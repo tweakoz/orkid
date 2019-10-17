@@ -8,6 +8,7 @@
 #include <ork/file/file.h>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/string/string.h>
+#include <ork/util/crc.h>
 #include "../gl.h"
 #include "glslfxi_parser.h"
 
@@ -86,21 +87,22 @@ int PassNode::parse(const ScannerView& view, int istart) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Technique* TechniqueNode::generate(shaderbuilder::BackEnd& backend) const {
+void TechniqueNode::generate(shaderbuilder::BackEnd& backend) const {
   Technique* ptek = new Technique(_name);
   for (auto item : _passNodes) {
-    auto pass = item.second->generate(backend);
+    item.second->generate(backend);
+    auto pass = backend._statemap["pass"_crcu].Get<Pass*>();
     ptek->addPass(pass);
   }
   backend._container->addTechnique(ptek);
-  return ptek;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Pass* PassNode::generate(shaderbuilder::BackEnd& backend) const {
+void PassNode::generate(shaderbuilder::BackEnd& backend) const {
   Pass* ppass = new Pass(_name);
   auto c = backend._container;
+  backend._statemap["pass"_crcu].Set<Pass*>(ppass);
   /////////////////////////////////////////////////////////////
   // VTG pipe
   /////////////////////////////////////////////////////////////
@@ -165,7 +167,6 @@ Pass* PassNode::generate(shaderbuilder::BackEnd& backend) const {
     OrkAssert(psb != nullptr);
     ppass->_stateBlock = psb;
   }
-  return ppass;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

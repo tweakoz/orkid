@@ -8,6 +8,7 @@ namespace ork::lev2::glslfx {
 
 struct ContainerNode;
 struct GlSlFxParser;
+struct Pass;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -30,6 +31,7 @@ struct BackEnd {
     Container* _container = nullptr;
     const ContainerNode* _cnode = nullptr;
     Root _root;
+    std::map<uint32_t,svar64_t> _statemap;
 };
 } // namespace shaderbuilder
 
@@ -39,6 +41,7 @@ struct AstNode {
   AstNode(ContainerNode* cnode = nullptr)
       : _container(cnode) {}
   virtual ~AstNode() {}
+  virtual void generate(shaderbuilder::BackEnd& backend) const {}
   ContainerNode* _container;
 };
 
@@ -129,7 +132,7 @@ struct PassNode : public NamedBlockNode {
   PassNode(ContainerNode* cnode)
       : NamedBlockNode(cnode) {}
 
-  Pass* generate(shaderbuilder::BackEnd& backend) const;
+  void generate(shaderbuilder::BackEnd& backend) const final;
 
   int parse(const ScannerView& view, int startok );
   
@@ -149,7 +152,7 @@ struct TechniqueNode : public DecoBlockNode {
   TechniqueNode(ContainerNode* cnode)
       : DecoBlockNode(cnode) {}
   void parse(const ScannerView& view);
-  Technique* generate(shaderbuilder::BackEnd& backend) const;
+  void generate(shaderbuilder::BackEnd& backend) const final;
   std::string _fxconfig;
   std::unordered_map<std::string, PassNode*> _passNodes;
 };
@@ -210,7 +213,7 @@ struct InterfaceNode : public DecoBlockNode {
   void parse(const ScannerView& view);
   void parseIos(const ScannerView& view,IoContainer& ioc);
 
-  StreamInterface* _generate(shaderbuilder::BackEnd& backend, GLenum type);
+  void _generate(shaderbuilder::BackEnd& backend, GLenum type) const;
   std::vector<InterfaceLayoutNode*> _interfacelayouts;
   IoContainer _inputs;
   IoContainer _outputs;
@@ -233,7 +236,7 @@ struct ShaderNode : public DecoBlockNode {
   explicit ShaderNode(ContainerNode* cnode)
       : DecoBlockNode(cnode) {}
   void parse(const ScannerView& view);
-  void _generateCommon(Shader* subsh);
+  void _generateCommon(Shader* subsh) const;
   ShaderBody _body;
 };
 
@@ -243,7 +246,7 @@ struct StateBlockNode : public DecoBlockNode {
   explicit StateBlockNode(ContainerNode* cnode)
       : DecoBlockNode(cnode) {}
   void parse(const ScannerView& view);
-  StateBlock* generate(shaderbuilder::BackEnd& backend) const;
+  void generate(shaderbuilder::BackEnd& backend) const final;
   std::string _culltest;
   std::string _depthmask;
   std::string _depthtest;
@@ -253,28 +256,28 @@ struct StateBlockNode : public DecoBlockNode {
 struct VertexShaderNode : public ShaderNode {
   explicit VertexShaderNode(ContainerNode* cnode)
       : ShaderNode(cnode) {}
-  ShaderVtx* generate(shaderbuilder::BackEnd& backend);
+  void generate(shaderbuilder::BackEnd& backend) const final;
 };
 
 struct FragmentShaderNode : public ShaderNode {
   explicit FragmentShaderNode(ContainerNode* cnode)
       : ShaderNode(cnode) {}
-  ShaderFrg* generate(shaderbuilder::BackEnd& backend);
+  void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct TessCtrlShaderNode : public ShaderNode {
   explicit TessCtrlShaderNode(ContainerNode* cnode)
       : ShaderNode(cnode) {}
-  ShaderTsC* generate(shaderbuilder::BackEnd& backend);
+  void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct TessEvalShaderNode : public ShaderNode {
   explicit TessEvalShaderNode(ContainerNode* cnode)
       : ShaderNode(cnode) {}
-  ShaderTsE* generate(shaderbuilder::BackEnd& backend);
+  void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct GeometryShaderNode : public ShaderNode {
   explicit GeometryShaderNode(ContainerNode* cnode)
       : ShaderNode(cnode) {}
-  ShaderGeo* generate(shaderbuilder::BackEnd& backend);
+  void generate(shaderbuilder::BackEnd& backend) const final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -282,39 +285,39 @@ struct GeometryShaderNode : public ShaderNode {
 struct VertexInterfaceNode : public InterfaceNode {
   explicit VertexInterfaceNode(ContainerNode* cnode)
       : InterfaceNode(cnode) {}
-  StreamInterface* generate(shaderbuilder::BackEnd& backend);
+  void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct FragmentInterfaceNode : public InterfaceNode {
   explicit FragmentInterfaceNode(ContainerNode* cnode)
       : InterfaceNode(cnode) {}
-  StreamInterface* generate(shaderbuilder::BackEnd& backend);
+  void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct TessCtrlInterfaceNode : public InterfaceNode {
   explicit TessCtrlInterfaceNode(ContainerNode* cnode)
       : InterfaceNode(cnode) {}
-  StreamInterface* generate(shaderbuilder::BackEnd& backend);
+  void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct TessEvalInterfaceNode : public InterfaceNode {
   explicit TessEvalInterfaceNode(ContainerNode* cnode)
       : InterfaceNode(cnode) {}
-  StreamInterface* generate(shaderbuilder::BackEnd& backend);
+  void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct GeometryInterfaceNode : public InterfaceNode {
   explicit GeometryInterfaceNode(ContainerNode* cnode)
       : InterfaceNode(cnode) {}
-  StreamInterface* generate(shaderbuilder::BackEnd& backend);
+  void generate(shaderbuilder::BackEnd& backend) const final;
 };
 
 #if defined ENABLE_COMPUTE_SHADERS
 struct ComputeShaderNode : public ShaderNode {
   explicit ComputeShaderNode(ContainerNode* cnode)
       : ShaderNode(cnode) {}
-  ComputeShader* generate(shaderbuilder::BackEnd& backend);
+  void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct ComputeInterfaceNode : public InterfaceNode {
   explicit ComputeInterfaceNode(ContainerNode* cnode)
       : InterfaceNode(cnode) {}
-  StreamInterface* generate(shaderbuilder::BackEnd& backend);
+  void generate(shaderbuilder::BackEnd& backend) const final;
 };
 #endif
 
@@ -322,22 +325,22 @@ struct ComputeInterfaceNode : public InterfaceNode {
 struct NvTaskInterfaceNode : public InterfaceNode {
   explicit NvTaskInterfaceNode(ContainerNode* cnode)
       : InterfaceNode(cnode) {}
-  StreamInterface* generate(shaderbuilder::BackEnd& backend);
+  void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct NvMeshInterfaceNode : public InterfaceNode {
   explicit NvMeshInterfaceNode(ContainerNode* cnode)
       : InterfaceNode(cnode) {}
-  StreamInterface* generate(shaderbuilder::BackEnd& backend);
+  void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct NvTaskShaderNode : public ShaderNode {
   explicit NvTaskShaderNode(ContainerNode* cnode)
       : ShaderNode(cnode) {}
-  ShaderNvTask* generate(shaderbuilder::BackEnd& backend);
+  void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct NvMeshShaderNode : public ShaderNode {
   explicit NvMeshShaderNode(ContainerNode* cnode)
       : ShaderNode(cnode) {}
-  ShaderNvMesh* generate(shaderbuilder::BackEnd& backend);
+  void generate(shaderbuilder::BackEnd& backend) const final;
 };
 #endif
 
@@ -357,7 +360,6 @@ struct ShaderDataNode : public DecoBlockNode {
   void parse(const ScannerView& view);
   std::vector<UniformDeclNode*> _uniformdecls;
   std::set<std::string> _dupenamecheck;
-  virtual void generate(shaderbuilder::BackEnd& backend) const = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -408,10 +410,13 @@ struct ContainerNode : public AstNode {
   bool isIoAttrDecorator(const std::string typeName) const;
 
   Container* createContainer() const;
-  
+
+  typedef std::vector<AstNode*> nodevect_t;
+
   template <typename T> void generateBlocks(shaderbuilder::BackEnd& backend) const;
   template <typename T> void forEachBlockOfType(std::function<void(T*)> operation) const;
-  void generate(shaderbuilder::BackEnd& backend) const;
+  template <typename T> void collectNodesOfType(nodevect_t& outnvect) const;
+  void generate(shaderbuilder::BackEnd& backend) const final;
   
   int itokidx = 0;
 
@@ -438,6 +443,11 @@ template <typename T> void ContainerNode::forEachBlockOfType(std::function<void(
    for( auto blocknode : _orderedBlockNodes )
      if( auto as_t = dynamic_cast<T*>(blocknode) )
          operation(as_t);
+}
+template <typename T> void ContainerNode::collectNodesOfType(nodevect_t& outnvect) const {
+   for( auto blocknode : _orderedBlockNodes )
+     if( auto as_t = dynamic_cast<T*>(blocknode) )
+         outnvect.push_back(as_t);
 }
 
 template <typename T> void ContainerNode::generateBlocks(shaderbuilder::BackEnd& backend) const {
