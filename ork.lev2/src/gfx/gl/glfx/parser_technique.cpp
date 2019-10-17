@@ -86,21 +86,21 @@ int PassNode::parse(const ScannerView& view, int istart) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Technique* TechniqueNode::generate(Container* c) const {
+Technique* TechniqueNode::generate(shaderbuilder::BackEnd& backend) const {
   Technique* ptek = new Technique(_name);
   for (auto item : _passNodes) {
-    auto pass = item.second->generate(c);
+    auto pass = item.second->generate(backend);
     ptek->addPass(pass);
   }
-  c->addTechnique(ptek);
+  backend._container->addTechnique(ptek);
   return ptek;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Pass* PassNode::generate(Container* c) const {
+Pass* PassNode::generate(shaderbuilder::BackEnd& backend) const {
   Pass* ppass = new Pass(_name);
-
+  auto c = backend._container;
   /////////////////////////////////////////////////////////////
   // VTG pipe
   /////////////////////////////////////////////////////////////

@@ -9,6 +9,32 @@ namespace ork::lev2::glslfx {
 struct ContainerNode;
 struct GlSlFxParser;
 
+///////////////////////////////////////////////////////////////////////////////
+
+namespace shaderbuilder {
+struct Node {
+
+};
+struct Section : public Node {
+
+  std::vector<Node*> _children;
+};
+struct Root {
+  
+  std::map<int,Section> _sections;
+  
+};
+struct BackEnd {
+    BackEnd(const ContainerNode* cnode, Container* c);
+    bool generate();
+    Container* _container = nullptr;
+    const ContainerNode* _cnode = nullptr;
+    Root _root;
+};
+} // namespace shaderbuilder
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct AstNode {
   AstNode(ContainerNode* cnode = nullptr)
       : _container(cnode) {}
@@ -103,7 +129,7 @@ struct PassNode : public NamedBlockNode {
   PassNode(ContainerNode* cnode)
       : NamedBlockNode(cnode) {}
 
-  Pass* generate(Container* c) const;
+  Pass* generate(shaderbuilder::BackEnd& backend) const;
 
   int parse(const ScannerView& view, int startok );
   
@@ -123,7 +149,7 @@ struct TechniqueNode : public DecoBlockNode {
   TechniqueNode(ContainerNode* cnode)
       : DecoBlockNode(cnode) {}
   void parse(const ScannerView& view);
-  Technique* generate(Container* c) const;
+  Technique* generate(shaderbuilder::BackEnd& backend) const;
   std::string _fxconfig;
   std::unordered_map<std::string, PassNode*> _passNodes;
 };
@@ -184,7 +210,7 @@ struct InterfaceNode : public DecoBlockNode {
   void parse(const ScannerView& view);
   void parseIos(const ScannerView& view,IoContainer& ioc);
 
-  StreamInterface* _generate(Container*, GLenum type);
+  StreamInterface* _generate(shaderbuilder::BackEnd& backend, GLenum type);
   std::vector<InterfaceLayoutNode*> _interfacelayouts;
   IoContainer _inputs;
   IoContainer _outputs;
@@ -217,7 +243,7 @@ struct StateBlockNode : public DecoBlockNode {
   explicit StateBlockNode(ContainerNode* cnode)
       : DecoBlockNode(cnode) {}
   void parse(const ScannerView& view);
-  StateBlock* generate(Container* c) const;
+  StateBlock* generate(shaderbuilder::BackEnd& backend) const;
   std::string _culltest;
   std::string _depthmask;
   std::string _depthtest;
@@ -227,28 +253,28 @@ struct StateBlockNode : public DecoBlockNode {
 struct VertexShaderNode : public ShaderNode {
   explicit VertexShaderNode(ContainerNode* cnode)
       : ShaderNode(cnode) {}
-  ShaderVtx* generate(Container*);
+  ShaderVtx* generate(shaderbuilder::BackEnd& backend);
 };
 
 struct FragmentShaderNode : public ShaderNode {
   explicit FragmentShaderNode(ContainerNode* cnode)
       : ShaderNode(cnode) {}
-  ShaderFrg* generate(Container*);
+  ShaderFrg* generate(shaderbuilder::BackEnd& backend);
 };
 struct TessCtrlShaderNode : public ShaderNode {
   explicit TessCtrlShaderNode(ContainerNode* cnode)
       : ShaderNode(cnode) {}
-  ShaderTsC* generate(Container*);
+  ShaderTsC* generate(shaderbuilder::BackEnd& backend);
 };
 struct TessEvalShaderNode : public ShaderNode {
   explicit TessEvalShaderNode(ContainerNode* cnode)
       : ShaderNode(cnode) {}
-  ShaderTsE* generate(Container*);
+  ShaderTsE* generate(shaderbuilder::BackEnd& backend);
 };
 struct GeometryShaderNode : public ShaderNode {
   explicit GeometryShaderNode(ContainerNode* cnode)
       : ShaderNode(cnode) {}
-  ShaderGeo* generate(Container*);
+  ShaderGeo* generate(shaderbuilder::BackEnd& backend);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -256,39 +282,39 @@ struct GeometryShaderNode : public ShaderNode {
 struct VertexInterfaceNode : public InterfaceNode {
   explicit VertexInterfaceNode(ContainerNode* cnode)
       : InterfaceNode(cnode) {}
-  StreamInterface* generate(Container*);
+  StreamInterface* generate(shaderbuilder::BackEnd& backend);
 };
 struct FragmentInterfaceNode : public InterfaceNode {
   explicit FragmentInterfaceNode(ContainerNode* cnode)
       : InterfaceNode(cnode) {}
-  StreamInterface* generate(Container*);
+  StreamInterface* generate(shaderbuilder::BackEnd& backend);
 };
 struct TessCtrlInterfaceNode : public InterfaceNode {
   explicit TessCtrlInterfaceNode(ContainerNode* cnode)
       : InterfaceNode(cnode) {}
-  StreamInterface* generate(Container*);
+  StreamInterface* generate(shaderbuilder::BackEnd& backend);
 };
 struct TessEvalInterfaceNode : public InterfaceNode {
   explicit TessEvalInterfaceNode(ContainerNode* cnode)
       : InterfaceNode(cnode) {}
-  StreamInterface* generate(Container*);
+  StreamInterface* generate(shaderbuilder::BackEnd& backend);
 };
 struct GeometryInterfaceNode : public InterfaceNode {
   explicit GeometryInterfaceNode(ContainerNode* cnode)
       : InterfaceNode(cnode) {}
-  StreamInterface* generate(Container*);
+  StreamInterface* generate(shaderbuilder::BackEnd& backend);
 };
 
 #if defined ENABLE_COMPUTE_SHADERS
 struct ComputeShaderNode : public ShaderNode {
   explicit ComputeShaderNode(ContainerNode* cnode)
       : ShaderNode(cnode) {}
-  ComputeShader* generate(Container*);
+  ComputeShader* generate(shaderbuilder::BackEnd& backend);
 };
 struct ComputeInterfaceNode : public InterfaceNode {
   explicit ComputeInterfaceNode(ContainerNode* cnode)
       : InterfaceNode(cnode) {}
-  StreamInterface* generate(Container*);
+  StreamInterface* generate(shaderbuilder::BackEnd& backend);
 };
 #endif
 
@@ -296,22 +322,22 @@ struct ComputeInterfaceNode : public InterfaceNode {
 struct NvTaskInterfaceNode : public InterfaceNode {
   explicit NvTaskInterfaceNode(ContainerNode* cnode)
       : InterfaceNode(cnode) {}
-  StreamInterface* generate(Container*);
+  StreamInterface* generate(shaderbuilder::BackEnd& backend);
 };
 struct NvMeshInterfaceNode : public InterfaceNode {
   explicit NvMeshInterfaceNode(ContainerNode* cnode)
       : InterfaceNode(cnode) {}
-  StreamInterface* generate(Container*);
+  StreamInterface* generate(shaderbuilder::BackEnd& backend);
 };
 struct NvTaskShaderNode : public ShaderNode {
   explicit NvTaskShaderNode(ContainerNode* cnode)
       : ShaderNode(cnode) {}
-  ShaderNvTask* generate(Container*);
+  ShaderNvTask* generate(shaderbuilder::BackEnd& backend);
 };
 struct NvMeshShaderNode : public ShaderNode {
   explicit NvMeshShaderNode(ContainerNode* cnode)
       : ShaderNode(cnode) {}
-  ShaderNvMesh* generate(Container*);
+  ShaderNvMesh* generate(shaderbuilder::BackEnd& backend);
 };
 #endif
 
@@ -331,7 +357,7 @@ struct ShaderDataNode : public DecoBlockNode {
   void parse(const ScannerView& view);
   std::vector<UniformDeclNode*> _uniformdecls;
   std::set<std::string> _dupenamecheck;
-  virtual void generate(Container* outcon) const = 0;
+  virtual void generate(shaderbuilder::BackEnd& backend) const = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -339,7 +365,7 @@ struct ShaderDataNode : public DecoBlockNode {
 struct UniformSetNode : public ShaderDataNode {
   UniformSetNode(ContainerNode* cnode)
       : ShaderDataNode(cnode) {}
-  void generate(Container* outcon) const final;
+  void generate(shaderbuilder::BackEnd& backend) const final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -347,7 +373,7 @@ struct UniformSetNode : public ShaderDataNode {
 struct UniformBlockNode : public ShaderDataNode {
   UniformBlockNode(ContainerNode* cnode)
       : ShaderDataNode(cnode) {}
-  void generate(Container* outcon) const final;
+  void generate(shaderbuilder::BackEnd& backend) const final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -364,7 +390,7 @@ struct LibraryBlockNode : public DecoBlockNode {
   // std::unordered_map<std::string, LibraryFunctionNode*> _functionNodes;
   // std::unordered_map<std::string, LibraryStructNode*> _structNodes;
   void parse(const ScannerView& view);
-  void generate(Container* c) const;
+  void generate(shaderbuilder::BackEnd& backend) const;
   ShaderBody _body;
 };
 
@@ -383,9 +409,9 @@ struct ContainerNode : public AstNode {
 
   Container* createContainer() const;
   
-  template <typename T> void generateBlocks(Container* c) const;
+  template <typename T> void generateBlocks(shaderbuilder::BackEnd& backend) const;
   template <typename T> void forEachBlockOfType(std::function<void(T*)> operation) const;
-  void generate(Container*c) const;
+  void generate(shaderbuilder::BackEnd& backend) const;
   
   int itokidx = 0;
 
@@ -395,6 +421,7 @@ struct ContainerNode : public AstNode {
   const AssetPath _path;
   ConfigNode* _configNode = nullptr;
 
+  
   std::vector<DecoBlockNode*> _orderedBlockNodes;
 
   std::unordered_map<std::string, DecoBlockNode*> _blockNodes;
@@ -413,8 +440,8 @@ template <typename T> void ContainerNode::forEachBlockOfType(std::function<void(
          operation(as_t);
 }
 
-template <typename T> void ContainerNode::generateBlocks(Container* c) const {
-   forEachBlockOfType<T>([&](T*as_t){as_t->generate(c);});
+template <typename T> void ContainerNode::generateBlocks(shaderbuilder::BackEnd& backend) const {
+   forEachBlockOfType<T>([&](T*as_t){as_t->generate(backend);});
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

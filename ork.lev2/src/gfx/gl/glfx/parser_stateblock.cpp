@@ -44,9 +44,9 @@ void StateBlockNode::parse(const ScannerView& view) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-StateBlock* StateBlockNode::generate(Container* c) const {
+StateBlock* StateBlockNode::generate(shaderbuilder::BackEnd& backend) const {
   auto psb      = new StateBlock;
-  
+  auto c = backend._container;
   psb->mName = _name;
   auto& apptors = psb->mApplicators;
 
@@ -103,7 +103,7 @@ StateBlock* StateBlockNode::generate(Container* c) const {
 
   //////////////////////
 
-  c->addStateBlock(psb);
+  backend._container->addStateBlock(psb);
   
   return psb;
 }

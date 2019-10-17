@@ -231,46 +231,48 @@ void ContainerNode::parse() {
 
 //////////////////////////////////////////////////////////////////////////////////
 
-void ContainerNode::generate(Container*c) const {
+void ContainerNode::generate(shaderbuilder::BackEnd& backend) const {
 
-    generateBlocks<LibraryBlockNode>(c);
-    generateBlocks<ShaderDataNode>(c);
+    generateBlocks<LibraryBlockNode>(backend);
+    generateBlocks<ShaderDataNode>(backend);
 
-    generateBlocks<VertexInterfaceNode>(c);
-    generateBlocks<TessEvalInterfaceNode>(c);
-    generateBlocks<TessCtrlInterfaceNode>(c);
-    generateBlocks<GeometryInterfaceNode>(c);
-    generateBlocks<FragmentInterfaceNode>(c);
+    generateBlocks<VertexInterfaceNode>(backend);
+    generateBlocks<TessEvalInterfaceNode>(backend);
+    generateBlocks<TessCtrlInterfaceNode>(backend);
+    generateBlocks<GeometryInterfaceNode>(backend);
+    generateBlocks<FragmentInterfaceNode>(backend);
 
-    generateBlocks<VertexShaderNode>(c);
-    generateBlocks<TessCtrlShaderNode>(c);
-    generateBlocks<TessEvalShaderNode>(c);
-    generateBlocks<GeometryShaderNode>(c);
-    generateBlocks<FragmentShaderNode>(c);
+    generateBlocks<VertexShaderNode>(backend);
+    generateBlocks<TessCtrlShaderNode>(backend);
+    generateBlocks<TessEvalShaderNode>(backend);
+    generateBlocks<GeometryShaderNode>(backend);
+    generateBlocks<FragmentShaderNode>(backend);
 
 #if defined(ENABLE_NVMESH_SHADERS)
-    generateBlocks<NvTaskInterfaceNode>(c);
-    generateBlocks<NvMeshInterfaceNode>(c);
-    generateBlocks<NvTaskShaderNode>(c);
-    generateBlocks<NvMeshShaderNode>(c);
+    generateBlocks<NvTaskInterfaceNode>(backend);
+    generateBlocks<NvMeshInterfaceNode>(backend);
+    generateBlocks<NvTaskShaderNode>(backend);
+    generateBlocks<NvMeshShaderNode>(backend);
 #endif
 
 #if defined(ENABLE_COMPUTE_SHADERS)
-    generateBlocks<ComputeInterfaceNode>(c);
-    generateBlocks<ComputeShaderNode>(c);
+    generateBlocks<ComputeInterfaceNode>(backend);
+    generateBlocks<ComputeShaderNode>(backend);
 #endif
 
-    generateBlocks<StateBlockNode>(c);
-    generateBlocks<TechniqueNode>(c);
+    generateBlocks<StateBlockNode>(backend);
+    generateBlocks<TechniqueNode>(backend);
 
 }
 
 //////////////////////////////////////////////////////////////////////////////////
 
 Container* ContainerNode::createContainer() const {
-  auto container = new Container(_path.c_str());
-  this->generate(container);
-  return container;
+  auto c = new Container(_path.c_str());
+  shaderbuilder::BackEnd backend(this,c);
+  bool ok = backend.generate();
+  assert(ok);
+  return c;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

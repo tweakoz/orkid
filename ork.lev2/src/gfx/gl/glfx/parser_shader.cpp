@@ -358,68 +358,75 @@ void ShaderNode::_generateCommon(Shader* pshader) {
 }
 
 ///////////////////////////////////////////////////////////
-ShaderVtx* VertexShaderNode::generate(Container* c) {
+ShaderVtx* VertexShaderNode::generate(shaderbuilder::BackEnd& backend) {
   auto pshader         = new ShaderVtx();
+  auto c = backend._container;
   pshader->mpContainer = c;
   _generateCommon(pshader);
   c->addVertexShader(pshader);
   return pshader;
 }
 ///////////////////////////////////////////////////////////
-ShaderTsC* TessCtrlShaderNode::generate(Container* c) {
+ShaderTsC* TessCtrlShaderNode::generate(shaderbuilder::BackEnd& backend) {
   auto pshader         = new ShaderTsC();
+  auto c = backend._container;
   pshader->mpContainer = c;
   _generateCommon(pshader);
   c->addTessCtrlShader(pshader);
   return pshader;
 }
 ///////////////////////////////////////////////////////////
-ShaderTsE* TessEvalShaderNode::generate(Container* c) {
+ShaderTsE* TessEvalShaderNode::generate(shaderbuilder::BackEnd& backend) {
   auto pshader         = new ShaderTsE();
+  auto c = backend._container;
   pshader->mpContainer = c;
   _generateCommon(pshader);
   c->addTessEvalShader(pshader);
   return pshader;
 }
 ///////////////////////////////////////////////////////////
-ShaderGeo* GeometryShaderNode::generate(Container* c) {
+ShaderGeo* GeometryShaderNode::generate(shaderbuilder::BackEnd& backend) {
   auto pshader         = new ShaderGeo();
-  pshader->mpContainer = c;
+  auto c = backend._container;
+  pshader->mpContainer = backend._container;
   _generateCommon(pshader);
   c->addGeometryShader(pshader);
   return pshader;
 }
 ///////////////////////////////////////////////////////////
-ShaderFrg* FragmentShaderNode::generate(Container* c) {
+ShaderFrg* FragmentShaderNode::generate(shaderbuilder::BackEnd& backend) {
   auto pshader         = new ShaderFrg();
-  pshader->mpContainer = c;
+  auto c = backend._container;
+  pshader->mpContainer = backend._container;
   _generateCommon(pshader);
-  c->addFragmentShader(pshader);
+  backend._container->addFragmentShader(pshader);
   return pshader;
 }
 #if defined(ENABLE_NVMESH_SHADERS)
-ShaderNvTask* NvTaskShaderNode::generate(Container* c) {
+ShaderNvTask* NvTaskShaderNode::generate(shaderbuilder::BackEnd& backend) {
   auto pshader         = new ShaderNvTask();
-  pshader->mpContainer = c;
+  auto c = backend._container;
+  pshader->mpContainer = backend._container;
   _generateCommon(pshader);
-  c->addNvTaskShader(pshader);
+  backend._container->addNvTaskShader(pshader);
   return pshader;
 }
-ShaderNvMesh* NvMeshShaderNode::generate(Container* c) {
+ShaderNvMesh* NvMeshShaderNode::generate(shaderbuilder::BackEnd& backend) {
   auto pshader         = new ShaderNvMesh();
-  pshader->mpContainer = c;
+  auto c = backend._container;
+  pshader->mpContainer = backend._container;
   _generateCommon(pshader);
-  c->addNvMeshShader(pshader);
+  backend._container->addNvMeshShader(pshader);
   return pshader;
 }
 #endif
 
 #if defined(ENABLE_COMPUTE_SHADERS)
-ComputeShader* ComputeShaderNode::generate(Container* c) {
+ComputeShader* ComputeShaderNode::generate(shaderbuilder::BackEnd& backend) {
   auto pshader         = new ComputeShader();
-  pshader->mpContainer = c;
+  pshader->mpContainer = backend._container;
   _generateCommon(pshader);
-  c->addComputeShader(pshader);
+  backend._container->addComputeShader(pshader);
   return pshader;
 }
 #endif
@@ -432,7 +439,7 @@ void LibraryBlockNode::parse(const ScannerView& view) {
 
 //////////////////////////////////////////////////////////////////////////////////
 
-void LibraryBlockNode::generate(Container* c) const {
+void LibraryBlockNode::generate(shaderbuilder::BackEnd& backend) const {
 
   for (auto l : _body._lines) {
     for (auto t : l->_tokens) {

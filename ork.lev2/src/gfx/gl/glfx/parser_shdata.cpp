@@ -83,8 +83,10 @@ void ShaderDataNode::parse(const ScannerView& view) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void UniformSetNode::generate(Container* outcon) const {
+void UniformSetNode::generate(shaderbuilder::BackEnd& backend) const {
 
+    auto outcon = backend._container;
+    
     assert(_blocktype == "uniform_set");
 
     UniformSet* uset = new UniformSet;
@@ -102,7 +104,9 @@ void UniformSetNode::generate(Container* outcon) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void UniformBlockNode::generate(Container* outcon) const {
+void UniformBlockNode::generate(shaderbuilder::BackEnd& backend) const {
+
+    auto outcon = backend._container;
 
     assert(_blocktype == "uniform_block");
 

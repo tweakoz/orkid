@@ -248,8 +248,10 @@ void InterfaceNode::parse(const ScannerView& view) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
+StreamInterface* InterfaceNode::_generate(shaderbuilder::BackEnd& backend, GLenum iftype) {
 
+  auto c = backend._container;
+  
   ////////////////////////
 
   StreamInterface* psi = new StreamInterface;
@@ -446,49 +448,56 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-StreamInterface* VertexInterfaceNode::generate(Container* c) {
-  auto sif = InterfaceNode::_generate(c, GL_VERTEX_SHADER);
+StreamInterface* VertexInterfaceNode::generate(shaderbuilder::BackEnd& backend) {
+  auto c = backend._container;
+  auto sif = InterfaceNode::_generate(backend, GL_VERTEX_SHADER);
   c->addVertexInterface(sif);
   return sif;
 }
-StreamInterface* FragmentInterfaceNode::generate(Container* c) {
-  auto sif = InterfaceNode::_generate(c, GL_FRAGMENT_SHADER);
+StreamInterface* FragmentInterfaceNode::generate(shaderbuilder::BackEnd& backend) {
+  auto c = backend._container;
+  auto sif = InterfaceNode::_generate(backend, GL_FRAGMENT_SHADER);
   c->addFragmentInterface(sif);
   return sif;
 }
-StreamInterface* TessCtrlInterfaceNode::generate(Container* c) {
-  auto sif = InterfaceNode::_generate(c, GL_TESS_CONTROL_SHADER);
+StreamInterface* TessCtrlInterfaceNode::generate(shaderbuilder::BackEnd& backend) {
+  auto c = backend._container;
+  auto sif = InterfaceNode::_generate(backend, GL_TESS_CONTROL_SHADER);
   c->addTessCtrlInterface(sif);
   return sif;
 }
-StreamInterface* TessEvalInterfaceNode::generate(Container* c) {
-  auto sif = InterfaceNode::_generate(c, GL_TESS_EVALUATION_SHADER);
+StreamInterface* TessEvalInterfaceNode::generate(shaderbuilder::BackEnd& backend) {
+  auto c = backend._container;
+  auto sif = InterfaceNode::_generate(backend, GL_TESS_EVALUATION_SHADER);
   c->addTessEvalInterface(sif);
   return sif;
 }
-StreamInterface* GeometryInterfaceNode::generate(Container* c) {
-  auto sif = InterfaceNode::_generate(c, GL_GEOMETRY_SHADER);
+StreamInterface* GeometryInterfaceNode::generate(shaderbuilder::BackEnd& backend) {
+  auto c = backend._container;
+  auto sif = InterfaceNode::_generate(backend, GL_GEOMETRY_SHADER);
   c->addGeometryInterface(sif);
   return sif;
 }
 #if defined(ENABLE_NVMESH_SHADERS)
-StreamInterface* NvTaskInterfaceNode::generate(Container* c) {
-  auto sif = InterfaceNode::_generate(c, GL_TASK_SHADER_NV);
+StreamInterface* NvTaskInterfaceNode::generate(shaderbuilder::BackEnd& backend) {
+  auto c = backend._container;
+  auto sif = InterfaceNode::_generate(backend, GL_TASK_SHADER_NV);
   c->addNvTaskInterface(sif);
   return sif;
 }
-StreamInterface* NvMeshInterfaceNode::generate(Container* c) {
-  auto sif = InterfaceNode::_generate(c, GL_MESH_SHADER_NV);
+StreamInterface* NvMeshInterfaceNode::generate(shaderbuilder::BackEnd& backend) {
+  auto c = backend._container;
+  auto sif = InterfaceNode::_generate(backend, GL_MESH_SHADER_NV);
   c->addNvMeshInterface(sif);
   return sif;
 }
 #endif
 #if defined(ENABLE_COMPUTE_SHADERS)
-StreamInterface* ComputeInterfaceNode::generate(Container* c) {
-  auto sif = InterfaceNode::_generate(c, GL_COMPUTE_SHADER);
+StreamInterface* ComputeInterfaceNode::generate(shaderbuilder::BackEnd& backend) {
+  auto c = backend._container;
+  auto sif = InterfaceNode::_generate(backend, GL_COMPUTE_SHADER);
   c->addComputeInterface(sif);
   return sif;
-  return nullptr;
 }
 #endif
 
