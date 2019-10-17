@@ -82,16 +82,6 @@ namespace ork::lev2::glslfx {
   }
 
   ///////////////////////////////////////////////////////////////////////////////
-  #if defined(ENABLE_SHADER_STORAGE)
-  StorageBlock* Container::storageBlock(const std::string& name) const {
-    const auto& it = _storageBlocks.find(name);
-    return (it == _storageBlocks.end()) ? nullptr : it->second;
-  }
-  void Container::addStorageBlock(StorageBlock* pif) {
-    _storageBlocks[pif->_name]=pif;
-  }
-#endif
-  ///////////////////////////////////////////////////////////////////////////////
 
   UniformSet* Container::uniformSet(const std::string& name) const {
     const auto& it = _uniformSets.find(name);
@@ -164,6 +154,11 @@ namespace ork::lev2::glslfx {
   #endif
 
   #if defined(ENABLE_COMPUTE_SHADERS)
+  void Container::addComputeInterface(StreamInterface* pif) { _computeInterfaces[pif->mName] = pif; }
+  StreamInterface* Container::computeInterface(const std::string& name) const {
+    const auto& it = _computeInterfaces.find(name);
+    return (it == _computeInterfaces.end()) ? nullptr : it->second;
+  }
   void Container::addComputeShader(ComputeShader* psha) { _computeShaders[psha->mName] = psha; }
   ComputeShader* Container::computeShader(const std::string& name) const {
     const auto& it = _computeShaders.find(name);

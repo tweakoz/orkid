@@ -126,6 +126,9 @@ void ShaderNode::_generateCommon(Shader* pshader) {
     auto it_nvm = c->_nvMeshInterfaces.find(deco);
 #endif
 
+#if defined(ENABLE_COMPUTE_SHADERS)
+    auto it_com = c->_computeInterfaces.find(deco);
+#endif
 
     if (auto as_lib = dynamic_cast<LibraryBlockNode*>(blocknode)) {
       for( auto tok_deco : as_lib->_decorators ){
@@ -164,6 +167,10 @@ void ShaderNode::_generateCommon(Shader* pshader) {
       pshader->setInputInterface(it_nvt->second);
     } else if (is_nvmesh_shader && (it_nvm != c->_nvMeshInterfaces.end())) {
       pshader->setInputInterface(it_nvm->second);
+#endif
+#if defined(ENABLE_COMPUTE_SHADERS)
+    } else if (is_compute_shader && (it_com != c->_computeInterfaces.end())) {
+      pshader->setInputInterface(it_com->second);
 #endif
     } else {
       printf("bad shader interface decorator!\n");
@@ -413,7 +420,6 @@ ComputeShader* ComputeShaderNode::generate(Container* c) {
   pshader->mpContainer = c;
   _generateCommon(pshader);
   c->addComputeShader(pshader);
-  assert(false);
   return pshader;
 }
 #endif
@@ -423,15 +429,6 @@ void LibraryBlockNode::parse(const ScannerView& view) {
   DecoBlockNode::parse(view);
   _body.parse(view);
 }
-
-//////////////////////////////////////////////////////////////////////////////////
-/*
-LibBlock::LibBlock(const Scanner& s)
-    : mFilter(nullptr)
-    , mView(nullptr) {
-  mFilter = new ScanViewFilter();
-  mView   = new ScannerView(s, *mFilter);
-}*/
 
 //////////////////////////////////////////////////////////////////////////////////
 

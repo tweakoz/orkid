@@ -71,7 +71,6 @@ struct NVMSIMPL {
       
       
       _lightcollectshader = _context._lightingmtl.computeShader("compute_collectlights");
-      
     }
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -120,6 +119,7 @@ struct NVMSIMPL {
     /////////////////////////////////////
     auto mapping = CI->mapStorageBuffer(_storagebuffer,0,1024);
     CI->unmapStorageBuffer(mapping.get());
+    CI->bindStorageBuffer(_lightcollectshader,0,_storagebuffer);
     CI->dispatchCompute(_lightcollectshader,1,1,1);
     
     /////////////////////////////////////
@@ -247,6 +247,7 @@ struct NVMSIMPL {
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uvb;
   FxShaderParamBuffer* _lightbuffer = nullptr;
   FxShaderStorageBuffer* _storagebuffer = nullptr;
+  const FxShaderStorageBlock* _storageparam = nullptr;
   const FxComputeShader* _lightcollectshader = nullptr;
   std::atomic<int> _pendingtilecounter;
 }; // IMPL

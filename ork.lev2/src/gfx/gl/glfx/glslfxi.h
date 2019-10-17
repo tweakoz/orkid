@@ -161,14 +161,6 @@ struct UniformBuffer {
   size_t _length              = 0;
 };
 
-#if defined(ENABLE_COMPUTE_SHADERS)
-struct ShaderStorageBuffer {
-  FxShaderStorageBuffer* _fxssb = nullptr;
-  GLuint _glbufid             = 0;
-  size_t _length              = 0;
-};
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct UniformBlockBinding {
@@ -214,22 +206,6 @@ struct UniformBlockLayout {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(ENABLE_SHADER_STORAGE)
-struct StorageBlock {
-  std::string _name;
-};
-struct StorageBlockBinding {
-  Pass* _pass        = nullptr; // program to which this binding is bound
-  GLuint _blockIndex = 0xffffffff;
-  std::string _name;
-  // StorageBlockItem findUniform(std::string named) const;
-};
-struct StorageBlockMapping {
-  StorageBlockBinding* _binding = nullptr;
-  uint8_t* _mapaddr             = nullptr;
-};
-#endif
-///////////////////////////////////////////////////////////////////////////////
 
 struct StreamInterface {
   StreamInterface();
@@ -330,16 +306,6 @@ struct ShaderTsE : Shader {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(ENABLE_COMPUTE_SHADERS)
-struct ComputeShader : Shader {
-  ComputeShader(const std::string& nam = "")
-      : Shader(nam, GL_COMPUTE_SHADER) {}
-
-};
-#endif
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct PrimPipelineVTG {
   ShaderVtx* _vertexShader   = nullptr;
   ShaderTsC* _tessCtrlShader = nullptr;
@@ -375,19 +341,29 @@ typedef std::unordered_map<UniformBlock*, UniformBlockBinding*> ubb_map_t;
 typedef std::unordered_map<std::string, Attribute*> attr_map_t;
 
 ///////////////////////////////////////////////////////////////////////////////
-
 #if defined(ENABLE_COMPUTE_SHADERS)
-struct PipelineCompute {
-  ComputeShader* _computeShader  = nullptr;
-  uni_map_t _uniformInstances;
-  GLuint _programObjectId = 0;
-  ubb_map_t _uboBindingMap;
-  //void bindUniformBlockBuffer(UniformBlock* block, UniformBuffer* buffer);
-  std::vector<UniformBuffer*> _ubobindings;
+struct ComputeShader;
+struct ShaderStorageBuffer {
+  FxShaderStorageBuffer* _fxssb = nullptr;
+  GLuint _glbufid             = 0;
+  size_t _length              = 0;
+};
+struct StorageBlockMapping {
 
-  #if defined(ENABLE_SHADER_STORAGE)
-  std::vector<StorageBlock*> _storagebindings;
-  #endif
+  uint8_t* _mapaddr             = nullptr;
+  ShaderStorageBuffer* _buffer  = nullptr;
+};
+typedef std::unordered_map<uint32_t, ShaderStorageBuffer*> ssbo_map_t;
+struct PipelineCompute {
+
+  ComputeShader* _computeShader  = nullptr;
+  GLuint _programObjectId = 0;
+  ssbo_map_t _ssboBindingMap;
+};
+struct ComputeShader : Shader {
+  ComputeShader(const std::string& nam = "")
+      : Shader(nam, GL_COMPUTE_SHADER) {}
+      PipelineCompute* _computePipe = nullptr;
 };
 #endif
 ///////////////////////////////////////////////////////////////////////////////
@@ -533,14 +509,14 @@ struct Container {
 
 ///////////////////////////////////////////////////////
 #if defined(ENABLE_SHADER_STORAGE)
-  std::unordered_map<std::string, StorageBlock*> _storageBlocks;
-  StorageBlock* storageBlock(const std::string& name) const;
-  void addStorageBlock(StorageBlock* pif);
 #endif
   ///////////////////////////////////////////////////////
   #if defined(ENABLE_COMPUTE_SHADERS)
+  std::unordered_map<std::string, StreamInterface*> _computeInterfaces;
   std::unordered_map<std::string, ComputeShader*> _computeShaders;
   ComputeShader* computeShader(const std::string& name) const;
+  StreamInterface* computeInterface(const std::string& name) const;
+  void addComputeInterface(StreamInterface* sif);
   void addComputeShader(ComputeShader* pif);
 #endif
   ///////////////////////////////////////////////////////
@@ -637,7 +613,10 @@ struct ComputeInterface : public lev2::ComputeInterface {
     FxShaderStorageBuffer* createStorageBuffer(size_t length) final;
     storagebuffermappingptr_t mapStorageBuffer(FxShaderStorageBuffer*b,size_t base=0, size_t length=0) final;
     void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) final;
-    void bindStorageBuffer(const FxShaderStorageBlock* block, FxShaderStorageBuffer* buffer) final;
+    void bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) final;
+
+    PipelineCompute* createComputePipe(ComputeShader* csh);
+    void bindComputeShader(ComputeShader* csh);
 };
 #endif
 

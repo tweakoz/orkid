@@ -41,7 +41,10 @@ struct FreestyleMaterial : public GfxMaterial {
   std::set<const FxShaderTechnique*> _techniques;
   std::set<const FxShaderParam*> _params;
   std::set<const FxShaderParamBlock*> _paramBlocks;
-  
+  #if defined(ENABLE_COMPUTE_SHADERS)
+  std::set<const FxShaderStorageBlock*> _storageBlocks;
+  #endif
+
   inline const FxShaderTechnique* technique(std::string named) {
     auto fxi = _initialTarget->FXI();
     auto tek = fxi->technique(_shader, named);
@@ -64,6 +67,16 @@ struct FreestyleMaterial : public GfxMaterial {
     return par;
   }
 
+  ////////////////////////////////////////////
+#if defined(ENABLE_COMPUTE_SHADERS)
+  inline const FxShaderStorageBlock* storageBlock(std::string named) {
+    auto fxi = _initialTarget->FXI();
+    auto blk = fxi->storageBlock(_shader, named);
+    if (blk != nullptr)
+      _storageBlocks.insert(blk);
+    return blk;
+  }
+#endif
   ////////////////////////////////////////////
 
   inline void commit() {

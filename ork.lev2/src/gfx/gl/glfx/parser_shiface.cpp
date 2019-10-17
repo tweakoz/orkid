@@ -391,6 +391,31 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
   }
 
   ////////////////////////
+
+  for (auto store : _storage._nodes) {
+
+    std::string preamble_chunk;
+    if( store->_layout ) {
+      for (auto item : store->_layout->_tokens) {
+        const auto& tok = item->text;
+        preamble_chunk += tok + " ";
+      }
+    }
+    preamble_chunk += store->_typeName + " ";
+    preamble_chunk += store->_name + " ";
+    if( store->_inlineStruct ) {
+      for (auto item : store->_inlineStruct->_tokens) {
+        const auto& tok = item->text;
+        preamble_chunk += tok + " ";
+      }
+    }
+    psi->mPreamble.push_back(preamble_chunk + ";");
+
+      //for (auto item : output->_layout->_tokens )
+        //pattr->mLayout+=item->text;
+  }
+
+  ////////////////////////
   // sort attributes for performance
   //  (see
   //  http://stackoverflow.com/questions/16415037/opengl-core-profile-incredible-slowdown-on-os-x)
@@ -461,9 +486,8 @@ StreamInterface* NvMeshInterfaceNode::generate(Container* c) {
 #if defined(ENABLE_COMPUTE_SHADERS)
 StreamInterface* ComputeInterfaceNode::generate(Container* c) {
   auto sif = InterfaceNode::_generate(c, GL_COMPUTE_SHADER);
-  //c->addComputeInterface(sif);
-  //return sif;
-  assert(false);
+  c->addComputeInterface(sif);
+  return sif;
   return nullptr;
 }
 #endif

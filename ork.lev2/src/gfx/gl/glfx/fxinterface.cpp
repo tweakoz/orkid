@@ -81,6 +81,15 @@ void Interface::BindContainerToAbstract(Container* pcont, FxShader* fxh) {
     ork_parm->mInternalHandle    = (void*)puni;
     fxh->addParameter(ork_parm);
   }
+#if defined(ENABLE_COMPUTE_SHADERS)
+  for (const auto& itp : pcont->_computeShaders) {
+    ComputeShader* csh                = itp.second;
+    auto fxcsh      = new FxComputeShader;
+    fxcsh->_name              = itp.first;
+    fxcsh->_impl.Set<ComputeShader*>(csh);
+    fxh->addComputeShader(fxcsh);
+  }
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -323,8 +332,9 @@ const FxShaderStorageBlock* Interface::storageBlock(FxShader* hfx, const std::st
   const auto& it         = storagemap.find(name);
   auto fxsblock          = (FxShaderStorageBlock*)(it != storagemap.end()) ? it->second : nullptr;
 
-  auto container = static_cast<Container*>(hfx->GetInternalHandle());
-  auto ublk      = container->storageBlock(name);
+  assert(false); // not implmented yet
+  //auto container = static_cast<Container*>(hfx->GetInternalHandle());
+  //auto ublk      = container->storageBlock(name);
 
   return fxsblock;
 }
@@ -334,8 +344,15 @@ const FxShaderStorageBlock* Interface::storageBlock(FxShader* hfx, const std::st
 #if defined(ENABLE_COMPUTE_SHADERS)
 
 const FxComputeShader* Interface::computeShader(FxShader* hfx, const std::string& name) {
-  assert(false);
-  return nullptr;
+  OrkAssert(0 != hfx);
+  const auto& cshmap = hfx->namedComputeShaders();
+  const auto& it         = cshmap.find(name);
+  auto csh          = (FxComputeShader*)(it != cshmap.end()) ? it->second : nullptr;
+
+  //auto container = static_cast<Container*>(hfx->GetInternalHandle());
+  //auto ublk      = container->storageBlock(name);
+
+  return csh;
 }
 
 #endif

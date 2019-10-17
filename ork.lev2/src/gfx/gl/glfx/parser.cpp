@@ -241,10 +241,6 @@ void ContainerNode::generate(Container*c) const {
     generateBlocks<TessCtrlInterfaceNode>(c);
     generateBlocks<GeometryInterfaceNode>(c);
     generateBlocks<FragmentInterfaceNode>(c);
-#if defined(ENABLE_NVMESH_SHADERS)
-    generateBlocks<NvTaskInterfaceNode>(c);
-    generateBlocks<NvMeshInterfaceNode>(c);
-#endif
 
     generateBlocks<VertexShaderNode>(c);
     generateBlocks<TessCtrlShaderNode>(c);
@@ -253,11 +249,14 @@ void ContainerNode::generate(Container*c) const {
     generateBlocks<FragmentShaderNode>(c);
 
 #if defined(ENABLE_NVMESH_SHADERS)
+    generateBlocks<NvTaskInterfaceNode>(c);
+    generateBlocks<NvMeshInterfaceNode>(c);
     generateBlocks<NvTaskShaderNode>(c);
     generateBlocks<NvMeshShaderNode>(c);
 #endif
 
 #if defined(ENABLE_COMPUTE_SHADERS)
+    generateBlocks<ComputeInterfaceNode>(c);
     generateBlocks<ComputeShaderNode>(c);
 #endif
 
