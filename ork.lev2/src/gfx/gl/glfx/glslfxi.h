@@ -614,6 +614,7 @@ struct ComputeInterface : public lev2::ComputeInterface {
     storagebuffermappingptr_t mapStorageBuffer(FxShaderStorageBuffer*b,size_t base=0, size_t length=0) final;
     void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) final;
     void bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) final;
+    void bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex) final;
 
     PipelineCompute* createComputePipe(ComputeShader* csh);
     void bindComputeShader(ComputeShader* csh);

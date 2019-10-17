@@ -73,6 +73,24 @@ void ComputeInterface::bindStorageBuffer(const FxComputeShader* shader, uint32_t
   GL_ERRORCHECK();
 }
 
+void ComputeInterface::bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex) {
+  auto csh = shader->_impl.Get<ComputeShader*>();
+  assert(csh);
+  bindComputeShader(csh);
+  auto texobj = (GLTextureObject*) tex->GetTexIH();
+  glActiveTexture(GL_TEXTURE0 + binding_index);
+  glBindTexture(GL_TEXTURE_2D, texobj->mObject );
+  GL_ERRORCHECK();
+  glBindImageTexture(binding_index,
+                     texobj->mObject,
+                     0,            // miplevel
+                     GL_FALSE,     // layered ?
+                     0,            // layerid
+                     GL_READ_ONLY, // access
+                     GL_R32UI);    // format
+  GL_ERRORCHECK();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 PipelineCompute* ComputeInterface::createComputePipe(ComputeShader* csh) {
@@ -97,9 +115,12 @@ void ComputeInterface::bindComputeShader(ComputeShader* csh) {
     csh->_computePipe = createComputePipe(csh);
   }
   assert(csh->_computePipe != nullptr);
-  GL_ERRORCHECK();
-  glUseProgram(csh->_computePipe->_programObjectId);
-  GL_ERRORCHECK();
+  if (_currentComputePipeline != csh->_computePipe){
+    GL_ERRORCHECK();
+    glUseProgram(csh->_computePipe->_programObjectId);
+    GL_ERRORCHECK();
+    _currentComputePipeline = csh->_computePipe;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

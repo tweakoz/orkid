@@ -124,6 +124,7 @@ struct NVMSIMPL {
 
     CI->unmapStorageBuffer(mapping.get());
     CI->bindStorageBuffer(_lightcollectshader,0,_storagebuffer);
+    CI->bindImage(_lightcollectshader,1,_context._rtgDepthCluster->GetMrt(0)->GetTexture());
     CI->dispatchCompute(_lightcollectshader,1,1,1);
     
     /////////////////////////////////////

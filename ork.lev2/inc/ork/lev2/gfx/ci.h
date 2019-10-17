@@ -25,6 +25,7 @@ struct ComputeInterface {
   virtual storagebuffermappingptr_t mapStorageBuffer(FxShaderStorageBuffer*b,size_t base=0, size_t length=0) { return nullptr; }
   virtual void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) {}
   virtual void bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) {}
+  virtual void bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex) {}
 
 };
 #endif
