@@ -118,6 +118,10 @@ struct NVMSIMPL {
     // printf( "Deferred::_render tilecpa time<%g>\n", time_tile_cpa-time_tile_in );
     /////////////////////////////////////
     auto mapping = CI->mapStorageBuffer(_storagebuffer,0,1024);
+
+    mapping->ref<int>(0) = 127;
+
+
     CI->unmapStorageBuffer(mapping.get());
     CI->bindStorageBuffer(_lightcollectshader,0,_storagebuffer);
     CI->dispatchCompute(_lightcollectshader,1,1,1);
