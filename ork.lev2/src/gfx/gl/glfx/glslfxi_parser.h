@@ -25,12 +25,27 @@ struct Root {
   std::map<int,Section> _sections;
   
 };
+struct BackendCodeGen {
+  void beginLine();
+  void endLine();
+  void incIndent();
+  void decIndent();
+  void format(const char*fmt, ...);
+  void output(std::string str);
+  void formatLine(const char*fmt, ...);
+  std::string flush();
+  std::vector<std::string> _lines;
+  std::string _curline;
+  int _indentLevel = 0;
+};
 struct BackEnd {
     BackEnd(const ContainerNode* cnode, Container* c);
     bool generate();
+
     Container* _container = nullptr;
     const ContainerNode* _cnode = nullptr;
     Root _root;
+    BackendCodeGen _codegen;
     std::map<std::string,svar32_t> _statemap;
 };
 } // namespace shaderbuilder
@@ -164,21 +179,33 @@ struct InterfaceLayoutNode : public AstNode {
   InterfaceLayoutNode(ContainerNode* cnode)
       : AstNode(cnode) {}
   int parse(const ScannerView& view);
+  void pregen(shaderbuilder::BackEnd& backend) const final;
+  void emit(shaderbuilder::BackEnd& backend);
   std::vector<const Token*> _tokens;
   std::string _direction;
   bool _standaloneLayout = false;
 };
 
+struct InterfaceInlineStructMemberNode : public AstNode {
+  const Token* _type;
+  const Token* _name;
+  int _arraySize = 0;
+};
 struct InterfaceInlineStructNode : public AstNode {
   InterfaceInlineStructNode(ContainerNode* cnode)
       : AstNode(cnode) {}
-  std::vector<const Token*> _tokens;
+  void pregen(shaderbuilder::BackEnd& backend) const final;
+  int parse(const ScannerView& view);
+  void emit(shaderbuilder::BackEnd& backend) const;
+  std::vector<InterfaceInlineStructMemberNode*> _members;
 };
 
 struct InterfaceIoNode : public AstNode {
   InterfaceIoNode(ContainerNode* cnode)
       : AstNode(cnode) {}
       
+  void pregen(shaderbuilder::BackEnd& backend) const final;
+
   std::string _name;
   std::string _typeName;
   InterfaceInlineStructNode* _inlineStruct = nullptr;
@@ -191,34 +218,45 @@ struct InterfaceIoNode : public AstNode {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct InterfaceNode : public DecoBlockNode {
-  InterfaceNode(ContainerNode* cnode)
-      : DecoBlockNode(cnode) {
-    _inputs._direction = "in";
-    _outputs._direction = "out";
-    _storage._direction = "storage";
-  }
+typedef std::vector<InterfaceIoNode*> ionodevect_t;
 
-      
-  typedef std::vector<InterfaceIoNode*> ionodevect_t;
-  
-  struct IoContainer {
+struct IoContainerNode : public AstNode {
+
+    IoContainerNode(ContainerNode*c):AstNode(c){}
+
+    void pregen(shaderbuilder::BackEnd& backend) const final;
     ionodevect_t _nodes;
     std::set<std::string> _dupecheck;
     InterfaceLayoutNode* _pendinglayout = nullptr;
     std::vector<InterfaceLayoutNode*> _layouts;
     std::string _direction;
   };
-      
-  
-  void parse(const ScannerView& view);
-  void parseIos(const ScannerView& view,IoContainer& ioc);
 
-  void _generate(shaderbuilder::BackEnd& backend, GLenum type) const;
+///////////////////////////////////////////////////////////////////////////////
+
+struct InterfaceNode : public DecoBlockNode {
+  InterfaceNode(ContainerNode* cnode, GLenum type)
+      : DecoBlockNode(cnode)
+      , _gltype(type){
+    _inputs = new IoContainerNode(cnode);
+    _outputs = new IoContainerNode(cnode);
+    _storage = new IoContainerNode(cnode);
+    _inputs->_direction = "in";
+    _outputs->_direction = "out";
+    _storage->_direction = "storage";
+  }
+
+  void parse(const ScannerView& view);
+  void parseIos(const ScannerView& view,IoContainerNode* ioc);
+
+  void pregen(shaderbuilder::BackEnd& backend) const final;
+  void _generate(shaderbuilder::BackEnd& backend) const;
+
   std::vector<InterfaceLayoutNode*> _interfacelayouts;
-  IoContainer _inputs;
-  IoContainer _outputs;
-  IoContainer _storage;
+  IoContainerNode* _inputs = nullptr;
+  IoContainerNode* _outputs = nullptr;
+  IoContainerNode* _storage = nullptr;
+  GLenum _gltype = GL_NONE;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -285,27 +323,27 @@ struct GeometryShaderNode : public ShaderNode {
 
 struct VertexInterfaceNode : public InterfaceNode {
   explicit VertexInterfaceNode(ContainerNode* cnode)
-      : InterfaceNode(cnode) {}
+      : InterfaceNode(cnode,GL_VERTEX_SHADER) {}
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct FragmentInterfaceNode : public InterfaceNode {
   explicit FragmentInterfaceNode(ContainerNode* cnode)
-      : InterfaceNode(cnode) {}
+      : InterfaceNode(cnode,GL_FRAGMENT_SHADER) {}
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct TessCtrlInterfaceNode : public InterfaceNode {
   explicit TessCtrlInterfaceNode(ContainerNode* cnode)
-      : InterfaceNode(cnode) {}
+      : InterfaceNode(cnode,GL_TESS_CONTROL_SHADER) {}
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct TessEvalInterfaceNode : public InterfaceNode {
   explicit TessEvalInterfaceNode(ContainerNode* cnode)
-      : InterfaceNode(cnode) {}
+      : InterfaceNode(cnode,GL_TESS_EVALUATION_SHADER) {}
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct GeometryInterfaceNode : public InterfaceNode {
   explicit GeometryInterfaceNode(ContainerNode* cnode)
-      : InterfaceNode(cnode) {}
+      : InterfaceNode(cnode,GL_GEOMETRY_SHADER) {}
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 
@@ -317,7 +355,7 @@ struct ComputeShaderNode : public ShaderNode {
 };
 struct ComputeInterfaceNode : public InterfaceNode {
   explicit ComputeInterfaceNode(ContainerNode* cnode)
-      : InterfaceNode(cnode) {}
+      : InterfaceNode(cnode,GL_COMPUTE_SHADER) {}
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 #endif
@@ -325,12 +363,12 @@ struct ComputeInterfaceNode : public InterfaceNode {
 #if defined ENABLE_NVMESH_SHADERS
 struct NvTaskInterfaceNode : public InterfaceNode {
   explicit NvTaskInterfaceNode(ContainerNode* cnode)
-      : InterfaceNode(cnode) {}
+      : InterfaceNode(cnode,GL_TASK_SHADER_NV) {}
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct NvMeshInterfaceNode : public InterfaceNode {
   explicit NvMeshInterfaceNode(ContainerNode* cnode)
-      : InterfaceNode(cnode) {}
+      : InterfaceNode(cnode,GL_MESH_SHADER_NV) {}
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct NvTaskShaderNode : public ShaderNode {

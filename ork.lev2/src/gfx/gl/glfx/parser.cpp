@@ -317,6 +317,53 @@ Container* LoadFxFromFile(const AssetPath& pth) {
   return pcont;
 }
 
+namespace shaderbuilder {
+void BackendCodeGen::beginLine() {
+  if( _curline.length() )
+    endLine();
+
+  int lineno = _lines.size();
+  _curline = FormatString("/*%03d*/ ", lineno);
+  for( int i=0; i<_indentLevel; i++ )
+    _curline += "  ";
+}
+void BackendCodeGen::endLine() {
+  _lines.push_back(_curline);
+  _curline = "";
+}
+void BackendCodeGen::incIndent() { _indentLevel++; }
+void BackendCodeGen::decIndent() { _indentLevel--; }
+void BackendCodeGen::format(const char* fmt, ...) {
+  constexpr int kmaxlen = 1024;
+  char buffer[kmaxlen];
+  va_list argp;
+  va_start(argp, fmt);
+  vsnprintf(&buffer[0], kmaxlen, fmt, argp);
+  va_end(argp);
+  output(buffer);
+}
+void BackendCodeGen::output(std::string str) { _curline += str; }
+void BackendCodeGen::formatLine(const char* fmt, ...) {
+  constexpr int kmaxlen = 1024;
+  char buffer[kmaxlen];
+  va_list argp;
+  va_start(argp, fmt);
+  vsnprintf(&buffer[0], kmaxlen, fmt, argp);
+  va_end(argp);
+
+  beginLine();
+  output(buffer);
+  endLine();
+}
+std::string BackendCodeGen::flush() {
+  std::string rval;
+  for( auto l : _lines )
+    rval += l + "\n";
+  _curline = "";
+  _lines.clear();
+  return rval;
+}
+} // namespace shaderbuilder
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::glslfx
 /////////////////////////////////////////////////////////////////////////////////////////////////

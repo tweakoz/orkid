@@ -56,7 +56,82 @@ int InterfaceLayoutNode::parse(const ScannerView& view) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void InterfaceNode::parseIos(const ScannerView& view,IoContainer& ioc) {
+void InterfaceLayoutNode::emit(shaderbuilder::BackEnd& backend) {
+  auto& codegen = backend._codegen;
+  for (auto item : _tokens)
+    codegen.output(item->text + " ");
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void InterfaceLayoutNode::pregen(shaderbuilder::BackEnd& backend) const {}
+void InterfaceInlineStructNode::pregen(shaderbuilder::BackEnd& backend) const {}
+
+void InterfaceInlineStructNode::emit(shaderbuilder::BackEnd& backend) const {
+  auto& codegen = backend._codegen;
+  codegen.formatLine("{");
+  codegen.incIndent();
+  for (auto m : _members) {
+    codegen.beginLine();
+    codegen.output(m->_type->text + " ");
+    codegen.output(m->_name->text);
+    if (m->_arraySize) {
+      codegen.format("[%u]", m->_arraySize);
+    }
+    codegen.output(";");
+    codegen.endLine();
+  }
+  codegen.decIndent();
+  codegen.formatLine("}");
+}
+
+int InterfaceInlineStructNode::parse(const ScannerView& view) {
+  int i = 0;
+  assert(view.token(i)->text == "{");
+  i += 1; // advance {
+  int closer            = -1;
+  bool done             = false;
+  const Token* test_tok = nullptr;
+  while (false == done) {
+    test_tok = view.token(i++);
+    if (test_tok->text == "}") {
+      done = true;
+    } else {
+      auto member   = new InterfaceInlineStructMemberNode;
+      member->_type = test_tok;
+      member->_name = view.token(i++);
+      test_tok      = view.token(i);
+      if (test_tok->text == "[") { // array ?
+        member->_arraySize = atoi(view.token(i + 1)->text.c_str());
+        assert(view.token(i + 2)->text == "]");
+        assert(view.token(i + 3)->text == ";");
+        i += 4;
+      } else {
+        assert(test_tok->text == ";");
+        i++;
+      }
+      _members.push_back(member);
+    }
+  }
+  return i;
+}
+
+void InterfaceIoNode::pregen(shaderbuilder::BackEnd& backend) const {
+  if (_layout)
+    _layout->pregen(backend);
+  if (_inlineStruct)
+    _inlineStruct->pregen(backend);
+}
+void IoContainerNode::pregen(shaderbuilder::BackEnd& backend) const {
+  for (auto l : _layouts)
+    l->pregen(backend);
+  for (auto n : _nodes)
+    n->pregen(backend);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void InterfaceNode::parseIos(const ScannerView& view, IoContainerNode* ioc) {
   size_t ist = view._start + 1;
   size_t ien = view._end - 1;
   std::set<std::string> decos;
@@ -77,28 +152,27 @@ void InterfaceNode::parseIos(const ScannerView& view,IoContainer& ioc) {
     if (dt_tok->text == "layout") {
       std::string layline;
       auto layout = new InterfaceLayoutNode(_container);
-      ScannerView subview(view._scanner,view._filter);
-      subview.scanUntil(view.globalTokenIndex(i),")",true);
+      ScannerView subview(view._scanner, view._filter);
+      subview.scanUntil(view.globalTokenIndex(i), ")", true);
       layout->parse(subview);
-      layout->_direction = ioc._direction;
+      layout->_direction = ioc->_direction;
       i += subview.numTokens(); // advance layout
       auto try_semicolon = view.token(i)->text;
-      if( try_semicolon == ";") {
+      if (try_semicolon == ";") {
         layout->_standaloneLayout = true;
         _interfacelayouts.push_back(layout);
-      }
-      else{
-          assert(ioc._pendinglayout==nullptr);
-          ioc._pendinglayout = layout;
+      } else {
+        assert(ioc->_pendinglayout == nullptr);
+        ioc->_pendinglayout = layout;
       }
       continue;
     }
-    
+
     //////////////////////////////////
     // check for ioattr decorators
     //////////////////////////////////
 
-    if(_container->isIoAttrDecorator(dt_tok->text)){
+    if (_container->isIoAttrDecorator(dt_tok->text)) {
       decos.insert(dt_tok->text);
       i++; // advance decorator
       continue;
@@ -110,38 +184,28 @@ void InterfaceNode::parseIos(const ScannerView& view,IoContainer& ioc) {
 
     printf("  parseOutputs DtTok<%s>\n", dt_tok->text.c_str());
     bool typeisvalid = _container->validateTypeName(dt_tok->text);
-    auto io = new InterfaceIoNode(_container);
-    ioc._nodes.push_back(io);
+    auto io          = new InterfaceIoNode(_container);
+    ioc->_nodes.push_back(io);
     io->_typeName   = dt_tok->text;
     io->_decorators = decos;
     decos.clear();
-    if (ioc._pendinglayout) {
-      io->_layout        = ioc._pendinglayout;
-      ioc._pendinglayout = nullptr;
+    if (ioc->_pendinglayout) {
+      io->_layout         = ioc->_pendinglayout;
+      ioc->_pendinglayout = nullptr;
     }
 
     i++; // advance typename
-    
+
     ///////////////////////////////////////////
     // inline struct type ?
     ///////////////////////////////////////////
 
     auto try_struct = view.token(i)->text;
-    
+
     if (try_struct == "{") {
+      ScannerView structview(view, i);
       io->_inlineStruct = new InterfaceInlineStructNode(_container);
-      io->_inlineStruct->_tokens.push_back(view.token(i));
-      i += 1; // advance {
-      // struct io
-      int closer = -1;
-      for (int s = 0; (s < 100) and (closer == -1); s++) {
-        const Token* test_tok = view.token(i++);
-        if (test_tok->text == "}") {
-          closer = s;
-        }
-        io->_inlineStruct->_tokens.push_back(test_tok);
-      }
-      assert(closer > 0);
+      i += io->_inlineStruct->parse(structview);
     }
 
     ///////////////////////////////////////////
@@ -149,12 +213,12 @@ void InterfaceNode::parseIos(const ScannerView& view,IoContainer& ioc) {
     ///////////////////////////////////////////
 
     const Token* nam_tok = view.token(i);
-    std::string named = nam_tok ? nam_tok->text : "";
+    std::string named    = nam_tok ? nam_tok->text : "";
     printf("  parseOutputs named<%s>\n", named.c_str());
-    auto it = ioc._dupecheck.find(named);
-    assert(it == ioc._dupecheck.end()); // make sure there are no duplicate attrs
-    ioc._dupecheck.insert(named);
-    io->_name              = named;
+    auto it = ioc->_dupecheck.find(named);
+    assert(it == ioc->_dupecheck.end()); // make sure there are no duplicate attrs
+    ioc->_dupecheck.insert(named);
+    io->_name = named;
 
     i++; // advance name
 
@@ -165,15 +229,15 @@ void InterfaceNode::parseIos(const ScannerView& view,IoContainer& ioc) {
     auto try_array = view.token(i)->text;
 
     if (try_array == "[") { // array ?
-        if (view.token(i + 1)->text == "]") {
-          // unsized array
-          io->_arraySize = -1;
-          i += 2; // advance []
-        } else {
-          assert(view.token(i + 2)->text == "]");
-          io->_arraySize = atoi(view.token(i + 1)->text.c_str());
-          i += 3; // advance [n]
-        }
+      if (view.token(i + 1)->text == "]") {
+        // unsized array
+        io->_arraySize = -1;
+        i += 2; // advance []
+      } else {
+        assert(view.token(i + 2)->text == "]");
+        io->_arraySize = atoi(view.token(i + 1)->text.c_str());
+        i += 3; // advance [n]
+      }
     }
 
     ///////////////////////////////////////////
@@ -193,8 +257,8 @@ void InterfaceNode::parseIos(const ScannerView& view,IoContainer& ioc) {
 
     auto try_semicolon = view.token(i)->text;
 
-    assert (try_semicolon == ";");
-    i ++; // advance ;
+    assert(try_semicolon == ";");
+    i++; // advance ;
 
     ////////////////////////////////////////////////////////////////////////////
   }
@@ -210,7 +274,7 @@ void InterfaceNode::parse(const ScannerView& view) {
   size_t ien = view._end - 1;
 
   std::set<std::string> output_decorators;
-  
+
   for (size_t i = ist; i <= ien;) {
     const Token* prv_tok = (i > 0) ? view.token(i - 1) : nullptr;
     const Token* vt_tok  = view.token(i);
@@ -225,21 +289,20 @@ void InterfaceNode::parse(const ScannerView& view) {
     ////////////////////////////////////////////////////////////////////////////
     if (vt_tok->text == "inputs") {
       assert(view.token(i + 1)->text == "{");
-      ScannerView inputsview(view,i+1);
+      ScannerView inputsview(view, i + 1);
       i += inputsview.numTokens() + 1;
-      parseIos(inputsview,_inputs);
+      parseIos(inputsview, _inputs);
     } else if (vt_tok->text == "outputs") {
       assert(view.token(i + 1)->text == "{");
-      ScannerView outputsview(view,i+1);
+      ScannerView outputsview(view, i + 1);
       i += outputsview.numTokens() + 1;
-      parseIos(outputsview,_outputs);
+      parseIos(outputsview, _outputs);
     } else if (vt_tok->text == "storage") {
       assert(view.token(i + 1)->text == "{");
-      ScannerView storageview(view,i+1);
+      ScannerView storageview(view, i + 1);
       i += storageview.numTokens() + 1;
-      parseIos(storageview,_storage);
-    }
-    else {
+      parseIos(storageview, _storage);
+    } else {
       ////////////////////////////////////////////////////////////////////////////
       printf("invalid token<%s>\n", vt_tok->text.c_str());
       assert(false);
@@ -249,22 +312,32 @@ void InterfaceNode::parse(const ScannerView& view) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void InterfaceNode::_generate(shaderbuilder::BackEnd& backend, GLenum iftype) const {
+void InterfaceNode::pregen(shaderbuilder::BackEnd& backend) const {
+  for (auto ifl : _interfacelayouts)
+    ifl->pregen(backend);
+  _inputs->pregen(backend);
+  _outputs->pregen(backend);
+  _storage->pregen(backend);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void InterfaceNode::_generate(shaderbuilder::BackEnd& backend) const {
 
   auto c = backend._container;
-  
+
   ////////////////////////
 
   StreamInterface* psi = new StreamInterface;
   psi->mName           = _name;
-  psi->mInterfaceType  = iftype;
+  psi->mInterfaceType  = _gltype;
 
   backend._statemap["sif"].Set<StreamInterface*>(psi);
 
   ////////////////////////
 
-  bool is_vtx = iftype == GL_VERTEX_SHADER;
-  bool is_geo = iftype == GL_GEOMETRY_SHADER;
+  bool is_vtx = _gltype == GL_VERTEX_SHADER;
+  bool is_geo = _gltype == GL_GEOMETRY_SHADER;
 
   ////////////////////////
   // interface scoped layouts
@@ -272,39 +345,37 @@ void InterfaceNode::_generate(shaderbuilder::BackEnd& backend, GLenum iftype) co
 
   psi->mPreamble.push_back("/*begin SIF preamble*/");
   std::string line;
-  for( auto iflayout : _interfacelayouts ){
-    for (auto item : iflayout->_tokens ) {
+  for (auto iflayout : _interfacelayouts) {
+    for (auto item : iflayout->_tokens) {
       const auto& tok = item->text;
       line += tok;
-      if( tok == ")" ) {
+      if (tok == ")") {
         line += " " + iflayout->_direction;
         line += ";";
         psi->mPreamble.push_back(line);
         line = "";
       }
-      
+
       // GS primtype
       int primsize = 0;
-      if( tok == "points" )
+      if (tok == "points")
         primsize = 1;
-      else if( tok == "lines" )
+      else if (tok == "lines")
         primsize = 2;
-      else if( tok == "triangles" )
+      else if (tok == "triangles")
         primsize = 3;
-      else if( tok == "triangle_strip" )
+      else if (tok == "triangle_strip")
         primsize = 4;
 
-      if(primsize!=0){
-        if(iflayout->_direction=="in"){
-            psi->_gspriminpsize = primsize;
-        }
-        else {
-            psi->_gsprimoutsize = primsize;
+      if (primsize != 0) {
+        if (iflayout->_direction == "in") {
+          psi->_gspriminpsize = primsize;
+        } else {
+          psi->_gsprimoutsize = primsize;
         }
       }
     }
   }
-  psi->mPreamble.push_back("/*end SIF preamble*/");
 
   /////////////////////////////
   // interface inheritance
@@ -342,82 +413,75 @@ void InterfaceNode::_generate(shaderbuilder::BackEnd& backend, GLenum iftype) co
       psi->Inherit(*it_fi->second);
     }
   } // for (size_t ideco = 0; ideco < inumdecos; ideco++) {
-  
+
   ////////////////////////
   // attribute scoped layouts
   ////////////////////////
-  
-  for (auto input : _inputs._nodes) {
-    int iloc                       = int(psi->_inputAttributes.size());
-    Attribute* pattr               = new Attribute(input->_name);
-    pattr->mTypeName               = input->_typeName;
-    pattr->mDirection              = "in";
-    pattr->mSemantic               = input->_semantic;
+
+  for (auto input : _inputs->_nodes) {
+    int iloc                            = int(psi->_inputAttributes.size());
+    Attribute* pattr                    = new Attribute(input->_name);
+    pattr->mTypeName                    = input->_typeName;
+    pattr->mDirection                   = "in";
+    pattr->mSemantic                    = input->_semantic;
     psi->_inputAttributes[input->_name] = pattr;
-    pattr->mLocation               = int(psi->_inputAttributes.size());
-    pattr->mArraySize = input->_arraySize;
-    if( input->_layout ){
-      for (auto item : input->_layout->_tokens ) {
+    pattr->mLocation                    = int(psi->_inputAttributes.size());
+    pattr->mArraySize                   = input->_arraySize;
+    if (input->_layout) {
+      for (auto item : input->_layout->_tokens) {
         const auto& tok = item->text;
         pattr->mLayout += tok;
       }
     }
   }
   //
-  for (auto output : _outputs._nodes) {
-    
-    int iloc                        = int(psi->_outputAttributes.size());
-    Attribute* pattr                = new Attribute(output->_name);
-    pattr->mTypeName                = output->_typeName;
-    pattr->mDirection               = "out";
-    pattr->mLocation                = iloc;
+  for (auto output : _outputs->_nodes) {
+
+    int iloc                              = int(psi->_outputAttributes.size());
+    Attribute* pattr                      = new Attribute(output->_name);
+    pattr->mTypeName                      = output->_typeName;
+    pattr->mDirection                     = "out";
+    pattr->mLocation                      = iloc;
     psi->_outputAttributes[output->_name] = pattr;
-    pattr->_decorators              = output->_decorators;
+    pattr->_decorators                    = output->_decorators;
 
     int arysiz = output->_arraySize;
-    arysiz  = (arysiz==0)
-            ? psi->_gsprimoutsize
-            : arysiz;
+    arysiz     = (arysiz == 0) ? psi->_gsprimoutsize : arysiz;
 
     pattr->mArraySize = arysiz;
 
-    for( auto deco : output->_decorators )
-        pattr->mDecorators += deco + " ";
-    
-    if( output->_inlineStruct ) {
-      for (auto tok : output->_inlineStruct->_tokens )
-        pattr->mInlineStruct += tok->text + " ";
+    for (auto deco : output->_decorators)
+      pattr->mDecorators += deco + " ";
+
+    if (output->_inlineStruct) {
+      backend._codegen.flush();
+      output->_inlineStruct->emit(backend);
+      pattr->mInlineStruct += backend._codegen.flush();
     }
 
-    if( output->_layout ){
-      for (auto item : output->_layout->_tokens )
-        pattr->mLayout+=item->text;
+    if (output->_layout) {
+      for (auto item : output->_layout->_tokens)
+        pattr->mLayout += item->text;
     }
   }
 
   ////////////////////////
+  auto& codegen = backend._codegen;
+  codegen.flush();
 
-  for (auto store : _storage._nodes) {
+  for (auto store : _storage->_nodes) {
 
-    std::string preamble_chunk;
-    if( store->_layout ) {
-      for (auto item : store->_layout->_tokens) {
-        const auto& tok = item->text;
-        preamble_chunk += tok + " ";
-      }
+    codegen.beginLine();
+    if (store->_layout)
+      store->_layout->emit(backend);
+    codegen.output(store->_typeName + " ");
+    codegen.output(store->_name + " ");
+    if (store->_inlineStruct) {
+      store->_inlineStruct->emit(backend);
     }
-    preamble_chunk += store->_typeName + " ";
-    preamble_chunk += store->_name + " ";
-    if( store->_inlineStruct ) {
-      for (auto item : store->_inlineStruct->_tokens) {
-        const auto& tok = item->text;
-        preamble_chunk += tok + " ";
-      }
-    }
-    psi->mPreamble.push_back(preamble_chunk + ";");
-
-      //for (auto item : output->_layout->_tokens )
-        //pattr->mLayout+=item->text;
+    codegen.output(";");
+    codegen.endLine();
+    psi->mPreamble.push_back(codegen.flush());
   }
 
   ////////////////////////
@@ -445,50 +509,51 @@ void InterfaceNode::_generate(shaderbuilder::BackEnd& backend, GLenum iftype) co
   }
 
   ////////////////////////
+  psi->mPreamble.push_back("/*end SIF preamble*/");
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void VertexInterfaceNode::generate(shaderbuilder::BackEnd& backend) const {
   auto c = backend._container;
-  InterfaceNode::_generate(backend, GL_VERTEX_SHADER);
+  InterfaceNode::_generate(backend);
   auto sif = backend._statemap["sif"].Get<StreamInterface*>();
   c->addVertexInterface(sif);
 }
 void FragmentInterfaceNode::generate(shaderbuilder::BackEnd& backend) const {
   auto c = backend._container;
-  InterfaceNode::_generate(backend, GL_FRAGMENT_SHADER);
+  InterfaceNode::_generate(backend);
   auto sif = backend._statemap["sif"].Get<StreamInterface*>();
   c->addFragmentInterface(sif);
 }
 void TessCtrlInterfaceNode::generate(shaderbuilder::BackEnd& backend) const {
   auto c = backend._container;
-  InterfaceNode::_generate(backend, GL_TESS_CONTROL_SHADER);
+  InterfaceNode::_generate(backend);
   auto sif = backend._statemap["sif"].Get<StreamInterface*>();
   c->addTessCtrlInterface(sif);
 }
 void TessEvalInterfaceNode::generate(shaderbuilder::BackEnd& backend) const {
   auto c = backend._container;
-  InterfaceNode::_generate(backend, GL_TESS_EVALUATION_SHADER);
+  InterfaceNode::_generate(backend);
   auto sif = backend._statemap["sif"].Get<StreamInterface*>();
   c->addTessEvalInterface(sif);
 }
 void GeometryInterfaceNode::generate(shaderbuilder::BackEnd& backend) const {
   auto c = backend._container;
-  InterfaceNode::_generate(backend, GL_GEOMETRY_SHADER);
+  InterfaceNode::_generate(backend);
   auto sif = backend._statemap["sif"].Get<StreamInterface*>();
   c->addGeometryInterface(sif);
 }
 #if defined(ENABLE_NVMESH_SHADERS)
 void NvTaskInterfaceNode::generate(shaderbuilder::BackEnd& backend) const {
   auto c = backend._container;
-  InterfaceNode::_generate(backend, GL_TASK_SHADER_NV);
+  InterfaceNode::_generate(backend);
   auto sif = backend._statemap["sif"].Get<StreamInterface*>();
   c->addNvTaskInterface(sif);
 }
 void NvMeshInterfaceNode::generate(shaderbuilder::BackEnd& backend) const {
   auto c = backend._container;
-  InterfaceNode::_generate(backend, GL_MESH_SHADER_NV);
+  InterfaceNode::_generate(backend);
   auto sif = backend._statemap["sif"].Get<StreamInterface*>();
   c->addNvMeshInterface(sif);
 }
@@ -496,12 +561,11 @@ void NvMeshInterfaceNode::generate(shaderbuilder::BackEnd& backend) const {
 #if defined(ENABLE_COMPUTE_SHADERS)
 void ComputeInterfaceNode::generate(shaderbuilder::BackEnd& backend) const {
   auto c = backend._container;
-  InterfaceNode::_generate(backend, GL_COMPUTE_SHADER);
+  InterfaceNode::_generate(backend);
   auto sif = backend._statemap["sif"].Get<StreamInterface*>();
   c->addComputeInterface(sif);
 }
 #endif
-
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::glslfx
