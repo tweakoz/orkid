@@ -410,6 +410,7 @@ struct UniformDeclNode : public AstNode {
   std::string _typeName;
   std::string _name;
   int _arraySize = 0;
+  InterfaceLayoutNode* _layout = nullptr;
   void emit(shaderbuilder::BackEnd& backend, bool emit_unitxt) const;
 };
 

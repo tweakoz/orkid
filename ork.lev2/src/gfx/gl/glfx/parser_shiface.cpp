@@ -162,7 +162,6 @@ void InterfaceNode::parseIos(const ScannerView& view, IoContainerNode* ioc) {
     //////////////////////////////////
 
     if (dt_tok->text == "layout") {
-      std::string layline;
       auto layout = new InterfaceLayoutNode(_container);
       ScannerView subview(view._scanner, view._filter);
       subview.scanUntil(view.globalTokenIndex(i), ")", true);

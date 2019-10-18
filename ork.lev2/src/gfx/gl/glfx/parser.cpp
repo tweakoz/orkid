@@ -50,6 +50,18 @@ ContainerNode::ContainerNode(const AssetPath& pth, const Scanner& s)
                           "u16vec2 u16vec3 u16vec4 "
                           "u32vec2 u32vec3 u32vec4 "
                           "u64vec2 u64vec3 u64vec4 "
+
+                          "image1D image2D image3D "
+                          "imageCube image2DRect "
+                          "imageBuffer image2DMS "
+                          "image1DArray image2DArray image2DMSArray"
+                          "imageCubeArray "
+
+                          "iimage1D iimage2D iimage3D "
+                          "iimageCube iimage2DRect "
+
+                          "uimage1D uimage2D uimage3D "
+                          "uimageCube uimage2DRect "
 #endif
                           "sampler2D sampler3D sampler2DShadow";
 

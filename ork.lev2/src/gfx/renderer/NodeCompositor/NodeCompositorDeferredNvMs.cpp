@@ -36,7 +36,7 @@ void DeferredCompositingNodeNvMs::describeX(class_t* c) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 struct NVMSIMPL {
-  static constexpr size_t KMAXLIGHTS = 2048;
+  static constexpr size_t KMAXLIGHTS         = 2048;
   static constexpr int KMAXNUMTILESX         = 512;
   static constexpr int KMAXNUMTILESY         = 256;
   static constexpr int KMAXTILECOUNT         = KMAXNUMTILESX * KMAXNUMTILESY;
@@ -45,31 +45,30 @@ struct NVMSIMPL {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   NVMSIMPL(DeferredCompositingNodeNvMs* node)
       : _camname(AddPooledString("Camera"))
-      , _context(node,"orkshader://deferrednvms",KMAXLIGHTS)
-      , _lighttiles(KMAXTILECOUNT)\
+      , _context(node, "orkshader://deferrednvms", KMAXLIGHTS)
+      , _lighttiles(KMAXTILECOUNT)
       , _lightbuffer(nullptr)
       , _storagebuffer(nullptr)
       , _lightcollectshader(nullptr) {
-    
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ~NVMSIMPL() {}
+  ~NVMSIMPL() {
+  }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void init(lev2::GfxTarget* target) {
     _context.gpuInit(target);
-    if( nullptr == _lightbuffer ) {
-      _lightbuffer = target->FXI()->createParamBuffer(65536);
-      _storagebuffer = target->CI()->createStorageBuffer(16<<20);
-      auto mapped  = target->FXI()->mapParamBuffer(_lightbuffer);
-      size_t base  = 0;
+    if (nullptr == _lightbuffer) {
+      _lightbuffer   = target->FXI()->createParamBuffer(65536);
+      _storagebuffer = target->CI()->createStorageBuffer(16 << 20);
+      auto mapped    = target->FXI()->mapParamBuffer(_lightbuffer);
+      size_t base    = 0;
       for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
         mapped->ref<fvec3>(base + i * sizeof(fvec4)) = fvec3(0, 0, 0);
       base += KMAXLIGHTSPERCHUNK * sizeof(fvec4);
       for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
         mapped->ref<fvec4>(base + i * sizeof(fvec4)) = fvec4();
       mapped->unmap();
-      
-      
+
       _lightcollectshader = _context._lightingmtl.computeShader("compute_collectlights");
     }
   }
@@ -89,51 +88,48 @@ struct NVMSIMPL {
     //////////////////////////////////////////////////////////////////
     int numtiles = _context._clusterW * _context._clusterH;
     for (int i = 0; i < numtiles; i++)
-      _lighttiles[i].atomicOp([](pllist_t&item){ item.clear(); });
+      _lighttiles[i].atomicOp([](pllist_t& item) { item.clear(); });
     /////////////////////////////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::render");
-      _context.renderGbuffer(drawdata, VD);
-      auto depthclusterbase = _context.captureDepthClusters(drawdata, VD);
-      targ->debugPushGroup("Deferred::LightAccum");
-        _context.renderBaseLighting(drawdata, VD);
-        this->renderPointLights(drawdata, VD);
-      targ->debugPopGroup(); // "Deferred::LightAccum"
+    _context.renderGbuffer(drawdata, VD);
+    auto depthclusterbase = _context.captureDepthClusters(drawdata, VD);
+    targ->debugPushGroup("Deferred::LightAccum");
+    _context.renderBaseLighting(drawdata, VD);
+    this->renderPointLights(drawdata, VD);
+    targ->debugPopGroup(); // "Deferred::LightAccum"
     targ->debugPopGroup(); // "Deferred::render"
     // float totaltime = _timer.SecsSinceStart();
     // printf( "Deferred::_render totaltime<%g>\n", totaltime );
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  void renderPointLights(CompositorDrawData& drawdata,
-                         const ViewData& VD){
+  void renderPointLights(CompositorDrawData& drawdata, const ViewData& VD) {
     /////////////////////////////////////////////////////////////////
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     auto CI                      = framerenderer.framedata().GetTarget()->CI();
     auto FXI                     = framerenderer.framedata().GetTarget()->FXI();
     auto this_buf                = framerenderer.framedata().GetTarget()->FBI()->GetThisBuffer();
     /////////////////////////////////////////////////////////////////
-    _context.beginPointLighting(drawdata,VD);
+    _context.beginPointLighting(drawdata, VD);
     FXI->bindParamBlockBuffer(_context._lightblock, _lightbuffer);
     /////////////////////////////////////
     // float time_tile_cpa = _timer.SecsSinceStart();
     // printf( "Deferred::_render tilecpa time<%g>\n", time_tile_cpa-time_tile_in );
     /////////////////////////////////////
-    auto mapping = CI->mapStorageBuffer(_storagebuffer,0,1024);
+    auto mapping = CI->mapStorageBuffer(_storagebuffer, 0, 1024);
 
     mapping->ref<int>(0) = 127;
 
-
     CI->unmapStorageBuffer(mapping.get());
-    CI->bindStorageBuffer(_lightcollectshader,0,_storagebuffer);
-    CI->bindImage(_lightcollectshader,1,_context._rtgDepthCluster->GetMrt(0)->GetTexture());
-    CI->dispatchCompute(_lightcollectshader,1,1,1);
-    
+    CI->bindStorageBuffer(_lightcollectshader, 0, _storagebuffer);
+    CI->bindImage(_lightcollectshader, 1, _context._rtgDepthCluster->GetMrt(0)->GetTexture(), EIBA_READ_ONLY);
+    CI->dispatchCompute(_lightcollectshader, 1, 1, 1);
+
     /////////////////////////////////////
 
-
-    const float KTILESIZX = 2.0f / float(_context._clusterW);
-    const float KTILESIZY = 2.0f / float(_context._clusterH);
+    const float KTILESIZX    = 2.0f / float(_context._clusterW);
+    const float KTILESIZY    = 2.0f / float(_context._clusterH);
     size_t num_pending_tiles = _pendingtilecounter.load();
-    size_t actindex  = 0;
+    size_t actindex          = 0;
     /////////////////////////////////////
     // float time_tile_cpc = _timer.SecsSinceStart();
     // printf( "Deferred::_render tilecpc time<%g>\n", time_tile_cpc-time_tile_cpb );
@@ -154,8 +150,8 @@ struct NVMSIMPL {
       _chunktiles_uvb.clear();
       /////////////////////////////////////
       while (false == chunk_done) {
-        int index              = _pendingtiles[actindex];
-        _lighttiles[index].atomicOp([&](pllist_t& lightlist){
+        int index = _pendingtiles[actindex];
+        _lighttiles[index].atomicOp([&](pllist_t& lightlist) {
           int iy                 = index / _context._clusterW;
           int ix                 = index % _context._clusterW;
           float T                = float(iy) * KTILESIZY - 1.0f;
@@ -215,14 +211,13 @@ struct NVMSIMPL {
       //////////////////////////////////////////////////
       if (VD._isStereo) {
         // float L = (float(ix) / float(_clusterW));
-        // this_buf->Render2dQuadEML(fvec4(L - 1.0f, T, KTILESIZX * 0.5, KTILESIZY), fvec4(0, 0, 1, 1));
-        // this_buf->Render2dQuadEML(fvec4(L, T, KTILESIZX * 0.5, KTILESIZY), fvec4(0, 0, 1, 1));
+        // this_buf->Render2dQuadEML(fvec4(L - 1.0f, T, KTILESIZX * 0.5, KTILESIZY), fvec4(0, 0, 1,
+        // 1)); this_buf->Render2dQuadEML(fvec4(L, T, KTILESIZX * 0.5, KTILESIZY), fvec4(0, 0, 1,
+        // 1));
       } else {
         if (_chunktiles_pos.size())
-          this_buf->Render2dQuadsEML(_chunktiles_pos.size(),
-                                     _chunktiles_pos.data(),
-                                     _chunktiles_uva.data(),
-                                     _chunktiles_uvb.data());
+          this_buf->Render2dQuadsEML(
+              _chunktiles_pos.size(), _chunktiles_pos.data(), _chunktiles_uva.data(), _chunktiles_uvb.data());
       }
       /////////////////////////////////////
       num_pending_tiles = _pendingtilecounter.load() - actindex;
@@ -233,7 +228,7 @@ struct NVMSIMPL {
     // printf( "Deferred::_render tiletime<%g>\n", time_tile_out-time_tile_in );
     // printf( "numchunks<%zu>\n", numchunks );
     /////////////////////////////////////
-    _context.endPointLighting(drawdata,VD);
+    _context.endPointLighting(drawdata, VD);
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   PoolString _camname;
@@ -245,24 +240,29 @@ struct NVMSIMPL {
   std::atomic<int> _lightjobcount;
   ork::Timer _timer;
   ork::fixedvector<locked_pllist_t, KMAXTILECOUNT> _lighttiles;
-  int  _pendingtiles[KMAXTILECOUNT];
+  int _pendingtiles[KMAXTILECOUNT];
   ork::fixedvector<int, KMAXTILECOUNT> _chunktiles;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_pos;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uva;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uvb;
-  FxShaderParamBuffer* _lightbuffer = nullptr;
-  FxShaderStorageBuffer* _storagebuffer = nullptr;
-  const FxShaderStorageBlock* _storageparam = nullptr;
+  FxShaderParamBuffer* _lightbuffer          = nullptr;
+  FxShaderStorageBuffer* _storagebuffer      = nullptr;
+  const FxShaderStorageBlock* _storageparam  = nullptr;
   const FxComputeShader* _lightcollectshader = nullptr;
   std::atomic<int> _pendingtilecounter;
 }; // IMPL
 
 ///////////////////////////////////////////////////////////////////////////////
-DeferredCompositingNodeNvMs::DeferredCompositingNodeNvMs() { _impl = std::make_shared<NVMSIMPL>(this); }
+DeferredCompositingNodeNvMs::DeferredCompositingNodeNvMs() {
+  _impl = std::make_shared<NVMSIMPL>(this);
+}
 ///////////////////////////////////////////////////////////////////////////////
-DeferredCompositingNodeNvMs::~DeferredCompositingNodeNvMs() {}
+DeferredCompositingNodeNvMs::~DeferredCompositingNodeNvMs() {
+}
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNodeNvMs::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) { _impl.Get<std::shared_ptr<NVMSIMPL>>()->init(pTARG); }
+void DeferredCompositingNodeNvMs::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) {
+  _impl.Get<std::shared_ptr<NVMSIMPL>>()->init(pTARG);
+}
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNodeNvMs::DoRender(CompositorDrawData& drawdata) {
   auto impl = _impl.Get<std::shared_ptr<NVMSIMPL>>();

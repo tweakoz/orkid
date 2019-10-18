@@ -26,10 +26,11 @@ ComputeInterface::ComputeInterface(GfxTargetGL& glctx)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ComputeInterface::dispatchCompute(const FxComputeShader* shader,
-                                       uint32_t numgroups_x,
-                                       uint32_t numgroups_y,
-                                       uint32_t numgroups_z) {
+void ComputeInterface::dispatchCompute(
+    const FxComputeShader* shader,
+    uint32_t numgroups_x,
+    uint32_t numgroups_y,
+    uint32_t numgroups_z) {
 
   auto csh = shader->_impl.Get<ComputeShader*>();
   assert(csh);
@@ -37,6 +38,7 @@ void ComputeInterface::dispatchCompute(const FxComputeShader* shader,
   GL_ERRORCHECK();
   glDispatchCompute(numgroups_x, numgroups_y, numgroups_z);
   GL_ERRORCHECK();
+  bindComputeShader(nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -48,6 +50,7 @@ void ComputeInterface::dispatchComputeIndirect(const FxComputeShader* shader, in
   GL_ERRORCHECK();
   glDispatchComputeIndirect((GLintptr)indirect);
   GL_ERRORCHECK();
+  bindComputeShader(nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -56,38 +59,49 @@ void ComputeInterface::bindStorageBuffer(const FxComputeShader* shader, uint32_t
   auto csh = shader->_impl.Get<ComputeShader*>();
   assert(csh);
   bindComputeShader(csh);
-  assert(buffer!=nullptr);
+  assert(buffer != nullptr);
   auto bufferimpl = buffer->_impl.Get<ShaderStorageBuffer*>();
   assert(bufferimpl != nullptr);
   GL_ERRORCHECK();
   GLuint unit = 0;
-  glShaderStorageBlockBinding(csh->_computePipe->_programObjectId,
-                              unit,
-                              binding_index);
+  glShaderStorageBlockBinding(csh->_computePipe->_programObjectId, unit, binding_index);
 
   GLuint binding_point_index = 80;
-  glBindBufferBase( GL_SHADER_STORAGE_BUFFER,
-                    binding_index,
-                    bufferimpl->_glbufid);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_index, bufferimpl->_glbufid);
 
   GL_ERRORCHECK();
 }
 
-void ComputeInterface::bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex) {
+///////////////////////////////////////////////////////////////////////////////
+
+void ComputeInterface::bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex, ImageBindAccess access) {
   auto csh = shader->_impl.Get<ComputeShader*>();
   assert(csh);
   bindComputeShader(csh);
-  auto texobj = (GLTextureObject*) tex->GetTexIH();
+  auto texobj = (GLTextureObject*)tex->GetTexIH();
   glActiveTexture(GL_TEXTURE0 + binding_index);
-  glBindTexture(GL_TEXTURE_2D, texobj->mObject );
+  glBindTexture(GL_TEXTURE_2D, texobj->mObject);
   GL_ERRORCHECK();
-  glBindImageTexture(binding_index,
-                     texobj->mObject,
-                     0,            // miplevel
-                     GL_FALSE,     // layered ?
-                     0,            // layerid
-                     GL_READ_ONLY, // access
-                     GL_R32UI);    // format
+  GLenum glaccess;
+  switch (access) {
+    case EIBA_READ_ONLY:
+      glaccess = GL_READ_ONLY;
+      break;
+    case EIBA_WRITE_ONLY:
+      glaccess = GL_WRITE_ONLY;
+      break;
+    case EIBA_READ_WRITE:
+      glaccess = GL_READ_WRITE;
+      break;
+  }
+  glBindImageTexture(
+      binding_index,
+      texobj->mObject,
+      0,         // miplevel
+      GL_FALSE,  // layered ?
+      0,         // layerid
+      glaccess,  // access
+      GL_R32UI); // format
   GL_ERRORCHECK();
 }
 
@@ -111,16 +125,19 @@ PipelineCompute* ComputeInterface::createComputePipe(ComputeShader* csh) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ComputeInterface::bindComputeShader(ComputeShader* csh) {
+  if (nullptr == csh) {
+    glUseProgram(0);
+    _currentComputePipeline = nullptr;
+    return;
+  }
   if (nullptr == csh->_computePipe) {
     csh->_computePipe = createComputePipe(csh);
   }
   assert(csh->_computePipe != nullptr);
-  if (_currentComputePipeline != csh->_computePipe){
-    GL_ERRORCHECK();
-    glUseProgram(csh->_computePipe->_programObjectId);
-    GL_ERRORCHECK();
-    _currentComputePipeline = csh->_computePipe;
-  }
+  GL_ERRORCHECK();
+  glUseProgram(csh->_computePipe->_programObjectId);
+  GL_ERRORCHECK();
+  _currentComputePipeline = csh->_computePipe;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -169,12 +186,13 @@ storagebuffermappingptr_t ComputeInterface::mapStorageBuffer(FxShaderStorageBuff
   // mapping->_mappedaddr = malloc(length);
   // glMapBuffer(GL_SHADER_STORAGE_BUFFER,
   //                                      GL_WRITE_ONLY);
-  mapping->_mappedaddr = glMapBufferRange(GL_SHADER_STORAGE_BUFFER,
-                                          base,
-                                          length,
-                                          GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT |
-                                              // GL_MAP_FLUSH_EXPLICIT_BIT |
-                                              0);
+  mapping->_mappedaddr = glMapBufferRange(
+      GL_SHADER_STORAGE_BUFFER,
+      base,
+      length,
+      GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT |
+          // GL_MAP_FLUSH_EXPLICIT_BIT |
+          0);
   assert(mapping->_mappedaddr != nullptr);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   GL_ERRORCHECK();
@@ -195,7 +213,6 @@ void ComputeInterface::unmapStorageBuffer(FxShaderStorageBufferMapping* mapping)
   mapping->_impl.Make<void*>(nullptr);
   mapping->_mappedaddr = nullptr;
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 

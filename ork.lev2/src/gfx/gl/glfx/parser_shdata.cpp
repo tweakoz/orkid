@@ -47,6 +47,18 @@ void ShaderDataNode::parse(const ScannerView& view) {
     if (is_endline) {
       i++;
     } else {
+
+      InterfaceLayoutNode* layout = nullptr;
+      if( dt_tok->text == "layout" ){
+        layout = new InterfaceLayoutNode(_container);
+        ScannerView subview(view._scanner, view._filter);
+        subview.scanUntil(view.globalTokenIndex(i), ")", true);
+        layout->parse(subview);
+        i += subview.numTokens();
+        dt_tok  = view.token(i);
+        nam_tok = view.token(i + 1);
+     }
+
       auto it = _dupenamecheck.find(nam_tok->text);
       assert(it == _dupenamecheck.end()); // make sure there are no duplicate uniforms
 
@@ -58,6 +70,7 @@ void ShaderDataNode::parse(const ScannerView& view) {
       auto unidecl       = new UniformDeclNode;
       unidecl->_name     = nam_tok->text;
       unidecl->_typeName = dt_tok->text;
+      unidecl->_layout = layout;
       bool is_array      = false;
       if (view.token(i + 2)->text == "[") {
         assert(view.token(i + 4)->text == "]");
@@ -81,7 +94,12 @@ void ShaderDataNode::parse(const ScannerView& view) {
 
 void UniformDeclNode::emit(shaderbuilder::BackEnd& backend, bool emit_unitxt) const {
   auto& codegen = backend._codegen;
+
   codegen.beginLine();
+
+  if( _layout )
+    _layout->emit(backend);
+
   if (emit_unitxt)
     codegen.output("uniform ");
   codegen.output(_typeName + " ");
