@@ -42,10 +42,12 @@ bool BackEnd::generate() {
   _cnode->collectNodesOfType<TessCtrlInterfaceNode>(ifnodes);
   _cnode->collectNodesOfType<TessEvalInterfaceNode>(ifnodes);
   _cnode->collectNodesOfType<GeometryInterfaceNode>(ifnodes);
+  _cnode->collectNodesOfType<FragmentInterfaceNode>(ifnodes);
   _cnode->collectNodesOfType<VertexShaderNode>(shnodes);
   _cnode->collectNodesOfType<TessCtrlShaderNode>(shnodes);
   _cnode->collectNodesOfType<TessEvalShaderNode>(shnodes);
   _cnode->collectNodesOfType<GeometryShaderNode>(shnodes);
+  _cnode->collectNodesOfType<FragmentShaderNode>(shnodes);
 
   #if defined(ENABLE_COMPUTE_SHADERS)
   _cnode->collectNodesOfType<ComputeInterfaceNode>(ifnodes);
@@ -81,7 +83,6 @@ bool BackEnd::generate() {
 
   /////////////////////////////////////////////////////
 
-  assert(false);
   return ok;
 }
 

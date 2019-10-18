@@ -31,7 +31,7 @@ struct BackEnd {
     Container* _container = nullptr;
     const ContainerNode* _cnode = nullptr;
     Root _root;
-    std::map<uint32_t,svar64_t> _statemap;
+    std::map<std::string,svar32_t> _statemap;
 };
 } // namespace shaderbuilder
 

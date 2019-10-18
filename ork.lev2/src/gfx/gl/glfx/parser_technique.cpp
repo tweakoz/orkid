@@ -91,7 +91,7 @@ void TechniqueNode::generate(shaderbuilder::BackEnd& backend) const {
   Technique* ptek = new Technique(_name);
   for (auto item : _passNodes) {
     item.second->generate(backend);
-    auto pass = backend._statemap["pass"_crcu].Get<Pass*>();
+    auto pass = backend._statemap["pass"].Get<Pass*>();
     ptek->addPass(pass);
   }
   backend._container->addTechnique(ptek);
@@ -102,7 +102,7 @@ void TechniqueNode::generate(shaderbuilder::BackEnd& backend) const {
 void PassNode::generate(shaderbuilder::BackEnd& backend) const {
   Pass* ppass = new Pass(_name);
   auto c = backend._container;
-  backend._statemap["pass"_crcu].Set<Pass*>(ppass);
+  backend._statemap["pass"].Set<Pass*>(ppass);
   /////////////////////////////////////////////////////////////
   // VTG pipe
   /////////////////////////////////////////////////////////////

@@ -259,7 +259,7 @@ void InterfaceNode::_generate(shaderbuilder::BackEnd& backend, GLenum iftype) co
   psi->mName           = _name;
   psi->mInterfaceType  = iftype;
 
-  backend._statemap["sif"_crcu].Set<StreamInterface*>(psi);
+  backend._statemap["sif"].Set<StreamInterface*>(psi);
 
   ////////////////////////
 
@@ -452,44 +452,44 @@ void InterfaceNode::_generate(shaderbuilder::BackEnd& backend, GLenum iftype) co
 void VertexInterfaceNode::generate(shaderbuilder::BackEnd& backend) const {
   auto c = backend._container;
   InterfaceNode::_generate(backend, GL_VERTEX_SHADER);
-  auto sif = backend._statemap["sif"_crcu].Get<StreamInterface*>();
+  auto sif = backend._statemap["sif"].Get<StreamInterface*>();
   c->addVertexInterface(sif);
 }
 void FragmentInterfaceNode::generate(shaderbuilder::BackEnd& backend) const {
   auto c = backend._container;
   InterfaceNode::_generate(backend, GL_FRAGMENT_SHADER);
-  auto sif = backend._statemap["sif"_crcu].Get<StreamInterface*>();
+  auto sif = backend._statemap["sif"].Get<StreamInterface*>();
   c->addFragmentInterface(sif);
 }
 void TessCtrlInterfaceNode::generate(shaderbuilder::BackEnd& backend) const {
   auto c = backend._container;
   InterfaceNode::_generate(backend, GL_TESS_CONTROL_SHADER);
-  auto sif = backend._statemap["sif"_crcu].Get<StreamInterface*>();
+  auto sif = backend._statemap["sif"].Get<StreamInterface*>();
   c->addTessCtrlInterface(sif);
 }
 void TessEvalInterfaceNode::generate(shaderbuilder::BackEnd& backend) const {
   auto c = backend._container;
   InterfaceNode::_generate(backend, GL_TESS_EVALUATION_SHADER);
-  auto sif = backend._statemap["sif"_crcu].Get<StreamInterface*>();
+  auto sif = backend._statemap["sif"].Get<StreamInterface*>();
   c->addTessEvalInterface(sif);
 }
 void GeometryInterfaceNode::generate(shaderbuilder::BackEnd& backend) const {
   auto c = backend._container;
   InterfaceNode::_generate(backend, GL_GEOMETRY_SHADER);
-  auto sif = backend._statemap["sif"_crcu].Get<StreamInterface*>();
+  auto sif = backend._statemap["sif"].Get<StreamInterface*>();
   c->addGeometryInterface(sif);
 }
 #if defined(ENABLE_NVMESH_SHADERS)
 void NvTaskInterfaceNode::generate(shaderbuilder::BackEnd& backend) const {
   auto c = backend._container;
   InterfaceNode::_generate(backend, GL_TASK_SHADER_NV);
-  auto sif = backend._statemap["sif"_crcu].Get<StreamInterface*>();
+  auto sif = backend._statemap["sif"].Get<StreamInterface*>();
   c->addNvTaskInterface(sif);
 }
 void NvMeshInterfaceNode::generate(shaderbuilder::BackEnd& backend) const {
   auto c = backend._container;
   InterfaceNode::_generate(backend, GL_MESH_SHADER_NV);
-  auto sif = backend._statemap["sif"_crcu].Get<StreamInterface*>();
+  auto sif = backend._statemap["sif"].Get<StreamInterface*>();
   c->addNvMeshInterface(sif);
 }
 #endif
@@ -497,7 +497,7 @@ void NvMeshInterfaceNode::generate(shaderbuilder::BackEnd& backend) const {
 void ComputeInterfaceNode::generate(shaderbuilder::BackEnd& backend) const {
   auto c = backend._container;
   InterfaceNode::_generate(backend, GL_COMPUTE_SHADER);
-  auto sif = backend._statemap["sif"_crcu].Get<StreamInterface*>();
+  auto sif = backend._statemap["sif"].Get<StreamInterface*>();
   c->addComputeInterface(sif);
 }
 #endif
