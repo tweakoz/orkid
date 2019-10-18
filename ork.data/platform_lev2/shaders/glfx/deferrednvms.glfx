@@ -268,16 +268,73 @@ compute_interface iface_compute : compute_unis {
     }
     storage {
         layout(std430, binding = 0) buffer {
-            int numLights;           // 0
-            vec4 lightPosR[8192];   // 16
-            vec4 lightColor[8192];  // 16+131072
-            vec4 testoutput[8192];  // 16+262144
+            mat4 MVP;               // 0
+            int numLights;          // 64
+            int pad[3];             // 68
+            vec4 lightPosR[8192];   // 80
+            vec4 lightColor[8192];  // 80+131072
+            vec4 testoutput[8192];  // 80+262144
         } ssbo_io_data;
+    }
+}
+///////////////////////////////////////////////////////////////
+libblock spheretools {
+    struct AABox {
+      vec3 _min;
+      vec3 _max;
+    };
+    AABox initAABox() {
+        AABox rval;
+        rval._min = vec3(1e6,1e6,1e6);
+        rval._max = vec3(-1e6,-1e6,-1e6);
+        return rval;
+    }
+    void growAABox(inout AABox box, vec3 point){
+        if(point.x>box._max.x) box._max.x=point.x;
+        if(point.y>box._max.y) box._max.y=point.y;
+        if(point.z>box._max.z) box._max.z=point.z;
+        if(point.x<box._min.x) box._min.x=point.x;
+        if(point.y<box._min.y) box._min.y=point.y;
+        if(point.z<box._min.z) box._min.z=point.z;
+    }
+    AABox sphereProjBounds(vec4 sphere, mat4 mvp){
+        vec3  ctr = sphere.xyz;
+        float rad = sphere.w;
+
+        vec3 c0 = ctr+vec3(-rad,-rad,-rad);
+        vec3 c1 = ctr+vec3(-rad,-rad,+rad);
+        vec3 c2 = ctr+vec3(-rad,+rad,-rad);
+        vec3 c3 = ctr+vec3(-rad,+rad,+rad);
+        vec3 c4 = ctr+vec3(+rad,-rad,-rad);
+        vec3 c5 = ctr+vec3(+rad,-rad,+rad);
+        vec3 c6 = ctr+vec3(+rad,+rad,-rad);
+        vec3 c7 = ctr+vec3(+rad,+rad,+rad);
+
+        vec4 c0j = mvp*vec4(c0,1); c0 = c0j.xyz / c0j.w;
+        vec4 c1j = mvp*vec4(c1,1); c1 = c1j.xyz / c1j.w;
+        vec4 c2j = mvp*vec4(c2,1); c2 = c2j.xyz / c2j.w;
+        vec4 c3j = mvp*vec4(c3,1); c3 = c3j.xyz / c3j.w;
+        vec4 c4j = mvp*vec4(c4,1); c4 = c4j.xyz / c4j.w;
+        vec4 c5j = mvp*vec4(c5,1); c5 = c5j.xyz / c5j.w;
+        vec4 c6j = mvp*vec4(c6,1); c6 = c6j.xyz / c6j.w;
+        vec4 c7j = mvp*vec4(c7,1); c7 = c7j.xyz / c7j.w;
+
+        AABox box = initAABox();
+        growAABox(box,c0);
+        growAABox(box,c1);
+        growAABox(box,c2);
+        growAABox(box,c3);
+        growAABox(box,c4);
+        growAABox(box,c5);
+        growAABox(box,c6);
+        growAABox(box,c7);
+        return box;
     }
 }
 ///////////////////////////////////////////////////////////////
 compute_shader compute_collectlights
     : extension(GL_NV_gpu_shader5)
+    : spheretools
     : iface_compute {
     ivec2 imgsiz = imageSize(img_depthclusters);
     int ix = int(gl_WorkGroupID.x);
@@ -286,12 +343,10 @@ compute_shader compute_collectlights
     int tileindex = iy * imgsiz.x + ix;
     testoutput[tileindex] = vec4(0,0,0,0);
     for( int il=0; il<numLights; il++ ){
-        vec4 pos_r = lightPosR[il];
-        vec4 color = lightColor[il];
-        testoutput[tileindex] += pos_r;
-        testoutput[tileindex] += color;
-        testoutput[tileindex].x += float(il);
-        // todo project sphere
+        vec4 sphere = lightPosR[il];
+        AABox sphbox = sphereProjBounds(sphere,MVP);
+        testoutput[tileindex].xy = sphbox._min.xy;
+        testoutput[tileindex].zw = sphbox._max.xy;
         // overlap checks
         // gather results
     }

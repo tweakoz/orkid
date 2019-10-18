@@ -115,16 +115,17 @@ struct NVMSIMPL {
     // float time_tile_cpa = _timer.SecsSinceStart();
     // printf( "Deferred::_render tilecpa time<%g>\n", time_tile_cpa-time_tile_in );
     /////////////////////////////////////
-    size_t mapping_size = 8192*sizeof(fvec4)*2+16; // around 256KiB
+    size_t mapping_size = 8192*sizeof(fvec4)*2+80; // around 256KiB
     auto mapping = CI->mapStorageBuffer(_storagebuffer, 0, mapping_size);
     size_t numlights = _context._pointlights.size();
-    mapping->ref<int>(0) = int(numlights);
-    size_t posrindex = 16;
+    mapping->ref<fmtx4>(0) = VD.VPL;
+    mapping->ref<int>(64) = int(numlights);
+    size_t posrindex = 80;
     size_t colrindex = posrindex+8192*sizeof(fvec4);
     for( size_t i=0; i<numlights; i++){
       const PointLight* pl = _context._pointlights[i];
       mapping->ref<fvec4>(posrindex) = fvec4(pl->_pos,pl->_radius);
-      mapping->ref<fvec4>(colrindex) = fvec4(pl->_pos,pl->_radius);
+      mapping->ref<fvec4>(colrindex) = fvec4(pl->_color,1);
       posrindex += sizeof(fvec4);
       colrindex += sizeof(fvec4);
     }
