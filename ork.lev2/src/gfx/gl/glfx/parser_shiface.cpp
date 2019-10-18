@@ -65,7 +65,12 @@ void InterfaceLayoutNode::emit(shaderbuilder::BackEnd& backend) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void InterfaceLayoutNode::pregen(shaderbuilder::BackEnd& backend) {}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 void InterfaceInlineStructNode::pregen(shaderbuilder::BackEnd& backend) {}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
 
 void InterfaceInlineStructNode::emit(shaderbuilder::BackEnd& backend) const {
   auto& codegen = backend._codegen;
@@ -84,6 +89,8 @@ void InterfaceInlineStructNode::emit(shaderbuilder::BackEnd& backend) const {
   codegen.decIndent();
   codegen.formatLine("}");
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
 
 int InterfaceInlineStructNode::parse(const ScannerView& view) {
   int i = 0;
@@ -116,12 +123,17 @@ int InterfaceInlineStructNode::parse(const ScannerView& view) {
   return i;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 void InterfaceIoNode::pregen(shaderbuilder::BackEnd& backend) {
   if (_layout)
     _layout->pregen(backend);
   if (_inlineStruct)
     _inlineStruct->pregen(backend);
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 void IoContainerNode::pregen(shaderbuilder::BackEnd& backend) {
   for (auto l : _layouts)
     l->pregen(backend);
@@ -335,7 +347,7 @@ void InterfaceNode::emit(shaderbuilder::BackEnd& backend) const {
         codegen.beginLine();
         codegen.output(tok + " ");
       } else if (tok == ")") {
-        codegen.output(" " + iflayout->_direction + ";");
+        codegen.output(") " + iflayout->_direction + ";");
         codegen.endLine();
       } else
         codegen.output(tok + " ");
