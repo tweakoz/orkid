@@ -260,7 +260,7 @@ technique downsampledepthcluster {
 }
 ///////////////////////////////////////////////////////////////
 uniform_set compute_unis {
-    layout (binding = 1, r32ui) uimage2D img_input;
+    layout (binding = 1, r32ui) uimage2D img_depthclusters;
 }
 compute_interface iface_compute : compute_unis {
     inputs {
@@ -268,9 +268,10 @@ compute_interface iface_compute : compute_unis {
     }
     storage {
         layout(std430, binding = 0) buffer {
-            int foo;
-            float bar[42];
-            float baz[8];
+            int numLights;           // 0
+            vec4 lightPosR[8192];   // 16
+            vec4 lightColor[8192];  // 16+131072
+            vec4 testoutput[8192];  // 16+262144
         } ssbo_io_data;
     }
 }
@@ -278,11 +279,20 @@ compute_interface iface_compute : compute_unis {
 compute_shader compute_collectlights
     : extension(GL_NV_gpu_shader5)
     : iface_compute {
-    for(int i=0; i<42; i++){
-        uint32_t clusterpix = imageLoad(img_input,ivec2(i, i)).r;
-        bar[i] = float(foo+i+int(clusterpix));
-    }
-    for (int i=0; i<8; i++){
-        baz[i] = float(foo+i);
+    ivec2 imgsiz = imageSize(img_depthclusters);
+    int ix = int(gl_WorkGroupID.x);
+    int iy = int(gl_WorkGroupID.y);
+    uint32_t clusterpix = imageLoad(img_depthclusters,ivec2(ix, iy)).r;
+    int tileindex = iy * imgsiz.x + ix;
+    testoutput[tileindex] = vec4(0,0,0,0);
+    for( int il=0; il<numLights; il++ ){
+        vec4 pos_r = lightPosR[il];
+        vec4 color = lightColor[il];
+        testoutput[tileindex] += pos_r;
+        testoutput[tileindex] += color;
+        testoutput[tileindex].x += float(il);
+        // todo project sphere
+        // overlap checks
+        // gather results
     }
 }

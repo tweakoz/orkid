@@ -115,14 +115,26 @@ struct NVMSIMPL {
     // float time_tile_cpa = _timer.SecsSinceStart();
     // printf( "Deferred::_render tilecpa time<%g>\n", time_tile_cpa-time_tile_in );
     /////////////////////////////////////
-    auto mapping = CI->mapStorageBuffer(_storagebuffer, 0, 1024);
-
-    mapping->ref<int>(0) = 127;
-
+    size_t mapping_size = 8192*sizeof(fvec4)*2+16; // around 256KiB
+    auto mapping = CI->mapStorageBuffer(_storagebuffer, 0, mapping_size);
+    size_t numlights = _context._pointlights.size();
+    mapping->ref<int>(0) = int(numlights);
+    size_t posrindex = 16;
+    size_t colrindex = posrindex+8192*sizeof(fvec4);
+    for( size_t i=0; i<numlights; i++){
+      const PointLight* pl = _context._pointlights[i];
+      mapping->ref<fvec4>(posrindex) = fvec4(pl->_pos,pl->_radius);
+      mapping->ref<fvec4>(colrindex) = fvec4(pl->_pos,pl->_radius);
+      posrindex += sizeof(fvec4);
+      colrindex += sizeof(fvec4);
+    }
     CI->unmapStorageBuffer(mapping.get());
     CI->bindStorageBuffer(_lightcollectshader, 0, _storagebuffer);
     CI->bindImage(_lightcollectshader, 1, _context._rtgDepthCluster->GetMrt(0)->GetTexture(), EIBA_READ_ONLY);
-    CI->dispatchCompute(_lightcollectshader, 1, 1, 1);
+    CI->dispatchCompute(_lightcollectshader,
+                         _context._clusterW,
+                         _context._clusterH,
+                         1);
 
     /////////////////////////////////////
 
