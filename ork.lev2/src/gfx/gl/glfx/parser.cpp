@@ -222,57 +222,56 @@ void ContainerNode::parse() {
     if( advance_block )
       itokidx = scanview.blockEnd() + 1;
   }
-  //if (false == bOK) {
-//    delete mpContainer;
-  //  mpContainer = nullptr;
-  //}
-  //return mpContainer;
+}
+
+ContainerNode::nodevect_t ContainerNode::collectAllNodes() const {
+  nodevect_t nodes;
+  ////////////////////////////////////////////
+  nodes.reserve(128);
+  ////////////////////////////////////////////
+  // build node list in desired order of processing
+  // so do leafy nodes first and nodes
+  //  which have dependencies later
+  ////////////////////////////////////////////
+  collectNodesOfType<LibraryBlockNode>(nodes);
+  collectNodesOfType<ShaderDataNode>(nodes);
+  collectNodesOfType<StateBlockNode>(nodes);
+
+  collectNodesOfType<VertexInterfaceNode>(nodes);
+  collectNodesOfType<TessCtrlInterfaceNode>(nodes);
+  collectNodesOfType<TessEvalInterfaceNode>(nodes);
+  collectNodesOfType<GeometryInterfaceNode>(nodes);
+  collectNodesOfType<FragmentInterfaceNode>(nodes);
+
+  collectNodesOfType<VertexShaderNode>(nodes);
+  collectNodesOfType<TessCtrlShaderNode>(nodes);
+  collectNodesOfType<TessEvalShaderNode>(nodes);
+  collectNodesOfType<GeometryShaderNode>(nodes);
+  collectNodesOfType<FragmentShaderNode>(nodes);
+
+  #if defined(ENABLE_COMPUTE_SHADERS)
+  collectNodesOfType<ComputeInterfaceNode>(nodes);
+  collectNodesOfType<ComputeShaderNode>(nodes);
+  #endif
+  #if defined(ENABLE_NVMESH_SHADERS)
+  collectNodesOfType<NvTaskInterfaceNode>(nodes);
+  collectNodesOfType<NvMeshInterfaceNode>(nodes);
+  collectNodesOfType<NvTaskShaderNode>(nodes);
+  collectNodesOfType<NvMeshShaderNode>(nodes);
+  #endif
+
+  collectNodesOfType<TechniqueNode>(nodes);
+  return nodes;
 }
 
 //////////////////////////////////////////////////////////////////////////////////
 
 void ContainerNode::generate(shaderbuilder::BackEnd& backend) const {
-
-    generateBlocks<LibraryBlockNode>(backend);
-    generateBlocks<ShaderDataNode>(backend);
-
-    generateBlocks<VertexInterfaceNode>(backend);
-    generateBlocks<TessEvalInterfaceNode>(backend);
-    generateBlocks<TessCtrlInterfaceNode>(backend);
-    generateBlocks<GeometryInterfaceNode>(backend);
-    generateBlocks<FragmentInterfaceNode>(backend);
-
-    generateBlocks<VertexShaderNode>(backend);
-    generateBlocks<TessCtrlShaderNode>(backend);
-    generateBlocks<TessEvalShaderNode>(backend);
-    generateBlocks<GeometryShaderNode>(backend);
-    generateBlocks<FragmentShaderNode>(backend);
-
-#if defined(ENABLE_NVMESH_SHADERS)
-    generateBlocks<NvTaskInterfaceNode>(backend);
-    generateBlocks<NvMeshInterfaceNode>(backend);
-    generateBlocks<NvTaskShaderNode>(backend);
-    generateBlocks<NvMeshShaderNode>(backend);
-#endif
-
-#if defined(ENABLE_COMPUTE_SHADERS)
-    generateBlocks<ComputeInterfaceNode>(backend);
-    generateBlocks<ComputeShaderNode>(backend);
-#endif
-
-    generateBlocks<StateBlockNode>(backend);
-    generateBlocks<TechniqueNode>(backend);
-
-}
-
-//////////////////////////////////////////////////////////////////////////////////
-
-Container* ContainerNode::createContainer() const {
-  auto c = new Container(_path.c_str());
-  shaderbuilder::BackEnd backend(this,c);
-  bool ok = backend.generate();
-  assert(ok);
-  return c;
+  auto nodes = collectAllNodes();
+  for( auto item : nodes )
+    item->pregen(backend);
+  for( auto item : nodes )
+    item->generate(backend);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -310,7 +309,10 @@ Container* LoadFxFromFile(const AssetPath& pth) {
   scanner.Scan();
   ///////////////////////////////////
   GlSlFxParser parser(pth.c_str(), scanner);
-  Container* pcont = parser._rootNode->createContainer();
+  auto pcont = new Container(pth.c_str());
+  shaderbuilder::BackEnd backend(parser._rootNode,pcont);
+  bool ok = backend.generate();
+  assert(ok);
   ///////////////////////////////////
   return pcont;
 }

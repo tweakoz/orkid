@@ -42,6 +42,7 @@ struct AstNode {
       : _container(cnode) {}
   virtual ~AstNode() {}
   virtual void generate(shaderbuilder::BackEnd& backend) const {}
+  virtual void pregen(shaderbuilder::BackEnd& backend) const {}
   ContainerNode* _container;
 };
 
@@ -409,15 +410,15 @@ struct ContainerNode : public AstNode {
   bool validateMemberName(const std::string typeName) const;
   bool isIoAttrDecorator(const std::string typeName) const;
 
-  Container* createContainer() const;
-
   typedef std::vector<AstNode*> nodevect_t;
 
   template <typename T> void generateBlocks(shaderbuilder::BackEnd& backend) const;
   template <typename T> void forEachBlockOfType(std::function<void(T*)> operation) const;
   template <typename T> void collectNodesOfType(nodevect_t& outnvect) const;
   void generate(shaderbuilder::BackEnd& backend) const final;
-  
+
+  nodevect_t collectAllNodes() const;
+
   int itokidx = 0;
 
   void addBlockNode(DecoBlockNode* node);
