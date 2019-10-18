@@ -455,6 +455,7 @@ struct LibraryBlockNode : public DecoBlockNode {
   void parse(const ScannerView& view);
   void pregen(shaderbuilder::BackEnd& backend) final;
   void generate(shaderbuilder::BackEnd& backend) const;
+  void emit(shaderbuilder::BackEnd& backend) const;
   ShaderBody _body;
 };
 

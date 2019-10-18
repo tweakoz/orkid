@@ -132,13 +132,13 @@ void DecoBlockNode::_pregen(shaderbuilder::BackEnd& backend) {
 }
 ///////////////////////////////////////////////////////////
 void DecoBlockNode::_emit(shaderbuilder::BackEnd& backend) const {
-  for (auto node : _libraryBlocks)
-    node->emit(backend);
-  for (auto node : _interfaceNodes)
+  for (auto node : _uniformBlocks)
     node->emit(backend);
   for (auto node : _uniformSets)
     node->emit(backend);
-  for (auto node : _uniformBlocks)
+  for (auto node : _interfaceNodes)
+    node->emit(backend);
+  for (auto node : _libraryBlocks)
     node->emit(backend);
 }
 ///////////////////////////////////////////////////////////

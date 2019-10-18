@@ -201,7 +201,7 @@ void ShaderNode::_generateCommon(shaderbuilder::BackEnd& backend) const {
   }
 
   //////////////////////////////////////////////
-  // visit direct unifor
+  // visit direct uniforms
   //////////////////////////////////////////////
 
   for (auto usetnode : _uniformSets) {
@@ -244,81 +244,9 @@ void ShaderNode::_generateCommon(shaderbuilder::BackEnd& backend) const {
 
   DecoBlockNode::emit(backend);
 
-  ////////////////////////////////////////////////////////////////////////////
-
-  ///////////////////////
-  // ATTRIBUTES
-  ///////////////////////
-  /*
-  auto do_attrs = [&](const StreamInterface::attrmap_t& attrmap) {
-    for (auto ita : attrmap) {
-      Attribute* pa = ita.second;
-
-      codegen.beginLine();
-
-      if (pa->mLayout.length())
-        codegen.output(pa->mLayout + " ");
-
-      if (pa->mDecorators.length())
-        codegen.output(pa->mDecorators + " ");
-
-      codegen.output(pa->mDirection + " ");
-      codegen.output(pa->mTypeName + " ");
-
-      if (pa->mInlineStruct.length())
-        codegen.output(pa->mInlineStruct + " ");
-
-      switch (pa->mArraySize) {
-        case 0: { // no array
-          codegen.output(pa->mName);
-          break;
-        }
-        case -1: { // unsized array
-          codegen.format("%s[]", pa->mName.c_str());
-          break;
-        }
-        default: { // sized array
-          codegen.format("%s[%d]", pa->mName.c_str(), pa->mArraySize);
-          break;
-        }
-      }
-
-      codegen.output(";");
-
-      if (pa->mComment.length()) {
-        codegen.output(" " + pa->mComment);
-      }
-      codegen.endLine();
-    }
-  };
-  do_attrs(iface->_inputAttributes);
-  do_attrs(iface->_outputAttributes);
-   */
   ///////////////////////
   // code
   ///////////////////////
-
-  for (auto block : _container->_orderedBlockNodes) {
-    auto libblock = dynamic_cast<LibraryBlockNode*>(block);
-    if (libblock) {
-      bool present = false;
-      for (auto b : _decorators) {
-        if (b->text == libblock->_name) {
-          codegen.formatLine("// libblock<%s> ///////////////////////////////////", libblock->_name.c_str());
-          for (auto l : libblock->_body._lines) {
-            codegen.beginLine();
-            for (int in = 0; in < l->_indent; in++)
-              codegen.incIndent();
-            for (auto t : l->_tokens)
-              codegen.output(t->text + " ");
-            for (int in = 0; in < l->_indent; in++)
-              codegen.decIndent();
-            codegen.endLine();
-          }
-        }
-      }
-    }
-  }
 
   codegen.formatLine("///////////////////////////////////////////////////////////////////");
 
@@ -328,8 +256,19 @@ void ShaderNode::_generateCommon(shaderbuilder::BackEnd& backend) const {
     codegen.beginLine();
     for (int in = 0; in < l->_indent; in++)
       codegen.incIndent();
-    for (auto t : l->_tokens)
+    for (auto t : l->_tokens) {
       codegen.output(t->text + " ");
+      if (t->text == "{") {
+        codegen.endLine();
+        codegen.incIndent();
+        codegen.beginLine();
+      }
+      else if (t->text == "}") {
+        codegen.endLine();
+        codegen.decIndent();
+        codegen.beginLine();
+      }
+    }
     for (int in = 0; in < l->_indent; in++)
       codegen.decIndent();
     codegen.endLine();
@@ -423,20 +362,6 @@ void ComputeShaderNode::generate(shaderbuilder::BackEnd& backend) const {
   backend._container->addComputeShader(pshader);
 }
 #endif
-
-///////////////////////////////////////////////////////////
-void LibraryBlockNode::parse(const ScannerView& view) {
-  DecoBlockNode::parse(view);
-  _body.parse(view);
-}
-
-//////////////////////////////////////////////////////////////////////////////////
-
-void LibraryBlockNode::pregen(shaderbuilder::BackEnd& backend) { DecoBlockNode::_pregen(backend); }
-
-//////////////////////////////////////////////////////////////////////////////////
-
-void LibraryBlockNode::generate(shaderbuilder::BackEnd& backend) const {}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::glslfx
