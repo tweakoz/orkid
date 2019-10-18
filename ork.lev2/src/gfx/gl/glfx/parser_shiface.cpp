@@ -64,8 +64,8 @@ void InterfaceLayoutNode::emit(shaderbuilder::BackEnd& backend) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void InterfaceLayoutNode::pregen(shaderbuilder::BackEnd& backend) const {}
-void InterfaceInlineStructNode::pregen(shaderbuilder::BackEnd& backend) const {}
+void InterfaceLayoutNode::pregen(shaderbuilder::BackEnd& backend) {}
+void InterfaceInlineStructNode::pregen(shaderbuilder::BackEnd& backend) {}
 
 void InterfaceInlineStructNode::emit(shaderbuilder::BackEnd& backend) const {
   auto& codegen = backend._codegen;
@@ -116,13 +116,13 @@ int InterfaceInlineStructNode::parse(const ScannerView& view) {
   return i;
 }
 
-void InterfaceIoNode::pregen(shaderbuilder::BackEnd& backend) const {
+void InterfaceIoNode::pregen(shaderbuilder::BackEnd& backend) {
   if (_layout)
     _layout->pregen(backend);
   if (_inlineStruct)
     _inlineStruct->pregen(backend);
 }
-void IoContainerNode::pregen(shaderbuilder::BackEnd& backend) const {
+void IoContainerNode::pregen(shaderbuilder::BackEnd& backend) {
   for (auto l : _layouts)
     l->pregen(backend);
   for (auto n : _nodes)
@@ -312,12 +312,63 @@ void InterfaceNode::parse(const ScannerView& view) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void InterfaceNode::pregen(shaderbuilder::BackEnd& backend) const {
+void InterfaceNode::pregen(shaderbuilder::BackEnd& backend) {
+  DecoBlockNode::_pregen(backend);
   for (auto ifl : _interfacelayouts)
     ifl->pregen(backend);
   _inputs->pregen(backend);
   _outputs->pregen(backend);
   _storage->pregen(backend);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void InterfaceNode::emit(shaderbuilder::BackEnd& backend) const {
+  DecoBlockNode::_emit(backend);
+  auto& codegen = backend._codegen;
+  codegen.formatLine("/*begin SIF preamble*/");
+  ////////////////////////////////////////////////
+  for (auto iflayout : _interfacelayouts) {
+    for (auto item : iflayout->_tokens) {
+      const auto& tok = item->text;
+      if (tok == "layout") {
+        codegen.beginLine();
+        codegen.output(tok + " ");
+      } else if (tok == ")") {
+        codegen.output(" " + iflayout->_direction + ";");
+        codegen.endLine();
+      } else
+        codegen.output(tok + " ");
+    }
+  }
+  ////////////////////////
+  _inputs->emit(backend);
+  _outputs->emit(backend);
+  _storage->emit(backend);
+  ////////////////////////////////////////////////
+  codegen.formatLine("/*end SIF preamble*/");
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void IoContainerNode::emit(shaderbuilder::BackEnd& backend) const {
+  auto& codegen = backend._codegen;
+  for (auto node : _nodes) {
+    codegen.beginLine();
+    if (node->_layout)
+      node->_layout->emit(backend);
+    if (_direction == "in")
+      codegen.output("in ");
+    if (_direction == "out")
+      codegen.output("out ");
+    codegen.output(node->_typeName + " ");
+    codegen.output(node->_name + " ");
+    if (node->_inlineStruct) {
+      node->_inlineStruct->emit(backend);
+    }
+    codegen.output(";");
+    codegen.endLine();
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -343,18 +394,9 @@ void InterfaceNode::_generate(shaderbuilder::BackEnd& backend) const {
   // interface scoped layouts
   ////////////////////////
 
-  psi->mPreamble.push_back("/*begin SIF preamble*/");
-  std::string line;
   for (auto iflayout : _interfacelayouts) {
     for (auto item : iflayout->_tokens) {
       const auto& tok = item->text;
-      line += tok;
-      if (tok == ")") {
-        line += " " + iflayout->_direction;
-        line += ";";
-        psi->mPreamble.push_back(line);
-        line = "";
-      }
 
       // GS primtype
       int primsize = 0;
@@ -466,25 +508,6 @@ void InterfaceNode::_generate(shaderbuilder::BackEnd& backend) const {
   }
 
   ////////////////////////
-  auto& codegen = backend._codegen;
-  codegen.flush();
-
-  for (auto store : _storage->_nodes) {
-
-    codegen.beginLine();
-    if (store->_layout)
-      store->_layout->emit(backend);
-    codegen.output(store->_typeName + " ");
-    codegen.output(store->_name + " ");
-    if (store->_inlineStruct) {
-      store->_inlineStruct->emit(backend);
-    }
-    codegen.output(";");
-    codegen.endLine();
-    psi->mPreamble.push_back(codegen.flush());
-  }
-
-  ////////////////////////
   // sort attributes for performance
   //  (see
   //  http://stackoverflow.com/questions/16415037/opengl-core-profile-incredible-slowdown-on-os-x)
@@ -509,7 +532,6 @@ void InterfaceNode::_generate(shaderbuilder::BackEnd& backend) const {
   }
 
   ////////////////////////
-  psi->mPreamble.push_back("/*end SIF preamble*/");
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

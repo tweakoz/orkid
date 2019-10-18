@@ -22,8 +22,7 @@ bool BackEnd::generate() {
   bool ok = true;
   try {
     _cnode->generate(*this);
-  }
-  catch(...) {
+  } catch (...) {
     ok = false;
   }
   return ok;

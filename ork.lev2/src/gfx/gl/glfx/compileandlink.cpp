@@ -18,8 +18,8 @@ bool Shader::Compile() {
   GL_NF_ERRORCHECK();
   mShaderObjectId = glCreateShader(mShaderType);
 
-  if( mShaderType == GL_COMPUTE_SHADER ){
-    printf( "yo\n");
+  if (mShaderType == GL_COMPUTE_SHADER) {
+    printf("yo\n");
   }
   std::string shadertext = "";
 
@@ -243,11 +243,11 @@ bool Interface::compilePipelineVTG(Container* container) {
 
 #if defined(ENABLE_NVMESH_SHADERS)
 bool Interface::compilePipelineNVTM(Container* container) {
-  auto pass = const_cast<Pass*>(container->_activePass);
-  auto& pipeNVTM = pass->_primpipe.Get<PrimPipelineNVTM>();
+  auto pass           = const_cast<Pass*>(container->_activePass);
+  auto& pipeNVTM      = pass->_primpipe.Get<PrimPipelineNVTM>();
   Shader* ptaskshader = pipeNVTM._nvTaskShader;
   Shader* pmeshhader  = pipeNVTM._nvMeshShader;
-  Shader* pfragshader  = pipeNVTM._fragmentShader;
+  Shader* pfragshader = pipeNVTM._fragmentShader;
   OrkAssert(pmeshhader != nullptr);
   OrkAssert(pfragshader != nullptr);
   auto l_compile = [&](Shader* psh) -> bool {

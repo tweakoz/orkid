@@ -45,8 +45,6 @@ void StreamInterface::Inherit(const StreamInterface& par) {
   ////////////////////////////////
 
   if (types_match) {
-    for (const auto& item : par.mPreamble)
-      mPreamble.push_back(item);
 
     for (const auto& ub : par._uniformSets)
       _uniformSets.push_back(ub);
@@ -61,40 +59,40 @@ void StreamInterface::Inherit(const StreamInterface& par) {
       _gspriminpsize = par._gspriminpsize;
     // printf( "inherit _gspriminpsize<%d>\n", _gspriminpsize );
   }
-  
+
   ////////////////////////////////
   // inherit input attributes
   ////////////////////////////////
 
-  if( types_match )
-  for (const auto& a : par._inputAttributes) {
-    const Attribute* src = a.second;
-    auto it = _inputAttributes.find(a.first);
-    assert(it == _inputAttributes.end()); // make sure there are no duplicate attrs
-    Attribute* cpy  = new Attribute(src->mName, src->mSemantic);
-    cpy->mTypeName  = src->mTypeName;
-    cpy->mDirection = src->mDirection;
-    cpy->meType     = src->meType;
-    cpy->mLocation       = int(_inputAttributes.size());
-    _inputAttributes[a.first] = cpy;
-  }
-  
+  if (types_match)
+    for (const auto& a : par._inputAttributes) {
+      const Attribute* src = a.second;
+      auto it              = _inputAttributes.find(a.first);
+      assert(it == _inputAttributes.end()); // make sure there are no duplicate attrs
+      Attribute* cpy            = new Attribute(src->mName, src->mSemantic);
+      cpy->mTypeName            = src->mTypeName;
+      cpy->mDirection           = src->mDirection;
+      cpy->meType               = src->meType;
+      cpy->mLocation            = int(_inputAttributes.size());
+      _inputAttributes[a.first] = cpy;
+    }
+
   ////////////////////////////////
   // inherit output attributes
   ////////////////////////////////
-  
-  if( types_match )
-  for (const auto& a : par._outputAttributes) {
-    const Attribute* src = a.second;
-    auto it = _outputAttributes.find(a.first);
-    assert(it == _outputAttributes.end()); // make sure there are no duplicate attrs
-    Attribute* cpy  = new Attribute(src->mName, src->mSemantic);
-    cpy->mTypeName  = src->mTypeName;
-    cpy->mDirection = src->mDirection;
-    cpy->meType     = src->meType;
-    cpy->mLocation       = int(_outputAttributes.size());
-    _outputAttributes[a.first] = cpy;
-  }
+
+  if (types_match)
+    for (const auto& a : par._outputAttributes) {
+      const Attribute* src = a.second;
+      auto it              = _outputAttributes.find(a.first);
+      assert(it == _outputAttributes.end()); // make sure there are no duplicate attrs
+      Attribute* cpy             = new Attribute(src->mName, src->mSemantic);
+      cpy->mTypeName             = src->mTypeName;
+      cpy->mDirection            = src->mDirection;
+      cpy->meType                = src->meType;
+      cpy->mLocation             = int(_outputAttributes.size());
+      _outputAttributes[a.first] = cpy;
+    }
 
   ////////////////////////////////
   // convert vertex out attrs
@@ -104,7 +102,7 @@ void StreamInterface::Inherit(const StreamInterface& par) {
   bool conv_vtx_to_geo = (is_geo && par_is_vtx);
   bool conv_tee_to_geo = (is_geo && par_is_tee);
   bool conv_to_geo     = conv_vtx_to_geo || conv_tee_to_geo;
-  
+
   if (conv_to_geo) {
     for (const auto& a : par._outputAttributes) {
       auto it = _inputAttributes.find(a.first);

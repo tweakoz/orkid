@@ -83,9 +83,9 @@ void Interface::BindContainerToAbstract(Container* pcont, FxShader* fxh) {
   }
 #if defined(ENABLE_COMPUTE_SHADERS)
   for (const auto& itp : pcont->_computeShaders) {
-    ComputeShader* csh                = itp.second;
-    auto fxcsh      = new FxComputeShader;
-    fxcsh->_name              = itp.first;
+    ComputeShader* csh = itp.second;
+    auto fxcsh         = new FxComputeShader;
+    fxcsh->_name       = itp.first;
     fxcsh->_impl.Set<ComputeShader*>(csh);
     fxh->addComputeShader(fxcsh);
   }
@@ -256,12 +256,12 @@ parambuffermappingptr_t Interface::mapParamBuffer(FxShaderParamBuffer* b, size_t
   // mapping->_mappedaddr = malloc(length);
   // glMapBuffer(GL_UNIFORM_BUFFER,
   //                                      GL_WRITE_ONLY);
-  mapping->_mappedaddr = glMapBufferRange(
-      GL_UNIFORM_BUFFER, base, length,
-      GL_MAP_WRITE_BIT |
-      GL_MAP_INVALIDATE_RANGE_BIT |
-      //GL_MAP_FLUSH_EXPLICIT_BIT |
-      0);
+  mapping->_mappedaddr = glMapBufferRange(GL_UNIFORM_BUFFER,
+                                          base,
+                                          length,
+                                          GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT |
+                                              // GL_MAP_FLUSH_EXPLICIT_BIT |
+                                              0);
   assert(mapping->_mappedaddr != nullptr);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
   GL_ERRORCHECK();
@@ -275,7 +275,7 @@ void Interface::unmapParamBuffer(FxShaderParamBufferMapping* mapping) {
   auto ub = mapping->_buffer->_impl.Get<UniformBuffer*>();
   GL_ERRORCHECK();
   glBindBuffer(GL_UNIFORM_BUFFER, ub->_glbufid);
-  //glFlushMappedBufferRange(GL_UNIFORM_BUFFER,mapping->_offset,mapping->_length);
+  // glFlushMappedBufferRange(GL_UNIFORM_BUFFER,mapping->_offset,mapping->_length);
   glUnmapBuffer(GL_UNIFORM_BUFFER);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
   GL_ERRORCHECK();
@@ -333,8 +333,8 @@ const FxShaderStorageBlock* Interface::storageBlock(FxShader* hfx, const std::st
   auto fxsblock          = (FxShaderStorageBlock*)(it != storagemap.end()) ? it->second : nullptr;
 
   assert(false); // not implmented yet
-  //auto container = static_cast<Container*>(hfx->GetInternalHandle());
-  //auto ublk      = container->storageBlock(name);
+  // auto container = static_cast<Container*>(hfx->GetInternalHandle());
+  // auto ublk      = container->storageBlock(name);
 
   return fxsblock;
 }
@@ -346,11 +346,11 @@ const FxShaderStorageBlock* Interface::storageBlock(FxShader* hfx, const std::st
 const FxComputeShader* Interface::computeShader(FxShader* hfx, const std::string& name) {
   OrkAssert(0 != hfx);
   const auto& cshmap = hfx->namedComputeShaders();
-  const auto& it         = cshmap.find(name);
-  auto csh          = (FxComputeShader*)(it != cshmap.end()) ? it->second : nullptr;
+  const auto& it     = cshmap.find(name);
+  auto csh           = (FxComputeShader*)(it != cshmap.end()) ? it->second : nullptr;
 
-  //auto container = static_cast<Container*>(hfx->GetInternalHandle());
-  //auto ublk      = container->storageBlock(name);
+  // auto container = static_cast<Container*>(hfx->GetInternalHandle());
+  // auto ublk      = container->storageBlock(name);
 
   return csh;
 }

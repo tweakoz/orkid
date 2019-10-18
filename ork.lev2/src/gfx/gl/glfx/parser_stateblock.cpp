@@ -46,8 +46,8 @@ void StateBlockNode::parse(const ScannerView& view) {
 
 void StateBlockNode::generate(shaderbuilder::BackEnd& backend) const {
   auto psb      = new StateBlock;
-  auto c = backend._container;
-  psb->mName = _name;
+  auto c        = backend._container;
+  psb->mName    = _name;
   auto& apptors = psb->mApplicators;
 
   //////////////////////
@@ -58,7 +58,7 @@ void StateBlockNode::generate(shaderbuilder::BackEnd& backend) const {
 
   assert(inumdecos < 2);
 
-  for (const auto deco : _decorators ) {
+  for (const auto deco : _decorators) {
     StateBlock* parent = c->GetStateBlock(deco->text);
     assert(parent != nullptr);
     psb->mApplicators = parent->mApplicators; // inherit applicators
@@ -104,7 +104,6 @@ void StateBlockNode::generate(shaderbuilder::BackEnd& backend) const {
   //////////////////////
 
   backend._container->addStateBlock(psb);
-  
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -51,7 +51,7 @@ void TechniqueNode::parse(const ScannerView& view) {
 
 int PassNode::parse(const ScannerView& view, int istart) {
   NamedBlockNode::parse(view);
-  
+
   int ist = view._start + 1;
   int ien = view._end - 1;
 
@@ -101,7 +101,7 @@ void TechniqueNode::generate(shaderbuilder::BackEnd& backend) const {
 
 void PassNode::generate(shaderbuilder::BackEnd& backend) const {
   Pass* ppass = new Pass(_name);
-  auto c = backend._container;
+  auto c      = backend._container;
   backend._statemap["pass"].Set<Pass*>(ppass);
   /////////////////////////////////////////////////////////////
   // VTG pipe
@@ -130,10 +130,10 @@ void PassNode::generate(shaderbuilder::BackEnd& backend) const {
     auto& primvtg           = ppass->_primpipe.Get<PrimPipelineVTG>();
     primvtg._geometryShader = pshader;
   }
-  /////////////////////////////////////////////////////////////
-  // NVTM pipe
-  /////////////////////////////////////////////////////////////
-  #if defined(ENABLE_NVMESH_SHADERS)
+/////////////////////////////////////////////////////////////
+// NVTM pipe
+/////////////////////////////////////////////////////////////
+#if defined(ENABLE_NVMESH_SHADERS)
   if (_nvtaskshader != "") {
     auto pshader = c->nvTaskShader(_nvtaskshader);
     OrkAssert(pshader != nullptr);
@@ -147,7 +147,7 @@ void PassNode::generate(shaderbuilder::BackEnd& backend) const {
                                                               : ppass->_primpipe.Make<PrimPipelineNVTM>();
     primnvmt._nvMeshShader = pshader;
   }
-  #endif
+#endif
   /////////////////////////////////////////////////////////////
   // do frag last so we already know pipe type
   /////////////////////////////////////////////////////////////
@@ -156,10 +156,10 @@ void PassNode::generate(shaderbuilder::BackEnd& backend) const {
     OrkAssert(pshader != nullptr);
     if (auto as_vtg = ppass->_primpipe.TryAs<PrimPipelineVTG>())
       as_vtg.value()._fragmentShader = pshader;
-    #if defined(ENABLE_NVMESH_SHADERS)
+#if defined(ENABLE_NVMESH_SHADERS)
     else if (auto as_nvtm = ppass->_primpipe.TryAs<PrimPipelineNVTM>())
       as_nvtm.value()._fragmentShader = pshader;
-    #endif
+#endif
   }
   /////////////////////////////////////////////////////////////
   if (_stateblock != "") {

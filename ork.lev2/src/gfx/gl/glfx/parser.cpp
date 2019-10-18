@@ -24,58 +24,58 @@
 namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+void RequiredExtensionNode::emit(shaderbuilder::BackEnd& backend) {
+  backend._codegen.formatLine("#extension %s : enable", _extension.c_str());
+}
+
 ///////////////////////////////////////////////////////////
 bool ContainerNode::IsTokenOneOfTheBlockTypes(const Token& tok) {
   static const std::regex regex_block(block_regex);
   return std::regex_match(tok.text, regex_block);
 }
 ///////////////////////////////////////////////////////////
-ContainerNode::ContainerNode(const AssetPath &pth, const Scanner &s)
-  : _path(pth)
-  , _scanner(s) {
+ContainerNode::ContainerNode(const AssetPath& pth, const Scanner& s)
+    : _path(pth)
+    , _scanner(s) {
 
-    std::string typenames = "mat2 mat3 mat4 vec2 vec3 vec4 "
-                            "float double half uint int "
-#if ! defined(__APPLE__)
-                            "int8_t int16_t int32_t int64_t "
-                            "uint8_t uint16_t uint32_t uint64_t "
-                            "i8vec2 i8vec3 i8vec4 "
-                            "i16vec2 i16vec3 i16vec4 "
-                            "i32vec2 i32vec3 i32vec4 "
-                            "i64vec2 i64vec3 i64vec4 "
-                            "u16vec2 u16vec3 u16vec4 "
-                            "u32vec2 u32vec3 u32vec4 "
-                            "u64vec2 u64vec3 u64vec4 "
+  std::string typenames = "mat2 mat3 mat4 vec2 vec3 vec4 "
+                          "float double half uint int "
+#if !defined(__APPLE__)
+                          "int8_t int16_t int32_t int64_t "
+                          "uint8_t uint16_t uint32_t uint64_t "
+                          "i8vec2 i8vec3 i8vec4 "
+                          "i16vec2 i16vec3 i16vec4 "
+                          "i32vec2 i32vec3 i32vec4 "
+                          "i64vec2 i64vec3 i64vec4 "
+                          "u16vec2 u16vec3 u16vec4 "
+                          "u32vec2 u32vec3 u32vec4 "
+                          "u64vec2 u64vec3 u64vec4 "
 #endif
-                            "sampler2D sampler3D sampler2DShadow";
+                          "sampler2D sampler3D sampler2DShadow";
 
-    for( auto item : SplitString(typenames, ' ') )
-      _validTypeNames.insert(item);
+  for (auto item : SplitString(typenames, ' '))
+    _validTypeNames.insert(item);
 
-    _validOutputDecorators.insert("perprimitiveNV");
-    _validOutputDecorators.insert("taskNV");
-
-
+  _validOutputDecorators.insert("perprimitiveNV");
+  _validOutputDecorators.insert("taskNV");
 }
 ///////////////////////////////////////////////////////////
 bool ContainerNode::validateTypeName(const std::string typeName) const {
   auto it = _validTypeNames.find(typeName);
-  return (it!=_validTypeNames.end());
+  return (it != _validTypeNames.end());
 }
 ///////////////////////////////////////////////////////////
-bool ContainerNode::validateMemberName(const std::string typeName) const {
-  return true;
-}
+bool ContainerNode::validateMemberName(const std::string typeName) const { return true; }
 ///////////////////////////////////////////////////////////
 bool ContainerNode::isIoAttrDecorator(const std::string typeName) const {
   auto it = _validOutputDecorators.find(typeName);
-  return (it!=_validOutputDecorators.end());
+  return (it != _validOutputDecorators.end());
 }
 
 ///////////////////////////////////////////////////////////
 
 void NamedBlockNode::parse(const ScannerView& view) {
-  _name  = view.blockName();
+  _name      = view.blockName();
   _blocktype = view.token(view._blockType)->text;
 }
 
@@ -94,28 +94,59 @@ void DecoBlockNode::parse(const ScannerView& view) {
   for (size_t ideco = 0; ideco < inumdecos; ideco++) {
     auto decotok = view.blockDecorator(ideco);
     auto decoref = decotok->text;
-    if( decoref=="extension"){
+    if (decoref == "extension") {
       int decoglobidx = view._blockDecorators[ideco];
-      auto extname = view._scanner.token(decoglobidx+2)->text;
-      _requiredExtensions.push_back(extname);
-    }
-    else {
+      assert(view._scanner.token(decoglobidx + 1)->text == "(");
+      assert(view._scanner.token(decoglobidx + 3)->text == ")");
+      auto extname        = view._scanner.token(decoglobidx + 2)->text;
+      auto extnode        = new RequiredExtensionNode(_container);
+      extnode->_extension = extname;
+      _requiredExtensions.push_back(extnode);
+    } else {
       bool name_ok = _container->validateMemberName(decoref);
-      auto it = _decodupecheck.find(decoref);
-      assert(it==_decodupecheck.end() or decoref=="extension");
+      auto it      = _decodupecheck.find(decoref);
+      assert(it == _decodupecheck.end() or decoref == "extension");
       _decodupecheck.insert(decoref);
       _decorators.push_back(decotok);
     }
   }
-
 }
 
 ///////////////////////////////////////////////////////////
+void DecoBlockNode::_pregen(shaderbuilder::BackEnd& backend) {
+  size_t inumdecos = _decorators.size();
+  for (size_t i = 0; i < inumdecos; i++) {
+    auto deco                = _decorators[i]->text;
+    auto it_nodedeco         = _container->_blockNodes.find(deco);
+    DecoBlockNode* blocknode = (it_nodedeco != _container->_blockNodes.end()) ? it_nodedeco->second : nullptr;
+    if (auto as_if = dynamic_cast<InterfaceNode*>(blocknode)) {
+      _interfaceNodes.emplace_back(as_if);
+    } else if (auto as_lib = dynamic_cast<LibraryBlockNode*>(blocknode)) {
+      _libraryBlocks.emplace_back(as_lib);
+    } else if (auto as_uset = dynamic_cast<UniformSetNode*>(blocknode)) {
+      _uniformSets.emplace_back(as_uset);
+    } else if (auto as_ublk = dynamic_cast<UniformBlockNode*>(blocknode)) {
+      _uniformBlocks.emplace_back(as_ublk);
+    }
+  }
+}
+///////////////////////////////////////////////////////////
+void DecoBlockNode::_emit(shaderbuilder::BackEnd& backend) const {
+  for (auto node : _libraryBlocks)
+    node->emit(backend);
+  for (auto node : _interfaceNodes)
+    node->emit(backend);
+  for (auto node : _uniformSets)
+    node->emit(backend);
+  for (auto node : _uniformBlocks)
+    node->emit(backend);
+}
+///////////////////////////////////////////////////////////
 
-void ContainerNode::addBlockNode(DecoBlockNode*node) {
+void ContainerNode::addBlockNode(DecoBlockNode* node) {
   auto it = _blockNodes.find(node->_name);
-  assert(it==_blockNodes.end());
-  auto status = _blockNodes.insert(std::make_pair(node->_name,node));
+  assert(it == _blockNodes.end());
+  auto status    = _blockNodes.insert(std::make_pair(node->_name, node));
   size_t bncount = _blockNodes.size();
   assert(status.second);
   _orderedBlockNodes.push_back(node);
@@ -133,13 +164,12 @@ void ContainerNode::parse() {
 
   while (itokidx < tokens.size()) {
     const Token& tok = tokens[itokidx];
-     printf( "token<%d> iline<%d> col<%d> text<%s>\n", itokidx, tok.iline+1,
-     tok.icol+1, tok.text.c_str() );
+    printf("token<%d> iline<%d> col<%d> text<%s>\n", itokidx, tok.iline + 1, tok.icol + 1, tok.text.c_str());
 
-     ScannerView scanview(_scanner, r);
-     scanview.scanBlock(itokidx);
+    ScannerView scanview(_scanner, r);
+    scanview.scanBlock(itokidx);
 
-     bool advance_block = true;
+    bool advance_block = true;
 
     if (tok.text == "\n") {
       itokidx++;
@@ -174,7 +204,7 @@ void ContainerNode::parse() {
     } else if (tok.text == "state_block") {
       auto sblock = new StateBlockNode(this);
       sblock->parse(scanview);
-      //mpContainer->addStateBlock(psblock);
+      // mpContainer->addStateBlock(psblock);
     } else if (tok.text == "vertex_shader") {
       auto sh = new VertexShaderNode(this);
       sh->parse(scanview);
@@ -219,7 +249,7 @@ void ContainerNode::parse() {
       printf("Unknown Token<%s>\n", tok.text.c_str());
       OrkAssert(false);
     }
-    if( advance_block )
+    if (advance_block)
       itokidx = scanview.blockEnd() + 1;
   }
 }
@@ -249,16 +279,16 @@ ContainerNode::nodevect_t ContainerNode::collectAllNodes() const {
   collectNodesOfType<GeometryShaderNode>(nodes);
   collectNodesOfType<FragmentShaderNode>(nodes);
 
-  #if defined(ENABLE_COMPUTE_SHADERS)
+#if defined(ENABLE_COMPUTE_SHADERS)
   collectNodesOfType<ComputeInterfaceNode>(nodes);
   collectNodesOfType<ComputeShaderNode>(nodes);
-  #endif
-  #if defined(ENABLE_NVMESH_SHADERS)
+#endif
+#if defined(ENABLE_NVMESH_SHADERS)
   collectNodesOfType<NvTaskInterfaceNode>(nodes);
   collectNodesOfType<NvMeshInterfaceNode>(nodes);
   collectNodesOfType<NvTaskShaderNode>(nodes);
   collectNodesOfType<NvMeshShaderNode>(nodes);
-  #endif
+#endif
 
   collectNodesOfType<TechniqueNode>(nodes);
   return nodes;
@@ -268,18 +298,18 @@ ContainerNode::nodevect_t ContainerNode::collectAllNodes() const {
 
 void ContainerNode::generate(shaderbuilder::BackEnd& backend) const {
   auto nodes = collectAllNodes();
-  for( auto item : nodes )
+  for (auto item : nodes)
     item->pregen(backend);
-  for( auto item : nodes )
+  for (auto item : nodes)
     item->generate(backend);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 GlSlFxParser::GlSlFxParser(const std::string& pth, const Scanner& s)
-  : mPath(pth)
-  , scanner(s) {
-  _rootNode = new ContainerNode(pth,s);
+    : mPath(pth)
+    , scanner(s) {
+  _rootNode = new ContainerNode(pth, s);
   _rootNode->parse();
 }
 
@@ -310,7 +340,7 @@ Container* LoadFxFromFile(const AssetPath& pth) {
   ///////////////////////////////////
   GlSlFxParser parser(pth.c_str(), scanner);
   auto pcont = new Container(pth.c_str());
-  shaderbuilder::BackEnd backend(parser._rootNode,pcont);
+  shaderbuilder::BackEnd backend(parser._rootNode, pcont);
   bool ok = backend.generate();
   assert(ok);
   ///////////////////////////////////
@@ -319,12 +349,12 @@ Container* LoadFxFromFile(const AssetPath& pth) {
 
 namespace shaderbuilder {
 void BackendCodeGen::beginLine() {
-  if( _curline.length() )
+  if (_curline.length())
     endLine();
 
   int lineno = _lines.size();
-  _curline = FormatString("/*%03d*/ ", lineno);
-  for( int i=0; i<_indentLevel; i++ )
+  _curline   = FormatString("/*%03d*/ ", lineno);
+  for (int i = 0; i < _indentLevel; i++)
     _curline += "  ";
 }
 void BackendCodeGen::endLine() {
@@ -357,7 +387,7 @@ void BackendCodeGen::formatLine(const char* fmt, ...) {
 }
 std::string BackendCodeGen::flush() {
   std::string rval;
-  for( auto l : _lines )
+  for (auto l : _lines)
     rval += l + "\n";
   _curline = "";
   _lines.clear();
