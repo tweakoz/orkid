@@ -268,12 +268,16 @@ compute_interface iface_compute : compute_unis {
     }
     storage {
         layout(std430, binding = 0) buffer {
-            mat4 MVP;               // 0
-            int numLights;          // 64
-            int pad[3];             // 68
-            vec4 lightPosR[8192];   // 80
-            vec4 lightColor[8192];  // 80+131072
-            vec4 testoutput[8192];  // 80+262144
+            mat4 MVP;                // 0
+            int numLights;           // 64
+            int numTiles;            // 68
+            int pad[2];              // 72
+            vec4 campos;             // 80
+            vec4 lightPosR[8192];    // 96
+            vec4 lightColor[8192];   // 96+131072
+            vec4 lightprjmin[8192];  // 96+262144
+            vec4 lightprjmax[8192];  // 96+393216
+            vec4 tileoutpos[8192];   // 96+524288
         } ssbo_io_data;
     }
 }
@@ -330,24 +334,81 @@ libblock spheretools {
         growAABox(box,c7);
         return box;
     }
+    bool doRangesOverlap( float amin, float amax, float bmin, float bmax ){
+        float mmax = (amin>bmin) ? amin : bmin;
+        float mmin = (amax<bmax) ? amax : bmax;
+        return mmax <= mmin;
+    }
+}
+///////////////////////////////////////////////////////////////
+compute_shader compute_projectlights
+    : extension(GL_NV_gpu_shader5)
+    : spheretools
+    : iface_compute {
+    ivec2 imgsiz = imageSize(img_depthclusters);
+    vec2 KTILEDIMM = vec2(imgsiz.x-1,imgsiz.y-1);
+    int il = int(gl_WorkGroupID.x);
+    vec4 sphere = lightPosR[il];
+    AABox sphbox = sphereProjBounds(sphere, MVP);
+    vec3 sphmin = sphbox._min.xyz;
+    vec3 sphmax = sphbox._max.xyz;
+    sphmin += vec3(1,1,1); // -1..1 -> 0..2
+    sphmax += vec3(1,1,1); // -1..1 -> 0..2
+    sphmin *= 0.5; // 0..2 -> 0..1
+    sphmax *= 0.5; // 0..2 -> 0..1
+    sphmin.xy = floor(sphmin.xy*KTILEDIMM);
+    sphmax.xy = floor(sphmax.xy*KTILEDIMM);
+    float d2cam = distance(sphere.xyz,campos.xyz);
+    sphmin.z = d2cam-sphere.w;
+    sphmax.z = d2cam+sphere.w;
+    lightprjmin[il] = vec4(sphmin,d2cam);
+    lightprjmax[il] = vec4(sphmax,d2cam);
+
+    // init numTiles
+    numTiles = 0;
 }
 ///////////////////////////////////////////////////////////////
 compute_shader compute_collectlights
     : extension(GL_NV_gpu_shader5)
     : spheretools
     : iface_compute {
-    ivec2 imgsiz = imageSize(img_depthclusters);
-    int ix = int(gl_WorkGroupID.x);
-    int iy = int(gl_WorkGroupID.y);
-    uint32_t clusterpix = imageLoad(img_depthclusters,ivec2(ix, iy)).r;
-    int tileindex = iy * imgsiz.x + ix;
-    testoutput[tileindex] = vec4(0,0,0,0);
+    const ivec2 imgsiz = imageSize(img_depthclusters);
+    const int KTILEMAXX = imgsiz.x-1;
+    const int KTILEMAXY = imgsiz.y-1;
+    const int ix = int(gl_WorkGroupID.x);
+    const int iy = int(gl_WorkGroupID.y);
+    const float fx = float(ix);
+    const float fy = float(iy);
+    const uint32_t clusterpix = imageLoad(img_depthclusters,ivec2(ix, iy)).r;
+    const int tileindex = iy * imgsiz.x + ix;
     for( int il=0; il<numLights; il++ ){
-        vec4 sphere = lightPosR[il];
-        AABox sphbox = sphereProjBounds(sphere,MVP);
-        testoutput[tileindex].xy = sphbox._min.xy;
-        testoutput[tileindex].zw = sphbox._max.xy;
-        // overlap checks
-        // gather results
+        vec4 lmin = lightprjmin[il];
+        float d2cam = lmin.w;
+        vec3 sphmin = lmin.xyz;
+        vec3 sphmax = lightprjmax[il].xyz;
+        bool overlapX = doRangesOverlap(fx,fx,sphmin.x,sphmax.x);
+        if( overlapX ){
+          bool overlapY = doRangesOverlap(fy,fy,sphmin.y,sphmax.y);
+            if( overlapY ){
+                uint32_t DC = clusterpix;
+                int bitindex = 0;
+                bool overlapZ = false;
+                while (DC != 0 && (false == overlapZ)) {
+                  bool has_bit = bool(DC & 1);
+                  if (has_bit) {
+                    float bitshiftedLO = float(1 << bitindex);
+                    float bitshiftedHI = bitshiftedLO + bitshiftedLO;
+                    bool testoz = doRangesOverlap(sphmin.z, sphmax.z, bitshiftedLO, bitshiftedHI);
+                    overlapZ = overlapZ || testoz;
+                  } // if (has_bit) {
+                  DC = DC>>1;
+                  bitindex++;
+                } // while(depthsample)
+                if (overlapZ) {
+                    int nt = atomicAdd(numTiles,1);
+                }
+            }
+        }
+
     }
 }

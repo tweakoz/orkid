@@ -49,6 +49,7 @@ struct NVMSIMPL {
       , _lighttiles(KMAXTILECOUNT)
       , _lightbuffer(nullptr)
       , _storagebuffer(nullptr)
+      , _lightprojectshader(nullptr)
       , _lightcollectshader(nullptr) {
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -69,6 +70,7 @@ struct NVMSIMPL {
         mapped->ref<fvec4>(base + i * sizeof(fvec4)) = fvec4();
       mapped->unmap();
 
+      _lightprojectshader = _context._lightingmtl.computeShader("compute_projectlights");
       _lightcollectshader = _context._lightingmtl.computeShader("compute_collectlights");
     }
   }
@@ -115,12 +117,14 @@ struct NVMSIMPL {
     // float time_tile_cpa = _timer.SecsSinceStart();
     // printf( "Deferred::_render tilecpa time<%g>\n", time_tile_cpa-time_tile_in );
     /////////////////////////////////////
-    size_t mapping_size = 8192*sizeof(fvec4)*2+80; // around 256KiB
+    const size_t KLIGHTBASE = 96;
+    size_t mapping_size = 8192*sizeof(fvec4)*2+KLIGHTBASE; // around 256KiB
     auto mapping = CI->mapStorageBuffer(_storagebuffer, 0, mapping_size);
     size_t numlights = _context._pointlights.size();
     mapping->ref<fmtx4>(0) = VD.VPL;
     mapping->ref<int>(64) = int(numlights);
-    size_t posrindex = 80;
+    mapping->ref<fvec4>(80) = fvec4(0,0,0,0);
+    size_t posrindex = KLIGHTBASE;
     size_t colrindex = posrindex+8192*sizeof(fvec4);
     for( size_t i=0; i<numlights; i++){
       const PointLight* pl = _context._pointlights[i];
@@ -130,14 +134,27 @@ struct NVMSIMPL {
       colrindex += sizeof(fvec4);
     }
     CI->unmapStorageBuffer(mapping.get());
+    /////////////////////////////////////
+    // project lights
+    /////////////////////////////////////
+    CI->bindStorageBuffer(_lightprojectshader, 0, _storagebuffer);
+    CI->bindImage(_lightprojectshader, 1, _context._rtgDepthCluster->GetMrt(0)->GetTexture(), EIBA_READ_ONLY);
+    CI->dispatchCompute(_lightprojectshader,
+                         numlights,
+                         1,
+                         1);
+    /////////////////////////////////////
+    // (collect/gather) lights
+    /////////////////////////////////////
+
+    // barrier here ?
+
     CI->bindStorageBuffer(_lightcollectshader, 0, _storagebuffer);
     CI->bindImage(_lightcollectshader, 1, _context._rtgDepthCluster->GetMrt(0)->GetTexture(), EIBA_READ_ONLY);
     CI->dispatchCompute(_lightcollectshader,
                          _context._clusterW,
                          _context._clusterH,
                          1);
-
-    /////////////////////////////////////
 
     const float KTILESIZX    = 2.0f / float(_context._clusterW);
     const float KTILESIZY    = 2.0f / float(_context._clusterH);
@@ -261,6 +278,7 @@ struct NVMSIMPL {
   FxShaderParamBuffer* _lightbuffer          = nullptr;
   FxShaderStorageBuffer* _storagebuffer      = nullptr;
   const FxShaderStorageBlock* _storageparam  = nullptr;
+  const FxComputeShader* _lightprojectshader = nullptr;
   const FxComputeShader* _lightcollectshader = nullptr;
   std::atomic<int> _pendingtilecounter;
 }; // IMPL

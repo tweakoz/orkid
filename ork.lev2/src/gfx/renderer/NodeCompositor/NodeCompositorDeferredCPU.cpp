@@ -115,23 +115,24 @@ struct IMPL {
       for (int ix = 0; ix <= _context._clusterW; ix++) {
         auto job = [this, ix, iy, &depthclusterbase]() {
           int tileindex = iy * _context._clusterW + ix;
+          const uint32_t depthclustersample = depthclusterbase[tileindex];
           for (size_t lightindex = 0; lightindex < _context._pointlights.size(); lightindex++) {
             auto light    = _context._pointlights[lightindex];
             bool overlapx = doRangesOverlap(ix, ix, light->_minX, light->_maxX);
             if (overlapx) {
               bool overlapy = doRangesOverlap(iy, iy, light->_minY, light->_maxY);
               if (overlapy) {
-                uint32_t depthclustersample = depthclusterbase[tileindex];
+                uint32_t depthcluster = depthclustersample;
                 uint32_t bitindex    = 0;
                 bool overlapZ        = false;
-                while (depthclustersample != 0 and (false == overlapZ)) {
-                  bool has_bit = (depthclustersample & 1);
+                while (depthcluster != 0 and (false == overlapZ)) {
+                  bool has_bit = (depthcluster & 1);
                   if (has_bit) {
                     float bitshiftedLO = float(1 << bitindex);
                     float bitshiftedHI = bitshiftedLO + bitshiftedLO;
                     overlapZ |= doRangesOverlap(light->_minZ, light->_maxZ, bitshiftedLO, bitshiftedHI);
                   } // if (has_bit) {
-                  depthclustersample >>= 1;
+                  depthcluster >>= 1;
                   bitindex++;
                 } // while(depthsample)
                 if (overlapZ) {
