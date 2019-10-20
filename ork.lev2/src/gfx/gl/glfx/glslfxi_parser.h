@@ -112,6 +112,18 @@ struct FnParseContext {
   size_t _startIndex = 0;
   const ScannerView& _view;
 };
+
+struct FnMatchResults {
+
+  operator bool () const {
+    return _matched;
+  }
+
+  size_t _start = -1;
+  size_t _end = -1;
+  bool _matched = false;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct StatementNode : public ShaderBodyElement {
@@ -121,10 +133,10 @@ struct StatementNode : public ShaderBodyElement {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct VariableDefinitionNode : public StatementNode {
-  VariableDefinitionNode(ContainerNode* cnode)
+struct VariableDefinitionStatement : public StatementNode {
+  VariableDefinitionStatement(ContainerNode* cnode)
       : StatementNode(cnode) {}
-  static bool match(FnParseContext& ctx);
+  static FnMatchResults match(const FnParseContext& ctx);
   int parse(const ScannerView& view, int start);
   void emit(shaderbuilder::BackEnd& backend) const final;
   AssignmentNode* _assigment = nullptr;
@@ -133,11 +145,22 @@ struct VariableDefinitionNode : public StatementNode {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ReturnNode : public StatementNode {
-  ReturnNode(ContainerNode* cnode)
+struct VariableAssignmentStatement : public StatementNode {
+  VariableAssignmentStatement(ContainerNode* cnode)
+      : StatementNode(cnode) {}
+  static FnMatchResults match(const FnParseContext& ctx);
+  int parse(const ScannerView& view, int start);
+  void emit(shaderbuilder::BackEnd& backend) const final;
+  AssignmentNode* _assigment = nullptr;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ReturnStatement : public StatementNode {
+  ReturnStatement(ContainerNode* cnode)
       : StatementNode(cnode) {}
 
-  static bool match(FnParseContext& ctx);
+  static FnMatchResults match(const FnParseContext& ctx);
   int parse(const ScannerView& view, int start);
   void emit(shaderbuilder::BackEnd& backend) const final;
 
@@ -154,11 +177,11 @@ struct ScopedBlockNode : public ShaderBodyElement {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ForLoopNode : public StatementNode {
-  ForLoopNode(ContainerNode* cnode)
+struct ForLoopStatement : public StatementNode {
+  ForLoopStatement(ContainerNode* cnode)
       : StatementNode(cnode) {}
 
-  static bool match(FnParseContext& ctx);
+  static FnMatchResults match(const FnParseContext& ctx);
   int parse(const ScannerView& view, int start);
   void emit(shaderbuilder::BackEnd& backend) const final;
 
@@ -170,11 +193,11 @@ struct ForLoopNode : public StatementNode {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct WhileLoopNode : public StatementNode {
-  WhileLoopNode(ContainerNode* cnode)
+struct WhileLoopStatement : public StatementNode {
+  WhileLoopStatement(ContainerNode* cnode)
       : StatementNode(cnode) {}
 
-  static bool match(FnParseContext& ctx);
+  static FnMatchResults match(const FnParseContext& ctx);
   int parse(const ScannerView& view, int start);
   void emit(shaderbuilder::BackEnd& backend) const final;
 
@@ -182,6 +205,13 @@ struct WhileLoopNode : public StatementNode {
   ScopedBlockNode* _block = nullptr;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+struct LValue {
+  static FnMatchResults match(const FnParseContext& ctx);
+};
+struct RValue {
+  static FnMatchResults match(const FnParseContext& ctx);
+};
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ElseNode : public ShaderBodyElement {
@@ -205,10 +235,10 @@ struct ElseIfNode : public ShaderBodyElement {
   ScopedBlockNode* _block = nullptr;
 };
 
-struct IfNode : public StatementNode {
-  IfNode(ContainerNode* cnode)
+struct IfStatement : public StatementNode {
+  IfStatement(ContainerNode* cnode)
       : StatementNode(cnode) {}
-  static bool match(FnParseContext& ctx);
+  static FnMatchResults match(const FnParseContext& ctx);
   int parse(const ScannerView& view, int start);
   void emit(shaderbuilder::BackEnd& backend) const final;
 

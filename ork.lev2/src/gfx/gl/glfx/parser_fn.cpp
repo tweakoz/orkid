@@ -29,40 +29,36 @@ int ParsedFunctionNode::parse(const ork::ScannerView& view) {
   auto open_tok = view.token(i++);
   assert(open_tok->text == "{");
   bool done = false;
-  FnParseContext pctx(_container,view);
-  while(not done){
-    auto try_tok = view.token(i)->text;
+  FnParseContext pctx(_container, view);
+  while (not done) {
+    auto try_tok     = view.token(i)->text;
     pctx._startIndex = i;
-    if( IfNode::match(pctx) ){
-      auto subnode = new IfNode(_container);
-      i += subnode->parse(view,i);
+    if (IfStatement::match(pctx)) {
+      auto subnode = new IfStatement(_container);
+      i += subnode->parse(view, i);
       _statements.push_back(subnode);
-    }
-    else if( ForLoopNode::match(pctx) ){
-      auto subnode = new ForLoopNode(_container);
-      i += subnode->parse(view,i);
+    } else if (ForLoopStatement::match(pctx)) {
+      auto subnode = new ForLoopStatement(_container);
+      i += subnode->parse(view, i);
       _statements.push_back(subnode);
-    }
-    else if( WhileLoopNode::match(pctx) ){
-      auto subnode = new WhileLoopNode(_container);
-      i += subnode->parse(view,i);
+    } else if (WhileLoopStatement::match(pctx)) {
+      auto subnode = new WhileLoopStatement(_container);
+      i += subnode->parse(view, i);
       _statements.push_back(subnode);
-    }
-    else if( ReturnNode::match(pctx) ){
-      auto subnode = new ReturnNode(_container);
-      i += subnode->parse(view,i);
+    } else if (ReturnStatement::match(pctx)) {
+      auto subnode = new ReturnStatement(_container);
+      i += subnode->parse(view, i);
       _statements.push_back(subnode);
-    }
-    else {
-      bool valid_dt = _container->validateTypeName(try_tok);
-      if( valid_dt and VariableDefinitionNode::match(pctx) ){ // assignment?
-        auto subnode = new VariableDefinitionNode(_container);
-        i += subnode->parse(view,i);
+    } else if (VariableDefinitionStatement::match(pctx)) {
+      auto subnode = new VariableDefinitionStatement(_container);
+      i += subnode->parse(view, i);
       _statements.push_back(subnode);
-      }
-      else {
-        assert(false);
-      }
+    } else if (VariableAssignmentStatement::match(pctx)) {
+      auto subnode = new VariableAssignmentStatement(_container);
+      i += subnode->parse(view, i);
+      _statements.push_back(subnode);
+    } else {
+      assert(false);
     }
   }
   assert(false);
@@ -79,87 +75,170 @@ void ParsedFunctionNode::emit(ork::lev2::glslfx::shaderbuilder::BackEnd& backend
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ReturnNode::match(FnParseContext& ctx) {
-  return ctx.tokenValue(0) == "return";
+FnMatchResults ReturnStatement::match(const FnParseContext& ctx) {
+  FnMatchResults rval;
+  rval._matched = ctx.tokenValue(0) == "return";
+  return rval;
 }
 
-int ReturnNode::parse(const ScannerView& view, int start) {
+int ReturnStatement::parse(const ScannerView& view, int start) {
   assert(false);
   return 0;
 }
-void ReturnNode::emit(shaderbuilder::BackEnd& backend) const {
+void ReturnStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ForLoopNode::match(FnParseContext& ctx) {
-  return ctx.tokenValue(0) == "for";
+FnMatchResults ForLoopStatement::match(const FnParseContext& ctx) {
+  FnMatchResults rval;
+  rval._matched = ctx.tokenValue(0) == "for";
+  return rval;
 }
 
-int ForLoopNode::parse(const ScannerView& view, int start) {
+int ForLoopStatement::parse(const ScannerView& view, int start) {
   assert(false);
   return 0;
 }
-void ForLoopNode::emit(shaderbuilder::BackEnd& backend) const {
+void ForLoopStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool WhileLoopNode::match(FnParseContext& ctx) {
-  return ctx.tokenValue(0) == "while";
+FnMatchResults WhileLoopStatement::match(const FnParseContext& ctx) {
+  FnMatchResults rval;
+  rval._matched = ctx.tokenValue(0) == "while";
+  return rval;
 }
 
-int WhileLoopNode::parse(const ScannerView& view, int start) {
+int WhileLoopStatement::parse(const ScannerView& view, int start) {
   assert(false);
   return 0;
 }
-void WhileLoopNode::emit(shaderbuilder::BackEnd& backend) const {
+void WhileLoopStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool IfNode::match(FnParseContext& ctx) {
-  return ctx.tokenValue(0) == "if";
+FnMatchResults IfStatement::match(const FnParseContext& ctx) {
+  FnMatchResults rval;
+  rval._matched = ctx.tokenValue(0) == "if";
+  return rval;
 }
 
-int IfNode::parse(const ScannerView& view, int start) {
+int IfStatement::parse(const ScannerView& view, int start) {
   assert(false);
   return 0;
 }
-void IfNode::emit(shaderbuilder::BackEnd& backend) const {
+void IfStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool VariableDefinitionNode::match(FnParseContext& ctx) {
-  int i = 0;
+FnMatchResults VariableDefinitionStatement::match(const FnParseContext& ctx) {
+  FnMatchResults rval;
+  ////////////////////////////////////
+  // check variable instantiation
+  ////////////////////////////////////
+  int i      = 0;
   auto tokDT = ctx.tokenValue(i);
-  if( tokDT == "const" ) {
+  if (tokDT == "const") {
     tokDT = ctx.tokenValue(++i);
   }
   bool valid_dt = ctx._container->validateTypeName(tokDT);
-  auto tokN = ctx.tokenValue(i+1);
+  auto tokN     = ctx.tokenValue(i + 1);
   bool valid_id = ctx._container->validateIdentifierName(tokN);
-  auto tokE = ctx.tokenValue(i+2);
-  return valid_dt and valid_id and (tokE=="=");
+  auto tokE     = ctx.tokenValue(i + 2);
+  bool instantiation_ok = valid_dt and valid_id and (tokE == "=");
+  if( false == instantiation_ok )
+    return rval;
+  ////////////////////////////////////
+  // check assignment
+  ////////////////////////////////////
+  FnParseContext lctx = ctx;
+  lctx._startIndex = i+1;
+  auto matchlv = LValue::match(ctx);
+  if( matchlv ){
+    auto try_eq = ctx.tokenValue(matchlv._end+1);
+    if( try_eq=="="){
+      FnParseContext rctx = ctx;
+      rctx._startIndex = matchlv._end+2;
+      auto matchrv = RValue::match(ctx);
+      if( matchrv ) {
+        rval._matched = true;
+        rval._start = ctx._startIndex;
+        rval._end = matchrv._end;
+      }
+    }
+  }
+  ////////////////////////////////////
+  return rval;
 }
 
-int VariableDefinitionNode::parse(const ScannerView& view, int start) {
+int VariableDefinitionStatement::parse(const ScannerView& view, int start) {
   assert(false);
   return 0;
 }
-void VariableDefinitionNode::emit(shaderbuilder::BackEnd& backend) const {
+void VariableDefinitionStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
 
-std::string FnParseContext::tokenValue(size_t offset) const {
-  return _view.token(_startIndex+offset)->text;
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+FnMatchResults VariableAssignmentStatement::match(const FnParseContext& ctx) {
+  FnMatchResults rval;
+  auto matchlv = LValue::match(ctx);
+  if( matchlv ){
+    auto try_eq = ctx.tokenValue(matchlv._end+1);
+    if( try_eq=="="){
+      FnParseContext rctx = ctx;
+      rctx._startIndex = matchlv._end+2;
+      auto matchrv = RValue::match(ctx);
+      if( matchrv ) {
+        rval._matched = true;
+        rval._start = ctx._startIndex;
+        rval._end = matchrv._end;
+      }
+    }
+  }
+  return rval;
+}
+
+int VariableAssignmentStatement::parse(const ScannerView& view, int start) {
+  assert(false);
+  return 0;
+}
+void VariableAssignmentStatement::emit(shaderbuilder::BackEnd& backend) const {
+  assert(false);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::glslfx {
+
+FnMatchResults LValue::match(const FnParseContext& ctx) {
+  FnMatchResults rval;
+  assert(false);
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+FnMatchResults RValue::match(const FnParseContext& ctx) {
+  FnMatchResults rval;
+  assert(false);
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+std::string FnParseContext::tokenValue(size_t offset) const {
+  return _view.token(_startIndex + offset)->text;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+} // namespace ork::lev2::glslfx
 /////////////////////////////////////////////////////////////////////////////////////////////////
