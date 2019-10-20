@@ -32,7 +32,10 @@ void StructNode::pregen(shaderbuilder::BackEnd& backend) {}
 
 void StructNode::emit(shaderbuilder::BackEnd& backend) const {
   auto& codegen = backend._codegen;
-  codegen.formatLine("{");
+  if( _emitstructandname )
+    codegen.formatLine("struct %s {", _name->text.c_str() );
+  else
+    codegen.formatLine("{");
   codegen.incIndent();
   for (auto m : _members) {
     codegen.beginLine();
@@ -45,7 +48,11 @@ void StructNode::emit(shaderbuilder::BackEnd& backend) const {
     codegen.endLine();
   }
   codegen.decIndent();
-  codegen.formatLine("}");
+  codegen.beginLine();
+  codegen.output("}");
+  if( _emitstructandname )
+    codegen.output(";");
+  codegen.endLine();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

@@ -18,7 +18,7 @@
 namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ShaderBody::parse(const ScannerView& view) {
+int ShaderBody::parse(const ScannerView& view) {
   ShaderLine* out_line = nullptr;
   int ist              = view._start + 1;
   int ien              = view._end - 1;
@@ -49,6 +49,7 @@ void ShaderBody::parse(const ScannerView& view) {
       indent--;
     ////////////////////////
   }
+  return ien;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

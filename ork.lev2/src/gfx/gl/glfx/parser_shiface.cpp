@@ -159,6 +159,7 @@ void InterfaceNode::parseIos(const ScannerView& view, IoContainerNode* ioc) {
     if (is_struct) {
       ScannerView structview(view, i);
       io->_inlineStruct = new StructNode(_container);
+      io->_inlineStruct->_emitstructandname = false;
       i += io->_inlineStruct->parse(structview);
     }
 

@@ -39,7 +39,9 @@ ContainerNode::ContainerNode(const AssetPath& pth, const Scanner& s)
     , _scanner(s) {
 
   std::string typenames = "mat2 mat3 mat4 vec2 vec3 vec4 "
+                          "ivec2 ivec3 ivec4 "
                           "float double half uint int "
+                          "void bool "
 #if !defined(__APPLE__)
                           "int8_t int16_t int32_t int64_t "
                           "uint8_t uint16_t uint32_t uint64_t "
@@ -77,7 +79,7 @@ bool ContainerNode::validateTypeName(const std::string typeName) const {
   return (it != _validTypeNames.end());
 }
 ///////////////////////////////////////////////////////////
-bool ContainerNode::validateMemberName(const std::string typeName) const { return true; }
+bool ContainerNode::validateIdentifierName(const std::string typeName) const { return true; }
 ///////////////////////////////////////////////////////////
 bool ContainerNode::isIoAttrDecorator(const std::string typeName) const {
   auto it = _validOutputDecorators.find(typeName);
@@ -115,7 +117,7 @@ void DecoBlockNode::parse(const ScannerView& view) {
       extnode->_extension = extname;
       _requiredExtensions.push_back(extnode);
     } else {
-      bool name_ok = _container->validateMemberName(decoref);
+      bool name_ok = _container->validateIdentifierName(decoref);
       auto it      = _decodupecheck.find(decoref);
       assert(it == _decodupecheck.end() or decoref == "extension");
       _decodupecheck.insert(decoref);
@@ -315,6 +317,17 @@ void ContainerNode::generate(shaderbuilder::BackEnd& backend) const {
   for (auto item : nodes)
     item->generate(backend);
 }
+
+void ContainerNode::addStructType(StructNode*snode) {
+  auto name = snode->_name->text;
+  auto it = _structTypes.find(name);
+  assert(it==_structTypes.end());
+  auto it2 = _validTypeNames.find(name);
+  assert(it2==_validTypeNames.end());
+  _structTypes[name]=snode;
+  _validTypeNames.insert(name);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 

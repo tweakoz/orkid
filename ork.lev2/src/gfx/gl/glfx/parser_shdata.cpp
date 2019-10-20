@@ -65,7 +65,7 @@ void ShaderDataNode::parse(const ScannerView& view) {
       _dupenamecheck.insert(nam_tok->text);
 
       bool typeok = _container->validateTypeName(dt_tok->text);
-      bool nameok = _container->validateMemberName(nam_tok->text);
+      bool nameok = _container->validateIdentifierName(nam_tok->text);
 
       auto unidecl       = new UniformDeclNode;
       unidecl->_name     = nam_tok->text;

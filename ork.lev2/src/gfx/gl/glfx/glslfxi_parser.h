@@ -162,6 +162,22 @@ struct DecoBlockNode : public NamedBlockNode {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct ShaderLine {
+  int _indent = 0;
+  std::vector<const Token*> _tokens;
+};
+typedef std::vector<ShaderLine*> linevect_t;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ShaderBody {
+  linevect_t _lines;
+  int parse(const ScannerView& view);
+  void emit(shaderbuilder::BackEnd& backend) const;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct StructMemberNode : public AstNode {
   const Token* _type = nullptr;
   const Token* _name = nullptr;
@@ -178,6 +194,32 @@ struct StructNode : public AstNode {
   void emit(shaderbuilder::BackEnd& backend) const;
   std::vector<StructMemberNode*> _members;
   const Token* _name = nullptr;
+  bool _emitstructandname = true;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct FunctionArgumentNode : public AstNode {
+  FunctionArgumentNode(ContainerNode* cnode)
+      : AstNode(cnode) {}
+  const Token* _type = nullptr;
+  const Token* _name = nullptr;
+  const Token* _direction = nullptr;
+  int _arraySize = 0;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct FunctionNode : public AstNode {
+  FunctionNode(ContainerNode* cnode)
+      : AstNode(cnode) {}
+  void pregen(shaderbuilder::BackEnd& backend) final;
+  int parse(const ScannerView& view);
+  void emit(shaderbuilder::BackEnd& backend) const;
+  const Token* _name = nullptr;
+  std::vector<FunctionArgumentNode*> _arguments;
+  const Token* _returnType = nullptr;
+  ShaderBody _body;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -286,17 +328,6 @@ struct InterfaceNode : public DecoBlockNode {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-struct ShaderLine {
-  int _indent = 0;
-  std::vector<const Token*> _tokens;
-};
-typedef std::vector<ShaderLine*> linevect_t;
-struct ShaderBody {
-  linevect_t _lines;
-  void parse(const ScannerView& view);
-  void emit(shaderbuilder::BackEnd& backend) const;
-};
 
 struct ShaderNode : public DecoBlockNode {
   explicit ShaderNode(ContainerNode* cnode)
@@ -451,12 +482,6 @@ struct UniformBlockNode : public ShaderDataNode {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct LibraryStructNode : public AstNode {
-  std::vector<LibraryStructMemberNode*> _memberNodes;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct LibraryBlockNode : public DecoBlockNode {
   explicit LibraryBlockNode(ContainerNode* cnode)
       : DecoBlockNode(cnode) {}
@@ -464,7 +489,9 @@ struct LibraryBlockNode : public DecoBlockNode {
   void pregen(shaderbuilder::BackEnd& backend) final;
   void generate(shaderbuilder::BackEnd& backend) const;
   void emit(shaderbuilder::BackEnd& backend) const;
-  ShaderBody _body;
+  //ShaderBody _body;
+
+  std::vector<svarp_t> _children;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -477,7 +504,7 @@ struct ContainerNode : public AstNode {
   void parse();
 
   bool validateTypeName(const std::string typeName) const;
-  bool validateMemberName(const std::string typeName) const;
+  bool validateIdentifierName(const std::string typeName) const;
   bool isIoAttrDecorator(const std::string typeName) const;
 
   typedef std::vector<AstNode*> nodevect_t;
@@ -487,6 +514,7 @@ struct ContainerNode : public AstNode {
   template <typename T> void collectNodesOfType(nodevect_t& outnvect) const;
   void generate(shaderbuilder::BackEnd& backend) const final;
 
+  void addStructType(StructNode*snode);
   nodevect_t collectAllNodes() const;
 
   int itokidx = 0;
@@ -504,6 +532,7 @@ struct ContainerNode : public AstNode {
 
   std::set<std::string> _validTypeNames;
   std::set<std::string> _validOutputDecorators;
+  std::map<std::string,StructNode*> _structTypes;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
