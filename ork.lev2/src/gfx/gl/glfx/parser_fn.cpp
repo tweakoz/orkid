@@ -33,30 +33,14 @@ int ParsedFunctionNode::parse(const ork::ScannerView& view) {
   while (not done) {
     auto try_tok     = view.token(i)->text;
     pctx._startIndex = i;
-    if (auto m = IfStatement::match(pctx)) {
-      auto subnode = new IfStatement(_container);
-      i += subnode->parse(pctx,m);
-      _statements.push_back(subnode);
-    } else if (auto m = ForLoopStatement::match(pctx)) {
-      auto subnode = new ForLoopStatement(_container);
-      i += subnode->parse(pctx,m);
-      _statements.push_back(subnode);
-    } else if (auto m = WhileLoopStatement::match(pctx)) {
-      auto subnode = new WhileLoopStatement(_container);
-      i += subnode->parse(pctx,m);
-      _statements.push_back(subnode);
-    } else if (auto m = ReturnStatement::match(pctx)) {
-      auto subnode = new ReturnStatement(_container);
-      i += subnode->parse(pctx,m);
-      _statements.push_back(subnode);
-    } else if (auto m = VariableDefinitionStatement::match(pctx)) {
-      auto subnode = new VariableDefinitionStatement(_container);
-      i += subnode->parse(pctx,m);
-      _statements.push_back(subnode);
-    } else if (auto m = VariableAssignmentStatement::match(pctx)) {
-      auto subnode = new VariableAssignmentStatement(_container);
-      i += subnode->parse(pctx,m);
-      _statements.push_back(subnode);
+    if (auto m = VariableDeclaration::match(pctx)) {
+      auto parsed = m.parse();
+      i += parsed._numtokens;
+      _elements.push_back(parsed._node);
+    } else if (auto m = CompoundStatement::match(pctx)) {
+      auto parsed = m.parse();
+      i += parsed._numtokens;
+      _elements.push_back(parsed._node);
     } else {
       assert(false);
     }
@@ -70,12 +54,14 @@ int ParsedFunctionNode::parse(const ork::ScannerView& view) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ParsedFunctionNode::emit(ork::lev2::glslfx::shaderbuilder::BackEnd& backend) const {
+  for( auto elem : _elements )
+    elem->emit(backend);
   assert(false); // not implemented yet...
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-FnMatchResults ReturnStatement::match(const FnParseContext& ctx) {
+/*FnMatchResults ReturnStatement::match(const FnParseContext& ctx) {
   FnMatchResults rval;
   rval._matched = ctx.tokenValue(0) == "return";
   return rval;
@@ -135,10 +121,46 @@ int IfStatement::parse(const FnParseContext& ctx, const FnMatchResults& r) {
 }
 void IfStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
-}
+}*/
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+VariableDeclaration::match_t VariableDeclaration::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  ////////////////////////////////////
+  // check variable instantiation
+  ////////////////////////////////////
+  int i      = 0;
+  auto tokDT = ctx.tokenValue(i);
+  if (tokDT == "const") {
+    tokDT = ctx.tokenValue(++i);
+  }
+  bool valid_dt         = ctx._container->validateTypeName(tokDT);
+  auto tokN             = ctx.tokenValue(i + 1);
+  bool valid_id         = ctx._container->validateIdentifierName(tokN);
+  auto tokE             = ctx.tokenValue(i + 2);
+  bool instantiation_ok = valid_dt and valid_id and (tokE == ";");
+  ////////////////////////////////////
+  if( instantiation_ok ) {
+    rval._matched = true;
+    rval._start   = ctx._startIndex;
+    rval._count     = i + 2;
+    assert(false);
+  }
+  return rval;
+}
+
+VariableDeclaration::parsed_t VariableDeclaration::parse(const match_t& m) {
+  parsed_t rval;
+  assert(false);
+  return rval;
+}
+void VariableDeclaration::emit(shaderbuilder::BackEnd& backend) const {
+  assert(false);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+/*
 FnMatchResults VariableDefinitionStatement::match(const FnParseContext& ctx) {
   FnMatchResults rval;
   ////////////////////////////////////
@@ -185,10 +207,10 @@ int VariableDefinitionStatement::parse(const FnParseContext& ctx, const FnMatchR
 }
 void VariableDefinitionStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
-}
+}*/
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-
+/*
 FnMatchResults VariableAssignmentStatement::match(const FnParseContext& ctx) {
   FnMatchResults rval;
   auto matchlv = LValue::match(ctx);
@@ -215,21 +237,120 @@ int VariableAssignmentStatement::parse(const FnParseContext& ctx, const FnMatchR
 void VariableAssignmentStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
+*/
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-FnMatchResults LValue::match(const FnParseContext& ctx) {
-  FnMatchResults rval;
+ExpressionNode::match_t ExpressionNode::match(FnParseContext ctx) {
+  match_t rval(ctx);
   assert(false);
   return rval;
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-FnMatchResults RValue::match(const FnParseContext& ctx) {
-  FnMatchResults rval;
+ExpressionNode::parsed_t ExpressionNode::parse(const match_t& match) {
+  parsed_t rval;
   assert(false);
   return rval;
+}
+//void ExpressionNode::emit(shaderbuilder::BackEnd& backend) const {
+  //assert(false);
+//}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+DeclarationList::match_t DeclarationList::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  assert(false);
+  return rval;
+}
+DeclarationList::parsed_t DeclarationList::parse(const match_t& match) {
+  parsed_t rval;
+  return rval;
+}
+void DeclarationList::emit(shaderbuilder::BackEnd& backend) const {
+    for( auto c : _children )
+        c->emit(backend);
+    assert(false);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+Statement::match_t Statement::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  assert(false);
+  return rval;
+}
+
+Statement::parsed_t Statement::parse(const match_t& match) {
+  parsed_t rval;
+  assert(false);
+  return rval;
+}
+void Statement::emit(shaderbuilder::BackEnd& backend) const {
+  assert(false);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+StatementList::match_t StatementList::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  assert(false);
+  return rval;
+}
+
+StatementList::parsed_t StatementList::parse(const match_t& match) {
+  parsed_t rval;
+  assert(false);
+  return rval;
+}
+void StatementList::emit(shaderbuilder::BackEnd& backend) const {
+  assert(false);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+CompoundStatement::match_t CompoundStatement::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  int i = 0;
+  if( ctx.tokenValue(i++) != "{" )
+    return rval;
+  ////////////////////////////////////
+  ctx._startIndex++; // consume {
+  ////////////////////////////////////
+  if( auto mdl = DeclarationList::match(ctx) ){
+    if( ctx.tokenValue(mdl._count) == "}" ){
+      rval._matched = true;
+      rval._count = mdl._count;
+      rval._count++; // consume }
+      rval._start = mdl._start;
+      assert(false);
+    }
+    else {
+      ctx = mdl.consume(); // consume mdl
+    }
+  }
+  ////////////////////////////////////
+  if( auto msl = StatementList::match(ctx)){
+    if( ctx.tokenValue(msl._count) == "}" ){
+      rval._matched = true;
+      rval._count = msl._count;
+      rval._start = msl._start;
+      assert(false);
+    }
+    assert(false);
+  }
+  ////////////////////////////////////
+  assert(false);
+  return rval;
+}
+
+CompoundStatement::parsed_t CompoundStatement::parse(const match_t& match) {
+  parsed_t rval;
+  assert(false);
+  return rval;
+}
+void CompoundStatement::emit(shaderbuilder::BackEnd& backend) const {
+  assert(false);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

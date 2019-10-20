@@ -53,12 +53,79 @@ struct BackEnd {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct FnParseContext {
+  FnParseContext(ContainerNode* c, const ScannerView& v)
+      : _container(c)
+      , _view(v) {
+  }
+  FnParseContext(const FnParseContext&oth)
+    : _container(oth._container)
+    , _view(oth._view)
+    , _startIndex(oth._startIndex){
+
+  }
+  FnParseContext operator = (const FnParseContext&oth){
+    FnParseContext rval(oth._container,oth._view);
+    rval._startIndex = oth._startIndex;
+    return rval;
+  }
+  std::string tokenValue(size_t offset) const;
+
+  ContainerNode* _container = nullptr;
+  size_t _startIndex = 0;
+  const ScannerView& _view;
+};
+
+struct FnMatchResultsBas {
+
+  FnMatchResultsBas(FnParseContext ctx)
+      : _ctx(ctx) {
+  }
+  operator bool() const {
+    return _matched;
+  }
+
+  size_t _start = -1;
+  size_t _count   = -1;
+  bool _matched = false;
+  FnParseContext _ctx;
+};
+
+template <typename T> struct FnMatchResults : public FnMatchResultsBas {
+
+  FnMatchResults(FnParseContext ctx)
+      : FnMatchResultsBas(ctx) {
+  }
+
+  struct ParseResult {
+    size_t _numtokens = 0;
+    T* _node          = nullptr;
+  };
+
+  ParseResult parse() {
+    return T::parse(*this);
+  }
+
+  FnParseContext consume() const {
+    assert(_matched);
+    FnParseContext rval = _ctx;
+    rval._startIndex += _count;
+    return rval;
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct AstNode {
   AstNode(ContainerNode* cnode = nullptr)
-      : _container(cnode) {}
-  virtual ~AstNode() {}
-  virtual void generate(shaderbuilder::BackEnd& backend) const {}
-  virtual void pregen(shaderbuilder::BackEnd& backend) {}
+      : _container(cnode) {
+  }
+  virtual ~AstNode() {
+  }
+  virtual void generate(shaderbuilder::BackEnd& backend) const {
+  }
+  virtual void pregen(shaderbuilder::BackEnd& backend) {
+  }
   ContainerNode* _container;
 };
 
@@ -66,198 +133,219 @@ struct AstNode {
 
 struct ShaderBodyElement : public AstNode {
   ShaderBodyElement(ContainerNode* cnode)
-      : AstNode(cnode) {}
+      : AstNode(cnode) {
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ShaderEmittable : public AstNode {
+  ShaderEmittable(ContainerNode* cnode)
+      : AstNode(cnode) {
+  }
   virtual void emit(shaderbuilder::BackEnd& backend) const = 0;
 };
+
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ConstantNode : public ShaderBodyElement {
-  ConstantNode(ContainerNode* cnode)
-      : ShaderBodyElement(cnode) {}
-  void emit(shaderbuilder::BackEnd& backend) const final;
+struct FnElement : public ShaderEmittable {
+  FnElement(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct VariableReferenceNode : public ShaderBodyElement {
-  VariableReferenceNode(ContainerNode* cnode)
-      : ShaderBodyElement(cnode) {}
-  void emit(shaderbuilder::BackEnd& backend) const final;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct ExpressionNode : public ShaderBodyElement {
-  ExpressionNode(ContainerNode* cnode)
-      : ShaderBodyElement(cnode) {}
-  void emit(shaderbuilder::BackEnd& backend) const final;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct AssignmentNode : public ShaderBodyElement {
-  AssignmentNode(ContainerNode* cnode)
-      : ShaderBodyElement(cnode) {}
-  void emit(shaderbuilder::BackEnd& backend) const final;
-  VariableReferenceNode* _lvalue = nullptr;
-  ExpressionNode* _rvalue;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct FnParseContext {
-  FnParseContext(ContainerNode* c,const ScannerView&v):_container(c),_view(v){}
-  ContainerNode* _container = nullptr;
-  std::string tokenValue(size_t offset) const;
-  size_t _startIndex = 0;
-  const ScannerView& _view;
-};
-
-struct FnMatchResults {
-
-  operator bool () const {
-    return _matched;
+struct VariableDeclaration : public FnElement {
+  VariableDeclaration(ContainerNode* cnode)
+      : FnElement(cnode) {
   }
 
-  size_t _start = -1;
-  size_t _end = -1;
-  bool _matched = false;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct StatementNode : public ShaderBodyElement {
-  StatementNode(ContainerNode* cnode)
-      : ShaderBodyElement(cnode) {}
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct VariableDefinitionStatement : public StatementNode {
-  VariableDefinitionStatement(ContainerNode* cnode)
-      : StatementNode(cnode) {}
-  static FnMatchResults match(const FnParseContext& ctx);
-  int parse(const FnParseContext& ctx, const FnMatchResults& r);
+  typedef FnMatchResults<VariableDeclaration> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(FnParseContext ctx);
+  static parsed_t parse(const match_t& match);
   void emit(shaderbuilder::BackEnd& backend) const final;
-  AssignmentNode* _assigment = nullptr;
-  std::set<const Token*> _qualifiers;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct VariableAssignmentStatement : public StatementNode {
-  VariableAssignmentStatement(ContainerNode* cnode)
-      : StatementNode(cnode) {}
-  static FnMatchResults match(const FnParseContext& ctx);
-  int parse(const FnParseContext& ctx, const FnMatchResults& r);
+struct DeclarationList : public ShaderEmittable {
+  DeclarationList(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+  typedef FnMatchResults<DeclarationList> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(FnParseContext ctx);
+  static parsed_t parse(const match_t& match);
   void emit(shaderbuilder::BackEnd& backend) const final;
-  AssignmentNode* _assigment = nullptr;
+
+  std::vector<VariableDeclaration*> _children;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct ExpressionNode : public ShaderEmittable {
+  ExpressionNode(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+
+  typedef FnMatchResults<ExpressionNode> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(FnParseContext ctx);
+  static parsed_t parse(const match_t& match);
+
+  std::vector<ShaderBodyElement*> _children;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+struct Statement : public ShaderEmittable {
+  Statement(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+  typedef FnMatchResults<Statement> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(FnParseContext ctx);
+  static parsed_t parse(const match_t& match);
+  void emit(shaderbuilder::BackEnd& backend) const final;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct StatementList : public ShaderEmittable {
+  StatementList(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+  typedef FnMatchResults<StatementList> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(FnParseContext ctx);
+  static parsed_t parse(const match_t& match);
+  void emit(shaderbuilder::BackEnd& backend) const final;
+
+  std::vector<Statement*> _children;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct CompoundStatement : public FnElement {
+  CompoundStatement(ContainerNode* cnode)
+      : FnElement(cnode) {
+  }
+
+  typedef FnMatchResults<CompoundStatement> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(FnParseContext ctx);
+  static parsed_t parse(const match_t& match);
+  void emit(shaderbuilder::BackEnd& backend) const final;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct IterationStatement : public ShaderEmittable {
+  IterationStatement(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/*
 struct ReturnStatement : public StatementNode {
   ReturnStatement(ContainerNode* cnode)
       : StatementNode(cnode) {}
 
-  static FnMatchResults match(const FnParseContext& ctx);
-  int parse(const FnParseContext& ctx, const FnMatchResults& r);
+  typedef FnMatchResults<ReturnStatement> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(const FnParseContext& ctx);
+  static parsed_t parse(const match_t& match);
   void emit(shaderbuilder::BackEnd& backend) const final;
 
   ExpressionNode* _returnValue = nullptr;
 };
+*/
 
 ///////////////////////////////////////////////////////////////////////////////
-
-struct ScopedBlockNode : public ShaderBodyElement {
-  ScopedBlockNode(ContainerNode* cnode)
-      : ShaderBodyElement(cnode) {}
-  void emit(shaderbuilder::BackEnd& backend) const final;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct ForLoopStatement : public StatementNode {
+/*
+struct ForLoopStatement : public IterationStatement {
   ForLoopStatement(ContainerNode* cnode)
-      : StatementNode(cnode) {}
+      : IterationStatement(cnode) {}
 
-  static FnMatchResults match(const FnParseContext& ctx);
-  int parse(const FnParseContext& ctx, const FnMatchResults& r);
-  void emit(shaderbuilder::BackEnd& backend) const final;
+  typedef FnMatchResults<ForLoopStatement> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(const FnParseContext& ctx);
+  static parsed_t parse(const match_t& match);
 
   const Token* _variable = nullptr;
   ExpressionNode* _condition = nullptr;
   AssignmentNode* _advance = nullptr;
-  ScopedBlockNode* _block = nullptr;
-};
+};*/
 
 ///////////////////////////////////////////////////////////////////////////////
-
-struct WhileLoopStatement : public StatementNode {
+/*
+struct WhileLoopStatement : public IterationStatement {
   WhileLoopStatement(ContainerNode* cnode)
-      : StatementNode(cnode) {}
+      : IterationStatement(cnode) {}
 
-  static FnMatchResults match(const FnParseContext& ctx);
-  int parse(const FnParseContext& ctx, const FnMatchResults& r);
+  typedef FnMatchResults<WhileLoopStatement> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(const FnParseContext& ctx);
+  static parsed_t parse(const match_t& match);
   void emit(shaderbuilder::BackEnd& backend) const final;
 
   ExpressionNode* _condition = nullptr;
-  ScopedBlockNode* _block = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-struct LValue {
-  static FnMatchResults match(const FnParseContext& ctx);
-};
-struct RValue {
-  static FnMatchResults match(const FnParseContext& ctx);
-};
-///////////////////////////////////////////////////////////////////////////////
 
-struct ElseNode : public ShaderBodyElement {
+struct ElseNode : public ShaderEmittable {
   ElseNode(ContainerNode* cnode)
-      : ShaderBodyElement(cnode) {}
+      : ShaderEmittable(cnode) {}
 
-  int parse(const FnParseContext& ctx, const FnMatchResults& r);
+  typedef FnMatchResults<ElseNode> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(const FnParseContext& ctx);
+  static parsed_t parse(const match_t& match);
   void emit(shaderbuilder::BackEnd& backend) const final;
 
-  ScopedBlockNode* _block = nullptr;
 };
 
-struct ElseIfNode : public ShaderBodyElement {
+struct ElseIfNode : public ShaderEmittable {
   ElseIfNode(ContainerNode* cnode)
-      : ShaderBodyElement(cnode) {}
+      : ShaderEmittable(cnode) {}
 
-  int parse(const FnParseContext& ctx, const FnMatchResults& r);
+  typedef FnMatchResults<ElseIfNode> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(const FnParseContext& ctx);
+  static parsed_t parse(const match_t& match);
   void emit(shaderbuilder::BackEnd& backend) const final;
 
   ExpressionNode* _condition = nullptr;
-  ScopedBlockNode* _block = nullptr;
 };
 
 struct IfStatement : public StatementNode {
   IfStatement(ContainerNode* cnode)
       : StatementNode(cnode) {}
-  static FnMatchResults match(const FnParseContext& ctx);
-  int parse(const FnParseContext& ctx, const FnMatchResults& r);
+  typedef FnMatchResults<IfStatement> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(const FnParseContext& ctx);
+  static parsed_t parse(const match_t& match);
   void emit(shaderbuilder::BackEnd& backend) const final;
 
   ExpressionNode* _condition = nullptr;
-  ScopedBlockNode* _block = nullptr;
   std::vector<ElseIfNode*> _elseifs;
   ElseNode* _elseNode = nullptr;
 };
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ParsedFunctionNode : public AstNode {
   ParsedFunctionNode(ContainerNode* cnode)
-      : AstNode(cnode) {}
+      : AstNode(cnode) {
+  }
 
   int parse(const ScannerView& view);
   void emit(shaderbuilder::BackEnd& backend) const;
 
-  std::vector<StatementNode*> _statements;
+  std::vector<FnElement*> _elements;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -272,7 +360,8 @@ struct LibraryStructMemberNode : public AstNode {
 struct NamedBlockNode : public AstNode {
 
   NamedBlockNode(ContainerNode* cnode)
-      : AstNode(cnode) {}
+      : AstNode(cnode) {
+  }
 
   void parse(const ScannerView& view);
 
@@ -287,7 +376,8 @@ struct NamedBlockNode : public AstNode {
 
 struct ConfigNode : public NamedBlockNode {
   ConfigNode(ContainerNode* cnode)
-      : NamedBlockNode(cnode) {}
+      : NamedBlockNode(cnode) {
+  }
 
   std::string _name;
   std::vector<GlSlFxParser*> _imports;
@@ -300,7 +390,8 @@ struct ConfigNode : public NamedBlockNode {
 
 struct RequiredExtensionNode : public AstNode {
   RequiredExtensionNode(ContainerNode* c)
-      : AstNode(c) {}
+      : AstNode(c) {
+  }
   void emit(shaderbuilder::BackEnd& backend);
   std::string _extension;
 };
@@ -310,12 +401,15 @@ struct RequiredExtensionNode : public AstNode {
 struct DecoBlockNode : public NamedBlockNode {
 
   DecoBlockNode(ContainerNode* cnode)
-      : NamedBlockNode(cnode) {}
+      : NamedBlockNode(cnode) {
+  }
 
   void parse(const ScannerView& view);
   void _pregen(shaderbuilder::BackEnd& backend);
   void _emit(shaderbuilder::BackEnd& backend) const;
-  virtual void emit(shaderbuilder::BackEnd& backend) const { _emit(backend); }
+  virtual void emit(shaderbuilder::BackEnd& backend) const {
+    _emit(backend);
+  }
 
   std::vector<RequiredExtensionNode*> _requiredExtensions;
 
@@ -347,19 +441,20 @@ struct ShaderBody {
 struct StructMemberNode : public AstNode {
   const Token* _type = nullptr;
   const Token* _name = nullptr;
-  int _arraySize = 0;
+  int _arraySize     = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct StructNode : public AstNode {
   StructNode(ContainerNode* cnode)
-      : AstNode(cnode) {}
+      : AstNode(cnode) {
+  }
   void pregen(shaderbuilder::BackEnd& backend) final;
   int parse(const ScannerView& view);
   void emit(shaderbuilder::BackEnd& backend) const;
   std::vector<StructMemberNode*> _members;
-  const Token* _name = nullptr;
+  const Token* _name      = nullptr;
   bool _emitstructandname = true;
 };
 
@@ -367,18 +462,20 @@ struct StructNode : public AstNode {
 
 struct FunctionArgumentNode : public AstNode {
   FunctionArgumentNode(ContainerNode* cnode)
-      : AstNode(cnode) {}
-  const Token* _type = nullptr;
-  const Token* _name = nullptr;
+      : AstNode(cnode) {
+  }
+  const Token* _type      = nullptr;
+  const Token* _name      = nullptr;
   const Token* _direction = nullptr;
-  int _arraySize = 0;
+  int _arraySize          = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FunctionNode : public AstNode {
   FunctionNode(ContainerNode* cnode)
-      : AstNode(cnode) {}
+      : AstNode(cnode) {
+  }
   void pregen(shaderbuilder::BackEnd& backend) final;
   int parse(const ScannerView& view);
   void emit(shaderbuilder::BackEnd& backend) const;
@@ -394,7 +491,8 @@ struct FunctionNode : public AstNode {
 
 struct PassNode : public NamedBlockNode {
   PassNode(ContainerNode* cnode)
-      : NamedBlockNode(cnode) {}
+      : NamedBlockNode(cnode) {
+  }
 
   void generate(shaderbuilder::BackEnd& backend) const final;
 
@@ -414,7 +512,8 @@ struct PassNode : public NamedBlockNode {
 
 struct TechniqueNode : public DecoBlockNode {
   TechniqueNode(ContainerNode* cnode)
-      : DecoBlockNode(cnode) {}
+      : DecoBlockNode(cnode) {
+  }
   void parse(const ScannerView& view);
   void generate(shaderbuilder::BackEnd& backend) const final;
   std::string _fxconfig;
@@ -425,7 +524,8 @@ struct TechniqueNode : public DecoBlockNode {
 
 struct InterfaceLayoutNode : public AstNode {
   InterfaceLayoutNode(ContainerNode* cnode)
-      : AstNode(cnode) {}
+      : AstNode(cnode) {
+  }
   int parse(const ScannerView& view);
   void pregen(shaderbuilder::BackEnd& backend) final;
   void emit(shaderbuilder::BackEnd& backend);
@@ -436,7 +536,8 @@ struct InterfaceLayoutNode : public AstNode {
 
 struct InterfaceIoNode : public AstNode {
   InterfaceIoNode(ContainerNode* cnode)
-      : AstNode(cnode) {}
+      : AstNode(cnode) {
+  }
 
   void pregen(shaderbuilder::BackEnd& backend) final;
 
@@ -456,7 +557,8 @@ typedef std::vector<InterfaceIoNode*> ionodevect_t;
 struct IoContainerNode : public AstNode {
 
   IoContainerNode(ContainerNode* c)
-      : AstNode(c) {}
+      : AstNode(c) {
+  }
 
   void pregen(shaderbuilder::BackEnd& backend) final;
   void emit(shaderbuilder::BackEnd& backend) const;
@@ -499,7 +601,8 @@ struct InterfaceNode : public DecoBlockNode {
 
 struct ShaderNode : public DecoBlockNode {
   explicit ShaderNode(ContainerNode* cnode)
-      : DecoBlockNode(cnode) {}
+      : DecoBlockNode(cnode) {
+  }
   void pregen(shaderbuilder::BackEnd& backend) final;
   void parse(const ScannerView& view);
   void _generateCommon(shaderbuilder::BackEnd& backend) const;
@@ -510,7 +613,8 @@ struct ShaderNode : public DecoBlockNode {
 
 struct StateBlockNode : public DecoBlockNode {
   explicit StateBlockNode(ContainerNode* cnode)
-      : DecoBlockNode(cnode) {}
+      : DecoBlockNode(cnode) {
+  }
   void parse(const ScannerView& view);
   void generate(shaderbuilder::BackEnd& backend) const final;
   std::string _culltest;
@@ -521,28 +625,33 @@ struct StateBlockNode : public DecoBlockNode {
 
 struct VertexShaderNode : public ShaderNode {
   explicit VertexShaderNode(ContainerNode* cnode)
-      : ShaderNode(cnode) {}
+      : ShaderNode(cnode) {
+  }
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 
 struct FragmentShaderNode : public ShaderNode {
   explicit FragmentShaderNode(ContainerNode* cnode)
-      : ShaderNode(cnode) {}
+      : ShaderNode(cnode) {
+  }
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct TessCtrlShaderNode : public ShaderNode {
   explicit TessCtrlShaderNode(ContainerNode* cnode)
-      : ShaderNode(cnode) {}
+      : ShaderNode(cnode) {
+  }
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct TessEvalShaderNode : public ShaderNode {
   explicit TessEvalShaderNode(ContainerNode* cnode)
-      : ShaderNode(cnode) {}
+      : ShaderNode(cnode) {
+  }
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct GeometryShaderNode : public ShaderNode {
   explicit GeometryShaderNode(ContainerNode* cnode)
-      : ShaderNode(cnode) {}
+      : ShaderNode(cnode) {
+  }
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 
@@ -550,39 +659,46 @@ struct GeometryShaderNode : public ShaderNode {
 
 struct VertexInterfaceNode : public InterfaceNode {
   explicit VertexInterfaceNode(ContainerNode* cnode)
-      : InterfaceNode(cnode, GL_VERTEX_SHADER) {}
+      : InterfaceNode(cnode, GL_VERTEX_SHADER) {
+  }
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct FragmentInterfaceNode : public InterfaceNode {
   explicit FragmentInterfaceNode(ContainerNode* cnode)
-      : InterfaceNode(cnode, GL_FRAGMENT_SHADER) {}
+      : InterfaceNode(cnode, GL_FRAGMENT_SHADER) {
+  }
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct TessCtrlInterfaceNode : public InterfaceNode {
   explicit TessCtrlInterfaceNode(ContainerNode* cnode)
-      : InterfaceNode(cnode, GL_TESS_CONTROL_SHADER) {}
+      : InterfaceNode(cnode, GL_TESS_CONTROL_SHADER) {
+  }
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct TessEvalInterfaceNode : public InterfaceNode {
   explicit TessEvalInterfaceNode(ContainerNode* cnode)
-      : InterfaceNode(cnode, GL_TESS_EVALUATION_SHADER) {}
+      : InterfaceNode(cnode, GL_TESS_EVALUATION_SHADER) {
+  }
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct GeometryInterfaceNode : public InterfaceNode {
   explicit GeometryInterfaceNode(ContainerNode* cnode)
-      : InterfaceNode(cnode, GL_GEOMETRY_SHADER) {}
+      : InterfaceNode(cnode, GL_GEOMETRY_SHADER) {
+  }
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 
 #if defined ENABLE_COMPUTE_SHADERS
 struct ComputeShaderNode : public ShaderNode {
   explicit ComputeShaderNode(ContainerNode* cnode)
-      : ShaderNode(cnode) {}
+      : ShaderNode(cnode) {
+  }
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct ComputeInterfaceNode : public InterfaceNode {
   explicit ComputeInterfaceNode(ContainerNode* cnode)
-      : InterfaceNode(cnode, GL_COMPUTE_SHADER) {}
+      : InterfaceNode(cnode, GL_COMPUTE_SHADER) {
+  }
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 #endif
@@ -590,22 +706,26 @@ struct ComputeInterfaceNode : public InterfaceNode {
 #if defined ENABLE_NVMESH_SHADERS
 struct NvTaskInterfaceNode : public InterfaceNode {
   explicit NvTaskInterfaceNode(ContainerNode* cnode)
-      : InterfaceNode(cnode, GL_TASK_SHADER_NV) {}
+      : InterfaceNode(cnode, GL_TASK_SHADER_NV) {
+  }
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct NvMeshInterfaceNode : public InterfaceNode {
   explicit NvMeshInterfaceNode(ContainerNode* cnode)
-      : InterfaceNode(cnode, GL_MESH_SHADER_NV) {}
+      : InterfaceNode(cnode, GL_MESH_SHADER_NV) {
+  }
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct NvTaskShaderNode : public ShaderNode {
   explicit NvTaskShaderNode(ContainerNode* cnode)
-      : ShaderNode(cnode) {}
+      : ShaderNode(cnode) {
+  }
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 struct NvMeshShaderNode : public ShaderNode {
   explicit NvMeshShaderNode(ContainerNode* cnode)
-      : ShaderNode(cnode) {}
+      : ShaderNode(cnode) {
+  }
   void generate(shaderbuilder::BackEnd& backend) const final;
 };
 #endif
@@ -615,7 +735,7 @@ struct NvMeshShaderNode : public ShaderNode {
 struct UniformDeclNode : public AstNode {
   std::string _typeName;
   std::string _name;
-  int _arraySize = 0;
+  int _arraySize               = 0;
   InterfaceLayoutNode* _layout = nullptr;
   void emit(shaderbuilder::BackEnd& backend, bool emit_unitxt) const;
 };
@@ -624,7 +744,8 @@ struct UniformDeclNode : public AstNode {
 
 struct ShaderDataNode : public DecoBlockNode {
   ShaderDataNode(ContainerNode* cnode)
-      : DecoBlockNode(cnode) {}
+      : DecoBlockNode(cnode) {
+  }
   void parse(const ScannerView& view);
   std::vector<UniformDeclNode*> _uniformdecls;
   std::set<std::string> _dupenamecheck;
@@ -634,7 +755,8 @@ struct ShaderDataNode : public DecoBlockNode {
 
 struct UniformSetNode : public ShaderDataNode {
   UniformSetNode(ContainerNode* cnode)
-      : ShaderDataNode(cnode) {}
+      : ShaderDataNode(cnode) {
+  }
   void generate(shaderbuilder::BackEnd& backend) const final;
   void emit(shaderbuilder::BackEnd& backend) const;
 };
@@ -643,7 +765,8 @@ struct UniformSetNode : public ShaderDataNode {
 
 struct UniformBlockNode : public ShaderDataNode {
   UniformBlockNode(ContainerNode* cnode)
-      : ShaderDataNode(cnode) {}
+      : ShaderDataNode(cnode) {
+  }
   void generate(shaderbuilder::BackEnd& backend) const final;
   void emit(shaderbuilder::BackEnd& backend) const;
 };
@@ -652,12 +775,13 @@ struct UniformBlockNode : public ShaderDataNode {
 
 struct LibraryBlockNode : public DecoBlockNode {
   explicit LibraryBlockNode(ContainerNode* cnode)
-      : DecoBlockNode(cnode) {}
+      : DecoBlockNode(cnode) {
+  }
   void parse(const ScannerView& view);
   void pregen(shaderbuilder::BackEnd& backend) final;
   void generate(shaderbuilder::BackEnd& backend) const;
   void emit(shaderbuilder::BackEnd& backend) const;
-  //ShaderBody _body;
+  // ShaderBody _body;
 
   std::vector<svarp_t> _children;
 };
@@ -682,7 +806,7 @@ struct ContainerNode : public AstNode {
   template <typename T> void collectNodesOfType(nodevect_t& outnvect) const;
   void generate(shaderbuilder::BackEnd& backend) const final;
 
-  void addStructType(StructNode*snode);
+  void addStructType(StructNode* snode);
   nodevect_t collectAllNodes() const;
 
   int itokidx = 0;
@@ -700,7 +824,7 @@ struct ContainerNode : public AstNode {
 
   std::set<std::string> _validTypeNames;
   std::set<std::string> _validOutputDecorators;
-  std::map<std::string,StructNode*> _structTypes;
+  std::map<std::string, StructNode*> _structTypes;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
