@@ -18,14 +18,6 @@
 namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*void Shader::addLibBlock(LibBlock* lib) {
-  _libblocks.push_back(lib);
-  for (auto uset : lib->_uniformSets)
-    addUniformSet(uset);
-  for (auto ublk : lib->_uniformBlocks)
-    addUniformBlock(ublk);
-}*/
-/////////////////////////////////////////////////////////////////////////////////////////////////
 void Shader::setInputInterface(StreamInterface* iface) {
   _inputInterface = iface;
   for (auto uset : iface->_uniformSets)
@@ -37,41 +29,6 @@ void Shader::setInputInterface(StreamInterface* iface) {
 void Shader::addUniformSet(UniformSet* uset) { _unisets.push_back(uset); }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void Shader::addUniformBlock(UniformBlock* ublk) { _uniblocks.push_back(ublk); }
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-void ShaderBody::parse(const ScannerView& view) {
-  ShaderLine* out_line = nullptr;
-  int ist              = view._start + 1;
-  int ien              = view._end - 1;
-  bool bnewline        = true;
-  int indent           = 1;
-  for (size_t i = ist; i <= ien; i++) {
-    ////////////////////////
-    // create a new line if its a new line...
-    ////////////////////////
-    if (bnewline) {
-      out_line          = new ShaderLine;
-      out_line->_indent = indent;
-      _lines.push_back(out_line);
-    }
-    bnewline = false;
-    ////////////////////////
-    auto ptok                  = view.token(i);
-    const std::string& cur_tok = ptok->text;
-    ////////////////////////
-    if (cur_tok != "\n")
-      out_line->_tokens.push_back(ptok);
-    ////////////////////////
-    if (cur_tok == "\n" or cur_tok == ";") {
-      bnewline = true;
-    } else if (cur_tok == "{")
-      indent++;
-    else if (cur_tok == "}")
-      indent--;
-    ////////////////////////
-  }
-}
 ///////////////////////////////////////////////////////////
 void ShaderNode::parse(const ScannerView& view) {
   DecoBlockNode::parse(view);
@@ -252,27 +209,7 @@ void ShaderNode::_generateCommon(shaderbuilder::BackEnd& backend) const {
 
   codegen.formatLine("void %s(){", _name.c_str());
   codegen.incIndent();
-  for (auto l : _body._lines) {
-    codegen.beginLine();
-    for (int in = 0; in < l->_indent; in++)
-      codegen.incIndent();
-    for (auto t : l->_tokens) {
-      codegen.output(t->text + " ");
-      if (t->text == "{") {
-        codegen.endLine();
-        codegen.incIndent();
-        codegen.beginLine();
-      }
-      else if (t->text == "}") {
-        codegen.endLine();
-        codegen.decIndent();
-        codegen.beginLine();
-      }
-    }
-    for (int in = 0; in < l->_indent; in++)
-      codegen.decIndent();
-    codegen.endLine();
-  }
+  _body.emit(backend);
   codegen.decIndent();
   codegen.formatLine("}");
 

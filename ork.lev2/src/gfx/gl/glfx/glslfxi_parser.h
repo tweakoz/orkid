@@ -162,6 +162,26 @@ struct DecoBlockNode : public NamedBlockNode {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct StructMemberNode : public AstNode {
+  const Token* _type = nullptr;
+  const Token* _name = nullptr;
+  int _arraySize = 0;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct StructNode : public AstNode {
+  StructNode(ContainerNode* cnode)
+      : AstNode(cnode) {}
+  void pregen(shaderbuilder::BackEnd& backend) final;
+  int parse(const ScannerView& view);
+  void emit(shaderbuilder::BackEnd& backend) const;
+  std::vector<StructMemberNode*> _members;
+  const Token* _name = nullptr;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct PassNode : public NamedBlockNode {
   PassNode(ContainerNode* cnode)
       : NamedBlockNode(cnode) {}
@@ -204,20 +224,6 @@ struct InterfaceLayoutNode : public AstNode {
   bool _standaloneLayout = false;
 };
 
-struct InterfaceInlineStructMemberNode : public AstNode {
-  const Token* _type;
-  const Token* _name;
-  int _arraySize = 0;
-};
-struct InterfaceInlineStructNode : public AstNode {
-  InterfaceInlineStructNode(ContainerNode* cnode)
-      : AstNode(cnode) {}
-  void pregen(shaderbuilder::BackEnd& backend) final;
-  int parse(const ScannerView& view);
-  void emit(shaderbuilder::BackEnd& backend) const;
-  std::vector<InterfaceInlineStructMemberNode*> _members;
-};
-
 struct InterfaceIoNode : public AstNode {
   InterfaceIoNode(ContainerNode* cnode)
       : AstNode(cnode) {}
@@ -226,7 +232,7 @@ struct InterfaceIoNode : public AstNode {
 
   std::string _name;
   std::string _typeName;
-  InterfaceInlineStructNode* _inlineStruct = nullptr;
+  StructNode* _inlineStruct = nullptr;
   std::string _semantic;
   InterfaceLayoutNode* _layout = nullptr;
   std::set<std::string> _decorators;
@@ -289,6 +295,7 @@ typedef std::vector<ShaderLine*> linevect_t;
 struct ShaderBody {
   linevect_t _lines;
   void parse(const ScannerView& view);
+  void emit(shaderbuilder::BackEnd& backend) const;
 };
 
 struct ShaderNode : public DecoBlockNode {

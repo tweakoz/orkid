@@ -68,63 +68,6 @@ void InterfaceLayoutNode::pregen(shaderbuilder::BackEnd& backend) {}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void InterfaceInlineStructNode::pregen(shaderbuilder::BackEnd& backend) {}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-void InterfaceInlineStructNode::emit(shaderbuilder::BackEnd& backend) const {
-  auto& codegen = backend._codegen;
-  codegen.formatLine("{");
-  codegen.incIndent();
-  for (auto m : _members) {
-    codegen.beginLine();
-    codegen.output(m->_type->text + " ");
-    codegen.output(m->_name->text);
-    if (m->_arraySize) {
-      codegen.format("[%u]", m->_arraySize);
-    }
-    codegen.output(";");
-    codegen.endLine();
-  }
-  codegen.decIndent();
-  codegen.formatLine("}");
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-int InterfaceInlineStructNode::parse(const ScannerView& view) {
-  int i = 0;
-  assert(view.token(i)->text == "{");
-  i += 1; // advance {
-  int closer            = -1;
-  bool done             = false;
-  const Token* test_tok = nullptr;
-  while (false == done) {
-    test_tok = view.token(i++);
-    if (test_tok->text == "}") {
-      done = true;
-    } else {
-      auto member   = new InterfaceInlineStructMemberNode;
-      member->_type = test_tok;
-      member->_name = view.token(i++);
-      test_tok      = view.token(i);
-      if (test_tok->text == "[") { // array ?
-        member->_arraySize = atoi(view.token(i + 1)->text.c_str());
-        assert(view.token(i + 2)->text == "]");
-        assert(view.token(i + 3)->text == ";");
-        i += 4;
-      } else {
-        assert(test_tok->text == ";");
-        i++;
-      }
-      _members.push_back(member);
-    }
-  }
-  return i;
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
 void InterfaceIoNode::pregen(shaderbuilder::BackEnd& backend) {
   if (_layout)
     _layout->pregen(backend);
@@ -211,11 +154,11 @@ void InterfaceNode::parseIos(const ScannerView& view, IoContainerNode* ioc) {
     // inline struct type ?
     ///////////////////////////////////////////
 
-    auto try_struct = view.token(i)->text;
+    bool is_struct = (view.token(i)->text=="{");
 
-    if (try_struct == "{") {
+    if (is_struct) {
       ScannerView structview(view, i);
-      io->_inlineStruct = new InterfaceInlineStructNode(_container);
+      io->_inlineStruct = new StructNode(_container);
       i += io->_inlineStruct->parse(structview);
     }
 
@@ -224,13 +167,15 @@ void InterfaceNode::parseIos(const ScannerView& view, IoContainerNode* ioc) {
     ///////////////////////////////////////////
 
     const Token* nam_tok = view.token(i);
+    if( is_struct ){
+      io->_inlineStruct->_name = nam_tok;
+    }
     std::string named    = nam_tok ? nam_tok->text : "";
     printf("  parseOutputs named<%s>\n", named.c_str());
     auto it = ioc->_dupecheck.find(named);
     assert(it == ioc->_dupecheck.end()); // make sure there are no duplicate attrs
     ioc->_dupecheck.insert(named);
     io->_name = named;
-
     i++; // advance name
 
     ///////////////////////////////////////////
@@ -400,6 +345,7 @@ void InterfaceNode::_generate(shaderbuilder::BackEnd& backend) const {
 
   bool is_vtx = _gltype == GL_VERTEX_SHADER;
   bool is_geo = _gltype == GL_GEOMETRY_SHADER;
+  bool is_frg = _gltype == GL_FRAGMENT_SHADER;
 
   ////////////////////////
   // interface scoped layouts
@@ -460,7 +406,7 @@ void InterfaceNode::_generate(shaderbuilder::BackEnd& backend) const {
       auto par = is_geo ? it_fig->second : is_vtx ? it_fiv->second : is_tee ? it_fie->second : nullptr;
       assert(par != nullptr);
       psi->Inherit(*par);
-    } else {
+    } else if(is_frg) {
       auto it_fi = c->_fragmentInterfaces.find(deconame);
       assert(it_fi != c->_fragmentInterfaces.end());
       psi->Inherit(*it_fi->second);
@@ -524,24 +470,25 @@ void InterfaceNode::_generate(shaderbuilder::BackEnd& backend) const {
   //  http://stackoverflow.com/questions/16415037/opengl-core-profile-incredible-slowdown-on-os-x)
   ////////////////////////
 
-  std::multimap<int, Attribute*> attr_sort_map;
-  for (const auto& it : psi->_inputAttributes) {
-    auto attr  = it.second;
-    auto itloc = gattrsorter.find(attr->mSemantic);
-    int isort  = 100;
-    if (itloc != gattrsorter.end()) {
-      isort = itloc->second;
+  if( is_vtx or is_geo or is_frg ) {
+    std::multimap<int, Attribute*> attr_sort_map;
+    for (const auto& it : psi->_inputAttributes) {
+      auto attr  = it.second;
+      auto itloc = gattrsorter.find(attr->mSemantic);
+      int isort  = 100;
+      if (itloc != gattrsorter.end()) {
+        isort = itloc->second;
+      }
+      attr_sort_map.insert(std::make_pair(isort, attr));
+      // pattr->mLocation = itloc->second;
     }
-    attr_sort_map.insert(std::make_pair(isort, attr));
-    // pattr->mLocation = itloc->second;
-  }
 
-  int isort = 0;
-  for (const auto& it : attr_sort_map) {
-    auto attr       = it.second;
-    attr->mLocation = isort++;
+    int isort = 0;
+    for (const auto& it : attr_sort_map) {
+      auto attr       = it.second;
+      attr->mLocation = isort++;
+    }
   }
-
   ////////////////////////
 }
 

@@ -39,27 +39,9 @@ void LibraryBlockNode::pregen(shaderbuilder::BackEnd& backend) { DecoBlockNode::
 void LibraryBlockNode::emit(shaderbuilder::BackEnd& backend) const {
   DecoBlockNode::_emit(backend);
   auto& codegen = backend._codegen;
-  codegen.formatLine("// libblock<%s> ///////////////////////////////////", _name.c_str());
-  for (auto l : _body._lines) {
-    codegen.beginLine();
-    for (int in = 0; in < l->_indent; in++)
-      codegen.incIndent();
-    for (auto t : l->_tokens) {
-      codegen.output(t->text + " ");
-      if (t->text == "{") {
-        codegen.endLine();
-        codegen.incIndent();
-        codegen.beginLine();
-      } else if (t->text == "}") {
-        codegen.endLine();
-        codegen.decIndent();
-        codegen.beginLine();
-      }
-    }
-    for (int in = 0; in < l->_indent; in++)
-      codegen.decIndent();
-    codegen.endLine();
-  }
+  codegen.formatLine("// begin libblock<%s> ///////////////////////////////////", _name.c_str());
+  _body.emit(backend);
+  codegen.formatLine("// end libblock<%s> ///////////////////////////////////", _name.c_str());
 }
 
 //////////////////////////////////////////////////////////////////////////////////
