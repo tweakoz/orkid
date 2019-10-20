@@ -137,7 +137,7 @@ struct VariableDefinitionStatement : public StatementNode {
   VariableDefinitionStatement(ContainerNode* cnode)
       : StatementNode(cnode) {}
   static FnMatchResults match(const FnParseContext& ctx);
-  int parse(const ScannerView& view, int start);
+  int parse(const FnParseContext& ctx, const FnMatchResults& r);
   void emit(shaderbuilder::BackEnd& backend) const final;
   AssignmentNode* _assigment = nullptr;
   std::set<const Token*> _qualifiers;
@@ -149,7 +149,7 @@ struct VariableAssignmentStatement : public StatementNode {
   VariableAssignmentStatement(ContainerNode* cnode)
       : StatementNode(cnode) {}
   static FnMatchResults match(const FnParseContext& ctx);
-  int parse(const ScannerView& view, int start);
+  int parse(const FnParseContext& ctx, const FnMatchResults& r);
   void emit(shaderbuilder::BackEnd& backend) const final;
   AssignmentNode* _assigment = nullptr;
 };
@@ -161,7 +161,7 @@ struct ReturnStatement : public StatementNode {
       : StatementNode(cnode) {}
 
   static FnMatchResults match(const FnParseContext& ctx);
-  int parse(const ScannerView& view, int start);
+  int parse(const FnParseContext& ctx, const FnMatchResults& r);
   void emit(shaderbuilder::BackEnd& backend) const final;
 
   ExpressionNode* _returnValue = nullptr;
@@ -182,7 +182,7 @@ struct ForLoopStatement : public StatementNode {
       : StatementNode(cnode) {}
 
   static FnMatchResults match(const FnParseContext& ctx);
-  int parse(const ScannerView& view, int start);
+  int parse(const FnParseContext& ctx, const FnMatchResults& r);
   void emit(shaderbuilder::BackEnd& backend) const final;
 
   const Token* _variable = nullptr;
@@ -198,7 +198,7 @@ struct WhileLoopStatement : public StatementNode {
       : StatementNode(cnode) {}
 
   static FnMatchResults match(const FnParseContext& ctx);
-  int parse(const ScannerView& view, int start);
+  int parse(const FnParseContext& ctx, const FnMatchResults& r);
   void emit(shaderbuilder::BackEnd& backend) const final;
 
   ExpressionNode* _condition = nullptr;
@@ -218,7 +218,7 @@ struct ElseNode : public ShaderBodyElement {
   ElseNode(ContainerNode* cnode)
       : ShaderBodyElement(cnode) {}
 
-  int parse(const ScannerView& view, int start);
+  int parse(const FnParseContext& ctx, const FnMatchResults& r);
   void emit(shaderbuilder::BackEnd& backend) const final;
 
   ScopedBlockNode* _block = nullptr;
@@ -228,7 +228,7 @@ struct ElseIfNode : public ShaderBodyElement {
   ElseIfNode(ContainerNode* cnode)
       : ShaderBodyElement(cnode) {}
 
-  int parse(const ScannerView& view, int start);
+  int parse(const FnParseContext& ctx, const FnMatchResults& r);
   void emit(shaderbuilder::BackEnd& backend) const final;
 
   ExpressionNode* _condition = nullptr;
@@ -239,7 +239,7 @@ struct IfStatement : public StatementNode {
   IfStatement(ContainerNode* cnode)
       : StatementNode(cnode) {}
   static FnMatchResults match(const FnParseContext& ctx);
-  int parse(const ScannerView& view, int start);
+  int parse(const FnParseContext& ctx, const FnMatchResults& r);
   void emit(shaderbuilder::BackEnd& backend) const final;
 
   ExpressionNode* _condition = nullptr;
@@ -398,7 +398,7 @@ struct PassNode : public NamedBlockNode {
 
   void generate(shaderbuilder::BackEnd& backend) const final;
 
-  int parse(const ScannerView& view, int startok);
+  int parse(const ScannerView& view, int start);
 
   std::string _vertexshader;
   std::string _fragmentshader;

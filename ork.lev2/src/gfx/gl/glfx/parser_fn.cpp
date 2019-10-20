@@ -33,29 +33,29 @@ int ParsedFunctionNode::parse(const ork::ScannerView& view) {
   while (not done) {
     auto try_tok     = view.token(i)->text;
     pctx._startIndex = i;
-    if (IfStatement::match(pctx)) {
+    if (auto m = IfStatement::match(pctx)) {
       auto subnode = new IfStatement(_container);
-      i += subnode->parse(view, i);
+      i += subnode->parse(pctx,m);
       _statements.push_back(subnode);
-    } else if (ForLoopStatement::match(pctx)) {
+    } else if (auto m = ForLoopStatement::match(pctx)) {
       auto subnode = new ForLoopStatement(_container);
-      i += subnode->parse(view, i);
+      i += subnode->parse(pctx,m);
       _statements.push_back(subnode);
-    } else if (WhileLoopStatement::match(pctx)) {
+    } else if (auto m = WhileLoopStatement::match(pctx)) {
       auto subnode = new WhileLoopStatement(_container);
-      i += subnode->parse(view, i);
+      i += subnode->parse(pctx,m);
       _statements.push_back(subnode);
-    } else if (ReturnStatement::match(pctx)) {
+    } else if (auto m = ReturnStatement::match(pctx)) {
       auto subnode = new ReturnStatement(_container);
-      i += subnode->parse(view, i);
+      i += subnode->parse(pctx,m);
       _statements.push_back(subnode);
-    } else if (VariableDefinitionStatement::match(pctx)) {
+    } else if (auto m = VariableDefinitionStatement::match(pctx)) {
       auto subnode = new VariableDefinitionStatement(_container);
-      i += subnode->parse(view, i);
+      i += subnode->parse(pctx,m);
       _statements.push_back(subnode);
-    } else if (VariableAssignmentStatement::match(pctx)) {
+    } else if (auto m = VariableAssignmentStatement::match(pctx)) {
       auto subnode = new VariableAssignmentStatement(_container);
-      i += subnode->parse(view, i);
+      i += subnode->parse(pctx,m);
       _statements.push_back(subnode);
     } else {
       assert(false);
@@ -81,7 +81,7 @@ FnMatchResults ReturnStatement::match(const FnParseContext& ctx) {
   return rval;
 }
 
-int ReturnStatement::parse(const ScannerView& view, int start) {
+int ReturnStatement::parse(const FnParseContext& ctx, const FnMatchResults& r) {
   assert(false);
   return 0;
 }
@@ -97,7 +97,7 @@ FnMatchResults ForLoopStatement::match(const FnParseContext& ctx) {
   return rval;
 }
 
-int ForLoopStatement::parse(const ScannerView& view, int start) {
+int ForLoopStatement::parse(const FnParseContext& ctx, const FnMatchResults& r) {
   assert(false);
   return 0;
 }
@@ -113,7 +113,7 @@ FnMatchResults WhileLoopStatement::match(const FnParseContext& ctx) {
   return rval;
 }
 
-int WhileLoopStatement::parse(const ScannerView& view, int start) {
+int WhileLoopStatement::parse(const FnParseContext& ctx, const FnMatchResults& r) {
   assert(false);
   return 0;
 }
@@ -129,7 +129,7 @@ FnMatchResults IfStatement::match(const FnParseContext& ctx) {
   return rval;
 }
 
-int IfStatement::parse(const ScannerView& view, int start) {
+int IfStatement::parse(const FnParseContext& ctx, const FnMatchResults& r) {
   assert(false);
   return 0;
 }
@@ -179,7 +179,7 @@ FnMatchResults VariableDefinitionStatement::match(const FnParseContext& ctx) {
   return rval;
 }
 
-int VariableDefinitionStatement::parse(const ScannerView& view, int start) {
+int VariableDefinitionStatement::parse(const FnParseContext& ctx, const FnMatchResults& r) {
   assert(false);
   return 0;
 }
@@ -208,7 +208,7 @@ FnMatchResults VariableAssignmentStatement::match(const FnParseContext& ctx) {
   return rval;
 }
 
-int VariableAssignmentStatement::parse(const ScannerView& view, int start) {
+int VariableAssignmentStatement::parse(const FnParseContext& ctx, const FnMatchResults& r) {
   assert(false);
   return 0;
 }

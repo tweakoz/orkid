@@ -18,9 +18,12 @@ bool Shader::Compile() {
   GL_NF_ERRORCHECK();
   mShaderObjectId = glCreateShader(mShaderType);
 
+#if defined(ENABLE_COMPUTE_SHADERS)
   if (mShaderType == GL_COMPUTE_SHADER) {
     printf("yo\n");
   }
+#endif
+
   std::string shadertext = "";
 
   shadertext += mShaderText;
