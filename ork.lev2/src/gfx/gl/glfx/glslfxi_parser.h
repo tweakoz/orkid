@@ -69,6 +69,12 @@ struct FnParseContext {
     rval._startIndex = oth._startIndex;
     return rval;
   }
+  FnParseContext advance (size_t count) const {
+    FnParseContext rval(*this);
+    rval._startIndex = count;
+    return rval;
+  }
+
   std::string tokenValue(size_t offset) const;
 
   ContainerNode* _container = nullptr;
@@ -85,6 +91,8 @@ struct FnMatchResultsBas {
     return _matched;
   }
 
+
+
   size_t _start = -1;
   size_t _count   = -1;
   size_t end() const { return _start+_count; }
@@ -97,6 +105,9 @@ template <typename T> struct FnMatchResults : public FnMatchResultsBas {
   FnMatchResults(FnParseContext ctx)
       : FnMatchResultsBas(ctx) {
   }
+  FnMatchResults(const FnMatchResultsBas& oth)
+      : FnMatchResultsBas(oth) {
+  }
 
   struct ParseResult {
     size_t _numtokens = 0;
@@ -105,6 +116,13 @@ template <typename T> struct FnMatchResults : public FnMatchResultsBas {
 
   ParseResult parse() {
     return T::parse(*this);
+  }
+
+  FnMatchResults operator+ (const FnMatchResults& rhs) const {
+    FnMatchResults rval = *this;
+    assert(_matched and rhs._matched);
+    rval._count += rhs._count;
+    return rval;
   }
 
   FnParseContext consume() const {
@@ -149,6 +167,31 @@ struct ShaderEmittable : public AstNode {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#define DECLARE_STD_FNS(xxx)\
+typedef FnMatchResults<xxx> match_t;\
+typedef match_t::ParseResult parsed_t;\
+static match_t match(FnParseContext ctx);\
+static parsed_t parse(const match_t& match);\
+
+#define DECLARE_STD_EMITTABLE_FNS(xxx)\
+DECLARE_STD_FNS(xxx)\
+void emit(shaderbuilder::BackEnd& backend) const final;\
+
+#define DECLARE_STD_EMITTABLE(xxx)\
+struct xxx : public ShaderEmittable {\
+xxx(ContainerNode* cnode)\
+    : ShaderEmittable(cnode) {\
+}\
+DECLARE_STD_EMITTABLE_FNS(xxx)\
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+DECLARE_STD_EMITTABLE(OpenBracket);
+DECLARE_STD_EMITTABLE(CloseBracket);
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct FnElement : public ShaderEmittable {
   FnElement(ContainerNode* cnode)
       : ShaderEmittable(cnode) {
@@ -161,12 +204,7 @@ struct VariableDeclaration : public FnElement {
   VariableDeclaration(ContainerNode* cnode)
       : FnElement(cnode) {
   }
-
-  typedef FnMatchResults<VariableDeclaration> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(FnParseContext ctx);
-  static parsed_t parse(const match_t& match);
-  void emit(shaderbuilder::BackEnd& backend) const final;
+  DECLARE_STD_EMITTABLE_FNS(VariableDeclaration);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -175,12 +213,7 @@ struct DeclarationList : public ShaderEmittable {
   DeclarationList(ContainerNode* cnode)
       : ShaderEmittable(cnode) {
   }
-  typedef FnMatchResults<DeclarationList> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(FnParseContext ctx);
-  static parsed_t parse(const match_t& match);
-  void emit(shaderbuilder::BackEnd& backend) const final;
-
+  DECLARE_STD_EMITTABLE_FNS(DeclarationList);
   std::vector<VariableDeclaration*> _children;
 };
 
@@ -191,12 +224,7 @@ struct Expression : public ShaderEmittable {
   Expression(ContainerNode* cnode)
       : ShaderEmittable(cnode) {
   }
-
-  typedef FnMatchResults<Expression> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(FnParseContext ctx);
-  static parsed_t parse(const match_t& match);
-
+  DECLARE_STD_EMITTABLE_FNS(Expression);
   std::vector<ShaderBodyElement*> _children;
 };
 
@@ -204,72 +232,98 @@ struct AssignmentExpression : public ShaderEmittable {
   AssignmentExpression(ContainerNode* cnode)
       : ShaderEmittable(cnode) {
   }
-
-  typedef FnMatchResults<Expression> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(FnParseContext ctx);
-  static parsed_t parse(const match_t& match);
-
+  DECLARE_STD_EMITTABLE_FNS(AssignmentExpression);
 };
 
 struct ConditionalExpression : public ShaderEmittable {
   ConditionalExpression(ContainerNode* cnode)
       : ShaderEmittable(cnode) {
   }
-
-  typedef FnMatchResults<Expression> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(FnParseContext ctx);
-  static parsed_t parse(const match_t& match);
-
+  DECLARE_STD_FNS(ConditionalExpression);
 };
 
 struct TernaryExpression : public ConditionalExpression {
   TernaryExpression(ContainerNode* cnode)
       : ConditionalExpression(cnode) {
   }
-
-  typedef FnMatchResults<Expression> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(FnParseContext ctx);
-  static parsed_t parse(const match_t& match);
-
+  DECLARE_STD_EMITTABLE_FNS(TernaryExpression);
 };
 
 struct LogicalOrExpression : public ShaderEmittable {
   LogicalOrExpression(ContainerNode* cnode)
       : ShaderEmittable(cnode) {
   }
+  DECLARE_STD_EMITTABLE_FNS(LogicalOrExpression);
+};
 
-  typedef FnMatchResults<Expression> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(FnParseContext ctx);
-  static parsed_t parse(const match_t& match);
+struct LogicalAndExpression : public ShaderEmittable {
+  LogicalAndExpression(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+  DECLARE_STD_EMITTABLE_FNS(LogicalAndExpression);
+};
 
+struct InclusiveOrExpression : public ShaderEmittable {
+  InclusiveOrExpression(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+  DECLARE_STD_EMITTABLE_FNS(InclusiveOrExpression);
+};
+
+struct ExclusiveOrExpression : public ShaderEmittable {
+  ExclusiveOrExpression(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+  DECLARE_STD_EMITTABLE_FNS(ExclusiveOrExpression);
+};
+
+struct AndExpression : public ShaderEmittable {
+  AndExpression(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+  DECLARE_STD_EMITTABLE_FNS(AndExpression);
+};
+
+struct EqualityExpression : public ShaderEmittable {
+  EqualityExpression(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+  DECLARE_STD_EMITTABLE_FNS(EqualityExpression);
+};
+
+struct RelationalExpression : public ShaderEmittable {
+  RelationalExpression(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+  DECLARE_STD_EMITTABLE_FNS(RelationalExpression);
+};
+
+struct ShiftExpression : public ShaderEmittable {
+  ShiftExpression(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+  DECLARE_STD_EMITTABLE_FNS(ShiftExpression);
+};
+
+struct AdditiveExpression : public ShaderEmittable {
+  AdditiveExpression(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+  DECLARE_STD_EMITTABLE_FNS(AdditiveExpression);
 };
 
 struct UnaryExpression : public ShaderEmittable {
   UnaryExpression(ContainerNode* cnode)
       : ShaderEmittable(cnode) {
   }
-
-  typedef FnMatchResults<Expression> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(FnParseContext ctx);
-  static parsed_t parse(const match_t& match);
-
+  DECLARE_STD_EMITTABLE_FNS(UnaryExpression);
 };
 
 struct AssignmentOperator : public ShaderEmittable {
   AssignmentOperator(ContainerNode* cnode)
       : ShaderEmittable(cnode) {
   }
-
-  typedef FnMatchResults<Expression> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(FnParseContext ctx);
-  static parsed_t parse(const match_t& match);
-
+  DECLARE_STD_EMITTABLE_FNS(AssignmentOperator);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -277,11 +331,7 @@ struct Statement : public ShaderEmittable {
   Statement(ContainerNode* cnode)
       : ShaderEmittable(cnode) {
   }
-  typedef FnMatchResults<Statement> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(FnParseContext ctx);
-  static parsed_t parse(const match_t& match);
-  void emit(shaderbuilder::BackEnd& backend) const final;
+  DECLARE_STD_EMITTABLE_FNS(Statement);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -290,12 +340,7 @@ struct ExpressionStatement : public ShaderEmittable {
   ExpressionStatement(ContainerNode* cnode)
       : ShaderEmittable(cnode) {
   }
-
-  typedef FnMatchResults<ExpressionStatement> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(FnParseContext ctx);
-  static parsed_t parse(const match_t& match);
-  void emit(shaderbuilder::BackEnd& backend) const final;
+  DECLARE_STD_EMITTABLE_FNS(ExpressionStatement);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -304,12 +349,7 @@ struct StatementList : public ShaderEmittable {
   StatementList(ContainerNode* cnode)
       : ShaderEmittable(cnode) {
   }
-  typedef FnMatchResults<StatementList> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(FnParseContext ctx);
-  static parsed_t parse(const match_t& match);
-  void emit(shaderbuilder::BackEnd& backend) const final;
-
+  DECLARE_STD_EMITTABLE_FNS(StatementList);
   std::vector<Statement*> _children;
 };
 
@@ -319,12 +359,7 @@ struct CompoundStatement : public FnElement {
   CompoundStatement(ContainerNode* cnode)
       : FnElement(cnode) {
   }
-
-  typedef FnMatchResults<CompoundStatement> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(FnParseContext ctx);
-  static parsed_t parse(const match_t& match);
-  void emit(shaderbuilder::BackEnd& backend) const final;
+  DECLARE_STD_EMITTABLE_FNS(CompoundStatement);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -333,10 +368,7 @@ struct IterationStatement : public ShaderEmittable {
   IterationStatement(ContainerNode* cnode)
       : ShaderEmittable(cnode) {
   }
-  typedef FnMatchResults<IterationStatement> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(FnParseContext ctx);
-  static parsed_t parse(const match_t& match);
+  DECLARE_STD_FNS(IterationStatement);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -361,11 +393,7 @@ struct ForLoopStatement : public IterationStatement {
   ForLoopStatement(ContainerNode* cnode)
       : IterationStatement(cnode) {}
 
-  typedef FnMatchResults<ForLoopStatement> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(const FnParseContext& ctx);
-  static parsed_t parse(const match_t& match);
-  void emit(shaderbuilder::BackEnd& backend) const final;
+  DECLARE_STD_EMITTABLE_FNS(ForLoopStatement);
 
   const Token* _variable = nullptr;
   Expression* _condition = nullptr;
