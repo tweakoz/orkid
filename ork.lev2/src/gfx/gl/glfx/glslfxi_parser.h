@@ -87,6 +87,7 @@ struct FnMatchResultsBas {
 
   size_t _start = -1;
   size_t _count   = -1;
+  size_t end() const { return _start+_count; }
   bool _matched = false;
   FnParseContext _ctx;
 };
@@ -201,6 +202,66 @@ struct Expression : public ShaderEmittable {
 
 struct AssignmentExpression : public ShaderEmittable {
   AssignmentExpression(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+
+  typedef FnMatchResults<Expression> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(FnParseContext ctx);
+  static parsed_t parse(const match_t& match);
+
+};
+
+struct ConditionalExpression : public ShaderEmittable {
+  ConditionalExpression(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+
+  typedef FnMatchResults<Expression> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(FnParseContext ctx);
+  static parsed_t parse(const match_t& match);
+
+};
+
+struct TernaryExpression : public ConditionalExpression {
+  TernaryExpression(ContainerNode* cnode)
+      : ConditionalExpression(cnode) {
+  }
+
+  typedef FnMatchResults<Expression> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(FnParseContext ctx);
+  static parsed_t parse(const match_t& match);
+
+};
+
+struct LogicalOrExpression : public ShaderEmittable {
+  LogicalOrExpression(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+
+  typedef FnMatchResults<Expression> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(FnParseContext ctx);
+  static parsed_t parse(const match_t& match);
+
+};
+
+struct UnaryExpression : public ShaderEmittable {
+  UnaryExpression(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+
+  typedef FnMatchResults<Expression> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(FnParseContext ctx);
+  static parsed_t parse(const match_t& match);
+
+};
+
+struct AssignmentOperator : public ShaderEmittable {
+  AssignmentOperator(ContainerNode* cnode)
       : ShaderEmittable(cnode) {
   }
 

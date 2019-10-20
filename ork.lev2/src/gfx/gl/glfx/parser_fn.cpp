@@ -233,7 +233,7 @@ Expression::match_t Expression::match(FnParseContext ctx) {
   size_t count = 0;
   size_t start = -1;
   bool done    = false;
-  bool match = true;
+  bool match   = true;
   while (not done) {
     auto mva = AssignmentExpression::match(ctx);
     if (mva) {
@@ -244,11 +244,9 @@ Expression::match_t Expression::match(FnParseContext ctx) {
     if (try_tok == ",") {
       ctx._startIndex++;
       count++;
-    }
-    else if( try_tok == ";" ){
+    } else if (try_tok == ";") {
       done = true;
-    }
-    else {
+    } else {
       match = false;
     }
   }
@@ -273,6 +271,24 @@ Expression::parsed_t Expression::parse(const match_t& match) {
 
 AssignmentExpression::match_t AssignmentExpression::match(FnParseContext ctx) {
   match_t rval(ctx);
+  if (auto mvc = ConditionalExpression::match(ctx)) {
+    rval._count += mvc._count;
+    rval._start   = ctx._startIndex;
+    rval._matched = true;
+  } else if (auto mvu = UnaryExpression::match(ctx)) {
+    size_t count = mvu._count;
+    auto ctx2    = mvu.consume();
+    if (auto mvo = AssignmentOperator::match(ctx2)) {
+      count += mvo._count;
+      auto ctx3 = mvo.consume();
+      if (auto mva = AssignmentExpression::match(ctx3)) {
+        count += mva._count;
+        rval._count   = count;
+        rval._start   = ctx._startIndex;
+        rval._matched = true;
+      }
+    }
+  }
   assert(false);
   return rval;
 }
@@ -286,6 +302,114 @@ AssignmentExpression::parsed_t AssignmentExpression::parse(const match_t& match)
 // assert(false);
 //}
 
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+UnaryExpression::match_t UnaryExpression::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  assert(false);
+  return rval;
+}
+
+UnaryExpression::parsed_t UnaryExpression::parse(const match_t& match) {
+  parsed_t rval;
+  assert(false);
+  return rval;
+}
+// void Expression::emit(shaderbuilder::BackEnd& backend) const {
+// assert(false);
+//}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+ConditionalExpression::match_t ConditionalExpression::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  assert(false);
+  return rval;
+}
+
+ConditionalExpression::parsed_t ConditionalExpression::parse(const match_t& match) {
+  parsed_t rval;
+
+  return rval;
+}
+// void Expression::emit(shaderbuilder::BackEnd& backend) const {
+// assert(false);
+//}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+TernaryExpression::match_t TernaryExpression::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  if( auto mvl = LogicalOrExpression::match(ctx)){
+    if(ctx.tokenValue(mvl.end())=="?"){
+      auto ctx2 = mvl.consume();
+      ctx2._startIndex++; // consume ?
+      if(auto mve = Expression::match(ctx2)){
+        if(ctx.tokenValue(mve.end())==":"){
+          auto ctx3 = mve.consume();
+          ctx3._startIndex++; // consume :
+          if( auto mvx = ConditionalExpression::match(ctx3)){
+            rval._matched = true;
+            assert(false);
+          }
+        }
+      }
+
+    }
+  }
+  return rval;
+}
+
+TernaryExpression::parsed_t TernaryExpression::parse(const match_t& match) {
+  parsed_t rval;
+
+  return rval;
+}
+// void Expression::emit(shaderbuilder::BackEnd& backend) const {
+// assert(false);
+//}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+LogicalOrExpression::match_t LogicalOrExpression::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  assert(false);
+  return rval;
+}
+
+LogicalOrExpression::parsed_t LogicalOrExpression::parse(const match_t& match) {
+  parsed_t rval;
+  assert(false);
+  return rval;
+}
+// void Expression::emit(shaderbuilder::BackEnd& backend) const {
+// assert(false);
+//}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+AssignmentOperator::match_t AssignmentOperator::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  if (ctx.tokenValue(0) == "=") {
+    auto op = ctx.tokenValue(1);
+    if (op == "*=" or op == "+=" or op == "-=" or op == "/=" or op == "&=" or op == "|=" or op == "<<=" or op == ">>=" or
+        op == "^=" ) {
+      rval._start   = ctx._startIndex;
+      rval._count   = 2;
+      rval._matched = true;
+    }
+  }
+  return rval;
+}
+
+AssignmentOperator::parsed_t AssignmentOperator::parse(const match_t& match) {
+  parsed_t rval;
+  assert(false);
+  return rval;
+}
+// void Expression::emit(shaderbuilder::BackEnd& backend) const {
+// assert(false);
+//}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -329,8 +453,7 @@ Statement::match_t Statement::match(FnParseContext ctx) {
     rval._matched = true;
     rval._count += mve._count;
     ctx = mve.consume();
-  }
-  else if (auto mvi = IterationStatement::match(ctx)) {
+  } else if (auto mvi = IterationStatement::match(ctx)) {
     rval._matched = true;
     rval._count += mvi._count;
     ctx = mvi.consume();
@@ -382,7 +505,7 @@ void ExpressionStatement::emit(shaderbuilder::BackEnd& backend) const {
 IterationStatement::match_t IterationStatement::match(FnParseContext ctx) {
   match_t rval(ctx);
   auto first_tok = ctx.tokenValue(0);
-  if(auto mfs = ForLoopStatement::match(ctx)) {
+  if (auto mfs = ForLoopStatement::match(ctx)) {
     rval._matched = true;
     rval._start   = ctx._startIndex;
     rval._count   = 1;
