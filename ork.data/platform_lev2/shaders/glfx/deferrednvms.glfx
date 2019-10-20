@@ -259,25 +259,54 @@ technique downsampledepthcluster {
     }
 }
 ///////////////////////////////////////////////////////////////
+libblock chunklisttools {
+
+    struct ChunkedList {
+        uint _head;         // 0
+        uint _count;        // 4
+        uint _storagebase;  // 8
+        uint _curchunk;     // 12
+    };
+
+    struct ListChunk {
+        uint _base;         // 0
+        uint _count;        // 4
+        uint _nextchunk;    // 8
+        uint _pad;          // 12
+    };
+
+    void initChunkedList(inout ChunkedList cl, uint storbas){
+        cl._storagebase = storbas;
+        cl._head = 0;
+        cl._count = 0;
+    }
+}
+///////////////////////////////////////////////////////////////
 uniform_set compute_unis {
     layout (binding = 1, r32ui) uimage2D img_depthclusters;
 }
-compute_interface iface_compute : compute_unis {
+compute_interface iface_compute
+    : chunklisttools
+    : compute_unis {
     inputs {
         layout(local_size_x = 1, local_size_y = 1, local_size_z = 1);
     }
     storage {
         layout(std430, binding = 0) buffer {
-            mat4 MVP;                // 0
-            int numLights;           // 64
-            int numTiles;            // 68
-            int pad[2];              // 72
-            vec4 campos;             // 80
-            vec4 lightPosR[8192];    // 96
-            vec4 lightColor[8192];   // 96+131072
-            vec4 lightprjmin[8192];  // 96+262144
-            vec4 lightprjmax[8192];  // 96+393216
-            vec4 tileoutpos[8192];   // 96+524288
+            mat4 MVP;                        // 0
+            int numLights;                   // 64
+            int numTiles;                    // 68
+            int pada[2];                     // 72
+            vec4 campos;                     // 80
+            int padb[8];                     // 96
+            vec4 lightPosR[8192];            // 128
+            vec4 lightColor[8192];           // 128+131072
+            vec4 lightprjmin[8192];          // 128+262144
+            vec4 lightprjmax[8192];          // 128+393216
+            vec4 tileoutpos[8192];           // 128+524288
+            //ChunkedList _pertilelists[4096]; // 128+655360
+            //ListChunk _listchunks[65536];    // 128+655360+65536
+            uint _pendingtiles[100];         // 128+655360+65536+1048576
         } ssbo_io_data;
     }
 }
@@ -396,6 +425,7 @@ compute_shader compute_collectlights
                 while (DC != 0 && (false == overlapZ)) {
                   bool has_bit = bool(DC & 1);
                   if (has_bit) {
+                    // todo: use bitCount() and findLSB()
                     float bitshiftedLO = float(1 << bitindex);
                     float bitshiftedHI = bitshiftedLO + bitshiftedLO;
                     bool testoz = doRangesOverlap(sphmin.z, sphmax.z, bitshiftedLO, bitshiftedHI);
@@ -405,10 +435,13 @@ compute_shader compute_collectlights
                   bitindex++;
                 } // while(depthsample)
                 if (overlapZ) {
-                    int nt = atomicAdd(numTiles,1);
+                    // todo : atomicCounters ?
+                    int tileindexcount = atomicAdd(numTiles,1);
                 }
             }
         }
 
     }
 }
+
+
