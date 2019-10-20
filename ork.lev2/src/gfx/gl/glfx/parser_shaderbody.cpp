@@ -24,6 +24,10 @@ int ShaderBody::parse(const ScannerView& view) {
   int ien              = view._end - 1;
   bool bnewline        = true;
   int indent           = 1;
+  ////////////////////////
+  assert( view.token(view._start)->text == "{" );
+  assert( view.token(view._end)->text == "}" );
+  ////////////////////////
   for (size_t i = ist; i <= ien; i++) {
     ////////////////////////
     // create a new line if its a new line...
@@ -49,7 +53,7 @@ int ShaderBody::parse(const ScannerView& view) {
       indent--;
     ////////////////////////
   }
-  return ien;
+  return view._end+1;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

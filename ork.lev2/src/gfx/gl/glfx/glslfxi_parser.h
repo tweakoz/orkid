@@ -64,33 +64,169 @@ struct AstNode {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ConstantNumericNode : public AstNode {};
-
+struct ShaderBodyElement : public AstNode {
+  ShaderBodyElement(ContainerNode* cnode)
+      : AstNode(cnode) {}
+  virtual void emit(shaderbuilder::BackEnd& backend) const = 0;
+};
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ExpressionNode : public AstNode {};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct AssignmentNode : public AstNode {};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct VariableDefinitionNode : public AstNode {
-  AssignmentNode* _assigment = nullptr;
+struct ConstantNode : public ShaderBodyElement {
+  ConstantNode(ContainerNode* cnode)
+      : ShaderBodyElement(cnode) {}
+  void emit(shaderbuilder::BackEnd& backend) const final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ForLoopNode : public AstNode {};
+struct VariableReferenceNode : public ShaderBodyElement {
+  VariableReferenceNode(ContainerNode* cnode)
+      : ShaderBodyElement(cnode) {}
+  void emit(shaderbuilder::BackEnd& backend) const final;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct StatementNode : public AstNode {};
+struct ExpressionNode : public ShaderBodyElement {
+  ExpressionNode(ContainerNode* cnode)
+      : ShaderBodyElement(cnode) {}
+  void emit(shaderbuilder::BackEnd& backend) const final;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct LibraryFunctionNode : public AstNode {
+struct AssignmentNode : public ShaderBodyElement {
+  AssignmentNode(ContainerNode* cnode)
+      : ShaderBodyElement(cnode) {}
+  void emit(shaderbuilder::BackEnd& backend) const final;
+  VariableReferenceNode* _lvalue = nullptr;
+  ExpressionNode* _rvalue;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct FnParseContext {
+  FnParseContext(ContainerNode* c,const ScannerView&v):_container(c),_view(v){}
+  ContainerNode* _container = nullptr;
+  std::string tokenValue(size_t offset) const;
+  size_t _startIndex = 0;
+  const ScannerView& _view;
+};
+///////////////////////////////////////////////////////////////////////////////
+
+struct StatementNode : public ShaderBodyElement {
+  StatementNode(ContainerNode* cnode)
+      : ShaderBodyElement(cnode) {}
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct VariableDefinitionNode : public StatementNode {
+  VariableDefinitionNode(ContainerNode* cnode)
+      : StatementNode(cnode) {}
+  static bool match(FnParseContext& ctx);
+  int parse(const ScannerView& view, int start);
+  void emit(shaderbuilder::BackEnd& backend) const final;
+  AssignmentNode* _assigment = nullptr;
+  std::set<const Token*> _qualifiers;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ReturnNode : public StatementNode {
+  ReturnNode(ContainerNode* cnode)
+      : StatementNode(cnode) {}
+
+  static bool match(FnParseContext& ctx);
+  int parse(const ScannerView& view, int start);
+  void emit(shaderbuilder::BackEnd& backend) const final;
+
+  ExpressionNode* _returnValue = nullptr;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ScopedBlockNode : public ShaderBodyElement {
+  ScopedBlockNode(ContainerNode* cnode)
+      : ShaderBodyElement(cnode) {}
+  void emit(shaderbuilder::BackEnd& backend) const final;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ForLoopNode : public StatementNode {
+  ForLoopNode(ContainerNode* cnode)
+      : StatementNode(cnode) {}
+
+  static bool match(FnParseContext& ctx);
+  int parse(const ScannerView& view, int start);
+  void emit(shaderbuilder::BackEnd& backend) const final;
+
+  const Token* _variable = nullptr;
+  ExpressionNode* _condition = nullptr;
+  AssignmentNode* _advance = nullptr;
+  ScopedBlockNode* _block = nullptr;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct WhileLoopNode : public StatementNode {
+  WhileLoopNode(ContainerNode* cnode)
+      : StatementNode(cnode) {}
+
+  static bool match(FnParseContext& ctx);
+  int parse(const ScannerView& view, int start);
+  void emit(shaderbuilder::BackEnd& backend) const final;
+
+  ExpressionNode* _condition = nullptr;
+  ScopedBlockNode* _block = nullptr;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ElseNode : public ShaderBodyElement {
+  ElseNode(ContainerNode* cnode)
+      : ShaderBodyElement(cnode) {}
+
+  int parse(const ScannerView& view, int start);
+  void emit(shaderbuilder::BackEnd& backend) const final;
+
+  ScopedBlockNode* _block = nullptr;
+};
+
+struct ElseIfNode : public ShaderBodyElement {
+  ElseIfNode(ContainerNode* cnode)
+      : ShaderBodyElement(cnode) {}
+
+  int parse(const ScannerView& view, int start);
+  void emit(shaderbuilder::BackEnd& backend) const final;
+
+  ExpressionNode* _condition = nullptr;
+  ScopedBlockNode* _block = nullptr;
+};
+
+struct IfNode : public StatementNode {
+  IfNode(ContainerNode* cnode)
+      : StatementNode(cnode) {}
+  static bool match(FnParseContext& ctx);
+  int parse(const ScannerView& view, int start);
+  void emit(shaderbuilder::BackEnd& backend) const final;
+
+  ExpressionNode* _condition = nullptr;
+  ScopedBlockNode* _block = nullptr;
+  std::vector<ElseIfNode*> _elseifs;
+  ElseNode* _elseNode = nullptr;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ParsedFunctionNode : public AstNode {
+  ParsedFunctionNode(ContainerNode* cnode)
+      : AstNode(cnode) {}
+
+  int parse(const ScannerView& view);
+  void emit(shaderbuilder::BackEnd& backend) const;
+
   std::vector<StatementNode*> _statements;
 };
 
@@ -220,6 +356,8 @@ struct FunctionNode : public AstNode {
   std::vector<FunctionArgumentNode*> _arguments;
   const Token* _returnType = nullptr;
   ShaderBody _body;
+
+  ParsedFunctionNode* _parsedfnnode = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
