@@ -184,18 +184,31 @@ struct DeclarationList : public ShaderEmittable {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
-struct ExpressionNode : public ShaderEmittable {
-  ExpressionNode(ContainerNode* cnode)
+struct Expression : public ShaderEmittable {
+  Expression(ContainerNode* cnode)
       : ShaderEmittable(cnode) {
   }
 
-  typedef FnMatchResults<ExpressionNode> match_t;
+  typedef FnMatchResults<Expression> match_t;
   typedef match_t::ParseResult parsed_t;
   static match_t match(FnParseContext ctx);
   static parsed_t parse(const match_t& match);
 
   std::vector<ShaderBodyElement*> _children;
+};
+
+struct AssignmentExpression : public ShaderEmittable {
+  AssignmentExpression(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+
+  typedef FnMatchResults<Expression> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(FnParseContext ctx);
+  static parsed_t parse(const match_t& match);
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -204,6 +217,20 @@ struct Statement : public ShaderEmittable {
       : ShaderEmittable(cnode) {
   }
   typedef FnMatchResults<Statement> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(FnParseContext ctx);
+  static parsed_t parse(const match_t& match);
+  void emit(shaderbuilder::BackEnd& backend) const final;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ExpressionStatement : public ShaderEmittable {
+  ExpressionStatement(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+
+  typedef FnMatchResults<ExpressionStatement> match_t;
   typedef match_t::ParseResult parsed_t;
   static match_t match(FnParseContext ctx);
   static parsed_t parse(const match_t& match);
@@ -245,6 +272,10 @@ struct IterationStatement : public ShaderEmittable {
   IterationStatement(ContainerNode* cnode)
       : ShaderEmittable(cnode) {
   }
+  typedef FnMatchResults<IterationStatement> match_t;
+  typedef match_t::ParseResult parsed_t;
+  static match_t match(FnParseContext ctx);
+  static parsed_t parse(const match_t& match);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -259,12 +290,12 @@ struct ReturnStatement : public StatementNode {
   static parsed_t parse(const match_t& match);
   void emit(shaderbuilder::BackEnd& backend) const final;
 
-  ExpressionNode* _returnValue = nullptr;
+  Expression* _returnValue = nullptr;
 };
 */
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
+
 struct ForLoopStatement : public IterationStatement {
   ForLoopStatement(ContainerNode* cnode)
       : IterationStatement(cnode) {}
@@ -273,11 +304,12 @@ struct ForLoopStatement : public IterationStatement {
   typedef match_t::ParseResult parsed_t;
   static match_t match(const FnParseContext& ctx);
   static parsed_t parse(const match_t& match);
+  void emit(shaderbuilder::BackEnd& backend) const final;
 
   const Token* _variable = nullptr;
-  ExpressionNode* _condition = nullptr;
-  AssignmentNode* _advance = nullptr;
-};*/
+  Expression* _condition = nullptr;
+  //AssignmentNode* _advance = nullptr;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 /*
@@ -291,7 +323,7 @@ struct WhileLoopStatement : public IterationStatement {
   static parsed_t parse(const match_t& match);
   void emit(shaderbuilder::BackEnd& backend) const final;
 
-  ExpressionNode* _condition = nullptr;
+  Expression* _condition = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -318,7 +350,7 @@ struct ElseIfNode : public ShaderEmittable {
   static parsed_t parse(const match_t& match);
   void emit(shaderbuilder::BackEnd& backend) const final;
 
-  ExpressionNode* _condition = nullptr;
+  Expression* _condition = nullptr;
 };
 
 struct IfStatement : public StatementNode {
@@ -330,7 +362,7 @@ struct IfStatement : public StatementNode {
   static parsed_t parse(const match_t& match);
   void emit(shaderbuilder::BackEnd& backend) const final;
 
-  ExpressionNode* _condition = nullptr;
+  Expression* _condition = nullptr;
   std::vector<ElseIfNode*> _elseifs;
   ElseNode* _elseNode = nullptr;
 };

@@ -26,7 +26,7 @@ namespace ork::lev2::glslfx {
 
 int ParsedFunctionNode::parse(const ork::ScannerView& view) {
   int i         = 0;
-  auto open_tok = view.token(i++);
+  auto open_tok = view.token(i);
   assert(open_tok->text == "{");
   bool done = false;
   FnParseContext pctx(_container, view);
@@ -54,7 +54,7 @@ int ParsedFunctionNode::parse(const ork::ScannerView& view) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ParsedFunctionNode::emit(ork::lev2::glslfx::shaderbuilder::BackEnd& backend) const {
-  for( auto elem : _elements )
+  for (auto elem : _elements)
     elem->emit(backend);
   assert(false); // not implemented yet...
 }
@@ -77,19 +77,6 @@ void ReturnStatement::emit(shaderbuilder::BackEnd& backend) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-FnMatchResults ForLoopStatement::match(const FnParseContext& ctx) {
-  FnMatchResults rval;
-  rval._matched = ctx.tokenValue(0) == "for";
-  return rval;
-}
-
-int ForLoopStatement::parse(const FnParseContext& ctx, const FnMatchResults& r) {
-  assert(false);
-  return 0;
-}
-void ForLoopStatement::emit(shaderbuilder::BackEnd& backend) const {
-  assert(false);
-}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -141,10 +128,10 @@ VariableDeclaration::match_t VariableDeclaration::match(FnParseContext ctx) {
   auto tokE             = ctx.tokenValue(i + 2);
   bool instantiation_ok = valid_dt and valid_id and (tokE == ";");
   ////////////////////////////////////
-  if( instantiation_ok ) {
+  if (instantiation_ok) {
     rval._matched = true;
     rval._start   = ctx._startIndex;
-    rval._count     = i + 2;
+    rval._count   = i + 2;
     assert(false);
   }
   return rval;
@@ -241,26 +228,87 @@ void VariableAssignmentStatement::emit(shaderbuilder::BackEnd& backend) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-ExpressionNode::match_t ExpressionNode::match(FnParseContext ctx) {
+Expression::match_t Expression::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  size_t count = 0;
+  size_t start = -1;
+  bool done    = false;
+  bool match = true;
+  while (not done) {
+    auto mva = AssignmentExpression::match(ctx);
+    if (mva) {
+      count += mva._count;
+      ctx = mva.consume();
+    }
+    auto try_tok = ctx.tokenValue(0);
+    if (try_tok == ",") {
+      ctx._startIndex++;
+      count++;
+    }
+    else if( try_tok == ";" ){
+      done = true;
+    }
+    else {
+      match = false;
+    }
+  }
+  if (match) {
+    rval._count   = count;
+    rval._start   = start;
+    rval._matched = true;
+  }
+  return rval;
+}
+
+Expression::parsed_t Expression::parse(const match_t& match) {
+  parsed_t rval;
+  assert(false);
+  return rval;
+}
+// void Expression::emit(shaderbuilder::BackEnd& backend) const {
+// assert(false);
+//}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+AssignmentExpression::match_t AssignmentExpression::match(FnParseContext ctx) {
   match_t rval(ctx);
   assert(false);
   return rval;
 }
 
-ExpressionNode::parsed_t ExpressionNode::parse(const match_t& match) {
+AssignmentExpression::parsed_t AssignmentExpression::parse(const match_t& match) {
   parsed_t rval;
   assert(false);
   return rval;
 }
-//void ExpressionNode::emit(shaderbuilder::BackEnd& backend) const {
-  //assert(false);
+// void Expression::emit(shaderbuilder::BackEnd& backend) const {
+// assert(false);
 //}
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 DeclarationList::match_t DeclarationList::match(FnParseContext ctx) {
   match_t rval(ctx);
-  assert(false);
+  size_t count = 0;
+  size_t start = -1;
+  bool done    = false;
+  while (not done) {
+    auto mvd = VariableDeclaration::match(ctx);
+    if (mvd) {
+      count += mvd._count;
+      count++; // consume }
+      ctx = mvd.consume();
+    } else {
+      done = true;
+    }
+  }
+  if (count) {
+    rval._count   = count;
+    rval._start   = start;
+    rval._matched = true;
+  }
   return rval;
 }
 DeclarationList::parsed_t DeclarationList::parse(const match_t& match) {
@@ -268,16 +316,25 @@ DeclarationList::parsed_t DeclarationList::parse(const match_t& match) {
   return rval;
 }
 void DeclarationList::emit(shaderbuilder::BackEnd& backend) const {
-    for( auto c : _children )
-        c->emit(backend);
-    assert(false);
+  for (auto c : _children)
+    c->emit(backend);
+  assert(false);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 Statement::match_t Statement::match(FnParseContext ctx) {
   match_t rval(ctx);
-  assert(false);
+  if (auto mve = ExpressionStatement::match(ctx)) {
+    rval._matched = true;
+    rval._count += mve._count;
+    ctx = mve.consume();
+  }
+  else if (auto mvi = IterationStatement::match(ctx)) {
+    rval._matched = true;
+    rval._count += mvi._count;
+    ctx = mvi.consume();
+  }
   return rval;
 }
 
@@ -292,9 +349,100 @@ void Statement::emit(shaderbuilder::BackEnd& backend) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+ExpressionStatement::match_t ExpressionStatement::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  auto first_tok = ctx.tokenValue(0);
+  if (first_tok == ";") {
+    rval._matched = true;
+    rval._start   = ctx._startIndex;
+    rval._count   = 1;
+    return rval;
+  }
+  auto mve = Expression::match(ctx);
+  if (mve) {
+    rval._matched = true;
+    rval._start   = ctx._startIndex;
+    rval._count += mve._count;
+    ctx = mve.consume();
+  }
+  return rval;
+}
+
+ExpressionStatement::parsed_t ExpressionStatement::parse(const match_t& match) {
+  parsed_t rval;
+  assert(false);
+  return rval;
+}
+void ExpressionStatement::emit(shaderbuilder::BackEnd& backend) const {
+  assert(false);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+IterationStatement::match_t IterationStatement::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  auto first_tok = ctx.tokenValue(0);
+  if(auto mfs = ForLoopStatement::match(ctx)) {
+    rval._matched = true;
+    rval._start   = ctx._startIndex;
+    rval._count   = 1;
+    return rval;
+  }
+  return rval;
+}
+
+IterationStatement::parsed_t IterationStatement::parse(const match_t& match) {
+  parsed_t rval;
+  assert(false);
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+ForLoopStatement::match_t ForLoopStatement::match(const FnParseContext& ctx) {
+  match_t rval(ctx);
+  auto first_tok = ctx.tokenValue(0);
+  if (first_tok == "for") {
+    rval._matched = true;
+    rval._start   = ctx._startIndex;
+    rval._count   = 1;
+    return rval;
+  }
+  assert(false);
+  return rval;
+}
+
+ForLoopStatement::parsed_t ForLoopStatement::parse(const match_t& match) {
+  parsed_t rval;
+  assert(false);
+  return rval;
+}
+void ForLoopStatement::emit(shaderbuilder::BackEnd& backend) const {
+  assert(false);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 StatementList::match_t StatementList::match(FnParseContext ctx) {
   match_t rval(ctx);
-  assert(false);
+  size_t count = 0;
+  size_t start = -1;
+  bool done    = false;
+  while (not done) {
+    auto mvd = Statement::match(ctx);
+    if (mvd) {
+      count += mvd._count;
+      count++; // consume }
+      ctx = mvd.consume();
+    } else {
+      done = true;
+    }
+  }
+  if (count) {
+    rval._count   = count;
+    rval._start   = start;
+    rval._matched = true;
+  }
   return rval;
 }
 
@@ -312,29 +460,28 @@ void StatementList::emit(shaderbuilder::BackEnd& backend) const {
 CompoundStatement::match_t CompoundStatement::match(FnParseContext ctx) {
   match_t rval(ctx);
   int i = 0;
-  if( ctx.tokenValue(i++) != "{" )
+  if (ctx.tokenValue(i++) != "{")
     return rval;
   ////////////////////////////////////
   ctx._startIndex++; // consume {
   ////////////////////////////////////
-  if( auto mdl = DeclarationList::match(ctx) ){
-    if( ctx.tokenValue(mdl._count) == "}" ){
+  if (auto mdl = DeclarationList::match(ctx)) {
+    if (ctx.tokenValue(mdl._count) == "}") {
       rval._matched = true;
-      rval._count = mdl._count;
+      rval._count   = mdl._count;
       rval._count++; // consume }
       rval._start = mdl._start;
       assert(false);
-    }
-    else {
+    } else {
       ctx = mdl.consume(); // consume mdl
     }
   }
   ////////////////////////////////////
-  if( auto msl = StatementList::match(ctx)){
-    if( ctx.tokenValue(msl._count) == "}" ){
+  if (auto msl = StatementList::match(ctx)) {
+    if (ctx.tokenValue(msl._count) == "}") {
       rval._matched = true;
-      rval._count = msl._count;
-      rval._start = msl._start;
+      rval._count   = msl._count;
+      rval._start   = msl._start;
       assert(false);
     }
     assert(false);
