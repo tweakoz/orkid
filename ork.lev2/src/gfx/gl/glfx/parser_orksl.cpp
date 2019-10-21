@@ -67,6 +67,22 @@ void ParsedFunctionNode::emit(ork::lev2::glslfx::shaderbuilder::BackEnd& backend
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+Constant::match_t Constant::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  assert(false);
+  return rval;
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+StringLiteral::match_t StringLiteral::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  assert(false);
+  return rval;
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 TypeName::match_t TypeName::match(FnParseContext ctx) {
   match_t rval(ctx);
   int count = 0;

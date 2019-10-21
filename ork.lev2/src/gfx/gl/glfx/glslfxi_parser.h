@@ -252,6 +252,19 @@ struct DeclarationList : public ShaderEmittable {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+struct Constant : public ShaderEmittable {
+  Constant(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+  DECLARE_STD_EMITTABLE_FNS(Constant);
+};
+struct StringLiteral : public ShaderEmittable {
+  StringLiteral(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+  DECLARE_STD_EMITTABLE_FNS(StringLiteral);
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Expression : public ShaderEmittable {
