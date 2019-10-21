@@ -27,22 +27,19 @@ enum scan_state
 
 };
 
-struct Scanner
-{
-	Scanner(std::string blockregex);
-	/////////////////////////////////////////
-	char to_lower( char ch ) { return ((ch>='A')&&(ch<='Z')) ? (ch-'A'+'a') : ch; }
-	/////////////////////////////////////////
-	bool is_alf( char ch ) { return (to_lower(ch)>='a')&&(to_lower(ch<='z')); }
-	/////////////////////////////////////////
-	bool is_num( char ch ) { return (ch>='0')&&(ch<='9'); }
-	/////////////////////////////////////////
-	bool is_alfnum( char ch ) { return is_alf(ch)||is_num(ch); }
-	/////////////////////////////////////////
-	bool is_spc( char ch ) { return (ch==' ')||(ch==' ')||(ch=='\t'); }
-	/////////////////////////////////////////
-	bool is_septok( char ch )
-	{	return
+/////////////////////////////////////////
+inline char to_lower( char ch ) { return ((ch>='A')&&(ch<='Z')) ? (ch-'A'+'a') : ch; }
+/////////////////////////////////////////
+inline bool is_alf( char ch ) { return (to_lower(ch)>='a')&&(to_lower(ch<='z')); }
+/////////////////////////////////////////
+inline bool is_num( char ch ) { return (ch>='0')&&(ch<='9'); }
+/////////////////////////////////////////
+inline bool is_alfnum( char ch ) { return is_alf(ch)||is_num(ch); }
+/////////////////////////////////////////
+inline bool is_spc( char ch ) { return (ch==' ')||(ch==' ')||(ch=='\t'); }
+/////////////////////////////////////////
+inline bool is_septok( char ch )
+{	return
 		(ch==';')||(ch==':')||(ch=='{')||(ch=='}')
 		||	(ch=='[')||(ch==']')||(ch=='(')||(ch==')')
 		||	(ch=='*')||(ch=='+')||(ch=='-')||(ch=='=')
@@ -50,9 +47,14 @@ struct Scanner
 		||	(ch=='<')||(ch=='>')||(ch=='&')||(ch=='|')
 		||	(ch=='!')||(ch=='/')
 		;
-	}
-	/////////////////////////////////////////
-	bool is_content( char ch ) { return is_alfnum(ch)||(ch=='_')||(ch=='.'); }
+}
+/////////////////////////////////////////
+inline bool is_content( char ch ) { return is_alfnum(ch)||(ch=='_')||(ch=='.'); }
+/////////////////////////////////////////
+
+struct Scanner
+{
+	Scanner(std::string blockregex);
 	/////////////////////////////////////////
 	void FlushToken();
 	void AddToken( const Token& tok );
