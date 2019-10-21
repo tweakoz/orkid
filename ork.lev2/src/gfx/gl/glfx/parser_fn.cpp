@@ -376,7 +376,24 @@ TernaryExpression::parsed_t TernaryExpression::parse(const match_t& match) {
 
 LogicalOrExpression::match_t LogicalOrExpression::match(FnParseContext ctx) {
   match_t rval(ctx);
-  assert(false);
+  bool done = false;
+  bool danglingor = false;
+  while(not done){
+    if( auto mla = LogicalAndExpression::match(ctx)){
+      ctx = mla.consume();
+      rval = rval+mla;
+      danglingor = false;
+    }
+    if( auto moo = OrOrOp::match(ctx)){
+      ctx = moo.consume();
+      rval = rval+moo;
+      danglingor = true;
+    }
+    else {
+      done = true;
+    }
+  }
+  assert(false==danglingor);
   return rval;
 }
 
@@ -388,6 +405,450 @@ LogicalOrExpression::parsed_t LogicalOrExpression::parse(const match_t& match) {
 // void Expression::emit(shaderbuilder::BackEnd& backend) const {
 // assert(false);
 //}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+LogicalAndExpression::match_t LogicalAndExpression::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  bool done = false;
+  bool danglingand = false;
+  while(not done){
+    if( auto mio = InclusiveOrExpression::match(ctx)){
+      ctx = mio.consume();
+      rval = rval+mio;
+      danglingand = false;
+    }
+    if( auto mao = AndAndOp::match(ctx)){
+      ctx = mao.consume();
+      rval = rval+mao;
+      danglingand = true;
+    }
+    else {
+      done = true;
+    }
+  }
+  assert(false==danglingand);
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+InclusiveOrExpression::match_t InclusiveOrExpression::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  bool done = false;
+  bool danglingor = false;
+  while(not done){
+    if( auto meo = ExclusiveOrExpression::match(ctx)){
+      ctx = meo.consume();
+      rval = rval+meo;
+      danglingor = false;
+    }
+    if( auto moo = OrOp::match(ctx)){
+      ctx = moo.consume();
+      rval = rval+moo;
+      danglingor = true;
+    }
+    else {
+      done = true;
+    }
+  }
+  assert(false==danglingor);
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+ExclusiveOrExpression::match_t ExclusiveOrExpression::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  bool done = false;
+  bool danglingxor = false;
+  while(not done){
+    if( auto meo = AndExpression::match(ctx)){
+      ctx = meo.consume();
+      rval = rval+meo;
+      danglingxor = false;
+    }
+    if( auto xoo = XorOp::match(ctx)){
+      ctx = xoo.consume();
+      rval = rval+xoo;
+      danglingxor = true;
+    }
+    else {
+      done = true;
+    }
+  }
+  assert(false==danglingxor);
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+AndExpression::match_t AndExpression::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  bool done = false;
+  bool danglingand = false;
+  while(not done){
+    if( auto eeo = EqualityExpression::match(ctx)){
+      ctx = eeo.consume();
+      rval = rval+eeo;
+      danglingand = false;
+    }
+    if( auto mao = AndOp::match(ctx)){
+      ctx = mao.consume();
+      rval = rval+mao;
+      danglingand = true;
+    }
+    else {
+      done = true;
+    }
+  }
+  assert(false==danglingand);
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+EqualityExpression::match_t EqualityExpression::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  bool done = false;
+  bool danglingop = false;
+  while(not done){
+    if( auto mro = RelationalExpression::match(ctx)){
+      ctx = mro.consume();
+      rval = rval+mro;
+      danglingop = false;
+    }
+    if( auto meo = EqOp::match(ctx)){
+      ctx = meo.consume();
+      rval = rval+meo;
+      danglingop = true;
+    }
+    else if( auto mno = NeqOp::match(ctx)){
+      ctx = mno.consume();
+      rval = rval+mno;
+      danglingop = true;
+    }
+    else {
+      done = true;
+    }
+  }
+  assert(false==danglingop);
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+RelationalExpression::match_t RelationalExpression::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  bool done = false;
+  bool danglingop = false;
+  while(not done){
+    if( auto mso = ShiftExpression::match(ctx)){
+      ctx = mso.consume();
+      rval = rval+mso;
+      danglingop = false;
+    }
+    if( auto mlt = LtOp::match(ctx)){
+      ctx = mlt.consume();
+      rval = rval+mlt;
+      danglingop = true;
+    }
+    else if( auto mlte = LtEqOp::match(ctx)){
+      ctx = mlte.consume();
+      rval = rval+mlte;
+      danglingop = true;
+    }
+    else if( auto mgt = GtOp::match(ctx)){
+      ctx = mgt.consume();
+      rval = rval+mgt;
+      danglingop = true;
+    }
+    else if( auto mgte = GtEqOp::match(ctx)){
+      ctx = mgte.consume();
+      rval = rval+mgte;
+      danglingop = true;
+    }
+    else {
+      done = true;
+    }
+  }
+  assert(false==danglingop);
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+ShiftExpression::match_t ShiftExpression::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  bool done = false;
+  bool danglingop = false;
+  while(not done){
+    if( auto mso = AdditiveExpression::match(ctx)){
+      ctx = mso.consume();
+      rval = rval+mso;
+      danglingop = false;
+    }
+    if( auto mlt = LeftOp::match(ctx)){
+      ctx = mlt.consume();
+      rval = rval+mlt;
+      danglingop = true;
+    }
+    else if( auto mrt = RightOp::match(ctx)){
+      ctx = mrt.consume();
+      rval = rval+mrt;
+      danglingop = true;
+    }
+    else {
+      done = true;
+    }
+  }
+  assert(false==danglingop);
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+AdditiveExpression::match_t AdditiveExpression::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  bool done = false;
+  bool danglingop = false;
+  while(not done){
+    if( auto mso = MultiplicativeExpression::match(ctx)){
+      ctx = mso.consume();
+      rval = rval+mso;
+      danglingop = false;
+    }
+    if( auto mlt = AddOp::match(ctx)){
+      ctx = mlt.consume();
+      rval = rval+mlt;
+      danglingop = true;
+    }
+    else if( auto mrt = SubOp::match(ctx)){
+      ctx = mrt.consume();
+      rval = rval+mrt;
+      danglingop = true;
+    }
+    else {
+      done = true;
+    }
+  }
+  assert(false==danglingop);
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+MultiplicativeExpression::match_t MultiplicativeExpression::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  bool done = false;
+  bool danglingop = false;
+  while(not done){
+    if( auto mso = CastExpression::match(ctx)){
+      ctx = mso.consume();
+      rval = rval+mso;
+      danglingop = false;
+    }
+    if( auto mlt = MulOp::match(ctx)){
+      ctx = mlt.consume();
+      rval = rval+mlt;
+      danglingop = true;
+    }
+    else if( auto mrt = DivOp::match(ctx)){
+      ctx = mrt.consume();
+      rval = rval+mrt;
+      danglingop = true;
+    }
+    else if( auto mrt = ModOp::match(ctx)){
+      ctx = mrt.consume();
+      rval = rval+mrt;
+      danglingop = true;
+    }
+    else {
+      done = true;
+    }
+  }
+  assert(false==danglingop);
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+CastExpression::match_t CastExpression::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  assert(false);
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+AddOp::match_t AddOp::match(FnParseContext ctx){
+  match_t rval(ctx);
+  if( ctx.tokenValue(0)=="+"){
+    rval._start == ctx._startIndex;
+    rval._count = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+SubOp::match_t SubOp::match(FnParseContext ctx){
+  match_t rval(ctx);
+  if( ctx.tokenValue(0)=="-"){
+    rval._start == ctx._startIndex;
+    rval._count = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+MulOp::match_t MulOp::match(FnParseContext ctx){
+  match_t rval(ctx);
+  if( ctx.tokenValue(0)=="*"){
+    rval._start == ctx._startIndex;
+    rval._count = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+DivOp::match_t DivOp::match(FnParseContext ctx){
+  match_t rval(ctx);
+  if( ctx.tokenValue(0)=="/"){
+    rval._start == ctx._startIndex;
+    rval._count = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+ModOp::match_t ModOp::match(FnParseContext ctx){
+  match_t rval(ctx);
+  if( ctx.tokenValue(0)=="%"){
+    rval._start == ctx._startIndex;
+    rval._count = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+
+
+
+LeftOp::match_t LeftOp::match(FnParseContext ctx){
+  match_t rval(ctx);
+  if( ctx.tokenValue(0)=="<<"){
+    rval._start == ctx._startIndex;
+    rval._count = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+RightOp::match_t RightOp::match(FnParseContext ctx){
+  match_t rval(ctx);
+  if( ctx.tokenValue(0)==">>"){
+    rval._start == ctx._startIndex;
+    rval._count = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+
+OrOrOp::match_t OrOrOp::match(FnParseContext ctx){
+  match_t rval(ctx);
+  if( ctx.tokenValue(0)=="||"){
+    rval._start == ctx._startIndex;
+    rval._count = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+OrOp::match_t OrOp::match(FnParseContext ctx){
+  match_t rval(ctx);
+  if( ctx.tokenValue(0)=="|"){
+    rval._start == ctx._startIndex;
+    rval._count = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+XorOp::match_t XorOp::match(FnParseContext ctx){
+  match_t rval(ctx);
+  if( ctx.tokenValue(0)=="^"){
+    rval._start == ctx._startIndex;
+    rval._count = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+LtOp::match_t LtOp::match(FnParseContext ctx){
+  match_t rval(ctx);
+  if( ctx.tokenValue(0)=="<"){
+    rval._start == ctx._startIndex;
+    rval._count = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+LtEqOp::match_t LtEqOp::match(FnParseContext ctx){
+  match_t rval(ctx);
+  if( ctx.tokenValue(0)=="<="){
+    rval._start == ctx._startIndex;
+    rval._count = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+GtOp::match_t GtOp::match(FnParseContext ctx){
+  match_t rval(ctx);
+  if( ctx.tokenValue(0)==">"){
+    rval._start == ctx._startIndex;
+    rval._count = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+GtEqOp::match_t GtEqOp::match(FnParseContext ctx){
+  match_t rval(ctx);
+  if( ctx.tokenValue(0)==">="){
+    rval._start == ctx._startIndex;
+    rval._count = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+EqOp::match_t EqOp::match(FnParseContext ctx){
+  match_t rval(ctx);
+  if( ctx.tokenValue(0)=="=="){
+    rval._start == ctx._startIndex;
+    rval._count = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+NeqOp::match_t NeqOp::match(FnParseContext ctx){
+  match_t rval(ctx);
+  if( ctx.tokenValue(0)=="!="){
+    rval._start == ctx._startIndex;
+    rval._count = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+AndAndOp::match_t AndAndOp::match(FnParseContext ctx){
+  match_t rval(ctx);
+  if( ctx.tokenValue(0)=="&&"){
+    rval._start == ctx._startIndex;
+    rval._count = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+AndOp::match_t AndOp::match(FnParseContext ctx){
+  match_t rval(ctx);
+  if( ctx.tokenValue(0)=="&"){
+    rval._start == ctx._startIndex;
+    rval._count = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -189,6 +189,24 @@ DECLARE_STD_EMITTABLE_FNS(xxx)\
 
 DECLARE_STD_EMITTABLE(OpenBracket);
 DECLARE_STD_EMITTABLE(CloseBracket);
+DECLARE_STD_EMITTABLE(OrOp);
+DECLARE_STD_EMITTABLE(OrOrOp);
+DECLARE_STD_EMITTABLE(AndOp);
+DECLARE_STD_EMITTABLE(AndAndOp);
+DECLARE_STD_EMITTABLE(XorOp);
+DECLARE_STD_EMITTABLE(EqOp);
+DECLARE_STD_EMITTABLE(NeqOp);
+DECLARE_STD_EMITTABLE(LtOp);
+DECLARE_STD_EMITTABLE(LtEqOp);
+DECLARE_STD_EMITTABLE(GtOp);
+DECLARE_STD_EMITTABLE(GtEqOp);
+DECLARE_STD_EMITTABLE(LeftOp);
+DECLARE_STD_EMITTABLE(RightOp);
+DECLARE_STD_EMITTABLE(AddOp);
+DECLARE_STD_EMITTABLE(SubOp);
+DECLARE_STD_EMITTABLE(MulOp);
+DECLARE_STD_EMITTABLE(DivOp);
+DECLARE_STD_EMITTABLE(ModOp);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -226,6 +244,19 @@ struct Expression : public ShaderEmittable {
   }
   DECLARE_STD_EMITTABLE_FNS(Expression);
   std::vector<ShaderBodyElement*> _children;
+};
+
+struct CastExpression : public ShaderEmittable {
+  CastExpression(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+  DECLARE_STD_EMITTABLE_FNS(CastExpression);
+};
+struct MultiplicativeExpression : public ShaderEmittable {
+  MultiplicativeExpression(ContainerNode* cnode)
+      : ShaderEmittable(cnode) {
+  }
+  DECLARE_STD_EMITTABLE_FNS(MultiplicativeExpression);
 };
 
 struct AssignmentExpression : public ShaderEmittable {
