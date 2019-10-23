@@ -26,23 +26,33 @@ namespace ork::lev2::glslfx {
 
 UnaryOp::match_t UnaryOp::match(FnParseContext ctx) {
   match_t rval(ctx);
-  if (auto m=AddOp::match(ctx))
+  if (auto m = AddOp::match(ctx))
     rval = m;
-  else if (auto m=SubOp::match(ctx))
+  else if (auto m = SubOp::match(ctx))
     rval = m;
-  else if (auto m=MulOp::match(ctx))
+  else if (auto m = MulOp::match(ctx))
     rval = m;
-  else if (auto m=NotOp::match(ctx))
+  else if (auto m = NotOp::match(ctx))
     rval = m;
-  else if (auto m=BitNotOp::match(ctx))
+  else if (auto m = BitNotOp::match(ctx))
     rval = m;
-  else if (auto m=AndOp::match(ctx))
+  else if (auto m = AndOp::match(ctx))
     rval = m;
   return rval;
 }
 SizeofOp::match_t SizeofOp::match(FnParseContext ctx) {
   match_t rval(ctx);
   if (ctx.tokenValue(0) == "sizeof") {
+    rval._start == ctx._startIndex;
+    rval._count   = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+
+DotOp::match_t DotOp::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  if (ctx.tokenValue(0) == ".") {
     rval._start == ctx._startIndex;
     rval._count   = 1;
     rval._matched = true;
@@ -87,7 +97,6 @@ DecOp::match_t DecOp::match(FnParseContext ctx) {
   }
   return rval;
 }
-
 
 AddOp::match_t AddOp::match(FnParseContext ctx) {
   match_t rval(ctx);
@@ -259,21 +268,18 @@ AndOp::match_t AndOp::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-AssignmentOperator::match_t AssignmentOperator::match(FnParseContext ctx) {
+InitialAssignmentOperator::match_t InitialAssignmentOperator::match(FnParseContext ctx) {
   match_t rval(ctx);
-  if (ctx.tokenValue(0) == "=") {
-    auto op = ctx.tokenValue(1);
-    if (op == "*=" or op == "+=" or op == "-=" or op == "/=" or op == "&=" or op == "|=" or op == "<<=" or op == ">>=" or
-        op == "^=" ) {
-      rval._start   = ctx._startIndex;
-      rval._count   = 2;
-      rval._matched = true;
-    }
+  auto op = ctx.tokenValue(0);
+  if (op == "=") {
+    rval._start   = ctx._startIndex;
+    rval._count   = 1;
+    rval._matched = true;
   }
   return rval;
 }
 
-AssignmentOperator::parsed_t AssignmentOperator::parse(const match_t& match) {
+InitialAssignmentOperator::parsed_t InitialAssignmentOperator::parse(const match_t& match) {
   parsed_t rval;
   assert(false);
   return rval;
@@ -283,5 +289,28 @@ AssignmentOperator::parsed_t AssignmentOperator::parse(const match_t& match) {
 //}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::glslfx {
+
+MutatingAssignmentOperator::match_t MutatingAssignmentOperator::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  auto op = ctx.tokenValue(0);
+  if (op == "=" or op == "*=" or op == "+=" or op == "-=" or op == "/=" or op == "&=" or op == "|=" or op == "<<=" or op == ">>=" or
+      op == "^=") {
+    rval._start   = ctx._startIndex;
+    rval._count   = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+
+MutatingAssignmentOperator::parsed_t MutatingAssignmentOperator::parse(const match_t& match) {
+  parsed_t rval;
+  assert(false);
+  return rval;
+}
+// void Expression::emit(shaderbuilder::BackEnd& backend) const {
+// assert(false);
+//}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+} // namespace ork::lev2::glslfx
 /////////////////////////////////////////////////////////////////////////////////////////////////

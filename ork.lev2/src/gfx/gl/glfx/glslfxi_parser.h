@@ -93,8 +93,8 @@ struct FnMatchResultsBas {
 
 
 
-  size_t _start = -1;
-  size_t _count   = -1;
+  size_t _start = 0;
+  size_t _count   = 0;
   size_t end() const { return _start+_count; }
   bool _matched = false;
   FnParseContext _ctx;
@@ -120,8 +120,10 @@ template <typename T> struct FnMatchResults : public FnMatchResultsBas {
 
   FnMatchResults operator+ (const FnMatchResults& rhs) const {
     FnMatchResults rval = *this;
-    assert(_matched and rhs._matched);
+    if( false == _matched )
+      rval._start = rhs._start;
     rval._count += rhs._count;
+    rval._matched |= rhs._matched;
     return rval;
   }
 
@@ -185,7 +187,23 @@ xxx(ContainerNode* cnode)\
 DECLARE_STD_EMITTABLE_FNS(xxx)\
 };
 
+#define DECLARE_STD_ABSTRACT_EMITTABLE(xxx)\
+struct xxx : public ShaderEmittable {\
+xxx(ContainerNode* cnode)\
+    : ShaderEmittable(cnode) {\
+}\
+DECLARE_STD_FNS(xxx)\
+};
+
 ///////////////////////////////////////////////////////////////////////////////
+// elemental types
+///////////////////////////////////////////////////////////////////////////////
+
+DECLARE_STD_EMITTABLE(Constant);
+DECLARE_STD_EMITTABLE(StringLiteral);
+DECLARE_STD_EMITTABLE(TypeName);
+DECLARE_STD_EMITTABLE(Identifier);
+DECLARE_STD_EMITTABLE(Keyword);
 
 DECLARE_STD_EMITTABLE(OpenCurly);
 DECLARE_STD_EMITTABLE(CloseCurly);
@@ -194,12 +212,10 @@ DECLARE_STD_EMITTABLE(CloseSquare);
 DECLARE_STD_EMITTABLE(OpenParen);
 DECLARE_STD_EMITTABLE(CloseParen);
 
-DECLARE_STD_EMITTABLE(TypeName);
-DECLARE_STD_EMITTABLE(Identifier);
-
 DECLARE_STD_EMITTABLE(SizeofOp);
 DECLARE_STD_EMITTABLE(UnaryOp);
 
+DECLARE_STD_EMITTABLE(DotOp);
 DECLARE_STD_EMITTABLE(NotOp);
 DECLARE_STD_EMITTABLE(BitNotOp);
 
@@ -223,6 +239,9 @@ DECLARE_STD_EMITTABLE(SubOp);
 DECLARE_STD_EMITTABLE(MulOp);
 DECLARE_STD_EMITTABLE(DivOp);
 DECLARE_STD_EMITTABLE(ModOp);
+
+DECLARE_STD_EMITTABLE(InitialAssignmentOperator);
+DECLARE_STD_EMITTABLE(MutatingAssignmentOperator);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -252,18 +271,30 @@ struct DeclarationList : public ShaderEmittable {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-struct Constant : public ShaderEmittable {
-  Constant(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(Constant);
-};
-struct StringLiteral : public ShaderEmittable {
-  StringLiteral(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(StringLiteral);
-};
+DECLARE_STD_EMITTABLE(ArgumentExpressionList);
+DECLARE_STD_EMITTABLE(PrimaryExpression);
+
+DECLARE_STD_EMITTABLE(CastExpression);
+DECLARE_STD_EMITTABLE(PostFixExpression);
+DECLARE_STD_EMITTABLE(MultiplicativeExpression);
+DECLARE_STD_EMITTABLE(AssignmentExpression);
+DECLARE_STD_EMITTABLE(LogicalOrExpression);
+DECLARE_STD_EMITTABLE(LogicalAndExpression);
+DECLARE_STD_EMITTABLE(ExclusiveOrExpression);
+DECLARE_STD_EMITTABLE(InclusiveOrExpression);
+DECLARE_STD_EMITTABLE(AndExpression);
+DECLARE_STD_EMITTABLE(EqualityExpression);
+DECLARE_STD_EMITTABLE(RelationalExpression);
+DECLARE_STD_EMITTABLE(ShiftExpression);
+DECLARE_STD_EMITTABLE(AdditiveExpression);
+DECLARE_STD_EMITTABLE(UnaryExpression);
+
+DECLARE_STD_EMITTABLE(Statement);
+DECLARE_STD_EMITTABLE(ExpressionStatement);
+DECLARE_STD_EMITTABLE(InstantiationStatement);
+
+DECLARE_STD_ABSTRACT_EMITTABLE(ConditionalExpression);
+DECLARE_STD_ABSTRACT_EMITTABLE(IterationStatement);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -275,151 +306,11 @@ struct Expression : public ShaderEmittable {
   std::vector<ShaderBodyElement*> _children;
 };
 
-struct ArgumentExpressionList : public ShaderEmittable {
-  ArgumentExpressionList(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(ArgumentExpressionList);
-};
-struct PrimaryExpression : public ShaderEmittable {
-  PrimaryExpression(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(PrimaryExpression);
-};
-
-struct CastExpression : public ShaderEmittable {
-  CastExpression(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(CastExpression);
-};
-struct PostFixExpression : public ShaderEmittable {
-  PostFixExpression(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(PostFixExpression);
-};
-struct MultiplicativeExpression : public ShaderEmittable {
-  MultiplicativeExpression(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(MultiplicativeExpression);
-};
-
-struct AssignmentExpression : public ShaderEmittable {
-  AssignmentExpression(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(AssignmentExpression);
-};
-
-struct ConditionalExpression : public ShaderEmittable {
-  ConditionalExpression(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_FNS(ConditionalExpression);
-};
-
 struct TernaryExpression : public ConditionalExpression {
   TernaryExpression(ContainerNode* cnode)
       : ConditionalExpression(cnode) {
   }
   DECLARE_STD_EMITTABLE_FNS(TernaryExpression);
-};
-
-struct LogicalOrExpression : public ShaderEmittable {
-  LogicalOrExpression(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(LogicalOrExpression);
-};
-
-struct LogicalAndExpression : public ShaderEmittable {
-  LogicalAndExpression(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(LogicalAndExpression);
-};
-
-struct InclusiveOrExpression : public ShaderEmittable {
-  InclusiveOrExpression(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(InclusiveOrExpression);
-};
-
-struct ExclusiveOrExpression : public ShaderEmittable {
-  ExclusiveOrExpression(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(ExclusiveOrExpression);
-};
-
-struct AndExpression : public ShaderEmittable {
-  AndExpression(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(AndExpression);
-};
-
-struct EqualityExpression : public ShaderEmittable {
-  EqualityExpression(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(EqualityExpression);
-};
-
-struct RelationalExpression : public ShaderEmittable {
-  RelationalExpression(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(RelationalExpression);
-};
-
-struct ShiftExpression : public ShaderEmittable {
-  ShiftExpression(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(ShiftExpression);
-};
-
-struct AdditiveExpression : public ShaderEmittable {
-  AdditiveExpression(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(AdditiveExpression);
-};
-
-struct UnaryExpression : public ShaderEmittable {
-  UnaryExpression(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(UnaryExpression);
-};
-
-struct AssignmentOperator : public ShaderEmittable {
-  AssignmentOperator(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(AssignmentOperator);
-};
-
-///////////////////////////////////////////////////////////////////////////////
-struct Statement : public ShaderEmittable {
-  Statement(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(Statement);
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct ExpressionStatement : public ShaderEmittable {
-  ExpressionStatement(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_EMITTABLE_FNS(ExpressionStatement);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -439,15 +330,6 @@ struct CompoundStatement : public FnElement {
       : FnElement(cnode) {
   }
   DECLARE_STD_EMITTABLE_FNS(CompoundStatement);
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct IterationStatement : public ShaderEmittable {
-  IterationStatement(ContainerNode* cnode)
-      : ShaderEmittable(cnode) {
-  }
-  DECLARE_STD_FNS(IterationStatement);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -996,6 +878,7 @@ struct ContainerNode : public AstNode {
   void parse();
 
   bool validateTypeName(const std::string typeName) const;
+  bool validateKeyword(const std::string typeName) const;
   bool validateIdentifierName(const std::string typeName) const;
   bool isIoAttrDecorator(const std::string typeName) const;
 
@@ -1023,6 +906,7 @@ struct ContainerNode : public AstNode {
   std::unordered_map<std::string, TechniqueNode*> _techniqueNodes;
 
   std::set<std::string> _validTypeNames;
+  std::set<std::string> _keywords;
   std::set<std::string> _validOutputDecorators;
   std::map<std::string, StructNode*> _structTypes;
 };

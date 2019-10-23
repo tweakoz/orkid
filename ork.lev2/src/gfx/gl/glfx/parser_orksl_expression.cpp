@@ -38,7 +38,6 @@ CastExpression::match_t CastExpression::match(FnParseContext ctx) {
       }
     }
   }
-  assert(false);
   return rval;
 }
 
@@ -53,8 +52,8 @@ Expression::match_t Expression::match(FnParseContext ctx) {
   while (not done) {
     auto mva = AssignmentExpression::match(ctx);
     if (mva) {
-      count += mva._count;
-      ctx = mva.consume();
+    // todo fix left recursive
+      return mva;
     }
     auto try_tok = ctx.tokenValue(0);
     if (try_tok == ",") {
@@ -63,6 +62,7 @@ Expression::match_t Expression::match(FnParseContext ctx) {
     } else if (try_tok == ";") {
       done = true;
     } else {
+      done = true;
       match = false;
     }
   }
@@ -92,7 +92,7 @@ AssignmentExpression::match_t AssignmentExpression::match(FnParseContext ctx) {
   } else if (auto mvu = UnaryExpression::match(ctx)) {
     size_t count = mvu._count;
     auto ctx2    = mvu.consume();
-    if (auto mvo = AssignmentOperator::match(ctx2)) {
+    if (auto mvo = MutatingAssignmentOperator::match(ctx2)) {
       count += mvo._count;
       auto ctx3 = mvo.consume();
       if (auto mva = AssignmentExpression::match(ctx3)) {
@@ -103,7 +103,6 @@ AssignmentExpression::match_t AssignmentExpression::match(FnParseContext ctx) {
       }
     }
   }
-  assert(false);
   return rval;
 }
 
@@ -117,9 +116,22 @@ AssignmentExpression::parsed_t AssignmentExpression::parse(const match_t& match)
 //}
 
 PrimaryExpression::match_t PrimaryExpression::match(FnParseContext ctx) {
-  const auto ctxbase = ctx;
-  match_t rval(ctxbase);
-  assert(false);
+  match_t rval(ctx);
+  if( auto m = Identifier::match(ctx))
+    return m;
+  else if( auto m = Constant::match(ctx))
+    return m;
+  else if( auto m = StringLiteral::match(ctx))
+    return m;
+  else if( auto m = OpenParen::match(ctx)){
+    auto c2 = m.consume();
+    if( auto m2 = Expression::match(c2)){
+      auto c3 = (m+m2).consume();
+      if( auto m3 = CloseParen::match(c3)){
+        rval = (m+m2+m3);
+      }
+    }
+  }
   return rval;
 }
 
@@ -139,10 +151,26 @@ PostFixExpression::match_t PostFixExpression::match(FnParseContext ctx) {
   size_t count = 0;
   bool done = false;
   while(not done){
+    /////////////////////////////////////////////////
     if (auto m = PrimaryExpression::match(ctx)) {
+      return m;
+    }
+    /////////////////////////////////////////////////
+    else if (auto m = OpenSquare::match(ctx)) {
       ctx = m.consume();
       count += m._count;
+      if (auto m = Expression::match(ctx)) {
+        ctx = m.consume();
+        count += m._count;
+        if (auto m = CloseSquare::match(ctx)) {
+          ctx = m.consume();
+          count += m._count;
+        }
+        else
+          return match_t(ctxbase);
+      }
     }
+    /////////////////////////////////////////////////
     else if (auto m = OpenParen::match(ctx)) {
       ctx = m.consume();
       count += m._count;
@@ -161,7 +189,36 @@ PostFixExpression::match_t PostFixExpression::match(FnParseContext ctx) {
           return match_t(ctxbase);
       }
     }
+    /////////////////////////////////////////////////
+    else if (auto m = DotOp::match(ctx)) {
+      ctx = m.consume();
+      count += m._count;
+      if (auto m = Identifier::match(ctx)) {
+        ctx = m.consume();
+        count += m._count;
+      }
+    }
+    /////////////////////////////////////////////////
+    else if (auto m = IncOp::match(ctx)) {
+      ctx = m.consume();
+      count += m._count;
+    }
+    /////////////////////////////////////////////////
+    else if (auto m = DecOp::match(ctx)) {
+      ctx = m.consume();
+      count += m._count;
+    }
+    else {
+      done = true;
+    }
+    /////////////////////////////////////////////////
   }
+  if( count ){
+    rval._matched = true;
+    rval._start = ctxbase._startIndex;
+    rval._count = count;
+  }
+  return rval;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -282,6 +339,7 @@ LogicalOrExpression::match_t LogicalOrExpression::match(FnParseContext ctx) {
       ctx = mla.consume();
       rval = rval+mla;
       danglingor = false;
+      return rval;
     }
     if( auto moo = OrOrOp::match(ctx)){
       ctx = moo.consume();
@@ -316,6 +374,7 @@ LogicalAndExpression::match_t LogicalAndExpression::match(FnParseContext ctx) {
       ctx = mio.consume();
       rval = rval+mio;
       danglingand = false;
+      return rval;
     }
     if( auto mao = AndAndOp::match(ctx)){
       ctx = mao.consume();
@@ -341,6 +400,7 @@ InclusiveOrExpression::match_t InclusiveOrExpression::match(FnParseContext ctx) 
       ctx = meo.consume();
       rval = rval+meo;
       danglingor = false;
+      return rval;
     }
     if( auto moo = OrOp::match(ctx)){
       ctx = moo.consume();
@@ -366,6 +426,7 @@ ExclusiveOrExpression::match_t ExclusiveOrExpression::match(FnParseContext ctx) 
       ctx = meo.consume();
       rval = rval+meo;
       danglingxor = false;
+      return rval;
     }
     if( auto xoo = XorOp::match(ctx)){
       ctx = xoo.consume();
@@ -416,6 +477,7 @@ EqualityExpression::match_t EqualityExpression::match(FnParseContext ctx) {
       ctx = mro.consume();
       rval = rval+mro;
       danglingop = false;
+      return rval;
     }
     if( auto meo = EqOp::match(ctx)){
       ctx = meo.consume();
@@ -446,6 +508,7 @@ RelationalExpression::match_t RelationalExpression::match(FnParseContext ctx) {
       ctx = mso.consume();
       rval = rval+mso;
       danglingop = false;
+      return rval;
     }
     if( auto mlt = LtOp::match(ctx)){
       ctx = mlt.consume();
@@ -486,6 +549,7 @@ ShiftExpression::match_t ShiftExpression::match(FnParseContext ctx) {
       ctx = mso.consume();
       rval = rval+mso;
       danglingop = false;
+      return rval;
     }
     if( auto mlt = LeftOp::match(ctx)){
       ctx = mlt.consume();
@@ -513,19 +577,20 @@ AdditiveExpression::match_t AdditiveExpression::match(FnParseContext ctx) {
   bool danglingop = false;
   while(not done){
     if( auto mso = MultiplicativeExpression::match(ctx)){
-      ctx = mso.consume();
       rval = rval+mso;
       danglingop = false;
+      ctx = mso.consume();
+      return rval;
     }
     if( auto mlt = AddOp::match(ctx)){
-      ctx = mlt.consume();
       rval = rval+mlt;
       danglingop = true;
+      ctx = mlt.consume();
     }
     else if( auto mrt = SubOp::match(ctx)){
-      ctx = mrt.consume();
       rval = rval+mrt;
       danglingop = true;
+      ctx = mrt.consume();
     }
     else {
       done = true;
@@ -543,23 +608,24 @@ MultiplicativeExpression::match_t MultiplicativeExpression::match(FnParseContext
   bool danglingop = false;
   while(not done){
     if( auto mso = CastExpression::match(ctx)){
-      ctx = mso.consume();
       rval = rval+mso;
+      ctx = mso.consume();
       danglingop = false;
+      return rval;
     }
     if( auto mlt = MulOp::match(ctx)){
-      ctx = mlt.consume();
       rval = rval+mlt;
+      ctx = mlt.consume();
       danglingop = true;
     }
     else if( auto mrt = DivOp::match(ctx)){
-      ctx = mrt.consume();
       rval = rval+mrt;
+      ctx = mrt.consume();
       danglingop = true;
     }
     else if( auto mrt = ModOp::match(ctx)){
-      ctx = mrt.consume();
       rval = rval+mrt;
+      ctx = mrt.consume();
       danglingop = true;
     }
     else {

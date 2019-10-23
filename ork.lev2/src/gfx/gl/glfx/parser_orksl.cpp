@@ -69,7 +69,79 @@ void ParsedFunctionNode::emit(ork::lev2::glslfx::shaderbuilder::BackEnd& backend
 
 Constant::match_t Constant::match(FnParseContext ctx) {
   match_t rval(ctx);
-  assert(false);
+  auto token = ctx.tokenValue(0);
+  ////////////////////////////////////
+  // boolean constants
+  ////////////////////////////////////
+  if( token=="true" or token =="false"){
+    rval._matched = true;
+    rval._start = ctx._startIndex;
+    rval._count = token.length();
+    return rval;
+  }
+  ////////////////////////////////////
+  // numeric constants, check leading digits
+  ////////////////////////////////////
+  bool done = false;
+  int count = 0;
+  char ch;
+  while( not done ){
+    ch = token[count];
+    if( is_num(ch) ){
+      count++;
+    }
+    else
+      done = true;
+  }
+  ////////////////////////////////////
+  // check decimal point
+  ////////////////////////////////////
+  ch = token[count];
+  if( ch == '.')
+    count++;
+  ////////////////////////////////////
+  // check following digits
+  ////////////////////////////////////
+  done = false;
+  while( not done ){
+    ch = token[count];
+    if( is_num(ch) ){
+      count++;
+    }
+    else
+      done = true;
+  }
+  ////////////////////////////////////
+  // early termination
+  ////////////////////////////////////
+  if( 0 == count )
+    return rval;
+  ////////////////////////////////////
+  // check e (scientific notation)
+  ////////////////////////////////////
+  ch = token[count];
+  if( ch == 'e')
+    count++;
+  ch = token[count];
+  if( ch == '-' or ch== '+')
+    count++;
+  done = false;
+  while( not done ){
+    ch = token[count];
+    if( is_num(ch) ){
+      count++;
+    }
+    else
+      done = true;
+  }
+  ////////////////////////////////////
+  if (count) {
+    rval._matched = true;
+    rval._start   = ctx._startIndex;
+    rval._count   = count;
+  }
+  return rval;
+
   return rval;
 };
 
@@ -77,7 +149,7 @@ Constant::match_t Constant::match(FnParseContext ctx) {
 
 StringLiteral::match_t StringLiteral::match(FnParseContext ctx) {
   match_t rval(ctx);
-  assert(false);
+  // dont need these yet, GLSL does not natively support them
   return rval;
 };
 
@@ -107,8 +179,11 @@ TypeName::match_t TypeName::match(FnParseContext ctx) {
 Identifier::match_t Identifier::match(FnParseContext ctx) {
   match_t rval(ctx);
   auto token = ctx.tokenValue(0);
+  if( ctx._container->validateKeyword(token) ){ // an identifer cannot be a keyword
+    return rval;
+  }
   ////////////////////////////////////
-  // check leading alphabetics's, _'s
+  // check leading alfa's or _'s
   ////////////////////////////////////
   bool done = false;
   int count = 0;
@@ -121,12 +196,12 @@ Identifier::match_t Identifier::match(FnParseContext ctx) {
       done = true;
   }
   ////////////////////////////////////
-  // check leading alphabetics's or numerics
+  // check leading alfnums or _'s
   ////////////////////////////////////
   done = false;
   while( not done ){
     char ch = token[count];
-    if( is_alf(ch) or (ch=='_') or is_num(ch) ){
+    if( is_alfnum(ch) or (ch=='_') ){
       count++;
     }
     else
@@ -136,7 +211,7 @@ Identifier::match_t Identifier::match(FnParseContext ctx) {
   if (count) {
     rval._matched = true;
     rval._start   = ctx._startIndex;
-    rval._count   = count;
+    rval._count   = 1;
   }
   return rval;
 }

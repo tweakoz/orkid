@@ -27,7 +27,9 @@ namespace ork::lev2::glslfx {
 
 Statement::match_t Statement::match(FnParseContext ctx) {
   match_t rval(ctx);
-  if (auto mve = ExpressionStatement::match(ctx)) {
+  if (auto mvi = InstantiationStatement::match(ctx)) {
+    rval = mvi;
+  } else if (auto mve = ExpressionStatement::match(ctx)) {
     rval = mve;
   } else if (auto mvi = IterationStatement::match(ctx)) {
     rval = mvi;
@@ -46,6 +48,34 @@ void Statement::emit(shaderbuilder::BackEnd& backend) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+InstantiationStatement::match_t InstantiationStatement::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  if (auto m = TypeName::match(ctx)) {
+    auto ctx2 = m.consume();
+    if (auto m2 = Identifier::match(ctx2)) {
+      auto ctx3 = (m + m2).consume();
+      if (auto m3 = InitialAssignmentOperator::match(ctx3)) {
+        auto ctx4 = (m + m2 + m3).consume();
+        if (auto m4 = Expression::match(ctx4)) {
+          rval = (m + m2 + m3 + m4);
+        }
+      }
+    }
+  }
+  return rval;
+}
+
+InstantiationStatement::parsed_t InstantiationStatement::parse(const match_t& match) {
+  parsed_t rval;
+  assert(false);
+  return rval;
+}
+void InstantiationStatement::emit(shaderbuilder::BackEnd& backend) const {
+  assert(false);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 ExpressionStatement::match_t ExpressionStatement::match(FnParseContext ctx) {
   match_t rval(ctx);
   auto first_tok = ctx.tokenValue(0);
@@ -54,8 +84,7 @@ ExpressionStatement::match_t ExpressionStatement::match(FnParseContext ctx) {
     rval._start   = ctx._startIndex;
     rval._count   = 1;
     return rval;
-  }
-  else if (auto mve = Expression::match(ctx)) {
+  } else if (auto mve = Expression::match(ctx)) {
     rval = mve;
   }
   return rval;
@@ -150,12 +179,12 @@ void StatementList::emit(shaderbuilder::BackEnd& backend) const {
 CompoundStatement::match_t CompoundStatement::match(FnParseContext ctx) {
   ////////////////////////////////////
   auto mfinal = OpenCurly::match(ctx);
-  if( not mfinal )
+  if (not mfinal)
     return match_t(ctx);
   ////////////////////////////////////
   // empty statement ?
   ////////////////////////////////////
-  if(auto mcb = CloseCurly::match(mfinal.consume())) {
+  if (auto mcb = CloseCurly::match(mfinal.consume())) {
     mfinal = mfinal + mcb;
     return match_t(mfinal);
   }
@@ -163,7 +192,7 @@ CompoundStatement::match_t CompoundStatement::match(FnParseContext ctx) {
   // declaration list optional
   ////////////////////////////////////
   if (auto mdl = DeclarationList::match(mfinal.consume()))
-      mfinal = mfinal + mdl;
+    mfinal = mfinal + mdl;
   ////////////////////////////////////
   // statement list mandatory
   ////////////////////////////////////
@@ -174,7 +203,7 @@ CompoundStatement::match_t CompoundStatement::match(FnParseContext ctx) {
   // closing bracket mandatory
   ////////////////////////////////////
   auto mcb = CloseCurly::match(mfinal.consume());
-  mfinal = mfinal + mcb;
+  mfinal   = mfinal + mcb;
   return mfinal;
 }
 
@@ -239,5 +268,5 @@ void IfStatement::emit(shaderbuilder::BackEnd& backend) const {
 }*/
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::glslfx {
+} // namespace ork::lev2::glslfx
 /////////////////////////////////////////////////////////////////////////////////////////////////

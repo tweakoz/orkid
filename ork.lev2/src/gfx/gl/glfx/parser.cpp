@@ -72,6 +72,23 @@ ContainerNode::ContainerNode(const AssetPath& pth, const Scanner& s)
 
   _validOutputDecorators.insert("perprimitiveNV");
   _validOutputDecorators.insert("taskNV");
+
+  std::string kws = "for while do struct const if else "
+                    "return not and or true false "
+                    "uniform layout switch case ";
+  
+  for (auto item : SplitString(typenames, ' '))
+    _keywords.insert(item);
+  for (auto item : _validOutputDecorators )
+    _keywords.insert(item);
+  for (auto item : SplitString(kws, ' '))
+    _keywords.insert(item);
+
+}
+///////////////////////////////////////////////////////////
+bool ContainerNode::validateKeyword(const std::string keyword) const {
+  auto it = _keywords.find(keyword);
+  return (it != _keywords.end());
 }
 ///////////////////////////////////////////////////////////
 bool ContainerNode::validateTypeName(const std::string typeName) const {
