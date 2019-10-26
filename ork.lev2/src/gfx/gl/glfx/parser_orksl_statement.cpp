@@ -34,6 +34,9 @@ Statement::match_t Statement::match(FnParseContext ctx) {
   } else if (auto mvi = IterationStatement::match(ctx)) {
     rval = mvi;
   }
+  else if (auto mempty = SemicolonOp::match(ctx)) {
+    rval = mempty; // empty statement
+  }
   return rval;
 }
 

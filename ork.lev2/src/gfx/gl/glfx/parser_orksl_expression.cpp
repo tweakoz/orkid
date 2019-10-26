@@ -50,7 +50,7 @@ Expression::match_t Expression::match(FnParseContext ctx) {
   bool done    = false;
   bool match   = true;
   while (not done) {
-    auto mva = AssignmentExpression::match(ctx);
+    auto mva = ExpressionNode::match(ctx);
     if (mva) {
     // todo fix left recursive
       return mva;
@@ -85,11 +85,105 @@ Expression::parsed_t Expression::parse(const match_t& match) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+QualifiedIdentifier::match_t QualifiedIdentifier::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  bool done = false;
+  size_t count = 0;
+  while(not done) {
+    if (auto mvu = Identifier::match(ctx)) {
+      count += mvu._count;
+      ctx = mvu.consume();
+      rval = rval+mvu;
+      if (auto mvd = DotOp::match(ctx)) {
+        count++;
+        ctx = mvd.consume();
+        rval = rval + mvd;
+      } else {
+        done = true;
+      }
+    }
+    else {
+      done = true;
+    }
+  }
+  return rval;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+ExpressionNode::match_t ExpressionNode::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  bool done = false;
+  size_t numparen = 0;
+  bool has_typename = false;
+  bool has_qid = false;
+  while(not done) {
+    if (auto mvo = OpenParen::match(ctx)) {
+      rval = rval+mvo;
+      ctx = rval.consume();
+      numparen++;
+      if( has_typename or has_qid ){
+        if( auto max = ArgumentExpressionList::match(ctx) ){
+          rval = rval+max;
+          ctx = rval.consume();
+        }
+      }
+      else { // expression scope
+        assert(false);
+      }
+      if(auto mvc = CloseParen::match(ctx)) {
+         rval = rval+mvc;
+         ctx = rval.consume();
+         numparen--;
+      }
+    }
+    else if (auto mvd = DotOp::match(ctx)) {
+      rval = rval + mvd;
+      ctx = rval.consume();
+      if (auto mvi = Identifier::match(ctx)) {
+        rval = rval + mvi;
+        ctx = rval.consume();
+      }
+    }
+    else if (auto mvq = TypeName::match(ctx)) {
+      has_typename = true;
+      rval = rval + mvq;
+      ctx = mvq.consume();
+      if (auto mvd = DotOp::match(ctx)) {
+        rval = rval + mvd;
+        ctx = rval.consume();
+      }
+    }
+    else if (auto mvq = QualifiedIdentifier::match(ctx)) {
+      rval = rval + mvq;
+      has_qid = true;
+      ctx = rval.consume();
+      if (auto mvd = DotOp::match(ctx)) {
+        rval = rval + mvq;
+        ctx = rval.consume();
+      }
+    }
+    else if (auto mvc = Constant::match(ctx)) {
+      rval = rval + mvc;
+      ctx = rval.consume();
+    }
+    else {
+      if( numparen>0 ){
+      }
+      else
+        done = true;
+    }
+  }
+  assert(numparen==0);
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 AssignmentExpression::match_t AssignmentExpression::match(FnParseContext ctx) {
   match_t rval(ctx);
-  if (auto mvc = ConditionalExpression::match(ctx)) {
-    rval = mvc;
-  } else if (auto mvu = UnaryExpression::match(ctx)) {
+  if (auto mvu = UnaryExpression::match(ctx)) {
     size_t count = mvu._count;
     auto ctx2    = mvu.consume();
     if (auto mvo = MutatingAssignmentOperator::match(ctx2)) {
@@ -103,45 +197,54 @@ AssignmentExpression::match_t AssignmentExpression::match(FnParseContext ctx) {
       }
     }
   }
+  else if (auto mvc = ConditionalExpression::match(ctx)) {
+    rval = mvc;
+  }
   return rval;
 }
 
-AssignmentExpression::parsed_t AssignmentExpression::parse(const match_t& match) {
-  parsed_t rval;
-  assert(false);
-  return rval;
-}
-// void Expression::emit(shaderbuilder::BackEnd& backend) const {
-// assert(false);
-//}
+/////////////////////////////////////////////////////////////////////////////////////////////////
 
-PrimaryExpression::match_t PrimaryExpression::match(FnParseContext ctx) {
+UnaryExpression::match_t UnaryExpression::match(FnParseContext ctx) {
   match_t rval(ctx);
-  if( auto m = Identifier::match(ctx))
+  if( auto m = PostFixExpression::match(ctx)){
     return m;
-  else if( auto m = Constant::match(ctx))
-    return m;
-  else if( auto m = StringLiteral::match(ctx))
-    return m;
-  else if( auto m = OpenParen::match(ctx)){
+  }
+  else if( auto m = IncOp::match(ctx)){
     auto c2 = m.consume();
-    if( auto m2 = Expression::match(c2)){
+    if( auto m2 = UnaryExpression::match(c2)){
+      return (m+m2);
+    }
+  }
+  else if( auto m = DecOp::match(ctx)){
+    auto c2 = m.consume();
+    if( auto m2 = UnaryExpression::match(c2)){
+      return (m+m2);
+    }
+  }
+  else if( auto m = UnaryOp::match(ctx)){
+    auto c2 = m.consume();
+    if( auto m2 = CastExpression::match(c2)){
+      return (m+m2);
+    }
+  }
+  else if( auto m = SizeofOp::match(ctx)){
+    auto c2 = m.consume();
+    if( auto m2 = UnaryExpression::match(c2)){
+      return (m+m2);
+    }
+    else if( auto m2 = OpenParen::match(c2)){
       auto c3 = (m+m2).consume();
-      if( auto m3 = CloseParen::match(c3)){
-        rval = (m+m2+m3);
+      if( auto m3 = TypeName::match(c3)){
+        auto c4 = (m+m2+m3).consume();
+        if( auto m4 = CloseParen::match(c4)){
+          return m+m2+m3+m4;
+        }
       }
     }
   }
   return rval;
 }
-
-ArgumentExpressionList::match_t ArgumentExpressionList::match(FnParseContext ctx) {
-  const auto ctxbase = ctx;
-  match_t rval(ctxbase);
-  assert(false);
-  return rval;
-}
-
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -223,46 +326,60 @@ PostFixExpression::match_t PostFixExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-UnaryExpression::match_t UnaryExpression::match(FnParseContext ctx) {
+
+AssignmentExpression::parsed_t AssignmentExpression::parse(const match_t& match) {
+  parsed_t rval;
+  assert(false);
+  return rval;
+}
+// void Expression::emit(shaderbuilder::BackEnd& backend) const {
+// assert(false);
+//}
+
+PrimaryExpression::match_t PrimaryExpression::match(FnParseContext ctx) {
   match_t rval(ctx);
-  if( auto m = PostFixExpression::match(ctx)){
+  if( auto m = Identifier::match(ctx))
     return m;
-  }
-  else if( auto m = IncOp::match(ctx)){
+  else if( auto m = Constant::match(ctx))
+    return m;
+  else if( auto m = StringLiteral::match(ctx))
+    return m;
+  else if( auto m = OpenParen::match(ctx)){
     auto c2 = m.consume();
-    if( auto m2 = UnaryExpression::match(c2)){
-      return (m+m2);
-    }
-  }
-  else if( auto m = DecOp::match(ctx)){
-    auto c2 = m.consume();
-    if( auto m2 = UnaryExpression::match(c2)){
-      return (m+m2);
-    }
-  }
-  else if( auto m = UnaryOp::match(ctx)){
-    auto c2 = m.consume();
-    if( auto m2 = CastExpression::match(c2)){
-      return (m+m2);
-    }
-  }
-  else if( auto m = SizeofOp::match(ctx)){
-    auto c2 = m.consume();
-    if( auto m2 = UnaryExpression::match(c2)){
-      return (m+m2);
-    }
-    else if( auto m2 = OpenParen::match(c2)){
+    if( auto m2 = Expression::match(c2)){
       auto c3 = (m+m2).consume();
-      if( auto m3 = TypeName::match(c3)){
-        auto c4 = (m+m2+m3).consume();
-        if( auto m4 = CloseParen::match(c4)){
-          return m+m2+m3+m4;
-        }
+      if( auto m3 = CloseParen::match(c3)){
+        rval = (m+m2+m3);
       }
     }
   }
   return rval;
 }
+
+ArgumentExpressionList::match_t ArgumentExpressionList::match(FnParseContext ctx) {
+  const auto ctxbase = ctx;
+  match_t rval(ctxbase);
+  bool done = false;
+  while(not done) {
+    if( auto m = ExpressionNode::match(ctx)){
+      rval = rval+m;
+      ctx = rval.consume();
+      if( auto m2 = CloseParen::match(ctx) )
+        done = true;
+      else if (auto m3 = CommaOp::match(ctx)) {
+        rval = rval + m3;
+        ctx  = rval.consume();
+      }
+    }
+    else{
+      done = true;
+    }
+  }
+  return rval;
+}
+
+
+
 
 UnaryExpression::parsed_t UnaryExpression::parse(const match_t& match) {
   parsed_t rval;

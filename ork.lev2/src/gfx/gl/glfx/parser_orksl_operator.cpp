@@ -268,6 +268,30 @@ AndOp::match_t AndOp::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+CommaOp::match_t CommaOp::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  if (ctx.tokenValue(0) == ",") {
+    rval._start == ctx._startIndex;
+    rval._count   = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+
+SemicolonOp::match_t SemicolonOp::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  if (ctx.tokenValue(0) == ";") {
+    rval._start == ctx._startIndex;
+    rval._count   = 1;
+    rval._matched = true;
+  }
+  return rval;
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 InitialAssignmentOperator::match_t InitialAssignmentOperator::match(FnParseContext ctx) {
   match_t rval(ctx);
   auto op = ctx.tokenValue(0);

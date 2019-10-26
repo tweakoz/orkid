@@ -54,33 +54,18 @@ struct BackEnd {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FnParseContext {
-  FnParseContext(ContainerNode* c, const ScannerView& v)
-      : _container(c)
-      , _view(v) {
-  }
-  FnParseContext(const FnParseContext&oth)
-    : _container(oth._container)
-    , _view(oth._view)
-    , _startIndex(oth._startIndex){
-
-  }
-  FnParseContext operator = (const FnParseContext&oth){
-    FnParseContext rval(oth._container,oth._view);
-    rval._startIndex = oth._startIndex;
-    return rval;
-  }
-  FnParseContext advance (size_t count) const {
-    FnParseContext rval(*this);
-    rval._startIndex = count;
-    return rval;
-  }
-
+  FnParseContext(ContainerNode* c, const ScannerView* v);
+  FnParseContext(const FnParseContext&oth);
+  FnParseContext& operator = (const FnParseContext&oth);
+  FnParseContext advance (size_t count) const;
   std::string tokenValue(size_t offset) const;
 
   ContainerNode* _container = nullptr;
   size_t _startIndex = 0;
-  const ScannerView& _view;
+  const ScannerView* _view;
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct FnMatchResultsBas {
 
@@ -99,6 +84,8 @@ struct FnMatchResultsBas {
   bool _matched = false;
   FnParseContext _ctx;
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> struct FnMatchResults : public FnMatchResultsBas {
 
@@ -215,6 +202,8 @@ DECLARE_STD_EMITTABLE(CloseParen);
 DECLARE_STD_EMITTABLE(SizeofOp);
 DECLARE_STD_EMITTABLE(UnaryOp);
 
+DECLARE_STD_EMITTABLE(SemicolonOp);
+DECLARE_STD_EMITTABLE(CommaOp);
 DECLARE_STD_EMITTABLE(DotOp);
 DECLARE_STD_EMITTABLE(NotOp);
 DECLARE_STD_EMITTABLE(BitNotOp);
@@ -276,6 +265,8 @@ DECLARE_STD_EMITTABLE(PrimaryExpression);
 
 DECLARE_STD_EMITTABLE(CastExpression);
 DECLARE_STD_EMITTABLE(PostFixExpression);
+DECLARE_STD_EMITTABLE(ExpressionNode);
+DECLARE_STD_EMITTABLE(QualifiedIdentifier);
 DECLARE_STD_EMITTABLE(MultiplicativeExpression);
 DECLARE_STD_EMITTABLE(AssignmentExpression);
 DECLARE_STD_EMITTABLE(LogicalOrExpression);

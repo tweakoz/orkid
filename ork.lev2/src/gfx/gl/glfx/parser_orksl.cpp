@@ -25,8 +25,31 @@ namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 std::string FnParseContext::tokenValue(size_t offset) const {
-  return _view.token(_startIndex + offset)->text;
+  return _view->token(_startIndex + offset)->text;
 }
+
+FnParseContext::FnParseContext(ContainerNode* c, const ScannerView* v)
+      : _container(c)
+      , _view(v) {
+  
+}
+FnParseContext::FnParseContext(const FnParseContext&oth)
+    : _container(oth._container)
+    , _view(oth._view)
+    , _startIndex(oth._startIndex){
+
+  }
+FnParseContext& FnParseContext::operator = (const FnParseContext&oth){
+    _container = oth._container;
+    _startIndex = oth._startIndex;
+    _view = oth._view;
+    return *this;
+  }
+FnParseContext FnParseContext::advance (size_t count) const {
+    FnParseContext rval(*this);
+    rval._startIndex = count;
+    return rval;
+  }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -35,7 +58,7 @@ int ParsedFunctionNode::parse(const ork::ScannerView& view) {
   auto open_tok = view.token(i);
   assert(open_tok->text == "{");
   bool done = false;
-  FnParseContext pctx(_container, view);
+  FnParseContext pctx(_container, &view);
   while (not done) {
     auto try_tok     = view.token(i)->text;
     pctx._startIndex = i;
@@ -198,7 +221,7 @@ Identifier::match_t Identifier::match(FnParseContext ctx) {
   ////////////////////////////////////
   // check leading alfnums or _'s
   ////////////////////////////////////
-  done = false;
+  done = (count==0);
   while( not done ){
     char ch = token[count];
     if( is_alfnum(ch) or (ch=='_') ){
