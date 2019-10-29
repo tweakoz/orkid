@@ -33,8 +33,9 @@ Statement::match_t Statement::match(FnParseContext ctx) {
     rval = mve;
   } else if (auto mvi = IterationStatement::match(ctx)) {
     rval = mvi;
-  }
-  else if (auto mempty = SemicolonOp::match(ctx)) {
+  } else if (auto mrs = ReturnStatement::match(ctx)) {
+    rval = mrs; // empty statement
+  } else if (auto mempty = SemicolonOp::match(ctx)) {
     rval = mempty; // empty statement
   }
   return rval;
@@ -130,7 +131,6 @@ ForLoopStatement::match_t ForLoopStatement::match(FnParseContext ctx) {
     rval._count   = 1;
     return rval;
   }
-  assert(false);
   return rval;
 }
 
@@ -205,7 +205,8 @@ CompoundStatement::match_t CompoundStatement::match(FnParseContext ctx) {
   ////////////////////////////////////
   // closing bracket mandatory
   ////////////////////////////////////
-  auto mcb = CloseCurly::match(mfinal.consume());
+  aut0 ctxx = mfinal.consume();
+  auto mcb = CloseCurly::match(ctxx);
   mfinal   = mfinal + mcb;
   return mfinal;
 }
@@ -221,19 +222,29 @@ void CompoundStatement::emit(shaderbuilder::BackEnd& backend) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*FnMatchResults ReturnStatement::match(const FnParseContext& ctx) {
-  FnMatchResults rval;
-  rval._matched = ctx.tokenValue(0) == "return";
+ReturnStatement::match_t ReturnStatement::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  bool matched = ctx.tokenValue(0) == "return";
+  if( matched ){
+    auto ctx2 = ctx;
+    ctx2._startIndex++;
+    if( auto me = ExpressionNode::match(ctx2)){
+      rval = me;
+      rval._count++; //  consume return keyword
+    }
+  }
   return rval;
 }
 
-int ReturnStatement::parse(const FnParseContext& ctx, const FnMatchResults& r) {
-  assert(false);
-  return 0;
-}
-void ReturnStatement::emit(shaderbuilder::BackEnd& backend) const {
-  assert(false);
-}
+//int ReturnStatement::parse(const FnParseContext& ctx, const FnMatchResults& r) {
+//  assert(false);
+  //return 0;
+//}
+//void ReturnStatement::emit(shaderbuilder::BackEnd& backend) const {
+  //assert(false);
+//}
+
+/*
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 

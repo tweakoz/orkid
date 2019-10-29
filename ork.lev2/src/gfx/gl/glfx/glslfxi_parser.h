@@ -283,6 +283,7 @@ DECLARE_STD_EMITTABLE(UnaryExpression);
 DECLARE_STD_EMITTABLE(Statement);
 DECLARE_STD_EMITTABLE(ExpressionStatement);
 DECLARE_STD_EMITTABLE(InstantiationStatement);
+DECLARE_STD_EMITTABLE(ReturnStatement);
 
 DECLARE_STD_ABSTRACT_EMITTABLE(ConditionalExpression);
 DECLARE_STD_ABSTRACT_EMITTABLE(IterationStatement);
