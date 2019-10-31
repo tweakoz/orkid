@@ -83,32 +83,6 @@ Expression::parsed_t Expression::parse(const match_t& match) {
 // assert(false);
 //}
 
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-QualifiedIdentifier::match_t QualifiedIdentifier::match(FnParseContext ctx) {
-  match_t rval(ctx);
-  bool done = false;
-  size_t count = 0;
-  while(not done) {
-    if (auto mvu = Identifier::match(ctx)) {
-      count += mvu._count;
-      ctx = mvu.consume();
-      rval = rval+mvu;
-      if (auto mvd = DotOp::match(ctx)) {
-        count++;
-        ctx = mvd.consume();
-        rval = rval + mvd;
-      } else {
-        done = true;
-      }
-    }
-    else {
-      done = true;
-    }
-  }
-  return rval;
-}
-
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -117,13 +91,14 @@ ExpressionNode::match_t ExpressionNode::match(FnParseContext ctx) {
   bool done = false;
   size_t numparen = 0;
   bool has_typename = false;
-  bool has_qid = false;
+  bool has_ref = false;
+  bool has_idp = false;
   while(not done) {
     if (auto mvo = OpenParen::match(ctx)) {
       rval = rval+mvo;
       ctx = rval.consume();
       numparen++;
-      if( has_typename or has_qid ){
+      if( has_typename or has_ref ){
         if( auto max = ArgumentExpressionList::match(ctx) ){
           rval = rval+max;
           ctx = rval.consume();
@@ -138,14 +113,6 @@ ExpressionNode::match_t ExpressionNode::match(FnParseContext ctx) {
          numparen--;
       }
     }
-    else if (auto mvd = DotOp::match(ctx)) {
-      rval = rval + mvd;
-      ctx = rval.consume();
-      if (auto mvi = Identifier::match(ctx)) {
-        rval = rval + mvi;
-        ctx = rval.consume();
-      }
-    }
     else if (auto mvq = TypeName::match(ctx)) {
       has_typename = true;
       rval = rval + mvq;
@@ -155,9 +122,9 @@ ExpressionNode::match_t ExpressionNode::match(FnParseContext ctx) {
         ctx = rval.consume();
       }
     }
-    else if (auto mvq = QualifiedIdentifier::match(ctx)) {
+    else if (auto mvq = Reference::match(ctx)) {
       rval = rval + mvq;
-      has_qid = true;
+      has_ref = true;
       ctx = rval.consume();
       if (auto mvd = DotOp::match(ctx)) {
         rval = rval + mvq;

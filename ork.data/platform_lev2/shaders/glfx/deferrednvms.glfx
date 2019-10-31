@@ -71,6 +71,9 @@ libblock lib_deferred : ub_light : ub_frg {
     };
     /////////////////////////////////////////////////////////
     float eyedepth(vec2 depthuv) {
+        // a.b[expr] = 5; ?
+        // or
+        // a.b [expr] = 5 ?
         float depthtex = texture(MapDepth, depthuv).r;
         float ndc      = depthtex * 2.0 - 1.0;
         return Zndc2eye.x / (ndc - Zndc2eye.y);

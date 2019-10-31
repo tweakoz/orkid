@@ -35,8 +35,6 @@ Statement::match_t Statement::match(FnParseContext ctx) {
     rval = mvi;
   } else if (auto mrs = ReturnStatement::match(ctx)) {
     rval = mrs; // empty statement
-  } else if (auto mempty = SemicolonOp::match(ctx)) {
-    rval = mempty; // empty statement
   }
   return rval;
 }
@@ -153,17 +151,15 @@ StatementList::match_t StatementList::match(FnParseContext ctx) {
   while (not done) {
     auto mvd = Statement::match(ctx);
     if (mvd) {
-      count += mvd._count;
-      count++; // consume }
-      ctx = mvd.consume();
+      rval = rval + mvd;
+      ctx = rval.consume();
+      if (auto msemi = SemicolonOp::match(ctx)) {
+        rval = rval + msemi;
+        ctx = rval.consume();
+      }
     } else {
       done = true;
     }
-  }
-  if (count) {
-    rval._count   = count;
-    rval._start   = start;
-    rval._matched = true;
   }
   return rval;
 }
@@ -205,7 +201,7 @@ CompoundStatement::match_t CompoundStatement::match(FnParseContext ctx) {
   ////////////////////////////////////
   // closing bracket mandatory
   ////////////////////////////////////
-  aut0 ctxx = mfinal.consume();
+  auto ctxx = mfinal.consume();
   auto mcb = CloseCurly::match(ctxx);
   mfinal   = mfinal + mcb;
   return mfinal;

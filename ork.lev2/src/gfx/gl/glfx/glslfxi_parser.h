@@ -158,6 +158,7 @@ struct ShaderEmittable : public AstNode {
 
 #define DECLARE_STD_FNS(xxx)\
 typedef FnMatchResults<xxx> match_t;\
+typedef std::shared_ptr<match_t> match_ptr_t;\
 typedef match_t::ParseResult parsed_t;\
 static match_t match(FnParseContext ctx);\
 static parsed_t parse(const match_t& match);\
@@ -190,6 +191,8 @@ DECLARE_STD_EMITTABLE(Constant);
 DECLARE_STD_EMITTABLE(StringLiteral);
 DECLARE_STD_EMITTABLE(TypeName);
 DECLARE_STD_EMITTABLE(Identifier);
+DECLARE_STD_EMITTABLE(IdentifierPath);
+DECLARE_STD_EMITTABLE(Reference);
 DECLARE_STD_EMITTABLE(Keyword);
 
 DECLARE_STD_EMITTABLE(OpenCurly);
@@ -266,7 +269,6 @@ DECLARE_STD_EMITTABLE(PrimaryExpression);
 DECLARE_STD_EMITTABLE(CastExpression);
 DECLARE_STD_EMITTABLE(PostFixExpression);
 DECLARE_STD_EMITTABLE(ExpressionNode);
-DECLARE_STD_EMITTABLE(QualifiedIdentifier);
 DECLARE_STD_EMITTABLE(MultiplicativeExpression);
 DECLARE_STD_EMITTABLE(AssignmentExpression);
 DECLARE_STD_EMITTABLE(LogicalOrExpression);

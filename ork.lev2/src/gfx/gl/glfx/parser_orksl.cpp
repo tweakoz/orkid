@@ -241,6 +241,50 @@ Identifier::match_t Identifier::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+IdentifierPath::match_t IdentifierPath::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  bool done = false;
+  while( not done ){
+    
+    if( auto mi = Identifier::match(ctx) ){
+      rval = rval + mi;
+      ctx = rval.consume();
+      if( auto md = DotOp::match(ctx) ){
+        rval = rval + md;
+        ctx = rval.consume();
+      }
+    }
+    else
+      done = true;
+  }
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+Reference::match_t Reference::match(FnParseContext ctx) {
+  match_t rval(ctx);
+  if( auto mi = IdentifierPath::match(ctx) ){
+    rval = rval + mi;
+    ctx = rval.consume();
+    if( auto mo = OpenSquare::match(ctx) ){
+      rval = rval + mo;
+      ctx = rval.consume();
+      auto me = Expression::match(ctx);
+      assert(me);
+      rval = rval + me;
+      ctx = rval.consume();
+      auto mc = CloseSquare::match(ctx);
+      assert(mc);
+      rval = rval + mc;
+      ctx = rval.consume();
+    }
+  }
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 VariableDeclaration::match_t VariableDeclaration::match(FnParseContext ctx) {
   match_t rval(ctx);
   if( auto m = TypeName::match(ctx)){
