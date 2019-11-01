@@ -127,7 +127,10 @@ struct FnMatchResultsBas {
 inline match_shptr_t operator+(match_shptr_t a, match_shptr_t b) {
   return a->merge(b);
 }
-
+inline operator bool ( match_shptr_t a ) {
+  if( not a ) return false;
+  return a->operator bool();
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> struct FnMatchResults : public FnMatchResultsBas {

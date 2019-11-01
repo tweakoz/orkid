@@ -149,15 +149,13 @@ void ForLoopStatement::emit(shaderbuilder::BackEnd& backend) const {
 
 match_shptr_t StatementList::match(FnParseContext ctx) {
   match_shptr_t rval;
+  rval = std::make_shared<match_t>(ctx);
   size_t count = 0;
   size_t start = -1;
   bool done    = false;
   while (not done) {
     auto mvd = Statement::match(ctx);
     if (mvd) {
-      if( not rval ){
-        rval = std::make_shared<match_t>(ctx);
-      }
       rval = rval + mvd;
       ctx = rval->consume();
       if (auto msemi = SemicolonOp::match(ctx)) {

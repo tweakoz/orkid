@@ -89,6 +89,7 @@ match_shptr_t Expression::match(FnParseContext ctx) {
 
 match_shptr_t ExpressionNode::match(FnParseContext ctx) {
   match_shptr_t rval;
+  rval = std::make_shared<match_t>(ctx);
   bool done = false;
   size_t numparen = 0;
   bool has_typename = false;
@@ -96,9 +97,6 @@ match_shptr_t ExpressionNode::match(FnParseContext ctx) {
   bool has_idp = false;
   while(not done) {
     if (auto mvo = OpenParen::match(ctx)) {
-      if( not rval ){
-        rval = std::make_shared<match_t>(ctx);
-      }
       rval = rval+mvo;
       ctx = rval->consume();
       numparen++;
