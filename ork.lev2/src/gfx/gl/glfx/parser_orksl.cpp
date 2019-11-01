@@ -309,11 +309,11 @@ match_shptr_t VariableDeclaration::match(FnParseContext ctx) {
   return rval;
 }
 
-VariableDeclaration::parsed_t VariableDeclaration::parse(const match_t& m) {
-  parsed_t rval;
-  assert(false);
-  return rval;
-}
+//parsed_t VariableDeclaration::parse(const match_t& m) {
+  //parsed_t rval;
+  //assert(false);
+  //return rval;
+//}
 void VariableDeclaration::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
@@ -423,10 +423,10 @@ match_shptr_t DeclarationList::match(FnParseContext ctx) {
   }
   return rval;
 }
-DeclarationList::parsed_t DeclarationList::parse(const match_t& match) {
-  parsed_t rval;
-  return rval;
-}
+//DeclarationList::parsed_t DeclarationList::parse(const match_t& match) {
+  //parsed_t rval;
+  //return rval;
+//}
 void DeclarationList::emit(shaderbuilder::BackEnd& backend) const {
   for (auto c : _children)
     c->emit(backend);

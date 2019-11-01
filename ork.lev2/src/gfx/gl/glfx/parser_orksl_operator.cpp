@@ -303,11 +303,11 @@ match_shptr_t InitialAssignmentOperator::match(FnParseContext ctx) {
   return rval;
 }
 
-InitialAssignmentOperator::parsed_t InitialAssignmentOperator::parse(const match_t& match) {
-  parsed_t rval;
-  assert(false);
-  return rval;
-}
+//InitialAssignmentOperator::parsed_t InitialAssignmentOperator::parse(const match_t& match) {
+  //parsed_t rval;
+  //assert(false);
+  //return rval;
+//}
 // void Expression::emit(shaderbuilder::BackEnd& backend) const {
 // assert(false);
 //}
@@ -326,11 +326,11 @@ match_shptr_t MutatingAssignmentOperator::match(FnParseContext ctx) {
   return rval;
 }
 
-MutatingAssignmentOperator::parsed_t MutatingAssignmentOperator::parse(const match_t& match) {
-  parsed_t rval;
-  assert(false);
-  return rval;
-}
+//parsed_t MutatingAssignmentOperator::parse(const match_t& match) {
+  //parsed_t rval;
+  //assert(false);
+  //return rval;
+//}
 // void Expression::emit(shaderbuilder::BackEnd& backend) const {
 // assert(false);
 //}

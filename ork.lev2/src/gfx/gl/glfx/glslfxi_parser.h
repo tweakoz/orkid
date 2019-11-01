@@ -85,6 +85,12 @@ struct FnMatchResultsBas;
 
 typedef std::shared_ptr<FnMatchResultsBas> match_shptr_t;
 
+struct ParseResult {
+    size_t _numtokens = 0;
+    AstNode* _node     = nullptr;
+};
+typedef ParseResult parsed_t;                                                                                           \
+
 struct FnMatchResultsBas {
 
   FnMatchResultsBas(FnParseContext ctx)
@@ -97,10 +103,6 @@ struct FnMatchResultsBas {
   }
   virtual match_shptr_t merge(match_shptr_t rhs) const = 0;
 
-  struct ParseResult {
-    size_t _numtokens = 0;
-    AstNode* _node     = nullptr;
-  };
   virtual ParseResult parse() = 0;
 
   FnParseContext consume() const {
@@ -138,7 +140,7 @@ template <typename T> struct FnMatchResults : public FnMatchResultsBas {
   }
 
   ParseResult parse() final {
-    return T::parse(*this);
+    return ParseResult(); //T::parse(*this);
   }
 
   match_shptr_t merge(match_shptr_t rhs) const final {
@@ -172,9 +174,8 @@ struct ShaderEmittable : public AstNode {
 
 #define DECLARE_STD_FNS(xxx)                                                                                                       \
   typedef FnMatchResults<xxx> match_t;                                                                                             \
-  typedef match_t::ParseResult parsed_t;                                                                                           \
-  static match_shptr_t match(FnParseContext ctx);                                                                                  \
-  static parsed_t parse(const match_t& match);
+  static match_shptr_t match(FnParseContext ctx);
+  //static parsed_t parse(const match_t& match);
 
 #define DECLARE_STD_EMITTABLE_FNS(xxx)                                                                                             \
   DECLARE_STD_FNS(xxx)                                                                                                             \

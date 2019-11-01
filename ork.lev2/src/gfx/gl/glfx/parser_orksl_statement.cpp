@@ -39,11 +39,11 @@ match_shptr_t Statement::match(FnParseContext ctx) {
   return rval;
 }
 
-Statement::parsed_t Statement::parse(const match_t& match) {
-  parsed_t rval;
-  assert(false);
-  return rval;
-}
+//parsed_t Statement::parse(const match_t& match) {
+  //parsed_t rval;
+  //assert(false);
+  //return rval;
+//}
 void Statement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
@@ -69,11 +69,11 @@ match_shptr_t InstantiationStatement::match(FnParseContext ctx) {
   return rval;
 }
 
-InstantiationStatement::parsed_t InstantiationStatement::parse(const match_t& match) {
-  parsed_t rval;
-  assert(false);
-  return rval;
-}
+//parsed_t InstantiationStatement::parse(const match_t& match) {
+  //parsed_t rval;
+  //assert(false);
+  //return rval;
+//}
 void InstantiationStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
@@ -95,11 +95,11 @@ match_shptr_t ExpressionStatement::match(FnParseContext ctx) {
   return rval;
 }
 
-ExpressionStatement::parsed_t ExpressionStatement::parse(const match_t& match) {
-  parsed_t rval;
-  assert(false);
-  return rval;
-}
+//parsed_t ExpressionStatement::parse(const match_t& match) {
+  //parsed_t rval;
+  //assert(false);
+  //return rval;
+//}
 void ExpressionStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
@@ -115,11 +115,11 @@ match_shptr_t IterationStatement::match(FnParseContext ctx) {
   return rval;
 }
 
-IterationStatement::parsed_t IterationStatement::parse(const match_t& match) {
-  parsed_t rval;
-  assert(false);
-  return rval;
-}
+//parsed_t IterationStatement::parse(const match_t& match) {
+  //parsed_t rval;
+  //assert(false);
+  //return rval;
+//}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -136,11 +136,11 @@ match_shptr_t ForLoopStatement::match(FnParseContext ctx) {
   return rval;
 }
 
-ForLoopStatement::parsed_t ForLoopStatement::parse(const match_t& match) {
-  parsed_t rval;
-  assert(false);
-  return rval;
-}
+//parsed_t ForLoopStatement::parse(const match_t& match) {
+  //parsed_t rval;
+  //assert(false);
+  //return rval;
+//}
 void ForLoopStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
@@ -171,11 +171,11 @@ match_shptr_t StatementList::match(FnParseContext ctx) {
   return rval;
 }
 
-StatementList::parsed_t StatementList::parse(const match_t& match) {
-  parsed_t rval;
-  assert(false);
-  return rval;
-}
+//parsed_t StatementList::parse(const match_t& match) {
+  //parsed_t rval;
+  //assert(false);
+  //return rval;
+//}
 void StatementList::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
@@ -215,11 +215,11 @@ match_shptr_t CompoundStatement::match(FnParseContext ctx) {
   return std::make_shared<match_t>(*mfinal.get());
 }
 
-CompoundStatement::parsed_t CompoundStatement::parse(const match_t& match) {
-  parsed_t rval;
-  assert(false);
-  return rval;
-}
+//parsed_t CompoundStatement::parse(const match_t& match) {
+  //parsed_t rval;
+  //assert(false);
+  //return rval;
+//}
 void CompoundStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }

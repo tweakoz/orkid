@@ -75,11 +75,11 @@ match_shptr_t Expression::match(FnParseContext ctx) {
   return rval;
 }
 
-Expression::parsed_t Expression::parse(const match_t& match) {
-  parsed_t rval;
-  assert(false);
-  return rval;
-}
+//parsed_t Expression::parse(const match_t& match) {
+  //parsed_t rval;
+  //assert(false);
+  //return rval;
+//}
 // void Expression::emit(shaderbuilder::BackEnd& backend) const {
 // assert(false);
 //}
@@ -300,11 +300,11 @@ match_shptr_t PostFixExpression::match(FnParseContext ctx) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-AssignmentExpression::parsed_t AssignmentExpression::parse(const match_t& match) {
-  parsed_t rval;
-  assert(false);
-  return rval;
-}
+//AssignmentExpression::parsed_t AssignmentExpression::parse(const match_t& match) {
+  //parsed_t rval;
+  //assert(false);
+  //return rval;
+//}
 // void Expression::emit(shaderbuilder::BackEnd& backend) const {
 // assert(false);
 //}
@@ -358,11 +358,11 @@ match_shptr_t ArgumentExpressionList::match(FnParseContext ctx) {
 
 
 
-UnaryExpression::parsed_t UnaryExpression::parse(const match_t& match) {
-  parsed_t rval;
-  assert(false);
-  return rval;
-}
+//UnaryExpression::parsed_t UnaryExpression::parse(const match_t& match) {
+  //parsed_t rval;
+  //assert(false);
+  //return rval;
+//}
 // void Expression::emit(shaderbuilder::BackEnd& backend) const {
 // assert(false);
 //}
@@ -380,11 +380,11 @@ match_shptr_t ConditionalExpression::match(FnParseContext ctx) {
   return rval;
 }
 
-ConditionalExpression::parsed_t ConditionalExpression::parse(const match_t& match) {
-  parsed_t rval;
+//parsed_t ConditionalExpression::parse(const match_t& match) {
+  //parsed_t rval;
 
-  return rval;
-}
+  //return rval;
+//}
 // void Expression::emit(shaderbuilder::BackEnd& backend) const {
 // assert(false);
 //}
@@ -414,11 +414,11 @@ match_shptr_t TernaryExpression::match(FnParseContext ctx) {
   return rval;
 }
 
-TernaryExpression::parsed_t TernaryExpression::parse(const match_t& match) {
-  parsed_t rval;
+//parsed_t TernaryExpression::parse(const match_t& match) {
+  //parsed_t rval;
 
-  return rval;
-}
+  //return rval;
+//}
 // void Expression::emit(shaderbuilder::BackEnd& backend) const {
 // assert(false);
 //}
@@ -450,11 +450,11 @@ match_shptr_t LogicalOrExpression::match(FnParseContext ctx) {
   return rval;
 }
 
-LogicalOrExpression::parsed_t LogicalOrExpression::parse(const match_t& match) {
-  parsed_t rval;
-  assert(false);
-  return rval;
-}
+//parsed_t LogicalOrExpression::parse(const match_t& match) {
+  //parsed_t rval;
+  //assert(false);
+  //return rval;
+//}
 // void Expression::emit(shaderbuilder::BackEnd& backend) const {
 // assert(false);
 //}
