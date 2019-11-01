@@ -24,10 +24,10 @@
 namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-UnaryOp::match_t UnaryOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t UnaryOp::match(FnParseContext ctx) {
+  match_shptr_t rval;
   if (auto m = AddOp::match(ctx))
-    rval = m;
+    rval = std::dynamic_pointer_cast<FnMatchResultsBas>(m);
   else if (auto m = SubOp::match(ctx))
     rval = m;
   else if (auto m = MulOp::match(ctx))
@@ -40,250 +40,250 @@ UnaryOp::match_t UnaryOp::match(FnParseContext ctx) {
     rval = m;
   return rval;
 }
-SizeofOp::match_t SizeofOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t SizeofOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "sizeof") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
 
-DotOp::match_t DotOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t DotOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == ".") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
 
-NotOp::match_t NotOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t NotOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "!") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
-BitNotOp::match_t BitNotOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t BitNotOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "~") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
 
-IncOp::match_t IncOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t IncOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "++") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
-DecOp::match_t DecOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t DecOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "--") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
 
-AddOp::match_t AddOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t AddOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "+") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
-SubOp::match_t SubOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t SubOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "-") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
-MulOp::match_t MulOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t MulOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "*") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
-DivOp::match_t DivOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t DivOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "/") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
-ModOp::match_t ModOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t ModOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "%") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
 
-LeftOp::match_t LeftOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t LeftOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "<<") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
-RightOp::match_t RightOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t RightOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == ">>") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
 
-OrOrOp::match_t OrOrOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t OrOrOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "||") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
-OrOp::match_t OrOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t OrOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "|") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
-XorOp::match_t XorOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t XorOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "^") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
-LtOp::match_t LtOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t LtOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "<") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
-LtEqOp::match_t LtEqOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t LtEqOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "<=") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
-GtOp::match_t GtOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t GtOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == ">") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
-GtEqOp::match_t GtEqOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t GtEqOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == ">=") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
-EqOp::match_t EqOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t EqOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "==") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
-NeqOp::match_t NeqOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t NeqOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "!=") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-AndAndOp::match_t AndAndOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t AndAndOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "&&") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
-AndOp::match_t AndOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t AndOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == "&") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-CommaOp::match_t CommaOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t CommaOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == ",") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
 
-SemicolonOp::match_t SemicolonOp::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t SemicolonOp::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   if (ctx.tokenValue(0) == ";") {
-    rval._start == ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start == ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
@@ -292,13 +292,13 @@ SemicolonOp::match_t SemicolonOp::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-InitialAssignmentOperator::match_t InitialAssignmentOperator::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t InitialAssignmentOperator::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   auto op = ctx.tokenValue(0);
   if (op == "=") {
-    rval._start   = ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start   = ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }
@@ -314,14 +314,14 @@ InitialAssignmentOperator::parsed_t InitialAssignmentOperator::parse(const match
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-MutatingAssignmentOperator::match_t MutatingAssignmentOperator::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t MutatingAssignmentOperator::match(FnParseContext ctx) {
+  auto rval=std::make_shared<match_t>(ctx);
   auto op = ctx.tokenValue(0);
   if (op == "=" or op == "*=" or op == "+=" or op == "-=" or op == "/=" or op == "&=" or op == "|=" or op == "<<=" or op == ">>=" or
       op == "^=") {
-    rval._start   = ctx._startIndex;
-    rval._count   = 1;
-    rval._matched = true;
+    rval->_start   = ctx._startIndex;
+    rval->_count   = 1;
+    rval->_matched = true;
   }
   return rval;
 }

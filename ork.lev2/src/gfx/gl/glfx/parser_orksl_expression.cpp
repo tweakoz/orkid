@@ -24,27 +24,27 @@
 namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-CastExpression::match_t CastExpression::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t CastExpression::match(FnParseContext ctx) {
+  match_shptr_t rval;
   if( auto m = UnaryExpression::match(ctx)){
     rval = m;
   }
   else if( auto m = OpenParen::match(ctx)){
-    auto c2 = m.consume();
+    auto c2 = m->consume();
     if( auto m2 = TypeName::match(c2)){
-      auto c3 = (m+m2).consume();
+      auto c3 = (m+m2)->consume();
       if( auto m3 = CloseParen::match( c3 )) {
-        rval = (m+m2+m3).consume();
+        rval = std::make_shared<match_t>((m+m2+m3)->consume());
       }
     }
   }
-  return rval;
+  return std::dynamic_pointer_cast<FnMatchResultsBas>(rval);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-Expression::match_t Expression::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t Expression::match(FnParseContext ctx) {
+  match_shptr_t rval;
   size_t count = 0;
   size_t start = -1;
   bool done    = false;
@@ -67,9 +67,10 @@ Expression::match_t Expression::match(FnParseContext ctx) {
     }
   }
   if (match) {
-    rval._count   = count;
-    rval._start   = start;
-    rval._matched = true;
+    rval = std::make_shared<match_t>(ctx);
+    rval->_count   = count;
+    rval->_start   = start;
+    rval->_matched = true;
   }
   return rval;
 }
@@ -86,8 +87,8 @@ Expression::parsed_t Expression::parse(const match_t& match) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-ExpressionNode::match_t ExpressionNode::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t ExpressionNode::match(FnParseContext ctx) {
+  match_shptr_t rval;
   bool done = false;
   size_t numparen = 0;
   bool has_typename = false;
@@ -95,13 +96,16 @@ ExpressionNode::match_t ExpressionNode::match(FnParseContext ctx) {
   bool has_idp = false;
   while(not done) {
     if (auto mvo = OpenParen::match(ctx)) {
+      if( not rval ){
+        rval = std::make_shared<match_t>(ctx);
+      }
       rval = rval+mvo;
-      ctx = rval.consume();
+      ctx = rval->consume();
       numparen++;
       if( has_typename or has_ref ){
         if( auto max = ArgumentExpressionList::match(ctx) ){
           rval = rval+max;
-          ctx = rval.consume();
+          ctx = rval->consume();
         }
       }
       else { // expression scope
@@ -109,31 +113,31 @@ ExpressionNode::match_t ExpressionNode::match(FnParseContext ctx) {
       }
       if(auto mvc = CloseParen::match(ctx)) {
          rval = rval+mvc;
-         ctx = rval.consume();
+         ctx = rval->consume();
          numparen--;
       }
     }
     else if (auto mvq = TypeName::match(ctx)) {
       has_typename = true;
       rval = rval + mvq;
-      ctx = mvq.consume();
+      ctx = mvq->consume();
       if (auto mvd = DotOp::match(ctx)) {
         rval = rval + mvd;
-        ctx = rval.consume();
+        ctx = rval->consume();
       }
     }
     else if (auto mvq = Reference::match(ctx)) {
       rval = rval + mvq;
       has_ref = true;
-      ctx = rval.consume();
+      ctx = rval->consume();
       if (auto mvd = DotOp::match(ctx)) {
         rval = rval + mvq;
-        ctx = rval.consume();
+        ctx = rval->consume();
       }
     }
     else if (auto mvc = Constant::match(ctx)) {
       rval = rval + mvc;
-      ctx = rval.consume();
+      ctx = rval->consume();
     }
     else {
       if( numparen>0 ){
@@ -148,19 +152,20 @@ ExpressionNode::match_t ExpressionNode::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-AssignmentExpression::match_t AssignmentExpression::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t AssignmentExpression::match(FnParseContext ctx) {
+  match_shptr_t rval;
   if (auto mvu = UnaryExpression::match(ctx)) {
-    size_t count = mvu._count;
-    auto ctx2    = mvu.consume();
+    size_t count = mvu->_count;
+    auto ctx2    = mvu->consume();
     if (auto mvo = MutatingAssignmentOperator::match(ctx2)) {
-      count += mvo._count;
-      auto ctx3 = mvo.consume();
+      count += mvo->_count;
+      auto ctx3 = mvo->consume();
       if (auto mva = AssignmentExpression::match(ctx3)) {
-        count += mva._count;
-        rval._count   = count;
-        rval._start   = ctx._startIndex;
-        rval._matched = true;
+        count += mva->_count;
+        rval = std::make_shared<match_t>(ctx);
+        rval->_count   = count;
+        rval->_start   = ctx._startIndex;
+        rval->_matched = true;
       }
     }
   }
@@ -172,38 +177,38 @@ AssignmentExpression::match_t AssignmentExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-UnaryExpression::match_t UnaryExpression::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t UnaryExpression::match(FnParseContext ctx) {
+  match_shptr_t rval;
   if( auto m = PostFixExpression::match(ctx)){
     return m;
   }
   else if( auto m = IncOp::match(ctx)){
-    auto c2 = m.consume();
+    auto c2 = m->consume();
     if( auto m2 = UnaryExpression::match(c2)){
       return (m+m2);
     }
   }
   else if( auto m = DecOp::match(ctx)){
-    auto c2 = m.consume();
+    auto c2 = m->consume();
     if( auto m2 = UnaryExpression::match(c2)){
       return (m+m2);
     }
   }
   else if( auto m = UnaryOp::match(ctx)){
-    auto c2 = m.consume();
+    auto c2 = m->consume();
     if( auto m2 = CastExpression::match(c2)){
       return (m+m2);
     }
   }
   else if( auto m = SizeofOp::match(ctx)){
-    auto c2 = m.consume();
+    auto c2 = m->consume();
     if( auto m2 = UnaryExpression::match(c2)){
       return (m+m2);
     }
     else if( auto m2 = OpenParen::match(c2)){
-      auto c3 = (m+m2).consume();
+      auto c3 = (m+m2)->consume();
       if( auto m3 = TypeName::match(c3)){
-        auto c4 = (m+m2+m3).consume();
+        auto c4 = (m+m2+m3)->consume();
         if( auto m4 = CloseParen::match(c4)){
           return m+m2+m3+m4;
         }
@@ -215,9 +220,9 @@ UnaryExpression::match_t UnaryExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-PostFixExpression::match_t PostFixExpression::match(FnParseContext ctx) {
+match_shptr_t PostFixExpression::match(FnParseContext ctx) {
   const auto ctxbase = ctx;
-  match_t rval(ctxbase);
+  match_shptr_t rval;
   size_t count = 0;
   bool done = false;
   while(not done){
@@ -227,56 +232,56 @@ PostFixExpression::match_t PostFixExpression::match(FnParseContext ctx) {
     }
     /////////////////////////////////////////////////
     else if (auto m = OpenSquare::match(ctx)) {
-      ctx = m.consume();
-      count += m._count;
+      ctx = m->consume();
+      count += m->_count;
       if (auto m = Expression::match(ctx)) {
-        ctx = m.consume();
-        count += m._count;
+        ctx = m->consume();
+        count += m->_count;
         if (auto m = CloseSquare::match(ctx)) {
-          ctx = m.consume();
-          count += m._count;
+          ctx = m->consume();
+          count += m->_count;
         }
         else
-          return match_t(ctxbase);
+          return match_shptr_t(nullptr);
       }
     }
     /////////////////////////////////////////////////
     else if (auto m = OpenParen::match(ctx)) {
-      ctx = m.consume();
-      count += m._count;
+      ctx = m->consume();
+      count += m->_count;
       if (auto m = CloseParen::match(ctx)) {
-        ctx = m.consume();
-        count += m._count;
+        ctx = m->consume();
+        count += m->_count;
       }
       else if (auto m = ArgumentExpressionList::match(ctx)) {
-        ctx = m.consume();
-        count += m._count;
+        ctx = m->consume();
+        count += m->_count;
         if (auto m = CloseParen::match(ctx)) {
-          ctx = m.consume();
-          count += m._count;
+          ctx = m->consume();
+          count += m->_count;
         }
         else
-          return match_t(ctxbase);
+          return match_shptr_t(nullptr);
       }
     }
     /////////////////////////////////////////////////
     else if (auto m = DotOp::match(ctx)) {
-      ctx = m.consume();
-      count += m._count;
+      ctx = m->consume();
+      count += m->_count;
       if (auto m = Identifier::match(ctx)) {
-        ctx = m.consume();
-        count += m._count;
+        ctx = m->consume();
+        count += m->_count;
       }
     }
     /////////////////////////////////////////////////
     else if (auto m = IncOp::match(ctx)) {
-      ctx = m.consume();
-      count += m._count;
+      ctx = m->consume();
+      count += m->_count;
     }
     /////////////////////////////////////////////////
     else if (auto m = DecOp::match(ctx)) {
-      ctx = m.consume();
-      count += m._count;
+      ctx = m->consume();
+      count += m->_count;
     }
     else {
       done = true;
@@ -284,9 +289,10 @@ PostFixExpression::match_t PostFixExpression::match(FnParseContext ctx) {
     /////////////////////////////////////////////////
   }
   if( count ){
-    rval._matched = true;
-    rval._start = ctxbase._startIndex;
-    rval._count = count;
+    rval = std::make_shared<match_t>(ctx);
+    rval->_matched = true;
+    rval->_start = ctxbase._startIndex;
+    rval->_count = count;
   }
   return rval;
 }
@@ -303,8 +309,8 @@ AssignmentExpression::parsed_t AssignmentExpression::parse(const match_t& match)
 // assert(false);
 //}
 
-PrimaryExpression::match_t PrimaryExpression::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t PrimaryExpression::match(FnParseContext ctx) {
+  match_shptr_t rval;
   if( auto m = Identifier::match(ctx))
     return m;
   else if( auto m = Constant::match(ctx))
@@ -312,30 +318,34 @@ PrimaryExpression::match_t PrimaryExpression::match(FnParseContext ctx) {
   else if( auto m = StringLiteral::match(ctx))
     return m;
   else if( auto m = OpenParen::match(ctx)){
-    auto c2 = m.consume();
+    auto c2 = m->consume();
     if( auto m2 = Expression::match(c2)){
-      auto c3 = (m+m2).consume();
+      auto c3 = (m+m2)->consume();
       if( auto m3 = CloseParen::match(c3)){
-        rval = (m+m2+m3);
+        auto mfinal = (m+m2+m3);
+        rval = std::make_shared<match_t>(*mfinal.get());
       }
     }
   }
   return rval;
 }
 
-ArgumentExpressionList::match_t ArgumentExpressionList::match(FnParseContext ctx) {
+match_shptr_t ArgumentExpressionList::match(FnParseContext ctx) {
   const auto ctxbase = ctx;
-  match_t rval(ctxbase);
+  match_shptr_t rval;
   bool done = false;
   while(not done) {
     if( auto m = ExpressionNode::match(ctx)){
+      if( not rval ){
+        rval = std::make_shared<match_t>(ctx);
+      }
       rval = rval+m;
-      ctx = rval.consume();
+      ctx = rval->consume();
       if( auto m2 = CloseParen::match(ctx) )
         done = true;
       else if (auto m3 = CommaOp::match(ctx)) {
         rval = rval + m3;
-        ctx  = rval.consume();
+        ctx  = rval->consume();
       }
     }
     else{
@@ -359,8 +369,8 @@ UnaryExpression::parsed_t UnaryExpression::parse(const match_t& match) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-ConditionalExpression::match_t ConditionalExpression::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t ConditionalExpression::match(FnParseContext ctx) {
+  match_shptr_t rval;
   if( auto mte = TernaryExpression::match(ctx)){
     rval = mte;
   }
@@ -381,18 +391,19 @@ ConditionalExpression::parsed_t ConditionalExpression::parse(const match_t& matc
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-TernaryExpression::match_t TernaryExpression::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t TernaryExpression::match(FnParseContext ctx) {
+  match_shptr_t rval;
+  rval = std::make_shared<match_t>(ctx);
   if( auto mvl = LogicalOrExpression::match(ctx)){
-    if(ctx.tokenValue(mvl.end())=="?"){
-      auto ctx2 = mvl.consume();
+    if(ctx.tokenValue(mvl->end())=="?"){
+      auto ctx2 = mvl->consume();
       ctx2._startIndex++; // consume ?
       if(auto mve = Expression::match(ctx2)){
-        if(ctx.tokenValue(mve.end())==":"){
-          auto ctx3 = mve.consume();
+        if(ctx.tokenValue(mve->end())==":"){
+          auto ctx3 = mve->consume();
           ctx3._startIndex++; // consume :
           if( auto mvx = ConditionalExpression::match(ctx3)){
-            rval._matched = true;
+            rval = mvx;
             assert(false);
           }
         }
@@ -414,19 +425,20 @@ TernaryExpression::parsed_t TernaryExpression::parse(const match_t& match) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-LogicalOrExpression::match_t LogicalOrExpression::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t LogicalOrExpression::match(FnParseContext ctx) {
+  match_shptr_t rval;
+  rval = std::make_shared<match_t>(ctx);
   bool done = false;
   bool danglingor = false;
   while(not done){
     if( auto mla = LogicalAndExpression::match(ctx)){
-      ctx = mla.consume();
+      ctx = mla->consume();
       rval = rval+mla;
       danglingor = false;
       return rval;
     }
     if( auto moo = OrOrOp::match(ctx)){
-      ctx = moo.consume();
+      ctx = moo->consume();
       rval = rval+moo;
       danglingor = true;
     }
@@ -449,19 +461,22 @@ LogicalOrExpression::parsed_t LogicalOrExpression::parse(const match_t& match) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-LogicalAndExpression::match_t LogicalAndExpression::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t LogicalAndExpression::match(FnParseContext ctx) {
+  match_shptr_t rval;
   bool done = false;
   bool danglingand = false;
   while(not done){
     if( auto mio = InclusiveOrExpression::match(ctx)){
-      ctx = mio.consume();
+      if( not rval ) {
+        rval = std::make_shared<match_t>(ctx);
+      }
+      ctx = mio->consume();
       rval = rval+mio;
       danglingand = false;
       return rval;
     }
     if( auto mao = AndAndOp::match(ctx)){
-      ctx = mao.consume();
+      ctx = mao->consume();
       rval = rval+mao;
       danglingand = true;
     }
@@ -475,19 +490,23 @@ LogicalAndExpression::match_t LogicalAndExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-InclusiveOrExpression::match_t InclusiveOrExpression::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t InclusiveOrExpression::match(FnParseContext ctx) {
+  match_shptr_t rval;
+  rval = std::make_shared<match_t>(ctx);
   bool done = false;
   bool danglingor = false;
   while(not done){
     if( auto meo = ExclusiveOrExpression::match(ctx)){
-      ctx = meo.consume();
+      if( not rval ) {
+        rval = std::make_shared<match_t>(ctx);
+      }
+      ctx = meo->consume();
       rval = rval+meo;
       danglingor = false;
       return rval;
     }
     if( auto moo = OrOp::match(ctx)){
-      ctx = moo.consume();
+      ctx = moo->consume();
       rval = rval+moo;
       danglingor = true;
     }
@@ -501,19 +520,23 @@ InclusiveOrExpression::match_t InclusiveOrExpression::match(FnParseContext ctx) 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-ExclusiveOrExpression::match_t ExclusiveOrExpression::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t ExclusiveOrExpression::match(FnParseContext ctx) {
+  match_shptr_t rval;
+  rval = std::make_shared<match_t>(ctx);
   bool done = false;
   bool danglingxor = false;
   while(not done){
     if( auto meo = AndExpression::match(ctx)){
-      ctx = meo.consume();
+      if( not rval ) {
+        rval = std::make_shared<match_t>(ctx);
+      }
+      ctx = meo->consume();
       rval = rval+meo;
       danglingxor = false;
       return rval;
     }
     if( auto xoo = XorOp::match(ctx)){
-      ctx = xoo.consume();
+      ctx = xoo->consume();
       rval = rval+xoo;
       danglingxor = true;
     }
@@ -527,18 +550,22 @@ ExclusiveOrExpression::match_t ExclusiveOrExpression::match(FnParseContext ctx) 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-AndExpression::match_t AndExpression::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t AndExpression::match(FnParseContext ctx) {
+  match_shptr_t rval;
+  rval = std::make_shared<match_t>(ctx);
   bool done = false;
   bool danglingand = false;
   while(not done){
     if( auto eeo = EqualityExpression::match(ctx)){
-      ctx = eeo.consume();
+      if( not rval ) {
+        rval = std::make_shared<match_t>(ctx);
+      }
+      ctx = eeo->consume();
       rval = rval+eeo;
       danglingand = false;
     }
     if( auto mao = AndOp::match(ctx)){
-      ctx = mao.consume();
+      ctx = mao->consume();
       rval = rval+mao;
       danglingand = true;
     }
@@ -552,24 +579,28 @@ AndExpression::match_t AndExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-EqualityExpression::match_t EqualityExpression::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t EqualityExpression::match(FnParseContext ctx) {
+  match_shptr_t rval;
+  rval = std::make_shared<match_t>(ctx);
   bool done = false;
   bool danglingop = false;
   while(not done){
     if( auto mro = RelationalExpression::match(ctx)){
-      ctx = mro.consume();
+      if( not rval ) {
+        rval = std::make_shared<match_t>(ctx);
+      }
+      ctx = mro->consume();
       rval = rval+mro;
       danglingop = false;
       return rval;
     }
     if( auto meo = EqOp::match(ctx)){
-      ctx = meo.consume();
+      ctx = meo->consume();
       rval = rval+meo;
       danglingop = true;
     }
     else if( auto mno = NeqOp::match(ctx)){
-      ctx = mno.consume();
+      ctx = mno->consume();
       rval = rval+mno;
       danglingop = true;
     }
@@ -583,34 +614,38 @@ EqualityExpression::match_t EqualityExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-RelationalExpression::match_t RelationalExpression::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t RelationalExpression::match(FnParseContext ctx) {
+  match_shptr_t rval;
+  rval = std::make_shared<match_t>(ctx);
   bool done = false;
   bool danglingop = false;
   while(not done){
+    if( not rval ) {
+      rval = std::make_shared<match_t>(ctx);
+    }
     if( auto mso = ShiftExpression::match(ctx)){
-      ctx = mso.consume();
+      ctx = mso->consume();
       rval = rval+mso;
       danglingop = false;
       return rval;
     }
     if( auto mlt = LtOp::match(ctx)){
-      ctx = mlt.consume();
+      ctx = mlt->consume();
       rval = rval+mlt;
       danglingop = true;
     }
     else if( auto mlte = LtEqOp::match(ctx)){
-      ctx = mlte.consume();
+      ctx = mlte->consume();
       rval = rval+mlte;
       danglingop = true;
     }
     else if( auto mgt = GtOp::match(ctx)){
-      ctx = mgt.consume();
+      ctx = mgt->consume();
       rval = rval+mgt;
       danglingop = true;
     }
     else if( auto mgte = GtEqOp::match(ctx)){
-      ctx = mgte.consume();
+      ctx = mgte->consume();
       rval = rval+mgte;
       danglingop = true;
     }
@@ -624,24 +659,28 @@ RelationalExpression::match_t RelationalExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-ShiftExpression::match_t ShiftExpression::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t ShiftExpression::match(FnParseContext ctx) {
+  match_shptr_t rval;
+  rval = std::make_shared<match_t>(ctx);
   bool done = false;
   bool danglingop = false;
   while(not done){
     if( auto mso = AdditiveExpression::match(ctx)){
-      ctx = mso.consume();
+      if( not rval ) {
+        rval = std::make_shared<match_t>(ctx);
+      }
+      ctx = mso->consume();
       rval = rval+mso;
       danglingop = false;
       return rval;
     }
     if( auto mlt = LeftOp::match(ctx)){
-      ctx = mlt.consume();
+      ctx = mlt->consume();
       rval = rval+mlt;
       danglingop = true;
     }
     else if( auto mrt = RightOp::match(ctx)){
-      ctx = mrt.consume();
+      ctx = mrt->consume();
       rval = rval+mrt;
       danglingop = true;
     }
@@ -655,26 +694,30 @@ ShiftExpression::match_t ShiftExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-AdditiveExpression::match_t AdditiveExpression::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t AdditiveExpression::match(FnParseContext ctx) {
+  match_shptr_t rval;
+  rval = std::make_shared<match_t>(ctx);
   bool done = false;
   bool danglingop = false;
   while(not done){
     if( auto mso = MultiplicativeExpression::match(ctx)){
+      if( not rval ) {
+        rval = std::make_shared<match_t>(ctx);
+      }
       rval = rval+mso;
       danglingop = false;
-      ctx = mso.consume();
+      ctx = mso->consume();
       return rval;
     }
     if( auto mlt = AddOp::match(ctx)){
       rval = rval+mlt;
       danglingop = true;
-      ctx = mlt.consume();
+      ctx = mlt->consume();
     }
     else if( auto mrt = SubOp::match(ctx)){
       rval = rval+mrt;
       danglingop = true;
-      ctx = mrt.consume();
+      ctx = mrt->consume();
     }
     else {
       done = true;
@@ -686,30 +729,34 @@ AdditiveExpression::match_t AdditiveExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-MultiplicativeExpression::match_t MultiplicativeExpression::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t MultiplicativeExpression::match(FnParseContext ctx) {
+  match_shptr_t rval;
+  rval = std::make_shared<match_t>(ctx);
   bool done = false;
   bool danglingop = false;
   while(not done){
+    if( not rval ) {
+      rval = std::make_shared<match_t>(ctx);
+    }
     if( auto mso = CastExpression::match(ctx)){
       rval = rval+mso;
-      ctx = mso.consume();
+      ctx = mso->consume();
       danglingop = false;
       return rval;
     }
     if( auto mlt = MulOp::match(ctx)){
       rval = rval+mlt;
-      ctx = mlt.consume();
+      ctx = mlt->consume();
       danglingop = true;
     }
     else if( auto mrt = DivOp::match(ctx)){
       rval = rval+mrt;
-      ctx = mrt.consume();
+      ctx = mrt->consume();
       danglingop = true;
     }
     else if( auto mrt = ModOp::match(ctx)){
       rval = rval+mrt;
-      ctx = mrt.consume();
+      ctx = mrt->consume();
       danglingop = true;
     }
     else {

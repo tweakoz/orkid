@@ -63,13 +63,13 @@ int ParsedFunctionNode::parse(const ork::ScannerView& view) {
     auto try_tok     = view.token(i)->text;
     pctx._startIndex = i;
     if (auto m = VariableDeclaration::match(pctx)) {
-      auto parsed = m.parse();
+      auto parsed = m->parse();
       i += parsed._numtokens;
-      _elements.push_back(parsed._node);
+      //_elements.push_back(parsed._node);
     } else if (auto m = CompoundStatement::match(pctx)) {
-      auto parsed = m.parse();
+      auto parsed = m->parse();
       i += parsed._numtokens;
-      _elements.push_back(parsed._node);
+      //_elements.push_back(parsed._node);
     } else {
       assert(false);
     }
@@ -90,16 +90,17 @@ void ParsedFunctionNode::emit(ork::lev2::glslfx::shaderbuilder::BackEnd& backend
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-Constant::match_t Constant::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t Constant::match(FnParseContext ctx) {
+  match_shptr_t rval;
   auto token = ctx.tokenValue(0);
   ////////////////////////////////////
   // boolean constants
   ////////////////////////////////////
   if( token=="true" or token =="false"){
-    rval._matched = true;
-    rval._start = ctx._startIndex;
-    rval._count = token.length();
+    rval = std::make_shared<match_t>(ctx);
+    rval->_matched = true;
+    rval->_start = ctx._startIndex;
+    rval->_count = token.length();
     return rval;
   }
   ////////////////////////////////////
@@ -159,9 +160,10 @@ Constant::match_t Constant::match(FnParseContext ctx) {
   }
   ////////////////////////////////////
   if (count) {
-    rval._matched = true;
-    rval._start   = ctx._startIndex;
-    rval._count   = count;
+    rval = std::make_shared<match_t>(ctx);
+    rval->_matched = true;
+    rval->_start   = ctx._startIndex;
+    rval->_count   = count;
   }
   return rval;
 
@@ -170,16 +172,17 @@ Constant::match_t Constant::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-StringLiteral::match_t StringLiteral::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t StringLiteral::match(FnParseContext ctx) {
+  match_shptr_t rval=nullptr;
+  //std::make_shared<match_t>(ctx);
   // dont need these yet, GLSL does not natively support them
   return rval;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-TypeName::match_t TypeName::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t TypeName::match(FnParseContext ctx) {
+  match_shptr_t rval;
   int count = 0;
   ////////////////////////////////////
   // check variable instantiation
@@ -190,17 +193,18 @@ TypeName::match_t TypeName::match(FnParseContext ctx) {
   }
   ////////////////////////////////////
   if (ctx._container->validateTypeName(tokDT)) {
-    rval._matched = true;
-    rval._start   = ctx._startIndex;
-    rval._count   = count;
+    rval = std::make_shared<match_t>(ctx);
+    rval->_matched = true;
+    rval->_start   = ctx._startIndex;
+    rval->_count   = count;
   }
   return rval;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-Identifier::match_t Identifier::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t Identifier::match(FnParseContext ctx) {
+  match_shptr_t rval;
   auto token = ctx.tokenValue(0);
   if( ctx._container->validateKeyword(token) ){ // an identifer cannot be a keyword
     return rval;
@@ -232,26 +236,30 @@ Identifier::match_t Identifier::match(FnParseContext ctx) {
   }
   ////////////////////////////////////
   if (count) {
-    rval._matched = true;
-    rval._start   = ctx._startIndex;
-    rval._count   = 1;
+    rval = std::make_shared<match_t>(ctx);
+    rval->_matched = true;
+    rval->_start   = ctx._startIndex;
+    rval->_count   = 1;
   }
   return rval;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-IdentifierPath::match_t IdentifierPath::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t IdentifierPath::match(FnParseContext ctx) {
+  match_shptr_t rval;
   bool done = false;
   while( not done ){
     
     if( auto mi = Identifier::match(ctx) ){
-      rval = rval + mi;
-      ctx = rval.consume();
+      if( not rval ){
+        rval = std::make_shared<match_t>(ctx);
+      }
+      rval = rval->merge(mi);
+      ctx = rval->consume();
       if( auto md = DotOp::match(ctx) ){
-        rval = rval + md;
-        ctx = rval.consume();
+        rval = rval->merge(md);
+        ctx = rval->consume();
       }
     }
     else
@@ -262,22 +270,25 @@ IdentifierPath::match_t IdentifierPath::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-Reference::match_t Reference::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t Reference::match(FnParseContext ctx) {
+  match_shptr_t rval;
   if( auto mi = IdentifierPath::match(ctx) ){
-    rval = rval + mi;
-    ctx = rval.consume();
+    if( not rval ){
+      rval = std::make_shared<match_t>(ctx);
+    }
+    rval = rval->merge(mi);
+    ctx = rval->consume();
     if( auto mo = OpenSquare::match(ctx) ){
-      rval = rval + mo;
-      ctx = rval.consume();
+      rval = rval->merge(mo);
+      ctx = rval->consume();
       auto me = Expression::match(ctx);
       assert(me);
-      rval = rval + me;
-      ctx = rval.consume();
+      rval = rval->merge(me);
+      ctx = rval->consume();
       auto mc = CloseSquare::match(ctx);
       assert(mc);
-      rval = rval + mc;
-      ctx = rval.consume();
+      rval = rval->merge(mc);
+      ctx = rval->consume();
     }
   }
   return rval;
@@ -285,13 +296,14 @@ Reference::match_t Reference::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-VariableDeclaration::match_t VariableDeclaration::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t VariableDeclaration::match(FnParseContext ctx) {
+  match_shptr_t rval;
   if( auto m = TypeName::match(ctx)){
-    if( ctx.tokenValue(m._count)==";"){
-      rval._matched = true;
-      rval._start   = ctx._startIndex;
-      rval._count   = m._count+1;
+    if( ctx.tokenValue(m->_count)==";"){
+      rval = std::make_shared<match_t>(ctx);
+      rval->_matched = true;
+      rval->_start   = ctx._startIndex;
+      rval->_count   = m->_count+1;
     }
   }
   return rval;
@@ -388,25 +400,26 @@ void VariableAssignmentStatement::emit(shaderbuilder::BackEnd& backend) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-DeclarationList::match_t DeclarationList::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t DeclarationList::match(FnParseContext ctx) {
+  match_shptr_t rval;
   size_t count = 0;
   size_t start = -1;
   bool done    = false;
   while (not done) {
     auto mvd = VariableDeclaration::match(ctx);
     if (mvd) {
-      count += mvd._count;
+      count += mvd->_count;
       count++; // consume }
-      ctx = mvd.consume();
+      ctx = mvd->consume();
     } else {
       done = true;
     }
   }
   if (count) {
-    rval._count   = count;
-    rval._start   = start;
-    rval._matched = true;
+    rval = std::make_shared<match_t>(ctx);
+    rval->_count   = count;
+    rval->_start   = start;
+    rval->_matched = true;
   }
   return rval;
 }

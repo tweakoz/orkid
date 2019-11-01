@@ -25,8 +25,8 @@ namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-Statement::match_t Statement::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t Statement::match(FnParseContext ctx) {
+  match_shptr_t rval;;
   if (auto mvi = InstantiationStatement::match(ctx)) {
     rval = mvi;
   } else if (auto mve = ExpressionStatement::match(ctx)) {
@@ -50,16 +50,18 @@ void Statement::emit(shaderbuilder::BackEnd& backend) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-InstantiationStatement::match_t InstantiationStatement::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t InstantiationStatement::match(FnParseContext ctx) {
+  match_shptr_t rval;
   if (auto m = TypeName::match(ctx)) {
-    auto ctx2 = m.consume();
+    auto ctx2 = m->consume();
     if (auto m2 = Identifier::match(ctx2)) {
-      auto ctx3 = (m + m2).consume();
+      auto ctx3 = (m + m2)->consume();
       if (auto m3 = InitialAssignmentOperator::match(ctx3)) {
-        auto ctx4 = (m + m2 + m3).consume();
+        auto ctx4 = (m + m2 + m3)->consume();
         if (auto m4 = Expression::match(ctx4)) {
-          rval = (m + m2 + m3 + m4);
+          auto mfinal = (m + m2 + m3 + m4);
+          auto& mf = *(mfinal.get());
+          rval = std::make_shared<match_t>(mf);
         }
       }
     }
@@ -78,13 +80,14 @@ void InstantiationStatement::emit(shaderbuilder::BackEnd& backend) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-ExpressionStatement::match_t ExpressionStatement::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t ExpressionStatement::match(FnParseContext ctx) {
+  match_shptr_t rval;
   auto first_tok = ctx.tokenValue(0);
   if (first_tok == ";") {
-    rval._matched = true;
-    rval._start   = ctx._startIndex;
-    rval._count   = 1;
+    rval = std::make_shared<match_t>(ctx);
+    rval->_matched = true;
+    rval->_start   = ctx._startIndex;
+    rval->_count   = 1;
     return rval;
   } else if (auto mve = Expression::match(ctx)) {
     rval = mve;
@@ -103,8 +106,8 @@ void ExpressionStatement::emit(shaderbuilder::BackEnd& backend) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-IterationStatement::match_t IterationStatement::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t IterationStatement::match(FnParseContext ctx) {
+  match_shptr_t rval;
   if (auto mfs = ForLoopStatement::match(ctx)) {
     rval = mfs;
     return rval;
@@ -120,13 +123,14 @@ IterationStatement::parsed_t IterationStatement::parse(const match_t& match) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-ForLoopStatement::match_t ForLoopStatement::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t ForLoopStatement::match(FnParseContext ctx) {
+  match_shptr_t rval;
   auto first_tok = ctx.tokenValue(0);
   if (first_tok == "for") {
-    rval._matched = true;
-    rval._start   = ctx._startIndex;
-    rval._count   = 1;
+    rval = std::make_shared<match_t>(ctx);
+    rval->_matched = true;
+    rval->_start   = ctx._startIndex;
+    rval->_count   = 1;
     return rval;
   }
   return rval;
@@ -143,19 +147,22 @@ void ForLoopStatement::emit(shaderbuilder::BackEnd& backend) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-StatementList::match_t StatementList::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t StatementList::match(FnParseContext ctx) {
+  match_shptr_t rval;
   size_t count = 0;
   size_t start = -1;
   bool done    = false;
   while (not done) {
     auto mvd = Statement::match(ctx);
     if (mvd) {
+      if( not rval ){
+        rval = std::make_shared<match_t>(ctx);
+      }
       rval = rval + mvd;
-      ctx = rval.consume();
+      ctx = rval->consume();
       if (auto msemi = SemicolonOp::match(ctx)) {
         rval = rval + msemi;
-        ctx = rval.consume();
+        ctx = rval->consume();
       }
     } else {
       done = true;
@@ -175,36 +182,37 @@ void StatementList::emit(shaderbuilder::BackEnd& backend) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-CompoundStatement::match_t CompoundStatement::match(FnParseContext ctx) {
+match_shptr_t CompoundStatement::match(FnParseContext ctx) {
+  match_shptr_t rval;
   ////////////////////////////////////
   auto mfinal = OpenCurly::match(ctx);
   if (not mfinal)
-    return match_t(ctx);
+    return rval;
   ////////////////////////////////////
   // empty statement ?
   ////////////////////////////////////
-  if (auto mcb = CloseCurly::match(mfinal.consume())) {
+  if (auto mcb = CloseCurly::match(mfinal->consume())) {
     mfinal = mfinal + mcb;
-    return match_t(mfinal);
+    rval = std::make_shared<match_t>(*mfinal.get());
   }
   ////////////////////////////////////
   // declaration list optional
   ////////////////////////////////////
-  if (auto mdl = DeclarationList::match(mfinal.consume()))
+  if (auto mdl = DeclarationList::match(mfinal->consume()))
     mfinal = mfinal + mdl;
   ////////////////////////////////////
   // statement list mandatory
   ////////////////////////////////////
-  auto msl = StatementList::match(mfinal.consume());
+  auto msl = StatementList::match(mfinal->consume());
   assert(msl); // statement list non optional in this case
   mfinal = mfinal + msl;
   ////////////////////////////////////
   // closing bracket mandatory
   ////////////////////////////////////
-  auto ctxx = mfinal.consume();
+  auto ctxx = mfinal->consume();
   auto mcb = CloseCurly::match(ctxx);
   mfinal   = mfinal + mcb;
-  return mfinal;
+  return std::make_shared<match_t>(*mfinal.get());
 }
 
 CompoundStatement::parsed_t CompoundStatement::parse(const match_t& match) {
@@ -218,15 +226,15 @@ void CompoundStatement::emit(shaderbuilder::BackEnd& backend) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-ReturnStatement::match_t ReturnStatement::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t ReturnStatement::match(FnParseContext ctx) {
+  match_shptr_t rval;
   bool matched = ctx.tokenValue(0) == "return";
   if( matched ){
     auto ctx2 = ctx;
     ctx2._startIndex++;
     if( auto me = ExpressionNode::match(ctx2)){
-      rval = me;
-      rval._count++; //  consume return keyword
+      rval = std::make_shared<match_t>(*me.get());
+      rval->_count++; //  consume return keyword
     }
   }
   return rval;

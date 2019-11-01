@@ -24,12 +24,13 @@
 namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-OpenCurly::match_t OpenCurly::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t OpenCurly::match(FnParseContext ctx) {
+  match_shptr_t rval;
   if(ctx.tokenValue(0)=="{"){
-    rval._matched = true;
-    rval._count = 1;
-    rval._start = ctx._startIndex;
+    rval = std::make_shared<match_t>(ctx);
+    rval->_matched = true;
+    rval->_count = 1;
+    rval->_start = ctx._startIndex;
   }
   return rval;
 }
@@ -45,12 +46,13 @@ void OpenCurly::emit(shaderbuilder::BackEnd& backend) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-CloseCurly::match_t CloseCurly::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t CloseCurly::match(FnParseContext ctx) {
+  match_shptr_t rval;
   if(ctx.tokenValue(0)=="}"){
-    rval._matched = true;
-    rval._count = 1;
-    rval._start = ctx._startIndex;
+    rval = std::make_shared<match_t>(ctx);
+    rval->_matched = true;
+    rval->_count = 1;
+    rval->_start = ctx._startIndex;
   }
   return rval;
 }
@@ -66,12 +68,13 @@ void CloseCurly::emit(shaderbuilder::BackEnd& backend) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-OpenSquare::match_t OpenSquare::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t OpenSquare::match(FnParseContext ctx) {
+  match_shptr_t rval;
   if(ctx.tokenValue(0)=="["){
-    rval._matched = true;
-    rval._count = 1;
-    rval._start = ctx._startIndex;
+    rval = std::make_shared<match_t>(ctx);
+    rval->_matched = true;
+    rval->_count = 1;
+    rval->_start = ctx._startIndex;
   }
   return rval;
 }
@@ -87,12 +90,13 @@ void OpenSquare::emit(shaderbuilder::BackEnd& backend) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-CloseSquare::match_t CloseSquare::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t CloseSquare::match(FnParseContext ctx) {
+  match_shptr_t rval;
   if(ctx.tokenValue(0)=="]"){
-    rval._matched = true;
-    rval._count = 1;
-    rval._start = ctx._startIndex;
+    rval = std::make_shared<match_t>(ctx);
+    rval->_matched = true;
+    rval->_count = 1;
+    rval->_start = ctx._startIndex;
   }
   return rval;
 }
@@ -108,12 +112,13 @@ void CloseSquare::emit(shaderbuilder::BackEnd& backend) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-OpenParen::match_t OpenParen::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t OpenParen::match(FnParseContext ctx) {
+  match_shptr_t rval;
   if(ctx.tokenValue(0)=="("){
-    rval._matched = true;
-    rval._count = 1;
-    rval._start = ctx._startIndex;
+    rval = std::make_shared<match_t>(ctx);
+    rval->_matched = true;
+    rval->_count = 1;
+    rval->_start = ctx._startIndex;
   }
   return rval;
 }
@@ -129,12 +134,13 @@ void OpenParen::emit(shaderbuilder::BackEnd& backend) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-CloseParen::match_t CloseParen::match(FnParseContext ctx) {
-  match_t rval(ctx);
+match_shptr_t CloseParen::match(FnParseContext ctx) {
+  match_shptr_t rval;
   if(ctx.tokenValue(0)==")"){
-    rval._matched = true;
-    rval._count = 1;
-    rval._start = ctx._startIndex;
+    rval = std::make_shared<match_t>(ctx);
+    rval->_matched = true;
+    rval->_count = 1;
+    rval->_start = ctx._startIndex;
   }
   return rval;
 }
