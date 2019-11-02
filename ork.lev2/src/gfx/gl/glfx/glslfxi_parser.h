@@ -124,13 +124,35 @@ struct FnMatchResultsBas {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline match_shptr_t operator+(match_shptr_t a, match_shptr_t b) {
-  return a->merge(b);
-}
-inline operator bool ( match_shptr_t a ) {
-  if( not a ) return false;
-  return a->operator bool();
-}
+struct FnMatchResultsWrap {
+  FnMatchResultsWrap(match_shptr_t p=nullptr)
+    : _results(p) {
+
+  }
+  template <typename T>
+  inline FnMatchResultsWrap& operator= (std::shared_ptr<T> p){
+      _results = std::dynamic_pointer_cast<FnMatchResultsBas>(p);
+      return *this;
+  }
+  template <typename T>
+  inline void make(FnParseContext ctx){
+    _results = std::dynamic_pointer_cast<FnMatchResultsBas>(std::make_shared<T>(ctx));
+  }
+  inline operator bool () const {
+    if( not _results ) return false;
+    return _results->operator bool();
+  }
+  inline FnMatchResultsWrap operator+(FnMatchResultsWrap b) const {
+    return _results->merge(b._results);
+  }
+  inline FnMatchResultsBas* operator -> () {
+    return _results.get();
+  }
+  match_shptr_t _results;
+};
+
+typedef FnMatchResultsWrap match_results_t;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> struct FnMatchResults : public FnMatchResultsBas {
@@ -177,7 +199,7 @@ struct ShaderEmittable : public AstNode {
 
 #define DECLARE_STD_FNS(xxx)                                                                                                       \
   typedef FnMatchResults<xxx> match_t;                                                                                             \
-  static match_shptr_t match(FnParseContext ctx);
+  static match_results_t match(FnParseContext ctx);
   //static parsed_t parse(const match_t& match);
 
 #define DECLARE_STD_EMITTABLE_FNS(xxx)                                                                                             \

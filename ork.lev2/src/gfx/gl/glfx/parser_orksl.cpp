@@ -90,8 +90,8 @@ void ParsedFunctionNode::emit(ork::lev2::glslfx::shaderbuilder::BackEnd& backend
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t Constant::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t Constant::match(FnParseContext ctx) {
+  match_results_t rval;
   auto token = ctx.tokenValue(0);
   ////////////////////////////////////
   // boolean constants
@@ -172,8 +172,8 @@ match_shptr_t Constant::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t StringLiteral::match(FnParseContext ctx) {
-  match_shptr_t rval=nullptr;
+match_results_t StringLiteral::match(FnParseContext ctx) {
+  match_results_t rval;
   //std::make_shared<match_t>(ctx);
   // dont need these yet, GLSL does not natively support them
   return rval;
@@ -181,8 +181,8 @@ match_shptr_t StringLiteral::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t TypeName::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t TypeName::match(FnParseContext ctx) {
+  match_results_t rval;
   int count = 0;
   ////////////////////////////////////
   // check variable instantiation
@@ -203,8 +203,8 @@ match_shptr_t TypeName::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t Identifier::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t Identifier::match(FnParseContext ctx) {
+  match_results_t rval;
   auto token = ctx.tokenValue(0);
   if( ctx._container->validateKeyword(token) ){ // an identifer cannot be a keyword
     return rval;
@@ -246,8 +246,8 @@ match_shptr_t Identifier::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t IdentifierPath::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t IdentifierPath::match(FnParseContext ctx) {
+  match_results_t rval;
   bool done = false;
   while( not done ){
     
@@ -255,10 +255,10 @@ match_shptr_t IdentifierPath::match(FnParseContext ctx) {
       if( not rval ){
         rval = std::make_shared<match_t>(ctx);
       }
-      rval = rval->merge(mi);
+      rval = rval + mi;
       ctx = rval->consume();
       if( auto md = DotOp::match(ctx) ){
-        rval = rval->merge(md);
+        rval = rval + md;
         ctx = rval->consume();
       }
     }
@@ -270,24 +270,24 @@ match_shptr_t IdentifierPath::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t Reference::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t Reference::match(FnParseContext ctx) {
+  match_results_t rval;
   if( auto mi = IdentifierPath::match(ctx) ){
     if( not rval ){
       rval = std::make_shared<match_t>(ctx);
     }
-    rval = rval->merge(mi);
+    rval = rval + mi;
     ctx = rval->consume();
     if( auto mo = OpenSquare::match(ctx) ){
-      rval = rval->merge(mo);
+      rval = rval + mo;
       ctx = rval->consume();
       auto me = Expression::match(ctx);
       assert(me);
-      rval = rval->merge(me);
+      rval = rval + me;
       ctx = rval->consume();
       auto mc = CloseSquare::match(ctx);
       assert(mc);
-      rval = rval->merge(mc);
+      rval = rval + mc;
       ctx = rval->consume();
     }
   }
@@ -296,8 +296,8 @@ match_shptr_t Reference::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t VariableDeclaration::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t VariableDeclaration::match(FnParseContext ctx) {
+  match_results_t rval;
   if( auto m = TypeName::match(ctx)){
     if( ctx.tokenValue(m->_count)==";"){
       rval = std::make_shared<match_t>(ctx);
@@ -400,8 +400,8 @@ void VariableAssignmentStatement::emit(shaderbuilder::BackEnd& backend) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t DeclarationList::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t DeclarationList::match(FnParseContext ctx) {
+  match_results_t rval;
   size_t count = 0;
   size_t start = -1;
   bool done    = false;

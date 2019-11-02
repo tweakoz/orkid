@@ -24,8 +24,8 @@
 namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t CastExpression::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t CastExpression::match(FnParseContext ctx) {
+  match_results_t rval;
   if( auto m = UnaryExpression::match(ctx)){
     rval = m;
   }
@@ -38,13 +38,13 @@ match_shptr_t CastExpression::match(FnParseContext ctx) {
       }
     }
   }
-  return std::dynamic_pointer_cast<FnMatchResultsBas>(rval);
+  return rval;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t Expression::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t Expression::match(FnParseContext ctx) {
+  match_results_t rval;
   size_t count = 0;
   size_t start = -1;
   bool done    = false;
@@ -87,8 +87,8 @@ match_shptr_t Expression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t ExpressionNode::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t ExpressionNode::match(FnParseContext ctx) {
+  match_results_t rval;
   rval = std::make_shared<match_t>(ctx);
   bool done = false;
   size_t numparen = 0;
@@ -150,8 +150,8 @@ match_shptr_t ExpressionNode::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t AssignmentExpression::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t AssignmentExpression::match(FnParseContext ctx) {
+  match_results_t rval;
   if (auto mvu = UnaryExpression::match(ctx)) {
     size_t count = mvu->_count;
     auto ctx2    = mvu->consume();
@@ -175,8 +175,8 @@ match_shptr_t AssignmentExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t UnaryExpression::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t UnaryExpression::match(FnParseContext ctx) {
+  match_results_t rval;
   if( auto m = PostFixExpression::match(ctx)){
     return m;
   }
@@ -218,9 +218,9 @@ match_shptr_t UnaryExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t PostFixExpression::match(FnParseContext ctx) {
+match_results_t PostFixExpression::match(FnParseContext ctx) {
   const auto ctxbase = ctx;
-  match_shptr_t rval;
+  match_results_t rval;
   size_t count = 0;
   bool done = false;
   while(not done){
@@ -240,7 +240,7 @@ match_shptr_t PostFixExpression::match(FnParseContext ctx) {
           count += m->_count;
         }
         else
-          return match_shptr_t(nullptr);
+          return match_results_t(nullptr);
       }
     }
     /////////////////////////////////////////////////
@@ -259,7 +259,7 @@ match_shptr_t PostFixExpression::match(FnParseContext ctx) {
           count += m->_count;
         }
         else
-          return match_shptr_t(nullptr);
+          return match_results_t(nullptr);
       }
     }
     /////////////////////////////////////////////////
@@ -307,8 +307,8 @@ match_shptr_t PostFixExpression::match(FnParseContext ctx) {
 // assert(false);
 //}
 
-match_shptr_t PrimaryExpression::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t PrimaryExpression::match(FnParseContext ctx) {
+  match_results_t rval;
   if( auto m = Identifier::match(ctx))
     return m;
   else if( auto m = Constant::match(ctx))
@@ -321,16 +321,16 @@ match_shptr_t PrimaryExpression::match(FnParseContext ctx) {
       auto c3 = (m+m2)->consume();
       if( auto m3 = CloseParen::match(c3)){
         auto mfinal = (m+m2+m3);
-        rval = std::make_shared<match_t>(*mfinal.get());
+        rval = mfinal;
       }
     }
   }
   return rval;
 }
 
-match_shptr_t ArgumentExpressionList::match(FnParseContext ctx) {
+match_results_t ArgumentExpressionList::match(FnParseContext ctx) {
   const auto ctxbase = ctx;
-  match_shptr_t rval;
+  match_results_t rval;
   bool done = false;
   while(not done) {
     if( auto m = ExpressionNode::match(ctx)){
@@ -367,8 +367,8 @@ match_shptr_t ArgumentExpressionList::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t ConditionalExpression::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t ConditionalExpression::match(FnParseContext ctx) {
+  match_results_t rval;
   if( auto mte = TernaryExpression::match(ctx)){
     rval = mte;
   }
@@ -389,8 +389,8 @@ match_shptr_t ConditionalExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t TernaryExpression::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t TernaryExpression::match(FnParseContext ctx) {
+  match_results_t rval;
   rval = std::make_shared<match_t>(ctx);
   if( auto mvl = LogicalOrExpression::match(ctx)){
     if(ctx.tokenValue(mvl->end())=="?"){
@@ -423,8 +423,8 @@ match_shptr_t TernaryExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t LogicalOrExpression::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t LogicalOrExpression::match(FnParseContext ctx) {
+  match_results_t rval;
   rval = std::make_shared<match_t>(ctx);
   bool done = false;
   bool danglingor = false;
@@ -459,8 +459,8 @@ match_shptr_t LogicalOrExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t LogicalAndExpression::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t LogicalAndExpression::match(FnParseContext ctx) {
+  match_results_t rval;
   bool done = false;
   bool danglingand = false;
   while(not done){
@@ -488,8 +488,8 @@ match_shptr_t LogicalAndExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t InclusiveOrExpression::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t InclusiveOrExpression::match(FnParseContext ctx) {
+  match_results_t rval;
   rval = std::make_shared<match_t>(ctx);
   bool done = false;
   bool danglingor = false;
@@ -518,8 +518,8 @@ match_shptr_t InclusiveOrExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t ExclusiveOrExpression::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t ExclusiveOrExpression::match(FnParseContext ctx) {
+  match_results_t rval;
   rval = std::make_shared<match_t>(ctx);
   bool done = false;
   bool danglingxor = false;
@@ -548,8 +548,8 @@ match_shptr_t ExclusiveOrExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t AndExpression::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t AndExpression::match(FnParseContext ctx) {
+  match_results_t rval;
   rval = std::make_shared<match_t>(ctx);
   bool done = false;
   bool danglingand = false;
@@ -577,8 +577,8 @@ match_shptr_t AndExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t EqualityExpression::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t EqualityExpression::match(FnParseContext ctx) {
+  match_results_t rval;
   rval = std::make_shared<match_t>(ctx);
   bool done = false;
   bool danglingop = false;
@@ -612,8 +612,8 @@ match_shptr_t EqualityExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t RelationalExpression::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t RelationalExpression::match(FnParseContext ctx) {
+  match_results_t rval;
   rval = std::make_shared<match_t>(ctx);
   bool done = false;
   bool danglingop = false;
@@ -657,8 +657,8 @@ match_shptr_t RelationalExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t ShiftExpression::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t ShiftExpression::match(FnParseContext ctx) {
+  match_results_t rval;
   rval = std::make_shared<match_t>(ctx);
   bool done = false;
   bool danglingop = false;
@@ -692,8 +692,8 @@ match_shptr_t ShiftExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t AdditiveExpression::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t AdditiveExpression::match(FnParseContext ctx) {
+  match_results_t rval;
   rval = std::make_shared<match_t>(ctx);
   bool done = false;
   bool danglingop = false;
@@ -727,8 +727,8 @@ match_shptr_t AdditiveExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_shptr_t MultiplicativeExpression::match(FnParseContext ctx) {
-  match_shptr_t rval;
+match_results_t MultiplicativeExpression::match(FnParseContext ctx) {
+  match_results_t rval;
   rval = std::make_shared<match_t>(ctx);
   bool done = false;
   bool danglingop = false;
