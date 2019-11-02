@@ -309,7 +309,6 @@ DECLARE_STD_EMITTABLE(CastExpression);
 DECLARE_STD_EMITTABLE(PostFixExpression);
 DECLARE_STD_EMITTABLE(ExpressionNode);
 DECLARE_STD_EMITTABLE(MultiplicativeExpression);
-DECLARE_STD_EMITTABLE(AssignmentExpression);
 DECLARE_STD_EMITTABLE(LogicalOrExpression);
 DECLARE_STD_EMITTABLE(LogicalAndExpression);
 DECLARE_STD_EMITTABLE(ExclusiveOrExpression);
@@ -325,6 +324,7 @@ DECLARE_STD_EMITTABLE(Statement);
 DECLARE_STD_EMITTABLE(ExpressionStatement);
 DECLARE_STD_EMITTABLE(InstantiationStatement);
 DECLARE_STD_EMITTABLE(ReturnStatement);
+DECLARE_STD_EMITTABLE(AssignmentStatement);
 
 DECLARE_STD_ABSTRACT_EMITTABLE(ConditionalExpression);
 DECLARE_STD_ABSTRACT_EMITTABLE(IterationStatement);

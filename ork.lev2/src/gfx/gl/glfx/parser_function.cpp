@@ -71,7 +71,8 @@ int FunctionNode::parse(const ork::ScannerView& view) {
   /////////////////////////////////
   assert(view.token(i)->text == "{");
   ScannerView bodyview(view, i);
-  i += _body.parse(bodyview);
+  size_t bodycount = _body.parse(bodyview);
+  i += bodycount;
   bodyview.numTokens();
   assert(i == view.numTokens());
   /////////////////////////////////
@@ -79,7 +80,7 @@ int FunctionNode::parse(const ork::ScannerView& view) {
   /////////////////////////////////
   _parsedfnnode = new ParsedFunctionNode(_container);
   int j = _parsedfnnode->parse(bodyview);
-  assert(j==i);
+  assert(j==bodycount);
   /////////////////////////////////
   return i;
 }

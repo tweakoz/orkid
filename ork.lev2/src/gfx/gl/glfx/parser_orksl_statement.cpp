@@ -27,12 +27,14 @@ namespace ork::lev2::glslfx {
 
 match_results_t Statement::match(FnParseContext ctx) {
   match_results_t rval;;
-  if (auto mvi = InstantiationStatement::match(ctx)) {
+  if (auto mvi = IterationStatement::match(ctx)) {
+    rval = mvi;
+  } else if (auto ma = AssignmentStatement::match(ctx)) {
+    rval = ma;
+  } else if (auto mvi = InstantiationStatement::match(ctx)) {
     rval = mvi;
   } else if (auto mve = ExpressionStatement::match(ctx)) {
     rval = mve;
-  } else if (auto mvi = IterationStatement::match(ctx)) {
-    rval = mvi;
   } else if (auto mrs = ReturnStatement::match(ctx)) {
     rval = mrs; // empty statement
   }
@@ -75,6 +77,23 @@ match_results_t InstantiationStatement::match(FnParseContext ctx) {
 //}
 void InstantiationStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+match_results_t AssignmentStatement::match(FnParseContext ctx) {
+  match_results_t rval;
+  if (auto m = Reference::match(ctx)) {
+    auto ctx2 = m->consume();
+    if (auto m2 = InitialAssignmentOperator::match(ctx2)) {
+      auto ctx3 = (m + m2)->consume();
+      if (auto m3 = Expression::match(ctx3)) {
+        auto mfinal = (m + m2 + m3);
+        rval = mfinal;
+      }
+    }
+  }
+  return rval;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

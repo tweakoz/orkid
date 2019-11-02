@@ -137,6 +137,10 @@ match_results_t ExpressionNode::match(FnParseContext ctx) {
       rval = rval + mvc;
       ctx = rval->consume();
     }
+    else if (auto mvo = UnaryOp::match(ctx)) {
+      rval = rval + mvo;
+      ctx = rval->consume();
+    }
     else {
       if( numparen>0 ){
       }
@@ -145,31 +149,6 @@ match_results_t ExpressionNode::match(FnParseContext ctx) {
     }
   }
   assert(numparen==0);
-  return rval;
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-match_results_t AssignmentExpression::match(FnParseContext ctx) {
-  match_results_t rval;
-  if (auto mvu = UnaryExpression::match(ctx)) {
-    size_t count = mvu->_count;
-    auto ctx2    = mvu->consume();
-    if (auto mvo = MutatingAssignmentOperator::match(ctx2)) {
-      count += mvo->_count;
-      auto ctx3 = mvo->consume();
-      if (auto mva = AssignmentExpression::match(ctx3)) {
-        count += mva->_count;
-        rval = std::make_shared<match_t>(ctx);
-        rval->_count   = count;
-        rval->_start   = ctx._startIndex;
-        rval->_matched = true;
-      }
-    }
-  }
-  else if (auto mvc = ConditionalExpression::match(ctx)) {
-    rval = mvc;
-  }
   return rval;
 }
 
@@ -297,15 +276,6 @@ match_results_t PostFixExpression::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-//AssignmentExpression::parsed_t AssignmentExpression::parse(const match_t& match) {
-  //parsed_t rval;
-  //assert(false);
-  //return rval;
-//}
-// void Expression::emit(shaderbuilder::BackEnd& backend) const {
-// assert(false);
-//}
 
 match_results_t PrimaryExpression::match(FnParseContext ctx) {
   match_results_t rval;

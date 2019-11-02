@@ -64,18 +64,18 @@ int ParsedFunctionNode::parse(const ork::ScannerView& view) {
     pctx._startIndex = i;
     if (auto m = VariableDeclaration::match(pctx)) {
       auto parsed = m->parse();
-      i += parsed._numtokens;
+      i += m->_count;
       //_elements.push_back(parsed._node);
     } else if (auto m = CompoundStatement::match(pctx)) {
       auto parsed = m->parse();
-      i += parsed._numtokens;
+      i += m->_count;
       //_elements.push_back(parsed._node);
     } else {
       assert(false);
     }
+    done = i >= view._indices.size();
   }
-  assert(false);
-  auto close_tok = view.token(i++);
+  auto close_tok = view.token(i-1);
   assert(close_tok->text == "}");
   return i;
 }
@@ -206,6 +206,9 @@ match_results_t TypeName::match(FnParseContext ctx) {
 match_results_t Identifier::match(FnParseContext ctx) {
   match_results_t rval;
   auto token = ctx.tokenValue(0);
+  if( token == "nrm"){
+    printf( "yo\n");
+  }
   if( ctx._container->validateKeyword(token) ){ // an identifer cannot be a keyword
     return rval;
   }
