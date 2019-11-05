@@ -33,6 +33,7 @@ include_directories(BEFORE ${destinc})
 link_directories(${destlib})
 
 include_directories(AFTER $ENV{OBT_STAGE}/include)
+include_directories(AFTER $ENV{OBT_STAGE}/include/tuio/oscpack)
 link_directories($ENV{OBT_STAGE}/lib/)
 
 link_directories($ENV{OBT_STAGE}/orkid/ork.tuio )

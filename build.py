@@ -37,7 +37,7 @@ if debug:
 else:
     cmd += ["-DCMAKE_BUILD_TYPE=Release"]
 
-cmd += ["-DCMAKE_FIND_DEBUG_MODE=ON"]
+cmd += ["-DCMAKE_FIND_DEBUG_MODE=ON","--target","install"]
 
 cmd += [prj_root]
 
