@@ -142,13 +142,71 @@ match_results_t IterationStatement::match(FnParseContext ctx) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 match_results_t ForLoopStatement::match(FnParseContext ctx) {
+  FnParseContext basectx = ctx;
   match_results_t rval;
   auto first_tok = ctx.tokenValue(0);
   if (first_tok == "for") {
+    match_results_t mf;
+    mf = std::make_shared<match_t>(ctx);
+    mf->_matched = true;
+    mf->_start   = ctx._startIndex;
+    mf->_count   = 1;
     rval = std::make_shared<match_t>(ctx);
-    rval->_matched = true;
-    rval->_start   = ctx._startIndex;
-    rval->_count   = 1;
+    rval = rval + mf;
+    ctx = rval->consume();
+    //////////////////////////////////////
+    auto mopen = OpenParen::match(ctx);
+    assert(mopen);
+    rval = rval + mopen;
+    ctx = rval->consume();
+    //////////////////////////////////////
+    if( auto mtyp = TypeName::match(ctx) ){
+      rval = rval + mtyp;
+      ctx = rval->consume();
+    }
+    //////////////////////////////////////
+    if( auto mid = Reference::match(ctx) ){
+      rval = rval + mid;
+      ctx = rval->consume();
+    }
+    //////////////////////////////////////
+    if( auto meq = MutatingAssignmentOperator::match(ctx) ){
+      rval = rval + meq;
+      ctx = rval->consume();
+      if( auto mex = Expression::match(ctx) ){
+        rval = rval + mex;
+        ctx = rval->consume();
+      }
+    }
+    //////////////////////////////////////
+    if( auto msc = SemicolonOp::match(ctx) ){
+      rval = rval + msc;
+      ctx = rval->consume();
+    }
+    //////////////////////////////////////
+    if( auto mex = Expression::match(ctx) ){
+      rval = rval + mex;
+      ctx = rval->consume();
+    }
+    //////////////////////////////////////
+    if( auto msc = SemicolonOp::match(ctx) ){
+      rval = rval + msc;
+      ctx = rval->consume();
+    }
+    //////////////////////////////////////
+    if( auto mex = Expression::match(ctx) ){
+      rval = rval + mex;
+      ctx = rval->consume();
+    }
+    //////////////////////////////////////
+    auto mclose = CloseParen::match(ctx);
+    assert(mclose);
+    rval = rval + mclose;
+    ctx = rval->consume();
+    //////////////////////////////////////
+    auto mblock = CompoundStatement::match(ctx);
+    rval = rval + mblock;
+    ctx = rval->consume();
     return rval;
   }
   return rval;
@@ -172,6 +230,10 @@ match_results_t StatementList::match(FnParseContext ctx) {
   size_t start = -1;
   bool done    = false;
   while (not done) {
+    if(ctx.tokenValue(0)=="float" and
+       ctx.tokenValue(1)=="nz"){
+      printf( "yo\n");
+    }
     auto mvd = Statement::match(ctx);
     if (mvd) {
       rval = rval + mvd;

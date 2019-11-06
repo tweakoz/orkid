@@ -143,7 +143,7 @@ struct FnMatchResultsWrap {
     return _results->operator bool();
   }
   inline FnMatchResultsWrap operator+(FnMatchResultsWrap b) const {
-    return _results->merge(b._results);
+    return b._results ? _results->merge(b._results) : _results;
   }
   inline FnMatchResultsBas* operator -> () {
     return _results.get();

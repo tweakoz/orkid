@@ -141,6 +141,10 @@ match_results_t ExpressionNode::match(FnParseContext ctx) {
       rval = rval + mvo;
       ctx = rval->consume();
     }
+    else if (auto mvo = MutatingAssignmentOperator::match(ctx)) {
+      rval = rval + mvo;
+      ctx = rval->consume();
+    }
     else {
       if( numparen>0 ){
       }
@@ -303,6 +307,9 @@ match_results_t ArgumentExpressionList::match(FnParseContext ctx) {
   match_results_t rval;
   bool done = false;
   while(not done) {
+    if( ctx.tokenValue(0)=="1.111"){
+      printf( "yo\n");
+    }
     if( auto m = ExpressionNode::match(ctx)){
       if( not rval ){
         rval = std::make_shared<match_t>(ctx);

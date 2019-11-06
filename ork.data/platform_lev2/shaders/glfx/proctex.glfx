@@ -192,7 +192,7 @@ libblock h2n_tools {
         vec2 fuvs = vec2(fitexdim, fitexdim);
         ivec2 iuv = ivec2(fuv.x*ftexdim, fuv.y*ftexdim);
         //////////////////////////////////////
-        vec3 nrm = vec3(0.0, 0.0, 0.0);
+        vec3 nrm = vec3(0.0, 0.0, 1.111);
         for (int idx=-12; idx<12; idx++) {
             int iU = iuv.x+idx;
             for (int idy=-12; idy<12; idy++) {

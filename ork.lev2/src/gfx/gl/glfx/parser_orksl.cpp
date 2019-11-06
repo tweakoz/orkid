@@ -163,7 +163,7 @@ match_results_t Constant::match(FnParseContext ctx) {
     rval = std::make_shared<match_t>(ctx);
     rval->_matched = true;
     rval->_start   = ctx._startIndex;
-    rval->_count   = count;
+    rval->_count   = 1; //number of tokens, not characters
   }
   return rval;
 

@@ -32,11 +32,27 @@ match_results_t UnaryOp::match(FnParseContext ctx) {
     rval = m;
   else if (auto m = MulOp::match(ctx))
     rval = m;
+  else if (auto m = DivOp::match(ctx))
+    rval = m;
   else if (auto m = NotOp::match(ctx))
+    rval = m;
+  else if (auto m = LtOp::match(ctx))
+    rval = m;
+  else if (auto m = GtOp::match(ctx))
+    rval = m;
+  else if (auto m = LtEqOp::match(ctx))
+    rval = m;
+  else if (auto m = GtEqOp::match(ctx))
     rval = m;
   else if (auto m = BitNotOp::match(ctx))
     rval = m;
   else if (auto m = AndOp::match(ctx))
+    rval = m;
+  else if (auto m = IncOp::match(ctx))
+    rval = m;
+  else if (auto m = DecOp::match(ctx))
+    rval = m;
+  else if (auto m = EqOp::match(ctx))
     rval = m;
   return rval;
 }
