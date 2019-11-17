@@ -1,0 +1,8 @@
+{
+  "leather1": {
+    "ambocc": "leather1_ambientOcclusion",
+    "albedo": "leather1_baseColor",
+    "normal": "leather1_normal",
+    "roughness": "leather1_roughness"
+  }
+}
