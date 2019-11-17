@@ -58,6 +58,8 @@ namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+QPoint logicalMousePos();
+
 class CTQT;
 
 class QCtxWidget : public QWidget {

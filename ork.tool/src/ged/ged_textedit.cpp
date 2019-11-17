@@ -104,14 +104,21 @@ QString GedInputDialog::getResult() {
 ///////////////////////////////////////////////////////////////////////////////
 
 QString GedInputDialog::getText( const ork::ui::Event& ev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih ) {
-	int isx = QCursor::pos().x();
-	int isy = QCursor::pos().y();
+
+	int isx = ork::lev2::logicalMousePos().x();
+	int isy = ork::lev2::logicalMousePos().y();
 
 	int ixb = (isx-ev.miRawX);
 	int iyb = (isy-ev.miRawY);
 
-	int ixa = ixb+pnode->GetX()+ix;
+    int ixa = ixb+pnode->GetX()+ix;
 	int iya = iyb+pnode->GetY()+iy;
+    if( ork::lev2::_HIDPI ){
+      iw *= 2;
+      ih *= 2;
+      ixa *= 2;
+      iya *= 2;
+    }
 
 	GedInputDialog dialog;
 	dialog.setModal( true );

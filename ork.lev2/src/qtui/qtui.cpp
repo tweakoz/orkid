@@ -74,6 +74,16 @@ std::string TypeIdName(const std::type_info*ti)
 
 namespace lev2 {
 
+bool _HIDPI = false;
+
+QPoint logicalMousePos() {
+  QPoint rval = QCursor::pos();
+  if(_HIDPI){
+    rval.setX(rval.x()/2.0f);
+    rval.setY(rval.y()/2.0f);
+  }
+  return rval;
+}
 
 void OrkGlobalDisableMousePointer(){
     QApplication::setOverrideCursor( QCursor( Qt::BlankCursor ) );

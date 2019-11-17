@@ -23,6 +23,7 @@
 #include <ork/lev2/ui/viewport.h>
 #include <ork/math/basicfilters.h>
 #include <ork/math/misc_math.h>
+#include <ork/lev2/qtui/qtui.h>
 
 #include <QtGui/QCursor>
 
@@ -158,7 +159,7 @@ static QPoint pmousepos;
 
 void EzUiCam::PanBegin(const CamEvTrackData& ed) {
   printf("BeginPan\n");
-  pmousepos = QCursor::pos();
+  pmousepos = ork::lev2::logicalMousePos();
   // OrkGlobalDisableMousePointer();
   mDoPan = true;
 }
@@ -202,7 +203,7 @@ void EzUiCam::RotBegin(const CamEvTrackData& ed) {
 
   // printf( "Rot: vPushNZ<%g %g %g>\n", vPushNZ.x, vPushNZ.y, vPushNZ.z );
 
-  pmousepos = QCursor::pos();
+  pmousepos = ork::lev2::logicalMousePos();
   // OrkGlobalDisableMousePointer();
   mDoRotate = true;
 }
@@ -220,7 +221,7 @@ void EzUiCam::RotEnd() {
 
 void EzUiCam::DollyBegin(const CamEvTrackData& ed) {
   printf("BeginDolly\n");
-  pmousepos = QCursor::pos();
+  pmousepos = ork::lev2::logicalMousePos();
   // OrkGlobalDisableMousePointer();
   mDoDolly = true;
 }
@@ -271,6 +272,8 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
       float fx   = float(esx) / _vpdim.x - 0.5f;
       float fy   = float(esy) / _vpdim.y - 0.5f;
       float frad = sqrtf((fx * fx) + (fy * fy));
+
+        printf( "fx<%g %g> frad<%g>\n", fx, fy, frad);
 
       meRotMode = (frad > 0.35f) ? EROT_SCREENZ : EROT_SCREENXY;
 

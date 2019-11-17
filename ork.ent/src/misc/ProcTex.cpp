@@ -172,7 +172,7 @@ void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
     if (IsPickState)
       return;
 
-    auto quad = pren->GetDrawableDataA().Get<ProcTexOutputQuad*>();
+    auto quad = pren->GetDrawableDataA().Get<const ProcTexOutputQuad*>();
 
     if (0 == quad->mMaterial) {
       quad->mMaterial = new lev2::GfxMaterial3DSolid(targ);

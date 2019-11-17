@@ -434,6 +434,8 @@ void Widget::LocalToRoot(int lx, int ly, int& rx, int& ry) const
 
 		w = w->GetParent();
 	}
+    bool ishidpi = mpTarget ? mpTarget->_hiDPI : false;
+
 }
 
 void Widget::RootToLocal(int rx, int ry, int& lx, int& ly) const
@@ -488,6 +490,27 @@ void Widget::Draw(ui::DrawEvent& drwev)
 	DoDraw(drwev);
 	mpTarget = 0;
 	mpDrawEvent = 0;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+float Widget::logicalWidth() const {
+    bool ishidpi = mpTarget ? mpTarget->_hiDPI : false;
+    return ishidpi ? miW*2 : miW;
+}
+float Widget::logicalHeight() const {
+  bool ishidpi = mpTarget ? mpTarget->_hiDPI : false;
+  return ishidpi ? miH*2 : miH;
+}
+float Widget::logicalX() const {
+  bool ishidpi = mpTarget ? mpTarget->_hiDPI : false;
+  return ishidpi ? miX*2 : miX;
+
+}
+float Widget::logicalY() const {
+  bool ishidpi = mpTarget ? mpTarget->_hiDPI : false;
+  return ishidpi ? miY*2 : miY;
+
 }
 
 /////////////////////////////////////////////////////////////////////////

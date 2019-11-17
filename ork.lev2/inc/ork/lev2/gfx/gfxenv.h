@@ -30,6 +30,8 @@ namespace ork {
 namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+extern bool _HIDPI;
+
 typedef SVtxV12C4T16 TEXT_VTXFMT;
 
 class CTXBASE;
@@ -225,7 +227,6 @@ public:
   void *BeginLoad();
   void EndLoad(void *ploadtok);
 
-protected:
   static const int kiModColorStackMax = 8;
   int miX, miY, miW, miH;
   CTXBASE *mCtxBase;
@@ -243,6 +244,7 @@ protected:
   std::stack<GfxMaterial *> mMaterialStack;
   bool mbDeviceAvailable;
   int miDrawLock;
+  bool _hiDPI = false;
 
   static orkvector<DisplayMode *> mDisplayModes;
 

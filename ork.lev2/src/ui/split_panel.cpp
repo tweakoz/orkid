@@ -59,6 +59,7 @@ void SplitPanel::SetChild2( Widget* pch)
 void SplitPanel::DoDraw(ui::DrawEvent& drwev)
 {
 	auto tgt = drwev.GetTarget();
+	bool is_hdpi = tgt->_hiDPI;
 	auto fbi = tgt->FBI();
 	auto mtxi = tgt->MTXI();
 	auto& primi = lev2::GfxPrimitives::GetRef();

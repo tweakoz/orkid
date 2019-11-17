@@ -107,7 +107,8 @@ match_results_t ExpressionNode::match(FnParseContext ctx) {
         }
       }
       else { // expression scope
-        assert(false);
+        printf( "yo\n");
+        //assert(false);
       }
       if(auto mvc = CloseParen::match(ctx)) {
          rval = rval+mvc;

@@ -37,6 +37,10 @@ void MatrixStackInterface::PushUIMatrix()
 	const auto& CPD = pfdata->topCPD();
 	float fw = float(CPD.GetDstRect().miW);
 	float fh = float(CPD.GetDstRect().miH);
+	if( mTarget._hiDPI ){
+	  fw *= 0.5f;
+	  fh *= 0.5f;
+	}
 	ork::fmtx4 mtxMVP = mTarget.MTXI()->Ortho( 0.0f, fw, 0.0f, fh, 0.0f, 1.0f );
 	PushPMatrix( mtxMVP );
 	PushVMatrix( ork::fmtx4::Identity );
@@ -47,6 +51,10 @@ void MatrixStackInterface::PushUIMatrix()
 
 void MatrixStackInterface::PushUIMatrix(int iw, int ih)
 {
+  if( mTarget._hiDPI ) {
+    //iw /=2;
+    //ih /=2;
+  }
 	ork::fmtx4 mtxMVP = mTarget.MTXI()->Ortho( 0.0f, float(iw), 0.0f, float(ih), 0.0f, 1.0f );
 	PushPMatrix( mtxMVP );
 	PushVMatrix( ork::fmtx4::Identity );

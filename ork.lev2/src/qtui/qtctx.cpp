@@ -132,6 +132,12 @@ void QCtxWidget::MouseEventCommon(QMouseEvent* event) {
   int ix = event->x();
   int iy = event->y();
 
+  if( _HIDPI ) {
+    ix /= 2;
+    iy /= 2;
+  }
+
+
   uiev.mbALT          = (modifiers & Qt::AltModifier);
   uiev.mbCTRL         = (modifiers & Qt::ControlModifier);
   uiev.mbSHIFT        = (modifiers & Qt::ShiftModifier);
@@ -146,15 +152,16 @@ void QCtxWidget::MouseEventCommon(QMouseEvent* event) {
   uiev.miX = ix;
   uiev.miY = iy;
 
-  float unitX = float(ix) / float(miWidth);
-  float unitY = float(iy) / float(miHeight);
+  float unitX = float(event->x()) / float(miWidth);
+  float unitY = float(event->y()) / float(miHeight);
 
   uiev.mfLastUnitX = uiev.mfUnitX;
   uiev.mfLastUnitY = uiev.mfUnitY;
   uiev.mfUnitX     = unitX;
   uiev.mfUnitY     = unitY;
 
-  // printf( "UNITX<%f> UNITY<%f>\n", unitX, unitY );
+   printf( "UNITX<%f> UNITY<%f>\n", unitX, unitY );
+    printf( "ix<%d %d>\n", ix, iy );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -167,7 +174,10 @@ void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
 
   gpos.x = event->x();
   gpos.y = event->y();
-
+  if( _HIDPI ) {
+    gpos.x /= 2.0f;
+    gpos.y /= 2.0f;
+  }
   MouseEventCommon(event);
 
   Qt::MouseButtons Buttons = event->buttons();
@@ -176,6 +186,10 @@ void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
 
   if (vp){
     uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
+    if( _HIDPI ){
+      uiev._vpdim *= 0.5;
+    }
+    //gpos.x /= 2.0f;
     vp->HandleUiEvent(uiev);
   }
   if (mpCtxBase)
@@ -192,6 +206,9 @@ void QCtxWidget::mousePressEvent(QMouseEvent* event) {
   uiev.miEventCode = ork::ui::UIEV_PUSH;
   if (vp){
     uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
+    if( _HIDPI ){
+      uiev._vpdim *= 0.5;
+    }
     vp->HandleUiEvent(uiev);
   }
   if (mpCtxBase)
@@ -209,6 +226,9 @@ void QCtxWidget::mouseDoubleClickEvent(QMouseEvent* event) {
 
   if (vp){
     uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
+    if( _HIDPI ){
+      uiev._vpdim *= 0.5;
+    }
     vp->HandleUiEvent(uiev);
   }
   if (mpCtxBase)
@@ -226,6 +246,9 @@ void QCtxWidget::mouseReleaseEvent(QMouseEvent* event) {
 
   if (vp){
     uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
+    if( _HIDPI ){
+      uiev._vpdim *= 0.5;
+    }
     vp->HandleUiEvent(uiev);
   }
 
@@ -263,6 +286,9 @@ void QCtxWidget::wheelEvent(QWheelEvent* qem) {
 
   if (vp && idelta != 0){
     uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
+    if( _HIDPI ){
+      uiev._vpdim *= 0.5;
+    }
     vp->HandleUiEvent(uiev);
   }
 
@@ -307,6 +333,9 @@ void QCtxWidget::keyPressEvent(QKeyEvent* event) {
 
   if (vp){
     uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
+    if( _HIDPI ){
+      uiev._vpdim *= 0.5;
+    }
     vp->HandleUiEvent(uiev);
   }
 
@@ -345,6 +374,9 @@ void QCtxWidget::keyReleaseEvent(QKeyEvent* event) {
 
   if (vp){
     uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
+    if( _HIDPI ){
+      uiev._vpdim *= 0.5;
+    }
     vp->HandleUiEvent(uiev);
   }
 
@@ -525,7 +557,7 @@ void CTQT::Resize(int X, int Y, int W, int H) {
   //////////////////////////////////////////////////////////
 
   this->SetThisXID((CTFLXID)winId());
-  // printf( "CTQT::Resize() mpTarget<%p>\n", mpTarget );
+  printf( "CTQT::Resize() mpTarget<%p>\n", mpTarget );
   if (mpTarget) {
     mpTarget->SetSize(X, Y, W, H);
     mUIEvent.mpGfxWin = (GfxWindow*)mpTarget->FBI()->GetThisBuffer();
@@ -542,7 +574,7 @@ void CTQT::SlotRepaint() {
     if (nullptr == GfxEnv::GetRef().GetDefaultUIMaterial())
       return;
 
-    auto pos = QCursor::pos();
+    auto pos = ork::lev2::logicalMousePos();
 
     msgrouter::content_t c;
 

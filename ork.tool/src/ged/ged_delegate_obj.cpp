@@ -270,7 +270,7 @@ void GedObjNode<Setter>::OnCreateObject()
 			qm.addMenu( qm2 );
 		}
 
-		pact = qm.exec(QCursor::pos());
+		pact = qm.exec(ork::lev2::logicalMousePos());
 
 		if( pact )
 		{
@@ -317,7 +317,7 @@ void GedObjNode<Setter>::OnCreateObject()
 		{
 			QMenu * qmenu = CreateFactoryMenu( Factories );
 
-			QAction* pact = qmenu->exec(QCursor::pos());
+			QAction* pact = qmenu->exec(ork::lev2::logicalMousePos());
 
 			if( pact )
 			{

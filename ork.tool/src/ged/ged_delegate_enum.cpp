@@ -157,7 +157,7 @@ public:
 			pchildmenu->setData( QVariant( str.c_str() ) );
 		}
 
-		QAction* pact = pMenu->exec(QCursor::pos());
+		QAction* pact = pMenu->exec(ork::lev2::logicalMousePos());
 
 		if( pact )
 		{

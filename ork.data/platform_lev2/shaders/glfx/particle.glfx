@@ -133,8 +133,14 @@ libblock lib_billboard {
     vec3 inp_pos;
   };
   struct Output {
-    vec4 pos0, pos1, pos2, pos3;
-    vec4 uv0, uv1, uv2, uv3;
+    vec4 pos0;
+    vec4 pos1;
+    vec4 pos2;
+    vec4 pos3;
+    vec4 uv0;
+    vec4 uv1;
+    vec4 uv2;
+    vec4 uv3;
   };
   Output Compute(Input inp, mat4 mvp) {
     Output outp;
@@ -291,11 +297,14 @@ geometry_interface gface_streak
   }
 }
 libblock lib_streak {
-  struct Output {
-    vec4 pos0, pos1, pos2, pos3;
+  struct StreakOutput {
+    vec4 pos0;
+    vec4 pos1;
+    vec4 pos2;
+    vec4 pos3;
   };
-  Output Compute(mat4 mvp) {
-    Output outp;
+  StreakOutput Compute(mat4 mvp) {
+    StreakOutput outp;
     vec3 vel  = geo_vel[0].xyz;
     vec3 cnrm = geo_cnrm[0].xyz;
     float wid = geo_lw[0].x;
@@ -320,7 +329,7 @@ libblock lib_streak {
   }
 }
 geometry_shader gs_streak : gface_streak : lib_streak {
-  Output outp = Compute(MatMVP);
+  StreakOutput outp = Compute(MatMVP);
   frg_clr     = geo_clr[0];
   gl_Position = outp.pos0;
   frg_uv0     = vec4(0.0, 0.0, 0.0, 0.0);
@@ -351,8 +360,8 @@ geometry_shader gs_streak_stereo : extension(GL_NV_stereo_view_rendering)
   gl_Layer                      = 0;
   gl_ViewportMask[0]            = 1;
   gl_SecondaryViewportMaskNV[0] = 2;
-  Output outpL                  = Compute(MatMVPL);
-  Output outpR                  = Compute(MatMVPR);
+  StreakOutput outpL                  = Compute(MatMVPL);
+  StreakOutput outpR                  = Compute(MatMVPR);
   frg_clr                       = geo_clr[0];
   gl_Position                   = outpL.pos0;
   gl_SecondaryPositionNV        = outpR.pos0;

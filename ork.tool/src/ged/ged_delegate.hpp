@@ -186,7 +186,7 @@ void Slider<T>::OnUiEvent(const ork::ui::Event& ev) // final
 
       // T val = GetVal();
 
-      auto qpos = QCursor::pos();
+      auto qpos = ork::lev2::logicalMousePos();
       int qx    = qpos.x();
       int qy    = qpos.y();
 
@@ -469,7 +469,7 @@ template <typename IODriver, typename T> void GedSimpleNode<IODriver, T>::OnUiEv
           if (ucd) {
             UserChoices uchc(*ucd, pobj, this);
             QMenu* qm     = uchc.CreateMenu();
-            QAction* pact = qm->exec(QCursor::pos());
+            QAction* pact = qm->exec(ork::lev2::logicalMousePos());
             if (pact) {
               QVariant UserData = pact->data();
               QString UserName  = UserData.toString();

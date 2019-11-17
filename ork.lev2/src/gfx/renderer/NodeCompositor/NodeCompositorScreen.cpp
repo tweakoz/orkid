@@ -53,6 +53,10 @@ struct SCRIMPL {
     GfxTarget* targ              = drawdata.target();
     int w = targ->GetW();
     int h = targ->GetH();
+    if( targ->_hiDPI ){
+      w /= 2;
+      h /= 2;
+    }
     //////////////////////////////////////////////////////
  SRect tgt_rect(0, 0, w, h);
 
