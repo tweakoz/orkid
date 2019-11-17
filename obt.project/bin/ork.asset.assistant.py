@@ -19,7 +19,7 @@ settings = QSettings("TweakoZ", "OrkidTool");
 settings.beginGroup("App");
 settings.endGroup();
 
-basedir = Path(os.getenv("ORKDOTBUILD_WORKSPACE_DIR"))
+basedir = Path(os.getenv("ORKID_WORKSPACE_DIR"))
 datadir = basedir/"ork.data"
 srcdir = str(datadir/"src")
 dstdir = str(datadir/"pc")
@@ -130,8 +130,9 @@ class AssetWidget(QWidget):
     def selectInput(self):
      options = QFileDialog.Options()
      options |= QFileDialog.DontUseNativeDialog
-     src = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()",srcdir,"Colladas(*.dae);;Images(*.png *.tga)", options=options )
-     src = src[0]
+     src = QFileDialog.getOpenFileNames(self,"QFileDialog.getOpenFileName()",srcdir,"Colladas(*.dae);;Images(*.png *.tga)", options=options )
+     print(src)
+     src = " ".join(src[0])
      src = src.replace(srcdir,"<SRC>")
      self.srced.onChangedExternally(src)
      dst = src.replace("<SRC>","<DST>")
@@ -156,86 +157,111 @@ class AssetWidget(QWidget):
         self.assettypeview.onChangedExternally("Tex(PNG)")
      self.dsted.onChangedExternally(dst)
 
-   ##########################################
+    ##########################################
+    def doItem(self,srcfile,dstfile):
+       srcpath = srcfile.replace("<SRC>","./ork.data/src")
+       extension = os.path.splitext(srcpath)[1]
+       dstpath = dstfile.replace("<DST>","./ork.data/pc")
+       print(srcpath,dstpath)
+       os.chdir(basedir)
+       orkbin = "ork.tool.release"
+
+       if extension == ".dae":
+           if self.assettypeview.value == "Dae(Mesh)":
+               orkfilt = "dae:xgm"
+           elif self.assettypeview.value == "Dae(Anim)":
+               orkfilt = "dae:xga"
+       elif extension == ".tga":
+           orkfilt = "nvcompress"
+       elif extension == ".png":
+           orkfilt = "nvcompress"
+
+       if orkfilt!=None:
+           if orkfilt == "nvcompress":
+               dstpath = dstpath.replace(".tga",".dds")
+               dstpath = dstpath.replace(".png",".dds")
+               cmd = "nvcompress -bc3 %s %s " % (srcpath,dstpath)
+               dp = Path(dstpath)
+               print(dp,dp.parent)
+               dpex = os.path.exists(dp.parent)
+               if False==dpex:
+                   dp.parent.mkdir(parents=True)
+               dpex = os.path.exists(dp.parent)
+               print(dpex)
+               print(cmd)
+           else:
+               cmd = orkbin + (" -filter %s -in " % orkfilt) + srcpath + " -out " + dstpath
+
+
+       class SubProc:
+           def __init__(self,mainwin):
+
+               te = QPlainTextEdit()
+               hilighter = hilite.Highlighter(te.document())
+
+               qd = QDockWidget("Dae:Xgm")
+               qd.setWidget(te)
+               qd.setMinimumSize(480,240)
+               qd.setFeatures(QDockWidget.DockWidgetMovable|QDockWidget.DockWidgetVerticalTitleBar|QDockWidget.DockWidgetFloatable)
+               qd.setAllowedAreas(Qt.LeftDockWidgetArea)
+               qdss = "QWidget{background-color: rgb(64,64,128); color: rgb(160,160,192);}"
+               qdss += "QDockWidget::title {background-color: rgb(32,32,48); color: rgb(255,0,0);}"
+               qd.setStyleSheet(qdss)
+               mainwin.addDockWidget(Qt.LeftDockWidgetArea,qd)
+               if mainwin.prevDockWidget!=None:
+                   mainwin.tabifyDockWidget(mainwin.prevDockWidget,qd)
+               mainwin.prevDockWidget = qd
+               self.stdout = ""
+               self.stderr = ""
+               def onSubProcStdout():
+                   bytes = self.process.readAllStandardOutput()
+                   self.stdout += str(bytes, encoding='ascii')
+                   te.setPlainText(self.stdout+self.stderr)
+               def onSubProcStderr():
+                   bytes = self.process.readAllStandardError()
+                   self.stderr += str(bytes, encoding='ascii')
+                   te.setPlainText(self.stdout+self.stderr)
+               def finished(text):
+                   print( "process done...\n")
+
+               self.process = QProcess()
+               self.process.readyReadStandardError.connect(onSubProcStderr)
+               self.process.readyReadStandardOutput.connect(onSubProcStdout);
+               self.process.finished.connect(finished);
+
+
+               self.process.start(cmd)
+           def join(self):
+               self.process.waitForFinished()
+
+       sp = SubProc(self.mainwin)
+       sp.join()
+       #...
+       #void MainWindow::updateError()
+       #{
+       #QByteArray data = myProcess->readAllStandardError();
+       #textEdit_verboseOutput->append(QString(data));
+       #}
+
+       #void MainWindow::updateText()
+       #{
+       #QByteArray data = myProcess->readAllStandardOutput();
+       #textEdit_verboseOutput->append(QString(data));
+       #}
+
+       #os.system(cmd)
+
+    ##########################################
 
     def goPushed(self):
-      srcfile = self.srced.value
-      srcpath = srcfile.replace("<SRC>","./data/src")
-      extension = os.path.splitext(srcpath)[1]
-      dstfile = self.dsted.value
-      dstpath = dstfile.replace("<DST>","./data/pc")
-      print(srcpath,dstpath)
-      os.chdir(basedir)
-      orkbin = "./stage/bundle/OrkidTool.app/Contents/MacOS/ork.tool.test.osx.release"
-
-      if extension == ".dae":
-        if self.assettypeview.value == "Dae(Mesh)":
-          orkfilt = "dae:xgm"
-        elif self.assettypeview.value == "Dae(Anim)":
-          orkfilt = "dae:xga"
-      elif extension == ".png":
-          orkfilt = "tga:dds"
-
-      if orkfilt!=None:
-          cmd = orkbin + (" -filter %s -in " % orkfilt) + srcpath + " -out " + dstpath
-
-
-      class SubProc:
-         def __init__(self,mainwin):
-
-            te = QPlainTextEdit()
-            hilighter = hilite.Highlighter(te.document())
-
-            qd = QDockWidget("Dae:Xgm")
-            qd.setWidget(te)
-            qd.setMinimumSize(480,240)
-            qd.setFeatures(QDockWidget.DockWidgetMovable|QDockWidget.DockWidgetVerticalTitleBar|QDockWidget.DockWidgetFloatable)
-            qd.setAllowedAreas(Qt.LeftDockWidgetArea)
-            qdss = "QWidget{background-color: rgb(64,64,128); color: rgb(160,160,192);}"
-            qdss += "QDockWidget::title {background-color: rgb(32,32,48); color: rgb(255,0,0);}"
-            qd.setStyleSheet(qdss)
-            mainwin.addDockWidget(Qt.LeftDockWidgetArea,qd)
-            if mainwin.prevDockWidget!=None:
-               mainwin.tabifyDockWidget(mainwin.prevDockWidget,qd)
-            mainwin.prevDockWidget = qd
-            self.stdout = ""
-            self.stderr = ""
-            def onSubProcStdout():
-               bytes = self.process.readAllStandardOutput()
-               self.stdout += str(bytes, encoding='ascii')
-               te.setPlainText(self.stdout+self.stderr)
-            def onSubProcStderr():
-               bytes = self.process.readAllStandardError()
-               self.stderr += str(bytes, encoding='ascii')
-               te.setPlainText(self.stdout+self.stderr)
-            def finished(text):
-               print( "process done...\n")
-
-            self.process = QProcess()
-            self.process.readyReadStandardError.connect(onSubProcStderr)
-            self.process.readyReadStandardOutput.connect(onSubProcStdout);
-            self.process.finished.connect(finished);
-
-
-            self.process.start(cmd)
-
-      sp = SubProc(self.mainwin)
-
-      #...
-      #void MainWindow::updateError()
-      #{
-      #QByteArray data = myProcess->readAllStandardError();
-      #textEdit_verboseOutput->append(QString(data));
-      #}
-
-      #void MainWindow::updateText()
-      #{
-      #QByteArray data = myProcess->readAllStandardOutput();
-      #textEdit_verboseOutput->append(QString(data));
-      #}
-
-      #os.system(cmd)
-
+      slist = self.srced.value.split(" ")
+      dlist = self.dsted.value.split(" ")
+      assert(len(slist)==len(dlist))
+      for i in range(0,len(slist)):
+        srcfile = slist[i]
+        dstfile = dlist[i]
+        print( srcfile, dstfile )
+        self.doItem(srcfile,dstfile)
 #############################################################################
 
 class AssetWindow(QMainWindow):
