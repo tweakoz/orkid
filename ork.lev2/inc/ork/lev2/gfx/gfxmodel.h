@@ -112,9 +112,9 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmSubMesh // Run Time Cluster Set
+struct XgmSubMesh // Run Time Cluster Set
 {
-public:
+
   GfxMaterial* mpMaterial;
   int miNumClusters;
   XgmCluster* mpClusters;
@@ -149,8 +149,8 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmMesh {
-public:
+struct XgmMesh {
+
   /////////////////////////////////////
   XgmMesh();
   XgmMesh(XgmMesh* pMesh);
@@ -178,7 +178,6 @@ public:
   void dump() const;
   /////////////////////////////////////
 
-private:
   orkvector<XgmSubMesh*> mSubMeshes;
   fvec4 mvBoundingBoxMin;
   fvec4 mvBoundingBoxMax;
@@ -192,9 +191,8 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmModel {
+struct XgmModel {
 
-public:
   /////////////////////////////////////
 
   void ReserveMeshes(int icount) { mMeshes.reserve(icount); }
@@ -294,7 +292,6 @@ public:
 
   PoolString GetModelName() const { return msModelName; }
 
-private:
   orklut<PoolString, XgmMesh*> mMeshes;
   orkvector<GfxMaterial*> mvMaterials;
   int miBonesPerCluster;
@@ -313,13 +310,11 @@ private:
 
 class GfxMaterialFx;
 
-class XgmModelInst {
-public:
+struct XgmModelInst {
+
   XgmModelInst(const XgmModel* Model);
   ~XgmModelInst();
 
-  GfxMaterialFx* GetLayerFxMaterial() const { return mLayerFxMaterial; }
-  void SetLayerFxMaterial(GfxMaterialFx* pfx) { mLayerFxMaterial = pfx; }
 
   const XgmModel* GetXgmModel(void) const { return mXgmModel; }
   int GetNumChannels(void) const;
@@ -347,13 +342,12 @@ public:
   bool IsBlenderZup() const { return mBlenderZup; }
   void SetBlenderZup(bool bv) { mBlenderZup = bv; }
 
-private:
   static const int knummaskbytes = 32;
   U8 mMaskBits[knummaskbytes];
   const XgmModel* mXgmModel;
   XgmLocalPose mLocalPose;
   XgmMaterialStateInst mMaterialStateInst;
-  GfxMaterialFx* mLayerFxMaterial;
+  GfxMaterial* _overrideMaterial = nullptr;
   int miNumChannels;
   bool mbSkinned;
   bool mBlenderZup;

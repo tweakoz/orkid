@@ -1,8 +1,9 @@
 {
-  "leather1": {
+  "pbr:metalness": {
     "ambocc": "leather1_ambientOcclusion",
     "albedo": "leather1_baseColor",
     "normal": "leather1_normal",
-    "roughness": "leather1_roughness"
+    "roughness": "leather1_roughness",
+    "metalness": "leather1_metallic"
   }
 }

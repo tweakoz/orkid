@@ -144,7 +144,7 @@ public:
 				pchildmenu2->setData( QVariant( "log" ) );
 				pchildmenu3->setData( QVariant( "exp" ) );
 
-				QAction* pact = pMenu->exec(ork::lev2::logicalMousePos());
+				QAction* pact = pMenu->exec(QCursor::pos());
 
 				if( pact )
 				{

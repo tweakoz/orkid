@@ -60,7 +60,7 @@ template <typename IODriver> void GedAssetNode<IODriver>::OnCreateObject() {
       qm.addMenu(qm2);
     }
 
-    pact = qm.exec(ork::lev2::logicalMousePos());
+    pact = qm.exec(QCursor::pos());
 
     // IODriver::LayerDeserializerType aldser( mIoDriver );
 

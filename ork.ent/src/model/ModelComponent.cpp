@@ -7,6 +7,7 @@
 
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
+#include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/texman.h>
@@ -45,9 +46,9 @@ void ModelComponentData::Describe() {
   ork::reflect::AnnotatePropertyForEditor<ModelComponentData>("Model", "editor.assettype", "xgmodel");
   ork::reflect::AnnotatePropertyForEditor<ModelComponentData>("Model", "editor.assetclass", "xgmodel");
 
-  ork::reflect::RegisterMapProperty("LayerFxMap", &ModelComponentData::mLayerFx);
-  ork::reflect::AnnotatePropertyForEditor<ModelComponentData>("LayerFxMap", "editor.assettype", "FxShader");
-  ork::reflect::AnnotatePropertyForEditor<ModelComponentData>("LayerFxMap", "editor.assetclass", "FxShader");
+  ork::reflect::RegisterMapProperty("MaterialOverrides", &ModelComponentData::_materialOverrides);
+  //ork::reflect::AnnotatePropertyForEditor<ModelComponentData>("MaterialOverrides", "editor.assettype", "FxShader");
+  //ork::reflect::AnnotatePropertyForEditor<ModelComponentData>("MaterialOverrides", "editor.assetclass", "FxShader");
 
   ork::reflect::RegisterProperty("AlwaysVisible", &ModelComponentData::mAlwaysVisible);
   ork::reflect::RegisterProperty("Scale", &ModelComponentData::mfScale);
@@ -121,22 +122,28 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
     mXgmModelInst->RefLocalPose().BindPose();
     mXgmModelInst->RefLocalPose().BuildPose();
     mXgmModelInst->SetBlenderZup(mData.IsBlenderZup());
-  }
 
-  const orklut<PoolString, lev2::FxShaderAsset*>& lfxmap = mData.GetLayerFXMap();
+    auto& ovmap = mData.MaterialOverrideMap();
 
-  for (auto it : lfxmap) {
-    lev2::FxShaderAsset* passet = it.second;
-
-    if (passet && passet->IsLoaded()) {
-      lev2::FxShader* pfxshader = passet->GetFxShader();
-
-      if (pfxshader) {
-        lev2::GfxMaterialFx* pfxmaterial = new lev2::GfxMaterialFx();
-        pfxmaterial->SetEffect(pfxshader);
+    for (auto it : ovmap) {
+      std::string mtlvaluename = it.second.c_str();
+      if( 0 == strcmp(it.first.c_str(),"all") ){
+        auto overridemtl = new lev2::PBRMaterial;
+        mXgmModelInst->_overrideMaterial = overridemtl;
       }
+      //lev2::FxShaderAsset* passet = it.second;
+
+      //if (passet && passet->IsLoaded()) {
+      //lev2::FxShader* pfxshader = passet->GetFxShader();
+
+      //if (pfxshader) {
+      //lev2::GfxMaterialFx* pfxmaterial = new lev2::GfxMaterialFx();
+      //pfxmaterial->SetEffect(pfxshader);
+      //}
+      //}
     }
   }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -192,7 +199,7 @@ bool ModelComponentInst::DoNotify(const ork::event::Event* event) {
           lev2::GfxMaterialFx* pmaterial = it->second;
         }
       }
-      modelDrawable().GetModelInst()->SetLayerFxMaterial(pmaterial);
+      modelDrawable().GetModelInst()->_overrideMaterial = pmaterial;
       return true;
     }
   }

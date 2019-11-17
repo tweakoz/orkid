@@ -465,7 +465,7 @@ public:
                                 PlugChoices uchc( choices );
                                 QMenu* qm = uchc.CreateMenu();
                                 ///////////////////////////////////////////
-                                QAction* pact = qm->exec(ork::lev2::logicalMousePos());
+                                QAction* pact = qm->exec(QCursor::pos());
                                 if( pact )
                                 {   QVariant UserData = pact->data();
                                     QString UserName = UserData.toString();

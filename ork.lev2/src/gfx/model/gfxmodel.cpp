@@ -47,7 +47,6 @@ XgmModelInst::XgmModelInst(const XgmModel* Model)
     : mXgmModel(Model)
     , mLocalPose(Model->RefSkel())
     , mMaterialStateInst(*this)
-    , mLayerFxMaterial(0)
     , mbSkinned(false)
     , mBlenderZup(false) {
   EnableAllMeshes();
@@ -265,8 +264,8 @@ void XgmModel::RenderRigid(const fcolor4& ModColor,
   pTARG->PushModColor(ModColor);
   {
     if (mdlctx.GetModelInst()) {
-      if (mdlctx.GetModelInst()->GetLayerFxMaterial() != 0) {
-        pmat = mdlctx.GetModelInst()->GetLayerFxMaterial();
+      if (mdlctx.GetModelInst()->_overrideMaterial != nullptr) {
+        pmat = mdlctx.GetModelInst()->_overrideMaterial;
       }
     }
 
@@ -405,8 +404,8 @@ void XgmModel::RenderMultipleRigid(const fcolor4& ModColor,
     GfxMaterial* pmaterial = XgmClusSet.GetMaterial();
 
     if (modelinst) {
-      if (nullptr == modelinst->GetLayerFxMaterial())
-        pmaterial = modelinst->GetLayerFxMaterial();
+      if (nullptr == modelinst->_overrideMaterial)
+        pmaterial = modelinst->_overrideMaterial;
     }
 
     if (nullptr != pmaterial) {
@@ -482,8 +481,8 @@ void XgmModel::RenderSkinned(const XgmModelInst* minst,
 
       auto mtl = XgmClusSet.GetMaterial();
 
-      if (minst->GetLayerFxMaterial() != 0)
-        mtl = minst->GetLayerFxMaterial();
+      if (minst->_overrideMaterial != 0)
+        mtl = minst->_overrideMaterial;
 
       if (0 != mtl) {
         pTARG->BindMaterial(mtl);
@@ -615,8 +614,8 @@ void XgmModel::RenderMultipleSkinned(const XgmModelInst* minst,
     bool bmatpushed   = false;
     GfxMaterial* pmat = XgmClusSet.GetMaterial();
 
-    if (minst->GetLayerFxMaterial() != 0)
-      pmat = minst->GetLayerFxMaterial();
+    if (minst->_overrideMaterial != 0)
+      pmat = minst->_overrideMaterial;
 
     if (0 != pmat) {
       pTARG->BindMaterial(pmat);

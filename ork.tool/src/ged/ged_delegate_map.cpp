@@ -1198,7 +1198,7 @@ void GedMapNode::OnMouseDoubleClicked (const ork::ui::Event& ev)
 		QVariant UserData( qstr );
 		pchildact->setData(UserData);
 	}
-	QAction* pact = pmenu->exec(ork::lev2::logicalMousePos());
+	QAction* pact = pmenu->exec(QCursor::pos());
 	if( pact )
 	{
 		QVariant UserData = pact->data();
@@ -1498,7 +1498,7 @@ void GedMapFactoryNode::OnMouseDoubleClicked(const ork::ui::Event& ev)
 	ConstString assettype_anno = GetOrkProp()->GetAnnotation( "editor.assettype" );
 	
 	
-	QAction* pact = qmenu->exec(ork::lev2::logicalMousePos());
+	QAction* pact = qmenu->exec(QCursor::pos());
 
 	if( pact )
 	{

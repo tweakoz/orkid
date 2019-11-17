@@ -112,7 +112,7 @@ void GedFileNode<IODriver>::OnCreateObject()
 		QMenu* qm2 = chclist.CreateMenu();
 		qm.addMenu( qm2 );
 
-		pact = qm.exec(ork::lev2::logicalMousePos());
+		pact = qm.exec(QCursor::pos());
 
 		if( pact )
 		{
