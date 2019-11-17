@@ -142,6 +142,7 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   MatCtx.SetLightingGroup(&lgrp);
 
   MdlCtx.SetSkinned(model->IsSkinned());
+  MdlCtx.SetModelInst(minst);
   if (model->IsSkinned()) {
     model->RenderSkinned(minst, ObjColor, nmat, GetTarget(), MatCtx, MdlCtx);
   } else {

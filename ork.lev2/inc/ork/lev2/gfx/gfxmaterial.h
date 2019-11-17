@@ -120,7 +120,12 @@ class GfxMaterial : public ork::Object
 	virtual void Update( void ) = 0;
 
 	virtual void Init( GfxTarget *pTarg ) = 0;
-
+    virtual void gpuUpdate(GfxTarget* targ) {
+      if( _doinit) {
+        Init(targ);
+        _doinit = false;
+      }
+    }
 	virtual bool BeginPass( GfxTarget* pTARG, int iPass=0 ) = 0;
 	virtual void EndPass( GfxTarget* pTARG ) = 0;
 	virtual int  BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx = RenderContextInstData::Default ) = 0;
@@ -164,6 +169,7 @@ class GfxMaterial : public ork::Object
 	RenderQueueSortingData					mSortingData;
 	const RenderContextInstData*			mRenderContexInstData;
 	std::stack<bool>						mDebug;
+	bool _doinit = true;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

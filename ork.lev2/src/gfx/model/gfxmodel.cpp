@@ -268,7 +268,7 @@ void XgmModel::RenderRigid(const fcolor4& ModColor,
         pmat = mdlctx.GetModelInst()->_overrideMaterial;
       }
     }
-
+    pmat->gpuUpdate(pTARG);
     //////////////////////////////////////////////
 
     struct RenderClus {
