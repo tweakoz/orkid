@@ -128,7 +128,7 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
     for (auto it : ovmap) {
       std::string mtlvaluename = it.second.c_str();
       if( 0 == strcmp(it.first.c_str(),"all") ){
-        auto overridemtl = new lev2::PBRMaterial;
+        auto overridemtl = new lev2::PBRMaterial(mtlvaluename);
         mXgmModelInst->_overrideMaterial = overridemtl;
       }
       //lev2::FxShaderAsset* passet = it.second;

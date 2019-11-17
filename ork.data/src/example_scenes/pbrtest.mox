@@ -12,10 +12,10 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>0.0378891 -0.195524 -0.00645753</property>
+                                                <property name='Center'>0.0388505 -0.0930999 -0.0294142</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>5</property>
-                                                <property name='QuatC'>-0.0191822 -0.993653 0.109844 -0.0148536</property>
+                                                <property name='Loc'>4.64466</property>
+                                                <property name='QuatC'>0.94799 -0.00933304 0.317511 0.0204072</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -51,7 +51,7 @@
                                         </property>
                                         <property name='Model'>
                                             <reference category='AssetClass'>
-                                                "xgmodel" "data://environ/objects/misc/headwalker"
+                                                "xgmodel" "data://actors/iceblob/iceblob"
                                             </reference>
                                         </property>
                                         <property name='Offset'>0 0 0</property>

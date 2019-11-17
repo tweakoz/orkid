@@ -19,6 +19,8 @@ uniform_set ub_vtx
 ///////////////////////////////////////////////////////////////
 uniform_set ub_frg
 {
+    sampler2D ColorMap;
+    sampler2D NormalMap;
 	vec4 modcolor;
 }
 ///////////////////////////////////////////////////////////////
@@ -71,7 +73,11 @@ fragment_interface iface_fgbuffer
 fragment_shader ps_gbuffer
 	: iface_fgbuffer
 {
-	out_clr = frg_nrmd;
+    vec3 ntx = texture(NormalMap,frg_uv0).xyz;
+    ntx = ntx - vec3(0.5,0.5,0.5);
+    out_clr.xyz = normalize(ntx.xyz);
+    //out_clr.xyz = vec3(frg_uv0,0);
+	out_clr.w = frg_nrmd.w;
 }
 ///////////////////////////////////////////////////////////////
 state_block sb_pick : sb_default
