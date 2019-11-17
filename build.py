@@ -14,7 +14,7 @@ parser.add_argument('--debug',action="store_true", help=" debug build")
 parser.add_argument('--xcode',action="store_true", help=" xcode debug build")
 _args = vars(parser.parse_args())
 
-ork.dep.require(["yarl","bullet","luajit","openexr","oiio","openvr","fcollada"])
+ork.dep.require(["yarl","bullet","luajit","openexr","oiio","openvr","fcollada","assimp"])
 
 build_dest = ork.path.stage()/"orkid"
 debug = _args["debug"]!=False

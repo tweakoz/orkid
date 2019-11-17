@@ -561,6 +561,7 @@ public:
 	void ReadFromXGM( const file::Path& inpath );
 	void ReadFromWavefrontObj( const file::Path& inpath );
 	void ReadFromDaeFile( const file::Path& inpath, DaeReadOpts& readopts );
+	void readFromAssimp( const file::Path& inpath, DaeReadOpts& readopts );
 
 	/////////////////////////////////////////////////////////////////////////
 
@@ -665,6 +666,15 @@ class OBJ_XGM_Filter : public ork::tool::AssetFilterBase
 	RttiDeclareConcrete(OBJ_XGM_Filter,ork::tool::AssetFilterBase);
 public: //
 	OBJ_XGM_Filter(  );
+	bool ConvertAsset( const tokenlist& toklist ) final;
+};
+
+class GLB_XGM_Filter : public ork::tool::AssetFilterBase
+{
+	RttiDeclareConcrete(GLB_XGM_Filter,ork::tool::AssetFilterBase);
+	//bool ConvertTextures( CColladaModel* mdl, const file::Path& outmdlpth );
+public: //
+	GLB_XGM_Filter(  );
 	bool ConvertAsset( const tokenlist& toklist ) final;
 };
 

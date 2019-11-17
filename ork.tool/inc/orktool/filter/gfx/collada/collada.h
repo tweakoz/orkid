@@ -468,6 +468,7 @@ public:
 	enum EMatClass
 	{
 		EMATCLASS_STANDARD = 0,
+		EMATCLASS_PBR,
 		EMATCLASS_FX,
 	};
 
@@ -818,8 +819,6 @@ public: //
 	DAEXGAFilter(  );
 	bool ConvertAsset( const tokenlist& toklist ) final;
 };
-
-///////////////////////////////////////////////////////////////////////////////
 
 } }
 

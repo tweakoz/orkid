@@ -106,6 +106,7 @@ public: //
 
 #define RegFilt(nam, cls) AssetFilterMap.insert(pair<string, AssetConvCB>((string)nam, (AssetConvCB)cls::ConvertAsset));
 
+
 ///////////////////////////////////////////////////////////////////////////////
 
 }} // namespace ork::tool
