@@ -34,6 +34,7 @@
 
 #include <orktool/filter/gfx/collada/collada.h>
 #include <orktool/filter/gfx/collada/daeutil.h>
+#include <orktool/filter/gfx/meshutil/clusterizer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -698,7 +699,7 @@ bool CColladaModel::ParseGeometries()
 
 				if( 0 == inumpolys ) continue;
 
-				SColladaMatGroup * ColMatGroup = new SColladaMatGroup;
+				auto ColMatGroup = new MeshUtil::ToolMaterialGroup;
 				ColMatGroup->mMeshConfigurationFlags.mbSkinned = ColMesh->IsSkinned();
 				ColMesh->RefMatGroups().push_back( ColMatGroup );
 
@@ -856,13 +857,13 @@ bool CColladaModel::ParseGeometries()
 				
 				ColMatGroup->mShadingGroupName = ShadingGroupName;
 
-				orkmap<std::string,SColladaMaterial>::iterator itmat = mMaterialMap.find( ShadingGroupName );
+				orkmap<std::string,ColladaMaterial>::iterator itmat = mMaterialMap.find( ShadingGroupName );
 
 				if( mMaterialMap.end() == itmat )
 				{
-					SColladaMaterial colladamaterial;
+					ColladaMaterial colladamaterial;
 					colladamaterial.ParseMaterial( mDocument, ShadingGroupName, MaterialName );
-					std::pair<std::string,SColladaMaterial> item(ShadingGroupName,colladamaterial);
+					std::pair<std::string,ColladaMaterial> item(ShadingGroupName,colladamaterial);
 					mMaterialMap.insert( item);
 					itmat = mMaterialMap.find( ShadingGroupName );
 				}

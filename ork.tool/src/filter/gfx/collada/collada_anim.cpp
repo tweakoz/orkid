@@ -219,9 +219,9 @@ bool CColladaAnim::GetPose( void )
 void CColladaAnim::ParseTextures()
 {
 	// TODO: Skip textures/materials on shapes in the ref layer
-	for( orkmap<std::string,SColladaMaterial>::iterator it=mMaterialMap.begin(); it!=mMaterialMap.end(); it++ )
+	for( orkmap<std::string,ColladaMaterial>::iterator it=mMaterialMap.begin(); it!=mMaterialMap.end(); it++ )
 	{
-		SColladaMaterial& mat = it->second;
+		ColladaMaterial& mat = it->second;
 
 		if( mat.mStdProfile )
 		{
@@ -293,12 +293,12 @@ void CColladaAnim::ParseMaterials()
 			const std::string& ShadingGroupName = item.first;
 			const std::string& MaterialName = item.second.mMaterialDaeId;
 
-			SColladaMaterial colladamaterial;
+			ColladaMaterial colladamaterial;
 			colladamaterial.ParseMaterial( mDocument, ShadingGroupName, MaterialName );
 
 			mMaterialMap[ MaterialName ] = colladamaterial;
 
-			lev2::GfxMaterialFx* pmatfx = rtti::autocast( colladamaterial.mpOrkMaterial );
+			lev2::GfxMaterialFx* pmatfx = rtti::autocast( colladamaterial._orkMaterial );
 
 			if( pmatfx )
 			{

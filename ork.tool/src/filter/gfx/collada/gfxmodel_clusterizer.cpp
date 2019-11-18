@@ -9,12 +9,13 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <orktool/filter/gfx/collada/collada.h>
 #include <orktool/filter/gfx/meshutil/meshutil_fixedgrid.h>
+#include <orktool/filter/gfx/meshutil/clusterizer.h>
 
 const bool gbFORCEDICE = true;
 const int kDICESIZE = 512;
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace tool {
+namespace ork::tool {
 ///////////////////////////////////////////////////////////////////////////////
 
 XgmClusterizer::XgmClusterizer()
@@ -43,7 +44,7 @@ XgmClusterizerStd::~XgmClusterizerStd()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmClusterizerStd::AddTriangle( const XgmClusterTri& Triangle, const SColladaMatGroup* cmg )
+bool XgmClusterizerStd::AddTriangle( const XgmClusterTri& Triangle, const MeshUtil::ToolMaterialGroup* cmg )
 {
 	ColladaExportPolicy* policy = ColladaExportPolicy::GetContext();
 
@@ -100,7 +101,7 @@ void XgmClusterizerDiced::Begin()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmClusterizerDiced::AddTriangle( const XgmClusterTri& Triangle, const SColladaMatGroup* cmg )
+bool XgmClusterizerDiced::AddTriangle( const XgmClusterTri& Triangle, const MeshUtil::ToolMaterialGroup* cmg )
 {
 	int iv0 = mPreDicedMesh.MergeVertex( Triangle.Vertex[0] );
 	int iv1 = mPreDicedMesh.MergeVertex( Triangle.Vertex[1] );
@@ -404,4 +405,4 @@ void XgmClusterBuilder::Dump( void )
 	orkprintf( "\n//////////////////\n" );*/
 }
 
-} }
+}

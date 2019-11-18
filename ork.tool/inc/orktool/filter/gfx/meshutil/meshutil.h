@@ -21,20 +21,22 @@
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/lev2/gfx/gfxmaterial.h>
+#include <ork/lev2/gfx/gfxmaterial_fx.h>
+#include <ork/lev2/gfx/gfxmodel.h>
 #include <unordered_map>
 
-struct DaeReadOpts;
-struct DaeWriteOpts;
 
-namespace ork { namespace tool {
-
-struct SColladaMaterial;
-
-}}
+namespace ork::tool {
+  struct ColladaMaterial;
+  struct XgmClusterizer;
+  struct XgmClusterBuilder;
+  struct DaeReadOpts;
+  struct DaeWriteOpts;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace ork { namespace MeshUtil {
+namespace ork::MeshUtil {
 
 struct MaterialBindingItem
 {
@@ -511,8 +513,8 @@ struct submesh
 
 class toolmesh
 {
-	orkmap<std::string,ork::tool::SColladaMaterial*>	mMaterialsByShadingGroup;
-	orkmap<std::string,ork::tool::SColladaMaterial*>	mMaterialsByName;
+	orkmap<std::string,ork::tool::ColladaMaterial*>	mMaterialsByShadingGroup;
+	orkmap<std::string,ork::tool::ColladaMaterial*>	mMaterialsByName;
 
 	fvec4							mRangeScale;
 	fvec4							mRangeTranslate;
@@ -535,8 +537,8 @@ public:
 	/////////////////////////////////////////////////////////////////////////
 
 	const ork::lev2::MaterialMap& RefFxmMaterialMap() const { return mFxmMaterialMap; }
-	const orkmap<std::string,ork::tool::SColladaMaterial*>& RefMaterialsBySG() const { return mMaterialsByShadingGroup; }
-	const orkmap<std::string,ork::tool::SColladaMaterial*>& RefMaterialsByName() const { return mMaterialsByName; }
+	const orkmap<std::string,ork::tool::ColladaMaterial*>& RefMaterialsBySG() const { return mMaterialsByShadingGroup; }
+	const orkmap<std::string,ork::tool::ColladaMaterial*>& RefMaterialsByName() const { return mMaterialsByName; }
 	const LightContainer& RefLightContainer() const { return mLights; }
 	LightContainer& RefLightContainer() { return mLights; }
 
@@ -553,15 +555,15 @@ public:
 
 	/////////////////////////////////////////////////////////////////////////
 	void WriteToWavefrontObj( const file::Path& outpath ) const;
-	void WriteToDaeFile( const file::Path& outpath, const DaeWriteOpts& writeopts ) const;
+	void WriteToDaeFile( const file::Path& outpath, const tool::DaeWriteOpts& writeopts ) const;
 	void WriteToRgmFile( const file::Path& outpath ) const;
 	void WriteToXgmFile( const file::Path& outpath ) const;
 	void WriteAuto( const file::Path& outpath ) const;
 	/////////////////////////////////////////////////////////////////////////
 	void ReadFromXGM( const file::Path& inpath );
 	void ReadFromWavefrontObj( const file::Path& inpath );
-	void ReadFromDaeFile( const file::Path& inpath, DaeReadOpts& readopts );
-	void readFromAssimp( const file::Path& inpath, DaeReadOpts& readopts );
+	void ReadFromDaeFile( const file::Path& inpath, tool::DaeReadOpts& readopts );
+	void readFromAssimp( const file::Path& inpath, tool::DaeReadOpts& readopts );
 
 	/////////////////////////////////////////////////////////////////////////
 
@@ -742,4 +744,70 @@ struct FlatSubMesh
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} } // namespace MeshUtil
+struct ToolMeshConfigurationFlags
+{
+	bool	mbSkinned;
+
+	ToolMeshConfigurationFlags()
+		: mbSkinned( false )
+	{
+
+	}
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ToolMaterialGroup
+{
+	enum EMatClass
+	{
+		EMATCLASS_STANDARD = 0,
+		EMATCLASS_PBR,
+		EMATCLASS_FX,
+	};
+
+	void Parse( const ork::tool::ColladaMaterial& colladamat );
+
+	///////////////////////////////////////////////////////////////////
+	// Build Clusters
+	///////////////////////////////////////////////////////////////////
+
+	void BuildTriStripXgmCluster( lev2::XgmCluster & XgmCluster, const tool::XgmClusterBuilder *pclusbuilder );
+
+	lev2::EVtxStreamFormat GetVtxStreamFormat() const { return meVtxFormat; }
+
+	void ComputeVtxStreamFormat();
+
+	tool::XgmClusterizer* GetClusterizer() const { return _clusterizer; }
+	void SetClusterizer( tool::XgmClusterizer* pcl ) { _clusterizer=pcl; }
+
+	///////////////////////////////////////////////////////////////////
+
+	ToolMaterialGroup()
+		: meMaterialClass( EMATCLASS_STANDARD )
+		, _orkMaterial( 0 )
+		, _clusterizer( nullptr )
+		, mbVertexLit(false)
+	{
+	}
+
+	///////////////////////////////////////////////////////////////////
+
+	tool::XgmClusterizer* 					    _clusterizer;
+	std::string									mShadingGroupName;
+	ToolMeshConfigurationFlags				    mMeshConfigurationFlags;
+	EMatClass									meMaterialClass;
+	ork::lev2::GfxMaterial*						_orkMaterial;
+	orkvector<ork::lev2::VertexConfig>			mVertexConfigData;
+	orkvector<ork::lev2::VertexConfig>			mAvailVertexConfigData;
+	lev2::EVtxStreamFormat						meVtxFormat;
+	ork::file::Path								mLightMapPath;
+	bool										mbVertexLit;
+
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // namespace MeshUtil

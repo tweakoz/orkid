@@ -33,6 +33,8 @@
 #include <ork/kernel/thread.h>
 //bool ParseColladaMaterialBindings( FCDocument& daedoc, orkmap<std::string,std::string>& MatSemMap );
 
+using namespace ork::tool;
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace MeshUtil {
 ///////////////////////////////////////////////////////////////////////////////
@@ -382,15 +384,15 @@ FCDMaterial* PreserveMaterial(const toolmesh& tmesh, FCDocument& daedoc, const s
 	FCDEffectLibrary* EfxLib = daedoc.GetEffectLibrary();
 	FCDMaterial* DaeMat = 0;
 
-	const orkmap<std::string,ork::tool::SColladaMaterial*>& materials = tmesh.RefMaterialsByName();
-	orkmap<std::string,ork::tool::SColladaMaterial*>::const_iterator it = materials.find(mtlname);
+	const orkmap<std::string,ork::tool::ColladaMaterial*>& materials = tmesh.RefMaterialsByName();
+	orkmap<std::string,ork::tool::ColladaMaterial*>::const_iterator it = materials.find(mtlname);
 
 	if( it != materials.end() )
 	{
-		ork::tool::SColladaMaterial* pmaterial = it->second;
+		ork::tool::ColladaMaterial* pmaterial = it->second;
 
 		//orkprintf( "omat1\n" );
-		lev2::GfxMaterialFx* pfx = rtti::autocast( pmaterial->mpOrkMaterial );
+		lev2::GfxMaterialFx* pfx = rtti::autocast( pmaterial->_orkMaterial );
 		auto pcfx = pmaterial->mFxProfile;
 
 		if( 0 == pfx )
@@ -560,15 +562,15 @@ FCDMaterial* PreserveMaterial(const toolmesh& tmesh, FCDocument& daedoc, const s
 void WriteDaeMeshPreservingMaterials( const toolmesh& tmesh, FCDocument& daedoc, FCDSceneNode* Child )
 {
 	std::map<std::string,FCDMaterial*>	DaeMaterials;
-	const orkmap<std::string,ork::tool::SColladaMaterial*>& origmaterialsbyname = tmesh.RefMaterialsByName();
+	const orkmap<std::string,ork::tool::ColladaMaterial*>& origmaterialsbyname = tmesh.RefMaterialsByName();
 	///////////////////////////////////////////////////
-	for( orkmap<std::string,ork::tool::SColladaMaterial*>::const_iterator
+	for( orkmap<std::string,ork::tool::ColladaMaterial*>::const_iterator
 			it=origmaterialsbyname.begin();
 			it!=origmaterialsbyname.end();
 			it++ )
 	{
 		const std::string& matname = it->first;
-		const tool::SColladaMaterial* colmat = it->second;
+		const tool::ColladaMaterial* colmat = it->second;
 		FCDMaterial* DaeMat = PreserveMaterial( tmesh, daedoc, matname );
 		DaeMaterials[matname] = DaeMat;
 		orkprintf( "DaeMaterial<%s><%p>\n", matname.c_str(), DaeMat );
@@ -1197,7 +1199,7 @@ void toolmesh::ReadFromDaeFile( const file::Path& BasePath, DaeReadOpts& readopt
 			anno_map->SetAnnotation("material",MaterialName);
 			anno_map->SetAnnotation("daemesh",MeshDaeID);
 
-			ork::tool::SColladaMaterial* colladamaterial = new ork::tool::SColladaMaterial;
+			ork::tool::ColladaMaterial* colladamaterial = new ork::tool::ColladaMaterial;
 			colladamaterial->ParseMaterial( &daedoc, ShadingGroupName, MaterialName );
 			//mMaterialMap[ ShadingGroupName ] = colladamaterial;
 			//ColMatGroup->Parse( colladamaterial );
@@ -1328,6 +1330,28 @@ bool DAEToDAE(const tokenlist& options)
 
 	return rval;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ToolMaterialGroup::Parse( const tool::ColladaMaterial& colmat )
+{
+	ork::lev2::GfxMaterial* pmat = colmat._orkMaterial;
+
+	ork::lev2::GfxMaterialFx* pmatfx = rtti::autocast( pmat );
+
+	if( pmatfx )
+	{
+		meMaterialClass = EMATCLASS_FX;
+		mVertexConfigData = pmatfx->RefVertexConfig();
+		_orkMaterial = colmat._orkMaterial;
+	}
+	else
+	{
+		meMaterialClass = EMATCLASS_STANDARD;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
 }}

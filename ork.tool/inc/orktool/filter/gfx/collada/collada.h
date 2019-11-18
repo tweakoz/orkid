@@ -36,6 +36,18 @@
 #include <FCDocument/FCDEffectParameterSampler.h>
 #include <FCDocument/FCDEffectParameterSurface.h>
 
+class FCDocument;
+class FCDGeometryMesh;
+class FCDEffectStandard;
+class FCDEffectProfileFX;
+class FCDAsset;
+
+namespace ork::MeshUtil {
+  struct ToolMaterialGroup;
+}
+
+namespace ork::tool {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ColladaVertexFormat
@@ -237,26 +249,19 @@ struct DaeExtraNode
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class FCDocument;
-class FCDGeometryMesh;
-class FCDEffectStandard;
-class FCDEffectProfileFX;
-class FCDAsset;
-
-namespace ork { namespace tool {
 
 fmtx4 FCDMatrixTofmtx4( const FMMatrix44 & inmat );
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct SColladaMaterialChannel
+struct ColladaMaterialChannel
 {
 	std::string						mTextureName;
 	std::string						mPlacementNodeName;
 	float							mRepeatU;
 	float							mRepeatV;
 
-	SColladaMaterialChannel()
+	ColladaMaterialChannel()
 		: mRepeatU( 1.0f )
 		, mRepeatV( 1.0f )
 	{
@@ -266,7 +271,7 @@ struct SColladaMaterialChannel
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct SColladaMaterial
+struct ColladaMaterial
 {
 	enum ELightingType
 	{
@@ -280,21 +285,21 @@ struct SColladaMaterial
 	std::string							mMaterialName;
 	ELightingType						mLightingType;
 	float								mSpecularPower;
-	SColladaMaterialChannel				mDiffuseMapChannel;
-	SColladaMaterialChannel				mSpecularMapChannel;
-	SColladaMaterialChannel				mNormalMapChannel;
-	SColladaMaterialChannel				mAmbientMapChannel;
+	ColladaMaterialChannel				mDiffuseMapChannel;
+	ColladaMaterialChannel				mSpecularMapChannel;
+	ColladaMaterialChannel				mNormalMapChannel;
+	ColladaMaterialChannel				mAmbientMapChannel;
 
-	ork::lev2::GfxMaterial*				mpOrkMaterial;
-	fvec4							mEmissiveColor;
-	fvec4							mTransparencyColor;
+	ork::lev2::GfxMaterial*				_orkMaterial;
+	fvec4							    mEmissiveColor;
+	fvec4							    mTransparencyColor;
 	FCDEffect*							mFx;
 	FCDMaterial*					    mFxProfile;
 	FCDEffectStandard*					mStdProfile;
 	FCDEffectStandard::TransparencyMode	mTransparencyMode;
 	orkmap<std::string,std::string>		mAnnotations;
 
-	SColladaMaterial();
+	ColladaMaterial();
 
 	void ParseFxMaterial( FCDMaterial* FxProf );
 	void ParseStdMaterial( FCDEffectStandard *StdProf );
@@ -327,196 +332,9 @@ struct SColladaVertexWeightingInfo
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct SColladaMeshConfigurationFlags
-{
-	bool	mbSkinned;
-
-	SColladaMeshConfigurationFlags()
-		: mbSkinned( false )
-	{
-
-	}
-
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct XgmClusterTri
-{
-	ork::MeshUtil::vertex Vertex[3];
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct SColladaMatGroup;
-
-///////////////////////////////////////////////////////////////////////////////
-
-class XgmClusterBuilder : public ork::Object
-{
-	RttiDeclareAbstract(XgmClusterBuilder,ork::Object);
-public:
-	ork::MeshUtil::submesh			mSubMesh;
-	lev2::VertexBufferBase*			mpVertexBuffer;
-	//////////////////////////////////////////////////
-	XgmClusterBuilder();
-	virtual ~XgmClusterBuilder();
-	//////////////////////////////////////////////////
-	virtual bool AddTriangle( const XgmClusterTri& Triangle ) = 0;
-	virtual void BuildVertexBuffer( const SColladaMatGroup& matgroup ) = 0;
-	//////////////////////////////////////////////////
-	void Dump( void );
-	///////////////////////////////////////////////////////////////////
-	// Build Vertex Buffers
-	///////////////////////////////////////////////////////////////////
-
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class XgmSkinnedClusterBuilder : public XgmClusterBuilder
-{
-	RttiDeclareAbstract(XgmSkinnedClusterBuilder,XgmClusterBuilder);
-	/////////////////////////////////////////////////
-public:
-	const orkmap<std::string,int>& RefBoneRegMap() const { return mmBoneRegMap; }
-private:
-	bool AddTriangle( const XgmClusterTri& Triangle ) final;
-    void BuildVertexBuffer( const SColladaMatGroup& matgroup ) final; // virtual
-
-	int FindNewBoneIndex( const std::string& BoneName );
-	void BuildVertexBuffer_V12N12T8I4W4();
-	void BuildVertexBuffer_V12N12B12T8I4W4();
-	void BuildVertexBuffer_V12N6I1T4();
-
-	orkmap<std::string,int>			mmBoneRegMap;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class XgmRigidClusterBuilder : public XgmClusterBuilder
-{
-	RttiDeclareAbstract(XgmRigidClusterBuilder,XgmClusterBuilder);
-	/////////////////////////////////////////////////
-	bool AddTriangle( const XgmClusterTri& Triangle ) final;
-    void BuildVertexBuffer( const SColladaMatGroup& matgroup ) final;
-
-	void BuildVertexBuffer_V12N6C2T4();
-	void BuildVertexBuffer_V12N12B12T8C4();
-	void BuildVertexBuffer_V12N12T16C4();
-	void BuildVertexBuffer_V12N12B12T16();
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class XgmClusterizer
-{
-public:
-	///////////////////////////////////////////////////////
-	XgmClusterizer();
-	virtual ~XgmClusterizer();
-	///////////////////////////////////////////////////////
-	virtual bool AddTriangle( const XgmClusterTri& Triangle, const SColladaMatGroup* cmg ) = 0;
-	virtual void Begin() {}
-	virtual void End() {}
-	///////////////////////////////////////////////////////
-	size_t GetNumClusters() const { return ClusterVect.size(); }
-	XgmClusterBuilder* GetCluster(int idx) const { return ClusterVect[idx]; }
-protected:
-	///////////////////////////////////////////////////////
-	orkvector< XgmClusterBuilder* > ClusterVect;
-	///////////////////////////////////////////////////////
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class XgmClusterizerDiced : public XgmClusterizer
-{
-public:
-	///////////////////////////////////////////////////////
-	XgmClusterizerDiced();
-	virtual ~XgmClusterizerDiced();
-	///////////////////////////////////////////////////////
-	bool AddTriangle( const XgmClusterTri& Triangle, const SColladaMatGroup* cmg );
-	void Begin(); // virtual
-	void End(); // virtual
-	///////////////////////////////////////////////////////
-private:
-	ork::MeshUtil::submesh mPreDicedMesh;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class XgmClusterizerStd : public XgmClusterizer
-{
-public:
-	///////////////////////////////////////////////////////
-	XgmClusterizerStd();
-	virtual ~XgmClusterizerStd();
-	///////////////////////////////////////////////////////
-	bool AddTriangle( const XgmClusterTri& Triangle, const SColladaMatGroup* cmg );
-	///////////////////////////////////////////////////////
-private:
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class SColladaMatGroup
-{
-public:
-
-	enum EMatClass
-	{
-		EMATCLASS_STANDARD = 0,
-		EMATCLASS_PBR,
-		EMATCLASS_FX,
-	};
-
-	void Parse( const SColladaMaterial& colladamat );
-
-	std::string									mShadingGroupName;
-	SColladaMeshConfigurationFlags				mMeshConfigurationFlags;
-	EMatClass									meMaterialClass;
-	ork::lev2::GfxMaterial*						mpOrkMaterial;
-	orkvector<ork::lev2::VertexConfig>			mVertexConfigData;
-	orkvector<ork::lev2::VertexConfig>			mAvailVertexConfigData;
-	lev2::EVtxStreamFormat						meVtxFormat;
-	ork::file::Path								mLightMapPath;
-	bool										mbVertexLit;
-
-	///////////////////////////////////////////////////////////////////
-	// Build Clusters
-	///////////////////////////////////////////////////////////////////
-
-	void BuildTriStripXgmCluster( lev2::XgmCluster & XgmCluster, const XgmClusterBuilder *pclusbuilder );
-
-	lev2::EVtxStreamFormat GetVtxStreamFormat() const { return meVtxFormat; }
-
-	void ComputeVtxStreamFormat();
-
-	XgmClusterizer* GetClusterizer() const { return mClusterizer; }
-	void SetClusterizer( XgmClusterizer* pcl ) { mClusterizer=pcl; }
-
-	///////////////////////////////////////////////////////////////////
-
-	SColladaMatGroup()
-		: meMaterialClass( EMATCLASS_STANDARD )
-		, mpOrkMaterial( 0 )
-		, mClusterizer( 0 )
-		, mbVertexLit(false)
-	{
-	}
-
-private:
-	XgmClusterizer*								mClusterizer;
-
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 class SColladaMesh
 {
-	orkvector<SColladaMatGroup*>			mMatGroups;
+	orkvector<MeshUtil::ToolMaterialGroup*>			mMatGroups;
 	orkvector<SColladaVertexWeightingInfo>	mVertexWeighting;
 	bool									mbSkinned;
 	std::string								mMeshName;
@@ -527,7 +345,7 @@ public:
 
 	void SetSkinned( bool bv ) { mbSkinned=bv; }
 	bool IsSkinned( void ) const { return mbSkinned; }
-	orkvector<SColladaMatGroup*>& RefMatGroups( void ) { return mMatGroups; }
+	orkvector<MeshUtil::ToolMaterialGroup*>& RefMatGroups( void ) { return mMatGroups; }
 	orkvector<SColladaVertexWeightingInfo>& RefWeightingInfo( void ) { return mVertexWeighting; }
 	void SetMeshName( const std::string& name ) { mMeshName=name; }
 	const std::string& GetMeshName() const { return mMeshName; }
@@ -591,7 +409,7 @@ public:
 
 	orkmap<std::string,ColMeshRec*>				mMeshIdMap;
 	lev2::XgmModel 								mXgmModel;
-	orkmap<std::string,SColladaMaterial>		mMaterialMap;
+	orkmap<std::string,ColladaMaterial>		mMaterialMap;
 	MeshUtil::material_semanticmap_t			mMaterialSemanticBindingMap;
 	orkmap<std::string,ork::lev2::XgmSkelNode*>	mSkeleton;
 	ork::lev2::XgmSkelNode*						mSkeletonRoot;
@@ -608,7 +426,7 @@ public:
 	static CColladaModel* Load( const AssetPath & fname );
 	bool FindDaeMeshes();
 	bool ParseGeometries();
-	void ParseMaterial( SColladaMatGroup * MatGroup );
+	void ParseMaterial( MeshUtil::ToolMaterialGroup * MatGroup );
 
 	bool ParseMaterialBindings();
 	bool ParseControllers( );
@@ -619,7 +437,7 @@ public:
 
 	bool ConvertTextures(const file::Path& outmdlpth, ork::tool::FilterOptMap& options );
 
-	const SColladaMaterial & GetMaterialFromShadingGroup( const std::string & ShadingGroupName ) const;
+	const ColladaMaterial & GetMaterialFromShadingGroup( const std::string & ShadingGroupName ) const;
 
 	bool IsSkinned() const { return mSkeleton.size()>0; }
 
@@ -771,7 +589,7 @@ public:
 
 	///////////////////////////////////////////////////////////////////
 	MeshUtil::material_semanticmap_t						mShadingGroupMap;
-	orkmap<std::string,SColladaMaterial>					mMaterialMap;
+	orkmap<std::string,ColladaMaterial>					mMaterialMap;
 	orkmap<std::string,ork::lev2::GfxMaterialFxParamBase*>	mFxAnimatables;
 	orkmap<std::string,ColladaUvAnimChannel*>				mUvAnimatables;
 
@@ -820,7 +638,7 @@ public: //
 	bool ConvertAsset( const tokenlist& toklist ) final;
 };
 
-} }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 #endif // USE_FCOLLADA
