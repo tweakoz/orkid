@@ -20,12 +20,10 @@
 #include <orktool/filter/gfx/meshutil/clusterizer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork::tool {
-  void BuildXgmClusterPrimGroups( lev2::XgmCluster & XgmCluster, const std::vector<unsigned int> & TriangleIndices );
-};
-///////////////////////////////////////////////////////////////////////////////
 namespace ork::MeshUtil {
 ///////////////////////////////////////////////////////////////////////////////
+
+void BuildXgmClusterPrimGroups( lev2::XgmCluster & XgmCluster, const std::vector<unsigned int> & TriangleIndices );
 
 void ToolMaterialGroup::ComputeVtxStreamFormat()
 {
@@ -139,11 +137,11 @@ void ToolMaterialGroup::Parse( const tool::ColladaMaterial& colmat )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ToolMaterialGroup::BuildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, const tool::XgmClusterBuilder* XgmClusterBuilder) {
-  if (!XgmClusterBuilder->mpVertexBuffer)
+void ToolMaterialGroup::BuildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, const XgmClusterBuilder* clusterbuilder) {
+  if (!clusterbuilder->mpVertexBuffer)
     return;
 
-  XgmCluster.mpVertexBuffer = XgmClusterBuilder->mpVertexBuffer;
+  XgmCluster.mpVertexBuffer = clusterbuilder->mpVertexBuffer;
 
   const int imaxvtx = XgmCluster.mpVertexBuffer->GetNumVertices();
 
@@ -153,14 +151,14 @@ void ToolMaterialGroup::BuildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, co
   std::vector<unsigned int> TriangleIndices;
   std::vector<int> ToolMeshTriangles;
 
-  XgmClusterBuilder->mSubMesh.FindNSidedPolys(ToolMeshTriangles, 3);
+  clusterbuilder->mSubMesh.FindNSidedPolys(ToolMeshTriangles, 3);
 
   int inumtriangles = int(ToolMeshTriangles.size());
 
   for (int i = 0; i < inumtriangles; i++) {
     int itri_i = ToolMeshTriangles[i];
 
-    const ork::MeshUtil::poly& ClusTri = XgmClusterBuilder->mSubMesh.RefPoly(itri_i);
+    const ork::MeshUtil::poly& ClusTri = clusterbuilder->mSubMesh.RefPoly(itri_i);
 
     TriangleIndices.push_back(ClusTri.GetVertexID(0));
     TriangleIndices.push_back(ClusTri.GetVertexID(1));
@@ -169,15 +167,15 @@ void ToolMaterialGroup::BuildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, co
 
   /////////////////////////////////////////////////////////////
 
-  tool::BuildXgmClusterPrimGroups(XgmCluster, TriangleIndices);
+  BuildXgmClusterPrimGroups(XgmCluster, TriangleIndices);
 
-  XgmCluster.mBoundingBox    = XgmClusterBuilder->mSubMesh.GetAABox();
+  XgmCluster.mBoundingBox    = clusterbuilder->mSubMesh.GetAABox();
   XgmCluster.mBoundingSphere = Sphere(XgmCluster.mBoundingBox.Min(), XgmCluster.mBoundingBox.Max());
 
   /////////////////////////////////////////////////////////////
   // bone -> matrix register mapping
 
-  auto skinner = dynamic_cast<const tool::XgmSkinnedClusterBuilder*>(XgmClusterBuilder);
+  auto skinner = dynamic_cast<const XgmSkinnedClusterBuilder*>(clusterbuilder);
 
   if (skinner) {
     const orkmap<std::string, int>& BoneMap = skinner->RefBoneRegMap();

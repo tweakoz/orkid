@@ -28,8 +28,6 @@
 
 namespace ork::tool {
   struct ColladaMaterial;
-  struct XgmClusterizer;
-  struct XgmClusterBuilder;
   struct DaeReadOpts;
   struct DaeWriteOpts;
 }
@@ -37,6 +35,9 @@ namespace ork::tool {
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::MeshUtil {
+
+  struct XgmClusterizer;
+  struct XgmClusterBuilder;
 
 struct MaterialBindingItem
 {
@@ -773,14 +774,14 @@ struct ToolMaterialGroup
 	// Build Clusters
 	///////////////////////////////////////////////////////////////////
 
-	void BuildTriStripXgmCluster( lev2::XgmCluster & XgmCluster, const tool::XgmClusterBuilder *pclusbuilder );
+	void BuildTriStripXgmCluster( lev2::XgmCluster & XgmCluster, const XgmClusterBuilder *pclusbuilder );
 
 	lev2::EVtxStreamFormat GetVtxStreamFormat() const { return meVtxFormat; }
 
 	void ComputeVtxStreamFormat();
 
-	tool::XgmClusterizer* GetClusterizer() const { return _clusterizer; }
-	void SetClusterizer( tool::XgmClusterizer* pcl ) { _clusterizer=pcl; }
+	XgmClusterizer* GetClusterizer() const { return _clusterizer; }
+	void SetClusterizer( XgmClusterizer* pcl ) { _clusterizer=pcl; }
 
 	///////////////////////////////////////////////////////////////////
 
@@ -794,7 +795,7 @@ struct ToolMaterialGroup
 
 	///////////////////////////////////////////////////////////////////
 
-	tool::XgmClusterizer* 					    _clusterizer;
+	XgmClusterizer* 					        _clusterizer;
 	std::string									mShadingGroupName;
 	ToolMeshConfigurationFlags				    mMeshConfigurationFlags;
 	EMatClass									meMaterialClass;

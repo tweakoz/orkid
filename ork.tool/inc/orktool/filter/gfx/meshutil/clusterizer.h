@@ -25,27 +25,27 @@
 #include <unordered_map>
 #include <orktool/filter/gfx/meshutil/meshutil.h>
 
-namespace ork::tool {
+namespace ork::MeshUtil {
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct XgmClusterTri
 {
-	MeshUtil::vertex Vertex[3];
+	vertex Vertex[3];
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct XgmClusterBuilder
 {
-	ork::MeshUtil::submesh			mSubMesh;
+	submesh			                mSubMesh;
 	lev2::VertexBufferBase*			mpVertexBuffer;
 	//////////////////////////////////////////////////
 	XgmClusterBuilder();
 	virtual ~XgmClusterBuilder();
 	//////////////////////////////////////////////////
 	virtual bool AddTriangle( const XgmClusterTri& Triangle ) = 0;
-	virtual void BuildVertexBuffer( const MeshUtil::ToolMaterialGroup& matgroup ) = 0;
+	virtual void BuildVertexBuffer( const ToolMaterialGroup& matgroup ) = 0;
 	//////////////////////////////////////////////////
 	void Dump( void );
 	///////////////////////////////////////////////////////////////////
@@ -62,7 +62,7 @@ struct XgmSkinnedClusterBuilder : public XgmClusterBuilder
 	const orkmap<std::string,int>& RefBoneRegMap() const { return mmBoneRegMap; }
 
 	bool AddTriangle( const XgmClusterTri& Triangle ) final;
-    void BuildVertexBuffer( const MeshUtil::ToolMaterialGroup& matgroup ) final; // virtual
+    void BuildVertexBuffer( const ToolMaterialGroup& matgroup ) final; // virtual
 
 	int FindNewBoneIndex( const std::string& BoneName );
 	void BuildVertexBuffer_V12N12T8I4W4();
@@ -78,7 +78,7 @@ class XgmRigidClusterBuilder : public XgmClusterBuilder
 {
 	/////////////////////////////////////////////////
 	bool AddTriangle( const XgmClusterTri& Triangle ) final;
-    void BuildVertexBuffer( const MeshUtil::ToolMaterialGroup& matgroup ) final;
+    void BuildVertexBuffer( const ToolMaterialGroup& matgroup ) final;
 
 	void BuildVertexBuffer_V12N6C2T4();
 	void BuildVertexBuffer_V12N12B12T8C4();
@@ -94,7 +94,7 @@ struct XgmClusterizer
 	XgmClusterizer();
 	virtual ~XgmClusterizer();
 	///////////////////////////////////////////////////////
-	virtual bool AddTriangle( const XgmClusterTri& Triangle, const MeshUtil::ToolMaterialGroup* cmg ) = 0;
+	virtual bool AddTriangle( const XgmClusterTri& Triangle, const ToolMaterialGroup* cmg ) = 0;
 	virtual void Begin() {}
 	virtual void End() {}
 	///////////////////////////////////////////////////////
@@ -113,12 +113,12 @@ struct XgmClusterizerDiced : public XgmClusterizer
 	XgmClusterizerDiced();
 	virtual ~XgmClusterizerDiced();
 	///////////////////////////////////////////////////////
-	bool AddTriangle( const XgmClusterTri& Triangle, const MeshUtil::ToolMaterialGroup* cmg );
+	bool AddTriangle( const XgmClusterTri& Triangle, const ToolMaterialGroup* cmg );
 	void Begin(); // virtual
 	void End(); // virtual
 	///////////////////////////////////////////////////////
 
-	ork::MeshUtil::submesh mPreDicedMesh;
+	submesh mPreDicedMesh;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -127,7 +127,7 @@ struct XgmClusterizerStd : public XgmClusterizer
 {
 	XgmClusterizerStd();
 	virtual ~XgmClusterizerStd();
-	bool AddTriangle( const XgmClusterTri& Triangle, const MeshUtil::ToolMaterialGroup* cmg );
+	bool AddTriangle( const XgmClusterTri& Triangle, const ToolMaterialGroup* cmg );
 };
 
 } // namespace ork:::ool {

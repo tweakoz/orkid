@@ -206,7 +206,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
         auto outmtl                  = materialmap[mesh->mMaterialIndex];
         auto ColMatGroup             = new ToolMaterialGroup;
         ColMatGroup->meMaterialClass = ToolMaterialGroup::EMATCLASS_PBR;
-        auto clusterizer             = new ork::tool::XgmClusterizerStd;
+        auto clusterizer             = new XgmClusterizerStd;
         ColMatGroup->SetClusterizer(clusterizer);
         ColMatGroup->mMeshConfigurationFlags.mbSkinned = false;
         ColMatGroup->meVtxFormat                       = VertexFormat;
@@ -214,7 +214,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
         // merge geometry
         /////////////////////////////////////////////
         // MeshUtil::vertex muverts[4];
-        ork::tool::XgmClusterTri clustertri;
+        XgmClusterTri clustertri;
         clusterizer->Begin();
         std::vector<int> dest_indices;
         for (int t = 0; t < mesh->mNumFaces; ++t) {

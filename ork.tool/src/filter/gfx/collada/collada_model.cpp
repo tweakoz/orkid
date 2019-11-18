@@ -758,17 +758,17 @@ bool CColladaModel::ParseGeometries()
 				
 				if( buselightmap )
 				{
-					ColMatGroup->SetClusterizer( new XgmClusterizerStd );
+					ColMatGroup->SetClusterizer( new MeshUtil::XgmClusterizerStd );
 				}
 				else
 				switch( policy->mDicingPolicy.GetPolicy() )
 				{
 					case ColladaDicingPolicy::ECTP_DICE:
-						ColMatGroup->SetClusterizer( new XgmClusterizerDiced );
+						ColMatGroup->SetClusterizer( new MeshUtil::XgmClusterizerDiced );
 						//ColMatGroup->SetClusterizer( new XgmClusterizerStd );
 						break;
 					case ColladaDicingPolicy::ECTP_DONT_DICE:
-						ColMatGroup->SetClusterizer( new XgmClusterizerStd );
+						ColMatGroup->SetClusterizer( new MeshUtil::XgmClusterizerStd );
 						break;
 					default:
 						OrkAssert(false);
@@ -959,7 +959,7 @@ bool CColladaModel::ParseGeometries()
 					size_t iface_numfverts = GetFaceVertexCount(iface);
 					size_t iface_fvertbase = GetFaceVertexOffset(iface);
 					OrkAssert( 3 == iface_numfverts );
-					XgmClusterTri ClusTri;
+					MeshUtil::XgmClusterTri ClusTri;
 					if( iface%1000 == 0 )
 						printf( "iface<%d> of %d\n", iface, imatnumfaces );
 					for( size_t iface_v=0; iface_v<iface_numfverts; iface_v++ )
