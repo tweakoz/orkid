@@ -227,7 +227,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
               const auto& n             = mesh->mNormals[index];
               const auto& uv            = (mesh->mTextureCoords[0])[index];
               const auto& b             = (mesh->mBitangents)[index];
-              auto& muvtx               = clustertri.Vertex[facevert_index];
+              auto& muvtx               = clustertri._vertex[facevert_index];
               muvtx.mPos                = fvec3(v.x, v.y, v.z);
               muvtx.mNrm                = fvec3(n.x, n.y, n.z);
               muvtx.mCol[0]             = fvec4(1, 1, 1, 1);

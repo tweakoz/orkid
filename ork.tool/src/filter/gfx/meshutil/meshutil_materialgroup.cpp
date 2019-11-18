@@ -138,12 +138,12 @@ void ToolMaterialGroup::Parse( const tool::ColladaMaterial& colmat )
 ///////////////////////////////////////////////////////////////////////////////
 
 void ToolMaterialGroup::BuildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, const XgmClusterBuilder* clusterbuilder) {
-  if (!clusterbuilder->mpVertexBuffer)
+  if (!clusterbuilder->_vertexBuffer)
     return;
 
-  XgmCluster.mpVertexBuffer = clusterbuilder->mpVertexBuffer;
+  XgmCluster._vertexBuffer = clusterbuilder->_vertexBuffer;
 
-  const int imaxvtx = XgmCluster.mpVertexBuffer->GetNumVertices();
+  const int imaxvtx = XgmCluster._vertexBuffer->GetNumVertices();
 
   /////////////////////////////////////////////////////////////
   // triangle indices come from the ClusterBuilder
@@ -151,14 +151,14 @@ void ToolMaterialGroup::BuildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, co
   std::vector<unsigned int> TriangleIndices;
   std::vector<int> ToolMeshTriangles;
 
-  clusterbuilder->mSubMesh.FindNSidedPolys(ToolMeshTriangles, 3);
+  clusterbuilder->_submesh.FindNSidedPolys(ToolMeshTriangles, 3);
 
   int inumtriangles = int(ToolMeshTriangles.size());
 
   for (int i = 0; i < inumtriangles; i++) {
     int itri_i = ToolMeshTriangles[i];
 
-    const ork::MeshUtil::poly& ClusTri = clusterbuilder->mSubMesh.RefPoly(itri_i);
+    const ork::MeshUtil::poly& ClusTri = clusterbuilder->_submesh.RefPoly(itri_i);
 
     TriangleIndices.push_back(ClusTri.GetVertexID(0));
     TriangleIndices.push_back(ClusTri.GetVertexID(1));
@@ -169,7 +169,7 @@ void ToolMaterialGroup::BuildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, co
 
   BuildXgmClusterPrimGroups(XgmCluster, TriangleIndices);
 
-  XgmCluster.mBoundingBox    = clusterbuilder->mSubMesh.GetAABox();
+  XgmCluster.mBoundingBox    = clusterbuilder->_submesh.GetAABox();
   XgmCluster.mBoundingSphere = Sphere(XgmCluster.mBoundingBox.Min(), XgmCluster.mBoundingBox.Max());
 
   /////////////////////////////////////////////////////////////

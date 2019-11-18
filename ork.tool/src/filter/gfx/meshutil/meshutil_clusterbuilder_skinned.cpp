@@ -24,8 +24,8 @@ namespace ork::MeshUtil {
 
 int XgmSkinnedClusterBuilder::FindNewBoneIndex( const std::string & BoneName )
 {	int rval = -1;
-	orkmap<std::string,int>::const_iterator itBONE = mmBoneRegMap.find( BoneName );
-	if( mmBoneRegMap.end()!=itBONE )
+	orkmap<std::string,int>::const_iterator itBONE = _boneRegisterMap.find( BoneName );
+	if( _boneRegisterMap.end()!=itBONE )
 	{	rval = (*itBONE).second;
 	}
 //	OrkAssert( rval>=0 );
@@ -40,7 +40,7 @@ bool XgmSkinnedClusterBuilder::AddTriangle( const XgmClusterTri& Triangle )
 	// make sure triangle will absolutely fit in the vertex buffer
 	///////////////////////////////////////
 
-	size_t ivcount = mSubMesh.RefVertexPool().GetNumVertices();
+	size_t ivcount = _submesh.RefVertexPool().GetNumVertices();
 
 	static const size_t kvtresh = (2<<16)-4;
 
@@ -57,10 +57,10 @@ bool XgmSkinnedClusterBuilder::AddTriangle( const XgmClusterTri& Triangle )
 	const int kMaxBonesPerCluster = ColladaExportPolicy::GetContext()->miNumBonesPerCluster;
 	orkset<std::string> AddThisRun;
 	for( int i=0; i<3; i++ )
-	{	int inumw = Triangle.Vertex[i].miNumWeights;
+	{	int inumw = Triangle._vertex[i].miNumWeights;
 		for( int iw=0; iw<inumw; iw++ )
-		{	const std::string & BoneName = Triangle.Vertex[i].mJointNames[iw];
-			bool IsBoneResidentInClusterAlready = mmBoneRegMap.find(BoneName) != mmBoneRegMap.end();
+		{	const std::string & BoneName = Triangle._vertex[i].mJointNames[iw];
+			bool IsBoneResidentInClusterAlready = _boneRegisterMap.find(BoneName) != _boneRegisterMap.end();
 			if( IsBoneResidentInClusterAlready )
 			{
 			}
@@ -75,7 +75,7 @@ bool XgmSkinnedClusterBuilder::AddTriangle( const XgmClusterTri& Triangle )
 	{	bAddTriangle=true;
 	}
 	else
-	{	size_t NumBonesAlreadyAllocated = mmBoneRegMap.size();
+	{	size_t NumBonesAlreadyAllocated = _boneRegisterMap.size();
 		size_t NumBonesFreeInCluster = (size_t) kMaxBonesPerCluster - NumBonesAlreadyAllocated;
 		if( NumBonesFreeInCluster <= 0 )
 		{	//orkprintf( "Current Cluster [%08x] Is Full\n", this );
@@ -84,11 +84,11 @@ bool XgmSkinnedClusterBuilder::AddTriangle( const XgmClusterTri& Triangle )
 		else if( NumBonesToAllocate <= NumBonesFreeInCluster )
 		{	for( orkset<std::string>::const_iterator it = AddThisRun.begin(); it!=AddThisRun.end(); it++ )
 			{	const std::string & BoneName = *it;
-				int iBoneREG = (int) mmBoneRegMap.size();
+				int iBoneREG = (int) _boneRegisterMap.size();
 				//orkprintf( "SKIN: <Cluster %08x> <Adding New Bone %d> <Reg%02d> <Bone:%s>\n", this, AddThisRun.size(), iBoneREG, BoneName.c_str() );
-				if( mmBoneRegMap.find(BoneName) == mmBoneRegMap.end() )
+				if( _boneRegisterMap.find(BoneName) == _boneRegisterMap.end() )
 				{	std::pair<std::string,int> NewBone(BoneName,iBoneREG);
-					mmBoneRegMap.insert(NewBone);
+					_boneRegisterMap.insert(NewBone);
 					//orkprintf( "Cluster[%08x] Adding BoneRec [Reg%02d:Bone:%s]\n", this, iBoneREG, BoneName.c_str() );
 				}
 			}
@@ -96,11 +96,11 @@ bool XgmSkinnedClusterBuilder::AddTriangle( const XgmClusterTri& Triangle )
 		}
 	}
 	if( bAddTriangle )
-	{	int iv0 = mSubMesh.MergeVertex( Triangle.Vertex[0] );
-		int iv1 = mSubMesh.MergeVertex( Triangle.Vertex[1] );
-		int iv2 = mSubMesh.MergeVertex( Triangle.Vertex[2] );
+	{	int iv0 = _submesh.MergeVertex( Triangle._vertex[0] );
+		int iv1 = _submesh.MergeVertex( Triangle._vertex[1] );
+		int iv2 = _submesh.MergeVertex( Triangle._vertex[2] );
 		poly the_poly( iv0, iv1, iv2 );
-		mSubMesh.MergePoly( the_poly );
+		_submesh.MergePoly( the_poly );
 	}
 	return bAddTriangle;
 }
@@ -138,14 +138,14 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4() // binormal p
 	lev2::GfxTargetDummy DummyTarget;
 	const float kVertexScale(1.0f);
 	const fvec2 UVScale( 1.0f,1.0f );
-	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
-	mpVertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12B12T8I4W4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
+	int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
+	_vertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12B12T8I4W4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
 	lev2::VtxWriter<ork::lev2::SVtxV12N12B12T8I4W4> vwriter;
-	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices );
+	vwriter.Lock( &DummyTarget, _vertexBuffer, NumVertexIndices );
 
 	for( int iv=0; iv<NumVertexIndices; iv++ )
 	{	ork::lev2::SVtxV12N12B12T8I4W4 OutVtx;
-		const MeshUtil::vertex & InVtx = mSubMesh.RefVertexPool().GetVertex(iv);
+		const MeshUtil::vertex & InVtx = _submesh.RefVertexPool().GetVertex(iv);
 		OutVtx.mPosition = InVtx.mPos*kVertexScale;
 		OutVtx.mUV0 = InVtx.mUV[0].mMapTexCoord * UVScale;
 		OutVtx.mNormal = InVtx.mNrm;
@@ -180,7 +180,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4() // binormal p
 
 	}
 	vwriter.UnLock(&DummyTarget);
-	mpVertexBuffer->SetNumVertices( NumVertexIndices );
+	_vertexBuffer->SetNumVertices( NumVertexIndices );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -189,16 +189,16 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4() // basic pc skin
 {
 	const float kVertexScale(1.0f);
 	const fvec2 UVScale( 1.0f,1.0f );
-	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
+	int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
 
 	lev2::GfxTargetDummy DummyTarget;
 	lev2::VtxWriter<ork::lev2::SVtxV12N12T8I4W4> vwriter;
-	mpVertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12T8I4W4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
-	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices );
+	_vertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12T8I4W4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
+	vwriter.Lock( &DummyTarget, _vertexBuffer, NumVertexIndices );
 	for( int iv=0; iv<NumVertexIndices; iv++ )
 	{
 		ork::lev2::SVtxV12N12T8I4W4 OutVtx;
-		const MeshUtil::vertex & InVtx = mSubMesh.RefVertexPool().GetVertex(iv);
+		const MeshUtil::vertex & InVtx = _submesh.RefVertexPool().GetVertex(iv);
 		OutVtx.mPosition = InVtx.mPos*kVertexScale;
 		OutVtx.mUV0 = InVtx.mUV[0].mMapTexCoord * UVScale;
 		OutVtx.mNormal = InVtx.mNrm;
@@ -230,7 +230,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4() // basic pc skin
 		vwriter.AddVertex(OutVtx);
 	}
 	vwriter.UnLock(&DummyTarget);
-	mpVertexBuffer->SetNumVertices( NumVertexIndices );
+	_vertexBuffer->SetNumVertices( NumVertexIndices );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -239,14 +239,14 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N6I1T4() // basic wii skinne
 {
 	const float kVertexScale(1.0f);
 	const fvec2 UVScale( 1.0f,1.0f );
-	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
+	int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
 	lev2::GfxTargetDummy DummyTarget;
 	lev2::VtxWriter<ork::lev2::SVtxV12N6I1T4> vwriter;
-	mpVertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N6I1T4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
-	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices );
+	_vertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N6I1T4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
+	vwriter.Lock( &DummyTarget, _vertexBuffer, NumVertexIndices );
 	for( int iv=0; iv<NumVertexIndices; iv++ )
 	{	ork::lev2::SVtxV12N6I1T4 OutVtx;
-		const MeshUtil::vertex & InVtx = mSubMesh.RefVertexPool().GetVertex(iv);
+		const MeshUtil::vertex & InVtx = _submesh.RefVertexPool().GetVertex(iv);
 
 		OutVtx.mX = InVtx.mPos.GetX()*kVertexScale;
 		OutVtx.mY = InVtx.mPos.GetY()*kVertexScale;
@@ -289,7 +289,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N6I1T4() // basic wii skinne
 		vwriter.AddVertex(OutVtx);
 	}
 	vwriter.UnLock(&DummyTarget);
-	mpVertexBuffer->SetNumVertices( NumVertexIndices );
+	_vertexBuffer->SetNumVertices( NumVertexIndices );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

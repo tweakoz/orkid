@@ -963,7 +963,7 @@ bool CColladaModel::ParseGeometries()
 					if( iface%1000 == 0 )
 						printf( "iface<%d> of %d\n", iface, imatnumfaces );
 					for( size_t iface_v=0; iface_v<iface_numfverts; iface_v++ )
-					{	MeshUtil::vertex& MuVtx = ClusTri.Vertex[ iface_v ];
+					{	MeshUtil::vertex& MuVtx = ClusTri._vertex[ iface_v ];
 						/////////////////////////////////
 						// position
 						/////////////////////////////////

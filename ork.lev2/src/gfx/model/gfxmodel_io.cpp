@@ -549,7 +549,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
           }
           pTARG->GBI()->UnLockVB(*pvb);
           // lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
-          Clus.mpVertexBuffer = pvb;
+          Clus._vertexBuffer = pvb;
           ////////////////////////////////////////////////////////////////////////
           Clus.mpPrimGroups = new XgmPrimGroup[Clus.miNumPrimGroups];
           for (int ipg = 0; ipg < Clus.miNumPrimGroups; ipg++) {
@@ -932,7 +932,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
       for (int ic = 0; ic < inumclus; ic++) {
         const lev2::XgmCluster& Clus     = CS.RefCluster(ic);
-        const lev2::VertexBufferBase* VB = Clus.mpVertexBuffer;
+        const lev2::VertexBufferBase* VB = Clus._vertexBuffer;
 
         if (!VB)
           return false;
@@ -963,7 +963,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
       ////////////////////////////////////////////////////////////
       for (int32_t ic = 0; ic < inumclus; ic++) {
         const lev2::XgmCluster& Clus     = CS.RefCluster(ic);
-        const lev2::VertexBufferBase* VB = Clus.mpVertexBuffer;
+        const lev2::VertexBufferBase* VB = Clus._vertexBuffer;
         lev2::VertexBufferBase* VBNC     = const_cast<lev2::VertexBufferBase*>(VB);
         const Sphere& clus_sphere        = Clus.mBoundingSphere;
         const AABox& clus_box            = Clus.mBoundingBox;

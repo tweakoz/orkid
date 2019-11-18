@@ -30,7 +30,7 @@ XgmClusterizer::XgmClusterizer()
 
 XgmClusterizer::~XgmClusterizer()
 {
-	for( auto item : ClusterVect ) delete item;
+	for( auto item : _clusters ) delete item;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -51,13 +51,13 @@ bool XgmClusterizerStd::AddTriangle( const XgmClusterTri& Triangle, const ToolMa
 {
 	ColladaExportPolicy* policy = ColladaExportPolicy::GetContext();
 
-	size_t iNumClusters = ClusterVect.size();
+	size_t iNumClusters = _clusters.size();
 
 	bool bAdded = false;
 
 	for( size_t i=0; i<iNumClusters; i++ )
 	{
-		XgmClusterBuilder *pClus = ClusterVect[i];
+		XgmClusterBuilder *pClus = _clusters[i];
 		bAdded = pClus->AddTriangle( Triangle );
 		if( bAdded )
 		{
@@ -78,7 +78,7 @@ bool XgmClusterizerStd::AddTriangle( const XgmClusterTri& Triangle, const ToolMa
 			pNewCluster = new XgmRigidClusterBuilder;
 		}
 
-		ClusterVect.push_back( pNewCluster );
+		_clusters.push_back( pNewCluster );
 		return pNewCluster->AddTriangle( Triangle );
 	}
 	return bAdded;
@@ -106,11 +106,11 @@ void XgmClusterizerDiced::Begin()
 
 bool XgmClusterizerDiced::AddTriangle( const XgmClusterTri& Triangle, const ToolMaterialGroup* cmg )
 {
-	int iv0 = mPreDicedMesh.MergeVertex( Triangle.Vertex[0] );
-	int iv1 = mPreDicedMesh.MergeVertex( Triangle.Vertex[1] );
-	int iv2 = mPreDicedMesh.MergeVertex( Triangle.Vertex[2] );
+	int iv0 = _preDicedMesh.MergeVertex( Triangle._vertex[0] );
+	int iv1 = _preDicedMesh.MergeVertex( Triangle._vertex[1] );
+	int iv2 = _preDicedMesh.MergeVertex( Triangle._vertex[2] );
 	poly the_poly( iv0, iv1, iv2 );
-	mPreDicedMesh.MergePoly( the_poly );
+	_preDicedMesh.MergePoly( the_poly );
 	return true;
 }
 
@@ -124,7 +124,7 @@ void XgmClusterizerDiced::End()
 	// compute ideal dice size
 	///////////////////////////////////////////////
 
-	AABox aab = mPreDicedMesh.GetAABox();
+	AABox aab = _preDicedMesh.GetAABox();
 	fvec3 extents = aab.Max()-aab.Min();
 
 #if 0
@@ -170,15 +170,15 @@ void XgmClusterizerDiced::End()
 
 	DicedMesh.SetMergeEdges(false);
 
-	if( gbFORCEDICE || mPreDicedMesh.GetNumPolys() > 10000 )
+	if( gbFORCEDICE || _preDicedMesh.GetNumPolys() > 10000 )
 	{
 		float ftimeA = float(OldSchool::GetRef().GetLoResTime());
 
 		GridGraph thegraph(isize);
 		thegraph.BeginPreMerge();
-			thegraph.PreMergeMesh( mPreDicedMesh );
+			thegraph.PreMergeMesh( _preDicedMesh );
 		thegraph.EndPreMerge();
-		thegraph.MergeMesh( mPreDicedMesh, DicedMesh );
+		thegraph.MergeMesh( _preDicedMesh, DicedMesh );
 
 		float ftimeB = float(OldSchool::GetRef().GetLoResTime());
 
@@ -188,7 +188,7 @@ void XgmClusterizerDiced::End()
 	}
 	else
 	{
-		DicedMesh.MergeSubMesh(mPreDicedMesh);
+		DicedMesh.MergeSubMesh(_preDicedMesh);
 	}
 	int inumpacc = 0;
 
@@ -207,7 +207,7 @@ void XgmClusterizerDiced::End()
 		inumpacc += inumpolys;
 
 		XgmClusterBuilder* pNewCluster = new XgmRigidClusterBuilder;
-		ClusterVect.push_back( pNewCluster );
+		_clusters.push_back( pNewCluster );
 
 		for( int ip=0; ip<inumpolys; ip++ )
 		{
@@ -217,16 +217,16 @@ void XgmClusterizerDiced::End()
 
 			XgmClusterTri ClusTri;
 
-			ClusTri.Vertex[0] = pgrp.RefVertexPool().GetVertex(ply.GetVertexID(0));
-			ClusTri.Vertex[1] = pgrp.RefVertexPool().GetVertex(ply.GetVertexID(1));
-			ClusTri.Vertex[2] = pgrp.RefVertexPool().GetVertex(ply.GetVertexID(2));
+			ClusTri._vertex[0] = pgrp.RefVertexPool().GetVertex(ply.GetVertexID(0));
+			ClusTri._vertex[1] = pgrp.RefVertexPool().GetVertex(ply.GetVertexID(1));
+			ClusTri._vertex[2] = pgrp.RefVertexPool().GetVertex(ply.GetVertexID(2));
 
 			bool bOK = pNewCluster->AddTriangle( ClusTri );
 
 			if( false == bOK ) // cluster full, make new cluster
 			{
 				pNewCluster = new XgmRigidClusterBuilder;
-				ClusterVect.push_back( pNewCluster );
+				_clusters.push_back( pNewCluster );
 				bOK = pNewCluster->AddTriangle( ClusTri );
 				OrkAssert( bOK );
 			}
@@ -240,16 +240,16 @@ void XgmClusterizerDiced::End()
 
 	orkprintf( "dicer NumGroups<%d> AvgPolysPerGroup<%d>\n", inumgroups, int(favgpolyspergroup) );
 
-	size_t inumclus = ClusterVect.size();
+	size_t inumclus = _clusters.size();
 	for( size_t ic=0; ic<inumclus; ic++ )
 	{
-		const XgmClusterBuilder& clus = *ClusterVect[ic];
-		AABox bbox = clus.mSubMesh.GetAABox();
+		const XgmClusterBuilder& clus = *_clusters[ic];
+		AABox bbox = clus._submesh.GetAABox();
 		fvec3 vmin = bbox.Min();
 		fvec3 vmax = bbox.Max();
 		float fdist = (vmax-vmin).Mag();
 
-		int inumv = (int) clus.mSubMesh.RefVertexPool().GetNumVertices();
+		int inumv = (int) clus._submesh.RefVertexPool().GetNumVertices();
 		orkprintf( "clus<%d> inumv<%d> bbmin<%g %g %g> bbmax<%g %g %g> diag<%g>\n", ic, inumv, vmin.GetX(), vmin.GetY(), vmin.GetZ(), vmax.GetX(), vmax.GetY(), vmax.GetZ(), fdist );
 	}
 

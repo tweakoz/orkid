@@ -20,7 +20,7 @@ using namespace ork::tool;
 namespace ork::MeshUtil {
 ///////////////////////////////////////////////////////////////////////////////
 
-XgmClusterBuilder::XgmClusterBuilder() : mpVertexBuffer(NULL)
+XgmClusterBuilder::XgmClusterBuilder() : _vertexBuffer(NULL)
 {
 }
 
@@ -36,14 +36,14 @@ XgmClusterBuilder::~XgmClusterBuilder()
 void XgmClusterBuilder::Dump( void )
 {
 	/*orkprintf( "[CLUSDUMP] Cluster[%08x] NUBI %02d\n", this, GetNumUniqueBonIndices() );
-	int iNumBones = mmBoneRegMap.size();
+	int iNumBones = _boneRegisterMap.size();
 	orkprintf( "/////////////////////////////////////////\n" );
 	orkprintf( "[CLUSDUMP] [Cluster %08x] [NumBones %d]\n", this, iNumBones );
 	orkprintf( "//////////////////\n" );
 	orkprintf( "[CLUSDUMP] " );
 	/////////////////////////////////////////////////////////////////
 	static int RegMap[256];
-	for( orkmap<int,int>::const_iterator it=mmBoneRegMap.begin(); it!=mmBoneRegMap.end(); it++ )
+	for( orkmap<int,int>::const_iterator it=_boneRegisterMap.begin(); it!=_boneRegisterMap.end(); it++ )
 	{	std::pair<int,int> BoneMapItem = *it;
 		int BoneIDX = BoneMapItem.first;
 		int BoneREG = BoneMapItem.second;
@@ -64,7 +64,7 @@ void BuildXgmClusterPrimGroups( lev2::XgmCluster & XgmCluster, const std::vector
 {
 	lev2::GfxTargetDummy DummyTarget;
 
-	const int imaxvtx = XgmCluster.mpVertexBuffer->GetNumVertices();
+	const int imaxvtx = XgmCluster._vertexBuffer->GetNumVertices();
 
 	const ColladaExportPolicy* policy = ColladaExportPolicy::GetContext();
 	// TODO: Is this correct? Why?

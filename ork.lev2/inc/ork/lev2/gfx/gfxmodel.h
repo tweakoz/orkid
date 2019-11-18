@@ -82,7 +82,7 @@ public:
 
   int miNumPrimGroups;
   XgmPrimGroup* mpPrimGroups;
-  VertexBufferBase* mpVertexBuffer; // Our Models have 1 VB per cluster
+  VertexBufferBase* _vertexBuffer; // Our Models have 1 VB per cluster
   EVtxStreamFormat meVtxStrFmt;
 
   AABox mBoundingBox;
@@ -103,7 +103,7 @@ public:
     OrkAssert(idx < miNumPrimGroups);
     return mpPrimGroups[idx];
   }
-  const VertexBufferBase* GetVertexBuffer(void) const { return mpVertexBuffer; }
+  const VertexBufferBase* GetVertexBuffer(void) const { return _vertexBuffer; }
   const PoolString& GetJointBinding(int idx) const { return mJoints[idx]; }
   size_t GetNumJointBindings(void) const { return mJoints.size(); }
 

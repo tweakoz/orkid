@@ -176,13 +176,13 @@ XgmPrimGroup::XgmPrimGroup(XgmPrimGroup* pgrp)
 XgmCluster::XgmCluster()
     : miNumPrimGroups(0)
     , mpPrimGroups(0)
-    , mpVertexBuffer(0)
+    , _vertexBuffer(0)
     , mBoundingSphere(fvec3::Zero(), 0.0f) {}
 
 XgmCluster::~XgmCluster() {
   delete[] mpPrimGroups;
 
-  delete mpVertexBuffer;
+  delete _vertexBuffer;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -31,15 +31,15 @@ namespace ork::MeshUtil {
 
 struct XgmClusterTri
 {
-	vertex Vertex[3];
+	vertex _vertex[3];
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct XgmClusterBuilder
 {
-	submesh			                mSubMesh;
-	lev2::VertexBufferBase*			mpVertexBuffer;
+	submesh			                _submesh;
+	lev2::VertexBufferBase*			_vertexBuffer;
 	//////////////////////////////////////////////////
 	XgmClusterBuilder();
 	virtual ~XgmClusterBuilder();
@@ -59,7 +59,7 @@ struct XgmClusterBuilder
 struct XgmSkinnedClusterBuilder : public XgmClusterBuilder
 {
 	/////////////////////////////////////////////////
-	const orkmap<std::string,int>& RefBoneRegMap() const { return mmBoneRegMap; }
+	const orkmap<std::string,int>& RefBoneRegMap() const { return _boneRegisterMap; }
 
 	bool AddTriangle( const XgmClusterTri& Triangle ) final;
     void BuildVertexBuffer( const ToolMaterialGroup& matgroup ) final; // virtual
@@ -69,7 +69,7 @@ struct XgmSkinnedClusterBuilder : public XgmClusterBuilder
 	void BuildVertexBuffer_V12N12B12T8I4W4();
 	void BuildVertexBuffer_V12N6I1T4();
 
-	orkmap<std::string,int>			mmBoneRegMap;
+	orkmap<std::string,int>			_boneRegisterMap;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -98,10 +98,10 @@ struct XgmClusterizer
 	virtual void Begin() {}
 	virtual void End() {}
 	///////////////////////////////////////////////////////
-	size_t GetNumClusters() const { return ClusterVect.size(); }
-	XgmClusterBuilder* GetCluster(int idx) const { return ClusterVect[idx]; }
+	size_t GetNumClusters() const { return _clusters.size(); }
+	XgmClusterBuilder* GetCluster(int idx) const { return _clusters[idx]; }
 
-	orkvector< XgmClusterBuilder* > ClusterVect;
+	orkvector< XgmClusterBuilder* > _clusters;
 	///////////////////////////////////////////////////////
 };
 
@@ -118,7 +118,7 @@ struct XgmClusterizerDiced : public XgmClusterizer
 	void End(); // virtual
 	///////////////////////////////////////////////////////
 
-	submesh mPreDicedMesh;
+	submesh _preDicedMesh;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

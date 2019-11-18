@@ -147,8 +147,8 @@ void toolSubMeshToXgmSubMesh(const toolmesh& mesh, const submesh& smesh, ork::le
 	////////////////////////////////////////////////////////
 	cluster.miNumPrimGroups = 1;
 	cluster.mpPrimGroups = new lev2::XgmPrimGroup[1];
-	cluster.mpVertexBuffer = lev2::VertexBufferBase::CreateVertexBuffer( fsub.evtxformat, inumvertices, true );
-	lev2::VertexBufferBase& vb = *cluster.mpVertexBuffer;
+	cluster._vertexBuffer = lev2::VertexBufferBase::CreateVertexBuffer( fsub.evtxformat, inumvertices, true );
+	lev2::VertexBufferBase& vb = *cluster._vertexBuffer;
 	void *poutverts = DummyTarget.GBI()->LockVB( vb );
 	OrkAssert(poutverts!=0);
 	{
