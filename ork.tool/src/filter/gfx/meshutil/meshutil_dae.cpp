@@ -1331,25 +1331,6 @@ bool DAEToDAE(const tokenlist& options)
 	return rval;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-void ToolMaterialGroup::Parse( const tool::ColladaMaterial& colmat )
-{
-	ork::lev2::GfxMaterial* pmat = colmat._orkMaterial;
-
-	ork::lev2::GfxMaterialFx* pmatfx = rtti::autocast( pmat );
-
-	if( pmatfx )
-	{
-		meMaterialClass = EMATCLASS_FX;
-		mVertexConfigData = pmatfx->RefVertexConfig();
-		_orkMaterial = colmat._orkMaterial;
-	}
-	else
-	{
-		meMaterialClass = EMATCLASS_STANDARD;
-	}
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 

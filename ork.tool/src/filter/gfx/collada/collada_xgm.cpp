@@ -831,7 +831,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12B12T16() // basic pc enviro
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-static void BuildXgmClusterPrimGroups( lev2::XgmCluster & XgmCluster, const std::vector<unsigned int> & TriangleIndices )
+void BuildXgmClusterPrimGroups( lev2::XgmCluster & XgmCluster, const std::vector<unsigned int> & TriangleIndices )
 {
 	lev2::GfxTargetDummy DummyTarget;
 
@@ -954,62 +954,6 @@ static void BuildXgmClusterPrimGroups( lev2::XgmCluster & XgmCluster, const std:
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::MeshUtil {
-void ToolMaterialGroup::BuildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, const tool::XgmClusterBuilder* XgmClusterBuilder) {
-  if (!XgmClusterBuilder->mpVertexBuffer)
-    return;
-
-  XgmCluster.mpVertexBuffer = XgmClusterBuilder->mpVertexBuffer;
-
-  const int imaxvtx = XgmCluster.mpVertexBuffer->GetNumVertices();
-
-  /////////////////////////////////////////////////////////////
-  // triangle indices come from the ClusterBuilder
-
-  std::vector<unsigned int> TriangleIndices;
-  std::vector<int> ToolMeshTriangles;
-
-  XgmClusterBuilder->mSubMesh.FindNSidedPolys(ToolMeshTriangles, 3);
-
-  int inumtriangles = int(ToolMeshTriangles.size());
-
-  for (int i = 0; i < inumtriangles; i++) {
-    int itri_i = ToolMeshTriangles[i];
-
-    const ork::MeshUtil::poly& ClusTri = XgmClusterBuilder->mSubMesh.RefPoly(itri_i);
-
-    TriangleIndices.push_back(ClusTri.GetVertexID(0));
-    TriangleIndices.push_back(ClusTri.GetVertexID(1));
-    TriangleIndices.push_back(ClusTri.GetVertexID(2));
-  }
-
-  /////////////////////////////////////////////////////////////
-
-  tool::BuildXgmClusterPrimGroups(XgmCluster, TriangleIndices);
-
-  XgmCluster.mBoundingBox    = XgmClusterBuilder->mSubMesh.GetAABox();
-  XgmCluster.mBoundingSphere = Sphere(XgmCluster.mBoundingBox.Min(), XgmCluster.mBoundingBox.Max());
-
-  /////////////////////////////////////////////////////////////
-  // bone -> matrix register mapping
-
-  auto skinner = dynamic_cast<const tool::XgmSkinnedClusterBuilder*>(XgmClusterBuilder);
-
-  if (skinner) {
-    const orkmap<std::string, int>& BoneMap = skinner->RefBoneRegMap();
-
-    int inumjointsmapped = BoneMap.size();
-
-    XgmCluster.mJoints.resize(inumjointsmapped);
-
-    for (orkmap<std::string, int>::const_iterator it = BoneMap.begin(); it != BoneMap.end(); it++) {
-      const std::string& JointName      = it->first;  // the index of the bone in the skeleton
-      int JointRegister                 = it->second; // the shader register index the bone goes into
-      XgmCluster.mJoints[JointRegister] = AddPooledString(JointName.c_str());
-    }
-  }
-
-  /////////////////////////////////////////////////////////////
-}
 
 } //namespace ork::MeshUtil {
 

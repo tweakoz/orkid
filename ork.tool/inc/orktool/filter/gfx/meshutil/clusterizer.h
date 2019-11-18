@@ -36,11 +36,8 @@ struct XgmClusterTri
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct XgmClusterBuilder //: public ork::Object
+struct XgmClusterBuilder
 {
-//	RttiDeclareAbstract(XgmClusterBuilder,ork::Object);
-//public:
-
 	ork::MeshUtil::submesh			mSubMesh;
 	lev2::VertexBufferBase*			mpVertexBuffer;
 	//////////////////////////////////////////////////
@@ -61,8 +58,6 @@ struct XgmClusterBuilder //: public ork::Object
 
 struct XgmSkinnedClusterBuilder : public XgmClusterBuilder
 {
-//	RttiDeclareAbstract(XgmSkinnedClusterBuilder,XgmClusterBuilder);
-//public:
 	/////////////////////////////////////////////////
 	const orkmap<std::string,int>& RefBoneRegMap() const { return mmBoneRegMap; }
 
@@ -81,7 +76,6 @@ struct XgmSkinnedClusterBuilder : public XgmClusterBuilder
 
 class XgmRigidClusterBuilder : public XgmClusterBuilder
 {
-	//RttiDeclareAbstract(XgmRigidClusterBuilder,XgmClusterBuilder);
 	/////////////////////////////////////////////////
 	bool AddTriangle( const XgmClusterTri& Triangle ) final;
     void BuildVertexBuffer( const MeshUtil::ToolMaterialGroup& matgroup ) final;
