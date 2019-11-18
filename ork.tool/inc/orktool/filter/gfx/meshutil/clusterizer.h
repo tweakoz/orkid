@@ -74,7 +74,7 @@ struct XgmSkinnedClusterBuilder : public XgmClusterBuilder
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmRigidClusterBuilder : public XgmClusterBuilder
+struct XgmRigidClusterBuilder : public XgmClusterBuilder
 {
 	/////////////////////////////////////////////////
 	bool AddTriangle( const XgmClusterTri& Triangle ) final;

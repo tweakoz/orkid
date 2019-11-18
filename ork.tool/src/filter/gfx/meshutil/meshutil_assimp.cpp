@@ -204,12 +204,12 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
         /////////////////////////////////////////////
         auto VertexFormat            = ork::lev2::EVTXSTREAMFMT_V12N12B12T16;
         auto outmtl                  = materialmap[mesh->mMaterialIndex];
-        auto ColMatGroup             = new ToolMaterialGroup;
-        ColMatGroup->meMaterialClass = ToolMaterialGroup::EMATCLASS_PBR;
+        auto materialGroup             = new ToolMaterialGroup;
+        materialGroup->meMaterialClass = ToolMaterialGroup::EMATCLASS_PBR;
         auto clusterizer             = new XgmClusterizerStd;
-        ColMatGroup->SetClusterizer(clusterizer);
-        ColMatGroup->mMeshConfigurationFlags.mbSkinned = false;
-        ColMatGroup->meVtxFormat                       = VertexFormat;
+        materialGroup->SetClusterizer(clusterizer);
+        materialGroup->mMeshConfigurationFlags.mbSkinned = false;
+        materialGroup->meVtxFormat                       = VertexFormat;
         /////////////////////////////////////////////
         // merge geometry
         /////////////////////////////////////////////
@@ -249,6 +249,11 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
         /////////////////////////////////////////////
         // stats
         /////////////////////////////////////////////
+        for( int i=0; i<clusterizer->GetNumClusters(); i++){
+          auto clusterbuilder = dynamic_cast<XgmRigidClusterBuilder*>(clusterizer->GetCluster(i));
+          clusterbuilder->BuildVertexBuffer(*materialGroup);
+        }
+        assert(false);
         // int meshout_numtris = out_submesh.GetNumPolys(3);
         // int meshout_numquads = out_submesh.GetNumPolys(4);
         // int meshout_numverts = out_submesh.RefVertexPool().GetNumVertices();
