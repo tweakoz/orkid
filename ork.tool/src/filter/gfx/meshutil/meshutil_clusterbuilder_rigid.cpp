@@ -20,7 +20,7 @@ using namespace ork::tool;
 namespace ork::MeshUtil {
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmRigidClusterBuilder::AddTriangle( const XgmClusterTri& Triangle )
+bool XgmRigidClusterBuilder::addTriangle( const XgmClusterTri& Triangle )
 {
 	size_t ivcount = _submesh.RefVertexPool().GetNumVertices();
 	int iicount = (int) _submesh.GetNumPolys();
@@ -48,9 +48,9 @@ bool XgmRigidClusterBuilder::AddTriangle( const XgmClusterTri& Triangle )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmRigidClusterBuilder::BuildVertexBuffer( const MeshUtil::ToolMaterialGroup& matgroup )
+void XgmRigidClusterBuilder::buildVertexBuffer( lev2::EVtxStreamFormat format )
 {
-	switch( matgroup.GetVtxStreamFormat() )
+	switch( format )
 	{
 		case lev2::EVTXSTREAMFMT_V12N6C2T4: // basic wii environmen
 		{	BuildVertexBuffer_V12N6C2T4();

@@ -4,6 +4,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <orktool/orktool_pch.h>
+#include <ork/application/application.h>
 #include <ork/math/plane.h>
 #include <orktool/filter/gfx/meshutil/meshutil.h>
 #include <orktool/filter/filter.h>
@@ -57,6 +58,14 @@ void get_bounding_box_for_node(const aiScene* scene, const aiNode* nd, aiVector3
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct GltfMaterial {
+  std::string _name;
+};
+
+typedef std::map<int, GltfMaterial*> gltfmaterialmap_t;
+
+///////////////////////////////////////////////////////////////////////////////
+
 void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& readopts) {
 
   ork::file::Path GlbPath = BasePath;
@@ -105,12 +114,8 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
     //////////////////////////////////////////////
     // parse materials
     //////////////////////////////////////////////
-
-    struct GltfMaterial {
-      std::string _name;
-    };
-
-    std::map<int, GltfMaterial*> materialmap;
+    
+    gltfmaterialmap_t materialmap;
 
     for (int i = 0; i < scene->mNumMaterials; i++) {
       auto material = scene->mMaterials[i];
@@ -202,21 +207,17 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
         /////////////////////////////////////////////
         const char* name = mesh->mName.data;
         /////////////////////////////////////////////
-        auto VertexFormat            = ork::lev2::EVTXSTREAMFMT_V12N12B12T16;
-        auto outmtl                  = materialmap[mesh->mMaterialIndex];
-        auto materialGroup             = new ToolMaterialGroup;
-        materialGroup->meMaterialClass = ToolMaterialGroup::EMATCLASS_PBR;
-        auto clusterizer             = new XgmClusterizerStd;
-        materialGroup->SetClusterizer(clusterizer);
-        materialGroup->mMeshConfigurationFlags.mbSkinned = false;
-        materialGroup->meVtxFormat                       = VertexFormat;
+        GltfMaterial* outmtl = materialmap[mesh->mMaterialIndex];
         /////////////////////////////////////////////
         // merge geometry
         /////////////////////////////////////////////
-        // MeshUtil::vertex muverts[4];
-        XgmClusterTri clustertri;
-        clusterizer->Begin();
-        std::vector<int> dest_indices;
+        auto& out_submesh = MergeSubMesh(name);
+        auto& mtlset = out_submesh.typedAnnotation<std::set<int>>("materialset");
+        mtlset.insert(mesh->mMaterialIndex);
+        auto& mtlref = out_submesh.typedAnnotation<GltfMaterial*>("gltfmaterial");
+        mtlref = outmtl;
+        /////////////////////////////////////////////
+        MeshUtil::vertex muverts[4];
         for (int t = 0; t < mesh->mNumFaces; ++t) {
           const aiFace* face = &mesh->mFaces[t];
           bool is_triangle   = (face->mNumIndices == 3);
@@ -227,33 +228,26 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
               const auto& n             = mesh->mNormals[index];
               const auto& uv            = (mesh->mTextureCoords[0])[index];
               const auto& b             = (mesh->mBitangents)[index];
-              auto& muvtx               = clustertri._vertex[facevert_index];
+              auto& muvtx               = muverts[facevert_index];
               muvtx.mPos                = fvec3(v.x, v.y, v.z);
               muvtx.mNrm                = fvec3(n.x, n.y, n.z);
               muvtx.mCol[0]             = fvec4(1, 1, 1, 1);
               muvtx.mUV[0].mMapTexCoord = fvec2(uv.x, uv.y);
               muvtx.mUV[0].mMapBiNormal = fvec3(b.x, b.y, b.z);
             }
-            clusterizer->AddTriangle(clustertri, nullptr);
-            // int outpoly_indices[3] = {-1,-1,-1};
-            // outpoly_indices[0] = out_submesh.MergeVertex( muverts[0] );
-            // outpoly_indices[1] = out_submesh.MergeVertex( muverts[1] );
-            // outpoly_indices[2] = out_submesh.MergeVertex( muverts[2] );
-            // MeshUtil::poly ply( outpoly_indices, 3);
-            // out_submesh.MergePoly( ply );
+            int outpoly_indices[3] = {-1,-1,-1};
+            outpoly_indices[0] = out_submesh.MergeVertex( muverts[0] );
+            outpoly_indices[1] = out_submesh.MergeVertex( muverts[1] );
+            outpoly_indices[2] = out_submesh.MergeVertex( muverts[2] );
+            poly ply( outpoly_indices, 3);
+            out_submesh.MergePoly( ply );
           } else {
             printf("non triangle\n");
           }
         }
-        clusterizer->End();
         /////////////////////////////////////////////
         // stats
         /////////////////////////////////////////////
-        for( int i=0; i<clusterizer->GetNumClusters(); i++){
-          auto clusterbuilder = dynamic_cast<XgmRigidClusterBuilder*>(clusterizer->GetCluster(i));
-          clusterbuilder->BuildVertexBuffer(*materialGroup);
-        }
-        assert(false);
         // int meshout_numtris = out_submesh.GetNumPolys(3);
         // int meshout_numquads = out_submesh.GetNumPolys(4);
         // int meshout_numverts = out_submesh.RefVertexPool().GetNumVertices();
@@ -286,7 +280,108 @@ void GLB_XGM_Filter::Describe() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolSubMeshToXgmSubMesh(const toolmesh& mesh, const submesh& smesh, ork::lev2::XgmSubMesh& meshout);
+template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(
+    const toolmesh& inp_model,
+    ork::lev2::XgmModel& out_model) {
+
+    out_model.ReserveMeshes(inp_model.RefSubMeshLut().size());
+    ork::lev2::XgmMesh* out_mesh = new ork::lev2::XgmMesh;
+    out_mesh->ReserveSubMeshes(inp_model.RefSubMeshLut().size());
+    out_mesh->SetMeshName("Mesh1"_pool);
+    out_model.AddMesh("Mesh1"_pool, out_mesh);
+
+    auto VertexFormat              = ork::lev2::EVTXSTREAMFMT_V12N12B12T16;
+
+    struct SubRec {
+      lev2::XgmSubMesh* _xgmsub  = nullptr;
+      submesh* _toolsub = nullptr;
+      ToolMaterialGroup* _toolmgrp = nullptr;
+      XgmClusterizer* _clusterizer = nullptr;
+    };
+    
+    typedef std::vector<SubRec> xgmsubvect_t;
+    typedef std::map<GltfMaterial*,xgmsubvect_t> mtl2submap_t;
+    typedef std::map<GltfMaterial*,ToolMaterialGroup*> mtl2mtlmap_t;
+    
+    mtl2submap_t mtlmap;
+    mtl2mtlmap_t mtlmtlmap;
+    
+    for (auto item : inp_model.RefSubMeshLut()) {
+      submesh* inp_submesh = item.second;
+      auto out_submesh     = new ork::lev2::XgmSubMesh;
+      //simpleToolSubMeshToXgmSubMesh(tmesh, *inp_submesh, *out_submesh);
+      auto& mtlset = inp_submesh->typedAnnotation<std::set<int>>("materialset");
+      auto& mtlref = inp_submesh->typedAnnotation<GltfMaterial*>("gltfmaterial");
+      assert(mtlset.size()==1); // assimp does 1 material per submesh
+      
+      out_model.AddMaterial(out_submesh->mpMaterial);
+      out_mesh->AddSubMesh(out_submesh);
+      
+      auto clusterizer = new ClusterizerType;
+      ToolMaterialGroup* materialGroup = nullptr;
+      auto it = mtlmtlmap.find(mtlref);
+      if( it == mtlmtlmap.end() ){
+        materialGroup = new ToolMaterialGroup;
+        materialGroup->meMaterialClass = ToolMaterialGroup::EMATCLASS_PBR;
+        materialGroup->SetClusterizer(clusterizer);
+        materialGroup->mMeshConfigurationFlags.mbSkinned = false;
+        materialGroup->meVtxFormat                       = VertexFormat;
+        mtlmtlmap[mtlref] = materialGroup;
+      }
+      else
+        materialGroup = it->second;
+      
+      XgmClusterTri clustertri;
+      clusterizer->Begin();
+
+      const auto& vertexpool = inp_submesh->RefVertexPool();
+      const auto& polys = inp_submesh->RefPolys();
+      for( const auto& poly : polys ){
+          assert(poly.GetNumSides()==3);
+          for( int i=0; i<3; i++ )
+            clustertri._vertex[i] = vertexpool.GetVertex(poly.GetVertexID(i));
+          clusterizer->AddTriangle(clustertri, materialGroup);
+      }
+      
+
+      clusterizer->End();
+
+      ///////////////////////////////////////
+      
+      SubRec srec;
+      srec._xgmsub = out_submesh;
+      srec._toolsub = inp_submesh;
+      srec._toolmgrp = materialGroup;
+      srec._clusterizer = clusterizer;
+      mtlmap[mtlref].push_back(srec);
+
+      ///////////////////////////////////////
+      
+  }
+  
+  //////////////////////////////////////////////////////////////////
+  
+  for( auto item : mtlmap ){
+    GltfMaterial* gltfm = item.first;
+    auto& subvect = item.second;
+    for( auto subitem : subvect ) {
+      auto clusterizer           = subitem._clusterizer;
+      int numxgm_clusterbuilders = clusterizer->GetNumClusters();
+      for (int i = 0; i < numxgm_clusterbuilders; i++) {
+        auto clusterbuilder = dynamic_cast<XgmRigidClusterBuilder*>(clusterizer->GetCluster(i));
+        auto& submesh       = clusterbuilder->_submesh;
+        clusterbuilder->buildVertexBuffer(VertexFormat);
+      }
+    }
+  }
+  
+  
+  
+
+  
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 bool GLB_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
   ork::tool::FilterOptMap options;
@@ -317,23 +412,19 @@ bool GLB_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
 
   ////////////////////////////////////////////////////////////////
   // PC vertex formats supported
-  policy.mAvailableVertexFormats.Add(lev2::EVTXSTREAMFMT_V12N12T8I4W4);    // PC basic skinned
-  policy.mAvailableVertexFormats.Add(lev2::EVTXSTREAMFMT_V12N12B12T8I4W4); // PC 1 tanspace skinned
-  policy.mAvailableVertexFormats.Add(lev2::EVTXSTREAMFMT_V12N12B12T8C4);   // PC 1 tanspace unskinned
-  policy.mAvailableVertexFormats.Add(lev2::EVTXSTREAMFMT_V12N12B12T16);    // PC 1 tanspace, 2UV unskinned
-  policy.mAvailableVertexFormats.Add(lev2::EVTXSTREAMFMT_V12N12T16C4);     // PC 2UV 1 color unskinned
+  policy.mAvailableVertexFormats.add(lev2::EVTXSTREAMFMT_V12N12T8I4W4);    // PC basic skinned
+  policy.mAvailableVertexFormats.add(lev2::EVTXSTREAMFMT_V12N12B12T8I4W4); // PC 1 tanspace skinned
+  policy.mAvailableVertexFormats.add(lev2::EVTXSTREAMFMT_V12N12B12T8C4);   // PC 1 tanspace unskinned
+  policy.mAvailableVertexFormats.add(lev2::EVTXSTREAMFMT_V12N12B12T16);    // PC 1 tanspace, 2UV unskinned
+  policy.mAvailableVertexFormats.add(lev2::EVTXSTREAMFMT_V12N12T16C4);     // PC 2UV 1 color unskinned
   ////////////////////////////////////////////////////////////////
 
   toolmesh tmesh;
   tool::DaeReadOpts opts;
   tmesh.readFromAssimp(inf, opts);
-
-  for (auto item : tmesh.RefSubMeshLut()) {
-    submesh* inp_submesh = item.second;
-    ork::lev2::XgmSubMesh out_submesh;
-    toolSubMeshToXgmSubMesh(tmesh, *inp_submesh, out_submesh);
-  }
-
+  ork::lev2::XgmModel xgmmdlout;
+  clusterizeToolMeshToXgmMesh<XgmClusterizerStd>(tmesh,xgmmdlout);
+  assert(false);
   return false;
 }
 } // namespace ork::MeshUtil

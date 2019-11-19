@@ -155,7 +155,7 @@ void ColladaVertexFormat::SetFormat( ork::lev2::EVtxStreamFormat efmt )
 	}
 }
 
-void ColladaAvailVertexFormats::Add( ork::lev2::EVtxStreamFormat efmt )
+void ColladaAvailVertexFormats::add( ork::lev2::EVtxStreamFormat efmt )
 {
 	ColladaVertexFormat format;
 	format.SetFormat( efmt );
@@ -231,11 +231,11 @@ bool DAEXGMFilter::ConvertAsset( const tokenlist& toklist )
 
        ////////////////////////////////////////////////////////////////
        // PC vertex formats supported
-       policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12T8I4W4 );         // PC basic skinned
-       policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12B12T8I4W4 );      // PC 1 tanspace skinned
-       policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12B12T8C4 );        // PC 1 tanspace unskinned
-       policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12B12T16 );         // PC 1 tanspace, 2UV unskinned
-       policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12T16C4 );          // PC 2UV 1 color unskinned
+       policy.mAvailableVertexFormats.add( lev2::EVTXSTREAMFMT_V12N12T8I4W4 );         // PC basic skinned
+       policy.mAvailableVertexFormats.add( lev2::EVTXSTREAMFMT_V12N12B12T8I4W4 );      // PC 1 tanspace skinned
+       policy.mAvailableVertexFormats.add( lev2::EVTXSTREAMFMT_V12N12B12T8C4 );        // PC 1 tanspace unskinned
+       policy.mAvailableVertexFormats.add( lev2::EVTXSTREAMFMT_V12N12B12T16 );         // PC 1 tanspace, 2UV unskinned
+       policy.mAvailableVertexFormats.add( lev2::EVTXSTREAMFMT_V12N12T16C4 );          // PC 2UV 1 color unskinned
        ////////////////////////////////////////////////////////////////
 
        CColladaModel *colmdl = CColladaModel::Load( inf.c_str() );

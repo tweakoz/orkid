@@ -44,8 +44,8 @@ struct XgmClusterBuilder
 	XgmClusterBuilder();
 	virtual ~XgmClusterBuilder();
 	//////////////////////////////////////////////////
-	virtual bool AddTriangle( const XgmClusterTri& Triangle ) = 0;
-	virtual void BuildVertexBuffer( const ToolMaterialGroup& matgroup ) = 0;
+	virtual bool addTriangle( const XgmClusterTri& Triangle ) = 0;
+	virtual void buildVertexBuffer( lev2::EVtxStreamFormat format ) = 0;
 	//////////////////////////////////////////////////
 	void Dump( void );
 	///////////////////////////////////////////////////////////////////
@@ -61,8 +61,8 @@ struct XgmSkinnedClusterBuilder : public XgmClusterBuilder
 	/////////////////////////////////////////////////
 	const orkmap<std::string,int>& RefBoneRegMap() const { return _boneRegisterMap; }
 
-	bool AddTriangle( const XgmClusterTri& Triangle ) final;
-    void BuildVertexBuffer( const ToolMaterialGroup& matgroup ) final; // virtual
+	bool addTriangle( const XgmClusterTri& Triangle ) final;
+    void buildVertexBuffer( lev2::EVtxStreamFormat format ) final; // virtual
 
 	int FindNewBoneIndex( const std::string& BoneName );
 	void BuildVertexBuffer_V12N12T8I4W4();
@@ -77,8 +77,8 @@ struct XgmSkinnedClusterBuilder : public XgmClusterBuilder
 struct XgmRigidClusterBuilder : public XgmClusterBuilder
 {
 	/////////////////////////////////////////////////
-	bool AddTriangle( const XgmClusterTri& Triangle ) final;
-    void BuildVertexBuffer( const ToolMaterialGroup& matgroup ) final;
+	bool addTriangle( const XgmClusterTri& Triangle ) final;
+    void buildVertexBuffer( lev2::EVtxStreamFormat format ) final;
 
 	void BuildVertexBuffer_V12N6C2T4();
 	void BuildVertexBuffer_V12N12B12T8C4();
@@ -129,5 +129,9 @@ struct XgmClusterizerStd : public XgmClusterizer
 	virtual ~XgmClusterizerStd();
 	bool AddTriangle( const XgmClusterTri& Triangle, const ToolMaterialGroup* cmg );
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+void buildTriStripXgmCluster( lev2::XgmCluster & XgmCluster, const XgmClusterBuilder *pclusbuilder );
 
 } // namespace ork:::ool {

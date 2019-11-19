@@ -107,10 +107,10 @@ FlatSubMesh::FlatSubMesh( const submesh& mesh )
 	mesh.FindNSidedPolys( TrianglePolyIndices, 3 );
 	mesh.FindNSidedPolys( QuadPolyIndices, 4 );
 
-	const char* vtxformat = mesh.GetAnnotation("OutVtxFormat");
-	evtxformat = PropType<lev2::EVtxStreamFormat>::FromString( vtxformat );
+	auto vtxformat = mesh.typedAnnotation<std::string>("OutVtxFormat");
+	evtxformat = PropType<lev2::EVtxStreamFormat>::FromString( vtxformat.c_str() );
 
-	orkprintf( "vtxformat<%s>\n", vtxformat );
+	orkprintf( "vtxformat<%s>\n", vtxformat.c_str() );
 
 	////////////////////////////////////////////////////////
 	int inumv = (int) vpool.GetNumVertices();

@@ -58,7 +58,7 @@ bool XgmClusterizerStd::AddTriangle( const XgmClusterTri& Triangle, const ToolMa
 	for( size_t i=0; i<iNumClusters; i++ )
 	{
 		XgmClusterBuilder *pClus = _clusters[i];
-		bAdded = pClus->AddTriangle( Triangle );
+		bAdded = pClus->addTriangle( Triangle );
 		if( bAdded )
 		{
 			break;
@@ -79,7 +79,7 @@ bool XgmClusterizerStd::AddTriangle( const XgmClusterTri& Triangle, const ToolMa
 		}
 
 		_clusters.push_back( pNewCluster );
-		return pNewCluster->AddTriangle( Triangle );
+		return pNewCluster->addTriangle( Triangle );
 	}
 	return bAdded;
 }
@@ -221,13 +221,13 @@ void XgmClusterizerDiced::End()
 			ClusTri._vertex[1] = pgrp.RefVertexPool().GetVertex(ply.GetVertexID(1));
 			ClusTri._vertex[2] = pgrp.RefVertexPool().GetVertex(ply.GetVertexID(2));
 
-			bool bOK = pNewCluster->AddTriangle( ClusTri );
+			bool bOK = pNewCluster->addTriangle( ClusTri );
 
 			if( false == bOK ) // cluster full, make new cluster
 			{
 				pNewCluster = new XgmRigidClusterBuilder;
 				_clusters.push_back( pNewCluster );
-				bOK = pNewCluster->AddTriangle( ClusTri );
+				bOK = pNewCluster->addTriangle( ClusTri );
 				OrkAssert( bOK );
 			}
 		}

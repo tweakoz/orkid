@@ -433,7 +433,7 @@ struct annopolyposlut : public annopolylut
 
 struct submesh
 {
-	typedef orkmap<std::string,std::string> AnnotationMap;
+	typedef orkmap<std::string,svar64_t> AnnotationMap;
 
 	std::string						name;
 	AnnotationMap					mAnnotations;
@@ -458,12 +458,32 @@ struct submesh
 	void ImportPolyAnnotations( const annopolylut& apl );
 	void ExportPolyAnnotations( annopolylut& apl ) const;
 
-	void SetAnnotation( const char* annokey, const char* annoval );
-	const char* GetAnnotation( const char* annokey ) const;
-	AnnotationMap& RefAnnotations() { return mAnnotations; }
-	const AnnotationMap& RefAnnotations() const { return mAnnotations; }
+	void setStringAnnotation( const char* annokey, std::string annoval );
+	AnnotationMap& annotations() { return mAnnotations; }
+	const AnnotationMap& annotations() const { return mAnnotations; }
 
 	void MergeAnnos( const AnnotationMap& mrgannos, bool boverwrite );
+
+	svar64_t annotation( const char* annokey ) const;
+
+    template <typename T>
+    T& typedAnnotation( const std::string annokey ) {
+      auto& anno = mAnnotations[annokey];
+      if( anno.IsA<T>() )
+        return anno.Get<T>();
+      return anno.Make<T>();
+    }
+    
+    template <typename T>
+    const T& typedAnnotation( const std::string annokey )  const {
+      auto it = mAnnotations.find(annokey);
+      if( it != mAnnotations.end() ){
+        const auto& anno = it->second;
+        return anno.Get<T>();
+      }
+      assert(false);
+      return T();
+    }
 
 	//////////////////////////////////////////////////////////////////////////////
 
@@ -773,9 +793,7 @@ struct ToolMaterialGroup
 	///////////////////////////////////////////////////////////////////
 	// Build Clusters
 	///////////////////////////////////////////////////////////////////
-
-	void BuildTriStripXgmCluster( lev2::XgmCluster & XgmCluster, const XgmClusterBuilder *pclusbuilder );
-
+	
 	lev2::EVtxStreamFormat GetVtxStreamFormat() const { return meVtxFormat; }
 
 	void ComputeVtxStreamFormat();

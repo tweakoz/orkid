@@ -34,7 +34,7 @@ int XgmSkinnedClusterBuilder::FindNewBoneIndex( const std::string & BoneName )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmSkinnedClusterBuilder::AddTriangle( const XgmClusterTri& Triangle )
+bool XgmSkinnedClusterBuilder::addTriangle( const XgmClusterTri& Triangle )
 {
 	///////////////////////////////////////
 	// make sure triangle will absolutely fit in the vertex buffer
@@ -105,9 +105,9 @@ bool XgmSkinnedClusterBuilder::AddTriangle( const XgmClusterTri& Triangle )
 	return bAddTriangle;
 }
 
-void XgmSkinnedClusterBuilder::BuildVertexBuffer( const MeshUtil::ToolMaterialGroup& matgroup )
+void XgmSkinnedClusterBuilder::buildVertexBuffer( lev2::EVtxStreamFormat format )
 {
-	switch( matgroup.GetVtxStreamFormat() )
+	switch( format )
 	{
 		case lev2::EVTXSTREAMFMT_V12N12T8I4W4: // PC skinned format
 		{	BuildVertexBuffer_V12N12T8I4W4();
@@ -123,9 +123,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer( const MeshUtil::ToolMaterialGr
 		}
 		default:
 		{
-			orkerrorlog("ERROR: Unknown or unsupported vertex stream format (%s : %s)\n"
-				, matgroup.mShadingGroupName.c_str()
-				, matgroup._orkMaterial ? matgroup._orkMaterial->GetName().c_str() : "null");
+            assert(false);
 			break;
 		}
 	}

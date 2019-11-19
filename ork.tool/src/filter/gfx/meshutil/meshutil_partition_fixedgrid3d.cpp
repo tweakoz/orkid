@@ -382,7 +382,7 @@ void GridGraph::MergeMesh( const submesh& MeshIn, toolmesh& MeshOut )
 
 						submesh& node_submesh = MeshOut.MergeSubMesh(NodeName);
 
-						node_submesh.RefAnnotations() = MeshIn.RefAnnotations();
+						node_submesh.annotations() = MeshIn.annotations();
 
 						/////////////////////////////////////////////////////////
 						// debug output (wavefront obj fmt)

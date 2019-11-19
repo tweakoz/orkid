@@ -444,10 +444,11 @@ void CColladaModel::BuildXgmTriStripMesh( lev2::XgmMesh& XgmMesh, SColladaMesh* 
 		{
 			MeshUtil::XgmClusterBuilder *clusterbuilder = ColMatGroup->GetClusterizer()->GetCluster( ic );
 
-			clusterbuilder->BuildVertexBuffer( *ColMatGroup );
+			auto format = ColMatGroup->GetVtxStreamFormat();
+			clusterbuilder->buildVertexBuffer( format );
 
 			lev2::XgmCluster & XgmClus = XgmClusSet.mpClusters[ ic ];
-			ColMatGroup->BuildTriStripXgmCluster( XgmClus, clusterbuilder );
+			buildTriStripXgmCluster( XgmClus, clusterbuilder );
 
 			int inumclusjoints = XgmClus.mJoints.size();
 			for( int ib=0; ib<inumclusjoints; ib++ )

@@ -583,9 +583,9 @@ void WriteDaeMeshPreservingMaterials( const toolmesh& tmesh, FCDocument& daedoc,
 			it++ )
 	{	const submesh& pgroup = *it->second;
 		const std::string& polygroupname = it->first;
-		std::string lmapgrp = pgroup.GetAnnotation("LightMapGroup");
-		std::string vtxlit = pgroup.GetAnnotation("vtxlit");
-		std::string material = pgroup.GetAnnotation("Material");
+		std::string lmapgrp = pgroup.typedAnnotation<std::string>("LightMapGroup");
+		std::string vtxlit = pgroup.typedAnnotation<std::string>("vtxlit");
+		std::string material = pgroup.typedAnnotation<std::string>("Material");
 		std::map<std::string,FCDMaterial*>::const_iterator itf = DaeMaterials.find(material);
 		if( itf!=DaeMaterials.end() )
 		{	FCDMaterial* DaeMat = itf->second;
