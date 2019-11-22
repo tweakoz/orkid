@@ -64,3 +64,7 @@ target_include_directories (ork_lev2 PRIVATE $ENV{QTDIR}/include/QtGui/$ENV{QTVE
 ###################################
 
 install(TARGETS ork_lev2 LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )
+
+###################################
+
+add_subdirectory (tests)
