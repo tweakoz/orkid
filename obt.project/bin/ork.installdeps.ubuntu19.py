@@ -8,6 +8,7 @@ deplist += ["rapidjson-dev","graphviz","doxygen","clang","libtiff-dev"]
 deplist += ["libboost-filesystem-dev","libboost-system-dev","libboost-thread-dev"]
 deplist += ["libqt5x11extras5-dev", "portaudio19-dev", "pybind11-dev"]
 deplist += ["libpng-dev","clang-format","python-dev", "libnvtt-bin"]
+deplist += ["iverilog"]
 
 for item in deplist:
     os.system("sudo apt install %s" % item)

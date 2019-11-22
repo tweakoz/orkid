@@ -94,7 +94,7 @@ NoiseCache2D::NoiseCache2D(int seed, u32 samplesPerSide)
 	, mkSamplesPerSide(samplesPerSide)
 
 {
-	OrkAssert(ork::IsPowerOfTwo(int(mkSamplesPerSide)));
+	OrkAssert(ork::isPowerOfTwo(int(mkSamplesPerSide)));
 
 	mCache = new float[mkSamplesPerSide * mkSamplesPerSide];
 

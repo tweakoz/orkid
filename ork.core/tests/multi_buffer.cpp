@@ -1,4 +1,4 @@
-#include <unittest++/UnitTest++.h>
+#include <utpp/UnitTest++.h>
 #include <cmath>
 #include <limits>
 #include <ork/math/cvector2.h>
@@ -143,9 +143,9 @@ template <typename queue_type>
 			Timer tm;
 			tm.Start();
 
-			stage0.start( [=](){ this->Stage0(); } );
-			stage1.start( [=](){ this->Stage1(); } );
-			stage2.start( [=](){ this->Stage2(); } );
+			stage0.start( [=](anyp data){ this->Stage0(); } );
+			stage1.start( [=](anyp data){ this->Stage1(); } );
+			stage2.start( [=](anyp data){ this->Stage2(); } );
 
 			usleep(4<<20);
 			this->mStage0ExitPlease = true;

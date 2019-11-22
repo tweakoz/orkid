@@ -13,9 +13,9 @@
 #include <set>
 #include <stack>
 #include <vector>
-#include <ork/svariant.h>
-#include <ork/string/stringutils.h>
-#include <ork/math/misc.h>
+#include <ork/kernel/svariant.h>
+#include <ork/kernel/string/string.h>
+#include <ork/math/misc_math.h>
 #include <atomic>
 
 #define _GNU_SOURCE
@@ -293,7 +293,7 @@ struct Rvalue {
     Rvalue(KUIntC u);
     Rvalue(KSIntC u);
     size_t bitwidth() const;
-    ork::svar128_t _payload;
+    ork::svar160_t _payload;
 };
 
 ///////////////////////////////////////////////////

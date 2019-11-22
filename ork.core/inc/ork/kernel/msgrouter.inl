@@ -7,7 +7,7 @@
 
 namespace ork::msgrouter {
 
-typedef svar64_t content_t;
+typedef svar96_t content_t;
 typedef std::function<void(content_t)> msghandler_t;
 typedef void* msgkey_t;
 struct channel_impl;

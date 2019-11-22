@@ -1,34 +1,18 @@
-#include <ork/pch.h>
-#include <ork/application/application.h>
-#include <ork/object/Object.h>
-#include <ork/rtti/downcast.h>
-#include <ork/reflect/RegisterProperty.h>
-#include <unittest++/UnitTest++.h>
+#include <utpp/UnitTest++.h>
+#include <ork/kernel/thread.h>
 
-class TestApplication : public ork::Application
+int main(int argc, const char** argv )
+
 {
-	RttiDeclareConcrete(TestApplication, ork::Application );
-};
-void TestApplication::Describe()
-{
-}
+    int rval = 0;
 
-INSTANTIATE_TRANSPARENT_RTTI(TestApplication, "TestApplication");
+    ork::SetCurrentThreadName("main");
 
-int main(int argc, char** argv)
-{
-	TestApplication the_app;
-    ApplicationStack::Push(&the_app);
-
-	ork::rtti::Class::InitializeClasses();
-	printf("yo\n" );
-	
-	int rval = 0;
     /////////////////////////////////////////////
     // default Run All Tests
     /////////////////////////////////////////////
     if( argc != 2 )
-    {    
+    {
         printf( "ork.core unit test : usage :\n");
         printf( "<exename> list : list test names\n" );
         printf( "<exename> testname : run 1 test named\n" );
@@ -41,14 +25,11 @@ int main(int argc, char** argv)
     {
         bool blist_tests = (0 == strcmp( argv[1], "list" ));
         bool all_tests = (0 == strcmp( argv[1], "all" ));
+        const char *testname = argv[1];
 
         if( all_tests )
             return UnitTest::RunAllTests();
 
-        const char *testname = argv[1];
-        const UnitTest::TestList & List = UnitTest::Test::GetTestList();
-        const UnitTest::Test* ptest = List.GetHead();
-        int itest = 0;
         if( blist_tests )
         {
             printf( "//////////////////////////////////\n" );
@@ -56,9 +37,13 @@ int main(int argc, char** argv)
             printf( "//////////////////////////////////\n" );
         }
 
+        auto test_list = UnitTest::Test::GetTestList();
+        auto ptest = test_list.GetHead();
+        int itest = 0;
+
         while( ptest )
         {
-           const UnitTest::TestDetails & Details = ptest->m_details;
+           auto& Details = ptest->m_details;
 
             if( blist_tests )
             {
@@ -66,13 +51,12 @@ int main(int argc, char** argv)
             }
             else if( 0 == strcmp( testname, Details.testName ) )
             {   printf( "Running Test<%s>\n", Details.testName );
-                UnitTest::TestResults res;
-                ptest->Run(res);
+		        UnitTest::TestResults testResults;
+		        ptest->Run(testResults);
             }
             ptest = ptest->next;
             itest++;
         }
     }
-    return rval;
-
+    return rval;    return 0;
 }

@@ -38,6 +38,7 @@ vertex_interface iface_vgbuffer
     inputs {
 	    vec4 position : POSITION;
         vec3 normal : NORMAL;
+        vec3 normal : NORMAL;
         vec4 vtxcolor : COLOR0;
 	    vec2 uv0 : TEXCOORD0;
 	}

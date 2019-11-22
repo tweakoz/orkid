@@ -257,7 +257,7 @@ ParticlePoolRenderBuffer::~ParticlePoolRenderBuffer()
 	}
 }
 
-int NextHighestPowerOfTwo( int inp )
+int NexthighestPowerOfTwo( int inp )
 {
 	int outp = inp;
 	outp--;
@@ -275,7 +275,7 @@ void ParticlePoolRenderBuffer::SetCapacity( int icap )
 	if( icap > miMaxParticles )
 	{
 		if( mpParticles ) delete[] mpParticles;
-		miMaxParticles = NextHighestPowerOfTwo( icap );
+		miMaxParticles = NexthighestPowerOfTwo( icap );
 		mpParticles = new BasicParticle[ miMaxParticles ];
 	}
 }

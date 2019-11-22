@@ -32,7 +32,7 @@ public:
         size_t size() const { return length(); }
         virtual size_t get_maxlen() const = 0;
         virtual const char* c_str() const = 0;
-		size_t Hash() const;
+		size_t hash() const;
 
 protected:
 
@@ -337,7 +337,7 @@ namespace std
  	{
  		size_t operator()(const ork::FixedString<siz>& v) const
     	{
-    		return v.Hash();
+    		return v.hash();
     	}
 	};
 

@@ -48,3 +48,5 @@ target_include_directories (ork_core PRIVATE ${INCD} )
 install(TARGETS ork_core LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )
 
 ###################################
+
+add_subdirectory (tests)

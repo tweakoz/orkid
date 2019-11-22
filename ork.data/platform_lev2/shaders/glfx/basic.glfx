@@ -114,7 +114,7 @@ fragment_interface iface_fpick : ub_frg {
 // StateBlocks
 ///////////////////////////////////////////////////////////////
 state_block sb_default : default {
-  // BlendMode = ADDITIVE;
+  // BlendMode = ADDITIVE;https://plugins.jetbrains.com/plugin/7275-codeglance/
   DepthTest = LESS;
   DepthMask = true;
   CullTest  = PASS_FRONT;

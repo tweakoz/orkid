@@ -96,7 +96,7 @@ void Timer::OnInterval( float interval, const void_lambda_t& oper )
 
 	if( mOnInterval )
 	{
-		mThread->start( [=]()
+		mThread->start( [=](anyp data)
 		{
 			while(false==mKill)
 			{

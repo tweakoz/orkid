@@ -415,12 +415,12 @@ void AtlasMapperOps::Describe(){}
 
 class AtlasProcessThread : public ork::Thread
 {	
-	void run() // virtual
+	void run() final
 	{
 		static ork::recursive_mutex gproc_mutex("atlaser");
 		gproc_mutex.Lock();
 		{
-			AtlasMapperOps* pOPS = mUserData.Get<AtlasMapperOps*>();
+			AtlasMapperOps* pOPS = _userdata.Get<AtlasMapperOps*>();
 			LightMapperArchetype* parch = pOPS->mpARCH;
 			pOPS->SetProgress( 0.01f );
 			const BakerSettings* psetting = parch->GetCurrentSetting();
@@ -442,7 +442,7 @@ class AtlasProcessThread : public ork::Thread
 void AtlasMapperOps::Execute( ork::Object* ptarget )
 {
 	AtlasProcessThread* pthread = new AtlasProcessThread;
-	pthread->UserData().Set<AtlasMapperOps*>(this);
+	pthread->_userdata.Set<AtlasMapperOps*>(this);
 	mpARCH = rtti::autocast(ptarget);
 	pthread->start();
 }
@@ -455,11 +455,11 @@ void BakeOps::Describe(){}
 
 class BakeProcessThread : public ork::Thread
 {	
-	void run() // virtual
+	void run() final
 	{	static ork::mutex gproc_mutex("lightmapper");
 		gproc_mutex.Lock();
 		{
-			BakeOps* pOPS = mUserData.Get<BakeOps*>();
+			BakeOps* pOPS = _userdata.Get<BakeOps*>();
 			LightMapperArchetype* parch = pOPS->mpARCH;
 			pOPS->SetProgress(0.0f);
 			const BakerSettings* psetting = parch->GetCurrentSetting();
@@ -481,8 +481,8 @@ class BakeProcessThread : public ork::Thread
 void BakeOps::Execute( ork::Object* ptarget )
 {	mpARCH = rtti::autocast(ptarget);
 	BakeProcessThread bthread;
-	bthread.UserData().Set<BakeOps*>(this);
-	bthread.RunSynchronous();
+	bthread._userdata.Set<BakeOps*>(this);
+	bthread.runSynchronous();
 	
 	//DWORD ThreadId;
 	//HANDLE thread_h = CreateThread( 
@@ -502,11 +502,11 @@ void ImtMapperOps::Describe(){}
 
 class ImtProcessThread : public ork::Thread
 {	
-	void run() // virtual
+	void run() final
 	{	static ork::mutex gproc_mutex("lightmapper");
 		gproc_mutex.Lock();
 		{
-			ImtMapperOps* pOPS = mUserData.Get<ImtMapperOps*>();
+			ImtMapperOps* pOPS = _userdata.Get<ImtMapperOps*>();
 			LightMapperArchetype* parch = pOPS->mpARCH;
 			pOPS->SetProgress(0.0f);
 			const BakerSettings* psetting = parch->GetCurrentSetting();
@@ -536,7 +536,7 @@ class ImtProcessThread : public ork::Thread
 void ImtMapperOps::Execute( ork::Object* ptarget )
 {	mpARCH = rtti::autocast(ptarget);
 	ImtProcessThread* pthread = new ImtProcessThread;
-	pthread->UserData().Set<ImtMapperOps*>(this);
+	pthread->_userdata.Set<ImtMapperOps*>(this);
 	pthread->start();
 }
 

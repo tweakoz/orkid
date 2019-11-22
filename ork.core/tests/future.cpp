@@ -1,4 +1,4 @@
-#include <unittest++/UnitTest++.h>
+#include <utpp/UnitTest++.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/future.hpp>
 
@@ -9,18 +9,20 @@ struct fut_yo
 
 };
 
-static void* future_thread(void* ctx)
-{
-	Future* pfut = static_cast<Future*>(ctx);
-	usleep(1<<20);
-	pfut->Signal(fut_yo());
-	return 0;
-}
 TEST(OrkFuture)
 {
 	printf( "futtest\n" );
 
-/*	OpqTest ot(nullptr);
+/*
+ * auto l_thread = [](anyp data)({
+    	Future* pfut = static_cast<Future*>(ctx);
+	    usleep(1<<20);
+    	pfut->Signal(fut_yo());
+	};
+
+	ork::Thread thr_p(l_thread);
+
+	OpqTest ot(nullptr);
 
     Opq the_opq(1);
 
