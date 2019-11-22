@@ -273,25 +273,25 @@ void GfxTargetGL::GLinit()
 
  	printf("OpenGL Version %d.%d loaded\n", GLVersion.major, GLVersion.minor);
 
-	printf( "glad_glDrawMeshTasksNV<%p>\n", glad_glDrawMeshTasksNV );
-	printf( "glad_glDrawMeshTasksIndirectNV<%p>\n", glad_glDrawMeshTasksIndirectNV );
-	printf( "glad_glMultiDrawMeshTasksIndirectNV<%p>\n", glad_glMultiDrawMeshTasksIndirectNV );
-	printf( "glad_glMultiDrawMeshTasksIndirectCountNV<%p>\n", glad_glMultiDrawMeshTasksIndirectCountNV );
+	//printf( "glad_glDrawMeshTasksNV<%p>\n", glad_glDrawMeshTasksNV );
+	//printf( "glad_glDrawMeshTasksIndirectNV<%p>\n", glad_glDrawMeshTasksIndirectNV );
+	//printf( "glad_glMultiDrawMeshTasksIndirectNV<%p>\n", glad_glMultiDrawMeshTasksIndirectNV );
+	//printf( "glad_glMultiDrawMeshTasksIndirectCountNV<%p>\n", glad_glMultiDrawMeshTasksIndirectCountNV );/
 
-	printf( "glObjectLabel<%p>\n", glObjectLabel );
-	printf( "glPushDebugGroup<%p>\n", glPushDebugGroup );
-	printf( "glPopDebugGroup<%p>\n", glPopDebugGroup );
+	//printf( "glObjectLabel<%p>\n", glObjectLabel );
+	//printf( "glPushDebugGroup<%p>\n", glPushDebugGroup );
+	//printf( "glPopDebugGroup<%p>\n", glPopDebugGroup );
 
-	printf( "glad_glInsertEventMarkerEXT<%p>\n", glad_glInsertEventMarkerEXT );
+	//printf( "glad_glInsertEventMarkerEXT<%p>\n", glad_glInsertEventMarkerEXT );
 
 	glInsertEventMarkerEXT = glad_glInsertEventMarkerEXT;
 	//glPushGroupMarkerEXT = glad_glPushDebugGroup;
 	//glPopGroupMarkerEXT = glad_glPopDebugGroup;
 
-	printf( "GLAD_GL_EXT_debug_label<%d>\n", int(GLAD_GL_EXT_debug_label) );
-	printf( "GLAD_GL_EXT_debug_marker<%d>\n", int(GLAD_GL_EXT_debug_marker) );
-	printf( "GLAD_GL_NV_mesh_shader<%d>\n", int(GLAD_GL_NV_mesh_shader) );
-	printf( "GLAD_GL_KHR_debug<%d>\n", int(GLAD_GL_KHR_debug));
+	//printf( "GLAD_GL_EXT_debug_label<%d>\n", int(GLAD_GL_EXT_debug_label) );
+	//printf( "GLAD_GL_EXT_debug_marker<%d>\n", int(GLAD_GL_EXT_debug_marker) );
+	//printf( "GLAD_GL_NV_mesh_shader<%d>\n", int(GLAD_GL_NV_mesh_shader) );
+	//printf( "GLAD_GL_KHR_debug<%d>\n", int(GLAD_GL_KHR_debug));
 
 	for( int i=0; i<1; i++ )
 	{

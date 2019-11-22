@@ -220,10 +220,10 @@ void ShaderNode::_generateCommon(shaderbuilder::BackEnd& backend) const {
   pshader->mShaderText = codegen.flush();
 
   ///////////////////////////////////
-  printf("shaderbody\n");
-  printf("///////////////////////////////\n");
-  printf("%s", pshader->mShaderText.c_str());
-  printf("///////////////////////////////\n");
+  //printf("shaderbody\n");
+ // printf("///////////////////////////////\n");
+  //printf("%s", pshader->mShaderText.c_str());
+  //printf("///////////////////////////////\n");
 }
 
 ///////////////////////////////////////////////////////////

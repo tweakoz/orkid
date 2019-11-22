@@ -1,4 +1,4 @@
-#if 0
+#if 1
 #include <ork/pch.h>
 #include <ork/kernel/opq.h>
 #include <ork/application/application.h>
@@ -11,7 +11,7 @@
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.h>
 #include <pkg/ent/scene.hpp>
-#include <unittest++/UnitTest++.h>
+#include <utpp/UnitTest++.h>
 #include <pkg/ent/ScriptComponent.h>
 
 using namespace ork;

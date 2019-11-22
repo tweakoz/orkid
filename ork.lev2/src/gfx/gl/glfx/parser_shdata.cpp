@@ -86,7 +86,7 @@ void ShaderDataNode::parse(const ScannerView& view) {
       i += is_array ? 6 : 3;
     }
     done = (i >= ien);
-    printf("ni<%d> ien<%d> done<%d>\n", int(i), int(ien), int(done));
+    //printf("ni<%d> ien<%d> done<%d>\n", int(i), int(ien), int(done));
   }
 }
 

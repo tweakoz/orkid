@@ -223,7 +223,7 @@ FxShaderLoader::FxShaderLoader()
 bool FxShaderLoader::LoadFileAsset(asset::Asset *pAsset, ConstString filename)
 {
 		ork::file::Path pth(filename.c_str());
-		printf( "Loading Effect url<%s> abs<%s>\n", filename.c_str(), pth.ToAbsolute().c_str() );
+		//printf( "Loading Effect url<%s> abs<%s>\n", filename.c_str(), pth.ToAbsolute().c_str() );
 		FxShaderAsset* pshader = rtti::safe_downcast<FxShaderAsset*>(pAsset);
 		bool bOK = GfxEnv::GetRef().GetLoaderTarget()->FXI()->LoadFxShader( filename.c_str(), pshader->GetFxShader() );
 		OrkAssert( bOK );

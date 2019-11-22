@@ -136,7 +136,7 @@ void InterfaceNode::parseIos(const ScannerView& view, IoContainerNode* ioc) {
     // typename
     //////////////////////////////////
 
-    printf("  parseOutputs DtTok<%s>\n", dt_tok->text.c_str());
+    //printf("  parseOutputs DtTok<%s>\n", dt_tok->text.c_str());
     bool typeisvalid = _container->validateTypeName(dt_tok->text);
     auto io          = new InterfaceIoNode(_container);
     ioc->_nodes.push_back(io);
@@ -172,7 +172,7 @@ void InterfaceNode::parseIos(const ScannerView& view, IoContainerNode* ioc) {
       io->_inlineStruct->_name = nam_tok;
     }
     std::string named    = nam_tok ? nam_tok->text : "";
-    printf("  parseOutputs named<%s>\n", named.c_str());
+    //printf("  parseOutputs named<%s>\n", named.c_str());
     auto it = ioc->_dupecheck.find(named);
     assert(it == ioc->_dupecheck.end()); // make sure there are no duplicate attrs
     ioc->_dupecheck.insert(named);
@@ -238,9 +238,9 @@ void InterfaceNode::parse(const ScannerView& view) {
     const Token* dt_tok  = view.token(i + 1);
     const Token* nam_tok = view.token(i + 2);
     const auto& named    = nam_tok->text;
-    printf("  ParseFxInterface VtTok<%zu:%s>\n", i, vt_tok->text.c_str());
-    printf("  ParseFxInterface DtTok<%s>\n", dt_tok->text.c_str());
-    printf("  ParseFxInterface named<%s>\n", named.c_str());
+    //printf("  ParseFxInterface VtTok<%zu:%s>\n", i, vt_tok->text.c_str());
+    //printf("  ParseFxInterface DtTok<%s>\n", dt_tok->text.c_str());
+    //printf("  ParseFxInterface named<%s>\n", named.c_str());
     ////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////
