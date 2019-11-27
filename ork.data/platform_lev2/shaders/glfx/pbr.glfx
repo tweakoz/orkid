@@ -38,7 +38,6 @@ vertex_interface iface_vgbuffer
     inputs {
 	    vec4 position : POSITION;
         vec3 normal : NORMAL;
-        vec3 normal : NORMAL;
         vec4 vtxcolor : COLOR0;
 	    vec2 uv0 : TEXCOORD0;
 	}
@@ -69,16 +68,25 @@ fragment_interface iface_fgbuffer
 	}
 	outputs {
         layout(location = 0) vec4 out_clr;
+        layout(location = 1) vec4 out_normal_mdl;
 	}
 }
 fragment_shader ps_gbuffer
 	: iface_fgbuffer
 {
+    vec3 ntx = frg_nrmd.xyz;
+    out_clr = vec4(frg_clr.xyz,1);
+    out_normal_mdl.xyz = normalize(ntx.xyz);
+	out_normal_mdl.w = frg_nrmd.w;
+}
+fragment_shader ps_gbuffer_n // normalmap
+	: iface_fgbuffer
+{
     vec3 ntx = texture(NormalMap,frg_uv0).xyz;
     ntx = ntx - vec3(0.5,0.5,0.5);
-    out_clr.xyz = normalize(ntx.xyz);
-    //out_clr.xyz = vec3(frg_uv0,0);
-	out_clr.w = frg_nrmd.w;
+    out_clr = vec4(frg_clr.xyz,1);
+    out_normal_mdl.xyz = normalize(ntx.xyz);
+	out_normal_mdl.w = frg_nrmd.w;
 }
 ///////////////////////////////////////////////////////////////
 state_block sb_pick : sb_default
@@ -94,6 +102,15 @@ technique rigid_gbuffer
 	pass p0
 	{	vertex_shader=vs_rigid_gbuffer;
 		fragment_shader=ps_gbuffer;
+		state_block=sb_default;
+	}
+}
+technique rigid_gbuffer_n
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_rigid_gbuffer;
+		fragment_shader=ps_gbuffer_n;
 		state_block=sb_default;
 	}
 }

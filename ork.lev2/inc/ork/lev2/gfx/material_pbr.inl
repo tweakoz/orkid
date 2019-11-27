@@ -41,7 +41,6 @@ struct PBRMaterial : public GfxMaterial {
 
   FxShader* _shader = nullptr;
   GfxTarget* _initialTarget = nullptr;
-  const FxShaderTechnique* _tekRigidGBUFFER = nullptr;
   const FxShaderParam* _paramMVP = nullptr;
   const FxShaderParam* _paramMV = nullptr;
   const FxShaderParam* _paramMROT = nullptr;
@@ -50,6 +49,8 @@ struct PBRMaterial : public GfxMaterial {
   Texture* _texColor = nullptr;
   Texture* _texNormal = nullptr;
   std::string _textureBaseName;
+  const FxShaderTechnique* _tekRigidGBUFFER = nullptr;
+  const FxShaderTechnique* _tekRigidGBUFFER_N = nullptr;
 };
 
 inline PBRMaterial::PBRMaterial(std::string name) {
@@ -110,7 +111,11 @@ inline void PBRMaterial::EndPass(GfxTarget* targ) {
 }
 inline int PBRMaterial::BeginBlock(GfxTarget* targ, const RenderContextInstData& RCID) {
   auto fxi       = targ->FXI();
-  fxi->BindTechnique(_shader,_tekRigidGBUFFER);
+  if( _paramMapNormal )
+    fxi->BindTechnique(_shader,_tekRigidGBUFFER_N);
+  else
+    fxi->BindTechnique(_shader,_tekRigidGBUFFER);
+
   int numpasses = fxi->BeginBlock(_shader,RCID);
   assert(numpasses==1);
   return numpasses;
@@ -125,7 +130,10 @@ inline void PBRMaterial::Init(GfxTarget* targ) /*final*/ {
   auto fxi       = targ->FXI();
   auto shass     = ork::asset::AssetManager<FxShaderAsset>::Load("orkshader://pbr");
   _shader        = shass->GetFxShader();
+
   _tekRigidGBUFFER = fxi->technique(_shader,"rigid_gbuffer");
+  _tekRigidGBUFFER_N = fxi->technique(_shader,"rigid_gbuffer_n");
+
   _paramMVP = fxi->parameter(_shader,"mvp");
   _paramMV = fxi->parameter(_shader,"mv");
   _paramMROT = fxi->parameter(_shader,"mrot");

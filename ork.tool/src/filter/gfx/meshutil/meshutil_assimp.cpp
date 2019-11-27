@@ -424,7 +424,7 @@ bool GLB_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
   tmesh.readFromAssimp(inf, opts);
   ork::lev2::XgmModel xgmmdlout;
   clusterizeToolMeshToXgmMesh<XgmClusterizerStd>(tmesh,xgmmdlout);
-  assert(false);
+  //assert(false);
   return false;
 }
 } // namespace ork::MeshUtil
