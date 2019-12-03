@@ -532,33 +532,10 @@ bool Scene::InitScene( const AABox& scene_box )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-struct RgmLoadAllocator
-{	//////////////////////////////
-	// per chunk allocation policy
-	//////////////////////////////
-	void* alloc( const char* pchkname, int ilen )
-	{
-		void* pmem = 0;
-		if( 0 == strcmp( pchkname, "header" ) ) pmem = malloc(ilen);
-		else if( 0 == strcmp( pchkname, "modeldata" ) ) pmem = malloc(ilen);
-
-		return pmem;
-	}
-	//////////////////////////////
-	// per chunk deallocation policy
-	//////////////////////////////
-	void done( const char* pchkname, void* pdata )
-	{	
-		free( pdata );
-	}
-};
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
 void RgmLightContainer::LoadLitFile( const char* pfilename )
 {
-	chunkfile::Reader<RgmLoadAllocator> chunkreader( pfilename, "lit" );
+    chunkfile::DefaultLoadAllocator allocator;
+	chunkfile::Reader chunkreader( pfilename, "lit", allocator );
 	if( chunkreader.IsOk() )
 	{	chunkfile::InputStream* HeaderStream = chunkreader.GetStream("header");
 		///////////////////////////////////////////////////
@@ -609,7 +586,8 @@ RgmModel* LoadRgmFile( const char* pfilename, RgmShaderBuilder& shbuilder )
 	RgmModel* mdl = new RgmModel;
 
 	mdl->mAABox.BeginGrow();
-	chunkfile::Reader<RgmLoadAllocator> chunkreader( pfilename, "rgm" );
+    chunkfile::DefaultLoadAllocator allocator;
+	chunkfile::Reader chunkreader( pfilename, "rgm", allocator );
 	if( chunkreader.IsOk() )
 	{	chunkfile::InputStream* HeaderStream = chunkreader.GetStream("header");
 		chunkfile::InputStream* ModelDataStream = chunkreader.GetStream("modeldata");

@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/gfx/gfxmaterial.h>
+#include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/pch.h>
@@ -43,30 +44,79 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::MaterialInstItemMatrix, "MaterialInstIte
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::MaterialInstItemMatrixBlock, "MaterialInstItemMatrixBlock")
 ImplementReflectionX(ork::lev2::PBRMaterial, "PBRMaterial");
 
-namespace ork { namespace lev2 {
+
+
+namespace ork {
+
+namespace chunkfile {
+
+XgmMaterialWriterContext::XgmMaterialWriterContext(Writer& w) : _writer(w) {}
+XgmMaterialReaderContext::XgmMaterialReaderContext(Reader& r) : _reader(r) {}
+
+}
+namespace lev2 {
+
 
 /////////////////////////////////////////////////////////////////////////
 
 void PBRMaterial::describeX(class_t* c) {
 
+    /////////////////////////////////////////////////////////////////
+
     chunkfile::materialreader_t reader = [](chunkfile::XgmMaterialReaderContext& ctx)->ork::lev2::GfxMaterial*{
+
+      auto targ = ctx._varmap.typedValueForKey<GfxTarget*>("gfxtarget").value();
+      auto txi = targ->TXI();
+      const auto& embtexmap = ctx._varmap.typedValueForKey<embtexmap_t>("embtexmap").value();
+
+      int istring = 0;
+      ctx._inputStream->GetItem(istring);
+      auto texbasename = ctx._reader.GetString(istring);
+      auto mtl = new PBRMaterial;
+      ctx._inputStream->GetItem(istring);
+      auto begintextures = ctx._reader.GetString(istring);
+      assert(0==strcmp(begintextures,"begintextures"));
+      bool done = false;
+      while( false==done ){
+        ctx._inputStream->GetItem(istring);
+        auto token = ctx._reader.GetString(istring);
+        if( 0 == strcmp(token,"endtextures"))
+          done = true;
+        else {
+          ctx._inputStream->GetItem(istring);
+          auto texname = ctx._reader.GetString(istring);
+          auto itt = embtexmap.find(texname);
+          assert(itt!=embtexmap.end());
+          auto embtex = itt->second;
+          printf( "got tex channel<%s> name<%s> embtex<%p>\n", token, texname, embtex );
+          auto tex = new lev2::Texture;
+          chunkfile::InputStream texstream(embtex->_srcdata,embtex->_srcdatalen);
+          bool ok = txi->LoadTexture(tex,texstream);
+          assert(ok);
+        }
+
+      }
+
       assert(false);
-      return nullptr;
+      return mtl;
     };
+
+    /////////////////////////////////////////////////////////////////
+
     chunkfile::materialwriter_t writer = [](chunkfile::XgmMaterialWriterContext& ctx){
       auto pbrmtl = static_cast<const PBRMaterial*>(ctx._material);
-      int istring = ctx._chunkwriter->GetStringIndex(pbrmtl->_textureBaseName.c_str());
+      int istring = ctx._writer.stringIndex(pbrmtl->_textureBaseName.c_str());
       ctx._outputStream->AddItem(istring);
 
       auto dotex = [&](std::string channelname, std::string texname){
         if( texname.length() ) {
-          istring = ctx._chunkwriter->GetStringIndex(channelname.c_str());
+          istring = ctx._writer.stringIndex(channelname.c_str());
           ctx._outputStream->AddItem(istring);
-          istring = ctx._chunkwriter->GetStringIndex(texname.c_str());
+          istring = ctx._writer.stringIndex(texname.c_str());
           ctx._outputStream->AddItem(istring);
         }
       };
-      istring = ctx._chunkwriter->GetStringIndex("begintextures");
+      istring = ctx._writer.stringIndex("begintextures");
       ctx._outputStream->AddItem(istring);
       dotex( "colormap", pbrmtl->_colorMapName );
       dotex( "normalmap", pbrmtl->_normalMapName );
@@ -74,10 +124,13 @@ void PBRMaterial::describeX(class_t* c) {
       dotex( "emissivemap", pbrmtl->_emissiveMapName );
       dotex( "roughmap", pbrmtl->_roughMapName );
       dotex( "metalmap", pbrmtl->_metalMapName );
-      istring = ctx._chunkwriter->GetStringIndex("endtextures");
+      istring = ctx._writer.stringIndex("endtextures");
       ctx._outputStream->AddItem(istring);
 
     };
+
+    /////////////////////////////////////////////////////////////////
+
     c->annotate("xgm.writer",writer);
     c->annotate("xgm.reader",reader);
 }

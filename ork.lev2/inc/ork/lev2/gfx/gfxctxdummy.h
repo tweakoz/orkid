@@ -155,6 +155,7 @@ public:
 
   bool DestroyTexture(Texture* ptex) final { return false; }
   bool LoadTexture(const AssetPath& fname, Texture* ptex) final;
+  bool LoadTexture(Texture* ptex, chunkfile::InputStream& inpstream) final { return false; }
   void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final {}
   void generateMipMaps(Texture* ptex) final {}
 };

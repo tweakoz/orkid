@@ -32,8 +32,8 @@ void toolmesh::WriteToRgmFile( const file::Path& outpath ) const
 	for( orkmap<std::string,std::string>::const_iterator it=mAnnotations.begin(); it!=mAnnotations.end(); it++ )
 	{	const std::string& key = it->first;
 		const std::string& val = it->second;
-		int ikey = chunkwriter.GetStringIndex(key.c_str());
-		int ival = chunkwriter.GetStringIndex(val.c_str());
+		int ikey = chunkwriter.stringIndex(key.c_str());
+		int ival = chunkwriter.stringIndex(val.c_str());
 		HeaderStream->AddItem(ikey);
 		HeaderStream->AddItem(ival);
 	}	
@@ -56,14 +56,14 @@ void toolmesh::WriteToRgmFile( const file::Path& outpath ) const
 			it2++ )
 		{	const std::string& key = it2->first;
 			const std::string& val = it2->second.Get<std::string>();
-			int ikey = chunkwriter.GetStringIndex(key.c_str());
-			int ival = chunkwriter.GetStringIndex(val.c_str());
+			int ikey = chunkwriter.stringIndex(key.c_str());
+			int ival = chunkwriter.stringIndex(val.c_str());
 			HeaderStream->AddItem(ikey);
 			HeaderStream->AddItem(ival);
 		}	
 		///////////////////////////////////////////////////////////
 		int inumv = (int) vpool.GetNumVertices();
-		int isubname = chunkwriter.GetStringIndex(name.c_str());
+		int isubname = chunkwriter.stringIndex(name.c_str());
 		HeaderStream->AddItem(isubname);
 		HeaderStream->AddItem(inumv);
 		HeaderStream->AddItem(inumtotv);

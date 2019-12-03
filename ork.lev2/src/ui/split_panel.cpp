@@ -110,11 +110,11 @@ void SplitPanel::DoDraw(ui::DrawEvent& drwev)
 		if( has_foc )
 			clr = fcolor4::White();
 
-		defmtl->mRasterState.SetBlending( lev2::EBLENDING_ALPHA );
+		defmtl->_rasterstate.SetBlending( lev2::EBLENDING_ALPHA );
 		tgt->PushModColor( clr );
 		ren_quad( ixr, iyr, ixr+miW, iyr+miH );
 		tgt->PopModColor();
-		defmtl->mRasterState.SetBlending( lev2::EBLENDING_OFF );
+		defmtl->_rasterstate.SetBlending( lev2::EBLENDING_OFF );
 
 		/////////////
 		// close button

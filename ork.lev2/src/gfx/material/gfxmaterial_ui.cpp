@@ -42,12 +42,12 @@ GfxMaterialUI::GfxMaterialUI(GfxTarget *pTarg)
 	, meUIColorMode( EUICOLOR_MOD )
 {
 	miNumPasses = 1;
-	mRasterState.SetShadeModel( ESHADEMODEL_SMOOTH );
-	mRasterState.SetAlphaTest( EALPHATEST_OFF );
-	mRasterState.SetBlending( EBLENDING_OFF );
-	mRasterState.SetDepthTest( EDEPTHTEST_LEQUALS );
-	mRasterState.SetZWriteMask( false );
-	mRasterState.SetCullTest( ECULLTEST_OFF );
+	_rasterstate.SetShadeModel( ESHADEMODEL_SMOOTH );
+	_rasterstate.SetAlphaTest( EALPHATEST_OFF );
+	_rasterstate.SetBlending( EBLENDING_OFF );
+	_rasterstate.SetDepthTest( EDEPTHTEST_LEQUALS );
+	_rasterstate.SetZWriteMask( false );
+	_rasterstate.SetCullTest( ECULLTEST_OFF );
 
 	hModFX = asset::AssetManager<FxShaderAsset>::Load( "orkshader://ui" )->GetFxShader();
 
@@ -134,7 +134,7 @@ void GfxMaterialUI::EndPass( GfxTarget *pTarg )
 bool GfxMaterialUI::BeginPass( GfxTarget *pTarg, int iPass )
 {
 	///////////////////////////////
-	pTarg->RSI()->BindRasterState( mRasterState );
+	pTarg->RSI()->BindRasterState( _rasterstate );
 	///////////////////////////////
 
 	const fmtx4& MatMVP = pTarg->MTXI()->RefMVPMatrix();
@@ -158,11 +158,11 @@ GfxMaterialUIText::GfxMaterialUIText(GfxTarget *pTarg)
 	, hModColor(0)
 	, hColorMap(0)
 {
-	mRasterState.SetAlphaTest( EALPHATEST_GREATER, 0.0f );
-	mRasterState.SetBlending( EBLENDING_OFF );
-	mRasterState.SetDepthTest( EDEPTHTEST_ALWAYS );
-	mRasterState.SetZWriteMask( false );
-	mRasterState.SetCullTest( ECULLTEST_OFF );
+	_rasterstate.SetAlphaTest( EALPHATEST_GREATER, 0.0f );
+	_rasterstate.SetBlending( EBLENDING_OFF );
+	_rasterstate.SetDepthTest( EDEPTHTEST_ALWAYS );
+	_rasterstate.SetZWriteMask( false );
+	_rasterstate.SetCullTest( ECULLTEST_OFF );
 
 	miNumPasses = 1;
 
@@ -184,7 +184,7 @@ void GfxMaterialUIText::Init(ork::lev2::GfxTarget *pTarg)
 	hModColor = pTarg->FXI()->parameter( hModFX, "ModColor" );
 	hColorMap = pTarg->FXI()->parameter( hModFX, "ColorMap" );
 
-	mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_OFF );
+	_rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_OFF );
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -217,7 +217,7 @@ bool GfxMaterialUIText::BeginPass( GfxTarget *pTarg, int iPass )
 	pTarg->FXI()->BindPass( hModFX, iPass );
 
 	///////////////////////////////
-	SRasterState & RasterState = mRasterState; //pTarg->RSI()->RefUIRasterState();
+	SRasterState & RasterState = _rasterstate; //pTarg->RSI()->RefUIRasterState();
 
 	//RasterState.SetAlphaTest( EALPHATEST_GREATER, 0.0f );
 	//pTarg->RSI()->BindRasterState( RasterState );
@@ -247,11 +247,11 @@ GfxMaterialUITextured::GfxMaterialUITextured( GfxTarget *pTarg, const std::strin
 	, hColorMap(0)
 {
 	miNumPasses = 1;
-	mRasterState.SetShadeModel( ESHADEMODEL_SMOOTH );
-	mRasterState.SetAlphaTest( EALPHATEST_OFF );
-	mRasterState.SetBlending( EBLENDING_OFF );
-	mRasterState.SetDepthTest( EDEPTHTEST_LEQUALS );
-	mRasterState.SetCullTest( ECULLTEST_OFF );
+	_rasterstate.SetShadeModel( ESHADEMODEL_SMOOTH );
+	_rasterstate.SetAlphaTest( EALPHATEST_OFF );
+	_rasterstate.SetBlending( EBLENDING_OFF );
+	_rasterstate.SetDepthTest( EDEPTHTEST_LEQUALS );
+	_rasterstate.SetCullTest( ECULLTEST_OFF );
 
 	mTechniqueName = Technique;
 
@@ -320,7 +320,7 @@ void GfxMaterialUITextured::EndPass( GfxTarget *pTarg )
 bool GfxMaterialUITextured::BeginPass( GfxTarget *pTarg, int iPass )
 {
 	///////////////////////////////
-	pTarg->RSI()->BindRasterState( mRasterState );
+	pTarg->RSI()->BindRasterState( _rasterstate );
 	///////////////////////////////
 
 	const fmtx4& MatMVP = pTarg->MTXI()->RefMVPMatrix();

@@ -228,10 +228,10 @@ bool XgmAnim::Save( const AssetPath& Filename, const XgmAnim *anm )
 			}
 		}
 
-		int ichnclas = chunkwriter.GetStringIndex( it->second->GetClass()->Name().c_str() );
-		int iobjname = chunkwriter.GetStringIndex( ObjectName.c_str() );
-		int ichnname = chunkwriter.GetStringIndex( ChannelName.c_str() );
-		int iusgname = chunkwriter.GetStringIndex( ChannelUsage.c_str() );
+		int ichnclas = chunkwriter.stringIndex( it->second->GetClass()->Name().c_str() );
+		int iobjname = chunkwriter.stringIndex( ObjectName.c_str() );
+		int ichnname = chunkwriter.stringIndex( ChannelName.c_str() );
+		int iusgname = chunkwriter.stringIndex( ChannelUsage.c_str() );
 		
         printf( "XGAOUT channelname<%s>\n", ChannelName.c_str() );
 		HeaderStream->AddItem( ichnclas );
@@ -283,10 +283,10 @@ bool XgmAnim::Save( const AssetPath& Filename, const XgmAnim *anm )
 			}
 		}
 
-		int ichnclas = chunkwriter.GetStringIndex( it->second->GetClass()->Name().c_str() );
-		int iobjname = chunkwriter.GetStringIndex( ObjectName.c_str() );
-		int ichnname = chunkwriter.GetStringIndex( ChannelName.c_str() );
-		int iusgname = chunkwriter.GetStringIndex( ChannelUsage.c_str() );
+		int ichnclas = chunkwriter.stringIndex( it->second->GetClass()->Name().c_str() );
+		int iobjname = chunkwriter.stringIndex( ObjectName.c_str() );
+		int ichnname = chunkwriter.stringIndex( ChannelName.c_str() );
+		int iusgname = chunkwriter.stringIndex( ChannelUsage.c_str() );
 		HeaderStream->AddItem( ichnclas );
 		HeaderStream->AddItem( iobjname );
 		HeaderStream->AddItem( ichnname );
@@ -307,7 +307,7 @@ bool XgmAnim::Save( const AssetPath& Filename, const XgmAnim *anm )
 		const ork::lev2::DecompMtx44 & mtx = (*it).second;
 
 		//int idataoffset = AnimDataStream->GetSize();
-		int ichannelname = chunkwriter.GetStringIndex( name.c_str() );
+		int ichannelname = chunkwriter.stringIndex( name.c_str() );
 
 		HeaderStream->AddItem( ichannelname );
 		//HeaderStream->AddItem( idataoffset );

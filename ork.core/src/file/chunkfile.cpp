@@ -126,7 +126,7 @@ void* InputStream::GetDataAt( size_t idx )
 
 Writer::Writer( const char* file_type )
 {
-	mFileType = GetStringIndex( file_type );
+	mFileType = stringIndex( file_type );
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -141,7 +141,7 @@ OutputStream* Writer::AddStream( std::string stream_name )
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-int Writer::GetStringIndex( const char* pstr )
+int Writer::stringIndex( const char* pstr )
 {
 	return string_block.AddString(pstr).Index();
 }

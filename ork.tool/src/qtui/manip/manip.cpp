@@ -399,7 +399,7 @@ void ManipManager::Setup(ork::lev2::IRenderer* prend) {
 
   if (0 == mpManipMaterial) {
     mpManipMaterial = new GfxMaterialManip(pTARG, *this);
-    mpManipMaterial->mRasterState.SetDepthTest(EDEPTHTEST_OFF);
+    mpManipMaterial->_rasterstate.SetDepthTest(EDEPTHTEST_OFF);
 
     if (mpTXManip == 0)
       mpTXManip = new ManipTX(*this);

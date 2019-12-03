@@ -177,7 +177,7 @@ void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
     if (0 == quad->mMaterial) {
       quad->mMaterial = new lev2::GfxMaterial3DSolid(targ);
       quad->mMaterial->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
-      quad->mMaterial->mRasterState.SetZWriteMask(true);
+      quad->mMaterial->_rasterstate.SetZWriteMask(true);
     }
 
     auto mtl = quad->mMaterial;
@@ -286,7 +286,7 @@ void ProcTexOutputSkybox::OnLinkEntity(Simulation* psi, Entity* pent) {
         if (0 == skybox->mMaterial) {
           skybox->mMaterial = new lev2::GfxMaterial3DSolid(targ);
           skybox->mMaterial->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
-          skybox->mMaterial->mRasterState.SetZWriteMask(false);
+          skybox->mMaterial->_rasterstate.SetZWriteMask(false);
         }
 
         auto mtl = skybox->mMaterial;

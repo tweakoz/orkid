@@ -86,8 +86,6 @@ struct CollisionLoadAllocator
 	}
 };
 
-typedef ork::chunkfile::Reader<CollisionLoadAllocator> CollisonReader;
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -815,7 +813,8 @@ Track::~Track()
 
 bool Track::Load(const ork::file::Path& path, const ork::fmtx4& transform)
 {
-	CollisonReader reader(path, "sec");
+    chunkfile::DefaultLoadAllocator allocator;
+	chunkfile::Reader reader(path, "sec",allocator);
 
 	if (!reader.IsOk())
 	{
@@ -1440,4 +1439,3 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::bullet::SectorTrackerInst, "SectorTracker
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::bullet::TrackData, "TrackData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::bullet::TrackInst, "TrackInst");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::bullet::TrackArchetype, "TrackArchetype");
-template class ork::chunkfile::Reader<ork::ent::bullet::CollisionLoadAllocator>;

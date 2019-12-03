@@ -346,10 +346,10 @@ void RotSolid::compute(ProcTex& ptex) {
         , stdmat(ptx.GetTarget())
         , mVB(vb) {
       stdmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
-      stdmat.mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-      stdmat.mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      stdmat.mRasterState.SetBlending(ebm);
-      stdmat.mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+      stdmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+      stdmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+      stdmat._rasterstate.SetBlending(ebm);
+      stdmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
       stdmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(bo.miW)));
 
       mOrthoBoxXYWH = fvec4(-1.0f, -1.0f, 2.0f, 2.0f);
@@ -421,10 +421,10 @@ void ImgOp2::compute(ProcTex& ptex) {
     }
     lev2::GfxMaterial3DSolid gridmat(pTARG, "orkshader://proctex", pop);
     gridmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-    gridmat.mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-    gridmat.mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    gridmat.mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-    gridmat.mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+    gridmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+    gridmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+    gridmat._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+    gridmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     gridmat.SetTexture(conplugA->GetValue().GetTexture(ptex));
     gridmat.SetTexture2(conplugB->GetValue().GetTexture(ptex));
     gridmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(buffer.miW)));
@@ -502,28 +502,28 @@ void ImgOp3::compute(ProcTex& ptex) {
       mMtlMul3 = new lev2::GfxMaterial3DSolid(pTARG, "orkshader://proctex", "imgop3_mul3");
 
       mMtlLerp->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-      mMtlLerp->mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-      mMtlLerp->mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      mMtlLerp->mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-      mMtlLerp->mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+      mMtlLerp->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+      mMtlLerp->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+      mMtlLerp->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      mMtlLerp->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
 
       mMtlAddw->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-      mMtlAddw->mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-      mMtlAddw->mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      mMtlAddw->mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-      mMtlAddw->mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+      mMtlAddw->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+      mMtlAddw->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+      mMtlAddw->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      mMtlAddw->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
 
       mMtlSubw->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-      mMtlSubw->mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-      mMtlSubw->mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      mMtlSubw->mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-      mMtlSubw->mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+      mMtlSubw->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+      mMtlSubw->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+      mMtlSubw->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      mMtlSubw->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
 
       mMtlMul3->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-      mMtlMul3->mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-      mMtlMul3->mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      mMtlMul3->mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-      mMtlMul3->mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+      mMtlMul3->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+      mMtlMul3->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+      mMtlMul3->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      mMtlMul3->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     }
 
     lev2::GfxMaterial3DSolid* cur_mtl = nullptr;
@@ -618,10 +618,10 @@ void Transform::compute(ProcTex& ptex) {
     if (nullptr == mMaterial) {
       mMaterial = new lev2::GfxMaterial3DSolid(pTARG, "orkshader://proctex", "transform");
       mMaterial->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-      mMaterial->mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-      mMaterial->mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      mMaterial->mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-      mMaterial->mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+      mMaterial->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+      mMaterial->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+      mMaterial->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      mMaterial->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     }
     ////////////////////////////////////////////////////////////////
     float rot = PI2 * mPlugInpRotate.GetValue() / 360.0f;
@@ -669,10 +669,10 @@ void Texture::compute(ProcTex& ptex) {
   pTARG->debugPushGroup(FormatString("ptx::Texture::compute"));
   lev2::GfxMaterial3DSolid gridmat(pTARG, "orkshader://proctex", "ttex");
   gridmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-  gridmat.mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-  gridmat.mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-  gridmat.mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-  gridmat.mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+  gridmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+  gridmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+  gridmat._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+  gridmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
   gridmat.SetTexture(GetTexture());
   gridmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(buffer.miW)));
   pTARG->BindMaterial(&gridmat);
@@ -787,10 +787,10 @@ void ShaderQuad::compute(ProcTex& ptex) {
     Buffer& buffer = GetWriteBuffer(ptex);
 
     mShader->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-    mShader->mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-    mShader->mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    mShader->mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-    mShader->mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+    mShader->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+    mShader->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+    mShader->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+    mShader->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
 
     if (conplug) {
       auto& plugbuf      = conplug->GetValue().GetBuffer(ptex);
@@ -871,10 +871,10 @@ void SolidColor::compute(ProcTex& ptex) {
   if (nullptr == mMaterial) {
     mMaterial = new lev2::GfxMaterial3DSolid(pTARG);
     mMaterial->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR);
-    mMaterial->mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-    mMaterial->mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    mMaterial->mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-    mMaterial->mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+    mMaterial->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+    mMaterial->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+    mMaterial->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+    mMaterial->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     mMaterial->SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(buffer.miW)));
   }
 
@@ -947,11 +947,11 @@ void Gradient::compute(ProcTex& ptex) {
     mMtl = new lev2::GfxMaterial3DSolid(pTARG);
 
     mMtl->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
-    mMtl->mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-    mMtl->mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    mMtl->mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-    mMtl->mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
-    mMtl->mRasterState.SetShadeModel(ork::lev2::ESHADEMODEL_SMOOTH);
+    mMtl->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+    mMtl->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+    mMtl->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+    mMtl->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+    mMtl->_rasterstate.SetShadeModel(ork::lev2::ESHADEMODEL_SMOOTH);
   }
 
   mMtl->SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(buffer.miW)));
@@ -1193,10 +1193,10 @@ void Group::compute(ProcTex& ptex) {
 
     lev2::GfxMaterial3DSolid gridmat(pTARG, "orkshader://proctex", "ttex");
     gridmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-    gridmat.mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-    gridmat.mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    gridmat.mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-    gridmat.mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+    gridmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+    gridmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+    gridmat._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+    gridmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     gridmat.SetTexture(ptexture);
     gridmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(computebuffer.miW)));
     pTARG->BindMaterial(&gridmat);

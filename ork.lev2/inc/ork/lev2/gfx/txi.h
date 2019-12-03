@@ -15,6 +15,7 @@ public:
 
   virtual bool DestroyTexture(Texture* ptex)                           = 0;
   virtual bool LoadTexture(const AssetPath& fname, Texture* ptex)      = 0;
+  virtual bool LoadTexture(Texture* ptex, chunkfile::InputStream& inpstream) = 0;
   virtual void SaveTexture(const ork::AssetPath& fname, Texture* ptex) = 0;
   virtual void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) {}
   virtual void ApplySamplingMode(Texture* ptex) {}

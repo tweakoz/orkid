@@ -195,9 +195,9 @@ const uint32_t* DeferredContext::captureDepthClusters(CompositorDrawData& drawda
     _lightingmtl.bindParamVec2(_parNearFar, fvec2(KNEAR, KFAR));
     _lightingmtl.bindParamVec2(_parZndc2eye, VD._zndc2eye);
     _lightingmtl.bindParamVec2(_parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
-    _lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
-    _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
-    _lightingmtl.mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
+    _lightingmtl._rasterstate.SetBlending(EBLENDING_OFF);
+    _lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
+    _lightingmtl._rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
     _lightingmtl.commit();
     this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
     _lightingmtl.end(RCFD);
@@ -349,9 +349,9 @@ void DeferredContext::renderBaseLighting( CompositorDrawData& drawdata,
       //////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::BaseLighting");
       _lightingmtl.bindTechnique(VD._isStereo ? _tekBaseLightingStereo : _tekBaseLighting);
-      _lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
-      _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
-      _lightingmtl.mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
+      _lightingmtl._rasterstate.SetBlending(EBLENDING_OFF);
+      _lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
+      _lightingmtl._rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
       _lightingmtl.begin(RCFD);
       //////////////////////////////////////////////////////
       _lightingmtl.bindParamMatrixArray(_parMatIVPArray, VD._ivp, 2);
@@ -363,7 +363,7 @@ void DeferredContext::renderBaseLighting( CompositorDrawData& drawdata,
       _lightingmtl.bindParamVec2(_parNearFar, fvec2(KNEAR, KFAR));
       _lightingmtl.bindParamVec2(_parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
       _lightingmtl.commit();
-      RSI->BindRasterState(_lightingmtl.mRasterState);
+      RSI->BindRasterState(_lightingmtl._rasterstate);
       this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
       _lightingmtl.end(RCFD);
     CIMPL->popCPD();       // base lighting
@@ -403,11 +403,11 @@ void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const Vie
     _lightingmtl.bindParamVec2(_parInvViewSize,
                                         fvec2(1.0 / float(_width), 1.0f / float(_height)));
     //////////////////////////////////////////////////
-    _lightingmtl.mRasterState.SetCullTest(ECULLTEST_OFF);
-    _lightingmtl.mRasterState.SetBlending(EBLENDING_ADDITIVE);
-    //_lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
-    _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
-    RSI->BindRasterState(_lightingmtl.mRasterState);
+    _lightingmtl._rasterstate.SetCullTest(ECULLTEST_OFF);
+    _lightingmtl._rasterstate.SetBlending(EBLENDING_ADDITIVE);
+    //_lightingmtl._rasterstate.SetBlending(EBLENDING_OFF);
+    _lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
+    RSI->BindRasterState(_lightingmtl._rasterstate);
 
 }
 

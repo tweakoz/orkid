@@ -53,7 +53,7 @@ void GridArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
         {
             mGridMaterial = new lev2::GfxMaterial3DSolid( lev2::GfxEnv::GetRef().GetLoaderTarget() );
             mGridMaterial->SetColorMode( lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR  );
-            mGridMaterial->mRasterState.SetBlending(lev2::EBLENDING_OFF);
+            mGridMaterial->_rasterstate.SetBlending(lev2::EBLENDING_OFF);
         }
         ~yo()
         {

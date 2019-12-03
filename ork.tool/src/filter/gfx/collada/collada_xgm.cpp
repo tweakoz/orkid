@@ -380,7 +380,7 @@ void ConfigureStdMaterial( CColladaModel *ColModel, MeshUtil::ToolMaterialGroup 
 
 	if( transmode == FCDEffectStandard::A_ONE )
 	{
-		MatVct->mRasterState.SetBlending( ork::lev2::EBLENDING_ALPHA );
+		MatVct->_rasterstate.SetBlending( ork::lev2::EBLENDING_ALPHA );
 	}
 }
 

@@ -130,7 +130,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata)
         mtl.SetTexture(tex);
         mtl.SetTexture2(nullptr);
         mtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
-        mtl.mRasterState.SetBlending(EBLENDING_OFF);
+        mtl._rasterstate.SetBlending(EBLENDING_OFF);
         this_buf->RenderMatOrthoQuad(vprect,
                                      quadrect,
                                      &mtl,

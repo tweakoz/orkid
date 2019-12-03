@@ -665,7 +665,7 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
       } else {
         pTARG->BindMaterial(&UiMat);
       }
-      UiMat.mRasterState.SetBlending(lev2::EBLENDING_OFF);
+      UiMat._rasterstate.SetBlending(lev2::EBLENDING_OFF);
       pTARG->PushModColor(fcolor4::White());
       {
         const int ksize = 512;

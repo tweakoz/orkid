@@ -66,12 +66,12 @@ GfxMaterialWiiBasic::GfxMaterialWiiBasic(const char* bastek)
     , hBotEnvTEX(nullptr) {
   if (gbenable) {
     miNumPasses = 1;
-    mRasterState.SetShadeModel(ESHADEMODEL_SMOOTH);
-    mRasterState.SetAlphaTest(EALPHATEST_GREATER, 0.5f);
-    mRasterState.SetBlending(EBLENDING_OFF);
-    mRasterState.SetDepthTest(EDEPTHTEST_LEQUALS);
-    mRasterState.SetZWriteMask(true);
-    mRasterState.SetCullTest(ECULLTEST_PASS_FRONT);
+    _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
+    _rasterstate.SetAlphaTest(EALPHATEST_GREATER, 0.5f);
+    _rasterstate.SetBlending(EBLENDING_OFF);
+    _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+    _rasterstate.SetZWriteMask(true);
+    _rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
   }
 }
 
@@ -333,10 +333,10 @@ bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
 
   fcolor4 ModColor = pTarg->RefModColor();
 
-  mRasterState.SetZWriteMask(!bforcenoz);
+  _rasterstate.SetZWriteMask(!bforcenoz);
 
   if (is_picking) {
-    auto copyofrasterstate = mRasterState;
+    auto copyofrasterstate = _rasterstate;
     copyofrasterstate.SetZWriteMask(true);
     copyofrasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
     copyofrasterstate.SetCullTest(ECULLTEST_PASS_BACK);
@@ -344,7 +344,7 @@ bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
     copyofrasterstate.SetAlphaTest(EALPHATEST_OFF);
     RSI->BindRasterState(copyofrasterstate);
   } else {
-    RSI->BindRasterState(mRasterState);
+    RSI->BindRasterState(_rasterstate);
   }
 
   FXI->BindPass(hModFX, iPass);

@@ -336,10 +336,10 @@ void PerformanceTracker::Draw(ork::lev2::GfxTarget* pTARG) {
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   ork::lev2::GfxMaterial3DSolid Material(pTARG);
-  Material.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-  Material.mRasterState.SetBlending( ork::lev2::EBLENDING_ADDITIVE );
+  Material._rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+  Material._rasterstate.SetBlending( ork::lev2::EBLENDING_ADDITIVE );
   Material.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
-  Material.mRasterState.SetZWriteMask( false );
+  Material._rasterstate.SetZWriteMask( false );
   pTARG->BindMaterial( & Material );
 
   pTARG->PushModColor( fcolor4(0.0f,0.5f,0.0f) );

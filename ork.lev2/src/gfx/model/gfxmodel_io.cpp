@@ -42,21 +42,6 @@ namespace ork { namespace lev2 {
 
 #if defined(USE_XGM_FILES)
 
-///////////////////////////////////////////////////////////////////////////////
-struct ModelLoadAllocator { //////////////////////////////
-  // per chunk allocation policy
-  //////////////////////////////
-  void* alloc(const char* pchkname, int ilen) {
-    return  malloc(ilen);
-  }
-  //////////////////////////////
-  // per chunk deallocation policy
-  //////////////////////////////
-  void done(const char* pchkname, void* pdata) {
-    free(pdata);
-  }
-};
-
 ////////////////////////////////////////////////////////////
 // account for bug in old XGM files (version 0)
 // since EVTXSTREAMFMT_V12N12T16C4 was missing,
@@ -109,7 +94,7 @@ EVtxStreamFormat GetVersion0VertexStreamFormat(const char* fmtstr) {
 
 bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
   GfxTarget* pTARG = GfxEnv::GetRef().GetLoaderTarget();
-  bool rval = true;
+  bool rval        = true;
 
   int XGMVERSIONCODE           = 0;
   static const int kVERSIONTAG = 0x01234567;
@@ -121,13 +106,14 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
 
   /////////////////////////////////////////////////////////////
   OrkHeapCheck();
-  chunkfile::Reader<ModelLoadAllocator> chunkreader(fnameext, "xgm");
+  chunkfile::DefaultLoadAllocator allocator;
+  chunkfile::Reader chunkreader(fnameext, "xgm", allocator);
   OrkHeapCheck();
   /////////////////////////////////////////////////////////////
   if (chunkreader.IsOk()) {
     chunkfile::InputStream* HeaderStream    = chunkreader.GetStream("header");
     chunkfile::InputStream* ModelDataStream = chunkreader.GetStream("modeldata");
-    chunkfile::InputStream* EmbTexStream = chunkreader.GetStream("embtexmap");
+    chunkfile::InputStream* EmbTexStream    = chunkreader.GetStream("embtexmap");
 
     /////////////////////////////////////////////////////////
     mdl->msModelName = AddPooledString(Filename.c_str());
@@ -204,31 +190,33 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
     ///////////////////////////////////
     // embedded textures
     ///////////////////////////////////
-    if( EmbTexStream ){
-
-      auto& embtexmap = mdl->_varmap.makeValueForKey<embtexmap_t>("embtexmap");
-
-      size_t numembtex = 0;
+    auto& embtexmap = mdl->_varmap.makeValueForKey<embtexmap_t>("embtexmap");
+    if (EmbTexStream) {
+     size_t numembtex = 0;
       EmbTexStream->GetItem(numembtex);
       int itexname = 0;
-      for( size_t i=0; i<numembtex; i++ ){
+      for (size_t i = 0; i < numembtex; i++) {
         EmbTexStream->GetItem(itexname);
-        auto texname = chunkreader.GetString(itexname);
+        auto texname    = chunkreader.GetString(itexname);
         size_t datasize = 0;
         EmbTexStream->GetItem(datasize);
         auto texturedata = EmbTexStream->GetCurrent();
-        auto texdatcopy = malloc(datasize);
-        memcpy(texdatcopy,texturedata,datasize);
+        auto texdatcopy  = malloc(datasize);
+        memcpy(texdatcopy, texturedata, datasize);
         EmbTexStream->advance(datasize);
-        auto embtex = new EmbeddedTexture;
-        embtex->_srcdata = texdatcopy;
+        auto embtex         = new EmbeddedTexture;
+        embtex->_srcdata    = texdatcopy;
         embtex->_srcdatalen = datasize;
-        embtexmap[texname]=embtex;
-        printf( "embtex<%zu:%s> datasiz<%zu> dataptr<%p>\n", i, texname, datasize, texturedata );
+        embtexmap[texname]  = embtex;
+        printf("embtex<%zu:%s> datasiz<%zu> dataptr<%p>\n", i, texname, datasize, texturedata);
       }
     }
 
-
+    ///////////////////////////////////
+    chunkfile::XgmMaterialReaderContext materialread_ctx(chunkreader);
+    materialread_ctx._inputStream = HeaderStream;
+    materialread_ctx._varmap.makeValueForKey<GfxTarget*>("gfxtarget")=pTARG;
+    materialread_ctx._varmap.makeValueForKey<embtexmap_t>("embtexmap") = embtexmap;
     ///////////////////////////////////
     for (int imat = 0; imat < inummats; imat++) {
       int iimat = 0, imatname = 0, imatclass = 0;
@@ -270,9 +258,9 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
 
         if ((eblend != lev2::EBLENDING_OFF)) {
           rqdata.miSortingPass = kdefaulttranssortpass;
-          pbasmat->mRasterState.SetAlphaTest(EALPHATEST_GREATER, 0.0f);
+          pbasmat->_rasterstate.SetAlphaTest(EALPHATEST_GREATER, 0.0f);
         }
-        pbasmat->mRasterState.SetBlending(eblend);
+        pbasmat->_rasterstate.SetBlending(eblend);
       }
       /////////////////////////////////////////////////////////////
       // minimal solid material
@@ -409,18 +397,16 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
         ///////////////////////////////////////////////////////////
 
         auto anno = pmatclass->annotation("xgm.reader");
-        if( auto as_reader = anno.TryAs<chunkfile::materialreader_t>()){
-          auto& reader = as_reader.value();
-          chunkfile::XgmMaterialReaderContext ctx;
-          pmat = reader(ctx);
+        if (auto as_reader = anno.TryAs<chunkfile::materialreader_t>()) {
+          pmat = as_reader.value()(materialread_ctx);
         }
+
         ///////////////////////////////////////////////////////////
         // material class not supported in XGM
         ///////////////////////////////////////////////////////////
-        else{
+        else {
           OrkAssert(false);
         }
-
       }
 
       mdl->AddMaterial(pmat);
@@ -597,10 +583,11 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
             {
               // TODO: Make 16-bit indices a policy
               if (PG.miNumIndices > 0xFFFF)
-                orkerrorlog("WARNING: <%s> Wii cannot have num indices larger than 65535: MeshName=%s, MatName=%s\n",
-                            Filename.c_str(),
-                            MeshName,
-                            matname);
+                orkerrorlog(
+                    "WARNING: <%s> Wii cannot have num indices larger than 65535: MeshName=%s, MatName=%s\n",
+                    Filename.c_str(),
+                    MeshName,
+                    matname);
 
               memcpy(poutidx, pidx, PG.miNumIndices * sizeof(U16));
             }
@@ -713,16 +700,16 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
     HeaderStream->AddItem(ib);
     HeaderStream->AddItem(JointParentIndex);
-    istring = chunkwriter.GetStringIndex(JointName.c_str());
+    istring = chunkwriter.stringIndex(JointName.c_str());
     HeaderStream->AddItem(istring);
 
     PropTypeString tstr;
     PropType<fmtx4>::ToString(JointMatrix, tstr);
-    istring = chunkwriter.GetStringIndex(tstr.c_str());
+    istring = chunkwriter.stringIndex(tstr.c_str());
     HeaderStream->AddItem(istring);
 
     PropType<fmtx4>::ToString(InvRestMatrix, tstr);
-    istring = chunkwriter.GetStringIndex(tstr.c_str());
+    istring = chunkwriter.stringIndex(tstr.c_str());
     HeaderStream->AddItem(istring);
   }
 
@@ -781,20 +768,20 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
   // embedded textures chunk
   ///////////////////////////////////////////////////////////////////////////////////////////
 
-  if( auto as_embtexmap = mdl->_varmap.typedValueForKey<embtexmap_t>("embtexmap") ) {
-    auto& embtexmap = as_embtexmap.value();
+  if (auto as_embtexmap = mdl->_varmap.typedValueForKey<embtexmap_t>("embtexmap")) {
+    auto& embtexmap    = as_embtexmap.value();
     auto textureStream = chunkwriter.AddStream("embtexmap");
     textureStream->AddItem<size_t>(embtexmap.size());
-    for( auto item : embtexmap ){
-      std::string texname = item.first;
+    for (auto item : embtexmap) {
+      std::string texname   = item.first;
       EmbeddedTexture* ptex = item.second;
-      int istring = chunkwriter.GetStringIndex(texname.c_str());
+      int istring           = chunkwriter.stringIndex(texname.c_str());
       textureStream->AddItem<int>(istring);
-      auto ddsblock = ptex->_ddsdestdatablock;
+      auto ddsblock    = ptex->_ddsdestdatablock;
       size_t blocksize = ddsblock->_data.GetSize();
       textureStream->AddItem<size_t>(blocksize);
       const void* data = ddsblock->_data.GetData();
-      textureStream->AddData(data,blocksize);
+      textureStream->AddData(data, blocksize);
     }
   }
 
@@ -802,11 +789,11 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
   for (int32_t imat = 0; imat < inummats; imat++) {
     const lev2::GfxMaterial* pmat = mdl->GetMaterial(imat);
-    auto matclass = pmat->GetClass();
-    auto& writeranno = matclass->annotation("xgm.writer");
+    auto matclass                 = pmat->GetClass();
+    auto& writeranno              = matclass->annotation("xgm.writer");
 
     HeaderStream->AddItem(imat);
-    istring = chunkwriter.GetStringIndex(pmat->GetName().c_str());
+    istring = chunkwriter.stringIndex(pmat->GetName().c_str());
     HeaderStream->AddItem(istring);
 
     rtti::Class* pclass         = pmat->GetClass();
@@ -814,37 +801,35 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
     const char* pclassname      = classname.c_str();
 
     printf("WriteXgm<%s> material<%d> class<%s> name<%s>\n", Filename.c_str(), imat, pclassname, pmat->GetName().c_str());
-    istring = chunkwriter.GetStringIndex(classname.c_str());
+    istring = chunkwriter.stringIndex(classname.c_str());
     HeaderStream->AddItem(istring);
 
     printf("Material Name<%s> Class<%s>\n", pmat->GetName().c_str(), classname.c_str());
 
-
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     // new style material writer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-    if( auto as_writer = writeranno.TryAs<chunkfile::materialwriter_t>()){
-      chunkfile::XgmMaterialWriterContext mtlwctx;
-      mtlwctx._chunkwriter = & chunkwriter;
-      mtlwctx._material = pmat;
+    if (auto as_writer = writeranno.TryAs<chunkfile::materialwriter_t>()) {
+      chunkfile::XgmMaterialWriterContext mtlwctx(chunkwriter);
+      mtlwctx._material     = pmat;
       mtlwctx._outputStream = HeaderStream;
-      auto& writer = as_writer.value();
+      auto& writer          = as_writer.value();
       writer(mtlwctx);
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     // basic materials (fixed, simple materials
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     else if (pmat->GetClass()->IsSubclassOf(lev2::GfxMaterialWiiBasic::GetClassStatic())) {
-      const lev2::GfxMaterialWiiBasic* pbasmat = rtti::safe_downcast<const lev2::GfxMaterialWiiBasic*>(pmat);
-      istring                                  = chunkwriter.GetStringIndex(pbasmat->GetBasicTechName().c_str());
+      auto pbasmat = rtti::safe_downcast<const lev2::GfxMaterialWiiBasic*>(pmat);
+      istring                                  = chunkwriter.stringIndex(pbasmat->GetBasicTechName().c_str());
       HeaderStream->AddItem(istring);
 
-      lev2::EBlending eblend = pbasmat->mRasterState.GetBlending();
+      lev2::EBlending eblend = pbasmat->_rasterstate.GetBlending();
 
       PropTypeString BlendModeString;
       PropType<lev2::EBlending>::ToString(eblend, BlendModeString);
 
-      istring = chunkwriter.GetStringIndex(BlendModeString.c_str());
+      istring = chunkwriter.stringIndex(BlendModeString.c_str());
       HeaderStream->AddItem(istring);
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -923,9 +908,9 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
           }
 
           HeaderStream->AddItem(int32_t(etype));
-          istring = chunkwriter.GetStringIndex(paramname.c_str());
+          istring = chunkwriter.stringIndex(paramname.c_str());
           HeaderStream->AddItem(istring);
-          istring = chunkwriter.GetStringIndex(valstr.c_str());
+          istring = chunkwriter.stringIndex(valstr.c_str());
           HeaderStream->AddItem(istring);
         }
       }
@@ -963,9 +948,9 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
         // orkprintf( " WRITING slot<%s> texname<%s>\n", tstr.c_str(), TexName.c_str() );
       }
 
-      istring = chunkwriter.GetStringIndex(TexDest.c_str());
+      istring = chunkwriter.stringIndex(TexDest.c_str());
       HeaderStream->AddItem(istring);
-      istring = chunkwriter.GetStringIndex(TexName.c_str());
+      istring = chunkwriter.stringIndex(TexName.c_str());
       HeaderStream->AddItem(istring);
       HeaderStream->AddItem(TexCtx.mfRepeatU);
       HeaderStream->AddItem(TexCtx.mfRepeatV);
@@ -978,7 +963,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
     int32_t inumsubmeshes = Mesh.GetNumSubMeshes();
 
     HeaderStream->AddItem(imesh);
-    istring = chunkwriter.GetStringIndex(Mesh.GetMeshName().c_str());
+    istring = chunkwriter.stringIndex(Mesh.GetMeshName().c_str());
     HeaderStream->AddItem(istring);
     HeaderStream->AddItem(inumsubmeshes);
 
@@ -1010,11 +995,11 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
       printf("WriteXgm<%s>  submesh<%d> numenaclus<%d>\n", Filename.c_str(), ics, inumenabledclus);
       ////////////////////////////////////////////////////////////
-      istring = chunkwriter.GetStringIndex(pmat ? pmat->GetName().c_str() : "None");
+      istring = chunkwriter.stringIndex(pmat ? pmat->GetName().c_str() : "None");
       HeaderStream->AddItem(istring);
       ////////////////////////////////////////////////////////////
       const file::Path& LightMapPath = CS.mLightMapPath;
-      istring                        = chunkwriter.GetStringIndex(LightMapPath.c_str());
+      istring                        = chunkwriter.stringIndex(LightMapPath.c_str());
       HeaderStream->AddItem(istring);
       ////////////////////////////////////////////////////////////
       int32_t ivtxlitflg = 0;
@@ -1052,7 +1037,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
           HeaderStream->AddItem(inumpg);
           HeaderStream->AddItem(inumjb);
 
-          istring = chunkwriter.GetStringIndex(VertexFmt.c_str());
+          istring = chunkwriter.stringIndex(VertexFmt.c_str());
           HeaderStream->AddItem(istring);
           HeaderStream->AddItem(ivbufoffset);
           HeaderStream->AddItem(VB->GetNumVertices());
@@ -1078,7 +1063,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
           printf("WritePG<%d> NumIndices<%d>\n", ipg, inumidx);
 
           HeaderStream->AddItem(ipg);
-          istring = chunkwriter.GetStringIndex(PrimType.c_str());
+          istring = chunkwriter.stringIndex(PrimType.c_str());
           HeaderStream->AddItem(istring);
           HeaderStream->AddItem(inumidx);
           HeaderStream->AddItem(ModelDataStream->GetSize());
@@ -1104,7 +1089,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
         for (int32_t ij = 0; ij < inumjb; ij++) {
           const PoolString& bound = Clus.GetJointBinding(ij);
           HeaderStream->AddItem(ij);
-          istring = chunkwriter.GetStringIndex(bound.c_str());
+          istring = chunkwriter.stringIndex(bound.c_str());
           HeaderStream->AddItem(istring);
         }
       }
@@ -1131,5 +1116,3 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }} // namespace ork::lev2
-
-template class ork::chunkfile::Reader<ork::lev2::ModelLoadAllocator>;

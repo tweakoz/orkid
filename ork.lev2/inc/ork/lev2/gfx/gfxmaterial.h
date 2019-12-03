@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/gfxrasterstate.h>
+#include <ork/kernel/varmap.inl>
 
 namespace ork {
 
@@ -160,7 +161,7 @@ struct GfxMaterial : public ork::Object
 
 	//////////////////////////////////////////////////////////////////////////////
 
-	SRasterState							mRasterState;
+	SRasterState							_rasterstate;
 
 	int										miNumPasses;		///< Number Of Render Passes in this Material (platform specific)
 	PoolString								mMaterialName;
@@ -172,7 +173,7 @@ struct GfxMaterial : public ork::Object
 	std::stack<bool>						mDebug;
 	bool _doinit = true;
 
-	std::map<std::string,svar64_t>          _properties;
+	ork::varmap::VarMap                    _varmap;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -184,26 +185,30 @@ bool LoadMaterialMap( const ork::file::Path& pth, MaterialMap& mmap );
 
 namespace chunkfile {
 
-  //class Reader;
+  struct Reader;
   class Writer;
   class OutputStream;
   class InputStream;
 
   struct XgmMaterialWriterContext {
+    XgmMaterialWriterContext(Writer& w);
     OutputStream* _outputStream = nullptr;
     const ork::lev2::GfxMaterial* _material = nullptr;
-    Writer* _chunkwriter = nullptr;
+    Writer& _writer;
+   	ork::varmap::VarMap _varmap;
   };
   struct XgmMaterialReaderContext {
+    XgmMaterialReaderContext(Reader& r);
     InputStream* _inputStream = nullptr;
     ork::lev2::GfxMaterial* _material = nullptr;
-    //Reader* _chunkReader = nullptr;
+    Reader& _reader;
+   	ork::varmap::VarMap _varmap;
   };
 
   typedef std::function<ork::lev2::GfxMaterial*(XgmMaterialReaderContext& ctx)> materialreader_t;
   typedef std::function<void(XgmMaterialWriterContext& ctx)> materialwriter_t;
 
-};
+} // namespace chunkfile
 
 }
 

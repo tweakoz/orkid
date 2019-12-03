@@ -557,7 +557,7 @@ void XgmModel::RenderSkinned(const XgmModelInst* minst,
 
   if (0) {
     pTARG->PushModColor(ModColor);
-    GfxEnv::GetDefault3DMaterial()->mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+    GfxEnv::GetDefault3DMaterial()->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     pTARG->BindMaterial(GfxEnv::GetDefault3DMaterial());
     {
       int inumbones             = RefSkel().GetNumBones();

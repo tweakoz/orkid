@@ -142,12 +142,12 @@ struct FreestyleMaterial : public GfxMaterial {
 ///////////////////////////////////////////////////////////////////////////////
 
 inline FreestyleMaterial::FreestyleMaterial() {
-  mRasterState.SetShadeModel(ESHADEMODEL_SMOOTH);
-  mRasterState.SetAlphaTest(EALPHATEST_OFF);
-  mRasterState.SetBlending(EBLENDING_OFF);
-  mRasterState.SetDepthTest(EDEPTHTEST_LEQUALS);
-  mRasterState.SetZWriteMask(true);
-  mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
+  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
+  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
+  _rasterstate.SetBlending(EBLENDING_OFF);
+  _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+  _rasterstate.SetZWriteMask(true);
+  _rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
   miNumPasses = 1;
 }
 
@@ -185,7 +185,7 @@ inline void FreestyleMaterial::begin(const RenderContextFrameData& RCFD) {
 
   RenderContextInstData RCID(RCFD);
   int npasses = fxi->BeginBlock(_shader, RCID);
-  rsi->BindRasterState(mRasterState);
+  rsi->BindRasterState(_rasterstate);
   fxi->BindPass(_shader, 0);
 }
 inline void FreestyleMaterial::end(const RenderContextFrameData& RCFD) {

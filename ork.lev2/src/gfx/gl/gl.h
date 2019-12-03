@@ -31,6 +31,7 @@
 #include <ork/kernel/concurrent_queue.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/texman.h>
+#include <ork/file/chunkfile.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -284,7 +285,8 @@ struct GlTexLoadReq {
   Texture* ptex;
   dxt::DDS_HEADER* ddsh;
   GLTextureObject* pTEXOBJ;
-  File* pTEXFILE;
+  std::string _texname;
+  chunkfile::InputStream _inpstream;
 };
 
 class GlTextureInterface : public TextureInterface {
@@ -293,6 +295,7 @@ public:
 
   void LoadDDSTextureMainThreadPart(const GlTexLoadReq& req);
   bool LoadDDSTexture(const AssetPath& fname, Texture* ptex);
+  bool LoadDDSTexture(Texture* ptex, chunkfile::InputStream inpstream);
   bool LoadVDSTexture(const AssetPath& fname, Texture* ptex);
   bool LoadQTZTexture(const AssetPath& fname, Texture* ptex);
 
@@ -301,6 +304,7 @@ public:
   GlTextureInterface(GfxTargetGL& tgt);
 
 private:
+  bool LoadTexture(Texture* ptex, chunkfile::InputStream& inpstream) final;
   bool DestroyTexture(Texture* ptex) final;
   bool LoadTexture(const AssetPath& fname, Texture* ptex) final;
   void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final;

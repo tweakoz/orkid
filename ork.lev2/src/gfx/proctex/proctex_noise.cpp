@@ -93,11 +93,11 @@ void Octaves::compute( ProcTex& ptex )
 	if(conplug)
 	{
 		mOctMaterial.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
-		mOctMaterial.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
-		mOctMaterial.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-		mOctMaterial.mRasterState.SetBlending( ork::lev2::EBLENDING_ADDITIVE );
-		mOctMaterial.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-		mOctMaterial.mRasterState.SetZWriteMask( false );
+		mOctMaterial._rasterstate.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
+		mOctMaterial._rasterstate.SetCullTest( ork::lev2::ECULLTEST_OFF );
+		mOctMaterial._rasterstate.SetBlending( ork::lev2::EBLENDING_ADDITIVE );
+		mOctMaterial._rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+		mOctMaterial._rasterstate.SetZWriteMask( false );
 
 		auto inptex = conplug->GetValue().GetTexture(ptex);
 
@@ -411,10 +411,10 @@ void Cells::compute( ProcTex& ptex )
 			, wrapv( 0.0f, float(idimV), 0.0f )
 		{
 			stdmat.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR );
-			stdmat.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
-			stdmat.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-			stdmat.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
-			stdmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+			stdmat._rasterstate.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
+			stdmat._rasterstate.SetCullTest( ork::lev2::ECULLTEST_OFF );
+			stdmat._rasterstate.SetBlending( ork::lev2::EBLENDING_OFF );
+			stdmat._rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 			stdmat.SetUser0( fvec4(0.0f,0.0f,0.0f,float(bo.miW)) );
 
 			mOrthoBoxXYWH = fvec4( 0.0f, 0.0f, float(idimU), float(idimV) );

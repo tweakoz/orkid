@@ -327,10 +327,10 @@ void ImgModule::UpdateThumb( ProcTex& ptex )
 	fbi->PushRtGroup(mThumbBuffer.GetRtGroup(pTARG));
 	GfxMaterial3DSolid gridmat( pTARG, "orkshader://proctex", "ttex" );
 	gridmat.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
-	gridmat.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
-	gridmat.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-	gridmat.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
-	gridmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+	gridmat._rasterstate.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
+	gridmat._rasterstate.SetCullTest( ork::lev2::ECULLTEST_OFF );
+	gridmat._rasterstate.SetBlending( ork::lev2::EBLENDING_OFF );
+	gridmat._rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 	gridmat.SetTexture( ptexture );
 	gridmat.SetUser0( fvec4(0.0f,0.0f,0.0f,float(wrbuf.miW)) );
 	pTARG->BindMaterial( & gridmat );
@@ -620,10 +620,10 @@ AA16Render::AA16Render( ProcTex& ptx, Buffer& bo )
 	, downsamplemat( ork::lev2::GfxEnv::GetRef().GetLoaderTarget(), "orkshader://proctex", "downsample16" )
 {
 	downsamplemat.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
-	downsamplemat.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
-	downsamplemat.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-	downsamplemat.mRasterState.SetBlending( ork::lev2::EBLENDING_ADDITIVE );
-	downsamplemat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+	downsamplemat._rasterstate.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
+	downsamplemat._rasterstate.SetCullTest( ork::lev2::ECULLTEST_OFF );
+	downsamplemat._rasterstate.SetBlending( ork::lev2::EBLENDING_ADDITIVE );
+	downsamplemat._rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 	downsamplemat.SetUser0( fvec4(0.0f,0.0f,0.0f,float(bo.miW)) );
 }
 

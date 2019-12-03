@@ -174,7 +174,7 @@ void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, line
     auto cam_z = pcamdata->_camdat.zNormal();
 
     static GfxMaterial3DSolid material(ptarg);
-    material.mRasterState.SetZWriteMask(true);
+    material._rasterstate.SetZWriteMask(true);
     material.SetColorMode(GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
     ptarg->BindMaterial(&material);
     ptarg->PushModColor(fvec4::White());

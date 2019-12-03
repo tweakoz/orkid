@@ -76,9 +76,9 @@ void CompositingMaterial::Init(lev2::GfxTarget* pTarg) {
     hTekBsolo = fxi->technique(hModFX, "Bsolo");
     hTekCsolo = fxi->technique(hModFX, "Csolo");
 
-    mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-    mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_OFF);
+    _rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+    _rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+    _rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_OFF);
   }
 }
 /////////////////////////////////////////////////
@@ -106,7 +106,7 @@ void CompositingMaterial::SetTechnique(const std::string& tek) {
 bool CompositingMaterial::BeginPass(lev2::GfxTarget* pTarg, int iPass) {
   // printf("CompositorMtl draw\n");
 
-  pTarg->RSI()->BindRasterState(mRasterState);
+  pTarg->RSI()->BindRasterState(_rasterstate);
   pTarg->FXI()->BindPass(hModFX, iPass);
   pTarg->FXI()->BindParamMatrix(hModFX, hMatMVP, pTarg->MTXI()->RefMVPMatrix());
 

@@ -67,7 +67,7 @@ public:
 
 	Writer( const char* file_type );
 	OutputStream* AddStream( std::string stream_name );
-	int GetStringIndex( const char* pstr );
+	int stringIndex( const char* pstr );
 	void WriteToFile( const file::Path& outpath );
 
 	////////////////////////////////////////////////////////////////////////////////////
@@ -98,31 +98,44 @@ struct InputStream
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename Allocator> class Reader
-{
-	static const int kmaxstreams = 16;
-	InputStream mStreamBank[kmaxstreams];
-	typedef ork::fixedlut<ork::PoolString,InputStream*,kmaxstreams> StreamLut;
+struct ILoadAllocator { //////////////////////////////
+  virtual ~ILoadAllocator() {}
+  virtual void* alloc(const char* pchkname, int ilen) = 0;
+  virtual void done(const char* pchkname, void* pdata) = 0;
+};
 
-	Allocator mAllocator;
+struct DefaultLoadAllocator : public ILoadAllocator { //////////////////////////////
+  inline void* alloc(const char* pchkname, int ilen) final {
+    return  malloc(ilen);
+  }
+  inline void done(const char* pchkname, void* pdata) final {
+    free(pdata);
+  }
+};
 
-public:
+///////////////////////////////////////////////////////////////////////////////
 
-	Reader( const file::Path& inpath, const char* ptype );
-	~Reader();
+struct Reader {
+
+  Reader( const file::Path& inpath, const char* ptype, ILoadAllocator& allocator );
+  ~Reader();
 
 	InputStream* GetStream( const char* streamname );
 	const char* GetString( int index );
 
 	bool IsOk() const { return mbOk; }
 
-private:
+	static const int kmaxstreams = 16;
+	InputStream mStreamBank[kmaxstreams];
+	typedef ork::fixedlut<ork::PoolString,InputStream*,kmaxstreams> StreamLut;
+
 
 	int	mistrtablen;
 	const char* mpstrtab;
 	bool mbOk;
 
 	StreamLut mInputStreams;
+	ILoadAllocator& _allocator;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -70,12 +70,12 @@ public:
 };
 
 inline PBRMaterial::PBRMaterial() {
-  mRasterState.SetShadeModel(ESHADEMODEL_SMOOTH);
-  mRasterState.SetAlphaTest(EALPHATEST_OFF);
-  mRasterState.SetBlending(EBLENDING_OFF);
-  mRasterState.SetDepthTest(EDEPTHTEST_LEQUALS);
-  mRasterState.SetZWriteMask(true);
-  mRasterState.SetCullTest(ECULLTEST_PASS_FRONT);
+  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
+  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
+  _rasterstate.SetBlending(EBLENDING_OFF);
+  _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+  _rasterstate.SetZWriteMask(true);
+  _rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
   miNumPasses = 1;
 
 }
@@ -117,7 +117,7 @@ inline bool PBRMaterial::BeginPass(GfxTarget* targ, int iPass) {
                * mcams->_pmatrix;
     fxi->BindParamMatrix(_shader, _paramMVP, MVP);
   }
-  rsi->BindRasterState(mRasterState);
+  rsi->BindRasterState(_rasterstate);
   fxi->CommitParams();
   return true;
 }

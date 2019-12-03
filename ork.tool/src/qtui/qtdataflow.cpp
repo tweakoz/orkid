@@ -194,9 +194,9 @@ void GraphVP::draw_connections(GfxTarget* pTARG) {
       vw.UnLock(pTARG);
       mGridMaterial.SetTexture(mpArrowTex);
       mGridMaterial.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
-      mGridMaterial.mRasterState.SetDepthTest(lev2::EDEPTHTEST_OFF);
-      mGridMaterial.mRasterState.SetAlphaTest(EALPHATEST_OFF, 0.0f);
-      mGridMaterial.mRasterState.SetBlending(lev2::EBLENDING_OFF);
+      mGridMaterial._rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
+      mGridMaterial._rasterstate.SetAlphaTest(EALPHATEST_OFF, 0.0f);
+      mGridMaterial._rasterstate.SetBlending(lev2::EBLENDING_OFF);
       pTARG->BindMaterial(&mGridMaterial);
       pTARG->GBI()->DrawPrimitive(vw, EPRIM_TRIANGLES, ivcount);
     }
@@ -270,9 +270,9 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
   float fwd2 = fw * 0.5f;
   float fhd2 = fh * 0.5f;
 
-  mGridMaterial.mRasterState.SetDepthTest(lev2::EDEPTHTEST_OFF);
-  mGridMaterial.mRasterState.SetAlphaTest(EALPHATEST_GREATER, 0.0f);
-  //	mGridMaterial.mRasterState.SetAlphaTest( EALPHATEST_OFF, 0.0f );
+  mGridMaterial._rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
+  mGridMaterial._rasterstate.SetAlphaTest(EALPHATEST_GREATER, 0.0f);
+  //	mGridMaterial._rasterstate.SetAlphaTest( EALPHATEST_OFF, 0.0f );
 
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
@@ -331,7 +331,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
         mGridMaterial.SetColorMode(is_pick ? lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR
                                            : lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
 
-        mGridMaterial.mRasterState.SetBlending(lev2::EBLENDING_OFF);
+        mGridMaterial._rasterstate.SetBlending(lev2::EBLENDING_OFF);
 
         tgt->BindMaterial(&mGridMaterial);
 
@@ -423,7 +423,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
           do_blend &= (false == is_pick);
 
           auto blend_mode = do_blend ? lev2::EBLENDING_ALPHA : lev2::EBLENDING_OFF;
-          mGridMaterial.mRasterState.SetBlending(blend_mode);
+          mGridMaterial._rasterstate.SetBlending(blend_mode);
           mGridMaterial.SetTexture(picon);
 
           //////////////////////

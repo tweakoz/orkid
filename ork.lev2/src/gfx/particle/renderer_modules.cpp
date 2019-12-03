@@ -577,7 +577,7 @@ void SpriteRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& 
 				bound_mtl->SetUser1( user1 );
 				bound_mtl->SetUser2( user2 );
 
-				bound_mtl->mRasterState.SetBlending( meBlendMode );
+				bound_mtl->_rasterstate.SetBlending( meBlendMode );
 				targ->MTXI()->PushMMatrix(MatScale*mtx);
 				targ->GBI()->DrawPrimitive( vw, ork::lev2::EPRIM_POINTS, ivertexlockcount );
 				mpVB = 0;
@@ -757,12 +757,12 @@ void StreakRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& 
 		targ->BindMaterial( mpMaterial );
 		mpMaterial->SetUser0(mAlphaMux);
 		mpMaterial->SetColorMode( ork::lev2::GfxMaterial3DSolid::EMODE_USER );
-		mpMaterial->mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_GREATER, 0.0f );
-		mpMaterial->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_LEQUALS );
-		mpMaterial->mRasterState.SetBlending( meBlendMode );
-		mpMaterial->mRasterState.SetZWriteMask( false );
-		mpMaterial->mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-		mpMaterial->mRasterState.SetPointSize( 32.0f );
+		mpMaterial->_rasterstate.SetAlphaTest( ork::lev2::EALPHATEST_GREATER, 0.0f );
+		mpMaterial->_rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_LEQUALS );
+		mpMaterial->_rasterstate.SetBlending( meBlendMode );
+		mpMaterial->_rasterstate.SetZWriteMask( false );
+		mpMaterial->_rasterstate.SetCullTest( ork::lev2::ECULLTEST_OFF );
+		mpMaterial->_rasterstate.SetPointSize( 32.0f );
 		mpMaterial->SetTexture( GetTexture() );
 		//////////////////////////////////////////
 		// Draw Particles
@@ -1010,11 +1010,11 @@ lev2::GfxMaterial* TextureMaterial::Bind( lev2::GfxTarget* pT )
 
 	mpMaterial->SetTexture( GetTexture() );
 	mpMaterial->SetColorMode( ork::lev2::GfxMaterial3DSolid::EMODE_USER );
-	mpMaterial->mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_GREATER, 0.0f );
-	mpMaterial->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_LEQUALS );
-	mpMaterial->mRasterState.SetZWriteMask( false );
-	mpMaterial->mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-	mpMaterial->mRasterState.SetPointSize( 32.0f );
+	mpMaterial->_rasterstate.SetAlphaTest( ork::lev2::EALPHATEST_GREATER, 0.0f );
+	mpMaterial->_rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_LEQUALS );
+	mpMaterial->_rasterstate.SetZWriteMask( false );
+	mpMaterial->_rasterstate.SetCullTest( ork::lev2::ECULLTEST_OFF );
+	mpMaterial->_rasterstate.SetPointSize( 32.0f );
 	pT->BindMaterial(mpMaterial);
 
 	return mpMaterial;
@@ -1068,11 +1068,11 @@ lev2::GfxMaterial* VolTexMaterial::Bind( lev2::GfxTarget* pT )
 
 	mpMaterial->SetVolumeTexture( GetTexture() );
 	mpMaterial->SetColorMode( ork::lev2::GfxMaterial3DSolid::EMODE_USER );
-	mpMaterial->mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_GREATER, 0.0f );
-	mpMaterial->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_LEQUALS );
-	mpMaterial->mRasterState.SetZWriteMask( false );
-	mpMaterial->mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-	mpMaterial->mRasterState.SetPointSize( 32.0f );
+	mpMaterial->_rasterstate.SetAlphaTest( ork::lev2::EALPHATEST_GREATER, 0.0f );
+	mpMaterial->_rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_LEQUALS );
+	mpMaterial->_rasterstate.SetZWriteMask( false );
+	mpMaterial->_rasterstate.SetCullTest( ork::lev2::ECULLTEST_OFF );
+	mpMaterial->_rasterstate.SetPointSize( 32.0f );
 	pT->BindMaterial(mpMaterial);
 
 	return mpMaterial;

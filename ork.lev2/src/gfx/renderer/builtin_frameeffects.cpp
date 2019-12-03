@@ -376,9 +376,9 @@ bool BuiltinFrameEffectMaterial::BeginPass( GfxTarget* pTarg,int iPass )
 	auto fbi = pTarg->FBI();
 	auto mxi = pTarg->MTXI();
 
-	mRasterState.SetCullTest( ECULLTEST_OFF );
+	_rasterstate.SetCullTest( ECULLTEST_OFF );
 	///////////////////////////////
-	rsi->BindRasterState( mRasterState );
+	rsi->BindRasterState( _rasterstate );
 	///////////////////////////////
 
 	F32 fVPW = (F32) fbi->GetVPW();
@@ -552,7 +552,7 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 					fvec4 clr1(0.0f,0.0f,0.0f,fatten);
 					mUtilMaterial.SetTexture( mpRadialMap );
 					mUtilMaterial.SetColorMode( GfxMaterial3DSolid::EMODE_USER );
-					mUtilMaterial.mRasterState.SetBlending( EBLENDING_ALPHA );
+					mUtilMaterial._rasterstate.SetBlending( EBLENDING_ALPHA );
 					pTARG->FBI()->GetThisBuffer()->RenderMatOrthoQuad( vprect, quadrect, & mUtilMaterial, 0.0f, 0.0f, 1.0f, 1.0f, 0, clr1 );
 
 					////////////////////////////////////////////////////
@@ -575,7 +575,7 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 							//mFBinMaterial.SetTexture2( mpRadialMap );
 							mFBinMaterial.SetTexture2( mpFbUvMap );
 							mFBinMaterial.SetColorMode( GfxMaterial3DSolid::EMODE_USER );
-							mFBinMaterial.mRasterState.SetBlending( EBLENDING_ADDITIVE );
+							mFBinMaterial._rasterstate.SetBlending( EBLENDING_ADDITIVE );
                             auto thisbuf = pTARG->FBI()->GetThisBuffer();
 							thisbuf->RenderMatOrthoQuad( vprect,
                                                          quadrect,
@@ -638,7 +638,7 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 
 
 				mFBoutMaterial.BindRtGroups( rtgroupFBINP, 0 );
-				mFBoutMaterial.mRasterState.SetBlending( EBLENDING_OFF );
+				mFBoutMaterial._rasterstate.SetBlending( EBLENDING_OFF );
 				pTARG->FBI()->PushRtGroup( rtgroupFBOUT );
 				pTARG->GBI()->BeginFrame( );
 				{

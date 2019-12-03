@@ -108,7 +108,7 @@ bool NAVOutput( const file::Path& outpath, const toolmesh& inmesh )
 		submesh *group = it->second;
 
 		std::string materialname = materialnames.find(group->name)->second;
-		int gname = chunkwriter.GetStringIndex(materialname.c_str());
+		int gname = chunkwriter.stringIndex(materialname.c_str());
 		DataStream->AddItem(gname);
 
 		fprintf(fdbgout, "Group<%d, %s>\n", gname, materialname.c_str());
@@ -129,8 +129,8 @@ bool NAVOutput( const file::Path& outpath, const toolmesh& inmesh )
 		{
 			fprintf(fdbgout, "Attr<%d> %s=%s\n", num, it->first.c_str(), it->second.c_str());
 
-			int name = chunkwriter.GetStringIndex(it->first.c_str());
-			int value = chunkwriter.GetStringIndex(it->second.c_str());
+			int name = chunkwriter.stringIndex(it->first.c_str());
+			int value = chunkwriter.stringIndex(it->second.c_str());
 			DataStream->AddItem(name);
 			DataStream->AddItem(value);
 		}
@@ -242,7 +242,7 @@ bool NAVOutput( const file::Path& outpath, const toolmesh& inmesh )
 			if(submesh *group = inmesh.RefPolyGroupByPolyIndex()[it])
 			{
 				std::string materialname = materialnames.find(group->name)->second;
-				int igroup = chunkwriter.GetStringIndex(materialname.c_str());
+				int igroup = chunkwriter.stringIndex(materialname.c_str());
 				ntri.mGroup = igroup;
 			}
 		}
