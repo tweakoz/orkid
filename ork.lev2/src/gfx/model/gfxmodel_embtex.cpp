@@ -59,14 +59,14 @@ void EmbeddedTexture::fetchDDSdata() {
   basehasher.accumulate(_srcdata, _srcdatalen);
   basehasher.finish();
   uint64_t hashkey = basehasher.result();
-  _ddsdatablock    = DataBlockMgr::findDataBlock(hashkey);
+  _ddsdestdatablock    = DataBlockMgr::findDataBlock(hashkey);
 
-  if (_ddsdatablock) {
-    const auto& str = _ddsdatablock->_data;
+  if (_ddsdestdatablock) {
+    const auto& str = _ddsdestdatablock->_data;
     chunkfile::InputStream istr(str.GetData(), str.GetSize());
   } else {
-    _ddsdatablock = compressTexture(hashkey);
-    DataBlockMgr::setDataBlock(hashkey, _ddsdatablock);
+    _ddsdestdatablock = compressTexture(hashkey);
+    DataBlockMgr::setDataBlock(hashkey, _ddsdestdatablock);
   }
 }
 

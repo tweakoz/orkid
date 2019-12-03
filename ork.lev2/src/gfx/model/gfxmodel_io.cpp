@@ -47,38 +47,13 @@ struct ModelLoadAllocator { //////////////////////////////
   // per chunk allocation policy
   //////////////////////////////
   void* alloc(const char* pchkname, int ilen) {
-    void* pmem = 0;
-#if defined(WII)
-    // static void* pmodeldatabuffer = wii::MEM2StackedAlloc(kmaxbuf);
-    if (0 == strcmp(pchkname, "header"))
-      pmem = new char[ilen];
-    else if (0 == strcmp(pchkname, "modeldata"))
-      pmem = wii::LockSharedMem2Buf(ilen);
-#else
-    if (0 == strcmp(pchkname, "header"))
-      pmem = new char[ilen];
-    else if (0 == strcmp(pchkname, "modeldata"))
-      pmem = new char[ilen];
-#endif
-    return pmem;
+    return  malloc(ilen);
   }
   //////////////////////////////
   // per chunk deallocation policy
   //////////////////////////////
   void done(const char* pchkname, void* pdata) {
-    char* pch = (char*)pdata;
-
-    if (0 == strcmp(pchkname, "header")) {
-
-      delete[] pch;
-    } else if (0 == strcmp(pchkname, "modeldata")) {
-#if defined(WII)
-      wii::UnLockSharedMem2Buf();
-#else
-      delete[] pch;
-
-#endif
-    }
+    free(pdata);
   }
 };
 
@@ -152,6 +127,8 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
   if (chunkreader.IsOk()) {
     chunkfile::InputStream* HeaderStream    = chunkreader.GetStream("header");
     chunkfile::InputStream* ModelDataStream = chunkreader.GetStream("modeldata");
+    chunkfile::InputStream* EmbTexStream = chunkreader.GetStream("embtexmap");
+
     /////////////////////////////////////////////////////////
     mdl->msModelName = AddPooledString(Filename.c_str());
     /////////////////////////////////////////////////////////
@@ -224,6 +201,34 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
     HeaderStream->GetItem(inummats);
     ///////////////////////////////////
     mdl->mMeshes.reserve(inummeshes);
+    ///////////////////////////////////
+    // embedded textures
+    ///////////////////////////////////
+    if( EmbTexStream ){
+
+      auto& embtexmap = mdl->_varmap.makeValueForKey<embtexmap_t>("embtexmap");
+
+      size_t numembtex = 0;
+      EmbTexStream->GetItem(numembtex);
+      int itexname = 0;
+      for( size_t i=0; i<numembtex; i++ ){
+        EmbTexStream->GetItem(itexname);
+        auto texname = chunkreader.GetString(itexname);
+        size_t datasize = 0;
+        EmbTexStream->GetItem(datasize);
+        auto texturedata = EmbTexStream->GetCurrent();
+        auto texdatcopy = malloc(datasize);
+        memcpy(texdatcopy,texturedata,datasize);
+        EmbTexStream->advance(datasize);
+        auto embtex = new EmbeddedTexture;
+        embtex->_srcdata = texdatcopy;
+        embtex->_srcdatalen = datasize;
+        embtexmap[texname]=embtex;
+        printf( "embtex<%zu:%s> datasiz<%zu> dataptr<%p>\n", i, texname, datasize, texturedata );
+      }
+    }
+
+
     ///////////////////////////////////
     for (int imat = 0; imat < inummats; imat++) {
       int iimat = 0, imatname = 0, imatclass = 0;
@@ -397,9 +402,25 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
           }
         }
         // pmat->Init( pTARG );
-      } else // material class not supported in XGM
-      {
-        OrkAssert(false);
+      } else {
+
+        ///////////////////////////////////////////////////////////
+        // check xgm reader annotation
+        ///////////////////////////////////////////////////////////
+
+        auto anno = pmatclass->annotation("xgm.reader");
+        if( auto as_reader = anno.TryAs<chunkfile::materialreader_t>()){
+          auto& reader = as_reader.value();
+          chunkfile::XgmMaterialReaderContext ctx;
+          pmat = reader(ctx);
+        }
+        ///////////////////////////////////////////////////////////
+        // material class not supported in XGM
+        ///////////////////////////////////////////////////////////
+        else{
+          OrkAssert(false);
+        }
+
       }
 
       mdl->AddMaterial(pmat);
@@ -756,6 +777,29 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
   ParameterIgnoreSet.insert("uniformParameters");
   ParameterIgnoreSet.insert("varyingParameters");
 
+  ///////////////////////////////////////////////////////////////////////////////////////////
+  // embedded textures chunk
+  ///////////////////////////////////////////////////////////////////////////////////////////
+
+  if( auto as_embtexmap = mdl->_varmap.typedValueForKey<embtexmap_t>("embtexmap") ) {
+    auto& embtexmap = as_embtexmap.value();
+    auto textureStream = chunkwriter.AddStream("embtexmap");
+    textureStream->AddItem<size_t>(embtexmap.size());
+    for( auto item : embtexmap ){
+      std::string texname = item.first;
+      EmbeddedTexture* ptex = item.second;
+      int istring = chunkwriter.GetStringIndex(texname.c_str());
+      textureStream->AddItem<int>(istring);
+      auto ddsblock = ptex->_ddsdestdatablock;
+      size_t blocksize = ddsblock->_data.GetSize();
+      textureStream->AddItem<size_t>(blocksize);
+      const void* data = ddsblock->_data.GetData();
+      textureStream->AddData(data,blocksize);
+    }
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////////////////
+
   for (int32_t imat = 0; imat < inummats; imat++) {
     const lev2::GfxMaterial* pmat = mdl->GetMaterial(imat);
     auto matclass = pmat->GetClass();
@@ -774,6 +818,8 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
     HeaderStream->AddItem(istring);
 
     printf("Material Name<%s> Class<%s>\n", pmat->GetName().c_str(), classname.c_str());
+
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     // new style material writer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -784,7 +830,6 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
       mtlwctx._outputStream = HeaderStream;
       auto& writer = as_writer.value();
       writer(mtlwctx);
-      assert(false);
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     // basic materials (fixed, simple materials

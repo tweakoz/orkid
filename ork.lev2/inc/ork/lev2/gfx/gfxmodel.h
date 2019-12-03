@@ -56,7 +56,7 @@ struct EmbeddedTexture {
     const void* _srcdata = nullptr;
     std::string _format;
     std::string _name;
-    datablockptr_t _ddsdatablock;
+    datablockptr_t _ddsdestdatablock;
     datablockptr_t compressTexture(uint64_t hash) const;
     void fetchDDSdata();
 };

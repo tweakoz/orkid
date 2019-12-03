@@ -58,8 +58,6 @@ void PBRMaterial::describeX(class_t* c) {
       int istring = ctx._chunkwriter->GetStringIndex(pbrmtl->_textureBaseName.c_str());
       ctx._outputStream->AddItem(istring);
 
-      auto textureStream  = ctx._chunkwriter->AddStream("texture");
-
       auto dotex = [&](std::string channelname, std::string texname){
         if( texname.length() ) {
           istring = ctx._chunkwriter->GetStringIndex(channelname.c_str());
@@ -68,14 +66,17 @@ void PBRMaterial::describeX(class_t* c) {
           ctx._outputStream->AddItem(istring);
         }
       };
+      istring = ctx._chunkwriter->GetStringIndex("begintextures");
+      ctx._outputStream->AddItem(istring);
       dotex( "colormap", pbrmtl->_colorMapName );
       dotex( "normalmap", pbrmtl->_normalMapName );
       dotex( "amboccmap", pbrmtl->_amboccMapName );
       dotex( "emissivemap", pbrmtl->_emissiveMapName );
       dotex( "roughmap", pbrmtl->_roughMapName );
       dotex( "metalmap", pbrmtl->_metalMapName );
+      istring = ctx._chunkwriter->GetStringIndex("endtextures");
+      ctx._outputStream->AddItem(istring);
 
-      assert(false);
     };
     c->annotate("xgm.writer",writer);
     c->annotate("xgm.reader",reader);

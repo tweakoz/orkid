@@ -137,6 +137,7 @@ static void RegisterFilters() {
     AssetFilter::RegisterFilter("obj:obj", MeshUtil::OBJ_OBJ_Filter::DesignNameStatic().c_str());
     AssetFilter::RegisterFilter("obj:xgm", MeshUtil::OBJ_XGM_Filter::DesignNameStatic().c_str());
     AssetFilter::RegisterFilter("glb:xgm", MeshUtil::GLB_XGM_Filter::DesignNameStatic().c_str());
+    AssetFilter::RegisterFilter("gltf:xgm", MeshUtil::GLB_XGM_Filter::DesignNameStatic().c_str());
     AssetFilter::RegisterFilter("tga:dds", TGADDSFilter::DesignNameStatic().c_str());
     AssetFilter::RegisterFilter("png:dds", TGADDSFilter::DesignNameStatic().c_str());
     AssetFilter::RegisterFilter("fg3d", fg3dFilter::DesignNameStatic().c_str());

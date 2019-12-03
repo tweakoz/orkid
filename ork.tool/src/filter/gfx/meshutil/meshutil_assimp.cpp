@@ -78,7 +78,7 @@ typedef std::map<int, GltfMaterial*> gltfmaterialmap_t;
 void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& readopts) {
 
   ork::file::Path GlbPath = BasePath;
-  GlbPath.SetExtension("glb");
+  //GlbPath.SetExtension("glb");
 
   auto& embtexmap = _varmap.makeValueForKey<lev2::embtexmap_t>("embtexmap");
 
