@@ -4,10 +4,12 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <orktool/orktool_pch.h>
+#include <ork/file/cfs.inl>
 #include <ork/application/application.h>
 #include <ork/math/plane.h>
 #include <orktool/filter/gfx/meshutil/meshutil.h>
 #include <orktool/filter/filter.h>
+#include <ork/kernel/spawner.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 #include <assimp/cimport.h>
@@ -19,6 +21,8 @@
 #include <orktool/filter/gfx/collada/collada.h>
 #include <orktool/filter/gfx/meshutil/meshutil.h>
 #include <orktool/filter/gfx/meshutil/clusterizer.h>
+
+#include <ork/lev2/gfx/material_pbr.inl>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::MeshUtil::GLB_XGM_Filter, "GLB_XGM_Filter");
 
@@ -60,6 +64,11 @@ void get_bounding_box_for_node(const aiScene* scene, const aiNode* nd, aiVector3
 
 struct GltfMaterial {
   std::string _name;
+  std::string _metallicAndRoughnessMap;
+  std::string _colormap;
+  std::string _normalmap;
+  std::string _amboccmap;
+  std::string _emissivemap;
 };
 
 typedef std::map<int, GltfMaterial*> gltfmaterialmap_t;
@@ -70,6 +79,8 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
 
   ork::file::Path GlbPath = BasePath;
   GlbPath.SetExtension("glb");
+
+  auto& embtexmap = _varmap.makeValueForKey<lev2::embtexmap_t>("embtexmap");
 
   auto scene = aiImportFile(GlbPath.c_str(), aiProcessPreset_TargetRealtime_MaxQuality);
   if (scene) {
@@ -92,17 +103,24 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       auto texture        = scene->mTextures[i];
       std::string fmt     = (const char*)texture->achFormatHint;
       std::string texname = (const char*)texture->mFilename.data;
-      if (fmt == "png") {
+      bool embedded = false;
+      if( texname.length() == 0) {
+        texname = FormatString("*%d", i);
+        embedded = true;
+      }
+
+      auto embtex = new lev2::EmbeddedTexture;
+      embtex->_format = fmt;
+      embtex->_name = texname;
+
+      if (fmt == "png" or fmt=="jpg") {
         int filelen = texture->mWidth;
         auto data   = (const void*)texture->pcData;
-      } else if (fmt == "jpg") {
-        int filelen = texture->mWidth;
-        auto data   = (const void*)texture->pcData;
-      } else if (fmt == "rgba8888") {
-        int w                 = texture->mWidth;
-        int h                 = texture->mHeight;
-        const aiTexel* texels = texture->pcData;
-      } else if (fmt == "argb8888") {
+        embtex->_srcdatalen = filelen;
+        embtex->_srcdata = data;
+        embtex->fetchDDSdata();
+        embtexmap[texname] = embtex;
+      } else if (fmt == "rgba8888" or fmt=="argb8888") {
         int w                 = texture->mWidth;
         int h                 = texture->mHeight;
         const aiTexel* texels = texture->pcData;
@@ -124,12 +142,6 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       materialmap[i] = outmtl;
 
       std::string material_name;
-      std::string material_pbrmetalmap;
-      std::string material_pbrgoughmap;
-      std::string material_colormap;
-      std::string material_normalmap;
-      std::string material_amboccmap;
-      std::string material_emissivemap;
 
       aiColor4D color;
       aiString string;
@@ -150,29 +162,35 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_EMISSIVE, &color)) {
         printf("has_uniform_emissive\n");
       }
-      if (AI_SUCCESS == aiGetMaterialTexture(material, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE, &string)) {
-        material_pbrmetalmap = (const char*)string.data;
-        printf("has_pbr_metalmap\n");
+      if (AI_SUCCESS == material->GetTexture(aiTextureType_DIFFUSE, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
+        outmtl->_colormap = (const char*) string.data;
+        auto it = embtexmap.find(outmtl->_colormap);
+        auto tex = (it!=embtexmap.end()) ? it->second : (lev2::EmbeddedTexture*) nullptr;
+        printf("has_pbr_colormap<%s> tex<%p>\n", outmtl->_colormap.c_str(), tex );
       }
       if (AI_SUCCESS == aiGetMaterialTexture(material, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &string)) {
-        material_pbrgoughmap = (const char*)string.data;
-        printf("has_pbr_roughmap\n");
-      }
-      if (AI_SUCCESS == material->GetTexture(aiTextureType_DIFFUSE, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
-        material_colormap = (const char*)string.data;
-        printf("has_colormap\n");
+        outmtl->_metallicAndRoughnessMap = (const char*) string.data;
+        auto it = embtexmap.find(outmtl->_metallicAndRoughnessMap);
+        auto tex = (it!=embtexmap.end()) ? it->second : (lev2::EmbeddedTexture*) nullptr;
+        printf("has_pbr_MetallicAndRoughnessMap<%s> tex<%p>\n", outmtl->_metallicAndRoughnessMap.c_str(), tex );
       }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_NORMALS, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
-        material_normalmap = (const char*)string.data;
-        printf("has_normalmap\n");
+        outmtl->_normalmap = (const char*) string.data;
+        auto it = embtexmap.find(outmtl->_normalmap);
+        auto tex = (it!=embtexmap.end()) ? it->second : (lev2::EmbeddedTexture*) nullptr;
+        printf("has_pbr_normalmap<%s> tex<%p>\n", outmtl->_normalmap.c_str(), tex );
       }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_AMBIENT, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
-        material_amboccmap = (const char*)string.data;
-        printf("has_amboccmap\n");
+        outmtl->_amboccmap = (const char*) string.data;
+        auto it = embtexmap.find(outmtl->_amboccmap);
+        auto tex = (it!=embtexmap.end()) ? it->second : (lev2::EmbeddedTexture*) nullptr;
+        printf("has_pbr_amboccmap<%s> tex<%p>", outmtl->_amboccmap.c_str(), tex );
       }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_EMISSIVE, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
-        material_emissivemap = (const char*)string.data;
-        printf("has_emissivemap\n");
+        outmtl->_emissivemap = (const char*) string.data;
+        auto it = embtexmap.find(outmtl->_emissivemap);
+        auto tex = (it!=embtexmap.end()) ? it->second : (lev2::EmbeddedTexture*) nullptr;
+        printf("has_pbr_emissivemap<%s> tex<%p> \n", outmtl->_emissivemap.c_str(), tex );
       }
     }
 
@@ -284,6 +302,9 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(
     const toolmesh& inp_model,
     ork::lev2::XgmModel& out_model) {
 
+    auto& inp_embtexmap = inp_model._varmap.typedValueForKey<lev2::embtexmap_t>("embtexmap").value();
+    auto& out_embtexmap = out_model._varmap.makeValueForKey<lev2::embtexmap_t>("embtexmap") = inp_embtexmap;
+
     out_model.ReserveMeshes(inp_model.RefSubMeshLut().size());
     ork::lev2::XgmMesh* out_mesh = new ork::lev2::XgmMesh;
     out_mesh->ReserveSubMeshes(inp_model.RefSubMeshLut().size());
@@ -305,28 +326,41 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(
     
     mtl2submap_t mtlmap;
     mtl2mtlmap_t mtlmtlmap;
-    
+
+    int subindex = 0;
     for (auto item : inp_model.RefSubMeshLut()) {
+      subindex++;
       submesh* inp_submesh = item.second;
       auto out_submesh     = new ork::lev2::XgmSubMesh;
       //simpleToolSubMeshToXgmSubMesh(tmesh, *inp_submesh, *out_submesh);
       auto& mtlset = inp_submesh->typedAnnotation<std::set<int>>("materialset");
-      auto& mtlref = inp_submesh->typedAnnotation<GltfMaterial*>("gltfmaterial");
+      auto gltfmtl = inp_submesh->typedAnnotation<GltfMaterial*>("gltfmaterial");
       assert(mtlset.size()==1); // assimp does 1 material per submesh
-      
-      out_model.AddMaterial(out_submesh->mpMaterial);
+
+      auto mtlout = new ork::lev2::PBRMaterial();
+      mtlout->setTextureBaseName(FormatString("material%d",subindex));
+      mtlout->_colorMapName = gltfmtl->_colormap;
+      mtlout->_normalMapName = gltfmtl->_normalmap;
+      mtlout->_amboccMapName = gltfmtl->_amboccmap;
+      mtlout->_roughMapName = gltfmtl->_metallicAndRoughnessMap;
+      mtlout->_metalMapName = gltfmtl->_metallicAndRoughnessMap;
+      mtlout->_metalicRoughnessSingleTexture = true;
+
+
+      out_model.AddMaterial(mtlout);
       out_mesh->AddSubMesh(out_submesh);
+
       
       auto clusterizer = new ClusterizerType;
       ToolMaterialGroup* materialGroup = nullptr;
-      auto it = mtlmtlmap.find(mtlref);
+      auto it = mtlmtlmap.find(gltfmtl);
       if( it == mtlmtlmap.end() ){
         materialGroup = new ToolMaterialGroup;
         materialGroup->meMaterialClass = ToolMaterialGroup::EMATCLASS_PBR;
         materialGroup->SetClusterizer(clusterizer);
         materialGroup->mMeshConfigurationFlags.mbSkinned = false;
         materialGroup->meVtxFormat                       = VertexFormat;
-        mtlmtlmap[mtlref] = materialGroup;
+        mtlmtlmap[gltfmtl] = materialGroup;
       }
       else
         materialGroup = it->second;
@@ -353,7 +387,7 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(
       srec._toolsub = inp_submesh;
       srec._toolmgrp = materialGroup;
       srec._clusterizer = clusterizer;
-      mtlmap[mtlref].push_back(srec);
+      mtlmap[gltfmtl].push_back(srec);
 
       ///////////////////////////////////////
       
@@ -425,6 +459,7 @@ bool GLB_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
   ork::lev2::XgmModel xgmmdlout;
   clusterizeToolMeshToXgmMesh<XgmClusterizerStd>(tmesh,xgmmdlout);
   //assert(false);
-  return false;
+  bool rv = ork::lev2::SaveXGM( outf, & xgmmdlout );
+  return rv;
 }
 } // namespace ork::MeshUtil

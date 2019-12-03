@@ -110,7 +110,7 @@ template <> const fvec3 &outplug<fvec3>::GetValue() const {
 void floatinplug::Describe() {
   ork::reflect::RegisterProperty("value", &floatinplug::GetValAccessor,
                                  &floatinplug::SetValAccessor);
-  ork::reflect::AnnotatePropertyForEditor<floatinplug>(
+  ork::reflect::annotatePropertyForEditor<floatinplug>(
       "value", "editor.visible", "false");
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -121,7 +121,7 @@ template <> void floatinplugxf<floatxf>::Describe() {
 void vect3inplug::Describe() {
   ork::reflect::RegisterProperty("value", &vect3inplug::GetValAccessor,
                                  &vect3inplug::SetValAccessor);
-  ork::reflect::AnnotatePropertyForEditor<vect3inplug>(
+  ork::reflect::annotatePropertyForEditor<vect3inplug>(
       "value", "editor.visible", "false");
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -135,17 +135,17 @@ void modscabias::Describe() {
   ork::reflect::RegisterProperty("mod", &modscabias::mfMod);
   ork::reflect::RegisterProperty("scale", &modscabias::mfScale);
   ork::reflect::RegisterProperty("bias", &modscabias::mfBias);
-  ork::reflect::AnnotatePropertyForEditor<modscabias>("mod", "editor.range.min",
+  ork::reflect::annotatePropertyForEditor<modscabias>("mod", "editor.range.min",
                                                       "0.0f");
-  ork::reflect::AnnotatePropertyForEditor<modscabias>("mod", "editor.range.max",
+  ork::reflect::annotatePropertyForEditor<modscabias>("mod", "editor.range.max",
                                                       "16.0f");
-  ork::reflect::AnnotatePropertyForEditor<modscabias>(
+  ork::reflect::annotatePropertyForEditor<modscabias>(
       "scale", "editor.range.min", "-16.0f");
-  ork::reflect::AnnotatePropertyForEditor<modscabias>(
+  ork::reflect::annotatePropertyForEditor<modscabias>(
       "scale", "editor.range.max", "16.0f");
-  ork::reflect::AnnotatePropertyForEditor<modscabias>(
+  ork::reflect::annotatePropertyForEditor<modscabias>(
       "bias", "editor.range.min", "-16.0f");
-  ork::reflect::AnnotatePropertyForEditor<modscabias>(
+  ork::reflect::annotatePropertyForEditor<modscabias>(
       "bias", "editor.range.max", "16.0f");
 }
 void floatxfitembase::Describe() {}
@@ -164,7 +164,7 @@ void floatxfmsbcurve::Describe() {
 
   reflect::Description::anno_t annoval;
   annoval.Set<const char *>(EdGrpStr);
-  reflect::AnnotateClassForEditor<floatxfmsbcurve>("editor.prop.groups",
+  reflect::annotateClassForEditor<floatxfmsbcurve>("editor.prop.groups",
                                                    annoval);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -187,21 +187,21 @@ void floatxfmodstep::Describe() {
   ork::reflect::RegisterProperty("Step", &floatxfmodstep::miSteps);
   ork::reflect::RegisterProperty("OutputBias", &floatxfmodstep::mOutputBias);
   ork::reflect::RegisterProperty("OutputScale", &floatxfmodstep::mOutputScale);
-  ork::reflect::AnnotatePropertyForEditor<floatxfmodstep>(
+  ork::reflect::annotatePropertyForEditor<floatxfmodstep>(
       "Mod", "editor.range.min", "0.01f");
-  ork::reflect::AnnotatePropertyForEditor<floatxfmodstep>(
+  ork::reflect::annotatePropertyForEditor<floatxfmodstep>(
       "Mod", "editor.range.max", "16.0f");
-  ork::reflect::AnnotatePropertyForEditor<floatxfmodstep>(
+  ork::reflect::annotatePropertyForEditor<floatxfmodstep>(
       "Step", "editor.range.min", "1.0f");
-  ork::reflect::AnnotatePropertyForEditor<floatxfmodstep>(
+  ork::reflect::annotatePropertyForEditor<floatxfmodstep>(
       "Step", "editor.range.max", "128.0f");
-  ork::reflect::AnnotatePropertyForEditor<floatxfmodstep>(
+  ork::reflect::annotatePropertyForEditor<floatxfmodstep>(
       "OutputBias", "editor.range.min", "-16.0f");
-  ork::reflect::AnnotatePropertyForEditor<floatxfmodstep>(
+  ork::reflect::annotatePropertyForEditor<floatxfmodstep>(
       "OutputBias", "editor.range.max", "16.0f");
-  ork::reflect::AnnotatePropertyForEditor<floatxfmodstep>(
+  ork::reflect::annotatePropertyForEditor<floatxfmodstep>(
       "OutputScale", "editor.range.min", "-1600.0f");
-  ork::reflect::AnnotatePropertyForEditor<floatxfmodstep>(
+  ork::reflect::annotatePropertyForEditor<floatxfmodstep>(
       "OutputScale", "editor.range.max", "1600.0f");
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -222,9 +222,9 @@ floatxf::~floatxf() {}
 ///////////////////////////////////////////////////////////////////////////////
 void floatxf::Describe() {
   ork::reflect::RegisterMapProperty("Transforms", &floatxf::mTransforms);
-  ork::reflect::AnnotatePropertyForEditor<floatxf>(
+  ork::reflect::annotatePropertyForEditor<floatxf>(
       "Transforms", "editor.factorylistbase", "dflow/floatxfitembase");
-  ork::reflect::AnnotatePropertyForEditor<floatxf>(
+  ork::reflect::annotatePropertyForEditor<floatxf>(
       "Transforms", "editor.map.policy.impexp", "true");
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -517,7 +517,7 @@ it!=mDependencies.end(); it++ )
 ///////////////////////////////////////////////////////////////////////////////
 void dgmodule::Describe() {
   ork::reflect::RegisterProperty("mgvpos", &dgmodule::mgvpos);
-  ork::reflect::AnnotatePropertyForEditor<dgmodule>("mgvpos", "editor.visible",
+  ork::reflect::annotatePropertyForEditor<dgmodule>("mgvpos", "editor.visible",
                                                     "false");
 }
 ///////////////////////////////////////////////////////////////////////////////

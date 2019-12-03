@@ -65,8 +65,8 @@ SequenceCamArchetype::SequenceCamArchetype()
 void SequenceCamControllerData::Describe()
 {
 	ork::reflect::RegisterMapProperty( "CamItems", & SequenceCamControllerData::mItemDatas );
-	ork::reflect::AnnotatePropertyForEditor< SequenceCamControllerData >("CamItems", "editor.factorylistbase", "SeqCamItemDataBase" );
-	ork::reflect::AnnotatePropertyForEditor< SequenceCamControllerData >("CamItems", "editor.map.policy.impexp", "true" );
+	ork::reflect::annotatePropertyForEditor< SequenceCamControllerData >("CamItems", "editor.factorylistbase", "SeqCamItemDataBase" );
+	ork::reflect::annotatePropertyForEditor< SequenceCamControllerData >("CamItems", "editor.map.policy.impexp", "true" );
 
 	ork::reflect::RegisterProperty( "CurrentItem", & SequenceCamControllerData::mCurrentItem );
 }
@@ -216,28 +216,28 @@ SeqCamItemInstBase::~SeqCamItemInstBase(){
 void SpinnyCamControllerData::Describe()
 {
 	ork::reflect::RegisterProperty( "Elevation", &SpinnyCamControllerData::mfElevation );
-	ork::reflect::AnnotatePropertyForEditor< SpinnyCamControllerData >( "Elevation", "editor.range.min", "-100.0f" );
-	ork::reflect::AnnotatePropertyForEditor< SpinnyCamControllerData >( "Elevation", "editor.range.max", "100.0f" );
+	ork::reflect::annotatePropertyForEditor< SpinnyCamControllerData >( "Elevation", "editor.range.min", "-100.0f" );
+	ork::reflect::annotatePropertyForEditor< SpinnyCamControllerData >( "Elevation", "editor.range.max", "100.0f" );
 
 	ork::reflect::RegisterProperty( "Radius", &SpinnyCamControllerData::mfRadius );
-	ork::reflect::AnnotatePropertyForEditor< SpinnyCamControllerData >( "Radius", "editor.range.min", "-1000.0f" );
-	ork::reflect::AnnotatePropertyForEditor< SpinnyCamControllerData >( "Radius", "editor.range.max", "1000.0f" );
+	ork::reflect::annotatePropertyForEditor< SpinnyCamControllerData >( "Radius", "editor.range.min", "-1000.0f" );
+	ork::reflect::annotatePropertyForEditor< SpinnyCamControllerData >( "Radius", "editor.range.max", "1000.0f" );
 
 	ork::reflect::RegisterProperty( "SpinRate", &SpinnyCamControllerData::mfSpinRate );
-	ork::reflect::AnnotatePropertyForEditor< SpinnyCamControllerData >( "SpinRate", "editor.range.min", "-100.0f" );
-	ork::reflect::AnnotatePropertyForEditor< SpinnyCamControllerData >( "SpinRate", "editor.range.max", "100.0f" );
+	ork::reflect::annotatePropertyForEditor< SpinnyCamControllerData >( "SpinRate", "editor.range.min", "-100.0f" );
+	ork::reflect::annotatePropertyForEditor< SpinnyCamControllerData >( "SpinRate", "editor.range.max", "100.0f" );
 
 	ork::reflect::RegisterProperty( "Near", &SpinnyCamControllerData::mfNear );
-	ork::reflect::AnnotatePropertyForEditor< SpinnyCamControllerData >( "Near", "editor.range.min", "0.1f" );
-	ork::reflect::AnnotatePropertyForEditor< SpinnyCamControllerData >( "Near", "editor.range.max", "1000.0f" );
+	ork::reflect::annotatePropertyForEditor< SpinnyCamControllerData >( "Near", "editor.range.min", "0.1f" );
+	ork::reflect::annotatePropertyForEditor< SpinnyCamControllerData >( "Near", "editor.range.max", "1000.0f" );
 
 	ork::reflect::RegisterProperty( "Far", &SpinnyCamControllerData::mfFar );
-	ork::reflect::AnnotatePropertyForEditor< SpinnyCamControllerData >( "Far", "editor.range.min", "1.0f" );
-	ork::reflect::AnnotatePropertyForEditor< SpinnyCamControllerData >( "Far", "editor.range.max", "10000.0f" );
+	ork::reflect::annotatePropertyForEditor< SpinnyCamControllerData >( "Far", "editor.range.min", "1.0f" );
+	ork::reflect::annotatePropertyForEditor< SpinnyCamControllerData >( "Far", "editor.range.max", "10000.0f" );
 
 	ork::reflect::RegisterProperty( "Aper", &SpinnyCamControllerData::mfAper );
-	ork::reflect::AnnotatePropertyForEditor< SpinnyCamControllerData >( "Aper", "editor.range.min", "15.0f" );
-	ork::reflect::AnnotatePropertyForEditor< SpinnyCamControllerData >( "Aper", "editor.range.max", "160.0f" );
+	ork::reflect::annotatePropertyForEditor< SpinnyCamControllerData >( "Aper", "editor.range.min", "15.0f" );
+	ork::reflect::annotatePropertyForEditor< SpinnyCamControllerData >( "Aper", "editor.range.max", "160.0f" );
 }
 
 SpinnyCamControllerData::SpinnyCamControllerData()
@@ -288,28 +288,28 @@ void SpinnyCamControllerInst::DoUpdate(ent::Simulation* psi)
 void CurvyCamControllerData::Describe()
 {
 	ork::reflect::RegisterProperty( "Elevation", &CurvyCamControllerData::mfElevation );
-	ork::reflect::AnnotatePropertyForEditor< CurvyCamControllerData >( "Elevation", "editor.range.min", "-100.0f" );
-	ork::reflect::AnnotatePropertyForEditor< CurvyCamControllerData >( "Elevation", "editor.range.max", "100.0f" );
+	ork::reflect::annotatePropertyForEditor< CurvyCamControllerData >( "Elevation", "editor.range.min", "-100.0f" );
+	ork::reflect::annotatePropertyForEditor< CurvyCamControllerData >( "Elevation", "editor.range.max", "100.0f" );
 
 	ork::reflect::RegisterProperty( "Radius", &CurvyCamControllerData::mfRadius );
-	ork::reflect::AnnotatePropertyForEditor< CurvyCamControllerData >( "Radius", "editor.range.min", "-1000.0f" );
-	ork::reflect::AnnotatePropertyForEditor< CurvyCamControllerData >( "Radius", "editor.range.max", "1000.0f" );
+	ork::reflect::annotatePropertyForEditor< CurvyCamControllerData >( "Radius", "editor.range.min", "-1000.0f" );
+	ork::reflect::annotatePropertyForEditor< CurvyCamControllerData >( "Radius", "editor.range.max", "1000.0f" );
 
 	ork::reflect::RegisterProperty( "Angle", &CurvyCamControllerData::mfAngle );
-	ork::reflect::AnnotatePropertyForEditor< CurvyCamControllerData >( "Angle", "editor.range.min", "-100.0f" );
-	ork::reflect::AnnotatePropertyForEditor< CurvyCamControllerData >( "Angle", "editor.range.max", "100.0f" );
+	ork::reflect::annotatePropertyForEditor< CurvyCamControllerData >( "Angle", "editor.range.min", "-100.0f" );
+	ork::reflect::annotatePropertyForEditor< CurvyCamControllerData >( "Angle", "editor.range.max", "100.0f" );
 
 	ork::reflect::RegisterProperty( "Near", &CurvyCamControllerData::mfNear );
-	ork::reflect::AnnotatePropertyForEditor< CurvyCamControllerData >( "Near", "editor.range.min", "0.1f" );
-	ork::reflect::AnnotatePropertyForEditor< CurvyCamControllerData >( "Near", "editor.range.max", "1000.0f" );
+	ork::reflect::annotatePropertyForEditor< CurvyCamControllerData >( "Near", "editor.range.min", "0.1f" );
+	ork::reflect::annotatePropertyForEditor< CurvyCamControllerData >( "Near", "editor.range.max", "1000.0f" );
 
 	ork::reflect::RegisterProperty( "Far", &CurvyCamControllerData::mfFar );
-	ork::reflect::AnnotatePropertyForEditor< CurvyCamControllerData >( "Far", "editor.range.min", "1.0f" );
-	ork::reflect::AnnotatePropertyForEditor< CurvyCamControllerData >( "Far", "editor.range.max", "10000.0f" );
+	ork::reflect::annotatePropertyForEditor< CurvyCamControllerData >( "Far", "editor.range.min", "1.0f" );
+	ork::reflect::annotatePropertyForEditor< CurvyCamControllerData >( "Far", "editor.range.max", "10000.0f" );
 
 	ork::reflect::RegisterProperty( "Aper", &CurvyCamControllerData::mfAper );
-	ork::reflect::AnnotatePropertyForEditor< CurvyCamControllerData >( "Aper", "editor.range.min", "15.0f" );
-	ork::reflect::AnnotatePropertyForEditor< CurvyCamControllerData >( "Aper", "editor.range.max", "160.0f" );
+	ork::reflect::annotatePropertyForEditor< CurvyCamControllerData >( "Aper", "editor.range.min", "15.0f" );
+	ork::reflect::annotatePropertyForEditor< CurvyCamControllerData >( "Aper", "editor.range.max", "160.0f" );
 
 	ork::reflect::RegisterProperty( "RadiusCurve", & CurvyCamControllerData::RadiusCurveAccessor );
 

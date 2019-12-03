@@ -137,20 +137,20 @@ void SceneData::Describe() {
   // temporary
   //  (we want a custom solution)
   /////////////////////
-  AnnotatePropertyForEditor<SceneData>("SystemData", "editor.factorylistbase",
+  annotatePropertyForEditor<SceneData>("SystemData", "editor.factorylistbase",
                                        "SystemData");
   /////////////////////
 
 
 
   RegisterProperty("ScriptFile", &SceneData::_sceneScriptPath);
-  AnnotatePropertyForEditor<SceneData>("ScriptFile", "editor.class",
+  annotatePropertyForEditor<SceneData>("ScriptFile", "editor.class",
                                        "ged.factory.filelist");
-  AnnotatePropertyForEditor<SceneData>("ScriptFile", "editor.filetype", "lua");
-  AnnotatePropertyForEditor<SceneData>("ScriptFile", "editor.filebase",
+  annotatePropertyForEditor<SceneData>("ScriptFile", "editor.filetype", "lua");
+  annotatePropertyForEditor<SceneData>("ScriptFile", "editor.filebase",
                                        "src://scripts/");
 
-  AnnotateClassForEditor<SceneData>("editor.object.props", "ScriptFile SystemData"s);
+  annotateClassForEditor<SceneData>("editor.object.props", "ScriptFile SystemData"s);
 }
 ///////////////////////////////////////////////////////////////////////////////
 SceneData::SceneData() : _sceneDataMode(ESCENEDATAMODE_NEW) {}

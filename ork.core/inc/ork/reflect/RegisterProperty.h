@@ -247,17 +247,17 @@ static void RegisterSlot(const char* name, object::AutoSlot ClassType::*pmember,
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename ClassType> inline void AnnotateProperty(const char* PropName, const char* Key, const char* Val) {
+template <typename ClassType> inline void annotateProperty(const char* PropName, const char* Key, const char* Val) {
   Description& description = ClassType::GetClassStatic()->Description();
-  description.AnnotateProperty(PropName, Key, Val);
+  description.annotateProperty(PropName, Key, Val);
 }
-template <typename ClassType> inline void AnnotatePropertyForEditor(const char* PropName, const char* Key, const char* Val) {
+template <typename ClassType> inline void annotatePropertyForEditor(const char* PropName, const char* Key, const char* Val) {
   Description& description = ClassType::GetClassStatic()->Description();
-  description.AnnotateProperty(PropName, Key, Val);
+  description.annotateProperty(PropName, Key, Val);
 }
-template <typename ClassType> inline void AnnotateClassForEditor(const char* Key, const Description::anno_t& Val) {
+template <typename ClassType> inline void annotateClassForEditor(const char* Key, const Description::anno_t& Val) {
   Description& description = ClassType::GetClassStatic()->Description();
-  description.AnnotateClass(Key, Val);
+  description.annotateClass(Key, Val);
 }
 
 struct OpMap {
@@ -271,13 +271,13 @@ struct OpMap {
 
 template <typename T> void RegisterFloatMinMaxProp(float T::*member, const char* prop_name, const char* fmin, const char* fmax) {
   RegisterProperty(prop_name, member);
-  AnnotatePropertyForEditor<T>(prop_name, "editor.range.min", fmin);
-  AnnotatePropertyForEditor<T>(prop_name, "editor.range.max", fmax);
+  annotatePropertyForEditor<T>(prop_name, "editor.range.min", fmin);
+  annotatePropertyForEditor<T>(prop_name, "editor.range.max", fmax);
 }
 template <typename T> void RegisterIntMinMaxProp(int T::*member, const char* prop_name, const char* imin, const char* imax) {
   RegisterProperty(prop_name, member);
-  AnnotatePropertyForEditor<T>(prop_name, "editor.range.min", imin);
-  AnnotatePropertyForEditor<T>(prop_name, "editor.range.max", imax);
+  annotatePropertyForEditor<T>(prop_name, "editor.range.min", imin);
+  annotatePropertyForEditor<T>(prop_name, "editor.range.max", imax);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -302,7 +302,7 @@ template <typename ClassType, typename MemberType>
 inline object::PropertyModifier object::ObjectClass::memberProperty(const char* name, MemberType ClassType::*member) {
   object::PropertyModifier modder;
   modder._property = new reflect::DirectObjectPropertyType<MemberType>(static_cast<MemberType Object::*>(member));
-  mDescription.AddProperty(name, modder._property);
+  _description.AddProperty(name, modder._property);
   return modder;
 }
 
@@ -313,7 +313,7 @@ inline object::PropertyModifier object::ObjectClass::accessorProperty(const char
   object::PropertyModifier modder;
   modder._property = new reflect::AccessorObjectPropertyType<MemberType>(static_cast<void (Object::*)(MemberType&) const>(getter),
                                                                          static_cast<void (Object::*)(const MemberType&)>(setter));
-  mDescription.AddProperty(name, modder._property);
+  _description.AddProperty(name, modder._property);
   return modder;
 }
 

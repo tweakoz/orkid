@@ -125,16 +125,16 @@ void FarmGroupChoiceDelegate::EnumerateChoices( orkmap<ork::PoolString,ValueType
 void LightMapperArchetype::Describe()
 {
 	ork::reflect::RegisterMapProperty( "Settings", & LightMapperArchetype::mSettingsMap );
-	ork::reflect::AnnotatePropertyForEditor< LightMapperArchetype >("Settings", "editor.factorylistbase", "EditorOnly/BakerSettings" );
+	ork::reflect::annotatePropertyForEditor< LightMapperArchetype >("Settings", "editor.factorylistbase", "EditorOnly/BakerSettings" );
 	
 	ork::reflect::RegisterMapProperty( "FarmNodeGroups", & LightMapperArchetype::mFarmNodeGroups );
-	ork::reflect::AnnotatePropertyForEditor< LightMapperArchetype >("FarmNodeGroups", "editor.factorylistbase", "EditorOnly/FarmNodeGroup" );
+	ork::reflect::annotatePropertyForEditor< LightMapperArchetype >("FarmNodeGroups", "editor.factorylistbase", "EditorOnly/FarmNodeGroup" );
 
 	ork::reflect::RegisterProperty( "ActiveBakeSettings", & LightMapperArchetype::mCurrentSetting );
-	ork::reflect::AnnotatePropertyForEditor< LightMapperArchetype >( "ActiveBakeSettings", "ged.userchoice.delegate", "BakersChoiceDelegate" );
+	ork::reflect::annotatePropertyForEditor< LightMapperArchetype >( "ActiveBakeSettings", "ged.userchoice.delegate", "BakersChoiceDelegate" );
 
 	ork::reflect::RegisterProperty( "ActiveRenderFarmGroup", & LightMapperArchetype::mCurrentNodeGroup );
-	ork::reflect::AnnotatePropertyForEditor< LightMapperArchetype >( "ActiveRenderFarmGroup", "ged.userchoice.delegate", "FarmGroupChoiceDelegate" );
+	ork::reflect::annotatePropertyForEditor< LightMapperArchetype >( "ActiveRenderFarmGroup", "ged.userchoice.delegate", "FarmGroupChoiceDelegate" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -170,8 +170,8 @@ void FarmNode::Describe()
 	ork::reflect::RegisterProperty( "HostName", & FarmNode::mHostName );
 	ork::reflect::RegisterProperty( "SshPort", & FarmNode::mSSHPort );
 	ork::reflect::RegisterProperty( "ExclusiveConnection", & FarmNode::mbExclusiveConnection );
-	ork::reflect::AnnotatePropertyForEditor< FarmNode >( "SshPort", "editor.range.min", "0" );
-	ork::reflect::AnnotatePropertyForEditor< FarmNode >( "SshPort", "editor.range.max", "22200" );
+	ork::reflect::annotatePropertyForEditor< FarmNode >( "SshPort", "editor.range.min", "0" );
+	ork::reflect::annotatePropertyForEditor< FarmNode >( "SshPort", "editor.range.max", "22200" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -179,14 +179,14 @@ void FarmNode::Describe()
 void FarmJob::Describe()
 {
 	//ork::reflect::RegisterProperty( "RgmFile", & FarmJob::mRgmInputName );
-	//ork::reflect::AnnotatePropertyForEditor<FarmJob>("RgmFile", "editor.class", "ged.factory.filelist");
-	//ork::reflect::AnnotatePropertyForEditor<FarmJob>("RgmFile", "editor.filetype", "rgm");
-	//ork::reflect::AnnotatePropertyForEditor<FarmJob>("RgmFile", "editor.filebase", "src://");
+	//ork::reflect::annotatePropertyForEditor<FarmJob>("RgmFile", "editor.class", "ged.factory.filelist");
+	//ork::reflect::annotatePropertyForEditor<FarmJob>("RgmFile", "editor.filetype", "rgm");
+	//ork::reflect::annotatePropertyForEditor<FarmJob>("RgmFile", "editor.filebase", "src://");
 
 	ork::reflect::RegisterProperty( "DaeFile", & FarmJob::mDaeInputName );
-	ork::reflect::AnnotatePropertyForEditor<FarmJob>("DaeFile", "editor.class", "ged.factory.filelist");
-	ork::reflect::AnnotatePropertyForEditor<FarmJob>("DaeFile", "editor.filetype", "dae");
-	ork::reflect::AnnotatePropertyForEditor<FarmJob>("DaeFile", "editor.filebase", "src://environ/");
+	ork::reflect::annotatePropertyForEditor<FarmJob>("DaeFile", "editor.class", "ged.factory.filelist");
+	ork::reflect::annotatePropertyForEditor<FarmJob>("DaeFile", "editor.filetype", "dae");
+	ork::reflect::annotatePropertyForEditor<FarmJob>("DaeFile", "editor.filebase", "src://environ/");
 
 	ork::reflect::RegisterProperty( "BakeGroupMatch", & FarmJob::mBakeGroupMatch );
 }
@@ -194,7 +194,7 @@ void FarmJob::Describe()
 void FarmJobSet::Describe()
 {
 	ork::reflect::RegisterMapProperty( "Jobs", & FarmJobSet::mFarmJobs );
-	reflect::AnnotatePropertyForEditor<FarmJobSet>( "Jobs", "editor.factorylistbase", "EditorOnly/FarmJob" );
+	reflect::annotatePropertyForEditor<FarmJobSet>( "Jobs", "editor.factorylistbase", "EditorOnly/FarmJob" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -202,7 +202,7 @@ void FarmJobSet::Describe()
 void FarmNodeGroup::Describe()
 {
 	ork::reflect::RegisterMapProperty( "FarmNodes", & FarmNodeGroup::mFarmNodes );
-	ork::reflect::AnnotatePropertyForEditor< FarmNodeGroup >("FarmNodes", "editor.factorylistbase", "EditorOnly/FarmNode" );
+	ork::reflect::annotatePropertyForEditor< FarmNodeGroup >("FarmNodes", "editor.factorylistbase", "EditorOnly/FarmNode" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -210,7 +210,7 @@ void FarmNodeGroup::Describe()
 void BakingGroup::Describe()
 {
 	ork::reflect::RegisterProperty( "BakeType", & BakingGroup::meBakeMapType );
-	ork::reflect::AnnotatePropertyForEditor<BakingGroup>(	"BakeType", "editor.class", "ged.factory.enum" );
+	ork::reflect::annotatePropertyForEditor<BakingGroup>(	"BakeType", "editor.class", "ged.factory.enum" );
 	
 	ork::reflect::RegisterProperty( "MatchItem", & BakingGroup::mMatchItem );
 	ork::reflect::RegisterProperty( "MatchLights", & BakingGroup::mMatchLights );
@@ -222,64 +222,64 @@ void BakingGroup::Describe()
 	ork::reflect::RegisterProperty("UseVertexColors", &BakingGroup::mbUseVertexColors);
 
 	ork::reflect::RegisterProperty("UserShader", &BakingGroup::mUserShaderName);
-	ork::reflect::AnnotatePropertyForEditor<BakingGroup>("UserShader", "editor.class", "ged.factory.filelist");
-	ork::reflect::AnnotatePropertyForEditor<BakingGroup>("UserShader", "editor.filetype", "gsl");
-	ork::reflect::AnnotatePropertyForEditor<BakingGroup>("UserShader", "editor.filebase", "miniorkdata://");
+	ork::reflect::annotatePropertyForEditor<BakingGroup>("UserShader", "editor.class", "ged.factory.filelist");
+	ork::reflect::annotatePropertyForEditor<BakingGroup>("UserShader", "editor.filetype", "gsl");
+	ork::reflect::annotatePropertyForEditor<BakingGroup>("UserShader", "editor.filebase", "miniorkdata://");
 
 	ork::reflect::RegisterProperty("UserSdbShader", &BakingGroup::mUserSdbShaderName);
-	ork::reflect::AnnotatePropertyForEditor<BakingGroup>("UserSdbShader", "editor.class", "ged.factory.filelist");
-	ork::reflect::AnnotatePropertyForEditor<BakingGroup>("UserSdbShader", "editor.filetype", "gsl");
-	ork::reflect::AnnotatePropertyForEditor<BakingGroup>("UserSdbShader", "editor.filebase", "miniorkdata://");
+	ork::reflect::annotatePropertyForEditor<BakingGroup>("UserSdbShader", "editor.class", "ged.factory.filelist");
+	ork::reflect::annotatePropertyForEditor<BakingGroup>("UserSdbShader", "editor.filetype", "gsl");
+	ork::reflect::annotatePropertyForEditor<BakingGroup>("UserSdbShader", "editor.filebase", "miniorkdata://");
 
 	ork::reflect::RegisterProperty("BakeResolution", &BakingGroup::miResolution);
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "BakeResolution", "editor.range.min", "64" );
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "BakeResolution", "editor.range.max", "1024" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "BakeResolution", "editor.range.min", "64" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "BakeResolution", "editor.range.max", "1024" );
 
 	ork::reflect::RegisterProperty("AtlasStretching", &BakingGroup::mfAtlasStretching);
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "AtlasStretching", "editor.range.min", "0.0" );
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "AtlasStretching", "editor.range.max", "1.0" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "AtlasStretching", "editor.range.min", "0.0" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "AtlasStretching", "editor.range.max", "1.0" );
 
 	ork::reflect::RegisterProperty("AtlasUnification", &BakingGroup::mfAtlasUnification);
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "AtlasUnification", "editor.range.min", "0.25" );
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "AtlasUnification", "editor.range.max", "4.0" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "AtlasUnification", "editor.range.min", "0.25" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "AtlasUnification", "editor.range.max", "4.0" );
 
 	ork::reflect::RegisterProperty("DiceSize", &BakingGroup::miDiceSize);
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "DiceSize", "editor.range.min", "256" );
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "DiceSize", "editor.range.max", "2048" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "DiceSize", "editor.range.min", "256" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "DiceSize", "editor.range.max", "2048" );
 	
 	ork::reflect::RegisterProperty("NumSamples", &BakingGroup::miNumSamples);
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "NumSamples", "editor.range.min", "8" );
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "NumSamples", "editor.range.max", "1024" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "NumSamples", "editor.range.min", "8" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "NumSamples", "editor.range.max", "1024" );
 
 	ork::reflect::RegisterProperty("ShadowBias", &BakingGroup::mfShadowBias);
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "ShadowBias", "editor.range.min", "0.0f" );
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "ShadowBias", "editor.range.max", "1000.0f" );
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "ShadowBias", "editor.range.log", "true" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "ShadowBias", "editor.range.min", "0.0f" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "ShadowBias", "editor.range.max", "1000.0f" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "ShadowBias", "editor.range.log", "true" );
 
 	ork::reflect::RegisterProperty("MaxError", &BakingGroup::mfMaxError);
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "MaxError", "editor.range.min", "0.0f" );
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "MaxError", "editor.range.max", "1.0f" );
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "MaxError", "editor.range.log", "true" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "MaxError", "editor.range.min", "0.0f" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "MaxError", "editor.range.max", "1.0f" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "MaxError", "editor.range.log", "true" );
 
 	ork::reflect::RegisterProperty("Adaptive", &BakingGroup::mfAdaptive);
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "Adaptive", "editor.range.min", "0.0f" );
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "Adaptive", "editor.range.max", "2.0f" );
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "Adaptive", "editor.range.log", "true" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "Adaptive", "editor.range.min", "0.0f" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "Adaptive", "editor.range.max", "2.0f" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "Adaptive", "editor.range.log", "true" );
 
 	ork::reflect::RegisterProperty("MaxPixelDist", &BakingGroup::mfMaxPixelDist);
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "MaxPixelDist", "editor.range.min", "0.0f" );
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "MaxPixelDist", "editor.range.max", "30.0f" );
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "MaxPixelDist", "editor.range.log", "true" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "MaxPixelDist", "editor.range.min", "0.0f" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "MaxPixelDist", "editor.range.max", "30.0f" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "MaxPixelDist", "editor.range.log", "true" );
 
 	ork::reflect::RegisterProperty("MaxHitDist", &BakingGroup::mfMaxHitDist);
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "MaxHitDist", "editor.range.min", "0.0f" );
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "MaxHitDist", "editor.range.max", "10000.0f" );
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "MaxHitDist", "editor.range.log", "true" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "MaxHitDist", "editor.range.min", "0.0f" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "MaxHitDist", "editor.range.max", "10000.0f" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "MaxHitDist", "editor.range.log", "true" );
 
 	ork::reflect::RegisterProperty("FilterWidth", &BakingGroup::mfFilterWidth);
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "FilterWidth", "editor.range.min", "0.0f" );
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "FilterWidth", "editor.range.max", "8.0f" );
-	ork::reflect::AnnotatePropertyForEditor< BakingGroup >( "FilterWidth", "editor.range.log", "true" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "FilterWidth", "editor.range.min", "0.0f" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "FilterWidth", "editor.range.max", "8.0f" );
+	ork::reflect::annotatePropertyForEditor< BakingGroup >( "FilterWidth", "editor.range.log", "true" );
 
 	static const char* EdGrpStr =
 				"sort://MatchItem MatchLights UseVertexColors "
@@ -289,7 +289,7 @@ void BakingGroup::Describe()
 				"grp://Shadows ComputeShadows ComputeAmbOcc ShadowCasters NumSamples "
 				"Adaptive MaxError MaxPixelDist MaxHitDist ShadowBias  ";
 
-	reflect::AnnotateClassForEditor<BakingGroup>( "editor.prop.groups", EdGrpStr );
+	reflect::annotateClassForEditor<BakingGroup>( "editor.prop.groups", EdGrpStr );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -298,26 +298,26 @@ void BakerSettings::Describe()
 {
 	ork::reflect::RegisterProperty("DebugPyg", &BakerSettings::mDebugPyg);
 	ork::reflect::RegisterProperty("DebugPygEmbedGeom", &BakerSettings::mDebugPygEmbedGeom);
-	ork::reflect::AnnotateClassForEditor< LightMapperArchetype >("editor.object.ops", ConstString("Atlas:AtlasMapperOps Bake:BakeOps ") );
+	ork::reflect::annotateClassForEditor< LightMapperArchetype >("editor.object.ops", ConstString("Atlas:AtlasMapperOps Bake:BakeOps ") );
 	ork::reflect::RegisterMapProperty( "BakingGroups", & BakerSettings::mBakingGroupMap );
-	reflect::AnnotatePropertyForEditor<BakerSettings>( "BakingGroups", "editor.factorylistbase", "EditorOnly/BakingGroup" );
+	reflect::annotatePropertyForEditor<BakerSettings>( "BakingGroups", "editor.factorylistbase", "EditorOnly/BakingGroup" );
 	ork::reflect::RegisterProperty("DaeInput", &BakerSettings::mDaeInputName);
-	ork::reflect::AnnotatePropertyForEditor<BakerSettings>("DaeInput", "editor.class", "ged.factory.filelist");
-	ork::reflect::AnnotatePropertyForEditor<BakerSettings>("DaeInput", "editor.filetype", "dae");
-	ork::reflect::AnnotatePropertyForEditor<BakerSettings>("DaeInput", "editor.filebase", "src://");
+	ork::reflect::annotatePropertyForEditor<BakerSettings>("DaeInput", "editor.class", "ged.factory.filelist");
+	ork::reflect::annotatePropertyForEditor<BakerSettings>("DaeInput", "editor.filetype", "dae");
+	ork::reflect::annotatePropertyForEditor<BakerSettings>("DaeInput", "editor.filebase", "src://");
 	ork::reflect::RegisterMapProperty( "JobSets", & BakerSettings::mFarmJobSets );
 
 	ork::reflect::RegisterProperty("ActiveJobSet", &BakerSettings::mCurrentJobSet);
 	
-	ork::reflect::AnnotatePropertyForEditor< BakerSettings >( "ActiveJobSet", "ged.userchoice.delegate", "JobSetChoiceDelegate" );
+	ork::reflect::annotatePropertyForEditor< BakerSettings >( "ActiveJobSet", "ged.userchoice.delegate", "JobSetChoiceDelegate" );
 
-	reflect::AnnotatePropertyForEditor<BakerSettings>( "JobSets", "editor.factorylistbase", "EditorOnly/FarmJobSet" );
+	reflect::annotatePropertyForEditor<BakerSettings>( "JobSets", "editor.factorylistbase", "EditorOnly/FarmJobSet" );
 	
 
 	static const char* EdGrpStr =
 				"sort://DaeInput BakingGroups ActiveJobSet JobSets DebugPyg DebugPygEmbedGeom";
 
-	reflect::AnnotateClassForEditor<BakerSettings>( "editor.prop.groups", EdGrpStr );
+	reflect::annotateClassForEditor<BakerSettings>( "editor.prop.groups", EdGrpStr );
 
 	AtlasMapperOps::LinkMe();
 	ImtMapperOps::LinkMe();

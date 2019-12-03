@@ -48,11 +48,11 @@ public:
 
 	void SetParentDescription(const Description *);
 
-	void AnnotateProperty( const ConstString &propname, const ConstString &key, const ConstString &val );
-	ConstString	GetPropertyAnnotation( const ConstString &propname, const ConstString& key ) const;
+	void annotateProperty( const ConstString &propname, const ConstString &key, const ConstString &val );
+	ConstString	propertyAnnotation( const ConstString &propname, const ConstString& key ) const;
 
-	void AnnotateClass( const ConstString &key, const anno_t& val );
-	const anno_t& GetClassAnnotation( const ConstString& key ) const;
+	void annotateClass( const ConstString &key, const anno_t& val );
+	const anno_t& classAnnotation( const ConstString& key ) const;
 
 	PropertyMapType &Properties();
 	const PropertyMapType &Properties() const;

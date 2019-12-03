@@ -87,8 +87,8 @@ static lev2::Texture* GetPtclModuleIcon( ork::dataflow::dgmodule* pmod )
 
 void Module::Describe()
 {
-	reflect::AnnotateClassForEditor<Module>( "dflowicon", & GetPtclModuleIcon );
-	reflect::AnnotateClassForEditor<Module>( "dflowshouldblend", true );
+	reflect::annotateClassForEditor<Module>( "dflowicon", & GetPtclModuleIcon );
+	reflect::annotateClassForEditor<Module>( "dflowshouldblend", true );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -124,7 +124,7 @@ bool psys_graph::CanConnect( const ork::dataflow::inplugbase* pin, const ork::da
 
 void psys_graph::Describe()
 {
-	//ork::reflect::AnnotatePropertyForEditor< psys_graph >("Modules", "editor.factorylistbase", "dflow/dgmodule" );
+	//ork::reflect::annotatePropertyForEditor< psys_graph >("Modules", "editor.factorylistbase", "dflow/dgmodule" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -243,8 +243,8 @@ void psys_graph_pool::Describe()
 //	ork::reflect::RegisterProperty("Template", &psys_graph_pool::TemplateAccessor);
 
 	ork::reflect::RegisterProperty("MaxInstances", &psys_graph_pool::miPoolSize);
-	ork::reflect::AnnotatePropertyForEditor< psys_graph_pool >( "MaxInstances", "editor.range.min", "1" );
-	ork::reflect::AnnotatePropertyForEditor< psys_graph_pool >( "MaxInstances", "editor.range.max", "128" );
+	ork::reflect::annotatePropertyForEditor< psys_graph_pool >( "MaxInstances", "editor.range.min", "1" );
+	ork::reflect::annotatePropertyForEditor< psys_graph_pool >( "MaxInstances", "editor.range.max", "128" );
 
 }
 

@@ -198,7 +198,7 @@ void CompositingContext::composite(CompositorDrawData& drawdata) {
 
 void CompositingScene::describeX(class_t* c) {
   ork::reflect::RegisterMapProperty("Items", &CompositingScene::_items);
-  ork::reflect::AnnotatePropertyForEditor<CompositingScene>("Items", "editor.factorylistbase", "CompositingSceneItem");
+  ork::reflect::annotatePropertyForEditor<CompositingScene>("Items", "editor.factorylistbase", "CompositingSceneItem");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -210,7 +210,7 @@ CompositingScene::CompositingScene() {}
 void CompositingSceneItem::describeX(class_t* c) {
 
   ork::reflect::RegisterProperty("Technique", &CompositingSceneItem::_readTech, &CompositingSceneItem::_writeTech);
-  ork::reflect::AnnotatePropertyForEditor<CompositingSceneItem>("Technique", "editor.factorylistbase", "CompositingTechnique");
+  ork::reflect::annotatePropertyForEditor<CompositingSceneItem>("Technique", "editor.factorylistbase", "CompositingTechnique");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

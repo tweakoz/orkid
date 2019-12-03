@@ -117,8 +117,8 @@ void AudioAnalysisSystem::AddAACI( AudioAnalysisComponentInst* cci )
 void AudioAnalysisComponentData::Describe()
 {
 	ork::reflect::RegisterProperty("AudioInputDeviceID", &AudioAnalysisComponentData::mAudioInputDeviceID);
-	reflect::AnnotatePropertyForEditor< AudioAnalysisComponentData >("AudioInputDeviceID", "editor.range.min", "1" );
-	reflect::AnnotatePropertyForEditor< AudioAnalysisComponentData >("AudioInputDeviceID", "editor.range.max", "1000" );
+	reflect::annotatePropertyForEditor< AudioAnalysisComponentData >("AudioInputDeviceID", "editor.range.min", "1" );
+	reflect::annotatePropertyForEditor< AudioAnalysisComponentData >("AudioInputDeviceID", "editor.range.max", "1000" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

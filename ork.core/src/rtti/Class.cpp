@@ -202,4 +202,5 @@ Category* Class::category() {
 
 Class* Class::GetClass() const { return Class::GetClassStatic(); }
 ConstString Class::DesignNameStatic() { return "Class"; }
+
 }} // namespace ork::rtti

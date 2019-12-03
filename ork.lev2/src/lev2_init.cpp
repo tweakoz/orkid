@@ -17,6 +17,7 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/kernel/string/string.h>
 #include <ork/lev2/gfx/gfxmaterial_basic.h>
+#include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/targetinterfaces.h>
 #include <ork/lev2/gfx/particle/modular_particles.h>
 #include <ork/lev2/init.h>
@@ -149,6 +150,7 @@ void ClassInit() {
   RegisterClassX(PtxCompositingNode);
   RegisterClassX(Op2CompositingNode);
   RegisterClassX(NodeCompositingTechnique);
+  RegisterClassX(PBRMaterial);
 
   //////////////////////////////////////////
   // register lev2 graphics target classes

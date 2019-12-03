@@ -964,27 +964,27 @@ protected:
 
 #define RegisterFloatXfPlug( cls, name, mmin, mmax, deleg )\
 	ork::reflect::RegisterProperty( #name, & cls::InpAccessor##name );\
-	ork::reflect::AnnotatePropertyForEditor< cls >( #name, "editor.class", "ged.factory.plug" );\
-	ork::reflect::AnnotatePropertyForEditor< cls >( #name, "ged.plug.delegate", #deleg );\
-	ork::reflect::AnnotatePropertyForEditor< cls >( #name, "editor.range.min", #mmin );\
-	ork::reflect::AnnotatePropertyForEditor< cls >( #name, "editor.range.max", #mmax );
+	ork::reflect::annotatePropertyForEditor< cls >( #name, "editor.class", "ged.factory.plug" );\
+	ork::reflect::annotatePropertyForEditor< cls >( #name, "ged.plug.delegate", #deleg );\
+	ork::reflect::annotatePropertyForEditor< cls >( #name, "editor.range.min", #mmin );\
+	ork::reflect::annotatePropertyForEditor< cls >( #name, "editor.range.max", #mmax );
 
 #define RegisterVect3XfPlug( cls, name, mmin, mmax, deleg )\
 	ork::reflect::RegisterProperty( #name, & cls::InpAccessor##name );\
-	ork::reflect::AnnotatePropertyForEditor< cls >( #name, "editor.class", "ged.factory.plug" );\
-	ork::reflect::AnnotatePropertyForEditor< cls >( #name, "ged.plug.delegate", #deleg );\
-	ork::reflect::AnnotatePropertyForEditor< cls >( #name, "editor.range.min", #mmin );\
-	ork::reflect::AnnotatePropertyForEditor< cls >( #name, "editor.range.max", #mmax );
+	ork::reflect::annotatePropertyForEditor< cls >( #name, "editor.class", "ged.factory.plug" );\
+	ork::reflect::annotatePropertyForEditor< cls >( #name, "ged.plug.delegate", #deleg );\
+	ork::reflect::annotatePropertyForEditor< cls >( #name, "editor.range.min", #mmin );\
+	ork::reflect::annotatePropertyForEditor< cls >( #name, "editor.range.max", #mmax );
 
 
 #define RegisterObjInpPlug( cls, name )\
 	ork::reflect::RegisterProperty( #name, & cls::InpAccessor##name );\
-	ork::reflect::AnnotatePropertyForEditor< cls >( #name, "editor.class", "ged.factory.plug" );\
-	ork::reflect::AnnotatePropertyForEditor< cls >( #name, "ged.plug.delegate", "ged::OutPlugChoiceDelegate" );\
+	ork::reflect::annotatePropertyForEditor< cls >( #name, "editor.class", "ged.factory.plug" );\
+	ork::reflect::annotatePropertyForEditor< cls >( #name, "ged.plug.delegate", "ged::OutPlugChoiceDelegate" );\
 
 #define RegisterObjOutPlug( cls, name )\
 	ork::reflect::RegisterProperty( #name, & cls::OutAccessor##name );\
-	ork::reflect::AnnotatePropertyForEditor< cls >(#name, "editor.visible", "false" );
+	ork::reflect::annotatePropertyForEditor< cls >(#name, "editor.visible", "false" );
 
 } }
 

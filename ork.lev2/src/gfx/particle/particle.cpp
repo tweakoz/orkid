@@ -114,26 +114,26 @@ void SpiralEmitterData::Describe()
 	reflect::RegisterProperty( "EmissionOut", & SpiralEmitterData::mfEmissionOut );
 	reflect::RegisterProperty( "SpinRate", & SpiralEmitterData::mfSpinRate );
 
-	reflect::AnnotatePropertyForEditor< SpiralEmitterData >("Lifespan", "editor.range.min", "0.1" );
-	reflect::AnnotatePropertyForEditor< SpiralEmitterData >("Lifespan", "editor.range.max", "10.0" );
-	reflect::AnnotatePropertyForEditor< SpiralEmitterData >("Lifespan", "editor.range.log", "true" );
+	reflect::annotatePropertyForEditor< SpiralEmitterData >("Lifespan", "editor.range.min", "0.1" );
+	reflect::annotatePropertyForEditor< SpiralEmitterData >("Lifespan", "editor.range.max", "10.0" );
+	reflect::annotatePropertyForEditor< SpiralEmitterData >("Lifespan", "editor.range.log", "true" );
 
-	reflect::AnnotatePropertyForEditor< SpiralEmitterData >("EmitScale", "editor.range.min", "0.001" );
-	reflect::AnnotatePropertyForEditor< SpiralEmitterData >("EmitScale", "editor.range.max", "100.0" );
-	reflect::AnnotatePropertyForEditor< SpiralEmitterData >("EmitScale", "editor.range.log", "true" );
+	reflect::annotatePropertyForEditor< SpiralEmitterData >("EmitScale", "editor.range.min", "0.001" );
+	reflect::annotatePropertyForEditor< SpiralEmitterData >("EmitScale", "editor.range.max", "100.0" );
+	reflect::annotatePropertyForEditor< SpiralEmitterData >("EmitScale", "editor.range.log", "true" );
 
-	reflect::AnnotatePropertyForEditor< SpiralEmitterData >("EmissionRate", "editor.range.min", "0.01" );
-	reflect::AnnotatePropertyForEditor< SpiralEmitterData >("EmissionRate", "editor.range.max", "100.0" );
-	reflect::AnnotatePropertyForEditor< SpiralEmitterData >("EmissionRate", "editor.range.log", "true" );
+	reflect::annotatePropertyForEditor< SpiralEmitterData >("EmissionRate", "editor.range.min", "0.01" );
+	reflect::annotatePropertyForEditor< SpiralEmitterData >("EmissionRate", "editor.range.max", "100.0" );
+	reflect::annotatePropertyForEditor< SpiralEmitterData >("EmissionRate", "editor.range.log", "true" );
 
-	reflect::AnnotatePropertyForEditor< SpiralEmitterData >("EmissionUp", "editor.range.min", "-100" );
-	reflect::AnnotatePropertyForEditor< SpiralEmitterData >("EmissionUp", "editor.range.max", "100" );
-	reflect::AnnotatePropertyForEditor< SpiralEmitterData >("EmissionOut", "editor.range.min", "-100" );
-	reflect::AnnotatePropertyForEditor< SpiralEmitterData >("EmissionOut", "editor.range.max", "100" );
+	reflect::annotatePropertyForEditor< SpiralEmitterData >("EmissionUp", "editor.range.min", "-100" );
+	reflect::annotatePropertyForEditor< SpiralEmitterData >("EmissionUp", "editor.range.max", "100" );
+	reflect::annotatePropertyForEditor< SpiralEmitterData >("EmissionOut", "editor.range.min", "-100" );
+	reflect::annotatePropertyForEditor< SpiralEmitterData >("EmissionOut", "editor.range.max", "100" );
 
-	reflect::AnnotatePropertyForEditor< SpiralEmitterData >("SpinRate", "editor.range.min", "0.001" );
-	reflect::AnnotatePropertyForEditor< SpiralEmitterData >("SpinRate", "editor.range.max", "100.0" );
-	reflect::AnnotatePropertyForEditor< SpiralEmitterData >("SpinRate", "editor.range.log", "true" );
+	reflect::annotatePropertyForEditor< SpiralEmitterData >("SpinRate", "editor.range.min", "0.001" );
+	reflect::annotatePropertyForEditor< SpiralEmitterData >("SpinRate", "editor.range.max", "100.0" );
+	reflect::annotatePropertyForEditor< SpiralEmitterData >("SpinRate", "editor.range.log", "true" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -352,24 +352,24 @@ void DirectedEmitter::Reap( EmitterCtx& ctx )
 void ParticleItemBase::Describe()
 {
 	ork::reflect::RegisterProperty("Duration", &ParticleItemBase::mfDuration);
-	ork::reflect::AnnotatePropertyForEditor< ParticleItemBase >( "Duration", "editor.range.min", "0" );
-	ork::reflect::AnnotatePropertyForEditor< ParticleItemBase >( "Duration", "editor.range.max", "60.0f" );
-	ork::reflect::AnnotatePropertyForEditor< ParticleItemBase >( "Duration", "editor.range.log", "true" );
+	ork::reflect::annotatePropertyForEditor< ParticleItemBase >( "Duration", "editor.range.min", "0" );
+	ork::reflect::annotatePropertyForEditor< ParticleItemBase >( "Duration", "editor.range.max", "60.0f" );
+	ork::reflect::annotatePropertyForEditor< ParticleItemBase >( "Duration", "editor.range.log", "true" );
 
 	ork::reflect::RegisterProperty("PreCharge", &ParticleItemBase::mfPreCharge);
-	ork::reflect::AnnotatePropertyForEditor< ParticleItemBase >( "PreCharge", "editor.range.min", "0" );
-	ork::reflect::AnnotatePropertyForEditor< ParticleItemBase >( "PreCharge", "editor.range.max", "60.0f" );
-	ork::reflect::AnnotatePropertyForEditor< ParticleItemBase >( "PreCharge", "editor.range.log", "true" );
+	ork::reflect::annotatePropertyForEditor< ParticleItemBase >( "PreCharge", "editor.range.min", "0" );
+	ork::reflect::annotatePropertyForEditor< ParticleItemBase >( "PreCharge", "editor.range.max", "60.0f" );
+	ork::reflect::annotatePropertyForEditor< ParticleItemBase >( "PreCharge", "editor.range.log", "true" );
 
 	ork::reflect::RegisterProperty("StartTime", &ParticleItemBase::mfStartTime);
-	ork::reflect::AnnotatePropertyForEditor< ParticleItemBase >( "StartTime", "editor.range.min", "0" );
-	ork::reflect::AnnotatePropertyForEditor< ParticleItemBase >( "StartTime", "editor.range.max", "60.0f" );
-	ork::reflect::AnnotatePropertyForEditor< ParticleItemBase >( "StartTime", "editor.range.log", "true" );
+	ork::reflect::annotatePropertyForEditor< ParticleItemBase >( "StartTime", "editor.range.min", "0" );
+	ork::reflect::annotatePropertyForEditor< ParticleItemBase >( "StartTime", "editor.range.max", "60.0f" );
+	ork::reflect::annotatePropertyForEditor< ParticleItemBase >( "StartTime", "editor.range.log", "true" );
 
 	ork::reflect::RegisterProperty("SortValue", &ParticleItemBase::mfSortValue);
-	ork::reflect::AnnotatePropertyForEditor< ParticleItemBase >( "SortValue", "editor.range.min", "0" );
-	ork::reflect::AnnotatePropertyForEditor< ParticleItemBase >( "SortValue", "editor.range.max", "1.0f" );
-	ork::reflect::AnnotatePropertyForEditor< ParticleItemBase >( "SortValue", "editor.range.log", "true" );
+	ork::reflect::annotatePropertyForEditor< ParticleItemBase >( "SortValue", "editor.range.min", "0" );
+	ork::reflect::annotatePropertyForEditor< ParticleItemBase >( "SortValue", "editor.range.max", "1.0f" );
+	ork::reflect::annotatePropertyForEditor< ParticleItemBase >( "SortValue", "editor.range.log", "true" );
 
 	ork::reflect::RegisterProperty("IsWorldSpace", &ParticleItemBase::mbWorldSpace);
 }

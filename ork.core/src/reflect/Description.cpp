@@ -92,7 +92,7 @@ object::AutoSlot Object::*Description::FindAutoSlot(const ConstString& key) cons
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void Description::AnnotateProperty(const ConstString& propname, const ConstString& key, const ConstString& val) {
+void Description::annotateProperty(const ConstString& propname, const ConstString& key, const ConstString& val) {
   const PropertyMapType& map         = Properties();
   PropertyMapType::const_iterator it = map.find(propname);
   if (it == map.end()) {
@@ -102,7 +102,7 @@ void Description::AnnotateProperty(const ConstString& propname, const ConstStrin
   }
 }
 
-ConstString Description::GetPropertyAnnotation(const ConstString& propname, const ConstString& key) const {
+ConstString Description::propertyAnnotation(const ConstString& propname, const ConstString& key) const {
   for (const Description* description = this; description != NULL; description = description->mParentDescription) {
     const PropertyMapType& map         = description->Properties();
     PropertyMapType::const_iterator it = map.find(propname);
@@ -113,7 +113,7 @@ ConstString Description::GetPropertyAnnotation(const ConstString& propname, cons
   return "";
 }
 
-void Description::AnnotateClass(const ConstString& key, const Description::anno_t& val) {
+void Description::annotateClass(const ConstString& key, const Description::anno_t& val) {
   orklut<ConstString, anno_t>::const_iterator it = mClassAnnotations.find(key);
   if (it == mClassAnnotations.end()) {
     mClassAnnotations.AddSorted(key, val);
@@ -122,7 +122,7 @@ void Description::AnnotateClass(const ConstString& key, const Description::anno_
   }
 }
 
-const Description::anno_t& Description::GetClassAnnotation(const ConstString& key) const {
+const Description::anno_t& Description::classAnnotation(const ConstString& key) const {
   for (const Description* description = this; description != NULL; description = description->mParentDescription) {
     orklut<ConstString, anno_t>::const_iterator it = description->mClassAnnotations.find(key);
     if (it != description->mClassAnnotations.end()) {

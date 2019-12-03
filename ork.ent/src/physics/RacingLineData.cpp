@@ -35,7 +35,7 @@ void RacingLine::Describe()
 	ork::reflect::RegisterProperty("Time", &RacingLine::mTime);
 
 	ork::reflect::RegisterMapProperty("RacingLineSamples", &RacingLine::mRacingLineSamples);
-	reflect::AnnotatePropertyForEditor<RacingLine>("RacingLineSamples", "editor.map.policy.const", "true");
+	reflect::annotatePropertyForEditor<RacingLine>("RacingLineSamples", "editor.map.policy.const", "true");
 }
 
 RacingLine::~RacingLine()
@@ -65,7 +65,7 @@ void RacingLineData::Describe()
 	// so we can draw racing lines, let's get an update
 
 	ork::reflect::RegisterMapProperty("RacingLines", &RacingLineData::mRacingLines);
-	reflect::AnnotatePropertyForEditor<RacingLineData>("RacingLines", "editor.map.policy.const", "true");
+	reflect::annotatePropertyForEditor<RacingLineData>("RacingLines", "editor.map.policy.const", "true");
 }
 
 RacingLineData::~RacingLineData()

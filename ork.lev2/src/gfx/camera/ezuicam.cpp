@@ -40,16 +40,16 @@ void OrkGlobalEnableMousePointer();
 
 void EzUiCam::Describe() {
   ork::reflect::RegisterProperty("Aperature", &EzUiCam::aper);
-  ork::reflect::AnnotatePropertyForEditor<EzUiCam>("Aperature", "editor.range.min", "0.0f");
-  ork::reflect::AnnotatePropertyForEditor<EzUiCam>("Aperature", "editor.range.max", "90.0f");
+  ork::reflect::annotatePropertyForEditor<EzUiCam>("Aperature", "editor.range.min", "0.0f");
+  ork::reflect::annotatePropertyForEditor<EzUiCam>("Aperature", "editor.range.max", "90.0f");
 
   ork::reflect::RegisterProperty("MaxFar", &EzUiCam::far_max);
-  ork::reflect::AnnotatePropertyForEditor<EzUiCam>("MaxFar", "editor.range.min", "1.0f");
-  ork::reflect::AnnotatePropertyForEditor<EzUiCam>("MaxFar", "editor.range.max", "100000.0f");
+  ork::reflect::annotatePropertyForEditor<EzUiCam>("MaxFar", "editor.range.min", "1.0f");
+  ork::reflect::annotatePropertyForEditor<EzUiCam>("MaxFar", "editor.range.max", "100000.0f");
 
   ork::reflect::RegisterProperty("MinNear", &EzUiCam::near_min);
-  ork::reflect::AnnotatePropertyForEditor<EzUiCam>("MinNear", "editor.range.min", "0.1f");
-  ork::reflect::AnnotatePropertyForEditor<EzUiCam>("MinNear", "editor.range.max", "10000.0f");
+  ork::reflect::annotatePropertyForEditor<EzUiCam>("MinNear", "editor.range.min", "0.1f");
+  ork::reflect::annotatePropertyForEditor<EzUiCam>("MinNear", "editor.range.max", "10000.0f");
 
   // temporary until old mox files converted
   ork::rtti::Class::CreateClassAlias("Camera_persp", GetClassStatic());

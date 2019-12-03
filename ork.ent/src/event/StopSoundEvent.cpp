@@ -18,7 +18,7 @@ namespace ork { namespace ent { namespace event {
 void StopSoundEvent::Describe()
 {
 	ork::reflect::RegisterProperty("SoundName", &StopSoundEvent::mSoundName);
-	ork::reflect::AnnotatePropertyForEditor<StopSoundEvent>( "SoundName",	"ged.userchoice.delegate", "AudioEventChoiceDelegate" );
+	ork::reflect::annotatePropertyForEditor<StopSoundEvent>( "SoundName",	"ged.userchoice.delegate", "AudioEventChoiceDelegate" );
 
 }
 ///////////////////////////////////////////////////////////////////////////////

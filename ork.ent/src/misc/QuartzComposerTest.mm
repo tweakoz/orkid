@@ -79,21 +79,21 @@ void QuartzComposerData::Describe()
 	ork::ent::RegisterFamily<QuartzComposerData>(ork::AddPooledLiteral("control"));
 
 	ork::reflect::RegisterProperty("Composition", &QuartzComposerData::mCompositionPath);
-	ork::reflect::AnnotatePropertyForEditor<QuartzComposerData>("Composition", "editor.class", "ged.factory.filelist");
-	ork::reflect::AnnotatePropertyForEditor<QuartzComposerData>("Composition", "editor.filetype", "qtz");
+	ork::reflect::annotatePropertyForEditor<QuartzComposerData>("Composition", "editor.class", "ged.factory.filelist");
+	ork::reflect::annotatePropertyForEditor<QuartzComposerData>("Composition", "editor.filetype", "qtz");
 
 	ork::reflect::RegisterProperty("StartTime", &QuartzComposerData::mfStartTime);
 	ork::reflect::RegisterProperty("EndTime", &QuartzComposerData::mfEndTime);
 	ork::reflect::RegisterProperty("FPS", &QuartzComposerData::miFPS);
 
-	reflect::AnnotatePropertyForEditor<QuartzComposerData>( "StartTime", "editor.range.min", "0.0" );
-	reflect::AnnotatePropertyForEditor<QuartzComposerData>( "StartTime", "editor.range.max", "30.0" );
+	reflect::annotatePropertyForEditor<QuartzComposerData>( "StartTime", "editor.range.min", "0.0" );
+	reflect::annotatePropertyForEditor<QuartzComposerData>( "StartTime", "editor.range.max", "30.0" );
 
-	reflect::AnnotatePropertyForEditor<QuartzComposerData>( "EndTime", "editor.range.min", "0.0" );
-	reflect::AnnotatePropertyForEditor<QuartzComposerData>( "EndTime", "editor.range.max", "30.0" );
+	reflect::annotatePropertyForEditor<QuartzComposerData>( "EndTime", "editor.range.min", "0.0" );
+	reflect::annotatePropertyForEditor<QuartzComposerData>( "EndTime", "editor.range.max", "30.0" );
 
-	reflect::AnnotatePropertyForEditor<QuartzComposerData>( "FPS", "editor.range.min", "1.0" );
-	reflect::AnnotatePropertyForEditor<QuartzComposerData>( "FPS", "editor.range.max", "60.0" );
+	reflect::annotatePropertyForEditor<QuartzComposerData>( "FPS", "editor.range.min", "1.0" );
+	reflect::annotatePropertyForEditor<QuartzComposerData>( "FPS", "editor.range.max", "60.0" );
 }
 QuartzComposerData::QuartzComposerData()
 	: mfStartTime(0.0f)

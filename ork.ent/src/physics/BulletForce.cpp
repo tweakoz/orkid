@@ -323,8 +323,8 @@ private:
 void DirectionalForceData::Describe() {
   reflect::RegisterProperty("Force", &DirectionalForceData::mForce);
   reflect::RegisterProperty("Direction", &DirectionalForceData::mDirection);
-  reflect::AnnotatePropertyForEditor<DirectionalForceData>("Force", "editor.range.min", "-1000.0");
-  reflect::AnnotatePropertyForEditor<DirectionalForceData>("Force", "editor.range.max", "1000.0");
+  reflect::annotatePropertyForEditor<DirectionalForceData>("Force", "editor.range.min", "-1000.0");
+  reflect::annotatePropertyForEditor<DirectionalForceData>("Force", "editor.range.max", "1000.0");
 }
 
 BulletObjectForceControllerInst* DirectionalForceData::CreateForceControllerInst(const BulletObjectControllerData& data,

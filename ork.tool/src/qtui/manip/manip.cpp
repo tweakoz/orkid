@@ -296,7 +296,7 @@ void ManipManager::AttachObject(ork::Object* pobj) {
     mpCurrentInterface = 0;
   }
 
-  auto anno = pclass->Description().GetClassAnnotation("editor.3dxfinterface");
+  auto anno = pclass->Description().classAnnotation("editor.3dxfinterface");
 
   if (auto as_cstr = anno.TryAs<ConstString>()) {
     ConstString classname       = as_cstr.value();

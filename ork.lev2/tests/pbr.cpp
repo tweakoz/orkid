@@ -17,7 +17,8 @@ TEST(pbr1) {
     printf("fxi<%p>\n", fxi);
     CHECK(fxi != nullptr);
 
-    auto mtl = new ork::lev2::PBRMaterial("yo");
+    auto mtl = new ork::lev2::PBRMaterial();
+    mtl->setTextureBaseName("yo");
     mtl->Init(targ);
     printf("mtl<%p>\n", mtl);
     CHECK(mtl != nullptr);

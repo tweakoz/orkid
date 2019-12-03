@@ -54,13 +54,13 @@ void LightData::Describe() {
   ork::reflect::RegisterProperty("ShadowBias", &LightData::mShadowBias);
   ork::reflect::RegisterProperty("ShadowCaster", &LightData::mbShadowCaster);
 
-  ork::reflect::AnnotatePropertyForEditor<LightData>("ShadowBias", "editor.range.min", "0.0");
-  ork::reflect::AnnotatePropertyForEditor<LightData>("ShadowBias", "editor.range.max", "2.0");
-  ork::reflect::AnnotatePropertyForEditor<LightData>("ShadowBias", "editor.range.log", "true");
-  ork::reflect::AnnotatePropertyForEditor<LightData>("ShadowSamples", "editor.range.min", "1");
-  ork::reflect::AnnotatePropertyForEditor<LightData>("ShadowSamples", "editor.range.max", "256.0");
-  ork::reflect::AnnotatePropertyForEditor<LightData>("ShadowBlur", "editor.range.min", "0");
-  ork::reflect::AnnotatePropertyForEditor<LightData>("ShadowBlur", "editor.range.max", "1.0");
+  ork::reflect::annotatePropertyForEditor<LightData>("ShadowBias", "editor.range.min", "0.0");
+  ork::reflect::annotatePropertyForEditor<LightData>("ShadowBias", "editor.range.max", "2.0");
+  ork::reflect::annotatePropertyForEditor<LightData>("ShadowBias", "editor.range.log", "true");
+  ork::reflect::annotatePropertyForEditor<LightData>("ShadowSamples", "editor.range.min", "1");
+  ork::reflect::annotatePropertyForEditor<LightData>("ShadowSamples", "editor.range.max", "256.0");
+  ork::reflect::annotatePropertyForEditor<LightData>("ShadowBlur", "editor.range.min", "0");
+  ork::reflect::annotatePropertyForEditor<LightData>("ShadowBlur", "editor.range.max", "1.0");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -73,14 +73,14 @@ void PointLight::Describe() {}
 
 void PointLightData::Describe() {
   ork::reflect::RegisterProperty("Radius", &PointLightData::_radius);
-  ork::reflect::AnnotatePropertyForEditor<PointLightData>("Radius", "editor.range.min", "1");
-  ork::reflect::AnnotatePropertyForEditor<PointLightData>("Radius", "editor.range.max", "3000.00");
-  ork::reflect::AnnotatePropertyForEditor<PointLightData>("Radius", "editor.range.log", "true");
+  ork::reflect::annotatePropertyForEditor<PointLightData>("Radius", "editor.range.min", "1");
+  ork::reflect::annotatePropertyForEditor<PointLightData>("Radius", "editor.range.max", "3000.00");
+  ork::reflect::annotatePropertyForEditor<PointLightData>("Radius", "editor.range.log", "true");
 
   ork::reflect::RegisterProperty("Falloff", &PointLightData::_falloff);
-  ork::reflect::AnnotatePropertyForEditor<PointLightData>("Falloff", "editor.range.min", "0");
-  ork::reflect::AnnotatePropertyForEditor<PointLightData>("Falloff", "editor.range.max", "10.00");
-  ork::reflect::AnnotatePropertyForEditor<PointLightData>("Falloff", "editor.range.log", "true");
+  ork::reflect::annotatePropertyForEditor<PointLightData>("Falloff", "editor.range.min", "0");
+  ork::reflect::annotatePropertyForEditor<PointLightData>("Falloff", "editor.range.max", "10.00");
+  ork::reflect::annotatePropertyForEditor<PointLightData>("Falloff", "editor.range.log", "true");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -170,8 +170,8 @@ AmbientLight::AmbientLight(const fmtx4& mtx, const AmbientLightData* dld)
 
 void AmbientLightData::Describe() {
   ork::reflect::RegisterProperty("AmbientShade", &AmbientLightData::mfAmbientShade);
-  ork::reflect::AnnotatePropertyForEditor<AmbientLightData>("AmbientShade", "editor.range.min", "0.0");
-  ork::reflect::AnnotatePropertyForEditor<AmbientLightData>("AmbientShade", "editor.range.max", "1.0");
+  ork::reflect::annotatePropertyForEditor<AmbientLightData>("AmbientShade", "editor.range.min", "0.0");
+  ork::reflect::annotatePropertyForEditor<AmbientLightData>("AmbientShade", "editor.range.max", "1.0");
   ork::reflect::RegisterProperty("HeadlightDir", &AmbientLightData::mvHeadlightDir);
 }
 
@@ -194,15 +194,15 @@ void SpotLightData::Describe() {
   ork::reflect::RegisterProperty("Range", &SpotLightData::mRange);
   ork::reflect::RegisterProperty("Texture", &SpotLightData::GetTextureAccessor, &SpotLightData::SetTextureAccessor);
 
-  ork::reflect::AnnotatePropertyForEditor<SpotLightData>("Texture", "editor.class", "ged.factory.assetlist");
-  ork::reflect::AnnotatePropertyForEditor<SpotLightData>("Texture", "editor.assettype", "lev2tex");
+  ork::reflect::annotatePropertyForEditor<SpotLightData>("Texture", "editor.class", "ged.factory.assetlist");
+  ork::reflect::annotatePropertyForEditor<SpotLightData>("Texture", "editor.assettype", "lev2tex");
 
-  ork::reflect::AnnotatePropertyForEditor<SpotLightData>("Fovy", "editor.range.min", "0.0");
-  ork::reflect::AnnotatePropertyForEditor<SpotLightData>("Fovy", "editor.range.max", "180.0");
+  ork::reflect::annotatePropertyForEditor<SpotLightData>("Fovy", "editor.range.min", "0.0");
+  ork::reflect::annotatePropertyForEditor<SpotLightData>("Fovy", "editor.range.max", "180.0");
 
-  ork::reflect::AnnotatePropertyForEditor<SpotLightData>("Range", "editor.range.min", "1");
-  ork::reflect::AnnotatePropertyForEditor<SpotLightData>("Range", "editor.range.max", "1000.00");
-  ork::reflect::AnnotatePropertyForEditor<SpotLightData>("Range", "editor.range.log", "true");
+  ork::reflect::annotatePropertyForEditor<SpotLightData>("Range", "editor.range.min", "1");
+  ork::reflect::annotatePropertyForEditor<SpotLightData>("Range", "editor.range.max", "1000.00");
+  ork::reflect::annotatePropertyForEditor<SpotLightData>("Range", "editor.range.log", "true");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

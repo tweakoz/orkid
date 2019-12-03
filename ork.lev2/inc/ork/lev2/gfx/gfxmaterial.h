@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <functional>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/gfxenv_enum.h> // For ETextureDest
 #include <ork/lev2/gfx/gfxenv.h>
@@ -14,7 +15,9 @@
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/gfxrasterstate.h>
 
-namespace ork { namespace lev2 {
+namespace ork {
+
+namespace lev2 {
 
 class Texture;
 
@@ -104,7 +107,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class GfxMaterial : public ork::Object
+struct GfxMaterial : public ork::Object
 {
 	RttiDeclareAbstract(GfxMaterial,ork::Object);
 	//////////////////////////////////////////////////////////////////////////////
@@ -159,8 +162,6 @@ class GfxMaterial : public ork::Object
 
 	SRasterState							mRasterState;
 
-	protected:
-
 	int										miNumPasses;		///< Number Of Render Passes in this Material (platform specific)
 	PoolString								mMaterialName;
 	TextureContext							mTextureMap[ETEXDEST_END];
@@ -170,6 +171,8 @@ class GfxMaterial : public ork::Object
 	const RenderContextInstData*			mRenderContexInstData;
 	std::stack<bool>						mDebug;
 	bool _doinit = true;
+
+	std::map<std::string,svar64_t>          _properties;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -177,5 +180,30 @@ class GfxMaterial : public ork::Object
 typedef orkmap<std::string,GfxMaterial*> MaterialMap;
 bool LoadMaterialMap( const ork::file::Path& pth, MaterialMap& mmap );
 
-} }
+}
+
+namespace chunkfile {
+
+  //class Reader;
+  class Writer;
+  class OutputStream;
+  class InputStream;
+
+  struct XgmMaterialWriterContext {
+    OutputStream* _outputStream = nullptr;
+    const ork::lev2::GfxMaterial* _material = nullptr;
+    Writer* _chunkwriter = nullptr;
+  };
+  struct XgmMaterialReaderContext {
+    InputStream* _inputStream = nullptr;
+    ork::lev2::GfxMaterial* _material = nullptr;
+    //Reader* _chunkReader = nullptr;
+  };
+
+  typedef std::function<ork::lev2::GfxMaterial*(XgmMaterialReaderContext& ctx)> materialreader_t;
+  typedef std::function<void(XgmMaterialWriterContext& ctx)> materialwriter_t;
+
+};
+
+}
 

@@ -660,6 +660,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
   ///////////////////////////////////
   chunkfile::Writer chunkwriter("xgm");
+
   ///////////////////////////////////
   chunkfile::OutputStream* HeaderStream    = chunkwriter.AddStream("header");
   chunkfile::OutputStream* ModelDataStream = chunkwriter.AddStream("modeldata");
@@ -757,6 +758,9 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
   for (int32_t imat = 0; imat < inummats; imat++) {
     const lev2::GfxMaterial* pmat = mdl->GetMaterial(imat);
+    auto matclass = pmat->GetClass();
+    auto& writeranno = matclass->annotation("xgm.writer");
+
     HeaderStream->AddItem(imat);
     istring = chunkwriter.GetStringIndex(pmat->GetName().c_str());
     HeaderStream->AddItem(istring);
@@ -771,9 +775,21 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
     printf("Material Name<%s> Class<%s>\n", pmat->GetName().c_str(), classname.c_str());
     /////////////////////////////////////////////////////////////////////////////////////////////////////
+    // new style material writer
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    if( auto as_writer = writeranno.TryAs<chunkfile::materialwriter_t>()){
+      chunkfile::XgmMaterialWriterContext mtlwctx;
+      mtlwctx._chunkwriter = & chunkwriter;
+      mtlwctx._material = pmat;
+      mtlwctx._outputStream = HeaderStream;
+      auto& writer = as_writer.value();
+      writer(mtlwctx);
+      assert(false);
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
     // basic materials (fixed, simple materials
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-    if (pmat->GetClass()->IsSubclassOf(lev2::GfxMaterialWiiBasic::GetClassStatic())) {
+    else if (pmat->GetClass()->IsSubclassOf(lev2::GfxMaterialWiiBasic::GetClassStatic())) {
       const lev2::GfxMaterialWiiBasic* pbasmat = rtti::safe_downcast<const lev2::GfxMaterialWiiBasic*>(pmat);
       istring                                  = chunkwriter.GetStringIndex(pbasmat->GetBasicTechName().c_str());
       HeaderStream->AddItem(istring);

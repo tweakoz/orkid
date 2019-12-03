@@ -160,8 +160,8 @@ void Constants::Describe()
 {	
 	ork::reflect::RegisterMapProperty( "Floats", & Constants::mFloatConsts );
 	ork::reflect::RegisterMapProperty( "Vect3s", & Constants::mVect3Consts );
-	//ork::reflect::AnnotatePropertyForEditor< Constants >("FloatPlugs", "editor.factorylistbase", "dflow/outplug<float>" );
-	//ork::reflect::AnnotatePropertyForEditor< Constants >("Vect3Plugs", "editor.factorylistbase", "dflow/outplug<vect3>" );
+	//ork::reflect::annotatePropertyForEditor< Constants >("FloatPlugs", "editor.factorylistbase", "dflow/outplug<float>" );
+	//ork::reflect::annotatePropertyForEditor< Constants >("Vect3Plugs", "editor.factorylistbase", "dflow/outplug<vect3>" );
 }
 
 int Constants::GetNumOutputs() const
@@ -349,8 +349,8 @@ void ExtConnector::Describe()
 {	
 	ork::reflect::RegisterMapProperty( "FloatPlugs", & ExtConnector::mFloatPlugs );
 	ork::reflect::RegisterMapProperty( "Vect3Plugs", & ExtConnector::mVect3Plugs );
-	ork::reflect::AnnotatePropertyForEditor< ExtConnector >("FloatPlugs", "editor.factorylistbase", "dflow/outplug<float>" );
-	ork::reflect::AnnotatePropertyForEditor< ExtConnector >("Vect3Plugs", "editor.factorylistbase", "dflow/outplug<vect3>" );
+	ork::reflect::annotatePropertyForEditor< ExtConnector >("FloatPlugs", "editor.factorylistbase", "dflow/outplug<float>" );
+	ork::reflect::annotatePropertyForEditor< ExtConnector >("Vect3Plugs", "editor.factorylistbase", "dflow/outplug<vect3>" );
 }
 int ExtConnector::GetNumOutputs() const
 {	int iret = 0;
@@ -447,7 +447,7 @@ void FloatOp2Module::Describe()
 	RegisterFloatXfPlug( FloatOp2Module, InputB, -100.0f, 100.0f, ged::OutPlugChoiceDelegate );
 	//static const char* EdGrpStr =
 	//	        "grp://yp Input Gravity";
-	//reflect::AnnotateClassForEditor<FloatOp2Module>( "editor.prop.groups", EdGrpStr );
+	//reflect::annotateClassForEditor<FloatOp2Module>( "editor.prop.groups", EdGrpStr );
 }
 ///////////////////////////////////////////////////////////////////////////////
 FloatOp2Module::FloatOp2Module()
@@ -490,7 +490,7 @@ void Vec3Op2Module::Describe()
 	RegisterVect3XfPlug( Vec3Op2Module, InputB, -100.0f, 100.0f, ged::OutPlugChoiceDelegate );
 	//static const char* EdGrpStr =
 	//	        "grp://yp Input Gravity";
-	//reflect::AnnotateClassForEditor<FloatOp2Module>( "editor.prop.groups", EdGrpStr );
+	//reflect::annotateClassForEditor<FloatOp2Module>( "editor.prop.groups", EdGrpStr );
 }
 ///////////////////////////////////////////////////////////////////////////////
 Vec3Op2Module::Vec3Op2Module()
@@ -575,8 +575,8 @@ void ParticlePool::Describe()
 	RegisterFloatXfPlug( ParticlePool, PathInterval, 0.0f, 10.0f, ged::OutPlugChoiceDelegate );
 	RegisterFloatXfPlug( ParticlePool, PathProbability, 0.0f, 1.0f, ged::OutPlugChoiceDelegate );
 	ork::reflect::RegisterProperty( "MaxParticles", & ParticlePool::miPoolSize );
-	ork::reflect::AnnotatePropertyForEditor< ParticlePool >( "MaxParticles", "editor.range.min", "1" );
-	ork::reflect::AnnotatePropertyForEditor< ParticlePool >( "MaxParticles", "editor.range.max", "20000" );
+	ork::reflect::annotatePropertyForEditor< ParticlePool >( "MaxParticles", "editor.range.min", "1" );
+	ork::reflect::annotatePropertyForEditor< ParticlePool >( "MaxParticles", "editor.range.max", "20000" );
 	ork::reflect::RegisterProperty( "PathStochasticQID", & ParticlePool::mPathStochasticQueueID );
 	ork::reflect::RegisterProperty( "PathIntervalQID", & ParticlePool::mPathIntervalQueueID );
 }
@@ -698,14 +698,14 @@ void RingEmitter::Describe()
 	ork::reflect::RegisterProperty( "DeathQID", & RingEmitter::mDeathQueueID );
 
 	ork::reflect::RegisterProperty( "DirectionType", & RingEmitter::meDirection );
-	ork::reflect::AnnotatePropertyForEditor<RingEmitter>(	"DirectionType", "editor.class", "ged.factory.enum" );
+	ork::reflect::annotatePropertyForEditor<RingEmitter>(	"DirectionType", "editor.class", "ged.factory.enum" );
 	static const char* EdGrpStr =
 		        "sort://Input "
 		        "Direction DirectionType DispersionAngle Lifespan EmitterSpinRate "
 				"EmissionRadius EmissionRate EmissionVelocity "
 				"grp://Offset OffsetX OffsetY OffsetZ "
 				"grp://Event DeathQID PathIntervalQID PathStochasticQID";
-	reflect::AnnotateClassForEditor<RingEmitter>( "editor.prop.groups", EdGrpStr );
+	reflect::annotateClassForEditor<RingEmitter>( "editor.prop.groups", EdGrpStr );
 }
 ///////////////////////////////////////////////////////////////////////////////
 RingEmitter::RingEmitter()
@@ -890,7 +890,7 @@ void NozzleEmitter::Describe()
 		        "DispersionAngle Lifespan "
 				"EmissionRate EmissionVelocity "
 				"Offset Direction  OffsetVelocity";
-	reflect::AnnotateClassForEditor<NozzleEmitter>( "editor.prop.groups", EdGrpStr );
+	reflect::annotateClassForEditor<NozzleEmitter>( "editor.prop.groups", EdGrpStr );
 }
 ///////////////////////////////////////////////////////////////////////////////
 NozzleEmitter::NozzleEmitter()
@@ -1039,14 +1039,14 @@ void ReEmitter::Describe()
 	ork::reflect::RegisterProperty( "DirectionType", & ReEmitter::meDirection );
 	ork::reflect::RegisterProperty( "SpawnQID", & ReEmitter::mSpawnQueueID );
 	ork::reflect::RegisterProperty( "DeathQID", & ReEmitter::mDeathQueueID );
-	ork::reflect::AnnotatePropertyForEditor<ReEmitter>(	"DirectionType", "editor.class", "ged.factory.enum" );
+	ork::reflect::annotatePropertyForEditor<ReEmitter>(	"DirectionType", "editor.class", "ged.factory.enum" );
 
 	static const char* EdGrpStr =
 		        "grp://Input "
 		        "Input DirectionType DispersionAngle Lifespan "
 				"EmissionRate EmissionVelocity "
 				"grp://Event SpawnProbability SpawnMultiplier SpawnQID DeathQID ";
-	reflect::AnnotateClassForEditor<ReEmitter>( "editor.prop.groups", EdGrpStr );
+	reflect::annotateClassForEditor<ReEmitter>( "editor.prop.groups", EdGrpStr );
 
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -1165,7 +1165,7 @@ void WindModule::Describe()
 	RegisterFloatXfPlug( WindModule, Force, -100.0f, 100.0f, ged::OutPlugChoiceDelegate );
 	static const char* EdGrpStr =
 		        "grp://yp Input Force";
-	reflect::AnnotateClassForEditor<WindModule>( "editor.prop.groups", EdGrpStr );
+	reflect::annotateClassForEditor<WindModule>( "editor.prop.groups", EdGrpStr );
 }
 ///////////////////////////////////////////////////////////////////////////////
 WindModule::WindModule()
@@ -1209,7 +1209,7 @@ void GravityModule::Describe()
 
 	static const char* EdGrpStr =
 		        "grp://yp Input G Mass OthMass MinDistance Center";
-	reflect::AnnotateClassForEditor<GravityModule>( "editor.prop.groups", EdGrpStr );
+	reflect::annotateClassForEditor<GravityModule>( "editor.prop.groups", EdGrpStr );
 }
 ///////////////////////////////////////////////////////////////////////////////
 GravityModule::GravityModule()
@@ -1290,10 +1290,10 @@ void PlanarColliderModule::Describe()
 		        "grp://Normal NormalX NormalY NormalZ "
 		        "grp://Origin OriginX OriginY OriginZ ";
 				
-	reflect::AnnotateClassForEditor<PlanarColliderModule>( "editor.prop.groups", EdGrpStr );
+	reflect::annotateClassForEditor<PlanarColliderModule>( "editor.prop.groups", EdGrpStr );
 	ork::reflect::RegisterProperty("DiodeDirection", & PlanarColliderModule::miDiodeDirection );
-	ork::reflect::AnnotatePropertyForEditor< PlanarColliderModule >( "DiodeDirection", "editor.range.min", "-1" );
-	ork::reflect::AnnotatePropertyForEditor< PlanarColliderModule >( "DiodeDirection", "editor.range.max", "1" );
+	ork::reflect::annotatePropertyForEditor< PlanarColliderModule >( "DiodeDirection", "editor.range.min", "-1" );
+	ork::reflect::annotatePropertyForEditor< PlanarColliderModule >( "DiodeDirection", "editor.range.max", "1" );
 }
 ///////////////////////////////////////////////////////////////////////////////
 PlanarColliderModule::PlanarColliderModule()
@@ -1394,7 +1394,7 @@ void SphericalColliderModule::Describe()
 		        "grp://Main Input Absorbtion "
 		        "grp://Sphere CenterX CenterY CenterZ Radius";
 				
-	reflect::AnnotateClassForEditor<SphericalColliderModule>( "editor.prop.groups", EdGrpStr );
+	reflect::annotateClassForEditor<SphericalColliderModule>( "editor.prop.groups", EdGrpStr );
 }
 ///////////////////////////////////////////////////////////////////////////////
 SphericalColliderModule::SphericalColliderModule()
@@ -1485,7 +1485,7 @@ void DecayModule::Describe()
 	RegisterFloatXfPlug( DecayModule, Decay, 0.0f, 1.0f, ged::OutPlugChoiceDelegate );
 	static const char* EdGrpStr =
 		        "grp://yp Input Decay";
-	reflect::AnnotateClassForEditor<DecayModule>( "editor.prop.groups", EdGrpStr );
+	reflect::annotateClassForEditor<DecayModule>( "editor.prop.groups", EdGrpStr );
 }
 ///////////////////////////////////////////////////////////////////////////////
 DecayModule::DecayModule()
@@ -1526,7 +1526,7 @@ void TurbulenceModule::Describe()
 	RegisterFloatXfPlug( TurbulenceModule, AmountZ, -100.0f, 100.0f, ged::OutPlugChoiceDelegate );
 	static const char* EdGrpStr =
 		        "grp://yp Input AmountX AmountY AmountZ ";
-	reflect::AnnotateClassForEditor<TurbulenceModule>( "editor.prop.groups", EdGrpStr );
+	reflect::annotateClassForEditor<TurbulenceModule>( "editor.prop.groups", EdGrpStr );
 }
 ///////////////////////////////////////////////////////////////////////////////
 TurbulenceModule::TurbulenceModule()
@@ -1581,7 +1581,7 @@ void VortexModule::Describe()
 	RegisterFloatXfPlug( VortexModule, OutwardStrength, -100.0f, 100.0f, ged::OutPlugChoiceDelegate );
 	static const char* EdGrpStr =
 		        "grp://yp Input Falloff VortexStrength OutwardStrength";
-	reflect::AnnotateClassForEditor<VortexModule>( "editor.prop.groups", EdGrpStr );
+	reflect::annotateClassForEditor<VortexModule>( "editor.prop.groups", EdGrpStr );
 }
 ///////////////////////////////////////////////////////////////////////////////
 VortexModule::VortexModule()

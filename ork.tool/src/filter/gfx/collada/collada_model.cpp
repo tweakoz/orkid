@@ -217,7 +217,7 @@ bool CColladaModel::FindDaeMeshes( void )
 			FCDGeometry *GeoObj = GeoLib->GetEntity(ient);
 	
 			bool is_mesh = GeoObj->IsMesh();
-			printf( "collada_ent<%d> is_mesh<%d>\n", ient, int(is_mesh) );
+ 			printf( "collada_ent<%d> is_mesh<%d>\n", ient, int(is_mesh) );
 
 			if( is_mesh )
 			{

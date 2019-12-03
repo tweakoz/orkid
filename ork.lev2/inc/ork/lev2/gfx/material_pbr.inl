@@ -12,16 +12,23 @@
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/lev2_asset.h>
 #include <boost/filesystem.hpp>
+#include <ork/file/chunkfile.h>
+#include <ork/file/chunkfile.inl>
 
 namespace ork::lev2 {
 using namespace boost::filesystem;
 using namespace std::literals;
 ///////////////////////////////////////////////////////////////////////////////
 
-struct PBRMaterial : public GfxMaterial {
+class PBRMaterial : public GfxMaterial {
 
-  PBRMaterial(std::string name);
+  DeclareConcreteX(PBRMaterial,GfxMaterial);
+public:
+
+  PBRMaterial();
   ~PBRMaterial() final;
+
+ void setTextureBaseName(std::string basename) { _textureBaseName = basename; }
 
   ////////////////////////////////////////////
 
@@ -51,9 +58,18 @@ struct PBRMaterial : public GfxMaterial {
   std::string _textureBaseName;
   const FxShaderTechnique* _tekRigidGBUFFER = nullptr;
   const FxShaderTechnique* _tekRigidGBUFFER_N = nullptr;
+
+  std::string _colorMapName;
+  std::string _normalMapName;
+  std::string _roughMapName;
+  std::string _metalMapName;
+  std::string _amboccMapName;
+  std::string _emissiveMapName;
+
+  bool _metalicRoughnessSingleTexture = false;
 };
 
-inline PBRMaterial::PBRMaterial(std::string name) {
+inline PBRMaterial::PBRMaterial() {
   mRasterState.SetShadeModel(ESHADEMODEL_SMOOTH);
   mRasterState.SetAlphaTest(EALPHATEST_OFF);
   mRasterState.SetBlending(EBLENDING_OFF);
@@ -61,7 +77,6 @@ inline PBRMaterial::PBRMaterial(std::string name) {
   mRasterState.SetZWriteMask(true);
   mRasterState.SetCullTest(ECULLTEST_PASS_FRONT);
   miNumPasses = 1;
-  _textureBaseName = name;
 
 }
 inline PBRMaterial::~PBRMaterial() {

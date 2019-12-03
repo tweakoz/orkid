@@ -5,10 +5,10 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _GFX_GFXMODEL_H
-#define _GFX_GFXMODEL_H
-
+#pragma once
+#include <ork/kernel/varmap.inl>
 #include <ork/file/chunkfile.h>
+#include <ork/kernel/datablock.inl>
 #include <ork/file/file.h>
 #include <ork/file/path.h>
 #include <ork/kernel/string/ConstString.h>
@@ -31,7 +31,7 @@
 //	Orkid Native Model File Format (XGM = XPlat Skinned Gfx Model)
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace ork { namespace lev2 {
+namespace ork::lev2 {
 
 typedef AssetHandle ModelH;
 
@@ -48,6 +48,20 @@ class XgmModel;
 class XgmCluster;
 class XgmSubMesh;
 struct RenderContextInstModelData;
+
+struct EmbeddedTexture {
+    int _w = 0;
+    int _h = 0;
+    size_t _srcdatalen = 0;
+    const void* _srcdata = nullptr;
+    std::string _format;
+    std::string _name;
+    datablockptr_t _ddsdatablock;
+    datablockptr_t compressTexture(uint64_t hash) const;
+    void fetchDDSdata();
+};
+
+typedef std::map<std::string,EmbeddedTexture*> embtexmap_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -304,6 +318,7 @@ struct XgmModel {
   fvec3 mBoundingCenter;
   float mBoundingRadius;
   bool mbSkinned;
+  varmap::VarMap _varmap;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -386,6 +401,4 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-}} // namespace ork::lev2
-
-#endif
+} // namespace ork::lev2

@@ -179,7 +179,7 @@ static lev2::Texture* GetImgModuleIcon( ork::dataflow::dgmodule* pmod )
 
 void ImgModule::Describe()
 {
-	reflect::AnnotateClassForEditor<ImgModule>( "dflowicon", & GetImgModuleIcon );
+	reflect::annotateClassForEditor<ImgModule>( "dflowicon", & GetImgModuleIcon );
 
 	auto opm = new ork::reflect::OpMap;
 
@@ -194,7 +194,7 @@ void ImgModule::Describe()
 		}
 	};
 
-	reflect::AnnotateClassForEditor< Img32Module >("editor.object.ops", opm );
+	reflect::annotateClassForEditor< Img32Module >("editor.object.ops", opm );
 
 
 }
@@ -356,8 +356,8 @@ void ImgModule::UpdateThumb( ProcTex& ptex )
 ///////////////////////////////////////////////////////////////////////////////
 void ProcTex::Describe()
 {	//ork::reflect::RegisterProperty( "Global", & ProcTex::GlobalAccessor );
-	//ork::reflect::AnnotatePropertyForEditor< ProcTex >("Global", "editor.visible", "false" );
-	//ork::reflect::AnnotatePropertyForEditor< ProcTex >("Modules", "editor.factorylistbase", "proctex::Module" );
+	//ork::reflect::annotatePropertyForEditor< ProcTex >("Global", "editor.visible", "false" );
+	//ork::reflect::annotatePropertyForEditor< ProcTex >("Modules", "editor.factorylistbase", "proctex::Module" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

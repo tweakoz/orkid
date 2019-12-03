@@ -350,7 +350,7 @@ ork::dataflow::inplugbase* SphRefract::GetInput(int idx)
 void H2N::Describe()
 {	RegisterObjInpPlug( H2N, Input );
 	RegisterFloatXfPlug( H2N, ScaleY, 0.0f, 1.0f, ged::OutPlugChoiceDelegate );
-	ork::reflect::AnnotatePropertyForEditor< H2N >( "ScaleY", "editor.range.log", "true" );
+	ork::reflect::annotatePropertyForEditor< H2N >( "ScaleY", "editor.range.log", "true" );
 	ork::reflect::RegisterProperty( "AntiAlias", & H2N::mbAA );
 }
 ork::dataflow::inplugbase* H2N::GetInput(int idx)
@@ -429,7 +429,7 @@ void Kaled::Describe()
 	RegisterFloatXfPlug( Kaled, OffsetX, -1.0f, 1.0f, ged::OutPlugChoiceDelegate );
 	RegisterFloatXfPlug( Kaled, OffsetY, -1.0f, 1.0f, ged::OutPlugChoiceDelegate );	
 	ork::reflect::RegisterProperty( "Mode", & Kaled::meMode );
-	ork::reflect::AnnotatePropertyForEditor< Kaled >( "Mode", "editor.class", "ged.factory.enum" );
+	ork::reflect::annotatePropertyForEditor< Kaled >( "Mode", "editor.class", "ged.factory.enum" );
 }
 ///////////////////////////////////////////////////////////////////////////////
 Kaled::Kaled()

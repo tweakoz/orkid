@@ -50,12 +50,12 @@ static PoolString sBulletFamily;
 
 void BulletSystemData::Describe() {
   ork::reflect::RegisterProperty("SimulationRate", &BulletSystemData::mSimulationRate);
-  ork::reflect::AnnotatePropertyForEditor<BulletSystemData>("SimulationRate", "editor.range.min", "60.0f");
-  ork::reflect::AnnotatePropertyForEditor<BulletSystemData>("SimulationRate", "editor.range.max", "2400.0f");
+  ork::reflect::annotatePropertyForEditor<BulletSystemData>("SimulationRate", "editor.range.min", "60.0f");
+  ork::reflect::annotatePropertyForEditor<BulletSystemData>("SimulationRate", "editor.range.max", "2400.0f");
 
   ork::reflect::RegisterProperty("TimeScale", &BulletSystemData::mfTimeScale);
-  ork::reflect::AnnotatePropertyForEditor<BulletSystemData>("TimeScale", "editor.range.min", "0.0f");
-  ork::reflect::AnnotatePropertyForEditor<BulletSystemData>("TimeScale", "editor.range.max", "50.0f");
+  ork::reflect::annotatePropertyForEditor<BulletSystemData>("TimeScale", "editor.range.min", "0.0f");
+  ork::reflect::annotatePropertyForEditor<BulletSystemData>("TimeScale", "editor.range.max", "50.0f");
 
   ork::reflect::RegisterProperty("Gravity", &BulletSystemData::mGravity);
 

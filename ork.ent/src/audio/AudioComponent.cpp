@@ -121,15 +121,15 @@ void AudioEffectPlayDataBase::Describe()
 	ork::reflect::RegisterProperty( "IsEmitter", & AudioEffectPlayDataBase::mbEmitter);
 	ork::reflect::RegisterProperty( "AttenCurve", & AudioEffectPlayDataBase::AttenCurveAccessor );
 
-	ork::reflect::AnnotatePropertyForEditor< AudioEffectPlayDataBase >( "MutexPriority", "editor.range.min", "0" );
-	ork::reflect::AnnotatePropertyForEditor< AudioEffectPlayDataBase >( "MutexPriority", "editor.range.max", "15" );
+	ork::reflect::annotatePropertyForEditor< AudioEffectPlayDataBase >( "MutexPriority", "editor.range.min", "0" );
+	ork::reflect::annotatePropertyForEditor< AudioEffectPlayDataBase >( "MutexPriority", "editor.range.max", "15" );
 
-	ork::reflect::AnnotatePropertyForEditor< AudioEffectPlayDataBase >( "MutexGroup", "ged.userchoice.delegate", "AudioMutexGroupChoiceDelegate" );
-	ork::reflect::AnnotatePropertyForEditor< AudioEffectPlayDataBase >( "SubMixGroup", "ged.userchoice.delegate", "AudioSubMixChoiceDelegate" );
+	ork::reflect::annotatePropertyForEditor< AudioEffectPlayDataBase >( "MutexGroup", "ged.userchoice.delegate", "AudioMutexGroupChoiceDelegate" );
+	ork::reflect::annotatePropertyForEditor< AudioEffectPlayDataBase >( "SubMixGroup", "ged.userchoice.delegate", "AudioSubMixChoiceDelegate" );
 
-	ork::reflect::AnnotatePropertyForEditor< AudioEffectPlayDataBase >("MaxEmitterRange", "editor.range.min", "0.0" );
-	ork::reflect::AnnotatePropertyForEditor< AudioEffectPlayDataBase >("MaxEmitterRange", "editor.range.max", "100.0" );
-	ork::reflect::AnnotatePropertyForEditor< AudioEffectPlayDataBase >("MaxEmitterRange", "editor.range.log", "true" );
+	ork::reflect::annotatePropertyForEditor< AudioEffectPlayDataBase >("MaxEmitterRange", "editor.range.min", "0.0" );
+	ork::reflect::annotatePropertyForEditor< AudioEffectPlayDataBase >("MaxEmitterRange", "editor.range.max", "100.0" );
+	ork::reflect::annotatePropertyForEditor< AudioEffectPlayDataBase >("MaxEmitterRange", "editor.range.log", "true" );
 }
 ///////////////////////////////////////////////////////////////////////////////
 AudioEffectPlayDataBase::AudioEffectPlayDataBase()
@@ -145,9 +145,9 @@ AudioEffectPlayDataBase::AudioEffectPlayDataBase()
 void AudioMultiEffectPlayData::Describe()
 {
 	ork::reflect::RegisterMapProperty( "SubSounds", & AudioMultiEffectPlayData::mSubSoundMap );
-	ork::reflect::AnnotatePropertyForEditor< AudioMultiEffectPlayData >("SubSounds", "editor.factorylistbase", "AudioMultiEffectPlayDataItemBase" );
+	ork::reflect::annotatePropertyForEditor< AudioMultiEffectPlayData >("SubSounds", "editor.factorylistbase", "AudioMultiEffectPlayDataItemBase" );
 	ork::reflect::RegisterProperty( "SelectMode", & AudioMultiEffectPlayData::mSelectMode );
-	ork::reflect::AnnotatePropertyForEditor<AudioMultiEffectPlayData>(	"SelectMode", "editor.class", "ged.factory.enum" );
+	ork::reflect::annotatePropertyForEditor<AudioMultiEffectPlayData>(	"SelectMode", "editor.class", "ged.factory.enum" );
 	ork::reflect::RegisterProperty( "Enable3D", & AudioMultiEffectPlayData::mEnable3D );
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -337,15 +337,15 @@ void AudioMultiEffectPlayDataItemBase::Describe()
 	ork::reflect::RegisterProperty( "Note", & AudioMultiEffectPlayDataItemBase::miNote );
 	ork::reflect::RegisterProperty( "Velocity", & AudioMultiEffectPlayDataItemBase::miVelocity );
 
-	ork::reflect::AnnotatePropertyForEditor< AudioMultiEffectPlayDataItemBase >( "Velocity", "editor.range.min", "0" );
-	ork::reflect::AnnotatePropertyForEditor< AudioMultiEffectPlayDataItemBase >( "Velocity", "editor.range.max", "255" );
+	ork::reflect::annotatePropertyForEditor< AudioMultiEffectPlayDataItemBase >( "Velocity", "editor.range.min", "0" );
+	ork::reflect::annotatePropertyForEditor< AudioMultiEffectPlayDataItemBase >( "Velocity", "editor.range.max", "255" );
 
-	ork::reflect::AnnotatePropertyForEditor< AudioMultiEffectPlayDataItemBase >( "Note", "editor.range.min", "-1" );
-	ork::reflect::AnnotatePropertyForEditor< AudioMultiEffectPlayDataItemBase >( "Note", "editor.range.max", "127" );
+	ork::reflect::annotatePropertyForEditor< AudioMultiEffectPlayDataItemBase >( "Note", "editor.range.min", "-1" );
+	ork::reflect::annotatePropertyForEditor< AudioMultiEffectPlayDataItemBase >( "Note", "editor.range.max", "127" );
 
-	ork::reflect::AnnotatePropertyForEditor< AudioMultiEffectPlayDataItemBase >( "Note", "ged.userchoice.delegate", "AudioNoteChoiceDelegate" );
-	ork::reflect::AnnotatePropertyForEditor< AudioMultiEffectPlayDataItemBase >( "BankName", "ged.userchoice.delegate", "AudioBankChoiceDelegate" );
-	ork::reflect::AnnotatePropertyForEditor< AudioMultiEffectPlayDataItemBase >( "ProgramName", "ged.userchoice.delegate", "AudioProgramChoiceDelegate" );
+	ork::reflect::annotatePropertyForEditor< AudioMultiEffectPlayDataItemBase >( "Note", "ged.userchoice.delegate", "AudioNoteChoiceDelegate" );
+	ork::reflect::annotatePropertyForEditor< AudioMultiEffectPlayDataItemBase >( "BankName", "ged.userchoice.delegate", "AudioBankChoiceDelegate" );
+	ork::reflect::annotatePropertyForEditor< AudioMultiEffectPlayDataItemBase >( "ProgramName", "ged.userchoice.delegate", "AudioProgramChoiceDelegate" );
 }
 AudioMultiEffectPlayDataItemBase::AudioMultiEffectPlayDataItemBase()
 	: mProgramName( ork::AddPooledLiteral("") )
@@ -419,8 +419,8 @@ void AudioMultiEffectPlayDataItemModular::Describe()
 {
 	ork::reflect::RegisterProperty( "ControlGraph", & AudioMultiEffectPlayDataItemModular::TemplateAccessor );
 	ork::reflect::RegisterProperty( "NumVoices", & AudioMultiEffectPlayDataItemModular::miNumVoices );
-	ork::reflect::AnnotatePropertyForEditor< AudioMultiEffectPlayDataItemModular >("NumVoices", "editor.range.min", "1" );
-	ork::reflect::AnnotatePropertyForEditor< AudioMultiEffectPlayDataItemModular >("NumVoices", "editor.range.max", "16" );
+	ork::reflect::annotatePropertyForEditor< AudioMultiEffectPlayDataItemModular >("NumVoices", "editor.range.min", "1" );
+	ork::reflect::annotatePropertyForEditor< AudioMultiEffectPlayDataItemModular >("NumVoices", "editor.range.max", "16" );
 }
 AudioMultiEffectPlayDataItemModular::AudioMultiEffectPlayDataItemModular()
 	: miNumVoices(1)
@@ -517,10 +517,10 @@ void AudioEffectComponentData::Describe()
 	ork::reflect::RegisterMapProperty("BankMap", & AudioEffectComponentData::mBankMap);
 
 
-	ork::reflect::AnnotatePropertyForEditor<AudioEffectComponentData>("BankMap", "editor.assettype", "lev2::audiobank");
-	ork::reflect::AnnotatePropertyForEditor<AudioEffectComponentData>("BankMap", "editor.assetclass", "lev2::audiobank");
+	ork::reflect::annotatePropertyForEditor<AudioEffectComponentData>("BankMap", "editor.assettype", "lev2::audiobank");
+	ork::reflect::annotatePropertyForEditor<AudioEffectComponentData>("BankMap", "editor.assetclass", "lev2::audiobank");
 
-	ork::reflect::AnnotatePropertyForEditor< AudioEffectComponentData >("SoundMap", "editor.factorylistbase", "AudioEffectPlayDataBase" );
+	ork::reflect::annotatePropertyForEditor< AudioEffectComponentData >("SoundMap", "editor.factorylistbase", "AudioEffectPlayDataBase" );
 
 }
 void AudioEffectComponentData::DoRegisterWithScene( ork::ent::SceneComposer& sc )

@@ -36,7 +36,7 @@ void SceneObject::Describe()
 	// Name must be registered for the case that a SceneObject does not live inside a Scene and exists only by Reference from a Spawner
 	reflect::RegisterProperty("Name", &SceneObject::mName);
 	reflect::RegisterFunctor("GetName", &SceneObject::GetName);
-	reflect::AnnotatePropertyForEditor<SceneObject>( "Name", "editor.visible", "false" );
+	reflect::annotatePropertyForEditor<SceneObject>( "Name", "editor.visible", "false" );
 }
 
 SceneObject::SceneObject()
@@ -55,14 +55,14 @@ void SceneObject::SetName( const char* name )
 ///////////////////////////////////////////////////////////////////////////////
 void SceneDagObject::Describe()
 {
-	reflect::AnnotateClassForEditor<SceneDagObject>( "editor.3dpickable", ConstString("true") );
-	reflect::AnnotateClassForEditor<SceneDagObject>( "editor.3dxfable", true );
-	reflect::AnnotateClassForEditor<SceneDagObject>( "editor.3dxfinterface", ConstString("SceneDagObjectManipInterface") );
+	reflect::annotateClassForEditor<SceneDagObject>( "editor.3dpickable", ConstString("true") );
+	reflect::annotateClassForEditor<SceneDagObject>( "editor.3dxfable", true );
+	reflect::annotateClassForEditor<SceneDagObject>( "editor.3dxfinterface", ConstString("SceneDagObjectManipInterface") );
 	reflect::RegisterProperty( "DagNode", & SceneDagObject::AccessDagNode );
 	reflect::RegisterProperty( "Parent", & SceneDagObject::mParentName );
 
-	reflect::AnnotatePropertyForEditor<SceneDagObject>( "DagNode", "editor.visible", "false" );
-	reflect::AnnotatePropertyForEditor<SceneDagObject>( "Parent", "editor.visible", "false" );
+	reflect::annotatePropertyForEditor<SceneDagObject>( "DagNode", "editor.visible", "false" );
+	reflect::annotatePropertyForEditor<SceneDagObject>( "Parent", "editor.visible", "false" );
 
 }
 SceneDagObject::SceneDagObject()
@@ -81,9 +81,9 @@ void SceneDagObject::SetParentName( const PoolString& pname )
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGroup::Describe()
 {
-	reflect::AnnotateClassForEditor<SceneGroup>( "editor.3dpickable", ConstString("true") );
-	reflect::AnnotateClassForEditor<SceneGroup>( "editor.3dxfable", true );
-	reflect::AnnotateClassForEditor<SceneGroup>( "editor.3dxfinterface", ConstString("SceneDagObjectManipInterface") );
+	reflect::annotateClassForEditor<SceneGroup>( "editor.3dpickable", ConstString("true") );
+	reflect::annotateClassForEditor<SceneGroup>( "editor.3dxfable", true );
+	reflect::annotateClassForEditor<SceneGroup>( "editor.3dxfinterface", ConstString("SceneDagObjectManipInterface") );
 }
 ///////////////////////////////////////////////////////////////////////////////
 SceneGroup::SceneGroup()

@@ -35,9 +35,9 @@ namespace ork { namespace ent {
 
 void ScriptComponentData::Describe() {
   ork::reflect::RegisterProperty("ScriptFile", &ScriptComponentData::mScriptPath);
-  ork::reflect::AnnotatePropertyForEditor<ScriptComponentData>("ScriptFile", "editor.class", "ged.factory.filelist");
-  ork::reflect::AnnotatePropertyForEditor<ScriptComponentData>("ScriptFile", "editor.filetype", "lua");
-  ork::reflect::AnnotatePropertyForEditor<ScriptComponentData>("ScriptFile", "editor.filebase", "src://scripts/");
+  ork::reflect::annotatePropertyForEditor<ScriptComponentData>("ScriptFile", "editor.class", "ged.factory.filelist");
+  ork::reflect::annotatePropertyForEditor<ScriptComponentData>("ScriptFile", "editor.filetype", "lua");
+  ork::reflect::annotatePropertyForEditor<ScriptComponentData>("ScriptFile", "editor.filebase", "src://scripts/");
 }
 ScriptComponentData::ScriptComponentData() { printf("ScriptComponentData::ScriptComponentData() this: %p\n", this); }
 

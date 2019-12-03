@@ -22,6 +22,7 @@ target_link_libraries(ork.ecs.test LINK_PRIVATE ork_utpp )
 target_link_libraries(ork.ecs.test LINK_PRIVATE ork_core )
 target_link_libraries(ork.ecs.test LINK_PRIVATE ork_lev2 )
 target_link_libraries(ork.ecs.test LINK_PRIVATE ork_ecs )
+target_link_libraries(ork.ecs.test LINK_PRIVATE boost_system )
 
 set_target_properties(ork.ecs.test PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories (ork.ecs.test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../ork.core/inc )

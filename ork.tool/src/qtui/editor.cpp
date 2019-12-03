@@ -1244,7 +1244,7 @@ void SceneEditorBase::AddObjectToSelection(ork::Object* pobj) {
   /////////////////////////////////////////////////
   object::ObjectClass* pclass = rtti::safe_downcast<object::ObjectClass*>(pobj->GetClass());
 
-  auto anno = pclass->Description().GetClassAnnotation("editor.3dxfable");
+  auto anno = pclass->Description().classAnnotation("editor.3dxfable");
 
   if (anno.IsSet() && anno.Get<bool>()) {
     ManipManager().AttachObject(pobj);

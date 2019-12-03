@@ -41,17 +41,17 @@ void CompositingData::describeX(class_t* c) {
   RegisterProperty("Enable", &CompositingData::mbEnable);
 
   RegisterMapProperty("Groups", &CompositingData::_groups);
-  AnnotatePropertyForEditor<CompositingData>("Groups", "editor.factorylistbase", "CompositingGroup");
+  annotatePropertyForEditor<CompositingData>("Groups", "editor.factorylistbase", "CompositingGroup");
 
   RegisterMapProperty("Scenes", &CompositingData::_scenes);
-  AnnotatePropertyForEditor<CompositingData>("Scenes", "editor.factorylistbase", "CompositingScene");
+  annotatePropertyForEditor<CompositingData>("Scenes", "editor.factorylistbase", "CompositingScene");
 
   RegisterProperty("ActiveScene", &CompositingData::_activeScene);
   RegisterProperty("ActiveItem", &CompositingData::_activeItem);
 
   static const char* EdGrpStr = "grp://Main Enable ActiveScene ActiveItem "
                                 "grp://Data Groups Scenes ";
-  reflect::AnnotateClassForEditor<CompositingData>("editor.prop.groups", EdGrpStr);
+  reflect::annotateClassForEditor<CompositingData>("editor.prop.groups", EdGrpStr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

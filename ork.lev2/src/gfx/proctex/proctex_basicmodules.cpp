@@ -84,7 +84,7 @@ void Periodic::Describe() {
   RegisterFloatXfPlug(Periodic, Bias, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
 
   ork::reflect::RegisterProperty("Shape", &Periodic::meShape);
-  ork::reflect::AnnotatePropertyForEditor<Periodic>("Shape", "editor.class", "ged.factory.enum");
+  ork::reflect::annotatePropertyForEditor<Periodic>("Shape", "editor.class", "ged.factory.enum");
 }
 dataflow::inplugbase* Periodic::GetInput(int idx) {
   dataflow::inplugbase* rval = 0;
@@ -192,7 +192,7 @@ dataflow::outplugbase* Global::GetOutput(int idx) {
 void Curve1D::Describe() {
   RegisterFloatXfPlug(Curve1D, Input, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
   ork::reflect::RegisterProperty("curve", &Curve1D::CurveAccessor);
-  // ork::reflect::AnnotatePropertyForEditor<Curve1D>( "curve", "editor.class", "ged.factory.curve1d" );
+  // ork::reflect::annotatePropertyForEditor<Curve1D>( "curve", "editor.class", "ged.factory.curve1d" );
 }
 Curve1D::Curve1D()
     : mOutput(this, dataflow::EPR_UNIFORM, &mOutValue, "Output")
@@ -234,14 +234,14 @@ void RotSolid::Describe() {
 
   RegisterFloatXfPlug(RotSolid, PhaseOffset, 0.0f, 360.0f, ged::OutPlugChoiceDelegate);
 
-  ork::reflect::AnnotatePropertyForEditor<RotSolid>("NumSides", "editor.range.min", "3");
-  ork::reflect::AnnotatePropertyForEditor<RotSolid>("NumSides", "editor.range.max", "360");
-  ork::reflect::AnnotatePropertyForEditor<RotSolid>("BlendMode", "editor.class", "ged.factory.enum");
+  ork::reflect::annotatePropertyForEditor<RotSolid>("NumSides", "editor.range.min", "3");
+  ork::reflect::annotatePropertyForEditor<RotSolid>("NumSides", "editor.range.max", "360");
+  ork::reflect::annotatePropertyForEditor<RotSolid>("BlendMode", "editor.class", "ged.factory.enum");
 
   static const char* EdGrpStr = "grp://Basic AntiAlias NumSides BlendMode "
                                 "grp://Plugs PhaseOffset Radius Intens ";
 
-  reflect::AnnotateClassForEditor<RotSolid>("editor.prop.groups", EdGrpStr);
+  reflect::annotateClassForEditor<RotSolid>("editor.prop.groups", EdGrpStr);
 }
 ///////////////////////////////////////////////////////////////////////////////
 RotSolid::RotSolid()
@@ -374,7 +374,7 @@ void ImgOp2::Describe() {
   RegisterObjInpPlug(ImgOp2, InputA);
   RegisterObjInpPlug(ImgOp2, InputB);
   ork::reflect::RegisterProperty("Op", &ImgOp2::meOp);
-  ork::reflect::AnnotatePropertyForEditor<ImgOp2>("Op", "editor.class", "ged.factory.enum");
+  ork::reflect::annotatePropertyForEditor<ImgOp2>("Op", "editor.class", "ged.factory.enum");
 }
 ork::dataflow::inplugbase* ImgOp2::GetInput(int idx) {
   ork::dataflow::inplugbase* rval = 0;
@@ -444,9 +444,9 @@ void ImgOp3::Describe() {
   RegisterObjInpPlug(ImgOp3, InputB);
   RegisterObjInpPlug(ImgOp3, InputM);
   ork::reflect::RegisterProperty("Op", &ImgOp3::meOp);
-  ork::reflect::AnnotatePropertyForEditor<ImgOp3>("Op", "editor.class", "ged.factory.enum");
+  ork::reflect::annotatePropertyForEditor<ImgOp3>("Op", "editor.class", "ged.factory.enum");
   ork::reflect::RegisterProperty("ChanCtrl", &ImgOp3::meChanCtrl);
-  ork::reflect::AnnotatePropertyForEditor<ImgOp3>("ChanCtrl", "editor.class", "ged.factory.enum");
+  ork::reflect::annotatePropertyForEditor<ImgOp3>("ChanCtrl", "editor.class", "ged.factory.enum");
 }
 ork::dataflow::inplugbase* ImgOp3::GetInput(int idx) {
   ork::dataflow::inplugbase* rval = 0;
@@ -653,9 +653,9 @@ void Transform::compute(ProcTex& ptex) {
 void Texture::Describe() {
   ork::reflect::RegisterProperty("Input", &Texture::GetTextureAccessor, &Texture::SetTextureAccessor);
   ork::reflect::RegisterProperty("FlipY", &Texture::_flipy);
-  ork::reflect::AnnotatePropertyForEditor<Texture>("Input", "editor.class", "ged.factory.assetlist");
-  ork::reflect::AnnotatePropertyForEditor<Texture>("Input", "editor.assettype", "lev2tex");
-  ork::reflect::AnnotatePropertyForEditor<Texture>("Input", "editor.assetclass", "lev2tex");
+  ork::reflect::annotatePropertyForEditor<Texture>("Input", "editor.class", "ged.factory.assetlist");
+  ork::reflect::annotatePropertyForEditor<Texture>("Input", "editor.assettype", "lev2tex");
+  ork::reflect::annotatePropertyForEditor<Texture>("Input", "editor.assetclass", "lev2tex");
 }
 Texture::Texture()
     : mpTexture(0) {}
@@ -709,14 +709,14 @@ void Texture::compute(ProcTex& ptex) {
 ///////////////////////////////////////////////////////////////////////////////
 void ShaderQuad::Describe() {
   ork::reflect::RegisterProperty("ShaderFile", &ShaderQuad::mShaderPath);
-  ork::reflect::AnnotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.class", "ged.factory.filelist");
-  ork::reflect::AnnotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.filetype", "glfx");
-  ork::reflect::AnnotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.filebase", "orkshader://");
+  ork::reflect::annotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.class", "ged.factory.filelist");
+  ork::reflect::annotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.filetype", "glfx");
+  ork::reflect::annotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.filebase", "orkshader://");
 
   ork::reflect::RegisterProperty("Texture0", &ShaderQuad::GetTextureAccessor, &ShaderQuad::SetTextureAccessor);
-  ork::reflect::AnnotatePropertyForEditor<ShaderQuad>("Texture0", "editor.class", "ged.factory.assetlist");
-  ork::reflect::AnnotatePropertyForEditor<ShaderQuad>("Texture0", "editor.assettype", "lev2tex");
-  ork::reflect::AnnotatePropertyForEditor<ShaderQuad>("Texture0", "editor.assetclass", "lev2tex");
+  ork::reflect::annotatePropertyForEditor<ShaderQuad>("Texture0", "editor.class", "ged.factory.assetlist");
+  ork::reflect::annotatePropertyForEditor<ShaderQuad>("Texture0", "editor.assettype", "lev2tex");
+  ork::reflect::annotatePropertyForEditor<ShaderQuad>("Texture0", "editor.assetclass", "lev2tex");
 
   RegisterObjInpPlug(ShaderQuad, ImgInput0);
   RegisterFloatXfPlug(ShaderQuad, User0X, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
@@ -737,7 +737,7 @@ void ShaderQuad::Describe() {
     }
   };
 
-  reflect::AnnotateClassForEditor<ShaderQuad>("editor.object.ops", opm);
+  reflect::annotateClassForEditor<ShaderQuad>("editor.object.ops", opm);
 
   ////////////////////////////////////////
 }
@@ -838,21 +838,21 @@ void SolidColor::Describe() {
   ork::reflect::RegisterProperty("Blue", &SolidColor::mfb);
   ork::reflect::RegisterProperty("Alpha", &SolidColor::mfa);
 
-  ork::reflect::AnnotatePropertyForEditor<SolidColor>("Red", "editor.range.min", "-8.0f");
-  ork::reflect::AnnotatePropertyForEditor<SolidColor>("Red", "editor.range.max", "8.0f");
+  ork::reflect::annotatePropertyForEditor<SolidColor>("Red", "editor.range.min", "-8.0f");
+  ork::reflect::annotatePropertyForEditor<SolidColor>("Red", "editor.range.max", "8.0f");
 
-  ork::reflect::AnnotatePropertyForEditor<SolidColor>("Green", "editor.range.min", "-8.0f");
-  ork::reflect::AnnotatePropertyForEditor<SolidColor>("Green", "editor.range.max", "8.0f");
+  ork::reflect::annotatePropertyForEditor<SolidColor>("Green", "editor.range.min", "-8.0f");
+  ork::reflect::annotatePropertyForEditor<SolidColor>("Green", "editor.range.max", "8.0f");
 
-  ork::reflect::AnnotatePropertyForEditor<SolidColor>("Blue", "editor.range.min", "-8.0f");
-  ork::reflect::AnnotatePropertyForEditor<SolidColor>("Blue", "editor.range.max", "8.0f");
+  ork::reflect::annotatePropertyForEditor<SolidColor>("Blue", "editor.range.min", "-8.0f");
+  ork::reflect::annotatePropertyForEditor<SolidColor>("Blue", "editor.range.max", "8.0f");
 
-  ork::reflect::AnnotatePropertyForEditor<SolidColor>("Alpha", "editor.range.min", "-8.0f");
-  ork::reflect::AnnotatePropertyForEditor<SolidColor>("Alpha", "editor.range.max", "8.0f");
+  ork::reflect::annotatePropertyForEditor<SolidColor>("Alpha", "editor.range.min", "-8.0f");
+  ork::reflect::annotatePropertyForEditor<SolidColor>("Alpha", "editor.range.max", "8.0f");
 
   static const char* EdGrpStr = "grp://RGBA Red Green Blue Alpha";
 
-  reflect::AnnotateClassForEditor<SolidColor>("editor.prop.groups", EdGrpStr);
+  reflect::annotateClassForEditor<SolidColor>("editor.prop.groups", EdGrpStr);
 }
 SolidColor::SolidColor()
     : mfr(1.0f)
@@ -899,24 +899,24 @@ void SolidColor::compute(ProcTex& ptex) {
 ///////////////////////////////////////////////////////////////////////////////
 void Gradient::Describe() {
   ork::reflect::RegisterProperty("gradient", &Gradient::GradientAccessor);
-  ork::reflect::AnnotatePropertyForEditor<Gradient>("gradient", "editor.class", "ged.factory.gradient");
+  ork::reflect::annotatePropertyForEditor<Gradient>("gradient", "editor.class", "ged.factory.gradient");
 
   ork::reflect::RegisterProperty("Type", &Gradient::meGradientType);
 
   ork::reflect::RegisterProperty("Repeat", &Gradient::miRepeat);
   ork::reflect::RegisterProperty("RepeatMode", &Gradient::meRepeatMode);
 
-  ork::reflect::AnnotatePropertyForEditor<Gradient>("Repeat", "editor.range.min", "1");
-  ork::reflect::AnnotatePropertyForEditor<Gradient>("Repeat", "editor.range.max", "16");
-  ork::reflect::AnnotatePropertyForEditor<Gradient>("RepeatMode", "editor.class", "ged.factory.enum");
+  ork::reflect::annotatePropertyForEditor<Gradient>("Repeat", "editor.range.min", "1");
+  ork::reflect::annotatePropertyForEditor<Gradient>("Repeat", "editor.range.max", "16");
+  ork::reflect::annotatePropertyForEditor<Gradient>("RepeatMode", "editor.class", "ged.factory.enum");
 
-  ork::reflect::AnnotatePropertyForEditor<Gradient>("Type", "editor.class", "ged.factory.enum");
+  ork::reflect::annotatePropertyForEditor<Gradient>("Type", "editor.class", "ged.factory.enum");
 
   ork::reflect::RegisterProperty("AntiAlias", &Gradient::mbAA);
 
   static const char* EdGrpStr = "grp://Basic AntiAlias Type Repeat RepeatMode gradient";
 
-  reflect::AnnotateClassForEditor<Gradient>("editor.prop.groups", EdGrpStr);
+  reflect::annotateClassForEditor<Gradient>("editor.prop.groups", EdGrpStr);
 }
 Gradient::Gradient()
     : mpTexture(0)
@@ -1171,8 +1171,8 @@ void Gradient::compute(ProcTex& ptex) {
 ///////////////////////////////////////////////////////////////////////////////
 void Group::Describe() {
   ork::reflect::RegisterProperty("ProcTex", &Group::GetTextureAccessor, &Group::SetTextureAccessor);
-  ork::reflect::AnnotatePropertyForEditor<Group>("ProcTex", "editor.visible", "false");
-  ork::reflect::AnnotateClassForEditor<Group>("editor.object.ops", ConstString("load:proctexgroupload save:proctexgroupsave"));
+  ork::reflect::annotatePropertyForEditor<Group>("ProcTex", "editor.visible", "false");
+  ork::reflect::annotateClassForEditor<Group>("editor.object.ops", ConstString("load:proctexgroupload save:proctexgroupsave"));
 }
 Group::Group()
     : mpProcTex(0) {}

@@ -17,6 +17,7 @@
 #include <ork/math/box.h>
 #include <algorithm>
 #include <ork/kernel/Array.h>
+#include <ork/kernel/varmap.inl>
 
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
@@ -24,6 +25,7 @@
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <unordered_map>
+#include <ork/kernel/datablock.inl>
 
 
 namespace ork::tool {
@@ -626,6 +628,8 @@ public:
 
 	toolmesh();
 	~toolmesh();
+
+    varmap::VarMap _varmap;
 
 private:
 

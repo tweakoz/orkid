@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/gfx/gfxmaterial.h>
 #include <ork/lev2/gfx/shadman.h>
+#include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/pch.h>
 
 namespace ork {
@@ -40,11 +41,45 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::MaterialInstApplicator, "MaterialInstApp
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::MaterialInstItem, "MaterialInstItem")
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::MaterialInstItemMatrix, "MaterialInstItemMatrix")
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::MaterialInstItemMatrixBlock, "MaterialInstItemMatrixBlock")
+ImplementReflectionX(ork::lev2::PBRMaterial, "PBRMaterial");
 
 namespace ork { namespace lev2 {
 
 /////////////////////////////////////////////////////////////////////////
 
+void PBRMaterial::describeX(class_t* c) {
+
+    chunkfile::materialreader_t reader = [](chunkfile::XgmMaterialReaderContext& ctx)->ork::lev2::GfxMaterial*{
+      assert(false);
+      return nullptr;
+    };
+    chunkfile::materialwriter_t writer = [](chunkfile::XgmMaterialWriterContext& ctx){
+      auto pbrmtl = static_cast<const PBRMaterial*>(ctx._material);
+      int istring = ctx._chunkwriter->GetStringIndex(pbrmtl->_textureBaseName.c_str());
+      ctx._outputStream->AddItem(istring);
+
+      auto textureStream  = ctx._chunkwriter->AddStream("texture");
+
+      auto dotex = [&](std::string channelname, std::string texname){
+        if( texname.length() ) {
+          istring = ctx._chunkwriter->GetStringIndex(channelname.c_str());
+          ctx._outputStream->AddItem(istring);
+          istring = ctx._chunkwriter->GetStringIndex(texname.c_str());
+          ctx._outputStream->AddItem(istring);
+        }
+      };
+      dotex( "colormap", pbrmtl->_colorMapName );
+      dotex( "normalmap", pbrmtl->_normalMapName );
+      dotex( "amboccmap", pbrmtl->_amboccMapName );
+      dotex( "emissivemap", pbrmtl->_emissiveMapName );
+      dotex( "roughmap", pbrmtl->_roughMapName );
+      dotex( "metalmap", pbrmtl->_metalMapName );
+
+      assert(false);
+    };
+    c->annotate("xgm.writer",writer);
+    c->annotate("xgm.reader",reader);
+}
 void MaterialInstApplicator::Describe() {}
 void MaterialInstItem::Describe() {}
 void MaterialInstItemMatrix::Describe() {}

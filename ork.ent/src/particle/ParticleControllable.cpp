@@ -48,8 +48,8 @@ void NovaParticleItemBase::Describe() {}
 void ParticleControllableData::Describe()
 {
 	ork::reflect::RegisterMapProperty( "Systems", & ParticleControllableData::mItems );
-	ork::reflect::AnnotatePropertyForEditor< ParticleControllableData >("Systems", "editor.factorylistbase", "Lev2ParticleItemBase" );
-	ork::reflect::AnnotatePropertyForEditor< ParticleControllableData >("Systems", "editor.map.policy.impexp", "true" );
+	ork::reflect::annotatePropertyForEditor< ParticleControllableData >("Systems", "editor.factorylistbase", "Lev2ParticleItemBase" );
+	ork::reflect::annotatePropertyForEditor< ParticleControllableData >("Systems", "editor.map.policy.impexp", "true" );
 
 	ork::reflect::RegisterProperty("DefaultEnable", &ParticleControllableData::mDefaultEnable);
 	ork::reflect::RegisterProperty("EntAttachment", &ParticleControllableData::mEntAttachment);

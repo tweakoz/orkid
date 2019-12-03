@@ -471,7 +471,7 @@ bool CColladaAnim::Parse( void )
 				auto chan = Anim->GetChannel(icha);
 				size_t numcrv = chan->GetCurveCount();// const { return curves.size(); }
 
-				printf( "  AnimName<%s> Chan<%d><%p> numcurves<%d>\n", AnimName.c_str(), icha, chan, numcrv );
+				printf( "  AnimName<%s> Chan<%d><%p> numcurves<%zu>\n", AnimName.c_str(), icha, chan, numcrv );
 				if( numcrv==16 )
 					ValidMatrixAnimSet[AnimName]=chan;
 			}

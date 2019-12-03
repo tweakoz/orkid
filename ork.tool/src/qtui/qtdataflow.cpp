@@ -399,13 +399,13 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
 
           bool do_blend = false;
 
-          auto shbanno = class_desc.GetClassAnnotation("dflowshouldblend");
+          auto shbanno = class_desc.classAnnotation("dflowshouldblend");
           if (shbanno.IsA<bool>()) {
             do_blend = shbanno.Get<bool>();
           }
 
           if (false == is_pick) {
-            auto iconcbanno = class_desc.GetClassAnnotation("dflowicon");
+            auto iconcbanno = class_desc.classAnnotation("dflowicon");
 
             typedef lev2::Texture* (*icon_cb_t)(dataflow::dgmodule*);
 

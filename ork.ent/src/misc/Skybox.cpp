@@ -167,19 +167,19 @@ void SkyBoxArchetype::DoCompose(ork::ent::ArchComposer& composer) { composer.Reg
 void SkyBoxControllerData::Describe() {
   reflect::RegisterProperty("SpinRate", &SkyBoxControllerData::mfSpinRate);
 
-  reflect::AnnotatePropertyForEditor<SkyBoxControllerData>("SpinRate", "editor.range.min", "-6.28");
-  reflect::AnnotatePropertyForEditor<SkyBoxControllerData>("SpinRate", "editor.range.max", "6.28");
+  reflect::annotatePropertyForEditor<SkyBoxControllerData>("SpinRate", "editor.range.min", "-6.28");
+  reflect::annotatePropertyForEditor<SkyBoxControllerData>("SpinRate", "editor.range.max", "6.28");
 
   reflect::RegisterProperty("Model", &SkyBoxControllerData::mModelAsset);
 
-  ork::reflect::AnnotatePropertyForEditor<SkyBoxControllerData>("Model", "editor.class", "ged.factory.assetlist");
-  ork::reflect::AnnotatePropertyForEditor<SkyBoxControllerData>("Model", "editor.assettype", "xgmodel");
-  ork::reflect::AnnotatePropertyForEditor<SkyBoxControllerData>("Model", "editor.assetclass", "xgmodel");
+  ork::reflect::annotatePropertyForEditor<SkyBoxControllerData>("Model", "editor.class", "ged.factory.assetlist");
+  ork::reflect::annotatePropertyForEditor<SkyBoxControllerData>("Model", "editor.assettype", "xgmodel");
+  ork::reflect::annotatePropertyForEditor<SkyBoxControllerData>("Model", "editor.assetclass", "xgmodel");
 
   ork::reflect::RegisterProperty("Scale", &SkyBoxControllerData::mfScale);
 
-  reflect::AnnotatePropertyForEditor<SkyBoxControllerData>("Scale", "editor.range.min", "-1000.0");
-  reflect::AnnotatePropertyForEditor<SkyBoxControllerData>("Scale", "editor.range.max", "1000.0");
+  reflect::annotatePropertyForEditor<SkyBoxControllerData>("Scale", "editor.range.min", "-1000.0");
+  reflect::annotatePropertyForEditor<SkyBoxControllerData>("Scale", "editor.range.max", "1000.0");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

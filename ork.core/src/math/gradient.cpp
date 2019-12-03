@@ -84,8 +84,8 @@ template <typename T> T Gradient<T>::Sample( float fu )
 template <typename T> void Gradient<T>::Describe()
 {
 	ork::reflect::RegisterMapProperty( "points", & Gradient<T>::mData );
-	ork::reflect::AnnotatePropertyForEditor<Gradient>( "points", "editor.visible", "false" );
-	ork::reflect::AnnotateClassForEditor< Gradient >( "editor.class", ConstString("ged.factory.gradient") );
+	ork::reflect::annotatePropertyForEditor<Gradient>( "points", "editor.visible", "false" );
+	ork::reflect::annotateClassForEditor< Gradient >( "editor.class", ConstString("ged.factory.gradient") );
 
 }
 
@@ -116,7 +116,7 @@ template <typename T> bool GradientD2<T>::PreDeserialize( ork::reflect::IDeseria
 template <typename T> void GradientD2<T>::Describe()
 {
 	//ork::reflect::RegisterMapProperty( "points", & GradientD2<T>::mData );
-	//ork::reflect::AnnotatePropertyForEditor<GradientD2>( "points", "editor.visible", "false" );
+	//ork::reflect::annotatePropertyForEditor<GradientD2>( "points", "editor.visible", "false" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -425,23 +425,23 @@ void AudioReverbProperties::Describe()
 	ork::reflect::RegisterProperty( "EnvDiffusion", & AudioReverbProperties::mfEnvDiffusion );
 	ork::reflect::RegisterProperty( "Room", & AudioReverbProperties::mfRoom );
 
-	ork::reflect::AnnotatePropertyForEditor< AudioReverbProperties >( "DecayTime", "editor.range.min", "0.1" );
-	ork::reflect::AnnotatePropertyForEditor< AudioReverbProperties >( "DecayTime", "editor.range.max", "20.0" );
+	ork::reflect::annotatePropertyForEditor< AudioReverbProperties >( "DecayTime", "editor.range.min", "0.1" );
+	ork::reflect::annotatePropertyForEditor< AudioReverbProperties >( "DecayTime", "editor.range.max", "20.0" );
 
-	ork::reflect::AnnotatePropertyForEditor< AudioReverbProperties >( "Reflections", "editor.range.min", "-10000.0" );
-	ork::reflect::AnnotatePropertyForEditor< AudioReverbProperties >( "Reflections", "editor.range.max", "1000.0" );
+	ork::reflect::annotatePropertyForEditor< AudioReverbProperties >( "Reflections", "editor.range.min", "-10000.0" );
+	ork::reflect::annotatePropertyForEditor< AudioReverbProperties >( "Reflections", "editor.range.max", "1000.0" );
 
-	ork::reflect::AnnotatePropertyForEditor< AudioReverbProperties >( "ReverbDelay", "editor.range.min", "0.0" );
-	ork::reflect::AnnotatePropertyForEditor< AudioReverbProperties >( "ReverbDelay", "editor.range.max", "0.1" );
+	ork::reflect::annotatePropertyForEditor< AudioReverbProperties >( "ReverbDelay", "editor.range.min", "0.0" );
+	ork::reflect::annotatePropertyForEditor< AudioReverbProperties >( "ReverbDelay", "editor.range.max", "0.1" );
 
-	ork::reflect::AnnotatePropertyForEditor< AudioReverbProperties >( "ModulationDepth", "editor.range.min", "0.0" );
-	ork::reflect::AnnotatePropertyForEditor< AudioReverbProperties >( "ModulationDepth", "editor.range.max", "1.0" );
+	ork::reflect::annotatePropertyForEditor< AudioReverbProperties >( "ModulationDepth", "editor.range.min", "0.0" );
+	ork::reflect::annotatePropertyForEditor< AudioReverbProperties >( "ModulationDepth", "editor.range.max", "1.0" );
 
-	ork::reflect::AnnotatePropertyForEditor< AudioReverbProperties >( "EnvDiffusion", "editor.range.min", "0.0" );
-	ork::reflect::AnnotatePropertyForEditor< AudioReverbProperties >( "EnvDiffusion", "editor.range.max", "1.0" );
+	ork::reflect::annotatePropertyForEditor< AudioReverbProperties >( "EnvDiffusion", "editor.range.min", "0.0" );
+	ork::reflect::annotatePropertyForEditor< AudioReverbProperties >( "EnvDiffusion", "editor.range.max", "1.0" );
 
-	ork::reflect::AnnotatePropertyForEditor< AudioReverbProperties >( "Room", "editor.range.min", "-10000.0" );
-	ork::reflect::AnnotatePropertyForEditor< AudioReverbProperties >( "Room", "editor.range.max", "0.0" );
+	ork::reflect::annotatePropertyForEditor< AudioReverbProperties >( "Room", "editor.range.min", "-10000.0" );
+	ork::reflect::annotatePropertyForEditor< AudioReverbProperties >( "Room", "editor.range.max", "0.0" );
 
 }
 

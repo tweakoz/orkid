@@ -25,6 +25,7 @@ class Category;
 class  Class : public ICastable
 {
 public:
+
     Class(const RTTIData &);
 
     static void InitializeClasses();

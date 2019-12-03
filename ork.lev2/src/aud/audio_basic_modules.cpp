@@ -126,7 +126,7 @@ dataflow::outplugbase* AudioGlobalModule::GetOutput(int idx)
 void AudioExtConnectorModule::Describe()
 {	
 	ork::reflect::RegisterMapProperty( "FloatPlugs", & AudioExtConnectorModule::mFloatPlugs );
-	ork::reflect::AnnotatePropertyForEditor< AudioExtConnectorModule >("FloatPlugs", "editor.factorylistbase", "dflow/outplug<float>" );
+	ork::reflect::annotatePropertyForEditor< AudioExtConnectorModule >("FloatPlugs", "editor.factorylistbase", "dflow/outplug<float>" );
 }
 AudioExtConnectorModule::AudioExtConnectorModule()
 {

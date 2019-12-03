@@ -42,21 +42,21 @@ void ModelComponentData::Describe() {
   reflect::RegisterProperty("ShowBoundingSphere", &ModelComponentData::mbShowBoundingSphere);
   reflect::RegisterProperty("EditorDagDebug", &ModelComponentData::mbCopyDag);
 
-  ork::reflect::AnnotatePropertyForEditor<ModelComponentData>("Model", "editor.class", "ged.factory.assetlist");
-  ork::reflect::AnnotatePropertyForEditor<ModelComponentData>("Model", "editor.assettype", "xgmodel");
-  ork::reflect::AnnotatePropertyForEditor<ModelComponentData>("Model", "editor.assetclass", "xgmodel");
+  ork::reflect::annotatePropertyForEditor<ModelComponentData>("Model", "editor.class", "ged.factory.assetlist");
+  ork::reflect::annotatePropertyForEditor<ModelComponentData>("Model", "editor.assettype", "xgmodel");
+  ork::reflect::annotatePropertyForEditor<ModelComponentData>("Model", "editor.assetclass", "xgmodel");
 
   ork::reflect::RegisterMapProperty("MaterialOverrides", &ModelComponentData::_materialOverrides);
-  //ork::reflect::AnnotatePropertyForEditor<ModelComponentData>("MaterialOverrides", "editor.assettype", "FxShader");
-  //ork::reflect::AnnotatePropertyForEditor<ModelComponentData>("MaterialOverrides", "editor.assetclass", "FxShader");
+  //ork::reflect::annotatePropertyForEditor<ModelComponentData>("MaterialOverrides", "editor.assettype", "FxShader");
+  //ork::reflect::annotatePropertyForEditor<ModelComponentData>("MaterialOverrides", "editor.assetclass", "FxShader");
 
   ork::reflect::RegisterProperty("AlwaysVisible", &ModelComponentData::mAlwaysVisible);
   ork::reflect::RegisterProperty("Scale", &ModelComponentData::mfScale);
   ork::reflect::RegisterProperty("BlenderZup", &ModelComponentData::mBlenderZup);
 
-  reflect::AnnotatePropertyForEditor<ModelComponentData>("Scale", "editor.range.min", "-1000.0");
-  reflect::AnnotatePropertyForEditor<ModelComponentData>("Scale", "editor.range.max", "1000.0");
-  // reflect::AnnotatePropertyForEditor<ModelComponentData>( "Scale", "editor.range.log", "true" );
+  reflect::annotatePropertyForEditor<ModelComponentData>("Scale", "editor.range.min", "-1000.0");
+  reflect::annotatePropertyForEditor<ModelComponentData>("Scale", "editor.range.max", "1000.0");
+  // reflect::annotatePropertyForEditor<ModelComponentData>( "Scale", "editor.range.log", "true" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -128,7 +128,8 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
     for (auto it : ovmap) {
       std::string mtlvaluename = it.second.c_str();
       if( 0 == strcmp(it.first.c_str(),"all") ){
-        auto overridemtl = new lev2::PBRMaterial(mtlvaluename);
+        auto overridemtl = new lev2::PBRMaterial();
+        overridemtl->setTextureBaseName(mtlvaluename);
         mXgmModelInst->_overrideMaterial = overridemtl;
       }
       //lev2::FxShaderAsset* passet = it.second;

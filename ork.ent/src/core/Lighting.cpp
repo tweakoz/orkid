@@ -38,7 +38,7 @@ void LightingComponentData::Describe()
 {
 	ork::reflect::RegisterProperty("LightData", &LightingComponentData::LdGetter, &LightingComponentData::LdSetter );
 	ork::reflect::RegisterProperty("Dynamic", &LightingComponentData::mbDynamic );
-	ork::reflect::AnnotatePropertyForEditor< LightingComponentData >("LightData", "editor.factorylistbase", "LightData" );
+	ork::reflect::annotatePropertyForEditor< LightingComponentData >("LightData", "editor.factorylistbase", "LightData" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

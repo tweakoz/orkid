@@ -35,23 +35,23 @@ void MultiCurve1D::Describe()
 
 	ork::reflect::RegisterProperty("Curve", &ork::MultiCurve1D::ProxyAccessor);
 
-	ork::reflect::AnnotatePropertyForEditor< MultiCurve1D >("Segs", "editor.visible", "false" );
-	ork::reflect::AnnotatePropertyForEditor< MultiCurve1D >("Verts", "editor.visible", "false" );
+	ork::reflect::annotatePropertyForEditor< MultiCurve1D >("Segs", "editor.visible", "false" );
+	ork::reflect::annotatePropertyForEditor< MultiCurve1D >("Verts", "editor.visible", "false" );
 
 	ork::reflect::RegisterProperty("min", &ork::MultiCurve1D::mMin);
 	ork::reflect::RegisterProperty("max", &ork::MultiCurve1D::mMax);
 
-	ork::reflect::AnnotatePropertyForEditor< MultiCurve1D >("Curve", "editor.class", "ged.factory.curve1d" );
+	ork::reflect::annotatePropertyForEditor< MultiCurve1D >("Curve", "editor.class", "ged.factory.curve1d" );
 
-	ork::reflect::AnnotatePropertyForEditor< MultiCurve1D >( "min", "editor.range.min", "-2000.0f" );
-	ork::reflect::AnnotatePropertyForEditor< MultiCurve1D >( "min", "editor.range.max", "2000.0f" );
+	ork::reflect::annotatePropertyForEditor< MultiCurve1D >( "min", "editor.range.min", "-2000.0f" );
+	ork::reflect::annotatePropertyForEditor< MultiCurve1D >( "min", "editor.range.max", "2000.0f" );
 
-	ork::reflect::AnnotatePropertyForEditor< MultiCurve1D >( "max", "editor.range.min", "-2000.0f" );
-	ork::reflect::AnnotatePropertyForEditor< MultiCurve1D >( "max", "editor.range.max", "2000.0f" );
+	ork::reflect::annotatePropertyForEditor< MultiCurve1D >( "max", "editor.range.min", "-2000.0f" );
+	ork::reflect::annotatePropertyForEditor< MultiCurve1D >( "max", "editor.range.max", "2000.0f" );
 
 	static const char* EdGrpStr = "sort://min max Curve";
 
-	reflect::AnnotateClassForEditor<MultiCurve1D>( "editor.prop.groups", EdGrpStr );
+	reflect::annotateClassForEditor<MultiCurve1D>( "editor.prop.groups", EdGrpStr );
 
 }
 
