@@ -76,6 +76,7 @@ void DeferredContext::gpuInit(GfxTarget* target) {
     _parMapGBufAlbAo   = _lightingmtl.param("MapAlbedoAo");
     _parMapGBufNrmL    = _lightingmtl.param("MapNormalL");
     _parMapDepth       = _lightingmtl.param("MapDepth");
+    _parMapGBufRufMtlAlpha = _lightingmtl.param("MapRufMtlAlpha");
     _parMapDepthCluster = _lightingmtl.param("MapDepthCluster");
     _parInvViewSize    = _lightingmtl.param("InvViewportSize");
     _parTime           = _lightingmtl.param("Time");
@@ -87,10 +88,13 @@ void DeferredContext::gpuInit(GfxTarget* target) {
     _rtgGbuffer      = new RtGroup(target, 8, 8, 1);
     auto buf0        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, 8, 8);
     auto buf1        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT1, lev2::EBUFFMT_RGB10A2, 8, 8);
+    auto buf2        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT2, lev2::EBUFFMT_RGBA8, 8, 8);
     buf0->_debugName = "DeferredRtAlbAo";
     buf1->_debugName = "DeferredRtNormalDist";
+    buf2->_debugName = "DeferredRtRufMtl";
     _rtgGbuffer->SetMrt(0, buf0);
     _rtgGbuffer->SetMrt(1, buf1);
+    _rtgGbuffer->SetMrt(2, buf2);
     _gbuffRT = new RtGroupRenderTarget(_rtgGbuffer);
     //////////////////////////////////////////////////////////////
     _rtgDepthCluster      = new RtGroup(target, 8, 8, 1);

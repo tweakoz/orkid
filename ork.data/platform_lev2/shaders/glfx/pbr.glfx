@@ -84,6 +84,7 @@ fragment_interface iface_fgbuffer
 	outputs {
         layout(location = 0) vec4 out_clr;
         layout(location = 1) vec4 out_normal_mdl;
+        layout(location = 2) vec4 out_rufmtl;
 	}
 }
 fragment_shader ps_gbuffer
@@ -99,21 +100,23 @@ fragment_shader ps_gbuffer_n // normalmap
 {
     vec4 col = texture(ColorMap,frg_uv0).xyzw;
     vec3 nrm_tanspace = texture(NormalMap,frg_uv0).xyz*2.0-vec3(1,1,1);
-    vec3 rufandmtl = vec3(texture(RoughAndMetalMap,frg_uv0).zy,0);
+    vec3 rufandmtl = vec3(texture(RoughAndMetalMap,frg_uv0).zy,1);
     nrm_tanspace = normalize(nrm_tanspace);
 
 	vec3 nrm_w = normalize(nrm_tanspace*frg_tbn);
 
+
 	//vec3 nxyz = vec3(frg_tbn[0].x,frg_tbn[1].x,frg_tbn[2].x);
 	//nxyz = nxyz*0.5+vec3(0.5);
 
-	float l = dot(nrm_w,vec3(0,0,-1));
-	l = pow(l,1+rufandmtl.x*3);
-	vec3 coln = (0.5+l*0.5)*col.xyz;
+	//float l = dot(nrm_w,vec3(0,0,-1));
+	//l = pow(l,1+rufandmtl.x*3);
+	//vec3 coln = (0.5+l*0.5)*col.xyz;
 
     out_clr = col;
-    out_normal_mdl.xyz = coln;
+    out_normal_mdl.xyz = (nrm_w*0.5)+vec3(0.5,0.5,0.5);
 	out_normal_mdl.w = frg_camdist;
+	out_rufmtl = vec4(rufandmtl,1);
 }
 ///////////////////////////////////////////////////////////////
 state_block sb_pick : sb_default
