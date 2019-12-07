@@ -362,11 +362,6 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
               if (0 != strcmp(texname.c_str(), "None")) {
                 ork::lev2::TextureAsset* ptexa = asset::AssetManager<TextureAsset>::Create(texname.c_str());
                 ptex                           = ptexa ? ptexa->GetTexture() : 0;
-#if defined(_DEBUG)
-                if (ptex) {
-                  ptex->setProperty<std::string>("filename", texname.c_str());
-                }
-#endif
               }
               // orkprintf( "ModelIO::LoadTexture mdl<%s> tex<%s> ptex<%p>\n", "", texname.c_str(), ptex );
               paramf->mValue = ptex;
@@ -399,6 +394,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
         auto anno = pmatclass->annotation("xgm.reader");
         if (auto as_reader = anno.TryAs<chunkfile::materialreader_t>()) {
           pmat = as_reader.value()(materialread_ctx);
+          pmat->SetName(AddPooledString(pmatname));
         }
 
         ///////////////////////////////////////////////////////////
@@ -559,26 +555,25 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
           Clus._vertexBuffer = pvb;
           ////////////////////////////////////////////////////////////////////////
           Clus.mpPrimGroups = new XgmPrimGroup[Clus.miNumPrimGroups];
-          for (int ipg = 0; ipg < Clus.miNumPrimGroups; ipg++) {
-            int ipgindex    = -1;
-            int ipgprimtype = -1;
-            HeaderStream->GetItem(ipgindex);
+          for (int32_t ipg = 0; ipg < Clus.miNumPrimGroups; ipg++) {
+            int32_t ipgindex    = -1;
+            int32_t ipgprimtype = -1;
+            HeaderStream->GetItem<int32_t>(ipgindex);
             OrkAssert(ipgindex == ipg);
 
             XgmPrimGroup& PG = Clus.RefPrimGroup(ipg);
-            HeaderStream->GetItem(ipgprimtype);
+            HeaderStream->GetItem<int32_t>(ipgprimtype);
             const char* primtype = chunkreader.GetString(ipgprimtype);
             PG.mePrimType        = PropType<EPrimitiveType>::FromString(primtype);
-            HeaderStream->GetItem(PG.miNumIndices);
+            HeaderStream->GetItem<int32_t>(PG.miNumIndices);
 
-            int idxdataoffset = -1;
-            HeaderStream->GetItem(idxdataoffset);
+            int32_t idxdataoffset = -1;
+            HeaderStream->GetItem<int32_t>(idxdataoffset);
 
             U16* pidx = (U16*)ModelDataStream->GetDataAt(idxdataoffset);
 
-            StaticIndexBuffer<U16>* pidxbuf = new StaticIndexBuffer<U16>(PG.miNumIndices);
+            auto pidxbuf = new StaticIndexBuffer<U16>(PG.miNumIndices);
 
-            // lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
             void* poutidx = (void*)pTARG->GBI()->LockIB(*pidxbuf);
             {
               // TODO: Make 16-bit indices a policy
@@ -592,7 +587,6 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
               memcpy(poutidx, pidx, PG.miNumIndices * sizeof(U16));
             }
             pTARG->GBI()->UnLockIB(*pidxbuf);
-            // lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
 
             PG.mpIndices = pidxbuf;
           }
@@ -778,9 +772,9 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
       int istring           = chunkwriter.stringIndex(texname.c_str());
       textureStream->AddItem<int>(istring);
       auto ddsblock    = ptex->_ddsdestdatablock;
-      size_t blocksize = ddsblock->_data.GetSize();
+      size_t blocksize = ddsblock->length();
       textureStream->AddItem<size_t>(blocksize);
-      const void* data = ddsblock->_data.GetData();
+      auto data = (const void*) ddsblock->data();
       textureStream->AddData(data, blocksize);
     }
   }
@@ -1064,9 +1058,9 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
           HeaderStream->AddItem(ipg);
           istring = chunkwriter.stringIndex(PrimType.c_str());
-          HeaderStream->AddItem(istring);
-          HeaderStream->AddItem(inumidx);
-          HeaderStream->AddItem(ModelDataStream->GetSize());
+          HeaderStream->AddItem<int32_t>(istring);
+          HeaderStream->AddItem<int32_t>(inumidx);
+          HeaderStream->AddItem<int32_t>(ModelDataStream->GetSize());
 
           //////////////////////////////////////////////////
           U16* pidx = (U16*)DummyTarget.GBI()->LockIB(*PG.GetIndexBuffer()); //->GetDataPointer();

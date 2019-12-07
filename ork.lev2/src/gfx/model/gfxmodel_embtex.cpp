@@ -5,6 +5,7 @@
 
 #include <ork/kernel/orklut.hpp>
 #include <ork/kernel/prop.h>
+#include <ork/kernel/datacache.inl>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmodel.h>
@@ -29,7 +30,7 @@ datablockptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
 
   Spawner s;
   s.mCommandLine = "nvcompress ";
-  s.mCommandLine += "-bc3 ";
+  s.mCommandLine += "-rgb ";
   s.mCommandLine += srcpath.c_str() + std::string(" ");
   s.mCommandLine += ddspath.c_str() + std::string(" ");
 
@@ -59,14 +60,13 @@ void EmbeddedTexture::fetchDDSdata() {
   basehasher.accumulate(_srcdata, _srcdatalen);
   basehasher.finish();
   uint64_t hashkey = basehasher.result();
-  _ddsdestdatablock    = DataBlockMgr::findDataBlock(hashkey);
+  _ddsdestdatablock    = DataBlockCache::findDataBlock(hashkey);
 
   if (_ddsdestdatablock) {
-    const auto& str = _ddsdestdatablock->_data;
-    chunkfile::InputStream istr(str.GetData(), str.GetSize());
+    chunkfile::InputStream istr(_ddsdestdatablock->data(0), _ddsdestdatablock->length());
   } else {
     _ddsdestdatablock = compressTexture(hashkey);
-    DataBlockMgr::setDataBlock(hashkey, _ddsdestdatablock);
+    DataBlockCache::setDataBlock(hashkey, _ddsdestdatablock);
   }
 }
 

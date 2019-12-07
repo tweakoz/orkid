@@ -153,9 +153,9 @@ struct TexSetter {
       int inummips,
       int& iw,
       int& ih,
-      chunkfile::InputStream inpstream ) {
-    //size_t ifilelen       = 0;
-    //EFileErrCode eFileErr = file.GetLength(ifilelen);
+      DataBlockInputStream inpstream) {
+    // size_t ifilelen       = 0;
+    // EFileErrCode eFileErr = file.GetLength(ifilelen);
 
     int isize = iw * ih * BPP;
     auto glto = (GLTextureObject*)tex->_internalHandle;
@@ -238,8 +238,8 @@ struct TexSetter {
         map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
         void* pgfxmem = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, isiz2, map_flags);
         // printf( "UPDATE IMAGE UNC imip<%d> iw<%d> ih<%d> isiz<%d> pbo<%d> mem<%p>\n", imip, iw, ih, isiz2, PBOOBJ, pgfxmem );
-        auto copy_src = inpstream.GetCurrent();
-        memcpy(pgfxmem,copy_src,isiz2);
+        auto copy_src = inpstream.current();
+        memcpy(pgfxmem, copy_src, isiz2);
         inpstream.advance(isiz2);
         glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
         GL_ERRORCHECK();
@@ -261,11 +261,10 @@ struct TexSetter {
         GL_ERRORCHECK();
       } else // not PBO
       {
-        auto pgfxmem = inpstream.GetCurrent();
+        auto pgfxmem = inpstream.current();
         inpstream.advance(isiz2);
         glTexImage2D(tgt, imip, intfmt, iw, ih, 0, nfmt, typ, pgfxmem);
         GL_ERRORCHECK();
-
       }
 
       ////////////////////////
@@ -287,7 +286,7 @@ struct TexSetter {
       int& iw,
       int& ih,
       int& id,
-      chunkfile::InputStream inpstream ) //, int& irdptr, const u8* dataBASE )
+      DataBlockInputStream inpstream) //, int& irdptr, const u8* dataBASE )
   {
     for (int imip = 0; imip < inummips; imip++) {
       /////////////////////////////////////////////////
@@ -319,8 +318,8 @@ struct TexSetter {
 
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
         void* pgfxmem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
-        auto copy_src = inpstream.GetCurrent();
-        memcpy(pgfxmem,copy_src,isize);
+        auto copy_src = inpstream.current();
+        memcpy(pgfxmem, copy_src, isize);
         inpstream.advance(isize);
         glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 
@@ -338,7 +337,7 @@ struct TexSetter {
       }
       /////////////////////////////
       else {
-        auto pgfxmem = inpstream.GetCurrent();
+        auto pgfxmem = inpstream.current();
         glTexImage3D(tgt, imip, tc.mInternalFormat, iw, ih, id, 0, tc.mFormat, typ, pgfxmem);
         inpstream.advance(isize);
       }
@@ -359,7 +358,7 @@ struct TexSetter {
       int inummips,
       int& iw,
       int& ih,
-      chunkfile::InputStream inpstream ) //, int& irdptr, const u8* dataBASE )
+      DataBlockInputStream inpstream) //, int& irdptr, const u8* dataBASE )
   {
     for (int imip = 0; imip < inummips; imip++) {
       int iBwidth  = (iw + 3) / 4;
@@ -387,14 +386,14 @@ struct TexSetter {
       //	tgt,imip,fmt,iw,ih,extfmt );
 
       if (false == bUSEPBO) {
-        static const int kloadbufsize = 16 << 20;
-        static void* gloadbuf         = malloc(kloadbufsize);
-        OrkAssert(isize < kloadbufsize);
-        auto copy_src = inpstream.GetCurrent();
-        memcpy(gloadbuf,copy_src,isize);
+        //static const int kloadbufsize = 16 << 20;
+        //static void* gloadbuf         = malloc(kloadbufsize);
+        //OrkAssert(isize < kloadbufsize);
+        auto copy_src = inpstream.current();
+        //memcpy(gloadbuf, copy_src, isize);
         inpstream.advance(isize);
         GL_ERRORCHECK();
-        glCompressedTexImage2D(tgt, imip, fmt, iw, ih, 0, isize, gloadbuf);
+        glCompressedTexImage2D(tgt, imip, fmt, iw, ih, 0, isize, copy_src);
 
         GL_ERRORCHECK();
       } else // PBO
@@ -416,8 +415,8 @@ struct TexSetter {
         void* pgfxmem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
         GL_ERRORCHECK();
         OrkAssert(pgfxmem != 0);
-        auto copy_src = inpstream.GetCurrent();
-        memcpy(pgfxmem,copy_src,isize);
+        auto copy_src = inpstream.current();
+        memcpy(pgfxmem, copy_src, isize);
         inpstream.advance(isize);
         glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
         GL_ERRORCHECK();
@@ -462,7 +461,7 @@ struct TexSetter {
       int& iw,
       int& ih,
       int& id,
-      chunkfile::InputStream inpstream ) //, int& irdptr, const u8* dataBASE )
+      DataBlockInputStream inpstream) //, int& irdptr, const u8* dataBASE )
   {
     for (int imip = 0; imip < inummips; imip++) {
       int iBwidth  = (iw + 3) / 4;
@@ -748,12 +747,12 @@ bool GlTextureInterface::LoadVDSTexture(const AssetPath& infname, Texture* ptex)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req) {
+void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   mTargetGL.makeCurrentContext();
 
-  dxt::DDS_HEADER* ddsh    = req.ddsh;
-  Texture* ptex            = req.ptex;
-  GLTextureObject* pTEXOBJ = req.pTEXOBJ;
+  const dxt::DDS_HEADER* ddsh = req._ddsheader;
+  Texture* ptex               = req.ptex;
+  GLTextureObject* pTEXOBJ    = req.pTEXOBJ;
   // File& TextureFile = *req.pTEXFILE;
 
   int NumMips  = (ddsh->dwFlags & dxt::DDSD_MIPMAPCOUNT) ? ddsh->dwMipMapCount : 1;
@@ -802,7 +801,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req) {
   if (dxt::IsLUM(ddsh->ddspf)) {
     // printf( "  tex<%s> LUM\n", infname.c_str() );
     if (bVOLUMETEX)
-      TexSetter::Set3D(this, GL_RED, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+      TexSetter::Set3D(
+          this, GL_RED, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
     else
       TexSetter::Set2D(
           this, ptex, 1, GL_RED, GL_UNSIGNED_BYTE, TARGET, 1, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
@@ -815,8 +815,9 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req) {
           this, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
     else
       TexSetter::Set2D(
-          this, ptex, 4, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, 2, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata
-                                                                                                                // );
+          this, ptex, 4, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, 2, NumMips, iwidth, iheight, req._inpstream); // ireadptr,
+                                                                                                                   // pdata
+                                                                                                                   // );
   } else if (dxt::IsBGRA8(ddsh->ddspf)) {
     const dxt::DdsLoadInfo& li = dxt::loadInfoBGRA8;
     int size                   = idepth * iwidth * iheight * 4;
@@ -842,7 +843,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req) {
     // printf( "  tex<%s> size<%d>\n", TextureFile.msFileName.c_str(), size );
     // printf( "  tex<%s> BGR8\n", infname.c_str() );
     if (bVOLUMETEX)
-      TexSetter::Set3D(this, GL_BGR, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+      TexSetter::Set3D(
+          this, GL_BGR, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
     else
       TexSetter::Set2D(
           this, ptex, 3, GL_BGR, GL_UNSIGNED_BYTE, TARGET, 3, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
@@ -907,18 +909,19 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req) {
   GL_ERRORCHECK();
 }
 
-bool GlTextureInterface::LoadTexture(Texture* ptex, chunkfile::InputStream& inpstream) {
+bool GlTextureInterface::LoadTexture(Texture* ptex, datablockptr_t datablock) {
   // todo: filetype deduction
-  return LoadDDSTexture(ptex,inpstream);
+  return LoadDDSTexture(ptex, datablock);
 }
 
-bool GlTextureInterface::LoadDDSTexture(Texture* ptex, chunkfile::InputStream inpstream) {
+bool GlTextureInterface::LoadDDSTexture(Texture* ptex, datablockptr_t datablock) {
+
   GlTexLoadReq load_req;
-  load_req.ptex = ptex;
-  load_req._inpstream = inpstream;
-  ////////////////////////////////////////////////////////////////////
-  auto ddsh = (dxt::DDS_HEADER*) load_req._inpstream.GetCurrent();
+  load_req.ptex                  = ptex;
+  load_req._inpstream._datablock = datablock;
   load_req._inpstream.advance(sizeof(dxt::DDS_HEADER));
+  ////////////////////////////////////////////////////////////////////
+  auto ddsh = (const dxt::DDS_HEADER*)load_req._inpstream.data(0);
   ////////////////////////////////////////////////////////////////////
   ptex->_width  = ddsh->dwWidth;
   ptex->_height = ddsh->dwHeight;
@@ -933,9 +936,9 @@ bool GlTextureInterface::LoadDDSTexture(Texture* ptex, chunkfile::InputStream in
   ptex->_internalHandle    = (void*)pTEXOBJ;
 
   ///////////////////////////////////////////////
-  load_req.ddsh    = ddsh;
-  load_req.pTEXOBJ = pTEXOBJ;
-  void_lambda_t lamb = [=]() { this->LoadDDSTextureMainThreadPart(load_req); };
+  load_req._ddsheader = ddsh;
+  load_req.pTEXOBJ    = pTEXOBJ;
+  void_lambda_t lamb  = [=]() { this->LoadDDSTextureMainThreadPart(load_req); };
   MainThreadOpQ().push(lamb);
   ///////////////////////////////////////////////
   return true;
@@ -952,9 +955,9 @@ bool GlTextureInterface::LoadDDSTexture(const AssetPath& infname, Texture* ptex)
   ///////////////////////////////////////////////
   size_t ifilelen       = 0;
   EFileErrCode eFileErr = TextureFile.GetLength(ifilelen);
-  U8* pdata             = (U8*)malloc(ifilelen);
-  OrkAssertI(pdata != 0, "out of memory ?");
-  eFileErr = TextureFile.Read(pdata, sizeof(dxt::DDS_HEADER));
+  auto pdata            = (U8*)malloc(ifilelen);
+  assert(pdata != nullptr);
+  eFileErr = TextureFile.Read(pdata, ifilelen);
   ////////////////////////////////////////////////////////////////////
 
   /*if (0) {
@@ -970,7 +973,7 @@ bool GlTextureInterface::LoadDDSTexture(const AssetPath& infname, Texture* ptex)
     printf("  tex<%s> gmask<0x%x>\n", infname.c_str(), int(ddsh->ddspf.dwGBitMask));
     printf("  tex<%s> bmask<0x%x>\n", infname.c_str(), int(ddsh->ddspf.dwBBitMask));
   }*/
-  chunkfile::InputStream inpstream(pdata,ifilelen);
+  auto inpstream = std::make_shared<DataBlock>(pdata, ifilelen);
   return LoadDDSTexture(ptex, inpstream);
 }
 

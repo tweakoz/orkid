@@ -32,6 +32,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/file/chunkfile.inl>
+#include <ork/kernel/datablock.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -282,20 +283,20 @@ private:
 };
 
 struct GlTexLoadReq {
-  Texture* ptex;
-  dxt::DDS_HEADER* ddsh;
-  GLTextureObject* pTEXOBJ;
+  Texture* ptex = nullptr;
+  const dxt::DDS_HEADER* _ddsheader = nullptr;
+  GLTextureObject* pTEXOBJ = nullptr;
   std::string _texname;
-  chunkfile::InputStream _inpstream;
+  DataBlockInputStream _inpstream;
 };
 
 class GlTextureInterface : public TextureInterface {
 public:
   void TexManInit(void) override;
 
-  void LoadDDSTextureMainThreadPart(const GlTexLoadReq& req);
+  void LoadDDSTextureMainThreadPart(GlTexLoadReq req);
   bool LoadDDSTexture(const AssetPath& fname, Texture* ptex);
-  bool LoadDDSTexture(Texture* ptex, chunkfile::InputStream inpstream);
+  bool LoadDDSTexture(Texture* ptex, datablockptr_t inpdata);
   bool LoadVDSTexture(const AssetPath& fname, Texture* ptex);
   bool LoadQTZTexture(const AssetPath& fname, Texture* ptex);
 
@@ -304,7 +305,7 @@ public:
   GlTextureInterface(GfxTargetGL& tgt);
 
 private:
-  bool LoadTexture(Texture* ptex, chunkfile::InputStream& inpstream) final;
+  bool LoadTexture(Texture* ptex, datablockptr_t inpdata) final;
   bool DestroyTexture(Texture* ptex) final;
   bool LoadTexture(const AssetPath& fname, Texture* ptex) final;
   void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final;

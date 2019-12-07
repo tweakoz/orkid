@@ -90,14 +90,21 @@ void PBRMaterial::describeX(class_t* c) {
           auto embtex = itt->second;
           printf( "got tex channel<%s> name<%s> embtex<%p>\n", token, texname, embtex );
           auto tex = new lev2::Texture;
-          chunkfile::InputStream texstream(embtex->_srcdata,embtex->_srcdatalen);
-          bool ok = txi->LoadTexture(tex,texstream);
+          auto datablock = std::make_shared<DataBlock>(embtex->_srcdata,embtex->_srcdatalen);
+          bool ok = txi->LoadTexture(tex,datablock);
           assert(ok);
+          if( 0 == strcmp(token,"colormap")){
+            mtl->_texColor = tex;
+          }
+          if( 0 == strcmp(token,"normalmap")){
+            mtl->_texNormal = tex;
+          }
+          if( 0 == strcmp(token,"metalmap")){
+            mtl->_texRoughAndMetal = tex;
+          }
         }
 
       }
-
-      assert(false);
       return mtl;
     };
 

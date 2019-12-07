@@ -131,6 +131,7 @@ void ClassInit() {
   RegisterClassX(RenderCompositingNode);
   RegisterClassX(ForwardCompositingNode);
   RegisterClassX(deferrednode::DeferredCompositingNode);
+  RegisterClassX(deferrednode::DeferredCompositingNodeDebugNormal);
 
 #if defined(ENABLE_NVMESH_SHADERS)
   RegisterClassX(deferrednode::DeferredCompositingNodeNvMs);

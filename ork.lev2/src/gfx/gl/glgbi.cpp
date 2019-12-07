@@ -599,7 +599,18 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 	switch( eStrFmt )
 	{
 		case lev2::EVTXSTREAMFMT_V12N12B12T16:
-		{	break;
+		{
+			static vtx_config cfgs[] =
+			{	{"POSITION",	3,	GL_FLOAT,			false,	0,		0,0},
+				{"NORMAL",		3,	GL_FLOAT,			true,	12,		0,0},
+				{"BINORMAL",	3,	GL_FLOAT,			true,	24,		0,0},
+				{"TEXCOORD0",	2,	GL_FLOAT,			false,	36,		0,0},
+				{"TEXCOORD1",	2,	GL_FLOAT,			false,	44,		0,0},
+			};
+			for( vtx_config& vcfg : cfgs )
+				component_mask |= vcfg.bind_to_attr(pfxpass,iStride);
+			rval = true;
+		  break;
 		}
 		case lev2::EVTXSTREAMFMT_V12N12B12T8I4W4:
 		{	break;
@@ -702,8 +713,6 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 	{
 		printf( "unhandled vtxfmt<%d>\n", int(eStrFmt) );
 	}
-
-	assert(rval);
 	return rval;
 }
 

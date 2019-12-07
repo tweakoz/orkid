@@ -41,7 +41,7 @@ const DdsLoadInfo loadInfoIndex8 = {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool IsLUM( DDS_PIXELFORMAT& pf )
+bool IsLUM( const DDS_PIXELFORMAT& pf )
 {
 	bool bv = 
 	(pf.dwRGBBitCount == 8) &&
@@ -54,7 +54,7 @@ bool IsLUM( DDS_PIXELFORMAT& pf )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool IsBGR5A1( DDS_PIXELFORMAT& pf )
+bool IsBGR5A1( const DDS_PIXELFORMAT& pf )
 {
 	bool bv = ((pf.dwFlags & DDSD_RGBA) &&
 	(pf.dwRGBBitCount == 16) &&
@@ -67,7 +67,7 @@ bool IsBGR5A1( DDS_PIXELFORMAT& pf )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool IsBGR8( dxt::DDS_PIXELFORMAT& pf )
+bool IsBGR8( const dxt::DDS_PIXELFORMAT& pf )
 {
 	bool bv = ((pf.dwFlags & DDSD_RGB) &&
 	(pf.dwRGBBitCount == 24) &&
@@ -79,7 +79,7 @@ bool IsBGR8( dxt::DDS_PIXELFORMAT& pf )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool IsBGRA8( DDS_PIXELFORMAT& pf )
+bool IsBGRA8( const DDS_PIXELFORMAT& pf )
 {
 	bool bv = ((pf.dwFlags & DDSD_RGBA) &&
 	(pf.dwRGBBitCount == 32) &&
@@ -92,7 +92,7 @@ bool IsBGRA8( DDS_PIXELFORMAT& pf )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool IsDXT1( DDS_PIXELFORMAT& pf )
+bool IsDXT1( const DDS_PIXELFORMAT& pf )
 {
 	bool bv = (pf.dwFlags & DDS_FOURCC);
 	bv &= (pf.dwFourCC == FOURCC_DXT1);
@@ -101,7 +101,7 @@ bool IsDXT1( DDS_PIXELFORMAT& pf )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool IsDXT3( DDS_PIXELFORMAT& pf )
+bool IsDXT3( const DDS_PIXELFORMAT& pf )
 {
 	bool bv = (pf.dwFlags & DDS_FOURCC);
 	bv &= (pf.dwFourCC == FOURCC_DXT3);
@@ -110,7 +110,7 @@ bool IsDXT3( DDS_PIXELFORMAT& pf )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool IsDXT5( DDS_PIXELFORMAT& pf )
+bool IsDXT5( const DDS_PIXELFORMAT& pf )
 {
 	bool bv = (pf.dwFlags & DDS_FOURCC);
 	bv &= (pf.dwFourCC == FOURCC_DXT5);
@@ -119,7 +119,7 @@ bool IsDXT5( DDS_PIXELFORMAT& pf )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool IsABGR8( dxt::DDS_PIXELFORMAT& pf )
+bool IsABGR8( const dxt::DDS_PIXELFORMAT& pf )
 {
 	bool bv = ((pf.dwFlags & dxt::DDSD_RGBA) &&
 	(pf.dwRGBBitCount == 32) &&
@@ -132,7 +132,7 @@ bool IsABGR8( dxt::DDS_PIXELFORMAT& pf )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool IsRGB8( dxt::DDS_PIXELFORMAT& pf )
+bool IsRGB8( const dxt::DDS_PIXELFORMAT& pf )
 {
 	bool bv = ((pf.dwFlags & dxt::DDSD_RGB) &&
 	(pf.dwRGBBitCount == 24) &&
@@ -145,7 +145,7 @@ bool IsRGB8( dxt::DDS_PIXELFORMAT& pf )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool IsXBGR8( dxt::DDS_PIXELFORMAT& pf )
+bool IsXBGR8( const dxt::DDS_PIXELFORMAT& pf )
 {
 	bool bv = ((pf.dwFlags & dxt::DDSD_RGB) &&
 	(pf.dwRGBBitCount == 32) &&

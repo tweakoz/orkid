@@ -27,15 +27,16 @@ namespace ork::lev2::glslfx {
 const std::map<std::string, int> gattrsorter = {
     {"POSITION", 0},
     {"NORMAL", 1},
-    {"COLOR0", 2},
-    {"COLOR1", 3},
-    {"TEXCOORD0", 4},
+    {"BINORMAL", 2},
+    {"COLOR0", 3},
+    {"COLOR1", 4},
     {"TEXCOORD0", 5},
-    {"TEXCOORD1", 6},
-    {"TEXCOORD2", 7},
-    {"TEXCOORD3", 8},
-    {"BONEINDICES", 9},
-    {"BONEWEIGHTS", 10},
+    {"TEXCOORD0", 6},
+    {"TEXCOORD1", 7},
+    {"TEXCOORD2", 8},
+    {"TEXCOORD3", 9},
+    {"BONEINDICES", 10},
+    {"BONEWEIGHTS", 11},
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

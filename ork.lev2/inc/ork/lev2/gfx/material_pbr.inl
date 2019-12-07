@@ -53,8 +53,10 @@ public:
   const FxShaderParam* _paramMROT = nullptr;
   const FxShaderParam* _paramMapColor = nullptr;
   const FxShaderParam* _paramMapNormal = nullptr;
+  const FxShaderParam* _paramMapRoughAndMetal = nullptr;
   Texture* _texColor = nullptr;
   Texture* _texNormal = nullptr;
+  Texture* _texRoughAndMetal = nullptr;
   std::string _textureBaseName;
   const FxShaderTechnique* _tekRigidGBUFFER = nullptr;
   const FxShaderTechnique* _tekRigidGBUFFER_N = nullptr;
@@ -95,14 +97,16 @@ inline bool PBRMaterial::BeginPass(GfxTarget* targ, int iPass) {
   auto mvpmtx = mtxi->RefMVPMatrix();
   auto rotmtx = mtxi->RefR3Matrix();
   auto mvmtx = mtxi->RefMVMatrix();
+  auto vmtx = mtxi->RefVMatrix();
+  vmtx.dump("vmtx");
   const RenderContextInstData* RCID  = targ->GetRenderContextInstData();
   const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
   const auto& CPD = RCFD->topCPD();
   fxi->BindPass(_shader, 0);
   fxi->BindParamCTex(_shader,_paramMapColor,_texColor);
   fxi->BindParamCTex(_shader,_paramMapNormal,_texNormal);
+  fxi->BindParamCTex(_shader,_paramMapRoughAndMetal,_texRoughAndMetal);
   fxi->BindParamMatrix(_shader,_paramMV,mvmtx);
-  fxi->BindParamMatrix(_shader,_paramMROT,rotmtx);
   const auto& world = mtxi->RefMMatrix();
   if (CPD.isStereoOnePass() and CPD._stereoCameraMatrices) {
     auto stereomtx = CPD._stereoCameraMatrices;
@@ -116,6 +120,7 @@ inline bool PBRMaterial::BeginPass(GfxTarget* targ, int iPass) {
                * mcams->_vmatrix
                * mcams->_pmatrix;
     fxi->BindParamMatrix(_shader, _paramMVP, MVP);
+    fxi->BindParamMatrix(_shader,_paramMROT,(world*mcams->_vmatrix).rotMatrix33());
   }
   rsi->BindRasterState(_rasterstate);
   fxi->CommitParams();
@@ -154,16 +159,17 @@ inline void PBRMaterial::Init(GfxTarget* targ) /*final*/ {
   _paramMROT = fxi->parameter(_shader,"mrot");
   _paramMapColor = fxi->parameter(_shader,"ColorMap");
   _paramMapNormal = fxi->parameter(_shader,"NormalMap");
+  _paramMapRoughAndMetal = fxi->parameter(_shader,"RoughAndMetalMap");
 
   auto basepath = "data://materials/"s+_textureBaseName+"/"s;
   auto colorpath = basepath+_textureBaseName+"_baseColor"s;
   auto normalpath = basepath+_textureBaseName+"_normal"s;
   printf( "colorpath<%s>\n", colorpath.c_str() );
-  auto ass_color = ork::asset::AssetManager<TextureAsset>::Load(colorpath.c_str());
-  auto ass_normal = ork::asset::AssetManager<TextureAsset>::Load(normalpath.c_str());
-  _texColor = ass_color->GetTexture();
-  _texNormal = ass_normal->GetTexture();
-  printf( "ass_color<%p>\n", ass_color );
+  //auto ass_color = ork::asset::AssetManager<TextureAsset>::Load(colorpath.c_str());
+  //auto ass_normal = ork::asset::AssetManager<TextureAsset>::Load(normalpath.c_str());
+  //_texColor = ass_color->GetTexture();
+  //_texNormal = ass_normal->GetTexture();
+  //printf( "ass_color<%p>\n", ass_color );
   printf( "tex_color<%p>\n", _texColor );
   printf( "tex_normal<%p>\n", _texNormal );
 }

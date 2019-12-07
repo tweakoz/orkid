@@ -64,7 +64,8 @@ void DeferredContext::gpuInit(GfxTarget* target) {
     _tekBaseLightingStereo     = _lightingmtl.technique("baselight_stereo");
     _tekPointLightingStereo    = _lightingmtl.technique("pointlight_stereo");
     _tekDownsampleDepthCluster = _lightingmtl.technique("downsampledepthcluster");
-    //////////////////////////////////////////////////////////////
+    _tekDebugNormal = _lightingmtl.technique("debugnormal");
+//////////////////////////////////////////////////////////////
     // init lightblock
     //////////////////////////////////////////////////////////////
     _lightblock  = _lightingmtl.paramBlock("ub_light");

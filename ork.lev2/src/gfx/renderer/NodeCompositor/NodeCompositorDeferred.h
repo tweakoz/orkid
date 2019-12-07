@@ -105,6 +105,7 @@ struct DeferredContext {
 
   const FxShaderTechnique* _tekBaseLighting          = nullptr;
   const FxShaderTechnique* _tekPointLighting         = nullptr;
+  const FxShaderTechnique* _tekDebugNormal           = nullptr;
   const FxShaderTechnique* _tekBaseLightingStereo    = nullptr;
   const FxShaderTechnique* _tekPointLightingStereo   = nullptr;
   const FxShaderTechnique* _tekDownsampleDepthCluster = nullptr;
@@ -152,6 +153,25 @@ class DeferredCompositingNode : public RenderCompositingNode {
 public:
   DeferredCompositingNode();
   ~DeferredCompositingNode();
+  fvec4 _clearColor;
+  fvec4 _fogColor;
+
+private:
+  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;
+  void DoRender(CompositorDrawData& drawdata) final;
+
+  lev2::RtBuffer* GetOutput() const final;
+  svar256_t _impl;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class DeferredCompositingNodeDebugNormal : public RenderCompositingNode {
+  DeclareConcreteX(DeferredCompositingNodeDebugNormal, RenderCompositingNode);
+
+public:
+  DeferredCompositingNodeDebugNormal();
+  ~DeferredCompositingNodeDebugNormal();
   fvec4 _clearColor;
   fvec4 _fogColor;
 

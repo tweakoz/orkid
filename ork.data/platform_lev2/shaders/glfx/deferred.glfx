@@ -197,6 +197,13 @@ fragment_shader ps_pointlight : iface_f2uv : lib_deferred {
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
+fragment_shader ps_debugnormal : iface_f2uv : lib_deferred {
+  vec2 uv   = gl_FragCoord.xy * InvViewportSize;
+  vec3 n    = texture(MapNormalL, uv).xyz; //*2-vec3(1,1,1);
+  //n = normalize(n)*0.5+vec3(0.5);
+  out_clr = vec4(n, 1);
+}
+///////////////////////////////////////////////////////////////
 fragment_shader ps_pointlight_stereo : iface_f2uv : lib_deferred {
   WPosData wpd;
   wpd._muv     = gl_FragCoord.xy * InvViewportSize;
@@ -254,6 +261,15 @@ technique downsampledepthcluster {
   pass p0 {
     vertex_shader   = vs_passthru2uv;
     fragment_shader = ps_downsampledepthcluster;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique debugnormal {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_debugnormal;
     state_block     = sb_default;
   }
 }

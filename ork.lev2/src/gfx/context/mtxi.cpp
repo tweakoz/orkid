@@ -75,11 +75,11 @@ void MatrixStackInterface::PopUIMatrix()
 void MatrixStackInterface::OnMMatrixDirty( void )
 {
 	const fmtx4& wmat = RefMMatrix();
-	mmR3Matrix = wmat.rotMatrix33();
 	mmR4Matrix = wmat.rotMatrix44();
 	//
 	mmMVMatrix = wmat * RefVMatrix();
 	mmMVPMatrix = wmat * mmVPMatrix;
+	mmR3Matrix = mmMVMatrix.rotMatrix33();
 	//mmMVPMatrix.Transpose();
 }
 
