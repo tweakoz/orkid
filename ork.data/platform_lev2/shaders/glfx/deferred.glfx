@@ -236,7 +236,7 @@ fragment_shader ps_debugnormal : iface_f2uv : lib_deferred : lib_cellnoise {
     // dual parabaloid env mapping
     /////////////////////////
 
-    float miplevel = roughness*7;
+    float miplevel = clamp(2+(roughness*5),0,7);
     vec3 env;
     if( refl.z>0.0 ){
 		vec2 frontUV = (refl.xy / (2.0*(1.0 + refl.z))) + 0.5;
