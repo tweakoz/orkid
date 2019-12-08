@@ -849,6 +849,11 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
       TexSetter::Set2D(
           this, ptex, 3, GL_BGR, GL_UNSIGNED_BYTE, TARGET, 3, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
     GL_ERRORCHECK();
+      if (NumMips > 3) {
+        ptex->TexSamplingMode().PresetTrilinearWrap();
+        ApplySamplingMode(ptex);
+// assert(false);
+      }
   }
   //////////////////////////////////////////////////////////
   // DXT5: texturing fast path (8 bits per pixel true color)

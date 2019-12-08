@@ -78,6 +78,8 @@ void DeferredContext::gpuInit(GfxTarget* target) {
     _parMapDepth       = _lightingmtl.param("MapDepth");
     _parMapGBufRufMtlAlpha = _lightingmtl.param("MapRufMtlAlpha");
     _parMapDepthCluster = _lightingmtl.param("MapDepthCluster");
+    _parMapEnvironment = _lightingmtl.param("MapEnvironment");
+
     _parInvViewSize    = _lightingmtl.param("InvViewportSize");
     _parTime           = _lightingmtl.param("Time");
     _parNumLights      = _lightingmtl.param("NumLights");

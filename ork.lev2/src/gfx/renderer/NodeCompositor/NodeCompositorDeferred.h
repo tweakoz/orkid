@@ -124,6 +124,7 @@ struct DeferredContext {
   const FxShaderParam* _parMapGBufRufMtlAlpha        = nullptr;
   const FxShaderParam* _parMapDepth                  = nullptr;
   const FxShaderParam* _parMapDepthCluster           = nullptr;
+  const FxShaderParam* _parMapEnvironment            = nullptr;
   const FxShaderParam* _parTime                      = nullptr;
   const FxShaderParam* _parNearFar                   = nullptr;
   const FxShaderParam* _parInvViewSize               = nullptr;
@@ -142,7 +143,6 @@ struct DeferredContext {
   RtGroup* _rtgGbuffer = nullptr;
   RtGroup* _rtgDepthCluster = nullptr;
   RtGroup* _rtgLaccum  = nullptr;
-
   PoolString _layername;
 };
 
@@ -175,10 +175,14 @@ public:
   ~DeferredCompositingNodeDebugNormal();
   fvec4 _clearColor;
   fvec4 _fogColor;
+  lev2::Texture* envTexture() const;
 
 private:
   void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
+  void _readEnvTexture(ork::rtti::ICastable *&tex) const;
+  void _writeEnvTexture(ork::rtti::ICastable *const &tex);
+  lev2::TextureAsset*                     _environmentTextureAsset = nullptr;
 
   lev2::RtBuffer* GetOutput() const final;
   svar256_t _impl;

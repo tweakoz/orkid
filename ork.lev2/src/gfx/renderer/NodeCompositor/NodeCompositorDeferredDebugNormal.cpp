@@ -31,7 +31,24 @@ namespace ork::lev2::deferrednode {
 void DeferredCompositingNodeDebugNormal::describeX(class_t* c) {
   c->memberProperty("ClearColor", &DeferredCompositingNodeDebugNormal::_clearColor);
   c->memberProperty("FogColor", &DeferredCompositingNodeDebugNormal::_fogColor);
+  auto texprop = c->accessorProperty("EnvironmentTexture", &DeferredCompositingNodeDebugNormal::_readEnvTexture, &DeferredCompositingNodeDebugNormal::_writeEnvTexture);
+  texprop->annotate<ConstString>("editor.class", "ged.factory.assetlist");
+  texprop->annotate<ConstString>("editor.assettype", "lev2tex");
+  texprop->annotate<ConstString>("editor.assetclass", "lev2tex");
+
 }
+void DeferredCompositingNodeDebugNormal::_readEnvTexture(ork::rtti::ICastable *&tex) const {
+  tex = _environmentTextureAsset;
+}
+void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable *const &tex) {
+_environmentTextureAsset = tex ? rtti::autocast(tex) : nullptr;
+}
+
+  lev2::Texture* DeferredCompositingNodeDebugNormal::envTexture() const {
+  return _environmentTextureAsset ? _environmentTextureAsset->GetTexture() : nullptr;
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 struct IMPL {
   static const int KMAXLIGHTS=8;
@@ -97,6 +114,9 @@ struct IMPL {
       _context._lightingmtl.bindParamCTex(_context._parMapGBufNrmL, _context._rtgGbuffer->GetMrt(1)->GetTexture());
       _context._lightingmtl.bindParamCTex(_context._parMapGBufRufMtlAlpha, _context._rtgGbuffer->GetMrt(2)->GetTexture());
       _context._lightingmtl.bindParamCTex(_context._parMapDepth, _context._rtgGbuffer->_depthTexture);
+
+      if( node->envTexture() )
+        _context._lightingmtl.bindParamCTex(_context._parMapEnvironment, node->envTexture() );
 
 
       _context._lightingmtl.bindParamVec2(_context._parNearFar, fvec2(0.1, 1000));
