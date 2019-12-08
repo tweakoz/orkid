@@ -42,6 +42,7 @@ uniform_set ub_frg {
   int NumLights;
   int TileDim;
   vec2 Zndc2eye;
+  float EnvironmentIntensity;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ub_light {
@@ -255,7 +256,7 @@ fragment_shader ps_debugnormal : iface_f2uv : lib_deferred : lib_cellnoise {
     //float envmix = pow(roughness,1);
     //env = mix( env, vec3(0.5,0.5,0.5), envmix); // technically we should use a blurred cube map here..
     vec3 diffuse = gbd._albedo*(1-metallic)*l;
-    vec3 specular = mix(metalbase,gbd._albedo,metallic)*env*1.25;
+    vec3 specular = mix(metalbase,gbd._albedo,metallic)*env*EnvironmentIntensity;
     //vec3 specular = env*gbd._albedo;
     out_clr = vec4(diffuse+specular,1);
     //out_clr = vec4(env,1);
