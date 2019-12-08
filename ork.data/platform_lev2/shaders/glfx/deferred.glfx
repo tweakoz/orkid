@@ -203,22 +203,20 @@ fragment_shader ps_debugnormal : iface_f2uv : lib_deferred : lib_cellnoise {
   vec3 rma = texture(MapRufMtlAlpha,uv).xyz;
 
   //n = normalize(n)*0.5+vec3(0.5);
-  vec3 metal = vec3(0.04,0.04,0.04);
+  vec3 metalbase = vec3(0.04,0.04,0.04);
   if( rma.z>0 ){
-    float shininess = 0.1+rma.x*0.9;
-    float roughness = 1.0-shininess;
-    float metallic = pow(rma.y,0.5);
+    float roughness = rma.x;
+    float metallic = rma.y;
     vec3 n    = texture(MapNormalL, uv).xyz*2-vec3(1,1,1);
     vec3 albedo = texture(MapAlbedoAo, uv).xyz;
-    float l = clamp(dot(n,vec3(0,0,-1)),0,1);
-    //l = pow(l,1+rma.x*3);
-    l += 0.25;
+    float l = clamp(dot(n,vec3(0,0,-1)),0,1)*0.5;
+    l += 0.5;
     vec3 refl = reflect(vec3(0,0,-1),n);
     float celln = cellnoise(refl);
-    vec3 env = mix(metal,vec3(3,3,3),pow(celln,1.5));
-    vec3 specular = env*pow(shininess,0.5)*0.5; //zz*(1.0-l);
-    //out_clr = vec4(albedo*l+spec, 1);
-    vec3 diffuse = albedo*l;
+    vec3 env = mix(vec3(0.1,0.1,0.1),vec3(3,3,3),pow(celln,1.5));
+    env = mix( env, vec3(2,2,2.5), pow(roughness,2));
+    vec3 diffuse = albedo*(1-metallic)*l;
+    vec3 specular = mix(metalbase,albedo,metallic)*env;
     out_clr = vec4(diffuse+specular,1);
   }
   else

@@ -100,8 +100,8 @@ fragment_shader ps_gbuffer_n // normalmap
 {
     vec4 col = texture(ColorMap,frg_uv0).xyzw;
     vec3 nrm_tanspace = texture(NormalMap,frg_uv0).xyz*2.0-vec3(1,1,1);
-    vec3 rufandmtl = vec3(texture(RoughAndMetalMap,frg_uv0).zy,1);
-    nrm_tanspace = normalize(nrm_tanspace);
+    vec3 rufandmtl = vec3(texture(RoughAndMetalMap,frg_uv0).yz,1);
+    nrm_tanspace = normalize(nrm_tanspace*vec3(1,1,5));
 
 	vec3 nrm_w = normalize(nrm_tanspace*frg_tbn);
 
