@@ -199,24 +199,43 @@ fragment_shader ps_pointlight : iface_f2uv : lib_deferred {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_debugnormal : iface_f2uv : lib_deferred : lib_cellnoise {
+
   vec2 uv   = gl_FragCoord.xy * InvViewportSize;
   vec3 rma = texture(MapRufMtlAlpha,uv).xyz;
 
   //n = normalize(n)*0.5+vec3(0.5);
-  vec3 metalbase = vec3(0.04,0.04,0.04);
+  vec3 metalbase = vec3(0.1,0.1,0.1);
   if( rma.z>0 ){
+
     float roughness = rma.x;
     float metallic = rma.y;
+
+    WPosData wpd;
+    wpd._muv   = uv;
+    wpd._ivp   = IVPArray[0];
+    wpd._scruv = wpd._muv;
+    GBufData gbd = decodeGBUF(wpd);
+    vec3 wpos = gbd._wpos;
+    float depthtex = 0.0;
+    vec2 scrxy     = wpd._scruv * 2.0 - vec2(1, 1);
+    vec3 inpos     = vec3(scrxy.x, scrxy.y, depthtex * 2 - 1.0);
+    vec4 rr        = wpd._ivp * vec4(inpos, 1);
+    float ndc      = depthtex * 2.0 - 1.0;
+    float zeye     = Zndc2eye.x / (ndc - Zndc2eye.y);
+    vec3 epos      = vec3(rr.xyz / rr.w);
+
+    vec3 edir = normalize(epos-wpos);
+
     vec3 n    = texture(MapNormalL, uv).xyz*2-vec3(1,1,1);
-    vec3 albedo = texture(MapAlbedoAo, uv).xyz;
-    float l = clamp(dot(n,vec3(0,0,-1)),0,1)*0.5;
+    float l = clamp(dot(n,edir),0,1)*0.7;
     l += 0.5;
-    vec3 refl = reflect(vec3(0,0,-1),n);
+    vec3 refl = reflect(n,edir);
     float celln = cellnoise(refl);
     vec3 env = mix(vec3(0.1,0.1,0.1),vec3(3,3,3),pow(celln,1.5));
-    env = mix( env, vec3(2,2,2.5), pow(roughness,2));
-    vec3 diffuse = albedo*(1-metallic)*l;
-    vec3 specular = mix(metalbase,albedo,metallic)*env;
+    float envmix = pow(roughness,1);
+    env = mix( env, vec3(0.5,0.5,0.5), envmix); // technically we should use a blurred cube map here..
+    vec3 diffuse = gbd._albedo*(1-metallic)*l;
+    vec3 specular = mix(metalbase,gbd._albedo,metallic)*env*1.5;
     out_clr = vec4(diffuse+specular,1);
   }
   else

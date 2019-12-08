@@ -64,8 +64,8 @@ vertex_shader vs_rigid_gbuffer
 	vec4 nrmd = vec4(wnorm,-cpos.z);
 	frg_camdist = nrmd.w;
 	frg_tbn = transpose(mat3(
-        wtangent,
-        wbinorm,
+        -wtangent,
+        -wbinorm,
         wnorm
     ));
 	frg_camz = wnorm.xyz;
@@ -101,12 +101,12 @@ fragment_shader ps_gbuffer_n // normalmap
     vec4 col = texture(ColorMap,frg_uv0).xyzw;
     vec3 nrm_tanspace = texture(NormalMap,frg_uv0).xyz*2.0-vec3(1,1,1);
     vec3 rufandmtl = vec3(texture(RoughAndMetalMap,frg_uv0).yz,1);
-    nrm_tanspace = normalize(nrm_tanspace*vec3(1,1,5));
+    nrm_tanspace = normalize(nrm_tanspace*vec3(1,1,1));
 
 	vec3 nrm_w = normalize(nrm_tanspace*frg_tbn);
 
 
-	//vec3 nxyz = vec3(frg_tbn[0].x,frg_tbn[1].x,frg_tbn[2].x);
+	//vec3 nxyz = vec3(frg_tbn[0].z,frg_tbn[1].z,frg_tbn[2].z);
 	//nxyz = nxyz*0.5+vec3(0.5);
 
 	//float l = dot(nrm_w,vec3(0,0,-1));

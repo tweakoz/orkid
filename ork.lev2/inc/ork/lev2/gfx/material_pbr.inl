@@ -120,7 +120,8 @@ inline bool PBRMaterial::BeginPass(GfxTarget* targ, int iPass) {
                * mcams->_vmatrix
                * mcams->_pmatrix;
     fxi->BindParamMatrix(_shader, _paramMVP, MVP);
-    fxi->BindParamMatrix(_shader,_paramMROT,(world*mcams->_vmatrix).rotMatrix33());
+    //fxi->BindParamMatrix(_shader,_paramMROT,(world*mcams->_vmatrix).rotMatrix33());
+    fxi->BindParamMatrix(_shader,_paramMROT,(world).rotMatrix33());
   }
   rsi->BindRasterState(_rasterstate);
   fxi->CommitParams();
