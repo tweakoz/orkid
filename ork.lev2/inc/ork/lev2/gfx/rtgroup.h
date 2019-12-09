@@ -33,7 +33,7 @@ class RtBuffer //: public GfxBuffer
 
 	Texture* GetTexture() const { return mTexture; }
 	GfxMaterial* GetMaterial() const { return mMaterial; }
-	EBufferFormat GetBufferFormat() const { return mFormat; }
+	EBufferFormat format() const { return mFormat; }
 
 	void SetSizeDirty( bool sd ) { mSizeDirty=sd; }
 	void SetTexture( Texture* ptex ) { mTexture=ptex; }

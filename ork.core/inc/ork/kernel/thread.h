@@ -19,26 +19,29 @@ namespace ork
 
 	struct Thread
 	{		
-		Thread(const std::string& thread_name = "");
+        typedef std::function<void(anyp)> thread_lambda_t;
+
+		Thread(const std::string& thread_name = "", anyp data=nullptr);
+		Thread(thread_lambda_t l,
+		       anyp data=nullptr,
+		       const std::string& thread_name = "" );
 		virtual ~Thread() {}
 
 		virtual void run() {}
 
-		void RunSynchronous();
+		void runSynchronous();
 		void start();
-		void start( const ork::void_lambda_t& l );
+		void start( const thread_lambda_t& l );
 		bool join();
 
-		anyp& UserData() { return mUserData; }
-				
-	protected:
-		
-		std::thread*       mThreadH;
-		std::string		   mThreadName;
-		anyp		       mUserData;
-		ork::atomic<int>   mState;
-		ork::void_lambda_t mLambda;
-		bool 			   mRunning;
+		anyp& userdata() { return _userdata; }
+
+		std::thread*       _threadh;
+		std::string		   _threadname;
+		anyp		       _userdata;
+		ork::atomic<int>   _state;
+		bool 			   _running;
+		thread_lambda_t    _lambda;
 		static void* VirtualThreadImpl(void*data);
    		static void* LambdaThreadImpl(void* pdat);
 		

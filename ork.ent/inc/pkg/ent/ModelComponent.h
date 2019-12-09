@@ -47,6 +47,9 @@ class ModelComponentData : public ComponentData {
   RttiDeclareConcrete(ModelComponentData, ComponentData);
 
 public:
+
+  typedef orklut<PoolString,PoolString> mtloverridemap_t;
+
   ModelComponentData();
 
   lev2::XgmModel* GetModel() const;
@@ -60,7 +63,7 @@ public:
   const fvec3& GetOffset() const { return mOffset; }
   void SetRotate(const fvec3& r) { mRotate = r; }
 
-  const orklut<PoolString, lev2::FxShaderAsset*>& GetLayerFXMap() const { return mLayerFx; }
+  const mtloverridemap_t& MaterialOverrideMap() const { return _materialOverrides; }
 
   bool ShowBoundingSphere() const { return mbShowBoundingSphere; }
 
@@ -83,7 +86,7 @@ private:
   bool mbCopyDag;
   bool mBlenderZup;
 
-  orklut<PoolString, lev2::FxShaderAsset*> mLayerFx;
+  mtloverridemap_t _materialOverrides;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

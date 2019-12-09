@@ -145,14 +145,14 @@ void BulletShapeHeightfieldData::Describe() {
 
   reflect::RegisterProperty("VisualData",&BulletShapeHeightfieldData::_visualDataAccessor);
 
-  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("HeightMap", "editor.class", "ged.factory.filelist");
-  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("HeightMap", "editor.filetype", "png");
+  reflect::annotatePropertyForEditor<BulletShapeHeightfieldData>("HeightMap", "editor.class", "ged.factory.filelist");
+  reflect::annotatePropertyForEditor<BulletShapeHeightfieldData>("HeightMap", "editor.filetype", "png");
 
-  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("WorldHeight", "editor.range.min", "0");
-  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("WorldHeight", "editor.range.max", "10000");
+  reflect::annotatePropertyForEditor<BulletShapeHeightfieldData>("WorldHeight", "editor.range.min", "0");
+  reflect::annotatePropertyForEditor<BulletShapeHeightfieldData>("WorldHeight", "editor.range.max", "10000");
 
-  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("WorldSize", "editor.range.min", "1.0f");
-  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("WorldSize", "editor.range.max", "20000.0");
+  reflect::annotatePropertyForEditor<BulletShapeHeightfieldData>("WorldSize", "editor.range.min", "1.0f");
+  reflect::annotatePropertyForEditor<BulletShapeHeightfieldData>("WorldSize", "editor.range.max", "20000.0");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

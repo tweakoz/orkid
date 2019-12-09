@@ -65,14 +65,14 @@ void ObserverCamControllerData::Describe()
 	ork::reflect::RegisterProperty( "Near", &ObserverCamControllerData::mfNear );
 	ork::reflect::RegisterProperty( "Far", &ObserverCamControllerData::mfFar );
 
-	reflect::AnnotatePropertyForEditor< ObserverCamControllerData >("Aperature", "editor.range.min", "1.0" );
-	reflect::AnnotatePropertyForEditor< ObserverCamControllerData >("Aperature", "editor.range.max", "150.0" );
+	reflect::annotatePropertyForEditor< ObserverCamControllerData >("Aperature", "editor.range.min", "1.0" );
+	reflect::annotatePropertyForEditor< ObserverCamControllerData >("Aperature", "editor.range.max", "150.0" );
 
-	reflect::AnnotatePropertyForEditor< ObserverCamControllerData >("Near", "editor.range.min", "0.1" );
-	reflect::AnnotatePropertyForEditor< ObserverCamControllerData >("Near", "editor.range.max", "10000.0" );
+	reflect::annotatePropertyForEditor< ObserverCamControllerData >("Near", "editor.range.min", "0.1" );
+	reflect::annotatePropertyForEditor< ObserverCamControllerData >("Near", "editor.range.max", "10000.0" );
 
-	reflect::AnnotatePropertyForEditor< ObserverCamControllerData >("Far", "editor.range.min", "1.0" );
-	reflect::AnnotatePropertyForEditor< ObserverCamControllerData >("Far", "editor.range.max", "10000.0" );
+	reflect::annotatePropertyForEditor< ObserverCamControllerData >("Far", "editor.range.min", "1.0" );
+	reflect::annotatePropertyForEditor< ObserverCamControllerData >("Far", "editor.range.max", "10000.0" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

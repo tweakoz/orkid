@@ -17,7 +17,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace ork { namespace tool {
+namespace ork::tool {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -28,9 +28,9 @@ bool CColladaModel::ParseMaterialBindings( void )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const SColladaMaterial & CColladaModel::GetMaterialFromShadingGroup( const std::string& ShadingGroupName ) const
+const ColladaMaterial & CColladaModel::GetMaterialFromShadingGroup( const std::string& ShadingGroupName ) const
 {
-	static const SColladaMaterial kDefaultMaterial;
+	static const ColladaMaterial kDefaultMaterial;
 
 	MeshUtil::material_semanticmap_t::const_iterator itsh = mMaterialSemanticBindingMap.find( ShadingGroupName );
 
@@ -38,7 +38,7 @@ const SColladaMaterial & CColladaModel::GetMaterialFromShadingGroup( const std::
 	{
 		const std::string & MaterialName = itsh->second.mMaterialDaeId;
 
-		orkmap<std::string,SColladaMaterial>::const_iterator itmat = mMaterialMap.find( ShadingGroupName );
+		orkmap<std::string,ColladaMaterial>::const_iterator itmat = mMaterialMap.find( ShadingGroupName );
 
 		if( mMaterialMap.end() != itmat )
 		{
@@ -148,7 +148,7 @@ struct StandardEffectTexGetter
 		///////////////////////////////////////////////////////////
 	}
 
-	static void CheckChannel( FCDEffectStandard * StdProf, uint32 texbucket, int isubtex, SColladaMaterialChannel & RefMatCh )
+	static void CheckChannel( FCDEffectStandard * StdProf, uint32 texbucket, int isubtex, ColladaMaterialChannel & RefMatCh )
 	{
 		int TexCount( StdProf->GetTextureCount(texbucket) );
 
@@ -160,13 +160,13 @@ struct StandardEffectTexGetter
 	}
 
 
-	static void DoIt( FCDEffectStandard * StdProf, SColladaMaterial & ColMat )
+	static void DoIt( FCDEffectStandard * StdProf, ColladaMaterial & ColMat )
 	{
 		switch( ColMat.mLightingType )
 		{
-			case SColladaMaterial::ELIGHTING_LAMBERT:
-			case SColladaMaterial::ELIGHTING_BLINN:
-			case SColladaMaterial::ELIGHTING_PHONG:
+			case ColladaMaterial::ELIGHTING_LAMBERT:
+			case ColladaMaterial::ELIGHTING_BLINN:
+			case ColladaMaterial::ELIGHTING_PHONG:
 				CheckChannel( StdProf, FUDaeTextureChannel::DIFFUSE, 0, ColMat.mDiffuseMapChannel );
 				CheckChannel( StdProf, FUDaeTextureChannel::SPECULAR, 0, ColMat.mSpecularMapChannel );
 				CheckChannel( StdProf, FUDaeTextureChannel::BUMP, 0, ColMat.mNormalMapChannel );
@@ -179,7 +179,7 @@ struct StandardEffectTexGetter
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SColladaMaterial::ParseStdMaterial( FCDEffectStandard *StdProf )
+void ColladaMaterial::ParseStdMaterial( FCDEffectStandard *StdProf )
 {
 	FCDEffectStandard::LightingType lighting_type = StdProf->GetLightingType();
 
@@ -190,16 +190,16 @@ void SColladaMaterial::ParseStdMaterial( FCDEffectStandard *StdProf )
 	switch( lighting_type )
 	{
 		case FCDEffectStandard::LAMBERT:
-			mLightingType = SColladaMaterial::ELIGHTING_LAMBERT;
+			mLightingType = ColladaMaterial::ELIGHTING_LAMBERT;
 			break;
 		case FCDEffectStandard::BLINN:
-			mLightingType = SColladaMaterial::ELIGHTING_BLINN;
+			mLightingType = ColladaMaterial::ELIGHTING_BLINN;
 			break;
 		case FCDEffectStandard::PHONG:
-			mLightingType = SColladaMaterial::ELIGHTING_PHONG;
+			mLightingType = ColladaMaterial::ELIGHTING_PHONG;
 			break;
 		default:
-			mLightingType = SColladaMaterial::ELIGHTING_NONE;
+			mLightingType = ColladaMaterial::ELIGHTING_NONE;
 			break;
 	}
 
@@ -218,7 +218,7 @@ void SColladaMaterial::ParseStdMaterial( FCDEffectStandard *StdProf )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SColladaMaterial::ParseFxMaterial( FCDMaterial *FxProf )
+void ColladaMaterial::ParseFxMaterial( FCDMaterial *FxProf )
 {
 	int inumparams = FxProf->GetEffectParameterCount();
 
@@ -226,7 +226,7 @@ void SColladaMaterial::ParseFxMaterial( FCDMaterial *FxProf )
 	{
 		////////////////////////////////////////////////////
 		ork::lev2::GfxMaterialFx* FxMaterial = new ork::lev2::GfxMaterialFx;
-		mpOrkMaterial = FxMaterial;
+		_orkMaterial = FxMaterial;
 		////////////////////////////////////////////////////
 
 		for( int ip=0; ip<inumparams; ip++ )
@@ -507,7 +507,7 @@ void SColladaMaterial::ParseFxMaterial( FCDMaterial *FxProf )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SColladaMaterial::ParseMaterial( FCDocument* doc, const std::string & ShadingGroupName, const std::string& MaterialName )
+void ColladaMaterial::ParseMaterial( FCDocument* doc, const std::string & ShadingGroupName, const std::string& MaterialName )
 {
 
 	printf( "ParseMaterial\n");
@@ -599,37 +599,17 @@ void SColladaMaterial::ParseMaterial( FCDocument* doc, const std::string & Shadi
 			}
 		}
 
-		if( mpOrkMaterial )
+		if( _orkMaterial )
 		{
-			mpOrkMaterial->SetName( AddPooledString( MaterialName.c_str() ) );
+			_orkMaterial->SetName( AddPooledString( MaterialName.c_str() ) );
 		}
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SColladaMatGroup::Parse( const SColladaMaterial& colmat )
-{
-	ork::lev2::GfxMaterial* pmat = colmat.mpOrkMaterial;
-
-	ork::lev2::GfxMaterialFx* pmatfx = rtti::autocast( pmat );
-
-	if( pmatfx )
-	{
-		meMaterialClass = EMATCLASS_FX;
-		mVertexConfigData = pmatfx->RefVertexConfig();
-		mpOrkMaterial = colmat.mpOrkMaterial;
-	}
-	else
-	{
-		meMaterialClass = EMATCLASS_STANDARD;
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-SColladaMaterial::SColladaMaterial()
-	: mpOrkMaterial( 0 )
+ColladaMaterial::ColladaMaterial()
+	: _orkMaterial( 0 )
 	, mStdProfile( 0 )
 {
 
@@ -700,5 +680,5 @@ bool CColladaModel::ConvertTextures(const file::Path& outmdlpth, ork::tool::Filt
 	return rv;
 }
 
-} }
+} // namespace ork::tool
 #endif

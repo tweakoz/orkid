@@ -81,7 +81,7 @@ InputDeviceIX::InputDeviceIX() : InputDevice() {
 
   auto thr = new ork::Thread("InputDeviceIX");
 
-  thr->start([=]() {
+  thr->start([=](anyp data) {
     TuioInputReader reader;
 
     reader.mOnDown = [=](TuioCursor* tcur) {

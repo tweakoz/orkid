@@ -3,44 +3,12 @@ include (GenerateExportHeader)
 
 ###################################
 
-IF(${APPLE})
-set(QT5BASE /usr/local/opt/qt)
-set(CMAKE_MACOSX_RPATH 1)
-ENDIF()
-
-###################################
-
-set(Qt5Widgets_DIR ${QT5BASE}/lib/cmake/Qt5Widgets)
-set(Qt5Test_DIR ${QT5BASE}/lib/cmake/Qt5Test)
-set(Qt5Core_DIR ${QT5BASE}/lib/cmake/Qt5Core)
-set(Qt5_DIR ${QT5BASE}/lib/cmake)
-set(Qt5Concurrent_DIR ${QT5BASE}/lib/cmake/Qt5Concurrent)
-set(Qt5Gui_DIR ${QT5BASE}/lib/cmake/Qt5Gui)
-set(Qt5Network_DIR ${QT5BASE}/lib/cmake/Qt5Network)
-
-find_package(Qt5Core REQUIRED)
-find_package(Qt5Widgets REQUIRED)
-find_package(Qt5Gui REQUIRED)
-
-IF(${APPLE})
-ELSE()
-find_package(Qt5X11Extras REQUIRED)
-ENDIF()
-
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
-
-###################################
-
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
 set( INCD ${CMAKE_CURRENT_SOURCE_DIR}/inc )
 set( COREINCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.core/inc )
 set( LEV2INCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.lev2/inc )
 set( ECSINCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.ent/inc )
-set( CLDABASE ${CMAKE_CURRENT_SOURCE_DIR}/../ork.fcollada305/ext/fcollada )
+set( CLDABASE $ENV{OBT_STAGE}/include/fcollada )
 
 ###################################
 
@@ -73,8 +41,8 @@ target_include_directories (ork_tool PRIVATE ${SRCD} )
 target_include_directories (ork_tool PRIVATE ${COREINCD} )
 target_include_directories (ork_tool PRIVATE ${LEV2INCD} )
 target_include_directories (ork_tool PRIVATE ${ECSINCD} )
-target_include_directories (ork_tool PRIVATE ${CLDABASE}/FCollada )
-target_include_directories (ork_tool PRIVATE ${CLDABASE}/FCollada/LibXML/include )
+target_include_directories (ork_tool PRIVATE ${CLDABASE} )
+target_include_directories (ork_tool PRIVATE ${CLDABASE}/LibXML/include )
 target_include_directories (ork_tool PRIVATE $ENV{OBT_STAGE}/include )
 target_include_directories (ork_tool PRIVATE $ENV{OBT_STAGE}/include/bullet )
 target_include_directories (ork_tool PRIVATE /usr/include/python2.7 )
@@ -92,9 +60,9 @@ IF(${APPLE})
     list(APPEND libs "-framework AudioUnit" "-framework AudioToolbox" )
     list(APPEND libs "-framework Carbon" "-framework Foundation" )
     list(APPEND libs "-framework ApplicationServices" "-framework AppKit" )
-    list(APPEND libs glfw.3 objc Qt5::Widgets Qt5::Core Qt5::Gui )
+    list(APPEND libs glfw.3 objc Qt5::Widgets Qt5::Core Qt5::Gui assimp )
 ELSEIF(${UNIX})
-    list(APPEND libs rt dl pthread python2.7 GL Qt5::X11Extras )
+    list(APPEND libs rt dl pthread python2.7 GL Qt5::X11Extras assimp )
 ENDIF()
 
 target_link_libraries(ork_tool ${libs})

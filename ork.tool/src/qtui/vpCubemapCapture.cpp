@@ -355,8 +355,8 @@ void SceneEditorVP::SaveCubeMap()
 	pTEXTARG->BeginFrame();
 	{
 		lev2::GfxMaterial3DSolid tmat(pTEXTARG);
-		tmat.mRasterState.SetAlphaTest( lev2::EALPHATEST_OFF, 0.0f );
-		tmat.mRasterState.SetDepthTest( lev2::EDEPTHTEST_OFF );
+		tmat._rasterstate.SetAlphaTest( lev2::EALPHATEST_OFF, 0.0f );
+		tmat._rasterstate.SetDepthTest( lev2::EDEPTHTEST_OFF );
 
 		mRenderer->SetTarget( pTEXTARG );
 
@@ -403,8 +403,8 @@ void SceneEditorVP::SaveCubeMap()
 	pTEXTARG->BeginFrame();
 	{
 		lev2::GfxMaterial3DSolid tmat(pTEXTARG);
-		tmat.mRasterState.SetAlphaTest( lev2::EALPHATEST_OFF, 0.0f );
-		tmat.mRasterState.SetDepthTest( lev2::EDEPTHTEST_OFF );
+		tmat._rasterstate.SetAlphaTest( lev2::EALPHATEST_OFF, 0.0f );
+		tmat._rasterstate.SetDepthTest( lev2::EDEPTHTEST_OFF );
 
 		///////////////////////////////////////////////////////////////////////////
 		mRenderer->SetTarget( pTEXTARG );

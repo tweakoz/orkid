@@ -88,24 +88,24 @@ void ProcTexControllerData::OutputSetter(ork::rtti::ICastable* const& val) {
 void ProcTexControllerData::Describe() {
   ork::reflect::RegisterProperty("Output", &ProcTexControllerData::OutputGetter, &ProcTexControllerData::OutputSetter);
 
-  ork::reflect::AnnotatePropertyForEditor<ProcTexControllerData>("Output", "editor.factorylistbase", "ProcTexOutputBase");
+  ork::reflect::annotatePropertyForEditor<ProcTexControllerData>("Output", "editor.factorylistbase", "ProcTexOutputBase");
 
   // ork::reflect::RegisterProperty("SkyBox", &ProcTexControllerData::mSkybox);
 
   ork::reflect::RegisterProperty("Template", &ProcTexControllerData::TemplateAccessor);
 
   ork::reflect::RegisterProperty("BufferDim", &ProcTexControllerData::mBufferDim);
-  ork::reflect::AnnotatePropertyForEditor<ProcTexControllerData>("BufferDim", "editor.range.min", "16");
-  ork::reflect::AnnotatePropertyForEditor<ProcTexControllerData>("BufferDim", "editor.range.max", "8192");
+  ork::reflect::annotatePropertyForEditor<ProcTexControllerData>("BufferDim", "editor.range.min", "16");
+  ork::reflect::annotatePropertyForEditor<ProcTexControllerData>("BufferDim", "editor.range.max", "8192");
 
   ork::reflect::RegisterProperty("FrameRate", &ProcTexControllerData::mMaxFrameRate);
-  ork::reflect::AnnotatePropertyForEditor<ProcTexControllerData>("FrameRate", "editor.range.min", "0");
-  ork::reflect::AnnotatePropertyForEditor<ProcTexControllerData>("FrameRate", "editor.range.max", "60");
+  ork::reflect::annotatePropertyForEditor<ProcTexControllerData>("FrameRate", "editor.range.min", "0");
+  ork::reflect::annotatePropertyForEditor<ProcTexControllerData>("FrameRate", "editor.range.max", "60");
 
   ////////////////////////////////////////
 
   static const char* edgstr = "grp://Main BufferDim FrameRate Output Template ";
-  reflect::AnnotateClassForEditor<ProcTexControllerData>("editor.prop.groups", edgstr);
+  reflect::annotateClassForEditor<ProcTexControllerData>("editor.prop.groups", edgstr);
 
   ////////////////////////////////////////
   // ops map
@@ -119,7 +119,7 @@ void ProcTexControllerData::Describe() {
     }
   };
 
-  reflect::AnnotateClassForEditor<ProcTexControllerData>("editor.object.ops", opm);
+  reflect::annotateClassForEditor<ProcTexControllerData>("editor.object.ops", opm);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -161,8 +161,8 @@ void ProcTexOutputBase::Describe() {}
 ///////////////////////////////////////////////////////////////////////////////
 void ProcTexOutputQuad::Describe() {
   ork::reflect::RegisterProperty("Scale", &ProcTexOutputQuad::mScale);
-  ork::reflect::AnnotatePropertyForEditor<ProcTexOutputQuad>("Scale", "editor.range.min", "-1000");
-  ork::reflect::AnnotatePropertyForEditor<ProcTexOutputQuad>("Scale", "editor.range.max", "1000");
+  ork::reflect::annotatePropertyForEditor<ProcTexOutputQuad>("Scale", "editor.range.min", "-1000");
+  ork::reflect::annotatePropertyForEditor<ProcTexOutputQuad>("Scale", "editor.range.max", "1000");
 }
 ProcTexOutputQuad::ProcTexOutputQuad() : mScale(1.0f), mMaterial(nullptr) {}
 ///////////////////////////////////////////////////////////////////////////////
@@ -172,12 +172,12 @@ void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
     if (IsPickState)
       return;
 
-    auto quad = pren->GetDrawableDataA().Get<ProcTexOutputQuad*>();
+    auto quad = pren->GetDrawableDataA().Get<const ProcTexOutputQuad*>();
 
     if (0 == quad->mMaterial) {
       quad->mMaterial = new lev2::GfxMaterial3DSolid(targ);
       quad->mMaterial->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
-      quad->mMaterial->mRasterState.SetZWriteMask(true);
+      quad->mMaterial->_rasterstate.SetZWriteMask(true);
     }
 
     auto mtl = quad->mMaterial;
@@ -262,12 +262,12 @@ void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
 ///////////////////////////////////////////////////////////////////////////////
 void ProcTexOutputSkybox::Describe() {
   ork::reflect::RegisterProperty("VerticalAdjust", &ProcTexOutputSkybox::mVerticalAdjust);
-  ork::reflect::AnnotatePropertyForEditor<ProcTexOutputSkybox>("VerticalAdjust", "editor.range.min", "-10000.0");
-  ork::reflect::AnnotatePropertyForEditor<ProcTexOutputSkybox>("VerticalAdjust", "editor.range.max", "10000.0");
+  ork::reflect::annotatePropertyForEditor<ProcTexOutputSkybox>("VerticalAdjust", "editor.range.min", "-10000.0");
+  ork::reflect::annotatePropertyForEditor<ProcTexOutputSkybox>("VerticalAdjust", "editor.range.max", "10000.0");
 
   ork::reflect::RegisterProperty("Scale", &ProcTexOutputSkybox::mScale);
-  ork::reflect::AnnotatePropertyForEditor<ProcTexOutputSkybox>("Scale", "editor.range.min", "0.1");
-  ork::reflect::AnnotatePropertyForEditor<ProcTexOutputSkybox>("Scale", "editor.range.max", "10000.0");
+  ork::reflect::annotatePropertyForEditor<ProcTexOutputSkybox>("Scale", "editor.range.min", "0.1");
+  ork::reflect::annotatePropertyForEditor<ProcTexOutputSkybox>("Scale", "editor.range.max", "10000.0");
 }
 ///////////////////////////////////////////////////////////////////////////////
 ProcTexOutputSkybox::ProcTexOutputSkybox() : mVerticalAdjust(0.0f), mMaterial(nullptr), mScale(1.0f) {}
@@ -286,7 +286,7 @@ void ProcTexOutputSkybox::OnLinkEntity(Simulation* psi, Entity* pent) {
         if (0 == skybox->mMaterial) {
           skybox->mMaterial = new lev2::GfxMaterial3DSolid(targ);
           skybox->mMaterial->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
-          skybox->mMaterial->mRasterState.SetZWriteMask(false);
+          skybox->mMaterial->_rasterstate.SetZWriteMask(false);
         }
 
         auto mtl = skybox->mMaterial;

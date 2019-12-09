@@ -7,6 +7,7 @@
 
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
+#include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/texman.h>
@@ -41,21 +42,21 @@ void ModelComponentData::Describe() {
   reflect::RegisterProperty("ShowBoundingSphere", &ModelComponentData::mbShowBoundingSphere);
   reflect::RegisterProperty("EditorDagDebug", &ModelComponentData::mbCopyDag);
 
-  ork::reflect::AnnotatePropertyForEditor<ModelComponentData>("Model", "editor.class", "ged.factory.assetlist");
-  ork::reflect::AnnotatePropertyForEditor<ModelComponentData>("Model", "editor.assettype", "xgmodel");
-  ork::reflect::AnnotatePropertyForEditor<ModelComponentData>("Model", "editor.assetclass", "xgmodel");
+  ork::reflect::annotatePropertyForEditor<ModelComponentData>("Model", "editor.class", "ged.factory.assetlist");
+  ork::reflect::annotatePropertyForEditor<ModelComponentData>("Model", "editor.assettype", "xgmodel");
+  ork::reflect::annotatePropertyForEditor<ModelComponentData>("Model", "editor.assetclass", "xgmodel");
 
-  ork::reflect::RegisterMapProperty("LayerFxMap", &ModelComponentData::mLayerFx);
-  ork::reflect::AnnotatePropertyForEditor<ModelComponentData>("LayerFxMap", "editor.assettype", "FxShader");
-  ork::reflect::AnnotatePropertyForEditor<ModelComponentData>("LayerFxMap", "editor.assetclass", "FxShader");
+  ork::reflect::RegisterMapProperty("MaterialOverrides", &ModelComponentData::_materialOverrides);
+  //ork::reflect::annotatePropertyForEditor<ModelComponentData>("MaterialOverrides", "editor.assettype", "FxShader");
+  //ork::reflect::annotatePropertyForEditor<ModelComponentData>("MaterialOverrides", "editor.assetclass", "FxShader");
 
   ork::reflect::RegisterProperty("AlwaysVisible", &ModelComponentData::mAlwaysVisible);
   ork::reflect::RegisterProperty("Scale", &ModelComponentData::mfScale);
   ork::reflect::RegisterProperty("BlenderZup", &ModelComponentData::mBlenderZup);
 
-  reflect::AnnotatePropertyForEditor<ModelComponentData>("Scale", "editor.range.min", "-1000.0");
-  reflect::AnnotatePropertyForEditor<ModelComponentData>("Scale", "editor.range.max", "1000.0");
-  // reflect::AnnotatePropertyForEditor<ModelComponentData>( "Scale", "editor.range.log", "true" );
+  reflect::annotatePropertyForEditor<ModelComponentData>("Scale", "editor.range.min", "-1000.0");
+  reflect::annotatePropertyForEditor<ModelComponentData>("Scale", "editor.range.max", "1000.0");
+  // reflect::annotatePropertyForEditor<ModelComponentData>( "Scale", "editor.range.log", "true" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -121,22 +122,29 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
     mXgmModelInst->RefLocalPose().BindPose();
     mXgmModelInst->RefLocalPose().BuildPose();
     mXgmModelInst->SetBlenderZup(mData.IsBlenderZup());
-  }
 
-  const orklut<PoolString, lev2::FxShaderAsset*>& lfxmap = mData.GetLayerFXMap();
+    auto& ovmap = mData.MaterialOverrideMap();
 
-  for (auto it : lfxmap) {
-    lev2::FxShaderAsset* passet = it.second;
-
-    if (passet && passet->IsLoaded()) {
-      lev2::FxShader* pfxshader = passet->GetFxShader();
-
-      if (pfxshader) {
-        lev2::GfxMaterialFx* pfxmaterial = new lev2::GfxMaterialFx();
-        pfxmaterial->SetEffect(pfxshader);
+    for (auto it : ovmap) {
+      std::string mtlvaluename = it.second.c_str();
+      if( 0 == strcmp(it.first.c_str(),"all") ){
+        auto overridemtl = new lev2::PBRMaterial();
+        overridemtl->setTextureBaseName(mtlvaluename);
+        mXgmModelInst->_overrideMaterial = overridemtl;
       }
+      //lev2::FxShaderAsset* passet = it.second;
+
+      //if (passet && passet->IsLoaded()) {
+      //lev2::FxShader* pfxshader = passet->GetFxShader();
+
+      //if (pfxshader) {
+      //lev2::GfxMaterialFx* pfxmaterial = new lev2::GfxMaterialFx();
+      //pfxmaterial->SetEffect(pfxshader);
+      //}
+      //}
     }
   }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -192,7 +200,7 @@ bool ModelComponentInst::DoNotify(const ork::event::Event* event) {
           lev2::GfxMaterialFx* pmaterial = it->second;
         }
       }
-      modelDrawable().GetModelInst()->SetLayerFxMaterial(pmaterial);
+      modelDrawable().GetModelInst()->_overrideMaterial = pmaterial;
       return true;
     }
   }

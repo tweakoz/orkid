@@ -118,18 +118,18 @@ void UIToolHandler<VPTYPE>::DrawToolIcon( lev2::GfxTarget* pTARG, int ix, int iy
 			////////////////////////////////
 			if( bhilite )
 			{	UiMat.SetTexture( lev2::ETEXDEST_DIFFUSE, 0 );
-				UiMat.mRasterState.SetBlending( lev2::EBLENDING_OFF );
+				UiMat._rasterstate.SetBlending( lev2::EBLENDING_OFF );
 				pTARG->BindMaterial( & UiMat );
 				pTARG->PushModColor( fcolor4::Green() );
 					pTARG->GBI()->DrawPrimitive( vb, lev2::EPRIM_TRIANGLES, ibase, 6 );
 				pTARG->PopModColor();
 			}
 			////////////////////////////////
-			UiMatTex.mRasterState.SetDepthTest( lev2::EDEPTHTEST_OFF );
+			UiMatTex._rasterstate.SetDepthTest( lev2::EDEPTHTEST_OFF );
 			UiMatTex.SetTexture( lev2::ETEXDEST_DIFFUSE, mpBaseIcon );
-			UiMatTex.mRasterState.SetBlending( lev2::EBLENDING_OFF );
-			UiMatTex.mRasterState.SetAlphaTest( lev2::EALPHATEST_OFF, 0.0f );
-			UiMatTex.mRasterState.SetDepthTest( lev2::EDEPTHTEST_ALWAYS );
+			UiMatTex._rasterstate.SetBlending( lev2::EBLENDING_OFF );
+			UiMatTex._rasterstate.SetAlphaTest( lev2::EALPHATEST_OFF, 0.0f );
+			UiMatTex._rasterstate.SetDepthTest( lev2::EDEPTHTEST_ALWAYS );
 			pTARG->BindMaterial( & UiMatTex );
 			pTARG->PushModColor( fcolor4::White() );
 				pTARG->GBI()->DrawPrimitive( vb, lev2::EPRIM_TRIANGLES, bhilite ? ibase+6 : ibase, 6 );

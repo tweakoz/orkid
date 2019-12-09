@@ -7,92 +7,85 @@ fxconfig fxcfg_default { glsl_version = "330"; }
 ///////////////////////////////////////////////////////////////
 
 uniform_set ublock_vtx {
-  uniform mat4 MatM;
-  uniform mat4 MatV;
-  uniform mat4 MatP;
-  uniform mat4 MatMV;
-  uniform mat4 MatMVP;
-  uniform mat4 MatAux;
-  uniform vec4 modcolor;
-  uniform vec4 User0;
-  uniform vec4 User1;
-  uniform vec4 User2;
-  uniform vec4 User3;
-  uniform float Time;
-  uniform vec4 NoiseShift;
-  uniform vec4 NoiseFreq;
-  uniform vec4 NoiseAmp;
+  mat4 MatM;
+  mat4 MatV;
+  mat4 MatP;
+  mat4 MatMV;
+  mat4 MatMVP;
+  mat4 MatAux;
+  vec4 modcolor;
+  vec4 User0;
+  vec4 User1;
+  vec4 User2;
+  vec4 User3;
+  float Time;
+  vec4 NoiseShift;
+  vec4 NoiseFreq;
+  vec4 NoiseAmp;
 }
 
 uniform_set ublock_geo {
-  uniform mat4 MatP;
-  uniform mat4 MatV;
-  uniform mat4 MatMVP;
-  uniform mat4 MatMVPL;
-  uniform mat4 MatMVPR;
-  uniform vec4 User0;
-  uniform vec4 User1;
-  uniform vec4 User2;
+  mat4 MatP;
+  mat4 MatV;
+  mat4 MatMVP;
+  mat4 MatMVPL;
+  mat4 MatMVPR;
+  vec4 User0;
+  vec4 User1;
+  vec4 User2;
 }
 
 uniform_set ublock_frg {
-  uniform vec4 modcolor;
-  uniform vec4 User0;
-  uniform sampler2D ColorMap;
-  uniform sampler3D VolumeMap;
+  vec4 modcolor;
+  vec4 User0;
+  sampler2D ColorMap;
+  sampler3D VolumeMap;
 }
 
 ///////////////////////////////////////////////////////////////
 fragment_interface fface_minimal : ublock_frg {
-  in vec4 frg_clr;
-  in vec4 frg_uv0;
-  in vec4 frg_uv1;
-  //
-  out vec4 out_clr;
+  inputs {
+    vec4 frg_clr;
+    vec4 frg_uv0;
+    vec4 frg_uv1;
+  }
+  outputs { vec4 out_clr; }
 }
 fragment_interface fface_psys : ublock_frg {
-  //
-  in vec4 frg_clr;
-  in vec4 frg_uv0;
-  in vec4 frg_uv1;
-  //
-  out vec4 out_clr;
+  inputs {
+    vec4 frg_clr;
+    vec4 frg_uv0;
+    vec4 frg_uv1;
+  }
+  outputs { vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
 ///////////////////////////////////////////////////////////////
-state_block sb_default {
-  inherits default;
+state_block sb_default : default {
   // DepthTest=LEQUALS;
   // DepthMask=true;
   // CullTest=PASS_FRONT;
 }
 ///////////////////////////////////////////////////////////////
-state_block sb_lerpblend {
-  inherits sb_default;
-  BlendMode = ADDITIVE;
-}
+state_block sb_lerpblend : sb_default { BlendMode = ADDITIVE; }
 ///////////////////////////////////////////////////////////////
-state_block sb_additive {
-  inherits sb_default;
-  BlendMode = ADDITIVE;
-}
+state_block sb_additive : sb_default { BlendMode = ADDITIVE; }
 ///////////////////////////////////////////////////////////////
-state_block sb_alpadd {
-  inherits sb_default;
-  BlendMode = ALPHA_ADDITIVE;
-}
-///////////////////////////////////////////////////////////////
+state_block sb_alpadd : sb_default { BlendMode = ALPHA_ADDITIVE; }
 ///////////////////////////////////////////////////////////////
 vertex_interface vface_bill : ublock_vtx {
-  in vec4 position : POSITION;
-  in vec4 vtxcolor : COLOR0;
-  in vec4 uv0 : TEXCOORD0;
-  in vec4 uv1 : TEXCOORD1;
-  //
-  out vec4 geo_clr;
-  out vec4 geo_uv0;
-  out vec4 geo_uv1;
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec4 uv0 : TEXCOORD0;
+    vec4 uv1 : TEXCOORD1;
+  }
+  outputs {
+    vec4 geo_clr;
+    vec4 geo_uv0;
+    vec4 geo_uv1;
+  }
 }
 vertex_shader vs_vtxcolor : vface_bill {
   gl_Position = position;
@@ -108,16 +101,17 @@ vertex_shader vs_vtxtexcolor : vface_bill {
 }
 ///////////////////////////////////////////////////////////////
 geometry_interface gface_base : ublock_geo {
-  layout(points) in;
-  layout(triangle_strip, max_vertices = 4) out;
-  //
+  inputs { layout(points); }
+  outputs { layout(triangle_strip, max_vertices = 4); }
 }
 ///////////////////////////////////////////////////////////////
 geometry_interface gface_bill : gface_base : vface_bill // import vtxshader outputs
 {
-  out vec4 frg_clr;
-  out vec4 frg_uv0;
-  out vec4 frg_uv1;
+  outputs {
+    vec4 frg_clr;
+    vec4 frg_uv0;
+    vec4 frg_uv1;
+  }
 }
 ///////////////////////////////////////////////////////////////
 geometry_shader gs_identity : gface_bill {
@@ -139,8 +133,14 @@ libblock lib_billboard {
     vec3 inp_pos;
   };
   struct Output {
-    vec4 pos0, pos1, pos2, pos3;
-    vec4 uv0, uv1, uv2, uv3;
+    vec4 pos0;
+    vec4 pos1;
+    vec4 pos2;
+    vec4 pos3;
+    vec4 uv0;
+    vec4 uv1;
+    vec4 uv2;
+    vec4 uv3;
   };
   Output Compute(Input inp, mat4 mvp) {
     Output outp;
@@ -195,12 +195,10 @@ libblock lib_billboard {
       outp.uv2        = vec4(fu1, fv1, 0.0, 0.0);
       outp.uv3        = vec4(fu0, fv1, 0.0, 0.0);
     }
-		return outp;
+    return outp;
   }
 }
-geometry_shader gs_billboardquad
-	: lib_billboard
-	: gface_bill {
+geometry_shader gs_billboardquad : lib_billboard : gface_bill {
   Input inp;
   inp.inp_clr     = geo_clr[0];
   inp.inp_ang_siz = geo_uv0[0];
@@ -222,18 +220,16 @@ geometry_shader gs_billboardquad
   EndPrimitive();
 }
 ///////////////////////////////////////////////////////////////
-geometry_interface gface_bill_stereo
-	: gface_base
-	: vface_bill // import vtxshader outputs
-{	// TODO recursive walk up inheritance tree for attribute out->in inheritance
-  out vec4 frg_clr;
-  out vec4 frg_uv0;
-  out vec4 frg_uv1;
-	layout(secondary_view_offset = 1) out highp int gl_Layer;
+geometry_interface gface_bill_stereo : gface_base : vface_bill // import vtxshader outputs
+{ // TODO recursive walk up inheritance tree for attribute out->in inheritance
+  outputs {
+    vec4 frg_clr;
+    vec4 frg_uv0;
+    vec4 frg_uv1;
+    layout(secondary_view_offset = 1) int gl_Layer;
+  }
 }
-geometry_shader gs_billboardquad_stereo
-		: gface_bill_stereo
-		: extension(GL_NV_stereo_view_rendering)
+geometry_shader gs_billboardquad_stereo : gface_bill_stereo : extension(GL_NV_stereo_view_rendering)
     : extension(GL_NV_viewport_array2)
     : lib_billboard {
   gl_Layer                      = 0;
@@ -265,24 +261,20 @@ geometry_shader gs_billboardquad_stereo
   EndPrimitive();
 }
 ///////////////////////////////////////////////////////////////
-tessctrl_interface tcface_base { layout(vertices = 4) out; }
-///////////////////////////////////////////////////////////////
-tessctrl_shader tcs_passthru : tcface_base {
-  int invid                 = gl_InvocationID;
-  gl_out[invid].gl_Position = gl_in[invid].gl_Position;
-}
-///////////////////////////////////////////////////////////////
 vertex_interface vface_streak : ublock_vtx {
-  in vec4 position : POSITION;
-  in vec4 normal : NORMAL;
-  in vec4 binormal : BINORMAL;
-  in vec4 vtxcolor : COLOR0;
-  in vec4 uv0 : TEXCOORD0;
-  //
-  out vec4 geo_cnrm;
-  out vec4 geo_vel;
-  out vec4 geo_clr;
-  out vec4 geo_lw;
+  inputs {
+    vec4 position : POSITION;
+    vec4 normal : NORMAL;
+    vec4 binormal : BINORMAL;
+    vec4 vtxcolor : COLOR0;
+    vec4 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec4 geo_cnrm;
+    vec4 geo_vel;
+    vec4 geo_clr;
+    vec4 geo_lw;
+  }
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_streak : vface_streak {
@@ -293,17 +285,26 @@ vertex_shader vs_streak : vface_streak {
   geo_lw      = uv0;
 }
 ///////////////////////////////////////////////////////////////
-geometry_interface gface_streak : gface_base : vface_streak // import vtxshader outputs
+geometry_interface gface_streak
+  : gface_base
+  : vface_streak // import vtxshader outputs
 {
-  out vec4 frg_clr;
-  out vec4 frg_uv0;
+  // inputs passed from vertex shader
+
+  outputs {
+    vec4 frg_clr;
+    vec4 frg_uv0;
+  }
 }
 libblock lib_streak {
-  struct Output {
-    vec4 pos0, pos1, pos2, pos3;
+  struct StreakOutput {
+    vec4 pos0;
+    vec4 pos1;
+    vec4 pos2;
+    vec4 pos3;
   };
-  Output Compute(mat4 mvp) {
-    Output outp;
+  StreakOutput Compute(mat4 mvp) {
+    StreakOutput outp;
     vec3 vel  = geo_vel[0].xyz;
     vec3 cnrm = geo_cnrm[0].xyz;
     float wid = geo_lw[0].x;
@@ -327,10 +328,8 @@ libblock lib_streak {
     return outp;
   }
 }
-geometry_shader gs_streak
-	: gface_streak
-	: lib_streak {
-  Output outp = Compute(MatMVP);
+geometry_shader gs_streak : gface_streak : lib_streak {
+  StreakOutput outp = Compute(MatMVP);
   frg_clr     = geo_clr[0];
   gl_Position = outp.pos0;
   frg_uv0     = vec4(0.0, 0.0, 0.0, 0.0);
@@ -347,24 +346,22 @@ geometry_shader gs_streak
   EndPrimitive();
 }
 ///////////////////////////////////////////////////////////////
-geometry_interface gface_streak_stereo
-	: gface_base
-	: vface_streak // import vtxshader outputs
-{	// TODO recursive walk up inheritance tree for attribute out->in inheritance
-	out vec4 frg_clr;
-  out vec4 frg_uv0;
-	layout(secondary_view_offset = 1) out highp int gl_Layer;
+geometry_interface gface_streak_stereo : gface_base : vface_streak // import vtxshader outputs
+{ // TODO recursive walk up inheritance tree for attribute out->in inheritance
+  outputs {
+    vec4 frg_clr;
+    vec4 frg_uv0;
+    layout(secondary_view_offset = 1) int gl_Layer;
+  }
 }
-geometry_shader gs_streak_stereo
-		: extension(GL_NV_stereo_view_rendering)
+geometry_shader gs_streak_stereo : extension(GL_NV_stereo_view_rendering)
     : extension(GL_NV_viewport_array2)
-    : gface_streak_stereo
-		: lib_streak {
+    : gface_streak_stereo : lib_streak {
   gl_Layer                      = 0;
   gl_ViewportMask[0]            = 1;
   gl_SecondaryViewportMaskNV[0] = 2;
-  Output outpL                  = Compute(MatMVPL);
-  Output outpR                  = Compute(MatMVPR);
+  StreakOutput outpL                  = Compute(MatMVPL);
+  StreakOutput outpR                  = Compute(MatMVPR);
   frg_clr                       = geo_clr[0];
   gl_Position                   = outpL.pos0;
   gl_SecondaryPositionNV        = outpR.pos0;

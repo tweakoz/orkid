@@ -24,7 +24,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/kernel/datablock.inl>
+#include <ork/kernel/datacache.inl>
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
 ImplementReflectionX(ork::ent::HeightFieldDrawableData, "HeightFieldDrawableData");
@@ -371,8 +371,7 @@ datablockptr_t HeightfieldRenderImpl::recomputeTextures(GfxTarget* ptarg) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void HeightfieldRenderImpl::reloadCachedTextures(GfxTarget* ptarg,datablockptr_t dblock) {
-  const auto& ostr = dblock->_data;
-  chunkfile::InputStream istr(ostr.GetData(),ostr.GetSize());
+  chunkfile::InputStream istr(dblock->data(),dblock->length());
   int MIPW, MIPH;
   istr.GetItem<int>(MIPW);
   istr.GetItem<int>(MIPH);
@@ -473,14 +472,14 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
   if (0 == iglX)
     return;
 
-  auto dblock = DataBlockMgr::findDataBlock(hashkey);
+  auto dblock = DataBlockCache::findDataBlock(hashkey);
 
   if( dblock ){
     reloadCachedTextures(ptarg,dblock);
   }
   else {
     dblock = recomputeTextures(ptarg);
-    DataBlockMgr::setDataBlock(hashkey,dblock);
+    DataBlockCache::setDataBlock(hashkey,dblock);
   }
 
 

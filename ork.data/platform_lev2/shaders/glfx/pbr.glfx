@@ -1,0 +1,183 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default
+{
+	glsl_version = "130";
+}
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+uniform_set ub_vtx
+{
+	mat4        mv;
+	mat4        mvp;
+	mat4 		mvp_l;
+	mat4 		mvp_r;
+	mat3        mrot;
+	vec4        modcolor;
+
+
+}
+///////////////////////////////////////////////////////////////
+uniform_set ub_frg
+{
+    sampler2D ColorMap;
+    sampler2D NormalMap;
+    sampler2D RoughAndMetalMap;
+	vec4 modcolor;
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_default : default
+{
+}
+///////////////////////////////////////////////////////////////
+// shaders
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vgbuffer
+	: ub_vtx
+{
+    inputs {
+	    vec4 position : POSITION;
+        vec3 normal : NORMAL;
+        vec3 binormal : BINORMAL;
+        vec4 vtxcolor : COLOR0;
+	    vec2 uv0 : TEXCOORD0;
+	}
+    outputs {
+        vec4 frg_clr;
+	    vec2 frg_uv0;
+	    mat3 frg_tbn;
+		float frg_camdist;
+		vec3 frg_camz;
+	}
+}
+vertex_shader vs_rigid_gbuffer
+	: iface_vgbuffer
+{
+    vec4 cpos  = mv * position;
+    vec3 wnorm = normalize(mrot * normal);
+    vec3 wbinorm = normalize(mrot * binormal);
+	vec3 wtangent = cross(wbinorm,wnorm);
+	gl_Position = mvp*position;
+	frg_clr = vec4(1.0,1.0,1.0,1.0);
+	frg_uv0 = uv0*vec2(1,-1);
+	vec4 nrmd = vec4(wnorm,-cpos.z);
+	frg_camdist = nrmd.w;
+	frg_tbn = transpose(mat3(
+        -wtangent,
+        -wbinorm,
+        wnorm
+    ));
+	frg_camz = wnorm.xyz;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vgbuffer_stereo : iface_vgbuffer {
+  outputs {
+    layout(secondary_view_offset=1) int gl_Layer;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_rigid_gbuffer_stereo
+	: extension(GL_NV_stereo_view_rendering)
+  	: extension(GL_NV_viewport_array2)
+	: iface_vgbuffer_stereo
+{
+    vec4 cpos  = mv * position;
+    vec3 wnorm = normalize(mrot * normal);
+    vec3 wbinorm = normalize(mrot * binormal);
+	vec3 wtangent = cross(wbinorm,wnorm);
+	frg_clr = vec4(1.0,1.0,1.0,1.0);
+	frg_uv0 = uv0*vec2(1,-1);
+	vec4 nrmd = vec4(wnorm,-cpos.z);
+	frg_camdist = nrmd.w;
+	frg_tbn = transpose(mat3(
+        -wtangent,
+        -wbinorm,
+        wnorm
+    ));
+	frg_camz = wnorm.xyz;
+	gl_Position = mvp_l*position;
+	gl_SecondaryPositionNV = mvp_r*position;
+  	gl_Layer = 0;
+	gl_ViewportMask[0] = 1;
+  	gl_SecondaryViewportMaskNV[0] = 2;
+
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fgbuffer
+	: ub_frg
+{
+    inputs {
+        vec4 frg_clr;
+        vec2 frg_uv0;
+	    mat3 frg_tbn;
+		float frg_camdist;
+		vec3 frg_camz;
+	}
+	outputs {
+        layout(location = 0) vec4 out_clr;
+        layout(location = 1) vec4 out_normal_mdl;
+        layout(location = 2) vec4 out_rufmtl;
+	}
+}
+fragment_shader ps_gbuffer
+	: iface_fgbuffer
+{
+    vec3 ntx = frg_nrmd.xyz;
+    out_clr = vec4(frg_clr.xyz,1);
+    //out_normal_mdl.xyz = normalize(ntx.xyz);
+	//out_normal_mdl.w = frg_nrmd.w;
+}
+fragment_shader ps_gbuffer_n // normalmap
+	: iface_fgbuffer
+{
+    vec3 nrm_tanspace = texture(NormalMap,frg_uv0).xyz*2.0-vec3(1,1,1);
+    nrm_tanspace = normalize(nrm_tanspace);
+	vec3 nrm_w = normalize(nrm_tanspace*frg_tbn);
+
+    vec3 rufmtlamb = texture(RoughAndMetalMap,frg_uv0).xyz;
+
+    out_clr = texture(ColorMap,frg_uv0).xyzw;
+    out_normal_mdl.xyz = (nrm_w*0.5)+vec3(0.5,0.5,0.5);
+	out_normal_mdl.w = frg_camdist;
+	out_rufmtl = vec4(rufmtlamb,1);
+}
+///////////////////////////////////////////////////////////////
+state_block sb_pick : sb_default
+{
+	DepthTest=OFF;
+	DepthMask=true;
+	CullTest=OFF;
+	BlendMode = OFF;
+}
+technique rigid_gbuffer
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_rigid_gbuffer;
+		fragment_shader=ps_gbuffer;
+		state_block=sb_default;
+	}
+}
+technique rigid_gbuffer_n
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_rigid_gbuffer;
+		fragment_shader=ps_gbuffer_n;
+		state_block=sb_default;
+	}
+}
+technique rigid_gbuffer_n_stereo
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_rigid_gbuffer_stereo;
+		fragment_shader=ps_gbuffer_n;
+		state_block=sb_default;
+	}
+}
+///////////////////////////////////////////////////////////////

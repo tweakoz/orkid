@@ -121,17 +121,17 @@ namespace ork { namespace lev2 { namespace dxt {
 
 		void FixEndian();
     };
-	bool IsLUM( DDS_PIXELFORMAT& pf );
-	bool IsBGR5A1( DDS_PIXELFORMAT& pf );
-	bool IsBGR8( dxt::DDS_PIXELFORMAT& pf );
-	bool IsBGRA8( DDS_PIXELFORMAT& pf );
-	bool IsDXT1( DDS_PIXELFORMAT& pf );
-	bool IsDXT3( DDS_PIXELFORMAT& pf );
-	bool IsDXT5( DDS_PIXELFORMAT& pf );
+	bool IsLUM(  const DDS_PIXELFORMAT& pf );
+	bool IsBGR5A1(  const DDS_PIXELFORMAT& pf );
+	bool IsBGR8(  const dxt::DDS_PIXELFORMAT& pf );
+	bool IsBGRA8(  const DDS_PIXELFORMAT& pf );
+	bool IsDXT1(  const DDS_PIXELFORMAT& pf );
+	bool IsDXT3(  const DDS_PIXELFORMAT& pf );
+	bool IsDXT5(  const DDS_PIXELFORMAT& pf );
 	
-	bool IsABGR8( DDS_PIXELFORMAT& pf );
-	bool IsRGB8( DDS_PIXELFORMAT& pf );
-	bool IsXBGR8( DDS_PIXELFORMAT& pf );
+	bool IsABGR8(  const DDS_PIXELFORMAT& pf );
+	bool IsRGB8(  const DDS_PIXELFORMAT& pf );
+	bool IsXBGR8(  const DDS_PIXELFORMAT& pf );
 
 	struct DDFile
 	{

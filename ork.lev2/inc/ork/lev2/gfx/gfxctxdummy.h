@@ -32,6 +32,9 @@ public:
   #if defined(ENABLE_SHADER_STORAGE)
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final { return nullptr; }
   #endif
+  #if defined(ENABLE_COMPUTE_SHADERS)
+  const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final { return nullptr; }
+  #endif
 
   void BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bval) final {}
   void BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int ival) final {}
@@ -41,9 +44,6 @@ public:
   void BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, const fvec4* Vec, const int icount) final {}
   void BindParamFloatArray(FxShader* hfx, const FxShaderParam* hpar, const float* pfA, const int icnt) final {}
   void BindParamFloat(FxShader* hfx, const FxShaderParam* hpar, float fA) final {}
-  void BindParamFloat2(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB) final {}
-  void BindParamFloat3(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC) final {}
-  void BindParamFloat4(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC, float fD) final {}
   void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx4& Mat) final {}
   void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx3& Mat) final {}
   void BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) final {}
@@ -70,6 +70,11 @@ struct DuRasterStateInterface : public RasterStateInterface {
 public:
 };
 
+///////////////////////////////////////////////////////////////////////////////
+#if defined (ENABLE_COMPUTE_SHADERS)
+struct DuComputeInterface : public ComputeInterface {
+};
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 
 class DuMatrixStackInterface : public MatrixStackInterface {
@@ -150,6 +155,7 @@ public:
 
   bool DestroyTexture(Texture* ptex) final { return false; }
   bool LoadTexture(const AssetPath& fname, Texture* ptex) final;
+  bool LoadTexture(Texture* ptex, datablockptr_t inpdata) final { return false; }
   void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final {}
   void generateMipMaps(Texture* ptex) final {}
 };
@@ -185,6 +191,10 @@ public:
   TextureInterface* TXI() final { return &mTxI; }
   FrameBufferInterface* FBI() final { return &mFbI; }
 
+  #if defined(ENABLE_COMPUTE_SHADERS)
+  ComputeInterface* CI() final { return &mCI; }
+  #endif
+  
   //////////////////////////////////////////////
 
 private:
@@ -208,6 +218,10 @@ private:
   DuGeometryBufferInterface mGbI;
   DuTextureInterface mTxI;
   DuFrameBufferInterface mFbI;
+
+#if defined(ENABLE_COMPUTE_SHADERS)
+  DuComputeInterface mCI;
+#endif
 };
 
 ///////////////////////////////////////////////////////////////////////////////

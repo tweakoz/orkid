@@ -24,7 +24,7 @@ FixedStringBase::FixedStringBase()
 
 }
 
-FixedStringBase::HashType FixedStringBase::Hash() const
+FixedStringBase::HashType FixedStringBase::hash() const
 {
     size_t rval = 5381;
     const char* pbas = c_str();

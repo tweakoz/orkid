@@ -33,7 +33,7 @@ void SeriesCompositingNode::describeX(class_t*c) {
   ork::reflect::RegisterProperty("Node", &SeriesCompositingNode::GetNode, &SeriesCompositingNode::SetNode);
 
   auto anno = [&](const char* p, const char* k, const char* v) {
-    ork::reflect::AnnotatePropertyForEditor<SeriesCompositingNode>(p, k, v);
+    ork::reflect::annotatePropertyForEditor<SeriesCompositingNode>(p, k, v);
   };
 
   // anno( "Mode", "editor.class", "ged.factory.enum" );

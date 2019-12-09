@@ -18,14 +18,6 @@
 namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Shader::addLibBlock(LibBlock* lib) {
-  _libblocks.push_back(lib);
-  for (auto uset : lib->_uniformSets)
-    addUniformSet(uset);
-  for (auto ublk : lib->_uniformBlocks)
-    addUniformBlock(ublk);
-}
-/////////////////////////////////////////////////////////////////////////////////////////////////
 void Shader::setInputInterface(StreamInterface* iface) {
   _inputInterface = iface;
   for (auto uset : iface->_uniformSets)
@@ -37,304 +29,274 @@ void Shader::setInputInterface(StreamInterface* iface) {
 void Shader::addUniformSet(UniformSet* uset) { _unisets.push_back(uset); }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void Shader::addUniformBlock(UniformBlock* ublk) { _uniblocks.push_back(ublk); }
+///////////////////////////////////////////////////////////
+void ShaderNode::parse(const ScannerView& view) {
+  DecoBlockNode::parse(view);
+  _body.parse(view);
+}
+void ShaderNode::pregen(shaderbuilder::BackEnd& backend) { DecoBlockNode::_pregen(backend); }
+///////////////////////////////////////////////////////////
+void ShaderNode::_generateCommon(shaderbuilder::BackEnd& backend) const {
+  auto pshader  = backend._statemap["curshader"].Get<Shader*>();
+  auto& codegen = backend._codegen;
+  codegen.flush();
 
-/////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////
+#if defined(__APPLE__)
+  codegen.formatLine("#version 410 core");
+#else
+  codegen.formatLine("#version 460 core");
+#endif
+  ////////////////////////////////////////////////////
 
-int GlSlFxParser::ParseFxShaderCommon(Shader* pshader) {
-  bool bkill = false;
-
-  ScanViewRegex r("()", true);
-  ScannerView v(scanner, r);
-  v.scanBlock(itokidx);
-  // v.Dump();
-
-  pshader->mpContainer = mpContainer;
-
-  ///////////////////////////////////
-  std::string shadername = v.blockName();
-
-  LibBlock* plibblock = nullptr;
-
-  const Token* ptok = nullptr;
-  // int itok = v._blockName+1;
-
-  //////////////////////////////////////////////
-  // enumerate lib blocks / interfaces
-  //////////////////////////////////////////////
+  pshader->mName = _name;
+  // LibBlock* plibblock = nullptr;
+  Container* c = pshader->mpContainer;
 
   bool is_vertex_shader   = pshader->mShaderType == GL_VERTEX_SHADER;
   bool is_tessctrl_shader = pshader->mShaderType == GL_TESS_CONTROL_SHADER;
   bool is_tesseval_shader = pshader->mShaderType == GL_TESS_EVALUATION_SHADER;
   bool is_geometry_shader = pshader->mShaderType == GL_GEOMETRY_SHADER;
   bool is_fragment_shader = pshader->mShaderType == GL_FRAGMENT_SHADER;
+#if defined(ENABLE_NVMESH_SHADERS)
+  bool is_nvtask_shader = pshader->mShaderType == GL_TASK_SHADER_NV;
+  bool is_nvmesh_shader = pshader->mShaderType == GL_MESH_SHADER_NV;
+#endif
+#if defined(ENABLE_COMPUTE_SHADERS)
+  bool is_compute_shader = pshader->mShaderType == GL_COMPUTE_SHADER;
+#endif
 
-  {
-    size_t inumdecos = v.numBlockDecorators();
+  //////////////////////////////////////////////
+  // visit lib blocks
+  //////////////////////////////////////////////
 
-    for (size_t ideco = 0; ideco < inumdecos; ideco++) {
-      ptok                 = v.blockDecorator(ideco);
-      int block_deco_index = v._blockDecorators[ideco];
-
-      auto it_uset = mpContainer->_uniformSets.find(ptok->text);
-      auto it_ublk = mpContainer->_uniformBlocks.find(ptok->text);
-      auto it_lib  = mpContainer->_libBlocks.find(ptok->text);
-      auto it_vi   = mpContainer->_vertexInterfaces.find(ptok->text);
-      auto it_tc   = mpContainer->_tessCtrlInterfaces.find(ptok->text);
-      auto it_te   = mpContainer->_tessEvalInterfaces.find(ptok->text);
-      auto it_gi   = mpContainer->_geometryInterfaces.find(ptok->text);
-      auto it_fi   = mpContainer->_fragmentInterfaces.find(ptok->text);
-
-      if (it_lib != mpContainer->_libBlocks.end()) {
-        auto plibblock = it_lib->second;
-        pshader->addLibBlock(plibblock);
-      } else if (it_ublk != (mpContainer->_uniformBlocks.end())) {
-        auto ublk = it_ublk->second;
+  for (auto as_lib : _libraryBlocks) {
+    for (auto tok_deco : as_lib->_decorators) {
+      auto lib_deco = tok_deco->text;
+      auto it_usetl = c->_uniformSets.find(lib_deco);
+      auto it_ublkl = c->_uniformBlocks.find(lib_deco);
+      if (it_ublkl != (c->_uniformBlocks.end())) {
+        auto ublk = it_ublkl->second;
         pshader->addUniformBlock(ublk);
-      } else if (it_uset != (mpContainer->_uniformSets.end())) {
-        auto uset = it_uset->second;
+      }
+      if (it_usetl != (c->_uniformSets.end())) {
+        auto uset = it_usetl->second;
         pshader->addUniformSet(uset);
-      } else if (ptok->text == "extension") {
-        auto lparen = scanner.token(block_deco_index + 1);
-        auto rparen = scanner.token(block_deco_index + 3);
-        assert(lparen->text == "(");
-        assert(rparen->text == ")");
-        auto extid = scanner.token(block_deco_index + 2);
-        pshader->requireExtension(extid->text);
-      } else if (is_vertex_shader && it_vi != (mpContainer->_vertexInterfaces.end())) {
-        pshader->setInputInterface(it_vi->second);
-      } else if (is_tessctrl_shader && (it_tc != mpContainer->_tessCtrlInterfaces.end())) {
-        pshader->setInputInterface(it_tc->second);
-      } else if (is_tesseval_shader && (it_te != mpContainer->_tessEvalInterfaces.end())) {
-        pshader->setInputInterface(it_te->second);
-      } else if (is_geometry_shader && (it_gi != mpContainer->_geometryInterfaces.end())) {
-        pshader->setInputInterface(it_gi->second);
-      } else if (is_fragment_shader && (it_fi != mpContainer->_fragmentInterfaces.end())) {
-        pshader->setInputInterface(it_fi->second);
-      } else {
-        printf("bad shader interface decorator!\n");
-        printf("shader<%s>\n", shadername.c_str());
-        printf("deco<%s>\n", ptok->text.c_str());
-        printf("is_vtx<%d> is_geo<%d> is_frg<%d>\n", int(is_vertex_shader), int(is_geometry_shader), int(is_fragment_shader));
-        assert(false);
       }
     }
   }
 
   //////////////////////////////////////////////
+  // visit interfaces
+  //////////////////////////////////////////////
+
+  for (auto ifnode : _interfaceNodes) {
+    const auto& named = ifnode->_name;
+    //////////////////////////////////////////////////////////////////
+    if (auto as_vxif = dynamic_cast<VertexInterfaceNode*>(ifnode)) {
+      assert(is_vertex_shader);
+      auto it_vi = c->_vertexInterfaces.find(named);
+      assert(it_vi != c->_vertexInterfaces.end());
+      pshader->setInputInterface(it_vi->second);
+    }
+    //////////////////////////////////////////////////////////////////
+    if (auto as_tcif = dynamic_cast<TessCtrlInterfaceNode*>(ifnode)) {
+      assert(is_tessctrl_shader);
+      auto it_tcif = c->_tessCtrlInterfaces.find(named);
+      assert(it_tcif != c->_tessCtrlInterfaces.end());
+      pshader->setInputInterface(it_tcif->second);
+    }
+    //////////////////////////////////////////////////////////////////
+    if (auto as_teif = dynamic_cast<TessEvalInterfaceNode*>(ifnode)) {
+      assert(is_tesseval_shader);
+      auto it_teif = c->_tessEvalInterfaces.find(named);
+      assert(it_teif != c->_tessEvalInterfaces.end());
+      pshader->setInputInterface(it_teif->second);
+    }
+    //////////////////////////////////////////////////////////////////
+    if (auto as_geif = dynamic_cast<GeometryInterfaceNode*>(ifnode)) {
+      assert(is_geometry_shader);
+      auto it_geif = c->_geometryInterfaces.find(named);
+      assert(it_geif != c->_geometryInterfaces.end());
+      pshader->setInputInterface(it_geif->second);
+    }
+    //////////////////////////////////////////////////////////////////
+    if (auto as_frif = dynamic_cast<FragmentInterfaceNode*>(ifnode)) {
+      assert(is_fragment_shader);
+      auto it_frif = c->_fragmentInterfaces.find(named);
+      assert(it_frif != c->_fragmentInterfaces.end());
+      pshader->setInputInterface(it_frif->second);
+    }
+    //////////////////////////////////////////////////////////////////
+#if defined(ENABLE_NVMESH_SHADERS)
+    //////////////////////////////////////////////////////////////////
+    if (auto as_ntif = dynamic_cast<NvTaskInterfaceNode*>(ifnode)) {
+      assert(is_nvtask_shader);
+      auto it_ntif = c->_nvTaskInterfaces.find(named);
+      assert(it_ntif != c->_nvTaskInterfaces.end());
+      pshader->setInputInterface(it_ntif->second);
+    }
+    //////////////////////////////////////////////////////////////////
+    if (auto as_nmif = dynamic_cast<NvMeshInterfaceNode*>(ifnode)) {
+      assert(is_nvmesh_shader);
+      auto it_nmif = c->_nvMeshInterfaces.find(named);
+      assert(it_nmif != c->_nvMeshInterfaces.end());
+      pshader->setInputInterface(it_nmif->second);
+    }
+#endif
+    //////////////////////////////////////////////////////////////////
+#if defined(ENABLE_COMPUTE_SHADERS)
+    //////////////////////////////////////////////////////////////////
+    if (auto as_cxif = dynamic_cast<ComputeInterfaceNode*>(ifnode)) {
+      assert(is_compute_shader);
+      auto it_cxif = c->_computeInterfaces.find(named);
+      assert(it_cxif != c->_computeInterfaces.end());
+      pshader->setInputInterface(it_cxif->second);
+    }
+#endif
+    //////////////////////////////////////////////////////////////////
+  }
+
+  //////////////////////////////////////////////
+  // visit direct uniforms
+  //////////////////////////////////////////////
+
+  for (auto usetnode : _uniformSets) {
+    auto it_uset = c->_uniformSets.find(usetnode->_name);
+    auto uset    = it_uset->second;
+    pshader->addUniformSet(uset);
+  }
+
+  //////////////////////////////////////////////
+  // visit direct uniform blocks
+  //////////////////////////////////////////////
+
+  for (auto ublknode : _uniformBlocks) {
+    auto it_ublk = c->_uniformBlocks.find(ublknode->_name);
+    auto ublk    = it_ublk->second;
+    pshader->addUniformBlock(ublk);
+  }
+
+  //////////////////////////////////////////////
+  //
+  //////////////////////////////////////////////
 
   auto iface = pshader->_inputInterface;
   assert(iface != nullptr);
-
-  ///////////////////////////////////
-
-  std::string shaderbody;
-
-  size_t iline = 1;
-  FixedString<64> fxstr;
-  auto prline = [&]() {
-    fxstr.format("/*%03d*/", int(iline));
-    shaderbody += fxstr.c_str();
-    iline++;
-  };
-
-  prline();
-
-  shaderbody += "#version 410 core\n";
 
   ////////////////////////////////////////////////////////////////////////////
   // declare required extensions
   ////////////////////////////////////////////////////////////////////////////
 
-  for (auto extension : pshader->_requiredExtensions) {
-    prline();
-    shaderbody += FormatString("#extension %s : enable\n", extension.c_str());
-  }
+  for (auto extnode : _requiredExtensions)
+    extnode->emit(backend);
 
   ////////////////////////////////////////////////////////////////////////////
+  // this will (recursively) emit
+  //  library blocks
+  //  interface nodes
+  //  uniformSets
+  //  uniformBlocks
+  ////////////////////////////////////////////////////////////////////////////
 
-  for (const auto& preamble_line : iface->mPreamble) {
-    prline();
-    shaderbody += preamble_line;
-  }
-
-  ///////////////////////
-  // UNIFORM Set
-  ///////////////////////
-
-  for (const auto& ub : pshader->_unisets) {
-    for (auto itu : ub->_uniforms) {
-      prline();
-      shaderbody += "uniform ";
-      shaderbody += itu.second->genshaderbody();
-      shaderbody += ";\n";
-    }
-  }
+  DecoBlockNode::emit(backend);
 
   ///////////////////////
-  // UNIFORM Block
+  // code
   ///////////////////////
 
-  for (const auto& ub : pshader->_uniblocks) {
-    prline();
-    shaderbody += FormatString("layout(std140) uniform %s {\n", ub->_name.c_str());
-    for (auto itsub : ub->_subuniforms) {
-      prline();
-      shaderbody += itsub.second->genshaderbody();
-      shaderbody += ";\n";
-    }
-    prline();
-    shaderbody += "};\n";
-  }
+  codegen.formatLine("///////////////////////////////////////////////////////////////////");
 
-  ///////////////////////
-  // ATTRIBUTES
-  ///////////////////////
-  for (StreamInterface::AttrMap::const_iterator ita = iface->mAttributes.begin(); ita != iface->mAttributes.end(); ita++) {
-    prline();
-    Attribute* pa = ita->second;
-
-    shaderbody += pa->mDirection + " ";
-    shaderbody += pa->mTypeName + " ";
-
-    if (pa->mArraySize) {
-      ork::FixedString<128> fxs;
-      // fxs.format("%s[%d]", pa->mName.c_str(), pa->mArraySize );
-      fxs.format("%s[]", pa->mName.c_str());
-      shaderbody += fxs.c_str();
-    } else
-      shaderbody += pa->mName;
-
-    shaderbody += ";";
-
-    if (pa->mComment.length()) {
-      shaderbody += pa->mComment;
-      bkill = true;
-    }
-
-    shaderbody += "\n";
-  }
-  ///////////////////////////////////
-  auto code_inject = [&](const ScannerView& view) {
-    int ist = view._start + 1;
-    int ien = view._end - 1;
-
-    bool bnewline = true;
-
-    size_t column = 0;
-    int indent    = 1;
-
-    for (size_t i = ist; i <= ien; i++) {
-      ptok = view.token(i);
-
-      if (bnewline) {
-        prline();
-
-        for (int in = 0; in < indent; in++)
-          shaderbody += "\t";
-        column = 0;
-      }
-
-      const std::string& cur_tok = ptok->text;
-      // printf( "  ParseFxShaderCommon Tok<%s>\n", cur_tok.c_str() );
-      shaderbody += cur_tok;
-
-      // if( column < 2 )
-      shaderbody += " ";
-
-      column++;
-
-      bnewline = false;
-      if (cur_tok == "\n") {
-        bnewline = true;
-      } else if (cur_tok == "{")
-        indent++;
-      else if (cur_tok == "}")
-        indent--;
-    }
-  };
+  codegen.formatLine("void %s(){", _name.c_str());
+  codegen.incIndent();
+  _body.emit(backend);
+  codegen.decIndent();
+  codegen.formatLine("}");
 
   ///////////////////////////////////
-  // inject libblock code
+
+  pshader->mName = _name;
+
+  pshader->mShaderText = codegen.flush();
+
   ///////////////////////////////////
-  for (const auto& libblk : pshader->_libblocks) {
-    prline();
-    shaderbody += "// libblock<" + libblk->mName + "> ///////////////////////////////////\n";
-
-    const ScannerView& lib_view = *libblk->mView;
-    // printf( "LibBlockView.Start<%d> LibBlockView.End<%d>
-    // scanner.numtoks<%d> view.numtoks<%d>\n", view._start,view._end,
-    // int(scanner.tokens.size()), int(view.mIndices.size()) );
-    code_inject(lib_view);
-
-    shaderbody += "//////////////////////////////////////////////////////////"
-                  "/////////\n";
-  }
-  ///////////////////////////////////
-  prline();
-  shaderbody += "void " + shadername + "()\n{";
-
-  size_t iblockstart = v._start;
-  size_t iblockend   = v._end;
-
-  code_inject(v);
-
-  shaderbody += "}\n";
-  ///////////////////////////////////
-  // printf( "shaderbody\n" );
-  // printf( "///////////////////////////////\n" );
-  // printf( "%s", shaderbody.c_str() );
-  // printf( "///////////////////////////////\n" );
-  ///////////////////////////////////
-  pshader->mName       = shadername;
-  pshader->mShaderText = shaderbody;
-  ///////////////////////////////////
-  int new_end = v.blockEnd() + 1;
-  // printf( "newend be<%d> deref<%d>\n", int(iblockend), new_end );
-
-  // assert(false==bkill);
-
-  return new_end;
+  //printf("shaderbody\n");
+ // printf("///////////////////////////////\n");
+  //printf("%s", pshader->mShaderText.c_str());
+  //printf("///////////////////////////////\n");
 }
+
 ///////////////////////////////////////////////////////////
-ShaderVtx* GlSlFxParser::ParseFxVertexShader() {
+void VertexShaderNode::generate(shaderbuilder::BackEnd& backend) const {
   auto pshader = new ShaderVtx();
-  itokidx      = ParseFxShaderCommon(pshader);
-  return pshader;
+  backend._statemap["curshader"].Set<Shader*>(pshader);
+  auto c               = backend._container;
+  pshader->mpContainer = c;
+  _generateCommon(backend);
+  c->addVertexShader(pshader);
 }
 ///////////////////////////////////////////////////////////
-ShaderTsC* GlSlFxParser::ParseFxTessCtrlShader() {
+void TessCtrlShaderNode::generate(shaderbuilder::BackEnd& backend) const {
   auto pshader = new ShaderTsC();
-  itokidx      = ParseFxShaderCommon(pshader);
-  return pshader;
+  backend._statemap["curshader"].Set<Shader*>(pshader);
+  auto c               = backend._container;
+  pshader->mpContainer = c;
+  _generateCommon(backend);
+  c->addTessCtrlShader(pshader);
 }
 ///////////////////////////////////////////////////////////
-ShaderTsE* GlSlFxParser::ParseFxTessEvalShader() {
+void TessEvalShaderNode::generate(shaderbuilder::BackEnd& backend) const {
   auto pshader = new ShaderTsE();
-  itokidx      = ParseFxShaderCommon(pshader);
-  return pshader;
+  backend._statemap["curshader"].Set<Shader*>(pshader);
+  auto c               = backend._container;
+  pshader->mpContainer = c;
+  _generateCommon(backend);
+  c->addTessEvalShader(pshader);
 }
 ///////////////////////////////////////////////////////////
-ShaderGeo* GlSlFxParser::ParseFxGeometryShader() {
+void GeometryShaderNode::generate(shaderbuilder::BackEnd& backend) const {
   auto pshader = new ShaderGeo();
-  itokidx      = ParseFxShaderCommon(pshader);
-  return pshader;
+  backend._statemap["curshader"].Set<Shader*>(pshader);
+  auto c               = backend._container;
+  pshader->mpContainer = backend._container;
+  _generateCommon(backend);
+  c->addGeometryShader(pshader);
 }
 ///////////////////////////////////////////////////////////
-ShaderFrg* GlSlFxParser::ParseFxFragmentShader() {
+void FragmentShaderNode::generate(shaderbuilder::BackEnd& backend) const {
   auto pshader = new ShaderFrg();
-  itokidx      = ParseFxShaderCommon(pshader);
-  return pshader;
+  backend._statemap["curshader"].Set<Shader*>(pshader);
+  auto c               = backend._container;
+  pshader->mpContainer = backend._container;
+  _generateCommon(backend);
+  backend._container->addFragmentShader(pshader);
 }
 #if defined(ENABLE_NVMESH_SHADERS)
-ShaderNvTask* GlSlFxParser::ParseFxNvTaskShader() {
+void NvTaskShaderNode::generate(shaderbuilder::BackEnd& backend) const {
   auto pshader = new ShaderNvTask();
-  itokidx      = ParseFxShaderCommon(pshader);
-  return pshader;
+  backend._statemap["curshader"].Set<Shader*>(pshader);
+  auto c               = backend._container;
+  pshader->mpContainer = backend._container;
+  _generateCommon(backend);
+  backend._container->addNvTaskShader(pshader);
 }
-ShaderNvMesh* GlSlFxParser::ParseFxNvMeshShader() {
+void NvMeshShaderNode::generate(shaderbuilder::BackEnd& backend) const {
   auto pshader = new ShaderNvMesh();
-  itokidx      = ParseFxShaderCommon(pshader);
-  return pshader;
+  backend._statemap["curshader"].Set<Shader*>(pshader);
+  auto c               = backend._container;
+  pshader->mpContainer = backend._container;
+  _generateCommon(backend);
+  backend._container->addNvMeshShader(pshader);
+}
+#endif
+
+#if defined(ENABLE_COMPUTE_SHADERS)
+void ComputeShaderNode::generate(shaderbuilder::BackEnd& backend) const {
+  auto pshader = new ComputeShader();
+  backend._statemap["curshader"].Set<Shader*>(pshader);
+  pshader->mpContainer = backend._container;
+  _generateCommon(backend);
+  backend._container->addComputeShader(pshader);
 }
 #endif
 

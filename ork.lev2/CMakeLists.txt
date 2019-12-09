@@ -3,41 +3,10 @@ include (GenerateExportHeader)
 
 ###################################
 
-IF(${APPLE})
-set(QT5BASE /usr/local/opt/qt/lib/cmake)
-set(CMAKE_MACOSX_RPATH 1)
-ELSE()
-set(QT5BASE /usr/lib/x86_64-linux-gnu/cmake)
-ENDIF()
-
-###################################
-
-set(Qt5Widgets_DIR ${QT5BASE}/Qt5Widgets)
-set(Qt5Test_DIR ${QT5BASE}/Qt5Test)
-set(Qt5Core_DIR ${QT5BASE}/Qt5Core)
-set(Qt5_DIR ${QT5BASE})
-set(Qt5Concurrent_DIR ${QT5BASE}/Qt5Concurrent)
-set(Qt5Gui_DIR ${QT5BASE}/Qt5Gui)
-set(Qt5Network_DIR ${QT5BASE}/Qt5Network)
-
-find_package(Qt5Core REQUIRED)
-find_package(Qt5Widgets REQUIRED)
-find_package(Qt5Gui REQUIRED)
-
-if(${APPLE})
-else()
-find_package(Qt5X11Extras REQUIRED)
-endif()
-
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
-
-###################################
-
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
 set( INCD ${CMAKE_CURRENT_SOURCE_DIR}/inc )
 set( COREINCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.core/inc )
+set( TUIOINCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.tuio/inc )
 ###################################
 
 file(GLOB_RECURSE src_aud ${SRCD}/aud/*.cpp)
@@ -89,7 +58,13 @@ target_link_libraries(ork_lev2 ${libs})
 target_include_directories (ork_lev2 PRIVATE $ENV{OBT_STAGE}/include )
 target_include_directories (ork_lev2 PRIVATE ${INCD} )
 target_include_directories (ork_lev2 PRIVATE ${COREINCD} )
+target_include_directories (ork_lev2 PRIVATE ${TUIOINCD} )
+target_include_directories (ork_lev2 PRIVATE $ENV{QTDIR}/include/QtGui/$ENV{QTVER})
 
 ###################################
 
 install(TARGETS ork_lev2 LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )
+
+###################################
+
+add_subdirectory (tests)

@@ -36,9 +36,19 @@
 
 #include <ork/kernel/atomic.h>
 #include <ork/orkstd.h>
+#include <cxxabi.h>
+
+#define SVAR_DEBUG
 
 namespace ork {
 
+template <typename T>
+inline std::string demangled_typename() {
+  auto typestr          = typeid(T).name();
+  int status = 0;
+  const char* demangled = abi::__cxa_demangle(typestr, 0, 0, &status);
+  return std::string(demangled);
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 template <int tsize> class static_variant;
@@ -133,6 +143,9 @@ public:
     AssignCopier<T>();
 
     mtinfo = &typeid(T);
+# if defined(SVAR_DEBUG)
+    _typestr = demangled_typename<T>();
+#endif
   }
   //////////////////////////////////////////////////////////////
   // destructor, delegate destuction of the contained object to the destroyer
@@ -175,6 +188,9 @@ public:
     T* pval = (T*)&mbuffer[0];
     new (pval) T(value);
     mtinfo = &typeid(T);
+# if defined(SVAR_DEBUG)
+    _typestr = demangled_typename<T>();
+#endif
     AssignDestroyer<T>();
     AssignCopier<T>();
   }
@@ -215,6 +231,9 @@ public:
     auto pval = (T*)&mbuffer[0];
     new (pval) T(std::forward<A>(args)...);
     mtinfo = &typeid(T);
+# if defined(SVAR_DEBUG)
+    _typestr = demangled_typename<T>();
+#endif
     AssignDestroyer<T>();
     AssignCopier<T>();
     assert(typeid(T) == *mtinfo);
@@ -232,6 +251,9 @@ public:
     new (pval) sharedptr_t;
     (*pval) = std::make_shared<T>(std::forward<A>(args)...);
     mtinfo  = &typeid(sharedptr_t);
+# if defined(SVAR_DEBUG)
+    _typestr = demangled_typename<T>();
+#endif
     AssignDestroyer<sharedptr_t>();
     AssignCopier<sharedptr_t>();
     assert(typeid(sharedptr_t) == *mtinfo);
@@ -269,13 +291,20 @@ public:
   // return true if the variant has been set to something
   //////////////////////////////////////////////////////////////
   bool IsSet() const { return (mtinfo != 0); }
-
-  //////////////////////////////////////////////////////////////
+# if defined(SVAR_DEBUG)
+  std::string typestr() const {
+    return _typestr;
+  }
+#endif
+//////////////////////////////////////////////////////////////
 private:
   char mbuffer[ksize];
   ork::atomic<destroyer_t> mDestroyer;
   ork::atomic<copier_t> mCopier;
   const std::type_info* mtinfo;
+# if defined(SVAR_DEBUG)
+  std::string _typestr;
+  #endif
   //////////////////////////////////////////////////////////////
 };
 

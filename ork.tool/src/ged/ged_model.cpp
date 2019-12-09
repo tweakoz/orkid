@@ -214,7 +214,7 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
   ///////////////////////////////////////////////////
   // editor.object.ops
   ///////////////////////////////////////////////////
-  auto obj_ops_anno = objclass->Description().GetClassAnnotation("editor.object.ops");
+  auto obj_ops_anno = objclass->Description().classAnnotation("editor.object.ops");
 
   bool is_const_string = obj_ops_anno.IsSet() && obj_ops_anno.IsA<ConstString>();
   bool is_op_map = obj_ops_anno.IsSet() && obj_ops_anno.IsA<ork::reflect::OpMap*>();
@@ -237,7 +237,7 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
   // editor.class
   ///////////////////////////////////////////////////
 
-  auto ClassEditorAnno = objclass->Description().GetClassAnnotation("editor.class");
+  auto ClassEditorAnno = objclass->Description().classAnnotation("editor.class");
   if (auto as_conststr = ClassEditorAnno.TryAs<ConstString>()) {
     ConstString anno_edclass = as_conststr.value();
     if (anno_edclass.length()) {
@@ -369,7 +369,7 @@ void ObjModel::EnumerateNodes(sortnode& in_node, object::ObjectClass* the_class)
   for (int ic = (inumclasses - 1); ic >= 0; ic--) {
     object::ObjectClass* pclass = ClassVect[ic];
     ork::reflect::Description::PropertyMapType& propmap = pclass->Description().Properties();
-    auto eg_anno = pclass->Description().GetClassAnnotation("editor.prop.groups");
+    auto eg_anno = pclass->Description().classAnnotation("editor.prop.groups");
     auto as_conststr = eg_anno.TryAs<const char*>();
     const char* eg = "";
     if( as_conststr )
@@ -439,7 +439,7 @@ void ObjModel::EnumerateNodes(sortnode& in_node, object::ObjectClass* the_class)
         // editor.object.props
         ///////////////////////////////////////////////////
         std::set<std::string> allowed_props;
-        auto obj_props_anno = the_class->Description().GetClassAnnotation("editor.object.props");
+        auto obj_props_anno = the_class->Description().classAnnotation("editor.object.props");
         if ( auto as_str = obj_props_anno.TryAs<std::string>() ) {
           auto propnameset = as_str.value();
           if (propnameset.length()) {

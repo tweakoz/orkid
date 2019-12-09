@@ -47,7 +47,6 @@ XgmModelInst::XgmModelInst(const XgmModel* Model)
     : mXgmModel(Model)
     , mLocalPose(Model->RefSkel())
     , mMaterialStateInst(*this)
-    , mLayerFxMaterial(0)
     , mbSkinned(false)
     , mBlenderZup(false) {
   EnableAllMeshes();
@@ -177,13 +176,13 @@ XgmPrimGroup::XgmPrimGroup(XgmPrimGroup* pgrp)
 XgmCluster::XgmCluster()
     : miNumPrimGroups(0)
     , mpPrimGroups(0)
-    , mpVertexBuffer(0)
+    , _vertexBuffer(0)
     , mBoundingSphere(fvec3::Zero(), 0.0f) {}
 
 XgmCluster::~XgmCluster() {
   delete[] mpPrimGroups;
 
-  delete mpVertexBuffer;
+  delete _vertexBuffer;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -265,11 +264,11 @@ void XgmModel::RenderRigid(const fcolor4& ModColor,
   pTARG->PushModColor(ModColor);
   {
     if (mdlctx.GetModelInst()) {
-      if (mdlctx.GetModelInst()->GetLayerFxMaterial() != 0) {
-        pmat = mdlctx.GetModelInst()->GetLayerFxMaterial();
+      if (mdlctx.GetModelInst()->_overrideMaterial != nullptr) {
+        pmat = mdlctx.GetModelInst()->_overrideMaterial;
       }
     }
-
+    pmat->gpuUpdate(pTARG);
     //////////////////////////////////////////////
 
     struct RenderClus {
@@ -405,8 +404,8 @@ void XgmModel::RenderMultipleRigid(const fcolor4& ModColor,
     GfxMaterial* pmaterial = XgmClusSet.GetMaterial();
 
     if (modelinst) {
-      if (nullptr == modelinst->GetLayerFxMaterial())
-        pmaterial = modelinst->GetLayerFxMaterial();
+      if (nullptr == modelinst->_overrideMaterial)
+        pmaterial = modelinst->_overrideMaterial;
     }
 
     if (nullptr != pmaterial) {
@@ -482,8 +481,8 @@ void XgmModel::RenderSkinned(const XgmModelInst* minst,
 
       auto mtl = XgmClusSet.GetMaterial();
 
-      if (minst->GetLayerFxMaterial() != 0)
-        mtl = minst->GetLayerFxMaterial();
+      if (minst->_overrideMaterial != 0)
+        mtl = minst->_overrideMaterial;
 
       if (0 != mtl) {
         pTARG->BindMaterial(mtl);
@@ -558,7 +557,7 @@ void XgmModel::RenderSkinned(const XgmModelInst* minst,
 
   if (0) {
     pTARG->PushModColor(ModColor);
-    GfxEnv::GetDefault3DMaterial()->mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+    GfxEnv::GetDefault3DMaterial()->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     pTARG->BindMaterial(GfxEnv::GetDefault3DMaterial());
     {
       int inumbones             = RefSkel().GetNumBones();
@@ -615,8 +614,8 @@ void XgmModel::RenderMultipleSkinned(const XgmModelInst* minst,
     bool bmatpushed   = false;
     GfxMaterial* pmat = XgmClusSet.GetMaterial();
 
-    if (minst->GetLayerFxMaterial() != 0)
-      pmat = minst->GetLayerFxMaterial();
+    if (minst->_overrideMaterial != 0)
+      pmat = minst->_overrideMaterial;
 
     if (0 != pmat) {
       pTARG->BindMaterial(pmat);

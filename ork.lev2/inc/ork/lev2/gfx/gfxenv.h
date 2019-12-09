@@ -14,6 +14,8 @@
 #include <ork/kernel/core/singleton.h>
 #include <ork/kernel/timer.h>
 
+#include <ork/lev2/gfx/config.h>
+
 #include "gfxenv_enum.h"
 #include "gfxvtxbuf.h"
 #include "targetinterfaces.h"
@@ -21,12 +23,15 @@
 
 #include <ork/event/Event.h>
 #include <ork/kernel/mutex.h>
+#include <ork/kernel/datablock.inl>
 #include <ork/object/AutoConnector.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
+
+extern bool _HIDPI;
 
 typedef SVtxV12C4T16 TEXT_VTXFMT;
 
@@ -116,6 +121,10 @@ public:
   virtual FrameBufferInterface *FBI() = 0;    // FrameBuffer/Control Interface
   virtual TextureInterface *TXI() = 0;        // Texture Interface
 
+#if defined (ENABLE_COMPUTE_SHADERS)
+  virtual ComputeInterface* CI() = 0;        // ComputeShader Interface
+#endif
+  
   virtual void debugPushGroup(const std::string str) {}
   virtual void debugPopGroup() {}
   virtual void debugMarker(const std::string str) {}
@@ -219,7 +228,6 @@ public:
   void *BeginLoad();
   void EndLoad(void *ploadtok);
 
-protected:
   static const int kiModColorStackMax = 8;
   int miX, miY, miW, miH;
   CTXBASE *mCtxBase;
@@ -237,6 +245,7 @@ protected:
   std::stack<GfxMaterial *> mMaterialStack;
   bool mbDeviceAvailable;
   int miDrawLock;
+  bool _hiDPI = false;
 
   static orkvector<DisplayMode *> mDisplayModes;
 
@@ -304,7 +313,7 @@ public:
   const fcolor4 &GetClearColor() const { return mClearColor; }
   GfxBuffer *GetParent(void) const { return mParent; }
   ETargetType GetTargetType(void) const { return meTargetType; }
-  EBufferFormat GetBufferFormat(void) const { return meFormat; }
+  EBufferFormat format(void) const { return meFormat; }
   Texture *GetTexture() const { return mpTexture; }
   GfxMaterial *GetMaterial() const { return mpMaterial; }
   GfxTarget *GetContext(void) const;
@@ -343,7 +352,8 @@ public:
                           float fu1 = 1.0f, float fv1 = 1.0f, float *uv2 = NULL,
                           const fcolor4 &clr = fcolor4::White());
 
-  void Render2dQuadEML(const fvec4 &QuadRect, const fvec4 &UvRect );
+  void Render2dQuadEML(const fvec4 &QuadRect, const fvec4 &UvRect, const fvec4 &UvRect2 );
+  void Render2dQuadsEML(size_t count, const fvec4* QuadRects, const fvec4* UvRects, const fvec4* UvRect2s );
 
   void RenderMatOrthoQuads(const OrthoQuads &oquads);
 

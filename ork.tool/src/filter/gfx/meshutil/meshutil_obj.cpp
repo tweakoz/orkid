@@ -512,7 +512,7 @@ void toolmesh::ReadFromWavefrontObj( const file::Path& BasePath )
 		/////////////////////////////////////////////
 		PropTypeString outstr;
 		PropType<lev2::EVtxStreamFormat>::ToString( ork::lev2::EVTXSTREAMFMT_V12N12B12T16, outstr );
-		smesh.SetAnnotation( "OutVtxFormat", outstr.c_str() );
+		smesh.setStringAnnotation( "OutVtxFormat", outstr.c_str() );
 		/////////////////////////////////////////////
 
 		size_t inumv = opoly.mvtxindices.size();

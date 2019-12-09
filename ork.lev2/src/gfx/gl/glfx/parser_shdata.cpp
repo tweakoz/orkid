@@ -23,147 +23,153 @@
 namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-UniformBlock *GlSlFxParser::parseUniformBlock() {
-  ScanViewRegex r("(\n)", true);
-  ScannerView v(scanner, r);
-  v.scanBlock(itokidx);
-
-  const std::string BlockType = v.token(v._blockType)->text;
-
-  assert(BlockType == "uniform_block");
+void ShaderDataNode::parse(const ScannerView& view) {
+  DecoBlockNode::parse(view);
 
   ////////////////////////
 
-  auto pret = new UniformBlock;
-  pret->_name = v.blockName();
-  ////////////////////////
-
-  size_t inumdecos = v.numBlockDecorators();
-
+  size_t inumdecos = view.numBlockDecorators();
   for (size_t ideco = 0; ideco < inumdecos; ideco++) {
-    auto ptok = v.blockDecorator(ideco);
+    auto ptok = view.blockDecorator(ideco);
   }
-
   ////////////////////////
 
-  size_t ist = v._start + 1;
-  size_t ien = v._end - 1;
-  size_t i = ist;
-  bool done = false;
+  size_t ist = view._start + 1;
+  size_t ien = view._end - 1;
+  size_t i   = ist;
+  bool done  = false;
 
   while (false == done) {
-    const Token *dt_tok = v.token(i);
-    const Token *nam_tok = v.token(i + 1);
+    const Token* dt_tok  = view.token(i);
+    const Token* nam_tok = view.token(i + 1);
 
     bool is_endline = (dt_tok->text == "\n");
-
     if (is_endline) {
       i++;
     } else {
 
-      auto puni = new Uniform(nam_tok->text);
-      puni->_typeName = dt_tok->text;
-      pret->_subuniforms[nam_tok->text] = puni;
-      printf("uniname<%s> typename<%s>\n", nam_tok->text.c_str(),
-             puni->_typeName.c_str());
+      InterfaceLayoutNode* layout = nullptr;
+      if( dt_tok->text == "layout" ){
+        layout = new InterfaceLayoutNode(_container);
+        ScannerView subview(view._scanner, view._filter);
+        subview.scanUntil(view.globalTokenIndex(i), ")", true);
+        layout->parse(subview);
+        i += subview.numTokens();
+        dt_tok  = view.token(i);
+        nam_tok = view.token(i + 1);
+     }
 
-      bool is_array = false;
-      if (v.token(i + 2)->text == "[") {
-        assert(v.token(i + 4)->text == "]");
-        puni->_arraySize = atoi(v.token(i + 3)->text.c_str());
-        printf("uniname<%s> typename<%s> arraysize<%d>\n",
-               nam_tok->text.c_str(), puni->_typeName.c_str(),
-               puni->_arraySize);
-        is_array = true;
+      auto it = _dupenamecheck.find(nam_tok->text);
+      assert(it == _dupenamecheck.end()); // make sure there are no duplicate uniforms
+
+      _dupenamecheck.insert(nam_tok->text);
+
+      bool typeok = _container->validateTypeName(dt_tok->text);
+      bool nameok = _container->validateIdentifierName(nam_tok->text);
+
+      auto unidecl       = new UniformDeclNode;
+      unidecl->_name     = nam_tok->text;
+      unidecl->_typeName = dt_tok->text;
+      unidecl->_layout = layout;
+      bool is_array      = false;
+      if (view.token(i + 2)->text == "[") {
+        assert(view.token(i + 4)->text == "]");
+        unidecl->_arraySize = atoi(view.token(i + 3)->text.c_str());
+        is_array            = true;
       }
+
+      assert(typeok);
+      assert(nameok);
+
+      _uniformdecls.push_back(unidecl);
 
       i += is_array ? 6 : 3;
     }
-
     done = (i >= ien);
-    printf("ni<%d> ien<%d> done<%d> dt_tok<%s>\n", int(i), int(ien), int(done),
-           dt_tok->text.c_str());
+    //printf("ni<%d> ien<%d> done<%d>\n", int(i), int(ien), int(done));
   }
-  itokidx = v.blockEnd() + 1;
-  return pret;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-UniformSet *GlSlFxParser::parseUniformSet() {
-  ScanViewRegex r("(\n)", true);
-  ScannerView v(scanner, r);
-  v.scanBlock(itokidx);
+void UniformDeclNode::emit(shaderbuilder::BackEnd& backend, bool emit_unitxt) const {
+  auto& codegen = backend._codegen;
 
-  const std::string BlockType = v.token(v._blockType)->text;
+  codegen.beginLine();
 
-  assert(BlockType == "uniform_set");
+  if( _layout )
+    _layout->emit(backend);
 
-  ////////////////////////
-
-  auto pret = new UniformSet;
-  pret->_name = v.blockName();
-  ////////////////////////
-
-  size_t inumdecos = v.numBlockDecorators();
-
-  for (size_t ideco = 0; ideco < inumdecos; ideco++) {
-    auto ptok = v.blockDecorator(ideco);
+  if (emit_unitxt)
+    codegen.output("uniform ");
+  codegen.output(_typeName + " ");
+  codegen.output(_name);
+  if (_arraySize) {
+    codegen.format("[%d]", _arraySize);
   }
-
-  ////////////////////////
-
-  size_t ist = v._start + 1;
-  size_t ien = v._end - 1;
-  size_t i = ist;
-  bool done = false;
-
-  while (false == done) {
-    const Token *vt_tok = v.token(i);
-    const Token *dt_tok = v.token(i + 1);
-    const Token *nam_tok = v.token(i + 2);
-
-    // printf( "oi<%d> done<%d> ist<%d> ien<%d>\n", int(i), int(done),
-    // int(ist),int(ien) );
-
-    bool is_endline = (vt_tok->text == "\n");
-    if (is_endline) {
-      i++;
-    } else if (vt_tok->text == "uniform") {
-      auto it = pret->_uniforms.find(nam_tok->text);
-      assert(
-          it ==
-          pret->_uniforms.end()); // make sure there are no duplicate uniforms
-
-      Uniform *puni = mpContainer->MergeUniform(nam_tok->text);
-      puni->_typeName = dt_tok->text;
-      pret->_uniforms[nam_tok->text] = puni;
-      printf("uniname<%s> typename<%s>\n", nam_tok->text.c_str(),
-             puni->_typeName.c_str());
-
-      bool is_array = false;
-
-      if (v.token(i + 3)->text == "[") {
-        assert(v.token(i + 5)->text == "]");
-        puni->_arraySize = atoi(v.token(i + 4)->text.c_str());
-        printf("uniname<%s> typename<%s> arraysize<%d>\n",
-               nam_tok->text.c_str(), puni->_typeName.c_str(),
-               puni->_arraySize);
-
-        is_array = true;
-      }
-
-      i += is_array ? 7 : 4;
-
-    } else {
-      assert(false);
-    }
-    done = (i >= ien);
-    printf("ni<%d> ien<%d> done<%d>\n", int(i), int(ien), int(done));
-  }
-  itokidx = v.blockEnd() + 1;
-  return pret;
+  codegen.output(";");
+  codegen.endLine();
 }
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2::glslfx {
+
+void UniformSetNode::emit(shaderbuilder::BackEnd& backend) const {
+  auto& codegen = backend._codegen;
+  for (auto udecl : _uniformdecls)
+    udecl->emit(backend, true);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void UniformSetNode::generate(shaderbuilder::BackEnd& backend) const {
+
+  auto outcon = backend._container;
+
+  assert(_blocktype == "uniform_set");
+
+  UniformSet* uset = new UniformSet;
+  auto pret        = new UniformSet;
+  uset->_name      = _name;
+
+  for (auto item : _uniformdecls) {
+    Uniform* puni                = outcon->MergeUniform(item->_name);
+    puni->_typeName              = item->_typeName;
+    puni->_arraySize             = item->_arraySize;
+    uset->_uniforms[item->_name] = puni;
+  }
+  outcon->addUniformSet(uset);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void UniformBlockNode::emit(shaderbuilder::BackEnd& backend) const {
+  auto& codegen = backend._codegen;
+  codegen.formatLine("layout(std140) uniform %s {", _name.c_str());
+  codegen.incIndent();
+  for (auto sub : _uniformdecls)
+    sub->emit(backend, false);
+  codegen.decIndent();
+  codegen.formatLine("};");
+}
+void UniformBlockNode::generate(shaderbuilder::BackEnd& backend) const {
+
+  auto outcon = backend._container;
+
+  assert(_blocktype == "uniform_block");
+
+  UniformBlock* ublk = new UniformBlock;
+  auto pret          = new UniformSet;
+  ublk->_name        = _name;
+
+  for (auto item : _uniformdecls) {
+    auto puni        = new Uniform(item->_name);
+    puni->_typeName  = item->_typeName;
+    puni->_arraySize = item->_arraySize;
+    ublk->_subuniforms.push_back(puni);
+  }
+  outcon->addUniformBlock(ublk);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+} // namespace ork::lev2::glslfx
 /////////////////////////////////////////////////////////////////////////////////////////////////

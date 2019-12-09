@@ -23,6 +23,7 @@
 #include <ork/lev2/ui/viewport.h>
 #include <ork/math/basicfilters.h>
 #include <ork/math/misc_math.h>
+#include <ork/lev2/qtui/qtui.h>
 
 #include <QtGui/QCursor>
 
@@ -39,16 +40,16 @@ void OrkGlobalEnableMousePointer();
 
 void EzUiCam::Describe() {
   ork::reflect::RegisterProperty("Aperature", &EzUiCam::aper);
-  ork::reflect::AnnotatePropertyForEditor<EzUiCam>("Aperature", "editor.range.min", "0.0f");
-  ork::reflect::AnnotatePropertyForEditor<EzUiCam>("Aperature", "editor.range.max", "90.0f");
+  ork::reflect::annotatePropertyForEditor<EzUiCam>("Aperature", "editor.range.min", "0.0f");
+  ork::reflect::annotatePropertyForEditor<EzUiCam>("Aperature", "editor.range.max", "90.0f");
 
   ork::reflect::RegisterProperty("MaxFar", &EzUiCam::far_max);
-  ork::reflect::AnnotatePropertyForEditor<EzUiCam>("MaxFar", "editor.range.min", "1.0f");
-  ork::reflect::AnnotatePropertyForEditor<EzUiCam>("MaxFar", "editor.range.max", "100000.0f");
+  ork::reflect::annotatePropertyForEditor<EzUiCam>("MaxFar", "editor.range.min", "1.0f");
+  ork::reflect::annotatePropertyForEditor<EzUiCam>("MaxFar", "editor.range.max", "100000.0f");
 
   ork::reflect::RegisterProperty("MinNear", &EzUiCam::near_min);
-  ork::reflect::AnnotatePropertyForEditor<EzUiCam>("MinNear", "editor.range.min", "0.1f");
-  ork::reflect::AnnotatePropertyForEditor<EzUiCam>("MinNear", "editor.range.max", "10000.0f");
+  ork::reflect::annotatePropertyForEditor<EzUiCam>("MinNear", "editor.range.min", "0.1f");
+  ork::reflect::annotatePropertyForEditor<EzUiCam>("MinNear", "editor.range.max", "10000.0f");
 
   // temporary until old mox files converted
   ork::rtti::Class::CreateClassAlias("Camera_persp", GetClassStatic());
@@ -158,7 +159,7 @@ static QPoint pmousepos;
 
 void EzUiCam::PanBegin(const CamEvTrackData& ed) {
   printf("BeginPan\n");
-  pmousepos = QCursor::pos();
+  pmousepos = ork::lev2::logicalMousePos();
   // OrkGlobalDisableMousePointer();
   mDoPan = true;
 }
@@ -202,7 +203,7 @@ void EzUiCam::RotBegin(const CamEvTrackData& ed) {
 
   // printf( "Rot: vPushNZ<%g %g %g>\n", vPushNZ.x, vPushNZ.y, vPushNZ.z );
 
-  pmousepos = QCursor::pos();
+  pmousepos = ork::lev2::logicalMousePos();
   // OrkGlobalDisableMousePointer();
   mDoRotate = true;
 }
@@ -220,7 +221,7 @@ void EzUiCam::RotEnd() {
 
 void EzUiCam::DollyBegin(const CamEvTrackData& ed) {
   printf("BeginDolly\n");
-  pmousepos = QCursor::pos();
+  pmousepos = ork::lev2::logicalMousePos();
   // OrkGlobalDisableMousePointer();
   mDoDolly = true;
 }
@@ -271,6 +272,8 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
       float fx   = float(esx) / _vpdim.x - 0.5f;
       float fy   = float(esy) / _vpdim.y - 0.5f;
       float frad = sqrtf((fx * fx) + (fy * fy));
+
+        printf( "fx<%g %g> frad<%g>\n", fx, fy, frad);
 
       meRotMode = (frad > 0.35f) ? EROT_SCREENZ : EROT_SCREENXY;
 

@@ -169,7 +169,7 @@ struct GLVtxBufHandle
 	{	GLVaoHandle* rval = nullptr;
 		size_t k1 = size_t(plat_h);
 		size_t k2= size_t(vao_key);
-		size_t key = k1 xor k2;
+		size_t key = k1 xor k2 xor size_t(this);
 		const auto& it = mVaoMap.find(key);
 		if( it==mVaoMap.end() )
 		{
@@ -528,6 +528,7 @@ struct vtx_config
 		if( mPass != pfxpass )
 		{
 			const auto& it = pfxpass->_vtxAttributesBySemantic.find(mSemantic);
+            mAttr = nullptr;
 			if(it!=pfxpass->_vtxAttributesBySemantic.end())
 			{
 				//printf( "gbi::bind_attr pass<%p> attr_sem<%s> istride<%d> found!\n", pfxpass, mSemantic.c_str(), istride );
@@ -598,7 +599,18 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 	switch( eStrFmt )
 	{
 		case lev2::EVTXSTREAMFMT_V12N12B12T16:
-		{	break;
+		{
+			static vtx_config cfgs[] =
+			{	{"POSITION",	3,	GL_FLOAT,			false,	0,		0,0},
+				{"NORMAL",		3,	GL_FLOAT,			true,	12,		0,0},
+				{"BINORMAL",	3,	GL_FLOAT,			true,	24,		0,0},
+				{"TEXCOORD0",	2,	GL_FLOAT,			false,	36,		0,0},
+				{"TEXCOORD1",	2,	GL_FLOAT,			false,	44,		0,0},
+			};
+			for( vtx_config& vcfg : cfgs )
+				component_mask |= vcfg.bind_to_attr(pfxpass,iStride);
+			rval = true;
+		  break;
 		}
 		case lev2::EVTXSTREAMFMT_V12N12B12T8I4W4:
 		{	break;
@@ -701,8 +713,6 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 	{
 		printf( "unhandled vtxfmt<%d>\n", int(eStrFmt) );
 	}
-
-	assert(rval);
 	return rval;
 }
 
@@ -722,7 +732,7 @@ bool GlGeometryBufferInterface::BindVertexStreamSource( const VertexBufferBase& 
 	OrkAssert( hBuf );
 	GL_ERRORCHECK();
 
-	void* plat_h = mTargetGL.GetPlatformHandle();
+	void* plat_h = (void*) mTargetGL.GetPlatformHandle();
 	auto vao_key = (void*) pfxpass;
 
 	GLVaoHandle* vao_obj = hBuf->BindVao(plat_h,vao_key);

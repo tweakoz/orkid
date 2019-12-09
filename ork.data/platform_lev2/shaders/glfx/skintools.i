@@ -1,10 +1,12 @@
 //
 
-uniform_set ublock_skinned { uniform mat4 BoneMatrices[32]; }
+uniform_set ublock_skinned { mat4 BoneMatrices[32]; }
 
 vertex_interface iface_skintools : ublock_skinned {
-  in vec4 boneindices : BONEINDICES;
-  in vec4 boneweights : BONEWEIGHTS;
+  inputs {
+    vec4 boneindices : BONEINDICES;
+    vec4 boneweights : BONEWEIGHTS;
+  }
 }
 
 libblock skin_tools {

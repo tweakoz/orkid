@@ -48,7 +48,8 @@ public:
 private:
   const VrSystemData& _vrSystemData;
   Entity* _spawnloc = nullptr;
-  const lev2::CameraData* _spawncam = nullptr; // todo clean this up..
+  Entity* _spawncam = nullptr;
+  const lev2::CameraData* _spawncamdat = nullptr; // todo clean this up..
   int _vrstate = 0;
   int _prv_vrstate = 0;
   void DoUpdate(Simulation* psi) final;

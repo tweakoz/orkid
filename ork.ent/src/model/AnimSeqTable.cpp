@@ -20,7 +20,7 @@ namespace ork { namespace ent {
 void AnimSeqTable::Describe()
 {
 	ork::reflect::RegisterMapProperty("EventTable", &AnimSeqTable::mEventTable);
-	ork::reflect::AnnotatePropertyForEditor<AnimSeqTable>("EventTable", "editor.factorylistbase", "Event");
+	ork::reflect::annotatePropertyForEditor<AnimSeqTable>("EventTable", "editor.factorylistbase", "Event");
 }
 
 AnimSeqTable::AnimSeqTable() : mEventTable(ork::EKEYPOLICY_MULTILUT) {}

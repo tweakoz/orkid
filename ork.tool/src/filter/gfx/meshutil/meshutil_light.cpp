@@ -46,12 +46,12 @@ void Light::Describe()
 	ork::reflect::RegisterProperty( "ShadowBias", & Light::mShadowBias );
 	ork::reflect::RegisterProperty( "ShadowCaster", & Light::mbIsShadowCaster );	
 
-	ork::reflect::AnnotatePropertyForEditor<Light>( "ShadowBias", "editor.range.min", "0.0" );
-	ork::reflect::AnnotatePropertyForEditor<Light>( "ShadowBias", "editor.range.max", "10.0" );
-	ork::reflect::AnnotatePropertyForEditor<Light>( "ShadowSamples", "editor.range.min", "1" );
-	ork::reflect::AnnotatePropertyForEditor<Light>( "ShadowSamples", "editor.range.max", "256.0" );
-	ork::reflect::AnnotatePropertyForEditor<Light>( "ShadowBlur", "editor.range.min", "0" );
-	ork::reflect::AnnotatePropertyForEditor<Light>( "ShadowBlur", "editor.range.max", "1.0" );
+	ork::reflect::annotatePropertyForEditor<Light>( "ShadowBias", "editor.range.min", "0.0" );
+	ork::reflect::annotatePropertyForEditor<Light>( "ShadowBias", "editor.range.max", "10.0" );
+	ork::reflect::annotatePropertyForEditor<Light>( "ShadowSamples", "editor.range.min", "1" );
+	ork::reflect::annotatePropertyForEditor<Light>( "ShadowSamples", "editor.range.max", "256.0" );
+	ork::reflect::annotatePropertyForEditor<Light>( "ShadowBlur", "editor.range.min", "0" );
+	ork::reflect::annotatePropertyForEditor<Light>( "ShadowBlur", "editor.range.max", "1.0" );
 
 }
 

@@ -117,7 +117,7 @@ bool SF2PXVAssetFilterInterface::ConvertAsset( const std::string & FromFileName,
 
 		lev2::AudioSample outputsample;
 	
-		outputsample.SetSampleName( (const char*) chunkwriter.GetStringIndex(samplename.c_str()) );
+		outputsample.SetSampleName( (const char*) chunkwriter.stringIndex(samplename.c_str()) );
 		outputsample.SetSampleRate( psamp->samplerate );
 		outputsample.SetRootKey( psamp->originalpitch );
 		outputsample.SetLoopEnable( psamp->loop );
@@ -153,7 +153,7 @@ bool SF2PXVAssetFilterInterface::ConvertAsset( const std::string & FromFileName,
 		int inumzones = (int) pinst->GetNumZones();
 		//////////////////////////////////
 		HeaderStream->AddItem( iinst );
-		HeaderStream->AddItem( chunkwriter.GetStringIndex(instname.c_str()) );
+		HeaderStream->AddItem( chunkwriter.stringIndex(instname.c_str()) );
 		HeaderStream->AddItem( inumzones );
 		//////////////////////////////////
 		orkmessageh( "//inst<%d of %d> name<%s> numzones<%d>\n", iinst, inuminst, instname.c_str(), inumzones );
@@ -215,7 +215,7 @@ bool SF2PXVAssetFilterInterface::ConvertAsset( const std::string & FromFileName,
 		//////////////////////////////////
 		HeaderStream->AddItem( iprog );
 		HeaderStream->AddItem( imapped );
-		HeaderStream->AddItem( chunkwriter.GetStringIndex(instname.c_str()) );
+		HeaderStream->AddItem( chunkwriter.stringIndex(instname.c_str()) );
 		HeaderStream->AddItem( inumzones );
 		//////////////////////////////////
 		orkmessageh( "//prog<%d> name<%s> numzones<%d>\n", iprog, instname.c_str(), inumzones );

@@ -30,9 +30,9 @@ void graph_data::Describe()
 	ork::reflect::RegisterMapProperty("Modules", &graph_data::mModules);
 	ork::reflect::RegisterProperty( "zzz_connections", & graph_inst::SerializeConnections, & graph_inst::DeserializeConnections );
 
-	ork::reflect::AnnotatePropertyForEditor< graph_data >("zzz_connections", "editor.visible", "false" );
-	ork::reflect::AnnotateClassForEditor< graph_data >("editor.object.ops", ConstString("dfgraph:dflowgraphedit import:dflowgraphimport export:dflowgraphexport") );
-	ork::reflect::AnnotatePropertyForEditor< graph_data >("Modules", "editor.factorylistbase", "dflow/dgmodule" );
+	ork::reflect::annotatePropertyForEditor< graph_data >("zzz_connections", "editor.visible", "false" );
+	ork::reflect::annotateClassForEditor< graph_data >("editor.object.ops", ConstString("dfgraph:dflowgraphedit import:dflowgraphimport export:dflowgraphexport") );
+	ork::reflect::annotatePropertyForEditor< graph_data >("Modules", "editor.factorylistbase", "dflow/dgmodule" );
 
 }
 graph_data::graph_data()

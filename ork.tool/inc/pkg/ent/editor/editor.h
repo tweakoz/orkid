@@ -98,7 +98,7 @@ public:
 	SceneEditorBase();
 	~SceneEditorBase();
 
-	typedef any128 var_t;
+	typedef svar160_t var_t;
 
 	ork::Application*				mApplication;
 	bool							mbInit;

@@ -52,11 +52,11 @@ static ork::PoolString sAsteriskString;
 void SimpleAnimatableData::Describe()
 {
 	ork::reflect::RegisterMapProperty("AnimationMap", &SimpleAnimatableData::mAnimationMap);
-	ork::reflect::AnnotatePropertyForEditor<SimpleAnimatableData>("AnimationMap", "editor.assettype", "xganim");
-	ork::reflect::AnnotatePropertyForEditor<SimpleAnimatableData>("AnimationMap", "editor.assetclass", "xganim");
+	ork::reflect::annotatePropertyForEditor<SimpleAnimatableData>("AnimationMap", "editor.assettype", "xganim");
+	ork::reflect::annotatePropertyForEditor<SimpleAnimatableData>("AnimationMap", "editor.assetclass", "xganim");
 
 	ork::reflect::RegisterMapProperty("AnimSeqTableMap", &SimpleAnimatableData::mAnimSeqTableMap);
-	ork::reflect::AnnotatePropertyForEditor<SimpleAnimatableData>("AnimSeqTableMap", "editor.factorylistbase", "AnimSeqTable");
+	ork::reflect::annotatePropertyForEditor<SimpleAnimatableData>("AnimSeqTableMap", "editor.factorylistbase", "AnimSeqTable");
 
 	ork::reflect::RegisterMapProperty("AnimMaskMap", &SimpleAnimatableData::mAnimMaskMap);
 

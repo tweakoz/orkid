@@ -42,7 +42,7 @@ void RendererModule::Describe()
 {	RegisterObjInpPlug ( RendererModule, Input );
 	//static const char* EdGrpStr =
 	//	        "grp://BasicRenderer Input Gradient";
-	//reflect::AnnotateClassForEditor<BasicRendererModule>( "editor.prop.groups", EdGrpStr );
+	//reflect::annotateClassForEditor<BasicRendererModule>( "editor.prop.groups", EdGrpStr );
 }
 RendererModule::RendererModule()
 	: ConstructInpPlug( Input, dataflow::EPR_UNIFORM, gNoCon )
@@ -74,23 +74,23 @@ void SpriteRenderer::Describe()
 	/////////////////
 	ork::reflect::RegisterProperty("ActiveMaterial", &SpriteRenderer::mActiveMaterial);
 	ork::reflect::RegisterMapProperty( "Materials", & SpriteRenderer::mMaterials );
-	ork::reflect::AnnotatePropertyForEditor< SpriteRenderer >("Materials", "editor.factorylistbase", "psys::MaterialBase" );
-	ork::reflect::AnnotatePropertyForEditor< SpriteRenderer >("Materials", "editor.map.policy.impexp", "true" );
+	ork::reflect::annotatePropertyForEditor< SpriteRenderer >("Materials", "editor.factorylistbase", "psys::MaterialBase" );
+	ork::reflect::annotatePropertyForEditor< SpriteRenderer >("Materials", "editor.map.policy.impexp", "true" );
 	/////////////////
 
 	/////////////////
 	ork::reflect::RegisterProperty("ActiveGradient", &SpriteRenderer::mActiveGradient);
 	ork::reflect::RegisterMapProperty( "Gradients", & SpriteRenderer::mGradients );
-	ork::reflect::AnnotatePropertyForEditor< SpriteRenderer >("Gradients", "editor.factorylistbase", "GradientV4" );
-	ork::reflect::AnnotatePropertyForEditor< SpriteRenderer >("Gradients", "editor.map.policy.impexp", "true" );
+	ork::reflect::annotatePropertyForEditor< SpriteRenderer >("Gradients", "editor.factorylistbase", "GradientV4" );
+	ork::reflect::annotatePropertyForEditor< SpriteRenderer >("Gradients", "editor.map.policy.impexp", "true" );
 	/////////////////
 
 	ork::reflect::RegisterProperty("Alignment", &SpriteRenderer::meAlignment);
 	ork::reflect::RegisterProperty("BlendMode", &SpriteRenderer::meBlendMode);
 
 	ork::reflect::RegisterProperty("AnimTexDim", &SpriteRenderer::miAnimTexDim);
-	ork::reflect::AnnotatePropertyForEditor< SpriteRenderer >( "AnimTexDim", "editor.range.min", "1" );
-	ork::reflect::AnnotatePropertyForEditor< SpriteRenderer >( "AnimTexDim", "editor.range.max", "8" );
+	ork::reflect::annotatePropertyForEditor< SpriteRenderer >( "AnimTexDim", "editor.range.min", "1" );
+	ork::reflect::annotatePropertyForEditor< SpriteRenderer >( "AnimTexDim", "editor.range.max", "8" );
 	//ork::reflect::RegisterProperty( "VolumeTexture", & SpriteRenderer::GetVolumeTextureAccessor, & SpriteRenderer::SetVolumeTextureAccessor );
 
 	//ork::reflect::RegisterProperty( "Material", & SpriteRenderer::GetMaterial );
@@ -101,29 +101,29 @@ void SpriteRenderer::Describe()
 	//ork::reflect::RegisterProperty("ImgSeq", & SpriteRenderer::mbImageSequence );
 
 	/////////////////
-	//ork::reflect::AnnotatePropertyForEditor<SpriteRenderer>("Gradient", "editor.class", "ged.factory.gradient" );
+	//ork::reflect::annotatePropertyForEditor<SpriteRenderer>("Gradient", "editor.class", "ged.factory.gradient" );
 	/////////////////
-	ork::reflect::AnnotatePropertyForEditor<SpriteRenderer>("Alignment", "editor.class", "ged.factory.enum" );
-	ork::reflect::AnnotatePropertyForEditor<SpriteRenderer>("BlendMode", "editor.class", "ged.factory.enum" );
+	ork::reflect::annotatePropertyForEditor<SpriteRenderer>("Alignment", "editor.class", "ged.factory.enum" );
+	ork::reflect::annotatePropertyForEditor<SpriteRenderer>("BlendMode", "editor.class", "ged.factory.enum" );
 	/////////////////
-	//ork::reflect::AnnotatePropertyForEditor<SpriteRenderer>("VolumeTexture", "editor.class", "ged.factory.assetlist" );
-	//ork::reflect::AnnotatePropertyForEditor<SpriteRenderer>("VolumeTexture", "editor.assettype", "lev2tex" );
-	//ork::reflect::AnnotatePropertyForEditor<SpriteRenderer>("VolumeTexture", "editor.assetclass", "lev2tex");
+	//ork::reflect::annotatePropertyForEditor<SpriteRenderer>("VolumeTexture", "editor.class", "ged.factory.assetlist" );
+	//ork::reflect::annotatePropertyForEditor<SpriteRenderer>("VolumeTexture", "editor.assettype", "lev2tex" );
+	//ork::reflect::annotatePropertyForEditor<SpriteRenderer>("VolumeTexture", "editor.assetclass", "lev2tex");
 	/////////////////
-	//ork::reflect::AnnotatePropertyForEditor< SpriteRenderer >( "ImgSeqBegin", "editor.range.min", "0" );
-	//ork::reflect::AnnotatePropertyForEditor< SpriteRenderer >( "ImgSeqBegin", "editor.range.max", "999" );
-	//ork::reflect::AnnotatePropertyForEditor< SpriteRenderer >( "ImgSeqEnd", "editor.range.min", "0" );
-	//ork::reflect::AnnotatePropertyForEditor< SpriteRenderer >( "ImgSeqEnd", "editor.range.max", "999" );
+	//ork::reflect::annotatePropertyForEditor< SpriteRenderer >( "ImgSeqBegin", "editor.range.min", "0" );
+	//ork::reflect::annotatePropertyForEditor< SpriteRenderer >( "ImgSeqBegin", "editor.range.max", "999" );
+	//ork::reflect::annotatePropertyForEditor< SpriteRenderer >( "ImgSeqEnd", "editor.range.min", "0" );
+	//ork::reflect::annotatePropertyForEditor< SpriteRenderer >( "ImgSeqEnd", "editor.range.max", "999" );
 	/////////////////
-	//ork::reflect::AnnotatePropertyForEditor< SpriteRenderer >( "AnimTexDim", "editor.range.min", "1" );
-	//ork::reflect::AnnotatePropertyForEditor< SpriteRenderer >( "AnimTexDim", "editor.range.max", "16" );
+	//ork::reflect::annotatePropertyForEditor< SpriteRenderer >( "AnimTexDim", "editor.range.min", "1" );
+	//ork::reflect::annotatePropertyForEditor< SpriteRenderer >( "AnimTexDim", "editor.range.max", "16" );
 	static const char* EdGrpStr =
 		        "grp://Base DepthSort Alignment Rot Size BlendMode "
 				"grp://Gradient ActiveGradient GradientIntensity Gradients "
 				"grp://Material ActiveMaterial AnimFrame Materials AnimTexDim ";
 				//"grp://Image VolumeTexture Texture ImgSeq ImgSeqBegin ImgSeqEnd ImgAnimTexDim AnimTexFrame "
 				//"grp://Noise NoiseAmp0 NoiseAmp1 NoiseAmp2 NoiseFreq0 NoiseFreq1 NoiseFreq2 NoiseShift0 NoiseShift1 NoiseShift2  ";
-	reflect::AnnotateClassForEditor<SpriteRenderer>( "editor.prop.groups", EdGrpStr );
+	reflect::annotateClassForEditor<SpriteRenderer>( "editor.prop.groups", EdGrpStr );
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -257,7 +257,7 @@ ParticlePoolRenderBuffer::~ParticlePoolRenderBuffer()
 	}
 }
 
-int NextHighestPowerOfTwo( int inp )
+int NexthighestPowerOfTwo( int inp )
 {
 	int outp = inp;
 	outp--;
@@ -275,7 +275,7 @@ void ParticlePoolRenderBuffer::SetCapacity( int icap )
 	if( icap > miMaxParticles )
 	{
 		if( mpParticles ) delete[] mpParticles;
-		miMaxParticles = NextHighestPowerOfTwo( icap );
+		miMaxParticles = NexthighestPowerOfTwo( icap );
 		mpParticles = new BasicParticle[ miMaxParticles ];
 	}
 }
@@ -577,7 +577,7 @@ void SpriteRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& 
 				bound_mtl->SetUser1( user1 );
 				bound_mtl->SetUser2( user2 );
 
-				bound_mtl->mRasterState.SetBlending( meBlendMode );
+				bound_mtl->_rasterstate.SetBlending( meBlendMode );
 				targ->MTXI()->PushMMatrix(MatScale*mtx);
 				targ->GBI()->DrawPrimitive( vw, ork::lev2::EPRIM_POINTS, ivertexlockcount );
 				mpVB = 0;
@@ -604,15 +604,15 @@ void StreakRenderer::Describe()
 
 	ork::reflect::RegisterProperty("DepthSort", & StreakRenderer::mbSort );
 	ork::reflect::RegisterProperty("AlphaMux", & StreakRenderer::mAlphaMux );
-	//ork::reflect::AnnotatePropertyForEditor<StreakRenderer>("Gradient", "editor.class", "ged.factory.gradient" );
+	//ork::reflect::annotatePropertyForEditor<StreakRenderer>("Gradient", "editor.class", "ged.factory.gradient" );
 
-	ork::reflect::AnnotatePropertyForEditor<StreakRenderer>("BlendMode", "editor.class", "ged.factory.enum" );
-	ork::reflect::AnnotatePropertyForEditor<StreakRenderer>("Texture", "editor.class", "ged.factory.assetlist" );
-	ork::reflect::AnnotatePropertyForEditor<StreakRenderer>("Texture", "editor.assettype", "lev2tex" );
-	ork::reflect::AnnotatePropertyForEditor<StreakRenderer>("Texture", "editor.assetclass", "lev2tex");
+	ork::reflect::annotatePropertyForEditor<StreakRenderer>("BlendMode", "editor.class", "ged.factory.enum" );
+	ork::reflect::annotatePropertyForEditor<StreakRenderer>("Texture", "editor.class", "ged.factory.assetlist" );
+	ork::reflect::annotatePropertyForEditor<StreakRenderer>("Texture", "editor.assettype", "lev2tex" );
+	ork::reflect::annotatePropertyForEditor<StreakRenderer>("Texture", "editor.assetclass", "lev2tex");
 	static const char* EdGrpStr =
 		        "grp://StreakRenderer Input DepthSort AlphaMux Length Width BlendMode Gradient GradientIntensity Texture ";
-	reflect::AnnotateClassForEditor<StreakRenderer>( "editor.prop.groups", EdGrpStr );
+	reflect::annotateClassForEditor<StreakRenderer>( "editor.prop.groups", EdGrpStr );
 }
 ///////////////////////////////////////////////////////////////////////////////
 StreakRenderer::StreakRenderer()
@@ -757,12 +757,12 @@ void StreakRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& 
 		targ->BindMaterial( mpMaterial );
 		mpMaterial->SetUser0(mAlphaMux);
 		mpMaterial->SetColorMode( ork::lev2::GfxMaterial3DSolid::EMODE_USER );
-		mpMaterial->mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_GREATER, 0.0f );
-		mpMaterial->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_LEQUALS );
-		mpMaterial->mRasterState.SetBlending( meBlendMode );
-		mpMaterial->mRasterState.SetZWriteMask( false );
-		mpMaterial->mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-		mpMaterial->mRasterState.SetPointSize( 32.0f );
+		mpMaterial->_rasterstate.SetAlphaTest( ork::lev2::EALPHATEST_GREATER, 0.0f );
+		mpMaterial->_rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_LEQUALS );
+		mpMaterial->_rasterstate.SetBlending( meBlendMode );
+		mpMaterial->_rasterstate.SetZWriteMask( false );
+		mpMaterial->_rasterstate.SetCullTest( ork::lev2::ECULLTEST_OFF );
+		mpMaterial->_rasterstate.SetPointSize( 32.0f );
 		mpMaterial->SetTexture( GetTexture() );
 		//////////////////////////////////////////
 		// Draw Particles
@@ -787,13 +787,13 @@ void ModelRenderer::Describe()
 	ork::reflect::RegisterProperty( "AnimRotAxis", & ModelRenderer::mAnimRotAxis );
 	ork::reflect::RegisterProperty( "UpVector", & ModelRenderer::mUpVector );
 
-	ork::reflect::AnnotatePropertyForEditor<ModelRenderer>("Model", "editor.class", "ged.factory.assetlist" );
-	ork::reflect::AnnotatePropertyForEditor<ModelRenderer>("Model", "editor.assettype", "xgmodel" );
-	ork::reflect::AnnotatePropertyForEditor<ModelRenderer>("Model", "editor.assetclass", "xgmodel");
+	ork::reflect::annotatePropertyForEditor<ModelRenderer>("Model", "editor.class", "ged.factory.assetlist" );
+	ork::reflect::annotatePropertyForEditor<ModelRenderer>("Model", "editor.assettype", "xgmodel" );
+	ork::reflect::annotatePropertyForEditor<ModelRenderer>("Model", "editor.assetclass", "xgmodel");
 
 	static const char* EdGrpStr =
 		        "sort://Input Model UpVector BaseRotAxisAngle AnimRotAxis AnimScale AnimRot";
-	reflect::AnnotateClassForEditor<ModelRenderer>( "editor.prop.groups", EdGrpStr );
+	reflect::annotateClassForEditor<ModelRenderer>( "editor.prop.groups", EdGrpStr );
 }
 ///////////////////////////////////////////////////////////////////////////////
 ModelRenderer::ModelRenderer()
@@ -967,9 +967,9 @@ void MaterialBase::Describe()
 void TextureMaterial::Describe()
 {
 	ork::reflect::RegisterProperty( "Texture", & TextureMaterial::GetTextureAccessor, & TextureMaterial::SetTextureAccessor );
-	ork::reflect::AnnotatePropertyForEditor<TextureMaterial>("Texture", "editor.class", "ged.factory.assetlist" );
-	ork::reflect::AnnotatePropertyForEditor<TextureMaterial>("Texture", "editor.assettype", "lev2tex" );
-	ork::reflect::AnnotatePropertyForEditor<TextureMaterial>("Texture", "editor.assetclass", "lev2tex");
+	ork::reflect::annotatePropertyForEditor<TextureMaterial>("Texture", "editor.class", "ged.factory.assetlist" );
+	ork::reflect::annotatePropertyForEditor<TextureMaterial>("Texture", "editor.assettype", "lev2tex" );
+	ork::reflect::annotatePropertyForEditor<TextureMaterial>("Texture", "editor.assetclass", "lev2tex");
 }
 ///////////////////////////////////////////////////////////////////////////////
 TextureMaterial::TextureMaterial()
@@ -1010,11 +1010,11 @@ lev2::GfxMaterial* TextureMaterial::Bind( lev2::GfxTarget* pT )
 
 	mpMaterial->SetTexture( GetTexture() );
 	mpMaterial->SetColorMode( ork::lev2::GfxMaterial3DSolid::EMODE_USER );
-	mpMaterial->mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_GREATER, 0.0f );
-	mpMaterial->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_LEQUALS );
-	mpMaterial->mRasterState.SetZWriteMask( false );
-	mpMaterial->mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-	mpMaterial->mRasterState.SetPointSize( 32.0f );
+	mpMaterial->_rasterstate.SetAlphaTest( ork::lev2::EALPHATEST_GREATER, 0.0f );
+	mpMaterial->_rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_LEQUALS );
+	mpMaterial->_rasterstate.SetZWriteMask( false );
+	mpMaterial->_rasterstate.SetCullTest( ork::lev2::ECULLTEST_OFF );
+	mpMaterial->_rasterstate.SetPointSize( 32.0f );
 	pT->BindMaterial(mpMaterial);
 
 	return mpMaterial;
@@ -1024,9 +1024,9 @@ lev2::GfxMaterial* TextureMaterial::Bind( lev2::GfxTarget* pT )
 void VolTexMaterial::Describe()
 {
 	ork::reflect::RegisterProperty( "Texture", & VolTexMaterial::GetTextureAccessor, & VolTexMaterial::SetTextureAccessor );
-	ork::reflect::AnnotatePropertyForEditor<VolTexMaterial>("Texture", "editor.class", "ged.factory.assetlist" );
-	ork::reflect::AnnotatePropertyForEditor<VolTexMaterial>("Texture", "editor.assettype", "lev2tex" );
-	ork::reflect::AnnotatePropertyForEditor<VolTexMaterial>("Texture", "editor.assetclass", "lev2tex");
+	ork::reflect::annotatePropertyForEditor<VolTexMaterial>("Texture", "editor.class", "ged.factory.assetlist" );
+	ork::reflect::annotatePropertyForEditor<VolTexMaterial>("Texture", "editor.assettype", "lev2tex" );
+	ork::reflect::annotatePropertyForEditor<VolTexMaterial>("Texture", "editor.assetclass", "lev2tex");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1068,11 +1068,11 @@ lev2::GfxMaterial* VolTexMaterial::Bind( lev2::GfxTarget* pT )
 
 	mpMaterial->SetVolumeTexture( GetTexture() );
 	mpMaterial->SetColorMode( ork::lev2::GfxMaterial3DSolid::EMODE_USER );
-	mpMaterial->mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_GREATER, 0.0f );
-	mpMaterial->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_LEQUALS );
-	mpMaterial->mRasterState.SetZWriteMask( false );
-	mpMaterial->mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-	mpMaterial->mRasterState.SetPointSize( 32.0f );
+	mpMaterial->_rasterstate.SetAlphaTest( ork::lev2::EALPHATEST_GREATER, 0.0f );
+	mpMaterial->_rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_LEQUALS );
+	mpMaterial->_rasterstate.SetZWriteMask( false );
+	mpMaterial->_rasterstate.SetCullTest( ork::lev2::ECULLTEST_OFF );
+	mpMaterial->_rasterstate.SetPointSize( 32.0f );
 	pT->BindMaterial(mpMaterial);
 
 	return mpMaterial;

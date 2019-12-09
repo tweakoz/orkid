@@ -20,11 +20,19 @@ std::string indent(int count){
    rval += "  ";
   return rval;
 }
+static thread_local int _dbglevel = 0;
+static thread_local std::stack<std::string> _groupstack;
 
 #if defined(__APPLE__)
 void GfxTargetGL::debugPushGroup(const std::string str) {
+ auto mstr = indent(_dbglevel++) + str;
+  _groupstack.push(mstr);
+  GL_ERRORCHECK();
+  glPushGroupMarkerEXT(mstr.length(),mstr.c_str());
 }
 void GfxTargetGL::debugPopGroup() {
+  glPopGroupMarkerEXT();
+  _dbglevel--;
 }
 void GfxTargetGL::debugMarker(const std::string str) {
 }
@@ -41,34 +49,18 @@ void GfxTargetGL::debugLabel(GLenum target, GLuint object, std::string name){
                   name.length(),
                   name.c_str() );
 }
-static thread_local std::stack<std::string> _groupstack;
-static thread_local int _dbglevel = 0;
-static thread_local ork::Timer timer;
 void GfxTargetGL::debugPushGroup(const std::string str) {
  auto mstr = indent(_dbglevel++) + str;
   _groupstack.push(mstr);
-  //printf( "BEG:: %s\n", mstr.c_str() );
-  if( mstr == "toolvp::assemble" ){
-      timer.Start();
-  }
   GL_ERRORCHECK();
   glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0,
                    mstr.length(),mstr.c_str());
                    GL_ERRORCHECK();
-  timer.Start();
 }
 void GfxTargetGL::debugPopGroup() {
  //auto mstr = indent(_dbglevel--) + _prevgroup;
   std::string top = _groupstack.top();
-  if( top == "toolvp::assemble" ){
-    static int counter = 0;
-    //printf( "toolvp::assemble counter<%d> timer<%f>\n", counter, timer.SecsSinceStart() );
-    //if( timer.SecsSinceStart()>1.0 or (counter==3) )
-      //assert(false);
-    counter++;
-  }
   _groupstack.pop();
-  //printf( "END:: %s\n", top.c_str() );
   GL_ERRORCHECK();
   glPopDebugGroup();
   GL_ERRORCHECK();
@@ -147,10 +139,9 @@ int GetGlError( void )
 {
 	int err = glGetError();
 
-	std::string errstr = GetGlErrorString( err );
-
 	if( err != GL_NO_ERROR )
 	{
+    	std::string errstr = GetGlErrorString( err );
 		orkprintf( "GLERROR [%s]\n", errstr.c_str() );
 		check_debug_log();
 	}

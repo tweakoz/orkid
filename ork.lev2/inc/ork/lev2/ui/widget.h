@@ -117,6 +117,11 @@ public:
 
 	HandlerResult RouteUiEvent( const Event& Ev );
 
+	float logicalWidth() const;
+    float logicalHeight() const;
+    float logicalX() const;
+    float logicalY() const;
+
 protected:
 
 	bool				mbInit;

@@ -116,12 +116,12 @@ private:
 void FnBallArchetype::Describe()
 {
     reflect::RegisterProperty( "TessLevel", & FnBallArchetype::mTessLevel );
-    reflect::AnnotatePropertyForEditor<FnBallArchetype>( "TessLevel", "editor.range.min", "0.0" );
-    reflect::AnnotatePropertyForEditor<FnBallArchetype>( "TessLevel", "editor.range.max", "1.0" );
+    reflect::annotatePropertyForEditor<FnBallArchetype>( "TessLevel", "editor.range.min", "0.0" );
+    reflect::annotatePropertyForEditor<FnBallArchetype>( "TessLevel", "editor.range.max", "1.0" );
 
     reflect::RegisterProperty( "Displacement", & FnBallArchetype::mDisplacement );
-    reflect::AnnotatePropertyForEditor<FnBallArchetype>( "Displacement", "editor.range.min", "-24.0" );
-    reflect::AnnotatePropertyForEditor<FnBallArchetype>( "Displacement", "editor.range.max", "12.0" );
+    reflect::annotatePropertyForEditor<FnBallArchetype>( "Displacement", "editor.range.min", "-24.0" );
+    reflect::annotatePropertyForEditor<FnBallArchetype>( "Displacement", "editor.range.max", "12.0" );
 }
 
 FnBallArchetype::FnBallArchetype()

@@ -31,6 +31,12 @@ struct PropertyModifier {
 class ObjectClass : public rtti::Class {
   RttiDeclareExplicit(ObjectClass, rtti::Class, rtti::NamePolicy, ObjectCategory) public : ObjectClass(const rtti::RTTIData&);
 
+public:
+  typedef ork::reflect::Description::anno_t anno_t;
+
+  void annotate( const ConstString &key, const anno_t& val );
+  const anno_t& annotation( const ConstString &key );
+
   reflect::Description& Description();
   const reflect::Description& Description() const;
 
@@ -47,7 +53,7 @@ class ObjectClass : public rtti::Class {
   inline PropertyModifier floatProperty(const char* name, float_range range, float ClassType::*member);
 
 private:
-  reflect::Description mDescription;
+  reflect::Description _description;
   void Initialize() override;
 };
 

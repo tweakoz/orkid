@@ -69,7 +69,7 @@ public:
             mtl.SetTexture( tex );
             //mtl.SetColorMode( ork::lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
             mtl.SetColorMode( ork::lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR );
-            mtl.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
+            mtl._rasterstate.SetBlending( ork::lev2::EBLENDING_OFF );
             mpTarget->FBI()->GetThisBuffer()->RenderMatOrthoQuad( tgtrect, tgtrect, & mtl, 0.0f, 0.0f, 1.0f, 1.0f, 0, clr1 );
 
             GLint curtex = 0;

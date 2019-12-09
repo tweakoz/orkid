@@ -1,5 +1,8 @@
 #pragma once
 
+struct FxComputeShader;
+struct FxShaderStorageBuffer;
+
 struct FxShaderParamBlock;
 struct FxShaderParamBuffer;
 struct FxShaderParamBufferMapping;
@@ -27,6 +30,10 @@ public:
   virtual const FxShaderParam* parameter(FxShader* hfx, const std::string& name)    = 0;
   virtual const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name)    = 0;
 
+  #if defined(ENABLE_COMPUTE_SHADERS)
+  virtual const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) = 0;
+  #endif
+ 
   #if defined(ENABLE_SHADER_STORAGE)
   virtual const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) = 0;
   #endif
@@ -39,15 +46,16 @@ public:
   virtual void BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, const fvec4* Vec, const int icount) = 0;
   virtual void BindParamFloatArray(FxShader* hfx, const FxShaderParam* hpar, const float* pfA, const int icnt)   = 0;
   virtual void BindParamFloat(FxShader* hfx, const FxShaderParam* hpar, float fA)                                = 0;
-  virtual void BindParamFloat2(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB)                     = 0;
-  virtual void BindParamFloat3(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC)           = 0;
-  virtual void BindParamFloat4(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC, float fD) = 0;
   virtual void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx4& Mat)                       = 0;
   virtual void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx3& Mat)                       = 0;
   virtual void BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) = 0;
-  virtual void BindParamU32(FxShader* hfx, const FxShaderParam* hpar, U32 uval)                                  = 0;
+  virtual void BindParamU32(FxShader* hfx, const FxShaderParam* hpar, uint32_t uval)                                  = 0;
   virtual void BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Texture* pTex)                      = 0;
 
+#if ! defined(__APPLE__)
+  virtual void BindParamU64(FxShader* hfx, const FxShaderParam* hpar, uint64_t uval) {}
+#endif
+  
   void BindParamTex(FxShader* hfx, const FxShaderParam* hpar, const lev2::TextureAsset* tex);
 
   void BeginMaterialGroup(GfxMaterial* pmtl);
@@ -71,7 +79,8 @@ public:
 
 protected:
   FxInterface();
-
+  virtual ~FxInterface() {}
+  
   FxShader* mpActiveFxShader;
   GfxMaterial* mpLastFxMaterial;
   GfxMaterial* mpGroupMaterial;

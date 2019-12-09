@@ -105,13 +105,13 @@ void BulletObjectControllerData::Describe()
 	reflect::RegisterProperty("Disable", &BulletObjectControllerData::_disablePhysics);
 
 	reflect::RegisterMapProperty( "ForceControllers", & BulletObjectControllerData::mForceControllerDataMap );
-	reflect::AnnotatePropertyForEditor< BulletObjectControllerData >("ForceControllers", "editor.factorylistbase", "BulletObjectForceControllerData" );
-	reflect::AnnotatePropertyForEditor< BulletObjectControllerData >("ForceControllers", "editor.map.policy.impexp", "true" );
+	reflect::annotatePropertyForEditor< BulletObjectControllerData >("ForceControllers", "editor.factorylistbase", "BulletObjectForceControllerData" );
+	reflect::annotatePropertyForEditor< BulletObjectControllerData >("ForceControllers", "editor.map.policy.impexp", "true" );
 
 	reflect::RegisterProperty( "Shape",
 								& BulletObjectControllerData::ShapeGetter,
 								& BulletObjectControllerData::ShapeSetter );
-	reflect::AnnotatePropertyForEditor<BulletObjectControllerData>( "Shape", "editor.factorylistbase", "BulletShapeBaseData" );
+	reflect::annotatePropertyForEditor<BulletObjectControllerData>( "Shape", "editor.factorylistbase", "BulletShapeBaseData" );
 
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -437,9 +437,9 @@ void BulletShapeModelData::Describe()
 	reflect::RegisterFloatMinMaxProp( &BulletShapeModelData::mfScale, "Scale", "-1000.0", "1000.0" );
 
 	reflect::RegisterProperty( "Model", & BulletShapeModelData::GetModelAccessor, & BulletShapeModelData::SetModelAccessor );
-	reflect::AnnotatePropertyForEditor<BulletShapeModelData>("Model", "editor.class", "ged.factory.assetlist");
-	reflect::AnnotatePropertyForEditor<BulletShapeModelData>("Model", "editor.assettype", "xgmodel");
-	reflect::AnnotatePropertyForEditor<BulletShapeModelData>("Model", "editor.assetclass", "xgmodel");
+	reflect::annotatePropertyForEditor<BulletShapeModelData>("Model", "editor.class", "ged.factory.assetlist");
+	reflect::annotatePropertyForEditor<BulletShapeModelData>("Model", "editor.assettype", "xgmodel");
+	reflect::annotatePropertyForEditor<BulletShapeModelData>("Model", "editor.assetclass", "xgmodel");
 
 }
 BulletShapeModelData::BulletShapeModelData()

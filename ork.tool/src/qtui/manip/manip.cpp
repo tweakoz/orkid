@@ -296,7 +296,7 @@ void ManipManager::AttachObject(ork::Object* pobj) {
     mpCurrentInterface = 0;
   }
 
-  auto anno = pclass->Description().GetClassAnnotation("editor.3dxfinterface");
+  auto anno = pclass->Description().classAnnotation("editor.3dxfinterface");
 
   if (auto as_cstr = anno.TryAs<ConstString>()) {
     ConstString classname       = as_cstr.value();
@@ -399,7 +399,7 @@ void ManipManager::Setup(ork::lev2::IRenderer* prend) {
 
   if (0 == mpManipMaterial) {
     mpManipMaterial = new GfxMaterialManip(pTARG, *this);
-    mpManipMaterial->mRasterState.SetDepthTest(EDEPTHTEST_OFF);
+    mpManipMaterial->_rasterstate.SetDepthTest(EDEPTHTEST_OFF);
 
     if (mpTXManip == 0)
       mpTXManip = new ManipTX(*this);

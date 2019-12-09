@@ -86,8 +86,6 @@ struct CollisionLoadAllocator
 	}
 };
 
-typedef ork::chunkfile::Reader<CollisionLoadAllocator> CollisonReader;
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -815,7 +813,8 @@ Track::~Track()
 
 bool Track::Load(const ork::file::Path& path, const ork::fmtx4& transform)
 {
-	CollisonReader reader(path, "sec");
+    chunkfile::DefaultLoadAllocator allocator;
+	chunkfile::Reader reader(path, "sec",allocator);
 
 	if (!reader.IsOk())
 	{
@@ -1136,12 +1135,12 @@ bool Track::CrossedKill(unsigned int currSector, const ork::fvec3& oldpos, const
 void SectorRange::Describe()
 {
 	ork::reflect::RegisterProperty("Begin", &SectorRange::mBegin);
-	ork::reflect::AnnotatePropertyForEditor<SectorRange>("Begin", "editor.range.min", "0.0f");
-	ork::reflect::AnnotatePropertyForEditor<SectorRange>("Begin", "editor.range.max", "1.0f");
+	ork::reflect::annotatePropertyForEditor<SectorRange>("Begin", "editor.range.min", "0.0f");
+	ork::reflect::annotatePropertyForEditor<SectorRange>("Begin", "editor.range.max", "1.0f");
 
 	ork::reflect::RegisterProperty("End", &SectorRange::mEnd);
-	ork::reflect::AnnotatePropertyForEditor<SectorRange>("End", "editor.range.min", "0.0f");
-	ork::reflect::AnnotatePropertyForEditor<SectorRange>("End", "editor.range.max", "1.0f");
+	ork::reflect::annotatePropertyForEditor<SectorRange>("End", "editor.range.min", "0.0f");
+	ork::reflect::annotatePropertyForEditor<SectorRange>("End", "editor.range.max", "1.0f");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1149,19 +1148,19 @@ void SectorRange::Describe()
 void TrackData::Describe()
 {
 	ork::reflect::RegisterProperty("SecMesh", &TrackData::mSecMeshName);
-	ork::reflect::AnnotatePropertyForEditor<TrackData>("SecMesh", "editor.class", "ged.factory.filelist");
-	ork::reflect::AnnotatePropertyForEditor<TrackData>("SecMesh", "editor.filetype", "sec");
+	ork::reflect::annotatePropertyForEditor<TrackData>("SecMesh", "editor.class", "ged.factory.filelist");
+	ork::reflect::annotatePropertyForEditor<TrackData>("SecMesh", "editor.filetype", "sec");
 
 	ork::reflect::RegisterProperty("TrackScale", &TrackData::mTrackScale);
-	ork::reflect::AnnotatePropertyForEditor<TrackData>("TrackScale", "editor.range.min", "0.01f");
-	ork::reflect::AnnotatePropertyForEditor<TrackData>("TrackScale", "editor.range.max", "10.0f");
+	ork::reflect::annotatePropertyForEditor<TrackData>("TrackScale", "editor.range.min", "0.01f");
+	ork::reflect::annotatePropertyForEditor<TrackData>("TrackScale", "editor.range.max", "10.0f");
 
 	ork::reflect::RegisterProperty("IntroCameraAnimation", &TrackData::mIntroCameraAnimation);
-	ork::reflect::AnnotatePropertyForEditor<TrackData>("IntroCameraAnimation", "editor.assettype", "xganim");
-	ork::reflect::AnnotatePropertyForEditor<TrackData>("IntroCameraAnimation", "editor.assetclass", "xganim");
+	ork::reflect::annotatePropertyForEditor<TrackData>("IntroCameraAnimation", "editor.assettype", "xganim");
+	ork::reflect::annotatePropertyForEditor<TrackData>("IntroCameraAnimation", "editor.assetclass", "xganim");
 
 	ork::reflect::RegisterMapProperty("NoRespawnRanges", &TrackData::mNoRespawnRanges);
-	ork::reflect::AnnotatePropertyForEditor<TrackData>("NoRespawnRanges", "editor.factorylistbase", "SectorRange");
+	ork::reflect::annotatePropertyForEditor<TrackData>("NoRespawnRanges", "editor.factorylistbase", "SectorRange");
 }
 
 TrackData::TrackData()
@@ -1440,4 +1439,3 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::bullet::SectorTrackerInst, "SectorTracker
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::bullet::TrackData, "TrackData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::bullet::TrackInst, "TrackInst");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::bullet::TrackArchetype, "TrackArchetype");
-template class ork::chunkfile::Reader<ork::ent::bullet::CollisionLoadAllocator>;

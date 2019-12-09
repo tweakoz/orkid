@@ -127,19 +127,46 @@ struct FxShaderParamBufferMapping {
 #if defined(ENABLE_SHADER_STORAGE)
 
 struct FxShaderStorageBlock;
-struct FxShaderStorageBlockMapping;
+struct FxShaderStorageBufferMapping;
 
 struct FxShaderStorageBlock {
   std::string _name;
-  //FxShaderParam *param(const std::string &name) const;
-  FxShaderStorageBlockMapping *map() const;
+  svarp_t _impl;
 };
-struct FxShaderStorageBlockMapping {
-  ~FxShaderStorageBlockMapping();
-  FxShaderStorageBlock *_block = nullptr;
+struct FxShaderStorageBuffer {
+  size_t _length = 0;
+  svarp_t _impl;
+};
+struct FxShaderStorageBufferMapping {
+  FxShaderStorageBufferMapping();
+  ~FxShaderStorageBufferMapping();
   void unmap();
+  FxShaderStorageBuffer* _buffer = nullptr;
+  ComputeInterface* _ci = nullptr;
+  size_t _offset = 0;
+  size_t _length = 0;
+  svarp_t _impl;
+
+  template <typename T> T& ref(size_t offset) {
+    size_t end = offset + sizeof(T);
+    assert(end<=_length);
+    auto tstar = (T*) (((char*)_mappedaddr)+offset);
+    return *tstar;
+  }
+
+
+  void* _mappedaddr = nullptr;
 };
 
+#endif
+
+///////////////////////////////////////////////////////////////////////////////
+
+#if defined (ENABLE_COMPUTE_SHADERS)
+struct FxComputeShader {
+    svar64_t _impl;
+    std::string _name;
+};
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -150,10 +177,12 @@ struct FxShader {
   typedef orkmap<std::string, const FxShaderParam *> parambynamemap_t;
   typedef orkmap<std::string, const FxShaderParamBlock *> paramblockbynamemap_t;
   typedef orkmap<std::string, const FxShaderTechnique *> techniquebynamemap_t;
+  typedef orkmap<std::string, const FxComputeShader *> computebynamemap_t;
 
   techniquebynamemap_t _techniques;
   parambynamemap_t _parameterByName;
   paramblockbynamemap_t _parameterBlockByName;
+  computebynamemap_t _computeShaderByName;
 
   bool mAllowCompileFailure;
   bool mFailedCompile;
@@ -176,20 +205,25 @@ struct FxShader {
   void addTechnique(const FxShaderTechnique *tek);
   void addParameter(const FxShaderParam *param);
   void addParameterBlock(const FxShaderParamBlock *block);
+  void addComputeShader(const FxComputeShader *csh);
 
   const techniquebynamemap_t &techniques(void) const { return _techniques; }
   const parambynamemap_t &namedParams(void) const { return _parameterByName; }
   const paramblockbynamemap_t &namedParamBlocks(void) const {
     return _parameterBlockByName;
   }
-
-  // const orkmap<std::string,const FxShaderParam*>& 	GetParametersBySemantic(
-  // void ) const { return mParameterBySemantic; }
+  const computebynamemap_t &namedComputeShaders(void) const {
+    return _computeShaderByName;
+  }
 
   FxShaderParam *FindParamByName(const std::string &named);
   FxShaderParamBlock *FindParamBlockByName(const std::string &named);
   FxShaderTechnique *FindTechniqueByName(const std::string &named);
 
+  #if defined (ENABLE_COMPUTE_SHADERS)
+  FxComputeShader* findComputeShader(const std::string &named);
+  #endif
+  
   void SetAllowCompileFailure(bool bv) { mAllowCompileFailure = bv; }
   bool GetAllowCompileFailure() const { return mAllowCompileFailure; }
   void SetFailedCompile(bool bv) { mFailedCompile = bv; }

@@ -18,7 +18,7 @@ namespace ork { namespace ent { namespace event {
 void PlaySoundEvent::Describe()
 {
 	ork::reflect::RegisterProperty("SoundName", &PlaySoundEvent::mSoundName);
-	ork::reflect::AnnotatePropertyForEditor<PlaySoundEvent>( "SoundName",	"ged.userchoice.delegate", "AudioEventChoiceDelegate" );
+	ork::reflect::annotatePropertyForEditor<PlaySoundEvent>( "SoundName",	"ged.userchoice.delegate", "AudioEventChoiceDelegate" );
 
 }
 ///////////////////////////////////////////////////////////////////////////////

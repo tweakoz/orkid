@@ -124,7 +124,7 @@ void Grid3d::Render(RenderContextFrameData& FrameData) const {
   {
     static GfxMaterial3DSolid gridmat(pTARG);
     gridmat.SetColorMode(GfxMaterial3DSolid::EMODE_MOD_COLOR);
-    gridmat.mRasterState.SetBlending(EBLENDING_ADDITIVE);
+    gridmat._rasterstate.SetBlending(EBLENDING_ADDITIVE);
 
     pTARG->BindMaterial(&gridmat);
 
@@ -331,7 +331,7 @@ void Grid2d::Render(GfxTarget* pTARG, int iw, int ih) {
   {
     static GfxMaterial3DSolid gridmat(pTARG);
     gridmat.SetColorMode(GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
-    gridmat.mRasterState.SetBlending(EBLENDING_ADDITIVE);
+    gridmat._rasterstate.SetBlending(EBLENDING_ADDITIVE);
 
     pTARG->PushMaterial(&gridmat);
 

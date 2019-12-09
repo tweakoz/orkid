@@ -31,6 +31,8 @@
 #include <ork/kernel/concurrent_queue.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/texman.h>
+#include <ork/file/chunkfile.inl>
+#include <ork/kernel/datablock.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -207,6 +209,7 @@ public:
   void PushScissor(const SRect& rScissorRect) final;
   void DoBeginFrame(void) final;
   void DoEndFrame(void) final;
+  bool capture(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer) final;
   void Capture(const RtGroup& inpbuf, int irt, const file::Path& pth) final;
   bool CaptureToTexture(const CaptureBuffer& capbuf, Texture& tex) final { return false; }
   void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) final;
@@ -280,18 +283,20 @@ private:
 };
 
 struct GlTexLoadReq {
-  Texture* ptex;
-  dxt::DDS_HEADER* ddsh;
-  GLTextureObject* pTEXOBJ;
-  File* pTEXFILE;
+  Texture* ptex = nullptr;
+  const dxt::DDS_HEADER* _ddsheader = nullptr;
+  GLTextureObject* pTEXOBJ = nullptr;
+  std::string _texname;
+  DataBlockInputStream _inpstream;
 };
 
 class GlTextureInterface : public TextureInterface {
 public:
   void TexManInit(void) override;
 
-  void LoadDDSTextureMainThreadPart(const GlTexLoadReq& req);
+  void LoadDDSTextureMainThreadPart(GlTexLoadReq req);
   bool LoadDDSTexture(const AssetPath& fname, Texture* ptex);
+  bool LoadDDSTexture(Texture* ptex, datablockptr_t inpdata);
   bool LoadVDSTexture(const AssetPath& fname, Texture* ptex);
   bool LoadQTZTexture(const AssetPath& fname, Texture* ptex);
 
@@ -300,6 +305,7 @@ public:
   GlTextureInterface(GfxTargetGL& tgt);
 
 private:
+  bool LoadTexture(Texture* ptex, datablockptr_t inpdata) final;
   bool DestroyTexture(Texture* ptex) final;
   bool LoadTexture(const AssetPath& fname, Texture* ptex) final;
   void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final;
@@ -347,7 +353,10 @@ public:
   GeometryBufferInterface* GBI() final { return &mGbI; }
   FrameBufferInterface* FBI() final { return &mFbI; }
   TextureInterface* TXI() final { return &mTxI; }
-
+#if defined(ENABLE_COMPUTE_SHADERS)
+  ComputeInterface* CI() final { return &mCI; };
+#endif
+  
   ///////////////////////////////////////////////////////////////////////
 
   ~GfxTargetGL();
@@ -413,6 +422,11 @@ public:
   GlGeometryBufferInterface mGbI;
   GlFrameBufferInterface mFbI;
   GlTextureInterface mTxI;
+  
+#if defined(ENABLE_COMPUTE_SHADERS)
+  glslfx::ComputeInterface mCI;
+#endif
+  
   bool mTargetDrawableSizeDirty;
 };
 

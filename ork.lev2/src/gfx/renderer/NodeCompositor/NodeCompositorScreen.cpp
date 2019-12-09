@@ -53,6 +53,10 @@ struct SCRIMPL {
     GfxTarget* targ              = drawdata.target();
     int w = targ->GetW();
     int h = targ->GetH();
+    if( targ->_hiDPI ){
+      w /= 2;
+      h /= 2;
+    }
     //////////////////////////////////////////////////////
  SRect tgt_rect(0, 0, w, h);
 
@@ -126,7 +130,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata)
         mtl.SetTexture(tex);
         mtl.SetTexture2(nullptr);
         mtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
-        mtl.mRasterState.SetBlending(EBLENDING_OFF);
+        mtl._rasterstate.SetBlending(EBLENDING_OFF);
         this_buf->RenderMatOrthoQuad(vprect,
                                      quadrect,
                                      &mtl,

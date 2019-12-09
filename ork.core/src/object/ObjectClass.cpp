@@ -35,15 +35,22 @@ void ObjectClass::Describe()
 
 ObjectClass::ObjectClass(const rtti::RTTIData &data)
 	: rtti::Class(data)
-	, mDescription()
+	, _description()
 {
+}
+
+void ObjectClass::annotate( const ConstString &key, const anno_t& val ) {
+  _description.annotateClass(key,val);
+}
+const ObjectClass::anno_t& ObjectClass::annotation( const ConstString &key ) {
+  return _description.classAnnotation(key);
 }
 
 void ObjectClass::Initialize() {
   Class::Initialize();
-  mDescription.SetParentDescription(ParentClassDescription(Parent()));
+  _description.SetParentDescription(ParentClassDescription(Parent()));
 
-  reflect::Description::PropertyMapType& propmap = mDescription.Properties();
+  reflect::Description::PropertyMapType& propmap = _description.Properties();
 
   for (reflect::Description::PropertyMapType::iterator it = propmap.begin(); it != propmap.end(); it++) {
     ConstString name               = it->first;
@@ -57,12 +64,12 @@ void ObjectClass::Initialize() {
 
 reflect::Description &ObjectClass::Description()
 {
-	return mDescription;
+	return _description;
 }
 
 const reflect::Description &ObjectClass::Description() const
 {
-	return mDescription;
+	return _description;
 }
 
 } }

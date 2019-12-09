@@ -77,49 +77,6 @@ void AudioBank::Describe()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-struct AudioBankAllocator
-{	//////////////////////////////
-	// per chunk allocation policy
-	//////////////////////////////
-	void* alloc( const char* pchkname, int ilen )
-	{	void* pmem = 0;
-		if( 0 == strcmp( pchkname, "header" ) )
-		{
-			pmem = new char[ilen];
-		}
-		else if( 0 == strcmp( pchkname, "progdata" ) )
-		{
-			pmem = new char[ilen];
-		}
-		else if( 0 == strcmp( pchkname, "wavedata" ) )
-		{
-#if defined(WII)
-		pmem = wii::LockSharedMem2Buf(ilen);
-#else
-		pmem = new char[ilen];
-#endif
-		}
-		return pmem;
-	}
-	//////////////////////////////
-	// per chunk deallocation policy
-	//////////////////////////////
-	void done( const char* pchkname, void* pdata )
-	{
-		if( 0 == strcmp( pchkname, "header" ) ) {}			// audio banks keep this resident
-		else if( 0 == strcmp( pchkname, "progdata" ) ) {}	// audio banks keep this resident
-		else if( 0 == strcmp( pchkname, "wavedata" ) )
-		{
-#if defined(WII)
-			wii::UnLockSharedMem2Buf();
-#endif
-		}	// audio banks keep this resident
-	}
-};
-
-
-
-///////////////////////////////////////////////////////////////////////////////
 bool AudioDevice::LoadSoundBank( AudioBank* ppxvbank, ConstString fname )
 {	bool rval = false;
 	bool busevagd = false;
@@ -127,7 +84,8 @@ bool AudioDevice::LoadSoundBank( AudioBank* ppxvbank, ConstString fname )
 	AssetPath filename = ppxvbank->GetName().c_str();
 	filename.SetExtension( "xab" );
 	/////////////////////////////////////////////////////////////
-	chunkfile::Reader<AudioBankAllocator> chunkreader( filename, "xab" );
+    chunkfile::DefaultLoadAllocator allocator;
+	chunkfile::Reader chunkreader( filename, "xab", allocator );
 	/////////////////////////////////////////////////////////////
 	if( chunkreader.IsOk() )
 	{	
@@ -592,5 +550,3 @@ void AudioInstrumentZone::EndianSwap()
 ///////////////////////////////////////////////////////////////////////////////
 }}
 ///////////////////////////////////////////////////////////////////////////////
-
-template class ork::chunkfile::Reader<ork::lev2::AudioBankAllocator>;

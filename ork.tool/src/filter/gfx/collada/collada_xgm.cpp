@@ -16,15 +16,11 @@
 
 #include <orktool/filter/gfx/collada/collada.h>
 #include <ork/lev2/lev2_asset.h>
-#include "../meshutil/meshutil_stripper.h"
-
-INSTANTIATE_TRANSPARENT_RTTI(ork::tool::XgmClusterBuilder, "XgmClusterBuilder");
-INSTANTIATE_TRANSPARENT_RTTI(ork::tool::XgmSkinnedClusterBuilder, "XgmSkinnedClusterBuilder");
-INSTANTIATE_TRANSPARENT_RTTI(ork::tool::XgmRigidClusterBuilder, "XgmRigidClusterBuilder");
+#include <orktool/filter/gfx/meshutil/clusterizer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace ork { namespace tool {
+namespace ork::tool {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -117,7 +113,7 @@ struct TexSetter
 {
 	orkmap<file::Path, ork::lev2::TextureAsset* > mTextureMap;
 
-	ork::lev2::TextureAsset* get( const SColladaMaterialChannel & MatChanIn, const std::string & model_directory, std::string &ActualFileName )
+	ork::lev2::TextureAsset* get( const ColladaMaterialChannel & MatChanIn, const std::string & model_directory, std::string &ActualFileName )
 	{
 		ork::lev2::TextureAsset* htexture = 0;
 
@@ -201,12 +197,12 @@ struct TexSetter
 
 static TexSetter gtex_setter;
 
-void ConfigureFxMaterial( CColladaModel *ColModel, SColladaMatGroup *ColMatGroup, lev2::XgmSubMesh & XgmClusSet )
+void ConfigureFxMaterial( CColladaModel *ColModel, MeshUtil::ToolMaterialGroup *ColMatGroup, lev2::XgmSubMesh & XgmClusSet )
 {
 	const bool bskinned = ColMatGroup->mMeshConfigurationFlags.mbSkinned;
 
 	const std::string & ShadingGroupName = ColMatGroup->mShadingGroupName;
-	const SColladaMaterial &ColladaMaterial = ColModel->GetMaterialFromShadingGroup( ShadingGroupName );
+	const ColladaMaterial &ColladaMaterial = ColModel->GetMaterialFromShadingGroup( ShadingGroupName );
 
 	// TODO: The dependency on the "data://" URL prefix should be removed so any URL can work.
 	const file::Path::NameType mdlname = FileEnv::filespec_strip_base(ColModel->mFileName.c_str(), "data://");
@@ -214,7 +210,7 @@ void ConfigureFxMaterial( CColladaModel *ColModel, SColladaMatGroup *ColMatGroup
 
 	///////////////////////////////////////////////
 
-	ork::lev2::GfxMaterial* pmat = ColMatGroup->mpOrkMaterial;
+	ork::lev2::GfxMaterial* pmat = ColMatGroup->_orkMaterial;
 
 	ork::lev2::GfxMaterialFx* pmatfx = rtti::autocast( pmat );
 
@@ -234,7 +230,7 @@ void ConfigureFxMaterial( CColladaModel *ColModel, SColladaMatGroup *ColMatGroup
 
 			const std::string initstr = paramf->GetInitString();
 
-			SColladaMaterialChannel matchan;
+			ColladaMaterialChannel matchan;
 			matchan.mTextureName = initstr;
 			matchan.mRepeatU = 1.0f;
 			matchan.mRepeatV = 1.0f;
@@ -256,23 +252,23 @@ void ConfigureFxMaterial( CColladaModel *ColModel, SColladaMatGroup *ColMatGroup
 
 	///////////////////////////////////////////////
 
-	OrkAssert( ColMatGroup->mpOrkMaterial != 0 );
+	OrkAssert( ColMatGroup->_orkMaterial != 0 );
 
 	///////////////////////////////////////////////
 
-	XgmClusSet.mpMaterial = ColMatGroup->mpOrkMaterial;
+	XgmClusSet.mpMaterial = ColMatGroup->_orkMaterial;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ConfigureStdMaterial( CColladaModel *ColModel, SColladaMatGroup *ColMatGroup, lev2::XgmSubMesh & XgmClusSet )
+void ConfigureStdMaterial( CColladaModel *ColModel, MeshUtil::ToolMaterialGroup *ColMatGroup, lev2::XgmSubMesh & XgmClusSet )
 {
 	const ColladaExportPolicy* policy = ColladaExportPolicy::GetContext();
 
 	const bool bskinned = ColMatGroup->mMeshConfigurationFlags.mbSkinned;
 
 	const std::string & ShadingGroupName = ColMatGroup->mShadingGroupName;
-	const SColladaMaterial &ColladaMaterial = ColModel->GetMaterialFromShadingGroup( ShadingGroupName );
+	const ColladaMaterial &ColladaMaterial = ColModel->GetMaterialFromShadingGroup( ShadingGroupName );
 	const std::string& MaterialName = ColladaMaterial.mMaterialName;
 
 	const file::Path mdlname = FileEnv::GetPathFromUrlExt(ColModel->mFileName.c_str());
@@ -327,17 +323,17 @@ void ConfigureStdMaterial( CColladaModel *ColModel, SColladaMatGroup *ColMatGrou
 
 	switch( ColladaMaterial.mLightingType )
 	{
-		case SColladaMaterial::ELIGHTING_LAMBERT:
+		case ColladaMaterial::ELIGHTING_LAMBERT:
 			stdtechname +=		bNormalMapPresent
 							? 	"/lambert/tex/bump"
 							:	bDiffuseMapPresent
 								?	"/lambert/tex"
 								:	"/modvtx";
 			break;
-		case SColladaMaterial::ELIGHTING_BLINN:
+		case ColladaMaterial::ELIGHTING_BLINN:
 			stdtechname += bNormalMapPresent ? "/blinn/tex/bump" : "/lambert/tex";
 			break;
-		case SColladaMaterial::ELIGHTING_PHONG:
+		case ColladaMaterial::ELIGHTING_PHONG:
 			stdtechname += bNormalMapPresent ? "/phong/tex/bump" : "/lambert/tex";
 			break;
 		default:
@@ -384,7 +380,7 @@ void ConfigureStdMaterial( CColladaModel *ColModel, SColladaMatGroup *ColMatGrou
 
 	if( transmode == FCDEffectStandard::A_ONE )
 	{
-		MatVct->mRasterState.SetBlending( ork::lev2::EBLENDING_ALPHA );
+		MatVct->_rasterstate.SetBlending( ork::lev2::EBLENDING_ALPHA );
 	}
 }
 
@@ -394,11 +390,11 @@ void CColladaModel::BuildXgmTriStripMesh( lev2::XgmMesh& XgmMesh, SColladaMesh* 
 {
 	int inummatgroups = ColMesh->RefMatGroups().size();
 
-	orkvector<SColladaMatGroup*> clustersets;
+	orkvector<MeshUtil::ToolMaterialGroup*> clustersets;
 
 	for( int imat=0; imat<inummatgroups; imat++ )
 	{
-		SColladaMatGroup *ColMatGroup = ColMesh->RefMatGroups()[ imat ];
+		MeshUtil::ToolMaterialGroup *ColMatGroup = ColMesh->RefMatGroups()[ imat ];
 		clustersets.push_back( ColMatGroup );
 	}
 
@@ -413,17 +409,17 @@ void CColladaModel::BuildXgmTriStripMesh( lev2::XgmMesh& XgmMesh, SColladaMesh* 
 		lev2::XgmSubMesh & XgmClusSet = * new lev2::XgmSubMesh;
 		XgmMesh.AddSubMesh( & XgmClusSet );
 
-		SColladaMatGroup *ColMatGroup = clustersets[ imat ];
+		MeshUtil::ToolMaterialGroup *ColMatGroup = clustersets[ imat ];
 
 		XgmClusSet.mLightMapPath = ColMatGroup->mLightMapPath;
 		XgmClusSet.mbVertexLit = ColMatGroup->mbVertexLit;
 		///////////////////////////////////////////////
 
-		if( ColMatGroup->meMaterialClass == SColladaMatGroup::EMATCLASS_FX )
+		if( ColMatGroup->meMaterialClass == MeshUtil::ToolMaterialGroup::EMATCLASS_FX )
 		{
 			ConfigureFxMaterial( this, ColMatGroup, XgmClusSet );
 		}
-		else if( ColMatGroup->meMaterialClass == SColladaMatGroup::EMATCLASS_STANDARD )
+		else if( ColMatGroup->meMaterialClass == MeshUtil::ToolMaterialGroup::EMATCLASS_STANDARD )
 		{
 			ConfigureStdMaterial( this, ColMatGroup, XgmClusSet );
 		}
@@ -446,12 +442,13 @@ void CColladaModel::BuildXgmTriStripMesh( lev2::XgmMesh& XgmMesh, SColladaMesh* 
 
 		for( int ic=0; ic<inumclus; ic++ )
 		{
-			XgmClusterBuilder *XgmClusBuilder = ColMatGroup->GetClusterizer()->GetCluster( ic );
+			MeshUtil::XgmClusterBuilder *clusterbuilder = ColMatGroup->GetClusterizer()->GetCluster( ic );
 
-			XgmClusBuilder->BuildVertexBuffer( *ColMatGroup );
+			auto format = ColMatGroup->GetVtxStreamFormat();
+			clusterbuilder->buildVertexBuffer( format );
 
 			lev2::XgmCluster & XgmClus = XgmClusSet.mpClusters[ ic ];
-			ColMatGroup->BuildTriStripXgmCluster( XgmClus, XgmClusBuilder );
+			buildTriStripXgmCluster( XgmClus, clusterbuilder );
 
 			int inumclusjoints = XgmClus.mJoints.size();
 			for( int ib=0; ib<inumclusjoints; ib++ )
@@ -507,609 +504,9 @@ bool CColladaModel::BuildXgmTriStripModel( void )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void SColladaMatGroup::ComputeVtxStreamFormat()
-{
-	ork::lev2::GfxMaterialFx* MatFx = 0;
 
-	if( mpOrkMaterial )
-	{
-		MatFx = rtti::downcast<ork::lev2::GfxMaterialFx*>( mpOrkMaterial );
-	}
-
-	meVtxFormat = lev2::EVTXSTREAMFMT_END;
-
-	const orkvector<ork::lev2::VertexConfig>& VertexConfigDataAvl = mAvailVertexConfigData;
-	int inumvtxcfgavailable = VertexConfigDataAvl.size();
-
-	const ColladaAvailVertexFormats::FormatMap& TargetFormatsAvailable = ColladaExportPolicy::GetContext()->mAvailableVertexFormats.GetFormats();
-
-	//////////////////////////////////////////
-	// get vertex configuration data
-	//////////////////////////////////////////
-
-	int imin_jnt = mMeshConfigurationFlags.mbSkinned ? 1 : 0;
-	int	imin_clr = 0;
-	int	imin_tex = 0;
-	int	imin_nrm = 0;
-	int	imin_bin = 0;
-	int	imin_tan = 0;
-
-	if( MatFx ) // fx material
-	{	const orkvector<ork::lev2::VertexConfig>& VertexConfigDataMtl = MatFx->RefVertexConfig();
-		int inumvtxcfgmaterial = VertexConfigDataMtl.size();
-		for( int iv=0; iv<inumvtxcfgmaterial; iv++ )
-		{	const ork::lev2::VertexConfig& vcfg = VertexConfigDataMtl[iv];
-			if( vcfg.Semantic.find("COLOR") != std::string::npos ) imin_clr++;
-			if( vcfg.Semantic.find("TEXCOORD") != std::string::npos ) imin_tex++;
-			if( vcfg.Semantic.find("BINORMAL") != std::string::npos ) imin_bin++;
-			if( vcfg.Semantic.find("TANGENT") != std::string::npos ) imin_tan++;
-			if( vcfg.Semantic == "NORMAL") imin_nrm++;
-		}
-	}
-	else // basic materials
-	{
-		imin_clr = mMeshConfigurationFlags.mbSkinned ? 0 : 1;
-		imin_tex = 1;
-		imin_nrm = 1;
-	}
-
-	if( mLightMapPath.length() )
-	{
-		imin_tex++;
-		//orkprintf( "lightmap<%s> found\n", LightMapPath.c_str() );
-	}
-	//////////////////////////////////////////
-	// find lowest cost match
-	//////////////////////////////////////////
-
-	static const int kbad_score = 0x10000;
-	int inv_score = kbad_score;
-
-	for( ColladaAvailVertexFormats::FormatMap::const_iterator itf=TargetFormatsAvailable.begin(); itf!=TargetFormatsAvailable.end(); itf++ )
-	{
-		const ColladaVertexFormat& format = itf->second;
-
-		bool bok_jnt = mMeshConfigurationFlags.mbSkinned ? (format.miNumJoints >= imin_jnt) : (format.miNumJoints==0);
-		bool bok_clr = (format.miNumColors >= imin_clr);
-		bool bok_tex = (format.miNumUvs >= imin_tex);
-		bool bok_nrm = (imin_nrm==1) ? format.mbNormals : true;
-		bool bok_bin = (format.miNumBinormals >= imin_bin);
-
-		bool bok = (bok_jnt&bok_clr&bok_tex&bok_nrm&bok_bin);
-
-		/////////////////////////////////
-
-		int iscore = bok	?	// build weighted score (lower score is better)
-								format.miVertexSize
-							:	kbad_score;
-
-		/////////////////////////////////
-
-		if( iscore<inv_score )
-		{
-			meVtxFormat = format.meVertexStreamFormat;
-			inv_score = iscore;
-		}
-	}
-
-	//////////////////////////////////////////
-
-
-}
+} // namespace ork::tool
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 
-void XgmClusterBuilder::Describe( )
-{
-}
-void XgmSkinnedClusterBuilder::Describe( )
-{
-}
-void XgmRigidClusterBuilder::Describe( )
-{
-}
-
-void XgmSkinnedClusterBuilder::BuildVertexBuffer( const SColladaMatGroup& matgroup )
-{
-	switch( matgroup.GetVtxStreamFormat() )
-	{
-		case lev2::EVTXSTREAMFMT_V12N12T8I4W4: // PC skinned format
-		{	BuildVertexBuffer_V12N12T8I4W4();
-			break;
-		}
-		case lev2::EVTXSTREAMFMT_V12N12B12T8I4W4: // PC binormal skinned format
-		{	BuildVertexBuffer_V12N12B12T8I4W4();
-			break;
-		}
-		case lev2::EVTXSTREAMFMT_V12N6I1T4: // WII skinned format
-		{	BuildVertexBuffer_V12N6I1T4();
-			break;
-		}
-		default:
-		{
-			orkerrorlog("ERROR: Unknown or unsupported vertex stream format (%s : %s)\n"
-				, matgroup.mShadingGroupName.c_str()
-				, matgroup.mpOrkMaterial ? matgroup.mpOrkMaterial->GetName().c_str() : "null");
-			break;
-		}
-	}
-}
-
-void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4() // binormal pc skinned
-{
-	lev2::GfxTargetDummy DummyTarget;
-	const float kVertexScale(1.0f);
-	const fvec2 UVScale( 1.0f,1.0f );
-	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
-	mpVertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12B12T8I4W4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
-	lev2::VtxWriter<ork::lev2::SVtxV12N12B12T8I4W4> vwriter;
-	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices );
-
-	for( int iv=0; iv<NumVertexIndices; iv++ )
-	{	ork::lev2::SVtxV12N12B12T8I4W4 OutVtx;
-		const MeshUtil::vertex & InVtx = mSubMesh.RefVertexPool().GetVertex(iv);
-		OutVtx.mPosition = InVtx.mPos*kVertexScale;
-		OutVtx.mUV0 = InVtx.mUV[0].mMapTexCoord * UVScale;
-		OutVtx.mNormal = InVtx.mNrm;
-		OutVtx.mBiNormal = InVtx.mUV[0].mMapBiNormal;
-
-		const std::string& jn0 = InVtx.mJointNames[0];
-		const std::string& jn1 = InVtx.mJointNames[1];
-		const std::string& jn2 = InVtx.mJointNames[2];
-		const std::string& jn3 = InVtx.mJointNames[3];
-
-		int index0 = FindNewBoneIndex( jn0 );
-		int index1 = FindNewBoneIndex( jn1 );
-		int index2 = FindNewBoneIndex( jn2 );
-		int index3 = FindNewBoneIndex( jn3 );
-
-		index0 = (index0==-1) ? 0 : index0;
-		index1 = (index1==-1) ? 0 : index1;
-		index2 = (index2==-1) ? 0 : index2;
-		index3 = (index3==-1) ? 0 : index3;
-
-		OutVtx.mBoneIndices = (index0) | (index1<<8) | (index2<<16) | (index3<<24);
-
-		fvec4 vw;
-		vw.SetX(InVtx.mJointWeights[3]);
-		vw.SetY(InVtx.mJointWeights[2]);
-		vw.SetZ(InVtx.mJointWeights[1]);
-		vw.SetW(InVtx.mJointWeights[0]);
-
-		OutVtx.mBoneWeights = vw.GetRGBAU32();
-
-		vwriter.AddVertex( OutVtx );
-
-	}
-	vwriter.UnLock(&DummyTarget);
-	mpVertexBuffer->SetNumVertices( NumVertexIndices );
-}
-
-void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4() // basic pc skinned
-{
-	const float kVertexScale(1.0f);
-	const fvec2 UVScale( 1.0f,1.0f );
-	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
-
-	lev2::GfxTargetDummy DummyTarget;
-	lev2::VtxWriter<ork::lev2::SVtxV12N12T8I4W4> vwriter;
-	mpVertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12T8I4W4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
-	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices );
-	for( int iv=0; iv<NumVertexIndices; iv++ )
-	{
-		ork::lev2::SVtxV12N12T8I4W4 OutVtx;
-		const MeshUtil::vertex & InVtx = mSubMesh.RefVertexPool().GetVertex(iv);
-		OutVtx.mPosition = InVtx.mPos*kVertexScale;
-		OutVtx.mUV0 = InVtx.mUV[0].mMapTexCoord * UVScale;
-		OutVtx.mNormal = InVtx.mNrm;
-
-		const std::string& jn0 = InVtx.mJointNames[0];
-		const std::string& jn1 = InVtx.mJointNames[1];
-		const std::string& jn2 = InVtx.mJointNames[2];
-		const std::string& jn3 = InVtx.mJointNames[3];
-
-		int index0 = FindNewBoneIndex( jn0 );
-		int index1 = FindNewBoneIndex( jn1 );
-		int index2 = FindNewBoneIndex( jn2 );
-		int index3 = FindNewBoneIndex( jn3 );
-
-		index0 = (index0==-1) ? 0 : index0;
-		index1 = (index1==-1) ? 0 : index1;
-		index2 = (index2==-1) ? 0 : index2;
-		index3 = (index3==-1) ? 0 : index3;
-
-		OutVtx.mBoneIndices = (index0) | (index1<<8) | (index2<<16) | (index3<<24);
-
-		fvec4 vw;
-		vw.SetX(InVtx.mJointWeights[3]);
-		vw.SetY(InVtx.mJointWeights[2]);
-		vw.SetZ(InVtx.mJointWeights[1]);
-		vw.SetW(InVtx.mJointWeights[0]);
-
-		OutVtx.mBoneWeights = vw.GetRGBAU32();
-		vwriter.AddVertex(OutVtx);
-	}
-	vwriter.UnLock(&DummyTarget);
-	mpVertexBuffer->SetNumVertices( NumVertexIndices );
-}
-
-void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N6I1T4() // basic wii skinned
-{
-	const float kVertexScale(1.0f);
-	const fvec2 UVScale( 1.0f,1.0f );
-	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
-	lev2::GfxTargetDummy DummyTarget;
-	lev2::VtxWriter<ork::lev2::SVtxV12N6I1T4> vwriter;
-	mpVertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N6I1T4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
-	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices );
-	for( int iv=0; iv<NumVertexIndices; iv++ )
-	{	ork::lev2::SVtxV12N6I1T4 OutVtx;
-		const MeshUtil::vertex & InVtx = mSubMesh.RefVertexPool().GetVertex(iv);
-
-		OutVtx.mX = InVtx.mPos.GetX()*kVertexScale;
-		OutVtx.mY = InVtx.mPos.GetY()*kVertexScale;
-		OutVtx.mZ = InVtx.mPos.GetZ()*kVertexScale;
-
-		OutVtx.mNX = s16( InVtx.mNrm.GetX() * float(32767.0f) );
-		OutVtx.mNY = s16( InVtx.mNrm.GetY() * float(32767.0f) );
-		OutVtx.mNZ = s16( InVtx.mNrm.GetZ() * float(32767.0f) );
-
-		OutVtx.mU = s16( InVtx.mUV[0].mMapTexCoord.GetX() * float(1024.0f) );
-		OutVtx.mV = s16( InVtx.mUV[0].mMapTexCoord.GetY() * float(1024.0f) );
-
-		///////////////////////////////////////
-
-		const std::string& jn0 = InVtx.mJointNames[0];
-		const std::string& jn1 = InVtx.mJointNames[1];
-		const std::string& jn2 = InVtx.mJointNames[2];
-		const std::string& jn3 = InVtx.mJointNames[3];
-
-		int index0 = FindNewBoneIndex( jn0 );
-		int index1 = FindNewBoneIndex( jn1 );
-		int index2 = FindNewBoneIndex( jn2 );
-		int index3 = FindNewBoneIndex( jn3 );
-
-		index0 = (index0==-1) ? 0 : index0;
-		index1 = (index1==-1) ? 0 : index1;
-		index2 = (index2==-1) ? 0 : index2;
-		index3 = (index3==-1) ? 0 : index3;
-
-		orkset<int> BoneSet;
-		BoneSet.insert(index0);
-		BoneSet.insert(index1);
-		BoneSet.insert(index2);
-		BoneSet.insert(index3);
-
-		OrkAssertI(BoneSet.size()==1, "Sorry, wii does not support hardware weighting!!!" );
-		OrkAssertI(index0<8, "Sorry, wii only has 8 matrix registers!!!" );
-
-		OutVtx.mBone = u8(index0);
-		vwriter.AddVertex(OutVtx);
-	}
-	vwriter.UnLock(&DummyTarget);
-	mpVertexBuffer->SetNumVertices( NumVertexIndices );
-}
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-void XgmRigidClusterBuilder::BuildVertexBuffer( const SColladaMatGroup& matgroup )
-{
-	switch( matgroup.GetVtxStreamFormat() )
-	{
-		case lev2::EVTXSTREAMFMT_V12N6C2T4: // basic wii environmen
-		{	BuildVertexBuffer_V12N6C2T4();
-			break;
-		}
-		case lev2::EVTXSTREAMFMT_V12N12B12T8C4: // basic pc environment
-		{	BuildVertexBuffer_V12N12B12T8C4();
-			break;
-		}
-		case lev2::EVTXSTREAMFMT_V12N12B12T16: // basic pc environment
-		{	BuildVertexBuffer_V12N12B12T16();
-			break;
-		}
-		case lev2::EVTXSTREAMFMT_V12N12T16C4: // basic pc environment
-		{	BuildVertexBuffer_V12N12T16C4();
-			break;
-		}
-		default:
-		{	OrkAssert(false);
-			break;
-		}
-	}
-}
-
-void XgmRigidClusterBuilder::BuildVertexBuffer_V12N6C2T4() // basic wii environment
-{
-	const float kVertexScale(1.0f);
-	const fvec2 UVScale( 1.0f,1.0f );
-	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
-	lev2::GfxTargetDummy DummyTarget;
-	lev2::VtxWriter<ork::lev2::SVtxV12N6C2T4> vwriter;
-	mpVertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N6C2T4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
-	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices );
-	for( int iv=0; iv<NumVertexIndices; iv++ )
-	{	ork::lev2::SVtxV12N6C2T4 OutVtx;
-		const MeshUtil::vertex & InVtx = mSubMesh.RefVertexPool().GetVertex(iv);
-
-		OutVtx.mX = InVtx.mPos.GetX()*kVertexScale;
-		OutVtx.mY = InVtx.mPos.GetY()*kVertexScale;
-		OutVtx.mZ = InVtx.mPos.GetZ()*kVertexScale;
-
-		OutVtx.mNX = s16( InVtx.mNrm.GetX() * float(32767.0f) );
-		OutVtx.mNY = s16( InVtx.mNrm.GetY() * float(32767.0f) );
-		OutVtx.mNZ = s16( InVtx.mNrm.GetZ() * float(32767.0f) );
-
-		OutVtx.mU = s16( InVtx.mUV[0].mMapTexCoord.GetX() * float(1024.0f) );
-		OutVtx.mV = s16( InVtx.mUV[0].mMapTexCoord.GetY() * float(1024.0f) );
-
-		int ir = int(InVtx.mCol[0].GetY()*255.0f);
-		int ig = int(InVtx.mCol[0].GetZ()*255.0f);
-		int ib = int(InVtx.mCol[0].GetW()*255.0f);
-
-		OutVtx.mColor = U16(((ir>>3)<<11)|((ig>>2)<<5)|((ib>>3)<<0));
-		vwriter.AddVertex(OutVtx);
-	}
-	vwriter.UnLock(&DummyTarget);
-	mpVertexBuffer->SetNumVertices( NumVertexIndices );
-}
-
-void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12B12T8C4() // basic pc environment
-{
-	const float kVertexScale(1.0f);
-	const fvec2 UVScale( 1.0f,1.0f );
-	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
-	lev2::GfxTargetDummy DummyTarget;
-	lev2::VtxWriter<ork::lev2::SVtxV12N12B12T8C4> vwriter;
-	mpVertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12B12T8C4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
-	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices );
-	for( int iv=0; iv<NumVertexIndices; iv++ )
-	{	ork::lev2::SVtxV12N12B12T8C4 OutVtx;
-		const MeshUtil::vertex & InVtx = mSubMesh.RefVertexPool().GetVertex(iv);
-		OutVtx.mPosition = InVtx.mPos*kVertexScale;
-		OutVtx.mUV0 = InVtx.mUV[0].mMapTexCoord * UVScale;
-		OutVtx.mNormal = InVtx.mNrm;
-		OutVtx.mBiNormal = InVtx.mUV[0].mMapBiNormal;
-		OutVtx.mColor = InVtx.mCol[0].GetRGBAU32();
-		vwriter.AddVertex(OutVtx);
-	}
-	vwriter.UnLock(&DummyTarget);
-	mpVertexBuffer->SetNumVertices( NumVertexIndices );
-}
-void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12T16C4() // basic pc environment
-{
-	const float kVertexScale(1.0f);
-	const fvec2 UVScale( 1.0f,1.0f );
-	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
-	lev2::GfxTargetDummy DummyTarget;
-	lev2::VtxWriter<ork::lev2::SVtxV12N12T16C4> vwriter;
-	mpVertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12T16C4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
-	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices );
-	for( int iv=0; iv<NumVertexIndices; iv++ )
-	{	ork::lev2::SVtxV12N12T16C4 OutVtx;
-		const MeshUtil::vertex & InVtx = mSubMesh.RefVertexPool().GetVertex(iv);
-		OutVtx.mPosition = InVtx.mPos*kVertexScale;
-		OutVtx.mUV0 = InVtx.mUV[0].mMapTexCoord * UVScale;
-		OutVtx.mUV1 = InVtx.mUV[1].mMapTexCoord * UVScale;
-		OutVtx.mNormal = InVtx.mNrm;
-		OutVtx.mColor = InVtx.mCol[0].GetRGBAU32();
-		vwriter.AddVertex(OutVtx);
-	}
-	vwriter.UnLock(&DummyTarget);
-	mpVertexBuffer->SetNumVertices( NumVertexIndices );
-}
-
-void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12B12T16() // basic pc environment
-{
-	const float kVertexScale(1.0f);
-	const fvec2 UVScale( 1.0f,1.0f );
-	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
-	lev2::GfxTargetDummy DummyTarget;
-	lev2::VtxWriter<ork::lev2::SVtxV12N12B12T16> vwriter;
-	mpVertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12B12T16>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
-	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices );
-	for( int iv=0; iv<NumVertexIndices; iv++ )
-	{	ork::lev2::SVtxV12N12B12T16 OutVtx;
-		const MeshUtil::vertex & InVtx = mSubMesh.RefVertexPool().GetVertex(iv);
-		OutVtx.mPosition = InVtx.mPos*kVertexScale;
-		OutVtx.mUV0 = InVtx.mUV[0].mMapTexCoord * UVScale;
-		OutVtx.mUV1 = InVtx.mUV[1].mMapTexCoord * UVScale;
-		OutVtx.mNormal = InVtx.mNrm;
-		OutVtx.mBiNormal = InVtx.mUV[0].mMapBiNormal;
-		//OutVtx.mColor = InVtx.mCol[0].GetRGBAU32();
-		vwriter.AddVertex(OutVtx);
-	}
-	vwriter.UnLock(&DummyTarget);
-	mpVertexBuffer->SetNumVertices( NumVertexIndices );
-}
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-static void BuildXgmClusterPrimGroups( lev2::XgmCluster & XgmCluster, const std::vector<unsigned int> & TriangleIndices )
-{
-	lev2::GfxTargetDummy DummyTarget;
-
-	const int imaxvtx = XgmCluster.mpVertexBuffer->GetNumVertices();
-
-	const ColladaExportPolicy* policy = ColladaExportPolicy::GetContext();
-	// TODO: Is this correct? Why?
-	static const int WII_PRIM_GROUP_MAX_INDICES = 0xFFFF;
-
-	////////////////////////////////////////////////////////////
-	// Build TriStrips
-
-	MeshUtil::TriStripper MyStripper( TriangleIndices, 16, 4 );
-
-	bool bhastris = (MyStripper.GetTriIndices().size()>0);
-
-	int inumstripgroups = MyStripper.GetStripGroups().size();
-
-	bool bhasstrips = (inumstripgroups>0);
-
-	int inumpg = inumstripgroups + int(bhastris);
-
-	////////////////////////////////////////////////////////////
-	// Create PrimGroups
-
-	XgmCluster.mpPrimGroups = new ork::lev2::XgmPrimGroup[ inumpg ];
-	XgmCluster.miNumPrimGroups = inumpg;
-
-	////////////////////////////////////////////////////////////
-
-	int ipg = 0;
-
-	////////////////////////////////////////////////////////////
-	if( bhasstrips )
-	////////////////////////////////////////////////////////////
-	{
-		const orkvector<MeshUtil::TriStripperPrimGroup>& StripGroups = MyStripper.GetStripGroups();
-		for( int i=0; i<inumstripgroups; i++ )
-		{
-			const orkvector<unsigned int>& StripIndices = MyStripper.GetStripIndices(i);
-			int inumidx = StripIndices.size();
-
-			/////////////////////////////////
-			// check index buffer size policy
-			//  (some platforms do not have 32bit indices)
-			/////////////////////////////////
-
-			if(ColladaExportPolicy::GetContext()->mPrimGroupPolicy.mMaxIndices == ColladaPrimGroupPolicy::EPOLICY_MAXINDICES_WII)
-			{
-				if(inumidx > WII_PRIM_GROUP_MAX_INDICES)
-				{
-					orkerrorlog("ERROR: <%s> Wii prim group max indices exceeded: %d\n", policy->mColladaOutName.c_str(), inumidx);
-					throw std::exception();
-				}
-			}
-
-			/////////////////////////////////
-
-			ork::lev2::StaticIndexBuffer<U16> *pidxbuf = new ork::lev2::StaticIndexBuffer<U16>(inumidx);
-			U16 *pidx = (U16*) DummyTarget.GBI()->LockIB( *pidxbuf );
-			OrkAssert(pidx!=0);
-			{
-				for( int ii=0; ii<inumidx; ii++ )
-				{
-					int index = StripIndices[ii];
-					OrkAssert(index<imaxvtx);
-					pidx[ii] = U16(index);
-				}
-			}
-			DummyTarget.GBI()->UnLockIB( *pidxbuf );
-
-			/////////////////////////////////
-
-			ork::lev2::XgmPrimGroup & StripGroup = XgmCluster.mpPrimGroups[ ipg++ ];
-
-			StripGroup.miNumIndices = inumidx;
-			StripGroup.mpIndices = pidxbuf;
-			StripGroup.mePrimType = lev2::EPRIM_TRIANGLESTRIP;
-		}
-	}
-
-	////////////////////////////////////////////////////////////
-	if( bhastris )
-	////////////////////////////////////////////////////////////
-	{
-		int inumidx = MyStripper.GetTriIndices().size();
-
-		/////////////////////////////////////////////////////
-		ork::lev2::StaticIndexBuffer<U16> *pidxbuf = new ork::lev2::StaticIndexBuffer<U16>(inumidx);
-		U16 *pidx = (U16*) DummyTarget.GBI()->LockIB( *pidxbuf );
-		OrkAssert(pidx!=0);
-		for( int ii=0; ii<inumidx; ii++ )
-		{
-			pidx[ii] = U16(MyStripper.GetTriIndices()[ii]);
-		}
-		DummyTarget.GBI()->UnLockIB( *pidxbuf );
-		/////////////////////////////////////////////////////
-
-		ork::lev2::XgmPrimGroup & StripGroup = XgmCluster.mpPrimGroups[ ipg++ ];
-
-		if(ColladaExportPolicy::GetContext()->mPrimGroupPolicy.mMaxIndices == ColladaPrimGroupPolicy::EPOLICY_MAXINDICES_WII)
-			if(inumidx > WII_PRIM_GROUP_MAX_INDICES)
-			{
-				orkerrorlog("ERROR: <%s> Wii prim group max indices exceeded: %d\n", policy->mColladaOutName.c_str(), inumidx);
-				throw std::exception();
-			}
-
-		StripGroup.miNumIndices = inumidx;
-		StripGroup.mpIndices = pidxbuf;
-		StripGroup.mePrimType = lev2::EPRIM_TRIANGLES;
-
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void SColladaMatGroup::BuildTriStripXgmCluster( lev2::XgmCluster & XgmCluster, const XgmClusterBuilder *XgmClusterBuilder )
-{
-	if(!XgmClusterBuilder->mpVertexBuffer)
-		return;
-
-	XgmCluster.mpVertexBuffer = XgmClusterBuilder->mpVertexBuffer;
-
-	const int imaxvtx = XgmCluster.mpVertexBuffer->GetNumVertices();
-
-	/////////////////////////////////////////////////////////////
-	// triangle indices come from the ClusterBuilder
-
-	std::vector<unsigned int> TriangleIndices;
-	std::vector<int> ToolMeshTriangles;
-
-	XgmClusterBuilder->mSubMesh.FindNSidedPolys( ToolMeshTriangles, 3 );
-
-	int inumtriangles = int( ToolMeshTriangles.size() );
-
-	for( int i=0; i<inumtriangles; i++ )
-	{
-		int itri_i = ToolMeshTriangles[ i ];
-
-		const ork::MeshUtil::poly& ClusTri = XgmClusterBuilder->mSubMesh.RefPoly( itri_i );
-
-		TriangleIndices.push_back( ClusTri.GetVertexID(0) );
-		TriangleIndices.push_back( ClusTri.GetVertexID(1) );
-		TriangleIndices.push_back( ClusTri.GetVertexID(2) );
-	}
-
-	/////////////////////////////////////////////////////////////
-
-	BuildXgmClusterPrimGroups( XgmCluster, TriangleIndices );
-
-	XgmCluster.mBoundingBox = XgmClusterBuilder->mSubMesh.GetAABox();
-	XgmCluster.mBoundingSphere = Sphere(XgmCluster.mBoundingBox.Min(),XgmCluster.mBoundingBox.Max());
-
-	/////////////////////////////////////////////////////////////
-	// bone -> matrix register mapping
-
-	const XgmSkinnedClusterBuilder* skinner = ork::rtti::autocast(XgmClusterBuilder);
-
-	if( skinner )
-	{
-		const orkmap<std::string,int> & BoneMap = skinner->RefBoneRegMap();
-
-		int inumjointsmapped = BoneMap.size();
-
-		XgmCluster.mJoints.resize( inumjointsmapped );
-
-		for( orkmap<std::string,int>::const_iterator it=BoneMap.begin(); it!=BoneMap.end(); it++ )
-		{
-			const std::string & JointName = it->first;	// the index of the bone in the skeleton
-			int JointRegister = it->second;				// the shader register index the bone goes into
-			XgmCluster.mJoints[ JointRegister ] = AddPooledString(JointName.c_str());
-		}
-	}
-
-	/////////////////////////////////////////////////////////////
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-} }
 #endif // USE_FCOLLADA

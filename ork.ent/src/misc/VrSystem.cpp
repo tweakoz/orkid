@@ -78,18 +78,19 @@ void VrSystem::DoUpdate(Simulation* psim) {
 
 void VrSystem::enqueueDrawables(lev2::DrawableBuffer& buffer) {
   if( _vrstate != 0 ){
-    fmtx4 vrmtx = this->_spawnloc->GetEffectiveMatrix(); // copy (updthread->renderthread)
+    fmtx4 vrmtx = this->_spawncam->GetEffectiveMatrix(); // copy (updthread->renderthread)
     buffer.setPreRenderCallback(0,[=](lev2::RenderContextFrameData&RCFD){
           RCFD.setUserProperty("vrroot"_crc,vrmtx);
-          RCFD.setUserProperty("vrcam"_crc,this->_spawncam);
+          RCFD.setUserProperty("vrcam"_crc,this->_spawncamdat);
     });
   }
 }
 
 bool VrSystem::DoLink(Simulation* psim) {
   _spawnloc = psim->FindEntity(AddPooledString("spawnloc"));
-  _spawncam = psim->cameraData(AddPooledString("spawncam"));
-  bool good2go = (_spawnloc!=nullptr) and (_spawncam!=nullptr);
+  _spawncam = psim->FindEntity(AddPooledString("spawncam"));
+  _spawncamdat = psim->cameraData(AddPooledString("spawncam"));
+  bool good2go = (_spawnloc!=nullptr) and (_spawncamdat!=nullptr);
   _vrstate = int(good2go);
   return good2go or (false==enabled());
 }

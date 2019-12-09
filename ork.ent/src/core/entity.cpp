@@ -96,17 +96,17 @@ void EntData::Describe() {
   mutstr.format("EntData");
   GetClassStatic()->SetPreferredName(arrstr);
 
-  reflect::AnnotateClassForEditor<EntData>("editor.3dpickable", true);
-  reflect::AnnotateClassForEditor<EntData>("editor.3dxfable", true);
-  reflect::AnnotateClassForEditor<EntData>("editor.3dxfinterface", ConstString("SceneDagObjectManipInterface"));
+  reflect::annotateClassForEditor<EntData>("editor.3dpickable", true);
+  reflect::annotateClassForEditor<EntData>("editor.3dxfable", true);
+  reflect::annotateClassForEditor<EntData>("editor.3dxfinterface", ConstString("SceneDagObjectManipInterface"));
 
   reflect::RegisterProperty("Archetype", &EntData::ArchetypeGetter, &EntData::ArchetypeSetter);
-  reflect::AnnotatePropertyForEditor<EntData>("Archetype", "editor.choicelist", "archetype");
-  reflect::AnnotatePropertyForEditor<EntData>("Archetype", "editor.factorylistbase", "Ent3dArchetype");
+  reflect::annotatePropertyForEditor<EntData>("Archetype", "editor.choicelist", "archetype");
+  reflect::annotatePropertyForEditor<EntData>("Archetype", "editor.factorylistbase", "Ent3dArchetype");
 
   reflect::RegisterFunctor("SlotArchetypeDeleted", &EntData::SlotArchetypeDeleted);
 
-  reflect::AnnotateClassForEditor<EntData>("editor.object.ops",
+  reflect::annotateClassForEditor<EntData>("editor.object.ops",
                                            ConstString("ArchDeRef:EntArchDeRef ArchReRef:EntArchReRef ArchSplit:EntArchSplit"));
 
   ork::reflect::RegisterMapProperty("UserProperties", &EntData::mUserProperties);
@@ -345,7 +345,7 @@ void Archetype::Describe() {
   GetClassStatic()->SetPreferredName(arrstr);
 
   reflect::RegisterMapProperty("Components", &Archetype::mComponentDatas);
-  reflect::AnnotatePropertyForEditor<Archetype>("Components", "editor.map.policy.const", "true");
+  reflect::annotatePropertyForEditor<Archetype>("Components", "editor.map.policy.const", "true");
 }
 ///////////////////////////////////////////////////////////////////////////////
 Archetype::Archetype()

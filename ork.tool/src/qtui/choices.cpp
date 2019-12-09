@@ -75,7 +75,7 @@ void BuildFactoryList(rtti::Class* root, orkvector<ObjectFactory*>& factories)
 	if(root->HasFactory())
 	{
 		object::ObjectClass* pobjclass = rtti::autocast(root);
-		auto instanno = pobjclass->Description().GetClassAnnotation( "editor.instantiable" );
+		auto instanno = pobjclass->Description().classAnnotation( "editor.instantiable" );
 
 		bool bok2add = instanno.IsA<bool>() ? instanno.Get<bool>() : true;
 

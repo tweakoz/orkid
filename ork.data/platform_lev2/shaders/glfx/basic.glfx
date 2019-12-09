@@ -10,92 +10,111 @@ fxconfig fxcfg_default {
 ///////////////////////////////////////////////////////////////
 
 uniform_set ub_vtx {
-  uniform mat4 WVPMatrix;
-  uniform mat4 WVPMatrixL;
-  uniform mat4 WVPMatrixR;
-  uniform mat4 VPMatrix;
-  uniform mat4 PMatrix;
-  uniform mat4 WMatrix;
-  uniform mat4 WVMatrix;
-  uniform mat4 VMatrix;
-  uniform mat4 IWMatrix;
-  uniform mat3 WRotMatrix;
-  uniform mat4 DiffuseMapMatrix;
-  uniform mat4 NormalMapMatrix;
-  uniform mat4 SpecularMapMatrix;
+  mat4 WVPMatrix;
+  mat4 WVPMatrixL;
+  mat4 WVPMatrixR;
+  mat4 VPMatrix;
+  mat4 PMatrix;
+  mat4 WMatrix;
+  mat4 WVMatrix;
+  mat4 VMatrix;
+  mat4 IWMatrix;
+  mat3 WRotMatrix;
+  mat4 DiffuseMapMatrix;
+  mat4 NormalMapMatrix;
+  mat4 SpecularMapMatrix;
 
-  uniform vec4 modcolor;
-  uniform float time;
+  vec4 modcolor;
+  float time;
 
-  uniform vec3 AmbientLight;
-  uniform int NumDirectionalLights;
-  uniform vec3 DirectionalLightDir[4];
-  uniform vec3 DirectionalLightColor[4];
-  uniform vec3 EmissiveColor;
+  vec3 AmbientLight;
+  int NumDirectionalLights;
+  vec3 DirectionalLightDir[4];
+  vec3 DirectionalLightColor[4];
+  vec3 EmissiveColor;
 
-  uniform vec3 WCamLoc;
-  uniform float SpecularPower;
+  vec3 WCamLoc;
+  float SpecularPower;
 }
 
 vertex_interface iface_rigid : ub_vtx {
-  in vec4 position : POSITION;
-  in vec3 normal : NORMAL;
-  in vec4 vtxcolor : COLOR0;
-  in vec2 uv0 : TEXCOORD0;
-
-  out vec4 frg_clr;
-  out vec2 frg_uv0;
-  out vec4 frg_nrmd;
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    vec4 frg_nrmd;
+  }
 }
 
 vertex_interface iface_skinned : iface_skintools // inherit skinned unis/attrs
     : ub_vtx {
-  in vec4 position : POSITION;
-  in vec3 normal : NORMAL;
-  in vec2 uv0 : TEXCOORD0;
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec4 frg_clr;
+    vec4 frg_nrmd;
+    vec2 frg_uv0;
+  }
 
-  out vec4 frg_clr;
-  out vec4 frg_nrmd;
-  out vec2 frg_uv0;
 }
 
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fdefault {
-  in vec4 frg_clr;
-  in vec2 frg_uv0;
-  in vec4 frg_nrmd;
+  inputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    vec4 frg_nrmd;
+  }
+  outputs {
+    layout(location = 0) vec4 out_clr;
+  }
 
-  layout(location = 0) out vec4 out_clr;
 }
 ///////////////////////////////////////////////////////////////
 
 uniform_set ub_frg {
-  uniform vec4 modcolor;
-  uniform sampler2D DiffuseMap;
+  vec4 modcolor;
+  sampler2D DiffuseMap;
 }
 
 fragment_interface iface_fmt : ub_frg {
-  in vec4 frg_clr;
-  in vec2 frg_uv0;
+  inputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+  }
+  outputs {
+    layout(location = 0) vec4 out_clr;
+  }
 
-  layout(location = 0) out vec4 out_clr;
 }
 
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fpick : ub_frg {
-  in vec4 frg_clr;
-  in vec2 frg_uv0;
-  in vec4 frg_nrmd;
+  inputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    vec4 frg_nrmd;
+  }
+  outputs {
+    layout(location = 0) vec4 out_clr;
+    layout(location = 1) vec4 out_nrmd;
+  }
 
-  layout(location = 0) out vec4 out_clr;
-  layout(location = 1) out vec4 out_nrmd;
 }
 
 ///////////////////////////////////////////////////////////////
 // StateBlocks
 ///////////////////////////////////////////////////////////////
-state_block sb_default {
-  // BlendMode = ADDITIVE;
+state_block sb_default : default {
+  // BlendMode = ADDITIVE;https://plugins.jetbrains.com/plugin/7275-codeglance/
   DepthTest = LESS;
   DepthMask = true;
   CullTest  = PASS_FRONT;
@@ -128,7 +147,9 @@ vertex_shader vs_wnormal : iface_rigid {
 
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_rigid_stereo : iface_rigid {
-  layout(secondary_view_offset=1) out highp int gl_Layer;
+  outputs {
+    layout(secondary_view_offset=1) int gl_Layer;
+  }
 }
 vertex_shader vs_wnormal_stereo
   : extension(GL_NV_stereo_view_rendering)
@@ -168,7 +189,9 @@ vertex_shader vs_sk : iface_skinned : skin_tools {
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_skinned_stereo : iface_skinned {
-  layout(secondary_view_offset=1) out highp int gl_Layer;
+  outputs {
+    layout(secondary_view_offset=1) int gl_Layer;
+  }
 }
 vertex_shader vs_sk_stereo
   : extension(GL_NV_stereo_view_rendering)

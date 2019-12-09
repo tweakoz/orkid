@@ -16,9 +16,10 @@
 #include <ork/lev2/gfx/gfxctxdummy.h>
 #include <ork/file/chunkfile.h>
 #include <ork/application/application.h>
+#include <orktool/filter/gfx/collada/collada.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace MeshUtil {
+namespace ork::MeshUtil {
 ///////////////////////////////////////////////////////////////////////////////
 
 void toolmesh::WriteToRgmFile( const file::Path& outpath ) const
@@ -31,8 +32,8 @@ void toolmesh::WriteToRgmFile( const file::Path& outpath ) const
 	for( orkmap<std::string,std::string>::const_iterator it=mAnnotations.begin(); it!=mAnnotations.end(); it++ )
 	{	const std::string& key = it->first;
 		const std::string& val = it->second;
-		int ikey = chunkwriter.GetStringIndex(key.c_str());
-		int ival = chunkwriter.GetStringIndex(val.c_str());
+		int ikey = chunkwriter.stringIndex(key.c_str());
+		int ival = chunkwriter.stringIndex(val.c_str());
 		HeaderStream->AddItem(ikey);
 		HeaderStream->AddItem(ival);
 	}	
@@ -47,22 +48,22 @@ void toolmesh::WriteToRgmFile( const file::Path& outpath ) const
 		const vertexpool& vpool = sub.RefVertexPool();
 		const std::string& name = it->first;
 		///////////////////////////////////////////////////////////
-		int inumannos = (int) sub.RefAnnotations().size();
+		int inumannos = (int) sub.annotations().size();
 		HeaderStream->AddItem(inumannos);
 		for( submesh::AnnotationMap::const_iterator
-			it2=sub.RefAnnotations().begin();
-			it2!=sub.RefAnnotations().end();
+			it2=sub.annotations().begin();
+			it2!=sub.annotations().end();
 			it2++ )
 		{	const std::string& key = it2->first;
-			const std::string& val = it2->second;
-			int ikey = chunkwriter.GetStringIndex(key.c_str());
-			int ival = chunkwriter.GetStringIndex(val.c_str());
+			const std::string& val = it2->second.Get<std::string>();
+			int ikey = chunkwriter.stringIndex(key.c_str());
+			int ival = chunkwriter.stringIndex(val.c_str());
 			HeaderStream->AddItem(ikey);
 			HeaderStream->AddItem(ival);
 		}	
 		///////////////////////////////////////////////////////////
 		int inumv = (int) vpool.GetNumVertices();
-		int isubname = chunkwriter.GetStringIndex(name.c_str());
+		int isubname = chunkwriter.stringIndex(name.c_str());
 		HeaderStream->AddItem(isubname);
 		HeaderStream->AddItem(inumv);
 		HeaderStream->AddItem(inumtotv);
@@ -93,8 +94,13 @@ void toolmesh::WriteToRgmFile( const file::Path& outpath ) const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// simpleToolSubMeshToXgmSubMesh
+//   convert tool mesh to xgmmesh with no clusterization
+//   obviously due to the lack of clusterization, this would not
+//   work with meshes that have more than 64K vertices (because of 16 bit indices)
+///////////////////////////////////////////////////////////////////////////////
 
-void toolSubMeshToXgmSubMesh(const toolmesh& mesh, const submesh& smesh, ork::lev2::XgmSubMesh& meshout)
+void simpleToolSubMeshToXgmSubMesh(const toolmesh& mesh, const submesh& smesh, ork::lev2::XgmSubMesh& meshout)
 {
 	lev2::GfxTargetDummy DummyTarget;
 	FlatSubMesh fsub( smesh );
@@ -146,8 +152,8 @@ void toolSubMeshToXgmSubMesh(const toolmesh& mesh, const submesh& smesh, ork::le
 	////////////////////////////////////////////////////////
 	cluster.miNumPrimGroups = 1;
 	cluster.mpPrimGroups = new lev2::XgmPrimGroup[1];
-	cluster.mpVertexBuffer = lev2::VertexBufferBase::CreateVertexBuffer( fsub.evtxformat, inumvertices, true );
-	lev2::VertexBufferBase& vb = *cluster.mpVertexBuffer;
+	cluster._vertexBuffer = lev2::VertexBufferBase::CreateVertexBuffer( fsub.evtxformat, inumvertices, true );
+	lev2::VertexBufferBase& vb = *cluster._vertexBuffer;
 	void *poutverts = DummyTarget.GBI()->LockVB( vb );
 	OrkAssert(poutverts!=0);
 	{
@@ -195,7 +201,7 @@ void toolmeshToXgmModel(const toolmesh& tmesh, ork::lev2::XgmModel& mdlout)
 		const ork::MeshUtil::submesh* srcsub = it->second;
 
 		ork::lev2::XgmSubMesh* dstsub = new ork::lev2::XgmSubMesh;
-		toolSubMeshToXgmSubMesh(tmesh,*srcsub,*dstsub);
+		simpleToolSubMeshToXgmSubMesh(tmesh,*srcsub,*dstsub);
 		mdlout.AddMaterial(dstsub->mpMaterial);
 		outmesh->AddSubMesh( dstsub );
 	}
@@ -351,13 +357,10 @@ void toolmesh::ReadFromXGM( const file::Path& BasePath )
 				}
 			}
 		}
-
-
-
 	}
-	
 }
 
+
 ///////////////////////////////////////////////////////////////////////////////
-}}
+}
 ///////////////////////////////////////////////////////////////////////////////

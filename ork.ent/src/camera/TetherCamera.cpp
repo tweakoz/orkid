@@ -66,17 +66,17 @@ void TetherCamControllerData::Describe()
 	ork::reflect::RegisterProperty( "Far", &TetherCamControllerData::mfFar );
 	ork::reflect::RegisterProperty( "ApproachSpeed", &TetherCamControllerData::mApproachSpeed );
 
-	reflect::AnnotatePropertyForEditor< TetherCamControllerData >("ApproachSpeed", "editor.range.min", "0.1" );
-	reflect::AnnotatePropertyForEditor< TetherCamControllerData >("ApproachSpeed", "editor.range.max", "10.0" );
+	reflect::annotatePropertyForEditor< TetherCamControllerData >("ApproachSpeed", "editor.range.min", "0.1" );
+	reflect::annotatePropertyForEditor< TetherCamControllerData >("ApproachSpeed", "editor.range.max", "10.0" );
 
-	reflect::AnnotatePropertyForEditor< TetherCamControllerData >("Aperature", "editor.range.min", "1.0" );
-	reflect::AnnotatePropertyForEditor< TetherCamControllerData >("Aperature", "editor.range.max", "150.0" );
+	reflect::annotatePropertyForEditor< TetherCamControllerData >("Aperature", "editor.range.min", "1.0" );
+	reflect::annotatePropertyForEditor< TetherCamControllerData >("Aperature", "editor.range.max", "150.0" );
 
-	reflect::AnnotatePropertyForEditor< TetherCamControllerData >("Near", "editor.range.min", "0.1" );
-	reflect::AnnotatePropertyForEditor< TetherCamControllerData >("Near", "editor.range.max", "10000.0" );
+	reflect::annotatePropertyForEditor< TetherCamControllerData >("Near", "editor.range.min", "0.1" );
+	reflect::annotatePropertyForEditor< TetherCamControllerData >("Near", "editor.range.max", "10000.0" );
 
-	reflect::AnnotatePropertyForEditor< TetherCamControllerData >("Far", "editor.range.min", "1.0" );
-	reflect::AnnotatePropertyForEditor< TetherCamControllerData >("Far", "editor.range.max", "100000.0" );
+	reflect::annotatePropertyForEditor< TetherCamControllerData >("Far", "editor.range.min", "1.0" );
+	reflect::annotatePropertyForEditor< TetherCamControllerData >("Far", "editor.range.max", "100000.0" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

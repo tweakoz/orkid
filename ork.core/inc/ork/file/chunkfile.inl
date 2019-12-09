@@ -46,8 +46,7 @@ template< typename T > void InputStream::RefItem( T* &item )
     midx += isize;
 }
 ///////////////////////////////////////////////////////////////////////////////
-template <typename Allocator>
-Reader<Allocator>::~Reader()
+inline Reader::~Reader()
 {
     for( typename StreamLut::const_iterator it=mInputStreams.begin(); it!=mInputStreams.end(); it++ )
     {
@@ -55,16 +54,16 @@ Reader<Allocator>::~Reader()
         InputStream* stream = it->second;
         if( stream->GetLength() )
         {
-            mAllocator.done(pname.c_str(),stream->GetDataAt(0));
+            _allocator.done(pname.c_str(),stream->GetDataAt(0));
         }
     }
 }
 ///////////////////////////////////////////////////////////////////////////////
-template <typename Allocator>
-Reader<Allocator>::Reader( const file::Path& inpath, const char* ptype )
+inline Reader::Reader( const file::Path& inpath, const char* ptype, ILoadAllocator& allocator )
     : mpstrtab( 0 )
     , mistrtablen( 0 )
     , mbOk( false )
+    , _allocator(allocator)
 {
     const Char4 good_chunk_magic("chkf");
     OrkHeapCheck();
@@ -106,7 +105,7 @@ Reader<Allocator>::Reader( const file::Path& inpath, const char* ptype )
             OrkHeapCheck();
             if( ichunklen )
             {
-                void* pdata = mAllocator.alloc( psname.c_str(), ichunklen );
+                void* pdata = _allocator.alloc( psname.c_str(), ichunklen );
                 OrkAssert( pdata != 0 );
                 new ( stream ) InputStream( pdata, ichunklen );
                 mInputStreams.AddSorted(psname,stream);
@@ -130,14 +129,14 @@ Reader<Allocator>::Reader( const file::Path& inpath, const char* ptype )
     }
 }
 ////////////////////////////////////////////////////////////////////////////////////
-template <typename Allocator> InputStream* Reader<Allocator>::GetStream( const char* streamname )
+inline InputStream* Reader::GetStream( const char* streamname )
 {
     PoolString ps = ork::AddPooledString(streamname);
     typename StreamLut::const_iterator it=mInputStreams.find(ps);
     return (it==mInputStreams.end()) ? 0 : it->second;
 }
 ////////////////////////////////////////////////////////////////////////////////////
-template <typename Allocator> const char* Reader<Allocator>::GetString( int index )
+inline const char* Reader::GetString( int index )
 {
     OrkAssert( index<mistrtablen );
     OrkAssert( mpstrtab );

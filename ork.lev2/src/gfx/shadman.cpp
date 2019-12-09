@@ -95,7 +95,17 @@ void FxShader::addParameterBlock( const FxShaderParamBlock * block )
 	_parameterBlockByName[ block->_name ] = block;
 
 }
+#if defined(ENABLE_COMPUTE_SHADERS)
+void FxShader::addComputeShader( const FxComputeShader* csh )
+{
+	_computeShaderByName[ csh->_name ] = csh;
+}
+FxComputeShader *FxShader::findComputeShader(const std::string &named){
+	auto it=_computeShaderByName.find(named);
+	return const_cast<FxComputeShader*>((it!=_computeShaderByName.end()) ? it->second : nullptr);
 
+}
+#endif
 #if defined(ENABLE_SHADER_STORAGE)
 void FxShader::addStorageBlock(const FxShaderStorageBlock *block) {
 	_storageBlockByName[ block->_name ] = block;
@@ -105,15 +115,12 @@ FxShaderStorageBlock *FxShader::storageBlockByName(const std::string &named){
 	return const_cast<FxShaderStorageBlock*>((it!=_storageBlockByName.end()) ? it->second : nullptr);
 
 }
-FxShaderStorageBlockMapping *FxShaderStorageBlock::map() const {
-	assert(false);
-	return nullptr;
+FxShaderStorageBufferMapping::FxShaderStorageBufferMapping() {}
+FxShaderStorageBufferMapping::~FxShaderStorageBufferMapping(){
+	assert(_mappedaddr==nullptr);
 }
-FxShaderStorageBlockMapping::~FxShaderStorageBlockMapping(){
-	unmap();
-}
-void FxShaderStorageBlockMapping::unmap(){
-
+void FxShaderStorageBufferMapping::unmap(){
+  _ci->unmapStorageBuffer(this);
 }
 
 #endif
@@ -188,6 +195,17 @@ const char *FxShader::GetName()
 {
 	return mName.c_str();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+#if defined(ENABLE_COMPUTE_SHADER)
+FxComputeShader* FxShader::findComputeShader(const std::string &named) {
+    FxComputeShader* rval = nullptr;
+    assert(false);
+    return rval;
+}
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 
 }

@@ -37,7 +37,7 @@ GlFrameBufferInterface::~GlFrameBufferInterface() {}
 
 void GlFrameBufferInterface::_setAsRenderTarget(void) {
   mTargetGL.makeCurrentContext();
-  //mTargetGL.debugPushGroup("GlFrameBufferInterface::_setAsRenderTarget");
+  // mTargetGL.debugPushGroup("GlFrameBufferInterface::_setAsRenderTarget");
   GL_ERRORCHECK();
   GL_ERRORCHECK();
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -45,7 +45,7 @@ void GlFrameBufferInterface::_setAsRenderTarget(void) {
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
   GL_ERRORCHECK();
   GL_ERRORCHECK();
-  //mTargetGL.debugPopGroup();
+  // mTargetGL.debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -54,7 +54,7 @@ void GlFrameBufferInterface::DoBeginFrame(void) {
 
   mTargetGL.makeCurrentContext();
 
-  //mTargetGL.debugPushGroup("GlFrameBufferInterface::DoBeginFrameA");
+  // mTargetGL.debugPushGroup("GlFrameBufferInterface::DoBeginFrameA");
   // glFinish();
   GL_ERRORCHECK();
 
@@ -70,7 +70,7 @@ void GlFrameBufferInterface::DoBeginFrame(void) {
     PushViewport(extents);
     PushScissor(extents);
     // printf( "BEGINFRAME<RtGroup>\n" );
-    //mTargetGL.debugPopGroup();
+    // mTargetGL.debugPopGroup();
   }
   ////////////////////////////////
   else if (IsOffscreenTarget())
@@ -81,7 +81,7 @@ void GlFrameBufferInterface::DoBeginFrame(void) {
     // printf( "OST begin x<%d> y<%d> w<%d> h<%d>\n", mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH() );
     PushViewport(extents);
     PushScissor(extents);
-    //mTargetGL.debugPopGroup();
+    // mTargetGL.debugPopGroup();
   }
   /////////////////////////////////////////////////
   else // window (On Screen Target)
@@ -114,27 +114,26 @@ void GlFrameBufferInterface::DoBeginFrame(void) {
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       GL_ERRORCHECK();
     }
-    //mTargetGL.debugPopGroup();
+    // mTargetGL.debugPopGroup();
   }
 
   /////////////////////////////////////////////////
   // Set Initial Rendering States
   GL_ERRORCHECK();
 
-  //mTargetGL.debugPushGroup("GlFrameBufferInterface::DoBeginFrameB");
+  // mTargetGL.debugPushGroup("GlFrameBufferInterface::DoBeginFrameB");
 
   const SRasterState defstate;
   mTarget.RSI()->BindRasterState(defstate, true);
-  //mTargetGL.debugPopGroup();
+  // mTargetGL.debugPopGroup();
 
   GL_ERRORCHECK();
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::DoEndFrame(void) {
-  //mTargetGL.debugPushGroup("GlFrameBufferInterface::DoEndFrame");
+  // mTargetGL.debugPushGroup("GlFrameBufferInterface::DoEndFrame");
   GL_ERRORCHECK();
 
   ///////////////////////////////////////////
@@ -180,7 +179,7 @@ void GlFrameBufferInterface::DoEndFrame(void) {
   GL_ERRORCHECK();
   ////////////////////////////////
   glBindTexture(GL_TEXTURE_2D, 0);
-  //mTargetGL.debugPopGroup();
+  // mTargetGL.debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -194,7 +193,7 @@ void GlFrameBufferInterface::_initializeContext(GfxBuffer* pBuf) {
 
   bool Zonly = false;
 
-  switch (pBuf->GetBufferFormat()) {
+  switch (pBuf->format()) {
     case EBUFFMT_RGBA8:
       // efmt = D3DFMT_A8R8G8B8;
       ibytesperpix = 4;
@@ -312,20 +311,19 @@ void GlFrameBufferInterface::SetViewport(int iX, int iY, int iW, int iH) {
   // printf( "SetViewport<%d %d %d %d>\n", iX, iY, iW, iH );
 
   auto framedata = mTargetGL.topRenderContextFrameData();
-  bool stereo = false;
-  if( framedata ){
-      const auto& CPD = framedata->topCPD();
-      stereo = CPD.isStereoOnePass();
+  bool stereo    = false;
+  if (framedata) {
+    const auto& CPD = framedata->topCPD();
+    stereo          = CPD.isStereoOnePass();
   }
 
   GL_ERRORCHECK();
 
-  if( stereo ){
-    int wd2 = iW/2;
+  if (stereo) {
+    int wd2 = iW / 2;
     glViewportIndexedf(0, 0, 0, wd2, iH);
     glViewportIndexedf(1, wd2, 0, wd2, iH);
-  }
-  else {
+  } else {
     glViewport(iX, iY, iW, iH);
   }
 
@@ -416,10 +414,81 @@ void GlFrameBufferInterface::Capture(const RtGroup& rtg, int irt, const file::Pa
   free((void*)pu8);
 #endif
 }
-/*void GlFrameBufferInterface::Capture( GfxBuffer& inpbuf, CaptureBuffer& buffer )
-{
 
-}*/
+///////////////////////////////////////////////////////////////////////////////
+
+bool GlFrameBufferInterface::capture(const RtGroup& rtg, int irt, CaptureBuffer* capbuf) {
+
+  GlFboObject* FboObj = (GlFboObject*)rtg.GetInternalHandle();
+
+  if (nullptr == FboObj)
+    return false;
+  if (nullptr == capbuf)
+    return false;
+  if (0 == FboObj->mFBOMaster)
+    return false;
+
+  GL_ERRORCHECK();
+  glBindFramebuffer(GL_FRAMEBUFFER, FboObj->mFBOMaster);
+  GL_ERRORCHECK();
+
+  OrkAssert(irt < rtg.GetNumTargets());
+  auto rtb        = rtg.mMrt[irt];
+  auto rtb_format = rtb->format();
+
+  GLint readbuffer = 0;
+  GL_ERRORCHECK();
+  glGetIntegerv(GL_READ_BUFFER, &readbuffer);
+  GL_ERRORCHECK();
+
+  // glDepthMask(GL_TRUE); ??? wtf ???
+  GL_ERRORCHECK();
+  glReadBuffer(GL_COLOR_ATTACHMENT0 + irt);
+  GL_ERRORCHECK();
+
+  bool fmtmatch = (capbuf->format() == rtb_format);
+  bool sizmatch = (capbuf->width() == rtb->miW);
+  sizmatch &= (capbuf->height() == rtb->miH);
+  int w = rtb->miW;
+  int h = rtb->miH;
+
+  if (not(fmtmatch and sizmatch))
+    capbuf->setFormatAndSize(rtb_format, w, h);
+
+  //glPixelStore()
+
+  GL_ERRORCHECK();
+  switch (rtb_format) {
+    case EBUFFMT_RGBA8:
+      glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_data);
+      break;
+    case EBUFFMT_RGBA16F:
+      glReadPixels(0, 0, w, h, GL_RGBA, GL_HALF_FLOAT, capbuf->_data);
+      break;
+    case EBUFFMT_RGBA32F:
+      glReadPixels(0, 0, w, h, GL_RGBA, GL_FLOAT, capbuf->_data);
+      break;
+    case EBUFFMT_R32F:
+      glReadPixels(0, 0, w, h, GL_RED, GL_FLOAT, capbuf->_data);
+      break;
+    case EBUFFMT_R32UI:
+      glReadPixels(0, 0, w, h, GL_RED_INTEGER, GL_UNSIGNED_INT, capbuf->_data);
+      break;
+    case EBUFFMT_RG32F:
+      glReadPixels(0, 0, w, h, GL_RG, GL_FLOAT, capbuf->_data);
+      break;
+    default:
+      assert(false);
+      break;
+  }
+  GL_ERRORCHECK();
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//  glReadBuffer( readbuffer ); // restore read buffer
+  GL_ERRORCHECK();
+  return true;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) {

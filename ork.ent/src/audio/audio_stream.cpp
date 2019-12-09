@@ -47,8 +47,8 @@ void AudioStreamComponentInst::DoStop(ork::ent::Simulation *psi)
 void AudioStreamComponentData::Describe()
 {
 	ork::reflect::RegisterMapProperty( "StreamMap", & AudioStreamComponentData::mStreamMap );
-	ork::reflect::AnnotatePropertyForEditor<AudioStreamComponentData>("StreamMap", "editor.assettype", "lev2::audiostream");
-	ork::reflect::AnnotatePropertyForEditor<AudioStreamComponentData>("StreamMap", "editor.assetclass", "lev2::audiostream");
+	ork::reflect::annotatePropertyForEditor<AudioStreamComponentData>("StreamMap", "editor.assettype", "lev2::audiostream");
+	ork::reflect::annotatePropertyForEditor<AudioStreamComponentData>("StreamMap", "editor.assetclass", "lev2::audiostream");
 }
 ///////////////////////////////////////////////////////////////////////////////
 AudioStreamComponentData::AudioStreamComponentData()

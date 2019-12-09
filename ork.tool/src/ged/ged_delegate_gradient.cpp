@@ -306,11 +306,11 @@ class GedGradientV4Widget : public GedItemNode
 		{
 			lev2::GfxMaterial3DSolid gridmat( pTARG );
 			gridmat.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR );
-			gridmat.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
-			gridmat.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-			gridmat.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
-			gridmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-			gridmat.mRasterState.SetShadeModel( ork::lev2::ESHADEMODEL_SMOOTH );
+			gridmat._rasterstate.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
+			gridmat._rasterstate.SetCullTest( ork::lev2::ECULLTEST_OFF );
+			gridmat._rasterstate.SetBlending( ork::lev2::EBLENDING_OFF );
+			gridmat._rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+			gridmat._rasterstate.SetShadeModel( ork::lev2::ESHADEMODEL_SMOOTH );
 			pTARG->BindMaterial( & gridmat );
 
 			pthis->mVertexBuffer.Reset();

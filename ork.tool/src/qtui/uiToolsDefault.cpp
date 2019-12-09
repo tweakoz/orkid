@@ -68,7 +68,7 @@ void TestVPDefaultHandler::HandlePickOperation(DeferredPickOperationContext* ppi
       ork::Object* pobj = rtti::autocast(pcast);
       object::ObjectClass* pclass = rtti::safe_downcast<object::ObjectClass*>(pobj->GetClass());
       orkprintf("Object<%p> Class<%s>\n", pobj, pclass->Name().c_str());
-      auto anno = pclass->Description().GetClassAnnotation("editor.3dpickable");
+      auto anno = pclass->Description().classAnnotation("editor.3dpickable");
       // if( anno == "true" )
       {
         editor.ManipManager().AttachObject(pobj);

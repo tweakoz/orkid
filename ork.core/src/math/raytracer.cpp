@@ -333,8 +333,8 @@ bool RaytTriangle::IntersectBox( const AABox& a_Box ) const
 
 void RaytTriangle::Rasterize( Engine* peng ) const
 {
-	int iw = peng->GetWidth();
-	int ih = peng->GetHeight();
+	int iw = peng->width();
+	int ih = peng->height();
 
 	const BakeShader* bshader = GetBakeShader();
 	const fvec2& uv0 = mRgmPoly->mpv0->uv;
@@ -532,33 +532,10 @@ bool Scene::InitScene( const AABox& scene_box )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-struct RgmLoadAllocator
-{	//////////////////////////////
-	// per chunk allocation policy
-	//////////////////////////////
-	void* alloc( const char* pchkname, int ilen )
-	{
-		void* pmem = 0;
-		if( 0 == strcmp( pchkname, "header" ) ) pmem = malloc(ilen);
-		else if( 0 == strcmp( pchkname, "modeldata" ) ) pmem = malloc(ilen);
-
-		return pmem;
-	}
-	//////////////////////////////
-	// per chunk deallocation policy
-	//////////////////////////////
-	void done( const char* pchkname, void* pdata )
-	{	
-		free( pdata );
-	}
-};
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
 void RgmLightContainer::LoadLitFile( const char* pfilename )
 {
-	chunkfile::Reader<RgmLoadAllocator> chunkreader( pfilename, "lit" );
+    chunkfile::DefaultLoadAllocator allocator;
+	chunkfile::Reader chunkreader( pfilename, "lit", allocator );
 	if( chunkreader.IsOk() )
 	{	chunkfile::InputStream* HeaderStream = chunkreader.GetStream("header");
 		///////////////////////////////////////////////////
@@ -609,7 +586,8 @@ RgmModel* LoadRgmFile( const char* pfilename, RgmShaderBuilder& shbuilder )
 	RgmModel* mdl = new RgmModel;
 
 	mdl->mAABox.BeginGrow();
-	chunkfile::Reader<RgmLoadAllocator> chunkreader( pfilename, "rgm" );
+    chunkfile::DefaultLoadAllocator allocator;
+	chunkfile::Reader chunkreader( pfilename, "rgm", allocator );
 	if( chunkreader.IsOk() )
 	{	chunkfile::InputStream* HeaderStream = chunkreader.GetStream("header");
 		chunkfile::InputStream* ModelDataStream = chunkreader.GetStream("modeldata");
@@ -987,7 +965,7 @@ void Engine::InitRender( fvec3& eye, fvec3& target )
 
 	fmtx4 mtxP;
 
-	float faspect = float(GetWidth())/float(GetHeight());
+	float faspect = float(width())/float(height());
 	mtxP.Perspective( 45, faspect, 1.0f, 10000.0f );
 	//mtxP.Ortho( -1, 1, -1, 1, 1, 10000  );
 
@@ -1072,8 +1050,8 @@ void* RenderingJobThread(void *vptr_args)
 	RenderingJobCtx* mpCtx = (RenderingJobCtx*)	vptr_args;
 
 	mpCtx->miNumRays = 0;
-	int ih = mpCtx->mpEngine->GetHeight();
-	int iw = mpCtx->mpEngine->GetWidth();
+	int ih = mpCtx->mpEngine->height();
+	int iw = mpCtx->mpEngine->width();
 
 	const fvec3& cTL = mpCtx->mpEngine->CornerTL();
 	const fvec3& cTR = mpCtx->mpEngine->CornerTR();
@@ -1242,8 +1220,8 @@ void* BakingJobThread( void* pval )
 			const RgmGeoSet* RasterSet = it->second;
 
 			int inumtri = RasterSet->NumPrimitives();
-			int iw = mpCtx->mpEngine->GetWidth();
-			int ih = mpCtx->mpEngine->GetHeight();
+			int iw = mpCtx->mpEngine->width();
+			int ih = mpCtx->mpEngine->height();
 			int itrictr = inumtri/mpCtx->miNumCores;
 
 			int icntdwn = (inumtri>>8); // 

@@ -5,10 +5,10 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _GFX_GFXMODEL_H
-#define _GFX_GFXMODEL_H
-
+#pragma once
+#include <ork/kernel/varmap.inl>
 #include <ork/file/chunkfile.h>
+#include <ork/kernel/datablock.inl>
 #include <ork/file/file.h>
 #include <ork/file/path.h>
 #include <ork/kernel/string/ConstString.h>
@@ -31,7 +31,7 @@
 //	Orkid Native Model File Format (XGM = XPlat Skinned Gfx Model)
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace ork { namespace lev2 {
+namespace ork::lev2 {
 
 typedef AssetHandle ModelH;
 
@@ -48,6 +48,20 @@ class XgmModel;
 class XgmCluster;
 class XgmSubMesh;
 struct RenderContextInstModelData;
+
+struct EmbeddedTexture {
+    int _w = 0;
+    int _h = 0;
+    size_t _srcdatalen = 0;
+    const void* _srcdata = nullptr;
+    std::string _format;
+    std::string _name;
+    datablockptr_t _ddsdestdatablock;
+    datablockptr_t compressTexture(uint64_t hash) const;
+    void fetchDDSdata();
+};
+
+typedef std::map<std::string,EmbeddedTexture*> embtexmap_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -82,7 +96,7 @@ public:
 
   int miNumPrimGroups;
   XgmPrimGroup* mpPrimGroups;
-  VertexBufferBase* mpVertexBuffer; // Our Models have 1 VB per cluster
+  VertexBufferBase* _vertexBuffer; // Our Models have 1 VB per cluster
   EVtxStreamFormat meVtxStrFmt;
 
   AABox mBoundingBox;
@@ -103,7 +117,7 @@ public:
     OrkAssert(idx < miNumPrimGroups);
     return mpPrimGroups[idx];
   }
-  const VertexBufferBase* GetVertexBuffer(void) const { return mpVertexBuffer; }
+  const VertexBufferBase* GetVertexBuffer(void) const { return _vertexBuffer; }
   const PoolString& GetJointBinding(int idx) const { return mJoints[idx]; }
   size_t GetNumJointBindings(void) const { return mJoints.size(); }
 
@@ -112,9 +126,9 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmSubMesh // Run Time Cluster Set
+struct XgmSubMesh // Run Time Cluster Set
 {
-public:
+
   GfxMaterial* mpMaterial;
   int miNumClusters;
   XgmCluster* mpClusters;
@@ -149,8 +163,8 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmMesh {
-public:
+struct XgmMesh {
+
   /////////////////////////////////////
   XgmMesh();
   XgmMesh(XgmMesh* pMesh);
@@ -178,7 +192,6 @@ public:
   void dump() const;
   /////////////////////////////////////
 
-private:
   orkvector<XgmSubMesh*> mSubMeshes;
   fvec4 mvBoundingBoxMin;
   fvec4 mvBoundingBoxMax;
@@ -192,9 +205,8 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmModel {
+struct XgmModel {
 
-public:
   /////////////////////////////////////
 
   void ReserveMeshes(int icount) { mMeshes.reserve(icount); }
@@ -294,7 +306,6 @@ public:
 
   PoolString GetModelName() const { return msModelName; }
 
-private:
   orklut<PoolString, XgmMesh*> mMeshes;
   orkvector<GfxMaterial*> mvMaterials;
   int miBonesPerCluster;
@@ -307,19 +318,18 @@ private:
   fvec3 mBoundingCenter;
   float mBoundingRadius;
   bool mbSkinned;
+  varmap::VarMap _varmap;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 class GfxMaterialFx;
 
-class XgmModelInst {
-public:
+struct XgmModelInst {
+
   XgmModelInst(const XgmModel* Model);
   ~XgmModelInst();
 
-  GfxMaterialFx* GetLayerFxMaterial() const { return mLayerFxMaterial; }
-  void SetLayerFxMaterial(GfxMaterialFx* pfx) { mLayerFxMaterial = pfx; }
 
   const XgmModel* GetXgmModel(void) const { return mXgmModel; }
   int GetNumChannels(void) const;
@@ -347,13 +357,12 @@ public:
   bool IsBlenderZup() const { return mBlenderZup; }
   void SetBlenderZup(bool bv) { mBlenderZup = bv; }
 
-private:
   static const int knummaskbytes = 32;
   U8 mMaskBits[knummaskbytes];
   const XgmModel* mXgmModel;
   XgmLocalPose mLocalPose;
   XgmMaterialStateInst mMaterialStateInst;
-  GfxMaterialFx* mLayerFxMaterial;
+  GfxMaterial* _overrideMaterial = nullptr;
   int miNumChannels;
   bool mbSkinned;
   bool mBlenderZup;
@@ -392,6 +401,4 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-}} // namespace ork::lev2
-
-#endif
+} // namespace ork::lev2

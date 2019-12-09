@@ -47,6 +47,11 @@ submesh::~submesh() {
   size_t ic5 = mEdges.size();
   size_t ic6 = mMergedPolys.size();
   gc1 += ic1;
+
+
+
+
+
   gc2 += ic2;
   gc3 += ic3;
   gc4 += ic4;
@@ -111,7 +116,7 @@ void toolmesh::Prune() {
 void toolmesh::Dump(const std::string& comment) const {
   if (1)
     return; //
-
+/*
   static int icnt   = 0;
   std::string fname = CreateFormattedString("tmeshout%d.txt", icnt);
   icnt++;
@@ -185,6 +190,7 @@ void toolmesh::Dump(const std::string& comment) const {
   }
   fprintf(fout, "////////////////////////////////////////////////\n");
   fclose(fout);
+  */
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -203,11 +209,8 @@ void toolmesh::SetAnnotation(const char* annokey, const char* annoval) {
     aval = annoval;
   mAnnotations[std::string(annokey)] = aval;
 }
-void submesh::SetAnnotation(const char* annokey, const char* annoval) {
-  std::string aval = "";
-  if (annoval != 0)
-    aval = annoval;
-  mAnnotations[std::string(annokey)] = aval;
+void submesh::setStringAnnotation(const char* annokey, std::string annoval) {
+  mAnnotations[std::string(annokey)] = annoval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -220,11 +223,11 @@ const char* toolmesh::GetAnnotation(const char* annokey) const {
   }
   return defret;
 }
-const char* submesh::GetAnnotation(const char* annokey) const {
+svar64_t submesh::annotation(const char* annokey) const {
   static const char* defret("");
-  orkmap<std::string, std::string>::const_iterator it = mAnnotations.find(std::string(annokey));
+  auto it = mAnnotations.find(std::string(annokey));
   if (it != mAnnotations.end()) {
-    return (*it).second.c_str();
+    return (*it).second;
   }
   return defret;
 }
@@ -258,7 +261,7 @@ void submesh::SplitOnAnno(toolmesh& out, const std::string& annokey) const {
 void submesh::MergeAnnos(const AnnotationMap& mrgannos, bool boverwrite) {
   for (AnnotationMap::const_iterator it = mrgannos.begin(); it != mrgannos.end(); it++) {
     const std::string& key = it->first;
-    const std::string& val = it->second;
+    const auto& val = it->second;
 
     AnnotationMap::iterator itf = mAnnotations.find(key);
     if (itf == mAnnotations.end()) {

@@ -25,12 +25,12 @@ bool gearlyhack = true;
 
 GfxMaterial3DSolid::GfxMaterial3DSolid(GfxTarget* pTARG)
     : meColorMode(EMODE_MOD_COLOR) {
-  mRasterState.SetShadeModel(ESHADEMODEL_SMOOTH);
-  mRasterState.SetAlphaTest(EALPHATEST_OFF);
-  mRasterState.SetBlending(EBLENDING_OFF);
-  mRasterState.SetDepthTest(EDEPTHTEST_LEQUALS);
-  mRasterState.SetZWriteMask(true);
-  mRasterState.SetCullTest(ECULLTEST_OFF);
+  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
+  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
+  _rasterstate.SetBlending(EBLENDING_OFF);
+  _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+  _rasterstate.SetZWriteMask(true);
+  _rasterstate.SetCullTest(ECULLTEST_OFF);
 
   miNumPasses = 1;
 
@@ -51,12 +51,12 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(
     , mUnManaged(unmanaged)
     , mAllowCompileFailure(allowcompilefailure) {
 
-  mRasterState.SetShadeModel(ESHADEMODEL_SMOOTH);
-  mRasterState.SetAlphaTest(EALPHATEST_OFF);
-  mRasterState.SetBlending(EBLENDING_OFF);
-  mRasterState.SetDepthTest(EDEPTHTEST_LEQUALS);
-  mRasterState.SetZWriteMask(true);
-  mRasterState.SetCullTest(ECULLTEST_OFF);
+  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
+  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
+  _rasterstate.SetBlending(EBLENDING_OFF);
+  _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+  _rasterstate.SetZWriteMask(true);
+  _rasterstate.SetCullTest(ECULLTEST_OFF);
 
   miNumPasses = 1;
 
@@ -223,7 +223,7 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
   bool is_stereo                     = CPD.isStereoOnePass();
   bool is_forcenoz                   = RCID ? RCID->IsForceNoZWrite() : false;
 
-  pTarg->RSI()->BindRasterState(mRasterState);
+  pTarg->RSI()->BindRasterState(_rasterstate);
   pTarg->FXI()->BindPass(hModFX, iPass);
 
   if (hModFX->GetFailedCompile()){

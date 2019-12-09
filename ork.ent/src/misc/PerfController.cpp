@@ -91,10 +91,10 @@ void PerfControllerComponentData::Describe()
 	ork::reflect::RegisterProperty( "MorphGroup", & PerfControllerComponentData::mMorphGroup );
 
 	ork::reflect::RegisterMapProperty( "Programs", & PerfControllerComponentData::mPrograms );
-	ork::reflect::AnnotatePropertyForEditor< PerfControllerComponentData >("Programs", "editor.factorylistbase", "PerfProgramData" );
-	ork::reflect::AnnotatePropertyForEditor< PerfControllerComponentData >("Programs", "editor.map.policy.impexp", "true" );
+	ork::reflect::annotatePropertyForEditor< PerfControllerComponentData >("Programs", "editor.factorylistbase", "PerfProgramData" );
+	ork::reflect::annotatePropertyForEditor< PerfControllerComponentData >("Programs", "editor.map.policy.impexp", "true" );
 
-	ork::reflect::AnnotateClassForEditor< PerfControllerComponentData >("editor.object.ops", ConstString("AdvPrg:perfctrladv NewPrg:perfctrlnew WriPrg:perfctrlwri WriMorphA:perfctrlwrimorph ") );
+	ork::reflect::annotateClassForEditor< PerfControllerComponentData >("editor.object.ops", ConstString("AdvPrg:perfctrladv NewPrg:perfctrlnew WriPrg:perfctrlwri WriMorphA:perfctrlwrimorph ") );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PerfControllerComponentData::SetMorphA( const float& fv )
@@ -473,8 +473,8 @@ void PerfSnapShotEvent::PopNode() const
 void PerfProgramData::Describe()
 {
 	ork::reflect::RegisterMapProperty( "Targets", & PerfProgramData::mTargets );
-	ork::reflect::AnnotatePropertyForEditor< PerfProgramData >("Targets", "editor.factorylistbase", "PerfProgramTarget" );
-	ork::reflect::AnnotatePropertyForEditor< PerfProgramData >("Targets", "editor.map.policy.impexp", "true" );
+	ork::reflect::annotatePropertyForEditor< PerfProgramData >("Targets", "editor.factorylistbase", "PerfProgramTarget" );
+	ork::reflect::annotatePropertyForEditor< PerfProgramData >("Targets", "editor.map.policy.impexp", "true" );
 }
 ///////////////////////////////////////////////////////////////////////////////
 PerfProgramData::PerfProgramData()

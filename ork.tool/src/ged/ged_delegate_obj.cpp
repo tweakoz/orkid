@@ -73,7 +73,7 @@ GedObjNode<PropSetterObj>::GedObjNode( ObjModel& mdl, const char* name, const re
 			ork::Object* psubOBJ = rtti::autocast( psubobj );
 			object::ObjectClass* objclass = rtti::downcast<object::ObjectClass*>( psubOBJ->GetClass() );
 
-			/*obj_ops = objclass->Description().GetClassAnnotation( "editor.object.ops" );
+			/*obj_ops = objclass->Description().classAnnotation( "editor.object.ops" );
 
 			mdl.GetGedWidget()->PushItemNode( this );
 			const reflect::IObjectFunctor *functor = rtti::downcast<object::ObjectClass*>(psubobj->GetClass())->Description().FindFunctor("GetName");

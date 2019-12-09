@@ -1,0 +1,450 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+    glsl_version = "330";
+    import "misctools.i";
+}
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+uniform_set ub_vtx {
+    mat4 MVPC;
+    mat4 MVPL;
+    mat4 MVPR;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface iface_v2uv : ub_vtx {
+    inputs {
+        vec4 position : POSITION;
+        vec2 uv0 : TEXCOORD0;
+        vec2 uv1 : TEXCOORD1;
+    }
+    outputs {
+        vec2 frg_uva;
+        vec2 frg_uvb;
+    }
+}
+///////////////////////////////////////////////////////////////
+uniform_set ub_frg {
+    mat4 IVPArray[2];
+    mat4 VArray[2];
+    mat4 PArray[2];
+    sampler2D MapAlbedoAo;
+    sampler2D MapNormalL;
+    sampler2D MapDepthCluster;
+    sampler2D MapDepth;
+    vec2 InvViewportSize;// inverse target size
+    float Time;
+    vec2 NearFar;
+    int NumLights;
+    int TileDim;
+    vec2 Zndc2eye;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ub_light {
+    vec4 LightColorD[2048];// 32KiB
+    vec4 LightPosR[2048];// 32KiB
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_f2uv {
+    inputs {
+        vec2 frg_uva;
+        vec2 frg_uvb;
+    }
+    outputs { vec4 out_clr; }
+}
+///////////////////////////////////////////////////////////////
+libblock lib_deferred : ub_light : ub_frg {
+/////////////////////////////////////////////////////////
+    struct GBufData {
+        vec2 _uv;
+        vec3 _wpos;
+        vec3 _wnrm;
+        vec3 _albedo;
+        float _zeye;
+    };
+    struct WPosData {
+        vec2 _muv;
+        vec2 _scruv;
+        mat4 _ivp;
+    };
+    /////////////////////////////////////////////////////////
+    float eyedepth(vec2 depthuv) {
+        // a.b[expr] = 5; ?
+        // or
+        // a.b [expr] = 5 ?
+        float depthtex = texture(MapDepth, depthuv).r;
+        float ndc      = depthtex * 2.0 - 1.0;
+        return Zndc2eye.x / (ndc - Zndc2eye.y);
+    }
+    /////////////////////////////////////////////////////////
+    vec4 defwpos(WPosData wpd) {
+        float depthtex = texture(MapDepth, wpd._muv).r;
+        vec2 scrxy     = wpd._scruv * 2.0 - vec2(1, 1);
+        vec3 inpos     = vec3(scrxy.x, scrxy.y, depthtex * 2 - 1.0);
+        vec4 rr        = wpd._ivp * vec4(inpos, 1);
+        float ndc      = depthtex * 2.0 - 1.0;
+        float zeye     = Zndc2eye.x / (ndc - Zndc2eye.y);
+        vec3 wpos      = vec3(rr.xyz / rr.w);
+        return vec4(wpos, zeye);
+    }
+    /////////////////////////////////////////////////////////
+    GBufData decodeGBUF(WPosData wpd) {
+        vec4 wpres = defwpos(wpd);
+        GBufData decoded;
+
+        decoded._uv     = wpd._muv;
+        decoded._wpos   = wpres.xyz;
+        decoded._zeye   = wpres.w;
+        vec4 n_mdl      = texture(MapNormalL, decoded._uv);
+        decoded._wnrm   = normalize(n_mdl.xyz);
+        decoded._albedo = texture(MapAlbedoAo, decoded._uv).xyz;
+        return decoded;
+    }
+    /////////////////////////////////////////////////////////
+    vec3 pointlight(GBufData gbd, vec3 lightpos, float lightradius, vec3 color) {
+        vec3 postolight = lightpos - gbd._wpos;
+        float dis2light = length(postolight);
+        float atten     = dis2light / lightradius;
+        atten           = 1.0 - clamp(atten, 0, 1);
+        atten           = pow(atten, 1.4);// * atten;
+        vec3 dir2light  = normalize(postolight);
+        atten *= max(dot(gbd._wnrm, dir2light), 0);
+        //float dis2rad = clamp(1 - abs(dis2light - lightradius), 0, 1);
+        //return color * atten + vec3(pow(dis2rad, 4) * 0.2);
+        return color * atten;
+    }
+    /////////////////////////////////////////////////////////
+    vec3 baselighting(WPosData wpd) {
+        GBufData gbd = decodeGBUF(wpd);
+        // sunlight ///////////////
+        vec3 l = vec3((0.5 + dot(gbd._wnrm, vec3(0, 1, 0)) * 0.5)) * 0.25;
+        ///////////////////////////
+        return gbd._albedo * l;
+    }
+    /////////////////////////////////////////////////////////
+    vec3 pntlighting(WPosData wpd) {
+        GBufData gbd = decodeGBUF(wpd);
+        vec3 l       = vec3(0, 0, 0);
+        int lbas     = int(frg_uvb.x);
+        int numl     = int(frg_uvb.y);
+        for (int i = 0; i < numl; i++) {
+            int lidx                     = lbas + i;
+            float lightcamdepth          = LightColorD[lidx].w;
+            bool sphere_intersects_depth = (gbd._zeye - lightcamdepth) < LightPosR[lidx].w;
+            if (sphere_intersects_depth)
+            l += pointlight(gbd, LightPosR[lidx].xyz, LightPosR[lidx].w, LightColorD[lidx].xyz);
+        }
+        return gbd._albedo * l;
+    }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_passthru2uv : iface_v2uv {
+    frg_uva     = uv0;
+    frg_uvb     = uv1;
+    gl_Position = position;
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fdownsampledepthcluster {
+    inputs {
+        vec2 frg_uva;
+        vec2 frg_uvb;
+    }
+    outputs { uint out_depthclusters; }
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_downsampledepthcluster : iface_fdownsampledepthcluster : lib_deferred {
+    vec2 base       = (gl_FragCoord.xy - vec2(0.5, 0.5)) * float(TileDim);
+    uint clusterset = 0;
+    for (int iy = 0; iy < TileDim; iy++) {
+        for (int ix = 0; ix < TileDim; ix++) {
+            vec2 uv              = base + vec2(ix, iy);
+            uv                   = uv * InvViewportSize;
+            float depthtex       = texture(MapDepth, uv).x;
+            float ndc            = depthtex * 2.0 - 1.0;
+            float zeye           = Zndc2eye.x / (ndc - Zndc2eye.y);
+            uint clusterbitindex = uint(log2(zeye));
+            clusterset           = clusterset | (1u << clusterbitindex);
+        }
+    }
+    out_depthclusters = clusterset;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_baselight : iface_f2uv : lib_deferred {
+    WPosData wpd;
+    wpd._muv   = gl_FragCoord.xy * InvViewportSize;
+    wpd._scruv = wpd._muv;
+    wpd._ivp   = IVPArray[int(wpd._muv.x >= 0.5)];
+    vec3 c     = baselighting(wpd);
+    out_clr    = vec4(c, 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_baselight_stereo : iface_f2uv : lib_deferred {
+    WPosData wpd;
+    wpd._muv     = gl_FragCoord.xy * InvViewportSize;
+    wpd._ivp     = IVPArray[int(wpd._muv.x >= 0.5)];
+    wpd._scruv   = wpd._muv;
+    wpd._scruv.x = mod(wpd._scruv.x * 2, 1);
+    vec3 c       = baselighting(wpd);
+    out_clr      = vec4(c, 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_pointlight : iface_f2uv : lib_deferred {
+    WPosData wpd;
+    wpd._muv   = gl_FragCoord.xy * InvViewportSize;
+    wpd._ivp   = IVPArray[0];
+    wpd._scruv = wpd._muv;
+    vec3 c     = pntlighting(wpd);
+    float dp5  = distance(frg_uva, vec2(.5, .5));
+    c += vec3(pow(dp5, 17) * 256.0);
+    out_clr = vec4(c, 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_pointlight_stereo : iface_f2uv : lib_deferred {
+    WPosData wpd;
+    wpd._muv     = gl_FragCoord.xy * InvViewportSize;
+    wpd._ivp     = IVPArray[int(wpd._muv.x >= 0.5)];
+    wpd._scruv   = wpd._muv;
+    wpd._scruv.x = mod(wpd._scruv.x * 2, 1);
+    vec3 c       = pntlighting(wpd);
+// c = vec3(wpd._muv,0);
+// vec3 c = vec3(frg_uva,0);
+    out_clr = vec4(c, 1);
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_default : default { }
+///////////////////////////////////////////////////////////////
+technique baselight {
+    fxconfig = fxcfg_default;
+    pass p0 {
+        vertex_shader   = vs_passthru2uv;
+        fragment_shader = ps_baselight;
+        state_block     = sb_default;
+    }
+}
+///////////////////////////////////////////////////////////////
+technique pointlight {
+    fxconfig = fxcfg_default;
+    pass p0 {
+        vertex_shader   = vs_passthru2uv;
+        fragment_shader = ps_pointlight;
+        state_block     = sb_default;
+    }
+}
+///////////////////////////////////////////////////////////////
+technique baselight_stereo {
+    fxconfig = fxcfg_default;
+    pass p0 {
+        vertex_shader   = vs_passthru2uv;
+        fragment_shader = ps_baselight_stereo;
+        state_block     = sb_default;
+    }
+}
+///////////////////////////////////////////////////////////////
+technique pointlight_stereo {
+    fxconfig = fxcfg_default;
+    pass p0 {
+        vertex_shader   = vs_passthru2uv;
+        fragment_shader = ps_pointlight_stereo;
+        state_block     = sb_default;
+    }
+}
+///////////////////////////////////////////////////////////////
+technique downsampledepthcluster {
+    fxconfig = fxcfg_default;
+    pass p0 {
+        vertex_shader   = vs_passthru2uv;
+        fragment_shader = ps_downsampledepthcluster;
+        state_block     = sb_default;
+    }
+}
+///////////////////////////////////////////////////////////////
+libblock chunklisttools {
+
+    struct ChunkedList {
+        uint _head;         // 0
+        uint _count;        // 4
+        uint _storagebase;  // 8
+        uint _curchunk;     // 12
+    };
+
+    struct ListChunk {
+        uint _base;         // 0
+        uint _count;        // 4
+        uint _nextchunk;    // 8
+        uint _pad;          // 12
+    };
+
+    void initChunkedList(inout ChunkedList cl, uint storbas){
+        cl._storagebase = storbas;
+        cl._head = 0;
+        cl._count = 0;
+    }
+}
+///////////////////////////////////////////////////////////////
+uniform_set compute_unis {
+    layout (binding = 1, r32ui) uimage2D img_depthclusters;
+}
+compute_interface iface_compute
+    : chunklisttools
+    : compute_unis {
+    inputs {
+        layout(local_size_x = 1, local_size_y = 1, local_size_z = 1);
+    }
+    storage {
+        layout(std430, binding = 0) buffer {
+            mat4 MVP;                        // 0
+            int numLights;                   // 64
+            int numTiles;                    // 68
+            int pada[2];                     // 72
+            vec4 campos;                     // 80
+            int padb[8];                     // 96
+            vec4 lightPosR[8192];            // 128
+            vec4 lightColor[8192];           // 128+131072
+            vec4 lightprjmin[8192];          // 128+262144
+            vec4 lightprjmax[8192];          // 128+393216
+            vec4 tileoutpos[8192];           // 128+524288
+            //ChunkedList _pertilelists[4096]; // 128+655360
+            //ListChunk _listchunks[65536];    // 128+655360+65536
+            uint _pendingtiles[100];         // 128+655360+65536+1048576
+        } ssbo_io_data;
+    }
+}
+///////////////////////////////////////////////////////////////
+libblock spheretools {
+    struct AABox {
+      vec3 _min;
+      vec3 _max;
+    };
+    AABox initAABox() {
+        AABox rval;
+        rval._min = vec3(1e6,1e6,1e6);
+        rval._max = vec3(-1e6,-1e6,-1e6);
+        return rval;
+    }
+    void growAABox(inout AABox box, vec3 point){
+        if(point.x>box._max.x) box._max.x=point.x;
+        if(point.y>box._max.y) box._max.y=point.y;
+        if(point.z>box._max.z) box._max.z=point.z;
+        if(point.x<box._min.x) box._min.x=point.x;
+        if(point.y<box._min.y) box._min.y=point.y;
+        if(point.z<box._min.z) box._min.z=point.z;
+    }
+    AABox sphereProjBounds(vec4 sphere, mat4 mvp){
+        vec3  ctr = sphere.xyz;
+        float rad = sphere.w;
+
+        vec3 c0 = ctr+vec3(-rad,-rad,-rad);
+        vec3 c1 = ctr+vec3(-rad,-rad,+rad);
+        vec3 c2 = ctr+vec3(-rad,+rad,-rad);
+        vec3 c3 = ctr+vec3(-rad,+rad,+rad);
+        vec3 c4 = ctr+vec3(+rad,-rad,-rad);
+        vec3 c5 = ctr+vec3(+rad,-rad,+rad);
+        vec3 c6 = ctr+vec3(+rad,+rad,-rad);
+        vec3 c7 = ctr+vec3(+rad,+rad,+rad);
+
+        vec4 c0j = mvp*vec4(c0,1); c0 = c0j.xyz / c0j.w;
+        vec4 c1j = mvp*vec4(c1,1); c1 = c1j.xyz / c1j.w;
+        vec4 c2j = mvp*vec4(c2,1); c2 = c2j.xyz / c2j.w;
+        vec4 c3j = mvp*vec4(c3,1); c3 = c3j.xyz / c3j.w;
+        vec4 c4j = mvp*vec4(c4,1); c4 = c4j.xyz / c4j.w;
+        vec4 c5j = mvp*vec4(c5,1); c5 = c5j.xyz / c5j.w;
+        vec4 c6j = mvp*vec4(c6,1); c6 = c6j.xyz / c6j.w;
+        vec4 c7j = mvp*vec4(c7,1); c7 = c7j.xyz / c7j.w;
+
+        AABox box = initAABox();
+        growAABox(box,c0);
+        growAABox(box,c1);
+        growAABox(box,c2);
+        growAABox(box,c3);
+        growAABox(box,c4);
+        growAABox(box,c5);
+        growAABox(box,c6);
+        growAABox(box,c7);
+        return box;
+    }
+    bool doRangesOverlap( float amin, float amax, float bmin, float bmax ){
+        float mmax = (amin>bmin) ? amin : bmin;
+        float mmin = (amax<bmax) ? amax : bmax;
+        return mmax <= mmin;
+    }
+}
+///////////////////////////////////////////////////////////////
+compute_shader compute_projectlights
+    : extension(GL_NV_gpu_shader5)
+    : spheretools
+    : iface_compute {
+    ivec2 imgsiz = imageSize(img_depthclusters);
+    vec2 KTILEDIMM = vec2(imgsiz.x-1,imgsiz.y-1);
+    int il = int(gl_WorkGroupID.x);
+    vec4 sphere = lightPosR[il];
+    AABox sphbox = sphereProjBounds(sphere, MVP);
+    vec3 sphmin = sphbox._min.xyz;
+    vec3 sphmax = sphbox._max.xyz;
+    sphmin += vec3(1,1,1); // -1..1 -> 0..2
+    sphmax += vec3(1,1,1); // -1..1 -> 0..2
+    sphmin *= 0.5; // 0..2 -> 0..1
+    sphmax *= 0.5; // 0..2 -> 0..1
+    sphmin.xy = floor(sphmin.xy*KTILEDIMM);
+    sphmax.xy = floor(sphmax.xy*KTILEDIMM);
+    float d2cam = distance(sphere.xyz,campos.xyz);
+    sphmin.z = d2cam-sphere.w;
+    sphmax.z = d2cam+sphere.w;
+    lightprjmin[il] = vec4(sphmin,d2cam);
+    lightprjmax[il] = vec4(sphmax,d2cam);
+
+    // init numTiles
+    numTiles = 0;
+}
+///////////////////////////////////////////////////////////////
+compute_shader compute_collectlights
+    : extension(GL_NV_gpu_shader5)
+    : spheretools
+    : iface_compute {
+    const ivec2 imgsiz = imageSize(img_depthclusters);
+    const int KTILEMAXX = imgsiz.x-1;
+    const int KTILEMAXY = imgsiz.y-1;
+    const int ix = int(gl_WorkGroupID.x);
+    const int iy = int(gl_WorkGroupID.y);
+    const float fx = float(ix);
+    const float fy = float(iy);
+    const uint32_t clusterpix = imageLoad(img_depthclusters,ivec2(ix, iy)).r;
+    const int tileindex = iy * imgsiz.x + ix;
+    for( int il=0; il<numLights; il++ ){
+        vec4 lmin = lightprjmin[il];
+        float d2cam = lmin.w;
+        vec3 sphmin = lmin.xyz;
+        vec3 sphmax = lightprjmax[il].xyz;
+        bool overlapX = doRangesOverlap(fx,fx,sphmin.x,sphmax.x);
+        if( overlapX ){
+          bool overlapY = doRangesOverlap(fy,fy,sphmin.y,sphmax.y);
+            if( overlapY ){
+                uint32_t DC = clusterpix;
+                int bitindex = 0;
+                bool overlapZ = false;
+                while (DC != 0 && (false == overlapZ)) {
+                  bool has_bit = bool(DC & 1);
+                  if (has_bit) {
+                    // todo: use bitCount() and findLSB()
+                    float bitshiftedLO = float(1 << bitindex);
+                    float bitshiftedHI = bitshiftedLO + bitshiftedLO;
+                    bool testoz = doRangesOverlap(sphmin.z, sphmax.z, bitshiftedLO, bitshiftedHI);
+                    overlapZ = overlapZ || testoz;
+                  } // if (has_bit) {
+                  DC = DC>>1;
+                  bitindex++;
+                } // while(depthsample)
+                if (overlapZ) {
+                    // todo : atomicCounters ?
+                    int tileindexcount = atomicAdd(numTiles,1);
+                }
+            }
+        }
+
+    }
+}
+
+

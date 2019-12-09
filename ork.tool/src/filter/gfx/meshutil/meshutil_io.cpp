@@ -67,7 +67,7 @@ void toolmesh::ReadAuto( const file::Path& BasePath )
 
 	if( ext == "dae" )
 	{
-		DaeReadOpts opts;
+		tool::DaeReadOpts opts;
 		ReadFromDaeFile( BasePath, opts );
 	}
 	else
@@ -89,7 +89,7 @@ void toolmesh::WriteAuto( const file::Path& BasePath ) const
 
 	if( ext == "dae" )
 	{
-		DaeWriteOpts out_opts;
+		tool::DaeWriteOpts out_opts;
 		WriteToDaeFile( BasePath, out_opts );
 	}
 	else
@@ -107,10 +107,10 @@ FlatSubMesh::FlatSubMesh( const submesh& mesh )
 	mesh.FindNSidedPolys( TrianglePolyIndices, 3 );
 	mesh.FindNSidedPolys( QuadPolyIndices, 4 );
 
-	const char* vtxformat = mesh.GetAnnotation("OutVtxFormat");
-	evtxformat = PropType<lev2::EVtxStreamFormat>::FromString( vtxformat );
+	auto vtxformat = mesh.typedAnnotation<std::string>("OutVtxFormat");
+	evtxformat = PropType<lev2::EVtxStreamFormat>::FromString( vtxformat.c_str() );
 
-	orkprintf( "vtxformat<%s>\n", vtxformat );
+	orkprintf( "vtxformat<%s>\n", vtxformat.c_str() );
 
 	////////////////////////////////////////////////////////
 	int inumv = (int) vpool.GetNumVertices();

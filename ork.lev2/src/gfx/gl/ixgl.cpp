@@ -16,7 +16,8 @@
 #include <QtCore/QMetaObject>
 #include <QtX11Extras/QX11Info>
 #include <GL/glx.h>
-#include <QtGui/5.12.2/QtGui/qpa/qplatformnativeinterface.h>
+
+#include <QtGui/qpa/qplatformnativeinterface.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxTargetGL, "GfxTargetGL")
 
@@ -27,7 +28,8 @@ extern "C"
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace lev2 {
+namespace ork {
+namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 ork::MpMcBoundedQueue<void*> GfxTargetGL::mLoadTokens;
@@ -271,25 +273,25 @@ void GfxTargetGL::GLinit()
 
  	printf("OpenGL Version %d.%d loaded\n", GLVersion.major, GLVersion.minor);
 
-	printf( "glad_glDrawMeshTasksNV<%p>\n", glad_glDrawMeshTasksNV );
-	printf( "glad_glDrawMeshTasksIndirectNV<%p>\n", glad_glDrawMeshTasksIndirectNV );
-	printf( "glad_glMultiDrawMeshTasksIndirectNV<%p>\n", glad_glMultiDrawMeshTasksIndirectNV );
-	printf( "glad_glMultiDrawMeshTasksIndirectCountNV<%p>\n", glad_glMultiDrawMeshTasksIndirectCountNV );
+	//printf( "glad_glDrawMeshTasksNV<%p>\n", glad_glDrawMeshTasksNV );
+	//printf( "glad_glDrawMeshTasksIndirectNV<%p>\n", glad_glDrawMeshTasksIndirectNV );
+	//printf( "glad_glMultiDrawMeshTasksIndirectNV<%p>\n", glad_glMultiDrawMeshTasksIndirectNV );
+	//printf( "glad_glMultiDrawMeshTasksIndirectCountNV<%p>\n", glad_glMultiDrawMeshTasksIndirectCountNV );/
 
-	printf( "glObjectLabel<%p>\n", glObjectLabel );
-	printf( "glPushDebugGroup<%p>\n", glPushDebugGroup );
-	printf( "glPopDebugGroup<%p>\n", glPopDebugGroup );
+	//printf( "glObjectLabel<%p>\n", glObjectLabel );
+	//printf( "glPushDebugGroup<%p>\n", glPushDebugGroup );
+	//printf( "glPopDebugGroup<%p>\n", glPopDebugGroup );
 
-	printf( "glad_glInsertEventMarkerEXT<%p>\n", glad_glInsertEventMarkerEXT );
+	//printf( "glad_glInsertEventMarkerEXT<%p>\n", glad_glInsertEventMarkerEXT );
 
 	glInsertEventMarkerEXT = glad_glInsertEventMarkerEXT;
 	//glPushGroupMarkerEXT = glad_glPushDebugGroup;
 	//glPopGroupMarkerEXT = glad_glPopDebugGroup;
 
-	printf( "GLAD_GL_EXT_debug_label<%d>\n", int(GLAD_GL_EXT_debug_label) );
-	printf( "GLAD_GL_EXT_debug_marker<%d>\n", int(GLAD_GL_EXT_debug_marker) );
-	printf( "GLAD_GL_NV_mesh_shader<%d>\n", int(GLAD_GL_NV_mesh_shader) );
-	printf( "GLAD_GL_KHR_debug<%d>\n", int(GLAD_GL_KHR_debug));
+	//printf( "GLAD_GL_EXT_debug_label<%d>\n", int(GLAD_GL_EXT_debug_label) );
+	//printf( "GLAD_GL_EXT_debug_marker<%d>\n", int(GLAD_GL_EXT_debug_marker) );
+	//printf( "GLAD_GL_NV_mesh_shader<%d>\n", int(GLAD_GL_NV_mesh_shader) );
+	//printf( "GLAD_GL_KHR_debug<%d>\n", int(GLAD_GL_KHR_debug));
 
 	for( int i=0; i<1; i++ )
 	{
@@ -331,6 +333,7 @@ GfxTargetGL::GfxTargetGL()
 	, mFbI( *this )
 	, mTxI( *this )
 	, mMtxI( *this )
+	, mCI( *this )
 {
 	GfxTargetGL::GLinit();
 
@@ -384,8 +387,25 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 	//auto pvis = (XVisualInfo*) x11info.visual();
 	XVisualInfo* vinfo = GlIxPlatformObject::gVisInfo;
 	///////////////////////
-
+    int DWMM = DisplayWidthMM(x_dpy,x_screen);
+    int DHMM = DisplayHeightMM(x_dpy,x_screen);
+	int RESW = DisplayWidth(x_dpy,x_screen);
+    int RESH = DisplayHeight(x_dpy,x_screen);
+    float CDPIX = float(RESW)/float(DWMM)*25.4f;
+    float CDPIY = float(RESH)/float(DHMM)*25.4f;
+    int DPIX = QX11Info::appDpiX(x_screen);
+    int DPIY = QX11Info::appDpiY(x_screen);
 	printf( "GfxTargetGL<%p> dpy<%p> screen<%d> vis<%p>\n", this, x_dpy, x_screen, vinfo );
+    printf( "dpi <%d %d>\n", DPIX, DPIY );
+    printf( "res <%d %d>\n", RESW, RESH );
+    printf( "siz <%d %d>\n", DWMM, DHMM );
+    printf( "cpi <%g %g>\n", CDPIX, CDPIY );
+    float avgdpi = (CDPIX+CDPIY)*0.5f;
+    _hiDPI = avgdpi>180.0;
+    if( _hiDPI ) {
+      printf("HIDPI enabled\n");
+      ork::lev2::_HIDPI = _hiDPI; // todo remove when the correct plumbing is in place
+    }
 
 	plato->mGlxContext = GLXCCA(x_dpy,gl_this_fb_config,plato->gShareMaster,GL_TRUE,gl46_context_attribs);
 

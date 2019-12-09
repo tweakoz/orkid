@@ -10,40 +10,44 @@ fxconfig fxcfg_default
 ///////////////////////////////////////////////////////////////
 uniform_set ub_vtx
 {
-	uniform mat4        mvp;
-	uniform vec4        modcolor;
+	mat4        mvp;
+	vec4        modcolor;
 
 }
 vertex_interface iface_vdefault
 	: ub_vtx
 {
-	//
-	in vec4 position : POSITION;
-	in vec4 vtxcolor : COLOR0;
-	in vec2 uv0 : TEXCOORD0;
-	in vec2 uv1 : TEXCOORD1;
-	//
-	out vec4 frg_clr;
-	out vec2 frg_uv;
+    inputs {
+	    vec4 position : POSITION;
+        vec4 vtxcolor : COLOR0;
+	    vec2 uv0 : TEXCOORD0;
+	    vec2 uv1 : TEXCOORD1;
+	}
+    outputs {
+        vec4 frg_clr;
+	    vec2 frg_uv;
+	}
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_frg
 {
-	uniform vec4 modcolor;
+	vec4 modcolor;
 }
 fragment_interface iface_fmt
 	: ub_frg
 {
-	//in vec2 frg_uv;
-	//
-	out vec4 out_clr;
+    inputs {
+	    //vec2 frg_uv;
+	}
+	outputs {
+	    vec4 out_clr;
+	}
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
 ///////////////////////////////////////////////////////////////
-state_block sb_default
+state_block sb_default : default
 {
-	inherits default;
 }
 ///////////////////////////////////////////////////////////////
 // shaders
@@ -72,35 +76,31 @@ fragment_shader ps_modclrd3
 	out_clr = vec4(modcolor.xyz*0.3,1.0);
 }
 ///////////////////////////////////////////////////////////////
-state_block sb_m1
+state_block sb_m1 : sb_default
 {
-	inherits sb_default;
 	DepthTest=OFF;
 	DepthMask=true;
 	CullTest=OFF;
 	BlendMode = OFF;
 }
 /*
-state_block sb_m2
+state_block sb_m2  : sb_m1
 {
-	inherits sb_m1;
 	DepthTest=OFF;
 	DepthMask=false;
 	CullTest=PASS_FRONT;
 	BlendMode = ALPHA;
 }
-state_block sb_m3
+state_block sb_m3 : sb_m2
 {
-	inherits sb_m2;
 	DepthTest=LEQUALS;
 	DepthMask=true;
 	CullTest=PASS_BACK;
 	BlendMode = ADDITIVE;
 }
 */
-state_block sb_pick
+state_block sb_pick : sb_default
 {
-	inherits sb_default;
 	DepthTest=OFF;
 	DepthMask=true;
 	CullTest=OFF;

@@ -34,6 +34,7 @@
 
 #include <orktool/filter/gfx/collada/collada.h>
 #include <orktool/filter/gfx/collada/daeutil.h>
+#include <orktool/filter/gfx/meshutil/clusterizer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -216,7 +217,7 @@ bool CColladaModel::FindDaeMeshes( void )
 			FCDGeometry *GeoObj = GeoLib->GetEntity(ient);
 	
 			bool is_mesh = GeoObj->IsMesh();
-			printf( "collada_ent<%d> is_mesh<%d>\n", ient, int(is_mesh) );
+ 			printf( "collada_ent<%d> is_mesh<%d>\n", ient, int(is_mesh) );
 
 			if( is_mesh )
 			{
@@ -698,7 +699,7 @@ bool CColladaModel::ParseGeometries()
 
 				if( 0 == inumpolys ) continue;
 
-				SColladaMatGroup * ColMatGroup = new SColladaMatGroup;
+				auto ColMatGroup = new MeshUtil::ToolMaterialGroup;
 				ColMatGroup->mMeshConfigurationFlags.mbSkinned = ColMesh->IsSkinned();
 				ColMesh->RefMatGroups().push_back( ColMatGroup );
 
@@ -757,17 +758,17 @@ bool CColladaModel::ParseGeometries()
 				
 				if( buselightmap )
 				{
-					ColMatGroup->SetClusterizer( new XgmClusterizerStd );
+					ColMatGroup->SetClusterizer( new MeshUtil::XgmClusterizerStd );
 				}
 				else
 				switch( policy->mDicingPolicy.GetPolicy() )
 				{
 					case ColladaDicingPolicy::ECTP_DICE:
-						ColMatGroup->SetClusterizer( new XgmClusterizerDiced );
+						ColMatGroup->SetClusterizer( new MeshUtil::XgmClusterizerDiced );
 						//ColMatGroup->SetClusterizer( new XgmClusterizerStd );
 						break;
 					case ColladaDicingPolicy::ECTP_DONT_DICE:
-						ColMatGroup->SetClusterizer( new XgmClusterizerStd );
+						ColMatGroup->SetClusterizer( new MeshUtil::XgmClusterizerStd );
 						break;
 					default:
 						OrkAssert(false);
@@ -856,13 +857,13 @@ bool CColladaModel::ParseGeometries()
 				
 				ColMatGroup->mShadingGroupName = ShadingGroupName;
 
-				orkmap<std::string,SColladaMaterial>::iterator itmat = mMaterialMap.find( ShadingGroupName );
+				orkmap<std::string,ColladaMaterial>::iterator itmat = mMaterialMap.find( ShadingGroupName );
 
 				if( mMaterialMap.end() == itmat )
 				{
-					SColladaMaterial colladamaterial;
+					ColladaMaterial colladamaterial;
 					colladamaterial.ParseMaterial( mDocument, ShadingGroupName, MaterialName );
-					std::pair<std::string,SColladaMaterial> item(ShadingGroupName,colladamaterial);
+					std::pair<std::string,ColladaMaterial> item(ShadingGroupName,colladamaterial);
 					mMaterialMap.insert( item);
 					itmat = mMaterialMap.find( ShadingGroupName );
 				}
@@ -958,11 +959,11 @@ bool CColladaModel::ParseGeometries()
 					size_t iface_numfverts = GetFaceVertexCount(iface);
 					size_t iface_fvertbase = GetFaceVertexOffset(iface);
 					OrkAssert( 3 == iface_numfverts );
-					XgmClusterTri ClusTri;
+					MeshUtil::XgmClusterTri ClusTri;
 					if( iface%1000 == 0 )
 						printf( "iface<%d> of %d\n", iface, imatnumfaces );
 					for( size_t iface_v=0; iface_v<iface_numfverts; iface_v++ )
-					{	MeshUtil::vertex& MuVtx = ClusTri.Vertex[ iface_v ];
+					{	MeshUtil::vertex& MuVtx = ClusTri._vertex[ iface_v ];
 						/////////////////////////////////
 						// position
 						/////////////////////////////////

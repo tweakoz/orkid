@@ -555,6 +555,13 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
   int ity0 = frame_rect.miY;
   int ity1 = frame_rect.miY2;
 
+    if( pTARG->_hiDPI ){
+      itx0 /= 2;
+      itx1 /= 2;
+      ity0 /= 2;
+      ity1 /= 2;
+    }
+
   static Texture* pplaytex = ork::asset::AssetManager<ork::lev2::TextureAsset>::Create("lev2://textures/play_icon")->GetTexture();
   static Texture* ppaustex = ork::asset::AssetManager<ork::lev2::TextureAsset>::Create("lev2://textures/pause_icon")->GetTexture();
 
@@ -658,7 +665,7 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
       } else {
         pTARG->BindMaterial(&UiMat);
       }
-      UiMat.mRasterState.SetBlending(lev2::EBLENDING_OFF);
+      UiMat._rasterstate.SetBlending(lev2::EBLENDING_OFF);
       pTARG->PushModColor(fcolor4::White());
       {
         const int ksize = 512;

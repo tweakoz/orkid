@@ -11,6 +11,8 @@ hotkeys.ork
 *.swatch*
 *.moc
 *.ma
+.idea
+cmake-build*
 mocs
 .mayaSwatches/*
 ork.build.ini

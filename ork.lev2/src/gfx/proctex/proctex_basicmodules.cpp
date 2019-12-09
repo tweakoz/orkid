@@ -84,7 +84,7 @@ void Periodic::Describe() {
   RegisterFloatXfPlug(Periodic, Bias, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
 
   ork::reflect::RegisterProperty("Shape", &Periodic::meShape);
-  ork::reflect::AnnotatePropertyForEditor<Periodic>("Shape", "editor.class", "ged.factory.enum");
+  ork::reflect::annotatePropertyForEditor<Periodic>("Shape", "editor.class", "ged.factory.enum");
 }
 dataflow::inplugbase* Periodic::GetInput(int idx) {
   dataflow::inplugbase* rval = 0;
@@ -192,7 +192,7 @@ dataflow::outplugbase* Global::GetOutput(int idx) {
 void Curve1D::Describe() {
   RegisterFloatXfPlug(Curve1D, Input, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
   ork::reflect::RegisterProperty("curve", &Curve1D::CurveAccessor);
-  // ork::reflect::AnnotatePropertyForEditor<Curve1D>( "curve", "editor.class", "ged.factory.curve1d" );
+  // ork::reflect::annotatePropertyForEditor<Curve1D>( "curve", "editor.class", "ged.factory.curve1d" );
 }
 Curve1D::Curve1D()
     : mOutput(this, dataflow::EPR_UNIFORM, &mOutValue, "Output")
@@ -234,14 +234,14 @@ void RotSolid::Describe() {
 
   RegisterFloatXfPlug(RotSolid, PhaseOffset, 0.0f, 360.0f, ged::OutPlugChoiceDelegate);
 
-  ork::reflect::AnnotatePropertyForEditor<RotSolid>("NumSides", "editor.range.min", "3");
-  ork::reflect::AnnotatePropertyForEditor<RotSolid>("NumSides", "editor.range.max", "360");
-  ork::reflect::AnnotatePropertyForEditor<RotSolid>("BlendMode", "editor.class", "ged.factory.enum");
+  ork::reflect::annotatePropertyForEditor<RotSolid>("NumSides", "editor.range.min", "3");
+  ork::reflect::annotatePropertyForEditor<RotSolid>("NumSides", "editor.range.max", "360");
+  ork::reflect::annotatePropertyForEditor<RotSolid>("BlendMode", "editor.class", "ged.factory.enum");
 
   static const char* EdGrpStr = "grp://Basic AntiAlias NumSides BlendMode "
                                 "grp://Plugs PhaseOffset Radius Intens ";
 
-  reflect::AnnotateClassForEditor<RotSolid>("editor.prop.groups", EdGrpStr);
+  reflect::annotateClassForEditor<RotSolid>("editor.prop.groups", EdGrpStr);
 }
 ///////////////////////////////////////////////////////////////////////////////
 RotSolid::RotSolid()
@@ -346,10 +346,10 @@ void RotSolid::compute(ProcTex& ptex) {
         , stdmat(ptx.GetTarget())
         , mVB(vb) {
       stdmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
-      stdmat.mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-      stdmat.mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      stdmat.mRasterState.SetBlending(ebm);
-      stdmat.mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+      stdmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+      stdmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+      stdmat._rasterstate.SetBlending(ebm);
+      stdmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
       stdmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(bo.miW)));
 
       mOrthoBoxXYWH = fvec4(-1.0f, -1.0f, 2.0f, 2.0f);
@@ -374,7 +374,7 @@ void ImgOp2::Describe() {
   RegisterObjInpPlug(ImgOp2, InputA);
   RegisterObjInpPlug(ImgOp2, InputB);
   ork::reflect::RegisterProperty("Op", &ImgOp2::meOp);
-  ork::reflect::AnnotatePropertyForEditor<ImgOp2>("Op", "editor.class", "ged.factory.enum");
+  ork::reflect::annotatePropertyForEditor<ImgOp2>("Op", "editor.class", "ged.factory.enum");
 }
 ork::dataflow::inplugbase* ImgOp2::GetInput(int idx) {
   ork::dataflow::inplugbase* rval = 0;
@@ -421,10 +421,10 @@ void ImgOp2::compute(ProcTex& ptex) {
     }
     lev2::GfxMaterial3DSolid gridmat(pTARG, "orkshader://proctex", pop);
     gridmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-    gridmat.mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-    gridmat.mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    gridmat.mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-    gridmat.mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+    gridmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+    gridmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+    gridmat._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+    gridmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     gridmat.SetTexture(conplugA->GetValue().GetTexture(ptex));
     gridmat.SetTexture2(conplugB->GetValue().GetTexture(ptex));
     gridmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(buffer.miW)));
@@ -444,9 +444,9 @@ void ImgOp3::Describe() {
   RegisterObjInpPlug(ImgOp3, InputB);
   RegisterObjInpPlug(ImgOp3, InputM);
   ork::reflect::RegisterProperty("Op", &ImgOp3::meOp);
-  ork::reflect::AnnotatePropertyForEditor<ImgOp3>("Op", "editor.class", "ged.factory.enum");
+  ork::reflect::annotatePropertyForEditor<ImgOp3>("Op", "editor.class", "ged.factory.enum");
   ork::reflect::RegisterProperty("ChanCtrl", &ImgOp3::meChanCtrl);
-  ork::reflect::AnnotatePropertyForEditor<ImgOp3>("ChanCtrl", "editor.class", "ged.factory.enum");
+  ork::reflect::annotatePropertyForEditor<ImgOp3>("ChanCtrl", "editor.class", "ged.factory.enum");
 }
 ork::dataflow::inplugbase* ImgOp3::GetInput(int idx) {
   ork::dataflow::inplugbase* rval = 0;
@@ -502,28 +502,28 @@ void ImgOp3::compute(ProcTex& ptex) {
       mMtlMul3 = new lev2::GfxMaterial3DSolid(pTARG, "orkshader://proctex", "imgop3_mul3");
 
       mMtlLerp->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-      mMtlLerp->mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-      mMtlLerp->mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      mMtlLerp->mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-      mMtlLerp->mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+      mMtlLerp->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+      mMtlLerp->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+      mMtlLerp->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      mMtlLerp->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
 
       mMtlAddw->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-      mMtlAddw->mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-      mMtlAddw->mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      mMtlAddw->mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-      mMtlAddw->mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+      mMtlAddw->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+      mMtlAddw->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+      mMtlAddw->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      mMtlAddw->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
 
       mMtlSubw->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-      mMtlSubw->mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-      mMtlSubw->mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      mMtlSubw->mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-      mMtlSubw->mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+      mMtlSubw->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+      mMtlSubw->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+      mMtlSubw->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      mMtlSubw->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
 
       mMtlMul3->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-      mMtlMul3->mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-      mMtlMul3->mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      mMtlMul3->mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-      mMtlMul3->mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+      mMtlMul3->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+      mMtlMul3->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+      mMtlMul3->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      mMtlMul3->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     }
 
     lev2::GfxMaterial3DSolid* cur_mtl = nullptr;
@@ -618,10 +618,10 @@ void Transform::compute(ProcTex& ptex) {
     if (nullptr == mMaterial) {
       mMaterial = new lev2::GfxMaterial3DSolid(pTARG, "orkshader://proctex", "transform");
       mMaterial->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-      mMaterial->mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-      mMaterial->mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      mMaterial->mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-      mMaterial->mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+      mMaterial->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+      mMaterial->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+      mMaterial->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      mMaterial->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     }
     ////////////////////////////////////////////////////////////////
     float rot = PI2 * mPlugInpRotate.GetValue() / 360.0f;
@@ -653,9 +653,9 @@ void Transform::compute(ProcTex& ptex) {
 void Texture::Describe() {
   ork::reflect::RegisterProperty("Input", &Texture::GetTextureAccessor, &Texture::SetTextureAccessor);
   ork::reflect::RegisterProperty("FlipY", &Texture::_flipy);
-  ork::reflect::AnnotatePropertyForEditor<Texture>("Input", "editor.class", "ged.factory.assetlist");
-  ork::reflect::AnnotatePropertyForEditor<Texture>("Input", "editor.assettype", "lev2tex");
-  ork::reflect::AnnotatePropertyForEditor<Texture>("Input", "editor.assetclass", "lev2tex");
+  ork::reflect::annotatePropertyForEditor<Texture>("Input", "editor.class", "ged.factory.assetlist");
+  ork::reflect::annotatePropertyForEditor<Texture>("Input", "editor.assettype", "lev2tex");
+  ork::reflect::annotatePropertyForEditor<Texture>("Input", "editor.assetclass", "lev2tex");
 }
 Texture::Texture()
     : mpTexture(0) {}
@@ -669,10 +669,10 @@ void Texture::compute(ProcTex& ptex) {
   pTARG->debugPushGroup(FormatString("ptx::Texture::compute"));
   lev2::GfxMaterial3DSolid gridmat(pTARG, "orkshader://proctex", "ttex");
   gridmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-  gridmat.mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-  gridmat.mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-  gridmat.mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-  gridmat.mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+  gridmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+  gridmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+  gridmat._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+  gridmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
   gridmat.SetTexture(GetTexture());
   gridmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(buffer.miW)));
   pTARG->BindMaterial(&gridmat);
@@ -709,14 +709,14 @@ void Texture::compute(ProcTex& ptex) {
 ///////////////////////////////////////////////////////////////////////////////
 void ShaderQuad::Describe() {
   ork::reflect::RegisterProperty("ShaderFile", &ShaderQuad::mShaderPath);
-  ork::reflect::AnnotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.class", "ged.factory.filelist");
-  ork::reflect::AnnotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.filetype", "glfx");
-  ork::reflect::AnnotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.filebase", "orkshader://");
+  ork::reflect::annotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.class", "ged.factory.filelist");
+  ork::reflect::annotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.filetype", "glfx");
+  ork::reflect::annotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.filebase", "orkshader://");
 
   ork::reflect::RegisterProperty("Texture0", &ShaderQuad::GetTextureAccessor, &ShaderQuad::SetTextureAccessor);
-  ork::reflect::AnnotatePropertyForEditor<ShaderQuad>("Texture0", "editor.class", "ged.factory.assetlist");
-  ork::reflect::AnnotatePropertyForEditor<ShaderQuad>("Texture0", "editor.assettype", "lev2tex");
-  ork::reflect::AnnotatePropertyForEditor<ShaderQuad>("Texture0", "editor.assetclass", "lev2tex");
+  ork::reflect::annotatePropertyForEditor<ShaderQuad>("Texture0", "editor.class", "ged.factory.assetlist");
+  ork::reflect::annotatePropertyForEditor<ShaderQuad>("Texture0", "editor.assettype", "lev2tex");
+  ork::reflect::annotatePropertyForEditor<ShaderQuad>("Texture0", "editor.assetclass", "lev2tex");
 
   RegisterObjInpPlug(ShaderQuad, ImgInput0);
   RegisterFloatXfPlug(ShaderQuad, User0X, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
@@ -737,7 +737,7 @@ void ShaderQuad::Describe() {
     }
   };
 
-  reflect::AnnotateClassForEditor<ShaderQuad>("editor.object.ops", opm);
+  reflect::annotateClassForEditor<ShaderQuad>("editor.object.ops", opm);
 
   ////////////////////////////////////////
 }
@@ -787,10 +787,10 @@ void ShaderQuad::compute(ProcTex& ptex) {
     Buffer& buffer = GetWriteBuffer(ptex);
 
     mShader->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-    mShader->mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-    mShader->mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    mShader->mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-    mShader->mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+    mShader->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+    mShader->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+    mShader->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+    mShader->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
 
     if (conplug) {
       auto& plugbuf      = conplug->GetValue().GetBuffer(ptex);
@@ -813,7 +813,7 @@ void ShaderQuad::compute(ProcTex& ptex) {
 
     mShader->SetUser0(fvec4(mPlugInpUser0X.GetValue(), mPlugInpUser0Y.GetValue(), mPlugInpUser0Z.GetValue(), float(buffer.miW)));
     ////////////////////////////////////////////////////////////////
-    // float ftexw = GetTexture() ? GetTexture()->GetWidth() : 1.0f;
+    // float ftexw = GetTexture() ? GetTexture()->width() : 1.0f;
     // pTARG->PushModColor( ork::fvec4( ftexw, ftexw, ftexw, ftexw ) );
     ////////////////////////////////////////////////////////////////
     buffer.PtexBegin(pTARG, true, false);
@@ -838,21 +838,21 @@ void SolidColor::Describe() {
   ork::reflect::RegisterProperty("Blue", &SolidColor::mfb);
   ork::reflect::RegisterProperty("Alpha", &SolidColor::mfa);
 
-  ork::reflect::AnnotatePropertyForEditor<SolidColor>("Red", "editor.range.min", "-8.0f");
-  ork::reflect::AnnotatePropertyForEditor<SolidColor>("Red", "editor.range.max", "8.0f");
+  ork::reflect::annotatePropertyForEditor<SolidColor>("Red", "editor.range.min", "-8.0f");
+  ork::reflect::annotatePropertyForEditor<SolidColor>("Red", "editor.range.max", "8.0f");
 
-  ork::reflect::AnnotatePropertyForEditor<SolidColor>("Green", "editor.range.min", "-8.0f");
-  ork::reflect::AnnotatePropertyForEditor<SolidColor>("Green", "editor.range.max", "8.0f");
+  ork::reflect::annotatePropertyForEditor<SolidColor>("Green", "editor.range.min", "-8.0f");
+  ork::reflect::annotatePropertyForEditor<SolidColor>("Green", "editor.range.max", "8.0f");
 
-  ork::reflect::AnnotatePropertyForEditor<SolidColor>("Blue", "editor.range.min", "-8.0f");
-  ork::reflect::AnnotatePropertyForEditor<SolidColor>("Blue", "editor.range.max", "8.0f");
+  ork::reflect::annotatePropertyForEditor<SolidColor>("Blue", "editor.range.min", "-8.0f");
+  ork::reflect::annotatePropertyForEditor<SolidColor>("Blue", "editor.range.max", "8.0f");
 
-  ork::reflect::AnnotatePropertyForEditor<SolidColor>("Alpha", "editor.range.min", "-8.0f");
-  ork::reflect::AnnotatePropertyForEditor<SolidColor>("Alpha", "editor.range.max", "8.0f");
+  ork::reflect::annotatePropertyForEditor<SolidColor>("Alpha", "editor.range.min", "-8.0f");
+  ork::reflect::annotatePropertyForEditor<SolidColor>("Alpha", "editor.range.max", "8.0f");
 
   static const char* EdGrpStr = "grp://RGBA Red Green Blue Alpha";
 
-  reflect::AnnotateClassForEditor<SolidColor>("editor.prop.groups", EdGrpStr);
+  reflect::annotateClassForEditor<SolidColor>("editor.prop.groups", EdGrpStr);
 }
 SolidColor::SolidColor()
     : mfr(1.0f)
@@ -871,10 +871,10 @@ void SolidColor::compute(ProcTex& ptex) {
   if (nullptr == mMaterial) {
     mMaterial = new lev2::GfxMaterial3DSolid(pTARG);
     mMaterial->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR);
-    mMaterial->mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-    mMaterial->mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    mMaterial->mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-    mMaterial->mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+    mMaterial->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+    mMaterial->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+    mMaterial->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+    mMaterial->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     mMaterial->SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(buffer.miW)));
   }
 
@@ -899,24 +899,24 @@ void SolidColor::compute(ProcTex& ptex) {
 ///////////////////////////////////////////////////////////////////////////////
 void Gradient::Describe() {
   ork::reflect::RegisterProperty("gradient", &Gradient::GradientAccessor);
-  ork::reflect::AnnotatePropertyForEditor<Gradient>("gradient", "editor.class", "ged.factory.gradient");
+  ork::reflect::annotatePropertyForEditor<Gradient>("gradient", "editor.class", "ged.factory.gradient");
 
   ork::reflect::RegisterProperty("Type", &Gradient::meGradientType);
 
   ork::reflect::RegisterProperty("Repeat", &Gradient::miRepeat);
   ork::reflect::RegisterProperty("RepeatMode", &Gradient::meRepeatMode);
 
-  ork::reflect::AnnotatePropertyForEditor<Gradient>("Repeat", "editor.range.min", "1");
-  ork::reflect::AnnotatePropertyForEditor<Gradient>("Repeat", "editor.range.max", "16");
-  ork::reflect::AnnotatePropertyForEditor<Gradient>("RepeatMode", "editor.class", "ged.factory.enum");
+  ork::reflect::annotatePropertyForEditor<Gradient>("Repeat", "editor.range.min", "1");
+  ork::reflect::annotatePropertyForEditor<Gradient>("Repeat", "editor.range.max", "16");
+  ork::reflect::annotatePropertyForEditor<Gradient>("RepeatMode", "editor.class", "ged.factory.enum");
 
-  ork::reflect::AnnotatePropertyForEditor<Gradient>("Type", "editor.class", "ged.factory.enum");
+  ork::reflect::annotatePropertyForEditor<Gradient>("Type", "editor.class", "ged.factory.enum");
 
   ork::reflect::RegisterProperty("AntiAlias", &Gradient::mbAA);
 
   static const char* EdGrpStr = "grp://Basic AntiAlias Type Repeat RepeatMode gradient";
 
-  reflect::AnnotateClassForEditor<Gradient>("editor.prop.groups", EdGrpStr);
+  reflect::annotateClassForEditor<Gradient>("editor.prop.groups", EdGrpStr);
 }
 Gradient::Gradient()
     : mpTexture(0)
@@ -947,11 +947,11 @@ void Gradient::compute(ProcTex& ptex) {
     mMtl = new lev2::GfxMaterial3DSolid(pTARG);
 
     mMtl->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
-    mMtl->mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-    mMtl->mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    mMtl->mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-    mMtl->mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
-    mMtl->mRasterState.SetShadeModel(ork::lev2::ESHADEMODEL_SMOOTH);
+    mMtl->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+    mMtl->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+    mMtl->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+    mMtl->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+    mMtl->_rasterstate.SetShadeModel(ork::lev2::ESHADEMODEL_SMOOTH);
   }
 
   mMtl->SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(buffer.miW)));
@@ -1171,8 +1171,8 @@ void Gradient::compute(ProcTex& ptex) {
 ///////////////////////////////////////////////////////////////////////////////
 void Group::Describe() {
   ork::reflect::RegisterProperty("ProcTex", &Group::GetTextureAccessor, &Group::SetTextureAccessor);
-  ork::reflect::AnnotatePropertyForEditor<Group>("ProcTex", "editor.visible", "false");
-  ork::reflect::AnnotateClassForEditor<Group>("editor.object.ops", ConstString("load:proctexgroupload save:proctexgroupsave"));
+  ork::reflect::annotatePropertyForEditor<Group>("ProcTex", "editor.visible", "false");
+  ork::reflect::annotateClassForEditor<Group>("editor.object.ops", ConstString("load:proctexgroupload save:proctexgroupsave"));
 }
 Group::Group()
     : mpProcTex(0) {}
@@ -1193,10 +1193,10 @@ void Group::compute(ProcTex& ptex) {
 
     lev2::GfxMaterial3DSolid gridmat(pTARG, "orkshader://proctex", "ttex");
     gridmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-    gridmat.mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-    gridmat.mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    gridmat.mRasterState.SetBlending(ork::lev2::EBLENDING_OFF);
-    gridmat.mRasterState.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+    gridmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+    gridmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+    gridmat._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+    gridmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     gridmat.SetTexture(ptexture);
     gridmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(computebuffer.miW)));
     pTARG->BindMaterial(&gridmat);

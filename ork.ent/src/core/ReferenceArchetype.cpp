@@ -142,11 +142,11 @@ void ReferenceArchetype::Describe()
 {
 	reflect::RegisterProperty("ArchetypeAsset", &ReferenceArchetype::mArchetypeAsset);
 
-	reflect::AnnotatePropertyForEditor<ReferenceArchetype>("ArchetypeAsset", "editor.class", "ged.factory.assetlist");
-	reflect::AnnotatePropertyForEditor<ReferenceArchetype>("ArchetypeAsset", "editor.assettype", "refarch");
-	reflect::AnnotatePropertyForEditor<ReferenceArchetype>("ArchetypeAsset", "editor.assetclass", "ArchetypeAsset");
-	//reflect::AnnotateClassForEditor<ReferenceArchetype>( "editor.instantiable", false );
-	//reflect::AnnotatePropertyForEditor<ReferenceArchetype>( "Components", "editor.visible", "false" );
+	reflect::annotatePropertyForEditor<ReferenceArchetype>("ArchetypeAsset", "editor.class", "ged.factory.assetlist");
+	reflect::annotatePropertyForEditor<ReferenceArchetype>("ArchetypeAsset", "editor.assettype", "refarch");
+	reflect::annotatePropertyForEditor<ReferenceArchetype>("ArchetypeAsset", "editor.assetclass", "ArchetypeAsset");
+	//reflect::annotateClassForEditor<ReferenceArchetype>( "editor.instantiable", false );
+	//reflect::annotatePropertyForEditor<ReferenceArchetype>( "Components", "editor.visible", "false" );
 }
 
 ////////////////////////////////////////////////////////////////////////////////

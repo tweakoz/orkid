@@ -24,8 +24,8 @@ void UiCamera::Describe() {
   ork::reflect::RegisterProperty("Loc", &UiCamera::mfLoc);
   ork::reflect::RegisterProperty("QuatC", &UiCamera::QuatC);
 
-  ork::reflect::AnnotatePropertyForEditor<UiCamera>("Loc", "editor.range.min", "0.1f");
-  ork::reflect::AnnotatePropertyForEditor<UiCamera>("Loc", "editor.range.max", "1000.0f");
+  ork::reflect::annotatePropertyForEditor<UiCamera>("Loc", "editor.range.min", "0.1f");
+  ork::reflect::annotatePropertyForEditor<UiCamera>("Loc", "editor.range.max", "1000.0f");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

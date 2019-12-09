@@ -218,7 +218,7 @@
                                             <object type='EzUiCam' id='19'>
                                                 <property name='Center'>-56.9913 813.364 1.14067</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>1139.46</property>
+                                                <property name='Loc'>531.492</property>
                                                 <property name='QuatC'>0.0536734 -0.726223 0.680477 0.0863041</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>100000</property>

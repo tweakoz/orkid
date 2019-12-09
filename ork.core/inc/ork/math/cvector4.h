@@ -60,7 +60,7 @@ public:
   T GetW(void) const { return (w); }
 
   // sometimes 4-vectors are used for XYWH format
-  T GetWidth(void) const { return (z); }
+  T width(void) const { return (z); }
   T GetHeight(void) const { return (w); }
 
   void Set(T _x, T _y, T _z, T _w) {

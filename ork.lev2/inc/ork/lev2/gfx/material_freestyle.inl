@@ -41,22 +41,25 @@ struct FreestyleMaterial : public GfxMaterial {
   std::set<const FxShaderTechnique*> _techniques;
   std::set<const FxShaderParam*> _params;
   std::set<const FxShaderParamBlock*> _paramBlocks;
+  #if defined(ENABLE_COMPUTE_SHADERS)
+  std::set<const FxShaderStorageBlock*> _storageBlocks;
+  #endif
 
-  const FxShaderTechnique* technique(std::string named) {
+  inline const FxShaderTechnique* technique(std::string named) {
     auto fxi = _initialTarget->FXI();
     auto tek = fxi->technique(_shader, named);
     if (tek != nullptr)
       _techniques.insert(tek);
     return tek;
   }
-  const FxShaderParam* param(std::string named) {
+  inline const FxShaderParam* param(std::string named) {
     auto fxi = _initialTarget->FXI();
     auto par = fxi->parameter(_shader, named);
     if (par != nullptr)
       _params.insert(par);
     return par;
   }
-  const FxShaderParamBlock* paramBlock(std::string named) {
+  inline const FxShaderParamBlock* paramBlock(std::string named) {
     auto fxi = _initialTarget->FXI();
     auto par = fxi->parameterBlock(_shader, named);
     if (par != nullptr)
@@ -65,50 +68,71 @@ struct FreestyleMaterial : public GfxMaterial {
   }
 
   ////////////////////////////////////////////
+#if defined(ENABLE_COMPUTE_SHADERS)
+  inline const FxShaderStorageBlock* storageBlock(std::string named) {
+    auto fxi = _initialTarget->FXI();
+    auto blk = fxi->storageBlock(_shader, named);
+    if (blk != nullptr)
+      _storageBlocks.insert(blk);
+    return blk;
+  }
+#endif
+  ////////////////////////////////////////////
 
-  void commit() {
+  inline void commit() {
     auto fxi = _initialTarget->FXI();
     fxi->CommitParams();
   }
 
 
-  void bindTechnique(const FxShaderTechnique* tek) {
+  inline void bindTechnique(const FxShaderTechnique* tek) {
     auto fxi = _initialTarget->FXI();
     fxi->BindTechnique(_shader, tek);
   }
-  void bindParamInt(const FxShaderParam* par, int value) {
+  inline void bindParamInt(const FxShaderParam* par, int value) {
     auto fxi = _initialTarget->FXI();
     fxi->BindParamInt(_shader, par, value);
   }
-  void bindParamFloat(const FxShaderParam* par, float value) {
+  inline void bindParamFloat(const FxShaderParam* par, float value) {
     auto fxi = _initialTarget->FXI();
     fxi->BindParamFloat(_shader, par, value);
   }
-  void bindParamCTex(const FxShaderParam* par, const Texture* tex) {
+  inline void bindParamCTex(const FxShaderParam* par, const Texture* tex) {
     auto fxi = _initialTarget->FXI();
     fxi->BindParamCTex(_shader, par, tex);
   }
-  void bindParamVec2(const FxShaderParam* par, const fvec2& v) {
+  inline void bindParamVec2(const FxShaderParam* par, const fvec2& v) {
     auto fxi = _initialTarget->FXI();
     fxi->BindParamVect2(_shader, par, v);
   }
-  void bindParamVec3(const FxShaderParam* par, const fvec3& v) {
+  inline void bindParamVec3(const FxShaderParam* par, const fvec3& v) {
     auto fxi = _initialTarget->FXI();
     fxi->BindParamVect3(_shader, par, v);
   }
-  void bindParamVec4(const FxShaderParam* par, const fvec4& v) {
+  inline void bindParamVec4(const FxShaderParam* par, const fvec4& v) {
     auto fxi = _initialTarget->FXI();
     fxi->BindParamVect4(_shader, par, v);
   }
 
-  void bindParamMatrix(const FxShaderParam* par, const fmtx4& m) {
+  inline void bindParamMatrix(const FxShaderParam* par, const fmtx4& m) {
     auto fxi = _initialTarget->FXI();
     fxi->BindParamMatrix(_shader, par, m);
   }
-  void bindParamMatrixArray(const FxShaderParam* par, const fmtx4* m, size_t len) {
+  inline void bindParamMatrixArray(const FxShaderParam* par, const fmtx4* m, size_t len) {
     auto fxi = _initialTarget->FXI();
     fxi->BindParamMatrixArray(_shader, par, m, len);
   }
+
+#if defined (ENABLE_COMPUTE_SHADERS)
+  std::set<const FxComputeShader*> _computeShaders;
+  inline const FxComputeShader* computeShader(std::string named) {
+    auto fxi = _initialTarget->FXI();
+    auto tek = fxi->computeShader(_shader, named);
+    if (tek != nullptr)
+      _computeShaders.insert(tek);
+    return tek;
+  }
+#endif
 
   ////////////////////////////////////////////
 
@@ -117,23 +141,23 @@ struct FreestyleMaterial : public GfxMaterial {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FreestyleMaterial::FreestyleMaterial() {
-  mRasterState.SetShadeModel(ESHADEMODEL_SMOOTH);
-  mRasterState.SetAlphaTest(EALPHATEST_OFF);
-  mRasterState.SetBlending(EBLENDING_OFF);
-  mRasterState.SetDepthTest(EDEPTHTEST_LEQUALS);
-  mRasterState.SetZWriteMask(true);
-  mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
+inline FreestyleMaterial::FreestyleMaterial() {
+  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
+  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
+  _rasterstate.SetBlending(EBLENDING_OFF);
+  _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+  _rasterstate.SetZWriteMask(true);
+  _rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
   miNumPasses = 1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FreestyleMaterial::~FreestyleMaterial() {}
+inline FreestyleMaterial::~FreestyleMaterial() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FreestyleMaterial::gpuInit(GfxTarget* targ,const AssetPath& assetname) {
+inline void FreestyleMaterial::gpuInit(GfxTarget* targ,const AssetPath& assetname) {
   _initialTarget = targ;
   auto fxi       = targ->FXI();
   auto shass     = asset::AssetManager<FxShaderAsset>::Load(assetname.c_str());
@@ -144,14 +168,14 @@ void FreestyleMaterial::gpuInit(GfxTarget* targ,const AssetPath& assetname) {
 // legacy methods
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FreestyleMaterial::BeginPass(GfxTarget* targ, int iPass) { return true; }
-void FreestyleMaterial::EndPass(GfxTarget* targ) {}
-int FreestyleMaterial::BeginBlock(GfxTarget* targ, const RenderContextInstData& RCID) { return 1; }
-void FreestyleMaterial::EndBlock(GfxTarget* targ) {}
+inline bool FreestyleMaterial::BeginPass(GfxTarget* targ, int iPass) { return true; }
+inline void FreestyleMaterial::EndPass(GfxTarget* targ) {}
+inline int FreestyleMaterial::BeginBlock(GfxTarget* targ, const RenderContextInstData& RCID) { return 1; }
+inline void FreestyleMaterial::EndBlock(GfxTarget* targ) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FreestyleMaterial::begin(const RenderContextFrameData& RCFD) {
+inline void FreestyleMaterial::begin(const RenderContextFrameData& RCFD) {
   auto targ        = RCFD.GetTarget();
   const auto& CPD  = RCFD.topCPD();
   bool stereo1pass = CPD.isStereoOnePass();
@@ -161,10 +185,10 @@ void FreestyleMaterial::begin(const RenderContextFrameData& RCFD) {
 
   RenderContextInstData RCID(RCFD);
   int npasses = fxi->BeginBlock(_shader, RCID);
-  rsi->BindRasterState(mRasterState);
+  rsi->BindRasterState(_rasterstate);
   fxi->BindPass(_shader, 0);
 }
-void FreestyleMaterial::end(const RenderContextFrameData& RCFD) {
+inline void FreestyleMaterial::end(const RenderContextFrameData& RCFD) {
   auto targ = RCFD.GetTarget();
   targ->FXI()->EndPass(_shader);
   targ->FXI()->EndBlock(_shader);

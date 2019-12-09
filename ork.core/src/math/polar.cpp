@@ -12,119 +12,106 @@
 #include <cmath>
 
 
-// As psp-gcc does _not_ qualify sqrtf with std:: we must make CW 'using' it
-#ifdef NITRO
-using fabs;
-using sinff;
-using cosff;
-using sqrtff;
-using std::atanf;
-#endif
-
+namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-F32 pol2rect_x( F32 ang, F32 rad )
-{
-	F32 x = rad * cosf( ang );
-	return x;
+float pol2rect_x(float ang, float rad) {
+  float x = rad * cosf(ang);
+  return x;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-F32 pol2rect_y( F32 ang, F32 rad )
-{
-	F32 y = rad * sinf( ang );
-	return y;
+float pol2rect_y(float ang, float rad) {
+  float y = rad * sinf(ang);
+  return y;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-F32 rect2pol_ang( F32 x, F32 y )
-{
-	F32 ang = 0.0f;
+float rect2pol_ang(float x, float y) {
+  float ang = 0.0f;
 
-	// AXIS
-	if( x == 0.0f )
-	{	if( y == 0.0f )
-			ang = 0.0f;
-		else if( y > 0.0f )
-			ang = PI_DIV_2;
-		else if( y < 0.0f )
-			ang = (3.0f*PI_DIV_2);
-	}
-	else if( y == 0.0f )
-	{	if( x < 0.0f )
-			ang = PI;
-		else if( x > 0.0f )
-			ang = 0.0f;
-	}
-	
-	// Q0 ( bottom right )
-	else if( (x>0.0f) && (y>0.0f) )
-	{	ang = atanf( y/x );
-	}
-	// Q1 ( bottom left )
-	else if( (x<0.0f) && (y>0.0f) )
-	{	ang = PI+atanf( y/x );
-	}
-	// Q2 ( top left )
-	else if( (x<0.0f) && (y<0.0f) )
-	{	ang = PI+atanf( y/x );
-	}
-	// Q3 ( top right )
-	else if( (x>0.0f) && (y<0.0f) )
-	{	ang = atanf( y/x );
-	}
-	
-	return ang;
+  // AXIS
+  if (x == 0.0f) {
+    if (y == 0.0f)
+      ang = 0.0f;
+    else if (y > 0.0f)
+      ang = PI_DIV_2;
+    else if (y < 0.0f)
+      ang = (3.0f * PI_DIV_2);
+  } else if (y == 0.0f) {
+    if (x < 0.0f)
+      ang = PI;
+    else if (x > 0.0f)
+      ang = 0.0f;
+  }
+
+  // Q0 ( bottom right )
+  else if ((x > 0.0f) && (y > 0.0f)) {
+    ang = atanf(y / x);
+  }
+  // Q1 ( bottom left )
+  else if ((x < 0.0f) && (y > 0.0f)) {
+    ang = PI + atanf(y / x);
+  }
+  // Q2 ( top left )
+  else if ((x < 0.0f) && (y < 0.0f)) {
+    ang = PI + atanf(y / x);
+  }
+  // Q3 ( top right )
+  else if ((x > 0.0f) && (y < 0.0f)) {
+    ang = atanf(y / x);
+  }
+
+  return ang;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-F32 rect2pol_angr( F32 x, F32 y )
-{
-	F32 ang = 0.0f;
+float rect2pol_angr(float x, float y) {
+  float ang = 0.0f;
 
-	// AXIS
-	if( x == 0.0f )
-	{	if( y == 0.0f )
-			ang = 0.0f;
-		else if( y > 0.0f )
-			ang = PI_DIV_2;
-		else if( y < 0.0f )
-			ang = (3.0f*PI_DIV_2);
-	}
-	else if( y == 0.0f )
-	{	if( x < 0.0f )
-			ang = PI;
-		else if( x > 0.0f )
-			ang = 0.0f;
-	}
-	
-	// Q0 ( bottom right )
-	else if( (x>0.0f) && (y>0.0f) )
-	{	ang = atanf( y/x );
-	}
-	// Q1 ( bottom left )
-	else if( (x<0.0f) && (y>0.0f) )
-	{	ang = PI+atanf( y/x );
-	}
-	// Q2 ( top left )
-	else if( (x<0.0f) && (y<0.0f) )
-	{	ang = PI+atanf( y/x );
-	}
-	// Q3 ( top right )
-	else if( (x>0.0f) && (y<0.0f) )
-	{	ang = atanf( y/x );
-	}
-	
-	return ang;
+  // AXIS
+  if (x == 0.0f) {
+    if (y == 0.0f)
+      ang = 0.0f;
+    else if (y > 0.0f)
+      ang = PI_DIV_2;
+    else if (y < 0.0f)
+      ang = (3.0f * PI_DIV_2);
+  } else if (y == 0.0f) {
+    if (x < 0.0f)
+      ang = PI;
+    else if (x > 0.0f)
+      ang = 0.0f;
+  }
+
+  // Q0 ( bottom right )
+  else if ((x > 0.0f) && (y > 0.0f)) {
+    ang = atanf(y / x);
+  }
+  // Q1 ( bottom left )
+  else if ((x < 0.0f) && (y > 0.0f)) {
+    ang = PI + atanf(y / x);
+  }
+  // Q2 ( top left )
+  else if ((x < 0.0f) && (y < 0.0f)) {
+    ang = PI + atanf(y / x);
+  }
+  // Q3 ( top right )
+  else if ((x > 0.0f) && (y < 0.0f)) {
+    ang = atanf(y / x);
+  }
+
+  return ang;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-F32 rect2pol_rad( F32 x, F32 y )
-{
-	F32 rad = sqrtf( (x*x)+(y*y) );
-	return rad;
+float rect2pol_rad(float x, float y) {
+  float rad = sqrtf((x * x) + (y * y));
+  return rad;
+}
+
 }

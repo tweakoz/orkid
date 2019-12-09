@@ -302,7 +302,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
       int inumcusts = (int)primcontainer->mCustomPrims.size();
 
       uimat.SetUIColorMode(EUICOLOR_VTX);
-      uimat.mRasterState.SetBlending(lev2::EBLENDING_OFF);
+      uimat._rasterstate.SetBlending(lev2::EBLENDING_OFF);
 
       const float fZ = 0.0f;
 
@@ -607,7 +607,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
       int inumcusts = (int)primcontainer->mCustomPrims.size();
 
       uimat.SetUIColorMode(EUICOLOR_VTX);
-      uimat.mRasterState.SetBlending(lev2::EBLENDING_OFF);
+      uimat._rasterstate.SetBlending(lev2::EBLENDING_OFF);
 
       const float fZ = 0.0f;
 

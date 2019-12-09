@@ -587,7 +587,7 @@ void WriteLightsFile( const MeshUtil::LightContainer& lights, const file::Path& 
 	{
 		const PoolString& name = itl->first;
 		const MeshUtil::Light* plight = itl->second;
-		int iname = chunkwriter.GetStringIndex(name.c_str());
+		int iname = chunkwriter.stringIndex(name.c_str());
 		HeaderStream->AddItem(iname);
 		HeaderStream->AddItem(plight->mWorldMatrix);
 		HeaderStream->AddItem(plight->mColor);
@@ -598,7 +598,7 @@ void WriteLightsFile( const MeshUtil::LightContainer& lights, const file::Path& 
 		const MeshUtil::PointLight* pplight = rtti::autocast(plight);
 		if( pplight )
 		{
-			int itype = chunkwriter.GetStringIndex("PointLight");
+			int itype = chunkwriter.stringIndex("PointLight");
 			HeaderStream->AddItem(itype);
 			HeaderStream->AddItem(pplight->mPoint);
 			HeaderStream->AddItem(pplight->mFalloff);
@@ -606,7 +606,7 @@ void WriteLightsFile( const MeshUtil::LightContainer& lights, const file::Path& 
 		}
 		else
 		{
-			int itype = chunkwriter.GetStringIndex("Other");
+			int itype = chunkwriter.stringIndex("Other");
 			HeaderStream->AddItem(itype);
 		}
 	}

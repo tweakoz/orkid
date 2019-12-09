@@ -1302,40 +1302,6 @@ struct chansettter
 	}
 };
 ///////////////////////////////////////////////////////////////////////////////
-struct AnimLoadAllocator
-{	//////////////////////////////
-	// per chunk allocation policy
-	//////////////////////////////
-	void* alloc( const char* pchkname, int ilen )
-	{
-		void* pmem = 0;
-#if defined(WII)
-		if( 0 == strcmp( pchkname, "header" ) ) pmem = new char[ilen];
-		else if( 0 == strcmp( pchkname, "animdata" ) ) pmem = wii::LockSharedMem2Buf(ilen);
-#else
-		if( 0 == strcmp( pchkname, "header" ) ) pmem = new char[ilen];
-		else if( 0 == strcmp( pchkname, "animdata" ) ) pmem = new char[ilen];
-#endif
-		return pmem;
-	}
-	//////////////////////////////
-	// per chunk deallocation policy
-	//////////////////////////////
-	void done( const char* pchkname, void* pdata )
-	{
-		if( 0 == strcmp( pchkname, "header" ) )
-		{
-			delete[] (char *) pdata;
-		}			// audio banks keep this resident
-		else if( 0 == strcmp( pchkname, "animdata" ) )
-		{
-#if defined(WII)
-			wii::UnLockSharedMem2Buf();
-#endif
-		}	// audio banks keep this resident
-	}
-};
-///////////////////////////////////////////////////////////////////////////////
 bool XgmAnim::UnLoadUnManaged( XgmAnim* anm )
 {
 #if defined(ORKCONFIG_ASSET_UNLOAD)
@@ -1361,7 +1327,8 @@ bool XgmAnim::LoadUnManaged( XgmAnim* anm, const AssetPath& fname )
 	AssetPath ActualPath = fnameext.ToAbsolute();
 	/////////////////////////////////////////////////////////////
 	OrkHeapCheck();
-	chunkfile::Reader<AnimLoadAllocator> chunkreader( fnameext, "xga" );
+    chunkfile::DefaultLoadAllocator allocator;
+	chunkfile::Reader chunkreader( fnameext, "xga", allocator );
 	OrkHeapCheck();
 	/////////////////////////////////////////////////////////////
 	if( chunkreader.IsOk() )
@@ -1444,6 +1411,5 @@ bool XgmAnim::LoadUnManaged( XgmAnim* anm, const AssetPath& fname )
 }
 
 INSTANTIATE_TRANSPARENT_RTTI( ork::lev2::MaterialInstItem_UvXf, "MaterialInstItem_UvXf" );
-template class ork::chunkfile::Reader<ork::lev2::AnimLoadAllocator>;
 template void ork::chunkfile::OutputStream::AddItem<ork::lev2::DecompMtx44>( const ork::lev2::DecompMtx44& item );
 template class ork::orklut<ork::PoolString,ork::lev2::DecompMtx44>;

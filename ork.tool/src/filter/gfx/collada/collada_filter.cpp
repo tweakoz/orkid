@@ -5,6 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <ork/orkconfig.h>
 #include <orktool/orktool_pch.h>
 #include <orktool/filter/gfx/collada/collada.h>
 #include <ork/lev2/gfx/gfxenv.h>
@@ -19,23 +20,23 @@
 
 #if defined(USE_FCOLLADA)
 
-template class ork::util::Context<ColladaExportPolicy>;
+template class ork::util::Context<ork::tool::ColladaExportPolicy>;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace ork { namespace MeshUtil
+namespace ork::MeshUtil
 {
 	bool DAEToNAVCollision( const tokenlist& options );
 	bool DAEToSECCollision( const tokenlist& options );
 	bool DAEToDAE( const tokenlist& options );
 
-} }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace ork { namespace tool {
+namespace ork::tool {
 
 class DAENAVFilter : public AssetFilterBase
 {
@@ -85,8 +86,6 @@ public: //
 };
 void DAEDAEFilter::Describe() {}
 
-} // namespace tool
-} // namespace ork
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -157,7 +156,7 @@ void ColladaVertexFormat::SetFormat( ork::lev2::EVtxStreamFormat efmt )
 	}
 }
 
-void ColladaAvailVertexFormats::Add( ork::lev2::EVtxStreamFormat efmt )
+void ColladaAvailVertexFormats::add( ork::lev2::EVtxStreamFormat efmt )
 {
 	ColladaVertexFormat format;
 	format.SetFormat( efmt );
@@ -167,9 +166,6 @@ void ColladaAvailVertexFormats::Add( ork::lev2::EVtxStreamFormat efmt )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-
-namespace ork {
-namespace tool {
 
 void RegisterColladaFilters()
 {
@@ -236,11 +232,11 @@ bool DAEXGMFilter::ConvertAsset( const tokenlist& toklist )
 
        ////////////////////////////////////////////////////////////////
        // PC vertex formats supported
-       policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12T8I4W4 );         // PC basic skinned
-       policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12B12T8I4W4 );      // PC 1 tanspace skinned
-       policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12B12T8C4 );        // PC 1 tanspace unskinned
-       policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12B12T16 );         // PC 1 tanspace, 2UV unskinned
-       policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12T16C4 );          // PC 2UV 1 color unskinned
+       policy.mAvailableVertexFormats.add( lev2::EVTXSTREAMFMT_V12N12T8I4W4 );         // PC basic skinned
+       policy.mAvailableVertexFormats.add( lev2::EVTXSTREAMFMT_V12N12B12T8I4W4 );      // PC 1 tanspace skinned
+       policy.mAvailableVertexFormats.add( lev2::EVTXSTREAMFMT_V12N12B12T8C4 );        // PC 1 tanspace unskinned
+       policy.mAvailableVertexFormats.add( lev2::EVTXSTREAMFMT_V12N12B12T16 );         // PC 1 tanspace, 2UV unskinned
+       policy.mAvailableVertexFormats.add( lev2::EVTXSTREAMFMT_V12N12T16C4 );          // PC 2UV 1 color unskinned
        ////////////////////////////////////////////////////////////////
 
        CColladaModel *colmdl = CColladaModel::Load( inf.c_str() );
@@ -282,8 +278,7 @@ bool DAEXGMFilter::ConvertTextures( CColladaModel* mdl, const file::Path& outmdl
 	return mdl->ConvertTextures(outmdlpth, options );
 }
 
-}
-}
+} // namespace ork::tool
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::DAEXGMFilter,"DAEXGMFilter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::DAEXGAFilter,"DAEXGAFilter");

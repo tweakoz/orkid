@@ -17,24 +17,29 @@
 #include <ork/math/box.h>
 #include <algorithm>
 #include <ork/kernel/Array.h>
+#include <ork/kernel/varmap.inl>
 
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/lev2/gfx/gfxmaterial.h>
+#include <ork/lev2/gfx/gfxmaterial_fx.h>
+#include <ork/lev2/gfx/gfxmodel.h>
 #include <unordered_map>
+#include <ork/kernel/datablock.inl>
 
-struct DaeReadOpts;
-struct DaeWriteOpts;
 
-namespace ork { namespace tool {
-
-struct SColladaMaterial;
-
-}}
+namespace ork::tool {
+  struct ColladaMaterial;
+  struct DaeReadOpts;
+  struct DaeWriteOpts;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace ork { namespace MeshUtil {
+namespace ork::MeshUtil {
+
+  struct XgmClusterizer;
+  struct XgmClusterBuilder;
 
 struct MaterialBindingItem
 {
@@ -430,7 +435,7 @@ struct annopolyposlut : public annopolylut
 
 struct submesh
 {
-	typedef orkmap<std::string,std::string> AnnotationMap;
+	typedef orkmap<std::string,svar64_t> AnnotationMap;
 
 	std::string						name;
 	AnnotationMap					mAnnotations;
@@ -455,12 +460,32 @@ struct submesh
 	void ImportPolyAnnotations( const annopolylut& apl );
 	void ExportPolyAnnotations( annopolylut& apl ) const;
 
-	void SetAnnotation( const char* annokey, const char* annoval );
-	const char* GetAnnotation( const char* annokey ) const;
-	AnnotationMap& RefAnnotations() { return mAnnotations; }
-	const AnnotationMap& RefAnnotations() const { return mAnnotations; }
+	void setStringAnnotation( const char* annokey, std::string annoval );
+	AnnotationMap& annotations() { return mAnnotations; }
+	const AnnotationMap& annotations() const { return mAnnotations; }
 
 	void MergeAnnos( const AnnotationMap& mrgannos, bool boverwrite );
+
+	svar64_t annotation( const char* annokey ) const;
+
+    template <typename T>
+    T& typedAnnotation( const std::string annokey ) {
+      auto& anno = mAnnotations[annokey];
+      if( anno.IsA<T>() )
+        return anno.Get<T>();
+      return anno.Make<T>();
+    }
+    
+    template <typename T>
+    const T& typedAnnotation( const std::string annokey )  const {
+      auto it = mAnnotations.find(annokey);
+      if( it != mAnnotations.end() ){
+        const auto& anno = it->second;
+        return anno.Get<T>();
+      }
+      assert(false);
+      return T();
+    }
 
 	//////////////////////////////////////////////////////////////////////////////
 
@@ -511,8 +536,8 @@ struct submesh
 
 class toolmesh
 {
-	orkmap<std::string,ork::tool::SColladaMaterial*>	mMaterialsByShadingGroup;
-	orkmap<std::string,ork::tool::SColladaMaterial*>	mMaterialsByName;
+	orkmap<std::string,ork::tool::ColladaMaterial*>	mMaterialsByShadingGroup;
+	orkmap<std::string,ork::tool::ColladaMaterial*>	mMaterialsByName;
 
 	fvec4							mRangeScale;
 	fvec4							mRangeTranslate;
@@ -535,8 +560,8 @@ public:
 	/////////////////////////////////////////////////////////////////////////
 
 	const ork::lev2::MaterialMap& RefFxmMaterialMap() const { return mFxmMaterialMap; }
-	const orkmap<std::string,ork::tool::SColladaMaterial*>& RefMaterialsBySG() const { return mMaterialsByShadingGroup; }
-	const orkmap<std::string,ork::tool::SColladaMaterial*>& RefMaterialsByName() const { return mMaterialsByName; }
+	const orkmap<std::string,ork::tool::ColladaMaterial*>& RefMaterialsBySG() const { return mMaterialsByShadingGroup; }
+	const orkmap<std::string,ork::tool::ColladaMaterial*>& RefMaterialsByName() const { return mMaterialsByName; }
 	const LightContainer& RefLightContainer() const { return mLights; }
 	LightContainer& RefLightContainer() { return mLights; }
 
@@ -553,14 +578,15 @@ public:
 
 	/////////////////////////////////////////////////////////////////////////
 	void WriteToWavefrontObj( const file::Path& outpath ) const;
-	void WriteToDaeFile( const file::Path& outpath, const DaeWriteOpts& writeopts ) const;
+	void WriteToDaeFile( const file::Path& outpath, const tool::DaeWriteOpts& writeopts ) const;
 	void WriteToRgmFile( const file::Path& outpath ) const;
 	void WriteToXgmFile( const file::Path& outpath ) const;
 	void WriteAuto( const file::Path& outpath ) const;
 	/////////////////////////////////////////////////////////////////////////
 	void ReadFromXGM( const file::Path& inpath );
 	void ReadFromWavefrontObj( const file::Path& inpath );
-	void ReadFromDaeFile( const file::Path& inpath, DaeReadOpts& readopts );
+	void ReadFromDaeFile( const file::Path& inpath, tool::DaeReadOpts& readopts );
+	void readFromAssimp( const file::Path& inpath, tool::DaeReadOpts& readopts );
 
 	/////////////////////////////////////////////////////////////////////////
 
@@ -602,6 +628,8 @@ public:
 
 	toolmesh();
 	~toolmesh();
+
+    varmap::VarMap _varmap;
 
 private:
 
@@ -665,6 +693,15 @@ class OBJ_XGM_Filter : public ork::tool::AssetFilterBase
 	RttiDeclareConcrete(OBJ_XGM_Filter,ork::tool::AssetFilterBase);
 public: //
 	OBJ_XGM_Filter(  );
+	bool ConvertAsset( const tokenlist& toklist ) final;
+};
+
+class GLB_XGM_Filter : public ork::tool::AssetFilterBase
+{
+	RttiDeclareConcrete(GLB_XGM_Filter,ork::tool::AssetFilterBase);
+	//bool ConvertTextures( CColladaModel* mdl, const file::Path& outmdlpth );
+public: //
+	GLB_XGM_Filter(  );
 	bool ConvertAsset( const tokenlist& toklist ) final;
 };
 
@@ -732,4 +769,68 @@ struct FlatSubMesh
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} } // namespace MeshUtil
+struct ToolMeshConfigurationFlags
+{
+	bool	mbSkinned;
+
+	ToolMeshConfigurationFlags()
+		: mbSkinned( false )
+	{
+
+	}
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ToolMaterialGroup
+{
+	enum EMatClass
+	{
+		EMATCLASS_STANDARD = 0,
+		EMATCLASS_PBR,
+		EMATCLASS_FX,
+	};
+
+	void Parse( const ork::tool::ColladaMaterial& colladamat );
+
+	///////////////////////////////////////////////////////////////////
+	// Build Clusters
+	///////////////////////////////////////////////////////////////////
+	
+	lev2::EVtxStreamFormat GetVtxStreamFormat() const { return meVtxFormat; }
+
+	void ComputeVtxStreamFormat();
+
+	XgmClusterizer* GetClusterizer() const { return _clusterizer; }
+	void SetClusterizer( XgmClusterizer* pcl ) { _clusterizer=pcl; }
+
+	///////////////////////////////////////////////////////////////////
+
+	ToolMaterialGroup()
+		: meMaterialClass( EMATCLASS_STANDARD )
+		, _orkMaterial( 0 )
+		, _clusterizer( nullptr )
+		, mbVertexLit(false)
+	{
+	}
+
+	///////////////////////////////////////////////////////////////////
+
+	XgmClusterizer* 					        _clusterizer;
+	std::string									mShadingGroupName;
+	ToolMeshConfigurationFlags				    mMeshConfigurationFlags;
+	EMatClass									meMaterialClass;
+	ork::lev2::GfxMaterial*						_orkMaterial;
+	orkvector<ork::lev2::VertexConfig>			mVertexConfigData;
+	orkvector<ork::lev2::VertexConfig>			mAvailVertexConfigData;
+	lev2::EVtxStreamFormat						meVtxFormat;
+	ork::file::Path								mLightMapPath;
+	bool										mbVertexLit;
+
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // namespace MeshUtil

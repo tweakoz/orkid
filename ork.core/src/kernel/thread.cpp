@@ -11,12 +11,12 @@ void* Thread::VirtualThreadImpl(void*data)
 {
 	auto pthr = (Thread*) data;
 
-    if( pthr->mThreadName.length() )
-    	SetCurrentThreadName(pthr->mThreadName.c_str());
+    if( pthr->_threadname.length() )
+    	SetCurrentThreadName(pthr->_threadname.c_str());
 
-    pthr->mRunning = true;
+    pthr->_running = true;
 	pthr->run();
-    pthr->mRunning = false;
+    pthr->_running = false;
 	return 0;
 }
 
@@ -25,49 +25,61 @@ void* Thread::LambdaThreadImpl(void* pdat)
 
     auto pthr = (Thread*) pdat;
     
-    if( pthr->mThreadName.length() )
-    	SetCurrentThreadName(pthr->mThreadName.c_str());
+    if( pthr->_threadname.length() )
+    	SetCurrentThreadName(pthr->_threadname.c_str());
 
 
-    pthr->mRunning = true;
-    pthr->mLambda();
-    pthr->mRunning = false;
+    pthr->_running = true;
+    pthr->_lambda(pthr->_userdata);
+    pthr->_running = false;
     return nullptr;
 }
 
-void Thread::RunSynchronous()
+void Thread::runSynchronous()
 {
 	start();
 	join();
 }
-Thread::Thread(const std::string& thread_name)
-	: mUserData()
-	, mThreadH(0)
-	, mRunning(false)
-	, mThreadName( thread_name )
+Thread::Thread(const std::string& thread_name, anyp data)
+	: _userdata(data)
+	, _threadh(0)
+	, _running(false)
+	, _threadname( thread_name )
 {
-	mState = 0;
+	_state = 0;
 }
+Thread::Thread(thread_lambda_t l,
+               anyp data,
+               const std::string& thread_name )
+	: _userdata(data)
+	, _threadh(0)
+	, _running(false)
+	, _threadname( thread_name )
+{
+	_state = 0;
+    start(l);
+}
+
 void Thread::start()
 {
-	if( mState.fetch_add(1)==0 )
+	if( _state.fetch_add(1)==0 )
 	{
-		mThreadH = new std::thread(&VirtualThreadImpl,(void*)this);
+		_threadh = new std::thread(&VirtualThreadImpl,(void*)this);
 	}
 }
 
-void Thread::start( const ork::void_lambda_t& l )
+void Thread::start( const thread_lambda_t& l )
 {
-	if( mState.fetch_add(1)==0 )
+	if( _state.fetch_add(1)==0 )
 	{
-		mLambda = l;
-		mThreadH = new std::thread(&LambdaThreadImpl,(void*)this);
+		_lambda = l;
+		_threadh = new std::thread(&LambdaThreadImpl,(void*)this);
 	}
 }
 
 bool Thread::join()
 {
-	mThreadH->join();
+	_threadh->join();
 	return true;
 }
 

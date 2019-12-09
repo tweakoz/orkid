@@ -7,14 +7,18 @@
 
 #pragma once
 
+#include <functional>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/gfxenv_enum.h> // For ETextureDest
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/gfxrasterstate.h>
+#include <ork/kernel/varmap.inl>
 
-namespace ork { namespace lev2 {
+namespace ork {
+
+namespace lev2 {
 
 class Texture;
 
@@ -104,7 +108,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class GfxMaterial : public ork::Object
+struct GfxMaterial : public ork::Object
 {
 	RttiDeclareAbstract(GfxMaterial,ork::Object);
 	//////////////////////////////////////////////////////////////////////////////
@@ -120,7 +124,12 @@ class GfxMaterial : public ork::Object
 	virtual void Update( void ) = 0;
 
 	virtual void Init( GfxTarget *pTarg ) = 0;
-
+    virtual void gpuUpdate(GfxTarget* targ) {
+      if( _doinit) {
+        Init(targ);
+        _doinit = false;
+      }
+    }
 	virtual bool BeginPass( GfxTarget* pTARG, int iPass=0 ) = 0;
 	virtual void EndPass( GfxTarget* pTARG ) = 0;
 	virtual int  BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx = RenderContextInstData::Default ) = 0;
@@ -152,9 +161,7 @@ class GfxMaterial : public ork::Object
 
 	//////////////////////////////////////////////////////////////////////////////
 
-	SRasterState							mRasterState;
-
-	protected:
+	SRasterState							_rasterstate;
 
 	int										miNumPasses;		///< Number Of Render Passes in this Material (platform specific)
 	PoolString								mMaterialName;
@@ -164,6 +171,9 @@ class GfxMaterial : public ork::Object
 	RenderQueueSortingData					mSortingData;
 	const RenderContextInstData*			mRenderContexInstData;
 	std::stack<bool>						mDebug;
+	bool _doinit = true;
+
+	ork::varmap::VarMap                    _varmap;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -171,5 +181,34 @@ class GfxMaterial : public ork::Object
 typedef orkmap<std::string,GfxMaterial*> MaterialMap;
 bool LoadMaterialMap( const ork::file::Path& pth, MaterialMap& mmap );
 
-} }
+}
+
+namespace chunkfile {
+
+  struct Reader;
+  class Writer;
+  class OutputStream;
+  class InputStream;
+
+  struct XgmMaterialWriterContext {
+    XgmMaterialWriterContext(Writer& w);
+    OutputStream* _outputStream = nullptr;
+    const ork::lev2::GfxMaterial* _material = nullptr;
+    Writer& _writer;
+   	ork::varmap::VarMap _varmap;
+  };
+  struct XgmMaterialReaderContext {
+    XgmMaterialReaderContext(Reader& r);
+    InputStream* _inputStream = nullptr;
+    ork::lev2::GfxMaterial* _material = nullptr;
+    Reader& _reader;
+   	ork::varmap::VarMap _varmap;
+  };
+
+  typedef std::function<ork::lev2::GfxMaterial*(XgmMaterialReaderContext& ctx)> materialreader_t;
+  typedef std::function<void(XgmMaterialWriterContext& ctx)> materialwriter_t;
+
+} // namespace chunkfile
+
+}
 

@@ -3,47 +3,62 @@
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
   glsl_version = "330";
-  import "misctools.i";
+import "misctools.i";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
 uniform_set ub_vtx {
-  uniform mat4 MVPC;
-  uniform mat4 MVPL;
-  uniform mat4 MVPR;
+  mat4 MVPC;
+  mat4 MVPL;
+  mat4 MVPR;
 }
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vdefault : ub_vtx {
-  in vec4 position : POSITION;
-  in vec2 uv0 : TEXCOORD0;
-  //
-  out vec2 frg_uv;
+vertex_interface iface_v2uv : ub_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec2 uv0 : TEXCOORD0;
+    vec2 uv1 : TEXCOORD1;
+  }
+  outputs {
+    vec2 frg_uva;
+    vec2 frg_uvb;
+  }
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_frg {
-  uniform mat4 IVPArray[2];
-  uniform mat4 VArray[2];
-  uniform mat4 PArray[2];
-  uniform sampler2D MapAlbedoAo;
-  uniform sampler2D MapNormalL;
-  uniform sampler2D MapDepth;
-  uniform vec2 InvViewportSize; // inverse target size
-  uniform float Time;
-  uniform vec2 NearFar;
-  uniform int NumLights;
-  uniform vec2 Zndc2eye;
+  mat4 IVPArray[2];
+  mat4 VArray[2];
+  mat4 PArray[2];
+  sampler2D MapAlbedoAo;
+  sampler2D MapNormalL;
+  sampler2D MapDepthCluster;
+  sampler2D MapRufMtlAlpha;
+  sampler2D MapDepth;
+  sampler2D MapEnvironment;
+  vec2 InvViewportSize; // inverse target size
+  float Time;
+  vec2 NearFar;
+  int NumLights;
+  int TileDim;
+  vec2 Zndc2eye;
+  float EnvironmentIntensity;
+  float EnvironmentMipBias;
+  float DiffuseIntensity;
+  vec3 Ambient;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ub_light {
   vec4 LightColorD[2048]; // 32KiB
-  vec4 LightPosR[2048];  // 32KiB
+  vec4 LightPosR[2048];   // 32KiB
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fdefault {
-  in vec2 frg_uv;
-  //
-  out vec4 out_clr;
+fragment_interface iface_f2uv {
+  inputs {
+    vec2 frg_uva;
+    vec2 frg_uvb;
+  }
+  outputs { vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_deferred : ub_light : ub_frg {
@@ -59,12 +74,13 @@ libblock lib_deferred : ub_light : ub_frg {
     vec2 _muv;
     vec2 _scruv;
     mat4 _ivp;
+    int _index;
   };
   /////////////////////////////////////////////////////////
-  float eyedepth(vec2 depthuv){
+  float eyedepth(vec2 depthuv) {
     float depthtex = texture(MapDepth, depthuv).r;
-    float ndc = depthtex*2.0-1.0;
-    return Zndc2eye.x/(ndc - Zndc2eye.y);
+    float ndc      = depthtex * 2.0 - 1.0;
+    return Zndc2eye.x / (ndc - Zndc2eye.y);
   }
   /////////////////////////////////////////////////////////
   vec4 defwpos(WPosData wpd) {
@@ -72,9 +88,10 @@ libblock lib_deferred : ub_light : ub_frg {
     vec2 scrxy     = wpd._scruv * 2.0 - vec2(1, 1);
     vec3 inpos     = vec3(scrxy.x, scrxy.y, depthtex * 2 - 1.0);
     vec4 rr        = wpd._ivp * vec4(inpos, 1);
-    float ndc = depthtex*2.0-1.0;
-    float zeye = Zndc2eye.x/(ndc - Zndc2eye.y);
-    return vec4(rr.xyz / rr.w,zeye);
+    float ndc      = depthtex * 2.0 - 1.0;
+    float zeye     = Zndc2eye.x / (ndc - Zndc2eye.y);
+    vec3 wpos      = vec3(rr.xyz / rr.w);
+    return vec4(wpos, zeye);
   }
   /////////////////////////////////////////////////////////
   GBufData decodeGBUF(WPosData wpd) {
@@ -95,91 +112,236 @@ libblock lib_deferred : ub_light : ub_frg {
     float dis2light = length(postolight);
     float atten     = dis2light / lightradius;
     atten           = 1.0 - clamp(atten, 0, 1);
-    atten           = atten * atten;
+    atten           = pow(atten, 1.4); // * atten;
     vec3 dir2light  = normalize(postolight);
     atten *= max(dot(gbd._wnrm, dir2light), 0);
+    //float dis2rad = clamp(1 - abs(dis2light - lightradius), 0, 1);
+    //return color * atten + vec3(pow(dis2rad, 4) * 0.2);
     return color * atten;
   }
   /////////////////////////////////////////////////////////
-  vec3 baselighting(WPosData wpd){
+  vec3 baselighting(WPosData wpd) {
     GBufData gbd = decodeGBUF(wpd);
     // sunlight ///////////////
     vec3 l = vec3((0.5 + dot(gbd._wnrm, vec3(0, 1, 0)) * 0.5)) * 0.25;
     ///////////////////////////
-    return gbd._albedo*l;
+    return gbd._albedo * l;
   }
   /////////////////////////////////////////////////////////
-  vec3 pntlighting(WPosData wpd){
+  vec3 pntlighting(WPosData wpd) {
     GBufData gbd = decodeGBUF(wpd);
-    vec3 l = vec3(0,0,0);
-    for( int i=0; i<NumLights; i++ ){
-       float lightcamdepth = LightColorD[i].w;
-       bool sphere_intersects_depth = (gbd._zeye-lightcamdepth)<LightPosR[i].w;
-       if( sphere_intersects_depth )
-          l += pointlight(gbd, LightPosR[i].xyz, LightPosR[i].w, LightColorD[i].xyz);
+    vec3 l       = vec3(0, 0, 0);
+    int lbas     = int(frg_uvb.x);
+    int numl     = int(frg_uvb.y);
+    for (int i = 0; i < numl; i++) {
+      int lidx                     = lbas + i;
+      float lightcamdepth          = LightColorD[lidx].w;
+      bool sphere_intersects_depth = (gbd._zeye - lightcamdepth) < LightPosR[lidx].w;
+      if (sphere_intersects_depth)
+        l += pointlight(gbd, LightPosR[lidx].xyz, LightPosR[lidx].w, LightColorD[lidx].xyz);
     }
-    return gbd._albedo*l;
+    return gbd._albedo * l;
   }
-}
+  /////////////////////////////////////////////////////////
+  vec3 debuglighting(WPosData wpd){
+
+    vec3 rval;
+
+    GBufData gbd = decodeGBUF(wpd);
+
+    vec2 uv   = wpd._muv;
+    vec4 rma = texture(MapRufMtlAlpha,uv);
+
+    //n = normalize(n)*0.5+vec3(0.5);
+    vec3 metalbase = vec3(0.04);
+    if( rma.w>0 ){
+
+      float roughness = rma.x;
+      float metallic = 1.0-rma.y;
+
+      vec3 wpos = gbd._wpos;
+      float depthtex = 0.0;
+      vec2 scrxy     = wpd._scruv * 2.0 - vec2(1, 1);
+      vec3 inpos     = vec3(scrxy.x, scrxy.y, depthtex * 2 - 1.0);
+      vec4 rr        = wpd._ivp * vec4(inpos, 1);
+      float ndc      = depthtex * 2.0 - 1.0;
+      float zeye     = Zndc2eye.x / (ndc - Zndc2eye.y);
+      vec3 epos      = vec3(rr.xyz / rr.w);
+
+      vec3 edir = normalize(epos-wpos);
+
+      vec3 n    = texture(MapNormalL, uv).xyz*2-vec3(1,1,1);
+      vec3 refl = normalize(reflect(edir,n));
+      /////////////////////////
+      // dual parabaloid env mapping
+      /////////////////////////
+
+      float miplevel = clamp(EnvironmentMipBias+(roughness*5),0,7);
+      vec3 env;
+      if( refl.z>0.0 ){
+          vec2 frontUV = (refl.xy / (2.0*(1.0 + refl.z))) + 0.5;
+          frontUV = frontUV*vec2(1,-1);
+          env = textureLod( MapEnvironment, frontUV, miplevel ).xyz;
+      }
+      else {
+          vec2 backUV = (refl.xy / (2.0*(1.0 - refl.z))) + 0.5;
+          backUV = backUV*vec2(1,-1);
+          env = textureLod( MapEnvironment, backUV, miplevel ).xyz;
+      }
+
+      /////////////////////////
+
+
+      float l = clamp(dot(n,edir),0,1)*DiffuseIntensity;
+      vec3 ll = Ambient+vec3(l);
+      vec3 diffuse = gbd._albedo*(1-metallic)*ll;
+      vec3 specular = mix(metalbase,gbd._albedo,metallic)*env*EnvironmentIntensity;
+      rval = diffuse+specular;
+      //out_clr = vec4(metallic,metallic,metallic,1);
+    }
+    else{
+
+      float depthtex = 0.0;
+      vec2 scrxy     = wpd._scruv * 2.0 - vec2(1, 1);
+      vec3 inpos     = vec3(scrxy.x, scrxy.y, depthtex * 2 - 1.0);
+      vec4 rr        = wpd._ivp * vec4(inpos, 1);
+      vec3 epos0      = vec3(rr.xyz / rr.w);
+
+      depthtex = 1.0;
+      scrxy     = wpd._scruv * 2.0 - vec2(1, 1);
+      inpos     = vec3(scrxy.x, scrxy.y, depthtex * 2 - 1.0);
+      rr        = wpd._ivp * vec4(inpos, 1);
+      vec3 epos1      = vec3(rr.xyz / rr.w);
+
+      vec3 N = normalize(epos1-epos0);
+
+      /////////////////////////
+      // dual parabaloid env mapping
+      /////////////////////////
+
+      float miplevel = 0;
+      vec3 env;
+      if( N.z>0.0 ){
+          vec2 frontUV = (N.xy / (2.0*(1.0 + N.z))) + 0.5;
+          frontUV = frontUV*vec2(1,-1);
+          env = textureLod( MapEnvironment, frontUV, miplevel ).xyz;
+      }
+      else {
+          vec2 backUV = (N.xy / (2.0*(1.0 - N.z))) + 0.5;
+          backUV = backUV*vec2(1,-1);
+          env = textureLod( MapEnvironment, backUV, miplevel ).xyz;
+      }
+
+
+      rval = env;
+
+    }
+    return rval;
+  } // vec3 debuglighting(){
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_std : iface_vdefault {
-  frg_uv      = uv0;
+} // libblock lib_deferred : ub_light : ub_frg {
+///////////////////////////////////////////////////////////////
+vertex_shader vs_passthru2uv : iface_v2uv {
+  frg_uva     = uv0;
+  frg_uvb     = uv1;
   gl_Position = position;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_baselight : iface_fdefault : lib_deferred  {
+fragment_interface iface_fdownsampledepthcluster {
+  inputs {
+    vec2 frg_uva;
+    vec2 frg_uvb;
+  }
+  outputs { uint out_depthclusters; }
+}
+fragment_shader ps_downsampledepthcluster : iface_fdownsampledepthcluster : lib_deferred {
+  vec2 base       = (gl_FragCoord.xy - vec2(0.5, 0.5)) * float(TileDim);
+  uint clusterset = 0;
+  for (int iy = 0; iy < TileDim; iy++) {
+    for (int ix = 0; ix < TileDim; ix++) {
+      vec2 uv              = base + vec2(ix, iy);
+      uv                   = uv * InvViewportSize;
+      float depthtex       = texture(MapDepth, uv).x;
+      float ndc            = depthtex * 2.0 - 1.0;
+      float zeye           = Zndc2eye.x / (ndc - Zndc2eye.y);
+      uint clusterbitindex = uint(log2(zeye));
+      clusterset           = clusterset | (1u << clusterbitindex);
+    }
+  }
+  out_depthclusters = clusterset;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_baselight : iface_f2uv : lib_deferred {
   WPosData wpd;
-  wpd._muv = gl_FragCoord.xy * InvViewportSize;
+  wpd._muv   = gl_FragCoord.xy * InvViewportSize;
   wpd._scruv = wpd._muv;
-  wpd._ivp = IVPArray[int(wpd._muv.x>=0.5)];
-  vec3 c  = baselighting(wpd);
+  wpd._ivp   = IVPArray[int(wpd._muv.x >= 0.5)];
+  vec3 c     = baselighting(wpd);
+  out_clr    = vec4(c, 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_baselight_stereo : iface_f2uv : lib_deferred {
+  WPosData wpd;
+  wpd._muv     = gl_FragCoord.xy * InvViewportSize;
+  wpd._ivp     = IVPArray[int(wpd._muv.x >= 0.5)];
+  wpd._scruv   = wpd._muv;
+  wpd._scruv.x = mod(wpd._scruv.x * 2, 1);
+  vec3 c       = baselighting(wpd);
+  out_clr      = vec4(c, 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_pointlight : iface_f2uv : lib_deferred {
+  WPosData wpd;
+  wpd._muv   = gl_FragCoord.xy * InvViewportSize;
+  wpd._ivp   = IVPArray[0];
+  wpd._scruv = wpd._muv;
+  vec3 c     = pntlighting(wpd);
+  float dp5  = distance(frg_uva, vec2(.5, .5));
+  c += vec3(pow(dp5, 17) * 256.0);
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_baselight_stereo : iface_fdefault : lib_deferred  {
+fragment_shader ps_debugnormal : iface_f2uv : lib_deferred : lib_cellnoise {
   WPosData wpd;
-  wpd._muv = gl_FragCoord.xy * InvViewportSize;
-  wpd._ivp = IVPArray[int(wpd._muv.x>=0.5)];
+  wpd._muv   = gl_FragCoord.xy * InvViewportSize;
+  wpd._index = 0;
+  wpd._ivp   = IVPArray[0];
   wpd._scruv = wpd._muv;
-  wpd._scruv.x = mod(wpd._scruv.x*2,1);
-  vec3 c  = baselighting(wpd);
-  out_clr = vec4(c, 1);
+  out_clr = vec4(debuglighting(wpd),1);
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_pointlight : iface_vdefault {
-  frg_uv      = uv0;
-  gl_Position = position;
+fragment_shader ps_debugnormal_stereo : iface_f2uv : lib_deferred : lib_cellnoise {
+  WPosData wpd;
+  wpd._muv   = gl_FragCoord.xy * InvViewportSize;
+  int index = int(wpd._muv.x >= 0.5);
+  wpd._ivp   = IVPArray[index];
+  wpd._scruv = wpd._muv;
+  wpd._scruv.x = mod(wpd._scruv.x * 2, 1);
+  wpd._index = index;
+  vec3 c = debuglighting(wpd);
+  out_clr = vec4(c,1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_pointlight : iface_fdefault : lib_deferred  {
+fragment_shader ps_pointlight_stereo : iface_f2uv : lib_deferred {
   WPosData wpd;
-  wpd._muv = gl_FragCoord.xy * InvViewportSize;
-  wpd._ivp = IVPArray[0];
-  wpd._scruv = wpd._muv;
-  vec3 c  = pntlighting(wpd);
-  out_clr = vec4(c, 1);
-}
-///////////////////////////////////////////////////////////////
-fragment_shader ps_pointlight_stereo : iface_fdefault : lib_deferred  {
-  WPosData wpd;
-  wpd._muv = gl_FragCoord.xy * InvViewportSize;
-  wpd._ivp = IVPArray[int(wpd._muv.x>=0.5)];
-  wpd._scruv = wpd._muv;
-  wpd._scruv.x = mod(wpd._scruv.x*2,1);
-  vec3 c  = pntlighting(wpd);
-  //c = vec3(wpd._muv,0);
-  //vec3 c = vec3(frg_uv,0);
+  wpd._muv     = gl_FragCoord.xy * InvViewportSize;
+  wpd._ivp     = IVPArray[int(wpd._muv.x >= 0.5)];
+  wpd._scruv   = wpd._muv;
+  wpd._scruv.x = mod(wpd._scruv.x * 2, 1);
+  vec3 c       = pntlighting(wpd);
+  // c = vec3(wpd._muv,0);
+  // vec3 c = vec3(frg_uva,0);
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
 ///////////////////////////////////////////////////////////////
-state_block sb_default { inherits default; }
+state_block sb_default : default {}
 ///////////////////////////////////////////////////////////////
 technique baselight {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_std;
+    vertex_shader   = vs_passthru2uv;
     fragment_shader = ps_baselight;
     state_block     = sb_default;
   }
@@ -188,7 +350,7 @@ technique baselight {
 technique pointlight {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_pointlight;
+    vertex_shader   = vs_passthru2uv;
     fragment_shader = ps_pointlight;
     state_block     = sb_default;
   }
@@ -197,7 +359,7 @@ technique pointlight {
 technique baselight_stereo {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_std;
+    vertex_shader   = vs_passthru2uv;
     fragment_shader = ps_baselight_stereo;
     state_block     = sb_default;
   }
@@ -206,8 +368,35 @@ technique baselight_stereo {
 technique pointlight_stereo {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_pointlight;
+    vertex_shader   = vs_passthru2uv;
     fragment_shader = ps_pointlight_stereo;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique downsampledepthcluster {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_downsampledepthcluster;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique debugnormal {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_debugnormal;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique debugnormal_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_debugnormal_stereo;
     state_block     = sb_default;
   }
 }

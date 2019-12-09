@@ -79,10 +79,10 @@ void Colorize::compute( ProcTex& ptex )
 			{
 				auto targ = mPTX.GetTarget();
 				mtl.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
-				mtl.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
-				mtl.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-				mtl.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
-				mtl.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+				mtl._rasterstate.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
+				mtl._rasterstate.SetCullTest( ork::lev2::ECULLTEST_OFF );
+				mtl._rasterstate.SetBlending( ork::lev2::EBLENDING_OFF );
+				mtl._rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 				auto inptexa = cpa->GetValue().GetTexture(ptex);
 				auto inptexb = cpb->GetValue().GetTexture(ptex);
 				inptexa->TexSamplingMode().PresetTrilinearWrap();
@@ -159,10 +159,10 @@ void UvMap::compute( ProcTex& ptex )
 			{
 				auto targ = mPTX.GetTarget();
 				mtl.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
-				mtl.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
-				mtl.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-				mtl.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
-				mtl.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+				mtl._rasterstate.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
+				mtl._rasterstate.SetCullTest( ork::lev2::ECULLTEST_OFF );
+				mtl._rasterstate.SetBlending( ork::lev2::EBLENDING_OFF );
+				mtl._rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 				auto inptexa = cpa->GetValue().GetTexture(ptex);
 				auto inptexb = cpb->GetValue().GetTexture(ptex);
 				inptexa->TexSamplingMode().PresetTrilinearWrap();
@@ -232,10 +232,10 @@ void SphMap::compute( ProcTex& ptex )
 			{
 				auto targ = mPTX.GetTarget();
 				mtl.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
-				mtl.mRasterState.SetAlphaTest( lev2::EALPHATEST_OFF );
-				mtl.mRasterState.SetCullTest( lev2::ECULLTEST_OFF );
-				mtl.mRasterState.SetBlending( lev2::EBLENDING_OFF );
-				mtl.mRasterState.SetDepthTest( lev2::EDEPTHTEST_ALWAYS );
+				mtl._rasterstate.SetAlphaTest( lev2::EALPHATEST_OFF );
+				mtl._rasterstate.SetCullTest( lev2::ECULLTEST_OFF );
+				mtl._rasterstate.SetBlending( lev2::EBLENDING_OFF );
+				mtl._rasterstate.SetDepthTest( lev2::EDEPTHTEST_ALWAYS );
 				auto inptexa = cpa->GetValue().GetTexture(ptex);
 				auto inptexb = cpb->GetValue().GetTexture(ptex);
 				inptexa->TexSamplingMode().PresetTrilinearWrap();
@@ -310,10 +310,10 @@ void SphRefract::compute( ProcTex& ptex )
 				, mtl( ptex.GetTarget(), "orkshader://proctex", "sphrefract" )
 			{
 				mtl.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
-				mtl.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
-				mtl.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-				mtl.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
-				mtl.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+				mtl._rasterstate.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
+				mtl._rasterstate.SetCullTest( ork::lev2::ECULLTEST_OFF );
+				mtl._rasterstate.SetBlending( ork::lev2::EBLENDING_OFF );
+				mtl._rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 				mtl.SetTexture( cpa->GetValue().GetTexture(ptex) );
 				mtl.SetTexture2( cpb->GetValue().GetTexture(ptex) );
 				mtl.SetUser0( fvec4(0.0f,direc,ior,float(bo.miW)) );
@@ -350,7 +350,7 @@ ork::dataflow::inplugbase* SphRefract::GetInput(int idx)
 void H2N::Describe()
 {	RegisterObjInpPlug( H2N, Input );
 	RegisterFloatXfPlug( H2N, ScaleY, 0.0f, 1.0f, ged::OutPlugChoiceDelegate );
-	ork::reflect::AnnotatePropertyForEditor< H2N >( "ScaleY", "editor.range.log", "true" );
+	ork::reflect::annotatePropertyForEditor< H2N >( "ScaleY", "editor.range.log", "true" );
 	ork::reflect::RegisterProperty( "AntiAlias", & H2N::mbAA );
 }
 ork::dataflow::inplugbase* H2N::GetInput(int idx)
@@ -368,11 +368,11 @@ H2N::H2N()
 	, mfScaleY(1.0f)
 	, mMTL( ork::lev2::GfxEnv::GetRef().GetLoaderTarget(), "orkshader://proctex", "h2n" )
 {
-	mMTL.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
-	mMTL.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-	mMTL.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
-	mMTL.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-	mMTL.mRasterState.SetZWriteMask( false );
+	mMTL._rasterstate.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
+	mMTL._rasterstate.SetCullTest( ork::lev2::ECULLTEST_OFF );
+	mMTL._rasterstate.SetBlending( ork::lev2::EBLENDING_OFF );
+	mMTL._rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+	mMTL._rasterstate.SetZWriteMask( false );
 	mMTL.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
 }
 void H2N::compute( ProcTex& ptex )
@@ -429,7 +429,7 @@ void Kaled::Describe()
 	RegisterFloatXfPlug( Kaled, OffsetX, -1.0f, 1.0f, ged::OutPlugChoiceDelegate );
 	RegisterFloatXfPlug( Kaled, OffsetY, -1.0f, 1.0f, ged::OutPlugChoiceDelegate );	
 	ork::reflect::RegisterProperty( "Mode", & Kaled::meMode );
-	ork::reflect::AnnotatePropertyForEditor< Kaled >( "Mode", "editor.class", "ged.factory.enum" );
+	ork::reflect::annotatePropertyForEditor< Kaled >( "Mode", "editor.class", "ged.factory.enum" );
 }
 ///////////////////////////////////////////////////////////////////////////////
 Kaled::Kaled()
@@ -474,10 +474,10 @@ void Kaled::compute( ProcTex& ptex )
 	{	auto targ = ptex.GetTarget();
 		lev2::GfxMaterial3DSolid gridmat( targ );
 		gridmat.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR );
-		gridmat.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
-		gridmat.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-		gridmat.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
-		gridmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+		gridmat._rasterstate.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
+		gridmat._rasterstate.SetCullTest( ork::lev2::ECULLTEST_OFF );
+		gridmat._rasterstate.SetBlending( ork::lev2::EBLENDING_OFF );
+		gridmat._rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 		auto inptexa = conplug->GetValue().GetTexture(ptex);
 
 		inptexa->TexSamplingMode().PresetTrilinearWrap();

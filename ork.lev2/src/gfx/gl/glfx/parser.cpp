@@ -16,6 +16,7 @@
 #include <ork/file/file.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/pch.h>
+#include <ork/kernel/string/string.h>
 #include <regex>
 #include <stdlib.h>
 
@@ -23,350 +24,339 @@
 namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-const std::map<std::string, int> GlSlFxParser::gattrsorter = {
-    {"POSITION", 0},
-    {"NORMAL", 1},
-    {"COLOR0", 2},
-    {"COLOR1", 3},
-    {"TEXCOORD0", 4},
-    {"TEXCOORD0", 5},
-    {"TEXCOORD1", 6},
-    {"TEXCOORD2", 7},
-    {"TEXCOORD3", 8},
-    {"BONEINDICES", 9},
-    {"BONEWEIGHTS", 10},
-};
+void RequiredExtensionNode::emit(shaderbuilder::BackEnd& backend) {
+  backend._codegen.formatLine("#extension %s : enable", _extension.c_str());
+}
 
 ///////////////////////////////////////////////////////////
-GlSlFxParser::GlSlFxParser(const AssetPath& pth, Scanner& s)
-    : mPath(pth)
-    , scanner(s)
-    , mpContainer(nullptr) {}
-///////////////////////////////////////////////////////////
-bool GlSlFxParser::IsTokenOneOfTheBlockTypes(const Token& tok) {
-  std::regex regex_block(token_regex);
+bool ContainerNode::IsTokenOneOfTheBlockTypes(const Token& tok) {
+  static const std::regex regex_block(block_regex);
   return std::regex_match(tok.text, regex_block);
 }
 ///////////////////////////////////////////////////////////
-Config* GlSlFxParser::ParseFxConfig() {
-  ScanViewRegex r("(\n)", true);
-  ScannerView v(scanner, r);
-  v.scanBlock(itokidx);
+ContainerNode::ContainerNode(const AssetPath& pth, const Scanner& s)
+    : _path(pth)
+    , _scanner(s) {
 
-  Config* pcfg = new Config;
-  pcfg->mName  = v.blockName();
+  std::string typenames = "mat2 mat3 mat4 vec2 vec3 vec4 "
+                          "ivec2 ivec3 ivec4 "
+                          "float double half uint int "
+                          "void bool "
+#if !defined(__APPLE__)
+                          "int8_t int16_t int32_t int64_t "
+                          "uint8_t uint16_t uint32_t uint64_t "
+                          "i8vec2 i8vec3 i8vec4 "
+                          "i16vec2 i16vec3 i16vec4 "
+                          "i32vec2 i32vec3 i32vec4 "
+                          "i64vec2 i64vec3 i64vec4 "
+                          "u16vec2 u16vec3 u16vec4 "
+                          "u32vec2 u32vec3 u32vec4 "
+                          "u64vec2 u64vec3 u64vec4 "
 
-  int ist = v._start + 1;
-  int ien = v._end - 1;
+                          "image1D image2D image3D "
+                          "imageCube image2DRect "
+                          "imageBuffer image2DMS "
+                          "image1DArray image2DArray image2DMSArray"
+                          "imageCubeArray "
 
-  std::vector<std::string> imports;
-  for (size_t i = ist; i <= ien;) {
-    const Token* vt_tok = v.token(i);
+                          "iimage1D iimage2D iimage3D "
+                          "iimageCube iimage2DRect "
 
-    // printf( "vt_tok<%s>\n", vt_tok->text.c_str() );
-
-    if (vt_tok->text == "import") {
-      const Token* impnam = v.token(i + 1);
-      std::string p       = impnam->text.substr(1, impnam->text.length() - 2);
-      imports.push_back(p);
-
-      i += 3;
-    } else
-      i++;
-  }
-
-  itokidx = v.blockEnd() + 1;
-
-  for (const auto& imp : imports) {
-    Scanner scanner2;
-
-    file::Path::NameType a, b;
-    mPath.Split(a, b, ':');
-
-    ork::FixedString<256> fxs;
-    fxs.format("%s://%s", a.c_str(), imp.c_str());
-    file::Path imppath = fxs.c_str();
-    // assert(false);
-
-    // printf( "impnam<%s> a<%s> b<%s> imppath<%s>\n", imp.c_str(), a.c_str(),
-    // b.c_str(), imppath.c_str() );
-    ///////////////////////////////////
-    File fx_file(imppath.c_str(), EFM_READ);
-    OrkAssert(fx_file.IsOpen());
-    EFileErrCode eFileErr = fx_file.GetLength(scanner2.ifilelen);
-    OrkAssert(scanner2.ifilelen < scanner2.kmaxfxblen);
-    eFileErr                             = fx_file.Read(scanner2.fxbuffer, scanner2.ifilelen);
-    scanner2.fxbuffer[scanner2.ifilelen] = 0;
-    ///////////////////////////////////
-    scanner2.Scan();
-
-    const auto& stoks = scanner2.tokens;
-    auto& dtoks       = scanner.tokens;
-
-    dtoks.insert(dtoks.begin() + itokidx, stoks.begin(), stoks.end());
-  }
-
-  return pcfg;
-}
-
-///////////////////////////////////////////////////////////
-StateBlock* GlSlFxParser::ParseFxStateBlock() {
-  ScanViewRegex r("(\n)", true);
-  ScannerView v(scanner, r);
-  v.scanBlock(itokidx);
-
-  StateBlock* psb = new StateBlock;
-  psb->mName      = v.blockName();
-  mpContainer->addStateBlock(psb);
-  //////////////////////
-
-  auto& apptors = psb->mApplicators;
-
-  //////////////////////
-
-  size_t inumdecos = v.numBlockDecorators();
-
-  assert(inumdecos < 2);
-
-  for (size_t ideco = 0; ideco < inumdecos; ideco++) {
-    auto ptok        = v.blockDecorator(ideco);
-    StateBlock* ppar = mpContainer->GetStateBlock(ptok->text);
-    OrkAssert(ppar != nullptr);
-    psb->mApplicators = ppar->mApplicators;
-  }
-
-  //////////////////////
-
-  int ist = v._start + 1;
-  int ien = v._end - 1;
-
-  for (size_t i = ist; i <= ien;) {
-
-    const Token* vt_tok = v.token(i);
-    // printf( "  ParseFxStateBlock Tok<%s>\n", vt_tok.text.c_str() );
-    if (vt_tok->text == "inherits") {
-      const Token* parent_tok = v.token(i + 1);
-      StateBlock* ppar        = mpContainer->GetStateBlock(parent_tok->text);
-      OrkAssert(ppar != nullptr);
-      psb->mApplicators = ppar->mApplicators;
-      i += 3;
-    } else if (vt_tok->text == "CullTest") {
-      const std::string& mode = v.token(i + 2)->text;
-      if (mode == "OFF")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetCullTest(lev2::ECULLTEST_OFF); });
-      else if (mode == "PASS_FRONT")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetCullTest(lev2::ECULLTEST_PASS_FRONT); });
-      else if (mode == "PASS_BACK")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetCullTest(lev2::ECULLTEST_PASS_BACK); });
-
-      i += 4;
-    } else if (vt_tok->text == "DepthMask") {
-      const std::string& mode = v.token(i + 2)->text;
-      bool bena               = (mode == "true");
-      psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetZWriteMask(bena); });
-      // printf( "DepthMask<%d>\n", int(bena) );
-      i += 4;
-    } else if (vt_tok->text == "DepthTest") {
-      const std::string& mode = v.token(i + 2)->text;
-      if (mode == "OFF")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_OFF); });
-      else if (mode == "LESS")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_LESS); });
-      else if (mode == "LEQUALS")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_LEQUALS); });
-      else if (mode == "GREATER")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_GREATER); });
-      else if (mode == "GEQUALS")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_GEQUALS); });
-      else if (mode == "EQUALS")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_EQUALS); });
-      i += 4;
-    } else if (vt_tok->text == "BlendMode") {
-      const std::string& mode = v.token(i + 2)->text;
-      if (mode == "ADDITIVE")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetBlending(lev2::EBLENDING_ADDITIVE); });
-      else if (mode == "ALPHA_ADDITIVE")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetBlending(lev2::EBLENDING_ALPHA_ADDITIVE); });
-      else if (mode == "ALPHA")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetBlending(lev2::EBLENDING_ALPHA); });
-      i += 4;
-    } else if (vt_tok->text == "\n") {
-      i++;
-    } else {
-      OrkAssert(false);
-    }
-  }
-  //////////////////////
-  itokidx = v.blockEnd() + 1;
-  return psb;
-}
-///////////////////////////////////////////////////////////
-LibBlock* GlSlFxParser::ParseLibraryBlock() {
-  int cachetokidx = itokidx;
-  ////////////////////////////////////////////
-  // scan library block code
-  ////////////////////////////////////////////
-  auto libblock = new LibBlock(scanner);
-  libblock->mView->scanBlock(itokidx);
-  libblock->mName = scanner.tokens[itokidx + 1].text;
-  itokidx         = libblock->mView->blockEnd() + 1;
-  ////////////////////////////////////////////
-  // scan decorators
-  ////////////////////////////////////////////
-  ScanViewRegex r("(\n)", true);
-  ScannerView v(scanner, r);
-  v.scanBlock(cachetokidx);
-  size_t inumdecos = v.numBlockDecorators();
-  for (size_t ideco = 0; ideco < inumdecos; ideco++) {
-    auto ptok          = v.blockDecorator(ideco);
-    auto it_uniformset = mpContainer->_uniformSets.find(ptok->text);
-    auto it_uniformblk = mpContainer->_uniformBlocks.find(ptok->text);
-    if (it_uniformset != mpContainer->_uniformSets.end()) {
-      libblock->_uniformSets.push_back(it_uniformset->second);
-    } else if (it_uniformblk != mpContainer->_uniformBlocks.end()) {
-      libblock->_uniformBlocks.push_back(it_uniformblk->second);
-    } else {
-      assert(false);
-    }
-  }
-  ////////////////////////////////////////////
-  return libblock;
-}
-
-///////////////////////////////////////////////////////////
-Technique* GlSlFxParser::ParseFxTechnique() {
-  ScanViewRegex r("(\n)", true);
-  ScannerView v(scanner, r);
-  v.scanBlock(itokidx);
-
-  // int iend = FindEndOfBlock( itokidx+1, itokidx+2 );
-  // const token& etok = scanner.tokens[iend+1];
-  // printf( "ParseFxTechnique Eob<%d> Next<%s>\n", iend, etok.text.c_str() );
-
-  std::string tekname = v.blockName();
-
-  Technique* ptek = new Technique(tekname);
-  ////////////////////////////////////////
-  // OrkAssert( scanner.tokens[itokidx+2].text == "{" );
-  ////////////////////////////////////////
-
-  int ist = v._start + 1;
-  int ien = v._end - 1;
-
-  for (int i = ist; i <= ien;) {
-    const Token* vt_tok = v.token(i);
-    // printf( "  ParseFxTechnique Tok<%s>\n", vt_tok.text.c_str() );
-    if (vt_tok->text == "fxconfig") {
-      i += 4;
-    } else if (vt_tok->text == "pass") {
-      // printf( "parsing pass at i<%d>\n", i );
-      // i is in view space, we need the globspace index to
-      //  start the pass parse
-      int globspac_passtoki = v.tokenIndex(i);
-      i                     = ParseFxPass(globspac_passtoki, ptek);
-    } else if (vt_tok->text == "\n") {
-      i++;
-    } else {
-      OrkAssert(false);
-    }
-  }
-  ////////////////////////////////////////
-  itokidx = v.blockEnd() + 1;
-  return ptek;
-}
-///////////////////////////////////////////////////////////
-int GlSlFxParser::ParseFxPass(int istart, Technique* ptek) {
-  ScanViewRegex r("(\n)", true);
-  ScannerView v(scanner, r);
-  v.scanBlock(istart);
-
-  std::string name = v.blockName();
-  // printf( "ParseFxPass Name<%s> Eob<%d> Next<%s>\n", name.c_str(), iend,
-  // etok.text.c_str() );
-  Pass* ppass = new Pass(name);
-  ////////////////////////////////////////
-  // OrkAssert( scanner.tokens[istart+2].text == "{" );
-  /////////////////////////////////////////////
-
-  int ist = v._start + 1;
-  int ien = v._end - 1;
-
-  for (size_t i = ist; i <= ien;) {
-    const Token* vt_tok = v.token(i);
-    // printf( "  ParseFxPass Tok<%s>\n", vt_tok->text.c_str() );
-
-    if (vt_tok->text == "vertex_shader") {
-      std::string vsnam = v.token(i + 2)->text;
-      auto pshader      = mpContainer->vertexShader(vsnam);
-      OrkAssert(pshader != nullptr);
-      auto& primvtg         = ppass->_primpipe.Make<PrimPipelineVTG>();
-      primvtg._vertexShader = pshader;
-      i += 4;
-    } else if (vt_tok->text == "tessctrl_shader") {
-      std::string fsnam = v.token(i + 2)->text;
-      auto pshader      = mpContainer->tessCtrlShader(fsnam);
-      OrkAssert(pshader != nullptr);
-      auto& primvtg           = ppass->_primpipe.Get<PrimPipelineVTG>();
-      primvtg._tessCtrlShader = pshader;
-      i += 4;
-    } else if (vt_tok->text == "tesseval_shader") {
-      std::string fsnam = v.token(i + 2)->text;
-      auto pshader      = mpContainer->tessEvalShader(fsnam);
-      OrkAssert(pshader != nullptr);
-      auto& primvtg           = ppass->_primpipe.Get<PrimPipelineVTG>();
-      primvtg._tessEvalShader = pshader;
-      i += 4;
-    } else if (vt_tok->text == "geometry_shader") {
-      std::string fsnam = v.token(i + 2)->text;
-      auto pshader      = mpContainer->geometryShader(fsnam);
-      OrkAssert(pshader != nullptr);
-      auto& primvtg           = ppass->_primpipe.Get<PrimPipelineVTG>();
-      primvtg._geometryShader = pshader;
-      i += 4;
-    } else if (vt_tok->text == "fragment_shader") {
-      std::string fsnam = v.token(i + 2)->text;
-      auto pshader      = mpContainer->fragmentShader(fsnam);
-      OrkAssert(pshader != nullptr);
-      auto& primvtg           = ppass->_primpipe.Get<PrimPipelineVTG>();
-      primvtg._fragmentShader = pshader;
-      i += 4;
-    }
-#if defined(ENABLE_NVMESH_SHADERS)
-    else if (vt_tok->text == "nvtask_shader") {
-      std::string fsnam = v.token(i + 2)->text;
-      auto pshader      = mpContainer->nvTaskShader(fsnam);
-      OrkAssert(pshader != nullptr);
-      auto& primnvmt         = ppass->_primpipe.Get<PrimPipelineNVMT>();
-      primnvmt._nvTaskShader = pshader;
-      i += 4;
-    } else if (vt_tok->text == "nvmesh_shader") {
-      std::string fsnam = v.token(i + 2)->text;
-      auto pshader      = mpContainer->nvMeshShader(fsnam);
-      OrkAssert(pshader != nullptr);
-      auto& primnvmt         = ppass->_primpipe.Get<PrimPipelineNVMT>();
-      primnvmt._nvMeshShader = pshader;
-      i += 4;
-    }
+                          "uimage1D uimage2D uimage3D "
+                          "uimageCube uimage2DRect "
 #endif
-    else if (vt_tok->text == "state_block") {
-      std::string sbnam = v.token(i + 2)->text;
-      StateBlock* psb   = mpContainer->GetStateBlock(sbnam);
-      OrkAssert(psb != nullptr);
-      ppass->_stateBlock = psb;
-      i += 4;
-    } else if (vt_tok->text == "\n") {
-      i++;
-    } else {
-      OrkAssert(false);
-    }
-  }
-  /////////////////////////////////////////////
-  /////////////////////////////////////////////
-  ptek->addPass(ppass);
-  /////////////////////////////////////////////
-  return v.blockEnd() + 1;
+                          "sampler2D sampler3D sampler2DShadow";
+
+  for (auto item : SplitString(typenames, ' '))
+    _validTypeNames.insert(item);
+
+  _validOutputDecorators.insert("perprimitiveNV");
+  _validOutputDecorators.insert("taskNV");
+
+  std::string kws = "for while do struct const if else "
+                    "return not and or true false "
+                    "uniform layout switch case ";
+  
+  for (auto item : SplitString(typenames, ' '))
+    _keywords.insert(item);
+  for (auto item : _validOutputDecorators )
+    _keywords.insert(item);
+  for (auto item : SplitString(kws, ' '))
+    _keywords.insert(item);
+
 }
 ///////////////////////////////////////////////////////////
+bool ContainerNode::validateKeyword(const std::string keyword) const {
+  auto it = _keywords.find(keyword);
+  return (it != _keywords.end());
+}
+///////////////////////////////////////////////////////////
+bool ContainerNode::validateTypeName(const std::string typeName) const {
+  auto it = _validTypeNames.find(typeName);
+  return (it != _validTypeNames.end());
+}
+///////////////////////////////////////////////////////////
+bool ContainerNode::validateIdentifierName(const std::string typeName) const { return true; }
+///////////////////////////////////////////////////////////
+bool ContainerNode::isIoAttrDecorator(const std::string typeName) const {
+  auto it = _validOutputDecorators.find(typeName);
+  return (it != _validOutputDecorators.end());
+}
+
+///////////////////////////////////////////////////////////
+
+void NamedBlockNode::parse(const ScannerView& view) {
+  _name      = view.blockName();
+  _blocktype = view.token(view._blockType)->text;
+}
+
+///////////////////////////////////////////////////////////
+
+void DecoBlockNode::parse(const ScannerView& view) {
+  NamedBlockNode::parse(view);
+  _container->addBlockNode(this);
+
+  /////////////////////////////
+  // fetch block decorators
+  /////////////////////////////
+
+  size_t inumdecos = view.numBlockDecorators();
+
+  for (size_t ideco = 0; ideco < inumdecos; ideco++) {
+    auto decotok = view.blockDecorator(ideco);
+    auto decoref = decotok->text;
+    if (decoref == "extension") {
+      int decoglobidx = view._blockDecorators[ideco];
+      assert(view._scanner.token(decoglobidx + 1)->text == "(");
+      assert(view._scanner.token(decoglobidx + 3)->text == ")");
+      auto extname        = view._scanner.token(decoglobidx + 2)->text;
+      auto extnode        = new RequiredExtensionNode(_container);
+      extnode->_extension = extname;
+      _requiredExtensions.push_back(extnode);
+    } else {
+      bool name_ok = _container->validateIdentifierName(decoref);
+      auto it      = _decodupecheck.find(decoref);
+      assert(it == _decodupecheck.end() or decoref == "extension");
+      _decodupecheck.insert(decoref);
+      _decorators.push_back(decotok);
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////
+void DecoBlockNode::_pregen(shaderbuilder::BackEnd& backend) {
+  size_t inumdecos = _decorators.size();
+  for (size_t i = 0; i < inumdecos; i++) {
+    auto deco                = _decorators[i]->text;
+    auto it_nodedeco         = _container->_blockNodes.find(deco);
+    DecoBlockNode* blocknode = (it_nodedeco != _container->_blockNodes.end()) ? it_nodedeco->second : nullptr;
+    if (auto as_if = dynamic_cast<InterfaceNode*>(blocknode)) {
+      _interfaceNodes.emplace_back(as_if);
+    } else if (auto as_lib = dynamic_cast<LibraryBlockNode*>(blocknode)) {
+      _libraryBlocks.emplace_back(as_lib);
+    } else if (auto as_uset = dynamic_cast<UniformSetNode*>(blocknode)) {
+      _uniformSets.emplace_back(as_uset);
+    } else if (auto as_ublk = dynamic_cast<UniformBlockNode*>(blocknode)) {
+      _uniformBlocks.emplace_back(as_ublk);
+    }
+  }
+}
+///////////////////////////////////////////////////////////
+void DecoBlockNode::_emit(shaderbuilder::BackEnd& backend) const {
+  for (auto node : _uniformBlocks)
+    node->emit(backend);
+  for (auto node : _uniformSets)
+    node->emit(backend);
+  for (auto node : _interfaceNodes)
+    node->emit(backend);
+  for (auto node : _libraryBlocks)
+    node->emit(backend);
+}
+///////////////////////////////////////////////////////////
+
+void ContainerNode::addBlockNode(DecoBlockNode* node) {
+  auto it = _blockNodes.find(node->_name);
+  assert(it == _blockNodes.end());
+  auto status    = _blockNodes.insert(std::make_pair(node->_name, node));
+  size_t bncount = _blockNodes.size();
+  assert(status.second);
+  _orderedBlockNodes.push_back(node);
+}
+
+///////////////////////////////////////////////////////////
+void ContainerNode::parse() {
+  const auto& tokens = _scanner.tokens;
+
+  // printf( "NumTokens<%d>\n", int(tokens.size()) );
+
+  itokidx = 0;
+
+  ScanViewRegex r("(\n)", true);
+
+  while (itokidx < tokens.size()) {
+    const Token& tok = tokens[itokidx];
+    //printf("token<%d> iline<%d> col<%d> text<%s>\n", itokidx, tok.iline + 1, tok.icol + 1, tok.text.c_str());
+
+    ScannerView scanview(_scanner, r);
+    scanview.scanBlock(itokidx);
+
+    bool advance_block = true;
+
+    if (tok.text == "\n") {
+      itokidx++;
+      advance_block = false;
+    } else if (tok.text == "fxconfig") {
+      _configNode = new ConfigNode(this);
+      _configNode->parse(scanview);
+    } else if (tok.text == "libblock") {
+      auto lb = new LibraryBlockNode(this);
+      lb->parse(scanview);
+    } else if (tok.text == "uniform_set") {
+      auto uniset = new UniformSetNode(this);
+      uniset->parse(scanview);
+    } else if (tok.text == "uniform_block") {
+      auto uniblk = new UniformBlockNode(this);
+      uniblk->parse(scanview);
+    } else if (tok.text == "vertex_interface") {
+      auto sif = new VertexInterfaceNode(this);
+      sif->parse(scanview);
+    } else if (tok.text == "tessctrl_interface") {
+      auto sif = new TessCtrlInterfaceNode(this);
+      sif->parse(scanview);
+    } else if (tok.text == "tesseval_interface") {
+      auto sif = new TessEvalInterfaceNode(this);
+      sif->parse(scanview);
+    } else if (tok.text == "geometry_interface") {
+      auto sif = new GeometryInterfaceNode(this);
+      sif->parse(scanview);
+    } else if (tok.text == "fragment_interface") {
+      auto sif = new FragmentInterfaceNode(this);
+      sif->parse(scanview);
+    } else if (tok.text == "state_block") {
+      auto sblock = new StateBlockNode(this);
+      sblock->parse(scanview);
+      // mpContainer->addStateBlock(psblock);
+    } else if (tok.text == "vertex_shader") {
+      auto sh = new VertexShaderNode(this);
+      sh->parse(scanview);
+    } else if (tok.text == "tessctrl_shader") {
+      auto sh = new TessCtrlShaderNode(this);
+      sh->parse(scanview);
+    } else if (tok.text == "tesseval_shader") {
+      auto sh = new TessEvalShaderNode(this);
+      sh->parse(scanview);
+    } else if (tok.text == "geometry_shader") {
+      auto sh = new GeometryShaderNode(this);
+      sh->parse(scanview);
+    } else if (tok.text == "fragment_shader") {
+      auto sh = new FragmentShaderNode(this);
+      sh->parse(scanview);
+#if defined(ENABLE_COMPUTE_SHADERS)
+    } else if (tok.text == "compute_shader") {
+      auto sh = new ComputeShaderNode(this);
+      sh->parse(scanview);
+    } else if (tok.text == "compute_interface") {
+      auto sif = new ComputeInterfaceNode(this);
+      sif->parse(scanview);
+#endif
+#if defined(ENABLE_NVMESH_SHADERS)
+    } else if (tok.text == "nvtask_shader") {
+      auto sh = new NvTaskShaderNode(this);
+      sh->parse(scanview);
+    } else if (tok.text == "nvmesh_shader") {
+      auto sh = new NvMeshShaderNode(this);
+      sh->parse(scanview);
+    } else if (tok.text == "nvtask_interface") {
+      auto sif = new NvTaskInterfaceNode(this);
+      sif->parse(scanview);
+    } else if (tok.text == "nvmesh_interface") {
+      auto sif = new NvMeshInterfaceNode(this);
+      sif->parse(scanview);
+#endif
+    } else if (tok.text == "technique") {
+      auto tek = new TechniqueNode(this);
+      tek->parse(scanview);
+    } else {
+      printf("Unknown Token<%s>\n", tok.text.c_str());
+      OrkAssert(false);
+    }
+    if (advance_block)
+      itokidx = scanview.blockEnd() + 1;
+  }
+}
+
+ContainerNode::nodevect_t ContainerNode::collectAllNodes() const {
+  nodevect_t nodes;
+  ////////////////////////////////////////////
+  nodes.reserve(128);
+  ////////////////////////////////////////////
+  // build node list in desired order of processing
+  // so do leafy nodes first and nodes
+  //  which have dependencies later
+  ////////////////////////////////////////////
+  collectNodesOfType<LibraryBlockNode>(nodes);
+  collectNodesOfType<ShaderDataNode>(nodes);
+  collectNodesOfType<StateBlockNode>(nodes);
+
+  collectNodesOfType<VertexInterfaceNode>(nodes);
+  collectNodesOfType<TessCtrlInterfaceNode>(nodes);
+  collectNodesOfType<TessEvalInterfaceNode>(nodes);
+  collectNodesOfType<GeometryInterfaceNode>(nodes);
+  collectNodesOfType<FragmentInterfaceNode>(nodes);
+
+  collectNodesOfType<VertexShaderNode>(nodes);
+  collectNodesOfType<TessCtrlShaderNode>(nodes);
+  collectNodesOfType<TessEvalShaderNode>(nodes);
+  collectNodesOfType<GeometryShaderNode>(nodes);
+  collectNodesOfType<FragmentShaderNode>(nodes);
+
+#if defined(ENABLE_COMPUTE_SHADERS)
+  collectNodesOfType<ComputeInterfaceNode>(nodes);
+  collectNodesOfType<ComputeShaderNode>(nodes);
+#endif
+#if defined(ENABLE_NVMESH_SHADERS)
+  collectNodesOfType<NvTaskInterfaceNode>(nodes);
+  collectNodesOfType<NvMeshInterfaceNode>(nodes);
+  collectNodesOfType<NvTaskShaderNode>(nodes);
+  collectNodesOfType<NvMeshShaderNode>(nodes);
+#endif
+
+  collectNodesOfType<TechniqueNode>(nodes);
+  return nodes;
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+
+void ContainerNode::generate(shaderbuilder::BackEnd& backend) const {
+  auto nodes = collectAllNodes();
+  for (auto item : nodes)
+    item->pregen(backend);
+  for (auto item : nodes)
+    item->generate(backend);
+}
+
+void ContainerNode::addStructType(StructNode*snode) {
+  auto name = snode->_name->text;
+  auto it = _structTypes.find(name);
+  assert(it==_structTypes.end());
+  auto it2 = _validTypeNames.find(name);
+  assert(it2==_validTypeNames.end());
+  _structTypes[name]=snode;
+  _validTypeNames.insert(name);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+GlSlFxParser::GlSlFxParser(const std::string& pth, const Scanner& s)
+    : mPath(pth)
+    , scanner(s) {
+  _rootNode = new ContainerNode(pth, s);
+  _rootNode->parse();
+}
+
+///////////////////////////////////////////////////////////
+
 void GlSlFxParser::DumpAllTokens() {
   size_t itokidx     = 0;
   const auto& tokens = scanner.tokens;
@@ -375,107 +365,11 @@ void GlSlFxParser::DumpAllTokens() {
     // printf( "tok<%d> <%s>\n", itokidx, tok.text.c_str() );
   }
 }
-///////////////////////////////////////////////////////////
-Container* GlSlFxParser::Parse(const std::string& fxname) {
-  const auto& tokens = scanner.tokens;
 
-  // printf( "NumTokens<%d>\n", int(tokens.size()) );
-
-  mpContainer = new Container(fxname.c_str());
-  bool bOK    = true;
-
-  itokidx = 0;
-
-  while (itokidx < tokens.size()) {
-    const Token& tok = tokens[itokidx];
-    // printf( "token<%d> iline<%d> col<%d> text<%s>\n", itokidx, tok.iline+1,
-    // tok.icol+1, tok.text.c_str() );
-
-    if (tok.text == "\n") {
-      itokidx++;
-    } else if (tok.text == "fxconfig") {
-      Config* pconfig = ParseFxConfig();
-      mpContainer->addConfig(pconfig);
-    } else if (tok.text == "libblock") {
-      auto lb = ParseLibraryBlock();
-      mpContainer->addLibBlock(lb);
-    } else if (tok.text == "uniform_set") {
-      auto pif = parseUniformSet();
-      mpContainer->addUniformSet(pif);
-    } else if (tok.text == "uniform_block") {
-      auto block = parseUniformBlock();
-      mpContainer->addUniformBlock(block);
-    } else if (tok.text == "vertex_interface") {
-      StreamInterface* pif = ParseFxInterface(GL_VERTEX_SHADER);
-      mpContainer->addVertexInterface(pif);
-    } else if (tok.text == "tessctrl_interface") {
-      StreamInterface* pif = ParseFxInterface(GL_TESS_CONTROL_SHADER);
-      mpContainer->addTessCtrlInterface(pif);
-    } else if (tok.text == "tesseval_interface") {
-      StreamInterface* pif = ParseFxInterface(GL_TESS_EVALUATION_SHADER);
-      mpContainer->addTessEvalInterface(pif);
-    } else if (tok.text == "geometry_interface") {
-      StreamInterface* pif = ParseFxInterface(GL_GEOMETRY_SHADER);
-      mpContainer->addGeometryInterface(pif);
-    } else if (tok.text == "fragment_interface") {
-      StreamInterface* pif = ParseFxInterface(GL_FRAGMENT_SHADER);
-      mpContainer->addFragmentInterface(pif);
-    } else if (tok.text == "state_block") {
-      StateBlock* psblock = ParseFxStateBlock();
-      mpContainer->addStateBlock(psblock);
-    } else if (tok.text == "vertex_shader") {
-      ShaderVtx* pshader = ParseFxVertexShader();
-      mpContainer->addVertexShader(pshader);
-    } else if (tok.text == "tessctrl_shader") {
-      ShaderTsC* pshader = ParseFxTessCtrlShader();
-      mpContainer->addTessCtrlShader(pshader);
-    } else if (tok.text == "tesseval_shader") {
-      ShaderTsE* pshader = ParseFxTessEvalShader();
-      mpContainer->addTessEvalShader(pshader);
-    } else if (tok.text == "geometry_shader") {
-      ShaderGeo* pshader = ParseFxGeometryShader();
-      mpContainer->addGeometryShader(pshader);
-    } else if (tok.text == "fragment_shader") {
-      ShaderFrg* pshader = ParseFxFragmentShader();
-      mpContainer->addFragmentShader(pshader);
-    }
-#if defined(ENABLE_NVMESH_SHADERS)
-    else if (tok.text == "nvtask_shader") {
-      ShaderNvTask* pshader = ParseFxNvTaskShader();
-      mpContainer->addNvTaskShader(pshader);
-    } else if (tok.text == "nvmesh_shader") {
-      ShaderNvMesh* pshader = ParseFxNvMeshShader();
-      mpContainer->addNvMeshShader(pshader);
-    }
-#endif
-    else if (tok.text == "technique") {
-      Technique* ptek = ParseFxTechnique();
-      mpContainer->addTechnique(ptek);
-    } else {
-      printf("Unknown Token<%s>\n", tok.text.c_str());
-      OrkAssert(false);
-    }
-  }
-  if (false == bOK) {
-    delete mpContainer;
-    mpContainer = nullptr;
-  }
-  return mpContainer;
-}
-
-LibBlock::LibBlock(const Scanner& s)
-    : mFilter(nullptr)
-    , mView(nullptr) {
-  mFilter = new ScanViewFilter();
-  mView   = new ScannerView(s, *mFilter);
-}
-
-//////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 Container* LoadFxFromFile(const AssetPath& pth) {
-  Scanner scanner;
-  GlSlFxParser parser(pth, scanner);
+  Scanner scanner(block_regex);
   ///////////////////////////////////
   File fx_file(pth, EFM_READ);
   OrkAssert(fx_file.IsOpen());
@@ -485,7 +379,13 @@ Container* LoadFxFromFile(const AssetPath& pth) {
   scanner.fxbuffer[scanner.ifilelen] = 0;
   ///////////////////////////////////
   scanner.Scan();
-  Container* pcont = parser.Parse(pth.c_str());
+  ///////////////////////////////////
+  GlSlFxParser parser(pth.c_str(), scanner);
+  auto pcont = new Container(pth.c_str());
+  shaderbuilder::BackEnd backend(parser._rootNode, pcont);
+  bool ok = backend.generate();
+  assert(ok);
+  ///////////////////////////////////
   return pcont;
 }
 

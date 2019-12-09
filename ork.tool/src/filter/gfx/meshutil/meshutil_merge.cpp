@@ -28,26 +28,26 @@ void toolmesh::MergeMaterialsFromToolMesh( const toolmesh& from )
 		OrkAssert(itf==mShadingGroupToMaterialMap.end());
 		mShadingGroupToMaterialMap[key] = val;
 	}
-	for( orkmap<std::string,ork::tool::SColladaMaterial*>::const_iterator 
+	for( orkmap<std::string,ork::tool::ColladaMaterial*>::const_iterator 
 			itm=from.mMaterialsByShadingGroup.begin();
 			itm!=from.mMaterialsByShadingGroup.end();
 			itm++ )
 	{	const std::string& key = itm->first;
-		ork::tool::SColladaMaterial* val = itm->second;
+		ork::tool::ColladaMaterial* val = itm->second;
 
-		orkmap<std::string,ork::tool::SColladaMaterial*>::const_iterator itf = mMaterialsByShadingGroup.find(key);
+		orkmap<std::string,ork::tool::ColladaMaterial*>::const_iterator itf = mMaterialsByShadingGroup.find(key);
 		OrkAssert(itf==mMaterialsByShadingGroup.end());
 		mMaterialsByShadingGroup[key] = val;
 	}
-	for( orkmap<std::string,ork::tool::SColladaMaterial*>::const_iterator 
+	for( orkmap<std::string,ork::tool::ColladaMaterial*>::const_iterator 
 			itm=from.mMaterialsByName.begin();
 			itm!=from.mMaterialsByName.end();
 			itm++ )
 	{
 		const std::string& key = itm->first;
-		ork::tool::SColladaMaterial* val = itm->second;
+		ork::tool::ColladaMaterial* val = itm->second;
 
-		orkmap<std::string,ork::tool::SColladaMaterial*>::const_iterator itf = mMaterialsByName.find(key);
+		orkmap<std::string,ork::tool::ColladaMaterial*>::const_iterator itf = mMaterialsByName.find(key);
 		OrkAssert(itf==mMaterialsByName.end());
 		mMaterialsByName[key] = val;
 	}

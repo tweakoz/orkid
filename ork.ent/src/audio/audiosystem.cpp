@@ -36,21 +36,21 @@ void AudioSystemData::Describe(){
 	RegisterProperty("DistanceMax", &AudioSystemData::mfDistMax);
 	RegisterProperty("DistanceAttenPower", &AudioSystemData::mfDistAttenPower);
 
-	AnnotatePropertyForEditor<AudioSystemData>("DistanceScale", "editor.range.min", "0.001" );
-	AnnotatePropertyForEditor<AudioSystemData>("DistanceScale", "editor.range.max", "100.0" );
-	AnnotatePropertyForEditor<AudioSystemData>("DistanceScale", "editor.range.log", "true" );
+	annotatePropertyForEditor<AudioSystemData>("DistanceScale", "editor.range.min", "0.001" );
+	annotatePropertyForEditor<AudioSystemData>("DistanceScale", "editor.range.max", "100.0" );
+	annotatePropertyForEditor<AudioSystemData>("DistanceScale", "editor.range.log", "true" );
 
-	AnnotatePropertyForEditor<AudioSystemData>("DistanceMin", "editor.range.min", "0.1" );
-	AnnotatePropertyForEditor<AudioSystemData>("DistanceMin", "editor.range.max", "10000.0" );
-	AnnotatePropertyForEditor<AudioSystemData>("DistanceMin", "editor.range.log", "true" );
+	annotatePropertyForEditor<AudioSystemData>("DistanceMin", "editor.range.min", "0.1" );
+	annotatePropertyForEditor<AudioSystemData>("DistanceMin", "editor.range.max", "10000.0" );
+	annotatePropertyForEditor<AudioSystemData>("DistanceMin", "editor.range.log", "true" );
 
-	AnnotatePropertyForEditor<AudioSystemData>("DistanceMax", "editor.range.min", "0.1" );
-	AnnotatePropertyForEditor<AudioSystemData>("DistanceMax", "editor.range.max", "10000.0" );
-	AnnotatePropertyForEditor<AudioSystemData>("DistanceMax", "editor.range.log", "true" );
+	annotatePropertyForEditor<AudioSystemData>("DistanceMax", "editor.range.min", "0.1" );
+	annotatePropertyForEditor<AudioSystemData>("DistanceMax", "editor.range.max", "10000.0" );
+	annotatePropertyForEditor<AudioSystemData>("DistanceMax", "editor.range.log", "true" );
 
-	AnnotatePropertyForEditor<AudioSystemData>("DistanceAttenPower", "editor.range.min", "0.5" );
-	AnnotatePropertyForEditor<AudioSystemData>("DistanceAttenPower", "editor.range.max", "2.0" );
-	AnnotatePropertyForEditor<AudioSystemData>("DistanceAttenPower", "editor.range.log", "true" );
+	annotatePropertyForEditor<AudioSystemData>("DistanceAttenPower", "editor.range.min", "0.5" );
+	annotatePropertyForEditor<AudioSystemData>("DistanceAttenPower", "editor.range.max", "2.0" );
+	annotatePropertyForEditor<AudioSystemData>("DistanceAttenPower", "editor.range.log", "true" );
 }
 ///////////////////////////////////////////////////////////////////////////////
 const float g_allsoundmod = 0.8f;

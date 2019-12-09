@@ -463,7 +463,7 @@ boost::Crc64 HotKey::GetHash() const
 void HotKeyConfiguration::Describe()
 {
 	ork::reflect::RegisterMapProperty("HotKeys", &HotKeyConfiguration::mHotKeys);
-	ork::reflect::AnnotatePropertyForEditor< HotKeyConfiguration >("HotKeys", "editor.factorylistbase", "HotKey" );
+	ork::reflect::annotatePropertyForEditor< HotKeyConfiguration >("HotKeys", "editor.factorylistbase", "HotKey" );
 
 }
 
@@ -554,7 +554,7 @@ HotKeyManager HotKeyManager::gHotKeyManager;
 void HotKeyManager::Describe()
 {
 	ork::reflect::RegisterMapProperty("Configurations", &HotKeyManager::mHotKeyConfigurations);
-	ork::reflect::AnnotatePropertyForEditor< HotKeyManager >("Configurations", "editor.factorylistbase", "HotKeyConfiguration" );
+	ork::reflect::annotatePropertyForEditor< HotKeyManager >("Configurations", "editor.factorylistbase", "HotKeyConfiguration" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

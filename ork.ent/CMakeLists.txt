@@ -47,3 +47,5 @@ target_include_directories (ork_ecs PRIVATE $ENV{OBT_STAGE}/include/bullet )
 
 
 install(TARGETS ork_ecs LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )
+
+add_subdirectory (tests)

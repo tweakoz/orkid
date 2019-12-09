@@ -53,7 +53,7 @@ void GridArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
         {
             mGridMaterial = new lev2::GfxMaterial3DSolid( lev2::GfxEnv::GetRef().GetLoaderTarget() );
             mGridMaterial->SetColorMode( lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR  );
-            mGridMaterial->mRasterState.SetBlending(lev2::EBLENDING_OFF);
+            mGridMaterial->_rasterstate.SetBlending(lev2::EBLENDING_OFF);
         }
         ~yo()
         {
@@ -209,19 +209,19 @@ void GridControllerData::Describe()
 {
     reflect::RegisterProperty( "SpinRate", & GridControllerData::mfSpinRate );
 
-    reflect::AnnotatePropertyForEditor<GridControllerData>( "SpinRate", "editor.range.min", "-6.28" );
-    reflect::AnnotatePropertyForEditor<GridControllerData>( "SpinRate", "editor.range.max", "6.28" );
+    reflect::annotatePropertyForEditor<GridControllerData>( "SpinRate", "editor.range.min", "-6.28" );
+    reflect::annotatePropertyForEditor<GridControllerData>( "SpinRate", "editor.range.max", "6.28" );
 
     reflect::RegisterProperty("Texture", &GridControllerData::mTextureAsset);
 
-    ork::reflect::AnnotatePropertyForEditor<GridControllerData>("Texture", "editor.class", "ged.factory.assetlist");
-    ork::reflect::AnnotatePropertyForEditor<GridControllerData>("Texture", "editor.assettype", "lev2tex");
-    ork::reflect::AnnotatePropertyForEditor<GridControllerData>("Texture", "editor.assetclass", "lev2tex");
+    ork::reflect::annotatePropertyForEditor<GridControllerData>("Texture", "editor.class", "ged.factory.assetlist");
+    ork::reflect::annotatePropertyForEditor<GridControllerData>("Texture", "editor.assettype", "lev2tex");
+    ork::reflect::annotatePropertyForEditor<GridControllerData>("Texture", "editor.assetclass", "lev2tex");
 
     ork::reflect::RegisterProperty("Scale", &GridControllerData::mfScale);
 
-    reflect::AnnotatePropertyForEditor<GridControllerData>( "Scale", "editor.range.min", "-1000.0" );
-    reflect::AnnotatePropertyForEditor<GridControllerData>( "Scale", "editor.range.max", "1000.0" );
+    reflect::annotatePropertyForEditor<GridControllerData>( "Scale", "editor.range.min", "-1000.0" );
+    reflect::annotatePropertyForEditor<GridControllerData>( "Scale", "editor.range.max", "1000.0" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -30,7 +30,7 @@ void Array<Entity*>::ClassInit()
 												CProp::EFLAG_NONE, 
 												PROP_OFFSET(Array<Entity*>, mArray), Entity::GetClassNameStatic()));
 
-	AnnotateProperty("Array", "Container.BaseClass", Entity::GetClassNameStatic());
+	annotateProperty("Array", "Container.BaseClass", Entity::GetClassNameStatic());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

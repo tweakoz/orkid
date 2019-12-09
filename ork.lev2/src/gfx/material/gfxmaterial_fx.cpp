@@ -104,8 +104,8 @@ GfxMaterialFx::GfxMaterialFx()
       mWorldViewMtxParam(0), mWorldViewProjectionMtxParam(0), mLightMapParam(0),
       mLightMapTexture(0) {
   miNumPasses = 1;
-  mRasterState.SetShadeModel(ESHADEMODEL_SMOOTH);
-  mRasterState.SetDepthTest(EDEPTHTEST_LEQUALS);
+  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
+  _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
 
   for (int i = 0; i < kMaxEngineParamFloats; i++)
     mEngineParamFloats[i] = 0.0f;
@@ -844,7 +844,7 @@ bool GfxMaterialFx::BeginPass(GfxTarget *pTarg, int iPass) {
   U32 ucurtarghash = pTarg->GetTargetFrame();
 
   if (mEffectInstance.mpEffect) {
-    pTarg->RSI()->BindRasterState(mRasterState, true);
+    pTarg->RSI()->BindRasterState(_rasterstate, true);
 
     ////////////////////////////////
 
