@@ -91,7 +91,12 @@ bool EditorCamControllerInst::DoLink(Simulation* psi) {
     const ent::EntData& ED = GetEntity()->GetEntData();
     PoolString name        = ED.GetName();
     std::string Name       = CreateFormattedString("%s", name.c_str());
-    psi->setCameraData(AddPooledString(Name.c_str()), &pcam->cameraMatrices());
+    const auto& cammats = pcam->cameraMatrices();
+    psi->setCameraData(AddPooledString(Name.c_str()), &cammats);
+    fmtx4 matrix, imatrix;
+    matrix.LookAt(cammats.GetEye(),cammats.GetTarget(),cammats.GetUp());
+    imatrix.inverseOf(matrix);
+    GetEntity()->SetDynMatrix(imatrix);
   }
   return true;
 }

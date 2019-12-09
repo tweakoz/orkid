@@ -72,7 +72,7 @@ struct ColladaAvailVertexFormats
 
 	FormatMap	mFormats;
 
-	inline void add( ork::lev2::EVtxStreamFormat efmt );
+	void add( ork::lev2::EVtxStreamFormat efmt );
 
 	const FormatMap& GetFormats() const { return mFormats; }
 };
