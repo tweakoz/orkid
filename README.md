@@ -15,12 +15,16 @@ Some Features Include:
 * Game-Genre agnostic.. 
 * Integrated Bullet Physics Engine.
 * GlFx shader based renderer. Uses OpenGL 4.1 on OSX and 4.5 on Linux.
+* PBR Shader support
+* GLTF/assimp import support
 * Realtime fixed function and node based compositor with offline rendering mode (dumps to image files on disk).
 * QT5/OpenGL based UI
 * Singularity - Pro synthesizer inspired audio engine. Loads Kurzweil k2000, CZ101, TX81Z and SF2 patches.
 * Now has OpenVR/Linux support!
 * Fairly lightweight build. A clean build builds in about 5 mins on a 2.8ghz 4core ivybridge 2013 macbook pro or 80 seconds on a 2.8ghz 20core ivybridge xeon. That includes building the embedded bullet and fcollada.
 * Many more...
+
+![PBR](./ork.data/misc/th_screenshot_pbr.png )
 
 ![Particles](http://tweakoz.com/resources/images/th_sshot_psys.jpg)
 
