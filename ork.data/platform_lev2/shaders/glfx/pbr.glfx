@@ -12,8 +12,11 @@ uniform_set ub_vtx
 {
 	mat4        mv;
 	mat4        mvp;
+	mat4 		mvp_l;
+	mat4 		mvp_r;
 	mat3        mrot;
 	vec4        modcolor;
+
 
 }
 ///////////////////////////////////////////////////////////////
@@ -69,6 +72,39 @@ vertex_shader vs_rigid_gbuffer
         wnorm
     ));
 	frg_camz = wnorm.xyz;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vgbuffer_stereo : iface_vgbuffer {
+  outputs {
+    layout(secondary_view_offset=1) int gl_Layer;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_rigid_gbuffer_stereo
+	: extension(GL_NV_stereo_view_rendering)
+  	: extension(GL_NV_viewport_array2)
+	: iface_vgbuffer_stereo
+{
+    vec4 cpos  = mv * position;
+    vec3 wnorm = normalize(mrot * normal);
+    vec3 wbinorm = normalize(mrot * binormal);
+	vec3 wtangent = cross(wbinorm,wnorm);
+	frg_clr = vec4(1.0,1.0,1.0,1.0);
+	frg_uv0 = uv0*vec2(1,-1);
+	vec4 nrmd = vec4(wnorm,-cpos.z);
+	frg_camdist = nrmd.w;
+	frg_tbn = transpose(mat3(
+        -wtangent,
+        -wbinorm,
+        wnorm
+    ));
+	frg_camz = wnorm.xyz;
+	gl_Position = mvp_l*position;
+	gl_SecondaryPositionNV = mvp_r*position;
+  	gl_Layer = 0;
+	gl_ViewportMask[0] = 1;
+  	gl_SecondaryViewportMaskNV[0] = 2;
+
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fgbuffer
@@ -131,6 +167,15 @@ technique rigid_gbuffer_n
 	fxconfig=fxcfg_default;
 	pass p0
 	{	vertex_shader=vs_rigid_gbuffer;
+		fragment_shader=ps_gbuffer_n;
+		state_block=sb_default;
+	}
+}
+technique rigid_gbuffer_n_stereo
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_rigid_gbuffer_stereo;
 		fragment_shader=ps_gbuffer_n;
 		state_block=sb_default;
 	}

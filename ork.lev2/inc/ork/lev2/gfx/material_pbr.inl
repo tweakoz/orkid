@@ -49,6 +49,8 @@ public:
   FxShader* _shader = nullptr;
   GfxTarget* _initialTarget = nullptr;
   const FxShaderParam* _paramMVP = nullptr;
+  const FxShaderParam* _paramMVPL = nullptr;
+  const FxShaderParam* _paramMVPR = nullptr;
   const FxShaderParam* _paramMV = nullptr;
   const FxShaderParam* _paramMROT = nullptr;
   const FxShaderParam* _paramMapColor = nullptr;
@@ -60,6 +62,7 @@ public:
   std::string _textureBaseName;
   const FxShaderTechnique* _tekRigidGBUFFER = nullptr;
   const FxShaderTechnique* _tekRigidGBUFFER_N = nullptr;
+  const FxShaderTechnique* _tekRigidGBUFFER_N_STEREO = nullptr;
 
   std::string _colorMapName;
   std::string _normalMapName;
@@ -113,15 +116,15 @@ inline bool PBRMaterial::BeginPass(GfxTarget* targ, int iPass) {
     auto stereomtx = CPD._stereoCameraMatrices;
     auto MVPL = stereomtx->MVPL(world);
     auto MVPR = stereomtx->MVPR(world);
-    fxi->BindParamMatrix(_shader, _paramMVP, MVPL);
-    fxi->BindParamMatrix(_shader, _paramMVP, MVPR);
+    fxi->BindParamMatrix(_shader, _paramMVPL, MVPL);
+    fxi->BindParamMatrix(_shader, _paramMVPR, MVPR);
+    fxi->BindParamMatrix(_shader,_paramMROT,(world).rotMatrix33());
   } else {
     auto mcams = CPD._cameraMatrices;
     auto MVP = world
                * mcams->_vmatrix
                * mcams->_pmatrix;
     fxi->BindParamMatrix(_shader, _paramMVP, MVP);
-    //fxi->BindParamMatrix(_shader,_paramMROT,(world*mcams->_vmatrix).rotMatrix33());
     fxi->BindParamMatrix(_shader,_paramMROT,(world).rotMatrix33());
   }
   rsi->BindRasterState(_rasterstate);
@@ -133,8 +136,12 @@ inline void PBRMaterial::EndPass(GfxTarget* targ) {
 }
 inline int PBRMaterial::BeginBlock(GfxTarget* targ, const RenderContextInstData& RCID) {
   auto fxi       = targ->FXI();
-  if( _paramMapNormal )
-    fxi->BindTechnique(_shader,_tekRigidGBUFFER_N);
+  const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
+  const auto& CPD = RCFD->topCPD();
+  bool is_stereo = CPD.isStereoOnePass();
+  if( _paramMapNormal ) {
+    fxi->BindTechnique(_shader, is_stereo ? _tekRigidGBUFFER_N_STEREO : _tekRigidGBUFFER_N);
+  }
   else
     fxi->BindTechnique(_shader,_tekRigidGBUFFER);
 
@@ -155,25 +162,17 @@ inline void PBRMaterial::Init(GfxTarget* targ) /*final*/ {
 
   _tekRigidGBUFFER = fxi->technique(_shader,"rigid_gbuffer");
   _tekRigidGBUFFER_N = fxi->technique(_shader,"rigid_gbuffer_n");
+  _tekRigidGBUFFER_N_STEREO = fxi->technique(_shader,"rigid_gbuffer_n_stereo");
 
   _paramMVP = fxi->parameter(_shader,"mvp");
+  _paramMVPL = fxi->parameter(_shader,"mvp_l");
+  _paramMVPR = fxi->parameter(_shader,"mvp_r");
   _paramMV = fxi->parameter(_shader,"mv");
   _paramMROT = fxi->parameter(_shader,"mrot");
   _paramMapColor = fxi->parameter(_shader,"ColorMap");
   _paramMapNormal = fxi->parameter(_shader,"NormalMap");
   _paramMapRoughAndMetal = fxi->parameter(_shader,"RoughAndMetalMap");
 
-  auto basepath = "data://materials/"s+_textureBaseName+"/"s;
-  auto colorpath = basepath+_textureBaseName+"_baseColor"s;
-  auto normalpath = basepath+_textureBaseName+"_normal"s;
-  printf( "colorpath<%s>\n", colorpath.c_str() );
-  //auto ass_color = ork::asset::AssetManager<TextureAsset>::Load(colorpath.c_str());
-  //auto ass_normal = ork::asset::AssetManager<TextureAsset>::Load(normalpath.c_str());
-  //_texColor = ass_color->GetTexture();
-  //_texNormal = ass_normal->GetTexture();
-  //printf( "ass_color<%p>\n", ass_color );
-  printf( "tex_color<%p>\n", _texColor );
-  printf( "tex_normal<%p>\n", _texNormal );
 }
 inline void PBRMaterial::Update() {
 }

@@ -5,6 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <ork/orkconfig.h>
 #include <orktool/orktool_pch.h>
 #include <orktool/filter/gfx/collada/collada.h>
 #include <ork/lev2/gfx/gfxenv.h>

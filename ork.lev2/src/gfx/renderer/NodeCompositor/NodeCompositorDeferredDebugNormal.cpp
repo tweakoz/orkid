@@ -105,7 +105,8 @@ struct IMPL {
       // base lighting
       //////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::BaseLighting");
-      _context._lightingmtl.bindTechnique(_context._tekDebugNormal);
+      _context._lightingmtl.bindTechnique(VD._isStereo ? _context._tekDebugNormalStereo
+                                                       : _context._tekDebugNormal );
       _context._lightingmtl._rasterstate.SetBlending(EBLENDING_OFF);
       _context._lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
       _context._lightingmtl._rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
