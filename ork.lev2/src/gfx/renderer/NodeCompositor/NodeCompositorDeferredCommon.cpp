@@ -88,6 +88,8 @@ void DeferredContext::gpuInit(GfxTarget* target) {
     _parZndc2eye       = _lightingmtl.param("Zndc2eye");
     _parEnvironmentIntensity = _lightingmtl.param("EnvironmentIntensity");
     _parEnvironmentMipBias = _lightingmtl.param("EnvironmentMipBias");
+    _parDiffuseIntensity = _lightingmtl.param("DiffuseIntensity");
+    _parAmbient = _lightingmtl.param("Ambient");
     //////////////////////////////////////////////////////////////
     _rtgGbuffer      = new RtGroup(target, 8, 8, 1);
     auto buf0        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, 8, 8);

@@ -148,15 +148,17 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       aiColor4D color;
       aiString string;
       if (AI_SUCCESS == aiGetMaterialString(material, AI_MATKEY_NAME, &string)) {
-        printf("has name\n");
         material_name = (const char*)string.data;
         outmtl->_name = material_name;
+        printf("has name<%s>\n", material_name.c_str());
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &color)) {
-        printf("has_uniform_diffuse\n");
+        printf("has_uniform_diffuse<%f %f %f %f>\n",
+               color.r, color.g, color.b, color.a );
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_SPECULAR, &color)) {
-        printf("has_uniform_specular\n");
+        printf("has_uniform_specular<%f %f %f %f>\n",
+               color.r, color.g, color.b, color.a );
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_AMBIENT, &color)) {
         printf("has_uniform_ambient\n");
@@ -336,6 +338,7 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
 
     auto mtlout = new ork::lev2::PBRMaterial();
     mtlout->setTextureBaseName(FormatString("material%d", subindex));
+    mtlout->SetName(AddPooledString(gltfmtl->_name.c_str()));
     mtlout->_colorMapName                  = gltfmtl->_colormap;
     mtlout->_normalMapName                 = gltfmtl->_normalmap;
     mtlout->_amboccMapName                 = gltfmtl->_amboccmap;

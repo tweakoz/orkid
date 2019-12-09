@@ -133,6 +133,8 @@ struct DeferredContext {
   const FxShaderParam* _parTileDim                   = nullptr;
   const FxShaderParam* _parEnvironmentIntensity      = nullptr;
   const FxShaderParam* _parEnvironmentMipBias        = nullptr;
+  const FxShaderParam* _parDiffuseIntensity          = nullptr;
+  const FxShaderParam* _parAmbient                   = nullptr;
   const FxShaderParamBlock* _lightblock              = nullptr;
 
   ////////////////////////////////////////////////////////////////////
@@ -180,6 +182,8 @@ public:
   lev2::Texture* envTexture() const;
   float environmentIntensity() const { return _environmentIntensity; }
   float environmentMipBias() const { return _environmentMipBias; }
+  float diffuseIntensity() const { return _diffuseIntensity; }
+  fvec3 ambient() const { return _ambient; }
 
 private:
   void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;
@@ -192,6 +196,8 @@ private:
   svar256_t _impl;
   float _environmentIntensity = 1.0f;
   float _environmentMipBias = 0.0f;
+  float _diffuseIntensity = 1.0f;
+  fvec3 _ambient;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

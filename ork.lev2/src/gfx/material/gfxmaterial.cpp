@@ -70,9 +70,15 @@ void PBRMaterial::describeX(class_t* c) {
       const auto& embtexmap = ctx._varmap.typedValueForKey<embtexmap_t>("embtexmap").value();
 
       int istring = 0;
+
+      ctx._inputStream->GetItem(istring);
+      auto materialname = ctx._reader.GetString(istring);
+
       ctx._inputStream->GetItem(istring);
       auto texbasename = ctx._reader.GetString(istring);
       auto mtl = new PBRMaterial;
+      mtl->SetName(AddPooledString(materialname));
+      printf( "materialName<%s>\n", materialname );
       ctx._inputStream->GetItem(istring);
       auto begintextures = ctx._reader.GetString(istring);
       assert(0==strcmp(begintextures,"begintextures"));
@@ -112,7 +118,11 @@ void PBRMaterial::describeX(class_t* c) {
 
     chunkfile::materialwriter_t writer = [](chunkfile::XgmMaterialWriterContext& ctx){
       auto pbrmtl = static_cast<const PBRMaterial*>(ctx._material);
-      int istring = ctx._writer.stringIndex(pbrmtl->_textureBaseName.c_str());
+
+      int istring = ctx._writer.stringIndex(pbrmtl->mMaterialName.c_str());
+      ctx._outputStream->AddItem(istring);
+
+      istring = ctx._writer.stringIndex(pbrmtl->_textureBaseName.c_str());
       ctx._outputStream->AddItem(istring);
 
       auto dotex = [&](std::string channelname, std::string texname){

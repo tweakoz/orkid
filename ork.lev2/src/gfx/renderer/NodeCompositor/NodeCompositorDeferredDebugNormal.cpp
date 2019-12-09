@@ -31,8 +31,10 @@ namespace ork::lev2::deferrednode {
 void DeferredCompositingNodeDebugNormal::describeX(class_t* c) {
   c->memberProperty("ClearColor", &DeferredCompositingNodeDebugNormal::_clearColor);
   c->memberProperty("FogColor", &DeferredCompositingNodeDebugNormal::_fogColor);
+  c->memberProperty("Ambient", &DeferredCompositingNodeDebugNormal::_ambient);
   c->floatProperty("EnvironmentIntensity", float_range{-5,5},&DeferredCompositingNodeDebugNormal::_environmentIntensity);
   c->floatProperty("EnvironmentMipBias", float_range{0,12},&DeferredCompositingNodeDebugNormal::_environmentMipBias);
+  c->floatProperty("DiffuseIntensity", float_range{-5,5},&DeferredCompositingNodeDebugNormal::_diffuseIntensity);
   auto texprop = c->accessorProperty("EnvironmentTexture", &DeferredCompositingNodeDebugNormal::_readEnvTexture, &DeferredCompositingNodeDebugNormal::_writeEnvTexture);
   texprop->annotate<ConstString>("editor.class", "ged.factory.assetlist");
   texprop->annotate<ConstString>("editor.assettype", "lev2tex");
@@ -122,6 +124,8 @@ struct IMPL {
 
       _context._lightingmtl.bindParamFloat(_context._parEnvironmentIntensity, node->environmentIntensity() );
       _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipBias, node->environmentMipBias() );
+      _context._lightingmtl.bindParamFloat(_context._parDiffuseIntensity, node->diffuseIntensity() );
+      _context._lightingmtl.bindParamVec3(_context._parAmbient, node->ambient() );
 
       _context._lightingmtl.bindParamVec2(_context._parNearFar, fvec2(0.1, 1000));
       _context._lightingmtl.bindParamVec2(_context._parInvViewSize, fvec2(1.0 / float(_context._width), 1.0f / float(_context._height)));

@@ -77,7 +77,7 @@ inline PBRMaterial::PBRMaterial() {
   _rasterstate.SetBlending(EBLENDING_OFF);
   _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
   _rasterstate.SetZWriteMask(true);
-  _rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
+  _rasterstate.SetCullTest(ECULLTEST_OFF);
   miNumPasses = 1;
 
 }
@@ -91,6 +91,7 @@ inline void PBRMaterial::end(const RenderContextFrameData& RCFD) {
 ////////////////////////////////////////////
 
 inline bool PBRMaterial::BeginPass(GfxTarget* targ, int iPass) {
+  //printf( "_name<%s>\n", mMaterialName.c_str() );
   auto fxi       = targ->FXI();
   auto rsi       = targ->RSI();
   auto mtxi      = targ->MTXI();
@@ -98,7 +99,7 @@ inline bool PBRMaterial::BeginPass(GfxTarget* targ, int iPass) {
   auto rotmtx = mtxi->RefR3Matrix();
   auto mvmtx = mtxi->RefMVMatrix();
   auto vmtx = mtxi->RefVMatrix();
-  vmtx.dump("vmtx");
+  //vmtx.dump("vmtx");
   const RenderContextInstData* RCID  = targ->GetRenderContextInstData();
   const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
   const auto& CPD = RCFD->topCPD();
