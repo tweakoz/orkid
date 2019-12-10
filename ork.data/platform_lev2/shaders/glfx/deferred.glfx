@@ -162,7 +162,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_envmapping : lib_cellnoise {
     vec4 rma = texture(MapRufMtlAlpha,uv);
 
     vec3 metalbase = vec3(0.25);
-    if( rma.w>0 ){
+    if( rma.w==0 ){
 
       float roughness = rma.y;
       float metallic = rma.z;
@@ -170,7 +170,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_envmapping : lib_cellnoise {
 
       vec3 wpos = gbd._wpos;
       vec3 epos = posatdepth(wpd,0.0);
-      vec3 edir = normalize(epos-wpos);
+      vec3 edir = normalize(wpos-epos);
 
       vec3 n    = texture(MapNormalL, uv).xyz*2-vec3(1,1,1);
       vec3 refl = normalize(reflect(edir,n));
@@ -192,7 +192,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_envmapping : lib_cellnoise {
       vec3 epos0 = posatdepth(wpd,0.0);
       vec3 epos1 = posatdepth(wpd,1.0);
       vec3 N = normalize(epos1-epos0);
-      rval = env_dualparabaloid(N,MapEnvironment,0.0);
+      rval = env_dualparabaloid(N,MapEnvironment,EnvironmentMipBias);
     }
     return rval;
   } // vec3 debuglighting(){
