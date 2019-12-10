@@ -1,0 +1,610 @@
+
+<reference category='ObjectClass'>
+    <object type='Ent3dSceneData' id='0'>
+        <property name='SceneObjects'>
+            <item key='/arch/edcam'>
+                <reference category='SceneObjectClass'>
+                    <object type='EditorCamArchetype' id='1'>
+                        <property name='Name'>"/arch/edcam"</property>
+                        <property name='Components'>
+                            <item key='camera'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='EditorCamControllerData' id='2'>
+                                        <property name='Camera'>
+                                            <object type='EzUiCam' id='3'>
+                                                <property name='Center'>0.765942 0.466615 0.075947</property>
+                                                <property name='Focus'>0 0 0</property>
+                                                <property name='Loc'>4.87566</property>
+                                                <property name='QuatC'>0.00960525 -0.0906735 -0.253645 -0.963142</property>
+                                                <property name='Aperature'>40</property>
+                                                <property name='MaxFar'>10000</property>
+                                                <property name='MinNear'>0.1</property>
+                                            </object>
+                                        </property>
+                                    </object>
+                                </reference>
+                            </item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='/arch/object'>
+                <reference category='SceneObjectClass'>
+                    <object type='ModelArchetype' id='4'>
+                        <property name='Name'>"/arch/object"</property>
+                        <property name='Components'>
+                            <item key=''>
+                                <reference category='ComponentDataClass'>
+                                    <object type='EditorPropMapData' id='5'>
+                                        <property name='Properties'></property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='ModelComponentData' id='6'>
+                                        <property name='AlwaysVisible'>false</property>
+                                        <property name='BlenderZup'>false</property>
+                                        <property name='EditorDagDebug'>false</property>
+                                        <property name='MaterialOverrides'></property>
+                                        <property name='Model'>
+                                            <reference category='AssetClass'>
+                                                "xgmodel" "data://environ/pbrtest.xgm"
+                                            </reference>
+                                        </property>
+                                        <property name='Offset'>0 0 0</property>
+                                        <property name='Rotate'>0 0 0</property>
+                                        <property name='Scale'>1</property>
+                                        <property name='ShowBoundingSphere'>false</property>
+                                    </object>
+                                </reference>
+                            </item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='spawncam'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='7'>
+                        <property name='Name'>"spawncam"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='8'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'><backreference id='1'/></property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+            <item key='spawnloc'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='9'>
+                        <property name='Name'>"spawnloc"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='10'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'><backreference id='4'/></property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+        </property>
+        <property name='ScriptFile'>""</property>
+        <property name='SystemData'>
+            <item key='CompositingSystemData'>
+                <reference category='SystemDataClass'>
+                    <object type='CompositingSystemData' id='11'>
+                        <property name='CompositorData'>
+                            <object type='CompositingData' id='12'>
+                                <property name='ActiveItem'>"item1"</property>
+                                <property name='ActiveScene'>"scene1"</property>
+                                <property name='Enable'>true</property>
+                                <property name='Groups'></property>
+                                <property name='Scenes'>
+                                    <item key='scene1'>
+                                        <reference category='ObjectClass'>
+                                            <object type='CompositingScene' id='13'>
+                                                <property name='Items'>
+                                                    <item key='item1'>
+                                                        <reference category='ObjectClass'>
+                                                            <object type='CompositingSceneItem' id='14'>
+                                                                <property name='Technique'>
+                                                                    <reference category='ObjectClass'>
+                                                                        <object type='NodeCompositingTechnique' id='15'>
+                                                                            <property name='OutputNode'>
+                                                                                <reference category='ObjectClass'>
+                                                                                    <object type='ScreenOutputCompositingNode' id='16'>
+                                                                                        <property name='Layer'>"All"</property>
+                                                                                    </object>
+                                                                                </reference>
+                                                                            </property>
+                                                                            <property name='PostFxNode'>
+                                                                                <reference category='ObjectClass'>
+                                                                                    <object type='PtxCompositingNode' id='17'>
+                                                                                        <property name='BufferDim'>1024</property>
+                                                                                        <property name='DynTexName'>"CompositorSend"</property>
+                                                                                        <property name='ReturnTexture'><backreference id='-1'/></property>
+                                                                                        <property name='Template'>
+                                                                                            <object type='proctex' id='18'>
+                                                                                                <property name='Modules'>
+                                                                                                    <item key='cgoct'>
+                                                                                                        <reference category='ObjectClass'>
+                                                                                                            <object type='proctex::Octaves' id='19'>
+                                                                                                                <property name='mgvpos'>200 0</property>
+                                                                                                                <property name='ImgOut'>
+                                                                                                                    <object type='proctex::OutImgPlug' id='20'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='BaseAmp'>
+                                                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='21'>
+                                                                                                                        <property name='value'>0.1</property>
+                                                                                                                        <property name='xf'>
+                                                                                                                            <object type='dflow/floatxf' id='22'>
+                                                                                                                                <property name='Transforms'></property>
+                                                                                                                            </object>
+                                                                                                                        </property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='BaseFreq'>
+                                                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='23'>
+                                                                                                                        <property name='value'>1</property>
+                                                                                                                        <property name='xf'>
+                                                                                                                            <object type='dflow/floatxf' id='24'>
+                                                                                                                                <property name='Transforms'></property>
+                                                                                                                            </object>
+                                                                                                                        </property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='BaseOffsetX'>
+                                                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='25'>
+                                                                                                                        <property name='value'>100</property>
+                                                                                                                        <property name='xf'>
+                                                                                                                            <object type='dflow/floatxf' id='26'>
+                                                                                                                                <property name='Transforms'>
+                                                                                                                                    <item key='xf1'>
+                                                                                                                                        <reference category='ObjectClass'>
+                                                                                                                                            <object type='dflow/floatxfmsbcurve' id='27'>
+                                                                                                                                                <property name='ModScaleBias'>
+                                                                                                                                                    <object type='dflow/ModScaleBias' id='28'>
+                                                                                                                                                        <property name='bias'>0</property>
+                                                                                                                                                        <property name='mod'>1</property>
+                                                                                                                                                        <property name='scale'>1</property>
+                                                                                                                                                    </object>
+                                                                                                                                                </property>
+                                                                                                                                                <property name='curve'>
+                                                                                                                                                    <object type='MultiCurve1D' id='29'>
+                                                                                                                                                        <property name='Curve'>
+                                                                                                                                                            <object type='Object' id='30'>
+                                                                                                                                                            </object>
+                                                                                                                                                        </property>
+                                                                                                                                                        <property name='Segs' size='2'>
+                                                                                                                                                            <item>"EMCST_LINEAR"</item>
+                                                                                                                                                            <item>"EMCST_LINEAR"</item>
+                                                                                                                                                        </property>
+                                                                                                                                                        <property name='Verts'>
+                                                                                                                                                            <item key='0'>0</item>
+                                                                                                                                                            <item key='0.683206'>0.976562</item>
+                                                                                                                                                            <item key='1'>0</item>
+                                                                                                                                                        </property>
+                                                                                                                                                        <property name='max'>1</property>
+                                                                                                                                                        <property name='min'>0</property>
+                                                                                                                                                    </object>
+                                                                                                                                                </property>
+                                                                                                                                                <property name='docurve'>true</property>
+                                                                                                                                                <property name='domodscabia'>true</property>
+                                                                                                                                            </object>
+                                                                                                                                        </reference>
+                                                                                                                                    </item>
+                                                                                                                                </property>
+                                                                                                                            </object>
+                                                                                                                        </property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='BaseOffsetY'>
+                                                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='31'>
+                                                                                                                        <property name='value'>0</property>
+                                                                                                                        <property name='xf'>
+                                                                                                                            <object type='dflow/floatxf' id='32'>
+                                                                                                                                <property name='Transforms'></property>
+                                                                                                                            </object>
+                                                                                                                        </property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='Input'>
+                                                                                                                    <object type='proctex::InImgPlug' id='33'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='NumOctaves'>1</property>
+                                                                                                                <property name='ScalAmp'>
+                                                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='34'>
+                                                                                                                        <property name='value'>1</property>
+                                                                                                                        <property name='xf'>
+                                                                                                                            <object type='dflow/floatxf' id='35'>
+                                                                                                                                <property name='Transforms'></property>
+                                                                                                                            </object>
+                                                                                                                        </property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='ScalFreq'>
+                                                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='36'>
+                                                                                                                        <property name='value'>2</property>
+                                                                                                                        <property name='xf'>
+                                                                                                                            <object type='dflow/floatxf' id='37'>
+                                                                                                                                <property name='Transforms'></property>
+                                                                                                                            </object>
+                                                                                                                        </property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='ScalOffsetX'>
+                                                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='38'>
+                                                                                                                        <property name='value'>1</property>
+                                                                                                                        <property name='xf'>
+                                                                                                                            <object type='dflow/floatxf' id='39'>
+                                                                                                                                <property name='Transforms'></property>
+                                                                                                                            </object>
+                                                                                                                        </property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='ScalOffsetY'>
+                                                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='40'>
+                                                                                                                        <property name='value'>1</property>
+                                                                                                                        <property name='xf'>
+                                                                                                                            <object type='dflow/floatxf' id='41'>
+                                                                                                                                <property name='Transforms'></property>
+                                                                                                                            </object>
+                                                                                                                        </property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                            </object>
+                                                                                                        </reference>
+                                                                                                    </item>
+                                                                                                    <item key='cgx'>
+                                                                                                        <reference category='ObjectClass'>
+                                                                                                            <object type='proctex::Gradient' id='42'>
+                                                                                                                <property name='mgvpos'>170 -120</property>
+                                                                                                                <property name='ImgOut'>
+                                                                                                                    <object type='proctex::OutImgPlug' id='43'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='AntiAlias'>false</property>
+                                                                                                                <property name='Repeat'>1</property>
+                                                                                                                <property name='RepeatMode'>"EGS_REPEAT"</property>
+                                                                                                                <property name='Type'>"EGT_RADIAL"</property>
+                                                                                                                <property name='gradient'>
+                                                                                                                    <object type='GradientV4' id='44'>
+                                                                                                                        <property name='points'>
+                                                                                                                            <item key='0'>0 0 0 1</item>
+                                                                                                                            <item key='0.5'>0.498047 0 0 0.998047</item>
+                                                                                                                            <item key='1'>0 0 0 0</item>
+                                                                                                                        </property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                            </object>
+                                                                                                        </reference>
+                                                                                                    </item>
+                                                                                                    <item key='cgxy'>
+                                                                                                        <reference category='ObjectClass'>
+                                                                                                            <object type='proctex::ImgOp2' id='45'>
+                                                                                                                <property name='mgvpos'>200 -60</property>
+                                                                                                                <property name='ImgOut'>
+                                                                                                                    <object type='proctex::OutImgPlug' id='46'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='InputA'>
+                                                                                                                    <object type='proctex::InImgPlug' id='47'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='InputB'>
+                                                                                                                    <object type='proctex::InImgPlug' id='48'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='Op'>"EIO2_ADD"</property>
+                                                                                                            </object>
+                                                                                                        </reference>
+                                                                                                    </item>
+                                                                                                    <item key='cgy'>
+                                                                                                        <reference category='ObjectClass'>
+                                                                                                            <object type='proctex::Gradient' id='49'>
+                                                                                                                <property name='mgvpos'>230 -120</property>
+                                                                                                                <property name='ImgOut'>
+                                                                                                                    <object type='proctex::OutImgPlug' id='50'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='AntiAlias'>false</property>
+                                                                                                                <property name='Repeat'>1</property>
+                                                                                                                <property name='RepeatMode'>"EGS_REPEAT"</property>
+                                                                                                                <property name='Type'>"EGT_CONICAL"</property>
+                                                                                                                <property name='gradient'>
+                                                                                                                    <object type='GradientV4' id='51'>
+                                                                                                                        <property name='points'>
+                                                                                                                            <item key='0'>0 0 0 1</item>
+                                                                                                                            <item key='0.5'>0 0.498047 0 0.998047</item>
+                                                                                                                            <item key='1'>0 0 0 0.988281</item>
+                                                                                                                        </property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                            </object>
+                                                                                                        </reference>
+                                                                                                    </item>
+                                                                                                    <item key='comp_input'>
+                                                                                                        <reference category='ObjectClass'>
+                                                                                                            <object type='proctex::Texture' id='52'>
+                                                                                                                <property name='mgvpos'>-50 -50</property>
+                                                                                                                <property name='ImgOut'>
+                                                                                                                    <object type='proctex::OutImgPlug' id='53'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='FlipY'>true</property>
+                                                                                                                <property name='Input'>
+                                                                                                                    <reference category='AssetClass'>
+                                                                                                                        "lev2tex" "nodins://CompositorSend"
+                                                                                                                    </reference>
+                                                                                                                </property>
+                                                                                                            </object>
+                                                                                                        </reference>
+                                                                                                    </item>
+                                                                                                    <item key='finaluv'>
+                                                                                                        <reference category='ObjectClass'>
+                                                                                                            <object type='proctex::ImgOp2' id='54'>
+                                                                                                                <property name='mgvpos'>90 80</property>
+                                                                                                                <property name='ImgOut'>
+                                                                                                                    <object type='proctex::OutImgPlug' id='55'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='InputA'>
+                                                                                                                    <object type='proctex::InImgPlug' id='56'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='InputB'>
+                                                                                                                    <object type='proctex::InImgPlug' id='57'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='Op'>"EIO2_ADD"</property>
+                                                                                                            </object>
+                                                                                                        </reference>
+                                                                                                    </item>
+                                                                                                    <item key='global'>
+                                                                                                        <reference category='ObjectClass'>
+                                                                                                            <object type='proctex::Global' id='58'>
+                                                                                                                <property name='mgvpos'>-40 -130</property>
+                                                                                                            </object>
+                                                                                                        </reference>
+                                                                                                    </item>
+                                                                                                    <item key='grx'>
+                                                                                                        <reference category='ObjectClass'>
+                                                                                                            <object type='proctex::Gradient' id='59'>
+                                                                                                                <property name='mgvpos'>20 -120</property>
+                                                                                                                <property name='ImgOut'>
+                                                                                                                    <object type='proctex::OutImgPlug' id='60'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='AntiAlias'>false</property>
+                                                                                                                <property name='Repeat'>1</property>
+                                                                                                                <property name='RepeatMode'>"EGS_REPEAT"</property>
+                                                                                                                <property name='Type'>"EGT_HORIZONTAL"</property>
+                                                                                                                <property name='gradient'>
+                                                                                                                    <object type='GradientV4' id='61'>
+                                                                                                                        <property name='points'>
+                                                                                                                            <item key='0'>0 0 0 1</item>
+                                                                                                                            <item key='1'>0.996094 0 0 0.996094</item>
+                                                                                                                        </property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                            </object>
+                                                                                                        </reference>
+                                                                                                    </item>
+                                                                                                    <item key='grxy'>
+                                                                                                        <reference category='ObjectClass'>
+                                                                                                            <object type='proctex::ImgOp2' id='62'>
+                                                                                                                <property name='mgvpos'>60 -90</property>
+                                                                                                                <property name='ImgOut'>
+                                                                                                                    <object type='proctex::OutImgPlug' id='63'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='InputA'>
+                                                                                                                    <object type='proctex::InImgPlug' id='64'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='InputB'>
+                                                                                                                    <object type='proctex::InImgPlug' id='65'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='Op'>"EIO2_ADD"</property>
+                                                                                                            </object>
+                                                                                                        </reference>
+                                                                                                    </item>
+                                                                                                    <item key='gry'>
+                                                                                                        <reference category='ObjectClass'>
+                                                                                                            <object type='proctex::Gradient' id='66'>
+                                                                                                                <property name='mgvpos'>100 -120</property>
+                                                                                                                <property name='ImgOut'>
+                                                                                                                    <object type='proctex::OutImgPlug' id='67'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='AntiAlias'>false</property>
+                                                                                                                <property name='Repeat'>1</property>
+                                                                                                                <property name='RepeatMode'>"EGS_REPEAT"</property>
+                                                                                                                <property name='Type'>"EGT_VERTICAL"</property>
+                                                                                                                <property name='gradient'>
+                                                                                                                    <object type='GradientV4' id='68'>
+                                                                                                                        <property name='points'>
+                                                                                                                            <item key='0'>0.132812 0.996094 0.0234375 0.996094</item>
+                                                                                                                            <item key='1'>0 0 0 0.992188</item>
+                                                                                                                        </property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                            </object>
+                                                                                                        </reference>
+                                                                                                    </item>
+                                                                                                    <item key='octtr'>
+                                                                                                        <reference category='ObjectClass'>
+                                                                                                            <object type='proctex::Transform' id='69'>
+                                                                                                                <property name='mgvpos'>200 60</property>
+                                                                                                                <property name='ImgOut'>
+                                                                                                                    <object type='proctex::OutImgPlug' id='70'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='Input'>
+                                                                                                                    <object type='proctex::InImgPlug' id='71'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='OffsetX'>
+                                                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='72'>
+                                                                                                                        <property name='value'>1</property>
+                                                                                                                        <property name='xf'>
+                                                                                                                            <object type='dflow/floatxf' id='73'>
+                                                                                                                                <property name='Transforms'>
+                                                                                                                                    <item key='xf1'>
+                                                                                                                                        <reference category='ObjectClass'>
+                                                                                                                                            <object type='dflow/floatxfmsbcurve' id='74'>
+                                                                                                                                                <property name='ModScaleBias'>
+                                                                                                                                                    <object type='dflow/ModScaleBias' id='75'>
+                                                                                                                                                        <property name='bias'>0</property>
+                                                                                                                                                        <property name='mod'>1</property>
+                                                                                                                                                        <property name='scale'>1</property>
+                                                                                                                                                    </object>
+                                                                                                                                                </property>
+                                                                                                                                                <property name='curve'>
+                                                                                                                                                    <object type='MultiCurve1D' id='76'>
+                                                                                                                                                        <property name='Curve'>
+                                                                                                                                                            <object type='Object' id='77'>
+                                                                                                                                                            </object>
+                                                                                                                                                        </property>
+                                                                                                                                                        <property name='Segs' size='1'>
+                                                                                                                                                            <item>"EMCST_LINEAR"</item>
+                                                                                                                                                        </property>
+                                                                                                                                                        <property name='Verts'>
+                                                                                                                                                            <item key='0'>0</item>
+                                                                                                                                                            <item key='1'>1</item>
+                                                                                                                                                        </property>
+                                                                                                                                                        <property name='max'>1</property>
+                                                                                                                                                        <property name='min'>0</property>
+                                                                                                                                                    </object>
+                                                                                                                                                </property>
+                                                                                                                                                <property name='docurve'>false</property>
+                                                                                                                                                <property name='domodscabia'>true</property>
+                                                                                                                                            </object>
+                                                                                                                                        </reference>
+                                                                                                                                    </item>
+                                                                                                                                </property>
+                                                                                                                            </object>
+                                                                                                                        </property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='OffsetY'>
+                                                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='78'>
+                                                                                                                        <property name='value'>0</property>
+                                                                                                                        <property name='xf'>
+                                                                                                                            <object type='dflow/floatxf' id='79'>
+                                                                                                                                <property name='Transforms'></property>
+                                                                                                                            </object>
+                                                                                                                        </property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='Rotate'>
+                                                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='80'>
+                                                                                                                        <property name='value'>0</property>
+                                                                                                                        <property name='xf'>
+                                                                                                                            <object type='dflow/floatxf' id='81'>
+                                                                                                                                <property name='Transforms'></property>
+                                                                                                                            </object>
+                                                                                                                        </property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='ScaleX'>
+                                                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='82'>
+                                                                                                                        <property name='value'>1</property>
+                                                                                                                        <property name='xf'>
+                                                                                                                            <object type='dflow/floatxf' id='83'>
+                                                                                                                                <property name='Transforms'></property>
+                                                                                                                            </object>
+                                                                                                                        </property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='ScaleY'>
+                                                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='84'>
+                                                                                                                        <property name='value'>1</property>
+                                                                                                                        <property name='xf'>
+                                                                                                                            <object type='dflow/floatxf' id='85'>
+                                                                                                                                <property name='Transforms'></property>
+                                                                                                                            </object>
+                                                                                                                        </property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                            </object>
+                                                                                                        </reference>
+                                                                                                    </item>
+                                                                                                    <item key='x'>
+                                                                                                        <reference category='ObjectClass'>
+                                                                                                            <object type='proctex::UvMap' id='86'>
+                                                                                                                <property name='mgvpos'>90 150</property>
+                                                                                                                <property name='ImgOut'>
+                                                                                                                    <object type='proctex::OutImgPlug' id='87'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='AntiAlias'>false</property>
+                                                                                                                <property name='InputA'>
+                                                                                                                    <object type='proctex::InImgPlug' id='88'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='InputB'>
+                                                                                                                    <object type='proctex::InImgPlug' id='89'>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                            </object>
+                                                                                                        </reference>
+                                                                                                    </item>
+                                                                                                </property>
+                                                                                                <property name='zzz_connections'>11 "cgoct" "Input" "cgxy" "ImgOut" "cgxy" "InputA" "cgx" "ImgOut" "cgxy" "InputB" "cgy" "ImgOut" "finaluv" "InputA" "octtr" "ImgOut" "finaluv" "InputB" "grxy" "ImgOut" "grxy" "InputA" "grx" "ImgOut" "grxy" "InputB" "gry" "ImgOut" "octtr" "Input" "cgoct" "ImgOut" "octtr" "OffsetX" "global" "Time" "x" "InputA" "finaluv" "ImgOut" "x" "InputB" "comp_input" "ImgOut"</property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </reference>
+                                                                            </property>
+                                                                            <property name='RenderNode'>
+                                                                                <reference category='ObjectClass'>
+                                                                                    <object type='DeferredCompositingNodeDebugNormal' id='90'>
+                                                                                        <property name='Ambient'>1 1 1</property>
+                                                                                        <property name='ClearColor'>0 0 0 1</property>
+                                                                                        <property name='DiffuseIntensity'>2</property>
+                                                                                        <property name='EnvironmentIntensity'>5</property>
+                                                                                        <property name='EnvironmentMipBias'>0</property>
+                                                                                        <property name='EnvironmentTexture'>
+                                                                                            <reference category='AssetClass'>
+                                                                                                "lev2tex" "data://environ/envmaps/blender_studio"
+                                                                                            </reference>
+                                                                                        </property>
+                                                                                        <property name='FogColor'>0 0 0 1</property>
+                                                                                    </object>
+                                                                                </reference>
+                                                                            </property>
+                                                                        </object>
+                                                                    </reference>
+                                                                </property>
+                                                            </object>
+                                                        </reference>
+                                                    </item>
+                                                </property>
+                                            </object>
+                                        </reference>
+                                    </item>
+                                </property>
+                            </object>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='LightingSystemData'>
+                <reference category='SystemDataClass'>
+                    <object type='VrSystemData' id='91'>
+                    </object>
+                </reference>
+            </item>
+        </property>
+    </object>
+</reference>

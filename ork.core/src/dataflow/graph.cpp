@@ -214,12 +214,28 @@ bool graph_data::PreDeserialize(reflect::IDeserializer &)
 }
 bool graph_data::PostDeserialize(reflect::IDeserializer &)
 {
+    /////////////////////////////////
+    // remove dangling null modules
+    /////////////////////////////////
+
+    auto modules_copy = mModules;
+    mModules.clear();
+	for( auto item : modules_copy ) {
+	  auto sec = item.second;
+	  if( sec != nullptr ){
+        mModules.AddSorted(item.first,item.second);
+	  }
+    }
+
+	    /////////////////////////////////
+
 	OnGraphChanged();
 	return true;
 }
 
 void graph_data::OnGraphChanged()
 {
+
 	for( auto item : mModules )
 	{	dgmodule* module = rtti::autocast(item.second);
 
