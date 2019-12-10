@@ -61,7 +61,7 @@ fragment_interface iface_f2uv {
   outputs { vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
-libblock lib_deferred : ub_light : ub_frg {
+libblock lib_deferred : ub_light : ub_frg : lib_envmapping {
   /////////////////////////////////////////////////////////
   struct GBufData {
     vec2 _uv;
@@ -176,18 +176,7 @@ libblock lib_deferred : ub_light : ub_frg {
       // dual parabaloid env mapping
       /////////////////////////
 
-      float miplevel = clamp(EnvironmentMipBias+(roughness*5),0,7);
-      vec3 env;
-      if( refl.z>0.0 ){
-          vec2 frontUV = (refl.xy / (2.0*(1.0 + refl.z))) + 0.5;
-          frontUV = frontUV*vec2(1,-1);
-          env = textureLod( MapEnvironment, frontUV, miplevel ).xyz;
-      }
-      else {
-          vec2 backUV = (refl.xy / (2.0*(1.0 - refl.z))) + 0.5;
-          backUV = backUV*vec2(1,-1);
-          env = textureLod( MapEnvironment, backUV, miplevel ).xyz;
-      }
+      vec3 env = env_dualparabaloid_pbr(refl,MapEnvironment,EnvironmentMipBias,roughness);
 
       /////////////////////////
 
@@ -215,26 +204,7 @@ libblock lib_deferred : ub_light : ub_frg {
 
       vec3 N = normalize(epos1-epos0);
 
-      /////////////////////////
-      // dual parabaloid env mapping
-      /////////////////////////
-
-      float miplevel = 0;
-      vec3 env;
-      if( N.z>0.0 ){
-          vec2 frontUV = (N.xy / (2.0*(1.0 + N.z))) + 0.5;
-          frontUV = frontUV*vec2(1,-1);
-          env = textureLod( MapEnvironment, frontUV, miplevel ).xyz;
-      }
-      else {
-          vec2 backUV = (N.xy / (2.0*(1.0 - N.z))) + 0.5;
-          backUV = backUV*vec2(1,-1);
-          env = textureLod( MapEnvironment, backUV, miplevel ).xyz;
-      }
-
-
-      rval = env;
-
+      rval = env_dualparabaloid(N,MapEnvironment,0.0);
     }
     return rval;
   } // vec3 debuglighting(){
@@ -310,7 +280,7 @@ fragment_shader ps_debugnormal : iface_f2uv : lib_deferred : lib_cellnoise {
   out_clr = vec4(debuglighting(wpd),1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_debugnormal_stereo : iface_f2uv : lib_deferred : lib_cellnoise {
+fragment_shader ps_debugnormal_stereo : iface_f2uv : lib_deferred : lib_cellnoise  {
   WPosData wpd;
   wpd._muv   = gl_FragCoord.xy * InvViewportSize;
   int index = int(wpd._muv.x >= 0.5);

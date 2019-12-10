@@ -4,8 +4,12 @@ libblock lib_mmnoise {
   //	<https://www.shadertoy.com/view/4dS3Wd>
   //	By Morgan McGuire @morgan3d, http://graphicscodex.com
   //
-  float hash(float n) { return fract(sin(n) * 1e4); }
-  float hash(vec2 p) { return fract(1e4 * sin(17.0 * p.x + p.y * 0.1) * (0.1 + abs(sin(p.y * 13.0 + p.x)))); }
+  float hash(float n) {
+    return fract(sin(n) * 1e4);
+  }
+  float hash(vec2 p) {
+    return fract(1e4 * sin(17.0 * p.x + p.y * 0.1) * (0.1 + abs(sin(p.y * 13.0 + p.x))));
+  }
 
   float noise(float x) {
     float i = floor(x);
@@ -47,13 +51,14 @@ libblock lib_mmnoise {
     float n = dot(i, step);
 
     vec3 u = f * f * (3.0 - 2.0 * f);
-    return mix(mix(mix(hash(n + dot(step, vec3(0, 0, 0))), hash(n + dot(step, vec3(1, 0, 0))), u.x),
-                   mix(hash(n + dot(step, vec3(0, 1, 0))), hash(n + dot(step, vec3(1, 1, 0))), u.x),
-                   u.y),
-               mix(mix(hash(n + dot(step, vec3(0, 0, 1))), hash(n + dot(step, vec3(1, 0, 1))), u.x),
-                   mix(hash(n + dot(step, vec3(0, 1, 1))), hash(n + dot(step, vec3(1, 1, 1))), u.x),
-                   u.y),
-               u.z);
+    return mix(
+        mix(mix(hash(n + dot(step, vec3(0, 0, 0))), hash(n + dot(step, vec3(1, 0, 0))), u.x),
+            mix(hash(n + dot(step, vec3(0, 1, 0))), hash(n + dot(step, vec3(1, 1, 0))), u.x),
+            u.y),
+        mix(mix(hash(n + dot(step, vec3(0, 0, 1))), hash(n + dot(step, vec3(1, 0, 1))), u.x),
+            mix(hash(n + dot(step, vec3(0, 1, 1))), hash(n + dot(step, vec3(1, 1, 1))), u.x),
+            u.y),
+        u.z);
   }
 
   float snoise(vec2 p) {
@@ -66,57 +71,76 @@ libblock lib_mmnoise {
     return 2.0 * (mix(mix(r.x, r.y, f.x), mix(r.z, r.w, f.x), f.y)) - 1.0;
   }
 
-
 } // libblock lib_mmnoise {
 
 libblock lib_cellnoise {
   // from https://github.com/BrianSharpe/Wombat/blob/master/Cellular3D.glsl
-  float cellnoise(vec3 P)
-  {
-      //	establish our grid cell and unit position
-      vec3 Pi = floor(P);
-      vec3 Pf = P - Pi;
+  float cellnoise(vec3 P) {
+    //	establish our grid cell and unit position
+    vec3 Pi = floor(P);
+    vec3 Pf = P - Pi;
 
-      // clamp the domain
-      Pi.xyz = Pi.xyz - floor(Pi.xyz * ( 1.0 / 69.0 )) * 69.0;
-      vec3 Pi_inc1 = step( Pi, vec3( 69.0 - 1.5 ) ) * ( Pi + 1.0 );
+    // clamp the domain
+    Pi.xyz       = Pi.xyz - floor(Pi.xyz * (1.0 / 69.0)) * 69.0;
+    vec3 Pi_inc1 = step(Pi, vec3(69.0 - 1.5)) * (Pi + 1.0);
 
-      // calculate the hash ( over -1.0->1.0 range )
-      vec4 Pt = vec4( Pi.xy, Pi_inc1.xy ) + vec2( 50.0, 161.0 ).xyxy;
-      Pt *= Pt;
-      Pt = Pt.xzxz * Pt.yyww;
-      const vec3 SOMELARGEFLOATS = vec3( 635.298681, 682.357502, 668.926525 );
-      const vec3 ZINC = vec3( 48.500388, 65.294118, 63.934599 );
-      vec3 lowz_mod = vec3( 1.0 / ( SOMELARGEFLOATS + Pi.zzz * ZINC ) );
-      vec3 highz_mod = vec3( 1.0 / ( SOMELARGEFLOATS + Pi_inc1.zzz * ZINC ) );
-      vec4 hash_x0 = fract( Pt * lowz_mod.xxxx ) * 2.0 - 1.0;
-      vec4 hash_x1 = fract( Pt * highz_mod.xxxx ) * 2.0 - 1.0;
-      vec4 hash_y0 = fract( Pt * lowz_mod.yyyy ) * 2.0 - 1.0;
-      vec4 hash_y1 = fract( Pt * highz_mod.yyyy ) * 2.0 - 1.0;
-      vec4 hash_z0 = fract( Pt * lowz_mod.zzzz ) * 2.0 - 1.0;
-      vec4 hash_z1 = fract( Pt * highz_mod.zzzz ) * 2.0 - 1.0;
+    // calculate the hash ( over -1.0->1.0 range )
+    vec4 Pt = vec4(Pi.xy, Pi_inc1.xy) + vec2(50.0, 161.0).xyxy;
+    Pt *= Pt;
+    Pt                         = Pt.xzxz * Pt.yyww;
+    const vec3 SOMELARGEFLOATS = vec3(635.298681, 682.357502, 668.926525);
+    const vec3 ZINC            = vec3(48.500388, 65.294118, 63.934599);
+    vec3 lowz_mod              = vec3(1.0 / (SOMELARGEFLOATS + Pi.zzz * ZINC));
+    vec3 highz_mod             = vec3(1.0 / (SOMELARGEFLOATS + Pi_inc1.zzz * ZINC));
+    vec4 hash_x0               = fract(Pt * lowz_mod.xxxx) * 2.0 - 1.0;
+    vec4 hash_x1               = fract(Pt * highz_mod.xxxx) * 2.0 - 1.0;
+    vec4 hash_y0               = fract(Pt * lowz_mod.yyyy) * 2.0 - 1.0;
+    vec4 hash_y1               = fract(Pt * highz_mod.yyyy) * 2.0 - 1.0;
+    vec4 hash_z0               = fract(Pt * lowz_mod.zzzz) * 2.0 - 1.0;
+    vec4 hash_z1               = fract(Pt * highz_mod.zzzz) * 2.0 - 1.0;
 
-      //  generate the 8 point positions
-      const float JITTER_WINDOW = 0.166666666;	// 0.166666666 will guarentee no artifacts.
-      hash_x0 = ( ( hash_x0 * hash_x0 * hash_x0 ) - sign( hash_x0 ) ) * JITTER_WINDOW + vec4( 0.0, 1.0, 0.0, 1.0 );
-      hash_y0 = ( ( hash_y0 * hash_y0 * hash_y0 ) - sign( hash_y0 ) ) * JITTER_WINDOW + vec4( 0.0, 0.0, 1.0, 1.0 );
-      hash_x1 = ( ( hash_x1 * hash_x1 * hash_x1 ) - sign( hash_x1 ) ) * JITTER_WINDOW + vec4( 0.0, 1.0, 0.0, 1.0 );
-      hash_y1 = ( ( hash_y1 * hash_y1 * hash_y1 ) - sign( hash_y1 ) ) * JITTER_WINDOW + vec4( 0.0, 0.0, 1.0, 1.0 );
-      hash_z0 = ( ( hash_z0 * hash_z0 * hash_z0 ) - sign( hash_z0 ) ) * JITTER_WINDOW + vec4( 0.0, 0.0, 0.0, 0.0 );
-      hash_z1 = ( ( hash_z1 * hash_z1 * hash_z1 ) - sign( hash_z1 ) ) * JITTER_WINDOW + vec4( 1.0, 1.0, 1.0, 1.0 );
+    //  generate the 8 point positions
+    const float JITTER_WINDOW = 0.166666666; // 0.166666666 will guarentee no artifacts.
+    hash_x0                   = ((hash_x0 * hash_x0 * hash_x0) - sign(hash_x0)) * JITTER_WINDOW + vec4(0.0, 1.0, 0.0, 1.0);
+    hash_y0                   = ((hash_y0 * hash_y0 * hash_y0) - sign(hash_y0)) * JITTER_WINDOW + vec4(0.0, 0.0, 1.0, 1.0);
+    hash_x1                   = ((hash_x1 * hash_x1 * hash_x1) - sign(hash_x1)) * JITTER_WINDOW + vec4(0.0, 1.0, 0.0, 1.0);
+    hash_y1                   = ((hash_y1 * hash_y1 * hash_y1) - sign(hash_y1)) * JITTER_WINDOW + vec4(0.0, 0.0, 1.0, 1.0);
+    hash_z0                   = ((hash_z0 * hash_z0 * hash_z0) - sign(hash_z0)) * JITTER_WINDOW + vec4(0.0, 0.0, 0.0, 0.0);
+    hash_z1                   = ((hash_z1 * hash_z1 * hash_z1) - sign(hash_z1)) * JITTER_WINDOW + vec4(1.0, 1.0, 1.0, 1.0);
 
-      //	return the closest squared distance
-      vec4 dx1 = Pf.xxxx - hash_x0;
-      vec4 dy1 = Pf.yyyy - hash_y0;
-      vec4 dz1 = Pf.zzzz - hash_z0;
-      vec4 dx2 = Pf.xxxx - hash_x1;
-      vec4 dy2 = Pf.yyyy - hash_y1;
-      vec4 dz2 = Pf.zzzz - hash_z1;
-      vec4 d1 = dx1 * dx1 + dy1 * dy1 + dz1 * dz1;
-      vec4 d2 = dx2 * dx2 + dy2 * dy2 + dz2 * dz2;
-      d1 = min(d1, d2);
-      d1.xy = min(d1.xy, d1.wz);
-      return min(d1.x, d1.y) * ( 9.0 / 12.0 ); // return a value scaled to 0.0->1.0
+    //	return the closest squared distance
+    vec4 dx1 = Pf.xxxx - hash_x0;
+    vec4 dy1 = Pf.yyyy - hash_y0;
+    vec4 dz1 = Pf.zzzz - hash_z0;
+    vec4 dx2 = Pf.xxxx - hash_x1;
+    vec4 dy2 = Pf.yyyy - hash_y1;
+    vec4 dz2 = Pf.zzzz - hash_z1;
+    vec4 d1  = dx1 * dx1 + dy1 * dy1 + dz1 * dz1;
+    vec4 d2  = dx2 * dx2 + dy2 * dy2 + dz2 * dz2;
+    d1       = min(d1, d2);
+    d1.xy    = min(d1.xy, d1.wz);
+    return min(d1.x, d1.y) * (9.0 / 12.0); // return a value scaled to 0.0->1.0
+  }
+}
+
+libblock lib_envmapping {
+
+  vec3 env_dualparabaloid(vec3 normal, sampler2D envtex, float miplevel) {
+    vec3 env;
+    if (normal.z > 0.0) {
+      vec2 frontUV = (normal.xy / (2.0 * (1.0 + normal.z))) + 0.5;
+      frontUV      = frontUV * vec2(1, -1);
+      env          = textureLod(envtex, frontUV, miplevel).xyz;
+    } else {
+      vec2 backUV = (normal.xy / (2.0 * (1.0 - normal.z))) + 0.5;
+      backUV      = backUV * vec2(1, -1);
+      env         = textureLod(envtex, backUV, miplevel).xyz;
     }
+    return env;
+  }
+  vec3 env_dualparabaloid_pbr(vec3 normal, sampler2D envtex, float mipbias, float roughness) {
+    float miplevel = clamp(mipbias + (roughness * 5), 0, 7);
+    return env_dualparabaloid(normal,envtex,miplevel);
+  }
 
 }
