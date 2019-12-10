@@ -28,13 +28,7 @@ datablockptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
   fwrite(_srcdata, _srcdatalen, 1, fout);
   fclose(fout);
 
-  Spawner s;
-  s.mCommandLine = "nvcompress ";
-  s.mCommandLine += "-rgb ";
-  s.mCommandLine += srcpath.c_str() + std::string(" ");
-  s.mCommandLine += ddspath.c_str() + std::string(" ");
-
-  s.spawnSynchronous();
+  invoke_nvcompress(srcpath,ddspath,"rgb");
 
   FILE* fin = fopen(ddspath.c_str(), "rb");
   fseek(fin, 0, SEEK_END);

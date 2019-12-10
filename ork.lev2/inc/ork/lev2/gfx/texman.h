@@ -16,6 +16,10 @@
 
 namespace ork { namespace lev2 {
 
+void invoke_nvcompress( std::string inpath,
+                        std::string outpath,
+                        std::string outfmt);
+
 class GfxTarget;
 
 //////////////////////////////////////////////////////////////////////////

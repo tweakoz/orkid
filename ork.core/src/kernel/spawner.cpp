@@ -114,6 +114,8 @@ void Spawner::spawn()
 
         char** args =  (char**) malloc(sizeof(char*)*(inum_args+1));
 
+        file::DecomposedPath decomposed_path;
+
         for( int i=0; i<inum_args; i++ )
         {
             const std::string& arg = vargs[i];
@@ -121,10 +123,9 @@ void Spawner::spawn()
             if( 0 == i )
             {
                 auto argpath = file::Path(arg);
-                file::DecomposedPath dec;
-                argpath.DeCompose(dec);
+                argpath.DeCompose(decomposed_path);
 
-                auto exe = dec.mFile + dec.mExtension;
+                auto exe = decomposed_path.mFile + decomposed_path.mExtension;
 
                 args[i] = strdup(exe.c_str());
             }
@@ -161,7 +162,12 @@ void Spawner::spawn()
 
         #if defined(__APPLE__)
         	::environ = env_vars;
-        	mExecRet = execvp(args[0], args);
+        	if( decomposed_path.mFolder.length() ){
+            	printf( "folder<%s>\n", decomposed_path.mFolder.c_str() );
+            	mExecRet = execvP(args[0], decomposed_path.mFolder.c_str(), args);
+        	}
+        	else
+            	mExecRet = execvp(args[0], args);
         #else
             mExecRet = execvpe( args[0], args, env_vars );
         #endif

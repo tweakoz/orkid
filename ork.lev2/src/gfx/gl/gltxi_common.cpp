@@ -162,12 +162,18 @@ struct TexSetter {
 
     glto->_maxmip = 0;
 
+    int mipbias = 0;
+    #if defined(__APPLE__) // todo move to gfx user settings
+    if(iw>=4096){
+      mipbias = 2;
+    }
+    #endif
+
     for (int imip = 0; imip < inummips; imip++) {
       if (iw < 4)
         continue;
       if (ih < 4)
         continue;
-      glto->_maxmip = imip;
 
       GLuint nfmt = fmt;
 
@@ -263,7 +269,10 @@ struct TexSetter {
       {
         auto pgfxmem = inpstream.current();
         inpstream.advance(isiz2);
-        glTexImage2D(tgt, imip, intfmt, iw, ih, 0, nfmt, typ, pgfxmem);
+        if( imip>=mipbias ) {
+          glTexImage2D(tgt, imip - mipbias, intfmt, iw, ih, 0, nfmt, typ, pgfxmem);
+          glto->_maxmip = imip - mipbias;
+        }
         GL_ERRORCHECK();
       }
 

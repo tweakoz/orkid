@@ -8,6 +8,7 @@
 #include <orktool/orktool_pch.h>
 #include <orktool/filter/filter.h>
 #include <ork/kernel/spawner.h>
+#include <ork/lev2/gfx/texman.h>
 
 namespace ork { namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
@@ -26,8 +27,6 @@ bool Tga2DdsFilterDriver( const tokenlist& toklist )
 	return NvttCompress( OptionsMap );
 
 }
-
-
 
 bool NvttCompress( const ork::tool::FilterOptMap& OptionsMap )
 {
@@ -71,14 +70,9 @@ bool NvttCompress( const ork::tool::FilterOptMap& OptionsMap )
 
   /////////////////////////////////////////////////////
 
-
-  Spawner s;
-  s.mCommandLine =  "nvcompress ";
-  s.mCommandLine += "-bc3 ";
-  s.mCommandLine += inpath.ToAbsolute().c_str() + std::string(" ");
-  s.mCommandLine += outpath.ToAbsolute().c_str() + std::string(" ");
-
-  s.spawnSynchronous();
+  ork::lev2::invoke_nvcompress( inpath.ToAbsolute().c_str(),
+                                outpath.ToAbsolute().c_str(),
+                                "bc3" );
 
 	return true;
 }
