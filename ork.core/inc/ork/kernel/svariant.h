@@ -38,10 +38,12 @@
 #include <ork/orkstd.h>
 #include <cxxabi.h>
 
+#if !defined(__APPLE__)
 #define SVAR_DEBUG
+#endif
 
 namespace ork {
-
+#if defined(SVAR_DEBUG)
 template <typename T>
 inline std::string demangled_typename() {
   auto typestr          = typeid(T).name();
@@ -49,6 +51,8 @@ inline std::string demangled_typename() {
   const char* demangled = abi::__cxa_demangle(typestr, 0, 0, &status);
   return std::string(demangled);
 }
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <int tsize> class static_variant;

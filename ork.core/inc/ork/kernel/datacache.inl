@@ -5,6 +5,7 @@
 #include "mutex.h"
 #include <boost/filesystem.hpp>
 #include <ork/kernel/datablock.inl>
+#include <unordered_map>
 
 namespace ork {
 

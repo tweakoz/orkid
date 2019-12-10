@@ -36,7 +36,7 @@ size_t Expression::bitwidth() const {
         return as.value()->bitwidth();
     }
     else {
-        printf( "_childtype<%s>\n", _child.typestr());
+        //printf( "_childtype<%s>\n", _child.typestr());
         assert(false);
     }
     return 0;

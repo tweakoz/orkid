@@ -104,7 +104,7 @@ struct CombAssignNode : public AstNode {
 
         }
         else{
-            printf( "type<%s>\n",_lhs._ref->typestr());
+            //printf( "type<%s>\n",_lhs._ref->typestr());
             assert(false);
         }
         check_bitwidths(lhs,rhs);

@@ -10,7 +10,7 @@ namespace ork::varmap {
 
   struct VarMap {
     ///////////////////////////////////////////////////////////////////////////
-    static const val_t& nil() {
+    static const val_t& nill() {
         static const val_t noval = nullptr;
         return noval;
     }
@@ -18,7 +18,7 @@ namespace ork::varmap {
     inline const val_t& valueForKey(const key_t& key) const {
 
         auto it = _themap.find(key);
-        return (it==_themap.end()) ? nil() : it->second;
+        return (it==_themap.end()) ? nill() : it->second;
 
     }
     ///////////////////////////////////////////////////////////////////////////

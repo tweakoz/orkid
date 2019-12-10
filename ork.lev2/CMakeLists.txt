@@ -40,7 +40,7 @@ list(APPEND libs OpenImageIO OpenImageIO_Util portaudio )
 
 IF(${APPLE})
     target_include_directories (ork_lev2 PRIVATE /usr/local/include)
-    list(APPEND libs m pthread )
+    list(APPEND libs m pthread boost_filesystem )
     list(APPEND libs "-framework OpenGL"  )
     list(APPEND libs "-framework CoreMIDI" "-framework CoreAudio" )
     list(APPEND libs "-framework AudioUnit" "-framework AudioToolbox" )
