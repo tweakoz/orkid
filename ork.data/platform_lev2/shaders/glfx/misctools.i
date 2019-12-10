@@ -73,6 +73,10 @@ libblock lib_mmnoise {
 
 } // libblock lib_mmnoise {
 
+///////////////////////////////////////////////////////////////////////////////
+// cellular noise
+///////////////////////////////////////////////////////////////////////////////
+
 libblock lib_cellnoise {
   // from https://github.com/BrianSharpe/Wombat/blob/master/Cellular3D.glsl
   float cellnoise(vec3 P) {
@@ -123,20 +127,18 @@ libblock lib_cellnoise {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// environment mapping functions
+///////////////////////////////////////////////////////////////////////////////
+
 libblock lib_envmapping {
 
   vec3 env_dualparabaloid(vec3 normal, sampler2D envtex, float miplevel) {
-    vec3 env;
-    if (normal.z > 0.0) {
-      vec2 frontUV = (normal.xy / (2.0 * (1.0 + normal.z))) + 0.5;
-      frontUV      = frontUV * vec2(1, -1);
-      env          = textureLod(envtex, frontUV, miplevel).xyz;
-    } else {
-      vec2 backUV = (normal.xy / (2.0 * (1.0 - normal.z))) + 0.5;
-      backUV      = backUV * vec2(1, -1);
-      env         = textureLod(envtex, backUV, miplevel).xyz;
-    }
-    return env;
+    bool sel_front = (normal.z > 0.0);
+    vec2 frontUV = (normal.xy / (2.0 * (1.0 + normal.z))) + 0.5;
+    vec2 backUV = (normal.xy / (2.0 * (1.0 - normal.z))) + 0.5;
+    vec2 uv = mix(backUV,frontUV,float(sel_front))* vec2(1, -1);
+    return textureLod(envtex, uv, miplevel).xyz;
   }
   vec3 env_dualparabaloid_pbr(vec3 normal, sampler2D envtex, float mipbias, float roughness) {
     float miplevel = clamp(mipbias + (roughness * 5), 0, 7);
