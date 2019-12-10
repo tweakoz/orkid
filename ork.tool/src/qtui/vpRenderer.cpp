@@ -71,7 +71,7 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   if (minst->IsBlenderZup()) // zup to yup conversion matrix
   {
     fmtx4 rmatx, rmaty;
-    rmatx.RotateX(3.14159f * 0.5f);
+    rmatx.RotateX(3.14159f * -0.5f);
     rmaty.RotateX(3.14159f);
     nmat = (rmatx * rmaty) * nmat;
   }

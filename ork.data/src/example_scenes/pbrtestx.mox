@@ -12,10 +12,10 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>0.137044 0.229763 0.548118</property>
+                                                <property name='Center'>-1.27302 123.119 -42.0645</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>5.89925</property>
-                                                <property name='QuatC'>0.107687 -0.345141 0.0418792 0.932841</property>
+                                                <property name='Loc'>286.804</property>
+                                                <property name='QuatC'>0.0271815 -0.901537 -0.00636717 -0.435269</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -44,12 +44,12 @@
                                 <reference category='ComponentDataClass'>
                                     <object type='ModelComponentData' id='6'>
                                         <property name='AlwaysVisible'>false</property>
-                                        <property name='BlenderZup'>false</property>
+                                        <property name='BlenderZup'>true</property>
                                         <property name='EditorDagDebug'>false</property>
                                         <property name='MaterialOverrides'></property>
                                         <property name='Model'>
                                             <reference category='AssetClass'>
-                                                "xgmodel" "data://test/pbr_calib"
+                                                "xgmodel" "data://actors/miscreant"
                                             </reference>
                                         </property>
                                         <property name='Offset'>0 0 0</property>
@@ -127,15 +127,15 @@
                                                                             <property name='RenderNode'>
                                                                                 <reference category='ObjectClass'>
                                                                                     <object type='DeferredCompositingNodeDebugNormal' id='17'>
-                                                                                        <property name='Ambient'>0 0 0</property>
+                                                                                        <property name='Ambient'>0.5 0.5 0.5</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
-                                                                                        <property name='DiffuseIntensity'>1</property>
-                                                                                        <property name='EnvironmentIntensity'>1</property>
+                                                                                        <property name='DiffuseIntensity'>0.5</property>
+                                                                                        <property name='EnvironmentIntensity'>1.5</property>
                                                                                         <property name='EnvironmentMipBias'>0</property>
-                                                                                        <property name='EnvironmentMipScale'>30</property>
+                                                                                        <property name='EnvironmentMipScale'>19</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
-                                                                                                "lev2tex" "data://environ/envmaps/blender_city"
+                                                                                                "lev2tex" "data://environ/envmaps/blender_forest"
                                                                                             </reference>
                                                                                         </property>
                                                                                         <property name='FogColor'>0 0 0 1</property>
