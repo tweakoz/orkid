@@ -164,35 +164,35 @@ libblock lib_deferred : ub_light : ub_frg : lib_envmapping : lib_cellnoise {
     vec3 metalbase = vec3(0.25);
     if( rma.w==0 ){
 
+      float metallic = rma.x;
       float roughness = rma.y;
-      float metallic = rma.z;
       float dialetric = 1.0-metallic;
 
       vec3 wpos = gbd._wpos;
       vec3 epos = posatdepth(wpd,0.0);
       vec3 edir = normalize(wpos-epos);
 
-      vec3 n    = texture(MapNormalL, uv).xyz*2-vec3(1,1,1);
+      vec3 n    = texture(MapNormalL, uv).xyz*2-1;
       vec3 refl = normalize(reflect(edir,n));
       float miplevel = clamp(EnvironmentMipBias + (roughness * EnvironmentMipScale), 0, 7);
       vec3 env = env_dualparabaloid(refl,MapEnvironment,miplevel);
       /////////////////////////
 
-      float l = clamp(dot(n,edir),0,1)*DiffuseIntensity;
-      vec3 ll = Ambient+vec3(l)*dialetric;
-      vec3 diffuse = gbd._albedo*ll;
+      float l = clamp(dot(n,-edir),0,1); //*DiffuseIntensity;
+      vec3 ll = vec3(l)*dialetric*(DiffuseIntensity+Ambient);
+      vec3 diffuse = gbd._albedo*ll*EnvironmentIntensity;
       float specamt = pow(metallic,0.1);
       vec3 specular = mix(metalbase,gbd._albedo,metallic)*env*EnvironmentIntensity;
       //specular = specular * (1.0-roughness);
       rval = diffuse+specular;
-      //rval = specular;
-      //rval = vec3(metallic);
+      //rval = env;
+      //rval = vec3(roughness);
     }
     else{
       vec3 epos0 = posatdepth(wpd,0.0);
       vec3 epos1 = posatdepth(wpd,1.0);
       vec3 N = normalize(epos1-epos0);
-      rval = env_dualparabaloid(N,MapEnvironment,EnvironmentMipBias);
+      rval = env_dualparabaloid(N,MapEnvironment,EnvironmentMipBias)*EnvironmentIntensity;
     }
     return rval;
   } // vec3 debuglighting(){
