@@ -44,6 +44,7 @@ uniform_set ub_frg {
   vec2 Zndc2eye;
   float EnvironmentIntensity;
   float EnvironmentMipBias;
+  float EnvironmentMipScale;
   float DiffuseIntensity;
   vec3 Ambient;
 }
@@ -160,11 +161,12 @@ libblock lib_deferred : ub_light : ub_frg : lib_envmapping : lib_cellnoise {
     vec2 uv   = wpd._muv;
     vec4 rma = texture(MapRufMtlAlpha,uv);
 
-    vec3 metalbase = vec3(0.04);
+    vec3 metalbase = vec3(0.25);
     if( rma.w>0 ){
 
-      float roughness = rma.x;
-      float metallic = 1.0-rma.y;
+      float roughness = rma.y;
+      float metallic = rma.z;
+      float dialetric = 1.0-metallic;
 
       vec3 wpos = gbd._wpos;
       vec3 epos = posatdepth(wpd,0.0);
@@ -172,16 +174,19 @@ libblock lib_deferred : ub_light : ub_frg : lib_envmapping : lib_cellnoise {
 
       vec3 n    = texture(MapNormalL, uv).xyz*2-vec3(1,1,1);
       vec3 refl = normalize(reflect(edir,n));
-      vec3 env = env_dualparabaloid_pbr(refl,MapEnvironment,EnvironmentMipBias,roughness);
-
+      float miplevel = clamp(EnvironmentMipBias + (roughness * EnvironmentMipScale), 0, 7);
+      vec3 env = env_dualparabaloid(refl,MapEnvironment,miplevel);
       /////////////////////////
 
       float l = clamp(dot(n,edir),0,1)*DiffuseIntensity;
-      vec3 ll = Ambient+vec3(l);
-      vec3 diffuse = gbd._albedo*(1-metallic)*ll;
+      vec3 ll = Ambient+vec3(l)*dialetric;
+      vec3 diffuse = gbd._albedo*ll;
+      float specamt = pow(metallic,0.1);
       vec3 specular = mix(metalbase,gbd._albedo,metallic)*env*EnvironmentIntensity;
+      //specular = specular * (1.0-roughness);
       rval = diffuse+specular;
-      //out_clr = vec4(metallic,metallic,metallic,1);
+      //rval = specular;
+      //rval = vec3(metallic);
     }
     else{
       vec3 epos0 = posatdepth(wpd,0.0);

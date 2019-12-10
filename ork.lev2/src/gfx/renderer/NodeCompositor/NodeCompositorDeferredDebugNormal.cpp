@@ -34,6 +34,7 @@ void DeferredCompositingNodeDebugNormal::describeX(class_t* c) {
   c->memberProperty("Ambient", &DeferredCompositingNodeDebugNormal::_ambient);
   c->floatProperty("EnvironmentIntensity", float_range{-5,5},&DeferredCompositingNodeDebugNormal::_environmentIntensity);
   c->floatProperty("EnvironmentMipBias", float_range{0,12},&DeferredCompositingNodeDebugNormal::_environmentMipBias);
+  c->floatProperty("EnvironmentMipScale", float_range{0,100},&DeferredCompositingNodeDebugNormal::_environmentMipScale);
   c->floatProperty("DiffuseIntensity", float_range{-5,5},&DeferredCompositingNodeDebugNormal::_diffuseIntensity);
   auto texprop = c->accessorProperty("EnvironmentTexture", &DeferredCompositingNodeDebugNormal::_readEnvTexture, &DeferredCompositingNodeDebugNormal::_writeEnvTexture);
   texprop->annotate<ConstString>("editor.class", "ged.factory.assetlist");
@@ -125,6 +126,7 @@ struct IMPL {
 
       _context._lightingmtl.bindParamFloat(_context._parEnvironmentIntensity, node->environmentIntensity() );
       _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipBias, node->environmentMipBias() );
+      _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipScale, node->environmentMipScale() );
       _context._lightingmtl.bindParamFloat(_context._parDiffuseIntensity, node->diffuseIntensity() );
       _context._lightingmtl.bindParamVec3(_context._parAmbient, node->ambient() );
 

@@ -140,9 +140,5 @@ libblock lib_envmapping {
     vec2 uv = mix(backUV,frontUV,float(sel_front))* vec2(1, -1);
     return textureLod(envtex, uv, miplevel).xyz;
   }
-  vec3 env_dualparabaloid_pbr(vec3 normal, sampler2D envtex, float mipbias, float roughness) {
-    float miplevel = clamp(mipbias + (roughness * 5), 0, 7);
-    return env_dualparabaloid(normal,envtex,miplevel);
-  }
 
 }

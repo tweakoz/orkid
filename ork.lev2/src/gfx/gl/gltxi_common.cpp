@@ -165,7 +165,7 @@ struct TexSetter {
     int mipbias = 0;
     #if defined(__APPLE__) // todo move to gfx user settings
     if(iw>=4096){
-      mipbias = 2;
+      //mipbias = 2;
     }
     #endif
 
