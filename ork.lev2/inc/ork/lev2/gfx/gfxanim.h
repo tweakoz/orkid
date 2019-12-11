@@ -10,6 +10,7 @@
 #include <ork/math/cmatrix4.h>
 #include <ork/math/box.h>
 #include <ork/file/path.h>
+#include <ork/kernel/varmap.inl>
 
 namespace ork { namespace lev2 {
 
@@ -358,12 +359,13 @@ public:
 
 struct XgmSkelNode
 {
-	std::string						mNodeName;
+	std::string					mNodeName;
 	fmtx4						mBindMatrixInverse;
 	fmtx4						mJointMatrix;
-	XgmSkelNode*					mpParent;
-	orkvector<XgmSkelNode*>			mChildren;
-	int								miSkelIndex;
+	XgmSkelNode*				mpParent = nullptr;
+	orkvector<XgmSkelNode*>		mChildren;
+	int							miSkelIndex = -1;
+	ork::varmap::VarMap         _varmap;
 
 	XgmSkelNode( const std::string & Name );
 

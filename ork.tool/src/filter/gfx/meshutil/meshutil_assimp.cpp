@@ -73,6 +73,7 @@ struct GltfMaterial {
 };
 
 typedef std::map<int, GltfMaterial*> gltfmaterialmap_t;
+typedef std::map<std::string,ork::lev2::XgmSkelNode*> skelnodemap_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -203,34 +204,122 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
     //////////////////////////////////////////////
 
     std::queue<aiNode*> nodestack;
-    nodestack.push(scene->mRootNode);
+
+    skelnodemap_t& xgmskelnodes = _varmap["xgmskelnodes"].Make<skelnodemap_t>();
+    std::set<std::string> uniqskelnodeset;
 
     //////////////////////////////////////////////
-    // count, declare bones
+    // count, visit dagnodes
     //////////////////////////////////////////////
 
     bool is_skinned = false;
 
+    nodestack = std::queue<aiNode*>();
+    nodestack.push(scene->mRootNode);
     while (not nodestack.empty()) {
       auto n = nodestack.front();
       nodestack.pop();
-      for (int i = 0; i < n->mNumMeshes; ++i) {
-        const aiMesh* mesh = scene->mMeshes[n->mMeshes[i]];
-        for (int i = 0 ; i < mesh->mNumBones ; i++) {
-          auto bone     = mesh->mBones[i];
-          int boneIndex = 0;
-          std::string BoneName(bone->mName.data);
-          auto matrix = bone->mOffsetMatrix;
-          printf("gotBONE<%p:%s> ", bone, BoneName.c_str());
-          for (int j = 0; j < 4; j++){
-              printf( "[");
-            for (int k = 0; k < 4; k++) {
-              printf("%g ", matrix[j][k]);
-            }
-            printf( "] ");
+      auto name = std::string(n->mName.data);
+      auto itb = uniqskelnodeset.find(name);
+      if( itb==uniqskelnodeset.end() ) {
+        int index = uniqskelnodeset.size();
+        uniqskelnodeset.insert(name);
+        auto xgmnode = new ork::lev2::XgmSkelNode(name);
+        xgmnode->miSkelIndex = index;
+        xgmskelnodes[name] = xgmnode;
+        auto matrix = n->mTransformation;
+        printf("uniqNODE<%d:%p> xgmnode<%p> <%s> ", index, n, xgmnode, name.c_str());
+        auto& assimpnodematrix    = xgmnode->_varmap["assimpnodematrix"].Make<fmtx4>();
+        for (int j = 0; j < 4; j++) {
+          printf("[");
+          for (int k = 0; k < 4; k++) {
+            assimpnodematrix.SetElemXY(j, k, matrix[j][k]);
+            printf("%0.3g ", matrix[k][j]);
           }
-          printf( "\n");
-          is_skinned = true;
+          printf("] ");
+        }
+        printf("\n");
+      }
+      for (int i = 0; i < n->mNumChildren; ++i) {
+        nodestack.push(n->mChildren[i]);
+      }
+    }
+
+    //////////////////////////////////////////////
+    // visit meshes, marking dagnodes as bones and fetching joint matrices
+    //////////////////////////////////////////////
+
+    struct XgmAssimpVertexWeightItem {
+      std::string _bonename;
+      float _weight = 0.0f;
+    };
+    struct XgmAssimpVertexWeights {
+      std::vector<XgmAssimpVertexWeightItem> _items;
+    };
+    std::map<int,XgmAssimpVertexWeights*> assimpweightlut;
+
+    nodestack = std::queue<aiNode*>();
+    nodestack.push(scene->mRootNode);
+    while (not nodestack.empty()) {
+      auto n = nodestack.front();
+      nodestack.pop();
+      for (int m = 0; m < n->mNumMeshes; ++m) {
+        const aiMesh* mesh = scene->mMeshes[n->mMeshes[m]];
+        for (int b = 0 ; b < mesh->mNumBones ; b++) {
+          auto bone     = mesh->mBones[b];
+          auto bonename = std::string(bone->mName.data);
+          auto itb = xgmskelnodes.find(bonename);
+          /////////////////////////////////////////////
+          // yuk -- assimp is not like gltf, or collada...
+          // https://github.com/assimp/assimp/blob/master/code/glTF2/glTF2Importer.cpp#L904
+          /////////////////////////////////////////////
+          int numvertsaffected = bone->mNumWeights;
+          ////////////////////////////////////////////
+          if( itb!=xgmskelnodes.end() ) {
+            auto xgmnode = itb->second;
+            //////////////////////////////////
+            // mark skel node as actual mesh referenced bone
+            //////////////////////////////////
+            if( false == xgmnode->_varmap["is_bone"].IsA<bool>() ) {
+              xgmnode->_varmap["is_bone"].Set<bool>(true);
+              int index               = xgmnode->miSkelIndex;
+              auto matrix             = bone->mOffsetMatrix;
+              auto& xgmjointmatrix    = xgmnode->_varmap["assimpoffsetmatrix"].Make<fmtx4>();
+              auto& xgmjointmatrixinv = xgmnode->_varmap["assimpoffsetmatrix-inv"].Make<fmtx4>();
+              printf("markBONE<%p> xgmnode<%d:%p> <%s> numverts_affected<%d> ", bone, index, xgmnode, bonename.c_str(),numvertsaffected);
+              for (int j = 0; j < 4; j++) {
+                printf("[");
+                for (int k = 0; k < 4; k++) {
+                  xgmjointmatrix.SetElemXY(j, k, matrix[j][k]);
+                  printf("%g ", matrix[j][k]);
+                }
+                printf("] ");
+              }
+              xgmjointmatrixinv.inverseOf(xgmjointmatrix);
+              printf("\n");
+              /////////////////////////////
+              // remember effected verts
+              /////////////////////////////
+              for( int v=0; v<numvertsaffected; v++ ){
+                const aiVertexWeight& vw = bone->mWeights[v];
+                int vertexID = vw.mVertexId;
+                float weight = vw.mWeight;
+                XgmAssimpVertexWeights* weights_for_vertex = nullptr;
+                auto itw = assimpweightlut.find(vertexID);
+                if( itw!=assimpweightlut.end() ){
+                  weights_for_vertex = itw->second;
+                }
+                else {
+                  weights_for_vertex = new XgmAssimpVertexWeights;
+                  assimpweightlut[vertexID] = weights_for_vertex;
+                }
+                auto xgmw = XgmAssimpVertexWeightItem { bonename, weight };
+                weights_for_vertex->_items.push_back(xgmw);
+              }
+              /////////////////////////////
+              is_skinned = true;
+            }
+          }
         }
       }
       for (int i = 0; i < n->mNumChildren; ++i) {
@@ -242,6 +331,12 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
     nodestack.push(scene->mRootNode);
 
     //////////////////////////////////////////////
+
+   	orkstack<fmtx4> MtxStack;
+   	auto it_root_skelnode = xgmskelnodes.find(scene->mRootNode->mName.data);
+    ork::lev2::XgmSkelNode* root_skelnode = (it_root_skelnode!=xgmskelnodes.end()) ? it_root_skelnode->second : nullptr;
+
+    //////////////////////////////////////////////
     // parse nodes
     //////////////////////////////////////////////
 
@@ -251,8 +346,18 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       nodestack.pop();
 
       auto p = n->mParent;
-      if( p )
-        printf( "visit node<%s> parent<%s>\n", n->mName.data, p->mName.data );
+      if( p ) {
+     	auto it_nod_skelnode = xgmskelnodes.find(n->mName.data);
+     	auto it_par_skelnode = xgmskelnodes.find(p->mName.data);
+        ork::lev2::XgmSkelNode* nod_skelnode = (it_nod_skelnode!=xgmskelnodes.end()) ? it_nod_skelnode->second : nullptr;
+        ork::lev2::XgmSkelNode* par_skelnode = (it_par_skelnode!=xgmskelnodes.end()) ? it_par_skelnode->second : nullptr;
+        printf("visit node<%s> parent<%s> xgmskenod<%p> xgmskelpar<%p>\n", n->mName.data, p->mName.data, nod_skelnode, par_skelnode );
+        if( par_skelnode ){
+          nod_skelnode->mpParent = par_skelnode;
+          par_skelnode->mChildren.push_back(nod_skelnode);
+        }
+
+      }
 
       //////////////////////////////////////////////
       // visit node
@@ -261,22 +366,6 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       aiMatrix4x4 mtx = n->mTransformation;
       for (int i = 0; i < n->mNumMeshes; ++i) {
         const aiMesh* mesh = scene->mMeshes[n->mMeshes[i]];
-        for (int i = 0 ; i < mesh->mNumBones ; i++) {
-          auto bone     = mesh->mBones[i];
-          int boneIndex = 0;
-          std::string BoneName(bone->mName.data);
-          auto matrix = bone->mOffsetMatrix;
-          printf("gotBONE<%p:%s> ", bone, BoneName.c_str());
-          for (int j = 0; j < 4; j++){
-              printf( "[");
-            for (int k = 0; k < 4; k++) {
-              printf("%g ", matrix[j][k]);
-            }
-            printf( "] ");
-          }
-          printf( "\n");
-          is_skinned = true;
-        }
         /////////////////////////////////////////////
         // query which input data is available
         /////////////////////////////////////////////
@@ -298,14 +387,16 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
         mtlset.insert(mesh->mMaterialIndex);
         auto& mtlref = out_submesh.typedAnnotation<GltfMaterial*>("gltfmaterial");
         mtlref       = outmtl;
-        /////////////////////////////////////////////
         MeshUtil::vertex muverts[4];
         for (int t = 0; t < mesh->mNumFaces; ++t) {
           const aiFace* face = &mesh->mFaces[t];
           bool is_triangle   = (face->mNumIndices == 3);
+
+
           if (is_triangle) {
             for (int facevert_index = 0; facevert_index < 3; facevert_index++) {
               int index                 = face->mIndices[facevert_index];
+              /////////////////////////////////////////////
               const auto& v             = mesh->mVertices[index];
               const auto& n             = mesh->mNormals[index];
               const auto& uv            = (mesh->mTextureCoords[0])[index];
@@ -316,6 +407,82 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
               muvtx.mCol[0]             = fvec4(1, 1, 1, 1);
               muvtx.mUV[0].mMapTexCoord = fvec2(uv.x, uv.y);
               muvtx.mUV[0].mMapBiNormal = fvec3(b.x, b.y, b.z);
+              /////////////////////////////////////////////
+              // yuk -- assimp is not like gltf, or collada...
+              // https://github.com/assimp/assimp/blob/master/code/glTF2/glTF2Importer.cpp#L904
+              /////////////////////////////////////////////
+              if( is_skinned ){
+                auto itw = assimpweightlut.find(index);
+                if( itw != assimpweightlut.end() ){
+                  auto influences = itw->second;
+                  int numinf = influences->_items.size();
+                  printf( "vertex<%d> raw_numweights<%d>\n", index, numinf );
+  				  ///////////////////////////////////////////////////
+  				  // prune to no more than 4 weights
+  				  ///////////////////////////////////////////////////
+				  std::map<float,XgmAssimpVertexWeightItem> largestWeightMap;
+				  std::map<float,std::string> prunedWeightMap;
+				  std::map<std::string,float> rawweightMap;
+                  for(int inf=0; inf<numinf; inf++ ) {
+                    auto infl = influences->_items[inf];
+                    float fw = infl._weight;
+					rawweightMap[infl._bonename] = fw;
+                    if( fw!=0.0f) {
+                      largestWeightMap[1.0f - fw] = infl;
+                    }
+					//printf( " inf<%d> bone<%s> weight<%g>\n", inf, infl._bonename.c_str(), fw);
+                  }
+                  int icount = 0;
+				  float totweight = 0.0f;
+				  for(auto it : largestWeightMap ){
+					if(icount < 4)
+						totweight += (1.0f - it.first);
+					icount++;
+				  }
+				  icount = 0;
+				  float newtotweight = 0.0f;
+				  for(auto item : largestWeightMap )
+				  {
+				  	if(icount < 4){
+				  	    // normalize pruned weights
+                        float w = 1.0f-item.first;
+                        float fjointweight = w / totweight;
+                        newtotweight += fjointweight;
+                        std::string name              = item.second._bonename;
+                        prunedWeightMap[fjointweight] = name;
+					}
+					++icount;
+				  }
+				  float fwtest = fabs(1.0f - newtotweight);
+				  if( fwtest >= 0.02f ) // ensure within tolerable error limit
+				  {
+					printf( "WARNING weight pruning tolerance: <%s> vertex<%d> fwtest<%f> icount<%d> prunedWeightMapSize<%zu>\n", GlbPath.c_str(), index, fwtest, icount, prunedWeightMap.size() );
+					//orkerrorlog( "ERROR: <%s> vertex<%d> fwtest<%f> numpairs<%d> largestWeightMap<%d>\n", policy->mColladaOutName.c_str(), im, fwtest, inumpairs, largestWeightMap.size() );
+					//orkerrorlog( "ERROR: <%s> cannot prune weight, out of tolerance. You must prune it manually\n", policy->mColladaOutName.c_str() );
+					//return false;
+				  }
+				  ///////////////////////////////////////////////////
+                  muvtx.miNumWeights = prunedWeightMap.size();
+				  assert(muvtx.miNumWeights>=0);
+				  assert(muvtx.miNumWeights<=4);
+				  int windex = 0;
+   				  /////////////////////////////////
+				  // init vertex with no influences
+				  /////////////////////////////////
+                  for( int iw=0; iw<4; iw++ ){
+                    muvtx.mJointNames[iw] = root_skelnode->mNodeName;
+                    muvtx.mJointWeights[iw] = 0.0f;
+                  }
+				  /////////////////////////////////
+                  for(auto item:prunedWeightMap ){
+                    muvtx.mJointNames[windex] = item.second;
+                    muvtx.mJointWeights[windex] = item.first;
+                    //printf( "inf<%s:%g> ", item.second.c_str(), item.first );
+                    windex++;
+                  }
+                  //printf( "\n");
+                }
+              }
             }
             int outpoly_indices[3] = {-1, -1, -1};
             outpoly_indices[0]     = out_submesh.MergeVertex(muverts[0]);
@@ -347,7 +514,77 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
         nodestack.push(n->mChildren[i]);
       }
     }
+    _varmap["is_skinned"].Set<bool>(is_skinned);
+
+    //////////////////////////////////////////////
+    // build xgm skeleton
+    //////////////////////////////////////////////
+
+    if( is_skinned ){
+
+    }
+
+    //////////////////////////////////////////////
+
+  } // if(scene)
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void configureXgmSkeleton(const toolmesh& input, lev2::XgmModel& xgmmdlout) {
+
+
+  const skelnodemap_t& xgmskelnodes = input._varmap.valueForKey("xgmskelnodes").Get<skelnodemap_t>();
+
+  printf( "NumSkelNodes<%d>\n", int(xgmskelnodes.size()));
+  xgmmdlout.SetSkinned(true);
+  auto& xgmskel = xgmmdlout.RefSkel();
+  xgmskel.SetNumJoints(xgmskelnodes.size());
+  for( auto& item : xgmskelnodes ){
+    const std::string & JointName = item.first;
+  	auto skelnode = item.second;
+  	auto parskelnode = skelnode->mpParent;
+    int idx = skelnode->miSkelIndex;
+    int pidx = parskelnode ? parskelnode->miSkelIndex : -1;
+    printf( "JointName<%s> skelnode<%p> parskelnode<%p> idx<%d> pidx<%d>\n", JointName.c_str(), skelnode, parskelnode, idx, pidx );
+
+    PoolString JointNameSidx = AddPooledString( JointName.c_str() );
+    xgmskel.AddJoint( idx, pidx, JointNameSidx );
+    xgmskel.RefInverseBindMatrix(idx) = skelnode ? skelnode->mBindMatrixInverse : fmtx4();
+    xgmskel.RefJointMatrix( idx ) = parskelnode ? parskelnode->mJointMatrix :fmtx4();
   }
+  /////////////////////////////////////
+  // flatten the skeleton (WIP)
+  /////////////////////////////////////
+
+  auto itroot = xgmskelnodes.find("ROOT");
+  assert(itroot!=xgmskelnodes.end());
+  auto root = itroot->second;
+
+  xgmskel.miRootNode = root ? root->miSkelIndex : -1;
+
+	if( root ){
+		orkstack<lev2::XgmSkelNode *> NodeStack;
+		NodeStack.push( root );
+		while( false == NodeStack.empty() )
+		{	lev2::XgmSkelNode *ParNode = NodeStack.top();
+			int iparentindex = ParNode->miSkelIndex;
+			NodeStack.pop();
+			int inumchildren = ParNode->mChildren.size();
+			for( int ic=0; ic<inumchildren; ic++ )
+			{	lev2::XgmSkelNode *Child = ParNode->mChildren[ ic ];
+				int ichildindex = Child->miSkelIndex;
+
+				lev2::XgmBone Bone = { iparentindex, ichildindex };
+
+				xgmskel.AddFlatBone( Bone );
+				NodeStack.push( Child );
+			}
+		}
+	}
+	xgmskel.mpRootNode = root;
+	xgmskel.dump();
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -362,7 +599,13 @@ void GLB_XGM_Filter::Describe() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolmesh& inp_model, ork::lev2::XgmModel& out_model) {
+template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolmesh& inp_model,
+                                                                     ork::lev2::XgmModel& out_model) {
+
+  bool is_skinned = false;
+  if( auto as_bool = inp_model._varmap.valueForKey("is_skinned").TryAs<bool>() ){
+     is_skinned = as_bool.value();
+  }
 
   auto& inp_embtexmap = inp_model._varmap.typedValueForKey<lev2::embtexmap_t>("embtexmap").value();
   auto& out_embtexmap = out_model._varmap.makeValueForKey<lev2::embtexmap_t>("embtexmap") = inp_embtexmap;
@@ -372,8 +615,9 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
   out_mesh->SetMeshName("Mesh1"_pool);
   out_model.AddMesh("Mesh1"_pool, out_mesh);
 
-  auto VertexFormat = ork::lev2::EVTXSTREAMFMT_V12N12B12T16;
-
+  auto VertexFormat = is_skinned
+                    ? ork::lev2::EVTXSTREAMFMT_V12N12B12T8I4W4
+                    : ork::lev2::EVTXSTREAMFMT_V12N12B12T16;
   struct SubRec {
     submesh* _toolsub                    = nullptr;
     ToolMaterialGroup* _toolmgrp         = nullptr;
@@ -414,7 +658,7 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
       materialGroup                  = new ToolMaterialGroup;
       materialGroup->meMaterialClass = ToolMaterialGroup::EMATCLASS_PBR;
       materialGroup->SetClusterizer(clusterizer);
-      materialGroup->mMeshConfigurationFlags.mbSkinned = false;
+      materialGroup->mMeshConfigurationFlags.mbSkinned = is_skinned;
       materialGroup->meVtxFormat                       = VertexFormat;
       mtlmtlmap[gltfmtl]                               = materialGroup;
     } else
@@ -476,7 +720,7 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
       xgm_submesh->miNumClusters = inumclus;
       xgm_submesh->mpClusters = new lev2::XgmCluster[ inumclus ];
       for (int icluster = 0; icluster < inumclus; icluster++) {
-        auto clusterbuilder      = dynamic_cast<XgmRigidClusterBuilder*>(clusterizer->GetCluster(icluster));
+        auto clusterbuilder      = dynamic_cast<XgmClusterBuilder*>(clusterizer->GetCluster(icluster));
         const auto& tool_submesh = clusterbuilder->_submesh;
         clusterbuilder->buildVertexBuffer(VertexFormat);
 
@@ -538,9 +782,16 @@ bool GLB_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
   toolmesh tmesh;
   tool::DaeReadOpts opts;
   tmesh.readFromAssimp(inf, opts);
+
+
   ork::lev2::XgmModel xgmmdlout;
+  bool is_skinned = false;
+  if( auto as_bool = tmesh._varmap.valueForKey("is_skinned").TryAs<bool>() ) {
+    is_skinned = as_bool.value();
+    configureXgmSkeleton(tmesh,xgmmdlout);
+  }
+  policy.mbIsSkinned = is_skinned;
   clusterizeToolMeshToXgmMesh<XgmClusterizerStd>(tmesh, xgmmdlout);
-  // assert(false);
   bool rv = ork::lev2::SaveXGM(outf, &xgmmdlout);
   return rv;
 }
