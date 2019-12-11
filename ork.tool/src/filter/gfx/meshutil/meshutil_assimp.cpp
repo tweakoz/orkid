@@ -39,6 +39,7 @@ void get_bounding_box_for_node(const aiScene* scene, const aiNode* nd, aiVector3
 
   for (; n < nd->mNumMeshes; ++n) {
     const aiMesh* mesh = scene->mMeshes[nd->mMeshes[n]];
+
     for (t = 0; t < mesh->mNumVertices; ++t) {
 
       aiVector3D tmp = mesh->mVertices[t];
@@ -84,6 +85,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
 
   auto scene = aiImportFile(GlbPath.c_str(), aiProcessPreset_TargetRealtime_MaxQuality);
   if (scene) {
+
     aiVector3D scene_min, scene_max, scene_center;
     aiMatrix4x4 identity;
     aiIdentityMatrix4(&identity);
@@ -199,16 +201,58 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
     }
 
     //////////////////////////////////////////////
-    // parse nodes
-    //////////////////////////////////////////////
 
     std::queue<aiNode*> nodestack;
     nodestack.push(scene->mRootNode);
+
+    //////////////////////////////////////////////
+    // count, declare bones
+    //////////////////////////////////////////////
+
+    bool is_skinned = false;
+
+    while (not nodestack.empty()) {
+      auto n = nodestack.front();
+      nodestack.pop();
+      for (int i = 0; i < n->mNumMeshes; ++i) {
+        const aiMesh* mesh = scene->mMeshes[n->mMeshes[i]];
+        for (int i = 0 ; i < mesh->mNumBones ; i++) {
+          auto bone     = mesh->mBones[i];
+          int boneIndex = 0;
+          std::string BoneName(bone->mName.data);
+          auto matrix = bone->mOffsetMatrix;
+          printf("gotBONE<%p:%s> ", bone, BoneName.c_str());
+          for (int j = 0; j < 4; j++){
+              printf( "[");
+            for (int k = 0; k < 4; k++) {
+              printf("%g ", matrix[j][k]);
+            }
+            printf( "] ");
+          }
+          printf( "\n");
+          is_skinned = true;
+        }
+      }
+      for (int i = 0; i < n->mNumChildren; ++i) {
+        nodestack.push(n->mChildren[i]);
+      }
+    }
+
+    nodestack = std::queue<aiNode*>();
+    nodestack.push(scene->mRootNode);
+
+    //////////////////////////////////////////////
+    // parse nodes
+    //////////////////////////////////////////////
 
     while (not nodestack.empty()) {
 
       auto n = nodestack.front();
       nodestack.pop();
+
+      auto p = n->mParent;
+      if( p )
+        printf( "visit node<%s> parent<%s>\n", n->mName.data, p->mName.data );
 
       //////////////////////////////////////////////
       // visit node
@@ -217,6 +261,22 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       aiMatrix4x4 mtx = n->mTransformation;
       for (int i = 0; i < n->mNumMeshes; ++i) {
         const aiMesh* mesh = scene->mMeshes[n->mMeshes[i]];
+        for (int i = 0 ; i < mesh->mNumBones ; i++) {
+          auto bone     = mesh->mBones[i];
+          int boneIndex = 0;
+          std::string BoneName(bone->mName.data);
+          auto matrix = bone->mOffsetMatrix;
+          printf("gotBONE<%p:%s> ", bone, BoneName.c_str());
+          for (int j = 0; j < 4; j++){
+              printf( "[");
+            for (int k = 0; k < 4; k++) {
+              printf("%g ", matrix[j][k]);
+            }
+            printf( "] ");
+          }
+          printf( "\n");
+          is_skinned = true;
+        }
         /////////////////////////////////////////////
         // query which input data is available
         /////////////////////////////////////////////

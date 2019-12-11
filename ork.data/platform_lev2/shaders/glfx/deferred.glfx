@@ -179,7 +179,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_envmapping : lib_cellnoise {
       /////////////////////////
 
       float l = clamp(dot(n,-edir),0,1); //*DiffuseIntensity;
-      vec3 ll = vec3(l)*dialetric*(DiffuseIntensity+Ambient);
+      vec3 ll = vec3(l)*dialetric*(DiffuseIntensity)+Ambient;
       vec3 diffuse = gbd._albedo*ll*EnvironmentIntensity;
       float specamt = pow(metallic,0.1);
       vec3 specular = mix(metalbase,gbd._albedo,metallic)*env*EnvironmentIntensity;
