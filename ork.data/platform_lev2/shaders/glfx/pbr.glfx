@@ -97,7 +97,7 @@ vertex_shader vs_rigid_gbuffer_stereo
 	frg_tbn = transpose(mat3(
         wnorm,
         wtangent,
-        wbinorm,
+        wbinorm
     ));
 	frg_camz = wnorm.xyz;
 	gl_Position = mvp_l*position;
