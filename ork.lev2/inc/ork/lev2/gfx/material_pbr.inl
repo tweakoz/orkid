@@ -102,10 +102,19 @@ inline PBRMaterial::PBRMaterial() {
   miNumPasses = 1;
 
 }
+
+////////////////////////////////////////////
+
 inline PBRMaterial::~PBRMaterial() {
 }
+
+////////////////////////////////////////////
+
 inline void PBRMaterial::begin(const RenderContextFrameData& RCFD) {
 }
+
+////////////////////////////////////////////
+
 inline void PBRMaterial::end(const RenderContextFrameData& RCFD) {
 }
 
@@ -149,9 +158,15 @@ inline bool PBRMaterial::BeginPass(GfxTarget* targ, int iPass) {
   fxi->CommitParams();
   return true;
 }
+
+////////////////////////////////////////////
+
 inline void PBRMaterial::EndPass(GfxTarget* targ) {
   targ->FXI()->EndPass(_shader);
 }
+
+////////////////////////////////////////////
+
 inline int PBRMaterial::BeginBlock(GfxTarget* targ, const RenderContextInstData& RCID) {
   auto fxi       = targ->FXI();
   const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
@@ -167,10 +182,16 @@ inline int PBRMaterial::BeginBlock(GfxTarget* targ, const RenderContextInstData&
   assert(numpasses==1);
   return numpasses;
 }
+
+////////////////////////////////////////////
+
 inline void PBRMaterial::EndBlock(GfxTarget* targ) {
   auto fxi       = targ->FXI();
   fxi->EndBlock(_shader);
 }
+
+////////////////////////////////////////////
+
 inline void PBRMaterial::Init(GfxTarget* targ) /*final*/ {
   assert(_initialTarget==nullptr);
   _initialTarget = targ;
