@@ -18,6 +18,19 @@
 namespace ork::lev2 {
 using namespace boost::filesystem;
 using namespace std::literals;
+
+///////////////////////////////////////////////////////////////////////////////
+
+class PBRMaterial;
+
+struct PbrMatrixBlockApplicator : public MaterialInstApplicator
+{
+	MaterialInstItemMatrixBlock* _matrixblock = nullptr;
+	const PBRMaterial* _pbrmaterial = nullptr;
+	void ApplyToTarget( GfxTarget *pTARG ) final;
+    static PbrMatrixBlockApplicator* getApplicator();
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class PBRMaterial : public GfxMaterial {
@@ -43,6 +56,8 @@ public:
   void EndBlock(GfxTarget* targ) final;
   void Init(GfxTarget* targ) final;
   void Update() final;
+  void BindMaterialInstItem( MaterialInstItem* pitem ) const final;
+  void UnBindMaterialInstItem( MaterialInstItem* pitem ) const final;
 
   ////////////////////////////////////////////
 
@@ -73,6 +88,9 @@ public:
 
   bool _metalicRoughnessSingleTexture = false;
 };
+
+
+//////////////////////////////////////////////////////
 
 inline PBRMaterial::PBRMaterial() {
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
@@ -175,6 +193,95 @@ inline void PBRMaterial::Init(GfxTarget* targ) /*final*/ {
 
 }
 inline void PBRMaterial::Update() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+inline void PBRMaterial::BindMaterialInstItem(MaterialInstItem* pitem) const {
+  ///////////////////////////////////
+  MaterialInstItemMatrixBlock* mtxblockitem = rtti::autocast(pitem);
+
+  if (mtxblockitem) {
+    //if (hBoneMatrices->GetPlatformHandle()) {
+      auto applicator = PbrMatrixBlockApplicator::getApplicator();
+      OrkAssert(applicator != 0);
+      applicator->_pbrmaterial = this;
+      applicator->_matrixblock = mtxblockitem;
+      mtxblockitem->SetApplicator(applicator);
+    //}
+    return;
+  }
+
+  ///////////////////////////////////
+
+  /*MaterialInstItemMatrix* mtxitem = rtti::autocast(pitem);
+
+  if (mtxitem) {
+    WiiMatrixApplicator* pyo = MtxApplicators.allocate();
+    OrkAssert(pyo != 0);
+    new (pyo) WiiMatrixApplicator(mtxitem, this);
+    mtxitem->SetApplicator(pyo);
+    return;
+  }*/
+
+  ///////////////////////////////////
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+inline void PBRMaterial::UnBindMaterialInstItem(MaterialInstItem* pitem) const {
+  ///////////////////////////////////
+
+  MaterialInstItemMatrixBlock* mtxblockitem = rtti::autocast(pitem);
+
+  if (mtxblockitem) {
+    //if (hBoneMatrices->GetPlatformHandle()) {
+      auto applicator = static_cast<PbrMatrixBlockApplicator*>(mtxblockitem->mApplicator);
+      if (applicator) {
+        applicator->_pbrmaterial = nullptr;
+        applicator->_matrixblock = nullptr;
+      }
+    //}
+    return;
+  }
+
+  ///////////////////////////////////
+
+  /*
+  MaterialInstItemMatrix* mtxitem = rtti::autocast(pitem);
+
+  if (mtxitem) {
+    WiiMatrixApplicator* wiimtxapp = rtti::autocast(mtxitem->mApplicator);
+    if (wiimtxapp) {
+      MtxApplicators.deallocate(wiimtxapp);
+    }
+    return;
+  }*/
+
+  ///////////////////////////////////
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+inline void PbrMatrixBlockApplicator::ApplyToTarget(GfxTarget* pTARG) // virtual
+{
+  auto fxi  = pTARG->FXI();
+  auto mtxi = pTARG->MTXI();
+
+  size_t inumbones      = _matrixblock->GetNumMatrices();
+  const fmtx4* Matrices = _matrixblock->GetMatrices();
+  FxShader* hshader     = _pbrmaterial->_shader;
+
+  //fxi->BindParamMatrix(hshader, mMaterial->hMatMV, mtxi->RefMVMatrix());
+  //fxi->BindParamMatrix(hshader, mMaterial->hWVPMatrix, mtxi->RefMVPMatrix());
+  //fxi->BindParamMatrix(hshader, mMaterial->hWMatrix, mtxi->RefMMatrix());
+
+  //fmtx4 iwmat;
+  //iwmat.inverseOf(mtxi->RefMVMatrix());
+  //fxi->BindParamMatrix(hshader, mMaterial->hIWMatrix, iwmat);
+  //fxi->BindParamMatrixArray(hshader, mMaterial->hBoneMatrices, Matrices, (int)inumbones);
+  //fxi->CommitParams();
 }
 
 } // namespace ork::lev2

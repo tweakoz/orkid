@@ -59,6 +59,11 @@ namespace lev2 {
 
 /////////////////////////////////////////////////////////////////////////
 
+PbrMatrixBlockApplicator* PbrMatrixBlockApplicator::getApplicator() {
+  static PbrMatrixBlockApplicator* _gapplicator = new PbrMatrixBlockApplicator;
+  return _gapplicator;
+}
+
 void PBRMaterial::describeX(class_t* c) {
 
     /////////////////////////////////////////////////////////////////

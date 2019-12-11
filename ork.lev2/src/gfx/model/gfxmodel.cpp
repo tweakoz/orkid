@@ -481,8 +481,11 @@ void XgmModel::RenderSkinned(const XgmModelInst* minst,
 
       auto mtl = XgmClusSet.GetMaterial();
 
+
       if (minst->_overrideMaterial != 0)
         mtl = minst->_overrideMaterial;
+
+      mtl->gpuUpdate(pTARG);
 
       if (0 != mtl) {
         pTARG->BindMaterial(mtl);
