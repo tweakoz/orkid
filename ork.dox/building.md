@@ -34,6 +34,13 @@ To build on Ubuntu19.04 x86/64
 everything will be built and installed into the staging folder.
 the ```<stage>/bin``` and ```<stage>/lib``` paths were added to your environment variables already when you launched the environment'.
 
+Build issues, notes for later fixes
+==================================
+There are a few bugs in the build process from a new working copy.
+* ```qt5 environment not initialized properly before qt5 built. just exit the environment session and re-enter it after qt5 built.```
+* ```ork.tuio not installed properly. This is an issue in the ork.tuio/CMakeLists.txt - to fix:```
+     ```cd <staging>/orkid/ork.tuio; make install```
+
 misc
 =====
 * ```<staging_folder>/.launch_env``` <- relaunch previously made environment container.
