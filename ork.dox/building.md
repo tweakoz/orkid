@@ -39,8 +39,9 @@ Build issues, notes for later fixes
 There are a few bugs in the build process from a new working copy.
 * ```qt5 environment not initialized properly before qt5 built. just exit the environment session and re-enter it after qt5 built.```
 * ```ork.tuio not installed properly. This is an issue in the ork.tuio/CMakeLists.txt - to fix:```
-     ```cd <staging>/orkid/ork.tuio; make install```
-
+     ```cd <staging>/orkid/ork.tuio; make install .```
+     ```more specifically - ./build.py does do a multi-project install. Apparently in nested cmake projects, installs are deferred until all subprojects are built, as opposed to when the individual subprojects are finished building. The probably fix for this is to just make ork.tuio an external dependency```
+     
 misc
 =====
 * ```<staging_folder>/.launch_env``` <- relaunch previously made environment container.
