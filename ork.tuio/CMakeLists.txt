@@ -5,8 +5,9 @@ include (GenerateExportHeader)
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
 set(CMAKE_CXX_FLAGS "-Wno-deprecated --std=c++17")
 set( TUIO_DEST_HEADERDIR $ENV{OBT_STAGE}/include/tuio )
-set( OSC_DEST_HEADERDIR $ENV{OBT_STAGE}/include/osc )
-set( IP_DEST_HEADERDIR $ENV{OBT_STAGE}/include/ip )
+set( OSCPACK_DEST_HEADERDIR ${TUIO_DEST_HEADERDIR}/oscpack )
+set( OSC_DEST_HEADERDIR ${OSCPACK_DEST_HEADERDIR}/osc )
+set( IP_DEST_HEADERDIR ${OSCPACK_DEST_HEADERDIR}/ip )
 ###################################
 
 file(GLOB src_1 ${SRCD}/*.cpp)
