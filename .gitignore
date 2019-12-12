@@ -1,5 +1,6 @@
 stage
 .stage
+.staging
 dist
 .DS_Store
 data
