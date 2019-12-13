@@ -20,6 +20,8 @@
 
 #include <QtWidgets/QStyle>
 #include <QtWidgets/QStyleFactory>
+#include <QtGui/QFontDatabase>
+#include <QtCore/QDebug>
 
 // This include is relative to src/miniork which is temporarily added an a include search path.
 // We'll need to come up with a long-term solution eventually.
@@ -184,7 +186,9 @@ int BootQtThreadImpl(void* arg_opaq )
 {
   #if ! defined(__APPLE__)
     setenv("QT_QPA_PLATFORMTHEME","gtk2",1); // qt5 file dialog crashes otherwise...
-  #endif
+    //QFont arialFont("Ubuntu Regular", 15);
+    //QGuiApplication::setFont(arialFont);
+    #endif
 
 	InputArgs *args = (InputArgs*) arg_opaq;
 
@@ -205,6 +209,20 @@ int BootQtThreadImpl(void* arg_opaq )
 	ent::gEditorMainWindow = new ent::EditorMainWindow(0, AppClassName, *gpQtApplication );
 	ent::gEditorMainWindow->showMaximized();
     ent::gEditorMainWindow->raise();  // for MacOS
+
+    /////////////////////////////////////////////////////////////////////
+    // for some reason fonts do not get set up consistently on linux
+    //  a hack for now
+    /////////////////////////////////////////////////////////////////////
+    #if ! defined(__APPLE__)
+    QFile fontFile("/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf");
+    fontFile.open(QFile::ReadOnly);
+    qDebug() << fontFile.exists();
+    qDebug() << fontFile.size();
+    int appFontId = QFontDatabase::addApplicationFontFromData(fontFile.readAll());
+    assert(appFontId!=-1);
+    #endif
+    /////////////////////////////////////////////////////////////////////
 
 	gpQtApplication->mpMainWindow = ent::gEditorMainWindow;
 

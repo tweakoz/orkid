@@ -67,8 +67,8 @@ void CompositingData::defaultSetup() {
   auto p1 = new ScaleBiasCompositingNode;
 
   auto t1 = new NodeCompositingTechnique;
-  // auto o1 = new ScreenOutputCompositingNode;
-  auto o1 = new VrCompositingNode;
+  auto o1 = new ScreenOutputCompositingNode;
+  //auto o1 = new VrCompositingNode;
   auto r1 = new deferrednode::DeferredCompositingNode;
   t1->_writeOutputNode(o1);
   t1->_writeRenderNode(r1);
