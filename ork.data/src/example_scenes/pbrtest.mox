@@ -12,10 +12,10 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>-1.6376 1.21715 -0.374254</property>
+                                                <property name='Center'>-1.10871 -0.991866 -1.54487</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>7.40415</property>
-                                                <property name='QuatC'>-0.263899 -0.939287 0.202272 0.0857959</property>
+                                                <property name='Loc'>9.57471</property>
+                                                <property name='QuatC'>-0.203228 -0.733304 0.625248 -0.173931</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -130,11 +130,12 @@
                                                                                         <property name='Ambient'>0.5 0.5 0.5</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
                                                                                         <property name='DiffuseIntensity'>2</property>
-                                                                                        <property name='EnvironmentIntensity'>2</property>
-                                                                                        <property name='EnvironmentMipBias'>1</property>
+                                                                                        <property name='EnvironmentIntensity'>1</property>
+                                                                                        <property name='EnvironmentMipBias'>2</property>
+                                                                                        <property name='EnvironmentMipScale'>20</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
-                                                                                                "lev2tex" "data://environ/envmaps/blender_studio"
+                                                                                                "lev2tex" "data://environ/envmaps/blender_interior"
                                                                                             </reference>
                                                                                         </property>
                                                                                         <property name='FogColor'>0 0 0 1</property>
