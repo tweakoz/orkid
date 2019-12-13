@@ -291,13 +291,13 @@ _goingdown = true;
   // signal to thread we are going down, then wait for it to go down
   /////////////////////////////////
 
-  printf( "Opq<%s> signalling OK2KILL\n", _name.c_str());
+  //printf( "Opq<%s> signalling OK2KILL\n", _name.c_str());
   _threads.atomicOp([=](threadset_t& thset){
     for( auto thread : thset )
       thread->_state.store(EPOQSTATE_OK2KILL);
   });
 
-  printf( "Opq<%s> joining\n", _name.c_str());
+  //printf( "Opq<%s> joining\n", _name.c_str());
   bool done = false;
   while( false == done ){
     _threads.atomicOp([=,&done](threadset_t& thset){
@@ -312,7 +312,7 @@ _goingdown = true;
     usleep(0);
   }
 
-  printf( "Opq<%s> joined\n", _name.c_str());
+  //printf( "Opq<%s> joined\n", _name.c_str());
 
   /////////////////////////////////
   // trash the groups

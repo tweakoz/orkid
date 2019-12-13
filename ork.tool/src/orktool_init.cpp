@@ -65,7 +65,7 @@ void LinkMe() {
 ///////////////////////////////////////////////////////////////////////////////
 
 tokenlist Init(int argc, char** argv) {
-  printf("ork::tool::Init()\n");
+  //printf("ork::tool::Init()\n");
   LinkMe();
 
   static ork::lev2::StdFileSystemInitalizer filesysteminit(argc,argv);
@@ -76,7 +76,7 @@ tokenlist Init(int argc, char** argv) {
 
   //	xmlInitParser(); // must init libxml in main thread
 
-  printf("CPX\n");
+  //printf("CPX\n");
   tokenlist toklist;
   for (int iarg = 1; iarg < argc; iarg++) {
     const char* parg = argv[iarg];

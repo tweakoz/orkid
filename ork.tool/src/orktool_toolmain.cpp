@@ -97,7 +97,7 @@ int toolmain(int& argc, char **argv)
 
 	int el = getrlimit( RLIMIT_STACK, & oldlimit );
 
-	printf( "stack cur<%p> max<%p<\n", (void*) oldlimit.rlim_cur, oldlimit.rlim_max );
+	//printf( "stack cur<%p> max<%p<\n", (void*) oldlimit.rlim_cur, oldlimit.rlim_max );
 
 	//el = setrlimit( RLIMIT_STACK, & newlimit );
 

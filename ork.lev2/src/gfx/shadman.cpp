@@ -144,8 +144,8 @@ void FxShader::RegisterLoaders( const file::Path::NameType & base, const file::P
 
 	FileEnv::RegisterUrlBase( "orkshader://", gShaderFileContext1 );
 	FileEnv::RegisterUrlBase( "prjshader://", gShaderFileContext2 );
-	printf( "FxShader::RegisterLoaders ext<%s> base<miniorkshader:> pth<%s>\n", ext.c_str(), fsbase1.c_str() );
-	printf( "FxShader::RegisterLoaders ext<%s> base<gameshader:> pth<%s>\n", ext.c_str(), fsbase2.c_str() );
+	//printf( "FxShader::RegisterLoaders ext<%s> base<miniorkshader:> pth<%s>\n", ext.c_str(), fsbase1.c_str() );
+	//printf( "FxShader::RegisterLoaders ext<%s> base<gameshader:> pth<%s>\n", ext.c_str(), fsbase2.c_str() );
 	gearlyhack = false;
 }
 

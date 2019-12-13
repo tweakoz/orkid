@@ -235,7 +235,7 @@ bool FxShaderLoader::LoadFileAsset(asset::Asset *pAsset, ConstString filename)
 void FxShaderAsset::Describe()
 {
 	auto loader = new FxShaderLoader;
-	printf( "Registering FxShaderAsset\n" );
+	//printf( "Registering FxShaderAsset\n" );
 
 	GetClassStatic()->AddLoader(loader);
 	GetClassStatic()->SetAssetNamer("orkshader://");

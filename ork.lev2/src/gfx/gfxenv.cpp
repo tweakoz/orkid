@@ -229,8 +229,7 @@ GfxEnv::GfxEnv()
 /////////////////////////////////////////////////////////////////////////
 
 void GfxEnv::RegisterWinContext(GfxWindow* pWin) {
-  orkprintf("GfxEnv::RegisterWinContext\n");
-
+  //orkprintf("GfxEnv::RegisterWinContext\n");
   // gfxenvlateinit();
 }
 

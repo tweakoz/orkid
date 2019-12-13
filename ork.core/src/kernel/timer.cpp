@@ -287,7 +287,7 @@ int OldSchool::GetNumCores()
 	fprintf(stderr,"you have %i cpu cores", numCPUs);
 
 #endif
-	orkprintf( "NumCpus<%d>\n", numCPUs );
+	//orkprintf( "OrkiNumCpus<%d>\n", numCPUs );
 	fflush(stdout);
 	return numCPUs;
 

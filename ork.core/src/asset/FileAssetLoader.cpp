@@ -72,10 +72,10 @@ void FileAssetLoader::AddLocation( file_pathbase_t b, file_ext_t e)
 	fset.mPathBase = b;
 	mLocations.push_back(fset);
 
-	printf( "FileAssetLoader added set ext<%s> loc<%s> base<%s>\n",
-			fset.mExt.c_str(),
-			fset.mLoc.c_str(),
-			fset.mPathBase.c_str() );
+	//printf( "FileAssetLoader added set ext<%s> loc<%s> base<%s>\n",
+	//		fset.mExt.c_str(),
+	//		fset.mLoc.c_str(),
+	//		fset.mPathBase.c_str() );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

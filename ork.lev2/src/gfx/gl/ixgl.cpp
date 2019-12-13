@@ -186,7 +186,7 @@ void GfxTargetGL::GLinit()
 		return;
 	}
 
-	orkprintf( "INITOPENGL\n" );
+	//orkprintf( "INITOPENGL\n" );
 
 	GLXFBConfig fb_config;
 	//XInitThreads();
@@ -195,17 +195,17 @@ void GfxTargetGL::GLinit()
 	int x_screen = 0; // screen?
 	int inumconfigs = 0;
 	GlIxPlatformObject::gFbConfigs = glXChooseFBConfig(x_dpy,x_screen,g_glx_win_attrlist,&inumconfigs);
-	printf( "gFbConfigs<%p>\n", (void*) GlIxPlatformObject::gFbConfigs );
-	printf( "NUMCONFIGS<%d>\n", inumconfigs );
+	//printf( "gFbConfigs<%p>\n", (void*) GlIxPlatformObject::gFbConfigs );
+	//printf( "NUMCONFIGS<%d>\n", inumconfigs );
 	assert(inumconfigs>0);
 
 	gl_this_fb_config = GlIxPlatformObject::gFbConfigs[0];
 
 	GlIxPlatformObject::gVisInfo = glXGetVisualFromFBConfig( x_dpy, gl_this_fb_config );
 	XVisualInfo* vi = GlIxPlatformObject::gVisInfo;
-	printf( "vi<%p>\n", (void*) vi );
+	//printf( "vi<%p>\n", (void*) vi );
 
-	printf( "numfbconfig<%d>\n", inumconfigs );
+	//printf( "numfbconfig<%d>\n", inumconfigs );
 	assert(GlIxPlatformObject::gFbConfigs!=0);
 
 	GlIxPlatformObject::gDisplay = x_dpy;
@@ -265,7 +265,7 @@ void GfxTargetGL::GLinit()
 
     assert(GlIxPlatformObject::gShareMaster!=nullptr);
 
-	printf( "display<%p> screen<%d> rootwin<%d> numcfgs<%d> gsharemaster<%p>\n", x_dpy, x_screen, g_rootwin, inumconfigs, GlIxPlatformObject::gShareMaster );
+	//printf( "display<%p> screen<%d> rootwin<%d> numcfgs<%d> gsharemaster<%p>\n", x_dpy, x_screen, g_rootwin, inumconfigs, GlIxPlatformObject::gShareMaster );
 
 	///////////////////////////////////////////////////////////////
 

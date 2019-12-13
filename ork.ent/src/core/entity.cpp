@@ -467,7 +467,7 @@ void Init() {
   SequenceCamArchetype::GetClassStatic();
   BulletObjectArchetype::GetClassStatic();
   auto bwcd = BulletSystemData::GetClassStatic();
-  printf("BWCD<%p>\n", bwcd);
+  //printf("BWCD<%p>\n", bwcd);
   PerfControllerArchetype::GetClassStatic();
   PerformanceAnalyzerArchetype::GetClassStatic();
   SimpleCharacterArchetype::GetClassStatic();
