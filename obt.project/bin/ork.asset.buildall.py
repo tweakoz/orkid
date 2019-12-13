@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os,string
 import ork.host
@@ -29,19 +29,19 @@ def exp_object( objnam ):
 	os.system(cmd)
 
 def do_objects( obj_str ):
- for a in string.split(obj_str):
+ for a in obj_str.split(" "):
     mkdir(a)
     exp_object(a)
 
 def do_actors( act_str ):
- for a in string.split(act_str):
+ for a in act_str.split(" "):
     mkdir(a)
     exp_actor(a)
 
 def do_anims( anm_str ):
  for k in anm_str:
     a = anm_str[k]
-    for i in string.split(a):
+    for i in anm_str:
         exp_anim(k, a)
 
 #######################################
