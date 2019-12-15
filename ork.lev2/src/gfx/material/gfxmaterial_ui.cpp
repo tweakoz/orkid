@@ -33,12 +33,12 @@ GfxMaterialUI::~GfxMaterialUI()
 
 GfxMaterialUI::GfxMaterialUI(GfxTarget *pTarg)
 	: meType( ETYPE_STANDARD )
-	, hTekMod( 0 )
-	, hTekVtx( 0 )
-	, hTekModVtx( 0 )
-	, hTekCircle( 0 )
-	, hTransform( 0 )
-	, hModColor( 0 )
+	, hTekMod( nullptr )
+	, hTekVtx( nullptr )
+	, hTekModVtx( nullptr )
+	, hTekCircle( nullptr )
+	, hTransform( nullptr )
+	, hModColor( nullptr )
 	, meUIColorMode( EUICOLOR_MOD )
 {
 	miNumPasses = 1;
@@ -50,8 +50,7 @@ GfxMaterialUI::GfxMaterialUI(GfxTarget *pTarg)
 	_rasterstate.SetCullTest( ECULLTEST_OFF );
 
 	hModFX = asset::AssetManager<FxShaderAsset>::Load( "orkshader://ui" )->GetFxShader();
-
-	//printf( "HMODFX<%p>\n", hModFX );
+	//printf( "HMODFX<%p> pTarg<%p>\n", hModFX, pTarg );
 	OrkAssertI( hModFX!=0, "did you copy the shaders folder!\n" );
 
 	if( pTarg )
@@ -240,11 +239,11 @@ bool GfxMaterialUIText::BeginPass( GfxTarget *pTarg, int iPass )
 /////////////////////////////////////////////////////////////////////////
 
 GfxMaterialUITextured::GfxMaterialUITextured( GfxTarget *pTarg, const std::string & Technique )
-	: hTek(0)
+	: hTek(nullptr)
 	, mTechniqueName( Technique )
-	, hTransform(0)
-	, hModColor(0)
-	, hColorMap(0)
+	, hTransform(nullptr)
+	, hModColor(nullptr)
+	, hColorMap(nullptr)
 {
 	miNumPasses = 1;
 	_rasterstate.SetShadeModel( ESHADEMODEL_SMOOTH );
@@ -276,7 +275,7 @@ void GfxMaterialUITextured::EffectInit( void )
 void GfxMaterialUITextured::Init(ork::lev2::GfxTarget *pTarg)
 {
 	hModFX = asset::AssetManager<FxShaderAsset>::Load( "orkshader://ui" )->GetFxShader();
-
+	//printf( "HMODFX<%p> pTarg<%p>\n", hModFX, pTarg );
 	hTek = pTarg->FXI()->technique( hModFX, mTechniqueName );
 
 	hTransform = pTarg->FXI()->parameter( hModFX, "mvp" );

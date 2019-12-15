@@ -160,8 +160,8 @@ void QCtxWidget::MouseEventCommon(QMouseEvent* event) {
   uiev.mfUnitX     = unitX;
   uiev.mfUnitY     = unitY;
 
-   printf( "UNITX<%f> UNITY<%f>\n", unitX, unitY );
-    printf( "ix<%d %d>\n", ix, iy );
+//   printf( "UNITX<%f> UNITY<%f>\n", unitX, unitY );
+//    printf( "ix<%d %d>\n", ix, iy );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -557,7 +557,7 @@ void CTQT::Resize(int X, int Y, int W, int H) {
   //////////////////////////////////////////////////////////
 
   this->SetThisXID((CTFLXID)winId());
-  printf( "CTQT::Resize() mpTarget<%p>\n", mpTarget );
+  //printf( "CTQT::Resize() mpTarget<%p>\n", mpTarget );
   if (mpTarget) {
     mpTarget->SetSize(X, Y, W, H);
     mUIEvent.mpGfxWin = (GfxWindow*)mpTarget->FBI()->GetThisBuffer();

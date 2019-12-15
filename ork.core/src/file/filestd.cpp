@@ -332,50 +332,11 @@ bool FileDevStd::DoesFileExist( const file::Path& filespec )
 	file::Path::SmallNameType url = filespec.GetUrlBase();
 	const FileDevContext& ctx = ork::FileEnv::UrlBaseToContext(url);
 
-	bool bTRYTOC = false;
-	bool bEXISTSINTOC = false;
-
-    //printf( "DoesFileExist<%s>\n", filespec.c_str() );
-
-	if( ctx.GetTocMode() == ork::ETM_USE_TOC )
-	{
-
-		bTRYTOC = true;
-
-		const orkmap<file::Path::NameType,int>& toc = ctx.GetTOC();
-
-		file::Path testf = filespec;
-		testf.SetUrlBase("");
-		file::Path::NameType testn(testf.c_str());
-
-		size_t ilen = testn.length();
-		for( size_t i=0; i<ilen; i++ )
-		{
-			char ch = testn.c_str()[i];
-
-			if( ch == '\\' ) ch = '/';
-			else if( ch>='A' && ch<='Z' ) ch = (ch-'A')+'a';
-
-			testn.SetChar( i, ch );
-		}
-		orkmap<file::Path::NameType,int>::const_iterator it = toc.find( testn.c_str() );
-
-		if( it != toc.end() )
-		{
-			bEXISTSINTOC = true;
-				return true;
-		}
-		return false;
-	}
-
-
 	file::Path pathspec( filespec.c_str() );
-
 	file::Path abspath = pathspec.ToAbsolute();
-
 	const char *pFn = abspath.c_str();
 
-    //printf( "DoesFileExist<%s> Abs<%s>\n", filespec.c_str(), abspath.c_str() );
+    //printf( "DoesFileExist<%s> url<%s> Abs<%s>\n", filespec.c_str(), url.c_str(), abspath.c_str() );
 
 	FILE *fin = fopen( abspath.c_str(), "rb" );
 	bool bv = (fin==0) ? false : true;
@@ -564,6 +525,8 @@ orkvector<file::Path::NameType> ork::FileEnv::filespec_search( const file::Path:
 		0
 	};
 
+	//printf( "path<%s>\n", path );
+
 	FTS *tree = fts_open(&paths[0], FTS_NOCHDIR, 0);
 	if (!tree) {
 		perror("fts_open");
@@ -587,12 +550,14 @@ orkvector<file::Path::NameType> ork::FileEnv::filespec_search( const file::Path:
 				//orkprintf( "file found <%s>\n", fullname.c_str() );
 			}
 
+            #if 0
+			printf("got file named %s at depth %d, "
+			"accessible via %s from the current directory "
+			"or via %s from the original starting directory\n",
+			node->fts_name, node->fts_level,
+			node->fts_accpath, node->fts_path);
+            #endif
 
-//			printf("got file named %s at depth %d, "
-//			"accessible via %s from the current directory "
-//			"or via %s from the original starting directory\n",
-//			node->fts_name, node->fts_level,
-//			node->fts_accpath, node->fts_path);
 			/* if fts_open is not given FTS_NOCHDIR,
 			* fts may change the program's current working directory */
 		}

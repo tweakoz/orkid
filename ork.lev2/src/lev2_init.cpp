@@ -189,7 +189,7 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
 
   OldSchool::SetGlobalStringVariable("data://", base_dir.c_str());
 
-  //printf("base_dir<%s>\n", base_dir.c_str());
+  printf("ORKID_WORKSPACE_DIR<%s>\n", base_dir.c_str());
 
   //printf("CPB2\n");
   //////////////////////////////////////////

@@ -384,11 +384,11 @@ void Widget::UpdateMouseFocus(const HandlerResult& r, const Event& Ev)
 	}
 	if( plfp != gFastPath )
 	{
-		if( plfp )
-			printf( "widget<%p:%s> has lost the fastpath\n", plfp, plfp->msName.c_str() );
+		//if( plfp )
+		//	printf( "widget<%p:%s> has lost the fastpath\n", plfp, plfp->msName.c_str() );
 
-		if( gFastPath )
-			printf( "widget<%p:%s> now has the fastpath\n", gFastPath, gFastPath->msName.c_str() );
+		//if( gFastPath )
+		//	printf( "widget<%p:%s> now has the fastpath\n", gFastPath, gFastPath->msName.c_str() );
 
 	}
 

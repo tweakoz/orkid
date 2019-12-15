@@ -830,7 +830,7 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   } else if (dxt::IsBGRA8(ddsh->ddspf)) {
     const dxt::DdsLoadInfo& li = dxt::loadInfoBGRA8;
     int size                   = idepth * iwidth * iheight * 4;
-    printf("  tex<%s> BGRA8\n", infname.c_str());
+    //printf("  tex<%s> BGRA8\n", infname.c_str());
     // printf( "  tex<%s> size<%d>\n", infname.c_str(), size );
     if (bVOLUMETEX)
       TexSetter::Set3D(
@@ -870,8 +870,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   else if (dxt::IsDXT5(ddsh->ddspf)) {
     const dxt::DdsLoadInfo& li = dxt::loadInfoDXT5;
     int size                   = (iBwidth * iBheight) * li.blockBytes;
-    printf("  tex<%s> DXT5\n", infname.c_str());
-    printf("  tex<%s> size<%d>\n", infname.c_str(), size);
+    //printf("  tex<%s> DXT5\n", infname.c_str());
+    //printf("  tex<%s> size<%d>\n", infname.c_str(), size);
     if (bVOLUMETEX)
       TexSetter::Set3DC(
           this, kRGBA_DXT5, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
@@ -886,8 +886,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   else if (dxt::IsDXT3(ddsh->ddspf)) {
     const dxt::DdsLoadInfo& li = dxt::loadInfoDXT3;
     int size                   = (iBwidth * iBheight) * li.blockBytes;
-    printf("  tex<%s> DXT3\n", infname.c_str());
-    printf("  tex<%s> size<%d>\n", infname.c_str(), size);
+    //printf("  tex<%s> DXT3\n", infname.c_str());
+    //printf("  tex<%s> size<%d>\n", infname.c_str(), size);
 
     if (bVOLUMETEX)
       TexSetter::Set3DC(
@@ -901,8 +901,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   else if (dxt::IsDXT1(ddsh->ddspf)) {
     const dxt::DdsLoadInfo& li = dxt::loadInfoDXT1;
     int size                   = (iBwidth * iBheight) * li.blockBytes;
-    printf("  tex<%s> DXT1\n", infname.c_str());
-    printf("  tex<%s> size<%d>\n", infname.c_str(), size);
+    //printf("  tex<%s> DXT1\n", infname.c_str());
+    //printf("  tex<%s> size<%d>\n", infname.c_str(), size);
     if (bVOLUMETEX)
       TexSetter::Set3DC(
           this, kRGBA_DXT1, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );

@@ -232,7 +232,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
 
       static const int kdefaulttranssortpass = 100;
 
-      printf("MODEL USEMATCLASS<%s>\n", pmatclassname);
+      //printf("MODEL USEMATCLASS<%s>\n", pmatclassname);
 
       /////////////////////////////////////////////////////////////
       // wii (basic) material
@@ -245,7 +245,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
 
         const char* bastek = chunkreader.GetString(ibastek);
 
-        printf("MODEL USETEK<%s>\n", bastek);
+        //printf("MODEL USETEK<%s>\n", bastek);
         // assert(false);
         GfxMaterialWiiBasic* pbasmat = new GfxMaterialWiiBasic(bastek);
         pbasmat->Init(pTARG);
@@ -534,7 +534,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
           void* pverts          = (void*)(ModelDataStream->GetDataAt(ivboffset));
           int ivblen            = ivbnum * ivbsize;
 
-          printf("ReadVB NumVerts<%d> VtxSize<%d>\n", ivbnum, pvb->GetVtxSize());
+          //printf("ReadVB NumVerts<%d> VtxSize<%d>\n", ivbnum, pvb->GetVtxSize());
           void* poutverts = pTARG->GBI()->LockVB(*pvb, 0, ivbnum); // ivblen );
           {
             memcpy(poutverts, pverts, ivblen);
@@ -617,7 +617,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
 
           mdl->mbSkinned |= (inumbb > 0);
 
-          printf("mdl<%p> mbSkinned<%d>\n", mdl, int(mdl->mbSkinned));
+          //printf("mdl<%p> mbSkinned<%d>\n", mdl, int(mdl->mbSkinned));
           ////////////////////////////////////////////////////////////////////////
         }
       }

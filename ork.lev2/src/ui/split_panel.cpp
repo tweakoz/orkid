@@ -177,18 +177,18 @@ void SplitPanel::DoLayout()
 
 HandlerResult SplitPanel::DoRouteUiEvent( const Event& Ev )
 {
-	printf( "Panel::DoRouteUiEvent xy<%d %d> mPanelUiState<%d>\n", Ev.miX, Ev.miY, mPanelUiState );
+	//printf( "Panel::DoRouteUiEvent xy<%d %d> mPanelUiState<%d>\n", Ev.miX, Ev.miY, mPanelUiState );
 
 	if( mChild1 && mChild1->IsEventInside(Ev) && mPanelUiState==0 )
 	{
-    printf( "Child1\n");
+    //printf( "Child1\n");
 		HandlerResult res = mChild1->RouteUiEvent(Ev);
 		if( res.mHandler != nullptr )
 			return res;
 	}
 	else if( mChild2 && mChild2->IsEventInside(Ev) && mPanelUiState==0 )
 	{
-    printf( "Child2\n");
+    //printf( "Child2\n");
 		HandlerResult res = mChild2->RouteUiEvent(Ev);
 		if( res.mHandler != nullptr )
 			return res;
@@ -218,8 +218,8 @@ void SplitPanel::Snap()
 	int y2 = GetY2();
 	int ph = mParent->GetH();
 	int yd = abs(y2-ph);
-	printf( "x2<%d> pw<%d> xd<%d>\n", x2, pw, xd );
-	printf( "y2<%d> ph<%d> yd<%d>\n", y2, ph, yd );
+	//printf( "x2<%d> pw<%d> xd<%d>\n", x2, pw, xd );
+	//printf( "y2<%d> ph<%d> yd<%d>\n", y2, ph, yd );
 	bool snapl = ( miX<kpanelw );
 	bool snapr = ( xd<kpanelw );
 	bool snapt = ( miY<kpanelw );

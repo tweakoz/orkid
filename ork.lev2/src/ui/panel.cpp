@@ -180,8 +180,8 @@ void Panel::Snap()
 	int y2 = GetY2();
 	int ph = mParent->GetH();
 	int yd = abs(y2-ph);
-	printf( "x2<%d> pw<%d> xd<%d>\n", x2, pw, xd );
-	printf( "y2<%d> ph<%d> yd<%d>\n", y2, ph, yd );
+	//printf( "x2<%d> pw<%d> xd<%d>\n", x2, pw, xd );
+	//printf( "y2<%d> ph<%d> yd<%d>\n", y2, ph, yd );
 	bool snapl = ( miX<kpanelw );
 	bool snapr = ( xd<kpanelw );
 	bool snapt = ( miY<kpanelw );

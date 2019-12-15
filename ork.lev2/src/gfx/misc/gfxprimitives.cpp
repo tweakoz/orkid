@@ -931,7 +931,7 @@ void GfxPrimitives::Init(GfxTarget* pTarg) {
         numvtx += 6;
       }
     }
-    printf("numvtx<%zu>\n", numvtx);
+    //printf("numvtx<%zu>\n", numvtx);
     vw.UnLock(pTarg, EULFLG_ASSIGNVBLEN);
     //////////////////////////////////////////////
   }

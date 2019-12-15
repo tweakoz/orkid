@@ -1102,7 +1102,7 @@ void GlGeometryBufferInterface::UnLockIB( IndexBufferBase& IdxBuf)
 		const void* src_data = plat_handle->mBuffer;
 		int iblen = plat_handle->mNumIndices*sizeof(U16);
 
-		printf( "UNLOCKIBO\n");
+		//printf( "UNLOCKIBO\n");
 		glGenBuffers( 1, (GLuint*) & plat_handle->mIBO );
 		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, plat_handle->mIBO );
 		glBufferData( GL_ELEMENT_ARRAY_BUFFER, iblen, src_data, GL_STATIC_DRAW );
@@ -1120,7 +1120,7 @@ void GlGeometryBufferInterface::UnLockIB( IndexBufferBase& IdxBuf)
 		plat_handle->mMinIndex = int(umin);
 		plat_handle->mMaxIndex = int(umax);
 
-		printf( "umin<%d> umax<%d>\n", int(umin), int(umax) );
+		//printf( "umin<%d> umax<%d>\n", int(umin), int(umax) );
 		//glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
 	}
 }

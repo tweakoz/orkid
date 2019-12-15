@@ -52,11 +52,11 @@ UniformBlockBinding* Pass::uniformBlockBinding(UniformBlock* block) {
   glUniformBlockBinding(_programObjectId, rval->_blockIndex, 0);
 
   glGetActiveUniformBlockiv(_programObjectId, rval->_blockIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &rval->_blockSize);
-  printf("block<%s> blocksize<%d>\n", block->_name.c_str(), rval->_blockSize);
+  //printf("block<%s> blocksize<%d>\n", block->_name.c_str(), rval->_blockSize);
 
   GLint numunis = 0;
   glGetActiveUniformBlockiv(_programObjectId, rval->_blockIndex, GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &numunis);
-  printf("block<%s> numunis<%d>\n", block->_name.c_str(), numunis);
+  //printf("block<%s> numunis<%d>\n", block->_name.c_str(), numunis);
 
   auto uniindices = new GLuint[numunis];
   glGetActiveUniformBlockiv(_programObjectId, rval->_blockIndex, GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, (GLint*)uniindices);
@@ -91,13 +91,13 @@ UniformBlockBinding* Pass::uniformBlockBinding(UniformBlock* block) {
     item._arraystride  = uniarystrides[i];
     item._matrixstride = unimtxstrides[i];
     rval->_ubbitems.push_back(item);
-    printf("block<%s> uni<%d> actidx<%d>\n", block->_name.c_str(), i, uniindices[i]);
+    //printf("block<%s> uni<%d> actidx<%d>\n", block->_name.c_str(), i, uniindices[i]);
     // printf( "block<%s> uni<%d> blkidx<%d>\n", block->_name.c_str(), i, uniblkidcs[i] );
-    printf("block<%s> uni<%d> offset<%d>\n", block->_name.c_str(), i, unioffsets[i]);
-    printf("block<%s> uni<%d> type<%d>\n", block->_name.c_str(), i, unitypes[i]);
-    printf("block<%s> uni<%d> size<%d>\n", block->_name.c_str(), i, unisizes[i]);
-    printf("block<%s> uni<%d> arystride<%d>\n", block->_name.c_str(), i, uniarystrides[i]);
-    printf("block<%s> uni<%d> mtxstride<%d>\n", block->_name.c_str(), i, unimtxstrides[i]);
+    //printf("block<%s> uni<%d> offset<%d>\n", block->_name.c_str(), i, unioffsets[i]);
+    //printf("block<%s> uni<%d> type<%d>\n", block->_name.c_str(), i, unitypes[i]);
+    //printf("block<%s> uni<%d> size<%d>\n", block->_name.c_str(), i, unisizes[i]);
+    //printf("block<%s> uni<%d> arystride<%d>\n", block->_name.c_str(), i, uniarystrides[i]);
+    //printf("block<%s> uni<%d> mtxstride<%d>\n", block->_name.c_str(), i, unimtxstrides[i]);
   }
 
   //////////////////////////////////////////////
@@ -124,7 +124,7 @@ void Pass::bindUniformBlockBuffer(UniformBlock* block, UniformBuffer* buffer) {
 
   if (_ubobindings.size() < (ubo_bindingindex + 1)) {
     _ubobindings.resize(ubo_bindingindex + 1);
-    printf("RESIZEUBOB<%d>\n", ubo_bindingindex + 1);
+    //printf("RESIZEUBOB<%d>\n", ubo_bindingindex + 1);
   }
 
   if (_ubobindings[ubo_bindingindex] != buffer) {

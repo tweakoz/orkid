@@ -182,12 +182,16 @@ ork::file::Path FileEnv::GetPathFromUrlExt( const file::Path::NameType& UrlName,
 	if( Tail==(Base+"://") ) Tail="";
 
 	const FileDevContext & Ctx = UrlBaseToContext( Base.c_str() );
+    auto base = Ctx.GetFilesystemBaseAbs();
+
+	//printf( "  FileEnv::GetPathFromUrlExt UrlName<%s> subfolder<%s> base<%s>\n", UrlName.c_str(), subfolder.c_str(), base.c_str() );
 
 	file::Path::NameType path;
 
 	if( Ctx.GetPrependFilesystemBase() )
 	{
 		path = file::Path::NameType(Ctx.GetFilesystemBaseAbs().c_str()) + subfolder.c_str() + Tail + ext.c_str();
+    	//printf( "  FileEnv::GetPathFromUrlExt path<%s>\n", path.c_str() );
 	}
 	else
 	{
@@ -206,7 +210,8 @@ void FileEnv::RegisterUrlBase( const file::Path::SmallNameType& UrlName, const F
 	orkmap<ork::file::Path::SmallNameType, FileDevContext> & Map = GetRef().mUrlRegistryMap;
 	std::pair<ork::file::Path::SmallNameType, FileDevContext> the_pair(urlbase.c_str(), FileContext);
 	Map.insert( the_pair );
-
+	auto base = FileContext.GetFilesystemBaseAbs();
+	//printf( "RegisterUrlBase UrlName<%s> base<%s>\n", UrlName.c_str(), base.c_str() );
 	FileDevContext& nc = const_cast<FileDevContext&>(FileContext);
 	nc.CreateToc(UrlName);
 }

@@ -461,6 +461,7 @@ Path Path::ToRelative( EPathType etype ) const
 
 Path Path::ToAbsolute( EPathType etype ) const
 {
+	//printf( "Path::ToAbsolute (begin) inp<%s>\n", this->c_str()  );
 	Path tmp = ToAbsoluteFolder(etype);
 	Path rval;
 	if( HasExtension() )
@@ -510,11 +511,13 @@ Path Path::ToAbsolute( EPathType etype ) const
 		default:
 			OrkAssert(false);
 	}
+	//printf( "Path::ToAbsolute (end) inp<%s> out<%s> tmp<%s>\n", this->c_str(), rval.c_str(), tmp.c_str()  );
 	return rval;
 }
 
 Path Path::ToAbsoluteFolder( EPathType etype ) const
 {
+	//printf( " Path::ToAbsoluteFolder (begin) inp<%s>\n", this->c_str()  );
 
 	if( etype == EPATHTYPE_NATIVE ) etype = Path::GetNative();
 
@@ -522,12 +525,13 @@ Path Path::ToAbsoluteFolder( EPathType etype ) const
 
 	if( HasUrlBase() )
 	{
-		const char* pstr = FileEnv::GetPathFromUrlExt( GetUrlBase().c_str() ).c_str();
-		size_t ilen = strlen(pstr);
+		auto path = FileEnv::GetPathFromUrlExt( GetUrlBase().c_str() );
+		//printf( " Path::ToAbsoluteFolder urlbase<%s> pstr<%s>\n", GetUrlBase().c_str(), path.c_str() );
+		size_t ilen = strlen(path.c_str());
 
-		bool b_ends_with_slash = pstr[ilen-1] == '/';
+		bool b_ends_with_slash = path.c_str()[ilen-1] == '/';
 
-		rval.mPathString.format( b_ends_with_slash ? "%s" : "%s/", pstr );
+		rval.mPathString.format( b_ends_with_slash ? "%s" : "%s/", path.c_str() );
 	}
 	else if( HasDrive() )
 	{
@@ -606,7 +610,7 @@ Path Path::ToAbsoluteFolder( EPathType etype ) const
 			break;
 		}
 	}
-	//orkprintf( "Path<%s> AbsoluteFolder<%s>\n", c_str(), rval.c_str() );
+	//printf( " Path::ToAbsoluteFolder (end) inp<%s> AbsoluteFolder<%s>\n", this->c_str(), rval.c_str() );
 	return rval;
 }
 

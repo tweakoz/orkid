@@ -182,7 +182,10 @@ void ColladaChoiceCache(const file::Path& sdir, ChoiceList* ChcList, const std::
 
 void ModelChoices::EnumerateChoices(bool bforcenocache) {
   clear();
-  FindAssetChoices("data://", "*.xgm");
+  //FindAssetChoices("data://", "*.xgm");
+  auto items = lev2::XgmModelAsset::GetClassStatic()->EnumerateExisting();
+  for (const auto& i : items)
+    add(AttrChoiceValue(i.c_str(), i.c_str()));
   // ColladaChoiceCache( "data://", this, "xgm", CColladaAsset::ECOLLADA_MODEL
   // );
 }

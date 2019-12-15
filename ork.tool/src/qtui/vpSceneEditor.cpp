@@ -246,7 +246,7 @@ void SceneEditorVP::DoInit(ork::lev2::GfxTarget* pTARG) {
 
   pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
 
-  orkprintf("PickBuffer<%p>\n", mpPickBuffer);
+  //orkprintf("PickBuffer<%p>\n", mpPickBuffer);
 }
 
 ///////////////////////////////////////////////////////////////////////////

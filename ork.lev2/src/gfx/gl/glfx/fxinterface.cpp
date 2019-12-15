@@ -42,7 +42,7 @@ void Interface::DoBeginFrame() { mLastPass = 0; }
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Interface::LoadFxShader(const AssetPath& pth, FxShader* pfxshader) {
-  // printf( "GLSLFXI LoadShader<%s>\n", pth.c_str() );
+  //printf( "GLSLFXI LoadShader<%s>\n", pth.c_str() );
   GL_ERRORCHECK();
   bool bok = false;
   pfxshader->SetInternalHandle(0);
