@@ -49,7 +49,7 @@ inline const char* strrstr(const char* s1, const char* s2)
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned int kmaxlen>
-void FixedString<kmaxlen>::recalclen() 
+void FixedString<kmaxlen>::recalclen()
 {
 	mLength = length();
 }
@@ -66,7 +66,7 @@ void FixedString<kmaxlen>::SetChar( size_t index, char ch )
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned int kmaxlen>
-void FixedString<kmaxlen>::set( const char* pstr )
+void FixedString<kmaxlen>::set( const char* pstr ) // final
 {
 	if( pstr )
 	{
@@ -367,7 +367,7 @@ typename FixedString<kmaxlen>::size_type FixedString<kmaxlen>::find_first_of( co
 	size_type rval = npos;
 
 	const char* pfound = strstr( buffer, srch );
-	
+
 	if( pfound )
 	{
 		rval = (pfound-buffer);
@@ -384,7 +384,7 @@ typename FixedString<kmaxlen>::size_type FixedString<kmaxlen>::find_last_of( con
 	size_type rval = npos;
 
 	const char* pfound = strrstr( buffer, srch );
-	
+
 	if( pfound )
 	{
 		rval = (pfound-buffer);
@@ -401,7 +401,7 @@ typename FixedString<kmaxlen>::size_type FixedString<kmaxlen>::find( const char*
 	size_type rval = npos;
 
 	const char* pfound = strstr( buffer+pos, srch );
-	
+
 	if( pfound )
 	{
 		rval = (pfound-buffer);
@@ -442,7 +442,7 @@ FixedString<kmaxlen>& FixedString<kmaxlen>::replace( size_type pos1, size_type n
 	}
 
 	recalclen();
-	
+
 	return *this;
 }
 
@@ -543,7 +543,7 @@ typename FixedString<kmaxlen>::iterator::pointer FixedString<kmaxlen>::iterator:
 	OrkAssert( mIteratorBase.mindex >= 0 );
 	OrkAssert( mIteratorBase.mindex < isize );
 	OrkAssert( mIteratorBase.mindex < kmaxlen );
-	typename FixedString<kmaxlen>::iterator::value_type* p0 = 
+	typename FixedString<kmaxlen>::iterator::value_type* p0 =
 		(mIteratorBase.mdirection>0) ? &mpString->buffer[mIteratorBase.mindex] : &mpString->buffer[(isize-1)-mIteratorBase.mindex];
 	return p0;
 }
@@ -692,7 +692,7 @@ bool FixedString<kmaxlen>::iterator::operator < ( const iterator& oth ) const
 	bool thsNPOS = ( mIteratorBase.mindex == npos );
 
 	int index = int(othNPOS)+(int(thsNPOS)<<1);
-	bool btable[4] = 
+	bool btable[4] =
 	{
 		oth.mIteratorBase.mindex < mIteratorBase.mindex,// 0==neither
 		true, // 1==othNPOS
@@ -790,7 +790,7 @@ typename FixedString<kmaxlen>::const_iterator::const_pointer FixedString<kmaxlen
 	size_t isize = mpString->size();
 	OrkAssert( mIteratorBase.mindex >= 0 );
 	OrkAssert( mIteratorBase.mindex < isize );
-	const typename FixedString<kmaxlen>::iterator::value_type* p0 = 
+	const typename FixedString<kmaxlen>::iterator::value_type* p0 =
 		(mIteratorBase.mdirection>0) ? &mpString->c_str()[mIteratorBase.mindex] : &mpString->c_str()[(isize-1)-mIteratorBase.mindex];
 	return p0;
 }
@@ -939,7 +939,7 @@ bool FixedString<kmaxlen>::const_iterator::operator < ( const const_iterator& ot
 	bool thsNPOS = ( mIteratorBase.mindex == npos );
 
 	int index = int(othNPOS)+(int(thsNPOS)<<1);
-	bool btable[4] = 
+	bool btable[4] =
 	{
 		oth.mIteratorBase.mindex < mIteratorBase.mindex,// 0==neither
 		true, // 1==othNPOS
@@ -988,7 +988,7 @@ void FixedString<kmaxlen>::resize( size_t n, char c )
 	if( n > mLength )
 	{	for( size_t i=mLength; i<n; i++ )
 		{
-			buffer[i+1] = c;			
+			buffer[i+1] = c;
 		}
 		buffer[n+1] = 0;
 		mLength = n;

@@ -42,6 +42,31 @@ struct VrProjFrustumPar {
   float _near = .1f;
   float _far = 50000.0f;
 };
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct VrTrackingCameraNotificationFrame {
+  CameraMatrices _leftcamera;
+  CameraMatrices _centercamera;
+  CameraMatrices _rightcamera;
+};
+struct VrTrackingHmdPoseNotificationFrame {
+  fmtx4 _hmdMatrix;
+};
+struct VrTrackingControllerNotificationFrame {
+  ControllerState _left;
+  ControllerState _right;
+};
+
+struct VrTrackingNotificationReceiver {
+  typedef std::function<void(const svar256_t &)> callback_t;
+  callback_t _callback;
+};
+typedef std::shared_ptr<VrTrackingNotificationReceiver> VrTrackingNotificationReceiver_ptr_t;
+typedef std::set<VrTrackingNotificationReceiver_ptr_t> VrTrackingNotificationReceiver_set;
+
+void addVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t recvr);
+
 ////////////////////////////////////////////////////////////////////////////////
 
 struct Device {

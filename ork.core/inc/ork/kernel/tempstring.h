@@ -21,18 +21,20 @@ class MutableString;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class FixedStringBase 
+class FixedStringBase
 {
 public:
 		typedef size_t HashType;
 
         FixedStringBase();
+				virtual ~FixedStringBase() {}
 
         size_t length() const;
         size_t size() const { return length(); }
         virtual size_t get_maxlen() const = 0;
         virtual const char* c_str() const = 0;
-		size_t hash() const;
+				virtual void set( const char* pstr ) = 0;
+				size_t hash() const;
 
 protected:
 
@@ -60,7 +62,7 @@ public:
 		iterator_base( size_t idx=npos, int idir=0 );
 	};
 
-	struct iterator 
+	struct iterator
 	{
 		typedef std::random_access_iterator_tag iterator_category;
 		typedef char		value_type;
@@ -89,7 +91,7 @@ public:
 
 		iterator_base mIteratorBase;
 	};
-	struct const_iterator 
+	struct const_iterator
 	{
 		typedef const char* const_pointer;
 		typedef const char& const_reference;
@@ -116,7 +118,7 @@ public:
 		difference_type operator - ( const const_iterator& oth ) const;
 
 		iterator_base mIteratorBase;
-	};	
+	};
 	friend struct iterator;
 	friend struct const_iterator;
 	//////////////////////////////////////////////////////////
@@ -127,7 +129,7 @@ public:
 	//////////////////////////////////////////////////////////
 	void SetChar( size_t index, char val );
 	//////////////////////////////////////////////////////////
-	void set(const char* pstr);
+	void set(const char* pstr) final;
 	void set( const char* pstr, size_t len );
 
 	void format( const char*fmt, ... );
@@ -342,4 +344,3 @@ namespace std
 	};
 
 }
-

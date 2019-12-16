@@ -240,7 +240,7 @@ struct MessageStreamBase
 
     virtual void serdesImpl( void* pdata, size_t len ) = 0;
     virtual void serdesStringImpl( std::string& str ) = 0;
-    virtual void serdesFixedStringImpl( fixedstring_base& str ) = 0;
+    virtual void serdesFixedStringImpl( FixedStringBase& str ) = 0;
     virtual bool isOutputStream() const = 0;
 
     NetworkMessage          mMessage;
@@ -249,7 +249,7 @@ struct MessageStreamBase
 ///////////////////////////////////////////////////////////////////////////////
 template <typename T> struct MessageStreamTraits
 {   static void serdes(MessageStreamBase& stream_bas, T& data_ref)
-    {   static_assert(is_trivially_copyable<T>::value,"can only write is_trivially_copyable's into a NetworkMessage!");
+    {   static_assert(std::is_trivially_copyable<T>::value,"can only write is_trivially_copyable's into a NetworkMessage!");
         size_t ilen = sizeof(T);
         stream_bas.serdesImpl(&data_ref,ilen);
     }
@@ -281,7 +281,7 @@ template <typename T> inline MessageStreamBase& MessageStreamBase::operator || (
 //! Message Stream outgoing stream (write into NetworkMessage )
 struct MessageOutStream : public MessageStreamBase // into netmessage
 {
-    void serdesFixedStringImpl( ork::fixedstring_base& str ) override
+    void serdesFixedStringImpl( ork::FixedStringBase& str ) override
     {
         mMessage.writeString(str.c_str());
     }
@@ -306,7 +306,7 @@ struct MessageInpStream : public MessageStreamBase // outof netmessage
 {
     MessageInpStream() : mIterator(mMessage) {}
 
-    void serdesFixedStringImpl( ork::fixedstring_base& str ) override
+    void serdesFixedStringImpl( ork::FixedStringBase& str ) override
     {
         // todo make me more efficient!!!
         std::string inp = mMessage.readString(mIterator);

@@ -14,6 +14,13 @@
 namespace ork::lev2::orkidvr {
 ////////////////////////////////////////////////////////////////////////////////
 
+static ork::LockedResource<VrTrackingNotificationReceiver_set> gnotifset;
+void addVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t recvr) {
+  gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset){
+    notifset.insert(recvr);
+  });
+}
+
 fmtx4 steam34tofmtx4(const _ovr::HmdMatrix34_t& matPose) {
   fmtx4 orkmtx = fmtx4::Identity;
   for (int i = 0; i < 3; i++)
@@ -75,8 +82,13 @@ OpenVrDevice::OpenVrDevice() {
     ///////////////////////////////////////////////////////////
 
     std::string configpath;
-    genviron.get("OBT_STAGE",configpath);
-    configpath = configpath+"/controller.json";
+    if( genviron.get("OVR_CONTROLLER_JSON",configpath) ){
+      // we already have the config path...
+    }
+    else {
+      genviron.get("OBT_STAGE",configpath);
+      configpath = configpath+"/controller.json";
+    }
     if(boost::filesystem::exists(configpath)){
     	FILE* fin = fopen(configpath.c_str(),"rt");
       assert(fin!=nullptr);
@@ -307,6 +319,21 @@ void OpenVrDevice::_processControllerEvents() {
       }
       _prevthumbL = curthumbL;
       _prevthumbR = curthumbR;
+
+      ///////////////////////////////////////////////////////////
+      // notification receivers
+      ///////////////////////////////////////////////////////////
+
+      ork::svar256_t notifvar;
+      auto& ctrlnotiffram = notifvar.Make<VrTrackingControllerNotificationFrame>();
+      ctrlnotiffram._left = LCONTROLLER;
+      ctrlnotiffram._right = RCONTROLLER;
+      gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset){
+        for( auto recvr : notifset ){
+            recvr->_callback(notifvar);
+          }
+      });
+
     } // if( _rightControllerDeviceIndex>=0 and _leftControllerDeviceIndex>=0 ){
   }
 
@@ -317,6 +344,16 @@ void OpenVrDevice::_processControllerEvents() {
     actionSet.ulActionSet                 = actset_demo;
     // _ovr::VRInput()->UpdateActionState( &actionSet, sizeof(actionSet), 1 );
   }
+
+  if (_rightControllerDeviceIndex >= 0 and _leftControllerDeviceIndex >= 0) {
+
+    using inpmgr    = lev2::InputManager;
+    auto& handgroup = *inpmgr::inputGroup("hands");
+
+    auto& LCONTROLLER = _controllers[_leftControllerDeviceIndex];
+    auto& RCONTROLLER = _controllers[_rightControllerDeviceIndex];
+  }
+
   //////////////////////////////////////////////
 }
 
@@ -448,6 +485,16 @@ void OpenVrDevice::_updatePoses(fmtx4 observermatrix) {
       hmdmatrix.inverseOf(_poseMatrices[_ovr::k_unTrackedDeviceIndex_Hmd]);
       _posemap["hmd"] = hmdmatrix;
       _hmdinputgroup.setChannel("hmdmatrix").as<fmtx4>(hmdmatrix);
+
+      ork::svar256_t notifvar;
+      auto& hmdnotiffram = notifvar.Make<VrTrackingHmdPoseNotificationFrame>();
+      hmdnotiffram._hmdMatrix = hmdmatrix;
+      gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset){
+        for( auto recvr : notifset ){
+            recvr->_callback(notifvar);
+          }
+      });
+
     }
 
     _updatePosesCommon(observermatrix);
