@@ -1130,7 +1130,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, bool autogenmips) {
   switch(ptex->_texFormat){
     case EBUFFMT_RGBA8:
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, ptex->_width, ptex->_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex->_data);
-      printf( "tex<%p:%s> updatedata<%p>\n", ptex, ptex->_debugName.c_str(), ptex->_data);
+      //printf( "tex<%p:%s> updatedata<%p>\n", ptex, ptex->_debugName.c_str(), ptex->_data);
       break;
     default:
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, ptex->_width, ptex->_height, 0, GL_RGBA, GL_FLOAT, ptex->_data);

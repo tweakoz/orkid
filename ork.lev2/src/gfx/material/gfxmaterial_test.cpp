@@ -314,7 +314,7 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
 
   if (mCurrentTexture && hColorMap) {
     //if (IsDebug())
-    printf("Binding texmap<%p:%s> to param<%p>\n", mCurrentTexture, mCurrentTexture->_debugName.c_str(), hColorMap);
+    //printf("Binding texmap<%p:%s> to param<%p>\n", mCurrentTexture, mCurrentTexture->_debugName.c_str(), hColorMap);
     FXI->BindParamCTex(hModFX, hColorMap, mCurrentTexture);
   }
   if (mCurrentTexture2 && hColorMap2) {
