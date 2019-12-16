@@ -488,7 +488,7 @@ void OpenVrDevice::_updatePoses(fmtx4 observermatrix) {
 
       ork::svar256_t notifvar;
       auto& hmdnotiffram = notifvar.Make<VrTrackingHmdPoseNotificationFrame>();
-      hmdnotiffram._hmdMatrix = hmdmatrix;
+      hmdnotiffram._hmdMatrix = _poseMatrices[_ovr::k_unTrackedDeviceIndex_Hmd];
       gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset){
         for( auto recvr : notifset ){
             recvr->_callback(notifvar);
