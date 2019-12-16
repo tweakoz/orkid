@@ -22,4 +22,5 @@ public:
   virtual void initTextureFromData(Texture* ptex, bool autogenmips) {}
   virtual Texture* createFromMipChain(MipChain* from_chain) { return nullptr; }
   virtual void generateMipMaps(Texture* ptex) = 0;
+
 };

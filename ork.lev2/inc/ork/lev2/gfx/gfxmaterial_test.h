@@ -109,6 +109,7 @@ protected:
   const FxShaderTechnique* hTekUser = nullptr;
   const FxShaderTechnique* hTekUserStereo = nullptr;
   const FxShaderTechnique* hTekTexColor = nullptr;
+  const FxShaderTechnique* hTekTexColorStereo = nullptr;
   const FxShaderTechnique* hTekTexModColor = nullptr;
   const FxShaderTechnique* hTekTexTexModColor = nullptr;
   const FxShaderTechnique* hTekTexVertexColor = nullptr;

@@ -1118,17 +1118,35 @@ void GlTextureInterface::generateMipMaps(Texture* ptex) {
 
 void GlTextureInterface::initTextureFromData(Texture* ptex, bool autogenmips) {
 
-  GLTextureObject* pTEXOBJ = new GLTextureObject;
-  ptex->_internalHandle    = (void*)pTEXOBJ;
-  glGenTextures(1, &pTEXOBJ->mObject);
+  if( nullptr == ptex->_internalHandle ){
+    auto texobj = new GLTextureObject;
+    ptex->_internalHandle    = (void*) texobj;
+    glGenTextures(1, &texobj->mObject);
+  }
+  auto pTEXOBJ = (GLTextureObject*) ptex->_internalHandle;
+
   glBindTexture(GL_TEXTURE_2D, pTEXOBJ->mObject);
 
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, ptex->_width, ptex->_height, 0, GL_RGBA, GL_FLOAT, ptex->_data);
+  switch(ptex->_texFormat){
+    case EBUFFMT_RGBA8:
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, ptex->_width, ptex->_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex->_data);
+      printf( "tex<%p:%s> updatedata<%p>\n", ptex, ptex->_debugName.c_str(), ptex->_data);
+      break;
+    default:
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, ptex->_width, ptex->_height, 0, GL_RGBA, GL_FLOAT, ptex->_data);
+      break;
+  }
 
-  glGenerateMipmap(GL_TEXTURE_2D);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-  // glTexParameterf(tgt, GL_TEXTURE_MAX_LEVEL, inummips);
+
+  if( autogenmips ){
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 3);
+  }
+  else {
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+  }
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 

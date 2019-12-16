@@ -61,6 +61,7 @@ void GfxTarget::BeginFrame( void )
 	FBI()->BeginFrame();
 	GBI()->BeginFrame();
 	FXI()->BeginFrame();
+		
 //	IMI()->BeginFrame();
 
 	if( GfxEnv::GetRef().GetDefaultUIMaterial() )

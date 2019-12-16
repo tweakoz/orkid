@@ -13,6 +13,8 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+std::function<void(GfxTarget*)> FrameBufferInterface::_hackcb = nullptr;
+
 FrameBufferInterface::FrameBufferInterface( GfxTarget& tgt )
 	: mTarget(tgt)
 	, mbEnableVSync( false )
@@ -63,7 +65,7 @@ void FrameBufferInterface::PushRtGroup( RtGroup* Base )
 
 	PushScissor( r );
 	PushViewport( r );
-	//BeginFrame();	
+	//BeginFrame();
 }
 void FrameBufferInterface::PopRtGroup()
 {
@@ -96,6 +98,8 @@ SRect &FrameBufferInterface::GetViewport( void )
 void FrameBufferInterface::BeginFrame( void )
 {
 	DoBeginFrame();
+	if( _hackcb )
+		_hackcb(&mTarget);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -108,7 +112,7 @@ void FrameBufferInterface::EndFrame( void )
 ///////////////////////////////////////////////////////////////////////////////
 
 void FrameBufferInterface::PushScissor( const SRect &rScissorRect )
-{	
+{
 	maScissorStack[ miScissorStackIndex ] = rScissorRect;
 
 	int X = rScissorRect.miX;
@@ -119,8 +123,8 @@ void FrameBufferInterface::PushScissor( const SRect &rScissorRect )
 
 	if( miScissorStackIndex > 0 )
 	{
-		SRect &rParentRect = maScissorStack[ miScissorStackIndex-1 ];	
-		
+		SRect &rParentRect = maScissorStack[ miScissorStackIndex-1 ];
+
 		int PX = rParentRect.miX;
 		int PX2 = rParentRect.miX2;
 		int PY = rParentRect.miY;
@@ -170,7 +174,7 @@ SRect &FrameBufferInterface::PopScissor( void )
 		SRect &rRect = maScissorStack[ miScissorStackIndex-1 ];
 		int W = rRect.miX2 - rRect.miX;
 		int H = rRect.miY2 - rRect.miY;
-		
+
 		SetScissor( rRect.miX, rRect.miY, W, H );
 
 		return rRect;
@@ -181,9 +185,9 @@ SRect &FrameBufferInterface::PopScissor( void )
 ///////////////////////////////////////////////////////////////////////////////
 
 void FrameBufferInterface::PushViewport( const SRect &rViewportRect )
-{	
+{
 	OrkAssert( miViewportStackIndex<(kiVPStackMax-1) );
-    
+
 	int icvpx1 = miCurVPX;
 	int icvpy1 = miCurVPY;
 	int icvpx2 = miCurVPX+miCurVPW;
@@ -192,7 +196,7 @@ void FrameBufferInterface::PushViewport( const SRect &rViewportRect )
 	maViewportStack[ miViewportStackIndex ] = SRect( icvpx1, icvpy1, icvpx2, icvpy2 ); //rViewportRect;
 
 	SetViewport( rViewportRect.miX, rViewportRect.miY, rViewportRect.miW, rViewportRect.miH );
-	
+
 	//miCurVPX = rViewportRect.miX;
 	//miCurVPY = rViewportRect.miY;
 	//miCurVPW = rViewportRect.miW;
@@ -209,9 +213,9 @@ SRect &FrameBufferInterface::PopViewport( void )
 	SRect &rRect = maViewportStack[ miViewportStackIndex ];
 	int W = rRect.miX2 - rRect.miX;
 	int H = rRect.miY2 - rRect.miY;
-	
+
 	SetViewport( rRect.miX, rRect.miY, W, H );
-	
+
 	return rRect;
 }
 

@@ -112,6 +112,7 @@ void GfxMaterial3DSolid::Init(ork::lev2::GfxTarget* pTarg) {
     hTekVertexModColor = fxi->technique(hModFX, "vtxmodcolor");
     hTekModColor       = fxi->technique(hModFX, "mmodcolor");
     hTekTexColor       = fxi->technique(hModFX, "texcolor");
+    hTekTexColorStereo = fxi->technique(hModFX, "texcolorstereo");
     hTekTexModColor    = fxi->technique(hModFX, "texmodcolor");
     hTekTexTexModColor = fxi->technique(hModFX, "textexmodcolor");
     hTekTexVertexColor = fxi->technique(hModFX, "texvtxcolor");
@@ -185,7 +186,7 @@ int GfxMaterial3DSolid::BeginBlock(GfxTarget* pTarg, const RenderContextInstData
         pTarg->FXI()->BindTechnique(hModFX, hTekModColor);
         break;
       case EMODE_TEX_COLOR:
-        pTarg->FXI()->BindTechnique(hModFX, hTekTexColor);
+        pTarg->FXI()->BindTechnique(hModFX, is_stereo ? hTekTexColorStereo : hTekTexColor);
         break;
       case EMODE_TEXMOD_COLOR:
         pTarg->FXI()->BindTechnique(hModFX, hTekTexModColor);
@@ -312,8 +313,8 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
   }
 
   if (mCurrentTexture && hColorMap) {
-    if (IsDebug())
-      printf("Binding texmap<%p> to param<%p>\n", mCurrentTexture, hColorMap);
+    //if (IsDebug())
+    printf("Binding texmap<%p:%s> to param<%p>\n", mCurrentTexture, mCurrentTexture->_debugName.c_str(), hColorMap);
     FXI->BindParamCTex(hModFX, hColorMap, mCurrentTexture);
   }
   if (mCurrentTexture2 && hColorMap2) {

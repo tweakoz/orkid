@@ -80,6 +80,8 @@ public:
 
   //////////////////////////////////////////////
 
+  static std::function<void(GfxTarget*)> _hackcb;
+
 protected:
   static const int kiVPStackMax = 16;
 
