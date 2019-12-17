@@ -189,6 +189,13 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+ork::asset::FileAssetLoader* shaderLoader() {
+  static FxShaderLoader* _loader = new FxShaderLoader;
+  return _loader;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 FxShaderLoader::FxShaderLoader()
     : FileAssetLoader(FxShaderAsset::GetClassStatic()) {
   /////////////////////
@@ -215,7 +222,7 @@ bool FxShaderLoader::LoadFileAsset(asset::Asset* pAsset, ConstString filename) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void FxShaderAsset::Describe() {
-  auto loader = new FxShaderLoader;
+  auto loader = shaderLoader();
   // printf( "Registering FxShaderAsset\n" );
 
   GetClassStatic()->AddLoader(loader);
