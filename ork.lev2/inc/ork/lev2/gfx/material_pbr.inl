@@ -193,7 +193,7 @@ inline int PBRMaterial::BeginBlock(GfxTarget* targ, const RenderContextInstData&
 			tek = (_paramMapNormal?_tekRigidGBUFFER_N_STEREO:_tekRigidGBUFFER_N);
 	}
 
-  fxi->BindTechnique(_shader,_tekRigidGBUFFER_N_TEX_STEREO);
+  fxi->BindTechnique(_shader,tek);
 
   int numpasses = fxi->BeginBlock(_shader,RCID);
   assert(numpasses==1);
