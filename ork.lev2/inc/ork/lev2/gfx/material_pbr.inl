@@ -71,6 +71,8 @@ public:
   const FxShaderParam* _paramMapColor = nullptr;
   const FxShaderParam* _paramMapNormal = nullptr;
   const FxShaderParam* _paramMapRoughAndMetal = nullptr;
+	const FxShaderParam* _parInvViewSize = nullptr;
+
   Texture* _texColor = nullptr;
   Texture* _texNormal = nullptr;
   Texture* _texRoughAndMetal = nullptr;
@@ -78,6 +80,7 @@ public:
   const FxShaderTechnique* _tekRigidGBUFFER = nullptr;
   const FxShaderTechnique* _tekRigidGBUFFER_N = nullptr;
   const FxShaderTechnique* _tekRigidGBUFFER_N_STEREO = nullptr;
+	const FxShaderTechnique* _tekRigidGBUFFER_N_TEX_STEREO = nullptr;
 
   std::string _colorMapName;
   std::string _normalMapName;
@@ -86,6 +89,7 @@ public:
   std::string _amboccMapName;
   std::string _emissiveMapName;
 
+	bool _stereoVtex = false;
   bool _metalicRoughnessSingleTexture = false;
 };
 
@@ -139,6 +143,13 @@ inline bool PBRMaterial::BeginPass(GfxTarget* targ, int iPass) {
   fxi->BindParamCTex(_shader,_paramMapRoughAndMetal,_texRoughAndMetal);
   fxi->BindParamMatrix(_shader,_paramMV,mvmtx);
   const auto& world = mtxi->RefMMatrix();
+	const auto& drect = CPD.GetDstRect();
+	const auto& mrect = CPD.GetMrtRect();
+	float w = mrect.miW;
+	float h = mrect.miH;
+	//printf( "w<%g> h<%g>\n", w, h );
+	fxi->BindParamVect2( _shader, _parInvViewSize, fvec2(1.0 / w, 1.0f / h));
+
   if (CPD.isStereoOnePass() and CPD._stereoCameraMatrices) {
     auto stereomtx = CPD._stereoCameraMatrices;
     auto MVPL = stereomtx->MVPL(world);
@@ -172,11 +183,17 @@ inline int PBRMaterial::BeginBlock(GfxTarget* targ, const RenderContextInstData&
   const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
   const auto& CPD = RCFD->topCPD();
   bool is_stereo = CPD.isStereoOnePass();
-  if( _paramMapNormal ) {
-    fxi->BindTechnique(_shader, is_stereo ? _tekRigidGBUFFER_N_STEREO : _tekRigidGBUFFER_N);
-  }
-  else
-    fxi->BindTechnique(_shader,_tekRigidGBUFFER);
+
+	const FxShaderTechnique* tek = _tekRigidGBUFFER;
+
+	if( is_stereo ){
+		if( _stereoVtex )
+			tek = _tekRigidGBUFFER_N_TEX_STEREO;
+		else
+			tek = (_paramMapNormal?_tekRigidGBUFFER_N_STEREO:_tekRigidGBUFFER_N);
+	}
+
+  fxi->BindTechnique(_shader,_tekRigidGBUFFER_N_TEX_STEREO);
 
   int numpasses = fxi->BeginBlock(_shader,RCID);
   assert(numpasses==1);
@@ -202,6 +219,7 @@ inline void PBRMaterial::Init(GfxTarget* targ) /*final*/ {
   _tekRigidGBUFFER = fxi->technique(_shader,"rigid_gbuffer");
   _tekRigidGBUFFER_N = fxi->technique(_shader,"rigid_gbuffer_n");
   _tekRigidGBUFFER_N_STEREO = fxi->technique(_shader,"rigid_gbuffer_n_stereo");
+	_tekRigidGBUFFER_N_TEX_STEREO = fxi->technique(_shader,"rigid_gbuffer_n_tex_stereo");
 
   _paramMVP = fxi->parameter(_shader,"mvp");
   _paramMVPL = fxi->parameter(_shader,"mvp_l");
@@ -211,6 +229,7 @@ inline void PBRMaterial::Init(GfxTarget* targ) /*final*/ {
   _paramMapColor = fxi->parameter(_shader,"ColorMap");
   _paramMapNormal = fxi->parameter(_shader,"NormalMap");
   _paramMapRoughAndMetal = fxi->parameter(_shader,"RoughAndMetalMap");
+	_parInvViewSize = fxi->parameter(_shader,"InvViewportSize");
 
 }
 inline void PBRMaterial::Update() {

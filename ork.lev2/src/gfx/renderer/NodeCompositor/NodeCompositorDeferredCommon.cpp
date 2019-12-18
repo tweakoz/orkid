@@ -117,7 +117,7 @@ void DeferredContext::gpuInit(GfxTarget* target) {
     _rtgLaccum->SetMrt(0, bufLA);
     _accumRT = new RtGroupRenderTarget(_rtgLaccum);
     //////////////////////////////////////////////////////////////
-    
+
   }
   target->debugPopGroup();
 }
@@ -133,6 +133,7 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
   auto& ddprops                = drawdata._properties;
   auto irenderer = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
   SRect tgt_rect(0, 0, targ->GetW(), targ->GetH());
+  SRect mrt_rect(0, 0, _rtgGbuffer->GetW(), _rtgGbuffer->GetH());
   ///////////////////////////////////////////////////////////////////////////
   FBI->PushRtGroup(_rtgGbuffer);
   FBI->SetAutoClear(false); // explicit clear
@@ -144,6 +145,7 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
   CPD.mpLayerName      = &_layername;
   CPD._irendertarget   = _gbuffRT;
   CPD.SetDstRect(tgt_rect);
+  CPD.SetMrtRect(mrt_rect);
   CPD._passID       = "defgbuffer1"_crcu;
   ///////////////////////////////////////////////////////////////////////////
   auto DB              = RCFD.GetDB();
@@ -326,7 +328,7 @@ ViewData DeferredContext::computeViewData(CompositorDrawData& drawdata) {
   VD._camposmono = IVL.GetColumn(3).xyz();
 
   VD._zndc2eye = fvec2(VD._p[0].GetElemXY(3, 2), VD._p[0].GetElemXY(2, 2));
-  
+
   return VD;
 }
 
