@@ -190,8 +190,10 @@ inline int PBRMaterial::BeginBlock(GfxTarget* targ, const RenderContextInstData&
 		if( _stereoVtex )
 			tek = _tekRigidGBUFFER_N_TEX_STEREO;
 		else
-			tek = (_paramMapNormal?_tekRigidGBUFFER_N_STEREO:_tekRigidGBUFFER_N);
+			tek = _tekRigidGBUFFER_N_STEREO;
 	}
+	else if( _paramMapNormal )
+		tek = _tekRigidGBUFFER_N;
 
   fxi->BindTechnique(_shader,tek);
 

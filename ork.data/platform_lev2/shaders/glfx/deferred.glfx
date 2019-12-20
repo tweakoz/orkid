@@ -161,34 +161,45 @@ libblock lib_deferred : ub_light : ub_frg : lib_envmapping : lib_cellnoise {
     vec2 uv   = wpd._muv;
     vec4 rma = texture(MapRufMtlAlpha,uv);
 
-    vec3 metalbase = vec3(0.25);
+    vec3 metalbase = vec3(0.04);
     if( rma.w==0 ){
-
-      float metallic = rma.x;
-      float roughness = rma.y;
+      /////////////////////////
+      vec3 mtlruf = rma.zyx;
+      // pixel was written to in the gbuffer
+      float metallic = mtlruf.x;
+      float roughness = mtlruf.y;
+      float roughnessE = roughness*roughness;
+      float roughnessL = max(.01,roughness);
       float dialetric = 1.0-metallic;
-
+      /////////////////////////
+      vec3 basecolor = gbd._albedo;
+      vec3 diffcolor = mix(basecolor,vec3(0),metallic);
+      vec3 speccolor = mix(vec3(0.02),basecolor,metallic);
+      /////////////////////////
       vec3 wpos = gbd._wpos;
       vec3 epos = posatdepth(wpd,0.0);
       vec3 edir = normalize(wpos-epos);
-
       vec3 n    = texture(MapNormalL, uv).xyz*2-1;
       vec3 refl = normalize(reflect(edir,n));
-      float miplevel = clamp(EnvironmentMipBias + (roughness * EnvironmentMipScale), 0, 7);
-      vec3 env = env_dualparabaloid(refl,MapEnvironment,miplevel);
+      float miplevel = clamp(EnvironmentMipBias + (roughness * EnvironmentMipScale), 0, 10);
+      /////////////////////////
+      vec3 spec_env = env_dualparabaloid(refl,MapEnvironment,miplevel);
+      vec3 diffuse_env = env_dualparabaloid(-n,MapEnvironment,10);
       /////////////////////////
 
-      float l = clamp(dot(n,-edir),0,1); //*DiffuseIntensity;
-      vec3 ll = vec3(l)*dialetric*(DiffuseIntensity)+Ambient;
-      vec3 diffuse = gbd._albedo*ll*EnvironmentIntensity;
+      float l = clamp(dot(n,-edir),0,1)*0.5+0.5;
+      vec3 ambient = Ambient*basecolor*l*EnvironmentIntensity*dialetric;
+      float ll = dialetric*(DiffuseIntensity);
+      vec3 diffuse = basecolor*ll*EnvironmentIntensity*diffuse_env;
       float specamt = pow(metallic,0.1);
-      vec3 specular = mix(metalbase,gbd._albedo,metallic)*env*EnvironmentIntensity;
-      //specular = specular * (1.0-roughness);
-      rval = diffuse+specular;
-      //rval = env;
-      //rval = vec3(roughness);
+      vec3 specular = mix(metalbase,gbd._albedo,metallic)*spec_env*EnvironmentIntensity;
+      rval = ambient+diffuse+specular;
+      return rval;
+
     }
     else{
+      // pixel was blank to in the gbuffer
+      //  replace with environment
       vec3 epos0 = posatdepth(wpd,0.0);
       vec3 epos1 = posatdepth(wpd,1.0);
       vec3 N = normalize(epos1-epos0);
