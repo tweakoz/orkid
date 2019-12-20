@@ -558,33 +558,33 @@ void configureXgmSkeleton(const toolmesh& input, lev2::XgmModel& xgmmdlout) {
   /////////////////////////////////////
 
   auto itroot = xgmskelnodes.find("ROOT");
-  assert(itroot!=xgmskelnodes.end());
-  auto root = itroot->second;
+  if( itroot!=xgmskelnodes.end()){
+    auto root = itroot->second;
 
-  xgmskel.miRootNode = root ? root->miSkelIndex : -1;
+    xgmskel.miRootNode = root ? root->miSkelIndex : -1;
 
-	if( root ){
-		orkstack<lev2::XgmSkelNode *> NodeStack;
-		NodeStack.push( root );
-		while( false == NodeStack.empty() )
-		{	lev2::XgmSkelNode *ParNode = NodeStack.top();
-			int iparentindex = ParNode->miSkelIndex;
-			NodeStack.pop();
-			int inumchildren = ParNode->mChildren.size();
-			for( int ic=0; ic<inumchildren; ic++ )
-			{	lev2::XgmSkelNode *Child = ParNode->mChildren[ ic ];
-				int ichildindex = Child->miSkelIndex;
+  	if( root ){
+  		orkstack<lev2::XgmSkelNode *> NodeStack;
+  		NodeStack.push( root );
+  		while( false == NodeStack.empty() )
+  		{	lev2::XgmSkelNode *ParNode = NodeStack.top();
+  			int iparentindex = ParNode->miSkelIndex;
+  			NodeStack.pop();
+  			int inumchildren = ParNode->mChildren.size();
+  			for( int ic=0; ic<inumchildren; ic++ )
+  			{	lev2::XgmSkelNode *Child = ParNode->mChildren[ ic ];
+  				int ichildindex = Child->miSkelIndex;
 
-				lev2::XgmBone Bone = { iparentindex, ichildindex };
+  				lev2::XgmBone Bone = { iparentindex, ichildindex };
 
-				xgmskel.AddFlatBone( Bone );
-				NodeStack.push( Child );
-			}
-		}
-	}
-	xgmskel.mpRootNode = root;
-	xgmskel.dump();
-
+  				xgmskel.AddFlatBone( Bone );
+  				NodeStack.push( Child );
+  			}
+  		}
+  	}
+  	xgmskel.mpRootNode = root;
+  	xgmskel.dump();
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -788,7 +788,8 @@ bool GLB_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
   bool is_skinned = false;
   if( auto as_bool = tmesh._varmap.valueForKey("is_skinned").TryAs<bool>() ) {
     is_skinned = as_bool.value();
-    configureXgmSkeleton(tmesh,xgmmdlout);
+    if( is_skinned )
+      configureXgmSkeleton(tmesh,xgmmdlout);
   }
   policy.mbIsSkinned = is_skinned;
   clusterizeToolMeshToXgmMesh<XgmClusterizerStd>(tmesh, xgmmdlout);
