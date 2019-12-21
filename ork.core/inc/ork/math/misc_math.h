@@ -24,6 +24,17 @@ namespace ork {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+inline int powerOfTwoIndex (size_t inp)
+{ int index = 0;
+	while (((inp & 1) == 0) && inp > 1){
+		inp >>= 1;
+		index++;
+	}
+	return index;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 inline bool isPowerOfTwo(int ival) {
   int inumbits = 0;
   int ibitidx  = 30;

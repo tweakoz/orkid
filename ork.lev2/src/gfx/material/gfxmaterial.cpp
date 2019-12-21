@@ -42,7 +42,6 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::MaterialInstApplicator, "MaterialInstApp
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::MaterialInstItem, "MaterialInstItem")
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::MaterialInstItemMatrix, "MaterialInstItemMatrix")
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::MaterialInstItemMatrixBlock, "MaterialInstItemMatrixBlock")
-ImplementReflectionX(ork::lev2::PBRMaterial, "PBRMaterial");
 
 
 
@@ -56,106 +55,6 @@ XgmMaterialReaderContext::XgmMaterialReaderContext(Reader& r) : _reader(r) {}
 }
 namespace lev2 {
 
-
-/////////////////////////////////////////////////////////////////////////
-
-PbrMatrixBlockApplicator* PbrMatrixBlockApplicator::getApplicator() {
-  static PbrMatrixBlockApplicator* _gapplicator = new PbrMatrixBlockApplicator;
-  return _gapplicator;
-}
-
-void PBRMaterial::describeX(class_t* c) {
-
-    /////////////////////////////////////////////////////////////////
-
-    chunkfile::materialreader_t reader = [](chunkfile::XgmMaterialReaderContext& ctx)->ork::lev2::GfxMaterial*{
-
-      auto targ = ctx._varmap.typedValueForKey<GfxTarget*>("gfxtarget").value();
-      auto txi = targ->TXI();
-      const auto& embtexmap = ctx._varmap.typedValueForKey<embtexmap_t>("embtexmap").value();
-
-      int istring = 0;
-
-      ctx._inputStream->GetItem(istring);
-      auto materialname = ctx._reader.GetString(istring);
-
-      ctx._inputStream->GetItem(istring);
-      auto texbasename = ctx._reader.GetString(istring);
-      auto mtl = new PBRMaterial;
-      mtl->SetName(AddPooledString(materialname));
-      printf( "materialName<%s>\n", materialname );
-      ctx._inputStream->GetItem(istring);
-      auto begintextures = ctx._reader.GetString(istring);
-      assert(0==strcmp(begintextures,"begintextures"));
-      bool done = false;
-      while( false==done ){
-        ctx._inputStream->GetItem(istring);
-        auto token = ctx._reader.GetString(istring);
-        if( 0 == strcmp(token,"endtextures"))
-          done = true;
-        else {
-          ctx._inputStream->GetItem(istring);
-          auto texname = ctx._reader.GetString(istring);
-          auto itt = embtexmap.find(texname);
-          assert(itt!=embtexmap.end());
-          auto embtex = itt->second;
-          printf( "got tex channel<%s> name<%s> embtex<%p>\n", token, texname, embtex );
-          auto tex = new lev2::Texture;
-          auto datablock = std::make_shared<DataBlock>(embtex->_srcdata,embtex->_srcdatalen);
-          bool ok = txi->LoadTexture(tex,datablock);
-          assert(ok);
-          if( 0 == strcmp(token,"colormap")){
-            mtl->_texColor = tex;
-          }
-          if( 0 == strcmp(token,"normalmap")){
-            mtl->_texNormal = tex;
-          }
-          if( 0 == strcmp(token,"metalmap")){
-            mtl->_texRoughAndMetal = tex;
-          }
-        }
-
-      }
-      return mtl;
-    };
-
-    /////////////////////////////////////////////////////////////////
-
-    chunkfile::materialwriter_t writer = [](chunkfile::XgmMaterialWriterContext& ctx){
-      auto pbrmtl = static_cast<const PBRMaterial*>(ctx._material);
-
-      int istring = ctx._writer.stringIndex(pbrmtl->mMaterialName.c_str());
-      ctx._outputStream->AddItem(istring);
-
-      istring = ctx._writer.stringIndex(pbrmtl->_textureBaseName.c_str());
-      ctx._outputStream->AddItem(istring);
-
-      auto dotex = [&](std::string channelname, std::string texname){
-        if( texname.length() ) {
-          istring = ctx._writer.stringIndex(channelname.c_str());
-          ctx._outputStream->AddItem(istring);
-          istring = ctx._writer.stringIndex(texname.c_str());
-          ctx._outputStream->AddItem(istring);
-        }
-      };
-      istring = ctx._writer.stringIndex("begintextures");
-      ctx._outputStream->AddItem(istring);
-      dotex( "colormap", pbrmtl->_colorMapName );
-      dotex( "normalmap", pbrmtl->_normalMapName );
-      dotex( "amboccmap", pbrmtl->_amboccMapName );
-      dotex( "emissivemap", pbrmtl->_emissiveMapName );
-      dotex( "roughmap", pbrmtl->_roughMapName );
-      dotex( "metalmap", pbrmtl->_metalMapName );
-      istring = ctx._writer.stringIndex("endtextures");
-      ctx._outputStream->AddItem(istring);
-
-    };
-
-    /////////////////////////////////////////////////////////////////
-
-    c->annotate("xgm.writer",writer);
-    c->annotate("xgm.reader",reader);
-}
 void MaterialInstApplicator::Describe() {}
 void MaterialInstItem::Describe() {}
 void MaterialInstItemMatrix::Describe() {}

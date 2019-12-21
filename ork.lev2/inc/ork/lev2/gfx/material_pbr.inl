@@ -41,7 +41,11 @@ public:
   PBRMaterial();
   ~PBRMaterial() final;
 
- void setTextureBaseName(std::string basename) { _textureBaseName = basename; }
+ 	void setTextureBaseName(std::string basename) { _textureBaseName = basename; }
+
+	////////////////////////////////////////////
+
+	static Texture* brdfIntegrationMap(GfxTarget* targ);
 
   ////////////////////////////////////////////
 
@@ -142,6 +146,9 @@ inline bool PBRMaterial::BeginPass(GfxTarget* targ, int iPass) {
   fxi->BindParamCTex(_shader,_paramMapNormal,_texNormal);
   fxi->BindParamCTex(_shader,_paramMapRoughAndMetal,_texRoughAndMetal);
   fxi->BindParamMatrix(_shader,_paramMV,mvmtx);
+
+	auto brdfintegtex = PBRMaterial::brdfIntegrationMap(targ);
+
   const auto& world = mtxi->RefMMatrix();
 	const auto& drect = CPD.GetDstRect();
 	const auto& mrect = CPD.GetMrtRect();
