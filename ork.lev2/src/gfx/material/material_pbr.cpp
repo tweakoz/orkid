@@ -20,6 +20,7 @@
 #include <ork/gfx/brdf.inl>
 #include <ork/pch.h>
 #include <OpenImageIO/imageio.h>
+#include <ork/kernel/datacache.inl>
 
 OIIO_NAMESPACE_USING
 
@@ -35,10 +36,6 @@ namespace ork::lev2 {
 
     if( nullptr == _map ){
 
-      printf( "Begin Compute brdfIntegrationMap\n");
-
-      // todo: use datablock cache
-      
       _map = new lev2::Texture;
       _map->_debugName = "brdfIntegrationMap";
       constexpr int DIM = 1024;
@@ -46,35 +43,67 @@ namespace ork::lev2 {
       _map->_height = DIM;
       _map->_texFormat = EBUFFMT_RGBA32F;
 
+      ///////////////////////////////
+      // dblock cache
+      ///////////////////////////////
 
-      auto texels = (float*) malloc(DIM*DIM*4*sizeof(float));
-      for( int y=0; y<DIM; y++ ){
-        float fy = float(y)/float(DIM-1);
-        int ybase = y*DIM;
-        for( int x=0; x<DIM; x++ ){
-          float fx = float(x)/float(DIM-1);
-          dvec3 output = brdf::integrateGGX<1024>(fx,fy);
-          int texidxbase = (ybase+x)*4;
-          texels[texidxbase+0] = float(output.x);
-          texels[texidxbase+1] = float(output.y);
-          texels[texidxbase+2] = float(output.z);
-          texels[texidxbase+3] = 1.0f;
-        }
+      boost::Crc64 basehasher;
+      basehasher.accumulateString(_map->_debugName); // identifier
+      basehasher.accumulateItem<float>(1.0); // version code
+      basehasher.accumulateItem<float>(DIM); // dimension
+      basehasher.finish();
+      uint64_t hashkey = basehasher.result();
+      printf( "brdfIntegrationMap hashkey<%zx>\n", hashkey);
+
+      auto dblock = DataBlockCache::findDataBlock(hashkey);
+      if( dblock ){
+        // loaded from cache
+        printf( "brdfIntegrationMap loaded from cache\n");
       }
+      else { // recompute and cache
+        printf( "Begin Compute brdfIntegrationMap\n");
+        dblock = std::make_shared<DataBlock>();
+        size_t length = DIM*DIM*4*sizeof(float);
+        auto texels = (float*) malloc(length);
+        for( int y=0; y<DIM; y++ ){
+          float fy = float(y)/float(DIM-1);
+          int ybase = y*DIM;
+          for( int x=0; x<DIM; x++ ){
+            float fx = float(x)/float(DIM-1);
+            dvec3 output = brdf::integrateGGX<1024>(fx,fy);
+            int texidxbase = (ybase+x)*4;
+            texels[texidxbase+0] = float(output.x);
+            texels[texidxbase+1] = float(output.y);
+            texels[texidxbase+2] = float(output.z);
+            texels[texidxbase+3] = 1.0f;
+          }
+        }
+        dblock->addData((void*)texels,length);
+        DataBlockCache::setDataBlock(hashkey,dblock);
+        free((void*)texels);
+        printf( "End Compute brdfIntegrationMap\n");
+      }
+
+      _map->_data = dblock->data();
+
+      ///////////////////////////////
+      // verify (debug)
+      ///////////////////////////////
+
+      if( 1 ){
+        auto outpath = file::Path::temp_dir()/"brdftest.exr";
+        auto out = ImageOutput::create(outpath.c_str());
+        assert(out!=nullptr);
+        ImageSpec spec(DIM, DIM, 4, TypeDesc::FLOAT);
+        out->open(outpath.c_str(), spec);
+        out->write_image(TypeDesc::FLOAT, dblock->data());
+        out->close();
+      }
+
+      ///////////////////////////////
+
       targ->TXI()->initTextureFromData(_map,false);
 
-      auto outpath = file::Path::temp_dir()/"brdftest.exr";
-      auto out = ImageOutput::create(outpath.c_str());
-      assert(out!=nullptr);
-      ImageSpec spec(DIM, DIM, 4, TypeDesc::FLOAT);
-      out->open(outpath.c_str(), spec);
-      out->write_image(TypeDesc::FLOAT, texels);
-      out->close();
-
-
-      free((void*)texels);
-      printf( "End Compute brdfIntegrationMap\n");
-      OrkAssert(false);
     }
     return _map;
   }

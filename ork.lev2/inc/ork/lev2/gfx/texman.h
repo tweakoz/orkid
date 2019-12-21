@@ -189,7 +189,7 @@ struct Texture
   uint64_t					_flags = 0;
   MipChain*         _chain = nullptr;
   mutable bool			_dirty = true;
-  void*							_data = nullptr;
+  const void*				_data = nullptr;
   TextureAnimationBase*	_anim = nullptr;
   mutable void*			_internalHandle = nullptr;
   GfxTarget*        _creatingTarget = nullptr;
