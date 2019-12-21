@@ -745,15 +745,15 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
 
 bool GLB_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
   ork::tool::FilterOptMap options;
-  options.SetDefault("-dice", "false");
-  options.SetDefault("-dicedim", "128.0f");
-  options.SetDefault("-in", "yo");
-  options.SetDefault("-out", "yo");
+  options.SetDefault("--dice", "false");
+  options.SetDefault("--dicedim", "128.0f");
+  options.SetDefault("--in", "yo");
+  options.SetDefault("--out", "yo");
   options.SetOptions(toklist);
-  const std::string inf  = options.GetOption("-in")->GetValue();
-  const std::string outf = options.GetOption("-out")->GetValue();
+  const std::string inf  = options.GetOption("--in")->GetValue();
+  const std::string outf = options.GetOption("--out")->GetValue();
 
-  bool bDICE = options.GetOption("-dice")->GetValue() == "true";
+  bool bDICE = options.GetOption("--dice")->GetValue() == "true";
   bool brval = false;
 
   OldSchool::SetGlobalStringVariable("StripJoinPolicy", "true");

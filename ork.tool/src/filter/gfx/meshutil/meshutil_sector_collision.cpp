@@ -1167,12 +1167,12 @@ bool DAEToSECCollision(const tokenlist& options)
 	float ftimeA = float(OldSchool::GetRef().GetLoResTime());
 
 	ork::tool::FilterOptMap	OptionsMap;
-	OptionsMap.SetDefault("-in", "coldae_in.dae");
-	OptionsMap.SetDefault("-out", "coldae_out.sec");
+	OptionsMap.SetDefault("--in", "coldae_in.dae");
+	OptionsMap.SetDefault("--out", "coldae_out.sec");
 	OptionsMap.SetOptions(options);
 
-	std::string ttv_in = OptionsMap.GetOption("-in")->GetValue();
-	std::string ttv_out = OptionsMap.GetOption("-out")->GetValue();
+	std::string ttv_in = OptionsMap.GetOption("--in")->GetValue();
+	std::string ttv_out = OptionsMap.GetOption("--out")->GetValue();
 
 	file::Path inPath(ttv_in.c_str());
 	file::Path outPath(ttv_out.c_str());

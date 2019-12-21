@@ -23,7 +23,7 @@ file::Path SaveFileRequester( const std::string& title, const std::string& ext )
 	QString FileName = QFileDialog::getSaveFileName( 0, "Export ProcTexImage", 0, "PNG (*.png)");
 	file::Path::NameType fname = FileName.toStdString().c_str();
 	gfxenv.GetGlobalLock().UnLock();
-	return fname;
+	return file::Path(fname);
 }
 
 #if defined(IX)

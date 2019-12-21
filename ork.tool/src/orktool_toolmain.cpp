@@ -161,38 +161,23 @@ int toolmain(int& argc, char **argv)
 
 		//////////////////////////////////////////
 
-		if( toklist.empty() || toklist.front() == std::string("-edit") ){
-			ToolStartupDataFolder();
-			//////////////////////////////////////////
-			#if defined( ORK_CONFIG_QT )
-			ork::tool::QtTest( argc, argv, false, false );
-			#endif
-		}
-		else if(toklist.front() == std::string("-help")){
+		if(toklist.front() == std::string("--help")){
 			orkprintf( "usage:\n" );
-			//orkprintf( "miniork_tool -data foldername                               : set the data:// folder (defaults to working directory\n" );
-			orkprintf( "miniork_tool -unittest                                     : run the miniork unittests\n" );
-			orkprintf( "miniork_tool -editor                                        : run the miniork editor\n" );
-			orkprintf( "miniork_tool -filter list                                   : list registered asset filters (eg miniork_tool -filter sf2:pxv test.sf2 yo.pxv)\n" );
-			orkprintf( "miniork_tool -filter <filtername> source dest               : filter a single asset\n" );
-			orkprintf( "miniork_tool -filtertree <filtername> sourcebase destbase   : filter a tree of assets\n" );
+			orkprintf( "miniork_tool --edit moxfile                                  : edit a specific moxfile\n" );
+			orkprintf( "miniork_tool --filter list                                   : list registered asset filters (eg miniork_tool -filter sf2:pxv test.sf2 yo.pxv)\n" );
+			orkprintf( "miniork_tool --filter <filtername> source dest               : filter a single asset\n" );
+			orkprintf( "miniork_tool --filtertree <filtername> sourcebase destbase   : filter a tree of assets\n" );
 		}
-		else if(toklist.front() == "-singul"){
-			iret = 0; //SingularityMain(argc,(const char**)argv);
-		}
-		else if(toklist.front() == std::string("-unittest")){
-    		iret = UnitTest::RunAllTests();
-		}
-		else if(toklist.front() == std::string("-filter")){
+		else if(toklist.front() == std::string("--filter")){
 			exit_gracefully = true;
 			iret = ork::tool::Main_Filter( toklist );
 		}
-		else if(toklist.front() == std::string("-execute")){
+		else if(toklist.front() == std::string("--execute")){
 			exit_gracefully = true;
 			toklist.pop_front(); // Remove -execute
 			FunctionManager::GetRef().ExecuteFunction(toklist);
 		}
-		else if(toklist.front() == std::string("-filtertree")){
+		else if(toklist.front() == std::string("--filtertree")){
 			exit_gracefully = true;
 			ork::tool::Main_FilterTree( toklist );
 		}
@@ -210,12 +195,7 @@ int toolmain(int& argc, char **argv)
 		}
 		else
 		{
-			QMessageBox msgBox;
-			msgBox.setText(errorbuffer);
-			msgBox.exec();
-			//MessageBox( 0, errorbuffer, "Fatal Error", MB_ICONERROR|MB_OK|MB_TASKMODAL );
 			assert(false);
-
 		}
 	}
 

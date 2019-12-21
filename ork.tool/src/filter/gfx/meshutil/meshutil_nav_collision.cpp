@@ -27,15 +27,15 @@ bool DAEToNAVCollision( const tokenlist& options )
 	return true;
 #if 0
 	ork::tool::FilterOptMap	OptionsMap;
-	OptionsMap.SetDefault("-in", "coldae_in.dae" );
-	OptionsMap.SetDefault("-out", "coldae_out.nav" );
+	OptionsMap.SetDefault("--in", "coldae_in.dae" );
+	OptionsMap.SetDefault("--out", "coldae_out.nav" );
 	OptionsMap.SetDefault("-layer", "collision" );
 	OptionsMap.SetOptions( options );
 
 	MeshUtil::toolmesh inmesh;
 
-	std::string ttv_in = OptionsMap.GetOption( "-in" )->GetValue();
-	std::string ttv_out = OptionsMap.GetOption( "-out" )->GetValue();
+	std::string ttv_in = OptionsMap.GetOption( "--in" )->GetValue();
+	std::string ttv_out = OptionsMap.GetOption( "--out" )->GetValue();
 	std::string layer_name = OptionsMap.GetOption( "-layer" )->GetValue();
 
 	file::Path InPath( ttv_in.c_str() );

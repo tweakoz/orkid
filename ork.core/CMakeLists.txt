@@ -33,14 +33,14 @@ add_library (ork_core SHARED ${orksrcs})
 
 IF(${APPLE})
     target_include_directories (ork_core PRIVATE /usr/local/include)
-    target_link_libraries(ork_core LINK_PUBLIC m pthread)
-    target_link_libraries(ork_core LINK_PUBLIC
+    target_link_libraries(ork_core LINK_PRIVATE m pthread)
+    target_link_libraries(ork_core LINK_PRIVATE
         "-framework AppKit"
         "-framework IOKit"
     )
-    target_link_libraries(ork_core LINK_PUBLIC objc )
+    target_link_libraries(ork_core LINK_PRIVATE objc boost_filesystem  boost_system)
 ELSEIF(${UNIX})
-    target_link_libraries(ork_core LINK_PUBLIC rt dl pthread)
+    target_link_libraries(ork_core LINK_PRIVATE rt dl pthread boost_filesystem boost_system)
 ENDIF()
 
 target_include_directories (ork_core PRIVATE ${INCD} )

@@ -40,11 +40,11 @@ void RegisterArchFilters() { AssetFilter::RegisterFilter("sbox2arch", ArchSandBo
 ///////////////////////////////////////////////////////////////////////////////
 bool ConvertArchetypeSbox2Arch(const tokenlist& toklist) {
   ork::tool::FilterOptMap options;
-  options.SetDefault("-in", "yo");
-  options.SetDefault("-out", "yo");
+  options.SetDefault("--in", "yo");
+  options.SetDefault("--out", "yo");
   options.SetOptions(toklist);
-  const std::string inf = options.GetOption("-in")->GetValue();
-  const std::string outf = options.GetOption("-out")->GetValue();
+  const std::string inf = options.GetOption("--in")->GetValue();
+  const std::string outf = options.GetOption("--out")->GetValue();
   printf("ArchSandBoxExporter says yo in<%s> out<%s>\n", inf.c_str(), outf.c_str());
 
   /////////////////////////////////////////

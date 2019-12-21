@@ -229,7 +229,7 @@ int BootQtThreadImpl(void* arg_opaq )
     file::Path fname;
 
     for( int i=0; i<args->argc; i++ )
-        if( 0 == strcmp(args->argv[i],"-edit") && (i<args->argc-1) )
+        if( 0 == strcmp(args->argv[i],"--edit") && (i<args->argc-1) )
             fname = args->argv[++i];
 
     if( fname.IsFile() )

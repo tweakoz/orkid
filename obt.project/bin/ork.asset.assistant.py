@@ -190,7 +190,7 @@ class AssetWidget(QWidget):
                print(dpex)
                print(cmd)
            else:
-               cmd = orkbin + (" -filter %s -in " % orkfilt) + srcpath + " -out " + dstpath
+               cmd = orkbin + (" --filter %s --in " % orkfilt) + srcpath + " --out " + dstpath
 
 
        class SubProc:

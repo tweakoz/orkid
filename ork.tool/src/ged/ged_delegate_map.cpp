@@ -170,8 +170,8 @@ bool MapTraverseSerializer::Serialize(const float &value)
 			if( miFloatCounter == 2 )
 			{
 				GedSimpleNode< GedMapIoDriver, fvec3 >* simplenode = new GedSimpleNode< GedMapIoDriver, fvec3 >
-					( 
-					mModel, 
+					(
+					mModel,
 					GetDecoKeyString().c_str(),
 					mProp,
 					mObject
@@ -184,13 +184,13 @@ bool MapTraverseSerializer::Serialize(const float &value)
 		else
 		{
 			//GedSimpleNode< GedMapIoDriver, float >* simplenode = new GedSimpleNode< GedMapIoDriver, float >
-			//	( 
-			//	mModel, 
+			//	(
+			//	mModel,
 			//	GetDecoKeyString().c_str(),
 			//	mProp,
 			//	mObject
 			//	);
-			//			
+			//
 			GedFloatNode<GedMapIoDriver>* pfloatnode = new GedFloatNode<GedMapIoDriver>(
 				mModel,
 				GetDecoKeyString().c_str(),
@@ -228,8 +228,8 @@ bool MapTraverseSerializer::Serialize(const rtti::ICastable *value)
 		ConstString anno = mProp->GetAnnotation( "editor.assettype" );
 		if( anno.length() )
 		{
-			GedAssetNode<GedMapIoDriver>* itemnode = new GedAssetNode<GedMapIoDriver>( 
-				mModel, 
+			GedAssetNode<GedMapIoDriver>* itemnode = new GedAssetNode<GedMapIoDriver>(
+				mModel,
 				GetDecoKeyString().c_str(),
 				mProp,
 				mObject
@@ -282,13 +282,13 @@ bool MapTraverseSerializer::Serialize(const PieceString &value)
 		{
 			OrkAssert( mMapValueTypeAnno == ConstString("filelist" ) );
 
-			GedFileNode<GedMapIoDriver>* filenode = new GedFileNode<GedMapIoDriver>( 
-				mModel, 
+			GedFileNode<GedMapIoDriver>* filenode = new GedFileNode<GedMapIoDriver>(
+				mModel,
 				GetDecoKeyString().c_str(),
 				mProp,
 				mObject
 				);
-	
+
 			filenode->RefIODriver().SetKey(mKeyDeco);
 
 			filenode->SetLabel();
@@ -299,8 +299,8 @@ bool MapTraverseSerializer::Serialize(const PieceString &value)
 		else
 		{
 			GedSimpleNode< GedMapIoDriver, PoolString >* simplenode = new GedSimpleNode< GedMapIoDriver, PoolString >
-				( 
-				mModel, 
+				(
+				mModel,
 				GetDecoKeyString().c_str(),
 				mProp,
 				mObject
@@ -328,7 +328,7 @@ MapItemWriteSerializer::MapItemWriteSerializer( GedMapIoDriver& iodriver )
 	, miFloatIndex( 0 )
 {
 	mMapProp = rtti::autocast( mIoDriver.GetProp() );
-}	
+}
 ///////////////////////////////////////////////////////////////////////////////
 void MapItemWriteSerializer::Hint(const PieceString &value)
 {
@@ -383,12 +383,12 @@ bool MapItemWriteSerializer::Deserialize(float &fv)
 		case EWT_CVECTOR3:
 			switch( miFloatIndex )
 			{
-				case 0: fv=mVector3.GetX(); break;		
-				case 1: fv=mVector3.GetY(); break;		
-				case 2: fv=mVector3.GetZ(); break;		
-				case 3: 
+				case 0: fv=mVector3.GetX(); break;
+				case 1: fv=mVector3.GetY(); break;
+				case 2: fv=mVector3.GetZ(); break;
+				case 3:
 					OrkAssert(false);
-					break;		
+					break;
 			}
 			miFloatIndex++;
 			break;
@@ -479,7 +479,7 @@ void MapItemWriteSerializer::Remove( const KeyDecoName& kdeco )
 void MapItemWriteSerializer::Move( const KeyDecoName& kdeco, const char* pname )
 {
 	ork::PropSetContext pctx( ork::PropSetContext::EPROPEDITOR );
-	
+
 	MapKeyWriter keyser( mIoDriver );
 	mIoDriver.SetKey( kdeco.mActualKey.c_str() );
 
@@ -521,7 +521,7 @@ void MapItemWriteSerializer::Move( const KeyDecoName& kdeco, const char* pname )
 void MapItemWriteSerializer::Duplicate( const KeyDecoName& kdeco, const char* pname )
 {
 	ork::PropSetContext pctx( ork::PropSetContext::EPROPEDITOR );
-	
+
 	MapKeyWriter keyser( mIoDriver );
 	mIoDriver.SetKey( kdeco.mActualKey.c_str() );
 
@@ -567,7 +567,7 @@ void MapItemWriteSerializer::Import( const KeyDecoName& kdeco, const char* pname
 	if( fname.length() )
 	{
 		ork::PropSetContext pctx( ork::PropSetContext::EPROPEDITOR );
-		
+
 		////////////////////////////////////////////////
 		// write temp item to new key
 		////////////////////////////////////////////////
@@ -576,7 +576,7 @@ void MapItemWriteSerializer::Import( const KeyDecoName& kdeco, const char* pname
 		{
 			stream::FileInputStream istream(fname.c_str());
 			reflect::serialize::XMLDeserializer iser(istream);
-		
+
 			GedMapIoDriver niodriver( mIoDriver.GetModel(), mIoDriver.GetProp(), mIoDriver.GetObject() );
 			niodriver.SetKey( KeyDecoName(pname,0) );
 			MapKeyWriter keyser2( niodriver );
@@ -601,7 +601,7 @@ void MapItemWriteSerializer::Export( const KeyDecoName& kdeco, const char* pname
 		if( ork::FileEnv::filespec_to_extension( fname ).length() == 0 ) fname += ".mit";
 
 		ork::PropSetContext pctx( ork::PropSetContext::EPROPEDITOR );
-	
+
 		lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
 		{
 			MapKeyWriter keyser( mIoDriver );
@@ -661,7 +661,7 @@ void MapItemWriteSerializer::SetValue( const fvec3& v3 )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-MapItemReadSerializer::MapItemReadSerializer( const GedMapIoDriver& ioDriver)	
+MapItemReadSerializer::MapItemReadSerializer( const GedMapIoDriver& ioDriver)
 	: reflect::serialize::LayerSerializer(mNullSer)
 	, mIoDriver( ioDriver )
 	, mMapProp( 0 )
@@ -697,17 +697,17 @@ bool MapItemReadSerializer::Serialize(const rtti::ICastable *value) //virtual
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool MapItemReadSerializer::Serialize(const float& value)
-{	
+{
 	switch( meReadType )
 	{
 		case ERT_CVECTOR3:
 		{
 			switch( miFloatIndex )
 			{
-				case 0:	mVector3.SetX( value ); break;	
-				case 1:	mVector3.SetY( value );	break;	
-				case 2:	mVector3.SetZ( value );	break;	
-				case 3:	
+				case 0:	mVector3.SetX( value ); break;
+				case 1:	mVector3.SetY( value );	break;
+				case 2:	mVector3.SetZ( value );	break;
+				case 3:
 					OrkAssert(false);
 			}
 			miFloatIndex++;
@@ -717,12 +717,12 @@ bool MapItemReadSerializer::Serialize(const float& value)
 			mFloat = value;
 			break;
 	}
-	
+
 	return reflect::serialize::LayerSerializer::Serialize(value);
 }
 ///////////////////////////////////////////////////////////////////////////////
 const ork::asset::Asset* MapItemReadSerializer::GetAsset()
-{	
+{
 	meReadType = ERT_NEWASSET;
 	if( mIoDriver.mDecoKey.mActualKey == "" )
 	{
@@ -736,7 +736,7 @@ const ork::asset::Asset* MapItemReadSerializer::GetAsset()
 }
 ///////////////////////////////////////////////////////////////////////////////
 PoolString MapItemReadSerializer::GetPoolString()
-{	
+{
 	meReadType = ERT_POOLSTRING;
 	if( mIoDriver.mDecoKey.mActualKey == "" )
 	{
@@ -749,11 +749,11 @@ PoolString MapItemReadSerializer::GetPoolString()
 }
 ///////////////////////////////////////////////////////////////////////////////
 file::Path MapItemReadSerializer::GetPathObject()
-{	
+{
 	meReadType = ERT_PATHOBJECT;
 	if( mIoDriver.mDecoKey.mActualKey == "" )
 	{
-		return AddPooledString("");
+		return file::Path("");
 	}
 	MapKeyWriter keyser( mIoDriver );
 	bool bok = mMapProp->SerializeItem( *this, keyser, mIoDriver.mDecoKey.miMultiIndex, mIoDriver.GetObject() );
@@ -762,7 +762,7 @@ file::Path MapItemReadSerializer::GetPathObject()
 }
 ///////////////////////////////////////////////////////////////////////////////
 float MapItemReadSerializer::GetFloat()
-{	
+{
 	meReadType = ERT_FLOAT;
 	if( mIoDriver.mDecoKey.mActualKey == "" )
 	{
@@ -775,7 +775,7 @@ float MapItemReadSerializer::GetFloat()
 }
 ///////////////////////////////////////////////////////////////////////////////
 fvec3 MapItemReadSerializer::Getfvec3()
-{	
+{
 	meReadType = ERT_CVECTOR3;
 	if( mIoDriver.mDecoKey.mActualKey == "" )
 	{
@@ -911,7 +911,7 @@ KeyDecoName::KeyDecoName( const char* pkey ) // precomposed name/index
 		size_t ilen = strlen(tempstr.c_str());
 		int ipos = (pfindcolon-tempstr.c_str());
 		const char* pindexstr = pfindcolon+1;
-		
+
 		size_t inumlen = ilen-ipos;
 
 		if( inumlen )
@@ -976,7 +976,7 @@ void GedMapNode::DuplicateItem(const ork::ui::Event& ev)
 	int ibasex = (kdim+4)*3+3;
 
 	QString qstra = GedInputDialog::getText ( ev, this, 0, ibasex, 0, miW-ibasex-6, klabh );
-	
+
 	ork::msleep(100);
 	QString qstrb = GedInputDialog::getText ( ev, this, 0, ibasex, 0, miW-ibasex-6, klabh );
 
@@ -1001,7 +1001,7 @@ void GedMapNode::DuplicateItem(const ork::ui::Event& ev)
 
 		GedMapIoDriver iodriver( mModel, mMapProp, GetOrkObj() );
 		iodriver.duplicate( kdeca, sstrb.c_str() );
-		
+
 		mModel.Attach(mModel.CurrentObject());
 
 	}
@@ -1015,7 +1015,7 @@ void GedMapNode::MoveItem(const ork::ui::Event& ev)
 	int ibasex = (kdim+4)*3+3;
 
 	QString qstra = GedInputDialog::getText ( ev, this, 0, ibasex, 0, miW-ibasex-6, klabh );
-	
+
 	ork::msleep(100);
 	QString qstrb = GedInputDialog::getText ( ev, this, 0, ibasex, 0, miW-ibasex-6, klabh );
 
@@ -1037,7 +1037,7 @@ void GedMapNode::MoveItem(const ork::ui::Event& ev)
 
 			GedMapIoDriver iodriver( mModel, mMapProp, GetOrkObj() );
 			iodriver.move( kdeca, sstrb.c_str() );
-			
+
 			mModel.Attach(mModel.CurrentObject());
 		}
 	}
@@ -1092,7 +1092,7 @@ void GedMapNode::OnMouseDoubleClicked (const ork::ui::Event& ev)
 
 	printf( "GedMapNode<%p> ilx<%d> ily<%d>\n", this, ix, iy );
 
-	if( ix >= koff && ix <= kdim 
+	if( ix >= koff && ix <= kdim
      && iy >= koff && iy <= kdim ) // drop down
 	{
 		mbSingle = ! mbSingle;
@@ -1103,7 +1103,7 @@ void GedMapNode::OnMouseDoubleClicked (const ork::ui::Event& ev)
 		HashCtx.mProperty = GetOrkProp();
 		PersistantMap* pmap = mModel.GetPersistMap( HashCtx );
 		///////////////////////////////////////////
-	
+
 		pmap->SetValue( "single", mbSingle ? "true" : "false" );
 
 		CheckVis();
@@ -1115,10 +1115,10 @@ void GedMapNode::OnMouseDoubleClicked (const ork::ui::Event& ev)
 	if( mbConst == false )
 	{
 		ix -= (kdim+4);
-		if( ix >= koff && ix <= kdim 
+		if( ix >= koff && ix <= kdim
          && iy >= koff && iy <= kdim ) // drop down
 		{
-			ObjModel& model = mModel; 
+			ObjModel& model = mModel;
 			AddItem(ev);
 			//model.Attach(model.CurrentObject());
 			printf( "MAPADDITEM\n");
@@ -1126,30 +1126,30 @@ void GedMapNode::OnMouseDoubleClicked (const ork::ui::Event& ev)
 			return;
 		}
 		ix -= (kdim+4);
-		if( ix >= koff && ix <= kdim 
+		if( ix >= koff && ix <= kdim
          && iy >= koff && iy <= kdim ) // drop down
 		{
-			ObjModel& model = mModel; 
+			ObjModel& model = mModel;
 			RemoveItem(ev);
 			//model.Attach(model.CurrentObject());
 			model.QueueUpdate();
 			return;
 		}
 		ix -= (kdim+4);
-		if( ix >= koff && ix <= kdim 
+		if( ix >= koff && ix <= kdim
          && iy >= koff && iy <= kdim ) // Move Item
 		{
-			ObjModel& model = mModel; 
+			ObjModel& model = mModel;
 			MoveItem(ev);
 			//model.Attach(model.CurrentObject());
 			model.QueueUpdate();
 			return;
 		}
 		ix -= (kdim+4);
-		if( ix >= koff && ix <= kdim 
+		if( ix >= koff && ix <= kdim
          && iy >= koff && iy <= kdim ) // Move Item
 		{
-			ObjModel& model = mModel; 
+			ObjModel& model = mModel;
 			DuplicateItem(ev);
 			//model.Attach(model.CurrentObject());
 			model.QueueUpdate();
@@ -1162,20 +1162,20 @@ void GedMapNode::OnMouseDoubleClicked (const ork::ui::Event& ev)
 	if( mbImpExp ) // Import Export
 	{
 		ix -= (kdim+4);
-		if( ix >= koff && ix <= kdim 
+		if( ix >= koff && ix <= kdim
          && iy >= koff && iy <= kdim ) // drop down
 		{
-			ObjModel& model = mModel; 
+			ObjModel& model = mModel;
 			ImportItem(ev);
 			//model.Attach(model.CurrentObject());
 			model.QueueUpdate();
 			return;
 		}
 		ix -= (kdim+4);
-		if( ix >= koff && ix <= kdim 
+		if( ix >= koff && ix <= kdim
          && iy >= koff && iy <= kdim ) // drop down
 		{
-			ObjModel& model = mModel; 
+			ObjModel& model = mModel;
 			ExportItem(ev);
 			//model.Attach(model.CurrentObject());
 			model.QueueUpdate();
@@ -1260,7 +1260,7 @@ void GedMapNode::DoDraw( lev2::GfxTarget* pTARG )
 	int dby2 = dby1+idim;
 
 	int labw = this->GetNameWidth();
-	
+
 
 	int ity = get_text_center_y();
 
@@ -1496,8 +1496,8 @@ void GedMapFactoryNode::OnMouseDoubleClicked(const ork::ui::Event& ev)
 	QMenu * qmenu = CreateFactoryMenu( Factories );
 
 	ConstString assettype_anno = GetOrkProp()->GetAnnotation( "editor.assettype" );
-	
-	
+
+
 	QAction* pact = qmenu->exec(QCursor::pos());
 
 	if( pact )
@@ -1505,7 +1505,7 @@ void GedMapFactoryNode::OnMouseDoubleClicked(const ork::ui::Event& ev)
 		QVariant UserData = pact->data();
 		std::string sname = UserData.toString().toStdString();
 		const char* pname = sname.c_str();
-		rtti::Class* pclass = rtti::Class::FindClass(pname); 
+		rtti::Class* pclass = rtti::Class::FindClass(pname);
 		ork::object::ObjectClass* poclass = rtti::autocast(pclass);
 		if( poclass )
 		{

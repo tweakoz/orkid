@@ -11,6 +11,9 @@
 
 #include <ork/kernel/tempstring.h>
 
+namespace boost::filesystem {
+	class path;
+}
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
@@ -94,12 +97,13 @@ class Path
 	};
 
 	Path();
-	Path(const PieceString &pathName);
 	Path(const char* pathName);
 	Path(const std::string pathName);
-	Path(const NameType& pathName);
-	Path(const ork::PoolString& pathName);
-	Path(const std::vector<std::string>& pathVect);
+	explicit Path(const PieceString &pathName);
+	explicit Path(const boost::filesystem::path& p);
+	explicit Path(const NameType& pathName);
+	explicit Path(const ork::PoolString& pathName);
+	explicit Path(const std::vector<std::string>& pathVect);
 
 
 	~Path();
@@ -172,6 +176,10 @@ class Path
 
 	//////////////////////////////////////////////
 
+	Path& operator / ( const Path& rhs );
+
+	//////////////////////////////////////////////
+
 	SmallNameType	GetDrive() const;
 	SmallNameType	GetExtension() const;
 	SmallNameType	GetUrlBase() const;
@@ -183,7 +191,10 @@ class Path
 	Path		StripBasePath(const NameType& base) const;
 
 	const char* c_str() const { return mPathString.c_str(); }
+	std::string toStdString() const;
 
+	boost::filesystem::path toBFS() const;
+	void fromBFS(const boost::filesystem::path& p);
 	HashType Hash() const;
 
 	//////////////////////////////////////
@@ -193,6 +204,13 @@ class Path
 	bool IsFolder() const;
 	bool IsSymLink() const;
 
+	static Path stage_dir();
+	static Path bin_dir();
+	static Path lib_dir();
+	static Path dblockcache_dir();
+	static Path share_dir();
+	static Path temp_dir();
+	static Path data_dir();
 
 private:
 
@@ -204,6 +222,7 @@ private:
 	//////////////////////////////////////
 
 };
+
 
 ///////////////////////////////////////////////////////////////////////////////
 } // ork

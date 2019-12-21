@@ -61,7 +61,7 @@ cmd += ["-DCMAKE_FIND_DEBUG_MODE=ON","--target","install"]
 
 cmd += [prj_root]
 
-ork.dep.require(["yarl","bullet","luajit","openexr","oiio","openvr","fcollada","assimp"])
+ork.dep.require(["yarl","bullet","luajit","openexr","oiio","openvr","fcollada","assimp","nvtt","astcencoder"])
 
 Command(cmd).exec()
 

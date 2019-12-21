@@ -243,7 +243,7 @@ void ArchetypeChoices::EnumerateChoices( bool bforcenocache )
 		{
 			ork::file::Path objPath(files[ifile].c_str());
 
-			ork::file::Path objBase = objPath.StripBasePath(searchbase).GetFolder(ork::file::Path::EPATHTYPE_POSIX);
+			auto objBase = ork::file::Path(objPath.StripBasePath(searchbase).GetFolder(ork::file::Path::EPATHTYPE_POSIX));
 
 			const char* pfolder = objBase.c_str();
 			const char* pname = objPath.GetName().c_str();
@@ -340,7 +340,7 @@ void SystemDataChoices::EnumerateChoices( bool bforcenocache )
 		{
 			ork::file::Path objPath(files[ifile].c_str());
 
-			ork::file::Path objBase = objPath.StripBasePath(searchbase).GetFolder(ork::file::Path::EPATHTYPE_POSIX);
+			auto objBase = ork::file::Path(objPath.StripBasePath(searchbase).GetFolder(ork::file::Path::EPATHTYPE_POSIX));
 
 			const char* pfolder = objBase.c_str();
 			const char* pname = objPath.GetName().c_str();

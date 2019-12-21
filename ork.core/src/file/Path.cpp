@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <boost/filesystem.hpp>
 
 template class ork::fixedvector< ork::file::Path,8 >;
 bool gbas1 = true;
@@ -452,7 +453,7 @@ bool Path::IsRelative() const
 Path Path::ToRelative( EPathType etype ) const
 {
 	Path rval = ToAbsoluteFolder(etype);
-	rval += GetName();
+	rval += Path(GetName());
 	rval += GetExtension().c_str();
 	return rval;
 }
@@ -1377,6 +1378,66 @@ bool Path::IsSymLink() const
     int ist = stat( c_str(), & file_stat );
     //printf( "stat<%s> : %d\n", c_str(), ist );
     return (ist==0) ? bool(S_ISREG(file_stat.st_mode)) : false;
+}
+
+std::string Path::toStdString() const {
+	return std::string(c_str());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// using BFS goes against ork::Path's memory policy of not using the
+//  heap, but were not trying to run on the DS or PSP anymore
+//  so it does not matter. Probably should start using heap allocated strings
+//  for Path anyway.. Paths tend not to be used in performance critical areas
+//  anyway.
+///////////////////////////////////////////////////////////////////////////////
+
+Path::Path(const boost::filesystem::path& p) {
+	this->Set(p.c_str());
+}
+
+boost::filesystem::path Path::toBFS() const {
+		return boost::filesystem::path(c_str());
+}
+void Path::fromBFS(const boost::filesystem::path& p){
+	Set(p.c_str());
+}
+Path& Path::operator / ( const Path& rhs ) {
+	auto a = this->toBFS();
+	auto b = rhs.toBFS();
+	auto c = a/b;
+	this->Set(c.c_str());
+	return *this;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// standard path retrieval
+///////////////////////////////////////////////////////////////////////////////
+
+Path Path::stage_dir() {
+	const char* STAGE_DIR = getenv("OBT_STAGE");
+	Path p(STAGE_DIR);
+	return p;
+}
+Path Path::data_dir() {
+	const char* ORKROOT_DIR = getenv("ORKID_WORKSPACE_ROOT");
+	Path p(ORKROOT_DIR);
+	return (p/"ork.data");
+}
+Path Path::bin_dir() {
+	return (stage_dir()/"bin");
+}
+Path Path::lib_dir() {
+	return (stage_dir()/"lib");
+}
+Path Path::dblockcache_dir() {
+	return (stage_dir()/"dblockcache");
+}
+Path Path::share_dir() {
+	return (stage_dir()/"share");
+}
+Path Path::temp_dir() {
+	return (stage_dir()/"tempdir");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

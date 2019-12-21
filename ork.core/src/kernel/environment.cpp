@@ -1,4 +1,5 @@
 #include <ork/kernel/environment.h>
+#include <ork/file/path.h>
 #include <assert.h>
 #include <string.h>
 
@@ -44,6 +45,32 @@ void Environment::init_from_envp(char** envp)
 void Environment::set( const std::string& k, const std::string& v )
 {
     mEnvMap[k] = v;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Environment::appendPath( const std::string& k, const file::Path& v ) {
+  auto it = mEnvMap.find(k);
+  if( it == mEnvMap.end() ){
+      set(k,v.toStdString());
+  }
+  else {
+    auto prev_val = it->second;
+    set(k,prev_val+":"+v.toStdString());
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Environment::prependPath( const std::string& k, const file::Path& v ) {
+  auto it = mEnvMap.find(k);
+  if( it == mEnvMap.end() ){
+      set(k,v.toStdString());
+  }
+  else {
+    auto prev_val = it->second;
+    set(k,v.toStdString()+":"+prev_val);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

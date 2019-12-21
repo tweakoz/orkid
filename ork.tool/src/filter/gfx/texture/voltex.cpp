@@ -40,12 +40,12 @@ static int NextPowerOfTwo(int inp)
 bool VolTexAssemble( const tokenlist& toklist )
 {
 	ork::tool::FilterOptMap	OptionsMap;
-	OptionsMap.SetDefault( "-in", "yo.vtc" );
-	OptionsMap.SetDefault( "-out", "yo.dds" );
+	OptionsMap.SetDefault( "--in", "yo.vtc" );
+	OptionsMap.SetDefault( "--out", "yo.dds" );
 	OptionsMap.SetOptions( toklist );
 	
-	std::string tex_in = OptionsMap.GetOption( "-in" )->GetValue();
-	std::string tex_out = OptionsMap.GetOption( "-out" )->GetValue();
+	std::string tex_in = OptionsMap.GetOption( "--in" )->GetValue();
+	std::string tex_out = OptionsMap.GetOption( "--out" )->GetValue();
 	
 	printf( "IN<%s>\n", tex_in.c_str() );
 	printf( "OUT<%s>\n", tex_out.c_str() );
@@ -111,7 +111,7 @@ bool VolTexAssemble( const tokenlist& toklist )
 		ih >>= 1;
 	}
 	outf.Close();
-	//std::string tex_pla = OptionsMap.GetOption( "-out" );
+	//std::string tex_pla = OptionsMap.GetOption( "--out" );
 	/////////////////////////////////////////////
 	//ork::file::Path InPath( tex_in.c_str() );
 

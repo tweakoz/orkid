@@ -14,17 +14,17 @@ def mkdir( actnam ):
 	os.system(cmd)
 
 def exp_anim( actnam, anmnam ):
-	cmd = "%s -filter dae:xga -in ork.data/src/actors/%s/anims/%s.dae -out ork.data/pc/actors/%s/%s.xga" % (tool,actnam,anmnam,actnam,anmnam)
+	cmd = "%s --filter dae:xga --in ork.data/src/actors/%s/anims/%s.dae --out ork.data/pc/actors/%s/%s.xga" % (tool,actnam,anmnam,actnam,anmnam)
 	print(cmd)
 	os.system(cmd)
 
 def exp_actor( actnam ):
-	cmd = "%s -filter dae:xgm -in ork.data/src/actors/%s/ref/%s.dae -out ork.data/pc/actors/%s/%s.xgm" % (tool,actnam,actnam,actnam,actnam)
+	cmd = "%s --filter dae:xgm --in ork.data/src/actors/%s/ref/%s.dae --out ork.data/pc/actors/%s/%s.xgm" % (tool,actnam,actnam,actnam,actnam)
 	print(cmd)
 	os.system(cmd)
 
 def exp_object( objnam ):
-	cmd = "%s -filter dae:xgm -in ork.data/src/environ/%s/ref/%s.dae -out ork.data/pc/environ/%s/%s.xgm" % (tool,objnam,objnam,objnam,objnam)
+	cmd = "%s --filter dae:xgm --in ork.data/src/environ/%s/ref/%s.dae --out ork.data/pc/environ/%s/%s.xgm" % (tool,objnam,objnam,objnam,objnam)
 	print(cmd)
 	os.system(cmd)
 

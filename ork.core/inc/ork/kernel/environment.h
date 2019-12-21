@@ -4,6 +4,9 @@
 #include <string>
 
 namespace ork {
+namespace file {
+	class Path;
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 class Environment
@@ -17,9 +20,11 @@ public:
 	void set( const std::string& k, const std::string& v );
 	bool has( const std::string& k ) const;
 	bool get( const std::string& k, std::string& vout ) const;
+	void appendPath( const std::string& k, const file::Path& v );
+	void prependPath( const std::string& k, const file::Path& v );
 
 	void dump() const;
-	
+
 	const env_map_t& RefMap() const { return mEnvMap; }
 
 private:

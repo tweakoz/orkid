@@ -193,16 +193,16 @@ void DAEXGMFilter::Describe()
 bool DAEXGMFilter::ConvertAsset( const tokenlist& toklist )
 {
        ork::tool::FilterOptMap options;
-       options.SetDefault( "-dice" ,"false" );
-       options.SetDefault( "-dicedim" ,"128.0f" );
+       options.SetDefault( "--dice" ,"false" );
+       options.SetDefault( "--dicedim" ,"128.0f" );
        options.SetDefault( "-in" ,"yo" );
-       options.SetDefault( "-out" ,"yo" );
+       options.SetDefault( "--out" ,"yo" );
        options.SetOptions( toklist );
 
-       const std::string inf = options.GetOption( "-in" )->GetValue();
-       const std::string outf = options.GetOption( "-out" )->GetValue();
+       const std::string inf = options.GetOption( "--in" )->GetValue();
+       const std::string outf = options.GetOption( "--out" )->GetValue();
 
-       bool bDICE = options.GetOption( "-dice" )->GetValue()=="true";
+       bool bDICE = options.GetOption( "--dice" )->GetValue()=="true";
        bool brval = false;
 
        OldSchool::SetGlobalStringVariable( "StripJoinPolicy", "true" );
@@ -272,7 +272,7 @@ bool DAEXGMFilter::ConvertTextures( CColladaModel* mdl, const file::Path& outmdl
 {
 	ork::tool::FilterOptMap options;
 	options.SetDefault( "-in", "yo" );
-	options.SetDefault( "-out", "yo" );
+	options.SetDefault( "--out", "yo" );
 	options.SetDefault( "-platform", "pc" );
 	options.SetDefault( "-flipy" ,"true" );
 	return mdl->ConvertTextures(outmdlpth, options );

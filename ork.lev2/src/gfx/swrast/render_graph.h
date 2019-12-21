@@ -371,7 +371,7 @@ struct GeoPrimTable // complete table of all primitives for the bounder/splitter
 	////////////////////////////////////////////
 };
 ///////////////////////////////////////////////////////////////////////////////
-struct IGeoPrim // reyes course primitive (pre-diced)
+struct IGeoPrim // reyes course primitive (pre--diced)
 {
 	IGeoPrim() {}
 

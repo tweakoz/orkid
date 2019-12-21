@@ -105,7 +105,8 @@ public:
       while (0 == GfxEnv::GetRef().GetLoaderTarget()) {
         ork::msleep(100);
       }
-      bool bOK = GfxEnv::GetRef().GetLoaderTarget()->TXI()->LoadTexture(pAsset->GetName(), ptex->GetTexture());
+      auto p = file::Path(pAsset->GetName());
+      bool bOK = GfxEnv::GetRef().GetLoaderTarget()->TXI()->LoadTexture(p, ptex->GetTexture());
       OrkAssert(bOK);
     }
     return true;

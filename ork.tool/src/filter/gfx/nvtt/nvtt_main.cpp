@@ -18,8 +18,8 @@ bool NvttCompress( const ork::tool::FilterOptMap& options ) ;
 bool Tga2DdsFilterDriver( const tokenlist& toklist )
 {
 	ork::tool::FilterOptMap	OptionsMap;
-	OptionsMap.SetDefault( "-in", "yo.tga" );
-	OptionsMap.SetDefault( "-out", "" );
+	OptionsMap.SetDefault( "--in", "yo.tga" );
+	OptionsMap.SetDefault( "--out", "" );
 	OptionsMap.SetDefault( "-mipfilter", "kaiser" );
 	OptionsMap.SetDefault( "-platform", "pc" );
 	OptionsMap.SetOptions( toklist );
@@ -30,8 +30,8 @@ bool Tga2DdsFilterDriver( const tokenlist& toklist )
 
 bool NvttCompress( const ork::tool::FilterOptMap& OptionsMap )
 {
-  std::string tex_in = OptionsMap.GetOption( "-in" )->GetValue();
-  std::string tex_out = OptionsMap.GetOption( "-out" )->GetValue();
+  std::string tex_in = OptionsMap.GetOption( "--in" )->GetValue();
+  std::string tex_out = OptionsMap.GetOption( "--out" )->GetValue();
   file::Path inpath( tex_in.c_str() );
   file::Path outpath( tex_out.c_str() );
 
@@ -52,14 +52,14 @@ bool NvttCompress( const ork::tool::FilterOptMap& OptionsMap )
 
     if( it != out_nodes.end() ){
       out_nodes.erase(it);
-      outpath = out_nodes;
+      outpath = file::Path(out_nodes);
     }
     it = std::find( out_nodes.begin(),
                     out_nodes.end(),
                     "src");
     if( it != out_nodes.end() ){
       (*it) = "pc";
-      outpath = out_nodes;
+      outpath = file::Path(out_nodes);
     }
 
     outpath.SetExtension("dds");

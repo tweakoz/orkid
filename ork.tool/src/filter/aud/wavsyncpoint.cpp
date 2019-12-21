@@ -100,12 +100,12 @@ void GetSubListChunks( RIFFChunk* basechunk, int ioffset, orkmultimap<U32,RIFFCh
 bool WavToMkr( const tokenlist& toklist )
 {
 	ork::tool::FilterOptMap	OptionsMap;
-	OptionsMap.SetDefault( "-in", "yo");
-	OptionsMap.SetDefault( "-out", "dude" );
+	OptionsMap.SetDefault( "--in", "yo");
+	OptionsMap.SetDefault( "--out", "dude" );
 	OptionsMap.SetOptions( toklist );
 
-	std::string ttv_in = OptionsMap.GetOption( "-in" )->GetValue();
-	std::string ttv_out = OptionsMap.GetOption( "-out" )->GetValue();
+	std::string ttv_in = OptionsMap.GetOption( "--in" )->GetValue();
+	std::string ttv_out = OptionsMap.GetOption( "--out" )->GetValue();
 
 	ork::file::Path InPath( ttv_in.c_str() );
 	ork::file::Path Outfile( ttv_out.c_str() );

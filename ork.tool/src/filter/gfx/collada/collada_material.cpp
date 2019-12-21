@@ -633,7 +633,7 @@ bool CColladaModel::ConvertTextures(const file::Path& outmdlpth, ork::tool::Filt
 
 	for( auto passet : mTextures )
 	{
-		const ork::AssetPath& path = passet->GetName();
+		auto path = ork::AssetPath(passet->GetName());
 
 		lev2::Texture* ptex = (passet==nullptr) ? nullptr : passet->GetTexture();
 
@@ -652,8 +652,8 @@ bool CColladaModel::ConvertTextures(const file::Path& outmdlpth, ork::tool::Filt
 		file::Path OutPath = outmdlpth;
 		OutPath.SetFile( path.GetName().c_str() );
 		OutPath.SetExtension( "dds" );
-		options.GetOption( "-in" )->SetValue( InPath.c_str() );
-		options.GetOption( "-out" )->SetValue( OutPath.c_str() );
+		options.GetOption( "--in" )->SetValue( InPath.c_str() );
+		options.GetOption( "--out" )->SetValue( OutPath.c_str() );
 
 		ork::file::Path::SmallNameType extension = InPath.GetExtension();
 

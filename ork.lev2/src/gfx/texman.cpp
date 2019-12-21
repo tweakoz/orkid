@@ -19,24 +19,6 @@ namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void invoke_nvcompress( std::string inpath,
-                        std::string outpath,
-                        std::string outfmt){
-  Spawner s;
-#if defined(__APPLE__)
-  s.mCommandLine = "/usr/local/bin/nvcompress ";
-#else
-  s.mCommandLine = "nvcompress ";
-#endif
-  s.mCommandLine += "-" + outfmt + " ";
-  s.mCommandLine += inpath + std::string(" ");
-  s.mCommandLine += outpath + std::string(" ");
-  s.spawnSynchronous();
-
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void TextureSamplingModeData::PresetPointAndClamp()
 {
 	mTexAddrModeU = ETEXADDR_CLAMP;

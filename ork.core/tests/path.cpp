@@ -1,6 +1,7 @@
 //
 #include <utpp/UnitTest++.h>
 #include <ork/file/path.h>
+#include <boost/filesystem.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -76,6 +77,39 @@ TEST(PathSplit)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+TEST(PathJoin){
+	Path a("/what/up");
+	auto b = a/"yo";
+	printf( "b<%s>\n", b.c_str());
+	CHECK_EQUAL( b.c_str(), "/what/up/yo");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(PathToBfs){
+	Path a("/what/up/yo");
+	auto b = a.toBFS();
+	printf( "b<%s>\n", b.c_str());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(PathFromBfs){
+	boost::filesystem::path a("/what/up/yo");
+	auto b = Path(a);
+	printf( "b<%s>\n", b.c_str());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(PathExists){
+	auto a = Path::lib_dir();
+	bool exists = boost::filesystem::exists(a.toBFS());
+	printf( "a<%s> exists<%d>\n", a.c_str(), int(exists));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 //TEST(PathHostNameTest)
 //{
 //    Path p1("http://localhost:5901/yo.txt");
@@ -84,7 +118,7 @@ TEST(PathSplit)
 //    CHECK_EQUAL( "localhost", decomp.mHostname.c_str() );
 //    // we know this fails now, I am working on it!
 //    //printf( "hname<%s>\n", decomp.mHostname.c_str() );
-//   
+//
 //}
 
 ///////////////////////////////////////////////////////////////////////////////

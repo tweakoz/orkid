@@ -57,10 +57,10 @@ struct QcCompositionCache
 	std::map<float,file::Path> mFrameHashFilenames;
 	int miNumFilesCached;
 	int miNumFilesNotCached;
-	
+
 };
 
-bool QtzToPngSequence(	const file::Path& pth, 
+bool QtzToPngSequence(	const file::Path& pth,
 						int iFPS, float fstart, float fend,
 						int iwidth, int iheight )
 {
@@ -94,7 +94,7 @@ bool QtzToPngSequence(	const file::Path& pth,
 					initOffScreenWithSize:size
 					colorSpace:csref
 					composition: pcomp ];
-					
+
 		QCREN = pqcren;
 		QCREN.Dump();
 	}
@@ -109,9 +109,9 @@ bool QtzToPngSequence(	const file::Path& pth,
 
 		std::map<float,file::Path>::const_iterator itF = QCCC.mFrameHashFilenames.find(ftime);
 		OrkAssert(itF!=QCCC.mFrameHashFilenames.end());
-		
+
 		const file::Path& texpth = itF->second;
-		
+
 		bool bEXISTS = FileEnv::GetRef().DoesFileExist( texpth.ToAbsolute() );
 
 		/////////////////////////////////////
@@ -140,32 +140,32 @@ bool QtzToPngSequence(	const file::Path& pth,
 bool QtzComposerToPng( const tokenlist& toklist )
 {
 	ork::tool::FilterOptMap	OptionsMap;
-	OptionsMap.SetDefault( "-in", "yo.qtz" );
-	OptionsMap.SetDefault( "-out", "yo.png" );
-	OptionsMap.SetDefault( "-w", "256" );
-	OptionsMap.SetDefault( "-h", "256" );
-	OptionsMap.SetDefault( "-s", "0.0" );
-	OptionsMap.SetDefault( "-e", "1.0" );
-	OptionsMap.SetDefault( "-f", "30.0" );
+	OptionsMap.SetDefault( "--in", "yo.qtz" );
+	OptionsMap.SetDefault( "--out", "yo.png" );
+	OptionsMap.SetDefault( "--width", "256" );
+	OptionsMap.SetDefault( "--height", "256" );
+	OptionsMap.SetDefault( "--starttime", "0.0" );
+	OptionsMap.SetDefault( "--endtime", "1.0" );
+	OptionsMap.SetDefault( "--fps", "30.0" );
 	OptionsMap.SetOptions( toklist );
-	
-	std::string qtz_in = OptionsMap.GetOption( "-in" )->GetValue();
-	std::string png_out = OptionsMap.GetOption( "-out" )->GetValue();
-	std::string swidth = OptionsMap.GetOption( "-w" )->GetValue();
-	std::string sheight = OptionsMap.GetOption( "-h" )->GetValue();
-	std::string sstart = OptionsMap.GetOption( "-s" )->GetValue();
-	std::string send = OptionsMap.GetOption( "-e" )->GetValue();
-	std::string sFPS = OptionsMap.GetOption( "-f" )->GetValue();
-	
+
+	std::string qtz_in = OptionsMap.GetOption( "--in" )->GetValue();
+	std::string png_out = OptionsMap.GetOption( "--out" )->GetValue();
+	std::string swidth = OptionsMap.GetOption( "--width" )->GetValue();
+	std::string sheight = OptionsMap.GetOption( "--height" )->GetValue();
+	std::string sstart = OptionsMap.GetOption( "--starttime" )->GetValue();
+	std::string send = OptionsMap.GetOption( "--endtime" )->GetValue();
+	std::string sFPS = OptionsMap.GetOption( "--fps" )->GetValue();
+
 	int iw, ih, iFPS;
 	float fstart, fend;
-	
+
 	sscanf( swidth.c_str(), "%d", & iw );
 	sscanf( sheight.c_str(), "%d", & ih );
 	sscanf( sFPS.c_str(), "%d", & iFPS );
 	sscanf( sstart.c_str(), "%f", & fstart );
 	sscanf( send.c_str(), "%f", & fend );
-	
+
 	printf( "IN<%s>\n", qtz_in.c_str() );
 	printf( "OUT<%s>\n", png_out.c_str() );
 	printf( "WIDTH<%s:%d>\n", swidth.c_str(), iw );
@@ -174,15 +174,15 @@ bool QtzComposerToPng( const tokenlist& toklist )
 	printf( "START<%s:%f>\n", sstart.c_str(), fstart );
 	printf( "END<%s:%f>\n", send.c_str(), fend );
 
-	
+
 	file::Path QtzPath( qtz_in.c_str() );
 	file::Path PngPath( png_out.c_str() );
-	
+
 	bool bQtzPresent = FileEnv::GetRef().DoesFileExist( QtzPath );
-	
+
 	if( false == bQtzPresent ) return false;
 
-	
+
 	return QtzToPngSequence(	QtzPath,
 								iFPS, fstart, fend,
 								iw, ih );

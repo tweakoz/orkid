@@ -28,11 +28,11 @@ bool DAEXGAFilter::ConvertAsset( const tokenlist& toklist )
 {
 	ork::tool::FilterOptMap options;
 	options.SetDefault( "-in" ,"yo" );
-	options.SetDefault( "-out" ,"yo" );
+	options.SetDefault( "--out" ,"yo" );
 	options.SetOptions( toklist );
 
-	const std::string inf = options.GetOption( "-in" )->GetValue();
-	const std::string outf = options.GetOption( "-out" )->GetValue();
+	const std::string inf = options.GetOption( "--in" )->GetValue();
+	const std::string outf = options.GetOption( "--out" )->GetValue();
 
 	ColladaExportPolicy policy;
 	policy.mUnits = UNITS_METER;
