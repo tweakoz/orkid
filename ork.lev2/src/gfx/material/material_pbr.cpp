@@ -6,9 +6,10 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/application/application.h>
-#include <ork/file/path.h>
+#include <ork/kernel/opq.h>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/prop.hpp>
+#include <ork/file/path.h>
 #include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxenv.h>
@@ -68,20 +69,24 @@ namespace ork::lev2 {
         for( int y=0; y<DIM; y++ ){
           float fy = float(y)/float(DIM-1);
           int ybase = y*DIM;
-          for( int x=0; x<DIM; x++ ){
-            float fx = float(x)/float(DIM-1);
-            dvec3 output = brdf::integrateGGX<1024>(fx,fy);
-            int texidxbase = (ybase+x)*4;
-            texels[texidxbase+0] = float(output.x);
-            texels[texidxbase+1] = float(output.y);
-            texels[texidxbase+2] = float(output.z);
-            texels[texidxbase+3] = 1.0f;
-          }
+          ConcurrentOpQ().push([=](){
+            for( int x=0; x<DIM; x++ ){
+              float fx = float(x)/float(DIM-1);
+              dvec3 output = brdf::integrateGGX<1024>(fx,fy);
+              int texidxbase = (ybase+x)*4;
+              texels[texidxbase+0] = float(output.x);
+              texels[texidxbase+1] = float(output.y);
+              texels[texidxbase+2] = float(output.z);
+              texels[texidxbase+3] = 1.0f;
+            }
+          });
         }
+        ConcurrentOpQ().drain();
+        printf( "End Compute brdfIntegrationMap\n");
+        fflush(stdout);
         dblock->addData((void*)texels,length);
         DataBlockCache::setDataBlock(hashkey,dblock);
         free((void*)texels);
-        printf( "End Compute brdfIntegrationMap\n");
       }
 
       _map->_data = dblock->data();

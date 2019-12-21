@@ -98,7 +98,7 @@ void OpqThread::run() // virtual
   OpqTest opqtest(popq);
 
   int slindex = 0;
-  
+
   while (EPOQSTATE_OK2KILL != _state.load()) {
     dispersed_sleep(slindex++,10); // semaphores are slowing us down
     //popq->mSemaphore.wait(); // wait for an op (without spinning)
@@ -396,8 +396,7 @@ int OpqSynchro::NumOps() const { return int(mOpCounter); }
 ///////////////////////////////////////////////////////////////////////
 static Opq gmainupdateq(0, "MainUpdateQ");
 static Opq gmainthrq(0, "MainThreadQ");
-static Opq gparallelq((OldSchool::GetNumCores()/2)-2, "ParallelQ");
-//static Opq gparallelq(4, "ParallelQ");
+static Opq gconcurrentq((OldSchool::GetNumCores()/2)-1, "ParallelQ");
 ///////////////////////////////////////////////////////////////////////////
 Opq& UpdateSerialOpQ() { return gmainupdateq; }
 ///////////////////////////////////////////////////////////////////////
@@ -405,7 +404,7 @@ Opq& EditorOpQ() { return gmainupdateq; }
 ///////////////////////////////////////////////////////////////////////
 Opq& MainThreadOpQ() { return gmainthrq; }
 ///////////////////////////////////////////////////////////////////////
-Opq& ParallelOpQ() { return gparallelq; }
+Opq& ConcurrentOpQ() { return gconcurrentq; }
 ///////////////////////////////////////////////////////////////////////
 std::shared_ptr<Opq::InternalLock> Opq::scopedLock() {
   auto l = std::make_shared<InternalLock>(*this);
@@ -418,11 +417,6 @@ Opq::InternalLock::InternalLock(Opq& opq)
 Opq::InternalLock::~InternalLock() {
   _opq._internalEndLock();
 }
-///////////////////////////////////////////////////////////////////////
-#if 1
-static Opq gconopq(1, "ConcOpQ");
-Opq& ConcurrentOpQ() { return gconopq; }
-#endif
 ///////////////////////////////////////////////////////////////////////
 void AssertOnOpQ2(Opq& the_opQ) {
   auto ot = OpqTest::GetContext();
