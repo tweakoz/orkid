@@ -13,6 +13,8 @@
 #include <ork/math/cvector4.h>
 #include <ork/file/path.h>
 #include <ork/kernel/kernel.h>
+#include <ork/kernel/datablock.inl>
+#include <ork/kernel/varmap.inl>
 
 namespace ork { namespace lev2 {
 
@@ -120,6 +122,8 @@ struct MipChain {
 
 struct Texture
 {
+    typedef std::function<bool(Texture*,TextureInterface*,DataBlockInputStream)> postproc_t;
+
 	//////////////////////////////////////////////////////
 
 	Texture();
@@ -150,20 +154,6 @@ struct Texture
 
 	//////////////////////////////////////////////////////////
 
-	template <typename T> void setProperty( const std::string & texname, T value ){
-		_textureProperties[ texname ].Set<T>(value);
-	}
-
-	template <typename T> T getProperty( const std::string & propname ) const
-	{
-		auto it =_textureProperties.find( propname );
-		return (it==_textureProperties.end())
-		          ? T()
-						  : it->second.Get<T>();
-	}
-
-	//////////////////////////////////////////////////////////
-
 	TextureAnimationBase* GetTexAnim() const { return _anim; }
 	void SetTexAnim( TextureAnimationBase* ptexanim ) { _anim=ptexanim; }
 
@@ -176,7 +166,6 @@ struct Texture
 	int								miMaxMipUniqueColors;
 
 
-	orkmap<std::string,svar64_t>	_textureProperties;
   TextureSamplingModeData			mTexSampleMode;
 
   ETextureDest			_texDest = ETEXDEST_END;
@@ -195,6 +184,7 @@ struct Texture
   GfxTarget*        _creatingTarget = nullptr;
   std::string       _debugName;
   bool _isDepthTexture = false;
+  varmap::VarMap _varmap;
 
 };
 

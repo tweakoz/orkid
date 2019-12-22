@@ -930,7 +930,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
       std::string TexName = "None";
       if (TexCtx.mpTexture) {
-        auto tname = TexCtx.mpTexture->getProperty<std::string>("abspath");
+        auto tname = TexCtx.mpTexture->_varmap.typedValueForKey<std::string>("abspath").value();
         ork::AssetPath pth(tname.c_str());
         pth.SetExtension("");
         pth.SetUrlBase("");

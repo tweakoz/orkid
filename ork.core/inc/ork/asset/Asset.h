@@ -8,17 +8,13 @@
 #endif
 #include <ork/asset/AssetClass.h>
 #include <ork/object/Object.h>
-// COMPAT
-//e#include <ork/kernel/core/object/object.h>
+#include <ork/kernel/varmap.inl>
 #include <ork/kernel/string/PoolString.h>
 
 #include <ork/config/config.h>
 
 namespace ork { namespace asset {
 
-//typedef rtti::RTTI<Asset, Object, rtti::AbstractPolicy, AssetClass> AssetBase;
-    
-// COMPAT: inheritance from CObject
 class Asset : public Object
 {
     RttiDeclareAbstractWithCategory( Asset, Object, AssetClass );
@@ -30,8 +26,9 @@ public:
 	bool Load() const;
 	bool LoadUnManaged() const;
 	bool IsLoaded() const;
-private:
-	PoolString mName;
+
+    varmap::VarMap _varmap;
+    PoolString mName;
 };
 
 } }

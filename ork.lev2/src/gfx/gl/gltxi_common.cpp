@@ -154,6 +154,10 @@ struct TexSetter {
       int& iw,
       int& ih,
       DataBlockInputStream inpstream) {
+
+      DataBlockInputStream copy_stream = inpstream;
+
+
     // size_t ifilelen       = 0;
     // EFileErrCode eFileErr = file.GetLength(ifilelen);
 
@@ -285,6 +289,13 @@ struct TexSetter {
       ih >>= 1;
       isize = iw * ih * BPP;
     }
+
+    if( tex->_varmap.hasKey("postproc") ){
+        auto postproc = tex->_varmap.typedValueForKey<Texture::postproc_t>("postproc").value();
+        bool ok = postproc(tex,txi,copy_stream);
+        OrkAssert(ok);
+    }
+
   }
   static void Set3D(
       GlTextureInterface* txi,
@@ -925,7 +936,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
 
 bool GlTextureInterface::LoadTexture(Texture* ptex, datablockptr_t datablock) {
   // todo: filetype deduction
-  return LoadDDSTexture(ptex, datablock);
+  bool ok = LoadDDSTexture(ptex, datablock);
+  return ok;
 }
 
 bool GlTextureInterface::LoadDDSTexture(Texture* ptex, datablockptr_t datablock) {

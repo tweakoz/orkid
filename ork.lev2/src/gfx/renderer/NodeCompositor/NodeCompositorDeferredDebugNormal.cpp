@@ -36,17 +36,28 @@ void DeferredCompositingNodeDebugNormal::describeX(class_t* c) {
   c->floatProperty("EnvironmentMipBias", float_range{0,12},&DeferredCompositingNodeDebugNormal::_environmentMipBias);
   c->floatProperty("EnvironmentMipScale", float_range{0,100},&DeferredCompositingNodeDebugNormal::_environmentMipScale);
   c->floatProperty("DiffuseIntensity", float_range{-5,5},&DeferredCompositingNodeDebugNormal::_diffuseIntensity);
-  auto texprop = c->accessorProperty("EnvironmentTexture", &DeferredCompositingNodeDebugNormal::_readEnvTexture, &DeferredCompositingNodeDebugNormal::_writeEnvTexture);
-  texprop->annotate<ConstString>("editor.class", "ged.factory.assetlist");
-  texprop->annotate<ConstString>("editor.assettype", "lev2tex");
-  texprop->annotate<ConstString>("editor.assetclass", "lev2tex");
 
+  c->accessorProperty("EnvironmentTexture", &DeferredCompositingNodeDebugNormal::_readEnvTexture, &DeferredCompositingNodeDebugNormal::_writeEnvTexture)
+   ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
+   ->annotate<ConstString>("editor.assettype", "lev2tex")
+   ->annotate<ConstString>("editor.assetclass", "lev2tex");
 }
+
 void DeferredCompositingNodeDebugNormal::_readEnvTexture(ork::rtti::ICastable *&tex) const {
   tex = _environmentTextureAsset;
 }
+
 void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable *const &tex) {
-_environmentTextureAsset = tex ? rtti::autocast(tex) : nullptr;
+  _environmentTextureAsset = tex ? rtti::autocast(tex) : nullptr;
+  ////////////////////////////////////////////////////////////////////////////////
+  // irradiance map postprocessor
+  ////////////////////////////////////////////////////////////////////////////////
+  _environmentTextureAsset->_varmap.makeValueForKey<Texture::postproc_t>("postproc") =
+      [](Texture*tex,TextureInterface* txi,DataBlockInputStream inpstream)->bool{
+        printf( "EnvironmentTexture Irradiance Postprocessor tex<%p:%s> inpstreamlen<%zu>...\n", tex, tex->_debugName.c_str(), inpstream.length());
+        return true;
+  };
+  ////////////////////////////////////////////////////////////////////////////////
 }
 
   lev2::Texture* DeferredCompositingNodeDebugNormal::envTexture() const {
@@ -121,8 +132,10 @@ struct IMPL {
       _context._lightingmtl.bindParamCTex(_context._parMapGBufRufMtlAlpha, _context._rtgGbuffer->GetMrt(2)->GetTexture());
       _context._lightingmtl.bindParamCTex(_context._parMapDepth, _context._rtgGbuffer->_depthTexture);
 
-      if( node->envTexture() )
-        _context._lightingmtl.bindParamCTex(_context._parMapEnvironment, node->envTexture() );
+      auto envtex = node->envTexture();
+      _context._lightingmtl.bindParamCTex(_context._parMapEnvironment, envtex);
+
+      /////////////////////////
 
       _context._lightingmtl.bindParamFloat(_context._parEnvironmentIntensity, node->environmentIntensity() );
       _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipBias, node->environmentMipBias() );

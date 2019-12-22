@@ -15,6 +15,11 @@ namespace ork::varmap {
         return noval;
     }
     ///////////////////////////////////////////////////////////////////////////
+    inline bool hasKey(const key_t& key) const {
+      auto it = _themap.find(key);
+      return ( it != _themap.end() );
+    }
+    ///////////////////////////////////////////////////////////////////////////
     inline const val_t& valueForKey(const key_t& key) const {
 
         auto it = _themap.find(key);

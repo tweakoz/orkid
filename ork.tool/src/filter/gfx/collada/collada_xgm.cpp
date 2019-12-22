@@ -178,7 +178,7 @@ struct TexSetter
 					if( bOK ){
             printf( "loaded texture<%s>\n", PathToTexture.c_str() );
 						pl2tex->SetName( ork::AddPooledString(PathToTexture.c_str()) );
-						ptex->setProperty<std::string>( "abspath", PathToTexture.c_str() );
+						ptex->_varmap.makeValueForKey<std::string>("abspath")=PathToTexture.c_str();
 						htexture = 	pl2tex;
 						mTextureMap[ PathToTexture ] = pl2tex;
 					}
@@ -241,7 +241,7 @@ void ConfigureFxMaterial( CColladaModel *ColModel, MeshUtil::ToolMaterialGroup *
 
 			if( ptexture )
 			{
-				ptexture->GetTexture()->setProperty<std::string>( "usage", param->GetRecord()._name );
+				ptexture->GetTexture()->_varmap.makeValueForKey<std::string>( "usage")=param->GetRecord()._name;
 				ColModel->AddTexture( ptexture );
 				paramf->mValue = ptexture->GetTexture();
 			}
@@ -285,22 +285,22 @@ void ConfigureStdMaterial( CColladaModel *ColModel, MeshUtil::ToolMaterialGroup 
 
 	if( DiffuseTex )
 	{
-		DiffuseTex->GetTexture()->setProperty<std::string>( "usage", "diffusemap" );
+		DiffuseTex->GetTexture()->_varmap.makeValueForKey<std::string>( "usage")="diffusemap";
 		ColModel->AddTexture( DiffuseTex );
 	}
 	if( NormalTex )
 	{
-		NormalTex->GetTexture()->setProperty<std::string>( "usage", "normalmap" );
+		NormalTex->GetTexture()->_varmap.makeValueForKey<std::string>( "usage")="normalmap";
 		ColModel->AddTexture( NormalTex );
 	}
 	if( SpecularTex )
 	{
-		SpecularTex->GetTexture()->setProperty<std::string>( "usage", "specularmap" );
+		SpecularTex->GetTexture()->_varmap.makeValueForKey<std::string>( "usage")="specularmap";
 		ColModel->AddTexture( SpecularTex );
 	}
 	if( AmbientTex )
 	{
-		AmbientTex->GetTexture()->setProperty<std::string>( "usage", "ambientmap" );
+		AmbientTex->GetTexture()->_varmap.makeValueForKey<std::string>( "usage")="ambientmap";
 		ColModel->AddTexture( AmbientTex );
 	}
 

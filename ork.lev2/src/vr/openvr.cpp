@@ -365,7 +365,7 @@ void composite(lev2::GfxTarget* targ, Texture* twoeyetex) {
 
     auto fbi = targ->FBI();
 
-    auto twoeyetexOBJ = twoeyetex->getProperty<GLuint>("gltexobj");
+    auto twoeyetexOBJ = twoeyetex->_varmap.typedValueForKey<GLuint>("gltexobj").value();
 
     _ovr::Texture_t twoEyeTexture = {(void*)(uintptr_t)twoeyetexOBJ, _ovr::TextureType_OpenGL, _ovr::ColorSpace_Gamma};
 

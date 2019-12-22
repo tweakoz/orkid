@@ -117,7 +117,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       ptex->_height         = ih;
       ptex->_internalHandle = (void*)ptexOBJ;
 
-      ptex->setProperty<GLuint>("gltexobj", FboObj->mTEX[it]);
+      ptex->_varmap.makeValueForKey<GLuint>("gltexobj")=FboObj->mTEX[it];
 
       mTargetGL.TXI()->ApplySamplingMode(ptex);
       pB->SetTexture(ptex);
@@ -171,7 +171,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     GL_ERRORCHECK();
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, FboObj->_depthTexture, 0);
     GL_ERRORCHECK();
-    Base->_depthTexture->setProperty<GLuint>("gltexobj", FboObj->_depthTexture);
+    Base->_depthTexture->_varmap.makeValueForKey<GLuint>("gltexobj") = FboObj->_depthTexture;
     mTargetGL.TXI()->ApplySamplingMode(Base->_depthTexture);
     Base->_depthTexture->_isDepthTexture = true;
     auto depthtexobj = (GLTextureObject*) Base->_depthTexture->_internalHandle;

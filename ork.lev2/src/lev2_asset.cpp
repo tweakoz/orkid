@@ -99,17 +99,19 @@ public:
 
   bool LoadFileAsset(asset::Asset* pAsset, ConstString filename) {
     ork::file::Path pth(filename.c_str());
-    {
-      TextureAsset* ptex = rtti::safe_downcast<TextureAsset*>(pAsset);
+      TextureAsset* tex_asset = rtti::safe_downcast<TextureAsset*>(pAsset);
+      if( tex_asset->_varmap.hasKey("postproc") ){
+        auto postproc = tex_asset->_varmap.typedValueForKey<Texture::postproc_t>("postproc").value();
+        tex_asset->GetTexture()->_varmap.makeValueForKey<Texture::postproc_t>("postproc")=postproc;
+      }
 
       while (0 == GfxEnv::GetRef().GetLoaderTarget()) {
         ork::msleep(100);
       }
       auto p = file::Path(pAsset->GetName());
-      bool bOK = GfxEnv::GetRef().GetLoaderTarget()->TXI()->LoadTexture(p, ptex->GetTexture());
+      bool bOK = GfxEnv::GetRef().GetLoaderTarget()->TXI()->LoadTexture(p, tex_asset->GetTexture());
       OrkAssert(bOK);
-    }
-    return true;
+      return true;
   }
 
   void DestroyAsset(asset::Asset* pAsset) {
