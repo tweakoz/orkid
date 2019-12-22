@@ -288,7 +288,7 @@ HandlerResult SplitPanel::DoOnUiEvent( const Event& Ev )
 					auto lamb = [=]()
 					{	delete this;
 					};
-					Op(lamb).QueueASync(mainThreadQueue());
+					opq::Op(lamb).QueueASync(opq::mainSerialQueue());
 
 				}
 				else

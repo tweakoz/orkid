@@ -62,15 +62,15 @@ TEST(SceneManip1)
 				    delete scenedata;
 					counter --;
 				};
-				updateSerialQueue().enqueue(Op(opl3));
+				opq::updateSerialQueue().enqueue(opl3);
 			};
-			mainThreadQueue().enqueue(Op(opl2));
+			opq::mainSerialQueue().enqueue(opl2);
 
 
 
 		};
 
-		updateSerialQueue().enqueue(Op(opl1));
+		opq::updateSerialQueue().enqueue(opl1);
 	}
 	while( counter != 0 )
 	{
@@ -177,9 +177,9 @@ TEST(ScriptCompTest)
 	    delete scenedata;
 
 	};
-	updateSerialQueue().enqueue(Op(opl1));
+	opq::updateSerialQueue().enqueue(opl1);
 
-	updateSerialQueue().drain();
+	opq::updateSerialQueue().drain();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

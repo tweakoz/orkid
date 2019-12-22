@@ -96,14 +96,14 @@ void SceneEditorVP::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::DisableSceneDisplay() {
-  ork::opq::assertOnQueue2(ork::opq::mainThreadQueue());
+  ork::opq::assertOnQueue2(ork::opq::mainSerialQueue());
   mbSceneDisplayEnable = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::EnableSceneDisplay() {
-  ork::opq::assertOnQueue2(ork::opq::mainThreadQueue());
+  ork::opq::assertOnQueue2(ork::opq::mainSerialQueue());
   mbSceneDisplayEnable = true;
 }
 
@@ -134,12 +134,12 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
       switch (sei.GetEvent()) {
         case ork::ent::SimulationEvent::ESIEV_DISABLE_UPDATE: {
           auto lamb = [=]() { gUpdateStatus.SetState(EUPD_STOP); };
-          Op(lamb).QueueASync(updateSerialQueue());
+          opq::Op(lamb).QueueASync(opq::updateSerialQueue());
           break;
         }
         case ork::ent::SimulationEvent::ESIEV_ENABLE_UPDATE: {
           auto lamb = [=]() { gUpdateStatus.SetState(EUPD_START); };
-          Op(lamb).QueueASync(updateSerialQueue());
+          opq::Op(lamb).QueueASync(opq::updateSerialQueue());
           break;
         }
         case ork::ent::SimulationEvent::ESIEV_DISABLE_VIEW: {
@@ -149,7 +149,7 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
             //# maybe show a "loading" screen or something
           };
           // mDbLock.ReleaseCurrent();
-          Op(lamb).QueueASync(mainThreadQueue());
+          opq::Op(lamb).QueueASync(opq::mainSerialQueue());
           break;
         }
         case ork::ent::SimulationEvent::ESIEV_ENABLE_VIEW: {
@@ -158,7 +158,7 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
             //#disable path that would lead to gfx globallock
             //# maybe show a "loading" screen or something
           };
-          Op(lamb).QueueASync(mainThreadQueue());
+          opq::Op(lamb).QueueASync(opq::mainSerialQueue());
           // mDbLock.ReleaseCurrent();
           break;
         }
@@ -167,12 +167,12 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
           break;
         case ork::ent::SimulationEvent::ESIEV_START: {
           auto lamb = [=]() { UpdateRefreshPolicy(); };
-          Op(lamb).QueueASync(mainThreadQueue());
+          opq::Op(lamb).QueueASync(opq::mainSerialQueue());
           break;
         }
         case ork::ent::SimulationEvent::ESIEV_STOP: {
           auto lamb = [=]() { UpdateRefreshPolicy(); };
-          Op(lamb).QueueASync(mainThreadQueue());
+          opq::Op(lamb).QueueASync(opq::mainSerialQueue());
           break;
         }
         case ork::ent::SimulationEvent::ESIEV_USER:

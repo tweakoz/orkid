@@ -174,8 +174,8 @@ OrkQtApp::OrkQtApp(int& argc, char** argv)
 ///////////////////////////////////////////////////////////////////////////////
 
 void OrkQtApp::OnTimer() {
-  OpqTest opqtest(&mainThreadQueue());
-  while (mainThreadQueue().Process())
+  opq::TrackCurrent opqtest(&opq::mainSerialQueue());
+  while (opq::mainSerialQueue().Process())
     ;
 }
 
@@ -202,8 +202,8 @@ int BootQtThreadImpl(void* arg_opaq) {
 
   InputArgs* args = (InputArgs*)arg_opaq;
 
-  auto& mainthreadopq = ork::opq::mainThreadQueue();
-  OpqTest ot(&mainthreadopq);
+  auto& mainthreadopq = ork::opq::mainSerialQueue();
+  opq::TrackCurrent ot(&mainthreadopq);
 
   int iret = 0;
 

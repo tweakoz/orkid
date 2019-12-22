@@ -368,9 +368,9 @@ bool BulletShapeBaseData::DoNotify(const event::Event *event)
 {
 	if( const ObjectGedEditEvent* pgev = rtti::autocast(event) )
 	{
-        updateSerialQueue().enqueue(Op([this](){
+        opq::updateSerialQueue().enqueue([this](){
             mShapeFactory._invalidate(this);
-		}));
+		});
 	}
 
 	return true;

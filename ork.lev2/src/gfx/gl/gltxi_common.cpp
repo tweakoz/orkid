@@ -44,8 +44,8 @@ bool GlTextureInterface::DestroyTexture(Texture* tex) {
       delete glto;
     }
   };
-  // mainThreadQueue().push(lamb,get_backtrace());
-  mainThreadQueue().enqueue(lamb);
+  // opq::mainSerialQueue().push(lamb,get_backtrace());
+  opq::mainSerialQueue().enqueue(lamb);
   return true;
 }
 
@@ -953,7 +953,7 @@ bool GlTextureInterface::LoadDDSTexture(Texture* ptex, datablockptr_t datablock)
   load_req._ddsheader = ddsh;
   load_req.pTEXOBJ    = pTEXOBJ;
   void_lambda_t lamb  = [=]() { this->LoadDDSTextureMainThreadPart(load_req); };
-  mainThreadQueue().enqueue(lamb);
+  opq::mainSerialQueue().enqueue(lamb);
   ///////////////////////////////////////////////
   return true;
 }

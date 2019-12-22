@@ -223,10 +223,11 @@ struct OperationsQueue {
 
 //////////////////////////////////////////////////////////////////////
 
-struct OpqTest : public ork::util::ContextTLS<OpqTest> {
-  OpqTest(OperationsQueue* q)
+struct TrackCurrent : public ork::util::ContextTLS<TrackCurrent> {
+  inline TrackCurrent(OperationsQueue* q)
       : _queue(q) {
   }
+  static bool is(const OperationsQueue&rhs);
   OperationsQueue* _queue;
 };
 void assertOnQueue2(OperationsQueue& the_opQ);
@@ -237,11 +238,9 @@ void assertNotOnQueue(OperationsQueue& the_opQ);
 ///////////////////////////////////////////////////////////////////////////////
 
 OperationsQueue& updateSerialQueue();
-OperationsQueue& editorQueue();
-OperationsQueue& mainThreadQueue();
+OperationsQueue& mainSerialQueue();
 OperationsQueue& concurrentQueue();
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::opq
-using namespace ork::opq; // temporary
 ///////////////////////////////////////////////////////////////////////////////

@@ -12,7 +12,7 @@
 
 //#define DEBUG_OPQ_CALLSTACK
 ///////////////////////////////////////////////////////////////////////
-template class ork::util::ContextTLS<ork::opq::OpqTest>;
+template class ork::util::ContextTLS<ork::opq::TrackCurrent>;
 ///////////////////////////////////////////////////////////////////////
 namespace ork::opq {
 void dispersed_sleep(int idx, int iquantausec) {
@@ -144,7 +144,7 @@ void OpqThread::run() // virtual
   int thid            = opqthreaddata->_threadID + 4;
   std::string channam = CreateFormattedString("opqth%d", int(thid));
 
-  OpqTest opqtest(popq);
+  TrackCurrent opqtest(popq);
 
   int slindex = 0;
 
@@ -495,13 +495,8 @@ OperationsQueue& updateSerialQueue() {
   return gupdserq;
 }
 ///////////////////////////////////////////////////////////////////////
-OperationsQueue& editorQueue() {
-  static OperationsQueue gedq(0, "editorQueue");
-  return gedq;
-}
-///////////////////////////////////////////////////////////////////////
-OperationsQueue& mainThreadQueue() {
-  static OperationsQueue gmainthrq(0, "mainThreadQueue");
+OperationsQueue& mainSerialQueue() {
+  static OperationsQueue gmainthrq(0, "mainSerialQueue");
   return gmainthrq;
 }
 ///////////////////////////////////////////////////////////////////////
@@ -533,16 +528,21 @@ OperationsQueue::InternalLock::~InternalLock() {
 }
 ///////////////////////////////////////////////////////////////////////
 void assertOnQueue2(OperationsQueue& the_opQ) {
-  auto ot = OpqTest::GetContext();
+  auto ot = TrackCurrent::GetContext();
   assert(ot->_queue == &the_opQ);
 }
 void assertOnQueue(OperationsQueue& the_opQ) {
   assertOnQueue2(the_opQ);
 }
 void assertNotOnQueue(OperationsQueue& the_opQ) {
-  auto ot = OpqTest::GetContext();
+  auto ot = TrackCurrent::GetContext();
   assert(ot->_queue != &the_opQ);
 }
+bool TrackCurrent::is(const OperationsQueue&rhs) {
+  auto ot = TrackCurrent::GetContext();
+  return &rhs==ot->_queue;
+}
+
 ///////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::opq

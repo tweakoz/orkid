@@ -136,7 +136,7 @@ struct ModItemRenderData {
     mEntity = 0;
   }
   static void QueueToLayerCallback(lev2::DrawableBufItem& cdb) {
-    ork::opq::assertOnQueue2(updateSerialQueue());
+    ork::opq::assertOnQueue2(opq::updateSerialQueue());
 
     ModItemRenderData* pmird = cdb.mUserData0.Get<ModItemRenderData*>();
 
@@ -173,7 +173,7 @@ struct ModItemRenderData {
       ork::lev2::RenderContextInstData& rcid,
       ork::lev2::GfxTarget* targ,
       const ork::lev2::CallbackRenderable* pren) {
-    ork::opq::assertOnQueue2(mainThreadQueue());
+    ork::opq::assertOnQueue2(opq::mainSerialQueue());
 
     //////////////////////////////////////////
     if (targ->FBI()->IsPickState())

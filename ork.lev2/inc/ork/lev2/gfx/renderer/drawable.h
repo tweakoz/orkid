@@ -195,7 +195,7 @@ public:
   virtual ~Drawable();
 
   virtual void enqueueToRenderQueue(const DrawableBufItem& item,
-                               lev2::IRenderer* prenderer) const = 0; // 	AssertOnOpQ2( mainThreadQueue() );
+                               lev2::IRenderer* prenderer) const = 0; // 	AssertOnOpQ2( mainSerialQueue() );
   virtual void QueueToLayer(const DrawQueueXfData& xfdata,
                             DrawableBufLayer& buffer) const = 0; // AssertOnOpQ2( updateSerialQueue() );
 

@@ -22,7 +22,7 @@ TEST(OrkFuture)
 
 	ork::Thread thr_p(l_thread);
 
-	OpqTest ot(nullptr);
+	TrackCurrent ot(nullptr);
 
     Opq the_opq(1);
 

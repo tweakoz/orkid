@@ -622,11 +622,11 @@ void CTQT::SlotRepaint() {
     ork::PerfMarkerPush("ork.viewport.draw.end");
   };
 
-  if (OpqTest::GetContext()->_queue == &mainThreadQueue()) {
+  if (opq::TrackCurrent::is(opq::mainSerialQueue())) {
     // already on main Q
     lamb();
   } else {
-    mainThreadQueue().enqueue(Op(lamb));
+    opq::mainSerialQueue().enqueue(lamb);
   }
 }
 

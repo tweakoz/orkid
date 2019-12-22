@@ -152,7 +152,7 @@ struct IMPL {
         }; // job =
         int jobindex = _lightjobcount++;
         //job();
-        concurrentQueue().enqueue(job);
+        opq::concurrentQueue().enqueue(job);
       }         // for (int ix = 0; ix <= _clusterW; ix++) {
     } // for (int iy = 0; iy <= _clusterH; iy++) {
     /////////////////////////////////////
@@ -160,7 +160,7 @@ struct IMPL {
     // printf( "Deferred::_render tilecpb time<%g>\n", time_tile_cpb-time_tile_cpa );
     /////////////////////////////////////
     while (_lightjobcount) {
-      concurrentQueue().sync();
+      opq::concurrentQueue().sync();
     }
     const float KTILESIZX = 2.0f / float(_context._clusterW);
     const float KTILESIZY = 2.0f / float(_context._clusterH);

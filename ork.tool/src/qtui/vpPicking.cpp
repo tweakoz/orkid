@@ -57,7 +57,7 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
     // stop updates, and wait for mainthread to acknowledge
     ////////////
     gUpdateStatus.SetState(EUPD_STOP);
-    updateSerialQueue().sync();
+    opq::updateSerialQueue().sync();
     ////////////
     static auto d_buf = new ork::lev2::DrawableBuffer(4);
 
@@ -71,14 +71,14 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
     RCFD.setUserProperty("DB"_crc, db_var);
 
     auto lamb = [&]() {
-      ork::opq::assertOnQueue2(updateSerialQueue());
+      ork::opq::assertOnQueue2(opq::updateSerialQueue());
       d_buf->miBufferIndex = 0;
       psi->enqueueDrawablesToBuffer(*d_buf);
       ////////////
-      mainThreadQueue().sync();
+      opq::mainSerialQueue().sync();
       ////////////
       auto op_pick = [&]() {
-        ork::opq::assertOnQueue2(mainThreadQueue());
+        ork::opq::assertOnQueue2(opq::mainSerialQueue());
         pickctx->mState     = 1;
         auto& pixel_ctx     = pickctx->_pixelctx;
         pixel_ctx.miMrtMask = 3;
@@ -95,17 +95,17 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
             pickctx->mState = 2;
             gUpdateStatus.SetState(EUPD_START);
           };
-          Op(on_pick).QueueASync(updateSerialQueue());
+          opq::Op(on_pick).QueueASync(opq::updateSerialQueue());
         } else {
           pickctx->mState = 3;
           gUpdateStatus.SetState(EUPD_START);
         }
       };
-      Op(op_pick).QueueSync(mainThreadQueue());
+      opq::Op(op_pick).QueueSync(opq::mainSerialQueue());
     };
-    Op(lamb).QueueSync(updateSerialQueue()); // HERE<<<<<<
+    opq::Op(lamb).QueueSync(opq::updateSerialQueue()); // HERE<<<<<<
   };
-  Op(outer_op).QueueASync(gPickOPQ);
+  opq::Op(outer_op).QueueASync(gPickOPQ);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -141,7 +141,7 @@ void SceneEditorVP::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::PixelFetchContext& ctx) {
-  ork::opq::assertOnQueue2(mainThreadQueue());
+  ork::opq::assertOnQueue2(opq::mainSerialQueue());
 
   const ent::Simulation* psi = mpViewport->simulation();
   ent::SceneData* pscene     = mpViewport->mEditor.mpScene;

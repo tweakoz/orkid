@@ -10,6 +10,7 @@ typedef uint32_t u32;
 typedef std::atomic<int> atomic_counter;
 
 using namespace ork;
+using namespace ork::opq;
 
 // atomic_reservoir = atomic_alloc_reservoir(USE_DEFAULT_PM,10, NULL);
 // atomic_var = atomic_alloc_variable(atomic_reservoir, NULL);

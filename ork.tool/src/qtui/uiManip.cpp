@@ -46,7 +46,7 @@ ManipHandler::ManipHandler( SceneEditorBase& editor )
 
 ui::HandlerResult ManipHandler::DoOnUiEvent( const ui::Event& EV )
 {
-	auto& updQ = updateSerialQueue();
+	auto& updQ = opq::updateSerialQueue();
 
 	ui::HandlerResult ret;
 
@@ -78,7 +78,7 @@ ui::HandlerResult ManipHandler::DoOnUiEvent( const ui::Event& EV )
 			
 			if( isleft && false == isright )
 			{
-				Op([&](){this->mEditor.ClearSelection();}).QueueSync(updQ);
+				opq::Op([&](){this->mEditor.ClearSelection();}).QueueSync(updQ);
 			}
 
 			DeferredPickOperationContext* pickctx = new DeferredPickOperationContext;

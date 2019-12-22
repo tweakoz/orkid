@@ -158,7 +158,7 @@ notok:
 		{	auto lamb = [&]()
 			{	fn->mProcessViewer->start(cmdstr.c_str());
 			};
-			mainThreadQueue().enqueueAndWait(Op(lamb));
+			opq::mainSerialQueue().enqueueAndWait(opq::Op(lamb));
 			return fn->mProcessViewer->wait();
 		}
 		return -1000;

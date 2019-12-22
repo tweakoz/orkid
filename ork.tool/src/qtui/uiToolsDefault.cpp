@@ -59,7 +59,7 @@ void TestVPDefaultHandler::DoDetach(SceneEditorVP* pvp) {
 
 void TestVPDefaultHandler::HandlePickOperation(DeferredPickOperationContext* ppickctx) {
   auto process_pick = [=](DeferredPickOperationContext* pickctx) {
-    ork::opq::assertOnQueue2(updateSerialQueue());
+    ork::opq::assertOnQueue2(opq::updateSerialQueue());
 
     SceneEditorVPToolHandler* handler = pickctx->mHandler;
 
@@ -137,7 +137,7 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
             for (orkset<ork::Object*>::const_iterator it = selection.begin(); it != selection.end(); it++)
               mEditor.EditorDeleteObject(*it);
           };
-          Op(l).QueueASync(updateSerialQueue());
+          opq::Op(l).QueueASync(opq::updateSerialQueue());
           break;
         }
         case 'c': {
@@ -193,7 +193,7 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
         pickctx->mViewport = GetViewport();
 
         auto process_pick = [=](DeferredPickOperationContext* pickctx) {
-          ork::opq::assertOnQueue2(updateSerialQueue());
+          ork::opq::assertOnQueue2(opq::updateSerialQueue());
 
           SceneEditorVPToolHandler* handler = pickctx->mHandler;
           auto& pixctx                      = pickctx->_pixelctx;

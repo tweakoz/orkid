@@ -53,7 +53,7 @@ BulletDebugDrawDBData::BulletDebugDrawDBData(BulletSystem* system)
 ///////////////////////////////////////////////////////////////////////////////
 
 void bulletDebugEnqueueToLayer(DrawableBufItem& cdb) {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   BulletDebugDrawDBData* pdata = cdb.mUserData0.Get<BulletDebugDrawDBData*>();
   auto dbger                   = pdata->_debugger;
   if (dbger->_enabled) {
@@ -65,7 +65,7 @@ void bulletDebugEnqueueToLayer(DrawableBufItem& cdb) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void PhysicsDebugger::beginSimFrame(BulletSystem* system) {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   if (_enabled) {
     _currentwritelq = nullptr;
     bool got_one    = _lineqpool.try_pop(_currentwritelq);
@@ -190,7 +190,7 @@ void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, line
 ///////////////////////////////////////////////////////////////////////////////
 
 void PhysicsDebugger::addLine(const fvec3& from, const fvec3& to, const fvec3& color) {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   if (_currentwritelq != nullptr)
     _currentwritelq->push_back(PhysicsDebuggerLine(from, to, color));
 }

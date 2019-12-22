@@ -454,9 +454,9 @@ void SceneData::cleanup() {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneData::defaultSetup(OperationsQueue& editopq) {
-  Op editOP([=]() {
-    auto updlock = updateSerialQueue().scopedLock();
+void SceneData::defaultSetup(opq::OperationsQueue& editopq) {
+  opq::Op editOP([=]() {
+    auto updlock = opq::updateSerialQueue().scopedLock();
     //////////////////////////////////////////
     // do required stuff
     //////////////////////////////////////////
@@ -494,9 +494,9 @@ void SceneData::defaultSetup(OperationsQueue& editopq) {
       // load model asset
       ////////////////////////////////////////////
       lev2::XgmModelAsset* asset = nullptr;
-      Op([&asset]() {
+      opq::Op([&asset]() {
         asset = asset::AssetManager<lev2::XgmModelAsset>::Load("data://environ/objects/misc/headwalker");
-      }).QueueSync(mainThreadQueue());
+      }).QueueSync(opq::mainSerialQueue());
       ////////////////////////////////////////////
       // perform edit
       ////////////////////////////////////////////

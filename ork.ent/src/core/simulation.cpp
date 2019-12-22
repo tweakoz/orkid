@@ -122,7 +122,7 @@ Simulation::Simulation(const SceneData* sdata, Application* application)
     , mEntityUpdateCount(0) {
   printf("new simulation <%p>\n", this);
 
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   OrkAssertI(mApplication, "Simulation must be constructed with a non-NULL Application!");
 
   auto player = new lev2::Layer;
@@ -142,7 +142,7 @@ Simulation::Simulation(const SceneData* sdata, Application* application)
 ///////////////////////////////////////////////////////////////////////////////
 Simulation::~Simulation() {
   printf("deleting simulation <%p>\n", this);
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   lev2::DrawableBuffer::BeginClearAndSyncReaders();
   for (auto it : mEntities) {
     Entity* pent = it.second;
@@ -192,7 +192,7 @@ float Simulation::ComputeDeltaTime() {
   auto compsys     = compositingSystem();
   float frame_rate = 0.0f;
 
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   float systime = float(OldSchool::GetRef().GetLoResTime());
   float fdelta  = (frame_rate != 0.0f) ? (1.0f / frame_rate) : (systime - mUpTime);
 
@@ -284,11 +284,11 @@ void Simulation::SlotSceneTopoChanged() {
     this->GetData().AutoLoadAssets();
     this->EnterEditState();
   };
-  updateSerialQueue().enqueue(Op(topo_op));
+  opq::updateSerialQueue().enqueue(opq::Op(topo_op));
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Simulation::UpdateEntityComponents(const Simulation::ComponentList& components) {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   for (Simulation::ComponentList::const_iterator it = components.begin(); it != components.end(); ++it) {
     ComponentInst* pci = (*it);
     OrkAssert(pci != 0);
@@ -303,7 +303,7 @@ ent::Entity* Simulation::GetEntity(const ent::EntData* pdata) const {
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::SetEntity(const ent::EntData* pentdata, ent::Entity* pent) {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   assert(pent != nullptr);
   mEntities[pentdata->GetName()] = pent;
 }
@@ -398,7 +398,7 @@ void Simulation::EnterEditState() {
   printf("////////////////////////\n");
   printf("%s", ANSI_COLOR_GREEN);
   lev2::DrawableBuffer::BeginClearAndSyncReaders();
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
 
   msgrouter::channel("Simulation")->postType<SimulationEvent>(this, SimulationEvent::ESIEV_BIND);
 
@@ -435,7 +435,7 @@ void Simulation::EnterRunState() {
   printf("%s", ANSI_COLOR_GREEN);
 
   lev2::DrawableBuffer::BeginClearAndSyncReaders();
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   EnterRunMode();
 
   AllocationLabel label("Simulation::EnterRunState::255");
@@ -466,7 +466,7 @@ void Simulation::EnterRunState() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Simulation::OnSimulationMode(ESimulationMode emode) {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
 
   switch (meSimulationMode) {
     case ork::ent::ESCENEMODE_ATTACHED:
@@ -507,7 +507,7 @@ void Simulation::DecomposeEntities() {
   // printf( "/////////////////////////////////////\n");
   // std::string bt = get_backtrace();
   // printf( "%s", bt.c_str() );
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   for (auto item : mEntities) {
     const ork::PoolString& name = item.first;
     ork::ent::Entity* pent      = item.second;
@@ -524,7 +524,7 @@ void Simulation::DecomposeEntities() {
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::ComposeEntities() {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   ///////////////////////////////////
   // clear runtime containers
   ///////////////////////////////////
@@ -578,7 +578,7 @@ void Simulation::ComposeEntities() {
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::LinkEntities() {
   // orkprintf( "beg si<%p> Link Entities..\n", this );
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   ///////////////////////////////////
   // Link Entities
   ///////////////////////////////////
@@ -602,7 +602,7 @@ void Simulation::LinkEntities() {
 
 void Simulation::UnLinkEntities() {
   // orkprintf( "beg si<%p> Link Entities..\n", this );
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
 
   ///////////////////////////////////
   // Link Entities
@@ -625,7 +625,7 @@ void Simulation::UnLinkEntities() {
 ///////////////////////////////////////////////////////////////////////////
 
 void Simulation::composeSystems() {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   ///////////////////////////////////
   // Systems
   ///////////////////////////////////
@@ -642,7 +642,7 @@ void Simulation::composeSystems() {
 ///////////////////////////////////////////////////////////////////////////
 
 void Simulation::decomposeSystems() {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
 
   // todo this atomic will go away when we
   //  complete opq refactor
@@ -670,7 +670,7 @@ void Simulation::LinkSystems() {
 ///////////////////////////////////////////////////////////////////////////
 
 void Simulation::UnLinkSystems() {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
 
   ///////////////////////////////////
 
@@ -687,7 +687,7 @@ void Simulation::UnLinkSystems() {
 ///////////////////////////////////////////////////////////////////////////
 
 void Simulation::StartSystems() {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   // todo this atomic will go away when we
   //  complete opq refactor
   _systems.atomicOp([&](const SystemLut& syslut) {
@@ -699,7 +699,7 @@ void Simulation::StartSystems() {
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::StopSystems() {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   // todo this atomic will go away when we
   //  complete opq refactor
   _systems.atomicOp([&](SystemLut& syslut) {
@@ -713,7 +713,7 @@ void Simulation::StopSystems() {
 
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::StartEntities() {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
 
   ///////////////////////////////////
   // Start Entities
@@ -734,7 +734,7 @@ void Simulation::StartEntities() {
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::StopEntities() {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   ///////////////////////////////////
   // Start Entities
   ///////////////////////////////////
@@ -765,7 +765,7 @@ void Simulation::QueueDeactivateEntity(Entity* pent) {
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::ActivateEntity(ent::Entity* pent) {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   // DEBUG_PRINT( "ActivateEntity<%p:%s>\n",  pent,
   // pent->GetEntData().GetName().c_str()  );
   EntitySet::iterator it = mActiveEntities.find(pent);
@@ -803,7 +803,7 @@ void Simulation::ActivateEntity(ent::Entity* pent) {
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::DeActivateEntity(ent::Entity* pent) {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   // printf( "DeActivateEntity<%p:%s>\n",  pent,
   // pent->GetEntData().GetName().c_str() );
 
@@ -863,7 +863,7 @@ bool Simulation::IsEntityActive(Entity* pent) const {
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::ServiceDeactivateQueue() {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   // Copy queue so we can queue more inside Stop
   orkvector<ent::Entity*> deactivate_queue = mEntityDeactivateQueue;
   mEntityDeactivateQueue.clear();
@@ -877,7 +877,7 @@ void Simulation::ServiceDeactivateQueue() {
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::ServiceActivateQueue() {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   // Copy queue so we can queue more inside Start
   orkvector<EntityActivationQueueItem> activate_queue = mEntityActivateQueue;
   mEntityActivateQueue.clear();
@@ -961,7 +961,7 @@ void Simulation::updateThreadTick() {
 ///////////////////////////////////////////////////////////////////////////
 
 void Simulation::enqueueDrawablesToBuffer(ork::lev2::DrawableBuffer& buffer) const {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
 
   buffer.Reset();
 
@@ -1148,7 +1148,7 @@ float Simulation::desiredFrameRate() const {
 }
 
 void Simulation::Update() {
-  ork::opq::assertOnQueue2(updateSerialQueue());
+  ork::opq::assertOnQueue2(opq::updateSerialQueue());
   // ork::msleep(1);
   ComputeDeltaTime();
   static int ictr = 0;
