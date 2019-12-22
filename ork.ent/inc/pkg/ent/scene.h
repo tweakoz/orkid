@@ -25,8 +25,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork {
-
-class Opq;
+namespace opq {
+class OperationsQueue;
+}
 class Application;
 
 namespace lev2 {
@@ -35,48 +36,47 @@ class XgmModelInst;
 class IRenderer;
 class LightManager;
 class CameraData;
-}
+} // namespace lev2
 
 namespace ent {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum EUpdateState
-{
-	EUPD_STOPPED,
-	EUPD_START,
-	EUPD_RUNNING,
-	EUPD_STOP,
+enum EUpdateState {
+  EUPD_STOPPED,
+  EUPD_START,
+  EUPD_RUNNING,
+  EUPD_STOP,
 };
 
-
-struct UpdateStatus
-{
-	UpdateStatus() : meStatus(EUPD_RUNNING) {}
-	EUpdateState meStatus;
-	void SetState(EUpdateState est);
-	EUpdateState GetState() const { return meStatus; }
+struct UpdateStatus {
+  UpdateStatus()
+      : meStatus(EUPD_RUNNING) {
+  }
+  EUpdateState meStatus;
+  void SetState(EUpdateState est);
+  EUpdateState GetState() const {
+    return meStatus;
+  }
 };
 
 extern UpdateStatus gUpdateStatus;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum ESceneDataMode
-{
-	ESCENEDATAMODE_NEW = 0,
-	ESCENEDATAMODE_INIT,
-	ESCENEDATAMODE_EDIT,
-	ESCENEDATAMODE_RUN,
+enum ESceneDataMode {
+  ESCENEDATAMODE_NEW = 0,
+  ESCENEDATAMODE_INIT,
+  ESCENEDATAMODE_EDIT,
+  ESCENEDATAMODE_RUN,
 };
 
-enum ESimulationMode
-{
-	ESCENEMODE_ATTACHED = 0,	// attached to a SceneData
-	ESCENEMODE_EDIT,			// editing
-	ESCENEMODE_RUN,				// running
-	ESCENEMODE_SINGLESTEP,		// single stepping
-	ESCENEMODE_PAUSE,			// pausing
+enum ESimulationMode {
+  ESCENEMODE_ATTACHED = 0, // attached to a SceneData
+  ESCENEMODE_EDIT,         // editing
+  ESCENEMODE_RUN,          // running
+  ESCENEMODE_SINGLESTEP,   // single stepping
+  ESCENEMODE_PAUSE,        // pausing
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -84,91 +84,95 @@ enum ESimulationMode
 /// this should never get subclassed
 ///////////////////////////////////////////////////////////////////////////////
 
-class SceneData : public ork::Object
-{
-	RttiDeclareConcrete( SceneData, ork::Object );
+class SceneData : public ork::Object {
+  RttiDeclareConcrete(SceneData, ork::Object);
 
 public:
+  typedef orkmap<PoolString, SystemData*> SystemDataLut;
 
-	typedef orkmap<PoolString,SystemData*> SystemDataLut;
+  SceneData();
+  ~SceneData(); /*virtual*/
 
-	SceneData();
-	~SceneData(); /*virtual*/
+  ESceneDataMode GetSceneDataMode() const {
+    return _sceneDataMode;
+  }
 
-	ESceneDataMode GetSceneDataMode() const { return _sceneDataMode; }
+  void AutoLoadAssets() const;
 
-	void AutoLoadAssets() const;
+  PoolString NewObjectName() const;
 
-	PoolString NewObjectName() const;
+  void cleanup();
+  void defaultSetup(opq::OperationsQueue& editopq);
 
-	void cleanup();
-	void defaultSetup(Opq&editopq);
+  //////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////
+  const SceneObject* FindSceneObjectByName(const PoolString& name) const;
+  SceneObject* FindSceneObjectByName(const PoolString& name);
+  void AddSceneObject(SceneObject* object);
+  void RemoveSceneObject(SceneObject* object);
+  bool RenameSceneObject(SceneObject* pobj, const char* pname);
+  const orkmap<PoolString, SceneObject*>& GetSceneObjects() const {
+    return _sceneObjects;
+  }
+  orkmap<PoolString, SceneObject*>& GetSceneObjects() {
+    return _sceneObjects;
+  }
 
-	const SceneObject* FindSceneObjectByName(const PoolString& name) const;
-	SceneObject* FindSceneObjectByName(const PoolString& name);
-	void AddSceneObject(SceneObject* object);
-	void RemoveSceneObject(SceneObject* object);
-	bool RenameSceneObject(SceneObject* pobj, const char* pname );
-	const orkmap<PoolString, SceneObject*> & GetSceneObjects() const { return _sceneObjects; }
-	orkmap<PoolString, SceneObject*> & GetSceneObjects() { return _sceneObjects; }
+  bool IsSceneObjectPresent(SceneObject*) const;
 
-	bool IsSceneObjectPresent(SceneObject*) const;
+  ////////////////////////////////////////////////////////////////
 
-	////////////////////////////////////////////////////////////////
+  template <typename T> T* FindTypedObject(const PoolString& pstr);
+  template <typename T> const T* FindTypedObject(const PoolString& pstr) const;
 
-	template <typename T> T* FindTypedObject( const PoolString& pstr );
-	template <typename T> const T* FindTypedObject( const PoolString& pstr ) const;
+  template <typename T> std::set<EntData*> FindEntitiesWithComponent() const;
+  template <typename T> std::set<EntData*> FindEntitiesOfArchetype() const;
 
-	template <typename T> std::set<EntData*> FindEntitiesWithComponent() const;
-	template <typename T> std::set<EntData*> FindEntitiesOfArchetype() const;
+  //////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////
+  void EnterEditState();
+  void EnterInitState();
+  void EnterRunState();
 
-	void EnterEditState();
-	void EnterInitState();
-	void EnterRunState();
+  //////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////
+  template <typename T> T* getTypedSystemData() const;
 
-	template <typename T >
-	T* getTypedSystemData() const;
+  const SystemDataLut& getSystemDatas() const {
+    return _systemDatas;
+  }
+  void addSystemData(SystemData* pcomp);
 
-	const SystemDataLut& getSystemDatas() const { return _systemDatas; }
-	void addSystemData( SystemData* pcomp );
+  void OnSceneDataMode(ESceneDataMode emode);
+  void PrepareForEdit();
+  bool PostDeserialize(reflect::IDeserializer&) final;
 
-	void OnSceneDataMode(ESceneDataMode emode);
-	void PrepareForEdit();
-	bool PostDeserialize(reflect::IDeserializer &) final;
+  //////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////
-
-	orkmap<PoolString, SceneObject*>		_sceneObjects;
-	SystemDataLut												_systemDatas;
-	ESceneDataMode											_sceneDataMode;
-	file::Path  												_sceneScriptPath;
-
+  orkmap<PoolString, SceneObject*> _sceneObjects;
+  SystemDataLut _systemDatas;
+  ESceneDataMode _sceneDataMode;
+  file::Path _sceneScriptPath;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct SceneComposer
-{
-	SceneData* mpSceneData;
+struct SceneComposer {
+  SceneData* mpSceneData;
 
-	template <typename T> T* Register();
+  template <typename T> T* Register();
 
-	SceneData* GetSceneData() const { return mpSceneData; }
+  SceneData* GetSceneData() const {
+    return mpSceneData;
+  }
 
-	SceneComposer(SceneData* psd);
-	~SceneComposer();
-
+  SceneComposer(SceneData* psd);
+  ~SceneComposer();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-
-} }
+} // namespace ent
+} // namespace ork
 
 #include "simulation.h" // temp

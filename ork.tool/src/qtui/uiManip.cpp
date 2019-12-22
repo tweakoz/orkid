@@ -46,7 +46,7 @@ ManipHandler::ManipHandler( SceneEditorBase& editor )
 
 ui::HandlerResult ManipHandler::DoOnUiEvent( const ui::Event& EV )
 {
-	auto& updQ = UpdateSerialOpQ();
+	auto& updQ = updateSerialQueue();
 
 	ui::HandlerResult ret;
 

@@ -36,14 +36,15 @@ PhysicsDebugger::PhysicsDebugger() {
   }
   _curreadlq = nullptr;
   DefaultColors mycolors;
-  mycolors.m_activeObject = btVector3(.5,1,.5);
+  mycolors.m_activeObject = btVector3(.5, 1, .5);
   setDefaultColors(mycolors);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 BulletDebugDrawDBData::BulletDebugDrawDBData(BulletSystem* system)
-    : _bulletSystem(system), _debugger(0) {
+    : _bulletSystem(system)
+    , _debugger(0) {
   for (int i = 0; i < DrawableBuffer::kmaxbuffers; i++) {
     mDBRecs[i]; //._bulletSystem = system;
   }
@@ -52,9 +53,9 @@ BulletDebugDrawDBData::BulletDebugDrawDBData(BulletSystem* system)
 ///////////////////////////////////////////////////////////////////////////////
 
 void bulletDebugEnqueueToLayer(DrawableBufItem& cdb) {
-  AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
   BulletDebugDrawDBData* pdata = cdb.mUserData0.Get<BulletDebugDrawDBData*>();
-  auto dbger = pdata->_debugger;
+  auto dbger                   = pdata->_debugger;
   if (dbger->_enabled) {
     BulletDebugDrawDBRec* prec = pdata->mDBRecs + cdb.miBufferIndex;
     cdb.mUserData1.Set(prec);
@@ -64,11 +65,11 @@ void bulletDebugEnqueueToLayer(DrawableBufItem& cdb) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void PhysicsDebugger::beginSimFrame(BulletSystem* system) {
-  AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
   if (_enabled) {
     _currentwritelq = nullptr;
-    bool got_one = _lineqpool.try_pop(_currentwritelq);
-    if( got_one ){
+    bool got_one    = _lineqpool.try_pop(_currentwritelq);
+    if (got_one) {
       assert(_currentwritelq != nullptr);
       _currentwritelq->clear();
     }
@@ -81,10 +82,9 @@ void PhysicsDebugger::endSimFrame(BulletSystem* system) {
   if (_enabled and _currentwritelq) {
     system->BulletWorld()->debugDrawWorld();
     auto prevread = _curreadlq.exchange(_currentwritelq);
-    if( prevread ) { // replacing old readbuffer
+    if (prevread) {              // replacing old readbuffer
       _lineqpool.push(prevread); // so return old readbuffer to pool
-    }
-    else {
+    } else {
       // _currentwritelq transferred to _curreadlq
     }
     _currentwritelq = nullptr;
@@ -118,19 +118,17 @@ void bulletDebugRender(RenderContextInstData& rcid, GfxTarget* targ, const Callb
 void PhysicsDebugger::endRenderFrame() {
   auto tmp = _curreadlq.exchange(_checkedoutreadlq); // return _checkedoutreadlq
 
-  if( tmp == nullptr ){ //no new one posted yet, just put it back
+  if (tmp == nullptr) { // no new one posted yet, just put it back
     // and since it was a fetch and fetch_and_store
     //  it is alread back...
-  }
-  else { // tmp is new rlq that was posted
+  } else {                                // tmp is new rlq that was posted
     auto tmp2 = _curreadlq.exchange(tmp); // put tmp back into curread
-    assert(tmp2==_checkedoutreadlq);
+    assert(tmp2 == _checkedoutreadlq);
     // put _checkedoutreadlq back into the pool
     _lineqpool.push(tmp2);
   }
 
   _checkedoutreadlq = nullptr;
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -139,13 +137,12 @@ void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, line
 
   typedef SVtxV12C4T16 vtx_t;
 
-  if(nullptr == lines)
+  if (nullptr == lines)
     return;
 
   int inumlines = lines->size();
 
-
-  //printf( "draw numlines<%d>\n", inumlines );
+  // printf( "draw numlines<%d>\n", inumlines );
   auto prenderer = rcid.GetRenderer();
 
   auto pcamdata = ptarg->topRenderContextFrameData()->topCPD().cameraMatrices();
@@ -193,8 +190,8 @@ void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, line
 ///////////////////////////////////////////////////////////////////////////////
 
 void PhysicsDebugger::addLine(const fvec3& from, const fvec3& to, const fvec3& color) {
-  AssertOnOpQ2(UpdateSerialOpQ());
-  if(_currentwritelq!=nullptr)
+  ork::opq::assertOnQueue2(updateSerialQueue());
+  if (_currentwritelq != nullptr)
     _currentwritelq->push_back(PhysicsDebuggerLine(from, to, color));
 }
 
@@ -202,35 +199,42 @@ void PhysicsDebugger::addLine(const fvec3& from, const fvec3& to, const fvec3& c
 
 void PhysicsDebugger::drawLine(const btVector3& from, const btVector3& to, const btVector3& color) {
   fvec3 vfrom = !from;
-  fvec3 vto = !to;
-  fvec3 vclr = !color * (1.0f / 256.0f);
+  fvec3 vto   = !to;
+  fvec3 vclr  = !color * (1.0f / 256.0f);
 
   addLine(vfrom, vto, vclr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PhysicsDebugger::drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime,
-                                       const btVector3& color) {
+void PhysicsDebugger::drawContactPoint(
+    const btVector3& PointOnB,
+    const btVector3& normalOnB,
+    btScalar distance,
+    int lifeTime,
+    const btVector3& color) {
   fvec3 vfrom = !PointOnB;
-  fvec3 vdir = !normalOnB;
-  fvec3 vto = vfrom + vdir * 4.0F; // distance;
-  fvec3 vclr = ! normalOnB;
-  vclr = (vclr+fvec3(1,1,1))*0.5;
+  fvec3 vdir  = !normalOnB;
+  fvec3 vto   = vfrom + vdir * 4.0F; // distance;
+  fvec3 vclr  = !normalOnB;
+  vclr        = (vclr + fvec3(1, 1, 1)) * 0.5;
   addLine(vfrom, vto, vclr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PhysicsDebugger::reportErrorWarning(const char* warningString) {}
+void PhysicsDebugger::reportErrorWarning(const char* warningString) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PhysicsDebugger::draw3dText(const btVector3& location, const char* textString) {}
+void PhysicsDebugger::draw3dText(const btVector3& location, const char* textString) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PhysicsDebugger::setDebugMode(int debugMode) {}
+void PhysicsDebugger::setDebugMode(int debugMode) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

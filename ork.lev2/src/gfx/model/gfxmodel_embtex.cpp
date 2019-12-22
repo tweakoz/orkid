@@ -36,7 +36,8 @@ datablockptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
   fseek(fin, 0, SEEK_SET);
   dblock->reserve(ddslen);
   void* ddsdata = malloc(ddslen);
-  fread(ddsdata, ddslen, 1, fin);
+  size_t numread = fread(ddsdata, ddslen, 1, fin);
+  OrkAssert(numread==ddslen);
   fclose(fin);
   dblock->addData(ddsdata, ddslen);
   free(ddsdata);

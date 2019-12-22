@@ -113,20 +113,20 @@ int main(int argc, char** argv) {
   ork::Thread updthr("updatethread");
   bool upddone = false;
   updthr.start([&](anyp data) {
-    OpqTest opqtest(&UpdateSerialOpQ());
+    OpqTest opqtest(&updateSerialQueue());
     while (false == testdone)
-      UpdateSerialOpQ().Process();
+      updateSerialQueue().Process();
     upddone = true;
   });
   /////////////////////////////////////////////
   while (false == testdone) {
-    OpqTest opqtest(&MainThreadOpQ());
-    MainThreadOpQ().Process();
+    OpqTest opqtest(&mainThreadQueue());
+    mainThreadQueue().Process();
   }
   /////////////////////////////////////////////
 
-  MainThreadOpQ().drain();
-  UpdateSerialOpQ().drain();
+  mainThreadQueue().drain();
+  updateSerialQueue().drain();
 
   ApplicationStack::Pop();
 

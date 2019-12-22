@@ -31,7 +31,7 @@ void QtConsoleWindow::Register()
 {
     gPCON = this;
 
-    MainThreadOpQ().push([&]() {
+    mainThreadQueue().enqueue([&]() {
         //const char* inpname = slave_inp_name;
         const char* outname = slave_out_name;
         const char* errname = slave_err_name;
@@ -154,7 +154,7 @@ void console_handler()
 
     /////////////////////
 
-    MainThreadOpQ().push([&]() {
+    mainThreadQueue().enqueue([&]() {
         console_handler();
     });
 }
@@ -247,7 +247,7 @@ void QtConsoleWindow::InputDone( void )
 	//printf( "INPUT<%s>\n", sstr.c_str() );
 	if( sstr.length() )
 	{
-    MainThreadOpQ().push([&]() {
+    mainThreadQueue().enqueue([&]() {
 			  Py::Ctx().Call(sstr);
 		});
 	}

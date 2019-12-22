@@ -31,13 +31,13 @@ TEST(npot_dynamic)
         printf( "npot1: x<0x%zx> y<0x%zx>\n", x,y);
     }
 
-    CHECK_EQUAL(nextPowerOfTwo(1),2);
-    CHECK_EQUAL(nextPowerOfTwo(3),4);
-    CHECK_EQUAL(nextPowerOfTwo(5),8);
-    CHECK_EQUAL(nextPowerOfTwo(16),16);
-    CHECK_EQUAL(nextPowerOfTwo(17),32);
-    CHECK_EQUAL(nextPowerOfTwo(0x7fff),0x8000);
-    CHECK_EQUAL(nextPowerOfTwo(0x7fffff),0x800000);
+    CHECK_EQUAL(1,nextPowerOfTwo(1));
+    CHECK_EQUAL(4,nextPowerOfTwo(3));
+    CHECK_EQUAL(8,nextPowerOfTwo(5));
+    CHECK_EQUAL(16,nextPowerOfTwo(16));
+    CHECK_EQUAL(32,nextPowerOfTwo(17));
+    CHECK_EQUAL(0x8000,nextPowerOfTwo(0x7fff));
+    CHECK_EQUAL(0x800000,nextPowerOfTwo(0x7fffff));
 }
 
 TEST(npot_static)
@@ -52,13 +52,13 @@ TEST(npot_static)
     printf( "npotstatic<0x%zx:0x%zx>\n", 0x7fffffffL, nextPowerOfTwo<0x7fffffff>());
     printf( "npotstatic<0x%zx:0x%zx>\n", 0x7fffffffffL, nextPowerOfTwo<0x7fffffffff>());
 
-    CHECK_EQUAL(nextPowerOfTwo<1>(),2);
-    CHECK_EQUAL(nextPowerOfTwo<3>(),2);
-    CHECK_EQUAL(nextPowerOfTwo<5>(),2);
-    CHECK_EQUAL(nextPowerOfTwo<16>(),2);
-    CHECK_EQUAL(nextPowerOfTwo<17>(),2);
-    CHECK_EQUAL(nextPowerOfTwo<0x7fff>(),2);
-    CHECK_EQUAL(nextPowerOfTwo<0x7fffff>(),2);
+    CHECK_EQUAL(1,nextPowerOfTwo<1>());
+    CHECK_EQUAL(4,nextPowerOfTwo<3>());
+    CHECK_EQUAL(8,nextPowerOfTwo<5>());
+    CHECK_EQUAL(16,nextPowerOfTwo<16>());
+    CHECK_EQUAL(32,nextPowerOfTwo<17>());
+    CHECK_EQUAL(0x8000,nextPowerOfTwo<0x7fff>());
+    CHECK_EQUAL(0x800000,nextPowerOfTwo<0x7fffff>());
 }
 
 TEST(clz_dynamic)

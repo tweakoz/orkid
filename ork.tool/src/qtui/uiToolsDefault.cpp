@@ -40,32 +40,35 @@ void OuterPickOp(DeferredPickOperationContext* pickctx);
 
 ///////////////////////////////////////////////////////////////////////////
 
-TestVPDefaultHandler::TestVPDefaultHandler(SceneEditorBase& editor) : SceneEditorVPToolHandler(editor) {
+TestVPDefaultHandler::TestVPDefaultHandler(SceneEditorBase& editor)
+    : SceneEditorVPToolHandler(editor) {
   SetBaseIconName("lev2://editor/DefaultToolIcon");
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-void TestVPDefaultHandler::DoAttach(SceneEditorVP* pvp) {}
+void TestVPDefaultHandler::DoAttach(SceneEditorVP* pvp) {
+}
 
 ///////////////////////////////////////////////////////////////////////////
 
-void TestVPDefaultHandler::DoDetach(SceneEditorVP* pvp) {}
+void TestVPDefaultHandler::DoDetach(SceneEditorVP* pvp) {
+}
 
 ///////////////////////////////////////////////////////////////////////////
 
 void TestVPDefaultHandler::HandlePickOperation(DeferredPickOperationContext* ppickctx) {
   auto process_pick = [=](DeferredPickOperationContext* pickctx) {
-    AssertOnOpQ2(UpdateSerialOpQ());
+    ork::opq::assertOnQueue2(updateSerialQueue());
 
     SceneEditorVPToolHandler* handler = pickctx->mHandler;
 
     ork::rtti::ICastable* pcast = pickctx->mpCastable;
-     orkprintf( "obj<%p>\n", pcast );
+    orkprintf("obj<%p>\n", pcast);
     ork::ent::SceneEditorBase& editor = handler->GetEditor();
-    ork::rtti::ICastable* pillegal = (ork::rtti::ICastable*)0xffffffffffffffff;
+    ork::rtti::ICastable* pillegal    = (ork::rtti::ICastable*)0xffffffffffffffff;
     if (pcast && pcast != pillegal) {
-      ork::Object* pobj = rtti::autocast(pcast);
+      ork::Object* pobj           = rtti::autocast(pcast);
       object::ObjectClass* pclass = rtti::safe_downcast<object::ObjectClass*>(pobj->GetClass());
       orkprintf("Object<%p> Class<%s>\n", pobj, pclass->Name().c_str());
       auto anno = pclass->Description().classAnnotation("editor.3dpickable");
@@ -86,7 +89,7 @@ void TestVPDefaultHandler::HandlePickOperation(DeferredPickOperationContext* ppi
   };
 
   ppickctx->mViewport = GetViewport();
-  ppickctx->mOnPick = process_pick;
+  ppickctx->mOnPick   = process_pick;
   OuterPickOp(ppickctx);
 }
 
@@ -97,11 +100,11 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
   ui::HandlerResult ret(this);
 
   bool isshift = EV.mbSHIFT;
-  bool isctrl = EV.mbCTRL;
+  bool isctrl  = EV.mbCTRL;
 
-  bool isleft = EV.mbLeftButton;
+  bool isleft  = EV.mbLeftButton;
   bool isright = EV.mbRightButton;
-  bool ismid = EV.mbMiddleButton;
+  bool ismid   = EV.mbMiddleButton;
 
   int ix = EV.miX;
   int iy = EV.miY;
@@ -109,15 +112,15 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
   float fx = float(ix) / float(GetViewport()->GetW());
   float fy = float(iy) / float(GetViewport()->GetH());
 
-  bool AreAnyMoveKeysDown =
-      OldSchool::IsKeyDepressed('W') | OldSchool::IsKeyDepressed('A') | OldSchool::IsKeyDepressed('S') | OldSchool::IsKeyDepressed('D');
+  bool AreAnyMoveKeysDown = OldSchool::IsKeyDepressed('W') | OldSchool::IsKeyDepressed('A') | OldSchool::IsKeyDepressed('S') |
+                            OldSchool::IsKeyDepressed('D');
 
   switch (EV.miEventCode) {
     case ui::UIEV_SHOW: {
       if (GetViewport()->GetTarget()) {
-        GfxTarget* pTARG = GetViewport()->GetTarget();
+        GfxTarget* pTARG       = GetViewport()->GetTarget();
         lev2::CTXBASE* CtxBase = pTARG->GetCtxBase();
-        //CtxBase->SetRefreshRate(0);
+        // CtxBase->SetRefreshRate(0);
       }
       break;
     }
@@ -129,12 +132,12 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
         case 0x01000007: // delete
         {
           orkset<ork::Object*> selection = mEditor.selectionManager().getActiveSelection();
-          auto l = [=]() {
+          auto l                         = [=]() {
             mEditor.ClearSelection();
             for (orkset<ork::Object*>::const_iterator it = selection.begin(); it != selection.end(); it++)
               mEditor.EditorDeleteObject(*it);
           };
-          Op(l).QueueASync(UpdateSerialOpQ());
+          Op(l).QueueASync(updateSerialQueue());
           break;
         }
         case 'c': {
@@ -178,27 +181,27 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
       if (AreAnyMoveKeysDown)
         break;
       if (GetViewport()->getActiveCamera()) {
-        auto pickctx = new DeferredPickOperationContext;
-        pickctx->miX = ix;
-        pickctx->miY = iy;
-        pickctx->is_shift = isshift;
-        pickctx->is_ctrl = isctrl;
-        pickctx->is_left = isleft;
-        pickctx->is_mid = ismid;
-        pickctx->is_right = isright;
-        pickctx->mHandler = this;
+        auto pickctx       = new DeferredPickOperationContext;
+        pickctx->miX       = ix;
+        pickctx->miY       = iy;
+        pickctx->is_shift  = isshift;
+        pickctx->is_ctrl   = isctrl;
+        pickctx->is_left   = isleft;
+        pickctx->is_mid    = ismid;
+        pickctx->is_right  = isright;
+        pickctx->mHandler  = this;
         pickctx->mViewport = GetViewport();
 
         auto process_pick = [=](DeferredPickOperationContext* pickctx) {
-          AssertOnOpQ2(UpdateSerialOpQ());
+          ork::opq::assertOnQueue2(updateSerialQueue());
 
           SceneEditorVPToolHandler* handler = pickctx->mHandler;
-          auto& pixctx = pickctx->_pixelctx;
-          this->setSpawnLoc( pixctx, fx, fy );
+          auto& pixctx                      = pickctx->_pixelctx;
+          this->setSpawnLoc(pixctx, fx, fy);
         };
 
         pickctx->mViewport = GetViewport();
-        pickctx->mOnPick = process_pick;
+        pickctx->mOnPick   = process_pick;
         OuterPickOp(pickctx);
       }
       break;
@@ -214,15 +217,15 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
       ret.mHoldFocus = true;
 
       if (isleft && false == isright) {
-        auto pickctx = new DeferredPickOperationContext;
-        pickctx->miX = ix;
-        pickctx->miY = iy;
-        pickctx->is_shift = isshift;
-        pickctx->is_ctrl = isctrl;
-        pickctx->is_left = isleft;
-        pickctx->is_mid = ismid;
-        pickctx->is_right = isright;
-        pickctx->mHandler = this;
+        auto pickctx       = new DeferredPickOperationContext;
+        pickctx->miX       = ix;
+        pickctx->miY       = iy;
+        pickctx->is_shift  = isshift;
+        pickctx->is_ctrl   = isctrl;
+        pickctx->is_left   = isleft;
+        pickctx->is_mid    = ismid;
+        pickctx->is_right  = isright;
+        pickctx->mHandler  = this;
         pickctx->mViewport = GetViewport();
 
         HandlePickOperation(pickctx);

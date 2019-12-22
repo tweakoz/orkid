@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
     // default Run All Tests
     /////////////////////////////////////////////
     if (argc != 2) {
-      printf("ork.core unit test : usage :\n");
+      printf("ork.lev2 unit test : usage :\n");
       printf("<exename> list : list test names\n");
       printf("<exename> testname : run 1 test named\n");
       printf("<exename> all : run all tests\n");
@@ -69,8 +69,11 @@ int main(int argc, char** argv) {
       bool all_tests       = (0 == strcmp(argv[1], "all"));
       const char* testname = argv[1];
 
-      if (all_tests)
-        return UnitTest::RunAllTests();
+      if (all_tests) {
+        UnitTest::RunAllTests();
+        testdone = true;
+        return;
+      }
 
       if (blist_tests) {
         printf("//////////////////////////////////\n");
@@ -97,7 +100,7 @@ int main(int argc, char** argv) {
       }
     }
     printf("//////////////////////////////////\n");
-    printf( "Tests finished!\n");
+    printf("Tests finished!\n");
     printf("//////////////////////////////////\n");
     testdone = true;
   });
@@ -105,20 +108,20 @@ int main(int argc, char** argv) {
   ork::Thread updthr("updatethread");
   bool upddone = false;
   updthr.start([&](anyp data) {
-    OpqTest opqtest(&UpdateSerialOpQ());
+    OpqTest opqtest(&updateSerialQueue());
     while (false == testdone)
-      UpdateSerialOpQ().Process();
+      updateSerialQueue().Process();
     upddone = true;
   });
   /////////////////////////////////////////////
   while (false == testdone) {
-    OpqTest opqtest(&MainThreadOpQ());
-    MainThreadOpQ().Process();
+    OpqTest opqtest(&mainThreadQueue());
+    mainThreadQueue().Process();
   }
   /////////////////////////////////////////////
 
-  MainThreadOpQ().drain();
-  UpdateSerialOpQ().drain();
+  mainThreadQueue().drain();
+  updateSerialQueue().drain();
 
   ApplicationStack::Pop();
 

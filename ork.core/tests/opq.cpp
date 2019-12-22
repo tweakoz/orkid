@@ -1,5 +1,6 @@
 #include <ork/kernel/timer.h>
 #include <ork/kernel/opq.h>
+#include <ork/kernel/debug.h>
 #include <utpp/UnitTest++.h>
 #include <string.h>
 #include <math.h>
@@ -10,417 +11,420 @@ typedef std::atomic<int> atomic_counter;
 
 using namespace ork;
 
-//atomic_reservoir = atomic_alloc_reservoir(USE_DEFAULT_PM,10, NULL);
-//atomic_var = atomic_alloc_variable(atomic_reservoir, NULL);
-//atomic_fetch_and_increment(atomic_var);
-//ret_inc = atomic_load(atomic_var);
+// atomic_reservoir = atomic_alloc_reservoir(USE_DEFAULT_PM,10, NULL);
+// atomic_var = atomic_alloc_variable(atomic_reservoir, NULL);
+// atomic_fetch_and_increment(atomic_var);
+// ret_inc = atomic_load(atomic_var);
 
 #if 1
-TEST(opq_serialized_ops)
-{
-	float fsynctime = ork::get_sync_time();
+TEST(opq_serialized_ops) {
+  float fsynctime = ork::get_sync_time();
 
-	srand( u32(fsynctime*100.0f) ); // so we dont get the same thread count seqeuence every run
+  srand(u32(fsynctime * 100.0f)); // so we dont get the same thread count seqeuence every run
 
-	for( int i=0; i<16; i++ )
-	{
-		const int knumthreads = 1 + rand()%64;
-		const int kopqconcurr = knumthreads;
-		const int kops = 1<<14;
+  for (int i = 0; i < 16; i++) {
+    const int knumthreads = 1 + rand() % 64;
+    const int kopqconcurr = knumthreads;
+    const int kops        = 1 << 14;
 
-	    auto gopq1 = new Opq(knumthreads);
-	    auto l0grp = gopq1->CreateOpGroup("l0");
-	    auto l1grp = gopq1->CreateOpGroup("l1");
-	    auto l2grp = gopq1->CreateOpGroup("l2");
-	    auto l3grp = gopq1->CreateOpGroup("l3");
-	    l0grp->mLimitMaxOpsInFlight = 1;
-	    l1grp->mLimitMaxOpsInFlight = 1;
-	    l2grp->mLimitMaxOpsInFlight = 1;
-	    l3grp->mLimitMaxOpsInFlight = 1;
+    auto gopq1                  = new OperationsQueue(knumthreads);
+    gopq1->_debuginfo = get_backtrace();
+    gopq1->_name = FormatString("opq_serialized_ops<%d>",i);
+    auto l0grp                  = gopq1->createConcurrencyGroup("l0");
+    auto l1grp                  = gopq1->createConcurrencyGroup("l1");
+    auto l2grp                  = gopq1->createConcurrencyGroup("l2");
+    auto l3grp                  = gopq1->createConcurrencyGroup("l3");
+    l0grp->_limit_maxops_inflight = 1;
+    l1grp->_limit_maxops_inflight = 1;
+    l2grp->_limit_maxops_inflight = 1;
+    l3grp->_limit_maxops_inflight = 1;
 
-	    ork::atomic<int> ops_in_flight;
+    std::atomic<int> ops_in_flight;
 
-		atomic_counter l0ctr(0), l1ctr(0), l2ctr(0), l3ctr(0);
+    atomic_counter l0ctr(0), l1ctr(0), l2ctr(0), l3ctr(0);
 
-	    ops_in_flight = 0;
+    ops_in_flight = 0;
 
-	    ork::Timer measure;
-	    measure.Start();
+    ork::Timer measure;
+    measure.Start();
 
-    	auto l0_op = [&]()
-		{
-	    	ops_in_flight++;
+    auto l0_op = [&]() {
+      int curnumops = ops_in_flight.fetch_add(1);
 
-	    	assert(int(ops_in_flight)<=kopqconcurr);
-	    	assert(int(ops_in_flight)>=0);
+      assert(curnumops <= kopqconcurr);
+      assert(curnumops >= 0);
 
-			int this_l0cnt = l0ctr.fetch_add(1);
+      int this_l0cnt = l0ctr.fetch_add(1);
 
-			//int this_l0cnt = level0_counter++; // record l0cnt at l1 queue time
+      auto l1_op = [=, &l1ctr, &l2ctr, &l3ctr]() {
+        int this_l1cnt = l1ctr.fetch_add(1);
+         assert(this_l1cnt==this_l0cnt);
 
-			auto l1_op = [=,&l1ctr,&l2ctr,&l3ctr]()
-			{
-				//int this_l1cnt = level1_counter++; // record l1cnt at l2 queue time
-				int this_l1cnt = l1ctr.fetch_add(1);
-				assert(this_l1cnt==this_l0cnt);
+        auto l2_op = [=, &l2ctr, &l3ctr]() {
+          int this_l2cnt = l2ctr.fetch_add(1);
+           assert(this_l2cnt==this_l1cnt);
 
-				auto l2_op = [=,&l2ctr,&l3ctr]()
-				{
-					//int this_l2cnt = level2_counter++; // record l2cnt at l3 queue time
-					int this_l2cnt = l2ctr.fetch_add(1);
-					assert(this_l2cnt==this_l1cnt);
+          auto l3_op = [=, &l3ctr]() {
+            int this_l3cnt = l3ctr.fetch_add(1);
+             assert(this_l3cnt==this_l2cnt);
+          };
+          l3grp->enqueue(Op(l3_op)); // thr 5
+        };
+        l2grp->enqueue(Op(l2_op)); // thr 6, 7
+      };
+      l1grp->enqueue(Op(l1_op)); // thr 4
 
-					auto l3_op = [=,&l3ctr]()
-					{
-						//int this_l3cnt = level3_counter++;
-						int this_l3cnt = l3ctr.fetch_add(1);
-						assert(this_l3cnt==this_l2cnt);
-					};
-					l3grp->push(Op(l3_op));
+      ops_in_flight--;
+    };
 
-				};
-				l2grp->push(Op(l2_op));
+    for (int i = 0; i < kops; i++) {
 
-			};
-			l1grp->push(Op(l1_op));
+      l0grp->enqueue(Op(l0_op, "yo"));
+    }
 
-			ops_in_flight--;
-	    };
+    l0grp->drain(); // thr 2
+    l1grp->drain(); // thr 2
+    l2grp->drain(); // thr 2
+    l3grp->drain(); // thr 2
 
-	    for( int i=0; i<kops; i++ )
-	    {
+    int this_l0cnt = l0ctr.load();
+    int this_l1cnt = l1ctr.load();
 
-		    l0grp->push(Op(l0_op,"yo"));
-		}
+    CHECK(this_l0cnt == kops);
+    // CHECK(this_l1cnt==kops);
 
-	    gopq1->drain();
+    float elapsed = measure.SecsSinceStart();
 
-		int this_l0cnt = l0ctr.load();
-		int this_l1cnt = l1ctr.load();
+    float fopspsec = float(kops * 2) / elapsed;
 
-		CHECK(this_l0cnt==kops);
-		//CHECK(this_l1cnt==kops);
+    printf(
+        "opq_serops<%d> test nthr<%d> elapsed<%.02f sec> nops<%d> ops/sec[agg]<%d> ops/sec[/thr]<%d> counter<%d>\n",
+        i,
+        knumthreads,
+        elapsed,
+        kops,
+        int(fopspsec),
+        int(fopspsec / float(knumthreads)),
+        int(this_l0cnt));
 
-		float elapsed = measure.SecsSinceStart();
-
-		float fopspsec = float(kops*2)/elapsed;
-
-		printf( "opq_serops test nthr<%d> elapsed<%.02f sec> nops<%d> ops/sec[agg]<%d> ops/sec[/thr]<%d> counter<%d>\n", knumthreads, elapsed, kops, int(fopspsec), int(fopspsec/float(knumthreads)), int(this_l0cnt) );
-
-	    delete gopq1;
-	}
+    delete gopq1;
+  }
 }
-TEST(opq_serialized_ops2)
-{
-	float fsynctime = ork::get_sync_time();
+TEST(opq_serialized_ops2) {
+  float fsynctime = ork::get_sync_time();
 
-	srand( u32(fsynctime*100.0f) ); // so we dont get the same thread count seqeuence every run
+  srand(u32(fsynctime * 100.0f)); // so we dont get the same thread count seqeuence every run
 
-	for( int i=0; i<16; i++ )
-	{
-		const int knumthreads = 1 + rand()%64;
-		const int kopqconcurr = knumthreads;
-		const int kops = 1<<14;
+  for (int i = 0; i < 16; i++) {
+    const int knumthreads = 1 + rand() % 64;
+    const int kopqconcurr = knumthreads;
+    const int kops        = 1 << 14;
 
-	    auto gopq1 = new Opq(knumthreads);
-	    auto l0grp = gopq1->CreateOpGroup("l0");
-	    auto l1grp = gopq1->CreateOpGroup("l1");
-	    auto l2grp = gopq1->CreateOpGroup("l2");
-	    auto l3grp = gopq1->CreateOpGroup("l3");
-	    l0grp->mLimitMaxOpsInFlight = 0;
-	    l1grp->mLimitMaxOpsInFlight = 0;
-	    l2grp->mLimitMaxOpsInFlight = 0;
-	    l3grp->mLimitMaxOpsInFlight = 0;
+    auto gopq1                  = new OperationsQueue(knumthreads);
+    gopq1->_debuginfo = get_backtrace();
+    auto l0grp                  = gopq1->createConcurrencyGroup("l0");
+    auto l1grp                  = gopq1->createConcurrencyGroup("l1");
+    auto l2grp                  = gopq1->createConcurrencyGroup("l2");
+    auto l3grp                  = gopq1->createConcurrencyGroup("l3");
+    l0grp->_limit_maxops_inflight = 0;
+    l1grp->_limit_maxops_inflight = 0;
+    l2grp->_limit_maxops_inflight = 0;
+    l3grp->_limit_maxops_inflight = 0;
 
-	    ork::atomic<int> ops_in_flight;
+    ork::atomic<int> ops_in_flight;
 
-		atomic_counter l0ctr(0), l1ctr(0), l2ctr(0), l3ctr(0);
+    atomic_counter l0ctr(0), l1ctr(0), l2ctr(0), l3ctr(0);
 
-	    ops_in_flight = 0;
+    ops_in_flight = 0;
 
-	    ork::Timer measure;
-	    measure.Start();
+    ork::Timer measure;
+    measure.Start();
 
-    	auto l0_op = [&]()
-		{
-	    	ops_in_flight++;
+    auto l0_op = [&]() {
+      ops_in_flight++;
 
-	    	//assert(int(ops_in_flight)<=kopqconcurr);
-	    	//assert(int(ops_in_flight)>=0);
+      // assert(int(ops_in_flight)<=kopqconcurr);
+      // assert(int(ops_in_flight)>=0);
 
-			int this_l0cnt = l0ctr.fetch_add(1);
-			//int this_l0cnt = level0_counter++; // record l0cnt at l1 queue time
+      int this_l0cnt = l0ctr.fetch_add(1);
+      // int this_l0cnt = level0_counter++; // record l0cnt at l1 queue time
 
-			auto l1_op = [=,&l1ctr,&l2ctr,&l3ctr]()
-			{
-				//int this_l1cnt = level1_counter++; // record l1cnt at l2 queue time
-				int this_l1cnt = l1ctr.fetch_add(1);
-				//assert(this_l1cnt==this_l0cnt);
+      auto l1_op = [=, &l1ctr, &l2ctr, &l3ctr]() {
+        // int this_l1cnt = level1_counter++; // record l1cnt at l2 queue time
+        int this_l1cnt = l1ctr.fetch_add(1);
+        // assert(this_l1cnt==this_l0cnt);
 
-				auto l2_op = [=,&l2ctr,&l3ctr]()
-				{
-					//int this_l2cnt = level2_counter++; // record l2cnt at l3 queue time
-					int this_l2cnt = l2ctr.fetch_add(1);
-					//assert(this_l2cnt==this_l1cnt);
+        auto l2_op = [=, &l2ctr, &l3ctr]() {
+          // int this_l2cnt = level2_counter++; // record l2cnt at l3 queue time
+          int this_l2cnt = l2ctr.fetch_add(1);
+          // assert(this_l2cnt==this_l1cnt);
 
-					auto l3_op = [=,&l3ctr]()
-					{
-						//int this_l3cnt = level3_counter++;
-						int this_l3cnt = l3ctr.fetch_add(1);
-						//assert(this_l3cnt==this_l2cnt);
-					};
-					l3grp->push(Op(l3_op));
+          auto l3_op = [=, &l3ctr]() {
+            // int this_l3cnt = level3_counter++;
+            int this_l3cnt = l3ctr.fetch_add(1);
+            // assert(this_l3cnt==this_l2cnt);
+          };
+          l3grp->enqueue(Op(l3_op));
+        };
+        l2grp->enqueue(Op(l2_op));
+      };
+      l1grp->enqueue(Op(l1_op));
 
-				};
-				l2grp->push(Op(l2_op));
+      ops_in_flight--;
+    };
 
-			};
-			l1grp->push(Op(l1_op));
+    for (int i = 0; i < kops; i++) {
 
-			ops_in_flight--;
-	    };
+      l0grp->enqueue(Op(l0_op, "yo"));
+    }
 
-	    for( int i=0; i<kops; i++ )
-	    {
+    gopq1->drain();
 
-		    l0grp->push(Op(l0_op,"yo"));
-		}
+    int this_l0cnt = l0ctr.load();
+    int this_l3cnt = l3ctr.load();
 
-	    gopq1->drain();
+    CHECK(this_l3cnt == kops);
+    // CHECK(this_l1cnt==kops);
 
-		int this_l0cnt = l0ctr.load();
-		int this_l3cnt = l3ctr.load();
+    float elapsed = measure.SecsSinceStart();
 
-		CHECK(this_l3cnt==kops);
-		//CHECK(this_l1cnt==kops);
+    float fopspsec = float(kops * 2) / elapsed;
 
-		float elapsed = measure.SecsSinceStart();
+    printf(
+        "opq_serops2 test nthr<%d> elapsed<%.02f sec> nops<%d> ops/sec[agg]<%d> ops/sec[/thr]<%d> counter<%d>\n",
+        knumthreads,
+        elapsed,
+        kops,
+        int(fopspsec),
+        int(fopspsec / float(knumthreads)),
+        int(this_l0cnt));
 
-		float fopspsec = float(kops*2)/elapsed;
-
-		printf( "opq_serops2 test nthr<%d> elapsed<%.02f sec> nops<%d> ops/sec[agg]<%d> ops/sec[/thr]<%d> counter<%d>\n", knumthreads, elapsed, kops, int(fopspsec), int(fopspsec/float(knumthreads)), int(this_l0cnt) );
-
-	    delete gopq1;
-	}
+    delete gopq1;
+  }
 }
 #endif
 #if 1
-TEST(opq_maxinflight)
-{
-	float fsynctime = ork::get_sync_time();
+TEST(opq_maxinflight) {
+  float fsynctime = ork::get_sync_time();
 
-	srand( u32(fsynctime*100.0f) ); // so we dont get the same thread count seqeuence every run
+  srand(u32(fsynctime * 100.0f)); // so we dont get the same thread count seqeuence every run
 
-	for( int i=0; i<4; i++ )
-	{
-		const int knumthreads = 1 + rand()%16;
-		const int kopqconcurr = knumthreads;
-		const int kops = knumthreads*256;
+  for (int i = 0; i < 4; i++) {
+    const int knumthreads = 1 + rand() % 16;
+    const int kopqconcurr = knumthreads;
+    const int kops        = knumthreads * 256;
 
-	    auto gopq1 = new Opq(knumthreads);
-	    auto gopg1 = gopq1->CreateOpGroup("g1");
-	    gopg1->mLimitMaxOpsInFlight = kopqconcurr;
+    auto gopq1                  = new OperationsQueue(knumthreads);
+    auto gopg1                  = gopq1->createConcurrencyGroup("g1");
+    gopg1->_limit_maxops_inflight = kopqconcurr;
 
-	    //printf( "OpLimit::1 <%d>\n", kopqconcurr );
+    // printf( "OpLimit::1 <%d>\n", kopqconcurr );
 
-	    std::atomic<int> ops_in_flight;
-	    std::atomic<int> counter;
+    std::atomic<int> ops_in_flight;
+    std::atomic<int> counter;
 
-	    ops_in_flight = 0;
-	    counter = 0;
+    ops_in_flight = 0;
+    counter       = 0;
 
-	    ork::Timer measure;
-	    measure.Start();
+    ork::Timer measure;
+    measure.Start();
 
-	    for( int i=0; i<kops; i++ )
-	    {
-	    	auto the_op = [&]()
-		    {
-		    	ops_in_flight++;
+    for (int i = 0; i < kops; i++) {
+      auto the_op = [&]() {
+        ops_in_flight++;
 
-		    	assert(int(ops_in_flight)<=kopqconcurr);
-		    	assert(int(ops_in_flight)>=0);
+        assert(int(ops_in_flight) <= kopqconcurr);
+        assert(int(ops_in_flight) >= 0);
 
-		    	int ir = 4+(rand()%4);
-		    	float fr = float(ir)*0.0003f;
+        int ir   = 4 + (rand() % 4);
+        float fr = float(ir) * 0.0003f;
 
-			    ork::Timer throttle;
-	            throttle.Start();
+        ork::Timer throttle;
+        throttle.Start();
 
-	            //printf( "BEG Op<%p> wait<%dms> OIF<%d>\n", this, ir, int(ops_in_flight) );
+        // printf( "BEG Op<%p> wait<%dms> OIF<%d>\n", this, ir, int(ops_in_flight) );
 
-	            int i =0;
+        int i = 0;
 
-	            while(throttle.SecsSinceStart()<fr)
-	            {
-	            	usleep(100);
-	            }
+        while (throttle.SecsSinceStart() < fr) {
+          usleep(100);
+        }
 
-				ops_in_flight--;
+        ops_in_flight--;
 
-				counter++;
+        counter++;
+      };
 
-		    };
+      gopg1->enqueue(Op(the_op, "yo"));
 
-		    gopg1->push( Op(the_op,"yo") );
+      int j = rand() % 1000;
+      if (j < 10)
+        gopq1->drain();
+    }
 
-		    int j = rand()%1000;
-		    if( j<10 )
-			    gopq1->drain();
+    // gopg1->drain();
+    gopq1->drain();
 
-		}
+    CHECK(counter == kops);
 
-	    //gopg1->drain();
-	    gopq1->drain();
+    float elapsed = measure.SecsSinceStart();
 
-		CHECK(counter==kops);
+    float fopspsec = float(kops) / elapsed;
 
-		float elapsed = measure.SecsSinceStart();
+    printf(
+        "opqmaxinflight test nthr<%d> elapsed<%.02f sec> nops<%d> ops/sec[agg]<%d> ops/sec[/thr]<%d> counter<%d>\n",
+        knumthreads,
+        elapsed,
+        kops,
+        int(fopspsec),
+        int(fopspsec / float(knumthreads)),
+        int(counter));
 
-		float fopspsec = float(kops)/elapsed;
-
-		printf( "opqmaxinflight test nthr<%d> elapsed<%.02f sec> nops<%d> ops/sec[agg]<%d> ops/sec[/thr]<%d> counter<%d>\n", knumthreads, elapsed, kops, int(fopspsec), int(fopspsec/float(knumthreads)), int(counter) );
-
-	    delete gopq1;
-	}
+    delete gopq1;
+  }
 }
 #endif
 #if 1
 
-TEST(opq_ballsout)
-{
-	float fsynctime = ork::get_sync_time();
+TEST(opq_ballsout) {
+  float fsynctime = ork::get_sync_time();
 
-	srand( u32(fsynctime*100.0f) ); // so we dont get the same thread count seqeuence every run
+  srand(u32(fsynctime * 100.0f)); // so we dont get the same thread count seqeuence every run
 
-	for( int i=0; i<16; i++ )
-	{
-		const int knumthreads = 1 + rand()%64;
-		const int kopqconcurr = knumthreads;
-		const int kops = knumthreads*256;
+  for (int i = 0; i < 16; i++) {
+    const int knumthreads = 1 + rand() % 64;
+    const int kopqconcurr = knumthreads;
+    const int kops        = knumthreads * 256;
 
-	    auto gopq1 = new Opq(knumthreads);
-	    auto gopg1 = gopq1->CreateOpGroup("g1");
-	    gopg1->mLimitMaxOpsInFlight = 0;
+    auto gopq1                  = new OperationsQueue(knumthreads);
+    auto gopg1                  = gopq1->createConcurrencyGroup("g1");
+    gopg1->_limit_maxops_inflight = 0;
 
-	    ork::atomic<int> ops_in_flight;
-	    ork::atomic<int> counter;
+    ork::atomic<int> ops_in_flight;
+    ork::atomic<int> counter;
 
-	    ops_in_flight = 0;
-	    counter = 0;
+    ops_in_flight = 0;
+    counter       = 0;
 
-	    ork::Timer measure;
-	    measure.Start();
+    ork::Timer measure;
+    measure.Start();
 
-	    for( int i=0; i<kops; i++ )
-	    {
-		    gopg1->push(Op(
-		    [&]()
-		    {
-		    	ops_in_flight++;
-		    	assert(int(ops_in_flight)<=kopqconcurr);
-		    	assert(int(ops_in_flight)>=0);
-				ops_in_flight--;
-				counter++;
+    for (int i = 0; i < kops; i++) {
+      gopg1->enqueue(Op(
+          [&]() {
+            ops_in_flight++;
+            assert(int(ops_in_flight) <= kopqconcurr);
+            assert(int(ops_in_flight) >= 0);
+            ops_in_flight--;
+            counter++;
+          },
+          "yo"));
+    }
 
-		    },"yo"));
-		}
+    gopg1->drain();
+    gopq1->drain();
 
-	    gopg1->drain();
-	    gopq1->drain();
+    CHECK(counter == kops);
 
-		CHECK(counter==kops);
+    float elapsed = measure.SecsSinceStart();
 
-		float elapsed = measure.SecsSinceStart();
+    float fopspsec = float(kops) / elapsed;
 
-		float fopspsec = float(kops)/elapsed;
+    printf(
+        "opq_ballsout test nthr<%d> elapsed<%.02f sec> nops<%d> ops/sec[agg]<%d> ops/sec[/thr]<%d> counter<%d>\n",
+        knumthreads,
+        elapsed,
+        kops,
+        int(fopspsec),
+        int(fopspsec / float(knumthreads)),
+        int(counter));
 
-		printf( "opq_ballsout test nthr<%d> elapsed<%.02f sec> nops<%d> ops/sec[agg]<%d> ops/sec[/thr]<%d> counter<%d>\n", knumthreads, elapsed, kops, int(fopspsec), int(fopspsec/float(knumthreads)), int(counter) );
-
-	    delete gopq1;
-	}
+    delete gopq1;
+  }
 }
 
-TEST(opq_real_load)
-{
-	float fsynctime = ork::get_sync_time();
+TEST(opq_real_load) {
+  float fsynctime = ork::get_sync_time();
 
-	srand( u32(fsynctime*100.0f) ); // so we dont get the same thread count seqeuence every run
+  srand(u32(fsynctime * 100.0f)); // so we dont get the same thread count seqeuence every run
 
-	float favgopspsec = 0.0f;
+  float favgopspsec = 0.0f;
 
-	const int kdim = 512;
+  const int kdim = 512;
 
-	for( int i=0; i<16; i++ )
-	{
-		const int knumthreads = 8 + rand()%64;
-		const int kopqconcurr = knumthreads;
-		const int kops = 256;
+  for (int i = 0; i < 16; i++) {
+    const int knumthreads = 8 + rand() % 64;
+    const int kopqconcurr = knumthreads;
+    const int kops        = 256;
 
-	    auto gopq1 = new Opq(knumthreads);
-	    auto gopg1 = gopq1->CreateOpGroup("g1");
-	    gopg1->mLimitMaxOpsInFlight = 0;
+    auto gopq1                  = new OperationsQueue(knumthreads);
+    auto gopg1                  = gopq1->createConcurrencyGroup("g1");
+    gopg1->_limit_maxops_inflight = 0;
 
-	    ork::atomic<int> ops_in_flight;
-	    ork::atomic<int> counter;
+    ork::atomic<int> ops_in_flight;
+    ork::atomic<int> counter;
 
-	    ops_in_flight = 0;
-	    counter = 0;
+    ops_in_flight = 0;
+    counter       = 0;
 
-	    ork::Timer measure;
-	    measure.Start();
+    ork::Timer measure;
+    measure.Start();
 
-	    atomic_counter no_opt;
-	    no_opt.store(0);
+    atomic_counter no_opt;
+    no_opt.store(0);
 
-	    for( int i=0; i<kops; i++ )
-	    {
-		    gopg1->push(Op(
-		    [&]()
-		    {
-		    	int nops = 0;
-		    	ops_in_flight++;
+    for (int i = 0; i < kops; i++) {
+      gopg1->enqueue(Op(
+          [&]() {
+            int nops = 0;
+            ops_in_flight++;
 
-		    	float* pbuf = new float[ kdim*kdim ];
-		    	float fidim = 1.0f / float(kdim);
+            float* pbuf = new float[kdim * kdim];
+            float fidim = 1.0f / float(kdim);
 
-		    	for( int y=0; y<kdim; y++ )
-		    	{
-		    		float fy = float(y)*fidim;
-			    	for( int x=0; x<kdim; x++ )
-			    	{
-			    		float fx = float(x)*fidim;
-			    		int idx = (y*kdim)+x;
-			    		pbuf[idx] = sinf(fy*PI2)*cosf(fx*PI2)+tanf(fy*fx*PI2);
-			    		nops+=int(pbuf[idx]);
-		    		}
-		    	}
-		    	delete[] pbuf;
+            for (int y = 0; y < kdim; y++) {
+              float fy = float(y) * fidim;
+              for (int x = 0; x < kdim; x++) {
+                float fx  = float(x) * fidim;
+                int idx   = (y * kdim) + x;
+                pbuf[idx] = sinf(fy * PI2) * cosf(fx * PI2) + tanf(fy * fx * PI2);
+                nops += int(pbuf[idx]);
+              }
+            }
+            delete[] pbuf;
 
-				ops_in_flight--;
-				counter++;
-				no_opt.fetch_add(nops);
+            ops_in_flight--;
+            counter++;
+            no_opt.fetch_add(nops);
+          },
+          "yo"));
+    }
 
-		    },"yo"));
-		}
+    gopg1->drain();
+    gopq1->drain();
 
-	    gopg1->drain();
-	    gopq1->drain();
+    CHECK(counter == kops);
 
-		CHECK(counter==kops);
+    float elapsed = measure.SecsSinceStart();
 
-		float elapsed = measure.SecsSinceStart();
+    float fopspsec = float(kops) / elapsed;
+    favgopspsec += fopspsec;
 
-		float fopspsec = float(kops)/elapsed;
-		favgopspsec += fopspsec;
+    printf(
+        "opq_real_load nthr<%d> elapsed<%.04f sec> nops<%d> ops/sec[agg]<%d> ops/sec[/thr]<%d> counter<%d> no_opt<%d>\n",
+        knumthreads,
+        elapsed,
+        kops,
+        int(fopspsec),
+        int(fopspsec / float(knumthreads)),
+        int(counter),
+        int(no_opt.load()));
 
-		printf( "opq_real_load nthr<%d> elapsed<%.04f sec> nops<%d> ops/sec[agg]<%d> ops/sec[/thr]<%d> counter<%d> no_opt<%d>\n", knumthreads, elapsed, kops, int(fopspsec), int(fopspsec/float(knumthreads)), int(counter), int(no_opt.load()) );
-
-	    delete gopq1;
-	}
-	float agg = favgopspsec/float(16.0f);
-	float fMPPS = float(kdim*kdim)*agg/1000000.0f;
-	printf( "opq_real_load avg_ops/sec(agg) %f MPPS<%f>\n", agg, fMPPS );
+    delete gopq1;
+  }
+  float agg   = favgopspsec / float(16.0f);
+  float fMPPS = float(kdim * kdim) * agg / 1000000.0f;
+  printf("opq_real_load avg_ops/sec(agg) %f MPPS<%f>\n", agg, fMPPS);
 }
 
 #endif

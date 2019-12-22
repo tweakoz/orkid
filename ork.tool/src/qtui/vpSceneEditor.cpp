@@ -78,7 +78,9 @@ namespace ent {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneEditorView::Describe() { reflect::RegisterFunctor("SlotModelDirty", &SceneEditorView::SlotModelDirty); }
+void SceneEditorView::Describe() {
+  reflect::RegisterFunctor("SlotModelDirty", &SceneEditorView::SlotModelDirty);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -88,19 +90,20 @@ orkset<SceneEditorInitCb> SceneEditorVP::mInitCallbacks;
 
 UpdateThread* gupdatethread = 0;
 
-void SceneEditorVP::Describe() {}
+void SceneEditorVP::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::DisableSceneDisplay() {
-  ork::AssertOnOpQ2(ork::MainThreadOpQ());
+  ork::opq::assertOnQueue2(ork::opq::mainThreadQueue());
   mbSceneDisplayEnable = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::EnableSceneDisplay() {
-  ork::AssertOnOpQ2(ork::MainThreadOpQ());
+  ork::opq::assertOnQueue2(ork::opq::mainThreadQueue());
   mbSceneDisplayEnable = true;
 }
 
@@ -126,18 +129,17 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
   ///////////////////////////////////////////////////////////
 
   _simchannelsubscriber = msgrouter::channel("Simulation")->subscribe([=](msgrouter::content_t c) {
-
     if (auto as_sei = c.TryAs<ork::ent::SimulationEvent>()) {
       auto& sei = as_sei.value();
       switch (sei.GetEvent()) {
         case ork::ent::SimulationEvent::ESIEV_DISABLE_UPDATE: {
           auto lamb = [=]() { gUpdateStatus.SetState(EUPD_STOP); };
-          Op(lamb).QueueASync(UpdateSerialOpQ());
+          Op(lamb).QueueASync(updateSerialQueue());
           break;
         }
         case ork::ent::SimulationEvent::ESIEV_ENABLE_UPDATE: {
           auto lamb = [=]() { gUpdateStatus.SetState(EUPD_START); };
-          Op(lamb).QueueASync(UpdateSerialOpQ());
+          Op(lamb).QueueASync(updateSerialQueue());
           break;
         }
         case ork::ent::SimulationEvent::ESIEV_DISABLE_VIEW: {
@@ -147,7 +149,7 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
             //# maybe show a "loading" screen or something
           };
           // mDbLock.ReleaseCurrent();
-          Op(lamb).QueueASync(MainThreadOpQ());
+          Op(lamb).QueueASync(mainThreadQueue());
           break;
         }
         case ork::ent::SimulationEvent::ESIEV_ENABLE_VIEW: {
@@ -156,25 +158,21 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
             //#disable path that would lead to gfx globallock
             //# maybe show a "loading" screen or something
           };
-          Op(lamb).QueueASync(MainThreadOpQ());
+          Op(lamb).QueueASync(mainThreadQueue());
           // mDbLock.ReleaseCurrent();
           break;
         }
         case ork::ent::SimulationEvent::ESIEV_BIND:
           // mDbLock.ReleaseCurrent();
           break;
-        case ork::ent::SimulationEvent::ESIEV_START:{
-          auto lamb = [=]() {
-            UpdateRefreshPolicy();
-          };
-          Op(lamb).QueueASync(MainThreadOpQ());
+        case ork::ent::SimulationEvent::ESIEV_START: {
+          auto lamb = [=]() { UpdateRefreshPolicy(); };
+          Op(lamb).QueueASync(mainThreadQueue());
           break;
         }
-        case ork::ent::SimulationEvent::ESIEV_STOP:{
-        auto lamb = [=]() {
-          UpdateRefreshPolicy();
-        };
-        Op(lamb).QueueASync(MainThreadOpQ());
+        case ork::ent::SimulationEvent::ESIEV_STOP: {
+          auto lamb = [=]() { UpdateRefreshPolicy(); };
+          Op(lamb).QueueASync(mainThreadQueue());
           break;
         }
         case ork::ent::SimulationEvent::ESIEV_USER:
@@ -199,7 +197,9 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
 
 ///////////////////////////////////////////////////////////////////////////
 
-SceneEditorVP::~SceneEditorVP() { delete _updateThread; }
+SceneEditorVP::~SceneEditorVP() {
+  delete _updateThread;
+}
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -225,14 +225,21 @@ void SceneEditorVP::Init() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::RegisterInitCallback(ork::ent::SceneEditorInitCb icb) { mInitCallbacks.insert(icb); }
-void SceneEditorVP::IncPickDirtyCount(int icount) { mpPickBuffer->SetDirty(true); }
-void SceneEditorView::SlotModelDirty() { mVP->IncPickDirtyCount(1); }
+void SceneEditorVP::RegisterInitCallback(ork::ent::SceneEditorInitCb icb) {
+  mInitCallbacks.insert(icb);
+}
+void SceneEditorVP::IncPickDirtyCount(int icount) {
+  mpPickBuffer->SetDirty(true);
+}
+void SceneEditorView::SlotModelDirty() {
+  mVP->IncPickDirtyCount(1);
+}
 
 ///////////////////////////////////////////////////////////////////////////
 
 SceneEditorView::SceneEditorView(SceneEditorVP* vp)
-    : mVP(vp) {}
+    : mVP(vp) {
+}
 ///////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::DoInit(ork::lev2::GfxTarget* pTARG) {
@@ -246,7 +253,7 @@ void SceneEditorVP::DoInit(ork::lev2::GfxTarget* pTARG) {
 
   pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
 
-  //orkprintf("PickBuffer<%p>\n", mpPickBuffer);
+  // orkprintf("PickBuffer<%p>\n", mpPickBuffer);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -257,7 +264,7 @@ bool SceneEditorVP::isCompositorEnabled() {
   auto compsys            = compositingSystem();
   if (simulation()) {
     if (compsys)
-        compositor_enabled = compsys->enabled();
+      compositor_enabled = compsys->enabled();
   }
   mRenderLock = 0;
   return compositor_enabled;
@@ -269,7 +276,7 @@ bool SceneEditorVP::isCompositorEnabled() {
 
 void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
 
-  if( nullptr == _ctxbase ){
+  if (nullptr == _ctxbase) {
     _ctxbase = mpTarget->GetCtxBase();
   }
 
@@ -287,20 +294,20 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   /////////////////////////////////
   lev2::CompositingPassData TOPCPD;
   TOPCPD.SetDstRect(tgtrect);
-  TOPCPD._irendertarget = & rt;
+  TOPCPD._irendertarget = &rt;
   TOPCPD.SetDstRect(tgtrect);
   /////////////////////////////////
   // We must have a compositor to continue...
   /////////////////////////////////
   auto compsys = compositingSystem();
-  auto sim = simulation();
-  auto FBI = mpTarget->FBI();
+  auto sim     = simulation();
+  auto FBI     = mpTarget->FBI();
   static CompositingData _gdata;
   static CompositingImpl _gimpl(_gdata);
-  RCFD._cimpl = & _gimpl;
+  RCFD._cimpl = &_gimpl;
   _gimpl.pushCPD(TOPCPD);
   GL_ERRORCHECK();
-  if( nullptr == compsys or nullptr==sim){
+  if (nullptr == compsys or nullptr == sim) {
     // still want to draw something so we know the editor is alive..
     GL_ERRORCHECK();
     mpTarget->BeginFrame();
@@ -313,17 +320,19 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     this->Clear();
     DrawHUD(RCFD);
     DrawSpinner(RCFD);
-    if (DB) { DrawableBuffer::releaseReadDB(DB); }  // release consumed DB
+    if (DB) {
+      DrawableBuffer::releaseReadDB(DB);
+    } // release consumed DB
     mpTarget->EndFrame();
     mpTarget->popRenderContextFrameData();
     _gimpl.popCPD();
     GL_ERRORCHECK();
     return;
   }
-  RCFD._cimpl = & compsys->_impl;
+  RCFD._cimpl = &compsys->_impl;
   RCFD._cimpl->pushCPD(TOPCPD);
   auto simmode = sim->GetSimulationMode();
-  bool running = (simmode==ent::ESCENEMODE_RUN);
+  bool running = (simmode == ent::ESCENEMODE_RUN);
   ////////////////////////////////////////////////
   // FrameRenderer (and content)
   // rendering callback will be invoked from within compositor
@@ -335,28 +344,26 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   //////////////////////////////////////////////////
   GL_ERRORCHECK();
   mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
-      _renderer->SetTarget(mpTarget);
-      SetRect(mpTarget->GetX(), mpTarget->GetY(), mpTarget->GetW(), mpTarget->GetH());
-      FBI->SetAutoClear(true);
-      FBI->SetViewport(0, 0, TARGW, TARGH);
-      FBI->SetScissor(0, 0, TARGW, TARGH);
-      mpTarget->debugPopGroup();
-      GL_ERRORCHECK();
-      mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
-      mpTarget->BeginFrame();
-      mpTarget->debugPopGroup();
-      GL_ERRORCHECK();
-      mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
-      this->Clear();
-      mpTarget->debugPopGroup();
-      GL_ERRORCHECK();
-      mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
+  _renderer->SetTarget(mpTarget);
+  SetRect(mpTarget->GetX(), mpTarget->GetY(), mpTarget->GetW(), mpTarget->GetH());
+  FBI->SetAutoClear(true);
+  FBI->SetViewport(0, 0, TARGW, TARGH);
+  FBI->SetScissor(0, 0, TARGW, TARGH);
+  mpTarget->debugPopGroup();
+  GL_ERRORCHECK();
+  mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
+  mpTarget->BeginFrame();
+  mpTarget->debugPopGroup();
+  GL_ERRORCHECK();
+  mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
+  this->Clear();
+  mpTarget->debugPopGroup();
+  GL_ERRORCHECK();
+  mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
   mpTarget->debugPopGroup();
   GL_ERRORCHECK();
   //////////////////////////////////////////////////
-  lev2::FrameRenderer framerenderer(RCFD, [&]() {
-      renderMisc(RCFD);
-  });
+  lev2::FrameRenderer framerenderer(RCFD, [&]() { renderMisc(RCFD); });
   lev2::CompositorDrawData drawdata(framerenderer);
   drawdata._properties["primarycamindex"_crcu].Set<int>(miCameraIndex);
   drawdata._properties["cullcamindex"_crcu].Set<int>(miCullCameraIndex);
@@ -370,7 +377,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   mpTarget->debugPushGroup("toolvp::assemble");
   bool aok = compsys->_impl.assemble(drawdata);
   GL_ERRORCHECK();
-  mpTarget->debugMarker(FormatString("toolvp::aok<%d>",int(aok)));
+  mpTarget->debugMarker(FormatString("toolvp::aok<%d>", int(aok)));
   GL_ERRORCHECK();
   mpTarget->debugPopGroup();
   GL_ERRORCHECK();
@@ -380,35 +387,36 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   //   into final image
   //////////////////////////////////////////////////
   mpTarget->debugPushGroup("toolvp::composite");
-      if( aok ) compsys->_impl.composite(drawdata);
+  if (aok)
+    compsys->_impl.composite(drawdata);
   mpTarget->debugPopGroup();
   // todo - lock sim
   RCFD._cimpl->popCPD();
-  RCFD._cimpl = & _gimpl;
+  RCFD._cimpl = &_gimpl;
   GL_ERRORCHECK();
   //////////////////////////////////////////////////
   // after composite:
   //  render hud and other 2d non-content layers
   //////////////////////////////////////////////////
   mpTarget->debugPushGroup("toolvp::DRAWEND");
-      if (gtoggle_hud) {
-        DrawHUD(RCFD);
-        mpTarget->debugPushGroup("toolvp::DRAWEND::Children");
-        DrawChildren(drwev);
-        mpTarget->debugPopGroup();
-        if (false == FBI->IsPickState())
-          DrawSpinner(RCFD);
-      }
-      mpTarget->EndFrame();
+  if (gtoggle_hud) {
+    DrawHUD(RCFD);
+    mpTarget->debugPushGroup("toolvp::DRAWEND::Children");
+    DrawChildren(drwev);
+    mpTarget->debugPopGroup();
+    if (false == FBI->IsPickState())
+      DrawSpinner(RCFD);
+  }
+  mpTarget->EndFrame();
   mpTarget->debugPopGroup();
   //////////////////////////////////////////////////
   // update editor camera (TODO - move to engine)
   //////////////////////////////////////////////////
-  if( auto trycam = drawdata._properties["seleditcam"_crcu].TryAs<const CameraData*>() ){
-      auto CAMDAT = trycam.value();
-      _editorCamera = CAMDAT ? CAMDAT->getEditorCamera() : nullptr;
-      ManipManager().SetActiveCamera(_editorCamera);
-      mpTarget->debugMarker(FormatString("toolvp::_editorCamera<%p>", _editorCamera));
+  if (auto trycam = drawdata._properties["seleditcam"_crcu].TryAs<const CameraData*>()) {
+    auto CAMDAT   = trycam.value();
+    _editorCamera = CAMDAT ? CAMDAT->getEditorCamera() : nullptr;
+    ManipManager().SetActiveCamera(_editorCamera);
+    mpTarget->debugMarker(FormatString("toolvp::_editorCamera<%p>", _editorCamera));
   }
   ///////////////////////////////////////////////////////
   // filth up the pick buffer
@@ -448,13 +456,14 @@ const ent::Simulation* SceneEditorVP::simulation() {
 //  this may go to the onscreen or pickbuffer targets
 ///////////////////////////////////////////////////////////////////////////////
 
-
 struct ScopedSimFramer {
   ScopedSimFramer(const Simulation* sim)
       : _sim(sim) {
     sim->beginRenderFrame();
   }
-  ~ScopedSimFramer() { _sim->endRenderFrame(); }
+  ~ScopedSimFramer() {
+    _sim->endRenderFrame();
+  }
   const Simulation* _sim;
 };
 
@@ -462,13 +471,13 @@ struct ScopedSimFramer {
 
 void SceneEditorVP::renderMisc(lev2::RenderContextFrameData& RCFD) {
   ///////////////////////////////////////////////////////////////////////////
-  //auto sim = simulation();
-  //if((nullptr==sim))
-    //return;
+  // auto sim = simulation();
+  // if((nullptr==sim))
+  // return;
   ///////////////////////////////////////////////////////////////////////////
-  //ScopedSimFramer framescope(sim);
+  // ScopedSimFramer framescope(sim);
   ///////////////////////////////////////////////////////////////////////////
-  const auto& topCPD = RCFD.topCPD();
+  const auto& topCPD        = RCFD.topCPD();
   lev2::IRenderTarget* pIRT = topCPD._irendertarget;
   auto gfxtarg              = RCFD.GetTarget();
   auto FBI                  = gfxtarg->FBI();
@@ -499,12 +508,10 @@ void SceneEditorVP::UpdateRefreshPolicy() {
 
   auto sim = simulation();
 
-  if (nullptr == sim){
+  if (nullptr == sim) {
     //_ctxbase->SetRefreshPolicy(lev2::CTXBASE::EREFRESH_WHENDIRTY);
     return;
   }
-
-
 
   ///////////////////////////////////////////////////////////
   // refresh control
@@ -518,16 +525,16 @@ void SceneEditorVP::UpdateRefreshPolicy() {
     // if( enewmode != ecurmode )
     {
       switch (enewmode) {
-        case ent::ESCENEMODE_EDIT:{
+        case ent::ESCENEMODE_EDIT: {
           lev2::RefreshPolicyItem policy;
           policy._policy = lev2::EREFRESH_FIXEDFPS;
-          policy._fps = 2;
+          policy._fps    = 2;
           _ctxbase->_setRefreshPolicy(policy);
           break;
         }
         case ent::ESCENEMODE_RUN:
         case ent::ESCENEMODE_SINGLESTEP:
-        case ent::ESCENEMODE_PAUSE:{
+        case ent::ESCENEMODE_PAUSE: {
           lev2::RefreshPolicyItem policy;
           policy._policy = lev2::EREFRESH_FASTEST;
           _ctxbase->_setRefreshPolicy(policy);
@@ -545,9 +552,9 @@ void SceneEditorVP::UpdateRefreshPolicy() {
 void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
   lev2::GfxTarget* pTARG = FrameData.GetTarget();
   mpTarget->debugPushGroup("toolvp::DrawHUD");
-  auto MTXI              = pTARG->MTXI();
-  auto GBI               = pTARG->GBI();
-  const auto& topCPD = FrameData.topCPD();
+  auto MTXI               = pTARG->MTXI();
+  auto GBI                = pTARG->GBI();
+  const auto& topCPD      = FrameData.topCPD();
   const SRect& frame_rect = topCPD.GetDstRect();
 
   int itx0 = frame_rect.miX;
@@ -555,12 +562,12 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
   int ity0 = frame_rect.miY;
   int ity1 = frame_rect.miY2;
 
-    if( pTARG->_hiDPI ){
-      itx0 /= 2;
-      itx1 /= 2;
-      ity0 /= 2;
-      ity1 /= 2;
-    }
+  if (pTARG->_hiDPI) {
+    itx0 /= 2;
+    itx1 /= 2;
+    ity0 /= 2;
+    ity1 /= 2;
+  }
 
   static Texture* pplaytex = ork::asset::AssetManager<ork::lev2::TextureAsset>::Create("lev2://textures/play_icon")->GetTexture();
   static Texture* ppaustex = ork::asset::AssetManager<ork::lev2::TextureAsset>::Create("lev2://textures/pause_icon")->GetTexture();
@@ -740,19 +747,18 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
   MTXI->PopVMatrix(); // back to ortho
   MTXI->PopMMatrix(); // back to ortho
 
-  //if (_editorCamera) {
-    //_editorCamera->draw(pTARG);
+  // if (_editorCamera) {
+  //_editorCamera->draw(pTARG);
   //}
   mpTarget->debugPopGroup();
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::DrawGrid(ork::lev2::RenderContextFrameData& RCFD) {
   const auto& topCPD = RCFD.topCPD();
-  auto cammatrices = topCPD.cameraMatrices();
-  if( nullptr == cammatrices )
+  auto cammatrices   = topCPD.cameraMatrices();
+  if (nullptr == cammatrices)
     return;
 
   mpTarget->debugPushGroup("toolvp::DrawGrid");
@@ -780,8 +786,8 @@ void SceneEditorVP::DrawGrid(ork::lev2::RenderContextFrameData& RCFD) {
 
 void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& RCFD, ork::lev2::GfxTarget* pProxyTarg) {
   const auto& topCPD = RCFD.topCPD();
-  auto cammatrices = topCPD.cameraMatrices();
-  if( nullptr == cammatrices )
+  auto cammatrices   = topCPD.cameraMatrices();
+  if (nullptr == cammatrices)
     return;
 
   ork::lev2::GfxTarget* pOutputTarget = RCFD.GetTarget();
@@ -803,7 +809,7 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& RCFD, ork::lev2
         const fvec4 V0 = MatW.GetTranslation();
         const fvec4 V1 = V0 + ScreenXNorm * float(30.0f);
         fvec2 VP(float(pProxyTarg->GetW()), float(pProxyTarg->GetH()));
-        fvec3 Pos                = MatW.GetTranslation();
+        fvec3 Pos = MatW.GetTranslation();
         fvec3 UpVector;
         fvec3 RightVector;
         cammatrices->GetPixelLengthVectors(Pos, VP, UpVector, RightVector);
@@ -841,13 +847,12 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& RCFD, ork::lev2
 
 void SceneEditorVP::DrawSpinner(lev2::RenderContextFrameData& RCFD) {
   const auto& topCPD = RCFD.topCPD();
-  bool bhasfocus  = HasKeyboardFocus();
-  float fw        = topCPD.GetDstRect().miW;
-  float fh        = topCPD.GetDstRect().miH;
-  auto TGT        = RCFD.GetTarget();
+  bool bhasfocus     = HasKeyboardFocus();
+  float fw           = topCPD.GetDstRect().miW;
+  float fh           = topCPD.GetDstRect().miH;
+  auto TGT           = RCFD.GetTarget();
 
   mpTarget->debugPushGroup("toolvp::DrawSpinner");
-
 
   auto MTXI       = TGT->MTXI();
   ork::fmtx4 mtxP = MTXI->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);
@@ -899,7 +904,6 @@ void SceneEditorVP::DrawSpinner(lev2::RenderContextFrameData& RCFD) {
   TGT->BindMaterial(0);
 
   mpTarget->debugPopGroup();
-
 }
 
 } // namespace ent

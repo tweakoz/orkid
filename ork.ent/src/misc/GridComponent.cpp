@@ -174,7 +174,7 @@ void GridArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
         }
         static void QueueToLayerCallback(ork::lev2::DrawableBufItem&cdb)
         {
-            //AssertOnOpQ2( UpdateSerialOpQ() );
+            //AssertOnOpQ2( updateSerialQueue() );
 
         }
     };

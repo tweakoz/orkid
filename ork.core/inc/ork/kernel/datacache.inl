@@ -45,7 +45,8 @@ struct DataBlockCache {
           rval->reserve(len);
           FILE* fin   = fopen(cache_path.c_str(), "rb");
           void* pdata = malloc(len);
-          fread(pdata, len, 1, fin);
+          size_t numread = fread(pdata, len, 1, fin);
+          OrkAssert(numread==len);
           fclose(fin);
           rval->addData(pdata, len);
           free(pdata);

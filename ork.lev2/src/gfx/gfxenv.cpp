@@ -252,7 +252,7 @@ void GfxEnv::SetLoaderTarget(GfxTarget* target) {
     gLoaderTarget->BeginFrame();
     gLoaderTarget->EndFrame();
   };
-  MainThreadOpQ().push(gfxenvlateinit);
+  mainThreadQueue().enqueue(gfxenvlateinit);
 }
 
 /////////////////////////////////////////////////////////////////////////

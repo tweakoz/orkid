@@ -35,16 +35,21 @@ ork::MpMcBoundedQueue<RenderSyncToken> DrawableBuffer::mOfflineUpdateSynchro;
 
 ork::atomic<bool> DrawableBuffer::gbInsideClearAndSync;
 
-Layer::Layer() {}
+Layer::Layer() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void Drawable::Describe() { DrawableBuffer::gbInsideClearAndSync = false; }
+void Drawable::Describe() {
+  DrawableBuffer::gbInsideClearAndSync = false;
+}
 
-void ModelDrawable::Describe() {}
+void ModelDrawable::Describe() {
+}
 
-void CallbackDrawable::Describe() {}
+void CallbackDrawable::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -62,7 +67,9 @@ RenderSyncToken DrawableBuffer::acquireRenderToken() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawableBuffer::setPreRenderCallback(int key, prerendercallback_t cb) { _preRenderCallbacks.AddSorted(key, cb); }
+void DrawableBuffer::setPreRenderCallback(int key, prerendercallback_t cb) {
+  _preRenderCallbacks.AddSorted(key, cb);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -74,11 +81,11 @@ void DrawableBuffer::invokePreRenderCallbacks(lev2::RenderContextFrameData& RCFD
 ///////////////////////////////////////////////////////////////////////////////
 
 void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName, lev2::IRenderer* renderer) const {
-  lev2::GfxTarget* target                            = renderer->GetTarget();
+  lev2::GfxTarget* target                       = renderer->GetTarget();
   const ork::lev2::RenderContextFrameData* RCFD = target->topRenderContextFrameData();
-  const auto& topCPD                                 = RCFD->topCPD();
+  const auto& topCPD                            = RCFD->topCPD();
 
-  if(false==topCPD.isValid())
+  if (false == topCPD.isValid())
     return;
 
   bool DoAll = (0 == strcmp(LayerName.c_str(), "All"));
@@ -91,10 +98,11 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName, lev2
 
     bool Match = (LayerName == TestLayerName);
 
-    target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue TestLayerName<%s> player<%p> Match<%d>",
-                                     TestLayerName.c_str(),
-                                     player,
-                                     int(Match)));
+    target->debugMarker(FormatString(
+        "DrawableBuffer::enqueueLayerToRenderQueue TestLayerName<%s> player<%p> Match<%d>",
+        TestLayerName.c_str(),
+        player,
+        int(Match)));
 
     if (DoAll || (Match && topCPD.HasLayer(TestLayerName))) {
       target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer itemcount<%d>", player->miItemIndex + 1));
@@ -112,7 +120,7 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName, lev2
 ///////////////////////////////////////////////////////////////////////////////
 
 void DrawableBuffer::Reset() {
-  // AssertOnOpQ2( UpdateSerialOpQ() );
+  // ork::opq::assertOnQueue2( updateSerialQueue() );
 
   miNumLayersUsed = 0;
   mLayers.clear();
@@ -126,7 +134,7 @@ void DrawableBuffer::Reset() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DrawableBufLayer::Reset(const DrawableBuffer& dB) {
-  // AssertOnOpQ2( UpdateSerialOpQ() );
+  // ork::opq::assertOnQueue2( updateSerialQueue() );
   miBufferIndex = dB.miBufferIndex;
   miItemIndex   = -1;
 }
@@ -134,7 +142,7 @@ void DrawableBufLayer::Reset(const DrawableBuffer& dB) {
 ///////////////////////////////////////////////////////////////////////////////
 
 DrawableBufLayer* DrawableBuffer::MergeLayer(const PoolString& layername) {
-  AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
   DrawableBufLayer* player     = 0;
   LayerLut::const_iterator itL = mLayerLut.find(layername);
   if (itL != mLayerLut.end()) {
@@ -151,7 +159,7 @@ DrawableBufLayer* DrawableBuffer::MergeLayer(const PoolString& layername) {
 ///////////////////////////////////////////////////////////////////////////////
 
 DrawableBufItem& DrawableBufLayer::Queue(const DrawQueueXfData& xfdata, const Drawable* d) {
-  AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
   // mDrawBufItems.push_back(DrawableBufItem()); // replace std::vector with an array so we can amortize construction costs
   miItemIndex++;
   OrkAssert(miItemIndex < kmaxitems);
@@ -168,15 +176,18 @@ DrawableBufItem& DrawableBufLayer::Queue(const DrawQueueXfData& xfdata, const Dr
 
 DrawableBuffer::DrawableBuffer(int ibidx)
     : miBufferIndex(ibidx)
-    , miNumLayersUsed(0) {}
+    , miNumLayersUsed(0) {
+}
 
 DrawableBufLayer::DrawableBufLayer()
     : miItemIndex(-1)
-    , miBufferIndex(-1) {}
+    , miBufferIndex(-1) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DrawableBuffer::~DrawableBuffer() {}
+DrawableBuffer::~DrawableBuffer() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -184,10 +195,10 @@ const CameraData* DrawableBuffer::cameraData(int icam) const {
   int inumscenecameras = _cameraDataLUT.size();
   // printf( "NumSceneCameras<%d>\n", inumscenecameras );
   if (icam >= 0 && inumscenecameras) {
-    icam                     = icam % inumscenecameras;
-    auto& itCAM              = _cameraDataLUT.GetItemAtIndex(icam);
-    const CameraData* pdata  = itCAM.second;
-    auto pcam = pdata->getEditorCamera();
+    icam                    = icam % inumscenecameras;
+    auto& itCAM             = _cameraDataLUT.GetItemAtIndex(icam);
+    const CameraData* pdata = itCAM.second;
+    auto pcam               = pdata->getEditorCamera();
     // printf( "icam<%d> pdata<%p> pcam<%p>\n", icam, pdata, pcam );
     return pdata;
   }
@@ -209,17 +220,21 @@ const CameraData* DrawableBuffer::cameraData(const PoolString& named) const {
 /////////////////////////////////////////////////////////////////////
 static concurrent_multi_buffer<DrawableBuffer, 2> gBuffers;
 /////////////////////////////////////////////////////////////////////
-const DrawableBuffer* DrawableBuffer::acquireReadDB(int lid) { return gBuffers.BeginRead(); }
+const DrawableBuffer* DrawableBuffer::acquireReadDB(int lid) {
+  return gBuffers.BeginRead();
+}
 /////////////////////
-void DrawableBuffer::releaseReadDB(const DrawableBuffer* db) { gBuffers.EndRead(db); }
+void DrawableBuffer::releaseReadDB(const DrawableBuffer* db) {
+  gBuffers.EndRead(db);
+}
 /////////////////////////////////////////////////////////////////////
 DrawableBuffer* DrawableBuffer::LockWriteBuffer(int lid) {
-  AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
   DrawableBuffer* wbuf = gBuffers.BeginWrite();
   return wbuf;
 }
 void DrawableBuffer::UnLockWriteBuffer(DrawableBuffer* db) {
-  AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
   gBuffers.EndWrite(db);
 }
 /////////////////////////////////////////////////////////////////////
@@ -227,7 +242,7 @@ void DrawableBuffer::UnLockWriteBuffer(DrawableBuffer* db) {
 //  sync until flushed
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::BeginClearAndSyncReaders() {
-  AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
 
   bool b = gbInsideClearAndSync.exchange(true);
   OrkAssert(b == false);
@@ -236,7 +251,7 @@ void DrawableBuffer::BeginClearAndSyncReaders() {
 }
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::EndClearAndSyncReaders() {
-  AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
   bool b = gbInsideClearAndSync.exchange(false);
   OrkAssert(b == true);
   ////////////////////
@@ -245,20 +260,20 @@ void DrawableBuffer::EndClearAndSyncReaders() {
 }
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::BeginClearAndSyncWriters() {
-  // AssertOnOpQ2( UpdateSerialOpQ() );
+  // ork::opq::assertOnQueue2( updateSerialQueue() );
   // printf( "DrawableBuffer::BeginClearAndSyncWriters()\n");
   gBuffers.disable();
 }
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::EndClearAndSyncWriters() {
-  // AssertOnOpQ2( UpdateSerialOpQ() );
+  // ork::opq::assertOnQueue2( updateSerialQueue() );
   ////////////////////
   // printf( "DrawableBuffer::EndClearAndSyncWriters()\n");
   gBuffers.enable();
 }
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::ClearAndSyncReaders() {
-  AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
 
   BeginClearAndSyncReaders();
   EndClearAndSyncReaders();
@@ -273,11 +288,11 @@ Drawable::Drawable()
     : mDataA(nullptr)
     , mDataB(nullptr)
     , mEnabled(true) {
-  AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
   fflush(stdout);
 }
 Drawable::~Drawable() {
-  AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
   // printf( "Delete Drawable<%p>\n", this );
 }
 
@@ -329,7 +344,7 @@ void ModelDrawable::SetModelInst(lev2::XgmModelInst* pModelInst) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ModelDrawable::QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
-  AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
 
   const lev2::XgmModel* Model = mModelInst->GetXgmModel();
   bool IsSkinned              = Model->IsSkinned();
@@ -361,7 +376,7 @@ void ModelDrawable::QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer
 ///////////////////////////////////////////////////////////////////////////////
 
 void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
-  AssertOnOpQ2(MainThreadOpQ());
+  ork::opq::assertOnQueue2(mainThreadQueue());
   auto RCFD          = renderer->GetTarget()->topRenderContextFrameData();
   const auto& topCPD = RCFD->topCPD();
 
@@ -555,7 +570,8 @@ CallbackDrawable::CallbackDrawable(DrawableOwner* pent)
     , mSortKey(4)
     , mRenderCallback(0)
     , mQueueToLayerCallback(0)
-    , mDataDestroyer(0) {}
+    , mDataDestroyer(0) {
+}
 ///////////////////////////////////////////////////////////////////////////////
 CallbackDrawable::~CallbackDrawable() {
   if (mDataDestroyer) {
@@ -569,7 +585,7 @@ CallbackDrawable::~CallbackDrawable() {
 // Multithreaded Renderer DB
 ///////////////////////////////////////////////////////////////////////////////
 void CallbackDrawable::QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
-  AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
 
   DrawableBufItem& cdb = buffer.Queue(xfdata, this);
   cdb.mUserData0       = GetUserDataA();
@@ -581,7 +597,7 @@ void CallbackDrawable::QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLa
 //
 ///////////////////////////////////////////////////////////////////////////////
 void CallbackDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
-  AssertOnOpQ2(MainThreadOpQ());
+  ork::opq::assertOnQueue2(mainThreadQueue());
 
   lev2::CallbackRenderable& renderable = renderer->QueueCallback();
   renderable.SetMatrix(item.mXfData.mWorldMatrix);
@@ -597,8 +613,10 @@ void CallbackDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::I
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawableOwner::Describe() {}
-DrawableOwner::DrawableOwner() {}
+void DrawableOwner::Describe() {
+}
+DrawableOwner::DrawableOwner() {
+}
 DrawableOwner::~DrawableOwner() {
   for (LayerMap::const_iterator itL = mLayerMap.begin(); itL != mLayerMap.end(); itL++) {
     DrawableVector* pldrawables = itL->second;

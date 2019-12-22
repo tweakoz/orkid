@@ -5,10 +5,9 @@
 #include <ork/kernel/opq.h>
 #include <utpp/UnitTest++.h>
 
-
 TEST(pbr1) {
   // we must load shaders on the main thread!
-  ork::MainThreadOpQ().push([&]() {
+  ork::opq::mainThreadQueue().enqueue([&]() {
     auto targ = ork::lev2::GfxEnv::GetRef().GetLoaderTarget();
     printf("targ<%p>\n", targ);
     CHECK(targ != nullptr);
@@ -24,5 +23,5 @@ TEST(pbr1) {
     CHECK(mtl != nullptr);
   });
 
-  ork::MainThreadOpQ().drain();
+  ork::opq::mainThreadQueue().drain();
 }

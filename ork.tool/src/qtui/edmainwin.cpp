@@ -303,28 +303,28 @@ void EditorMainWindow::ArchExport(){
 	auto lamb = [=](){
 		this->mEditorBase.EditorArchExport();
 	};
-	UpdateSerialOpQ().push_sync(Op(lamb));
+	updateSerialQueue().enqueueAndWait(Op(lamb));
 }
 ///////////////////////////////////////////////////////////////////////////
 void EditorMainWindow::ArchImport(){
 	auto lamb = [=](){
 		this->mEditorBase.EditorArchImport();
 	};
-	UpdateSerialOpQ().push_sync(Op(lamb));
+	updateSerialQueue().enqueueAndWait(Op(lamb));
 }
 ///////////////////////////////////////////////////////////////////////////
 void EditorMainWindow::ArchMakeReferenced(){
 	auto lamb = [=](){
 		this->mEditorBase.EditorArchMakeReferenced();
 	};
-	UpdateSerialOpQ().push_sync(Op(lamb));
+	updateSerialQueue().enqueueAndWait(Op(lamb));
 }
 ///////////////////////////////////////////////////////////////////////////
 void EditorMainWindow::ArchMakeLocal(){
 	auto lamb = [=](){
 		this->mEditorBase.EditorArchMakeLocal();
 	};
-	UpdateSerialOpQ().push_sync(Op(lamb));
+	updateSerialQueue().enqueueAndWait(Op(lamb));
 }
 ///////////////////////////////////////////////////////////////////////////
 void EditorMainWindow::NewEntity(){
@@ -342,7 +342,7 @@ void EditorMainWindow::NewEntities(){
 															 1, // step
 															 &ok);
 	if(ok){
-		UpdateSerialOpQ().push_sync(Op([=](){
+		updateSerialQueue().enqueueAndWait(Op([=](){
 			this->mEditorBase.EditorNewEntities(i);
 		}));
 	}

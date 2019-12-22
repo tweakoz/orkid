@@ -89,9 +89,9 @@ public:
 		: ConstructOutPlug( OutputA, EPR_UNIFORM )
 		, ConstructOutPlug( OutputB, EPR_UNIFORM )
 		, ConstructOutPlug( OutputC, EPR_UNIFORM )
-		, mOutDataOutputA(1.0f) 
-		, mOutDataOutputB(2.0f) 
-		, mOutDataOutputC(3.0f) 
+		, mOutDataOutputA(1.0f)
+		, mOutDataOutputB(2.0f)
+		, mOutDataOutputC(3.0f)
 	{
 
 	}
@@ -129,7 +129,7 @@ public: //
 Img32 ImgModule::gNoCon;
 
 void ImgModule::Describe()
-{	
+{
 }
 
 ////////////////////////////////////////////////////////////
@@ -154,7 +154,7 @@ public: //
 };
 
 void Img32Module::Describe()
-{	
+{
 	RegisterObjOutPlug( Img32Module, ImgOut );
 }
 
@@ -180,7 +180,7 @@ public: //
 };
 
 void Img64Module::Describe()
-{	
+{
 	RegisterObjOutPlug( Img64Module, ImgOut );
 }
 
@@ -206,8 +206,8 @@ public: //
 	/*inplugbase* GetInput(int idx) override
 	{	ork::dataflow::inplugbase* rval = nullptr;
 		switch( idx )
-		{	case 0:	rval = & mPlugInpInputA; break; 
-			case 1:	rval = & mPlugInpInputB; break; 
+		{	case 0:	rval = & mPlugInpInputA; break;
+			case 1:	rval = & mPlugInpInputB; break;
 		}
 		return rval;
 	}*/
@@ -249,8 +249,8 @@ public: //
 	inplugbase* GetInput(int idx) override
 	{	ork::dataflow::inplugbase* rval = nullptr;
 		switch( idx )
-		{	case 0:	rval = & mPlugInpInput; break; 
-			case 1:	rval = & mPlugInpFloatInp; break; 
+		{	case 0:	rval = & mPlugInpInput; break;
+			case 1:	rval = & mPlugInpFloatInp; break;
 		}
 		return rval;
 	}
@@ -294,8 +294,8 @@ public: //
 	inplugbase* GetInput(int idx) override
 	{	ork::dataflow::inplugbase* rval = nullptr;
 		switch( idx )
-		{	case 0:	rval = & mPlugInpInputA; break; 
-			case 1:	rval = & mPlugInpInputB; break; 
+		{	case 0:	rval = & mPlugInpInputA; break;
+			case 1:	rval = & mPlugInpInputB; break;
 		}
 		return rval;
 	}
@@ -341,9 +341,9 @@ public: //
 	inplugbase* GetInput(int idx) override
 	{	ork::dataflow::inplugbase* rval = nullptr;
 		switch( idx )
-		{	case 0:	rval = & mPlugInpInputA; break; 
-			case 1:	rval = & mPlugInpInputB; break; 
-			case 2:	rval = & mPlugInpInputC; break; 
+		{	case 0:	rval = & mPlugInpInputA; break;
+			case 1:	rval = & mPlugInpInputB; break;
+			case 2:	rval = & mPlugInpInputC; break;
 		}
 		return rval;
 	}
@@ -357,7 +357,7 @@ public:
 		, ConstructInpPlug( InputA,EPR_UNIFORM,mfInputA )
 		, ConstructInpPlug( InputB,EPR_UNIFORM,mfInputB )
 		, ConstructInpPlug( InputC,EPR_UNIFORM,mfInputC )
-		, mOutDataOutputA(1.0f) 
+		, mOutDataOutputA(1.0f)
 		, mfInputA(2.0f)
 		, mfInputB(3.0f)
 		, mfInputC(4.0f)
@@ -420,7 +420,7 @@ toposort k<6> mod<sh>
 ////////////////////////////////////////////////////////////
 
 TEST(dflow_1)
-{	
+{
 	TestGraph tg;
 	auto gl = new GlobalModule;
 	auto gr = new GradientModule;
@@ -521,7 +521,6 @@ TEST(dflow_1)
 
 	tg.RefreshTopology(ctx);
 
-	OrkAssert(false);
 }
 
 ////////////////////////////////////////////////////////////

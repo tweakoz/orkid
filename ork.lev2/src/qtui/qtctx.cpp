@@ -64,15 +64,17 @@ QCtxWidget::~QCtxWidget() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void QCtxWidget::SendOrkUiEvent() {
-  if (UIEvent().mpGfxWin){
-    UIEvent()._vpdim = fvec2(miWidth,miHeight);
+  if (UIEvent().mpGfxWin) {
+    UIEvent()._vpdim = fvec2(miWidth, miHeight);
     UIEvent().mpGfxWin->GetRootWidget()->HandleUiEvent(UIEvent());
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool QCtxWidget::event(QEvent* event) { return QWidget::event(event); }
+bool QCtxWidget::event(QEvent* event) {
+  return QWidget::event(event);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -132,11 +134,10 @@ void QCtxWidget::MouseEventCommon(QMouseEvent* event) {
   int ix = event->x();
   int iy = event->y();
 
-  if( _HIDPI ) {
+  if (_HIDPI) {
     ix /= 2;
     iy /= 2;
   }
-
 
   uiev.mbALT          = (modifiers & Qt::AltModifier);
   uiev.mbCTRL         = (modifiers & Qt::ControlModifier);
@@ -160,8 +161,8 @@ void QCtxWidget::MouseEventCommon(QMouseEvent* event) {
   uiev.mfUnitX     = unitX;
   uiev.mfUnitY     = unitY;
 
-//   printf( "UNITX<%f> UNITY<%f>\n", unitX, unitY );
-//    printf( "ix<%d %d>\n", ix, iy );
+  //   printf( "UNITX<%f> UNITY<%f>\n", unitX, unitY );
+  //    printf( "ix<%d %d>\n", ix, iy );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -174,7 +175,7 @@ void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
 
   gpos.x = event->x();
   gpos.y = event->y();
-  if( _HIDPI ) {
+  if (_HIDPI) {
     gpos.x /= 2.0f;
     gpos.y /= 2.0f;
   }
@@ -184,12 +185,12 @@ void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
 
   uiev.miEventCode = (Buttons == Qt::NoButton) ? ork::ui::UIEV_MOVE : ork::ui::UIEV_DRAG;
 
-  if (vp){
-    uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
-    if( _HIDPI ){
+  if (vp) {
+    uiev._vpdim = fvec2(vp->GetW(), vp->GetH());
+    if (_HIDPI) {
       uiev._vpdim *= 0.5;
     }
-    //gpos.x /= 2.0f;
+    // gpos.x /= 2.0f;
     vp->HandleUiEvent(uiev);
   }
   if (mpCtxBase)
@@ -204,9 +205,9 @@ void QCtxWidget::mousePressEvent(QMouseEvent* event) {
   auto gfxwin      = uiev.mpGfxWin;
   auto vp          = gfxwin ? gfxwin->GetRootWidget() : nullptr;
   uiev.miEventCode = ork::ui::UIEV_PUSH;
-  if (vp){
-    uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
-    if( _HIDPI ){
+  if (vp) {
+    uiev._vpdim = fvec2(vp->GetW(), vp->GetH());
+    if (_HIDPI) {
       uiev._vpdim *= 0.5;
     }
     vp->HandleUiEvent(uiev);
@@ -224,9 +225,9 @@ void QCtxWidget::mouseDoubleClickEvent(QMouseEvent* event) {
   auto vp          = gfxwin ? gfxwin->GetRootWidget() : nullptr;
   uiev.miEventCode = ork::ui::UIEV_DOUBLECLICK;
 
-  if (vp){
-    uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
-    if( _HIDPI ){
+  if (vp) {
+    uiev._vpdim = fvec2(vp->GetW(), vp->GetH());
+    if (_HIDPI) {
       uiev._vpdim *= 0.5;
     }
     vp->HandleUiEvent(uiev);
@@ -244,9 +245,9 @@ void QCtxWidget::mouseReleaseEvent(QMouseEvent* event) {
   auto vp          = gfxwin ? gfxwin->GetRootWidget() : nullptr;
   uiev.miEventCode = ork::ui::UIEV_RELEASE;
 
-  if (vp){
-    uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
-    if( _HIDPI ){
+  if (vp) {
+    uiev._vpdim = fvec2(vp->GetW(), vp->GetH());
+    if (_HIDPI) {
       uiev._vpdim *= 0.5;
     }
     vp->HandleUiEvent(uiev);
@@ -284,9 +285,9 @@ void QCtxWidget::wheelEvent(QWheelEvent* qem) {
 
   uiev.miMWY = idelta;
 
-  if (vp && idelta != 0){
-    uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
-    if( _HIDPI ){
+  if (vp && idelta != 0) {
+    uiev._vpdim = fvec2(vp->GetW(), vp->GetH());
+    if (_HIDPI) {
       uiev._vpdim *= 0.5;
     }
     vp->HandleUiEvent(uiev);
@@ -331,9 +332,9 @@ void QCtxWidget::keyPressEvent(QKeyEvent* event) {
     uiev.miKeyCode = 13;
   }
 
-  if (vp){
-    uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
-    if( _HIDPI ){
+  if (vp) {
+    uiev._vpdim = fvec2(vp->GetW(), vp->GetH());
+    if (_HIDPI) {
       uiev._vpdim *= 0.5;
     }
     vp->HandleUiEvent(uiev);
@@ -372,9 +373,9 @@ void QCtxWidget::keyReleaseEvent(QKeyEvent* event) {
     uiev.miKeyCode = 13;
   }
 
-  if (vp){
-    uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
-    if( _HIDPI ){
+  if (vp) {
+    uiev._vpdim = fvec2(vp->GetW(), vp->GetH());
+    if (_HIDPI) {
       uiev._vpdim *= 0.5;
     }
     vp->HandleUiEvent(uiev);
@@ -422,20 +423,32 @@ void QCtxWidget::focusOutEvent(QFocusEvent* event) {
     mpCtxBase->SlotRepaint();
 }
 
-ui::Event& QCtxWidget::UIEvent() { return mpCtxBase->mUIEvent; }
-const ui::Event& QCtxWidget::UIEvent() const { return mpCtxBase->mUIEvent; }
+ui::Event& QCtxWidget::UIEvent() {
+  return mpCtxBase->mUIEvent;
+}
+const ui::Event& QCtxWidget::UIEvent() const {
+  return mpCtxBase->mUIEvent;
+}
 
-GfxTarget* QCtxWidget::Target() const { return mpCtxBase->mpTarget; }
+GfxTarget* QCtxWidget::Target() const {
+  return mpCtxBase->mpTarget;
+}
 
-GfxWindow* QCtxWidget::GetGfxWindow() const { return mpCtxBase->mpGfxWindow; }
+GfxWindow* QCtxWidget::GetGfxWindow() const {
+  return mpCtxBase->mpGfxWindow;
+}
 
-bool QCtxWidget::AlwaysRun() const { return mpCtxBase->mbAlwaysRun; }
+bool QCtxWidget::AlwaysRun() const {
+  return mpCtxBase->mbAlwaysRun;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-QTimer& CTQT::Timer() const { return mpQtWidget->mQtTimer; }
+QTimer& CTQT::Timer() const {
+  return mpQtWidget->mQtTimer;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -449,7 +462,9 @@ void CTQT::Show() {
   }
 }
 
-void CTQT::Hide() { mParent->hide(); }
+void CTQT::Hide() {
+  mParent->hide();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -469,7 +484,7 @@ inline int to_qtmillis(RefreshPolicyItem policy) {
       qt_millis = -1;
       break;
     case EREFRESH_FIXEDFPS:
-      qt_millis = user_millis+1;
+      qt_millis = user_millis + 1;
       break;
     default:
       break;
@@ -557,7 +572,7 @@ void CTQT::Resize(int X, int Y, int W, int H) {
   //////////////////////////////////////////////////////////
 
   this->SetThisXID((CTFLXID)winId());
-  //printf( "CTQT::Resize() mpTarget<%p>\n", mpTarget );
+  // printf( "CTQT::Resize() mpTarget<%p>\n", mpTarget );
   if (mpTarget) {
     mpTarget->SetSize(X, Y, W, H);
     mUIEvent.mpGfxWin = (GfxWindow*)mpTarget->FBI()->GetThisBuffer();
@@ -607,11 +622,11 @@ void CTQT::SlotRepaint() {
     ork::PerfMarkerPush("ork.viewport.draw.end");
   };
 
-  if (OpqTest::GetContext()->mOPQ == &MainThreadOpQ()) {
+  if (OpqTest::GetContext()->_queue == &mainThreadQueue()) {
     // already on main Q
     lamb();
   } else {
-    MainThreadOpQ().push(Op(lamb));
+    mainThreadQueue().enqueue(Op(lamb));
   }
 }
 

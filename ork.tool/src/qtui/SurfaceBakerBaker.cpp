@@ -65,7 +65,7 @@ public:
 
 class BakeProcessor : public QObject
 {
-    
+
 public:
 
 	BakeJobThread*		mJobThread;
@@ -148,7 +148,7 @@ notok:
 			if( bev->mbLocal )	BakeLocal(bev);
 			else				BakeRemote(bev);
 		}
-		
+
 		return rval;
 	}
 	///////////////////////////////////////////////////////////////////////////////
@@ -158,7 +158,7 @@ notok:
 		{	auto lamb = [&]()
 			{	fn->mProcessViewer->start(cmdstr.c_str());
 			};
-			MainThreadOpQ().push_sync(Op(lamb));
+			mainThreadQueue().enqueueAndWait(Op(lamb));
 			return fn->mProcessViewer->wait();
 		}
 		return -1000;
@@ -259,7 +259,7 @@ void BakeJobThread::ActivateJob()
 			FileEnv::DoesDirectoryExist(dst_imgpathA)
 		?	dst_imgpathA
 		:	dst_imgpathB;
-	
+
 	if( false == FileEnv::DoesDirectoryExist(dst_imagepath) )
 	{
 		std::string  str = CreateFormattedString("ERROR lightmaps Folder Does Not Exist<%s>\n",dst_imagepath.c_str());
@@ -284,57 +284,57 @@ void BakeJobThread::ActivateJob()
 	std::string src_bz2filename = std::string(src_rgmfilename.c_str()) + std::string(".bz2");
 	std::string dst_bz2filename = std::string(dst_rgmfilename.c_str()) + std::string(".bz2");
 	//////////////////////////////////////////////
-	std::string copythere_options = 
-		CreateFormattedString(	
-			"-v -P %d -i %s %s michael@%s:%s", 
-			isshport,	
+	std::string copythere_options =
+		CreateFormattedString(
+			"-v -P %d -i %s %s michael@%s:%s",
+			isshport,
 			id_dsafile.c_str(),
 			src_bz2filename.c_str(),
 			machinename.c_str(),
-			dst_bz2filename.c_str() 
+			dst_bz2filename.c_str()
 		);
-	std::string fullcmd_ct = pscpcmd + copythere_options;		
+	std::string fullcmd_ct = pscpcmd + copythere_options;
 	//////////////////////////////////////////////
-	std::string remotedecomp_options = 
-		CreateFormattedString(	
-			"-v -ssh -C -P %d -i %s michael@%s bzip2 -d -f %s", 
-			isshport,	
+	std::string remotedecomp_options =
+		CreateFormattedString(
+			"-v -ssh -C -P %d -i %s michael@%s bzip2 -d -f %s",
+			isshport,
 			id_dsafile.c_str(),
 			machinename.c_str(),
-			dst_bz2filename.c_str() 
+			dst_bz2filename.c_str()
 		);
-	std::string fullcmd_decomp = plnkcmd + remotedecomp_options;		
+	std::string fullcmd_decomp = plnkcmd + remotedecomp_options;
 	//////////////////////////////////////////////
-	std::string remotegelato_options = 
-		CreateFormattedString(	
-			"-v -ssh -C -P %d -i %s michael@%s gelato %s", 
-			isshport,	
+	std::string remotegelato_options =
+		CreateFormattedString(
+			"-v -ssh -C -P %d -i %s michael@%s gelato %s",
+			isshport,
 			id_dsafile.c_str(),
 			machinename.c_str(),
-			dst_rgmfilename.c_str() 
+			dst_rgmfilename.c_str()
 		);
-	std::string fullcmd_gel = plnkcmd + remotegelato_options;		
+	std::string fullcmd_gel = plnkcmd + remotegelato_options;
 	//////////////////////////////////////////////
-	std::string copyback_options = 
-		CreateFormattedString(	
-			"-v -C -P %d -i %s michael@%s:%s %s", 
-			isshport,	
+	std::string copyback_options =
+		CreateFormattedString(
+			"-v -C -P %d -i %s michael@%s:%s %s",
+			isshport,
 			id_dsafile.c_str(),
 			machinename.c_str(),
 			dst_imagepath.c_str(),
-			dst_imagepath.c_str() 
+			dst_imagepath.c_str()
 		);
-	std::string fullcmd_cb = pscpcmd + copyback_options;		
+	std::string fullcmd_cb = pscpcmd + copyback_options;
 	//////////////////////////////////////////////
 	if( blocal )
 	{
-		fullcmd_gel = 
-		CreateFormattedString(	
-			"ext\\miniork\\ext\\bin\\lmapper.exe -in %s -litin %s -outdir %s", 
-			src_rgmfilename.c_str(), 
+		fullcmd_gel =
+		CreateFormattedString(
+			"ext\\miniork\\ext\\bin\\lmapper.exe -in %s -litin %s -outdir %s",
+			src_rgmfilename.c_str(),
 			LitFilePath.ToAbsolute().c_str(),
 			dst_imagepath.c_str()
-		);		
+		);
 	}
 	//////////////////////////////////////////////
 	if( pfarmnode )
@@ -446,7 +446,7 @@ bool PerformBake( BakeOps* pOPS, const BakerSettings* psetting,const FarmNodeGro
 		orkset<FarmJob*>& locked_jobs = bkctx->mJobSet.LockForWrite();
 		//////////////////////////////////////////
 		{	const orklut<PoolString,FarmJob*>& jobs = jobset->GetJobs();
-			for( orklut<PoolString,FarmJob*>::const_iterator 
+			for( orklut<PoolString,FarmJob*>::const_iterator
 				it=jobs.begin();
 				it!=jobs.end();
 				it++ )
@@ -472,17 +472,17 @@ bool PerformBake( BakeOps* pOPS, const BakerSettings* psetting,const FarmNodeGro
 				it++ )
 		{
 			fnpool.mPool.direct_access(idx).mFarmNode = *(it->second);
-			fnpool.mPool.direct_access(idx).mProcessViewer = 
+			fnpool.mPool.direct_access(idx).mProcessViewer =
 				new ork::tool::ProcessView( it->first.c_str(), ork::tool::gpQtApplication->mpMainWindow );
 
 			BakeJobThread* bjt = new BakeJobThread( bkctx, & fnpool.mPool.direct_access(idx) );
 
-			bool bcon = bjt->connect( 
-				bjt,  SIGNAL(SigAppendString(QString)), 
+			bool bcon = bjt->connect(
+				bjt,  SIGNAL(SigAppendString(QString)),
 				fnpool.mPool.direct_access(idx).mProcessViewer, SLOT(AppendString(QString))
 				);
 
-			bjt->start();			
+			bjt->start();
 
 			idx++;
 		}
@@ -506,23 +506,23 @@ void CollectLights( MeshUtil::LightContainer& lc, const SceneData* psd, const st
 		const EntData* pentd = rtti::autocast(pso);
 		if( pentd )
 		{	std::string LightName = itso->first.c_str();
-			
+
 			bool bmatchitem = bmatchAll;
 
 			////////////////////////////////////////////////
-			for(	tokenlist::const_iterator 
+			for(	tokenlist::const_iterator
 					itm=match_toklist.begin();
 					itm!=match_toklist.end();
 					itm++ )
 			{	const std::string& str = (*itm);
 				size_t itfind = LightName.find(str);
 				if( itfind != std::string::npos )
-				{	
+				{
 					bmatchitem = true;
 				}
 			}
 			////////////////////////////////////////////////
-			
+
 			if( bmatchitem )
 			{
 				fmtx4 MtxWorld;
@@ -580,7 +580,7 @@ void WriteLightsFile( const MeshUtil::LightContainer& lights, const file::Path& 
 {
 	chunkfile::Writer chunkwriter( "lit" );
 	chunkfile::OutputStream* HeaderStream = chunkwriter.AddStream("header");
-	
+
 	int inumlights = (int) lights.mLights.size();
 	HeaderStream->AddItem(inumlights);
 	for( orklut<PoolString,MeshUtil::Light*>::const_iterator itl=lights.mLights.begin(); itl!=lights.mLights.end(); itl++ )

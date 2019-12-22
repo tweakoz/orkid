@@ -66,7 +66,7 @@ void UpdateThread::run() // virtual
   timr.Start();
   int icounter = 0;
 
-  OpqTest opqtest(&UpdateSerialOpQ());
+  OpqTest opqtest(&updateSerialQueue());
 
   while (false == mbEXITING) {
     icounter++;
@@ -79,7 +79,7 @@ void UpdateThread::run() // virtual
     ////////////////////////////////////////////////
     // process serial update opQ
     ////////////////////////////////////////////////
-    while (UpdateSerialOpQ().Process())
+    while (updateSerialQueue().Process())
       ;
     ////////////////////////////////////////////////
     // update scene

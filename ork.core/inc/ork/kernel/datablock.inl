@@ -12,6 +12,8 @@ struct DataBlock {
   template <typename T> void addItem(const T& data);
   bool _append(const unsigned char* buffer, size_t bufmax);
   const uint8_t* data(size_t index = 0) const { return (const uint8_t*) _storage.data()+index; }
+  void* allocateBlock(size_t length);
+  template <typename T> T* allocateItems(size_t itemcount);
   size_t length() const { return _storage.size(); }
 
   std::vector<uint8_t> _storage;
@@ -27,6 +29,19 @@ inline DataBlock::DataBlock(const void* buffer, size_t len) {
 ///////////////////////////////////////////////////////////////////////////////
 inline void DataBlock::reserve(size_t len) {
   _storage.reserve(len);
+}
+///////////////////////////////////////////////////////////////////////////////
+inline void* DataBlock::allocateBlock(size_t length) {
+  size_t prev_length = _storage.size();
+  _storage.resize(prev_length+length);
+  auto cursor = _storage.data()+prev_length;
+  return (void*) cursor;
+}
+///////////////////////////////////////////////////////////////////////////////
+template <typename T> inline T* DataBlock::allocateItems(size_t itemcount) {
+  size_t length = itemcount*sizeof(T);
+  void* block = allocateBlock(length);
+  return (T*) block;
 }
 ///////////////////////////////////////////////////////////////////////////////
 inline void DataBlock::addData(const void* ptr, size_t length) {

@@ -47,11 +47,13 @@ bool ModParticleItem::DoNotify(const event::Event* event) {
   return false;
 }
 
-void ModularSystem::Describe() {}
+void ModularSystem::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ModParticleItem::ModParticleItem() {}
+ModParticleItem::ModParticleItem() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -71,8 +73,10 @@ struct ModItemBufferDataDB {
   float mfStartTime;
   fmtx4 mMatrix;
 
-  ModItemBufferDataDB() {} //: mBufferMutex("ModItemBufferDataDB::Mutex") {}
-  ~ModItemBufferDataDB() {}
+  ModItemBufferDataDB() {
+  } //: mBufferMutex("ModItemBufferDataDB::Mutex") {}
+  ~ModItemBufferDataDB() {
+  }
 
   //	void LockMIBDDB(int lid) { mBufferLock.Lock(lid); }
   // void UnLockMIBDDB() { mBufferLock.UnLock(); }
@@ -85,8 +89,10 @@ public:
       , mpRendererModule(0)
       , mpDrawable(0)
       , mpMIRD(0)
-      , mDB(ork::lev2::DrawableBuffer::kmaxbuffers + 1) {}
-  ~ModItemBufferData() {}
+      , mDB(ork::lev2::DrawableBuffer::kmaxbuffers + 1) {
+  }
+  ~ModItemBufferData() {
+  }
 
   const ork::ent::Entity* mpEntity;
   RendererModule* mpRendererModule;
@@ -126,9 +132,11 @@ struct ModItemRenderData {
     mMIBD.mpEntity         = pent;
     mMIBD.mpRendererModule = prend;
   }
-  ~ModItemRenderData() { mEntity = 0; }
+  ~ModItemRenderData() {
+    mEntity = 0;
+  }
   static void QueueToLayerCallback(lev2::DrawableBufItem& cdb) {
-    AssertOnOpQ2(UpdateSerialOpQ());
+    ork::opq::assertOnQueue2(updateSerialQueue());
 
     ModItemRenderData* pmird = cdb.mUserData0.Get<ModItemRenderData*>();
 
@@ -161,10 +169,11 @@ struct ModItemRenderData {
       }
     }
   }
-  static void enqueueToRenderQueueCallback(ork::lev2::RenderContextInstData& rcid,
-                                      ork::lev2::GfxTarget* targ,
-                                      const ork::lev2::CallbackRenderable* pren) {
-    AssertOnOpQ2(MainThreadOpQ());
+  static void enqueueToRenderQueueCallback(
+      ork::lev2::RenderContextInstData& rcid,
+      ork::lev2::GfxTarget* targ,
+      const ork::lev2::CallbackRenderable* pren) {
+    ork::opq::assertOnQueue2(mainThreadQueue());
 
     //////////////////////////////////////////
     if (targ->FBI()->IsPickState())
@@ -269,12 +278,13 @@ bool ModularSystem::DoNotify(const event::Event* event) {
     std::string SystemName     = pce2.PopTargetNode();
     std::string ModuleName     = pce2.PopTargetNode();
 
-    printf("ModularSystem<%p:%s> PerfControlEvent<%p> key<%s> ModuleName<%s>\n",
-           this,
-           mName.c_str(),
-           pce,
-           k.c_str(),
-           ModuleName.c_str());
+    printf(
+        "ModularSystem<%p:%s> PerfControlEvent<%p> key<%s> ModuleName<%s>\n",
+        this,
+        mName.c_str(),
+        pce,
+        k.c_str(),
+        ModuleName.c_str());
 
     if (0 == strcmp(SystemName.c_str(), mName.c_str())) {
       psys_graph& template_graph = mItem.GetTemplate();
@@ -370,7 +380,8 @@ void ModularSystem::DoLinkSystem(ork::ent::Simulation* psi, ork::ent::Entity* pe
 
       public:
         Destroyer(ModItemRenderData* pird)
-            : mpMIRD(pird) {}
+            : mpMIRD(pird) {
+        }
       };
       ////////////////////////////////////////////////////////
       ////////////////////////////////////////////////////////

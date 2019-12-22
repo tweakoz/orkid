@@ -30,7 +30,7 @@ DeferredPickOperationContext::DeferredPickOperationContext()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-static Opq gPickOPQ(1, "PickOpQ");
+static opq::OperationsQueue gPickOPQ(1, "PickOpQ");
 void OuterPickOp(DeferredPickOperationContext* pickctx) {
 
   assert(pickctx->mViewport != nullptr);
@@ -52,12 +52,12 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
     return;
 
   auto outer_op = [=]() {
-    AssertOnOpQ2(gPickOPQ);
+    ork::opq::assertOnQueue2(gPickOPQ);
     ////////////
     // stop updates, and wait for mainthread to acknowledge
     ////////////
     gUpdateStatus.SetState(EUPD_STOP);
-    UpdateSerialOpQ().sync();
+    updateSerialQueue().sync();
     ////////////
     static auto d_buf = new ork::lev2::DrawableBuffer(4);
 
@@ -71,14 +71,14 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
     RCFD.setUserProperty("DB"_crc, db_var);
 
     auto lamb = [&]() {
-      AssertOnOpQ2(UpdateSerialOpQ());
+      ork::opq::assertOnQueue2(updateSerialQueue());
       d_buf->miBufferIndex = 0;
       psi->enqueueDrawablesToBuffer(*d_buf);
       ////////////
-      MainThreadOpQ().sync();
+      mainThreadQueue().sync();
       ////////////
       auto op_pick = [&]() {
-        AssertOnOpQ2(MainThreadOpQ());
+        ork::opq::assertOnQueue2(mainThreadQueue());
         pickctx->mState     = 1;
         auto& pixel_ctx     = pickctx->_pixelctx;
         pixel_ctx.miMrtMask = 3;
@@ -95,15 +95,15 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
             pickctx->mState = 2;
             gUpdateStatus.SetState(EUPD_START);
           };
-          Op(on_pick).QueueASync(UpdateSerialOpQ());
+          Op(on_pick).QueueASync(updateSerialQueue());
         } else {
           pickctx->mState = 3;
           gUpdateStatus.SetState(EUPD_START);
         }
       };
-      Op(op_pick).QueueSync(MainThreadOpQ());
+      Op(op_pick).QueueSync(mainThreadQueue());
     };
-    Op(lamb).QueueSync(UpdateSerialOpQ()); // HERE<<<<<<
+    Op(lamb).QueueSync(updateSerialQueue()); // HERE<<<<<<
   };
   Op(outer_op).QueueASync(gPickOPQ);
 }
@@ -141,7 +141,7 @@ void SceneEditorVP::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::PixelFetchContext& ctx) {
-  AssertOnOpQ2(MainThreadOpQ());
+  ork::opq::assertOnQueue2(mainThreadQueue());
 
   const ent::Simulation* psi = mpViewport->simulation();
   ent::SceneData* pscene     = mpViewport->mEditor.mpScene;

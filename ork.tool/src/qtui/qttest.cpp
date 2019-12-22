@@ -42,89 +42,103 @@
 #include <Python.h>
 namespace ork { namespace tool {
 void InitPython();
-}} //namespace ork { namespace tool {
+}} // namespace ork::tool
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork {
 
+static const std::string ReadMangledName(const char*& input, orkvector<std::string>& names, std::string& subresult) {
+  const char* q = input;
 
-static const std::string ReadMangledName(const char *&input, orkvector<std::string> &names, std::string &subresult) {
-    const char *q = input;
-
-    if(*input == 'S') {
-        int nameref;
-        input++;
-        if(*input == '_') {
-            nameref = 0;
-        } else if(isdigit(*input)) {
-            nameref = 1 + strtol(input, const_cast<char **>(&input), 10);
-            OrkAssert(*input == '_');
-        } else switch(*input++) {
-        case 'a': return "std::allocator";
-        case 'b': return "std::basic_string";
-        case 's': return "std::string";
-        case 't': return "std::";
+  if (*input == 'S') {
+    int nameref;
+    input++;
+    if (*input == '_') {
+      nameref = 0;
+    } else if (isdigit(*input)) {
+      nameref = 1 + strtol(input, const_cast<char**>(&input), 10);
+      OrkAssert(*input == '_');
+    } else
+      switch (*input++) {
+        case 'a':
+          return "std::allocator";
+        case 'b':
+          return "std::basic_string";
+        case 's':
+          return "std::string";
+        case 't':
+          return "std::";
         default:
-                  return "std::???";
-        }
-        input++;
-        OrkAssert(nameref < int(names.size()));
-        return names[orkvector<std::string>::size_type(nameref)];
-    } else if(isdigit(*input)) {
-        int namelen = strtol(input, const_cast<char **>(&input), 10);
-        std::string result;
-		result.reserve(std::string::size_type(namelen));
-        for(int i = 0; i < namelen; i++) {
-            OrkAssert(*input);
-            result += *input++;
-        }
-        return result;
-    } else switch(*input++) {
-    case 'i': return "int";
-    case 'c': return "char";
-    case 'f': return "float";
-    case 's': return "short";
-    case 'b': return "bool";
-    case 'l': return "long";
-    default: // flf: incomplete, I'm sure.
-              return "???";
+          return "std::???";
+      }
+    input++;
+    OrkAssert(nameref < int(names.size()));
+    return names[orkvector<std::string>::size_type(nameref)];
+  } else if (isdigit(*input)) {
+    int namelen = strtol(input, const_cast<char**>(&input), 10);
+    std::string result;
+    result.reserve(std::string::size_type(namelen));
+    for (int i = 0; i < namelen; i++) {
+      OrkAssert(*input);
+      result += *input++;
+    }
+    return result;
+  } else
+    switch (*input++) {
+      case 'i':
+        return "int";
+      case 'c':
+        return "char";
+      case 'f':
+        return "float";
+      case 's':
+        return "short";
+      case 'b':
+        return "bool";
+      case 'l':
+        return "long";
+      default: // flf: incomplete, I'm sure.
+        return "???";
     }
 }
 
-static void GccDemangleRecurse(std::string &result, orkvector<std::string> &names, const char *&input)
-{
-    std::string subresult;
-    if(strchr("IN", *input) == NULL) {
-        do {
-            subresult += ReadMangledName(input, names, subresult);
-        } while(subresult[subresult.size()-1] == ':');
-    } else switch(*input) {
-    case 'I':
+static void GccDemangleRecurse(std::string& result, orkvector<std::string>& names, const char*& input) {
+  std::string subresult;
+  if (strchr("IN", *input) == NULL) {
+    do {
+      subresult += ReadMangledName(input, names, subresult);
+    } while (subresult[subresult.size() - 1] == ':');
+  } else
+    switch (*input) {
+      case 'I':
         input++;
         result += '<';
-        while(*input != 'E') {
-            OrkAssert(input && *input);
-            GccDemangleRecurse(subresult, names, input);
-            names.push_back(subresult);
-            if(strchr("INE", *input) == NULL) subresult += ",";
-            else if(*input == 'E') subresult += ">";
+        while (*input != 'E') {
+          OrkAssert(input && *input);
+          GccDemangleRecurse(subresult, names, input);
+          names.push_back(subresult);
+          if (strchr("INE", *input) == NULL)
+            subresult += ",";
+          else if (*input == 'E')
+            subresult += ">";
         }
         input++;
         break;
-    case 'N':
+      case 'N':
         input++;
-        while(*input != 'E') {
-            OrkAssert(input && *input);
-            GccDemangleRecurse(subresult, names, input);
-            names.push_back(subresult);
-            if(strchr("INE", *input) == NULL) subresult += "::";
+        while (*input != 'E') {
+          OrkAssert(input && *input);
+          GccDemangleRecurse(subresult, names, input);
+          names.push_back(subresult);
+          if (strchr("INE", *input) == NULL)
+            subresult += "::";
         }
         input++;
         break;
     }
-    result += subresult;
+  result += subresult;
 }
 
 // Function prototype to make CW happy
@@ -141,123 +155,118 @@ namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-OrkQtApp::OrkQtApp( int& argc, char** argv )
-	: QApplication( argc, argv )
-	, mpMainWindow(0)
-{
+OrkQtApp::OrkQtApp(int& argc, char** argv)
+    : QApplication(argc, argv)
+    , mpMainWindow(0) {
 
   QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath());
   setOrganizationDomain("tweakoz.com");
   setApplicationDisplayName("OrkidTool");
   setApplicationName("OrkidTool");
 
-	bool bcon = mIdleTimer.connect( & mIdleTimer, SIGNAL(timeout()), this, SLOT(OnTimer()));
+  bool bcon = mIdleTimer.connect(&mIdleTimer, SIGNAL(timeout()), this, SLOT(OnTimer()));
 
-	mIdleTimer.setInterval(5);
-	mIdleTimer.setSingleShot(false);
-	mIdleTimer.start();
-
+  mIdleTimer.setInterval(5);
+  mIdleTimer.setSingleShot(false);
+  mIdleTimer.start();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void OrkQtApp::OnTimer()
-{
-	OpqTest opqtest(&MainThreadOpQ());
-	while(MainThreadOpQ().Process());
+void OrkQtApp::OnTimer() {
+  OpqTest opqtest(&mainThreadQueue());
+  while (mainThreadQueue().Process())
+    ;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct InputArgs
-{
-    int& argc;
-    char **argv;
+struct InputArgs {
+  int& argc;
+  char** argv;
 
-    InputArgs( int& ac, char** av )
-    	: argc(ac)
-    	, argv(av)
-    {}
+  InputArgs(int& ac, char** av)
+      : argc(ac)
+      , argv(av) {
+  }
 };
 
 OrkQtApp* gpQtApplication = nullptr;
 
-int BootQtThreadImpl(void* arg_opaq )
-{
-  #if ! defined(__APPLE__)
-    setenv("QT_QPA_PLATFORMTHEME","gtk2",1); // qt5 file dialog crashes otherwise...
-    //QFont arialFont("Ubuntu Regular", 15);
-    //QGuiApplication::setFont(arialFont);
-    #endif
+int BootQtThreadImpl(void* arg_opaq) {
+#if !defined(__APPLE__)
+  setenv("QT_QPA_PLATFORMTHEME", "gtk2", 1); // qt5 file dialog crashes otherwise...
+// QFont arialFont("Ubuntu Regular", 15);
+// QGuiApplication::setFont(arialFont);
+#endif
 
-	InputArgs *args = (InputArgs*) arg_opaq;
+  InputArgs* args = (InputArgs*)arg_opaq;
 
-	Opq& mainthreadopq = ork::MainThreadOpQ();
-  	OpqTest ot( &mainthreadopq );
+  auto& mainthreadopq = ork::opq::mainThreadQueue();
+  OpqTest ot(&mainthreadopq);
 
-	int iret = 0;
+  int iret = 0;
 
   QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
 
-	gpQtApplication = new OrkQtApp( args->argc, args->argv );
+  gpQtApplication = new OrkQtApp(args->argc, args->argv);
 
-	std::string AppClassName = OldSchool::GetGlobalStringVariable( "ProjectApplicationClassName" );
+  std::string AppClassName = OldSchool::GetGlobalStringVariable("ProjectApplicationClassName");
 
-	ork::lev2::AudioDevice* paudio = ork::lev2::AudioDevice::GetDevice();
-    ork::lev2::InputManager::poll();
+  ork::lev2::AudioDevice* paudio = ork::lev2::AudioDevice::GetDevice();
+  ork::lev2::InputManager::poll();
 
-	ent::gEditorMainWindow = new ent::EditorMainWindow(0, AppClassName, *gpQtApplication );
-	ent::gEditorMainWindow->showMaximized();
-    ent::gEditorMainWindow->raise();  // for MacOS
+  ent::gEditorMainWindow = new ent::EditorMainWindow(0, AppClassName, *gpQtApplication);
+  ent::gEditorMainWindow->showMaximized();
+  ent::gEditorMainWindow->raise(); // for MacOS
 
-    /////////////////////////////////////////////////////////////////////
-    // for some reason fonts do not get set up consistently on linux
-    //  a hack for now
-    /////////////////////////////////////////////////////////////////////
-    #if ! defined(__APPLE__)
-    QFile fontFile("/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf");
-    fontFile.open(QFile::ReadOnly);
-    qDebug() << fontFile.exists();
-    qDebug() << fontFile.size();
-    int appFontId = QFontDatabase::addApplicationFontFromData(fontFile.readAll());
-    assert(appFontId!=-1);
-    #endif
-    /////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+// for some reason fonts do not get set up consistently on linux
+//  a hack for now
+/////////////////////////////////////////////////////////////////////
+#if !defined(__APPLE__)
+  QFile fontFile("/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf");
+  fontFile.open(QFile::ReadOnly);
+  qDebug() << fontFile.exists();
+  qDebug() << fontFile.size();
+  int appFontId = QFontDatabase::addApplicationFontFromData(fontFile.readAll());
+  assert(appFontId != -1);
+#endif
+  /////////////////////////////////////////////////////////////////////
 
-	gpQtApplication->mpMainWindow = ent::gEditorMainWindow;
+  gpQtApplication->mpMainWindow = ent::gEditorMainWindow;
 
-    file::Path fname;
+  file::Path fname;
 
-    for( int i=0; i<args->argc; i++ )
-        if( 0 == strcmp(args->argv[i],"--edit") && (i<args->argc-1) )
-            fname = args->argv[++i];
+  for (int i = 0; i < args->argc; i++)
+    if (0 == strcmp(args->argv[i], "--edit") && (i < args->argc - 1))
+      fname = args->argv[++i];
 
-    if( fname.IsFile() )
-        ent::gEditorMainWindow->QueueLoadScene( fname.c_str() );
+  if (fname.IsFile())
+    ent::gEditorMainWindow->QueueLoadScene(fname.c_str());
 
-	iret = gpQtApplication->exec();
+  iret = gpQtApplication->exec();
 
-	lev2::DrawableBuffer::ClearAndSyncWriters();
+  lev2::DrawableBuffer::ClearAndSyncWriters();
 
-
-
-	delete paudio;
-	delete gpQtApplication;
+  delete paudio;
+  delete gpQtApplication;
 
   gpQtApplication = nullptr;
 
-	return 0;
+  return 0;
 }
 ////////////////////////////////////////////////////////////////////////////////
-int QtTest( int& argc, char **argv, bool bgamemode, bool bmenumode ){
-    #if defined(USE_PYTHON)
-    InitPython();
-    #endif
-    InputArgs args(argc,argv);
-    return BootQtThreadImpl( & args );
+int QtTest(int& argc, char** argv, bool bgamemode, bool bmenumode) {
+#if defined(USE_PYTHON)
+  InitPython();
+#endif
+  InputArgs args(argc, argv);
+  return BootQtThreadImpl(&args);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-}} // // namespace ork { namespace tool
+} // namespace tool
+} // namespace ork

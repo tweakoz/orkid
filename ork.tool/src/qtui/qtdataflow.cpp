@@ -103,7 +103,7 @@ GraphVP::GraphVP(DataFlowEditor& dfed, tool::ged::ObjModel& objmdl, const std::s
 
   auto lamb_outer = [=]() {
     auto lamb_inner = [=]() { this->SetDirty(); };
-    Op(lamb_inner).QueueASync(MainThreadOpQ());
+    Op(lamb_inner).QueueASync(mainThreadQueue());
   };
 
   ptimer->OnInterval(0.3f, lamb_outer);

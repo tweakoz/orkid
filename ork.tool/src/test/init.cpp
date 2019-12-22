@@ -46,11 +46,10 @@ void Init2();
 
 ////////////////////////////////////////////////////////////////
 
-
 ////////////////////////////////////////////////////////////////
 
 namespace ork { namespace tool {
-//tokenlist Init(int argc, char** argv);
+// tokenlist Init(int argc, char** argv);
 
 void init(char** argp) {
 
@@ -62,9 +61,9 @@ void init(char** argp) {
 
   SetCurrentThreadName("MainThread");
 
-  #if defined(IX)
-  //	XInitThreads();
-  #endif
+#if defined(IX)
+//	XInitThreads();
+#endif
 
   ork::ent::Init();
   ork::rtti::Class::InitializeClasses();
@@ -73,14 +72,14 @@ void init(char** argp) {
   CreationParams.miNumSharedVerts = 4 << 10;
   ork::lev2::GfxEnv::GetRef().PushCreationParams(CreationParams);
 
-  ork::Opq& mainthreadopq = ork::MainThreadOpQ();
-  ork::OpqTest ot(&mainthreadopq);
+  auto& mainthreadopq = ork::opq::mainThreadQueue();
+  ork::opq::OpqTest ot(&mainthreadopq);
 
   //////////////////////////
   // init
   //////////////////////////
 
-  //return ork::tool::main(argc, argv);
+  // return ork::tool::main(argc, argv);
 }
 
 }} // namespace ork::tool

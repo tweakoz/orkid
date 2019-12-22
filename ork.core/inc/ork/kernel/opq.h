@@ -10,114 +10,149 @@
 #include <ork/util/Context.h>
 #include <ork/kernel/thread.h>
 
-
 #include <ork/kernel/atomic.h>
 
 #include "mutex.h"
 #include "semaphore.h"
-
+#include <queue>
 #include <set>
 
-///////////////////////////////////////////////////////////////////////////////
 namespace ork {
-///////////////////////////////////////////////////////////////////////////////
-
 struct Future;
-
 void SetCurrentThreadName(const char* threadName);
+} // namespace ork
+///////////////////////////////////////////////////////////////////////////////
+namespace ork::opq {
+///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef any128 op_wrap_t;
 
-struct Opq;
+struct OperationsQueue;
 
-struct BarrierSyncReq
-{
-	BarrierSyncReq(Future&f):mFuture(f){}
-	Future& mFuture;
+struct BarrierSyncReq {
+  BarrierSyncReq(Future& f)
+      : mFuture(f) {
+  }
+  Future& mFuture;
 };
 
-struct Op
-{
-	op_wrap_t mWrapped;
-	std::string mName;
+struct Op {
+  op_wrap_t mWrapped;
+  std::string mName;
 
-	Op(const Op& oth);
-	Op(const BarrierSyncReq& op,const std::string& name="");
-	Op(const void_lambda_t& op,const std::string& name="");
-	Op();
-	~Op();
-	void SetOp(const op_wrap_t& op);
+  Op(const Op& oth);
+  Op(const BarrierSyncReq& op, const std::string& name = "");
+  Op(const void_lambda_t& op, const std::string& name = "");
+  Op();
+  ~Op();
+  void SetOp(const op_wrap_t& op);
+  void invoke();
 
-	void QueueASync(Opq&q) const;
-	void QueueSync(Opq&q) const;
+  void QueueASync(OperationsQueue& q) const;
+  void QueueSync(OperationsQueue& q) const;
 };
 
 //////////////////////////////////////////////////////////////////////
 
 struct IOpqSynchrComparison;
 
-struct OpqSynchro
-{
-	typedef std::function<bool(OpqSynchro*psyn,int icomparator)> comparison_block_t;
-	typedef std::unique_lock<std::mutex> mtx_lock_t;
+struct OpqSynchro {
+  typedef std::function<bool(OpqSynchro* psyn, int icomparator)> comparison_block_t;
+  typedef std::unique_lock<std::mutex> mtx_lock_t;
 
-	OpqSynchro();
+  OpqSynchro();
 
-	void AddItem(); // mOpCounter++
-	void RemItem(); // mOpCounter--;
-	void WaitOnCondition(const IOpqSynchrComparison& comparator); // wait til mOpCounter changes
-	int NumOps() const;
+  void AddItem();
+  void RemItem();
+  void WaitOnCondition(const IOpqSynchrComparison& comparator); // wait til _pendingOps changes
+  int pendingOps() const;
 
-	ork::atomic<int> 				mOpCounter;
-	std::condition_variable			mOpWaitCV;
-	std::mutex 						mOpWaitMtx;
-
+  ork::atomic<int> _pendingOps;
+  std::condition_variable mOpWaitCV;
+  std::mutex mOpWaitMtx;
 };
 
 //////////////////////////////////////////////////////////////////////
 
-struct IOpqSynchrComparison
-{
-	virtual bool IsConditionMet(const OpqSynchro& synchro) const = 0;
+struct IOpqSynchrComparison {
+  virtual bool IsConditionMet(const OpqSynchro& synchro) const = 0;
 };
 
 //////////////////////////////////////////////////////////////////////
+// ConcurrencyGroup :
+//  opq subdivision which enforces custom max concurrency within
+//  the thread pool of an opq. In other words, if an OperationsQueue
+//  has a threadpool size of 10 and a child ConcurrencyGroup has a
+//  max inflight set to 3 then when enqueueing operations to
+//  the group no more than 3 operations assigned to that group will be in
+//  flight simultaneously, despite the opq's threadpool size of 10
+//////////////////////////////////////////////////////////////////////
 
-struct OpGroup
-{
+struct ConcurrencyGroup {
 
-	OpGroup(Opq*popq, const char* pname);
-	void push( const Op& the_op );
-	bool try_pop( Op& out_op );
-	void drain();
-	void MakeSerial() { mLimitMaxOpsInFlight=1; }
+  ConcurrencyGroup(OperationsQueue* popq, const char* pname);
+  void enqueue(const Op& the_op);
+  bool try_pop(Op& out_op);
+  void drain();
+  void MakeSerial() {
+    _limit_maxops_inflight = 1;
+  }
 
-	////////////////////////////////
+  ////////////////////////////////
 
-	std::string mGroupName;
-	Opq* mpOpQ;
+  typedef std::queue<Op> queue_t;
 
-	////////////////////////////////
+  ////////////////////////////////
 
-	MpMcBoundedQueue<Op,4096> 		mOps;
-	ork::atomic<int>			 	mOpsInFlightCounter;
-	ork::atomic<int>			 	mOpSerialIndex;
+  ork::LockedResource<queue_t> _ops;
+  std::atomic<int> _opsinflight;
+  std::atomic<int> _serialopindex;
+  std::string _name;
+  OperationsQueue* _queue;
 
-	OpqSynchro						mSynchro;
+  size_t _limit_maxops_inflight;
+  size_t _limit_maxops_enqueued;
+  size_t _limit_maxrunlength;
+};
 
-	////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+// CompletionGroup
+//  opq synchronization primitive which allows to batch together a set of
+//  and wait until all of the operations assigned to the completion
+//   group are finished
+//////////////////////////////////////////////////////////////////////
 
-	int 							mLimitMaxOpsInFlight;
-	int 							mLimitMaxOpsQueued;
+struct CompletionGroup;
+
+template <class... Args> std::unique_ptr<CompletionGroup> createCompletionGroup(Args&&... args);
+
+struct CompletionGroup {
+
+  void enqueue(const ork::void_lambda_t& the_op);
+  void join();
+  ~CompletionGroup();
+
+private:
+  template <class... Args> inline friend std::unique_ptr<CompletionGroup> createCompletionGroup(Args&&... args) {
+    return std::unique_ptr<CompletionGroup>(new CompletionGroup(std::forward<Args>(args)...));
+  }
+
+  CompletionGroup(OperationsQueue& q);
+  CompletionGroup(const CompletionGroup& oth) = delete;
+  CompletionGroup& operator=(const CompletionGroup&) = delete;
+
+  OperationsQueue& _q;
+  std::atomic<int> _numpending;
 };
 
 ///////////////////////////////////////////////////////////////////////////
+
 struct OpqThreadData {
-  Opq* _opq = nullptr;
-  int _threadID = 0;
+  OperationsQueue* _queue = nullptr;
+  int _threadID           = 0;
 };
 enum OpqThreadState {
   EPOQSTATE_NEW = 0,
@@ -131,80 +166,82 @@ enum OpqThreadState {
 struct OpqThread : public ork::Thread {
   OpqThreadData _data;
   std::atomic<int> _state;
-  OpqThread(Opq* popq, int thid);
+  OpqThread(OperationsQueue* popq, int thid);
   ~OpqThread();
   void run() final;
 };
 //////////////////////////////////////////////////////////////////////
 
-struct Opq
-{
-	Opq(int inumthreads, const char* name = "DefOpQ");
-	~Opq();
+struct OperationsQueue {
+  OperationsQueue(int inumthreads, const char* name = "DefOpQ");
+  ~OperationsQueue();
 
   struct InternalLock {
 
-    InternalLock(Opq& opq);
+    InternalLock(OperationsQueue& opq);
     ~InternalLock();
-    Opq& _opq;
+    OperationsQueue& _queue;
   };
 
   std::shared_ptr<InternalLock> scopedLock();
 
-	void push(const Op& the_op);
-	void push(const void_lambda_t& l,const std::string& name="");
-	void push(const BarrierSyncReq& s);
-	void push_sync(const Op& the_op);
-	void sync();
-	void drain();
+  void enqueue(const Op& the_op);
+  void enqueue(const void_lambda_t& l, const std::string& name = "");
+  void enqueue(const BarrierSyncReq& s);
+  void enqueueAndWait(const Op& the_op);
+  void sync();
+  void drain();
 
   void _internalBeginLock();
   void _internalEndLock();
 
-	OpGroup* CreateOpGroup(const char* pname);
+  ConcurrencyGroup* createConcurrencyGroup(const char* pname);
 
-	static Opq* GlobalConQ();
-	static Opq* GlobalSerQ();
-
-	bool Process();
+  bool Process();
 
   typedef std::set<OpqThread*> threadset_t;
 
-	OpGroup* 					mDefaultGroup;
-	ork::atomic<int>			 mGroupCounter;
+  ConcurrencyGroup* _defaultConcurrencyGroup;
+  ork::atomic<int> mGroupCounter;
   LockedResource<threadset_t> _threads;
-	OpqSynchro						mSynchro;
+  OpqSynchro mSynchro;
 
-	std::set<OpGroup*> 			mOpGroups;
+  typedef std::vector<ConcurrencyGroup*> concgroupvect_t;
 
-	ork::semaphore mSemaphore;
+  std::set<ConcurrencyGroup*> _concurrencygroups;
+  LockedResource<concgroupvect_t> _linearconcurrencygroups;
+
+  ork::semaphore mSemaphore;
 
   std::atomic<bool> _lock;
   std::atomic<bool> _goingdown;
-	std::atomic<int> _numThreadsRunning;
-	std::string _name;
+  std::atomic<int> _numThreadsRunning;
+  std::atomic<int> _numPendingOperations;
+  std::string _name;
+  std::string _debuginfo;
 };
 
 //////////////////////////////////////////////////////////////////////
 
-struct OpqTest : public ork::util::ContextTLS<OpqTest>
-{
-	OpqTest( Opq* popq ) : mOPQ( popq ) {}
-	Opq* mOPQ;
+struct OpqTest : public ork::util::ContextTLS<OpqTest> {
+  OpqTest(OperationsQueue* q)
+      : _queue(q) {
+  }
+  OperationsQueue* _queue;
 };
-void AssertOnOpQ2( Opq& the_opQ );
-void AssertOnOpQ( Opq& the_opQ );
-void AssertNotOnOpQ( Opq& the_opQ );
+void assertOnQueue2(OperationsQueue& the_opQ);
+void assertOnQueue(OperationsQueue& the_opQ);
+void assertNotOnQueue(OperationsQueue& the_opQ);
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-Opq& UpdateSerialOpQ();
-Opq& EditorOpQ();
-
-Opq& MainThreadOpQ();
-Opq& ConcurrentOpQ();
+OperationsQueue& updateSerialQueue();
+OperationsQueue& editorQueue();
+OperationsQueue& mainThreadQueue();
+OperationsQueue& concurrentQueue();
 
 ///////////////////////////////////////////////////////////////////////////////
-}
+} // namespace ork::opq
+using namespace ork::opq; // temporary
 ///////////////////////////////////////////////////////////////////////////////

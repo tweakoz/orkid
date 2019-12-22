@@ -52,7 +52,7 @@ void vp_cons::Register()
 {
     gPCON = this;
 
-    MainThreadOpQ().push([&]() {
+    mainThreadQueue().enqueue([&]() {
         const char* inpname = slave_inp_name;
         const char* outname = slave_out_name;
         const char* errname = slave_err_name;
@@ -168,7 +168,7 @@ static void getPythonOutput()
 
     /////////////////////
 
-    MainThreadOpQ().push([&]() {
+    mainThreadQueue().enqueue([&]() {
         getPythonOutput();
     });
 

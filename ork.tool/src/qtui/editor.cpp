@@ -41,15 +41,20 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SceneEditorBase, "SceneEditorBase");
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////
 
-NewEntityReq::shared_t NewEntityReq::makeShared(Future& f) { return std::make_shared<NewEntityReq>(f); }
+NewEntityReq::shared_t NewEntityReq::makeShared(Future& f) {
+  return std::make_shared<NewEntityReq>(f);
+}
 
-static Opq gImplSerQ(0, "eddummyopq");
+static opq::OperationsQueue gImplSerQ(0, "eddummyopq");
 
 static ork::PoolString gEdChanName;
 
-const ork::PoolString& EditorChanName() { return gEdChanName; }
+const ork::PoolString& EditorChanName() {
+  return gEdChanName;
+}
 
-void SceneEditorBase::RegisterChoices() {}
+void SceneEditorBase::RegisterChoices() {
+}
 
 void SceneEditorBase::Describe() {
   gEdChanName = ork::AddPooledLiteral("Editor");
@@ -74,65 +79,67 @@ void RefArchetypeChoices::EnumerateChoices(bool bforcenocache) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-RefArchetypeChoices::RefArchetypeChoices() { EnumerateChoices(true); }
+RefArchetypeChoices::RefArchetypeChoices() {
+  EnumerateChoices(true);
+}
 
 ///////////////////////////////////////////////////////////////////////////
 
 EntData* NewEntityReq::GetEntity() {
-  AssertNotOnOpQ(MainThreadOpQ()); // prevent deadlock
+  ork::opq::assertNotOnQueue(mainThreadQueue()); // prevent deadlock
   return mResult.GetResult().Get<EntData*>();
 }
 
 void NewEntityReq::SetEntity(EntData* pent) {
-  AssertOnOpQ(gImplSerQ);
+  ork::opq::assertOnQueue(gImplSerQ);
   mResult.Signal<EntData*>(pent);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
 Archetype* NewArchReq::GetArchetype() {
-  AssertNotOnOpQ(MainThreadOpQ()); // prevent deadlock
+  ork::opq::assertNotOnQueue(mainThreadQueue()); // prevent deadlock
   return mResult.GetResult().Get<Archetype*>();
 }
 
 void NewArchReq::SetArchetype(Archetype* parch) {
-  AssertOnOpQ(gImplSerQ);
+  ork::opq::assertOnQueue(gImplSerQ);
   mResult.Signal<Archetype*>(parch);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
 SystemData* NewSystemReq::system() {
-  AssertNotOnOpQ(MainThreadOpQ()); // prevent deadlock
+  ork::opq::assertNotOnQueue(mainThreadQueue()); // prevent deadlock
   return mResult.GetResult().Get<SystemData*>();
 }
 
 void NewSystemReq::setSystem(SystemData* parch) {
-  AssertOnOpQ(gImplSerQ);
+  ork::opq::assertOnQueue(gImplSerQ);
   mResult.Signal<SystemData*>(parch);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
 SceneData* NewSceneReq::GetScene() {
-  AssertNotOnOpQ(MainThreadOpQ()); // prevent deadlock
+  ork::opq::assertNotOnQueue(mainThreadQueue()); // prevent deadlock
   return mResult.GetResult().Get<SceneData*>();
 }
 
 void NewSceneReq::SetScene(SceneData* sd) {
-  AssertOnOpQ(gImplSerQ);
+  ork::opq::assertOnQueue(gImplSerQ);
   mResult.Signal<SceneData*>(sd);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
 SceneData* GetSceneReq::GetScene() {
-  AssertNotOnOpQ(MainThreadOpQ()); // prevent deadlock
+  ork::opq::assertNotOnQueue(mainThreadQueue()); // prevent deadlock
   return mResult.GetResult().Get<SceneData*>();
 }
 
 void GetSceneReq::SetScene(SceneData* sd) {
-  AssertOnOpQ(gImplSerQ);
+  ork::opq::assertOnQueue(gImplSerQ);
   mResult.Signal<SceneData*>(sd);
 }
 
@@ -213,7 +220,9 @@ void SceneEditorBase::QueueSync() {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneEditorBase::QueueOpASync(const var_t& op) { mSerialQ.push(op); }
+void SceneEditorBase::QueueOpASync(const var_t& op) {
+  mSerialQ.push(op);
+}
 void SceneEditorBase::QueueOpSync(const var_t& op) {
   QueueOpASync(op);
   QueueSync();
@@ -228,7 +237,7 @@ void SceneEditorBase::RunLoop() {
 
   var_t event;
 
-  auto& updQ = UpdateSerialOpQ();
+  auto& updQ = updateSerialQueue();
 
   auto disable_op = [&]() {
     gUpdateStatus.SetState(EUPD_STOP);
@@ -244,13 +253,13 @@ void SceneEditorBase::RunLoop() {
   auto do_it = [&]() {
     while (this->mSerialQ.try_pop(event)) {
 
-      printf( "SceneEditorBase::mSerialQ gotevent\n");
+      printf("SceneEditorBase::mSerialQ gotevent\n");
 
       if (event.IsA<BarrierSyncReq>()) {
         auto& R = event.Get<BarrierSyncReq>();
         R.mFuture.Signal<bool>(true);
       } else if (event.IsA<LoadSceneReq>()) {
-        usleep(2<<20);
+        usleep(2 << 20);
         const auto& R = event.Get<LoadSceneReq>();
         auto& DFLOWG  = tool::GetGlobalDataFlowScheduler()->GraphSet();
         DFLOWG.LockForWrite().clear();
@@ -327,9 +336,15 @@ void SceneEditorBase::RunLoop() {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneEditorBase::EditorRefreshModels() { mpMdlChoices->EnumerateChoices(true); }
-void SceneEditorBase::EditorRefreshAnims() { mpAnmChoices->EnumerateChoices(true); }
-void SceneEditorBase::EditorRefreshTextures() { mpTexChoices->EnumerateChoices(true); }
+void SceneEditorBase::EditorRefreshModels() {
+  mpMdlChoices->EnumerateChoices(true);
+}
+void SceneEditorBase::EditorRefreshAnims() {
+  mpAnmChoices->EnumerateChoices(true);
+}
+void SceneEditorBase::EditorRefreshTextures() {
+  mpTexChoices->EnumerateChoices(true);
+}
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::NewSimulation() {
   if (mpEditSimulation) {
@@ -352,18 +367,18 @@ void SceneEditorBase::NewSimulation() {
 SceneData* SceneEditorBase::ImplGetScene() {
   ////////////////////////////////////
   // to prevent deadlock
-  ork::AssertOnOpQ2(gImplSerQ);
+  ork::opq::assertOnQueue2(gImplSerQ);
   ////////////////////////////////////
   SceneData* rval   = nullptr;
   auto get_scene_op = [&]() { rval = mpScene; };
-  Op(get_scene_op).QueueSync(UpdateSerialOpQ());
+  Op(get_scene_op).QueueSync(updateSerialQueue());
   return mpScene;
 }
 ///////////////////////////////////////////////////////////////////////////
 SceneData* SceneEditorBase::ImplNewScene() {
   ////////////////////////////////////
   // to prevent deadlock
-  ork::AssertOnOpQ2(gImplSerQ);
+  ork::opq::assertOnQueue2(gImplSerQ);
   ////////////////////////////////////
   auto new_scene_op = [&]() {
     auto& DFLOWG = tool::GetGlobalDataFlowScheduler()->GraphSet();
@@ -372,7 +387,7 @@ SceneData* SceneEditorBase::ImplNewScene() {
     mselectionManager.ClearSelection();
     ent::SceneData* poldscene = mpScene;
     mpScene                   = new ent::SceneData;
-    mpScene->defaultSetup(UpdateSerialOpQ());
+    mpScene->defaultSetup(updateSerialQueue());
     mpArchChoices->EnumerateChoices();
     NewSimulation();
     if (poldscene) {
@@ -385,14 +400,14 @@ SceneData* SceneEditorBase::ImplNewScene() {
     SigNewScene();
     SigSceneTopoChanged();
   };
-  Op(new_scene_op).QueueSync(UpdateSerialOpQ());
+  Op(new_scene_op).QueueSync(updateSerialQueue());
   return mpScene;
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::ImplLoadScene(std::string fname) {
   ////////////////////////////////////
   // to prevent deadlock
-  ork::AssertOnOpQ2(gImplSerQ);
+  ork::opq::assertOnQueue2(gImplSerQ);
   ////////////////////////////////////
 
   if (fname.length() == 0)
@@ -438,15 +453,17 @@ void SceneEditorBase::ImplLoadScene(std::string fname) {
         fflush(stdout);
         ork::msleep(1000.0f);
       };
-      Op(post_load_op).QueueASync(UpdateSerialOpQ());
+      Op(post_load_op).QueueASync(updateSerialQueue());
     };
-    Op(load_op).QueueASync(MainThreadOpQ());
+    Op(load_op).QueueASync(mainThreadQueue());
   };
-  Op(pre_load_op).QueueASync(UpdateSerialOpQ());
+  Op(pre_load_op).QueueASync(updateSerialQueue());
   ////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////
-void SceneEditorBase::EditorDupe() { SigSceneTopoChanged(); }
+void SceneEditorBase::EditorDupe() {
+  SigSceneTopoChanged();
+}
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::EditorGroup() {
   if (mpScene) {
@@ -711,7 +728,7 @@ SystemData* SceneEditorBase::EditorNewSystem(const std::string& classname) {
 ent::EntData* SceneEditorBase::ImplNewEntity(const ent::Archetype* parchetype) {
   ////////////////////////////////////
   // to prevent deadlock
-  ork::AssertOnOpQ2(gImplSerQ);
+  ork::opq::assertOnQueue2(gImplSerQ);
   ////////////////////////////////////
 
   if (nullptr == mpScene)
@@ -765,7 +782,7 @@ ent::EntData* SceneEditorBase::ImplNewEntity(const ent::Archetype* parchetype) {
     ClearSelection();
     AddObjectToSelection(pentdata);
   };
-  Op(lamb).QueueSync(UpdateSerialOpQ());
+  Op(lamb).QueueSync(updateSerialQueue());
   return pentdata;
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -960,7 +977,7 @@ void SceneEditorBase::EditorDeleteObject(ork::Object* pobj) {
 void SceneEditorBase::ImplDeleteObject(ork::Object* pobj) {
   ////////////////////////////////////
   // to prevent deadlock
-  ork::AssertOnOpQ2(gImplSerQ);
+  ork::opq::assertOnQueue2(gImplSerQ);
   ////////////////////////////////////
   if (nullptr == mpScene)
     return;
@@ -1015,25 +1032,25 @@ void SceneEditorBase::ImplDeleteObject(ork::Object* pobj) {
     /////////////////////////////////////////
     SigSceneTopoChanged();
   };
-  Op(lamb).QueueASync(UpdateSerialOpQ());
+  Op(lamb).QueueASync(updateSerialQueue());
 }
 void SceneEditorBase::DisableUpdates() {
-  ork::AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
   ork::lev2::DrawableBuffer::ClearAndSyncReaders();
   msgrouter::channel("Simulation")->postType<SimulationEvent>(nullptr, SimulationEvent::ESIEV_DISABLE_UPDATE);
 }
 void SceneEditorBase::EnableUpdates() {
-  ork::AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
   ork::lev2::DrawableBuffer::ClearAndSyncReaders();
   msgrouter::channel("Simulation")->postType<SimulationEvent>(nullptr, SimulationEvent::ESIEV_ENABLE_UPDATE);
 }
 void SceneEditorBase::DisableViews() {
-  ork::AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
   ork::lev2::DrawableBuffer::ClearAndSyncReaders();
   msgrouter::channel("Simulation")->postType<SimulationEvent>(nullptr, SimulationEvent::ESIEV_DISABLE_VIEW);
 }
 void SceneEditorBase::EnableViews() {
-  ork::AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
   ork::lev2::DrawableBuffer::ClearAndSyncReaders();
   msgrouter::channel("Simulation")->postType<SimulationEvent>(mpEditSimulation, SimulationEvent::ESIEV_ENABLE_VIEW);
 }
@@ -1041,7 +1058,7 @@ void SceneEditorBase::EnableViews() {
 void SceneEditorBase::ImplEnterRunLocalState() {
   ////////////////////////////////////
   // to prevent deadlock
-  ork::AssertOnOpQ2(gImplSerQ);
+  ork::opq::assertOnQueue2(gImplSerQ);
   ////////////////////////////////////
 
   auto lamb = [&]() {
@@ -1074,17 +1091,21 @@ void SceneEditorBase::ImplEnterRunLocalState() {
     EnableViews();
     msgrouter::channel("Simulation")->postType<SimulationEvent>(mpEditSimulation, SimulationEvent::ESIEV_ENABLE_VIEW);
   };
-  Op(lamb).QueueSync(UpdateSerialOpQ());
+  Op(lamb).QueueSync(updateSerialQueue());
 }
 ///////////////////////////////////////////////////////////////////////////
-Simulation* SceneEditorBase::GetEditSimulation() const { return mpEditSimulation; }
+Simulation* SceneEditorBase::GetEditSimulation() const {
+  return mpEditSimulation;
+}
 ///////////////////////////////////////////////////////////////////////////
-Simulation* SceneEditorBase::GetActiveSimulation() const { return mpEditSimulation; }
+Simulation* SceneEditorBase::GetActiveSimulation() const {
+  return mpEditSimulation;
+}
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::ImplEnterPauseState() {
   ////////////////////////////////////
   // to prevent deadlock
-  ork::AssertOnOpQ2(gImplSerQ);
+  ork::opq::assertOnQueue2(gImplSerQ);
   ////////////////////////////////////
 
   auto lamb = [&]() {
@@ -1092,13 +1113,13 @@ void SceneEditorBase::ImplEnterPauseState() {
       mpEditSimulation->SetSimulationMode(ent::ESCENEMODE_PAUSE);
     }
   };
-  Op(lamb).QueueSync(UpdateSerialOpQ());
+  Op(lamb).QueueSync(updateSerialQueue());
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::ImplEnterEditState() {
   ////////////////////////////////////
   // to prevent deadlock
-  ork::AssertOnOpQ2(gImplSerQ);
+  ork::opq::assertOnQueue2(gImplSerQ);
   ////////////////////////////////////
 
   auto lamb = [&]() {
@@ -1126,10 +1147,12 @@ void SceneEditorBase::ImplEnterEditState() {
 
     EnableViews();
   };
-  Op(lamb).QueueSync(UpdateSerialOpQ());
+  Op(lamb).QueueSync(updateSerialQueue());
 }
 ///////////////////////////////////////////////////////////////////////////
-SceneObject* SceneEditorBase::FindSceneObject(const char* pname) { return mpScene->FindSceneObjectByName(AddPooledString(pname)); }
+SceneObject* SceneEditorBase::FindSceneObject(const char* pname) {
+  return mpScene->FindSceneObjectByName(AddPooledString(pname));
+}
 const SceneObject* SceneEditorBase::FindSceneObject(const char* pname) const {
   return mpScene->FindSceneObjectByName(AddPooledString(pname));
 }
@@ -1168,7 +1191,7 @@ ReferenceArchetype* SceneEditorBase::NewReferenceArchetype(const std::string& ar
 Archetype* SceneEditorBase::ImplNewArchetype(const std::string& classname, const std::string& name) {
   ////////////////////////////////////
   // to prevent deadlock
-  ork::AssertOnOpQ2(gImplSerQ);
+  ork::opq::assertOnQueue2(gImplSerQ);
   ////////////////////////////////////
 
   if (nullptr == mpScene)
@@ -1185,12 +1208,12 @@ Archetype* SceneEditorBase::ImplNewArchetype(const std::string& classname, const
       SlotNewObject(rarch);
     }
   };
-  Op(lamb).QueueSync(UpdateSerialOpQ());
+  Op(lamb).QueueSync(updateSerialQueue());
   return rarch;
 }
 SystemData* SceneEditorBase::ImplNewSystem(const std::string& classname) { ////////////////////////////////////
   // to prevent deadlock
-  ork::AssertOnOpQ2(gImplSerQ);
+  ork::opq::assertOnQueue2(gImplSerQ);
   ////////////////////////////////////
   if (nullptr == mpScene)
     return nullptr;
@@ -1204,17 +1227,17 @@ SystemData* SceneEditorBase::ImplNewSystem(const std::string& classname) { /////
       SlotNewObject(system);
     }
   };
-  Op(lamb).QueueSync(UpdateSerialOpQ());
+  Op(lamb).QueueSync(updateSerialQueue());
   return system;
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::SigSceneTopoChanged() {
   auto lamb = [=]() { ork::lev2::DrawableBuffer::ClearAndSyncReaders(); };
 
-  if (OpqTest::GetContext()->mOPQ == &UpdateSerialOpQ())
+  if (OpqTest::GetContext()->_queue == &updateSerialQueue())
     lamb();
   else
-    Op(lamb).QueueASync(UpdateSerialOpQ());
+    Op(lamb).QueueASync(updateSerialQueue());
 
   mSignalSceneTopoChanged(&SceneEditorBase::SigSceneTopoChanged);
 
@@ -1222,17 +1245,17 @@ void SceneEditorBase::SigSceneTopoChanged() {
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::SigNewScene() {
-  AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
   mSignalNewScene(&SceneEditorBase::SigNewScene);
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::ClearSelection() {
-  AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
   mselectionManager.ClearSelection();
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::AddObjectToSelection(ork::Object* pobj) {
-  AssertOnOpQ2(UpdateSerialOpQ());
+  ork::opq::assertOnQueue2(updateSerialQueue());
   Entity* pent = rtti::downcast<Entity*>(pobj);
 
   if (pent) {
@@ -1267,7 +1290,9 @@ void SceneEditorBase::AddObjectToSelection(ork::Object* pobj) {
   /////////////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////
-void SceneEditorBase::GetSelected(orkset<ork::Object*>& SelSet) { SelSet = mselectionManager.getActiveSelection(); }
+void SceneEditorBase::GetSelected(orkset<ork::Object*>& SelSet) {
+  SelSet = mselectionManager.getActiveSelection();
+}
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::ToggleSelection(ork::Object* pobj) {
   mselectionManager.ToggleSelection(pobj);
@@ -1310,9 +1335,13 @@ void SceneEditorBase::SlotNewObject(ork::Object* pobj) {
   //	SigModelInvalidated();
 }
 
-void SceneEditorBase::SlotPreNewObject() { StopLocalReq(); }
+void SceneEditorBase::SlotPreNewObject() {
+  StopLocalReq();
+}
 
-void SceneEditorBase::SlotModelInvalidated() { SigSceneTopoChanged(); }
+void SceneEditorBase::SlotModelInvalidated() {
+  SigSceneTopoChanged();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::ent

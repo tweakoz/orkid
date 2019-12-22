@@ -240,7 +240,7 @@ HandlerResult Panel::DoOnUiEvent( const Event& Ev )
 					auto lamb = [=]() 
 					{	delete this;
 					};
-					Op(lamb).QueueASync(MainThreadOpQ());
+					Op(lamb).QueueASync(mainThreadQueue());
 
 				}
 				else

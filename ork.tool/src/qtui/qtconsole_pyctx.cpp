@@ -241,7 +241,7 @@ void orkpy_runiter()
 	fflush(fp_pty_out_master);
 	fflush(fp_pty_err_master);
 	int ret = PyRun_InteractiveOneFlags(stdin, "<stdin>", & orkpy_cf );
-	MainThreadOpQ().push([&]() {
+	mainThreadQueue().enqueue([&]() {
 		orkpy_runiter();
 	});
 }
@@ -250,7 +250,7 @@ void InitPython()
 {
 	gPythonEnabled = true;
 
-	MainThreadOpQ().push([&]() {
+	mainThreadQueue().enqueue([&]() {
 		usleep(1500000);
 		char* strbuf = "TheMachine";
 		Py_SetProgramName(strbuf);
@@ -258,10 +258,10 @@ void InitPython()
 
 		PyGILState_STATE gstate = PyGILState_Ensure();
 		PyGILState_Release(gstate);
-		MainThreadOpQ().push([&]() {orkpy_initst2();});
-		MainThreadOpQ().push([&]() {orkpy_initpty();});
-		MainThreadOpQ().push([&]() {orkpy_initork();});
-		MainThreadOpQ().push([&]() {orkpy_runiter();});
+		mainThreadQueue().enqueue([&]() {orkpy_initst2();});
+		mainThreadQueue().enqueue([&]() {orkpy_initpty();});
+		mainThreadQueue().enqueue([&]() {orkpy_initork();});
+		mainThreadQueue().enqueue([&]() {orkpy_runiter();});
 
 	});
 }

@@ -195,9 +195,9 @@ public:
   virtual ~Drawable();
 
   virtual void enqueueToRenderQueue(const DrawableBufItem& item,
-                               lev2::IRenderer* prenderer) const = 0; // 	AssertOnOpQ2( MainThreadOpQ() );
+                               lev2::IRenderer* prenderer) const = 0; // 	AssertOnOpQ2( mainThreadQueue() );
   virtual void QueueToLayer(const DrawQueueXfData& xfdata,
-                            DrawableBufLayer& buffer) const = 0; // AssertOnOpQ2( UpdateSerialOpQ() );
+                            DrawableBufLayer& buffer) const = 0; // AssertOnOpQ2( updateSerialQueue() );
 
   const ork::Object* GetOwner() const { return mOwner; }
   void SetOwner(const ork::Object* owner) { mOwner = owner; }
