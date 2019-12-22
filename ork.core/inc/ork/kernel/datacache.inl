@@ -1,5 +1,6 @@
 #pragma once
 #include "../file/fileenv.h"
+#include "../file/path.h"
 #include "../util/crc64.h"
 #include "environment.h"
 #include "mutex.h"
@@ -20,15 +21,13 @@ struct DataBlockCache {
   //////////////////////////////////////////////////////////////////////////////
   static std::string _generateCachePath(uint64_t key) {
     using namespace boost::filesystem;
-    std::string cache_dir;
-    genviron.get("OBT_STAGE", cache_dir);
-    cache_dir = cache_dir + "/dblockcache";
-    if (false == exists(cache_dir)) {
+    auto cache_dir = file::Path::dblockcache_dir();
+    if (false == exists(cache_dir.toBFS())) {
       printf("Making cache_dir folder<%s>\n", cache_dir.c_str());
-      create_directory(cache_dir);
+      create_directory(cache_dir.toBFS());
     }
-    auto cache_path = cache_dir + "/" + FormatString("%zx.bin", key);
-    return cache_path;
+    auto cache_path = cache_dir/FormatString("%zx.bin", key);
+    return cache_path.toStdString();
   }
   //////////////////////////////////////////////////////////////////////////////
   static inline datablockptr_t findDataBlock(uint64_t key) {
@@ -45,7 +44,7 @@ struct DataBlockCache {
           rval->reserve(len);
           FILE* fin   = fopen(cache_path.c_str(), "rb");
           void* pdata = malloc(len);
-          size_t numread = fread(pdata, len, 1, fin);
+          size_t numread = fread(pdata, 1, len, fin);
           OrkAssert(numread==len);
           fclose(fin);
           rval->addData(pdata, len);
