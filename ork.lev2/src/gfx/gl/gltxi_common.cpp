@@ -155,8 +155,7 @@ struct TexSetter {
       int& ih,
       DataBlockInputStream inpstream) {
 
-      DataBlockInputStream copy_stream = inpstream;
-
+    DataBlockInputStream copy_stream = inpstream;
 
     // size_t ifilelen       = 0;
     // EFileErrCode eFileErr = file.GetLength(ifilelen);
@@ -167,11 +166,11 @@ struct TexSetter {
     glto->_maxmip = 0;
 
     int mipbias = 0;
-    #if defined(__APPLE__) // todo move to gfx user settings
-    if(iw>=4096){
-      //mipbias = 2;
+#if defined(__APPLE__) // todo move to gfx user settings
+    if (iw >= 4096) {
+      // mipbias = 2;
     }
-    #endif
+#endif
 
     for (int imip = 0; imip < inummips; imip++) {
       if (iw < 4)
@@ -273,7 +272,7 @@ struct TexSetter {
       {
         auto pgfxmem = inpstream.current();
         inpstream.advance(isiz2);
-        if( imip>=mipbias ) {
+        if (imip >= mipbias) {
           glTexImage2D(tgt, imip - mipbias, intfmt, iw, ih, 0, nfmt, typ, pgfxmem);
           glto->_maxmip = imip - mipbias;
         }
@@ -290,12 +289,11 @@ struct TexSetter {
       isize = iw * ih * BPP;
     }
 
-    if( tex->_varmap.hasKey("postproc") ){
-        auto postproc = tex->_varmap.typedValueForKey<Texture::postproc_t>("postproc").value();
-        bool ok = postproc(tex,txi,copy_stream);
-        OrkAssert(ok);
+    if (tex->_varmap.hasKey("postproc")) {
+      auto postproc = tex->_varmap.typedValueForKey<Texture::postproc_t>("postproc").value();
+      bool ok       = postproc(tex, txi, copy_stream);
+      OrkAssert(ok);
     }
-
   }
   static void Set3D(
       GlTextureInterface* txi,
@@ -406,11 +404,11 @@ struct TexSetter {
       //	tgt,imip,fmt,iw,ih,extfmt );
 
       if (false == bUSEPBO) {
-        //static const int kloadbufsize = 16 << 20;
-        //static void* gloadbuf         = malloc(kloadbufsize);
-        //OrkAssert(isize < kloadbufsize);
+        // static const int kloadbufsize = 16 << 20;
+        // static void* gloadbuf         = malloc(kloadbufsize);
+        // OrkAssert(isize < kloadbufsize);
         auto copy_src = inpstream.current();
-        //memcpy(gloadbuf, copy_src, isize);
+        // memcpy(gloadbuf, copy_src, isize);
         inpstream.advance(isize);
         GL_ERRORCHECK();
         glCompressedTexImage2D(tgt, imip, fmt, iw, ih, 0, isize, copy_src);
@@ -841,7 +839,7 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   } else if (dxt::IsBGRA8(ddsh->ddspf)) {
     const dxt::DdsLoadInfo& li = dxt::loadInfoBGRA8;
     int size                   = idepth * iwidth * iheight * 4;
-    //printf("  tex<%s> BGRA8\n", infname.c_str());
+    // printf("  tex<%s> BGRA8\n", infname.c_str());
     // printf( "  tex<%s> size<%d>\n", infname.c_str(), size );
     if (bVOLUMETEX)
       TexSetter::Set3D(
@@ -869,11 +867,11 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
       TexSetter::Set2D(
           this, ptex, 3, GL_BGR, GL_UNSIGNED_BYTE, TARGET, 3, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
     GL_ERRORCHECK();
-      if (NumMips > 3) {
-        ptex->TexSamplingMode().PresetTrilinearWrap();
-        ApplySamplingMode(ptex);
-// assert(false);
-      }
+    if (NumMips > 3) {
+      ptex->TexSamplingMode().PresetTrilinearWrap();
+      ApplySamplingMode(ptex);
+      // assert(false);
+    }
   }
   //////////////////////////////////////////////////////////
   // DXT5: texturing fast path (8 bits per pixel true color)
@@ -881,8 +879,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   else if (dxt::IsDXT5(ddsh->ddspf)) {
     const dxt::DdsLoadInfo& li = dxt::loadInfoDXT5;
     int size                   = (iBwidth * iBheight) * li.blockBytes;
-    //printf("  tex<%s> DXT5\n", infname.c_str());
-    //printf("  tex<%s> size<%d>\n", infname.c_str(), size);
+    // printf("  tex<%s> DXT5\n", infname.c_str());
+    // printf("  tex<%s> size<%d>\n", infname.c_str(), size);
     if (bVOLUMETEX)
       TexSetter::Set3DC(
           this, kRGBA_DXT5, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
@@ -897,8 +895,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   else if (dxt::IsDXT3(ddsh->ddspf)) {
     const dxt::DdsLoadInfo& li = dxt::loadInfoDXT3;
     int size                   = (iBwidth * iBheight) * li.blockBytes;
-    //printf("  tex<%s> DXT3\n", infname.c_str());
-    //printf("  tex<%s> size<%d>\n", infname.c_str(), size);
+    // printf("  tex<%s> DXT3\n", infname.c_str());
+    // printf("  tex<%s> size<%d>\n", infname.c_str(), size);
 
     if (bVOLUMETEX)
       TexSetter::Set3DC(
@@ -912,8 +910,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   else if (dxt::IsDXT1(ddsh->ddspf)) {
     const dxt::DdsLoadInfo& li = dxt::loadInfoDXT1;
     int size                   = (iBwidth * iBheight) * li.blockBytes;
-    //printf("  tex<%s> DXT1\n", infname.c_str());
-    //printf("  tex<%s> size<%d>\n", infname.c_str(), size);
+    // printf("  tex<%s> DXT1\n", infname.c_str());
+    // printf("  tex<%s> size<%d>\n", infname.c_str(), size);
     if (bVOLUMETEX)
       TexSetter::Set3DC(
           this, kRGBA_DXT1, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
@@ -942,6 +940,11 @@ bool GlTextureInterface::LoadTexture(Texture* ptex, datablockptr_t datablock) {
 
 bool GlTextureInterface::LoadDDSTexture(Texture* ptex, datablockptr_t datablock) {
 
+  if (ptex->_varmap.hasKey("preproc")) {
+    auto preproc        = ptex->_varmap.typedValueForKey<Texture::preproc_t>("preproc").value();
+    auto orig_datablock = datablock;
+    datablock           = preproc(ptex, this, orig_datablock);
+  }
   GlTexLoadReq load_req;
   load_req.ptex                  = ptex;
   load_req._inpstream._datablock = datablock;
@@ -999,8 +1002,9 @@ bool GlTextureInterface::LoadDDSTexture(const AssetPath& infname, Texture* ptex)
     printf("  tex<%s> gmask<0x%x>\n", infname.c_str(), int(ddsh->ddspf.dwGBitMask));
     printf("  tex<%s> bmask<0x%x>\n", infname.c_str(), int(ddsh->ddspf.dwBBitMask));
   }*/
-  auto inpstream = std::make_shared<DataBlock>(pdata, ifilelen);
-  return LoadDDSTexture(ptex, inpstream);
+  auto inpdata   = std::make_shared<DataBlock>(pdata, ifilelen);
+  inpdata->_name = infname.toStdString();
+  return LoadDDSTexture(ptex, inpdata);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1130,19 +1134,19 @@ void GlTextureInterface::generateMipMaps(Texture* ptex) {
 
 void GlTextureInterface::initTextureFromData(Texture* ptex, bool autogenmips) {
 
-  if( nullptr == ptex->_internalHandle ){
-    auto texobj = new GLTextureObject;
-    ptex->_internalHandle    = (void*) texobj;
+  if (nullptr == ptex->_internalHandle) {
+    auto texobj           = new GLTextureObject;
+    ptex->_internalHandle = (void*)texobj;
     glGenTextures(1, &texobj->mObject);
   }
-  auto pTEXOBJ = (GLTextureObject*) ptex->_internalHandle;
+  auto pTEXOBJ = (GLTextureObject*)ptex->_internalHandle;
 
   glBindTexture(GL_TEXTURE_2D, pTEXOBJ->mObject);
 
-  switch(ptex->_texFormat){
+  switch (ptex->_texFormat) {
     case EBUFFMT_RGBA8:
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, ptex->_width, ptex->_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex->_data);
-      //printf( "tex<%p:%s> updatedata<%p>\n", ptex, ptex->_debugName.c_str(), ptex->_data);
+      // printf( "tex<%p:%s> updatedata<%p>\n", ptex, ptex->_debugName.c_str(), ptex->_data);
       break;
     default:
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, ptex->_width, ptex->_height, 0, GL_RGBA, GL_FLOAT, ptex->_data);
@@ -1151,12 +1155,11 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, bool autogenmips) {
 
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  if( autogenmips ){
+  if (autogenmips) {
     glGenerateMipmap(GL_TEXTURE_2D);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 3);
-  }
-  else {
+  } else {
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
   }
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);

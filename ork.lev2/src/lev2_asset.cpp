@@ -99,19 +99,18 @@ public:
 
   bool LoadFileAsset(asset::Asset* pAsset, ConstString filename) {
     ork::file::Path pth(filename.c_str());
-      TextureAsset* tex_asset = rtti::safe_downcast<TextureAsset*>(pAsset);
-      if( tex_asset->_varmap.hasKey("postproc") ){
-        auto postproc = tex_asset->_varmap.typedValueForKey<Texture::postproc_t>("postproc").value();
-        tex_asset->GetTexture()->_varmap.makeValueForKey<Texture::postproc_t>("postproc")=postproc;
-      }
+    TextureAsset* tex_asset          = rtti::safe_downcast<TextureAsset*>(pAsset);
+    tex_asset->GetTexture()->_varmap = tex_asset->_varmap;
 
-      while (0 == GfxEnv::GetRef().GetLoaderTarget()) {
-        ork::msleep(100);
-      }
-      auto p = file::Path(pAsset->GetName());
-      bool bOK = GfxEnv::GetRef().GetLoaderTarget()->TXI()->LoadTexture(p, tex_asset->GetTexture());
-      OrkAssert(bOK);
-      return true;
+    // OrkAssert(false == tex_asset->GetTexture()->_varmap.hasKey("preproc"));
+
+    while (0 == GfxEnv::GetRef().GetLoaderTarget()) {
+      ork::msleep(100);
+    }
+    auto p   = file::Path(pAsset->GetName());
+    bool bOK = GfxEnv::GetRef().GetLoaderTarget()->TXI()->LoadTexture(p, tex_asset->GetTexture());
+    OrkAssert(bOK);
+    return true;
   }
 
   void DestroyAsset(asset::Asset* pAsset) {
@@ -213,7 +212,7 @@ FxShaderLoader::FxShaderLoader()
 
 bool FxShaderLoader::LoadFileAsset(asset::Asset* pAsset, ConstString filename) {
   ork::file::Path pth(filename.c_str());
-  //printf("Loading Effect url<%s> abs<%s>\n", filename.c_str(), pth.ToAbsolute().c_str());
+  // printf("Loading Effect url<%s> abs<%s>\n", filename.c_str(), pth.ToAbsolute().c_str());
   auto pshader = rtti::safe_downcast<FxShaderAsset*>(pAsset);
   bool bOK     = GfxEnv::GetRef().GetLoaderTarget()->FXI()->LoadFxShader(filename.c_str(), pshader->GetFxShader());
   OrkAssert(bOK);

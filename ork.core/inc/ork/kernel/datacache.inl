@@ -26,7 +26,7 @@ struct DataBlockCache {
       printf("Making cache_dir folder<%s>\n", cache_dir.c_str());
       create_directory(cache_dir.toBFS());
     }
-    auto cache_path = cache_dir/FormatString("%zx.bin", key);
+    auto cache_path = cache_dir / FormatString("%zx.bin", key);
     return cache_path.toStdString();
   }
   //////////////////////////////////////////////////////////////////////////////
@@ -39,13 +39,14 @@ struct DataBlockCache {
       if (it == m.end()) {
         using namespace boost::filesystem;
         if (exists(cache_path)) {
-          rval       = std::make_shared<DataBlock>();
-          size_t len = file_size(cache_path);
+          rval        = std::make_shared<DataBlock>();
+          size_t len  = file_size(cache_path);
+          rval->_name = cache_path;
           rval->reserve(len);
-          FILE* fin   = fopen(cache_path.c_str(), "rb");
-          void* pdata = malloc(len);
+          FILE* fin      = fopen(cache_path.c_str(), "rb");
+          void* pdata    = malloc(len);
           size_t numread = fread(pdata, 1, len, fin);
-          OrkAssert(numread==len);
+          OrkAssert(numread == len);
           fclose(fin);
           rval->addData(pdata, len);
           free(pdata);

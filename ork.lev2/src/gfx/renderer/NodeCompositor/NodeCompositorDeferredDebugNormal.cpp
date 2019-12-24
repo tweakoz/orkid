@@ -32,49 +32,56 @@ void DeferredCompositingNodeDebugNormal::describeX(class_t* c) {
   c->memberProperty("ClearColor", &DeferredCompositingNodeDebugNormal::_clearColor);
   c->memberProperty("FogColor", &DeferredCompositingNodeDebugNormal::_fogColor);
   c->memberProperty("Ambient", &DeferredCompositingNodeDebugNormal::_ambient);
-  c->floatProperty("EnvironmentIntensity", float_range{-5,5},&DeferredCompositingNodeDebugNormal::_environmentIntensity);
-  c->floatProperty("EnvironmentMipBias", float_range{0,12},&DeferredCompositingNodeDebugNormal::_environmentMipBias);
-  c->floatProperty("EnvironmentMipScale", float_range{0,100},&DeferredCompositingNodeDebugNormal::_environmentMipScale);
-  c->floatProperty("DiffuseIntensity", float_range{-5,5},&DeferredCompositingNodeDebugNormal::_diffuseIntensity);
+  c->floatProperty("EnvironmentIntensity", float_range{-5, 5}, &DeferredCompositingNodeDebugNormal::_environmentIntensity);
+  c->floatProperty("EnvironmentMipBias", float_range{0, 12}, &DeferredCompositingNodeDebugNormal::_environmentMipBias);
+  c->floatProperty("EnvironmentMipScale", float_range{0, 100}, &DeferredCompositingNodeDebugNormal::_environmentMipScale);
+  c->floatProperty("DiffuseIntensity", float_range{-5, 5}, &DeferredCompositingNodeDebugNormal::_diffuseIntensity);
 
-  c->accessorProperty("EnvironmentTexture", &DeferredCompositingNodeDebugNormal::_readEnvTexture, &DeferredCompositingNodeDebugNormal::_writeEnvTexture)
-   ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
-   ->annotate<ConstString>("editor.assettype", "lev2tex")
-   ->annotate<ConstString>("editor.assetclass", "lev2tex");
+  c->accessorProperty(
+       "EnvironmentTexture",
+       &DeferredCompositingNodeDebugNormal::_readEnvTexture,
+       &DeferredCompositingNodeDebugNormal::_writeEnvTexture)
+      ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
+      ->annotate<ConstString>("editor.assettype", "lev2tex")
+      ->annotate<ConstString>("editor.assetclass", "lev2tex");
 }
 
-void DeferredCompositingNodeDebugNormal::_readEnvTexture(ork::rtti::ICastable *&tex) const {
+void DeferredCompositingNodeDebugNormal::_readEnvTexture(ork::rtti::ICastable*& tex) const {
   tex = _environmentTextureAsset;
 }
 
-void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable *const &tex) {
+void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable* const& tex) {
   _environmentTextureAsset = tex ? rtti::autocast(tex) : nullptr;
   ////////////////////////////////////////////////////////////////////////////////
-  // irradiance map postprocessor
+  // irradiance map preprocessor
   ////////////////////////////////////////////////////////////////////////////////
-  _environmentTextureAsset->_varmap.makeValueForKey<Texture::postproc_t>("postproc") =
-      [](Texture*tex,TextureInterface* txi,DataBlockInputStream inpstream)->bool{
-        printf( "EnvironmentTexture Irradiance Postprocessor tex<%p:%s> inpstreamlen<%zu>...\n", tex, tex->_debugName.c_str(), inpstream.length());
-        return true;
+  _environmentTextureAsset->_varmap.makeValueForKey<Texture::preproc_t>("preproc") =
+      [](Texture* tex, TextureInterface* txi, datablockptr_t inpdata) -> datablockptr_t {
+    printf(
+        "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>...\n",
+        tex,
+        tex->_debugName.c_str(),
+        inpdata->length());
+    return inpdata;
   };
   ////////////////////////////////////////////////////////////////////////////////
 }
 
-  lev2::Texture* DeferredCompositingNodeDebugNormal::envTexture() const {
+lev2::Texture* DeferredCompositingNodeDebugNormal::envTexture() const {
   return _environmentTextureAsset ? _environmentTextureAsset->GetTexture() : nullptr;
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
 struct IMPL {
-  static const int KMAXLIGHTS=8;
+  static const int KMAXLIGHTS = 8;
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   IMPL(DeferredCompositingNodeDebugNormal* node)
       : _camname(AddPooledString("Camera"))
-      , _context(node,"orkshader://deferred",KMAXLIGHTS){
+      , _context(node, "orkshader://deferred", KMAXLIGHTS) {
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ~IMPL() {}
+  ~IMPL() {
+  }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void init(lev2::GfxTarget* target) {
     _context.gpuInit(target);
@@ -89,7 +96,7 @@ struct IMPL {
     auto FBI                     = targ->FBI();
     auto this_buf                = FBI->GetThisBuffer();
     auto RSI                     = targ->RSI();
-    const auto TOPCPD = CIMPL->topCPD();
+    const auto TOPCPD            = CIMPL->topCPD();
     //////////////////////////////////////////////////////
     _context.renderUpdate(drawdata);
     auto VD = _context.computeViewData(drawdata);
@@ -97,8 +104,8 @@ struct IMPL {
     _context._clearColor = node->_clearColor;
     /////////////////////////////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::render");
-      _context.renderGbuffer(drawdata, VD);
-      targ->debugPushGroup("Deferred::LightAccum");
+    _context.renderGbuffer(drawdata, VD);
+    targ->debugPushGroup("Deferred::LightAccum");
     _context._accumCPD = TOPCPD;
     /////////////////////////////////////////////////////////////////
     auto vprect   = SRect(0, 0, _context._width, _context._height);
@@ -109,53 +116,52 @@ struct IMPL {
     _context._accumCPD._stereoCameraMatrices = nullptr;
     _context._accumCPD._stereo1pass          = false;
     CIMPL->pushCPD(_context._accumCPD); // base lighting
-      FBI->SetAutoClear(true);
-      FBI->PushRtGroup(_context._rtgLaccum);
-      targ->BeginFrame();
-      FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
-      //////////////////////////////////////////////////////////////////
-      // base lighting
-      //////////////////////////////////////////////////////////////////
+    FBI->SetAutoClear(true);
+    FBI->PushRtGroup(_context._rtgLaccum);
+    targ->BeginFrame();
+    FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
+    //////////////////////////////////////////////////////////////////
+    // base lighting
+    //////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::BaseLighting");
-      _context._lightingmtl.bindTechnique(VD._isStereo ? _context._tekDebugNormalStereo
-                                                       : _context._tekDebugNormal );
-      _context._lightingmtl._rasterstate.SetBlending(EBLENDING_OFF);
-      _context._lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
-      _context._lightingmtl._rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
-      _context._lightingmtl.begin(RCFD);
-      //////////////////////////////////////////////////////
-      _context._lightingmtl.bindParamMatrixArray(_context._parMatIVPArray, VD._ivp, 2);
-      _context._lightingmtl.bindParamMatrixArray(_context._parMatVArray, VD._v, 2);
-      _context._lightingmtl.bindParamMatrixArray(_context._parMatPArray, VD._p, 2);
-      _context._lightingmtl.bindParamCTex(_context._parMapGBufAlbAo, _context._rtgGbuffer->GetMrt(0)->GetTexture());
-      _context._lightingmtl.bindParamCTex(_context._parMapGBufNrmL, _context._rtgGbuffer->GetMrt(1)->GetTexture());
-      _context._lightingmtl.bindParamCTex(_context._parMapGBufRufMtlAlpha, _context._rtgGbuffer->GetMrt(2)->GetTexture());
-      _context._lightingmtl.bindParamCTex(_context._parMapDepth, _context._rtgGbuffer->_depthTexture);
+    _context._lightingmtl.bindTechnique(VD._isStereo ? _context._tekDebugNormalStereo : _context._tekDebugNormal);
+    _context._lightingmtl._rasterstate.SetBlending(EBLENDING_OFF);
+    _context._lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
+    _context._lightingmtl._rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
+    _context._lightingmtl.begin(RCFD);
+    //////////////////////////////////////////////////////
+    _context._lightingmtl.bindParamMatrixArray(_context._parMatIVPArray, VD._ivp, 2);
+    _context._lightingmtl.bindParamMatrixArray(_context._parMatVArray, VD._v, 2);
+    _context._lightingmtl.bindParamMatrixArray(_context._parMatPArray, VD._p, 2);
+    _context._lightingmtl.bindParamCTex(_context._parMapGBufAlbAo, _context._rtgGbuffer->GetMrt(0)->GetTexture());
+    _context._lightingmtl.bindParamCTex(_context._parMapGBufNrmL, _context._rtgGbuffer->GetMrt(1)->GetTexture());
+    _context._lightingmtl.bindParamCTex(_context._parMapGBufRufMtlAlpha, _context._rtgGbuffer->GetMrt(2)->GetTexture());
+    _context._lightingmtl.bindParamCTex(_context._parMapDepth, _context._rtgGbuffer->_depthTexture);
 
-      auto envtex = node->envTexture();
-      _context._lightingmtl.bindParamCTex(_context._parMapEnvironment, envtex);
+    auto envtex = node->envTexture();
+    _context._lightingmtl.bindParamCTex(_context._parMapEnvironment, envtex);
 
-      /////////////////////////
+    /////////////////////////
 
-      _context._lightingmtl.bindParamFloat(_context._parEnvironmentIntensity, node->environmentIntensity() );
-      _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipBias, node->environmentMipBias() );
-      _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipScale, node->environmentMipScale() );
-      _context._lightingmtl.bindParamFloat(_context._parDiffuseIntensity, node->diffuseIntensity() );
-      _context._lightingmtl.bindParamVec3(_context._parAmbient, node->ambient() );
+    _context._lightingmtl.bindParamFloat(_context._parEnvironmentIntensity, node->environmentIntensity());
+    _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipBias, node->environmentMipBias());
+    _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipScale, node->environmentMipScale());
+    _context._lightingmtl.bindParamFloat(_context._parDiffuseIntensity, node->diffuseIntensity());
+    _context._lightingmtl.bindParamVec3(_context._parAmbient, node->ambient());
 
-      _context._lightingmtl.bindParamVec2(_context._parNearFar, fvec2(0.1, 1000));
-      _context._lightingmtl.bindParamVec2(_context._parInvViewSize, fvec2(1.0 / float(_context._width), 1.0f / float(_context._height)));
-      _context._lightingmtl.commit();
-      RSI->BindRasterState(_context._lightingmtl._rasterstate);
-      this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
-      _context._lightingmtl.end(RCFD);
+    _context._lightingmtl.bindParamVec2(_context._parNearFar, fvec2(0.1, 1000));
+    _context._lightingmtl.bindParamVec2(
+        _context._parInvViewSize, fvec2(1.0 / float(_context._width), 1.0f / float(_context._height)));
+    _context._lightingmtl.commit();
+    RSI->BindRasterState(_context._lightingmtl._rasterstate);
+    this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
+    _context._lightingmtl.end(RCFD);
     CIMPL->popCPD();       // base lighting
     targ->debugPopGroup(); // BaseLighting
     targ->EndFrame();
-    FBI->PopRtGroup();     // deferredRtg
+    FBI->PopRtGroup(); // deferredRtg
 
-
-      targ->debugPopGroup(); // "Deferred::LightAccum"
+    targ->debugPopGroup(); // "Deferred::LightAccum"
     targ->debugPopGroup(); // "Deferred::render"
     // float totaltime = _timer.SecsSinceStart();
     // printf( "Deferred::_render totaltime<%g>\n", totaltime );
@@ -171,11 +177,16 @@ struct IMPL {
 }; // IMPL
 
 ///////////////////////////////////////////////////////////////////////////////
-DeferredCompositingNodeDebugNormal::DeferredCompositingNodeDebugNormal() { _impl = std::make_shared<IMPL>(this); }
+DeferredCompositingNodeDebugNormal::DeferredCompositingNodeDebugNormal() {
+  _impl = std::make_shared<IMPL>(this);
+}
 ///////////////////////////////////////////////////////////////////////////////
-DeferredCompositingNodeDebugNormal::~DeferredCompositingNodeDebugNormal() {}
+DeferredCompositingNodeDebugNormal::~DeferredCompositingNodeDebugNormal() {
+}
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNodeDebugNormal::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) { _impl.Get<std::shared_ptr<IMPL>>()->init(pTARG); }
+void DeferredCompositingNodeDebugNormal::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) {
+  _impl.Get<std::shared_ptr<IMPL>>()->init(pTARG);
+}
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNodeDebugNormal::DoRender(CompositorDrawData& drawdata) {
   auto impl = _impl.Get<std::shared_ptr<IMPL>>();
