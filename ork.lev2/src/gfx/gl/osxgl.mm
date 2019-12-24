@@ -43,7 +43,7 @@ struct GlOsxPlatformObject
 	NSView*				mOsxView;
 	bool				mbInit;
 	bool				mbNSOpenGlView;
-	Opq 				mOpQ;
+	opq::OperationsQueue		mOpQ;
 	void_lambda_t       mBindOp;
 	GfxTargetGL*		mTarget;
 
