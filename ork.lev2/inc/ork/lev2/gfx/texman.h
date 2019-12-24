@@ -133,8 +133,7 @@ struct MipChain {
 //////////////////////////////////////////////////////////////////////////
 
 struct Texture {
-  typedef std::function<bool(Texture*, TextureInterface*, DataBlockInputStream)> postproc_t;
-  typedef std::function<datablockptr_t(Texture*, TextureInterface*, datablockptr_t)> preproc_t;
+  typedef std::function<datablockptr_t(Texture*, GfxTarget*, datablockptr_t)> proc_t;
 
   //////////////////////////////////////////////////////
 

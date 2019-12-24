@@ -46,35 +46,36 @@ public:
 	////////////////////////////////////////////
 
 	static Texture* brdfIntegrationMap(GfxTarget* targ);
+    static Texture* filterEnvMap(Texture* rawenvmap, GfxTarget* targ);
 
-  ////////////////////////////////////////////
+    ////////////////////////////////////////////
 
-  void begin(const RenderContextFrameData& RCFD);
-  void end(const RenderContextFrameData& RCFD);
+    void begin(const RenderContextFrameData& RCFD);
+    void end(const RenderContextFrameData& RCFD);
 
-  ////////////////////////////////////////////
+    ////////////////////////////////////////////
 
-  bool BeginPass(GfxTarget* targ, int iPass = 0) final;
-  void EndPass(GfxTarget* targ) final;
-  int BeginBlock(GfxTarget* targ, const RenderContextInstData& RCID) final;
-  void EndBlock(GfxTarget* targ) final;
-  void Init(GfxTarget* targ) final;
-  void Update() final;
-  void BindMaterialInstItem( MaterialInstItem* pitem ) const final;
-  void UnBindMaterialInstItem( MaterialInstItem* pitem ) const final;
+    bool BeginPass(GfxTarget* targ, int iPass = 0) final;
+    void EndPass(GfxTarget* targ) final;
+    int BeginBlock(GfxTarget* targ, const RenderContextInstData& RCID) final;
+    void EndBlock(GfxTarget* targ) final;
+    void Init(GfxTarget* targ) final;
+    void Update() final;
+    void BindMaterialInstItem(MaterialInstItem* pitem) const final;
+    void UnBindMaterialInstItem(MaterialInstItem* pitem) const final;
 
-  ////////////////////////////////////////////
+    ////////////////////////////////////////////
 
-  FxShader* _shader = nullptr;
-  GfxTarget* _initialTarget = nullptr;
-  const FxShaderParam* _paramMVP = nullptr;
-  const FxShaderParam* _paramMVPL = nullptr;
-  const FxShaderParam* _paramMVPR = nullptr;
-  const FxShaderParam* _paramMV = nullptr;
-  const FxShaderParam* _paramMROT = nullptr;
-  const FxShaderParam* _paramMapColor = nullptr;
-  const FxShaderParam* _paramMapNormal = nullptr;
-  const FxShaderParam* _paramMapRoughAndMetal = nullptr;
+    FxShader* _shader                           = nullptr;
+    GfxTarget* _initialTarget                   = nullptr;
+    const FxShaderParam* _paramMVP              = nullptr;
+    const FxShaderParam* _paramMVPL             = nullptr;
+    const FxShaderParam* _paramMVPR             = nullptr;
+    const FxShaderParam* _paramMV               = nullptr;
+    const FxShaderParam* _paramMROT             = nullptr;
+    const FxShaderParam* _paramMapColor         = nullptr;
+    const FxShaderParam* _paramMapNormal        = nullptr;
+    const FxShaderParam* _paramMapRoughAndMetal = nullptr;
 	const FxShaderParam* _parInvViewSize = nullptr;
 
   Texture* _texColor = nullptr;

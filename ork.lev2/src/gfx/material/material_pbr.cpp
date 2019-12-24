@@ -20,6 +20,7 @@
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/gfx/brdf.inl>
 #include <ork/pch.h>
+#include <ork/lev2/gfx/rtgroup.h>
 #include <OpenImageIO/imageio.h>
 #include <ork/kernel/datacache.inl>
 
@@ -106,6 +107,44 @@ Texture* PBRMaterial::brdfIntegrationMap(GfxTarget* targ) {
     targ->TXI()->initTextureFromData(_map, false);
   }
   return _map;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+Texture* PBRMaterial::filterEnvMap(Texture* rawenvmap, GfxTarget* targ) {
+  auto txi = targ->TXI();
+  auto fbi = targ->FBI();
+  auto fxi = targ->FXI();
+  ///////////////////////////////////////////////
+  static FxShader* shader             = nullptr;
+  static const FxShaderTechnique* tek = nullptr;
+  if (nullptr == shader) {
+    shader = asset::AssetManager<FxShaderAsset>::Load("orkshader://pbr_filterenv")->GetFxShader();
+    OrkAssert(shader != nullptr);
+    tek = fxi->technique(shader, "tek_yo");
+    OrkAssert(tek != nullptr);
+    printf("filterenv shader<%p> tek<%p>\n", shader, tek);
+    ///////////////////////////////////////////////
+    int w              = rawenvmap->_width;
+    int h              = rawenvmap->_height;
+    auto outgroup      = new RtGroup(targ, w, h, 1);
+    auto outbuf        = new RtBuffer(outgroup, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, w, h);
+    outbuf->_debugName = "filteredenvmap";
+    outgroup->SetMrt(0, outbuf);
+
+    printf("filterenv w<%d> h<%d>\n", w, h);
+    printf("filterenv outgroup<%p> outbuf<%p>\n", outgroup, outbuf);
+
+    fbi->PushRtGroup(outgroup);
+    fbi->BeginFrame();
+    fbi->Clear(fvec4(0, 0, 0, 0), 1);
+    ///////////////////////////////////////////////
+
+    ///////////////////////////////////////////////
+    fbi->EndFrame();
+    fbi->PopRtGroup();
+  }
+  return rawenvmap;
 }
 
 /////////////////////////////////////////////////////////////////////////

@@ -19,6 +19,10 @@
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/material_freestyle.inl>
 #include <ork/kernel/datacache.inl>
+#include <ork/gfx/brdf.inl>
+#include <ork/gfx/dds.h>
+//#include <ork/gfx/image.inl>
+#include <ork/lev2/gfx/material_pbr.inl>
 
 #include "NodeCompositorDeferred.h"
 
@@ -56,8 +60,8 @@ void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable* 
   ////////////////////////////////////////////////////////////////////////////////
   // irradiance map preprocessor
   ////////////////////////////////////////////////////////////////////////////////
-  _environmentTextureAsset->_varmap.makeValueForKey<Texture::preproc_t>("preproc") =
-      [](Texture* tex, TextureInterface* txi, datablockptr_t datablock) -> datablockptr_t {
+  _environmentTextureAsset->_varmap.makeValueForKey<Texture::proc_t>("preproc") =
+      [](Texture* tex, GfxTarget* targ, datablockptr_t datablock) -> datablockptr_t {
     printf(
         "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>...\n",
         tex,
@@ -70,9 +74,18 @@ void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable* 
     uint64_t cachekey = hasher.result();
     auto irrmapdblock = DataBlockCache::findDataBlock(cachekey);
     if (irrmapdblock) {
+      // found in cache
       datablock = irrmapdblock;
     } else {
-      DataBlockCache::setDataBlock(cachekey, datablock);
+      DataBlockInputStream istream(datablock);
+      // not found in cache, generate
+      irrmapdblock = std::make_shared<DataBlock>();
+      ///////////////////////////
+      auto newtex = PBRMaterial::filterEnvMap(tex, targ);
+      //////////////////////////////////////////////////////////////
+      OrkAssert(false);
+      DataBlockCache::setDataBlock(cachekey, irrmapdblock);
+      datablock = irrmapdblock;
     }
 
     return datablock;

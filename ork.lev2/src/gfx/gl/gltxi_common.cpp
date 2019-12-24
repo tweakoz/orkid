@@ -7,9 +7,9 @@
 
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/gfx/dds.h>
 #include "gl.h"
 #include <ork/lev2/gfx/texman.h>
-#include <ork/lev2/gfx/dxt.h>
 #include <ork/lev2/ui/ui.h>
 #include <ork/file/file.h>
 #include <ork/math/misc_math.h>
@@ -288,12 +288,6 @@ struct TexSetter {
       ih >>= 1;
       isize = iw * ih * BPP;
     }
-
-    if (tex->_varmap.hasKey("postproc")) {
-      auto postproc = tex->_varmap.typedValueForKey<Texture::postproc_t>("postproc").value();
-      bool ok       = postproc(tex, txi, copy_stream);
-      OrkAssert(ok);
-    }
   }
   static void Set3D(
       GlTextureInterface* txi,
@@ -553,15 +547,15 @@ VdsTextureAnimation::VdsTextureAnimation(const AssetPath& pth) {
   U8* pdata             = (U8*)malloc(ifilelen);
   miFileLength          = int(ifilelen);
   OrkAssertI(pdata != 0, "out of memory ?");
-  eFileErr          = mpFile->Read(pdata, sizeof(dxt::DDS_HEADER));
-  mpDDSHEADER       = (dxt::DDS_HEADER*)pdata;
-  miFrameBaseOffset = sizeof(dxt::DDS_HEADER);
+  eFileErr          = mpFile->Read(pdata, sizeof(dds::DDS_HEADER));
+  mpDDSHEADER       = (dds::DDS_HEADER*)pdata;
+  miFrameBaseOffset = sizeof(dds::DDS_HEADER);
   ////////////////////////////////////////////////////////////////////
   miW         = mpDDSHEADER->dwWidth;
   miH         = mpDDSHEADER->dwHeight;
   miNumFrames = (mpDDSHEADER->dwDepth > 1) ? mpDDSHEADER->dwDepth : 1;
   ////////////////////////////////////////////////////////////////////
-  int NumMips = (mpDDSHEADER->dwFlags & dxt::DDSD_MIPMAPCOUNT) ? mpDDSHEADER->dwMipMapCount : 1;
+  int NumMips = (mpDDSHEADER->dwFlags & dds::DDSD_MIPMAPCOUNT) ? mpDDSHEADER->dwMipMapCount : 1;
   int iwidth  = mpDDSHEADER->dwWidth;
   int iheight = mpDDSHEADER->dwHeight;
   int idepth  = mpDDSHEADER->dwDepth;
@@ -577,20 +571,20 @@ VdsTextureAnimation::VdsTextureAnimation(const AssetPath& pth) {
   int iBheight    = (iheight + 3) / 4;
   miFrameBaseSize = 0;
 
-  if (dxt::IsBGRA8(mpDDSHEADER->ddspf)) {
-    const dxt::DdsLoadInfo& li = dxt::loadInfoBGRA8;
+  if (dds::IsBGRA8(mpDDSHEADER->ddspf)) {
+    const dds::DdsLoadInfo& li = dds::loadInfoBGRA8;
     miFrameBaseSize            = iwidth * iheight * 4;
-  } else if (dxt::IsBGR8(mpDDSHEADER->ddspf)) {
-    const dxt::DdsLoadInfo& li = dxt::loadInfoBGR8;
+  } else if (dds::IsBGR8(mpDDSHEADER->ddspf)) {
+    const dds::DdsLoadInfo& li = dds::loadInfoBGR8;
     miFrameBaseSize            = iwidth * iheight * 3;
-  } else if (dxt::IsDXT1(mpDDSHEADER->ddspf)) {
-    const dxt::DdsLoadInfo& li = dxt::loadInfoDXT1;
+  } else if (dds::IsDXT1(mpDDSHEADER->ddspf)) {
+    const dds::DdsLoadInfo& li = dds::loadInfoDXT1;
     miFrameBaseSize            = (iBwidth * iBheight) * li.blockBytes;
-  } else if (dxt::IsDXT3(mpDDSHEADER->ddspf)) {
-    const dxt::DdsLoadInfo& li = dxt::loadInfoDXT3;
+  } else if (dds::IsDXT3(mpDDSHEADER->ddspf)) {
+    const dds::DdsLoadInfo& li = dds::loadInfoDXT3;
     miFrameBaseSize            = (iBwidth * iBheight) * li.blockBytes;
-  } else if (dxt::IsDXT5(mpDDSHEADER->ddspf)) {
-    const dxt::DdsLoadInfo& li = dxt::loadInfoDXT5;
+  } else if (dds::IsDXT5(mpDDSHEADER->ddspf)) {
+    const dds::DdsLoadInfo& li = dds::loadInfoDXT5;
     miFrameBaseSize            = (iBwidth * iBheight) * li.blockBytes;
   }
   ////////////////////////////////////////////////////////////////////
@@ -651,7 +645,7 @@ void VdsTextureAnimation::UpdateTexture(TextureInterface* txi, lev2::Texture* pt
 
   void* pdata = ReadFromFrameCache(iframe, miFrameBaseSize);
 
-  if (dxt::IsBGRA8(mpDDSHEADER->ddspf)) {
+  if (dds::IsBGRA8(mpDDSHEADER->ddspf)) {
     /////////////////////////////////////////////////
     // allocate space for image
     // see http://www.opengl.org/discussion_boards/ubbthreads.php?ubb=showflat&Board=3&Number=159972
@@ -690,7 +684,7 @@ void VdsTextureAnimation::UpdateTexture(TextureInterface* txi, lev2::Texture* pt
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
   }
-  if (dxt::IsDXT5(mpDDSHEADER->ddspf)) {
+  if (dds::IsDXT5(mpDDSHEADER->ddspf)) {
     /////////////////////////////////////////////////
     // allocate space for image
     // see http://www.opengl.org/discussion_boards/ubbthreads.php?ubb=showflat&Board=3&Number=159972
@@ -754,9 +748,9 @@ bool GlTextureInterface::LoadVDSTexture(const AssetPath& infname, Texture* ptex)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-  if (dxt::IsBGRA8(vta->mpDDSHEADER->ddspf)) { // allocate uncompressed
+  if (dds::IsBGRA8(vta->mpDDSHEADER->ddspf)) { // allocate uncompressed
     glTexImage2D(GL_TEXTURE_2D, 0, 4, vta->miW, vta->miH, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-  } else if (dxt::IsDXT5(vta->mpDDSHEADER->ddspf)) { // allocate compressed
+  } else if (dds::IsDXT5(vta->mpDDSHEADER->ddspf)) { // allocate compressed
     glTexImage2D(GL_TEXTURE_2D, 0, kRGBA_DXT5, vta->miW, vta->miH, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
   }
 
@@ -768,12 +762,12 @@ bool GlTextureInterface::LoadVDSTexture(const AssetPath& infname, Texture* ptex)
 void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   mTargetGL.makeCurrentContext();
 
-  const dxt::DDS_HEADER* ddsh = req._ddsheader;
+  const dds::DDS_HEADER* ddsh = req._ddsheader;
   Texture* ptex               = req.ptex;
   GLTextureObject* pTEXOBJ    = req.pTEXOBJ;
   // File& TextureFile = *req.pTEXFILE;
 
-  int NumMips  = (ddsh->dwFlags & dxt::DDSD_MIPMAPCOUNT) ? ddsh->dwMipMapCount : 1;
+  int NumMips  = (ddsh->dwFlags & dds::DDSD_MIPMAPCOUNT) ? ddsh->dwMipMapCount : 1;
   int iwidth   = ddsh->dwWidth;
   int iheight  = ddsh->dwHeight;
   int idepth   = ddsh->dwDepth;
@@ -816,7 +810,7 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   glTexParameteri(TARGET, GL_TEXTURE_BASE_LEVEL, 0);
   glTexParameteri(TARGET, GL_TEXTURE_MAX_LEVEL, NumMips - 1);
 
-  if (dxt::IsLUM(ddsh->ddspf)) {
+  if (dds::IsLUM(ddsh->ddspf)) {
     // printf( "  tex<%s> LUM\n", infname.c_str() );
     if (bVOLUMETEX)
       TexSetter::Set3D(
@@ -824,8 +818,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
     else
       TexSetter::Set2D(
           this, ptex, 1, GL_RED, GL_UNSIGNED_BYTE, TARGET, 1, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
-  } else if (dxt::IsBGR5A1(ddsh->ddspf)) {
-    const dxt::DdsLoadInfo& li = dxt::loadInfoBGR5A1;
+  } else if (dds::IsBGR5A1(ddsh->ddspf)) {
+    const dds::DdsLoadInfo& li = dds::loadInfoBGR5A1;
     // printf( "  tex<%s> BGR5A1\n", infname.c_str() );
     // printf( "  tex<%s> size<%d>\n", infname.c_str(), 2 );
     if (bVOLUMETEX)
@@ -836,8 +830,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
           this, ptex, 4, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, 2, NumMips, iwidth, iheight, req._inpstream); // ireadptr,
                                                                                                                    // pdata
                                                                                                                    // );
-  } else if (dxt::IsBGRA8(ddsh->ddspf)) {
-    const dxt::DdsLoadInfo& li = dxt::loadInfoBGRA8;
+  } else if (dds::IsBGRA8(ddsh->ddspf)) {
+    const dds::DdsLoadInfo& li = dds::loadInfoBGRA8;
     int size                   = idepth * iwidth * iheight * 4;
     // printf("  tex<%s> BGRA8\n", infname.c_str());
     // printf( "  tex<%s> size<%d>\n", infname.c_str(), size );
@@ -855,7 +849,7 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
     }
 
     GL_ERRORCHECK();
-  } else if (dxt::IsBGR8(ddsh->ddspf)) {
+  } else if (dds::IsBGR8(ddsh->ddspf)) {
     int size = idepth * iwidth * iheight * 3;
     // printf( "  tex<%s> BGR8\n", TextureFile.msFileName.c_str() );
     // printf( "  tex<%s> size<%d>\n", TextureFile.msFileName.c_str(), size );
@@ -876,8 +870,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   //////////////////////////////////////////////////////////
   // DXT5: texturing fast path (8 bits per pixel true color)
   //////////////////////////////////////////////////////////
-  else if (dxt::IsDXT5(ddsh->ddspf)) {
-    const dxt::DdsLoadInfo& li = dxt::loadInfoDXT5;
+  else if (dds::IsDXT5(ddsh->ddspf)) {
+    const dds::DdsLoadInfo& li = dds::loadInfoDXT5;
     int size                   = (iBwidth * iBheight) * li.blockBytes;
     // printf("  tex<%s> DXT5\n", infname.c_str());
     // printf("  tex<%s> size<%d>\n", infname.c_str(), size);
@@ -892,8 +886,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   //////////////////////////////////////////////////////////
   // DXT3: texturing fast path (8 bits per pixel true color)
   //////////////////////////////////////////////////////////
-  else if (dxt::IsDXT3(ddsh->ddspf)) {
-    const dxt::DdsLoadInfo& li = dxt::loadInfoDXT3;
+  else if (dds::IsDXT3(ddsh->ddspf)) {
+    const dds::DdsLoadInfo& li = dds::loadInfoDXT3;
     int size                   = (iBwidth * iBheight) * li.blockBytes;
     // printf("  tex<%s> DXT3\n", infname.c_str());
     // printf("  tex<%s> size<%d>\n", infname.c_str(), size);
@@ -907,8 +901,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   //////////////////////////////////////////////////////////
   // DXT1: texturing fast path (4 bits per pixel true color)
   //////////////////////////////////////////////////////////
-  else if (dxt::IsDXT1(ddsh->ddspf)) {
-    const dxt::DdsLoadInfo& li = dxt::loadInfoDXT1;
+  else if (dds::IsDXT1(ddsh->ddspf)) {
+    const dds::DdsLoadInfo& li = dds::loadInfoDXT1;
     int size                   = (iBwidth * iBheight) * li.blockBytes;
     // printf("  tex<%s> DXT1\n", infname.c_str());
     // printf("  tex<%s> size<%d>\n", infname.c_str(), size);
@@ -930,6 +924,18 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   ptex->_dirty = false;
   glBindTexture(TARGET, 0);
   GL_ERRORCHECK();
+
+  ////////////////////////////////////////////////
+  // done loading texture,
+  //  perform postprocessing, if any..
+  ////////////////////////////////////////////////
+
+  if (ptex->_varmap.hasKey("postproc")) {
+    auto dblock    = req._inpstream._datablock;
+    auto postproc  = ptex->_varmap.typedValueForKey<Texture::proc_t>("postproc").value();
+    auto postblock = postproc(ptex, &mTargetGL, dblock);
+    OrkAssert(postblock);
+  }
 }
 
 bool GlTextureInterface::LoadTexture(Texture* ptex, datablockptr_t datablock) {
@@ -940,23 +946,18 @@ bool GlTextureInterface::LoadTexture(Texture* ptex, datablockptr_t datablock) {
 
 bool GlTextureInterface::LoadDDSTexture(Texture* ptex, datablockptr_t datablock) {
 
-  if (ptex->_varmap.hasKey("preproc")) {
-    auto preproc        = ptex->_varmap.typedValueForKey<Texture::preproc_t>("preproc").value();
-    auto orig_datablock = datablock;
-    datablock           = preproc(ptex, this, orig_datablock);
-  }
   GlTexLoadReq load_req;
   load_req.ptex                  = ptex;
   load_req._inpstream._datablock = datablock;
-  load_req._inpstream.advance(sizeof(dxt::DDS_HEADER));
+  load_req._inpstream.advance(sizeof(dds::DDS_HEADER));
   ////////////////////////////////////////////////////////////////////
-  auto ddsh = (const dxt::DDS_HEADER*)load_req._inpstream.data(0);
+  auto ddsh = (const dds::DDS_HEADER*)load_req._inpstream.data(0);
   ////////////////////////////////////////////////////////////////////
   ptex->_width  = ddsh->dwWidth;
   ptex->_height = ddsh->dwHeight;
   ptex->_depth  = (ddsh->dwDepth > 1) ? ddsh->dwDepth : 1;
   ////////////////////////////////////////////////////////////////////
-  int NumMips = (ddsh->dwFlags & dxt::DDSD_MIPMAPCOUNT) ? ddsh->dwMipMapCount : 1;
+  int NumMips = (ddsh->dwFlags & dds::DDSD_MIPMAPCOUNT) ? ddsh->dwMipMapCount : 1;
   int iwidth  = ddsh->dwWidth;
   int iheight = ddsh->dwHeight;
   int idepth  = ddsh->dwDepth;
@@ -967,7 +968,18 @@ bool GlTextureInterface::LoadDDSTexture(Texture* ptex, datablockptr_t datablock)
   ///////////////////////////////////////////////
   load_req._ddsheader = ddsh;
   load_req.pTEXOBJ    = pTEXOBJ;
-  void_lambda_t lamb  = [=]() { this->LoadDDSTextureMainThreadPart(load_req); };
+  void_lambda_t lamb  = [=]() {
+    /////////////////////////////////////////////
+    // texture preprocssing, if any..
+    //  on main thread.
+    /////////////////////////////////////////////
+    if (ptex->_varmap.hasKey("preproc")) {
+      auto preproc        = ptex->_varmap.typedValueForKey<Texture::proc_t>("preproc").value();
+      auto orig_datablock = datablock;
+      auto postblock      = preproc(ptex, &mTargetGL, orig_datablock);
+    }
+    this->LoadDDSTextureMainThreadPart(load_req);
+  };
   opq::mainSerialQueue().enqueue(lamb);
   ///////////////////////////////////////////////
   return true;

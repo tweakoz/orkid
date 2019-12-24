@@ -19,11 +19,13 @@ file(GLOB_RECURSE src_reflect ${SRCD}/reflect/*.cpp)
 file(GLOB_RECURSE src_rtti ${SRCD}/rtti/*.cpp)
 file(GLOB_RECURSE src_stream ${SRCD}/stream/*.cpp)
 file(GLOB_RECURSE src_util ${SRCD}/util/*.cpp)
+file(GLOB_RECURSE src_gfx ${SRCD}/gfx/*.cpp)
 
 set( orksrcs ${src_application} ${src_asset} ${src_dataflow} )
 list( APPEND orksrcs ${src_event} ${src_file} ${src_kernel} )
 list( APPEND orksrcs ${src_math} ${src_object} ${src_reflect} )
 list( APPEND orksrcs ${src_rtti} ${src_stream} ${src_util} )
+list( APPEND orksrcs ${src_gfx} )
 
 ###################################
 

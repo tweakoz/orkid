@@ -55,14 +55,15 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace ork::dds {
+struct DDS_HEADER;
+}
+
 namespace ork { namespace lev2 {
 
 class GfxTargetGL;
 class GlslFxInterface;
 
-namespace dxt {
-struct DDS_HEADER;
-}
 
 struct GlFboObject {
   static const int kmaxrt = RtGroup::kmaxmrts;
@@ -243,7 +244,7 @@ public:
   int miNumFrames;
   File* mpFile;
   std::string mPath;
-  dxt::DDS_HEADER* mpDDSHEADER;
+  dds::DDS_HEADER* mpDDSHEADER;
   int miFrameBaseSize;
   int miFrameBaseOffset;
   int miFileLength;
@@ -284,7 +285,7 @@ private:
 
 struct GlTexLoadReq {
   Texture* ptex = nullptr;
-  const dxt::DDS_HEADER* _ddsheader = nullptr;
+  const dds::DDS_HEADER* _ddsheader = nullptr;
   GLTextureObject* pTEXOBJ = nullptr;
   std::string _texname;
   DataBlockInputStream _inpstream;
@@ -356,7 +357,7 @@ public:
 #if defined(ENABLE_COMPUTE_SHADERS)
   ComputeInterface* CI() final { return &mCI; };
 #endif
-  
+
   ///////////////////////////////////////////////////////////////////////
 
   ~GfxTargetGL();
@@ -422,11 +423,11 @@ public:
   GlGeometryBufferInterface mGbI;
   GlFrameBufferInterface mFbI;
   GlTextureInterface mTxI;
-  
+
 #if defined(ENABLE_COMPUTE_SHADERS)
   glslfx::ComputeInterface mCI;
 #endif
-  
+
   bool mTargetDrawableSizeDirty;
 };
 
