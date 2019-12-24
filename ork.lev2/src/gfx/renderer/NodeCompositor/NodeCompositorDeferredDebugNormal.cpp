@@ -18,6 +18,7 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/material_freestyle.inl>
+#include <ork/kernel/datacache.inl>
 
 #include "NodeCompositorDeferred.h"
 
@@ -56,13 +57,25 @@ void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable* 
   // irradiance map preprocessor
   ////////////////////////////////////////////////////////////////////////////////
   _environmentTextureAsset->_varmap.makeValueForKey<Texture::preproc_t>("preproc") =
-      [](Texture* tex, TextureInterface* txi, datablockptr_t inpdata) -> datablockptr_t {
+      [](Texture* tex, TextureInterface* txi, datablockptr_t datablock) -> datablockptr_t {
     printf(
         "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>...\n",
         tex,
         tex->_debugName.c_str(),
-        inpdata->length());
-    return inpdata;
+        datablock->length());
+    boost::Crc64 hasher;
+    hasher.accumulateString("irradiancemap");
+    hasher.accumulateItem<uint64_t>(datablock->hash()); // data content
+    hasher.finish();
+    uint64_t cachekey = hasher.result();
+    auto irrmapdblock = DataBlockCache::findDataBlock(cachekey);
+    if (irrmapdblock) {
+      datablock = irrmapdblock;
+    } else {
+      DataBlockCache::setDataBlock(cachekey, datablock);
+    }
+
+    return datablock;
   };
   ////////////////////////////////////////////////////////////////////////////////
 }
