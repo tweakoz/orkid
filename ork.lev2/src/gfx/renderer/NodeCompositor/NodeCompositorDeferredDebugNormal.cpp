@@ -60,7 +60,7 @@ void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable* 
   ////////////////////////////////////////////////////////////////////////////////
   // irradiance map preprocessor
   ////////////////////////////////////////////////////////////////////////////////
-  _environmentTextureAsset->_varmap.makeValueForKey<Texture::proc_t>("preproc") =
+  _environmentTextureAsset->_varmap.makeValueForKey<Texture::proc_t>("postproc") =
       [](Texture* tex, GfxTarget* targ, datablockptr_t datablock) -> datablockptr_t {
     printf(
         "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>...\n",
@@ -73,7 +73,7 @@ void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable* 
     hasher.finish();
     uint64_t cachekey = hasher.result();
     auto irrmapdblock = DataBlockCache::findDataBlock(cachekey);
-    if (irrmapdblock) {
+    if (0) { // irrmapdblock) {
       // found in cache
       datablock = irrmapdblock;
     } else {
@@ -83,7 +83,6 @@ void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable* 
       ///////////////////////////
       auto newtex = PBRMaterial::filterEnvMap(tex, targ);
       //////////////////////////////////////////////////////////////
-      OrkAssert(false);
       DataBlockCache::setDataBlock(cachekey, irrmapdblock);
       datablock = irrmapdblock;
     }

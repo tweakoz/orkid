@@ -23,69 +23,78 @@ using namespace std::literals;
 
 class PBRMaterial;
 
-struct PbrMatrixBlockApplicator : public MaterialInstApplicator
-{
-	MaterialInstItemMatrixBlock* _matrixblock = nullptr;
-	const PBRMaterial* _pbrmaterial = nullptr;
-	void ApplyToTarget( GfxTarget *pTARG ) final;
-    static PbrMatrixBlockApplicator* getApplicator();
+struct PbrMatrixBlockApplicator : public MaterialInstApplicator {
+  MaterialInstItemMatrixBlock* _matrixblock = nullptr;
+  const PBRMaterial* _pbrmaterial           = nullptr;
+  void ApplyToTarget(GfxTarget* pTARG) final;
+  static PbrMatrixBlockApplicator* getApplicator();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct FilteredEnvMap {
+  std::shared_ptr<RtGroup> _rtgroup;
+  std::shared_ptr<RtBuffer> _rtbuffer;
+  Texture* _texture = nullptr;
+};
+typedef std::shared_ptr<FilteredEnvMap> filtenvmapptr_t;
+///////////////////////////////////////////////////////////////////////////////
+
 class PBRMaterial : public GfxMaterial {
 
-  DeclareConcreteX(PBRMaterial,GfxMaterial);
-public:
+  DeclareConcreteX(PBRMaterial, GfxMaterial);
 
+public:
   PBRMaterial();
   ~PBRMaterial() final;
 
- 	void setTextureBaseName(std::string basename) { _textureBaseName = basename; }
+  void setTextureBaseName(std::string basename) {
+    _textureBaseName = basename;
+  }
 
-	////////////////////////////////////////////
+  ////////////////////////////////////////////
 
-	static Texture* brdfIntegrationMap(GfxTarget* targ);
-    static Texture* filterEnvMap(Texture* rawenvmap, GfxTarget* targ);
+  static Texture* brdfIntegrationMap(GfxTarget* targ);
+  static Texture* filterEnvMap(Texture* rawenvmap, GfxTarget* targ);
 
-    ////////////////////////////////////////////
+  ////////////////////////////////////////////
 
-    void begin(const RenderContextFrameData& RCFD);
-    void end(const RenderContextFrameData& RCFD);
+  void begin(const RenderContextFrameData& RCFD);
+  void end(const RenderContextFrameData& RCFD);
 
-    ////////////////////////////////////////////
+  ////////////////////////////////////////////
 
-    bool BeginPass(GfxTarget* targ, int iPass = 0) final;
-    void EndPass(GfxTarget* targ) final;
-    int BeginBlock(GfxTarget* targ, const RenderContextInstData& RCID) final;
-    void EndBlock(GfxTarget* targ) final;
-    void Init(GfxTarget* targ) final;
-    void Update() final;
-    void BindMaterialInstItem(MaterialInstItem* pitem) const final;
-    void UnBindMaterialInstItem(MaterialInstItem* pitem) const final;
+  bool BeginPass(GfxTarget* targ, int iPass = 0) final;
+  void EndPass(GfxTarget* targ) final;
+  int BeginBlock(GfxTarget* targ, const RenderContextInstData& RCID) final;
+  void EndBlock(GfxTarget* targ) final;
+  void Init(GfxTarget* targ) final;
+  void Update() final;
+  void BindMaterialInstItem(MaterialInstItem* pitem) const final;
+  void UnBindMaterialInstItem(MaterialInstItem* pitem) const final;
 
-    ////////////////////////////////////////////
+  ////////////////////////////////////////////
 
-    FxShader* _shader                           = nullptr;
-    GfxTarget* _initialTarget                   = nullptr;
-    const FxShaderParam* _paramMVP              = nullptr;
-    const FxShaderParam* _paramMVPL             = nullptr;
-    const FxShaderParam* _paramMVPR             = nullptr;
-    const FxShaderParam* _paramMV               = nullptr;
-    const FxShaderParam* _paramMROT             = nullptr;
-    const FxShaderParam* _paramMapColor         = nullptr;
-    const FxShaderParam* _paramMapNormal        = nullptr;
-    const FxShaderParam* _paramMapRoughAndMetal = nullptr;
-	const FxShaderParam* _parInvViewSize = nullptr;
+  FxShader* _shader                           = nullptr;
+  GfxTarget* _initialTarget                   = nullptr;
+  const FxShaderParam* _paramMVP              = nullptr;
+  const FxShaderParam* _paramMVPL             = nullptr;
+  const FxShaderParam* _paramMVPR             = nullptr;
+  const FxShaderParam* _paramMV               = nullptr;
+  const FxShaderParam* _paramMROT             = nullptr;
+  const FxShaderParam* _paramMapColor         = nullptr;
+  const FxShaderParam* _paramMapNormal        = nullptr;
+  const FxShaderParam* _paramMapRoughAndMetal = nullptr;
+  const FxShaderParam* _parInvViewSize        = nullptr;
 
-  Texture* _texColor = nullptr;
-  Texture* _texNormal = nullptr;
+  Texture* _texColor         = nullptr;
+  Texture* _texNormal        = nullptr;
   Texture* _texRoughAndMetal = nullptr;
   std::string _textureBaseName;
-  const FxShaderTechnique* _tekRigidGBUFFER = nullptr;
-  const FxShaderTechnique* _tekRigidGBUFFER_N = nullptr;
-  const FxShaderTechnique* _tekRigidGBUFFER_N_STEREO = nullptr;
-	const FxShaderTechnique* _tekRigidGBUFFER_N_TEX_STEREO = nullptr;
+  const FxShaderTechnique* _tekRigidGBUFFER              = nullptr;
+  const FxShaderTechnique* _tekRigidGBUFFER_N            = nullptr;
+  const FxShaderTechnique* _tekRigidGBUFFER_N_STEREO     = nullptr;
+  const FxShaderTechnique* _tekRigidGBUFFER_N_TEX_STEREO = nullptr;
 
   std::string _colorMapName;
   std::string _normalMapName;
@@ -94,10 +103,9 @@ public:
   std::string _amboccMapName;
   std::string _emissiveMapName;
 
-	bool _stereoVtex = false;
+  bool _stereoVtex                    = false;
   bool _metalicRoughnessSingleTexture = false;
 };
-
 
 //////////////////////////////////////////////////////
 
@@ -109,7 +117,6 @@ inline PBRMaterial::PBRMaterial() {
   _rasterstate.SetZWriteMask(true);
   _rasterstate.SetCullTest(ECULLTEST_OFF);
   miNumPasses = 1;
-
 }
 
 ////////////////////////////////////////////
@@ -130,48 +137,46 @@ inline void PBRMaterial::end(const RenderContextFrameData& RCFD) {
 ////////////////////////////////////////////
 
 inline bool PBRMaterial::BeginPass(GfxTarget* targ, int iPass) {
-  //printf( "_name<%s>\n", mMaterialName.c_str() );
-  auto fxi       = targ->FXI();
-  auto rsi       = targ->RSI();
-  auto mtxi      = targ->MTXI();
+  // printf( "_name<%s>\n", mMaterialName.c_str() );
+  auto fxi    = targ->FXI();
+  auto rsi    = targ->RSI();
+  auto mtxi   = targ->MTXI();
   auto mvpmtx = mtxi->RefMVPMatrix();
   auto rotmtx = mtxi->RefR3Matrix();
-  auto mvmtx = mtxi->RefMVMatrix();
-  auto vmtx = mtxi->RefVMatrix();
-  //vmtx.dump("vmtx");
+  auto mvmtx  = mtxi->RefMVMatrix();
+  auto vmtx   = mtxi->RefVMatrix();
+  // vmtx.dump("vmtx");
   const RenderContextInstData* RCID  = targ->GetRenderContextInstData();
   const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
-  const auto& CPD = RCFD->topCPD();
+  const auto& CPD                    = RCFD->topCPD();
   fxi->BindPass(_shader, 0);
-  fxi->BindParamCTex(_shader,_paramMapColor,_texColor);
-  fxi->BindParamCTex(_shader,_paramMapNormal,_texNormal);
-  fxi->BindParamCTex(_shader,_paramMapRoughAndMetal,_texRoughAndMetal);
-  fxi->BindParamMatrix(_shader,_paramMV,mvmtx);
+  fxi->BindParamCTex(_shader, _paramMapColor, _texColor);
+  fxi->BindParamCTex(_shader, _paramMapNormal, _texNormal);
+  fxi->BindParamCTex(_shader, _paramMapRoughAndMetal, _texRoughAndMetal);
+  fxi->BindParamMatrix(_shader, _paramMV, mvmtx);
 
-	auto brdfintegtex = PBRMaterial::brdfIntegrationMap(targ);
+  auto brdfintegtex = PBRMaterial::brdfIntegrationMap(targ);
 
   const auto& world = mtxi->RefMMatrix();
-	const auto& drect = CPD.GetDstRect();
-	const auto& mrect = CPD.GetMrtRect();
-	float w = mrect.miW;
-	float h = mrect.miH;
-	//printf( "w<%g> h<%g>\n", w, h );
-	fxi->BindParamVect2( _shader, _parInvViewSize, fvec2(1.0 / w, 1.0f / h));
+  const auto& drect = CPD.GetDstRect();
+  const auto& mrect = CPD.GetMrtRect();
+  float w           = mrect.miW;
+  float h           = mrect.miH;
+  // printf( "w<%g> h<%g>\n", w, h );
+  fxi->BindParamVect2(_shader, _parInvViewSize, fvec2(1.0 / w, 1.0f / h));
 
   if (CPD.isStereoOnePass() and CPD._stereoCameraMatrices) {
     auto stereomtx = CPD._stereoCameraMatrices;
-    auto MVPL = stereomtx->MVPL(world);
-    auto MVPR = stereomtx->MVPR(world);
+    auto MVPL      = stereomtx->MVPL(world);
+    auto MVPR      = stereomtx->MVPR(world);
     fxi->BindParamMatrix(_shader, _paramMVPL, MVPL);
     fxi->BindParamMatrix(_shader, _paramMVPR, MVPR);
-    fxi->BindParamMatrix(_shader,_paramMROT,(world).rotMatrix33());
+    fxi->BindParamMatrix(_shader, _paramMROT, (world).rotMatrix33());
   } else {
     auto mcams = CPD._cameraMatrices;
-    auto MVP = world
-               * mcams->_vmatrix
-               * mcams->_pmatrix;
+    auto MVP   = world * mcams->_vmatrix * mcams->_pmatrix;
     fxi->BindParamMatrix(_shader, _paramMVP, MVP);
-    fxi->BindParamMatrix(_shader,_paramMROT,(world).rotMatrix33());
+    fxi->BindParamMatrix(_shader, _paramMROT, (world).rotMatrix33());
   }
   rsi->BindRasterState(_rasterstate);
   fxi->CommitParams();
@@ -187,60 +192,58 @@ inline void PBRMaterial::EndPass(GfxTarget* targ) {
 ////////////////////////////////////////////
 
 inline int PBRMaterial::BeginBlock(GfxTarget* targ, const RenderContextInstData& RCID) {
-  auto fxi       = targ->FXI();
+  auto fxi                           = targ->FXI();
   const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
-  const auto& CPD = RCFD->topCPD();
-  bool is_stereo = CPD.isStereoOnePass();
+  const auto& CPD                    = RCFD->topCPD();
+  bool is_stereo                     = CPD.isStereoOnePass();
 
-	const FxShaderTechnique* tek = _tekRigidGBUFFER;
+  const FxShaderTechnique* tek = _tekRigidGBUFFER;
 
-	if( is_stereo ){
-		if( _stereoVtex )
-			tek = _tekRigidGBUFFER_N_TEX_STEREO;
-		else
-			tek = _tekRigidGBUFFER_N_STEREO;
-	}
-	else if( _paramMapNormal )
-		tek = _tekRigidGBUFFER_N;
+  if (is_stereo) {
+    if (_stereoVtex)
+      tek = _tekRigidGBUFFER_N_TEX_STEREO;
+    else
+      tek = _tekRigidGBUFFER_N_STEREO;
+  } else if (_paramMapNormal)
+    tek = _tekRigidGBUFFER_N;
 
-  fxi->BindTechnique(_shader,tek);
+  fxi->BindTechnique(_shader, tek);
 
-  int numpasses = fxi->BeginBlock(_shader,RCID);
-  assert(numpasses==1);
+  int numpasses = fxi->BeginBlock(_shader, RCID);
+  assert(numpasses == 1);
   return numpasses;
 }
 
 ////////////////////////////////////////////
 
 inline void PBRMaterial::EndBlock(GfxTarget* targ) {
-  auto fxi       = targ->FXI();
+  auto fxi = targ->FXI();
   fxi->EndBlock(_shader);
 }
 
 ////////////////////////////////////////////
 
 inline void PBRMaterial::Init(GfxTarget* targ) /*final*/ {
-  assert(_initialTarget==nullptr);
+  assert(_initialTarget == nullptr);
   _initialTarget = targ;
   auto fxi       = targ->FXI();
   auto shass     = ork::asset::AssetManager<FxShaderAsset>::Load("orkshader://pbr");
   _shader        = shass->GetFxShader();
 
-  _tekRigidGBUFFER = fxi->technique(_shader,"rigid_gbuffer");
-  _tekRigidGBUFFER_N = fxi->technique(_shader,"rigid_gbuffer_n");
-  _tekRigidGBUFFER_N_STEREO = fxi->technique(_shader,"rigid_gbuffer_n_stereo");
-	_tekRigidGBUFFER_N_TEX_STEREO = fxi->technique(_shader,"rigid_gbuffer_n_tex_stereo");
+  _tekRigidGBUFFER              = fxi->technique(_shader, "rigid_gbuffer");
+  _tekRigidGBUFFER_N            = fxi->technique(_shader, "rigid_gbuffer_n");
+  _tekRigidGBUFFER_N_STEREO     = fxi->technique(_shader, "rigid_gbuffer_n_stereo");
+  _tekRigidGBUFFER_N_TEX_STEREO = fxi->technique(_shader, "rigid_gbuffer_n_tex_stereo");
 
-  _paramMVP = fxi->parameter(_shader,"mvp");
-  _paramMVPL = fxi->parameter(_shader,"mvp_l");
-  _paramMVPR = fxi->parameter(_shader,"mvp_r");
-  _paramMV = fxi->parameter(_shader,"mv");
-  _paramMROT = fxi->parameter(_shader,"mrot");
-  _paramMapColor = fxi->parameter(_shader,"ColorMap");
-  _paramMapNormal = fxi->parameter(_shader,"NormalMap");
-  _paramMapRoughAndMetal = fxi->parameter(_shader,"RoughAndMetalMap");
-	_parInvViewSize = fxi->parameter(_shader,"InvViewportSize");
-
+  _paramMVP              = fxi->parameter(_shader, "mvp");
+  _paramMVPL             = fxi->parameter(_shader, "mvp_l");
+  _paramMVPR             = fxi->parameter(_shader, "mvp_r");
+  _paramMV               = fxi->parameter(_shader, "mv");
+  _paramMROT             = fxi->parameter(_shader, "mrot");
+  _paramMapColor         = fxi->parameter(_shader, "ColorMap");
+  _paramMapNormal        = fxi->parameter(_shader, "NormalMap");
+  _paramMapRoughAndMetal = fxi->parameter(_shader, "RoughAndMetalMap");
+  _parInvViewSize        = fxi->parameter(_shader, "InvViewportSize");
 }
 inline void PBRMaterial::Update() {
 }
@@ -252,12 +255,12 @@ inline void PBRMaterial::BindMaterialInstItem(MaterialInstItem* pitem) const {
   MaterialInstItemMatrixBlock* mtxblockitem = rtti::autocast(pitem);
 
   if (mtxblockitem) {
-    //if (hBoneMatrices->GetPlatformHandle()) {
-      auto applicator = PbrMatrixBlockApplicator::getApplicator();
-      OrkAssert(applicator != 0);
-      applicator->_pbrmaterial = this;
-      applicator->_matrixblock = mtxblockitem;
-      mtxblockitem->SetApplicator(applicator);
+    // if (hBoneMatrices->GetPlatformHandle()) {
+    auto applicator = PbrMatrixBlockApplicator::getApplicator();
+    OrkAssert(applicator != 0);
+    applicator->_pbrmaterial = this;
+    applicator->_matrixblock = mtxblockitem;
+    mtxblockitem->SetApplicator(applicator);
     //}
     return;
   }
@@ -285,12 +288,12 @@ inline void PBRMaterial::UnBindMaterialInstItem(MaterialInstItem* pitem) const {
   MaterialInstItemMatrixBlock* mtxblockitem = rtti::autocast(pitem);
 
   if (mtxblockitem) {
-    //if (hBoneMatrices->GetPlatformHandle()) {
-      auto applicator = static_cast<PbrMatrixBlockApplicator*>(mtxblockitem->mApplicator);
-      if (applicator) {
-        applicator->_pbrmaterial = nullptr;
-        applicator->_matrixblock = nullptr;
-      }
+    // if (hBoneMatrices->GetPlatformHandle()) {
+    auto applicator = static_cast<PbrMatrixBlockApplicator*>(mtxblockitem->mApplicator);
+    if (applicator) {
+      applicator->_pbrmaterial = nullptr;
+      applicator->_matrixblock = nullptr;
+    }
     //}
     return;
   }
@@ -311,7 +314,6 @@ inline void PBRMaterial::UnBindMaterialInstItem(MaterialInstItem* pitem) const {
   ///////////////////////////////////
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
 
 inline void PbrMatrixBlockApplicator::ApplyToTarget(GfxTarget* pTARG) // virtual
@@ -323,15 +325,15 @@ inline void PbrMatrixBlockApplicator::ApplyToTarget(GfxTarget* pTARG) // virtual
   const fmtx4* Matrices = _matrixblock->GetMatrices();
   FxShader* hshader     = _pbrmaterial->_shader;
 
-  //fxi->BindParamMatrix(hshader, mMaterial->hMatMV, mtxi->RefMVMatrix());
-  //fxi->BindParamMatrix(hshader, mMaterial->hWVPMatrix, mtxi->RefMVPMatrix());
-  //fxi->BindParamMatrix(hshader, mMaterial->hWMatrix, mtxi->RefMMatrix());
+  // fxi->BindParamMatrix(hshader, mMaterial->hMatMV, mtxi->RefMVMatrix());
+  // fxi->BindParamMatrix(hshader, mMaterial->hWVPMatrix, mtxi->RefMVPMatrix());
+  // fxi->BindParamMatrix(hshader, mMaterial->hWMatrix, mtxi->RefMMatrix());
 
-  //fmtx4 iwmat;
-  //iwmat.inverseOf(mtxi->RefMVMatrix());
-  //fxi->BindParamMatrix(hshader, mMaterial->hIWMatrix, iwmat);
-  //fxi->BindParamMatrixArray(hshader, mMaterial->hBoneMatrices, Matrices, (int)inumbones);
-  //fxi->CommitParams();
+  // fmtx4 iwmat;
+  // iwmat.inverseOf(mtxi->RefMVMatrix());
+  // fxi->BindParamMatrix(hshader, mMaterial->hIWMatrix, iwmat);
+  // fxi->BindParamMatrixArray(hshader, mMaterial->hBoneMatrices, Matrices, (int)inumbones);
+  // fxi->CommitParams();
 }
 
 } // namespace ork::lev2

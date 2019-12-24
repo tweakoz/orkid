@@ -18,6 +18,7 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/material_pbr.inl>
+#include <ork/lev2/gfx/material_freestyle.inl>
 #include <ork/gfx/brdf.inl>
 #include <ork/pch.h>
 #include <ork/lev2/gfx/rtgroup.h>
@@ -116,34 +117,57 @@ Texture* PBRMaterial::filterEnvMap(Texture* rawenvmap, GfxTarget* targ) {
   auto fbi = targ->FBI();
   auto fxi = targ->FXI();
   ///////////////////////////////////////////////
-  static FxShader* shader             = nullptr;
-  static const FxShaderTechnique* tek = nullptr;
-  if (nullptr == shader) {
-    shader = asset::AssetManager<FxShaderAsset>::Load("orkshader://pbr_filterenv")->GetFxShader();
-    OrkAssert(shader != nullptr);
-    tek = fxi->technique(shader, "tek_yo");
+  static std::shared_ptr<FreestyleMaterial> mtl;
+  static const FxShaderTechnique* tek   = nullptr;
+  static const FxShaderParam* param_mvp = nullptr;
+  static const FxShaderParam* param_pfm = nullptr;
+
+  targ->debugPushGroup("PBRMaterial::filterEnvMap");
+  if (not mtl) {
+    mtl = std::make_shared<FreestyleMaterial>();
+    OrkAssert(mtl.get() != nullptr);
+    mtl->gpuInit(targ, "orkshader://pbr_filterenv");
+    tek = mtl->technique("tek_yo");
     OrkAssert(tek != nullptr);
-    printf("filterenv shader<%p> tek<%p>\n", shader, tek);
-    ///////////////////////////////////////////////
-    int w              = rawenvmap->_width;
-    int h              = rawenvmap->_height;
-    auto outgroup      = new RtGroup(targ, w, h, 1);
-    auto outbuf        = new RtBuffer(outgroup, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, w, h);
-    outbuf->_debugName = "filteredenvmap";
-    outgroup->SetMrt(0, outbuf);
-
-    printf("filterenv w<%d> h<%d>\n", w, h);
-    printf("filterenv outgroup<%p> outbuf<%p>\n", outgroup, outbuf);
-
-    fbi->PushRtGroup(outgroup);
-    fbi->BeginFrame();
-    fbi->Clear(fvec4(0, 0, 0, 0), 1);
-    ///////////////////////////////////////////////
-
-    ///////////////////////////////////////////////
-    fbi->EndFrame();
-    fbi->PopRtGroup();
+    printf("filterenv mtl<%p> tek<%p>\n", mtl.get(), tek);
+    param_mvp = mtl->param("mvp");
+    param_pfm = mtl->param("prefiltmap");
   }
+  ///////////////////////////////////////////////
+  auto filtex                                                       = std::make_shared<FilteredEnvMap>();
+  rawenvmap->_varmap.makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
+  ///////////////////////////////////////////////
+  RenderContextFrameData RCFD(targ);
+  int w                = rawenvmap->_width;
+  int h                = rawenvmap->_height;
+  auto outgroup        = std::make_shared<RtGroup>(targ, w, h, 1);
+  auto outbuffr        = std::make_shared<RtBuffer>(outgroup.get(), lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, w, h);
+  filtex->_rtgroup     = outgroup;
+  filtex->_rtbuffer    = outbuffr;
+  auto targ_buf        = fbi->GetThisBuffer();
+  outbuffr->_debugName = "filteredenvmap";
+  outgroup->SetMrt(0, outbuffr.get());
+
+  printf("filterenv w<%d> h<%d>\n", w, h);
+  printf("filterenv outgroup<%p> outbuf<%p>\n", outgroup.get(), outbuffr.get());
+
+  fbi->PushRtGroup(outgroup.get());
+  fbi->BeginFrame();
+  fbi->Clear(fvec4(0, 0, 0, 0), 1);
+  mtl->bindTechnique(tek);
+  mtl->begin(RCFD);
+  ///////////////////////////////////////////////
+  mtl->bindParamMatrix(param_mvp, fmtx4::Identity);
+  mtl->bindParamCTex(param_pfm, rawenvmap);
+  mtl->commit();
+  targ_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
+  ///////////////////////////////////////////////
+  mtl->end(RCFD);
+  fbi->EndFrame();
+  fbi->PopRtGroup();
+  targ->debugPopGroup();
+  rawenvmap->_varmap.makeValueForKey<Texture*>("alt-tex") = outbuffr->GetTexture();
+
   return rawenvmap;
 }
 
