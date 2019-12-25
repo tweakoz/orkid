@@ -141,7 +141,7 @@ Texture* PBRMaterial::filterEnvMap(Texture* rawenvmap, GfxTarget* targ) {
   int w                = rawenvmap->_width;
   int h                = rawenvmap->_height;
   auto outgroup        = std::make_shared<RtGroup>(targ, w, h, 1);
-  auto outbuffr        = std::make_shared<RtBuffer>(outgroup.get(), lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, w, h);
+  auto outbuffr        = std::make_shared<RtBuffer>(outgroup.get(), lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32F, w, h);
   filtex->_rtgroup     = outgroup;
   filtex->_rtbuffer    = outbuffr;
   auto targ_buf        = fbi->GetThisBuffer();

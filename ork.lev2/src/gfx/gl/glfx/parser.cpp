@@ -76,14 +76,28 @@ ContainerNode::ContainerNode(const AssetPath& pth, const Scanner& s)
   std::string kws = "for while do struct const if else "
                     "return not and or true false "
                     "uniform layout switch case ";
-  
+
   for (auto item : SplitString(typenames, ' '))
     _keywords.insert(item);
-  for (auto item : _validOutputDecorators )
+  for (auto item : _validOutputDecorators)
     _keywords.insert(item);
   for (auto item : SplitString(kws, ' '))
     _keywords.insert(item);
 
+  _stddefines["PI"]          = "3.141592654";
+  _stddefines["PI2"]         = "6.283185307";
+  _stddefines["INV_PI"]      = "0.3183098861837907";
+  _stddefines["INV_PI2"]     = "0.15915494309189535";
+  _stddefines["PIDIV2"]      = "1.5707963267949";
+  _stddefines["DEGTORAD"]    = "0.017453";
+  _stddefines["RADTODEG"]    = "57.29578";
+  _stddefines["E"]           = "2.718281828459";
+  _stddefines["SQRT2"]       = "1.4142135623730951";
+  _stddefines["GOLDENRATIO"] = "1.6180339887498948482";
+
+  for (auto item : _stddefines) {
+    _keywords.insert(item.first);
+  }
 }
 ///////////////////////////////////////////////////////////
 bool ContainerNode::validateKeyword(const std::string keyword) const {
@@ -96,7 +110,9 @@ bool ContainerNode::validateTypeName(const std::string typeName) const {
   return (it != _validTypeNames.end());
 }
 ///////////////////////////////////////////////////////////
-bool ContainerNode::validateIdentifierName(const std::string typeName) const { return true; }
+bool ContainerNode::validateIdentifierName(const std::string typeName) const {
+  return true;
+}
 ///////////////////////////////////////////////////////////
 bool ContainerNode::isIoAttrDecorator(const std::string typeName) const {
   auto it = _validOutputDecorators.find(typeName);
@@ -195,7 +211,7 @@ void ContainerNode::parse() {
 
   while (itokidx < tokens.size()) {
     const Token& tok = tokens[itokidx];
-    //printf("token<%d> iline<%d> col<%d> text<%s>\n", itokidx, tok.iline + 1, tok.icol + 1, tok.text.c_str());
+    // printf("token<%d> iline<%d> col<%d> text<%s>\n", itokidx, tok.iline + 1, tok.icol + 1, tok.text.c_str());
 
     ScannerView scanview(_scanner, r);
     scanview.scanBlock(itokidx);
@@ -335,16 +351,15 @@ void ContainerNode::generate(shaderbuilder::BackEnd& backend) const {
     item->generate(backend);
 }
 
-void ContainerNode::addStructType(StructNode*snode) {
+void ContainerNode::addStructType(StructNode* snode) {
   auto name = snode->_name->text;
-  auto it = _structTypes.find(name);
-  assert(it==_structTypes.end());
+  auto it   = _structTypes.find(name);
+  assert(it == _structTypes.end());
   auto it2 = _validTypeNames.find(name);
-  assert(it2==_validTypeNames.end());
-  _structTypes[name]=snode;
+  assert(it2 == _validTypeNames.end());
+  _structTypes[name] = snode;
   _validTypeNames.insert(name);
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 

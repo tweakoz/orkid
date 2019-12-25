@@ -25,8 +25,8 @@ int ShaderBody::parse(const ScannerView& view) {
   bool bnewline        = true;
   int indent           = 1;
   ////////////////////////
-  assert( view.token(view._start)->text == "{" );
-  assert( view.token(view._end)->text == "}" );
+  assert(view.token(view._start)->text == "{");
+  assert(view.token(view._end)->text == "}");
   ////////////////////////
   for (size_t i = ist; i <= ien; i++) {
     ////////////////////////
@@ -53,25 +53,29 @@ int ShaderBody::parse(const ScannerView& view) {
       indent--;
     ////////////////////////
   }
-  return view._end+1;
+  return view._end + 1;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ShaderBody::emit(shaderbuilder::BackEnd& backend) const {
-  auto& codegen = backend._codegen;
+  auto& codegen       = backend._codegen;
+  const auto& stddefs = backend._cnode->_stddefines;
   for (auto l : _lines) {
     codegen.beginLine();
     for (int in = 0; in < l->_indent; in++)
       codegen.incIndent();
     for (auto t : l->_tokens) {
-      codegen.output(t->text + " ");
+      auto it_def = stddefs.find(t->text);
+      if (it_def != stddefs.end()) {
+        codegen.output(it_def->second + " ");
+      } else
+        codegen.output(t->text + " ");
       if (t->text == "{") {
         codegen.endLine();
         codegen.incIndent();
         codegen.beginLine();
-      }
-      else if (t->text == "}") {
+      } else if (t->text == "}") {
         codegen.endLine();
         codegen.decIndent();
         codegen.beginLine();
@@ -81,9 +85,8 @@ void ShaderBody::emit(shaderbuilder::BackEnd& backend) const {
       codegen.decIndent();
     codegen.endLine();
   }
-
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::glslfx {
+} // namespace ork::lev2::glslfx
 /////////////////////////////////////////////////////////////////////////////////////////////////

@@ -126,19 +126,3 @@ libblock lib_cellnoise {
     return min(d1.x, d1.y) * (9.0 / 12.0); // return a value scaled to 0.0->1.0
   }
 }
-
-///////////////////////////////////////////////////////////////////////////////
-// environment mapping functions
-///////////////////////////////////////////////////////////////////////////////
-
-libblock lib_envmapping {
-
-  vec3 env_dualparabaloid(vec3 normal, sampler2D envtex, float miplevel) {
-    bool sel_front = (normal.z > 0.0);
-    vec2 frontUV = (normal.xy / (2.0 * (1.0 + normal.z))) + 0.5;
-    vec2 backUV = (normal.xy / (2.0 * (1.0 - normal.z))) + 0.5;
-    vec2 uv = mix(backUV,frontUV,float(sel_front))* vec2(1, -1);
-    return textureLod(envtex, uv, miplevel).xyz;
-  }
-
-}

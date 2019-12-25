@@ -4,6 +4,11 @@
 fxconfig fxcfg_default
 {
 	glsl_version = "130";
+	import "mathtools.i";
+	import "misctools.i";
+	import "envtools.i";
+	import "brdftools.i";
+
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
@@ -42,7 +47,7 @@ vertex_shader vs_yo
 	: iface_vyo {
 	gl_Position = mvp*position;
 	frg_clr = vec4(1.0,1.0,1.0,1.0);
-	frg_uv0 = uv0*vec2(1,-1);
+	frg_uv0 = uv0;//*vec2(1,-1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fyo
@@ -58,8 +63,15 @@ fragment_interface iface_fyo
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_yo
-	: iface_fyo {
-	out_clr = texture(prefiltmap,frg_uv0);
+	: iface_fyo
+	: lib_math 
+	: lib_envmapping {
+
+	vec3 n = env_equirectangularUV2N(frg_uv0);
+	vec2 testuv = env_equirectangularN2UV(n);
+	out_clr = texture(prefiltmap,testuv);
+		//out_clr = vec4(testuv,0,1);
+		//out_clr = vec4(n.xyz,1);
 }
 ///////////////////////////////////////////////////////////////
 technique tek_yo {

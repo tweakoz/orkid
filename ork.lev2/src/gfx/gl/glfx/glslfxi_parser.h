@@ -86,10 +86,10 @@ struct FnMatchResultsBas;
 typedef std::shared_ptr<FnMatchResultsBas> match_shptr_t;
 
 struct ParseResult {
-    size_t _numtokens = 0;
-    AstNode* _node     = nullptr;
+  size_t _numtokens = 0;
+  AstNode* _node    = nullptr;
 };
-typedef ParseResult parsed_t;                                                                                           \
+typedef ParseResult parsed_t;
 
 struct FnMatchResultsBas {
 
@@ -125,27 +125,25 @@ struct FnMatchResultsBas {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FnMatchResultsWrap {
-  FnMatchResultsWrap(match_shptr_t p=nullptr)
-    : _results(p) {
-
+  FnMatchResultsWrap(match_shptr_t p = nullptr)
+      : _results(p) {
   }
-  template <typename T>
-  inline FnMatchResultsWrap& operator= (std::shared_ptr<T> p){
-      _results = std::dynamic_pointer_cast<FnMatchResultsBas>(p);
-      return *this;
+  template <typename T> inline FnMatchResultsWrap& operator=(std::shared_ptr<T> p) {
+    _results = std::dynamic_pointer_cast<FnMatchResultsBas>(p);
+    return *this;
   }
-  template <typename T>
-  inline void make(FnParseContext ctx){
+  template <typename T> inline void make(FnParseContext ctx) {
     _results = std::dynamic_pointer_cast<FnMatchResultsBas>(std::make_shared<T>(ctx));
   }
-  inline operator bool () const {
-    if( not _results ) return false;
+  inline operator bool() const {
+    if (not _results)
+      return false;
     return _results->operator bool();
   }
   inline FnMatchResultsWrap operator+(FnMatchResultsWrap b) const {
     return b._results ? _results->merge(b._results) : _results;
   }
-  inline FnMatchResultsBas* operator -> () {
+  inline FnMatchResultsBas* operator->() {
     return _results.get();
   }
   match_shptr_t _results;
@@ -165,7 +163,7 @@ template <typename T> struct FnMatchResults : public FnMatchResultsBas {
   }
 
   ParseResult parse() final {
-    return ParseResult(); //T::parse(*this);
+    return ParseResult(); // T::parse(*this);
   }
 
   match_shptr_t merge(match_shptr_t rhs) const final {
@@ -200,7 +198,7 @@ struct ShaderEmittable : public AstNode {
 #define DECLARE_STD_FNS(xxx)                                                                                                       \
   typedef FnMatchResults<xxx> match_t;                                                                                             \
   static match_results_t match(FnParseContext ctx);
-  //static parsed_t parse(const match_t& match);
+// static parsed_t parse(const match_t& match);
 
 #define DECLARE_STD_EMITTABLE_FNS(xxx)                                                                                             \
   DECLARE_STD_FNS(xxx)                                                                                                             \
@@ -943,6 +941,7 @@ struct ContainerNode : public AstNode {
   std::set<std::string> _keywords;
   std::set<std::string> _validOutputDecorators;
   std::map<std::string, StructNode*> _structTypes;
+  std::map<std::string, std::string> _stddefines;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
