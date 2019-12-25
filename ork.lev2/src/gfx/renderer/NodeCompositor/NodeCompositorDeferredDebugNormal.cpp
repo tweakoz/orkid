@@ -37,7 +37,7 @@ void DeferredCompositingNodeDebugNormal::describeX(class_t* c) {
   c->memberProperty("ClearColor", &DeferredCompositingNodeDebugNormal::_clearColor);
   c->memberProperty("FogColor", &DeferredCompositingNodeDebugNormal::_fogColor);
   c->memberProperty("Ambient", &DeferredCompositingNodeDebugNormal::_ambient);
-  c->floatProperty("EnvironmentIntensity", float_range{-5, 5}, &DeferredCompositingNodeDebugNormal::_environmentIntensity);
+  c->floatProperty("EnvironmentIntensity", float_range{-10, 10}, &DeferredCompositingNodeDebugNormal::_environmentIntensity);
   c->floatProperty("EnvironmentMipBias", float_range{0, 12}, &DeferredCompositingNodeDebugNormal::_environmentMipBias);
   c->floatProperty("EnvironmentMipScale", float_range{0, 100}, &DeferredCompositingNodeDebugNormal::_environmentMipScale);
   c->floatProperty("DiffuseIntensity", float_range{-5, 5}, &DeferredCompositingNodeDebugNormal::_diffuseIntensity);
@@ -61,7 +61,7 @@ void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable* 
   // irradiance map preprocessor
   ////////////////////////////////////////////////////////////////////////////////
   _environmentTextureAsset->_varmap.makeValueForKey<Texture::proc_t>("postproc") =
-      [](Texture* tex, GfxTarget* targ, datablockptr_t datablock) -> datablockptr_t {
+      [this](Texture* tex, GfxTarget* targ, datablockptr_t datablock) -> datablockptr_t {
     printf(
         "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>...\n",
         tex,
@@ -81,7 +81,9 @@ void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable* 
       // not found in cache, generate
       irrmapdblock = std::make_shared<DataBlock>();
       ///////////////////////////
-      auto newtex = PBRMaterial::filterEnvMap(tex, targ);
+      auto newtex              = PBRMaterial::filterEnvMap(tex, targ);
+      _environmentTextureAsset = new TextureAsset;
+      _environmentTextureAsset->SetTexture(newtex);
       //////////////////////////////////////////////////////////////
       DataBlockCache::setDataBlock(cachekey, irrmapdblock);
       datablock = irrmapdblock;

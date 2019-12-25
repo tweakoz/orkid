@@ -19,23 +19,22 @@ namespace ork::lev2 {
 
 void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
   mTargetGL.makeCurrentContext();
-  //mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup");
+  // mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup");
 
   if (0 == Base) {
     if (mCurrentRtGroup) {
-      auto FboObj = (GlFboObject*)mCurrentRtGroup->GetInternalHandle();
-      int inumtargets     = mCurrentRtGroup->GetNumTargets();
+      auto FboObj     = (GlFboObject*)mCurrentRtGroup->GetInternalHandle();
+      int inumtargets = mCurrentRtGroup->GetNumTargets();
 
       for (int it = 0; it < inumtargets; it++) {
         auto b = mCurrentRtGroup->GetMrt(it);
 
-        if (FboObj && b && b->mComputeMips) {
+        if (FboObj && b) {
           auto tex_obj = FboObj->mTEX[it];
-
-          // printf( "GENMIPS texobj<%p>\n", (void*) tex_obj );
-
-          // glBindTexture( GL_TEXTURE_2D, tex_obj );
-          // glGenerateMipmap( GL_TEXTURE_2D );
+          if (b->_mipgen == RtBuffer::EMG_AUTOCOMPUTE) {
+            glBindTexture(GL_TEXTURE_2D, tex_obj);
+            glGenerateMipmap(GL_TEXTURE_2D);
+          }
         }
       }
     }
@@ -49,7 +48,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     ////////////////////////////////////////////////
     _setAsRenderTarget();
     mCurrentRtGroup = 0;
-    //mTargetGL.debugPopGroup();
+    // mTargetGL.debugPopGroup();
     return;
   }
 
@@ -83,7 +82,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
   GL_ERRORCHECK();
 
   if (0 == FboObj) {
-    //mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup::newFbo");
+    // mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup::newFbo");
     FboObj = new GlFboObject;
 
     Base->SetInternalHandle(FboObj);
@@ -105,11 +104,11 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       GLTextureObject* ptexOBJ = new GLTextureObject;
       GL_ERRORCHECK();
       glGenTextures(1, (GLuint*)&FboObj->mTEX[it]);
-      glBindTexture(GL_TEXTURE_2D,FboObj->mTEX[it]);
-      if( pB->_debugName.length() ){
-        mTargetGL.debugLabel(GL_TEXTURE,FboObj->mTEX[it], pB->_debugName );
+      glBindTexture(GL_TEXTURE_2D, FboObj->mTEX[it]);
+      if (pB->_debugName.length()) {
+        mTargetGL.debugLabel(GL_TEXTURE, FboObj->mTEX[it], pB->_debugName);
       }
-      glBindTexture(GL_TEXTURE_2D,0);
+      glBindTexture(GL_TEXTURE_2D, 0);
       GL_ERRORCHECK();
       ptexOBJ->mObject = FboObj->mTEX[it];
       //////////////////////////////////////////
@@ -117,7 +116,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       ptex->_height         = ih;
       ptex->_internalHandle = (void*)ptexOBJ;
 
-      ptex->_varmap.makeValueForKey<GLuint>("gltexobj")=FboObj->mTEX[it];
+      ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = FboObj->mTEX[it];
 
       mTargetGL.TXI()->ApplySamplingMode(ptex);
       pB->SetTexture(ptex);
@@ -127,23 +126,20 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       pB->SetMaterial(pmtl);
       //////////////////////////////////////////
     }
-    Base->_depthTexture = new Texture;
+    Base->_depthTexture                  = new Texture;
     Base->_depthTexture->_width          = iw;
     Base->_depthTexture->_height         = ih;
-    GLTextureObject* depthtexobj = new GLTextureObject;
-    Base->_depthTexture->_internalHandle = (void*) depthtexobj;
+    GLTextureObject* depthtexobj         = new GLTextureObject;
+    Base->_depthTexture->_internalHandle = (void*)depthtexobj;
     GL_ERRORCHECK();
 
-
-
-
     Base->SetSizeDirty(true);
-    //mTargetGL.debugPopGroup();
+    // mTargetGL.debugPopGroup();
   }
   GL_ERRORCHECK();
 
   if (Base->IsSizeDirty()) {
-    //mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup::SizeDirty");
+    // mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup::SizeDirty");
     //////////////////////////////////////////
     // initialize depth renderbuffer
     GL_ERRORCHECK();
@@ -151,17 +147,17 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     GL_ERRORCHECK();
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, iw, ih);
     GL_ERRORCHECK();
-    glGenTextures(1,&FboObj->_depthTexture);
+    glGenTextures(1, &FboObj->_depthTexture);
     glBindTexture(GL_TEXTURE_2D, FboObj->_depthTexture);
     GL_ERRORCHECK();
     std::string DepthTexName("RtgDepth");
-    mTargetGL.debugLabel(GL_TEXTURE,FboObj->_depthTexture, DepthTexName );
+    mTargetGL.debugLabel(GL_TEXTURE, FboObj->_depthTexture, DepthTexName);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, iw, ih, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-    //glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+    // glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
     GL_ERRORCHECK();
     glBindTexture(GL_TEXTURE_2D, 0);
     GL_ERRORCHECK();
@@ -174,34 +170,34 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     Base->_depthTexture->_varmap.makeValueForKey<GLuint>("gltexobj") = FboObj->_depthTexture;
     mTargetGL.TXI()->ApplySamplingMode(Base->_depthTexture);
     Base->_depthTexture->_isDepthTexture = true;
-    auto depthtexobj = (GLTextureObject*) Base->_depthTexture->_internalHandle;
-    depthtexobj->mObject =FboObj->_depthTexture;
+    auto depthtexobj                     = (GLTextureObject*)Base->_depthTexture->_internalHandle;
+    depthtexobj->mObject                 = FboObj->_depthTexture;
     //////
     for (int it = 0; it < inumtargets; it++) {
-      RtBuffer* pB = Base->GetMrt(it);
+      RtBuffer* rtbuffer = Base->GetMrt(it);
       // D3DFORMAT efmt = D3DFMT_A8R8G8B8;
       GLuint glinternalformat = 0;
       GLuint glformat         = GL_RGBA;
       GLenum gltype           = 0;
 
-      switch (pB->format()) {
+      switch (rtbuffer->format()) {
         case EBUFFMT_R32F:
-          glformat = GL_RED;
+          glformat         = GL_RED;
           glinternalformat = GL_R32F;
           gltype           = GL_FLOAT;
           break;
         case EBUFFMT_R32UI:
-          glformat = GL_RED_INTEGER;
+          glformat         = GL_RED_INTEGER;
           glinternalformat = GL_R32UI;
           gltype           = GL_UNSIGNED_INT;
           break;
         case EBUFFMT_RG16F:
-          glformat = GL_RG;
+          glformat         = GL_RG;
           glinternalformat = GL_RG16F;
           gltype           = GL_HALF_FLOAT;
           break;
         case EBUFFMT_RG32F:
-          glformat = GL_RG;
+          glformat         = GL_RG;
           glinternalformat = GL_RG32F;
           gltype           = GL_FLOAT;
           break;
@@ -222,7 +218,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
           gltype           = GL_UNSIGNED_INT_10_10_10_2;
           break;
         case EBUFFMT_RGB32UI:
-          glformat = GL_RGB_INTEGER;
+          glformat         = GL_RGB_INTEGER;
           glinternalformat = GL_RGB32UI;
           gltype           = GL_UNSIGNED_INT;
           break;
@@ -237,14 +233,38 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       // initialize texture
       //////////////////////////////////////////
 
-      glBindTexture(GL_TEXTURE_2D, FboObj->mTEX[it]);
-      GL_ERRORCHECK();
-      glTexImage2D(GL_TEXTURE_2D, 0, glinternalformat, iw, ih, 0, glformat, gltype, NULL);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-      GL_ERRORCHECK();
+      auto tex        = rtbuffer->GetTexture();
+      auto orkteximpl = (GLTextureObject*)tex->GetTexIH();
+      GLuint texobj   = FboObj->mTEX[it];
 
-      // printf( "SetRtg::gentex<%d> w<%d> h<%d>\n", int(FboObj->mTEX[it]), iw,ih );
+      tex->mTexSampleMode.mTexFiltModeMin = ETEXFILT_LINEAR;
+      tex->mTexSampleMode.mTexFiltModeMag = ETEXFILT_LINEAR;
+      tex->mTexSampleMode.mTexFiltModeMip = ETEXFILT_LINEAR;
+
+      mTargetGL.debugPushGroup("init-rt-tex");
+
+      glBindTexture(GL_TEXTURE_2D, texobj);
+      GL_ERRORCHECK();
+      void* initialdata = calloc(1, iw * ih * 16);
+      glTexImage2D(GL_TEXTURE_2D, 0, glinternalformat, iw, ih, 0, glformat, gltype, initialdata);
+      free(initialdata);
+
+      switch (rtbuffer->_mipgen) {
+        case RtBuffer::EMG_AUTOCOMPUTE:
+        case RtBuffer::EMG_USER: {
+          glGenerateMipmap(GL_TEXTURE_2D);
+          int nummips         = std::ceil(log_base(2, std::max(iw, ih))) + 1;
+          orkteximpl->_maxmip = nummips - 2;
+          printf("SetRtg::gentex<%d> w<%d> h<%d> nummips<%d>\n", int(FboObj->mTEX[it]), iw, ih, nummips);
+          break;
+        }
+        default:
+          break;
+      }
+      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LEVEL, 0);
+      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, nummips - 1);
+      mTargetGL.TXI()->ApplySamplingMode(tex);
+      GL_ERRORCHECK();
 
       //////////////////////////////////////////
       //////////////////////////////////////////
@@ -253,8 +273,10 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + it, GL_TEXTURE_2D, FboObj->mTEX[it], 0);
       GL_ERRORCHECK();
 
-      pB->SetSizeDirty(false);
-      //mTargetGL.debugPopGroup();
+      rtbuffer->SetSizeDirty(false);
+      // mTargetGL.debugPopGroup();
+
+      mTargetGL.debugPopGroup();
     }
     Base->SetSizeDirty(false);
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -293,7 +315,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     GL_ERRORCHECK();
   }
-  //mTargetGL.debugPopGroup();
+  // mTargetGL.debugPopGroup();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -1084,7 +1084,11 @@ static auto minfiltlamb = [](const TextureSamplingModeData& inp) -> GLenum {
 void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
   GLTextureObject* pTEXOBJ = (GLTextureObject*)ptex->GetTexIH();
   if (pTEXOBJ) {
+    GLenum tgt = (pTEXOBJ->mTarget != GL_NONE) ? pTEXOBJ->mTarget : GL_TEXTURE_2D;
     mTargetGL.makeCurrentContext();
+    mTargetGL.debugPushGroup("ApplySamplingMode");
+    GL_ERRORCHECK();
+    glBindTexture(tgt, pTEXOBJ->mObject);
 
     const auto& texmode = ptex->TexSamplingMode();
 
@@ -1111,10 +1115,6 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
 #endif
     }
 
-    GLenum tgt = (pTEXOBJ->mTarget != GL_NONE) ? pTEXOBJ->mTarget : GL_TEXTURE_2D;
-
-    GL_ERRORCHECK();
-    glBindTexture(tgt, pTEXOBJ->mObject);
     GL_ERRORCHECK();
     glTexParameterf(tgt, GL_TEXTURE_MAG_FILTER, magfiltlamb(texmode));
     GL_ERRORCHECK();
@@ -1127,6 +1127,7 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
     glTexParameterf(tgt, GL_TEXTURE_WRAP_T, addrlamb(texmode.GetAddrModeV()));
     GL_ERRORCHECK();
   }
+  mTargetGL.debugPopGroup();
 }
 
 void GlTextureInterface::generateMipMaps(Texture* ptex) {
@@ -1196,6 +1197,11 @@ Texture* GlTextureInterface::createFromMipChain(MipChain* from_chain) {
   tex->_internalHandle    = (void*)texobj;
   glGenTextures(1, &texobj->mObject);
   glBindTexture(GL_TEXTURE_2D, texobj->mObject);
+
+  if (from_chain->_debugName.length()) {
+    tex->_debugName = from_chain->_debugName;
+    mTargetGL.debugLabel(GL_TEXTURE, texobj->mObject, tex->_debugName);
+  }
 
   size_t nummips = from_chain->_levels.size();
 

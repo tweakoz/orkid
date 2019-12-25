@@ -121,6 +121,7 @@ Texture* PBRMaterial::filterEnvMap(Texture* rawenvmap, GfxTarget* targ) {
   static const FxShaderTechnique* tek   = nullptr;
   static const FxShaderParam* param_mvp = nullptr;
   static const FxShaderParam* param_pfm = nullptr;
+  static const FxShaderParam* param_ruf = nullptr;
 
   targ->debugPushGroup("PBRMaterial::filterEnvMap");
   if (not mtl) {
@@ -132,41 +133,85 @@ Texture* PBRMaterial::filterEnvMap(Texture* rawenvmap, GfxTarget* targ) {
     printf("filterenv mtl<%p> tek<%p>\n", mtl.get(), tek);
     param_mvp = mtl->param("mvp");
     param_pfm = mtl->param("prefiltmap");
+    param_ruf = mtl->param("roughness");
   }
   ///////////////////////////////////////////////
   auto filtex                                                       = std::make_shared<FilteredEnvMap>();
   rawenvmap->_varmap.makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
   ///////////////////////////////////////////////
   RenderContextFrameData RCFD(targ);
-  int w                = rawenvmap->_width;
-  int h                = rawenvmap->_height;
-  auto outgroup        = std::make_shared<RtGroup>(targ, w, h, 1);
-  auto outbuffr        = std::make_shared<RtBuffer>(outgroup.get(), lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32F, w, h);
-  filtex->_rtgroup     = outgroup;
-  filtex->_rtbuffer    = outbuffr;
-  auto targ_buf        = fbi->GetThisBuffer();
-  outbuffr->_debugName = "filteredenvmap";
-  outgroup->SetMrt(0, outbuffr.get());
+  int w = rawenvmap->_width;
+  int h = rawenvmap->_height;
 
-  printf("filterenv w<%d> h<%d>\n", w, h);
-  printf("filterenv outgroup<%p> outbuf<%p>\n", outgroup.get(), outbuffr.get());
+  int numpix      = w * h;
+  int imip        = 0;
+  auto targ_buf   = fbi->GetThisBuffer();
+  float roughness = 0.0f;
+  std::map<int, std::shared_ptr<CaptureBuffer>> cap4mip;
+  auto mipchain        = new MipChain(w, h, EBUFFMT_RGBA32F, ETEXTYPE_2D);
+  mipchain->_debugName = "filtenvmap-processed";
+  while (numpix != 0) {
 
-  fbi->PushRtGroup(outgroup.get());
-  fbi->BeginFrame();
-  fbi->Clear(fvec4(0, 0, 0, 0), 1);
-  mtl->bindTechnique(tek);
-  mtl->begin(RCFD);
-  ///////////////////////////////////////////////
-  mtl->bindParamMatrix(param_mvp, fmtx4::Identity);
-  mtl->bindParamCTex(param_pfm, rawenvmap);
-  mtl->commit();
-  targ_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
-  ///////////////////////////////////////////////
-  mtl->end(RCFD);
-  fbi->EndFrame();
-  fbi->PopRtGroup();
+    auto outgroup = std::make_shared<RtGroup>(targ, w, h, 1);
+    auto outbuffr = std::make_shared<RtBuffer>(outgroup.get(), lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32F, w, h);
+    auto captureb = std::make_shared<CaptureBuffer>();
+
+    filtex->_rtgroup     = outgroup;
+    filtex->_rtbuffer    = outbuffr;
+    outbuffr->_debugName = FormatString("filteredenvmap-mip%d", imip);
+    // outbuffer->
+    outgroup->SetMrt(0, outbuffr.get());
+
+    printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
+    printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
+
+    fbi->PushRtGroup(outgroup.get());
+    fbi->BeginFrame();
+    fbi->Clear(fvec4(0, 0, 0, 0), 1);
+    mtl->bindTechnique(tek);
+    mtl->begin(RCFD);
+    ///////////////////////////////////////////////
+    mtl->bindParamMatrix(param_mvp, fmtx4::Identity);
+    mtl->bindParamCTex(param_pfm, rawenvmap);
+    mtl->bindParamFloat(param_ruf, roughness);
+    mtl->commit();
+    targ_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
+    ///////////////////////////////////////////////
+    mtl->end(RCFD);
+    fbi->EndFrame();
+    fbi->PopRtGroup();
+
+    fbi->capture(*outgroup.get(), 0, captureb.get());
+
+    auto mipchain_level = mipchain->_levels[imip];
+    memcpy(mipchain_level->_data, captureb->_data, w * h * 4 * sizeof(float));
+
+    if (1) {
+      auto outpath = file::Path::temp_dir() / FormatString("filteredenvmip%d.exr", imip);
+      auto out     = ImageOutput::create(outpath.c_str());
+      printf("filterenv write dbgout<%s> <%p>\n", outpath.c_str(), out.get());
+      OrkAssert(out != nullptr);
+      ImageSpec spec(w, h, 4, TypeDesc::FLOAT);
+      out->open(outpath.c_str(), spec);
+      out->write_image(TypeDesc::FLOAT, captureb->_data);
+      out->close();
+    }
+
+    rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtGroup>>(FormatString("alt-tex-group-mip%d", imip))   = outgroup;
+    rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtBuffer>>(FormatString("alt-tex-buffer-mip%d", imip)) = outbuffr;
+
+    cap4mip[imip] = captureb;
+    w >>= 1;
+    h >>= 1;
+    roughness += 0.1f;
+    numpix = w * h;
+    imip++;
+  }
+
+  auto alt_tex                                            = txi->createFromMipChain(mipchain);
+  rawenvmap->_varmap.makeValueForKey<Texture*>("alt-tex") = alt_tex;
+
   targ->debugPopGroup();
-  rawenvmap->_varmap.makeValueForKey<Texture*>("alt-tex") = outbuffr->GetTexture();
 
   return rawenvmap;
 }

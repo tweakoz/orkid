@@ -24,13 +24,24 @@ namespace ork {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline int powerOfTwoIndex (size_t inp)
-{ int index = 0;
-	while (((inp & 1) == 0) && inp > 1){
-		inp >>= 1;
-		index++;
-	}
-	return index;
+inline float log_base(float base, float inp) {
+  float rval = logf(inp) / logf(base);
+  return rval;
+}
+inline float pow_base(float base, float inp) {
+  float rval = powf(base, inp);
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+inline int powerOfTwoIndex(size_t inp) {
+  int index = 0;
+  while (((inp & 1) == 0) && inp > 1) {
+    inp >>= 1;
+    index++;
+  }
+  return index;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -310,12 +321,12 @@ inline float calc_dist(float x0, float y0, float z0, float x1, float y1, float z
 
 inline bool clip_angle(float x0, float y0, float z0, float x1, float y1, float z1, float Tang, float Cang) {
   bool do_clip = false;
-  float dx       = (x1 - x0);
-  float dz       = (z1 - z0);
-  float ang      = rect2pol_ang((float)dx, (float)dz);
+  float dx     = (x1 - x0);
+  float dz     = (z1 - z0);
+  float ang    = rect2pol_ang((float)dx, (float)dz);
   ang          = norm_radian_angle(ang);
-  float tang     = norm_radian_angle(Tang);
-  float angD     = ang - tang;
+  float tang   = norm_radian_angle(Tang);
+  float angD   = ang - tang;
   if (angD < 0.0f)
     angD *= -1.0f;
   if ((angD > Cang) && (angD < (PI2 - Cang)))

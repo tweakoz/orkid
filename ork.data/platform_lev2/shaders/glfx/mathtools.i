@@ -45,6 +45,9 @@ libblock lib_math {
     float costheta = cos(theta);
     return vec3(sintheta * cos(phi), sintheta * sin(phi), costheta);
   }
+  vec3 sphericalToNormal(float phi, float costheta, float sintheta) {
+    return vec3(sintheta * cos(phi), sintheta * sin(phi), costheta);
+  }
   vec2 normalToSpherical(vec3 n) {
     float phi = atan(n.y,n.x);
     float theta = acos(n.z);

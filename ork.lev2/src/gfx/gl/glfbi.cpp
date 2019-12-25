@@ -29,9 +29,11 @@ namespace ork { namespace lev2 {
 
 GlFrameBufferInterface::GlFrameBufferInterface(GfxTargetGL& target)
     : FrameBufferInterface(target)
-    , mTargetGL(target) {}
+    , mTargetGL(target) {
+}
 
-GlFrameBufferInterface::~GlFrameBufferInterface() {}
+GlFrameBufferInterface::~GlFrameBufferInterface() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -148,20 +150,6 @@ void GlFrameBufferInterface::DoEndFrame(void) {
   if (rtg) {
     GlFboObject* FboObj = (GlFboObject*)rtg->GetInternalHandle();
     int inumtargets     = rtg->GetNumTargets();
-
-    for (int it = 0; it < inumtargets; it++) {
-      auto b = rtg->GetMrt(it);
-
-      if (b && b->mComputeMips) {
-        auto tex_obj = FboObj->mTEX[it];
-
-        printf("GENMIPS texobj<%d>\n", tex_obj);
-
-        // glBindTexture( GL_TEXTURE_2D, tex_obj );
-        // glGenerateMipmap( GL_TEXTURE_2D );
-      }
-    }
-
     // printf( "ENDFRAME<RtGroup>\n" );
   } else if (IsOffscreenTarget()) {
     // printf( "ENDFRAME<OST>\n" );
@@ -455,7 +443,7 @@ bool GlFrameBufferInterface::capture(const RtGroup& rtg, int irt, CaptureBuffer*
   if (not(fmtmatch and sizmatch))
     capbuf->setFormatAndSize(rtb_format, w, h);
 
-  //glPixelStore()
+  // glPixelStore()
 
   GL_ERRORCHECK();
   switch (rtb_format) {
@@ -484,7 +472,7 @@ bool GlFrameBufferInterface::capture(const RtGroup& rtg, int irt, CaptureBuffer*
   GL_ERRORCHECK();
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-//  glReadBuffer( readbuffer ); // restore read buffer
+  //  glReadBuffer( readbuffer ); // restore read buffer
   GL_ERRORCHECK();
   return true;
 }

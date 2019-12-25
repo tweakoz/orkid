@@ -9,9 +9,20 @@ libblock lib_brdf : lib_math {
     float cosThetaSq    = cosThetaSqNum / cosThetaSqDiv;
     float cosTheta      = sqrt(cosThetaSq);
     float sinTheta      = sqrt(1.0 - cosThetaSq);
-    return sphericalToCartesian(phi, cosTheta, sinTheta);
+    return sphericalToNormal(phi, cosTheta, sinTheta);
   }
-
+  vec3 importanceSampleGGXN(vec2 e, vec3 n, float roughness) {
+    vec3 h = importanceSampleGGX(e,roughness);
+    vec3 up        = abs(n.z) < 0.999
+                   ? vec3(0.0, 0.0, 1.0)
+                   : vec3(1.0, 0.0, 0.0);
+    vec3 tangent   = normalize(cross(up, n));
+    vec3 bitangent = cross(n, tangent);
+    vec3 result    = tangent*h.x
+                   + bitangent*h.y
+                   + n*h.z;
+    return normalize(result);
+  }
   float geometrySchlickGGX(vec3 normal, vec3 dir, float roughness) {
     float k       = roughness * roughness * 0.5;
     float numer   = saturate(dot(normal,dir));
@@ -31,13 +42,14 @@ libblock lib_brdf : lib_math {
   vec2 integrateGGX(float n_dot_v, float roughness) {
     int numsamples = 1024;
     n_dot_v = saturate(n_dot_v);
-    vec3 v(sqrt(1.0 - n_dot_v * n_dot_v), 0, n_dot_v);
+    float vx = sqrt(1.0 - n_dot_v * n_dot_v);
+    vec3 v = vec3(vx, 0, n_dot_v);
     float accum_scale = 0.0;
     float accum_bias  = 0.0;
     for (int i = 0; i < numsamples; i++) {
       vec2 e            = hammersley(i, numsamples);
       vec3 h            = importanceSampleGGX(e, roughness);
-      float v_dot_h     = dot(v.h);
+      float v_dot_h     = dot(v,h);
       vec3 l            = normalize((h * 2.0 * v_dot_h) - v);
       float n_dot_h_sat = saturate(h.z);
       float v_dot_h_sat = saturate(v_dot_h);
@@ -51,5 +63,6 @@ libblock lib_brdf : lib_math {
     }
     return vec2(accum_scale / float(numsamples), accum_bias / float(numsamples));
   }
+
 
 }

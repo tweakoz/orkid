@@ -22,6 +22,7 @@ uniform_set ub_vtx {
 uniform_set ub_frg {
     sampler2D prefiltmap;
 		vec2 InvViewportSize; // inverse target size
+		float roughness;
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
@@ -64,14 +65,30 @@ fragment_interface iface_fyo
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_yo
 	: iface_fyo
-	: lib_math 
-	: lib_envmapping {
+	: lib_math
+	: lib_envmapping
+	: lib_brdf {
 
 	vec3 n = env_equirectangularUV2N(frg_uv0);
-	vec2 testuv = env_equirectangularN2UV(n);
-	out_clr = texture(prefiltmap,testuv);
-		//out_clr = vec4(testuv,0,1);
-		//out_clr = vec4(n.xyz,1);
+	vec3 r = n;
+	vec3 v = r;
+	vec3 o = vec3(0,0,0);
+	float w = 0;
+	//////////////////////////////////
+	for( uint i=0; i<1024; i++){
+		vec2 e = hammersley(i,1024);
+		vec3 h = importanceSampleGGXN(e,n,roughness);
+		vec3 l = normalize(2.0 * dot(v, h) * h - v);
+		float ndotl = saturate(dot(n, l));
+		if(ndotl > 0.0){
+			vec2 luv = env_equirectangularN2UV(l);
+		  o += texture(prefiltmap, luv).rgb * ndotl;
+		  w += ndotl;
+		}
+	}
+	//////////////////////////////////
+	o = o/w;
+	out_clr = vec4(o,1);
 }
 ///////////////////////////////////////////////////////////////
 technique tek_yo {

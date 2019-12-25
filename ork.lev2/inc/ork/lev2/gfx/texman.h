@@ -125,6 +125,7 @@ struct MipChain {
   std::vector<mipchainlevel_t> _levels;
   int _width  = 0;
   int _height = 0;
+  std::string _debugName;
 
   EBufferFormat _format = EBUFFMT_END;
   ETextureType _type    = ETEXTYPE_END;

@@ -23,7 +23,8 @@ libblock lib_envmapping {
   vec3 env_equirectangularUV2N(vec2 tex_uv) {
     float phi = tex_uv.x*PI2-PI;
     float theta = tex_uv.y * PI;
-    return sphericalToNormal(phi,theta);
+    vec3 n = sphericalToNormal(phi,theta);
+    return vec3(-n.x,n.z,-n.y);
   }
 
   ////////////////////////////////////////////

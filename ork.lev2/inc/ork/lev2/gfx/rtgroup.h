@@ -24,75 +24,100 @@ class RtBuffer;
 
 class RtBuffer //: public GfxBuffer
 {
-	public:
+public:
+  enum EMipGen { EMG_NONE, EMG_AUTOCOMPUTE, EMG_USER };
 
-	RtBuffer(	RtGroup* pgroup,
-				ETargetType etype,
-				EBufferFormat efmt,
-				int iW, int iH );
+  RtBuffer(RtGroup* pgroup, ETargetType etype, EBufferFormat efmt, int iW, int iH);
 
-	Texture* GetTexture() const { return mTexture; }
-	GfxMaterial* GetMaterial() const { return mMaterial; }
-	EBufferFormat format() const { return mFormat; }
+  Texture* GetTexture() const {
+    return mTexture;
+  }
+  GfxMaterial* GetMaterial() const {
+    return mMaterial;
+  }
+  EBufferFormat format() const {
+    return mFormat;
+  }
 
-	void SetSizeDirty( bool sd ) { mSizeDirty=sd; }
-	void SetTexture( Texture* ptex ) { mTexture=ptex; }
-	void SetMaterial( GfxMaterial* pmtl ) { mMaterial=pmtl; }
+  void SetSizeDirty(bool sd) {
+    mSizeDirty = sd;
+  }
+  void SetTexture(Texture* ptex) {
+    mTexture = ptex;
+  }
+  void SetMaterial(GfxMaterial* pmtl) {
+    mMaterial = pmtl;
+  }
 
-	RtGroup* mParentGroup;
-	int miW, miH;
-	Texture* mTexture;
-	GfxMaterial* mMaterial;
-	ETargetType   mType;
-	EBufferFormat mFormat;
-	svarp_t mPlatformHandle;
-	bool mSizeDirty;
-	bool mComputeMips;
+  RtGroup* mParentGroup;
+  int miW, miH;
+  Texture* mTexture;
+  GfxMaterial* mMaterial;
+  ETargetType mType;
+  EBufferFormat mFormat;
+  svarp_t mPlatformHandle;
+  bool mSizeDirty;
+  EMipGen _mipgen;
   std::string _debugName;
 };
 
-class RtGroup
-{
+class RtGroup {
 public:
-	/////////////////////////////////////////
-	RtGroup( GfxTarget* partarg,
-			 int iW, int iH, int iSamples=1 );
+  /////////////////////////////////////////
+  RtGroup(GfxTarget* partarg, int iW, int iH, int iSamples = 1);
 
-	~RtGroup();
-	/////////////////////////////////////////
-	RtBuffer* GetMrt( int idx ) const
-	{
-		OrkAssert( (idx>=0) && (idx<kmaxmrts) );
-		return mMrt[ idx ];
-	}
-	/////////////////////////////////////////
-	void	SetMrt( int idx, RtBuffer* buffer );
-	int		GetNumTargets( void ) const { return mNumMrts; }
-	void	SetInternalHandle( void*h ) { mInternalHandle=h; }
-	void*	GetInternalHandle( void ) const { return mInternalHandle; }
-	void	Resize( int iw, int ih );
-	void	SetSizeDirty( bool bv ) { mbSizeDirty=bv; }
-	bool	IsSizeDirty() const { return mbSizeDirty; }
-	GfxTarget* ParentTarget() const { return mParentTarget; }
-	/////////////////////////////////////////
-	int		GetW() const { return miW; }
-	int		GetH() const { return miH; }
-	int		GetSamples() const { return miSamples; }
-	/////////////////////////////////////////
-	static const int	kmaxmrts = 4;
+  ~RtGroup();
+  /////////////////////////////////////////
+  RtBuffer* GetMrt(int idx) const {
+    OrkAssert((idx >= 0) && (idx < kmaxmrts));
+    return mMrt[idx];
+  }
+  /////////////////////////////////////////
+  void SetMrt(int idx, RtBuffer* buffer);
+  int GetNumTargets(void) const {
+    return mNumMrts;
+  }
+  void SetInternalHandle(void* h) {
+    mInternalHandle = h;
+  }
+  void* GetInternalHandle(void) const {
+    return mInternalHandle;
+  }
+  void Resize(int iw, int ih);
+  void SetSizeDirty(bool bv) {
+    mbSizeDirty = bv;
+  }
+  bool IsSizeDirty() const {
+    return mbSizeDirty;
+  }
+  GfxTarget* ParentTarget() const {
+    return mParentTarget;
+  }
+  /////////////////////////////////////////
+  int GetW() const {
+    return miW;
+  }
+  int GetH() const {
+    return miH;
+  }
+  int GetSamples() const {
+    return miSamples;
+  }
+  /////////////////////////////////////////
+  static const int kmaxmrts = 4;
 
-	GfxTarget* 			mParentTarget;
-	RtBuffer*			mMrt[kmaxmrts];
-	GfxBuffer*			mDepth;
+  GfxTarget* mParentTarget;
+  RtBuffer* mMrt[kmaxmrts];
+  GfxBuffer* mDepth;
   Texture* _depthTexture = nullptr;
-	int					mNumMrts;
-	int					miW;
-	int					miH;
-	int					miSamples;
-	bool				mbSizeDirty;
-	void*				mInternalHandle;
+  int mNumMrts;
+  int miW;
+  int miH;
+  int miSamples;
+  bool mbSizeDirty;
+  void* mInternalHandle;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-}} //namespace ork { namespace lev2 {
+}} // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////
