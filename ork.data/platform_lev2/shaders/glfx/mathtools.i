@@ -11,11 +11,11 @@ libblock lib_math {
   }
 
   uint bitReverse(uint x) {
-    x = ((x & 0x55555555) << 1) | ((x & 0xaaaaaaaa) >> 1);
-    x = ((x & 0x33333333) << 2) | ((x & 0xcccccccc) >> 2);
-    x = ((x & 0x0f0f0f0f) << 4) | ((x & 0xf0f0f0f0) >> 4);
-    x = ((x & 0x00ff00ff) << 8) | ((x & 0xff00ff00) >> 8);
-    x = ((x & 0x0000ffff) << 16) | ((x & 0xffff0000) >> 16);
+    x = ((x & 0x55555555u) << 1u) | ((x & 0xaaaaaaaau) >> 1u);
+    x = ((x & 0x33333333u) << 2u) | ((x & 0xccccccccu) >> 2u);
+    x = ((x & 0x0f0f0f0fu) << 4u) | ((x & 0xf0f0f0f0u) >> 4u);
+    x = ((x & 0x00ff00ffu) << 8u) | ((x & 0xff00ff00u) >> 8u);
+    x = ((x & 0x0000ffffu) << 16u) | ((x & 0xffff0000u) >> 16u);
     return x;
   }
 
