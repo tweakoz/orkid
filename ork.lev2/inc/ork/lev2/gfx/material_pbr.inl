@@ -55,7 +55,8 @@ public:
   ////////////////////////////////////////////
 
   static Texture* brdfIntegrationMap(GfxTarget* targ);
-  static Texture* filterEnvMap(Texture* rawenvmap, GfxTarget* targ);
+  static Texture* filterSpecularEnvMap(Texture* rawenvmap, GfxTarget* targ);
+  static Texture* filterDiffuseEnvMap(Texture* rawenvmap, GfxTarget* targ);
 
   ////////////////////////////////////////////
 

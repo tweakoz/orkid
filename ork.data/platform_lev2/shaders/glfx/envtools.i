@@ -32,7 +32,8 @@ libblock lib_envmapping {
   ////////////////////////////////////////////
 
   vec3 env_equirectangular(vec3 normal, sampler2D envtex, float miplevel) {
-    vec2 uv = env_equirectangularN2UV(normal);
+    vec3 n = vec3(-normal.x,-normal.y,normal.z);
+    vec2 uv = env_equirectangularN2UV(n);
     return textureLod(envtex, uv, miplevel).xyz;
   }
 

@@ -17,14 +17,15 @@ namespace ork::lev2::deferrednode {
 
 class DeferredCompositingNode;
 
-template <typename T> inline bool doRangesOverlap(T amin, T amax, T bmin, T bmax){
+template <typename T> inline bool doRangesOverlap(T amin, T amax, T bmin, T bmax) {
   return std::max(amin, bmin) <= std::min(amax, bmax);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
 struct PointLight {
 
-  PointLight() {}
+  PointLight() {
+  }
   fvec3 _pos;
   fvec3 _dst;
   fvec3 _color;
@@ -70,8 +71,8 @@ struct DeferredContext {
 #else
   static constexpr int KTILEDIMXY = 64;
 #endif
-  static constexpr float KNEAR               = 0.1f;
-  static constexpr float KFAR                = 100000.0f;
+  static constexpr float KNEAR = 0.1f;
+  static constexpr float KFAR  = 100000.0f;
   ////////////////////////////////////////////////////////////////////
   DeferredContext(RenderCompositingNode* node, std::string shadername, int numlights);
   ~DeferredContext();
@@ -94,8 +95,8 @@ struct DeferredContext {
   fvec4 _clearColor;
   std::string _shadername;
   ////////////////////////////////////////////////////////////////////
-  int _width   = 0;
-  int _height  = 0;
+  int _width    = 0;
+  int _height   = 0;
   int _clusterW = 0;
   int _clusterH = 0;
   ////////////////////////////////////////////////////////////////////
@@ -103,52 +104,54 @@ struct DeferredContext {
 
   ////////////////////////////////////////////////////////////////////
 
-  const FxShaderTechnique* _tekBaseLighting          = nullptr;
-  const FxShaderTechnique* _tekPointLighting         = nullptr;
-  const FxShaderTechnique* _tekDebugNormal           = nullptr;
-  const FxShaderTechnique* _tekDebugNormalStereo     = nullptr;
-  const FxShaderTechnique* _tekBaseLightingStereo    = nullptr;
-  const FxShaderTechnique* _tekPointLightingStereo   = nullptr;
+  const FxShaderTechnique* _tekBaseLighting           = nullptr;
+  const FxShaderTechnique* _tekPointLighting          = nullptr;
+  const FxShaderTechnique* _tekDebugNormal            = nullptr;
+  const FxShaderTechnique* _tekDebugNormalStereo      = nullptr;
+  const FxShaderTechnique* _tekBaseLightingStereo     = nullptr;
+  const FxShaderTechnique* _tekPointLightingStereo    = nullptr;
   const FxShaderTechnique* _tekDownsampleDepthCluster = nullptr;
-  
-  
+
 #if defined(ENABLE_COMPUTE_SHADERS)
   FxComputeShader* _lightcollectcomputeshader = nullptr;
 #endif
 
-  const FxShaderParam* _parMatIVPArray               = nullptr;
-  const FxShaderParam* _parMatPArray                 = nullptr;
-  const FxShaderParam* _parMatVArray                 = nullptr;
-  const FxShaderParam* _parZndc2eye                  = nullptr;
-  const FxShaderParam* _parMapGBufAlbAo              = nullptr;
-  const FxShaderParam* _parMapGBufNrmL               = nullptr;
-  const FxShaderParam* _parMapGBufRufMtlAlpha        = nullptr;
-  const FxShaderParam* _parMapDepth                  = nullptr;
-  const FxShaderParam* _parMapDepthCluster           = nullptr;
-  const FxShaderParam* _parMapEnvironment            = nullptr;
-  const FxShaderParam* _parTime                      = nullptr;
-  const FxShaderParam* _parNearFar                   = nullptr;
-  const FxShaderParam* _parInvViewSize               = nullptr;
-  const FxShaderParam* _parInvVpDim                  = nullptr;
-  const FxShaderParam* _parNumLights                 = nullptr;
-  const FxShaderParam* _parTileDim                   = nullptr;
-  const FxShaderParam* _parEnvironmentIntensity      = nullptr;
-  const FxShaderParam* _parEnvironmentMipBias        = nullptr;
-  const FxShaderParam* _parEnvironmentMipScale       = nullptr;
-  const FxShaderParam* _parDiffuseIntensity          = nullptr;
-  const FxShaderParam* _parAmbient                   = nullptr;
-  const FxShaderParamBlock* _lightblock              = nullptr;
+  const FxShaderParam* _parMatIVPArray         = nullptr;
+  const FxShaderParam* _parMatPArray           = nullptr;
+  const FxShaderParam* _parMatVArray           = nullptr;
+  const FxShaderParam* _parZndc2eye            = nullptr;
+  const FxShaderParam* _parMapGBufAlbAo        = nullptr;
+  const FxShaderParam* _parMapGBufNrmL         = nullptr;
+  const FxShaderParam* _parMapGBufRufMtlAlpha  = nullptr;
+  const FxShaderParam* _parMapDepth            = nullptr;
+  const FxShaderParam* _parMapDepthCluster     = nullptr;
+  const FxShaderParam* _parMapSpecularEnv      = nullptr;
+  const FxShaderParam* _parMapDiffuseEnv       = nullptr;
+  const FxShaderParam* _parMapBrdfIntegration  = nullptr;
+  const FxShaderParam* _parTime                = nullptr;
+  const FxShaderParam* _parNearFar             = nullptr;
+  const FxShaderParam* _parInvViewSize         = nullptr;
+  const FxShaderParam* _parInvVpDim            = nullptr;
+  const FxShaderParam* _parNumLights           = nullptr;
+  const FxShaderParam* _parTileDim             = nullptr;
+  const FxShaderParam* _parSpecularLevel       = nullptr;
+  const FxShaderParam* _parDiffuseLevel        = nullptr;
+  const FxShaderParam* _parAmbientLevel        = nullptr;
+  const FxShaderParam* _parSkyboxLevel         = nullptr;
+  const FxShaderParam* _parEnvironmentMipBias  = nullptr;
+  const FxShaderParam* _parEnvironmentMipScale = nullptr;
+  const FxShaderParamBlock* _lightblock        = nullptr;
 
   ////////////////////////////////////////////////////////////////////
 
-  RtGroupRenderTarget* _accumRT  = nullptr;
-  RtGroupRenderTarget* _gbuffRT  = nullptr;
+  RtGroupRenderTarget* _accumRT   = nullptr;
+  RtGroupRenderTarget* _gbuffRT   = nullptr;
   RtGroupRenderTarget* _clusterRT = nullptr;
 
   CaptureBuffer _clustercapture;
-  RtGroup* _rtgGbuffer = nullptr;
+  RtGroup* _rtgGbuffer      = nullptr;
   RtGroup* _rtgDepthCluster = nullptr;
-  RtGroup* _rtgLaccum  = nullptr;
+  RtGroup* _rtgLaccum       = nullptr;
   PoolString _layername;
 };
 
@@ -179,29 +182,55 @@ class DeferredCompositingNodeDebugNormal : public RenderCompositingNode {
 public:
   DeferredCompositingNodeDebugNormal();
   ~DeferredCompositingNodeDebugNormal();
+
+  lev2::Texture* envSpecularTexture() const;
+  lev2::Texture* envDiffuseTexture() const;
+  lev2::Texture* brdfIntegrationTexture() const;
+
+  float environmentIntensity() const {
+    return _environmentIntensity;
+  }
+  float environmentMipBias() const {
+    return _environmentMipBias;
+  }
+  float environmentMipScale() const {
+    return _environmentMipScale;
+  }
+  float diffuseLevel() const {
+    return _diffuseLevel;
+  }
+  float specularLevel() const {
+    return _specularLevel;
+  }
+  fvec3 ambientLevel() const {
+    return _ambientLevel;
+  }
+  float skyboxLevel() const {
+    return _skyboxLevel;
+  }
+
   fvec4 _clearColor;
   fvec4 _fogColor;
-  lev2::Texture* envTexture() const;
-  float environmentIntensity() const { return _environmentIntensity; }
-  float environmentMipBias() const { return _environmentMipBias; }
-  float environmentMipScale() const { return _environmentMipScale; }
-  float diffuseIntensity() const { return _diffuseIntensity; }
-  fvec3 ambient() const { return _ambient; }
 
 private:
   void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
-  void _readEnvTexture(ork::rtti::ICastable *&tex) const;
-  void _writeEnvTexture(ork::rtti::ICastable *const &tex);
-  lev2::TextureAsset*                     _environmentTextureAsset = nullptr;
+  void _readEnvTexture(ork::rtti::ICastable*& tex) const;
+  void _writeEnvTexture(ork::rtti::ICastable* const& tex);
+  lev2::TextureAsset* _environmentTextureAsset = nullptr;
 
   lev2::RtBuffer* GetOutput() const final;
   svar256_t _impl;
   float _environmentIntensity = 1.0f;
-  float _environmentMipBias = 0.0f;
-  float _environmentMipScale = 0.0f;
-  float _diffuseIntensity = 1.0f;
-  fvec3 _ambient;
+  float _environmentMipBias   = 0.0f;
+  float _environmentMipScale  = 0.0f;
+  float _diffuseLevel         = 1.0f;
+  float _specularLevel        = 1.0f;
+  float _skyboxLevel          = 1.0f;
+  fvec3 _ambientLevel;
+  lev2::Texture* _brdfIntegrationMap = nullptr;
+  lev2::Texture* _filtenvSpecularMap = nullptr;
+  lev2::Texture* _filtenvDiffuseMap  = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -63,7 +63,7 @@ fragment_interface iface_fyo
 	}
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_yo
+fragment_shader ps_filterSpecularEnvMap
 	: iface_fyo
 	: lib_math
 	: lib_envmapping
@@ -91,11 +91,54 @@ fragment_shader ps_yo
 	out_clr = vec4(o,1);
 }
 ///////////////////////////////////////////////////////////////
-technique tek_yo {
+fragment_shader ps_filterDiffuseEnvMap
+	: iface_fyo
+	: lib_math
+	: lib_envmapping
+	: lib_brdf {
+	//////////////////////////////////
+	vec3 n = env_equirectangularUV2N(frg_uv0);
+	vec3 up    = vec3(0.0, 1.0, 0.0);
+	vec3 right = cross(up,n);
+	up         = cross(n,right);
+	//////////////////////////////////
+	vec3 o = vec3(0);
+	float w = 0.0;
+	float incr = 0.025;
+	//////////////////////////////////
+	for(float phi=0.0; phi<PI2; phi += incr){
+		float cosphi = cos(phi);
+		float sinphi = sin(phi);
+    	for(float theta=0.0; theta<(PI*0.5); theta += incr) {
+			float costheta = cos(theta);
+			float sintheta = sin(theta);
+			vec3 tangent = vec3(sintheta*cosphi,sintheta*sinphi,costheta);
+			vec3 sampleN = tangent.x * right
+                         + tangent.y * up
+                         + tangent.z * n;
+			vec2 luv = env_equirectangularN2UV(sampleN);
+			o += texture(prefiltmap, luv).rgb*costheta*sintheta;
+			w+=1.0;
+    	}
+	}
+	//////////////////////////////////
+	out_clr = vec4(o/w,1);
+}
+///////////////////////////////////////////////////////////////
+technique tek_filterSpecularMap {
 	fxconfig=fxcfg_default;
 	pass p0 {
 		vertex_shader=vs_yo;
-		fragment_shader=ps_yo;
+		fragment_shader=ps_filterSpecularEnvMap;
+		state_block=sb_default;
+	}
+}
+///////////////////////////////////////////////////////////////
+technique tek_filterDiffuseMap {
+	fxconfig=fxcfg_default;
+	pass p0 {
+		vertex_shader=vs_yo;
+		fragment_shader=ps_filterDiffuseEnvMap;
 		state_block=sb_default;
 	}
 }

@@ -101,6 +101,11 @@ public:
     ork::file::Path pth(filename.c_str());
     TextureAsset* tex_asset          = rtti::safe_downcast<TextureAsset*>(pAsset);
     tex_asset->GetTexture()->_varmap = tex_asset->_varmap;
+    if (tex_asset->_varmap.hasKey("postproc")) {
+      printf("texasset<%p> has postproc\n", tex_asset);
+    } else {
+      printf("texasset<%p> does NOT have postproc\n", tex_asset);
+    }
 
     // OrkAssert(false == tex_asset->GetTexture()->_varmap.hasKey("preproc"));
 

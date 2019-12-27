@@ -29,12 +29,12 @@ std::set<file::Path> FileAssetLoader::EnumerateExisting() {
     auto wild = file_ext_t("*") + item.mExt;
     auto dir  = item.mPathBase;
 
-    //orkprintf("FileAssetLoader<%p> searching<%s> for pattern<%s>\n", this, dir.c_str(), wild.c_str());
+    // orkprintf("FileAssetLoader<%p> searching<%s> for pattern<%s>\n", this, dir.c_str(), wild.c_str());
 
     auto files    = FileEnv::filespec_search(wild.c_str(), dir);
     int inumfiles = (int)files.size();
 
-    //orkprintf("FileAssetLoader<%p> searching<%s> for<%s> inumfiles<%d>\n", this, dir.c_str(), wild.c_str(), inumfiles);
+    // orkprintf("FileAssetLoader<%p> searching<%s> for<%s> inumfiles<%d>\n", this, dir.c_str(), wild.c_str(), inumfiles);
 
     file::Path::NameType searchdir(dir.ToAbsolute().c_str());
     searchdir.replace_in_place("\\", "/");
@@ -52,7 +52,7 @@ std::set<file::Path> FileAssetLoader::EnumerateExisting() {
       rval.insert(OutPath);
     }
   }
-  //printf("found <%zu> files\n", rval.size());
+  // printf("found <%zu> files\n", rval.size());
   return rval;
 }
 
@@ -65,12 +65,13 @@ void FileAssetLoader::AddLocation(file_pathbase_t b, file_ext_t e) {
   fset.mPathBase = b;
   mLocations.push_back(fset);
 
-  if(0) printf(
-      "FileAssetLoader<%p> added set ext<%s> loc<%s> base<%s>\n",
-      this,
-      fset.mExt.c_str(),
-      fset.mLoc.c_str(),
-      fset.mPathBase.c_str());
+  if (0)
+    printf(
+        "FileAssetLoader<%p> added set ext<%s> loc<%s> base<%s>\n",
+        this,
+        fset.mExt.c_str(),
+        fset.mLoc.c_str(),
+        fset.mPathBase.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -98,7 +99,7 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
     }
   }
 
-  //printf("FindAsset<%s> has_valid_extension<%d>\n", ork::Application::AddPooledString(name).c_str(), int(has_valid_extension));
+  // printf("FindAsset<%s> has_valid_extension<%d>\n", ork::Application::AddPooledString(name).c_str(), int(has_valid_extension));
 
   //////////////////////////////////////////
   // check Munged Paths first (Munged path is a path run thru 1 or more path converters)
@@ -107,8 +108,6 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
   file::Path::SmallNameType url = pathobjnoq.GetUrlBase();
 
   const FileDevContext& ctx = ork::FileEnv::UrlBaseToContext(url);
-
-
 
   //////////////////////
   // munge the path
@@ -154,7 +153,7 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
       for (auto l : mLocations) {
         MungedPath.SetExtension(l.mExt.c_str());
 
-        //printf( "munged_ext<%s>\n", MungedPath.c_str() );
+        // printf( "munged_ext<%s>\n", MungedPath.c_str() );
 
         if (FileEnv::DoesFileExist(MungedPath)) {
           // pathobj.SetExtension( extension.c_str() );
@@ -185,7 +184,7 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
     for (auto l : mLocations) {
       pathobjnoq.SetExtension(l.mExt.c_str());
       bool exists = FileEnv::DoesFileExist(pathobjnoq);
-      //printf("TESTPTH4<%s> exists<%d>\n", pathobjnoq.c_str(), int(exists));
+      // printf("TESTPTH4<%s> exists<%d>\n", pathobjnoq.c_str(), int(exists));
       if (exists) {
         result = pathobjnoq.c_str();
         // printf( "PTH4<%s>\n", pathobjnoq.c_str() );
@@ -210,9 +209,6 @@ bool FileAssetLoader::CheckAsset(const PieceString& name) {
 
 bool FileAssetLoader::LoadAsset(Asset* asset) {
   float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
-#if defined(_XBOX) && defined(PROFILE)
-  PIXBeginNamedEvent(0, "FileAssetLoader::LoadAsset(%s)", asset->GetName());
-#endif
   ArrayString<256> asset_name;
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -225,10 +221,7 @@ bool FileAssetLoader::LoadAsset(Asset* asset) {
 #endif
   }
 
-  bool out = LoadFileAsset(asset, asset_name);
-#if defined(_XBOX) && defined(PROFILE)
-  PIXEndNamedEvent();
-#endif
+  bool out     = LoadFileAsset(asset, asset_name);
   float ftime2 = ork::OldSchool::GetRef().GetLoResRelTime();
 
   static float ftotaltime = 0.0f;

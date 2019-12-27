@@ -23,6 +23,7 @@
 #include <ork/gfx/dds.h>
 //#include <ork/gfx/image.inl>
 #include <ork/lev2/gfx/material_pbr.inl>
+#include <ork/lev2/gfx/texman.h>
 
 #include "NodeCompositorDeferred.h"
 
@@ -36,11 +37,12 @@ namespace ork::lev2::deferrednode {
 void DeferredCompositingNodeDebugNormal::describeX(class_t* c) {
   c->memberProperty("ClearColor", &DeferredCompositingNodeDebugNormal::_clearColor);
   c->memberProperty("FogColor", &DeferredCompositingNodeDebugNormal::_fogColor);
-  c->memberProperty("Ambient", &DeferredCompositingNodeDebugNormal::_ambient);
+  c->memberProperty("AmbientLevel", &DeferredCompositingNodeDebugNormal::_ambientLevel);
   c->floatProperty("EnvironmentIntensity", float_range{-10, 10}, &DeferredCompositingNodeDebugNormal::_environmentIntensity);
   c->floatProperty("EnvironmentMipBias", float_range{0, 12}, &DeferredCompositingNodeDebugNormal::_environmentMipBias);
   c->floatProperty("EnvironmentMipScale", float_range{0, 100}, &DeferredCompositingNodeDebugNormal::_environmentMipScale);
-  c->floatProperty("DiffuseIntensity", float_range{-5, 5}, &DeferredCompositingNodeDebugNormal::_diffuseIntensity);
+  c->floatProperty("DiffuseLevel", float_range{-5, 5}, &DeferredCompositingNodeDebugNormal::_diffuseLevel);
+  c->floatProperty("SpecularLevel", float_range{-5, 5}, &DeferredCompositingNodeDebugNormal::_specularLevel);
 
   c->accessorProperty(
        "EnvironmentTexture",
@@ -57,6 +59,9 @@ void DeferredCompositingNodeDebugNormal::_readEnvTexture(ork::rtti::ICastable*& 
 
 void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable* const& tex) {
   _environmentTextureAsset = tex ? rtti::autocast(tex) : nullptr;
+  if (nullptr == _environmentTextureAsset)
+    return;
+  printf("WTF1 <%p>\n\n", _environmentTextureAsset);
   ////////////////////////////////////////////////////////////////////////////////
   // irradiance map preprocessor
   ////////////////////////////////////////////////////////////////////////////////
@@ -81,21 +86,26 @@ void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable* 
       // not found in cache, generate
       irrmapdblock = std::make_shared<DataBlock>();
       ///////////////////////////
-      auto newtex              = PBRMaterial::filterEnvMap(tex, targ);
-      _environmentTextureAsset = new TextureAsset;
-      _environmentTextureAsset->SetTexture(newtex);
+      _filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ);
+      _filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ);
+      _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(targ);
       //////////////////////////////////////////////////////////////
       DataBlockCache::setDataBlock(cachekey, irrmapdblock);
       datablock = irrmapdblock;
     }
-
     return datablock;
   };
   ////////////////////////////////////////////////////////////////////////////////
 }
 
-lev2::Texture* DeferredCompositingNodeDebugNormal::envTexture() const {
-  return _environmentTextureAsset ? _environmentTextureAsset->GetTexture() : nullptr;
+lev2::Texture* DeferredCompositingNodeDebugNormal::envSpecularTexture() const {
+  return _filtenvSpecularMap;
+}
+lev2::Texture* DeferredCompositingNodeDebugNormal::envDiffuseTexture() const {
+  return _filtenvDiffuseMap;
+}
+lev2::Texture* DeferredCompositingNodeDebugNormal::brdfIntegrationTexture() const {
+  return _brdfIntegrationMap;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -160,21 +170,31 @@ struct IMPL {
     _context._lightingmtl.bindParamMatrixArray(_context._parMatIVPArray, VD._ivp, 2);
     _context._lightingmtl.bindParamMatrixArray(_context._parMatVArray, VD._v, 2);
     _context._lightingmtl.bindParamMatrixArray(_context._parMatPArray, VD._p, 2);
+
+    /////////////////////////
+
     _context._lightingmtl.bindParamCTex(_context._parMapGBufAlbAo, _context._rtgGbuffer->GetMrt(0)->GetTexture());
     _context._lightingmtl.bindParamCTex(_context._parMapGBufNrmL, _context._rtgGbuffer->GetMrt(1)->GetTexture());
     _context._lightingmtl.bindParamCTex(_context._parMapGBufRufMtlAlpha, _context._rtgGbuffer->GetMrt(2)->GetTexture());
     _context._lightingmtl.bindParamCTex(_context._parMapDepth, _context._rtgGbuffer->_depthTexture);
 
-    auto envtex = node->envTexture();
-    _context._lightingmtl.bindParamCTex(_context._parMapEnvironment, envtex);
+    _context._lightingmtl.bindParamCTex(_context._parMapSpecularEnv, node->envSpecularTexture());
+    _context._lightingmtl.bindParamCTex(_context._parMapDiffuseEnv, node->envDiffuseTexture());
+    _context._lightingmtl.bindParamCTex(_context._parMapBrdfIntegration, node->brdfIntegrationTexture());
 
     /////////////////////////
 
-    _context._lightingmtl.bindParamFloat(_context._parEnvironmentIntensity, node->environmentIntensity());
+    _context._lightingmtl.bindParamFloat(_context._parSkyboxLevel, node->skyboxLevel());
+    _context._lightingmtl.bindParamVec3(_context._parAmbientLevel, node->ambientLevel());
+    _context._lightingmtl.bindParamFloat(_context._parSpecularLevel, node->specularLevel());
+    _context._lightingmtl.bindParamFloat(_context._parDiffuseLevel, node->diffuseLevel());
+
+    /////////////////////////
+
     _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipBias, node->environmentMipBias());
     _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipScale, node->environmentMipScale());
-    _context._lightingmtl.bindParamFloat(_context._parDiffuseIntensity, node->diffuseIntensity());
-    _context._lightingmtl.bindParamVec3(_context._parAmbient, node->ambient());
+
+    /////////////////////////
 
     _context._lightingmtl.bindParamVec2(_context._parNearFar, fvec2(0.1, 1000));
     _context._lightingmtl.bindParamVec2(

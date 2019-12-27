@@ -800,7 +800,7 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
 
   auto infname = req._texname;
 
-  // printf( "  tex<%s> ORKTEXOBJECT<%p>\n", TextureFile.msFileName.c_str(), pTEXOBJ );
+  printf("  tex<%p:%s> ORKTEXOBJECT<%p>\n", ptex, ptex->_debugName.c_str(), pTEXOBJ);
 
   // printf( "  tex<%s> GLTEXOBJECT<%d>\n", infname.c_str(), int(pTEXOBJ->mObject) );
   ////////////////////////////////////////////////////////////////////
@@ -935,6 +935,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
     auto postproc  = ptex->_varmap.typedValueForKey<Texture::proc_t>("postproc").value();
     auto postblock = postproc(ptex, &mTargetGL, dblock);
     OrkAssert(postblock);
+  } else {
+    printf("ptex<%p> no postproc\n", ptex);
   }
 }
 

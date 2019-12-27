@@ -12,10 +12,10 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>-0.973443 0.482012 -0.718733</property>
+                                                <property name='Center'>0.378513 1.02523 0.399423</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>4.23309</property>
-                                                <property name='QuatC'>-0.0715486 -0.100163 0.991536 -0.0453304</property>
+                                                <property name='Loc'>5.62171</property>
+                                                <property name='QuatC'>-0.291153 -0.888629 0.248161 0.25435</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -127,18 +127,19 @@
                                                                             <property name='RenderNode'>
                                                                                 <reference category='ObjectClass'>
                                                                                     <object type='DeferredCompositingNodeDebugNormal' id='17'>
-                                                                                        <property name='Ambient'>0.3 0.3 0.35</property>
+                                                                                        <property name='AmbientLevel'>0.3 0.3 0.3</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
-                                                                                        <property name='DiffuseIntensity'>0.3</property>
+                                                                                        <property name='DiffuseLevel'>3</property>
                                                                                         <property name='EnvironmentIntensity'>1.7</property>
                                                                                         <property name='EnvironmentMipBias'>0</property>
-                                                                                        <property name='EnvironmentMipScale'>18</property>
+                                                                                        <property name='EnvironmentMipScale'>7</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
-                                                                                                "lev2tex" "none"
+                                                                                                "lev2tex" "data://environ/envmaps/blender_courtyard"
                                                                                             </reference>
                                                                                         </property>
                                                                                         <property name='FogColor'>0 0 0 1</property>
+                                                                                        <property name='SpecularLevel'>1.5</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>

@@ -112,17 +112,18 @@ template <typename IODriver> void GedAssetNode<IODriver>::OnCreateObject() {
         asset::Asset* passet = 0;
         // dont worry, if pname doesnt start with "data://", DynAssetManager
         // will prepend it
+        passet = passetclass->DeclareAsset(pname.c_str());
+        if (passet) {
+          mIoDriver.SetValue(passet);
+        }
         lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
         {
-          passet = passetclass->DeclareAsset(pname.c_str());
           if (passet) {
             passet->Load();
-            // passetclass->AutoLoad();
           }
         }
         lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
         OrkAssert(passet);
-        mIoDriver.SetValue(passet);
         //mModel.SigNewObject(passet);
       }
       // SetLabel();
