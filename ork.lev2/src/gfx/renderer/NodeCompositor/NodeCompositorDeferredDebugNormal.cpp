@@ -180,6 +180,8 @@ struct IMPL {
 
     _context._lightingmtl.bindParamCTex(_context._parMapSpecularEnv, node->envSpecularTexture());
     _context._lightingmtl.bindParamCTex(_context._parMapDiffuseEnv, node->envDiffuseTexture());
+
+    OrkAssert(node->brdfIntegrationTexture() != nullptr);
     _context._lightingmtl.bindParamCTex(_context._parMapBrdfIntegration, node->brdfIntegrationTexture());
 
     /////////////////////////

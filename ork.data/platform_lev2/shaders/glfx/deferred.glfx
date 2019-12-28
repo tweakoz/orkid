@@ -6,6 +6,7 @@ fxconfig fxcfg_default {
   import "mathtools.i";
   import "misctools.i";
   import "envtools.i";
+  import "brdftools.i";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
@@ -67,7 +68,7 @@ fragment_interface iface_f2uv {
   outputs { vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
-libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cellnoise {
+libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cellnoise : lib_brdf {
   /////////////////////////////////////////////////////////
   struct GBufData {
     vec2 _uv;
@@ -186,19 +187,25 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       vec3 edir = normalize(wpos-epos);
       vec3 n    = texture(MapNormalL, uv).xyz*2-vec3(1);
       vec3 refl = normalize(reflect(edir,n));
-      float miplevel = clamp(EnvironmentMipBias + (roughness * EnvironmentMipScale), 0, 10);
       /////////////////////////
-      refl = vec3(refl.x,-refl.y,refl.z);
-      vec3 spec_env = env_equirectangular(refl,MapSpecularEnv,miplevel);
-      vec3 diffn = vec3(n.x,-n.y,n.z);
-      vec3 diffuse_env = env_equirectangular(diffn,MapDiffuseEnv,0);
-      /////////////////////////
-
       float l = clamp(dot(n,-edir),0,1)*0.5+0.5;
       vec3 ambient = AmbientLevel*basecolor*l*dialetric;
+      /////////////////////////
+      float spec_miplevel = clamp(EnvironmentMipBias + (roughness * EnvironmentMipScale), 0, 10);
+      refl = vec3(refl.x,-refl.y,refl.z);
+      vec3 spec_env = env_equirectangular(refl,MapSpecularEnv,spec_miplevel);
+      vec3 diffn = vec3(n.x,-n.y,n.z);
+      vec3 diffuse_env = env_equirectangular(diffn,MapDiffuseEnv,0);
       vec3 diffuse = basecolor*diffuse_env*DiffuseLevel*dialetric;
-      vec3 specular = mix(metalbase,gbd._albedo,metallic)*spec_env*SpecularLevel;
-      rval = ambient+diffuse+specular;
+      /////////////////////////
+      float costheta = saturateF(dot(n, -edir));
+      vec3 F0 = mix(metalbase,gbd._albedo,metallic);
+      vec3 F        = fresnelSchlickRoughness(costheta, F0, roughness);
+      vec3 brdfLUT  = texture(MapBrdfIntegration, vec2(roughness,costheta)).rgb;
+      float specs = saturateF(brdfLUT.x+brdfLUT.y);
+      vec3 specular = F0*spec_env*SpecularLevel;
+      /////////////////////////
+      rval = ambient+diffuse+specular*specs;
       return rval;
 
     }

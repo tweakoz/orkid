@@ -105,7 +105,7 @@ Texture* PBRMaterial::brdfIntegrationMap(GfxTarget* targ) {
 
     ///////////////////////////////
 
-    targ->TXI()->initTextureFromData(_map, false);
+    targ->TXI()->initTextureFromData(_map, true);
   }
   return _map;
 }

@@ -25,7 +25,7 @@ libblock lib_brdf : lib_math {
   }
   float geometrySchlickGGX(vec3 normal, vec3 dir, float roughness) {
     float k       = roughness * roughness * 0.5;
-    float numer   = saturate(dot(normal,dir));
+    float numer   = saturateF(dot(normal,dir));
     float divisor = numer * (1.0 - k) + k;
     return numer / divisor;
   }
@@ -35,13 +35,17 @@ libblock lib_brdf : lib_math {
   }
 
   vec3 fresnelSchlick(vec3 normal, vec3 viewdir, vec3 F0) {
-    float ndotv_sat = saturate(dot(normal,viewdir));
+    float ndotv_sat = saturateF(dot(normal,viewdir));
     return F0 + (vec3(1, 1, 1) - F0) * pow(1.0 - ndotv_sat, 5.0);
   }
+  vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+	{
+		return F0+(max(vec3(1)*(1-roughness),F0)-F0) * pow(1.0-cosTheta,5.0);
+	}
 
   vec2 integrateGGX(float n_dot_v, float roughness) {
     int numsamples = 1024;
-    n_dot_v = saturate(n_dot_v);
+    n_dot_v = saturateF(n_dot_v);
     float vx = sqrt(1.0 - n_dot_v * n_dot_v);
     vec3 v = vec3(vx, 0, n_dot_v);
     float accum_scale = 0.0;
@@ -51,8 +55,8 @@ libblock lib_brdf : lib_math {
       vec3 h            = importanceSampleGGX(e, roughness);
       float v_dot_h     = dot(v,h);
       vec3 l            = normalize((h * 2.0 * v_dot_h) - v);
-      float n_dot_h_sat = saturate(h.z);
-      float v_dot_h_sat = saturate(v_dot_h);
+      float n_dot_h_sat = saturateF(h.z);
+      float v_dot_h_sat = saturateF(v_dot_h);
       if (l.z > 0.0) {
         float gsmith = geometrySmith(vec3(0, 0, 1), v, l, roughness);
         float gvis   = (gsmith * v_dot_h) / (n_dot_h_sat * n_dot_v);

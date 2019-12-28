@@ -3,10 +3,10 @@ libblock lib_math {
   vec3 rcp(vec3 inp) {
     return vec3(1.0 / inp.x, 1.0 / inp.y, 1.0 / inp.z);
   }
-  float saturate(float inp) {
+  float saturateF(float inp) {
     return clamp(inp,0,1);
   }
-  vec3 saturate(vec3 inp) {
+  vec3 saturateV(vec3 inp) {
     return clamp(inp,0,1);
   }
 
