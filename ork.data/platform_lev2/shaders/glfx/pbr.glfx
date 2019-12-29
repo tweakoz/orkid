@@ -138,11 +138,11 @@ fragment_shader ps_gbuffer_n // normalmap
 	: iface_fgbuffer
 {
     vec3 nrm_tanspace = texture(NormalMap,frg_uv0).xyz*2.0-vec3(1,1,1);
-		nrm_tanspace = normalize(mix(vec3(0,0,1),nrm_tanspace,0.5));
+		nrm_tanspace = normalize(mix(vec3(0,0,1),nrm_tanspace,1.0));
 		vec3 nrm_w = nrm_tanspace*frg_tbn;
     vec3 rufmtlamb = texture(RoughAndMetalMap,frg_uv0).xyz;
-		rufmtlamb = rufmtlamb.yxz;
-		rufmtlamb.y = 0; // = vec3(1,0,0);
+		//rufmtlamb = rufmtlamb.yxz;
+		//rufmtlamb.y = 0; // = vec3(1,0,0);
     out_clr = texture(ColorMap,frg_uv0).xyzw;
     out_normal_mdl.xyz = (nrm_w*0.5)+vec3(0.5,0.5,0.5);
 		out_normal_mdl.w = frg_camdist;
