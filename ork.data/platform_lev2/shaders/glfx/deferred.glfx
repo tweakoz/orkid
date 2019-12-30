@@ -206,7 +206,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       /////////////////////////
       float ambientshade = clamp(dot(n,-edir),0,1)*0.3+0.7;
       vec3 ambient = AmbientLevel*ambientshade;
-      vec3 diffuse_env = env_equirectangular(diffn,MapDiffuseEnv,0);//*DiffuseLevel;
+      vec3 diffuse_env = env_equirectangular(diffn,MapDiffuseEnv,0)*DiffuseLevel;
       vec3 diffuse_light = ambient+diffuse_env;
       /////////////////////////
       vec3 diffuse = basecolor*diffuse_light*dialetric;//*invF;
@@ -215,7 +215,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       refl = vec3(refl.x,-refl.y,refl.z);
       vec3 spec_env = env_equirectangularFlipV(refl,MapSpecularEnv,spec_miplevel);
       vec3 specular_light = ambient+spec_env;
-      vec3 specular = /*(F0*brdf.x+brdf.y)**/specular_light*speccolor*SpecularLevel;
+      vec3 specular = (F*brdf.x+brdf.y)*specular_light*speccolor*SpecularLevel;
       //vec3 ambient = invF*AmbientLevel;
       /////////////////////////
       /////////////////////////
