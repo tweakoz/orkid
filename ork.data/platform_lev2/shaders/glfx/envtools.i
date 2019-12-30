@@ -9,7 +9,7 @@ libblock lib_envmapping {
   ////////////////////////////////////////////
 
   vec2 env_equirectangularN2UV(vec3 normal) {
-      vec3 n = vec3(-normal.xz,normal.y);
+      vec3 n = vec3(normal.xy,normal.z);
       vec2 s = normalToSpherical(n) * INV_PI;
       float u = (s.x+1.0)*0.5;
       float v = (s.y);
@@ -24,7 +24,7 @@ libblock lib_envmapping {
     float phi = tex_uv.x*PI2-PI;
     float theta = tex_uv.y * PI;
     vec3 n = sphericalToNormal(phi,theta);
-    return vec3(-n.x,n.z,-n.y);
+    return vec3(n.x,n.z,n.y);
   }
 
   ////////////////////////////////////////////
@@ -32,9 +32,14 @@ libblock lib_envmapping {
   ////////////////////////////////////////////
 
   vec3 env_equirectangular(vec3 normal, sampler2D envtex, float miplevel) {
-    vec3 n = vec3(-normal.x,-normal.y,normal.z);
+    vec3 n = vec3(normal.x,normal.y,normal.z);
     vec2 uv = env_equirectangularN2UV(n);
     return textureLod(envtex, uv, miplevel).xyz;
+  }
+  vec3 env_equirectangularFlipV(vec3 normal, sampler2D envtex, float miplevel) {
+    vec3 n = vec3(normal.x,normal.y,normal.z);
+    vec2 uv = env_equirectangularN2UV(n);
+    return textureLod(envtex, vec2(-uv.x,uv.y), miplevel).xyz;
   }
 
 }

@@ -143,11 +143,10 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, GfxTarget* targ) 
   int w = rawenvmap->_width;
   int h = rawenvmap->_height;
 
-  int numpix      = w * h;
-  int imip        = 0;
-  auto targ_buf   = fbi->GetThisBuffer();
-  float roughness = 0.0f;
-  std::map<int, std::shared_ptr<CaptureBuffer>> cap4mip;
+  int numpix           = w * h;
+  int imip             = 0;
+  auto targ_buf        = fbi->GetThisBuffer();
+  float roughness      = 0.0f;
   auto mipchain        = new MipChain(w, h, EBUFFMT_RGBA32F, ETEXTYPE_2D);
   mipchain->_debugName = "filtenvmap-processed";
   while (numpix != 0) {
@@ -200,7 +199,6 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, GfxTarget* targ) 
     rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtGroup>>(FormatString("alt-tex-specenv-group-mip%d", imip))   = outgroup;
     rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtBuffer>>(FormatString("alt-tex-specenv-buffer-mip%d", imip)) = outbuffr;
 
-    cap4mip[imip] = captureb;
     w >>= 1;
     h >>= 1;
     roughness += 0.1f;
@@ -360,25 +358,43 @@ void PBRMaterial::describeX(class_t* c) {
       else {
         ctx._inputStream->GetItem(istring);
         auto texname = ctx._reader.GetString(istring);
-        auto itt     = embtexmap.find(texname);
+        printf("find tex channel<%s> channel<%s> .. ", token, texname);
+        auto itt = embtexmap.find(texname);
         assert(itt != embtexmap.end());
-        auto embtex = itt->second;
-        printf("got tex channel<%s> name<%s> embtex<%p>\n", token, texname, embtex);
+        auto embtex    = itt->second;
         auto tex       = new lev2::Texture;
         auto datablock = std::make_shared<DataBlock>(embtex->_srcdata, embtex->_srcdatalen);
         bool ok        = txi->LoadTexture(tex, datablock);
         assert(ok);
+        printf(" embtex<%p> datablock<%p> len<%zu>\n", embtex, datablock.get(), datablock->length());
         if (0 == strcmp(token, "colormap")) {
           mtl->_texColor = tex;
         }
         if (0 == strcmp(token, "normalmap")) {
           mtl->_texNormal = tex;
         }
-        if (0 == strcmp(token, "metalmap")) {
-          mtl->_texRoughAndMetal = tex;
+        if (0 == strcmp(token, "mtlrufmap")) {
+          mtl->_texMtlRuf = tex;
         }
       }
     }
+    if (mtl->_texColor == nullptr) {
+      mtl->_texColor = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/white")->GetTexture();
+      printf("substituted white for non-existant color texture\n");
+      OrkAssert(mtl->_texColor != nullptr);
+    }
+    if (mtl->_texNormal == nullptr) {
+      mtl->_texNormal = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/default_normal")->GetTexture();
+      printf("substituted blue for non-existant normal texture\n");
+      OrkAssert(mtl->_texNormal != nullptr);
+    }
+    if (mtl->_texMtlRuf == nullptr) {
+      mtl->_texMtlRuf = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/green")->GetTexture();
+      printf("substituted white for non-existant color texture\n");
+      OrkAssert(mtl->_texMtlRuf != nullptr);
+    }
+    ctx._inputStream->GetItem<float>(mtl->_metallicFactor);
+    ctx._inputStream->GetItem<float>(mtl->_roughnessFactor);
     return mtl;
   };
 
@@ -407,10 +423,12 @@ void PBRMaterial::describeX(class_t* c) {
     dotex("normalmap", pbrmtl->_normalMapName);
     dotex("amboccmap", pbrmtl->_amboccMapName);
     dotex("emissivemap", pbrmtl->_emissiveMapName);
-    dotex("roughmap", pbrmtl->_roughMapName);
-    dotex("metalmap", pbrmtl->_metalMapName);
+    dotex("mtlrufmap", pbrmtl->_mtlRufMapName);
     istring = ctx._writer.stringIndex("endtextures");
     ctx._outputStream->AddItem(istring);
+
+    ctx._outputStream->AddItem<float>(pbrmtl->_metallicFactor);
+    ctx._outputStream->AddItem<float>(pbrmtl->_roughnessFactor);
   };
 
   /////////////////////////////////////////////////////////////////

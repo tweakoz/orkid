@@ -90,7 +90,7 @@ void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable* 
       _filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ);
       _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(targ);
       //////////////////////////////////////////////////////////////
-      DataBlockCache::setDataBlock(cachekey, irrmapdblock);
+      // DataBlockCache::setDataBlock(cachekey, irrmapdblock);
       datablock = irrmapdblock;
     }
     return datablock;

@@ -33,7 +33,7 @@ bool Shader::Compile() {
   shadertext += "(); }\n";
   const char* c_str = shadertext.c_str();
 
-  printf("Shader<%s>\n/////////////\n%s\n///////////////////\n", mName.c_str(), c_str);
+  // printf("Shader<%s>\n/////////////\n%s\n///////////////////\n", mName.c_str(), c_str);
 
   GL_NF_ERRORCHECK();
   glShaderSource(mShaderObjectId, 1, &c_str, NULL);

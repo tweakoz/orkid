@@ -28,16 +28,16 @@ datablockptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
   fwrite(_srcdata, _srcdatalen, 1, fout);
   fclose(fout);
 
-  invoke_nvcompress(srcpath,ddspath,"rgb");
+  invoke_nvcompress(srcpath, ddspath, "rgb");
 
   FILE* fin = fopen(ddspath.c_str(), "rb");
   fseek(fin, 0, SEEK_END);
   size_t ddslen = ftell(fin);
   fseek(fin, 0, SEEK_SET);
   dblock->reserve(ddslen);
-  void* ddsdata = malloc(ddslen);
-  size_t numread = fread(ddsdata, ddslen, 1, fin);
-  OrkAssert(numread==ddslen);
+  void* ddsdata  = malloc(ddslen);
+  size_t numread = fread(ddsdata, 1, ddslen, fin);
+  OrkAssert(numread == ddslen);
   fclose(fin);
   dblock->addData(ddsdata, ddslen);
   free(ddsdata);
@@ -54,8 +54,8 @@ void EmbeddedTexture::fetchDDSdata() {
   basehasher.accumulateString(_name);
   basehasher.accumulate(_srcdata, _srcdatalen);
   basehasher.finish();
-  uint64_t hashkey = basehasher.result();
-  _ddsdestdatablock    = DataBlockCache::findDataBlock(hashkey);
+  uint64_t hashkey  = basehasher.result();
+  _ddsdestdatablock = DataBlockCache::findDataBlock(hashkey);
 
   if (_ddsdestdatablock) {
     chunkfile::InputStream istr(_ddsdestdatablock->data(0), _ddsdestdatablock->length());
@@ -66,5 +66,5 @@ void EmbeddedTexture::fetchDDSdata() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::MeshUtil
+} // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

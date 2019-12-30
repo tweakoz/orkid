@@ -101,8 +101,8 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
   /////////////////////////////////////////////////////////////
   AssetPath fnameext(Filename);
   fnameext.SetExtension("xgm");
-  // AssetPath ActualPath = fnameext.ToAbsolute();
-  // orkprintf("XgmModel: %s\n", ActualPath.c_str());
+  auto ActualPath = fnameext.ToAbsolute();
+  printf("XgmModel: %s\n", ActualPath.c_str());
 
   /////////////////////////////////////////////////////////////
   OrkHeapCheck();
@@ -192,7 +192,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
     ///////////////////////////////////
     auto& embtexmap = mdl->_varmap.makeValueForKey<embtexmap_t>("embtexmap");
     if (EmbTexStream) {
-     size_t numembtex = 0;
+      size_t numembtex = 0;
       EmbTexStream->GetItem(numembtex);
       int itexname = 0;
       for (size_t i = 0; i < numembtex; i++) {
@@ -214,8 +214,8 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
 
     ///////////////////////////////////
     chunkfile::XgmMaterialReaderContext materialread_ctx(chunkreader);
-    materialread_ctx._inputStream = HeaderStream;
-    materialread_ctx._varmap.makeValueForKey<GfxTarget*>("gfxtarget")=pTARG;
+    materialread_ctx._inputStream                                      = HeaderStream;
+    materialread_ctx._varmap.makeValueForKey<GfxTarget*>("gfxtarget")  = pTARG;
     materialread_ctx._varmap.makeValueForKey<embtexmap_t>("embtexmap") = embtexmap;
     ///////////////////////////////////
     for (int imat = 0; imat < inummats; imat++) {
@@ -232,7 +232,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
 
       static const int kdefaulttranssortpass = 100;
 
-      //printf("MODEL USEMATCLASS<%s>\n", pmatclassname);
+      // printf("MODEL USEMATCLASS<%s>\n", pmatclassname);
 
       /////////////////////////////////////////////////////////////
       // wii (basic) material
@@ -245,7 +245,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
 
         const char* bastek = chunkreader.GetString(ibastek);
 
-        //printf("MODEL USETEK<%s>\n", bastek);
+        // printf("MODEL USETEK<%s>\n", bastek);
         // assert(false);
         GfxMaterialWiiBasic* pbasmat = new GfxMaterialWiiBasic(bastek);
         pbasmat->Init(pTARG);
@@ -534,7 +534,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
           void* pverts          = (void*)(ModelDataStream->GetDataAt(ivboffset));
           int ivblen            = ivbnum * ivbsize;
 
-          //printf("ReadVB NumVerts<%d> VtxSize<%d>\n", ivbnum, pvb->GetVtxSize());
+          // printf("ReadVB NumVerts<%d> VtxSize<%d>\n", ivbnum, pvb->GetVtxSize());
           void* poutverts = pTARG->GBI()->LockVB(*pvb, 0, ivbnum); // ivblen );
           {
             memcpy(poutverts, pverts, ivblen);
@@ -617,7 +617,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
 
           mdl->mbSkinned |= (inumbb > 0);
 
-          //printf("mdl<%p> mbSkinned<%d>\n", mdl, int(mdl->mbSkinned));
+          // printf("mdl<%p> mbSkinned<%d>\n", mdl, int(mdl->mbSkinned));
           ////////////////////////////////////////////////////////////////////////
         }
       }
@@ -774,7 +774,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
       auto ddsblock    = ptex->_ddsdestdatablock;
       size_t blocksize = ddsblock->length();
       textureStream->AddItem<size_t>(blocksize);
-      auto data = (const void*) ddsblock->data();
+      auto data = (const void*)ddsblock->data();
       textureStream->AddData(data, blocksize);
     }
   }
@@ -815,7 +815,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     else if (pmat->GetClass()->IsSubclassOf(lev2::GfxMaterialWiiBasic::GetClassStatic())) {
       auto pbasmat = rtti::safe_downcast<const lev2::GfxMaterialWiiBasic*>(pmat);
-      istring                                  = chunkwriter.stringIndex(pbasmat->GetBasicTechName().c_str());
+      istring      = chunkwriter.stringIndex(pbasmat->GetBasicTechName().c_str());
       HeaderStream->AddItem(istring);
 
       lev2::EBlending eblend = pbasmat->_rasterstate.GetBlending();

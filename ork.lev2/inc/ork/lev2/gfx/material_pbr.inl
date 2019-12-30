@@ -76,21 +76,23 @@ public:
 
   ////////////////////////////////////////////
 
-  FxShader* _shader                           = nullptr;
-  GfxTarget* _initialTarget                   = nullptr;
-  const FxShaderParam* _paramMVP              = nullptr;
-  const FxShaderParam* _paramMVPL             = nullptr;
-  const FxShaderParam* _paramMVPR             = nullptr;
-  const FxShaderParam* _paramMV               = nullptr;
-  const FxShaderParam* _paramMROT             = nullptr;
-  const FxShaderParam* _paramMapColor         = nullptr;
-  const FxShaderParam* _paramMapNormal        = nullptr;
-  const FxShaderParam* _paramMapRoughAndMetal = nullptr;
-  const FxShaderParam* _parInvViewSize        = nullptr;
+  FxShader* _shader                        = nullptr;
+  GfxTarget* _initialTarget                = nullptr;
+  const FxShaderParam* _paramMVP           = nullptr;
+  const FxShaderParam* _paramMVPL          = nullptr;
+  const FxShaderParam* _paramMVPR          = nullptr;
+  const FxShaderParam* _paramMV            = nullptr;
+  const FxShaderParam* _paramMROT          = nullptr;
+  const FxShaderParam* _paramMapColor      = nullptr;
+  const FxShaderParam* _paramMapNormal     = nullptr;
+  const FxShaderParam* _paramMapMtlRuf     = nullptr;
+  const FxShaderParam* _parInvViewSize     = nullptr;
+  const FxShaderParam* _parMetallicFactor  = nullptr;
+  const FxShaderParam* _parRoughnessFactor = nullptr;
 
-  Texture* _texColor         = nullptr;
-  Texture* _texNormal        = nullptr;
-  Texture* _texRoughAndMetal = nullptr;
+  Texture* _texColor  = nullptr;
+  Texture* _texNormal = nullptr;
+  Texture* _texMtlRuf = nullptr;
   std::string _textureBaseName;
   const FxShaderTechnique* _tekRigidGBUFFER              = nullptr;
   const FxShaderTechnique* _tekRigidGBUFFER_N            = nullptr;
@@ -99,13 +101,13 @@ public:
 
   std::string _colorMapName;
   std::string _normalMapName;
-  std::string _roughMapName;
-  std::string _metalMapName;
+  std::string _mtlRufMapName;
   std::string _amboccMapName;
   std::string _emissiveMapName;
+  float _metallicFactor  = 0.0f;
+  float _roughnessFactor = 1.0f;
 
-  bool _stereoVtex                    = false;
-  bool _metalicRoughnessSingleTexture = false;
+  bool _stereoVtex = false;
 };
 
 //////////////////////////////////////////////////////
@@ -153,8 +155,11 @@ inline bool PBRMaterial::BeginPass(GfxTarget* targ, int iPass) {
   fxi->BindPass(_shader, 0);
   fxi->BindParamCTex(_shader, _paramMapColor, _texColor);
   fxi->BindParamCTex(_shader, _paramMapNormal, _texNormal);
-  fxi->BindParamCTex(_shader, _paramMapRoughAndMetal, _texRoughAndMetal);
+  fxi->BindParamCTex(_shader, _paramMapMtlRuf, _texMtlRuf);
   fxi->BindParamMatrix(_shader, _paramMV, mvmtx);
+
+  fxi->BindParamFloat(_shader, _parMetallicFactor, _metallicFactor);
+  fxi->BindParamFloat(_shader, _parRoughnessFactor, _roughnessFactor);
 
   auto brdfintegtex = PBRMaterial::brdfIntegrationMap(targ);
 
@@ -236,16 +241,19 @@ inline void PBRMaterial::Init(GfxTarget* targ) /*final*/ {
   _tekRigidGBUFFER_N_STEREO     = fxi->technique(_shader, "rigid_gbuffer_n_stereo");
   _tekRigidGBUFFER_N_TEX_STEREO = fxi->technique(_shader, "rigid_gbuffer_n_tex_stereo");
 
-  _paramMVP              = fxi->parameter(_shader, "mvp");
-  _paramMVPL             = fxi->parameter(_shader, "mvp_l");
-  _paramMVPR             = fxi->parameter(_shader, "mvp_r");
-  _paramMV               = fxi->parameter(_shader, "mv");
-  _paramMROT             = fxi->parameter(_shader, "mrot");
-  _paramMapColor         = fxi->parameter(_shader, "ColorMap");
-  _paramMapNormal        = fxi->parameter(_shader, "NormalMap");
-  _paramMapRoughAndMetal = fxi->parameter(_shader, "RoughAndMetalMap");
-  _parInvViewSize        = fxi->parameter(_shader, "InvViewportSize");
+  _paramMVP           = fxi->parameter(_shader, "mvp");
+  _paramMVPL          = fxi->parameter(_shader, "mvp_l");
+  _paramMVPR          = fxi->parameter(_shader, "mvp_r");
+  _paramMV            = fxi->parameter(_shader, "mv");
+  _paramMROT          = fxi->parameter(_shader, "mrot");
+  _paramMapColor      = fxi->parameter(_shader, "ColorMap");
+  _paramMapNormal     = fxi->parameter(_shader, "NormalMap");
+  _paramMapMtlRuf     = fxi->parameter(_shader, "MtlRufMap");
+  _parInvViewSize     = fxi->parameter(_shader, "InvViewportSize");
+  _parMetallicFactor  = fxi->parameter(_shader, "MetallicFactor");
+  _parRoughnessFactor = fxi->parameter(_shader, "RoughnessFactor");
 }
+
 inline void PBRMaterial::Update() {
 }
 
