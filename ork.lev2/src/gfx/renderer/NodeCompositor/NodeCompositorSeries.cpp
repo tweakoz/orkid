@@ -62,7 +62,7 @@ void SeriesCompositingNode::SetNode(ork::rtti::ICastable* const& val) {
   mNode                     = ((ptr == 0) ? 0 : rtti::safe_downcast<PostCompositingNode*>(ptr));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SeriesCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) {
+void SeriesCompositingNode::DoInit(lev2::Context* pTARG, int iW, int iH) {
   if (nullptr == mOutput) {
     mCompositingMaterial.Init(pTARG);
 

@@ -41,7 +41,7 @@ class IRenderer;
 class GfxMaterial;
 class Manip;
 class RenderContextInstData;
-class GfxTarget;
+class Context;
 class GfxMaterial;
 class ManipManager;
 class XgmWorldPose;
@@ -187,7 +187,7 @@ private:
 
 class CallbackRenderable : public IRenderableDag {
 public:
-  typedef std::function<void(lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const CallbackRenderable* pren)> cbtype_t;
+  typedef std::function<void(lev2::RenderContextInstData& rcid, lev2::Context* targ, const CallbackRenderable* pren)> cbtype_t;
 
   CallbackRenderable(IRenderer* renderer = NULL);
 

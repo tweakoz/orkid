@@ -37,7 +37,7 @@ struct IMPL {
   ~IMPL() {
   }
   ///////////////////////////////////////
-  void init(lev2::GfxTarget* pTARG) {
+  void init(lev2::Context* pTARG) {
     if (nullptr == _rtg) {
       int w           = pTARG->mainSurfaceWidth();
       int h           = pTARG->mainSurfaceHeight();
@@ -50,7 +50,7 @@ struct IMPL {
   }
   ///////////////////////////////////////
   void _render(CompositorDrawData& drawdata) {
-    GfxTarget* target = drawdata.target();
+    Context* target = drawdata.target();
     //////////////////////////////////////////////////////
     target->FBI()->SetAutoClear(false);
     //////////////////////////////////////////////////////
@@ -81,7 +81,7 @@ ScaleBiasCompositingNode::ScaleBiasCompositingNode() {
 ScaleBiasCompositingNode::~ScaleBiasCompositingNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ScaleBiasCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtual
+void ScaleBiasCompositingNode::DoInit(lev2::Context* pTARG, int iW, int iH) // virtual
 {
   _impl.Get<std::shared_ptr<scaleandbias::IMPL>>()->init(pTARG);
 }

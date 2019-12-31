@@ -26,12 +26,12 @@ struct FreestyleMaterial : public GfxMaterial {
 
   ////////////////////////////////////////////
 
-  bool BeginPass(GfxTarget* targ, int iPass = 0) final;
-  void EndPass(GfxTarget* targ) final;
-  int BeginBlock(GfxTarget* targ, const RenderContextInstData& RCID) final;
-  void EndBlock(GfxTarget* targ) final;
-  void gpuInit(GfxTarget* targ, const AssetPath& assetname);
-  void Init(GfxTarget* targ) final {
+  bool BeginPass(Context* targ, int iPass = 0) final;
+  void EndPass(Context* targ) final;
+  int BeginBlock(Context* targ, const RenderContextInstData& RCID) final;
+  void EndBlock(Context* targ) final;
+  void gpuInit(Context* targ, const AssetPath& assetname);
+  void Init(Context* targ) final {
   }
   void Update() final {
   }
@@ -137,7 +137,7 @@ struct FreestyleMaterial : public GfxMaterial {
 
   ////////////////////////////////////////////
 
-  GfxTarget* _initialTarget = nullptr;
+  Context* _initialTarget = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -159,7 +159,7 @@ inline FreestyleMaterial::~FreestyleMaterial() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline void FreestyleMaterial::gpuInit(GfxTarget* targ, const AssetPath& assetname) {
+inline void FreestyleMaterial::gpuInit(Context* targ, const AssetPath& assetname) {
   _initialTarget = targ;
   auto fxi       = targ->FXI();
   auto shass     = asset::AssetManager<FxShaderAsset>::Load(assetname.c_str());
@@ -170,15 +170,15 @@ inline void FreestyleMaterial::gpuInit(GfxTarget* targ, const AssetPath& assetna
 // legacy methods
 ///////////////////////////////////////////////////////////////////////////////
 
-inline bool FreestyleMaterial::BeginPass(GfxTarget* targ, int iPass) {
+inline bool FreestyleMaterial::BeginPass(Context* targ, int iPass) {
   return true;
 }
-inline void FreestyleMaterial::EndPass(GfxTarget* targ) {
+inline void FreestyleMaterial::EndPass(Context* targ) {
 }
-inline int FreestyleMaterial::BeginBlock(GfxTarget* targ, const RenderContextInstData& RCID) {
+inline int FreestyleMaterial::BeginBlock(Context* targ, const RenderContextInstData& RCID) {
   return 1;
 }
-inline void FreestyleMaterial::EndBlock(GfxTarget* targ) {
+inline void FreestyleMaterial::EndBlock(Context* targ) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

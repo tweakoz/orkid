@@ -23,7 +23,7 @@ public:
   fvec4 _clearColor;
 
 private:
-  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;
+  void DoInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
 
   lev2::RtBuffer* GetOutput() const final;

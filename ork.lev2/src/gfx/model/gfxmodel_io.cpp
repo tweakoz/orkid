@@ -93,7 +93,7 @@ EVtxStreamFormat GetVersion0VertexStreamFormat(const char* fmtstr) {
 ////////////////////////////////////////////////////////////
 
 bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
-  GfxTarget* pTARG = GfxEnv::GetRef().GetLoaderTarget();
+  Context* pTARG = GfxEnv::GetRef().GetLoaderTarget();
   bool rval        = true;
 
   int XGMVERSIONCODE           = 0;
@@ -215,7 +215,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
     ///////////////////////////////////
     chunkfile::XgmMaterialReaderContext materialread_ctx(chunkreader);
     materialread_ctx._inputStream                                      = HeaderStream;
-    materialread_ctx._varmap.makeValueForKey<GfxTarget*>("gfxtarget")  = pTARG;
+    materialread_ctx._varmap.makeValueForKey<Context*>("gfxtarget")  = pTARG;
     materialread_ctx._varmap.makeValueForKey<embtexmap_t>("embtexmap") = embtexmap;
     ///////////////////////////////////
     for (int imat = 0; imat < inummats; imat++) {
@@ -653,7 +653,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
   bool bwii   = (0 != strstr(Filename.c_str(), "wii"));
   bool bxb360 = (0 != strstr(Filename.c_str(), "xb360"));
 
-  lev2::GfxTargetDummy DummyTarget;
+  lev2::ContextDummy DummyTarget;
 
   if (bwii || bxb360) {
     pendianctx          = new EndianContext;

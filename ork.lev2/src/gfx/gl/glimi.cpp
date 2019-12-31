@@ -14,7 +14,7 @@
 
 namespace ork { namespace lev2 {
 
-GlImiInterface::GlImiInterface( GfxTargetGL& target )
+GlImiInterface::GlImiInterface( ContextGL& target )
 	: ImmInterface( target )
 {
 }

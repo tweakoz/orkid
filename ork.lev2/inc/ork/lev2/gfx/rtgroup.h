@@ -8,7 +8,7 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 class Texture;
-class GfxTarget;
+class Context;
 class GfxMaterial;
 class RtGroup;
 class RtBuffer;
@@ -22,7 +22,7 @@ class RtBuffer;
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
 
-class RtBuffer //: public GfxBuffer
+class RtBuffer //: public OffscreenBuffer
 {
 public:
   enum EMipGen { EMG_NONE, EMG_AUTOCOMPUTE, EMG_USER };
@@ -64,7 +64,7 @@ public:
 class RtGroup {
 public:
   /////////////////////////////////////////
-  RtGroup(GfxTarget* partarg, int iW, int iH, int iSamples = 1);
+  RtGroup(Context* partarg, int iW, int iH, int iSamples = 1);
 
   ~RtGroup();
   /////////////////////////////////////////
@@ -90,7 +90,7 @@ public:
   bool IsSizeDirty() const {
     return mbSizeDirty;
   }
-  GfxTarget* ParentTarget() const {
+  Context* ParentTarget() const {
     return mParentTarget;
   }
   /////////////////////////////////////////
@@ -106,9 +106,9 @@ public:
   /////////////////////////////////////////
   static const int kmaxmrts = 4;
 
-  GfxTarget* mParentTarget;
+  Context* mParentTarget;
   RtBuffer* mMrt[kmaxmrts];
-  GfxBuffer* mDepth;
+  OffscreenBuffer* mDepth;
   Texture* _depthTexture = nullptr;
   int mNumMrts;
   int miW;

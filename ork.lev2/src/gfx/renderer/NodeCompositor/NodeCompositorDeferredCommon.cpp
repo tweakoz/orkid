@@ -55,7 +55,7 @@ DeferredContext::~DeferredContext() {
 // rt3/GL_R32F     (32,128) - depth
 ///////////////////////////////////////
 
-void DeferredContext::gpuInit(GfxTarget* target) {
+void DeferredContext::gpuInit(Context* target) {
   target->debugPushGroup("Deferred::rendeinitr");
   auto FXI = target->FXI();
   if (nullptr == _rtgGbuffer) {

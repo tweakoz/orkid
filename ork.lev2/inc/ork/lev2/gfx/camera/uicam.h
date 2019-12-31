@@ -150,7 +150,7 @@ public:
   //////////////////////////////////////////////////////////////////////////////
 
   virtual bool UIEventHandler(const ui::Event& EV) = 0;
-  virtual void draw(GfxTarget* pT) = 0;
+  virtual void draw(Context* pT) = 0;
 
   virtual void SetFromWorldSpaceMatrix(const fmtx4&) = 0;
 
@@ -210,7 +210,7 @@ public: //
   fvec3 _pushNZ, _pushNX, _pushNY;
 
   bool UIEventHandler(const ui::Event& EV) final;
-  void draw(GfxTarget* pT) final;
+  void draw(Context* pT) final;
 
   void SetFromWorldSpaceMatrix(const fmtx4& matrix) final;
 

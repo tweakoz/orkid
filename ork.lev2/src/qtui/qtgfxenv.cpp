@@ -24,14 +24,14 @@ namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CQtGfxWindow::CQtGfxWindow( ui::Widget* prw )
-	: GfxWindow( 0, 0, 640, 448, "yo" ) 
+CQtWindow::CQtWindow( ui::Widget* prw )
+	: Window( 0, 0, 640, 448, "yo" ) 
 	, mbinit( true )
 	, mRootWidget( prw )
 {
 }
 
-CQtGfxWindow::~CQtGfxWindow()
+CQtWindow::~CQtWindow()
 {
 	if( mRootWidget )
 	{
@@ -41,7 +41,7 @@ CQtGfxWindow::~CQtGfxWindow()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CQtGfxWindow::Draw( void )
+void CQtWindow::Draw( void )
 {
 	int ix = GetContextX();
 	int iy = GetContextY();
@@ -49,13 +49,13 @@ void CQtGfxWindow::Draw( void )
 	int ih = GetContextH();
 	mRootWidget->SetRect( ix,iy,iw,ih );
 
-	ui::DrawEvent drwev( GetContext() );
+	ui::DrawEvent drwev( context() );
 	mRootWidget->Draw( drwev );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CQtGfxWindow::GotFocus( void )
+void CQtWindow::GotFocus( void )
 {
 	if( mRootWidget )
 	{
@@ -70,7 +70,7 @@ void CQtGfxWindow::GotFocus( void )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CQtGfxWindow::LostFocus( void )
+void CQtWindow::LostFocus( void )
 {
 	if( mRootWidget )
 	{
@@ -85,9 +85,9 @@ void CQtGfxWindow::LostFocus( void )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CQtGfxWindow::OnShow()
+void CQtWindow::OnShow()
 {
-	ork::lev2::GfxTarget *pTARG = GetContext();
+	ork::lev2::Context *pTARG = context();
 
 	//if( mbinit )
 	{

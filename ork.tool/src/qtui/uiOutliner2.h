@@ -108,7 +108,7 @@ private:
 	int kitemh() const;
 
 	void DoRePaintSurface(ui::DrawEvent& drwev) override;
-	void DoInit( lev2::GfxTarget* pt ) override;
+	void DoInit( lev2::Context* pt ) override;
 	ui::HandlerResult DoOnUiEvent( const ui::Event& EV ) override;
 	void SetNameOfSelectedItem();
 

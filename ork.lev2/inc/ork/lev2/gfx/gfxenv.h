@@ -37,9 +37,9 @@ typedef SVtxV12C4T16 TEXT_VTXFMT;
 
 class CTXBASE;
 
-class GfxTarget;
-class GfxBuffer;
-class GfxWindow;
+class Context;
+class OffscreenBuffer;
+class Window;
 class RtGroup;
 
 class Texture;
@@ -52,8 +52,8 @@ class GfxEnv;
 ///
 /// ////////////////////////////////////////////////////////////////////////////
 
-struct GfxTargetCreationParams {
-  GfxTargetCreationParams()
+struct ContextCreationParams {
+  ContextCreationParams()
       : miNumSharedVerts(0)
       , mbFullScreen(false)
       , mbWideScreen(false)
@@ -107,15 +107,15 @@ struct DisplayMode {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class GfxTarget : public ork::rtti::ICastable {
-  RttiDeclareAbstract(GfxTarget, ork::rtti::ICastable);
+class Context : public ork::rtti::ICastable {
+  RttiDeclareAbstract(Context, ork::rtti::ICastable);
 
   ///////////////////////////////////////////////////////////////////////
 public:
   ///////////////////////////////////////////////////////////////////////
 
-  GfxTarget();
-  virtual ~GfxTarget();
+  Context();
+  virtual ~Context();
 
   //////////////////////////////////////////////
   // Interfaces
@@ -148,8 +148,8 @@ public:
 
   ///////////////////////////////////////////////////////////////////////
 
-  virtual void InitializeContext(GfxWindow* pWin, CTXBASE* pctxbase) = 0;
-  virtual void InitializeContext(GfxBuffer* pBuf)                    = 0;
+  virtual void InitializeContext(Window* pWin, CTXBASE* pctxbase) = 0;
+  virtual void InitializeContext(OffscreenBuffer* pBuf)                    = 0;
 
   ///////////////////////////////////////////////////////////////////////
 
@@ -346,14 +346,14 @@ struct OrthoQuad {
   float mfrot;
 };
 
-class GfxBuffer : public ork::Object {
-  RttiDeclareAbstract(GfxBuffer, ork::Object);
+class OffscreenBuffer : public ork::Object {
+  RttiDeclareAbstract(OffscreenBuffer, ork::Object);
 
 public:
   //////////////////////////////////////////////
 
-  GfxBuffer(
-      GfxBuffer* Parent,
+  OffscreenBuffer(
+      OffscreenBuffer* Parent,
       int iX,
       int iY,
       int iW,
@@ -362,7 +362,7 @@ public:
       ETargetType etype       = ETGTTYPE_EXTBUFFER,
       const std::string& name = "NoName");
 
-  virtual ~GfxBuffer();
+  virtual ~OffscreenBuffer();
 
   //////////////////////////////////////////////
 
@@ -394,7 +394,7 @@ public:
   const fcolor4& GetClearColor() const {
     return mClearColor;
   }
-  GfxBuffer* GetParent(void) const {
+  OffscreenBuffer* GetParent(void) const {
     return mParent;
   }
   ETargetType GetTargetType(void) const {
@@ -409,19 +409,19 @@ public:
   GfxMaterial* GetMaterial() const {
     return mpMaterial;
   }
-  GfxTarget* GetContext(void) const;
+  Context* context(void) const;
 
   int GetContextX(void) const {
-    return GetContext()->mainSurfaceWindowPosX();
+    return context()->mainSurfaceWindowPosX();
   }
   int GetContextY(void) const {
-    return GetContext()->mainSurfaceWindowPosY();
+    return context()->mainSurfaceWindowPosY();
   }
   int GetContextW(void) const {
-    return GetContext()->mainSurfaceWidth();
+    return context()->mainSurfaceWidth();
   }
   int GetContextH(void) const {
-    return GetContext()->mainSurfaceHeight();
+    return context()->mainSurfaceHeight();
   }
 
   int GetBufferW(void) const {
@@ -454,7 +454,7 @@ public:
   fcolor4& RefClearColor() {
     return mClearColor;
   }
-  void SetContext(GfxTarget* pctx) {
+  void SetContext(Context* pctx) {
     mpContext = pctx;
   }
   void SetTexture(Texture* ptex) {
@@ -492,11 +492,11 @@ public:
 
   virtual void BeginFrame(void);
   virtual void EndFrame(void);
-  virtual void CreateContext();
+  virtual void initContext();
 
 protected:
   ui::Widget* mRootWidget;
-  GfxTarget* mpContext;
+  Context* mpContext;
   GfxMaterial* mpMaterial;
   Texture* mpTexture;
   int miWidth;
@@ -507,7 +507,7 @@ protected:
   bool mbSizeIsDirty;
   std::string msName;
   fcolor4 mClearColor;
-  GfxBuffer* mParent;
+  OffscreenBuffer* mParent;
   RtGroup* mParentRtGroup;
   void* mPlatformHandle;
 };
@@ -516,16 +516,16 @@ protected:
 ///
 /// ////////////////////////////////////////////////////////////////////////////
 
-class GfxWindow : public GfxBuffer {
+class Window : public OffscreenBuffer {
 public:
   //////////////////////////////////////////////
 
-  GfxWindow(int iX, int iY, int iW, int iH, const std::string& name = "NoName", void* pdata = 0);
-  virtual ~GfxWindow();
+  Window(int iX, int iY, int iW, int iH, const std::string& name = "NoName", void* pdata = 0);
+  virtual ~Window();
 
   //////////////////////////////////////////////
 
-  virtual void CreateContext();
+  virtual void initContext();
 
   virtual void OnShow() {
   }
@@ -551,16 +551,16 @@ public:
 /// ////////////////////////////////////////////////////////////////////////////
 
 class GfxEnv : public NoRttiSingleton<GfxEnv> {
-  friend class GfxBuffer;
-  friend class GfxWindow;
-  friend class GfxTarget;
+  friend class OffscreenBuffer;
+  friend class Window;
+  friend class Context;
   //////////////////////////////////////////////////////////////////////////////
 
 public:
-  GfxTarget* GetLoaderTarget() const {
+  Context* GetLoaderTarget() const {
     return gLoaderTarget;
   }
-  void SetLoaderTarget(GfxTarget* ptarget);
+  void SetLoaderTarget(Context* ptarget);
 
   recursive_mutex& GetGlobalLock() {
     return mGfxEnvMutex;
@@ -571,21 +571,21 @@ public:
 
   GfxEnv();
 
-  void RegisterWinContext(GfxWindow* pWin);
+  void RegisterWinContext(Window* pWin);
 
   //////////////////////////////////////////////////////////////////////////////
 
-  GfxBuffer* GetMainWindow(void) {
+  OffscreenBuffer* GetMainWindow(void) {
     return mpMainWindow;
   }
-  void SetMainWindow(GfxWindow* pWin) {
+  void SetMainWindow(Window* pWin) {
     mpMainWindow = pWin;
   }
 
 //////////////////////////////////////////////////////////////////////////////
 #if defined(_WIN32) && (!(defined(_XBOX)))
   static HWND GetMainHWND(void) {
-    return GetRef().mpMainWindow->GetContext()->GetHWND();
+    return GetRef().mpMainWindow->context()->GetHWND();
   }
 #endif
   //////////////////////////////////////////////////////////////////////////////
@@ -597,22 +597,22 @@ public:
     return GetRef().mp3DMaterial;
   }
 
-  static void SetTargetClass(const rtti::Class* pclass) {
+  static void setContextClass(const rtti::Class* pclass) {
     gpTargetClass = pclass;
   }
-  static const rtti::Class* GetTargetClass() {
+  static const rtti::Class* contextClass() {
     return gpTargetClass;
   }
   void SetRuntimeEnvironmentVariable(const std::string& key, const std::string& val);
   const std::string& GetRuntimeEnvironmentVariable(const std::string& key) const;
 
-  void PushCreationParams(const GfxTargetCreationParams& p) {
+  void PushCreationParams(const ContextCreationParams& p) {
     mCreationParams.push(p);
   }
   void PopCreationParams() {
     mCreationParams.pop();
   }
-  const GfxTargetCreationParams& GetCreationParams() {
+  const ContextCreationParams& GetCreationParams() {
     return mCreationParams.top();
   }
 
@@ -626,18 +626,18 @@ protected:
 
   GfxMaterial* mpUIMaterial;
   GfxMaterial* mp3DMaterial;
-  GfxWindow* mpMainWindow;
-  GfxTarget* gLoaderTarget;
+  Window* mpMainWindow;
+  Context* gLoaderTarget;
 
-  orkvector<GfxBuffer*> mvActivePBuffers;
-  orkvector<GfxBuffer*> mvActiveWindows;
-  orkvector<GfxBuffer*> mvInactiveWindows;
+  orkvector<OffscreenBuffer*> mvActivePBuffers;
+  orkvector<OffscreenBuffer*> mvActiveWindows;
+  orkvector<OffscreenBuffer*> mvInactiveWindows;
 
   DynamicVertexBuffer<SVtxV12C4T16> mVtxBufSharedVect;
   DynamicVertexBuffer<SVtxV12N12B12T8C4> mVtxBufSharedVect2;
   DynamicVertexBuffer<SVtxV16T16C16> _vtxBufSharedV16T16C16;
   orkmap<std::string, std::string> mRuntimeEnvironment;
-  orkstack<GfxTargetCreationParams> mCreationParams;
+  orkstack<ContextCreationParams> mCreationParams;
   recursive_mutex mGfxEnvMutex;
 
   static const rtti::Class* gpTargetClass;
@@ -651,15 +651,15 @@ class DrawHudEvent : public ork::event::Event {
   RttiDeclareConcrete(DrawHudEvent, ork::event::Event);
 
 public:
-  DrawHudEvent(GfxTarget* target = NULL, int camera_number = 1)
+  DrawHudEvent(Context* target = NULL, int camera_number = 1)
       : mTarget(target)
       , mCameraNumber(camera_number) {
   }
 
-  GfxTarget* GetTarget() const {
+  Context* GetTarget() const {
     return mTarget;
   }
-  void SetTarget(GfxTarget* target) {
+  void setContext(Context* target) {
     mTarget = target;
   }
 
@@ -671,7 +671,7 @@ public:
   }
 
 private:
-  GfxTarget* mTarget;
+  Context* mTarget;
   int mCameraNumber;
 };
 

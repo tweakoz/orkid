@@ -123,7 +123,7 @@ public:
   void UpdateScene(lev2::DrawableBuffer* pdb);
 
   ///////////////////////////////////////////////////
-  void DrawManip(lev2::RenderContextFrameData& fdata, lev2::GfxTarget* pProxyTarg);
+  void DrawManip(lev2::RenderContextFrameData& fdata, lev2::Context* pProxyTarg);
   void DrawGrid(lev2::RenderContextFrameData& fdata);
   void DrawHUD(lev2::RenderContextFrameData& FrameData);
   void DrawSpinner(lev2::RenderContextFrameData& FrameData);
@@ -189,7 +189,7 @@ private:
 
   ////////////////////////////////////////////
 
-  void DoInit(ork::lev2::GfxTarget* pTARG) override;
+  void DoInit(ork::lev2::Context* pTARG) override;
 
   static orkset<SceneEditorInitCb> mInitCallbacks;
 };

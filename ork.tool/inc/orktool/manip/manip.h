@@ -58,7 +58,7 @@ public:
 
   Manip(ManipManager& mgr);
 
-  virtual void Draw(GfxTarget* pTARG) const        = 0;
+  virtual void Draw(Context* pTARG) const        = 0;
   virtual bool UIEventHandler(const ui::Event& EV) = 0;
 
   fvec3 IntersectWithPlanes(const ork::fvec2& posubp);
@@ -93,10 +93,10 @@ class ManipSingleTrans : public ManipTrans {
 public:
   ManipSingleTrans(ManipManager& mgr);
 
-  virtual void DrawAxis(GfxTarget* pTARG) const;
+  virtual void DrawAxis(Context* pTARG) const;
 
 protected:
-  void Draw(GfxTarget* pTARG) const final;
+  void Draw(Context* pTARG) const final;
   void HandleDrag(const ork::fvec2& pos) final;
 
   virtual ork::fvec3 GetNormal() const = 0;
@@ -110,7 +110,7 @@ class ManipDualTrans : public ManipTrans {
 public:
   ManipDualTrans(ManipManager& mgr);
 
-  void Draw(GfxTarget* pTARG) const final;
+  void Draw(Context* pTARG) const final;
 
 protected:
   virtual void GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1, ork::fvec4& v2, ork::fvec4& v3) const = 0;
@@ -192,7 +192,7 @@ class ManipRot : public Manip {
 public: //
   ManipRot(ManipManager& mgr, const fvec4& LocRotMat);
 
-  void Draw(GfxTarget* pTARG) const final;
+  void Draw(Context* pTARG) const final;
   bool UIEventHandler(const ui::Event& EV) final;
 
   virtual F32 CalcAngle(fvec4& inv_isect, fvec4& inv_lisect) const = 0;
@@ -247,16 +247,16 @@ class GfxMaterialManip : public GfxMaterial {
   ManipManager& mManager;
 
 public:
-  GfxMaterialManip(GfxTarget*, ManipManager& mgr);
+  GfxMaterialManip(Context*, ManipManager& mgr);
   ~GfxMaterialManip() final{};
-  void Init(GfxTarget* pTarg) final;
+  void Init(Context* pTarg) final;
 
-  int BeginBlock(GfxTarget* pTarg, const RenderContextInstData& MatCtx) final;
-  void EndBlock(GfxTarget* pTarg) final;
+  int BeginBlock(Context* pTarg, const RenderContextInstData& MatCtx) final;
+  void EndBlock(Context* pTarg) final;
   void Update(void) final {}
-  bool BeginPass(GfxTarget* pTarg, int iPass = 0) final;
-  void EndPass(GfxTarget* pTarg) final;
-  void UpdateMVPMatrix(GfxTarget* pTARG) final;
+  bool BeginPass(Context* pTarg, int iPass = 0) final;
+  void EndPass(Context* pTarg) final;
+  void UpdateMVPMatrix(Context* pTARG) final;
 
 protected:
   FxShader* hModFX;
@@ -349,8 +349,8 @@ public:
   void Setup(IRenderer* prend);
   void Queue(IRenderer* prend);
 
-  void DrawManip(Manip* manip, GfxTarget* pTARG);
-  void DrawCurrentManipSet(GfxTarget* pTARG);
+  void DrawManip(Manip* manip, Context* pTARG);
+  void DrawCurrentManipSet(Context* pTARG);
 
   void SetHover(Manip* manip) { mpHoverManip = manip; }
   Manip* GetHover() { return mpHoverManip; }

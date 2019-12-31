@@ -142,12 +142,12 @@ public:
 
 	virtual void Update( float fdt ) {}
 
-	const AudioInstrumentZoneContext&	GetContext() const { return mIzContext; }
+	const AudioInstrumentZoneContext&	context() const { return mIzContext; }
 	const AudioInstrumentPlayback*		GetInsPlayback() const { return mInsPlayback; }
 
 	AudioInstrumentPlayback*			GetInsPlayback() { return mInsPlayback; }
 	AudioInstrumentZone*				GetZone() const { return mpPxvInsZone; }
-	AudioInstrumentZoneContext&			GetContext() { return mIzContext; }
+	AudioInstrumentZoneContext&			context() { return mIzContext; }
 	AudioSample*						GetSample() const { return mpPxvSample; }
 	void*								GetChannelPB() const { return mpChannelPB; }
 	int									GetChannel() const { return miSoundChannel; }

@@ -82,7 +82,7 @@ EzUiCam::EzUiCam()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void EzUiCam::draw(GfxTarget* pT) {
+void EzUiCam::draw(Context* pT) {
   extern fvec4 TRayN;
   extern fvec4 TRayF;
 

@@ -64,7 +64,7 @@ void GridArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
         lev2::GfxMaterial3DSolid*  mGridMaterial;
 
         static void RenderCallback( ork::lev2::RenderContextInstData& rcid,
-                                    ork::lev2::GfxTarget* targ,
+                                    ork::lev2::Context* targ,
                                     const ork::lev2::CallbackRenderable* pren )
         {
             const yo* pyo = pren->GetUserData0().Get<const yo*>();

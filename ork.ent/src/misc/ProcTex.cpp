@@ -167,7 +167,7 @@ void ProcTexOutputQuad::Describe() {
 ProcTexOutputQuad::ProcTexOutputQuad() : mScale(1.0f), mMaterial(nullptr) {}
 ///////////////////////////////////////////////////////////////////////////////
 void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
-  auto l_render_quad = [=](lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const lev2::CallbackRenderable* pren) {
+  auto l_render_quad = [=](lev2::RenderContextInstData& rcid, lev2::Context* targ, const lev2::CallbackRenderable* pren) {
     bool IsPickState = targ->FBI()->IsPickState();
     if (IsPickState)
       return;
@@ -273,7 +273,7 @@ void ProcTexOutputSkybox::Describe() {
 ProcTexOutputSkybox::ProcTexOutputSkybox() : mVerticalAdjust(0.0f), mMaterial(nullptr), mScale(1.0f) {}
 ///////////////////////////////////////////////////////////////////////////////
 void ProcTexOutputSkybox::OnLinkEntity(Simulation* psi, Entity* pent) {
-  auto l_render_skybox = [=](lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const lev2::CallbackRenderable* pren) {
+  auto l_render_skybox = [=](lev2::RenderContextInstData& rcid, lev2::Context* targ, const lev2::CallbackRenderable* pren) {
     bool IsPickState = targ->FBI()->IsPickState();
     if (IsPickState)
       return;
@@ -408,7 +408,7 @@ ProcTexOutputDynTex::~ProcTexOutputDynTex() {
 void ProcTexOutputDynTex::OnLinkEntity(Simulation* psi, Entity* pent) {
 
 
-  auto l_compute = [=](lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const lev2::CallbackRenderable* pren) {
+  auto l_compute = [=](lev2::RenderContextInstData& rcid, lev2::Context* targ, const lev2::CallbackRenderable* pren) {
     bool IsPickState = targ->FBI()->IsPickState();
     if (IsPickState)
       return;

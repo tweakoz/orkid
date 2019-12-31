@@ -47,7 +47,7 @@ class RenderContextInstData;
 class GfxMaterial;
 class VertexBufferBase;
 class IndexBufferBase;
-class GfxBuffer;
+class OffscreenBuffer;
 class TextureAnimationInst;
 class PickBufferBase;
 class RtGroup;
@@ -122,7 +122,7 @@ struct PixelFetchContext {
 
   static const int kmaxitems = 4;
 
-  GfxBuffer* mAsBuffer;
+  OffscreenBuffer* mAsBuffer;
   RtGroup* mRtGroup;
   int miMrtMask;
   fcolor4 mPickColors[kmaxitems];

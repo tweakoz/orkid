@@ -55,7 +55,7 @@ void PerfMarkerPushState();
 void PerfMarkerPopState();
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace lev2 { class GfxTarget; }
+namespace lev2 { class Context; }
 ///////////////////////////////////////////////////////////////////////////////
 
 
@@ -118,7 +118,7 @@ public:
 	static void AddItem( eperfset eset, PerformanceItem& Item );
 	static orklist<PerformanceItem*>* GetItemList(eperfset eset);
 
-	static void Draw(ork::lev2::GfxTarget *pTARG);
+	static void Draw(ork::lev2::Context *pTARG);
 	static void TextDump();
 
 };

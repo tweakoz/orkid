@@ -22,7 +22,7 @@
 
 #import <ork/kernel/objc.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxTargetGL, "GfxTargetGL")
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ContextGL, "ContextGL")
 
 extern "C"
 {
@@ -33,7 +33,7 @@ extern "C"
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::MpMcBoundedQueue<void*> GfxTargetGL::mLoadTokens;
+ork::MpMcBoundedQueue<void*> ContextGL::_loadTokens;
 
 struct GlOsxPlatformObject
 {
@@ -45,7 +45,7 @@ struct GlOsxPlatformObject
 	bool				mbNSOpenGlView;
 	opq::OperationsQueue		mOpQ;
 	void_lambda_t       mBindOp;
-	GfxTargetGL*		mTarget;
+	ContextGL*		mTarget;
 
 	GlOsxPlatformObject()
 		: mNSOpenGLContext(nil)
@@ -85,7 +85,7 @@ void check_debug_log()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxTargetGL::GLinit()
+void ContextGL::GLinit()
 {
 	orkprintf( "INITOPENGL\n" );
 
@@ -124,7 +124,7 @@ void GfxTargetGL::GLinit()
 
 	printf( "gpixfmt<%p>\n", (void*) gpixfmt );
 
-	CGLError err = CGLCreateContext ( gpixfmt, NULL, & gOGLdefaultctx );
+	CGLError err = CGLinitContext ( gpixfmt, NULL, & gOGLdefaultctx );
 
 	OrkAssert( err==kCGLNoError );
 
@@ -151,20 +151,20 @@ void GfxTargetGL::GLinit()
 
 std::string GetGlErrorString( void );
 
-void OpenGlGfxTargetInit()
+void OpenGlContextInit()
 {
 	///////////////////////////////////////////////////////////
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	///////////////////////////////////////////////////////////
-	GfxEnv::SetTargetClass(GfxTargetGL::GetClassStatic());
+	GfxEnv::setContextClass(ContextGL::GetClassStatic());
 	//const ork::FileDevContext& datactx = ork::FileEnv::UrlBaseToContext( "data" );//, DataDirContext );
 
 	//static dispatch_once_t ginit_once;
 	//auto once_blk = ^ void (void)
 	{
-		GfxTargetGL::GLinit();
-		auto target = new GfxTargetGL;
-		auto poutbuf = new GfxBuffer(0,0,0,1280,720);
+		ContextGL::GLinit();
+		auto target = new ContextGL;
+		auto poutbuf = new OffscreenBuffer(0,0,0,1280,720);
 		GfxEnv::GetRef().SetLoaderTarget(target);
 		target->InitializeContext(poutbuf);
 	}
@@ -173,8 +173,8 @@ void OpenGlGfxTargetInit()
 
 /////////////////////////////////////////////////////////////////////////
 
-GfxTargetGL::GfxTargetGL()
-	: GfxTarget()
+ContextGL::ContextGL()
+	: Context()
 	, mFxI( *this )
 	, mImI( *this )
 	, mRsI( *this )
@@ -198,20 +198,20 @@ GfxTargetGL::GfxTargetGL()
 
 		loadctx->mGlContext = gctx;
 
-		mLoadTokens.push( (void*) loadctx );
+		_loadTokens.push( (void*) loadctx );
 	}
 
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-GfxTargetGL::~GfxTargetGL()
+ContextGL::~ContextGL()
 {
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
+void ContextGL::InitializeContext( Window *pWin, CTXBASE* pctxbase  )
 {
 	///////////////////////
 	GlOsxPlatformObject* plato = new GlOsxPlatformObject;
@@ -313,7 +313,7 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 			{
 				//printf( "MCC PATH C\n" );
 				NSView* osxview = (NSView*) tgt->mCtxBase->GetThisXID();
-				GfxWindow *pWin = (GfxWindow *) tgt->mFbI.GetThisBuffer();
+				Window *pWin = (Window *) tgt->mFbI.GetThisBuffer();
 				if( osxview != plato->mOsxView )
 				{
 					//printf( "MCC PATH D\n" );
@@ -344,7 +344,7 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxTargetGL::InitializeContext( GfxBuffer *pBuf )
+void ContextGL::InitializeContext( OffscreenBuffer *pBuf )
 {
 	///////////////////////
 
@@ -404,7 +404,7 @@ void GfxTargetGL::InitializeContext( GfxBuffer *pBuf )
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxTargetGL::makeCurrentContext( void )
+void ContextGL::makeCurrentContext( void )
 {
 	GlOsxPlatformObject* plato = (GlOsxPlatformObject*) mPlatformHandle;
 
@@ -420,7 +420,7 @@ void GfxTargetGL::makeCurrentContext( void )
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxTargetGL::SwapGLContext( CTXBASE *pCTFL )
+void ContextGL::SwapGLContext( CTXBASE *pCTFL )
 {
 	GlOsxPlatformObject* plato = (GlOsxPlatformObject*) mPlatformHandle;
 	if( plato )
@@ -435,11 +435,11 @@ void GfxTargetGL::SwapGLContext( CTXBASE *pCTFL )
 	//Objc::Class("NSOpenGLContext").InvokeClassMethodV("clearCurrentContext" );
 }
 
-void* GfxTargetGL::_doBeginLoad()
+void* ContextGL::_doBeginLoad()
 {
 	void* pvoiddat = nullptr;
 
-	while(false==mLoadTokens.try_pop(pvoiddat))
+	while(false==_loadTokens.try_pop(pvoiddat))
 	{
 		usleep(1<<10);
 	}
@@ -457,11 +457,11 @@ void* GfxTargetGL::_doBeginLoad()
 	return pvoiddat;
 }
 
-void GfxTargetGL::_doEndLoad(void*ploadtok)
+void ContextGL::_doEndLoad(void*ploadtok)
 {
 	GlOsxLoadContext* loadctx = (GlOsxLoadContext*) ploadtok;
 	printf( "ENDLOAD loadctx<%p> glx<%p>\n", loadctx,loadctx->mGlContext);
-	mLoadTokens.push(ploadtok);
+	_loadTokens.push(ploadtok);
 }
 
 }}

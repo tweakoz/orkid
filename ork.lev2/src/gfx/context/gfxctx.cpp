@@ -20,7 +20,7 @@
 bool sbExit = false;
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CTXBASE, "Lev2CTXBASE");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxTarget, "GfxTarget")
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::Context, "Context")
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -32,16 +32,16 @@ void CTXBASE::Describe() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CTXBASE::CTXBASE(GfxWindow* pwin)
+CTXBASE::CTXBASE(Window* pwin)
     : mbInitialize(true)
-    , mpGfxWindow(pwin)
+    , mpWindow(pwin)
     , mpTarget(0)
     , mUIEvent()
     , ConstructAutoSlot(Repaint)
 
 {
   SetupSignalsAndSlots();
-  mpGfxWindow->mpCTXBASE = this;
+  mpWindow->mpCTXBASE = this;
 }
 
 void CTXBASE::pushRefreshPolicy(RefreshPolicyItem policy) {
@@ -55,17 +55,17 @@ void CTXBASE::popRefreshPolicy() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GfxTarget::hiDPI() const {
+bool Context::hiDPI() const {
   return _HIDPI();
 }
 
-float GfxTarget::currentDPI() const {
+float Context::currentDPI() const {
   return _currentDPI();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxTarget::beginFrame(void) {
+void Context::beginFrame(void) {
   FBI()->BeginFrame();
   GBI()->BeginFrame();
   FXI()->BeginFrame();
@@ -89,7 +89,7 @@ void GfxTarget::beginFrame(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxTarget::endFrame(void) {
+void Context::endFrame(void) {
   //	IMI()->EndFrame();
   GBI()->EndFrame();
   MTXI()->PopMMatrix();
@@ -105,7 +105,7 @@ void GfxTarget::endFrame(void) {
 
 /////////////////////////////////////////////////////////////////////////
 
-GfxTarget::GfxTarget()
+Context::Context()
     : miModColorStackIndex(0)
     , mbPostInitializeContext(true)
     , mCtxBase(nullptr)
@@ -135,14 +135,14 @@ GfxTarget::GfxTarget()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GfxTarget::~GfxTarget() {
+Context::~Context() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-orkvector<DisplayMode*> GfxTarget::mDisplayModes;
+orkvector<DisplayMode*> Context::mDisplayModes;
 
-bool GfxTarget::SetDisplayMode(unsigned int index) {
+bool Context::SetDisplayMode(unsigned int index) {
   if (index < mDisplayModes.size())
     return SetDisplayMode(mDisplayModes[index]);
   return false;
@@ -150,25 +150,25 @@ bool GfxTarget::SetDisplayMode(unsigned int index) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxTarget::BindMaterial(GfxMaterial* pmtl) {
+void Context::BindMaterial(GfxMaterial* pmtl) {
   if (nullptr == pmtl)
     pmtl = currentMaterial();
   mpCurMaterial = pmtl;
   // OrkAssert( pMat );
 }
-void GfxTarget::PushMaterial(GfxMaterial* pmtl) {
+void Context::PushMaterial(GfxMaterial* pmtl) {
   mMaterialStack.push(mpCurMaterial);
   mpCurMaterial = pmtl;
 }
-void GfxTarget::PopMaterial() {
+void Context::PopMaterial() {
   mpCurMaterial = mMaterialStack.top();
   mMaterialStack.pop();
 }
 
-void* GfxTarget::BeginLoad() {
+void* Context::BeginLoad() {
   return _doBeginLoad();
 }
-void GfxTarget::EndLoad(void* ploadtok) {
+void Context::EndLoad(void* ploadtok) {
   _doEndLoad(ploadtok);
 }
 

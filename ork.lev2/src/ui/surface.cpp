@@ -32,7 +32,7 @@ void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
   float fy = float(iy) / float(iH);
   /////////////////////////////////////////////////////////////
   if (mpPickBuffer) {
-    auto tgt      = mpPickBuffer->GetContext();
+    auto tgt      = mpPickBuffer->context();
     auto fbi      = tgt->FBI();
     ctx.mRtGroup  = mpPickBuffer->mpPickRtGroup;
     ctx.mAsBuffer = mpPickBuffer;
@@ -141,7 +141,7 @@ void Surface::DoDraw(DrawEvent& drwev) {
 
 void Surface::SurfaceRender(lev2::RenderContextFrameData& FrameData, const std::function<void()>& render_lambda) {
 #if 0
-	lev2::GfxTarget* pTARG = FrameData.GetTarget();
+	lev2::Context* pTARG = FrameData.GetTarget();
 	lev2::IRenderTarget* pIT = FrameData.GetRenderTarget();
 
 	int vpx = GetX();
@@ -199,11 +199,11 @@ lev2::FrameTechniqueBase* Surface::GetFrameTechnique() const {
 
 void Surface::BeginSurface(lev2::FrameRenderer& frenderer) {
   lev2::RenderContextFrameData& FrameData = frenderer.framedata();
-  lev2::GfxTarget* pTARG                  = FrameData.GetTarget();
+  lev2::Context* pTARG                  = FrameData.GetTarget();
 }
 void Surface::EndSurface(lev2::FrameRenderer& frenderer) {
   lev2::RenderContextFrameData& FrameData = frenderer.framedata();
-  lev2::GfxTarget* pTARG                  = FrameData.GetTarget();
+  lev2::Context* pTARG                  = FrameData.GetTarget();
 }
 
 /////////////////////////////////////////////////////////////////////////

@@ -143,14 +143,14 @@ int GedItemNode::GetNumItems() const {
   return int(mItems.size());
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedLabelNode::DoDraw(lev2::GfxTarget* pTARG) {
+void GedLabelNode::DoDraw(lev2::Context* pTARG) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool GedItemNode::DoDrawDefault() const {
   return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedItemNode::Draw(lev2::GfxTarget* pTARG) {
+void GedItemNode::Draw(lev2::Context* pTARG) {
   if (mbInvalid) {
     ReSync();
   }
@@ -180,7 +180,7 @@ int GedItemNode::contentWidth() const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void GedRootNode::DoDraw(lev2::GfxTarget* pTARG) {
+void GedRootNode::DoDraw(lev2::Context* pTARG) {
   int ih = (micalch > miH) ? micalch : miH;
   GetSkin()->DrawBgBox(this, miX, miY, miW, ih, GedSkin::ESTYLE_BACKGROUND_1);
   GetSkin()->DrawOutlineBox(this, miX, miY, miW, ih, GedSkin::ESTYLE_DEFAULT_OUTLINE);

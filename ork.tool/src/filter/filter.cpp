@@ -222,9 +222,9 @@ bool AssetFilter::ListFilters() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class NullAppWindow : public ork::lev2::GfxWindow {
+class NullAppWindow : public ork::lev2::Window {
 public: //
-  NullAppWindow(int iX, int iY, int iW, int iH) : ork::lev2::GfxWindow(iX, iY, iW, iH) { CreateContext(); }
+  NullAppWindow(int iX, int iY, int iW, int iH) : ork::lev2::Window(iX, iY, iW, iH) { initContext(); }
 
   virtual void Draw(void) {}
   //	virtual void Show( void ) {};
@@ -253,11 +253,11 @@ int Main_Filter(tokenlist toklist) {
   // need a gfx context for some filters
 
   //	ork::lev2::GfxEnv::GetRef().SetCurrentRenderer( ork::lev2::EGFXENVTYPE_DUMMY );
-  ork::lev2::GfxEnv::SetTargetClass(ork::lev2::GfxTargetDummy::GetClassStatic());
+  ork::lev2::GfxEnv::setContextClass(ork::lev2::ContextDummy::GetClassStatic());
 
   NullAppWindow* w = new NullAppWindow(0, 0, 640, 480);
   ork::lev2::GfxEnv::GetRef().RegisterWinContext(w);
-  ork::lev2::GfxEnv::GetRef().SetLoaderTarget(w->GetContext());
+  ork::lev2::GfxEnv::GetRef().SetLoaderTarget(w->context());
 
   //////////////////////////////
 
@@ -296,7 +296,7 @@ int Main_FilterTree(tokenlist toklist) {
   // need a gfx context for some filters
 
   // ork::lev2::GfxEnv::GetRef().SetCurrentRenderer( ork::lev2::EGFXENVTYPE_DUMMY );
-  ork::lev2::GfxEnv::SetTargetClass(ork::lev2::GfxTargetDummy::GetClassStatic());
+  ork::lev2::GfxEnv::setContextClass(ork::lev2::ContextDummy::GetClassStatic());
   NullAppWindow* w = new NullAppWindow(0, 0, 640, 480);
 
   //////////////////////////////

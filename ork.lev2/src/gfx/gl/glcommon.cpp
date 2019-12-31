@@ -24,33 +24,33 @@ static thread_local int _dbglevel = 0;
 static thread_local std::stack<std::string> _groupstack;
 
 #if defined(__APPLE__)
-void GfxTargetGL::debugPushGroup(const std::string str) {
+void ContextGL::debugPushGroup(const std::string str) {
   auto mstr = indent(_dbglevel++) + str;
   _groupstack.push(mstr);
   GL_ERRORCHECK();
   glPushGroupMarkerEXT(mstr.length(), mstr.c_str());
 }
-void GfxTargetGL::debugPopGroup() {
+void ContextGL::debugPopGroup() {
   glPopGroupMarkerEXT();
   _dbglevel--;
 }
-void GfxTargetGL::debugMarker(const std::string str) {
+void ContextGL::debugMarker(const std::string str) {
 }
-void GfxTargetGL::debugLabel(GLenum target, GLuint object, std::string name) {
+void ContextGL::debugLabel(GLenum target, GLuint object, std::string name) {
   glLabelObjectEXT(target, object, name.length(), name.c_str());
 }
 #else
-void GfxTargetGL::debugLabel(GLenum target, GLuint object, std::string name) {
+void ContextGL::debugLabel(GLenum target, GLuint object, std::string name) {
   glObjectLabel(target, object, name.length(), name.c_str());
 }
-void GfxTargetGL::debugPushGroup(const std::string str) {
+void ContextGL::debugPushGroup(const std::string str) {
   auto mstr = indent(_dbglevel++) + str;
   _groupstack.push(mstr);
   GL_ERRORCHECK();
   glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, mstr.length(), mstr.c_str());
   GL_ERRORCHECK();
 }
-void GfxTargetGL::debugPopGroup() {
+void ContextGL::debugPopGroup() {
   // auto mstr = indent(_dbglevel--) + _prevgroup;
   std::string top = _groupstack.top();
   _groupstack.pop();
@@ -59,7 +59,7 @@ void GfxTargetGL::debugPopGroup() {
   GL_ERRORCHECK();
   _dbglevel--;
 }
-void GfxTargetGL::debugMarker(const std::string str) {
+void ContextGL::debugMarker(const std::string str) {
   auto mstr = indent(_dbglevel) + str;
   // printf( "Marker:: %s\n", mstr.c_str() );
 
@@ -70,7 +70,7 @@ void GfxTargetGL::debugMarker(const std::string str) {
 }
 #endif
 
-bool GfxTargetGL::SetDisplayMode(DisplayMode* mode) {
+bool ContextGL::SetDisplayMode(DisplayMode* mode) {
   return false;
 }
 
@@ -78,7 +78,7 @@ bool GfxTargetGL::SetDisplayMode(DisplayMode* mode) {
 
 void recomputeHIDPI(void* plato);
 
-void GfxTargetGL::_doResizeMainSurface(int ix, int iy, int iw, int ih) {
+void ContextGL::_doResizeMainSurface(int ix, int iy, int iw, int ih) {
   miX                      = ix;
   miY                      = iy;
   miW                      = iw;

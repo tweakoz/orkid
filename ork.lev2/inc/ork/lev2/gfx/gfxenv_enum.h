@@ -18,7 +18,7 @@ enum EField
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum EGfxTargetNiceness
+enum EContextNiceness
 {
 	EGFXNICEMODE_GAME = 0,	// the target is running as fast as it can
 	EGFXNICEMODE_APP		// only refresh UI when dirty (use from external apps like audio plugins, etc..)

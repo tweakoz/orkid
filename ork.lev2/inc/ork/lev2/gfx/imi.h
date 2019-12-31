@@ -13,9 +13,9 @@ public:
   inline CVtxBuffer<SVtxV12C4T16>& RefTextVB(void) { return mVtxBufText; }
 
 protected:
-  ImmInterface(GfxTarget& target);
+  ImmInterface(Context& target);
 
-  GfxTarget& mTarget;
+  Context& mTarget;
   DynamicVertexBuffer<SVtxV4C4> mVtxBufUILine;
   DynamicVertexBuffer<SVtxV4C4> mVtxBufUIQuad;
   DynamicVertexBuffer<SVtxV12C4T16> mVtxBufUITexQuad;

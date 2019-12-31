@@ -71,7 +71,7 @@ void FxInterface::BeginFrame()
 
 void FxInterface::Reset()
 {
-	GfxTarget* pTARG = GfxEnv::GetRef().GetLoaderTarget();
+	Context* pTARG = GfxEnv::GetRef().GetLoaderTarget();
 	pTARG->FXI()->DoOnReset();
 }
 

@@ -16,11 +16,11 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class TexBuffer : public GfxBuffer
+class TexBuffer : public OffscreenBuffer
 {
 	public:
 
-	TexBuffer(	GfxBuffer *parent,
+	TexBuffer(	OffscreenBuffer *parent,
 				EBufferFormat efmt,
 				int iW, int iH );
 
@@ -55,15 +55,15 @@ class BuiltinFrameEffectMaterial : public GfxMaterial
 	public:
 
 	BuiltinFrameEffectMaterial();
-	void Init( GfxTarget* pTarg );
-	void PostInit( GfxTarget* pTarg , const char *FxFile, const char* TekName );
+	void Init( Context* pTarg );
+	void PostInit( Context* pTarg , const char *FxFile, const char* TekName );
 	void SetAuxMaps( Texture *AuxMap0, Texture* AuxMap1 );
 	~BuiltinFrameEffectMaterial() {}
 	virtual void Update( void );
-	virtual bool BeginPass( GfxTarget* pTarg,int iPass=0 );
-	virtual void EndPass( GfxTarget* pTarg );
-	virtual int BeginBlock( GfxTarget* pTarg,const RenderContextInstData &MatCtx );
-	virtual void EndBlock( GfxTarget* pTarg );
+	virtual bool BeginPass( Context* pTarg,int iPass=0 );
+	virtual void EndPass( Context* pTarg );
+	virtual int BeginBlock( Context* pTarg,const RenderContextInstData &MatCtx );
+	virtual void EndBlock( Context* pTarg );
 	void SetEffectAmount( float famount ) { mfEffectAmount=famount; }
 
 	void BindRtGroups( RtGroup* cur, RtGroup* prev ) { mpCurrentRtGroup=cur; mpPreviousRtGroup=prev; }
@@ -171,7 +171,7 @@ public:
 
 	RtGroup*					mOutputRt;
 
-	void DoInit( GfxTarget* ptgt );
+	void DoInit( Context* ptgt );
 	BuiltinFrameTechniques( int iW, int iH );
 	~BuiltinFrameTechniques();
 	virtual void Render( FrameRenderer & ContextData );
@@ -189,7 +189,7 @@ class ShadowFrameTechnique : public FrameTechniqueBase
 
 public:
 
-	ShadowFrameTechnique( GfxWindow* Parent, ui::Viewport* pvp, int iW, int iH );
+	ShadowFrameTechnique( Window* Parent, ui::Viewport* pvp, int iW, int iH );
 	void Render( FrameRenderer & ContextData ) final;
 };
 

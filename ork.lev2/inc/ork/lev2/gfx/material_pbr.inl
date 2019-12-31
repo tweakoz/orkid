@@ -26,7 +26,7 @@ class PBRMaterial;
 struct PbrMatrixBlockApplicator : public MaterialInstApplicator {
   MaterialInstItemMatrixBlock* _matrixblock = nullptr;
   const PBRMaterial* _pbrmaterial           = nullptr;
-  void ApplyToTarget(GfxTarget* pTARG) final;
+  void ApplyToTarget(Context* pTARG) final;
   static PbrMatrixBlockApplicator* getApplicator();
 };
 
@@ -54,9 +54,9 @@ public:
 
   ////////////////////////////////////////////
 
-  static Texture* brdfIntegrationMap(GfxTarget* targ);
-  static Texture* filterSpecularEnvMap(Texture* rawenvmap, GfxTarget* targ);
-  static Texture* filterDiffuseEnvMap(Texture* rawenvmap, GfxTarget* targ);
+  static Texture* brdfIntegrationMap(Context* targ);
+  static Texture* filterSpecularEnvMap(Texture* rawenvmap, Context* targ);
+  static Texture* filterDiffuseEnvMap(Texture* rawenvmap, Context* targ);
 
   ////////////////////////////////////////////
 
@@ -65,11 +65,11 @@ public:
 
   ////////////////////////////////////////////
 
-  bool BeginPass(GfxTarget* targ, int iPass = 0) final;
-  void EndPass(GfxTarget* targ) final;
-  int BeginBlock(GfxTarget* targ, const RenderContextInstData& RCID) final;
-  void EndBlock(GfxTarget* targ) final;
-  void Init(GfxTarget* targ) final;
+  bool BeginPass(Context* targ, int iPass = 0) final;
+  void EndPass(Context* targ) final;
+  int BeginBlock(Context* targ, const RenderContextInstData& RCID) final;
+  void EndBlock(Context* targ) final;
+  void Init(Context* targ) final;
   void Update() final;
   void BindMaterialInstItem(MaterialInstItem* pitem) const final;
   void UnBindMaterialInstItem(MaterialInstItem* pitem) const final;
@@ -77,7 +77,7 @@ public:
   ////////////////////////////////////////////
 
   FxShader* _shader                        = nullptr;
-  GfxTarget* _initialTarget                = nullptr;
+  Context* _initialTarget                = nullptr;
   const FxShaderParam* _paramMVP           = nullptr;
   const FxShaderParam* _paramMVPL          = nullptr;
   const FxShaderParam* _paramMVPR          = nullptr;
@@ -139,7 +139,7 @@ inline void PBRMaterial::end(const RenderContextFrameData& RCFD) {
 
 ////////////////////////////////////////////
 
-inline bool PBRMaterial::BeginPass(GfxTarget* targ, int iPass) {
+inline bool PBRMaterial::BeginPass(Context* targ, int iPass) {
   // printf( "_name<%s>\n", mMaterialName.c_str() );
   auto fxi    = targ->FXI();
   auto rsi    = targ->RSI();
@@ -191,13 +191,13 @@ inline bool PBRMaterial::BeginPass(GfxTarget* targ, int iPass) {
 
 ////////////////////////////////////////////
 
-inline void PBRMaterial::EndPass(GfxTarget* targ) {
+inline void PBRMaterial::EndPass(Context* targ) {
   targ->FXI()->EndPass(_shader);
 }
 
 ////////////////////////////////////////////
 
-inline int PBRMaterial::BeginBlock(GfxTarget* targ, const RenderContextInstData& RCID) {
+inline int PBRMaterial::BeginBlock(Context* targ, const RenderContextInstData& RCID) {
   auto fxi                           = targ->FXI();
   const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
   const auto& CPD                    = RCFD->topCPD();
@@ -222,14 +222,14 @@ inline int PBRMaterial::BeginBlock(GfxTarget* targ, const RenderContextInstData&
 
 ////////////////////////////////////////////
 
-inline void PBRMaterial::EndBlock(GfxTarget* targ) {
+inline void PBRMaterial::EndBlock(Context* targ) {
   auto fxi = targ->FXI();
   fxi->EndBlock(_shader);
 }
 
 ////////////////////////////////////////////
 
-inline void PBRMaterial::Init(GfxTarget* targ) /*final*/ {
+inline void PBRMaterial::Init(Context* targ) /*final*/ {
   assert(_initialTarget == nullptr);
   _initialTarget = targ;
   auto fxi       = targ->FXI();
@@ -325,7 +325,7 @@ inline void PBRMaterial::UnBindMaterialInstItem(MaterialInstItem* pitem) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline void PbrMatrixBlockApplicator::ApplyToTarget(GfxTarget* pTARG) // virtual
+inline void PbrMatrixBlockApplicator::ApplyToTarget(Context* pTARG) // virtual
 {
   auto fxi  = pTARG->FXI();
   auto mtxi = pTARG->MTXI();

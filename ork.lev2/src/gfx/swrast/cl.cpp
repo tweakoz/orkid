@@ -20,7 +20,7 @@ void SourceBuffer::CreateCLprogram(const CLDevice* pdev, cl_program& prg, cl_ker
 	// create program
 	////////////////////////////////////////////////////////////
 	int err = 0;
-	prg = clCreateProgramWithSource(pdev->GetContext(), 1, (const char **) & mpSource, NULL, &err);
+	prg = clCreateProgramWithSource(pdev->context(), 1, (const char **) & mpSource, NULL, &err);
 	if(0==prg)
 	{
 		OrkAssertI(false,"could not create program!\n");
@@ -143,7 +143,7 @@ void CLFromHostBuffer::resize(int isize,const CLDevice* dev)
 	mpBuffer0 = new char[ miSize ];
 	mpBuffer1 = new char[ miSize ];
 	//////////////////////////
-	mCLhandle = clCreateBuffer(dev->GetContext(), CL_MEM_READ_ONLY, miSize, 0, NULL);
+	mCLhandle = clCreateBuffer(dev->context(), CL_MEM_READ_ONLY, miSize, 0, NULL);
 	//////////////////////////
 	gmemalloxsize+=miSize;
 	if( 0 == mCLhandle )
@@ -210,7 +210,7 @@ void CLToHostBuffer::resize(int isize,const CLDevice* dev)
 	mpBuffer0 = new char[ miSize ];
 	mpBuffer1 = new char[ miSize ];
 	//////////////////////////
-	mCLhandle = clCreateBuffer(dev->GetContext(), CL_MEM_WRITE_ONLY, miSize, 0, NULL);
+	mCLhandle = clCreateBuffer(dev->context(), CL_MEM_WRITE_ONLY, miSize, 0, NULL);
 	//////////////////////////
 	if( 0 == mCLhandle )
 	{
@@ -469,7 +469,7 @@ void CLDevice::Init( cl_device_id& devid )
 	// create compute-context
 	////////////////////////////////////////////////////////////
 	int err = 0;
-	mContext = clCreateContext(0, 1, &mDeviceID, NULL, NULL, &err);
+	mContext = clinitContext(0, 1, &mDeviceID, NULL, NULL, &err);
 	if(false==mContext)
 	{
 		OrkAssertI(false,"could not create a compute context\n");

@@ -19,7 +19,7 @@ namespace ork { namespace tool {
 class Renderer : public lev2::IRenderer {
 
 public:
-  Renderer(ent::SceneEditorBase& editor, lev2::GfxTarget* ptarg = nullptr);
+  Renderer(ent::SceneEditorBase& editor, lev2::Context* ptarg = nullptr);
 
 private:
   void RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::RenderGroupState rgs = ork::lev2::ERGST_NONE) const final;

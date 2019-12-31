@@ -30,7 +30,7 @@ public:
 	WiiMatrixBlockApplicator( MaterialInstItemMatrixBlock* mtxblockitem,	const GfxMaterialWiiBasic* pmat );
 
 private:
-	void ApplyToTarget( GfxTarget *pTARG ) final;
+	void ApplyToTarget( Context *pTARG ) final;
 
 	///////////////////////////////////////////////////////////////
 
@@ -54,7 +54,7 @@ public:
 
 	///////////////////////////////////////////////////////////////
 private:
-    void ApplyToTarget( GfxTarget *pTARG ) final;
+    void ApplyToTarget( Context *pTARG ) final;
 
 };
 
@@ -73,15 +73,15 @@ class GfxMaterialWiiBasic : public GfxMaterial //TRttiBase<GfxMaterialWiiBasic,G
 	GfxMaterialWiiBasic( const char* pbastek = "/modvtx" );
 	~GfxMaterialWiiBasic() final {};
 
-	void Init( GfxTarget *pTarg ) final;
-	int  BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx ) final;
-	void EndBlock( GfxTarget* pTARG ) final;
+	void Init( Context *pTarg ) final;
+	int  BeginBlock( Context* pTARG, const RenderContextInstData &MatCtx ) final;
+	void EndBlock( Context* pTARG ) final;
 	void Update( void ) final {}
-	bool BeginPass( GfxTarget* pTARG, int iPass=0 ) final;
-	void EndPass( GfxTarget* pTARG ) final;
+	bool BeginPass( Context* pTARG, int iPass=0 ) final;
+	void EndPass( Context* pTARG ) final;
 	void BindMaterialInstItem( MaterialInstItem* pitem ) const final;
 	void UnBindMaterialInstItem( MaterialInstItem* pitem ) const final;
-	void UpdateMVPMatrix( GfxTarget *pTARG ) final ;
+	void UpdateMVPMatrix( Context *pTARG ) final ;
 
     const std::string & GetBasicTechName( void ) const { return mBasicTechName; }
 

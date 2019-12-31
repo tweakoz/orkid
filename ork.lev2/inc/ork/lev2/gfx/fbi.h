@@ -8,7 +8,7 @@
 
 class FrameBufferInterface {
 public:
-  FrameBufferInterface(GfxTarget& mTarget);
+  FrameBufferInterface(Context& mTarget);
   ~FrameBufferInterface();
 
   Texture* GetBufferTexture(void) { return mpBufferTex; }
@@ -18,8 +18,8 @@ public:
   void SetAutoClear(bool bv) { mbAutoClear = bv; }
   bool GetAutoClear() const { return mbAutoClear; }
   void SetVSyncEnable(bool bv) { mbEnableVSync = bv; }
-  GfxBuffer* GetThisBuffer(void) { return mpThisBuffer; }
-  void SetThisBuffer(GfxBuffer* pbuf) { mpThisBuffer = pbuf; }
+  OffscreenBuffer* GetThisBuffer(void) { return mpThisBuffer; }
+  void SetThisBuffer(OffscreenBuffer* pbuf) { mpThisBuffer = pbuf; }
   bool IsOffscreenTarget(void) { return mbIsPbuffer; }
   void SetOffscreenTarget(bool bv) { mbIsPbuffer = bv; }
   virtual void SetRtGroup(RtGroup* Base) = 0;
@@ -80,7 +80,7 @@ public:
 
   //////////////////////////////////////////////
 
-  static std::function<void(GfxTarget*)> _hackcb;
+  static std::function<void(Context*)> _hackcb;
 
 protected:
   static const int kiVPStackMax = 16;
@@ -90,7 +90,7 @@ protected:
   SRect maScissorStack[kiVPStackMax];
   SRect maViewportStack[kiVPStackMax];
 
-  GfxBuffer* mpThisBuffer;
+  OffscreenBuffer* mpThisBuffer;
   Texture* mpBufferTex;
   RtGroup* mCurrentRtGroup;
   fcolor4 mcClearColor;
@@ -103,7 +103,7 @@ protected:
   int miCurVPW;
   int miCurVPH;
   int miPickState;
-  GfxTarget& mTarget;
+  Context& mTarget;
   PickBufferBase* mpPickBuffer;
   std::stack<lev2::RtGroup*> mRtGroupStack;
 };

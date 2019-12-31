@@ -666,7 +666,7 @@ bool CColladaModel::ConvertTextures(const file::Path& outmdlpth, ork::tool::Filt
 		}
 		else
 		{	// convert via NVTT ?
-			/*if(ColladaExportPolicy::GetContext() && ColladaExportPolicy::GetContext()->mDDSInputOnly)
+			/*if(ColladaExportPolicy::context() && ColladaExportPolicy::context()->mDDSInputOnly)
 			{
 				orkerrorlog("ERROR: <%s> Only DDS files should be referenced from DAE (and hence Maya) models! (%s)\n", InPath.c_str(), mFileName.c_str());
 

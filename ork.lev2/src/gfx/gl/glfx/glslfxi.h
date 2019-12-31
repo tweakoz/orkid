@@ -18,7 +18,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
-class GfxTargetGL;
+class ContextGL;
 }
 
 namespace ork::lev2::glslfx {
@@ -214,7 +214,7 @@ struct StreamInterface {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef std::function<void(GfxTarget*)> state_applicator_t;
+typedef std::function<void(Context*)> state_applicator_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -549,7 +549,7 @@ public:
 
   bool LoadFxShader(const AssetPath& pth, FxShader* ptex) final;
 
-  Interface(GfxTargetGL& glctx);
+  Interface(ContextGL& glctx);
 
   void BindContainerToAbstract(Container* pcont, FxShader* fxh);
 
@@ -574,15 +574,15 @@ private:
   const Pass* mLastPass;
   FxShaderTechnique* mhCurrentTek;
 
-  GfxTargetGL& mTarget;
+  ContextGL& mTarget;
 };
 
 #if defined(ENABLE_COMPUTE_SHADERS)
 
 struct ComputeInterface : public lev2::ComputeInterface {
 
-  ComputeInterface(GfxTargetGL& glctx);
-  GfxTargetGL& _targetGL;
+  ComputeInterface(ContextGL& glctx);
+  ContextGL& _targetGL;
   Interface* _fxi                          = nullptr;
   PipelineCompute* _currentComputePipeline = nullptr;
 

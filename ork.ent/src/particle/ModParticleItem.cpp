@@ -171,7 +171,7 @@ struct ModItemRenderData {
   }
   static void enqueueToRenderQueueCallback(
       ork::lev2::RenderContextInstData& rcid,
-      ork::lev2::GfxTarget* targ,
+      ork::lev2::Context* targ,
       const ork::lev2::CallbackRenderable* pren) {
     ork::opq::assertOnQueue2(opq::mainSerialQueue());
 

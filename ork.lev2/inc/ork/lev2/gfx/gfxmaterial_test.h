@@ -18,9 +18,9 @@ class GfxMaterial3DSolid : public GfxMaterial {
 
 public:
   static void ClassInit();
-  GfxMaterial3DSolid(GfxTarget* pTARG = 0);
+  GfxMaterial3DSolid(Context* pTARG = 0);
   GfxMaterial3DSolid(
-      GfxTarget* pTARG, const char* puserfx, const char* pusertek, bool allowcompilefailure = false, bool unmanaged = false);
+      Context* pTARG, const char* puserfx, const char* pusertek, bool allowcompilefailure = false, bool unmanaged = false);
   ~GfxMaterial3DSolid() final{};
 
   void SetVolumeTexture(Texture* ptex) { mVolumeTexture = ptex; }
@@ -71,11 +71,11 @@ public:
   void SetAuxMatrix(const fmtx4& mtx) { mMatAux = mtx; }
   void SetAux2Matrix(const fmtx4& mtx) { mMatAux2 = mtx; }
 
-  bool BeginPass(GfxTarget* pTARG, int iPass = 0) final;
-  void EndPass(GfxTarget* pTARG) final;
-  int BeginBlock(GfxTarget* pTARG, const RenderContextInstData& MatCtx) final;
-  void EndBlock(GfxTarget* pTARG) final;
-  void Init(GfxTarget* pTarg) final;
+  bool BeginPass(Context* pTARG, int iPass = 0) final;
+  void EndPass(Context* pTARG) final;
+  int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx) final;
+  void EndBlock(Context* pTARG) final;
+  void Init(Context* pTarg) final;
 
   bool _enablePick = false;
 

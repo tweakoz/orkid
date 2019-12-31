@@ -19,7 +19,7 @@ namespace ork::lev2::glslfx {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ComputeInterface::ComputeInterface(GfxTargetGL& glctx)
+ComputeInterface::ComputeInterface(ContextGL& glctx)
     : _targetGL(glctx) {
   _fxi = dynamic_cast<Interface*>(glctx.FXI());
 }

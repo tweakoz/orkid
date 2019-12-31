@@ -237,7 +237,7 @@ static const int CHECKBOX_MARGIN = 2;
 #define CHECKBOX_X(x, width, SIZE) (x + width - SIZE - CHECKBOX_MARGIN)
 #define CHECKBOX_Y(y) (y + CHECKBOX_MARGIN)
 
-template <typename Setter> void GedBoolNode<Setter>::DoDraw(lev2::GfxTarget* pTARG) {
+template <typename Setter> void GedBoolNode<Setter>::DoDraw(lev2::Context* pTARG) {
   // GedItemNode::DoDraw( pTARG );
 
   const int SIZE = CHECKBOX_SIZE(miH);
@@ -334,7 +334,7 @@ void GedFloatNode<IODriver>::ReSync() // virtual
   slider->SetVal(fval);
 }
 
-template <typename IoDriver> void GedFloatNode<IoDriver>::DoDraw(lev2::GfxTarget* pTARG) {
+template <typename IoDriver> void GedFloatNode<IoDriver>::DoDraw(lev2::Context* pTARG) {
   slider->resize(miX, miY, miW, miH);
 
   int ixi = int(slider->GetIndicPos()) - miX;
@@ -400,7 +400,7 @@ void GedIntNode<IODriver>::ReSync() // virtual
   ((Slider<GedIntNode>*)slider)->SetVal(ival);
 }
 
-template <typename IODriver> void GedIntNode<IODriver>::DoDraw(lev2::GfxTarget* pTARG) {
+template <typename IODriver> void GedIntNode<IODriver>::DoDraw(lev2::Context* pTARG) {
   slider->resize(miX, miY, miW, miH);
 
   int ixi = int(slider->GetIndicPos()) - miX;
@@ -506,7 +506,7 @@ template <typename IODriver, typename T> void GedSimpleNode<IODriver, T>::OnUiEv
   SigInvalidateProperty();
 }
 ///////////////////////////////////////////////////////////////////////////////
-template <typename IODriver, typename T> void GedSimpleNode<IODriver, T>::DoDraw(lev2::GfxTarget* pTARG) {
+template <typename IODriver, typename T> void GedSimpleNode<IODriver, T>::DoDraw(lev2::Context* pTARG) {
   bool IsPickState = pTARG->FBI()->IsPickState();
 
   int ity = get_text_center_y();

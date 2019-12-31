@@ -126,14 +126,14 @@ void SceneEditorVP::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
   mpPickBuffer->Draw(ctx);
 
   /////////////////////////////////////////////////////////////
-  int iW = mpPickBuffer->GetContext()->mainSurfaceWidth();
-  int iH = mpPickBuffer->GetContext()->mainSurfaceHeight();
+  int iW = mpPickBuffer->context()->mainSurfaceWidth();
+  int iH = mpPickBuffer->context()->mainSurfaceHeight();
   /////////////////////////////////////////////////////////////
-  mpPickBuffer->GetContext()->FBI()->SetViewport(0, 0, iW, iH);
-  mpPickBuffer->GetContext()->FBI()->SetScissor(0, 0, iW, iH);
+  mpPickBuffer->context()->FBI()->SetViewport(0, 0, iW, iH);
+  mpPickBuffer->context()->FBI()->SetScissor(0, 0, iW, iH);
   /////////////////////////////////////////////////////////////
 
-  mpPickBuffer->GetContext()->FBI()->GetPixel(fvec4(fx, fy, 0.0f), ctx);
+  mpPickBuffer->context()->FBI()->GetPixel(fvec4(fx, fy, 0.0f), ctx);
 }
 
 }} // namespace ork::ent
@@ -167,12 +167,12 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::Pixe
   glock.Lock(0x777);
   PickFrameTechnique pktek;
   mpViewport->PushFrameTechnique(&pktek);
-  GfxTarget* pTEXTARG    = GetContext();
-  GfxTarget* pPARENTTARG = GetParent()->GetContext();
+  Context* pTEXTARG    = context();
+  Context* pPARENTTARG = GetParent()->context();
   pTEXTARG->pushRenderContextFrameData(&RCFD);
   SRect tgt_rect(0, 0, mpViewport->GetW(), mpViewport->GetH());
   ///////////////////////////////////////////////////////////////////////////
-  mpViewport->GetRenderer()->SetTarget(pTEXTARG);
+  mpViewport->GetRenderer()->setContext(pTEXTARG);
   RCFD.SetLightManager(nullptr);
   ///////////////////////////////////////////////////////////////////////////
   // use source viewport's W/H for camera matrix computation

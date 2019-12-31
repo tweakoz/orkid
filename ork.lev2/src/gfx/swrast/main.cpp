@@ -552,7 +552,7 @@ int lev3_test_main( int argc, char** argv )
     ApplicationStack::Push(&app);
 	//ork::lev2::CQNoMocBase::MocInitAll();
 	ork::rtti::Class::InitializeClasses();
-	ork::lev2::GfxTargetCreationParams CreationParams;
+	ork::lev2::ContextCreationParams CreationParams;
 	CreationParams.miNumSharedVerts = 512<<10;
 	ork::lev2::GfxEnv::GetRef().PushCreationParams(CreationParams);
 	////////////////////////////////////////////////////

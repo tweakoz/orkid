@@ -168,7 +168,7 @@ btSphereShape *XgmModelToSphereShape(const ork::lev2::XgmModel *xgmmodel,float f
 
 btTriangleIndexVertexArray* XgmClusterToTriVertArray(const ork::lev2::XgmCluster &xgmcluster,float fscale)
 {
-	ork::lev2::GfxTarget* pTARG = ork::lev2::GfxEnv::GetRef().GetLoaderTarget();
+	ork::lev2::Context* pTARG = ork::lev2::GfxEnv::GetRef().GetLoaderTarget();
 
 	void* ploadtoken = pTARG->BeginLoad();
 

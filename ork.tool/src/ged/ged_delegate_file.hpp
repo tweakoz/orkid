@@ -38,7 +38,7 @@ template <typename IODriver> void GedFileNode<IODriver>::OnMouseDoubleClicked(co
   OnCreateObject();
 }
 ///////////////////////////////////////////////////////////////////////////////
-template <typename IODriver> void GedFileNode<IODriver>::DoDraw(lev2::GfxTarget* pTARG) {
+template <typename IODriver> void GedFileNode<IODriver>::DoDraw(lev2::Context* pTARG) {
   int inamw = propnameWidth() + 8;
   // int ilabw = contentWidth()+8;
 

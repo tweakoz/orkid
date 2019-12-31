@@ -67,10 +67,10 @@ private:
 
 	ui::HandlerResult DoOnUiEvent( const ui::Event& EV ) override;
 	void DoRePaintSurface( ui::DrawEvent& drwev) override; 
-	void DoInit(lev2::GfxTarget* pt ) override;
+	void DoInit(lev2::Context* pt ) override;
 
 	DataFlowEditor& GetDataFlowEditor() { return mDflowEditor; }
-	void draw_connections( ork::lev2::GfxTarget* pTARG );
+	void draw_connections( ork::lev2::Context* pTARG );
 	//void GetPixel( int ix, int iy, lev2::PixelFetchContext& ctx );
 
 	lev2::Grid2d								mGrid;

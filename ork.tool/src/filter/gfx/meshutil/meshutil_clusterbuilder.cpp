@@ -63,11 +63,11 @@ void XgmClusterBuilder::Dump( void )
 
 void BuildXgmClusterPrimGroups( lev2::XgmCluster & XgmCluster, const std::vector<unsigned int> & TriangleIndices )
 {
-	lev2::GfxTargetDummy DummyTarget;
+	lev2::ContextDummy DummyTarget;
 
 	const int imaxvtx = XgmCluster._vertexBuffer->GetNumVertices();
 
-	const ColladaExportPolicy* policy = ColladaExportPolicy::GetContext();
+	const ColladaExportPolicy* policy = ColladaExportPolicy::context();
 	// TODO: Is this correct? Why?
 	static const int WII_PRIM_GROUP_MAX_INDICES = 0xFFFF;
 
@@ -109,7 +109,7 @@ void BuildXgmClusterPrimGroups( lev2::XgmCluster & XgmCluster, const std::vector
 			//  (some platforms do not have 32bit indices)
 			/////////////////////////////////
 
-			if(ColladaExportPolicy::GetContext()->mPrimGroupPolicy.mMaxIndices == ColladaPrimGroupPolicy::EPOLICY_MAXINDICES_WII)
+			if(ColladaExportPolicy::context()->mPrimGroupPolicy.mMaxIndices == ColladaPrimGroupPolicy::EPOLICY_MAXINDICES_WII)
 			{
 				if(inumidx > WII_PRIM_GROUP_MAX_INDICES)
 				{
@@ -162,7 +162,7 @@ void BuildXgmClusterPrimGroups( lev2::XgmCluster & XgmCluster, const std::vector
 
 		ork::lev2::XgmPrimGroup & StripGroup = XgmCluster.mpPrimGroups[ ipg++ ];
 
-		if(ColladaExportPolicy::GetContext()->mPrimGroupPolicy.mMaxIndices == ColladaPrimGroupPolicy::EPOLICY_MAXINDICES_WII)
+		if(ColladaExportPolicy::context()->mPrimGroupPolicy.mMaxIndices == ColladaPrimGroupPolicy::EPOLICY_MAXINDICES_WII)
 			if(inumidx > WII_PRIM_GROUP_MAX_INDICES)
 			{
 				orkerrorlog("ERROR: <%s> Wii prim group max indices exceeded: %d\n", policy->mColladaOutName.c_str(), inumidx);

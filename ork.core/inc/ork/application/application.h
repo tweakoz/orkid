@@ -35,7 +35,7 @@ public:
 
 	Application();
 
-	static Application* GetContext() { return gctx; }
+	static Application* context() { return gctx; }
 
 	StringPool &GetStringPool() { return mStringPool; }
 	const StringPool &GetStringPool() const { return mStringPool; }

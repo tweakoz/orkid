@@ -22,7 +22,7 @@ IndexBufferBase::IndexBufferBase()
 
 IndexBufferBase::~IndexBufferBase()
 {
-	GfxTarget* pTARG = GfxEnv::GetRef().GetLoaderTarget();
+	Context* pTARG = GfxEnv::GetRef().GetLoaderTarget();
 	//pTARG->GBI()->ReleaseIB( *this );
 	mpIndices = 0;
 }
@@ -127,13 +127,13 @@ VertexBufferBase::VertexBufferBase( int iMax, int iFlush, int iSize, EPrimitiveT
 
 VertexBufferBase::~VertexBufferBase()
 {
-	GfxTarget* pTARG = GfxEnv::GetRef().GetLoaderTarget();
+	Context* pTARG = GfxEnv::GetRef().GetLoaderTarget();
 	//pTARG->GBI()->ReleaseVB( *this );
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void VtxWriterBase::Lock( GfxTarget* pT, VertexBufferBase* pVB, int icount )
+void VtxWriterBase::Lock( Context* pT, VertexBufferBase* pVB, int icount )
 {
 	OrkAssert(pVB!=0);
 	bool bringlock = pVB->GetRingLock();
@@ -167,7 +167,7 @@ void VtxWriterBase::Lock( GfxTarget* pT, VertexBufferBase* pVB, int icount )
 	////////////////////////////////////////////
 	pVB->SetNumVertices( inewbase );
 }
-void VtxWriterBase::UnLock( GfxTarget* pT, u32 ulflgs )
+void VtxWriterBase::UnLock( Context* pT, u32 ulflgs )
 {
 	OrkAssert(mpVB!=0);
 	pT->GBI()->UnLockVB( *mpVB);

@@ -34,7 +34,7 @@ extern bool sbExit;
 extern int giCurMouseX;
 extern int giCurMouseY;
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxTargetGL, "GfxTargetGL")
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ContextGL, "ContextGL")
 ///////////////////////////////////////////////////////////////////////////////
 
 //		HGLRC				mhGLRC;		// Handle to a GL context.
@@ -108,9 +108,9 @@ int GetGlError( void )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void OpenGlGfxTargetInit()
+void OpenGlContextInit()
 {
-	GfxEnv::SetTargetClass(GfxTargetGL::GetClassStatic());
+	GfxEnv::setContextClass(ContextGL::GetClassStatic());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -119,8 +119,8 @@ std::string GetGlErrorString( void );
 
 /////////////////////////////////////////////////////////////////////////
 
-GfxTargetGL::GfxTargetGL()
-	: GfxTarget()
+ContextGL::ContextGL()
+	: Context()
 	, mFxI( *this )
 	, mImI( *this )
 	, mGbI( *this )
@@ -132,7 +132,7 @@ GfxTargetGL::GfxTargetGL()
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxTargetGL::SwapGLContext( CTXBASE *pCTFL )
+void ContextGL::SwapGLContext( CTXBASE *pCTFL )
 {
 	GlWinPlatformObject* plato = (GlWinPlatformObject*) mPlatformHandle;
 
@@ -141,7 +141,7 @@ void GfxTargetGL::SwapGLContext( CTXBASE *pCTFL )
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxTargetGL::makeCurrentContext( void )
+void ContextGL::makeCurrentContext( void )
 {
 	GlWinPlatformObject* plato = (GlWinPlatformObject*) mPlatformHandle;
 
@@ -158,9 +158,9 @@ LRESULT WINAPI OGLMsgProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam );
 
 /////////////////////////////////////////////////////////////////////////
 
-static GfxTargetGL *gpmaincontext = 0;
+static ContextGL *gpmaincontext = 0;
 
-void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase )
+void ContextGL::InitializeContext( Window *pWin, CTXBASE* pctxbase )
 {
 	CTQT *pqtwin = (CTQT*) pWin->mpCTXBASE;
 	GlWinPlatformObject* plato = new GlWinPlatformObject;
@@ -169,7 +169,7 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase )
 	mFbI.SetThisBuffer( pWin );
 	plato->mhHWND =  HWND(pqtwin->winId());
 	pWin->SetContext(this);
-	pctxbase->SetTarget(this);
+	pctxbase->setContext(this);
 	///////////////////////////////////////
 	//extern u32 W32KeyMap_Current[8]; // 256 bits
 	//for( int idx=0; idx<8; idx++ )
@@ -205,7 +205,7 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase )
 
 	if( gbinitglew )
 	{
-		HGLRC tempContext=wglCreateContext(RenderingDC);
+		HGLRC tempContext=wglinitContext(RenderingDC);
 		wglMakeCurrent(RenderingDC,tempContext);
 		GLenum giOK = glewInit();
 		OrkAssert( giOK == GLEW_OK );
@@ -221,8 +221,8 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase )
 		WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
 		0
 	};
-	HGLRC OpenGLContext = wglCreateContextAttribsARB( RenderingDC, 0, attribs );
-	//			     const int *attribList)	HGLRC OpenGLContext = wglCreateContext( RenderingDC );
+	HGLRC OpenGLContext = wglinitContextAttribsARB( RenderingDC, 0, attribs );
+	//			     const int *attribList)	HGLRC OpenGLContext = wglinitContext( RenderingDC );
 
 	OrkAssert( OpenGLContext );
 
@@ -267,7 +267,7 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase )
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxTargetGL::InitializeContext( GfxBuffer *pBuf )
+void ContextGL::InitializeContext( OffscreenBuffer *pBuf )
 {
 	GlWinPlatformObject* shmaster = GlWinPlatformObject::gShareMaster;
 
@@ -282,7 +282,7 @@ void GfxTargetGL::InitializeContext( GfxBuffer *pBuf )
 
 	FBI()->SetOffscreenTarget( true );
 
-	GfxTargetGL* pTARG = this;
+	ContextGL* pTARG = this;
 
 //	HDC hWindowDC = pTARG->GetHDC();
 	//HGLRC hWindowGLRC = pTARG->GetHGLRC();
@@ -319,14 +319,14 @@ void GfxTargetGL::InitializeContext( GfxBuffer *pBuf )
 ///////////////////////////////////////////////////////////////////////////////
 
 
-bool GfxTargetGL::SetDisplayMode(DisplayMode *mode)
+bool ContextGL::SetDisplayMode(DisplayMode *mode)
 {
 	return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GfxTargetGL::~GfxTargetGL()
+ContextGL::~ContextGL()
 {
 //	FontMan::FlushFonts();
 }

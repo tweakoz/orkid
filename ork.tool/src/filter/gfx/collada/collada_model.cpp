@@ -46,7 +46,7 @@ namespace ork { namespace tool {
 
 bool CColladaModel::FindDaeMeshes( void )
 {
-	const ColladaExportPolicy* policy = ColladaExportPolicy::GetContext();
+	const ColladaExportPolicy* policy = ColladaExportPolicy::context();
 
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
@@ -267,7 +267,7 @@ typedef orkmap<std::string,ork::lev2::XgmSkelNode*> SkelMap;
 bool CColladaModel::ParseControllers( )
 {
 	const FCDControllerLibrary * ConLib = mDocument->GetControllerLibrary();
-	const ColladaExportPolicy* policy = ColladaExportPolicy::GetContext();
+	const ColladaExportPolicy* policy = ColladaExportPolicy::context();
 
 	if( 0 == ConLib ) return true;
 
@@ -614,7 +614,7 @@ bool CColladaModel::ParseControllers( )
 
 		if( targetMesh->IsSkinned() )
 		{
-			ColladaExportPolicy* policy = ColladaExportPolicy::GetContext();
+			ColladaExportPolicy* policy = ColladaExportPolicy::context();
 			policy->mbIsSkinned = true;
 		}
 	}
@@ -626,7 +626,7 @@ bool CColladaModel::ParseControllers( )
 
 bool CColladaModel::ParseGeometries()
 {
-	const ColladaExportPolicy* policy = ColladaExportPolicy::GetContext();
+	const ColladaExportPolicy* policy = ColladaExportPolicy::context();
 
 	bool brval = false;
 

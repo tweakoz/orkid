@@ -82,7 +82,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N6C2T4() // basic wii environm
 	const float kVertexScale(1.0f);
 	const fvec2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
-	lev2::GfxTargetDummy DummyTarget;
+	lev2::ContextDummy DummyTarget;
 	lev2::VtxWriter<ork::lev2::SVtxV12N6C2T4> vwriter;
 	_vertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N6C2T4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
 	vwriter.Lock( &DummyTarget, _vertexBuffer, NumVertexIndices );
@@ -119,7 +119,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12B12T8C4() // basic pc envir
 	const float kVertexScale(1.0f);
 	const fvec2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
-	lev2::GfxTargetDummy DummyTarget;
+	lev2::ContextDummy DummyTarget;
 	lev2::VtxWriter<ork::lev2::SVtxV12N12B12T8C4> vwriter;
 	_vertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12B12T8C4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
 	vwriter.Lock( &DummyTarget, _vertexBuffer, NumVertexIndices );
@@ -144,7 +144,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12T16C4() // basic pc environ
 	const float kVertexScale(1.0f);
 	const fvec2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
-	lev2::GfxTargetDummy DummyTarget;
+	lev2::ContextDummy DummyTarget;
 	lev2::VtxWriter<ork::lev2::SVtxV12N12T16C4> vwriter;
 	_vertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12T16C4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
 	vwriter.Lock( &DummyTarget, _vertexBuffer, NumVertexIndices );
@@ -169,7 +169,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12B12T16() // basic pc enviro
 	const float kVertexScale(1.0f);
 	const fvec2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
-	lev2::GfxTargetDummy DummyTarget;
+	lev2::ContextDummy DummyTarget;
 	lev2::VtxWriter<ork::lev2::SVtxV12N12B12T16> vwriter;
 	_vertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12B12T16>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
 	vwriter.Lock( &DummyTarget, _vertexBuffer, NumVertexIndices );

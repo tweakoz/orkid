@@ -22,10 +22,10 @@ class IRenderer;
 class Texture;
 struct LightingGroup;
 class LightManager;
-class GfxTarget;
-class GfxBuffer;
+class Context;
+class OffscreenBuffer;
 class RtGroup;
-class GfxWindow;
+class Window;
 class XgmMaterialStateInst;
 class IRenderableDag;
 class IRenderTarget;
@@ -126,12 +126,12 @@ typedef svar64_t rendervar_t;
 
 struct RenderContextFrameData {
 
-  RenderContextFrameData(GfxTarget* ptarg);
+  RenderContextFrameData(Context* ptarg);
 
   RenderContextFrameData(const RenderContextFrameData&) =delete;
   RenderContextFrameData& operator=(const RenderContextFrameData&) =delete;
 
-  GfxTarget* GetTarget(void) const { return mpTarget; }
+  Context* GetTarget(void) const { return mpTarget; }
   LightManager* GetLightManager() const { return _lightmgr; }
 
   void SetLightManager(LightManager* lmgr) { _lightmgr = lmgr; }
@@ -153,7 +153,7 @@ struct RenderContextFrameData {
   CompositingImpl* _cimpl = nullptr;
   LightManager* _lightmgr = nullptr;
   usermap_t _userProperties;
-  GfxTarget* const mpTarget = nullptr;
+  Context* const mpTarget = nullptr;
   const IRenderer* _renderer;
 };
 

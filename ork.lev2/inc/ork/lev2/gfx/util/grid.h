@@ -58,7 +58,7 @@ class Grid2d
 {
 public:
 
-	void Render( GfxTarget* pTARG, int iw, int ih );
+	void Render( Context* pTARG, int iw, int ih );
 
 	float				GetVisGridBase() const { return mVisGridBase; }
 	float				GetVisGridDiv() const { return mVisGridDiv; }

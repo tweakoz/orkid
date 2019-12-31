@@ -23,7 +23,7 @@ void GfxMaterial3DSolid::Describe() {}
 
 bool gearlyhack = true;
 
-GfxMaterial3DSolid::GfxMaterial3DSolid(GfxTarget* pTARG)
+GfxMaterial3DSolid::GfxMaterial3DSolid(Context* pTARG)
     : meColorMode(EMODE_MOD_COLOR) {
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
   _rasterstate.SetAlphaTest(EALPHATEST_OFF);
@@ -44,7 +44,7 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(GfxTarget* pTARG)
 }
 
 GfxMaterial3DSolid::GfxMaterial3DSolid(
-    GfxTarget* pTARG, const char* puserfx, const char* pusertek, bool allowcompilefailure, bool unmanaged)
+    Context* pTARG, const char* puserfx, const char* pusertek, bool allowcompilefailure, bool unmanaged)
     : meColorMode(EMODE_USER)
     , mUserFxName(puserfx)
     , mUserTekName(pusertek)
@@ -79,7 +79,7 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterial3DSolid::Init(ork::lev2::GfxTarget* pTarg) {
+void GfxMaterial3DSolid::Init(ork::lev2::Context* pTarg) {
 
   auto fxi = pTarg->FXI();
 
@@ -162,7 +162,7 @@ bool GfxMaterial3DSolid::IsUserFxOk() const {
 
 /////////////////////////////////////////////////////////////////////////
 
-int GfxMaterial3DSolid::BeginBlock(GfxTarget* pTarg, const RenderContextInstData& RCID) {
+int GfxMaterial3DSolid::BeginBlock(Context* pTarg, const RenderContextInstData& RCID) {
 
   const RenderContextFrameData* RCFD = pTarg->topRenderContextFrameData();
   const auto& CPD = RCFD->topCPD();
@@ -207,13 +207,13 @@ int GfxMaterial3DSolid::BeginBlock(GfxTarget* pTarg, const RenderContextInstData
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterial3DSolid::EndBlock(GfxTarget* pTarg) { pTarg->FXI()->EndBlock(hModFX); }
+void GfxMaterial3DSolid::EndBlock(Context* pTarg) { pTarg->FXI()->EndBlock(hModFX); }
 
 /////////////////////////////////////////////////////////////////////////
 
 static bool gbskip = false;
 
-bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
+bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
   if (gbskip)
     return false;
 
@@ -336,7 +336,7 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void GfxMaterial3DSolid::EndPass(GfxTarget* pTarg) {
+void GfxMaterial3DSolid::EndPass(Context* pTarg) {
   if (false == gbskip)
     pTarg->FXI()->EndPass(hModFX);
 }

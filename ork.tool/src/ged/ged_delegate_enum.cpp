@@ -104,7 +104,7 @@ class GedEnumWidget : public GedItemNode {
   EnumWriter meWriter;
   std::string mCurrentValue;
 
-  void DoDraw(lev2::GfxTarget* pTARG) // virtual
+  void DoDraw(lev2::Context* pTARG) // virtual
   {
     //////////////////////////////////////
     int ilabw = propnameWidth() + 16;

@@ -67,7 +67,7 @@ namespace ork::lev2 {
     Fx3CompositingTechnique();
     ~Fx3CompositingTechnique();
 
-    void CompositeLayerToScreen(lev2::GfxTarget* pT, ECOMPOSITEBlend eblend, lev2::RtGroup* psrcgroupA,
+    void CompositeLayerToScreen(lev2::Context* pT, ECOMPOSITEBlend eblend, lev2::RtGroup* psrcgroupA,
                                 lev2::RtGroup* psrcgroupB, lev2::RtGroup* psrcgroupC, float levA, float levB, float levC);
 
     const PoolString& GetGroupA() const { return mGroupA; }
@@ -93,7 +93,7 @@ namespace ork::lev2 {
     CompositingMaterial mCompositingMaterial;
 
   private:
-    void Init(lev2::GfxTarget* pTARG, int w, int h) final;
+    void Init(lev2::Context* pTARG, int w, int h) final;
     bool assemble(CompositorDrawData& drawdata) final;
     void composite(CompositorDrawData& drawdata) final;
   };
@@ -108,7 +108,7 @@ namespace ork::lev2 {
     void _readGroup(ork::rtti::ICastable*& val) const;
     void _writeGroup(ork::rtti::ICastable* const& val);
 
-    void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
+    void DoInit(lev2::Context* pTARG, int w, int h) final;                          // virtual
     void DoRender(CompositorDrawData& drawdata) final; // virtual
 
     lev2::RtBuffer* GetOutput() const final;

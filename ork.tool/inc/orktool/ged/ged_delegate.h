@@ -89,7 +89,7 @@ public:
 	void OnMouseDoubleClicked(const ork::ui::Event& ev) final;
 	void OnMouseReleased(const ork::ui::Event& ev) final;
 
-	void DoDraw(lev2::GfxTarget *pTARG) final;
+	void DoDraw(lev2::Context *pTARG) final;
 };
 ///////////////////////////////////////////////////////////////////////////////
 template <typename IODriver> class GedFloatNode : public GedItemNode
@@ -99,7 +99,7 @@ public:
 	GedFloatNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj );
 
     void OnUiEvent( const ork::ui::Event& ev ) final;
-    void DoDraw( lev2::GfxTarget* pTARG ) final;
+    void DoDraw( lev2::Context* pTARG ) final;
 	
     typedef float datatype;
 	void ReSync(); // virtual 
@@ -118,7 +118,7 @@ public:
 
     void OnUiEvent( const ork::ui::Event& ev ) final;
 
-	void DoDraw( lev2::GfxTarget* pTARG ) final;
+	void DoDraw( lev2::Context* pTARG ) final;
 	typedef int datatype;
 	void ReSync(); // virtual
 	IODriver& RefIODriver() { return mIoDriver; }
@@ -134,7 +134,7 @@ public:
 
 	void OnUiEvent( const ork::ui::Event& ev ) final;
 
-	/*virtual*/ void DoDraw( lev2::GfxTarget* pTARG );
+	/*virtual*/ void DoDraw( lev2::Context* pTARG );
 	IODriver& RefIODriver() { return mIoDriver; }
 private:
 	IODriver	mIoDriver;
@@ -150,7 +150,7 @@ public:
 
 	void OnMouseDoubleClicked( const ork::ui::Event& ev ) final;
 
-	void DoDraw( lev2::GfxTarget* pTARG ); // virtual
+	void DoDraw( lev2::Context* pTARG ); // virtual
 private:
 	Setter		mSetter;
 	bool		mbInteractive;
@@ -200,7 +200,7 @@ private:
 	void OnMouseDoubleClicked( const ork::ui::Event& ev ) final;
 
 	void CheckVis();
-	void DoDraw( lev2::GfxTarget* pTARG ) final;
+	void DoDraw( lev2::Context* pTARG ) final;
 
 	void AddItem(const ork::ui::Event& ev);
 	void RemoveItem(const ork::ui::Event& ev);
@@ -292,7 +292,7 @@ public:
 	GedAssetNode( ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj );
 	void OnCreateObject();
 	void SetLabel();
-	void DoDraw( lev2::GfxTarget* pTARG ); // virtual
+	void DoDraw( lev2::Context* pTARG ); // virtual
 	IODriver& RefIODriver() { return mIoDriver; }
 
 private:
@@ -313,7 +313,7 @@ public:
 	GedFileNode( ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj );
 	void OnCreateObject();
 	void SetLabel();
-	void DoDraw( lev2::GfxTarget* pTARG ); // virtual
+	void DoDraw( lev2::Context* pTARG ); // virtual
 	IODriver& RefIODriver() { return mIoDriver; }
 
 private:
@@ -382,7 +382,7 @@ protected:
 };
 class OpsNode : public GedItemNode
 {
-	void DoDraw( lev2::GfxTarget* pTARG ) override;
+	void DoDraw( lev2::Context* pTARG ) override;
 	void OnMouseClicked( const ork::ui::Event& ev ) final;
 	orkvector< std::pair< std::string,any64> > mOps;	
 

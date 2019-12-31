@@ -22,7 +22,7 @@
 namespace ork { namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
 
-Renderer::Renderer(ent::SceneEditorBase& ed, lev2::GfxTarget* ptarg)
+Renderer::Renderer(ent::SceneEditorBase& ed, lev2::Context* ptarg)
     : lev2::IRenderer(ptarg)
     , mEditor(ed) {}
 
@@ -36,7 +36,7 @@ void Renderer::RenderModelGroup(const modelgroup_t& mdlgroup) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::RenderGroupState rgs) const {
-  lev2::GfxTarget* target = GetTarget();
+  lev2::Context* target = GetTarget();
 
   const auto& SelMgr = mEditor.selectionManager();
 

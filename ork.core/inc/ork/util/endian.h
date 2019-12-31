@@ -64,7 +64,7 @@ struct EndianContext : public ork::util::Context<EndianContext>
 
 inline EEndian GetCurrentEndian()
 {
-	EndianContext* pctx = ork::EndianContext::GetContext();
+	EndianContext* pctx = ork::EndianContext::context();
 	EEndian rval = (pctx!=0) ? pctx->mendian : ork::kHostEndian;
 	return rval;
 }

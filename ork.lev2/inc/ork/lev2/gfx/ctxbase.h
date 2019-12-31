@@ -62,7 +62,7 @@ public:
 	void SetThisXID( CTFLXID xid ) { mxidThis=xid; }
 	void SetTopXID( CTFLXID xid ) { mxidTopLevel=xid; }
 
-	CTXBASE( GfxWindow* pwin );
+	CTXBASE( Window* pwin );
 
 	virtual void SlotRepaint( void ) {}
 
@@ -74,10 +74,10 @@ public:
 	virtual void Show() {}
 	virtual void Hide() {}
 
-	GfxTarget* GetTarget() const { return mpTarget; }
-	GfxWindow* GetWindow() const { return mpGfxWindow; }
-	void SetTarget(GfxTarget*pt) { mpTarget=pt; }
-	void SetWindow(GfxWindow*pw) { mpGfxWindow=pw; }
+	Context* GetTarget() const { return mpTarget; }
+	Window* GetWindow() const { return mpWindow; }
+	void setContext(Context*pt) { mpTarget=pt; }
+	void SetWindow(Window*pw) { mpWindow=pw; }
 
 	virtual fvec2 MapCoordToGlobal( const fvec2& v ) const { return v; }
 
@@ -85,8 +85,8 @@ protected:
 
   std::stack<RefreshPolicyItem> _policyStack;
 
-	GfxTarget*					mpTarget;
-	GfxWindow*					mpGfxWindow;
+	Context*					mpTarget;
+	Window*					mpWindow;
 
 	ui::Event					mUIEvent;
 	CTFLXID						mxidThis;

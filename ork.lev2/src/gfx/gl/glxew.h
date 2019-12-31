@@ -108,7 +108,7 @@ extern int glXGetConfig (Display *dpy, XVisualInfo *vis, int attrib, int *value)
 extern XVisualInfo* glXChooseVisual (Display *dpy, int screen, int *attribList);
 extern GLXPixmap glXCreateGLXPixmap (Display *dpy, XVisualInfo *vis, Pixmap pixmap);
 extern void glXDestroyGLXPixmap (Display *dpy, GLXPixmap pix);
-extern GLXContext glXCreateContext (Display *dpy, XVisualInfo *vis, GLXContext shareList, Bool direct);
+extern GLXContext glXinitContext (Display *dpy, XVisualInfo *vis, GLXContext shareList, Bool direct);
 extern void glXDestroyContext (Display *dpy, GLXContext ctx);
 extern Bool glXIsDirect (Display *dpy, GLXContext ctx);
 extern void glXCopyContext (Display *dpy, GLXContext src, GLXContext dst, GLuint mask);
@@ -673,7 +673,7 @@ typedef GLXFBConfigSGIX ( * PFNGLXGETFBCONFIGFROMVISUALSGIXPROC) (Display* dpy, 
 typedef XVisualInfo* ( * PFNGLXGETVISUALFROMFBCONFIGSGIXPROC) (Display *dpy, GLXFBConfig config);
 
 #define glXChooseFBConfigSGIX GLXEW_GET_FUN(__glewXChooseFBConfigSGIX)
-#define glXCreateContextWithConfigSGIX GLXEW_GET_FUN(__glewXCreateContextWithConfigSGIX)
+#define glXinitContextWithConfigSGIX GLXEW_GET_FUN(__glewXinitContextWithConfigSGIX)
 #define glXCreateGLXPixmapWithConfigSGIX GLXEW_GET_FUN(__glewXCreateGLXPixmapWithConfigSGIX)
 #define glXGetFBConfigAttribSGIX GLXEW_GET_FUN(__glewXGetFBConfigAttribSGIX)
 #define glXGetFBConfigFromVisualSGIX GLXEW_GET_FUN(__glewXGetFBConfigFromVisualSGIX)
@@ -942,7 +942,7 @@ extern PFNGLXWAITFORSBCOMLPROC __glewXWaitForSbcOML;
 #endif
 
 extern PFNGLXCHOOSEFBCONFIGSGIXPROC __glewXChooseFBConfigSGIX;
-extern PFNGLXCREATECONTEXTWITHCONFIGSGIXPROC __glewXCreateContextWithConfigSGIX;
+extern PFNGLXCREATECONTEXTWITHCONFIGSGIXPROC __glewXinitContextWithConfigSGIX;
 extern PFNGLXCREATEGLXPIXMAPWITHCONFIGSGIXPROC __glewXCreateGLXPixmapWithConfigSGIX;
 extern PFNGLXGETFBCONFIGATTRIBSGIXPROC __glewXGetFBConfigAttribSGIX;
 extern PFNGLXGETFBCONFIGFROMVISUALSGIXPROC __glewXGetFBConfigFromVisualSGIX;
@@ -1038,10 +1038,10 @@ typedef struct GLXEWContextStruct GLXEWContext;
 extern GLenum glxewContextInit (GLXEWContext* ctx);
 extern GLboolean glxewContextIsSupported (GLXEWContext* ctx, const char* name);
 
-#define glxewInit() glxewContextInit(glxewGetContext())
-#define glxewIsSupported(x) glxewContextIsSupported(glxewGetContext(), x)
+#define glxewInit() glxewContextInit(glxewcontext())
+#define glxewIsSupported(x) glxewContextIsSupported(glxewcontext(), x)
 
-#define GLXEW_GET_VAR(x) glxewGetContext()->x
+#define GLXEW_GET_VAR(x) glxewcontext()->x
 #define GLXEW_GET_FUN(x) x
 
 #else /* GLEW_MX */

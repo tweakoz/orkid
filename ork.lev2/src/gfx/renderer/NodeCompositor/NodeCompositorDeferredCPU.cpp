@@ -51,7 +51,7 @@ struct IMPL {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ~IMPL() {}
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  void init(lev2::GfxTarget* target) {
+  void init(lev2::Context* target) {
     _context.gpuInit(target);
     if( nullptr == _lightbuffer ) {
       _lightbuffer = target->FXI()->createParamBuffer(65536);
@@ -291,7 +291,7 @@ DeferredCompositingNode::DeferredCompositingNode() { _impl = std::make_shared<IM
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNode::~DeferredCompositingNode() {}
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) { _impl.Get<std::shared_ptr<IMPL>>()->init(pTARG); }
+void DeferredCompositingNode::DoInit(lev2::Context* pTARG, int iW, int iH) { _impl.Get<std::shared_ptr<IMPL>>()->init(pTARG); }
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNode::DoRender(CompositorDrawData& drawdata) {
   auto impl = _impl.Get<std::shared_ptr<IMPL>>();

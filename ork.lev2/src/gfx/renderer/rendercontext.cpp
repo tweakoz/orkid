@@ -76,7 +76,7 @@ float RenderContextInstData::GetEngineParamFloat(int idx) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RenderContextFrameData::RenderContextFrameData(GfxTarget* ptarg)
+RenderContextFrameData::RenderContextFrameData(Context* ptarg)
     : _lightmgr(0)
     , mpTarget(ptarg) {}
 

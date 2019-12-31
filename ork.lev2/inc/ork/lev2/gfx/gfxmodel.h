@@ -262,7 +262,7 @@ struct XgmModel {
 
   void BeginRigidBlock(const fcolor4& ModColor,
                        const fmtx4& WorldMat,
-                       ork::lev2::GfxTarget* pTARG,
+                       ork::lev2::Context* pTARG,
                        const RenderContextInstData& MatCtx,
                        const RenderContextInstModelData& MdlCtx) const;
   void EndRigidBlock() const;
@@ -270,21 +270,21 @@ struct XgmModel {
 
   void RenderRigid(const fcolor4& ModColor,
                    const fmtx4& WorldMat,
-                   ork::lev2::GfxTarget* pTARG,
+                   ork::lev2::Context* pTARG,
                    const RenderContextInstData& MatCtx,
                    const RenderContextInstModelData& MdlCtx) const;
 
   void RenderMultipleRigid(const fcolor4& ModColor,
                            const fmtx4* WorldMats,
                            int icount,
-                           ork::lev2::GfxTarget* pTARG,
+                           ork::lev2::Context* pTARG,
                            const RenderContextInstData& MatCtx,
                            const RenderContextInstModelData& MdlCtx) const;
 
   void RenderSkinned(const XgmModelInst* minst,
                      const fcolor4& ModColor,
                      const fmtx4& WorldMat,
-                     ork::lev2::GfxTarget* pTARG,
+                     ork::lev2::Context* pTARG,
                      const RenderContextInstData& MatCtx,
                      const RenderContextInstModelData& MdlCtx) const;
 
@@ -292,7 +292,7 @@ struct XgmModel {
                              const fcolor4& ModColor,
                              const fmtx4* WorldMats,
                              int icount,
-                             ork::lev2::GfxTarget* pTARG,
+                             ork::lev2::Context* pTARG,
                              const RenderContextInstData& MatCtx,
                              const RenderContextInstModelData& MdlCtx) const;
 

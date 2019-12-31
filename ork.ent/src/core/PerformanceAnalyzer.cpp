@@ -160,7 +160,7 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(Simulation* inst, Entity* pent) 
     Entity* pent;
     Simulation* psi;
 
-    static void doit(lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const lev2::CallbackRenderable* pren) {
+    static void doit(lev2::RenderContextInstData& rcid, lev2::Context* targ, const lev2::CallbackRenderable* pren) {
       const yo* pyo = pren->GetDrawableDataA().Get<const yo*>();
 
       const PerformanceAnalyzerArchetype* parch = pyo->parch;
@@ -168,7 +168,7 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(Simulation* inst, Entity* pent) 
       const Simulation* pSI                     = pyo->psi;
       const PerfAnalyzerControllerInst* ssci    = pent->GetTypedComponent<PerfAnalyzerControllerInst>();
       const PerfAnalyzerControllerData& cd      = ssci->GetCD();
-      ork::lev2::GfxTarget* pTARG               = rcid.GetRenderer()->GetTarget();
+      ork::lev2::Context* pTARG               = rcid.GetRenderer()->GetTarget();
       bool IsPickState                          = pTARG->FBI()->IsPickState();
 
       if (cd.mbEnable) {

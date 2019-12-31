@@ -19,7 +19,7 @@ public:
   PtxCompositingNode();
   ~PtxCompositingNode() final;
 
-  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;
+  void DoInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
   proctex::ProcTex& getTemplate() const { return _template; }
   int bufferDim() const { return _bufferDim; }

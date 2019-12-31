@@ -21,17 +21,17 @@ class GfxMaterialUI : public GfxMaterial
 
 	public:
 
-	GfxMaterialUI(GfxTarget *pTarg=0);
+	GfxMaterialUI(Context *pTarg=0);
 	~GfxMaterialUI() final;
 
 	void Update( void ) final {}
 
-	void Init( GfxTarget *pTarg ) final;
+	void Init( Context *pTarg ) final;
 
-	bool BeginPass( GfxTarget* pTARG, int iPass=0 ) final;
-	void EndPass( GfxTarget* pTARG ) final;
-	int BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx ) final;
-	void EndBlock( GfxTarget* pTARG ) final;
+	bool BeginPass( Context* pTARG, int iPass=0 ) final;
+	void EndPass( Context* pTARG ) final;
+	int BeginBlock( Context* pTARG, const RenderContextInstData &MatCtx ) final;
+	void EndBlock( Context* pTARG ) final;
 
 	void SetUIColorMode( EUIColorMode emod ) { meUIColorMode = emod; }
 	EUIColorMode GetUIColorMode( void ) { return meUIColorMode; }
@@ -78,15 +78,15 @@ class GfxMaterialUIText : public GfxMaterial
 	public:
 	static void ClassInit() {}
 
-	GfxMaterialUIText(GfxTarget *pTarg=0);
+	GfxMaterialUIText(Context *pTarg=0);
 	
 	void Update( void ) final {}
-	void Init( GfxTarget *pTarg ) final;
+	void Init( Context *pTarg ) final;
 
-	bool BeginPass( GfxTarget* pTARG, int iPass=0 ) final;
-	void EndPass( GfxTarget* pTARG ) final;
-	int BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx ) final;
-	void EndBlock( GfxTarget* pTARG ) final;
+	bool BeginPass( Context* pTARG, int iPass=0 ) final;
+	void EndPass( Context* pTARG ) final;
+	int BeginBlock( Context* pTARG, const RenderContextInstData &MatCtx ) final;
+	void EndBlock( Context* pTARG ) final;
 
 	//////////////////////////////////////////////////////////////////////////////
 
@@ -114,14 +114,14 @@ class GfxMaterialUITextured : public GfxMaterial
 {	public:
 	
 	static void ClassInit();
-	GfxMaterialUITextured( GfxTarget *pTarg = 0, const std::string & Technique="uitextured" );
-	void Init( GfxTarget *pTarg ) final;
-    void Init( GfxTarget *pTarg, const std::string & Technique );
+	GfxMaterialUITextured( Context *pTarg = 0, const std::string & Technique="uitextured" );
+	void Init( Context *pTarg ) final;
+    void Init( Context *pTarg, const std::string & Technique );
 	void Update( void ) final {}
-	bool BeginPass( GfxTarget* pTARG, int iPass=0 ) final;
-	void EndPass( GfxTarget* pTARG ) final;
-	int BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx ) final;
-	void EndBlock( GfxTarget* pTARG ) final;
+	bool BeginPass( Context* pTARG, int iPass=0 ) final;
+	void EndPass( Context* pTARG ) final;
+	int BeginBlock( Context* pTARG, const RenderContextInstData &MatCtx ) final;
+	void EndBlock( Context* pTARG ) final;
 	
 	void EffectInit( void );
 

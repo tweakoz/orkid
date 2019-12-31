@@ -81,7 +81,7 @@ struct DeferredContext {
   ////////////////////////////////////////////////////////////////////
   void update(const ViewData& VD);
   ////////////////////////////////////////////////////////////////////
-  void gpuInit(GfxTarget* target);
+  void gpuInit(Context* target);
   const uint32_t* captureDepthClusters(CompositorDrawData& drawdata, const ViewData& VD);
   void renderUpdate(CompositorDrawData& drawdata);
   void renderGbuffer(CompositorDrawData& drawdata, const ViewData& VD);
@@ -167,7 +167,7 @@ public:
   fvec4 _fogColor;
 
 private:
-  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;
+  void DoInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
 
   lev2::RtBuffer* GetOutput() const final;
@@ -213,7 +213,7 @@ public:
   fvec4 _fogColor;
 
 private:
-  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;
+  void DoInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
   void _readEnvTexture(ork::rtti::ICastable*& tex) const;
   void _writeEnvTexture(ork::rtti::ICastable* const& tex);
@@ -247,7 +247,7 @@ public:
   fvec4 _fogColor;
 
 private:
-  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;
+  void DoInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
 
   lev2::RtBuffer* GetOutput() const final;

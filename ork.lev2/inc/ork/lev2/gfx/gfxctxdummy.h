@@ -92,7 +92,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DuRasterStateInterface : public RasterStateInterface {
-  DuRasterStateInterface(GfxTarget& target);
+  DuRasterStateInterface(Context& target);
   void BindRasterState(const SRasterState& rState, bool bForce = false) override {
   }
   void SetZWriteMask(bool bv) override {
@@ -121,7 +121,7 @@ class DuMatrixStackInterface : public MatrixStackInterface {
   virtual fmtx4 Ortho(float left, float right, float top, float bottom, float fnear, float ffar);
 
 public:
-  DuMatrixStackInterface(GfxTarget& target)
+  DuMatrixStackInterface(Context& target)
       : MatrixStackInterface(target) {
   }
 };
@@ -176,7 +176,7 @@ public:
 
 class DuFrameBufferInterface : public FrameBufferInterface {
 public:
-  DuFrameBufferInterface(GfxTarget& target);
+  DuFrameBufferInterface(Context& target);
   ~DuFrameBufferInterface();
 
   virtual void SetRtGroup(RtGroup* Base) {
@@ -229,16 +229,16 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-class GfxTargetDummy : public GfxTarget {
-  RttiDeclareConcrete(GfxTargetDummy, GfxTarget);
+class ContextDummy : public Context {
+  RttiDeclareConcrete(ContextDummy, Context);
 
   friend class GfxEnv;
 
   ///////////////////////////////////////////////////////////////////////
 
 public:
-  GfxTargetDummy();
-  ~GfxTargetDummy() final;
+  ContextDummy();
+  ~ContextDummy() final;
 
   ///////////////////////////////////////////////////////////////////////
   // VtxBuf Interface
@@ -284,8 +284,8 @@ private:
   }
   void _doEndFrame(void) final {
   }
-  void InitializeContext(GfxWindow* pWin, CTXBASE* pctxbase) final; // make a window
-  void InitializeContext(GfxBuffer* pBuf) final;                    // make a pbuffer
+  void InitializeContext(Window* pWin, CTXBASE* pctxbase) final; // make a window
+  void InitializeContext(OffscreenBuffer* pBuf) final;                    // make a pbuffer
   void _doResizeMainSurface(int iX, int iY, int iW, int iH) final;
 
   ///////////////////////////////////////////////////////////////////////

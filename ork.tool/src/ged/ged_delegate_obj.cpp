@@ -156,7 +156,7 @@ GedObjNode<PropSetterObj>::GedObjNode(ObjModel& mdl, const char* name, const ref
   // std::string str = ork::CreateFormattedString("%s::Create", name );
 }
 
-template <typename Setter> void GedObjNode<Setter>::DoDraw(lev2::GfxTarget* pTARG) {
+template <typename Setter> void GedObjNode<Setter>::DoDraw(lev2::Context* pTARG) {
   GetSkin()->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);
   GetSkin()->DrawOutlineBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_DEFAULT_OUTLINE);
 

@@ -1097,7 +1097,7 @@ void GedMapNode::CheckVis() {
   mModel.GetGedWidget()->DoResize();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedMapNode::DoDraw(lev2::GfxTarget* pTARG) {
+void GedMapNode::DoDraw(lev2::Context* pTARG) {
   const int klabh = get_charh();
   const int kdim  = klabh - 2;
 

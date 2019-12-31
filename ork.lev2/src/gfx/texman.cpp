@@ -79,7 +79,7 @@ Texture::Texture() {
 ///////////////////////////////////////////////////////////////////////////////
 
 Texture::~Texture() {
-  GfxTarget* pTARG = GfxEnv::GetRef().GetLoaderTarget();
+  Context* pTARG = GfxEnv::GetRef().GetLoaderTarget();
   pTARG->TXI()->DestroyTexture(this);
 }
 

@@ -46,7 +46,7 @@ namespace ork::lev2 {
 class XgmModel;
 class XgmMesh;
 class XgmCluster;
-class GfxTarget;
+class Context;
 class RenderContextInstData;
 } // namespace ork::lev2
 
@@ -106,7 +106,7 @@ struct PhysicsDebugger final : public btIDebugDraw {
   PhysicsDebugger();
 
   void addLine(const ork::fvec3& from, const ork::fvec3& to, const ork::fvec3& color);
-  void render(ork::lev2::RenderContextInstData& rcid, ork::lev2::GfxTarget* ptarg, lineqptr_t lines);
+  void render(ork::lev2::RenderContextInstData& rcid, ork::lev2::Context* ptarg, lineqptr_t lines);
   void SetDebug(bool bv) { _enabled = bv; }
 
   //////////////////////////

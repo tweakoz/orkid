@@ -157,7 +157,7 @@ void OldSchool::Log(LOG_SEVERITY severity, const std::string &chanid, char *form
 
 	static const char *SEVERITY_TEXT[] = { "INFO: ", "WARNING: ", "ERROR: ", "FATAL: " };
 
-	if(OldSchool::LogPolicy::GetContext()->mFileOut)
+	if(OldSchool::LogPolicy::context()->mFileOut)
 	{
 		File *pFile = new File((chanid + ".Log").c_str(), EFM_APPEND);
 		EFileErrCode eFileErr = pFile->Open();
@@ -172,8 +172,8 @@ void OldSchool::Log(LOG_SEVERITY severity, const std::string &chanid, char *form
 		}
 	}
 
-	if(OldSchool::LogPolicy::GetContext()->mAllChannelsToStdOut
-			|| OldSchool::LogPolicy::GetContext()->mChannelsToStdOut.find(chanid) != OldSchool::LogPolicy::GetContext()->mChannelsToStdOut.end())
+	if(OldSchool::LogPolicy::context()->mAllChannelsToStdOut
+			|| OldSchool::LogPolicy::context()->mChannelsToStdOut.find(chanid) != OldSchool::LogPolicy::context()->mChannelsToStdOut.end())
 		orkprintf("[%s] %s%s\n", chanid.c_str(), SEVERITY_TEXT[severity], errorbuffer);
 }
 

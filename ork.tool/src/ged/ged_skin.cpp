@@ -25,7 +25,7 @@ namespace ork { namespace tool { namespace ged {
 
 typedef SVtxV16T16C16 vtx_t;
 
-GedSkin::GedSkin(GfxTarget* ptarg) : miScrollY(0), mpCurrentGedVp(nullptr), mpFONT(nullptr), miCHARW(0), miCHARH(0) {}
+GedSkin::GedSkin(Context* ptarg) : miScrollY(0), mpCurrentGedVp(nullptr), mpFONT(nullptr), miCHARW(0), miCHARH(0) {}
 
 struct GedText {
   typedef ork::ArrayString<128> StringType;
@@ -87,7 +87,7 @@ void GedSkin::clear() {
 struct GedSkin0 : public GedSkin { ///////////////////////////////////////////////////////////////////
   bool mbPickMode;
   orkvector<GedText> mTexts;
-  GedSkin0(GfxTarget* ptarg) : GedSkin(ptarg) {
+  GedSkin0(Context* ptarg) : GedSkin(ptarg) {
     mpFONT = lev2::FontMan::GetFont("i14");
     miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
     miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
@@ -273,7 +273,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     }
   }
   ///////////////////////////////////////////////////////////////////
-  void Begin(GfxTarget* pTARG, GedVP* pVP) {
+  void Begin(Context* pTARG, GedVP* pVP) {
     mbPickMode = pTARG->FBI()->IsPickState();
     mpCurrentGedVp = pVP;
     mTexts.clear();
@@ -281,7 +281,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     ClearObjSet();
   }
   ///////////////////////////////////////////////////////////////////
-  void End(GfxTarget* pTARG) {
+  void End(Context* pTARG) {
     int iw = mpCurrentGedVp->GetW();
     int ih = mpCurrentGedVp->GetH();
     lev2::GfxMaterialUI uimat(pTARG);
@@ -396,7 +396,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   bool mbPickMode;
   orkvector<GedText> mTexts;
   ///////////////////////////////////////////////////////////////////
-  GedSkin1(GfxTarget* ptarg) : GedSkin(ptarg) {
+  GedSkin1(Context* ptarg) : GedSkin(ptarg) {
     mpFONT = lev2::FontMan::GetFont("i14");
     miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
     miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
@@ -578,7 +578,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     }
   }
   ///////////////////////////////////////////////////////////////////
-  void Begin(GfxTarget* pTARG, GedVP* pVP) {
+  void Begin(Context* pTARG, GedVP* pVP) {
     mbPickMode = pTARG->FBI()->IsPickState();
     mpCurrentGedVp = pVP;
     mTexts.clear();
@@ -586,7 +586,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     ClearObjSet();
   }
   ///////////////////////////////////////////////////////////////////
-  void End(GfxTarget* pTARG) {
+  void End(Context* pTARG) {
     int iw = mpCurrentGedVp->GetW();
     int ih = mpCurrentGedVp->GetH();
     lev2::GfxMaterialUI uimat(pTARG);

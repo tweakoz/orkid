@@ -29,7 +29,7 @@ class RenderContextFrameData;
 class FxShader;
 class FxShaderParam;
 class FxShaderParamBlock;
-class GfxTarget;
+class Context;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -449,7 +449,7 @@ struct LightingFxInterface
 
 	const LightingGroup*		mCurrentLightingGroup;
 
-	void ApplyLighting( GfxTarget *pTarg, int iPass );
+	void ApplyLighting( Context *pTarg, int iPass );
 
 	bool						mbHasLightingInterface;
 

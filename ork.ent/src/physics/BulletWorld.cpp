@@ -41,7 +41,7 @@ namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
 void bulletDebugEnqueueToLayer(ork::lev2::DrawableBufItem& cdb);
-void bulletDebugRender(ork::lev2::RenderContextInstData& rcid, ork::lev2::GfxTarget* targ,
+void bulletDebugRender(ork::lev2::RenderContextInstData& rcid, ork::lev2::Context* targ,
                                const ork::lev2::CallbackRenderable* pren);
 
 static PoolString sBulletFamily;

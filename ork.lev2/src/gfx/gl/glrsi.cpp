@@ -18,7 +18,7 @@
 
 namespace ork { namespace lev2 {
 
-GlRasterStateInterface::GlRasterStateInterface( GfxTarget& target )
+GlRasterStateInterface::GlRasterStateInterface( Context& target )
 	: RasterStateInterface(target) {}
 
 void GlRasterStateInterface::SetZWriteMask( bool bv )

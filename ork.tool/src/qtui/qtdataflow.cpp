@@ -34,7 +34,7 @@ namespace ork::lev2 {
 template <> void PickBuffer<ork::tool::GraphVP>::Draw(lev2::PixelFetchContext& ctx) {
   mPickIds.clear();
 
-  auto tgt  = GetContext();
+  auto tgt  = context();
   auto mtxi = tgt->MTXI();
   auto fbi  = tgt->FBI();
   auto fxi  = tgt->FXI();
@@ -130,7 +130,7 @@ GraphVP::GraphVP(DataFlowEditor& dfed, tool::ged::ObjModel& objmdl, const std::s
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GraphVP::draw_connections(GfxTarget* pTARG) {
+void GraphVP::draw_connections(Context* pTARG) {
   auto fbi     = pTARG->FBI();
   bool is_pick = fbi->IsPickState();
 
@@ -220,14 +220,14 @@ struct regstr {
   int ireg;
 };
 
-void GraphVP::DoInit(lev2::GfxTarget* pt) {
+void GraphVP::DoInit(lev2::Context* pt) {
   auto fbi     = pt->FBI();
   auto par     = fbi->GetThisBuffer();
   mpPickBuffer = new lev2::PickBuffer<GraphVP>(par, this, 0, 0, miW, miH, lev2::PickBufferBase::EPICK_FACE_VTX);
 
-  mpPickBuffer->CreateContext();
+  mpPickBuffer->initContext();
   mpPickBuffer->RefClearColor().SetRGBAU32(0);
-  mpPickBuffer->GetContext()->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
+  mpPickBuffer->context()->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
 }
 void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
   auto tgt      = drwev.GetTarget();
@@ -255,7 +255,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
   // SRect tgt_rect = SRect( 0,0, pTARG->GetW(), pTARG->GetH() );
   // RenderContextFrameData framedata;
   // framedata.SetDstRect(tgt_rect);
-  // framedata.SetTarget( pTARG );
+  // framedata.setContext( pTARG );
 
   // pTARG->SetRenderContextFrameData( & framedata );
 

@@ -24,7 +24,7 @@ template <typename IODriver> void GedAssetNode<IODriver>::OnMouseDoubleClicked(c
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename IODriver> void GedAssetNode<IODriver>::DoDraw(lev2::GfxTarget* pTARG) {
+template <typename IODriver> void GedAssetNode<IODriver>::DoDraw(lev2::Context* pTARG) {
   int pnamew = propnameWidth() + 16;
   // GedItemNode::Draw( pTARG );
   GetSkin()->DrawBgBox(this, miX + pnamew, miY, miW - pnamew, miH, GedSkin::ESTYLE_BACKGROUND_2);

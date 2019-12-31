@@ -114,7 +114,7 @@ void gpuUpdate(RenderContextFrameData& RCFD) {
   mgr._updatePoses(RCFD);
 }
 
-void composite(GfxTarget* targ, Texture* twoeyetex) {
+void composite(Context* targ, Texture* twoeyetex) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::orkidvr

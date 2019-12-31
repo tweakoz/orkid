@@ -64,7 +64,7 @@ GfxPrimitives::GfxPrimitives()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::Init(GfxTarget* pTarg) {
+void GfxPrimitives::Init(Context* pTarg) {
   static bool binit = true;
 
   if (binit) {
@@ -1227,7 +1227,7 @@ void GfxPrimitives::Init(GfxTarget* pTarg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderAxis(GfxTarget* pTarg) {
+void GfxPrimitives::RenderAxis(Context* pTarg) {
   pTarg->BindMaterial(&GetRef().mMaterial);
   pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_Axis);
   pTarg->BindMaterial(0);
@@ -1235,7 +1235,7 @@ void GfxPrimitives::RenderAxis(GfxTarget* pTarg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderGridX100(GfxTarget* pTarg) {
+void GfxPrimitives::RenderGridX100(Context* pTarg) {
   pTarg->BindMaterial(&GetRef().mMaterial);
   pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_GridX100);
   pTarg->BindMaterial(0);
@@ -1243,7 +1243,7 @@ void GfxPrimitives::RenderGridX100(GfxTarget* pTarg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderCone(GfxTarget* pTarg) {
+void GfxPrimitives::RenderCone(Context* pTarg) {
   pTarg->BindMaterial(&GetRef().mMaterial);
   pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_Cone);
   pTarg->BindMaterial(0);
@@ -1251,14 +1251,14 @@ void GfxPrimitives::RenderCone(GfxTarget* pTarg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderDirCone(GfxTarget* pTarg) {
+void GfxPrimitives::RenderDirCone(Context* pTarg) {
   pTarg->BindMaterial(&GetRef().mMaterial);
   pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_DirCone);
   pTarg->BindMaterial(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderCircleStrip(GfxTarget* pTarg) {
+void GfxPrimitives::RenderCircleStrip(Context* pTarg) {
   pTarg->BindMaterial(&GetRef().mMaterial);
   pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_CircleStrip);
   pTarg->BindMaterial(0);
@@ -1266,7 +1266,7 @@ void GfxPrimitives::RenderCircleStrip(GfxTarget* pTarg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderCircleUI(GfxTarget* pTarg) {
+void GfxPrimitives::RenderCircleUI(Context* pTarg) {
   pTarg->BindMaterial(&GetRef().mMaterial);
   pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_CircleUI);
   pTarg->BindMaterial(0);
@@ -1274,7 +1274,7 @@ void GfxPrimitives::RenderCircleUI(GfxTarget* pTarg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderCircleStripUI(GfxTarget* pTarg) {
+void GfxPrimitives::RenderCircleStripUI(Context* pTarg) {
   pTarg->BindMaterial(&GetRef().mMaterial);
   pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_CircleStripUI);
   pTarg->BindMaterial(0);
@@ -1282,7 +1282,7 @@ void GfxPrimitives::RenderCircleStripUI(GfxTarget* pTarg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderTriCircle(GfxTarget* pTarg) {
+void GfxPrimitives::RenderTriCircle(Context* pTarg) {
   pTarg->BindMaterial(&GetRef().mMaterial);
   pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_TriCircle);
   pTarg->BindMaterial(0);
@@ -1290,19 +1290,19 @@ void GfxPrimitives::RenderTriCircle(GfxTarget* pTarg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderDiamond(GfxTarget* pTarg) {
+void GfxPrimitives::RenderDiamond(Context* pTarg) {
   pTarg->BindMaterial(&GetRef().mMaterial);
   pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_Diamond);
   pTarg->BindMaterial(0);
 }
 
-void GfxPrimitives::RenderCylinder(GfxTarget* pTarg, bool drawoutline) {
+void GfxPrimitives::RenderCylinder(Context* pTarg, bool drawoutline) {
   pTarg->BindMaterial(&GetRef().mMaterial);
   pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_Cylinder);
   pTarg->BindMaterial(0);
 }
 
-void GfxPrimitives::RenderCapsule(GfxTarget* pTarg, float radius) {
+void GfxPrimitives::RenderCapsule(Context* pTarg, float radius) {
   pTarg->BindMaterial(&GetRef().mMaterial);
   fmtx4 MatScale, MatTrans, MatRotate;
 
@@ -1328,28 +1328,28 @@ void GfxPrimitives::RenderCapsule(GfxTarget* pTarg, float radius) {
   pTarg->BindMaterial(0);
 }
 
-void GfxPrimitives::RenderBox(GfxTarget* pTarg, bool drawoutline) {
+void GfxPrimitives::RenderBox(Context* pTarg, bool drawoutline) {
   pTarg->BindMaterial(&GetRef().mMaterial);
   pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_Box);
   pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_WireFrameBox);
   pTarg->BindMaterial(0);
 }
 
-void GfxPrimitives::RenderAxisLineCone(GfxTarget* pTarg) {
+void GfxPrimitives::RenderAxisLineCone(Context* pTarg) {
   pTarg->BindMaterial(&GetRef().mMaterial);
   pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_AxisCone);
   pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_AxisLine);
   pTarg->BindMaterial(0);
 }
 
-void GfxPrimitives::RenderAxisBox(GfxTarget* pTarg) {
+void GfxPrimitives::RenderAxisBox(Context* pTarg) {
   pTarg->BindMaterial(&GetRef().mMaterial);
   pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_AxisBox);
   pTarg->BindMaterial(0);
 }
 
 /*
-void GfxPrimitives::RenderHalfSphere( GfxTarget *pTarg )
+void GfxPrimitives::RenderHalfSphere( Context *pTarg )
 {
     pTarg->GBI()->DrawPrimitive( GetRef().mVtxBuf_Dome );
 }
@@ -1357,24 +1357,24 @@ void GfxPrimitives::RenderHalfSphere( GfxTarget *pTarg )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderEQSphere(GfxTarget* pTarg) { pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_EQSphere); }
+void GfxPrimitives::RenderEQSphere(Context* pTarg) { pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_EQSphere); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderSkySphere(GfxTarget* pTarg) { pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_SkySphere); }
+void GfxPrimitives::RenderSkySphere(Context* pTarg) { pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_SkySphere); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderGroundPlane(GfxTarget* pTarg) { pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_GroundPlane); }
+void GfxPrimitives::RenderGroundPlane(Context* pTarg) { pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_GroundPlane); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderPerlinTerrain(GfxTarget* pTarg) { pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_PerlinTerrain); }
+void GfxPrimitives::RenderPerlinTerrain(Context* pTarg) { pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_PerlinTerrain); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderOrthoQuad(
-    GfxTarget* pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
+    Context* pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
   auto vb = &GfxEnv::GetSharedDynamicVB();
 
   ///////////////////////////////////////////
@@ -1417,7 +1417,7 @@ void GfxPrimitives::RenderOrthoQuad(
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderQuadAtX(
-    GfxTarget* pTarg, f32 fY1, f32 fY2, f32 fZ1, f32 fZ2, f32 fX, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
+    Context* pTarg, f32 fY1, f32 fY2, f32 fZ1, f32 fZ2, f32 fX, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
   auto vb = &GfxEnv::GetSharedDynamicVB();
 
   ///////////////////////////////////////////
@@ -1446,7 +1446,7 @@ void GfxPrimitives::RenderQuadAtX(
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderQuadAtY(
-    GfxTarget* pTarg, f32 fX1, f32 fX2, f32 fZ1, f32 fZ2, f32 fY, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
+    Context* pTarg, f32 fX1, f32 fX2, f32 fZ1, f32 fZ2, f32 fY, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
   auto vb = &GfxEnv::GetSharedDynamicVB();
 
   ///////////////////////////////////////////
@@ -1475,7 +1475,7 @@ void GfxPrimitives::RenderQuadAtY(
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderQuadAtZ(
-    GfxTarget* pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 fZ, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
+    Context* pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 fZ, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
   auto vb = &GfxEnv::GetSharedDynamicVB();
 
   ///////////////////////////////////////////
@@ -1504,7 +1504,7 @@ void GfxPrimitives::RenderQuadAtZ(
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderQuadAtZV16T16C16(
-    GfxTarget* pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 fZ, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
+    Context* pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 fZ, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
   auto vb = &GfxEnv::GetSharedDynamicV16T16C16();
 
   ///////////////////////////////////////////
@@ -1532,7 +1532,7 @@ void GfxPrimitives::RenderQuadAtZV16T16C16(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderQuad(GfxTarget* pTarg, fvec4& V0, fvec4& V1, fvec4& V2, fvec4& V3) {
+void GfxPrimitives::RenderQuad(Context* pTarg, fvec4& V0, fvec4& V1, fvec4& V2, fvec4& V3) {
   auto vb = &GfxEnv::GetSharedDynamicVB();
 
   ///////////////////////////////////////////

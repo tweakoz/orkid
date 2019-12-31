@@ -90,7 +90,7 @@ void NodeCompositingTechnique::_writeOutputNode(ork::rtti::ICastable* const& val
   _outputNode = ((ptr == nullptr) ? nullptr : rtti::safe_downcast<OutputCompositingNode*>(ptr));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::Init(lev2::GfxTarget* pTARG, int w, int h) {
+void NodeCompositingTechnique::Init(lev2::Context* pTARG, int w, int h) {
   pTARG->debugPushGroup("NodeCompositingTechnique::init");
   if (_renderNode)
     _renderNode->Init(pTARG, w, h);
@@ -148,7 +148,7 @@ CompositingBuffer::~CompositingBuffer() {}
 void RenderCompositingNode::describeX(class_t*c) {}
 RenderCompositingNode::RenderCompositingNode() {}
 RenderCompositingNode::~RenderCompositingNode() {}
-void RenderCompositingNode::Init(lev2::GfxTarget* pTARG, int w, int h) { DoInit(pTARG, w, h); }
+void RenderCompositingNode::Init(lev2::Context* pTARG, int w, int h) { DoInit(pTARG, w, h); }
 void RenderCompositingNode::Render(CompositorDrawData& drawdata) {
   drawdata.target()->debugPushGroup("RenderCompositingNode::Render");
   DoRender(drawdata);
@@ -158,7 +158,7 @@ void RenderCompositingNode::Render(CompositorDrawData& drawdata) {
 void PostCompositingNode::describeX(class_t*c) {}
 PostCompositingNode::PostCompositingNode() {}
 PostCompositingNode::~PostCompositingNode() {}
-void PostCompositingNode::Init(lev2::GfxTarget* pTARG, int w, int h) { DoInit(pTARG, w, h); }
+void PostCompositingNode::Init(lev2::Context* pTARG, int w, int h) { DoInit(pTARG, w, h); }
 void PostCompositingNode::Render(CompositorDrawData& drawdata) {
   drawdata.target()->debugPushGroup("PostCompositingNode::Render");
   DoRender(drawdata);

@@ -34,8 +34,8 @@ public:
 
 	ui::HandlerResult DoOnUiEvent( const ui::Event& EV) override;
 	void LoadToolIcon();
-	virtual void DrawToolIcon(lev2::GfxTarget* pTARG, int ix, int iy, bool bhilite);
-	virtual void DrawSubToolIcon( lev2::GfxTarget* pTARG, int ix, int iy, bool bhilite );
+	virtual void DrawToolIcon(lev2::Context* pTARG, int ix, int iy, bool bhilite);
+	virtual void DrawSubToolIcon( lev2::Context* pTARG, int ix, int iy, bool bhilite );
 
 	VPTYPE* GetViewport() const { return mpViewport; }
 

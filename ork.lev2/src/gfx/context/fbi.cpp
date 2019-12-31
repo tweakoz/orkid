@@ -13,9 +13,9 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::function<void(GfxTarget*)> FrameBufferInterface::_hackcb = nullptr;
+std::function<void(Context*)> FrameBufferInterface::_hackcb = nullptr;
 
-FrameBufferInterface::FrameBufferInterface(GfxTarget& tgt)
+FrameBufferInterface::FrameBufferInterface(Context& tgt)
     : mTarget(tgt)
     , mbEnableVSync(false)
     , mbEnableFullScreen(GfxEnv::GetRef().GetCreationParams().mbFullScreen)

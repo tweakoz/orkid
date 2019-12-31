@@ -31,7 +31,7 @@ GfxMaterialUI::~GfxMaterialUI()
 
 /////////////////////////////////////////////////////////////////////////
 
-GfxMaterialUI::GfxMaterialUI(GfxTarget *pTarg)
+GfxMaterialUI::GfxMaterialUI(Context *pTarg)
 	: meType( ETYPE_STANDARD )
 	, hTekMod( nullptr )
 	, hTekVtx( nullptr )
@@ -61,7 +61,7 @@ GfxMaterialUI::GfxMaterialUI(GfxTarget *pTarg)
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialUI::Init(ork::lev2::GfxTarget *pTarg)
+void GfxMaterialUI::Init(ork::lev2::Context *pTarg)
 {
 	//printf( "hModFX<%p>\n", hModFX );
 
@@ -78,7 +78,7 @@ void GfxMaterialUI::Init(ork::lev2::GfxTarget *pTarg)
 
 /////////////////////////////////////////////////////////////////////////
 
-int GfxMaterialUI::BeginBlock( GfxTarget *pTarg, const RenderContextInstData &MatCtx )
+int GfxMaterialUI::BeginBlock( Context *pTarg, const RenderContextInstData &MatCtx )
 {
 	const FxShaderTechnique* htek = 0;
 
@@ -116,21 +116,21 @@ int GfxMaterialUI::BeginBlock( GfxTarget *pTarg, const RenderContextInstData &Ma
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialUI::EndBlock( GfxTarget *pTarg )
+void GfxMaterialUI::EndBlock( Context *pTarg )
 {
 	pTarg->FXI()->EndBlock( hModFX );
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialUI::EndPass( GfxTarget *pTarg )
+void GfxMaterialUI::EndPass( Context *pTarg )
 {
 	pTarg->FXI()->EndPass( hModFX );
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-bool GfxMaterialUI::BeginPass( GfxTarget *pTarg, int iPass )
+bool GfxMaterialUI::BeginPass( Context *pTarg, int iPass )
 {
 	///////////////////////////////
 	pTarg->RSI()->BindRasterState( _rasterstate );
@@ -151,7 +151,7 @@ bool GfxMaterialUI::BeginPass( GfxTarget *pTarg, int iPass )
 
 /////////////////////////////////////////////////////////////////////////
 
-GfxMaterialUIText::GfxMaterialUIText(GfxTarget *pTarg)
+GfxMaterialUIText::GfxMaterialUIText(Context *pTarg)
 	: hTek(0)
 	, hTransform(0)
 	, hModColor(0)
@@ -175,7 +175,7 @@ GfxMaterialUIText::GfxMaterialUIText(GfxTarget *pTarg)
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialUIText::Init(ork::lev2::GfxTarget *pTarg)
+void GfxMaterialUIText::Init(ork::lev2::Context *pTarg)
 {
 	hTek = pTarg->FXI()->technique( hModFX, "uitext" );
 
@@ -188,7 +188,7 @@ void GfxMaterialUIText::Init(ork::lev2::GfxTarget *pTarg)
 
 /////////////////////////////////////////////////////////////////////////
 
-int GfxMaterialUIText::BeginBlock( GfxTarget *pTarg, const RenderContextInstData &MatCtx )
+int GfxMaterialUIText::BeginBlock( Context *pTarg, const RenderContextInstData &MatCtx )
 {
 	pTarg->FXI()->BindTechnique( hModFX, hTek );
 	int inumpasses = pTarg->FXI()->BeginBlock( hModFX, MatCtx );
@@ -197,21 +197,21 @@ int GfxMaterialUIText::BeginBlock( GfxTarget *pTarg, const RenderContextInstData
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialUIText::EndBlock( GfxTarget *pTarg )
+void GfxMaterialUIText::EndBlock( Context *pTarg )
 {
 	pTarg->FXI()->EndBlock( hModFX );
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialUIText::EndPass( GfxTarget *pTarg )
+void GfxMaterialUIText::EndPass( Context *pTarg )
 {
 	pTarg->FXI()->EndPass( hModFX );
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-bool GfxMaterialUIText::BeginPass( GfxTarget *pTarg, int iPass )
+bool GfxMaterialUIText::BeginPass( Context *pTarg, int iPass )
 {
 	pTarg->FXI()->BindPass( hModFX, iPass );
 
@@ -238,7 +238,7 @@ bool GfxMaterialUIText::BeginPass( GfxTarget *pTarg, int iPass )
 
 /////////////////////////////////////////////////////////////////////////
 
-GfxMaterialUITextured::GfxMaterialUITextured( GfxTarget *pTarg, const std::string & Technique )
+GfxMaterialUITextured::GfxMaterialUITextured( Context *pTarg, const std::string & Technique )
 	: hTek(nullptr)
 	, mTechniqueName( Technique )
 	, hTransform(nullptr)
@@ -272,7 +272,7 @@ void GfxMaterialUITextured::EffectInit( void )
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialUITextured::Init(ork::lev2::GfxTarget *pTarg)
+void GfxMaterialUITextured::Init(ork::lev2::Context *pTarg)
 {
 	hModFX = asset::AssetManager<FxShaderAsset>::Load( "orkshader://ui" )->GetFxShader();
 	//printf( "HMODFX<%p> pTarg<%p>\n", hModFX, pTarg );
@@ -285,7 +285,7 @@ void GfxMaterialUITextured::Init(ork::lev2::GfxTarget *pTarg)
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialUITextured::Init( ork::lev2::GfxTarget *pTarg, const std::string & Technique )
+void GfxMaterialUITextured::Init( ork::lev2::Context *pTarg, const std::string & Technique )
 {
 	mTechniqueName = Technique;
 	Init(pTarg);
@@ -293,7 +293,7 @@ void GfxMaterialUITextured::Init( ork::lev2::GfxTarget *pTarg, const std::string
 
 /////////////////////////////////////////////////////////////////////////
 
-int GfxMaterialUITextured::BeginBlock( GfxTarget *pTarg, const RenderContextInstData &MatCtx )
+int GfxMaterialUITextured::BeginBlock( Context *pTarg, const RenderContextInstData &MatCtx )
 {
 	pTarg->FXI()->BindTechnique( hModFX, hTek );
 	int inumpasses = pTarg->FXI()->BeginBlock( hModFX, MatCtx );
@@ -302,21 +302,21 @@ int GfxMaterialUITextured::BeginBlock( GfxTarget *pTarg, const RenderContextInst
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialUITextured::EndBlock( GfxTarget *pTarg )
+void GfxMaterialUITextured::EndBlock( Context *pTarg )
 {
 	pTarg->FXI()->EndBlock( hModFX );
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialUITextured::EndPass( GfxTarget *pTarg )
+void GfxMaterialUITextured::EndPass( Context *pTarg )
 {
 	pTarg->FXI()->EndPass( hModFX );
 }
 
 ////////////////////////////////////////////////////////////2/////////////
 
-bool GfxMaterialUITextured::BeginPass( GfxTarget *pTarg, int iPass )
+bool GfxMaterialUITextured::BeginPass( Context *pTarg, int iPass )
 {
 	///////////////////////////////
 	pTarg->RSI()->BindRasterState( _rasterstate );

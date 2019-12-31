@@ -79,7 +79,7 @@ void Buffer::SetBufferSize(int w, int h) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void Buffer::PtexBegin(lev2::GfxTarget* ptgt, bool push_full_vp, bool clear_all) {
+void Buffer::PtexBegin(lev2::Context* ptgt, bool push_full_vp, bool clear_all) {
   mTarget = ptgt;
   mTarget->FBI()->SetAutoClear(false);
   // mTarget->FBI()->BeginFrame();
@@ -110,7 +110,7 @@ void Buffer::PtexEnd(bool pop_vp) {
   // mTarget->FBI()->EndFrame();
   mTarget = nullptr;
 }
-lev2::RtGroup* Buffer::GetRtGroup(lev2::GfxTarget* ptgt) {
+lev2::RtGroup* Buffer::GetRtGroup(lev2::Context* ptgt) {
   if (mRtGroup == nullptr) {
     mRtGroup = new RtGroup(ptgt, miW, miH);
 
@@ -240,7 +240,7 @@ void ImgModule::Compute(dataflow::workunit* wu) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ImgModule::UnitTexQuad(
-    ork::lev2::GfxTarget* pTARG) { // fmtx4 mtxortho = pTARG->MTXI()->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
+    ork::lev2::Context* pTARG) { // fmtx4 mtxortho = pTARG->MTXI()->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
   pTARG->MTXI()->PushPMatrix(fmtx4::Identity);
   pTARG->MTXI()->PushVMatrix(fmtx4::Identity);
   pTARG->MTXI()->PushMMatrix(fmtx4::Identity);
@@ -258,7 +258,7 @@ void ImgModule::MarkClean() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void RenderQuad(
-    ork::lev2::GfxTarget* pTARG,
+    ork::lev2::Context* pTARG,
     float fX1,
     float fY1,
     float fX2,

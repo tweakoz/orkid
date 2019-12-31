@@ -36,7 +36,7 @@ enum edynvbopath
 
 static edynvbopath gDynVboPath = EVB_MAP_BUFFER_RANGE;
 
-void GfxTargetGL::TakeThreadOwnership()
+void ContextGL::TakeThreadOwnership()
 {
 	makeCurrentContext();
 }
@@ -250,7 +250,7 @@ struct GLVtxBufHandle
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GlGeometryBufferInterface::GlGeometryBufferInterface( GfxTargetGL& target )
+GlGeometryBufferInterface::GlGeometryBufferInterface( ContextGL& target )
 	: mTargetGL(target)
 	, mLastComponentMask(0)
 {

@@ -22,7 +22,7 @@ extern "C" {
 #include <X11/extensions/Xrandr.h>
 }
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxTargetGL, "GfxTargetGL")
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ContextGL, "ContextGL")
 
 extern "C" {
 extern bool gbVSYNC;
@@ -32,10 +32,12 @@ extern bool gbVSYNC;
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+typedef ::Window x11_window_t; // contained alias of X11 Window Class (conflicts with lev2::Window)
+
 bool _hakHIDPI       = false;
 float _hakCurrentDPI = 95.0f;
 
-ork::MpMcBoundedQueue<void*> GfxTargetGL::mLoadTokens;
+ork::MpMcBoundedQueue<void*> ContextGL::_loadTokens;
 
 struct GlIxPlatformObject {
   static GLXContext gShareMaster;
@@ -61,7 +63,7 @@ struct GlIxPlatformObject {
 struct GlxLoadContext {
   GLXContext mGlxContext;
   GLXContext mPushedContext;
-  Window mWindow;
+  x11_window_t mWindow;
   Display* mDisplay;
 };
 
@@ -181,7 +183,7 @@ void check_debug_log() {
   }
 }
 
-void GfxTargetGL::GLinit() {
+void ContextGL::GLinit() {
   int iinit = atomic_init++;
 
   if (0 != iinit) {
@@ -225,7 +227,7 @@ void GfxTargetGL::GLinit() {
   win_flags |= CWColormap;
   win_flags |= CWEventMask;
   win_flags |= CWOverrideRedirect;
-  Window dummy_win = XCreateWindow(
+  x11_window_t dummy_win = XCreateWindow(
       x_dpy,
       g_rootwin,
       0,
@@ -310,7 +312,7 @@ void GfxTargetGL::GLinit() {
     loadctx->mWindow     = g_rootwin;
     loadctx->mDisplay    = GlIxPlatformObject::gDisplay;
 
-    mLoadTokens.push((void*)loadctx);
+    _loadTokens.push((void*)loadctx);
   }
 }
 
@@ -318,19 +320,19 @@ void GfxTargetGL::GLinit() {
 
 std::string GetGlErrorString(void);
 
-void OpenGlGfxTargetInit() {
-  GfxEnv::SetTargetClass(GfxTargetGL::GetClassStatic());
-  GfxTargetGL::GLinit();
-  auto target  = new GfxTargetGL;
-  auto poutbuf = new GfxBuffer(0, 0, 0, 1280, 720);
+void OpenGlContextInit() {
+  GfxEnv::setContextClass(ContextGL::GetClassStatic());
+  ContextGL::GLinit();
+  auto target  = new ContextGL;
+  auto poutbuf = new OffscreenBuffer(0, 0, 0, 1280, 720);
   GfxEnv::GetRef().SetLoaderTarget(target);
   target->InitializeContext(poutbuf);
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-GfxTargetGL::GfxTargetGL()
-    : GfxTarget()
+ContextGL::ContextGL()
+    : Context()
     , mFxI(*this)
     , mImI(*this)
     , mRsI(*this)
@@ -339,14 +341,14 @@ GfxTargetGL::GfxTargetGL()
     , mTxI(*this)
     , mMtxI(*this)
     , mCI(*this) {
-  GfxTargetGL::GLinit();
+  ContextGL::GLinit();
 
   FxInit();
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-GfxTargetGL::~GfxTargetGL() {
+ContextGL::~ContextGL() {
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -361,15 +363,15 @@ static QWindow* windowForWidget(const QWidget* widget) {
   return 0;
 }
 
-Window getHandleForWidget(const QWidget* widget) {
+x11_window_t getHandleForWidget(const QWidget* widget) {
   auto window = windowForWidget(widget);
   if (window) {
     auto PNI = QGuiApplication::platformNativeInterface();
-    return (Window)(PNI->nativeResourceForWindow(QByteArrayLiteral("handle"), window));
+    return (x11_window_t)(PNI->nativeResourceForWindow(QByteArrayLiteral("handle"), window));
   }
   return 0;
 }
-void GfxTargetGL::InitializeContext(GfxWindow* pWin, CTXBASE* pctxbase) {
+void ContextGL::InitializeContext(Window* pWin, CTXBASE* pctxbase) {
   ///////////////////////
   GlIxPlatformObject* plato = new GlIxPlatformObject;
   mCtxBase                  = pctxbase;
@@ -431,8 +433,8 @@ void recomputeHIDPI(void* plato) {
   ///////////////////////
   int winpos_x = 0;
   int winpos_y = 0;
-  Window child;
-  Window root_window = DefaultRootWindow(x_dpy);
+  x11_window_t child;
+  x11_window_t root_window = DefaultRootWindow(x_dpy);
   XTranslateCoordinates(x_dpy, x_window, root_window, 0, 0, &winpos_x, &winpos_y, &child);
   XWindowAttributes xwa;
   XGetWindowAttributes(x_dpy, x_window, &xwa);
@@ -523,7 +525,7 @@ float _currentDPI() {
 }
 /////////////////////////////////////////////////////////////////////////
 
-void GfxTargetGL::InitializeContext(GfxBuffer* pBuf) {
+void ContextGL::InitializeContext(OffscreenBuffer* pBuf) {
   ///////////////////////
 
   miW = pBuf->GetBufferW();
@@ -572,7 +574,7 @@ void GfxTargetGL::InitializeContext(GfxBuffer* pBuf) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxTargetGL::makeCurrentContext(void) {
+void ContextGL::makeCurrentContext(void) {
   GlIxPlatformObject* plato = (GlIxPlatformObject*)mPlatformHandle;
   OrkAssert(plato);
   if (plato) {
@@ -583,7 +585,7 @@ void GfxTargetGL::makeCurrentContext(void) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxTargetGL::SwapGLContext(CTXBASE* pCTFL) {
+void ContextGL::SwapGLContext(CTXBASE* pCTFL) {
   GlIxPlatformObject* plato = (GlIxPlatformObject*)mPlatformHandle;
   OrkAssert(plato);
   if (plato && (plato->mXWindowId > 0)) {
@@ -594,10 +596,10 @@ void GfxTargetGL::SwapGLContext(CTXBASE* pCTFL) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void* GfxTargetGL::_doBeginLoad() {
+void* ContextGL::_doBeginLoad() {
   void* pvoiddat = nullptr;
 
-  while (false == mLoadTokens.try_pop(pvoiddat)) {
+  while (false == _loadTokens.try_pop(pvoiddat)) {
     usleep(1 << 10);
   }
 
@@ -616,10 +618,10 @@ void* GfxTargetGL::_doBeginLoad() {
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxTargetGL::_doEndLoad(void* ploadtok) {
+void ContextGL::_doEndLoad(void* ploadtok) {
   GlxLoadContext* loadctx = (GlxLoadContext*)ploadtok;
   // printf("ENDLOAD loadctx<%p> glx<%p>\n", loadctx, loadctx->mGlxContext);
-  mLoadTokens.push(ploadtok);
+  _loadTokens.push(ploadtok);
 }
 
 /////////////////////////////////////////////////////////////////////////

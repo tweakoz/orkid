@@ -27,7 +27,7 @@ class PerformanceItem;
 
 namespace lev2 {
 
-class GfxTarget;
+class Context;
 class CameraData;
 
 class IRenderer {
@@ -37,7 +37,7 @@ public:
   static const int kmaxrablessm  = 64;
 
 protected:
-  GfxTarget* mpTarget;
+  Context* mpTarget;
 
   ork::fixedvector<U32, RenderQueue::krqmaxsize> mQueueSortKeys;
   ork::fixedvector<const RenderQueue::Node*, RenderQueue::krqmaxsize> mQueueSortNodes;
@@ -84,8 +84,8 @@ public:
 
   inline void SetPerformanceItem(PerformanceItem* perfitem) { mPerformanceItem = perfitem; }
 
-  GfxTarget* GetTarget() const { return mpTarget; }
-  void SetTarget(GfxTarget* ptarg) { mpTarget = ptarg; }
+  Context* GetTarget() const { return mpTarget; }
+  void setContext(Context* ptarg) { mpTarget = ptarg; }
 
   void FakeDraw() { ResetQueue(); }
 
@@ -95,7 +95,7 @@ protected:
   RenderQueue mRenderQueue;
   PerformanceItem* mPerformanceItem;
 
-  IRenderer(GfxTarget* pTARG);
+  IRenderer(Context* pTARG);
 };
 
 } // namespace lev2

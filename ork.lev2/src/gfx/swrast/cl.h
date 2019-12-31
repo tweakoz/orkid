@@ -151,7 +151,7 @@ public:
 	void Init( cl_device_id& devid );
 	void Sync() const ;// virtual
 	///////////////////////////////////
-	const cl_context& GetContext() const { return mContext; }
+	const cl_context& context() const { return mContext; }
 	const cl_command_queue& GetCmdQueue() const { return mCmdQueue; }
 	const cl_device_id& GetDeviceID() const { return mDeviceID; }
 	///////////////////////////////////

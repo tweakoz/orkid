@@ -146,7 +146,7 @@ void FnBallArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
         Entity *pent;
 
         static void doit(   RenderContextInstData& rcid,
-                            GfxTarget* targ,
+                            Context* targ,
                             const CallbackRenderable* pren )
         {
             const yo* pyo = pren->GetUserData0().Get<const yo*>();

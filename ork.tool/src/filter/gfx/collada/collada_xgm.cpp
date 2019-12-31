@@ -171,7 +171,7 @@ struct TexSetter
 
 			if( mTextureMap.end() == itt ){
 				if( FileEnv::DoesFileExist( PathToTexture ) ){
-					lev2::GfxTargetDummy DummyTarget;
+					lev2::ContextDummy DummyTarget;
 					ork::lev2::TextureAsset *pl2tex = new ork::lev2::TextureAsset;
 					ork::lev2::Texture* ptex = pl2tex->GetTexture();
 					bool bOK = DummyTarget.TXI()->LoadTexture( PathToTexture, ptex );
@@ -263,7 +263,7 @@ void ConfigureFxMaterial( CColladaModel *ColModel, MeshUtil::ToolMaterialGroup *
 
 void ConfigureStdMaterial( CColladaModel *ColModel, MeshUtil::ToolMaterialGroup *ColMatGroup, lev2::XgmSubMesh & XgmClusSet )
 {
-	const ColladaExportPolicy* policy = ColladaExportPolicy::GetContext();
+	const ColladaExportPolicy* policy = ColladaExportPolicy::context();
 
 	const bool bskinned = ColMatGroup->mMeshConfigurationFlags.mbSkinned;
 

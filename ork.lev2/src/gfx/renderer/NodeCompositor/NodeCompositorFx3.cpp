@@ -59,7 +59,7 @@ Fx3CompositingTechnique::~Fx3CompositingTechnique() {
     delete mpBuiltinFrameTekC;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Fx3CompositingTechnique::Init(ork::lev2::GfxTarget* pTARG, int iW, int iH) {
+void Fx3CompositingTechnique::Init(ork::lev2::Context* pTARG, int iW, int iH) {
   pTARG->debugPushGroup("Fx3CompositingNode::Init");
   if (nullptr == mpBuiltinFrameTekA) {
     mCompositingMaterial.Init(pTARG);
@@ -113,7 +113,7 @@ bool Fx3CompositingTechnique::assemble(CompositorDrawData& drawdata) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Fx3CompositingTechnique::CompositeLayerToScreen(
-    lev2::GfxTarget* pT,
+    lev2::Context* pT,
     ECOMPOSITEBlend eblend,
     lev2::RtGroup* psrcgroupA,
     lev2::RtGroup* psrcgroupB,
@@ -235,7 +235,7 @@ void Fx3CompositingNode::_writeGroup(ork::rtti::ICastable* const& val) {
   mGroup                    = ((ptr == 0) ? 0 : rtti::safe_downcast<CompositingGroup*>(ptr));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Fx3CompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtual
+void Fx3CompositingNode::DoInit(lev2::Context* pTARG, int iW, int iH) // virtual
 {
   if (nullptr == mFTEK) {
     mCompositingMaterial.Init(pTARG);

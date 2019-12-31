@@ -65,12 +65,12 @@ int UiViewportRenderTarget::GetW() { return mpViewport->GetW(); }
 int UiViewportRenderTarget::GetH() { return mpViewport->GetH(); }
 void UiViewportRenderTarget::BeginFrame(FrameRenderer& frenderer) {
   RenderContextFrameData& FrameData = frenderer.framedata();
-  GfxTarget* pTARG                  = FrameData.GetTarget();
+  Context* pTARG                  = FrameData.GetTarget();
   mpViewport->BeginFrame(pTARG);
 }
 void UiViewportRenderTarget::EndFrame(FrameRenderer& frenderer) {
   RenderContextFrameData& FrameData = frenderer.framedata();
-  GfxTarget* pTARG                  = FrameData.GetTarget();
+  Context* pTARG                  = FrameData.GetTarget();
   mpViewport->EndFrame(pTARG);
 }
 
@@ -93,12 +93,12 @@ FrameTechniqueBase::FrameTechniqueBase(int iW, int iH)
     , miH(iH)
     , mpMrtFinal(0) {}
 
-void FrameTechniqueBase::Init(GfxTarget* targ) {
+void FrameTechniqueBase::Init(Context* targ) {
   static const int kmultisamples = 1;
 
   auto fbi          = targ->FBI();
-  GfxBuffer* parent = fbi->GetThisBuffer();
-  targ              = parent ? parent->GetContext() : targ;
+  OffscreenBuffer* parent = fbi->GetThisBuffer();
+  targ              = parent ? parent->context() : targ;
   auto clear_color  = fbi->GetClearColor();
 
   mpMrtFinal = new RtGroup(targ, kFINALW, kFINALH, kmultisamples);

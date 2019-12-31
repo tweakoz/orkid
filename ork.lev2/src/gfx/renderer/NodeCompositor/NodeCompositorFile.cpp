@@ -74,7 +74,7 @@ struct IMPL {
   ~IMPL() {
   }
   ///////////////////////////////////////
-  void gpuInit(lev2::GfxTarget* pTARG) {
+  void gpuInit(lev2::Context* pTARG) {
   }
   ///////////////////////////////////////
   void beginAssemble(CompositorDrawData& drawdata) {
@@ -107,7 +107,7 @@ FileOutputCompositingNode::FileOutputCompositingNode()
 }
 FileOutputCompositingNode::~FileOutputCompositingNode() {
 }
-void FileOutputCompositingNode::gpuInit(lev2::GfxTarget* pTARG, int iW, int iH) {
+void FileOutputCompositingNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
   _impl.Get<std::shared_ptr<IMPL>>()->gpuInit(pTARG);
 }
 void FileOutputCompositingNode::beginAssemble(CompositorDrawData& drawdata) {

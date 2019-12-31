@@ -245,7 +245,7 @@ void AudioInstrumentPlayback::ReInit()
 			//zone->SetChannel(-1);
 			//zone->SetZone(0);
 			//zone->SetSample(0);
-			//zone->GetContext().Reset();
+			//zone->context().Reset();
 		}
 	}
 
@@ -307,7 +307,7 @@ void AudioSf2ZonePlayback::Describe(){}
 
 void AudioSf2ZonePlayback::Update( float fdt )
 {
-	AudioInstrumentZoneContext& izc = GetContext();
+	AudioInstrumentZoneContext& izc = context();
 	AudioSample* psamp = GetSample();
 	AudioInstrumentZone* pizone = GetZone();
 	//const AudioIntrumentPlayParam& pbparam = GetPlaybackParam();

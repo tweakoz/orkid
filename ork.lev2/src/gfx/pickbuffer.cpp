@@ -26,10 +26,10 @@ namespace ork { namespace lev2 {
 
 void PickBufferBase::Describe() {}
 
-PickBufferBase::PickBufferBase(lev2::GfxBuffer* Parent, int iX, int iY, int iW, int iH, EPickBufferType etyp)
-    : ork::lev2::GfxBuffer(Parent, iX, iY, iW, iH, lev2::EBUFFMT_RGBA8, lev2::ETGTTYPE_EXTBUFFER), meType(etyp), mbInitTex(true),
-      mpPickRtGroup(new lev2::RtGroup(GetContext(), iW, iH)) {
-  mpUIMaterial = new ork::lev2::GfxMaterialUITextured(GetContext());
+PickBufferBase::PickBufferBase(lev2::OffscreenBuffer* Parent, int iX, int iY, int iW, int iH, EPickBufferType etyp)
+    : ork::lev2::OffscreenBuffer(Parent, iX, iY, iW, iH, lev2::EBUFFMT_RGBA8, lev2::ETGTTYPE_EXTBUFFER), meType(etyp), mbInitTex(true),
+      mpPickRtGroup(new lev2::RtGroup(context(), iW, iH)) {
+  mpUIMaterial = new ork::lev2::GfxMaterialUITextured(context());
 }
 
 uint64_t PickBufferBase::AssignPickId(ork::Object* pobj) {

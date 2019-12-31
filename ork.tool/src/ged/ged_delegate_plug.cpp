@@ -98,7 +98,7 @@ private:
     mFloatSlider.SetVal(fval);
   }
 
-  void DoDraw(lev2::GfxTarget* pTARG) final {
+  void DoDraw(lev2::Context* pTARG) final {
     const int klabh = get_charh();
     const int kdim  = klabh - 2;
     GetSkin()->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);

@@ -75,7 +75,7 @@ struct NormalToSphereCoordMapper
 ///////////////////////////////////////////////////////////////////////////////
 
 #if 0
-static void RenderFace( lev2::GfxTarget* pTARG, const fcolor4 & clr, lev2::Texture* ptex,
+static void RenderFace( lev2::Context* pTARG, const fcolor4 & clr, lev2::Texture* ptex,
 						int iface, float fstep,
 						float fumin, float fumax,
 						float fvmin, float fvmax,
@@ -238,7 +238,7 @@ void SceneEditorVP::SaveCubeMap()
 {
 	const lev2::EzUiCam* persp = mPerspCam;
 	PickBuffer<SceneEditorVP>* pb = mpPickBuffer;
-	lev2::GfxTarget* pTEXTARG = mpPickBuffer->GetContext();
+	lev2::Context* pTEXTARG = mpPickBuffer->context();
 
 	const fvec3 Locator = mPerspCam->CamFocus.xyz();
 
@@ -285,7 +285,7 @@ void SceneEditorVP::SaveCubeMap()
 			ent::SceneData *pscene = mEditor.mpScene;
 
 			///////////////////////////////////////////////////////////////////////////
-			mRenderer->SetTarget( pTEXTARG );
+			mRenderer->setContext( pTEXTARG );
 			lev2::RenderContextFrameData ContextData( *mRenderer, & CardinalCameras[icam] );
 			ContextData.SetRenderingMode( lev2::RenderContextFrameData::ERENDMODE_STANDARD );
 			///////////////////////////////////////////////////////////////////////////
@@ -358,7 +358,7 @@ void SceneEditorVP::SaveCubeMap()
 		tmat._rasterstate.SetAlphaTest( lev2::EALPHATEST_OFF, 0.0f );
 		tmat._rasterstate.SetDepthTest( lev2::EDEPTHTEST_OFF );
 
-		mRenderer->SetTarget( pTEXTARG );
+		mRenderer->setContext( pTEXTARG );
 
 		pTEXTARG->MTXI()->PushPMatrix( pTEXTARG->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f ) );
 		pTEXTARG->MTXI()->PushVMatrix( fmtx4::Identity );
@@ -407,7 +407,7 @@ void SceneEditorVP::SaveCubeMap()
 		tmat._rasterstate.SetDepthTest( lev2::EDEPTHTEST_OFF );
 
 		///////////////////////////////////////////////////////////////////////////
-		mRenderer->SetTarget( pTEXTARG );
+		mRenderer->setContext( pTEXTARG );
 
 		pTEXTARG->MTXI()->PushPMatrix( pTEXTARG->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f ) );
 		pTEXTARG->MTXI()->PushVMatrix( fmtx4::Identity );

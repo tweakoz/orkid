@@ -81,7 +81,7 @@ void DrawableBuffer::invokePreRenderCallbacks(lev2::RenderContextFrameData& RCFD
 ///////////////////////////////////////////////////////////////////////////////
 
 void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName, lev2::IRenderer* renderer) const {
-  lev2::GfxTarget* target                       = renderer->GetTarget();
+  lev2::Context* target                       = renderer->GetTarget();
   const ork::lev2::RenderContextFrameData* RCFD = target->topRenderContextFrameData();
   const auto& topCPD                            = RCFD->topCPD();
 

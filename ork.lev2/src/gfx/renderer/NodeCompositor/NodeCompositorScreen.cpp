@@ -37,7 +37,7 @@ struct SCRIMPL {
   ~SCRIMPL() {
   }
   ///////////////////////////////////////
-  void gpuInit(lev2::GfxTarget* pTARG) {
+  void gpuInit(lev2::Context* pTARG) {
     if (_needsinit) {
       _blit2screenmtl.SetUserFx("orkshader://solid", "texcolor");
       _blit2screenmtl.Init(pTARG);
@@ -51,7 +51,7 @@ struct SCRIMPL {
     RenderContextFrameData& RCFD = framerenderer.framedata();
     auto CIMPL                   = drawdata._cimpl;
     auto DB                      = RCFD.GetDB();
-    GfxTarget* targ              = drawdata.target();
+    Context* targ              = drawdata.target();
     int w                        = targ->mainSurfaceWidth();
     int h                        = targ->mainSurfaceHeight();
     if (targ->hiDPI()) {
@@ -94,7 +94,7 @@ ScreenOutputCompositingNode::ScreenOutputCompositingNode() {
 }
 ScreenOutputCompositingNode::~ScreenOutputCompositingNode() {
 }
-void ScreenOutputCompositingNode::gpuInit(lev2::GfxTarget* pTARG, int iW, int iH) {
+void ScreenOutputCompositingNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
   _impl.Get<std::shared_ptr<SCRIMPL>>()->gpuInit(pTARG);
 }
 void ScreenOutputCompositingNode::beginAssemble(CompositorDrawData& drawdata) {
@@ -111,7 +111,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////////////////////////
   FrameRenderer& framerenderer      = drawdata.mFrameRenderer;
   RenderContextFrameData& framedata = framerenderer.framedata();
-  GfxTarget* targ                   = framedata.GetTarget();
+  Context* targ                   = framedata.GetTarget();
   if (auto try_final = drawdata._properties["final_out"_crcu].TryAs<RtBuffer*>()) {
     auto buffer = try_final.value();
     if (buffer) {

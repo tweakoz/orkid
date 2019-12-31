@@ -368,7 +368,7 @@ void AudioHwSinkModule::Compute( float fDT )
 }
 void AudioModularZonePlayback::Update( float fDT )
 {
-	AudioInstrumentZoneContext& izc = GetContext();
+	AudioInstrumentZoneContext& izc = context();
 	AudioSample* psamp = GetSample();
 	AudioInstrumentZone* pizone = GetZone();
 	//const AudioIntrumentPlayParam& pbparam = GetPlaybackParam();

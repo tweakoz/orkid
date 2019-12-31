@@ -60,18 +60,18 @@ public:
   Buffer(ork::lev2::EBufferFormat efmt);
   dataflow::node_hash mHash;
   lev2::RtGroup* mRtGroup;
-  lev2::GfxTarget* mTarget;
+  lev2::Context* mTarget;
   int miW, miH;
 
   lev2::Texture* OutputTexture();
 
-  void PtexBegin(lev2::GfxTarget* ptgt, bool push_full_vp, bool clear_all);
+  void PtexBegin(lev2::Context* ptgt, bool push_full_vp, bool clear_all);
   void PtexEnd(bool pop_vp);
 
   bool IsBuf32() const { return format() == lev2::EBUFFMT_RGBA8; }
   bool IsBuf64() const { return format() == lev2::EBUFFMT_RGBA16F; }
 
-  lev2::RtGroup* GetRtGroup(lev2::GfxTarget* pt);
+  lev2::RtGroup* GetRtGroup(lev2::Context* pt);
 
   virtual ork::lev2::EBufferFormat format() const = 0;
 
@@ -149,7 +149,7 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void RenderQuad(ork::lev2::GfxTarget* pTARG,
+void RenderQuad(ork::lev2::Context* pTARG,
                 float fx1,
                 float fy1,
                 float fx2,
@@ -169,7 +169,7 @@ class ImgModule : public Module {
   bool mExport;
 
 protected:
-  void UnitTexQuad(ork::lev2::GfxTarget* pTARG);
+  void UnitTexQuad(ork::lev2::Context* pTARG);
 
   static Img32 gNoCon;
 
@@ -295,7 +295,7 @@ struct ProcTexContext {
 
   Buffer& GetBuffer32(int edest);
   Buffer& GetBuffer64(int edest);
-  lev2::GfxTarget* mTarget;
+  lev2::Context* mTarget;
   static ork::MpMcBoundedQueue<Buffer*> gBuf32Q;
   static ork::MpMcBoundedQueue<Buffer*> gBuf64Q;
 
@@ -330,7 +330,7 @@ public:
   bool GetTexQuality() const { return mbTexQuality; }
 
   ProcTexContext* GetPTC() { return mpctx; }
-  lev2::GfxTarget* GetTarget() { return (mpctx != nullptr) ? mpctx->mTarget : nullptr; }
+  lev2::Context* GetTarget() { return (mpctx != nullptr) ? mpctx->mTarget : nullptr; }
 
   ork::lev2::Texture* ResultTexture();
 
@@ -408,7 +408,7 @@ class RotSolid : public Img32Module {
 
   ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16> mVertexBuffer;
 
-  void ComputeVB(lev2::GfxTarget* tgt);
+  void ComputeVB(lev2::Context* tgt);
 
   void compute(ProcTex& ptex) final;
 
@@ -571,7 +571,7 @@ class Cells : public Img32Module {
   void compute(ProcTex& ptex) final;
 
   int site_index(int ix, int iy) { return (iy * miDimU) + ix; }
-  void ComputeVB(lev2::GfxTarget* tgt);
+  void ComputeVB(lev2::Context* tgt);
 
 public:
   Cells();
@@ -604,7 +604,7 @@ class Kaled : public Img32Module {
   //////////////////////////////////////////////////
 
   void compute(ProcTex& ptex) final;
-  void ComputeVB(lev2::GfxBuffer& buffer);
+  void ComputeVB(lev2::OffscreenBuffer& buffer);
   ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16> mVertexBuffer;
   void addvtx(float fx, float fy, float fu, float fv);
 

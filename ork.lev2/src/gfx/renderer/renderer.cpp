@@ -26,7 +26,7 @@ static const int kRenderbufferSize = 1024 << 10;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-IRenderer::IRenderer(GfxTarget* pTARG)
+IRenderer::IRenderer(Context* pTARG)
     : mPerformanceItem(0)
     , mpTarget(pTARG)
     , mRenderQueue() {}
@@ -118,7 +118,7 @@ void IRenderer::ResetQueue(void) {
 
 void IRenderer::RenderCallback(const lev2::CallbackRenderable& cbren) const {
   lev2::RenderContextInstData MatCtx;
-  lev2::GfxTarget* pTARG = GetTarget();
+  lev2::Context* pTARG = GetTarget();
   MatCtx.SetRenderer(this);
 
   if (cbren.GetRenderCallback()) {

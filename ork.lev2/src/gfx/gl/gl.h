@@ -61,7 +61,7 @@ struct DDS_HEADER;
 
 namespace ork { namespace lev2 {
 
-class GfxTargetGL;
+class ContextGL;
 class GlslFxInterface;
 
 
@@ -90,14 +90,14 @@ class GlImiInterface : public ImmInterface {
   virtual void _doEndFrame() {}
 
 public:
-  GlImiInterface(GfxTargetGL& target);
+  GlImiInterface(ContextGL& target);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GlRasterStateInterface : public RasterStateInterface {
 
-  GlRasterStateInterface(GfxTarget& target);
+  GlRasterStateInterface(Context& target);
   void BindRasterState(const SRasterState& rState, bool bForce) override;
 
   void SetZWriteMask(bool bv) override;
@@ -115,7 +115,7 @@ class GlMatrixStackInterface : public MatrixStackInterface {
   fmtx4 Frustum(float left, float right, float top, float bottom, float zn, float zf);    // virtual
 
 public:
-  GlMatrixStackInterface(GfxTarget& target);
+  GlMatrixStackInterface(Context& target);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -123,7 +123,7 @@ public:
 class GlGeometryBufferInterface : public GeometryBufferInterface {
 
 public:
-  GlGeometryBufferInterface(GfxTargetGL& target);
+  GlGeometryBufferInterface(ContextGL& target);
 
 private:
   ///////////////////////////////////////////////////////////////////////
@@ -186,7 +186,7 @@ private:
   #endif
   //////////////////////////////////////////////
 
-  GfxTargetGL& mTargetGL;
+  ContextGL& mTargetGL;
 
   uint32_t mLastComponentMask;
 
@@ -198,7 +198,7 @@ private:
 
 class GlFrameBufferInterface : public FrameBufferInterface {
 public:
-  GlFrameBufferInterface(GfxTargetGL& mTarget);
+  GlFrameBufferInterface(ContextGL& mTarget);
   ~GlFrameBufferInterface();
 
   ///////////////////////////////////////////////////////
@@ -219,10 +219,10 @@ public:
   //////////////////////////////////////////////
 
   void _setAsRenderTarget();
-  void _initializeContext(GfxBuffer* pBuf);
+  void _initializeContext(OffscreenBuffer* pBuf);
 
 protected:
-  GfxTargetGL& mTargetGL;
+  ContextGL& mTargetGL;
   int miCurScissorX;
   int miCurScissorY;
   int miCurScissorW;
@@ -303,7 +303,7 @@ public:
 
   GLuint GetPBO(int isize);
 
-  GlTextureInterface(GfxTargetGL& tgt);
+  GlTextureInterface(ContextGL& tgt);
 
 private:
   bool LoadTexture(Texture* ptex, datablockptr_t inpdata) final;
@@ -317,15 +317,15 @@ private:
   Texture* createFromMipChain(MipChain* from_chain) final;
 
   std::map<int, PboSet*> mPBOSets;
-  GfxTargetGL& mTargetGL;
+  ContextGL& mTargetGL;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-class GfxTargetGL : public GfxTarget {
-  RttiDeclareConcrete(GfxTargetGL, GfxTarget);
+class ContextGL : public Context {
+  RttiDeclareConcrete(ContextGL, Context);
   friend class GfxEnv;
 
   static const CClass* gpClass;
@@ -333,7 +333,7 @@ class GfxTargetGL : public GfxTarget {
   ///////////////////////////////////////////////////////////////////////
 
 public:
-  GfxTargetGL();
+  ContextGL();
 
   void FxInit();
 
@@ -360,7 +360,7 @@ public:
 
   ///////////////////////////////////////////////////////////////////////
 
-  ~GfxTargetGL();
+  ~ContextGL();
 
   //////////////////////////////////////////////
 
@@ -380,7 +380,7 @@ public:
 
   GlFrameBufferInterface& GLFBI() { return mFbI; }
 
-  void InitializeContext(GfxBuffer* pBuf) final; // make a pbuffer
+  void InitializeContext(OffscreenBuffer* pBuf) final; // make a pbuffer
 
   void debugPushGroup(const std::string str) final;
   void debugPopGroup() final;
@@ -388,20 +388,20 @@ public:
 
   void TakeThreadOwnership() final;
   bool SetDisplayMode(DisplayMode* mode) final;
-  void InitializeContext(GfxWindow* pWin, CTXBASE* pctxbase) final; // make a window
+  void InitializeContext(Window* pWin, CTXBASE* pctxbase) final; // make a window
   void* _doBeginLoad() final;
   void _doEndLoad(void* ploadtok) final; // virtual
 
   void* mhHWND;
   void* mGLXContext;
-  GfxTargetGL* mpParentTarget;
+  ContextGL* mpParentTarget;
 
   std::stack<void*> mDCStack;
   std::stack<void*> mGLRCStack;
 
   //////////////////////////////////////////////
 
-  static ork::MpMcBoundedQueue<void*> mLoadTokens;
+  static ork::MpMcBoundedQueue<void*> _loadTokens;
 
   ///////////////////////////////////////////////////////////////////////////
   // Rendering State Info

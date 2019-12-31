@@ -134,6 +134,6 @@ struct NoVrDevice : public Device {
 Device& device();
 ////////////////////////////////////////////////////////////////////////////////
 void gpuUpdate(RenderContextFrameData& RCFD);
-void composite(GfxTarget* targ, Texture* twoeyetex);
+void composite(Context* targ, Texture* twoeyetex);
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::orkidvr

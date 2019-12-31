@@ -12,7 +12,7 @@ namespace ork::lev2 {
 struct RenderContextFrameData;
 struct CompositingPassData;
 struct RtGroup;
-struct GfxTarget;
+struct Context;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -38,7 +38,7 @@ public:
 
   virtual void Render(FrameRenderer& ContextData) {}
   virtual RtGroup* GetFinalRenderTarget() const { return mpMrtFinal; }
-  void Init(GfxTarget* targ);
+  void Init(Context* targ);
 
   virtual void update(const CompositingPassData& CPD, int itargw, int itargh) {}
 
@@ -48,7 +48,7 @@ protected:
   RtGroup* mpMrtFinal;
 
 private:
-  virtual void DoInit(GfxTarget* targ) {}
+  virtual void DoInit(Context* targ) {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////

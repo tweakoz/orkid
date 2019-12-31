@@ -15,9 +15,9 @@
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-class PickBufferBase : public ork::lev2::GfxBuffer
+class PickBufferBase : public ork::lev2::OffscreenBuffer
 {
-	RttiDeclareAbstract(PickBufferBase,ork::lev2::GfxBuffer);
+	RttiDeclareAbstract(PickBufferBase,ork::lev2::OffscreenBuffer);
 
 	public:
 
@@ -29,7 +29,7 @@ class PickBufferBase : public ork::lev2::GfxBuffer
 		EPICK_ST
 	};
 
-	PickBufferBase( GfxBuffer *parent,
+	PickBufferBase( OffscreenBuffer *parent,
 					 int iX, int iY, int iW, int iH,
 					 EPickBufferType etyp );
 
@@ -56,7 +56,7 @@ template <typename VPT> class PickBuffer : public PickBufferBase
 {
 	public:
 
-	PickBuffer(	lev2::GfxBuffer* pbuf,
+	PickBuffer(	lev2::OffscreenBuffer* pbuf,
 					VPT* pVP,
 					int iX, int iY, int iW, int iH,
 					EPickBufferType etyp );
@@ -70,7 +70,7 @@ template <typename VPT> class PickBuffer : public PickBufferBase
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename TLev2Viewport>
-PickBuffer<TLev2Viewport>::PickBuffer(	lev2::GfxBuffer *Parent,
+PickBuffer<TLev2Viewport>::PickBuffer(	lev2::OffscreenBuffer *Parent,
 											TLev2Viewport *pVP,
 											int iX, int iY, int iW, int iH,
 											EPickBufferType etyp )

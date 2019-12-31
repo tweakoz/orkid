@@ -814,16 +814,16 @@ void DaeReadQueueItem::ReadPolys(int ithreadidx) const
 			float fNY = mNrmSource.GetData( inrmidx+1 );
 			float fNZ = mNrmSource.GetData( inrmidx+2 );
 			/////////////////////////////////
-			if(ColladaExportPolicy::GetContext()->mReadComponentsPolicy.mReadComponents & ColladaReadComponentsPolicy::EPOLICY_READCOMPONENTS_POSITION)
+			if(ColladaExportPolicy::context()->mReadComponentsPolicy.mReadComponents & ColladaReadComponentsPolicy::EPOLICY_READCOMPONENTS_POSITION)
 				muvtx.mPos.SetXYZ( fX, fY, fZ );
-			if(ColladaExportPolicy::GetContext()->mReadComponentsPolicy.mReadComponents & ColladaReadComponentsPolicy::EPOLICY_READCOMPONENTS_NORMAL)
+			if(ColladaExportPolicy::context()->mReadComponentsPolicy.mReadComponents & ColladaReadComponentsPolicy::EPOLICY_READCOMPONENTS_NORMAL)
 				muvtx.mNrm.SetXYZ( fNX, fNY, fNZ );
 			/////////////////////////////////
 			for( int icolor=0; icolor<inumvtxcolors; icolor++ )
 			{
 				bool breadcolor = false;
 				ColladaReadComponentsPolicy::ReadComponents rc = 
-					ColladaExportPolicy::GetContext()->mReadComponentsPolicy.mReadComponents;
+					ColladaExportPolicy::context()->mReadComponentsPolicy.mReadComponents;
 				switch(icolor)
 				{	case 0: breadcolor=(rc&ColladaReadComponentsPolicy::EPOLICY_READCOMPONENTS_COLOR0); break;
 					case 1: breadcolor=(rc&ColladaReadComponentsPolicy::EPOLICY_READCOMPONENTS_COLOR1); break;
@@ -844,7 +844,7 @@ void DaeReadQueueItem::ReadPolys(int ithreadidx) const
 			{
 				bool breaduv = false;
 				ColladaReadComponentsPolicy::ReadComponents rc = 
-					ColladaExportPolicy::GetContext()->mReadComponentsPolicy.mReadComponents;
+					ColladaExportPolicy::context()->mReadComponentsPolicy.mReadComponents;
 				switch(iuv)
 				{	case 0: breaduv=(rc&ColladaReadComponentsPolicy::EPOLICY_READCOMPONENTS_UV0); break;
 					case 1: breaduv=(rc&ColladaReadComponentsPolicy::EPOLICY_READCOMPONENTS_UV1); break;
@@ -863,7 +863,7 @@ void DaeReadQueueItem::ReadPolys(int ithreadidx) const
 			{
 				bool breadbin = false;
 				ColladaReadComponentsPolicy::ReadComponents rc = 
-					ColladaExportPolicy::GetContext()->mReadComponentsPolicy.mReadComponents;
+					ColladaExportPolicy::context()->mReadComponentsPolicy.mReadComponents;
 				switch(ibin)
 				{	case 0: breadbin=(rc&ColladaReadComponentsPolicy::EPOLICY_READCOMPONENTS_BIN0); break;
 					case 1: breadbin=(rc&ColladaReadComponentsPolicy::EPOLICY_READCOMPONENTS_BIN1); break;
@@ -1078,7 +1078,7 @@ void toolmesh::ReadFromDaeFile( const file::Path& BasePath, DaeReadOpts& readopt
 		FCDGeometryMesh* mesh = (*it);
 		const std::string MeshDaeID = mesh->GetDaeId().c_str();
 
-		if( ColladaExportPolicy::GetContext()->mTriangulation.GetPolicy() == ColladaTriangulationPolicy::ECTP_TRIANGULATE )
+		if( ColladaExportPolicy::context()->mTriangulation.GetPolicy() == ColladaTriangulationPolicy::ECTP_TRIANGULATE )
 		{
 			FCDGeometryPolygonsTools::Triangulate(mesh);
 		}

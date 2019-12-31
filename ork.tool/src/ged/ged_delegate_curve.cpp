@@ -187,7 +187,7 @@ class GedCurveV4Widget : public GedItemNode
 
 	bool DoDrawDefault() const { return false; } // virtual
 
-	void DoDraw( lev2::GfxTarget* pTARG ) // virtual
+	void DoDraw( lev2::Context* pTARG ) // virtual
 	{
 		const orklut<float,float> & data = mCurveObject->GetVertices();
 
@@ -271,7 +271,7 @@ class GedCurveV4Widget : public GedItemNode
 
 	}
 	
-	static void CurveCustomPrim( GedSkin*pskin,GedObject*pnode,ork::lev2::GfxTarget* pTARG ) 
+	static void CurveCustomPrim( GedSkin*pskin,GedObject*pnode,ork::lev2::Context* pTARG ) 
 	{
 		GedCurveV4Widget* pthis = rtti::autocast(pnode);
 		const orklut<float,float> & data = pthis->mCurveObject->GetVertices();

@@ -38,7 +38,7 @@ QWidget * EditorMainWindow::NewCamView( bool bfloat )
 	static int viewnum = 0;
 	std::string viewname = CreateFormattedString( "Camera:%d", viewnum+1 );
 
-	lev2::CQtGfxWindow* pgfxwin = new lev2::CQtGfxWindow( nullptr );
+	lev2::CQtWindow* pgfxwin = new lev2::CQtWindow( nullptr );
 	lev2::GfxEnv::GetRef().RegisterWinContext(pgfxwin);
 
 	gpvp = new SceneEditorVP( "SceneViewport", mEditorBase, *this );
@@ -246,7 +246,7 @@ QDockWidget *EditorMainWindow::NewPyConView(bool bfloat)
     if( 1 )
     {
     	auto pvp = new tool::vp_cons( viewname );
-    	auto pgfxwin = new lev2::CQtGfxWindow( pvp );
+    	auto pgfxwin = new lev2::CQtWindow( pvp );
     	auto pctqt = new lev2::CTQT( pgfxwin, gfxdock );
     	auto pqw = pctqt->GetQWidget();
     	gfxdock->setWidget( pqw );

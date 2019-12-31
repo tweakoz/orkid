@@ -175,7 +175,7 @@ static orkvector<std::string> StringListParser(const std::string &instr) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialFx::Init(GfxTarget *pTARG) {
+void GfxMaterialFx::Init(Context *pTARG) {
   //////////////////////////////////////////
   /// parse shader vertex configuration data
   /// this figures out the the required vertex data for
@@ -322,7 +322,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
             new GfxMaterialFxParamEngine<fmtx4>(this);
         param = ParamMatrix4;
         struct yo {
-          static const fmtx4 &RefMvpMtx(GfxTarget *pTARG,
+          static const fmtx4 &RefMvpMtx(Context *pTARG,
                                         const GfxMaterialFxParamBase *param) {
             return pTARG->MTXI()->RefMVPMatrix();
           }
@@ -335,7 +335,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
       ////////////////////////////////////
       {
         struct getmat {
-          static const fmtx4 &doit_worldrot(GfxTarget *pTARG) {
+          static const fmtx4 &doit_worldrot(Context *pTARG) {
             return pTARG->MTXI()->RefR4Matrix();
           }
         };
@@ -349,7 +349,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
       ////////////////////////////////////
       {
         struct getmat {
-          static const fmtx3 &doit_worldrot3(GfxTarget *pTARG) {
+          static const fmtx3 &doit_worldrot3(Context *pTARG) {
             return pTARG->MTXI()->RefR3Matrix();
           }
         };
@@ -363,7 +363,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
       ////////////////////////////////////
       {
         struct getmat {
-          static const fmtx4 &doit_worldroti(GfxTarget *pTARG) {
+          static const fmtx4 &doit_worldroti(Context *pTARG) {
             static fmtx4 MatR;
             MatR.inverseOf(pTARG->MTXI()->RefR4Matrix());
             return MatR;
@@ -379,7 +379,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
       ////////////////////////////////////
       {
         struct getmat {
-          static const fmtx4 &doit_worldinverse(GfxTarget *pTARG) {
+          static const fmtx4 &doit_worldinverse(Context *pTARG) {
             static fmtx4 wimat;
             wimat.inverseOf(pTARG->MTXI()->RefMMatrix());
             return wimat;
@@ -396,7 +396,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
       {
         struct getmat {
           static const fmtx4 &
-          doit_worldviewprojectioninverse(GfxTarget *pTARG) {
+          doit_worldviewprojectioninverse(Context *pTARG) {
             static fmtx4 wvpimat;
             wvpimat.inverseOf(pTARG->MTXI()->RefMVPMatrix());
             return wvpimat;
@@ -412,7 +412,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
       ////////////////////////////////////
       {
         struct getmat {
-          static const fmtx4 &doit_viewprojection(GfxTarget *pTARG) {
+          static const fmtx4 &doit_viewprojection(Context *pTARG) {
             return pTARG->MTXI()->RefVPMatrix();
           }
         };
@@ -430,7 +430,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
         param = ParamMatrix4;
 
         struct getmat {
-          static const fmtx4 &doit_world(GfxTarget *pTARG) {
+          static const fmtx4 &doit_world(Context *pTARG) {
             return pTARG->MTXI()->RefMMatrix();
           }
         };
@@ -447,7 +447,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
         param = ParamMatrix4;
 
         struct getmat {
-          static const fmtx4 &doit_worldview(GfxTarget *pTARG) {
+          static const fmtx4 &doit_worldview(Context *pTARG) {
             // const fmtx4& wmat = pTARG->MTXI()->RefMMatrix();
             // const fmtx4& vmat = pTARG->MTXI()->RefVMatrix();
             return pTARG->MTXI()->RefMVMatrix(); //(wmat*vmat);
@@ -465,7 +465,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
             new GfxMaterialFxParamEngine<fvec2>(this);
         param = ParamVector2;
         struct getcurrentdims {
-          static const fvec2 &doit_viewportdim(GfxTarget *pTARG) {
+          static const fvec2 &doit_viewportdim(Context *pTARG) {
             static fvec2 Dims;
             // Dims.SetX( float(GfxEnv::GetRef().GetCT()->GetW()) );
             // Dims.SetY( float(GfxEnv::GetRef().GetCT()->GetH()) );
@@ -483,21 +483,21 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
         param = ParamMatrix4;
 
         struct getmat {
-          static const fmtx4 &doit_std(GfxTarget *pTARG) {
+          static const fmtx4 &doit_std(Context *pTARG) {
             return pTARG->MTXI()->RefVMatrix();
           }
-          static const fmtx4 &doit_i(GfxTarget *pTARG) {
+          static const fmtx4 &doit_i(Context *pTARG) {
             static fmtx4 mat;
             mat.inverseOf(pTARG->MTXI()->RefVMatrix());
             return mat;
           }
-          static const fmtx4 &doit_t(GfxTarget *pTARG) {
+          static const fmtx4 &doit_t(Context *pTARG) {
             static fmtx4 mat;
             mat = pTARG->MTXI()->RefVMatrix();
             mat.Transpose();
             return mat;
           }
-          static const fmtx4 &doit_it(GfxTarget *pTARG) {
+          static const fmtx4 &doit_it(Context *pTARG) {
             return pTARG->MTXI()->RefVITIYMatrix();
           }
         };
@@ -518,7 +518,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
         param = ParamMatrix4;
 
         struct getmat {
-          static const fmtx4 &doit_std(GfxTarget *pTARG) {
+          static const fmtx4 &doit_std(Context *pTARG) {
             return pTARG->MTXI()->RefPMatrix();
           }
         };
@@ -533,7 +533,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
             new GfxMaterialFxParamEngine<fvec4>(this);
         param = ParamVector4;
         struct yo {
-          static const fvec4 &RefModColor(GfxTarget *pTARG) {
+          static const fvec4 &RefModColor(Context *pTARG) {
             return pTARG->RefModColor();
           }
         };
@@ -547,7 +547,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
             new GfxMaterialFxParamEngine<fvec4>(this);
         param = ParamVector4;
         struct getcurrentobj {
-          static const fvec4 &doit(GfxTarget *pTARG) {
+          static const fvec4 &doit(Context *pTARG) {
             // const CObject *pobj =
             // GfxEnv::GetRef().GetCT()->GetCurrentObject();
             static fvec4 ObjColor;
@@ -565,7 +565,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
             new GfxMaterialFxParamEngine<float>(this);
         param = ParamFloat;
         struct gettime {
-          static const float &doit(GfxTarget *pTARG) {
+          static const float &doit(Context *pTARG) {
             static float reltime;
             reltime =
                 fmodf(float(OldSchool::GetRef().GetLoResRelTime()), 300.0f);
@@ -582,7 +582,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
             new GfxMaterialFxParamEngine<float>(this);
         param = ParamFloat;
         struct gettime {
-          static const float &doit(GfxTarget *pTARG) {
+          static const float &doit(Context *pTARG) {
             static float reltime;
             reltime = float(OldSchool::GetRef().GetLoResRelTime());
             return reltime;
@@ -598,7 +598,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
             new GfxMaterialFxParamEngine<float>(this);
         param = ParamFloat;
         struct get_engine_float_0 {
-          static const float &doit(GfxTarget *pTARG,
+          static const float &doit(Context *pTARG,
                                    const GfxMaterialFxParamBase *param) {
             if (GfxMaterialFx *pmaterial = param->GetParentMaterial()) {
               // if(pmaterial->mEngineParamFloats[0] > 0.0f &&
@@ -622,7 +622,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
             new GfxMaterialFxParamEngine<fvec3>(this);
         param = ParamT;
         struct paramget {
-          static const fvec3 &doit(GfxTarget *pTARG) {
+          static const fvec3 &doit(Context *pTARG) {
             static fvec3 vout; // GfxEnv::GetRef().GetCurrentContext();
             // Camera *pcam = 0; //pTarg->GetCurrentCamera();
             return vout; // pcam->mCameraData.mCamZNormal;
@@ -638,9 +638,9 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
             new GfxMaterialFxParamEngine<Texture *>(this);
         param = ParamT;
         struct paramget {
-          static Texture *const &doit(GfxTarget *pTARG) {
-            // GfxTarget *pTarg = 0; //GfxEnv::GetRef().GetCurrentContext();
-            // GfxBuffer* pShadowBuf = 0; //pTarg->GetShadowBuffer();
+          static Texture *const &doit(Context *pTARG) {
+            // Context *pTarg = 0; //GfxEnv::GetRef().GetCurrentContext();
+            // OffscreenBuffer* pShadowBuf = 0; //pTarg->GetShadowBuffer();
             static Texture *gout = 0;
             return gout; // pShadowBuf ? pShadowBuf->GetTexture() : gout;
           }
@@ -651,7 +651,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
             new GfxMaterialFxParamEngine<fmtx4>(this);
         param = ParamT;
         struct paramget {
-          static const fmtx4 &doit(GfxTarget *pTARG) {
+          static const fmtx4 &doit(Context *pTARG) {
             const fmtx4 &ShadVMat = pTARG->MTXI()->GetShadowVMatrix();
             const fmtx4 &ShadPMat = pTARG->MTXI()->GetShadowPMatrix();
 
@@ -666,7 +666,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
             // D3DXMatrixInverse( &mViewToLightProj, NULL, &mViewToLightProj );
             // D3DXMatrixMultiply( &mViewToLightProj, &mViewToLightProj,
             // &mLightView ); D3DXMatrixMultiply( &mViewToLightProj,
-            // &mViewToLightProj, &g_mShadowProj ); GfxBuffer* pShadowBuf =
+            // &mViewToLightProj, &g_mShadowProj ); OffscreenBuffer* pShadowBuf =
             // pTarg->GetShadowBuffer(); return pShadowBuf ?
             // pShadowBuf->mpTexture : 0;
 
@@ -837,7 +837,7 @@ PerformanceItem *GfxMaterialFx::gMatFxBeginBlockPerfItem = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GfxMaterialFx::BeginPass(GfxTarget *pTarg, int iPass) {
+bool GfxMaterialFx::BeginPass(Context *pTarg, int iPass) {
   bool rval = false;
 
   bool bpick = pTarg->FBI()->IsPickState();
@@ -920,13 +920,13 @@ bool GfxMaterialFx::BeginPass(GfxTarget *pTarg, int iPass) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialFx::EndPass(GfxTarget *pTarg) {
+void GfxMaterialFx::EndPass(Context *pTarg) {
   pTarg->FXI()->EndPass(mEffectInstance.mpEffect);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int GfxMaterialFx::BeginBlock(GfxTarget *pTarg,
+int GfxMaterialFx::BeginBlock(Context *pTarg,
                               const RenderContextInstData &MatCtx) {
   int inumpasses = 0;
 
@@ -936,7 +936,7 @@ int GfxMaterialFx::BeginBlock(GfxTarget *pTarg,
     // ActiveLayerIndex =
     // MatCtx.GetRenderer()->GetActiveDisplayLayer()->GetLayerIndex();
 
-    GfxBuffer *ShadowBuffer = 0; // pTarg->GetShadowBuffer();
+    OffscreenBuffer *ShadowBuffer = 0; // pTarg->GetShadowBuffer();
 
     bool bpick = pTarg->FBI()->IsPickState();
     bool bisshadowcaster =
@@ -1017,7 +1017,7 @@ int GfxMaterialFx::BeginBlock(GfxTarget *pTarg,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialFx::EndBlock(GfxTarget *pTarg) {
+void GfxMaterialFx::EndBlock(Context *pTarg) {
   if (mEffectInstance.mpEffect) {
     pTarg->FXI()->EndBlock(mEffectInstance.mpEffect);
   }
@@ -1032,7 +1032,7 @@ void GfxMaterialFx::Update(void) {}
 ///////////////////////////////////////////////////////////////////////////////
 
 template <>
-void GfxMaterialFxParam<bool>::Bind(FxShader *fxh, GfxTarget *ptarg) {
+void GfxMaterialFxParam<bool>::Bind(FxShader *fxh, Context *ptarg) {
   ptarg->FXI()->BindParamBool(fxh, GetRecord().mParameterHandle,
                               GetValue(ptarg));
 }
@@ -1040,7 +1040,7 @@ void GfxMaterialFxParam<bool>::Bind(FxShader *fxh, GfxTarget *ptarg) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <>
-void GfxMaterialFxParam<int>::Bind(FxShader *fxh, GfxTarget *ptarg) {
+void GfxMaterialFxParam<int>::Bind(FxShader *fxh, Context *ptarg) {
   OrkAssert(false);
   // const std::string& paramname = GetRecord()._name;
   // ptarg->FXI()->BindParamFloat( fxh, GetRecord().mParameterHandle,
@@ -1050,7 +1050,7 @@ void GfxMaterialFxParam<int>::Bind(FxShader *fxh, GfxTarget *ptarg) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <>
-void GfxMaterialFxParam<float>::Bind(FxShader *fxh, GfxTarget *ptarg) {
+void GfxMaterialFxParam<float>::Bind(FxShader *fxh, Context *ptarg) {
   const std::string &paramname = GetRecord()._name;
   ptarg->FXI()->BindParamFloat(fxh, GetRecord().mParameterHandle,
                                GetValue(ptarg));
@@ -1059,7 +1059,7 @@ void GfxMaterialFxParam<float>::Bind(FxShader *fxh, GfxTarget *ptarg) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <>
-void GfxMaterialFxParam<fvec2>::Bind(FxShader *fxh, GfxTarget *ptarg) {
+void GfxMaterialFxParam<fvec2>::Bind(FxShader *fxh, Context *ptarg) {
   fvec2 Value(GetValue(ptarg));
   ptarg->FXI()->BindParamVect2(fxh, GetRecord().mParameterHandle, Value);
 }
@@ -1067,7 +1067,7 @@ void GfxMaterialFxParam<fvec2>::Bind(FxShader *fxh, GfxTarget *ptarg) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <>
-void GfxMaterialFxParam<fvec3>::Bind(FxShader *fxh, GfxTarget *ptarg) {
+void GfxMaterialFxParam<fvec3>::Bind(FxShader *fxh, Context *ptarg) {
   fvec3 Value = GetValue(ptarg);
   ptarg->FXI()->BindParamVect3(fxh, GetRecord().mParameterHandle, Value);
 }
@@ -1075,7 +1075,7 @@ void GfxMaterialFxParam<fvec3>::Bind(FxShader *fxh, GfxTarget *ptarg) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <>
-void GfxMaterialFxParam<fvec4>::Bind(FxShader *fxh, GfxTarget *ptarg) {
+void GfxMaterialFxParam<fvec4>::Bind(FxShader *fxh, Context *ptarg) {
   fvec4 Value = GetValue(ptarg);
   ptarg->FXI()->BindParamVect4(fxh, GetRecord().mParameterHandle, Value);
 }
@@ -1083,7 +1083,7 @@ void GfxMaterialFxParam<fvec4>::Bind(FxShader *fxh, GfxTarget *ptarg) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <>
-void GfxMaterialFxParam<fmtx4>::Bind(FxShader *fxh, GfxTarget *ptarg) {
+void GfxMaterialFxParam<fmtx4>::Bind(FxShader *fxh, Context *ptarg) {
   fmtx4 Value(GetValue(ptarg));
   ptarg->FXI()->BindParamMatrix(fxh, GetRecord().mParameterHandle, Value);
 }
@@ -1091,7 +1091,7 @@ void GfxMaterialFxParam<fmtx4>::Bind(FxShader *fxh, GfxTarget *ptarg) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <>
-void GfxMaterialFxParam<fmtx3>::Bind(FxShader *fxh, GfxTarget *ptarg) {
+void GfxMaterialFxParam<fmtx3>::Bind(FxShader *fxh, Context *ptarg) {
   fmtx3 Value(GetValue(ptarg));
   ptarg->FXI()->BindParamMatrix(fxh, GetRecord().mParameterHandle, Value);
 }
@@ -1100,7 +1100,7 @@ void GfxMaterialFxParam<fmtx3>::Bind(FxShader *fxh, GfxTarget *ptarg) {
 
 template <>
 void GfxMaterialFxParam<lev2::Texture *>::Bind(FxShader *fxh,
-                                               GfxTarget *ptarg) {
+                                               Context *ptarg) {
   Texture *ptex = GetValue(ptarg);
 
   // const char* paramname = GetRecord()._name.c_str();
@@ -1117,7 +1117,7 @@ void GfxMaterialFxParam<lev2::Texture *>::Bind(FxShader *fxh,
 ///////////////////////////////////////////////////////////////////////////////
 
 template <>
-void GfxMaterialFxParam<std::string>::Bind(FxShader *fxh, GfxTarget *ptarg) {}
+void GfxMaterialFxParam<std::string>::Bind(FxShader *fxh, Context *ptarg) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1184,7 +1184,7 @@ FxMatrixBlockApplicator::FxMatrixBlockApplicator(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FxMatrixBlockApplicator::ApplyToTarget(GfxTarget *pTARG) // virtual
+void FxMatrixBlockApplicator::ApplyToTarget(Context *pTARG) // virtual
 {
   size_t inumbones = mMatrixBlockItem->GetNumMatrices();
   const fmtx4 *Matrices = mMatrixBlockItem->GetMatrices();
@@ -1199,7 +1199,7 @@ void FxMatrixBlockApplicator::ApplyToTarget(GfxTarget *pTARG) // virtual
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialFx::UpdateMVPMatrix(GfxTarget *pTARG) {
+void GfxMaterialFx::UpdateMVPMatrix(Context *pTARG) {
   FxShader *hshader = GetEffectInstance().mpEffect;
 
   if (mWorldMtxParam) {

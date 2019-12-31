@@ -19,17 +19,17 @@
 #include <ork/lev2/ui/viewport.h>
 #include <ork/rtti/downcast.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxBuffer, "ork::lev2::GfxBuffer");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::OffscreenBuffer, "ork::lev2::OffscreenBuffer");
 
 namespace ork { namespace lev2 {
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxBuffer::Describe() {
+void OffscreenBuffer::Describe() {
 }
 
-GfxBuffer::GfxBuffer(
-    GfxBuffer* Parent,
+OffscreenBuffer::OffscreenBuffer(
+    OffscreenBuffer* Parent,
     int iX,
     int iY,
     int iW,
@@ -52,7 +52,7 @@ GfxBuffer::GfxBuffer(
     , mbSizeIsDirty(true) {
 }
 
-GfxBuffer::~GfxBuffer() {
+OffscreenBuffer::~OffscreenBuffer() {
   //	if( mpContext )
   //	{
   //		delete mpContext;
@@ -61,15 +61,15 @@ GfxBuffer::~GfxBuffer() {
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxBuffer::Resize(int ix, int iy, int iw, int ih) {
+void OffscreenBuffer::Resize(int ix, int iy, int iw, int ih) {
 
-  // TODO: GfxBuffer is probably completely superseded
+  // TODO: OffscreenBuffer is probably completely superseded
   //  by RtBuffer (RenderTargetBuffer)
-  // GfxBuffer was originally intended for pbuffers..
+  // OffscreenBuffer was originally intended for pbuffers..
   //  though maybe no if we need offscreen hardware backed devices
   //  for commandline tools
 
-  GetContext()->resizeMainSurface(ix, iy, iw, ih);
+  context()->resizeMainSurface(ix, iy, iw, ih);
 
   if (GetRootWidget()) {
     GetRootWidget()->SetRect(ix, iy, iw, ih);
@@ -79,13 +79,13 @@ void GfxBuffer::Resize(int ix, int iy, int iw, int ih) {
 
 /////////////////////////////////////////////////////////////////////////
 
-GfxWindow::GfxWindow(int iX, int iY, int iW, int iH, const std::string& name, void* pdata)
-    : GfxBuffer(0, iX, iY, iW, iH, EBUFFMT_RGBA8, ETGTTYPE_WINDOW, name)
+Window::Window(int iX, int iY, int iW, int iH, const std::string& name, void* pdata)
+    : OffscreenBuffer(0, iX, iY, iW, iH, EBUFFMT_RGBA8, ETGTTYPE_WINDOW, name)
     , mpCTXBASE(0) {
   gGfxEnv.SetMainWindow(this);
 }
 
-GfxWindow::~GfxWindow() {
+Window::~Window() {
   if (mpCTXBASE) {
     mpCTXBASE = 0;
   }
@@ -93,16 +93,16 @@ GfxWindow::~GfxWindow() {
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxBuffer::BeginFrame(void) {
+void OffscreenBuffer::BeginFrame(void) {
   if (0 == mpContext) {
-    GetContext();
+    context();
   }
   mpContext->beginFrame();
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxBuffer::EndFrame(void) {
+void OffscreenBuffer::EndFrame(void) {
   if (mpContext) {
     mpContext->endFrame();
   }
@@ -110,10 +110,10 @@ void GfxBuffer::EndFrame(void) {
 
 /////////////////////////////////////////////////////////////////////////
 
-GfxTarget* GfxBuffer::GetContext(void) const {
+Context* OffscreenBuffer::context(void) const {
   //	if( 0 == mpContext )
   //{
-  // CreateContext();
+  // initContext();
   //}
 
   return mpContext;
@@ -121,25 +121,25 @@ GfxTarget* GfxBuffer::GetContext(void) const {
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxBuffer::CreateContext() {
-  mpContext = ork::rtti::safe_downcast<GfxTarget*>(GfxEnv::GetRef().GetTargetClass()->CreateObject());
+void OffscreenBuffer::initContext() {
+  mpContext = ork::rtti::safe_downcast<Context*>(GfxEnv::GetRef().contextClass()->CreateObject());
   mpContext->InitializeContext(this);
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxWindow::CreateContext() {
-  mpContext = ork::rtti::safe_downcast<GfxTarget*>(GfxEnv::GetRef().GetTargetClass()->CreateObject());
+void Window::initContext() {
+  mpContext = ork::rtti::safe_downcast<Context*>(GfxEnv::GetRef().contextClass()->CreateObject());
   if (mpCTXBASE) {
-    mpCTXBASE->SetTarget(mpContext);
+    mpCTXBASE->setContext(mpContext);
   }
   mpContext->InitializeContext(this, mpCTXBASE);
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxBuffer::Render2dQuadEML(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2) {
-  auto ctx = GetContext();
+void OffscreenBuffer::Render2dQuadEML(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2) {
+  auto ctx = context();
 
   // align source pixels to target pixels if sizes match
   float fx0 = QuadRect.x;
@@ -160,7 +160,7 @@ void GfxBuffer::Render2dQuadEML(const fvec4& QuadRect, const fvec4& UvRect, cons
   DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
   U32 uc                                = 0xffffffff;
   ork::lev2::VtxWriter<SVtxV12C4T16> vw;
-  vw.Lock(GetContext(), &vb, 6);
+  vw.Lock(context(), &vb, 6);
   vw.AddVertex(SVtxV12C4T16(fx0, fy0, 0.0f, fua0, fva0, fub0, fvb0, uc));
   vw.AddVertex(SVtxV12C4T16(fx1, fy1, 0.0f, fua1, fva1, fub1, fvb1, uc));
   vw.AddVertex(SVtxV12C4T16(fx1, fy0, 0.0f, fua1, fva0, fub1, fvb0, uc));
@@ -168,19 +168,19 @@ void GfxBuffer::Render2dQuadEML(const fvec4& QuadRect, const fvec4& UvRect, cons
   vw.AddVertex(SVtxV12C4T16(fx0, fy0, 0.0f, fua0, fva0, fub0, fvb0, uc));
   vw.AddVertex(SVtxV12C4T16(fx0, fy1, 0.0f, fua0, fva1, fub0, fvb1, uc));
   vw.AddVertex(SVtxV12C4T16(fx1, fy1, 0.0f, fua1, fva1, fub1, fvb1, uc));
-  vw.UnLock(GetContext());
+  vw.UnLock(context());
 
   ctx->GBI()->DrawPrimitiveEML(vw, EPRIM_TRIANGLES, 6);
 }
 
-void GfxBuffer::Render2dQuadsEML(size_t count, const fvec4* QuadRects, const fvec4* UvRects, const fvec4* UvRect2s) {
+void OffscreenBuffer::Render2dQuadsEML(size_t count, const fvec4* QuadRects, const fvec4* UvRects, const fvec4* UvRect2s) {
 
-  auto ctx = GetContext();
+  auto ctx = context();
 
   DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
   U32 uc                                = 0xffffffff;
   ork::lev2::VtxWriter<SVtxV12C4T16> vw;
-  vw.Lock(GetContext(), &vb, 6 * count);
+  vw.Lock(context(), &vb, 6 * count);
 
   for (size_t i = 0; i < count; i++) {
 
@@ -211,14 +211,14 @@ void GfxBuffer::Render2dQuadsEML(size_t count, const fvec4* QuadRects, const fve
     vw.AddVertex(SVtxV12C4T16(fx0, fy1, 0.0f, fua0, fva1, fub0, fvb1, uc));
     vw.AddVertex(SVtxV12C4T16(fx1, fy1, 0.0f, fua1, fva1, fub1, fvb1, uc));
   }
-  vw.UnLock(GetContext());
+  vw.UnLock(context());
 
   ctx->GBI()->DrawPrimitiveEML(vw, EPRIM_TRIANGLES, 6 * count);
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxBuffer::RenderMatOrthoQuad(
+void OffscreenBuffer::RenderMatOrthoQuad(
     const SRect& ViewportRect,
     const SRect& QuadRect,
     GfxMaterial* pmat,
@@ -229,7 +229,7 @@ void GfxBuffer::RenderMatOrthoQuad(
     float* uv2,
     const fcolor4& clr) {
   static SRasterState DefaultRasterState;
-  auto ctx  = GetContext();
+  auto ctx  = context();
   auto mtxi = ctx->MTXI();
   auto fbi  = ctx->FBI();
 
@@ -263,7 +263,7 @@ void GfxBuffer::RenderMatOrthoQuad(
       // U32 uc = clr.GetBGRAU32();
       U32 uc = clr.GetVtxColorAsU32();
       ork::lev2::VtxWriter<SVtxV12C4T16> vw;
-      vw.Lock(GetContext(), &vb, 6);
+      vw.Lock(context(), &vb, 6);
       vw.AddVertex(SVtxV12C4T16(fx0, fy0, 0.0f, fu0, fv0, uv2[0], uv2[1], uc));
       vw.AddVertex(SVtxV12C4T16(fx1, fy1, 0.0f, fu1, fv1, uv2[4], uv2[5], uc));
       vw.AddVertex(SVtxV12C4T16(fx1, fy0, 0.0f, fu1, fv0, uv2[2], uv2[3], uc));
@@ -271,7 +271,7 @@ void GfxBuffer::RenderMatOrthoQuad(
       vw.AddVertex(SVtxV12C4T16(fx0, fy0, 0.0f, fu0, fv0, uv2[0], uv2[1], uc));
       vw.AddVertex(SVtxV12C4T16(fx0, fy1, 0.0f, fu0, fv1, uv2[6], uv2[7], uc));
       vw.AddVertex(SVtxV12C4T16(fx1, fy1, 0.0f, fu1, fv1, uv2[4], uv2[5], uc));
-      vw.UnLock(GetContext());
+      vw.UnLock(context());
 
       ctx->GBI()->DrawPrimitive(vw, EPRIM_TRIANGLES);
     }
@@ -297,7 +297,7 @@ OrthoQuad::OrthoQuad()
     , mfv1b(0.0f) {
 }
 
-void GfxBuffer::RenderMatOrthoQuads(const OrthoQuads& oquads) {
+void OffscreenBuffer::RenderMatOrthoQuads(const OrthoQuads& oquads) {
   int inumquads             = oquads.miNumQuads;
   const SRect& ViewportRect = oquads.mViewportRect;
   const SRect& OrthoRect    = oquads.mOrthoRect;
@@ -315,21 +315,21 @@ void GfxBuffer::RenderMatOrthoQuads(const OrthoQuads& oquads) {
   float fvx1 = float(OrthoRect.miX2);
   float fvy1 = float(OrthoRect.miY2);
 
-  GetContext()->MTXI()->PushPMatrix(GetContext()->MTXI()->Ortho(fvx0, fvx1, fvy0, fvy1, 0.0f, 1.0f));
-  GetContext()->MTXI()->PushVMatrix(fmtx4::Identity);
-  GetContext()->MTXI()->PushMMatrix(fmtx4::Identity);
-  GetContext()->RSI()->BindRasterState(DefaultRasterState, true);
-  GetContext()->FBI()->PushViewport(ViewportRect);
-  GetContext()->FBI()->PushScissor(ViewportRect);
+  context()->MTXI()->PushPMatrix(context()->MTXI()->Ortho(fvx0, fvx1, fvy0, fvy1, 0.0f, 1.0f));
+  context()->MTXI()->PushVMatrix(fmtx4::Identity);
+  context()->MTXI()->PushMMatrix(fmtx4::Identity);
+  context()->RSI()->BindRasterState(DefaultRasterState, true);
+  context()->FBI()->PushViewport(ViewportRect);
+  context()->FBI()->PushScissor(ViewportRect);
   { // Draw Full Screen Quad with specified material
-    GetContext()->BindMaterial(pmtl);
-    GetContext()->FXI()->InvalidateStateBlock();
-    GetContext()->PushModColor(ork::fcolor4::White());
+    context()->BindMaterial(pmtl);
+    context()->FXI()->InvalidateStateBlock();
+    context()->PushModColor(ork::fcolor4::White());
     {
       ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
 
       ork::lev2::VtxWriter<ork::lev2::SVtxV12C4T16> vw;
-      vw.Lock(GetContext(), &vb, 6 * inumquads);
+      vw.Lock(context(), &vb, 6 * inumquads);
       {
         for (int iq = 0; iq < inumquads; iq++) {
           const OrthoQuad& Q    = pquads[iq];
@@ -383,17 +383,17 @@ void GfxBuffer::RenderMatOrthoQuads(const OrthoQuads& oquads) {
           }
         }
       }
-      vw.UnLock(GetContext());
+      vw.UnLock(context());
 
-      GetContext()->GBI()->DrawPrimitive(vw, ork::lev2::EPRIM_TRIANGLES);
+      context()->GBI()->DrawPrimitive(vw, ork::lev2::EPRIM_TRIANGLES);
     }
-    GetContext()->PopModColor();
+    context()->PopModColor();
   }
-  GetContext()->FBI()->PopScissor();
-  GetContext()->FBI()->PopViewport();
-  GetContext()->MTXI()->PopPMatrix();
-  GetContext()->MTXI()->PopVMatrix();
-  GetContext()->MTXI()->PopMMatrix();
+  context()->FBI()->PopScissor();
+  context()->FBI()->PopViewport();
+  context()->MTXI()->PopPMatrix();
+  context()->MTXI()->PopVMatrix();
+  context()->MTXI()->PopMMatrix();
 }
 
 /////////////////////////////////////////////////////////////////////////

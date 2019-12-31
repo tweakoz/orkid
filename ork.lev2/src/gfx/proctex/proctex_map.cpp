@@ -128,7 +128,7 @@ UvMap::UvMap()
 	, mbAA(false)
 {
 }
-void RenderMapQuad(lev2::GfxTarget* targ, lev2::GfxMaterial3DSolid& mtl, float l, float r, float t, float b)
+void RenderMapQuad(lev2::Context* targ, lev2::GfxMaterial3DSolid& mtl, float l, float r, float t, float b)
 {	auto mtxi = targ->MTXI();
 	targ->PushModColor( ork::fvec4::Red() );
 	fmtx4 mtxortho = mtxi->Ortho( l, r, t, b, 0.0f, 1.0f );

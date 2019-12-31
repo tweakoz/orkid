@@ -18,7 +18,7 @@
 
 namespace ork { namespace lev2 {
 
-MatrixStackInterface::MatrixStackInterface(GfxTarget& target)
+MatrixStackInterface::MatrixStackInterface(Context& target)
     : mTarget(target)
     , miMatrixStackIndexP(0)
     , miMatrixStackIndexM(0)
@@ -278,7 +278,7 @@ fmtx4 MatrixStackInterface::Persp(float fovy, float aspect, float fnear, float f
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// GfxTarget::Frustum virtual virtual
+// Context::Frustum virtual virtual
 ///////////////////////////////////////////////////////////////////////////////
 
 fmtx4 MatrixStackInterface::Frustum(float left, float right, float top, float bottom, float zn, float zf) // virtual

@@ -302,7 +302,7 @@ OpsTask* IOpsDelegate::GetTask(ork::object::ObjectClass* pdelegclass, ork::Objec
   return pret;
 }
 
-void OpsNode::DoDraw(lev2::GfxTarget* pTARG) // virtual
+void OpsNode::DoDraw(lev2::Context* pTARG) // virtual
 {
   bool bispick = pTARG->FBI()->IsPickState();
 
@@ -458,7 +458,7 @@ OpsNode::OpsNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty
 static const int koff = 1;
 // static const int kdim = GedMapNode::klabelsize-2;
 
-void GedGroupNode::DoDraw(lev2::GfxTarget* pTARG) {
+void GedGroupNode::DoDraw(lev2::Context* pTARG) {
   int inumitems   = GetNumItems();
   int stack_depth = mModel.StackSize();
 

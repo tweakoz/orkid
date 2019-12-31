@@ -8,7 +8,7 @@
 
 class RasterStateInterface {
 public:
-  RasterStateInterface(GfxTarget& target);
+  RasterStateInterface(Context& target);
 
   SRasterState& GetRasterState(void) { return mCurrentState; }
   SRasterState& RefUIRasterState(void) { return mUIRasterState; }
@@ -24,7 +24,7 @@ public:
   virtual void SetScissorTest(EScissorTest eVal)  = 0;
 
 protected:
-  GfxTarget& _target;
+  Context& _target;
   SRasterState mUIRasterState;
   SRasterState mCurrentState;
   SRasterState mLastState;

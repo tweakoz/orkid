@@ -294,7 +294,7 @@ void ParticlePoolRenderBuffer::Update( const Pool<BasicParticle>& the_pool )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::lev2::GfxTarget* gtarg = 0;
+ork::lev2::Context* gtarg = 0;
 
 void SpriteRenderer::Compute( float dt )
 {
@@ -366,7 +366,7 @@ bool SpriteRenderer::DoNotify(const ork::event::Event *event)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpriteRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ)
+void SpriteRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::Context* targ)
 {
 	gtarg = targ;
 
@@ -628,7 +628,7 @@ StreakRenderer::StreakRenderer()
 	, mfGradientIntensity(1.0f)
 	, mbSort(false)
 {
-	ork::lev2::GfxTarget* targ = ork::lev2::GfxEnv::GetRef().GetLoaderTarget();
+	ork::lev2::Context* targ = ork::lev2::GfxEnv::GetRef().GetLoaderTarget();
 	mpMaterial = new GfxMaterial3DSolid(targ, "orkshader://particle", "tstreakparticle");
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -663,7 +663,7 @@ dataflow::outplugbase* StreakRenderer::GetOutput(int idx)
 	return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void StreakRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ)
+void StreakRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::Context* targ)
 {	const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
 	const auto& CPD = RCFD->topCPD();
 	const CameraMatrices* cmtcs = CPD.cameraMatrices();
@@ -840,7 +840,7 @@ dataflow::outplugbase* ModelRenderer::GetOutput(int idx)
 	return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ModelRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ)
+void ModelRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::Context* targ)
 {	if( 0 == GetModel() ) return;
 	const ork::lev2::RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
 	const auto& CPD = RCFD->topCPD();
@@ -975,7 +975,7 @@ void TextureMaterial::Describe()
 TextureMaterial::TextureMaterial()
 	: mTexture(0)
 {
-	ork::lev2::GfxTarget* targ = ork::lev2::GfxEnv::GetRef().GetLoaderTarget();
+	ork::lev2::Context* targ = ork::lev2::GfxEnv::GetRef().GetLoaderTarget();
 	mpMaterial = new GfxMaterial3DSolid(targ, "orkshader://particle", "tbasicparticle");
 	mpMaterial->SetColorMode( GfxMaterial3DSolid::EMODE_USER );
 }
@@ -1005,7 +1005,7 @@ void TextureMaterial::Update( float ftexframe )
 		}
 	}
 }
-lev2::GfxMaterial* TextureMaterial::Bind( lev2::GfxTarget* pT )
+lev2::GfxMaterial* TextureMaterial::Bind( lev2::Context* pT )
 {
 
 	mpMaterial->SetTexture( GetTexture() );
@@ -1033,7 +1033,7 @@ void VolTexMaterial::Describe()
 VolTexMaterial::VolTexMaterial()
 	: mTexture(0)
 {
-	ork::lev2::GfxTarget* targ = ork::lev2::GfxEnv::GetRef().GetLoaderTarget();
+	ork::lev2::Context* targ = ork::lev2::GfxEnv::GetRef().GetLoaderTarget();
 	mpMaterial = new GfxMaterial3DSolid(targ, "orkshader://particle", "tvolumeparticle");
 	mpMaterial->SetColorMode( GfxMaterial3DSolid::EMODE_USER );
 }
@@ -1063,7 +1063,7 @@ void VolTexMaterial::Update( float ftexframe )
 		}
 	}
 }
-lev2::GfxMaterial* VolTexMaterial::Bind( lev2::GfxTarget* pT )
+lev2::GfxMaterial* VolTexMaterial::Bind( lev2::Context* pT )
 {
 
 	mpMaterial->SetVolumeTexture( GetTexture() );

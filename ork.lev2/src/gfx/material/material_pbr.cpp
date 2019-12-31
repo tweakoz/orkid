@@ -33,7 +33,7 @@ namespace ork::lev2 {
 
 /////////////////////////////////////////////////////////////////////////
 
-Texture* PBRMaterial::brdfIntegrationMap(GfxTarget* targ) {
+Texture* PBRMaterial::brdfIntegrationMap(Context* targ) {
 
   static Texture* _map = nullptr;
 
@@ -112,7 +112,7 @@ Texture* PBRMaterial::brdfIntegrationMap(GfxTarget* targ) {
 
 /////////////////////////////////////////////////////////////////////////
 
-Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, GfxTarget* targ) {
+Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
   auto txi = targ->TXI();
   auto fbi = targ->FBI();
   auto fxi = targ->FXI();
@@ -216,7 +216,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, GfxTarget* targ) 
 
 /////////////////////////////////////////////////////////////////////////
 
-Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, GfxTarget* targ) {
+Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
   auto txi = targ->TXI();
   auto fbi = targ->FBI();
   auto fxi = targ->FXI();
@@ -332,7 +332,7 @@ void PBRMaterial::describeX(class_t* c) {
   /////////////////////////////////////////////////////////////////
 
   chunkfile::materialreader_t reader = [](chunkfile::XgmMaterialReaderContext& ctx) -> ork::lev2::GfxMaterial* {
-    auto targ             = ctx._varmap.typedValueForKey<GfxTarget*>("gfxtarget").value();
+    auto targ             = ctx._varmap.typedValueForKey<Context*>("gfxtarget").value();
     auto txi              = targ->TXI();
     const auto& embtexmap = ctx._varmap.typedValueForKey<embtexmap_t>("embtexmap").value();
 

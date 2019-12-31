@@ -68,7 +68,7 @@ void init(char** argp) {
   ork::ent::Init();
   ork::rtti::Class::InitializeClasses();
 
-  ork::lev2::GfxTargetCreationParams CreationParams;
+  ork::lev2::ContextCreationParams CreationParams;
   CreationParams.miNumSharedVerts = 4 << 10;
   ork::lev2::GfxEnv::GetRef().PushCreationParams(CreationParams);
 

@@ -32,12 +32,12 @@ END_ENUM_SERIALIZER()
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-TexBuffer::TexBuffer(GfxBuffer* parent, EBufferFormat efmt, int iW, int iH)
-    : GfxBuffer(parent, 0, 0, iW, iH, efmt, ETGTTYPE_EXTBUFFER) {
-  lev2::GfxTargetCreationParams params = lev2::GfxEnv::GetRef().GetCreationParams();
+TexBuffer::TexBuffer(OffscreenBuffer* parent, EBufferFormat efmt, int iW, int iH)
+    : OffscreenBuffer(parent, 0, 0, iW, iH, efmt, ETGTTYPE_EXTBUFFER) {
+  lev2::ContextCreationParams params = lev2::GfxEnv::GetRef().GetCreationParams();
   params.miNumSharedVerts              = 4 << 10;
   lev2::GfxEnv::GetRef().PushCreationParams(params);
-  this->CreateContext();
+  this->initContext();
   lev2::GfxEnv::GetRef().PopCreationParams();
 }
 
@@ -81,7 +81,7 @@ static const int kFXH      = 512;
 static const int kFINALHDW = 1024;
 static const int kFINALHDH = 1024;
 
-void WriteRtgTex(const char* name, ork::lev2::GfxTarget* pT, RtGroup* pgrp, int imrt) {
+void WriteRtgTex(const char* name, ork::lev2::Context* pT, RtGroup* pgrp, int imrt) {
   Texture* ptex = pgrp->GetMrt(imrt)->GetTexture();
   pT->TXI()->SaveTexture(name, ptex);
 }
@@ -112,11 +112,11 @@ void BuiltinFrameTechniques::ResizeFxBuffer(int iw, int ih) {
     }
   }
 }
-void BuiltinFrameTechniques::DoInit(GfxTarget* pTARG) {
-  // ork::lev2::GfxTarget* pTARG = Parent->GetContext();
+void BuiltinFrameTechniques::DoInit(Context* pTARG) {
+  // ork::lev2::Context* pTARG = Parent->context();
   auto fbi          = pTARG->FBI();
-  GfxBuffer* Parent = fbi->GetThisBuffer();
-  pTARG             = Parent ? Parent->GetContext() : pTARG;
+  OffscreenBuffer* Parent = fbi->GetThisBuffer();
+  pTARG             = Parent ? Parent->context() : pTARG;
   auto clear_color  = Parent ? Parent->GetClearColor() : fbi->GetClearColor();
 
   static const int kmultisamplesH = 2;
@@ -280,12 +280,12 @@ BuiltinFrameEffectMaterial::BuiltinFrameEffectMaterial()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BuiltinFrameEffectMaterial::Init(GfxTarget* pTarg) {
+void BuiltinFrameEffectMaterial::Init(Context* pTarg) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BuiltinFrameEffectMaterial::PostInit(GfxTarget* pTarg, const char* FxFile, const char* TekName) {
+void BuiltinFrameEffectMaterial::PostInit(Context* pTarg, const char* FxFile, const char* TekName) {
   mFxFile  = FxFile;
   mTekName = TekName;
   // mpRtGroup = grp;
@@ -332,7 +332,7 @@ void BuiltinFrameEffectMaterial::Update(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool BuiltinFrameEffectMaterial::BeginPass(GfxTarget* pTarg, int iPass) {
+bool BuiltinFrameEffectMaterial::BeginPass(Context* pTarg, int iPass) {
   auto rsi = pTarg->RSI();
   auto fxi = pTarg->FXI();
   auto fbi = pTarg->FBI();
@@ -398,13 +398,13 @@ bool BuiltinFrameEffectMaterial::BeginPass(GfxTarget* pTarg, int iPass) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BuiltinFrameEffectMaterial::EndPass(GfxTarget* pTarg) {
+void BuiltinFrameEffectMaterial::EndPass(Context* pTarg) {
   pTarg->FXI()->EndPass(hFX);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int BuiltinFrameEffectMaterial::BeginBlock(GfxTarget* pTarg, const RenderContextInstData& MatCtx) {
+int BuiltinFrameEffectMaterial::BeginBlock(Context* pTarg, const RenderContextInstData& MatCtx) {
   pTarg->FXI()->BindTechnique(hFX, hTek);
   int inumpasses = pTarg->FXI()->BeginBlock(hFX, MatCtx);
   return inumpasses;
@@ -412,21 +412,21 @@ int BuiltinFrameEffectMaterial::BeginBlock(GfxTarget* pTarg, const RenderContext
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BuiltinFrameEffectMaterial::EndBlock(GfxTarget* pTarg) {
+void BuiltinFrameEffectMaterial::EndBlock(Context* pTarg) {
   pTarg->FXI()->EndBlock(hFX);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void BuiltinFrameTechniques::Render(FrameRenderer& frenderer) {
-  const ork::lev2::GfxTargetCreationParams& CreationParams = ork::lev2::GfxEnv::GetRef().GetCreationParams();
+  const ork::lev2::ContextCreationParams& CreationParams = ork::lev2::GfxEnv::GetRef().GetCreationParams();
 
   RenderContextFrameData& RCFD = frenderer.framedata();
   auto CIMPL                   = RCFD._cimpl;
   assert(CIMPL != nullptr);
   const auto& topCPD = CIMPL->topCPD();
 
-  GfxTarget* pTARG = RCFD.GetTarget();
+  Context* pTARG = RCFD.GetTarget();
 
   if (false == pTARG->IsDeviceAvailable())
     return;
@@ -628,7 +628,7 @@ void BuiltinFrameTechniques::Render(FrameRenderer& frenderer) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlowRenderMatOrthoQuad(
-    GfxTarget* pTARG,
+    Context* pTARG,
     MatrixStackInterface* MTXIO,
     const SRect& ViewportRect,
     const SRect& QuadRect,
@@ -695,11 +695,11 @@ void GlowRenderMatOrthoQuad(
 ///////////////////////////////////////////////////////////////////////////////
 
 void BuiltinFrameTechniques::PreProcess(RenderContextFrameData& FrameData) {
-  GfxTarget* pTARG = FrameData.GetTarget();
+  Context* pTARG = FrameData.GetTarget();
 
   if ((mEffectName == "glow") || (mEffectName == "ghostly") || (mEffectName == "dof") || (mEffectName == "afterlife")) {
-    auto MTXI0 = mpAuxBuffer0->GetContext()->MTXI();
-    auto MTXI1 = mpAuxBuffer1->GetContext()->MTXI();
+    auto MTXI0 = mpAuxBuffer0->context()->MTXI();
+    auto MTXI1 = mpAuxBuffer1->context()->MTXI();
 
     ////////////////////////////////////////
     // Blur in X Direction
@@ -744,7 +744,7 @@ void BuiltinFrameTechniques::PreProcess(RenderContextFrameData& FrameData) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void BuiltinFrameTechniques::PostProcess(RenderContextFrameData& FrameData) {
-  GfxTarget* pTARG = FrameData.GetTarget();
+  Context* pTARG = FrameData.GetTarget();
 
   pTARG->FBI()->PushRtGroup(mpMrtFinal);
   pTARG->GBI()->BeginFrame();
@@ -877,7 +877,7 @@ BasicFrameTechnique::BasicFrameTechnique()
 
 void BasicFrameTechnique::Render(FrameRenderer& frenderer) {
   RenderContextFrameData& FrameData = frenderer.framedata();
-  GfxTarget* pTARG                  = FrameData.GetTarget();
+  Context* pTARG                  = FrameData.GetTarget();
   SRect tgt_rect                    = pTARG->mainSurfaceRectAtOrigin();
   // FrameData.SetDstRect( tgt_rect );
   /*
@@ -902,7 +902,7 @@ PickFrameTechnique::PickFrameTechnique()
 
 void PickFrameTechnique::Render(FrameRenderer& frenderer) {
   RenderContextFrameData& FrameData = frenderer.framedata();
-  GfxTarget* pTARG                  = FrameData.GetTarget();
+  Context* pTARG                  = FrameData.GetTarget();
   SRect tgt_rect                    = pTARG->mainSurfaceRectAtOrigin();
   // FrameData.SetDstRect( tgt_rect );
   {
@@ -912,7 +912,7 @@ void PickFrameTechnique::Render(FrameRenderer& frenderer) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ShadowFrameTechnique::ShadowFrameTechnique(GfxWindow* Parent, ui::Viewport* pvp, int iW, int iH)
+ShadowFrameTechnique::ShadowFrameTechnique(Window* Parent, ui::Viewport* pvp, int iW, int iH)
     : FrameTechniqueBase(iW, iH)
     , _pShadowBuffer(0) {
   _pShadowBuffer                  = new TexBuffer(Parent, EBUFFMT_Z32, 1024, 1024);
@@ -923,7 +923,7 @@ ShadowFrameTechnique::ShadowFrameTechnique(GfxWindow* Parent, ui::Viewport* pvp,
 
 void ShadowFrameTechnique::Render(FrameRenderer& frenderer) {
   RenderContextFrameData& FrameData = frenderer.framedata();
-  GfxTarget* pTARG                  = FrameData.GetTarget();
+  Context* pTARG                  = FrameData.GetTarget();
   /////////////////////////////////////////////////
   int itx0 = pTARG->mainSurfaceWindowPosX();
   int itx1 = pTARG->mainSurfaceWindowPosX() + pTARG->mainSurfaceWidth();
@@ -938,26 +938,26 @@ void ShadowFrameTechnique::Render(FrameRenderer& frenderer) {
   fvec3 lpos = GetPropertyValueDynamic<fvec3>( ContextData.GetScene(), "LightPos" );
   fvec3 cpos = ContextData.GetCamera()->CamFocus;
 
-  mpShadowBuffer->GetContext()->beginFrame();
-  mpShadowBuffer->GetContext()->PushCamera( ContextData.GetCamera() );
-  mpShadowBuffer->GetContext()->MTXI()->PushPMatrix( lpmat );
-  mpShadowBuffer->GetContext()->MTXI()->PushVMatrix( lvmat );
-  mpShadowBuffer->GetContext()->MTXI()->PushMMatrix( fmtx4::Identity );
+  mpShadowBuffer->context()->beginFrame();
+  mpShadowBuffer->context()->PushCamera( ContextData.GetCamera() );
+  mpShadowBuffer->context()->MTXI()->PushPMatrix( lpmat );
+  mpShadowBuffer->context()->MTXI()->PushVMatrix( lvmat );
+  mpShadowBuffer->context()->MTXI()->PushMMatrix( fmtx4::Identity );
   {
       ContextData.SetRenderingMode( RenderContextFrameData::ERENDMODE_SHADOWMAP );
-      ContextData.GetRenderer().SetTarget(mpShadowBuffer->GetContext());
+      ContextData.GetRenderer().setContext(mpShadowBuffer->context());
       ContextData.GetRenderer().SetCamera( & ContextData.GetCamera()->mCameraData );
       ContextData.GetScene()->SendToRenderer( & ContextData.GetRenderer(), 1 );
       ContextData.GetRenderer().drawEnqueuedRenderables();
   }
-  mpShadowBuffer->GetContext()->PopCamera();
-  mpShadowBuffer->GetContext()->MTXI()->PopPMatrix();
-  mpShadowBuffer->GetContext()->MTXI()->PopVMatrix();
-  mpShadowBuffer->GetContext()->MTXI()->PopMMatrix();
-  mpShadowBuffer->GetContext()->endFrame();
+  mpShadowBuffer->context()->PopCamera();
+  mpShadowBuffer->context()->MTXI()->PopPMatrix();
+  mpShadowBuffer->context()->MTXI()->PopVMatrix();
+  mpShadowBuffer->context()->MTXI()->PopMMatrix();
+  mpShadowBuffer->context()->endFrame();
 */
 
-  // FrameData.GetRenderer()->SetTarget(pTARG);
+  // FrameData.GetRenderer()->setContext(pTARG);
   _pShadowBuffer->SetDirty(false);
 
   /////////////////////////////////////////////////

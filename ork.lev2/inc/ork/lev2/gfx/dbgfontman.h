@@ -72,14 +72,14 @@ public:
 
   Font(const std::string& fontname, const std::string& filename);
 
-  void LoadFromDisk(GfxTarget* pTARG, const FontDesc& fd);
+  void LoadFromDisk(Context* pTARG, const FontDesc& fd);
   const FontDesc& GetFontDesc(void) {
     return mFontDesc;
   }
   GfxMaterial* GetMaterial(void) {
     return mpMaterial;
   }
-  void QueChar(GfxTarget* pTarg, VtxWriter<SVtxV12C4T16>& vw, int ix, int iy, int iu, int iv, U32 ucolor);
+  void QueChar(Context* pTarg, VtxWriter<SVtxV12C4T16>& vw, int ix, int iy, int iu, int iv, U32 ucolor);
 
   /////////////////////////////////////////////
 private:
@@ -101,10 +101,10 @@ public: //
   FontMan();
   ~FontMan();
 
-  static void InitFonts(GfxTarget* pTARG);
+  static void InitFonts(Context* pTARG);
 
-  static void AddFont(GfxTarget* pTARG, const FontDesc& fdesc);
-  static void DrawText(GfxTarget* pTARG, int iX, int iY, const char* pFmt, ...);
+  static void AddFont(Context* pTARG, const FontDesc& fdesc);
+  static void DrawText(Context* pTARG, int iX, int iY, const char* pFmt, ...);
 
   static Font* GetCurrentFont(void) {
     return GetRef().mpCurrentFont;
@@ -146,8 +146,8 @@ public: //
     return GetRef().mpCurrentFont;
   }
 
-  static void BeginTextBlock(GfxTarget* pTARG, int imaxcharcount = 0);
-  static void EndTextBlock(GfxTarget* pTARG);
+  static void BeginTextBlock(Context* pTARG, int imaxcharcount = 0);
+  static void EndTextBlock(Context* pTARG);
 
   /////////////////////////////////////////////
 protected:

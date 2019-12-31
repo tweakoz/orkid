@@ -39,7 +39,7 @@ void ToolMaterialGroup::ComputeVtxStreamFormat()
 	const orkvector<ork::lev2::VertexConfig>& VertexConfigDataAvl = mAvailVertexConfigData;
 	int inumvtxcfgavailable = VertexConfigDataAvl.size();
 
-	const auto& TargetFormatsAvailable = tool::ColladaExportPolicy::GetContext()->mAvailableVertexFormats.GetFormats();
+	const auto& TargetFormatsAvailable = tool::ColladaExportPolicy::context()->mAvailableVertexFormats.GetFormats();
 
 	//////////////////////////////////////////
 	// get vertex configuration data

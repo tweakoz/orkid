@@ -19,7 +19,7 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ImmInterface::ImmInterface(GfxTarget& target)
+ImmInterface::ImmInterface(Context& target)
 	: mVtxBufUILine( 4<<10, 4096, EPRIM_LINES )
 	, mVtxBufUIQuad( 4<<10, 8, EPRIM_TRIANGLES )
 	, mVtxBufUITexQuad( 4<<10, 8, EPRIM_TRIANGLES )

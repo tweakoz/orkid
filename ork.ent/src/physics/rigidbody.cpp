@@ -489,7 +489,7 @@ fvec3 RigidBody::MassMOI_Sphere( const float fradius, const float fmass )
 // Basic Rigid Body Draw Routine
 ///////////////////////////////////////////////////////////////////////////////
 
-void RigidBody_Draw( lev2::GfxTarget* targ, const fmtx4& matw, const RigidBody& rbody, bool bdebug )
+void RigidBody_Draw( lev2::Context* targ, const fmtx4& matw, const RigidBody& rbody, bool bdebug )
 {
 	fmtx4 MatS;
 	static lev2::GfxMaterial3DSolid matsolid(targ);

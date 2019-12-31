@@ -91,7 +91,7 @@ Op2CompositingNode::~Op2CompositingNode() {
     delete mOutput;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Op2CompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtual
+void Op2CompositingNode::DoInit(lev2::Context* pTARG, int iW, int iH) // virtual
 {
   if (mSubA)
     mSubA->Init(pTARG, iW, iH);

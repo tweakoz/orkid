@@ -157,7 +157,7 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   auto& ddprops                      = drawdata._properties;
   auto the_renderer                  = drawdata.mFrameRenderer;
   lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
-  lev2::GfxTarget* target            = RCFD.GetTarget();
+  lev2::Context* target            = RCFD.GetTarget();
 
   drawdata._cimpl   = this;
   float aspectratio = target->mainSurfaceAspectRatio();
@@ -218,7 +218,7 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
 
     if (spncam and spncam->getEditorCamera()) {
       // spncam->computeMatrices(CAMCCTX);
-      // l2cam->_camcamdata.BindGfxTarget(target);
+      // l2cam->_camcamdata.BindContext(target);
       //_tempcamdat = l2cam->mCameraData;
       target->debugMarker(FormatString("seleditcam<%p>", spncam));
       ddprops["seleditcam"_crcu].Set<const CameraData*>(spncam);

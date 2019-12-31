@@ -20,7 +20,7 @@ namespace ork { namespace lev2 {
 
 void invoke_nvcompress(std::string inpath, std::string outpath, std::string outfmt);
 
-class GfxTarget;
+class Context;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -134,7 +134,7 @@ struct MipChain {
 //////////////////////////////////////////////////////////////////////////
 
 struct Texture {
-  typedef std::function<datablockptr_t(Texture*, GfxTarget*, datablockptr_t)> proc_t;
+  typedef std::function<datablockptr_t(Texture*, Context*, datablockptr_t)> proc_t;
 
   //////////////////////////////////////////////////////
 
@@ -214,7 +214,7 @@ struct Texture {
   const void* _data             = nullptr;
   TextureAnimationBase* _anim   = nullptr;
   mutable void* _internalHandle = nullptr;
-  GfxTarget* _creatingTarget    = nullptr;
+  Context* _creatingTarget    = nullptr;
   std::string _debugName;
   bool _isDepthTexture = false;
   varmap::VarMap _varmap;

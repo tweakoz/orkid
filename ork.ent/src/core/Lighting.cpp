@@ -110,7 +110,7 @@ LightingComponentInst::LightingComponentInst( const LightingComponentData& data,
 		ork::lev2::Light*			mpLight;
 
 		static void draw_tricircle(	ork::lev2::RenderContextInstData& rcid,
-									ork::lev2::GfxTarget* targ,
+									ork::lev2::Context* targ,
 									const ork::lev2::CallbackRenderable* pren,
 									ork::lev2::PointLight* ppntlight )
 		{
@@ -149,7 +149,7 @@ LightingComponentInst::LightingComponentInst( const LightingComponentData& data,
 		}
 
 		static void draw_dirlight(	ork::lev2::RenderContextInstData& rcid,
-									ork::lev2::GfxTarget* targ,
+									ork::lev2::Context* targ,
 									const ork::lev2::CallbackRenderable* pren  )
 		{
 # if defined(INTOOL)
@@ -205,7 +205,7 @@ LightingComponentInst::LightingComponentInst( const LightingComponentData& data,
 #endif
 		}
 		static void doit(	ork::lev2::RenderContextInstData& rcid,
-							ork::lev2::GfxTarget* targ,
+							ork::lev2::Context* targ,
 							const ork::lev2::CallbackRenderable* pren )
 		{
 			const yo* pyo = pren->GetUserData0().Get<const yo*>();

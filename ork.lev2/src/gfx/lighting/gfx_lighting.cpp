@@ -524,7 +524,7 @@ LightingFxInterface::LightingFxInterface()
   mCurrentLightingGroup = 0;
 }
 
-void LightingFxInterface::ApplyLighting(GfxTarget* pTarg, int iPass) {
+void LightingFxInterface::ApplyLighting(Context* pTarg, int iPass) {
   ////////////////////////////////
   if (false == mbHasLightingInterface) {
     return;

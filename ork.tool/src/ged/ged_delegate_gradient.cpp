@@ -206,7 +206,7 @@ class GedGradientV4Widget : public GedItemNode
 	ork::Gradient<ork::fvec4>*							mGradientObject;
 	ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>	mVertexBuffer;
 
-	void DoDraw( lev2::GfxTarget* pTARG ) // virtual
+	void DoDraw( lev2::Context* pTARG ) // virtual
 	{
 		const orklut<float,ork::fvec4> & data = mGradientObject->Data();
 
@@ -290,7 +290,7 @@ class GedGradientV4Widget : public GedItemNode
 
 	}
 	
-	static void GradientCustomPrim( GedSkin*pskin,GedObject*pnode,ork::lev2::GfxTarget* pTARG ) 
+	static void GradientCustomPrim( GedSkin*pskin,GedObject*pnode,ork::lev2::Context* pTARG ) 
 	{
 		GedGradientV4Widget* pthis = rtti::autocast(pnode);
 		const orklut<float,ork::fvec4> & data = pthis->mGradientObject->Data();

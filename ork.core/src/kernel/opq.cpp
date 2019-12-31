@@ -528,18 +528,18 @@ OperationsQueue::InternalLock::~InternalLock() {
 }
 ///////////////////////////////////////////////////////////////////////
 void assertOnQueue2(OperationsQueue& the_opQ) {
-  auto ot = TrackCurrent::GetContext();
+  auto ot = TrackCurrent::context();
   assert(ot->_queue == &the_opQ);
 }
 void assertOnQueue(OperationsQueue& the_opQ) {
   assertOnQueue2(the_opQ);
 }
 void assertNotOnQueue(OperationsQueue& the_opQ) {
-  auto ot = TrackCurrent::GetContext();
+  auto ot = TrackCurrent::context();
   assert(ot->_queue != &the_opQ);
 }
 bool TrackCurrent::is(const OperationsQueue&rhs) {
-  auto ot = TrackCurrent::GetContext();
+  auto ot = TrackCurrent::context();
   return &rhs==ot->_queue;
 }
 

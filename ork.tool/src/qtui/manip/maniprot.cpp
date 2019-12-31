@@ -69,7 +69,7 @@ F32 ManipRZ::CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ManipRot::Draw( GfxTarget *pTARG ) const
+void ManipRot::Draw( Context *pTARG ) const
 {
 	fmtx4 Mat;
 	fmtx4 VisMat;

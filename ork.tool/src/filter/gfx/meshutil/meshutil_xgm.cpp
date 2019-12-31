@@ -102,7 +102,7 @@ void toolmesh::WriteToRgmFile( const file::Path& outpath ) const
 
 void simpleToolSubMeshToXgmSubMesh(const toolmesh& mesh, const submesh& smesh, ork::lev2::XgmSubMesh& meshout)
 {
-	lev2::GfxTargetDummy DummyTarget;
+	lev2::ContextDummy DummyTarget;
 	FlatSubMesh fsub( smesh );
 	const ork::lev2::MaterialMap& FxmMtlMap = mesh.RefFxmMaterialMap();
 
@@ -221,7 +221,7 @@ void toolmesh::WriteToXgmFile( const file::Path& outpath ) const
 
 void toolmesh::ReadFromXGM( const file::Path& BasePath )
 {
-	lev2::GfxTargetDummy DummyTarget;
+	lev2::ContextDummy DummyTarget;
 
 	lev2::XgmModel* mdl = new lev2::XgmModel;
 
@@ -253,7 +253,7 @@ void toolmesh::ReadFromXGM( const file::Path& BasePath )
 					;
 					int inumv = pvb->GetMax();
 					int isrcsize = inumv*pvb->GetVtxSize();
-					const void *pvertbase = static_cast<lev2::GfxTarget&>(DummyTarget).GBI()->LockVB(*pvb);
+					const void *pvertbase = static_cast<lev2::Context&>(DummyTarget).GBI()->LockVB(*pvb);
 					OrkAssert(pvertbase!=0);
 					 //pvb->GetVertexPointer();
 					{
@@ -266,7 +266,7 @@ void toolmesh::ReadFromXGM( const file::Path& BasePath )
 								const lev2::IndexBufferBase *pidxbuf = pg.GetIndexBuffer();
 								const lev2::StaticIndexBuffer<U16>* pidxbuf16 = (const lev2::StaticIndexBuffer<U16>*) pidxbuf;
 								//const U16* pidx16 = pidxbuf16->GetIndexPointer();
-								const U16 *pidx16 = (const U16*) static_cast<lev2::GfxTarget&>(DummyTarget).GBI()->LockIB(*pidxbuf);
+								const U16 *pidx16 = (const U16*) static_cast<lev2::Context&>(DummyTarget).GBI()->LockIB(*pidxbuf);
 								
 								
 								
@@ -353,7 +353,7 @@ void toolmesh::ReadFromXGM( const file::Path& BasePath )
 							}
 						}
 					}
-					static_cast<lev2::GfxTarget&>(DummyTarget).GBI()->UnLockVB(*pvb);
+					static_cast<lev2::Context&>(DummyTarget).GBI()->UnLockVB(*pvb);
 				}
 			}
 		}

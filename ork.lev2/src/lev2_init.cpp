@@ -47,13 +47,13 @@ static bool gbPREFEROPENGL = false;
 static bool gbPREFEROPENGL = true;
 #endif
 
-void Direct3dGfxTargetInit();
-void WiiGfxTargetInit();
-void OpenGlGfxTargetInit();
-void DummyGfxTargetInit();
+void Direct3dContextInit();
+void WiiContextInit();
+void OpenGlContextInit();
+void DummyContextInit();
 
 void PreferOpenGL() {
-  ork::lev2::OpenGlGfxTargetInit();
+  ork::lev2::OpenGlContextInit();
   gbPREFEROPENGL = true;
 }
 
@@ -156,7 +156,7 @@ void ClassInit() {
   //////////////////////////////////////////
   // register lev2 graphics target classes
 
-  DummyGfxTargetInit();
+  DummyContextInit();
 
   //////////////////////////////////////////
 }
@@ -164,7 +164,7 @@ void ClassInit() {
 void GfxInit(const std::string& gfxlayer) {
   if (gfxlayer != "dummy") {
 #if defined(ORK_CONFIG_OPENGL)
-    OpenGlGfxTargetInit();
+    OpenGlContextInit();
 #endif
   }
 }
@@ -317,7 +317,7 @@ public:
   }
 };
 
-void PerformanceTracker::Draw(ork::lev2::GfxTarget* pTARG) {
+void PerformanceTracker::Draw(ork::lev2::Context* pTARG) {
   // return; //
   // orklist<PerformanceItem*>* PerfItemList = PerformanceTracker::GetItemList();
   /*s64 PerfTotal = PerformanceTracker::GetRef().mpRoot->miAvgCycle;

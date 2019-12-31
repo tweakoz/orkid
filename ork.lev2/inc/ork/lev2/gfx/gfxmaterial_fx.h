@@ -47,7 +47,7 @@ public:
 	const FxParamRec& GetRecord() const { return mRecord; }
 	//void SetRecord( FxParamRec* rec ) { mRecord=rec; }
 
-	virtual void Bind( FxShader* fxh, GfxTarget *pTARG ) = 0;
+	virtual void Bind( FxShader* fxh, Context *pTARG ) = 0;
 	virtual std::string GetValueString( void ) const = 0;
 
 	bool IsBindable( void ) const { return mbIsBindable; }
@@ -80,9 +80,9 @@ public:
 
 	GfxMaterialFxParam(GfxMaterialFx *parent = NULL) : GfxMaterialFxParamBase(parent) {}
 
-	virtual const T& GetValue( GfxTarget *pTARG ) const = 0;
+	virtual const T& GetValue( Context *pTARG ) const = 0;
 
-	virtual void Bind( FxShader* fxh, GfxTarget *pTARG );
+	virtual void Bind( FxShader* fxh, Context *pTARG );
 
 	virtual std::string GetValueString( void ) const;
 };
@@ -95,8 +95,8 @@ template <typename T> class GfxMaterialFxParamEngine : public GfxMaterialFxParam
 
 public:
 
-	typedef const T&(*FunctptrVoid)( GfxTarget *pTARG );
-	typedef const T&(*FunctptrParam)( GfxTarget *pTARG, const GfxMaterialFxParamBase*param );
+	typedef const T&(*FunctptrVoid)( Context *pTARG );
+	typedef const T&(*FunctptrParam)( Context *pTARG, const GfxMaterialFxParamBase*param );
 
 	GfxMaterialFxParamEngine(GfxMaterialFx *parent = NULL)
 		: GfxMaterialFxParam<T>(parent)
@@ -105,7 +105,7 @@ public:
 	{
 	}
 
-	virtual const T& GetValue( GfxTarget *pTARG ) const
+	virtual const T& GetValue( Context *pTARG ) const
 	{
 		OrkAssert( (mFuncptrVoid!=0) || (mFuncptrParam!=0) );
 		return mFuncptrVoid ? mFuncptrVoid(pTARG) : mFuncptrParam(pTARG,this);
@@ -124,7 +124,7 @@ template <typename T> class GfxMaterialFxParamArtist : public GfxMaterialFxParam
 public:
 
 	GfxMaterialFxParamArtist(GfxMaterialFx *parent = NULL);
-	virtual const T& GetValue( GfxTarget *pTARG ) const { return mValue; }
+	virtual const T& GetValue( Context *pTARG ) const { return mValue; }
 
 	T mValue;
 };
@@ -176,12 +176,12 @@ class GfxMaterialFx : public GfxMaterial
 
 	////////////////////////////////////////////
 
-    void Init( GfxTarget* pTARG ) final;
-	bool BeginPass( GfxTarget* pTARG, int iPass=0 ) final;
-	void EndPass( GfxTarget* pTARG ) final;
-	int BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx ) final;
-	void EndBlock( GfxTarget* pTARG ) final;
-	void UpdateMVPMatrix( GfxTarget *pTARG ) final;
+    void Init( Context* pTARG ) final;
+	bool BeginPass( Context* pTARG, int iPass=0 ) final;
+	void EndPass( Context* pTARG ) final;
+	int BeginBlock( Context* pTARG, const RenderContextInstData &MatCtx ) final;
+	void EndBlock( Context* pTARG ) final;
+	void UpdateMVPMatrix( Context *pTARG ) final;
 
 	void SetMaterialProperty( const char* prop, const char* val ) final;
 
@@ -255,7 +255,7 @@ public:
     ///////////////////////////////////////////////////////////////
 
 private:
-	void ApplyToTarget( GfxTarget *pTARG ) final;
+	void ApplyToTarget( Context *pTARG ) final;
 
 
 };

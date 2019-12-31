@@ -359,7 +359,7 @@ void OpenVrDevice::_processControllerEvents() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void composite(lev2::GfxTarget* targ, Texture* twoeyetex) {
+void composite(lev2::Context* targ, Texture* twoeyetex) {
 
   if (device()._active) {
 

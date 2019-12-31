@@ -116,7 +116,7 @@ void Grid3d::Calc(const CameraMatrices& camdat) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Grid3d::Render(RenderContextFrameData& FrameData) const {
-  GfxTarget* pTARG = FrameData.GetTarget();
+  Context* pTARG = FrameData.GetTarget();
 
   // pTARG->MTXI()->PushPMatrix( FrameData.cameraMatrices()->GetPMatrix() );
   // pTARG->MTXI()->PushVMatrix( FrameData.cameraMatrices()->GetVMatrix() );
@@ -316,7 +316,7 @@ fvec2 Grid2d::Snap(fvec2 inp) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Grid2d::Render(GfxTarget* pTARG, int iw, int ih) {
+void Grid2d::Render(Context* pTARG, int iw, int ih) {
   auto mtxi = pTARG->MTXI();
 
   lev2::DynamicVertexBuffer<lev2::SVtxV12C4T16>& VB = lev2::GfxEnv::GetSharedDynamicVB();

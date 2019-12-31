@@ -25,7 +25,7 @@ namespace ork::lev2 {
   public:
     OutputCompositingNode();
     ~OutputCompositingNode();
-    virtual void gpuInit(lev2::GfxTarget* pTARG, int w, int h) {}
+    virtual void gpuInit(lev2::Context* pTARG, int w, int h) {}
     virtual void beginAssemble(CompositorDrawData& drawdata) {}
     virtual void endAssemble(CompositorDrawData& drawdata) {}
     virtual void composite(CompositorDrawData& drawdata) {}
@@ -37,12 +37,12 @@ namespace ork::lev2 {
   public:
     RenderCompositingNode();
     ~RenderCompositingNode();
-    void Init(lev2::GfxTarget* pTARG, int w, int h);
+    void Init(lev2::Context* pTARG, int w, int h);
     void Render(CompositorDrawData& drawdata);
     virtual lev2::RtBuffer* GetOutput() const { return nullptr; }
 
   private:
-    virtual void DoInit(lev2::GfxTarget* pTARG, int w, int h) = 0;
+    virtual void DoInit(lev2::Context* pTARG, int w, int h) = 0;
     virtual void DoRender(CompositorDrawData& drawdata) = 0;
   };
   ///////////////////////////////////////////////////////////////////////////////
@@ -52,12 +52,12 @@ namespace ork::lev2 {
   public:
     PostCompositingNode();
     ~PostCompositingNode();
-    void Init(lev2::GfxTarget* pTARG, int w, int h);
+    void Init(lev2::Context* pTARG, int w, int h);
     void Render(CompositorDrawData& drawdata);
     virtual lev2::RtBuffer* GetOutput() const { return nullptr; }
 
   private:
-    virtual void DoInit(lev2::GfxTarget* pTARG, int w, int h) = 0;
+    virtual void DoInit(lev2::Context* pTARG, int w, int h) = 0;
     virtual void DoRender(CompositorDrawData& drawdata) = 0;
   };
   ///////////////////////////////////////////////////////////////////////////////
@@ -73,7 +73,7 @@ namespace ork::lev2 {
     ~SeriesCompositingNode();
 
   private:
-    void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
+    void DoInit(lev2::Context* pTARG, int w, int h) final;                          // virtual
     void DoRender(CompositorDrawData& drawdata) final; // virtual
 
     void GetNode(ork::rtti::ICastable*& val) const;
@@ -96,7 +96,7 @@ namespace ork::lev2 {
     ~Op2CompositingNode();
 
   private:
-    void DoInit(lev2::GfxTarget* pTARG, int w, int h) override;                          // virtual
+    void DoInit(lev2::Context* pTARG, int w, int h) override;                          // virtual
     void DoRender(CompositorDrawData& drawdata) override; // virtual
     void GetNodeA(ork::rtti::ICastable*& val) const;
     void SetNodeA(ork::rtti::ICastable* const& val);
@@ -131,7 +131,7 @@ namespace ork::lev2 {
     void _writeOutputNode(ork::rtti::ICastable* const& val);
 
   private:
-    void Init(lev2::GfxTarget* pTARG, int w, int h) override;
+    void Init(lev2::Context* pTARG, int w, int h) override;
     bool assemble(CompositorDrawData& drawdata) override;
     void composite(CompositorDrawData& drawdata) override;
     //

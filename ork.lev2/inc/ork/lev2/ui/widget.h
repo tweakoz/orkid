@@ -56,12 +56,12 @@ public:
 	Widget( const std::string & name, int x, int y, int w, int h );
 	~Widget();
 	
-	void Init( lev2::GfxTarget* pTARG );
+	void Init( lev2::Context* pTARG );
 
 	const std::string & GetName( void ) const { return msName; }
 	void SetName( const std::string & name ) { msName = name; }
 
-	lev2::GfxTarget* GetTarget( void ) const { return mpTarget; }
+	lev2::Context* GetTarget( void ) const { return mpTarget; }
 
 	int GetX( void ) const { return miX; }
 	int GetY( void ) const  { return miY; }
@@ -86,7 +86,7 @@ public:
 	virtual void Show( void ) {}
 	virtual void Hide( void ) {}
 
-	void ExtDraw( lev2::GfxTarget* pTARG );
+	void ExtDraw( lev2::Context* pTARG );
 	virtual void Draw( DrawEvent& drq );
 
 	virtual void Enter( void ) { /*mWidgetFlags.SetState( EUI_WIDGET_HOVER );*/ }
@@ -129,7 +129,7 @@ protected:
 	int					miX, miY, miW, miH, miX2, miY2;		
 	int					miLX, miLY, miLW, miLH, miLX2, miLY2;
 	std::string			msName;								
-	lev2::GfxTarget*	mpTarget;
+	lev2::Context*	mpTarget;
 	DrawEvent*			mpDrawEvent;
 	bool				mDirty;
 	bool				mSizeDirty;
@@ -141,7 +141,7 @@ protected:
 
 private:
 
-	virtual void DoInit( lev2::GfxTarget* pTARG ) {}
+	virtual void DoInit( lev2::Context* pTARG ) {}
 	virtual void DoOnEnter() {}
 	virtual void DoOnExit() {}
 	virtual void DoDraw(ui::DrawEvent& drwev) = 0;

@@ -22,7 +22,7 @@ public:
   PoolString _layername;
 
 private:
-  void gpuInit(lev2::GfxTarget* pTARG, int w, int h) final;
+  void gpuInit(lev2::Context* pTARG, int w, int h) final;
   void beginAssemble(CompositorDrawData& drawdata) final;
   void endAssemble(CompositorDrawData& drawdata) final;
   void composite(CompositorDrawData& drawdata) final;

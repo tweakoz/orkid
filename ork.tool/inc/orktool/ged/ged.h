@@ -238,7 +238,7 @@ class GedVP;
 class GedSkin {
 
 public:
-  typedef void (*DrawCB)(GedSkin* pskin, GedObject* pnode, ork::lev2::GfxTarget* pTARG);
+  typedef void (*DrawCB)(GedSkin* pskin, GedObject* pnode, ork::lev2::Context* pTARG);
 
   struct GedPrim {
     DrawCB mDrawCB;
@@ -272,7 +272,7 @@ public:
     void clear();
   };
 
-  GedSkin(ork::lev2::GfxTarget* ptarg);
+  GedSkin(ork::lev2::Context* ptarg);
 
   typedef enum {
     ESTYLE_BACKGROUND_1 = 0,
@@ -291,7 +291,7 @@ public:
     ESTYLE_BUTTON_OUTLINE,
   } ESTYLE;
 
-  virtual void Begin(ork::lev2::GfxTarget* pTARG, GedVP* pgedvp)                                          = 0;
+  virtual void Begin(ork::lev2::Context* pTARG, GedVP* pgedvp)                                          = 0;
   virtual void DrawBgBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort = 0)      = 0;
   virtual void DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort = 0) = 0;
   virtual void DrawLine(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic)                      = 0;
@@ -299,7 +299,7 @@ public:
   virtual void DrawDownArrow(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic)                 = 0;
   virtual void DrawRightArrow(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic)                = 0;
   virtual void DrawText(GedObject* pnode, int ix, int iy, const char* ptext)                              = 0;
-  virtual void End(ork::lev2::GfxTarget* pTARG)                                                           = 0;
+  virtual void End(ork::lev2::Context* pTARG)                                                           = 0;
 
   void SetScrollY(int iscrolly) {
     miScrollY = iscrolly;
@@ -340,7 +340,7 @@ protected:
   int miCHARW;
   int miCHARH;
 
-  bool IsVisible(ork::lev2::GfxTarget* pTARG, int iy1, int iy2) {
+  bool IsVisible(ork::lev2::Context* pTARG, int iy1, int iy2) {
     int iry1 = iy1 + miScrollY;
     int iry2 = iy2 + miScrollY;
     int ih   = pTARG->mainSurfaceHeight();
@@ -461,7 +461,7 @@ public:
   virtual void ReSync() {
   }
   ///////////////////////////////////////////////////
-  void Draw(lev2::GfxTarget* pTARG);
+  void Draw(lev2::Context* pTARG);
   ///////////////////////////////////////////////////
   int contentWidth() const;
   int propnameWidth() const;
@@ -512,7 +512,7 @@ public:
   static GedSkin* gpSkin1;
   static int giSkin;
 
-  virtual void DoDraw(lev2::GfxTarget* pTARG) = 0;
+  virtual void DoDraw(lev2::Context* pTARG) = 0;
 
   int miX, miY;
   int miW, miH;
@@ -549,12 +549,12 @@ public:
   }
 
 private:
-  virtual void DoDraw(lev2::GfxTarget* pTARG);
+  virtual void DoDraw(lev2::Context* pTARG);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 class GedRootNode : public GedItemNode {
-  virtual void DoDraw(lev2::GfxTarget* pTARG);
+  virtual void DoDraw(lev2::Context* pTARG);
   virtual void Layout(int ix, int iy, int iw, int ih);
   virtual int CalcHeight(void);
 
@@ -566,7 +566,7 @@ public:
 };
 ///////////////////////////////////////////////////////////////////////////////
 class GedGroupNode : public GedItemNode {
-  virtual void DoDraw(lev2::GfxTarget* pTARG);
+  virtual void DoDraw(lev2::Context* pTARG);
   bool mbCollapsed;
   void OnMouseDoubleClicked(const ork::ui::Event& ev) final;
   ork::file::Path::NameType mPersistID;
@@ -625,7 +625,7 @@ public:
   ~GedWidget();
   void Attach(ork::Object* obj);
 
-  void Draw(lev2::GfxTarget* pTARG, int iw, int ih, int iscrolly);
+  void Draw(lev2::Context* pTARG, int iw, int ih, int iscrolly);
 
   ObjModel& GetModel() {
     return mModel;
@@ -689,7 +689,7 @@ private:
   void DoRePaintSurface(ui::DrawEvent& drwev) override;
   void DoSurfaceResize() override;
   ui::HandlerResult DoOnUiEvent(const ui::Event& EV) override;
-  void DoInit(lev2::GfxTarget* pt) override;
+  void DoInit(lev2::Context* pt) override;
 
   ObjModel& mModel;
   GedWidget mWidget;

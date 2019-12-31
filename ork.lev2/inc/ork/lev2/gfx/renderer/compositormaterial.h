@@ -22,11 +22,11 @@ public:
   ~CompositingMaterial();
   /////////////////////////////////////////////////
   virtual void Update(void) {}
-  virtual void Init(lev2::GfxTarget* pTarg);
-  virtual bool BeginPass(lev2::GfxTarget* pTARG, int iPass = 0);
-  virtual void EndPass(lev2::GfxTarget* pTARG);
-  virtual int BeginBlock(lev2::GfxTarget* pTARG, const lev2::RenderContextInstData& MatCtx);
-  virtual void EndBlock(lev2::GfxTarget* pTARG);
+  virtual void Init(lev2::Context* pTarg);
+  virtual bool BeginPass(lev2::Context* pTARG, int iPass = 0);
+  virtual void EndPass(lev2::Context* pTARG);
+  virtual int BeginBlock(lev2::Context* pTARG, const lev2::RenderContextInstData& MatCtx);
+  virtual void EndBlock(lev2::Context* pTARG);
   /////////////////////////////////////////////////
   void SetTextureA(lev2::Texture* ptex) { mCurrentTextureA = ptex; }
   void SetTextureB(lev2::Texture* ptex) { mCurrentTextureB = ptex; }

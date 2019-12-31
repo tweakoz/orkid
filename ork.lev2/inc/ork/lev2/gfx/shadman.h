@@ -190,7 +190,7 @@ struct FxShader {
 
   void OnReset();
 
-  static void SetLoaderTarget(GfxTarget *targ);
+  static void SetLoaderTarget(Context *targ);
 
   FxShader();
 

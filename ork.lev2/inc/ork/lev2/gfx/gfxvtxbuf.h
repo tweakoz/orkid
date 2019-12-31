@@ -15,7 +15,7 @@
 
 namespace ork { namespace lev2 {
 
-class GfxTarget;
+class Context;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -167,8 +167,8 @@ struct VtxWriterBase {
 
   VtxWriterBase() : mpVB(0), miWriteCounter(0), miWriteMax(0), mpBase(0), miWriteBase(0) {}
 
-  void Lock(GfxTarget* pT, VertexBufferBase* mpVB, int icount = 0);
-  void UnLock(GfxTarget* pT, u32 UnLockFlags = EULFLG_NONE);
+  void Lock(Context* pT, VertexBufferBase* mpVB, int icount = 0);
+  void UnLock(Context* pT, u32 UnLockFlags = EULFLG_NONE);
 };
 
 template <typename T> struct VtxWriter : public VtxWriterBase {

@@ -8,7 +8,7 @@
 
 class MatrixStackInterface {
 public:
-  MatrixStackInterface(GfxTarget& target);
+  MatrixStackInterface(Context& target);
 
   void PushMMatrix(const fmtx4& rMat);
   void PushVMatrix(const fmtx4& rMat);
@@ -105,5 +105,5 @@ protected:
   fvec4 mVectorScreenRightNormal;
   fvec4 mVectorScreenUpNormal;
 
-  GfxTarget& mTarget;
+  Context& mTarget;
 };

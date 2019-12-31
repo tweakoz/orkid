@@ -312,7 +312,7 @@ struct QuartzComposerDrawable
 	Entity *pent;
 	QuartzComposerInst*	mpQCI;
 
-	static void doit( lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const lev2::CallbackRenderable* pren )
+	static void doit( lev2::RenderContextInstData& rcid, lev2::Context* targ, const lev2::CallbackRenderable* pren )
 	{
 		if( targ->FBI()->IsPickState() ) return;
 		

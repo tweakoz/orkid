@@ -37,7 +37,7 @@ struct VRIMPL {
     delete _tmpcameramatrices;
   }
   ///////////////////////////////////////
-  void gpuInit(lev2::GfxTarget* pTARG) {
+  void gpuInit(lev2::Context* pTARG) {
     if (_doinit) {
       pTARG->debugPushGroup("VRIMPL::gpuInit");
       _width  = orkidvr::device()._width * 2;
@@ -57,7 +57,7 @@ struct VRIMPL {
   }
   ///////////////////////////////////////
   typedef const std::map<int, orkidvr::ControllerState>& controllermap_t;
-  void renderPoses(GfxTarget* targ, CameraMatrices* camdat, controllermap_t controllers) {
+  void renderPoses(Context* targ, CameraMatrices* camdat, controllermap_t controllers) {
     fmtx4 rx;
     fmtx4 ry;
     fmtx4 rz;
@@ -101,7 +101,7 @@ struct VRIMPL {
     RenderContextFrameData& RCFD = framerenderer.framedata();
     auto CIMPL                   = drawdata._cimpl;
     auto DB                      = RCFD.GetDB();
-    GfxTarget* targ              = drawdata.target();
+    Context* targ              = drawdata.target();
 
     bool simrunning = drawdata._properties["simrunning"_crcu].Get<bool>();
     bool use_vr     = (orkidvr::device()._active and simrunning);
@@ -205,7 +205,7 @@ VrCompositingNode::VrCompositingNode() {
 VrCompositingNode::~VrCompositingNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::gpuInit(lev2::GfxTarget* pTARG, int iW, int iH) {
+void VrCompositingNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
   _impl.Get<std::shared_ptr<VRIMPL>>()->gpuInit(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -228,7 +228,7 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////////////////////////
   FrameRenderer& framerenderer      = drawdata.mFrameRenderer;
   RenderContextFrameData& framedata = framerenderer.framedata();
-  GfxTarget* targ                   = framedata.GetTarget();
+  Context* targ                   = framedata.GetTarget();
   if (auto try_final = drawdata._properties["final_out"_crcu].TryAs<RtBuffer*>()) {
     auto buffer = try_final.value();
     if (buffer) {

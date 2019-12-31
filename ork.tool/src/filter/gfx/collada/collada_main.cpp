@@ -109,16 +109,16 @@ bool CColladaAsset::LoadDocument(const AssetPath& fname)
 	mUnitsPerMeter = mpColladaAsset->GetUnitConversionFactor();
 	std::string UnitName(mpColladaAsset->GetUnitName().c_str());
 
-	if(ColladaExportPolicy::GetContext() && ColladaExportPolicy::GetContext()->mUnits != UNITS_ANY)
+	if(ColladaExportPolicy::context() && ColladaExportPolicy::context()->mUnits != UNITS_ANY)
 	{
-		/*if(ColladaExportPolicy::GetContext()->mUnits == UNITS_METER
+		/*if(ColladaExportPolicy::context()->mUnits == UNITS_METER
 				&& std::string("meter") != UnitName)
 		{
 			orkerrorlog("ERROR: Units must be in meters! Set your Maya preferences accordingly. (%s)\n", fname.c_str());
 			FCollada::Release();
 			return false;
 		}
-		else if(ColladaExportPolicy::GetContext()->mUnits == UNITS_CENTIMETER
+		else if(ColladaExportPolicy::context()->mUnits == UNITS_CENTIMETER
 				&& std::string("centimeter") != UnitName)
 		{
 			orkerrorlog("ERROR: Units must be in centimeters! Set your Maya preferences accordingly. (%s)\n", fname.c_str());
@@ -197,7 +197,7 @@ CColladaModel * CColladaModel::Load( const AssetPath & fname )
 		/////////////////////////////////////
 	}
 
-	int ibonespercluster = ColladaExportPolicy::GetContext()->miNumBonesPerCluster;
+	int ibonespercluster = ColladaExportPolicy::context()->miNumBonesPerCluster;
 
 	Model->mXgmModel.SetBonesPerCluster( ibonespercluster );
 

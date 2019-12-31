@@ -239,7 +239,7 @@ void XgmModel::AddMaterial(GfxMaterial* Mat) {
 
 void XgmModel::RenderRigid(const fcolor4& ModColor,
                            const fmtx4& WorldMat,
-                           ork::lev2::GfxTarget* pTARG,
+                           ork::lev2::Context* pTARG,
                            const RenderContextInstData& RCID,
                            const RenderContextInstModelData& mdlctx) const {
   auto R           = RCID.GetRenderer();
@@ -272,7 +272,7 @@ void XgmModel::RenderRigid(const fcolor4& ModColor,
     //////////////////////////////////////////////
 
     struct RenderClus {
-      static void RenderPrim(ork::lev2::GfxTarget* pTARG, const XgmCluster& XgmClus) {
+      static void RenderPrim(ork::lev2::Context* pTARG, const XgmCluster& XgmClus) {
         const ork::lev2::VertexBufferBase* pVertexBuffer = XgmClus.GetVertexBuffer();
         int inumprim                                     = XgmClus.GetNumPrimGroups();
         for (int iprim = 0; iprim < inumprim; iprim++) {
@@ -282,7 +282,7 @@ void XgmModel::RenderRigid(const fcolor4& ModColor,
         }
       }
 
-      static void RenderStd(ork::lev2::GfxTarget* pTARG, ork::lev2::GfxMaterial* pmat, const XgmCluster& XgmClus, int inumpasses) {
+      static void RenderStd(ork::lev2::Context* pTARG, ork::lev2::GfxMaterial* pmat, const XgmCluster& XgmClus, int inumpasses) {
         for (int ipass = 0; ipass < inumpasses; ipass++) {
           OrkAssert(ipass < inumpasses);
           bool bDRAW = pmat->BeginPass(pTARG, ipass);
@@ -381,7 +381,7 @@ void XgmModel::RenderRigid(const fcolor4& ModColor,
 void XgmModel::RenderMultipleRigid(const fcolor4& ModColor,
                                    const fmtx4* WorldMatrices,
                                    int icount,
-                                   ork::lev2::GfxTarget* pTARG,
+                                   ork::lev2::Context* pTARG,
                                    const RenderContextInstData& RCID,
                                    const RenderContextInstModelData& mdlctx) const {
   auto R           = RCID.GetRenderer();
@@ -450,7 +450,7 @@ int eggtest = 0;
 void XgmModel::RenderSkinned(const XgmModelInst* minst,
                              const fcolor4& ModColor,
                              const fmtx4& WorldMat,
-                             ork::lev2::GfxTarget* pTARG,
+                             ork::lev2::Context* pTARG,
                              const RenderContextInstData& RCID,
                              const RenderContextInstModelData& mdlctx) const {
   auto R           = RCID.GetRenderer();
@@ -590,7 +590,7 @@ void XgmModel::RenderMultipleSkinned(const XgmModelInst* minst,
                                      const fcolor4& ModColor,
                                      const fmtx4* WorldMats,
                                      int icount,
-                                     ork::lev2::GfxTarget* pTARG,
+                                     ork::lev2::Context* pTARG,
                                      const RenderContextInstData& RCID,
                                      const RenderContextInstModelData& mdlctx) const {
   auto R           = RCID.GetRenderer();

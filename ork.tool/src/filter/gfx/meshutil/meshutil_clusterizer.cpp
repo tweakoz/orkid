@@ -49,7 +49,7 @@ XgmClusterizerStd::~XgmClusterizerStd()
 
 bool XgmClusterizerStd::AddTriangle( const XgmClusterTri& Triangle, const ToolMaterialGroup* cmg )
 {
-	ColladaExportPolicy* policy = ColladaExportPolicy::GetContext();
+	ColladaExportPolicy* policy = ColladaExportPolicy::context();
 
 	size_t iNumClusters = _clusters.size();
 
@@ -121,7 +121,7 @@ bool XgmClusterizerDiced::AddTriangle( const XgmClusterTri& Triangle, const Tool
 
 void XgmClusterizerDiced::End()
 {
-	ColladaExportPolicy* policy = ColladaExportPolicy::GetContext();
+	ColladaExportPolicy* policy = ColladaExportPolicy::context();
 
 	///////////////////////////////////////////////
 	// compute ideal dice size

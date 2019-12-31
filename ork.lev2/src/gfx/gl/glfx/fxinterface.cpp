@@ -15,7 +15,7 @@
 // FX Interface
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
-void GfxTargetGL::FxInit() {
+void ContextGL::FxInit() {
   static bool binit = true;
   if (true == binit) {
     binit = false;
@@ -32,7 +32,7 @@ namespace ork::lev2::glslfx {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Interface::Interface(GfxTargetGL& glctx)
+Interface::Interface(ContextGL& glctx)
     : mTarget(glctx) {}
 
 ///////////////////////////////////////////////////////////////////////////////

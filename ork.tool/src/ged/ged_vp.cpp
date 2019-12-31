@@ -23,7 +23,7 @@ namespace ork { namespace lev2 {
 template <> void PickBuffer<ork::tool::ged::GedVP>::Draw(lev2::PixelFetchContext& ctx) {
   mPickIds.clear();
 
-  auto tgt  = GetContext();
+  auto tgt  = context();
   auto mtxi = tgt->MTXI();
   auto fbi  = tgt->FBI();
   auto fxi  = tgt->FXI();
@@ -94,12 +94,12 @@ GedVP::~GedVP() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void GedVP::DoInit(lev2::GfxTarget* pt) {
+void GedVP::DoInit(lev2::Context* pt) {
   auto par     = pt->FBI()->GetThisBuffer();
   mpPickBuffer = new lev2::PickBuffer<GedVP>(par, this, 0, 0, miW, miH, lev2::PickBufferBase::EPICK_FACE_VTX);
 
-  mpPickBuffer->CreateContext();
-  mpPickBuffer->GetContext()->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
+  mpPickBuffer->initContext();
+  mpPickBuffer->context()->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
   mpPickBuffer->RefClearColor().SetRGBAU32(0);
 }
 ///////////////////////////////////////////////////////////////////////////////

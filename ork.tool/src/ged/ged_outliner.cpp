@@ -32,7 +32,7 @@ class GedOutlinerWidget : public GedItemNode
 	static const int										kpoolsize = 32;
 	ork::ent::SceneData*									mpSceneData;
 	
-	void DoDraw( lev2::GfxTarget* pTARG ) // virtual
+	void DoDraw( lev2::Context* pTARG ) // virtual
 	{
 		GetSkin()->DrawBgBox( this, miX, miY+2, miW, kh-3, GedSkin::ESTYLE_BACKGROUND_1 );
 		

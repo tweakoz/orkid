@@ -15,7 +15,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 
-GfxMaterialManip::GfxMaterialManip(GfxTarget* pTARG,ManipManager&mgr)
+GfxMaterialManip::GfxMaterialManip(Context* pTARG,ManipManager&mgr)
 	: mbNoDepthTest( false )
 	, mManager(mgr)
 {
@@ -30,7 +30,7 @@ GfxMaterialManip::GfxMaterialManip(GfxTarget* pTARG,ManipManager&mgr)
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialManip::Init(ork::lev2::GfxTarget *pTarg)
+void GfxMaterialManip::Init(ork::lev2::Context *pTarg)
 {
 	hTekStd = pTarg->FXI()->technique( hModFX, "std" );
 	hTekPick = pTarg->FXI()->technique( hModFX, "pick" );
@@ -41,7 +41,7 @@ void GfxMaterialManip::Init(ork::lev2::GfxTarget *pTarg)
 
 /////////////////////////////////////////////////////////////////////////
 
-int GfxMaterialManip::BeginBlock( GfxTarget* pTarg,const RenderContextInstData &MatCtx )
+int GfxMaterialManip::BeginBlock( Context* pTarg,const RenderContextInstData &MatCtx )
 {
 	int imode = mManager.GetDrawMode();
 	bool bpick = pTarg->FBI()->IsPickState();
@@ -53,14 +53,14 @@ int GfxMaterialManip::BeginBlock( GfxTarget* pTarg,const RenderContextInstData &
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialManip::EndBlock( GfxTarget* pTarg )
+void GfxMaterialManip::EndBlock( Context* pTarg )
 {
 	pTarg->FXI()->EndBlock( hModFX );
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-bool GfxMaterialManip::BeginPass( GfxTarget* pTarg, int ipass )
+bool GfxMaterialManip::BeginPass( Context* pTarg, int ipass )
 {
 	pTarg->FXI()->BindPass( hModFX, ipass );
 	pTarg->FXI()->BindParamMatrix( hModFX, hMVP, pTarg->MTXI()->RefMVPMatrix() );
@@ -75,7 +75,7 @@ bool GfxMaterialManip::BeginPass( GfxTarget* pTarg, int ipass )
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialManip::UpdateMVPMatrix( GfxTarget *pTARG )
+void GfxMaterialManip::UpdateMVPMatrix( Context *pTARG )
 {
 	pTARG->FXI()->BindParamMatrix( hModFX, hMVP, pTARG->MTXI()->RefMVPMatrix() );
 	pTARG->FXI()->CommitParams();
@@ -83,7 +83,7 @@ void GfxMaterialManip::UpdateMVPMatrix( GfxTarget *pTARG )
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialManip::EndPass( GfxTarget* pTarg )
+void GfxMaterialManip::EndPass( Context* pTarg )
 {
  	pTarg->FXI()->EndPass( hModFX );
 }

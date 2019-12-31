@@ -35,7 +35,7 @@ template <typename T> void GlobalStack<T>::Pop() { gStack.pop(); }
 ////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-T *Context<T>::GetContext()
+T *Context<T>::context()
 {
 	if(NULL != sCurrentContext)
 	{
@@ -103,7 +103,7 @@ static tmap_t* get_thr_tmap()
 ///////////////////////////////////////////////////////////
 
 template<typename T>
-T* ContextTLS<T>::GetContext()
+T* ContextTLS<T>::context()
 {
 	////////////////////
 	#if defined(USE_MACH_TLS_HACK)

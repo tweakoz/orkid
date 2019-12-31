@@ -46,7 +46,7 @@ CompositingMaterial::CompositingMaterial()
 /////////////////////////////////////////////////
 CompositingMaterial::~CompositingMaterial() {}
 /////////////////////////////////////////////////
-void CompositingMaterial::Init(lev2::GfxTarget* pTarg) {
+void CompositingMaterial::Init(lev2::Context* pTarg) {
   if (0 == hModFX) {
     hModFX = asset::AssetManager<lev2::FxShaderAsset>::Load("orkshader://compositor")->GetFxShader();
 
@@ -103,7 +103,7 @@ void CompositingMaterial::SetTechnique(const std::string& tek) {
     hTekCurrent = hTekCsolo;
 }
 /////////////////////////////////////////////////
-bool CompositingMaterial::BeginPass(lev2::GfxTarget* pTarg, int iPass) {
+bool CompositingMaterial::BeginPass(lev2::Context* pTarg, int iPass) {
   // printf("CompositorMtl draw\n");
 
   pTarg->RSI()->BindRasterState(_rasterstate);
@@ -132,15 +132,15 @@ bool CompositingMaterial::BeginPass(lev2::GfxTarget* pTarg, int iPass) {
   return true;
 }
 /////////////////////////////////////////////////
-void CompositingMaterial::EndPass(lev2::GfxTarget* pTarg) { pTarg->FXI()->EndPass(hModFX); }
+void CompositingMaterial::EndPass(lev2::Context* pTarg) { pTarg->FXI()->EndPass(hModFX); }
 /////////////////////////////////////////////////
-int CompositingMaterial::BeginBlock(lev2::GfxTarget* pTarg, const lev2::RenderContextInstData& MatCtx) {
+int CompositingMaterial::BeginBlock(lev2::Context* pTarg, const lev2::RenderContextInstData& MatCtx) {
   pTarg->FXI()->BindTechnique(hModFX, hTekCurrent);
   int inumpasses = pTarg->FXI()->BeginBlock(hModFX, MatCtx);
   return inumpasses;
 }
 /////////////////////////////////////////////////
-void CompositingMaterial::EndBlock(lev2::GfxTarget* pTarg) { pTarg->FXI()->EndBlock(hModFX); }
+void CompositingMaterial::EndBlock(lev2::Context* pTarg) { pTarg->FXI()->EndBlock(hModFX); }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

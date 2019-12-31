@@ -28,8 +28,8 @@ public:
 
 	///////////////////////////////////////
 
-	void BeginFrame( lev2::GfxTarget* pTARG );
-	void EndFrame( lev2::GfxTarget* pTARG );
+	void BeginFrame( lev2::Context* pTARG );
+	void EndFrame( lev2::Context* pTARG );
 
 	///////////////////////////////////////
 

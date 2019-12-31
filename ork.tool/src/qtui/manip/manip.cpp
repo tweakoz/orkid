@@ -376,7 +376,7 @@ float ManipManager::CalcViewScale(float fW, float fH, const CameraMatrices* camm
 ///////////////////////////////////////////////////////////////////////////////
 
 void ManipManager::Setup(ork::lev2::IRenderer* prend) {
-  GfxTarget* pTARG = prend->GetTarget();
+  Context* pTARG = prend->GetTarget();
 
   if (mpCurrentInterface) {
     bool isshift = false; // OldSchool::IsKeyDepressed(VK_SHIFT);
@@ -424,7 +424,7 @@ void ManipManager::Setup(ork::lev2::IRenderer* prend) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ManipManager::DrawManip(Manip* pmanip, GfxTarget* pTARG) {
+void ManipManager::DrawManip(Manip* pmanip, Context* pTARG) {
   if (!pmanip)
     return;
 
@@ -454,7 +454,7 @@ void ManipManager::DrawManip(Manip* pmanip, GfxTarget* pTARG) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ManipManager::DrawCurrentManipSet(GfxTarget* pTARG) {
+void ManipManager::DrawCurrentManipSet(Context* pTARG) {
   switch (meManipMode) {
     case EMANIPMODE_WORLD_TRANS: {
       if (mDualAxis) {
@@ -480,7 +480,7 @@ void ManipManager::DrawCurrentManipSet(GfxTarget* pTARG) {
 ////////////////////////////////////////////////////////////////////////////////
 
 static void
-ManipRenderCallback(ork::lev2::RenderContextInstData& rcid, ork::lev2::GfxTarget* targ, const ork::lev2::CallbackRenderable* pren) {
+ManipRenderCallback(ork::lev2::RenderContextInstData& rcid, ork::lev2::Context* targ, const ork::lev2::CallbackRenderable* pren) {
   ManipManager* pmanipman = pren->GetUserData0().Get<ManipManager*>();
   pmanipman->SetDrawMode(0);
   pmanipman->DrawCurrentManipSet(targ);

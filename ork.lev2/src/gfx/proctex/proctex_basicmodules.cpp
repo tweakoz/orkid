@@ -253,7 +253,7 @@ RotSolid::RotSolid()
     , mPlugInpPhaseOffset(this, dataflow::EPR_UNIFORM, mfPhaseOffset, "pho")
     , mbAA(false) {}
 ///////////////////////////////////////////////////////////////////////////////
-void RotSolid::ComputeVB(ork::lev2::GfxTarget* pTARG) {
+void RotSolid::ComputeVB(ork::lev2::Context* pTARG) {
   int inumv = miNumSides * 3;
   mVertexBuffer.Reset();
   ork::lev2::VtxWriter<ork::lev2::SVtxV12C4T16> vw;

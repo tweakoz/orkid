@@ -39,7 +39,7 @@ public:
     return ork::ui::HandlerResult(this);
   }
 
-  void Init(ork::lev2::GfxTarget* pTARG) // virtual
+  void Init(ork::lev2::Context* pTARG) // virtual
   {
     mtl.Init(pTARG);
     tex          = ork::lev2::Texture::CreateBlank(512, 512, ork::lev2::EBUFFMT_RGBA8);
@@ -126,7 +126,7 @@ DemoApp::DemoApp(int iw, int ih)
   ////////////////////
 
   MyViewport* gpvp                 = new MyViewport("yo");
-  ork::lev2::CQtGfxWindow* pgfxwin = new ork::lev2::CQtGfxWindow(gpvp);
+  ork::lev2::CQtWindow* pgfxwin = new ork::lev2::CQtWindow(gpvp);
 
   ork::lev2::CTQT* pctqt = new ork::lev2::CTQT(pgfxwin, nullptr);
 
@@ -140,10 +140,10 @@ DemoApp::DemoApp(int iw, int ih)
 
   // viewnum++;
 
-  ork::lev2::GfxEnv::GetRef().SetLoaderTarget(pgfxwin->GetContext());
+  ork::lev2::GfxEnv::GetRef().SetLoaderTarget(pgfxwin->context());
   ork::lev2::GfxEnv::GetRef().RegisterWinContext(pgfxwin);
 
-  gpvp->Init(pgfxwin->GetContext());
+  gpvp->Init(pgfxwin->context());
 
   mpTimer->connect(mpTimer, SIGNAL(timeout()), pctqt->GetQWidget(), SLOT(repaint()));
   mpTimer->setSingleShot(false);

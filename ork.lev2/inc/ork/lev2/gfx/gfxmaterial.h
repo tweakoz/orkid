@@ -42,7 +42,7 @@ class MaterialInstApplicator : public ork::Object
 {
 	RttiDeclareAbstract(MaterialInstApplicator,ork::Object);
 public:
-	virtual void ApplyToTarget(GfxTarget *pTARG) = 0;
+	virtual void ApplyToTarget(Context *pTARG) = 0;
 };
 
 class MaterialInstItem : public ork::Object
@@ -123,17 +123,17 @@ struct GfxMaterial : public ork::Object
 
 	virtual void Update( void ) = 0;
 
-	virtual void Init( GfxTarget *pTarg ) = 0;
-    virtual void gpuUpdate(GfxTarget* targ) {
+	virtual void Init( Context *pTarg ) = 0;
+    virtual void gpuUpdate(Context* targ) {
       if( _doinit) {
         Init(targ);
         _doinit = false;
       }
     }
-	virtual bool BeginPass( GfxTarget* pTARG, int iPass=0 ) = 0;
-	virtual void EndPass( GfxTarget* pTARG ) = 0;
-	virtual int  BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx = RenderContextInstData::Default ) = 0;
-	virtual void EndBlock( GfxTarget* pTARG ) = 0;
+	virtual bool BeginPass( Context* pTARG, int iPass=0 ) = 0;
+	virtual void EndPass( Context* pTARG ) = 0;
+	virtual int  BeginBlock( Context* pTARG, const RenderContextInstData &MatCtx = RenderContextInstData::Default ) = 0;
+	virtual void EndBlock( Context* pTARG ) = 0;
 
 	void SetTexture( ETextureDest edest, const TextureContext & htex );
 	const TextureContext & GetTexture( ETextureDest edest ) const;
@@ -145,7 +145,7 @@ struct GfxMaterial : public ork::Object
 	void SetFogStart( F32 fstart ) { mfFogStart=float(fstart); };
 	void SetFogRange( F32 frange ) { mfFogRange=float(frange); };
 
-	virtual void UpdateMVPMatrix( GfxTarget *pTARG ) {}
+	virtual void UpdateMVPMatrix( Context *pTARG ) {}
 
 	virtual void BindMaterialInstItem( MaterialInstItem* pitem ) const {}
 	virtual void UnBindMaterialInstItem( MaterialInstItem* pitem ) const {}

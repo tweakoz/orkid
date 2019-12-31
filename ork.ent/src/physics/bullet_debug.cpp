@@ -99,7 +99,7 @@ void PhysicsDebugger::beginRenderFrame() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void bulletDebugRender(RenderContextInstData& rcid, GfxTarget* targ, const CallbackRenderable* pren) {
+void bulletDebugRender(RenderContextInstData& rcid, Context* targ, const CallbackRenderable* pren) {
   if (targ->FBI()->IsPickState())
     return;
   //////////////////////////////////////////
@@ -133,7 +133,7 @@ void PhysicsDebugger::endRenderFrame() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, lineqptr_t lines) {
+void PhysicsDebugger::render(RenderContextInstData& rcid, Context* ptarg, lineqptr_t lines) {
 
   typedef SVtxV12C4T16 vtx_t;
 

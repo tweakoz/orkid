@@ -39,7 +39,7 @@ struct IMPL {
   ~IMPL() {
   }
   ///////////////////////////////////////
-  void init(lev2::GfxTarget* pTARG) {
+  void init(lev2::Context* pTARG) {
     pTARG->debugPushGroup("Forward::rendeinitr");
     if (nullptr == _rtg) {
       _material.Init(pTARG);
@@ -125,7 +125,7 @@ ForwardCompositingNode::ForwardCompositingNode() {
 ForwardCompositingNode::~ForwardCompositingNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ForwardCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) {
+void ForwardCompositingNode::DoInit(lev2::Context* pTARG, int iW, int iH) {
   _impl.Get<std::shared_ptr<forwardnode::IMPL>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////

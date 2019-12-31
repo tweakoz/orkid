@@ -68,37 +68,37 @@ void StateBlockNode::generate(shaderbuilder::BackEnd& backend) const {
 
   if (_culltest != "") {
     if (_culltest == "OFF")
-      psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetCullTest(lev2::ECULLTEST_OFF); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetCullTest(lev2::ECULLTEST_OFF); });
     else if (_culltest == "PASS_FRONT")
-      psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetCullTest(lev2::ECULLTEST_PASS_FRONT); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetCullTest(lev2::ECULLTEST_PASS_FRONT); });
     else if (_culltest == "PASS_BACK")
-      psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetCullTest(lev2::ECULLTEST_PASS_BACK); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetCullTest(lev2::ECULLTEST_PASS_BACK); });
   }
   if (_depthmask != "") {
     bool bena = (_depthmask == "true");
-    psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetZWriteMask(bena); });
+    psb->addStateFn([=](Context* t) { t->RSI()->SetZWriteMask(bena); });
   }
   if (_depthtest != "") {
     if (_depthtest == "OFF")
-      psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_OFF); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_OFF); });
     else if (_depthtest == "LESS")
-      psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_LESS); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_LESS); });
     else if (_depthtest == "LEQUALS")
-      psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_LEQUALS); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_LEQUALS); });
     else if (_depthtest == "GREATER")
-      psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_GREATER); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_GREATER); });
     else if (_depthtest == "GEQUALS")
-      psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_GEQUALS); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_GEQUALS); });
     else if (_depthtest == "EQUALS")
-      psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_EQUALS); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_EQUALS); });
   }
   if (_blendmode != "") {
     if (_blendmode == "ADDITIVE")
-      psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetBlending(lev2::EBLENDING_ADDITIVE); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetBlending(lev2::EBLENDING_ADDITIVE); });
     else if (_blendmode == "ALPHA_ADDITIVE")
-      psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetBlending(lev2::EBLENDING_ALPHA_ADDITIVE); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetBlending(lev2::EBLENDING_ALPHA_ADDITIVE); });
     else if (_blendmode == "ALPHA")
-      psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetBlending(lev2::EBLENDING_ALPHA); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetBlending(lev2::EBLENDING_ALPHA); });
   }
 
   //////////////////////

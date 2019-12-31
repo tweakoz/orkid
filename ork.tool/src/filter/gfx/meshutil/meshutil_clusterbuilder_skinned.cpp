@@ -54,7 +54,7 @@ bool XgmSkinnedClusterBuilder::addTriangle( const XgmClusterTri& Triangle )
 	///////////////////////////////////////
 
 	bool bAddTriangle = false;
-	const int kMaxBonesPerCluster = ColladaExportPolicy::GetContext()->miNumBonesPerCluster;
+	const int kMaxBonesPerCluster = ColladaExportPolicy::context()->miNumBonesPerCluster;
 	orkset<std::string> AddThisRun;
 	for( int i=0; i<3; i++ )
 	{	int inumw = Triangle._vertex[i].miNumWeights;
@@ -133,7 +133,7 @@ void XgmSkinnedClusterBuilder::buildVertexBuffer( lev2::EVtxStreamFormat format 
 
 void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4() // binormal pc skinned
 {
-	lev2::GfxTargetDummy DummyTarget;
+	lev2::ContextDummy DummyTarget;
 	const float kVertexScale(1.0f);
 	const fvec2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
@@ -189,7 +189,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4() // basic pc skin
 	const fvec2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
 
-	lev2::GfxTargetDummy DummyTarget;
+	lev2::ContextDummy DummyTarget;
 	lev2::VtxWriter<ork::lev2::SVtxV12N12T8I4W4> vwriter;
 	_vertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12T8I4W4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
 	vwriter.Lock( &DummyTarget, _vertexBuffer, NumVertexIndices );
@@ -238,7 +238,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N6I1T4() // basic wii skinne
 	const float kVertexScale(1.0f);
 	const fvec2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
-	lev2::GfxTargetDummy DummyTarget;
+	lev2::ContextDummy DummyTarget;
 	lev2::VtxWriter<ork::lev2::SVtxV12N6I1T4> vwriter;
 	_vertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N6I1T4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
 	vwriter.Lock( &DummyTarget, _vertexBuffer, NumVertexIndices );

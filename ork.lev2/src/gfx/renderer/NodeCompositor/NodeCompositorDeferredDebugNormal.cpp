@@ -66,7 +66,7 @@ void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable* 
   // irradiance map preprocessor
   ////////////////////////////////////////////////////////////////////////////////
   _environmentTextureAsset->_varmap.makeValueForKey<Texture::proc_t>("postproc") =
-      [this](Texture* tex, GfxTarget* targ, datablockptr_t datablock) -> datablockptr_t {
+      [this](Texture* tex, Context* targ, datablockptr_t datablock) -> datablockptr_t {
     printf(
         "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>...\n",
         tex,
@@ -120,7 +120,7 @@ struct IMPL {
   ~IMPL() {
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  void init(lev2::GfxTarget* target) {
+  void init(lev2::Context* target) {
     _context.gpuInit(target);
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -233,7 +233,7 @@ DeferredCompositingNodeDebugNormal::DeferredCompositingNodeDebugNormal() {
 DeferredCompositingNodeDebugNormal::~DeferredCompositingNodeDebugNormal() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNodeDebugNormal::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) {
+void DeferredCompositingNodeDebugNormal::DoInit(lev2::Context* pTARG, int iW, int iH) {
   _impl.Get<std::shared_ptr<IMPL>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////

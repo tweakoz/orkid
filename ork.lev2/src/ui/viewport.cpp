@@ -33,7 +33,7 @@ Viewport::Viewport(const std::string& name, int x, int y, int w, int h, CColor3 
 
 /////////////////////////////////////////////////////////////////////////
 
-void Viewport::BeginFrame(lev2::GfxTarget* pTARG) {
+void Viewport::BeginFrame(lev2::Context* pTARG) {
   ork::lev2::FontMan::GetRef();
   //////////////////////////////////////////////////////////
   // GfxEnv::GetRef().GetGlobalLock().Lock(); // InterThreadLock
@@ -61,7 +61,7 @@ void Viewport::BeginFrame(lev2::GfxTarget* pTARG) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void Viewport::EndFrame(lev2::GfxTarget* pTARG) {
+void Viewport::EndFrame(lev2::Context* pTARG) {
   pTARG->debugPushGroup("Viewport::EndFrame");
   if (mbDrawOK) {
     // orkprintf( "END Viewport::BeginFrame::mbDrawOK\n" );

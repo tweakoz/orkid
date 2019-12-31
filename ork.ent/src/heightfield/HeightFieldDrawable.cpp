@@ -108,11 +108,11 @@ struct HeightfieldRenderImpl {
 
   HeightfieldRenderImpl(HeightFieldDrawable* hfdrw);
   ~HeightfieldRenderImpl();
-  void gpuUpdate(GfxTarget* ptarg);
+  void gpuUpdate(Context* ptarg);
   void render(const RenderContextInstData& RCID);
 
-  datablockptr_t recomputeTextures(GfxTarget* ptarg);
-  void reloadCachedTextures(GfxTarget* ptarg,datablockptr_t dblock);
+  datablockptr_t recomputeTextures(Context* ptarg);
+  void reloadCachedTextures(Context* ptarg,datablockptr_t dblock);
 
   HeightFieldDrawable* _hfdrawable;
   hfptr_t _heightfield;
@@ -172,7 +172,7 @@ HeightfieldRenderImpl::~HeightfieldRenderImpl() {
 
 
 ///////////////////////////////////////////////////////////////////////////////
-datablockptr_t HeightfieldRenderImpl::recomputeTextures(GfxTarget* ptarg) {
+datablockptr_t HeightfieldRenderImpl::recomputeTextures(Context* ptarg) {
 
   ork::Timer timer;
   timer.Start();
@@ -370,7 +370,7 @@ datablockptr_t HeightfieldRenderImpl::recomputeTextures(GfxTarget* ptarg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void HeightfieldRenderImpl::reloadCachedTextures(GfxTarget* ptarg,datablockptr_t dblock) {
+void HeightfieldRenderImpl::reloadCachedTextures(Context* ptarg,datablockptr_t dblock) {
   chunkfile::InputStream istr(dblock->data(),dblock->length());
   int MIPW, MIPH;
   istr.GetItem<int>(MIPW);
@@ -406,7 +406,7 @@ void HeightfieldRenderImpl::reloadCachedTextures(GfxTarget* ptarg,datablockptr_t
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
+void HeightfieldRenderImpl::gpuUpdate(Context* ptarg) {
   if (false == _gpuDataDirty)
     return;
 
@@ -843,7 +843,7 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
 
   auto raw_drawable         = _hfdrawable->_rawdrawable;
   const IRenderer* renderer = RCID.GetRenderer();
-  GfxTarget* targ           = renderer->GetTarget();
+  Context* targ           = renderer->GetTarget();
   auto RCFD                 = targ->topRenderContextFrameData();
   const auto& CPD = RCFD->topCPD();
   bool stereo1pass = CPD.isStereoOnePass();
@@ -1013,7 +1013,7 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static void _RenderHeightfield(RenderContextInstData& rcid, GfxTarget* targ, const CallbackRenderable* pren) {
+static void _RenderHeightfield(RenderContextInstData& rcid, Context* targ, const CallbackRenderable* pren) {
   pren->GetDrawableDataA().getShared<HeightfieldRenderImpl>()->render(rcid);
 }
 

@@ -27,7 +27,7 @@ static const uint16_t kRGBA_DXT5 = 0x83F3;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GlTextureInterface::GlTextureInterface(GfxTargetGL& tgt)
+GlTextureInterface::GlTextureInterface(ContextGL& tgt)
     : mTargetGL(tgt) {
 }
 

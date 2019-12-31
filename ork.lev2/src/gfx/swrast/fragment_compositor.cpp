@@ -263,7 +263,7 @@ void rend_texture2D::Init( /*const CLDevice* pdev*/ ) const
 		format.image_channel_data_type = CL_FLOAT;
 
 		int error = 0;
-		mCLhandle = clCreateImage2D(	pdev->GetContext(),
+		mCLhandle = clCreateImage2D(	pdev->context(),
 										CL_MEM_READ_ONLY| CL_MEM_USE_HOST_PTR,
 										& format,
 										this->miWidth,

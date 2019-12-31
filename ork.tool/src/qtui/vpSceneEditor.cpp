@@ -242,12 +242,12 @@ SceneEditorView::SceneEditorView(SceneEditorVP* vp)
 }
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::DoInit(ork::lev2::GfxTarget* pTARG) {
+void SceneEditorVP::DoInit(ork::lev2::Context* pTARG) {
   mpPickBuffer = new lev2::PickBuffer<SceneEditorVP>(
       pTARG->FBI()->GetThisBuffer(), this, 0, 0, 1024, 1024, lev2::PickBufferBase::EPICK_FACE_VTX);
   mpPickBuffer->RefClearColor().SetRGBAU32(0);
-  mpPickBuffer->CreateContext();
-  mpPickBuffer->GetContext()->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
+  mpPickBuffer->initContext();
+  mpPickBuffer->context()->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
 
   pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
 
@@ -281,7 +281,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   int TARGW           = mpTarget->mainSurfaceWidth();
   int TARGH           = mpTarget->mainSurfaceHeight();
   const SRect tgtrect = SRect(0, 0, TARGW, TARGH);
-  _renderer->SetTarget(mpTarget);
+  _renderer->setContext(mpTarget);
   ////////////////////////////////////////////////
   lev2::RenderContextFrameData RCFD(mpTarget);
   mpTarget->pushRenderContextFrameData(&RCFD);
@@ -342,7 +342,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   //////////////////////////////////////////////////
   GL_ERRORCHECK();
   mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
-  _renderer->SetTarget(mpTarget);
+  _renderer->setContext(mpTarget);
   auto mainrect = mpTarget->mainSurfaceRectAtWindowPos();
   SetRect(mainrect.miX, mainrect.miY, mainrect.miX2, mainrect.miY2);
   FBI->SetAutoClear(true);
@@ -549,7 +549,7 @@ void SceneEditorVP::UpdateRefreshPolicy() {
 ///////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
-  lev2::GfxTarget* pTARG = FrameData.GetTarget();
+  lev2::Context* pTARG = FrameData.GetTarget();
   mpTarget->debugPushGroup("toolvp::DrawHUD");
   auto MTXI               = pTARG->MTXI();
   auto GBI                = pTARG->GBI();
@@ -783,13 +783,13 @@ void SceneEditorVP::DrawGrid(ork::lev2::RenderContextFrameData& RCFD) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& RCFD, ork::lev2::GfxTarget* pProxyTarg) {
+void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& RCFD, ork::lev2::Context* pProxyTarg) {
   const auto& topCPD = RCFD.topCPD();
   auto cammatrices   = topCPD.cameraMatrices();
   if (nullptr == cammatrices)
     return;
 
-  ork::lev2::GfxTarget* pOutputTarget = RCFD.GetTarget();
+  ork::lev2::Context* pOutputTarget = RCFD.GetTarget();
   auto MTXI                           = pOutputTarget->MTXI();
   MTXI->PushPMatrix(cammatrices->_pmatrix);
   MTXI->PushVMatrix(cammatrices->_vmatrix);
@@ -798,7 +798,7 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& RCFD, ork::lev2
     switch (ManipManager().GetUIMode()) {
       case ManipManager::EUIMODE_MANIP_WORLD_TRANSLATE:
       case ManipManager::EUIMODE_MANIP_LOCAL_ROTATE: {
-        GetRenderer()->SetTarget(pProxyTarg);
+        GetRenderer()->setContext(pProxyTarg);
 
         ///////////////////////////////////////
         const fvec4& ScreenXNorm = pProxyTarg->MTXI()->GetScreenRightNormal();
@@ -830,7 +830,7 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& RCFD, ork::lev2
 
         ManipManager().Setup(GetRenderer());
         ManipManager().Queue(GetRenderer());
-        GetRenderer()->SetTarget(pOutputTarget);
+        GetRenderer()->setContext(pOutputTarget);
         break;
       }
       default:

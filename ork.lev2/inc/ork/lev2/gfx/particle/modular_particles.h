@@ -825,7 +825,7 @@ public:
 
 	RendererModule();
 
-	virtual void Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ) = 0;
+	virtual void Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::Context* targ) = 0;
 
 	const Pool<BasicParticle>* GetPool();
 
@@ -839,7 +839,7 @@ class MaterialBase : public ork::Object
 
 public:
 
-	virtual lev2::GfxMaterial* Bind( lev2::GfxTarget* pT ) = 0;
+	virtual lev2::GfxMaterial* Bind( lev2::Context* pT ) = 0;
 	virtual void Update( float ftexframe ) = 0;
 	
 protected:
@@ -864,7 +864,7 @@ private:
 
     void Update( float ftexframe ) final;
 	ork::lev2::TextureAsset*		mTexture;
-	lev2::GfxMaterial* Bind( lev2::GfxTarget* pT ) final; 	
+	lev2::GfxMaterial* Bind( lev2::Context* pT ) final; 	
 	
 };
 
@@ -885,7 +885,7 @@ private:
     void Update( float ftexframe ) final;
 
 	ork::lev2::TextureAsset*		mTexture;
-	lev2::GfxMaterial* Bind( lev2::GfxTarget* pT ) final;
+	lev2::GfxMaterial* Bind( lev2::Context* pT ) final;
 
 };
 
@@ -954,7 +954,7 @@ class SpriteRenderer : public RendererModule
 	int								miImageFrame;
 
 	void Compute( float dt ) final;
-	void Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ) final; 
+	void Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::Context* targ) final; 
 	void DoLink() final;
 	bool DoNotify(const ork::event::Event *event) final;
 
@@ -1001,7 +1001,7 @@ class StreakRenderer : public RendererModule
 	void GetTextureAccessor( ork::rtti::ICastable* & tex) const;
 
 	void Compute( float dt ) final {} 
-	void Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ) final; 
+	void Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::Context* targ) final; 
 
 	ork::lev2::Texture* GetTexture() const;
 
@@ -1046,7 +1046,7 @@ class ModelRenderer : public RendererModule
 	void GetModelAccessor( ork::rtti::ICastable* & tex) const;
 
 	void Compute( float dt ) final {}  
-	void Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ) final;
+	void Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::Context* targ) final;
 
 	ork::lev2::XgmModel* GetModel() const;
 

@@ -16,16 +16,16 @@
 bool LoadIL(const ork::AssetPath& pth, ork::lev2::Texture* ptex);
 /////////////////////////////////////////////////////////////////////////
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxTargetDummy, "GfxTargetDummy")
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ContextDummy, "ContextDummy")
 namespace ork { namespace lev2 {
 
 /////////////////////////////////////////////////////////////////////////
 
-void DummyGfxTargetInit() {
-  GfxEnv::SetTargetClass(GfxTargetDummy::GetClassStatic());
+void DummyContextInit() {
+  GfxEnv::setContextClass(ContextDummy::GetClassStatic());
 }
 
-DuRasterStateInterface::DuRasterStateInterface(GfxTarget& target)
+DuRasterStateInterface::DuRasterStateInterface(Context& target)
     : RasterStateInterface(target) {
 }
 
@@ -52,7 +52,7 @@ fmtx4 DuMatrixStackInterface::Ortho(float left, float right, float top, float bo
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DuFrameBufferInterface::DuFrameBufferInterface(GfxTarget& target)
+DuFrameBufferInterface::DuFrameBufferInterface(Context& target)
     : FrameBufferInterface(target) {
 }
 
@@ -61,17 +61,17 @@ DuFrameBufferInterface::~DuFrameBufferInterface() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GfxTargetDummy::~GfxTargetDummy() {
+ContextDummy::~ContextDummy() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GfxTargetDummy::GfxTargetDummy()
-    : GfxTarget()
+ContextDummy::ContextDummy()
+    : Context()
     , mFbI(*this)
     , mMtxI(*this)
     , mRsI(*this) {
-  DummyGfxTargetInit();
+  DummyContextInit();
   static bool binit = true;
 
   if (true == binit) {
@@ -80,13 +80,13 @@ GfxTargetDummy::GfxTargetDummy()
   }
 }
 
-void GfxTargetDummy::InitializeContext(GfxWindow* pWin, CTXBASE* pctxbase) {
+void ContextDummy::InitializeContext(Window* pWin, CTXBASE* pctxbase) {
 }
 
-void GfxTargetDummy::InitializeContext(GfxBuffer* pBuf) {
+void ContextDummy::InitializeContext(OffscreenBuffer* pBuf) {
 }
 
-void GfxTargetDummy::_doResizeMainSurface(int ix, int iy, int iw, int ih) {
+void ContextDummy::_doResizeMainSurface(int ix, int iy, int iw, int ih) {
   miX = ix;
   miY = iy;
   miW = iw;
@@ -154,7 +154,7 @@ void DuGeometryBufferInterface::ReleaseVB(VertexBufferBase& VBuf) {
   std::free((void*)VBuf.GetHandle());
 }
 
-bool GfxTargetDummy::SetDisplayMode(DisplayMode* mode) {
+bool ContextDummy::SetDisplayMode(DisplayMode* mode) {
   return false;
 }
 

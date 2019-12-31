@@ -57,7 +57,7 @@ class GedMapFactoryNode : public GedItemNode {
 
   void OnMouseDoubleClicked(const ork::ui::Event& ev) final;
 
-  void DoDraw(lev2::GfxTarget* pTARG) final {
+  void DoDraw(lev2::Context* pTARG) final {
     GetSkin()->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_DEFAULT_OUTLINE);
     GetSkin()->DrawOutlineBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);
     GetSkin()->DrawText(this, miX + 4, miY + 4, _propname.c_str());

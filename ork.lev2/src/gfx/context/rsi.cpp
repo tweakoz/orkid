@@ -12,7 +12,7 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxTarget::PushModColor( const fvec4 &mColor )
+void Context::PushModColor( const fvec4 &mColor )
 {
 	OrkAssert( miModColorStackIndex<(kiModColorStackMax-1) );
 	maModColorStack[ ++miModColorStackIndex ] = mColor;
@@ -21,7 +21,7 @@ void GfxTarget::PushModColor( const fvec4 &mColor )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fvec4& GfxTarget::PopModColor( void )
+fvec4& Context::PopModColor( void )
 {
 	OrkAssert( miModColorStackIndex>0 );
 	RefModColor() = maModColorStack[ --miModColorStackIndex ];
@@ -32,7 +32,7 @@ fvec4& GfxTarget::PopModColor( void )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-RasterStateInterface::RasterStateInterface(GfxTarget& target)
+RasterStateInterface::RasterStateInterface(Context& target)
 	: _target(target)
 {
 }

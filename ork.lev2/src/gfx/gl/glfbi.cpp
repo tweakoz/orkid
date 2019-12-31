@@ -27,7 +27,7 @@ OIIO_NAMESPACE_USING
 
 namespace ork { namespace lev2 {
 
-GlFrameBufferInterface::GlFrameBufferInterface(GfxTargetGL& target)
+GlFrameBufferInterface::GlFrameBufferInterface(ContextGL& target)
     : FrameBufferInterface(target)
     , mTargetGL(target) {
 }
@@ -153,7 +153,7 @@ void GlFrameBufferInterface::_doEndFrame(void) {
     // printf( "ENDFRAME<RtGroup>\n" );
   } else if (IsOffscreenTarget()) {
     // printf( "ENDFRAME<OST>\n" );
-    GfxBuffer* pbuf            = GetThisBuffer();
+    OffscreenBuffer* pbuf            = GetThisBuffer();
     pbuf->GetTexture()->_dirty = false;
     pbuf->SetDirty(false);
     // mTargetGL.EndContextFBO();
@@ -172,7 +172,7 @@ void GlFrameBufferInterface::_doEndFrame(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::_initializeContext(GfxBuffer* pBuf) {
+void GlFrameBufferInterface::_initializeContext(OffscreenBuffer* pBuf) {
   ///////////////////////////////////////////
   // create texture surface
 

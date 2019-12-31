@@ -20,7 +20,7 @@ public:
   ~ScaleBiasCompositingNode();
 
 private:
-  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
+  void DoInit(lev2::Context* pTARG, int w, int h) final;                          // virtual
   void DoRender(CompositorDrawData& drawdata) final; // virtual
 
   lev2::RtBuffer* GetOutput() const final;

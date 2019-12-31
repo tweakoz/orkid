@@ -78,7 +78,7 @@ void UIToolHandler<VPTYPE>::LoadToolIcon(  )
 }
 
 template <typename VPTYPE>
-void UIToolHandler<VPTYPE>::DrawToolIcon( lev2::GfxTarget* pTARG, int ix, int iy, bool bhilite )
+void UIToolHandler<VPTYPE>::DrawToolIcon( lev2::Context* pTARG, int ix, int iy, bool bhilite )
 {	if( mpBaseIcon )
 	{	lev2::DynamicVertexBuffer<lev2::SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
 		lev2::GfxMaterialUITextured UiMatTex(pTARG);
@@ -145,7 +145,7 @@ void UIToolHandler<VPTYPE>::DrawToolIcon( lev2::GfxTarget* pTARG, int ix, int iy
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename VPTYPE>
-void UIToolHandler<VPTYPE>::DrawSubToolIcon(lev2::GfxTarget* pTARG, int ix, int iy, bool bhilite)
+void UIToolHandler<VPTYPE>::DrawSubToolIcon(lev2::Context* pTARG, int ix, int iy, bool bhilite)
 {
 	if(mState < 0 || mState >= int(mpSubIconVector.size()))
 		return;

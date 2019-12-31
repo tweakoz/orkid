@@ -118,7 +118,7 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
   switch (EV.miEventCode) {
     case ui::UIEV_SHOW: {
       if (GetViewport()->GetTarget()) {
-        GfxTarget* pTARG       = GetViewport()->GetTarget();
+        Context* pTARG       = GetViewport()->GetTarget();
         lev2::CTXBASE* CtxBase = pTARG->GetCtxBase();
         // CtxBase->SetRefreshRate(0);
       }

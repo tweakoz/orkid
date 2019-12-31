@@ -157,7 +157,7 @@ CompositingContext::~CompositingContext() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingContext::Init(lev2::GfxTarget* pTARG) {
+void CompositingContext::Init(lev2::Context* pTARG) {
   if ((miWidth != pTARG->mainSurfaceWidth()) || (miHeight != pTARG->mainSurfaceHeight())) {
     miWidth  = pTARG->mainSurfaceWidth();
     miHeight = pTARG->mainSurfaceHeight();
@@ -187,7 +187,7 @@ bool CompositingContext::assemble(CompositorDrawData& drawdata) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GfxTarget* CompositorDrawData::target() const {
+Context* CompositorDrawData::target() const {
   return mFrameRenderer.framedata().GetTarget();
 }
 

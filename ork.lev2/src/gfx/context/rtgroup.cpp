@@ -28,7 +28,7 @@ RtBuffer::RtBuffer(RtGroup* pgroup, ETargetType etype, EBufferFormat efmt, int i
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RtGroup::RtGroup(GfxTarget* ptgt, int iW, int iH, int iSamples)
+RtGroup::RtGroup(Context* ptgt, int iW, int iH, int iSamples)
     : mParentTarget(ptgt)
     , miW(iW)
     , miH(iH)

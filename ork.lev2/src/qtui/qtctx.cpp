@@ -398,8 +398,8 @@ void QCtxWidget::focusInEvent(QFocusEvent* event) {
   }
   // orkprintf( "CTQT %08x got keyboard focus\n", this );
   QWidget::focusInEvent(event);
-  if (GetGfxWindow())
-    GetGfxWindow()->GotFocus();
+  if (GetWindow())
+    GetWindow()->GotFocus();
   //////////////////////////////////////////
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
@@ -416,8 +416,8 @@ void QCtxWidget::focusOutEvent(QFocusEvent* event) {
   }
   // orkprintf( "CTQT %08x lost keyboard focus\n", this );
   QWidget::focusOutEvent(event);
-  if (GetGfxWindow())
-    GetGfxWindow()->LostFocus();
+  if (GetWindow())
+    GetWindow()->LostFocus();
   //////////////////////////////////////////
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
@@ -430,12 +430,12 @@ const ui::Event& QCtxWidget::UIEvent() const {
   return mpCtxBase->mUIEvent;
 }
 
-GfxTarget* QCtxWidget::Target() const {
+Context* QCtxWidget::Target() const {
   return mpCtxBase->mpTarget;
 }
 
-GfxWindow* QCtxWidget::GetGfxWindow() const {
-  return mpCtxBase->mpGfxWindow;
+Window* QCtxWidget::GetWindow() const {
+  return mpCtxBase->mpWindow;
 }
 
 bool QCtxWidget::AlwaysRun() const {
@@ -456,8 +456,8 @@ void CTQT::Show() {
   mParent->show();
   if (mbInitialize) {
     printf("CreateCONTEXT\n");
-    mpGfxWindow->CreateContext();
-    mpGfxWindow->OnShow();
+    mpWindow->initContext();
+    mpWindow->OnShow();
     mbInitialize = false;
   }
 }
@@ -514,7 +514,7 @@ void CTQT::_setRefreshPolicy(RefreshPolicyItem newpolicy) { // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CTQT::CTQT(GfxWindow* pwin, QWidget* pparent)
+CTQT::CTQT(Window* pwin, QWidget* pparent)
     : CTXBASE(pwin)
     , mbAlwaysRun(false)
     , mix(0)
@@ -530,8 +530,8 @@ CTQT::CTQT(GfxWindow* pwin, QWidget* pparent)
 }
 
 CTQT::~CTQT() {
-  if (mpGfxWindow)
-    delete mpGfxWindow;
+  if (mpWindow)
+    delete mpWindow;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -553,7 +553,7 @@ void CTQT::SetParent(QWidget* pparent) {
   this->SetThisXID((CTFLXID)winId());
   this->SetTopXID((CTFLXID)pparent->winId());
 
-  mpGfxWindow->SetDirty(true);
+  mpWindow->SetDirty(true);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -575,7 +575,7 @@ void CTQT::Resize(int X, int Y, int W, int H) {
   // printf( "CTQT::Resize() mpTarget<%p>\n", mpTarget );
   if (mpTarget) {
     mpTarget->resizeMainSurface(X, Y, W, H);
-    mUIEvent.mpGfxWin = (GfxWindow*)mpTarget->FBI()->GetThisBuffer();
+    mUIEvent.mpGfxWin = (Window*)mpTarget->FBI()->GetThisBuffer();
     if (mUIEvent.mpGfxWin)
       mUIEvent.mpGfxWin->Resize(X, Y, W, H);
   }
@@ -611,7 +611,7 @@ void CTQT::SlotRepaint() {
         auto gfxwin = uiev.mpGfxWin;
         auto vp     = gfxwin ? gfxwin->GetRootWidget() : nullptr;
 
-        // this->UIEvent->mpGfxWin = (GfxWindow*) this->mpTarget->FBI()->GetThisBuffer();
+        // this->UIEvent->mpGfxWin = (Window*) this->mpTarget->FBI()->GetThisBuffer();
         ui::DrawEvent drwev(this->mpTarget);
 
         if (vp)

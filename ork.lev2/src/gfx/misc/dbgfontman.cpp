@@ -24,7 +24,7 @@ int FontDesc::stringWidth(int numchars) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FontMan::BeginTextBlock(GfxTarget* pTARG, int imaxcharcount) {
+void FontMan::BeginTextBlock(Context* pTARG, int imaxcharcount) {
 #if !defined(_XBOX)
   static bool bLoadFonts = true;
   if (bLoadFonts) {
@@ -53,7 +53,7 @@ void FontMan::BeginTextBlock(GfxTarget* pTARG, int imaxcharcount) {
   vw.Lock(pTARG, &pTARG->IMI()->RefTextVB(), inumv);
 }
 
-void FontMan::EndTextBlock(GfxTarget* pTARG) {
+void FontMan::EndTextBlock(Context* pTARG) {
   FontMan& fm = GetRef();
   OrkAssert(pTARG->IMI()->RefTextVB().IsLocked());
   fm.mTextWriter.UnLock(pTARG);
@@ -94,7 +94,7 @@ FontMan::~FontMan() {
 //  a 'cell' is one of the 256(16x16) tiles in the texture,
 //   if the texture size is 512x512, then a single cell will be 32x32
 
-void FontMan::InitFonts(GfxTarget* pTARG) {
+void FontMan::InitFonts(Context* pTARG) {
   FontDesc Inconsolata12;
   Inconsolata12.mFontName       = "i12";
   Inconsolata12.mFontFile       = "lev2://textures/Inconsolata12";
@@ -195,7 +195,7 @@ void FontMan::InitFonts(GfxTarget* pTARG) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FontMan::AddFont(GfxTarget* pTARG, const FontDesc& fdesc) {
+void FontMan::AddFont(Context* pTARG, const FontDesc& fdesc) {
   Font* pFontAlreadyLoaded = OldStlSchoolFindValFromKey(GetRef().mFontMap, fdesc.mFontName, (Font*)0);
 
   if (0 == pFontAlreadyLoaded) {
@@ -211,7 +211,7 @@ void FontMan::AddFont(GfxTarget* pTARG, const FontDesc& fdesc) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FontMan::DrawText(GfxTarget* pTARG, int iX, int iY, const char* pFmt, ...) {
+void FontMan::DrawText(Context* pTARG, int iX, int iY, const char* pFmt, ...) {
   char TextBuffer[1024];
   va_list argp;
   va_start(argp, pFmt);
@@ -283,7 +283,7 @@ Font::Font(const std::string& fontname, const std::string& filename)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline void Font::QueChar(GfxTarget* pTARG, VtxWriter<SVtxV12C4T16>& vw, int ix, int iy, int iu, int iv, U32 ucolor) {
+inline void Font::QueChar(Context* pTARG, VtxWriter<SVtxV12C4T16>& vw, int ix, int iy, int iu, int iv, U32 ucolor) {
   static const float kftexsiz   = float(mFontDesc.miTexWidth);
   static const float kfU0offset = +0.0f;
   static const float kfV0offset = 0.0f;
@@ -344,7 +344,7 @@ inline void Font::QueChar(GfxTarget* pTARG, VtxWriter<SVtxV12C4T16>& vw, int ix,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Font::LoadFromDisk(GfxTarget* pTARG, const FontDesc& fdesc) {
+void Font::LoadFromDisk(Context* pTARG, const FontDesc& fdesc) {
   mpMaterial = new GfxMaterialUIText;
   mpMaterial->Init(pTARG);
   AssetPath apath(msFileName.c_str());

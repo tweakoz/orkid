@@ -57,7 +57,7 @@ Widget::~Widget() {
     gFastPath = nullptr;
 }
 
-void Widget::Init(lev2::GfxTarget* pT) {
+void Widget::Init(lev2::Context* pT) {
   DoInit(pT);
 }
 
@@ -465,7 +465,7 @@ float Widget::logicalY() const {
 
 /////////////////////////////////////////////////////////////////////////
 
-void Widget::ExtDraw(lev2::GfxTarget* pTARG) {
+void Widget::ExtDraw(lev2::Context* pTARG) {
   if (mbInit) {
     ork::lev2::FontMan::GetRef();
     Init(mpTarget);

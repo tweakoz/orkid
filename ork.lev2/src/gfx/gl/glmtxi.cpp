@@ -14,7 +14,7 @@
 
 namespace ork { namespace lev2 {
 
-GlMatrixStackInterface::GlMatrixStackInterface( GfxTarget& target )
+GlMatrixStackInterface::GlMatrixStackInterface( Context& target )
 	: MatrixStackInterface(target)
 {
 }

@@ -104,7 +104,7 @@ void GfxMaterialWiiBasic::StaticInit() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialWiiBasic::Init(ork::lev2::GfxTarget* pTarg) {
+void GfxMaterialWiiBasic::Init(ork::lev2::Context* pTarg) {
   if (gbenable) {
     hModFX = asset::AssetManager<FxShaderAsset>::Load("orkshader://basic")->GetFxShader();
 
@@ -201,7 +201,7 @@ WiiMatrixBlockApplicator::WiiMatrixBlockApplicator(MaterialInstItemMatrixBlock* 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void WiiMatrixBlockApplicator::ApplyToTarget(GfxTarget* pTARG) // virtual
+void WiiMatrixBlockApplicator::ApplyToTarget(Context* pTARG) // virtual
 {
   auto fxi  = pTARG->FXI();
   auto mtxi = pTARG->MTXI();
@@ -227,7 +227,7 @@ WiiMatrixApplicator::WiiMatrixApplicator(MaterialInstItemMatrix* mtxitem, const 
     : mMatrixItem(mtxitem)
     , mMaterial(pmat) {}
 
-void WiiMatrixApplicator::ApplyToTarget(GfxTarget* pTARG) {
+void WiiMatrixApplicator::ApplyToTarget(Context* pTARG) {
   const fmtx4& mtx  = mMatrixItem->GetMatrix();
   FxShader* hshader = mMaterial->hModFX;
   pTARG->FXI()->BindParamMatrix(hshader, mMaterial->hDiffuseMapMatrix, mtx);
@@ -299,7 +299,7 @@ void GfxMaterialWiiBasic::UnBindMaterialInstItem(MaterialInstItem* pitem) const 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialWiiBasic::UpdateMVPMatrix(GfxTarget* pTarg) {
+void GfxMaterialWiiBasic::UpdateMVPMatrix(Context* pTarg) {
   auto FXI  = pTarg->FXI();
   auto MTXI = pTarg->MTXI();
   FXI->BindParamMatrix(hModFX, hMatMV, MTXI->RefMVMatrix());
@@ -311,7 +311,7 @@ void GfxMaterialWiiBasic::UpdateMVPMatrix(GfxTarget* pTarg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
+bool GfxMaterialWiiBasic::BeginPass(Context* pTarg, int iPass) {
 
   auto FXI  = pTarg->FXI();
   auto RSI  = pTarg->RSI();
@@ -402,11 +402,11 @@ bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialWiiBasic::EndPass(GfxTarget* pTarg) { pTarg->FXI()->EndPass(hModFX); }
+void GfxMaterialWiiBasic::EndPass(Context* pTarg) { pTarg->FXI()->EndPass(hModFX); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int GfxMaterialWiiBasic::BeginBlock(GfxTarget* pTarg, const RenderContextInstData& RCID) {
+int GfxMaterialWiiBasic::BeginBlock(Context* pTarg, const RenderContextInstData& RCID) {
   mRenderContexInstData              = &RCID;
   const RenderContextFrameData* RCFD = pTarg->topRenderContextFrameData();
   const auto& CPD = RCFD->topCPD();
@@ -435,7 +435,7 @@ int GfxMaterialWiiBasic::BeginBlock(GfxTarget* pTarg, const RenderContextInstDat
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialWiiBasic::EndBlock(GfxTarget* pTarg) {
+void GfxMaterialWiiBasic::EndBlock(Context* pTarg) {
   pTarg->FXI()->EndBlock(hModFX);
   mRenderContexInstData = 0;
 }

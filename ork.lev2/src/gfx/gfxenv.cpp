@@ -231,7 +231,7 @@ GfxEnv::GfxEnv()
   mVtxBufSharedVect.SetRingLock(true);
   mVtxBufSharedVect2.SetRingLock(true);
   _vtxBufSharedV16T16C16.SetRingLock(true);
-  GfxTargetCreationParams params;
+  ContextCreationParams params;
   params.miNumSharedVerts = 8 << 10;
 
   PushCreationParams(params);
@@ -240,12 +240,12 @@ GfxEnv::GfxEnv()
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxEnv::RegisterWinContext(GfxWindow* pWin) {
+void GfxEnv::RegisterWinContext(Window* pWin) {
   // orkprintf("GfxEnv::RegisterWinContext\n");
   // gfxenvlateinit();
 }
 
-void GfxEnv::SetLoaderTarget(GfxTarget* target) {
+void GfxEnv::SetLoaderTarget(Context* target) {
   gLoaderTarget = target;
 
   auto gfxenvlateinit = [=]() {

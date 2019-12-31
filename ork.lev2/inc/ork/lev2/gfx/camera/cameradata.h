@@ -12,7 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
-class GfxTarget;
+class Context;
 class UiCamera;
 struct CameraMatrices;
 

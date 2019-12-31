@@ -43,7 +43,7 @@ struct Event final // RawEvent
 {
   int mEventCode;
 
-  lev2::GfxBuffer* mpGfxWin;
+  lev2::OffscreenBuffer* mpGfxWin;
   Coordinate mUICoord;
 
   int miEventCode;
@@ -134,12 +134,12 @@ struct Event final // RawEvent
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DrawEvent {
-  DrawEvent(lev2::GfxTarget* ptarg)
+  DrawEvent(lev2::Context* ptarg)
       : mpTarget(ptarg) {}
-  lev2::GfxTarget* GetTarget() const { return mpTarget; }
+  lev2::Context* GetTarget() const { return mpTarget; }
 
 private:
-  lev2::GfxTarget* mpTarget;
+  lev2::Context* mpTarget;
 };
 
 }} // namespace ork::ui

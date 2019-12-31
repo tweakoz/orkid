@@ -98,8 +98,8 @@ public:
 
   const ui::Event& UIEvent() const;
   ui::Event& UIEvent();
-  GfxTarget* Target() const;
-  GfxWindow* GetGfxWindow() const;
+  Context* Target() const;
+  Window* GetWindow() const;
   bool AlwaysRun() const;
 
   QPaintEngine* paintEngine() const final { return nullptr; }
@@ -129,7 +129,7 @@ public:
   void _setRefreshPolicy(RefreshPolicyItem epolicy) final;
 
   QTimer& Timer() const;
-  CTQT(GfxWindow* pwin, QWidget* parent = 0);
+  CTQT(Window* pwin, QWidget* parent = 0);
   ~CTQT();
 
   void Resize(int X, int Y, int W, int H);
@@ -144,13 +144,13 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CQtGfxWindow : public ork::lev2::GfxWindow {
+class CQtWindow : public ork::lev2::Window {
 public:
   bool mbinit;
   ui::Widget* mRootWidget;
 
-  CQtGfxWindow(ui::Widget* root_widget);
-  ~CQtGfxWindow();
+  CQtWindow(ui::Widget* root_widget);
+  ~CQtWindow();
 
   virtual void Draw(void);
   // virtual void Show( void );

@@ -15,8 +15,8 @@ namespace ork {
 class HotKey;
 namespace lev2 {
 class RtGroup;
-class GfxTarget;
-class GfxWindow;
+class Context;
+class Window;
 class FrameTechniqueBase;
 class FrameRenderer;
 class PickBufferBase;

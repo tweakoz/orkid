@@ -89,7 +89,7 @@ void vp_cons::AppendOutput(const std::string& data) {
   std::vector<std::string> strsa;
   boost::split(strsa, data, boost::is_any_of("\n"));
 
-  lev2::GfxTarget* pTARG = mCTQT->GetTarget();
+  lev2::Context* pTARG = mCTQT->GetTarget();
   int IW                 = pTARG->mainSurfaceWidth();
   int wrap               = IW / 10;
 
@@ -246,7 +246,7 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev) {
     // if( 0 == g_orig_stdout ) return;
 #endif
 
-  lev2::GfxTarget* pTARG = mCTQT->GetTarget();
+  lev2::Context* pTARG = mCTQT->GetTarget();
 
   int IW = pTARG->mainSurfaceWidth();
   int IH = pTARG->mainSurfaceHeight();

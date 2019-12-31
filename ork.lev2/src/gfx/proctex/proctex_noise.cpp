@@ -212,7 +212,7 @@ dataflow::inplugbase* Cells::GetInput(int idx)
 	return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Cells::ComputeVB( lev2::GfxTarget* pTARG )
+void Cells::ComputeVB( lev2::Context* pTARG )
 {	fvec3 wrapu( float(miDimU), 0.0f, 0.0f );
 	fvec3 wrapv( 0.0f, float(miDimV), 0.0f );
 	////////////////////////////////////////////////

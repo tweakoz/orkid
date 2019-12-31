@@ -82,7 +82,7 @@ PoolString Application::AddPooledLiteral(const ConstString &string)
 
 PoolString Application::FindPooledString(const PieceString &string)
 {
-	//OrkAssert(ork::util::Context<ork::Application>::GetContext());
+	//OrkAssert(ork::util::Context<ork::Application>::context());
 
     auto pAPP = ApplicationStack::Top();
     PoolString result = pAPP->GetStringPool().Find(string);
