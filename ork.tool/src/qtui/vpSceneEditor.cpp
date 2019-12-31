@@ -562,7 +562,7 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
   int ity0 = frame_rect.miY;
   int ity1 = frame_rect.miY2;
 
-  if (pTARG->_hiDPI) {
+  if (pTARG->hiDPI()) {
     itx0 /= 2;
     itx1 /= 2;
     ity0 /= 2;

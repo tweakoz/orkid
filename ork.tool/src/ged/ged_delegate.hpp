@@ -174,7 +174,7 @@ void Slider<T>::OnUiEvent(const ork::ui::Event& ev) // final
       std::string RangeStr = CreateFormattedString("v:[%f..%f]", float(mmin), float(mmax));
       // QString qstr = QInputDialog::getText ( 0, "Set Value", RangeStr.c_str() );
 
-      int ilabw = mParent.GetNameWidth() + 16;
+      int ilabw = mParent.propnameWidth() + 16;
 
       int iwidth = mParent.width() - ilabw;
       if (iwidth < 64)
@@ -228,7 +228,8 @@ template <typename T> void Slider<T>::resize(int ix, int iy, int iw, int ih) {
 template <typename Setter>
 GedBoolNode<Setter>::GedBoolNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
     : GedItemNode(mdl, name, prop, obj)
-    , mSetter(prop, obj) {}
+    , mSetter(prop, obj) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 static const int CHECKBOX_MARGIN = 2;
@@ -250,7 +251,7 @@ template <typename Setter> void GedBoolNode<Setter>::DoDraw(lev2::GfxTarget* pTA
   if (value)
     GetSkin()->DrawCheckBox(this, miX + miW - SIZE - CHECKBOX_MARGIN, miY + CHECKBOX_MARGIN, SIZE, SIZE);
 
-  GetSkin()->DrawText(this, miX + 4, miY + 2, mName.c_str());
+  GetSkin()->DrawText(this, miX + 4, miY + 2, _propname.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -287,9 +288,9 @@ GedFloatNode<IODriver>::GedFloatNode(ObjModel& mdl, const char* name, const refl
     : GedItemNode(mdl, name, prop, obj)
     , mIoDriver(mdl, prop, obj)
     , mLogMode(false) {
-  auto annomin = prop->annotation("editor.range.min");
-  auto annomax = prop->annotation("editor.range.max");
-  auto annolog = prop->annotation("editor.range.log");
+  auto annomin   = prop->annotation("editor.range.min");
+  auto annomax   = prop->annotation("editor.range.max");
+  auto annolog   = prop->annotation("editor.range.log");
   auto annorange = prop->annotation("editor.range");
 
   float fval = -1.0f;
@@ -348,13 +349,13 @@ template <typename IoDriver> void GedFloatNode<IoDriver>::DoDraw(lev2::GfxTarget
   int itxi            = miX + (finp);
   PropTypeString& str = slider->ValString();
 
-  mLabel       = str.c_str();
-  int itextlen = GetLabelWidth();
+  _content     = str.c_str();
+  int itextlen = contentWidth();
 
   int ity = get_text_center_y();
 
   GetSkin()->DrawText(this, miX + miW - (itextlen + 8), ity, str.c_str());
-  GetSkin()->DrawText(this, miX + 4, ity, mName.c_str());
+  GetSkin()->DrawText(this, miX + 4, ity, _propname.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -387,8 +388,8 @@ GedIntNode<IODriver>::GedIntNode(ObjModel& mdl, const char* name, const reflect:
     }
   }
 
-  slider = new Slider<GedIntNode>(*this, fmin, fmax, ival);
-  SetName(name);
+  slider    = new Slider<GedIntNode>(*this, fmin, fmax, ival);
+  _propname = name;
 }
 
 template <typename IODriver>
@@ -416,9 +417,9 @@ template <typename IODriver> void GedIntNode<IODriver>::DoDraw(lev2::GfxTarget* 
   int itxi            = miX + int(finp);
   PropTypeString& str = slider->ValString();
   GetSkin()->DrawText(this, itxi, ity, str.c_str());
-  mLabel       = str.c_str();
-  int itextlen = GetLabelWidth();
-  GetSkin()->DrawText(this, miX + 4, ity, mName.c_str());
+  _content     = str.c_str();
+  int itextlen = contentWidth();
+  GetSkin()->DrawText(this, miX + 4, ity, _propname.c_str());
   //	GetSkin()->DrawText( this, miX+miW-(itextlen+8), miY+4, str.c_str() );
 }
 
@@ -442,7 +443,8 @@ template <typename IODriver> void GedFloatNode<IODriver>::OnUiEvent(const ork::u
 template <typename IODriver, typename T>
 GedSimpleNode<IODriver, T>::GedSimpleNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
     : GedItemNode(mdl, name, prop, obj)
-    , mIoDriver(mdl, prop, obj) {}
+    , mIoDriver(mdl, prop, obj) {
+}
 ///////////////////////////////////////////////////////////////////////////////
 template <typename IODriver, typename T> void GedSimpleNode<IODriver, T>::OnUiEvent(const ork::ui::Event& ev) {
   const auto& filtev = ev.mFilteredEvent;
@@ -490,7 +492,7 @@ template <typename IODriver, typename T> void GedSimpleNode<IODriver, T>::OnUiEv
           }
         }
       } else {
-        int ilabw        = GetNameWidth() + 16;
+        int ilabw        = propnameWidth() + 16;
         QString qstr     = GedInputDialog::getText(ev, this, ptsg.c_str(), ilabw, 2, miW - ilabw, miH - 3);
         std::string sstr = qstr.toStdString();
         if (sstr.length()) {
@@ -509,7 +511,7 @@ template <typename IODriver, typename T> void GedSimpleNode<IODriver, T>::DoDraw
 
   int ity = get_text_center_y();
 
-  int ilabw = GetNameWidth() + 16;
+  int ilabw = propnameWidth() + 16;
   // GedItemNode::DoDraw( pTARG );
   //////////////////////////////////////
   T val;
@@ -522,7 +524,7 @@ template <typename IODriver, typename T> void GedSimpleNode<IODriver, T>::DoDraw
     //////////////////////////////////////
 
     GetSkin()->DrawText(this, miX + ilabw, ity, pts.c_str());
-    GetSkin()->DrawText(this, miX + 6, ity, mName.c_str());
+    GetSkin()->DrawText(this, miX + 6, ity, _propname.c_str());
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

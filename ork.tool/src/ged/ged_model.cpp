@@ -74,10 +74,20 @@ void ObjModel::SlotRelayModelInvalidated() {
 orkset<ObjModel*> ObjModel::gAllObjectModels;
 
 ObjModel::ObjModel()
-    : mpGedWidget(0), mChoiceManager(0), mModelInvalidatedInvoker(mSignalModelInvalidated.CreateInvokation()), mQueueObject(0),
-      mCurrentObject(0), mRootObject(0), mbEnablePaint(false), ConstructAutoSlot(NewObject),
-      ConstructAutoSlot(RelayModelInvalidated), ConstructAutoSlot(RelayPropertyInvalidated), ConstructAutoSlot(ObjectDeleted),
-      ConstructAutoSlot(ObjectSelected), ConstructAutoSlot(ObjectDeSelected), ConstructAutoSlot(Repaint) {
+    : mpGedWidget(0)
+    , mChoiceManager(0)
+    , mModelInvalidatedInvoker(mSignalModelInvalidated.CreateInvokation())
+    , mQueueObject(0)
+    , mCurrentObject(0)
+    , mRootObject(0)
+    , mbEnablePaint(false)
+    , ConstructAutoSlot(NewObject)
+    , ConstructAutoSlot(RelayModelInvalidated)
+    , ConstructAutoSlot(RelayPropertyInvalidated)
+    , ConstructAutoSlot(ObjectDeleted)
+    , ConstructAutoSlot(ObjectSelected)
+    , ConstructAutoSlot(ObjectDeSelected)
+    , ConstructAutoSlot(Repaint) {
 
   SetupSignalsAndSlots();
   ///////////////////////////////////////////
@@ -154,7 +164,9 @@ void ObjModel::SigPropertyInvalidated(ork::Object* pobj, const reflect::IObjectP
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjModel::SigRepaint() { mSignalRepaint(&ObjModel::SigRepaint); }
+void ObjModel::SigRepaint() {
+  mSignalRepaint(&ObjModel::SigRepaint);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -167,19 +179,27 @@ void ObjModel::SigNewObject(ork::Object* pobj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjModel::SigPostNewObject(ork::Object* pobj) { mSignalPostNewObject(&ObjModel::SigPostNewObject, pobj); }
+void ObjModel::SigPostNewObject(ork::Object* pobj) {
+  mSignalPostNewObject(&ObjModel::SigPostNewObject, pobj);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjModel::SigSpawnNewGed(ork::Object* pOBJ) { mSignalSpawnNewGed(&ObjModel::SigSpawnNewGed, pOBJ); }
+void ObjModel::SigSpawnNewGed(ork::Object* pOBJ) {
+  mSignalSpawnNewGed(&ObjModel::SigSpawnNewGed, pOBJ);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjModel::SlotNewObject(ork::Object* pobj) { Attach(mCurrentObject); }
+void ObjModel::SlotNewObject(ork::Object* pobj) {
+  Attach(mCurrentObject);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjModel::SlotObjectDeleted(ork::Object* pobj) { Attach(0); }
+void ObjModel::SlotObjectDeleted(ork::Object* pobj) {
+  Attach(0);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -198,12 +218,14 @@ void ObjModel::SlotObjectSelected(ork::Object* pobj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjModel::SlotObjectDeSelected(ork::Object* pobj) { Attach(0); }
+void ObjModel::SlotObjectDeSelected(ork::Object* pobj) {
+  Attach(0);
+}
 
 //////////////////////////////////////////////////////////////////////////////
 
 GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool binline) {
-  GedItemNode* rval = 0;
+  GedItemNode* rval    = 0;
   ork::Object* cur_obj = root_object;
   if (cur_obj) {
     ObjectGedVisitEvent gev;
@@ -217,10 +239,10 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
   auto obj_ops_anno = objclass->Description().classAnnotation("editor.object.ops");
 
   bool is_const_string = obj_ops_anno.IsSet() && obj_ops_anno.IsA<ConstString>();
-  bool is_op_map = obj_ops_anno.IsSet() && obj_ops_anno.IsA<ork::reflect::OpMap*>();
+  bool is_op_map       = obj_ops_anno.IsSet() && obj_ops_anno.IsA<ork::reflect::OpMap*>();
 
   // ConstString obj_ops = obj_ops_anno.IsSet() ? obj_ops_anno.Get<ConstString>() : "";
-  const char* usename = (pname != 0) ? pname : cur_obj->GetClass()->Name().c_str();
+  const char* usename         = (pname != 0) ? pname : cur_obj->GetClass()->Name().c_str();
   GedGroupNode* ObjContainerW = binline ? 0 : new GedGroupNode(*this, usename, 0, cur_obj, true);
   if (cur_obj == root_object) {
     rval = ObjContainerW;
@@ -244,8 +266,8 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
       rtti::Class* AnnoEditorClass = rtti::Class::FindClass(anno_edclass);
       if (AnnoEditorClass) {
         ork::object::ObjectClass* pclass = rtti::safe_downcast<ork::object::ObjectClass*>(AnnoEditorClass);
-        ork::rtti::ICastable* factory = pclass->CreateObject();
-        GedFactory* qf = rtti::safe_downcast<GedFactory*>(factory);
+        ork::rtti::ICastable* factory    = pclass->CreateObject();
+        GedFactory* qf                   = rtti::safe_downcast<GedFactory*>(factory);
         if (qf) {
           if (pname == 0)
             pname = anno_edclass.c_str();
@@ -282,7 +304,7 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
     GedGroupNode* PropGroupNode = 0;
     if (igcount) {
       const std::string& GroupName = snode->Name;
-      PropGroupNode = new GedGroupNode(*this, GroupName.c_str(), 0, cur_obj);
+      PropGroupNode                = new GedGroupNode(*this, GroupName.c_str(), 0, cur_obj);
       GetGedWidget()->AddChild(PropGroupNode);
       GetGedWidget()->PushItemNode(PropGroupNode);
     }
@@ -290,9 +312,9 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
     { // Possibly In Group
       ////////////////////////////////////////////////////////////////////////////////////////
       for (auto item : snode->PropVect) {
-        const std::string& Name = item.first;
+        const std::string& Name              = item.first;
         const reflect::IObjectProperty* prop = item.second;
-        GedItemNode* PropContainerW = 0;
+        GedItemNode* PropContainerW          = 0;
         if (0 == prop)
           continue;
         if (false == IsNodeVisible(prop))
@@ -313,7 +335,7 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
     }
     ////////////////////////////////////////////////////////////////////////////////////////
     for (const auto& it : snode->GroupVect) {
-      const std::string& Name = it.first;
+      const std::string& Name     = it.first;
       const sortnode* child_group = it.second;
       sort_stack.push(child_group);
       igcount++;
@@ -332,7 +354,7 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
 //////////////////////////////////////////////////////////////////////////////
 
 bool ObjModel::IsNodeVisible(const reflect::IObjectProperty* prop) {
-  ConstString anno_vis = prop->GetAnnotation("editor.visible");
+  ConstString anno_vis       = prop->GetAnnotation("editor.visible");
   ConstString anno_ediftageq = prop->GetAnnotation("editor.iftageq");
   if (anno_vis.length()) {
     if (0 == strcmp(anno_vis.c_str(), "false"))
@@ -342,9 +364,9 @@ bool ObjModel::IsNodeVisible(const reflect::IObjectProperty* prop) {
     orkvector<std::string> AnnoSplit;
     SplitString(std::string(anno_ediftageq.c_str()), AnnoSplit, ":");
     OrkAssert(AnnoSplit.size() == 2);
-    const std::string& key = AnnoSplit[0];
-    const std::string& val = AnnoSplit[1];
-    GedItemNode* parentnode = GetGedWidget()->ParentItemNode();
+    const std::string& key                                 = AnnoSplit[0];
+    const std::string& val                                 = AnnoSplit[1];
+    GedItemNode* parentnode                                = GetGedWidget()->ParentItemNode();
     orkmap<std::string, std::string>::const_iterator ittag = parentnode->mTags.find(key);
     if (ittag != parentnode->mTags.end()) {
       if (val != ittag->second) {
@@ -367,13 +389,13 @@ void ObjModel::EnumerateNodes(sortnode& in_node, object::ObjectClass* the_class)
   }
   int inumclasses = int(ClassVect.size());
   for (int ic = (inumclasses - 1); ic >= 0; ic--) {
-    object::ObjectClass* pclass = ClassVect[ic];
+    object::ObjectClass* pclass                         = ClassVect[ic];
     ork::reflect::Description::PropertyMapType& propmap = pclass->Description().Properties();
-    auto eg_anno = pclass->Description().classAnnotation("editor.prop.groups");
-    auto as_conststr = eg_anno.TryAs<const char*>();
-    const char* eg = "";
-    if( as_conststr )
-        eg = as_conststr.value();
+    auto eg_anno                                        = pclass->Description().classAnnotation("editor.prop.groups");
+    auto as_conststr                                    = eg_anno.TryAs<const char*>();
+    const char* eg                                      = "";
+    if (as_conststr)
+      eg = as_conststr.value();
     if (strlen(eg)) {
       FixedString<1024> str_rep = eg;
       str_rep.replace_in_place("//", "// ");
@@ -392,8 +414,8 @@ void ObjModel::EnumerateNodes(sortnode& in_node, object::ObjectClass* the_class)
         if (aspath.HasUrlBase()) { // START NEW GROUP
           Groups.push_back(yo());
           orkvector<yo>::iterator itnew = Groups.end() - 1;
-          curtoklist = &itnew->mTokens;
-          itnew->mUrlType = group;
+          curtoklist                    = &itnew->mTokens;
+          itnew->mUrlType               = group;
         } else { // ADD TO LAST GROUP
           if (curtoklist) {
             curtoklist->push_back(group);
@@ -404,29 +426,29 @@ void ObjModel::EnumerateNodes(sortnode& in_node, object::ObjectClass* the_class)
       // process groups
       /////////////////////////////////////////////////
       for (const auto& grp : Groups) {
-        const std::string& UrlType = grp.mUrlType;
+        const std::string& UrlType    = grp.mUrlType;
         const tokenlist& iter_toklist = grp.mTokens;
         tokenlist::const_iterator itp = iter_toklist.end();
-        sortnode* pnode = 0;
+        sortnode* pnode               = 0;
         if (UrlType.find("grp") != std::string::npos) { // GroupNode
-          itp = iter_toklist.begin();
+          itp                          = iter_toklist.begin();
           const std::string& GroupName = (*itp);
           std::pair<std::string, sortnode*> the_pair;
-          the_pair.first = GroupName;
+          the_pair.first  = GroupName;
           the_pair.second = new sortnode;
           in_node.GroupVect.push_back(the_pair);
-          pnode = (in_node.GroupVect.end() - 1)->second;
+          pnode       = (in_node.GroupVect.end() - 1)->second;
           pnode->Name = GroupName;
           itp++;
         } else if (UrlType.find("sort") != std::string::npos) { // SortNode
           pnode = &in_node;
-          itp = iter_toklist.begin();
+          itp   = iter_toklist.begin();
         }
         if (pnode)
           for (; itp != iter_toklist.end(); itp++) {
-            const std::string& str = (*itp);
+            const std::string& str                                   = (*itp);
             ork::reflect::Description::PropertyMapType::iterator itf = propmap.find(str.c_str());
-            ork::reflect::IObjectProperty* prop = (itf != propmap.end()) ? itf->second : 0;
+            ork::reflect::IObjectProperty* prop                      = (itf != propmap.end()) ? itf->second : 0;
             if (prop) {
               pnode->PropVect.push_back(std::make_pair(str.c_str(), prop));
             }
@@ -434,13 +456,13 @@ void ObjModel::EnumerateNodes(sortnode& in_node, object::ObjectClass* the_class)
       }
       /////////////////////////////////////////////////
     } else
-      for (auto it : propmap ) {
+      for (auto it : propmap) {
         ///////////////////////////////////////////////////
         // editor.object.props
         ///////////////////////////////////////////////////
         std::set<std::string> allowed_props;
         auto obj_props_anno = the_class->Description().classAnnotation("editor.object.props");
-        if ( auto as_str = obj_props_anno.TryAs<std::string>() ) {
+        if (auto as_str = obj_props_anno.TryAs<std::string>()) {
           auto propnameset = as_str.value();
           if (propnameset.length()) {
             auto pvect = ork::SplitString(propnameset, ' ');
@@ -449,7 +471,7 @@ void ObjModel::EnumerateNodes(sortnode& in_node, object::ObjectClass* the_class)
           }
         }
         ///////////////////////////////////////////////////
-        bool prop_ok = true;
+        bool prop_ok            = true;
         const ConstString& Name = it.first;
         if (allowed_props.size()) {
           std::string namstr(Name.c_str());
@@ -480,8 +502,8 @@ GedItemNode* ObjModel::CreateNode(const std::string& Name, const reflect::IObjec
   /////////////////////////////////////////////////////////////////////////
   if (AnnoEditorClass) {
     ork::object::ObjectClass* pclass = rtti::safe_downcast<ork::object::ObjectClass*>(AnnoEditorClass);
-    ork::rtti::ICastable* factory = pclass->CreateObject();
-    GedFactory* qf = rtti::safe_downcast<GedFactory*>(factory);
+    ork::rtti::ICastable* factory    = pclass->CreateObject();
+    GedFactory* qf                   = rtti::safe_downcast<GedFactory*>(factory);
     if (qf) {
       return qf->CreateItemNode(*this, Name.c_str(), prop, pobject);
     }
@@ -489,7 +511,7 @@ GedItemNode* ObjModel::CreateNode(const std::string& Name, const reflect::IObjec
   /////////////////////////////////////////////////////////////////////////
   const reflect::IObjectArrayProperty* ArrayProp = rtti::autocast(prop);
   /////////////////////////////////////////////////////////////////////////
-  ConstString anno_ucdclass = prop->GetAnnotation("ged.userchoice.delegate");
+  ConstString anno_ucdclass  = prop->GetAnnotation("ged.userchoice.delegate");
   bool HasUserChoiceDelegate = (anno_ucdclass.length());
   /////////////////////////////////////////////////////////////////////////
   if (const reflect::IObjectPropertyType<Char8>* c8prop = rtti::autocast(prop))
@@ -563,7 +585,7 @@ GedItemNode* ObjModel::CreateNode(const std::string& Name, const reflect::IObjec
 
 void ObjModel::Attach(ork::Object* root_object, bool bclearstack, GedItemNode* top_root_item) {
   this->mRootObject = root_object;
-  bool bnewobj = (mCurrentObject != mRootObject);
+  bool bnewobj      = (mCurrentObject != mRootObject);
 
   auto ged_widget = GetGedWidget();
 
@@ -604,13 +626,19 @@ void ObjModel::Attach(ork::Object* root_object, bool bclearstack, GedItemNode* t
 
 //////////////////////////////////////////////////////////////////////////////
 
-void ObjModel::Detach() { mRootObject = 0; }
+void ObjModel::Detach() {
+  mRootObject = 0;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjModel::PushBrowseStack(ork::Object* pobj) { mBrowseStack.push(pobj); }
+void ObjModel::PushBrowseStack(ork::Object* pobj) {
+  mBrowseStack.push(pobj);
+}
 
-void ObjModel::PopBrowseStack() { mBrowseStack.pop(); }
+void ObjModel::PopBrowseStack() {
+  mBrowseStack.pop();
+}
 
 ork::Object* ObjModel::BrowseStackTop() const {
   ork::Object* rval = 0;
@@ -619,7 +647,9 @@ ork::Object* ObjModel::BrowseStackTop() const {
   return rval;
 }
 
-int ObjModel::StackSize() const { return mBrowseStack.size(); }
+int ObjModel::StackSize() const {
+  return mBrowseStack.size();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -638,7 +668,7 @@ void ObjModel::Dump(const char* header) const {
       GedItemNode* pchild = node->GetItem(ic);
       ItemQueue.push(pchild);
     }
-    orkprintf("NODE<%08x> Name<%s>\n", node, node->mName.c_str());
+    orkprintf("NODE<%08x> Name<%s>\n", node, node->_propname.c_str());
   }
 }
 

@@ -18,6 +18,9 @@ namespace ork { namespace lev2 {
 struct FontDesc {
   std::string mFontName;
   std::string mFontFile;
+
+  int stringWidth(int numchars) const;
+
   int miTexWidth;
   int miTexHeight;
   int miCellWidth;
@@ -31,8 +34,16 @@ struct FontDesc {
   int miAdvanceHeight;
 
   FontDesc()
-      : miCellWidth(0), miCellHeight(0), miCharWidth(0), miCharHeight(0), miCharOffsetX(0), miCharOffsetY(0), miYShift(0),
-        miAdvanceWidth(0), miAdvanceHeight(0) {}
+      : miCellWidth(0)
+      , miCellHeight(0)
+      , miCharWidth(0)
+      , miCharHeight(0)
+      , miCharOffsetX(0)
+      , miCharOffsetY(0)
+      , miYShift(0)
+      , miAdvanceWidth(0)
+      , miAdvanceHeight(0) {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -42,7 +53,11 @@ struct CharDesc {
   int miRow;
   int miCol;
 
-  CharDesc() : ch(0), miRow(0), miCol(0) {}
+  CharDesc()
+      : ch(0)
+      , miRow(0)
+      , miCol(0) {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -58,8 +73,12 @@ public:
   Font(const std::string& fontname, const std::string& filename);
 
   void LoadFromDisk(GfxTarget* pTARG, const FontDesc& fd);
-  const FontDesc& GetFontDesc(void) { return mFontDesc; }
-  GfxMaterial* GetMaterial(void) { return mpMaterial; }
+  const FontDesc& GetFontDesc(void) {
+    return mFontDesc;
+  }
+  GfxMaterial* GetMaterial(void) {
+    return mpMaterial;
+  }
   void QueChar(GfxTarget* pTarg, VtxWriter<SVtxV12C4T16>& vw, int ix, int iy, int iu, int iv, U32 ucolor);
 
   /////////////////////////////////////////////
@@ -87,7 +106,9 @@ public: //
   static void AddFont(GfxTarget* pTARG, const FontDesc& fdesc);
   static void DrawText(GfxTarget* pTARG, int iX, int iY, const char* pFmt, ...);
 
-  static Font* GetCurrentFont(void) { return GetRef().mpCurrentFont; }
+  static Font* GetCurrentFont(void) {
+    return GetRef().mpCurrentFont;
+  }
 
   static Font* GetFont(const std::string& name) {
     Font* pFont = OldStlSchoolFindValFromKey(GetRef().mFontMap, name, (Font*)0);

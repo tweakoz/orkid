@@ -25,18 +25,18 @@ template <typename IODriver> void GedAssetNode<IODriver>::OnMouseDoubleClicked(c
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename IODriver> void GedAssetNode<IODriver>::DoDraw(lev2::GfxTarget* pTARG) {
-  int ilabw = GetNameWidth() + 8;
+  int pnamew = propnameWidth() + 16;
   // GedItemNode::Draw( pTARG );
-  GetSkin()->DrawBgBox(this, miX + ilabw, miY, miW - ilabw, miH, GedSkin::ESTYLE_BACKGROUND_2);
-  GetSkin()->DrawText(this, miX + ilabw, miY + 2, mLabel.c_str());
-  GetSkin()->DrawText(this, miX + 6, miY + 2, mName.c_str());
+  GetSkin()->DrawBgBox(this, miX + pnamew, miY, miW - pnamew, miH, GedSkin::ESTYLE_BACKGROUND_2);
+  GetSkin()->DrawText(this, miX + pnamew, miY + 2, _content.c_str());
+  GetSkin()->DrawText(this, miX + 6, miY + 2, _propname.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename IODriver> void GedAssetNode<IODriver>::OnCreateObject() {
   ConstString annoclass = GetOrkProp()->GetAnnotation("editor.assetclass");
-  ConstString annotype = GetOrkProp()->GetAnnotation("editor.assettype");
+  ConstString annotype  = GetOrkProp()->GetAnnotation("editor.assettype");
 
   ork::asset::AssetClass* passetclass = rtti::autocast(ork::asset::AssetClass::FindClass(annoclass));
   OrkAssert(passetclass);
@@ -66,7 +66,7 @@ template <typename IODriver> void GedAssetNode<IODriver>::OnCreateObject() {
 
     if (pact) {
       QVariant UserData = pact->data();
-      QString UserName = UserData.toString();
+      QString UserName  = UserData.toString();
       std::string pname = UserName.toStdString();
 
       file::Path apath(pname.c_str());
@@ -124,7 +124,7 @@ template <typename IODriver> void GedAssetNode<IODriver>::OnCreateObject() {
         }
         lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
         OrkAssert(passet);
-        //mModel.SigNewObject(passet);
+        // mModel.SigNewObject(passet);
       }
       // SetLabel();
     }
@@ -143,9 +143,9 @@ template <typename IODriver> void GedAssetNode<IODriver>::SetLabel() {
   printf("passet<%p> nam<%s>\n", passet, (passet != 0) ? passet->GetName().c_str() : nullptr);
 
   if (passet) {
-    mLabel = ork::CreateFormattedString("%s<%s>", anno.c_str(), passet->GetName().c_str());
+    _content = ork::CreateFormattedString("%s<%s>", anno.c_str(), passet->GetName().c_str());
   } else {
-    mLabel = ork::CreateFormattedString("%s<none>", anno.c_str());
+    _content = ork::CreateFormattedString("%s<none>", anno.c_str());
   }
 }
 
@@ -153,7 +153,8 @@ template <typename IODriver> void GedAssetNode<IODriver>::SetLabel() {
 
 template <typename IODriver>
 GedAssetNode<IODriver>::GedAssetNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, Object* obj)
-    : GedItemNode(mdl, name, prop, obj), mIoDriver(mdl, prop, obj) {
+    : GedItemNode(mdl, name, prop, obj)
+    , mIoDriver(mdl, prop, obj) {
   mdl.GetGedWidget()->PushItemNode(this);
   mdl.GetGedWidget()->PopItemNode(this);
 }

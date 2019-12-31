@@ -18,6 +18,9 @@
 #include <GL/glx.h>
 
 #include <QtGui/qpa/qplatformnativeinterface.h>
+extern "C" {
+#include <X11/extensions/Xrandr.h>
+}
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxTargetGL, "GfxTargetGL")
 
@@ -28,6 +31,8 @@ extern bool gbVSYNC;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
+
+bool _hakHIDPI = false;
 
 ork::MpMcBoundedQueue<void*> GfxTargetGL::mLoadTokens;
 
@@ -140,17 +145,18 @@ static GLXFBConfig gl_this_fb_config;
 static glXcca_proc_t GLXCCA    = nullptr;
 PFNGLPATCHPARAMETERIPROC GLPPI = nullptr;
 
-static int gl46_context_attribs[] = {GLX_CONTEXT_MAJOR_VERSION_ARB,
-                                     4,
-                                     GLX_CONTEXT_MINOR_VERSION_ARB,
-                                     6,
-                                     GLX_CONTEXT_PROFILE_MASK_ARB,
-                                     GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+static int gl46_context_attribs[] = {
+    GLX_CONTEXT_MAJOR_VERSION_ARB,
+    4,
+    GLX_CONTEXT_MINOR_VERSION_ARB,
+    6,
+    GLX_CONTEXT_PROFILE_MASK_ARB,
+    GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
 #if 1
-                                     GLX_CONTEXT_FLAGS_ARB,
-                                     GLX_CONTEXT_DEBUG_BIT_ARB,
+    GLX_CONTEXT_FLAGS_ARB,
+    GLX_CONTEXT_DEBUG_BIT_ARB,
 #endif
-                                     None};
+    None};
 
 void check_debug_log() {
   GLuint count    = 1024; // max. num. of messages that will be read from the log
@@ -376,26 +382,6 @@ void GfxTargetGL::InitializeContext(GfxWindow* pWin, CTXBASE* pctxbase) {
 
   // auto pvis = (XVisualInfo*) x11info.visual();
   XVisualInfo* vinfo = GlIxPlatformObject::gVisInfo;
-  ///////////////////////
-  int DWMM    = DisplayWidthMM(x_dpy, x_screen);
-  int DHMM    = DisplayHeightMM(x_dpy, x_screen);
-  int RESW    = DisplayWidth(x_dpy, x_screen);
-  int RESH    = DisplayHeight(x_dpy, x_screen);
-  float CDPIX = float(RESW) / float(DWMM) * 25.4f;
-  float CDPIY = float(RESH) / float(DHMM) * 25.4f;
-  int DPIX    = QX11Info::appDpiX(x_screen);
-  int DPIY    = QX11Info::appDpiY(x_screen);
-  // printf( "GfxTargetGL<%p> dpy<%p> screen<%d> vis<%p>\n", this, x_dpy, x_screen, vinfo );
-  // printf( "dpi <%d %d>\n", DPIX, DPIY );
-  // printf( "res <%d %d>\n", RESW, RESH );
-  // printf( "siz <%d %d>\n", DWMM, DHMM );
-  // printf( "cpi <%g %g>\n", CDPIX, CDPIY );
-  float avgdpi = (CDPIX + CDPIY) * 0.5f;
-  _hiDPI       = avgdpi > 180.0;
-  if (_hiDPI) {
-    // printf("HIDPI enabled\n");
-    ork::lev2::_HIDPI = _hiDPI; // todo remove when the correct plumbing is in place
-  }
 
   plato->mGlxContext = GLXCCA(x_dpy, gl_this_fb_config, plato->gShareMaster, GL_TRUE, gl46_context_attribs);
 
@@ -427,6 +413,108 @@ void GfxTargetGL::InitializeContext(GfxWindow* pWin, CTXBASE* pctxbase) {
 
   mFbI.SetThisBuffer(pWin);
   mFbI.SetOffscreenTarget(false);
+}
+
+/////////////////////////////////////////////////////////////////////////
+// todo :: recomputeHIDPI on window move event
+/////////////////////////////////////////////////////////////////////////
+
+void recomputeHIDPI(void* plato) {
+
+  auto ixplato = (GlIxPlatformObject*)plato;
+
+  ///////////////////////
+  Display* x_dpy = QX11Info::display();
+  int x_screen   = QX11Info::appScreen();
+  int x_window   = ixplato->mXWindowId;
+  ///////////////////////
+  int winpos_x = 0;
+  int winpos_y = 0;
+  Window child;
+  Window root_window = DefaultRootWindow(x_dpy);
+  XTranslateCoordinates(x_dpy, x_window, root_window, 0, 0, &winpos_x, &winpos_y, &child);
+  XWindowAttributes xwa;
+  XGetWindowAttributes(x_dpy, x_window, &xwa);
+  winpos_x -= xwa.x;
+  winpos_y -= xwa.y;
+  // printf("winx: %d winy: %d\n", winpos_x, winpos_y);
+  ///////////////////////
+  // int DWMM       = DisplayWidthMM(x_dpy, x_screen);
+  // int DHMM       = DisplayHeightMM(x_dpy, x_screen);
+  // int RESW       = DisplayWidth(x_dpy, x_screen);
+  // int RESH       = DisplayHeight(x_dpy, x_screen);
+  // float CDPIX    = float(RESW) / float(DWMM) * 25.4f;
+  // float CDPIY    = float(RESH) / float(DHMM) * 25.4f;
+  // int DPIX       = QX11Info::appDpiX(x_screen);
+  // int DPIY       = QX11Info::appDpiY(x_screen);
+  // float avgdpi = (CDPIX + CDPIY) * 0.5f;
+  // printf("qx11dpi<%d %d>\n", DPIX, DPIY);
+  //_hakHIDPI = avgdpi > 180.0;
+
+  XRRScreenResources* xrrscreen = XRRGetScreenResources(x_dpy, x_window);
+
+  // printf("x_dpy<%p> x_window<%d> xrrscreen<%p>\n", x_dpy, x_window, xrrscreen);
+
+  if (xrrscreen) {
+    for (int iscres = xrrscreen->noutput; iscres > 0;) {
+      --iscres;
+      XRROutputInfo* info = XRRGetOutputInfo(x_dpy, xrrscreen, xrrscreen->outputs[iscres]);
+      double mm_width     = info->mm_width;
+      double mm_height    = info->mm_height;
+
+      RRCrtc crtcid          = info->crtc;
+      XRRCrtcInfo* crtc_info = XRRGetCrtcInfo(x_dpy, xrrscreen, crtcid);
+
+      /*printf(
+          "iscres<%d> info<%p> mm_width<%g> mm_height<%g> crtcid<%lu> crtc_info<%p>\n",
+          iscres,
+          info,
+          mm_width,
+          mm_height,
+          crtcid,
+          crtc_info);*/
+
+      if (crtc_info) {
+        double pix_left   = crtc_info->x;
+        double pix_top    = crtc_info->y;
+        double pix_width  = crtc_info->width;
+        double pix_height = crtc_info->height;
+        int rot           = crtc_info->rotation;
+
+        if ((winpos_x >= pix_left) and (winpos_x < (pix_left + pix_width)) and (winpos_y >= pix_top) and
+            (winpos_y < (pix_left + pix_height))) {
+          float CDPIX  = pix_width / mm_width * 25.4f;
+          float CDPIY  = pix_height / mm_height * 25.4f;
+          float avgdpi = (CDPIX + CDPIY) * 0.5f;
+          _hakHIDPI    = avgdpi > 180.0f;
+          // printf("_hakHIDPI<%d>\n", int(_hakHIDPI));
+        }
+
+        switch (rot) {
+          case RR_Rotate_0:
+            break;
+          case RR_Rotate_90: //
+            break;
+          case RR_Rotate_180:
+            break;
+          case RR_Rotate_270:
+            break;
+        }
+
+        // printf("  x<%g> y<%g> w<%g> h<%g> rot<%d> avgdpi<%g>\n", pix_left, pix_top, pix_width, pix_height, rot, avgdpi);
+
+        XRRFreeCrtcInfo(crtc_info);
+      }
+
+      XRRFreeOutputInfo(info);
+    }
+  }
+} // namespace lev2
+
+/////////////////////////////////////////////////////////////////////////
+
+bool _HIDPI() {
+  return _hakHIDPI;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -515,7 +603,7 @@ void* GfxTargetGL::DoBeginLoad() {
 
   bool bOK = glXMakeCurrent(loadctx->mDisplay, loadctx->mWindow, loadctx->mGlxContext);
 
-  //printf("BEGINLOAD loadctx<%p> glx<%p> OK<%d>\n", loadctx, loadctx->mGlxContext, int(bOK));
+  // printf("BEGINLOAD loadctx<%p> glx<%p> OK<%d>\n", loadctx, loadctx->mGlxContext, int(bOK));
 
   OrkAssert(bOK);
 
@@ -526,7 +614,7 @@ void* GfxTargetGL::DoBeginLoad() {
 
 void GfxTargetGL::DoEndLoad(void* ploadtok) {
   GlxLoadContext* loadctx = (GlxLoadContext*)ploadtok;
-  //printf("ENDLOAD loadctx<%p> glx<%p>\n", loadctx, loadctx->mGlxContext);
+  // printf("ENDLOAD loadctx<%p> glx<%p>\n", loadctx, loadctx->mGlxContext);
   mLoadTokens.push(ploadtok);
 }
 

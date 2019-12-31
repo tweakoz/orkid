@@ -48,7 +48,7 @@ IF(${APPLE})
     list(APPEND libs "-framework ApplicationServices" "-framework AppKit" )
     list(APPEND libs glfw.3 objc)
 ELSEIF(${UNIX})
-    list(APPEND libs rt dl pthread GL Qt5::X11Extras openvr_api )
+    list(APPEND libs rt dl pthread GL Qt5::X11Extras openvr_api Xrandr )
 ENDIF()
 
 list(APPEND libs Qt5::Widgets Qt5::Core Qt5::Gui)

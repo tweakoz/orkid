@@ -62,7 +62,7 @@ IF(${APPLE})
     list(APPEND libs "-framework ApplicationServices" "-framework AppKit" )
     list(APPEND libs glfw.3 objc Qt5::Widgets Qt5::Core Qt5::Gui assimp )
 ELSEIF(${UNIX})
-    list(APPEND libs rt dl pthread python2.7 GL Qt5::X11Extras assimp )
+    list(APPEND libs rt dl pthread python2.7 GL Qt5::X11Extras assimp  )
 ENDIF()
 
 target_link_libraries(ork_tool ${libs})

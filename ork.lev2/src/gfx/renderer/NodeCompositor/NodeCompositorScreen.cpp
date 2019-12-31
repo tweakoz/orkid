@@ -23,7 +23,7 @@ ImplementReflectionX(ork::lev2::ScreenOutputCompositingNode, "ScreenOutputCompos
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void ScreenOutputCompositingNode::describeX(class_t* c) {
-  c->memberProperty("Layer",&ScreenOutputCompositingNode::_layername);
+  c->memberProperty("Layer", &ScreenOutputCompositingNode::_layername);
 }
 ///////////////////////////////////////////////////////////////////////////////
 struct SCRIMPL {
@@ -31,16 +31,17 @@ struct SCRIMPL {
   SCRIMPL(ScreenOutputCompositingNode* node)
       : _node(node)
       , _camname(AddPooledString("Camera"))
-      , _layers(AddPooledString("All")) {}
+      , _layers(AddPooledString("All")) {
+  }
   ///////////////////////////////////////
   ~SCRIMPL() {
   }
   ///////////////////////////////////////
   void gpuInit(lev2::GfxTarget* pTARG) {
-      if( _needsinit ){
-        _blit2screenmtl.SetUserFx("orkshader://solid", "texcolor");
-        _blit2screenmtl.Init(pTARG);
-        _needsinit = false;
+    if (_needsinit) {
+      _blit2screenmtl.SetUserFx("orkshader://solid", "texcolor");
+      _blit2screenmtl.Init(pTARG);
+      _needsinit = false;
     }
   }
   ///////////////////////////////////////
@@ -48,26 +49,26 @@ struct SCRIMPL {
     auto& ddprops                = drawdata._properties;
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
-    auto CIMPL = drawdata._cimpl;
+    auto CIMPL                   = drawdata._cimpl;
     auto DB                      = RCFD.GetDB();
     GfxTarget* targ              = drawdata.target();
-    int w = targ->GetW();
-    int h = targ->GetH();
-    if( targ->_hiDPI ){
+    int w                        = targ->GetW();
+    int h                        = targ->GetH();
+    if (targ->hiDPI()) {
       w /= 2;
       h /= 2;
     }
     //////////////////////////////////////////////////////
- SRect tgt_rect(0, 0, w, h);
+    SRect tgt_rect(0, 0, w, h);
 
     _CPD.AddLayer("All"_pool);
- _CPD.mbDrawSource = true;
- _CPD.mpFrameTek   = nullptr;
- _CPD.mpCameraName = nullptr;
- _CPD.mpLayerName  = nullptr; // default == "All"
- _CPD._clearColor  = fvec4(0.61, 0, 0, 1);
+    _CPD.mbDrawSource = true;
+    _CPD.mpFrameTek   = nullptr;
+    _CPD.mpCameraName = nullptr;
+    _CPD.mpLayerName  = nullptr; // default == "All"
+    _CPD._clearColor  = fvec4(0.61, 0, 0, 1);
 
-_CPD._cameraMatrices = ddprops["defcammtx"_crcu].Get<const CameraMatrices*>();
+    _CPD._cameraMatrices = ddprops["defcammtx"_crcu].Get<const CameraMatrices*>();
 
     _CPD.SetDstRect(tgt_rect);
     drawdata._properties["OutputWidth"_crcu].Set<int>(w);
@@ -75,7 +76,7 @@ _CPD._cameraMatrices = ddprops["defcammtx"_crcu].Get<const CameraMatrices*>();
     CIMPL->pushCPD(_CPD);
   }
   void endAssemble(CompositorDrawData& drawdata) {
-    auto CIMPL = drawdata._cimpl;
+    auto CIMPL                   = drawdata._cimpl;
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
     CIMPL->popCPD();
@@ -85,23 +86,25 @@ _CPD._cameraMatrices = ddprops["defcammtx"_crcu].Get<const CameraMatrices*>();
   ScreenOutputCompositingNode* _node = nullptr;
   CompositingPassData _CPD;
   ork::lev2::GfxMaterial3DSolid _blit2screenmtl;
-bool _needsinit = true;
+  bool _needsinit = true;
 };
 ///////////////////////////////////////////////////////////////////////////////
-ScreenOutputCompositingNode::ScreenOutputCompositingNode() { _impl = std::make_shared<SCRIMPL>(this); }
-ScreenOutputCompositingNode::~ScreenOutputCompositingNode() {}
-void ScreenOutputCompositingNode::gpuInit(lev2::GfxTarget* pTARG, int iW, int iH)
-{ _impl.Get<std::shared_ptr<SCRIMPL>>()->gpuInit(pTARG);
+ScreenOutputCompositingNode::ScreenOutputCompositingNode() {
+  _impl = std::make_shared<SCRIMPL>(this);
+}
+ScreenOutputCompositingNode::~ScreenOutputCompositingNode() {
+}
+void ScreenOutputCompositingNode::gpuInit(lev2::GfxTarget* pTARG, int iW, int iH) {
+  _impl.Get<std::shared_ptr<SCRIMPL>>()->gpuInit(pTARG);
 }
 void ScreenOutputCompositingNode::beginAssemble(CompositorDrawData& drawdata) {
- _impl.Get<std::shared_ptr<SCRIMPL>>()->beginAssemble(drawdata);
-
+  _impl.Get<std::shared_ptr<SCRIMPL>>()->beginAssemble(drawdata);
 }
-void ScreenOutputCompositingNode::endAssemble(CompositorDrawData& drawdata){
- _impl.Get<std::shared_ptr<SCRIMPL>>()->endAssemble(drawdata);
+void ScreenOutputCompositingNode::endAssemble(CompositorDrawData& drawdata) {
+  _impl.Get<std::shared_ptr<SCRIMPL>>()->endAssemble(drawdata);
 }
-void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata)
-{  drawdata.target()->debugPushGroup("VrCompositingNode::composite");
+void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
+  drawdata.target()->debugPushGroup("VrCompositingNode::composite");
   auto impl = _impl.Get<std::shared_ptr<SCRIMPL>>();
   /////////////////////////////////////////////////////////////////////////////
   // VR compositor
@@ -131,15 +134,16 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata)
         mtl.SetTexture2(nullptr);
         mtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
         mtl._rasterstate.SetBlending(EBLENDING_OFF);
-        this_buf->RenderMatOrthoQuad(vprect,
-                                     quadrect,
-                                     &mtl,
-                                     0.0f,
-                                     0.0f, // u0 v0
-                                     1.0f,
-                                     1.0f, // u1 v1
-                                     nullptr,
-                                     color);
+        this_buf->RenderMatOrthoQuad(
+            vprect,
+            quadrect,
+            &mtl,
+            0.0f,
+            0.0f, // u0 v0
+            1.0f,
+            1.0f, // u1 v1
+            nullptr,
+            color);
         drawdata.target()->debugPopGroup();
       }
     }

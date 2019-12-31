@@ -229,7 +229,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       /////////////////////////
       // gamma correct
       /////////////////////////
-      //rval = pow(rval, vec3(1.0/1.8));
+      rval = pow(rval, vec3(1.0/1.6));
       /////////////////////////
 
 

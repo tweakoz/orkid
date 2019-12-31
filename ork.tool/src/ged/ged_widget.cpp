@@ -20,295 +20,252 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool { namespace ged {
 ///////////////////////////////////////////////////////////////////////////////
-void GedWidget::Describe()
-{
-	RegisterAutoSignal( GedWidget, Repaint );
+void GedWidget::Describe() {
+  RegisterAutoSignal(GedWidget, Repaint);
 
-	RegisterAutoSlot( GedWidget, Repaint );
-	RegisterAutoSlot( GedWidget, ModelInvalidated );
+  RegisterAutoSlot(GedWidget, Repaint);
+  RegisterAutoSlot(GedWidget, ModelInvalidated);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 orkvector<GedSkin*> InstantiateSkins();
 
-void GedWidget::IncrementSkin()
-{
-	miSkin++;
-	DoResize();
+void GedWidget::IncrementSkin() {
+  miSkin++;
+  DoResize();
 }
 
-GedWidget::GedWidget( ObjModel& mdl )
-	: mModel( mdl )
-	, mRootItem( 0 )
-	, miW(0)
-	, miH(0)
-	, miRootH( 0 )
-	, mViewport( 0 )
-	, mStackHash(0)
-	, mRootObject(0)
-	, miSkin(1)
-	, mbDeleteModel(false)
-	, ConstructAutoSlot(Repaint)
-	, ConstructAutoSlot(ModelInvalidated)
-{
-	SetupSignalsAndSlots();
+GedWidget::GedWidget(ObjModel& mdl)
+    : mModel(mdl)
+    , mRootItem(0)
+    , miW(0)
+    , miH(0)
+    , miRootH(0)
+    , mViewport(0)
+    , mStackHash(0)
+    , mRootObject(0)
+    , miSkin(1)
+    , mbDeleteModel(false)
+    , ConstructAutoSlot(Repaint)
+    , ConstructAutoSlot(ModelInvalidated) {
+  SetupSignalsAndSlots();
 
-	mdl.SetGedWidget(this);
-	mRootItem = new GedRootNode( mdl, "Root", 0, 0 );
-	PushItemNode( mRootItem );
+  mdl.SetGedWidget(this);
+  mRootItem = new GedRootNode(mdl, "Root", 0, 0);
+  PushItemNode(mRootItem);
 
-	orkvector<GedSkin*> skins = InstantiateSkins();
+  orkvector<GedSkin*> skins = InstantiateSkins();
 
-	for( orkvector<GedSkin*>::iterator it=skins.begin(); it!=skins.end(); it++ )
-	{
-		GedSkin* pskin = (*it);
-		AddSkin(pskin);
-	}
+  for (orkvector<GedSkin*>::iterator it = skins.begin(); it != skins.end(); it++) {
+    GedSkin* pskin = (*it);
+    AddSkin(pskin);
+  }
 
-
-	/*object::Connect(	& this->GetSigRepaint(),
-						& mCTQT->GetSlotRepaint() );*/
+  /*object::Connect(	& this->GetSigRepaint(),
+                      & mCTQT->GetSlotRepaint() );*/
 }
 
-GedWidget::~GedWidget()
-{
-	DisconnectAll();
-	if( mRootItem )
-	{
-		delete mRootItem;
-		mRootItem = 0;
-	}
-	if( mbDeleteModel )
-	{
-		delete & mModel;
-	}
+GedWidget::~GedWidget() {
+  DisconnectAll();
+  if (mRootItem) {
+    delete mRootItem;
+    mRootItem = 0;
+  }
+  if (mbDeleteModel) {
+    delete &mModel;
+  }
 }
 
+void GedWidget::PropertyInvalidated(ork::Object* pobj, const reflect::IObjectProperty* prop) {
+  if (mRootItem) {
+    orkstack<GedItemNode*> stackofnodes;
+    stackofnodes.push(mRootItem);
 
+    while (false == stackofnodes.empty()) {
+      GedItemNode* pnode = stackofnodes.top();
+      stackofnodes.pop();
 
-void GedWidget::PropertyInvalidated( ork::Object* pobj, const reflect::IObjectProperty* prop )
-{
-	if( mRootItem )
-	{
-		orkstack<GedItemNode*> stackofnodes;
-		stackofnodes.push(mRootItem);
-
-		while( false == stackofnodes.empty() )
-		{
-			GedItemNode* pnode = stackofnodes.top();
-			stackofnodes.pop();
-
-			if( pnode->GetOrkObj() == pobj )
-			{
-				if( pnode->GetOrkProp() == prop )
-				{
-					pnode->Invalidate();
-				}
-			}
-			int inumkids = pnode->GetNumItems();
-			for( int i=0; i<inumkids; i++ )
-			{
-				GedItemNode* pkid = pnode->GetItem(i);
-				stackofnodes.push(pkid);
-			}
-		}
-	}
-	SlotRepaint();
+      if (pnode->GetOrkObj() == pobj) {
+        if (pnode->GetOrkProp() == prop) {
+          pnode->Invalidate();
+        }
+      }
+      int inumkids = pnode->GetNumItems();
+      for (int i = 0; i < inumkids; i++) {
+        GedItemNode* pkid = pnode->GetItem(i);
+        stackofnodes.push(pkid);
+      }
+    }
+  }
+  SlotRepaint();
 }
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-void GedWidget::SlotRepaint( )
-{
-	//printf( "GedWidget::SlotRepaint\n" );
+void GedWidget::SlotRepaint() {
+  // printf( "GedWidget::SlotRepaint\n" );
   GetViewport()->onInvalidate();
 }
 
-void GedWidget::SlotModelInvalidated( )
-{
-	//printf( "GedWidget::SlotModelInvalidated\n" );
+void GedWidget::SlotModelInvalidated() {
+  // printf( "GedWidget::SlotModelInvalidated\n" );
   GetViewport()->onInvalidate();
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-U64 GedWidget::GetStackHash() const
-{
-	return mStackHash;
+U64 GedWidget::GetStackHash() const {
+  return mStackHash;
 }
 
-void GedWidget::ComputeStackHash()
-{
-	//const orkstack<GedItemNode*>& c = mItemStack._Get_container();
+void GedWidget::ComputeStackHash() {
+  // const orkstack<GedItemNode*>& c = mItemStack._Get_container();
 
-	U64 rval = 0;
-	boost::Crc64 the_hash;
+  U64 rval = 0;
+  boost::Crc64 the_hash;
 
-	int isize = (int) mItemStack.size();
+  int isize = (int)mItemStack.size();
 
-	the_hash.accumulateItem<ObjModel*>( &mModel );
-	the_hash.accumulateItem<int>( isize );
+  the_hash.accumulateItem<ObjModel*>(&mModel);
+  the_hash.accumulateItem<int>(isize);
 
-	int idx = 0;
-	for( std::deque<GedItemNode*>::const_iterator it=mItemStack.begin(); it!=mItemStack.end(); it++ )
-	{
-		const GedItemNode* pnode = *(it);
+  int idx = 0;
+  for (std::deque<GedItemNode*>::const_iterator it = mItemStack.begin(); it != mItemStack.end(); it++) {
+    const GedItemNode* pnode = *(it);
 
-		const GedItemNode::NameType& yo = pnode->mName;
+    const char* pname = pnode->_propname.c_str();
 
-		const char* pname = yo.c_str();
+    size_t ilen = pnode->_propname.length();
 
-		int ilen = (int)strlen( pname );
+    the_hash.accumulate(pname, ilen);
+    the_hash.accumulateItem<int>(idx);
 
-		the_hash.accumulate(pname,ilen);
-		the_hash.accumulateItem<int>( idx );
-
-		idx++;
-
-	}
-	the_hash.finish();
-	mStackHash = the_hash.result();// | (the_hash.crc1<<32);
+    idx++;
+  }
+  the_hash.finish();
+  mStackHash = the_hash.result(); // | (the_hash.crc1<<32);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-void GedWidget::OnSelectionChanged()
-{
-	//orkprintf( "SelectionChanged\n" );
+void GedWidget::OnSelectionChanged() {
+  // orkprintf( "SelectionChanged\n" );
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-GedItemNode* GedWidget::ParentItemNode() const
-{
-	return mItemStack.front();
+GedItemNode* GedWidget::ParentItemNode() const {
+  return mItemStack.front();
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-void GedWidget::PushItemNode(GedItemNode*qw)
-{
-	mItemStack.push_front(qw);
-	ComputeStackHash();
+void GedWidget::PushItemNode(GedItemNode* qw) {
+  mItemStack.push_front(qw);
+  ComputeStackHash();
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-void GedWidget::PopItemNode(GedItemNode*qw)
-{
-	OrkAssert( mItemStack.front() == qw );
-	mItemStack.pop_front();
-	ComputeStackHash();
+void GedWidget::PopItemNode(GedItemNode* qw) {
+  OrkAssert(mItemStack.front() == qw);
+  mItemStack.pop_front();
+  ComputeStackHash();
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-void GedWidget::AddChild(GedItemNode*pw)
-{
-	//printf( "GedWidget<%p> AddChild<%p>\n", this, pw );
+void GedWidget::AddChild(GedItemNode* pw) {
+  // printf( "GedWidget<%p> AddChild<%p>\n", this, pw );
 
-	GedItemNode* TopItem = (mItemStack.size()>0) ? mItemStack.front() : 0;
-	if( TopItem==0 ) // our root item widget
-	{
-	}
-	else
-	{	TopItem->AddItem( pw );
-	}
+  GedItemNode* TopItem = (mItemStack.size() > 0) ? mItemStack.front() : 0;
+  if (TopItem == 0) // our root item widget
+  {
+  } else {
+    TopItem->AddItem(pw);
+  }
 }
 //////////////////////////////////////////////////////////////////////////////
 
-void GedWidget::DoResize()
-{
-	if( mRootItem )
-	{
-		int inum = mRootItem->GetNumItems();
-		miRootH = mRootItem->CalcHeight();
-		mRootItem->Layout( 2, 2, miW-4, miH-4);
-		//printf( "GedWidget<%p>::DoResize() dims<%d %d> miRootH<%d> inumitems<%d>\n", this, miW, miH, miRootH, inum );
-	}
-	else
-	{
-		miRootH = 0;
-	}
+void GedWidget::DoResize() {
+  if (mRootItem) {
+    int inum = mRootItem->GetNumItems();
+    miRootH  = mRootItem->CalcHeight();
+    mRootItem->Layout(2, 2, miW - 4, miH - 4);
+    // printf( "GedWidget<%p>::DoResize() dims<%d %d> miRootH<%d> inumitems<%d>\n", this, miW, miH, miRootH, inum );
+  } else {
+    miRootH = 0;
+  }
 }
 
-void GedWidget::SetDims( int iw, int ih )
-{
-	miW=iw;
-	miH=ih;
-	DoResize();
+void GedWidget::SetDims(int iw, int ih) {
+  miW = iw;
+  miH = ih;
+  DoResize();
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-void GedWidget::Attach( ork::Object* obj )
-{
-	DoResize();
+void GedWidget::Attach(ork::Object* obj) {
+  DoResize();
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-void GedWidget::Draw( lev2::GfxTarget* pTARG, int iw, int ih, int iscrolly )
-{
-	///////////////////////////////////////////////
-	//miW = iw;
-	//miH = ih;
-	GedItemNode* root = GetRootItem();
-	///////////////////////////////////////////////
-	//if( false == pTARG->FBI()->IsPickState() )
-	//{
-	//	root->Layout( 2, 2, miW-4, miH-4 );
-	//}
-	///////////////////////////////////////////////
-	GetSkin()->SetScrollY( iscrolly );
-	GetSkin()->Begin(pTARG,mViewport);
-	{
-		orkstack<GedItemNode*> NodeStack;
-		NodeStack.push( root );
+void GedWidget::Draw(lev2::GfxTarget* pTARG, int iw, int ih, int iscrolly) {
+  ///////////////////////////////////////////////
+  // miW = iw;
+  // miH = ih;
+  GedItemNode* root = GetRootItem();
+  ///////////////////////////////////////////////
+  // if( false == pTARG->FBI()->IsPickState() )
+  //{
+  //	root->Layout( 2, 2, miW-4, miH-4 );
+  //}
+  ///////////////////////////////////////////////
+  GetSkin()->SetScrollY(iscrolly);
+  GetSkin()->Begin(pTARG, mViewport);
+  {
+    orkstack<GedItemNode*> NodeStack;
+    NodeStack.push(root);
 
-		while( false == NodeStack.empty() )
-		{
-			GedItemNode* item = NodeStack.top();
-			NodeStack.pop();
-			int id = item->GetDepth();
-			///////////////////////////////////////////////
-			int inumc = item->GetNumItems();
-			for( int ic=0; ic<inumc; ic++ )
-			{	GedItemNode* child = item->GetItem(ic);
-				if( child->IsVisible() )
-				{
-					child->SetDepth(id+1);
-					NodeStack.push(child);
-				}
-			}
-			///////////////////////////////////////////////
-			if( item->IsVisible() )
-			{
-				item->Draw( pTARG );
-			}
-			///////////////////////////////////////////////
-		}
-	}
-	GetSkin()->End(pTARG);
-	///////////////////////////////////////////////
+    while (false == NodeStack.empty()) {
+      GedItemNode* item = NodeStack.top();
+      NodeStack.pop();
+      int id = item->GetDepth();
+      ///////////////////////////////////////////////
+      int inumc = item->GetNumItems();
+      for (int ic = 0; ic < inumc; ic++) {
+        GedItemNode* child = item->GetItem(ic);
+        if (child->IsVisible()) {
+          child->SetDepth(id + 1);
+          NodeStack.push(child);
+        }
+      }
+      ///////////////////////////////////////////////
+      if (item->IsVisible()) {
+        item->Draw(pTARG);
+      }
+      ///////////////////////////////////////////////
+    }
+  }
+  GetSkin()->End(pTARG);
+  ///////////////////////////////////////////////
 }
 //////////////////////////////////////////////////////////////////////////////
 
-GedSkin* GedWidget::GetSkin()
-{
-	GedSkin* pret = 0;
-	int inumskins = int(mSkins.size());
-	if( inumskins )
-	{
-		pret = mSkins[miSkin%inumskins];
-	}
-	return pret;
+GedSkin* GedWidget::GetSkin() {
+  GedSkin* pret = 0;
+  int inumskins = int(mSkins.size());
+  if (inumskins) {
+    pret = mSkins[miSkin % inumskins];
+  }
+  return pret;
 }
-void GedWidget::AddSkin( GedSkin* psk)
-{
-	mSkins.push_back(psk);
+void GedWidget::AddSkin(GedSkin* psk) {
+  mSkins.push_back(psk);
 }
 
-} } }
+}}} // namespace ork::tool::ged
