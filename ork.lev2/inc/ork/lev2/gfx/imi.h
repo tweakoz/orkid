@@ -22,6 +22,6 @@ protected:
   DynamicVertexBuffer<SVtxV12C4T16> mVtxBufText;
 
 private:
-  virtual void DoBeginFrame() = 0;
-  virtual void DoEndFrame()   = 0;
+  virtual void _doBeginFrame() = 0;
+  virtual void _doEndFrame()   = 0;
 };

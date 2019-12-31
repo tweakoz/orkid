@@ -13,75 +13,68 @@
 #include <ork/util/hotkey.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 
-INSTANTIATE_TRANSPARENT_RTTI( ork::ui::Viewport, "ui::Viewport" );
+INSTANTIATE_TRANSPARENT_RTTI(ork::ui::Viewport, "ui::Viewport");
 
 namespace ork { namespace ui {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Viewport::Describe()
-{
+void Viewport::Describe() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Viewport::Viewport( const std::string & name, int x, int y, int w, int h, CColor3 color, F32 depth )
-	: Surface(name,x,y,w,h,color,depth)
-	, mpPickBuffer(nullptr)
-{
-	//mWidgetFlags.Enable();
-	//mWidgetFlags.SetState( EUI_WIDGET_OFF );
+Viewport::Viewport(const std::string& name, int x, int y, int w, int h, CColor3 color, F32 depth)
+    : Surface(name, x, y, w, h, color, depth)
+    , mpPickBuffer(nullptr) {
+  // mWidgetFlags.Enable();
+  // mWidgetFlags.SetState( EUI_WIDGET_OFF );
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void Viewport::BeginFrame( lev2::GfxTarget* pTARG )
-{
-	ork::lev2::FontMan::GetRef();
-	//////////////////////////////////////////////////////////
-	//GfxEnv::GetRef().GetGlobalLock().Lock(); // InterThreadLock
-	//////////////////////////////////////////////////////////
+void Viewport::BeginFrame(lev2::GfxTarget* pTARG) {
+  ork::lev2::FontMan::GetRef();
+  //////////////////////////////////////////////////////////
+  // GfxEnv::GetRef().GetGlobalLock().Lock(); // InterThreadLock
+  //////////////////////////////////////////////////////////
   pTARG->debugPushGroup("Viewport::BeginFrame");
 
-	pTARG->BeginFrame();
+  pTARG->beginFrame();
 
-	mbDrawOK = pTARG->IsDeviceAvailable();
+  mbDrawOK = pTARG->IsDeviceAvailable();
 
-	if( mbDrawOK )
-	{
-		//orkprintf( "BEG Viewport::BeginFrame::mbDrawOK\n" );
-		auto MatOrtho = fmtx4::Identity;
-		MatOrtho.Ortho( 0.0f, (F32)GetW(), 0.0f, (F32)GetH(), 0.0f, 1.0f );
+  if (mbDrawOK) {
+    // orkprintf( "BEG Viewport::BeginFrame::mbDrawOK\n" );
+    auto MatOrtho = fmtx4::Identity;
+    MatOrtho.Ortho(0.0f, (F32)GetW(), 0.0f, (F32)GetH(), 0.0f, 1.0f);
 
-		pTARG->MTXI()->SetOrthoMatrix( MatOrtho );
+    pTARG->MTXI()->SetOrthoMatrix(MatOrtho);
 
-		SRect SciRect( miX, miY, miX+miW, miY+miH );
-		pTARG->FBI()->PushScissor( SciRect );
-		pTARG->MTXI()->PushPMatrix( pTARG->MTXI()->GetOrthoMatrix() );
-		pTARG->BindMaterial( lev2::GfxEnv::GetRef().GetDefaultUIMaterial() );
-	}
+    SRect SciRect(miX, miY, miX + miW, miY + miH);
+    pTARG->FBI()->PushScissor(SciRect);
+    pTARG->MTXI()->PushPMatrix(pTARG->MTXI()->GetOrthoMatrix());
+    pTARG->BindMaterial(lev2::GfxEnv::GetRef().GetDefaultUIMaterial());
+  }
   pTARG->debugPopGroup();
-
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void Viewport::EndFrame( lev2::GfxTarget* pTARG )
-{
+void Viewport::EndFrame(lev2::GfxTarget* pTARG) {
   pTARG->debugPushGroup("Viewport::EndFrame");
-	if( mbDrawOK )
-	{
-		//orkprintf( "END Viewport::BeginFrame::mbDrawOK\n" );
-		pTARG->MTXI()->PopPMatrix();
-		pTARG->FBI()->PopScissor();
-		pTARG->BindMaterial( 0 );
-	}
-	pTARG->EndFrame();
-	//////////////////////////////////////////////////////////
-	//GfxEnv::GetRef().GetGlobalLock().UnLock(); // InterThreadLock
-	//////////////////////////////////////////////////////////
+  if (mbDrawOK) {
+    // orkprintf( "END Viewport::BeginFrame::mbDrawOK\n" );
+    pTARG->MTXI()->PopPMatrix();
+    pTARG->FBI()->PopScissor();
+    pTARG->BindMaterial(0);
+  }
+  pTARG->endFrame();
+  //////////////////////////////////////////////////////////
+  // GfxEnv::GetRef().GetGlobalLock().UnLock(); // InterThreadLock
+  //////////////////////////////////////////////////////////
 
-	mbDrawOK = false;
+  mbDrawOK = false;
   pTARG->debugPopGroup();
 }
 
@@ -144,4 +137,4 @@ CUICoord CUICoord::Convert( ECOORDSYS etype ) const
 #endif
 /////////////////////////////////////////////////////////////////////////
 
-} }
+}} // namespace ork::ui

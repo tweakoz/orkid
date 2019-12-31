@@ -59,8 +59,8 @@ public:
 
   void BeginFrame(void);
   void EndFrame(void);
-  virtual void DoBeginFrame(void) = 0;
-  virtual void DoEndFrame(void)   = 0;
+  virtual void _doBeginFrame(void) = 0;
+  virtual void _doEndFrame(void)   = 0;
 
   //////////////////////////////////////////////
 

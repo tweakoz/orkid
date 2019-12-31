@@ -26,28 +26,32 @@
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-using namespace ork::asset;using namespace ork::dataflow;
+using namespace ork::asset;
+using namespace ork::dataflow;
 using namespace ork::lev2;
 
 namespace ork::lev2 {
 template <> void PickBuffer<ork::tool::GraphVP>::Draw(lev2::PixelFetchContext& ctx) {
   mPickIds.clear();
 
-  auto tgt = GetContext();
+  auto tgt  = GetContext();
   auto mtxi = tgt->MTXI();
-  auto fbi = tgt->FBI();
-  auto fxi = tgt->FXI();
-  auto rsi = tgt->RSI();
+  auto fbi  = tgt->FBI();
+  auto fxi  = tgt->FXI();
+  auto rsi  = tgt->RSI();
 
-  int irtgw = mpPickRtGroup->GetW();
-  int irtgh = mpPickRtGroup->GetH();
+  int irtgw  = mpPickRtGroup->GetW();
+  int irtgh  = mpPickRtGroup->GetH();
   int isurfw = mpViewport->GetW();
   int isurfh = mpViewport->GetH();
   if (irtgw != isurfw || irtgh != isurfh) {
     printf("resize ged pickbuf rtgroup<%d %d>\n", isurfw, isurfh);
     this->SetBufferWidth(isurfw);
     this->SetBufferHeight(isurfh);
-    tgt->SetSize(0, 0, isurfw, isurfh);
+    tgt->miX = 0;
+    tgt->miY = 0;
+    tgt->miW = isurfw;
+    tgt->miH = isurfh;
     mpPickRtGroup->Resize(isurfw, isurfh);
   }
   fbi->PushRtGroup(mpPickRtGroup);
@@ -76,15 +80,20 @@ class dflowgraphedit : public tool::ged::IOpsDelegate {
   }
 };
 
-void dflowgraphedit::Describe() {}
+void dflowgraphedit::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dataflow::graph_data* GraphVP::GetTopGraph() { return mDflowEditor.GetTopGraph(); }
+dataflow::graph_data* GraphVP::GetTopGraph() {
+  return mDflowEditor.GetTopGraph();
+}
 
 GraphVP::GraphVP(DataFlowEditor& dfed, tool::ged::ObjModel& objmdl, const std::string& name)
-    : ui::Surface(name, 0, 0, 0, 0, CColor3(0.1f, 0.1f, 0.1f), 0.0f), mObjectModel(objmdl), mDflowEditor(dfed),
-      mGridMaterial(GfxEnv::GetRef().GetLoaderTarget())
+    : ui::Surface(name, 0, 0, 0, 0, CColor3(0.1f, 0.1f, 0.1f), 0.0f)
+    , mObjectModel(objmdl)
+    , mDflowEditor(dfed)
+    , mGridMaterial(GfxEnv::GetRef().GetLoaderTarget())
 
 {
   dflowgraphedit::GetClassStatic();
@@ -122,21 +131,21 @@ GraphVP::GraphVP(DataFlowEditor& dfed, tool::ged::ObjModel& objmdl, const std::s
 ///////////////////////////////////////////////////////////////////////////////
 
 void GraphVP::draw_connections(GfxTarget* pTARG) {
-  auto fbi = pTARG->FBI();
+  auto fbi     = pTARG->FBI();
   bool is_pick = fbi->IsPickState();
 
   if (nullptr == GetTopGraph())
     return;
   const auto& modules = GetTopGraph()->Modules();
-  auto& VB = lev2::GfxEnv::GetSharedDynamicVB();
-  fvec4 uv0(0.0f, 0.0f,0,0);
-  fvec4 uv1(1.0f, 0.0f,0,0);
-  fvec4 uv2(1.0f, 1.0f,0,0);
-  fvec4 uv3(0.0f, 1.0f,0,0);
+  auto& VB            = lev2::GfxEnv::GetSharedDynamicVB();
+  fvec4 uv0(0.0f, 0.0f, 0, 0);
+  fvec4 uv1(1.0f, 0.0f, 0, 0);
+  fvec4 uv2(1.0f, 1.0f, 0, 0);
+  fvec4 uv3(0.0f, 1.0f, 0, 0);
   float fw(kvppickdimw);
   float fh(kvppickdimw);
-  float fwd2 = fw * 0.5f;
-  float fhd2 = fh * 0.5f;
+  float fwd2    = fw * 0.5f;
+  float fhd2    = fh * 0.5f;
   float faspect = float(miW) / float(miH);
   if (false == is_pick) {
     /////////////////////////////////
@@ -149,7 +158,7 @@ void GraphVP::draw_connections(GfxTarget* pTARG) {
       if (pmod) {
         int inuminps = pmod->GetNumInputs();
         for (int ip = 0; ip < inuminps; ip++) {
-          dataflow::inplugbase* pinp = pmod->GetInput(ip);
+          dataflow::inplugbase* pinp            = pmod->GetInput(ip);
           const dataflow::outplugbase* poutplug = pinp->GetExternalOutput();
           if (poutplug)
             ivcount += 6;
@@ -163,20 +172,20 @@ void GraphVP::draw_connections(GfxTarget* pTARG) {
         dataflow::dgmodule* pmod = rtti::autocast(it.second);
         if (pmod) {
           const fvec2& pos = pmod->GetGVPos();
-          int inuminps = pmod->GetNumInputs();
+          int inuminps     = pmod->GetNumInputs();
           for (int ip = 0; ip < inuminps; ip++) {
-            dataflow::inplugbase* pinp = pmod->GetInput(ip);
+            dataflow::inplugbase* pinp            = pmod->GetInput(ip);
             const dataflow::outplugbase* poutplug = pinp->GetExternalOutput();
             if (poutplug) {
-              fvec4 ucolor = fvec4(1,1,1,1);
-              fvec4 ucolor2 = fvec4(1,1,1,1);
+              fvec4 ucolor                = fvec4(1, 1, 1, 1);
+              fvec4 ucolor2               = fvec4(1, 1, 1, 1);
               dataflow::dgmodule* pothmod = rtti::autocast(poutplug->GetModule());
-              const fvec2& othpos = pothmod->GetGVPos();
-              fvec3 vdif = (othpos - pos);
-              fvec3 vdir = vdif.Normal();
-              fvec3 vcross = vdir.Cross(fvec3(0.0f, 0.0f, 1.0f)) * fvec3(1.0f, faspect, 0.0f) * 5.0f;
-              float flength = vdif.Mag();
-              fvec4 uvs(flength / 16.0f, 1.0f,0,0);
+              const fvec2& othpos         = pothmod->GetGVPos();
+              fvec3 vdif                  = (othpos - pos);
+              fvec3 vdir                  = vdif.Normal();
+              fvec3 vcross                = vdir.Cross(fvec3(0.0f, 0.0f, 1.0f)) * fvec3(1.0f, faspect, 0.0f) * 5.0f;
+              float flength               = vdif.Mag();
+              fvec4 uvs(flength / 16.0f, 1.0f, 0, 0);
               SVtxV16T16C16 v0(fvec3(pos + vcross.GetXY()), uv1 * uvs, ucolor2);
               SVtxV16T16C16 v1(fvec3(othpos + vcross.GetXY()), uv0 * uvs, ucolor);
               SVtxV16T16C16 v2(fvec3(othpos - vcross.GetXY()), uv3 * uvs, ucolor);
@@ -212,8 +221,8 @@ struct regstr {
 };
 
 void GraphVP::DoInit(lev2::GfxTarget* pt) {
-  auto fbi = pt->FBI();
-  auto par = fbi->GetThisBuffer();
+  auto fbi     = pt->FBI();
+  auto par     = fbi->GetThisBuffer();
   mpPickBuffer = new lev2::PickBuffer<GraphVP>(par, this, 0, 0, miW, miH, lev2::PickBufferBase::EPICK_FACE_VTX);
 
   mpPickBuffer->CreateContext();
@@ -221,17 +230,17 @@ void GraphVP::DoInit(lev2::GfxTarget* pt) {
   mpPickBuffer->GetContext()->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
 }
 void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
-  auto tgt = drwev.GetTarget();
-  auto mtxi = tgt->MTXI();
-  auto fbi = tgt->FBI();
-  auto fxi = tgt->FXI();
-  auto rsi = tgt->RSI();
-  auto gbi = tgt->GBI();
-  auto& primi = lev2::GfxPrimitives::GetRef();
-  auto defmtl = lev2::GfxEnv::GetDefaultUIMaterial();
-  auto& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
-  bool has_foc = HasMouseFocus();
-  bool is_pick = fbi->IsPickState();
+  auto tgt      = drwev.GetTarget();
+  auto mtxi     = tgt->MTXI();
+  auto fbi      = tgt->FBI();
+  auto fxi      = tgt->FXI();
+  auto rsi      = tgt->RSI();
+  auto gbi      = tgt->GBI();
+  auto& primi   = lev2::GfxPrimitives::GetRef();
+  auto defmtl   = lev2::GfxEnv::GetDefaultUIMaterial();
+  auto& VB      = lev2::GfxEnv::GetSharedDynamicV16T16C16();
+  bool has_foc  = HasMouseFocus();
+  bool is_pick  = fbi->IsPickState();
   auto& modules = GetTopGraph()->Modules();
 
   if (nullptr == GetTopGraph()) {
@@ -250,10 +259,10 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
 
   // pTARG->SetRenderContextFrameData( & framedata );
 
-  fvec4 uv0(0.0f, 0.0f,0,0);
-  fvec4 uv1(1.0f, 0.0f,0,0);
-  fvec4 uv2(1.0f, 1.0f,0,0);
-  fvec4 uv3(0.0f, 1.0f,0,0);
+  fvec4 uv0(0.0f, 0.0f, 0, 0);
+  fvec4 uv1(1.0f, 0.0f, 0, 0);
+  fvec4 uv2(1.0f, 1.0f, 0, 0);
+  fvec4 uv3(0.0f, 1.0f, 0, 0);
 
   //////////////////////////////////////////
 
@@ -323,13 +332,13 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
         }
         vw.UnLock(tgt);
 
-        static const char* assetname = "lev2://textures/dfnodebg2";
+        static const char* assetname         = "lev2://textures/dfnodebg2";
         static lev2::TextureAsset* ptexasset = asset::AssetManager<lev2::TextureAsset>::Load(assetname);
 
         mGridMaterial.SetTexture(ptexasset->GetTexture());
 
-        mGridMaterial.SetColorMode(is_pick ? lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR
-                                           : lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
+        mGridMaterial.SetColorMode(
+            is_pick ? lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR : lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
 
         mGridMaterial._rasterstate.SetBlending(lev2::EBLENDING_OFF);
 
@@ -363,14 +372,14 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
 
         if (pmod) {
           auto module_class = pmod->GetClass();
-          auto class_desc = module_class->Description();
+          auto class_desc   = module_class->Description();
 
           const fvec2& pos = pmod->GetGVPos();
 
           uint64_t pickID = mpPickBuffer->AssignPickId(pmod);
 
-          color = fvec4(1,1,1,1);
-          if( is_pick )
+          color = fvec4(1, 1, 1, 1);
+          if (is_pick)
             color.SetRGBAU64(pickID);
 
           SVtxV16T16C16 v0(fvec3(pos + of0), uv0, color);
@@ -416,9 +425,9 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
             }
           }
 
-          mGridMaterial.SetColorMode(is_pick ? lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR
-                                             : (picon != 0) ? lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR
-                                                            : lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
+          mGridMaterial.SetColorMode(
+              is_pick ? lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR
+                      : (picon != 0) ? lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR : lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
 
           do_blend &= (false == is_pick);
 
@@ -441,11 +450,10 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
           int ireg = pmod->GetOutput(0)->GetRegister() ? pmod->GetOutput(0)->GetRegister()->mIndex : -1;
 
           regstr rs;
-          rs.pos = pos;
-          rs.ser = pmod->Key().mSerial;
+          rs.pos  = pos;
+          rs.ser  = pmod->Key().mSerial;
           rs.ireg = ireg;
           regstrs.push_back(rs);
-
         }
         imod++;
       }
@@ -468,16 +476,16 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
           lev2::FontMan::DrawText(tgt, 8, 16, "Sel<%s>", pdgmod->GetName().c_str());
         }
 
-        float fxa = mGrid.GetTopLeft().GetX();
-        float fxb = mGrid.GetBotRight().GetX();
-        float fya = mGrid.GetTopLeft().GetY();
-        float fyb = mGrid.GetBotRight().GetY();
-        float fgw = fxb - fxa;
-        float fgh = fyb - fya;
-        float ftw = miW;
-        float fth = miH;
-        float fwr = ftw / fgw;
-        float fhr = fth / fgh;
+        float fxa   = mGrid.GetTopLeft().GetX();
+        float fxb   = mGrid.GetBotRight().GetX();
+        float fya   = mGrid.GetTopLeft().GetY();
+        float fyb   = mGrid.GetBotRight().GetY();
+        float fgw   = fxb - fxa;
+        float fgh   = fyb - fya;
+        float ftw   = miW;
+        float fth   = miH;
+        float fwr   = ftw / fgw;
+        float fhr   = fth / fgh;
         float fzoom = mGrid.GetZoom();
 
         float fcx = mGrid.GetCenter().GetX();
@@ -538,10 +546,10 @@ void GraphVP::ReCenter() {
       }
     }
 
-    fvec2 rng = vmax - vmin;
-    fvec2 ctr = (vmin + vmax) * 0.5f;
+    fvec2 rng  = vmax - vmin;
+    fvec2 ctr  = (vmin + vmax) * 0.5f;
     float fmax = (rng.GetX() > rng.GetY()) ? rng.GetX() : rng.GetY();
-    float fz = (mGrid.GetExtent()) / (fmax + 32.0f);
+    float fz   = (mGrid.GetExtent()) / (fmax + 32.0f);
     mGrid.SetCenter(ctr);
     mGrid.SetZoom(fz);
   }
@@ -568,8 +576,8 @@ ui::HandlerResult GraphVP::DoOnUiEvent(const ui::Event& EV) {
   QInputEvent* qip = (QInputEvent*)EV.mpBlindEventData;
 
   bool bisshift = EV.mbSHIFT;
-  bool bisalt = EV.mbALT;
-  bool bisctrl = EV.mbCTRL;
+  bool bisalt   = EV.mbALT;
+  bool bisctrl  = EV.mbCTRL;
 
   static dataflow::dgmodule* gpmodule = 0;
 
@@ -609,9 +617,9 @@ ui::HandlerResult GraphVP::DoOnUiEvent(const ui::Event& EV) {
         printf("dflow pick pobj<%p>\n", pobj);
         if (ork::Object* object = ork::rtti::autocast(pobj))
           mObjectModel.Attach(object);
-        gpmodule = rtti::autocast(pobj);
-        gbasexym = fvec2(ix, iy);
-        gbasexy = mGrid.GetCenter();
+        gpmodule                  = rtti::autocast(pobj);
+        gbasexym                  = fvec2(ix, iy);
+        gbasexy                   = mGrid.GetCenter();
         dataflow::dgmodule* dgmod = rtti::autocast(pobj);
         mDflowEditor.SelModule(dgmod);
       }
@@ -621,7 +629,7 @@ ui::HandlerResult GraphVP::DoOnUiEvent(const ui::Event& EV) {
     case ui::UIEV_DOUBLECLICK: {
       GetPixel(ilocx, ilocy, ctx);
       ork::rtti::ICastable* pobj = ctx.GetObject(mpPickBuffer, 0);
-      gpmodule = rtti::autocast(pobj);
+      gpmodule                   = rtti::autocast(pobj);
 
       if (bisctrl) {
         if (gpmodule && gpmodule->IsGroup()) {
@@ -668,7 +676,12 @@ ui::HandlerResult GraphVP::DoOnUiEvent(const ui::Event& EV) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DataFlowEditor::DataFlowEditor() : mGraphVP(0), mpSelModule(0), mpProbeModule(0), ConstructAutoSlot(ModelInvalidated) {}
+DataFlowEditor::DataFlowEditor()
+    : mGraphVP(0)
+    , mpSelModule(0)
+    , mpProbeModule(0)
+    , ConstructAutoSlot(ModelInvalidated) {
+}
 
 void DataFlowEditor::Describe() {
   reflect::RegisterFunctor("SlotClear", &DataFlowEditor::SlotClear);
@@ -680,7 +693,9 @@ void DataFlowEditor::Attach(dataflow::graph_data* pgrf) {
     mGraphStack.pop();
   mGraphStack.push(pgrf);
 }
-void DataFlowEditor::Push(dataflow::graph_data* pgrf) { mGraphStack.push(pgrf); }
+void DataFlowEditor::Push(dataflow::graph_data* pgrf) {
+  mGraphStack.push(pgrf);
+}
 void DataFlowEditor::Pop() {
   if (mGraphStack.size() > 1) {
     mGraphStack.pop();
@@ -694,7 +709,9 @@ void DataFlowEditor::SlotModelInvalidated() {
   while (mGraphStack.empty() == false)
     mGraphStack.pop();
 }
-dataflow::graph_data* DataFlowEditor::GetTopGraph() { return mGraphStack.empty() ? 0 : mGraphStack.top(); }
+dataflow::graph_data* DataFlowEditor::GetTopGraph() {
+  return mGraphStack.empty() ? 0 : mGraphStack.top();
+}
 
 } // namespace ork::tool
 

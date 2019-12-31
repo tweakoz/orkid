@@ -343,7 +343,7 @@ protected:
   bool IsVisible(ork::lev2::GfxTarget* pTARG, int iy1, int iy2) {
     int iry1 = iy1 + miScrollY;
     int iry2 = iy2 + miScrollY;
-    int ih   = pTARG->GetH();
+    int ih   = pTARG->mainSurfaceHeight();
 
     if (iry2 < 0) {
       miRejected++;

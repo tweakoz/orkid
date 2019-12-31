@@ -64,7 +64,7 @@ void FxInterface::EndMaterialGroup()
 void FxInterface::BeginFrame()
 {
 	InvalidateStateBlock();
-	DoBeginFrame();
+	_doBeginFrame();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

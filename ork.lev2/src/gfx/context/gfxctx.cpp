@@ -59,9 +59,13 @@ bool GfxTarget::hiDPI() const {
   return _HIDPI();
 }
 
+float GfxTarget::currentDPI() const {
+  return _currentDPI();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxTarget::BeginFrame(void) {
+void GfxTarget::beginFrame(void) {
   FBI()->BeginFrame();
   GBI()->BeginFrame();
   FXI()->BeginFrame();
@@ -80,12 +84,12 @@ void GfxTarget::BeginFrame(void) {
 
   mRenderContextInstData = 0;
 
-  DoBeginFrame();
+  _doBeginFrame();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxTarget::EndFrame(void) {
+void GfxTarget::endFrame(void) {
   //	IMI()->EndFrame();
   GBI()->EndFrame();
   MTXI()->PopMMatrix();
@@ -96,7 +100,7 @@ void GfxTarget::EndFrame(void) {
   BindMaterial(0);
   PopModColor();
   mbPostInitializeContext = false;
-  DoEndFrame();
+  _doEndFrame();
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -148,7 +152,7 @@ bool GfxTarget::SetDisplayMode(unsigned int index) {
 
 void GfxTarget::BindMaterial(GfxMaterial* pmtl) {
   if (nullptr == pmtl)
-    pmtl = GetCurMaterial();
+    pmtl = currentMaterial();
   mpCurMaterial = pmtl;
   // OrkAssert( pMat );
 }
@@ -162,10 +166,10 @@ void GfxTarget::PopMaterial() {
 }
 
 void* GfxTarget::BeginLoad() {
-  return DoBeginLoad();
+  return _doBeginLoad();
 }
 void GfxTarget::EndLoad(void* ploadtok) {
-  DoEndLoad(ploadtok);
+  _doEndLoad(ploadtok);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

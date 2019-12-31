@@ -26,178 +26,168 @@ extern GLuint gLastBoundNonZeroTex;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class MyViewport : public ork::ui::Viewport
-{
+class MyViewport : public ork::ui::Viewport {
 
 public:
+  MyViewport(const std::string& name)
+      : ork::ui::Viewport(name, 1, 1, 1, 1, ork::CColor3(0.0f, 0.0f, 0.0f), 1.0f)
+      , gltex(0) {
+  }
 
-	MyViewport( const std::string & name )
-        : ork::ui::Viewport(name, 1, 1, 1, 1, ork::CColor3( 0.0f, 0.0f, 0.0f ), 1.0f )
-        , gltex(0)
+  ork::ui::HandlerResult DoOnUiEvent(ork::ui::Event* pEV) // virtual
+  {
+    return ork::ui::HandlerResult(this);
+  }
+
+  void Init(ork::lev2::GfxTarget* pTARG) // virtual
+  {
+    mtl.Init(pTARG);
+    tex          = ork::lev2::Texture::CreateBlank(512, 512, ork::lev2::EBUFFMT_RGBA8);
+    auto pu32    = (uint32_t*)tex->_data;
+    uint32_t idx = 0;
+    for (int iw = 0; iw < 512; iw++)
+      for (int ih = 0; ih < 512; ih++) {
+        pu32[idx++] = idx;
+      }
+    tex->_dirty = true;
+  }
+  void DoRePaintSurface(ork::ui::DrawEvent& ev) override {
+    mpTarget->FBI()->SetAutoClear(true);
+    const SRect tgtrect = mpTarget->mainSurfaceRectAtOrigin();
+
+    mpTarget->FBI()->SetViewport(0, 0, mpTarget->mainSurfaceWidth(), mpTarget->mainSurfaceHeight());
+    mpTarget->FBI()->SetScissor(0, 0, mpTarget->mainSurfaceWidth(), mpTarget->mainSurfaceHeight());
+    mpTarget->beginFrame();
     {
+      // mpTarget->TXI()->VRamUpload(tex);
+      ork::fvec4 clr1(1.0f, 1.0f, 1.0f, 1.0f);
+      mtl.SetTexture(tex);
+      // mtl.SetColorMode( ork::lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
+      mtl.SetColorMode(ork::lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
+      mtl._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      mpTarget->FBI()->GetThisBuffer()->RenderMatOrthoQuad(tgtrect, tgtrect, &mtl, 0.0f, 0.0f, 1.0f, 1.0f, 0, clr1);
+
+      GLint curtex = 0;
+      glGetIntegerv(GL_TEXTURE_BINDING_2D, &curtex);
+      printf("tex<%d>\n", int(gLastBoundNonZeroTex));
+
+      glBindTexture(GL_TEXTURE_2D, gLastBoundNonZeroTex);
+      static uint32_t* gpu32 = new uint32_t[512 * 512];
+      int ix                 = rand() % 512;
+      int iy                 = rand() % 512;
+      int io                 = (iy * 512) + ix;
+      int icr                = rand() % 255;
+      int icg                = rand() % 255;
+      int icb                = rand() % 255;
+      gpu32[io]              = icr | (icg << 8) | (icb << 16) | (0xff << 24);
+
+      glTexImage2D(GL_TEXTURE_2D, 0, 4, 512, 512, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void*)gpu32);
+      // glTexSubImage2D(	GL_TEXTURE_2D,
+      //                    0,
+      //                  0, 0,
+      //                512, 512,
+      //              GL_RGBA,
+      //            GL_UNSIGNED_BYTE,
+      //          tex->GetTexData() );
     }
+    /////////////////////////////////////////////////////////////////////
+    // HUD
+    /////////////////////////////////////////////////////////////////////
+    // DrawHUD(the_renderer.framedata());
+    /////////////////////////////////////////////////////////////////////
+    mpTarget->endFrame(); // the_renderer );*/
+  }
 
-	ork::ui::HandlerResult DoOnUiEvent( ork::ui::Event *pEV ) // virtual
-    {   return ork::ui::HandlerResult(this);
-    }
-
-	void Init( ork::lev2::GfxTarget* pTARG ) // virtual
-    {
-        mtl.Init(pTARG);
-        tex = ork::lev2::Texture::CreateBlank(512, 512, ork::lev2::EBUFFMT_RGBA8);
-        auto pu32 = (uint32_t*) tex->_data;
-        uint32_t idx=0;
-        for( int iw=0; iw<512; iw++ )
-            for( int ih=0; ih<512; ih++ )
-            {
-                pu32[idx++] = idx;
-
-            }
-        tex->_dirty=true;
-    }
-    void DoRePaintSurface(ork::ui::DrawEvent& ev) override
-    {
-        mpTarget->FBI()->SetAutoClear(true);
-        const SRect tgtrect = SRect( 0, 0, mpTarget->GetW(), mpTarget->GetH() );
-
-        mpTarget->FBI()->SetViewport( 0,0, mpTarget->GetW(), mpTarget->GetH() );
-        mpTarget->FBI()->SetScissor( 0,0, mpTarget->GetW(), mpTarget->GetH() );
-        mpTarget->BeginFrame();
-        {
-            //mpTarget->TXI()->VRamUpload(tex);
-            ork::fvec4 clr1(1.0f,1.0f,1.0f,1.0f);
-            mtl.SetTexture( tex );
-            //mtl.SetColorMode( ork::lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
-            mtl.SetColorMode( ork::lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR );
-            mtl._rasterstate.SetBlending( ork::lev2::EBLENDING_OFF );
-            mpTarget->FBI()->GetThisBuffer()->RenderMatOrthoQuad( tgtrect, tgtrect, & mtl, 0.0f, 0.0f, 1.0f, 1.0f, 0, clr1 );
-
-            GLint curtex = 0;
-            glGetIntegerv( GL_TEXTURE_BINDING_2D, &curtex );
-            printf( "tex<%d>\n", int(gLastBoundNonZeroTex) );
-
-            glBindTexture( GL_TEXTURE_2D, gLastBoundNonZeroTex );
-            static uint32_t* gpu32 = new uint32_t[512*512];
-            int ix=rand()%512;
-            int iy=rand()%512;
-            int io = (iy*512)+ix;
-            int icr = rand()%255;
-            int icg = rand()%255;
-            int icb = rand()%255;
-            gpu32[io] = icr|(icg<<8)|(icb<<16)|(0xff<<24);
-
-            glTexImage2D( GL_TEXTURE_2D, 0, 4, 512, 512, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void*)gpu32 );
-            //glTexSubImage2D(	GL_TEXTURE_2D,
-            //                    0,
-              //                  0, 0,
-                //                512, 512,
-                  //              GL_RGBA,
-                    //            GL_UNSIGNED_BYTE,
-                      //          tex->GetTexData() );
-        }
-        /////////////////////////////////////////////////////////////////////
-        // HUD
-        /////////////////////////////////////////////////////////////////////
-        //DrawHUD(the_renderer.framedata());
-        /////////////////////////////////////////////////////////////////////
-        mpTarget->EndFrame();// the_renderer );*/
-    }
-
-    ork::lev2::GfxMaterial3DSolid mtl;
-    ork::lev2::Texture*           tex;
-    GLuint gltex;
+  ork::lev2::GfxMaterial3DSolid mtl;
+  ork::lev2::Texture* tex;
+  GLuint gltex;
 };
 
 DemoApp::DemoApp(int iw, int ih)
-	//: m_hwnd(NULL)
+    //: m_hwnd(NULL)
     //, m_pDirect2dFactory(NULL)
     //, m_pRenderTarget(NULL)
     // m_pLightSlateGrayBrush(NULL)
     // m_pCornflowerBlueBrush(NULL)
-	: mpFrameBuffer(0)
-	//, mpBackBufferBitmap(0)
-	, miWidth(iw)
-	, miHeight(ih)
-	, mpThreadPool(0)
-	, miNumAviFrames(0)
-	, miFrameIndex(0)
-{
-	mRenderGraph = new render_graph;
-	mpThreadPool = new ork::threadpool::thread_pool;
-	//mpThreadPool->init(16);
-	mpThreadPool->init(4);
+    : mpFrameBuffer(0)
+    //, mpBackBufferBitmap(0)
+    , miWidth(iw)
+    , miHeight(ih)
+    , mpThreadPool(0)
+    , miNumAviFrames(0)
+    , miFrameIndex(0) {
+  mRenderGraph = new render_graph;
+  mpThreadPool = new ork::threadpool::thread_pool;
+  // mpThreadPool->init(16);
+  mpThreadPool->init(4);
 
-    mpTimer = new QTimer;
+  mpTimer = new QTimer;
 
-    ////////////////////
+  ////////////////////
 
-	MyViewport* gpvp = new MyViewport( "yo" );
-	ork::lev2::CQtGfxWindow* pgfxwin = new ork::lev2::CQtGfxWindow( gpvp );
+  MyViewport* gpvp                 = new MyViewport("yo");
+  ork::lev2::CQtGfxWindow* pgfxwin = new ork::lev2::CQtGfxWindow(gpvp);
 
-	ork::lev2::CTQT* pctqt = new ork::lev2::CTQT( pgfxwin, nullptr );
+  ork::lev2::CTQT* pctqt = new ork::lev2::CTQT(pgfxwin, nullptr);
 
-	//gfxdock->setWidget( pctqt->GetQWidget() );
-	//gfxdock->setMinimumSize( 100, 100 );
-	//addDockWidget(Qt::NoDockWidgetArea, gfxdock);
+  // gfxdock->setWidget( pctqt->GetQWidget() );
+  // gfxdock->setMinimumSize( 100, 100 );
+  // addDockWidget(Qt::NoDockWidgetArea, gfxdock);
 
-	pctqt->Show();
+  pctqt->Show();
 
-	pctqt->GetQWidget()->Enable();
+  pctqt->GetQWidget()->Enable();
 
-	//viewnum++;
+  // viewnum++;
 
+  ork::lev2::GfxEnv::GetRef().SetLoaderTarget(pgfxwin->GetContext());
+  ork::lev2::GfxEnv::GetRef().RegisterWinContext(pgfxwin);
 
-	ork::lev2::GfxEnv::GetRef().SetLoaderTarget( pgfxwin->GetContext() );
-	ork::lev2::GfxEnv::GetRef().RegisterWinContext(pgfxwin);
+  gpvp->Init(pgfxwin->GetContext());
 
-	gpvp->Init(pgfxwin->GetContext());
-
-
-    mpTimer->connect( mpTimer, SIGNAL(timeout()), pctqt->GetQWidget(), SLOT(repaint()));
-    mpTimer->setSingleShot(false);
-    mpTimer->setInterval(16);
-    mpTimer->start(16);
+  mpTimer->connect(mpTimer, SIGNAL(timeout()), pctqt->GetQWidget(), SLOT(repaint()));
+  mpTimer->setSingleShot(false);
+  mpTimer->setInterval(16);
+  mpTimer->start(16);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DemoApp::~DemoApp()
-{
-    //SafeRelease(&m_pDirect2dFactory);
-    //SafeRelease(&m_pRenderTarget);
-    //SafeRelease(&m_pLightSlateGrayBrush);
-    //SafeRelease(&m_pCornflowerBlueBrush);
+DemoApp::~DemoApp() {
+  // SafeRelease(&m_pDirect2dFactory);
+  // SafeRelease(&m_pRenderTarget);
+  // SafeRelease(&m_pLightSlateGrayBrush);
+  // SafeRelease(&m_pCornflowerBlueBrush);
 
-	delete mpThreadPool;
+  delete mpThreadPool;
 }
 
-void DemoApp::Run()
-{
+void DemoApp::Run() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-//void DemoApp::RunMessageLoop()
+// void DemoApp::RunMessageLoop()
 //{
 
 /*	MSG msg;
 
-	while(1)
-	{
-		if( PeekMessage( &msg, NULL, 0, 0, PM_NOREMOVE ) )
-		{
-		    if (GetMessage(&msg, NULL, 0, 0))
-		    {
-		        TranslateMessage(&msg);
-		        DispatchMessage(&msg);
-		    }
-		}
-		else
-		{
-			Sleep(10);
-		}
-		InvalidateRect ( m_hwnd, NULL, TRUE );
-	}*/
+    while(1)
+    {
+        if( PeekMessage( &msg, NULL, 0, 0, PM_NOREMOVE ) )
+        {
+            if (GetMessage(&msg, NULL, 0, 0))
+            {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
+        }
+        else
+        {
+            Sleep(10);
+        }
+        InvalidateRect ( m_hwnd, NULL, TRUE );
+    }*/
 //}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -340,20 +330,20 @@ LRESULT CALLBACK DemoApp::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM
                 result = 1;
                 wasHandled = true;
                 break;
-			case WM_KEYDOWN:
-			{
-				int key = wParam;
-				switch( key )
-				{
-					case 'M':
-						if( pDemoApp->miNumAviFrames )
-							pDemoApp->EndMovie();
-						else
-							pDemoApp->StartMovie();
-						break;
-				}
-				break;
-			}
+            case WM_KEYDOWN:
+            {
+                int key = wParam;
+                switch( key )
+                {
+                    case 'M':
+                        if( pDemoApp->miNumAviFrames )
+                            pDemoApp->EndMovie();
+                        else
+                            pDemoApp->StartMovie();
+                        break;
+                }
+                break;
+            }
             }
         }
 
@@ -368,18 +358,18 @@ LRESULT CALLBACK DemoApp::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 void DemoApp::EndMovie()
 {
-	miNumAviFrames = 0;
-	printf( "Movie Ended\n" );
+    miNumAviFrames = 0;
+    printf( "Movie Ended\n" );
 }
 
 void DemoApp::StartMovie()
 {
-	if( 0 == miNumAviFrames )
-	{
-		printf( "starting movie\n" );
-		miNumAviFrames = 30*60; //60; //60;
-		miFrameIndex = 0;
-	}
+    if( 0 == miNumAviFrames )
+    {
+        printf( "starting movie\n" );
+        miNumAviFrames = 30*60; //60; //60;
+        miFrameIndex = 0;
+    }
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -421,92 +411,93 @@ HRESULT DemoApp::CreateDeviceResources()
                 &m_pCornflowerBlueBrush
                 );
         }
-		if( SUCCEEDED(hr) )
-		{
+        if( SUCCEEDED(hr) )
+        {
             // Create a blue brush.
             hr = m_pRenderTarget->CreateSolidColorBrush(
-				D2D1::ColorF(D2D1::ColorF::Black),
+                D2D1::ColorF(D2D1::ColorF::Black),
                 &mpDefaultBrush
                 );
 
-		}
-		if( SUCCEEDED(hr) )
-		{
-			D2D1_BITMAP_PROPERTIES bmaprops;
-			D2D1_SIZE_U bmapsize;
+        }
+        if( SUCCEEDED(hr) )
+        {
+            D2D1_BITMAP_PROPERTIES bmaprops;
+            D2D1_SIZE_U bmapsize;
 
-			bmapsize.width = 2;
-			bmapsize.height = 2;
-			bmaprops.dpiX = 1;
-			bmaprops.dpiY = 1;
-			bmaprops.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
-			bmaprops.pixelFormat.alphaMode = D2D1_ALPHA_MODE_IGNORE;
-			ID2D1Bitmap* bitmap = 0;
+            bmapsize.width = 2;
+            bmapsize.height = 2;
+            bmaprops.dpiX = 1;
+            bmaprops.dpiY = 1;
+            bmaprops.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
+            bmaprops.pixelFormat.alphaMode = D2D1_ALPHA_MODE_IGNORE;
+            ID2D1Bitmap* bitmap = 0;
 
-			u32* psrcdata = new u32[4];
+            u32* psrcdata = new u32[4];
 
-			psrcdata[0] = 0xffffffff;
-			psrcdata[1] = 0x0;
-			psrcdata[2] = 0x0;
-			psrcdata[3] = 0xffffffff;
+            psrcdata[0] = 0xffffffff;
+            psrcdata[1] = 0x0;
+            psrcdata[2] = 0x0;
+            psrcdata[3] = 0xffffffff;
 
-			UINT32 psrcpitch = 8;
+            UINT32 psrcpitch = 8;
 
-			hr = m_pRenderTarget->CreateBitmap(
-				bmapsize,
-				psrcdata,
-				psrcpitch,
-				& bmaprops,
+            hr = m_pRenderTarget->CreateBitmap(
+                bmapsize,
+                psrcdata,
+                psrcpitch,
+                & bmaprops,
                 &bitmap
                 );
 
-			D2D1_MATRIX_3X2_F mtx;
-			mtx._11 = 1.0f;
-			mtx._12 = 0.0f;
-			mtx._21 = 0.0f;
-			mtx._22 = 1.0f;
-			mtx._31 = 0.0f;
-			mtx._32 = 0.0f;
+            D2D1_MATRIX_3X2_F mtx;
+            mtx._11 = 1.0f;
+            mtx._12 = 0.0f;
+            mtx._21 = 0.0f;
+            mtx._22 = 1.0f;
+            mtx._31 = 0.0f;
+            mtx._32 = 0.0f;
 
-			D2D1_BRUSH_PROPERTIES brushprops;
-			brushprops.opacity = 1.0f;
-			brushprops.transform = mtx;
+            D2D1_BRUSH_PROPERTIES brushprops;
+            brushprops.opacity = 1.0f;
+            brushprops.transform = mtx;
 
-			D2D1_BITMAP_BRUSH_PROPERTIES brushbmapprops;
-			brushbmapprops.extendModeX = D2D1_EXTEND_MODE_WRAP;
-			brushbmapprops.extendModeY = D2D1_EXTEND_MODE_WRAP;
-			brushbmapprops.interpolationMode = D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR; //D2D1_BITMAP_INTERPOLATION_MODE_LINEAR;
+            D2D1_BITMAP_BRUSH_PROPERTIES brushbmapprops;
+            brushbmapprops.extendModeX = D2D1_EXTEND_MODE_WRAP;
+            brushbmapprops.extendModeY = D2D1_EXTEND_MODE_WRAP;
+            brushbmapprops.interpolationMode = D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR;
+//D2D1_BITMAP_INTERPOLATION_MODE_LINEAR;
 
-			hr = m_pRenderTarget->CreateBitmapBrush( bitmap, & brushbmapprops, & brushprops, & mpCheckerBrush );
+            hr = m_pRenderTarget->CreateBitmapBrush( bitmap, & brushbmapprops, & brushprops, & mpCheckerBrush );
 
 
-		}
+        }
 
-		if( SUCCEEDED(hr) )
-		{
-			mpFrameBuffer = new u32[ size.width*size.height ];
+        if( SUCCEEDED(hr) )
+        {
+            mpFrameBuffer = new u32[ size.width*size.height ];
 
-			D2D1_BITMAP_PROPERTIES bmaprops;
-			D2D1_SIZE_U bmapsize;
+            D2D1_BITMAP_PROPERTIES bmaprops;
+            D2D1_SIZE_U bmapsize;
 
-			bmapsize.width = size.width;
-			bmapsize.height = size.height;
-			bmaprops.dpiX = 1;
-			bmaprops.dpiY = 1;
-			bmaprops.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
-			bmaprops.pixelFormat.alphaMode = D2D1_ALPHA_MODE_IGNORE;
+            bmapsize.width = size.width;
+            bmapsize.height = size.height;
+            bmaprops.dpiX = 1;
+            bmaprops.dpiY = 1;
+            bmaprops.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
+            bmaprops.pixelFormat.alphaMode = D2D1_ALPHA_MODE_IGNORE;
 
-			UINT32 psrcpitch = size.width*4;
+            UINT32 psrcpitch = size.width*4;
 
-			hr = m_pRenderTarget->CreateBitmap(
-				bmapsize,
-				0,
-				psrcpitch,
-				& bmaprops,
+            hr = m_pRenderTarget->CreateBitmap(
+                bmapsize,
+                0,
+                psrcpitch,
+                & bmaprops,
                 &mpBackBufferBitmap
                 );
 
-		}
+        }
 
     }
 
@@ -526,7 +517,7 @@ void DemoApp::DiscardDeviceResources()
 /*
 void DemoApp::OnResize(UINT width, UINT height)
 {
-	mRenderGraph->Resize(width,height);
+    mRenderGraph->Resize(width,height);
     if (m_pRenderTarget)
     {
         // Note: This method can fail, but it's okay to ignore the
@@ -536,36 +527,36 @@ void DemoApp::OnResize(UINT width, UINT height)
 
     }
 
-	if( mpFrameBuffer )
-	{
-		delete[] mpFrameBuffer;
-	}
-	mpFrameBuffer = new u32[ width*height ];
+    if( mpFrameBuffer )
+    {
+        delete[] mpFrameBuffer;
+    }
+    mpFrameBuffer = new u32[ width*height ];
 
-	if( mpBackBufferBitmap )
-	{
-		mpBackBufferBitmap->Release();
+    if( mpBackBufferBitmap )
+    {
+        mpBackBufferBitmap->Release();
 
-		D2D1_BITMAP_PROPERTIES bmaprops;
-		D2D1_SIZE_U bmapsize;
+        D2D1_BITMAP_PROPERTIES bmaprops;
+        D2D1_SIZE_U bmapsize;
 
-		bmapsize.width = width;
-		bmapsize.height = height;
-		bmaprops.dpiX = 1;
-		bmaprops.dpiY = 1;
-		bmaprops.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
-		bmaprops.pixelFormat.alphaMode = D2D1_ALPHA_MODE_IGNORE;
+        bmapsize.width = width;
+        bmapsize.height = height;
+        bmaprops.dpiX = 1;
+        bmaprops.dpiY = 1;
+        bmaprops.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
+        bmaprops.pixelFormat.alphaMode = D2D1_ALPHA_MODE_IGNORE;
 
-		UINT32 psrcpitch = width*4;
+        UINT32 psrcpitch = width*4;
 
-		HRESULT hr = m_pRenderTarget->CreateBitmap(
-			bmapsize,
-			0,
-			psrcpitch,
-			& bmaprops,
+        HRESULT hr = m_pRenderTarget->CreateBitmap(
+            bmapsize,
+            0,
+            psrcpitch,
+            & bmaprops,
             &mpBackBufferBitmap
             );
 
-	}
+    }
 }
 */

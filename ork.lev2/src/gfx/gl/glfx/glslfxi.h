@@ -510,7 +510,7 @@ struct Container {
 
 class Interface : public FxInterface {
 public:
-  virtual void DoBeginFrame();
+  virtual void _doBeginFrame();
 
   int BeginBlock(FxShader* hfx, const RenderContextInstData& data) final;
   bool BindPass(FxShader* hfx, int ipass) final;

@@ -37,7 +37,7 @@ Interface::Interface(GfxTargetGL& glctx)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::DoBeginFrame() { mLastPass = 0; }
+void Interface::_doBeginFrame() { mLastPass = 0; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -122,11 +122,11 @@ void Interface::CommitParams(void) {
     // mTarget.RSI()->BindRasterState(rstate);
   }
   // if( (mpActiveEffect->_activePass != mLastPass) ||
-  // (mTarget.GetCurMaterial()!=mpLastFxMaterial) )
+  // (mTarget.currentMaterial()!=mpLastFxMaterial) )
   {
     // orkprintf( "CgFxInterface::CommitParams() activepass<%p>\n",
     // mpActiveEffect->_activePass ); cgSetPassState( mpActiveEffect->_activePass
-    // ); mpLastFxMaterial = mTarget.GetCurMaterial(); mLastPass =
+    // ); mpLastFxMaterial = mTarget.currentMaterial(); mLastPass =
     // mpActiveEffect->_activePass;
   }
 }

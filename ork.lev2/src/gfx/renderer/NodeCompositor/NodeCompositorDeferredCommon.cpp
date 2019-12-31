@@ -137,12 +137,12 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
   auto FBI                     = targ->FBI();
   auto& ddprops                = drawdata._properties;
   auto irenderer               = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
-  SRect tgt_rect(0, 0, targ->GetW(), targ->GetH());
+  SRect tgt_rect(0, 0, targ->mainSurfaceWidth(), targ->mainSurfaceHeight());
   SRect mrt_rect(0, 0, _rtgGbuffer->GetW(), _rtgGbuffer->GetH());
   ///////////////////////////////////////////////////////////////////////////
   FBI->PushRtGroup(_rtgGbuffer);
   FBI->SetAutoClear(false); // explicit clear
-  targ->BeginFrame();
+  targ->beginFrame();
   ///////////////////////////////////////////////////////////////////////////
   const auto TOPCPD  = CIMPL->topCPD();
   auto CPD           = TOPCPD;
@@ -173,7 +173,7 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
     CIMPL->popCPD();
   }
   /////////////////////////////////////////////////////////////////////////////////////////
-  targ->EndFrame();
+  targ->endFrame();
   FBI->PopRtGroup();
 }
 
@@ -188,7 +188,7 @@ const uint32_t* DeferredContext::captureDepthClusters(CompositorDrawData& drawda
   auto this_buf                = FBI->GetThisBuffer();
   auto vprect                  = SRect(0, 0, _clusterW, _clusterH);
   auto quadrect                = SRect(0, 0, _clusterW, _clusterH);
-  auto tgt_rect                = SRect(0, 0, targ->GetW(), targ->GetH());
+  auto tgt_rect                = targ->mainSurfaceRectAtOrigin();
 
   const auto TOPCPD = CIMPL->topCPD();
   auto CPD          = TOPCPD;
@@ -206,7 +206,7 @@ const uint32_t* DeferredContext::captureDepthClusters(CompositorDrawData& drawda
   {
     FBI->SetAutoClear(true);
     FBI->PushRtGroup(_rtgDepthCluster);
-    targ->BeginFrame();
+    targ->beginFrame();
     _lightingmtl.bindTechnique(_tekDownsampleDepthCluster);
     _lightingmtl.begin(RCFD);
     _lightingmtl.bindParamInt(_parTileDim, KTILEDIMXY);
@@ -220,7 +220,7 @@ const uint32_t* DeferredContext::captureDepthClusters(CompositorDrawData& drawda
     _lightingmtl.commit();
     this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
     _lightingmtl.end(RCFD);
-    targ->EndFrame();
+    targ->endFrame();
     FBI->PopRtGroup();
   }
   targ->debugPopGroup(); // findclusters
@@ -358,7 +358,7 @@ void DeferredContext::renderBaseLighting(CompositorDrawData& drawdata, const Vie
   CIMPL->pushCPD(_accumCPD); // base lighting
   FBI->SetAutoClear(true);
   FBI->PushRtGroup(_rtgLaccum);
-  targ->BeginFrame();
+  targ->beginFrame();
   FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
   //////////////////////////////////////////////////////////////////
   // base lighting
@@ -384,7 +384,7 @@ void DeferredContext::renderBaseLighting(CompositorDrawData& drawdata, const Vie
   _lightingmtl.end(RCFD);
   CIMPL->popCPD();       // base lighting
   targ->debugPopGroup(); // BaseLighting
-  targ->EndFrame();
+  targ->endFrame();
   FBI->PopRtGroup(); // deferredRtg
 }
 
@@ -402,7 +402,7 @@ void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const Vie
   CIMPL->pushCPD(_accumCPD);
   FBI->SetAutoClear(false);
   FBI->PushRtGroup(_rtgLaccum);
-  targ->BeginFrame();
+  targ->beginFrame();
   _lightingmtl.bindTechnique(VD._isStereo ? _tekPointLightingStereo : _tekPointLighting);
   _lightingmtl.begin(RCFD);
   //////////////////////////////////////////////////////
@@ -435,7 +435,7 @@ void DeferredContext::endPointLighting(CompositorDrawData& drawdata, const ViewD
   _lightingmtl.end(RCFD);
   CIMPL->popCPD();       // _accumCPD
   targ->debugPopGroup(); // Deferred::PointLighting
-  targ->EndFrame();
+  targ->endFrame();
   FBI->PopRtGroup(); // _rtgLaccum
 }
 

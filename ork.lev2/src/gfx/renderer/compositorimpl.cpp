@@ -58,7 +58,8 @@ void CompositingData::describeX(class_t* c) {
 
 CompositingData::CompositingData()
     : mbEnable(true)
-    , mToggle(true) {}
+    , mToggle(true) {
+}
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -68,7 +69,7 @@ void CompositingData::defaultSetup() {
 
   auto t1 = new NodeCompositingTechnique;
   auto o1 = new ScreenOutputCompositingNode;
-  //auto o1 = new VrCompositingNode;
+  // auto o1 = new VrCompositingNode;
   auto r1 = new deferrednode::DeferredCompositingNode;
   t1->_writeOutputNode(o1);
   t1->_writeRenderNode(r1);
@@ -85,7 +86,9 @@ void CompositingData::defaultSetup() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CompositingImpl* CompositingData::createImpl() const { return new CompositingImpl(*this); }
+CompositingImpl* CompositingData::createImpl() const {
+  return new CompositingImpl(*this);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -107,7 +110,8 @@ CompositingImpl::CompositingImpl(const CompositingData& data)
   _defaultCameraMatrices = new CameraMatrices;
 }
 
-CompositingImpl::~CompositingImpl() {}
+CompositingImpl::~CompositingImpl() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -142,26 +146,27 @@ const CompositingSceneItem* CompositingImpl::compositingItem(int isceneidx, int 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CompositingImpl::IsEnabled() const { return _compositingData.IsEnabled(); }
+bool CompositingImpl::IsEnabled() const {
+  return _compositingData.IsEnabled();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
-  bool rval                              = false;
-  auto& ddprops                          = drawdata._properties;
-  auto the_renderer                      = drawdata.mFrameRenderer;
-  lev2::RenderContextFrameData& RCFD     = the_renderer.framedata();
-  lev2::GfxTarget* target                = RCFD.GetTarget();
+  bool rval                          = false;
+  auto& ddprops                      = drawdata._properties;
+  auto the_renderer                  = drawdata.mFrameRenderer;
+  lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
+  lev2::GfxTarget* target            = RCFD.GetTarget();
 
-  drawdata._cimpl                        = this;
-  float aspectratio = float(target->GetW()) / float(target->GetH());
+  drawdata._cimpl   = this;
+  float aspectratio = target->mainSurfaceAspectRatio();
+
   // todo - compute CameraMatrices per rendertarget/pass !
 
-  SRect tgtrect = SRect(0, 0, target->GetW(), target->GetH());
-
-  //lev2::rendervar_t passdata;
-  //passdata.Set<orkstack<CompositingPassData>*>(&cgSTACK);
-  //RCFD.setUserProperty("nodes"_crc, passdata);
+  // lev2::rendervar_t passdata;
+  // passdata.Set<orkstack<CompositingPassData>*>(&cgSTACK);
+  // RCFD.setUserProperty("nodes"_crc, passdata);
 
   /////////////////////////////////////////////////////////
   // bind compositing technique
@@ -174,13 +179,13 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   // bind lighting
   /////////////////////////////////
 
-  //auto cammatrices = RCFD.cameraMatrices();
-  //cammatrices->_aspectRatio = aspectratio;
-  //if (_lightmgr) { // WIP
-    //_lightmgr->EnumerateInFrustum(cammatrices->GetFrustum());
-    //if (_lightmgr->mLightsInFrustum.size()) {
-      //RCFD.SetLightManager(_lightmgr);
-    //}
+  // auto cammatrices = RCFD.cameraMatrices();
+  // cammatrices->_aspectRatio = aspectratio;
+  // if (_lightmgr) { // WIP
+  //_lightmgr->EnumerateInFrustum(cammatrices->GetFrustum());
+  // if (_lightmgr->mLightsInFrustum.size()) {
+  // RCFD.SetLightManager(_lightmgr);
+  //}
   //}
 
   /////////////////////////////////
@@ -202,20 +207,20 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
 
     auto spncam = (CameraData*)DB->cameraData("spawncam"_pool);
 
-    target->debugMarker(FormatString("spncam<%p>",spncam));
+    target->debugMarker(FormatString("spncam<%p>", spncam));
 
-    if( spncam ){
+    if (spncam) {
       (*_defaultCameraMatrices) = spncam->computeMatrices(aspectratio);
     }
 
-    target->debugMarker(FormatString("defcammtx<%p>",_defaultCameraMatrices));
+    target->debugMarker(FormatString("defcammtx<%p>", _defaultCameraMatrices));
     ddprops["defcammtx"_crcu].Set<const CameraMatrices*>(_defaultCameraMatrices);
 
     if (spncam and spncam->getEditorCamera()) {
-      //spncam->computeMatrices(CAMCCTX);
-      //l2cam->_camcamdata.BindGfxTarget(target);
+      // spncam->computeMatrices(CAMCCTX);
+      // l2cam->_camcamdata.BindGfxTarget(target);
       //_tempcamdat = l2cam->mCameraData;
-      target->debugMarker(FormatString("seleditcam<%p>",spncam));
+      target->debugMarker(FormatString("seleditcam<%p>", spncam));
       ddprops["seleditcam"_crcu].Set<const CameraData*>(spncam);
     }
 
@@ -269,23 +274,27 @@ void CompositingImpl::update(float dt) {
 const CompositingPassData& CompositingImpl::topCPD() const {
   return _stack.top();
 }
-const CompositingPassData& CompositingImpl::pushCPD(const CompositingPassData& cpd){
+const CompositingPassData& CompositingImpl::pushCPD(const CompositingPassData& cpd) {
   const CompositingPassData& prev = topCPD();
   _stack.push(cpd);
   return prev;
 }
-const CompositingPassData& CompositingImpl::popCPD(){
+const CompositingPassData& CompositingImpl::popCPD() {
   _stack.pop();
   return _stack.top();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CompositingContext& CompositingImpl::compositingContext() const { return _compcontext; }
+const CompositingContext& CompositingImpl::compositingContext() const {
+  return _compcontext;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CompositingContext& CompositingImpl::compositingContext() { return _compcontext; }
+CompositingContext& CompositingImpl::compositingContext() {
+  return _compcontext;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

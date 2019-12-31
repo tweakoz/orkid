@@ -30,10 +30,10 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CompositingTechnique, "CompositingTechni
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 CompositingPassData CompositingPassData::FromRCFD(const RenderContextFrameData& RCFD) {
-    lev2::rendervar_t passdata = RCFD.getUserProperty("nodes"_crc);
-    auto cstack                = passdata.Get<compositingpassdatastack_t*>();
-    OrkAssert(cstack != nullptr);
-    return cstack->top();
+  lev2::rendervar_t passdata = RCFD.getUserProperty("nodes"_crc);
+  auto cstack                = passdata.Get<compositingpassdatastack_t*>();
+  OrkAssert(cstack != nullptr);
+  return cstack->top();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -41,9 +41,7 @@ CompositingPassData CompositingPassData::FromRCFD(const RenderContextFrameData& 
 fvec3 CompositingPassData::monoCamPos(const fmtx4& vizoffsetmtx) const {
   // vizoffsetmtx : use in visual offset cases such as the heightfield
   //   (todo: elaborate on this subject)
-  fmtx4 vmono = isStereoOnePass()
-              ? _stereoCameraMatrices->VMONO()
-              : _cameraMatrices->_vmatrix;
+  fmtx4 vmono = isStereoOnePass() ? _stereoCameraMatrices->VMONO() : _cameraMatrices->_vmatrix;
   auto mvmono = (vizoffsetmtx * vmono);
   fmtx4 imvmono;
   imvmono.inverseOf(mvmono);
@@ -60,7 +58,7 @@ const Frustum& CompositingPassData::monoCamFrustum() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 const fvec3& CompositingPassData::monoCamZnormal() const {
-  static const fvec3 gzn(0,0,1);
+  static const fvec3 gzn(0, 0, 1);
   return _cameraMatrices ? _cameraMatrices->_camdat.zNormal() : gzn;
 }
 
@@ -87,28 +85,34 @@ std::vector<PoolString> CompositingPassData::getLayerNames() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 void CompositingPassData::updateCompositingSize(int w, int h) {
-  if( mpFrameTek )
-    if( auto ftek = dynamic_cast<FrameTechniqueBase*>(mpFrameTek) )
-        ftek->update(*this,w,h);
+  if (mpFrameTek)
+    if (auto ftek = dynamic_cast<FrameTechniqueBase*>(mpFrameTek))
+      ftek->update(*this, w, h);
 }
 bool CompositingPassData::isPicking() const {
-  return false; //mpTarget ? mpTarget->FBI()->IsPickState() : false;
+  return false; // mpTarget ? mpTarget->FBI()->IsPickState() : false;
 }
-void CompositingPassData::ClearLayers() { mLayers.clear(); }
-void CompositingPassData::AddLayer(const PoolString& layername) { mLayers.insert(layername); }
-bool CompositingPassData::HasLayer(const PoolString& layername) const { return (mLayers.find(layername) != mLayers.end()); }
+void CompositingPassData::ClearLayers() {
+  mLayers.clear();
+}
+void CompositingPassData::AddLayer(const PoolString& layername) {
+  mLayers.insert(layername);
+}
+bool CompositingPassData::HasLayer(const PoolString& layername) const {
+  return (mLayers.find(layername) != mLayers.end());
+}
 
-//void RenderContextFrameData::PushRenderTarget(IRenderTarget* ptarg) { mRenderTargetStack.push(ptarg); }
-//IRenderTarget* RenderContextFrameData::GetRenderTarget() {
+// void RenderContextFrameData::PushRenderTarget(IRenderTarget* ptarg) { mRenderTargetStack.push(ptarg); }
+// IRenderTarget* RenderContextFrameData::GetRenderTarget() {
 //  IRenderTarget* pt = mRenderTargetStack.top();
-  //return pt;
+// return pt;
 //}
-//void RenderContextFrameData::PopRenderTarget() { mRenderTargetStack.pop(); }
+// void RenderContextFrameData::PopRenderTarget() { mRenderTargetStack.pop(); }
 
-//void RenderContextFrameData::setLayerName(const char* layername) {
-  //lev2::rendervar_t passdata;
-  //passdata.Set<const char*>(layername);
-  //setUserProperty("pass"_crc, passdata);
+// void RenderContextFrameData::setLayerName(const char* layername) {
+// lev2::rendervar_t passdata;
+// passdata.Set<const char*>(layername);
+// setUserProperty("pass"_crc, passdata);
 //}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -132,29 +136,31 @@ void CompositingPassData::addStandardLayers() {
   AddLayer("O"_pool);
   AddLayer("P"_pool);
   AddLayer("Q"_pool);
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
-void CompositingTechnique::Describe() {}
+void CompositingTechnique::Describe() {
+}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 CompositingContext::CompositingContext()
     : miWidth(0)
     , miHeight(0)
-    , _compositingTechnique(nullptr) {}
+    , _compositingTechnique(nullptr) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CompositingContext::~CompositingContext() {}
+CompositingContext::~CompositingContext() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void CompositingContext::Init(lev2::GfxTarget* pTARG) {
-  if ((miWidth != pTARG->GetW()) || (miHeight != pTARG->GetH())) {
-    miWidth  = pTARG->GetW();
-    miHeight = pTARG->GetH();
+  if ((miWidth != pTARG->mainSurfaceWidth()) || (miHeight != pTARG->mainSurfaceHeight())) {
+    miWidth  = pTARG->mainSurfaceWidth();
+    miHeight = pTARG->mainSurfaceHeight();
   }
   _utilMaterial = new GfxMaterial3DSolid;
   _utilMaterial->Init(pTARG);
@@ -203,7 +209,8 @@ void CompositingScene::describeX(class_t* c) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CompositingScene::CompositingScene() {}
+CompositingScene::CompositingScene() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -216,19 +223,23 @@ void CompositingSceneItem::describeX(class_t* c) {
 ///////////////////////////////////////////////////////////////////////////////
 
 CompositingSceneItem::CompositingSceneItem()
-    : mpTechnique(nullptr) {}
+    : mpTechnique(nullptr) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingMorphable::WriteMorphTarget(dataflow::MorphKey name, float flerpval) {}
+void CompositingMorphable::WriteMorphTarget(dataflow::MorphKey name, float flerpval) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingMorphable::RecallMorphTarget(dataflow::MorphKey name) {}
+void CompositingMorphable::RecallMorphTarget(dataflow::MorphKey name) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingMorphable::Morph1D(const dataflow::morph_event* pme) {}
+void CompositingMorphable::Morph1D(const dataflow::morph_event* pme) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 void CompositingSceneItem::_readTech(ork::rtti::ICastable*& val) const {

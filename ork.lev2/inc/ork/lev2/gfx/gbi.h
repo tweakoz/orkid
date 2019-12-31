@@ -81,6 +81,6 @@ protected:
   int miTrianglesRendered;
 
 private:
-  virtual void DoBeginFrame() {}
-  virtual void DoEndFrame() {}
+  virtual void _doBeginFrame() {}
+  virtual void _doEndFrame() {}
 };

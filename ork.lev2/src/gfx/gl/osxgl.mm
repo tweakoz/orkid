@@ -435,7 +435,7 @@ void GfxTargetGL::SwapGLContext( CTXBASE *pCTFL )
 	//Objc::Class("NSOpenGLContext").InvokeClassMethodV("clearCurrentContext" );
 }
 
-void* GfxTargetGL::DoBeginLoad()
+void* GfxTargetGL::_doBeginLoad()
 {
 	void* pvoiddat = nullptr;
 
@@ -457,7 +457,7 @@ void* GfxTargetGL::DoBeginLoad()
 	return pvoiddat;
 }
 
-void GfxTargetGL::DoEndLoad(void*ploadtok)
+void GfxTargetGL::_doEndLoad(void*ploadtok)
 {
 	GlOsxLoadContext* loadctx = (GlOsxLoadContext*) ploadtok;
 	printf( "ENDLOAD loadctx<%p> glx<%p>\n", loadctx,loadctx->mGlContext);

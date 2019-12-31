@@ -22,14 +22,14 @@ namespace ork { namespace lev2 {
 void GeometryBufferInterface::BeginFrame()
 {
 	miTrianglesRendered = 0;
-	DoBeginFrame();
+	_doBeginFrame();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GeometryBufferInterface::EndFrame()
 {
-	DoEndFrame();
+	_doEndFrame();
 	miTrianglesRendered = 0;
 }
 

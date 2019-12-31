@@ -61,7 +61,8 @@ END_ENUM_SERIALIZER()
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::DrawHudEvent, "DrawHudEvent");
 
-void ork::lev2::DrawHudEvent::Describe() {}
+void ork::lev2::DrawHudEvent::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -93,28 +94,30 @@ static const std::string VertexFormatStrings[EVTXSTREAMFMT_END + 2] = {
 
     "EVTXSTREAMFMT_XP_VCNT",      "EVTXSTREAMFMT_XP_VCNTI",
     "EVTXSTREAMFMT_END",          ""};
-static const std::string PrimTypeStrings[EPRIM_END + 2]     = {"EPRIM_NONE",
-                                                           "EPRIM_POINTS",
-                                                           "EPRIM_LINES",
-                                                           "EPRIM_LINESTRIP",
-                                                           "EPRIM_LINELOOP",
-                                                           "EPRIM_TRIANGLES",
-                                                           "EPRIM_QUADS",
-                                                           "EPRIM_TRIANGLESTRIP",
-                                                           "EPRIM_TRIANGLEFAN",
-                                                           "EPRIM_QUADSTRIP",
-                                                           "EPRIM_MULTI",
-                                                           "EPRIM_POINTSPRITES",
-                                                           "EPRIM_END",
-                                                           ""};
-static const std::string BlendingStrings[EBLENDING_END + 2] = {"EBLENDING_OFF",
-                                                               "EBLENDING_ALPHA",
-                                                               "EBLENDING_DSTALPHA",
-                                                               "EBLENDING_ADDITIVE",
-                                                               "EBLENDING_ALPHA_ADDITIVE",
-                                                               "EBLENDING_SUBTRACTIVE",
-                                                               "EBLENDING_ALPHA_SUBTRACTIVE",
-                                                               "EBLENDING_MODULATE"};
+static const std::string PrimTypeStrings[EPRIM_END + 2] = {
+    "EPRIM_NONE",
+    "EPRIM_POINTS",
+    "EPRIM_LINES",
+    "EPRIM_LINESTRIP",
+    "EPRIM_LINELOOP",
+    "EPRIM_TRIANGLES",
+    "EPRIM_QUADS",
+    "EPRIM_TRIANGLESTRIP",
+    "EPRIM_TRIANGLEFAN",
+    "EPRIM_QUADSTRIP",
+    "EPRIM_MULTI",
+    "EPRIM_POINTSPRITES",
+    "EPRIM_END",
+    ""};
+static const std::string BlendingStrings[EBLENDING_END + 2] = {
+    "EBLENDING_OFF",
+    "EBLENDING_ALPHA",
+    "EBLENDING_DSTALPHA",
+    "EBLENDING_ADDITIVE",
+    "EBLENDING_ALPHA_ADDITIVE",
+    "EBLENDING_SUBTRACTIVE",
+    "EBLENDING_ALPHA_SUBTRACTIVE",
+    "EBLENDING_MODULATE"};
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -170,7 +173,8 @@ ECullTest GlobalCullTest = ECULLTEST_PASS_FRONT;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void IManipInterface::Describe() {}
+void IManipInterface::Describe() {
+}
 
 /////////////////////////////////////////////////////////////////////////
 SRasterState::SRasterState() {
@@ -192,18 +196,26 @@ SRasterState::SRasterState() {
 
 const ork::rtti::Class* GfxEnv::gpTargetClass = 0;
 
-void GfxEnv::SetRuntimeEnvironmentVariable(const std::string& key, const std::string& val) { mRuntimeEnvironment[key] = val; }
+void GfxEnv::SetRuntimeEnvironmentVariable(const std::string& key, const std::string& val) {
+  mRuntimeEnvironment[key] = val;
+}
 const std::string& GfxEnv::GetRuntimeEnvironmentVariable(const std::string& key) const {
   static const std::string EmptyString("");
   orkmap<std::string, std::string>::const_iterator it = mRuntimeEnvironment.find(key);
   return (it == mRuntimeEnvironment.end()) ? EmptyString : it->second;
 }
 
-DynamicVertexBuffer<SVtxV12C4T16>& GfxEnv::GetSharedDynamicVB() { return GetRef().mVtxBufSharedVect; }
+DynamicVertexBuffer<SVtxV12C4T16>& GfxEnv::GetSharedDynamicVB() {
+  return GetRef().mVtxBufSharedVect;
+}
 
-DynamicVertexBuffer<SVtxV12N12B12T8C4>& GfxEnv::GetSharedDynamicVB2() { return GetRef().mVtxBufSharedVect2; }
+DynamicVertexBuffer<SVtxV12N12B12T8C4>& GfxEnv::GetSharedDynamicVB2() {
+  return GetRef().mVtxBufSharedVect2;
+}
 
-DynamicVertexBuffer<SVtxV16T16C16>& GfxEnv::GetSharedDynamicV16T16C16() { return GetRef()._vtxBufSharedV16T16C16; }
+DynamicVertexBuffer<SVtxV16T16C16>& GfxEnv::GetSharedDynamicV16T16C16() {
+  return GetRef()._vtxBufSharedV16T16C16;
+}
 
 GfxEnv::GfxEnv()
     : NoRttiSingleton<GfxEnv>()
@@ -229,7 +241,7 @@ GfxEnv::GfxEnv()
 /////////////////////////////////////////////////////////////////////////
 
 void GfxEnv::RegisterWinContext(GfxWindow* pWin) {
-  //orkprintf("GfxEnv::RegisterWinContext\n");
+  // orkprintf("GfxEnv::RegisterWinContext\n");
   // gfxenvlateinit();
 }
 
@@ -249,8 +261,8 @@ void GfxEnv::SetLoaderTarget(GfxTarget* target) {
     mp3DMaterial->Init(gLoaderTarget);
     ork::lev2::GfxPrimitives::Init(gLoaderTarget);
 
-    gLoaderTarget->BeginFrame();
-    gLoaderTarget->EndFrame();
+    gLoaderTarget->beginFrame();
+    gLoaderTarget->endFrame();
   };
   opq::mainSerialQueue().enqueue(gfxenvlateinit);
 }
@@ -259,7 +271,8 @@ void GfxEnv::SetLoaderTarget(GfxTarget* target) {
 
 CaptureBuffer::CaptureBuffer()
     : _data(0)
-    , meFormat(EBUFFMT_END) {}
+    , meFormat(EBUFFMT_END) {
+}
 CaptureBuffer::~CaptureBuffer() {
   if (_data) {
     free(_data);
@@ -287,12 +300,24 @@ int CaptureBuffer::GetStride() const {
   }
   return istride;
 }
-int CaptureBuffer::CalcDataIndex(int ix, int iy) const { return ix + (iy * miW); }
-void CaptureBuffer::SetWidth(int iw) { miW = iw; }
-void CaptureBuffer::SetHeight(int ih) { miH = ih; }
-int CaptureBuffer::width() const { return miW; }
-int CaptureBuffer::height() const { return miH; }
-EBufferFormat CaptureBuffer::format() const { return meFormat; }
+int CaptureBuffer::CalcDataIndex(int ix, int iy) const {
+  return ix + (iy * miW);
+}
+void CaptureBuffer::SetWidth(int iw) {
+  miW = iw;
+}
+void CaptureBuffer::SetHeight(int ih) {
+  miH = ih;
+}
+int CaptureBuffer::width() const {
+  return miW;
+}
+int CaptureBuffer::height() const {
+  return miH;
+}
+EBufferFormat CaptureBuffer::format() const {
+  return meFormat;
+}
 void CaptureBuffer::CopyData(const void* pfrom, int isize) {
   int icapsize = GetStride() * miW * miH;
   OrkAssert(isize == icapsize);
@@ -322,9 +347,9 @@ void CaptureBuffer::setFormatAndSize(EBufferFormat fmt, int w, int h) {
       assert(false);
       break;
   }
-  assert(bytesperpix!=0);
-  _data = malloc(bytesperpix*w*h);
+  assert(bytesperpix != 0);
+  _data    = malloc(bytesperpix * w * h);
   meFormat = fmt;
-  miW = w;
-  miH = h;
+  miW      = w;
+  miH      = h;
 }

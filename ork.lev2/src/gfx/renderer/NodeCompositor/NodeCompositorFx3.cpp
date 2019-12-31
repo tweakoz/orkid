@@ -31,11 +31,10 @@ ImplementReflectionX(ork::lev2::CompositingGroupEffect, "CompositingGroupEffect"
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void Fx3CompositingTechnique::describeX(class_t* c) {
-  c->memberProperty("Mode", &Fx3CompositingTechnique::meBlendMode)
-   ->annotate<ConstString>("editor.class", "ged.factory.enum");
-  c->floatProperty("LevelA", float_range{-10,10}, &Fx3CompositingTechnique::mfLevelA);
-  c->floatProperty("LevelB", float_range{-10,10}, &Fx3CompositingTechnique::mfLevelB);
-  c->floatProperty("LevelC", float_range{-10,10}, &Fx3CompositingTechnique::mfLevelC);
+  c->memberProperty("Mode", &Fx3CompositingTechnique::meBlendMode)->annotate<ConstString>("editor.class", "ged.factory.enum");
+  c->floatProperty("LevelA", float_range{-10, 10}, &Fx3CompositingTechnique::mfLevelA);
+  c->floatProperty("LevelB", float_range{-10, 10}, &Fx3CompositingTechnique::mfLevelB);
+  c->floatProperty("LevelC", float_range{-10, 10}, &Fx3CompositingTechnique::mfLevelC);
   c->memberProperty("GroupA", &Fx3CompositingTechnique::mGroupA);
   c->memberProperty("GroupB", &Fx3CompositingTechnique::mGroupB);
   c->memberProperty("GroupC", &Fx3CompositingTechnique::mGroupC);
@@ -48,7 +47,8 @@ Fx3CompositingTechnique::Fx3CompositingTechnique()
     , mfLevelA(1.0f)
     , mfLevelB(1.0f)
     , mfLevelC(1.0f)
-    , meBlendMode(AplusBplusC) {}
+    , meBlendMode(AplusBplusC) {
+}
 ///////////////////////////////////////////////////////////////////////////////
 Fx3CompositingTechnique::~Fx3CompositingTechnique() {
   if (mpBuiltinFrameTekA)
@@ -82,20 +82,21 @@ bool Fx3CompositingTechnique::assemble(CompositorDrawData& drawdata) {
   const lev2::CompositingGroup* pCGC = drawdata._cimpl->compositingGroup(mGroupC);
 
   struct yo {
-    static void rend_lyr_2_comp_group(CompositorDrawData& drawdata,
-                                      const lev2::CompositingGroup* pCG,
-                                      lev2::BuiltinFrameTechniques* pFT,
-                                      const char* layername) {
-      drawdata.target()->debugPushGroup(FormatString("Fx3CompositingNode::rend_lyr_2_comp_group layer<%s>",layername));
-      lev2::FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
+    static void rend_lyr_2_comp_group(
+        CompositorDrawData& drawdata,
+        const lev2::CompositingGroup* pCG,
+        lev2::BuiltinFrameTechniques* pFT,
+        const char* layername) {
+      drawdata.target()->debugPushGroup(FormatString("Fx3CompositingNode::rend_lyr_2_comp_group layer<%s>", layername));
+      lev2::FrameRenderer& the_renderer  = drawdata.mFrameRenderer;
       lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
-      //orkstack<CompositingPassData>& cgSTACK  = drawdata.mCompositingGroupStack;
-      //auto node = pFT->createPassData(pCG);
-      //RCFD.setLayerName(layername);
-      //cgSTACK.push(node);
-      //pFT->Render(the_renderer);
-      //cgSTACK.pop();
-      //drawdata.target()->debugPopGroup();
+      // orkstack<CompositingPassData>& cgSTACK  = drawdata.mCompositingGroupStack;
+      // auto node = pFT->createPassData(pCG);
+      // RCFD.setLayerName(layername);
+      // cgSTACK.push(node);
+      // pFT->Render(the_renderer);
+      // cgSTACK.pop();
+      // drawdata.target()->debugPopGroup();
     }
   };
 
@@ -111,21 +112,22 @@ bool Fx3CompositingTechnique::assemble(CompositorDrawData& drawdata) {
   return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Fx3CompositingTechnique::CompositeLayerToScreen(lev2::GfxTarget* pT,
-                                                     ECOMPOSITEBlend eblend,
-                                                     lev2::RtGroup* psrcgroupA,
-                                                     lev2::RtGroup* psrcgroupB,
-                                                     lev2::RtGroup* psrcgroupC,
-                                                     float levA,
-                                                     float levB,
-                                                     float levC) {
+void Fx3CompositingTechnique::CompositeLayerToScreen(
+    lev2::GfxTarget* pT,
+    ECOMPOSITEBlend eblend,
+    lev2::RtGroup* psrcgroupA,
+    lev2::RtGroup* psrcgroupB,
+    lev2::RtGroup* psrcgroupC,
+    float levA,
+    float levB,
+    float levC) {
 
   static const float kMAXW = 1.0f;
   static const float kMAXH = 1.0f;
   auto fbi                 = pT->FBI();
   auto this_buf            = fbi->GetThisBuffer();
-  int itw                  = pT->GetW();
-  int ith                  = pT->GetH();
+  int itw                  = pT->mainSurfaceWidth();
+  int ith                  = pT->mainSurfaceHeight();
   SRect vprect(0, 0, itw, ith - 1);
   SRect quadrect(0, ith - 1, itw - 1, 0);
   auto out_buf = this_buf;
@@ -208,12 +210,15 @@ void Fx3CompositingTechnique::composite(CompositorDrawData& drawdata) {
   drawdata.target()->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Fx3CompositingNode::describeX(class_t*c) {
+void Fx3CompositingNode::describeX(class_t* c) {
   c->accessorProperty("Group", &Fx3CompositingNode::_readGroup, &Fx3CompositingNode::_writeGroup)
-   ->annotate<ConstString>("editor.factorylistbase", "CompositingGroup");
+      ->annotate<ConstString>("editor.factorylistbase", "CompositingGroup");
 }
 ///////////////////////////////////////////////////////////////////////////////
-Fx3CompositingNode::Fx3CompositingNode() : mFTEK(nullptr), mGroup(nullptr) {}
+Fx3CompositingNode::Fx3CompositingNode()
+    : mFTEK(nullptr)
+    , mGroup(nullptr) {
+}
 ///////////////////////////////////////////////////////////////////////////////
 Fx3CompositingNode::~Fx3CompositingNode() {
   if (mFTEK)
@@ -222,12 +227,12 @@ Fx3CompositingNode::~Fx3CompositingNode() {
 ///////////////////////////////////////////////////////////////////////////////
 void Fx3CompositingNode::_readGroup(ork::rtti::ICastable*& val) const {
   CompositingGroup* nonconst = const_cast<CompositingGroup*>(mGroup);
-  val = nonconst;
+  val                        = nonconst;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Fx3CompositingNode::_writeGroup(ork::rtti::ICastable* const& val) {
   ork::rtti::ICastable* ptr = val;
-  mGroup = ((ptr == 0) ? 0 : rtti::safe_downcast<CompositingGroup*>(ptr));
+  mGroup                    = ((ptr == 0) ? 0 : rtti::safe_downcast<CompositingGroup*>(ptr));
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Fx3CompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtual
@@ -243,10 +248,10 @@ void Fx3CompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtu
 void Fx3CompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
 {
   drawdata.target()->debugPushGroup("Fx3CompositingNode::DoRender");
-  const CompositingGroup* pCG = mGroup;
-  lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
+  const CompositingGroup* pCG        = mGroup;
+  lev2::FrameRenderer& the_renderer  = drawdata.mFrameRenderer;
   lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
-  auto CIMPL = drawdata._cimpl;
+  auto CIMPL                         = drawdata._cimpl;
 
   if (mFTEK) {
     auto node = mFTEK->createPassData(pCG);
@@ -290,17 +295,24 @@ CompositingGroupEffect::CompositingGroupEffect()
     , _finalResolution(0.5f)
     , _fxResolution(0.5f)
     , _texture(nullptr)
-    , _postFxFeedback(false) {}
+    , _postFxFeedback(false) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingGroupEffect::_writeTex(rtti::ICastable* const& tex) { _texture = tex ? rtti::autocast(tex) : nullptr; }
+void CompositingGroupEffect::_writeTex(rtti::ICastable* const& tex) {
+  _texture = tex ? rtti::autocast(tex) : nullptr;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingGroupEffect::_readTex(rtti::ICastable*& tex) const { tex = _texture; }
+void CompositingGroupEffect::_readTex(rtti::ICastable*& tex) const {
+  tex = _texture;
+}
 
-Texture* CompositingGroupEffect::GetFbUvMap() const { return (_texture == 0) ? 0 : _texture->GetTexture(); }
+Texture* CompositingGroupEffect::GetFbUvMap() const {
+  return (_texture == 0) ? 0 : _texture->GetTexture();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -349,7 +361,8 @@ void CompositingGroup::describeX(class_t* c) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CompositingGroup::CompositingGroup() {}
+CompositingGroup::CompositingGroup() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

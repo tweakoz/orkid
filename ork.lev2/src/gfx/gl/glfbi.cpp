@@ -52,11 +52,11 @@ void GlFrameBufferInterface::_setAsRenderTarget(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::DoBeginFrame(void) {
+void GlFrameBufferInterface::_doBeginFrame(void) {
 
   mTargetGL.makeCurrentContext();
 
-  // mTargetGL.debugPushGroup("GlFrameBufferInterface::DoBeginFrameA");
+  // mTargetGL.debugPushGroup("GlFrameBufferInterface::_doBeginFrameA");
   // glFinish();
   GL_ERRORCHECK();
 
@@ -79,7 +79,7 @@ void GlFrameBufferInterface::DoBeginFrame(void) {
   ////////////////////////////////
   {
     glDepthRange(0.0, 1.0f);
-    SRect extents(mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH());
+    SRect extents = mTarget.mainSurfaceRectAtOrigin();
     // printf( "OST begin x<%d> y<%d> w<%d> h<%d>\n", mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH() );
     PushViewport(extents);
     PushScissor(extents);
@@ -94,7 +94,7 @@ void GlFrameBufferInterface::DoBeginFrame(void) {
     GL_ERRORCHECK();
 
     glDepthRange(0.0, 1.0f);
-    SRect extents(mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH());
+    SRect extents = mTarget.mainSurfaceRectAtOrigin();
     // printf( "WINtarg begin x<%d> y<%d> w<%d> h<%d>\n", mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH() );
     PushViewport(extents);
     PushScissor(extents);
@@ -107,7 +107,7 @@ void GlFrameBufferInterface::DoBeginFrame(void) {
       if (IsPickState())
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
       else
-        glClearColor(rCol.GetX(), rCol.GetY(), rCol.GetZ(), 1.0f);
+        glClearColor(rCol.x, rCol.y, rCol.w, 1.0f);
 
       // printf( "GlFrameBufferInterface::ClearViewport()\n" );
       GL_ERRORCHECK();
@@ -123,7 +123,7 @@ void GlFrameBufferInterface::DoBeginFrame(void) {
   // Set Initial Rendering States
   GL_ERRORCHECK();
 
-  // mTargetGL.debugPushGroup("GlFrameBufferInterface::DoBeginFrameB");
+  // mTargetGL.debugPushGroup("GlFrameBufferInterface::_doBeginFrameB");
 
   const SRasterState defstate;
   mTarget.RSI()->BindRasterState(defstate, true);
@@ -134,8 +134,8 @@ void GlFrameBufferInterface::DoBeginFrame(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::DoEndFrame(void) {
-  // mTargetGL.debugPushGroup("GlFrameBufferInterface::DoEndFrame");
+void GlFrameBufferInterface::_doEndFrame(void) {
+  // mTargetGL.debugPushGroup("GlFrameBufferInterface::_doEndFrame");
   GL_ERRORCHECK();
 
   ///////////////////////////////////////////
@@ -213,8 +213,8 @@ void GlFrameBufferInterface::_initializeContext(GfxBuffer* pBuf) {
   // create orknum texture and link it
 
   Texture* ptexture = new Texture();
-  ptexture->_width  = mTarget.GetW();
-  ptexture->_height = mTarget.GetH();
+  ptexture->_width  = mTarget.mainSurfaceWidth();
+  ptexture->_height = mTarget.mainSurfaceHeight();
 
   SetBufferTexture(ptexture);
 
@@ -482,10 +482,10 @@ bool GlFrameBufferInterface::capture(const RtGroup& rtg, int irt, CaptureBuffer*
 void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) {
   fcolor4 Color(0.0f, 0.0f, 0.0f, 0.0f);
 
-  int sx = int((rAt.GetX()) * float(mTarget.GetW()));
-  int sy = int((1.0f - rAt.GetY()) * float(mTarget.GetH()));
+  int sx = int((rAt.GetX()) * float(mTarget.mainSurfaceWidth()));
+  int sy = int((1.0f - rAt.GetY()) * float(mTarget.mainSurfaceHeight()));
 
-  bool bInBounds = ((sx < mTarget.GetW()) && (sy < mTarget.GetH()) && (sx > 0) && (sy > 0));
+  bool bInBounds = ((sx < mTarget.mainSurfaceWidth()) && (sy < mTarget.mainSurfaceHeight()) && (sx > 0) && (sy > 0));
 
   if (IsOffscreenTarget() && bInBounds) {
     if (ctx.mRtGroup) {

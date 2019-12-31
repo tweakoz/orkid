@@ -29,7 +29,7 @@ ImplementReflectionX(ork::lev2::SeriesCompositingNode, "SeriesCompositingNode");
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-void SeriesCompositingNode::describeX(class_t*c) {
+void SeriesCompositingNode::describeX(class_t* c) {
   ork::reflect::RegisterProperty("Node", &SeriesCompositingNode::GetNode, &SeriesCompositingNode::SetNode);
 
   auto anno = [&](const char* p, const char* k, const char* v) {
@@ -40,7 +40,11 @@ void SeriesCompositingNode::describeX(class_t*c) {
   anno("Node", "editor.factorylistbase", "PostCompositingNode");
 }
 ///////////////////////////////////////////////////////////////////////////////
-SeriesCompositingNode::SeriesCompositingNode() : mFTEK(nullptr), mNode(nullptr), mOutput(nullptr) {}
+SeriesCompositingNode::SeriesCompositingNode()
+    : mFTEK(nullptr)
+    , mNode(nullptr)
+    , mOutput(nullptr) {
+}
 ///////////////////////////////////////////////////////////////////////////////
 SeriesCompositingNode::~SeriesCompositingNode() {
   if (mFTEK)
@@ -49,22 +53,23 @@ SeriesCompositingNode::~SeriesCompositingNode() {
     delete mOutput;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SeriesCompositingNode::GetNode(ork::rtti::ICastable*& val) const { val = const_cast<PostCompositingNode*>(mNode); }
+void SeriesCompositingNode::GetNode(ork::rtti::ICastable*& val) const {
+  val = const_cast<PostCompositingNode*>(mNode);
+}
 ///////////////////////////////////////////////////////////////////////////////
 void SeriesCompositingNode::SetNode(ork::rtti::ICastable* const& val) {
   ork::rtti::ICastable* ptr = val;
-  mNode = ((ptr == 0) ? 0 : rtti::safe_downcast<PostCompositingNode*>(ptr));
+  mNode                     = ((ptr == 0) ? 0 : rtti::safe_downcast<PostCompositingNode*>(ptr));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SeriesCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH)
-{
+void SeriesCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) {
   if (nullptr == mOutput) {
     mCompositingMaterial.Init(pTARG);
 
-    _rtg = new lev2::RtGroup(pTARG, iW, iH);
-    mOutput = new lev2::RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, iW, iH);
+    _rtg                = new lev2::RtGroup(pTARG, iW, iH);
+    mOutput             = new lev2::RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, iW, iH);
     mOutput->_debugName = FormatString("SeriesCompositingNode::output");
-    _rtg->SetMrt(0,mOutput);
+    _rtg->SetMrt(0, mOutput);
 
     mFTEK = new lev2::BuiltinFrameTechniques(iW, iH);
     mFTEK->Init(pTARG);
@@ -74,15 +79,14 @@ void SeriesCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH)
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SeriesCompositingNode::DoRender(CompositorDrawData& drawdata)
-{
-  lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
+void SeriesCompositingNode::DoRender(CompositorDrawData& drawdata) {
+  lev2::FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
   lev2::RenderContextFrameData& framedata = the_renderer.framedata();
-  auto target = framedata.GetTarget();
-  auto fbi = target->FBI();
-  auto gbi = target->GBI();
-  int iw = target->GetW();
-  int ih = target->GetH();
+  auto target                             = framedata.GetTarget();
+  auto fbi                                = target->FBI();
+  auto gbi                                = target->GBI();
+  int iw                                  = target->mainSurfaceWidth();
+  int ih                                  = target->mainSurfaceHeight();
 
   if (mNode)
     mNode->Render(drawdata);
@@ -111,4 +115,4 @@ lev2::RtBuffer* SeriesCompositingNode::GetOutput() const {
   return pRT;
 }
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2 {
+} // namespace ork::lev2

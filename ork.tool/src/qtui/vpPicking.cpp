@@ -126,8 +126,8 @@ void SceneEditorVP::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
   mpPickBuffer->Draw(ctx);
 
   /////////////////////////////////////////////////////////////
-  int iW = mpPickBuffer->GetContext()->GetW();
-  int iH = mpPickBuffer->GetContext()->GetH();
+  int iW = mpPickBuffer->GetContext()->mainSurfaceWidth();
+  int iH = mpPickBuffer->GetContext()->mainSurfaceHeight();
   /////////////////////////////////////////////////////////////
   mpPickBuffer->GetContext()->FBI()->SetViewport(0, 0, iW, iH);
   mpPickBuffer->GetContext()->FBI()->SetScissor(0, 0, iW, iH);

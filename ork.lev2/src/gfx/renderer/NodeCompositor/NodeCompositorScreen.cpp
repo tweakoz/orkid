@@ -52,8 +52,8 @@ struct SCRIMPL {
     auto CIMPL                   = drawdata._cimpl;
     auto DB                      = RCFD.GetDB();
     GfxTarget* targ              = drawdata.target();
-    int w                        = targ->GetW();
-    int h                        = targ->GetH();
+    int w                        = targ->mainSurfaceWidth();
+    int h                        = targ->mainSurfaceHeight();
     if (targ->hiDPI()) {
       w /= 2;
       h /= 2;
@@ -124,8 +124,8 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         drawdata.target()->debugPushGroup("ScreenCompositingNode::to_screen");
         auto this_buf = targ->FBI()->GetThisBuffer();
         auto& mtl     = impl->_blit2screenmtl;
-        int iw        = targ->GetW();
-        int ih        = targ->GetH();
+        int iw        = targ->mainSurfaceWidth();
+        int ih        = targ->mainSurfaceHeight();
         SRect vprect(0, 0, iw, ih);
         SRect quadrect(0, ih, iw, 0);
         fvec4 color(1.0f, 1.0f, 1.0f, 1.0f);

@@ -155,7 +155,7 @@ struct IMPL {
     CIMPL->pushCPD(_context._accumCPD); // base lighting
     FBI->SetAutoClear(true);
     FBI->PushRtGroup(_context._rtgLaccum);
-    targ->BeginFrame();
+    targ->beginFrame();
     FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
     //////////////////////////////////////////////////////////////////
     // base lighting
@@ -207,7 +207,7 @@ struct IMPL {
     _context._lightingmtl.end(RCFD);
     CIMPL->popCPD();       // base lighting
     targ->debugPopGroup(); // BaseLighting
-    targ->EndFrame();
+    targ->endFrame();
     FBI->PopRtGroup(); // deferredRtg
 
     targ->debugPopGroup(); // "Deferred::LightAccum"

@@ -248,8 +248,6 @@ void SceneEditorVP::DoInit(ork::lev2::GfxTarget* pTARG) {
   mpPickBuffer->RefClearColor().SetRGBAU32(0);
   mpPickBuffer->CreateContext();
   mpPickBuffer->GetContext()->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
-  int iw = pTARG->GetW();
-  int ih = pTARG->GetH();
 
   pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
 
@@ -280,8 +278,8 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     _ctxbase = mpTarget->GetCtxBase();
   }
 
-  int TARGW           = mpTarget->GetW();
-  int TARGH           = mpTarget->GetH();
+  int TARGW           = mpTarget->mainSurfaceWidth();
+  int TARGH           = mpTarget->mainSurfaceHeight();
   const SRect tgtrect = SRect(0, 0, TARGW, TARGH);
   _renderer->SetTarget(mpTarget);
   ////////////////////////////////////////////////
@@ -310,7 +308,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   if (nullptr == compsys or nullptr == sim) {
     // still want to draw something so we know the editor is alive..
     GL_ERRORCHECK();
-    mpTarget->BeginFrame();
+    mpTarget->beginFrame();
     GL_ERRORCHECK();
     // we must still consume DrawableBuffers (since the compositor cannot)
     const DrawableBuffer* DB = DrawableBuffer::acquireReadDB(7);
@@ -323,7 +321,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     if (DB) {
       DrawableBuffer::releaseReadDB(DB);
     } // release consumed DB
-    mpTarget->EndFrame();
+    mpTarget->endFrame();
     mpTarget->popRenderContextFrameData();
     _gimpl.popCPD();
     GL_ERRORCHECK();
@@ -345,14 +343,15 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   GL_ERRORCHECK();
   mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
   _renderer->SetTarget(mpTarget);
-  SetRect(mpTarget->GetX(), mpTarget->GetY(), mpTarget->GetW(), mpTarget->GetH());
+  auto mainrect = mpTarget->mainSurfaceRectAtWindowPos();
+  SetRect(mainrect.miX, mainrect.miY, mainrect.miX2, mainrect.miY2);
   FBI->SetAutoClear(true);
   FBI->SetViewport(0, 0, TARGW, TARGH);
   FBI->SetScissor(0, 0, TARGW, TARGH);
   mpTarget->debugPopGroup();
   GL_ERRORCHECK();
   mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
-  mpTarget->BeginFrame();
+  mpTarget->beginFrame();
   mpTarget->debugPopGroup();
   GL_ERRORCHECK();
   mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
@@ -407,7 +406,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     if (false == FBI->IsPickState())
       DrawSpinner(RCFD);
   }
-  mpTarget->EndFrame();
+  mpTarget->endFrame();
   mpTarget->debugPopGroup();
   //////////////////////////////////////////////////
   // update editor camera (TODO - move to engine)
@@ -808,7 +807,7 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& RCFD, ork::lev2
         ManipManager().GetCurTransform().GetMatrix(MatW);
         const fvec4 V0 = MatW.GetTranslation();
         const fvec4 V1 = V0 + ScreenXNorm * float(30.0f);
-        fvec2 VP(float(pProxyTarg->GetW()), float(pProxyTarg->GetH()));
+        fvec2 VP(float(pProxyTarg->mainSurfaceWidth()), float(pProxyTarg->mainSurfaceHeight()));
         fvec3 Pos = MatW.GetTranslation();
         fvec3 UpVector;
         fvec3 RightVector;
@@ -821,8 +820,8 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& RCFD, ork::lev2
         if (topCPD.isPicking()) {
           ManipManager().SetViewScale(fRSCALE);
         } else {
-          float fW = float(pOutputTarget->GetW());
-          float fH = float(pOutputTarget->GetH());
+          float fW = float(pOutputTarget->mainSurfaceWidth());
+          float fH = float(pOutputTarget->mainSurfaceHeight());
           fRSCALE  = ManipManager().CalcViewScale(fW, fH, cammatrices);
           ManipManager().SetViewScale(fRSCALE);
         }

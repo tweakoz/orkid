@@ -21,7 +21,8 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 struct PtxImpl {
   PtxImpl(PtxCompositingNode* node)
-      : _node(node) {}
+      : _node(node) {
+  }
   ~PtxImpl() {
     if (_output)
       delete _output;
@@ -29,14 +30,13 @@ struct PtxImpl {
   void gpuInit(lev2::GfxTarget* pTARG, int iW, int iH) {
     if (_needsinit) {
       _needsinit = false;
-        _blit2screenmtl.SetUserFx("orkshader://solid", "texcolor");
-        _blit2screenmtl.Init(pTARG);
+      _blit2screenmtl.SetUserFx("orkshader://solid", "texcolor");
+      _blit2screenmtl.Init(pTARG);
 
-      _output         = new lev2::RtGroup(pTARG, iW, iH);
-      _outputbuffer        = new lev2::RtBuffer(_output, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, iW, iH);
+      _output                   = new lev2::RtGroup(pTARG, iW, iH);
+      _outputbuffer             = new lev2::RtBuffer(_output, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, iW, iH);
       _outputbuffer->_debugName = FormatString("PtxCompositingNode::output");
       _output->SetMrt(0, _outputbuffer);
-
     }
   }
   void _recompute(CompositorDrawData& drawdata) {
@@ -57,21 +57,19 @@ struct PtxImpl {
   }
 
   void _render(CompositorDrawData& drawdata) {
-    lev2::FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
+    lev2::FrameRenderer& the_renderer  = drawdata.mFrameRenderer;
     lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
-    auto target                             = RCFD.GetTarget();
-    auto fbi                                = target->FBI();
-    auto gbi                                = target->GBI();
-    int iw                                  = target->GetW();
-    int ih                                  = target->GetH();
+    auto target                        = RCFD.GetTarget();
+    auto fbi                           = target->FBI();
+    auto gbi                           = target->GBI();
 
-    auto CIMPL = drawdata._cimpl;
-    auto CPD = CIMPL->topCPD();
-      SRect vprect(0, 0, iw, ih);
+    auto CIMPL   = drawdata._cimpl;
+    auto CPD     = CIMPL->topCPD();
+    SRect vprect = target->mainSurfaceRectAtOrigin();
     CPD.SetDstRect(vprect);
-    CPD._cameraMatrices = nullptr;
+    CPD._cameraMatrices       = nullptr;
     CPD._stereoCameraMatrices = nullptr;
-    CPD._stereo1pass = false;
+    CPD._stereo1pass          = false;
 
     lev2::Texture* input_tex = nullptr;
 
@@ -88,7 +86,7 @@ struct PtxImpl {
 
     if (_output) {
 
-        CIMPL->pushCPD(CPD);
+      CIMPL->pushCPD(CPD);
 
       /////////////////////////////////////////////
       // send texture
@@ -107,13 +105,11 @@ struct PtxImpl {
       target->debugPushGroup("PtxCompositingNode::to_output");
       target->FBI()->SetAutoClear(true);
       target->FBI()->PushRtGroup(_output);
-      target->BeginFrame();
+      target->beginFrame();
       RtGroupRenderTarget rt(_output);
-      auto this_buf = target->FBI()->GetThisBuffer();
-      auto& mtl     = _blit2screenmtl;
-      int iw        = target->GetW();
-      int ih        = target->GetH();
-      SRect quadrect(0, 0, iw, ih);
+      auto this_buf  = target->FBI()->GetThisBuffer();
+      auto& mtl      = _blit2screenmtl;
+      SRect quadrect = target->mainSurfaceRectAtOrigin();
       fvec4 color(1.0f, 1.0f, 1.0f, 1.0f);
       mtl.SetAuxMatrix(fmtx4::Identity);
       mtl.SetTexture(_resultTexture);
@@ -121,30 +117,31 @@ struct PtxImpl {
       mtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
       mtl._rasterstate.SetBlending(EBLENDING_OFF);
       mtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
-      this_buf->RenderMatOrthoQuad(vprect,
-                                   quadrect,
-                                   &mtl,
-                                   0.0f,
-                                   0.0f, // u0 v0
-                                   1.0f,
-                                   1.0f, // u1 v1
-                                   nullptr,
-                                   color);
-      target->EndFrame();
+      this_buf->RenderMatOrthoQuad(
+          vprect,
+          quadrect,
+          &mtl,
+          0.0f,
+          0.0f, // u0 v0
+          1.0f,
+          1.0f, // u1 v1
+          nullptr,
+          color);
+      target->endFrame();
       target->FBI()->PopRtGroup();
       target->debugPopGroup();
 
-    CIMPL->popCPD();
+      CIMPL->popCPD();
     }
   }
   ork::lev2::GfxMaterial3DSolid _blit2screenmtl;
   proctex::ProcTexContext _ptexContext;
-  PtxCompositingNode* _node           = nullptr;
-  RtGroup* _output              = nullptr;
-  RtBuffer* _outputbuffer = nullptr;
-  Texture* _resultTexture       = nullptr;
-  bool _needsinit                     = true;
-  float _time                         = 0.0f;
+  PtxCompositingNode* _node = nullptr;
+  RtGroup* _output          = nullptr;
+  RtBuffer* _outputbuffer   = nullptr;
+  Texture* _resultTexture   = nullptr;
+  bool _needsinit           = true;
+  float _time               = 0.0f;
 };
 ///////////////////////////////////////////////////////////////////////////////
 typedef std::set<PtxCompositingNode*> instex_set_t;
@@ -218,7 +215,9 @@ PtxCompositingNode::~PtxCompositingNode() {
 void PtxCompositingNode::SetTextureAccessor(ork::rtti::ICastable* const& tex) {
   mReturnTexture = tex ? ork::rtti::autocast(tex) : 0;
 }
-void PtxCompositingNode::GetTextureAccessor(ork::rtti::ICastable*& tex) const { tex = mReturnTexture; }
+void PtxCompositingNode::GetTextureAccessor(ork::rtti::ICastable*& tex) const {
+  tex = mReturnTexture;
+}
 ///////////////////////////////////////////////////////////////////////////////
 void PtxCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtual
 {
@@ -231,7 +230,7 @@ void PtxCompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
 }
 ///////////////////////////////////////////////////////////////////////////////
 lev2::RtBuffer* PtxCompositingNode::GetOutput() const {
-  auto ptximpl       = _impl.getShared<PtxImpl>();
+  auto ptximpl = _impl.getShared<PtxImpl>();
   return ptximpl->_output->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////

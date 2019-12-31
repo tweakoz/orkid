@@ -31,6 +31,7 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 extern bool _HIDPI();
+extern float _currentDPI();
 
 typedef SVtxV12C4T16 TEXT_VTXFMT;
 
@@ -152,29 +153,39 @@ public:
 
   ///////////////////////////////////////////////////////////////////////
 
-  int GetX(void) const {
+  inline int mainSurfaceWindowPosX(void) const {
     return miX;
   }
-  int GetY(void) const {
+  inline int mainSurfaceWindowPosY(void) const {
     return miY;
   }
-  int GetW(void) const {
+  inline int mainSurfaceWidth(void) const {
     return miW;
   }
-  int GetH(void) const {
+  inline int mainSurfaceHeight(void) const {
     return miH;
   }
-
-  virtual void SetSize(int ix, int iy, int iw, int ih) = 0;
+  inline float mainSurfaceAspectRatio() const {
+    return float(miW) / float(miH);
+  }
+  inline SRect mainSurfaceRectAtWindowPos() const {
+    return SRect(miX, miY, miW, miH);
+  }
+  inline SRect mainSurfaceRectAtOrigin() const {
+    return SRect(0, 0, miW, miH);
+  }
+  inline void resizeMainSurface(int ix, int iy, int iw, int ih) {
+    _doResizeMainSurface(ix, iy, iw, ih);
+  }
 
   //////////////////////////////////////////////
 
-  void BeginFrame(void);
-  void EndFrame(void);
+  void beginFrame(void);
+  void endFrame(void);
 
   //////////////////////////////////////////////
 
-  GfxMaterial* GetCurMaterial(void) {
+  GfxMaterial* currentMaterial(void) {
     return mpCurMaterial;
   }
   void BindMaterial(GfxMaterial* pmtl);
@@ -295,19 +306,22 @@ public:
   bool mbDeviceAvailable;
   int miDrawLock;
   bool hiDPI() const;
+  float currentDPI() const;
 
   static orkvector<DisplayMode*> mDisplayModes;
 
   std::stack<const RenderContextFrameData*> _rcfdstack;
 
 private:
-  virtual void DoBeginFrame(void) = 0;
-  virtual void DoEndFrame(void)   = 0;
-  virtual void* DoBeginLoad() {
+  virtual void _doBeginFrame(void) = 0;
+  virtual void _doEndFrame(void)   = 0;
+  virtual void* _doBeginLoad() {
     return nullptr;
   }
-  virtual void DoEndLoad(void* ploadtok) {
+  virtual void _doEndLoad(void* ploadtok) {
   }
+
+  virtual void _doResizeMainSurface(int ix, int iy, int iw, int ih) = 0;
 
   const RenderContextFrameData* _defaultrcfd = nullptr;
 };
@@ -398,16 +412,16 @@ public:
   GfxTarget* GetContext(void) const;
 
   int GetContextX(void) const {
-    return GetContext()->GetX();
+    return GetContext()->mainSurfaceWindowPosX();
   }
   int GetContextY(void) const {
-    return GetContext()->GetY();
+    return GetContext()->mainSurfaceWindowPosY();
   }
   int GetContextW(void) const {
-    return GetContext()->GetW();
+    return GetContext()->mainSurfaceWidth();
   }
   int GetContextH(void) const {
-    return GetContext()->GetH();
+    return GetContext()->mainSurfaceHeight();
   }
 
   int GetBufferW(void) const {

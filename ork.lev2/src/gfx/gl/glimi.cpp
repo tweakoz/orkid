@@ -24,11 +24,11 @@ GlImiInterface::GlImiInterface( GfxTargetGL& target )
 void GlImiInterface::DrawPrim( const fvec4 *Points, int inumpoints, EPrimitiveType eType )
 {
 /*	glBindBuffer( GL_ARRAY_BUFFER, 0 );
-	int inumpasses = mTarget.GetCurMaterial()->BeginBlock(&mTarget);
+	int inumpasses = mTarget.currentMaterial()->BeginBlock(&mTarget);
 
 	for( int ipass=0; ipass<inumpasses; ipass++ )
 	{
-		bool bDRAW = mTarget.GetCurMaterial()->BeginPass( &mTarget,ipass );
+		bool bDRAW = mTarget.currentMaterial()->BeginPass( &mTarget,ipass );
 
 		if( bDRAW )
 		{
@@ -73,11 +73,11 @@ void GlImiInterface::DrawPrim( const fvec4 *Points, int inumpoints, EPrimitiveTy
 void GlImiInterface::DrawLine( const fvec4 &From, const fvec4 &To )
 {
 /*	glBindBuffer( GL_ARRAY_BUFFER_ARB, 0 );
-	int inumpasses = mTarget.GetCurMaterial()->BeginBlock(&mTarget);
+	int inumpasses = mTarget.currentMaterial()->BeginBlock(&mTarget);
 
 	for( int ipass=0; ipass<inumpasses; ipass++ )
 	{
-		bool bDRAW = mTarget.GetCurMaterial()->BeginPass( &mTarget,ipass );
+		bool bDRAW = mTarget.currentMaterial()->BeginPass( &mTarget,ipass );
 
 		if( bDRAW )
 		{
@@ -86,21 +86,21 @@ void GlImiInterface::DrawLine( const fvec4 &From, const fvec4 &To )
 				glVertex3fv( (float*)const_cast<fvec4&>(To).GetArray() );
 			glEnd();
 		}
-		mTarget.GetCurMaterial()->EndPass(&mTarget);
+		mTarget.currentMaterial()->EndPass(&mTarget);
 
 	}
 
-	mTarget.GetCurMaterial()->EndBlock(&mTarget);*/
+	mTarget.currentMaterial()->EndBlock(&mTarget);*/
 }
 
 void GlImiInterface::DrawPoint( F32 fx, F32 fy, F32 fz )
 {
 	/*glBindBuffer( GL_ARRAY_BUFFER_ARB, 0 );
-	int inumpasses = mTarget.GetCurMaterial()->BeginBlock(&mTarget);
+	int inumpasses = mTarget.currentMaterial()->BeginBlock(&mTarget);
 
 	for( int ipass=0; ipass<inumpasses; ipass++ )
 	{
-		bool bDRAW = mTarget.GetCurMaterial()->BeginPass( &mTarget, ipass );
+		bool bDRAW = mTarget.currentMaterial()->BeginPass( &mTarget, ipass );
 
 		if( bDRAW )
 		{
@@ -110,10 +110,10 @@ void GlImiInterface::DrawPoint( F32 fx, F32 fy, F32 fz )
 			glEnd();
 		}
 
-		mTarget.GetCurMaterial()->EndPass(&mTarget);
+		mTarget.currentMaterial()->EndPass(&mTarget);
 	}
 
-	mTarget.GetCurMaterial()->EndBlock(&mTarget);*/
+	mTarget.currentMaterial()->EndBlock(&mTarget);*/
 }
 
 } }

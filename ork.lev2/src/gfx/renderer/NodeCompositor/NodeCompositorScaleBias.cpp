@@ -30,26 +30,27 @@ constexpr int NUMSAMPLES = 1;
 namespace scaleandbias {
 struct IMPL {
   ///////////////////////////////////////
-  IMPL(ScaleBiasCompositingNode*node)
-      : _node(node) {}
+  IMPL(ScaleBiasCompositingNode* node)
+      : _node(node) {
+  }
   ///////////////////////////////////////
   ~IMPL() {
   }
   ///////////////////////////////////////
   void init(lev2::GfxTarget* pTARG) {
     if (nullptr == _rtg) {
-      int w = pTARG->GetW();
-      int h = pTARG->GetH();
-      _rtg = new RtGroup(pTARG, w, h, NUMSAMPLES);
-      auto buf = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, w, h);
+      int w           = pTARG->mainSurfaceWidth();
+      int h           = pTARG->mainSurfaceHeight();
+      _rtg            = new RtGroup(pTARG, w, h, NUMSAMPLES);
+      auto buf        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, w, h);
       buf->_debugName = FormatString("ScaleBiasCompositingNode::output");
-      _rtg->SetMrt(0,buf);
+      _rtg->SetMrt(0, buf);
       _material.Init(pTARG);
     }
   }
   ///////////////////////////////////////
   void _render(CompositorDrawData& drawdata) {
-    GfxTarget* target                  = drawdata.target();
+    GfxTarget* target = drawdata.target();
     //////////////////////////////////////////////////////
     target->FBI()->SetAutoClear(false);
     //////////////////////////////////////////////////////
@@ -58,10 +59,10 @@ struct IMPL {
     RtGroupRenderTarget rt(_rtg);
     {
       target->FBI()->PushRtGroup(_rtg);
-      target->BeginFrame();
-      //framedata.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
-      //renderer.Render();
-      target->EndFrame();
+      target->beginFrame();
+      // framedata.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
+      // renderer.Render();
+      target->endFrame();
       target->FBI()->PopRtGroup();
     }
     target->debugPopGroup();
@@ -69,20 +70,25 @@ struct IMPL {
   ///////////////////////////////////////
   CompositingMaterial _material;
   ScaleBiasCompositingNode* _node = nullptr;
-  RtGroup* _rtg = nullptr;
+  RtGroup* _rtg                   = nullptr;
 };
-} //namespace scaleandbias {
+} // namespace scaleandbias
 ///////////////////////////////////////////////////////////////////////////////
-ScaleBiasCompositingNode::ScaleBiasCompositingNode() { _impl = std::make_shared<scaleandbias::IMPL>(this); }
+ScaleBiasCompositingNode::ScaleBiasCompositingNode() {
+  _impl = std::make_shared<scaleandbias::IMPL>(this);
+}
 ///////////////////////////////////////////////////////////////////////////////
-ScaleBiasCompositingNode::~ScaleBiasCompositingNode() {}
+ScaleBiasCompositingNode::~ScaleBiasCompositingNode() {
+}
 ///////////////////////////////////////////////////////////////////////////////
 void ScaleBiasCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtual
-{ _impl.Get<std::shared_ptr<scaleandbias::IMPL>>()->init(pTARG);
+{
+  _impl.Get<std::shared_ptr<scaleandbias::IMPL>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ScaleBiasCompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
-{ _impl.Get<std::shared_ptr<scaleandbias::IMPL>>()->_render(drawdata);
+{
+  _impl.Get<std::shared_ptr<scaleandbias::IMPL>>()->_render(drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 RtBuffer* ScaleBiasCompositingNode::GetOutput() const {

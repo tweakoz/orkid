@@ -58,11 +58,9 @@ void FileOutputCompositingNode::describeX(class_t* c) {
   c->memberProperty("Layer", &FileOutputCompositingNode::_layername);
   c->memberProperty("OutputFrames", &FileOutputCompositingNode::mbOutputFrames);
   c->memberProperty("OutputResBase", &FileOutputCompositingNode::mOutputBaseResolution)
-   ->annotate("editor.class", "ged.factory.enum");
-  c->memberProperty("OutputResMult", &FileOutputCompositingNode::mOutputResMult)
-  ->annotate("editor.class", "ged.factory.enum");
-  c->memberProperty("OutputFrameRate", &FileOutputCompositingNode::mOutputFrameRate)
-  ->annotate("editor.class", "ged.factory.enum");
+      ->annotate("editor.class", "ged.factory.enum");
+  c->memberProperty("OutputResMult", &FileOutputCompositingNode::mOutputResMult)->annotate("editor.class", "ged.factory.enum");
+  c->memberProperty("OutputFrameRate", &FileOutputCompositingNode::mOutputFrameRate)->annotate("editor.class", "ged.factory.enum");
 }
 ///////////////////////////////////////////////////////////////////////////////
 struct IMPL {
@@ -70,22 +68,27 @@ struct IMPL {
   IMPL(FileOutputCompositingNode* node)
       : _node(node)
       , _camname(AddPooledString("Camera"))
-      , _layers(AddPooledString("All")) {}
+      , _layers(AddPooledString("All")) {
+  }
   ///////////////////////////////////////
-  ~IMPL() {}
+  ~IMPL() {
+  }
   ///////////////////////////////////////
-  void gpuInit(lev2::GfxTarget* pTARG) {}
+  void gpuInit(lev2::GfxTarget* pTARG) {
+  }
   ///////////////////////////////////////
   void beginAssemble(CompositorDrawData& drawdata) {
     FrameRenderer& fr_renderer        = drawdata.mFrameRenderer;
     RenderContextFrameData& framedata = fr_renderer.framedata();
     auto targ                         = framedata.GetTarget();
-    //framedata.setLayerName(_node->_layername.c_str());
-    //targ->debugMarker("File::beginFrame");
-    drawdata._properties["OutputWidth"_crcu].Set<int>(targ->GetW());
-    drawdata._properties["OutputHeight"_crcu].Set<int>(targ->GetH());
+    // framedata.setLayerName(_node->_layername.c_str());
+    // targ->debugMarker("File::beginFrame");
+    drawdata._properties["OutputWidth"_crcu].Set<int>(targ->mainSurfaceWidth());
+    drawdata._properties["OutputHeight"_crcu].Set<int>(targ->mainSurfaceHeight());
   }
-  void endAssemble(CompositorDrawData& drawdata) { drawdata.target()->debugMarker("File::endFrame"); }
+  void endAssemble(CompositorDrawData& drawdata) {
+    drawdata.target()->debugMarker("File::endFrame");
+  }
   void composite(CompositorDrawData& drawdata) {
     auto final = drawdata._properties["final"_crcu].Get<RtGroup*>();
     drawdata.target()->debugMarker("File::endFrame");
@@ -102,7 +105,8 @@ FileOutputCompositingNode::FileOutputCompositingNode()
     , mOutputResMult(EOutputResMult_Full) {
   _impl = std::make_shared<IMPL>(this);
 }
-FileOutputCompositingNode::~FileOutputCompositingNode() {}
+FileOutputCompositingNode::~FileOutputCompositingNode() {
+}
 void FileOutputCompositingNode::gpuInit(lev2::GfxTarget* pTARG, int iW, int iH) {
   _impl.Get<std::shared_ptr<IMPL>>()->gpuInit(pTARG);
 }
@@ -112,7 +116,9 @@ void FileOutputCompositingNode::beginAssemble(CompositorDrawData& drawdata) {
 void FileOutputCompositingNode::endAssemble(CompositorDrawData& drawdata) {
   _impl.Get<std::shared_ptr<IMPL>>()->endAssemble(drawdata);
 }
-void FileOutputCompositingNode::composite(CompositorDrawData& drawdata) { _impl.Get<std::shared_ptr<IMPL>>()->composite(drawdata); }
+void FileOutputCompositingNode::composite(CompositorDrawData& drawdata) {
+  _impl.Get<std::shared_ptr<IMPL>>()->composite(drawdata);
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 EOutputTimeStep FileOutputCompositingNode::currentFrameRateEnum() const {

@@ -22,7 +22,9 @@ ImplementReflectionX(ork::lev2::ForwardCompositingNode, "ForwardCompositingNode"
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-void ForwardCompositingNode::describeX(class_t* c) { c->memberProperty("ClearColor", &ForwardCompositingNode::_clearColor); }
+void ForwardCompositingNode::describeX(class_t* c) {
+  c->memberProperty("ClearColor", &ForwardCompositingNode::_clearColor);
+}
 ///////////////////////////////////////////////////////////////////////////
 constexpr int NUMSAMPLES = 1;
 ///////////////////////////////////////////////////////////////////////////////
@@ -34,7 +36,8 @@ struct IMPL {
     _layername = "All"_pool;
   }
   ///////////////////////////////////////
-  ~IMPL() {}
+  ~IMPL() {
+  }
   ///////////////////////////////////////
   void init(lev2::GfxTarget* pTARG) {
     pTARG->debugPushGroup("Forward::rendeinitr");
@@ -52,10 +55,10 @@ struct IMPL {
   void _render(ForwardCompositingNode* node, CompositorDrawData& drawdata) {
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
-    auto CIMPL = drawdata._cimpl;
+    auto CIMPL                   = drawdata._cimpl;
     auto targ                    = RCFD.GetTarget();
     auto& ddprops                = drawdata._properties;
-    SRect tgt_rect(0, 0, targ->GetW(), targ->GetH());
+    SRect tgt_rect               = targ->mainSurfaceRectAtOrigin();
     //////////////////////////////////////////////////////
     // Resize RenderTargets
     //////////////////////////////////////////////////////
@@ -72,13 +75,13 @@ struct IMPL {
     {
       targ->FBI()->PushRtGroup(_rtg);
       targ->FBI()->SetAutoClear(false); // explicit clear
-      targ->BeginFrame();
+      targ->beginFrame();
       /////////////////////////////////////////////////////////////////////////////////////////
-      auto DB         = RCFD.GetDB();
-      auto CPD = CIMPL->topCPD();
-      CPD._clearColor = node->_clearColor;
-      CPD.mpLayerName = &_layername;
-      CPD._irendertarget = & rt;
+      auto DB            = RCFD.GetDB();
+      auto CPD           = CIMPL->topCPD();
+      CPD._clearColor    = node->_clearColor;
+      CPD.mpLayerName    = &_layername;
+      CPD._irendertarget = &rt;
       CPD.SetDstRect(tgt_rect);
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
@@ -100,7 +103,7 @@ struct IMPL {
         CIMPL->popCPD();
       }
       /////////////////////////////////////////////////////////////////////////////////////////
-      targ->EndFrame();
+      targ->endFrame();
       targ->FBI()->PopRtGroup();
     }
     targ->debugPopGroup();
@@ -115,9 +118,12 @@ struct IMPL {
 } // namespace forwardnode
 
 ///////////////////////////////////////////////////////////////////////////////
-ForwardCompositingNode::ForwardCompositingNode() { _impl = std::make_shared<forwardnode::IMPL>(); }
+ForwardCompositingNode::ForwardCompositingNode() {
+  _impl = std::make_shared<forwardnode::IMPL>();
+}
 ///////////////////////////////////////////////////////////////////////////////
-ForwardCompositingNode::~ForwardCompositingNode() {}
+ForwardCompositingNode::~ForwardCompositingNode() {
+}
 ///////////////////////////////////////////////////////////////////////////////
 void ForwardCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) {
   _impl.Get<std::shared_ptr<forwardnode::IMPL>>()->init(pTARG);
@@ -128,6 +134,8 @@ void ForwardCompositingNode::DoRender(CompositorDrawData& drawdata) {
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-RtBuffer* ForwardCompositingNode::GetOutput() const { return _impl.Get<std::shared_ptr<forwardnode::IMPL>>()->_rtg->GetMrt(0); }
+RtBuffer* ForwardCompositingNode::GetOutput() const {
+  return _impl.Get<std::shared_ptr<forwardnode::IMPL>>()->_rtg->GetMrt(0);
+}
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

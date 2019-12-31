@@ -28,223 +28,191 @@ namespace ork { namespace ent {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void PerfAnalyzerControllerData::Describe()
-{
-	reflect::RegisterProperty("EnableDisplay", &PerfAnalyzerControllerData::mbEnable);
+void PerfAnalyzerControllerData::Describe() {
+  reflect::RegisterProperty("EnableDisplay", &PerfAnalyzerControllerData::mbEnable);
 }
 PerfAnalyzerControllerData::PerfAnalyzerControllerData()
-	: mbEnable(true)
-{
+    : mbEnable(true) {
 }
-ent::ComponentInst* PerfAnalyzerControllerData::createComponent(ent::Entity* pent) const
-{
-	return new PerfAnalyzerControllerInst( *this, pent );
+ent::ComponentInst* PerfAnalyzerControllerData::createComponent(ent::Entity* pent) const {
+  return new PerfAnalyzerControllerInst(*this, pent);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void PerfAnalyzerControllerInst::Describe()
-{
+void PerfAnalyzerControllerInst::Describe() {
 }
 PerfAnalyzerControllerInst::PerfAnalyzerControllerInst(const PerfAnalyzerControllerData& cd, ork::ent::Entity* pent)
-	: ent::ComponentInst(&cd,pent)
-	, mCD(cd)
-	, iupdsampleindex(0)
-	, idrwsampleindex(0)
-	, favgupdate(0.0f)
-	, favgdraw(0.0f)
-{
-	for( int i=0; i<kmaxsamples; i++ )
-	{
-		updbeg[i] = 0.0f;
-		updend[i] = 0.0f;
-		drwbeg[i] = 0.0f;
-		drwend[i] = 0.0f;
-	}
+    : ent::ComponentInst(&cd, pent)
+    , mCD(cd)
+    , iupdsampleindex(0)
+    , idrwsampleindex(0)
+    , favgupdate(0.0f)
+    , favgdraw(0.0f) {
+  for (int i = 0; i < kmaxsamples; i++) {
+    updbeg[i] = 0.0f;
+    updend[i] = 0.0f;
+    drwbeg[i] = 0.0f;
+    drwend[i] = 0.0f;
+  }
 }
-void PerfAnalyzerControllerInst::DoUpdate(ent::Simulation* sinst)
-{
-	bool bpopped = true;
+void PerfAnalyzerControllerInst::DoUpdate(ent::Simulation* sinst) {
+  bool bpopped = true;
 
-	while( bpopped )
-	{
-		PerfItem2 pi;
-		bpopped = PerfMarkerPop( pi );
-		if( bpopped )
-		{
-			if( 0 == strcmp(pi.mpMarkerName, "ork.simulation.update.begin") )
-			{
-				updbeg[iupdsampleindex] = pi.mfMarkerTime;
-			}
-			if( 0 == strcmp(pi.mpMarkerName, "ork.simulation.update.end") )
-			{
-				updend[iupdsampleindex] = pi.mfMarkerTime;
-				iupdsampleindex ++;
-				iupdsampleindex%=kmaxsamples;
-			}
-			if( 0 == strcmp(pi.mpMarkerName, "ork.viewport.draw.begin") )
-			{
-				drwbeg[idrwsampleindex] = pi.mfMarkerTime;
-			}
-			if( 0 == strcmp(pi.mpMarkerName, "ork.viewport.draw.end") )
-			{
-				drwend[idrwsampleindex] = pi.mfMarkerTime;
-				idrwsampleindex ++;
-				idrwsampleindex%=kmaxsamples;
-			}
-		}
-	}
+  while (bpopped) {
+    PerfItem2 pi;
+    bpopped = PerfMarkerPop(pi);
+    if (bpopped) {
+      if (0 == strcmp(pi.mpMarkerName, "ork.simulation.update.begin")) {
+        updbeg[iupdsampleindex] = pi.mfMarkerTime;
+      }
+      if (0 == strcmp(pi.mpMarkerName, "ork.simulation.update.end")) {
+        updend[iupdsampleindex] = pi.mfMarkerTime;
+        iupdsampleindex++;
+        iupdsampleindex %= kmaxsamples;
+      }
+      if (0 == strcmp(pi.mpMarkerName, "ork.viewport.draw.begin")) {
+        drwbeg[idrwsampleindex] = pi.mfMarkerTime;
+      }
+      if (0 == strcmp(pi.mpMarkerName, "ork.viewport.draw.end")) {
+        drwend[idrwsampleindex] = pi.mfMarkerTime;
+        idrwsampleindex++;
+        idrwsampleindex %= kmaxsamples;
+      }
+    }
+  }
 
-	favgupdate = 0.0f;
-	favgdraw = 0.0f;
+  favgupdate = 0.0f;
+  favgdraw   = 0.0f;
 
-	int inumup = 0;
-	for( int i=1; i<kmaxsamples; i++ )
-	{
-		float fb1 = updbeg[i-1];
-		float fb2 = updbeg[i];
-		if( fb1<fb2 )
-		{	favgupdate += (fb2-fb1);
-			inumup++;
-		}
-	}
-	int inumds = 0;
-	for( int i=1; i<kmaxsamples; i++ )
-	{
-		float fb1 = drwbeg[i-1];
-		float fb2 = drwbeg[i];
-		if( fb1<fb2 )
-		{	favgdraw += (fb2-fb1);
-			inumds++;
-		}
-	}
-	favgupdate /= float(inumup);
-	favgdraw /= float(inumds);
-
+  int inumup = 0;
+  for (int i = 1; i < kmaxsamples; i++) {
+    float fb1 = updbeg[i - 1];
+    float fb2 = updbeg[i];
+    if (fb1 < fb2) {
+      favgupdate += (fb2 - fb1);
+      inumup++;
+    }
+  }
+  int inumds = 0;
+  for (int i = 1; i < kmaxsamples; i++) {
+    float fb1 = drwbeg[i - 1];
+    float fb2 = drwbeg[i];
+    if (fb1 < fb2) {
+      favgdraw += (fb2 - fb1);
+      inumds++;
+    }
+  }
+  favgupdate /= float(inumup);
+  favgdraw /= float(inumds);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void PerformanceAnalyzerArchetype::Describe()
-{
-	//reflect::RegisterProperty("ArchetypeAsset", &ReferenceArchetype::mArchetypeAsset);
-	//reflect::annotatePropertyForEditor<ReferenceArchetype>("ArchetypeAsset", "editor.class", "ged.factory.assetlist");
-	//reflect::annotatePropertyForEditor<ReferenceArchetype>("ArchetypeAsset", "editor.assettype", "refarch");
-	//reflect::annotatePropertyForEditor<ReferenceArchetype>("ArchetypeAsset", "editor.assetclass", "ArchetypeAsset");
-	//reflect::annotateClassForEditor<ReferenceArchetype>( "editor.instantiable", false );
-	//reflect::annotatePropertyForEditor<ReferenceArchetype>( "Components", "editor.visible", "false" );
+void PerformanceAnalyzerArchetype::Describe() {
+  // reflect::RegisterProperty("ArchetypeAsset", &ReferenceArchetype::mArchetypeAsset);
+  // reflect::annotatePropertyForEditor<ReferenceArchetype>("ArchetypeAsset", "editor.class", "ged.factory.assetlist");
+  // reflect::annotatePropertyForEditor<ReferenceArchetype>("ArchetypeAsset", "editor.assettype", "refarch");
+  // reflect::annotatePropertyForEditor<ReferenceArchetype>("ArchetypeAsset", "editor.assetclass", "ArchetypeAsset");
+  // reflect::annotateClassForEditor<ReferenceArchetype>( "editor.instantiable", false );
+  // reflect::annotatePropertyForEditor<ReferenceArchetype>( "Components", "editor.visible", "false" );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-PerformanceAnalyzerArchetype::PerformanceAnalyzerArchetype()
-{
+PerformanceAnalyzerArchetype::PerformanceAnalyzerArchetype() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void PerformanceAnalyzerArchetype::DoCompose(ork::ent::ArchComposer& composer)
-{
-	composer.Register<PerfAnalyzerControllerData>();
+void PerformanceAnalyzerArchetype::DoCompose(ork::ent::ArchComposer& composer) {
+  composer.Register<PerfAnalyzerControllerData>();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 /*void PerformanceAnalyzerArchetype::DoComposeEntity( Entity *pent ) const
 {
-	/////////////////////////////////////////////////
-	const ent::EntData& pentdata = pent->GetEntData();
-	/////////////////////////////////////////////////
+    /////////////////////////////////////////////////
+    const ent::EntData& pentdata = pent->GetEntData();
+    /////////////////////////////////////////////////
 }*/
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void PerformanceAnalyzerArchetype::DoStartEntity(Simulation* inst, const fmtx4 &world, Entity *pent) const
-{
-	const PerfAnalyzerControllerInst* ssci = pent->GetTypedComponent<PerfAnalyzerControllerInst>();
-	if( ssci )
-	{
-		const PerfAnalyzerControllerData&	cd = ssci->GetCD();
-		if( cd.mbEnable )
-		{
-			PerfMarkerEnable();
-		}
-		else
-		{
-			PerfMarkerDisable();
-		}
-	}
+void PerformanceAnalyzerArchetype::DoStartEntity(Simulation* inst, const fmtx4& world, Entity* pent) const {
+  const PerfAnalyzerControllerInst* ssci = pent->GetTypedComponent<PerfAnalyzerControllerInst>();
+  if (ssci) {
+    const PerfAnalyzerControllerData& cd = ssci->GetCD();
+    if (cd.mbEnable) {
+      PerfMarkerEnable();
+    } else {
+      PerfMarkerDisable();
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void PerformanceAnalyzerArchetype::DoLinkEntity(Simulation* inst, Entity *pent) const
-{
-	struct yo
-	{
-		const PerformanceAnalyzerArchetype* parch;
-		Entity *pent;
-		Simulation* psi;
+void PerformanceAnalyzerArchetype::DoLinkEntity(Simulation* inst, Entity* pent) const {
+  struct yo {
+    const PerformanceAnalyzerArchetype* parch;
+    Entity* pent;
+    Simulation* psi;
 
-		static void doit( lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const lev2::CallbackRenderable* pren )
-		{
-			const yo* pyo = pren->GetDrawableDataA().Get<const yo*>();
+    static void doit(lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const lev2::CallbackRenderable* pren) {
+      const yo* pyo = pren->GetDrawableDataA().Get<const yo*>();
 
-			const PerformanceAnalyzerArchetype* parch = pyo->parch;
-			const Entity* pent = pyo->pent;
-			const Simulation* pSI = pyo->psi;
-			const PerfAnalyzerControllerInst* ssci = pent->GetTypedComponent<PerfAnalyzerControllerInst>();
-			const PerfAnalyzerControllerData&	cd = ssci->GetCD();
-			ork::lev2::GfxTarget* pTARG = rcid.GetRenderer()->GetTarget();
-			bool IsPickState = pTARG->FBI()->IsPickState();
+      const PerformanceAnalyzerArchetype* parch = pyo->parch;
+      const Entity* pent                        = pyo->pent;
+      const Simulation* pSI                     = pyo->psi;
+      const PerfAnalyzerControllerInst* ssci    = pent->GetTypedComponent<PerfAnalyzerControllerInst>();
+      const PerfAnalyzerControllerData& cd      = ssci->GetCD();
+      ork::lev2::GfxTarget* pTARG               = rcid.GetRenderer()->GetTarget();
+      bool IsPickState                          = pTARG->FBI()->IsPickState();
 
-			if( cd.mbEnable )
-			{
+      if (cd.mbEnable) {
 
-				float frawdeltatime = pSI->GetUpDeltaTime();
+        float frawdeltatime = pSI->GetUpDeltaTime();
 
-				pTARG->MTXI()->PushUIMatrix();
-				pTARG->PushModColor( fcolor4::Green() );
-				ork::lev2::FontMan::PushFont("d24");
-				ork::lev2::FontMan::GetRef().BeginTextBlock(pTARG);
-				int y=pTARG->GetH()-24;
-				ork::lev2::FontMan::DrawText( pTARG, 16, y-=24, "AvgUpd<%f> UPS<%f>", ssci->favgupdate, 1.0f/ssci->favgupdate );
-				ork::lev2::FontMan::DrawText( pTARG, 16, y-=24, "AvgDrw<%f> FPS<%f>", ssci->favgdraw, 1.0f/ssci->favgdraw );
-				ork::lev2::FontMan::DrawText( pTARG, 16, y-=24, "RawDT<%f>", frawdeltatime );
-				ork::lev2::FontMan::GetRef().EndTextBlock(pTARG);
-				ork::lev2::FontMan::PopFont();
-				pTARG->PopModColor( );
-				pTARG->MTXI()->PopUIMatrix();
-			}
-		}
-		static void BufferCB(ork::lev2::DrawableBufItem&cdb)
-		{
+        pTARG->MTXI()->PushUIMatrix();
+        pTARG->PushModColor(fcolor4::Green());
+        ork::lev2::FontMan::PushFont("d24");
+        ork::lev2::FontMan::GetRef().BeginTextBlock(pTARG);
+        int y = pTARG->mainSurfaceHeight() - 24;
+        ork::lev2::FontMan::DrawText(pTARG, 16, y -= 24, "AvgUpd<%f> UPS<%f>", ssci->favgupdate, 1.0f / ssci->favgupdate);
+        ork::lev2::FontMan::DrawText(pTARG, 16, y -= 24, "AvgDrw<%f> FPS<%f>", ssci->favgdraw, 1.0f / ssci->favgdraw);
+        ork::lev2::FontMan::DrawText(pTARG, 16, y -= 24, "RawDT<%f>", frawdeltatime);
+        ork::lev2::FontMan::GetRef().EndTextBlock(pTARG);
+        ork::lev2::FontMan::PopFont();
+        pTARG->PopModColor();
+        pTARG->MTXI()->PopUIMatrix();
+      }
+    }
+    static void BufferCB(ork::lev2::DrawableBufItem& cdb) {
+    }
+  };
 
-		}
-	};
+  auto pdrw = new lev2::CallbackDrawable(pent);
+  pent->addDrawableToDefaultLayer(pdrw);
+  pdrw->SetRenderCallback(yo::doit);
+  pdrw->SetQueueToLayerCallback(yo::BufferCB);
+  pdrw->SetOwner(&pent->GetEntData());
+  pdrw->SetSortKey(0x7fffffff);
 
-	auto pdrw = new lev2::CallbackDrawable(pent);
-	pent->addDrawableToDefaultLayer(pdrw);
-	pdrw->SetRenderCallback( yo::doit );
-	pdrw->SetQueueToLayerCallback( yo::BufferCB );
-	pdrw->SetOwner(  & pent->GetEntData() );
-	pdrw->SetSortKey(0x7fffffff);
+  yo* pyo    = new yo;
+  pyo->parch = this;
+  pyo->pent  = pent;
+  pyo->psi   = inst;
 
-	yo* pyo = new yo;
-	pyo->parch = this;
-	pyo->pent = pent;
-	pyo->psi = inst;
-
-	lev2::Drawable::var_t ap;
-	ap.Set<const yo*>( pyo );
-	pdrw->SetUserDataA( ap );
-
+  lev2::Drawable::var_t ap;
+  ap.Set<const yo*>(pyo);
+  pdrw->SetUserDataA(ap);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void PerformanceAnalyzerArchetype::DoStopEntity(Simulation* psi, Entity *pent) const
-{
-	PerfMarkerDisable();
+void PerformanceAnalyzerArchetype::DoStopEntity(Simulation* psi, Entity* pent) const {
+  PerfMarkerDisable();
 }
 
-} } // ork::ent
+}} // namespace ork::ent

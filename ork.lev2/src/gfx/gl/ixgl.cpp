@@ -32,7 +32,8 @@ extern bool gbVSYNC;
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-bool _hakHIDPI = false;
+bool _hakHIDPI       = false;
+float _hakCurrentDPI = 95.0f;
 
 ork::MpMcBoundedQueue<void*> GfxTargetGL::mLoadTokens;
 
@@ -483,10 +484,11 @@ void recomputeHIDPI(void* plato) {
 
         if ((winpos_x >= pix_left) and (winpos_x < (pix_left + pix_width)) and (winpos_y >= pix_top) and
             (winpos_y < (pix_left + pix_height))) {
-          float CDPIX  = pix_width / mm_width * 25.4f;
-          float CDPIY  = pix_height / mm_height * 25.4f;
-          float avgdpi = (CDPIX + CDPIY) * 0.5f;
-          _hakHIDPI    = avgdpi > 180.0f;
+          float CDPIX    = pix_width / mm_width * 25.4f;
+          float CDPIY    = pix_height / mm_height * 25.4f;
+          float avgdpi   = (CDPIX + CDPIY) * 0.5f;
+          _hakHIDPI      = avgdpi > 180.0f;
+          _hakCurrentDPI = avgdpi;
           // printf("_hakHIDPI<%d>\n", int(_hakHIDPI));
         }
 
@@ -516,7 +518,9 @@ void recomputeHIDPI(void* plato) {
 bool _HIDPI() {
   return _hakHIDPI;
 }
-
+float _currentDPI() {
+  return _hakCurrentDPI;
+}
 /////////////////////////////////////////////////////////////////////////
 
 void GfxTargetGL::InitializeContext(GfxBuffer* pBuf) {
@@ -590,7 +594,7 @@ void GfxTargetGL::SwapGLContext(CTXBASE* pCTFL) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void* GfxTargetGL::DoBeginLoad() {
+void* GfxTargetGL::_doBeginLoad() {
   void* pvoiddat = nullptr;
 
   while (false == mLoadTokens.try_pop(pvoiddat)) {
@@ -612,7 +616,7 @@ void* GfxTargetGL::DoBeginLoad() {
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxTargetGL::DoEndLoad(void* ploadtok) {
+void GfxTargetGL::_doEndLoad(void* ploadtok) {
   GlxLoadContext* loadctx = (GlxLoadContext*)ploadtok;
   // printf("ENDLOAD loadctx<%p> glx<%p>\n", loadctx, loadctx->mGlxContext);
   mLoadTokens.push(ploadtok);

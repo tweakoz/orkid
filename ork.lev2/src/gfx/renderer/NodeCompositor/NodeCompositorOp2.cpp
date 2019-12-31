@@ -37,46 +37,50 @@ ImplementReflectionX(ork::lev2::Op2CompositingNode, "Op2CompositingNode");
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-void Op2CompositingNode::describeX(class_t*c) {
+void Op2CompositingNode::describeX(class_t* c) {
 
-  c->memberProperty("Mode", &Op2CompositingNode::mMode)
-   ->annotate<ConstString>("editor.class", "ged.factory.enum");
+  c->memberProperty("Mode", &Op2CompositingNode::mMode)->annotate<ConstString>("editor.class", "ged.factory.enum");
   c->accessorProperty("NodeA", &Op2CompositingNode::GetNodeA, &Op2CompositingNode::SetNodeA)
-   ->annotate<ConstString>("editor.factorylistbase", "PostCompositingNode");
+      ->annotate<ConstString>("editor.factorylistbase", "PostCompositingNode");
   c->accessorProperty("NodeB", &Op2CompositingNode::GetNodeB, &Op2CompositingNode::SetNodeB)
-   ->annotate<ConstString>("editor.factorylistbase", "PostCompositingNode");
+      ->annotate<ConstString>("editor.factorylistbase", "PostCompositingNode");
 
   c->memberProperty("LevelA", &Op2CompositingNode::mLevelA);
   c->memberProperty("LevelB", &Op2CompositingNode::mLevelB);
   c->memberProperty("BiasA", &Op2CompositingNode::mBiasA);
   c->memberProperty("BiasB", &Op2CompositingNode::mBiasB);
-
-
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Op2CompositingNode::GetNodeA(ork::rtti::ICastable*& val) const {
   auto nonconst = const_cast<PostCompositingNode*>(mSubA);
-  val = nonconst;
+  val           = nonconst;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Op2CompositingNode::SetNodeA(ork::rtti::ICastable* const& val) {
   ork::rtti::ICastable* ptr = val;
-  mSubA = ((ptr == 0) ? 0 : rtti::safe_downcast<PostCompositingNode*>(ptr));
+  mSubA                     = ((ptr == 0) ? 0 : rtti::safe_downcast<PostCompositingNode*>(ptr));
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Op2CompositingNode::GetNodeB(ork::rtti::ICastable*& val) const {
   auto nonconst = const_cast<PostCompositingNode*>(mSubB);
-  val = nonconst;
+  val           = nonconst;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Op2CompositingNode::SetNodeB(ork::rtti::ICastable* const& val) {
   ork::rtti::ICastable* ptr = val;
-  mSubB = ((ptr == 0) ? 0 : rtti::safe_downcast<PostCompositingNode*>(ptr));
+  mSubB                     = ((ptr == 0) ? 0 : rtti::safe_downcast<PostCompositingNode*>(ptr));
 }
 ///////////////////////////////////////////////////////////////////////////////
 Op2CompositingNode::Op2CompositingNode()
-    : mSubA(nullptr), mSubB(nullptr), mOutput(nullptr), mMode(Op2AsumB), mLevelA(1.0f, 1.0f, 1.0f, 1.0f),
-      mLevelB(1.0f, 1.0f, 1.0f, 1.0f), mBiasA(0.0f, 0.0f, 0.0f, 0.0f), mBiasB(0.0f, 0.0f, 0.0f, 0.0f) {}
+    : mSubA(nullptr)
+    , mSubB(nullptr)
+    , mOutput(nullptr)
+    , mMode(Op2AsumB)
+    , mLevelA(1.0f, 1.0f, 1.0f, 1.0f)
+    , mLevelB(1.0f, 1.0f, 1.0f, 1.0f)
+    , mBiasA(0.0f, 0.0f, 0.0f, 0.0f)
+    , mBiasB(0.0f, 0.0f, 0.0f, 0.0f) {
+}
 ///////////////////////////////////////////////////////////////////////////////
 Op2CompositingNode::~Op2CompositingNode() {
   if (mSubA)
@@ -97,22 +101,22 @@ void Op2CompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtu
   if (nullptr == mOutput) {
     mCompositingMaterial.Init(pTARG);
 
-    _rtg = new lev2::RtGroup(pTARG, iW, iH);
-    mOutput = new lev2::RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, iW, iH);
+    _rtg                = new lev2::RtGroup(pTARG, iW, iH);
+    mOutput             = new lev2::RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, iW, iH);
     mOutput->_debugName = FormatString("Op2CompositingNode::output");
-    _rtg->SetMrt(0,mOutput);
+    _rtg->SetMrt(0, mOutput);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Op2CompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
 {
   auto& the_renderer = drawdata.mFrameRenderer;
-  auto& framedata = the_renderer.framedata();
-  auto target = framedata.GetTarget();
-  auto fbi = target->FBI();
-  auto gbi = target->GBI();
-  int iw = target->GetW();
-  int ih = target->GetH();
+  auto& framedata    = the_renderer.framedata();
+  auto target        = framedata.GetTarget();
+  auto fbi           = target->FBI();
+  auto gbi           = target->GBI();
+  int iw             = target->mainSurfaceWidth();
+  int ih             = target->mainSurfaceHeight();
 
   if (mSubA) {
     mSubA->Render(drawdata);
@@ -170,4 +174,4 @@ void Op2CompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2 {
+} // namespace ork::lev2

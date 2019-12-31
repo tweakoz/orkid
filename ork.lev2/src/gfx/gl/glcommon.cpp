@@ -78,7 +78,7 @@ bool GfxTargetGL::SetDisplayMode(DisplayMode* mode) {
 
 void recomputeHIDPI(void* plato);
 
-void GfxTargetGL::SetSize(int ix, int iy, int iw, int ih) {
+void GfxTargetGL::_doResizeMainSurface(int ix, int iy, int iw, int ih) {
   miX                      = ix;
   miY                      = iy;
   miW                      = iw;

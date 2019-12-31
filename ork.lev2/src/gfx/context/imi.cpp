@@ -197,7 +197,7 @@ void ImmInterface::BeginFrame()
 	}
 
 	QueBeginFrame();
-	DoBeginFrame();
+	_doBeginFrame();
 
 }
 
@@ -205,7 +205,7 @@ void ImmInterface::BeginFrame()
 
 void ImmInterface::EndFrame()
 {
-	DoEndFrame();
+	_doEndFrame();
 
 	QueEndFrame();
 

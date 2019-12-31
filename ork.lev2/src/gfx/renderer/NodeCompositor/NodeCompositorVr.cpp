@@ -19,7 +19,8 @@ ImplementReflectionX(ork::lev2::VrCompositingNode, "VrCompositingNode");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::describeX(class_t* c) {}
+void VrCompositingNode::describeX(class_t* c) {
+}
 ///////////////////////////////////////////////////////////////////////////////
 struct VRIMPL {
   ///////////////////////////////////////
@@ -29,10 +30,12 @@ struct VRIMPL {
       , _layers(AddPooledString("All")) {
 
     _tmpcameramatrices = new CameraMatrices;
-    _stereomatrices = new StereoCameraMatrices;
+    _stereomatrices    = new StereoCameraMatrices;
   }
   ///////////////////////////////////////
-  ~VRIMPL() { delete _tmpcameramatrices; }
+  ~VRIMPL() {
+    delete _tmpcameramatrices;
+  }
   ///////////////////////////////////////
   void gpuInit(lev2::GfxTarget* pTARG) {
     if (_doinit) {
@@ -96,7 +99,7 @@ struct VRIMPL {
     auto& ddprops                = drawdata._properties;
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
-    auto CIMPL = drawdata._cimpl;
+    auto CIMPL                   = drawdata._cimpl;
     auto DB                      = RCFD.GetDB();
     GfxTarget* targ              = drawdata.target();
 
@@ -150,12 +153,12 @@ struct VRIMPL {
     auto& VRDEV = orkidvr::device();
 
     if (use_vr and VRDEV._supportsStereo) {
-      _stereomatrices->_left = VRDEV._leftcamera;
+      _stereomatrices->_left  = VRDEV._leftcamera;
       _stereomatrices->_right = VRDEV._rightcamera;
-      _stereomatrices->_mono = VRDEV._leftcamera;
+      _stereomatrices->_mono  = VRDEV._leftcamera;
       _CPD.setStereoOnePass(true);
       _CPD._stereoCameraMatrices = _stereomatrices;
-      _CPD._cameraMatrices = nullptr;
+      _CPD._cameraMatrices       = nullptr;
     } else {
       ////////////////////////////////////////////////
       // no stereo cam support, override cam with center side of stereocam
@@ -163,9 +166,7 @@ struct VRIMPL {
       ////////////////////////////////////////////////
       _CPD.setStereoOnePass(false);
       _CPD._stereoCameraMatrices = nullptr;
-      _CPD._cameraMatrices = simrunning
-                           ? VRDEV._centercamera
-                           : ddprops["defcammtx"_crcu].Get<const CameraMatrices*>();
+      _CPD._cameraMatrices       = simrunning ? VRDEV._centercamera : ddprops["defcammtx"_crcu].Get<const CameraMatrices*>();
       ////////////////////////////////////////////////
     }
 
@@ -178,7 +179,7 @@ struct VRIMPL {
   }
   ///////////////////////////////////////
   void endAssemble(CompositorDrawData& drawdata) {
-    auto CIMPL = drawdata._cimpl;
+    auto CIMPL                   = drawdata._cimpl;
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
     CIMPL->popCPD();
@@ -189,19 +190,24 @@ struct VRIMPL {
   VrCompositingNode* _vrnode = nullptr;
   CompositingPassData _CPD;
   fmtx4 _viewOffsetMatrix;
-  RtGroup* _rtg           = nullptr;
-  int _width              = 0;
-  int _height             = 0;
-  bool _doinit            = true;
+  RtGroup* _rtg                      = nullptr;
+  int _width                         = 0;
+  int _height                        = 0;
+  bool _doinit                       = true;
   CameraMatrices* _tmpcameramatrices = nullptr;
   ork::lev2::GfxMaterial3DSolid _blit2screenmtl;
 };
 ///////////////////////////////////////////////////////////////////////////////
-VrCompositingNode::VrCompositingNode() { _impl = std::make_shared<VRIMPL>(this); }
+VrCompositingNode::VrCompositingNode() {
+  _impl = std::make_shared<VRIMPL>(this);
+}
 ///////////////////////////////////////////////////////////////////////////////
-VrCompositingNode::~VrCompositingNode() {}
+VrCompositingNode::~VrCompositingNode() {
+}
 ///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::gpuInit(lev2::GfxTarget* pTARG, int iW, int iH) { _impl.Get<std::shared_ptr<VRIMPL>>()->gpuInit(pTARG); }
+void VrCompositingNode::gpuInit(lev2::GfxTarget* pTARG, int iW, int iH) {
+  _impl.Get<std::shared_ptr<VRIMPL>>()->gpuInit(pTARG);
+}
 ///////////////////////////////////////////////////////////////////////////////
 void VrCompositingNode::beginAssemble(CompositorDrawData& drawdata) {
   drawdata.target()->debugPushGroup("VrCompositingNode::beginAssemble");
@@ -240,8 +246,8 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
         drawdata.target()->debugPushGroup("VrCompositingNode::to_screen");
         auto this_buf = targ->FBI()->GetThisBuffer();
         auto& mtl     = impl->_blit2screenmtl;
-        int iw        = targ->GetW();
-        int ih        = targ->GetH();
+        int iw        = targ->mainSurfaceWidth();
+        int ih        = targ->mainSurfaceHeight();
         SRect vprect(0, 0, iw, ih);
         SRect quadrect(0, ih, iw, 0);
         fvec4 color(1.0f, 1.0f, 1.0f, 1.0f);
@@ -250,15 +256,16 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
         mtl.SetTexture2(nullptr);
         mtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
         mtl._rasterstate.SetBlending(EBLENDING_OFF);
-        this_buf->RenderMatOrthoQuad(vprect,
-                                     quadrect,
-                                     &mtl,
-                                     0.0f,
-                                     0.0f, // u0 v0
-                                     1.0f,
-                                     1.0f, // u1 v1
-                                     nullptr,
-                                     color);
+        this_buf->RenderMatOrthoQuad(
+            vprect,
+            quadrect,
+            &mtl,
+            0.0f,
+            0.0f, // u0 v0
+            1.0f,
+            1.0f, // u1 v1
+            nullptr,
+            color);
         drawdata.target()->debugPopGroup();
       }
     }

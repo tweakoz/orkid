@@ -87,6 +87,6 @@ protected:
   GfxMaterial* mpGroupCurMaterial;
 
 private:
-  virtual void DoBeginFrame() = 0;
+  virtual void _doBeginFrame() = 0;
   virtual void DoOnReset() {}
 };

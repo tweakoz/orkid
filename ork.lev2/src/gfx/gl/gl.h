@@ -86,8 +86,8 @@ class GlImiInterface : public ImmInterface {
   virtual void DrawLine(const fvec4& From, const fvec4& To);
   virtual void DrawPoint(F32 fx, F32 fy, F32 fz);
   virtual void DrawPrim(const fvec4* Points, int inumpoints, EPrimitiveType eType);
-  virtual void DoBeginFrame() {}
-  virtual void DoEndFrame() {}
+  virtual void _doBeginFrame() {}
+  virtual void _doEndFrame() {}
 
 public:
   GlImiInterface(GfxTargetGL& target);
@@ -190,8 +190,8 @@ private:
 
   uint32_t mLastComponentMask;
 
-  void DoBeginFrame() final { mLastComponentMask = 0; }
-  // virtual void DoEndFrame() {}
+  void _doBeginFrame() final { mLastComponentMask = 0; }
+  // virtual void _doEndFrame() {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -208,8 +208,8 @@ public:
   void SetViewport(int iX, int iY, int iW, int iH) final;
   void SetScissor(int iX, int iY, int iW, int iH) final;
   void PushScissor(const SRect& rScissorRect) final;
-  void DoBeginFrame(void) final;
-  void DoEndFrame(void) final;
+  void _doBeginFrame(void) final;
+  void _doEndFrame(void) final;
   bool capture(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer) final;
   void Capture(const RtGroup& inpbuf, int irt, const file::Path& pth) final;
   bool CaptureToTexture(const CaptureBuffer& capbuf, Texture& tex) final { return false; }
@@ -339,9 +339,9 @@ public:
 
   ///////////////////////////////////////////////////////////////////////
 
-  void SetSize(int ix, int iy, int iw, int ih) final;
-  void DoBeginFrame(void) final {}
-  void DoEndFrame(void) final {}
+  void _doResizeMainSurface(int ix, int iy, int iw, int ih) final;
+  void _doBeginFrame(void) final {}
+  void _doEndFrame(void) final {}
 
 public:
   //////////////////////////////////////////////
@@ -389,8 +389,8 @@ public:
   void TakeThreadOwnership() final;
   bool SetDisplayMode(DisplayMode* mode) final;
   void InitializeContext(GfxWindow* pWin, CTXBASE* pctxbase) final; // make a window
-  void* DoBeginLoad() final;
-  void DoEndLoad(void* ploadtok) final; // virtual
+  void* _doBeginLoad() final;
+  void _doEndLoad(void* ploadtok) final; // virtual
 
   void* mhHWND;
   void* mGLXContext;

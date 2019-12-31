@@ -825,11 +825,11 @@ void GlGeometryBufferInterface::DrawPrimitive( const VertexBufferBase& VBuf, EPr
 	GL_ERRORCHECK();
 	if( imax )
 	{
-		int inumpasses = mTargetGL.GetCurMaterial()->BeginBlock(&mTargetGL);
+		int inumpasses = mTargetGL.currentMaterial()->BeginBlock(&mTargetGL);
 
 		for( int ipass=0; ipass<inumpasses; ipass++ )
 		{
-			bool bDRAW = mTargetGL.GetCurMaterial()->BeginPass( &mTargetGL,ipass );
+			bool bDRAW = mTargetGL.currentMaterial()->BeginPass( &mTargetGL,ipass );
 
 			if( bDRAW )
 			{
@@ -842,12 +842,12 @@ void GlGeometryBufferInterface::DrawPrimitive( const VertexBufferBase& VBuf, EPr
 
 				DrawPrimitiveEML( VBuf, eTyp, ivbase, ivcount );
 
-				mTargetGL.GetCurMaterial()->EndPass(&mTargetGL);
+				mTargetGL.currentMaterial()->EndPass(&mTargetGL);
 			}
 
 		}
 
-		mTargetGL.GetCurMaterial()->EndBlock(&mTargetGL);
+		mTargetGL.currentMaterial()->EndBlock(&mTargetGL);
 
 	}
 
@@ -864,11 +864,11 @@ void GlGeometryBufferInterface::DrawIndexedPrimitive( const VertexBufferBase& VB
 	GL_ERRORCHECK();
 	if( imax )
 	{
-		int inumpasses = mTargetGL.GetCurMaterial()->BeginBlock(&mTargetGL);
+		int inumpasses = mTargetGL.currentMaterial()->BeginBlock(&mTargetGL);
 
 		for( int ipass=0; ipass<inumpasses; ipass++ )
 		{
-			bool bDRAW = mTargetGL.GetCurMaterial()->BeginPass( &mTargetGL,ipass );
+			bool bDRAW = mTargetGL.currentMaterial()->BeginPass( &mTargetGL,ipass );
 
 			if( bDRAW )
 			{
@@ -881,12 +881,12 @@ void GlGeometryBufferInterface::DrawIndexedPrimitive( const VertexBufferBase& VB
 
 				DrawIndexedPrimitiveEML( VBuf, IdxBuf, eType, ivbase, ivcount );
 
-				mTargetGL.GetCurMaterial()->EndPass(&mTargetGL);
+				mTargetGL.currentMaterial()->EndPass(&mTargetGL);
 			}
 
 		}
 
-		mTargetGL.GetCurMaterial()->EndBlock(&mTargetGL);
+		mTargetGL.currentMaterial()->EndBlock(&mTargetGL);
 
 	}
 
@@ -958,7 +958,7 @@ void GlGeometryBufferInterface::DrawPrimitiveEML( const VertexBufferBase& VBuf, 
 				break;
 /*			case EPRIM_POINTSPRITES:
 				GL_ERRORCHECK();
-				glPointSize( mTargetGL.GetCurMaterial()->mfParticleSize );
+				glPointSize( mTargetGL.currentMaterial()->mfParticleSize );
 
 				glEnable( GL_POINT_SPRITE_ARB );
 				glDrawArrays( GL_POINTS, 0, iNum );
@@ -1033,7 +1033,7 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML( const VertexBufferBase&
 				break;
 			case EPRIM_POINTSPRITES:
 				//GL_ERRORCHECK();
-				//glPointSize( mTargetGL.GetCurMaterial()->mfParticleSize );
+				//glPointSize( mTargetGL.currentMaterial()->mfParticleSize );
 	//GL_ERRORCHECK();
 
 				//glEnable( GL_POINT_SPRITE_ARB );

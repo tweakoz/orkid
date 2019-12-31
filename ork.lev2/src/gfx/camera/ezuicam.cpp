@@ -127,7 +127,7 @@ void EzUiCam::draw(GfxTarget* pT) {
   pT->MTXI()->PopUIMatrix();
   ///////////////////////////////////////////////////////////////
   // printf( "CAMHUD\n" );
-  float aspect = float(pT->GetW()) / float(pT->GetH());
+  float aspect = float(pT->mainSurfaceWidth()) / float(pT->mainSurfaceHeight());
   _curMatrices = _camcamdata.computeMatrices(aspect);
   ///////////////////////////////////////////////////////////////
 
@@ -158,7 +158,7 @@ static QPoint pmousepos;
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::PanBegin(const CamEvTrackData& ed) {
-  //printf("BeginPan\n");
+  // printf("BeginPan\n");
   pmousepos = ork::lev2::logicalMousePos();
   // OrkGlobalDisableMousePointer();
   mDoPan = true;
@@ -190,7 +190,7 @@ void EzUiCam::PanUpdate(const CamEvTrackData& ed) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::PanEnd() {
-  //printf("EndPan\n");
+  // printf("EndPan\n");
   // QCursor::setPos(pmousepos);
   // OrkGlobalEnableMousePointer();
   mDoPan = false;
@@ -199,7 +199,7 @@ void EzUiCam::PanEnd() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::RotBegin(const CamEvTrackData& ed) {
-  //printf("BeginRot\n");
+  // printf("BeginRot\n");
 
   // printf( "Rot: vPushNZ<%g %g %g>\n", vPushNZ.x, vPushNZ.y, vPushNZ.z );
 
@@ -211,7 +211,7 @@ void EzUiCam::RotBegin(const CamEvTrackData& ed) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::RotEnd() {
-  //printf("EndRot\n");
+  // printf("EndRot\n");
   // QCursor::setPos(pmousepos);
   // OrkGlobalEnableMousePointer();
   mDoRotate = false;
@@ -220,7 +220,7 @@ void EzUiCam::RotEnd() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::DollyBegin(const CamEvTrackData& ed) {
-  //printf("BeginDolly\n");
+  // printf("BeginDolly\n");
   pmousepos = ork::lev2::logicalMousePos();
   // OrkGlobalDisableMousePointer();
   mDoDolly = true;
@@ -229,7 +229,7 @@ void EzUiCam::DollyBegin(const CamEvTrackData& ed) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::DollyEnd() {
-  //printf("EndDolly\n");
+  // printf("EndDolly\n");
   // QCursor::setPos(pmousepos);
   // OrkGlobalEnableMousePointer();
   mDoDolly = false;
@@ -273,7 +273,7 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
       float fy   = float(esy) / _vpdim.y - 0.5f;
       float frad = sqrtf((fx * fx) + (fy * fy));
 
-        //printf( "fx<%g %g> frad<%g>\n", fx, fy, frad);
+      // printf( "fx<%g %g> frad<%g>\n", fx, fy, frad);
 
       meRotMode = (frad > 0.35f) ? EROT_SCREENZ : EROT_SCREENXY;
 
@@ -283,9 +283,9 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
       _pushNY = _camcamdata.yNormal();
       _pushNZ = _camcamdata.zNormal();
 
-      //printf( "nx <%g %g %g>\n", _pushNX.x, _pushNX.y, _pushNX.z );
-      //printf( "ny <%g %g %g>\n", _pushNY.x, _pushNY.y, _pushNY.z );
-      //printf( "nz <%g %g %g>\n", _pushNZ.x, _pushNZ.y, _pushNZ.z );
+      // printf( "nx <%g %g %g>\n", _pushNX.x, _pushNX.y, _pushNX.z );
+      // printf( "ny <%g %g %g>\n", _pushNY.x, _pushNY.y, _pushNY.z );
+      // printf( "nz <%g %g %g>\n", _pushNZ.x, _pushNZ.y, _pushNZ.z );
 
       fvec3 vrn, vrf;
 
@@ -418,22 +418,22 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
             float ang0   = rect2pol_ang(v0.x, v0.y);
             float ang1   = rect2pol_ang(v1.x, v1.y);
             float dangle = (ang1 - ang0);
-            fvec4 rotz = fvec4(_pushNZ,dangle);
+            fvec4 rotz   = fvec4(_pushNZ, dangle);
             fquat QuatZ;
             QuatZ.FromAxisAngle(rotz);
             QuatC = QuatZ.Multiply(QuatCPushed);
-            //printf( "v0 <%g %g> v1<%g %g>\n", v0.x, v0.y, v1.x, v1.y );
-            //printf( "ang0 <%g> ang1<%g>\n", ang0, ang1 );
-            //printf( "rotz <%g %g %g %g>\n", rotz.x, rotz.y, rotz.z, rotz.w );
-            //printf( "QuatZ <%g %g %g %g>\n", QuatZ.x, QuatZ.y, QuatZ.z, QuatZ.w );
-            //printf( "QuatC <%g %g %g %g>\n", QuatC.x, QuatC.y, QuatC.z, QuatC.w );
+            // printf( "v0 <%g %g> v1<%g %g>\n", v0.x, v0.y, v1.x, v1.y );
+            // printf( "ang0 <%g> ang1<%g>\n", ang0, ang1 );
+            // printf( "rotz <%g %g %g %g>\n", rotz.x, rotz.y, rotz.z, rotz.w );
+            // printf( "QuatZ <%g %g %g %g>\n", QuatZ.x, QuatZ.y, QuatZ.z, QuatZ.w );
+            // printf( "QuatC <%g %g %g %g>\n", QuatC.x, QuatC.y, QuatC.z, QuatC.w );
 
             break;
           }
           case EROT_SCREENXY: {
 
-            fvec4 rotx = fvec4(_pushNX,-dy);
-            fvec4 roty = fvec4(_pushNY,dx);
+            fvec4 rotx = fvec4(_pushNX, -dy);
+            fvec4 roty = fvec4(_pushNY, dx);
 
             fquat QuatX, QuatY;
 

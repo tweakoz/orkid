@@ -25,10 +25,18 @@ namespace ork { namespace lev2 {
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxBuffer::Describe() {}
+void GfxBuffer::Describe() {
+}
 
 GfxBuffer::GfxBuffer(
-    GfxBuffer* Parent, int iX, int iY, int iW, int iH, EBufferFormat efmt, ETargetType etgttype, const std::string& name)
+    GfxBuffer* Parent,
+    int iX,
+    int iY,
+    int iW,
+    int iH,
+    EBufferFormat efmt,
+    ETargetType etgttype,
+    const std::string& name)
     : mpContext(nullptr)
     , mParent(Parent)
     , miWidth(iW)
@@ -41,7 +49,8 @@ GfxBuffer::GfxBuffer(
     , mpTexture(nullptr)
     , mRootWidget(nullptr)
     , mpMaterial(nullptr)
-    , mbSizeIsDirty(true) {}
+    , mbSizeIsDirty(true) {
+}
 
 GfxBuffer::~GfxBuffer() {
   //	if( mpContext )
@@ -53,7 +62,14 @@ GfxBuffer::~GfxBuffer() {
 /////////////////////////////////////////////////////////////////////////
 
 void GfxBuffer::Resize(int ix, int iy, int iw, int ih) {
-  GetContext()->SetSize(ix, iy, iw, ih);
+
+  // TODO: GfxBuffer is probably completely superseded
+  //  by RtBuffer (RenderTargetBuffer)
+  // GfxBuffer was originally intended for pbuffers..
+  //  though maybe no if we need offscreen hardware backed devices
+  //  for commandline tools
+
+  GetContext()->resizeMainSurface(ix, iy, iw, ih);
 
   if (GetRootWidget()) {
     GetRootWidget()->SetRect(ix, iy, iw, ih);
@@ -81,14 +97,14 @@ void GfxBuffer::BeginFrame(void) {
   if (0 == mpContext) {
     GetContext();
   }
-  mpContext->BeginFrame();
+  mpContext->beginFrame();
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void GfxBuffer::EndFrame(void) {
   if (mpContext) {
-    mpContext->EndFrame();
+    mpContext->endFrame();
   }
 }
 
@@ -122,29 +138,27 @@ void GfxWindow::CreateContext() {
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxBuffer::Render2dQuadEML(const fvec4& QuadRect,
-                                const fvec4& UvRect,
-                                const fvec4& UvRect2 ) {
-  auto ctx  = GetContext();
+void GfxBuffer::Render2dQuadEML(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2) {
+  auto ctx = GetContext();
 
   // align source pixels to target pixels if sizes match
-  float fx0  = QuadRect.x;
-  float fy0  = QuadRect.y;
-  float fx1  = QuadRect.x+QuadRect.z;
-  float fy1  = QuadRect.y+QuadRect.w;
+  float fx0 = QuadRect.x;
+  float fy0 = QuadRect.y;
+  float fx1 = QuadRect.x + QuadRect.z;
+  float fy1 = QuadRect.y + QuadRect.w;
 
-  float fua0  = UvRect.x;
-  float fva0  = UvRect.y;
-  float fua1  = UvRect.x+UvRect.z;
-  float fva1  = UvRect.y+UvRect.w;
+  float fua0 = UvRect.x;
+  float fva0 = UvRect.y;
+  float fua1 = UvRect.x + UvRect.z;
+  float fva1 = UvRect.y + UvRect.w;
 
-  float fub0  = UvRect2.x;
-  float fvb0  = UvRect2.y;
-  float fub1  = UvRect2.x+UvRect2.z;
-  float fvb1  = UvRect2.y+UvRect2.w;
-  
+  float fub0 = UvRect2.x;
+  float fvb0 = UvRect2.y;
+  float fub1 = UvRect2.x + UvRect2.z;
+  float fvb1 = UvRect2.y + UvRect2.w;
+
   DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
-  U32 uc = 0xffffffff;
+  U32 uc                                = 0xffffffff;
   ork::lev2::VtxWriter<SVtxV12C4T16> vw;
   vw.Lock(GetContext(), &vb, 6);
   vw.AddVertex(SVtxV12C4T16(fx0, fy0, 0.0f, fua0, fva0, fub0, fvb0, uc));
@@ -159,23 +173,20 @@ void GfxBuffer::Render2dQuadEML(const fvec4& QuadRect,
   ctx->GBI()->DrawPrimitiveEML(vw, EPRIM_TRIANGLES, 6);
 }
 
-void GfxBuffer::Render2dQuadsEML(size_t count,
-                                 const fvec4* QuadRects,
-                                 const fvec4* UvRects,
-                                 const fvec4* UvRect2s ){
+void GfxBuffer::Render2dQuadsEML(size_t count, const fvec4* QuadRects, const fvec4* UvRects, const fvec4* UvRect2s) {
 
-  auto ctx  = GetContext();
+  auto ctx = GetContext();
 
   DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
-  U32 uc = 0xffffffff;
+  U32 uc                                = 0xffffffff;
   ork::lev2::VtxWriter<SVtxV12C4T16> vw;
-  vw.Lock(GetContext(), &vb, 6*count);
+  vw.Lock(GetContext(), &vb, 6 * count);
 
-  for( size_t i=0; i<count; i++ ) {
+  for (size_t i = 0; i < count; i++) {
 
     const fvec4& QuadRect = QuadRects[i];
-    const fvec4& UvRect = UvRects[i];
-    const fvec4& UvRect2 = UvRect2s[i];
+    const fvec4& UvRect   = UvRects[i];
+    const fvec4& UvRect2  = UvRect2s[i];
 
     float fx0 = QuadRect.x;
     float fy0 = QuadRect.y;
@@ -202,21 +213,21 @@ void GfxBuffer::Render2dQuadsEML(size_t count,
   }
   vw.UnLock(GetContext());
 
-  ctx->GBI()->DrawPrimitiveEML(vw, EPRIM_TRIANGLES, 6*count);
-
+  ctx->GBI()->DrawPrimitiveEML(vw, EPRIM_TRIANGLES, 6 * count);
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxBuffer::RenderMatOrthoQuad(const SRect& ViewportRect,
-                                   const SRect& QuadRect,
-                                   GfxMaterial* pmat,
-                                   float fu0,
-                                   float fv0,
-                                   float fu1,
-                                   float fv1,
-                                   float* uv2,
-                                   const fcolor4& clr) {
+void GfxBuffer::RenderMatOrthoQuad(
+    const SRect& ViewportRect,
+    const SRect& QuadRect,
+    GfxMaterial* pmat,
+    float fu0,
+    float fv0,
+    float fu1,
+    float fv1,
+    float* uv2,
+    const fcolor4& clr) {
   static SRasterState DefaultRasterState;
   auto ctx  = GetContext();
   auto mtxi = ctx->MTXI();
@@ -283,7 +294,8 @@ OrthoQuad::OrthoQuad()
     , mfv0a(0.0f)
     , mfv1a(0.0f)
     , mfv0b(0.0f)
-    , mfv1b(0.0f) {}
+    , mfv1b(0.0f) {
+}
 
 void GfxBuffer::RenderMatOrthoQuads(const OrthoQuads& oquads) {
   int inumquads             = oquads.miNumQuads;
@@ -385,7 +397,6 @@ void GfxBuffer::RenderMatOrthoQuads(const OrthoQuads& oquads) {
 }
 
 /////////////////////////////////////////////////////////////////////////
-
 
 /////////////////////////////////////////////////////////////////////////
 
