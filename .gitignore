@@ -1,4 +1,6 @@
 stage
+*.blend1
+*autosave*
 .build
 .stage
 .staging
