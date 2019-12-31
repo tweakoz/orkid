@@ -124,7 +124,7 @@ void ContextGL::GLinit()
 
 	printf( "gpixfmt<%p>\n", (void*) gpixfmt );
 
-	CGLError err = CGLinitContext ( gpixfmt, NULL, & gOGLdefaultctx );
+	CGLError err = CGLCreateContext ( gpixfmt, NULL, & gOGLdefaultctx );
 
 	OrkAssert( err==kCGLNoError );
 
@@ -462,6 +462,17 @@ void ContextGL::_doEndLoad(void*ploadtok)
 	GlOsxLoadContext* loadctx = (GlOsxLoadContext*) ploadtok;
 	printf( "ENDLOAD loadctx<%p> glx<%p>\n", loadctx,loadctx->mGlContext);
 	_loadTokens.push(ploadtok);
+}
+
+void recomputeHIDPI(void*plato){
+	auto osxplato = (GlOsxPlatformObject*) plato;
+  // nop for now..
+}
+bool _HIDPI() {
+  return true;
+}
+float _currentDPI(){
+  return 221.0f; // hardcoded to macbook pro for now..
 }
 
 }}
