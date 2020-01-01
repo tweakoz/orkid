@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -221,32 +221,29 @@ LightingComponentInst::LightingComponentInst(const LightingComponentData& data, 
 }
 
 bool LightingComponentInst::DoLink(ork::ent::Simulation* psi) {
-  if (GetLight()) {
-    switch (GetLight()->LightType()) {
+
+  auto lmi = psi->findSystem<ent::LightingSystem>();
+  if (nullptr == lmi)
+    return false;
+
+  ork::lev2::LightManager& lightmanager = lmi->GetLightManager();
+  bool bisdyn                           = mLightData.IsDynamic();
+
+  auto light_instance = GetLight();
+  if (light_instance) {
+    light_instance->mbIsDynamic = bisdyn;
+    switch (light_instance->LightType()) {
       case ork::lev2::ELIGHTTYPE_SPOT:
       case ork::lev2::ELIGHTTYPE_POINT:
-        break;
       case ork::lev2::ELIGHTTYPE_DIRECTIONAL:
       case ork::lev2::ELIGHTTYPE_AMBIENT: {
-        bool bisdyn             = mLightData.IsDynamic();
-        GetLight()->mbIsDynamic = bisdyn;
-
-        if (auto lmi = psi->findSystem<ent::LightingSystem>()) {
-
-          ork::lev2::LightManager& lightmanager = lmi->GetLightManager();
-
-          if (bisdyn) {
-            // orkprintf( "AddLight<%d:%08x>\n", lightmanager.mGlobalMovingLights.mPrioritizedLights.size(), GetLight() );
-            lightmanager.mGlobalMovingLights.AddLight(GetLight());
-          } else {
-            lightmanager.mGlobalStationaryLights.AddLight(GetLight());
-          }
-        }
-        break;
-      }
+        if (bisdyn)
+          lightmanager.mGlobalMovingLights.AddLight(light_instance);
+        else
+          lightmanager.mGlobalStationaryLights.AddLight(light_instance);
+      } break;
     }
   }
-
   return true;
 }
 

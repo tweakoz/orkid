@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -179,7 +179,7 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const uint32_t* DeferredContext::captureDepthClusters(CompositorDrawData& drawdata, const ViewData& VD) {
+const uint32_t* DeferredContext::captureDepthClusters(const CompositorDrawData& drawdata, const ViewData& VD) {
   auto CIMPL                   = drawdata._cimpl;
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
   RenderContextFrameData& RCFD = framerenderer.framedata();
@@ -253,7 +253,7 @@ void DeferredContext::renderUpdate(CompositorDrawData& drawdata) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DeferredContext::update(const ViewData& VD) {
+void DeferredContext::updateDebugLights(const ViewData& VD) {
   const int KTILEMAXX = _clusterW - 1;
   const int KTILEMAXY = _clusterH - 1;
   //////////////////////////////////////////////////////////////////

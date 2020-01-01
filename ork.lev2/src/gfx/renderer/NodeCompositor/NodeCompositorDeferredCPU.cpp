@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -34,7 +34,7 @@ void DeferredCompositingNode::describeX(class_t* c) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 struct IMPL {
-  static constexpr size_t KMAXLIGHTS = 512;
+  static constexpr size_t KMAXLIGHTS         = 512;
   static constexpr int KMAXNUMTILESX         = 512;
   static constexpr int KMAXNUMTILESY         = 256;
   static constexpr int KMAXTILECOUNT         = KMAXNUMTILESX * KMAXNUMTILESY;
@@ -43,17 +43,17 @@ struct IMPL {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   IMPL(DeferredCompositingNode* node)
       : _camname(AddPooledString("Camera"))
-      , _context(node,"orkshader://deferred",KMAXLIGHTS)
-      , _lighttiles(KMAXTILECOUNT)\
-      , _lightbuffer(nullptr){
-
+      , _context(node, "orkshader://deferred", KMAXLIGHTS)
+      , _lighttiles(KMAXTILECOUNT)
+      , _lightbuffer(nullptr) {
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ~IMPL() {}
+  ~IMPL() {
+  }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void init(lev2::Context* target) {
     _context.gpuInit(target);
-    if( nullptr == _lightbuffer ) {
+    if (nullptr == _lightbuffer) {
       _lightbuffer = target->FXI()->createParamBuffer(65536);
       auto mapped  = target->FXI()->mapParamBuffer(_lightbuffer);
       size_t base  = 0;
@@ -74,35 +74,34 @@ struct IMPL {
     //////////////////////////////////////////////////////
     _context.renderUpdate(drawdata);
     auto VD = _context.computeViewData(drawdata);
-    _context.update(VD);
+    _context.updateDebugLights(VD);
     _context._clearColor = node->_clearColor;
     //////////////////////////////////////////////////////////////////
     // clear lighttiles
     //////////////////////////////////////////////////////////////////
     int numtiles = _context._clusterW * _context._clusterH;
     for (int i = 0; i < numtiles; i++)
-      _lighttiles[i].atomicOp([](pllist_t&item){ item.clear(); });
+      _lighttiles[i].atomicOp([](pllist_t& item) { item.clear(); });
     /////////////////////////////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::render");
-      _context.renderGbuffer(drawdata, VD);
-      auto depthclusterbase = _context.captureDepthClusters(drawdata, VD);
-      targ->debugPushGroup("Deferred::LightAccum");
-        _context.renderBaseLighting(drawdata, VD);
-        this->renderPointLights(drawdata, VD);
-      targ->debugPopGroup(); // "Deferred::LightAccum"
+    _context.renderGbuffer(drawdata, VD);
+    auto depthclusterbase = _context.captureDepthClusters(drawdata, VD);
+    targ->debugPushGroup("Deferred::LightAccum");
+    _context.renderBaseLighting(drawdata, VD);
+    this->renderPointLights(drawdata, VD);
+    targ->debugPopGroup(); // "Deferred::LightAccum"
     targ->debugPopGroup(); // "Deferred::render"
     // float totaltime = _timer.SecsSinceStart();
     // printf( "Deferred::_render totaltime<%g>\n", totaltime );
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  void renderPointLights(CompositorDrawData& drawdata,
-                         const ViewData& VD){
+  void renderPointLights(CompositorDrawData& drawdata, const ViewData& VD) {
     /////////////////////////////////////////////////////////////////
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     auto FXI                     = framerenderer.framedata().GetTarget()->FXI();
     auto this_buf                = framerenderer.framedata().GetTarget()->FBI()->GetThisBuffer();
     /////////////////////////////////////////////////////////////////
-    _context.beginPointLighting(drawdata,VD);
+    _context.beginPointLighting(drawdata, VD);
     FXI->bindParamBlockBuffer(_context._lightblock, _lightbuffer);
     /////////////////////////////////////
     // float time_tile_cpa = _timer.SecsSinceStart();
@@ -114,7 +113,7 @@ struct IMPL {
     for (int iy = 0; iy <= _context._clusterH; iy++) {
       for (int ix = 0; ix <= _context._clusterW; ix++) {
         auto job = [this, ix, iy, &depthclusterbase]() {
-          int tileindex = iy * _context._clusterW + ix;
+          int tileindex                     = iy * _context._clusterW + ix;
           const uint32_t depthclustersample = depthclusterbase[tileindex];
           for (size_t lightindex = 0; lightindex < _context._pointlights.size(); lightindex++) {
             auto light    = _context._pointlights[lightindex];
@@ -123,8 +122,8 @@ struct IMPL {
               bool overlapy = doRangesOverlap(iy, iy, light->_minY, light->_maxY);
               if (overlapy) {
                 uint32_t depthcluster = depthclustersample;
-                uint32_t bitindex    = 0;
-                bool overlapZ        = false;
+                uint32_t bitindex     = 0;
+                bool overlapZ         = false;
                 while (depthcluster != 0 and (false == overlapZ)) {
                   bool has_bit = (depthcluster & 1);
                   if (has_bit) {
@@ -137,11 +136,11 @@ struct IMPL {
                 } // while(depthsample)
                 if (overlapZ) {
                   int numlintile = 0;
-                  _lighttiles[tileindex].atomicOp([&](pllist_t&item){
-                      item.push_back(light);
-                      numlintile = item.size();
+                  _lighttiles[tileindex].atomicOp([&](pllist_t& item) {
+                    item.push_back(light);
+                    numlintile = item.size();
                   });
-                  if (numlintile==1) {
+                  if (numlintile == 1) {
                     _pendingtiles[_pendingtilecounter.fetch_add(1)] = tileindex;
                   }
                 } // if( overlapZ )
@@ -151,10 +150,10 @@ struct IMPL {
           _lightjobcount--;
         }; // job =
         int jobindex = _lightjobcount++;
-        //job();
+        // job();
         opq::concurrentQueue().enqueue(job);
-      }         // for (int ix = 0; ix <= _clusterW; ix++) {
-    } // for (int iy = 0; iy <= _clusterH; iy++) {
+      } // for (int ix = 0; ix <= _clusterW; ix++) {
+    }   // for (int iy = 0; iy <= _clusterH; iy++) {
     /////////////////////////////////////
     // float time_tile_cpb = _timer.SecsSinceStart();
     // printf( "Deferred::_render tilecpb time<%g>\n", time_tile_cpb-time_tile_cpa );
@@ -162,10 +161,10 @@ struct IMPL {
     while (_lightjobcount) {
       opq::concurrentQueue().sync();
     }
-    const float KTILESIZX = 2.0f / float(_context._clusterW);
-    const float KTILESIZY = 2.0f / float(_context._clusterH);
+    const float KTILESIZX    = 2.0f / float(_context._clusterW);
+    const float KTILESIZY    = 2.0f / float(_context._clusterH);
     size_t num_pending_tiles = _pendingtilecounter.load();
-    size_t actindex  = 0;
+    size_t actindex          = 0;
     /////////////////////////////////////
     // float time_tile_cpc = _timer.SecsSinceStart();
     // printf( "Deferred::_render tilecpc time<%g>\n", time_tile_cpc-time_tile_cpb );
@@ -186,8 +185,8 @@ struct IMPL {
       _chunktiles_uvb.clear();
       /////////////////////////////////////
       while (false == chunk_done) {
-        int index              = _pendingtiles[actindex];
-        _lighttiles[index].atomicOp([&](pllist_t& lightlist){
+        int index = _pendingtiles[actindex];
+        _lighttiles[index].atomicOp([&](pllist_t& lightlist) {
           int iy                 = index / _context._clusterW;
           int ix                 = index % _context._clusterW;
           float T                = float(iy) * KTILESIZY - 1.0f;
@@ -251,10 +250,8 @@ struct IMPL {
         // this_buf->Render2dQuadEML(fvec4(L, T, KTILESIZX * 0.5, KTILESIZY), fvec4(0, 0, 1, 1));
       } else {
         if (_chunktiles_pos.size())
-          this_buf->Render2dQuadsEML(_chunktiles_pos.size(),
-                                     _chunktiles_pos.data(),
-                                     _chunktiles_uva.data(),
-                                     _chunktiles_uvb.data());
+          this_buf->Render2dQuadsEML(
+              _chunktiles_pos.size(), _chunktiles_pos.data(), _chunktiles_uva.data(), _chunktiles_uvb.data());
       }
       /////////////////////////////////////
       num_pending_tiles = _pendingtilecounter.load() - actindex;
@@ -265,7 +262,7 @@ struct IMPL {
     // printf( "Deferred::_render tiletime<%g>\n", time_tile_out-time_tile_in );
     // printf( "numchunks<%zu>\n", numchunks );
     /////////////////////////////////////
-    _context.endPointLighting(drawdata,VD);
+    _context.endPointLighting(drawdata, VD);
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   PoolString _camname;
@@ -277,7 +274,7 @@ struct IMPL {
   std::atomic<int> _lightjobcount;
   ork::Timer _timer;
   ork::fixedvector<locked_pllist_t, KMAXTILECOUNT> _lighttiles;
-  int  _pendingtiles[KMAXTILECOUNT];
+  int _pendingtiles[KMAXTILECOUNT];
   ork::fixedvector<int, KMAXTILECOUNT> _chunktiles;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_pos;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uva;
@@ -287,11 +284,16 @@ struct IMPL {
 }; // IMPL
 
 ///////////////////////////////////////////////////////////////////////////////
-DeferredCompositingNode::DeferredCompositingNode() { _impl = std::make_shared<IMPL>(this); }
+DeferredCompositingNode::DeferredCompositingNode() {
+  _impl = std::make_shared<IMPL>(this);
+}
 ///////////////////////////////////////////////////////////////////////////////
-DeferredCompositingNode::~DeferredCompositingNode() {}
+DeferredCompositingNode::~DeferredCompositingNode() {
+}
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNode::DoInit(lev2::Context* pTARG, int iW, int iH) { _impl.Get<std::shared_ptr<IMPL>>()->init(pTARG); }
+void DeferredCompositingNode::DoInit(lev2::Context* pTARG, int iW, int iH) {
+  _impl.Get<std::shared_ptr<IMPL>>()->init(pTARG);
+}
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNode::DoRender(CompositorDrawData& drawdata) {
   auto impl = _impl.Get<std::shared_ptr<IMPL>>();

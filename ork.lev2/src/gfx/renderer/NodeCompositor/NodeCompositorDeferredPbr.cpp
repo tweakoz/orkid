@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -27,6 +27,7 @@
 #include <ork/lev2/gfx/texman.h>
 
 #include "NodeCompositorDeferred.h"
+#include "CpuLightProcessor.h"
 
 ImplementReflectionX(ork::lev2::deferrednode::DeferredCompositingNodePbr, "DeferredCompositingNodePbr");
 
@@ -116,14 +117,15 @@ struct IMPL {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   IMPL(DeferredCompositingNodePbr* node)
       : _camname(AddPooledString("Camera"))
-      , _context(node, "orkshader://deferred", KMAXLIGHTS) {
+      , _context(node, "orkshader://deferred", KMAXLIGHTS)
+      , _lightProcessor(_context, node) {
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ~IMPL() {
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  void init(lev2::Context* target) {
-    _context.gpuInit(target);
+  void init(lev2::Context* context) {
+    _context.gpuInit(context);
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void _render(DeferredCompositingNodePbr* node, CompositorDrawData& drawdata) {
@@ -139,7 +141,7 @@ struct IMPL {
     //////////////////////////////////////////////////////
     _context.renderUpdate(drawdata);
     auto VD = _context.computeViewData(drawdata);
-    _context.update(VD);
+    _context.updateDebugLights(VD);
     _context._clearColor = node->_clearColor;
     /////////////////////////////////////////////////////////////////////////////////////////
     bool is_stereo = VD._isStereo;
@@ -221,81 +223,12 @@ struct IMPL {
       lmgr->enumerateInPass(_context._accumCPD, _enumeratedLights);
       auto& lights = _enumeratedLights._enumeratedLights;
 
-      if (lights.size()) {
-
-        ////////////////////////////////////////////////////////
-        // first non-shadow casters
-        ////////////////////////////////////////////////////////
-
-        targ->debugPushGroup("Deferred::DynamicLighting::NonShadowCasters");
-
-        _context._lightingmtl.bindTechnique(is_stereo ? _context._tekEnvironmentLightingStereo : _context._tekEnvironmentLighting);
-        _context._lightingmtl._rasterstate.SetBlending(EBLENDING_ADDITIVE);
-        _context._lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
-        _context._lightingmtl._rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
-        _context._lightingmtl.begin(RCFD);
-        //////////////////////////////////////////////////////
-        _context._lightingmtl.bindParamMatrixArray(_context._parMatIVPArray, VD._ivp, 2);
-        _context._lightingmtl.bindParamMatrixArray(_context._parMatVArray, VD._v, 2);
-        _context._lightingmtl.bindParamMatrixArray(_context._parMatPArray, VD._p, 2);
-
-        /////////////////////////
-
-        _context._lightingmtl.bindParamCTex(_context._parMapGBufAlbAo, _context._rtgGbuffer->GetMrt(0)->GetTexture());
-        _context._lightingmtl.bindParamCTex(_context._parMapGBufNrmL, _context._rtgGbuffer->GetMrt(1)->GetTexture());
-        _context._lightingmtl.bindParamCTex(_context._parMapGBufRufMtlAlpha, _context._rtgGbuffer->GetMrt(2)->GetTexture());
-        _context._lightingmtl.bindParamCTex(_context._parMapDepth, _context._rtgGbuffer->_depthTexture);
-
-        _context._lightingmtl.bindParamCTex(_context._parMapSpecularEnv, node->envSpecularTexture());
-        _context._lightingmtl.bindParamCTex(_context._parMapDiffuseEnv, node->envDiffuseTexture());
-
-        OrkAssert(node->brdfIntegrationTexture() != nullptr);
-        _context._lightingmtl.bindParamCTex(_context._parMapBrdfIntegration, node->brdfIntegrationTexture());
-
-        /////////////////////////
-
-        _context._lightingmtl.bindParamFloat(_context._parSkyboxLevel, node->skyboxLevel());
-        _context._lightingmtl.bindParamVec3(_context._parAmbientLevel, node->ambientLevel());
-        _context._lightingmtl.bindParamFloat(_context._parSpecularLevel, node->specularLevel());
-        _context._lightingmtl.bindParamFloat(_context._parDiffuseLevel, node->diffuseLevel());
-
-        /////////////////////////
-
-        _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipBias, node->environmentMipBias());
-        _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipScale, node->environmentMipScale());
-
-        /////////////////////////
-
-        _context._lightingmtl.bindParamVec2(_context._parNearFar, fvec2(0.1, 1000));
-        _context._lightingmtl.bindParamVec2(
-            _context._parInvViewSize, fvec2(1.0 / float(_context._width), 1.0f / float(_context._height)));
-
-        for (auto l : lights) {
-
-          if (l->isShadowCaster())
-            continue;
-
-          printf("processing nonshadowcasting light<%p> ", l);
-
-          fvec3 color = l->GetColor();
-          printf("color<%g %g %g> ", color.x, color.y, color.z);
-
-          if (auto as_directional = dynamic_cast<DirectionalLight*>(l)) {
-            fvec3 dir = l->GetDirection();
-            printf("type<directional> dir<%f %f %f> ", dir.x, dir.y, dir.z);
-          }
-          printf("\n");
-        }
-
-        _context._lightingmtl.commit();
-        RSI->BindRasterState(_context._lightingmtl._rasterstate);
-        // this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
-        _context._lightingmtl.end(RCFD);
-        targ->debugPopGroup(); // Deferred::DynamicLighting::NonShadowCasters
-      }
+      if (lights.size())
+        _lightProcessor.render(drawdata, VD, _enumeratedLights);
     }
 
     /////////////////////////////////
+    // end frame
     /////////////////////////////////
 
     CIMPL->popCPD(); // base lighting
@@ -314,8 +247,9 @@ struct IMPL {
   int _sequence = 0;
   std::atomic<int> _lightjobcount;
   ork::Timer _timer;
-  FxShaderParamBuffer* _lightbuffer = nullptr;
   EnumeratedLights _enumeratedLights;
+  CpuLightProcessor _lightProcessor;
+
 }; // IMPL
 
 ///////////////////////////////////////////////////////////////////////////////
