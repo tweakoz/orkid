@@ -218,23 +218,78 @@ struct IMPL {
       // printf("lightmgr<%p>\n", lmgr);
       lmgr->enumerateInPass(_context._accumCPD, _enumeratedLights);
       auto& lights = _enumeratedLights._enumeratedLights;
+
       if (lights.size()) {
 
-        targ->debugPushGroup("Deferred::DynamicLighting");
+        ////////////////////////////////////////////////////////
+        // first non-shadow casters
+        ////////////////////////////////////////////////////////
+
+        targ->debugPushGroup("Deferred::DynamicLighting::NonShadowCasters");
+
+        _context._lightingmtl.bindTechnique(is_stereo ? _context._tekDebugNormalStereo : _context._tekDebugNormal);
+        _context._lightingmtl._rasterstate.SetBlending(EBLENDING_ADDITIVE);
+        _context._lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
+        _context._lightingmtl._rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
+        _context._lightingmtl.begin(RCFD);
+        //////////////////////////////////////////////////////
+        _context._lightingmtl.bindParamMatrixArray(_context._parMatIVPArray, VD._ivp, 2);
+        _context._lightingmtl.bindParamMatrixArray(_context._parMatVArray, VD._v, 2);
+        _context._lightingmtl.bindParamMatrixArray(_context._parMatPArray, VD._p, 2);
+
+        /////////////////////////
+
+        _context._lightingmtl.bindParamCTex(_context._parMapGBufAlbAo, _context._rtgGbuffer->GetMrt(0)->GetTexture());
+        _context._lightingmtl.bindParamCTex(_context._parMapGBufNrmL, _context._rtgGbuffer->GetMrt(1)->GetTexture());
+        _context._lightingmtl.bindParamCTex(_context._parMapGBufRufMtlAlpha, _context._rtgGbuffer->GetMrt(2)->GetTexture());
+        _context._lightingmtl.bindParamCTex(_context._parMapDepth, _context._rtgGbuffer->_depthTexture);
+
+        _context._lightingmtl.bindParamCTex(_context._parMapSpecularEnv, node->envSpecularTexture());
+        _context._lightingmtl.bindParamCTex(_context._parMapDiffuseEnv, node->envDiffuseTexture());
+
+        OrkAssert(node->brdfIntegrationTexture() != nullptr);
+        _context._lightingmtl.bindParamCTex(_context._parMapBrdfIntegration, node->brdfIntegrationTexture());
+
+        /////////////////////////
+
+        _context._lightingmtl.bindParamFloat(_context._parSkyboxLevel, node->skyboxLevel());
+        _context._lightingmtl.bindParamVec3(_context._parAmbientLevel, node->ambientLevel());
+        _context._lightingmtl.bindParamFloat(_context._parSpecularLevel, node->specularLevel());
+        _context._lightingmtl.bindParamFloat(_context._parDiffuseLevel, node->diffuseLevel());
+
+        /////////////////////////
+
+        _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipBias, node->environmentMipBias());
+        _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipScale, node->environmentMipScale());
+
+        /////////////////////////
+
+        _context._lightingmtl.bindParamVec2(_context._parNearFar, fvec2(0.1, 1000));
+        _context._lightingmtl.bindParamVec2(
+            _context._parInvViewSize, fvec2(1.0 / float(_context._width), 1.0f / float(_context._height)));
+
         for (auto l : lights) {
 
-          printf("processing light<%p> type<", l);
+          if (l->isShadowCaster())
+            continue;
 
-          const auto& color = l->GetColor();
+          printf("processing nonshadowcasting light<%p> ", l);
+
+          fvec3 color = l->GetColor();
+          printf("color<%g %g %g> ", color.x, color.y, color.z);
 
           if (auto as_directional = dynamic_cast<DirectionalLight*>(l)) {
             fvec3 dir = l->GetDirection();
-            printf("directional> dir<%f %f %f>", dir.x, dir.y, dir.z);
+            printf("type<directional> dir<%f %f %f> ", dir.x, dir.y, dir.z);
           }
-
-          printf("shadowcaster<%d>\n", int(l->isShadowCaster()));
+          printf("\n");
         }
-        targ->debugPopGroup(); // Dynamic Lightinh
+
+        _context._lightingmtl.commit();
+        RSI->BindRasterState(_context._lightingmtl._rasterstate);
+        // this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
+        _context._lightingmtl.end(RCFD);
+        targ->debugPopGroup(); // Deferred::DynamicLighting::NonShadowCasters
       }
     }
 
