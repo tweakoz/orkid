@@ -104,13 +104,13 @@ struct DeferredContext {
 
   ////////////////////////////////////////////////////////////////////
 
-  const FxShaderTechnique* _tekBaseLighting           = nullptr;
-  const FxShaderTechnique* _tekPointLighting          = nullptr;
-  const FxShaderTechnique* _tekDebugNormal            = nullptr;
-  const FxShaderTechnique* _tekDebugNormalStereo      = nullptr;
-  const FxShaderTechnique* _tekBaseLightingStereo     = nullptr;
-  const FxShaderTechnique* _tekPointLightingStereo    = nullptr;
-  const FxShaderTechnique* _tekDownsampleDepthCluster = nullptr;
+  const FxShaderTechnique* _tekBaseLighting              = nullptr;
+  const FxShaderTechnique* _tekPointLighting             = nullptr;
+  const FxShaderTechnique* _tekEnvironmentLighting       = nullptr;
+  const FxShaderTechnique* _tekEnvironmentLightingStereo = nullptr;
+  const FxShaderTechnique* _tekBaseLightingStereo        = nullptr;
+  const FxShaderTechnique* _tekPointLightingStereo       = nullptr;
+  const FxShaderTechnique* _tekDownsampleDepthCluster    = nullptr;
 
 #if defined(ENABLE_COMPUTE_SHADERS)
   FxComputeShader* _lightcollectcomputeshader = nullptr;
@@ -176,12 +176,12 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class DeferredCompositingNodeDebugNormal : public RenderCompositingNode {
-  DeclareConcreteX(DeferredCompositingNodeDebugNormal, RenderCompositingNode);
+class DeferredCompositingNodePbr : public RenderCompositingNode {
+  DeclareConcreteX(DeferredCompositingNodePbr, RenderCompositingNode);
 
 public:
-  DeferredCompositingNodeDebugNormal();
-  ~DeferredCompositingNodeDebugNormal();
+  DeferredCompositingNodePbr();
+  ~DeferredCompositingNodePbr();
 
   lev2::Texture* envSpecularTexture() const;
   lev2::Texture* envDiffuseTexture() const;

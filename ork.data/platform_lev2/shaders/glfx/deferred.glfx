@@ -158,7 +158,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     return gbd._albedo * l;
   }
   /////////////////////////////////////////////////////////
-  vec3 debuglighting(WPosData wpd){
+  vec3 pbrEnvironmentLighting(WPosData wpd){
 
     vec3 rval;
 
@@ -245,7 +245,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       rval = env_equirectangularFlipV(nn,MapSpecularEnv,EnvironmentMipBias)*SkyboxLevel;
     }
     return rval;
-  } // vec3 debuglighting(){
+  } // vec3 environmentLighting(){
 ///////////////////////////////////////////////////////////////
 } // libblock lib_deferred : ub_light : ub_frg {
 ///////////////////////////////////////////////////////////////
@@ -309,16 +309,16 @@ fragment_shader ps_pointlight : iface_f2uv : lib_deferred {
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_debugnormal : iface_f2uv : lib_deferred  {
+fragment_shader ps_environment : iface_f2uv : lib_deferred  {
   WPosData wpd;
   wpd._muv   = gl_FragCoord.xy * InvViewportSize;
   wpd._index = 0;
   wpd._ivp   = IVPArray[0];
   wpd._scruv = wpd._muv;
-  out_clr = vec4(debuglighting(wpd),1);
+  out_clr = vec4(pbrEnvironmentLighting(wpd),1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_debugnormal_stereo : iface_f2uv : lib_deferred  {
+fragment_shader ps_environment_stereo : iface_f2uv : lib_deferred  {
   WPosData wpd;
   wpd._muv   = gl_FragCoord.xy * InvViewportSize;
   int index = int(wpd._muv.x >= 0.5);
@@ -326,7 +326,7 @@ fragment_shader ps_debugnormal_stereo : iface_f2uv : lib_deferred  {
   wpd._scruv = wpd._muv;
   wpd._scruv.x = mod(wpd._scruv.x * 2, 1);
   wpd._index = index;
-  vec3 c = debuglighting(wpd);
+  vec3 c = pbrEnvironmentLighting(wpd);
   out_clr = vec4(c,1);
 }
 ///////////////////////////////////////////////////////////////
@@ -391,20 +391,20 @@ technique downsampledepthcluster {
   }
 }
 ///////////////////////////////////////////////////////////////
-technique debugnormal {
+technique environmentlighting {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_passthru2uv;
-    fragment_shader = ps_debugnormal;
+    fragment_shader = ps_environment;
     state_block     = sb_default;
   }
 }
 ///////////////////////////////////////////////////////////////
-technique debugnormal_stereo {
+technique environmentlighting_stereo {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_passthru2uv;
-    fragment_shader = ps_debugnormal_stereo;
+    fragment_shader = ps_environment_stereo;
     state_block     = sb_default;
   }
 }

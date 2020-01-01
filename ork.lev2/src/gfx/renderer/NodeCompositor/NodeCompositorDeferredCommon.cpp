@@ -61,13 +61,13 @@ void DeferredContext::gpuInit(Context* target) {
   if (nullptr == _rtgGbuffer) {
     //////////////////////////////////////////////////////////////
     _lightingmtl.gpuInit(target, _shadername);
-    _tekBaseLighting           = _lightingmtl.technique("baselight");
-    _tekPointLighting          = _lightingmtl.technique("pointlight");
-    _tekBaseLightingStereo     = _lightingmtl.technique("baselight_stereo");
-    _tekPointLightingStereo    = _lightingmtl.technique("pointlight_stereo");
-    _tekDownsampleDepthCluster = _lightingmtl.technique("downsampledepthcluster");
-    _tekDebugNormal            = _lightingmtl.technique("debugnormal");
-    _tekDebugNormalStereo      = _lightingmtl.technique("debugnormal_stereo");
+    _tekBaseLighting              = _lightingmtl.technique("baselight");
+    _tekPointLighting             = _lightingmtl.technique("pointlight");
+    _tekBaseLightingStereo        = _lightingmtl.technique("baselight_stereo");
+    _tekPointLightingStereo       = _lightingmtl.technique("pointlight_stereo");
+    _tekDownsampleDepthCluster    = _lightingmtl.technique("downsampledepthcluster");
+    _tekEnvironmentLighting       = _lightingmtl.technique("environmentlighting");
+    _tekEnvironmentLightingStereo = _lightingmtl.technique("environmentlighting_stereo");
     //////////////////////////////////////////////////////////////
     // init lightblock
     //////////////////////////////////////////////////////////////
