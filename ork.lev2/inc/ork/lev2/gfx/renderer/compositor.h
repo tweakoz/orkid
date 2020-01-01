@@ -34,8 +34,12 @@ class CompositingScene : public ork::Object {
 public:
   CompositingScene();
 
-  const orklut<PoolString, ork::Object*>& items() const { return _items; }
-  orklut<PoolString, ork::Object*>& items() { return _items; }
+  const orklut<PoolString, ork::Object*>& items() const {
+    return _items;
+  }
+  orklut<PoolString, ork::Object*>& items() {
+    return _items;
+  }
 
 private:
   orklut<PoolString, ork::Object*> _items;
@@ -56,8 +60,8 @@ class CompositingTechnique : public ork::Object {
 
 public:
   virtual void Init(lev2::Context* pTARG, int w, int h) = 0;
-  virtual bool assemble(CompositorDrawData& drawdata) = 0;
-  virtual void composite(CompositorDrawData& drawdata) = 0;
+  virtual bool assemble(CompositorDrawData& drawdata)   = 0;
+  virtual void composite(CompositorDrawData& drawdata)  = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -75,7 +79,7 @@ class CompositingBuffer : public ork::Object {
 struct CompositingContext {
   int miWidth;
   int miHeight;
-  GfxMaterial3DSolid* _utilMaterial = nullptr;
+  GfxMaterial3DSolid* _utilMaterial           = nullptr;
   CompositingTechnique* _compositingTechnique = nullptr;
 
   CompositingContext();
@@ -96,39 +100,57 @@ struct CompositingPassData {
 
   ////////////////////////////////////////////////////
 
-  bool isStereoOnePass() const { return _stereo1pass; }
-  void setStereoOnePass(bool ena) { _stereo1pass=ena; }
-  const CameraMatrices* cameraMatrices() const { return _cameraMatrices; }
-  void setCameraMatrices(const CameraMatrices* m) { _cameraMatrices = m; }
+  bool isStereoOnePass() const {
+    return _stereo1pass;
+  }
+  void setStereoOnePass(bool ena) {
+    _stereo1pass = ena;
+  }
+  const CameraMatrices* cameraMatrices() const {
+    return _cameraMatrices;
+  }
+  void setCameraMatrices(const CameraMatrices* m) {
+    _cameraMatrices = m;
+  }
   static CompositingPassData FromRCFD(const RenderContextFrameData& RCFD);
   std::vector<PoolString> getLayerNames() const;
   void updateCompositingSize(int w, int h);
   bool isPicking() const;
-  const SRect& GetDstRect() const { return mDstRect; }
-  const SRect& GetMrtRect() const { return mMrtRect; }
-  void SetDstRect(const SRect& rect) { mDstRect = rect; }
-  void SetMrtRect(const SRect& rect) { mMrtRect = rect; }
+  const SRect& GetDstRect() const {
+    return mDstRect;
+  }
+  const SRect& GetMrtRect() const {
+    return mMrtRect;
+  }
+  void SetDstRect(const SRect& rect) {
+    mDstRect = rect;
+  }
+  void SetMrtRect(const SRect& rect) {
+    mMrtRect = rect;
+  }
   void ClearLayers();
   void AddLayer(const PoolString& layername);
   bool HasLayer(const PoolString& layername) const;
   void addStandardLayers();
 
-  bool isValid() const { return _cameraMatrices or _stereoCameraMatrices; }
+  bool isValid() const {
+    return _cameraMatrices or _stereoCameraMatrices;
+  }
 
   const Frustum& monoCamFrustum() const;
   const fvec3& monoCamZnormal() const;
   fvec3 monoCamPos(const fmtx4& vizoffsetmtx) const;
   ////////////////////////////////////////////////////
 
-  IRenderTarget* _irendertarget = nullptr;
-  const CompositingGroup* mpGroup = nullptr;
+  IRenderTarget* _irendertarget        = nullptr;
+  const CompositingGroup* mpGroup      = nullptr;
   lev2::FrameTechniqueBase* mpFrameTek = nullptr;
-  bool mbDrawSource = true;
-  const PoolString* mpCameraName = nullptr;
-  const PoolString* mpLayerName = nullptr;
+  bool mbDrawSource                    = true;
+  const PoolString* mpCameraName       = nullptr;
+  const PoolString* mpLayerName        = nullptr;
   ork::fvec4 _clearColor;
-  bool _stereo1pass = false;
-  const CameraMatrices* _cameraMatrices = nullptr;
+  bool _stereo1pass                                 = false;
+  const CameraMatrices* _cameraMatrices             = nullptr;
   const StereoCameraMatrices* _stereoCameraMatrices = nullptr;
   ork::svarp_t _var;
   SRect mDstRect;
@@ -144,10 +166,12 @@ typedef std::stack<lev2::CompositingPassData> compositingpassdatastack_t;
 struct CompositorDrawData {
   Context* target() const;
   CompositingImpl* _cimpl = nullptr;
-  std::map<uint64_t,svar16_t> _properties;
+  std::map<uint64_t, svar16_t> _properties;
   lev2::FrameRenderer& mFrameRenderer;
 
-  CompositorDrawData(lev2::FrameRenderer& renderer) : mFrameRenderer(renderer) {}
+  CompositorDrawData(lev2::FrameRenderer& renderer)
+      : mFrameRenderer(renderer) {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -162,15 +186,27 @@ public:
 
   void defaultSetup();
 
-  const orklut<PoolString, ork::Object*>& GetGroups() const { return _groups; }
-  const orklut<PoolString, ork::Object*>& GetScenes() const { return _scenes; }
+  const orklut<PoolString, ork::Object*>& GetGroups() const {
+    return _groups;
+  }
+  const orklut<PoolString, ork::Object*>& GetScenes() const {
+    return _scenes;
+  }
 
-  PoolString& GetActiveScene() const { return _activeScene; }
-  PoolString& GetActiveItem() const { return _activeItem; }
+  PoolString& GetActiveScene() const {
+    return _activeScene;
+  }
+  PoolString& GetActiveItem() const {
+    return _activeItem;
+  }
 
-  bool IsEnabled() const { return mbEnable && mToggle; }
+  bool IsEnabled() const {
+    return mbEnable && mToggle;
+  }
 
-  void Toggle() const { mToggle = !mToggle; }
+  void Toggle() const {
+    mToggle = !mToggle;
+  }
 
   orklut<PoolString, ork::Object*> _groups;
   orklut<PoolString, ork::Object*> _scenes;
@@ -186,14 +222,15 @@ public:
 
 class CompositingImpl {
 public:
-
   CompositingImpl(const CompositingData& data);
   ~CompositingImpl();
 
   bool assemble(lev2::CompositorDrawData& drawdata);
   void composite(lev2::CompositorDrawData& drawdata);
 
-  const CompositingData& compositingData() const { return _compositingData; }
+  const CompositingData& compositingData() const {
+    return _compositingData;
+  }
 
   bool IsEnabled() const;
 
@@ -206,7 +243,12 @@ public:
 
   void update(float dt);
 
-  void bindLighting(LightManager* lmgr) { _lightmgr=lmgr; }
+  void bindLighting(LightManager* lmgr) {
+    _lightmgr = lmgr;
+  }
+  const LightManager* lightManager() const {
+    return _lightmgr;
+  }
 
   const CompositingPassData& topCPD() const;
   const CompositingPassData& pushCPD(const CompositingPassData& cpd);
@@ -215,10 +257,9 @@ public:
 private:
   const CompositingData& _compositingData;
 
-
   float mfTimeAccum;
   float mfLastTime;
-  LightManager* _lightmgr = nullptr;
+  LightManager* _lightmgr  = nullptr;
   CameraData* _cimplcamdat = nullptr;
   CompositingMorphable _morphable;
   CameraMatrices* _defaultCameraMatrices = nullptr;
@@ -235,13 +276,14 @@ class CompositingSceneItem : public ork::Object {
 public:
   CompositingSceneItem();
 
-  CompositingTechnique* technique() const { return mpTechnique; }
+  CompositingTechnique* technique() const {
+    return mpTechnique;
+  }
   void _readTech(ork::rtti::ICastable*& val) const;
   void _writeTech(ork::rtti::ICastable* const& val);
-
 
   CompositingTechnique* mpTechnique;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2 {
+} // namespace ork::lev2

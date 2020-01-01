@@ -140,6 +140,8 @@ struct IMPL {
     _context.update(VD);
     _context._clearColor = node->_clearColor;
     /////////////////////////////////////////////////////////////////////////////////////////
+    bool is_stereo = VD._isStereo;
+    /////////////////////////////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::render");
     _context.renderGbuffer(drawdata, VD);
     targ->debugPushGroup("Deferred::LightAccum");
@@ -158,10 +160,10 @@ struct IMPL {
     targ->beginFrame();
     FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
     //////////////////////////////////////////////////////////////////
-    // base lighting
+    // base lighting (environent IBL lighting)
     //////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::BaseLighting");
-    _context._lightingmtl.bindTechnique(VD._isStereo ? _context._tekDebugNormalStereo : _context._tekDebugNormal);
+    _context._lightingmtl.bindTechnique(is_stereo ? _context._tekDebugNormalStereo : _context._tekDebugNormal);
     _context._lightingmtl._rasterstate.SetBlending(EBLENDING_OFF);
     _context._lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
     _context._lightingmtl._rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
@@ -205,8 +207,41 @@ struct IMPL {
     RSI->BindRasterState(_context._lightingmtl._rasterstate);
     this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
     _context._lightingmtl.end(RCFD);
-    CIMPL->popCPD();       // base lighting
     targ->debugPopGroup(); // BaseLighting
+
+    /////////////////////////////////
+    // Dynamic Lighting
+    /////////////////////////////////
+
+    if (auto lmgr = CIMPL->lightManager()) {
+
+      // printf("lightmgr<%p>\n", lmgr);
+      lmgr->enumerateInPass(_context._accumCPD, _enumeratedLights);
+      auto& lights = _enumeratedLights._enumeratedLights;
+      if (lights.size()) {
+
+        targ->debugPushGroup("Deferred::DynamicLighting");
+        for (auto l : lights) {
+
+          printf("processing light<%p> type<", l);
+
+          const auto& color = l->GetColor();
+
+          if (auto as_directional = dynamic_cast<DirectionalLight*>(l)) {
+            fvec3 dir = l->GetDirection();
+            printf("directional> dir<%f %f %f>", dir.x, dir.y, dir.z);
+          }
+
+          printf("shadowcaster<%d>\n", int(l->isShadowCaster()));
+        }
+        targ->debugPopGroup(); // Dynamic Lightinh
+      }
+    }
+
+    /////////////////////////////////
+    /////////////////////////////////
+
+    CIMPL->popCPD(); // base lighting
     targ->endFrame();
     FBI->PopRtGroup(); // deferredRtg
 
@@ -223,6 +258,7 @@ struct IMPL {
   std::atomic<int> _lightjobcount;
   ork::Timer _timer;
   FxShaderParamBuffer* _lightbuffer = nullptr;
+  EnumeratedLights _enumeratedLights;
 }; // IMPL
 
 ///////////////////////////////////////////////////////////////////////////////

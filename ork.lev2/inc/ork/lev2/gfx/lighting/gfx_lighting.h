@@ -30,432 +30,489 @@ class FxShader;
 class FxShaderParam;
 class FxShaderParamBlock;
 class Context;
+class CompositingPassData;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline int countbits( U32 v )
-{
-	v = v - ((v >> 1) & 0x55555555);								// reuse input as temporary
-	v = (v & 0x33333333) + ((v >> 2) & 0x33333333);					// temp
-	int c = (((v + (v >> 4) & 0xF0F0F0F) * 0x1010101) >> 24);	// count
-	return c;
+inline int countbits(U32 v) {
+  v     = v - ((v >> 1) & 0x55555555);                      // reuse input as temporary
+  v     = (v & 0x33333333) + ((v >> 2) & 0x33333333);       // temp
+  int c = (((v + (v >> 4) & 0xF0F0F0F) * 0x1010101) >> 24); // count
+  return c;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum ELightType
-{
-	ELIGHTTYPE_DIRECTIONAL = 0,
-	ELIGHTTYPE_SPOT,
-	ELIGHTTYPE_POINT,
-	ELIGHTTYPE_AMBIENT,
+enum ELightType {
+  ELIGHTTYPE_DIRECTIONAL = 0,
+  ELIGHTTYPE_SPOT,
+  ELIGHTTYPE_POINT,
+  ELIGHTTYPE_AMBIENT,
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class  LightData : public ork::Object
-{
-	RttiDeclareAbstract(LightData, ork::Object);
+class LightData : public ork::Object {
+  RttiDeclareAbstract(LightData, ork::Object);
 
-	fvec3				mColor;
-	bool					mbShadowCaster;
-	float					mShadowSamples;
-	float					mShadowBlur;
-	float					mShadowBias;
-	bool					mbSpecular;
+  fvec3 mColor;
+  bool mbShadowCaster;
+  float mShadowSamples;
+  float mShadowBlur;
+  float mShadowBias;
+  bool mbSpecular;
 
 public:
+  float GetShadowBias() const {
+    return mShadowBias;
+  }
+  float GetShadowSamples() const {
+    return mShadowSamples;
+  }
+  float GetShadowBlur() const {
+    return mShadowBlur;
+  }
+  bool GetSpecular() const {
+    return mbSpecular;
+  }
+  bool IsShadowCaster() const {
+    return mbShadowCaster;
+  }
 
-	float GetShadowBias() const { return mShadowBias; }
-	float GetShadowSamples() const { return mShadowSamples; }
-	float GetShadowBlur() const { return mShadowBlur; }
-	bool GetSpecular() const { return mbSpecular; }
-	bool IsShadowCaster() const { return mbShadowCaster; }
+  const fvec3& GetColor() const {
+    return mColor;
+  }
+  void SetColor(const fvec3& clr) {
+    mColor = clr;
+  }
 
-	const fvec3& GetColor() const { return mColor; }
-	void SetColor(const fvec3&clr) { mColor=clr; }
-
-	LightData()
-		: mColor( 1.0f, 0.0f, 0.0f )
-		, mbSpecular(false)
-		, mbShadowCaster(false)
-		, mShadowSamples(1.0f)
-		, mShadowBlur(0.0f)
-		, mShadowBias(0.2f)
-	{
-	}
+  LightData()
+      : mColor(1.0f, 0.0f, 0.0f)
+      , mbSpecular(false)
+      , mbShadowCaster(false)
+      , mShadowSamples(1.0f)
+      , mShadowBlur(0.0f)
+      , mShadowBias(0.2f) {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class  Light : public ork::Object
-{
-	RttiDeclareAbstract(Light, ork::Object);
+class Light : public ork::Object {
+  RttiDeclareAbstract(Light, ork::Object);
 
-	const LightData* mLd;
-	const fmtx4& mWorldMatrix;
+  const LightData* mLd;
+  const fmtx4& mWorldMatrix;
 
 public:
+  float mPriority;
+  int miInFrustumID;
+  bool mbIsDynamic;
 
-	float		mPriority;
-	int			miInFrustumID;
-	bool		mbIsDynamic;
+  bool isShadowCaster() const;
+  virtual bool IsInFrustum(const Frustum& frustum)              = 0;
+  virtual bool AffectsSphere(const fvec3& center, float radius) = 0;
+  virtual bool AffectsAABox(const AABox& aab)                   = 0;
+  virtual bool AffectsCircleXZ(const Circle& cir)               = 0;
+  virtual ELightType LightType() const                          = 0;
 
-	virtual bool IsInFrustum( const Frustum& frustum ) = 0;
-	virtual bool AffectsSphere( const fvec3& center, float radius ) = 0;
-	virtual bool AffectsAABox( const AABox& aab ) = 0;
-	virtual bool AffectsCircleXZ( const Circle& cir ) = 0;
-	virtual ELightType LightType() const = 0;
+  const fvec3& GetColor() const {
+    return mLd->GetColor();
+  }
+  const fmtx4& GetMatrix() const {
+    return mWorldMatrix;
+  }
+  fvec3 GetWorldPosition() const {
+    return mWorldMatrix.GetTranslation();
+  }
+  fvec3 GetDirection() const {
+    return mWorldMatrix.GetZNormal();
+  }
 
-	const fvec3& GetColor() const { return mLd->GetColor(); }
-	const fmtx4& GetMatrix() const { return mWorldMatrix; }
-	fvec3 GetWorldPosition() const { return mWorldMatrix.GetTranslation(); }
-	fvec3 GetDirection() const { return mWorldMatrix.GetZNormal(); }
-
-	Light( const fmtx4& mtx, const LightData* ld=0 ) : mWorldMatrix(mtx), mLd(ld), mbIsDynamic(false), mPriority(0.0f) {}
-
+  Light(const fmtx4& mtx, const LightData* ld = 0)
+      : mWorldMatrix(mtx)
+      , mLd(ld)
+      , mbIsDynamic(false)
+      , mPriority(0.0f) {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct  PointLightData : public LightData
-{
-	RttiDeclareConcrete(PointLightData, LightData);
- public:
-	float		_radius;
-	float		_falloff;
+struct PointLightData : public LightData {
+  RttiDeclareConcrete(PointLightData, LightData);
 
 public:
-
-	float GetRadius() const { return _radius; }
-	float GetFalloff() const { return _falloff; }
-
-	PointLightData() : _radius(1.0f), _falloff(1.0f) {}
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class  PointLight : public Light
-{
-	RttiDeclareAbstract(PointLight, ork::Object);
-
-	const PointLightData* mPld;
+  float _radius;
+  float _falloff;
 
 public:
+  float GetRadius() const {
+    return _radius;
+  }
+  float GetFalloff() const {
+    return _falloff;
+  }
 
-	/*virtual*/ bool IsInFrustum( const Frustum& frustum ) override;
-	/*virtual*/ bool AffectsSphere( const fvec3& center, float radius ) override;
-	/*virtual*/ bool AffectsAABox( const AABox& aab ) override;
-	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) override;
-	/*virtual*/ ELightType LightType() const override { return ELIGHTTYPE_POINT; }
-
-	float GetRadius() const { return mPld->GetRadius(); }
-	float GetFalloff() const { return mPld->GetFalloff(); }
-
-	PointLight( const fmtx4& mtx, const PointLightData* pld=0 );
+  PointLightData()
+      : _radius(1.0f)
+      , _falloff(1.0f) {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class  DirectionalLightData : public LightData
-{
-	RttiDeclareConcrete(DirectionalLightData, LightData);
+class PointLight : public Light {
+  RttiDeclareAbstract(PointLight, ork::Object);
+
+  const PointLightData* mPld;
 
 public:
+  /*virtual*/ bool IsInFrustum(const Frustum& frustum) override;
+  /*virtual*/ bool AffectsSphere(const fvec3& center, float radius) override;
+  /*virtual*/ bool AffectsAABox(const AABox& aab) override;
+  /*virtual*/ bool AffectsCircleXZ(const Circle& cir) override;
+  /*virtual*/ ELightType LightType() const override {
+    return ELIGHTTYPE_POINT;
+  }
 
-	DirectionalLightData() {}
+  float GetRadius() const {
+    return mPld->GetRadius();
+  }
+  float GetFalloff() const {
+    return mPld->GetFalloff();
+  }
+
+  PointLight(const fmtx4& mtx, const PointLightData* pld = 0);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class  DirectionalLight : public Light
-{
-	RttiDeclareAbstract(DirectionalLight, ork::Object);
-
-	const DirectionalLightData* mDld;
+class DirectionalLightData : public LightData {
+  RttiDeclareConcrete(DirectionalLightData, LightData);
 
 public:
-
-	/*virtual*/ bool IsInFrustum( const Frustum& frustum )override;
-	/*virtual*/ bool AffectsSphere( const fvec3& center, float radius ) override { return true; }
-	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) override { return true; }
-	/*virtual*/ bool AffectsAABox( const AABox& aab ) override { return true; }
-	/*virtual*/ ELightType LightType() const override { return ELIGHTTYPE_DIRECTIONAL; }
-
-	DirectionalLight( const fmtx4& mtx, const DirectionalLightData* dld=0 );
+  DirectionalLightData() {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class  AmbientLightData : public LightData
-{
-	RttiDeclareConcrete(AmbientLightData, LightData);
+class DirectionalLight : public Light {
+  RttiDeclareAbstract(DirectionalLight, ork::Object);
 
-	float	mfAmbientShade;
-	fvec3 mvHeadlightDir;
+  const DirectionalLightData* mDld;
 
 public:
+  /*virtual*/ bool IsInFrustum(const Frustum& frustum) override;
+  /*virtual*/ bool AffectsSphere(const fvec3& center, float radius) override {
+    return true;
+  }
+  /*virtual*/ bool AffectsCircleXZ(const Circle& cir) override {
+    return true;
+  }
+  /*virtual*/ bool AffectsAABox(const AABox& aab) override {
+    return true;
+  }
+  /*virtual*/ ELightType LightType() const override {
+    return ELIGHTTYPE_DIRECTIONAL;
+  }
 
-	AmbientLightData() : mfAmbientShade(0.0f), mvHeadlightDir(0.0f, 0.5f, 1.0f) {}
-	float GetAmbientShade() const { return mfAmbientShade; }
-	void SetAmbientShade( float fv ) { mfAmbientShade=fv; }
-	const fvec3& GetHeadlightDir() const { return mvHeadlightDir; }
-	void SetHeadlightDir( const fvec3 &dir) { mvHeadlightDir=dir; }
+  DirectionalLight(const fmtx4& mtx, const DirectionalLightData* dld = 0);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class  AmbientLight : public Light
-{
-	RttiDeclareAbstract(AmbientLight, ork::Object);
+class AmbientLightData : public LightData {
+  RttiDeclareConcrete(AmbientLightData, LightData);
 
-	const AmbientLightData* mAld;
+  float mfAmbientShade;
+  fvec3 mvHeadlightDir;
 
 public:
-
-	/*virtual*/ bool IsInFrustum( const Frustum& frustum ) override;
-	/*virtual*/ bool AffectsSphere( const fvec3& center, float radius ) override { return true; }
-	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) override { return true; }
-	/*virtual*/ bool AffectsAABox( const AABox& aab ) override { return true; }
-	/*virtual*/ ELightType LightType() const override { return ELIGHTTYPE_AMBIENT; }
-	float GetAmbientShade() const { return mAld->GetAmbientShade(); }
-	const fvec3& GetHeadlightDir() const { return mAld->GetHeadlightDir(); }
-
-	AmbientLight( const fmtx4& mtx, const AmbientLightData* dld=0 );
+  AmbientLightData()
+      : mfAmbientShade(0.0f)
+      , mvHeadlightDir(0.0f, 0.5f, 1.0f) {
+  }
+  float GetAmbientShade() const {
+    return mfAmbientShade;
+  }
+  void SetAmbientShade(float fv) {
+    mfAmbientShade = fv;
+  }
+  const fvec3& GetHeadlightDir() const {
+    return mvHeadlightDir;
+  }
+  void SetHeadlightDir(const fvec3& dir) {
+    mvHeadlightDir = dir;
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class  SpotLightData : public LightData
-{
-	RttiDeclareConcrete(SpotLightData, LightData);
+class AmbientLight : public Light {
+  RttiDeclareAbstract(AmbientLight, ork::Object);
 
-	float				mFovy;
-	float				mRange;
-	lev2::TextureAsset*	mTexture;
-
-	void SetTextureAccessor( ork::rtti::ICastable* const & tex);
-	void GetTextureAccessor( ork::rtti::ICastable* & tex) const;
+  const AmbientLightData* mAld;
 
 public:
+  /*virtual*/ bool IsInFrustum(const Frustum& frustum) override;
+  /*virtual*/ bool AffectsSphere(const fvec3& center, float radius) override {
+    return true;
+  }
+  /*virtual*/ bool AffectsCircleXZ(const Circle& cir) override {
+    return true;
+  }
+  /*virtual*/ bool AffectsAABox(const AABox& aab) override {
+    return true;
+  }
+  /*virtual*/ ELightType LightType() const override {
+    return ELIGHTTYPE_AMBIENT;
+  }
+  float GetAmbientShade() const {
+    return mAld->GetAmbientShade();
+  }
+  const fvec3& GetHeadlightDir() const {
+    return mAld->GetHeadlightDir();
+  }
 
-	float GetFovy() const { return mFovy; }
-	float GetRange() const { return mRange; }
-
-	SpotLightData() : mFovy(10.0f), mRange(1.0f), mTexture(0) {}
+  AmbientLight(const fmtx4& mtx, const AmbientLightData* dld = 0);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class  SpotLight : public Light
-{
-	RttiDeclareAbstract(PointLight, ork::Object);
+class SpotLightData : public LightData {
+  RttiDeclareConcrete(SpotLightData, LightData);
 
-	const SpotLightData* mSld;
+  float mFovy;
+  float mRange;
+  lev2::TextureAsset* mTexture;
+
+  void SetTextureAccessor(ork::rtti::ICastable* const& tex);
+  void GetTextureAccessor(ork::rtti::ICastable*& tex) const;
 
 public:
+  float GetFovy() const {
+    return mFovy;
+  }
+  float GetRange() const {
+    return mRange;
+  }
 
-	fmtx4		mProjectionMatrix;
-	fmtx4		mViewMatrix;
-	Frustum			mWorldSpaceLightFrustum;
-	//float			mFovy;
-	//float			mRange;
-	lev2::TextureAsset*	mTexture;
-
-
-	/*virtual*/ bool IsInFrustum( const Frustum& frustum ) override;
-	/*virtual*/ bool AffectsSphere( const fvec3& center, float radius ) override;
-	/*virtual*/ bool AffectsAABox( const AABox& aab ) override;
-	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) override;
-	/*virtual*/ ELightType LightType() const override { return ELIGHTTYPE_SPOT; }
-
-	void Set( const fvec3& pos, const fvec3& target, const fvec3& up, float fovy );
-
-	void SetTexture( lev2::TextureAsset* ptex ) { mTexture=ptex; }
-	lev2::TextureAsset* GetTexture() const { return mTexture; }
-
-	float GetFovy() const { return mSld->GetFovy(); }
-	float GetRange() const { return mSld->GetRange(); }
-
-	SpotLight( const fmtx4& mtx, const SpotLightData* sld = 0 );
-
+  SpotLightData()
+      : mFovy(10.0f)
+      , mRange(1.0f)
+      , mTexture(0) {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct  LightContainer
-{
-	static const int kmaxlights = 8;
+class SpotLight : public Light {
+  RttiDeclareAbstract(PointLight, ork::Object);
 
-	typedef fixedlut<float,Light*,kmaxlights> map_type;
+  const SpotLightData* mSld;
 
-	map_type	mPrioritizedLights;
+public:
+  fmtx4 mProjectionMatrix;
+  fmtx4 mViewMatrix;
+  Frustum mWorldSpaceLightFrustum;
+  // float			mFovy;
+  // float			mRange;
+  lev2::TextureAsset* mTexture;
 
-	void AddLight( Light* plight );
-	void RemoveLight( Light* plight );
+  /*virtual*/ bool IsInFrustum(const Frustum& frustum) override;
+  /*virtual*/ bool AffectsSphere(const fvec3& center, float radius) override;
+  /*virtual*/ bool AffectsAABox(const AABox& aab) override;
+  /*virtual*/ bool AffectsCircleXZ(const Circle& cir) override;
+  /*virtual*/ ELightType LightType() const override {
+    return ELIGHTTYPE_SPOT;
+  }
 
-	LightContainer();
-	void Clear();
-};
+  void Set(const fvec3& pos, const fvec3& target, const fvec3& up, float fovy);
 
-struct  GlobalLightContainer
-{
-	static const int kmaxlights = 256;
+  void SetTexture(lev2::TextureAsset* ptex) {
+    mTexture = ptex;
+  }
+  lev2::TextureAsset* GetTexture() const {
+    return mTexture;
+  }
 
-	typedef fixedlut<float,Light*,kmaxlights> map_type;
+  float GetFovy() const {
+    return mSld->GetFovy();
+  }
+  float GetRange() const {
+    return mSld->GetRange();
+  }
 
-	map_type	mPrioritizedLights;
-
-	void AddLight( Light* plight );
-	void RemoveLight( Light* plight );
-
-	GlobalLightContainer();
-	void Clear();
+  SpotLight(const fmtx4& mtx, const SpotLightData* sld = 0);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct  LightMask
-{
-	U32	mMask;
+struct LightContainer {
+  static const int kmaxlights = 8;
 
-	LightMask() : mMask(0) {}
+  typedef fixedlut<float, Light*, kmaxlights> map_type;
 
-	void SetMask( U32 mask ) { mMask=mask; }
-	void AddLight( const Light* plight );
-	int GetNumLights() const { return countbits(mMask); }
+  map_type mPrioritizedLights;
+
+  void AddLight(Light* plight);
+  void RemoveLight(Light* plight);
+
+  LightContainer();
+  void Clear();
+};
+
+struct GlobalLightContainer {
+  static const int kmaxlights = 256;
+
+  typedef fixedlut<float, Light*, kmaxlights> map_type;
+
+  map_type mPrioritizedLights;
+
+  void AddLight(Light* plight);
+  void RemoveLight(Light* plight);
+
+  GlobalLightContainer();
+  void Clear();
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct LightMask {
+  U32 mMask;
+
+  LightMask()
+      : mMask(0) {
+  }
+
+  void SetMask(U32 mask) {
+    mMask = mask;
+  }
+  void AddLight(const Light* plight);
+  int GetNumLights() const {
+    return countbits(mMask);
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 class LightManager;
 
-struct  LightingGroup
-{
-	static const int kmaxinst = 32;
+struct LightingGroup {
+  static const int kmaxinst = 32;
 
-	LightMask							mLightMask;
-	ork::fixedvector<fmtx4,kmaxinst>	mInstances;
-	LightManager*						mLightManager;
-	Texture*							mLightMap;
-	Texture*							mDPEnvMap;
+  LightMask mLightMask;
+  ork::fixedvector<fmtx4, kmaxinst> mInstances;
+  LightManager* mLightManager;
+  Texture* mLightMap;
+  Texture* mDPEnvMap;
 
-	size_t GetNumLights() const;
-	size_t GetNumMatrices() const;
-	const fmtx4* GetMatrices() const;
-	int GetLightId( int idx ) const;
+  size_t GetNumLights() const;
+  size_t GetNumMatrices() const;
+  const fmtx4* GetMatrices() const;
+  int GetLightId(int idx) const;
 
-	LightingGroup();
+  LightingGroup();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class  LightManagerData : public ork::Object
-{
-	RttiDeclareConcrete(LightManagerData, ork::Object);
+class LightManagerData : public ork::Object {
+  RttiDeclareConcrete(LightManagerData, ork::Object);
 
 public:
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class  LightCollector
-{
+class LightCollector {
 public:
-
-	static const int	kmaxonscreengroups = 32;
-	static const int	kmaxflagwords = kmaxonscreengroups>>5;
+  static const int kmaxonscreengroups = 32;
+  static const int kmaxflagwords      = kmaxonscreengroups >> 5;
 
 private:
+  // typedef fixedmap<U32,LightingGroup*,kmaxonscreengroups>	ActiveMapType;
+  // typedef orklut< U32,LightingGroup*, allocator_fixedpool< std::pair<U32,LightingGroup*>,kmaxonscreengroups > >	ActiveMapType;
+  typedef ork::fixedlut<U32, LightingGroup*, kmaxonscreengroups> ActiveMapType;
 
-	//typedef fixedmap<U32,LightingGroup*,kmaxonscreengroups>	ActiveMapType;
-	//typedef orklut< U32,LightingGroup*, allocator_fixedpool< std::pair<U32,LightingGroup*>,kmaxonscreengroups > >	ActiveMapType;
-	typedef ork::fixedlut< U32,LightingGroup*,kmaxonscreengroups >	ActiveMapType;
+  fixed_pool<LightingGroup, kmaxonscreengroups> mGroups;
+  ActiveMapType mActiveMap;
 
-	fixed_pool<LightingGroup,kmaxonscreengroups>		mGroups;
-	ActiveMapType										mActiveMap;
-
-	LightManager*		mManager;
+  LightManager* mManager;
 
 public:
-
-	//const LightingGroup& GetActiveGroup( int idx ) const;
-	size_t GetNumGroups() const;
-	void SetManager( LightManager*mgr );
-	void Clear();
-	LightCollector();
-	~LightCollector();
-	void QueueInstance( const LightMask& lmask, const fmtx4& mtx );
+  // const LightingGroup& GetActiveGroup( int idx ) const;
+  size_t GetNumGroups() const;
+  void SetManager(LightManager* mgr);
+  void Clear();
+  LightCollector();
+  ~LightCollector();
+  void QueueInstance(const LightMask& lmask, const fmtx4& mtx);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class  LightManager
-{
-	const LightManagerData& mLmd;
+struct EnumeratedLights {
+  std::vector<Light*> _enumeratedLights;
+};
 
-	LightCollector mcollector;
+///////////////////////////////////////////////////////////////////////////////
+
+class LightManager {
+  const LightManagerData& mLmd;
+
+  LightCollector mcollector;
 
 public:
+  LightManager(const LightManagerData& lmd)
+      : mLmd(lmd) {
+  }
 
-	LightManager( const LightManagerData& lmd ) : mLmd(lmd) {}
+  GlobalLightContainer mGlobalStationaryLights; // non-moving, potentially animating color or texture (and => not lightmappable)
+  LightContainer mGlobalMovingLights;           // moving lights
 
-	GlobalLightContainer	mGlobalStationaryLights;	// non-moving, potentially animating color or texture (and => not lightmappable)
-	LightContainer			mGlobalMovingLights;		// moving lights
+  void enumerateInPass(const CompositingPassData& CPD, EnumeratedLights& out) const;
 
-	//virtual void GetStationaryLights( const Frustum& frustum, LightContainer& container ) = 0;
-	//virtual void GetMovingLights( const Frustum& frustum, LightContainer& container ) = 0;
+  void QueueInstance(const LightMask& lgid, const fmtx4& mtx);
 
-	void EnumerateInFrustum( const Frustum& frustum );
-
-	static const int kmaxinfrustum = 32;
-	fixedvector<Light*,kmaxinfrustum> mLightsInFrustum;
-
-	//int	miNumLightsInFrustum;
-
-	void QueueInstance( const LightMask& lgid, const fmtx4& mtx );
-
-	size_t GetNumLightGroups() const;
-	void Clear();
-
-	//const LightingGroup& compositingGroup( int igroupindex ) const;
+  size_t GetNumLightGroups() const;
+  void Clear();
 };
 
-struct HeadLightManager
-{
-	ork::fmtx4		mHeadLightMatrix;
-	LightingGroup		mHeadLightGroup;
-	AmbientLightData	mHeadLightData;
-	AmbientLight		mHeadLight;
-	LightManagerData	mHeadLightManagerData;
-	LightManager		mHeadLightManager;
+struct HeadLightManager {
+  ork::fmtx4 mHeadLightMatrix;
+  LightingGroup mHeadLightGroup;
+  AmbientLightData mHeadLightData;
+  AmbientLight mHeadLight;
+  LightManagerData mHeadLightManagerData;
+  LightManager mHeadLightManager;
 
-	HeadLightManager( RenderContextFrameData & FrameData );
+  HeadLightManager(RenderContextFrameData& FrameData);
 };
 
-struct LightingFxInterface
-{
-	FxShader*					mpShader;
-	const FxShaderParam*		hAmbientLight;
-	const FxShaderParam*		hNumDirectionalLights;
-	const FxShaderParam*		hDirectionalLightColors;
-	const FxShaderParam*		hDirectionalLightDirs;
-	const FxShaderParam*		hDirectionalLightPos;
+struct LightingFxInterface {
+  FxShader* mpShader;
+  const FxShaderParam* hAmbientLight;
+  const FxShaderParam* hNumDirectionalLights;
+  const FxShaderParam* hDirectionalLightColors;
+  const FxShaderParam* hDirectionalLightDirs;
+  const FxShaderParam* hDirectionalLightPos;
 
-	const FxShaderParam*		hDirectionalAttenA;
-	const FxShaderParam*		hDirectionalAttenK;
-	const FxShaderParam*		hLightMode;
+  const FxShaderParam* hDirectionalAttenA;
+  const FxShaderParam* hDirectionalAttenK;
+  const FxShaderParam* hLightMode;
 
-	const LightingGroup*		mCurrentLightingGroup;
+  const LightingGroup* mCurrentLightingGroup;
 
-	void ApplyLighting( Context *pTarg, int iPass );
+  void ApplyLighting(Context* pTarg, int iPass);
 
-	bool						mbHasLightingInterface;
+  bool mbHasLightingInterface;
 
-	LightingFxInterface( );
+  LightingFxInterface();
 
-	void Init( FxShader* pshader );
+  void Init(FxShader* pshader);
 };
 /*
 ///////////////////////
@@ -471,5 +528,4 @@ however some lights are dynamically created, destroyed and moved
 ///////////////////////
 */
 
-
-}}
+}} // namespace ork::lev2

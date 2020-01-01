@@ -81,7 +81,7 @@ void DrawableBuffer::invokePreRenderCallbacks(lev2::RenderContextFrameData& RCFD
 ///////////////////////////////////////////////////////////////////////////////
 
 void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName, lev2::IRenderer* renderer) const {
-  lev2::Context* target                       = renderer->GetTarget();
+  lev2::Context* target                         = renderer->GetTarget();
   const ork::lev2::RenderContextFrameData* RCFD = target->topRenderContextFrameData();
   const auto& topCPD                            = RCFD->topCPD();
 
@@ -418,6 +418,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
   //////////////////////////////////////////////////////////////////////
   // generate coarse light mask
 
+  /*
   ork::lev2::LightMask mdl_lmask;
 
   ork::lev2::LightManager* light_manager = RCFD->GetLightManager();
@@ -436,7 +437,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
         mdl_lmask.AddLight(plight);
       }
     }
-  }
+  }*/
 
   //////////////////////////////////////////////////////////////////////
 
@@ -469,7 +470,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
           ork::lev2::LightMask lmask;
 
           if (IsSkinned) {
-            lmask = mdl_lmask;
+            // lmask = mdl_lmask;
 
             float fdb = monofrustum.mBottomPlane.GetPointDistance(ctr);
             float fdt = monofrustum.mTopPlane.GetPointDistance(ctr);
@@ -486,7 +487,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
             if (false == btest) {
             }
             btest = true; // todo fix culler
-          } else {
+          } else {        // Rigid
             const Sphere& bsph = cluster.mBoundingSphere;
 
             float clussphrad = bsph.mRadius * matw_scale * mfScale;
@@ -499,7 +500,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
             // per cluster light assignment
             ////////////////////////////////////////////////
 
-            if (btest) {
+            /*if (btest) {
               ////////////////////////////////////////////////
               // lighting sphere test
               ////////////////////////////////////////////////
@@ -513,7 +514,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
                   lmask.AddLight(plight);
                 }
               }
-            }
+            }*/
           }
 
           if (btest) {

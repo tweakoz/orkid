@@ -157,7 +157,7 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   auto& ddprops                      = drawdata._properties;
   auto the_renderer                  = drawdata.mFrameRenderer;
   lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
-  lev2::Context* target            = RCFD.GetTarget();
+  lev2::Context* target              = RCFD.GetTarget();
 
   drawdata._cimpl   = this;
   float aspectratio = target->mainSurfaceAspectRatio();
@@ -175,18 +175,6 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   if (auto item = compositingItem(0, scene_item)) {
     _compcontext._compositingTechnique = item->technique();
   }
-  /////////////////////////////////
-  // bind lighting
-  /////////////////////////////////
-
-  // auto cammatrices = RCFD.cameraMatrices();
-  // cammatrices->_aspectRatio = aspectratio;
-  // if (_lightmgr) { // WIP
-  //_lightmgr->EnumerateInFrustum(cammatrices->GetFrustum());
-  // if (_lightmgr->mLightsInFrustum.size()) {
-  // RCFD.SetLightManager(_lightmgr);
-  //}
-  //}
 
   /////////////////////////////////
   // Lock Drawable Buffer

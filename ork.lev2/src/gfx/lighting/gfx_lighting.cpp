@@ -37,12 +37,16 @@ template class fixedlut<float, lev2::Light*, lev2::LightContainer::kmaxlights>;
 template class fixedlut<float, lev2::Light*, lev2::GlobalLightContainer::kmaxlights>;
 template class ork::fixedvector<std::pair<U32, lev2::LightingGroup*>, lev2::LightCollector::kmaxonscreengroups>;
 template class ork::fixedvector<lev2::LightingGroup, lev2::LightCollector::kmaxonscreengroups>;
-template class ork::fixedvector<lev2::Light*, lev2::LightManager::kmaxinfrustum>;
 
 namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-void Light::Describe() {}
+void Light::Describe() {
+}
+
+bool Light::isShadowCaster() const {
+  return mLd->IsShadowCaster();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -67,7 +71,8 @@ void LightData::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void PointLight::Describe() {}
+void PointLight::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -87,7 +92,8 @@ void PointLightData::Describe() {
 
 PointLight::PointLight(const fmtx4& mtx, const PointLightData* pld)
     : Light(mtx, pld)
-    , mPld(pld) {}
+    , mPld(pld) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -141,14 +147,17 @@ bool PointLight::AffectsCircleXZ(const Circle& cirXZ) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void DirectionalLight::Describe() {}
+void DirectionalLight::Describe() {
+}
 
 DirectionalLight::DirectionalLight(const fmtx4& mtx, const DirectionalLightData* dld)
-    : Light(mtx, dld) {}
+    : Light(mtx, dld) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DirectionalLightData::Describe() {}
+void DirectionalLightData::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -160,11 +169,13 @@ bool DirectionalLight::IsInFrustum(const Frustum& frustum) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void AmbientLight::Describe() {}
+void AmbientLight::Describe() {
+}
 
 AmbientLight::AmbientLight(const fmtx4& mtx, const AmbientLightData* dld)
     : Light(mtx, dld)
-    , mAld(dld) {}
+    , mAld(dld) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -185,7 +196,8 @@ bool AmbientLight::IsInFrustum(const Frustum& frustum) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpotLight::Describe() {}
+void SpotLight::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -207,18 +219,23 @@ void SpotLightData::Describe() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpotLightData::SetTextureAccessor(ork::rtti::ICastable* const& tex) { mTexture = tex ? ork::rtti::autocast(tex) : 0; }
+void SpotLightData::SetTextureAccessor(ork::rtti::ICastable* const& tex) {
+  mTexture = tex ? ork::rtti::autocast(tex) : 0;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpotLightData::GetTextureAccessor(ork::rtti::ICastable*& tex) const { tex = mTexture; }
+void SpotLightData::GetTextureAccessor(ork::rtti::ICastable*& tex) const {
+  tex = mTexture;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 SpotLight::SpotLight(const fmtx4& mtx, const SpotLightData* sld)
     : Light(mtx, sld)
     , mSld(sld)
-    , mTexture(0) {}
+    , mTexture(0) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -261,7 +278,9 @@ bool SpotLight::AffectsSphere(const fvec3& center, float radius) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool SpotLight::AffectsAABox(const AABox& aab) { return CollisionTester::FrustumAABoxTest(mWorldSpaceLightFrustum, aab); }
+bool SpotLight::AffectsAABox(const AABox& aab) {
+  return CollisionTester::FrustumAABoxTest(mWorldSpaceLightFrustum, aab);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -287,9 +306,12 @@ void LightContainer::RemoveLight(Light* plight) {
 }
 
 LightContainer::LightContainer()
-    : mPrioritizedLights(EKEYPOLICY_MULTILUT) {}
+    : mPrioritizedLights(EKEYPOLICY_MULTILUT) {
+}
 
-void LightContainer::Clear() { mPrioritizedLights.clear(); }
+void LightContainer::Clear() {
+  mPrioritizedLights.clear();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -307,9 +329,12 @@ void GlobalLightContainer::RemoveLight(Light* plight) {
 }
 
 GlobalLightContainer::GlobalLightContainer()
-    : mPrioritizedLights(EKEYPOLICY_MULTILUT) {}
+    : mPrioritizedLights(EKEYPOLICY_MULTILUT) {
+}
 
-void GlobalLightContainer::Clear() { mPrioritizedLights.clear(); }
+void GlobalLightContainer::Clear() {
+  mPrioritizedLights.clear();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -320,9 +345,13 @@ void GlobalLightContainer::Clear() { mPrioritizedLights.clear(); }
 //	return mGroups[ idx ];
 //}
 
-size_t LightCollector::GetNumGroups() const { return mGroups.size(); }
+size_t LightCollector::GetNumGroups() const {
+  return mGroups.size();
+}
 
-void LightCollector::SetManager(LightManager* mgr) { mManager = mgr; }
+void LightCollector::SetManager(LightManager* mgr) {
+  mManager = mgr;
+}
 
 void LightCollector::Clear() {
   mGroups.clear();
@@ -378,23 +407,24 @@ void LightCollector::QueueInstance(const LightMask& lmask, const fmtx4& mtx) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightManagerData::Describe() {}
+void LightManagerData::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightManager::EnumerateInFrustum(const Frustum& frustum) {
-  mLightsInFrustum.clear();
+void LightManager::enumerateInPass(const CompositingPassData& CPD, EnumeratedLights& out) const {
+  out._enumeratedLights.clear();
   ////////////////////////////////////////////////////////////
   for (GlobalLightContainer::map_type::const_iterator it = mGlobalStationaryLights.mPrioritizedLights.begin();
        it != mGlobalStationaryLights.mPrioritizedLights.end();
        it++) {
     Light* plight = it->second;
 
-    if (plight->IsInFrustum(frustum)) {
-      size_t idx = mLightsInFrustum.size();
+    if (true) { // plight->IsInFrustum(frustum)) {
+      size_t idx = out._enumeratedLights.size();
 
       plight->miInFrustumID = 1 << idx;
-      mLightsInFrustum.push_back(plight);
+      out._enumeratedLights.push_back(plight);
     } else {
       plight->miInFrustumID = -1;
     }
@@ -405,34 +435,38 @@ void LightManager::EnumerateInFrustum(const Frustum& frustum) {
        it++) {
     Light* plight = it->second;
 
-    if (plight->IsInFrustum(frustum)) {
-      size_t idx = mLightsInFrustum.size();
+    if (true) { // plight->IsInFrustum(frustum)) {
+      size_t idx = out._enumeratedLights.size();
 
       plight->miInFrustumID = 1 << idx;
-      mLightsInFrustum.push_back(plight);
+      out._enumeratedLights.push_back(plight);
     } else {
       plight->miInFrustumID = -1;
     }
   }
+
   ////////////////////////////////////////////////////////////
-  mcollector.SetManager(this);
-  mcollector.Clear();
+  // mcollector.SetManager(this);
+  // mcollector.Clear();
 }
 
 ///////////////////////////////////////////////////////////
 
-void LightManager::QueueInstance(const LightMask& lmask, const fmtx4& mtx) { mcollector.QueueInstance(lmask, mtx); }
+void LightManager::QueueInstance(const LightMask& lmask, const fmtx4& mtx) {
+  mcollector.QueueInstance(lmask, mtx);
+}
 
 ///////////////////////////////////////////////////////////
 
-size_t LightManager::GetNumLightGroups() const { return mcollector.GetNumGroups(); }
+size_t LightManager::GetNumLightGroups() const {
+  return mcollector.GetNumGroups();
+}
 
 ///////////////////////////////////////////////////////////
 
 void LightManager::Clear() {
   // mGlobalStationaryLights.Clear();
   mGlobalMovingLights.Clear();
-  mLightsInFrustum.clear();
 
   mcollector.Clear();
 }
@@ -441,19 +475,27 @@ void LightManager::Clear() {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightMask::AddLight(const Light* plight) { mMask |= plight->miInFrustumID; }
+void LightMask::AddLight(const Light* plight) {
+  mMask |= plight->miInFrustumID;
+}
 
 ///////////////////////////////////////////////////////////
 
-size_t LightingGroup::GetNumLights() const { return size_t(countbits(mLightMask.mMask)); }
+size_t LightingGroup::GetNumLights() const {
+  return size_t(countbits(mLightMask.mMask));
+}
 
 ///////////////////////////////////////////////////////////
 
-size_t LightingGroup::GetNumMatrices() const { return mInstances.size(); }
+size_t LightingGroup::GetNumMatrices() const {
+  return mInstances.size();
+}
 
 ///////////////////////////////////////////////////////////
 
-const fmtx4* LightingGroup::GetMatrices() const { return &mInstances[0]; }
+const fmtx4* LightingGroup::GetMatrices() const {
+  return &mInstances[0];
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -481,7 +523,8 @@ int LightingGroup::GetLightId(int idx) const {
 LightingGroup::LightingGroup()
     : mLightManager(0)
     , mLightMap(0)
-    , mDPEnvMap(0) {}
+    , mDPEnvMap(0) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -503,7 +546,7 @@ HeadLightManager::HeadLightManager(RenderContextFrameData& FrameData)
     mHeadLightGroup.mLightManager = FrameData.GetLightManager();
     mHeadLightMatrix.SetTranslation( vP );
     mHeadLightManager.mGlobalMovingLights.AddLight( & mHeadLight );
-    mHeadLightManager.mLightsInFrustum.push_back(& mHeadLight);*/
+    mHeadLightManager._enumeratedLights.push_back(& mHeadLight);*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -525,6 +568,7 @@ LightingFxInterface::LightingFxInterface()
 }
 
 void LightingFxInterface::ApplyLighting(Context* pTarg, int iPass) {
+  /*
   ////////////////////////////////
   if (false == mbHasLightingInterface) {
     return;
@@ -568,7 +612,7 @@ void LightingFxInterface::ApplyLighting(Context* pTarg, int iPass) {
       for (int il = 0; il < inuml; il++) {
         int ilightid = lgroup->GetLightId(il);
 
-        Light* plight = lgroup->mLightManager->mLightsInFrustum[ilightid];
+        Light* plight = lgroup->mLightManager->_enumeratedLights[ilightid];
 
         fvec3 LightColor = plight->GetColor();
         // float fimag = 1.0f;
@@ -633,8 +677,8 @@ void LightingFxInterface::ApplyLighting(Context* pTarg, int iPass) {
               break;
             }
             case lev2::ELIGHTTYPE_AMBIENT: {
-              auto phedlight = (lev2::AmbientLight*)plight;
-              const ork::fmtx4& mativ       = pTarg->MTXI()->RefVITGMatrix();
+              auto phedlight          = (lev2::AmbientLight*)plight;
+              const ork::fmtx4& mativ = pTarg->MTXI()->RefVITGMatrix();
 
               const auto& camdat = cammatrices->_camdat;
 
@@ -682,6 +726,7 @@ void LightingFxInterface::ApplyLighting(Context* pTarg, int iPass) {
   } else {
     pTarg->FXI()->BindParamInt(mpShader, hNumDirectionalLights, 0);
   }
+  */
 }
 
 void LightingFxInterface::Init(FxShader* pshader) {
