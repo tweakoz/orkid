@@ -459,7 +459,7 @@ public:
                       chcvalprop.isValid() ? (const AttrChoiceValue*)chcvalprop.value<void*>() : (const AttrChoiceValue*)0;
                   if (chcval) {
                     if (mInputPlug) {
-                      const any64& customdata = chcval->GetCustomData();
+                      const auto& customdata = chcval->GetCustomData();
                       if (customdata.IsA<ork::dataflow::outplugbase*>()) {
                         ork::dataflow::outplugbase* outplug = customdata.Get<ork::dataflow::outplugbase*>();
 

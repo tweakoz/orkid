@@ -27,7 +27,7 @@
 #include <pkg/ent/scene.h>
 
 #include <ork/util/crc.h>
-
+#include <signal.h>
 ///////////////////////////////////////////////////////////////////////////////
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::ged::ObjModel, "ObjModel");
@@ -98,6 +98,7 @@ ObjModel::ObjModel()
   GedFactoryCurve::GetClassStatic();
   GedFactoryAssetList::GetClassStatic();
   GedFactoryFileList::GetClassStatic();
+  GedFactoryTransform::GetClassStatic();
 
   ///////////////////////////////////////////
 
@@ -225,6 +226,11 @@ void ObjModel::SlotObjectDeSelected(ork::Object* pobj) {
 //////////////////////////////////////////////////////////////////////////////
 
 GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool binline) {
+
+  if (pname and std::string(pname) == "DagNode") {
+    printf("wtf1\n");
+  }
+
   GedItemNode* rval    = 0;
   ork::Object* cur_obj = root_object;
   if (cur_obj) {
@@ -266,8 +272,10 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
       rtti::Class* AnnoEditorClass = rtti::Class::FindClass(anno_edclass);
       if (AnnoEditorClass) {
         ork::object::ObjectClass* pclass = rtti::safe_downcast<ork::object::ObjectClass*>(AnnoEditorClass);
-        ork::rtti::ICastable* factory    = pclass->CreateObject();
-        GedFactory* qf                   = rtti::safe_downcast<GedFactory*>(factory);
+        OrkAssert(pclass != nullptr);
+        ork::rtti::ICastable* factory = pclass->CreateObject();
+        GedFactory* qf                = rtti::safe_downcast<GedFactory*>(factory);
+        OrkAssert(qf != nullptr);
         if (qf) {
           if (pname == 0)
             pname = anno_edclass.c_str();
@@ -514,6 +522,8 @@ GedItemNode* ObjModel::CreateNode(const std::string& Name, const reflect::IObjec
   ConstString anno_ucdclass  = prop->GetAnnotation("ged.userchoice.delegate");
   bool HasUserChoiceDelegate = (anno_ucdclass.length());
   /////////////////////////////////////////////////////////////////////////
+  printf("CreateNode<%s> prop<%p> 1\n", Name.c_str(), prop);
+  /////////////////////////////////////////////////////////////////////////
   if (const reflect::IObjectPropertyType<Char8>* c8prop = rtti::autocast(prop))
     return new GedLabelNode(*this, Name.c_str(), prop, pobject);
   /////////////////////////////////////////////////////////////////////////
@@ -538,8 +548,13 @@ GedItemNode* ObjModel::CreateNode(const std::string& Name, const reflect::IObjec
   else if (const reflect::IObjectPropertyType<fmtx4>* mtx44prop = rtti::autocast(prop))
     return new GedSimpleNode<GedIoDriver<fmtx4>, fmtx4>(*this, Name.c_str(), mtx44prop, pobject);
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObjectPropertyType<ork::rtti::ICastable*>* castprop = rtti::autocast(prop))
+  else if (const reflect::IObjectPropertyType<TransformNode>* xfprop = rtti::autocast(prop)) {
+    return new GedSimpleNode<GedIoDriver<TransformNode>, TransformNode>(*this, Name.c_str(), xfprop, pobject);
+  }
+  /////////////////////////////////////////////////////////////////////////
+  else if (const reflect::IObjectPropertyType<ork::rtti::ICastable*>* castprop = rtti::autocast(prop)) {
     return new GedObjNode<PropSetterObj>(*this, Name.c_str(), prop, pobject);
+  }
   /////////////////////////////////////////////////////////////////////////
   else if (const reflect::IObjectPropertyType<int>* intprop = rtti::autocast(prop)) {
     return HasUserChoiceDelegate ? (GedItemNode*)new GedSimpleNode<GedIoDriver<int>, int>(*this, Name.c_str(), intprop, pobject)

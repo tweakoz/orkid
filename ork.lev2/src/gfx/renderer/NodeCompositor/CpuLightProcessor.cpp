@@ -275,9 +275,8 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
       // this_buf->Render2dQuadEML(fvec4(L - 1.0f, T, KTILESIZX * 0.5, KTILESIZY), fvec4(0, 0, 1, 1));
       // this_buf->Render2dQuadEML(fvec4(L, T, KTILESIZX * 0.5, KTILESIZY), fvec4(0, 0, 1, 1));
     } else {
-      // if (_chunktiles_pos.size())
-      // this_buf->Render2dQuadsEML(
-      //  _chunktiles_pos.size(), _chunktiles_pos.data(), _chunktiles_uva.data(), _chunktiles_uvb.data());
+      if (_chunktiles_pos.size())
+        this_buf->Render2dQuadsEML(_chunktiles_pos.size(), _chunktiles_pos.data(), _chunktiles_uva.data(), _chunktiles_uvb.data());
     }
     /////////////////////////////////////
     num_pending_tiles = _pendingtilecounter.load() - actindex;

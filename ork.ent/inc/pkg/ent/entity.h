@@ -19,9 +19,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
-  class Drawable;
-  class Layer;
-}
+class Drawable;
+class Layer;
+} // namespace ork::lev2
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -42,8 +42,12 @@ public:
       : object::ObjectClass(data) {
     SetPreferredName("SceneObject");
   }
-  ork::ConstString GetPreferredName() const { return mPreferredName; }
-  void SetPreferredName(PieceString ps) { mPreferredName = ps; }
+  ork::ConstString GetPreferredName() const {
+    return mPreferredName;
+  }
+  void SetPreferredName(PieceString ps) {
+    mPreferredName = ps;
+  }
 
 protected:
   ArrayString<64> mPreferredName;
@@ -59,7 +63,9 @@ protected:
 
 public:
   void SetName(PoolString name);
-  PoolString GetName() const { return mName; }
+  PoolString GetName() const {
+    return mName;
+  }
   void SetName(const char* name);
 
 private:
@@ -73,21 +79,27 @@ class DagRenderableContextData {
 
 public:
   DagRenderableContextData()
-      : mRenderFlags(0) {}
-  void SetRenderFlags(U32 uval) { mRenderFlags = uval; }
-  U32 GetRenderFlags(void) const { return mRenderFlags; }
+      : mRenderFlags(0) {
+  }
+  void SetRenderFlags(U32 uval) {
+    mRenderFlags = uval;
+  }
+  U32 GetRenderFlags(void) const {
+    return mRenderFlags;
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 class DagNode : public ork::Object {
-  RttiDeclareConcrete(DagNode, ork::Object);
+
+  DeclareConcreteX(DagNode, ork::Object);
 
   const ork::rtti::ICastable* mpOwner;
   orkvector<DagNode*> mChildren;
 
 protected:
-  TransformNode mTransformNode3D;
+  TransformNode _xfnode;
   DagRenderableContextData mRenderableContextData;
 
   static const int knumtimedmtx = 3;
@@ -96,13 +108,27 @@ protected:
 
 public:
   DagNode(const ork::rtti::ICastable* powner = 0);
-  const TransformNode& GetTransformNode() const { return mTransformNode3D; }
-  TransformNode& GetTransformNode() { return mTransformNode3D; }
-  const DagRenderableContextData& GetRenderableContextData() const { return mRenderableContextData; }
-  DagRenderableContextData& GetRenderableContextData() { return mRenderableContextData; }
-  const ork::rtti::ICastable* GetOwner() const { return mpOwner; }
-  orkvector<DagNode*>& GetChildren() { return mChildren; }
-  void GetMatrix(ork::fmtx4& mtx) const { mTransformNode3D.GetMatrix(mtx); }
+  const TransformNode& GetTransformNode() const {
+    return _xfnode;
+  }
+  TransformNode& GetTransformNode() {
+    return _xfnode;
+  }
+  const DagRenderableContextData& GetRenderableContextData() const {
+    return mRenderableContextData;
+  }
+  DagRenderableContextData& GetRenderableContextData() {
+    return mRenderableContextData;
+  }
+  const ork::rtti::ICastable* GetOwner() const {
+    return mpOwner;
+  }
+  orkvector<DagNode*>& GetChildren() {
+    return mChildren;
+  }
+  void GetMatrix(ork::fmtx4& mtx) const {
+    _xfnode.GetMatrix(mtx);
+  }
   const fmtx4& GetTimedMatrix(int idx) const {
     OrkAssert(idx < knumtimedmtx);
     return mPrevMtx[idx];
@@ -127,12 +153,20 @@ public:
   ~SceneDagObject();
 
   void SetParentName(const PoolString& pname);
-  const PoolString& GetParentName() const { return mParentName; }
+  const PoolString& GetParentName() const {
+    return mParentName;
+  }
 
-  DagNode& GetDagNode() { return mDagNode; }
-  const DagNode& GetDagNode() const { return mDagNode; }
+  DagNode& GetDagNode() {
+    return mDagNode;
+  }
+  const DagNode& GetDagNode() const {
+    return mDagNode;
+  }
 
-  ork::Object* AccessDagNode() { return &mDagNode; }
+  ork::Object* AccessDagNode() {
+    return &mDagNode;
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -146,7 +180,9 @@ public:
 
   ////////////////////////////////////////////////////////////////
 
-  const orkvector<SceneDagObject*>& Children() const { return mChildren; }
+  const orkvector<SceneDagObject*>& Children() const {
+    return mChildren;
+  }
 
   void AddChild(SceneDagObject* pchild);
   void RemoveChild(SceneDagObject* pchild);
@@ -170,7 +206,9 @@ public:
 
   bool PostDeserialize(reflect::IDeserializer&) final;
 
-  const Archetype* GetArchetype() const { return mArchetype; }
+  const Archetype* GetArchetype() const {
+    return mArchetype;
+  }
   void SetArchetype(const Archetype* parch);
 
   void ArchetypeGetter(ork::rtti::ICastable*& val) const; // { val=mArchetype; }
@@ -201,7 +239,9 @@ public:
 
   const ComponentTable& GetComponents() const;
   ComponentTable& GetComponents();
-  Entity* Self() { return this; }
+  Entity* Self() {
+    return this;
+  }
   void PrintName();
   fvec3 GetEntityPosition() const; // e this should eb gone BUT some entities have NO componenets
 
@@ -211,15 +251,21 @@ public:
   ComponentInst* GetComponentByClass(rtti::Class* clazz);
   ComponentInst* GetComponentByClassName(ork::PoolString classname);
 
-  const DagNode& GetDagNode() const { return mDagNode; }
-  DagNode& GetDagNode() { return mDagNode; }
+  const DagNode& GetDagNode() const {
+    return mDagNode;
+  }
+  DagNode& GetDagNode() {
+    return mDagNode;
+  }
 
   fmtx4 GetEffectiveMatrix() const;    // get Entity matrix if scene is running, EntData matrix if scene is stopped
   void SetDynMatrix(const fmtx4& mtx); // set this (Entity) matrix
 
-  const EntData& GetEntData() const { return mEntData; }
-  void addDrawableToDefaultLayer( lev2::Drawable* pdrw );
-  void addDrawableToLayer( lev2::Drawable* pdrw, const PoolString& layername );
+  const EntData& GetEntData() const {
+    return mEntData;
+  }
+  void addDrawableToDefaultLayer(lev2::Drawable* pdrw);
+  void addDrawableToLayer(lev2::Drawable* pdrw, const PoolString& layername);
 
   ////////////////////////////////////////////////////////////////
 
@@ -232,7 +278,9 @@ public:
 
   ////////////////////////////////////////////////////////////////
 
-  Simulation* simulation() const { return mSimulation; }
+  Simulation* simulation() const {
+    return mSimulation;
+  }
 
   const char* name() const;
 
@@ -274,7 +322,9 @@ class Archetype : public SceneObject {
 
 public:
   Archetype();
-  ~Archetype() { DeleteComponents(); }
+  ~Archetype() {
+    DeleteComponents();
+  }
 
   void LinkEntity(Simulation* psi, Entity* pent) const;
   void UnLinkEntity(Simulation* psi, Entity* pent) const;
@@ -290,11 +340,19 @@ public:
   template <typename T> T* GetTypedComponent();
   template <typename T> const T* GetTypedComponent() const;
 
-  const ComponentDataTable& GetComponentDataTable() const { return mComponentDataTable; }
-  ComponentDataTable& GetComponentDataTable() { return mComponentDataTable; }
+  const ComponentDataTable& GetComponentDataTable() const {
+    return mComponentDataTable;
+  }
+  ComponentDataTable& GetComponentDataTable() {
+    return mComponentDataTable;
+  }
 
-  void SetSceneData(SceneData* psd) { mpSceneData = psd; }
-  SceneData* GetSceneData() const { return mpSceneData; }
+  void SetSceneData(SceneData* psd) {
+    mpSceneData = psd;
+  }
+  SceneData* GetSceneData() const {
+    return mpSceneData;
+  }
 
 protected:
   virtual void DoComposeEntity(Entity* pent) const;
@@ -302,7 +360,8 @@ protected:
   virtual void DoLinkEntity(Simulation* psi, Entity* pent) const;
   virtual void DoUnLinkEntity(Simulation* psi, Entity* pent) const;
   virtual void DoStartEntity(Simulation* psi, const fmtx4& world, Entity* pent) const = 0;
-  virtual void DoStopEntity(Simulation* psi, Entity* pent) const {}
+  virtual void DoStopEntity(Simulation* psi, Entity* pent) const {
+  }
 
   virtual void DoCompose(ArchComposer& arch_composer) = 0;
 

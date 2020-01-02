@@ -108,6 +108,7 @@ GedObjNode<PropSetterObj>::GedObjNode(ObjModel& mdl, const char* name, const ref
   /////////////////////////////////////////////////////
 
   mdl.GetGedWidget()->PushItemNode(this);
+  printf("GedObjNode<%s> psubobj<%p> 1\n", name, psubobj);
   if (psubobj) {
     const reflect::IObjectFunctor* functor =
         rtti::downcast<object::ObjectClass*>(psubobj->GetClass())->Description().FindFunctor("GetName");
