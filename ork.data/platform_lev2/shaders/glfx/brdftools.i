@@ -68,5 +68,14 @@ libblock lib_brdf : lib_math {
     return vec2(accum_scale / float(numsamples), accum_bias / float(numsamples));
   }
 
+float computeGGX(vec3 normal, vec3 halfdir, float roughness) {
+    float a = roughness*roughness;
+    float a2 = a*a;
+    float ndoth = satdot(normal, halfdir);
+    float ndothsq = ndoth*ndoth;
+    float denominatorsqrt = (ndothsq * (a2 - 1.0) + 1.0);
+    return a*a*INV_PI / (denominatorsqrt*denominatorsqrt);
+}
+
 
 }

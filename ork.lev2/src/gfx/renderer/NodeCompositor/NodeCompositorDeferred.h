@@ -94,6 +94,7 @@ struct DeferredContext {
   CompositingPassData _accumCPD;
   fvec4 _clearColor;
   std::string _shadername;
+  lev2::Texture* brdfIntegrationTexture() const;
   ////////////////////////////////////////////////////////////////////
   int _width    = 0;
   int _height   = 0;
@@ -144,15 +145,18 @@ struct DeferredContext {
 
   ////////////////////////////////////////////////////////////////////
 
-  RtGroupRenderTarget* _accumRT   = nullptr;
-  RtGroupRenderTarget* _gbuffRT   = nullptr;
-  RtGroupRenderTarget* _clusterRT = nullptr;
+  RtGroupRenderTarget* _accumRT      = nullptr;
+  RtGroupRenderTarget* _gbuffRT      = nullptr;
+  RtGroupRenderTarget* _clusterRT    = nullptr;
+  lev2::Texture* _brdfIntegrationMap = nullptr;
 
   CaptureBuffer _clustercapture;
   RtGroup* _rtgGbuffer      = nullptr;
   RtGroup* _rtgDepthCluster = nullptr;
   RtGroup* _rtgLaccum       = nullptr;
   PoolString _layername;
+  float _specularLevel = 1.0f;
+  float _diffuseLevel  = 1.0f;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -185,7 +189,6 @@ public:
 
   lev2::Texture* envSpecularTexture() const;
   lev2::Texture* envDiffuseTexture() const;
-  lev2::Texture* brdfIntegrationTexture() const;
 
   float environmentIntensity() const {
     return _environmentIntensity;
@@ -228,7 +231,6 @@ private:
   float _specularLevel        = 1.0f;
   float _skyboxLevel          = 1.0f;
   fvec3 _ambientLevel;
-  lev2::Texture* _brdfIntegrationMap = nullptr;
   lev2::Texture* _filtenvSpecularMap = nullptr;
   lev2::Texture* _filtenvDiffuseMap  = nullptr;
 };

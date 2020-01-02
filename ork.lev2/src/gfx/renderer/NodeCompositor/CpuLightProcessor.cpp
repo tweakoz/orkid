@@ -66,7 +66,7 @@ void CpuLightProcessor::render(CompositorDrawData& drawdata, const ViewData& VD,
   _gpuInit(context);
   _clearFrameLighting();
   _depthClusterBase = _deferredContext.captureDepthClusters(drawdata, VD);
-  //_renderUnshadowedUnTexturedPointLights(drawdata, VD, enumlights);
+  _renderUnshadowedUnTexturedPointLights(drawdata, VD, enumlights);
   _depthClusterBase = nullptr;
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -92,6 +92,8 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
   const int KTILEMAXX = _deferredContext._clusterW - 1;
   const int KTILEMAXY = _deferredContext._clusterH - 1;
 
+  deferrednode::PointLight deferred_pointlight;
+
   for (auto l : scene_lights) {
 
     if (l->isShadowCaster())
@@ -101,23 +103,30 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
 
     if (auto as_point = dynamic_cast<lev2::PointLight*>(l)) {
       float radius = as_point->GetRadius();
+      fvec3 pos    = as_point->GetWorldPosition();
       float faloff = as_point->GetFalloff();
 
-      deferrednode::PointLight defptlight;
-      Sphere sph(defptlight._pos, defptlight._radius);
-      defptlight._aabox   = sph.projectedBounds(VD.VPL);
-      const auto& boxmin  = defptlight._aabox.Min();
-      const auto& boxmax  = defptlight._aabox.Max();
-      defptlight._aamin   = ((boxmin + fvec3(1, 1, 1)) * 0.5);
-      defptlight._aamax   = ((boxmax + fvec3(1, 1, 1)) * 0.5);
-      defptlight._minX    = int(floor(defptlight._aamin.x * KTILEMAXX));
-      defptlight._maxX    = int(ceil(defptlight._aamax.x * KTILEMAXX));
-      defptlight._minY    = int(floor(defptlight._aamin.y * KTILEMAXY));
-      defptlight._maxY    = int(ceil(defptlight._aamax.y * KTILEMAXY));
-      defptlight.dist2cam = (defptlight._pos - VD._camposmono).Mag();
-      defptlight._minZ    = defptlight.dist2cam - defptlight._radius; // Zndc2eye.x / (defptlight._aabox.Min().z - Zndc2eye.y);
-      defptlight._maxZ    = defptlight.dist2cam + defptlight._radius; // Zndc2eye.x / (pl->_aabox.Max().z - Zndc2eye.y);
-      defptlight._pos     = as_point->GetWorldPosition();
+      deferred_pointlight._radius = radius;
+      deferred_pointlight._pos    = as_point->GetWorldPosition();
+      deferred_pointlight._color  = color;
+
+      Sphere sph(pos, radius);
+      deferred_pointlight._aabox   = sph.projectedBounds(VD.VPL);
+      const auto& boxmin           = deferred_pointlight._aabox.Min();
+      const auto& boxmax           = deferred_pointlight._aabox.Max();
+      deferred_pointlight._aamin   = ((boxmin + fvec3(1, 1, 1)) * 0.5);
+      deferred_pointlight._aamax   = ((boxmax + fvec3(1, 1, 1)) * 0.5);
+      deferred_pointlight._minX    = int(floor(deferred_pointlight._aamin.x * KTILEMAXX));
+      deferred_pointlight._maxX    = int(ceil(deferred_pointlight._aamax.x * KTILEMAXX));
+      deferred_pointlight._minY    = int(floor(deferred_pointlight._aamin.y * KTILEMAXY));
+      deferred_pointlight._maxY    = int(ceil(deferred_pointlight._aamax.y * KTILEMAXY));
+      deferred_pointlight.dist2cam = (deferred_pointlight._pos - VD._camposmono).Mag();
+      deferred_pointlight._minZ    = deferred_pointlight.dist2cam -
+                                  deferred_pointlight._radius; // Zndc2eye.x / (deferred_pointlight._aabox.Min().z - Zndc2eye.y);
+      deferred_pointlight._maxZ =
+          deferred_pointlight.dist2cam + deferred_pointlight._radius; // Zndc2eye.x / (pl->_aabox.Max().z - Zndc2eye.y);
+
+      _pointlights.push_back(deferred_pointlight);
     }
   }
 
@@ -243,6 +252,7 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
           mapping->ref<fvec4>(chunk_offset)            = fvec4(light._color, light.dist2cam);
           mapping->ref<fvec4>(KPOSPASE + chunk_offset) = fvec4(light._pos, light._radius);
           chunk_offset += sizeof(fvec4);
+          // printf("tile<%d %d,%d> light_color<%g %g %g>\n", index, ix, iy, light._color.x, light._color.y, light._color.z);
         }
         /////////////////////////////////////////////////////////
         chunksize += countthisiter;
@@ -270,6 +280,8 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
     //////////////////////////////////////////////////
     // accumulate light for tile
     //////////////////////////////////////////////////
+
+    // printf("numlighttiles<%zu>\n", _chunktiles_pos.size());
     if (VD._isStereo) {
       // float L = (float(ix) / float(_clusterW));
       // this_buf->Render2dQuadEML(fvec4(L - 1.0f, T, KTILESIZX * 0.5, KTILESIZY), fvec4(0, 0, 1, 1));

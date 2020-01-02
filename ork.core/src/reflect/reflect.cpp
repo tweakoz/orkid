@@ -59,68 +59,70 @@ using namespace reflect;
 // Configuration //
 ///////////////////
 
-typedef rtti::ICastable *ICastablePointer;
+typedef rtti::ICastable* ICastablePointer;
 
 //MACRO(CLASS<long>); \
 
 ///////////
 
-#define INSTANTIATE(X) \
-namespace ork { namespace reflect {\
-	template class X;\
-}}
+#define INSTANTIATE(X)                                                                                                             \
+  namespace ork { namespace reflect {                                                                                              \
+  template class X;                                                                                                                \
+  }                                                                                                                                \
+  }
 
-#define BUILD_RTTI_CLASS(X) \
-namespace ork { namespace reflect {\
-	template<> rtti::Class X::RTTIType::sClass(X::RTTIType::ClassRTTI());\
-}}
+#define BUILD_RTTI_CLASS(X)                                                                                                        \
+  namespace ork { namespace reflect {                                                                                              \
+  template <> rtti::Class X::RTTIType::sClass(X::RTTIType::ClassRTTI());                                                           \
+  }                                                                                                                                \
+  }
 
 ///////////
 
 //	MACRO(CLASS<float>); \
 
-#define FOREACH_PRIMITIVE_TYPE(MACRO,CLASS) \
-    MACRO(CLASS<char>); \
-    MACRO(CLASS<short>); \
-    MACRO(CLASS<int>); \
-    MACRO(CLASS<float>); \
-    MACRO(CLASS<double>); \
-	MACRO(CLASS<PoolString>); \
-	MACRO(CLASS<file::Path>); \
-	MACRO(CLASS<TransformNode>); \
-	MACRO(CLASS<fvec2>); \
-	MACRO(CLASS<fvec3>); \
-	MACRO(CLASS<fvec4>); \
-	MACRO(CLASS<ICastablePointer>);
+#define FOREACH_PRIMITIVE_TYPE(MACRO, CLASS)                                                                                       \
+  MACRO(CLASS<char>);                                                                                                              \
+  MACRO(CLASS<short>);                                                                                                             \
+  MACRO(CLASS<int>);                                                                                                               \
+  MACRO(CLASS<float>);                                                                                                             \
+  MACRO(CLASS<double>);                                                                                                            \
+  MACRO(CLASS<PoolString>);                                                                                                        \
+  MACRO(CLASS<file::Path>);                                                                                                        \
+  MACRO(CLASS<TransformNode>);                                                                                                     \
+  MACRO(CLASS<fvec2>);                                                                                                             \
+  MACRO(CLASS<fvec3>);                                                                                                             \
+  MACRO(CLASS<fvec4>);                                                                                                             \
+  MACRO(CLASS<ICastablePointer>);
 
-#define FOREACH_DEPENDENT_TYPE(MACRO,DEPENDENTCLASS,CLASS) \
-	MACRO(CONSTRUCT_CLASS_##CLASS##_FOR_##DEPENDENTCLASS(char)); \
-    MACRO(CONSTRUCT_CLASS_##CLASS##_FOR_##DEPENDENTCLASS(short)); \
-    MACRO(CONSTRUCT_CLASS_##CLASS##_FOR_##DEPENDENTCLASS(int)); \
-    MACRO(CONSTRUCT_CLASS_##CLASS##_FOR_##DEPENDENTCLASS(long)); \
-    MACRO(CONSTRUCT_CLASS_##CLASS##_FOR_##DEPENDENTCLASS(float)); \
-    MACRO(CONSTRUCT_CLASS_##CLASS##_FOR_##DEPENDENTCLASS(double)); \
-    MACRO(CONSTRUCT_CLASS_##CLASS##_FOR_##DEPENDENTCLASS(ObjectPointer));
+#define FOREACH_DEPENDENT_TYPE(MACRO, DEPENDENTCLASS, CLASS)                                                                       \
+  MACRO(CONSTRUCT_CLASS_##CLASS##_FOR_##DEPENDENTCLASS(char));                                                                     \
+  MACRO(CONSTRUCT_CLASS_##CLASS##_FOR_##DEPENDENTCLASS(short));                                                                    \
+  MACRO(CONSTRUCT_CLASS_##CLASS##_FOR_##DEPENDENTCLASS(int));                                                                      \
+  MACRO(CONSTRUCT_CLASS_##CLASS##_FOR_##DEPENDENTCLASS(long));                                                                     \
+  MACRO(CONSTRUCT_CLASS_##CLASS##_FOR_##DEPENDENTCLASS(float));                                                                    \
+  MACRO(CONSTRUCT_CLASS_##CLASS##_FOR_##DEPENDENTCLASS(double));                                                                   \
+  MACRO(CONSTRUCT_CLASS_##CLASS##_FOR_##DEPENDENTCLASS(ObjectPointer));
 
 ///////////
 // Lists //
 ///////////
 
 //   FOREACH_PRIMITIVE_TYPE(MACRO,IObjectPropertyType);
-#define FOREACH_INSTANTIATED_PROPERTY_TYPE(MACRO) \
-    FOREACH_PRIMITIVE_TYPE(MACRO,DirectObjectPropertyType); \
-    FOREACH_PRIMITIVE_TYPE(MACRO,DirectObjectArrayPropertyType); \
-	FOREACH_PRIMITIVE_TYPE(MACRO,AccessorObjectPropertyType); \
-	FOREACH_PRIMITIVE_TYPE(MACRO,AccessorObjectArrayPropertyType);
+#define FOREACH_INSTANTIATED_PROPERTY_TYPE(MACRO)                                                                                  \
+  FOREACH_PRIMITIVE_TYPE(MACRO, DirectObjectPropertyType);                                                                         \
+  FOREACH_PRIMITIVE_TYPE(MACRO, DirectObjectArrayPropertyType);                                                                    \
+  FOREACH_PRIMITIVE_TYPE(MACRO, AccessorObjectPropertyType);                                                                       \
+  FOREACH_PRIMITIVE_TYPE(MACRO, AccessorObjectArrayPropertyType);
 
-#define FOREACH_RTTI_PROPERTY_TYPE(MACRO) \
-	MACRO(IProperty); \
-	MACRO(IObjectProperty); \
-	MACRO(IObjectPropertyObject); \
-	MACRO(IObjectArrayProperty); \
-	MACRO(IObjectArrayPropertyObject); \
-	MACRO(IObjectMapProperty); \
-	MACRO(IObjectMapPropertyObject);
+#define FOREACH_RTTI_PROPERTY_TYPE(MACRO)                                                                                          \
+  MACRO(IProperty);                                                                                                                \
+  MACRO(IObjectProperty);                                                                                                          \
+  MACRO(IObjectPropertyObject);                                                                                                    \
+  MACRO(IObjectArrayProperty);                                                                                                     \
+  MACRO(IObjectArrayPropertyObject);                                                                                               \
+  MACRO(IObjectMapProperty);                                                                                                       \
+  MACRO(IObjectMapPropertyObject);
 
 //	MACRO(IObjectArrayPropertyObject); \
 
@@ -128,24 +130,28 @@ namespace ork { namespace reflect {\
 // Instantiations //
 ////////////////////
 
-namespace ork { 
-ISerializer::~ISerializer() {}
-IDeserializer::~IDeserializer() {}
-
-template class orklut<ConstString, IObjectProperty *>;
-//template class orklut<ork::PoolString,ork::rtti::Class*>;
-template class orklut<ConstString, IObjectFunctor *>;
-template class orklut<ConstString, object::Signal Object:: *>;
-template class orklut<ConstString, object::AutoSlot Object:: *>;
+namespace ork {
+ISerializer::~ISerializer() {
+}
+IDeserializer::~IDeserializer() {
 }
 
-//"ork::reflect::AccessorObjectPropertyType<int>::AccessorObjectPropertyType(void (ork::Object::*)(int&) const, void (ork::Object::*)(int const&))", referenced from:
-//ork::reflect::AccessorObjectPropertyType<int>& ork::reflect::RegisterProperty<TestObject, int>(char const*, void (TestObject::*)(int&) const, void (TestObject::*)(int const&), ork::reflect::Description&)in main.o
-//"ork::reflect::DirectObjectPropertyType<int>::DirectObjectPropertyType(int ork::Object::*)", referenced from:
-//ork::reflect::DirectObjectPropertyType<int>& ork::reflect::RegisterProperty<TestSubObject, int>(char const*, int TestSubObject::*, ork::reflect::Description&)in main.o
+template class orklut<ConstString, IObjectProperty*>;
+// template class orklut<ork::PoolString,ork::rtti::Class*>;
+template class orklut<ConstString, IObjectFunctor*>;
+template class orklut<ConstString, object::Signal Object::*>;
+template class orklut<ConstString, object::AutoSlot Object::*>;
+} // namespace ork
 
-//template class AccessorObjectPropertyType<int>;
-//template class DirectObjectPropertyType<int>;
+//"ork::reflect::AccessorObjectPropertyType<int>::AccessorObjectPropertyType(void (ork::Object::*)(int&) const, void
+//(ork::Object::*)(int const&))", referenced from: ork::reflect::AccessorObjectPropertyType<int>&
+// ork::reflect::RegisterProperty<TestObject, int>(char const*, void (TestObject::*)(int&) const, void (TestObject::*)(int const&),
+// ork::reflect::Description&)in main.o "ork::reflect::DirectObjectPropertyType<int>::DirectObjectPropertyType(int ork::Object::*)",
+//referenced from: ork::reflect::DirectObjectPropertyType<int>& ork::reflect::RegisterProperty<TestSubObject, int>(char const*, int
+// TestSubObject::*, ork::reflect::Description&)in main.o
+
+// template class AccessorObjectPropertyType<int>;
+// template class DirectObjectPropertyType<int>;
 
 FOREACH_INSTANTIATED_PROPERTY_TYPE(INSTANTIATE);
 FOREACH_RTTI_PROPERTY_TYPE(INSTANTIATE_TRANSPARENT_CASTABLE);
@@ -168,28 +174,27 @@ template class IObjectPropertyType<Char4>;
 template class DirectObjectPropertyType<Char4>;
 template class IObjectPropertyType<Char8>;
 template class DirectObjectPropertyType<Char8>;
-template class DirectObjectMapPropertyType<orkmap<int,int> >;
-template class DirectObjectMapPropertyType<orklut<int,int> >;
-template class DirectObjectMapPropertyType<orkmap<PoolString,PoolString> >;
-template class DirectObjectMapPropertyType<orklut<PoolString,PoolString> >;
+template class DirectObjectMapPropertyType<orkmap<int, int>>;
+template class DirectObjectMapPropertyType<orklut<int, int>>;
+template class DirectObjectMapPropertyType<orkmap<PoolString, PoolString>>;
+template class DirectObjectMapPropertyType<orklut<PoolString, PoolString>>;
 template class AccessorObjectMapPropertyObject<int>;
 template class AccessorObjectMapPropertyType<int, char>;
 template class AccessorObjectMapPropertyType<int, ICastablePointer>;
 template class DirectObjectPropertyType<fmtx4>;
-template class DirectObjectPropertyType< Quaternion<float> >;
+template class DirectObjectPropertyType<Quaternion<float>>;
+template class IObjectPropertyType<TransformNode>;
+template class DirectObjectMapPropertyType<orkmap<float, fvec4>>;
+// template class DirectObjectPropertyType<orkvector<fvec2> >;
 
-template class DirectObjectMapPropertyType<orkmap< float, fvec4> >;
-//template class DirectObjectPropertyType<orkvector<fvec2> >;
+bool SetInvokationParameter(IInvokation* invokation, int param, const char* paramdata) {
+  if (param >= invokation->GetNumParameters())
+    return false;
 
-bool SetInvokationParameter(IInvokation *invokation, int param, const char *paramdata)
-{
-	if(param >= invokation->GetNumParameters())
-		return false;
-
-	ork::stream::StringInputStream stream(paramdata);
-	ork::reflect::serialize::TextDeserializer deser(stream);
-	BidirectionalSerializer bidi(deser);
-	invokation->ApplyParam(bidi, param);
-	return bidi.Succeeded();
+  ork::stream::StringInputStream stream(paramdata);
+  ork::reflect::serialize::TextDeserializer deser(stream);
+  BidirectionalSerializer bidi(deser);
+  invokation->ApplyParam(bidi, param);
+  return bidi.Succeeded();
 }
-}}
+}} // namespace ork::reflect

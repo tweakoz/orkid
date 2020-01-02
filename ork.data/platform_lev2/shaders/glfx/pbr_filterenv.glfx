@@ -81,7 +81,7 @@ fragment_shader ps_filterSpecularEnvMap
 		vec2 e = hammersley(i,1024);
 		vec3 h = importanceSampleGGXN(e,n,ruf);
 		vec3 l = normalize(2.0 * dot(v, h) * h - v);
-		float ndotl = saturateF(dot(n, l));
+		float ndotl = satdot(n, l);
 		if(ndotl > 0.0){
 			vec2 luv = env_equirectangularN2UV(l);
 		  o += texture(prefiltmap, luv).rgb * ndotl;

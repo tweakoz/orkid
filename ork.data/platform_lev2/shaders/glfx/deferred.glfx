@@ -122,19 +122,6 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     return decoded;
   }
   /////////////////////////////////////////////////////////
-  vec3 pointlight(GBufData gbd, vec3 lightpos, float lightradius, vec3 color) {
-    vec3 postolight = lightpos - gbd._wpos;
-    float dis2light = length(postolight);
-    float atten     = dis2light / lightradius;
-    atten           = 1.0 - clamp(atten, 0, 1);
-    atten           = pow(atten, 1.4); // * atten;
-    vec3 dir2light  = normalize(postolight);
-    atten *= max(dot(gbd._wnrm, dir2light), 0);
-    //float dis2rad = clamp(1 - abs(dis2light - lightradius), 0, 1);
-    //return color * atten + vec3(pow(dis2rad, 4) * 0.2);
-    return color * atten;
-  }
-  /////////////////////////////////////////////////////////
   vec3 baselighting(WPosData wpd) {
     GBufData gbd = decodeGBUF(wpd);
     // sunlight ///////////////
@@ -145,17 +132,67 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
   /////////////////////////////////////////////////////////
   vec3 pntlighting(WPosData wpd) {
     GBufData gbd = decodeGBUF(wpd);
+    vec2 uv   = wpd._muv;
+    vec4 rmao = texture(MapRufMtlAlpha,uv); // ruf mtl ao opa
+
     vec3 l       = vec3(0, 0, 0);
     int lbas     = int(frg_uvb.x);
     int numl     = int(frg_uvb.y);
-    for (int i = 0; i < numl; i++) {
-      int lidx                     = lbas + i;
-      float lightcamdepth          = LightColorD[lidx].w;
-      bool sphere_intersects_depth = (gbd._zeye - lightcamdepth) < LightPosR[lidx].w;
-      if (sphere_intersects_depth)
-        l += pointlight(gbd, LightPosR[lidx].xyz, LightPosR[lidx].w, LightColorD[lidx].xyz);
+    vec3 metalbase = vec3(0.04);
+    if( rmao.w==0 ){
+      /////////////////////////
+      // pixel was written to in the gbuffer
+      float metallic = clamp(rmao.x,0.02,0.99);
+      float roughness = rmao.y;
+      float roughnessE = roughness*roughness;
+      float roughnessL = max(.01,roughness);
+      float dialetric = 1.0-metallic;
+      /////////////////////////
+      vec3 basecolor = gbd._albedo;
+      vec3 diffcolor = mix(basecolor,vec3(0),metallic);
+      vec3 speccolor = mix(vec3(0.02),basecolor,metallic);
+      vec3 F0 = mix(metalbase,basecolor,metallic);
+      /////////////////////////
+      vec3 wpos = gbd._wpos;
+      vec3 epos = posatdepth(wpd,0.0);
+      vec3 edir = normalize(wpos-epos);
+      vec3 n    = normalize(texture(MapNormalL, uv).xyz*2-vec3(1));
+      vec3 refl = normalize(reflect(edir,n));
+      /////////////////////////
+      float costheta = clamp(dot(n, edir),0.01,1.0);
+      vec2 brdf  = textureGather(MapBrdfIntegration, vec2(costheta,pow(roughness,0.25)),0).rg;
+      vec3 v = -edir;
+      /////////////////////////
+      for (int i = 0; i < numl; i++) {
+        int lidx                     = lbas + i;
+        float lightcamdepth          = LightColorD[lidx].w;
+        bool sphere_intersects_depth = (gbd._zeye - lightcamdepth) < LightPosR[lidx].w;
+        if (sphere_intersects_depth){
+          vec3 lightpos = LightPosR[lidx].xyz;
+          vec3 lightdel = lightpos - wpos;
+          float dist2lightsq = lightdel.x*lightdel.x
+                             + lightdel.y*lightdel.y
+                             + lightdel.z*lightdel.z;
+          float atten = 1.0 / dist2lightsq;
+          vec3 lightdir = normalize(lightdel);
+          vec3 halfdir = normalize(v + lightdir);
+          vec3 radiance = LightColorD[lidx].xyz * atten;
+          float ggx = computeGGX(n, halfdir, roughness);
+          float geo = geometrySmith(n, v, lightdir, roughness);
+          vec3 fres = fresnelSchlickRoughness(satdot(halfdir,v), F0,roughness);
+          vec3 numerator  = ggx * geo * fres * SpecularLevel;
+          float denominator = 4.0 * satdot(n,v) * satdot(n, lightdir) + EPSILON;
+          vec3 specular = numerator / denominator;
+          vec3 diffusel = vec3(1.0) - fres;
+          diffusel *= (1.0 - metallic);
+          float ndotl = satdot(n,lightdir);
+          vec3 diffuse_term = (diffusel*gbd._albedo*INV_PI)*DiffuseLevel;
+          l += (diffuse_term + specular) * radiance * ndotl;
+        }
+      }
+      //l = vec3(brdf,0);
     }
-    return gbd._albedo * l;
+    return l;
   }
   /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLighting(WPosData wpd){
@@ -304,8 +341,12 @@ fragment_shader ps_pointlight : iface_f2uv : lib_deferred {
   wpd._ivp   = IVPArray[0];
   wpd._scruv = wpd._muv;
   vec3 c     = pntlighting(wpd);
-  float dp5  = distance(frg_uva, vec2(.5, .5));
-  c += vec3(pow(dp5, 17) * 256.0);
+  /////////////////////////////////////////
+  // show lighting tiles
+  /////////////////////////////////////////
+  //float dp5  = distance(frg_uva, vec2(.5, .5));
+  //c += vec3(pow(dp5, 17) * 256.0);
+  /////////////////////////////////////////
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////

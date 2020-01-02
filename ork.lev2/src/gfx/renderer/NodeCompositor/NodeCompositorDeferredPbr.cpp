@@ -91,7 +91,6 @@ void DeferredCompositingNodePbr::_writeEnvTexture(ork::rtti::ICastable* const& t
       ///////////////////////////
       _filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ);
       _filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ);
-      _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(targ);
       //////////////////////////////////////////////////////////////
       // DataBlockCache::setDataBlock(cachekey, irrmapdblock);
       datablock = irrmapdblock;
@@ -106,9 +105,6 @@ lev2::Texture* DeferredCompositingNodePbr::envSpecularTexture() const {
 }
 lev2::Texture* DeferredCompositingNodePbr::envDiffuseTexture() const {
   return _filtenvDiffuseMap;
-}
-lev2::Texture* DeferredCompositingNodePbr::brdfIntegrationTexture() const {
-  return _brdfIntegrationMap;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -158,6 +154,8 @@ struct IMPL {
     _context._accumCPD._cameraMatrices       = nullptr;
     _context._accumCPD._stereoCameraMatrices = nullptr;
     _context._accumCPD._stereo1pass          = false;
+    _context._specularLevel                  = node->specularLevel();
+    _context._diffuseLevel                   = node->diffuseLevel();
     CIMPL->pushCPD(_context._accumCPD); // base lighting
     FBI->SetAutoClear(true);
     FBI->PushRtGroup(_context._rtgLaccum);
@@ -187,8 +185,8 @@ struct IMPL {
     _context._lightingmtl.bindParamCTex(_context._parMapSpecularEnv, node->envSpecularTexture());
     _context._lightingmtl.bindParamCTex(_context._parMapDiffuseEnv, node->envDiffuseTexture());
 
-    OrkAssert(node->brdfIntegrationTexture() != nullptr);
-    _context._lightingmtl.bindParamCTex(_context._parMapBrdfIntegration, node->brdfIntegrationTexture());
+    OrkAssert(_context.brdfIntegrationTexture() != nullptr);
+    _context._lightingmtl.bindParamCTex(_context._parMapBrdfIntegration, _context.brdfIntegrationTexture());
 
     /////////////////////////
 

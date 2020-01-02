@@ -139,7 +139,7 @@ void ObjModel::QueueUpdateAll() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ObjModel::FlushQueue() {
-  printf("ObjModel::FlushQueue\n");
+  // printf("ObjModel::FlushQueue\n");
   Attach(CurrentObject());
   SigModelInvalidated();
   // SigNewObject(pobj);
@@ -148,7 +148,7 @@ void ObjModel::FlushQueue() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ObjModel::SigModelInvalidated() {
-  printf("ObjModel::SigModelInvalidated\n");
+  // printf("ObjModel::SigModelInvalidated\n");
   mSignalModelInvalidated(&ObjModel::SigModelInvalidated);
 }
 void ObjModel::SigPreNewObject() {
@@ -213,7 +213,7 @@ void ObjModel::ProcessQueue() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ObjModel::SlotObjectSelected(ork::Object* pobj) {
-  printf("ObjModel<%p> Object<%p> selected\n", this, pobj);
+  // printf("ObjModel<%p> Object<%p> selected\n", this, pobj);
   Attach(pobj);
 }
 
@@ -226,10 +226,6 @@ void ObjModel::SlotObjectDeSelected(ork::Object* pobj) {
 //////////////////////////////////////////////////////////////////////////////
 
 GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool binline) {
-
-  if (pname and std::string(pname) == "DagNode") {
-    printf("wtf1\n");
-  }
 
   GedItemNode* rval    = 0;
   ork::Object* cur_obj = root_object;
@@ -521,8 +517,6 @@ GedItemNode* ObjModel::CreateNode(const std::string& Name, const reflect::IObjec
   /////////////////////////////////////////////////////////////////////////
   ConstString anno_ucdclass  = prop->GetAnnotation("ged.userchoice.delegate");
   bool HasUserChoiceDelegate = (anno_ucdclass.length());
-  /////////////////////////////////////////////////////////////////////////
-  printf("CreateNode<%s> prop<%p> 1\n", Name.c_str(), prop);
   /////////////////////////////////////////////////////////////////////////
   if (const reflect::IObjectPropertyType<Char8>* c8prop = rtti::autocast(prop))
     return new GedLabelNode(*this, Name.c_str(), prop, pobject);

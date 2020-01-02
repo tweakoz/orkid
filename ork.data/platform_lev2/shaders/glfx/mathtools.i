@@ -72,4 +72,7 @@ vec3 srgb2linear(vec3 sRGB)
 
     return mix(higher, lower, cutoff);
 }
+float satdot(vec3 a, vec3 b){
+  return saturateF(dot(a,b));
+}
 }
