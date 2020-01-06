@@ -347,30 +347,15 @@ void ModelDrawable::QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer
   ork::opq::assertOnQueue2(opq::updateSerialQueue());
 
   const lev2::XgmModel* Model = mModelInst->GetXgmModel();
-  bool IsSkinned              = Model->IsSkinned();
 
-  DrawableBufItem& item = buffer.Queue(xfdata, this);
-
-  // orkprintf( " ModelDrawable::QueueToBuffer() mdl<%p> IsSkinned<%d>\n", Model, int(IsSkinned) );
-
-  if (IsSkinned) {
+  if (Model->IsSkinned()) {
     ork::lev2::XgmWorldPose* pworldpose = GetUserDataA().Get<ork::lev2::XgmWorldPose*>();
     if (pworldpose) {
-      const ork::lev2::XgmSkeleton& Skeleton = Model->RefSkel();
-
       const ork::lev2::XgmLocalPose& locpos = mModelInst->RefLocalPose();
-      orkvector<fmtx4>& WorldMatrices       = pworldpose->GetMatrices();
-      int inumch                            = locpos.NumJoints();
-      for (int ich = 0; ich < inumch; ich++) {
-        // orkprintf( " mdrwq2b setmtxblk ich<%d>\n", ich );
-        const fmtx4& MatIBind    = Skeleton.RefInverseBindMatrix(ich);
-        const fmtx4& MatJ        = Skeleton.RefJointMatrix(ich);
-        const fmtx4& MatAnimJCat = locpos.RefLocalMatrix(ich);
-
-        WorldMatrices[ich] = (MatIBind * MatAnimJCat);
-      }
+      pworldpose->apply(fmtx4(), locpos);
     }
   }
+  DrawableBufItem& item = buffer.Queue(xfdata, this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

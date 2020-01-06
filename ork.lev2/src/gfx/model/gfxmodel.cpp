@@ -476,7 +476,7 @@ void XgmModel::RenderSkinned(
 
   const XgmSkeleton& Skeleton = RefSkel();
 
-  const XgmWorldPose* __restrict pworldpose = mdlctx.mpWorldPose;
+  auto pworldpose = mdlctx.mpWorldPose;
 
   const XgmLocalPose& LocalPose = minst->RefLocalPose();
 
@@ -523,15 +523,9 @@ void XgmModel::RenderSkinned(
             for (size_t ijointreg = 0; ijointreg < inumjoints; ijointreg++) {
               const PoolString& JointName = XgmCluster.mJoints[ijointreg];
               int JointSkelIndex          = XgmCluster.mJointSkelIndices[ijointreg];
-              // const fmtx4 & MatIBind = Skeleton.RefInverseBindMatrix(JointSkelIndex);
-              // const fmtx4 & MatJ = Skeleton.RefJointMatrix( JointSkelIndex );
-              // const fmtx4 & MatAnimJCat = LocalPose.RefLocalMatrix(JointSkelIndex);
-              // const fmtx4 & MatAnimJCat = pworldpose->GetMatrices()[JointSkelIndex];
-              const fmtx4& MatAnimJCat = pworldpose->GetMatrices()[JointSkelIndex];
-
+              const fmtx4& finalmtx       = pworldpose->GetMatrices()[JointSkelIndex];
               //////////////////////////////////////
-              // MatrixBlock[ijointreg] = fmtx4::Identity; //(MatIBind * MatAnimJCat);
-              MatrixBlock[ijointreg] = MatAnimJCat; //(MatIBind * MatAnimJCat);
+              MatrixBlock[ijointreg] = finalmtx;
             }
 
             //////////////////////////////////////////////////////

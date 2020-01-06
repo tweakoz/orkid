@@ -27,7 +27,7 @@
 
 #include <ork/lev2/gfx/gfxmodel.h>
 
-#define ANIMATE_VERBOSE (0)
+#define ANIMATE_VERBOSE (1)
 #define PRINT_CONDITION_NAME(__name) true //(ork::PieceString(__name).find("ship1") != ork::PieceString::npos)
 #define PRINT_CONDITION (PRINT_CONDITION_NAME(GetEntity()->GetEntData().GetName()))
 #define PRINT_CONDITION_AD (entity && PRINT_CONDITION_NAME(entity->GetEntData().GetName()))
@@ -140,7 +140,7 @@ static void SetJointsFromExpression(
       ork::PieceString param          = expression.substr(5, end - 5);
 
       orkvector<int> parents;
-      parents.push_back(skeleton.GetJointIndex(ork::AddPooledString(param)));
+      parents.push_back(skeleton.jointIndex(ork::AddPooledString(param)));
       bool changed = true;
       while (changed) {
         changed = false;
@@ -159,7 +159,7 @@ static void SetJointsFromExpression(
       if (it != sad->GetAnimMaskMap().end())
         SetJointsFromExpression(joints, skeleton, sad, it->second);
       else
-        joints.insert(skeleton.GetJointIndex(exprStr));
+        joints.insert(skeleton.jointIndex(exprStr));
     }
   }
   // for( auto& j : joints )
@@ -640,6 +640,7 @@ float SimpleAnimatableInst::GetFrameNumOnAnimationOnFirstMask() {
 void SimpleAnimatableInst::DoUpdate(ork::ent::Simulation* inst) {
 #if 1
   float dt = inst->GetDeltaTime();
+  // printf("DoUpdate SimpleAnimatableInst<%p> mModelInst<%p>\n", this, mModelInst);
 
   if (mModelInst) {
     // Put the model in the model pose
@@ -720,13 +721,11 @@ void SimpleAnimatableInst::DoUpdate(ork::ent::Simulation* inst) {
           DEBUG_ANIMATE_PRINT(
               "Anim Queue:Play anim %s with priority 0 on entity %s\n", item.mName, GetEntity()->GetEntData().GetName().c_str());
           PlayAnimationEx(sEmptyString, item.mName, 0, item.mSpeed, item.mInterpDuration, item.mLoop);
-        } else if (!lastitem.mLoop) {
         }
-        // if(prodigy::ent::GroundControllableInst *groundInst =
-        // GetEntity()->GetTypedComponent<prodigy::ent::GroundControllableInst>()) 	groundInst->Enable();
       }
-    }
-  }
+    } // if (service_queue) {
+  }   // if (mModelInst) {
+
 #endif
 }
 

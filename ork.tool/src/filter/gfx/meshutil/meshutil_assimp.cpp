@@ -187,7 +187,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
           texfile.GetLength(length);
           printf("texlen<%zu>\n", length);
 
-          if (tex_ext == ".jpg" or tex_ext == ".jpeg" or tex_ext == ".png") {
+          if (tex_ext == ".jpg" or tex_ext == ".jpeg" or tex_ext == ".png" or tex_ext == ".tga") {
 
             auto embtex     = new ork::lev2::EmbeddedTexture;
             embtex->_format = tex_ext.substr(1);
@@ -326,6 +326,14 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
 
     printf("/////////////////////////////////////////////////////////////////\n");
 
+    ///////////////////////////////////////////////////////////////////////////////
+    // name      head                    tail
+
+    // Bone        (0, 0, 0)               (0, 0, 1.99m)
+    // Bone.001    (0, 0, 1.99m)           (-0.0000863, 0, 3.41m)
+    // Bone.002    (-0.0000863, 0, 3.41m)  (-0.00129m, 0, 4.86m)
+    // Bone.003    (-0.00129m, 0, 486m)    (-0.0204m, 0, 6.05m)
+
     //////////////////////////////////////////////
     // visit meshes, marking dagnodes as bones and fetching joint matrices
     //////////////////////////////////////////////
@@ -363,28 +371,32 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
             //////////////////////////////////
             if (false == xgmnode->_varmap["is_bone"].IsA<bool>()) {
               xgmnode->_varmap["is_bone"].Set<bool>(true);
-              int index               = xgmnode->miSkelIndex;
-              auto matrix             = bone->mOffsetMatrix;
-              auto& xgmjointmatrix    = xgmnode->_varmap["assimpoffsetmatrix"].Make<fmtx4>();
-              auto& xgmjointmatrixinv = xgmnode->_varmap["assimpoffsetmatrix-inv"].Make<fmtx4>();
-              /*printf(
-                  "markBONE<%p> xgmnode<%d:%p> <%s> numverts_affected<%d> ",
+              int index = xgmnode->miSkelIndex;
+
+              //////////////////////////////////////////
+              // according to what I read
+              //  aiBone::mOffsetMatrix is the inverse bind pose
+              //  an odd name to be sure. we shall see..
+              //////////////////////////////////////////
+
+              auto matrix = bone->mOffsetMatrix;
+
+              fmtx4 invbindpose;
+              printf(
+                  "markBONE<%p> xgmnode<%d:%p> <%s> numverts_affected<%d>\n",
                   bone,
                   index,
                   xgmnode,
                   bonename.c_str(),
-                  numvertsaffected);*/
+                  numvertsaffected);
               for (int j = 0; j < 4; j++) {
-                // printf("[");
                 for (int k = 0; k < 4; k++) {
-                  xgmjointmatrix.SetElemXY(j, k, matrix[j][k]);
-                  // printf("%g ", matrix[j][k]);
+                  invbindpose.SetElemYX(j, k, matrix[j][k]);
                 }
-                // printf("] ");
               }
-              xgmjointmatrixinv.inverseOf(xgmjointmatrix);
-              // printf("\n");
+              xgmnode->mBindMatrixInverse = invbindpose;
               /////////////////////////////
+              // xgmjointmatrix.dump(bonename.c_str());
               // remember effected verts
               /////////////////////////////
               for (int v = 0; v < numvertsaffected; v++) {
@@ -411,7 +423,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       for (int i = 0; i < n->mNumChildren; ++i) {
         nodestack.push(n->mChildren[i]);
       }
-    }
+    } // while (not nodestack.empty()) {
 
     nodestack = std::queue<aiNode*>();
     nodestack.push(scene->mRootNode);
@@ -438,19 +450,38 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
 
       nodestack.pop();
 
+      auto it_nod_skelnode                 = xgmskelnodes.find(n->mName.data);
+      ork::lev2::XgmSkelNode* nod_skelnode = (it_nod_skelnode != xgmskelnodes.end()) ? it_nod_skelnode->second : nullptr;
+
+      nod_skelnode->mJointMatrix = nod_skelnode->bindMatrix();
+
       auto p = n->mParent;
       if (p) {
-        auto it_nod_skelnode                 = xgmskelnodes.find(n->mName.data);
         auto it_par_skelnode                 = xgmskelnodes.find(p->mName.data);
-        ork::lev2::XgmSkelNode* nod_skelnode = (it_nod_skelnode != xgmskelnodes.end()) ? it_nod_skelnode->second : nullptr;
         ork::lev2::XgmSkelNode* par_skelnode = (it_par_skelnode != xgmskelnodes.end()) ? it_par_skelnode->second : nullptr;
         // printf(
         //  "visit node<%s> parent<%s> xgmskenod<%p> xgmskelpar<%p>\n", n->mName.data, p->mName.data, nod_skelnode, par_skelnode);
         if (par_skelnode) {
           nod_skelnode->mpParent = par_skelnode;
           par_skelnode->mChildren.push_back(nod_skelnode);
+
+          fmtx4 mymtx = nod_skelnode->bindMatrix();
+          fmtx4 pmtx  = par_skelnode->bindMatrix();
+          nod_skelnode->mJointMatrix.CorrectionMatrix(pmtx, mymtx);
         }
       }
+      std::string name = nod_skelnode->mNodeName;
+      fmtx4 local      = nod_skelnode->mJointMatrix;
+      fmtx4 invbind    = nod_skelnode->mBindMatrixInverse;
+      fmtx4 bind       = nod_skelnode->bindMatrix();
+      invbind.dump((name + ".inversebind").c_str());
+      bind.dump((name + ".bind").c_str());
+      local.dump((name + ".local").c_str());
+
+      fmtx4 concat = nod_skelnode->concatenated();
+      fmtx4 check  = concat * invbind;
+      concat.dump((name + ".concat").c_str());
+      check.dump((name + ".check").c_str());
 
       //////////////////////////////////////////////
       // for rigid meshes, preapply transforms
@@ -460,7 +491,6 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       fmtx4 ork_model_mtx;
       fmtx3 ork_normal_mtx;
       if (false == is_skinned) {
-
         printf("/////////////////////////////\n");
         std::deque<aiNode*> nodehier;
         bool done = false;
@@ -541,7 +571,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
                 if (itw != assimpweightlut.end()) {
                   auto influences = itw->second;
                   int numinf      = influences->_items.size();
-                  printf("vertex<%d> raw_numweights<%d>\n", index, numinf);
+                  // printf("vertex<%d> raw_numweights<%d>\n", index, numinf);
                   ///////////////////////////////////////////////////
                   // prune to no more than 4 weights
                   ///////////////////////////////////////////////////
