@@ -42,7 +42,7 @@ libblock skin_tools {
 		SkinOut rval;
 		rval.skn_pos = SkinPosition(boneindices, boneweights, position.xyz);
 	  vec3 sknorm  = SkinNormal(boneindices, boneweights, normal.xyz);
-	  vec3 wnorm   = normalize(WRotMatrix * sknorm);
+	  vec3 wnorm   = normalize(mrot * sknorm);
 	  float dif = dot(wnorm, vec3(0, 0, 1));
 	  float amb = 0.3;
 	  float tot = dif + amb;

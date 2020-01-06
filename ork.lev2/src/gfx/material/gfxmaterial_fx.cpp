@@ -926,7 +926,7 @@ int GfxMaterialFx::BeginBlock(Context* pTarg, const RenderContextInstData& MatCt
     bool bpick             = pTarg->FBI()->IsPickState();
     bool bisshadowcaster   = false; //(DRCD.GetRenderFlags()&2)&&(1==ActiveLayerIndex);
     bool bisshadowreciever = false; //(false==bisshadowcaster)&&(0==ActiveLayerIndex)&&(ShadowBuffer!=0);
-    bool bisskinned        = MatCtx.IsSkinned();
+    bool bisskinned        = MatCtx._isSkinned;
     bool bislightmap       = MatCtx.IsLightMapped() && (mActiveLightMapTechnique != 0);
     bool bisvertexlit      = MatCtx.IsVertexLit() && mActiveVertexLightTechnique;
 

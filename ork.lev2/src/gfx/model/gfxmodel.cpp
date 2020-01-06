@@ -24,7 +24,8 @@ XgmModel::XgmModel()
     : mpUserData(0)
     , miNumMaterials(0)
     , miBonesPerCluster(0)
-    , mbSkinned(false) {}
+    , mbSkinned(false) {
+}
 
 XgmModel::~XgmModel() {
   for (orklut<PoolString, XgmMesh*>::iterator it = mMeshes.begin(); it != mMeshes.end(); it++)
@@ -63,7 +64,8 @@ XgmModelInst::XgmModelInst(const XgmModel* Model)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-XgmModelInst::~XgmModelInst() {}
+XgmModelInst::~XgmModelInst() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -157,7 +159,8 @@ XgmPrimGroup::~XgmPrimGroup() {
 XgmPrimGroup::XgmPrimGroup()
     : miNumIndices(0)
     , mpIndices(0)
-    , mePrimType(EPRIM_NONE) {}
+    , mePrimType(EPRIM_NONE) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -177,7 +180,8 @@ XgmCluster::XgmCluster()
     : miNumPrimGroups(0)
     , mpPrimGroups(0)
     , _vertexBuffer(0)
-    , mBoundingSphere(fvec3::Zero(), 0.0f) {}
+    , mBoundingSphere(fvec3::Zero(), 0.0f) {
+}
 
 XgmCluster::~XgmCluster() {
   delete[] mpPrimGroups;
@@ -187,11 +191,14 @@ XgmCluster::~XgmCluster() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-XgmSubMesh::~XgmSubMesh() { delete[] mpClusters; }
+XgmSubMesh::~XgmSubMesh() {
+  delete[] mpClusters;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmCluster::Dump(void) {}
+void XgmCluster::Dump(void) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -219,7 +226,8 @@ XgmMesh::XgmMesh()
     : muFlags(0)
     , miNumBoneBindings(0)
     , mfBoundingRadius(0.0f)
-    , mvBoundingCenter(0.0f, 0.0f, 0.0f) {}
+    , mvBoundingCenter(0.0f, 0.0f, 0.0f) {
+}
 
 XgmMesh::~XgmMesh() {
   for (orkvector<XgmSubMesh*>::iterator it = mSubMeshes.begin(); it != mSubMeshes.end(); it++)
@@ -237,26 +245,32 @@ void XgmModel::AddMaterial(GfxMaterial* Mat) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmModel::RenderRigid(const fcolor4& ModColor,
-                           const fmtx4& WorldMat,
-                           ork::lev2::Context* pTARG,
-                           const RenderContextInstData& RCID,
-                           const RenderContextInstModelData& mdlctx) const {
-  auto R           = RCID.GetRenderer();
-  auto RCFD   = pTARG->topRenderContextFrameData();
-  const auto& CPD = RCFD->topCPD();
-  bool stereo1pass = CPD.isStereoOnePass();
+void XgmModel::RenderRigid(
+    const fcolor4& ModColor,
+    const fmtx4& WorldMat,
+    ork::lev2::Context* pTARG,
+    const RenderContextInstData& RCID,
+    const RenderContextInstModelData& mdlctx) const {
+  auto R                         = RCID.GetRenderer();
+  auto RCFD                      = pTARG->topRenderContextFrameData();
+  const auto& CPD                = RCFD->topCPD();
+  bool stereo1pass               = CPD.isStereoOnePass();
   const XgmMesh& XgmMesh         = *mdlctx.mMesh;
   const XgmCluster& XgmClus      = *mdlctx.mCluster;
   const XgmSubMesh& XgmClusSet   = *mdlctx.mSubMesh;
   const Texture* LightMapTexture = XgmClusSet.mLightMap;
-  int inummesh    = GetNumMeshes();
-  int inumclusset = XgmMesh.GetNumSubMeshes();
-  int imat        = RCID.GetMaterialIndex();
+  int inummesh                   = GetNumMeshes();
+  int inumclusset                = XgmMesh.GetNumSubMeshes();
+  int imat                       = RCID.GetMaterialIndex();
   OrkAssert(imat < inumclusset);
   GfxMaterial* __restrict pmat = XgmClusSet.GetMaterial();
 
-  pTARG->debugPushGroup(FormatString("XgmModel::RenderRigid stereo1pass<%d> inummesh<%d> inumclusset<%d> imat<%d>", int(stereo1pass), inummesh, inumclusset, imat ));
+  pTARG->debugPushGroup(FormatString(
+      "XgmModel::RenderRigid stereo1pass<%d> inummesh<%d> inumclusset<%d> imat<%d>",
+      int(stereo1pass),
+      inummesh,
+      inumclusset,
+      imat));
 
   ork::lev2::RenderGroupState rgs = RCID.GetRenderGroupState();
 
@@ -378,15 +392,16 @@ void XgmModel::RenderRigid(const fcolor4& ModColor,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmModel::RenderMultipleRigid(const fcolor4& ModColor,
-                                   const fmtx4* WorldMatrices,
-                                   int icount,
-                                   ork::lev2::Context* pTARG,
-                                   const RenderContextInstData& RCID,
-                                   const RenderContextInstModelData& mdlctx) const {
+void XgmModel::RenderMultipleRigid(
+    const fcolor4& ModColor,
+    const fmtx4* WorldMatrices,
+    int icount,
+    ork::lev2::Context* pTARG,
+    const RenderContextInstData& RCID,
+    const RenderContextInstModelData& mdlctx) const {
   auto R           = RCID.GetRenderer();
-  auto RCFD   = pTARG->topRenderContextFrameData();
-  const auto& CPD = RCFD->topCPD();
+  auto RCFD        = pTARG->topRenderContextFrameData();
+  const auto& CPD  = RCFD->topCPD();
   bool stereo1pass = CPD.isStereoOnePass();
 
   pTARG->MTXI()->SetMMatrix(pTARG->MTXI()->RefMMatrix());
@@ -447,15 +462,16 @@ static const int kMatrixBlockSize = 32;
 static fmtx4 MatrixBlock[kMatrixBlockSize];
 int eggtest = 0;
 
-void XgmModel::RenderSkinned(const XgmModelInst* minst,
-                             const fcolor4& ModColor,
-                             const fmtx4& WorldMat,
-                             ork::lev2::Context* pTARG,
-                             const RenderContextInstData& RCID,
-                             const RenderContextInstModelData& mdlctx) const {
+void XgmModel::RenderSkinned(
+    const XgmModelInst* minst,
+    const fcolor4& ModColor,
+    const fmtx4& WorldMat,
+    ork::lev2::Context* pTARG,
+    const RenderContextInstData& RCID,
+    const RenderContextInstModelData& mdlctx) const {
   auto R           = RCID.GetRenderer();
-  auto RCFD   = pTARG->topRenderContextFrameData();
-  const auto& CPD = RCFD->topCPD();
+  auto RCFD        = pTARG->topRenderContextFrameData();
+  const auto& CPD  = RCFD->topCPD();
   bool stereo1pass = CPD.isStereoOnePass();
 
   const XgmSkeleton& Skeleton = RefSkel();
@@ -464,12 +480,13 @@ void XgmModel::RenderSkinned(const XgmModelInst* minst,
 
   const XgmLocalPose& LocalPose = minst->RefLocalPose();
 
-  // printf( "rendering skinned!!\n");
+  // printf("rendering skinned!!\n");
   ////////////////////
   // Draw Skinned Mesh
 
   if (1) // draw mesh
   {
+    pTARG->debugPushGroup("RenderSkinnedMesh");
     pTARG->MTXI()->PushMMatrix(WorldMat);
     pTARG->PushModColor(ModColor);
     {
@@ -480,7 +497,6 @@ void XgmModel::RenderSkinned(const XgmModelInst* minst,
       bool bmatpushed = false;
 
       auto mtl = XgmClusSet.GetMaterial();
-
 
       if (minst->_overrideMaterial != 0)
         mtl = minst->_overrideMaterial;
@@ -553,12 +569,14 @@ void XgmModel::RenderSkinned(const XgmModelInst* minst,
     }
     pTARG->PopModColor();
     pTARG->MTXI()->PopMMatrix();
+    pTARG->debugPopGroup();
   }
 
   ////////////////////////////////////////
   // Draw Skeleton
 
-  if (0) {
+  if (1) {
+    pTARG->debugPushGroup("DrawSkeleton");
     pTARG->PushModColor(ModColor);
     GfxEnv::GetDefault3DMaterial()->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     pTARG->BindMaterial(GfxEnv::GetDefault3DMaterial());
@@ -581,21 +599,23 @@ void XgmModel::RenderSkinned(const XgmModelInst* minst,
       }
     }
     pTARG->PopModColor();
+    pTARG->debugPopGroup();
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmModel::RenderMultipleSkinned(const XgmModelInst* minst,
-                                     const fcolor4& ModColor,
-                                     const fmtx4* WorldMats,
-                                     int icount,
-                                     ork::lev2::Context* pTARG,
-                                     const RenderContextInstData& RCID,
-                                     const RenderContextInstModelData& mdlctx) const {
+void XgmModel::RenderMultipleSkinned(
+    const XgmModelInst* minst,
+    const fcolor4& ModColor,
+    const fmtx4* WorldMats,
+    int icount,
+    ork::lev2::Context* pTARG,
+    const RenderContextInstData& RCID,
+    const RenderContextInstModelData& mdlctx) const {
   auto R           = RCID.GetRenderer();
-  auto RCFD   = pTARG->topRenderContextFrameData();
-  const auto& CPD = RCFD->topCPD();
+  auto RCFD        = pTARG->topRenderContextFrameData();
+  const auto& CPD  = RCFD->topCPD();
   bool stereo1pass = CPD.isStereoOnePass();
 
   const XgmSkeleton& Skeleton   = RefSkel();
@@ -748,7 +768,8 @@ RenderContextInstModelData::RenderContextInstModelData()
     , mMesh(0)
     , mSubMesh(0)
     , mCluster(0)
-    , mpWorldPose(0) {}
+    , mpWorldPose(0) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

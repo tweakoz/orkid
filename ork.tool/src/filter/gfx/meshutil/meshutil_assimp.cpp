@@ -24,7 +24,7 @@
 
 #include <ork/lev2/gfx/material_pbr.inl>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::MeshUtil::GLB_XGM_Filter, "GLB_XGM_Filter");
+INSTANTIATE_TRANSPARENT_RTTI(ork::MeshUtil::ASS_XGM_Filter, "ASS_XGM_Filter");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::MeshUtil {
@@ -84,6 +84,7 @@ struct GltfMaterial {
   std::string _emissivemap;
   float _metallicFactor  = 0.0f;
   float _roughnessFactor = 1.0f;
+  fvec4 _baseColor       = fvec4(1, 1, 1, 1);
 };
 
 typedef std::map<int, GltfMaterial*> gltfmaterialmap_t;
@@ -235,6 +236,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
         printf("has name<%s>\n", material_name.c_str());
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &color)) {
+        outmtl->_baseColor = fvec4(color.r, color.g, color.b, color.a);
         printf("has_uniform_diffuse<%f %f %f %f>\n", color.r, color.g, color.b, color.a);
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_SPECULAR, &color)) {
@@ -425,8 +427,6 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
     //////////////////////////////////////////////
     // parse nodes
     //////////////////////////////////////////////
-
-    is_skinned = false; // not yet..
 
     // printf("parsing nodes for meshdata\n");
 
@@ -729,12 +729,12 @@ void configureXgmSkeleton(const toolmesh& input, lev2::XgmModel& xgmmdlout) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GLB_XGM_Filter::GLB_XGM_Filter() {
+ASS_XGM_Filter::ASS_XGM_Filter() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GLB_XGM_Filter::Describe() {
+void ASS_XGM_Filter::Describe() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -788,6 +788,7 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
     mtlout->_mtlRufMapName   = gltfmtl->_metallicAndRoughnessMap;
     mtlout->_metallicFactor  = gltfmtl->_metallicFactor;
     mtlout->_roughnessFactor = gltfmtl->_roughnessFactor;
+    mtlout->_baseColor       = gltfmtl->_baseColor;
     out_model.AddMaterial(mtlout);
 
     auto clusterizer                 = new ClusterizerType;
@@ -882,7 +883,7 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GLB_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
+bool ASS_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
   ork::tool::FilterOptMap options;
   options.SetDefault("--dice", "false");
   options.SetDefault("--dicedim", "128.0f");

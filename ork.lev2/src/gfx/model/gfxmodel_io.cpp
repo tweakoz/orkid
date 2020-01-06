@@ -76,9 +76,9 @@ EVtxStreamFormat GetVersion0VertexStreamFormat(const char* fmtstr) {
     formatmap["EVTXSTREAMFMT_V12N12T16C4"]     = EVTXSTREAMFMT_V12N12B12T8; // uhoh ! << this was missing
     formatmap["EVTXSTREAMFMT_V12N12B12T8C4"]   = EVTXSTREAMFMT_V12N12T16C4; // 15
     formatmap["EVTXSTREAMFMT_V12N12B12T16"]    = EVTXSTREAMFMT_V12N12B12T8C4;
-    formatmap["EVTXSTREAMFMT_V12N12B12T8I4W4"] = EVTXSTREAMFMT_V12N12B12T16; // 17
+    formatmap["EVTXSTREAMFMT_V12N12B12T8I4W4"] = EVTXSTREAMFMT_V12N12B12T8I4W4; // 17
 
-    formatmap["EVTXSTREAMFMT_MODELERRIGID"] = EVTXSTREAMFMT_V12N12B12T8I4W4; // 18
+    formatmap["EVTXSTREAMFMT_MODELERRIGID"] = EVTXSTREAMFMT_MODELERRIGID; // 18
 
     formatmap["EVTXSTREAMFMT_XP_VCNT"]  = EVTXSTREAMFMT_MODELERRIGID; // 19
     formatmap["EVTXSTREAMFMT_XP_VCNTI"] = EVTXSTREAMFMT_END;
@@ -94,7 +94,7 @@ EVtxStreamFormat GetVersion0VertexStreamFormat(const char* fmtstr) {
 
 bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
   Context* pTARG = GfxEnv::GetRef().GetLoaderTarget();
-  bool rval        = true;
+  bool rval      = true;
 
   int XGMVERSIONCODE           = 0;
   static const int kVERSIONTAG = 0x01234567;
@@ -215,7 +215,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
     ///////////////////////////////////
     chunkfile::XgmMaterialReaderContext materialread_ctx(chunkreader);
     materialread_ctx._inputStream                                      = HeaderStream;
-    materialread_ctx._varmap.makeValueForKey<Context*>("gfxtarget")  = pTARG;
+    materialread_ctx._varmap.makeValueForKey<Context*>("gfxtarget")    = pTARG;
     materialread_ctx._varmap.makeValueForKey<embtexmap_t>("embtexmap") = embtexmap;
     ///////////////////////////////////
     for (int imat = 0; imat < inummats; imat++) {

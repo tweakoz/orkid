@@ -31,293 +31,21 @@ ImplementReflectionX(ork::lev2::PBRMaterial, "PBRMaterial");
 
 namespace ork::lev2 {
 
-/////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////
 
-Texture* PBRMaterial::brdfIntegrationMap(Context* targ) {
-
-  static Texture* _map = nullptr;
-
-  if (nullptr == _map) {
-
-    _map              = new lev2::Texture;
-    _map->_debugName  = "brdfIntegrationMap";
-    constexpr int DIM = 1024;
-    _map->_width      = DIM;
-    _map->_height     = DIM;
-    _map->_texFormat  = EBUFFMT_RGBA32F;
-
-    ///////////////////////////////
-    // dblock cache
-    ///////////////////////////////
-
-    boost::Crc64 brdfhasher;
-    brdfhasher.accumulateString(_map->_debugName); // identifier
-    brdfhasher.accumulateItem<float>(1.0);         // version code
-    brdfhasher.accumulateItem<float>(DIM);         // dimension
-    brdfhasher.finish();
-    uint64_t brdfhash = brdfhasher.result();
-    printf("brdfIntegrationMap hashkey<%zx>\n", brdfhash);
-    auto dblock = DataBlockCache::findDataBlock(brdfhash);
-    if (dblock) {
-      // loaded from cache
-      printf("brdfIntegrationMap loaded from cache\n");
-    } else { // recompute and cache
-      printf("Begin Compute brdfIntegrationMap\n");
-      dblock        = std::make_shared<DataBlock>();
-      float* texels = dblock->allocateItems<float>(DIM * DIM * 4);
-      auto group    = opq::createCompletionGroup(opq::concurrentQueue());
-      for (int y = 0; y < DIM; y++) {
-        float fy  = float(y) / float(DIM - 1);
-        int ybase = y * DIM;
-        group->enqueue([=]() {
-          for (int x = 0; x < DIM; x++) {
-            float fx               = float(x) / float(DIM - 1);
-            dvec3 output           = brdf::integrateGGX<1024>(fx, fy);
-            int texidxbase         = (ybase + x) * 4;
-            texels[texidxbase + 0] = float(output.x);
-            texels[texidxbase + 1] = float(output.y);
-            texels[texidxbase + 2] = float(output.z);
-            texels[texidxbase + 3] = 1.0f;
-          }
-        });
-      }
-      group->join();
-      printf("End Compute brdfIntegrationMap\n");
-      fflush(stdout);
-      DataBlockCache::setDataBlock(brdfhash, dblock);
-    }
-
-    _map->_data = dblock->data();
-
-    ///////////////////////////////
-    // verify (debug)
-    ///////////////////////////////
-
-    if (1) {
-      auto outpath = file::Path::temp_dir() / "brdftest.exr";
-      auto out     = ImageOutput::create(outpath.c_str());
-      assert(out != nullptr);
-      ImageSpec spec(DIM, DIM, 4, TypeDesc::FLOAT);
-      out->open(outpath.c_str(), spec);
-      out->write_image(TypeDesc::FLOAT, dblock->data());
-      out->close();
-    }
-
-    ///////////////////////////////
-
-    targ->TXI()->initTextureFromData(_map, true);
-  }
-  return _map;
+PBRMaterial::PBRMaterial() {
+  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
+  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
+  _rasterstate.SetBlending(EBLENDING_OFF);
+  _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+  _rasterstate.SetZWriteMask(true);
+  _rasterstate.SetCullTest(ECULLTEST_OFF);
+  miNumPasses = 1;
 }
 
-/////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////
 
-Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
-  auto txi = targ->TXI();
-  auto fbi = targ->FBI();
-  auto fxi = targ->FXI();
-  ///////////////////////////////////////////////
-  static std::shared_ptr<FreestyleMaterial> mtl;
-  static const FxShaderTechnique* tekFilterSpecMap = nullptr;
-  static const FxShaderParam* param_mvp            = nullptr;
-  static const FxShaderParam* param_pfm            = nullptr;
-  static const FxShaderParam* param_ruf            = nullptr;
-
-  targ->debugPushGroup("PBRMaterial::filterEnvMap");
-  if (not mtl) {
-    mtl = std::make_shared<FreestyleMaterial>();
-    OrkAssert(mtl.get() != nullptr);
-    mtl->gpuInit(targ, "orkshader://pbr_filterenv");
-    tekFilterSpecMap = mtl->technique("tek_filterSpecularMap");
-    OrkAssert(tekFilterSpecMap != nullptr);
-    printf("filterenv mtl<%p> tekFilterSpecMap<%p>\n", mtl.get(), tekFilterSpecMap);
-    param_mvp = mtl->param("mvp");
-    param_pfm = mtl->param("prefiltmap");
-    param_ruf = mtl->param("roughness");
-  }
-  ///////////////////////////////////////////////
-  auto filtex                                                       = std::make_shared<FilteredEnvMap>();
-  rawenvmap->_varmap.makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
-  ///////////////////////////////////////////////
-  RenderContextFrameData RCFD(targ);
-  int w = rawenvmap->_width;
-  int h = rawenvmap->_height;
-
-  int numpix           = w * h;
-  int imip             = 0;
-  auto targ_buf        = fbi->GetThisBuffer();
-  float roughness      = 0.0f;
-  auto mipchain        = new MipChain(w, h, EBUFFMT_RGBA32F, ETEXTYPE_2D);
-  mipchain->_debugName = "filtenvmap-processed";
-  while (numpix != 0) {
-
-    auto outgroup = std::make_shared<RtGroup>(targ, w, h, 1);
-    auto outbuffr = std::make_shared<RtBuffer>(outgroup.get(), lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32F, w, h);
-    auto captureb = std::make_shared<CaptureBuffer>();
-
-    filtex->_rtgroup     = outgroup;
-    filtex->_rtbuffer    = outbuffr;
-    outbuffr->_debugName = FormatString("filteredenvmap-specenv-mip%d", imip);
-    // outbuffer->
-    outgroup->SetMrt(0, outbuffr.get());
-
-    printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
-    printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
-
-    fbi->PushRtGroup(outgroup.get());
-    fbi->BeginFrame();
-    fbi->Clear(fvec4(0, 0, 0, 0), 1);
-    mtl->bindTechnique(tekFilterSpecMap);
-    mtl->begin(RCFD);
-    ///////////////////////////////////////////////
-    mtl->bindParamMatrix(param_mvp, fmtx4::Identity);
-    mtl->bindParamCTex(param_pfm, rawenvmap);
-    mtl->bindParamFloat(param_ruf, roughness);
-    mtl->commit();
-    targ_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
-    ///////////////////////////////////////////////
-    mtl->end(RCFD);
-    fbi->EndFrame();
-    fbi->PopRtGroup();
-
-    fbi->capture(*outgroup.get(), 0, captureb.get());
-
-    auto mipchain_level = mipchain->_levels[imip];
-    memcpy(mipchain_level->_data, captureb->_data, w * h * 4 * sizeof(float));
-
-    if (1) {
-      auto outpath = file::Path::temp_dir() / FormatString("filteredenv-specmap-mip%d.exr", imip);
-      auto out     = ImageOutput::create(outpath.c_str());
-      printf("filterenv write dbgout<%s> <%p>\n", outpath.c_str(), out.get());
-      OrkAssert(out != nullptr);
-      ImageSpec spec(w, h, 4, TypeDesc::FLOAT);
-      out->open(outpath.c_str(), spec);
-      out->write_image(TypeDesc::FLOAT, captureb->_data);
-      out->close();
-    }
-
-    rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtGroup>>(FormatString("alt-tex-specenv-group-mip%d", imip))   = outgroup;
-    rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtBuffer>>(FormatString("alt-tex-specenv-buffer-mip%d", imip)) = outbuffr;
-
-    w >>= 1;
-    h >>= 1;
-    roughness += 0.1f;
-    numpix = w * h;
-    imip++;
-  }
-
-  auto alt_tex                                                    = txi->createFromMipChain(mipchain);
-  rawenvmap->_varmap.makeValueForKey<Texture*>("alt-tex-specenv") = alt_tex;
-
-  targ->debugPopGroup();
-
-  return alt_tex;
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
-  auto txi = targ->TXI();
-  auto fbi = targ->FBI();
-  auto fxi = targ->FXI();
-  ///////////////////////////////////////////////
-  static std::shared_ptr<FreestyleMaterial> mtl;
-  static const FxShaderTechnique* tekFilterDiffMap = nullptr;
-  static const FxShaderParam* param_mvp            = nullptr;
-  static const FxShaderParam* param_pfm            = nullptr;
-  static const FxShaderParam* param_ruf            = nullptr;
-
-  targ->debugPushGroup("PBRMaterial::filterEnvMap");
-  if (not mtl) {
-    mtl = std::make_shared<FreestyleMaterial>();
-    OrkAssert(mtl.get() != nullptr);
-    mtl->gpuInit(targ, "orkshader://pbr_filterenv");
-    tekFilterDiffMap = mtl->technique("tek_filterDiffuseMap");
-    OrkAssert(tekFilterDiffMap != nullptr);
-    printf("filterenv mtl<%p> tekFilterDiffMap<%p>\n", mtl.get(), tekFilterDiffMap);
-    param_mvp = mtl->param("mvp");
-    param_pfm = mtl->param("prefiltmap");
-    param_ruf = mtl->param("roughness");
-  }
-  ///////////////////////////////////////////////
-  auto filtex                                                       = std::make_shared<FilteredEnvMap>();
-  rawenvmap->_varmap.makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
-  ///////////////////////////////////////////////
-  RenderContextFrameData RCFD(targ);
-  int w = rawenvmap->_width;
-  int h = rawenvmap->_height;
-
-  int numpix      = w * h;
-  int imip        = 0;
-  auto targ_buf   = fbi->GetThisBuffer();
-  float roughness = 1.0f;
-  std::map<int, std::shared_ptr<CaptureBuffer>> cap4mip;
-  auto mipchain        = new MipChain(w, h, EBUFFMT_RGBA32F, ETEXTYPE_2D);
-  mipchain->_debugName = "filtenvmap-processed-diffenv";
-  while (numpix != 0) {
-
-    auto outgroup = std::make_shared<RtGroup>(targ, w, h, 1);
-    auto outbuffr = std::make_shared<RtBuffer>(outgroup.get(), lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32F, w, h);
-    auto captureb = std::make_shared<CaptureBuffer>();
-
-    filtex->_rtgroup     = outgroup;
-    filtex->_rtbuffer    = outbuffr;
-    outbuffr->_debugName = FormatString("filteredenvmap-diffenv-mip%d", imip);
-    // outbuffer->
-    outgroup->SetMrt(0, outbuffr.get());
-
-    printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
-    printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
-
-    fbi->PushRtGroup(outgroup.get());
-    fbi->BeginFrame();
-    fbi->Clear(fvec4(0, 0, 0, 0), 1);
-    mtl->bindTechnique(tekFilterDiffMap);
-    mtl->begin(RCFD);
-    ///////////////////////////////////////////////
-    mtl->bindParamMatrix(param_mvp, fmtx4::Identity);
-    mtl->bindParamCTex(param_pfm, rawenvmap);
-    mtl->bindParamFloat(param_ruf, roughness);
-    mtl->commit();
-    targ_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
-    ///////////////////////////////////////////////
-    mtl->end(RCFD);
-    fbi->EndFrame();
-    fbi->PopRtGroup();
-
-    fbi->capture(*outgroup.get(), 0, captureb.get());
-
-    auto mipchain_level = mipchain->_levels[imip];
-    memcpy(mipchain_level->_data, captureb->_data, w * h * 4 * sizeof(float));
-
-    if (1) {
-      auto outpath = file::Path::temp_dir() / FormatString("filteredenv-diffmap-mip%d.exr", imip);
-      auto out     = ImageOutput::create(outpath.c_str());
-      printf("filterenv write dbgout<%s> <%p>\n", outpath.c_str(), out.get());
-      OrkAssert(out != nullptr);
-      ImageSpec spec(w, h, 4, TypeDesc::FLOAT);
-      out->open(outpath.c_str(), spec);
-      out->write_image(TypeDesc::FLOAT, captureb->_data);
-      out->close();
-    }
-
-    rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtGroup>>(FormatString("alt-tex-diffenv-group-mip%d", imip))   = outgroup;
-    rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtBuffer>>(FormatString("alt-tex-diffenv-buffer-mip%d", imip)) = outbuffr;
-
-    cap4mip[imip] = captureb;
-    w >>= 1;
-    h >>= 1;
-    roughness += 0.1f;
-    numpix = w * h;
-    imip++;
-  }
-
-  auto alt_tex                                                    = txi->createFromMipChain(mipchain);
-  rawenvmap->_varmap.makeValueForKey<Texture*>("alt-tex-diffenv") = alt_tex;
-
-  targ->debugPopGroup();
-
-  return alt_tex;
+PBRMaterial::~PBRMaterial() {
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -389,12 +117,13 @@ void PBRMaterial::describeX(class_t* c) {
       OrkAssert(mtl->_texNormal != nullptr);
     }
     if (mtl->_texMtlRuf == nullptr) {
-      mtl->_texMtlRuf = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/green")->GetTexture();
-      printf("substituted white for non-existant color texture\n");
+      mtl->_texMtlRuf = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/white")->GetTexture();
+      printf("substituted white for non-existant mtlrufao texture\n");
       OrkAssert(mtl->_texMtlRuf != nullptr);
     }
     ctx._inputStream->GetItem<float>(mtl->_metallicFactor);
     ctx._inputStream->GetItem<float>(mtl->_roughnessFactor);
+    ctx._inputStream->GetItem<fvec4>(mtl->_baseColor);
     return mtl;
   };
 
@@ -429,6 +158,7 @@ void PBRMaterial::describeX(class_t* c) {
 
     ctx._outputStream->AddItem<float>(pbrmtl->_metallicFactor);
     ctx._outputStream->AddItem<float>(pbrmtl->_roughnessFactor);
+    ctx._outputStream->AddItem<fvec4>(pbrmtl->_baseColor);
   };
 
   /////////////////////////////////////////////////////////////////
@@ -436,4 +166,262 @@ void PBRMaterial::describeX(class_t* c) {
   c->annotate("xgm.writer", writer);
   c->annotate("xgm.reader", reader);
 }
+
+////////////////////////////////////////////
+
+void PBRMaterial::Init(Context* targ) /*final*/ {
+  assert(_initialTarget == nullptr);
+  _initialTarget = targ;
+  auto fxi       = targ->FXI();
+  auto shass     = ork::asset::AssetManager<FxShaderAsset>::Load("orkshader://pbr");
+  _shader        = shass->GetFxShader();
+
+  _tekRigidGBUFFER              = fxi->technique(_shader, "rigid_gbuffer");
+  _tekRigidGBUFFER_N            = fxi->technique(_shader, "rigid_gbuffer_n");
+  _tekRigidGBUFFER_N_STEREO     = fxi->technique(_shader, "rigid_gbuffer_n_stereo");
+  _tekRigidGBUFFER_N_TEX_STEREO = fxi->technique(_shader, "rigid_gbuffer_n_tex_stereo");
+
+  _tekRigidGBUFFER_SKINNED_N = fxi->technique(_shader, "skinned_gbuffer_n");
+
+  _paramMVP           = fxi->parameter(_shader, "mvp");
+  _paramMVPL          = fxi->parameter(_shader, "mvp_l");
+  _paramMVPR          = fxi->parameter(_shader, "mvp_r");
+  _paramMV            = fxi->parameter(_shader, "mv");
+  _paramMROT          = fxi->parameter(_shader, "mrot");
+  _paramMapColor      = fxi->parameter(_shader, "ColorMap");
+  _paramMapNormal     = fxi->parameter(_shader, "NormalMap");
+  _paramMapMtlRuf     = fxi->parameter(_shader, "MtlRufMap");
+  _parInvViewSize     = fxi->parameter(_shader, "InvViewportSize");
+  _parMetallicFactor  = fxi->parameter(_shader, "MetallicFactor");
+  _parRoughnessFactor = fxi->parameter(_shader, "RoughnessFactor");
+  _parModColor        = fxi->parameter(_shader, "ModColor");
+  _parBoneMatrices    = fxi->parameter(_shader, "BoneMatrices");
+
+  assert(_paramMapNormal != nullptr);
+  assert(_parBoneMatrices != nullptr);
+}
+
+////////////////////////////////////////////
+
+int PBRMaterial::BeginBlock(Context* targ, const RenderContextInstData& RCID) {
+  auto fxi                           = targ->FXI();
+  const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
+  const auto& CPD                    = RCFD->topCPD();
+  bool is_stereo                     = CPD.isStereoOnePass();
+  bool is_skinned                    = RCID._isSkinned;
+
+  const FxShaderTechnique* tek = _tekRigidGBUFFER;
+
+  if (is_stereo) {
+    if (_stereoVtex)
+      tek = _tekRigidGBUFFER_N_TEX_STEREO;
+    else
+      tek = _tekRigidGBUFFER_N_STEREO;
+  } else {
+    tek = is_skinned ? _tekRigidGBUFFER_SKINNED_N : _tekRigidGBUFFER_N;
+    if (is_skinned) {
+    }
+  }
+
+  fxi->BindTechnique(_shader, tek);
+
+  int numpasses = fxi->BeginBlock(_shader, RCID);
+  assert(numpasses == 1);
+  return numpasses;
+}
+
+////////////////////////////////////////////
+
+void PBRMaterial::EndBlock(Context* targ) {
+  auto fxi = targ->FXI();
+  fxi->EndBlock(_shader);
+}
+
+////////////////////////////////////////////
+
+bool PBRMaterial::BeginPass(Context* targ, int iPass) {
+  // printf( "_name<%s>\n", mMaterialName.c_str() );
+  auto fxi    = targ->FXI();
+  auto rsi    = targ->RSI();
+  auto mtxi   = targ->MTXI();
+  auto mvpmtx = mtxi->RefMVPMatrix();
+  auto rotmtx = mtxi->RefR3Matrix();
+  auto mvmtx  = mtxi->RefMVMatrix();
+  auto vmtx   = mtxi->RefVMatrix();
+  // vmtx.dump("vmtx");
+  const RenderContextInstData* RCID  = targ->GetRenderContextInstData();
+  const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
+  const auto& CPD                    = RCFD->topCPD();
+  fxi->BindPass(_shader, 0);
+  fxi->BindParamCTex(_shader, _paramMapColor, _texColor);
+  fxi->BindParamCTex(_shader, _paramMapNormal, _texNormal);
+  fxi->BindParamCTex(_shader, _paramMapMtlRuf, _texMtlRuf);
+  fxi->BindParamMatrix(_shader, _paramMV, mvmtx);
+
+  fxi->BindParamFloat(_shader, _parMetallicFactor, _metallicFactor);
+  fxi->BindParamFloat(_shader, _parRoughnessFactor, _roughnessFactor);
+  fxi->BindParamVect4(_shader, _parModColor, _baseColor);
+
+  auto brdfintegtex = PBRMaterial::brdfIntegrationMap(targ);
+
+  const auto& world = mtxi->RefMMatrix();
+  const auto& drect = CPD.GetDstRect();
+  const auto& mrect = CPD.GetMrtRect();
+  float w           = mrect.miW;
+  float h           = mrect.miH;
+  // printf( "w<%g> h<%g>\n", w, h );
+  fxi->BindParamVect2(_shader, _parInvViewSize, fvec2(1.0 / w, 1.0f / h));
+
+  if (CPD.isStereoOnePass() and CPD._stereoCameraMatrices) {
+    auto stereomtx = CPD._stereoCameraMatrices;
+    auto MVPL      = stereomtx->MVPL(world);
+    auto MVPR      = stereomtx->MVPR(world);
+    fxi->BindParamMatrix(_shader, _paramMVPL, MVPL);
+    fxi->BindParamMatrix(_shader, _paramMVPR, MVPR);
+    fxi->BindParamMatrix(_shader, _paramMROT, (world).rotMatrix33());
+  } else {
+    auto mcams = CPD._cameraMatrices;
+    auto MVP   = world * mcams->_vmatrix * mcams->_pmatrix;
+    fxi->BindParamMatrix(_shader, _paramMVP, MVP);
+    fxi->BindParamMatrix(_shader, _paramMROT, (world).rotMatrix33());
+  }
+  rsi->BindRasterState(_rasterstate);
+  fxi->CommitParams();
+  return true;
+}
+
+////////////////////////////////////////////
+
+void PBRMaterial::EndPass(Context* targ) {
+  targ->FXI()->EndPass(_shader);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void PBRMaterial::BindMaterialInstItem(MaterialInstItem* pitem) const {
+  ///////////////////////////////////
+  MaterialInstItemMatrixBlock* mtxblockitem = rtti::autocast(pitem);
+
+  if (mtxblockitem) {
+    // if (hBoneMatrices->GetPlatformHandle()) {
+    auto applicator = PbrMatrixBlockApplicator::getApplicator();
+    OrkAssert(applicator != 0);
+    applicator->_pbrmaterial = this;
+    applicator->_matrixblock = mtxblockitem;
+    mtxblockitem->SetApplicator(applicator);
+    //}
+    return;
+  }
+
+  ///////////////////////////////////
+
+  /*MaterialInstItemMatrix* mtxitem = rtti::autocast(pitem);
+
+  if (mtxitem) {
+    WiiMatrixApplicator* pyo = MtxApplicators.allocate();
+    OrkAssert(pyo != 0);
+    new (pyo) WiiMatrixApplicator(mtxitem, this);
+    mtxitem->SetApplicator(pyo);
+    return;
+  }*/
+
+  ///////////////////////////////////
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void PBRMaterial::UnBindMaterialInstItem(MaterialInstItem* pitem) const {
+  ///////////////////////////////////
+
+  MaterialInstItemMatrixBlock* mtxblockitem = rtti::autocast(pitem);
+
+  if (mtxblockitem) {
+    // if (hBoneMatrices->GetPlatformHandle()) {
+    auto applicator = static_cast<PbrMatrixBlockApplicator*>(mtxblockitem->mApplicator);
+    if (applicator) {
+      applicator->_pbrmaterial = nullptr;
+      applicator->_matrixblock = nullptr;
+    }
+    //}
+    return;
+  }
+
+  ///////////////////////////////////
+
+  /*
+  MaterialInstItemMatrix* mtxitem = rtti::autocast(pitem);
+
+  if (mtxitem) {
+    WiiMatrixApplicator* wiimtxapp = rtti::autocast(mtxitem->mApplicator);
+    if (wiimtxapp) {
+      MtxApplicators.deallocate(wiimtxapp);
+    }
+    return;
+  }*/
+
+  ///////////////////////////////////
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void PbrMatrixBlockApplicator::ApplyToTarget(Context* targ) // virtual
+{
+  auto fxi                           = targ->FXI();
+  auto mtxi                          = targ->MTXI();
+  const RenderContextInstData* RCID  = targ->GetRenderContextInstData();
+  const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
+  const auto& CPD                    = RCFD->topCPD();
+  const auto& world                  = mtxi->RefMMatrix();
+  const auto& drect                  = CPD.GetDstRect();
+  const auto& mrect                  = CPD.GetMrtRect();
+  FxShader* shader                   = _pbrmaterial->_shader;
+
+  if (CPD.isStereoOnePass() and CPD._stereoCameraMatrices) {
+    auto stereomtx = CPD._stereoCameraMatrices;
+    auto MVPL      = stereomtx->MVPL(world);
+    auto MVPR      = stereomtx->MVPR(world);
+    fxi->BindParamMatrix(shader, _pbrmaterial->_paramMVPL, MVPL);
+    fxi->BindParamMatrix(shader, _pbrmaterial->_paramMVPR, MVPR);
+    fxi->BindParamMatrix(shader, _pbrmaterial->_paramMROT, (world).rotMatrix33());
+    fxi->BindParamMatrix(shader, _pbrmaterial->_paramMV, mtxi->RefMVMatrix());
+    fxi->BindParamMatrix(shader, _pbrmaterial->_paramMVP, mtxi->RefMVPMatrix());
+  } else {
+    auto mcams = CPD._cameraMatrices;
+    auto MV    = world * mcams->_vmatrix;
+    auto MVP   = (MV)*mcams->_pmatrix;
+    fxi->BindParamMatrix(shader, _pbrmaterial->_paramMVP, MVP);
+    fxi->BindParamMatrix(shader, _pbrmaterial->_paramMROT, (world).rotMatrix33());
+    fxi->BindParamMatrix(shader, _pbrmaterial->_paramMV, MV);
+  }
+
+  float w = mrect.miW;
+  float h = mrect.miH;
+  // printf( "w<%g> h<%g>\n", w, h );
+  fxi->BindParamVect2(shader, _pbrmaterial->_parInvViewSize, fvec2(1.0 / w, 1.0f / h));
+
+  size_t inumbones      = _matrixblock->GetNumMatrices();
+  const fmtx4* Matrices = _matrixblock->GetMatrices();
+
+  // printf("PbrMatrixBlockApplicator<%p> apply <%d> bones\n", this, inumbones);
+  // fxi->BindParamMatrix(hshader, _pbrmaterial->hWMatrix, mtxi->RefMMatrix());
+
+  fxi->BindParamMatrixArray(shader, _pbrmaterial->_parBoneMatrices, Matrices, (int)inumbones);
+  fxi->CommitParams();
+}
+
+////////////////////////////////////////////
+
+void PBRMaterial::Update() {
+}
+
+////////////////////////////////////////////
+
+void PBRMaterial::begin(const RenderContextFrameData& RCFD) {
+}
+
+////////////////////////////////////////////
+
+void PBRMaterial::end(const RenderContextFrameData& RCFD) {
+}
+
 } // namespace ork::lev2

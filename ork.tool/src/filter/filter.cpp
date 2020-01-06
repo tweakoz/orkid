@@ -36,7 +36,8 @@ bool WavToMkr(const tokenlist& toklist);
 void RegisterColladaFilters();
 void RegisterArchFilters();
 
-void AssetFilterBase::Describe() {}
+void AssetFilterBase::Describe() {
+}
 
 #if defined(ORK_OSXX)
 bool VolTexAssemble(const tokenlist& toklist);
@@ -48,13 +49,15 @@ class VolTexAssembleFilter : public AssetFilterBase {
   RttiDeclareConcrete(VolTexAssembleFilter, AssetFilterBase);
 
 public: //
-  VolTexAssembleFilter() {}
+  VolTexAssembleFilter() {
+  }
   bool ConvertAsset(const tokenlist& toklist) final {
     VolTexAssemble(toklist);
     return true;
   }
 };
-void VolTexAssembleFilter::Describe() {}
+void VolTexAssembleFilter::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -62,13 +65,15 @@ class QtzComposerToPngFilter : public AssetFilterBase {
   RttiDeclareConcrete(QtzComposerToPngFilter, AssetFilterBase);
 
 public: //
-  QtzComposerToPngFilter() {}
+  QtzComposerToPngFilter() {
+  }
   bool ConvertAsset(const tokenlist& toklist) final {
     QtzComposerToPng(toklist);
     return true;
   }
 };
-void QtzComposerToPngFilter::Describe() {}
+void QtzComposerToPngFilter::Describe() {
+}
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -81,10 +86,14 @@ class TGADDSFilter : public AssetFilterBase {
   RttiDeclareConcrete(TGADDSFilter, AssetFilterBase);
 
 public: //
-  TGADDSFilter() {}
-  bool ConvertAsset(const tokenlist& toklist) final { return Tga2DdsFilterDriver(toklist); }
+  TGADDSFilter() {
+  }
+  bool ConvertAsset(const tokenlist& toklist) final {
+    return Tga2DdsFilterDriver(toklist);
+  }
 };
-void TGADDSFilter::Describe() {}
+void TGADDSFilter::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -93,13 +102,15 @@ class fg3dFilter : public AssetFilterBase {
   RttiDeclareConcrete(fg3dFilter, AssetFilterBase);
 
 public: //
-  fg3dFilter() {}
+  fg3dFilter() {
+  }
   bool ConvertAsset(const tokenlist& toklist) final {
     MeshUtil::PartitionMesh_FixedGrid3d_Driver(toklist);
     return true;
   }
 };
-void fg3dFilter::Describe() {}
+void fg3dFilter::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -108,10 +119,14 @@ class WAVMKRFilter : public AssetFilterBase {
   RttiDeclareConcrete(WAVMKRFilter, AssetFilterBase);
 
 public: //
-  WAVMKRFilter() {}
-  bool ConvertAsset(const tokenlist& toklist) final { return ork::tool::WavToMkr(toklist); }
+  WAVMKRFilter() {
+  }
+  bool ConvertAsset(const tokenlist& toklist) final {
+    return ork::tool::WavToMkr(toklist);
+  }
 };
-void WAVMKRFilter::Describe() {}
+void WAVMKRFilter::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -136,8 +151,7 @@ static void RegisterFilters() {
     AssetFilter::RegisterFilter("xgm:obj", MeshUtil::XGM_OBJ_Filter::DesignNameStatic().c_str());
     AssetFilter::RegisterFilter("obj:obj", MeshUtil::OBJ_OBJ_Filter::DesignNameStatic().c_str());
     AssetFilter::RegisterFilter("obj:xgm", MeshUtil::OBJ_XGM_Filter::DesignNameStatic().c_str());
-    AssetFilter::RegisterFilter("glb:xgm", MeshUtil::GLB_XGM_Filter::DesignNameStatic().c_str());
-    AssetFilter::RegisterFilter("gltf:xgm", MeshUtil::GLB_XGM_Filter::DesignNameStatic().c_str());
+    AssetFilter::RegisterFilter("ass:xgm", MeshUtil::ASS_XGM_Filter::DesignNameStatic().c_str());
     AssetFilter::RegisterFilter("tga:dds", TGADDSFilter::DesignNameStatic().c_str());
     AssetFilter::RegisterFilter("png:dds", TGADDSFilter::DesignNameStatic().c_str());
     AssetFilter::RegisterFilter("fg3d", fg3dFilter::DesignNameStatic().c_str());
@@ -153,7 +167,8 @@ static void RegisterFilters() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AssetFilterBase::AssetFilterBase() {}
+AssetFilterBase::AssetFilterBase() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -162,10 +177,10 @@ orkmap<ork::PoolString, FilterInfo*> AssetFilter::smFilterMap;
 void AssetFilter::RegisterFilter(const char* filtername, const char* classname, const char* pathmethod, const char* pathloc) {
   FilterInfo* pinfo = new FilterInfo;
   pinfo->filtername = AddPooledString(filtername);
-  pinfo->classname = AddPooledString(classname);
+  pinfo->classname  = AddPooledString(classname);
   pinfo->pathmethod = AddPooledString(pathmethod);
-  pinfo->pathloc = AddPooledString(pathloc);
-  bool badded = OldStlSchoolMapInsert(smFilterMap, AddPooledString(filtername), pinfo);
+  pinfo->pathloc    = AddPooledString(pathloc);
+  bool badded       = OldStlSchoolMapInsert(smFilterMap, AddPooledString(filtername), pinfo);
   OrkAssert(badded);
 }
 
@@ -211,7 +226,7 @@ bool AssetFilter::ListFilters() {
   orkmessageh("///////////////////////////////////////\n");
   for (orkmap<PoolString, FilterInfo*>::const_iterator it = smFilterMap.begin(); it != smFilterMap.end(); it++) {
     std::pair<PoolString, FilterInfo*> pr = *it;
-    FilterInfo* pinfo = pr.second;
+    FilterInfo* pinfo                     = pr.second;
     orkmessageh("Filter %02d [%s]\n", idx, pinfo->filtername.c_str());
     idx++;
   }
@@ -224,9 +239,13 @@ bool AssetFilter::ListFilters() {
 
 class NullAppWindow : public ork::lev2::Window {
 public: //
-  NullAppWindow(int iX, int iY, int iW, int iH) : ork::lev2::Window(iX, iY, iW, iH) { initContext(); }
+  NullAppWindow(int iX, int iY, int iW, int iH)
+      : ork::lev2::Window(iX, iY, iW, iH) {
+    initContext();
+  }
 
-  virtual void Draw(void) {}
+  virtual void Draw(void) {
+  }
   //	virtual void Show( void ) {};
   //	virtual void Hide( void ) {};
 };
@@ -328,11 +347,15 @@ int Main_FilterTree(tokenlist toklist) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FilterOption::SetValue(const char* defval) { mValue = std::string(defval); }
+void FilterOption::SetValue(const char* defval) {
+  mValue = std::string(defval);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FilterOption::SetDefault(const char* defval) { mDefaultValue = std::string(defval); }
+void FilterOption::SetDefault(const char* defval) {
+  mDefaultValue = std::string(defval);
+}
 
 const std::string& FilterOption::GetValue() const {
   if (0 == mValue.length()) {
@@ -412,7 +435,8 @@ void FilterOptMap::SetDefault(const char* name, const char* defval) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FilterOptMap::FilterOptMap() {}
+FilterOptMap::FilterOptMap() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -421,7 +445,7 @@ void FilterOptMap::DumpDefaults() const {
   orkprintf("// Options (defaults)\n");
 
   for (orkmap<std::string, FilterOption>::const_iterator it = moptions_map.begin(); it != moptions_map.end(); it++) {
-    const std::string& key = it->first;
+    const std::string& key  = it->first;
     const FilterOption& val = it->second;
 
     orkprintf("// Option key <%s> default<%s>\n", key.c_str(), val.GetDefault().c_str());
@@ -436,7 +460,7 @@ void FilterOptMap::DumpOptions() const {
   orkprintf("// Options (set values)\n");
 
   for (orkmap<std::string, FilterOption>::const_iterator it = moptions_map.begin(); it != moptions_map.end(); it++) {
-    const std::string& key = it->first;
+    const std::string& key  = it->first;
     const FilterOption& val = it->second;
 
     orkprintf("// Option key <%s> value<%s>\n", key.c_str(), val.GetValue().c_str());

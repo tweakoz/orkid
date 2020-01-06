@@ -696,12 +696,12 @@ public: //
 	bool ConvertAsset( const tokenlist& toklist ) final;
 };
 
-class GLB_XGM_Filter : public ork::tool::AssetFilterBase
+class ASS_XGM_Filter : public ork::tool::AssetFilterBase
 {
-	RttiDeclareConcrete(GLB_XGM_Filter,ork::tool::AssetFilterBase);
+	RttiDeclareConcrete(ASS_XGM_Filter,ork::tool::AssetFilterBase);
 	//bool ConvertTextures( CColladaModel* mdl, const file::Path& outmdlpth );
 public: //
-	GLB_XGM_Filter(  );
+	ASS_XGM_Filter(  );
 	bool ConvertAsset( const tokenlist& toklist ) final;
 };
 

@@ -24,7 +24,8 @@ namespace ork { namespace tool {
 
 Renderer::Renderer(ent::SceneEditorBase& ed, lev2::Context* ptarg)
     : lev2::IRenderer(ptarg)
-    , mEditor(ed) {}
+    , mEditor(ed) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -131,7 +132,7 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
     ObjColor = fcolor4::Red();
   }
 
-  target->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->IsSkinned()), as_ent ));
+  target->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->IsSkinned()), as_ent));
 
   ///////////////////////////////////////
 
@@ -140,10 +141,11 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   lgrp.mLightManager = target->topRenderContextFrameData()->GetLightManager();
   lgrp.mLightMask    = ModelRen.GetLightMask();
   MatCtx.SetLightingGroup(&lgrp);
-
-  MdlCtx.SetSkinned(model->IsSkinned());
+  bool model_is_skinned = model->IsSkinned();
+  MatCtx._isSkinned     = model_is_skinned;
+  MdlCtx.SetSkinned(model_is_skinned);
   MdlCtx.SetModelInst(minst);
-  if (model->IsSkinned()) {
+  if (model_is_skinned) {
     model->RenderSkinned(minst, ObjColor, nmat, GetTarget(), MatCtx, MdlCtx);
   } else {
     model->RenderRigid(ObjColor, nmat, GetTarget(), MatCtx, MdlCtx);
