@@ -721,7 +721,7 @@ void configureXgmSkeleton(const toolmesh& input, lev2::XgmModel& xgmmdlout) {
     PoolString JointNameSidx = AddPooledString(JointName.c_str());
     xgmskel.AddJoint(idx, pidx, JointNameSidx);
     xgmskel.RefInverseBindMatrix(idx) = skelnode ? skelnode->mBindMatrixInverse : fmtx4();
-    xgmskel.RefJointMatrix(idx)       = parskelnode ? parskelnode->mJointMatrix : fmtx4();
+    xgmskel.RefJointMatrix(idx)       = skelnode ? skelnode->mJointMatrix : fmtx4();
   }
   /////////////////////////////////////
   // flatten the skeleton (WIP)

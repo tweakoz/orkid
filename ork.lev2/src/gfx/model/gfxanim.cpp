@@ -666,7 +666,7 @@ void XgmLocalPose::Concatenate(void) {
       const fmtx4& ParentMatrix = pmats[iparent];
       const fmtx4& LocMatrix    = pmats[ichild];
 
-      pmats[ichild] = LocMatrix.Concat43(ParentMatrix);
+      pmats[ichild] = ParentMatrix * LocMatrix;
       auto parname  = mSkeleton.GetJointName(iparent);
       auto chname   = std::string(mSkeleton.GetJointName(ichild).c_str());
 
