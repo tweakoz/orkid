@@ -15,7 +15,7 @@
                                                 <property name='Center'>0 0 0</property>
                                                 <property name='Focus'>0 0 0</property>
                                                 <property name='Loc'>3.86482</property>
-                                                <property name='QuatC'>0.0472352 -0.85819 0.0393058 0.5122</property>
+                                                <property name='QuatC'>-0.0107064 0.998331 -0.0614884 0.0457621</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -126,20 +126,20 @@
                                                                             <property name='PostFxNode'><backreference id='-1'/></property>
                                                                             <property name='RenderNode'>
                                                                                 <reference category='ObjectClass'>
-                                                                                    <object type='DeferredCompositingNodeDebugNormal' id='17'>
-                                                                                        <property name='AmbientLevel'>1 1 1</property>
+                                                                                    <object type='DeferredCompositingNodePbr' id='17'>
+                                                                                        <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
-                                                                                        <property name='DiffuseLevel'>0</property>
+                                                                                        <property name='DiffuseLevel'>1</property>
                                                                                         <property name='EnvironmentIntensity'>1.7</property>
                                                                                         <property name='EnvironmentMipBias'>0</property>
-                                                                                        <property name='EnvironmentMipScale'>7</property>
+                                                                                        <property name='EnvironmentMipScale'>4</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
                                                                                                 "lev2tex" "data://environ/envmaps/blender_courtyard"
                                                                                             </reference>
                                                                                         </property>
                                                                                         <property name='FogColor'>0 0 0 1</property>
-                                                                                        <property name='SpecularLevel'>0.4</property>
+                                                                                        <property name='SpecularLevel'>1</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>
