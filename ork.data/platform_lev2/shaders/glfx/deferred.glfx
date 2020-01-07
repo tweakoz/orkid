@@ -216,7 +216,6 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       /////////////////////////
       vec3 basecolor = gbd._albedo;
       vec3 diffcolor = mix(basecolor,vec3(0),metallic);
-      vec3 speccolor = mix(vec3(0.02),basecolor,metallic);
       /////////////////////////
       vec3 wpos = gbd._wpos;
       vec3 epos = posatdepth(wpd,0.0);
@@ -252,14 +251,14 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       refl = vec3(refl.x,-refl.y,refl.z);
       vec3 spec_env = env_equirectangularFlipV(refl,MapSpecularEnv,spec_miplevel);
       vec3 specular_light = ambient+spec_env;
-      vec3 specular = (F*brdf.x+brdf.y)*specular_light*speccolor*SpecularLevel;
+      vec3 specular = (F*brdf.x+brdf.y)*specular_light*F0*SpecularLevel;
       //vec3 ambient = invF*AmbientLevel;
       /////////////////////////
       /////////////////////////
       // final linear color
       /////////////////////////
       rval = diffuse+specular;
-      //rval = vec3(metallic);
+      //rval = vec3(n);
       /////////////////////////
       // HDR tonemapping
       /////////////////////////

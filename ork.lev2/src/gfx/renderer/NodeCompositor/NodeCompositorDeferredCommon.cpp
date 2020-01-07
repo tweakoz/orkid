@@ -333,6 +333,7 @@ ViewData DeferredContext::computeViewData(CompositorDrawData& drawdata) {
   VD._p[1]   = VD.PR; //_p[1].Transpose();
   VD._ivp[0] = VD.IVPL;
   VD._ivp[1] = VD.IVPR;
+
   fmtx4 IVL;
   IVL.inverseOf(VD.VL);
   VD._camposmono = IVL.GetColumn(3).xyz();

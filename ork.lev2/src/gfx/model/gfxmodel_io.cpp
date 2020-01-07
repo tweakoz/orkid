@@ -539,12 +539,13 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
           {
             memcpy(poutverts, pverts, ivblen);
             pvb->SetNumVertices(ivbnum);
-            auto pv = (const SVtxV12N12T8I4W4*)pverts;
-            if (efmt == EVTXSTREAMFMT_V12N12T8I4W4) {
+            if (efmt == EVTXSTREAMFMT_V12N12B12T8I4W4) {
+              auto pv = (const SVtxV12N12B12T8I4W4*)pverts;
               for (int iv = 0; iv < ivbnum; iv++) {
                 auto& v = pv[iv];
                 auto& p = v.mPosition;
-
+                auto& n = v.mNormal;
+                OrkAssert(n.length() > 0.95);
                 // printf( " iv<%d> pos<%f %f %f> bi<%08x> bw<%08x>\n", iv, p.GetX(), p.GetY(), p.GetZ(), v.mBoneIndices,
                 // v.mBoneWeights );
               }

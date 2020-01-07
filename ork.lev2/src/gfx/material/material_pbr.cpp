@@ -312,20 +312,6 @@ void PBRMaterial::BindMaterialInstItem(MaterialInstItem* pitem) const {
     //}
     return;
   }
-
-  ///////////////////////////////////
-
-  /*MaterialInstItemMatrix* mtxitem = rtti::autocast(pitem);
-
-  if (mtxitem) {
-    WiiMatrixApplicator* pyo = MtxApplicators.allocate();
-    OrkAssert(pyo != 0);
-    new (pyo) WiiMatrixApplicator(mtxitem, this);
-    mtxitem->SetApplicator(pyo);
-    return;
-  }*/
-
-  ///////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -345,21 +331,6 @@ void PBRMaterial::UnBindMaterialInstItem(MaterialInstItem* pitem) const {
     //}
     return;
   }
-
-  ///////////////////////////////////
-
-  /*
-  MaterialInstItemMatrix* mtxitem = rtti::autocast(pitem);
-
-  if (mtxitem) {
-    WiiMatrixApplicator* wiimtxapp = rtti::autocast(mtxitem->mApplicator);
-    if (wiimtxapp) {
-      MtxApplicators.deallocate(wiimtxapp);
-    }
-    return;
-  }*/
-
-  ///////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -375,35 +346,8 @@ void PbrMatrixBlockApplicator::ApplyToTarget(Context* targ) // virtual
   const auto& drect                  = CPD.GetDstRect();
   const auto& mrect                  = CPD.GetMrtRect();
   FxShader* shader                   = _pbrmaterial->_shader;
-
-  if (CPD.isStereoOnePass() and CPD._stereoCameraMatrices) {
-    auto stereomtx = CPD._stereoCameraMatrices;
-    auto MVPL      = stereomtx->MVPL(world);
-    auto MVPR      = stereomtx->MVPR(world);
-    fxi->BindParamMatrix(shader, _pbrmaterial->_paramMVPL, MVPL);
-    fxi->BindParamMatrix(shader, _pbrmaterial->_paramMVPR, MVPR);
-    fxi->BindParamMatrix(shader, _pbrmaterial->_paramMROT, (world).rotMatrix33());
-    fxi->BindParamMatrix(shader, _pbrmaterial->_paramMV, mtxi->RefMVMatrix());
-    fxi->BindParamMatrix(shader, _pbrmaterial->_paramMVP, mtxi->RefMVPMatrix());
-  } else {
-    auto mcams = CPD._cameraMatrices;
-    auto MV    = world * mcams->_vmatrix;
-    auto MVP   = (MV)*mcams->_pmatrix;
-    fxi->BindParamMatrix(shader, _pbrmaterial->_paramMVP, MVP);
-    fxi->BindParamMatrix(shader, _pbrmaterial->_paramMROT, (world).rotMatrix33());
-    fxi->BindParamMatrix(shader, _pbrmaterial->_paramMV, MV);
-  }
-
-  float w = mrect.miW;
-  float h = mrect.miH;
-  // printf( "w<%g> h<%g>\n", w, h );
-  fxi->BindParamVect2(shader, _pbrmaterial->_parInvViewSize, fvec2(1.0 / w, 1.0f / h));
-
-  size_t inumbones      = _matrixblock->GetNumMatrices();
-  const fmtx4* Matrices = _matrixblock->GetMatrices();
-
-  // printf("PbrMatrixBlockApplicator<%p> apply <%d> bones\n", this, inumbones);
-  // fxi->BindParamMatrix(hshader, _pbrmaterial->hWMatrix, mtxi->RefMMatrix());
+  size_t inumbones                   = _matrixblock->GetNumMatrices();
+  const fmtx4* Matrices              = _matrixblock->GetMatrices();
 
   fxi->BindParamMatrixArray(shader, _pbrmaterial->_parBoneMatrices, Matrices, (int)inumbones);
   fxi->CommitParams();

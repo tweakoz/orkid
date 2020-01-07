@@ -5,17 +5,11 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef ORK_MATRIX_INVERSE_GEMS_HPP_
-#define ORK_MATRIX_INVERSE_GEMS_HPP_
+#pragma once
 
 #include <ork/math/cmatrix4.h>
 
-// As psp-gcc does _not_ qualify sqrtf with std:: we must make CW 'using' it
-#ifdef NITRO
-using fabs;
-#endif
-
-#define SMALL_NUMBER 1.e-24f
+#define GEMS_SMALL_NUMBER 1.e-24f
 
 namespace ork {
 
@@ -183,7 +177,7 @@ template <typename T> void GEMSMatrixInverse(const Matrix44<T>& in, Matrix44<T>&
 
   T det = det4x4(in);
 
-  if (fabs(det) < T(SMALL_NUMBER)) {
+  if (fabs(det) < T(GEMS_SMALL_NUMBER)) {
     OrkAssert(0);
     // fl_fatalerror( "Non-singular matrix, no inverse!\n" );
   }
@@ -198,7 +192,7 @@ template <typename T> void GEMSMatrixInverse(const Matrix44<T>& in, Matrix44<T>&
 }
 
 template <typename T> void Matrix44<T>::inverseOf(const Matrix44<T>& in) {
-  *this = inverse();
+  (*this) = in.inverse();
 }
 
 template <typename T> Matrix44<T> Matrix44<T>::inverse() const {
@@ -207,7 +201,7 @@ template <typename T> Matrix44<T> Matrix44<T>::inverse() const {
   GEMSadjoint<T>(*this, out); // calculate the adjoint matrix
   T det = det4x4<T>(*this);   //	calculate the 4x4 determinant, if the determinant is zero then the inverse matrix is not unique
 
-  if (fabs(det) < T(SMALL_NUMBER)) {
+  if (fabs(det) < T(GEMS_SMALL_NUMBER)) {
     printf("Non-singular matrix, no inverse!\n");
     return out;
   }
@@ -223,5 +217,3 @@ template <typename T> Matrix44<T> Matrix44<T>::inverse() const {
 }
 
 } // namespace ork
-
-#endif

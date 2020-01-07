@@ -725,7 +725,6 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
   int inumj = localpose.NumJoints();
   mWorldMatrices.resize(inumj);
   for (int ij = 0; ij < inumj; ij++) {
-    orkprintf(" mdrwq2b setmtxblk ich<%d>\n", ij);
     const fmtx4& MatIBind    = mSkeleton.RefInverseBindMatrix(ij);
     const fmtx4& MatAnimJCat = localpose.RefLocalMatrix(ij);
     auto finalmtx            = (MatIBind * MatAnimJCat);
