@@ -44,12 +44,18 @@ void ASS_XGA_Filter::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
+
+  bool rval = false;
   ork::tool::FilterOptMap options;
   options.SetDefault("--in", "yo");
   options.SetDefault("--out", "yo");
   options.SetOptions(toklist);
   std::string inf  = options.GetOption("--in")->GetValue();
   std::string outf = options.GetOption("--out")->GetValue();
+
+  ork::tool::ColladaExportPolicy policy;
+  policy.mUnits            = ork::tool::UNITS_METER;
+  const PoolString JointPS = AddPooledString("Joint");
 
   ork::file::Path GlbPath = inf;
   auto base_dir           = GlbPath.toBFS().parent_path();
@@ -65,6 +71,7 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
   auto scene = aiImportFile(GlbPath.c_str(), aiProcessPreset_TargetRealtime_MaxQuality);
   printf("END: importing scene<%p>\n", scene);
   if (scene) {
+    lev2::XgmAnim xgmanim;
     aiVector3D scene_min, scene_max, scene_center;
     aiMatrix4x4 identity;
     aiIdentityMatrix4(&identity);
@@ -84,8 +91,36 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
     printf("numanims<%d>\n", numanims);
     OrkAssert(numanims == 1);
 
+    ////////////////////////////////////////
+    // todo - build static pose
+    //  from static position of all aiNodes
+    ////////////////////////////////////////
+
+    auto& staticpose = xgmanim.GetStaticPose();
+
+    ////////////////////////////////////////
+
     aiAnimation* anim = scene->mAnimations[0];
     printf("numchannels<%d>\n", anim->mNumChannels);
+
+    /////////////////////////////////////////////////////
+    // compute number of frames
+    /////////////////////////////////////////////////////
+
+    int framecount = 0;
+    for (int i = 0; i < anim->mNumChannels; i++) {
+      aiNodeAnim* channel = anim->mChannels[i];
+      if (channel->mNumPositionKeys > framecount)
+        framecount = channel->mNumPositionKeys;
+      if (channel->mNumRotationKeys > framecount)
+        framecount = channel->mNumRotationKeys;
+      if (channel->mNumScalingKeys > framecount)
+        framecount = channel->mNumScalingKeys;
+    }
+
+    xgmanim.SetNumFrames(framecount);
+
+    /////////////////////////////////////////////////////
 
     for (int i = 0; i < anim->mNumChannels; i++) {
       aiNodeAnim* channel = anim->mChannels[i];
@@ -98,16 +133,16 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
       // we assume pre-sampled frames here
       /////////////////////////////
 
-      int framecount = 0;
-      if (channel->mNumPositionKeys > framecount)
-        framecount = channel->mNumPositionKeys;
-      if (channel->mNumRotationKeys > framecount)
-        framecount = channel->mNumRotationKeys;
-      if (channel->mNumScalingKeys > framecount)
-        framecount = channel->mNumScalingKeys;
-
       fvec3 curpos, cursca;
       fquat currot;
+
+      PoolString objnameps         = AddPooledString("");
+      PoolString ChannelPooledName = AddPooledString(channel->mNodeName.data);
+      auto XgmChan                 = new ork::lev2::XgmDecompAnimChannel(objnameps, ChannelPooledName, JointPS);
+      XgmChan->ReserveFrames(framecount);
+      xgmanim.AddChannel(ChannelPooledName, XgmChan);
+
+      ////////////////////////////////////////
 
       for (int f = 0; f < framecount; f++) {
         if (f < channel->mNumPositionKeys) {
@@ -131,15 +166,22 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
         printf("frame<%s.%d> pos<%g %g %g>\n", channel->mNodeName.data, f, curpos.x, curpos.y, curpos.z);
         printf("frame<%s.%d> rot<%g %g %g %g>\n", channel->mNodeName.data, f, currot.x, currot.y, currot.z, currot.w);
         printf("frame<%s.%d> sca<%g %g %g>\n", channel->mNodeName.data, f, cursca.x, cursca.y, cursca.z);
+        // const fmtx4& Matrix = MatrixChannelData->GetFrame(ifr);
+        ork::lev2::DecompMtx44 decomp;
+        decomp.mTrans = curpos;
+        decomp.mRot   = currot;
+        decomp.mScale = 1; // TODO - non uniform scale ?
+        XgmChan->AddFrame(decomp);
       }
     }
-  }
-  bool brval = false;
+    rval = ork::lev2::XgmAnim::Save(file::Path(outf.c_str()), &xgmanim);
+
+  } // if scene
 
   ///////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
 
-  return true;
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
