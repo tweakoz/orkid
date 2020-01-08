@@ -403,7 +403,7 @@ void XgmLocalPose::BindAnimInst(XgmAnimInst& AnimInst) {
 
       int inumjinmap = mSkeleton.mmJointNameMap.size();
 
-      // printf( "spose jname<%s> iskelindex<%d> inumjinmap<%d>\n", JointName.c_str(), iskelindex, inumjinmap );
+      printf("spose jname<%s> iskelindex<%d> inumjinmap<%d>\n", JointName.c_str(), iskelindex, inumjinmap);
 
       if (-1 != iskelindex) {
         EXFORM_COMPONENT components = AnimInst.RefMask().GetComponents(iskelindex);
@@ -576,17 +576,17 @@ void XgmLocalPose::BuildPose(void) {
 #ifdef ENABLE_ANIM
   int inumjoints = NumJoints();
 
-  printf("XgmLocalPose<%p>::BuildPose inumjoints<%d>\n", this, inumjoints);
+  // printf("XgmLocalPose<%p>::BuildPose inumjoints<%d>\n", this, inumjoints);
 
   static int gctr = 0;
   for (int i = 0; i < inumjoints; i++) {
     int inumanms = mBlendPoseInfos[i].GetNumAnims();
 
-    printf("j<%d> inumanms<%d>\n", i, inumanms);
+    // printf("j<%d> inumanms<%d>\n", i, inumanms);
     if (inumanms) {
       mBlendPoseInfos[i].ComputeMatrix(mLocalMatrices[i]);
 
-      if (1) //( i == ((gctr/1000)%inumjoints) )
+      if (0) //( i == ((gctr/1000)%inumjoints) )
       {
         ork::FixedString<64> fxs;
         fxs.format("buildpose i<%d>", i);
@@ -666,7 +666,8 @@ void XgmLocalPose::Concatenate(void) {
       const fmtx4& ParentMatrix = pmats[iparent];
       const fmtx4& LocMatrix    = pmats[ichild];
 
-      pmats[ichild] = ParentMatrix * LocMatrix;
+      // pmats[ichild] = ParentMatrix * LocMatrix;
+      pmats[ichild] = ParentMatrix.Concat43(LocMatrix);
       auto parname  = mSkeleton.GetJointName(iparent);
       auto chname   = std::string(mSkeleton.GetJointName(ichild).c_str());
 
@@ -1269,6 +1270,9 @@ bool XgmAnim::LoadUnManaged(XgmAnim* anm, const AssetPath& fname) { ////////////
       void* pdata                      = AnimDataStream->GetDataAt(idataoffset);
       ork::object::ObjectClass* pclass = rtti::autocast(rtti::Class::FindClass(pchannelclass));
       XgmAnimChannel* Channel          = rtti::autocast(pclass->CreateObject());
+
+      printf("LoadAnim MatrixChannel<%s> objname<%s> numframes<%d>\n", pchnname, pobjname, inumframes);
+
       Channel->SetChannelName(AddPooledString(pchnname));
       Channel->SetObjectName(AddPooledString(pobjname));
       Channel->SetChannelUsage(AddPooledString(pusgname));
@@ -1305,8 +1309,9 @@ bool XgmAnim::LoadUnManaged(XgmAnim* anm, const AssetPath& fname) { ////////////
     for (int iposeb = 0; iposeb < inumposebones; iposeb++) {
       HeaderStream->GetItem(ichnname);
       HeaderStream->GetItem(decmtx);
-      const char* PoseChannelName = chunkreader.GetString(ichnname);
-      anm->mPose.AddSorted(AddPooledString(PoseChannelName), decmtx);
+      std::string PoseChannelName = chunkreader.GetString(ichnname);
+      PoseChannelName             = ork::string::replaced(PoseChannelName, "_", ".");
+      anm->mPose.AddSorted(AddPooledString(PoseChannelName.c_str()), decmtx);
     }
     ////////////////////////////////////////////////////////
   }

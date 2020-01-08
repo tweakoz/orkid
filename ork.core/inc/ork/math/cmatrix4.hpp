@@ -9,6 +9,7 @@
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
 #include <ork/math/cmatrix3.h>
+#include <ork/kernel/string/string.h>
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <pmmintrin.h>
@@ -77,6 +78,17 @@ template <typename T> void Matrix44<T>::dump(std::string name) const {
   }
 
   orkprintf("\n}\n");
+}
+template <typename T> std::string Matrix44<T>::dump() const {
+  std::string rval;
+  for (int i = 0; i < 4; i++) {
+    rval += "[";
+    for (int j = 0; j < 4; j++) {
+      rval += FormatString(" %f ", elements[i][j]);
+    }
+    rval += "] ";
+  }
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

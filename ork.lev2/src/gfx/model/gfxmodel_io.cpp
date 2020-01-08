@@ -173,7 +173,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
     if (inumbones) {
       mdl->mSkeleton.miRootNode = (inumbones > 0) ? mdl->mSkeleton.GetFlattenedBone(0).miParent : -1;
     }
-    // mdl->mSkeleton.dump();
+    mdl->mSkeleton.dump();
     ///////////////////////////////////
     HeaderStream->GetItem(mdl->mBoundingCenter);
     HeaderStream->GetItem(mdl->mAABoundXYZ);
@@ -618,7 +618,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
 
           mdl->mbSkinned |= (inumbb > 0);
 
-          // printf("mdl<%p> mbSkinned<%d>\n", mdl, int(mdl->mbSkinned));
+          printf("mdl<%p> mbSkinned<%d>\n", mdl, int(mdl->mbSkinned));
           ////////////////////////////////////////////////////////////////////////
         }
       }
@@ -1015,6 +1015,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
         int32_t inumpg = Clus.GetNumPrimGroups();
         int32_t inumjb = (int)Clus.GetNumJointBindings();
 
+        printf("clus<%d> numjb<%d>\n", ic, inumjb);
         PropTypeString tstr;
         PropType<lev2::EVtxStreamFormat>::ToString(VB->GetStreamFormat(), tstr);
         std::string VertexFmt = tstr.c_str();

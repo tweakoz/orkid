@@ -91,10 +91,27 @@ typedef std::map<std::string, ork::lev2::XgmSkelNode*> skelnodemap_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline skelnodemap_t parseSkeleton(const aiScene* scene) {
+struct ParsedSkeleton {
+  skelnodemap_t _xgmskelmap;
+  bool _isSkinned = false;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+inline std::string remapSkelName(std::string inp) {
+  // fixup blender naming
+  auto remapped_name = ork::string::replaced(inp, "Armature_", "");
+  remapped_name      = ork::string::replaced(remapped_name, "_", ".");
+  return remapped_name;
+}
+///////////////////////////////////////////////////////////////////////////////
+
+inline ParsedSkeleton parseSkeleton(const aiScene* scene) {
   std::queue<aiNode*> nodestack;
   std::set<std::string> uniqskelnodeset;
-  skelnodemap_t xgmskelnodes;
+
+  ParsedSkeleton rval;
+  skelnodemap_t& xgmskelnodes = rval._xgmskelmap;
 
   /////////////////////////////////////////////////
   // get nodes
@@ -105,7 +122,7 @@ inline skelnodemap_t parseSkeleton(const aiScene* scene) {
   while (not nodestack.empty()) {
     auto n = nodestack.front();
     nodestack.pop();
-    auto name = std::string(n->mName.data);
+    auto name = remapSkelName(n->mName.data);
     auto itb  = uniqskelnodeset.find(name);
     if (itb == uniqskelnodeset.end()) {
       int index = uniqskelnodeset.size();
@@ -136,12 +153,12 @@ inline skelnodemap_t parseSkeleton(const aiScene* scene) {
       const aiMesh* mesh = scene->mMeshes[n->mMeshes[m]];
       for (int b = 0; b < mesh->mNumBones; b++) {
         auto bone     = mesh->mBones[b];
-        auto bonename = std::string(bone->mName.data);
+        auto bonename = remapSkelName(bone->mName.data);
         auto itb      = xgmskelnodes.find(bonename);
         if (itb != xgmskelnodes.end()) {
           auto xgmnode = itb->second;
-          if (false == xgmnode->_varmap["is_bone"].IsA<bool>()) {
-            xgmnode->_varmap["is_bone"].Set<bool>(true);
+          if (false == xgmnode->_varmap["visited_bone"].IsA<bool>()) {
+            xgmnode->_varmap["visited_bone"].Set<bool>(true);
             //////////////////////////////////////////
             // according to what I read
             //  aiBone::mOffsetMatrix is the inverse bind pose
@@ -156,6 +173,7 @@ inline skelnodemap_t parseSkeleton(const aiScene* scene) {
               }
             }
             xgmnode->mBindMatrixInverse = invbindpose;
+            rval._isSkinned             = true;
           }
         }
       }
@@ -175,7 +193,7 @@ inline skelnodemap_t parseSkeleton(const aiScene* scene) {
     auto p = nodestack.front();
     nodestack.pop();
     //////////////////////////////
-    auto itp = xgmskelnodes.find(p->mName.data);
+    auto itp = xgmskelnodes.find(remapSkelName(p->mName.data));
     OrkAssert(itp != xgmskelnodes.end());
     auto pskelnode = itp->second;
     if (p == scene->mRootNode) {
@@ -184,7 +202,7 @@ inline skelnodemap_t parseSkeleton(const aiScene* scene) {
     //////////////////////////////
     for (int i = 0; i < p->mNumChildren; ++i) {
       auto c   = p->mChildren[i];
-      auto itc = xgmskelnodes.find(c->mName.data);
+      auto itc = xgmskelnodes.find(remapSkelName(c->mName.data));
       OrkAssert(itc != xgmskelnodes.end());
       auto cskelnode = itc->second;
       nodestack.push(c);
@@ -198,8 +216,13 @@ inline skelnodemap_t parseSkeleton(const aiScene* scene) {
 
   /////////////////////////////////////////////////
 
-  return xgmskelnodes;
+  return rval;
 }
+
+// bone   len<1.998>
+// bone.1 len<1.42>
+// bone.2 len<1.45>
+// bone.3 len<1.18>
 
 ///////////////////////////////////////////////////////////////////////////////
 

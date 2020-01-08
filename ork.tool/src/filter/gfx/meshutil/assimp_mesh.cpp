@@ -210,17 +210,20 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
 
     std::queue<aiNode*> nodestack;
 
-    skelnodemap_t& xgmskelnodes = _varmap["xgmskelnodes"].Make<skelnodemap_t>();
+    auto parsedskel = parseSkeleton(scene);
+    bool is_skinned = parsedskel._isSkinned;
 
-    xgmskelnodes = parseSkeleton(scene);
+    auto& xgmskelnodes = _varmap["xgmskelnodes"].Make<skelnodemap_t>();
+
+    xgmskelnodes = parsedskel._xgmskelmap;
+
+    OrkAssert(is_skinned);
 
     //////////////////////////////////////////////
     // count, visit dagnodes
     //////////////////////////////////////////////
 
     printf("/////////////////////////////////////////////////////////////////\n");
-
-    bool is_skinned = false;
 
     //////////////////////////////////////////////
     // visit meshes, marking dagnodes as bones and fetching joint matrices
@@ -244,7 +247,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
         const aiMesh* mesh = scene->mMeshes[n->mMeshes[m]];
         for (int b = 0; b < mesh->mNumBones; b++) {
           auto bone     = mesh->mBones[b];
-          auto bonename = std::string(bone->mName.data);
+          auto bonename = remapSkelName(bone->mName.data);
           auto itb      = xgmskelnodes.find(bonename);
           /////////////////////////////////////////////
           // yuk -- assimp is not like gltf, or collada...
@@ -257,8 +260,8 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
             //////////////////////////////////
             // mark skel node as actual mesh referenced bone
             //////////////////////////////////
-            if (false == xgmnode->_varmap["is_bone"].IsA<bool>()) {
-              xgmnode->_varmap["is_bone"].Set<bool>(true);
+            if (false == xgmnode->_varmap["visited_weights"].IsA<bool>()) {
+              xgmnode->_varmap["visited_weights"].Set<bool>(true);
               int index = xgmnode->miSkelIndex;
               /////////////////////////////
               // xgmjointmatrix.dump(bonename.c_str());
@@ -279,8 +282,6 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
                 auto xgmw = XgmAssimpVertexWeightItem{bonename, weight};
                 weights_for_vertex->_items.push_back(xgmw);
               }
-              /////////////////////////////
-              is_skinned = true;
             }
           }
         }
@@ -298,7 +299,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
     // std::deque<fmtx4> ork_mtxstack;
     // ork_mtxstack.push_front(convertMatrix44(scene->mRootNode->mTransformation));
 
-    auto it_root_skelnode                 = xgmskelnodes.find(scene->mRootNode->mName.data);
+    auto it_root_skelnode                 = xgmskelnodes.find(remapSkelName(scene->mRootNode->mName.data));
     ork::lev2::XgmSkelNode* root_skelnode = (it_root_skelnode != xgmskelnodes.end()) ? it_root_skelnode->second : nullptr;
 
     //////////////////////////////////////////////
@@ -315,7 +316,9 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
 
       nodestack.pop();
 
-      auto it_nod_skelnode                 = xgmskelnodes.find(n->mName.data);
+      auto nren = remapSkelName(n->mName.data);
+
+      auto it_nod_skelnode                 = xgmskelnodes.find(nren);
       ork::lev2::XgmSkelNode* nod_skelnode = (it_nod_skelnode != xgmskelnodes.end()) ? it_nod_skelnode->second : nullptr;
 
       // auto ppar_skelnode = nod_skelnode->mpParent;
@@ -323,6 +326,9 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       fmtx4 local      = nod_skelnode->mJointMatrix;
       fmtx4 invbind    = nod_skelnode->mBindMatrixInverse;
       fmtx4 bind       = nod_skelnode->bindMatrix();
+      auto nodematrix  = nod_skelnode->_varmap["assimpnodematrix"].Get<fmtx4>();
+
+      nodematrix.dump((name + ".node").c_str());
       invbind.dump((name + ".inversebind").c_str());
       bind.dump((name + ".bind").c_str());
       local.dump((name + ".local").c_str());
@@ -347,7 +353,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
         while (not done) {
           nodehier.push_back(n);
           fmtx4 test = convertMatrix44(walk->mTransformation);
-          test.dump(walk->mName.data);
+          // test.dump(walk->mName.data);
           walk = walk->mParent;
           done = (walk == nullptr);
         }
@@ -416,12 +422,13 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
               // yuk -- assimp is not like gltf, or collada...
               // https://github.com/assimp/assimp/blob/master/code/glTF2/glTF2Importer.cpp#L904
               /////////////////////////////////////////////
+              OrkAssert(is_skinned);
               if (is_skinned) {
                 auto itw = assimpweightlut.find(index);
                 if (itw != assimpweightlut.end()) {
                   auto influences = itw->second;
                   int numinf      = influences->_items.size();
-                  // printf("vertex<%d> raw_numweights<%d>\n", index, numinf);
+                  printf("vertex<%d> raw_numweights<%d>\n", index, numinf);
                   ///////////////////////////////////////////////////
                   // prune to no more than 4 weights
                   ///////////////////////////////////////////////////
@@ -429,13 +436,14 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
                   std::map<float, std::string> prunedWeightMap;
                   std::map<std::string, float> rawweightMap;
                   for (int inf = 0; inf < numinf; inf++) {
-                    auto infl                    = influences->_items[inf];
-                    float fw                     = infl._weight;
-                    rawweightMap[infl._bonename] = fw;
+                    auto infl              = influences->_items[inf];
+                    float fw               = infl._weight;
+                    auto remapped          = remapSkelName(infl._bonename);
+                    rawweightMap[remapped] = fw;
                     if (fw != 0.0f) {
                       largestWeightMap[1.0f - fw] = infl;
                     }
-                    // printf( " inf<%d> bone<%s> weight<%g>\n", inf, infl._bonename.c_str(), fw);
+                    printf(" inf<%d> bone<%s> weight<%g>\n", inf, remapped.c_str(), fw);
                   }
                   int icount      = 0;
                   float totweight = 0.0f;
@@ -453,7 +461,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
                       float fjointweight = w / totweight;
                       newtotweight += fjointweight;
                       std::string name              = item.second._bonename;
-                      prunedWeightMap[fjointweight] = name;
+                      prunedWeightMap[fjointweight] = remapSkelName(name);
                     }
                     ++icount;
                   }
@@ -488,7 +496,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
                   for (auto item : prunedWeightMap) {
                     muvtx.mJointNames[windex]   = item.second;
                     muvtx.mJointWeights[windex] = item.first;
-                    // printf( "inf<%s:%g> ", item.second.c_str(), item.first );
+                    printf("inf<%s:%g> ", item.second.c_str(), item.first);
                     windex++;
                   }
                   // printf( "\n");

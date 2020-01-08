@@ -66,8 +66,8 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
     /////////////////////////////
     // get skeleton
 
-    auto skelnodes = parseSkeleton(scene);
-
+    auto parsedskel = parseSkeleton(scene);
+    auto& skelnodes = parsedskel._xgmskelmap;
     /////////////////////////////
     // we assume a single animation per file
     /////////////////////////////
@@ -96,8 +96,7 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
         int index = uniqskelnodeset.size();
         uniqskelnodeset.insert(name);
         auto matrix         = convertMatrix44(n->mTransformation);
-        auto remapped_name  = ork::string::replaced(name, "Armature_", "");
-        remapped_name       = ork::string::replaced(remapped_name, "_", ".");
+        auto remapped_name  = remapSkelName(name);
         channel_remap[name] = remapped_name;
         auto a              = deco::decorate(fvec3(0, 1, 1), name);
         auto b              = deco::decorate(fvec3(1, 1, 1), remapped_name);
@@ -140,7 +139,7 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
       for (int i = 0; i < anim->mNumChannels; i++) {
         aiNodeAnim* channel = anim->mChannels[i];
 
-        std::string channel_name = channel->mNodeName.data;
+        std::string channel_name = remapSkelName(channel->mNodeName.data);
 
         auto its        = skelnodes.find(channel_name);
         auto skelnode   = its->second;
@@ -192,12 +191,22 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
           }
           deco::print(color, "frame<%s.%d> pos<%g %g %g>\n", channel_name.c_str(), f, curpos.x, curpos.y, curpos.z);
           deco::print(color, "frame<%s.%d> rot<%g %g %g %g>\n", channel_name.c_str(), f, currot.x, currot.y, currot.z, currot.w);
-          deco::print(color, "frame<%s.%d> sca<%g %g %g>\n", channel_name.c_str(), f, cursca.x, cursca.y, cursca.z);
+          // deco::print(color, "frame<%s.%d> sca<%g %g %g>\n", channel_name.c_str(), f, cursca.x, cursca.y, cursca.z);
           // const fmtx4& Matrix = MatrixChannelData->GetFrame(ifr);
+
+          float s = 0.0f;
+          fmtx4 t;
+          t.SetTranslation(curpos);
+          fmtx4 r;
+          r = currot.ToMatrix();
+
+          fmtx4 x = r * t;
+
+          std::string xxx = (channel_name + ":") + x.dump();
+          deco::print(fvec3(1, 0, 0), "%s\n", xxx.c_str());
+
           ork::lev2::DecompMtx44 decomp;
-          decomp.mTrans = curpos;
-          decomp.mRot   = currot;
-          decomp.mScale = 1; // TODO - non uniform scale ?
+          x.DecomposeMatrix(decomp.mTrans, decomp.mRot, decomp.mScale);
           XgmChan->AddFrame(decomp);
         }
       }

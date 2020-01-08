@@ -349,6 +349,10 @@ void PbrMatrixBlockApplicator::ApplyToTarget(Context* targ) // virtual
   size_t inumbones                   = _matrixblock->GetNumMatrices();
   const fmtx4* Matrices              = _matrixblock->GetMatrices();
 
+  for (int i = 0; i < inumbones; i++) {
+    const auto& b = Matrices[i];
+    b.dump(FormatString("pbr-bone<%d>", i));
+  }
   fxi->BindParamMatrixArray(shader, _pbrmaterial->_parBoneMatrices, Matrices, (int)inumbones);
   fxi->CommitParams();
 }

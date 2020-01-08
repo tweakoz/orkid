@@ -480,7 +480,7 @@ void XgmModel::RenderSkinned(
 
   const XgmLocalPose& LocalPose = minst->RefLocalPose();
 
-  // printf("rendering skinned!!\n");
+  printf("rendering skinned!!\n");
   ////////////////////
   // Draw Skinned Mesh
 

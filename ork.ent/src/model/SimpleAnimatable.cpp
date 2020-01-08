@@ -27,7 +27,7 @@
 
 #include <ork/lev2/gfx/gfxmodel.h>
 
-#define ANIMATE_VERBOSE (1)
+#define ANIMATE_VERBOSE (0)
 #define PRINT_CONDITION_NAME(__name) true //(ork::PieceString(__name).find("ship1") != ork::PieceString::npos)
 #define PRINT_CONDITION (PRINT_CONDITION_NAME(GetEntity()->GetEntData().GetName()))
 #define PRINT_CONDITION_AD (entity && PRINT_CONDITION_NAME(entity->GetEntData().GetName()))
