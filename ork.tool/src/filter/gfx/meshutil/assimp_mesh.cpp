@@ -3,93 +3,12 @@
 // Copyright 1996-2020, Michael T. Mayers
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <orktool/orktool_pch.h>
-#include <ork/file/cfs.inl>
-#include <ork/application/application.h>
-#include <ork/math/plane.h>
-#include <orktool/filter/gfx/meshutil/meshutil.h>
-#include <orktool/filter/filter.h>
-#include <ork/kernel/spawner.h>
-
-///////////////////////////////////////////////////////////////////////////////
-#include <assimp/cimport.h>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <assimp/pbrmaterial.h>
-#include <assimp/material.h>
-
-#include <orktool/filter/gfx/collada/collada.h>
-#include <orktool/filter/gfx/meshutil/meshutil.h>
-#include <orktool/filter/gfx/meshutil/clusterizer.h>
-
-#include <ork/lev2/gfx/material_pbr.inl>
+#include "assimp_util.inl"
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::MeshUtil::ASS_XGM_Filter, "ASS_XGM_Filter");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::MeshUtil {
-///////////////////////////////////////////////////////////////////////////////
-
-fmtx4 convertMatrix44(const aiMatrix4x4& inp) {
-  fmtx4 rval;
-  for (int i = 0; i < 16; i++) {
-    int x = i % 4;
-    int y = i / 4;
-    rval.SetElemXY(x, y, inp[y][x]);
-  }
-  return rval;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void get_bounding_box_for_node(const aiScene* scene, const aiNode* nd, aiVector3D& min, aiVector3D& max, aiMatrix4x4& trafo) {
-  aiMatrix4x4 prev;
-  unsigned int n = 0, t;
-
-  prev = trafo;
-  aiMultiplyMatrix4(&trafo, &nd->mTransformation);
-
-  for (; n < nd->mNumMeshes; ++n) {
-    const aiMesh* mesh = scene->mMeshes[nd->mMeshes[n]];
-
-    for (t = 0; t < mesh->mNumVertices; ++t) {
-
-      aiVector3D tmp = mesh->mVertices[t];
-      aiTransformVecByMatrix4(&tmp, &trafo);
-
-      min.x = std::min(min.x, tmp.x);
-      min.y = std::min(min.y, tmp.y);
-      min.z = std::min(min.z, tmp.z);
-
-      max.x = std::max(max.x, tmp.x);
-      max.y = std::max(max.y, tmp.y);
-      max.z = std::max(max.z, tmp.z);
-    }
-  }
-
-  for (n = 0; n < nd->mNumChildren; ++n) {
-    get_bounding_box_for_node(scene, nd->mChildren[n], min, max, trafo);
-  }
-  trafo = prev;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct GltfMaterial {
-  std::string _name;
-  std::string _metallicAndRoughnessMap;
-  std::string _colormap;
-  std::string _normalmap;
-  std::string _amboccmap;
-  std::string _emissivemap;
-  float _metallicFactor  = 0.0f;
-  float _roughnessFactor = 1.0f;
-  fvec4 _baseColor       = fvec4(1, 1, 1, 1);
-};
-
-typedef std::map<int, GltfMaterial*> gltfmaterialmap_t;
-typedef std::map<std::string, ork::lev2::XgmSkelNode*> skelnodemap_t;
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& readopts) {
@@ -292,47 +211,16 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
     std::queue<aiNode*> nodestack;
 
     skelnodemap_t& xgmskelnodes = _varmap["xgmskelnodes"].Make<skelnodemap_t>();
-    std::set<std::string> uniqskelnodeset;
+
+    xgmskelnodes = parseSkeleton(scene);
 
     //////////////////////////////////////////////
     // count, visit dagnodes
     //////////////////////////////////////////////
 
-    bool is_skinned = false;
-
-    nodestack = std::queue<aiNode*>();
-    nodestack.push(scene->mRootNode);
-    while (not nodestack.empty()) {
-      auto n = nodestack.front();
-      nodestack.pop();
-      auto name = std::string(n->mName.data);
-      auto itb  = uniqskelnodeset.find(name);
-      if (itb == uniqskelnodeset.end()) {
-        int index = uniqskelnodeset.size();
-        uniqskelnodeset.insert(name);
-        auto xgmnode         = new ork::lev2::XgmSkelNode(name);
-        xgmnode->miSkelIndex = index;
-        xgmskelnodes[name]   = xgmnode;
-        auto matrix          = n->mTransformation;
-        printf("uniqNODE<%d:%p> xgmnode<%p> <%s>\n", index, n, xgmnode, name.c_str());
-        auto& assimpnodematrix = xgmnode->_varmap["assimpnodematrix"].Make<fmtx4>();
-        assimpnodematrix       = convertMatrix44(matrix);
-        // assimpnodematrix.dump(name.c_str());
-      }
-      for (int i = 0; i < n->mNumChildren; ++i) {
-        nodestack.push(n->mChildren[i]);
-      }
-    }
-
     printf("/////////////////////////////////////////////////////////////////\n");
 
-    ///////////////////////////////////////////////////////////////////////////////
-    // name      head                    tail
-
-    // Bone        (0, 0, 0)               (0, 0, 1.99m)
-    // Bone.001    (0, 0, 1.99m)           (-0.0000863, 0, 3.41m)
-    // Bone.002    (-0.0000863, 0, 3.41m)  (-0.00129m, 0, 4.86m)
-    // Bone.003    (-0.00129m, 0, 486m)    (-0.0204m, 0, 6.05m)
+    bool is_skinned = false;
 
     //////////////////////////////////////////////
     // visit meshes, marking dagnodes as bones and fetching joint matrices
@@ -372,29 +260,6 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
             if (false == xgmnode->_varmap["is_bone"].IsA<bool>()) {
               xgmnode->_varmap["is_bone"].Set<bool>(true);
               int index = xgmnode->miSkelIndex;
-
-              //////////////////////////////////////////
-              // according to what I read
-              //  aiBone::mOffsetMatrix is the inverse bind pose
-              //  an odd name to be sure. we shall see..
-              //////////////////////////////////////////
-
-              auto matrix = bone->mOffsetMatrix;
-
-              fmtx4 invbindpose;
-              printf(
-                  "markBONE<%p> xgmnode<%d:%p> <%s> numverts_affected<%d>\n",
-                  bone,
-                  index,
-                  xgmnode,
-                  bonename.c_str(),
-                  numvertsaffected);
-              for (int j = 0; j < 4; j++) {
-                for (int k = 0; k < 4; k++) {
-                  invbindpose.SetElemYX(j, k, matrix[j][k]);
-                }
-              }
-              xgmnode->mBindMatrixInverse = invbindpose;
               /////////////////////////////
               // xgmjointmatrix.dump(bonename.c_str());
               // remember effected verts
@@ -453,23 +318,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       auto it_nod_skelnode                 = xgmskelnodes.find(n->mName.data);
       ork::lev2::XgmSkelNode* nod_skelnode = (it_nod_skelnode != xgmskelnodes.end()) ? it_nod_skelnode->second : nullptr;
 
-      nod_skelnode->mJointMatrix = nod_skelnode->bindMatrix();
-
-      auto p = n->mParent;
-      if (p) {
-        auto it_par_skelnode                 = xgmskelnodes.find(p->mName.data);
-        ork::lev2::XgmSkelNode* par_skelnode = (it_par_skelnode != xgmskelnodes.end()) ? it_par_skelnode->second : nullptr;
-        // printf(
-        //  "visit node<%s> parent<%s> xgmskenod<%p> xgmskelpar<%p>\n", n->mName.data, p->mName.data, nod_skelnode, par_skelnode);
-        if (par_skelnode) {
-          nod_skelnode->mpParent = par_skelnode;
-          par_skelnode->mChildren.push_back(nod_skelnode);
-
-          fmtx4 mymtx = nod_skelnode->bindMatrix();
-          fmtx4 pmtx  = par_skelnode->bindMatrix();
-          nod_skelnode->mJointMatrix.CorrectionMatrix(pmtx, mymtx);
-        }
-      }
+      // auto ppar_skelnode = nod_skelnode->mpParent;
       std::string name = nod_skelnode->mNodeName;
       fmtx4 local      = nod_skelnode->mJointMatrix;
       fmtx4 invbind    = nod_skelnode->mBindMatrixInverse;
@@ -491,7 +340,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       fmtx4 ork_model_mtx;
       fmtx3 ork_normal_mtx;
       if (false == is_skinned) {
-        printf("/////////////////////////////\n");
+        deco::print(fvec3(1, 0, 0), "/////////////////////////////\n");
         std::deque<aiNode*> nodehier;
         bool done = false;
         auto walk = n;
@@ -509,7 +358,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
         ork_model_mtx = convertMatrix44(n->mTransformation);
         // ork_model_mtx  = ork_model_mtx.dump(n->mName.data);
         ork_normal_mtx = ork_model_mtx.rotMatrix33();
-        printf("/////////////////////////////\n");
+        deco::print(fvec3(1, 0, 0), "/////////////////////////////\n");
       }
 
       //////////////////////////////////////////////

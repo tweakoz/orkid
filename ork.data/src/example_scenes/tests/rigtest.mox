@@ -12,10 +12,10 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>0.0315193 -0.275362 -0.0305006</property>
+                                                <property name='Center'>-0.129876 -0.258444 0.157375</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>1.01014</property>
-                                                <property name='QuatC'>0.0928667 0.0303752 0.00854521 0.996739</property>
+                                                <property name='Loc'>1.3165</property>
+                                                <property name='QuatC'>0.373826 -0.0724948 -0.926006 -0.0249325</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -80,7 +80,13 @@
                                     <object type='SimpleAnimatableData' id='9'>
                                         <property name='AnimMaskMap'></property>
                                         <property name='AnimSeqTableMap'></property>
-                                        <property name='AnimationMap'></property>
+                                        <property name='AnimationMap'>
+                                            <item key='start'>
+                                                <reference category='AssetClass'>
+                                                    "xganim" "data:///test/rigtest_link"
+                                                </reference>
+                                            </item>
+                                        </property>
                                     </object>
                                 </reference>
                             </item>

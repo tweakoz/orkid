@@ -3,35 +3,13 @@
 // Copyright 1996-2020, Michael T. Mayers
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <orktool/orktool_pch.h>
-#include <ork/file/cfs.inl>
-#include <ork/application/application.h>
-#include <ork/math/plane.h>
-#include <orktool/filter/gfx/meshutil/meshutil.h>
-#include <orktool/filter/filter.h>
-#include <ork/kernel/spawner.h>
-
-///////////////////////////////////////////////////////////////////////////////
-#include <assimp/cimport.h>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <assimp/pbrmaterial.h>
-#include <assimp/material.h>
-
-#include <orktool/filter/gfx/collada/collada.h>
-#include <orktool/filter/gfx/meshutil/meshutil.h>
-#include <orktool/filter/gfx/meshutil/clusterizer.h>
-
-#include <ork/lev2/gfx/material_pbr.inl>
+#include "assimp_util.inl"
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::MeshUtil::ASS_XGA_Filter, "ASS_XGA_Filter");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::MeshUtil {
 ///////////////////////////////////////////////////////////////////////////////
-
-void get_bounding_box_for_node(const aiScene* scene, const aiNode* nd, aiVector3D& min, aiVector3D& max, aiMatrix4x4& trafo);
-fmtx4 convertMatrix44(const aiMatrix4x4& inp);
 
 ASS_XGA_Filter::ASS_XGA_Filter() {
 }
@@ -63,13 +41,15 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
   OrkAssert(boost::filesystem::exists(GlbPath.toBFS()));
   OrkAssert(boost::filesystem::is_regular_file(GlbPath.toBFS()));
 
-  printf("base_dir<%s>\n", base_dir.c_str());
+  // printf("base_dir<%s>\n", base_dir.c_str());
   OrkAssert(boost::filesystem::exists(base_dir));
   OrkAssert(boost::filesystem::is_directory(base_dir));
 
-  printf("BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
+  auto color = fvec3(1, 0, 1);
+
+  deco::print(color, "BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
   auto scene = aiImportFile(GlbPath.c_str(), aiProcessPreset_TargetRealtime_MaxQuality);
-  printf("END: importing scene<%p>\n", scene);
+  deco::print(color, "END: importing scene<%p>\n", scene);
   if (scene) {
     lev2::XgmAnim xgmanim;
     aiVector3D scene_min, scene_max, scene_center;
@@ -84,12 +64,16 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
     scene_center.z = (scene_min.z + scene_max.z) / 2.0f;
 
     /////////////////////////////
+    // get skeleton
+
+    auto skelnodes = parseSkeleton(scene);
+
+    /////////////////////////////
     // we assume a single animation per file
     /////////////////////////////
 
     int numanims = scene->mNumAnimations;
     printf("numanims<%d>\n", numanims);
-    OrkAssert(numanims == 1);
 
     ////////////////////////////////////////
     // todo - build static pose
@@ -97,81 +81,125 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
     ////////////////////////////////////////
 
     auto& staticpose = xgmanim.GetStaticPose();
+    std::set<std::string> uniqskelnodeset;
+    std::map<std::string, std::string> channel_remap;
+    std::map<std::string, fmtx4> inv_bind_map;
+
+    std::queue<aiNode*> nodestack;
+    nodestack.push(scene->mRootNode);
+    while (not nodestack.empty()) {
+      auto n = nodestack.front();
+      nodestack.pop();
+      auto name = std::string(n->mName.data);
+      auto itb  = uniqskelnodeset.find(name);
+      if (itb == uniqskelnodeset.end()) {
+        int index = uniqskelnodeset.size();
+        uniqskelnodeset.insert(name);
+        auto matrix         = convertMatrix44(n->mTransformation);
+        auto remapped_name  = ork::string::replaced(name, "Armature_", "");
+        remapped_name       = ork::string::replaced(remapped_name, "_", ".");
+        channel_remap[name] = remapped_name;
+        auto a              = deco::decorate(fvec3(0, 1, 1), name);
+        auto b              = deco::decorate(fvec3(1, 1, 1), remapped_name);
+        printf("name<%s> remapped -> <%s>\n", a.c_str(), b.c_str());
+        matrix.dump(name);
+      }
+      for (int i = 0; i < n->mNumChildren; ++i) {
+        nodestack.push(n->mChildren[i]);
+      }
+    }
 
     ////////////////////////////////////////
 
-    aiAnimation* anim = scene->mAnimations[0];
-    printf("numchannels<%d>\n", anim->mNumChannels);
+    if (scene->mNumAnimations > 0) {
 
-    /////////////////////////////////////////////////////
-    // compute number of frames
-    /////////////////////////////////////////////////////
+      auto color = fvec3(1, 1, 0);
 
-    int framecount = 0;
-    for (int i = 0; i < anim->mNumChannels; i++) {
-      aiNodeAnim* channel = anim->mChannels[i];
-      if (channel->mNumPositionKeys > framecount)
-        framecount = channel->mNumPositionKeys;
-      if (channel->mNumRotationKeys > framecount)
-        framecount = channel->mNumRotationKeys;
-      if (channel->mNumScalingKeys > framecount)
-        framecount = channel->mNumScalingKeys;
-    }
+      aiAnimation* anim = scene->mAnimations[0];
+      deco::print(color, "numchannels<%d>\n", anim->mNumChannels);
 
-    xgmanim.SetNumFrames(framecount);
+      /////////////////////////////////////////////////////
+      // compute number of frames
+      /////////////////////////////////////////////////////
 
-    /////////////////////////////////////////////////////
+      int framecount = 0;
+      for (int i = 0; i < anim->mNumChannels; i++) {
+        aiNodeAnim* channel = anim->mChannels[i];
+        if (channel->mNumPositionKeys > framecount)
+          framecount = channel->mNumPositionKeys;
+        if (channel->mNumRotationKeys > framecount)
+          framecount = channel->mNumRotationKeys;
+        if (channel->mNumScalingKeys > framecount)
+          framecount = channel->mNumScalingKeys;
+      }
 
-    for (int i = 0; i < anim->mNumChannels; i++) {
-      aiNodeAnim* channel = anim->mChannels[i];
-      printf("channel<%d:%p:%s>\n", i, channel, channel->mNodeName.data);
-      printf("  num poskeys<%d>\n", channel->mNumPositionKeys);
-      printf("  num rotkeys<%d>\n", channel->mNumRotationKeys);
-      printf("  num scakeys<%d>\n", channel->mNumScalingKeys);
+      xgmanim.SetNumFrames(framecount);
 
-      /////////////////////////////
-      // we assume pre-sampled frames here
-      /////////////////////////////
+      /////////////////////////////////////////////////////
 
-      fvec3 curpos, cursca;
-      fquat currot;
+      for (int i = 0; i < anim->mNumChannels; i++) {
+        aiNodeAnim* channel = anim->mChannels[i];
 
-      PoolString objnameps         = AddPooledString("");
-      PoolString ChannelPooledName = AddPooledString(channel->mNodeName.data);
-      auto XgmChan                 = new ork::lev2::XgmDecompAnimChannel(objnameps, ChannelPooledName, JointPS);
-      XgmChan->ReserveFrames(framecount);
-      xgmanim.AddChannel(ChannelPooledName, XgmChan);
+        std::string channel_name = channel->mNodeName.data;
 
-      ////////////////////////////////////////
+        auto its        = skelnodes.find(channel_name);
+        auto skelnode   = its->second;
+        auto bindmatrix = skelnode->bindMatrix();
+        auto invbindmtx = skelnode->mBindMatrixInverse;
 
-      for (int f = 0; f < framecount; f++) {
-        if (f < channel->mNumPositionKeys) {
-          const aiVectorKey& poskey = channel->mPositionKeys[f];
-          double time               = poskey.mTime;
-          aiVector3D pos            = poskey.mValue;
-          curpos                    = fvec3(pos.x, pos.y, pos.z);
+        auto it = channel_remap.find(channel_name);
+        if (it != channel_remap.end()) {
+          channel_name = it->second;
         }
-        if (f < channel->mNumRotationKeys) {
-          const aiQuatKey& rotkey = channel->mRotationKeys[f];
-          double time             = rotkey.mTime;
-          aiQuaternion rot        = rotkey.mValue;
-          currot                  = fquat(rot.x, rot.y, rot.z, rot.w);
+        deco::print(color, "channel<%d:%p:%s>\n", i, channel, channel_name.c_str());
+        deco::print(color, "  num poskeys<%d>\n", channel->mNumPositionKeys);
+        deco::print(color, "  num rotkeys<%d>\n", channel->mNumRotationKeys);
+        deco::print(color, "  num scakeys<%d>\n", channel->mNumScalingKeys);
+
+        /////////////////////////////
+        // we assume pre-sampled frames here
+        /////////////////////////////
+
+        fvec3 curpos, cursca;
+        fquat currot;
+
+        PoolString objnameps         = AddPooledString("");
+        PoolString ChannelPooledName = AddPooledString(channel_name.c_str());
+        auto XgmChan                 = new ork::lev2::XgmDecompAnimChannel(objnameps, ChannelPooledName, JointPS);
+        XgmChan->ReserveFrames(framecount);
+        xgmanim.AddChannel(ChannelPooledName, XgmChan);
+
+        ////////////////////////////////////////
+        color = fvec3(1, .5, 0);
+        for (int f = 0; f < framecount; f++) {
+          if (f < channel->mNumPositionKeys) {
+            const aiVectorKey& poskey = channel->mPositionKeys[f];
+            double time               = poskey.mTime;
+            aiVector3D pos            = poskey.mValue;
+            curpos                    = fvec3(pos.x, pos.y, pos.z);
+          }
+          if (f < channel->mNumRotationKeys) {
+            const aiQuatKey& rotkey = channel->mRotationKeys[f];
+            double time             = rotkey.mTime;
+            aiQuaternion rot        = rotkey.mValue;
+            currot                  = fquat(rot.x, rot.y, rot.z, rot.w);
+          }
+          if (f < channel->mNumScalingKeys) {
+            const aiVectorKey& scakey = channel->mScalingKeys[f];
+            double time               = scakey.mTime;
+            aiVector3D sca            = scakey.mValue;
+            cursca                    = fvec3(sca.x, sca.y, sca.z);
+          }
+          deco::print(color, "frame<%s.%d> pos<%g %g %g>\n", channel_name.c_str(), f, curpos.x, curpos.y, curpos.z);
+          deco::print(color, "frame<%s.%d> rot<%g %g %g %g>\n", channel_name.c_str(), f, currot.x, currot.y, currot.z, currot.w);
+          deco::print(color, "frame<%s.%d> sca<%g %g %g>\n", channel_name.c_str(), f, cursca.x, cursca.y, cursca.z);
+          // const fmtx4& Matrix = MatrixChannelData->GetFrame(ifr);
+          ork::lev2::DecompMtx44 decomp;
+          decomp.mTrans = curpos;
+          decomp.mRot   = currot;
+          decomp.mScale = 1; // TODO - non uniform scale ?
+          XgmChan->AddFrame(decomp);
         }
-        if (f < channel->mNumScalingKeys) {
-          const aiVectorKey& scakey = channel->mScalingKeys[f];
-          double time               = scakey.mTime;
-          aiVector3D sca            = scakey.mValue;
-          cursca                    = fvec3(sca.x, sca.y, sca.z);
-        }
-        printf("frame<%s.%d> pos<%g %g %g>\n", channel->mNodeName.data, f, curpos.x, curpos.y, curpos.z);
-        printf("frame<%s.%d> rot<%g %g %g %g>\n", channel->mNodeName.data, f, currot.x, currot.y, currot.z, currot.w);
-        printf("frame<%s.%d> sca<%g %g %g>\n", channel->mNodeName.data, f, cursca.x, cursca.y, cursca.z);
-        // const fmtx4& Matrix = MatrixChannelData->GetFrame(ifr);
-        ork::lev2::DecompMtx44 decomp;
-        decomp.mTrans = curpos;
-        decomp.mRot   = currot;
-        decomp.mScale = 1; // TODO - non uniform scale ?
-        XgmChan->AddFrame(decomp);
       }
     }
     rval = ork::lev2::XgmAnim::Save(file::Path(outf.c_str()), &xgmanim);
