@@ -10,6 +10,7 @@
 #include <ork/math/cvector4.h>
 #include <ork/math/cmatrix3.h>
 #include <ork/kernel/string/string.h>
+#include <ork/kernel/string/deco.inl>
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <pmmintrin.h>
@@ -79,6 +80,44 @@ template <typename T> void Matrix44<T>::dump(std::string name) const {
 
   orkprintf("\n}\n");
 }
+template <typename T> std::string Matrix44<T>::dump(Vector3<T> color) const {
+  std::string rval;
+  bool use_color = color.length() > 0.0f;
+  auto color2    = color * 0.6;
+  auto color3    = color * 0.8;
+  auto color4    = color * 0.3;
+  for (int i = 0; i < 4; i++) {
+    if (use_color) {
+      rval += ork::deco::asciic_rgb(color4);
+    }
+    rval += "[";
+    for (int j = 0; j < 4; j++) {
+      if (use_color) {
+        rval += j < 3 ? ork::deco::asciic_rgb(color2) : ork::deco::asciic_rgb(color4);
+      }
+      rval += FormatString(" %+0.3g ", elements[i][j]);
+    }
+    if (use_color) {
+      rval += ork::deco::asciic_rgb(color4);
+    }
+    rval += "] ";
+  }
+  {
+    Quaternion<T> q(*this);
+    auto rot = q.ToAxisAngle();
+    if (rot.w < 0.0f) {
+      rot *= -1.0f;
+    }
+    if (use_color) {
+      rval += ork::deco::asciic_rgb(color);
+    }
+    rval += FormatString("  axis<%0.1g %0.1g %0.1g> angle<%g>", rot.x, rot.y, rot.z, round(rot.w * RTOD));
+  }
+  if (use_color) {
+    rval += ork::deco::asciic_reset();
+  }
+  return rval;
+}
 template <typename T> std::string Matrix44<T>::dump() const {
   std::string rval;
   for (int i = 0; i < 4; i++) {
@@ -88,6 +127,10 @@ template <typename T> std::string Matrix44<T>::dump() const {
     }
     rval += "] ";
   }
+  Vector3<T> v(0, 0, -1);
+  auto rot = this->rotMatrix33();
+  auto vp  = v.Transform(rot);
+  rval += FormatString("(%+0.3g %+0.3g %+0.3g) ", vp.x, vp.y, vp.z);
   return rval;
 }
 

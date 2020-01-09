@@ -601,7 +601,6 @@ void XgmLocalPose::BuildPose(void) {
   }
   gctr++;
 
-  Concatenate();
 #endif
 }
 
@@ -723,6 +722,29 @@ std::string XgmLocalPose::dump() const {
       const auto& jmtx = RefLocalMatrix(ij);
       rval += FormatString("%16s", name.c_str());
       rval += ": "s + jmtx.dump() + "\n"s;
+    }
+  }
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::string XgmLocalPose::dumpc(fvec3 color) const {
+  std::string rval;
+  if (mSkeleton.miRootNode >= 0) {
+    const fmtx4& RootAnimMat = RefLocalMatrix(mSkeleton.miRootNode);
+    int inumjoints           = mSkeleton.GetNumJoints();
+    fvec3 ca                 = color;
+    fvec3 cb                 = color * 0.7;
+
+    for (int ij = 0; ij < inumjoints; ij++) {
+      fvec3 cc         = (ij & 1) ? cb : ca;
+      std::string name = mSkeleton.GetJointName(ij).c_str();
+      const auto& jmtx = RefLocalMatrix(ij);
+      rval += deco::asciic_rgb(cc);
+      rval += FormatString("%16s", name.c_str());
+      rval += ": "s + jmtx.dump(cc) + "\n"s;
+      rval += deco::asciic_reset();
     }
   }
   return rval;
@@ -1115,46 +1137,47 @@ void XgmSkeleton::SetNumJoints(int inumjoints) {
 
 ////////////////////////////////////////////////////////////////////////////
 
-std::string XgmSkeleton::dump() const {
+std::string XgmSkeleton::dump(fvec3 color) const {
   std::string rval;
-  rval += FormatString("XgmSkeleton<%p>\n", this);
-  rval += FormatString(" numjoints<%d>\n", miNumJoints);
-  rval += FormatString(" rootindex<%d>\n", miRootNode);
+  auto color2 = color * 0.5;
+  rval += deco::format(color, "XgmSkeleton<%p>\n", this);
+  rval += deco::format(color, " numjoints<%d>\n", miNumJoints);
+  rval += deco::format(color, " rootindex<%d>\n", miRootNode);
 
   int i = 0;
   for (orklut<PoolString, int>::const_iterator it = mmJointNameMap.begin(); it != mmJointNameMap.end(); it++) {
     PoolString sidx = (*it).first;
     int idx         = (*it).second;
-    // rval += FormatString(" jointnamemap<%d> <%s>:<%d>\n", i, sidx.c_str(), idx);
+    // rval += deco::format(color," jointnamemap<%d> <%s>:<%d>\n", i, sidx.c_str(), idx);
     i++;
   }
   i = 0;
   for (orkvector<PoolString>::const_iterator it = mvJointNameVect.begin(); it != mvJointNameVect.end(); it++) {
     const PoolString& s = (*it);
-    // rval += FormatString(" jointnamevect<%d> <%s>\n", i, s.c_str());
+    // rval += deco::format(color," jointnamevect<%d> <%s>\n", i, s.c_str());
     i++;
   }
   i = 0;
   for (orkvector<XgmBone>::const_iterator it = mFlattenedBones.begin(); it != mFlattenedBones.end(); it++) {
     const XgmBone& b = (*it);
-    rval += FormatString(" bone<%d> p<%d> c<%d>\n", i, b.miParent, b.miChild);
+    rval += deco::format(color, " bone<%d> p<%d> c<%d>\n", i, b.miParent, b.miChild);
     i++;
   }
 
-  rval += " topmat: " + mTopNodesMatrix.dump() + "\n";
-  rval += " bindmat: " + mBindShapeMatrix.dump() + "\n";
+  rval += deco::format(color, " topmat: ") + mTopNodesMatrix.dump(color) + "\n";
+  rval += deco::format(color, " bindmat: ") + mBindShapeMatrix.dump(color) + "\n";
 
   for (int ij = 0; ij < miNumJoints; ij++) {
     auto name = GetJointName(ij);
-    rval += FormatString("   joint<%02d:%s>\n", ij, name.c_str());
+    rval += deco::format(color, "   joint<%02d:%s>\n", ij, name.c_str());
 
     int parent          = maJointParents[ij];
     const char* parname = (parent >= 0) ? GetJointName(parent).c_str() : "none";
-    rval += FormatString("     parent<%d:%s>\n", parent, parname);
-    rval += FormatString("     flags<%08x>\n", mpJointFlags[ij]);
+    rval += deco::format(color, "     parent<%d:%s>\n", parent, parname);
+    rval += deco::format(color, "     flags<%08x>\n", mpJointFlags[ij]);
 
-    rval += "       mat: " + _jointMatrices[ij].dump() + "\n";
-    rval += "     ibmat: " + _inverseBindMatrices[ij].dump() + "\n";
+    rval += deco::format(color, "     ljmat: ") + _jointMatrices[ij].dump(color) + "\n";
+    rval += deco::format(color, "     ibmat: ") + _inverseBindMatrices[ij].dump(color) + "\n";
   }
   return rval;
 }

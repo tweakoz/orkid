@@ -14,6 +14,12 @@ inline std::string asciic_rgb256(int r, int g, int b) {
   //  rval = "\[" + rval + "\]"
   return rval;
 }
+inline std::string asciic_rgb(const fvec3& color) {
+  int r = int(color.x * 255.0f);
+  int g = int(color.y * 255.0f);
+  int b = int(color.z * 255.0f);
+  return asciic_rgb256(r, g, b);
+}
 inline std::string asciic_reset() {
   return "\033[0m";
 }
@@ -62,7 +68,7 @@ inline std::string format(const fvec3& color, const char* formatstring, ...) {
 #endif
   va_end(args);
   rval = formatbuffer;
-  return asciic_rgb256(color.x, color.y, color.z) + rval + asciic_reset();
+  return asciic_rgb(color) + rval + asciic_reset();
 }
 
 inline void print(const fvec3& color, const char* formatstring, ...) {
@@ -100,6 +106,12 @@ inline void printe(const fvec3& color, std::string inp, bool endl) {
   if (endl)
     final += "\n";
   final += asciic_reset();
+  printf("%s", final.c_str());
+}
+inline void prints(std::string inp, bool endl) {
+  std::string final = inp;
+  if (endl)
+    final += "\n";
   printf("%s", final.c_str());
 }
 

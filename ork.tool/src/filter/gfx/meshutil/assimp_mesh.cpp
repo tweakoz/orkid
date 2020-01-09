@@ -618,7 +618,7 @@ void configureXgmSkeleton(const toolmesh& input, lev2::XgmModel& xgmmdlout) {
       }
     }
     xgmskel.mpRootNode = root;
-    xgmskel.dump();
+    // xgmskel.dump();
   }
 }
 

@@ -710,6 +710,7 @@ void SimpleAnimatableInst::DoUpdate(ork::ent::Simulation* inst) {
     }
 
     mModelInst->RefLocalPose().BuildPose();
+    mModelInst->RefLocalPose().Concatenate();
 
     if (service_queue) {
       if (mAnimationQueue.size()) {

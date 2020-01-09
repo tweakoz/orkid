@@ -122,6 +122,7 @@ public:
   ////////////////
 
   void dump(std::string name) const;
+  std::string dump(Vector3<T> color) const;
   std::string dump() const;
 
   inline bool operator==(const Matrix44<T>& b) const {

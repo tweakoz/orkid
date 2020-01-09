@@ -14,6 +14,7 @@ TEST(gfxanim1) {
 
   auto white  = fvec3(1, 1, 1);
   auto yellow = fvec3(1, 1, 0);
+  auto orange = fvec3(1, 0.5, 0);
   auto cyan   = fvec3(0, 1, 1);
 
   opq::mainSerialQueue().enqueue([&]() {
@@ -31,7 +32,7 @@ TEST(gfxanim1) {
     auto anim     = anim_asset->GetAnim();
     auto animinst = new XgmAnimInst;
     animinst->BindAnim(anim);
-    animinst->SetCurrentFrame(0);
+    animinst->SetCurrentFrame(15);
     animinst->SetWeight(1);
     animinst->RefMask().EnableAll();
 
@@ -49,16 +50,21 @@ TEST(gfxanim1) {
     modelinst->EnableSkinning();
     modelinst->EnableAllMeshes();
 
-    deco::printe(cyan, skel.dump(), true);
+    deco::prints(skel.dump(cyan), true);
 
     auto& localpose = modelinst->RefLocalPose();
     localpose.BindPose();
-    deco::printe(white, "BindPose", true);
-    deco::printe(white, localpose.dump(), true);
+    deco::printe(white, "BindPose (pre-concat)", true);
+    deco::prints(localpose.dumpc(white), true);
     localpose.BindAnimInst(*animinst);
     localpose.BuildPose();
-    deco::printe(yellow, "AnimPose", true);
-    deco::printe(yellow, localpose.dump(), true);
+    deco::printe(yellow, "AnimPose (pre-concat)", true);
+    deco::prints(localpose.dumpc(yellow), true);
+
+    localpose.Concatenate();
+    deco::printe(orange, "AnimPose (post-concat)", true);
+    deco::prints(localpose.dumpc(orange), true);
+
     XgmWorldPose worldpose(skel, localpose);
     worldpose.apply(ork::fmtx4(), localpose);
 

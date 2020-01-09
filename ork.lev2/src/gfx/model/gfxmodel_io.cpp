@@ -173,7 +173,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
     if (inumbones) {
       mdl->mSkeleton.miRootNode = (inumbones > 0) ? mdl->mSkeleton.GetFlattenedBone(0).miParent : -1;
     }
-    mdl->mSkeleton.dump();
+    // mdl->mSkeleton.dump();
     ///////////////////////////////////
     HeaderStream->GetItem(mdl->mBoundingCenter);
     HeaderStream->GetItem(mdl->mAABoundXYZ);

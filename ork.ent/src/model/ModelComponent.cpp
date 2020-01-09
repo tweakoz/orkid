@@ -130,6 +130,7 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
     mXgmModelInst->SetBlenderZup(mData.IsBlenderZup());
     mXgmModelInst->RefLocalPose().BindPose();
     mXgmModelInst->RefLocalPose().BuildPose();
+    mXgmModelInst->RefLocalPose().Concatenate();
 
     auto& ovmap = mData.MaterialOverrideMap();
 

@@ -489,16 +489,16 @@ class XgmLocalPose {
   fvec4 mObjSpaceBoundingSphere;
   AABox mObjSpaceAABoundingBox;
 
-  void Concatenate(void);
-
 public:
   void BindAnimInst(XgmAnimInst& AnimInst);
   void UnBindAnimInst(XgmAnimInst& AnimInst);
 
   XgmLocalPose(const XgmSkeleton& Skeleton);
   void BindPose(void);  /// set pose to the skeletons bind pose
-  void BuildPose(void); /// Blend Poses, and Concatenate
+  void BuildPose(void); /// Blend Poses
+  void Concatenate(void);
   int NumJoints() const;
+  std::string dumpc(fvec3 color) const;
   std::string dump() const;
 
   fmtx4& RefLocalMatrix(int idx) {
@@ -662,7 +662,7 @@ struct XgmSkeleton {
 
   /////////////////////////////////////
 
-  std::string dump() const;
+  std::string dump(fvec3 color) const;
 };
 
 }} // namespace ork::lev2
