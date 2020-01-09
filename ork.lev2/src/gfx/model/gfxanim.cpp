@@ -1122,13 +1122,13 @@ std::string XgmSkeleton::dump() const {
   for (orklut<PoolString, int>::const_iterator it = mmJointNameMap.begin(); it != mmJointNameMap.end(); it++) {
     PoolString sidx = (*it).first;
     int idx         = (*it).second;
-    rval += FormatString(" jointnamemap<%d> <%s>:<%d>\n", i, sidx.c_str(), idx);
+    // rval += FormatString(" jointnamemap<%d> <%s>:<%d>\n", i, sidx.c_str(), idx);
     i++;
   }
   i = 0;
   for (orkvector<PoolString>::const_iterator it = mvJointNameVect.begin(); it != mvJointNameVect.end(); it++) {
     const PoolString& s = (*it);
-    rval += FormatString(" jointnamevect<%d> <%s>\n", i, s.c_str());
+    // rval += FormatString(" jointnamevect<%d> <%s>\n", i, s.c_str());
     i++;
   }
   i = 0;

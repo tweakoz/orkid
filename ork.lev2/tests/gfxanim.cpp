@@ -11,6 +11,11 @@ using namespace ork::lev2;
 
 TEST(gfxanim1) {
   // we must load shaders on the main thread!
+
+  auto white  = fvec3(1, 1, 1);
+  auto yellow = fvec3(1, 1, 0);
+  auto cyan   = fvec3(0, 1, 1);
+
   opq::mainSerialQueue().enqueue([&]() {
     auto targ = GfxEnv::GetRef().GetLoaderTarget();
     printf("targ<%p>\n", targ);
@@ -44,14 +49,16 @@ TEST(gfxanim1) {
     modelinst->EnableSkinning();
     modelinst->EnableAllMeshes();
 
-    deco::printe(fvec3(0, 1, 1), skel.dump(), true);
+    deco::printe(cyan, skel.dump(), true);
 
     auto& localpose = modelinst->RefLocalPose();
     localpose.BindPose();
-    deco::printe(fvec3(1, 1, 1), localpose.dump(), true);
+    deco::printe(white, "BindPose", true);
+    deco::printe(white, localpose.dump(), true);
     localpose.BindAnimInst(*animinst);
     localpose.BuildPose();
-    deco::printe(fvec3(1, 1, 0), localpose.dump(), true);
+    deco::printe(yellow, "AnimPose", true);
+    deco::printe(yellow, localpose.dump(), true);
     XgmWorldPose worldpose(skel, localpose);
     worldpose.apply(ork::fmtx4(), localpose);
 
