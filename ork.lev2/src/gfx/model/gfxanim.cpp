@@ -16,6 +16,8 @@
 #include <ork/application/application.h>
 #include <ork/kernel/string/deco.inl>
 
+using namespace std::string_literals;
+
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::XgmAnimChannel, "XgmAnimChannel");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::XgmFloatAnimChannel, "XgmFloatAnimChannel");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::XgmVect3AnimChannel, "XgmVect3AnimChannel");
@@ -719,7 +721,8 @@ std::string XgmLocalPose::dump() const {
     for (int ij = 0; ij < inumjoints; ij++) {
       std::string name = mSkeleton.GetJointName(ij).c_str();
       const auto& jmtx = RefLocalMatrix(ij);
-      rval += name + ": " + jmtx.dump() + "\n";
+      rval += FormatString("%16s", name.c_str());
+      rval += ": "s + jmtx.dump() + "\n"s;
     }
   }
   return rval;
@@ -1143,7 +1146,7 @@ std::string XgmSkeleton::dump() const {
 
   for (int ij = 0; ij < miNumJoints; ij++) {
     auto name = GetJointName(ij);
-    rval += FormatString("   joint<%d:%s>\n", ij, name.c_str());
+    rval += FormatString("   joint<%02d:%s>\n", ij, name.c_str());
 
     int parent          = maJointParents[ij];
     const char* parname = (parent >= 0) ? GetJointName(parent).c_str() : "none";
