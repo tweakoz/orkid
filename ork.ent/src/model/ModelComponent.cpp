@@ -119,6 +119,12 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
   lev2::XgmModel* model = data.GetModel();
 
   if (model) {
+
+    fvec3 whi(1, 1, 1);
+    fvec3 red(1, 0, 0);
+    fvec3 mag(1, 0, 1);
+    fvec3 cyn(0, 1, 1);
+
     mXgmModelInst = new lev2::XgmModelInst(model);
 
     mModelDrawable->SetModelInst(mXgmModelInst);
@@ -131,11 +137,16 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
     mXgmModelInst->SetBlenderZup(mData.IsBlenderZup());
     auto& localpose = mXgmModelInst->RefLocalPose();
     localpose.BindPose();
-    deco::prints(localpose.dumpc(fvec3(1, 0, 0)), true);
+
+    deco::printe(whi, "ModelComponentInst<%p> constructor:", true);
+    deco::printe(red, "init localpose (bind)", true);
+    deco::prints(localpose.dumpc(red), true);
     localpose.BuildPose();
-    deco::prints(localpose.dumpc(fvec3(1, 0, 1)), true);
+    deco::printe(mag, "init localpose (pre-concat)", true);
+    deco::prints(localpose.dumpc(mag), true);
     localpose.Concatenate();
-    deco::prints(localpose.dumpc(fvec3(0, 1, 1)), true);
+    deco::printe(cyn, "init localpose (post-concat)", true);
+    deco::prints(localpose.dumpc(cyn), true);
 
     auto& ovmap = mData.MaterialOverrideMap();
 
