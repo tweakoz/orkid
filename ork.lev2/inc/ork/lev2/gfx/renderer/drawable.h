@@ -196,7 +196,7 @@ public:
 
   virtual void enqueueToRenderQueue(const DrawableBufItem& item,
                                lev2::IRenderer* prenderer) const = 0; // 	AssertOnOpQ2( mainSerialQueue() );
-  virtual void QueueToLayer(const DrawQueueXfData& xfdata,
+  virtual void enqueueOnLayer(const DrawQueueXfData& xfdata,
                             DrawableBufLayer& buffer) const = 0; // AssertOnOpQ2( updateSerialQueue() );
 
   const ork::Object* GetOwner() const { return mOwner; }
@@ -246,7 +246,7 @@ public:
 
 private:
   void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const override;
-  void QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const override;
+  void enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const override;
 
   lev2::XgmModelInst* mModelInst;
   lev2::XgmWorldPose* mpWorldPose;
@@ -282,16 +282,16 @@ public:
 
   void SetDataDestroyer(ICallbackDrawableDataDestroyer* pdestroyer) { mDataDestroyer = pdestroyer; }
   void SetRenderCallback(lev2::CallbackRenderable::cbtype_t cb) { mRenderCallback = cb; }
-  void SetQueueToLayerCallback(Q2LCBType cb) { mQueueToLayerCallback = cb; }
+  void SetenqueueOnLayerCallback(Q2LCBType cb) { menqueueOnLayerCallback = cb; }
   U32 GetSortKey() const { return mSortKey; }
   void SetSortKey(U32 uv) { mSortKey = uv; }
   void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const final;
-  void QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const final;
+  void enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const final;
 
 private:
   ICallbackDrawableDataDestroyer* mDataDestroyer;
   lev2::CallbackRenderable::cbtype_t mRenderCallback;
-  Q2LCBType mQueueToLayerCallback;
+  Q2LCBType menqueueOnLayerCallback;
   U32 mSortKey;
 };
 

@@ -451,7 +451,7 @@ BulletShapeModelData::BulletShapeModelData()
 		auto rval = new BulletShapeBaseInst;
 		if( mModelAsset )
 		{	const lev2::XgmModel* model = this->mModelAsset->GetModel();
-			if( model && model->GetNumMeshes() )
+			if( model && model->numMeshes() )
 				rval->mCollisionShape = XgmModelToGimpactShape(model,this->mfScale);
 		}
 		else

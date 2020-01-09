@@ -1354,7 +1354,7 @@ public:
 	*/	
 	bool Error() const						{ return error; }
 
-	/// Contains a textual (english) description of the error if one occurs.
+	/// contains a textual (english) description of the error if one occurs.
 	const char * ErrorDesc() const	{ return errorDesc.c_str (); }
 
 	/** Generally, you probably want the error string ( ErrorDesc() ). But if you

@@ -44,7 +44,7 @@ void GfxMaterialManip::Init(ork::lev2::Context *pTarg)
 int GfxMaterialManip::BeginBlock( Context* pTarg,const RenderContextInstData &MatCtx )
 {
 	int imode = mManager.GetDrawMode();
-	bool bpick = pTarg->FBI()->IsPickState();
+	bool bpick = pTarg->FBI()->isPickState();
 
 	pTarg->FXI()->BindTechnique( hModFX, bpick ? hTekPick : hTekStd );
 	int inumpasses = pTarg->FXI()->BeginBlock( hModFX, MatCtx );

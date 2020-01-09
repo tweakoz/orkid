@@ -91,7 +91,7 @@ struct Sector
 		mFlags = 0;
 	}
 
-	bool ContainsPoint(const SectorData &data, const ork::fvec3& position) const;
+	bool containsPoint(const SectorData &data, const ork::fvec3& position) const;
 	void Transform(const fmtx4& transform);
 
 	float ContributeBasis(SectorData &data);

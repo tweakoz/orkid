@@ -100,7 +100,7 @@ void PhysicsDebugger::beginRenderFrame() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void bulletDebugRender(RenderContextInstData& rcid, Context* targ, const CallbackRenderable* pren) {
-  if (targ->FBI()->IsPickState())
+  if (targ->FBI()->isPickState())
     return;
   //////////////////////////////////////////
   auto drawdata = pren->GetDrawableDataA().Get<BulletDebugDrawDBData*>();

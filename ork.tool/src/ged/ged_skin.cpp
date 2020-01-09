@@ -274,7 +274,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
   }
   ///////////////////////////////////////////////////////////////////
   void Begin(Context* pTARG, GedVP* pVP) {
-    mbPickMode = pTARG->FBI()->IsPickState();
+    mbPickMode = pTARG->FBI()->isPickState();
     mpCurrentGedVp = pVP;
     mTexts.clear();
     clear();
@@ -579,7 +579,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   }
   ///////////////////////////////////////////////////////////////////
   void Begin(Context* pTARG, GedVP* pVP) {
-    mbPickMode = pTARG->FBI()->IsPickState();
+    mbPickMode = pTARG->FBI()->isPickState();
     mpCurrentGedVp = pVP;
     mTexts.clear();
     clear();

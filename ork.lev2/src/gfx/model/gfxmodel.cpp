@@ -5,6 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <ork/pch.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/kernel/prop.h>
 #include <ork/lev2/gfx/gfxenv.h>
@@ -12,7 +13,7 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
-#include <ork/pch.h>
+#include <ork/kernel/string/deco.inl>
 
 template class ork::orklut<ork::PoolString, ork::lev2::XgmMesh*>;
 int eggtestcount = 0;
@@ -36,7 +37,7 @@ XgmModel::~XgmModel() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int XgmModel::GetMeshIndex(const PoolString& name) const {
+int XgmModel::meshIndex(const PoolString& name) const {
   orklut<PoolString, XgmMesh*>::const_iterator it = mMeshes.find(name);
 
   return (it == mMeshes.end()) ? -1 : int(it - mMeshes.begin());
@@ -46,20 +47,21 @@ int XgmModel::GetMeshIndex(const PoolString& name) const {
 
 XgmModelInst::XgmModelInst(const XgmModel* Model)
     : mXgmModel(Model)
-    , mLocalPose(Model->RefSkel())
+    , mLocalPose(Model->skeleton())
     , mMaterialStateInst(*this)
     , mbSkinned(false)
     , mBlenderZup(false) {
   EnableAllMeshes();
 
   OrkAssert(Model != 0);
-  miNumChannels = Model->RefSkel().GetNumJoints();
+  miNumChannels = Model->skeleton().GetNumJoints();
   if (miNumChannels == 0) {
     miNumChannels = 1;
   }
 
   mLocalPose.BindPose();
   mLocalPose.BuildPose();
+  mLocalPose.Concatenate();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -70,14 +72,14 @@ XgmModelInst::~XgmModelInst() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void XgmModelInst::EnableMesh(const PoolString& ps) {
-  int index = mXgmModel->GetMeshIndex(ps);
+  int index = mXgmModel->meshIndex(ps);
   EnableMesh(index);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void XgmModelInst::DisableMesh(const PoolString& ps) {
-  int index = mXgmModel->GetMeshIndex(ps);
+  int index = mXgmModel->meshIndex(ps);
   DisableMesh(index);
 }
 
@@ -115,8 +117,8 @@ void XgmModelInst::DisableAllMeshes() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmModelInst::IsMeshEnabled(int imeshindex) {
-  if (imeshindex >= mXgmModel->GetNumMeshes())
+bool XgmModelInst::isMeshEnabled(int imeshindex) {
+  if (imeshindex >= mXgmModel->numMeshes())
     return false;
 
   int icharindex = (imeshindex >> 3);
@@ -127,16 +129,16 @@ bool XgmModelInst::IsMeshEnabled(int imeshindex) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmModelInst::IsMeshEnabled(const PoolString& ps) {
-  int index = mXgmModel->GetMeshIndex(ps);
+bool XgmModelInst::isMeshEnabled(const PoolString& ps) {
+  int index = mXgmModel->meshIndex(ps);
   if (index >= 0) {
-    return IsMeshEnabled(index);
+    return isMeshEnabled(index);
   }
   return false;
 }
 
 bool XgmModelInst::IsAnyMeshEnabled() {
-  if (mXgmModel->GetNumMeshes() == 1)
+  if (mXgmModel->numMeshes() == 1)
     return true;
 
   for (int i = 0; i < knummaskbytes; i++)
@@ -210,12 +212,12 @@ XgmMesh::XgmMesh(XgmMesh* pMesh) {
   mfBoundingRadius  = pMesh->mfBoundingRadius;
   mvBoundingCenter  = pMesh->mvBoundingCenter;
 
-  int inumsubmeshes = pMesh->GetNumSubMeshes();
+  int inumsubmeshes = pMesh->numSubMeshes();
   mSubMeshes.reserve(inumsubmeshes);
 
   for (int i = 0; i < inumsubmeshes; i++) {
-    XgmSubMesh* psrcmesh  = pMesh->GetSubMesh(i);
-    XgmSubMesh* pdestmesh = GetSubMesh(i);
+    XgmSubMesh* psrcmesh  = pMesh->subMesh(i);
+    XgmSubMesh* pdestmesh = subMesh(i);
     new (pdestmesh) XgmSubMesh(*psrcmesh);
   }
 }
@@ -259,8 +261,8 @@ void XgmModel::RenderRigid(
   const XgmCluster& XgmClus      = *mdlctx.mCluster;
   const XgmSubMesh& XgmClusSet   = *mdlctx.mSubMesh;
   const Texture* LightMapTexture = XgmClusSet.mLightMap;
-  int inummesh                   = GetNumMeshes();
-  int inumclusset                = XgmMesh.GetNumSubMeshes();
+  int inummesh                   = numMeshes();
+  int inumclusset                = XgmMesh.numSubMeshes();
   int imat                       = RCID.GetMaterialIndex();
   OrkAssert(imat < inumclusset);
   GfxMaterial* __restrict pmat = XgmClusSet.GetMaterial();
@@ -412,8 +414,8 @@ void XgmModel::RenderMultipleRigid(
     const XgmSubMesh& XgmClusSet = *mdlctx.mSubMesh;
     const auto modelinst         = mdlctx.GetModelInst();
 
-    int inummesh    = GetNumMeshes();
-    int inumclusset = XgmMesh.GetNumSubMeshes();
+    int inummesh    = numMeshes();
+    int inumclusset = XgmMesh.numSubMeshes();
     int imat        = RCID.GetMaterialIndex();
     OrkAssert(imat < inumclusset);
     GfxMaterial* pmaterial = XgmClusSet.GetMaterial();
@@ -474,18 +476,15 @@ void XgmModel::RenderSkinned(
   const auto& CPD  = RCFD->topCPD();
   bool stereo1pass = CPD.isStereoOnePass();
 
-  const XgmSkeleton& Skeleton = RefSkel();
+  // printf("rendering skinned!!\n");
 
-  auto pworldpose = mdlctx.mpWorldPose;
-
-  const XgmLocalPose& LocalPose = minst->RefLocalPose();
-
-  printf("rendering skinned!!\n");
   ////////////////////
   // Draw Skinned Mesh
 
   if (1) // draw mesh
   {
+    const XgmSkeleton& Skeleton = skeleton();
+
     pTARG->debugPushGroup("RenderSkinnedMesh");
     pTARG->MTXI()->PushMMatrix(WorldMat);
     pTARG->PushModColor(ModColor);
@@ -523,7 +522,7 @@ void XgmModel::RenderSkinned(
             for (size_t ijointreg = 0; ijointreg < inumjoints; ijointreg++) {
               const PoolString& JointName = XgmCluster.mJoints[ijointreg];
               int JointSkelIndex          = XgmCluster.mJointSkelIndices[ijointreg];
-              const fmtx4& finalmtx       = pworldpose->GetMatrices()[JointSkelIndex];
+              const fmtx4& finalmtx       = mdlctx.mpWorldPose->GetMatrices()[JointSkelIndex];
               //////////////////////////////////////
               MatrixBlock[ijointreg] = finalmtx;
             }
@@ -570,20 +569,21 @@ void XgmModel::RenderSkinned(
   // Draw Skeleton
 
   if (1) {
+    const XgmLocalPose& LocalPose = minst->RefLocalPose();
     pTARG->debugPushGroup("DrawSkeleton");
     pTARG->PushModColor(ModColor);
     GfxEnv::GetDefault3DMaterial()->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     pTARG->BindMaterial(GfxEnv::GetDefault3DMaterial());
     {
-      int inumbones             = RefSkel().GetNumBones();
-      const fmtx4& MatBindShape = RefSkel().mBindShapeMatrix;
+      int inumbones             = skeleton().GetNumBones();
+      const fmtx4& MatBindShape = skeleton().mBindShapeMatrix;
       fmtx4 MatStatScale;
       float rstat(0.5f);
       MatStatScale.Scale(rstat, rstat, rstat);
 
       for (int ib = 0; ib < inumbones; ib++) {
-        const fmtx4& MatIBind    = RefSkel().RefInverseBindMatrix(ib);
-        const fmtx4& MatJ        = RefSkel().RefJointMatrix(ib);
+        const fmtx4& MatIBind    = skeleton().RefInverseBindMatrix(ib);
+        const fmtx4& MatJ        = skeleton().RefJointMatrix(ib);
         const fmtx4& MatAnimJCat = LocalPose.RefLocalMatrix(ib);
         fmtx4 MatW               = MatStatScale * MatAnimJCat * WorldMat;
         fvec3 Pos                = MatW.GetTranslation();
@@ -612,7 +612,7 @@ void XgmModel::RenderMultipleSkinned(
   const auto& CPD  = RCFD->topCPD();
   bool stereo1pass = CPD.isStereoOnePass();
 
-  const XgmSkeleton& Skeleton   = RefSkel();
+  const XgmSkeleton& Skeleton   = skeleton();
   const XgmLocalPose& LocalPose = minst->RefLocalPose();
 
   ////////////////////
@@ -620,13 +620,13 @@ void XgmModel::RenderMultipleSkinned(
 
   pTARG->PushModColor(ModColor);
   {
-    int inummesh = GetNumMeshes();
+    int inummesh = numMeshes();
     int imat     = RCID.GetMaterialIndex();
 
     const XgmMesh& XgmMesh       = *mdlctx.mMesh;
-    const XgmSubMesh& XgmClusSet = *XgmMesh.GetSubMesh(imat);
+    const XgmSubMesh& XgmClusSet = *XgmMesh.subMesh(imat);
 
-    int inumclusset = XgmMesh.GetNumSubMeshes();
+    int inumclusset = XgmMesh.numSubMeshes();
     OrkAssert(imat < inumclusset);
     bool bmatpushed   = false;
     GfxMaterial* pmat = XgmClusSet.GetMaterial();
@@ -704,25 +704,25 @@ void XgmModel::RenderMultipleSkinned(
 ///////////////////////////////////////////////////////////////////////////////
 
 void XgmModel::dump() const {
-  int inummeshes = GetNumMeshes();
+  int inummeshes = numMeshes();
 
   orkprintf("CXGMModelDump this<%p>\n", this);
   orkprintf(" NumMeshes %d\n", inummeshes);
   for (int i = 0; i < inummeshes; i++) {
-    GetMesh(i)->dump();
+    mesh(i)->dump();
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void XgmMesh::dump() const {
-  int inumsubmeshes = GetNumSubMeshes();
+  int inumsubmeshes = numSubMeshes();
 
   orkprintf(" XgmMesh this<%p>\n", this);
   orkprintf(" NumClusterSets %d\n", inumsubmeshes);
 
   for (int i = 0; i < inumsubmeshes; i++) {
-    GetSubMesh(i)->dump();
+    subMesh(i)->dump();
   }
 }
 
@@ -757,7 +757,7 @@ void XgmCluster::dump() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 RenderContextInstModelData::RenderContextInstModelData()
-    : mbIsSkinned(false)
+    : mbisSkinned(false)
     , mpModelInst(0)
     , mMesh(0)
     , mSubMesh(0)

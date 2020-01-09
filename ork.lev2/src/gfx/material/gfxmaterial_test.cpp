@@ -269,7 +269,7 @@ bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
   if (hMatRot)
     FXI->BindParamMatrix(hModFX, hMatRot, MTXI->RefR3Matrix());
 
-  if (pTarg->FBI()->IsPickState()) {
+  if (pTarg->FBI()->isPickState()) {
     FXI->BindParamVect4(hModFX, hParamModColor, pTarg->RefModColor());
   } else {
     if (meColorMode == EMODE_INTERNAL_COLOR) {

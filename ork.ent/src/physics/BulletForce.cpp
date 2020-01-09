@@ -220,7 +220,7 @@ void TestForceControllerInst::UpdateForces(ork::ent::Simulation* inst, BulletObj
     //
     fplane3 Z_torque_ref_plane;
     Z_torque_ref_plane.CalcFromNormalAndOrigin(Z_torque_vec, pos);
-    float ztrpD = Z_torque_ref_plane.GetPointDistance(ORIGIN);
+    float ztrpD = Z_torque_ref_plane.pointDistance(ORIGIN);
     /////////////////////////////
     // Absolute Error
     float Y_fDOT = ynormal.Dot(Z_torque_vec); // 1 when we are heading to it, -1 when heading away
@@ -236,7 +236,7 @@ void TestForceControllerInst::UpdateForces(ork::ent::Simulation* inst, BulletObj
     Y_plane.CalcFromNormalAndOrigin(Z_torque_vec, pos); //! calc given normal and position of plane origin
     /////////////////////////////
     // Signed Error
-    float Y_fdistfromsplitplane = Z_torque_ref_plane.GetPointDistance(pos + ynormal);
+    float Y_fdistfromsplitplane = Z_torque_ref_plane.pointDistance(pos + ynormal);
     float Y_fsign = (Y_fdistfromsplitplane < 0.0f) ? 1.0f : -1.0f;
     float Y_ferr = Y_ferrABS * Y_fsign;
     /////////////////////////////
@@ -268,7 +268,7 @@ void TestForceControllerInst::UpdateForces(ork::ent::Simulation* inst, BulletObj
     Z_plane.CalcFromNormalAndOrigin(Z_split_vec, pos); //! calc given normal and position of plane origin
     /////////////////////////////
     // Signed Error
-    float Z_fdistfromsplitplane = Z_plane.GetPointDistance(ORIGIN);
+    float Z_fdistfromsplitplane = Z_plane.pointDistance(ORIGIN);
     float Z_fsign = (Z_fdistfromsplitplane < 0.0f) ? 1.0f : -1.0f;
     float Z_ferr = Z_ferrABS * Z_fsign;
     /////////////////////////////

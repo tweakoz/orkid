@@ -226,7 +226,7 @@ protected:
   const FxShaderParam* mWorldViewProjectionMtxParam;
   const FxShaderParam* mIsShadowRecieverParam;
   const FxShaderParam* mIsShadowCasterParam;
-  const FxShaderParam* mIsSkinnedParam;
+  const FxShaderParam* misSkinnedParam;
   const FxShaderParam* mIsPickParam;
   const FxShaderParam* mLightMapParam;
   Texture* mLightMapTexture;

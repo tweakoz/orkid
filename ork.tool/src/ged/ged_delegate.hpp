@@ -507,7 +507,7 @@ template <typename IODriver, typename T> void GedSimpleNode<IODriver, T>::OnUiEv
 }
 ///////////////////////////////////////////////////////////////////////////////
 template <typename IODriver, typename T> void GedSimpleNode<IODriver, T>::DoDraw(lev2::Context* pTARG) {
-  bool IsPickState = pTARG->FBI()->IsPickState();
+  bool isPickState = pTARG->FBI()->isPickState();
 
   int ity = get_text_center_y();
 
@@ -518,7 +518,7 @@ template <typename IODriver, typename T> void GedSimpleNode<IODriver, T>::DoDraw
   mIoDriver.GetValue(val);
   GetSkin()->DrawBgBox(this, miX + ilabw, miY, miW - ilabw, miH, GedSkin::ESTYLE_BACKGROUND_2);
 
-  if (false == IsPickState) {
+  if (false == isPickState) {
     PropTypeString pts;
     PropType<T>::ToString(val, pts);
     //////////////////////////////////////

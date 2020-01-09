@@ -85,7 +85,7 @@ void GridArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
 
             mtl->_enablePick = true;
 
-            bool IsPickState = targ->FBI()->IsPickState();
+            bool isPickState = targ->FBI()->isPickState();
             float fphase = ssci->GetPhase();
 
             auto RCFD = targ->topRenderContextFrameData();
@@ -172,7 +172,7 @@ void GridArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
                             );
             }
         }
-        static void QueueToLayerCallback(ork::lev2::DrawableBufItem&cdb)
+        static void enqueueOnLayerCallback(ork::lev2::DrawableBufItem&cdb)
         {
             //AssertOnOpQ2( updateSerialQueue() );
 
@@ -182,7 +182,7 @@ void GridArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
     auto pdrw = new lev2::CallbackDrawable(pent);
     pent->addDrawableToDefaultLayer(pdrw);
     pdrw->SetRenderCallback( yo::RenderCallback );
-    pdrw->SetQueueToLayerCallback( yo::QueueToLayerCallback );
+    pdrw->SetenqueueOnLayerCallback( yo::enqueueOnLayerCallback );
     pdrw->SetOwner(  & pent->GetEntData() );
     pdrw->SetSortKey(0);
 

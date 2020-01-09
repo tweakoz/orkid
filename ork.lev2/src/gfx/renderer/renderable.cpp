@@ -108,9 +108,9 @@ bool ModelRenderable::CanGroup( const IRenderable* oth ) const
 	const ModelRenderable* pren = ork::rtti::autocast(oth);
 	if( pren )
 	{
-		const lev2::XgmSubMesh* submesh = pren->GetSubMesh();
+		const lev2::XgmSubMesh* submesh = pren->subMesh();
 		const GfxMaterial* mtl = submesh->GetMaterial();
-		const GfxMaterial* mtl2 = GetSubMesh()->GetMaterial();
+		const GfxMaterial* mtl2 = subMesh()->GetMaterial();
 		return (mtl==mtl2);
 	}
 	return false;

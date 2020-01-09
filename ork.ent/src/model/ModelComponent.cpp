@@ -5,15 +5,15 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <ork/pch.h>
+#include <ork/reflect/RegisterProperty.h>
+#include <ork/rtti/downcast.h>
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/texman.h>
-#include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
-#include <ork/rtti/downcast.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/ModelComponent.h>
@@ -25,6 +25,7 @@
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/kernel/string/deco.inl>
 ///////////////////////////////////////////////////////////////////////////////
 //#include "ModelArchetype.h"
 ///////////////////////////////////////////////////////////////////////////////
@@ -128,9 +129,13 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
     mModelDrawable->SetOwner(pent);
 
     mXgmModelInst->SetBlenderZup(mData.IsBlenderZup());
-    mXgmModelInst->RefLocalPose().BindPose();
-    mXgmModelInst->RefLocalPose().BuildPose();
-    mXgmModelInst->RefLocalPose().Concatenate();
+    auto& localpose = mXgmModelInst->RefLocalPose();
+    localpose.BindPose();
+    deco::prints(localpose.dumpc(fvec3(1, 0, 0)), true);
+    localpose.BuildPose();
+    deco::prints(localpose.dumpc(fvec3(1, 0, 1)), true);
+    localpose.Concatenate();
+    deco::prints(localpose.dumpc(fvec3(0, 1, 1)), true);
 
     auto& ovmap = mData.MaterialOverrideMap();
 

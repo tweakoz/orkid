@@ -95,7 +95,13 @@ template <typename T> std::string Matrix44<T>::dump(Vector3<T> color) const {
       if (use_color) {
         rval += j < 3 ? ork::deco::asciic_rgb(color2) : ork::deco::asciic_rgb(color4);
       }
-      rval += FormatString(" %+0.3g ", elements[i][j]);
+      //////////////////////////////////
+      // round down small numbers
+      //////////////////////////////////
+      float elem = elements[i][j];
+      elem       = float(int(elem * 10000)) / 10000.0f;
+      //////////////////////////////////
+      rval += FormatString(" %+4.4g ", elem);
     }
     if (use_color) {
       rval += ork::deco::asciic_rgb(color4);

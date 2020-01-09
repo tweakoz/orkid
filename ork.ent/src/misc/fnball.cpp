@@ -154,10 +154,10 @@ void FnBallArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
             const Entity* pent = pyo->pent;
             const FnBallComponentInst* fnbi = pent->GetTypedComponent<FnBallComponentInst>();
             const FnBallComponentData& fd = fnbi->GetFbd();
-            bool IsPickState = rcid.GetRenderer()->GetTarget()->FBI()->IsPickState();
+            bool isPickState = rcid.GetRenderer()->GetTarget()->FBI()->isPickState();
             const fmtx4& MVP = targ->MTXI()->RefMVPMatrix();
 
-            if( fd.mpMaterial && false==IsPickState )
+            if( fd.mpMaterial && false==isPickState )
             {
 
                 auto& vtxbuf = GfxEnv::GetSharedDynamicVB2();

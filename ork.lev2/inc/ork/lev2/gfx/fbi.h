@@ -68,7 +68,7 @@ public:
     miPickState++;
     mpPickBuffer = pb;
   }
-  bool IsPickState(void) { return (miPickState > 0); }
+  bool isPickState(void) { return (miPickState > 0); }
 
   void LeavePickState(void) {
     miPickState--;

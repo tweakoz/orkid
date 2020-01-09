@@ -948,14 +948,14 @@ void ModelRenderer::Render(
     ///////////////////////////////////////////////////////////
     // setup headlight (default lighting)
     ///////////////////////////////////////////////////////////
-    int inummeshes = GetModel()->GetNumMeshes();
+    int inummeshes = GetModel()->numMeshes();
     for (int imesh = 0; imesh < inummeshes; imesh++) {
-      const lev2::XgmMesh& mesh = *GetModel()->GetMesh(imesh);
+      const lev2::XgmMesh& mesh = *GetModel()->mesh(imesh);
 
-      int inumclusset = mesh.GetNumSubMeshes();
+      int inumclusset = mesh.numSubMeshes();
 
       for (int ics = 0; ics < inumclusset; ics++) {
-        const lev2::XgmSubMesh& submesh   = *mesh.GetSubMesh(ics);
+        const lev2::XgmSubMesh& submesh   = *mesh.subMesh(ics);
         const lev2::GfxMaterial* material = submesh.mpMaterial;
 
         int inumclus = submesh.miNumClusters;
@@ -966,7 +966,7 @@ void ModelRenderer::Render(
 
           MdlCtx.mMesh    = &mesh;
           MdlCtx.mSubMesh = &submesh;
-          MdlCtx.mCluster = &submesh.RefCluster(ic);
+          MdlCtx.mCluster = &submesh.cluster(ic);
 
           GetModel()->RenderMultipleRigid(ork::fcolor4::White(), gmatrixblock, icnt, targ, MatCtx, MdlCtx);
         }

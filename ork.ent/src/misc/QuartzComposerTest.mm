@@ -314,7 +314,7 @@ struct QuartzComposerDrawable
 
 	static void doit( lev2::RenderContextInstData& rcid, lev2::Context* targ, const lev2::CallbackRenderable* pren )
 	{
-		if( targ->FBI()->IsPickState() ) return;
+		if( targ->FBI()->isPickState() ) return;
 		
 		const QuartzComposerDrawable* pyo = pren->GetUserData0().Get<const QuartzComposerDrawable*>();
 		QuartzComposerInst* pQCI = pyo->mpQCI;

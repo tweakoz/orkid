@@ -111,7 +111,7 @@ LightingComponentInst::LightingComponentInst(const LightingComponentData& data, 
       const ork::TransformNode& xf = &pyo->mpEntity->GetEntData().GetDagNode().GetTransformNode();
       ork::fmtx4 mtxw              = xf.GetTransform()->GetMatrix();
 
-      if (false == targ->FBI()->IsPickState()) {
+      if (false == targ->FBI()->isPickState()) {
         ork::lev2::SphereRenderable sphrend;
         sphrend.SetColor(ork::fcolor4::White());
         sphrend.SetPosition(mtxw.GetTranslation());
@@ -123,7 +123,7 @@ LightingComponentInst::LightingComponentInst(const LightingComponentData& data, 
       ork::fcolor4 ObjColor;
       ObjColor.SetRGBAU32(reinterpret_cast<U32>(pren->GetObject()));
 
-      ork::fcolor4 color = targ->FBI()->IsPickState() ? ObjColor : ModColor * ppntlight->GetColor();
+      ork::fcolor4 color = targ->FBI()->isPickState() ? ObjColor : ModColor * ppntlight->GetColor();
 
       mtxw.SetScale(0.25f);
       targ->PushModColor(color);
@@ -142,17 +142,17 @@ LightingComponentInst::LightingComponentInst(const LightingComponentData& data, 
       if (pmodel) {
         const ork::TransformNode3D& xf = &pyo->mpEntity->GetEntData().GetDagNode().GetTransformNode();
         // const ork::lev2::RenderContextFrameData* fdata = renderer->GetTarget()->topRenderContextFrameData();
-        int inummeshes = pmodel->GetNumMeshes();
+        int inummeshes = pmodel->numMeshes();
         for (int imesh = 0; imesh < inummeshes; imesh++) {
-          const ork::lev2::XgmMesh& mesh = *pmodel->GetMesh(imesh);
-          int inumclusset                = mesh.GetNumSubMeshes();
+          const ork::lev2::XgmMesh& mesh = *pmodel->mesh(imesh);
+          int inumclusset                = mesh.numSubMeshes();
           for (int ics = 0; ics < inumclusset; ics++) {
-            const ork::lev2::XgmSubMesh& submesh   = *mesh.GetSubMesh(ics);
+            const ork::lev2::XgmSubMesh& submesh   = *mesh.subMesh(ics);
             const ork::lev2::GfxMaterial* material = submesh.mpMaterial;
             int inumclus                           = submesh.miNumClusters;
             for (int ic = 0; ic < inumclus; ic++) {
               bool btest                           = true;
-              const ork::lev2::XgmCluster& cluster = submesh.RefCluster(ic);
+              const ork::lev2::XgmCluster& cluster = submesh.cluster(ic);
 
               ork::fcolor4 ModColor = pren->GetModColor();
 
@@ -162,7 +162,7 @@ LightingComponentInst::LightingComponentInst(const LightingComponentData& data, 
               ork::fcolor4 ObjColor;
               ObjColor.SetRGBAU32(reinterpret_cast<U32>(pren->GetObject()));
 
-              ork::fcolor4 color = targ->FBI()->IsPickState() ? ObjColor : ModColor;
+              ork::fcolor4 color = targ->FBI()->isPickState() ? ObjColor : ModColor;
 
               ork::fmtx4 mtxw = xf.GetTransform()->GetMatrix();
               ork::lev2::RenderContextInstModelData MdlCtx;

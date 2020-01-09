@@ -63,12 +63,12 @@ public:
   // Queued rendering
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  ModelRenderable& QueueModel() {
+  ModelRenderable& enqueueModel() {
     ModelRenderable& rend = mModels.create();
     QueueRenderable(&rend);
     return rend;
   }
-  CallbackRenderable& QueueCallback() {
+  CallbackRenderable& enqueueCallback() {
     CallbackRenderable& rend = mCallbacks.create();
     QueueRenderable(&rend);
     return rend;

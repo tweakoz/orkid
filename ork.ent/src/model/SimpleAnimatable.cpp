@@ -213,7 +213,7 @@ bool SimpleAnimatableInst::DoLink(ork::ent::Simulation* psi) {
   mModelInst  = mdraw.GetModelInst();
 
   if (mModelInst) {
-    const auto& skel = mModelInst->GetXgmModel()->RefSkel();
+    const auto& skel = mModelInst->xgmModel()->skeleton();
 
     const auto& mask_map = mData.GetAnimMaskMap();
     // Cache joints from masks
@@ -276,7 +276,7 @@ void SimpleAnimatableInst::PlayAnimationEx(
   if (itmask == mBodyPartMap.end()) {
     // orkprintf("WARNING: Mask %s is unknown on entity %s (%s) with model %s\n", maskname.c_str(),
     // GetEntity()->GetEntData().GetName().c_str(), GetEntity()->GetEntData().GetArchetype()->GetName().c_str(),
-    // mModelInst->GetXgmModel()->GetAssetName().c_str()); return;
+    // mModelInst->xgmModel()->GetAssetName().c_str()); return;
 
     maskname = sEmptyString;
     itmask   = mBodyPartMap.find(maskname);
@@ -287,7 +287,7 @@ void SimpleAnimatableInst::PlayAnimationEx(
     // nasa - not really a WARNING any more
     // orkprintf("WARNING: Anim %s is unknown on entity %s (%s) with model %s\n", name.c_str(),
     // GetEntity()->GetEntData().GetName().c_str(), GetEntity()->GetEntData().GetArchetype()->GetName().c_str(),
-    // mModelInst->GetXgmModel()->GetAssetName().c_str());
+    // mModelInst->xgmModel()->GetAssetName().c_str());
     return;
   }
 
@@ -487,9 +487,9 @@ void SimpleAnimatableInst::PlayAnimationOnMask(
         /*if(PRINT_CONDITION)
         {
             orkprintf("Mask for %s\n", itmask->first.c_str());
-            for(int i = 0; i < mModelInst->GetXgmModel()->RefSkel().GetNumJoints(); i++)
+            for(int i = 0; i < mModelInst->xgmModel()->skeleton().GetNumJoints(); i++)
                 if(itmask->second->mCurrentAnimData.RefMask().Check(i))
-                    orkprintf(" %s", mModelInst->GetXgmModel()->RefSkel().GetJointName(i));
+                    orkprintf(" %s", mModelInst->xgmModel()->skeleton().GetJointName(i));
             orkprintf("\n");
         }*/
 #endif
@@ -514,9 +514,9 @@ void SimpleAnimatableInst::PlayAnimationOnMask(
         /*if(PRINT_CONDITION)
         {
             orkprintf("Mask for %s\n", itmask->first.c_str());
-            for(int i = 0; i < mModelInst->GetXgmModel()->RefSkel().GetNumJoints(); i++)
+            for(int i = 0; i < mModelInst->xgmModel()->skeleton().GetNumJoints(); i++)
                 if(itmask->second->mCurrentAnimData.RefMask().Check(i))
-                    orkprintf(" %s", mModelInst->GetXgmModel()->RefSkel().GetJointName(i));
+                    orkprintf(" %s", mModelInst->xgmModel()->skeleton().GetJointName(i));
             orkprintf("\n");
         }*/
 #endif
@@ -548,11 +548,11 @@ void SimpleAnimatableInst::PlayAnimationOnMask(
 #if ANIMATE_VERBOSE
       /*if(PRINT_CONDITION)
       {
-          mModelInst->GetXgmModel()->RefSkel().dump();
+          mModelInst->xgmModel()->skeleton().dump();
           orkprintf("Mask for %s\n", itmask->first.c_str());
-          for(int i = 0; i < mModelInst->GetXgmModel()->RefSkel().GetNumJoints(); i++)
+          for(int i = 0; i < mModelInst->xgmModel()->skeleton().GetNumJoints(); i++)
               if(itmask->second->mCurrentAnimData.RefMask().Check(i))
-                  orkprintf(" %s", mModelInst->GetXgmModel()->RefSkel().GetJointName(i));
+                  orkprintf(" %s", mModelInst->xgmModel()->skeleton().GetJointName(i));
           orkprintf("\n");
       }*/
 #endif
@@ -643,8 +643,9 @@ void SimpleAnimatableInst::DoUpdate(ork::ent::Simulation* inst) {
   // printf("DoUpdate SimpleAnimatableInst<%p> mModelInst<%p>\n", this, mModelInst);
 
   if (mModelInst) {
+    auto& localpose = mModelInst->RefLocalPose();
     // Put the model in the model pose
-    mModelInst->RefLocalPose().BindPose();
+    localpose.BindPose();
 
     bool service_queue = false;
 
@@ -709,8 +710,8 @@ void SimpleAnimatableInst::DoUpdate(ork::ent::Simulation* inst) {
       }
     }
 
-    mModelInst->RefLocalPose().BuildPose();
-    mModelInst->RefLocalPose().Concatenate();
+    localpose.BuildPose();
+    localpose.Concatenate();
 
     if (service_queue) {
       if (mAnimationQueue.size()) {

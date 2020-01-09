@@ -573,7 +573,7 @@ void configureXgmSkeleton(const toolmesh& input, lev2::XgmModel& xgmmdlout) {
 
   printf("NumSkelNodes<%d>\n", int(xgmskelnodes.size()));
   xgmmdlout.SetSkinned(true);
-  auto& xgmskel = xgmmdlout.RefSkel();
+  auto& xgmskel = xgmmdlout.skeleton();
   xgmskel.SetNumJoints(xgmskelnodes.size());
   for (auto& item : xgmskelnodes) {
     const std::string& JointName = item.first;
@@ -767,7 +767,7 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
         // for( int ib=0; ib<inumclusjoints; ib++ )
         //{
         //	const PoolString JointName = XgmClus.mJoints[ ib ];
-        //	orklut<PoolString,int>::const_iterator itfind = mXgmModel.RefSkel().mmJointNameMap.find( JointName );
+        //	orklut<PoolString,int>::const_iterator itfind = mXgmModel.skeleton().mmJointNameMap.find( JointName );
         //	int iskelindex = (*itfind).second;
         //	XgmClus.mJointSkelIndices.push_back(iskelindex);
         //}
@@ -825,7 +825,7 @@ bool ASS_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
     if (is_skinned)
       configureXgmSkeleton(tmesh, xgmmdlout);
   }
-  policy.mbIsSkinned = is_skinned;
+  policy.mbisSkinned = is_skinned;
   clusterizeToolMeshToXgmMesh<XgmClusterizerStd>(tmesh, xgmmdlout);
   bool rv = ork::lev2::SaveXGM(outf, &xgmmdlout);
   return rv;

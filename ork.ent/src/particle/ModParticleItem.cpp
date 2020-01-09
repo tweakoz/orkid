@@ -135,7 +135,7 @@ struct ModItemRenderData {
   ~ModItemRenderData() {
     mEntity = 0;
   }
-  static void QueueToLayerCallback(lev2::DrawableBufItem& cdb) {
+  static void enqueueOnLayerCallback(lev2::DrawableBufItem& cdb) {
     ork::opq::assertOnQueue2(opq::updateSerialQueue());
 
     ModItemRenderData* pmird = cdb.mUserData0.Get<ModItemRenderData*>();
@@ -169,14 +169,14 @@ struct ModItemRenderData {
       }
     }
   }
-  static void enqueueToRenderQueueCallback(
+  static void enqueueToRendererCallback(
       ork::lev2::RenderContextInstData& rcid,
       ork::lev2::Context* targ,
       const ork::lev2::CallbackRenderable* pren) {
     ork::opq::assertOnQueue2(opq::mainSerialQueue());
 
     //////////////////////////////////////////
-    if (targ->FBI()->IsPickState())
+    if (targ->FBI()->isPickState())
       return;
     //////////////////////////////////////////
 
@@ -363,8 +363,8 @@ void ModularSystem::DoLinkSystem(ork::ent::Simulation* psi, ork::ent::Entity* pe
       RendererModule* renderer = GetRenderer(ir);
 
       auto pdrw = new lev2::CallbackDrawable(pent);
-      pdrw->SetRenderCallback(ModItemRenderData::enqueueToRenderQueueCallback);
-      pdrw->SetQueueToLayerCallback(ModItemRenderData::QueueToLayerCallback);
+      pdrw->SetRenderCallback(ModItemRenderData::enqueueToRendererCallback);
+      pdrw->SetenqueueOnLayerCallback(ModItemRenderData::enqueueOnLayerCallback);
       pdrw->SetOwner(&pent->GetEntData());
       pdrw->SetSortKey(isort);
 

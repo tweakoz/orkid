@@ -54,7 +54,7 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
       const Entity* pent               = pyo->pent;
       const SkyBoxControllerInst* ssci = pent->GetTypedComponent<SkyBoxControllerInst>();
       const SkyBoxControllerData& cd   = ssci->GetCD();
-      bool IsPickState                 = rcid.GetRenderer()->GetTarget()->FBI()->IsPickState();
+      bool isPickState                 = rcid.GetRenderer()->GetTarget()->FBI()->isPickState();
       float fphase                     = ssci->GetPhase();
 
       if (cd.GetModel()) {
@@ -73,7 +73,7 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
         fcolor4 ObjColor;
         // toz64 ObjColor.SetRGBAU32( reinterpret_cast<U32>( (u32)((size_t)pren->GetObject() )) );
 
-        fcolor4 color = targ->FBI()->IsPickState() ? ObjColor : pren->GetModColor();
+        fcolor4 color = targ->FBI()->isPickState() ? ObjColor : pren->GetModColor();
 
         ///////////////////////////////////////////////////////////
         // setup headlight (default lighting)
@@ -113,14 +113,14 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
 
         //	printf( "DrawSkyBox pos<%f %f %f>\n", pos.GetX(), pos.GetY(), pos.GetX() );
 
-        int inummeshes = cd.GetModel()->GetNumMeshes();
+        int inummeshes = cd.GetModel()->numMeshes();
         for (int imesh = 0; imesh < inummeshes; imesh++) {
-          const lev2::XgmMesh& mesh = *cd.GetModel()->GetMesh(imesh);
+          const lev2::XgmMesh& mesh = *cd.GetModel()->mesh(imesh);
 
-          int inumclusset = mesh.GetNumSubMeshes();
+          int inumclusset = mesh.numSubMeshes();
 
           for (int ics = 0; ics < inumclusset; ics++) {
-            const lev2::XgmSubMesh& submesh   = *mesh.GetSubMesh(ics);
+            const lev2::XgmSubMesh& submesh   = *mesh.subMesh(ics);
             const lev2::GfxMaterial* material = submesh.mpMaterial;
 
             int inumclus = submesh.miNumClusters;
@@ -131,7 +131,7 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
 
               MdlCtx.mMesh    = &mesh;
               MdlCtx.mSubMesh = &submesh;
-              MdlCtx.mCluster = &submesh.RefCluster(ic);
+              MdlCtx.mCluster = &submesh.cluster(ic);
 
               // printf( "DrawSkyBox clus<%d>\n", ic );
 

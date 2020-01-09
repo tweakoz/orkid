@@ -570,7 +570,7 @@ class XgmWorldPose {
   orkvector<fmtx4> mWorldMatrices;
 
 public:
-  XgmWorldPose(const XgmSkeleton& Skeleton, const XgmLocalPose& LocalPose);
+  XgmWorldPose(const XgmSkeleton& Skeleton);
   orkvector<fmtx4>& GetMatrices() {
     return mWorldMatrices;
   }
@@ -578,6 +578,7 @@ public:
     return mWorldMatrices;
   }
   void apply(const fmtx4& worldmtx, const XgmLocalPose& LocalPose);
+  std::string dumpc(fvec3 color) const;
 };
 
 /// ///////////////////////////////////////////////////////////////////////////
@@ -663,6 +664,7 @@ struct XgmSkeleton {
   /////////////////////////////////////
 
   std::string dump(fvec3 color) const;
+  std::string dumpInvBind(fvec3 color) const;
 };
 
 }} // namespace ork::lev2

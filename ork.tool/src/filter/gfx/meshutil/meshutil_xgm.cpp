@@ -130,7 +130,7 @@ void simpleToolSubMeshToXgmSubMesh(const toolmesh& mesh, const submesh& smesh, o
 	gicolor = (gicolor+1)%8;
 	meshout.miNumClusters = inumclus;
 	meshout.mpClusters = new ork::lev2::XgmCluster[inumclus];
-	ork::lev2::XgmCluster& cluster = meshout.RefCluster(0);
+	ork::lev2::XgmCluster& cluster = meshout.cluster(0);
 	ork::lev2::MaterialMap::const_iterator itMTL = FxmMtlMap.find(smesh.name);
 	ork::lev2::GfxMaterial* pmtl = 0;
 	if( itMTL!=FxmMtlMap.end() ) // match from FXM file
@@ -186,7 +186,7 @@ void simpleToolSubMeshToXgmSubMesh(const toolmesh& mesh, const submesh& smesh, o
 
 void toolmeshToXgmModel(const toolmesh& tmesh, ork::lev2::XgmModel& mdlout)
 {
-	int inumsubs = tmesh.GetNumSubMeshes();
+	int inumsubs = tmesh.numSubMeshes();
 	mdlout.ReserveMeshes(1);
 	ork::lev2::XgmMesh* outmesh = new ork::lev2::XgmMesh;
 	outmesh->SetMeshName(ork::AddPooledString("Mesh1"));
@@ -230,16 +230,16 @@ void toolmesh::ReadFromXGM( const file::Path& BasePath )
 	if( bOK )
 	{
 		////////////////////////////////////////////////////////
-		int inummesh = mdl->GetNumMeshes();
+		int inummesh = mdl->numMeshes();
 		for( int imesh=0; imesh<inummesh; imesh++ )
 		{
-			lev2::XgmMesh& mesh = * mdl->GetMesh(imesh);
-			int inumcs = mesh.GetNumSubMeshes();
+			lev2::XgmMesh& mesh = * mdl->mesh(imesh);
+			int inumcs = mesh.numSubMeshes();
 
 			for( int ics=0; ics<inumcs; ics++ )
 			{
 				std::string mesh_name = CreateFormattedString( "xgm_import_mesh<%d>", ics );
-				const lev2::XgmSubMesh& cs = * mesh.GetSubMesh(ics);
+				const lev2::XgmSubMesh& cs = * mesh.subMesh(ics);
 
 				submesh& outsub = MergeSubMesh( mesh_name.c_str() );
 
@@ -247,7 +247,7 @@ void toolmesh::ReadFromXGM( const file::Path& BasePath )
 
 				for( int ic=0; ic<inumclus; ic++ )
 				{
-					const lev2::XgmCluster& clus = cs.RefCluster(ic);
+					const lev2::XgmCluster& clus = cs.cluster(ic);
 					lev2::VertexBufferBase* pvb = const_cast<lev2::VertexBufferBase*>(clus.GetVertexBuffer());
 
 					;

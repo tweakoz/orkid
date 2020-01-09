@@ -202,7 +202,7 @@ bool BulletSystem::DoLink(Simulation* psi) {
 
   _debugDrawable = new ork::lev2::CallbackDrawable(nullptr);
   _debugDrawable->SetSortKey(0x7fffffff);
-  _debugDrawable->SetQueueToLayerCallback(bulletDebugEnqueueToLayer);
+  _debugDrawable->SetenqueueOnLayerCallback(bulletDebugEnqueueToLayer);
   _debugDrawable->SetRenderCallback(bulletDebugRender);
   _debugDrawable->SetOwner(&_systemData);
   _debugDrawable->SetSortKey(0x3fffffff);
@@ -221,7 +221,7 @@ void BulletSystem::enqueueDrawables(lev2::DrawableBuffer& buffer) {
 
   if( _debugger._enabled ){
     auto buflayer = buffer.MergeLayer(_dbgdrawlayername);
-    _debugDrawable->QueueToLayer(_dbgdrawXF,*buflayer);
+    _debugDrawable->enqueueOnLayer(_dbgdrawXF,*buflayer);
   }
   // do something with _debugDrawable
 

@@ -104,7 +104,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
     if (GetAutoClear()) {
       fvec4 rCol = GetClearColor();
       // U32 ClearColorU = mTarget.fcolor4ToU32(GetClearColor());
-      if (IsPickState())
+      if (isPickState())
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
       else
         glClearColor(rCol.x, rCol.y, rCol.w, 1.0f);
@@ -321,7 +321,7 @@ void GlFrameBufferInterface::SetViewport(int iX, int iY, int iW, int iH) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::Clear(const fcolor4& color, float fdepth) {
-  if (IsPickState())
+  if (isPickState())
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   else
     glClearColor(color.GetX(), color.GetY(), color.GetZ(), color.GetW());

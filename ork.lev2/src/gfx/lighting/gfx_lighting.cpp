@@ -100,7 +100,7 @@ PointLight::PointLight(const fmtx4& mtx, const PointLightData* pld)
 bool PointLight::IsInFrustum(const Frustum& frustum) {
   const fvec3& wpos = GetWorldPosition();
 
-  float fd = frustum.mNearPlane.GetPointDistance(wpos);
+  float fd = frustum._nearPlane.pointDistance(wpos);
 
   if (fd > 200.0f)
     return false;

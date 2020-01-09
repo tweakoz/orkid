@@ -6,14 +6,14 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
+#include <ork/application/application.h>
+#include <ork/kernel/orklut.hpp>
+#include <ork/file/chunkfile.h>
+#include <ork/file/chunkfile.inl>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxmaterial_basic.h>
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
-#include <ork/kernel/orklut.hpp>
-#include <ork/file/chunkfile.h>
-#include <ork/file/chunkfile.inl>
-#include <ork/application/application.h>
 #include <ork/kernel/string/deco.inl>
 
 using namespace std::string_literals;
@@ -291,7 +291,7 @@ void DecompMtx44::EndianSwap() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void XgmBlendPoseInfo::ComputeMatrix(fmtx4& outmatrix) const {
-  printf("miNumAnims<%d>\n", miNumAnims);
+  // printf("miNumAnims<%d>\n", miNumAnims);
 
   switch (miNumAnims) {
     case 1: // just copy the first matrix
@@ -589,7 +589,7 @@ void XgmLocalPose::BuildPose(void) {
     if (inumanms) {
       mBlendPoseInfos[i].ComputeMatrix(mLocalMatrices[i]);
 
-      if (1) //( i == ((gctr/1000)%inumjoints) )
+      if (0) //( i == ((gctr/1000)%inumjoints) )
       {
         const auto& name = mSkeleton.GetJointName(i);
         ork::FixedString<64> fxs;
@@ -758,9 +758,11 @@ int XgmLocalPose::NumJoints() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-XgmWorldPose::XgmWorldPose(const XgmSkeleton& skel, const XgmLocalPose& LocalPose)
+XgmWorldPose::XgmWorldPose(const XgmSkeleton& skel)
     : mSkeleton(skel) {
-  apply(fmtx4(), LocalPose);
+  // apply(fmtx4(), LocalPose);
+  // deco::prints(LocalPose.dumpc(fvec3(1, 1, .5)), true);
+  // OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -778,6 +780,28 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+std::string XgmWorldPose::dumpc(fvec3 color) const {
+  std::string rval;
+  if (mSkeleton.miRootNode >= 0) {
+    int inumjoints = mSkeleton.GetNumJoints();
+    fvec3 ca       = color;
+    fvec3 cb       = color * 0.7;
+
+    for (int ij = 0; ij < inumjoints; ij++) {
+      fvec3 cc         = (ij & 1) ? cb : ca;
+      std::string name = mSkeleton.GetJointName(ij).c_str();
+      const auto& jmtx = mWorldMatrices[ij];
+      rval += deco::asciic_rgb(cc);
+      rval += FormatString("%16s", name.c_str());
+      rval += ": "s + jmtx.dump(cc) + "\n"s;
+      rval += deco::asciic_reset();
+    }
+  }
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 XgmSkelNode::XgmSkelNode(const std::string& Name)
     : mNodeName(Name)
     , mpParent(0) {
@@ -790,7 +814,7 @@ XgmSkelNode::XgmSkelNode(const std::string& Name)
 
 XgmMaterialStateInst::XgmMaterialStateInst(const XgmModelInst& minst)
     : mModelInst(minst)
-    , mModel(minst.GetXgmModel())
+    , mModel(minst.xgmModel())
     , mVarMap(EKEYPOLICY_MULTILUT) {
 }
 
@@ -1133,6 +1157,28 @@ void XgmSkeleton::SetNumJoints(int inumjoints) {
   _inverseBindMatrices.resize(inumjoints);
   _jointMatrices.resize(inumjoints);
   mpJointFlags = new U32[inumjoints];
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::string XgmSkeleton::dumpInvBind(fvec3 color) const {
+  std::string rval;
+  if (miRootNode >= 0) {
+    int inumjoints = GetNumJoints();
+    fvec3 ca       = color;
+    fvec3 cb       = color * 0.7;
+
+    for (int ij = 0; ij < inumjoints; ij++) {
+      fvec3 cc         = (ij & 1) ? cb : ca;
+      std::string name = GetJointName(ij).c_str();
+      const auto& jmtx = _inverseBindMatrices[ij];
+      rval += deco::asciic_rgb(cc);
+      rval += FormatString("%16s", name.c_str());
+      rval += ": "s + jmtx.dump(cc) + "\n"s;
+      rval += deco::asciic_reset();
+    }
+  }
+  return rval;
 }
 
 ////////////////////////////////////////////////////////////////////////////

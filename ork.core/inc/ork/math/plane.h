@@ -51,7 +51,7 @@ public: //
 
   //////////////////////////////////
 
-  T GetPointDistance(const Vector3<T>& pt) const;
+  T pointDistance(const Vector3<T>& pt) const;
   const Vector3<T>& GetNormal(void) const;
   const T& GetD(void) const;
   void crossProduct(F64 ii1, F64 jj1, F64 kk1, F64 ii2, F64 jj2, F64 kk2, F64& iicp, F64& jjcp, F64& kkcp) const;

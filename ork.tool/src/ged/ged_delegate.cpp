@@ -304,7 +304,7 @@ OpsTask* IOpsDelegate::GetTask(ork::object::ObjectClass* pdelegclass, ork::Objec
 
 void OpsNode::DoDraw(lev2::Context* pTARG) // virtual
 {
-  bool bispick = pTARG->FBI()->IsPickState();
+  bool bispick = pTARG->FBI()->isPickState();
 
   int inumops = int(mOps.size());
 

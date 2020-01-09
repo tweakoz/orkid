@@ -227,7 +227,7 @@ class GedGradientV4Widget : public GedItemNode
 		////////////////////////////////////
 		// draw segments
 
-		if( pTARG->FBI()->IsPickState() )
+		if( pTARG->FBI()->isPickState() )
 		{
 			mEditSegs.clear();
 
@@ -274,7 +274,7 @@ class GedGradientV4Widget : public GedItemNode
 
 			GedSkin::ESTYLE pntstyl = IsObjectHilighted(editpoint) ? GedSkin::ESTYLE_DEFAULT_HIGHLIGHT : GedSkin::ESTYLE_DEFAULT_CHECKBOX;
 
-			if( pTARG->FBI()->IsPickState() )
+			if( pTARG->FBI()->isPickState() )
 			{
 				GetSkin()->DrawBgBox( editpoint, fx0+1, fy0+1, kpntsize*2-2, kpntsize*2-2, pntstyl, 2 );
 			}
@@ -299,7 +299,7 @@ class GedGradientV4Widget : public GedItemNode
 
 		if( 0 == ksegs ) return;
 	
-		if( pTARG->FBI()->IsPickState() )
+		if( pTARG->FBI()->isPickState() )
 		{
 		}
 		else if(pthis->mGradientObject )

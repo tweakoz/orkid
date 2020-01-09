@@ -128,7 +128,7 @@ void ManipRot::Draw( Context *pTARG ) const
 
 	if(!bdrawok)
 	{
-		if(pTARG->FBI()->IsPickState())
+		if(pTARG->FBI()->isPickState())
 			return;
 		else
 		{

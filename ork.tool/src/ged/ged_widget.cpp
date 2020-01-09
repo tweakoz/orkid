@@ -220,7 +220,7 @@ void GedWidget::Draw(lev2::Context* pTARG, int iw, int ih, int iscrolly) {
   // miH = ih;
   GedItemNode* root = GetRootItem();
   ///////////////////////////////////////////////
-  // if( false == pTARG->FBI()->IsPickState() )
+  // if( false == pTARG->FBI()->isPickState() )
   //{
   //	root->Layout( 2, 2, miW-4, miH-4 );
   //}

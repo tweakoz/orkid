@@ -98,12 +98,12 @@ void BoundAndSplitModule::do_process( const ork::threadpool::sub_task* tsk, cons
 	int ith = tile.miHeight;
 	int itx = tile.miScreenXBase;
 	int ity = tile.miScreenYBase;
-	const ork::fplane3& topplane = tile.mFrustum.mTopPlane;
-	const ork::fplane3& bottomplane = tile.mFrustum.mBottomPlane;
-	const ork::fplane3& nearplane = tile.mFrustum.mNearPlane;
-	const ork::fplane3& farplane = tile.mFrustum.mFarPlane;
-	const ork::fplane3& leftplane = tile.mFrustum.mLeftPlane;
-	const ork::fplane3& rightplane = tile.mFrustum.mRightPlane;
+	const ork::fplane3& topplane = tile.mFrustum._topPlane;
+	const ork::fplane3& bottomplane = tile.mFrustum._bottomPlane;
+	const ork::fplane3& nearplane = tile.mFrustum._nearPlane;
+	const ork::fplane3& farplane = tile.mFrustum._farPlane;
+	const ork::fplane3& leftplane = tile.mFrustum._leftPlane;
+	const ork::fplane3& rightplane = tile.mFrustum._rightPlane;
 
 	int imgW = mRenderData.miImageWidth;
 

@@ -1342,7 +1342,7 @@ void PlanarColliderModule::Compute( float dt )
 
             auto nxt_pos = cur_pos+cur_vel*dt;
 
-			float pntdist = CollisionPlane.GetPointDistance( nxt_pos );
+			float pntdist = CollisionPlane.pointDistance( nxt_pos );
 
             bool cur_inside = particle->mColliderStates&1;
             bool nxt_inside = pntdist<0;

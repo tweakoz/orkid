@@ -85,7 +85,7 @@ template< typename T> void Plane<T>::CalcFromNormalAndOrigin( const Vector3<T> &
 {
     n = NormalVec;
     d = T(0.0f);
-    d =  GetPointDistance( PosVec ) * T(-1.0f);
+    d =  pointDistance( PosVec ) * T(-1.0f);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -100,7 +100,7 @@ template< typename T> void Plane<T>::Reset(void)
 
 template< typename T> bool Plane<T>::IsPointInFront( const Vector3<T> &point ) const
 {
-	T distance = GetPointDistance(point);
+	T distance = pointDistance(point);
     return (distance >= T(0.0f));
 }
 
@@ -120,7 +120,7 @@ template< typename T> void Plane<T>::CalcD( const Vector3<T> &pt )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> T Plane<T>::GetPointDistance( const Vector3<T> &pt ) const
+template< typename T> T Plane<T>::pointDistance( const Vector3<T> &pt ) const
 {
     return n.Dot(pt) + d;
 }
@@ -222,7 +222,7 @@ template <typename T> void Plane<T>::CalcPlaneFromTriangle( const Vector3<T> & p
     
 	// get plane distance from origin
 	d = T(0.0f);
-    d =  GetPointDistance( p0 ) * T(-1.0f);
+    d =  pointDistance( p0 ) * T(-1.0f);
 
 
 
@@ -233,7 +233,7 @@ template <typename T> void Plane<T>::CalcPlaneFromTriangle( const Vector3<T> & p
 
 template< typename T> bool Plane<T>::IsOn( const Vector3<T> &pt ) const
 {
-    T d = GetPointDistance(pt);
+    T d = pointDistance(pt);
     return (Abs(d) < Epsilon()) ? true : false;
 }
 
@@ -289,7 +289,7 @@ template< typename T> bool Plane<T>::Intersect( const Ray3<T>& ray, T &dis ) con
 	if( Abs(denom) < Epsilon())
         return false;
 
-	T pointdist = GetPointDistance(ray.mOrigin);
+	T pointdist = pointDistance(ray.mOrigin);
 	T u = -pointdist/(denom);
 	
 	dis = u;

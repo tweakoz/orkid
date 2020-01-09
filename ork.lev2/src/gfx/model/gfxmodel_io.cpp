@@ -506,7 +506,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
           ////////////////////////////////////////////////////////////////////////
           HeaderStream->GetItem(iclusindex);
           OrkAssert(ic == iclusindex);
-          XgmCluster& Clus = CS.RefCluster(ic);
+          XgmCluster& Clus = CS.cluster(ic);
           HeaderStream->GetItem(Clus.miNumPrimGroups);
           HeaderStream->GetItem(inumbb);
           HeaderStream->GetItem(ivbformat);
@@ -678,7 +678,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
   ///////////////////////////////////
   // write out Joints
 
-  const lev2::XgmSkeleton& skel = mdl->RefSkel();
+  const lev2::XgmSkeleton& skel = mdl->skeleton();
 
   int32_t inumjoints = skel.GetNumJoints();
 
@@ -726,16 +726,16 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
   ///////////////////////////////////
 
-  int32_t inummeshes = mdl->GetNumMeshes();
+  int32_t inummeshes = mdl->numMeshes();
   int32_t inummats   = mdl->GetNumMaterials();
 
   printf("WriteXgm<%s> nummeshes<%d>\n", Filename.c_str(), inummeshes);
   printf("WriteXgm<%s> nummtls<%d>\n", Filename.c_str(), inummats);
 
-  const fvec3& bc    = mdl->GetBoundingCenter();
+  const fvec3& bc    = mdl->boundingCenter();
   float br           = mdl->GetBoundingRadius();
   const fvec3& bbxyz = mdl->GetBoundingAA_XYZ();
-  const fvec3& bbwhd = mdl->GetBoundingAA_WHD();
+  const fvec3& bbwhd = mdl->boundingAA_WHD();
 
   HeaderStream->AddItem(bc.GetX());
   HeaderStream->AddItem(bc.GetY());
@@ -953,18 +953,18 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
   }
 
   for (int32_t imesh = 0; imesh < inummeshes; imesh++) {
-    const lev2::XgmMesh& Mesh = *mdl->GetMesh(imesh);
+    const lev2::XgmMesh& Mesh = *mdl->mesh(imesh);
 
-    int32_t inumsubmeshes = Mesh.GetNumSubMeshes();
+    int32_t inumsubmeshes = Mesh.numSubMeshes();
 
     HeaderStream->AddItem(imesh);
-    istring = chunkwriter.stringIndex(Mesh.GetMeshName().c_str());
+    istring = chunkwriter.stringIndex(Mesh.meshName().c_str());
     HeaderStream->AddItem(istring);
     HeaderStream->AddItem(inumsubmeshes);
 
-    printf("WriteXgm<%s> mesh<%d:%s> numsubmeshes<%d>\n", Filename.c_str(), imesh, Mesh.GetMeshName().c_str(), inumsubmeshes);
+    printf("WriteXgm<%s> mesh<%d:%s> numsubmeshes<%d>\n", Filename.c_str(), imesh, Mesh.meshName().c_str(), inumsubmeshes);
     for (int32_t ics = 0; ics < inumsubmeshes; ics++) {
-      const lev2::XgmSubMesh& CS    = *Mesh.GetSubMesh(ics);
+      const lev2::XgmSubMesh& CS    = *Mesh.subMesh(ics);
       const lev2::GfxMaterial* pmat = CS.GetMaterial();
 
       int32_t inumclus = CS.GetNumClusters();
@@ -972,7 +972,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
       int32_t inumenabledclus = 0;
 
       for (int ic = 0; ic < inumclus; ic++) {
-        const lev2::XgmCluster& Clus     = CS.RefCluster(ic);
+        const lev2::XgmCluster& Clus     = CS.cluster(ic);
         const lev2::VertexBufferBase* VB = Clus._vertexBuffer;
 
         if (!VB)
@@ -1003,7 +1003,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
       HeaderStream->AddItem(ivtxlitflg);
       ////////////////////////////////////////////////////////////
       for (int32_t ic = 0; ic < inumclus; ic++) {
-        const lev2::XgmCluster& Clus     = CS.RefCluster(ic);
+        const lev2::XgmCluster& Clus     = CS.cluster(ic);
         const lev2::VertexBufferBase* VB = Clus._vertexBuffer;
         lev2::VertexBufferBase* VBNC     = const_cast<lev2::VertexBufferBase*>(VB);
         const Sphere& clus_sphere        = Clus.mBoundingSphere;

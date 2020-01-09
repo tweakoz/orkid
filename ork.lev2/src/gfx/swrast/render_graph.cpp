@@ -151,10 +151,10 @@ void RenderData::Update()
 	mMatrixMV = (mMatrixM*mMatrixV);
 	mMatrixMVP = mMatrixMV*mMatrixP;
 
-	ork::fvec3 root_topn = mFrustum.mTopPlane.GetNormal();
-	ork::fvec3 root_botn = mFrustum.mBottomPlane.GetNormal();
-	ork::fvec3 root_lftn = mFrustum.mLeftPlane.GetNormal();
-	ork::fvec3 root_rhtn = mFrustum.mRightPlane.GetNormal();
+	ork::fvec3 root_topn = mFrustum._topPlane.GetNormal();
+	ork::fvec3 root_botn = mFrustum._bottomPlane.GetNormal();
+	ork::fvec3 root_lftn = mFrustum._leftPlane.GetNormal();
+	ork::fvec3 root_rhtn = mFrustum._rightPlane.GetNormal();
 	//ork::fvec3 root_topc = mFrustum.mFarCorners
 
 	ork::fray3 Ray[4];
@@ -199,7 +199,7 @@ void RenderData::Update()
 		RF[0].Lerp( mFrustum.mFarCorners[1], mFrustum.mFarCorners[2], fity );		// right far top
 		RF[1].Lerp( mFrustum.mFarCorners[1], mFrustum.mFarCorners[2], fiby );		// right far bot
 
-		ork::fplane3 NFCenterPlane( mFrustum.mNearPlane.GetNormal(), mFrustum.mCenter );
+		ork::fplane3 NFCenterPlane( mFrustum._nearPlane.GetNormal(), mFrustum.mCenter );
 
 		/////////////////////////////////////////////////
 
@@ -255,17 +255,17 @@ void RenderData::Update()
 
 			/////////////////////////////////////////////////////
 
-			the_tile.mFrustum.mTopPlane.CalcFromNormalAndOrigin( -topn, vCTL );
-			the_tile.mFrustum.mBottomPlane.CalcFromNormalAndOrigin( -botn, vCBL );
-			the_tile.mFrustum.mLeftPlane.CalcFromNormalAndOrigin( -lftn, vCTL );
-			the_tile.mFrustum.mRightPlane.CalcFromNormalAndOrigin( -rhtn, vCBR );
+			the_tile.mFrustum._topPlane.CalcFromNormalAndOrigin( -topn, vCTL );
+			the_tile.mFrustum._bottomPlane.CalcFromNormalAndOrigin( -botn, vCBL );
+			the_tile.mFrustum._leftPlane.CalcFromNormalAndOrigin( -lftn, vCTL );
+			the_tile.mFrustum._rightPlane.CalcFromNormalAndOrigin( -rhtn, vCBR );
 
 			/////////////////////////////////////////////////
 			// near and far planes on the tiles are identical to the main image
 			/////////////////////////////////////////////////
 
-			the_tile.mFrustum.mNearPlane = mFrustum.mNearPlane;
-			the_tile.mFrustum.mFarPlane = mFrustum.mFarPlane;
+			the_tile.mFrustum._nearPlane = mFrustum._nearPlane;
+			the_tile.mFrustum._farPlane = mFrustum._farPlane;
 
 			the_tile.mFrustum.CalcCorners();
 
@@ -285,12 +285,12 @@ void RenderData::Update()
 		
 			the_tile.mFrustum.mCenter = C*0.125f;
 
-			float dT = the_tile.mFrustum.mTopPlane.GetPointDistance( the_tile.mFrustum.mCenter );
-			float dB = the_tile.mFrustum.mBottomPlane.GetPointDistance( the_tile.mFrustum.mCenter );
-			float dL = the_tile.mFrustum.mLeftPlane.GetPointDistance( the_tile.mFrustum.mCenter );
-			float dR = the_tile.mFrustum.mRightPlane.GetPointDistance( the_tile.mFrustum.mCenter );
-			float dN = the_tile.mFrustum.mNearPlane.GetPointDistance( the_tile.mFrustum.mCenter );
-			float dF = the_tile.mFrustum.mFarPlane.GetPointDistance( the_tile.mFrustum.mCenter );
+			float dT = the_tile.mFrustum._topPlane.pointDistance( the_tile.mFrustum.mCenter );
+			float dB = the_tile.mFrustum._bottomPlane.pointDistance( the_tile.mFrustum.mCenter );
+			float dL = the_tile.mFrustum._leftPlane.pointDistance( the_tile.mFrustum.mCenter );
+			float dR = the_tile.mFrustum._rightPlane.pointDistance( the_tile.mFrustum.mCenter );
+			float dN = the_tile.mFrustum._nearPlane.pointDistance( the_tile.mFrustum.mCenter );
+			float dF = the_tile.mFrustum._farPlane.pointDistance( the_tile.mFrustum.mCenter );
 
 			OrkAssert( dT>0.0f );
 			OrkAssert( dB>0.0f );
@@ -449,7 +449,7 @@ static rend_srcmesh* LoadObj( const char* pfname, RenderData& rdata )
 	ork::MeshUtil::toolmesh tmesh;
 	tmesh.ReadFromWavefrontObj( pfname );
 
-	int inumsubs = tmesh.GetNumSubMeshes();
+	int inumsubs = tmesh.numSubMeshes();
 	const ork::orklut<std::string, ork::MeshUtil::submesh*>& sublut = tmesh.RefSubMeshLut();
 
 	rend_srcmesh* poutmesh = new rend_srcmesh;

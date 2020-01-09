@@ -403,7 +403,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     mpTarget->debugPushGroup("toolvp::DRAWEND::Children");
     DrawChildren(drwev);
     mpTarget->debugPopGroup();
-    if (false == FBI->IsPickState())
+    if (false == FBI->isPickState())
       DrawSpinner(RCFD);
   }
   mpTarget->endFrame();
@@ -495,7 +495,7 @@ void SceneEditorVP::renderMisc(lev2::RenderContextFrameData& RCFD) {
   gfxtarg->debugPopGroup();
   /////////////////////////////////////////
   gfxtarg->debugPushGroup("toolvp::DrawGrid");
-  if (false == FBI->IsPickState())
+  if (false == FBI->isPickState())
     DrawGrid(RCFD);
   gfxtarg->debugPopGroup();
   ///////////////////////////////////////////////////////////////////////////

@@ -90,7 +90,7 @@ void CompositingPassData::updateCompositingSize(int w, int h) {
       ftek->update(*this, w, h);
 }
 bool CompositingPassData::isPicking() const {
-  return false; // mpTarget ? mpTarget->FBI()->IsPickState() : false;
+  return false; // mpTarget ? mpTarget->FBI()->isPickState() : false;
 }
 void CompositingPassData::ClearLayers() {
   mLayers.clear();

@@ -140,8 +140,8 @@ static ork::PoolString sWorldString;
 btBoxShape *XgmModelToBoxShape(const ork::lev2::XgmModel *xgmmodel,float fscale)
 {
 	const ork::fvec3 &xyz = xgmmodel->GetBoundingAA_XYZ();
-	const ork::fvec3 &whd = xgmmodel->GetBoundingAA_WHD();
-	const ork::fvec3 &center = xgmmodel->GetBoundingCenter();
+	const ork::fvec3 &whd = xgmmodel->boundingAA_WHD();
+	const ork::fvec3 &center = xgmmodel->boundingCenter();
 	float radius = xgmmodel->GetBoundingRadius();
 	float fsc = 0.5f*fscale;
 
@@ -156,8 +156,8 @@ btBoxShape *XgmModelToBoxShape(const ork::lev2::XgmModel *xgmmodel,float fscale)
 btSphereShape *XgmModelToSphereShape(const ork::lev2::XgmModel *xgmmodel,float fscale)
 {
 	const ork::fvec3 &xyz = xgmmodel->GetBoundingAA_XYZ();
-	const ork::fvec3 &whd = xgmmodel->GetBoundingAA_WHD();
-	const ork::fvec3 &center = xgmmodel->GetBoundingCenter();
+	const ork::fvec3 &whd = xgmmodel->boundingAA_WHD();
+	const ork::fvec3 &center = xgmmodel->boundingCenter();
 	float radius = xgmmodel->GetBoundingRadius()*fscale;
 
 	// Assumes center of sphere is at origin
@@ -338,9 +338,9 @@ btCompoundShape *XgmModelToCompoundShape(const ork::lev2::XgmModel *xgmmodel,flo
 {
 	btCompoundShape *compoundShape = new btCompoundShape;
 
-	for(int m = 0; m < xgmmodel->GetNumMeshes(); m++)
+	for(int m = 0; m < xgmmodel->numMeshes(); m++)
 	{
-		const ork::lev2::XgmMesh *xgmmesh = xgmmodel->GetMesh(m);
+		const ork::lev2::XgmMesh *xgmmesh = xgmmodel->mesh(m);
 
 		btCompoundShape *subCompoundShape = XgmMeshToCompoundShape(xgmmesh,fscale);
 
@@ -358,12 +358,12 @@ btCompoundShape *XgmMeshToCompoundShape(const ork::lev2::XgmMesh *xgmmesh,float 
 {
 	btCompoundShape *compoundShape = new btCompoundShape;
 
-	for(int sm = 0; sm < xgmmesh->GetNumSubMeshes(); sm++)
+	for(int sm = 0; sm < xgmmesh->numSubMeshes(); sm++)
 	{
-		const ork::lev2::XgmSubMesh *submesh = xgmmesh->GetSubMesh(sm);
+		const ork::lev2::XgmSubMesh *submesh = xgmmesh->subMesh(sm);
 		for(int c = 0; c < submesh->GetNumClusters(); c++)
 		{
-			const ork::lev2::XgmCluster &xgmcluster = submesh->RefCluster(c);
+			const ork::lev2::XgmCluster &xgmcluster = submesh->cluster(c);
 
 			if(btCollisionShape* shape = XgmClusterToBvhTriangleMeshShape(xgmcluster,fscale))
 			{
@@ -435,12 +435,12 @@ btCompoundShape* XgmMeshToGimpactShape(const ork::lev2::XgmMesh *xgmmesh,float f
 {
 	btCompoundShape *compoundShape = new btCompoundShape;
 
-	for(int sm = 0; sm < xgmmesh->GetNumSubMeshes(); sm++)
+	for(int sm = 0; sm < xgmmesh->numSubMeshes(); sm++)
 	{
-		const ork::lev2::XgmSubMesh *submesh = xgmmesh->GetSubMesh(sm);
+		const ork::lev2::XgmSubMesh *submesh = xgmmesh->subMesh(sm);
 		for(int c = 0; c < submesh->GetNumClusters(); c++)
 		{
-			const ork::lev2::XgmCluster &xgmcluster = submesh->RefCluster(c);
+			const ork::lev2::XgmCluster &xgmcluster = submesh->cluster(c);
 
 			if(btCollisionShape* shape = XgmClusterToGimpactMeshShape(xgmcluster,fscale))
 			{
@@ -460,9 +460,9 @@ btCollisionShape* XgmModelToGimpactShape(const ork::lev2::XgmModel *xgmmodel,flo
 {
 	btCompoundShape *compoundShape = new btCompoundShape;
 
-	for(int m = 0; m < xgmmodel->GetNumMeshes(); m++)
+	for(int m = 0; m < xgmmodel->numMeshes(); m++)
 	{
-		const ork::lev2::XgmMesh *xgmmesh = xgmmodel->GetMesh(m);
+		const ork::lev2::XgmMesh *xgmmesh = xgmmodel->mesh(m);
 
 		btCollisionShape *subCompoundShape = XgmMeshToGimpactShape(xgmmesh,fscale);
 

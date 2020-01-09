@@ -28,9 +28,9 @@ bool CColladaModel::BuildXgmSkeleton( void )
 {
 	int inumjoints = mSkeleton.size();
 
-	ork::lev2::XgmSkeleton & XgmSkel = mXgmModel.RefSkel();
+	ork::lev2::XgmSkeleton & XgmSkel = mXgmModel.skeleton();
 
-	mXgmModel.SetSkinned( IsSkinned() );
+	mXgmModel.SetSkinned( isSkinned() );
 
 	if( inumjoints>1 )
 	{
@@ -454,7 +454,7 @@ void CColladaModel::BuildXgmTriStripMesh( lev2::XgmMesh& XgmMesh, SColladaMesh* 
 			for( int ib=0; ib<inumclusjoints; ib++ )
 			{
 				const PoolString JointName = XgmClus.mJoints[ ib ];
-				orklut<PoolString,int>::const_iterator itfind = mXgmModel.RefSkel().mmJointNameMap.find( JointName );
+				orklut<PoolString,int>::const_iterator itfind = mXgmModel.skeleton().mmJointNameMap.find( JointName );
 				int iskelindex = (*itfind).second;
 				XgmClus.mJointSkelIndices.push_back(iskelindex);
 			}
@@ -483,7 +483,7 @@ bool CColladaModel::BuildXgmTriStripModel( void )
 		}
 		lev2::XgmMesh&		XgmMesh = * new lev2::XgmMesh;
 		SColladaMesh*		ColMesh = it->second->mcolmesh;
-		PoolString MeshName = AddPooledString(ColMesh->GetMeshName().c_str());
+		PoolString MeshName = AddPooledString(ColMesh->meshName().c_str());
 
 		mXgmModel.AddMesh( MeshName, & XgmMesh );
 

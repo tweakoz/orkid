@@ -612,8 +612,8 @@ float EzUiCam::ViewLengthToWorldLength(const fvec4& pos, float ViewLength) {
   float depthscaler   = distATfar / distATnear;
 
   // get pos as a lerp from near to far
-  float depthN     = frustum.mNearPlane.GetPointDistance(pos);
-  float depthF     = frustum.mFarPlane.GetPointDistance(pos);
+  float depthN     = frustum._nearPlane.pointDistance(pos);
+  float depthF     = frustum._farPlane.pointDistance(pos);
   float depthRange = (camrayF - camrayN).Mag();
   if ((depthN >= float(0.0f)) && (depthF >= float(0.0f))) { // better be between near and far planes
     float lerpV  = depthN / depthRange;

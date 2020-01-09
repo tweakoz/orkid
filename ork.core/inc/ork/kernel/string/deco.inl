@@ -1,5 +1,8 @@
 #pragma once
 
+#include <ork/kernel/string/string.h>
+#include <ork/math/cvector3.h>
+
 namespace ork::deco {
 
 ///////////////////////////////////////////////////////////////////////////////

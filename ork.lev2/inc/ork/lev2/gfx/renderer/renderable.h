@@ -137,9 +137,9 @@ public:
   inline int GetMaterialIndex(void) const { return mMaterialIndex; }
   inline int GetMaterialPassIndex(void) const { return mMaterialPassIndex; }
   inline int GetEdgeColor() const { return mEdgeColor; }
-  inline const lev2::XgmSubMesh* GetSubMesh(void) const { return mSubMesh; }
+  inline const lev2::XgmSubMesh* subMesh(void) const { return mSubMesh; }
   inline const lev2::XgmCluster* GetCluster(void) const { return mCluster; }
-  inline const lev2::XgmMesh* GetMesh(void) const { return mMesh; }
+  inline const lev2::XgmMesh* mesh(void) const { return mMesh; }
 
   void SetSortKey(U32 skey) { mSortKey = skey; }
 

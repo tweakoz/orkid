@@ -1007,7 +1007,7 @@ void Simulation::enqueueDrawablesToBuffer(ork::lev2::DrawableBuffer& buffer) con
           lev2::Drawable* pdrw = dv->operator[](i);
           if (pdrw && pdrw->IsEnabled()) {
             // printf("queue drw<%p>\n", pdrw);
-            pdrw->QueueToLayer(xfdata, *buflayer);
+            pdrw->enqueueOnLayer(xfdata, *buflayer);
           }
         }
       }

@@ -338,7 +338,7 @@ void GfxMaterialFx::Init(Context* pTARG) {
       } else if (Semantic == "isshadowcaster") {
         mIsShadowCasterParam = FxParam;
       } else if (Semantic == "isskinned") {
-        mIsSkinnedParam = FxParam;
+        misSkinnedParam = FxParam;
       } else if (Semantic == "ispick") {
         mIsPickParam = FxParam;
       }
@@ -829,7 +829,7 @@ PerformanceItem* GfxMaterialFx::gMatFxBeginBlockPerfItem = 0;
 bool GfxMaterialFx::BeginPass(Context* pTarg, int iPass) {
   bool rval = false;
 
-  bool bpick       = pTarg->FBI()->IsPickState();
+  bool bpick       = pTarg->FBI()->isPickState();
   U32 ucurtarghash = pTarg->GetTargetFrame();
 
   if (mEffectInstance.mpEffect) {
@@ -923,7 +923,7 @@ int GfxMaterialFx::BeginBlock(Context* pTarg, const RenderContextInstData& MatCt
 
     OffscreenBuffer* ShadowBuffer = 0; // pTarg->GetShadowBuffer();
 
-    bool bpick             = pTarg->FBI()->IsPickState();
+    bool bpick             = pTarg->FBI()->isPickState();
     bool bisshadowcaster   = false; //(DRCD.GetRenderFlags()&2)&&(1==ActiveLayerIndex);
     bool bisshadowreciever = false; //(false==bisshadowcaster)&&(0==ActiveLayerIndex)&&(ShadowBuffer!=0);
     bool bisskinned        = MatCtx._isSkinned;

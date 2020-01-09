@@ -607,7 +607,7 @@ public:
     return mShadingGroupToMaterialMap;
   }
 
-  int GetNumSubMeshes() const {
+  int numSubMeshes() const {
     return int(mPolyGroupLut.size());
   }
 
