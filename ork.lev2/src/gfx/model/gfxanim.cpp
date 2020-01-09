@@ -14,6 +14,7 @@
 #include <ork/file/chunkfile.h>
 #include <ork/file/chunkfile.inl>
 #include <ork/application/application.h>
+#include <ork/kernel/string/deco.inl>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::XgmAnimChannel, "XgmAnimChannel");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::XgmFloatAnimChannel, "XgmFloatAnimChannel");
@@ -586,10 +587,11 @@ void XgmLocalPose::BuildPose(void) {
     if (inumanms) {
       mBlendPoseInfos[i].ComputeMatrix(mLocalMatrices[i]);
 
-      if (0) //( i == ((gctr/1000)%inumjoints) )
+      if (1) //( i == ((gctr/1000)%inumjoints) )
       {
+        const auto& name = mSkeleton.GetJointName(i);
         ork::FixedString<64> fxs;
-        fxs.format("buildpose i<%d>", i);
+        fxs.format("buildpose i<%s>", name.c_str());
         mLocalMatrices[i].dump((char*)fxs.c_str());
       }
       // TODO: Callback for after previous/current have been blended in local space
@@ -673,11 +675,11 @@ void XgmLocalPose::Concatenate(void) {
 
       auto invbind = mSkeleton.RefInverseBindMatrix(ichild);
 
-      ParentMatrix.dump(chname + ".par");
-      LocMatrix.dump(chname + ".loc");
-      pmats[ichild].dump(chname + ".concat");
-      invbind.dump(chname + ".invbind");
-      (invbind * pmats[ichild]).dump(chname + ".check");
+      // ParentMatrix.dump(chname + ".par");
+      // LocMatrix.dump(chname + ".loc");
+      // pmats[ichild].dump(chname + ".concat");
+      // invbind.dump(chname + ".invbind");
+      //(invbind * pmats[ichild]).dump(chname + ".check");
 
       if (RefBlendPoseInfo(ichild).GetPoseCallback())
         RefBlendPoseInfo(ichild).GetPoseCallback()->PostBlendPostConcat(pmats[ichild]);
@@ -705,6 +707,22 @@ void XgmLocalPose::Concatenate(void) {
   mObjSpaceBoundingSphere = fvec4(fmidx, fmidy, fmidz, frange);
 
   mObjSpaceAABoundingBox.SetMinMax(fvec3(fminx, fminy, fminz), fvec3(fmaxx, fmaxy, fmaxz));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::string XgmLocalPose::dump() const {
+  std::string rval;
+  if (mSkeleton.miRootNode >= 0) {
+    const fmtx4& RootAnimMat = RefLocalMatrix(mSkeleton.miRootNode);
+    int inumjoints           = mSkeleton.GetNumJoints();
+    for (int ij = 0; ij < inumjoints; ij++) {
+      std::string name = mSkeleton.GetJointName(ij).c_str();
+      const auto& jmtx = RefLocalMatrix(ij);
+      rval += name + ": " + jmtx.dump() + "\n";
+    }
+  }
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1094,57 +1112,45 @@ void XgmSkeleton::SetNumJoints(int inumjoints) {
 
 ////////////////////////////////////////////////////////////////////////////
 
-void XgmSkeleton::dump() const {
-  orkprintf("SkelDump this<%p>\n", this);
-  orkprintf(" numjoints<%d>\n", miNumJoints);
-  orkprintf(" rootindex<%d>\n", miRootNode);
+std::string XgmSkeleton::dump() const {
+  std::string rval;
+  rval += FormatString("XgmSkeleton<%p>\n", this);
+  rval += FormatString(" numjoints<%d>\n", miNumJoints);
+  rval += FormatString(" rootindex<%d>\n", miRootNode);
 
   int i = 0;
   for (orklut<PoolString, int>::const_iterator it = mmJointNameMap.begin(); it != mmJointNameMap.end(); it++) {
     PoolString sidx = (*it).first;
     int idx         = (*it).second;
-    orkprintf(" jointnamemap<%d> <%s>:<%d>\n", i, sidx.c_str(), idx);
+    rval += FormatString(" jointnamemap<%d> <%s>:<%d>\n", i, sidx.c_str(), idx);
     i++;
   }
   i = 0;
   for (orkvector<PoolString>::const_iterator it = mvJointNameVect.begin(); it != mvJointNameVect.end(); it++) {
     const PoolString& s = (*it);
-    orkprintf(" jointnamevect<%d> <%s>\n", i, s.c_str());
+    rval += FormatString(" jointnamevect<%d> <%s>\n", i, s.c_str());
     i++;
   }
   i = 0;
   for (orkvector<XgmBone>::const_iterator it = mFlattenedBones.begin(); it != mFlattenedBones.end(); it++) {
     const XgmBone& b = (*it);
-    orkprintf(" bone<%d> p<%d> c<%d>\n", i, b.miParent, b.miChild);
+    rval += FormatString(" bone<%d> p<%d> c<%d>\n", i, b.miParent, b.miChild);
     i++;
   }
 
-  orkprintf("   topmat< ");
-  for (int k = 0; k < 16; k++)
-    orkprintf("%g ", float(mTopNodesMatrix.GetArray()[k]));
-  orkprintf(">\n");
-
-  orkprintf("   bindmat< ");
-  for (int k = 0; k < 16; k++)
-    orkprintf("%g ", float(mBindShapeMatrix.GetArray()[k]));
-  orkprintf(">\n");
+  rval += " topmat: " + mTopNodesMatrix.dump() + "\n";
+  rval += " bindmat: " + mBindShapeMatrix.dump() + "\n";
 
   for (int ij = 0; ij < miNumJoints; ij++) {
-    orkprintf("  joint<%d>\n", ij);
+    rval += FormatString("   joint<%d>\n", ij);
 
-    orkprintf("   parent<%d>\n", maJointParents[ij]);
-    orkprintf("   flags<%08x>\n", mpJointFlags[ij]);
+    rval += FormatString("     parent<%d>\n", maJointParents[ij]);
+    rval += FormatString("     flags<%08x>\n", mpJointFlags[ij]);
 
-    orkprintf("   mat< ");
-    for (int k = 0; k < 16; k++)
-      orkprintf("%g ", float(_jointMatrices[ij].GetArray()[k]));
-    orkprintf(">\n");
-
-    orkprintf("   irmat< ");
-    for (int k = 0; k < 16; k++)
-      orkprintf("%g ", float(_inverseBindMatrices[ij].GetArray()[k]));
-    orkprintf(">\n");
+    rval += "     mat: " + _jointMatrices[ij].dump() + "\n";
+    rval += "   ibmat: " + _inverseBindMatrices[ij].dump() + "\n";
   }
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

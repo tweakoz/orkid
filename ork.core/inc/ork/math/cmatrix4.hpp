@@ -84,7 +84,7 @@ template <typename T> std::string Matrix44<T>::dump() const {
   for (int i = 0; i < 4; i++) {
     rval += "[";
     for (int j = 0; j < 4; j++) {
-      rval += FormatString(" %f ", elements[i][j]);
+      rval += FormatString(" %0.3g ", elements[i][j]);
     }
     rval += "] ";
   }

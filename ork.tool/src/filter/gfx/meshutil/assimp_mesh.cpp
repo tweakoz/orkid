@@ -329,14 +329,21 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       auto nodematrix  = nod_skelnode->_varmap["assimpnodematrix"].Get<fmtx4>();
 
       nodematrix.dump((name + ".node").c_str());
-      invbind.dump((name + ".inversebind").c_str());
+      // invbind.dump((name + ".inversebind").c_str());
       bind.dump((name + ".bind").c_str());
-      local.dump((name + ".local").c_str());
+      // local.dump((name + ".local").c_str());
 
       fmtx4 concat = nod_skelnode->concatenated();
       fmtx4 check  = concat * invbind;
-      concat.dump((name + ".concat").c_str());
-      check.dump((name + ".check").c_str());
+      // concat.dump((name + ".concat").c_str());
+      // check.dump((name + ".check").c_str());
+
+      fmtx4 xxx;
+      xxx.CorrectionMatrix(nodematrix, bind);
+      xxx.dump((name + ".xxx"));
+
+      // corr(node,bind) == par.bind
+      // node*par.bind == bind
 
       //////////////////////////////////////////////
       // for rigid meshes, preapply transforms

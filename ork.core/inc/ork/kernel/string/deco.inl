@@ -89,4 +89,18 @@ inline void print(const fvec3& color, const char* formatstring, ...) {
   printf("%s", fmtstr.c_str());
 }
 
+inline void printe(const fvec3& color, std::string inp, bool endl) {
+
+  int r = int(color.x * 255.0);
+  int g = int(color.y * 255.0);
+  int b = int(color.z * 255.0);
+
+  std::string final = asciic_rgb256(r, g, b);
+  final += inp;
+  if (endl)
+    final += "\n";
+  final += asciic_reset();
+  printf("%s", final.c_str());
+}
+
 } // namespace ork::deco

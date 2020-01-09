@@ -499,6 +499,7 @@ public:
   void BindPose(void);  /// set pose to the skeletons bind pose
   void BuildPose(void); /// Blend Poses, and Concatenate
   int NumJoints() const;
+  std::string dump() const;
 
   fmtx4& RefLocalMatrix(int idx) {
     return mLocalMatrices[idx];
@@ -661,7 +662,7 @@ struct XgmSkeleton {
 
   /////////////////////////////////////
 
-  void dump() const;
+  std::string dump() const;
 };
 
 }} // namespace ork::lev2
