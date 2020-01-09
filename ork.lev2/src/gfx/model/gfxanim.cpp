@@ -1142,13 +1142,16 @@ std::string XgmSkeleton::dump() const {
   rval += " bindmat: " + mBindShapeMatrix.dump() + "\n";
 
   for (int ij = 0; ij < miNumJoints; ij++) {
-    rval += FormatString("   joint<%d>\n", ij);
+    auto name = GetJointName(ij);
+    rval += FormatString("   joint<%d:%s>\n", ij, name.c_str());
 
-    rval += FormatString("     parent<%d>\n", maJointParents[ij]);
+    int parent          = maJointParents[ij];
+    const char* parname = (parent >= 0) ? GetJointName(parent).c_str() : "none";
+    rval += FormatString("     parent<%d:%s>\n", parent, parname);
     rval += FormatString("     flags<%08x>\n", mpJointFlags[ij]);
 
-    rval += "     mat: " + _jointMatrices[ij].dump() + "\n";
-    rval += "   ibmat: " + _inverseBindMatrices[ij].dump() + "\n";
+    rval += "       mat: " + _jointMatrices[ij].dump() + "\n";
+    rval += "     ibmat: " + _inverseBindMatrices[ij].dump() + "\n";
   }
   return rval;
 }
