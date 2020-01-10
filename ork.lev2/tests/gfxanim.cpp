@@ -77,7 +77,7 @@ TEST(gfxanim1) {
     XgmWorldPose worldpose(skel);
 
     worldpose.apply(ork::fmtx4(), localpose);
-    deco::printf(magenta, "WorldPose (bind-post-concat)");
+    deco::printf(magenta, "WorldPose (bind-post-concat)\n");
     deco::prints(worldpose.dumpc(magenta), true);
     usleep(1 << 20);
 
