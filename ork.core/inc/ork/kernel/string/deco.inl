@@ -74,7 +74,7 @@ inline std::string format(const fvec3& color, const char* formatstring, ...) {
   return asciic_rgb(color) + rval + asciic_reset();
 }
 
-inline void print(const fvec3& color, const char* formatstring, ...) {
+inline void printf(const fvec3& color, const char* formatstring, ...) {
 
   int r = int(color.x * 255.0);
   int g = int(color.y * 255.0);
@@ -95,7 +95,7 @@ inline void print(const fvec3& color, const char* formatstring, ...) {
   va_end(args);
   rval        = formatbuffer;
   auto fmtstr = asciic_rgb256(r, g, b) + rval + asciic_reset();
-  printf("%s", fmtstr.c_str());
+  ::printf("%s", fmtstr.c_str());
 }
 
 inline void printe(const fvec3& color, std::string inp, bool endl) {
@@ -109,13 +109,13 @@ inline void printe(const fvec3& color, std::string inp, bool endl) {
   if (endl)
     final += "\n";
   final += asciic_reset();
-  printf("%s", final.c_str());
+  ::printf("%s", final.c_str());
 }
 inline void prints(std::string inp, bool endl) {
   std::string final = inp;
   if (endl)
     final += "\n";
-  printf("%s", final.c_str());
+  ::printf("%s", final.c_str());
 }
 
 } // namespace ork::deco

@@ -406,7 +406,7 @@ void XgmLocalPose::BindAnimInst(XgmAnimInst& AnimInst) {
 
       int inumjinmap = mSkeleton.mmJointNameMap.size();
 
-      printf("spose jname<%s> iskelindex<%d> inumjinmap<%d>\n", JointName.c_str(), iskelindex, inumjinmap);
+      // printf("spose jname<%s> iskelindex<%d> inumjinmap<%d>\n", JointName.c_str(), iskelindex, inumjinmap);
 
       if (-1 != iskelindex) {
         EXFORM_COMPONENT components = AnimInst.RefMask().GetComponents(iskelindex);
@@ -444,7 +444,7 @@ void XgmLocalPose::BindAnimInst(XgmAnimInst& AnimInst) {
       const ork::lev2::XgmDecompAnimChannel* __restrict MtxChannelData = it->second;
       int iskelindex                                                   = mSkeleton.jointIndex(ChannelName);
 
-      // printf( "bind channel<%s> skidx<%d>\n", ChannelName.c_str(), iskelindex );
+      // printf("bind channel<%s> skidx<%d>\n", ChannelName.c_str(), iskelindex);
 
       if (-1 != iskelindex) {
         EXFORM_COMPONENT components = AnimInst.RefMask().GetComponents(iskelindex);
@@ -497,6 +497,7 @@ void XgmLocalPose::ApplyAnimInst(const XgmAnimInst& AnimInst) {
       const XgmAnimInst::Binding& binding = AnimInst.GetPoseBinding(ipidx);
       int iskelindex                      = binding.mSkelIndex;
       if (iskelindex != 0xffff) {
+        OrkAssert(false);
         int iposeindex                = binding.mChanIndex;
         const DecompMtx44& PoseMatrix = StaticPose.GetItemAtIndex(iposeindex).second;
         EXFORM_COMPONENT components   = AnimInst.RefMask().GetComponents(iskelindex);
@@ -1387,6 +1388,7 @@ bool XgmAnim::LoadUnManaged(XgmAnim* anm, const AssetPath& fname) { ////////////
     HeaderStream->GetItem(inumposebones);
     DecompMtx44 decmtx;
     anm->mPose.reserve(inumposebones);
+    printf("inumposebones<%d>\n", inumposebones);
     for (int iposeb = 0; iposeb < inumposebones; iposeb++) {
       HeaderStream->GetItem(ichnname);
       HeaderStream->GetItem(decmtx);
@@ -1397,7 +1399,7 @@ bool XgmAnim::LoadUnManaged(XgmAnim* anm, const AssetPath& fname) { ////////////
     ////////////////////////////////////////////////////////
   }
   OrkHeapCheck();
-  return true;
+  return chunkreader.IsOk();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

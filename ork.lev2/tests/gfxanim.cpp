@@ -17,6 +17,7 @@ TEST(gfxanim1) {
   auto orange  = fvec3(1, 0.5, 0);
   auto cyan    = fvec3(0, 1, 1);
   auto magenta = fvec3(1, 0, 1);
+  auto indigo  = fvec3(0.7, 0.2, 1);
   auto blugrn  = fvec3(0, 1, .5);
 
   opq::mainSerialQueue().enqueue([&]() {
@@ -28,19 +29,15 @@ TEST(gfxanim1) {
     printf("fxi<%p>\n", fxi);
     CHECK(fxi != nullptr);
 
-    auto anim_asset = asset::AssetManager<XgmAnimAsset>::Load("data://tests/rigtest_link");
-    printf("anim_asset<%p>\n", anim_asset);
-    CHECK(anim_asset != nullptr);
-    auto anim     = anim_asset->GetAnim();
+    auto anim   = new XgmAnim;
+    bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/rigtest_link");
+    OrkAssert(loadOK);
     auto animinst = new XgmAnimInst;
-    animinst->BindAnim(anim);
-    animinst->SetCurrentFrame(15);
-    animinst->SetWeight(1);
-    animinst->RefMask().EnableAll();
 
-    auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/rigtest");
+    auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/rigtest_exp");
     printf("modl_asset<%p>\n", modl_asset);
     CHECK(modl_asset != nullptr);
+
     auto model = modl_asset->GetModel();
     auto& skel = model->skeleton();
     printf("model<%p> isskinned<%d>\n", model, int(model->isSkinned()));
@@ -52,7 +49,14 @@ TEST(gfxanim1) {
     modelinst->EnableSkinning();
     modelinst->EnableAllMeshes();
 
+    animinst->BindAnim(anim);
+    animinst->RefMask().EnableAll();
+
     deco::prints(skel.dump(cyan), true);
+
+    deco::printf(cyan, "//////////////////////////////////////////////\n");
+    deco::printf(cyan, "// skeleton pose info\n");
+    deco::printf(cyan, "//////////////////////////////////////////////\n");
 
     deco::printe(blugrn, "SkelInvBind (post-concat)", true);
     deco::prints(skel.dumpInvBind(blugrn), true);
@@ -66,20 +70,39 @@ TEST(gfxanim1) {
     deco::printe(orange, "BindPose (post-concat)", true);
     deco::prints(localpose.dumpc(orange), true);
 
-    localpose.BindPose();
     localpose.BindAnimInst(*animinst);
-    localpose.BuildPose();
-    deco::printe(yellow, "AnimPose (pre-concat)", true);
-    deco::prints(localpose.dumpc(yellow), true);
 
-    localpose.Concatenate();
-    deco::printe(orange, "AnimPose (post-concat)", true);
-    deco::prints(localpose.dumpc(orange), true);
+    int iframe = 0;
 
     XgmWorldPose worldpose(skel);
+
     worldpose.apply(ork::fmtx4(), localpose);
-    deco::printe(magenta, "WorldPose (post-concat)", true);
+    deco::printf(magenta, "WorldPose (bind-post-concat)");
     deco::prints(worldpose.dumpc(magenta), true);
+    usleep(1 << 20);
+
+    deco::printf(cyan, "//////////////////////////////////////////////\n");
+    deco::printf(cyan, "// begin animation\n");
+    deco::printf(cyan, "//////////////////////////////////////////////\n");
+
+    while (true) {
+      localpose.BindPose();
+      animinst->SetCurrentFrame((iframe++) % 20);
+      animinst->SetWeight(1);
+      localpose.ApplyAnimInst(*animinst);
+      localpose.BuildPose();
+      deco::printf(white, "fr<%d> AnimPose (pre-concat)\n", iframe);
+      deco::prints(localpose.dumpc(white), true);
+
+      localpose.Concatenate();
+      deco::printf(orange, "fr<%d> AnimPose (post-concat)\n", iframe);
+      deco::prints(localpose.dumpc(orange), true);
+
+      worldpose.apply(ork::fmtx4(), localpose);
+      deco::printf(magenta, "fr<%d> WorldPose (post-concat)", iframe);
+      deco::prints(worldpose.dumpc(magenta), true);
+      usleep(1 << 20);
+    }
 
     delete animinst;
     delete modelinst;

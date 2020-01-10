@@ -353,10 +353,14 @@ void ModelDrawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLay
   if (Model->isSkinned()) {
     auto pworldpose = GetUserDataA().Get<ork::lev2::XgmWorldPose*>();
     if (pworldpose) {
+      fvec3 c1(1, .8, .8);
+      fvec3 c2(.8, .8, 1);
       const auto& localpose = mModelInst->RefLocalPose();
-      deco::prints(localpose.dumpc(fvec3(1, .8, 0.8)), true);
+      deco::printe(c1, "LocalPose (post-concat)", true);
+      deco::prints(localpose.dumpc(c1), true);
       pworldpose->apply(xfdata.mWorldMatrix, localpose);
-      deco::prints(pworldpose->dumpc(fvec3(.8, .8, 1)), true);
+      deco::printe(c2, "WorldPose (post-concat)", true);
+      deco::prints(pworldpose->dumpc(c2), true);
     }
   }
   DrawableBufItem& item = buffer.Queue(xfdata, this);

@@ -47,9 +47,9 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
 
   auto color = fvec3(1, 0, 1);
 
-  deco::print(color, "BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
+  deco::printf(color, "BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
   auto scene = aiImportFile(GlbPath.c_str(), aiProcessPreset_TargetRealtime_MaxQuality);
-  deco::print(color, "END: importing scene<%p>\n", scene);
+  deco::printf(color, "END: importing scene<%p>\n", scene);
   if (scene) {
     lev2::XgmAnim xgmanim;
     aiVector3D scene_min, scene_max, scene_center;
@@ -115,7 +115,7 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
       auto color = fvec3(1, 1, 0);
 
       aiAnimation* anim = scene->mAnimations[0];
-      deco::print(color, "numchannels<%d>\n", anim->mNumChannels);
+      deco::printf(color, "numchannels<%d>\n", anim->mNumChannels);
 
       /////////////////////////////////////////////////////
       // compute number of frames
@@ -150,10 +150,10 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
         if (it != channel_remap.end()) {
           channel_name = it->second;
         }
-        deco::print(color, "channel<%d:%p:%s>\n", i, channel, channel_name.c_str());
-        deco::print(color, "  num poskeys<%d>\n", channel->mNumPositionKeys);
-        deco::print(color, "  num rotkeys<%d>\n", channel->mNumRotationKeys);
-        deco::print(color, "  num scakeys<%d>\n", channel->mNumScalingKeys);
+        deco::printf(color, "channel<%d:%p:%s>\n", i, channel, channel_name.c_str());
+        deco::printf(color, "  num poskeys<%d>\n", channel->mNumPositionKeys);
+        deco::printf(color, "  num rotkeys<%d>\n", channel->mNumRotationKeys);
+        deco::printf(color, "  num scakeys<%d>\n", channel->mNumScalingKeys);
 
         /////////////////////////////
         // we assume pre-sampled frames here
@@ -189,9 +189,10 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
             aiVector3D sca            = scakey.mValue;
             cursca                    = fvec3(sca.x, sca.y, sca.z);
           }
-          deco::print(color, "frame<%s.%d> pos<%g %g %g>\n", channel_name.c_str(), f, curpos.x, curpos.y, curpos.z);
-          deco::print(color, "frame<%s.%d> rot<%g %g %g %g>\n", channel_name.c_str(), f, currot.x, currot.y, currot.z, currot.w);
-          // deco::print(color, "frame<%s.%d> sca<%g %g %g>\n", channel_name.c_str(), f, cursca.x, cursca.y, cursca.z);
+          // deco::printf(color, "frame<%s.%d> pos<%g %g %g>\n", channel_name.c_str(), f, curpos.x, curpos.y, curpos.z);
+          // deco::printf(color, "frame<%s.%d> rot<%g %g %g %g>\n", channel_name.c_str(), f, currot.x, currot.y, currot.z,
+          // currot.w);
+          // deco::printf(color, "frame<%s.%d> sca<%g %g %g>\n", channel_name.c_str(), f, cursca.x, cursca.y, cursca.z);
           // const fmtx4& Matrix = MatrixChannelData->GetFrame(ifr);
 
           float s = 0.0f;
@@ -202,8 +203,12 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
 
           fmtx4 x = r * t;
 
-          std::string xxx = (channel_name + ":") + x.dump();
-          deco::print(fvec3(1, 0, 0), "%s\n", xxx.c_str());
+          auto yel        = fvec3(1, 1, 0);
+          auto whi        = fvec3(1, 1, 1);
+          std::string xxx = deco::format(color, "fr<%d> ", f);
+          xxx += deco::decorate(yel, channel_name + ":");
+          xxx += x.dump(whi);
+          deco::prints(xxx, true);
 
           ork::lev2::DecompMtx44 decomp;
           x.DecomposeMatrix(decomp.mTrans, decomp.mRot, decomp.mScale);

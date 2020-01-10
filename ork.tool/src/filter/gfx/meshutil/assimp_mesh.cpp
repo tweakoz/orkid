@@ -353,7 +353,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       fmtx4 ork_model_mtx;
       fmtx3 ork_normal_mtx;
       if (false == is_skinned) {
-        deco::print(fvec3(1, 0, 0), "/////////////////////////////\n");
+        deco::printf(fvec3(1, 0, 0), "/////////////////////////////\n");
         std::deque<aiNode*> nodehier;
         bool done = false;
         auto walk = n;
@@ -371,7 +371,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
         ork_model_mtx = convertMatrix44(n->mTransformation);
         // ork_model_mtx  = ork_model_mtx.dump(n->mName.data);
         ork_normal_mtx = ork_model_mtx.rotMatrix33();
-        deco::print(fvec3(1, 0, 0), "/////////////////////////////\n");
+        deco::printf(fvec3(1, 0, 0), "/////////////////////////////\n");
       }
 
       //////////////////////////////////////////////
