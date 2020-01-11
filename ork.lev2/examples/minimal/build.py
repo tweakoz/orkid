@@ -18,7 +18,7 @@ this_dir = ork.path.Path(os.path.dirname(os.path.realpath(__file__)))
 
 _args = vars(parser.parse_args())
 
-build_dest = ork.path.builds()/"ezgfx"
+build_dest = ork.path.builds()/"lev2gfx_minimal"
 debug = _args["debug"]!=False
 
 if _args["xcode"]!=False:
