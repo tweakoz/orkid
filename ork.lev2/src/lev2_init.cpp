@@ -170,13 +170,13 @@ void GfxInit(const std::string& gfxlayer) {
 }
 
 StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
-  //printf("CPA\n");
+  // printf("CPA\n");
   OldSchool::SetGlobalStringVariable("lev2://", std::string("ork.data/platform_lev2/"));
   OldSchool::SetGlobalStringVariable("miniorkdata://", CreateFormattedString("ork.data/"));
   OldSchool::SetGlobalStringVariable("src://", CreateFormattedString("ork.data/src/"));
   OldSchool::SetGlobalStringVariable("temp://", CreateFormattedString("ork.data/temp/"));
 
-  //printf("CPB\n");
+  // printf("CPB\n");
   //////////////////////////////////////////
   // Register data:// urlbase
 
@@ -191,7 +191,7 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
 
   printf("ORKID_WORKSPACE_DIR<%s>\n", base_dir.c_str());
 
-  //printf("CPB2\n");
+  // printf("CPB2\n");
   //////////////////////////////////////////
   // Register lev2:// data urlbase
 
@@ -201,7 +201,7 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
 
   FileEnv::RegisterUrlBase("lev2://", LocPlatformLevel2FileContext);
 
-  //printf("CPB3\n");
+  // printf("CPB3\n");
 
   //////////////////////////////////////////
   // Register src:// data urlbase
@@ -212,7 +212,7 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
 
   FileEnv::RegisterUrlBase("src://", SrcPlatformLevel2FileContext);
 
-  //printf("CPC\n");
+  // printf("CPC\n");
 
   //////////////////////////////////////////
   // Register temp:// data urlbase
@@ -243,7 +243,7 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
   MiniorkDirContext.SetFilesystemBaseAbs(OldSchool::GetGlobalStringVariable("lev2://").c_str());
   MiniorkDirContext.SetPrependFilesystemBase(true);
 
-  //printf("CPM\n");
+  // printf("CPM\n");
 
   for (int iarg = 1; iarg < argc; iarg++) {
     const char* parg = argv[iarg];
@@ -285,7 +285,6 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
 
   FileEnv::RegisterUrlBase("data://", DataDirContext);
   FileEnv::RegisterUrlBase("lev2://", MiniorkDirContext);
-
 }
 StdFileSystemInitalizer::~StdFileSystemInitalizer() {
 }

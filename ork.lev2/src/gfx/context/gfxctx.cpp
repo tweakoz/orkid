@@ -43,7 +43,10 @@ CTXBASE::CTXBASE(Window* pwin)
   SetupSignalsAndSlots();
   mpWindow->mpCTXBASE = this;
 }
-
+CTXBASE::~CTXBASE() {
+  if (mpWindow)
+    delete mpWindow;
+}
 void CTXBASE::pushRefreshPolicy(RefreshPolicyItem policy) {
   _policyStack.push(_curpolicy);
   _setRefreshPolicy(policy);

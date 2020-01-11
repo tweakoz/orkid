@@ -16,156 +16,145 @@
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////
 
+class EditorMainWindow : public tool::MiniorkMainWindow, public ork::AutoConnector {
+  RttiDeclareAbstract(EditorMainWindow, ork::AutoConnector);
 
-class EditorMainWindow 	: public tool::MiniorkMainWindow
-						, public ork::AutoConnector
-{
-	RttiDeclareAbstract( EditorMainWindow, ork::AutoConnector );
+  //////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////
+  DeclarePublicSignal(NewObject);
 
-	DeclarePublicSignal( NewObject );
+  DeclarePublicAutoSlot(UpdateAll);
+  DeclarePublicAutoSlot(OnTimer);
+  DeclarePublicAutoSlot(SimulationInvalidated);
+  DeclarePublicAutoSlot(ObjectSelected);
+  DeclarePublicAutoSlot(ObjectDeSelected);
+  DeclarePublicAutoSlot(SpawnNewGed);
+  DeclarePublicAutoSlot(ClearSelection);
+  DeclarePublicAutoSlot(PostNewObject);
 
-	DeclarePublicAutoSlot( UpdateAll );
-	DeclarePublicAutoSlot( OnTimer );
-	DeclarePublicAutoSlot( SimulationInvalidated );
-	DeclarePublicAutoSlot( ObjectSelected );
-	DeclarePublicAutoSlot( ObjectDeSelected );
-	DeclarePublicAutoSlot( SpawnNewGed );
-	DeclarePublicAutoSlot( ClearSelection );
-	DeclarePublicAutoSlot( PostNewObject );
+  //////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////
+  void AddBuiltInActions();
 
-	void AddBuiltInActions();
+  //////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////
+public: //
+  SceneEditorBase mEditorBase;
 
-public://
+  typedef void (EditorMainWindow::*IntMethodType)(int);
+  QString mCurrentFileName;
+  tool::ged::ObjModel mGedModelObj;
+  tool::DataFlowEditor mDataflowEditor;
 
-	SceneEditorBase					mEditorBase;
+  QTimer mQtTimer;
 
-	typedef void(EditorMainWindow::*IntMethodType)(int);
-	QString							mCurrentFileName;
-	QWidget*						mpCTQTMain;
-	tool::ged::ObjModel				mGedModelObj;
-	tool::DataFlowEditor			mDataflowEditor;
+  QSplashScreen* mpSplashScreen;
+  orkvector<std::string> mScripts;
+  QApplication& mQtApplication;
 
-	QTimer							mQtTimer;
+  ///////////////////////////////////////////////////////////////////////////
 
-	//QTreeView*						mpEntityView;
-	//QTreeView*						mpArchView;
-	QSplashScreen*					mpSplashScreen;
-	orkvector<std::string>			mScripts;
-	QApplication&					mQtApplication;
+  void SlotUpdateAll();
+  void SlotOnTimer();
+  void SlotSimulationInvalidated(ork::Object* pSI);
+  void SlotObjectSelected(ork::Object* pobj);
+  void SlotObjectDeSelected(ork::Object* pobj);
+  void SlotSpawnNewGed(ork::Object* pobj);
+  void SlotClearSelection();
+  void SlotPostNewObject(ork::Object* pobj);
 
-	///////////////////////////////////////////////////////////////////////////
+  void SigNewObject(ork::Object* pobj);
 
-	void SlotUpdateAll();
-	void SlotOnTimer();
-	void SlotSimulationInvalidated( ork::Object* pSI );
-	void SlotObjectSelected( ork::Object* pobj );
-	void SlotObjectDeSelected( ork::Object* pobj );
-	void SlotSpawnNewGed( ork::Object* pobj );
-	void SlotClearSelection();
-	void SlotPostNewObject( ork::Object* pobj );
+  bool event(QEvent* qevent) final; /*virtual*/
 
-	void SigNewObject( ork::Object* pobj );
+  void QueueLoadScene(const std::string& filename);
 
-	bool event(QEvent *qevent) final; /*virtual*/
+  ///////////////////////////////////////////////////////////////////////////
 
-	void QueueLoadScene( const std::string& filename );
+  QWidget* NewCamView(bool bfloat);
 
-	///////////////////////////////////////////////////////////////////////////
+  void NewOutliner2View();
 
-	QWidget*  NewCamView( bool bfloat );
+  // QDockWidget * NewToolView( bool bfloat );
+  // QDockWidget * NewDataflowView( bool bfloat );
+  QDockWidget* NewPyConView(bool bfloat);
 
-	void NewOutliner2View();
+  /////////////////////////////////////////////////
+  // this Ged is special it is the "master" ged, it cannot be closed
+  // and has some permanent connections to:
+  // the scene editor
+  // the editormainwindow
+  /////////////////////////////////////////////////
 
-	//QDockWidget * NewToolView( bool bfloat );
-	//QDockWidget * NewDataflowView( bool bfloat );
-	QDockWidget * NewPyConView( bool bfloat );
+  void SceneObjPropEdit();
 
-	/////////////////////////////////////////////////
-	// this Ged is special it is the "master" ged, it cannot be closed
-	// and has some permanent connections to:
-	// the scene editor
-	// the editormainwindow
-	/////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////
 
-	void SceneObjPropEdit();
+  void NewHierView(bool bfloat);
+  void NewCamViewFloating();
+  void NewToolViewFloating();
+  void NewDataflowViewFloating();
+  void NewAssetAssist();
 
-	///////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////
 
-	void NewHierView( bool bfloat );
-	void NewCamViewFloating();
-	void NewToolViewFloating();
-	void NewDataflowViewFloating();
-    void NewAssetAssist();
+  void Exit();
+  void ToggleFullscreen();
+  void NewDirView();
+  void LightingHeadLightMode();
+  void LightingSceneMode();
+  void LightingSetLightPos();
+  void ViewToggleCollisionSpheres();
+  void OpenSceneFile();
+  void SaveSceneFile();
+  void MergeFile();
+  void SaveSelected();
+  void RunGame();
+  void RunLevel();
+  void Group();
+  void ArchExport();
+  void ArchImport();
+  void ArchMakeReferenced();
+  void ArchMakeLocal();
+  void NewEntity();
+  void NewEntities();
+  void NewScene();
+  void Dupe();
+  void RefreshModels();
+  void RefreshAnims();
+  void RefreshTextures();
+  void RefreshHFSMs();
+  void SaveCubeMap();
+  void RunLocal();
+  void StopLocal();
+  void SaveLayout();
+  void LoadLayout();
 
-	///////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////
 
-	void Exit();
-	void ToggleFullscreen();
-	void NewDirView();
-	void LightingHeadLightMode();
-	void LightingSceneMode();
-	void LightingSetLightPos();
-	void ViewToggleCollisionSpheres();
-	void OpenSceneFile();
-	void SaveSceneFile();
-	void MergeFile();
-	void SaveSelected();
-	void RunGame();
-	void RunLevel();
-	void Group();
-	void ArchExport();
-	void ArchImport();
-	void ArchMakeReferenced();
-	void ArchMakeLocal();
-	void NewEntity();
-	void NewEntities();
-	void NewScene();
-	void Dupe();
-	void RefreshModels();
-	void RefreshAnims();
-	void RefreshTextures();
-	void RefreshHFSMs();
-	void SaveCubeMap();
-	void RunLocal();
-	void StopLocal();
-	void SaveLayout();
-	void LoadLayout();
+  EditorMainWindow(QWidget* parent, const std::string& applicationClassName, QApplication& App);
+  ~EditorMainWindow();
 
-	///////////////////////////////////////////////////////////////////////////
-
-	EditorMainWindow(QWidget *parent, const std::string& applicationClassName, QApplication & App);
-	~EditorMainWindow();
-
-	bool _fullscreen;
+  bool _fullscreen;
 };
 
-extern ent::EditorMainWindow *gEditorMainWindow;
+extern ent::EditorMainWindow* gEditorMainWindow;
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-inline void EditorMainWindow::NewCamViewFloating()
-{
-//	NewCamView(true);
+inline void EditorMainWindow::NewCamViewFloating() {
+  //	NewCamView(true);
 }
 
-inline void EditorMainWindow::NewToolViewFloating()
-{
-//	NewToolView(true);
+inline void EditorMainWindow::NewToolViewFloating() {
+  //	NewToolView(true);
 }
 
-inline void EditorMainWindow::NewDataflowViewFloating()
-{
-//	NewDataflowView(true);
+inline void EditorMainWindow::NewDataflowViewFloating() {
+  //	NewDataflowView(true);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-} // ent
-} // ork
+}} // namespace ork::ent
 ///////////////////////////////////////////////////////////////////////////

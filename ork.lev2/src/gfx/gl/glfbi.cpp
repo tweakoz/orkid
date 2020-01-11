@@ -107,7 +107,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
       if (isPickState())
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
       else
-        glClearColor(rCol.x, rCol.y, rCol.w, 1.0f);
+        glClearColor(rCol.x, rCol.y, rCol.z, rCol.w);
 
       // printf( "GlFrameBufferInterface::ClearViewport()\n" );
       GL_ERRORCHECK();
@@ -153,7 +153,7 @@ void GlFrameBufferInterface::_doEndFrame(void) {
     // printf( "ENDFRAME<RtGroup>\n" );
   } else if (IsOffscreenTarget()) {
     // printf( "ENDFRAME<OST>\n" );
-    OffscreenBuffer* pbuf            = GetThisBuffer();
+    OffscreenBuffer* pbuf      = GetThisBuffer();
     pbuf->GetTexture()->_dirty = false;
     pbuf->SetDirty(false);
     // mTargetGL.EndContextFBO();
