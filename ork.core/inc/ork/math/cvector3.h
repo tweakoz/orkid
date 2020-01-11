@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef __VECTOR_3D_H__
-#define __VECTOR_3D_H__
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -213,6 +212,7 @@ public:
   void SetRGB(T r, T g, T b) {
     SetXYZ(r, g, b);
   }
+  void setYUV(T Y, T U, T V);
 
   U32 GetVtxColorAsU32(void) const;
   U32 GetARGBU32(void) const;
@@ -269,5 +269,3 @@ template <typename T> inline ork::Vector3<T> operator*(T scalar, const ork::Vect
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#endif
