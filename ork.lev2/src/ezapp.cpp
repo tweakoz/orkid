@@ -105,7 +105,7 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
 
   bool bcon = mIdleTimer.connect(&mIdleTimer, SIGNAL(timeout()), this, SLOT(OnTimer()));
 
-  mIdleTimer.setInterval(5);
+  mIdleTimer.setInterval(1);
   mIdleTimer.setSingleShot(false);
   mIdleTimer.start();
 
@@ -149,16 +149,16 @@ void OrkEzQtApp::OnTimer() {
     ;
 }
 
-void OrkEzQtApp::setDrawCallback(EzMainWin::drawcb_t cb) {
+void OrkEzQtApp::onDraw(EzMainWin::drawcb_t cb) {
   _mainWindow->_onDraw = cb;
 }
-void OrkEzQtApp::setResizeCallback(EzMainWin::onresizecb_t cb) {
+void OrkEzQtApp::onResize(EzMainWin::onresizecb_t cb) {
   _mainWindow->_onResize = cb;
 }
-void OrkEzQtApp::setGpuInitCallback(EzMainWin::ongpuinit_t cb) {
+void OrkEzQtApp::onGpuInit(EzMainWin::ongpuinit_t cb) {
   _mainWindow->_onGpuInit = cb;
 }
-void OrkEzQtApp::setUiEventHandler(EzMainWin::onuieventcb_t cb) {
+void OrkEzQtApp::onUiEvent(EzMainWin::onuieventcb_t cb) {
   _mainWindow->_onUiEvent = cb;
 }
 

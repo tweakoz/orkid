@@ -67,10 +67,10 @@ public:
   ///////////////////////////////////
   static std::shared_ptr<OrkEzQtApp> create(int argc, char** argv);
 
-  void setDrawCallback(EzMainWin::drawcb_t cb);
-  void setResizeCallback(EzMainWin::onresizecb_t cb);
-  void setGpuInitCallback(EzMainWin::ongpuinit_t cb);
-  void setUiEventHandler(EzMainWin::onuieventcb_t cb);
+  void onDraw(EzMainWin::drawcb_t cb);
+  void onResize(EzMainWin::onresizecb_t cb);
+  void onGpuInit(EzMainWin::ongpuinit_t cb);
+  void onUiEvent(EzMainWin::onuieventcb_t cb);
 
 public slots:
   void OnTimer();
