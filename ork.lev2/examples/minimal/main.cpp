@@ -2,31 +2,60 @@
 #include <ork/kernel/string/deco.inl>
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/lev2/gfx/material_freestyle.inl>
 
 using namespace std::string_literals;
 using namespace ork;
 using namespace ork::lev2;
 int main(int argc, char** argv) {
-  auto qtapp = OrkEzQtApp::create(argc, argv);
+  auto qtapp  = OrkEzQtApp::create(argc, argv);
+  auto qtwin  = qtapp->_mainWindow;
+  auto gfxwin = qtwin->_gfxwin;
+  FreestyleMaterial material;
+  FxShader* fxshader                   = nullptr;
+  const FxShaderTechnique* fxtechnique = nullptr;
+  const FxShaderParam* fxparameterMVP  = nullptr;
+  const FxShaderParam* fxparameterMODC = nullptr;
   //////////////////////////////////////////////////////////
-  qtapp->onGpuInit([&](Context* gfxctx) { deco::printf(fvec3::White(), "gpuINIT - context<%p>", gfxctx); });
   //////////////////////////////////////////////////////////
-  qtapp->onDraw([=](const ui::DrawEvent& drwev) {
-    auto target = drwev.GetTarget();
-    float r     = float(rand() % 255) / 255.0f;
-    float g     = float(rand() % 255) / 255.0f;
-    float b     = float(rand() % 255) / 255.0f;
-    target->FBI()->SetClearColor(fvec4(r, g, b, 1));
-    int TARGW           = target->mainSurfaceWidth();
-    int TARGH           = target->mainSurfaceHeight();
-    const SRect tgtrect = SRect(0, 0, TARGW, TARGH);
-    target->beginFrame();
-    target->endFrame();
+  qtapp->onGpuInit([&](Context* ctx) {
+    material.gpuInit(ctx, "orkshader://solid");
+    fxshader        = material._shader;
+    fxtechnique     = material.technique("mmodcolor");
+    fxparameterMVP  = material.param("MatMVP");
+    fxparameterMODC = material.param("modcolor");
+    deco::printf(fvec3::White(), "gpuINIT - context<%p>\n", ctx, fxtechnique);
+    deco::printf(fvec3::Yellow(), "  fxtechnique<%p>\n", fxtechnique);
+    deco::printf(fvec3::Yellow(), "  fxparameterMVP<%p>\n", fxparameterMVP);
+    deco::printf(fvec3::Yellow(), "  fxparameterMODC<%p>\n", fxparameterMODC);
   });
   //////////////////////////////////////////////////////////
-  qtapp->onResize([=](int w, int h) { printf("GOTRESIZE<%d %d>\n", w, h); });
+  qtapp->onDraw([&](const ui::DrawEvent& drwev) {
+    auto context        = drwev.GetTarget();
+    auto fbi            = context->FBI(); // FrameBufferInterface
+    auto fxi            = context->FXI(); // FX Interface
+    float r             = float(rand() % 255) / 255.0f;
+    float g             = float(rand() % 255) / 255.0f;
+    float b             = float(rand() % 255) / 255.0f;
+    int TARGW           = context->mainSurfaceWidth();
+    int TARGH           = context->mainSurfaceHeight();
+    const SRect tgtrect = SRect(0, 0, TARGW, TARGH);
+
+    fbi->SetClearColor(fvec4(r, g, b, 1));
+    context->beginFrame();
+    RenderContextFrameData RCFD(context);
+    material.bindTechnique(fxtechnique);
+    material.begin(RCFD);
+    fxi->BindParamMatrix(fxshader, fxparameterMVP, fmtx4::Identity);
+    fxi->BindParamVect4(fxshader, fxparameterMODC, fvec4::Red());
+    gfxwin->Render2dQuadEML(fvec4(-0.5, -0.5, 1, 1), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+    material.end(RCFD);
+    context->endFrame();
+  });
   //////////////////////////////////////////////////////////
-  qtapp->onUiEvent([=](const ui::Event& ev) -> ui::HandlerResult {
+  qtapp->onResize([&](int w, int h) { printf("GOTRESIZE<%d %d>\n", w, h); });
+  //////////////////////////////////////////////////////////
+  qtapp->onUiEvent([&](const ui::Event& ev) -> ui::HandlerResult {
     switch (ev.mEventCode) {
       case ui::UIEV_DOUBLECLICK:
         OrkAssert(false);

@@ -49,6 +49,7 @@ public:
   EzMainWin();
   ~EzMainWin();
   bool _dogpuinit          = true;
+  CQtWindow* _gfxwin       = nullptr;
   CTQT* _ctqt              = nullptr;
   QCtxWidget* _ctxw        = nullptr;
   drawcb_t _onDraw         = nullptr;

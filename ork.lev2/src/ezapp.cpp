@@ -118,13 +118,13 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
   //////////////////////////////////////
   // create leve gfxwindow
   //////////////////////////////////////
-  auto gfxwin = new CQtWindow(nullptr);
-  GfxEnv::GetRef().RegisterWinContext(gfxwin);
+  _mainWindow->_gfxwin = new CQtWindow(nullptr);
+  GfxEnv::GetRef().RegisterWinContext(_mainWindow->_gfxwin);
   //////////////////////////////////////
-  auto vp             = new EzViewport(_mainWindow);
-  gfxwin->mRootWidget = vp;
+  auto vp                           = new EzViewport(_mainWindow);
+  _mainWindow->_gfxwin->mRootWidget = vp;
 
-  _mainWindow->_ctqt = new CTQT(gfxwin, _mainWindow);
+  _mainWindow->_ctqt = new CTQT(_mainWindow->_gfxwin, _mainWindow);
   _mainWindow->_ctqt->Show();
 
   _mainWindow->_ctxw = _mainWindow->_ctqt->GetQWidget();
