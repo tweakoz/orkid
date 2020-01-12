@@ -21,6 +21,10 @@ fvec3 spotreadYUV() {
   //   repeated measurements
   //   to amortize colorimeter startup time costs
 
+  // todo: Im pretty sure spotread in -u mode
+  //   spits out CIELUV - so ensure YUV conversion
+  //   is correct..
+
   fvec3 rval;
   const int MAX_BUFFER = 255;
   std::string stdout;
