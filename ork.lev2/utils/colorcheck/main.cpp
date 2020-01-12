@@ -24,7 +24,6 @@ int main(int argc, char** argv) {
   auto qtwin  = qtapp->_mainWindow;
   auto gfxwin = qtwin->_gfxwin;
   FreestyleMaterial material;
-  FxShader* fxshader                   = nullptr;
   const FxShaderTechnique* fxtechnique = nullptr;
   const FxShaderParam* fxparameterMVP  = nullptr;
   const FxShaderParam* fxparameterT    = nullptr;
@@ -33,7 +32,6 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////
   qtapp->onGpuInit([&](Context* ctx) {
     material.gpuInit(ctx, "colorcheck://shader");
-    fxshader       = material._shader;
     fxtechnique    = material.technique("yuv2rgb");
     fxparameterMVP = material.param("mvp");
     fxparameterT   = material.param("t");
@@ -57,8 +55,8 @@ int main(int argc, char** argv) {
     RenderContextFrameData RCFD(context);
     material.bindTechnique(fxtechnique);
     material.begin(RCFD);
-    fxi->BindParamMatrix(fxshader, fxparameterMVP, fmtx4::Identity);
-    fxi->BindParamFloat(fxshader, fxparameterT, fmod(t, 1));
+    material.bindParamMatrix(fxparameterMVP, fmtx4::Identity);
+    material.bindParamFloat(fxparameterT, fmod(t, 1));
     gfxwin->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0), fvec4(0));
     material.end(RCFD);
     context->endFrame();
