@@ -180,7 +180,8 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
   //////////////////////////////////////////
   // Register data:// urlbase
 
-  static FileDevContext WorkingDirContext;
+  // todo - hold somewhere not static
+  static auto WorkingDirContext = std::make_shared<FileDevContext>();
 
   auto base_dir = ork::file::GetStartupDirectory();
 
@@ -195,53 +196,53 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
   //////////////////////////////////////////
   // Register lev2:// data urlbase
 
-  static FileDevContext LocPlatformLevel2FileContext;
-  LocPlatformLevel2FileContext.SetFilesystemBaseAbs(OldSchool::GetGlobalStringVariable("lev2://").c_str());
-  LocPlatformLevel2FileContext.SetPrependFilesystemBase(true);
+  static auto LocPlatformLevel2FileContext = std::make_shared<FileDevContext>();
+  LocPlatformLevel2FileContext->SetFilesystemBaseAbs(OldSchool::GetGlobalStringVariable("lev2://").c_str());
+  LocPlatformLevel2FileContext->SetPrependFilesystemBase(true);
 
-  FileEnv::RegisterUrlBase("lev2://", LocPlatformLevel2FileContext);
+  FileEnv::registerUrlBase("lev2://", LocPlatformLevel2FileContext);
 
   // printf("CPB3\n");
 
   //////////////////////////////////////////
   // Register src:// data urlbase
 
-  static FileDevContext SrcPlatformLevel2FileContext;
-  SrcPlatformLevel2FileContext.SetFilesystemBaseAbs(OldSchool::GetGlobalStringVariable("src://").c_str());
-  SrcPlatformLevel2FileContext.SetPrependFilesystemBase(true);
+  static auto SrcPlatformLevel2FileContext = std::make_shared<FileDevContext>();
+  SrcPlatformLevel2FileContext->SetFilesystemBaseAbs(OldSchool::GetGlobalStringVariable("src://").c_str());
+  SrcPlatformLevel2FileContext->SetPrependFilesystemBase(true);
 
-  FileEnv::RegisterUrlBase("src://", SrcPlatformLevel2FileContext);
+  FileEnv::registerUrlBase("src://", SrcPlatformLevel2FileContext);
 
   // printf("CPC\n");
 
   //////////////////////////////////////////
   // Register temp:// data urlbase
 
-  static FileDevContext TempPlatformLevel2FileContext;
-  TempPlatformLevel2FileContext.SetFilesystemBaseAbs(OldSchool::GetGlobalStringVariable("temp://").c_str());
-  TempPlatformLevel2FileContext.SetPrependFilesystemBase(true);
+  static auto TempPlatformLevel2FileContext = std::make_shared<FileDevContext>();
+  TempPlatformLevel2FileContext->SetFilesystemBaseAbs(OldSchool::GetGlobalStringVariable("temp://").c_str());
+  TempPlatformLevel2FileContext->SetPrependFilesystemBase(true);
 
-  FileEnv::RegisterUrlBase("temp://", TempPlatformLevel2FileContext);
+  FileEnv::registerUrlBase("temp://", TempPlatformLevel2FileContext);
 
   //////////////////////////////////////////
   // Register miniork:// data urlbase
 
-  static FileDevContext LocPlatformMorkDataFileContext;
-  LocPlatformMorkDataFileContext.SetFilesystemBaseAbs(OldSchool::GetGlobalStringVariable("miniorkdata://").c_str());
-  LocPlatformMorkDataFileContext.SetPrependFilesystemBase(true);
+  static auto LocPlatformMorkDataFileContext = std::make_shared<FileDevContext>();
+  LocPlatformMorkDataFileContext->SetFilesystemBaseAbs(OldSchool::GetGlobalStringVariable("miniorkdata://").c_str());
+  LocPlatformMorkDataFileContext->SetPrependFilesystemBase(true);
 
-  FileEnv::RegisterUrlBase("miniorkdata://", LocPlatformMorkDataFileContext);
+  FileEnv::registerUrlBase("miniorkdata://", LocPlatformMorkDataFileContext);
 
   //////////////////////////////////////////
 
-  static FileDevContext DataDirContext;
+  static auto DataDirContext = std::make_shared<FileDevContext>();
 
-  DataDirContext.SetFilesystemBaseAbs("ork.data/pc");
-  DataDirContext.SetPrependFilesystemBase(true);
+  DataDirContext->SetFilesystemBaseAbs("ork.data/pc");
+  DataDirContext->SetPrependFilesystemBase(true);
 
-  static FileDevContext MiniorkDirContext;
-  MiniorkDirContext.SetFilesystemBaseAbs(OldSchool::GetGlobalStringVariable("lev2://").c_str());
-  MiniorkDirContext.SetPrependFilesystemBase(true);
+  static auto MiniorkDirContext = std::make_shared<FileDevContext>();
+  MiniorkDirContext->SetFilesystemBaseAbs(OldSchool::GetGlobalStringVariable("lev2://").c_str());
+  MiniorkDirContext->SetPrependFilesystemBase(true);
 
   // printf("CPM\n");
 
@@ -259,7 +260,7 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
       if (TheDir) {
         OldSchool::SetGlobalStringVariable("data://", dirname.c_str());
         FileEnv::GetRef().CloseDir(TheDir);
-        DataDirContext.SetFilesystemBaseAbs(dirname);
+        DataDirContext->SetFilesystemBaseAbs(dirname);
       } else {
         OrkNonFatalAssertI(false, "specified Data Folder Does Not Exist!!\n");
       }
@@ -275,7 +276,7 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
       if (TheDir) {
         OldSchool::SetGlobalStringVariable("lev2://", dirname.c_str());
         FileEnv::GetRef().CloseDir(TheDir);
-        MiniorkDirContext.SetFilesystemBaseAbs(dirname);
+        MiniorkDirContext->SetFilesystemBaseAbs(dirname);
       } else {
         OrkNonFatalAssertI(false, "specified MiniorkFolder Does Not Exist!!\n");
       }
@@ -283,8 +284,8 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
     }
   }
 
-  FileEnv::RegisterUrlBase("data://", DataDirContext);
-  FileEnv::RegisterUrlBase("lev2://", MiniorkDirContext);
+  FileEnv::registerUrlBase("data://", DataDirContext);
+  FileEnv::registerUrlBase("lev2://", MiniorkDirContext);
 }
 StdFileSystemInitalizer::~StdFileSystemInitalizer() {
 }

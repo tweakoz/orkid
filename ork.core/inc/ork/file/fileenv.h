@@ -3,7 +3,7 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -23,195 +23,203 @@ namespace ork {
 class FileDev;
 class File;
 
-struct FileEnvDir
-{
-    long					handle; /* -1 for failed rewind */
-    file::Path::NameType	result; /* d_name null iff first time */
-	file::Path::NameType	name;  /* null-terminated file::Path::NameType */
+struct FileEnvDir {
+  long handle;                 /* -1 for failed rewind */
+  file::Path::NameType result; /* d_name null iff first time */
+  file::Path::NameType name;   /* null-terminated file::Path::NameType */
 
-	u8						info;
+  u8 info;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace file {
 ///////////////////////////////////////////////////////////////////////////////
 
-	file::Path::NameType	GetStartupDirectory();
-	EFileErrCode 			SetCurDir( const file::Path::NameType & inspec );
-	file::Path::NameType	GetCurDir();
+file::Path::NameType GetStartupDirectory();
+EFileErrCode SetCurDir(const file::Path::NameType& inspec);
+file::Path::NameType GetCurDir();
 
 ///////////////////////////////////////////////////////////////////////////////
-}
+} // namespace file
 ///////////////////////////////////////////////////////////////////////////////
 
-enum ELINFILEMODE
-{
-	ELFM_NONE = 0,
-	ELFM_READ,
-	ELFM_WRITE,
+enum ELINFILEMODE {
+  ELFM_NONE = 0,
+  ELFM_READ,
+  ELFM_WRITE,
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class FileEnv : public NoRttiSingleton< FileEnv >
-{
-	// The constructor of a singleton must be private to show users that they must use GetRef instead.
-	// This ugly friend declaration is a side-effect of that. The only alternative is to ditch the template
-	// and just use singleton as a pattern.
-	friend class NoRttiSingleton< FileEnv >;
+class FileEnv : public NoRttiSingleton<FileEnv> {
+  // The constructor of a singleton must be private to show users that they must use GetRef instead.
+  // This ugly friend declaration is a side-effect of that. The only alternative is to ditch the template
+  // and just use singleton as a pattern.
+  friend class NoRttiSingleton<FileEnv>;
 
-	FileDev *mpDefaultDevice;
-	orkmap<ork::file::Path::SmallNameType, FileDevContext> mUrlRegistryMap;
+  FileDev* mpDefaultDevice;
 
 public:
-	FileEnv();
+  typedef orkmap<ork::file::Path::SmallNameType, filedevctxptr_t> filedevctxmap_t;
 
-	// These should all be forwarded to FileDev
-	FileEnvDir*			OpenDir(const char *);
-	int						CloseDir(FileEnvDir *);
-	file::Path::NameType	ReadDir(FileEnvDir *);
-	void					RewindDir(FileEnvDir *);
+  filedevctxmap_t _fileDevContextMap;
 
-	const orkmap<ork::file::Path::SmallNameType, FileDevContext>& RefUrlRegistry() const { return mUrlRegistryMap; }
+  FileEnv();
 
-	FileDev* GetDefaultDevice() const { return mpDefaultDevice; }
-	FileDev* GetDeviceForUrl(const file::Path &fileName) const;
+  // These should all be forwarded to FileDev
+  FileEnvDir* OpenDir(const char*);
+  int CloseDir(FileEnvDir*);
+  file::Path::NameType ReadDir(FileEnvDir*);
+  void RewindDir(FileEnvDir*);
 
-	//////////////////////////////////////////
+  const filedevctxmap_t& RefUrlRegistry() const {
+    return _fileDevContextMap;
+  }
 
-	void SetDefaultDevice(FileDev *pDevice) { mpDefaultDevice = pDevice; }
+  FileDev* GetDefaultDevice() const {
+    return mpDefaultDevice;
+  }
+  FileDev* GetDeviceForUrl(const file::Path& fileName) const;
 
-	//////////////////////////////////////////
-	// Caps And Flags
+  //////////////////////////////////////////
 
-	static bool CanRead( void );
-	static bool CanWrite( void );
-	static bool CanReadAsync( void );
+  void SetDefaultDevice(FileDev* pDevice) {
+    mpDefaultDevice = pDevice;
+  }
 
-	//////////////////////////////////////////
-	// misc support
+  //////////////////////////////////////////
+  // Caps And Flags
 
-	static bool						filespec_isunix( const file::Path::NameType & inspec );
-	static bool						filespec_isdos( const file::Path::NameType & inspec );
+  static bool CanRead(void);
+  static bool CanWrite(void);
+  static bool CanReadAsync(void);
 
-	static file::Path::NameType		filespec_to_extension( const file::Path::NameType & inspec );
-	static file::Path::NameType		filespec_no_extension( const file::Path::NameType & inspec );
-	static file::Path::NameType		filespec_strip_base( const file::Path::NameType & inspec, const file::Path::NameType & base );
+  //////////////////////////////////////////
+  // misc support
 
-	static orkvector<file::Path::NameType>	filespec_separate_terms( const file::Path::NameType & inspec );
-	static orkvector<file::Path::NameType>	filespec_search( const file::Path::NameType & wildcards, const ork::file::Path& initdir );
-	static orkset<file::Path::NameType>		filespec_search_sorted( const file::Path::NameType & wildcards, const ork::file::Path& initdir );
-	static FileStampH						EncodeFileStamp( int year, int month, int day, int hour, int minute, int second );
-	static void								DecodeFileStamp( FileStampH stamp, int& year, int& month, int& day, int& hour, int& minute, int& second );
-	static FileStampH						GetFileStamp( const file::Path::NameType & filespec );
+  static bool filespec_isunix(const file::Path::NameType& inspec);
+  static bool filespec_isdos(const file::Path::NameType& inspec);
 
-	/// This is a helper function for FilespecToContainingDirectory, but hell, feel free to use it
-	/// yourself. It simply finds the last occurence of any character from the set of chars that make
-	/// up setOfChars, and returns the substring of stringToTruncate up until (but not including) the
-	/// last char.
-	///
-	/// @param stringToTruncate This is the string that will be be searching and truncating.
-	/// @param setOfChars Think of this param as set of independant chars (order does not matter) to search for inside
-	///        stringToTruncate.
-	/// @return The truncated string from the first char up until the last char found from setOfChars. If no
-	///         char is found, then stringToTruncate is returned.
-	static file::Path::NameType TruncateAtFirstCharFromSet(const file::Path::NameType& stringToTruncate, const file::Path::NameType& setOfChars);
+  static file::Path::NameType filespec_to_extension(const file::Path::NameType& inspec);
+  static file::Path::NameType filespec_no_extension(const file::Path::NameType& inspec);
+  static file::Path::NameType filespec_strip_base(const file::Path::NameType& inspec, const file::Path::NameType& base);
 
-	/// For a given path, this function returns the folder path which contains the represented file. If path is
-	/// a directory then the function will return path. Trailing separators ('/' or '\\') will be stripped. The
-	/// function works for UNIX or DOS filenames.
-	///
-	/// @param path The string on which to find the containing folder.
-	/// @return The containing folder (does not contain a trailing separator).
-	/// @pre filespec_isunix(path) || filespec_isdos(path)
-	static file::Path::NameType FilespecToContainingDirectory(const file::Path::NameType& path);
+  static orkvector<file::Path::NameType> filespec_separate_terms(const file::Path::NameType& inspec);
+  static orkvector<file::Path::NameType> filespec_search(const file::Path::NameType& wildcards, const ork::file::Path& initdir);
+  static orkset<file::Path::NameType> filespec_search_sorted(const file::Path::NameType& wildcards, const ork::file::Path& initdir);
+  static FileStampH EncodeFileStamp(int year, int month, int day, int hour, int minute, int second);
+  static void DecodeFileStamp(FileStampH stamp, int& year, int& month, int& day, int& hour, int& minute, int& second);
+  static FileStampH GetFileStamp(const file::Path::NameType& filespec);
 
-	//////////////////////////////////////////
+  /// This is a helper function for FilespecToContainingDirectory, but hell, feel free to use it
+  /// yourself. It simply finds the last occurence of any character from the set of chars that make
+  /// up setOfChars, and returns the substring of stringToTruncate up until (but not including) the
+  /// last char.
+  ///
+  /// @param stringToTruncate This is the string that will be be searching and truncating.
+  /// @param setOfChars Think of this param as set of independant chars (order does not matter) to search for inside
+  ///        stringToTruncate.
+  /// @return The truncated string from the first char up until the last char found from setOfChars. If no
+  ///         char is found, then stringToTruncate is returned.
+  static file::Path::NameType
+  TruncateAtFirstCharFromSet(const file::Path::NameType& stringToTruncate, const file::Path::NameType& setOfChars);
 
-	static bool						DoesFileExist( const file::Path&  filespec );
-	static bool						DoesDirectoryExist( const file::Path& filespec );
+  /// For a given path, this function returns the folder path which contains the represented file. If path is
+  /// a directory then the function will return path. Trailing separators ('/' or '\\') will be stripped. The
+  /// function works for UNIX or DOS filenames.
+  ///
+  /// @param path The string on which to find the containing folder.
+  /// @return The containing folder (does not contain a trailing separator).
+  /// @pre filespec_isunix(path) || filespec_isdos(path)
+  static file::Path::NameType FilespecToContainingDirectory(const file::Path::NameType& path);
 
-	static bool						IsFileWritable( const file::Path& filespec );
+  //////////////////////////////////////////
 
-	static void							SetPrependFilesystemBase(bool setting);
-	static bool							GetPrependFilesystemBase(void);
-	static void							SetFilesystemBase( file::Path::NameType fbase );
-	static const file::Path::NameType&	GetFilesystemBase( void );
+  static bool DoesFileExist(const file::Path& filespec);
+  static bool DoesDirectoryExist(const file::Path& filespec);
 
-	//////////////////////////////////////////
+  static bool IsFileWritable(const file::Path& filespec);
 
-	static const FileDevContext& UrlBaseToContext( const file::Path::SmallNameType &UrlName );
+  static void SetPrependFilesystemBase(bool setting);
+  static bool GetPrependFilesystemBase(void);
+  static void SetFilesystemBase(file::Path::NameType fbase);
+  static const file::Path::NameType& GetFilesystemBase(void);
 
-	//////////////////////////////////////////
+  //////////////////////////////////////////
 
-	/// Determine is a path has a URL at the front. Note that is does not check if
-	/// the URL is registered. This function is purely checking for the *:// pattern
-	/// at the front of the path. Use IsUrlBaseRegister to find out if it's actually
-	/// registered.
-	///
-	/// @param PathName The path to check for a URL
-	/// @return Whether or not PathName has a URL
-	static bool						PathIsUrlForm(const file::Path& PathName);
+  static const_filedevctxptr_t UrlBaseToContext(const file::Path::SmallNameType& UrlName);
 
-	/// Is this URL actually registeted?
-	///
-	/// @urlBase A URL base string (for example "lev2://" or "data://")
-	/// @return Whether or the not the URL base is registered
-	static bool						IsUrlBaseRegistered(const file::Path::SmallNameType& urlBase);
+  //////////////////////////////////////////
 
-	static void					RegisterUrlBase(const file::Path::SmallNameType& UrlBase, const FileDevContext& PathBase);
-	static ork::file::Path		GetPathFromUrlExt( const file::Path::NameType& UrlName, const file::Path::NameType & subfolder = "", const file::Path::SmallNameType & ext = "");
+  /// Determine is a path has a URL at the front. Note that is does not check if
+  /// the URL is registered. This function is purely checking for the *:// pattern
+  /// at the front of the path. Use IsUrlBaseRegister to find out if it's actually
+  /// registered.
+  ///
+  /// @param PathName The path to check for a URL
+  /// @return Whether or not PathName has a URL
+  static bool PathIsUrlForm(const file::Path& PathName);
 
-	static bool IsCharAlpha( char c )
-	{
-		return ( ((c>='a') && (c<='z'))	|| ((c>='A') && (c<='Z')) );
-	}
+  /// Is this URL actually registeted?
+  ///
+  /// @urlBase A URL base string (for example "lev2://" or "data://")
+  /// @return Whether or the not the URL base is registered
+  static bool IsUrlBaseRegistered(const file::Path::SmallNameType& urlBase);
 
-	static bool IsCharNumeric( char c )
-	{
-		return ( ((c>='0') && (c<='9')) );
-	}
+  static void registerUrlBase(const file::Path::SmallNameType& UrlBase, filedevctxptr_t PathBase);
+  static ork::file::Path GetPathFromUrlExt(
+      const file::Path::NameType& UrlName,
+      const file::Path::NameType& subfolder = "",
+      const file::Path::SmallNameType& ext  = "");
 
-	static bool IsCharPunc( char c )
-	{
-		return ( (c=='_')||(c=='.')||(c==' ') );
-	}
+  static bool IsCharAlpha(char c) {
+    return (((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')));
+  }
 
-	static bool IsCharUnix( char c )
-	{
-		return (( c == '/' ) || IsCharAlpha(c) || IsCharNumeric(c) || IsCharPunc(c) );
-	}
-	static bool IsCharDos( char c )
-	{
-		return ( (c == '\\') || (c == ':') || IsCharAlpha(c) || IsCharNumeric(c) || IsCharPunc(c) );
-	}
+  static bool IsCharNumeric(char c) {
+    return (((c >= '0') && (c <= '9')));
+  }
 
-	static file::Path::SmallNameType UrlNameToBase( const file::Path::NameType& UrlName );
-	static file::Path::NameType UrlNameToPath( const file::Path::NameType& UrlName );
+  static bool IsCharPunc(char c) {
+    return ((c == '_') || (c == '.') || (c == ' '));
+  }
 
-	static void BeginLinFile( const file::Path& lfn, ELINFILEMODE emode );
-	static void EndLinFile();
+  static bool IsCharUnix(char c) {
+    return ((c == '/') || IsCharAlpha(c) || IsCharNumeric(c) || IsCharPunc(c));
+  }
+  static bool IsCharDos(char c) {
+    return ((c == '\\') || (c == ':') || IsCharAlpha(c) || IsCharNumeric(c) || IsCharPunc(c));
+  }
 
-	
-	static ELINFILEMODE GetLinFileMode() { return GetRef().meLinFileMode; }
-	static const file::Path& GetLinFileName() { return GetRef().mLinFileName; }
-	static File* GetLinFile() { return GetRef().mpLinFile; }
+  static file::Path::SmallNameType UrlNameToBase(const file::Path::NameType& UrlName);
+  static file::Path::NameType UrlNameToPath(const file::Path::NameType& UrlName);
 
-	private:
+  static void BeginLinFile(const file::Path& lfn, ELINFILEMODE emode);
+  static void EndLinFile();
 
-	/// Strips any URL from a path. The URL does not have to be regsitered.
-	///
-	/// @param urlName The path to strip a URL from
-	/// @return The path without the URL
-	static file::Path::NameType StripUrlFromPath(const file::Path::NameType& urlName);
-	file::Path				mLinFileName;
-	ELINFILEMODE			meLinFileMode;
-	File*					mpLinFile;
+  static ELINFILEMODE GetLinFileMode() {
+    return GetRef().meLinFileMode;
+  }
+  static const file::Path& GetLinFileName() {
+    return GetRef().mLinFileName;
+  }
+  static File* GetLinFile() {
+    return GetRef().mpLinFile;
+  }
+
+private:
+  /// Strips any URL from a path. The URL does not have to be regsitered.
+  ///
+  /// @param urlName The path to strip a URL from
+  /// @return The path without the URL
+  static file::Path::NameType StripUrlFromPath(const file::Path::NameType& urlName);
+  file::Path mLinFileName;
+  ELINFILEMODE meLinFileMode;
+  File* mpLinFile;
 };
 
-typedef void (*FileAsyncDoneCallback)( void );
+typedef void (*FileAsyncDoneCallback)(void);
 
 ///////////////////////////////////////////////////////////////////////////////
-}
+} // namespace ork
 ///////////////////////////////////////////////////////////////////////////////
-

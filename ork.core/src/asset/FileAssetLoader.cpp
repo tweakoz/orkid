@@ -107,13 +107,13 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
 
   file::Path::SmallNameType url = pathobjnoq.GetUrlBase();
 
-  const FileDevContext& ctx = ork::FileEnv::UrlBaseToContext(url);
+  auto filedevctx = ork::FileEnv::UrlBaseToContext(url);
 
   //////////////////////
   // munge the path
   //////////////////////
 
-  const orkvector<FileDevContext::path_converter_type>& converters = ctx.GetPathConverters();
+  const auto& converters = filedevctx->GetPathConverters();
 
   int inumc = int(converters.size());
 

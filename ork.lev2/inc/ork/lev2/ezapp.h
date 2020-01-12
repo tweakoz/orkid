@@ -68,6 +68,8 @@ public:
   ///////////////////////////////////
   static std::shared_ptr<OrkEzQtApp> create(int argc, char** argv);
 
+  filedevctxptr_t newFileDevContext(std::string uribase);
+
   void onDraw(EzMainWin::drawcb_t cb);
   void onResize(EzMainWin::onresizecb_t cb);
   void onGpuInit(EzMainWin::ongpuinit_t cb);
@@ -82,6 +84,7 @@ public:
   QTimer mIdleTimer;
   EzMainWin* _mainWindow;
   std::shared_ptr<EzApp> _ezapp;
+  std::map<std::string, filedevctxptr_t> _fdevctxmap;
 };
 
 } // namespace ork::lev2

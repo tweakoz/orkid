@@ -112,15 +112,14 @@ void FxShaderStorageBufferMapping::unmap() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-
 void FxShader::RegisterLoaders(const file::Path::NameType& base, const file::Path::NameType& ext) {
-  static FileDevContext gShaderFileContext1;
-  const FileDevContext& MorkCtx = FileEnv::UrlBaseToContext("lev2");
-  auto shaderpath = MorkCtx.GetFilesystemBaseAbs()+"/"+base;
-  gShaderFileContext1.SetFilesystemBaseAbs(shaderpath);
-  gShaderFileContext1.SetFilesystemBaseEnable(true);
-  gShaderFileContext1.SetPrependFilesystemBase(true);
-  FileEnv::RegisterUrlBase("orkshader://", gShaderFileContext1);
+  static auto gShaderFileContext1 = std::make_shared<FileDevContext>();
+  auto MorkCtx                    = FileEnv::UrlBaseToContext("lev2");
+  auto shaderpath                 = MorkCtx->GetFilesystemBaseAbs() + "/" + base;
+  gShaderFileContext1->SetFilesystemBaseAbs(shaderpath);
+  gShaderFileContext1->SetFilesystemBaseEnable(true);
+  gShaderFileContext1->SetPrependFilesystemBase(true);
+  FileEnv::registerUrlBase("orkshader://", gShaderFileContext1);
   printf("FxShader::RegisterLoaders ext<%s> base<%s> shaderpath<%s>\n", ext.c_str(), base.c_str(), shaderpath.c_str());
   gearlyhack = false;
 }

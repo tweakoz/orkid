@@ -162,6 +162,12 @@ void OrkEzQtApp::onUiEvent(EzMainWin::onuieventcb_t cb) {
   _mainWindow->_onUiEvent = cb;
 }
 
+filedevctxptr_t OrkEzQtApp::newFileDevContext(std::string uribase) {
+  auto ctx = std::make_shared<FileDevContext>();
+  FileEnv::registerUrlBase(uribase.c_str(), ctx);
+  return ctx;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 EzMainWin::EzMainWin()

@@ -12,7 +12,6 @@ int main(int argc, char** argv) {
   auto qtwin  = qtapp->_mainWindow;
   auto gfxwin = qtwin->_gfxwin;
   FreestyleMaterial material;
-  FxShader* fxshader                   = nullptr;
   const FxShaderTechnique* fxtechnique = nullptr;
   const FxShaderParam* fxparameterMVP  = nullptr;
   const FxShaderParam* fxparameterMODC = nullptr;
@@ -20,7 +19,6 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////
   qtapp->onGpuInit([&](Context* ctx) {
     material.gpuInit(ctx, "orkshader://solid");
-    fxshader        = material._shader;
     fxtechnique     = material.technique("mmodcolor");
     fxparameterMVP  = material.param("MatMVP");
     fxparameterMODC = material.param("modcolor");
@@ -46,8 +44,8 @@ int main(int argc, char** argv) {
     RenderContextFrameData RCFD(context);
     material.bindTechnique(fxtechnique);
     material.begin(RCFD);
-    fxi->BindParamMatrix(fxshader, fxparameterMVP, fmtx4::Identity);
-    fxi->BindParamVect4(fxshader, fxparameterMODC, fvec4::Red());
+    material.bindParamMatrix(fxparameterMVP, fmtx4::Identity);
+    material.bindParamVect4(fxparameterMODC, fvec4::Red());
     gfxwin->Render2dQuadEML(fvec4(-0.5, -0.5, 1, 1), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
     material.end(RCFD);
     context->endFrame();

@@ -1,0 +1,64 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default { glsl_version = "330"; }
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+uniform_set ublock_vtx {
+  mat4 mvp;
+  float t;
+}
+///////////////////////////////////////////////////////////////
+uniform_set ublock_frg {
+  vec4 modcolor;
+  sampler2D ColorMap;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vdefault : ublock_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec3 frg_yuv;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fmt : ublock_frg {
+  inputs { vec3 frg_yuv; }
+  outputs { layout(location = 0) vec4 out_clr; }
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_default : default {}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_vtxcolor : iface_vdefault {
+  gl_Position = mvp * position;
+  vec2 uv = position.xy;
+  uv *= 0.5;
+  uv += vec2(0.5,0.5);
+  frg_yuv     = vec3(t,uv);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_yuv2rgb : iface_fmt {
+  float y = frg_yuv.x - 1.0 / 16.0;
+  float u = frg_yuv.y - 0.5;
+  float v = frg_yuv.z - 0.5;
+  float r = 1.164 * y + 1.596 * v;
+  float g  = 1.164 * y - 0.392 * u - 0.813 * v;
+  float b = 1.164 * y + 2.017 * u;
+  out_clr = vec4(r,g,b,1);
+}
+///////////////////////////////////////////////////////////////
+technique yuv2rgb {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_yuv2rgb;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////

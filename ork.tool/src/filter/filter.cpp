@@ -261,13 +261,13 @@ int Main_Filter(tokenlist toklist) {
   //////////////////////////////////////////
   // Register fxshader:// data urlbase
 
-  static FileDevContext FxShaderFileContext;
+  static auto FxShaderFileContext   = std::make_shared<FileDevContext>();
   file::Path::NameType fxshaderbase = ork::file::GetStartupDirectory() + "data/src/shaders/dummy";
   file::Path fxshaderpath(fxshaderbase.c_str());
-  FxShaderFileContext.SetFilesystemBaseAbs(fxshaderpath.c_str());
-  FxShaderFileContext.SetPrependFilesystemBase(true);
+  FxShaderFileContext->SetFilesystemBaseAbs(fxshaderpath.c_str());
+  FxShaderFileContext->SetPrependFilesystemBase(true);
 
-  FileEnv::RegisterUrlBase("fxshader://", FxShaderFileContext);
+  FileEnv::registerUrlBase("fxshader://", FxShaderFileContext);
 
   //////////////////////////////
   // need a gfx context for some filters
