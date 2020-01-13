@@ -328,9 +328,9 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       fmtx4 bind       = nod_skelnode->bindMatrix();
       auto nodematrix  = nod_skelnode->_varmap["assimpnodematrix"].Get<fmtx4>();
 
-      nodematrix.dump((name + ".node").c_str());
+      deco::prints(deco::decorate(fvec3::Yellow(), (name + ".node") + nodematrix.dump()), true);
       // invbind.dump((name + ".inversebind").c_str());
-      bind.dump((name + ".bind").c_str());
+      deco::prints(deco::decorate(fvec3::Red(), (name + ".bind") + bind.dump()), true);
       // local.dump((name + ".local").c_str());
 
       fmtx4 concat = nod_skelnode->concatenated();
@@ -340,7 +340,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
 
       fmtx4 xxx;
       xxx.CorrectionMatrix(nodematrix, bind);
-      xxx.dump((name + ".xxx"));
+      deco::prints(deco::decorate(fvec3(1, 1, .5), (name + ".corr") + xxx.dump()), true);
 
       // corr(node,bind) == par.bind
       // node*par.bind == bind
@@ -435,7 +435,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
                 if (itw != assimpweightlut.end()) {
                   auto influences = itw->second;
                   int numinf      = influences->_items.size();
-                  printf("vertex<%d> raw_numweights<%d>\n", index, numinf);
+                  // printf("vertex<%d> raw_numweights<%d>\n", index, numinf);
                   ///////////////////////////////////////////////////
                   // prune to no more than 4 weights
                   ///////////////////////////////////////////////////
@@ -454,7 +454,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
                       auto pr      = std::make_pair(1.0f - fw, xgminfl);
                       largestWeightMap.insert(pr);
                     }
-                    printf(" inf<%d> bone<%s> weight<%g>\n", inf, remapped.c_str(), fw);
+                    // printf(" inf<%d> bone<%s> weight<%g>\n", inf, remapped.c_str(), fw);
                   }
                   int icount      = 0;
                   float totweight = 0.0f;
@@ -479,7 +479,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
                       ++icount;
                     }
                   }
-                  printf("newtotweight<%f>\n", newtotweight);
+                  // printf("newtotweight<%f>\n", newtotweight);
                   float fwtest = fabs(1.0f - newtotweight);
                   if (fwtest >= 0.001f) // ensure within tolerable error limit
                   {
@@ -518,11 +518,11 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
                     OrkAssert(w <= 1.0f);
                     muvtx.mJointNames[windex]   = it->second;
                     muvtx.mJointWeights[windex] = w;
-                    printf("inf<%s:%g> ", it->second.c_str(), w);
+                    // printf("inf<%s:%g> ", it->second.c_str(), w);
                     totw += w;
                     windex++;
                   }
-                  printf("totw<%g>\n", totw);
+                  // printf("totw<%g>\n", totw);
                   fwtest = fabs(1.0f - totw);
                   if (fwtest >= 0.01f) { // ensure within tolerable error limit
                     OrkAssert(false);
@@ -671,7 +671,7 @@ void ASS_XGM_Filter::Describe() {
 
 template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolmesh& inp_model, ork::lev2::XgmModel& out_model) {
 
-  printf("BEGIN: clusterizing model\n");
+  // printf("BEGIN: clusterizing model\n");
   bool is_skinned = false;
   if (auto as_bool = inp_model._varmap.valueForKey("is_skinned").TryAs<bool>()) {
     is_skinned = as_bool.value();
@@ -702,7 +702,7 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
 
   int subindex = 0;
   for (auto item : inp_model.RefSubMeshLut()) {
-    printf("BEGIN: clusterizing submesh<%d>\n", subindex);
+    // printf("BEGIN: clusterizing submesh<%d>\n", subindex);
     subindex++;
     submesh* inp_submesh = item.second;
     auto& mtlset         = inp_submesh->typedAnnotation<std::set<int>>("materialset");
@@ -758,7 +758,7 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
     mtlsubmap[gltfmtl].push_back(srec);
 
     ///////////////////////////////////////
-    printf("END: clusterizing submesh<%d>\n", subindex);
+    // printf("END: clusterizing submesh<%d>\n", subindex);
   }
 
   //////////////////////////////////////////////////////////////////
@@ -799,7 +799,7 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
 
         lev2::XgmCluster& XgmClus = xgm_submesh->mpClusters[icluster];
 
-        printf("building tristrip cluster<%d>\n", icluster);
+        // printf("building tristrip cluster<%d>\n", icluster);
 
         buildTriStripXgmCluster(XgmClus, clusterbuilder);
 

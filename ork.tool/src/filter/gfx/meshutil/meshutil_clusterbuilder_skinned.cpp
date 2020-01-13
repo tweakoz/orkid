@@ -162,10 +162,10 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4() // binormal p
     int W2 = round(InVtx.mJointWeights[2] * 256.0f);
     int W3 = round(InVtx.mJointWeights[3] * 256.0f);
 
-    printf("W0<%f>\n", InVtx.mJointWeights[0]);
-    printf("W1<%f>\n", InVtx.mJointWeights[1]);
-    printf("W2<%f>\n", InVtx.mJointWeights[2]);
-    printf("W3<%f>\n", InVtx.mJointWeights[3]);
+    // printf("W0<%f>\n", InVtx.mJointWeights[0]);
+    // printf("W1<%f>\n", InVtx.mJointWeights[1]);
+    // printf("W2<%f>\n", InVtx.mJointWeights[2]);
+    // printf("W3<%f>\n", InVtx.mJointWeights[3]);
 
     typedef std::pair<int, int> intpair_t;
     std::vector<intpair_t> wvec;
@@ -179,7 +179,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4() // binormal p
     for (auto item : wvec) {
       int w     = item.first;
       int index = item.second;
-      printf("seq<%d> w<%d>\n", sequence, w);
+      // printf("seq<%d> w<%d>\n", sequence, w);
       if (w) {
         if (w > points_remaining) {
           w = points_remaining;
@@ -193,7 +193,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4() // binormal p
       }
       sequence++;
     }
-    printf("points_remaining<%d>\n", points_remaining);
+    // printf("points_remaining<%d>\n", points_remaining);
     OrkAssert(points_remaining == 0);
 
     vwriter.AddVertex(OutVtx);

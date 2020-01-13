@@ -133,10 +133,12 @@ template <typename T> std::string Matrix44<T>::dump() const {
     }
     rval += "] ";
   }
-  Vector3<T> v(0, 0, -1);
-  auto rot = this->rotMatrix33();
-  auto vp  = v.Transform(rot);
-  rval += FormatString("(%+0.3g %+0.3g %+0.3g) ", vp.x, vp.y, vp.z);
+  Quaternion<T> q(*this);
+  auto rot = q.ToAxisAngle();
+  if (rot.w < 0.0f) {
+    rot *= -1.0f;
+  }
+  rval += FormatString("  axis<%0.1g %0.1g %0.1g> angle<%g>", rot.x, rot.y, rot.z, round(rot.w * RTOD));
   return rval;
 }
 

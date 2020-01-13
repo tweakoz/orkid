@@ -201,7 +201,9 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
           fmtx4 r;
           r = currot.ToMatrix();
 
-          fmtx4 x = r * t;
+          fmtx4 x = (r);
+          x.Transpose();
+          x.SetTranslation(curpos);
 
           auto yel        = fvec3(1, 1, 0);
           auto whi        = fvec3(1, 1, 1);
