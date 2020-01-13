@@ -20,263 +20,245 @@
 //#include <IL/il.h>
 //#include <IL/ilut.h>
 
-namespace devil { void InitDevIL(); }
+namespace devil {
+void InitDevIL();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FragmentCompositorZBuffer::Reset()
-{
-	opaqueZ=1.0e30f;
-	mpOpaqueFragment=0;
+void FragmentCompositorZBuffer::Reset() {
+  opaqueZ          = 1.0e30f;
+  mpOpaqueFragment = 0;
 }
-void FragmentCompositorZBuffer::Visit( const rend_fragment* pfrag ) // virtual
+void FragmentCompositorZBuffer::Visit(const rend_fragment* pfrag) // virtual
 {
-	if( pfrag->mZ > opaqueZ ) return; // we can still z cull on fully opaque fragments but it might not catch everything
-	if( pfrag->mZ < opaqueZ )
-	{
-		opaqueZ = pfrag->mZ;
-		mpOpaqueFragment = pfrag;
-	}
+  if (pfrag->mZ > opaqueZ)
+    return; // we can still z cull on fully opaque fragments but it might not catch everything
+  if (pfrag->mZ < opaqueZ) {
+    opaqueZ          = pfrag->mZ;
+    mpOpaqueFragment = pfrag;
+  }
 }
 ////////////////////////////////////////////////////////////
-ork::fvec3 FragmentCompositorZBuffer::Composite(const ork::fvec3&clrcolor)
-{
-	////////////////////////////////////////////////////////////
-	ork::fvec3 rgb = clrcolor;
-	if(mpOpaqueFragment!=0) rgb = mpOpaqueFragment->mRGBA.xyz();
-	////////////////////////////////////////////////////////////
-	//rgb.Saturate();
-	return rgb;
+ork::fvec3 FragmentCompositorZBuffer::Composite(const ork::fvec3& clrcolor) {
+  ////////////////////////////////////////////////////////////
+  ork::fvec3 rgb = clrcolor;
+  if (mpOpaqueFragment != 0)
+    rgb = mpOpaqueFragment->mRGBA.xyz();
+  ////////////////////////////////////////////////////////////
+  // rgb.Saturate();
+  return rgb;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FragmentCompositorREYES::Reset()
-{
-	miNumFragments=0;
-	mpOpaqueFragment = 0;
-	opaqueZ=1.0e30f;
+void FragmentCompositorREYES::Reset() {
+  miNumFragments   = 0;
+  mpOpaqueFragment = 0;
+  opaqueZ          = 1.0e30f;
 }
 
-void FragmentCompositorREYES::Visit( const rend_fragment* pfrag ) // virtual
+void FragmentCompositorREYES::Visit(const rend_fragment* pfrag) // virtual
 {
-	if( pfrag->mZ > opaqueZ ) return; // we can still z cull on fully opaque fragments but it might not catch everything
+  if (pfrag->mZ > opaqueZ)
+    return; // we can still z cull on fully opaque fragments but it might not catch everything
 
-	bool bisopaque = ( pfrag->mRGBA.GetW() == 1.0f );
+  bool bisopaque = (pfrag->mRGBA.GetW() == 1.0f);
 
-	if( bisopaque )
-	{
-		if( pfrag->mZ < opaqueZ )
-		{
-			opaqueZ = pfrag->mZ;
-			mpOpaqueFragment = pfrag;
-		}
-	}
-	mpFragments[ miNumFragments ] = pfrag;
-	mFragmentZ[ miNumFragments ] = pfrag->mZ;
+  if (bisopaque) {
+    if (pfrag->mZ < opaqueZ) {
+      opaqueZ          = pfrag->mZ;
+      mpOpaqueFragment = pfrag;
+    }
+  }
+  mpFragments[miNumFragments] = pfrag;
+  mFragmentZ[miNumFragments]  = pfrag->mZ;
 
-	miNumFragments++;
-	OrkAssert( miNumFragments<kmaxfrags );
+  miNumFragments++;
+  OrkAssert(miNumFragments < kmaxfrags);
 }
 ////////////////////////////////////////////
 // sort and hide occluded
 ////////////////////////////////////////////
-void FragmentCompositorREYES::SortAndHide()
-{
-	//mRadixSorter.ResetIndices();
-	//if( miNumFragments<2 ) return;
+void FragmentCompositorREYES::SortAndHide() {
+  // mRadixSorter.ResetIndices();
+  // if( miNumFragments<2 ) return;
 
-	for( int i=0; i<miNumFragments; i++ ) 
-		mpSortedFragments[i] = mpFragments[i];
+  for (int i = 0; i < miNumFragments; i++)
+    mpSortedFragments[i] = mpFragments[i];
 
-	bool bsorted = false;
+  bool bsorted = false;
 
-	//static int ginumacc = 0;
-	//static int gicounter = 0;
-	//ginumacc += miNumFragments;
-	//gicounter++;
-	//int iavg = ginumacc/gicounter;
-	//////////////////////////////////////////
-	while( false == bsorted )
-	{
-		bsorted = true;
-		for( int i=0; i<(miNumFragments-1); i++ )
-		{
-			int j=i+1;
-			const rend_fragment* pi = mpSortedFragments[i];
-			const rend_fragment* pj = mpSortedFragments[j];
+  // static int ginumacc = 0;
+  // static int gicounter = 0;
+  // ginumacc += miNumFragments;
+  // gicounter++;
+  // int iavg = ginumacc/gicounter;
+  //////////////////////////////////////////
+  while (false == bsorted) {
+    bsorted = true;
+    for (int i = 0; i < (miNumFragments - 1); i++) {
+      int j                   = i + 1;
+      const rend_fragment* pi = mpSortedFragments[i];
+      const rend_fragment* pj = mpSortedFragments[j];
 
-			if( pi->mZ > pj->mZ )
-			{
-				std::swap( pi, pj );
-				mpSortedFragments[i] = pi;
-				mpSortedFragments[j] = pj;
-				bsorted = false;
-			}
-		}
-	}
-	//////////////////////////////////////////
-	// must be sorted back to front here
-	//////////////////////////////////////////
-	for( int i=0; i<miNumFragments; i++ )
-	{	const rend_fragment* pfrag = mpSortedFragments[ i ];
-		if( pfrag==mpOpaqueFragment )
-		{	miNumFragments = i+1;
-			return;
-		}
-	}
-	//////////////////////////////////////////
-	mRadixSorter.Sort( mFragmentZ, miNumFragments );
-	U32* pidx = mRadixSorter.GetIndices();
-	for( int i=0; i<miNumFragments; i++ )
-	{
-		int idx = pidx[i];
-		const rend_fragment* pfrag = mpFragments[ idx ];
-		mpSortedFragments[i] = pfrag;
-		if( pfrag==mpOpaqueFragment )
-		{
-			miNumFragments = i+1;
-			return;
-		}
-	}
-
+      if (pi->mZ > pj->mZ) {
+        std::swap(pi, pj);
+        mpSortedFragments[i] = pi;
+        mpSortedFragments[j] = pj;
+        bsorted              = false;
+      }
+    }
+  }
+  //////////////////////////////////////////
+  // must be sorted back to front here
+  //////////////////////////////////////////
+  for (int i = 0; i < miNumFragments; i++) {
+    const rend_fragment* pfrag = mpSortedFragments[i];
+    if (pfrag == mpOpaqueFragment) {
+      miNumFragments = i + 1;
+      return;
+    }
+  }
+  //////////////////////////////////////////
+  mRadixSorter.Sort(mFragmentZ, miNumFragments);
+  U32* pidx = mRadixSorter.GetIndices();
+  for (int i = 0; i < miNumFragments; i++) {
+    int idx                    = pidx[i];
+    const rend_fragment* pfrag = mpFragments[idx];
+    mpSortedFragments[i]       = pfrag;
+    if (pfrag == mpOpaqueFragment) {
+      miNumFragments = i + 1;
+      return;
+    }
+  }
 }
 ////////////////////////////////////////////////////////////
-ork::fvec3 FragmentCompositorREYES::Composite(const ork::fvec3&clrcolor)
-{	////////////////////////////////////////////////////////////
-	// sort, hide fragments
-	////////////////////////////////////////////////////////////
-	SortAndHide();
-	////////////////////////////////////////////////////////////
-	// blend fragments
-	// ALWAYS back to front order (closest opaque fragment will always be the last)
-	// atmospheric processing/volume shaders can go in here
-	//  remember to disable backface culling for volume shaders
-	////////////////////////////////////////////////////////////
-	ork::fvec3 rgb = clrcolor;
-	const u32 uthreadmask = 1<<miThreadID;
+ork::fvec3
+FragmentCompositorREYES::Composite(const ork::fvec3& clrcolor) { ////////////////////////////////////////////////////////////
+  // sort, hide fragments
+  ////////////////////////////////////////////////////////////
+  SortAndHide();
+  ////////////////////////////////////////////////////////////
+  // blend fragments
+  // ALWAYS back to front order (closest opaque fragment will always be the last)
+  // atmospheric processing/volume shaders can go in here
+  //  remember to disable backface culling for volume shaders
+  ////////////////////////////////////////////////////////////
+  ork::fvec3 rgb        = clrcolor;
+  const u32 uthreadmask = 1 << miThreadID;
 
-	const int ilast = miNumFragments-1;
-	const rend_fragment* plastfrag = 0;
-	ork::fixed_stack<const rend_fragment*,32> VolumeStack;
-	VolumeStack.push(0);
+  const int ilast                = miNumFragments - 1;
+  const rend_fragment* plastfrag = 0;
+  ork::fixed_stack<const rend_fragment*, 32> VolumeStack;
+  VolumeStack.push(0);
 
-	for( int i=0; i<miNumFragments; i++ ) 
-	{	int j = ilast-i;
-		const rend_fragment* pfrag = mpSortedFragments[ j ];
-		const ork::fvec3& wpos = pfrag->mWorldPos;		
-		const ork::fvec4& fragrgba = pfrag->mRGBA;
+  for (int i = 0; i < miNumFragments; i++) {
+    int j                      = ilast - i;
+    const rend_fragment* pfrag = mpSortedFragments[j];
+    const ork::fvec3& wpos     = pfrag->mWorldPos;
+    const ork::fvec4& fragrgba = pfrag->mRGBA;
 
-		const rend_volume_shader* pcurrvolumeshader = ( pfrag->mpShader!=0) ? pfrag->mpShader->mpVolumeShader : 0;
-		const rend_fragment* plastfragment = VolumeStack.top();
-		const rend_volume_shader* plastvolumeshader = plastfragment ? plastfragment->mpShader->mpVolumeShader : 0;
-		////////////////////////////////////
-		bool bleavelast = false;
-		if( pcurrvolumeshader )
-		{
-			if( pcurrvolumeshader==plastvolumeshader ) // LEAVE pcurrvolumeshader
-			{
-				bleavelast = true;
-				VolumeStack.pop();
-			}
-			else // ENTER
-			{
-				VolumeStack.push(pfrag);
-			
-				if( plastvolumeshader ) // LEAVE plastvolumeshader
-				{
-					//bleavelast = true;
-				}
-			}
-		}
-		else if( plastvolumeshader ) // LEAVE plastvolumeshader
-		{
-			VolumeStack.pop();		
-			bleavelast = true;
-		}
-		////////////////////////////////////
-		if( bleavelast ) // composite in volume
-		{
-			if( fragrgba.GetW() < 1.0f )
-			{
-				const ork::fvec3& cnrm = pfrag->mWldSpaceNrm;
-				const ork::fvec3& lnrm = plastfragment->mWldSpaceNrm;
+    const rend_volume_shader* pcurrvolumeshader = (pfrag->mpShader != 0) ? pfrag->mpShader->mpVolumeShader : 0;
+    const rend_fragment* plastfragment          = VolumeStack.top();
+    const rend_volume_shader* plastvolumeshader = plastfragment ? plastfragment->mpShader->mpVolumeShader : 0;
+    ////////////////////////////////////
+    bool bleavelast = false;
+    if (pcurrvolumeshader) {
+      if (pcurrvolumeshader == plastvolumeshader) // LEAVE pcurrvolumeshader
+      {
+        bleavelast = true;
+        VolumeStack.pop();
+      } else // ENTER
+      {
+        VolumeStack.push(pfrag);
 
-//				if( cnrm.Dot(lnrm) > 0.0f )
-				{
+        if (plastvolumeshader) // LEAVE plastvolumeshader
+        {
+          // bleavelast = true;
+        }
+      }
+    } else if (plastvolumeshader) // LEAVE plastvolumeshader
+    {
+      VolumeStack.pop();
+      bleavelast = true;
+    }
+    ////////////////////////////////////
+    if (bleavelast) // composite in volume
+    {
+      if (fragrgba.GetW() < 1.0f) {
+        const ork::fvec3& cnrm = pfrag->mWldSpaceNrm;
+        const ork::fvec3& lnrm = plastfragment->mWldSpaceNrm;
 
-				const ork::fvec3& lpos = plastfragment->mWorldPos;
-				OrkAssert( plastvolumeshader );
-				ork::fvec4 shcol = plastvolumeshader->ShadeVolume( lpos, wpos );
-				float falpha = shcol.GetW();
-				ork::fvec3 res;
-				res.Lerp( rgb, shcol.xyz(), falpha );
-				rgb = res;			
-				}
-			}
-		}
-		////////////////////////////////////
+        //				if( cnrm.Dot(lnrm) > 0.0f )
+        {
 
-		ork::fvec3 res;
-		res.Lerp( rgb, fragrgba.xyz(), fragrgba.GetW() );
-		rgb = res;
-	}
-//	OrkAssert(VolumeShaderStack.size()==1);
-	////////////////////////////////////////////////////////////
-	rgb.Saturate();
-	return rgb;
+          const ork::fvec3& lpos = plastfragment->mWorldPos;
+          OrkAssert(plastvolumeshader);
+          ork::fvec4 shcol = plastvolumeshader->ShadeVolume(lpos, wpos);
+          float falpha     = shcol.GetW();
+          ork::fvec3 res;
+          res.Lerp(rgb, shcol.xyz(), falpha);
+          rgb = res;
+        }
+      }
+    }
+    ////////////////////////////////////
+
+    ork::fvec3 res;
+    res.Lerp(rgb, fragrgba.xyz(), fragrgba.GetW());
+    rgb = res;
+  }
+  //	OrkAssert(VolumeShaderStack.size()==1);
+  ////////////////////////////////////////////////////////////
+  return rgb.saturated();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 rend_texture2D::rend_texture2D()
-	: miWidth(256)
-	, miHeight(256)
-	//, mCLhandle(0)
+    : miWidth(256)
+    , miHeight(256)
+//, mCLhandle(0)
 {
-	ork::Perlin2D perlin;
+  ork::Perlin2D perlin;
 
-	mpData = new ork::fvec4[ 256*256 ];
-	for( int iy=0; iy<256; iy++ )
-	{
-		float fiy = float(iy)/256.0f;
-		for( int ix=0; ix<256; ix++ )
-		{
-			float fix = float(ix)/256.0f;
+  mpData = new ork::fvec4[256 * 256];
+  for (int iy = 0; iy < 256; iy++) {
+    float fiy = float(iy) / 256.0f;
+    for (int ix = 0; ix < 256; ix++) {
+      float fix = float(ix) / 256.0f;
 
-            //static f32 PlaneNoiseFunc( f32 fu, f32 fv, f32 fou, f32 fov, f32 fAmp, f32 fFrq )
-			float fr = perlin.PlaneNoiseFunc( fix*1.0f, fiy*1.0f,      0.0f,0.0f,1.0f,1.0f )*3.0f;
-			float fg = perlin.PlaneNoiseFunc( fix*2.0f, fiy*2.0f,      0.0f,0.0f,1.0f,1.0f )*3.0f;
-			float fb = perlin.PlaneNoiseFunc( fix*3.0f, fiy*3.0f,      0.0f,0.0f,1.0f,1.0f )*3.0f;
-			
-			int idx = iy*256+ix;
-			mpData[idx].SetXYZ( fr, fg, fb );
+      // static f32 PlaneNoiseFunc( f32 fu, f32 fv, f32 fou, f32 fov, f32 fAmp, f32 fFrq )
+      float fr = perlin.PlaneNoiseFunc(fix * 1.0f, fiy * 1.0f, 0.0f, 0.0f, 1.0f, 1.0f) * 3.0f;
+      float fg = perlin.PlaneNoiseFunc(fix * 2.0f, fiy * 2.0f, 0.0f, 0.0f, 1.0f, 1.0f) * 3.0f;
+      float fb = perlin.PlaneNoiseFunc(fix * 3.0f, fiy * 3.0f, 0.0f, 0.0f, 1.0f, 1.0f) * 3.0f;
 
-		}
-	}
+      int idx = iy * 256 + ix;
+      mpData[idx].SetXYZ(fr, fg, fb);
+    }
+  }
 }
 
-void rend_texture2D::Init( /*const CLDevice* pdev*/ ) const
-{
-/*	if( 0 == mCLhandle )
-	{
-		cl_image_format format;
-		format.image_channel_order = CL_RGBA;
-		format.image_channel_data_type = CL_FLOAT;
+void rend_texture2D::Init(/*const CLDevice* pdev*/) const {
+  /*	if( 0 == mCLhandle )
+      {
+          cl_image_format format;
+          format.image_channel_order = CL_RGBA;
+          format.image_channel_data_type = CL_FLOAT;
 
-		int error = 0;
-		mCLhandle = clCreateImage2D(	pdev->context(),
-										CL_MEM_READ_ONLY| CL_MEM_USE_HOST_PTR,
-										& format,
-										this->miWidth,
-										this->miHeight,
-										miWidth*16,
-										mpData, & error );
+          int error = 0;
+          mCLhandle = clCreateImage2D(	pdev->context(),
+                                          CL_MEM_READ_ONLY| CL_MEM_USE_HOST_PTR,
+                                          & format,
+                                          this->miWidth,
+                                          this->miHeight,
+                                          miWidth*16,
+                                          mpData, & error );
 
 
-	}*/
+      }*/
 }
 
-void rend_texture2D::Load( const std::string& pth )
-{
+void rend_texture2D::Load(const std::string& pth) {
 #if 0
 	devil::InitDevIL();
 	ILuint image;
@@ -297,7 +279,7 @@ void rend_texture2D::Load( const std::string& pth )
 		{
 			miWidth = Width;
 			miHeight = Height;
-			
+
 			if( mpData ) delete[] mpData;
 
 			mpData = new ork::fvec4[ miWidth*miHeight ];
@@ -322,255 +304,225 @@ void rend_texture2D::Load( const std::string& pth )
 					mpData[idstindex].Set( fR, fG, fB, fA );
 
 				}
-			}		
+			}
 		}
 	}
 	ilDeleteImage(image);
 #endif
 }
 
-rend_texture2D::~rend_texture2D() { delete[] mpData; }
+rend_texture2D::~rend_texture2D() {
+  delete[] mpData;
+}
 
-ork::fvec4 rend_texture2D::sample_point( float u, float v, bool wrapu, bool wrapv ) const
-{
-	if( wrapu )
-	{
-		if( u < 0.0f )
-		{
-			// -1.2
-			float fau = fabs(u); // 1.2
-			u = 1.0f-fmod( fau, 1.0f ); // 1.0f-.2 == .8
-		}
-		else
-		{
-			u = fmod( u, 1.0f );
-		}
-	}
-	if( wrapv )
-	{
-		if( v < 0.0f )
-		{
-			float fav = fabs(v);
-			v = 1.0f-fmod( fav, 1.0f );
-		}
-		else
-		{
-			v = fmod( v, 1.0f );
-		}
-	}
+ork::fvec4 rend_texture2D::sample_point(float u, float v, bool wrapu, bool wrapv) const {
+  if (wrapu) {
+    if (u < 0.0f) {
+      // -1.2
+      float fau = fabs(u);                // 1.2
+      u         = 1.0f - fmod(fau, 1.0f); // 1.0f-.2 == .8
+    } else {
+      u = fmod(u, 1.0f);
+    }
+  }
+  if (wrapv) {
+    if (v < 0.0f) {
+      float fav = fabs(v);
+      v         = 1.0f - fmod(fav, 1.0f);
+    } else {
+      v = fmod(v, 1.0f);
+    }
+  }
 
-	if( u>=1.0 ) u = 0.0f; 
-	if( u<0.0 ) u = 0.0f; 
-	if( v>=1.0 ) v = 0.0f; 
-	if( v<0.0 ) v = 0.0f;
+  if (u >= 1.0)
+    u = 0.0f;
+  if (u < 0.0)
+    u = 0.0f;
+  if (v >= 1.0)
+    v = 0.0f;
+  if (v < 0.0)
+    v = 0.0f;
 
-	int ix = int(std::floor(u*miWidth));
-	int iy = int(std::floor(v*miHeight));
-	int idx = iy*miWidth+ix;
-	ork::fvec4 rval = mpData[idx];
-	return rval;
+  int ix          = int(std::floor(u * miWidth));
+  int iy          = int(std::floor(v * miHeight));
+  int idx         = iy * miWidth + ix;
+  ork::fvec4 rval = mpData[idx];
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 rend_fraglist::rend_fraglist()
-	: mpHead( 0 )
-{
+    : mpHead(0) {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void rend_fraglist::AddFragment( rend_fragment* pfrag )
-{
-	pfrag->mpNext = mpHead;
-	mpHead = pfrag;
+void rend_fraglist::AddFragment(rend_fragment* pfrag) {
+  pfrag->mpNext = mpHead;
+  mpHead        = pfrag;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void rend_fraglist::Reset()
-{
-	mpHead = 0;
+void rend_fraglist::Reset() {
+  mpHead = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
-int rend_fraglist::DepthComplexity() const
-{
-	struct countvisitor : public rend_fraglist_visitor
-	{
-		countvisitor() : icount(0) {}
-		int icount;
-		void Visit( const rend_fragment* pnode ) // virtual
-		{
-			icount++;
-		}
-	};
+int rend_fraglist::DepthComplexity() const {
+  struct countvisitor : public rend_fraglist_visitor {
+    countvisitor()
+        : icount(0) {
+    }
+    int icount;
+    void Visit(const rend_fragment* pnode) // virtual
+    {
+      icount++;
+    }
+  };
 
-	countvisitor myvisitor;
-	Visit( myvisitor );
-	return myvisitor.icount;
+  countvisitor myvisitor;
+  Visit(myvisitor);
+  return myvisitor.icount;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void rend_fraglist::Visit(rend_fraglist_visitor& visitor) const
-{
-	const rend_fragment* pfrag = mpHead;
-	while( 0 != pfrag )
-	{
-		visitor.Visit( pfrag );
-		pfrag = pfrag->mpNext;
-	}
-}
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-void FragmentPoolNode::Reset()
-{
-	mFragmentIndex=0;
-}
-///////////////////////////////////////////////////////////////////////////////
-rend_fragment* FragmentPoolNode::AllocFragment()
-{
-	int idx = mFragmentIndex++;
-	if( idx<kNumFragments )
-	{
-		rend_fragment* rval = & mFragments[idx];
-		rval->mpNext = 0;
-		rval->mpPrimitive = 0;
-		return rval;
-	}
-	return 0;
-}
-void FragmentPoolNode::AllocFragments(rend_fragment** ppfrag, int icount)
-{
-	OrkAssert((mFragmentIndex+icount)<=kNumFragments);
-	for( int i=0; i<icount; i++ )
-	{
-		int idx = mFragmentIndex++;
-		rend_fragment* rval = & mFragments[idx];
-		rval->mpNext = 0;
-		rval->mpPrimitive = 0;
-		ppfrag[i] = rval;
-	}
-}
-///////////////////////////////////////////////////////////////////////////////
-FragmentPoolNode::FragmentPoolNode()
-{
-	mFragmentIndex = 0;
+void rend_fraglist::Visit(rend_fraglist_visitor& visitor) const {
+  const rend_fragment* pfrag = mpHead;
+  while (0 != pfrag) {
+    visitor.Visit(pfrag);
+    pfrag = pfrag->mpNext;
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-FragmentPool::FragmentPool()
-{
-	mFragmentPoolNodes.resize(1);
-	mFragmentPoolNodes[0] = new FragmentPoolNode;
+void FragmentPoolNode::Reset() {
+  mFragmentIndex = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FragmentPool::Reset()
-{
-	int inumnodes = mFragmentPoolNodes.size();
-	for( int i=0; i<inumnodes; i++ )
-	{
-		mFragmentPoolNodes[i]->Reset();
-	}
-	miPoolNodeIndex = 0;
-	if( inumnodes )
-	{
-		mpCurNode = mFragmentPoolNodes[0];
-	}
+rend_fragment* FragmentPoolNode::AllocFragment() {
+  int idx = mFragmentIndex++;
+  if (idx < kNumFragments) {
+    rend_fragment* rval = &mFragments[idx];
+    rval->mpNext        = 0;
+    rval->mpPrimitive   = 0;
+    return rval;
+  }
+  return 0;
+}
+void FragmentPoolNode::AllocFragments(rend_fragment** ppfrag, int icount) {
+  OrkAssert((mFragmentIndex + icount) <= kNumFragments);
+  for (int i = 0; i < icount; i++) {
+    int idx             = mFragmentIndex++;
+    rend_fragment* rval = &mFragments[idx];
+    rval->mpNext        = 0;
+    rval->mpPrimitive   = 0;
+    ppfrag[i]           = rval;
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
-rend_fragment* FragmentPool::AllocFragment()
-{	rend_fragment* rval = 0;
-	if( mFreeFragments.size() )
-	{	orkvector<rend_fragment*>::iterator it = mFreeFragments.end()-1;
-		rval = *it;
-		mFreeFragments.erase(it);
-	}
-	else
-	{	int inumnodes = mFragmentPoolNodes.size();
-		while( rval == 0 )
-		{	if( miPoolNodeIndex>=inumnodes )
-			{	
-				mFragmentPoolNodes.resize(inumnodes*2);
-				FragmentPoolNode* newnodes = new FragmentPoolNode[ inumnodes ];
-				for( int i=inumnodes; i<(inumnodes*2); i++ )
-				{
-					mFragmentPoolNodes[i] = newnodes+(i-inumnodes);
-				}
-			}
-			FragmentPoolNode* node = mFragmentPoolNodes[ miPoolNodeIndex ];
-			rval = node->AllocFragment();
-			if( 0==rval ) miPoolNodeIndex++;
-		}
-	}
-	return rval;
+FragmentPoolNode::FragmentPoolNode() {
+  mFragmentIndex = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool FragmentPool::AllocFragments(rend_fragment** ppfrags, int icount)
-{	bool bOK = true;
+///////////////////////////////////////////////////////////////////////////////
+FragmentPool::FragmentPool() {
+  mFragmentPoolNodes.resize(1);
+  mFragmentPoolNodes[0] = new FragmentPoolNode;
+}
+///////////////////////////////////////////////////////////////////////////////
+void FragmentPool::Reset() {
+  int inumnodes = mFragmentPoolNodes.size();
+  for (int i = 0; i < inumnodes; i++) {
+    mFragmentPoolNodes[i]->Reset();
+  }
+  miPoolNodeIndex = 0;
+  if (inumnodes) {
+    mpCurNode = mFragmentPoolNodes[0];
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+rend_fragment* FragmentPool::AllocFragment() {
+  rend_fragment* rval = 0;
+  if (mFreeFragments.size()) {
+    orkvector<rend_fragment*>::iterator it = mFreeFragments.end() - 1;
+    rval                                   = *it;
+    mFreeFragments.erase(it);
+  } else {
+    int inumnodes = mFragmentPoolNodes.size();
+    while (rval == 0) {
+      if (miPoolNodeIndex >= inumnodes) {
+        mFragmentPoolNodes.resize(inumnodes * 2);
+        FragmentPoolNode* newnodes = new FragmentPoolNode[inumnodes];
+        for (int i = inumnodes; i < (inumnodes * 2); i++) {
+          mFragmentPoolNodes[i] = newnodes + (i - inumnodes);
+        }
+      }
+      FragmentPoolNode* node = mFragmentPoolNodes[miPoolNodeIndex];
+      rval                   = node->AllocFragment();
+      if (0 == rval)
+        miPoolNodeIndex++;
+    }
+  }
+  return rval;
+}
+///////////////////////////////////////////////////////////////////////////////
+bool FragmentPool::AllocFragments(rend_fragment** ppfrags, int icount) {
+  bool bOK = true;
 
-	FragmentPoolNode* curnode = mFragmentPoolNodes[ miPoolNodeIndex ];
-	for( int i=0; i<icount; )
-	{	int inumnodes = mFragmentPoolNodes.size();
-		if( miPoolNodeIndex>=inumnodes )
-		{	if( 0 == inumnodes )
-			{	mFragmentPoolNodes.resize(1);
-				mFragmentPoolNodes[0] = new FragmentPoolNode;
-				
-			}
-			else
-			{	mFragmentPoolNodes.resize(inumnodes*2);
-				OrkAssert( inumnodes==miPoolNodeIndex );
-				for( int j=inumnodes; j<(inumnodes*2); j++ )
-				{
-					mFragmentPoolNodes[j] = new FragmentPoolNode;
-				}
-			}
-		}
-		FragmentPoolNode* node = mFragmentPoolNodes[ miPoolNodeIndex ];
-		/////////////////////////////////////////////////////
-		int inumfree = node->GetNumAvailable();
-		if( 0 == inumfree )
-		{
-			miPoolNodeIndex++;
-		}
-		else
-		{
-			int inum2alloc = ((i+icount)>inumfree) ? inumfree : (icount-i);
-			node->AllocFragments( ppfrags+i, inum2alloc );
-			i += inum2alloc;
-		}
-		/////////////////////////////////////////////////////
-	} // for( int i=0; i<icount; i++ )
-	return bOK;
+  FragmentPoolNode* curnode = mFragmentPoolNodes[miPoolNodeIndex];
+  for (int i = 0; i < icount;) {
+    int inumnodes = mFragmentPoolNodes.size();
+    if (miPoolNodeIndex >= inumnodes) {
+      if (0 == inumnodes) {
+        mFragmentPoolNodes.resize(1);
+        mFragmentPoolNodes[0] = new FragmentPoolNode;
+
+      } else {
+        mFragmentPoolNodes.resize(inumnodes * 2);
+        OrkAssert(inumnodes == miPoolNodeIndex);
+        for (int j = inumnodes; j < (inumnodes * 2); j++) {
+          mFragmentPoolNodes[j] = new FragmentPoolNode;
+        }
+      }
+    }
+    FragmentPoolNode* node = mFragmentPoolNodes[miPoolNodeIndex];
+    /////////////////////////////////////////////////////
+    int inumfree = node->GetNumAvailable();
+    if (0 == inumfree) {
+      miPoolNodeIndex++;
+    } else {
+      int inum2alloc = ((i + icount) > inumfree) ? inumfree : (icount - i);
+      node->AllocFragments(ppfrags + i, inum2alloc);
+      i += inum2alloc;
+    }
+    /////////////////////////////////////////////////////
+  } // for( int i=0; i<icount; i++ )
+  return bOK;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FragmentPool::FreeFragment(rend_fragment*pfrag)
-{
-	mFreeFragments.push_back(pfrag);
+void FragmentPool::FreeFragment(rend_fragment* pfrag) {
+  mFreeFragments.push_back(pfrag);
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 rend_prefrags::rend_prefrags()
-	: miNumPreFrags(0)
-	, miMaxPreFrags(1<<16)
-{
-	mPreFrags.resize(miMaxPreFrags);
+    : miNumPreFrags(0)
+    , miMaxPreFrags(1 << 16) {
+  mPreFrags.resize(miMaxPreFrags);
 }
-void rend_prefrags::Reset()
-{
-	miNumPreFrags = 0;
+void rend_prefrags::Reset() {
+  miNumPreFrags = 0;
 }
-rend_prefragment& rend_prefrags::AllocPreFrag()
-{
-	if( (miNumPreFrags+1)>miMaxPreFrags )
-	{
-		miMaxPreFrags*=2;
-		mPreFrags.resize(miMaxPreFrags);
-	}
-	int idx = miNumPreFrags;
-	miNumPreFrags++;
-	rend_prefragment& pfrag = mPreFrags[idx];
+rend_prefragment& rend_prefrags::AllocPreFrag() {
+  if ((miNumPreFrags + 1) > miMaxPreFrags) {
+    miMaxPreFrags *= 2;
+    mPreFrags.resize(miMaxPreFrags);
+  }
+  int idx = miNumPreFrags;
+  miNumPreFrags++;
+  rend_prefragment& pfrag = mPreFrags[idx];
 
-//	pfrag.mpSrcPrimitive = 0;
-//	pfrag.srcvtxR = 0;
-//	pfrag.srcvtxS = 0;
-//	pfrag.srcvtxT = 0;
+  //	pfrag.mpSrcPrimitive = 0;
+  //	pfrag.srcvtxR = 0;
+  //	pfrag.srcvtxS = 0;
+  //	pfrag.srcvtxT = 0;
 
-	return pfrag;
+  return pfrag;
 }
 ///////////////////////////////////////////////////////////////////////////////

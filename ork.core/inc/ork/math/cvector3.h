@@ -47,7 +47,8 @@ public:
   void RotateY(T rad);
   void RotateZ(T rad);
 
-  Vector3 Saturate() const;
+  Vector3 saturated() const;
+  Vector3 clamped(float min, float max) const;
 
   T Dot(const Vector3& vec) const;         // dot product of two vectors
   Vector3 Cross(const Vector3& vec) const; // cross product of two vectors

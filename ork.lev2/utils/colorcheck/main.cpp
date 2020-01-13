@@ -1,6 +1,6 @@
-#include <QWindow>
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/spawner.h>
+#include <ork/math/colormath.inl>
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/material_freestyle.inl>
@@ -10,12 +10,13 @@
 using namespace std::string_literals;
 using namespace ork;
 using namespace ork::lev2;
+using namespace ork::color;
 
 //////////////////////////////////////////////////////////
 // read colorimeter
 //////////////////////////////////////////////////////////
 
-fvec3 spotreadYUV() {
+fvec3 spotread() {
 
   // todo : keep spotread open and stream
   //   repeated measurements
@@ -29,16 +30,20 @@ fvec3 spotreadYUV() {
   const int MAX_BUFFER = 255;
   std::string stdout;
   char buffer[MAX_BUFFER];
-  FILE* stream = popen("spotread -e -O -T -u", "r");
+  FILE* stream = popen("spotread -e -O -T -x", "r");
   while (fgets(buffer, MAX_BUFFER, stream) != NULL)
     stdout.append(buffer);
   pclose(stream);
   auto lines = SplitString(stdout, '\n');
+
   for (auto l : lines) {
-    auto it = l.find("Yuv");
+    auto it = l.find("Yxy");
     if (it != std::string::npos) {
       auto lsub = l.substr(it);
-      sscanf(lsub.c_str(), "Yuv: %f %f %f", &rval.x, &rval.y, &rval.z);
+      // printf("lsub<%s>\n", lsub.c_str());
+      float Y, x, y;
+      sscanf(lsub.c_str(), "Yxy: %f %f %f", &Y, &x, &y);
+      rval = fvec3(Y, x, y);
     }
   }
   return rval;
@@ -50,8 +55,31 @@ int main(int argc, char** argv) {
   auto qtapp = OrkEzQtApp::create(argc, argv);
   //////////////////////////////////////////////////////////
   deco::printf(fvec3::White(), "reading colorimeter, please wait...\n");
-  fvec3 yuv = spotreadYUV();
-  deco::printf(fvec3::Yellow(), "y<%g cd/m^2> u<%g> v<%g>\n", yuv.x, yuv.y, yuv.z);
+  fvec3 yxy = spotread();
+  deco::printf(fvec3::Yellow(), "CIE 1931 Y<%g nits> xy<%g %g>\n", yxy.x, yxy.y, yxy.z);
+  float yy = yxy.x;
+  float xx = yxy.y * yxy.x / yxy.z;
+  float zz = (1.0 - yxy.y - yxy.z) * yxy.x / yxy.z;
+  deco::printf(fvec3::Yellow(), "CIE XYZ <%g %g %g> absolute\n", xx, yy, zz);
+  // printf("XYZ<%g %g %g>\n", xx, yy, zz);
+  const float STDLUM = 300.0f; // nits
+  fvec3 XYZ(xx, yy, zz);
+  XYZ = XYZ * 1.0f / STDLUM;
+  deco::printf(fvec3::Yellow(), "CIE XYZ<%g %g %g> std\n", XYZ.x, XYZ.y, XYZ.z);
+  //////////////////////////////////////////////////////////
+  fvec3 adobergb50 = cieXyz_to_D50AdobeRGB(XYZ);
+  fvec3 adobergb65 = cieXyz_to_D65AdobeRGB(XYZ);
+  deco::printf(fvec3::Yellow(), "AdobeRGB-D50<%g %g %g>\n", adobergb50.x, adobergb50.y, adobergb50.z);
+  deco::printf(fvec3::Yellow(), "AdobeRGB-D65<%g %g %g>\n", adobergb65.x, adobergb65.y, adobergb65.z);
+  //////////////////////////////////////////////////////////
+  fvec3 srgb50 = cieXyz_to_D50sRGB(XYZ);
+  fvec3 srgb65 = cieXyz_to_D65sRGB(XYZ);
+  deco::printf(fvec3::Yellow(), "sRGB-D50<%g %g %g>\n", srgb50.x, srgb50.y, srgb50.z);
+  deco::printf(fvec3::Yellow(), "sRGB-D65<%g %g %g>\n", srgb65.x, srgb65.y, srgb65.z);
+  //////////////////////////////////////////////////////////
+  fvec3 clamped = srgb65.saturated();
+  fvec3 rgb     = linear_to_sRGB(clamped, 2.2);
+  deco::printf(fvec3::Yellow(), "LinearRGB <%g %g %g>\n", rgb.x, rgb.y, rgb.z);
   //////////////////////////////////////////////////////////
   // project private asset filedevctx
   // so we can load our private shader

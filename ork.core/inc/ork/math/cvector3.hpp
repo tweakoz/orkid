@@ -13,15 +13,19 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T> Vector3<T> Vector3<T>::Saturate(void) const {
+template <typename T> Vector3<T> Vector3<T>::clamped(float min, float max) const {
   Vector3<T> rval = *this;
-  rval.x          = (rval.x > 1.0f) ? 1.0f : (rval.x < 0.0f) ? 0.0f : rval.x;
-  rval.y          = (rval.y > 1.0f) ? 1.0f : (rval.y < 0.0f) ? 0.0f : rval.y;
-  rval.z          = (rval.z > 1.0f) ? 1.0f : (rval.z < 0.0f) ? 0.0f : rval.z;
+  rval.x          = (rval.x > max) ? max : (rval.x < min) ? min : rval.x;
+  rval.y          = (rval.y > max) ? max : (rval.y < min) ? min : rval.y;
+  rval.z          = (rval.z > max) ? max : (rval.z < min) ? min : rval.z;
   return rval;
 }
+
+template <typename T> Vector3<T> Vector3<T>::saturated(void) const {
+  return this->clamped(0, 1);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> const Vector3<T>& Vector3<T>::Black(void) {
   static const Vector3<T> Black(T(0.0f), T(0.0f), T(0.0f));
