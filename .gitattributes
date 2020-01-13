@@ -13,3 +13,4 @@
 *.jpg filter=lfs diff=lfs merge=lfs -text
 *.jpeg filter=lfs diff=lfs merge=lfs -text
 *.blend filter=lfs diff=lfs merge=lfs -text
+*.3b.jpg filter=lfs diff=lfs merge=lfs -text
