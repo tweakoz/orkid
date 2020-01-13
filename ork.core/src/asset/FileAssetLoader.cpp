@@ -65,7 +65,7 @@ void FileAssetLoader::AddLocation(file_pathbase_t b, file_ext_t e) {
   fset.mPathBase = b;
   mLocations.push_back(fset);
 
-  if (0)
+  if (1)
     printf(
         "FileAssetLoader<%p> added set ext<%s> loc<%s> base<%s>\n",
         this,
@@ -99,7 +99,7 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
     }
   }
 
-  // printf("FindAsset<%s> has_valid_extension<%d>\n", ork::Application::AddPooledString(name).c_str(), int(has_valid_extension));
+  printf("FindAsset<%s> has_valid_extension<%d>\n", ork::Application::AddPooledString(name).c_str(), int(has_valid_extension));
 
   //////////////////////////////////////////
   // check Munged Paths first (Munged path is a path run thru 1 or more path converters)
@@ -108,6 +108,8 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
   file::Path::SmallNameType url = pathobjnoq.GetUrlBase();
 
   auto filedevctx = ork::FileEnv::UrlBaseToContext(url);
+
+  printf("filedevctx<%p>\n", filedevctx.get());
 
   //////////////////////
   // munge the path
@@ -131,7 +133,7 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
   // original path has lower priority
   MungedPaths.push_back(pathobjnoq);
   //////////////////////////////////////
-  // orkprintf( "MungedPaths<%s>\n", pathobjnoq.c_str() );
+  printf("MungedPaths<%s>\n", pathobjnoq.c_str());
 
   //////////////////////
   // path is munged
@@ -153,7 +155,7 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
       for (auto l : mLocations) {
         MungedPath.SetExtension(l.mExt.c_str());
 
-        // printf( "munged_ext<%s>\n", MungedPath.c_str() );
+        printf("munged_ext<%s>\n", MungedPath.c_str());
 
         if (FileEnv::DoesFileExist(MungedPath)) {
           // pathobj.SetExtension( extension.c_str() );
@@ -173,27 +175,27 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
   PieceString thename = name;
 
   if (has_valid_extension) {
-    // printf( "TESTPTH3<%s>\n", pathobjnoq.c_str() );
+    printf("TESTPTH3<%s>\n", pathobjnoq.c_str());
     if (FileEnv::DoesFileExist(pathobjnoq)) {
       ork::PieceString ps(pathobjnoq.c_str());
       result = ps;
-      // intf( "PTH3<%s>\n", pathobjnoq.c_str() );
+      printf("PTH3<%s>\n", pathobjnoq.c_str());
       return true;
     }
   } else {
     for (auto l : mLocations) {
       pathobjnoq.SetExtension(l.mExt.c_str());
       bool exists = FileEnv::DoesFileExist(pathobjnoq);
-      // printf("TESTPTH4<%s> exists<%d>\n", pathobjnoq.c_str(), int(exists));
+      printf("TESTPTH4<%s> exists<%d>\n", pathobjnoq.c_str(), int(exists));
       if (exists) {
         result = pathobjnoq.c_str();
-        // printf( "PTH4<%s>\n", pathobjnoq.c_str() );
+        printf("PTH4<%s>\n", pathobjnoq.c_str());
         return true;
       }
     }
   }
 
-  // printf( "NOTFOUND\n" );
+  printf("NOTFOUND\n");
   return false;
 }
 
@@ -213,7 +215,7 @@ bool FileAssetLoader::LoadAsset(Asset* asset) {
 
   ///////////////////////////////////////////////////////////////////////////////
   if (false == FindAsset(asset->GetName(), asset_name)) {
-    orkprintf("Error Loading File Asset %s\n", asset->GetName().c_str());
+    printf("Error Loading File Asset %s\n", asset->GetName().c_str());
 #if defined(ORKCONFIG_ASSET_UNLOAD)
     return false;
 #else

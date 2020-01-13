@@ -138,7 +138,7 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
     auto& localpose = mXgmModelInst->RefLocalPose();
     localpose.BindPose();
 
-    deco::printe(whi, "ModelComponentInst<%p> constructor:", true);
+    deco::printf(whi, "ModelComponentInst<%p> constructor:\n", this);
     deco::printe(red, "init localpose (bind)", true);
     deco::prints(localpose.dumpc(red), true);
     localpose.BuildPose();

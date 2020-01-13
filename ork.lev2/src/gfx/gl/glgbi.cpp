@@ -572,7 +572,7 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf, const svarp_t p
           {"NORMAL", 3, GL_FLOAT, true, 12, 0, 0},
           {"BINORMAL", 3, GL_FLOAT, true, 24, 0, 0},
           {"TEXCOORD0", 2, GL_FLOAT, false, 36, 0, 0},
-          {"BONEINDICES", 4, GL_UNSIGNED_BYTE, true, 44, 0, 0},
+          {"BONEINDICES", 4, GL_UNSIGNED_BYTE, false, 44, 0, 0},
           {"BONEWEIGHTS", 4, GL_UNSIGNED_BYTE, true, 48, 0, 0},
       };
       for (vtx_config& vcfg : cfgs)

@@ -237,7 +237,9 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
 
   static auto DataDirContext = std::make_shared<FileDevContext>();
 
-  DataDirContext->SetFilesystemBaseAbs("ork.data/pc");
+  auto data_dir = file::Path::orkroot_dir() / "ork.data" / "pc";
+
+  DataDirContext->SetFilesystemBaseAbs(data_dir.c_str());
   DataDirContext->SetPrependFilesystemBase(true);
 
   static auto MiniorkDirContext = std::make_shared<FileDevContext>();
@@ -249,7 +251,7 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
   for (int iarg = 1; iarg < argc; iarg++) {
     const char* parg = argv[iarg];
 
-    if (strcmp(parg, "-datafolder") == 0) {
+    if (strcmp(parg, "--datafolder") == 0) {
       file::Path pth(argv[iarg + 1]);
 
       file::Path::NameType dirname = pth.ToAbsolute().c_str();
@@ -265,7 +267,7 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
         OrkNonFatalAssertI(false, "specified Data Folder Does Not Exist!!\n");
       }
       iarg++;
-    } else if (strcmp(parg, "-lev2folder") == 0) {
+    } else if (strcmp(parg, "--lev2folder") == 0) {
       file::Path pth(argv[iarg + 1]);
 
       file::Path::NameType dirname = pth.ToAbsolute().c_str();

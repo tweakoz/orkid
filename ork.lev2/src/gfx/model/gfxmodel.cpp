@@ -568,7 +568,7 @@ void XgmModel::RenderSkinned(
   ////////////////////////////////////////
   // Draw Skeleton
 
-  if (1) {
+  if (0) {
     const XgmLocalPose& LocalPose = minst->RefLocalPose();
     pTARG->debugPushGroup("DrawSkeleton");
     pTARG->PushModColor(ModColor);

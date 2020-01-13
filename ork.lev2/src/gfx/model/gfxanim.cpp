@@ -497,7 +497,6 @@ void XgmLocalPose::ApplyAnimInst(const XgmAnimInst& AnimInst) {
       const XgmAnimInst::Binding& binding = AnimInst.GetPoseBinding(ipidx);
       int iskelindex                      = binding.mSkelIndex;
       if (iskelindex != 0xffff) {
-        OrkAssert(false);
         int iposeindex                = binding.mChanIndex;
         const DecompMtx44& PoseMatrix = StaticPose.GetItemAtIndex(iposeindex).second;
         EXFORM_COMPONENT components   = AnimInst.RefMask().GetComponents(iskelindex);

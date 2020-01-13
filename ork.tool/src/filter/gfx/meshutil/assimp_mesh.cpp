@@ -439,26 +439,33 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
                   ///////////////////////////////////////////////////
                   // prune to no more than 4 weights
                   ///////////////////////////////////////////////////
-                  std::map<float, XgmAssimpVertexWeightItem> largestWeightMap;
-                  std::map<float, std::string> prunedWeightMap;
+                  std::multimap<float, XgmAssimpVertexWeightItem> largestWeightMap;
+                  std::multimap<float, std::string> prunedWeightMap;
                   std::map<std::string, float> rawweightMap;
                   for (int inf = 0; inf < numinf; inf++) {
-                    auto infl              = influences->_items[inf];
-                    float fw               = infl._weight;
+                    auto infl = influences->_items[inf];
+                    float fw  = infl._weight;
+                    if (fw < 0.001)
+                      fw = 0.001;
                     auto remapped          = remapSkelName(infl._bonename);
                     rawweightMap[remapped] = fw;
-                    if (fw != 0.0f) {
-                      largestWeightMap[1.0f - fw] = infl;
+                    /*if (fw != 0.0f)*/ {
+                      auto xgminfl = XgmAssimpVertexWeightItem(infl);
+                      auto pr      = std::make_pair(1.0f - fw, xgminfl);
+                      largestWeightMap.insert(pr);
                     }
                     printf(" inf<%d> bone<%s> weight<%g>\n", inf, remapped.c_str(), fw);
                   }
                   int icount      = 0;
                   float totweight = 0.0f;
                   for (auto it : largestWeightMap) {
-                    if (icount < 4)
+                    if (icount < 4) {
                       totweight += (1.0f - it.first);
-                    icount++;
+                      icount++;
+                    }
                   }
+                  if (totweight == 0.0f)
+                    totweight = 1.0f;
                   icount             = 0;
                   float newtotweight = 0.0f;
                   for (auto item : largestWeightMap) {
@@ -467,13 +474,14 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
                       float w            = 1.0f - item.first;
                       float fjointweight = w / totweight;
                       newtotweight += fjointweight;
-                      std::string name              = item.second._bonename;
-                      prunedWeightMap[fjointweight] = remapSkelName(name);
+                      std::string name = item.second._bonename;
+                      prunedWeightMap.insert(std::make_pair(fjointweight, remapSkelName(name)));
+                      ++icount;
                     }
-                    ++icount;
                   }
+                  printf("newtotweight<%f>\n", newtotweight);
                   float fwtest = fabs(1.0f - newtotweight);
-                  if (fwtest >= 0.02f) // ensure within tolerable error limit
+                  if (fwtest >= 0.001f) // ensure within tolerable error limit
                   {
                     printf(
                         "WARNING weight pruning tolerance: <%s> vertex<%d> fwtest<%f> icount<%d> prunedWeightMapSize<%zu>\n",
@@ -482,6 +490,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
                         fwtest,
                         icount,
                         prunedWeightMap.size());
+                    OrkAssert(false);
                     // orkerrorlog( "ERROR: <%s> vertex<%d> fwtest<%f> numpairs<%d> largestWeightMap<%d>\n",
                     // policy->mColladaOutName.c_str(), im, fwtest, inumpairs, largestWeightMap.size() ); orkerrorlog( "ERROR:
                     // <%s> cannot prune weight, out of tolerance. You must prune it manually\n", policy->mColladaOutName.c_str()
@@ -489,8 +498,8 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
                   }
                   ///////////////////////////////////////////////////
                   muvtx.miNumWeights = prunedWeightMap.size();
-                  assert(muvtx.miNumWeights >= 0);
-                  assert(muvtx.miNumWeights <= 4);
+                  OrkAssert(muvtx.miNumWeights >= 0);
+                  OrkAssert(muvtx.miNumWeights <= 4);
                   int windex = 0;
                   /////////////////////////////////
                   // init vertex with no influences
@@ -500,13 +509,25 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
                     muvtx.mJointWeights[iw] = 0.0f;
                   }
                   /////////////////////////////////
-                  for (auto item : prunedWeightMap) {
-                    muvtx.mJointNames[windex]   = item.second;
-                    muvtx.mJointWeights[windex] = item.first;
-                    printf("inf<%s:%g> ", item.second.c_str(), item.first);
+                  float totw = 0.0f;
+                  if (newtotweight == 0.0f)
+                    newtotweight = 1.0f;
+                  for (auto it = prunedWeightMap.rbegin(); it != prunedWeightMap.rend(); it++) {
+                    float w = it->first / newtotweight;
+                    OrkAssert(w >= 0.0f);
+                    OrkAssert(w <= 1.0f);
+                    muvtx.mJointNames[windex]   = it->second;
+                    muvtx.mJointWeights[windex] = w;
+                    printf("inf<%s:%g> ", it->second.c_str(), w);
+                    totw += w;
                     windex++;
                   }
-                  // printf( "\n");
+                  printf("totw<%g>\n", totw);
+                  fwtest = fabs(1.0f - totw);
+                  if (fwtest >= 0.01f) { // ensure within tolerable error limit
+                    OrkAssert(false);
+                    // printf( "\n");
+                  }
                 }
               }
             }
@@ -550,6 +571,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
     // printf("done parsing nodes for meshdata\n");
     printf("/////////////////////////////////////////////////////////////////\n");
 
+    // is_skinned = false; // not yet
     _varmap["is_skinned"].Set<bool>(is_skinned);
 
     //////////////////////////////////////////////
@@ -592,7 +614,10 @@ void configureXgmSkeleton(const toolmesh& input, lev2::XgmModel& xgmmdlout) {
   // flatten the skeleton (WIP)
   /////////////////////////////////////
 
+  printf("Flatten Skeleton\n");
+
   auto itroot = xgmskelnodes.find("ROOT");
+  std::set<lev2::XgmSkelNode*> flatten_visited;
   if (itroot != xgmskelnodes.end()) {
     auto root = itroot->second;
 
@@ -601,6 +626,8 @@ void configureXgmSkeleton(const toolmesh& input, lev2::XgmModel& xgmmdlout) {
     if (root) {
       orkstack<lev2::XgmSkelNode*> NodeStack;
       NodeStack.push(root);
+      flatten_visited.insert(root);
+
       while (false == NodeStack.empty()) {
         lev2::XgmSkelNode* ParNode = NodeStack.top();
         int iparentindex           = ParNode->miSkelIndex;
@@ -608,18 +635,26 @@ void configureXgmSkeleton(const toolmesh& input, lev2::XgmModel& xgmmdlout) {
         int inumchildren = ParNode->mChildren.size();
         for (int ic = 0; ic < inumchildren; ic++) {
           lev2::XgmSkelNode* Child = ParNode->mChildren[ic];
-          int ichildindex          = Child->miSkelIndex;
+          auto itc                 = flatten_visited.find(Child);
+          if (itc == flatten_visited.end()) {
+            int ichildindex = Child->miSkelIndex;
 
-          lev2::XgmBone Bone = {iparentindex, ichildindex};
+            lev2::XgmBone Bone = {iparentindex, ichildindex};
 
-          xgmskel.AddFlatBone(Bone);
-          NodeStack.push(Child);
+            xgmskel.AddFlatBone(Bone);
+            NodeStack.push(Child);
+            flatten_visited.insert(Child);
+          } else {
+            printf("trying to visit node twice<%p>\n", Child);
+          }
         }
       }
     }
     xgmskel.mpRootNode = root;
     // xgmskel.dump();
   }
+
+  printf("skeleton configuration complete..\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -636,7 +671,7 @@ void ASS_XGM_Filter::Describe() {
 
 template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolmesh& inp_model, ork::lev2::XgmModel& out_model) {
 
-  // printf("BEGIN: clusterizing model\n");
+  printf("BEGIN: clusterizing model\n");
   bool is_skinned = false;
   if (auto as_bool = inp_model._varmap.valueForKey("is_skinned").TryAs<bool>()) {
     is_skinned = as_bool.value();
@@ -667,7 +702,7 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
 
   int subindex = 0;
   for (auto item : inp_model.RefSubMeshLut()) {
-    // printf("BEGIN: clusterizing submesh<%d>\n", subindex);
+    printf("BEGIN: clusterizing submesh<%d>\n", subindex);
     subindex++;
     submesh* inp_submesh = item.second;
     auto& mtlset         = inp_submesh->typedAnnotation<std::set<int>>("materialset");
@@ -723,7 +758,7 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
     mtlsubmap[gltfmtl].push_back(srec);
 
     ///////////////////////////////////////
-    // printf("END: clusterizing submesh<%d>\n", subindex);
+    printf("END: clusterizing submesh<%d>\n", subindex);
   }
 
   //////////////////////////////////////////////////////////////////
@@ -739,6 +774,8 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
 
   out_mesh->ReserveSubMeshes(count_subs);
   subindex = 0;
+
+  printf("generating %d submeshes\n", (int)count_subs);
 
   for (auto item : mtlsubmap) {
     GltfMaterial* gltfm = item.first;
@@ -761,6 +798,9 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
         clusterbuilder->buildVertexBuffer(VertexFormat);
 
         lev2::XgmCluster& XgmClus = xgm_submesh->mpClusters[icluster];
+
+        printf("building tristrip cluster<%d>\n", icluster);
+
         buildTriStripXgmCluster(XgmClus, clusterbuilder);
 
         // int inumclusjoints = XgmClus.mJoints.size();
@@ -826,7 +866,9 @@ bool ASS_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
       configureXgmSkeleton(tmesh, xgmmdlout);
   }
   policy.mbisSkinned = is_skinned;
+  printf("clusterizing..\n");
   clusterizeToolMeshToXgmMesh<XgmClusterizerStd>(tmesh, xgmmdlout);
+  printf("saving XGM file <%s>..\n", outf.c_str());
   bool rv = ork::lev2::SaveXGM(outf, &xgmmdlout);
   return rv;
 }

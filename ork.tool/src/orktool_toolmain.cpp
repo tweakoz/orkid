@@ -67,21 +67,21 @@ int Main_FilterTree(tokenlist toklist);
 static void ToolStartupDataFolder() {
   //////////////////////////////////////////
   // Register data:// urlbase
-  static auto WorkingDirContext = std::make_shared<FileDevContext>();
-  WorkingDirContext->SetFilesystemBaseEnable(true);
-  WorkingDirContext->SetFilesystemBaseRel("ork.data/");
+  // static auto WorkingDirContext = std::make_shared<FileDevContext>();
+  // WorkingDirContext->SetFilesystemBaseRel(data_dir.c_str());
+  // WorkingDirContext->SetFilesystemBaseEnable(true);
 
   QSettings settings("TweakoZ", "OrkidTool");
   settings.beginGroup("App");
-  if (settings.contains("datadir")) {
+  /*if (settings.contains("datadir")) {
     auto existdir = settings.value("datadir").toString();
     gdatadir      = existdir.toStdString();
     WorkingDirContext->SetFilesystemBaseAbs(gdatadir.c_str());
     printf("DATADIR from QSETTINGS<%s>\n", gdatadir.c_str());
-  }
+  }*/
   settings.endGroup();
 
-  FileEnv::registerUrlBase("data://", WorkingDirContext);
+  // FileEnv::registerUrlBase("data://", WorkingDirContext);
   //////////////////////////////////////////
 }
 
