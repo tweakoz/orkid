@@ -217,8 +217,6 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
 
     xgmskelnodes = parsedskel._xgmskelmap;
 
-    OrkAssert(is_skinned);
-
     //////////////////////////////////////////////
     // count, visit dagnodes
     //////////////////////////////////////////////
@@ -429,7 +427,6 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
               // yuk -- assimp is not like gltf, or collada...
               // https://github.com/assimp/assimp/blob/master/code/glTF2/glTF2Importer.cpp#L904
               /////////////////////////////////////////////
-              OrkAssert(is_skinned);
               if (is_skinned) {
                 auto itw = assimpweightlut.find(index);
                 if (itw != assimpweightlut.end()) {

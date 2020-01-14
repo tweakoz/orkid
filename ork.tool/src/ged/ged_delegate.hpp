@@ -322,8 +322,8 @@ GedFloatNode<IODriver>::GedFloatNode(ObjModel& mdl, const char* name, const refl
     }
   }
 
-  slider = new Slider<GedFloatNode>(*this, fmin, fmax, fval);
-  slider->SetLogMode(mLogMode);
+  _slider = new Slider<GedFloatNode>(*this, fmin, fmax, fval);
+  _slider->SetLogMode(mLogMode);
 }
 
 template <typename IODriver>
@@ -331,13 +331,13 @@ void GedFloatNode<IODriver>::ReSync() // virtual
 {
   float fval = -1.0f;
   mIoDriver.GetValue(fval);
-  slider->SetVal(fval);
+  _slider->SetVal(fval);
 }
 
 template <typename IoDriver> void GedFloatNode<IoDriver>::DoDraw(lev2::Context* pTARG) {
-  slider->resize(miX, miY, miW, miH);
+  _slider->resize(miX, miY, miW, miH);
 
-  int ixi = int(slider->GetIndicPos()) - miX;
+  int ixi = int(_slider->GetIndicPos()) - miX;
   GetSkin()->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);
   GetSkin()->DrawBgBox(this, miX + 2, miY + 2, miW - 3, miH - 4, GedSkin::ESTYLE_BACKGROUND_2);
   GetSkin()->DrawBgBox(this, miX + 2, miY + 4, ixi, miH - 8, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT);
@@ -345,9 +345,9 @@ template <typename IoDriver> void GedFloatNode<IoDriver>::DoDraw(lev2::Context* 
   ork::PropTypeString pstr;
   float fval = 0.0f;
   mIoDriver.GetValue(fval);
-  float finp          = slider->GetTextPos();
+  float finp          = _slider->GetTextPos();
   int itxi            = miX + (finp);
-  PropTypeString& str = slider->ValString();
+  PropTypeString& str = _slider->ValString();
 
   _content     = str.c_str();
   int itextlen = contentWidth();
@@ -356,6 +356,13 @@ template <typename IoDriver> void GedFloatNode<IoDriver>::DoDraw(lev2::Context* 
 
   GetSkin()->DrawText(this, miX + miW - (itextlen + 8), ity, str.c_str());
   GetSkin()->DrawText(this, miX + 4, ity, _propname.c_str());
+}
+
+template <typename IoDriver> void GedFloatNode<IoDriver>::onActivate() {
+  _slider->onActivate();
+}
+template <typename IoDriver> void GedFloatNode<IoDriver>::onDeactivate() {
+  _slider->onDeactivate();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -388,7 +395,7 @@ GedIntNode<IODriver>::GedIntNode(ObjModel& mdl, const char* name, const reflect:
     }
   }
 
-  slider    = new Slider<GedIntNode>(*this, fmin, fmax, ival);
+  _slider   = new Slider<GedIntNode>(*this, fmin, fmax, ival);
   _propname = name;
 }
 
@@ -397,13 +404,13 @@ void GedIntNode<IODriver>::ReSync() // virtual
 {
   int ival = 9;
   mIoDriver.GetValue(ival);
-  ((Slider<GedIntNode>*)slider)->SetVal(ival);
+  ((Slider<GedIntNode>*)_slider)->SetVal(ival);
 }
 
 template <typename IODriver> void GedIntNode<IODriver>::DoDraw(lev2::Context* pTARG) {
-  slider->resize(miX, miY, miW, miH);
+  _slider->resize(miX, miY, miW, miH);
 
-  int ixi = int(slider->GetIndicPos()) - miX;
+  int ixi = int(_slider->GetIndicPos()) - miX;
   GetSkin()->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);
   GetSkin()->DrawBgBox(this, miX + 2, miY + 2, miW - 3, miH - 4, GedSkin::ESTYLE_BACKGROUND_2);
   GetSkin()->DrawBgBox(this, miX + 2, miY + 3, ixi, miH - 6, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT);
@@ -413,9 +420,9 @@ template <typename IODriver> void GedIntNode<IODriver>::DoDraw(lev2::Context* pT
   ork::PropTypeString pstr;
   int ival = 0;
   mIoDriver.GetValue(ival);
-  float finp          = slider->GetTextPos();
+  float finp          = _slider->GetTextPos();
   int itxi            = miX + int(finp);
-  PropTypeString& str = slider->ValString();
+  PropTypeString& str = _slider->ValString();
   GetSkin()->DrawText(this, itxi, ity, str.c_str());
   _content     = str.c_str();
   int itextlen = contentWidth();
@@ -426,14 +433,14 @@ template <typename IODriver> void GedIntNode<IODriver>::DoDraw(lev2::Context* pT
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename IODriver> void GedIntNode<IODriver>::OnUiEvent(const ork::ui::Event& ev) {
-  slider->OnUiEvent(ev);
+  _slider->OnUiEvent(ev);
   mModel.SigRepaint();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename IODriver> void GedFloatNode<IODriver>::OnUiEvent(const ork::ui::Event& ev) {
-  slider->OnUiEvent(ev);
+  _slider->OnUiEvent(ev);
   mModel.SigRepaint();
 }
 

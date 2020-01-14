@@ -43,6 +43,12 @@ public:
   void SetLabelH(int ilabh) {
     miLabelH = ilabh;
   }
+  void onActivate() {
+    OrkAssert(false);
+  }
+  void onDeactivate() {
+    OrkAssert(false);
+  }
 
 protected:
   float mfx;
@@ -98,30 +104,31 @@ public:
   void DoDraw(lev2::Context* pTARG) final;
 };
 ///////////////////////////////////////////////////////////////////////////////
-template <typename IODriver> class GedFloatNode : public GedItemNode {
-public:
+template <typename IODriver> struct GedFloatNode : public GedItemNode {
+
   bool mLogMode;
   GedFloatNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj);
 
   void OnUiEvent(const ork::ui::Event& ev) final;
   void DoDraw(lev2::Context* pTARG) final;
 
+  void onActivate() final;
+  void onDeactivate() final;
+
   typedef float datatype;
   void ReSync(); // virtual
-  Slider<GedFloatNode>* GetSlider() {
-    return slider;
-  }
+  // Slider<GedFloatNode>* GetSlider() {
+  // return _slider;
+  //}
   IODriver& RefIODriver() {
     return mIoDriver;
   }
 
-private:
-  Slider<GedFloatNode>* slider;
+  Slider<GedFloatNode>* _slider;
   IODriver mIoDriver;
 };
 ///////////////////////////////////////////////////////////////////////////////
-template <typename IODriver> class GedIntNode : public GedItemNode {
-public:
+template <typename IODriver> struct GedIntNode : public GedItemNode {
   bool mLogMode;
   GedIntNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj);
 
@@ -134,8 +141,7 @@ public:
     return mIoDriver;
   }
 
-private:
-  SliderBase* slider;
+  SliderBase* _slider;
   IODriver mIoDriver;
 };
 ///////////////////////////////////////////////////////////////////////////////

@@ -106,7 +106,7 @@ void GedWidget::PropertyInvalidated(ork::Object* pobj, const reflect::IObjectPro
 
 void GedWidget::SlotRepaint() {
   // printf( "GedWidget::SlotRepaint\n" );
-  GetViewport()->onInvalidate();
+  GetViewport()->MarkSurfaceDirty();
 }
 
 void GedWidget::SlotModelInvalidated() {
