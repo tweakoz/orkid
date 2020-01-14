@@ -24,221 +24,339 @@ An OpenGLes2 version will be coming soon - This is the last prerequisite for get
 Example "skintools.i"
 
 	//
-	
-	vertex_interface iface_skintools
-	{
-		uniform mat4 BoneMatrices[32];
-	
-		in vec4 boneindices : BONEINDICES;
-		in vec4 boneweights : BONEWEIGHTS;
+
+	uniform_set ublock_skinned { mat4 BoneMatrices[32]; }
+
+	vertex_interface iface_skintools : ublock_skinned {
+  		inputs {
+	    	vec4 boneindices : BONEINDICES;
+    		vec4 boneweights : BONEWEIGHTS;
+  		}
+	}
+
+	libblock skin_tools {
+  		vec3 SkinPosition(vec3 objpos) {
+    			//ivec4 idcsi = ivec4(idcs);
+    			ivec4 idcsi = ivec4(boneindices);
+    			//wghts = vec4(0.25,0.25,0.25,0.25);
+    			vec4 Pos4   = vec4(objpos, 1.0);
+
+    			vec3 WeightedVertex = ((BoneMatrices[idcsi.w] * Pos4).xyz * boneweights.w);
+    			WeightedVertex += ((BoneMatrices[idcsi.z] * Pos4).xyz * boneweights.z);
+    			WeightedVertex += ((BoneMatrices[idcsi.y] * Pos4).xyz * boneweights.y);
+    			WeightedVertex += ((BoneMatrices[idcsi.x] * Pos4).xyz * boneweights.x);
+
+    			return WeightedVertex;
+  		}
+  		vec3 SkinNormal(vec3 InNrm) {
+    			ivec4 idcss = ivec4(boneindices);
+    			vec4 Nrm4   = vec4(InNrm, 0.0f);
+
+    			vec3 WeightedNormal = ((BoneMatrices[idcss.w] * Nrm4) * boneweights.w).xyz;
+    			WeightedNormal += ((BoneMatrices[idcss.z] * Nrm4) * boneweights.z).xyz;
+    			WeightedNormal += ((BoneMatrices[idcss.y] * Nrm4) * boneweights.y).xyz;
+    			WeightedNormal += ((BoneMatrices[idcss.x] * Nrm4) * boneweights.x).xyz;
+
+    			return normalize(WeightedNormal);
+  		}
+
+  		struct SkinOut {
+    		vec3 skn_pos;
+    		vec3 skn_col;
+  		};
+
+  		SkinOut LitSkinned(vec3 objpos) {
+			SkinOut rval;
+			rval.skn_pos = SkinPosition(position.xyz);
+	  		vec3 sknorm  = SkinNormal(normal.xyz);
+	  		vec3 wnorm   = normalize(mrot * sknorm);
+	  		float dif = dot(wnorm, vec3(0, 0, 1));
+	  		float amb = 0.3;
+	  		float tot = dif + amb;
+			rval.skn_col = vec3(tot,tot,tot);
+			return rval;
+		}
 	}
 	
-	libblock skin_tools
-	{
-		vec3 SkinPosition( vec4 idcs, vec4 wghts, vec3 InPos )
-		{
-			ivec4 idcss = ivec4(idcs*255.0);
-			vec4 Pos4 = vec4( InPos, 1.0 );
-	
-			vec3 WeightedVertex =	((BoneMatrices[idcss.w]*Pos4)*wghts.w).xyz;
-			     WeightedVertex += 	((BoneMatrices[idcss.z]*Pos4)*wghts.z).xyz;
-			     WeightedVertex +=	((BoneMatrices[idcss.y]*Pos4)*wghts.y).xyz;
-			     WeightedVertex +=	((BoneMatrices[idcss.x]*Pos4)*wghts.x).xyz;
-		 
-			return WeightedVertex;
-		}
-		vec3 SkinNormal( vec4 idcs, vec4 wghts, vec3 InNrm )
-		{
-			ivec4 idcss = ivec4(idcs*255.0);
-			vec4 Nrm4 = vec4( InNrm, 0.0f );
-	
-			vec3 WeightedNormal =  ((BoneMatrices[idcss.w]*Nrm4)*wghts.w).xyz;
-			     WeightedNormal += ((BoneMatrices[idcss.z]*Nrm4)*wghts.z).xyz;
-			     WeightedNormal += ((BoneMatrices[idcss.y]*Nrm4)*wghts.y).xyz;
-			     WeightedNormal += ((BoneMatrices[idcss.x]*Nrm4)*wghts.x).xyz;
-	
-			return normalize(WeightedNormal);
-		}
-	
-	}	 
-	
-example "basic.glfx"
+example "pbr.glfx"
 
 	///////////////////////////////////////////////////////////////
 	// FxConfigs
 	///////////////////////////////////////////////////////////////
 	fxconfig fxcfg_default
 	{
-		glsl_version = "150";
+		glsl_version = "130";
 		import "skintools.i";
 	}
 	///////////////////////////////////////////////////////////////
 	// Interfaces
 	///////////////////////////////////////////////////////////////
-	vertex_interface iface_vdefault
-		: iface_skintools // inherit skinned unis/attrs
+	uniform_set ub_vtx
 	{
-		uniform mat4 WVPMatrix;
-		uniform mat4 VPMatrix;
-		uniform mat4 PMatrix;
-		uniform mat4 WMatrix;
-		uniform mat4 WVMatrix;
-		uniform mat4 VMatrix;
-		uniform mat4 IWMatrix;
-		uniform mat3 WRotMatrix;
-		uniform mat4 DiffuseMapMatrix;
-		uniform mat4 NormalMapMatrix;
-		uniform mat4 SpecularMapMatrix;
-	
-		uniform vec4 modcolor;
-		uniform float time;
-	
-		uniform vec3 AmbientLight;
-		uniform int NumDirectionalLights;
-		uniform vec3 DirectionalLightDir[4];
-		uniform vec3 DirectionalLightColor[4];
-		uniform vec3 EmissiveColor;
-	
-		uniform vec3 WCamLoc;
-		uniform float SpecularPower;
-	
-		in vec4 position : POSITION;
-		in vec3 normal : NORMAL;
-		in vec2 uv0 : TEXCOORD0;
-	
-		out vec4 frg_clr;
-		out vec2 frg_uv0;
+		mat4        mv;
+		mat4        mvp;
+		mat4 		mvp_l;
+		mat4 		mvp_r;
+		mat3        mrot;
+		vec4        modcolor;
+		vec2 InvViewportSize; // inverse target size
 	}
 	///////////////////////////////////////////////////////////////
-	fragment_interface iface_fdefault
+	uniform_set ub_frg
 	{
-		in vec4 frg_clr;
-		in vec2 frg_uv0;
-	
-		out vec4 out_clr;
-	}
-	///////////////////////////////////////////////////////////////
-	fragment_interface iface_fmt
-	{
-		uniform vec4 modcolor;
-		uniform sampler2D DiffuseMap;
-	
-		in vec4 frg_clr;
-		in vec2 frg_uv0;
-	
-		out vec4 out_clr;
+    	sampler2D ColorMap;
+    	sampler2D NormalMap;
+    	sampler2D MtlRufMap;
+		vec4 ModColor;
+		vec2 InvViewportSize; // inverse target size
+		float MetallicFactor;
+		float RoughnessFactor;
 	}
 	///////////////////////////////////////////////////////////////
 	// StateBlocks
 	///////////////////////////////////////////////////////////////
-	state_block sb_default
+	state_block sb_default : default
 	{
-		//BlendMode = ADDITIVE;
-		DepthTest=LESS;
-		DepthMask=true;
-		CullTest=PASS_FRONT;
-	}
-	///////////////////////////////////////////////////////////////
-	state_block sb_lerpblend : sb_default
-	{
-		BlendMode = ALPHA;
-	}
-	///////////////////////////////////////////////////////////////
-	state_block sb_additive : sb_default
-	{
-		BlendMode = ADDITIVE;
 	}
 	///////////////////////////////////////////////////////////////
 	// shaders
 	///////////////////////////////////////////////////////////////
-	vertex_shader vs_vtxtexcolor : iface_vdefault
+	vertex_interface iface_vgbuffer
+		: ub_vtx
 	{
-		gl_Position = WVPMatrix*position;
-		frg_clr = vec4(1.0f,1.0f,1.0f,1.0f); //vtxcolor.bgra;
-		frg_uv0 = uv0;
-		//frg_uv1 = uv1;
+    	inputs {
+			vec4 position : POSITION;
+	        vec3 normal : NORMAL;
+	        vec3 binormal : BINORMAL;
+	        vec4 vtxcolor : COLOR0;
+			vec2 uv0 : TEXCOORD0;
+		}
+		outputs {
+        	vec4 frg_clr;
+	    	vec2 frg_uv0;
+	    	mat3 frg_tbn;
+			float frg_camdist;
+			vec3 frg_camz;
+		}
 	}
-	
-	///////////////////////////////////////////////////////////////
-	vertex_shader vs_wnormal : iface_vdefault
+	vertex_shader vs_rigid_gbuffer
+		: iface_vgbuffer
 	{
-		gl_Position = WVPMatrix*position;
-		vec3 wnorm = normalize(WRotMatrix*normal);
-		frg_clr = vec4(wnorm.xyz,1.0);
-		frg_uv0 = uv0;
+    	vec4 cpos  = mv * position;
+    	vec3 wnorm = normalize(mrot * normal);
+    	vec3 wbinorm = normalize(mrot * binormal);
+		vec3 wtangent = cross(wbinorm,wnorm);
+		gl_Position = mvp*position;
+		frg_clr = vec4(1.0,1.0,1.0,1.0);
+		frg_uv0 = uv0*vec2(1,-1);
+		vec4 nrmd = vec4(wnorm,-cpos.z);
+		frg_camdist = nrmd.w;
+		frg_tbn = transpose(mat3(
+        	-wtangent,
+        	-wbinorm,
+        	wnorm
+    	));
+		frg_camz = wnorm.xyz;
 	}
-	
 	///////////////////////////////////////////////////////////////
-	vertex_shader vs_wnormalsk 
-		: iface_vdefault
-		: skin_tools
+	vertex_interface iface_vgbuffer_skinned
+		: iface_vgbuffer
+		: iface_skintools
+	{
+	}
+	vertex_shader vs_skinned_gbuffer
+		: iface_vgbuffer_skinned : skin_tools
 	{
 		vec3 obj_pos = position.xyz;
-		vec3 skn_pos = SkinPosition( boneindices, boneweights, position.xyz );
-		gl_Position = WVPMatrix*vec4(skn_pos,1.0);
-		vec3 sknorm = SkinNormal(boneindices, boneweights, normal.xyz);
-		vec3 wnorm = normalize(WRotMatrix*sknorm);
-		frg_clr = vec4(wnorm.xyz,1.0);
-		frg_uv0 = uv0;
-	}
-	
-	///////////////////////////////////////////////////////////////
-	
-	fragment_shader ps_modtex : iface_fmt
-	{
-		vec4 texc = texture( DiffuseMap, frg_uv0 );
-		out_clr = texc*modcolor*frg_clr;
-		if( out_clr.a==0.0f ) discard;
-	}
-	///////////////////////////////////////////////////////////////
-	vertex_shader vs_vtxcolor : iface_vdefault
-	{
-		gl_Position = WVPMatrix*position;
-		//frg_clr = vtxcolor;
-		frg_clr = vec4(1.0f,0.0f,0.0f,1.0f); //vtxcolor.bgra;
-		frg_uv0 = uv0;
-		//frg_uv1 = uv0;
+  		vec3 skn_pos = SkinPosition(position.xyz);
+		vec3 skn_nrm  = SkinNormal(normalize(normal));
+		vec3 skn_bin  = SkinNormal(normalize(binormal));
+
+   		vec4 cpos  = mv * vec4(skn_pos,1);
+   		vec3 wnorm = mrot * skn_nrm;
+   		vec3 wbinorm = mrot * skn_bin;
+		vec3 wtangent = cross(wbinorm,wnorm);
+		gl_Position = mvp*vec4(skn_pos,1);
+		frg_clr = boneindices*1.0/32.0f;
+		frg_uv0 = uv0*vec2(1,-1);
+		frg_camdist = -cpos.z;
+		frg_tbn = transpose(mat3(
+        		-wtangent,
+        		-wbinorm,
+        		wnorm
+    	));
+		frg_camz = wnorm.xyz;
 	}
 	///////////////////////////////////////////////////////////////
-	fragment_shader ps_fragclr : iface_fdefault
-	{
-		out_clr = frg_clr;
-	}
-	fragment_shader ps_wnormalsk : iface_fdefault
-	{
-		out_clr = vec4(0,1,0,1);//frg_clr;
-	}
-	
-	///////////////////////////////////////////////////////////////
-	fragment_shader ps_modclr : iface_fmt
-	{
-		out_clr = frg_clr;
-		//out_clr = modcolor;
+	vertex_interface iface_vgbuffer_stereo : iface_vgbuffer {
+  		outputs {
+    		layout(secondary_view_offset=1) int gl_Layer;
+  		}
 	}
 	///////////////////////////////////////////////////////////////
-	technique tek_modcolor
-	{	fxconfig=fxcfg_default;
+	vertex_shader vs_rigid_gbuffer_stereo
+		: extension(GL_NV_stereo_view_rendering)
+  		: extension(GL_NV_viewport_array2)
+		: iface_vgbuffer_stereo
+	{
+    	vec4 cpos  = mv * position;
+		vec3 wnorm = normalize(mrot * normal);
+    	vec3 wbinorm = normalize(mrot * binormal);
+		vec3 wtangent = cross(wbinorm,wnorm);
+		frg_clr = vec4(1.0,1.0,1.0,1.0);
+		frg_uv0 = uv0*vec2(1,-1);
+		vec4 nrmd = vec4(wnorm,-cpos.z);
+		frg_camdist = nrmd.w;
+		frg_tbn = transpose(mat3(
+	        	-wtangent,
+	        	-wbinorm,
+	        	wnorm
+	    	));
+		frg_camz = wnorm.xyz;
+		gl_Position = mvp_l*position;
+		gl_SecondaryPositionNV = mvp_r*position;
+  		gl_Layer = 0;
+		gl_ViewportMask[0] = 1;
+  		gl_SecondaryViewportMaskNV[0] = 2;
+	}
+	///////////////////////////////////////////////////////////////
+	fragment_interface iface_fgbuffer
+		: ub_frg
+	{
+    		inputs {
+        		vec4 frg_clr;
+	    		vec2 frg_uv0;
+	    		mat3 frg_tbn;
+				float frg_camdist;
+				vec3 frg_camz;
+		}
+		outputs {
+        		layout(location = 0) vec4 out_clr;
+        		layout(location = 1) vec4 out_normal_mdl;
+        		layout(location = 2) vec4 out_rufmtl;
+		}
+	}
+	fragment_shader ps_gbuffer
+		: iface_fgbuffer
+	{
+		vec3 nrm_tanspace = vec3(0,0,1);
+		vec3 nrm_w = nrm_tanspace*frg_tbn;
+		vec3 rufmtlamb = texture(MtlRufMap,frg_uv0).zyx;
+		rufmtlamb.x *= MetallicFactor;
+		rufmtlamb.y *= RoughnessFactor;
+		out_clr = texture(ColorMap,frg_uv0).xyzw;
+		out_normal_mdl.xyz = (nrm_w*0.5)+vec3(0.5,0.5,0.5);
+		out_normal_mdl.w = frg_camdist;
+		out_rufmtl = vec4(rufmtlamb,0);
+	}
+	fragment_shader ps_gbuffer_n // normalmap
+		: iface_fgbuffer
+	{
+    	vec3 nrm_tanspace = texture(NormalMap,frg_uv0).xyz*2.0-vec3(1,1,1);
+		nrm_tanspace = normalize(mix(vec3(0,0,1),nrm_tanspace,1.0));
+		vec3 nrm_w = nrm_tanspace*frg_tbn;
+		vec3 rufmtlamb = texture(MtlRufMap,frg_uv0).zyx;
+		rufmtlamb.x *= MetallicFactor;
+		rufmtlamb.y *= RoughnessFactor;
+    	out_clr = ModColor*texture(ColorMap,frg_uv0).xyzw;
+		//out_clr = frg_clr;
+    	out_normal_mdl.xyz = (nrm_w*0.5)+vec3(0.5,0.5,0.5);
+		out_normal_mdl.w = frg_camdist;
+		out_rufmtl = vec4(rufmtlamb,0);
+	}
+	///////////////////////////////////////////////////////////////
+	fragment_shader ps_gbuffer_n_stereo // normalmap
+		: iface_fgbuffer
+	{
+    	vec3 nrm_tanspace = texture(NormalMap,frg_uv0).xyz*2.0-vec3(1,1,1);
+		nrm_tanspace = normalize(mix(vec3(0,0,1),nrm_tanspace,1.0));
+		vec3 nrm_w = nrm_tanspace*frg_tbn;
+    	vec3 rufmtlamb = texture(MtlRufMap,frg_uv0).zyx;
+		rufmtlamb.x *= MetallicFactor;
+		rufmtlamb.y *= RoughnessFactor;
+    	out_clr = texture(ColorMap,frg_uv0).xyzw;
+		out_normal_mdl.xyz = (nrm_w*0.5)+vec3(0.5,0.5,0.5);
+		out_normal_mdl.w = frg_camdist;
+		//out_rufmtl = vec4(rufmtlamb,0);
+		out_rufmtl = vec4(rufmtlamb,0);
+	}
+	///////////////////////////////////////////////////////////////
+
+	fragment_shader ps_gbuffer_n_tex_stereo // normalmap (stereo texture - vsplit)
+		: iface_fgbuffer
+	{
+		vec2 screen_uv   = gl_FragCoord.xy * InvViewportSize;
+		bool is_right = bool(screen_uv.x <= 0.5);
+
+		vec2 map_uv = frg_uv0*vec2(1,0.5);
+		if( is_right )
+			map_uv += vec2(0,0.5);
+
+    	vec3 nrm_tanspace = texture(NormalMap,map_uv).xyz*2.0-vec3(1,1,1);
+		vec3 nrm_w = nrm_tanspace*frg_tbn;
+    	vec3 rufmtlamb = texture(MtlRufMap,map_uv).zyx;
+		rufmtlamb.x *= MetallicFactor;
+		rufmtlamb.y *= RoughnessFactor;
+    	out_clr = texture(ColorMap,map_uv).xyzw;
+    	out_normal_mdl.xyz = (nrm_w*0.5)+vec3(0.5,0.5,0.5);
+		out_normal_mdl.w = frg_camdist;
+		out_rufmtl = vec4(rufmtlamb,0);
+	}
+	///////////////////////////////////////////////////////////////
+	state_block sb_pick : sb_default
+	{
+		DepthTest=OFF;
+		DepthMask=true;
+		CullTest=OFF;
+		BlendMode = OFF;
+	}
+	technique rigid_gbuffer
+	{
+		fxconfig=fxcfg_default;
 		pass p0
-		{	vertex_shader=vs_vtxcolor;
-			fragment_shader=ps_modclr;
+		{
+			vertex_shader=vs_rigid_gbuffer;
+			fragment_shader=ps_gbuffer;
 			state_block=sb_default;
 		}
 	}
-	technique tek_wnormal
-	{	fxconfig=fxcfg_default;
+	technique rigid_gbuffer_n
+	{
+		fxconfig=fxcfg_default;
 		pass p0
-		{	vertex_shader=vs_wnormal;
-			fragment_shader=ps_fragclr;
+		{	vertex_shader=vs_rigid_gbuffer;
+			fragment_shader=ps_gbuffer_n;
 			state_block=sb_default;
 		}
 	}
-	technique tek_wnormal_skinned
-	{	fxconfig=fxcfg_default;
+	technique skinned_gbuffer_n
+	{
+		fxconfig=fxcfg_default;
 		pass p0
-		{	vertex_shader=vs_wnormalsk;
-			fragment_shader=ps_fragclr;
+		{	vertex_shader=vs_skinned_gbuffer;
+			fragment_shader=ps_gbuffer_n;
 			state_block=sb_default;
 		}
 	}
+	technique rigid_gbuffer_n_stereo
+	{
+		fxconfig=fxcfg_default;
+		pass p0
+		{	vertex_shader=vs_rigid_gbuffer_stereo;
+			fragment_shader=ps_gbuffer_n_stereo;
+			state_block=sb_default;
+		}
+	}
+	technique rigid_gbuffer_n_tex_stereo
+	{
+		fxconfig=fxcfg_default;
+		pass p0
+		{	vertex_shader=vs_rigid_gbuffer_stereo;
+			fragment_shader=ps_gbuffer_n_tex_stereo;
+			state_block=sb_default;
+		}
+	}
+
 	///////////////////////////////////////////////////////////////
+
 

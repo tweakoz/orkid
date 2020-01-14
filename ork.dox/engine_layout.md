@@ -45,10 +45,6 @@ Orkid is divided into several shared libraries:
 		+ OpenVR (iX)
 ---
 
-* ork.bullet273 : bullet physics engine 
-
----
-
 * ork.ent : archetype / entity / component / scene system. Lets you load a pregenerated 'scene' document and run it as a simulation. Contains a collection of commonly useful components, including:
 	- Fixed Function and Node based frame compositor
 	- Rigid/Skinned 3D model components / archetypes
@@ -68,21 +64,4 @@ Orkid is divided into several shared libraries:
 	- Scene / Archetype / Component / Object editor.
 	- Asset conversion filters.
 	- Distributed Lightmapper (WIP)
-
----
-
-* tozkit 
-	- Production rendering utilities.
- 		+ Eventually one will be able to take a frame from the realtime renderer and re-render using a production renderer such as Renderman / Houdini mantra, etc...
- 		+ Notable dependencies: 
- 			* loki
- 			* blitz
- 			* hdf5
- 			* OpenEXR
- 			* OpenShaderLanguage
- 			* OpenImageIO
- 			* Alembic
- 			* Cortex-Vfx
- 			* 3Delight
- 		+ All of the above dependencies are automagically downloaded and built/installed via included scripts
 
