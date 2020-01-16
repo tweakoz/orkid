@@ -39,14 +39,16 @@ TEST(gfxanim1) {
     printf("fxi<%p>\n", fxi);
     CHECK(fxi != nullptr);
 
-    auto anim   = new XgmAnim;
-    bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/bonetest_anim");
-    // bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/char_anim");
+    auto anim = new XgmAnim;
+    // bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/bonetest_anim");
+    // bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/rigtest_anim");
+    bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/char_anim");
     OrkAssert(loadOK);
     auto animinst = new XgmAnimInst;
 
-    auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/bonetest_mesh");
-    // auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/char_mesh");
+    // auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/bonetest_mesh");
+    // auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/rigtest_exp");
+    auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/char_mesh");
     printf("modl_asset<%p>\n", modl_asset);
     CHECK(modl_asset != nullptr);
 

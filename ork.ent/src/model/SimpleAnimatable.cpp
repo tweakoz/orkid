@@ -197,7 +197,7 @@ bool SimpleAnimatableInst::DoStart(ork::ent::Simulation* psi, const ork::fmtx4& 
   auto nam         = AddPooledLiteral("start");
   auto it          = amap.find(nam);
   if (it != amap.end()) {
-    PlayAnimation(nam, 0.1);
+    PlayAnimation(nam, 1.0);
   }
 
   return true;

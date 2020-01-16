@@ -416,7 +416,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
               auto& muvtx    = muverts[facevert_index];
               muvtx.mPos     = fvec3(v.x, v.y, v.z).Transform(ork_model_mtx).xyz();
               muvtx.mNrm     = fvec3(n.x, n.y, n.z).Transform(ork_normal_mtx);
-              printf("v<%g %g %g>\n", v.x, v.y, v.z);
+              // printf("v<%g %g %g>\n", v.x, v.y, v.z);
               // printf("norm<%g %g %g>\n", muvtx.mNrm.x, muvtx.mNrm.y, muvtx.mNrm.z);
               if (has_colors)
                 muvtx.mCol[0] = fvec4(1, 1, 1, 1);
