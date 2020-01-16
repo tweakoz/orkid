@@ -127,7 +127,7 @@ void FxShader::RegisterLoaders(const file::Path::NameType& base, const file::Pat
 ///////////////////////////////////////////////////////////////////////////////
 
 void FxShader::OnReset() {
-  Context* pTARG = GfxEnv::GetRef().GetLoaderTarget();
+  Context* pTARG = GfxEnv::GetRef().loadingContext();
 
   for (orkmap<std::string, const FxShaderParam*>::const_iterator it = _parameterByName.begin(); it != _parameterByName.end();
        it++) {

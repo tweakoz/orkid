@@ -411,6 +411,7 @@ struct XgmSkelNode {
   std::string mNodeName;
   fmtx4 mBindMatrixInverse;
   fmtx4 mJointMatrix;
+  fmtx4 mNodeMatrix;
   XgmSkelNode* mpParent = nullptr;
   orkvector<XgmSkelNode*> mChildren;
   int miSkelIndex = -1;
@@ -592,6 +593,7 @@ struct XgmSkeleton {
 
   orkvector<fmtx4> _inverseBindMatrices;
   orkvector<fmtx4> _jointMatrices;
+  orkvector<fmtx4> _nodeMatrices;
   int miNumJoints;
   orkvector<PoolString> mvJointNameVect;
   orkvector<XgmBone> mFlattenedBones;
@@ -638,6 +640,9 @@ struct XgmSkeleton {
   }
   int jointIndex(const PoolString& Named) const;
 
+  int numJoints(void) const {
+    return miNumJoints;
+  }
   /////////////////////////////////////
 
   void SetNumJoints(int inumjoints);
@@ -646,6 +651,12 @@ struct XgmSkeleton {
 
   /////////////////////////////////////
 
+  fmtx4& RefNodeMatrix(int idx) {
+    return _nodeMatrices[idx];
+  }
+  const fmtx4& RefNodeMatrix(int idx) const {
+    return _nodeMatrices[idx];
+  }
   fmtx4& RefJointMatrix(int idx) {
     return _jointMatrices[idx];
   }

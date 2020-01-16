@@ -109,11 +109,11 @@ public:
 
     // OrkAssert(false == tex_asset->GetTexture()->_varmap.hasKey("preproc"));
 
-    while (0 == GfxEnv::GetRef().GetLoaderTarget()) {
+    while (0 == GfxEnv::GetRef().loadingContext()) {
       ork::msleep(100);
     }
     auto p   = file::Path(pAsset->GetName());
-    bool bOK = GfxEnv::GetRef().GetLoaderTarget()->TXI()->LoadTexture(p, tex_asset->GetTexture());
+    bool bOK = GfxEnv::GetRef().loadingContext()->TXI()->LoadTexture(p, tex_asset->GetTexture());
     OrkAssert(bOK);
     return true;
   }
@@ -219,7 +219,7 @@ bool FxShaderLoader::LoadFileAsset(asset::Asset* pAsset, ConstString filename) {
   ork::file::Path pth(filename.c_str());
   // printf("Loading Effect url<%s> abs<%s>\n", filename.c_str(), pth.ToAbsolute().c_str());
   auto pshader = rtti::safe_downcast<FxShaderAsset*>(pAsset);
-  bool bOK     = GfxEnv::GetRef().GetLoaderTarget()->FXI()->LoadFxShader(filename.c_str(), pshader->GetFxShader());
+  bool bOK     = GfxEnv::GetRef().loadingContext()->FXI()->LoadFxShader(filename.c_str(), pshader->GetFxShader());
   OrkAssert(bOK);
   if (bOK)
     pshader->GetFxShader()->SetName(filename.c_str());

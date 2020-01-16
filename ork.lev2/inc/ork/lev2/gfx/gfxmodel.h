@@ -361,11 +361,13 @@ struct XgmModelInst {
   U8 mMaskBits[knummaskbytes];
   const XgmModel* mXgmModel;
   XgmLocalPose mLocalPose;
+  mutable XgmWorldPose _worldPose;
   XgmMaterialStateInst mMaterialStateInst;
   GfxMaterial* _overrideMaterial = nullptr;
   int miNumChannels;
   bool mbSkinned;
   bool mBlenderZup;
+  bool _drawSkeleton;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -378,7 +380,6 @@ struct RenderContextInstModelData {
 
   bool mbisSkinned;
   int miSubMeshIndex;
-  const XgmWorldPose* mpWorldPose;
 
   //////////////////////////////////////
   // model interface

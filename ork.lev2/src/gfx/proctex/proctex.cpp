@@ -575,7 +575,7 @@ void ProcTexContext::ReturnBuffer(Buffer* pbuf) {
 AA16Render::AA16Render(ProcTex& ptx, Buffer& bo)
     : mPTX(ptx)
     , bufout(bo)
-    , downsamplemat(ork::lev2::GfxEnv::GetRef().GetLoaderTarget(), "orkshader://proctex", "downsample16") {
+    , downsamplemat(ork::lev2::GfxEnv::GetRef().loadingContext(), "orkshader://proctex", "downsample16") {
   downsamplemat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
   downsamplemat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
   downsamplemat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);

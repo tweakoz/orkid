@@ -696,10 +696,10 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   }
 };
 orkvector<GedSkin*> InstantiateSkins() {
-  while (0 == lev2::GfxEnv::GetRef().GetLoaderTarget()) {
+  while (0 == lev2::GfxEnv::GetRef().loadingContext()) {
     ork::msleep(100);
   }
-  auto targ = lev2::GfxEnv::GetRef().GetLoaderTarget();
+  auto targ = lev2::GfxEnv::GetRef().loadingContext();
 
   orkvector<GedSkin*> skins;
   skins.push_back(new GedSkin0(targ));

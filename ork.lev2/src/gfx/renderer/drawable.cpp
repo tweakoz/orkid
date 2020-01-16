@@ -347,22 +347,6 @@ void ModelDrawable::SetModelInst(lev2::XgmModelInst* pModelInst) {
 
 void ModelDrawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
   ork::opq::assertOnQueue2(opq::updateSerialQueue());
-
-  const lev2::XgmModel* Model = mModelInst->xgmModel();
-
-  if (Model->isSkinned()) {
-    auto pworldpose = GetUserDataA().Get<ork::lev2::XgmWorldPose*>();
-    if (pworldpose) {
-      fvec3 c1(1, .8, .8);
-      fvec3 c2(.8, .8, 1);
-      const auto& localpose = mModelInst->RefLocalPose();
-      deco::printe(c1, "LocalPose (post-concat)", true);
-      deco::prints(localpose.dumpc(c1), true);
-      pworldpose->apply(xfdata.mWorldMatrix, localpose);
-      deco::printe(c2, "WorldPose (post-concat)", true);
-      deco::prints(pworldpose->dumpc(c2), true);
-    }
-  }
   DrawableBufItem& item = buffer.Queue(xfdata, this);
 }
 
@@ -530,7 +514,6 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
             renderable.SetScale(mfScale);
             renderable.SetRotate(mRotate);
             renderable.SetOffset(mOffset);
-            renderable.SetWorldPose(pworldpose);
 
             size_t umat = size_t(material);
             u32 imtla   = (umat & 0xff);

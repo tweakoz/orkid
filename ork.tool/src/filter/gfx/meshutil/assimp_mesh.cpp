@@ -321,10 +321,10 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
 
       // auto ppar_skelnode = nod_skelnode->mpParent;
       std::string name = nod_skelnode->mNodeName;
+      auto nodematrix  = nod_skelnode->mNodeMatrix;
       fmtx4 local      = nod_skelnode->mJointMatrix;
       fmtx4 invbind    = nod_skelnode->mBindMatrixInverse;
       fmtx4 bind       = nod_skelnode->bindMatrix();
-      auto nodematrix  = nod_skelnode->_varmap["assimpnodematrix"].Get<fmtx4>();
 
       deco::prints(deco::decorate(fvec3::Yellow(), (name + ".node") + nodematrix.dump()), true);
       // invbind.dump((name + ".inversebind").c_str());
@@ -416,6 +416,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
               auto& muvtx    = muverts[facevert_index];
               muvtx.mPos     = fvec3(v.x, v.y, v.z).Transform(ork_model_mtx).xyz();
               muvtx.mNrm     = fvec3(n.x, n.y, n.z).Transform(ork_normal_mtx);
+              printf("v<%g %g %g>\n", v.x, v.y, v.z);
               // printf("norm<%g %g %g>\n", muvtx.mNrm.x, muvtx.mNrm.y, muvtx.mNrm.z);
               if (has_colors)
                 muvtx.mCol[0] = fvec4(1, 1, 1, 1);
@@ -606,6 +607,7 @@ void configureXgmSkeleton(const toolmesh& input, lev2::XgmModel& xgmmdlout) {
     xgmskel.AddJoint(idx, pidx, JointNameSidx);
     xgmskel.RefInverseBindMatrix(idx) = skelnode ? skelnode->mBindMatrixInverse : fmtx4();
     xgmskel.RefJointMatrix(idx)       = skelnode ? skelnode->mJointMatrix : fmtx4();
+    xgmskel.RefNodeMatrix(idx)        = skelnode ? skelnode->mNodeMatrix : fmtx4();
   }
   /////////////////////////////////////
   // flatten the skeleton (WIP)

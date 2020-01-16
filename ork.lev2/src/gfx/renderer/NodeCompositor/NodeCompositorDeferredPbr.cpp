@@ -43,11 +43,11 @@ void DeferredCompositingNodePbr::describeX(class_t* c) {
   c->memberProperty("ClearColor", &DeferredCompositingNodePbr::_clearColor);
   c->memberProperty("FogColor", &DeferredCompositingNodePbr::_fogColor);
   c->memberProperty("AmbientLevel", &DeferredCompositingNodePbr::_ambientLevel);
-  c->floatProperty("EnvironmentIntensity", float_range{-10, 10}, &DeferredCompositingNodePbr::_environmentIntensity);
+  c->floatProperty("EnvironmentIntensity", float_range{0, 100}, &DeferredCompositingNodePbr::_environmentIntensity);
   c->floatProperty("EnvironmentMipBias", float_range{0, 12}, &DeferredCompositingNodePbr::_environmentMipBias);
   c->floatProperty("EnvironmentMipScale", float_range{0, 100}, &DeferredCompositingNodePbr::_environmentMipScale);
-  c->floatProperty("DiffuseLevel", float_range{-5, 5}, &DeferredCompositingNodePbr::_diffuseLevel);
-  c->floatProperty("SpecularLevel", float_range{-5, 5}, &DeferredCompositingNodePbr::_specularLevel);
+  c->floatProperty("DiffuseLevel", float_range{0, 1}, &DeferredCompositingNodePbr::_diffuseLevel);
+  c->floatProperty("SpecularLevel", float_range{0, 1}, &DeferredCompositingNodePbr::_specularLevel);
 
   c->accessorProperty(
        "EnvironmentTexture", &DeferredCompositingNodePbr::_readEnvTexture, &DeferredCompositingNodePbr::_writeEnvTexture)
@@ -154,8 +154,8 @@ struct IMPL {
     _context._accumCPD._cameraMatrices       = nullptr;
     _context._accumCPD._stereoCameraMatrices = nullptr;
     _context._accumCPD._stereo1pass          = false;
-    _context._specularLevel                  = node->specularLevel();
-    _context._diffuseLevel                   = node->diffuseLevel();
+    _context._specularLevel                  = node->specularLevel() * node->environmentIntensity();
+    _context._diffuseLevel                   = node->diffuseLevel() * node->environmentIntensity();
     CIMPL->pushCPD(_context._accumCPD); // base lighting
     FBI->SetAutoClear(true);
     FBI->PushRtGroup(_context._rtgLaccum);
@@ -192,8 +192,8 @@ struct IMPL {
 
     _context._lightingmtl.bindParamFloat(_context._parSkyboxLevel, node->skyboxLevel());
     _context._lightingmtl.bindParamVec3(_context._parAmbientLevel, node->ambientLevel());
-    _context._lightingmtl.bindParamFloat(_context._parSpecularLevel, node->specularLevel());
-    _context._lightingmtl.bindParamFloat(_context._parDiffuseLevel, node->diffuseLevel());
+    _context._lightingmtl.bindParamFloat(_context._parSpecularLevel, _context._specularLevel);
+    _context._lightingmtl.bindParamFloat(_context._parDiffuseLevel, _context._diffuseLevel);
 
     /////////////////////////
 

@@ -93,7 +93,7 @@ EVtxStreamFormat GetVersion0VertexStreamFormat(const char* fmtstr) {
 ////////////////////////////////////////////////////////////
 
 bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
-  Context* pTARG               = GfxEnv::GetRef().GetLoaderTarget();
+  Context* pTARG               = GfxEnv::GetRef().loadingContext();
   bool rval                    = true;
   int XGMVERSIONCODE           = 0;
   static const int kVERSIONTAG = 0x01234567;
@@ -135,10 +135,12 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
       mdl->mSkeleton.SetNumJoints(inumjoints);
       for (int ib = 0; ib < inumjoints; ib++) {
         int iskelindex = 0, iparentindex = 0, ijointname = 0, ijointmatrix = 0, iinvrestmatrix = 0;
+        int inodematrix = 0;
         HeaderStream->GetItem(iskelindex);
         OrkAssert(ib == iskelindex);
         HeaderStream->GetItem(iparentindex);
         HeaderStream->GetItem(ijointname);
+        HeaderStream->GetItem(inodematrix);
         HeaderStream->GetItem(ijointmatrix);
         HeaderStream->GetItem(iinvrestmatrix);
         const char* pjntname = chunkreader.GetString(ijointname);
@@ -149,6 +151,8 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
           printf("FIXUPJOINTNAME<%s:%s>\n", pjntname, jnamp.c_str());
         }
         mdl->mSkeleton.AddJoint(iskelindex, iparentindex, AddPooledString(jnamp.c_str()));
+        ptstring.set(chunkreader.GetString(inodematrix));
+        mdl->mSkeleton.RefNodeMatrix(iskelindex) = PropType<fmtx4>::FromString(ptstring);
         ptstring.set(chunkreader.GetString(ijointmatrix));
         mdl->mSkeleton.RefJointMatrix(iskelindex) = PropType<fmtx4>::FromString(ptstring);
         ptstring.set(chunkreader.GetString(iinvrestmatrix));
@@ -691,6 +695,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
     int32_t JointParentIndex    = skel.GetJointParent(ib);
     const fmtx4& InvRestMatrix  = skel.RefInverseBindMatrix(ib);
     const fmtx4& JointMatrix    = skel.RefJointMatrix(ib);
+    const fmtx4& NodeMatrix     = skel.RefNodeMatrix(ib);
 
     HeaderStream->AddItem(ib);
     HeaderStream->AddItem(JointParentIndex);
@@ -698,6 +703,10 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
     HeaderStream->AddItem(istring);
 
     PropTypeString tstr;
+    PropType<fmtx4>::ToString(NodeMatrix, tstr);
+    istring = chunkwriter.stringIndex(tstr.c_str());
+    HeaderStream->AddItem(istring);
+
     PropType<fmtx4>::ToString(JointMatrix, tstr);
     istring = chunkwriter.stringIndex(tstr.c_str());
     HeaderStream->AddItem(istring);

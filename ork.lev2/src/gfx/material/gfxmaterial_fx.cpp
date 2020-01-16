@@ -162,7 +162,7 @@ void GfxMaterialFx::SetEffect(FxShader* pshader) {
   mEffectInstance.mpEffect = pshader;
 
   if (mEffectInstance.mpEffect) {
-    mBonesParam = GfxEnv::GetRef().GetLoaderTarget()->FXI()->parameter(mEffectInstance.mpEffect, "BoneMatrices");
+    mBonesParam = GfxEnv::GetRef().loadingContext()->FXI()->parameter(mEffectInstance.mpEffect, "BoneMatrices");
   }
 
   OrkAssert(mEffectInstance.mpEffect != 0);

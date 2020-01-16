@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/kernel/string/deco.inl>
+#include <ork/lev2/gfx/material_pbr.inl>
 
 template class ork::orklut<ork::PoolString, ork::lev2::XgmMesh*>;
 int eggtestcount = 0;
@@ -48,9 +49,11 @@ int XgmModel::meshIndex(const PoolString& name) const {
 XgmModelInst::XgmModelInst(const XgmModel* Model)
     : mXgmModel(Model)
     , mLocalPose(Model->skeleton())
+    , _worldPose(Model->skeleton())
     , mMaterialStateInst(*this)
     , mbSkinned(false)
-    , mBlenderZup(false) {
+    , mBlenderZup(false)
+    , _drawSkeleton(true) {
   EnableAllMeshes();
 
   OrkAssert(Model != 0);
@@ -62,6 +65,7 @@ XgmModelInst::XgmModelInst(const XgmModel* Model)
   mLocalPose.BindPose();
   mLocalPose.BuildPose();
   mLocalPose.Concatenate();
+  _worldPose.apply(fmtx4(), mLocalPose);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -478,6 +482,16 @@ void XgmModel::RenderSkinned(
 
   // printf("rendering skinned!!\n");
 
+  fvec3 c1(1, .8, .8);
+  fvec3 c2(.8, .8, 1);
+  const auto& localpose = minst->RefLocalPose();
+  deco::printe(c1, "LocalPose (post-concat)", true);
+  deco::prints(localpose.dumpc(c1), true);
+  // deco::printe(fvec3(1, 1, 1), xfdata.mWorldMatrix.dump(), true);
+  minst->_worldPose.apply(WorldMat, localpose);
+  deco::printe(c2, "WorldPose (post-concat)", true);
+  deco::prints(minst->_worldPose.dumpc(c2), true);
+
   ////////////////////
   // Draw Skinned Mesh
 
@@ -522,7 +536,7 @@ void XgmModel::RenderSkinned(
             for (size_t ijointreg = 0; ijointreg < inumjoints; ijointreg++) {
               const PoolString& JointName = XgmCluster.mJoints[ijointreg];
               int JointSkelIndex          = XgmCluster.mJointSkelIndices[ijointreg];
-              const fmtx4& finalmtx       = mdlctx.mpWorldPose->GetMatrices()[JointSkelIndex];
+              const fmtx4& finalmtx       = minst->_worldPose.GetMatrices()[JointSkelIndex];
               //////////////////////////////////////
               MatrixBlock[ijointreg] = finalmtx;
             }
@@ -568,27 +582,29 @@ void XgmModel::RenderSkinned(
   ////////////////////////////////////////
   // Draw Skeleton
 
-  if (0) {
+  if (minst->_drawSkeleton) {
     const XgmLocalPose& LocalPose = minst->RefLocalPose();
     pTARG->debugPushGroup("DrawSkeleton");
-    pTARG->PushModColor(ModColor);
+    pTARG->PushModColor(fvec4::White());
+
+    //////////////
+    // bone x-ray
+    //////////////
+
     GfxEnv::GetDefault3DMaterial()->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+
+    //////////////
+
     pTARG->BindMaterial(GfxEnv::GetDefault3DMaterial());
     {
-      int inumbones             = skeleton().GetNumBones();
-      const fmtx4& MatBindShape = skeleton().mBindShapeMatrix;
-      fmtx4 MatStatScale;
-      float rstat(0.5f);
-      MatStatScale.Scale(rstat, rstat, rstat);
+      int inumjoints = skeleton().numJoints();
 
-      for (int ib = 0; ib < inumbones; ib++) {
-        const fmtx4& MatIBind    = skeleton().RefInverseBindMatrix(ib);
-        const fmtx4& MatJ        = skeleton().RefJointMatrix(ib);
-        const fmtx4& MatAnimJCat = LocalPose.RefLocalMatrix(ib);
-        fmtx4 MatW               = MatStatScale * MatAnimJCat * WorldMat;
-        fvec3 Pos                = MatW.GetTranslation();
-        pTARG->MTXI()->PushMMatrix(MatW);
-        { GfxPrimitives::GetRef().RenderAxis(pTARG); }
+      for (int ij = 0; ij < inumjoints; ij++) {
+        fmtx4 MatAnimJCat = LocalPose.RefLocalMatrix(ij);
+        auto InvBind      = skeleton().RefInverseBindMatrix(ij);
+        auto finalmtx     = WorldMat * MatAnimJCat;
+        pTARG->MTXI()->PushMMatrix(finalmtx);
+        GfxPrimitives::GetRef().RenderAxis(pTARG);
         pTARG->MTXI()->PopMMatrix();
       }
     }
@@ -761,8 +777,7 @@ RenderContextInstModelData::RenderContextInstModelData()
     , mpModelInst(0)
     , mMesh(0)
     , mSubMesh(0)
-    , mCluster(0)
-    , mpWorldPose(0) {
+    , mCluster(0) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

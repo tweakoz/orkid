@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/gfxctxdummy.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
+#include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/pickbuffer.h>
@@ -254,8 +255,10 @@ void GfxEnv::SetLoaderTarget(Context* target) {
       delete GetRef().mp3DMaterial;
     }
 
+    auto matpbr = new PBRMaterial;
+
     mpUIMaterial = new GfxMaterialUI();
-    mp3DMaterial = new GfxMaterial3DSolid();
+    mp3DMaterial = matpbr;
 
     mpUIMaterial->Init(gLoaderTarget);
     mp3DMaterial->Init(gLoaderTarget);

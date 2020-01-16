@@ -107,10 +107,9 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   MatCtx.BindLightMap(ModelRen.subMesh()->mLightMap);
   MatCtx.SetVertexLit(ModelRen.subMesh()->mbVertexLit);
 
-  MdlCtx.mMesh       = ModelRen.mesh();
-  MdlCtx.mSubMesh    = ModelRen.subMesh();
-  MdlCtx.mCluster    = ModelRen.GetCluster();
-  MdlCtx.mpWorldPose = ModelRen.GetWorldPose();
+  MdlCtx.mMesh    = ModelRen.mesh();
+  MdlCtx.mSubMesh = ModelRen.subMesh();
+  MdlCtx.mCluster = ModelRen.GetCluster();
 
   MatCtx.SetMaterialIndex(0);
   MatCtx.SetRenderer(this);

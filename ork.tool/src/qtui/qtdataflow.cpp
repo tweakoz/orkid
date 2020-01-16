@@ -93,7 +93,7 @@ GraphVP::GraphVP(DataFlowEditor& dfed, tool::ged::ObjModel& objmdl, const std::s
     : ui::Surface(name, 0, 0, 0, 0, CColor3(0.1f, 0.1f, 0.1f), 0.0f)
     , mObjectModel(objmdl)
     , mDflowEditor(dfed)
-    , mGridMaterial(GfxEnv::GetRef().GetLoaderTarget())
+    , mGridMaterial(GfxEnv::GetRef().loadingContext())
 
 {
   dflowgraphedit::GetClassStatic();

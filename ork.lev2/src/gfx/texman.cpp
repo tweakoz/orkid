@@ -45,7 +45,7 @@ void Texture::RegisterLoaders(void) {
 
 Texture* Texture::LoadUnManaged(const AssetPath& fname) {
   Texture* ptex = new Texture;
-  bool bok      = GfxEnv::GetRef().GetLoaderTarget()->TXI()->LoadTexture(fname, ptex);
+  bool bok      = GfxEnv::GetRef().loadingContext()->TXI()->LoadTexture(fname, ptex);
   return ptex;
 }
 
@@ -79,7 +79,7 @@ Texture::Texture() {
 ///////////////////////////////////////////////////////////////////////////////
 
 Texture::~Texture() {
-  Context* pTARG = GfxEnv::GetRef().GetLoaderTarget();
+  Context* pTARG = GfxEnv::GetRef().loadingContext();
   pTARG->TXI()->DestroyTexture(this);
 }
 

@@ -648,6 +648,7 @@ fmtx4 XgmSkelNode::bindMatrix() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void XgmLocalPose::Concatenate(void) {
+
   fmtx4* __restrict pmats = &RefLocalMatrix(0);
 
   float fminx = std::numeric_limits<float>::max();
@@ -669,12 +670,13 @@ void XgmLocalPose::Concatenate(void) {
       const fmtx4& ParentMatrix = pmats[iparent];
       const fmtx4& LocMatrix    = pmats[ichild];
 
-      // pmats[ichild] = ParentMatrix * LocMatrix;
-      pmats[ichild] = ParentMatrix.Concat43(LocMatrix);
-      auto parname  = mSkeleton.GetJointName(iparent);
-      auto chname   = std::string(mSkeleton.GetJointName(ichild).c_str());
+      pmats[ichild] = (LocMatrix * ParentMatrix);
+      // pmats[ichild] = InvBind.inverse();
+      // auto bind    = invbind.inverse();
 
-      auto invbind = mSkeleton.RefInverseBindMatrix(ichild);
+      // pmats[ichild] = ParentMatrix.Concat43(LocMatrix);
+      auto parname = mSkeleton.GetJointName(iparent);
+      auto chname  = std::string(mSkeleton.GetJointName(ichild).c_str());
 
       // ParentMatrix.dump(chname + ".par");
       // LocMatrix.dump(chname + ".loc");
@@ -760,9 +762,6 @@ int XgmLocalPose::NumJoints() const {
 
 XgmWorldPose::XgmWorldPose(const XgmSkeleton& skel)
     : mSkeleton(skel) {
-  // apply(fmtx4(), LocalPose);
-  // deco::prints(LocalPose.dumpc(fvec3(1, 1, .5)), true);
-  // OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -771,10 +770,10 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
   int inumj = localpose.NumJoints();
   mWorldMatrices.resize(inumj);
   for (int ij = 0; ij < inumj; ij++) {
-    const fmtx4& MatIBind    = mSkeleton.RefInverseBindMatrix(ij);
-    const fmtx4& MatAnimJCat = localpose.RefLocalMatrix(ij);
-    auto finalmtx            = (MatIBind * MatAnimJCat);
-    mWorldMatrices[ij]       = finalmtx;
+    fmtx4 MatAnimJCat  = localpose.RefLocalMatrix(ij);
+    auto InvBind       = mSkeleton.RefInverseBindMatrix(ij);
+    auto finalmtx      = worldmtx * (InvBind * MatAnimJCat);
+    mWorldMatrices[ij] = finalmtx;
   }
 }
 
@@ -1156,6 +1155,7 @@ void XgmSkeleton::SetNumJoints(int inumjoints) {
   maJointParents.resize(inumjoints);
   _inverseBindMatrices.resize(inumjoints);
   _jointMatrices.resize(inumjoints);
+  _nodeMatrices.resize(inumjoints);
   mpJointFlags = new U32[inumjoints];
 }
 
@@ -1224,6 +1224,7 @@ std::string XgmSkeleton::dump(fvec3 color) const {
 
     rval += deco::format(color, "     ljmat: ") + _jointMatrices[ij].dump(color) + "\n";
     rval += deco::format(color, "     ibmat: ") + _inverseBindMatrices[ij].dump(color) + "\n";
+    rval += deco::format(color, "     ndmat: ") + _nodeMatrices[ij].dump(color) + "\n";
   }
   return rval;
 }

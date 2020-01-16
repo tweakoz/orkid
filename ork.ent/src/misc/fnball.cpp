@@ -43,7 +43,7 @@ public:
     {
         void_lambda_t lamb = [=]()
         {
-            auto targ = GfxEnv::GetRef().GetLoaderTarget();
+            auto targ = GfxEnv::GetRef().loadingContext();
             if( use_tess )
                 mpMaterial = new GfxMaterial3DSolid(targ, "orkshader://fnball", "fb1");
             else

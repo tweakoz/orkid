@@ -107,6 +107,7 @@ public:
   std::string _mtlRufMapName;
   std::string _amboccMapName;
   std::string _emissiveMapName;
+
   float _metallicFactor  = 0.0f;
   float _roughnessFactor = 1.0f;
   fvec4 _baseColor;

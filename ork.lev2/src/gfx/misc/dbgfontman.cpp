@@ -70,7 +70,7 @@ void FontMan::EndTextBlock(Context* pTARG) {
 FontMan::FontMan()
     : NoRttiSingleton<FontMan>()
     , mpCurrentFont(0) {
-  InitFonts(ork::lev2::GfxEnv::GetRef().GetLoaderTarget());
+  InitFonts(ork::lev2::GfxEnv::GetRef().loadingContext());
 
   for (int ich = 0; ich <= 255; ich++) {
     CharDesc& desc = mCharDescriptions[ich];

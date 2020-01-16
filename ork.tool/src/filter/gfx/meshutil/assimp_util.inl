@@ -132,8 +132,7 @@ inline ParsedSkeleton parseSkeleton(const aiScene* scene) {
       xgmskelnodes[name]   = xgmnode;
       auto matrix          = n->mTransformation;
       printf("uniqNODE<%d:%p> xgmnode<%p> <%s>\n", index, n, xgmnode, name.c_str());
-      auto& assimpnodematrix = xgmnode->_varmap["assimpnodematrix"].Make<fmtx4>();
-      assimpnodematrix       = convertMatrix44(matrix);
+      xgmnode->mNodeMatrix = convertMatrix44(matrix);
     }
     for (int i = 0; i < n->mNumChildren; ++i) {
       nodestack.push(n->mChildren[i]);

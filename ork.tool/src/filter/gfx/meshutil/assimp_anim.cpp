@@ -195,15 +195,25 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
           // deco::printf(color, "frame<%s.%d> sca<%g %g %g>\n", channel_name.c_str(), f, cursca.x, cursca.y, cursca.z);
           // const fmtx4& Matrix = MatrixChannelData->GetFrame(ifr);
 
-          float s = 0.0f;
-          fmtx4 t;
-          t.SetTranslation(curpos);
-          fmtx4 r;
-          r = currot.ToMatrix();
+          // float s = 0.0f;
+          // fmtx4 t;
+          // t.SetTranslation(curpos);
+          // fmtx4 r;
+          // r = currot.ToMatrix();
 
-          fmtx4 x = (r);
-          x.Transpose();
-          x.SetTranslation(curpos);
+          // fmtx4 x = r;
+          // x.Transpose();
+          // x.SetTranslation(curpos);
+
+          ork::lev2::DecompMtx44 decomp;
+          decomp.mRot   = currot;
+          decomp.mTrans = curpos;
+          decomp.mScale = 1.0f;
+
+          XgmChan->AddFrame(decomp);
+
+          fmtx4 x;
+          decomp.Compose(x, lev2::XFORM_COMPONENT_ALL);
 
           auto yel        = fvec3(1, 1, 0);
           auto whi        = fvec3(1, 1, 1);
@@ -211,10 +221,6 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
           xxx += deco::decorate(yel, channel_name + ":");
           xxx += x.dump(whi);
           deco::prints(xxx, true);
-
-          ork::lev2::DecompMtx44 decomp;
-          x.DecomposeMatrix(decomp.mTrans, decomp.mRot, decomp.mScale);
-          XgmChan->AddFrame(decomp);
         }
       }
     }

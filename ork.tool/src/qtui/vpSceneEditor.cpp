@@ -45,6 +45,7 @@
 #include "uiToolsDefault.h"
 #include "vpRenderer.h"
 #include "vpSceneEditor.h"
+#include <ork/lev2/gfx/material_pbr.inl>
 
 #define GL_ERRORCHECK()                                                                                                            \
   {                                                                                                                                \
@@ -790,7 +791,7 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& RCFD, ork::lev2
     return;
 
   ork::lev2::Context* pOutputTarget = RCFD.GetTarget();
-  auto MTXI                           = pOutputTarget->MTXI();
+  auto MTXI                         = pOutputTarget->MTXI();
   MTXI->PushPMatrix(cammatrices->_pmatrix);
   MTXI->PushVMatrix(cammatrices->_vmatrix);
   MTXI->PushMMatrix(fmtx4::Identity);

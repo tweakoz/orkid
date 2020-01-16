@@ -22,7 +22,7 @@ IndexBufferBase::IndexBufferBase()
 
 IndexBufferBase::~IndexBufferBase()
 {
-	Context* pTARG = GfxEnv::GetRef().GetLoaderTarget();
+	Context* pTARG = GfxEnv::GetRef().loadingContext();
 	//pTARG->GBI()->ReleaseIB( *this );
 	mpIndices = 0;
 }
@@ -127,7 +127,7 @@ VertexBufferBase::VertexBufferBase( int iMax, int iFlush, int iSize, EPrimitiveT
 
 VertexBufferBase::~VertexBufferBase()
 {
-	Context* pTARG = GfxEnv::GetRef().GetLoaderTarget();
+	Context* pTARG = GfxEnv::GetRef().loadingContext();
 	//pTARG->GBI()->ReleaseVB( *this );
 }
 

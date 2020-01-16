@@ -24,6 +24,7 @@
 #include <ork/math/basicfilters.h>
 #include <ork/math/misc_math.h>
 #include <ork/lev2/qtui/qtui.h>
+#include <ork/lev2/gfx/material_pbr.inl>
 
 #include <QtGui/QCursor>
 

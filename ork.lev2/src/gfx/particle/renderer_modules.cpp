@@ -639,7 +639,7 @@ StreakRenderer::StreakRenderer()
     , mfWidth(1.0f)
     , mfGradientIntensity(1.0f)
     , mbSort(false) {
-  ork::lev2::Context* targ = ork::lev2::GfxEnv::GetRef().GetLoaderTarget();
+  ork::lev2::Context* targ = ork::lev2::GfxEnv::GetRef().loadingContext();
   mpMaterial               = new GfxMaterial3DSolid(targ, "orkshader://particle", "tstreakparticle");
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -990,7 +990,7 @@ void TextureMaterial::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 TextureMaterial::TextureMaterial()
     : mTexture(0) {
-  ork::lev2::Context* targ = ork::lev2::GfxEnv::GetRef().GetLoaderTarget();
+  ork::lev2::Context* targ = ork::lev2::GfxEnv::GetRef().loadingContext();
   mpMaterial               = new GfxMaterial3DSolid(targ, "orkshader://particle", "tbasicparticle");
   mpMaterial->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
 }
@@ -1042,7 +1042,7 @@ void VolTexMaterial::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 VolTexMaterial::VolTexMaterial()
     : mTexture(0) {
-  ork::lev2::Context* targ = ork::lev2::GfxEnv::GetRef().GetLoaderTarget();
+  ork::lev2::Context* targ = ork::lev2::GfxEnv::GetRef().loadingContext();
   mpMaterial               = new GfxMaterial3DSolid(targ, "orkshader://particle", "tvolumeparticle");
   mpMaterial->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
 }

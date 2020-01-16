@@ -20,8 +20,18 @@ TEST(gfxanim1) {
   auto indigo  = fvec3(0.7, 0.2, 1);
   auto blugrn  = fvec3(0, 1, .5);
 
+  fmtx4 t, r, it;
+  t.SetTranslation(1, 0, 0);
+  r.RotateX(PI * 0.01);
+  it.SetTranslation(-1, 0, 0);
+  auto x  = it * r * t;
+  auto xx = fvec4(0, 1, 0).Transform(x);
+  deco::printe(orange, x.dump(), true);
+  printf("xx<%g %g %g>\n", xx.x, xx.y, xx.z);
+  // OrkAssert(false);
+
   opq::mainSerialQueue().enqueue([&]() {
-    auto targ = GfxEnv::GetRef().GetLoaderTarget();
+    auto targ = GfxEnv::GetRef().loadingContext();
     printf("targ<%p>\n", targ);
     CHECK(targ != nullptr);
 
@@ -30,11 +40,13 @@ TEST(gfxanim1) {
     CHECK(fxi != nullptr);
 
     auto anim   = new XgmAnim;
-    bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/rigtest_link");
+    bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/bonetest_anim");
+    // bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/char_anim");
     OrkAssert(loadOK);
     auto animinst = new XgmAnimInst;
 
-    auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/rigtest_exp");
+    auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/bonetest_mesh");
+    // auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/char_mesh");
     printf("modl_asset<%p>\n", modl_asset);
     CHECK(modl_asset != nullptr);
 
