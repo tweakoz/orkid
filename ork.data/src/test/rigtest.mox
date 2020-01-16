@@ -12,10 +12,10 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>0.0645224 2.12577 0.314642</property>
+                                                <property name='Center'>1.09321 1.13113 0.522128</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>10.2896</property>
-                                                <property name='QuatC'>0.00542635 0.848953 -0.00180484 0.531172</property>
+                                                <property name='Loc'>12.8021</property>
+                                                <property name='QuatC'>-0.00210159 -0.908493 0.0457541 0.418916</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -83,7 +83,7 @@
                                                 <object type='GridControllerData' id='10'>
                                                     <property name='ColorTexture'>
                                                         <reference category='AssetClass'>
-                                                            "lev2tex" "data://particle_textures/mask_crack1"
+                                                            "lev2tex" "lev2://textures/gridcell_blue"
                                                         </reference>
                                                     </property>
                                                     <property name='Scale'>1</property>
@@ -304,12 +304,12 @@
                                                                                         <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
                                                                                         <property name='DiffuseLevel'>1</property>
-                                                                                        <property name='EnvironmentIntensity'>13.1902</property>
+                                                                                        <property name='EnvironmentIntensity'>26.9076</property>
                                                                                         <property name='EnvironmentMipBias'>0</property>
-                                                                                        <property name='EnvironmentMipScale'>4</property>
+                                                                                        <property name='EnvironmentMipScale'>0</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
-                                                                                                "lev2tex" "data://environ/envmaps/tozenv_nebula"
+                                                                                                "lev2tex" "data://environ/envmaps/blender_studio"
                                                                                             </reference>
                                                                                         </property>
                                                                                         <property name='FogColor'>0 0 0 1</property>
