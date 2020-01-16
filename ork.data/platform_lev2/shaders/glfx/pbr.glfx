@@ -96,7 +96,8 @@ vertex_shader vs_skinned_gbuffer
 	vec3 wtangent = cross(wbinorm,wnorm);
 	gl_Position = mvp*vec4(skn_pos,1);
 	//frg_clr = vtxcolor;
-	frg_clr = boneindices*1.0/32.0f;
+	frg_clr = vec4(1,1,1,1);
+	//frg_clr = boneindices*1.0/32.0f;
 	frg_uv0 = uv0*vec2(1,-1);
 	frg_camdist = -cpos.z;
 	frg_tbn = transpose(mat3(
