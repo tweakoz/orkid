@@ -261,8 +261,8 @@ public:
   fmtx4 GetEffectiveMatrix() const;    // get Entity matrix if scene is running, EntData matrix if scene is stopped
   void SetDynMatrix(const fmtx4& mtx); // set this (Entity) matrix
 
-  const EntData& GetEntData() const {
-    return mEntData;
+  const EntData* data() const {
+    return _entdata;
   }
   void addDrawableToDefaultLayer(lev2::Drawable* pdrw);
   void addDrawableToLayer(lev2::Drawable* pdrw, const PoolString& layername);
@@ -273,7 +273,7 @@ public:
 
   ////////////////////////////////////////////////////////////////
 
-  Entity(const EntData& edata, Simulation* inst);
+  Entity(const EntData* edata, Simulation* inst);
   ~Entity();
 
   ////////////////////////////////////////////////////////////////
@@ -282,7 +282,7 @@ public:
     return mSimulation;
   }
 
-  const char* name() const;
+  PoolString name() const;
 
   _rendermtxprovider_t _renderMtxProvider = nullptr;
 
@@ -291,7 +291,7 @@ private:
 
   Simulation* mSimulation;
 
-  const EntData& mEntData;
+  const EntData* _entdata;
   mutable bool mComposed;
   ComponentTable mComponentTable;
   ComponentTable::LutType _components;

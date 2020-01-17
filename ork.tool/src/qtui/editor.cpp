@@ -768,7 +768,7 @@ ent::EntData* SceneEditorBase::ImplNewEntity(const ent::Archetype* parchetype) {
     // create an instance for the editor to draw
     ////////////////////
 
-    ent::Entity* pent = new ent::Entity(*pentdata, mpEditSimulation);
+    ent::Entity* pent = new ent::Entity(pentdata, mpEditSimulation);
 
     if (parchetype) {
       parchetype->ComposeEntity(pent);
@@ -841,7 +841,7 @@ ent::EntData* SceneEditorBase::EditorReplicateEntity() {
     // create an instance for the editor to draw
     ////////////////////
 
-    ent::Entity* pent = new ent::Entity(*pentdata, mpEditSimulation);
+    ent::Entity* pent = new ent::Entity(pentdata, mpEditSimulation);
     if (archetype) {
       archetype->ComposeEntity(pent);
       archetype->LinkEntity(mpEditSimulation, pent);
@@ -899,7 +899,7 @@ bool QueryArchetypeReferenced(ork::Object* pobj, const ent::Archetype* parch) {
 
 ork::fcolor4 SceneEditorBase::GetModColor(const ork::Object* pobj) const {
   const Entity* pent                        = rtti::autocast(pobj);
-  const ent::EntData* pentdata              = &pent->GetEntData();
+  const ent::EntData* pentdata              = pent->data();
   const ent::Archetype* parch               = pentdata->GetArchetype();
   const ork::tool::SelectManager& selectmgr = selectionManager();
 
@@ -1262,7 +1262,7 @@ void SceneEditorBase::AddObjectToSelection(ork::Object* pobj) {
   Entity* pent = rtti::downcast<Entity*>(pobj);
 
   if (pent) {
-    pobj = const_cast<EntData*>(&pent->GetEntData());
+    pobj = const_cast<EntData*>(pent->data());
   }
 
   mselectionManager.AddObjectToSelection(pobj);

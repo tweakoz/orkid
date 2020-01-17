@@ -129,10 +129,7 @@ bool ObserverCamControllerInst::DoStart(Simulation *psi, const fmtx4 &world)
 {
 	if( GetEntity() )
 	{
-		const ent::EntData& ED = GetEntity()->GetEntData();
-		PoolString name = ED.GetName();
-		std::string Name = CreateFormattedString( "%s", name.c_str() );
- 		psi->setCameraData( AddPooledString(Name.c_str()), _cameraData );
+ 		psi->setCameraData( GetEntity()->name(), _cameraData );
 
 
 	}

@@ -130,7 +130,6 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
     mModelDrawable->SetModelInst(mXgmModelInst);
     mModelDrawable->SetScale(mData.GetScale());
 
-    const auto& ED = GetEntity()->GetEntData();
     pent->addDrawableToDefaultLayer(mModelDrawable);
     mModelDrawable->SetOwner(pent);
 
@@ -176,7 +175,7 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
 void ModelComponentInst::DoUpdate(ork::ent::Simulation* psi) {
   if (mData.IsCopyDag()) {
     // mEntity->GetEntData().GetDagNode()
-    GetEntity()->GetDagNode() = GetEntity()->GetEntData().GetDagNode();
+    GetEntity()->GetDagNode() = GetEntity()->data()->GetDagNode();
   }
 
   mModelDrawable->SetScale(mData.GetScale());

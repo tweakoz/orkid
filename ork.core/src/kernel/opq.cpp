@@ -222,7 +222,6 @@ bool OperationsQueue::Process() {
 
   ConcurrencyGroup* pexecgrp = nullptr;
 
-
   _linearconcurrencygroups.atomicOp([&pexecgrp](concgroupvect_t&cgv){
     size_t numgroups   = cgv.size();
     size_t numattempts = 0;
@@ -306,10 +305,15 @@ void OperationsQueue::enqueueAndWait(const Op& the_op) {
 }
 ///////////////////////////////////////////////////////////////////////////
 void OperationsQueue::sync() {
-  assertNotOnQueue(*this);
   Future the_fut;
   BarrierSyncReq R(the_fut);
   enqueue(R);
+  auto ot = TrackCurrent::context();
+  if(ot->_queue == this) {
+    while(false==the_fut.IsSignaled()){
+      this->Process();
+    }
+  }
   the_fut.GetResult();
 }
 ///////////////////////////////////////////////////////////////////////////

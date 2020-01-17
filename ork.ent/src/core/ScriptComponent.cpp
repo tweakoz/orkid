@@ -100,7 +100,7 @@ bool ScriptComponentInst::DoStart(Simulation* psi, const fmtx4& world) {
     auto L = asluasys->mLuaState;
 
     auto ent = this->GetEntity();
-    auto name = ent->GetEntData().GetName().c_str();
+    auto name = ent->name().c_str();
 
     printf("Starting SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name);
 
@@ -123,7 +123,7 @@ void ScriptComponentInst::onActivate(Simulation* psi) {
     auto L = asluasys->mLuaState;
 
     auto ent = this->GetEntity();
-    auto name = ent->GetEntData().GetName().c_str();
+    auto name = ent->name().c_str();
 
     printf("Activating SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name);
 
@@ -143,7 +143,7 @@ void ScriptComponentInst::onDeactivate(Simulation* psi) {
     auto L = asluasys->mLuaState;
 
     auto ent = this->GetEntity();
-    auto name = ent->GetEntData().GetName().c_str();
+    auto name = ent->name().c_str();
 
     printf("Activating SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name);
 
@@ -164,7 +164,7 @@ void ScriptComponentInst::DoStop(Simulation* psi) {
     auto L = asluasys->mLuaState;
 
     auto ent = this->GetEntity();
-    auto name = ent->GetEntData().GetName().c_str();
+    auto name = ent->name().c_str();
 
     LuaIntf::LuaState lua = L;
     lua.getRef(mScriptObject->mOnEntStop);
@@ -219,7 +219,7 @@ ScriptSystem::ScriptSystem(const ScriptSystemData& data, ork::ent::Simulation* p
 
   auto luapath = getenv("LUA_PATH");
   assert(luapath!=nullptr);
-  
+
   ///////////////////////////////////////////////
 
   auto AppendPath = [&](const char* pth) {

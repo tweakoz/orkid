@@ -252,7 +252,7 @@ void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
   auto pdrw = new lev2::CallbackDrawable(pent);
   pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(l_render_quad);
-  pdrw->SetOwner(&pent->GetEntData());
+  pdrw->SetOwner(pent->data());
   pdrw->SetSortKey(400000000);
   lev2::Drawable::var_t ap;
   ap.Set<const ProcTexOutputQuad*>(this);
@@ -335,7 +335,7 @@ void ProcTexOutputSkybox::OnLinkEntity(Simulation* psi, Entity* pent) {
   auto pdrw = new lev2::CallbackDrawable(pent);
   pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(l_render_skybox);
-  pdrw->SetOwner(&pent->GetEntData());
+  pdrw->SetOwner(pent->data());
   pdrw->SetSortKey(400000000);
   lev2::Drawable::var_t ap;
   ap.Set<ProcTexOutputSkybox*>(this);
@@ -443,7 +443,7 @@ void ProcTexOutputDynTex::OnLinkEntity(Simulation* psi, Entity* pent) {
   auto pdrw = new lev2::CallbackDrawable(pent);
   pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(l_compute);
-  pdrw->SetOwner(&pent->GetEntData());
+  pdrw->SetOwner(pent->data());
   pdrw->SetSortKey(400000000);
   lev2::Drawable::var_t ap;
   ap.Set<ProcTexOutputDynTex*>(this);

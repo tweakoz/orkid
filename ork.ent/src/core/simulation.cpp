@@ -49,7 +49,7 @@ void LeaveRunMode();
 ///////////////////////////////////////////////////////////////////////////////
 
 #define VERBOSE 1
-#define PRINT_CONDITION (ork::PieceString(pent->GetEntData().GetName()).find("missile") != ork::PieceString::npos)
+#define PRINT_CONDITION (ork::PieceString(pent->name().c_str()).find("missile") != ork::PieceString::npos)
 
 #if VERBOSE
 #define DEBUG_PRINT orkprintf
@@ -545,7 +545,7 @@ void Simulation::ComposeEntities() {
     if (ork::ent::EntData* pentdata = ork::rtti::autocast(sobj)) {
       const ork::ent::Archetype* arch = pentdata->GetArchetype();
 
-      ork::ent::Entity* pent = new ork::ent::Entity(*pentdata, this);
+      ork::ent::Entity* pent = new ork::ent::Entity(pentdata, this);
 
       PoolString actualLayerName = AddPooledLiteral("Default");
 
@@ -586,12 +586,12 @@ void Simulation::LinkEntities() {
   // orkprintf( "Link Entities..\n" );
   for (auto item : mEntities) {
     ork::ent::Entity* pent         = item.second;
-    const ork::ent::EntData& edata = pent->GetEntData();
+    const ork::ent::EntData* edata = pent->data();
 
     OrkAssert(pent);
 
-    if (edata.GetArchetype()) {
-      edata.GetArchetype()->LinkEntity(this, pent);
+    if (edata and edata->GetArchetype()) {
+      edata->GetArchetype()->LinkEntity(this, pent);
     }
   }
 
@@ -611,12 +611,12 @@ void Simulation::UnLinkEntities() {
   // orkprintf( "Link Entities..\n" );
   for (auto item : mEntities) {
     ork::ent::Entity* pent         = item.second;
-    const ork::ent::EntData& edata = pent->GetEntData();
+    const ork::ent::EntData* edata = pent->data();
 
     OrkAssert(pent);
 
-    if (edata.GetArchetype()) {
-      edata.GetArchetype()->UnLinkEntity(this, pent);
+    if (edata->GetArchetype()) {
+      edata->GetArchetype()->UnLinkEntity(this, pent);
     }
   }
   // orkprintf( "end si<%p> Link Entities..\n", this );
@@ -722,13 +722,13 @@ void Simulation::StartEntities() {
   // orkprintf( "Start Entities..\n" );
   for (orkmap<ork::PoolString, ork::ent::Entity*>::const_iterator it = mEntities.begin(); it != mEntities.end(); it++) {
     ork::ent::Entity* pent         = it->second;
-    const ork::ent::EntData& edata = pent->GetEntData();
+    const ork::ent::EntData* edata = pent->data();
 
     OrkAssert(pent);
 
-    if (edata.GetArchetype()) {
+    if (edata->GetArchetype()) {
       fmtx4 world = pent->GetDagNode().GetTransformNode().GetTransform().GetMatrix();
-      edata.GetArchetype()->StartEntity(this, world, pent);
+      edata->GetArchetype()->StartEntity(this, world, pent);
     }
   }
 }
@@ -741,12 +741,12 @@ void Simulation::StopEntities() {
 
   for (orkmap<ork::PoolString, ork::ent::Entity*>::const_iterator it = mEntities.begin(); it != mEntities.end(); it++) {
     ork::ent::Entity* pent         = it->second;
-    const ork::ent::EntData& edata = pent->GetEntData();
+    const ork::ent::EntData* edata = pent->data();
 
     OrkAssert(pent);
 
-    if (edata.GetArchetype()) {
-      edata.GetArchetype()->StopEntity(this, pent);
+    if (edata->GetArchetype()) {
+      edata->GetArchetype()->StopEntity(this, pent);
     }
   }
 }
@@ -809,10 +809,10 @@ void Simulation::DeActivateEntity(ent::Entity* pent) {
 
   EntitySet::iterator listit = mActiveEntities.find(pent);
 
-  const Archetype* parch = pent->GetEntData().GetArchetype();
+  const Archetype* parch = pent->data()->GetArchetype();
   if (listit == mActiveEntities.end()) {
     PoolString parchname = (parch != 0) ? parch->GetName() : AddPooledLiteral("none");
-    PoolString pentname  = pent->GetEntData().GetName();
+    PoolString pentname  = pent->name();
 
     orkprintf(
         "uhoh, someone is deactivating an entity<%p:%s> of arch<%s> that "
@@ -889,7 +889,7 @@ void Simulation::ServiceActivateQueue() {
     OrkAssert(pent);
 
     // printf( "Activating Entity (Q) : ent<%p>\n", pent );
-    if (const Archetype* parch = pent->GetEntData().GetArchetype()) {
+    if (const Archetype* parch = pent->data()->GetArchetype()) {
       // printf( "Activating Entity (QQ) : ent<%p> arch<%p>\n", pent, parch );
       parch->StartEntity(this, mtx, pent);
     }
@@ -904,7 +904,7 @@ void Simulation::ServiceActivateQueue() {
 
 Entity* Simulation::SpawnDynamicEntity(const ent::EntData* spawn_rec) {
   // printf( "SpawnDynamicEntity ed<%p>\n", spawn_rec );
-  auto newent = new Entity(*spawn_rec, this);
+  auto newent = new Entity(spawn_rec, this);
   auto arch   = spawn_rec->GetArchetype();
   arch->ComposeEntity(newent);
   arch->LinkEntity(this, newent);

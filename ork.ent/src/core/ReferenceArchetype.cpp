@@ -60,14 +60,14 @@ bool ArchetypeAssetLoader::LoadFileAsset(asset::Asset* pAsset, ConstString asset
 			return true;
 	}
 	gaastack.push(pAsset);
-	
+
 	float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
 	ArchetypeAsset* archasset = rtti::autocast(pAsset);
 
 	stream::FileInputStream istream(asset_name.c_str());
 	reflect::serialize::XMLDeserializer iser(istream);
 	rtti::ICastable* pcastable = 0;
-	
+
 #if defined(_XBOX) && defined(PROFILE)
 	PIXBeginNamedEvent(0, "ArchetypeAssetLoader::LoadFileAsset(%s).Deserialize", pAsset->GetName());
 #endif
@@ -167,7 +167,6 @@ void ReferenceArchetype::DoCompose(ork::ent::ArchComposer& composer)
 void ReferenceArchetype::DoComposeEntity( Entity *pent ) const
 {
 	/////////////////////////////////////////////////
-	const ent::EntData& pentdata = pent->GetEntData();
 	if( mArchetypeAsset )
 	{
 		//const ent::ComponentDataTable::LutType& clut = GetComponentDataTable().GetComponents();

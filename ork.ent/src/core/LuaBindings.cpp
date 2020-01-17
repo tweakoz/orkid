@@ -276,8 +276,8 @@ LuaSystem::LuaSystem(Simulation* psi) : mSimulation(psi) {
       .addMetaFunction("__tostring",
                        [](const Entity* e) -> std::string {
                          ork::fxstring<256> str;
-                         const char* ename = e ? e->GetEntData().GetName().c_str() : "";
-                         auto a = e ? e->GetEntData().GetArchetype() : nullptr;
+                         const char* ename = e->name().c_str();
+                         auto a = e ? e->data()->GetArchetype() : nullptr;
                          const char* aname = a ? a->GetName().c_str() : "";
                          str.format("(ent<%s> arch<%s>)", ename, aname);
                          return str.c_str();

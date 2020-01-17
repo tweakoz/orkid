@@ -114,10 +114,7 @@ bool SequenceCamControllerInst::DoStart(Simulation *psi, const fmtx4 &world)
 {
 	if( GetEntity() and _cameraData)
 	{
-		const ent::EntData& ED = GetEntity()->GetEntData();
-		PoolString name = ED.GetName();
-		std::string Name = CreateFormattedString( "%s", name.c_str() );
- 		psi->setCameraData( AddPooledString(Name.c_str()), _cameraData );
+ 		psi->setCameraData( GetEntity()->name(), _cameraData );
 
 		for( orklut<PoolString,ork::Object*>::const_iterator it=GetCD().GetItemDatas().begin(); it!=GetCD().GetItemDatas().end(); it++ )
 		{

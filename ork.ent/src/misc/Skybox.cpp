@@ -149,7 +149,7 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
   pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(yo::doit);
   // pdrw->SetBufferCallback(yo::BufferCB);
-  pdrw->SetOwner(&pent->GetEntData());
+  pdrw->SetOwner(pent->data());
   pdrw->SetSortKey(0);
 
   yo* pyo    = new yo;

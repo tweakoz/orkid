@@ -197,7 +197,7 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(Simulation* inst, Entity* pent) 
   pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(yo::doit);
   pdrw->SetenqueueOnLayerCallback(yo::BufferCB);
-  pdrw->SetOwner(&pent->GetEntData());
+  pdrw->SetOwner(pent->data());
   pdrw->SetSortKey(0x7fffffff);
 
   yo* pyo    = new yo;

@@ -232,7 +232,7 @@ bool BulletObjectControllerInst::DoLink(Simulation* psi)
 
 					if( pshape ){
 						////////////////////////////////
-						const DagNode& dnode = shape_create_data.mEntity->GetEntData().GetDagNode();
+						const DagNode& dnode = shape_create_data.mEntity->data()->GetDagNode();
 						const TransformNode& t3d = dnode.GetTransformNode();
 						fmtx4 mtx = t3d.GetTransform().GetMatrix();
 						////////////////////////////////

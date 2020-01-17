@@ -144,6 +144,7 @@ EntData::EntData()
 }
 ///////////////////////////////////////////////////////////////////////////////
 EntData::~EntData() {
+  OrkAssert(false);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void EntData::ArchetypeGetter(ork::rtti::ICastable*& val) const {
@@ -174,8 +175,10 @@ void Entity::Describe() {
   reflect::RegisterFunctor("GetComponentByClassName", &Entity::GetComponentByClassName);
 }
 ///////////////////////////////////////////////////////////////////////////////
-const char* Entity::name() const {
-  const char* ename = GetEntData().GetName().c_str();
+PoolString Entity::name() const {
+  static const PoolString noname = ork::AddPooledString("noname");
+  auto ed = data();
+  PoolString ename = ed ? ed->GetName() : noname;
   return ename;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -196,18 +199,17 @@ ComponentInst* Entity::GetComponentByClassName(ork::PoolString classname) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Entity::EntDataGetter(ork::rtti::ICastable*& ptr) const {
-  EntData* pdata = const_cast<EntData*>(&mEntData);
+  EntData* pdata = const_cast<EntData*>(_entdata);
   ptr            = static_cast<ork::rtti::ICastable*>(pdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-Entity::Entity(const EntData& edata, Simulation* inst)
+Entity::Entity(const EntData* edata, Simulation* inst)
     : _components(EKEYPOLICY_MULTILUT)
-    , mEntData(edata)
-    , mDagNode(edata.GetDagNode())
-    //, mDrawable( 0 )
+    , _entdata(edata)
+    , mDagNode(edata->GetDagNode())
     , mComponentTable(_components)
     , mSimulation(inst) {
-  // mDrawable.reserve(4);
+  OrkAssert(edata!=nullptr);
 }
 ///////////////////////////////////////////////////////////////////////////////
 fmtx4 Entity::GetEffectiveMatrix() const {
@@ -222,7 +224,7 @@ fmtx4 Entity::GetEffectiveMatrix() const {
       break;
     }
     default: {
-      const DagNode& dagn = this->GetEntData().GetDagNode();
+      const DagNode& dagn = this->data()->GetDagNode();
       const auto& xf      = dagn.GetTransformNode().GetTransform();
       rval                = xf.GetMatrix();
       break;
@@ -249,7 +251,7 @@ fvec3 Entity::GetEntityPosition() const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Entity::PrintName() {
-  orkprintf("EntityName:%s: \n", mEntData.GetName().c_str());
+  orkprintf("EntityName:%s: \n", name().c_str());
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool Entity::DoNotify(const ork::event::Event* event) {
@@ -312,11 +314,13 @@ ComponentTable& Entity::GetComponents() {
 ///////////////////////////////////////////////////////////////////////////////
 void Entity::addDrawableToDefaultLayer(lev2::Drawable* pdrw) {
   auto layername         = AddPooledString("Default");
-  const ent::EntData& ED = GetEntData();
-  ConstString layer      = ED.GetUserProperty("DrawLayer");
-  if (strlen(layer.c_str()) != 0) {
-    layername = AddPooledString(layer.c_str());
+  if( auto ED = data() ){
+    ConstString layer      = ED->GetUserProperty("DrawLayer");
+    if (strlen(layer.c_str()) != 0) {
+      layername = AddPooledString(layer.c_str());
+    }
   }
+  printf("layername<%s>\n", layername.c_str());
   _addDrawable(layername, pdrw);
 }
 ///////////////////////////////////////////////////////////////////////////////

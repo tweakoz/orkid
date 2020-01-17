@@ -3,7 +3,7 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -20,6 +20,9 @@ namespace ork {
 template <typename K, typename V, typename Allocator >
 typename orklut<K,V,Allocator>::const_iterator orklut<K,V,Allocator>::LowerBound( const K &key ) const
 {
+  if(Empty())
+    return end();
+
 	value_type ComparePair( key,V() );
 	const_iterator WhereIt = std::lower_bound( begin(), end(), ComparePair, LutComparator<K,V>() );
 	return WhereIt;
@@ -30,6 +33,9 @@ typename orklut<K,V,Allocator>::const_iterator orklut<K,V,Allocator>::LowerBound
 template <typename K, typename V, typename Allocator >
 typename orklut<K,V,Allocator>::const_iterator orklut<K,V,Allocator>::UpperBound( const K &key ) const
 {
+  if(Empty())
+    return end();
+
 	value_type ComparePair( key,V() );
 	const_iterator WhereIt = std::upper_bound( begin(), end(), ComparePair, LutComparator<K,V>() );
 	return WhereIt;
@@ -40,6 +46,9 @@ typename orklut<K,V,Allocator>::const_iterator orklut<K,V,Allocator>::UpperBound
 template <typename K, typename V, typename Allocator >
 typename orklut<K,V,Allocator>::iterator orklut<K,V,Allocator>::LowerBound( const K &key )
 {
+  if(Empty())
+    return end();
+
 	value_type ComparePair( key,V() );
 	iterator WhereIt = std::lower_bound( begin(), end(), ComparePair, LutComparator<K,V>() );
 	return WhereIt;
@@ -50,6 +59,9 @@ typename orklut<K,V,Allocator>::iterator orklut<K,V,Allocator>::LowerBound( cons
 template <typename K, typename V, typename Allocator >
 typename orklut<K,V,Allocator>::iterator orklut<K,V,Allocator>::UpperBound( const K &key )
 {
+  if(Empty())
+    return end();
+
 	value_type ComparePair( key,V() );
 	iterator WhereIt = std::upper_bound( begin(), end(), ComparePair, LutComparator<K,V>() );
 	return WhereIt;
@@ -106,7 +118,7 @@ void orklut<K,V,Allocator>::Replace( const K &key, const V &val )
 	}
 	else // before WhereIt
 	{
-		WhereIt->second = val;		
+		WhereIt->second = val;
 	}
 }
 

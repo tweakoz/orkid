@@ -67,7 +67,7 @@ EditorCamControllerData::EditorCamControllerData() {
 ///////////////////////////////////////////////////////////////////////////////
 
 ent::ComponentInst* EditorCamControllerData::createComponent(ent::Entity* pent) const {
-  _camera->SetName(pent->GetEntData().GetName().c_str());
+  _camera->SetName(pent->name().c_str());
   return new EditorCamControllerInst(*this, pent);
 }
 
@@ -88,11 +88,8 @@ EditorCamControllerInst::EditorCamControllerInst(const EditorCamControllerData& 
 bool EditorCamControllerInst::DoLink(Simulation* psi) {
   const lev2::UiCamera* pcam = mCD.GetCamera();
   if (GetEntity()) {
-    const ent::EntData& ED = GetEntity()->GetEntData();
-    PoolString name        = ED.GetName();
-    std::string Name       = CreateFormattedString("%s", name.c_str());
     const auto& cammats = pcam->cameraMatrices();
-    psi->setCameraData(AddPooledString(Name.c_str()), &cammats);
+    psi->setCameraData(GetEntity()->name(), &cammats);
     fmtx4 matrix, imatrix;
     matrix.LookAt(cammats.GetEye(),cammats.GetTarget(),cammats.GetUp());
     imatrix.inverseOf(matrix);

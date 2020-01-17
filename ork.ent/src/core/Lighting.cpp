@@ -77,7 +77,7 @@ LightingComponentInst::LightingComponentInst(const LightingComponentData& data, 
   ork::lev2::SpotLightData* sptlight_data        = ork::rtti::autocast(lightdata);
   ork::lev2::AmbientLightData* amblight_data     = ork::rtti::autocast(lightdata);
 
-  auto& ent_xf = GetEntity()->GetEntData().GetDagNode().GetTransformNode().GetTransform().GetMatrix();
+  auto& ent_xf = GetEntity()->data()->GetDagNode().GetTransformNode().GetTransform().GetMatrix();
 
   if (amblight_data) {
     mLight = new ork::lev2::AmbientLight(ent_xf, amblight_data);

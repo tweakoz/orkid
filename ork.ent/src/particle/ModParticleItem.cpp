@@ -365,7 +365,7 @@ void ModularSystem::DoLinkSystem(ork::ent::Simulation* psi, ork::ent::Entity* pe
       auto pdrw = new lev2::CallbackDrawable(pent);
       pdrw->SetRenderCallback(ModItemRenderData::enqueueToRendererCallback);
       pdrw->SetenqueueOnLayerCallback(ModItemRenderData::enqueueOnLayerCallback);
-      pdrw->SetOwner(&pent->GetEntData());
+      pdrw->SetOwner(pent->data());
       pdrw->SetSortKey(isort);
 
       ////////////////////////////////////////////////////////

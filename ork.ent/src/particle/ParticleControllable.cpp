@@ -106,7 +106,7 @@ ParticleControllableInst::ParticleControllableInst(const ParticleControllableDat
 
 		}
 	}
-	const ork::ent::DataflowRecieverComponentData* dflowreciever = pent->GetEntData().GetTypedComponent<ork::ent::DataflowRecieverComponentData>();
+	const ork::ent::DataflowRecieverComponentData* dflowreciever = pent->data()->GetTypedComponent<ork::ent::DataflowRecieverComponentData>();
 	if( dflowreciever )
 	{
 		//ork::dataflow::dyn_dgmodule& dgmod = dflowreciever->RefDgModule();
@@ -157,8 +157,8 @@ bool ParticleControllableInst::DoLink( ork::ent::Simulation *psi )
 	// now check entdata EPMI for attachment
 	////////////////////////////////
 
-	const ent::EntData& ED = GetEntity()->GetEntData();
-	ConstString att = ED.GetUserProperty("ParentAttachment");
+	const ent::EntData* ED = GetEntity()->data();
+	ConstString att = ED->GetUserProperty("ParentAttachment");
 	PoolString attps(AddPooledString(att.c_str()));
 	ent::Entity* pna = psi->FindEntity(attps);
 	if( pna )

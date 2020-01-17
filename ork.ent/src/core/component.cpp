@@ -117,7 +117,7 @@ void ComponentInst::Stop(Simulation* psi) {
 }
 
 const char* ComponentInst::GetEntityName() const {
-  return mEntity->GetEntData().GetName().c_str();
+  return mEntity->name().c_str();
 }
 
 Simulation* ComponentInst::sceneInst() const {

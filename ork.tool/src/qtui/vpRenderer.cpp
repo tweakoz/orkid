@@ -84,7 +84,7 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
 
   const ent::Entity* as_ent = rtti::autocast(owner);
   if (as_ent) {
-    owner = &as_ent->GetEntData();
+    owner = as_ent->data();
     c     = owner->GetClass();
   }
 
