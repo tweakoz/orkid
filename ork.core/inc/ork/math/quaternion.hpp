@@ -363,6 +363,12 @@ template <typename T> Vector4<T> Quaternion<T>::ToAxisAngle(void) const {
   T vy                     = y * invscale;
   T vz                     = z * invscale;
   T ang                    = tr * T((float)kAAC);
+  if (isnan(tr)) {
+    vx  = 0.0f;
+    vy  = 0.0f;
+    vz  = 0.0f;
+    ang = 0.0f;
+  }
   return Vector4<T>(vx, vy, vz, -ang);
 }
 

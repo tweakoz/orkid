@@ -100,6 +100,8 @@ TEST(gfxanim1) {
     deco::printf(cyan, "//////////////////////////////////////////////\n");
 
     while (true) {
+      deco::prints(skel.dumpInvBind(blugrn), true);
+
       localpose.BindPose();
       animinst->SetCurrentFrame((iframe++) % 20);
       animinst->SetWeight(1);

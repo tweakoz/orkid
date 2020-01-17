@@ -770,9 +770,10 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
   int inumj = localpose.NumJoints();
   mWorldMatrices.resize(inumj);
   for (int ij = 0; ij < inumj; ij++) {
-    fmtx4 MatAnimJCat  = localpose.RefLocalMatrix(ij);
-    auto InvBind       = mSkeleton.RefInverseBindMatrix(ij);
-    auto finalmtx      = worldmtx * (InvBind * MatAnimJCat);
+    fmtx4 MatAnimJCat = localpose.RefLocalMatrix(ij);
+    auto InvBind      = mSkeleton.RefInverseBindMatrix(ij);
+    auto finalmtx     = (InvBind * MatAnimJCat) * worldmtx;
+    // auto finalmtx      = (MatAnimJCat)*worldmtx;
     mWorldMatrices[ij] = finalmtx;
   }
 }
