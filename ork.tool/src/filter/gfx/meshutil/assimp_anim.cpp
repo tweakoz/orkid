@@ -181,7 +181,7 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
             const aiQuatKey& rotkey = channel->mRotationKeys[f];
             double time             = rotkey.mTime;
             aiQuaternion rot        = rotkey.mValue;
-            currot                  = fquat(-rot.x, -rot.y, -rot.z, rot.w).Negate();
+            currot                  = fquat(-rot.x, -rot.y, -rot.z, rot.w);
           }
           if (f < channel->mNumScalingKeys) {
             const aiVectorKey& scakey = channel->mScalingKeys[f];
