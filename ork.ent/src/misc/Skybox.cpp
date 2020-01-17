@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -34,9 +34,11 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SkyBoxControllerData, "SkyBoxControllerDa
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-void SkyBoxArchetype::Describe() {}
+void SkyBoxArchetype::Describe() {
+}
 
-SkyBoxArchetype::SkyBoxArchetype() {}
+SkyBoxArchetype::SkyBoxArchetype() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -52,7 +54,7 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
       const Entity* pent               = pyo->pent;
       const SkyBoxControllerInst* ssci = pent->GetTypedComponent<SkyBoxControllerInst>();
       const SkyBoxControllerData& cd   = ssci->GetCD();
-      bool IsPickState                 = rcid.GetRenderer()->GetTarget()->FBI()->IsPickState();
+      bool isPickState                 = rcid.GetRenderer()->GetTarget()->FBI()->isPickState();
       float fphase                     = ssci->GetPhase();
 
       if (cd.GetModel()) {
@@ -71,28 +73,28 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
         fcolor4 ObjColor;
         // toz64 ObjColor.SetRGBAU32( reinterpret_cast<U32>( (u32)((size_t)pren->GetObject() )) );
 
-        fcolor4 color = targ->FBI()->IsPickState() ? ObjColor : pren->GetModColor();
+        fcolor4 color = targ->FBI()->isPickState() ? ObjColor : pren->GetModColor();
 
         ///////////////////////////////////////////////////////////
         // setup headlight (default lighting)
         ///////////////////////////////////////////////////////////
-        ork::fmtx4 HeadLightMatrix;
-        ork::lev2::LightingGroup HeadLightGroup;
-        ork::lev2::AmbientLightData HeadLightData;
-        ork::lev2::AmbientLight HeadLight(HeadLightMatrix, &HeadLightData);
-        ork::lev2::LightManagerData HeadLightManagerData;
-        ork::lev2::LightManager HeadLightManager(HeadLightManagerData);
-        HeadLightData.SetColor(ork::fvec3(1.3f, 1.3f, 1.5f));
-        HeadLightData.SetAmbientShade(0.75f);
-        HeadLight.miInFrustumID = 1;
-        HeadLightGroup.mLightMask.AddLight(&HeadLight);
-        HeadLightGroup.mLightManager                  = &HeadLightManager;
-        auto RCFD = targ->topRenderContextFrameData();
+        // ork::fmtx4 HeadLightMatrix;
+        // ork::lev2::LightingGroup HeadLightGroup;
+        // ork::lev2::AmbientLightData HeadLightData;
+        // ork::lev2::AmbientLight HeadLight(HeadLightMatrix, &HeadLightData);
+        // ork::lev2::LightManagerData HeadLightManagerData;
+        // ork::lev2::LightManager HeadLightManager(HeadLightManagerData);
+        // HeadLightData.SetColor(ork::fvec3(1.3f, 1.3f, 1.5f));
+        // HeadLightData.SetAmbientShade(0.75f);
+        // HeadLight.miInFrustumID = 1;
+        // HeadLightGroup.mLightMask.AddLight(&HeadLight);
+        // HeadLightGroup.mLightManager = &HeadLightManager;
+        auto RCFD       = targ->topRenderContextFrameData();
         const auto& CPD = RCFD->topCPD();
-        HeadLightMatrix                               = CPD.cameraMatrices()->GetIVMatrix();
-        HeadLightManager.mGlobalMovingLights.AddLight(&HeadLight);
-        HeadLightManager.mLightsInFrustum.push_back(&HeadLight);
-        MatCtx.SetLightingGroup(&HeadLightGroup);
+        // HeadLightMatrix                               = CPD.cameraMatrices()->GetIVMatrix();
+        // HeadLightManager.mGlobalMovingLights.AddLight(&HeadLight);
+        // HeadLightManager.mLightsInFrustum.push_back(&HeadLight);
+        // MatCtx.SetLightingGroup(&HeadLightGroup);
         ///////////////////////////////////////////////////////////
         // setup headlight (default lighting)
         ///////////////////////////////////////////////////////////
@@ -111,14 +113,14 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
 
         //	printf( "DrawSkyBox pos<%f %f %f>\n", pos.GetX(), pos.GetY(), pos.GetX() );
 
-        int inummeshes = cd.GetModel()->GetNumMeshes();
+        int inummeshes = cd.GetModel()->numMeshes();
         for (int imesh = 0; imesh < inummeshes; imesh++) {
-          const lev2::XgmMesh& mesh = *cd.GetModel()->GetMesh(imesh);
+          const lev2::XgmMesh& mesh = *cd.GetModel()->mesh(imesh);
 
-          int inumclusset = mesh.GetNumSubMeshes();
+          int inumclusset = mesh.numSubMeshes();
 
           for (int ics = 0; ics < inumclusset; ics++) {
-            const lev2::XgmSubMesh& submesh   = *mesh.GetSubMesh(ics);
+            const lev2::XgmSubMesh& submesh   = *mesh.subMesh(ics);
             const lev2::GfxMaterial* material = submesh.mpMaterial;
 
             int inumclus = submesh.miNumClusters;
@@ -129,7 +131,7 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
 
               MdlCtx.mMesh    = &mesh;
               MdlCtx.mSubMesh = &submesh;
-              MdlCtx.mCluster = &submesh.RefCluster(ic);
+              MdlCtx.mCluster = &submesh.cluster(ic);
 
               // printf( "DrawSkyBox clus<%d>\n", ic );
 
@@ -139,13 +141,14 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
         }
       }
     }
-    static void BufferCB(lev2::DrawableBufItem& cdb) {}
+    static void BufferCB(lev2::DrawableBufItem& cdb) {
+    }
   };
 
   auto pdrw = new lev2::CallbackDrawable(pent);
   pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(yo::doit);
-  //pdrw->SetBufferCallback(yo::BufferCB);
+  // pdrw->SetBufferCallback(yo::BufferCB);
   pdrw->SetOwner(&pent->GetEntData());
   pdrw->SetSortKey(0);
 
@@ -160,7 +163,9 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SkyBoxArchetype::DoCompose(ork::ent::ArchComposer& composer) { composer.Register<SkyBoxControllerData>(); }
+void SkyBoxArchetype::DoCompose(ork::ent::ArchComposer& composer) {
+  composer.Register<SkyBoxControllerData>();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -187,7 +192,8 @@ void SkyBoxControllerData::Describe() {
 SkyBoxControllerData::SkyBoxControllerData()
     : mfSpinRate(0.0f)
     , mModelAsset(0)
-    , mfScale(1.0f) {}
+    , mfScale(1.0f) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -198,14 +204,16 @@ lev2::XgmModel* SkyBoxControllerData::GetModel() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SkyBoxControllerInst::Describe() {}
+void SkyBoxControllerInst::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 SkyBoxControllerInst::SkyBoxControllerInst(const SkyBoxControllerData& data, ent::Entity* pent)
     : ork::ent::ComponentInst(&data, pent)
     , mCD(data)
-    , mPhase(0.0f) {}
+    , mPhase(0.0f) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -215,7 +223,9 @@ ent::ComponentInst* SkyBoxControllerData::createComponent(ent::Entity* pent) con
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SkyBoxControllerInst::DoUpdate(ent::Simulation* sinst) { mPhase += mCD.GetSpinRate() * sinst->GetDeltaTime(); }
+void SkyBoxControllerInst::DoUpdate(ent::Simulation* sinst) {
+  mPhase += mCD.GetSpinRate() * sinst->GetDeltaTime();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

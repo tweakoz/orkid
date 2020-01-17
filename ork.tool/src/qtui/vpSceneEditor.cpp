@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -45,6 +45,7 @@
 #include "uiToolsDefault.h"
 #include "vpRenderer.h"
 #include "vpSceneEditor.h"
+#include <ork/lev2/gfx/material_pbr.inl>
 
 #define GL_ERRORCHECK()                                                                                                            \
   {                                                                                                                                \
@@ -403,7 +404,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     mpTarget->debugPushGroup("toolvp::DRAWEND::Children");
     DrawChildren(drwev);
     mpTarget->debugPopGroup();
-    if (false == FBI->IsPickState())
+    if (false == FBI->isPickState())
       DrawSpinner(RCFD);
   }
   mpTarget->endFrame();
@@ -495,7 +496,7 @@ void SceneEditorVP::renderMisc(lev2::RenderContextFrameData& RCFD) {
   gfxtarg->debugPopGroup();
   /////////////////////////////////////////
   gfxtarg->debugPushGroup("toolvp::DrawGrid");
-  if (false == FBI->IsPickState())
+  if (false == FBI->isPickState())
     DrawGrid(RCFD);
   gfxtarg->debugPopGroup();
   ///////////////////////////////////////////////////////////////////////////
@@ -790,7 +791,7 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& RCFD, ork::lev2
     return;
 
   ork::lev2::Context* pOutputTarget = RCFD.GetTarget();
-  auto MTXI                           = pOutputTarget->MTXI();
+  auto MTXI                         = pOutputTarget->MTXI();
   MTXI->PushPMatrix(cammatrices->_pmatrix);
   MTXI->PushVMatrix(cammatrices->_vmatrix);
   MTXI->PushMMatrix(fmtx4::Identity);

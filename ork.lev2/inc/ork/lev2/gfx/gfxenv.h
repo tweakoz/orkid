@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -45,6 +45,7 @@ class RtGroup;
 class Texture;
 class GfxMaterial;
 class GfxMaterialUITextured;
+class PBRMaterial;
 
 class GfxEnv;
 
@@ -149,7 +150,7 @@ public:
   ///////////////////////////////////////////////////////////////////////
 
   virtual void InitializeContext(Window* pWin, CTXBASE* pctxbase) = 0;
-  virtual void InitializeContext(OffscreenBuffer* pBuf)                    = 0;
+  virtual void InitializeContext(OffscreenBuffer* pBuf)           = 0;
 
   ///////////////////////////////////////////////////////////////////////
 
@@ -557,7 +558,7 @@ class GfxEnv : public NoRttiSingleton<GfxEnv> {
   //////////////////////////////////////////////////////////////////////////////
 
 public:
-  Context* GetLoaderTarget() const {
+  Context* loadingContext() const {
     return gLoaderTarget;
   }
   void SetLoaderTarget(Context* ptarget);
@@ -593,7 +594,7 @@ public:
   static GfxMaterial* GetDefaultUIMaterial(void) {
     return GetRef().mpUIMaterial;
   }
-  static GfxMaterial* GetDefault3DMaterial(void) {
+  static PBRMaterial* GetDefault3DMaterial(void) {
     return GetRef().mp3DMaterial;
   }
 
@@ -625,7 +626,7 @@ protected:
   //////////////////////////////////////////////////////////////////////////////
 
   GfxMaterial* mpUIMaterial;
-  GfxMaterial* mp3DMaterial;
+  PBRMaterial* mp3DMaterial;
   Window* mpMainWindow;
   Context* gLoaderTarget;
 

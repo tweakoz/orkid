@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -23,10 +23,13 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::WiiMatrixBlockApplicator, "WiiMatrixBloc
 
 namespace ork { namespace lev2 {
 
-void WiiMatrixApplicator::Describe() {}
-void WiiMatrixBlockApplicator::Describe() {}
+void WiiMatrixApplicator::Describe() {
+}
+void WiiMatrixBlockApplicator::Describe() {
+}
 
-void GfxMaterialWiiBasic::Describe() {}
+void GfxMaterialWiiBasic::Describe() {
+}
 
 static bool gbenable = true; // disable since wii port is gone
 
@@ -173,8 +176,6 @@ void GfxMaterialWiiBasic::Init(ork::lev2::Context* pTarg) {
     hSpecularPower = pTarg->FXI()->parameter(hModFX, "SpecularPower");
     hMODCOLOR      = pTarg->FXI()->parameter(hModFX, "modcolor");
     hTIME          = pTarg->FXI()->parameter(hModFX, "time");
-
-    mLightingInterface.Init(hModFX);
   }
 }
 
@@ -197,7 +198,8 @@ static ork::fixed_pool<WiiMatrixApplicator, 256> MtxApplicators;
 
 WiiMatrixBlockApplicator::WiiMatrixBlockApplicator(MaterialInstItemMatrixBlock* mtxblockitem, const GfxMaterialWiiBasic* pmat)
     : mMatrixBlockItem(mtxblockitem)
-    , mMaterial(pmat) {}
+    , mMaterial(pmat) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -225,7 +227,8 @@ void WiiMatrixBlockApplicator::ApplyToTarget(Context* pTARG) // virtual
 
 WiiMatrixApplicator::WiiMatrixApplicator(MaterialInstItemMatrix* mtxitem, const GfxMaterialWiiBasic* pmat)
     : mMatrixItem(mtxitem)
-    , mMaterial(pmat) {}
+    , mMaterial(pmat) {
+}
 
 void WiiMatrixApplicator::ApplyToTarget(Context* pTARG) {
   const fmtx4& mtx  = mMatrixItem->GetMatrix();
@@ -319,13 +322,13 @@ bool GfxMaterialWiiBasic::BeginPass(Context* pTarg, int iPass) {
 
   const RenderContextInstData* RCID  = pTarg->GetRenderContextInstData();
   const RenderContextFrameData* RCFD = pTarg->topRenderContextFrameData();
-  const auto& CPD = RCFD->topCPD();
+  const auto& CPD                    = RCFD->topCPD();
 
   bool bforcenoz = RCID->IsForceNoZWrite();
 
   const ork::lev2::XgmMaterialStateInst* matinst = RCID->GetMaterialInst();
 
-  bool is_picking                  = CPD.isPicking();
+  bool is_picking = CPD.isPicking();
 
   const TextureContext& DiffuseCtx = GetTexture(ETEXDEST_DIFFUSE);
 
@@ -364,15 +367,13 @@ bool GfxMaterialWiiBasic::BeginPass(Context* pTarg, int iPass) {
   const auto& world = MTXI->RefMMatrix();
   if (CPD.isStereoOnePass() and CPD._stereoCameraMatrices) {
     auto stereomtx = CPD._stereoCameraMatrices;
-    auto MVPL = stereomtx->MVPL(world);
-    auto MVPR = stereomtx->MVPR(world);
+    auto MVPL      = stereomtx->MVPL(world);
+    auto MVPR      = stereomtx->MVPR(world);
     FXI->BindParamMatrix(hModFX, hWVPLMatrix, MVPL);
     FXI->BindParamMatrix(hModFX, hWVPRMatrix, MVPR);
   } else {
     auto mcams = CPD._cameraMatrices;
-    auto MVP = world
-             * mcams->_vmatrix
-             * mcams->_pmatrix;
+    auto MVP   = world * mcams->_vmatrix * mcams->_pmatrix;
     FXI->BindParamMatrix(hModFX, hWVPMatrix, MVP);
   }
   ////////////////////////////////////////////////////////////
@@ -393,8 +394,6 @@ bool GfxMaterialWiiBasic::BeginPass(Context* pTarg, int iPass) {
 
   ////////////////////////////////////////////////////////////
 
-  mLightingInterface.ApplyLighting(pTarg, iPass);
-
   FXI->CommitParams();
 
   return true;
@@ -402,20 +401,21 @@ bool GfxMaterialWiiBasic::BeginPass(Context* pTarg, int iPass) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialWiiBasic::EndPass(Context* pTarg) { pTarg->FXI()->EndPass(hModFX); }
+void GfxMaterialWiiBasic::EndPass(Context* pTarg) {
+  pTarg->FXI()->EndPass(hModFX);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 int GfxMaterialWiiBasic::BeginBlock(Context* pTarg, const RenderContextInstData& RCID) {
   mRenderContexInstData              = &RCID;
   const RenderContextFrameData* RCFD = pTarg->topRenderContextFrameData();
-  const auto& CPD = RCFD->topCPD();
-
+  const auto& CPD                    = RCFD->topCPD();
 
   const fvec3& znormal = CPD.monoCamZnormal();
 
-  bool is_picking                    = CPD.isPicking();
-  bool is_stereo                     = CPD.isStereoOnePass();
+  bool is_picking = CPD.isPicking();
+  bool is_stereo  = CPD.isStereoOnePass();
 
   const FxShaderTechnique* tek = hTekModVtxTex;
 

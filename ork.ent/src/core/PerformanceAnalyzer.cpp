@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -169,7 +169,7 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(Simulation* inst, Entity* pent) 
       const PerfAnalyzerControllerInst* ssci    = pent->GetTypedComponent<PerfAnalyzerControllerInst>();
       const PerfAnalyzerControllerData& cd      = ssci->GetCD();
       ork::lev2::Context* pTARG               = rcid.GetRenderer()->GetTarget();
-      bool IsPickState                          = pTARG->FBI()->IsPickState();
+      bool isPickState                          = pTARG->FBI()->isPickState();
 
       if (cd.mbEnable) {
 
@@ -196,7 +196,7 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(Simulation* inst, Entity* pent) 
   auto pdrw = new lev2::CallbackDrawable(pent);
   pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(yo::doit);
-  pdrw->SetQueueToLayerCallback(yo::BufferCB);
+  pdrw->SetenqueueOnLayerCallback(yo::BufferCB);
   pdrw->SetOwner(&pent->GetEntData());
   pdrw->SetSortKey(0x7fffffff);
 

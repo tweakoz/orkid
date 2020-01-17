@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -146,12 +146,12 @@ struct XgmSubMesh // Run Time Cluster Set
   virtual ~XgmSubMesh();
 
   int GetNumClusters(void) const { return miNumClusters; }
-  const XgmCluster& RefCluster(int idx) const {
+  const XgmCluster& cluster(int idx) const {
     OrkAssert(idx >= 0);
     OrkAssert(idx < miNumClusters);
     return mpClusters[idx];
   }
-  XgmCluster& RefCluster(int idx) {
+  XgmCluster& cluster(int idx) {
     OrkAssert(idx >= 0);
     OrkAssert(idx < miNumClusters);
     return mpClusters[idx];
@@ -177,13 +177,13 @@ struct XgmMesh {
   void SetFlags(U32 flags) { muFlags |= flags; }
   void SetMeshIndex(int i) { miMeshIndex = i; }
   void SetMeshName(const PoolString& name) { mMeshName = name; }
-  int GetNumSubMeshes(void) const { return int(mSubMeshes.size()); }
-  int GetMeshIndex() const { return miMeshIndex; }
+  int numSubMeshes(void) const { return int(mSubMeshes.size()); }
+  int meshIndex() const { return miMeshIndex; }
   U32 GetFlags(void) const { return muFlags; }
   bool CheckFlags(U32 flags) const { return ((flags & muFlags) == flags); }
-  const XgmSubMesh* GetSubMesh(int idx) const { return mSubMeshes[idx]; }
-  XgmSubMesh* GetSubMesh(int idx) { return mSubMeshes[idx]; }
-  const PoolString& GetMeshName() const { return mMeshName; }
+  const XgmSubMesh* subMesh(int idx) const { return mSubMeshes[idx]; }
+  XgmSubMesh* subMesh(int idx) { return mSubMeshes[idx]; }
+  const PoolString& meshName() const { return mMeshName; }
   const fvec4& RefBoundingBoxMin(void) const { return mvBoundingBoxMin; }
   const fvec4& RefBoundingBoxMax(void) const { return mvBoundingBoxMax; }
   /////////////////////////////////////
@@ -219,33 +219,33 @@ struct XgmModel {
 
   /////////////////////////////////////
 
-  bool IsSkinned() const { return mbSkinned; }
+  bool isSkinned() const { return mbSkinned; }
   void SetSkinned(bool bv) { mbSkinned = bv; }
 
   /////////////////////////////////////
 
-  int GetNumMeshes() const { return int(mMeshes.size()); }
+  int numMeshes() const { return int(mMeshes.size()); }
   int GetNumMaterials() const { return miNumMaterials; }
 
-  const XgmSkeleton& RefSkel() const { return mSkeleton; }
-  XgmSkeleton& RefSkel() { return mSkeleton; }
+  const XgmSkeleton& skeleton() const { return mSkeleton; }
+  XgmSkeleton& skeleton() { return mSkeleton; }
 
-  const XgmMesh* GetMesh(int idx) const { return mMeshes.GetItemAtIndex(idx).second; }
-  XgmMesh* GetMesh(int idx) { return mMeshes.GetItemAtIndex(idx).second; }
+  const XgmMesh* mesh(int idx) const { return mMeshes.GetItemAtIndex(idx).second; }
+  XgmMesh* mesh(int idx) { return mMeshes.GetItemAtIndex(idx).second; }
 
-  const XgmMesh* GetMesh(const PoolString& name) const { return mMeshes.find(name)->second; }
-  XgmMesh* GetMesh(const PoolString& name) { return mMeshes.find(name)->second; }
-  int GetMeshIndex(const PoolString& name) const;
+  const XgmMesh* mesh(const PoolString& name) const { return mMeshes.find(name)->second; }
+  XgmMesh* mesh(const PoolString& name) { return mMeshes.find(name)->second; }
+  int meshIndex(const PoolString& name) const;
 
   void* GetUserData() { return mpUserData; }
   const GfxMaterial* GetMaterial(int idx) const { return mvMaterials[idx]; }
   GfxMaterial* GetMaterial(int idx) { return mvMaterials[idx]; }
   void AddMaterial(GfxMaterial* hM);
 
-  const fvec3& GetBoundingCenter() const { return mBoundingCenter; }
+  const fvec3& boundingCenter() const { return mBoundingCenter; }
   float GetBoundingRadius() const { return mBoundingRadius; }
   const fvec3& GetBoundingAA_XYZ() const { return mAABoundXYZ; }
-  const fvec3& GetBoundingAA_WHD() const { return mAABoundWHD; }
+  const fvec3& boundingAA_WHD() const { return mAABoundWHD; }
 
   int GetBonesPerCluster() const { return miBonesPerCluster; }
 
@@ -331,7 +331,7 @@ struct XgmModelInst {
   ~XgmModelInst();
 
 
-  const XgmModel* GetXgmModel(void) const { return mXgmModel; }
+  const XgmModel* xgmModel(void) const { return mXgmModel; }
   int GetNumChannels(void) const;
 
   XgmLocalPose& RefLocalPose() { return mLocalPose; }
@@ -349,10 +349,10 @@ struct XgmModelInst {
   void EnableAllMeshes();
   void DisableAllMeshes();
 
-  bool IsMeshEnabled(int index);
-  bool IsMeshEnabled(const PoolString& ps);
+  bool isMeshEnabled(int index);
+  bool isMeshEnabled(const PoolString& ps);
   bool IsAnyMeshEnabled();
-  bool IsSkinned() const { return mbSkinned; }
+  bool isSkinned() const { return mbSkinned; }
   void EnableSkinning() { mbSkinned = true; }
   bool IsBlenderZup() const { return mBlenderZup; }
   void SetBlenderZup(bool bv) { mBlenderZup = bv; }
@@ -361,11 +361,13 @@ struct XgmModelInst {
   U8 mMaskBits[knummaskbytes];
   const XgmModel* mXgmModel;
   XgmLocalPose mLocalPose;
+  mutable XgmWorldPose _worldPose;
   XgmMaterialStateInst mMaterialStateInst;
   GfxMaterial* _overrideMaterial = nullptr;
   int miNumChannels;
   bool mbSkinned;
   bool mBlenderZup;
+  bool _drawSkeleton;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -376,16 +378,15 @@ struct RenderContextInstModelData {
   const XgmSubMesh* mSubMesh;
   const XgmCluster* mCluster;
 
-  bool mbIsSkinned;
+  bool mbisSkinned;
   int miSubMeshIndex;
-  const XgmWorldPose* mpWorldPose;
 
   //////////////////////////////////////
   // model interface
   //////////////////////////////////////
 
-  bool IsSkinned(void) const { return mbIsSkinned; }
-  void SetSkinned(bool bv) { mbIsSkinned = bv; }
+  bool isSkinned(void) const { return mbisSkinned; }
+  void SetSkinned(bool bv) { mbisSkinned = bv; }
 
   void SetModelInst(const XgmModelInst* pinst) { mpModelInst = pinst; }
   const XgmModelInst* GetModelInst(void) const { return mpModelInst; }

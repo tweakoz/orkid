@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -15,10 +15,10 @@ namespace ork {
 
 template <typename T> Vector4<T> Vector4<T>::Saturate(void) const {
   Vector4<T> rval = *this;
-  rval.x = (rval.x > 1.0f) ? 1.0f : (rval.x < 0.0f) ? 0.0f : rval.x;
-  rval.y = (rval.y > 1.0f) ? 1.0f : (rval.y < 0.0f) ? 0.0f : rval.y;
-  rval.z = (rval.z > 1.0f) ? 1.0f : (rval.z < 0.0f) ? 0.0f : rval.z;
-  rval.w = (rval.w > 1.0f) ? 1.0f : (rval.w < 0.0f) ? 0.0f : rval.w;
+  rval.x          = (rval.x > 1.0f) ? 1.0f : (rval.x < 0.0f) ? 0.0f : rval.x;
+  rval.y          = (rval.y > 1.0f) ? 1.0f : (rval.y < 0.0f) ? 0.0f : rval.y;
+  rval.z          = (rval.z > 1.0f) ? 1.0f : (rval.z < 0.0f) ? 0.0f : rval.z;
+  rval.w          = (rval.w > 1.0f) ? 1.0f : (rval.w < 0.0f) ? 0.0f : rval.w;
   return rval;
 }
 
@@ -101,38 +101,56 @@ template <typename T> const Vector4<T>& Vector4<T>::Yellow(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Vector4<T>::Vector4() : x(T(0.0f)), y(T(0.0f)), z(T(0.0f)), w(T(1.0f)) {}
+template <typename T>
+Vector4<T>::Vector4()
+    : x(T(0.0f))
+    , y(T(0.0f))
+    , z(T(0.0f))
+    , w(T(1.0f)) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Vector4<T>::Vector4(T _x, T _y, T _z, T _w) : x(_x), y(_y), z(_z), w(_w) {}
+template <typename T>
+Vector4<T>::Vector4(T _x, T _y, T _z, T _w)
+    : x(_x)
+    , y(_y)
+    , z(_z)
+    , w(_w) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Vector4<T>::Vector4(const Vector3<T>& in, T w) : x(in.x), y(in.y), z(in.z), w(w) {}
+template <typename T>
+Vector4<T>::Vector4(const Vector3<T>& in, T _w)
+    : x(in.x)
+    , y(in.y)
+    , z(in.z)
+    , w(_w) {
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> uint64_t Vector4<T>::GetRGBAU64(void) const {
-		uint64_t r = round(x*T(65535.0f));
-		uint64_t g = round(y*T(65535.0f));
-		uint64_t b = round(z*T(65535.0f));
-		uint64_t a = round(w*T(65535.0f));
-		return ((r<<48)|(g<<32)|(b<<16)|a);
+  uint64_t r = round(x * T(65535.0f));
+  uint64_t g = round(y * T(65535.0f));
+  uint64_t b = round(z * T(65535.0f));
+  uint64_t a = round(w * T(65535.0f));
+  return ((r << 48) | (g << 32) | (b << 16) | a);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Vector4<T>::SetRGBAU64(uint64_t inp) {
-	static constexpr T kfic( T(1.0) / T(65535.0) );
-	uint64_t r = (inp>>48)&0xffff;
-	uint64_t g = (inp>>32)&0xffff;
-	uint64_t b = (inp>>16)&0xffff;
-	uint64_t a = (inp)&0xffff;
-	x = (kfic * T(uint64_t(r)));
-	y = (kfic * T(uint64_t(g)));
-	z = (kfic * T(uint64_t(b)));
-	w = (kfic * T(uint64_t(a)));
+  static constexpr T kfic(T(1.0) / T(65535.0));
+  uint64_t r = (inp >> 48) & 0xffff;
+  uint64_t g = (inp >> 32) & 0xffff;
+  uint64_t b = (inp >> 16) & 0xffff;
+  uint64_t a = (inp)&0xffff;
+  x          = (kfic * T(uint64_t(r)));
+  y          = (kfic * T(uint64_t(g)));
+  z          = (kfic * T(uint64_t(b)));
+  w          = (kfic * T(uint64_t(a)));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -301,8 +319,8 @@ template <typename T> void Vector4<T>::SetHSV(T h, T s, T v) {
     if (kone <= h)
       h -= kone;
     h *= 6.0f;
-    T i = T(floor(h));
-    T f = h - i;
+    T i  = T(floor(h));
+    T f  = h - i;
     T aa = v * (kone - s);
     T bb = v * (kone - (s * f));
     T cc = v * (kone - (s * (kone - f)));
@@ -346,10 +364,10 @@ template <typename T> void Vector4<T>::PerspectiveDivide(void) {
 
 template <typename T> Vector4<T> Vector4<T>::perspectiveDivided(void) const {
   Vector4<T> rval;
-  T iw = T(1.0f) / w;
-  rval.x = x*iw;
-  rval.y = y*iw;
-  rval.z = z*iw;
+  T iw   = T(1.0f) / w;
+  rval.x = x * iw;
+  rval.y = y * iw;
+  rval.z = z * iw;
   rval.w = T(1.0);
   return rval;
 }
@@ -365,7 +383,9 @@ template <typename T> Vector4<T>::Vector4(const Vector4<T>& vec) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> T Vector4<T>::Dot(const Vector4<T>& vec) const { return ((x * vec.x) + (y * vec.y) + (z * vec.z)); }
+template <typename T> T Vector4<T>::Dot(const Vector4<T>& vec) const {
+  return ((x * vec.x) + (y * vec.y) + (z * vec.z));
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -393,14 +413,16 @@ template <typename T> void Vector4<T>::Normalize(void) {
 
 template <typename T> Vector4<T> Vector4<T>::Normal() const {
   T fmag = Mag();
-  fmag = (fmag == (T)0.0f) ? (T)0.00001f : fmag;
-  T s = (T)1.0f / fmag;
+  fmag   = (fmag == (T)0.0f) ? (T)0.00001f : fmag;
+  T s    = (T)1.0f / fmag;
   return Vector4<T>(x * s, y * s, z * s, w);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> T Vector4<T>::Mag(void) const { return Sqrt(x * x + y * y + z * z); }
+template <typename T> T Vector4<T>::Mag(void) const {
+  return Sqrt(x * x + y * y + z * z);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -415,10 +437,10 @@ template <typename T> Vector4<T> Vector4<T>::Transform(const Matrix44<T>& matrix
   T tx, ty, tz, tw;
 
   T* mp = (T*)matrix.elements;
-  T _x = x;
-  T _y = y;
-  T _z = z;
-  T _w = w;
+  T _x  = x;
+  T _y  = y;
+  T _z  = z;
+  T _w  = w;
 
   tx = _x * mp[0] + _y * mp[4] + _z * mp[8] + _w * mp[12];
   ty = _x * mp[1] + _y * mp[5] + _z * mp[9] + _w * mp[13];
@@ -443,8 +465,8 @@ void Vector4<T>::Serp(const Vector4<T>& PA, const Vector4<T>& PB, const Vector4<
 template <typename T> void Vector4<T>::RotateX(T rad) {
   T oldY = y;
   T oldZ = z;
-  y = (oldY * Cos(rad) - oldZ * Sin(rad));
-  z = (oldY * Sin(rad) + oldZ * Cos(rad));
+  y      = (oldY * Cos(rad) - oldZ * Sin(rad));
+  z      = (oldY * Sin(rad) + oldZ * Cos(rad));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -475,10 +497,10 @@ template <typename T> void Vector4<T>::Lerp(const Vector4<T>& from, const Vector
   if (par > T(1.0f))
     par = T(1.0f);
   T ipar = T(1.0f) - par;
-  x = (from.x * ipar) + (to.x * par);
-  y = (from.y * ipar) + (to.y * par);
-  z = (from.z * ipar) + (to.z * par);
-  w = (from.w * ipar) + (to.w * par);
+  x      = (from.x * ipar) + (to.x * par);
+  y      = (from.y * ipar) + (to.y * par);
+  z      = (from.z * ipar) + (to.z * par);
+  w      = (from.w * ipar) + (to.w * par);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

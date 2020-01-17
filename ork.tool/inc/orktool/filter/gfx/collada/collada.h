@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -199,12 +199,12 @@ struct ColladaExportPolicy : public ork::util::Context<ColladaExportPolicy>
 	int							miNumBonesPerCluster;
 	std::string					mColladaInpName;
 	std::string					mColladaOutName;
-	bool						mbIsSkinned;
+	bool						mbisSkinned;
 	EUnits						mUnits;
 	bool						mDDSInputOnly;
 
 	ColladaExportPolicy()
-		: miNumBonesPerCluster(0), mbIsSkinned(false), mUnits(UNITS_ANY), mDDSInputOnly(false) {}
+		: miNumBonesPerCluster(0), mbisSkinned(false), mUnits(UNITS_ANY), mDDSInputOnly(false) {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -344,11 +344,11 @@ public:
 	SColladaMesh() : mbSkinned(false) {}
 
 	void SetSkinned( bool bv ) { mbSkinned=bv; }
-	bool IsSkinned( void ) const { return mbSkinned; }
+	bool isSkinned( void ) const { return mbSkinned; }
 	orkvector<MeshUtil::ToolMaterialGroup*>& RefMatGroups( void ) { return mMatGroups; }
 	orkvector<SColladaVertexWeightingInfo>& RefWeightingInfo( void ) { return mVertexWeighting; }
 	void SetMeshName( const std::string& name ) { mMeshName=name; }
-	const std::string& GetMeshName() const { return mMeshName; }
+	const std::string& meshName() const { return mMeshName; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -439,7 +439,7 @@ public:
 
 	const ColladaMaterial & GetMaterialFromShadingGroup( const std::string & ShadingGroupName ) const;
 
-	bool IsSkinned() const { return mSkeleton.size()>0; }
+	bool isSkinned() const { return mSkeleton.size()>0; }
 
 	typedef orkvector<ork::fmtx4> MatrixVector;
 

@@ -341,20 +341,20 @@
                                                                             <property name='PostFxNode'><backreference id='-1'/></property>
                                                                             <property name='RenderNode'>
                                                                                 <reference category='ObjectClass'>
-                                                                                    <object type='DeferredCompositingNodeDebugNormal' id='38'>
-                                                                                        <property name='AmbientLevel'>0.1 0.1 0.1</property>
+                                                                                    <object type='DeferredCompositingNodePbr' id='38'>
+                                                                                        <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
-                                                                                        <property name='DiffuseLevel'>5</property>
+                                                                                        <property name='DiffuseLevel'>1</property>
                                                                                         <property name='EnvironmentIntensity'>1.3</property>
-                                                                                        <property name='EnvironmentMipBias'>0.5</property>
-                                                                                        <property name='EnvironmentMipScale'>2</property>
+                                                                                        <property name='EnvironmentMipBias'>0</property>
+                                                                                        <property name='EnvironmentMipScale'>4</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
                                                                                                 "lev2tex" "data://environ/envmaps/tozenv_nebula"
                                                                                             </reference>
                                                                                         </property>
                                                                                         <property name='FogColor'>0 0 0 1</property>
-                                                                                        <property name='SpecularLevel'>2</property>
+                                                                                        <property name='SpecularLevel'>1</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>

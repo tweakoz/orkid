@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -274,7 +274,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
   }
   ///////////////////////////////////////////////////////////////////
   void Begin(Context* pTARG, GedVP* pVP) {
-    mbPickMode = pTARG->FBI()->IsPickState();
+    mbPickMode = pTARG->FBI()->isPickState();
     mpCurrentGedVp = pVP;
     mTexts.clear();
     clear();
@@ -579,7 +579,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   }
   ///////////////////////////////////////////////////////////////////
   void Begin(Context* pTARG, GedVP* pVP) {
-    mbPickMode = pTARG->FBI()->IsPickState();
+    mbPickMode = pTARG->FBI()->isPickState();
     mpCurrentGedVp = pVP;
     mTexts.clear();
     clear();
@@ -696,10 +696,10 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   }
 };
 orkvector<GedSkin*> InstantiateSkins() {
-  while (0 == lev2::GfxEnv::GetRef().GetLoaderTarget()) {
+  while (0 == lev2::GfxEnv::GetRef().loadingContext()) {
     ork::msleep(100);
   }
-  auto targ = lev2::GfxEnv::GetRef().GetLoaderTarget();
+  auto targ = lev2::GfxEnv::GetRef().loadingContext();
 
   orkvector<GedSkin*> skins;
   skins.push_back(new GedSkin0(targ));

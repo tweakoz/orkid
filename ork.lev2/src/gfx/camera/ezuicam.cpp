@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -24,6 +24,7 @@
 #include <ork/math/basicfilters.h>
 #include <ork/math/misc_math.h>
 #include <ork/lev2/qtui/qtui.h>
+#include <ork/lev2/gfx/material_pbr.inl>
 
 #include <QtGui/QCursor>
 
@@ -612,8 +613,8 @@ float EzUiCam::ViewLengthToWorldLength(const fvec4& pos, float ViewLength) {
   float depthscaler   = distATfar / distATnear;
 
   // get pos as a lerp from near to far
-  float depthN     = frustum.mNearPlane.GetPointDistance(pos);
-  float depthF     = frustum.mFarPlane.GetPointDistance(pos);
+  float depthN     = frustum._nearPlane.pointDistance(pos);
+  float depthF     = frustum._farPlane.pointDistance(pos);
   float depthRange = (camrayF - camrayN).Mag();
   if ((depthN >= float(0.0f)) && (depthF >= float(0.0f))) { // better be between near and far planes
     float lerpV  = depthN / depthRange;

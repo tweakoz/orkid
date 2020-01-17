@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -168,8 +168,8 @@ ProcTexOutputQuad::ProcTexOutputQuad() : mScale(1.0f), mMaterial(nullptr) {}
 ///////////////////////////////////////////////////////////////////////////////
 void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
   auto l_render_quad = [=](lev2::RenderContextInstData& rcid, lev2::Context* targ, const lev2::CallbackRenderable* pren) {
-    bool IsPickState = targ->FBI()->IsPickState();
-    if (IsPickState)
+    bool isPickState = targ->FBI()->isPickState();
+    if (isPickState)
       return;
 
     auto quad = pren->GetDrawableDataA().Get<const ProcTexOutputQuad*>();
@@ -274,8 +274,8 @@ ProcTexOutputSkybox::ProcTexOutputSkybox() : mVerticalAdjust(0.0f), mMaterial(nu
 ///////////////////////////////////////////////////////////////////////////////
 void ProcTexOutputSkybox::OnLinkEntity(Simulation* psi, Entity* pent) {
   auto l_render_skybox = [=](lev2::RenderContextInstData& rcid, lev2::Context* targ, const lev2::CallbackRenderable* pren) {
-    bool IsPickState = targ->FBI()->IsPickState();
-    if (IsPickState)
+    bool isPickState = targ->FBI()->isPickState();
+    if (isPickState)
       return;
 
       auto skybox = pren->GetDrawableDataA().Get<ProcTexOutputSkybox*>();
@@ -409,8 +409,8 @@ void ProcTexOutputDynTex::OnLinkEntity(Simulation* psi, Entity* pent) {
 
 
   auto l_compute = [=](lev2::RenderContextInstData& rcid, lev2::Context* targ, const lev2::CallbackRenderable* pren) {
-    bool IsPickState = targ->FBI()->IsPickState();
-    if (IsPickState)
+    bool isPickState = targ->FBI()->isPickState();
+    if (isPickState)
       return;
 
     auto dyn = pren->GetDrawableDataA().Get<ProcTexOutputDynTex*>();

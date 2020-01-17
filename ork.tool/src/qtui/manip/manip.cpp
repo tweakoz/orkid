@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -436,7 +436,7 @@ void ManipManager::DrawManip(Manip* pmanip, Context* pTARG) {
   pTARG->SetCurrentObject(pmanip);
   // orkprintf( "MANIP<%p>\n", pmanip );
 
-  if (pTARG->FBI()->IsPickState()) {
+  if (pTARG->FBI()->isPickState()) {
     fvec4 asv4;
     asv4.SetRGBAU64(pickID);
     pTARG->PushModColor(asv4);
@@ -491,7 +491,7 @@ void ManipManager::Queue(ork::lev2::IRenderer* prend) {
     CallbackRenderable::var_t ap;
     ap.Set<ManipManager*>(this);
 
-    CallbackRenderable& rable = prend->QueueCallback();
+    CallbackRenderable& rable = prend->enqueueCallback();
     rable.SetUserData0(ap);
     rable.SetSortKey(0x7fffffff);
     rable.SetRenderCallback(ManipRenderCallback);

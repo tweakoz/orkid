@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -45,9 +45,10 @@ QCtxWidget::QCtxWidget(CTQT* pctxbase, QWidget* parent)
   setAttribute(Qt::WA_OpaquePaintEvent);
   setFocusPolicy(Qt::StrongFocus);
   connect(&mQtTimer, SIGNAL(timeout()), this, SLOT(repaint()));
-  show();
-  activateWindow();
+  // parent->activateWindow();
+  // activateWindow();
   setAttribute(Qt::WA_DeleteOnClose);
+  // show();
   // setAttribute( Qt::WA_AcceptTouchEvents );
   // grabGesture(Qt::PanGesture);
 }
@@ -87,6 +88,9 @@ void QCtxWidget::showEvent(QShowEvent* event) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void QCtxWidget::resizeEvent(QResizeEvent* event) {
+  if (nullptr == event)
+    return;
+
   UIEvent().mpBlindEventData = (void*)event;
   QWidget::resizeEvent(event);
   QSize size = event->size();
@@ -530,8 +534,6 @@ CTQT::CTQT(Window* pwin, QWidget* pparent)
 }
 
 CTQT::~CTQT() {
-  if (mpWindow)
-    delete mpWindow;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

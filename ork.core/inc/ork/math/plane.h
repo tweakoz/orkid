@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -51,7 +51,7 @@ public: //
 
   //////////////////////////////////
 
-  T GetPointDistance(const Vector3<T>& pt) const;
+  T pointDistance(const Vector3<T>& pt) const;
   const Vector3<T>& GetNormal(void) const;
   const T& GetD(void) const;
   void crossProduct(F64 ii1, F64 jj1, F64 kk1, F64 ii2, F64 jj2, F64 kk2, F64& iicp, F64& jjcp, F64& kkcp) const;

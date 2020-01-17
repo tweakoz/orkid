@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -112,15 +112,14 @@ void FxShaderStorageBufferMapping::unmap() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-
 void FxShader::RegisterLoaders(const file::Path::NameType& base, const file::Path::NameType& ext) {
-  static FileDevContext gShaderFileContext1;
-  const FileDevContext& MorkCtx = FileEnv::UrlBaseToContext("lev2");
-  auto shaderpath = MorkCtx.GetFilesystemBaseAbs()+"/"+base;
-  gShaderFileContext1.SetFilesystemBaseAbs(shaderpath);
-  gShaderFileContext1.SetFilesystemBaseEnable(true);
-  gShaderFileContext1.SetPrependFilesystemBase(true);
-  FileEnv::RegisterUrlBase("orkshader://", gShaderFileContext1);
+  static auto gShaderFileContext1 = std::make_shared<FileDevContext>();
+  auto MorkCtx                    = FileEnv::UrlBaseToContext("lev2");
+  auto shaderpath                 = MorkCtx->GetFilesystemBaseAbs() + "/" + base;
+  gShaderFileContext1->SetFilesystemBaseAbs(shaderpath);
+  gShaderFileContext1->SetFilesystemBaseEnable(true);
+  gShaderFileContext1->SetPrependFilesystemBase(true);
+  FileEnv::registerUrlBase("orkshader://", gShaderFileContext1);
   printf("FxShader::RegisterLoaders ext<%s> base<%s> shaderpath<%s>\n", ext.c_str(), base.c_str(), shaderpath.c_str());
   gearlyhack = false;
 }
@@ -128,7 +127,7 @@ void FxShader::RegisterLoaders(const file::Path::NameType& base, const file::Pat
 ///////////////////////////////////////////////////////////////////////////////
 
 void FxShader::OnReset() {
-  Context* pTARG = GfxEnv::GetRef().GetLoaderTarget();
+  Context* pTARG = GfxEnv::GetRef().loadingContext();
 
   for (orkmap<std::string, const FxShaderParam*>::const_iterator it = _parameterByName.begin(); it != _parameterByName.end();
        it++) {

@@ -1,19 +1,19 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <ork/pch.h>
+#include <ork/reflect/RegisterProperty.h>
+#include <ork/rtti/downcast.h>
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/texman.h>
-#include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
-#include <ork/rtti/downcast.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/ModelComponent.h>
@@ -25,6 +25,7 @@
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/kernel/string/deco.inl>
 ///////////////////////////////////////////////////////////////////////////////
 //#include "ModelArchetype.h"
 ///////////////////////////////////////////////////////////////////////////////
@@ -47,8 +48,8 @@ void ModelComponentData::Describe() {
   ork::reflect::annotatePropertyForEditor<ModelComponentData>("Model", "editor.assetclass", "xgmodel");
 
   ork::reflect::RegisterMapProperty("MaterialOverrides", &ModelComponentData::_materialOverrides);
-  //ork::reflect::annotatePropertyForEditor<ModelComponentData>("MaterialOverrides", "editor.assettype", "FxShader");
-  //ork::reflect::annotatePropertyForEditor<ModelComponentData>("MaterialOverrides", "editor.assetclass", "FxShader");
+  // ork::reflect::annotatePropertyForEditor<ModelComponentData>("MaterialOverrides", "editor.assettype", "FxShader");
+  // ork::reflect::annotatePropertyForEditor<ModelComponentData>("MaterialOverrides", "editor.assetclass", "FxShader");
 
   ork::reflect::RegisterProperty("AlwaysVisible", &ModelComponentData::mAlwaysVisible);
   ork::reflect::RegisterProperty("Scale", &ModelComponentData::mfScale);
@@ -61,8 +62,12 @@ void ModelComponentData::Describe() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lev2::XgmModel* ModelComponentData::GetModel() const { return (mModel == 0) ? 0 : mModel->GetModel(); }
-void ModelComponentData::SetModel(lev2::XgmModelAsset* passet) { mModel = passet; }
+lev2::XgmModel* ModelComponentData::GetModel() const {
+  return (mModel == 0) ? 0 : mModel->GetModel();
+}
+void ModelComponentData::SetModel(lev2::XgmModelAsset* passet) {
+  mModel = passet;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -74,7 +79,8 @@ ModelComponentData::ModelComponentData()
     , mOffset(0.0f, 0.0f, 0.0f)
     , mbShowBoundingSphere(false)
     , mbCopyDag(false)
-    , mBlenderZup(false) {}
+    , mBlenderZup(false) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -88,11 +94,14 @@ ComponentInst* ModelComponentData::createComponent(Entity* pent) const {
 void ModelComponentData::SetModelAccessor(ork::rtti::ICastable* const& model) {
   mModel = model ? ork::rtti::safe_downcast<ork::lev2::XgmModelAsset*>(model) : 0;
 }
-void ModelComponentData::GetModelAccessor(ork::rtti::ICastable*& model) const { model = mModel; }
+void ModelComponentData::GetModelAccessor(ork::rtti::ICastable*& model) const {
+  model = mModel;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ModelComponentInst::Describe() {}
+void ModelComponentInst::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -110,6 +119,12 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
   lev2::XgmModel* model = data.GetModel();
 
   if (model) {
+
+    fvec3 whi(1, 1, 1);
+    fvec3 red(1, 0, 0);
+    fvec3 mag(1, 0, 1);
+    fvec3 cyn(0, 1, 1);
+
     mXgmModelInst = new lev2::XgmModelInst(model);
 
     mModelDrawable->SetModelInst(mXgmModelInst);
@@ -119,32 +134,41 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
     pent->addDrawableToDefaultLayer(mModelDrawable);
     mModelDrawable->SetOwner(pent);
 
-    mXgmModelInst->RefLocalPose().BindPose();
-    mXgmModelInst->RefLocalPose().BuildPose();
     mXgmModelInst->SetBlenderZup(mData.IsBlenderZup());
+    auto& localpose = mXgmModelInst->RefLocalPose();
+    localpose.BindPose();
+
+    deco::printf(whi, "ModelComponentInst<%p> constructor:\n", this);
+    deco::printe(red, "init localpose (bind)", true);
+    deco::prints(localpose.dumpc(red), true);
+    localpose.BuildPose();
+    deco::printe(mag, "init localpose (pre-concat)", true);
+    deco::prints(localpose.dumpc(mag), true);
+    localpose.Concatenate();
+    deco::printe(cyn, "init localpose (post-concat)", true);
+    deco::prints(localpose.dumpc(cyn), true);
 
     auto& ovmap = mData.MaterialOverrideMap();
 
     for (auto it : ovmap) {
       std::string mtlvaluename = it.second.c_str();
-      if( 0 == strcmp(it.first.c_str(),"all") ){
+      if (0 == strcmp(it.first.c_str(), "all")) {
         auto overridemtl = new lev2::PBRMaterial();
         overridemtl->setTextureBaseName(mtlvaluename);
         mXgmModelInst->_overrideMaterial = overridemtl;
       }
-      //lev2::FxShaderAsset* passet = it.second;
+      // lev2::FxShaderAsset* passet = it.second;
 
-      //if (passet && passet->IsLoaded()) {
-      //lev2::FxShader* pfxshader = passet->GetFxShader();
+      // if (passet && passet->IsLoaded()) {
+      // lev2::FxShader* pfxshader = passet->GetFxShader();
 
-      //if (pfxshader) {
-      //lev2::GfxMaterialFx* pfxmaterial = new lev2::GfxMaterialFx();
-      //pfxmaterial->SetEffect(pfxshader);
+      // if (pfxshader) {
+      // lev2::GfxMaterialFx* pfxmaterial = new lev2::GfxMaterialFx();
+      // pfxmaterial->SetEffect(pfxshader);
       //}
       //}
     }
   }
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -6,6 +6,7 @@
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <orktool/qtui/qtui_tool.h>
 #include <pkg/ent/scene.h>
+#include <ork/lev2/gfx/material_pbr.inl>
 using namespace ork::lev2;
 
 ///////////////////////////////////////////////////////////////////////////////

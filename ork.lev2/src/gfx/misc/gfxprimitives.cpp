@@ -1,15 +1,16 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
 #include <math.h>
+#include <ork/pch.h>
+#include <ork/math/misc_math.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
-#include <ork/math/misc_math.h>
-#include <ork/pch.h>
+#include <ork/lev2/gfx/material_pbr.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -60,7 +61,8 @@ GfxPrimitives::GfxPrimitives()
     , mVtxBuf_WireFrameCylinder(4 * NUM_CYLINDER_FACES + 2, 4 * NUM_CYLINDER_FACES + 2, EPRIM_LINES)
     , mVtxBuf_WireFrameBox(6 * 4 * 2, 6 * 4 * 2, EPRIM_LINES)
     , mVtxBuf_WireFrameCapsule(6 * 4 * 2, 6 * 4 * 2, EPRIM_LINES)
-    , mVtxBuf_WireFrameDome(6 * (CIRCSEGS + 2), 6 * (CIRCSEGS + 2), EPRIM_LINES) {}
+    , mVtxBuf_WireFrameDome(6 * (CIRCSEGS + 2), 6 * (CIRCSEGS + 2), EPRIM_LINES) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -84,21 +86,26 @@ void GfxPrimitives::Init(Context* pTarg) {
 
   F32 fLineSize = 1.0f;
 
-  lev2::VtxWriter<SVtxV12C4T16> vw;
+  lev2::VtxWriter<SVtxV12N12B12T8C4> vwpbr;
 
-  vw.Lock(pTarg, &GetRef().mVtxBuf_Axis, 6);
+  vwpbr.Lock(pTarg, &GetRef().mVtxBuf_Axis, 6);
 
-  vw.AddVertex(SVtxV12C4T16(0.0f, 0.0f, 0.0f, 0, 0, fcolor4::Red().GetARGBU32()));
-  vw.AddVertex(SVtxV12C4T16(fLineSize, 0.0f, 0.0f, 0, 0, fcolor4::Red().GetARGBU32()));
-  vw.AddVertex(SVtxV12C4T16(0.0f, 0.0f, 0.0f, 0, 0, fcolor4::Green().GetARGBU32()));
-  vw.AddVertex(SVtxV12C4T16(0.0f, fLineSize, 0.0f, 0, 0, fcolor4::Green().GetARGBU32()));
-  vw.AddVertex(SVtxV12C4T16(0.0f, 0.0f, 0.0f, 0, 0, fcolor4::Blue().GetARGBU32()));
-  vw.AddVertex(SVtxV12C4T16(0.0f, 0.0f, fLineSize, 0, 0, fcolor4::Blue().GetARGBU32()));
+  auto RED = fvec4::Red().GetARGBU32();
+  auto GRN = fvec4::Green().GetARGBU32();
+  auto BLU = fvec4::Blue().GetARGBU32();
+  vwpbr.AddVertex(SVtxV12N12B12T8C4(fvec3(0, 0, 0), fvec3(1, 0, 0), fvec3(0, 1, 0), fvec2(), RED));
+  vwpbr.AddVertex(SVtxV12N12B12T8C4(fvec3(fLineSize, 0, 0), fvec3(1, 0, 0), fvec3(0, 1, 0), fvec2(), RED));
+  vwpbr.AddVertex(SVtxV12N12B12T8C4(fvec3(0, 0, 0), fvec3(0, 1, 0), fvec3(1, 0, 0), fvec2(), GRN));
+  vwpbr.AddVertex(SVtxV12N12B12T8C4(fvec3(0, fLineSize, 0), fvec3(0, 1, 0), fvec3(1, 0, 0), fvec2(), GRN));
+  vwpbr.AddVertex(SVtxV12N12B12T8C4(fvec3(0, 0, 0), fvec3(0, 0, 1), fvec3(1, 0, 0), fvec2(), BLU));
+  vwpbr.AddVertex(SVtxV12N12B12T8C4(fvec3(0, 0, fLineSize), fvec3(0, 0, 1), fvec3(1, 0, 0), fvec2(), BLU));
 
-  vw.UnLock(pTarg, EULFLG_ASSIGNVBLEN);
+  vwpbr.UnLock(pTarg, EULFLG_ASSIGNVBLEN);
 
   ////////////////////////////////////////////////////
   // Grid
+
+  lev2::VtxWriter<SVtxV12C4T16> vw;
 
   int iNumGridLines = GRIDDIVS;
 
@@ -908,30 +915,30 @@ void GfxPrimitives::Init(Context* pTarg) {
     //////////////////////////////////////////////
     // generate primitive
     //////////////////////////////////////////////
-    size_t numvtx = (inumrings*inumrings*6);
+    size_t numvtx  = (inumrings * inumrings * 6);
     uint32_t color = 0xffffffff;
     vw.Lock(pTarg, &GetRef().mVtxBuf_FullSphere, numvtx);
     for (int U = 0; U < inumrings; U++) {
       const auto& RingA = _rings[U];
-      const auto& RingB = _rings[(U+1)%_rings.size()];
+      const auto& RingB = _rings[(U + 1) % _rings.size()];
       for (int V = 0; V < inumrings; V++) {
         const auto& VA = RingA[V];
-        const auto& VB = RingA[(V+1)%inumrings];
+        const auto& VB = RingA[(V + 1) % inumrings];
         const auto& VC = RingB[V];
-        const auto& VD = RingB[(V+1)%inumrings];
+        const auto& VD = RingB[(V + 1) % inumrings];
 
-        vw.AddVertex(SVtxV12C4T16(VA,fvec2(),color));
-        vw.AddVertex(SVtxV12C4T16(VB,fvec2(),color));
-        vw.AddVertex(SVtxV12C4T16(VC,fvec2(),color));
+        vw.AddVertex(SVtxV12C4T16(VA, fvec2(), color));
+        vw.AddVertex(SVtxV12C4T16(VB, fvec2(), color));
+        vw.AddVertex(SVtxV12C4T16(VC, fvec2(), color));
 
-        vw.AddVertex(SVtxV12C4T16(VB,fvec2(),color));
-        vw.AddVertex(SVtxV12C4T16(VD,fvec2(),color));
-        vw.AddVertex(SVtxV12C4T16(VC,fvec2(),color));
+        vw.AddVertex(SVtxV12C4T16(VB, fvec2(), color));
+        vw.AddVertex(SVtxV12C4T16(VD, fvec2(), color));
+        vw.AddVertex(SVtxV12C4T16(VC, fvec2(), color));
 
         numvtx += 6;
       }
     }
-    //printf("numvtx<%zu>\n", numvtx);
+    // printf("numvtx<%zu>\n", numvtx);
     vw.UnLock(pTarg, EULFLG_ASSIGNVBLEN);
     //////////////////////////////////////////////
   }
@@ -1050,8 +1057,12 @@ void GfxPrimitives::Init(Context* pTarg) {
         mpuv  = new fvec2[igl * igl];
       }
 
-      fvec3& XYZ(int ix, int iy) { return mpxyz[ix * minumgl + iy]; }
-      fvec2& UV(int ix, int iy) { return mpuv[ix * minumgl + iy]; }
+      fvec3& XYZ(int ix, int iy) {
+        return mpxyz[ix * minumgl + iy];
+      }
+      fvec2& UV(int ix, int iy) {
+        return mpuv[ix * minumgl + iy];
+      }
 
       fvec3 Normal(int ix1, int iz1) {
         int ix0 = (ix1 - 1);
@@ -1228,7 +1239,7 @@ void GfxPrimitives::Init(Context* pTarg) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderAxis(Context* pTarg) {
-  pTarg->BindMaterial(&GetRef().mMaterial);
+  pTarg->BindMaterial(GfxEnv::GetDefault3DMaterial());
   pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_Axis);
   pTarg->BindMaterial(0);
 }
@@ -1357,24 +1368,40 @@ void GfxPrimitives::RenderHalfSphere( Context *pTarg )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderEQSphere(Context* pTarg) { pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_EQSphere); }
+void GfxPrimitives::RenderEQSphere(Context* pTarg) {
+  pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_EQSphere);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderSkySphere(Context* pTarg) { pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_SkySphere); }
+void GfxPrimitives::RenderSkySphere(Context* pTarg) {
+  pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_SkySphere);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderGroundPlane(Context* pTarg) { pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_GroundPlane); }
+void GfxPrimitives::RenderGroundPlane(Context* pTarg) {
+  pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_GroundPlane);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderPerlinTerrain(Context* pTarg) { pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_PerlinTerrain); }
+void GfxPrimitives::RenderPerlinTerrain(Context* pTarg) {
+  pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_PerlinTerrain);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderOrthoQuad(
-    Context* pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
+    Context* pTarg,
+    f32 fX1,
+    f32 fX2,
+    f32 fY1,
+    f32 fY2,
+    f32 iminU,
+    f32 imaxU,
+    f32 iminV,
+    f32 imaxV) {
   auto vb = &GfxEnv::GetSharedDynamicVB();
 
   ///////////////////////////////////////////
@@ -1416,8 +1443,8 @@ void GfxPrimitives::RenderOrthoQuad(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderQuadAtX(
-    Context* pTarg, f32 fY1, f32 fY2, f32 fZ1, f32 fZ2, f32 fX, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
+void GfxPrimitives::
+    RenderQuadAtX(Context* pTarg, f32 fY1, f32 fY2, f32 fZ1, f32 fZ2, f32 fX, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
   auto vb = &GfxEnv::GetSharedDynamicVB();
 
   ///////////////////////////////////////////
@@ -1445,8 +1472,8 @@ void GfxPrimitives::RenderQuadAtX(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderQuadAtY(
-    Context* pTarg, f32 fX1, f32 fX2, f32 fZ1, f32 fZ2, f32 fY, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
+void GfxPrimitives::
+    RenderQuadAtY(Context* pTarg, f32 fX1, f32 fX2, f32 fZ1, f32 fZ2, f32 fY, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
   auto vb = &GfxEnv::GetSharedDynamicVB();
 
   ///////////////////////////////////////////
@@ -1474,8 +1501,8 @@ void GfxPrimitives::RenderQuadAtY(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderQuadAtZ(
-    Context* pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 fZ, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
+void GfxPrimitives::
+    RenderQuadAtZ(Context* pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 fZ, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
   auto vb = &GfxEnv::GetSharedDynamicVB();
 
   ///////////////////////////////////////////
@@ -1503,8 +1530,8 @@ void GfxPrimitives::RenderQuadAtZ(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxPrimitives::RenderQuadAtZV16T16C16(
-    Context* pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 fZ, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
+void GfxPrimitives::
+    RenderQuadAtZV16T16C16(Context* pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 fZ, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
   auto vb = &GfxEnv::GetSharedDynamicV16T16C16();
 
   ///////////////////////////////////////////

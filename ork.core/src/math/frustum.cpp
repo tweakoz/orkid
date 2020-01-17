@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 //////////////////////////////////////////////////////////////// 
@@ -61,21 +61,21 @@ void Frustum::CalcCorners()
 
 	ray_type testray;
 
-    mNearPlane.PlaneIntersect( mLeftPlane, testray.mOrigin, testray.mDirection );
-    bv = mTopPlane.Intersect    (testray, planedist, mNearCorners[0] );	// corner 0
-    bv = mBottomPlane.Intersect (testray, planedist, mNearCorners[3] );	// corner 3
+    _nearPlane.PlaneIntersect( _leftPlane, testray.mOrigin, testray.mDirection );
+    bv = _topPlane.Intersect    (testray, planedist, mNearCorners[0] );	// corner 0
+    bv = _bottomPlane.Intersect (testray, planedist, mNearCorners[3] );	// corner 3
 
-	mRightPlane.PlaneIntersect( mNearPlane, testray.mOrigin, testray.mDirection );
-    bv = mTopPlane.Intersect    ( testray, planedist, mNearCorners[1] );	// corner 1
-    bv = mBottomPlane.Intersect ( testray, planedist, mNearCorners[2] );	// corner 2
+	_rightPlane.PlaneIntersect( _nearPlane, testray.mOrigin, testray.mDirection );
+    bv = _topPlane.Intersect    ( testray, planedist, mNearCorners[1] );	// corner 1
+    bv = _bottomPlane.Intersect ( testray, planedist, mNearCorners[2] );	// corner 2
 
-	mLeftPlane.PlaneIntersect(  mFarPlane, testray.mOrigin, testray.mDirection );
-    bv = mTopPlane.Intersect    ( testray, planedist, mFarCorners[0] );	// corner 4
-    bv = mBottomPlane.Intersect ( testray, planedist, mFarCorners[3] );	// corner 7
+	_leftPlane.PlaneIntersect(  _farPlane, testray.mOrigin, testray.mDirection );
+    bv = _topPlane.Intersect    ( testray, planedist, mFarCorners[0] );	// corner 4
+    bv = _bottomPlane.Intersect ( testray, planedist, mFarCorners[3] );	// corner 7
 
-	mFarPlane.PlaneIntersect( mRightPlane, testray.mOrigin, testray.mDirection );
-    mTopPlane.Intersect         ( testray, planedist, mFarCorners[1] );	// corner 5
-    mBottomPlane.Intersect      ( testray, planedist, mFarCorners[2] );	// corner 6
+	_farPlane.PlaneIntersect( _rightPlane, testray.mOrigin, testray.mDirection );
+    _topPlane.Intersect         ( testray, planedist, mFarCorners[1] );	// corner 5
+    _bottomPlane.Intersect      ( testray, planedist, mFarCorners[2] );	// corner 6
 
 }
 
@@ -123,26 +123,26 @@ void Frustum::Set( const mtx44_type& IVPMatrix )
     mZNormal.Normalize();
 
 	vec3_type  inNormal = mZNormal*float(-1.0f);
-	mNearPlane.CalcFromNormalAndOrigin( mZNormal, camrayN );
-    mFarPlane.CalcFromNormalAndOrigin( inNormal, camrayF );
+	_nearPlane.CalcFromNormalAndOrigin( mZNormal, camrayN );
+    _farPlane.CalcFromNormalAndOrigin( inNormal, camrayF );
 
 	double t = EPSILON;
-    mTopPlane.CalcPlaneFromTriangle( mFarCorners[1], mFarCorners[0], mNearCorners[0], EPSILON );
-    mBottomPlane.CalcPlaneFromTriangle( mNearCorners[3], mFarCorners[3], mFarCorners[2],EPSILON );
-    mLeftPlane.CalcPlaneFromTriangle( mNearCorners[0], mFarCorners[0], mFarCorners[3] ,EPSILON );
-    mRightPlane.CalcPlaneFromTriangle( mNearCorners[2], mFarCorners[2], mFarCorners[1],EPSILON );
+    _topPlane.CalcPlaneFromTriangle( mFarCorners[1], mFarCorners[0], mNearCorners[0], EPSILON );
+    _bottomPlane.CalcPlaneFromTriangle( mNearCorners[3], mFarCorners[3], mFarCorners[2],EPSILON );
+    _leftPlane.CalcPlaneFromTriangle( mNearCorners[0], mFarCorners[0], mFarCorners[3] ,EPSILON );
+    _rightPlane.CalcPlaneFromTriangle( mNearCorners[2], mFarCorners[2], mFarCorners[1],EPSILON );
 	//CalcCorners()l
 
 	mCenter = (  mFarCorners[0]+mFarCorners[1]+mFarCorners[2]+mFarCorners[3]
 			   + mNearCorners[0]+mNearCorners[1]+mNearCorners[2]+mNearCorners[3] ) * 0.125f;
 
 #if 0// test (camrayHALF should always be infront of planes, => all of these should return > 0
-    F32 Dn = mNearPlane.GetPointDistance( camrayHALF );
-    F32 Df = mFarPlane.GetPointDistance( camrayHALF );
-    F32 Dt = mTopPlane.GetPointDistance( camrayHALF );
-    F32 Db = mBottomPlane.GetPointDistance( camrayHALF );
-    F32 Dl = mLeftPlane.GetPointDistance( camrayHALF );
-    F32 Dr = mRightPlane.GetPointDistance( camrayHALF );
+    F32 Dn = _nearPlane.pointDistance( camrayHALF );
+    F32 Df = _farPlane.pointDistance( camrayHALF );
+    F32 Dt = _topPlane.pointDistance( camrayHALF );
+    F32 Db = _bottomPlane.pointDistance( camrayHALF );
+    F32 Dl = _leftPlane.pointDistance( camrayHALF );
+    F32 Dr = _rightPlane.pointDistance( camrayHALF );
     orkprintf( "Dn %f Df %f Dt %f Db %f Dl %f Dr %f\n", Dn, Df, Dt, Db, Dl, Dr );
 #endif
 }
@@ -157,24 +157,24 @@ void Frustum::Set( const mtx44_type& VMatrix, const mtx44_type& PMatrix )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool	Frustum::Contains(const vec3_type& v) const
+bool	Frustum::contains(const vec3_type& v) const
 {
-	if(mTopPlane.IsPointBehind(v))
+	if(_topPlane.IsPointBehind(v))
 		return false;
 
-	if(mBottomPlane.IsPointBehind(v))
+	if(_bottomPlane.IsPointBehind(v))
 		return false;
 
-	if(mLeftPlane.IsPointBehind(v))
+	if(_leftPlane.IsPointBehind(v))
 		return false;
 
-	if(mRightPlane.IsPointBehind(v))
+	if(_rightPlane.IsPointBehind(v))
 		return false;
 
-	if(mNearPlane.IsPointBehind(v))
+	if(_nearPlane.IsPointBehind(v))
 		return false;
 
-	if(mFarPlane.IsPointBehind(v))
+	if(_farPlane.IsPointBehind(v))
 		return false;
 
 	return true;

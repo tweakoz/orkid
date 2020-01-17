@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -93,7 +93,7 @@ GraphVP::GraphVP(DataFlowEditor& dfed, tool::ged::ObjModel& objmdl, const std::s
     : ui::Surface(name, 0, 0, 0, 0, CColor3(0.1f, 0.1f, 0.1f), 0.0f)
     , mObjectModel(objmdl)
     , mDflowEditor(dfed)
-    , mGridMaterial(GfxEnv::GetRef().GetLoaderTarget())
+    , mGridMaterial(GfxEnv::GetRef().loadingContext())
 
 {
   dflowgraphedit::GetClassStatic();
@@ -132,7 +132,7 @@ GraphVP::GraphVP(DataFlowEditor& dfed, tool::ged::ObjModel& objmdl, const std::s
 
 void GraphVP::draw_connections(Context* pTARG) {
   auto fbi     = pTARG->FBI();
-  bool is_pick = fbi->IsPickState();
+  bool is_pick = fbi->isPickState();
 
   if (nullptr == GetTopGraph())
     return;
@@ -240,7 +240,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
   auto defmtl   = lev2::GfxEnv::GetDefaultUIMaterial();
   auto& VB      = lev2::GfxEnv::GetSharedDynamicV16T16C16();
   bool has_foc  = HasMouseFocus();
-  bool is_pick  = fbi->IsPickState();
+  bool is_pick  = fbi->isPickState();
   auto& modules = GetTopGraph()->Modules();
 
   if (nullptr == GetTopGraph()) {

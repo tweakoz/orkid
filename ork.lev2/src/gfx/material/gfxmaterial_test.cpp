@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -269,7 +269,7 @@ bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
   if (hMatRot)
     FXI->BindParamMatrix(hModFX, hMatRot, MTXI->RefR3Matrix());
 
-  if (pTarg->FBI()->IsPickState()) {
+  if (pTarg->FBI()->isPickState()) {
     FXI->BindParamVect4(hModFX, hParamModColor, pTarg->RefModColor());
   } else {
     if (meColorMode == EMODE_INTERNAL_COLOR) {

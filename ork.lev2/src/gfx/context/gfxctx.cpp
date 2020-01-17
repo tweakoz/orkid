@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -43,7 +43,10 @@ CTXBASE::CTXBASE(Window* pwin)
   SetupSignalsAndSlots();
   mpWindow->mpCTXBASE = this;
 }
-
+CTXBASE::~CTXBASE() {
+  if (mpWindow)
+    delete mpWindow;
+}
 void CTXBASE::pushRefreshPolicy(RefreshPolicyItem policy) {
   _policyStack.push(_curpolicy);
   _setRefreshPolicy(policy);

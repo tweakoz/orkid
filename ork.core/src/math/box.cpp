@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -158,7 +158,7 @@ void AABox::ComputePlanes()
     mPlaneNZ[1] = fplane3( -nZ, mMax.GetZ() );
 }
 
-bool AABox::Contains(const float test_point_X, const float test_point_Z) const
+bool AABox::contains(const float test_point_X, const float test_point_Z) const
  {
     if (test_point_X > mMax.GetX())
         return false;
@@ -191,7 +191,7 @@ bool AABox::Contains(const float test_point_X, const float test_point_Z) const
 
  ///////////////////////////////////////////////////////////////////////////////
 
- bool AABox::Contains(const fvec3& test_point) const
+ bool AABox::contains(const fvec3& test_point) const
  {
     if (test_point.GetX() > mMax.GetX())
         return false;

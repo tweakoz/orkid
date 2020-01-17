@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -9,6 +9,8 @@
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
 #include <ork/math/cmatrix3.h>
+#include <ork/kernel/string/string.h>
+#include <ork/kernel/string/deco.inl>
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <pmmintrin.h>
@@ -21,21 +23,13 @@ template <typename T> const Matrix44<T> Matrix44<T>::Identity;
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Matrix33<T> Matrix44<T>::rotMatrix33(void) const {
-    Matrix33<T> rval;
-    rval.fromNormalVectors(
-  		GetXNormal().Normal(),
-  		GetYNormal().Normal(),
-  		GetZNormal().Normal()
-  	);
-    return rval;
+  Matrix33<T> rval;
+  rval.fromNormalVectors(GetXNormal().Normal(), GetYNormal().Normal(), GetZNormal().Normal());
+  return rval;
 }
 template <typename T> Matrix44<T> Matrix44<T>::rotMatrix44(void) const {
   Matrix44<T> rval;
-  rval.fromNormalVectors(
-    GetXNormal().Normal(),
-    GetYNormal().Normal(),
-    GetZNormal().Normal()
-  );
+  rval.fromNormalVectors(GetXNormal().Normal(), GetYNormal().Normal(), GetZNormal().Normal());
   return rval;
 }
 
@@ -72,8 +66,8 @@ template <typename T> void Matrix44<T>::SetToIdentity(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix44<T>::dump(const char* name) const {
-  orkprintf("Matrix %p %s\n{	", this, name);
+template <typename T> void Matrix44<T>::dump(std::string name) const {
+  orkprintf("Matrix %p %s\n{	", this, name.c_str());
 
   for (int i = 0; i < 4; i++) {
 
@@ -86,23 +80,94 @@ template <typename T> void Matrix44<T>::dump(const char* name) const {
 
   orkprintf("\n}\n");
 }
+template <typename T> std::string Matrix44<T>::dump(Vector3<T> color) const {
+  std::string rval;
+  bool use_color = color.length() > 0.0f;
+  auto color2    = color * 0.6;
+  auto color3    = color * 0.8;
+  auto color4    = color * 0.3;
+  for (int i = 0; i < 4; i++) {
+    if (use_color) {
+      rval += ork::deco::asciic_rgb(color4);
+    }
+    rval += "[";
+    for (int j = 0; j < 4; j++) {
+      if (use_color) {
+        rval += j < 3 ? ork::deco::asciic_rgb(color2) : ork::deco::asciic_rgb(color4);
+      }
+      //////////////////////////////////
+      // round down small numbers
+      //////////////////////////////////
+      float elem = elements[i][j];
+      elem       = float(int(elem * 10000)) / 10000.0f;
+      //////////////////////////////////
+      rval += FormatString(" %+4.4g ", elem);
+    }
+    if (use_color) {
+      rval += ork::deco::asciic_rgb(color4);
+    }
+    rval += "] ";
+  }
+  {
+    Quaternion<T> q(*this);
+    auto rot = q.ToAxisAngle();
+    if (rot.w < 0.0f) {
+      rot *= -1.0f;
+    }
+    if (use_color) {
+      rval += ork::deco::asciic_rgb(color);
+    }
+    // rval += FormatString("  quat<%0.1g %0.1g %0.1g %0.1g>", q.x, q.y, q.z, q.w);
+    rval += FormatString("  axis<%0.1g %0.1g %0.1g> angle<%g>", rot.x, rot.y, rot.z, round(rot.w * RTOD));
+  }
+  if (use_color) {
+    rval += ork::deco::asciic_reset();
+  }
+  return rval;
+}
+template <typename T> std::string Matrix44<T>::dump() const {
+  std::string rval;
+  for (int i = 0; i < 4; i++) {
+    rval += "[";
+    for (int j = 0; j < 4; j++) {
+      rval += FormatString(" %+0.3g ", elements[i][j]);
+    }
+    rval += "] ";
+  }
+  Quaternion<T> q(*this);
+  auto rot = q.ToAxisAngle();
+  if (rot.w < 0.0f) {
+    rot *= -1.0f;
+  }
+  // rval += FormatString("  quat<%0.1g %0.1g %0.1g %0.1g>", q.x, q.y, q.z, q.w);
+  rval += FormatString("  axis<%0.1g %0.1g %0.1g> angle<%g>", rot.x, rot.y, rot.z, round(rot.w * RTOD));
+  return rval;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix44<T>::SetElemYX(int ix, int iy, T val) { elements[iy][ix] = val; }
+template <typename T> void Matrix44<T>::SetElemYX(int ix, int iy, T val) {
+  elements[iy][ix] = val;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> T Matrix44<T>::GetElemYX(int ix, int iy) const { return elements[iy][ix]; }
+template <typename T> T Matrix44<T>::GetElemYX(int ix, int iy) const {
+  return elements[iy][ix];
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix44<T>::SetElemXY(int ix, int iy, T val) { elements[ix][iy] = val; }
+template <typename T> void Matrix44<T>::SetElemXY(int ix, int iy, T val) {
+  elements[ix][iy] = val;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> T Matrix44<T>::GetElemXY(int ix, int iy) const { return elements[ix][iy]; }
+template <typename T> T Matrix44<T>::GetElemXY(int ix, int iy) const {
+  return elements[ix][iy];
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -110,7 +175,7 @@ template <typename T> T Matrix44<T>::GetElemXY(int ix, int iy) const { return el
 template <typename T> void Matrix44<T>::Translate(const Vector4<T>& vec) {
   Matrix44<T> temp, res;
   temp.SetTranslation(vec);
-  res = temp * *this;
+  res   = temp * *this;
   *this = res;
 }
 
@@ -119,21 +184,27 @@ template <typename T> void Matrix44<T>::Translate(const Vector4<T>& vec) {
 template <typename T> void Matrix44<T>::Translate(T vx, T vy, T vz) {
   Matrix44<T> temp, res;
   temp.SetTranslation(vx, vy, vz);
-  res = temp * *this;
+  res   = temp * *this;
   *this = res;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix44<T>::SetTranslation(const Vector3<T>& vec) { SetColumn(3, Vector4<T>(vec, 1.0f)); }
+template <typename T> void Matrix44<T>::SetTranslation(const Vector3<T>& vec) {
+  SetColumn(3, Vector4<T>(vec, 1.0f));
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Vector3<T> Matrix44<T>::GetTranslation(void) const { return GetColumn(3).xyz(); }
+template <typename T> Vector3<T> Matrix44<T>::GetTranslation(void) const {
+  return GetColumn(3).xyz();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix44<T>::SetTranslation(T _x, T _y, T _z) { SetTranslation(Vector3<T>(_x, _y, _z)); }
+template <typename T> void Matrix44<T>::SetTranslation(T _x, T _y, T _z) {
+  SetTranslation(Vector3<T>(_x, _y, _z));
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -208,7 +279,7 @@ template <typename T> void Matrix44<T>::SetRotateZ(T rad) {
 template <typename T> void Matrix44<T>::RotateX(T rad) {
   Matrix44<T> temp, res;
   temp.SetRotateX(rad);
-  res = temp * *this;
+  res   = temp * *this;
   *this = res;
 }
 
@@ -218,7 +289,7 @@ template <typename T> void Matrix44<T>::RotateX(T rad) {
 template <typename T> void Matrix44<T>::RotateY(T rad) {
   Matrix44<T> temp, res;
   temp.SetRotateY(rad);
-  res = temp * *this;
+  res   = temp * *this;
   *this = res;
 }
 
@@ -228,14 +299,16 @@ template <typename T> void Matrix44<T>::RotateY(T rad) {
 template <typename T> void Matrix44<T>::RotateZ(T rad) {
   Matrix44<T> temp, res;
   temp.SetRotateZ(rad);
-  res = temp * *this;
+  res   = temp * *this;
   *this = res;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix44<T>::SetScale(const Vector4<T>& vec) { SetScale(vec.GetX(), vec.GetY(), vec.GetZ()); }
+template <typename T> void Matrix44<T>::SetScale(const Vector4<T>& vec) {
+  SetScale(vec.GetX(), vec.GetY(), vec.GetZ());
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -255,14 +328,16 @@ template <typename T> void Matrix44<T>::SetScale(T x, T y, T z) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix44<T>::SetScale(T s) { SetScale(s, s, s); }
+template <typename T> void Matrix44<T>::SetScale(T s) {
+  SetScale(s, s, s);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix44<T>::Scale(const Vector4<T>& vec) {
   Matrix44<T> temp, res;
   temp.SetScale(vec);
-  res = temp * *this;
+  res   = temp * *this;
   *this = res;
 }
 
@@ -271,7 +346,7 @@ template <typename T> void Matrix44<T>::Scale(const Vector4<T>& vec) {
 template <typename T> void Matrix44<T>::Scale(T xscl, T yscl, T zscl) {
   Matrix44<T> temp, res;
   temp.SetScale(xscl, yscl, zscl);
-  res = temp * *this;
+  res   = temp * *this;
   *this = res;
 }
 
@@ -321,7 +396,7 @@ template <typename T> void Matrix44<T>::CreateBillboard(Vector3<T> objectPos, Ve
   dir.SetZ(objectPos.GetZ() - viewPos.GetZ());
 
   T slen = dir.MagSquared();
-  dir = dir * (T(1.0f) / sqrtf(slen));
+  dir    = dir * (T(1.0f) / sqrtf(slen));
 
   cross = upVec;
   cross = cross.Cross(dir);
@@ -354,7 +429,7 @@ template <typename T> void Matrix44<T>::CreateBillboard(Vector3<T> objectPos, Ve
 template <typename T> void fpuM44xM44(const T a[4][4], const T b[4][4], T c[4][4]) {
   const T* fa = &a[0][0];
   const T* fb = &b[0][0];
-  T* fc = &c[0][0];
+  T* fc       = &c[0][0];
 
   //    y  x
   //    i  j      i  k    k  j      i  k    k  j      i  k    k  j      i  k    k  j
@@ -369,8 +444,8 @@ template <typename T> void fpuM44xM44(const T a[4][4], const T b[4][4], T c[4][4
   fc[6] = fa[4] * fb[2] + fa[5] * fb[6] + fa[6] * fb[10] + fa[7] * fb[14];
   fc[7] = fa[4] * fb[3] + fa[5] * fb[7] + fa[6] * fb[11] + fa[7] * fb[15];
 
-  fc[8] = fa[8] * fb[0] + fa[9] * fb[4] + fa[10] * fb[8] + fa[11] * fb[12];
-  fc[9] = fa[8] * fb[1] + fa[9] * fb[5] + fa[10] * fb[9] + fa[11] * fb[13];
+  fc[8]  = fa[8] * fb[0] + fa[9] * fb[4] + fa[10] * fb[8] + fa[11] * fb[12];
+  fc[9]  = fa[8] * fb[1] + fa[9] * fb[5] + fa[10] * fb[9] + fa[11] * fb[13];
   fc[10] = fa[8] * fb[2] + fa[9] * fb[6] + fa[10] * fb[10] + fa[11] * fb[14];
   fc[11] = fa[8] * fb[3] + fa[9] * fb[7] + fa[10] * fb[11] + fa[11] * fb[15];
 
@@ -825,9 +900,9 @@ template <typename T> void Matrix44<T>::Frustum(T left, T right, T top, T bottom
 
   SetToIdentity();
 
-  float width = right - left;
+  float width  = right - left;
   float height = top - bottom;
-  float depth = (zf - zn);
+  float depth  = (zf - zn);
 
   /////////////////////////////////////////////
 
@@ -872,15 +947,15 @@ template <typename T> void Matrix44<T>::LookAt(T eyex, T eyey, T eyez, T centerx
 // if you want device specific see the gfxtarget
 
 template <typename T> void Matrix44<T>::Ortho(T left, T right, T top, T bottom, T fnear, T ffar) {
-  T invWidth = T(1.0f) / (right - left);
+  T invWidth  = T(1.0f) / (right - left);
   T invHeight = T(1.0f) / (top - bottom);
-  T invDepth = T(1.0f) / (ffar - fnear);
-  T fScaleX = T(2.0f) * invWidth;
-  T fScaleY = T(2.0f) * invHeight;
-  T fScaleZ = T(-2.0f) * invDepth;
-  T TransX = -(right + left) * invWidth;
-  T TransY = -(top + bottom) * invHeight;
-  T TransZ = -(ffar + fnear) * invDepth;
+  T invDepth  = T(1.0f) / (ffar - fnear);
+  T fScaleX   = T(2.0f) * invWidth;
+  T fScaleY   = T(2.0f) * invHeight;
+  T fScaleZ   = T(-2.0f) * invDepth;
+  T TransX    = -(right + left) * invWidth;
+  T TransY    = -(top + bottom) * invHeight;
+  T TransZ    = -(ffar + fnear) * invDepth;
 
   SetElemYX(0, 0, fScaleX);
   SetElemYX(1, 0, T(0.0f));
@@ -908,7 +983,7 @@ template <typename T> void Matrix44<T>::Ortho(T left, T right, T top, T bottom, 
 template <typename T>
 bool Matrix44<T>::UnProject(const Vector4<T>& rVWin, const Matrix44<T>& rIMVP, const SRect& rVP, Vector3<T>& rVObj) {
   T in[4];
-  T _z = rVWin.GetZ();
+  T _z  = rVWin.GetZ();
   in[0] = (rVWin.GetX() - T(rVP.miX)) * T(2) / T(rVP.miW) - T(1.0f);
   in[1] = (T(rVP.miH) - rVWin.GetY() - T(rVP.miY)) * T(2) / T(rVP.miH) - T(1.0f);
   in[2] = _z;

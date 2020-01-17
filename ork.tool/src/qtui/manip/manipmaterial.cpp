@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -44,7 +44,7 @@ void GfxMaterialManip::Init(ork::lev2::Context *pTarg)
 int GfxMaterialManip::BeginBlock( Context* pTarg,const RenderContextInstData &MatCtx )
 {
 	int imode = mManager.GetDrawMode();
-	bool bpick = pTarg->FBI()->IsPickState();
+	bool bpick = pTarg->FBI()->isPickState();
 
 	pTarg->FXI()->BindTechnique( hModFX, bpick ? hTekPick : hTekStd );
 	int inumpasses = pTarg->FXI()->BeginBlock( hModFX, MatCtx );

@@ -1,12 +1,13 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
 #include <algorithm>
 #include <ork/pch.h>
+#include <ork/rtti/Class.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/mutex.h>
 #include <ork/reflect/RegisterProperty.h>
@@ -26,38 +27,40 @@
 #include <ork/lev2/gfx/texman.h>
 
 #include "NodeCompositorDeferred.h"
+#include "CpuLightProcessor.h"
 
-ImplementReflectionX(ork::lev2::deferrednode::DeferredCompositingNodeDebugNormal, "DeferredCompositingNodeDebugNormal");
+ImplementReflectionX(ork::lev2::deferrednode::DeferredCompositingNodePbr, "DeferredCompositingNodePbr");
 
 // fvec3 LightColor
 // fvec4 LightPosR 16byte
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::deferrednode {
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNodeDebugNormal::describeX(class_t* c) {
-  c->memberProperty("ClearColor", &DeferredCompositingNodeDebugNormal::_clearColor);
-  c->memberProperty("FogColor", &DeferredCompositingNodeDebugNormal::_fogColor);
-  c->memberProperty("AmbientLevel", &DeferredCompositingNodeDebugNormal::_ambientLevel);
-  c->floatProperty("EnvironmentIntensity", float_range{-10, 10}, &DeferredCompositingNodeDebugNormal::_environmentIntensity);
-  c->floatProperty("EnvironmentMipBias", float_range{0, 12}, &DeferredCompositingNodeDebugNormal::_environmentMipBias);
-  c->floatProperty("EnvironmentMipScale", float_range{0, 100}, &DeferredCompositingNodeDebugNormal::_environmentMipScale);
-  c->floatProperty("DiffuseLevel", float_range{-5, 5}, &DeferredCompositingNodeDebugNormal::_diffuseLevel);
-  c->floatProperty("SpecularLevel", float_range{-5, 5}, &DeferredCompositingNodeDebugNormal::_specularLevel);
+void DeferredCompositingNodePbr::describeX(class_t* c) {
+
+  class_t::CreateClassAlias("DeferredCompositingNodeDebugNormal", c);
+
+  c->memberProperty("ClearColor", &DeferredCompositingNodePbr::_clearColor);
+  c->memberProperty("FogColor", &DeferredCompositingNodePbr::_fogColor);
+  c->memberProperty("AmbientLevel", &DeferredCompositingNodePbr::_ambientLevel);
+  c->floatProperty("EnvironmentIntensity", float_range{0, 100}, &DeferredCompositingNodePbr::_environmentIntensity);
+  c->floatProperty("EnvironmentMipBias", float_range{0, 12}, &DeferredCompositingNodePbr::_environmentMipBias);
+  c->floatProperty("EnvironmentMipScale", float_range{0, 100}, &DeferredCompositingNodePbr::_environmentMipScale);
+  c->floatProperty("DiffuseLevel", float_range{0, 1}, &DeferredCompositingNodePbr::_diffuseLevel);
+  c->floatProperty("SpecularLevel", float_range{0, 1}, &DeferredCompositingNodePbr::_specularLevel);
 
   c->accessorProperty(
-       "EnvironmentTexture",
-       &DeferredCompositingNodeDebugNormal::_readEnvTexture,
-       &DeferredCompositingNodeDebugNormal::_writeEnvTexture)
+       "EnvironmentTexture", &DeferredCompositingNodePbr::_readEnvTexture, &DeferredCompositingNodePbr::_writeEnvTexture)
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.assettype", "lev2tex")
       ->annotate<ConstString>("editor.assetclass", "lev2tex");
 }
 
-void DeferredCompositingNodeDebugNormal::_readEnvTexture(ork::rtti::ICastable*& tex) const {
+void DeferredCompositingNodePbr::_readEnvTexture(ork::rtti::ICastable*& tex) const {
   tex = _environmentTextureAsset;
 }
 
-void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable* const& tex) {
+void DeferredCompositingNodePbr::_writeEnvTexture(ork::rtti::ICastable* const& tex) {
   _environmentTextureAsset = tex ? rtti::autocast(tex) : nullptr;
   if (nullptr == _environmentTextureAsset)
     return;
@@ -88,7 +91,6 @@ void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable* 
       ///////////////////////////
       _filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ);
       _filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ);
-      _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(targ);
       //////////////////////////////////////////////////////////////
       // DataBlockCache::setDataBlock(cachekey, irrmapdblock);
       datablock = irrmapdblock;
@@ -98,33 +100,31 @@ void DeferredCompositingNodeDebugNormal::_writeEnvTexture(ork::rtti::ICastable* 
   ////////////////////////////////////////////////////////////////////////////////
 }
 
-lev2::Texture* DeferredCompositingNodeDebugNormal::envSpecularTexture() const {
+lev2::Texture* DeferredCompositingNodePbr::envSpecularTexture() const {
   return _filtenvSpecularMap;
 }
-lev2::Texture* DeferredCompositingNodeDebugNormal::envDiffuseTexture() const {
+lev2::Texture* DeferredCompositingNodePbr::envDiffuseTexture() const {
   return _filtenvDiffuseMap;
-}
-lev2::Texture* DeferredCompositingNodeDebugNormal::brdfIntegrationTexture() const {
-  return _brdfIntegrationMap;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 struct IMPL {
   static const int KMAXLIGHTS = 8;
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  IMPL(DeferredCompositingNodeDebugNormal* node)
+  IMPL(DeferredCompositingNodePbr* node)
       : _camname(AddPooledString("Camera"))
-      , _context(node, "orkshader://deferred", KMAXLIGHTS) {
+      , _context(node, "orkshader://deferred", KMAXLIGHTS)
+      , _lightProcessor(_context, node) {
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ~IMPL() {
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  void init(lev2::Context* target) {
-    _context.gpuInit(target);
+  void init(lev2::Context* context) {
+    _context.gpuInit(context);
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  void _render(DeferredCompositingNodeDebugNormal* node, CompositorDrawData& drawdata) {
+  void _render(DeferredCompositingNodePbr* node, CompositorDrawData& drawdata) {
     //_timer.Start();
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
@@ -137,8 +137,10 @@ struct IMPL {
     //////////////////////////////////////////////////////
     _context.renderUpdate(drawdata);
     auto VD = _context.computeViewData(drawdata);
-    _context.update(VD);
+    _context.updateDebugLights(VD);
     _context._clearColor = node->_clearColor;
+    /////////////////////////////////////////////////////////////////////////////////////////
+    bool is_stereo = VD._isStereo;
     /////////////////////////////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::render");
     _context.renderGbuffer(drawdata, VD);
@@ -152,16 +154,18 @@ struct IMPL {
     _context._accumCPD._cameraMatrices       = nullptr;
     _context._accumCPD._stereoCameraMatrices = nullptr;
     _context._accumCPD._stereo1pass          = false;
+    _context._specularLevel                  = node->specularLevel() * node->environmentIntensity();
+    _context._diffuseLevel                   = node->diffuseLevel() * node->environmentIntensity();
     CIMPL->pushCPD(_context._accumCPD); // base lighting
     FBI->SetAutoClear(true);
     FBI->PushRtGroup(_context._rtgLaccum);
     targ->beginFrame();
     FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
     //////////////////////////////////////////////////////////////////
-    // base lighting
+    // base lighting (environent IBL lighting)
     //////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::BaseLighting");
-    _context._lightingmtl.bindTechnique(VD._isStereo ? _context._tekDebugNormalStereo : _context._tekDebugNormal);
+    _context._lightingmtl.bindTechnique(is_stereo ? _context._tekEnvironmentLightingStereo : _context._tekEnvironmentLighting);
     _context._lightingmtl._rasterstate.SetBlending(EBLENDING_OFF);
     _context._lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
     _context._lightingmtl._rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
@@ -181,15 +185,15 @@ struct IMPL {
     _context._lightingmtl.bindParamCTex(_context._parMapSpecularEnv, node->envSpecularTexture());
     _context._lightingmtl.bindParamCTex(_context._parMapDiffuseEnv, node->envDiffuseTexture());
 
-    OrkAssert(node->brdfIntegrationTexture() != nullptr);
-    _context._lightingmtl.bindParamCTex(_context._parMapBrdfIntegration, node->brdfIntegrationTexture());
+    OrkAssert(_context.brdfIntegrationTexture() != nullptr);
+    _context._lightingmtl.bindParamCTex(_context._parMapBrdfIntegration, _context.brdfIntegrationTexture());
 
     /////////////////////////
 
     _context._lightingmtl.bindParamFloat(_context._parSkyboxLevel, node->skyboxLevel());
     _context._lightingmtl.bindParamVec3(_context._parAmbientLevel, node->ambientLevel());
-    _context._lightingmtl.bindParamFloat(_context._parSpecularLevel, node->specularLevel());
-    _context._lightingmtl.bindParamFloat(_context._parDiffuseLevel, node->diffuseLevel());
+    _context._lightingmtl.bindParamFloat(_context._parSpecularLevel, _context._specularLevel);
+    _context._lightingmtl.bindParamFloat(_context._parDiffuseLevel, _context._diffuseLevel);
 
     /////////////////////////
 
@@ -205,8 +209,27 @@ struct IMPL {
     RSI->BindRasterState(_context._lightingmtl._rasterstate);
     this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
     _context._lightingmtl.end(RCFD);
-    CIMPL->popCPD();       // base lighting
     targ->debugPopGroup(); // BaseLighting
+
+    /////////////////////////////////
+    // Dynamic Lighting
+    /////////////////////////////////
+
+    if (auto lmgr = CIMPL->lightManager()) {
+
+      // printf("lightmgr<%p>\n", lmgr);
+      lmgr->enumerateInPass(_context._accumCPD, _enumeratedLights);
+      auto& lights = _enumeratedLights._enumeratedLights;
+
+      if (lights.size())
+        _lightProcessor.render(drawdata, VD, _enumeratedLights);
+    }
+
+    /////////////////////////////////
+    // end frame
+    /////////////////////////////////
+
+    CIMPL->popCPD(); // base lighting
     targ->endFrame();
     FBI->PopRtGroup(); // deferredRtg
 
@@ -222,27 +245,29 @@ struct IMPL {
   int _sequence = 0;
   std::atomic<int> _lightjobcount;
   ork::Timer _timer;
-  FxShaderParamBuffer* _lightbuffer = nullptr;
+  EnumeratedLights _enumeratedLights;
+  CpuLightProcessor _lightProcessor;
+
 }; // IMPL
 
 ///////////////////////////////////////////////////////////////////////////////
-DeferredCompositingNodeDebugNormal::DeferredCompositingNodeDebugNormal() {
+DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
   _impl = std::make_shared<IMPL>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
-DeferredCompositingNodeDebugNormal::~DeferredCompositingNodeDebugNormal() {
+DeferredCompositingNodePbr::~DeferredCompositingNodePbr() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNodeDebugNormal::DoInit(lev2::Context* pTARG, int iW, int iH) {
+void DeferredCompositingNodePbr::DoInit(lev2::Context* pTARG, int iW, int iH) {
   _impl.Get<std::shared_ptr<IMPL>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNodeDebugNormal::DoRender(CompositorDrawData& drawdata) {
+void DeferredCompositingNodePbr::DoRender(CompositorDrawData& drawdata) {
   auto impl = _impl.Get<std::shared_ptr<IMPL>>();
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-RtBuffer* DeferredCompositingNodeDebugNormal::GetOutput() const {
+RtBuffer* DeferredCompositingNodePbr::GetOutput() const {
   static int i = 0;
   i++;
   return _impl.Get<std::shared_ptr<IMPL>>()->_context._rtgLaccum->GetMrt(0);

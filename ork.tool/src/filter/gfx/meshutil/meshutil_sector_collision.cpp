@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -884,7 +884,7 @@ bool SectorWalker::AddMidlineInfo(const submesh& mesh) {
 			PolyAssertReturn(thePoly.miNumSides == 3, polynum, "Gravity mesh only has triangles (importer should force, tell inio/tweak)");
 			bool in = false;
 			for(int vert = 0 ; vert < 3 ; vert++) {
-				if (sector.ContainsPoint(mTarget, mesh.RefVertexPool().GetVertex(thePoly.miVertices[vert]).mPos)) {
+				if (sector.containsPoint(mTarget, mesh.RefVertexPool().GetVertex(thePoly.miVertices[vert]).mPos)) {
 					in = true;
 					break;
 				}
@@ -925,7 +925,7 @@ bool SectorWalker::AddKillInfo(const submesh& mesh) {
 			PolyAssertReturn(thePoly.miNumSides == 3, polynum, "Kill mesh only has triangles (importer should force, tell inio/tweak)");
 			bool in = false;
 			for(int vert = 0 ; vert < 3 ; vert++) {
-				if (sector.ContainsPoint(mTarget, mesh.RefVertexPool().GetVertex(thePoly.miVertices[vert]).mPos)) {
+				if (sector.containsPoint(mTarget, mesh.RefVertexPool().GetVertex(thePoly.miVertices[vert]).mPos)) {
 					in = true;
 					break;
 				}
@@ -1250,7 +1250,7 @@ bool DAEToSECCollision(const tokenlist& options)
 
 	ftimeA = float(OldSchool::GetRef().GetLoResTime());
 
-	if( 0 == sectorMesh.GetNumSubMeshes() )
+	if( 0 == sectorMesh.numSubMeshes() )
 	{
 		orkprintf( "ERROR: 0 submeshes found in sector mesh<%s>\n", inPath.c_str() );
 		return false;
@@ -1270,7 +1270,7 @@ bool DAEToSECCollision(const tokenlist& options)
 	ftimeA = float(OldSchool::GetRef().GetLoResTime());
 
 	toolmesh gravityMerged;
-	if( gravityMesh.GetNumSubMeshes() )
+	if( gravityMesh.numSubMeshes() )
 	{
 		gravityMerged.MergeToolMeshAs(gravityMesh, "all");
 		rval &= meshWalker.AddMidlineInfo(*gravityMerged.FindSubMesh("all"));
@@ -1278,7 +1278,7 @@ bool DAEToSECCollision(const tokenlist& options)
 	}
 
 	toolmesh killMerged;
-	if( killMesh.GetNumSubMeshes() )
+	if( killMesh.numSubMeshes() )
 	{
 		killMerged.MergeToolMeshAs(killMesh, "all");
 		rval &= meshWalker.AddKillInfo(*killMerged.FindSubMesh("all"));

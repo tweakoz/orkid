@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -43,7 +43,7 @@ public:
     {
         void_lambda_t lamb = [=]()
         {
-            auto targ = GfxEnv::GetRef().GetLoaderTarget();
+            auto targ = GfxEnv::GetRef().loadingContext();
             if( use_tess )
                 mpMaterial = new GfxMaterial3DSolid(targ, "orkshader://fnball", "fb1");
             else
@@ -154,10 +154,10 @@ void FnBallArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
             const Entity* pent = pyo->pent;
             const FnBallComponentInst* fnbi = pent->GetTypedComponent<FnBallComponentInst>();
             const FnBallComponentData& fd = fnbi->GetFbd();
-            bool IsPickState = rcid.GetRenderer()->GetTarget()->FBI()->IsPickState();
+            bool isPickState = rcid.GetRenderer()->GetTarget()->FBI()->isPickState();
             const fmtx4& MVP = targ->MTXI()->RefMVPMatrix();
 
-            if( fd.mpMaterial && false==IsPickState )
+            if( fd.mpMaterial && false==isPickState )
             {
 
                 auto& vtxbuf = GfxEnv::GetSharedDynamicVB2();

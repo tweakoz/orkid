@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -800,7 +800,7 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
 
   auto infname = req._texname;
 
-  printf("  tex<%p:%s> ORKTEXOBJECT<%p>\n", ptex, ptex->_debugName.c_str(), pTEXOBJ);
+  // printf("  tex<%p:%s> ORKTEXOBJECT<%p>\n", ptex, ptex->_debugName.c_str(), pTEXOBJ);
 
   // printf( "  tex<%s> GLTEXOBJECT<%d>\n", infname.c_str(), int(pTEXOBJ->mObject) );
   ////////////////////////////////////////////////////////////////////
@@ -936,7 +936,7 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
     auto postblock = postproc(ptex, &mTargetGL, dblock);
     OrkAssert(postblock);
   } else {
-    printf("ptex<%p> no postproc\n", ptex);
+    // printf("ptex<%p> no postproc\n", ptex);
   }
 }
 

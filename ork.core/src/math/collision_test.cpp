@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 //////////////////////////////////////////////////////////////// 
@@ -25,12 +25,12 @@ namespace ork {
 bool CollisionTester::FrustumPointTest( const Frustum& frus, const fvec3& pnt )
 {
 	fvec4 tpos( pnt );
-	bool	bv = frus.mNearPlane.IsPointInFront( tpos );
-			bv &= frus.mFarPlane.IsPointInFront( tpos );
-			bv &= frus.mLeftPlane.IsPointInFront( tpos );
-			bv &= frus.mRightPlane.IsPointInFront( tpos );
-			bv &= frus.mTopPlane.IsPointInFront( tpos );
-			bv &= frus.mBottomPlane.IsPointInFront( tpos );
+	bool	bv = frus._nearPlane.IsPointInFront( tpos );
+			bv &= frus._farPlane.IsPointInFront( tpos );
+			bv &= frus._leftPlane.IsPointInFront( tpos );
+			bv &= frus._rightPlane.IsPointInFront( tpos );
+			bv &= frus._topPlane.IsPointInFront( tpos );
+			bv &= frus._bottomPlane.IsPointInFront( tpos );
 
 	return bv;
 }
@@ -42,12 +42,12 @@ bool CollisionTester::FrustumSphereTest( const Frustum& frus, const Sphere& sph 
 	float nrad = -sph.mRadius;
 	fvec4 tpos( sph.mCenter );
 	
-	float nd = frus.mNearPlane.GetPointDistance( tpos );
-	float fd = frus.mFarPlane.GetPointDistance( tpos );
-	float ld = frus.mLeftPlane.GetPointDistance( tpos );
-	float rd = frus.mRightPlane.GetPointDistance( tpos );
-	float td = frus.mTopPlane.GetPointDistance( tpos );
-	float bd = frus.mBottomPlane.GetPointDistance( tpos );
+	float nd = frus._nearPlane.pointDistance( tpos );
+	float fd = frus._farPlane.pointDistance( tpos );
+	float ld = frus._leftPlane.pointDistance( tpos );
+	float rd = frus._rightPlane.pointDistance( tpos );
+	float td = frus._topPlane.pointDistance( tpos );
+	float bd = frus._bottomPlane.pointDistance( tpos );
 	
 	if(nd < nrad) return false;
 	if(fd < nrad) return false;
@@ -122,8 +122,8 @@ bool CollisionTester::RayTriangleTest( const fray3& ray, const fvec3& A, const f
 	fplane3 PlaneOCA( voc.Cross(voa).Normal(), O );
 	fplane3 PlaneOBA( voa.Cross(vob).Normal(), O );
 		
-	t = PlaneOCA.GetPointDistance( isect )/PlaneOCA.GetPointDistance(B);
-	s = PlaneOBA.GetPointDistance( isect )/PlaneOBA.GetPointDistance(C);
+	t = PlaneOCA.pointDistance( isect )/PlaneOCA.pointDistance(B);
+	s = PlaneOBA.pointDistance( isect )/PlaneOBA.pointDistance(C);
 
 	return ((t>=0.0f)&&(t<=1.0f)&&(s>=0.0f)&&(s<=1.0f));
 
@@ -135,9 +135,9 @@ bool CollisionTester::RayTriangleTest( const fray3& ray, const fplane3& FacePlan
 {
     float fdis = 0.0f;
     bool bisect = FacePlane.Intersect( ray, fdis, isect );
-    bisect &= EdgePlane0.GetPointDistance(isect)>=0.0f;
-    bisect &= EdgePlane1.GetPointDistance(isect)>=0.0f;
-    bisect &= EdgePlane2.GetPointDistance(isect)>=0.0f;
+    bisect &= EdgePlane0.pointDistance(isect)>=0.0f;
+    bisect &= EdgePlane1.pointDistance(isect)>=0.0f;
+    bisect &= EdgePlane2.pointDistance(isect)>=0.0f;
     return bisect;
 }
 
@@ -146,9 +146,9 @@ bool CollisionTester::RayTriangleTest( const fray3& ray, const fplane3& FacePlan
 bool CollisionTester::RayTriangleTest( const fray3& ray, const fplane3& FacePlane, const fplane3& EdgePlane0, const fplane3& EdgePlane1, const fplane3& EdgePlane2, fvec3& isect, float &fdis )
 {
     bool bisect = FacePlane.Intersect( ray, fdis, isect );
-    bisect &= EdgePlane0.GetPointDistance(isect)>=0.0f;
-    bisect &= EdgePlane1.GetPointDistance(isect)>=0.0f;
-    bisect &= EdgePlane2.GetPointDistance(isect)>=0.0f;
+    bisect &= EdgePlane0.pointDistance(isect)>=0.0f;
+    bisect &= EdgePlane1.pointDistance(isect)>=0.0f;
+    bisect &= EdgePlane2.pointDistance(isect)>=0.0f;
     return bisect;
 }
 

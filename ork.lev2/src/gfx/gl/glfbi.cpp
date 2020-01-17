@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -104,10 +104,10 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
     if (GetAutoClear()) {
       fvec4 rCol = GetClearColor();
       // U32 ClearColorU = mTarget.fcolor4ToU32(GetClearColor());
-      if (IsPickState())
+      if (isPickState())
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
       else
-        glClearColor(rCol.x, rCol.y, rCol.w, 1.0f);
+        glClearColor(rCol.x, rCol.y, rCol.z, rCol.w);
 
       // printf( "GlFrameBufferInterface::ClearViewport()\n" );
       GL_ERRORCHECK();
@@ -153,7 +153,7 @@ void GlFrameBufferInterface::_doEndFrame(void) {
     // printf( "ENDFRAME<RtGroup>\n" );
   } else if (IsOffscreenTarget()) {
     // printf( "ENDFRAME<OST>\n" );
-    OffscreenBuffer* pbuf            = GetThisBuffer();
+    OffscreenBuffer* pbuf      = GetThisBuffer();
     pbuf->GetTexture()->_dirty = false;
     pbuf->SetDirty(false);
     // mTargetGL.EndContextFBO();
@@ -321,7 +321,7 @@ void GlFrameBufferInterface::SetViewport(int iX, int iY, int iW, int iH) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::Clear(const fcolor4& color, float fdepth) {
-  if (IsPickState())
+  if (isPickState())
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   else
     glClearColor(color.GetX(), color.GetY(), color.GetZ(), color.GetW());

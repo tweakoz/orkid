@@ -316,6 +316,7 @@ void WidgetEventFilter1::DoFilter(const Event& Ev) {
       mRightDown  = Ev.mbRightButton;
       break;
     case ui::UIEV_DRAG:
+      break;
     default:
       break;
   }

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -44,7 +44,6 @@ class RenderContextInstData;
 class Context;
 class GfxMaterial;
 class ManipManager;
-class XgmWorldPose;
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -67,14 +66,18 @@ public:
   IRenderable();
 
   virtual void Render(const IRenderer* renderer) const = 0;
-  virtual bool CanGroup(const IRenderable* oth) const { return false; }
+  virtual bool CanGroup(const IRenderable* oth) const {
+    return false;
+  }
 
   /// Renderables implement this function to set the sort key used when all Renderables are sorted together.
   /// The default is 0 for all Renderables. If no Renderable overrides this, then the RenderableQueue is not
   /// sorted and all Renderables are drawn in the order they are queued.
   /// Typically, a Renderable will use the IRenderer::ComposeSortKey() function as a helper when composing
   /// its sort key.
-  virtual U32 ComposeSortKey(const IRenderer* renderer) const { return 0; }
+  virtual U32 ComposeSortKey(const IRenderer* renderer) const {
+    return 0;
+  }
 
   static const int kManipRenderableSortKey = 0x7fffffff;
   static const int kLastRenderableSortKey  = 0x7ffffffe;
@@ -87,22 +90,41 @@ class IRenderableDag : public IRenderable {
   RttiDeclareAbstract(IRenderableDag, IRenderable);
 
 public:
-
   IRenderableDag();
 
-  void SetObject(const ork::Object* o) { mpObject = o; }
-  const ork::Object* GetObject() const { return mpObject; }
+  void SetObject(const ork::Object* o) {
+    mpObject = o;
+  }
+  const ork::Object* GetObject() const {
+    return mpObject;
+  }
 
-  inline const fcolor4& GetModColor() const { return mModColor; }
-  inline void SetModColor(const fcolor4& Color) { mModColor = Color; }
+  inline const fcolor4& GetModColor() const {
+    return mModColor;
+  }
+  inline void SetModColor(const fcolor4& Color) {
+    mModColor = Color;
+  }
 
-  void SetMatrix(const fmtx4& mtx) { mMatrix = mtx; }
-  const fmtx4& GetMatrix() const { return mMatrix; }
+  void SetMatrix(const fmtx4& mtx) {
+    mMatrix = mtx;
+  }
+  const fmtx4& GetMatrix() const {
+    return mMatrix;
+  }
 
-  void SetDrawableDataA(const var_t& ap) { mDrwDataA = ap; }
-  const var_t& GetDrawableDataA() const { return mDrwDataA; }
-  void SetDrawableDataB(const var_t& ap) { mDrwDataB = ap; }
-  const var_t& GetDrawableDataB() const { return mDrwDataB; }
+  void SetDrawableDataA(const var_t& ap) {
+    mDrwDataA = ap;
+  }
+  const var_t& GetDrawableDataA() const {
+    return mDrwDataA;
+  }
+  void SetDrawableDataB(const var_t& ap) {
+    mDrwDataB = ap;
+  }
+  const var_t& GetDrawableDataB() const {
+    return mDrwDataB;
+  }
 
 protected:
   fmtx4 mMatrix;
@@ -122,46 +144,93 @@ public:
 
   ModelRenderable(IRenderer* renderer = NULL);
 
-  inline void SetMaterialIndex(int idx) { mMaterialIndex = idx; }
-  inline void SetMaterialPassIndex(int idx) { mMaterialPassIndex = idx; }
-  inline void SetModelInst(const lev2::XgmModelInst* modelInst) { mModelInst = modelInst; }
-  inline void SetEdgeColor(int edge_color) { mEdgeColor = edge_color; }
-  void SetScale(float scale) { mScale = scale; }
-  inline void SetSubMesh(const lev2::XgmSubMesh* cs) { mSubMesh = cs; }
-  inline void SetCluster(const lev2::XgmCluster* c) { mCluster = c; }
-  inline void SetMesh(const lev2::XgmMesh* m) { mMesh = m; }
+  inline void SetMaterialIndex(int idx) {
+    mMaterialIndex = idx;
+  }
+  inline void SetMaterialPassIndex(int idx) {
+    mMaterialPassIndex = idx;
+  }
+  inline void SetModelInst(const lev2::XgmModelInst* modelInst) {
+    mModelInst = modelInst;
+  }
+  inline void SetEdgeColor(int edge_color) {
+    mEdgeColor = edge_color;
+  }
+  void SetScale(float scale) {
+    mScale = scale;
+  }
+  inline void SetSubMesh(const lev2::XgmSubMesh* cs) {
+    mSubMesh = cs;
+  }
+  inline void SetCluster(const lev2::XgmCluster* c) {
+    mCluster = c;
+  }
+  inline void SetMesh(const lev2::XgmMesh* m) {
+    mMesh = m;
+  }
 
-  float GetScale() const { return mScale; }
-  inline const lev2::XgmModelInst* GetModelInst() const { return mModelInst; }
+  float GetScale() const {
+    return mScale;
+  }
+  inline const lev2::XgmModelInst* GetModelInst() const {
+    return mModelInst;
+  }
   inline const fmtx4& GetWorldMatrix() const;
-  inline int GetMaterialIndex(void) const { return mMaterialIndex; }
-  inline int GetMaterialPassIndex(void) const { return mMaterialPassIndex; }
-  inline int GetEdgeColor() const { return mEdgeColor; }
-  inline const lev2::XgmSubMesh* GetSubMesh(void) const { return mSubMesh; }
-  inline const lev2::XgmCluster* GetCluster(void) const { return mCluster; }
-  inline const lev2::XgmMesh* GetMesh(void) const { return mMesh; }
+  inline int GetMaterialIndex(void) const {
+    return mMaterialIndex;
+  }
+  inline int GetMaterialPassIndex(void) const {
+    return mMaterialPassIndex;
+  }
+  inline int GetEdgeColor() const {
+    return mEdgeColor;
+  }
+  inline const lev2::XgmSubMesh* subMesh(void) const {
+    return mSubMesh;
+  }
+  inline const lev2::XgmCluster* GetCluster(void) const {
+    return mCluster;
+  }
+  inline const lev2::XgmMesh* mesh(void) const {
+    return mMesh;
+  }
 
-  void SetSortKey(U32 skey) { mSortKey = skey; }
+  void SetSortKey(U32 skey) {
+    mSortKey = skey;
+  }
 
-  void AddLight(Light* plight) { mLightMask.AddLight(plight); }
-  void SetLightMask(const lev2::LightMask& lmask) { mLightMask = lmask; }
+  void AddLight(Light* plight) {
+    mLightMask.AddLight(plight);
+  }
+  void SetLightMask(const lev2::LightMask& lmask) {
+    mLightMask = lmask;
+  }
 
-  const lev2::LightMask& GetLightMask() const { return mLightMask; }
+  const lev2::LightMask& GetLightMask() const {
+    return mLightMask;
+  }
 
-  void SetRotate(const fvec3& v) { mRotate = v; }
-  void SetOffset(const fvec3& v) { mOffset = v; }
+  void SetRotate(const fvec3& v) {
+    mRotate = v;
+  }
+  void SetOffset(const fvec3& v) {
+    mOffset = v;
+  }
 
-  const fvec3& GetRotate() const { return mRotate; }
-  const fvec3& GetOffset() const { return mOffset; }
+  const fvec3& GetRotate() const {
+    return mRotate;
+  }
+  const fvec3& GetOffset() const {
+    return mOffset;
+  }
 
   void SetEngineParamFloat(int idx, float fv);
   float GetEngineParamFloat(int idx) const;
 
-  void SetWorldPose(const ork::lev2::XgmWorldPose* wp) { mWorldPose = wp; }
-  const ork::lev2::XgmWorldPose* GetWorldPose() const { return mWorldPose; }
-
 private:
-  U32 ComposeSortKey(const IRenderer* renderer) const final { return mSortKey; }
+  U32 ComposeSortKey(const IRenderer* renderer) const final {
+    return mSortKey;
+  }
   void Render(const IRenderer* renderer) const final;
   bool CanGroup(const IRenderable* oth) const final;
 
@@ -176,7 +245,6 @@ private:
   float mScale;
   fvec3 mOffset;
   fvec3 mRotate;
-  const lev2::XgmWorldPose* mWorldPose;
   const lev2::XgmSubMesh* mSubMesh;
   const lev2::XgmCluster* mCluster;
   const lev2::XgmMesh* mMesh;
@@ -191,19 +259,35 @@ public:
 
   CallbackRenderable(IRenderer* renderer = NULL);
 
-  void SetSortKey(U32 skey) { mSortKey = skey; }
+  void SetSortKey(U32 skey) {
+    mSortKey = skey;
+  }
 
-  void SetUserData0(var_t pdata) { mUserData0 = pdata; }
-  const var_t& GetUserData0() const { return mUserData0; }
-  void SetUserData1(var_t pdata) { mUserData1 = pdata; }
-  const var_t& GetUserData1() const { return mUserData1; }
+  void SetUserData0(var_t pdata) {
+    mUserData0 = pdata;
+  }
+  const var_t& GetUserData0() const {
+    return mUserData0;
+  }
+  void SetUserData1(var_t pdata) {
+    mUserData1 = pdata;
+  }
+  const var_t& GetUserData1() const {
+    return mUserData1;
+  }
 
-  void SetRenderCallback(cbtype_t cb) { mRenderCallback = cb; }
-  cbtype_t GetRenderCallback() const { return mRenderCallback; }
+  void SetRenderCallback(cbtype_t cb) {
+    mRenderCallback = cb;
+  }
+  cbtype_t GetRenderCallback() const {
+    return mRenderCallback;
+  }
 
 private:
   void Render(const IRenderer* renderer) const final;
-  U32 ComposeSortKey(const IRenderer* renderer) const final { return mSortKey; }
+  U32 ComposeSortKey(const IRenderer* renderer) const final {
+    return mSortKey;
+  }
 
   U32 mSortKey;
   int mMaterialIndex;
@@ -215,4 +299,5 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-}} // namespace ork::lev2
+} // namespace lev2
+} // namespace ork

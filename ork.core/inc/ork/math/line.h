@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -30,7 +30,7 @@ public:
         // mFC = C
         mNormal = Normal;
         mfC = T(0.0f);
-        mfC = GetPointDistance( PosVec ) * T(-1.0f);
+        mfC = pointDistance( PosVec ) * T(-1.0f);
 
     }
     inline  void CalcFromTwoPoints( const vec2_type& Pnt0, const vec2_type& Pnt1 )
@@ -110,17 +110,17 @@ public:
             mfC = -c;
         }
     }
-    float GetPointDistance( const vec2_type& point ) const
+    float pointDistance( const vec2_type& point ) const
     {
         return mNormal.Dot(point) + mfC;
     }
-     float GetPointDistance( float fx, float fy ) const
+     float pointDistance( float fx, float fy ) const
     {
         return (mNormal.GetX()*fx)+(mNormal.GetY()*fy) + mfC;
     }
     bool IsPointInFront( const vec2_type& point ) const
     {
-        T distance = GetPointDistance(point);
+        T distance = pointDistance(point);
         return (distance >= T(0.0f));
     }
     bool IsPointBehind( const vec2_type& point ) const
@@ -129,7 +129,7 @@ public:
     }
     bool IsPointInFront( float fx, float fy ) const
     {
-        T distance = GetPointDistance(fx,fy);
+        T distance = pointDistance(fx,fy);
         return (distance >= T(0.0f));
     }
     bool IsPointBehind( float fx, float fy ) const
@@ -177,8 +177,8 @@ class TLineSegment2Helper
 	vec2_type	mOrigin;
 	T			mMag;
 public:
-	float GetPointDistanceSquared( const vec2_type  &pt ) const;
-	float GetPointDistancePercent( const vec2_type  &pt ) const;
+	float pointDistanceSquared( const vec2_type  &pt ) const;
+	float pointDistancePercent( const vec2_type  &pt ) const;
 	T GetMag() const { return(mMag);}
 	TLineSegment2Helper( const vec2_type& s, const vec2_type& e );
 	TLineSegment2Helper();

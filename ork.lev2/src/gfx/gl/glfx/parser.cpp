@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -94,6 +94,7 @@ ContainerNode::ContainerNode(const AssetPath& pth, const Scanner& s)
   _stddefines["E"]           = "2.718281828459";
   _stddefines["SQRT2"]       = "1.4142135623730951";
   _stddefines["GOLDENRATIO"] = "1.6180339887498948482";
+  _stddefines["EPSILON"]     = "0.0000001";
 
   for (auto item : _stddefines) {
     _keywords.insert(item.first);

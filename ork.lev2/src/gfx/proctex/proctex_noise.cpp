@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Orkid
-// Copyright 1996-2010, Michael T. Mayers
+// Copyright 1996-2020, Michael T. Mayers
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
@@ -63,7 +63,7 @@ Octaves::Octaves()
 	, mfScalOffsetX(1.0f)
 	, mfScalOffsetY(1.0f)
 	, miNumOctaves(1)
-	, mOctMaterial( ork::lev2::GfxEnv::GetRef().GetLoaderTarget(), "orkshader://proctex", "octaves" )
+	, mOctMaterial( ork::lev2::GfxEnv::GetRef().loadingContext(), "orkshader://proctex", "octaves" )
 {
 }
 ///////////////////////////////////////////////////////////////////////////////

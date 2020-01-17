@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 //////////////////////////////////////////////////////////////// 
@@ -40,7 +40,7 @@ void TLineSegment2Helper<T>::SetStartEnd( const vec2_type& s, const vec2_type& e
 }
 
 template< typename T >
-float TLineSegment2Helper<T>::GetPointDistanceSquared( const vec2_type  &pt ) const
+float TLineSegment2Helper<T>::pointDistanceSquared( const vec2_type  &pt ) const
 {
 	vec2_type pt_origin = pt - mStart;
 	T U_num = (pt_origin).Dot(mOrigin);
@@ -58,7 +58,7 @@ float TLineSegment2Helper<T>::GetPointDistanceSquared( const vec2_type  &pt ) co
 
 
 template< typename T >
-float TLineSegment2Helper<T>::GetPointDistancePercent( const vec2_type  &pt ) const
+float TLineSegment2Helper<T>::pointDistancePercent( const vec2_type  &pt ) const
 {
 
 	/*

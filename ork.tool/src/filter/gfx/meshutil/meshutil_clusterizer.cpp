@@ -69,10 +69,10 @@ bool XgmClusterizerStd::AddTriangle( const XgmClusterTri& Triangle, const ToolMa
 	{
 		XgmClusterBuilder *pNewCluster = 0;
 
-		printf( "policy<%p> policyskinned<%d>\n", policy, int(policy->mbIsSkinned) );
+		printf( "policy<%p> policyskinned<%d>\n", policy, int(policy->mbisSkinned) );
         printf( "cmg<%p> cmgskinned<%d>\n", cmg, int(cmg->mMeshConfigurationFlags.mbSkinned));
 
-		if( policy->mbIsSkinned && cmg->mMeshConfigurationFlags.mbSkinned )
+		if( policy->mbisSkinned && cmg->mMeshConfigurationFlags.mbSkinned )
 		{
 			pNewCluster = new XgmSkinnedClusterBuilder;
 		}

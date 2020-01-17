@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -106,7 +106,7 @@ void GedWidget::PropertyInvalidated(ork::Object* pobj, const reflect::IObjectPro
 
 void GedWidget::SlotRepaint() {
   // printf( "GedWidget::SlotRepaint\n" );
-  GetViewport()->onInvalidate();
+  GetViewport()->MarkSurfaceDirty();
 }
 
 void GedWidget::SlotModelInvalidated() {
@@ -220,7 +220,7 @@ void GedWidget::Draw(lev2::Context* pTARG, int iw, int ih, int iscrolly) {
   // miH = ih;
   GedItemNode* root = GetRootItem();
   ///////////////////////////////////////////////
-  // if( false == pTARG->FBI()->IsPickState() )
+  // if( false == pTARG->FBI()->isPickState() )
   //{
   //	root->Layout( 2, 2, miW-4, miH-4 );
   //}

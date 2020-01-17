@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -156,7 +156,7 @@ void ManipSingleTrans::DrawAxis(Context* pTARG) const
 
 			if( bDRAW )
 			{
-				if( fbi->IsPickState() )
+				if( fbi->isPickState() )
 				{
 					gbi->DrawPrimitiveEML( ork::lev2::GfxPrimitives::GetAxisBoxVB() );
 				}
@@ -222,7 +222,7 @@ void ManipSingleTrans::Draw( Context *pTARG ) const
 	float ColorScale = 1.0f;
 	if(!bdrawok)
 	{
-		if(pTARG->FBI()->IsPickState())
+		if(pTARG->FBI()->isPickState())
 			return;
 		else
 		{
@@ -273,7 +273,7 @@ void ManipSingleTrans::Draw( Context *pTARG ) const
 
 	fmtx4 MatN = mmRotModel * neg_rot.ToMatrix() * MatCur;
 
-	if( false == pTARG->FBI()->IsPickState() )
+	if( false == pTARG->FBI()->isPickState() )
 	{
 		ModColor = ModColor*0.5f;
 	}
@@ -323,7 +323,7 @@ void ManipSingleTrans::HandleDrag(const ork::fvec2& pos)
 
 		fvec3 isect_wld = isect_loc.Transform(mtx_bas);
 
-		if(pcam->_curMatrices.GetFrustum().Contains(isect_wld))
+		if(pcam->_curMatrices.GetFrustum().contains(isect_wld))
 		{
 			mManager.mCurTransform.Translate(TransformNode::EMODE_ABSOLUTE, isect_wld);
 			mManager.ApplyTransform(mManager.mCurTransform);
@@ -409,7 +409,7 @@ void ManipDualTrans::HandleDrag(const ork::fvec2& pos)
 	ork::fvec3 worlddiff = ept - spt;
 	ork::fvec3 endpos = pos + worlddiff;
 
-	if(pcam->mCameraData.GetFrustum().Contains(endpos))
+	if(pcam->mCameraData.GetFrustum().contains(endpos))
 	{
 		mManager.mCurTransform.Translate(TransformNode3D::EMODE_ABSOLUTE, mManager.mCurTransform.GetTransform()->GetPosition() + worlddiff);
 		mManager.ApplyTransform(mManager.mCurTransform);

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -41,9 +41,12 @@ public:
 
   ////////////////
 
-  Matrix44(void) { SetToIdentity(); }
+  Matrix44(void) {
+    SetToIdentity();
+  }
 
-  ~Matrix44() {}
+  ~Matrix44() {
+  }
 
   /////////
 
@@ -87,7 +90,9 @@ public:
   Matrix44<T> Mult(T scalar) const;
   Matrix44<T> MatrixMult(const Matrix44<T>& mat1) const;
 
-  inline Matrix44<T> operator*(const Matrix44<T>& mat) const { return MatrixMult(mat); }
+  inline Matrix44<T> operator*(const Matrix44<T>& mat) const {
+    return MatrixMult(mat);
+  }
 
   Matrix44<T> Concat43(const Matrix44<T>& mat) const;
   Matrix44<T> Concat43Transpose(const Matrix44<T>& mat) const;
@@ -95,6 +100,7 @@ public:
   void Transpose(void);
   void Normalize(void);
   void inverseOf(const Matrix44<T>& in);
+  Matrix44<T> inverse() const;
 
   void CorrectionMatrix(const Matrix44<T>& from, const Matrix44<T>& to);
   void SetRotation(const Matrix44<T>& from);
@@ -115,7 +121,9 @@ public:
 
   ////////////////
 
-  void dump(const char* name) const;
+  void dump(std::string name) const;
+  std::string dump(Vector3<T> color) const;
+  std::string dump() const;
 
   inline bool operator==(const Matrix44<T>& b) const {
     bool beq = true;
@@ -149,9 +157,15 @@ public:
   void SetRow(int irow, const Vector4<T>& v);
   void SetColumn(int icol, const Vector4<T>& v);
 
-  Vector3<T> GetXNormal(void) const { return GetColumn(0).xyz(); }
-  Vector3<T> GetYNormal(void) const { return GetColumn(1).xyz(); }
-  Vector3<T> GetZNormal(void) const { return GetColumn(2).xyz(); }
+  Vector3<T> GetXNormal(void) const {
+    return GetColumn(0).xyz();
+  }
+  Vector3<T> GetYNormal(void) const {
+    return GetColumn(1).xyz();
+  }
+  Vector3<T> GetZNormal(void) const {
+    return GetColumn(2).xyz();
+  }
 
   void fromNormalVectors(const Vector3<T>& xv, const Vector3<T>& yv, const Vector3<T>& zv);
   void toNormalVectors(Vector3<T>& xv, Vector3<T>& yv, Vector3<T>& zv) const;
@@ -169,7 +183,9 @@ public:
 
   static const Matrix44<T> Identity;
 
-  T* GetArray(void) const { return (T*)&elements[0][0]; }
+  T* GetArray(void) const {
+    return (T*)&elements[0][0];
+  }
 
   ///////////////////////////////////////////////////////////////////////////////
 };

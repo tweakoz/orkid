@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -22,6 +22,7 @@
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/math/collision_test.h>
 #include <ork/stream/ResizableStringOutputStream.h>
+#include <ork/kernel/string/deco.inl>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::Drawable, "Drawable");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ModelDrawable, "ModelDrawable");
@@ -81,7 +82,7 @@ void DrawableBuffer::invokePreRenderCallbacks(lev2::RenderContextFrameData& RCFD
 ///////////////////////////////////////////////////////////////////////////////
 
 void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName, lev2::IRenderer* renderer) const {
-  lev2::Context* target                       = renderer->GetTarget();
+  lev2::Context* target                         = renderer->GetTarget();
   const ork::lev2::RenderContextFrameData* RCFD = target->topRenderContextFrameData();
   const auto& topCPD                            = RCFD->topCPD();
 
@@ -312,6 +313,7 @@ ModelDrawable::ModelDrawable(DrawableOwner* pent)
 ModelDrawable::~ModelDrawable() {
   if (mpWorldPose) {
     delete mpWorldPose;
+    mpWorldPose = nullptr;
   }
 }
 void ModelDrawable::SetEngineParamFloat(int idx, float fv) {
@@ -330,11 +332,11 @@ float ModelDrawable::GetEngineParamFloat(int idx) const {
 
 void ModelDrawable::SetModelInst(lev2::XgmModelInst* pModelInst) {
   mModelInst                          = pModelInst;
-  const lev2::XgmModel* Model         = mModelInst->GetXgmModel();
-  bool IsSkinned                      = Model->IsSkinned();
+  const lev2::XgmModel* Model         = mModelInst->xgmModel();
+  bool isSkinned                      = Model->isSkinned();
   ork::lev2::XgmWorldPose* pworldpose = 0;
-  if (IsSkinned) {
-    mpWorldPose = new ork::lev2::XgmWorldPose(Model->RefSkel(), mModelInst->RefLocalPose());
+  if (isSkinned) {
+    mpWorldPose = new ork::lev2::XgmWorldPose(Model->skeleton());
   }
   Drawable::var_t ap;
   ap.Set(mpWorldPose);
@@ -343,34 +345,9 @@ void ModelDrawable::SetModelInst(lev2::XgmModelInst* pModelInst) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ModelDrawable::QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
+void ModelDrawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
   ork::opq::assertOnQueue2(opq::updateSerialQueue());
-
-  const lev2::XgmModel* Model = mModelInst->GetXgmModel();
-  bool IsSkinned              = Model->IsSkinned();
-
   DrawableBufItem& item = buffer.Queue(xfdata, this);
-
-  // orkprintf( " ModelDrawable::QueueToBuffer() mdl<%p> IsSkinned<%d>\n", Model, int(IsSkinned) );
-
-  if (IsSkinned) {
-    ork::lev2::XgmWorldPose* pworldpose = GetUserDataA().Get<ork::lev2::XgmWorldPose*>();
-    if (pworldpose) {
-      const ork::lev2::XgmSkeleton& Skeleton = Model->RefSkel();
-
-      const ork::lev2::XgmLocalPose& locpos = mModelInst->RefLocalPose();
-      orkvector<fmtx4>& WorldMatrices       = pworldpose->GetMatrices();
-      int inumch                            = locpos.NumJoints();
-      for (int ich = 0; ich < inumch; ich++) {
-        // orkprintf( " mdrwq2b setmtxblk ich<%d>\n", ich );
-        const fmtx4& MatIBind    = Skeleton.RefInverseBindMatrix(ich);
-        const fmtx4& MatJ        = Skeleton.RefJointMatrix(ich);
-        const fmtx4& MatAnimJCat = locpos.RefLocalMatrix(ich);
-
-        WorldMatrices[ich] = (MatIBind * MatAnimJCat);
-      }
-    }
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -380,7 +357,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
   auto RCFD          = renderer->GetTarget()->topRenderContextFrameData();
   const auto& topCPD = RCFD->topCPD();
 
-  const lev2::XgmModel* Model = mModelInst->GetXgmModel();
+  const lev2::XgmModel* Model = mModelInst->xgmModel();
 
   const auto& monofrustum = topCPD.monoCamFrustum();
 
@@ -388,14 +365,14 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
 
   const ork::fmtx4& matw = item.mXfData.mWorldMatrix;
 
-  bool IsPickState = renderer->GetTarget()->FBI()->IsPickState();
-  bool IsSkinned   = Model->IsSkinned();
+  bool isPickState = renderer->GetTarget()->FBI()->isPickState();
+  bool isSkinned   = Model->isSkinned();
 
-  ork::fvec3 center_plus_offset = mOffset + Model->GetBoundingCenter();
+  ork::fvec3 center_plus_offset = mOffset + Model->boundingCenter();
 
   ork::fvec3 ctr = ork::fvec4(center_plus_offset * mfScale).Transform(matw);
 
-  ork::fvec3 vwhd = Model->GetBoundingAA_WHD();
+  ork::fvec3 vwhd = Model->boundingAA_WHD();
   float frad      = vwhd.GetX();
   if (vwhd.GetY() > frad)
     frad = vwhd.GetY();
@@ -403,7 +380,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
     frad = vwhd.GetZ();
   frad *= 0.6f;
 
-  bool bCenterInFrustum = monofrustum.Contains(ctr);
+  bool bCenterInFrustum = monofrustum.contains(ctr);
 
   //////////////////////////////////////////////////////////////////////
 
@@ -418,6 +395,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
   //////////////////////////////////////////////////////////////////////
   // generate coarse light mask
 
+  /*
   ork::lev2::LightMask mdl_lmask;
 
   ork::lev2::LightManager* light_manager = RCFD->GetLightManager();
@@ -436,27 +414,27 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
         mdl_lmask.AddLight(plight);
       }
     }
-  }
+  }*/
 
   //////////////////////////////////////////////////////////////////////
 
   int inumacc = 0;
   int inumrej = 0;
 
-  int inummeshes = Model->GetNumMeshes();
+  int inummeshes = Model->numMeshes();
   for (int imesh = 0; imesh < inummeshes; imesh++) {
-    const lev2::XgmMesh& mesh = *Model->GetMesh(imesh);
+    const lev2::XgmMesh& mesh = *Model->mesh(imesh);
 
-    // if( 0 == strcmp(mesh.GetMeshName().c_str(),"fg_2_1_3_ground_SG_ground_GeoDaeId") )
+    // if( 0 == strcmp(mesh.meshName().c_str(),"fg_2_1_3_ground_SG_ground_GeoDaeId") )
     //{
     //	orkprintf( "yo\n" );
     //}
 
-    if (mModelInst->IsMeshEnabled(imesh)) {
-      int inumclusset = mesh.GetNumSubMeshes();
+    if (mModelInst->isMeshEnabled(imesh)) {
+      int inumclusset = mesh.numSubMeshes();
 
       for (int ics = 0; ics < inumclusset; ics++) {
-        const lev2::XgmSubMesh& submesh   = *mesh.GetSubMesh(ics);
+        const lev2::XgmSubMesh& submesh   = *mesh.subMesh(ics);
         const lev2::GfxMaterial* material = submesh.mpMaterial;
 
         int inumclus = submesh.miNumClusters;
@@ -464,19 +442,19 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
         for (int ic = 0; ic < inumclus; ic++) {
           bool btest = true;
 
-          const lev2::XgmCluster& cluster = submesh.RefCluster(ic);
+          const lev2::XgmCluster& cluster = submesh.cluster(ic);
 
           ork::lev2::LightMask lmask;
 
-          if (IsSkinned) {
-            lmask = mdl_lmask;
+          if (isSkinned) {
+            // lmask = mdl_lmask;
 
-            float fdb = monofrustum.mBottomPlane.GetPointDistance(ctr);
-            float fdt = monofrustum.mTopPlane.GetPointDistance(ctr);
-            float fdl = monofrustum.mLeftPlane.GetPointDistance(ctr);
-            float fdr = monofrustum.mRightPlane.GetPointDistance(ctr);
-            float fdn = monofrustum.mNearPlane.GetPointDistance(ctr);
-            float fdf = monofrustum.mFarPlane.GetPointDistance(ctr);
+            float fdb = monofrustum._bottomPlane.pointDistance(ctr);
+            float fdt = monofrustum._topPlane.pointDistance(ctr);
+            float fdl = monofrustum._leftPlane.pointDistance(ctr);
+            float fdr = monofrustum._rightPlane.pointDistance(ctr);
+            float fdn = monofrustum._nearPlane.pointDistance(ctr);
+            float fdf = monofrustum._farPlane.pointDistance(ctr);
 
             const float kdist = -5.0f;
             btest             = (fdb > kdist) && (fdt > kdist) && (fdl > kdist) && (fdr > kdist) &&
@@ -486,7 +464,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
             if (false == btest) {
             }
             btest = true; // todo fix culler
-          } else {
+          } else {        // Rigid
             const Sphere& bsph = cluster.mBoundingSphere;
 
             float clussphrad = bsph.mRadius * matw_scale * mfScale;
@@ -499,12 +477,12 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
             // per cluster light assignment
             ////////////////////////////////////////////////
 
-            if (btest) {
+            /*if (btest) {
               ////////////////////////////////////////////////
               // lighting sphere test
               ////////////////////////////////////////////////
 
-              ork::fvec3 ctr = ork::fvec4(Model->GetBoundingCenter()).Transform(matw);
+              ork::fvec3 ctr = ork::fvec4(Model->boundingCenter()).Transform(matw);
               for (size_t il = 0; il < inuml; il++) {
                 ork::lev2::Light* plight = light_manager->mLightsInFrustum[il];
                 OrkAssert(plight);
@@ -513,11 +491,11 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
                   lmask.AddLight(plight);
                 }
               }
-            }
+            }*/
           }
 
           if (btest) {
-            lev2::ModelRenderable& renderable = renderer->QueueModel();
+            lev2::ModelRenderable& renderable = renderer->enqueueModel();
 
             // if(mEngineParamFloats[0] < 1.0f && mEngineParamFloats[0] > 0.0f)
             //	orkprintf("mEngineParamFloats[0] = %g\n", mEngineParamFloats[0]);
@@ -536,7 +514,6 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
             renderable.SetScale(mfScale);
             renderable.SetRotate(mRotate);
             renderable.SetOffset(mOffset);
-            renderable.SetWorldPose(pworldpose);
 
             size_t umat = size_t(material);
             u32 imtla   = (umat & 0xff);
@@ -569,7 +546,7 @@ CallbackDrawable::CallbackDrawable(DrawableOwner* pent)
     : Drawable()
     , mSortKey(4)
     , mRenderCallback(0)
-    , mQueueToLayerCallback(0)
+    , menqueueOnLayerCallback(0)
     , mDataDestroyer(0) {
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -577,20 +554,20 @@ CallbackDrawable::~CallbackDrawable() {
   if (mDataDestroyer) {
     mDataDestroyer->Destroy();
   }
-  mDataDestroyer        = 0;
-  mQueueToLayerCallback = 0;
-  mRenderCallback       = 0;
+  mDataDestroyer          = 0;
+  menqueueOnLayerCallback = 0;
+  mRenderCallback         = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
 // Multithreaded Renderer DB
 ///////////////////////////////////////////////////////////////////////////////
-void CallbackDrawable::QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
+void CallbackDrawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
   ork::opq::assertOnQueue2(opq::updateSerialQueue());
 
   DrawableBufItem& cdb = buffer.Queue(xfdata, this);
   cdb.mUserData0       = GetUserDataA();
-  if (mQueueToLayerCallback) {
-    mQueueToLayerCallback(cdb);
+  if (menqueueOnLayerCallback) {
+    menqueueOnLayerCallback(cdb);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -599,7 +576,7 @@ void CallbackDrawable::QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLa
 void CallbackDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
 
-  lev2::CallbackRenderable& renderable = renderer->QueueCallback();
+  lev2::CallbackRenderable& renderable = renderer->enqueueCallback();
   renderable.SetMatrix(item.mXfData.mWorldMatrix);
   renderable.SetObject(GetOwner());
   renderable.SetRenderCallback(mRenderCallback);

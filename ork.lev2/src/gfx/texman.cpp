@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -45,7 +45,7 @@ void Texture::RegisterLoaders(void) {
 
 Texture* Texture::LoadUnManaged(const AssetPath& fname) {
   Texture* ptex = new Texture;
-  bool bok      = GfxEnv::GetRef().GetLoaderTarget()->TXI()->LoadTexture(fname, ptex);
+  bool bok      = GfxEnv::GetRef().loadingContext()->TXI()->LoadTexture(fname, ptex);
   return ptex;
 }
 
@@ -79,7 +79,7 @@ Texture::Texture() {
 ///////////////////////////////////////////////////////////////////////////////
 
 Texture::~Texture() {
-  Context* pTARG = GfxEnv::GetRef().GetLoaderTarget();
+  Context* pTARG = GfxEnv::GetRef().loadingContext();
   pTARG->TXI()->DestroyTexture(this);
 }
 

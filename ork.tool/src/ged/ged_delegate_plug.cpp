@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -459,7 +459,7 @@ public:
                       chcvalprop.isValid() ? (const AttrChoiceValue*)chcvalprop.value<void*>() : (const AttrChoiceValue*)0;
                   if (chcval) {
                     if (mInputPlug) {
-                      const any64& customdata = chcval->GetCustomData();
+                      const auto& customdata = chcval->GetCustomData();
                       if (customdata.IsA<ork::dataflow::outplugbase*>()) {
                         ork::dataflow::outplugbase* outplug = customdata.Get<ork::dataflow::outplugbase*>();
 

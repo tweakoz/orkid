@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -24,7 +24,8 @@ namespace ork { namespace tool {
 
 Renderer::Renderer(ent::SceneEditorBase& ed, lev2::Context* ptarg)
     : lev2::IRenderer(ptarg)
-    , mEditor(ed) {}
+    , mEditor(ed) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -41,7 +42,7 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   const auto& SelMgr = mEditor.selectionManager();
 
   const lev2::XgmModelInst* minst = ModelRen.GetModelInst();
-  const lev2::XgmModel* model     = minst->GetXgmModel();
+  const lev2::XgmModel* model     = minst->xgmModel();
 
   target->debugPushGroup(FormatString("toolrenderer::RenderModel model<%p> minst<%p>", model, minst));
 
@@ -88,7 +89,7 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   }
 
   bool is_sel        = (owner == nullptr) ? false : SelMgr.IsObjectSelected(owner);
-  bool is_pick_state = target->FBI()->IsPickState();
+  bool is_pick_state = target->FBI()->isPickState();
 
   /////////////////////////////////////////////////////////////
 
@@ -103,13 +104,12 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
     MatCtx.SetEngineParamFloat(i, ModelRen.GetEngineParamFloat(i));
 
   MatCtx.SetMaterialInst(&minst->RefMaterialInst());
-  MatCtx.BindLightMap(ModelRen.GetSubMesh()->mLightMap);
-  MatCtx.SetVertexLit(ModelRen.GetSubMesh()->mbVertexLit);
+  MatCtx.BindLightMap(ModelRen.subMesh()->mLightMap);
+  MatCtx.SetVertexLit(ModelRen.subMesh()->mbVertexLit);
 
-  MdlCtx.mMesh       = ModelRen.GetMesh();
-  MdlCtx.mSubMesh    = ModelRen.GetSubMesh();
-  MdlCtx.mCluster    = ModelRen.GetCluster();
-  MdlCtx.mpWorldPose = ModelRen.GetWorldPose();
+  MdlCtx.mMesh    = ModelRen.mesh();
+  MdlCtx.mSubMesh = ModelRen.subMesh();
+  MdlCtx.mCluster = ModelRen.GetCluster();
 
   MatCtx.SetMaterialIndex(0);
   MatCtx.SetRenderer(this);
@@ -131,7 +131,7 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
     ObjColor = fcolor4::Red();
   }
 
-  target->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->IsSkinned()), as_ent ));
+  target->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->isSkinned()), as_ent));
 
   ///////////////////////////////////////
 
@@ -140,10 +140,11 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   lgrp.mLightManager = target->topRenderContextFrameData()->GetLightManager();
   lgrp.mLightMask    = ModelRen.GetLightMask();
   MatCtx.SetLightingGroup(&lgrp);
-
-  MdlCtx.SetSkinned(model->IsSkinned());
+  bool model_is_skinned = model->isSkinned();
+  MatCtx._isSkinned     = model_is_skinned;
+  MdlCtx.SetSkinned(model_is_skinned);
   MdlCtx.SetModelInst(minst);
-  if (model->IsSkinned()) {
+  if (model_is_skinned) {
     model->RenderSkinned(minst, ObjColor, nmat, GetTarget(), MatCtx, MdlCtx);
   } else {
     model->RenderRigid(ObjColor, nmat, GetTarget(), MatCtx, MdlCtx);

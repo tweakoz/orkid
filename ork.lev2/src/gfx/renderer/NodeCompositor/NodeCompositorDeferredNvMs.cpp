@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -83,7 +83,7 @@ struct NVMSIMPL {
     //////////////////////////////////////////////////////
     _context.renderUpdate(drawdata);
     auto VD = _context.computeViewData(drawdata);
-    _context.update(VD);
+    _context.updateDebugLights(VD);
     _context._clearColor = node->_clearColor;
     //////////////////////////////////////////////////////////////////
     // clear lighttiles
@@ -118,18 +118,18 @@ struct NVMSIMPL {
     // printf( "Deferred::_render tilecpa time<%g>\n", time_tile_cpa-time_tile_in );
     /////////////////////////////////////
     const size_t KLIGHTBASE = 96;
-    size_t mapping_size = 8192*sizeof(fvec4)*2+KLIGHTBASE; // around 256KiB
-    auto mapping = CI->mapStorageBuffer(_storagebuffer, 0, mapping_size);
-    size_t numlights = _context._pointlights.size();
-    mapping->ref<fmtx4>(0) = VD.VPL;
-    mapping->ref<int>(64) = int(numlights);
-    mapping->ref<fvec4>(80) = fvec4(0,0,0,0);
-    size_t posrindex = KLIGHTBASE;
-    size_t colrindex = posrindex+8192*sizeof(fvec4);
-    for( size_t i=0; i<numlights; i++){
-      const PointLight* pl = _context._pointlights[i];
-      mapping->ref<fvec4>(posrindex) = fvec4(pl->_pos,pl->_radius);
-      mapping->ref<fvec4>(colrindex) = fvec4(pl->_color,1);
+    size_t mapping_size     = 8192 * sizeof(fvec4) * 2 + KLIGHTBASE; // around 256KiB
+    auto mapping            = CI->mapStorageBuffer(_storagebuffer, 0, mapping_size);
+    size_t numlights        = _context._pointlights.size();
+    mapping->ref<fmtx4>(0)  = VD.VPL;
+    mapping->ref<int>(64)   = int(numlights);
+    mapping->ref<fvec4>(80) = fvec4(0, 0, 0, 0);
+    size_t posrindex        = KLIGHTBASE;
+    size_t colrindex        = posrindex + 8192 * sizeof(fvec4);
+    for (size_t i = 0; i < numlights; i++) {
+      const PointLight* pl           = _context._pointlights[i];
+      mapping->ref<fvec4>(posrindex) = fvec4(pl->_pos, pl->_radius);
+      mapping->ref<fvec4>(colrindex) = fvec4(pl->_color, 1);
       posrindex += sizeof(fvec4);
       colrindex += sizeof(fvec4);
     }
@@ -139,10 +139,7 @@ struct NVMSIMPL {
     /////////////////////////////////////
     CI->bindStorageBuffer(_lightprojectshader, 0, _storagebuffer);
     CI->bindImage(_lightprojectshader, 1, _context._rtgDepthCluster->GetMrt(0)->GetTexture(), EIBA_READ_ONLY);
-    CI->dispatchCompute(_lightprojectshader,
-                         numlights,
-                         1,
-                         1);
+    CI->dispatchCompute(_lightprojectshader, numlights, 1, 1);
     /////////////////////////////////////
     // (collect/gather) lights
     /////////////////////////////////////
@@ -151,10 +148,7 @@ struct NVMSIMPL {
 
     CI->bindStorageBuffer(_lightcollectshader, 0, _storagebuffer);
     CI->bindImage(_lightcollectshader, 1, _context._rtgDepthCluster->GetMrt(0)->GetTexture(), EIBA_READ_ONLY);
-    CI->dispatchCompute(_lightcollectshader,
-                         _context._clusterW,
-                         _context._clusterH,
-                         1);
+    CI->dispatchCompute(_lightcollectshader, _context._clusterW, _context._clusterH, 1);
 
     const float KTILESIZX    = 2.0f / float(_context._clusterW);
     const float KTILESIZY    = 2.0f / float(_context._clusterH);

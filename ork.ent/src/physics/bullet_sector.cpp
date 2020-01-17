@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -546,10 +546,10 @@ Sector::Sector()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Sector::ContainsPoint(const SectorData &data, const ork::fvec3& position) const
+bool Sector::containsPoint(const SectorData &data, const ork::fvec3& position) const
 {
 	for(int portal = 0 ; portal < NumPortals() ; portal++) {
-		if ((mPortals[portal].mPlane.GetPointDistance(position)<-EPSILON))
+		if ((mPortals[portal].mPlane.pointDistance(position)<-EPSILON))
 			return false;
 	}
 	float x, y, z;
@@ -635,8 +635,8 @@ void Sector::GetRelativePositionOfPoint(const SectorData &data, const ork::fvec3
 	}
 
 	{
-		float d0 = mPortals[0].mPlane.GetPointDistance(position);
-		float d1 = mPortals[portal1].mPlane.GetPointDistance(position);
+		float d0 = mPortals[0].mPlane.pointDistance(position);
+		float d1 = mPortals[portal1].mPlane.pointDistance(position);
 		z = d0/(d0+d1);
 	}
 
@@ -894,7 +894,7 @@ bool Track::Load(const ork::file::Path& path, const ork::fmtx4& transform)
 int Track::FindSectorByPoint(const ork::fvec3& point) const
 {
 	for (int sectorIdx = 0; sectorIdx < int(mSectorData.mSectors.size()); sectorIdx++)
-		if (mSectorData.mSectors[sectorIdx].ContainsPoint(mSectorData, point))
+		if (mSectorData.mSectors[sectorIdx].containsPoint(mSectorData, point))
 			return sectorIdx;
 
 	return -1;
@@ -906,10 +906,10 @@ int Track::CheckTraversal(unsigned int currSector, const ork::fvec3& pos, bool a
 {
 	// OPTIMIZE?
 	if (currSector == -1) return -1;
-	if (mSectorData.mSectors[currSector].ContainsPoint(mSectorData, pos)) return currSector;
+	if (mSectorData.mSectors[currSector].containsPoint(mSectorData, pos)) return currSector;
 	for(int i=0 ; i<mSectorData.mSectors[currSector].NumPortals() ; i++) {
 		int other = mSectorData.mSectors[currSector].mPortals[i].mNeighbor;
-		if (mSectorData.mSectors[other].ContainsPoint(mSectorData, pos)) return other;
+		if (mSectorData.mSectors[other].containsPoint(mSectorData, pos)) return other;
 	}
 	return -1;
 }
@@ -1070,7 +1070,7 @@ bool Sector::CrossedKill(const SectorData& data, const ork::fvec3& oldpos, const
 {
 	for(int tri=0 ; tri<mKillTriCount ; tri++) {
 		const fplane3 &plane = data.mKillPlanes[mKillTriStart+tri];
-		if (plane.GetPointDistance(oldpos)*plane.GetPointDistance(newpos) > 0) break;
+		if (plane.pointDistance(oldpos)*plane.pointDistance(newpos) > 0) break;
 		fvec3 intersect;
 		float dis;
 		plane.Intersect(LineSegment3(oldpos, newpos), dis, intersect);

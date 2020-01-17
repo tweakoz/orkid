@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -31,8 +31,8 @@ public:
   fvec3 Corner(int n) const;
 
   bool Intersect(const fray3 &ray, fvec3 &isect_in, fvec3 &isect_out) const;
-  bool Contains(const fvec3 &test_point) const;
-  bool Contains(const float test_point_X, const float test_point_Z) const;
+  bool contains(const fvec3 &test_point) const;
+  bool contains(const float test_point_X, const float test_point_Z) const;
   void Constrain(float &test_point_X, float &test_point_Z) const;
   void Constrain(fvec3 &test_point) const;
 

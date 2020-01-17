@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -314,7 +314,7 @@ struct QuartzComposerDrawable
 
 	static void doit( lev2::RenderContextInstData& rcid, lev2::Context* targ, const lev2::CallbackRenderable* pren )
 	{
-		if( targ->FBI()->IsPickState() ) return;
+		if( targ->FBI()->isPickState() ) return;
 		
 		const QuartzComposerDrawable* pyo = pren->GetUserData0().Get<const QuartzComposerDrawable*>();
 		QuartzComposerInst* pQCI = pyo->mpQCI;

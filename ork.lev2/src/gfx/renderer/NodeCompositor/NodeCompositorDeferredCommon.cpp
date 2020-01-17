@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -18,6 +18,7 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/material_freestyle.inl>
+#include <ork/lev2/gfx/material_pbr.inl>
 
 #include "NodeCompositorDeferred.h"
 
@@ -48,6 +49,12 @@ DeferredContext::~DeferredContext() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+lev2::Texture* DeferredContext::brdfIntegrationTexture() const {
+  return _brdfIntegrationMap;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // deferred layout
 // rt0/GL_RGBA8    (32,32)  - albedo,ao (primary color)
 // rt1/GL_RGB10_A2 (32,64)  - normal,model
@@ -59,15 +66,16 @@ void DeferredContext::gpuInit(Context* target) {
   target->debugPushGroup("Deferred::rendeinitr");
   auto FXI = target->FXI();
   if (nullptr == _rtgGbuffer) {
+    _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(target);
     //////////////////////////////////////////////////////////////
     _lightingmtl.gpuInit(target, _shadername);
-    _tekBaseLighting           = _lightingmtl.technique("baselight");
-    _tekPointLighting          = _lightingmtl.technique("pointlight");
-    _tekBaseLightingStereo     = _lightingmtl.technique("baselight_stereo");
-    _tekPointLightingStereo    = _lightingmtl.technique("pointlight_stereo");
-    _tekDownsampleDepthCluster = _lightingmtl.technique("downsampledepthcluster");
-    _tekDebugNormal            = _lightingmtl.technique("debugnormal");
-    _tekDebugNormalStereo      = _lightingmtl.technique("debugnormal_stereo");
+    _tekBaseLighting              = _lightingmtl.technique("baselight");
+    _tekPointLighting             = _lightingmtl.technique("pointlight");
+    _tekBaseLightingStereo        = _lightingmtl.technique("baselight_stereo");
+    _tekPointLightingStereo       = _lightingmtl.technique("pointlight_stereo");
+    _tekDownsampleDepthCluster    = _lightingmtl.technique("downsampledepthcluster");
+    _tekEnvironmentLighting       = _lightingmtl.technique("environmentlighting");
+    _tekEnvironmentLightingStereo = _lightingmtl.technique("environmentlighting_stereo");
     //////////////////////////////////////////////////////////////
     // init lightblock
     //////////////////////////////////////////////////////////////
@@ -179,7 +187,7 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const uint32_t* DeferredContext::captureDepthClusters(CompositorDrawData& drawdata, const ViewData& VD) {
+const uint32_t* DeferredContext::captureDepthClusters(const CompositorDrawData& drawdata, const ViewData& VD) {
   auto CIMPL                   = drawdata._cimpl;
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
   RenderContextFrameData& RCFD = framerenderer.framedata();
@@ -253,7 +261,7 @@ void DeferredContext::renderUpdate(CompositorDrawData& drawdata) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DeferredContext::update(const ViewData& VD) {
+void DeferredContext::updateDebugLights(const ViewData& VD) {
   const int KTILEMAXX = _clusterW - 1;
   const int KTILEMAXY = _clusterH - 1;
   //////////////////////////////////////////////////////////////////
@@ -325,6 +333,7 @@ ViewData DeferredContext::computeViewData(CompositorDrawData& drawdata) {
   VD._p[1]   = VD.PR; //_p[1].Transpose();
   VD._ivp[0] = VD.IVPL;
   VD._ivp[1] = VD.IVPR;
+
   fmtx4 IVL;
   IVL.inverseOf(VD.VL);
   VD._camposmono = IVL.GetColumn(3).xyz();
@@ -411,11 +420,15 @@ void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const Vie
   _lightingmtl.bindParamMatrixArray(_parMatPArray, VD._p, 2);
   _lightingmtl.bindParamCTex(_parMapGBufAlbAo, _rtgGbuffer->GetMrt(0)->GetTexture());
   _lightingmtl.bindParamCTex(_parMapGBufNrmL, _rtgGbuffer->GetMrt(1)->GetTexture());
+  _lightingmtl.bindParamCTex(_parMapGBufRufMtlAlpha, _rtgGbuffer->GetMrt(2)->GetTexture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
   _lightingmtl.bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->GetTexture());
+  _lightingmtl.bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap);
   _lightingmtl.bindParamVec2(_parNearFar, fvec2(DeferredContext::KNEAR, DeferredContext::KFAR));
   _lightingmtl.bindParamVec2(_parZndc2eye, VD._zndc2eye);
   _lightingmtl.bindParamVec2(_parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
+  _lightingmtl.bindParamFloat(_parSpecularLevel, _specularLevel);
+  _lightingmtl.bindParamFloat(_parDiffuseLevel, _diffuseLevel);
   //////////////////////////////////////////////////
   _lightingmtl._rasterstate.SetCullTest(ECULLTEST_OFF);
   _lightingmtl._rasterstate.SetBlending(EBLENDING_ADDITIVE);

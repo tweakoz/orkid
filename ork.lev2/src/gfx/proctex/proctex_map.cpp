@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Orkid
-// Copyright 1996-2010, Michael T. Mayers
+// Copyright 1996-2020, Michael T. Mayers
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/pch.h>
 #include <ork/lev2/gfx/proctex/proctex.h>
@@ -366,7 +366,7 @@ H2N::H2N()
 	, ConstructInpPlug( ScaleY,dataflow::EPR_UNIFORM,mfScaleY )
 	, mbAA(false)
 	, mfScaleY(1.0f)
-	, mMTL( ork::lev2::GfxEnv::GetRef().GetLoaderTarget(), "orkshader://proctex", "h2n" )
+	, mMTL( ork::lev2::GfxEnv::GetRef().loadingContext(), "orkshader://proctex", "h2n" )
 {
 	mMTL._rasterstate.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
 	mMTL._rasterstate.SetCullTest( ork::lev2::ECULLTEST_OFF );

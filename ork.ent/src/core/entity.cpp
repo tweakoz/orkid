@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -74,7 +74,8 @@ class SceneDagObjectManipInterface : public ork::lev2::IManipInterface {
   RttiDeclareConcrete(SceneDagObjectManipInterface, ork::lev2::IManipInterface);
 
 public:
-  SceneDagObjectManipInterface() {}
+  SceneDagObjectManipInterface() {
+  }
 
   const TransformNode& GetTransform(rtti::ICastable* pobj) final {
     SceneDagObject* pdago = rtti::autocast(pobj);
@@ -86,7 +87,8 @@ public:
   }
 };
 
-void SceneDagObjectManipInterface::Describe() {}
+void SceneDagObjectManipInterface::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -106,8 +108,8 @@ void EntData::Describe() {
 
   reflect::RegisterFunctor("SlotArchetypeDeleted", &EntData::SlotArchetypeDeleted);
 
-  reflect::annotateClassForEditor<EntData>("editor.object.ops",
-                                           ConstString("ArchDeRef:EntArchDeRef ArchReRef:EntArchReRef ArchSplit:EntArchSplit"));
+  reflect::annotateClassForEditor<EntData>(
+      "editor.object.ops", ConstString("ArchDeRef:EntArchDeRef ArchReRef:EntArchReRef ArchSplit:EntArchSplit"));
 
   ork::reflect::RegisterMapProperty("UserProperties", &EntData::mUserProperties);
 }
@@ -120,7 +122,9 @@ ConstString EntData::GetUserProperty(const ConstString& key) const {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool EntData::PostDeserialize(reflect::IDeserializer&) { return true; }
+bool EntData::PostDeserialize(reflect::IDeserializer&) {
+  return true;
+}
 ///////////////////////////////////////////////////////////////////////////////
 void EntData::SetArchetype(const Archetype* parch) {
   if (mArchetype != parch)
@@ -136,9 +140,11 @@ void EntData::SlotArchetypeDeleted(const ork::ent::Archetype* parch) {
 
 ///////////////////////////////////////////////////////////////////////////////
 EntData::EntData()
-    : mArchetype(0) {}
+    : mArchetype(0) {
+}
 ///////////////////////////////////////////////////////////////////////////////
-EntData::~EntData() {}
+EntData::~EntData() {
+}
 ///////////////////////////////////////////////////////////////////////////////
 void EntData::ArchetypeGetter(ork::rtti::ICastable*& val) const {
   Archetype* nonconst = const_cast<Archetype*>(mArchetype);
@@ -225,7 +231,9 @@ fmtx4 Entity::GetEffectiveMatrix() const {
   return rval;
 }
 
-void Entity::SetDynMatrix(const fmtx4& mtx) { this->GetDagNode().SetTransformMatrix(mtx); }
+void Entity::SetDynMatrix(const fmtx4& mtx) {
+  this->GetDagNode().SetTransformMatrix(mtx);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 Entity::~Entity() {
@@ -236,9 +244,13 @@ Entity::~Entity() {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-fvec3 Entity::GetEntityPosition() const { return GetDagNode().GetTransformNode().GetTransform().GetPosition(); }
+fvec3 Entity::GetEntityPosition() const {
+  return GetDagNode().GetTransformNode().GetTransform().GetPosition();
+}
 ///////////////////////////////////////////////////////////////////////////////
-void Entity::PrintName() { orkprintf("EntityName:%s: \n", mEntData.GetName().c_str()); }
+void Entity::PrintName() {
+  orkprintf("EntityName:%s: \n", mEntData.GetName().c_str());
+}
 ///////////////////////////////////////////////////////////////////////////////
 bool Entity::DoNotify(const ork::event::Event* event) {
   bool result = false;
@@ -294,10 +306,12 @@ bool Entity::DoNotify(const ork::event::Event* event) {
   return result;
 }
 ///////////////////////////////////////////////////////////////////////////////
-ComponentTable& Entity::GetComponents() { return mComponentTable; }
+ComponentTable& Entity::GetComponents() {
+  return mComponentTable;
+}
 ///////////////////////////////////////////////////////////////////////////////
-void Entity::addDrawableToDefaultLayer( lev2::Drawable* pdrw ){
-  auto layername = AddPooledString("Default");
+void Entity::addDrawableToDefaultLayer(lev2::Drawable* pdrw) {
+  auto layername         = AddPooledString("Default");
   const ent::EntData& ED = GetEntData();
   ConstString layer      = ED.GetUserProperty("DrawLayer");
   if (strlen(layer.c_str()) != 0) {
@@ -306,11 +320,13 @@ void Entity::addDrawableToDefaultLayer( lev2::Drawable* pdrw ){
   _addDrawable(layername, pdrw);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Entity::addDrawableToLayer( lev2::Drawable* pdrw, const PoolString& layername ){
+void Entity::addDrawableToLayer(lev2::Drawable* pdrw, const PoolString& layername) {
   _addDrawable(layername, pdrw);
 }
 ///////////////////////////////////////////////////////////////////////////////
-const ComponentTable& Entity::GetComponents() const { return mComponentTable; }
+const ComponentTable& Entity::GetComponents() const {
+  return mComponentTable;
+}
 ///////////////////////////////////////////////////////////////////////////////
 void ArchComposer::Register(ork::ent::ComponentData* pdata) {
   if (pdata) {
@@ -322,7 +338,8 @@ void ArchComposer::Register(ork::ent::ComponentData* pdata) {
 ArchComposer::ArchComposer(ork::ent::Archetype* parch, SceneComposer& scene_composer)
     : mpArchetype(parch)
     , _components(ork::EKEYPOLICY_MULTILUT)
-    , mSceneComposer(scene_composer) {}
+    , mSceneComposer(scene_composer) {
+}
 ///////////////////////////////////////////////////////////////////////////////
 ArchComposer::~ArchComposer() {
   mpArchetype->GetComponentDataTable().Clear();
@@ -351,7 +368,8 @@ void Archetype::Describe() {
 Archetype::Archetype()
     : mComponentDatas(EKEYPOLICY_MULTILUT)
     , mComponentDataTable(mComponentDatas)
-    , mpSceneData(0) {}
+    , mpSceneData(0) {
+}
 ///////////////////////////////////////////////////////////////////////////////
 bool Archetype::PostDeserialize(reflect::IDeserializer&) {
   // Compose();
@@ -364,8 +382,8 @@ void Archetype::ComposeEntity(Entity* pent) const {
 }
 
 void Archetype::DoComposeEntity(Entity* pent) const {
-   printf( "Archetype::DoComposeEntity pent<%p>\n", pent );
-const ent::ComponentDataTable::LutType& clut = GetComponentDataTable().GetComponents();
+  printf("Archetype::DoComposeEntity pent<%p>\n", pent);
+  const ent::ComponentDataTable::LutType& clut = GetComponentDataTable().GetComponents();
   for (ent::ComponentDataTable::LutType::const_iterator it = clut.begin(); it != clut.end(); it++) {
     ent::ComponentData* pcompdata = it->second;
     if (pcompdata) {
@@ -401,11 +419,14 @@ void Archetype::UnLinkEntity(ork::ent::Simulation* psi, ork::ent::Entity* pent) 
   DoUnLinkEntity(psi, pent);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Archetype::DoLinkEntity(Simulation* psi, Entity* pent) const {}
+void Archetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
+}
 ///////////////////////////////////////////////////////////////////////////////
-void Archetype::DoUnLinkEntity(Simulation* psi, Entity* pent) const {}
+void Archetype::DoUnLinkEntity(Simulation* psi, Entity* pent) const {
+}
 ///////////////////////////////////////////////////////////////////////////////
-void Archetype::DoDeComposeEntity(Entity* pent) const {}
+void Archetype::DoDeComposeEntity(Entity* pent) const {
+}
 ///////////////////////////////////////////////////////////////////////////////
 void Archetype::StartEntity(Simulation* psi, const fmtx4& world, Entity* pent) const {
   // printf( "Archetype<%p>::StartEntity<%p>\n", this, pent );
@@ -451,7 +472,9 @@ void Archetype::Compose(SceneComposer& scene_composer) {
   DoCompose(arch_composer);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Archetype::DeCompose() { DeleteComponents(); }
+void Archetype::DeCompose() {
+  DeleteComponents();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -467,7 +490,7 @@ void Init() {
   SequenceCamArchetype::GetClassStatic();
   BulletObjectArchetype::GetClassStatic();
   auto bwcd = BulletSystemData::GetClassStatic();
-  //printf("BWCD<%p>\n", bwcd);
+  // printf("BWCD<%p>\n", bwcd);
   PerfControllerArchetype::GetClassStatic();
   PerformanceAnalyzerArchetype::GetClassStatic();
   SimpleCharacterArchetype::GetClassStatic();
@@ -502,6 +525,7 @@ void Init() {
   EditorCamControllerInst::GetClassStatic();
 
   RegisterClassX(HeightFieldDrawableData);
+  RegisterClassX(DagNode);
   VrSystemData::GetClassStatic();
 
 #if defined(ORK_OSXX)
@@ -555,7 +579,8 @@ void Init() {
   RegisterFamily<BulletSystemData>(ork::AddPooledLiteral("physics"));
 }
 
-void Init2() {}
+void Init2() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ent

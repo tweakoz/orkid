@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -21,12 +21,12 @@ struct Frustum {
   typedef Plane<float> plane_type;
   typedef fmtx4 mtx44_type;
 
-  plane_type mNearPlane;
-  plane_type mFarPlane;
-  plane_type mLeftPlane;
-  plane_type mRightPlane;
-  plane_type mTopPlane;
-  plane_type mBottomPlane;
+  plane_type _nearPlane;
+  plane_type _farPlane;
+  plane_type _leftPlane;
+  plane_type _rightPlane;
+  plane_type _topPlane;
+  plane_type _bottomPlane;
 
   vec3_type mNearCorners[4];
   vec3_type mFarCorners[4];
@@ -42,7 +42,7 @@ struct Frustum {
 
   void CalcCorners();
 
-  bool Contains(const vec3_type& v) const;
+  bool contains(const vec3_type& v) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -29,6 +29,8 @@ set( orksrcs ${src_aud} ${src_gfx} ${src_input} )
 list( APPEND orksrcs ${src_qtui} ${src_ui} ${src_lev2} )
 list( APPEND orksrcs ${src_apple} ${src_ovr} ${src_glad} )
 
+list( APPEND orksrcs ${INCD}/ork/lev2/ezapp.h )
+
 ###################################
 
 add_library (ork_lev2 SHARED ${orksrcs})

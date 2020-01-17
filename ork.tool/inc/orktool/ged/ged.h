@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -291,7 +291,7 @@ public:
     ESTYLE_BUTTON_OUTLINE,
   } ESTYLE;
 
-  virtual void Begin(ork::lev2::Context* pTARG, GedVP* pgedvp)                                          = 0;
+  virtual void Begin(ork::lev2::Context* pTARG, GedVP* pgedvp)                                            = 0;
   virtual void DrawBgBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort = 0)      = 0;
   virtual void DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort = 0) = 0;
   virtual void DrawLine(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic)                      = 0;
@@ -299,7 +299,7 @@ public:
   virtual void DrawDownArrow(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic)                 = 0;
   virtual void DrawRightArrow(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic)                = 0;
   virtual void DrawText(GedObject* pnode, int ix, int iy, const char* ptext)                              = 0;
-  virtual void End(ork::lev2::Context* pTARG)                                                           = 0;
+  virtual void End(ork::lev2::Context* pTARG)                                                             = 0;
 
   void SetScrollY(int iscrolly) {
     miScrollY = iscrolly;
@@ -439,6 +439,14 @@ public:
 
   ///////////////////////////////////////////////////
 
+  void activate() {
+    onActivate();
+  }
+  void deactivate() {
+    onDeactivate();
+  }
+  ///////////////////////////////////////////////////
+
   void SigInvalidateProperty();
 
   void Init();
@@ -462,6 +470,11 @@ public:
   }
   ///////////////////////////////////////////////////
   void Draw(lev2::Context* pTARG);
+  ///////////////////////////////////////////////////
+  virtual void onActivate() {
+  }
+  virtual void onDeactivate() {
+  }
   ///////////////////////////////////////////////////
   int contentWidth() const;
   int propnameWidth() const;

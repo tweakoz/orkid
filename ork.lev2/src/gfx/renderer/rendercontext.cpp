@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -38,11 +38,10 @@ const RenderContextInstData RenderContextInstData::Default;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RenderContextInstData::RenderContextInstData(const RenderContextFrameData&RCFD)
-  : RenderContextInstData() {
-    mpActiveRenderer = RCFD._renderer;
-  }
-
+RenderContextInstData::RenderContextInstData(const RenderContextFrameData& RCFD)
+    : RenderContextInstData() {
+  mpActiveRenderer = RCFD._renderer;
+}
 
 RenderContextInstData::RenderContextInstData()
     : miMaterialIndex(0)
@@ -53,7 +52,7 @@ RenderContextInstData::RenderContextInstData()
     , mDPTopEnvMap(0)
     , mDPBotEnvMap(0)
     , mMaterialInst(0)
-    , mbIsSkinned(false)
+    , _isSkinned(false)
     , mbForzeNoZWrite(false)
     , mLightMap(0)
     , mbVertexLit(false)
@@ -78,7 +77,8 @@ float RenderContextInstData::GetEngineParamFloat(int idx) const {
 
 RenderContextFrameData::RenderContextFrameData(Context* ptarg)
     : _lightmgr(0)
-    , mpTarget(ptarg) {}
+    , mpTarget(ptarg) {
+}
 
 void RenderContextFrameData::setUserProperty(CrcString key, rendervar_t val) {
   auto it = _userProperties.find(key);
@@ -104,7 +104,7 @@ rendervar_t RenderContextFrameData::getUserProperty(CrcString key) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const DrawableBuffer* RenderContextFrameData::GetDB() const{
+const DrawableBuffer* RenderContextFrameData::GetDB() const {
   lev2::rendervar_t pvdb   = getUserProperty("DB"_crc);
   const DrawableBuffer* DB = pvdb.Get<const DrawableBuffer*>();
   return DB;
@@ -112,10 +112,9 @@ const DrawableBuffer* RenderContextFrameData::GetDB() const{
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CompositingPassData& RenderContextFrameData::topCPD() const{
-  assert(_cimpl!=nullptr);
+const CompositingPassData& RenderContextFrameData::topCPD() const {
+  assert(_cimpl != nullptr);
   return _cimpl->topCPD();
 }
-
 
 } // namespace ork::lev2

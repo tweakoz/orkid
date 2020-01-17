@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -304,7 +304,7 @@ OpsTask* IOpsDelegate::GetTask(ork::object::ObjectClass* pdelegclass, ork::Objec
 
 void OpsNode::DoDraw(lev2::Context* pTARG) // virtual
 {
-  bool bispick = pTARG->FBI()->IsPickState();
+  bool bispick = pTARG->FBI()->isPickState();
 
   int inumops = int(mOps.size());
 

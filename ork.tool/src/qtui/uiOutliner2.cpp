@@ -308,7 +308,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev) {
   SceneEditorBase& ed                  = mOutlinerModel.Editor();
   auto scene_data                      = ed.GetSceneData();
   bool has_foc                         = HasMouseFocus();
-  bool is_pick                         = fbi->IsPickState();
+  bool is_pick                         = fbi->isPickState();
 
   //////////////////////////////////////////////////
   // Compute Scoll Transform

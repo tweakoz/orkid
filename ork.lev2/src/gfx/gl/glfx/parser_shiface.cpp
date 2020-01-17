@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -31,12 +31,11 @@ const std::map<std::string, int> gattrsorter = {
     {"COLOR0", 3},
     {"COLOR1", 4},
     {"TEXCOORD0", 5},
-    {"TEXCOORD0", 6},
-    {"TEXCOORD1", 7},
-    {"TEXCOORD2", 8},
-    {"TEXCOORD3", 9},
-    {"BONEINDICES", 10},
-    {"BONEWEIGHTS", 11},
+    {"TEXCOORD1", 6},
+    {"TEXCOORD2", 7},
+    {"TEXCOORD3", 8},
+    {"BONEINDICES", 9},
+    {"BONEWEIGHTS", 10},
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -65,7 +64,8 @@ void InterfaceLayoutNode::emit(shaderbuilder::BackEnd& backend) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void InterfaceLayoutNode::pregen(shaderbuilder::BackEnd& backend) {}
+void InterfaceLayoutNode::pregen(shaderbuilder::BackEnd& backend) {
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -137,7 +137,7 @@ void InterfaceNode::parseIos(const ScannerView& view, IoContainerNode* ioc) {
     // typename
     //////////////////////////////////
 
-    //printf("  parseOutputs DtTok<%s>\n", dt_tok->text.c_str());
+    // printf("  parseOutputs DtTok<%s>\n", dt_tok->text.c_str());
     bool typeisvalid = _container->validateTypeName(dt_tok->text);
     auto io          = new InterfaceIoNode(_container);
     ioc->_nodes.push_back(io);
@@ -155,11 +155,11 @@ void InterfaceNode::parseIos(const ScannerView& view, IoContainerNode* ioc) {
     // inline struct type ?
     ///////////////////////////////////////////
 
-    bool is_struct = (view.token(i)->text=="{");
+    bool is_struct = (view.token(i)->text == "{");
 
     if (is_struct) {
       ScannerView structview(view, i);
-      io->_inlineStruct = new StructNode(_container);
+      io->_inlineStruct                     = new StructNode(_container);
       io->_inlineStruct->_emitstructandname = false;
       i += io->_inlineStruct->parse(structview);
     }
@@ -169,11 +169,11 @@ void InterfaceNode::parseIos(const ScannerView& view, IoContainerNode* ioc) {
     ///////////////////////////////////////////
 
     const Token* nam_tok = view.token(i);
-    if( is_struct ){
+    if (is_struct) {
       io->_inlineStruct->_name = nam_tok;
     }
-    std::string named    = nam_tok ? nam_tok->text : "";
-    //printf("  parseOutputs named<%s>\n", named.c_str());
+    std::string named = nam_tok ? nam_tok->text : "";
+    // printf("  parseOutputs named<%s>\n", named.c_str());
     auto it = ioc->_dupecheck.find(named);
     assert(it == ioc->_dupecheck.end()); // make sure there are no duplicate attrs
     ioc->_dupecheck.insert(named);
@@ -239,9 +239,9 @@ void InterfaceNode::parse(const ScannerView& view) {
     const Token* dt_tok  = view.token(i + 1);
     const Token* nam_tok = view.token(i + 2);
     const auto& named    = nam_tok->text;
-    //printf("  ParseFxInterface VtTok<%zu:%s>\n", i, vt_tok->text.c_str());
-    //printf("  ParseFxInterface DtTok<%s>\n", dt_tok->text.c_str());
-    //printf("  ParseFxInterface named<%s>\n", named.c_str());
+    // printf("  ParseFxInterface VtTok<%zu:%s>\n", i, vt_tok->text.c_str());
+    // printf("  ParseFxInterface DtTok<%s>\n", dt_tok->text.c_str());
+    // printf("  ParseFxInterface named<%s>\n", named.c_str());
     ////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////
@@ -408,7 +408,7 @@ void InterfaceNode::_generate(shaderbuilder::BackEnd& backend) const {
       auto par = is_geo ? it_fig->second : is_vtx ? it_fiv->second : is_tee ? it_fie->second : nullptr;
       assert(par != nullptr);
       psi->Inherit(*par);
-    } else if(is_frg) {
+    } else if (is_frg) {
       auto it_fi = c->_fragmentInterfaces.find(deconame);
       assert(it_fi != c->_fragmentInterfaces.end());
       psi->Inherit(*it_fi->second);
@@ -472,7 +472,7 @@ void InterfaceNode::_generate(shaderbuilder::BackEnd& backend) const {
   //  http://stackoverflow.com/questions/16415037/opengl-core-profile-incredible-slowdown-on-os-x)
   ////////////////////////
 
-  if( is_vtx or is_geo or is_frg ) {
+  if (is_vtx or is_geo or is_frg) {
     std::multimap<int, Attribute*> attr_sort_map;
     for (const auto& it : psi->_inputAttributes) {
       auto attr  = it.second;

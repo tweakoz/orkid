@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -208,7 +208,7 @@ class GedCurveV4Widget : public GedItemNode
 		////////////////////////////////////
 		// draw segments
 
-		if( pTARG->FBI()->IsPickState() )
+		if( pTARG->FBI()->isPickState() )
 		{
 			mEditSegs.clear();
 
@@ -255,7 +255,7 @@ class GedCurveV4Widget : public GedItemNode
 			int fy0 = miY+(kh-(kpntsize))-fyc;
 
 			GedSkin::ESTYLE pntstyl = IsObjectHilighted(editpoint) ? GedSkin::ESTYLE_DEFAULT_HIGHLIGHT : GedSkin::ESTYLE_DEFAULT_CHECKBOX;
-			if( pTARG->FBI()->IsPickState() )
+			if( pTARG->FBI()->isPickState() )
 			{
 				GetSkin()->DrawBgBox( editpoint, fx0, fy0, kpntsize*2, kpntsize*2, pntstyl, 2 );
 			}
@@ -280,7 +280,7 @@ class GedCurveV4Widget : public GedItemNode
 
 		if( 0 == ksegs ) return;
 	
-		if( pTARG->FBI()->IsPickState() )
+		if( pTARG->FBI()->isPickState() )
 		{
 		}
 		else if(pthis->mCurveObject )

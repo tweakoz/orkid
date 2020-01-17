@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -37,12 +37,16 @@ template class fixedlut<float, lev2::Light*, lev2::LightContainer::kmaxlights>;
 template class fixedlut<float, lev2::Light*, lev2::GlobalLightContainer::kmaxlights>;
 template class ork::fixedvector<std::pair<U32, lev2::LightingGroup*>, lev2::LightCollector::kmaxonscreengroups>;
 template class ork::fixedvector<lev2::LightingGroup, lev2::LightCollector::kmaxonscreengroups>;
-template class ork::fixedvector<lev2::Light*, lev2::LightManager::kmaxinfrustum>;
 
 namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-void Light::Describe() {}
+void Light::Describe() {
+}
+
+bool Light::isShadowCaster() const {
+  return mLd->IsShadowCaster();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -67,7 +71,8 @@ void LightData::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void PointLight::Describe() {}
+void PointLight::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -87,14 +92,15 @@ void PointLightData::Describe() {
 
 PointLight::PointLight(const fmtx4& mtx, const PointLightData* pld)
     : Light(mtx, pld)
-    , mPld(pld) {}
+    , mPld(pld) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool PointLight::IsInFrustum(const Frustum& frustum) {
   const fvec3& wpos = GetWorldPosition();
 
-  float fd = frustum.mNearPlane.GetPointDistance(wpos);
+  float fd = frustum._nearPlane.pointDistance(wpos);
 
   if (fd > 200.0f)
     return false;
@@ -141,14 +147,17 @@ bool PointLight::AffectsCircleXZ(const Circle& cirXZ) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void DirectionalLight::Describe() {}
+void DirectionalLight::Describe() {
+}
 
 DirectionalLight::DirectionalLight(const fmtx4& mtx, const DirectionalLightData* dld)
-    : Light(mtx, dld) {}
+    : Light(mtx, dld) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DirectionalLightData::Describe() {}
+void DirectionalLightData::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -160,11 +169,13 @@ bool DirectionalLight::IsInFrustum(const Frustum& frustum) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void AmbientLight::Describe() {}
+void AmbientLight::Describe() {
+}
 
 AmbientLight::AmbientLight(const fmtx4& mtx, const AmbientLightData* dld)
     : Light(mtx, dld)
-    , mAld(dld) {}
+    , mAld(dld) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -185,7 +196,8 @@ bool AmbientLight::IsInFrustum(const Frustum& frustum) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpotLight::Describe() {}
+void SpotLight::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -207,18 +219,23 @@ void SpotLightData::Describe() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpotLightData::SetTextureAccessor(ork::rtti::ICastable* const& tex) { mTexture = tex ? ork::rtti::autocast(tex) : 0; }
+void SpotLightData::SetTextureAccessor(ork::rtti::ICastable* const& tex) {
+  mTexture = tex ? ork::rtti::autocast(tex) : 0;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpotLightData::GetTextureAccessor(ork::rtti::ICastable*& tex) const { tex = mTexture; }
+void SpotLightData::GetTextureAccessor(ork::rtti::ICastable*& tex) const {
+  tex = mTexture;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 SpotLight::SpotLight(const fmtx4& mtx, const SpotLightData* sld)
     : Light(mtx, sld)
     , mSld(sld)
-    , mTexture(0) {}
+    , mTexture(0) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -261,7 +278,9 @@ bool SpotLight::AffectsSphere(const fvec3& center, float radius) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool SpotLight::AffectsAABox(const AABox& aab) { return CollisionTester::FrustumAABoxTest(mWorldSpaceLightFrustum, aab); }
+bool SpotLight::AffectsAABox(const AABox& aab) {
+  return CollisionTester::FrustumAABoxTest(mWorldSpaceLightFrustum, aab);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -287,9 +306,12 @@ void LightContainer::RemoveLight(Light* plight) {
 }
 
 LightContainer::LightContainer()
-    : mPrioritizedLights(EKEYPOLICY_MULTILUT) {}
+    : mPrioritizedLights(EKEYPOLICY_MULTILUT) {
+}
 
-void LightContainer::Clear() { mPrioritizedLights.clear(); }
+void LightContainer::Clear() {
+  mPrioritizedLights.clear();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -307,9 +329,12 @@ void GlobalLightContainer::RemoveLight(Light* plight) {
 }
 
 GlobalLightContainer::GlobalLightContainer()
-    : mPrioritizedLights(EKEYPOLICY_MULTILUT) {}
+    : mPrioritizedLights(EKEYPOLICY_MULTILUT) {
+}
 
-void GlobalLightContainer::Clear() { mPrioritizedLights.clear(); }
+void GlobalLightContainer::Clear() {
+  mPrioritizedLights.clear();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -320,9 +345,13 @@ void GlobalLightContainer::Clear() { mPrioritizedLights.clear(); }
 //	return mGroups[ idx ];
 //}
 
-size_t LightCollector::GetNumGroups() const { return mGroups.size(); }
+size_t LightCollector::GetNumGroups() const {
+  return mGroups.size();
+}
 
-void LightCollector::SetManager(LightManager* mgr) { mManager = mgr; }
+void LightCollector::SetManager(LightManager* mgr) {
+  mManager = mgr;
+}
 
 void LightCollector::Clear() {
   mGroups.clear();
@@ -378,23 +407,24 @@ void LightCollector::QueueInstance(const LightMask& lmask, const fmtx4& mtx) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightManagerData::Describe() {}
+void LightManagerData::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightManager::EnumerateInFrustum(const Frustum& frustum) {
-  mLightsInFrustum.clear();
+void LightManager::enumerateInPass(const CompositingPassData& CPD, EnumeratedLights& out) const {
+  out._enumeratedLights.clear();
   ////////////////////////////////////////////////////////////
   for (GlobalLightContainer::map_type::const_iterator it = mGlobalStationaryLights.mPrioritizedLights.begin();
        it != mGlobalStationaryLights.mPrioritizedLights.end();
        it++) {
     Light* plight = it->second;
 
-    if (plight->IsInFrustum(frustum)) {
-      size_t idx = mLightsInFrustum.size();
+    if (true) { // plight->IsInFrustum(frustum)) {
+      size_t idx = out._enumeratedLights.size();
 
       plight->miInFrustumID = 1 << idx;
-      mLightsInFrustum.push_back(plight);
+      out._enumeratedLights.push_back(plight);
     } else {
       plight->miInFrustumID = -1;
     }
@@ -405,34 +435,38 @@ void LightManager::EnumerateInFrustum(const Frustum& frustum) {
        it++) {
     Light* plight = it->second;
 
-    if (plight->IsInFrustum(frustum)) {
-      size_t idx = mLightsInFrustum.size();
+    if (true) { // plight->IsInFrustum(frustum)) {
+      size_t idx = out._enumeratedLights.size();
 
       plight->miInFrustumID = 1 << idx;
-      mLightsInFrustum.push_back(plight);
+      out._enumeratedLights.push_back(plight);
     } else {
       plight->miInFrustumID = -1;
     }
   }
+
   ////////////////////////////////////////////////////////////
-  mcollector.SetManager(this);
-  mcollector.Clear();
+  // mcollector.SetManager(this);
+  // mcollector.Clear();
 }
 
 ///////////////////////////////////////////////////////////
 
-void LightManager::QueueInstance(const LightMask& lmask, const fmtx4& mtx) { mcollector.QueueInstance(lmask, mtx); }
+void LightManager::QueueInstance(const LightMask& lmask, const fmtx4& mtx) {
+  mcollector.QueueInstance(lmask, mtx);
+}
 
 ///////////////////////////////////////////////////////////
 
-size_t LightManager::GetNumLightGroups() const { return mcollector.GetNumGroups(); }
+size_t LightManager::GetNumLightGroups() const {
+  return mcollector.GetNumGroups();
+}
 
 ///////////////////////////////////////////////////////////
 
 void LightManager::Clear() {
   // mGlobalStationaryLights.Clear();
   mGlobalMovingLights.Clear();
-  mLightsInFrustum.clear();
 
   mcollector.Clear();
 }
@@ -441,19 +475,27 @@ void LightManager::Clear() {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightMask::AddLight(const Light* plight) { mMask |= plight->miInFrustumID; }
+void LightMask::AddLight(const Light* plight) {
+  mMask |= plight->miInFrustumID;
+}
 
 ///////////////////////////////////////////////////////////
 
-size_t LightingGroup::GetNumLights() const { return size_t(countbits(mLightMask.mMask)); }
+size_t LightingGroup::GetNumLights() const {
+  return size_t(countbits(mLightMask.mMask));
+}
 
 ///////////////////////////////////////////////////////////
 
-size_t LightingGroup::GetNumMatrices() const { return mInstances.size(); }
+size_t LightingGroup::GetNumMatrices() const {
+  return mInstances.size();
+}
 
 ///////////////////////////////////////////////////////////
 
-const fmtx4* LightingGroup::GetMatrices() const { return &mInstances[0]; }
+const fmtx4* LightingGroup::GetMatrices() const {
+  return &mInstances[0];
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -481,7 +523,8 @@ int LightingGroup::GetLightId(int idx) const {
 LightingGroup::LightingGroup()
     : mLightManager(0)
     , mLightMap(0)
-    , mDPEnvMap(0) {}
+    , mDPEnvMap(0) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -503,219 +546,12 @@ HeadLightManager::HeadLightManager(RenderContextFrameData& FrameData)
     mHeadLightGroup.mLightManager = FrameData.GetLightManager();
     mHeadLightMatrix.SetTranslation( vP );
     mHeadLightManager.mGlobalMovingLights.AddLight( & mHeadLight );
-    mHeadLightManager.mLightsInFrustum.push_back(& mHeadLight);*/
+    mHeadLightManager._enumeratedLights.push_back(& mHeadLight);*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-
-LightingFxInterface::LightingFxInterface()
-    : mbHasLightingInterface(false)
-    , mpShader(0)
-    , hAmbientLight(0)
-    , hNumDirectionalLights(0)
-    , hDirectionalLightDirs(0)
-    , hDirectionalLightColors(0)
-    , hDirectionalLightPos(0)
-    , hDirectionalAttenA(0)
-    , hDirectionalAttenK(0)
-    , hLightMode(0) {
-  mCurrentLightingGroup = 0;
-}
-
-void LightingFxInterface::ApplyLighting(Context* pTarg, int iPass) {
-  ////////////////////////////////
-  if (false == mbHasLightingInterface) {
-    return;
-  }
-  if (nullptr == mpShader) {
-    return;
-  }
-
-  const RenderContextInstData* rdata   = pTarg->GetRenderContextInstData();
-  const RenderContextFrameData* rfdata = pTarg->topRenderContextFrameData();
-  auto cammatrices                     = rfdata->topCPD().cameraMatrices();
-
-  const lev2::LightingGroup* lgroup = rdata->GetLightingGroup();
-
-  if (lgroup) {
-    static int gLightStateChanged    = 0;
-    static int gLightStateNotChanged = 0;
-
-    if (lgroup != mCurrentLightingGroup) {
-      gLightStateChanged++;
-
-      static const int kmaxl = 8;
-
-      static fvec4 DirLightColors[kmaxl];
-      static fvec4 DirLightDirs[kmaxl];
-      static fvec4 DirLightPos[kmaxl];
-      static fvec4 DirLightAtnA[kmaxl];
-      static fvec4 DirLightAtnK[kmaxl];
-      static float LightMode[kmaxl];
-
-      int inumdl = 0;
-
-      int inuml = (int)lgroup->GetNumLights();
-
-      inuml = std::min(inuml, kmaxl);
-
-      for (int il = 0; il < kmaxl; il++) {
-        LightMode[il] = 0.0f;
-      }
-
-      for (int il = 0; il < inuml; il++) {
-        int ilightid = lgroup->GetLightId(il);
-
-        Light* plight = lgroup->mLightManager->mLightsInFrustum[ilightid];
-
-        fvec3 LightColor = plight->GetColor();
-        // float fimag = 1.0f;
-        // if( (LightColor.GetX()<0.0f) || (LightColor.GetY()<0.0f) || (LightColor.GetZ()<0.0f) )
-        //{
-        //	fimag = -1.0f;
-        //}
-        // float fmag = LightColor.Mag();
-        // LightColor = LightColor*(1.0f/fmag);
-        // fmag *= fimag;
-
-        if ((kmaxl - inumdl) > 0)
-          switch (plight->LightType()) {
-            case lev2::ELIGHTTYPE_SPOT: {
-              auto pspotlight = (lev2::SpotLight*)plight;
-
-              DirLightDirs[inumdl]   = pspotlight->GetDirection();
-              DirLightColors[inumdl] = LightColor;
-              DirLightPos[inumdl]    = pspotlight->GetWorldPosition();
-
-              float frang = pspotlight->GetRange();
-              float fovy  = pspotlight->GetFovy() * DTOR;
-
-              DirLightAtnA[inumdl] = fvec3(0.0f, 0.0f, fovy);
-              DirLightAtnK[inumdl] = fvec3(0.0f, 0.0f, 10.0f / frang);
-              inumdl++;
-              break;
-            }
-            case lev2::ELIGHTTYPE_POINT: {
-
-              auto ppointlight = (lev2::PointLight*)plight;
-
-              DirLightDirs[inumdl]   = ppointlight->GetDirection();
-              DirLightColors[inumdl] = LightColor;
-              DirLightPos[inumdl]    = ppointlight->GetWorldPosition();
-
-              float frang   = ppointlight->GetRadius();
-              float falloff = ppointlight->GetFalloff();
-
-              // float flin = 2.0ffalloff
-
-              DirLightAtnA[inumdl] = fvec3(0.0f, 1.0f, 0.0f);
-              DirLightAtnK[inumdl] = fvec3(1.0f, 0.0f, falloff);
-
-              LightMode[inumdl] = 1.0f;
-
-              inumdl++;
-
-              break;
-            }
-            case lev2::ELIGHTTYPE_DIRECTIONAL: {
-              auto pdirlight = (lev2::DirectionalLight*)plight;
-
-              DirLightDirs[inumdl]   = pdirlight->GetDirection();
-              DirLightColors[inumdl] = LightColor;
-              DirLightPos[inumdl]    = pdirlight->GetWorldPosition();
-
-              DirLightAtnA[inumdl] = fvec3(0.0f, 1.0f, 0.0f);
-              DirLightAtnK[inumdl] = fvec3(1.0f, 0.0f, 0.0f);
-
-              inumdl++;
-              break;
-            }
-            case lev2::ELIGHTTYPE_AMBIENT: {
-              auto phedlight = (lev2::AmbientLight*)plight;
-              const ork::fmtx4& mativ       = pTarg->MTXI()->RefVITGMatrix();
-
-              const auto& camdat = cammatrices->_camdat;
-
-              ork::fvec4 veye = ork::fvec4(camdat.GetEye());
-
-              auto hldir = phedlight->GetHeadlightDir();
-
-              ork::fvec3 vzdir = hldir.x * camdat.xNormal() + hldir.y * camdat.yNormal() + hldir.z * camdat.zNormal();
-
-              vzdir.Normalize();
-
-              DirLightDirs[inumdl]   = vzdir;
-              DirLightColors[inumdl] = LightColor;
-              DirLightPos[inumdl]    = veye;
-
-              ork::fvec4 vzn = vzdir;
-              vzn.SetW(0.0f);
-              fvec3 viewz = vzn.Transform(pTarg->MTXI()->RefVMatrix());
-
-              float fambientshade = phedlight->GetAmbientShade();
-              float fa0           = (1.0f - fambientshade);
-              float fa1           = fambientshade;
-
-              // orkprintf( "veye<%f %f %f> veyev<%f %f %f>\n", veye.GetX(), veye.GetY(), veye.GetZ(), veyev.GetX(), veyev.GetY(),
-              // veyev.GetZ() );
-              DirLightAtnA[inumdl] = fvec3(fa0, fa1, 0.0f);
-              DirLightAtnK[inumdl] = fvec3(1.0f, 0.0f, 0.0f);
-
-              inumdl++;
-              break;
-            }
-          }
-      }
-
-      pTarg->FXI()->BindParamInt(mpShader, hNumDirectionalLights, inumdl);
-      pTarg->FXI()->BindParamVect4Array(mpShader, hDirectionalLightColors, DirLightColors, inumdl);
-      pTarg->FXI()->BindParamVect4Array(mpShader, hDirectionalLightDirs, DirLightDirs, inumdl);
-      pTarg->FXI()->BindParamVect4Array(mpShader, hDirectionalLightPos, DirLightPos, inumdl);
-      pTarg->FXI()->BindParamVect4Array(mpShader, hDirectionalAttenA, DirLightAtnA, inumdl);
-      pTarg->FXI()->BindParamVect4Array(mpShader, hDirectionalAttenK, DirLightAtnK, inumdl);
-      pTarg->FXI()->BindParamFloatArray(mpShader, hLightMode, LightMode, inumdl);
-    } else {
-      gLightStateNotChanged++;
-    }
-  } else {
-    pTarg->FXI()->BindParamInt(mpShader, hNumDirectionalLights, 0);
-  }
-}
-
-void LightingFxInterface::Init(FxShader* pshader) {
-  mpShader = pshader;
-
-  FxInterface* pfxi       = GfxEnv::GetRef().GetLoaderTarget()->FXI();
-  hAmbientLight           = pfxi->parameter(pshader, "AmbientLight");
-  hNumDirectionalLights   = pfxi->parameter(pshader, "NumDirectionalLights");
-  hDirectionalLightDirs   = pfxi->parameter(pshader, "DirectionalLightDir");
-  hDirectionalLightColors = pfxi->parameter(pshader, "DirectionalLightColor");
-  hDirectionalLightPos    = pfxi->parameter(pshader, "DirectionalLightPos");
-  hDirectionalAttenA      = pfxi->parameter(pshader, "DirectionalAttenA");
-  hDirectionalAttenK      = pfxi->parameter(pshader, "DirectionalAttenK");
-  hLightMode              = pfxi->parameter(pshader, "LightMode");
-
-  mbHasLightingInterface = true;
-
-  if (0 == hAmbientLight)
-    mbHasLightingInterface = false;
-  if (0 == hNumDirectionalLights)
-    mbHasLightingInterface = false;
-  if (0 == hDirectionalLightDirs)
-    mbHasLightingInterface = false;
-  if (0 == hDirectionalLightColors)
-    mbHasLightingInterface = false;
-  if (0 == hDirectionalLightPos)
-    mbHasLightingInterface = false;
-  if (0 == hDirectionalAttenA)
-    mbHasLightingInterface = false;
-  if (0 == hDirectionalAttenK)
-    mbHasLightingInterface = false;
-  if (0 == hLightMode)
-    mbHasLightingInterface = false;
-}
 
 /////////////////////////////////////
 /////////////////////////////////////

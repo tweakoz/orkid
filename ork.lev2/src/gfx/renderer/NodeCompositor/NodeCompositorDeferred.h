@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -79,10 +79,10 @@ struct DeferredContext {
   ////////////////////////////////////////////////////////////////////
   ViewData computeViewData(CompositorDrawData& drawdata);
   ////////////////////////////////////////////////////////////////////
-  void update(const ViewData& VD);
+  void updateDebugLights(const ViewData& VD);
   ////////////////////////////////////////////////////////////////////
   void gpuInit(Context* target);
-  const uint32_t* captureDepthClusters(CompositorDrawData& drawdata, const ViewData& VD);
+  const uint32_t* captureDepthClusters(const CompositorDrawData& drawdata, const ViewData& VD);
   void renderUpdate(CompositorDrawData& drawdata);
   void renderGbuffer(CompositorDrawData& drawdata, const ViewData& VD);
   void renderBaseLighting(CompositorDrawData& drawdata, const ViewData& VD);
@@ -94,6 +94,7 @@ struct DeferredContext {
   CompositingPassData _accumCPD;
   fvec4 _clearColor;
   std::string _shadername;
+  lev2::Texture* brdfIntegrationTexture() const;
   ////////////////////////////////////////////////////////////////////
   int _width    = 0;
   int _height   = 0;
@@ -104,13 +105,13 @@ struct DeferredContext {
 
   ////////////////////////////////////////////////////////////////////
 
-  const FxShaderTechnique* _tekBaseLighting           = nullptr;
-  const FxShaderTechnique* _tekPointLighting          = nullptr;
-  const FxShaderTechnique* _tekDebugNormal            = nullptr;
-  const FxShaderTechnique* _tekDebugNormalStereo      = nullptr;
-  const FxShaderTechnique* _tekBaseLightingStereo     = nullptr;
-  const FxShaderTechnique* _tekPointLightingStereo    = nullptr;
-  const FxShaderTechnique* _tekDownsampleDepthCluster = nullptr;
+  const FxShaderTechnique* _tekBaseLighting              = nullptr;
+  const FxShaderTechnique* _tekPointLighting             = nullptr;
+  const FxShaderTechnique* _tekEnvironmentLighting       = nullptr;
+  const FxShaderTechnique* _tekEnvironmentLightingStereo = nullptr;
+  const FxShaderTechnique* _tekBaseLightingStereo        = nullptr;
+  const FxShaderTechnique* _tekPointLightingStereo       = nullptr;
+  const FxShaderTechnique* _tekDownsampleDepthCluster    = nullptr;
 
 #if defined(ENABLE_COMPUTE_SHADERS)
   FxComputeShader* _lightcollectcomputeshader = nullptr;
@@ -144,15 +145,18 @@ struct DeferredContext {
 
   ////////////////////////////////////////////////////////////////////
 
-  RtGroupRenderTarget* _accumRT   = nullptr;
-  RtGroupRenderTarget* _gbuffRT   = nullptr;
-  RtGroupRenderTarget* _clusterRT = nullptr;
+  RtGroupRenderTarget* _accumRT      = nullptr;
+  RtGroupRenderTarget* _gbuffRT      = nullptr;
+  RtGroupRenderTarget* _clusterRT    = nullptr;
+  lev2::Texture* _brdfIntegrationMap = nullptr;
 
   CaptureBuffer _clustercapture;
   RtGroup* _rtgGbuffer      = nullptr;
   RtGroup* _rtgDepthCluster = nullptr;
   RtGroup* _rtgLaccum       = nullptr;
   PoolString _layername;
+  float _specularLevel = 1.0f;
+  float _diffuseLevel  = 1.0f;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -176,16 +180,15 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class DeferredCompositingNodeDebugNormal : public RenderCompositingNode {
-  DeclareConcreteX(DeferredCompositingNodeDebugNormal, RenderCompositingNode);
+class DeferredCompositingNodePbr : public RenderCompositingNode {
+  DeclareConcreteX(DeferredCompositingNodePbr, RenderCompositingNode);
 
 public:
-  DeferredCompositingNodeDebugNormal();
-  ~DeferredCompositingNodeDebugNormal();
+  DeferredCompositingNodePbr();
+  ~DeferredCompositingNodePbr();
 
   lev2::Texture* envSpecularTexture() const;
   lev2::Texture* envDiffuseTexture() const;
-  lev2::Texture* brdfIntegrationTexture() const;
 
   float environmentIntensity() const {
     return _environmentIntensity;
@@ -228,7 +231,6 @@ private:
   float _specularLevel        = 1.0f;
   float _skyboxLevel          = 1.0f;
   fvec3 _ambientLevel;
-  lev2::Texture* _brdfIntegrationMap = nullptr;
   lev2::Texture* _filtenvSpecularMap = nullptr;
   lev2::Texture* _filtenvDiffuseMap  = nullptr;
 };

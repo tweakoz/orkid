@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
+// Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -91,7 +91,7 @@ struct Sector
 		mFlags = 0;
 	}
 
-	bool ContainsPoint(const SectorData &data, const ork::fvec3& position) const;
+	bool containsPoint(const SectorData &data, const ork::fvec3& position) const;
 	void Transform(const fmtx4& transform);
 
 	float ContributeBasis(SectorData &data);
