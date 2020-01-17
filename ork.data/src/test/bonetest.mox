@@ -14,8 +14,8 @@
                                             <object type='EzUiCam' id='3'>
                                                 <property name='Center'>0.00388462 1.21193 0.208354</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>6.39297</property>
-                                                <property name='QuatC'>0.00542635 0.848953 -0.00180484 0.531172</property>
+                                                <property name='Loc'>9.46322</property>
+                                                <property name='QuatC'>-0.0843226 0.509496 -0.0324217 -0.857421</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -304,7 +304,7 @@
                                                                                         <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
                                                                                         <property name='DiffuseLevel'>1</property>
-                                                                                        <property name='EnvironmentIntensity'>13.1902</property>
+                                                                                        <property name='EnvironmentIntensity'>1.14504</property>
                                                                                         <property name='EnvironmentMipBias'>0</property>
                                                                                         <property name='EnvironmentMipScale'>4</property>
                                                                                         <property name='EnvironmentTexture'>
