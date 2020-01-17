@@ -469,7 +469,7 @@ void recomputeHIDPI(void*plato){
   // nop for now..
 }
 bool _HIDPI() {
-  return true;
+  return false;
 }
 float _currentDPI(){
   return 221.0f; // hardcoded to macbook pro for now..
