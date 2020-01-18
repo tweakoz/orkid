@@ -329,7 +329,7 @@ void ManipManager::CalcObjectScale(void) {
   float scale;
   fmtx4 ScaleMat;
   mCurTransform.GetMatrix(ScaleMat);
-  ScaleMat.DecomposeMatrix(pos, rot, scale);
+  ScaleMat.decompose(pos, rot, scale);
 
   mObjScale    = scale;
   mObjInvScale = float(1.0f) / mObjScale;

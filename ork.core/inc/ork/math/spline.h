@@ -13,7 +13,7 @@
 #include <ork/math/misc_math.h>
 #include <ork/object/Object.h>
 
-namespace ork {
+namespace ork::math {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -21,7 +21,8 @@ struct SplineV2 {
   static const int Nu_components = 2;
 
   SplineV2(const fvec2& pos);
-  SplineV2() {}
+  SplineV2() {
+  }
 
   fvec2 mData;
 
@@ -35,7 +36,8 @@ struct SplineV3 {
   static const int Nu_components = 3;
 
   SplineV3(const fvec3& pos);
-  SplineV3() {}
+  SplineV3() {
+  }
 
   fvec3 mData;
 
@@ -49,7 +51,8 @@ struct SplineV4 {
   static const int Nu_components = 4;
 
   SplineV4(const fvec4& pos);
-  SplineV4() {}
+  SplineV4() {
+  }
 
   fvec4 mData;
 
@@ -78,7 +81,9 @@ public:
 
   void GetCV(int idx, T& out) const;
   void AddCV(const T& vert);
-  int NumCVs() const { return int(mSeqVertices.size()); }
+  int NumCVs() const {
+    return int(mSeqVertices.size());
+  }
   void ClearCVS();
 
   //////////////////////////////////////////////////////////
@@ -94,4 +99,4 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} // namespace ork
+} // namespace ork::math

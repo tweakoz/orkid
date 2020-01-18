@@ -50,7 +50,7 @@ void Device::_updatePosesCommon(fmtx4 observermatrix){
     fquat hmdrot;
     float hmdscl;
 
-    hmd.DecomposeMatrix(hmdpos, hmdrot, hmdscl);
+    hmd.decompose(hmdpos, hmdrot, hmdscl);
 
     _rotMatrix = hmdrot.ToMatrix();
     _rotMatrix      = _headingmatrix * _rotMatrix;

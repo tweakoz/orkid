@@ -132,7 +132,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
     }
     /////////////////////////////////////////////////////////
     if (inumjoints) {
-      mdl->mSkeleton.SetNumJoints(inumjoints);
+      mdl->mSkeleton.resize(inumjoints);
       for (int ib = 0; ib < inumjoints; ib++) {
         int iskelindex = 0, iparentindex = 0, ijointname = 0, ijointmatrix = 0, iinvrestmatrix = 0;
         int inodematrix = 0;
@@ -169,12 +169,12 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
       lev2::XgmBone Bone;
       HeaderStream->GetItem(iib);
       OrkAssert(iib == ib);
-      HeaderStream->GetItem(Bone.miParent);
-      HeaderStream->GetItem(Bone.miChild);
-      mdl->mSkeleton.AddFlatBone(Bone);
+      HeaderStream->GetItem(Bone._parentIndex);
+      HeaderStream->GetItem(Bone._childIndex);
+      mdl->mSkeleton.addBone(Bone);
     }
     if (inumbones) {
-      mdl->mSkeleton.miRootNode = (inumbones > 0) ? mdl->mSkeleton.GetFlattenedBone(0).miParent : -1;
+      mdl->mSkeleton.miRootNode = (inumbones > 0) ? mdl->mSkeleton.bone(0)._parentIndex : -1;
     }
     // mdl->mSkeleton.dump();
     ///////////////////////////////////
@@ -683,7 +683,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
   const lev2::XgmSkeleton& skel = mdl->skeleton();
 
-  int32_t inumjoints = skel.GetNumJoints();
+  int32_t inumjoints = skel.numJoints();
 
   HeaderStream->AddItem(inumjoints);
 
@@ -719,17 +719,17 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
   ///////////////////////////////////
   // write out flattened bones
 
-  int32_t inumbones = skel.GetNumBones();
+  int32_t inumbones = skel.numBones();
 
   HeaderStream->AddItem(inumbones);
 
   printf("WriteXgm<%s> numbones<%d>\n", Filename.c_str(), inumbones);
   for (int32_t ib = 0; ib < inumbones; ib++) {
-    const lev2::XgmBone& Bone = skel.GetFlattenedBone(ib);
+    const lev2::XgmBone& Bone = skel.bone(ib);
 
     HeaderStream->AddItem(ib);
-    HeaderStream->AddItem(Bone.miParent);
-    HeaderStream->AddItem(Bone.miChild);
+    HeaderStream->AddItem(Bone._parentIndex);
+    HeaderStream->AddItem(Bone._childIndex);
   }
 
   ///////////////////////////////////

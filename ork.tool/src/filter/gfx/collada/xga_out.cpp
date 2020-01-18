@@ -91,7 +91,7 @@ bool DAEXGAFilter::ConvertAsset( const tokenlist& toklist )
 				{
 					const fmtx4 & Matrix = MatrixChannelData->GetFrame( ifr );
 					ork::lev2::DecompMtx44 decomp;
-					Matrix.DecomposeMatrix( decomp.mTrans, decomp.mRot, decomp.mScale );
+					Matrix.decompose( decomp.mTrans, decomp.mRot, decomp.mScale );
 					XgmChan->AddFrame(decomp);
 				}
 				colanim->mXgmAnim.AddChannel( ChannelPooledName, XgmChan );
@@ -163,7 +163,7 @@ bool DAEXGAFilter::ConvertAsset( const tokenlist& toklist )
 			PoolString ChannelPooledName = AddPooledString(jname.c_str());
 
 			ork::lev2::DecompMtx44 decmtx;
-			Mtx.DecomposeMatrix( decmtx.mTrans, decmtx.mRot, decmtx.mScale );
+			Mtx.decompose( decmtx.mTrans, decmtx.mRot, decmtx.mScale );
 
 			StaticPose.AddSorted( ChannelPooledName, decmtx );
 		}

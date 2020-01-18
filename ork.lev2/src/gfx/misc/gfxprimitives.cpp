@@ -1115,7 +1115,7 @@ void GfxPrimitives::Init(Context* pTarg) {
           f32 fascal = fAmp * powf(fAmpScale, (f32)(iOctave));
           f32 ffscal = fFrq * powf(fFrqScale, (f32)(iOctave));
 
-          fy += Perlin2D::PlaneNoiseFunc(fx, fz, 0.0f, 0.0f, fascal, ffscal);
+          fy += math::Perlin2D::PlaneNoiseFunc(fx, fz, 0.0f, 0.0f, fascal, ffscal);
         }
 
         if (float(fy) < fmin)

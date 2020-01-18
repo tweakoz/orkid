@@ -776,7 +776,7 @@ void Matrix44<T>::Lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par) //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix44<T>::DecomposeMatrix(Vector3<T>& pos, Quaternion<T>& qrot, T& Scale) const {
+template <typename T> void Matrix44<T>::decompose(Vector3<T>& pos, Quaternion<T>& qrot, T& Scale) const {
   pos = GetTranslation();
 
   Matrix44<T> rot = *this;
@@ -806,7 +806,7 @@ template <typename T> void Matrix44<T>::DecomposeMatrix(Vector3<T>& pos, Quatern
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix44<T>::ComposeMatrix(const Vector3<T>& pos, const Quaternion<T>& qrot, const T& Scale) {
+template <typename T> void Matrix44<T>::compose(const Vector3<T>& pos, const Quaternion<T>& qrot, const T& Scale) {
   *this = qrot.ToMatrix();
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {

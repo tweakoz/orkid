@@ -444,7 +444,7 @@ template <typename T> void Matrix33<T>::Lerp( const Matrix33<T> &from, const Mat
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void Matrix33<T>::DecomposeMatrix( Quaternion<T>& qrot, T& Scale ) const
+void Matrix33<T>::decompose( Quaternion<T>& qrot, T& Scale ) const
 {
 	Matrix33<T> rot = *this;
 
@@ -467,7 +467,7 @@ void Matrix33<T>::DecomposeMatrix( Quaternion<T>& qrot, T& Scale ) const
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void Matrix33<T>::ComposeMatrix( const Quaternion<T>& qrot, const T& Scale )
+void Matrix33<T>::compose( const Quaternion<T>& qrot, const T& Scale )
 {
 	*this = qrot.ToMatrix3();
 	for( int i=0; i<3; i++ )

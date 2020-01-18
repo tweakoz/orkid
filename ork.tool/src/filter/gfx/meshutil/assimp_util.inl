@@ -91,19 +91,25 @@ typedef std::map<std::string, ork::lev2::XgmSkelNode*> skelnodemap_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ParsedSkeleton {
-  skelnodemap_t _xgmskelmap;
-  bool _isSkinned = false;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 inline std::string remapSkelName(std::string inp) {
   // fixup blender naming
   auto remapped_name = ork::string::replaced(inp, "Armature_", "");
   remapped_name      = ork::string::replaced(remapped_name, "_", ".");
   return remapped_name;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ParsedSkeleton {
+  std::string _rootname;
+  skelnodemap_t _xgmskelmap;
+  bool _isSkinned = false;
+  //////////////////////////////////////////////////////////////
+  inline lev2::XgmSkelNode* rootXgmSkelNode() {
+    return _xgmskelmap.find(remapSkelName(_rootname))->second;
+  }
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 inline ParsedSkeleton parseSkeleton(const aiScene* scene) {
@@ -119,11 +125,15 @@ inline ParsedSkeleton parseSkeleton(const aiScene* scene) {
 
   nodestack = std::queue<aiNode*>();
   nodestack.push(scene->mRootNode);
+
+  rval._rootname = scene->mRootNode->mName.data;
+
   while (not nodestack.empty()) {
     auto n = nodestack.front();
     nodestack.pop();
     auto name = remapSkelName(n->mName.data);
-    auto itb  = uniqskelnodeset.find(name);
+    printf("name<%s> remapped<%s>\n", n->mName.data, name.c_str());
+    auto itb = uniqskelnodeset.find(name);
     if (itb == uniqskelnodeset.end()) {
       int index = uniqskelnodeset.size();
       uniqskelnodeset.insert(name);
@@ -132,7 +142,8 @@ inline ParsedSkeleton parseSkeleton(const aiScene* scene) {
       xgmskelnodes[name]   = xgmnode;
       auto matrix          = n->mTransformation;
       printf("uniqNODE<%d:%p> xgmnode<%p> <%s>\n", index, n, xgmnode, name.c_str());
-      xgmnode->mNodeMatrix = convertMatrix44(matrix);
+      xgmnode->_nodeMatrix = convertMatrix44(matrix);
+      xgmnode->_nodeMatrix.dump(name);
     }
     for (int i = 0; i < n->mNumChildren; ++i) {
       nodestack.push(n->mChildren[i]);
@@ -154,6 +165,7 @@ inline ParsedSkeleton parseSkeleton(const aiScene* scene) {
         auto bone     = mesh->mBones[b];
         auto bonename = remapSkelName(bone->mName.data);
         auto itb      = xgmskelnodes.find(bonename);
+        OrkAssert(itb != xgmskelnodes.end());
         if (itb != xgmskelnodes.end()) {
           auto xgmnode = itb->second;
           if (false == xgmnode->_varmap["visited_bone"].IsA<bool>()) {
@@ -171,7 +183,7 @@ inline ParsedSkeleton parseSkeleton(const aiScene* scene) {
                 invbindpose.SetElemYX(j, k, matrix[j][k]);
               }
             }
-            xgmnode->mBindMatrixInverse = invbindpose;
+            xgmnode->_bindMatrixInverse = invbindpose;
             rval._isSkinned             = true;
           }
         }
@@ -196,8 +208,11 @@ inline ParsedSkeleton parseSkeleton(const aiScene* scene) {
     OrkAssert(itp != xgmskelnodes.end());
     auto pskelnode = itp->second;
     if (p == scene->mRootNode) {
-      pskelnode->mJointMatrix = pskelnode->bindMatrix();
+      pskelnode->_jointMatrix = pskelnode->bindMatrix();
     }
+    fmtx4 pmtx = pskelnode->bindMatrix();
+    deco::printf(fvec3::White(), "pskelnode<%s> %s\n", pskelnode->_name.c_str(), pskelnode->_jointMatrix.dump().c_str());
+    // deco::printf(fvec3::White(), "pskelnode<%s> %s\n", pskelnode->_name.c_str(), pmtx.dump().c_str());
     //////////////////////////////
     for (int i = 0; i < p->mNumChildren; ++i) {
       auto c   = p->mChildren[i];
@@ -205,16 +220,25 @@ inline ParsedSkeleton parseSkeleton(const aiScene* scene) {
       OrkAssert(itc != xgmskelnodes.end());
       auto cskelnode = itc->second;
       nodestack.push(c);
-      cskelnode->mpParent = pskelnode;
-      fmtx4 cmtx          = cskelnode->bindMatrix();
-      fmtx4 pmtx          = pskelnode->bindMatrix();
-      cskelnode->mJointMatrix.CorrectionMatrix(pmtx, cmtx);
+      cskelnode->_parent = pskelnode;
+      fmtx4 cmtx         = cskelnode->bindMatrix();
+      fmtx4 pmtx         = pskelnode->bindMatrix();
+      cskelnode->_jointMatrix.CorrectionMatrix(pmtx, cmtx);
+      cskelnode->_bindMatrix = cmtx;
       pskelnode->mChildren.push_back(cskelnode);
     }
-  }
-
+    /////////////////////////////////////////////////
+  } // while (not nodestack.empty())
   /////////////////////////////////////////////////
+  auto root = rval.rootXgmSkelNode();
+  // bool fixup_applied = root->applyCentimeterToMeterScale();
 
+  root->visitHierarchy([root](lev2::XgmSkelNode* node) {
+    auto d = node->concatenated().dump();
+    auto c = (node == root) ? fvec3::Magenta() : fvec3::Yellow();
+    deco::printf(c, "node<%s> %s\n", node->_name.c_str(), d.c_str());
+  });
+  // OrkAssert(false);
   return rval;
 }
 

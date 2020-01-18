@@ -225,7 +225,7 @@ void XgmBlendPoseInfo::AddPose(const DecompMtx44& mat, float weight, EXFORM_COMP
 
 void DecompMtx44::Compose(fmtx4& mtx, EXFORM_COMPONENT components) const {
   if (XFORM_COMPONENT_ALL == components)
-    mtx.ComposeMatrix(mTrans, mRot, mScale); // = scaleMat * rotMat * transMat;
+    mtx.compose(mTrans, mRot, mScale); // = scaleMat * rotMat * transMat;
   else if (XFORM_COMPONENT_ORIENT == components)
     mtx = mRot.ToMatrix();
   else if (XFORM_COMPONENT_TRANS == components) {
@@ -355,7 +355,7 @@ void XgmBlendPoseInfo::ComputeMatrix(fmtx4& outmatrix) const {
       if (mPoseCallback)
         mPoseCallback->PostBlendPreConcat(c);
 
-      outmatrix.ComposeMatrix(c.mTrans, c.mRot, c.mScale);
+      outmatrix.compose(c.mTrans, c.mRot, c.mScale);
     } break;
 
     default:
@@ -374,7 +374,7 @@ void XgmBlendPoseInfo::ComputeMatrix(fmtx4& outmatrix) const {
 
 XgmLocalPose::XgmLocalPose(const XgmSkeleton& Skeleton)
     : mSkeleton(Skeleton) {
-  int inumchannels = Skeleton.GetNumJoints();
+  int inumchannels = Skeleton.numJoints();
   if (inumchannels == 0) {
     inumchannels = 1;
   }
@@ -436,7 +436,7 @@ void XgmLocalPose::BindAnimInst(XgmAnimInst& AnimInst) {
     // int iframe = int(frame);
     int ichidx = 0;
 
-    // for( int is=0; is<mSkeleton.GetNumJoints(); is++ )
+    // for( int is=0; is<mSkeleton.numJoints(); is++ )
     //	printf( "skel bone<%d:%s>\n", is, mSkeleton.GetJointName(is).c_str() );
 
     for (ork::lev2::XgmAnim::JointChannelsMap::const_iterator it = Channels.begin(); it != Channels.end(); it++) {
@@ -533,7 +533,7 @@ void XgmLocalPose::ApplyAnimInst(const XgmAnimInst& AnimInst) {
     //////////////////////////////////////////////////////////////////////////////////////////
     // root anim on a rigid model (ala destructables in sushi)
     //////////////////////////////////////////////////////////////////////////////////////////
-    if( (1==inumanimchannels) && (1==XgmSkl.GetNumJoints()) )
+    if( (1==inumanimchannels) && (1==XgmSkl.numJoints()) )
     {	const PoolString& channelname = Channels.begin()->first;
         const ork::lev2::XgmMatrixAnimChannel* ChannelData = ork::lev2::XgmMatrixAnimChannel::Cast(Channels.begin()->second);
         PoolString JointName = FindPooledString( channelname.c_str() );
@@ -606,49 +606,7 @@ void XgmLocalPose::BuildPose(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fmtx4 XgmSkeleton::concatenated(PoolString named) const {
-  std::vector<int> walk;
-  int index = jointIndex(named);
-  while (index != -1) {
-    walk.push_back(index);
-    index = GetJointParent(index);
-  }
-  int walklen = sizeof(walk);
-  fmtx4 rval;
-  for (int i = walklen; i >= 0; i--) {
-    int jidx = walk[i];
-    auto mtx = RefJointMatrix(jidx);
-    rval     = rval * mtx;
-  }
-  return rval;
-}
-
-fmtx4 XgmSkelNode::concatenated() const {
-  const XgmSkelNode* cur = this;
-  std::vector<const XgmSkelNode*> walk;
-  while (cur != nullptr) {
-    assert(cur != nullptr);
-    walk.push_back(cur);
-    cur = cur->mpParent;
-  }
-  int walklen = (int)walk.size();
-  fmtx4 rval;
-  for (int i = walklen - 1; i >= 0; i--) {
-    cur = walk[i];
-    assert(cur != nullptr);
-    rval = rval * cur->mJointMatrix;
-  }
-  return rval;
-}
-
-fmtx4 XgmSkelNode::bindMatrix() const {
-  return mBindMatrixInverse.inverse();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void XgmLocalPose::Concatenate(void) {
-
   fmtx4* __restrict pmats = &RefLocalMatrix(0);
 
   float fminx = std::numeric_limits<float>::max();
@@ -662,11 +620,11 @@ void XgmLocalPose::Concatenate(void) {
     const fmtx4& RootAnimMat    = RefLocalMatrix(mSkeleton.miRootNode);
     pmats[mSkeleton.miRootNode] = RootAnimMat.Concat43(mSkeleton.mTopNodesMatrix);
 
-    int inumbones = mSkeleton.GetNumBones();
+    int inumbones = mSkeleton.numBones();
     for (int ib = 0; ib < inumbones; ib++) {
-      const XgmBone& Bone       = mSkeleton.GetFlattenedBone(ib);
-      int iparent               = Bone.miParent;
-      int ichild                = Bone.miChild;
+      const XgmBone& Bone       = mSkeleton.bone(ib);
+      int iparent               = Bone._parentIndex;
+      int ichild                = Bone._childIndex;
       const fmtx4& ParentMatrix = pmats[iparent];
       const fmtx4& LocMatrix    = pmats[ichild];
 
@@ -718,7 +676,7 @@ std::string XgmLocalPose::dump() const {
   std::string rval;
   if (mSkeleton.miRootNode >= 0) {
     const fmtx4& RootAnimMat = RefLocalMatrix(mSkeleton.miRootNode);
-    int inumjoints           = mSkeleton.GetNumJoints();
+    int inumjoints           = mSkeleton.numJoints();
     for (int ij = 0; ij < inumjoints; ij++) {
       std::string name = mSkeleton.GetJointName(ij).c_str();
       const auto& jmtx = RefLocalMatrix(ij);
@@ -735,7 +693,7 @@ std::string XgmLocalPose::dumpc(fvec3 color) const {
   std::string rval;
   if (mSkeleton.miRootNode >= 0) {
     const fmtx4& RootAnimMat = RefLocalMatrix(mSkeleton.miRootNode);
-    int inumjoints           = mSkeleton.GetNumJoints();
+    int inumjoints           = mSkeleton.numJoints();
     fvec3 ca                 = color;
     fvec3 cb                 = color * 0.7;
 
@@ -755,7 +713,7 @@ std::string XgmLocalPose::dumpc(fvec3 color) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 int XgmLocalPose::NumJoints() const {
-  return mSkeleton.GetNumJoints();
+  return mSkeleton.numJoints();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -772,7 +730,8 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
   for (int ij = 0; ij < inumj; ij++) {
     fmtx4 MatAnimJCat = localpose.RefLocalMatrix(ij);
     auto InvBind      = mSkeleton.RefInverseBindMatrix(ij);
-    auto finalmtx     = (InvBind * MatAnimJCat) * worldmtx;
+    // auto finalmtx     = worldmtx * (InvBind * MatAnimJCat);
+    auto finalmtx = worldmtx * (InvBind.inverse());
     // auto finalmtx      = (MatAnimJCat)*worldmtx;
     mWorldMatrices[ij] = finalmtx;
   }
@@ -783,7 +742,7 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
 std::string XgmWorldPose::dumpc(fvec3 color) const {
   std::string rval;
   if (mSkeleton.miRootNode >= 0) {
-    int inumjoints = mSkeleton.GetNumJoints();
+    int inumjoints = mSkeleton.numJoints();
     fvec3 ca       = color;
     fvec3 cb       = color * 0.7;
 
@@ -798,13 +757,6 @@ std::string XgmWorldPose::dumpc(fvec3 color) const {
     }
   }
   return rval;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-XgmSkelNode::XgmSkelNode(const std::string& Name)
-    : mNodeName(Name)
-    , mpParent(0) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1132,133 +1084,6 @@ void XgmDecompAnimChannel::ReserveFrames(int icount) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-XgmSkeleton::XgmSkeleton()
-    : miNumJoints(0)
-    , maJointParents(0)
-    , mpUserData(0)
-    , miRootNode(-1)
-    , mpRootNode(0) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-XgmSkeleton::~XgmSkeleton() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void XgmSkeleton::SetNumJoints(int inumjoints) {
-  miNumJoints = inumjoints;
-
-  mvJointNameVect.resize(inumjoints);
-  maJointParents.resize(inumjoints);
-  _inverseBindMatrices.resize(inumjoints);
-  _jointMatrices.resize(inumjoints);
-  _nodeMatrices.resize(inumjoints);
-  mpJointFlags = new U32[inumjoints];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-std::string XgmSkeleton::dumpInvBind(fvec3 color) const {
-  std::string rval;
-  if (miRootNode >= 0) {
-    int inumjoints = GetNumJoints();
-    fvec3 ca       = color;
-    fvec3 cb       = color * 0.7;
-
-    for (int ij = 0; ij < inumjoints; ij++) {
-      fvec3 cc         = (ij & 1) ? cb : ca;
-      std::string name = GetJointName(ij).c_str();
-      const auto& jmtx = _inverseBindMatrices[ij];
-      rval += deco::asciic_rgb(cc);
-      rval += FormatString("%16s", name.c_str());
-      rval += ": "s + jmtx.dump(cc) + "\n"s;
-      rval += deco::asciic_reset();
-    }
-  }
-  return rval;
-}
-
-////////////////////////////////////////////////////////////////////////////
-
-std::string XgmSkeleton::dump(fvec3 color) const {
-  std::string rval;
-  auto color2 = color * 0.5;
-  rval += deco::format(color, "XgmSkeleton<%p>\n", this);
-  rval += deco::format(color, " numjoints<%d>\n", miNumJoints);
-  rval += deco::format(color, " rootindex<%d>\n", miRootNode);
-
-  int i = 0;
-  for (orklut<PoolString, int>::const_iterator it = mmJointNameMap.begin(); it != mmJointNameMap.end(); it++) {
-    PoolString sidx = (*it).first;
-    int idx         = (*it).second;
-    // rval += deco::format(color," jointnamemap<%d> <%s>:<%d>\n", i, sidx.c_str(), idx);
-    i++;
-  }
-  i = 0;
-  for (orkvector<PoolString>::const_iterator it = mvJointNameVect.begin(); it != mvJointNameVect.end(); it++) {
-    const PoolString& s = (*it);
-    // rval += deco::format(color," jointnamevect<%d> <%s>\n", i, s.c_str());
-    i++;
-  }
-  i = 0;
-  for (orkvector<XgmBone>::const_iterator it = mFlattenedBones.begin(); it != mFlattenedBones.end(); it++) {
-    const XgmBone& b = (*it);
-    rval += deco::format(color, " bone<%d> p<%d> c<%d>\n", i, b.miParent, b.miChild);
-    i++;
-  }
-
-  rval += deco::format(color, " topmat: ") + mTopNodesMatrix.dump(color) + "\n";
-  rval += deco::format(color, " bindmat: ") + mBindShapeMatrix.dump(color) + "\n";
-
-  for (int ij = 0; ij < miNumJoints; ij++) {
-    auto name = GetJointName(ij);
-    rval += deco::format(color, "   joint<%02d:%s>\n", ij, name.c_str());
-
-    int parent          = maJointParents[ij];
-    const char* parname = (parent >= 0) ? GetJointName(parent).c_str() : "none";
-    rval += deco::format(color, "     parent<%d:%s>\n", parent, parname);
-    rval += deco::format(color, "     flags<%08x>\n", mpJointFlags[ij]);
-
-    rval += deco::format(color, "     ljmat: ") + _jointMatrices[ij].dump(color) + "\n";
-    rval += deco::format(color, "     ibmat: ") + _inverseBindMatrices[ij].dump(color) + "\n";
-    rval += deco::format(color, "     ndmat: ") + _nodeMatrices[ij].dump(color) + "\n";
-  }
-  return rval;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-int XgmSkeleton::jointIndex(const ork::PoolString& Named) const {
-  orklut<PoolString, int>::const_iterator it = mmJointNameMap.find(Named);
-  int index                                  = (it == mmJointNameMap.end()) ? -1 : it->second;
-  if (index == -1) {
-    // printf( "find joint<%s> in map\n", Named.c_str() );
-    for (auto it : mmJointNameMap) {
-      // printf( "in map key<%s>\n", it.first.c_str());
-    }
-  }
-  return index;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void XgmSkeleton::AddJoint(int iskelindex, int iparindex, const PoolString& name) {
-  mvJointNameVect[iskelindex] = name;
-  mmJointNameMap.AddSorted(name, iskelindex);
-  maJointParents[iskelindex] = iparindex;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void XgmSkeleton::AddFlatBone(const XgmBone& bone) {
-  mFlattenedBones.push_back(bone);
-}
-
-///////////////////////////////////////////////////////////////////////////////
 struct chansettter {
   static void set(XgmAnim* anm, XgmAnimChannel* Channel, const void* pdata) {
     XgmDecompAnimChannel* DecChannel = rtti::autocast(Channel);
@@ -1296,7 +1121,7 @@ struct chansettter {
       }
     }
   }
-};
+}; // namespace lev2
 ///////////////////////////////////////////////////////////////////////////////
 bool XgmAnim::UnLoadUnManaged(XgmAnim* anm) {
 #if defined(ORKCONFIG_ASSET_UNLOAD)

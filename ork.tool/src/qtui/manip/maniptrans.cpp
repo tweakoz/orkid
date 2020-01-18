@@ -189,8 +189,8 @@ void ManipSingleTrans::Draw( Context *pTARG ) const
 	float scale;
 
 	mManager.mCurTransform.GetMatrix(Mat);
-	Mat.DecomposeMatrix(pos, rot, scale);
-	VisMat.ComposeMatrix(pos, rot, 1.0f);
+	Mat.decompose(pos, rot, scale);
+	VisMat.compose(pos, rot, 1.0f);
 
 	////////////////////
 	// plane/screen cross section check
@@ -239,12 +239,12 @@ void ManipSingleTrans::Draw( Context *pTARG ) const
 	fquat neg_rot;
 
 	//mManager.mCurTransform.GetMatrix(MatCur);
-	//MatCur.DecomposeMatrix(pos, rot, scale);
+	//MatCur.decompose(pos, rot, scale);
 
 	if( mManager.mbWorldTrans )
 		rot.Identity();
 
-	MatCur.ComposeMatrix(pos, rot, mManager.GetManipScale());
+	MatCur.compose(pos, rot, mManager.GetManipScale());
 
 	if( GetClass() == ManipTX::GetClassStatic() )
 		neg_rot.FromAxisAngle(fvec4(0.0f, 1.0f, 0.0f, PI));
@@ -342,12 +342,12 @@ void ManipDualTrans::Draw(Context *pTARG ) const
 	float scale;
 
 	mManager.mCurTransform.GetMatrix(MatCur);
-	MatCur.DecomposeMatrix(pos, rot, scale);
+	MatCur.decompose(pos, rot, scale);
 
 	if( mManager.mbWorldTrans )
 		rot.Identity();
 
-	MatCur.ComposeMatrix(pos, rot, mManager.GetManipScale());
+	MatCur.compose(pos, rot, mManager.GetManipScale());
 
 	ork::fvec4 v0, v1, v2, v3;
 	GetQuad(1.0f, v0, v1, v2, v3);
@@ -372,7 +372,7 @@ void ManipDualTrans::HandleDrag(const ork::fvec2& pos)
 	ork::fvec3 pos = mManager.mCurTransform.GetTransform()->GetPosition();
 	ork::fquat rot;
 	float scale = 1.0f;
-	tform.ComposeMatrix(pos, rot, scale);
+	tform.compose(pos, rot, scale);
 	tform.inverseOf(tform);
 
 	ork::fvec3 snear = pVP->UnProject(ork::fvec3(start.GetX(), start.GetY(), 0),

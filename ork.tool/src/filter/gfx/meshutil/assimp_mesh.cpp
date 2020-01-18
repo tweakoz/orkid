@@ -40,6 +40,9 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
     scene_center.y = (scene_min.y + scene_max.y) / 2.0f;
     scene_center.z = (scene_min.z + scene_max.z) / 2.0f;
 
+    _vertexExtents.BeginGrow();
+    _skeletonExtents.BeginGrow();
+
     //////////////////////////////////////////////
     // parse embedded textures
     //////////////////////////////////////////////
@@ -319,11 +322,11 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       auto it_nod_skelnode                 = xgmskelnodes.find(nren);
       ork::lev2::XgmSkelNode* nod_skelnode = (it_nod_skelnode != xgmskelnodes.end()) ? it_nod_skelnode->second : nullptr;
 
-      // auto ppar_skelnode = nod_skelnode->mpParent;
-      std::string name = nod_skelnode->mNodeName;
-      auto nodematrix  = nod_skelnode->mNodeMatrix;
-      fmtx4 local      = nod_skelnode->mJointMatrix;
-      fmtx4 invbind    = nod_skelnode->mBindMatrixInverse;
+      // auto ppar_skelnode = nod_skelnode->_parent;
+      std::string name = nod_skelnode->_name;
+      auto nodematrix  = nod_skelnode->_nodeMatrix;
+      fmtx4 local      = nod_skelnode->_jointMatrix;
+      fmtx4 invbind    = nod_skelnode->_bindMatrixInverse;
       fmtx4 bind       = nod_skelnode->bindMatrix();
 
       deco::prints(deco::decorate(fvec3::Yellow(), (name + ".node") + nodematrix.dump()), true);
@@ -339,6 +342,10 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       fmtx4 xxx;
       xxx.CorrectionMatrix(nodematrix, bind);
       deco::prints(deco::decorate(fvec3(1, 1, .5), (name + ".corr") + xxx.dump()), true);
+
+      fvec3 trans = bind.GetTranslation();
+
+      _skeletonExtents.Grow(trans);
 
       // corr(node,bind) == par.bind
       // node*par.bind == bind
@@ -416,6 +423,9 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
               auto& muvtx    = muverts[facevert_index];
               muvtx.mPos     = fvec3(v.x, v.y, v.z).Transform(ork_model_mtx).xyz();
               muvtx.mNrm     = fvec3(n.x, n.y, n.z).Transform(ork_normal_mtx);
+
+              _vertexExtents.Grow(muvtx.mPos);
+
               // printf("v<%g %g %g>\n", v.x, v.y, v.z);
               // printf("norm<%g %g %g>\n", muvtx.mNrm.x, muvtx.mNrm.y, muvtx.mNrm.z);
               if (has_colors)
@@ -430,9 +440,11 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
               /////////////////////////////////////////////
               if (is_skinned) {
                 auto itw = assimpweightlut.find(index);
+                OrkAssert(itw != assimpweightlut.end());
                 if (itw != assimpweightlut.end()) {
                   auto influences = itw->second;
                   int numinf      = influences->_items.size();
+                  OrkAssert(numinf > 0);
                   // printf("vertex<%d> raw_numweights<%d>\n", index, numinf);
                   ///////////////////////////////////////////////////
                   // prune to no more than 4 weights
@@ -503,7 +515,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
                   // init vertex with no influences
                   /////////////////////////////////
                   for (int iw = 0; iw < 4; iw++) {
-                    muvtx.mJointNames[iw]   = root_skelnode->mNodeName;
+                    muvtx.mJointNames[iw]   = root_skelnode->_name;
                     muvtx.mJointWeights[iw] = 0.0f;
                   }
                   /////////////////////////////////
@@ -520,7 +532,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
                     totw += w;
                     windex++;
                   }
-                  // printf("totw<%g>\n", totw);
+                  printf("numw<%d> totw<%g>\n", muvtx.miNumWeights, totw);
                   fwtest = fabs(1.0f - totw);
                   if (fwtest >= 0.01f) { // ensure within tolerable error limit
                     OrkAssert(false);
@@ -579,6 +591,9 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
     if (is_skinned) {
     }
 
+    _vertexExtents.EndGrow();
+    _skeletonExtents.EndGrow();
+
     //////////////////////////////////////////////
   } // if(scene)
 
@@ -594,20 +609,20 @@ void configureXgmSkeleton(const toolmesh& input, lev2::XgmModel& xgmmdlout) {
   printf("NumSkelNodes<%d>\n", int(xgmskelnodes.size()));
   xgmmdlout.SetSkinned(true);
   auto& xgmskel = xgmmdlout.skeleton();
-  xgmskel.SetNumJoints(xgmskelnodes.size());
+  xgmskel.resize(xgmskelnodes.size());
   for (auto& item : xgmskelnodes) {
     const std::string& JointName = item.first;
     auto skelnode                = item.second;
-    auto parskelnode             = skelnode->mpParent;
+    auto parskelnode             = skelnode->_parent;
     int idx                      = skelnode->miSkelIndex;
     int pidx                     = parskelnode ? parskelnode->miSkelIndex : -1;
     printf("JointName<%s> skelnode<%p> parskelnode<%p> idx<%d> pidx<%d>\n", JointName.c_str(), skelnode, parskelnode, idx, pidx);
 
     PoolString JointNameSidx = AddPooledString(JointName.c_str());
     xgmskel.AddJoint(idx, pidx, JointNameSidx);
-    xgmskel.RefInverseBindMatrix(idx) = skelnode ? skelnode->mBindMatrixInverse : fmtx4();
-    xgmskel.RefJointMatrix(idx)       = skelnode ? skelnode->mJointMatrix : fmtx4();
-    xgmskel.RefNodeMatrix(idx)        = skelnode ? skelnode->mNodeMatrix : fmtx4();
+    xgmskel.RefInverseBindMatrix(idx) = skelnode ? skelnode->_bindMatrixInverse : fmtx4();
+    xgmskel.RefJointMatrix(idx)       = skelnode ? skelnode->_jointMatrix : fmtx4();
+    xgmskel.RefNodeMatrix(idx)        = skelnode ? skelnode->_nodeMatrix : fmtx4();
   }
   /////////////////////////////////////
   // flatten the skeleton (WIP)
@@ -640,7 +655,7 @@ void configureXgmSkeleton(const toolmesh& input, lev2::XgmModel& xgmmdlout) {
 
             lev2::XgmBone Bone = {iparentindex, ichildindex};
 
-            xgmskel.AddFlatBone(Bone);
+            xgmskel.addBone(Bone);
             NodeStack.push(Child);
             flatten_visited.insert(Child);
           } else {
@@ -869,6 +884,17 @@ bool ASS_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
   clusterizeToolMeshToXgmMesh<XgmClusterizerStd>(tmesh, xgmmdlout);
   printf("saving XGM file <%s>..\n", outf.c_str());
   bool rv = ork::lev2::SaveXGM(outf, &xgmmdlout);
+
+  auto vmin = tmesh._vertexExtents.Min();
+  auto vmax = tmesh._vertexExtents.Max();
+  auto smin = tmesh._skeletonExtents.Min();
+  auto smax = tmesh._skeletonExtents.Max();
+
+  deco::printf(fvec3::White(), "vtxext min<%g %g %g>\n", vmin.x, vmin.y, vmin.z);
+  deco::printf(fvec3::White(), "vtxext max<%g %g %g>\n", vmax.x, vmax.y, vmax.z);
+  deco::printf(fvec3::Yellow(), "sklext min<%g %g %g>\n", smin.x, smin.y, smin.z);
+  deco::printf(fvec3::Yellow(), "sklext max<%g %g %g>\n", smax.x, smax.y, smax.z);
+
   return rv;
 }
 } // namespace ork::MeshUtil

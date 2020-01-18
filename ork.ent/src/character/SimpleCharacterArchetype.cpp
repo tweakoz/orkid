@@ -78,7 +78,7 @@ public:
 
         mPosition += vel3d*dt;
         fmtx4 mtx;
-        mtx.ComposeMatrix( mPosition, mCurrentDirection, 1.0f );
+        mtx.compose( mPosition, mCurrentDirection, 1.0f );
 
         //mEntity->SetDynMatrix(mtx);
 

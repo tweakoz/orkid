@@ -82,8 +82,8 @@ void ManipRot::Draw( Context *pTARG ) const
 
 	mManager.mCurTransform.GetMatrix(Mat);
 
-	Mat.DecomposeMatrix(pos, rot, scale);
-	VisMat.ComposeMatrix(pos, rot, 1.0f);
+	Mat.decompose(pos, rot, scale);
+	VisMat.compose(pos, rot, 1.0f);
 
 	bool bdrawok = true;
 	fvec4 v_dir;

@@ -109,8 +109,8 @@ public:
 
   void Lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par); // par 0.0f .. 1.0f
 
-  void DecomposeMatrix(Vector3<T>& pos, Quaternion<T>& rot, T& Scale) const;
-  void ComposeMatrix(const Vector3<T>& pos, const Quaternion<T>& rot, const T& Scale);
+  void decompose(Vector3<T>& pos, Quaternion<T>& rot, T& Scale) const;
+  void compose(const Vector3<T>& pos, const Quaternion<T>& rot, const T& Scale);
 
   ////////////////
 

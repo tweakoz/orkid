@@ -219,7 +219,7 @@ rend_texture2D::rend_texture2D()
     , miHeight(256)
 //, mCLhandle(0)
 {
-  ork::Perlin2D perlin;
+  ork::math::Perlin2D perlin;
 
   mpData = new ork::fvec4[256 * 256];
   for (int iy = 0; iy < 256; iy++) {

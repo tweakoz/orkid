@@ -331,7 +331,7 @@ bool CColladaModel::ParseControllers() {
 
       if (it != mSkeleton.end()) {
         XgmSkelNode* SkelNode  = it->second;
-        SkelNode->mJointMatrix = ParentMtx;
+        SkelNode->_jointMatrix = ParentMtx;
       }
 
       ///////////////////////////////////////
@@ -354,9 +354,9 @@ bool CColladaModel::ParseControllers() {
           std::string pname           = pnode->GetName().c_str();
           SkelMap::const_iterator it2 = mSkeleton.find(pname);
           if (it2 == mSkeleton.end()) {
-            it->second->mpParent = 0;
+            it->second->_parent = 0;
           } else {
-            it->second->mpParent = it2->second;
+            it->second->_parent = it2->second;
             it2->second->mChildren.push_back(it->second);
           }
         }
@@ -368,9 +368,9 @@ bool CColladaModel::ParseControllers() {
   // Find The Root
   ////////////////////////////////
 
-  for (SkelMap::const_iterator it = mSkeleton.begin(); it != mSkeleton.end(); it++) {
-    if (it->second->mpParent == 0) {
-      mSkeletonRoot = it->second;
+  for (auto item : mSkeleton) {
+    if (item.second->_parent == nullptr) {
+      mSkeletonRoot = item.second;
       // new XgmSkelNode( prootnode->GetName().c_str() );
     }
   }
@@ -402,7 +402,7 @@ bool CColladaModel::ParseControllers() {
       OrkAssert(it != mSkeleton.end());
       ork::lev2::XgmSkelNode* skelnode = it->second;
       if (skelnode) {
-        skelnode->mBindMatrixInverse = FCDMatrixTofmtx4(invertedBindPoseMat);
+        skelnode->_bindMatrixInverse = FCDMatrixTofmtx4(invertedBindPoseMat);
       }
     }
 
@@ -980,7 +980,7 @@ bool CColladaModel::ParseGeometries() {
               int ilargestweightindex                      = -1;
               float fmaxw(0.0f);
               for (int iw = 0; iw < inumweights; iw++) {
-                MuVtx.mJointNames[iw]   = Weighting.mpSkelNodes[iw]->mNodeName;
+                MuVtx.mJointNames[iw]   = Weighting.mpSkelNodes[iw]->_name;
                 MuVtx.mJointWeights[iw] = Weighting.mWeighting[iw];
                 if (MuVtx.mJointWeights[iw] > fmaxw) {
                   ilargestweightindex = iw;
@@ -997,7 +997,7 @@ bool CColladaModel::ParseGeometries() {
               // fill the tail (unused jonints) with initialized data
               /////////////////////////////////
               for (int iw = inumweights; iw < 4; iw++) {
-                MuVtx.mJointNames[iw]   = Weighting.mpSkelNodes[0]->mNodeName;
+                MuVtx.mJointNames[iw]   = Weighting.mpSkelNodes[0]->_name;
                 MuVtx.mJointWeights[iw] = 0.0f;
               }
             }

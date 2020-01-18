@@ -7,7 +7,7 @@
 
 
 
-inline ork::fvec4 SphMap( const ork::fvec3& N, const ork::fvec3& EyeToPointDir, const rend_texture2D& tex ) 
+inline ork::fvec4 SphMap( const ork::fvec3& N, const ork::fvec3& EyeToPointDir, const rend_texture2D& tex )
 {
 	ork::fvec3 ref = EyeToPointDir-N*(N.Dot(EyeToPointDir)*2.0f);
 	float p = ::sqrtf( ref.GetX()*ref.GetX()+ref.GetY()*ref.GetY()+::powf(ref.GetZ()+1.0f,2.0f) );
@@ -31,12 +31,12 @@ inline ork::fvec4 OctaveTex( int inumoctaves, float fu, float fv, float texscale
 ///////////////////////////////////////////////////////////////////////////////
 struct test_volume_shader : public rend_volume_shader
 {
-	ork::fvec4 ShadeVolume( const ork::fvec3& entrywpos, const ork::fvec3& exitwpos ) const; // virtual 
+	ork::fvec4 ShadeVolume( const ork::fvec3& entrywpos, const ork::fvec3& exitwpos ) const; // virtual
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct Shader1 : public rend_shader
 {
-	ork::Perlin2D						mPerlin2D;
+	ork::math::Perlin2D						mPerlin2D;
 	rend_texture2D mTexture1;
 	//cl_program							mProgram;
 	//cl_kernel							mKernel;
@@ -44,7 +44,7 @@ struct Shader1 : public rend_shader
 
 	eType GetType() const { return EShaderTypeSurface; } // virtual
 
-	void Shade( const rend_prefragment& prefrag, rend_fragment* pdstfrag )  const; 
+	void Shade( const rend_prefragment& prefrag, rend_fragment* pdstfrag )  const;
 	void ShadeBlock( AABuffer& aabuf, int ifragbase, int icount, int inumtri ) const; // virtual
 
 	Shader1(/*const CLengine& eng*/);
@@ -119,7 +119,7 @@ struct Shader2 : public rend_shader
 struct MyBakeShader : public ork::BakeShader
 {
 	MyBakeShader(ork::Engine& eng,const RenderData*prdata);
-	void Compute( int ix, int iy ) const; // virtual 
+	void Compute( int ix, int iy ) const; // virtual
 };
 
 ///////////////////////////////////////////////////////////////////////////////

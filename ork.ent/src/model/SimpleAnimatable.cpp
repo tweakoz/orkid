@@ -127,12 +127,12 @@ static void SetJointsFromExpression(
     SetJointsFromExpression(joints, skeleton, sad, remaining);
   } else {
     if (expression == "*")
-      for (int i = 0; i < skeleton.GetNumJoints(); i++)
+      for (int i = 0; i < skeleton.numJoints(); i++)
         joints.insert(i);
     else if (expression.find("~") == 0) {
       orkset<int> children;
       SetJointsFromExpression(children, skeleton, sad, expression.substr(1));
-      for (int i = 0; i < skeleton.GetNumJoints(); i++)
+      for (int i = 0; i < skeleton.numJoints(); i++)
         if (children.find(i) == children.end())
           joints.insert(i);
     } else if (expression.find("tree(") == 0) {
@@ -144,7 +144,7 @@ static void SetJointsFromExpression(
       bool changed = true;
       while (changed) {
         changed = false;
-        for (int i = 0; i < skeleton.GetNumJoints(); i++)
+        for (int i = 0; i < skeleton.numJoints(); i++)
           if (std::find(parents.begin(), parents.end(), skeleton.GetJointParent(i)) != parents.end() &&
               std::find(parents.begin(), parents.end(), i) == parents.end()) {
             parents.push_back(i);
@@ -487,7 +487,7 @@ void SimpleAnimatableInst::PlayAnimationOnMask(
         /*if(PRINT_CONDITION)
         {
             orkprintf("Mask for %s\n", itmask->first.c_str());
-            for(int i = 0; i < mModelInst->xgmModel()->skeleton().GetNumJoints(); i++)
+            for(int i = 0; i < mModelInst->xgmModel()->skeleton().numJoints(); i++)
                 if(itmask->second->mCurrentAnimData.RefMask().Check(i))
                     orkprintf(" %s", mModelInst->xgmModel()->skeleton().GetJointName(i));
             orkprintf("\n");
@@ -514,7 +514,7 @@ void SimpleAnimatableInst::PlayAnimationOnMask(
         /*if(PRINT_CONDITION)
         {
             orkprintf("Mask for %s\n", itmask->first.c_str());
-            for(int i = 0; i < mModelInst->xgmModel()->skeleton().GetNumJoints(); i++)
+            for(int i = 0; i < mModelInst->xgmModel()->skeleton().numJoints(); i++)
                 if(itmask->second->mCurrentAnimData.RefMask().Check(i))
                     orkprintf(" %s", mModelInst->xgmModel()->skeleton().GetJointName(i));
             orkprintf("\n");
@@ -550,7 +550,7 @@ void SimpleAnimatableInst::PlayAnimationOnMask(
       {
           mModelInst->xgmModel()->skeleton().dump();
           orkprintf("Mask for %s\n", itmask->first.c_str());
-          for(int i = 0; i < mModelInst->xgmModel()->skeleton().GetNumJoints(); i++)
+          for(int i = 0; i < mModelInst->xgmModel()->skeleton().numJoints(); i++)
               if(itmask->second->mCurrentAnimData.RefMask().Check(i))
                   orkprintf(" %s", mModelInst->xgmModel()->skeleton().GetJointName(i));
           orkprintf("\n");

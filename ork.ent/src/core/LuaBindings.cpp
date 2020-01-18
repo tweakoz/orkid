@@ -303,7 +303,7 @@ LuaSystem::LuaSystem(Simulation* psi) : mSimulation(psi) {
                        spawner->SetName(AddPooledString(entnamestr.c_str()));
                        spawner->SetArchetype(as_arch);
                        auto mtx = fmtx4();
-                       mtx.ComposeMatrix(position, fquat(), 1.0f);
+                       mtx.compose(position, fquat(), 1.0f);
                        spawner->GetDagNode().SetTransformMatrix(mtx);
                        auto newent = psi->SpawnDynamicEntity(spawner);
                        return newent;

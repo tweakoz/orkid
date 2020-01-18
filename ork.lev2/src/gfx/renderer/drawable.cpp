@@ -390,7 +390,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
   ork::fquat matw_rot;
   float matw_scale;
 
-  matw.DecomposeMatrix(matw_trans, matw_rot, matw_scale);
+  matw.decompose(matw_trans, matw_rot, matw_scale);
 
   //////////////////////////////////////////////////////////////////////
   // generate coarse light mask

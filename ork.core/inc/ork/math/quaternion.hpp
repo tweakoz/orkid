@@ -58,116 +58,122 @@ template <typename T> Quaternion<T>::Quaternion(const Matrix44<T>& matrix) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Quaternion<T>::FromMatrix(const Matrix44<T>& M) {
-  T q[4];
-  const int nxt[3] = {1, 2, 0};
+template <typename MatrixType> inline Quaternion<typename MatrixType::value_type> QuaternionFromMatrix(const MatrixType& M) {
 
-  T tr = M.GetElemYX(0, 0) + M.GetElemYX(1, 1) + M.GetElemYX(2, 2);
+  typedef typename MatrixType::value_type T;
+  Quaternion<T> qout;
+  float q[4];
 
-  if (tr > T(0.0f)) {
-    T s  = sqrtf(tr + T(1.0f));
-    q[3] = s * T(0.5f);
-    s    = T(0.5f) / s;
-    q[0] = (M.GetElemYX(1, 2) - M.GetElemYX(2, 1)) * s;
-    q[1] = (M.GetElemYX(2, 0) - M.GetElemYX(0, 2)) * s;
-    q[2] = (M.GetElemYX(0, 1) - M.GetElemYX(1, 0)) * s;
-  } else {
-    int i = 0;
-    if (M.GetElemYX(1, 1) > M.GetElemYX(0, 0))
-      i = 1;
-    if (M.GetElemYX(2, 2) > M.GetElemYX(i, i))
-      i = 2;
-    int j = nxt[i];
-    int k = nxt[j];
-    T s   = sqrtf((M.GetElemYX(i, i) - (M.GetElemYX(j, j) + M.GetElemYX(k, k))) + T(1.0f));
-    q[i]  = s * T(0.5f);
+  /////////////////////////////////////////////
+  // factor out scale
+  /////////////////////////////////////////////
 
-    if (fabs(s) < T(EPSILON)) {
-      Identity();
-    } else {
-      s    = T(0.5f) / s;
-      q[3] = (M.GetElemYX(j, k) - M.GetElemYX(k, j)) * s;
-      q[j] = (M.GetElemYX(i, j) + M.GetElemYX(j, i)) * s;
-      q[k] = (M.GetElemYX(i, k) + M.GetElemYX(k, i)) * s;
+  MatrixType rot = M;
+
+  rot.SetElemYX(3, 0, T(0.0));
+  rot.SetElemYX(3, 1, T(0.0));
+  rot.SetElemYX(3, 2, T(0.0));
+  rot.SetElemYX(0, 3, T(0.0));
+  rot.SetElemYX(1, 3, T(0.0));
+  rot.SetElemYX(2, 3, T(0.0));
+
+  rot.SetElemYX(3, 3, T(1.0));
+
+  Vector3<T> UnitVector(T(1.0), T(0.0), T(0.0));
+  Vector3<T> XFVector = UnitVector.Transform(rot);
+
+  float scale = XFVector.Mag();
+
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 3; j++) {
+      rot.SetElemYX(i, j, rot.GetElemYX(i, j) / scale);
     }
   }
 
-  x = q[0];
-  y = q[1];
-  z = q[2];
-  w = q[3];
+  /////////////////////////////////////////////
+
+  const int nxt[3] = {1, 2, 0};
+
+  T tr = rot.GetElemYX(0, 0) + rot.GetElemYX(1, 1) + rot.GetElemYX(2, 2);
+
+  if (tr > T(0.0f)) {
+    T s  = sqrtf(tr + T(1.0));
+    q[3] = s * T(0.5);
+    s    = T(0.5) / s;
+    q[0] = (rot.GetElemYX(1, 2) - rot.GetElemYX(2, 1)) * s;
+    q[1] = (rot.GetElemYX(2, 0) - rot.GetElemYX(0, 2)) * s;
+    q[2] = (rot.GetElemYX(0, 1) - rot.GetElemYX(1, 0)) * s;
+  } else {
+    int i = 0;
+    if (rot.GetElemYX(1, 1) > rot.GetElemYX(0, 0))
+      i = 1;
+    if (rot.GetElemYX(2, 2) > rot.GetElemYX(i, i))
+      i = 2;
+    int j = nxt[i];
+    int k = nxt[j];
+    T s   = sqrtf((rot.GetElemYX(i, i) - (rot.GetElemYX(j, j) + rot.GetElemYX(k, k))) + T(1.0f));
+    q[i]  = s * T(0.5);
+
+    if (fabs(s) < T(EPSILON)) {
+      qout.Identity();
+    } else {
+      s    = T(0.5) / s;
+      q[3] = (rot.GetElemYX(j, k) - rot.GetElemYX(k, j)) * s;
+      q[j] = (rot.GetElemYX(i, j) + rot.GetElemYX(j, i)) * s;
+      q[k] = (rot.GetElemYX(i, k) + rot.GetElemYX(k, i)) * s;
+    }
+  }
+
+  qout.x = q[0];
+  qout.y = q[1];
+  qout.z = q[2];
+  qout.w = q[3];
+
+  return qout;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> void Quaternion<T>::FromMatrix(const Matrix44<T>& M) {
+  *this = QuaternionFromMatrix(M);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Quaternion<T>::FromMatrix3(const Matrix33<T>& M) {
-  T q[4];
-  const int nxt[3] = {1, 2, 0};
-
-  T tr = M.GetElemYX(0, 0) + M.GetElemYX(1, 1) + M.GetElemYX(2, 2);
-
-  if (tr > T(0.0f)) {
-    T s  = sqrtf(tr + T(1.0f));
-    q[3] = s * T(0.5f);
-    s    = T(0.5f) / s;
-    q[0] = (M.GetElemYX(1, 2) - M.GetElemYX(2, 1)) * s;
-    q[1] = (M.GetElemYX(2, 0) - M.GetElemYX(0, 2)) * s;
-    q[2] = (M.GetElemYX(0, 1) - M.GetElemYX(1, 0)) * s;
-  } else {
-    int i = 0;
-    if (M.GetElemYX(1, 1) > M.GetElemYX(0, 0))
-      i = 1;
-    if (M.GetElemYX(2, 2) > M.GetElemYX(i, i))
-      i = 2;
-    int j = nxt[i];
-    int k = nxt[j];
-    T s   = sqrtf((M.GetElemYX(i, i) - (M.GetElemYX(j, j) + M.GetElemYX(k, k))) + T(1.0f));
-    q[i]  = s * T(0.5f);
-
-    if (fabs(s) < T(EPSILON)) {
-      Identity();
-    } else {
-      s    = T(0.5f) / s;
-      q[3] = (M.GetElemYX(j, k) - M.GetElemYX(k, j)) * s;
-      q[j] = (M.GetElemYX(i, j) + M.GetElemYX(j, i)) * s;
-      q[k] = (M.GetElemYX(i, k) + M.GetElemYX(k, i)) * s;
-    }
-  }
-
-  x = q[0];
-  y = q[1];
-  z = q[2];
-  w = q[3];
+  *this = QuaternionFromMatrix(M);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Matrix44<T> Quaternion<T>::ToMatrix(void) const {
-  Matrix44<T> result;
+template <typename MatrixType> inline MatrixType QuaternionToMatrix(const Quaternion<typename MatrixType::value_type>& Q) {
+
+  typedef typename MatrixType::value_type T;
+  MatrixType result;
 
   T s, xs, ys, zs, wx, wy, wz, xx, xy, xz, yy, yz, zz, l;
 
-  l = x * x + y * y + z * z + w * w;
+  l = Q.x * Q.x + Q.y * Q.y + Q.z * Q.z + Q.w * Q.w;
 
   // should this be T::Epsilon() ?
   if (fabs(l) < T(EPSILON)) {
-    s = T(1.0f);
+    s = T(1.0);
   } else {
-    s = T(2.0f) / l;
+    s = T(2.0) / l;
   }
 
-  xs = x * s;
-  ys = y * s;
-  zs = z * s;
-  wx = w * xs;
-  wy = w * ys;
-  wz = w * zs;
-  xx = x * xs;
-  xy = x * ys;
-  xz = x * zs;
-  yy = y * ys;
-  yz = y * zs;
-  zz = z * zs;
+  xs = Q.x * s;
+  ys = Q.y * s;
+  zs = Q.z * s;
+  wx = Q.w * xs;
+  wy = Q.w * ys;
+  wz = Q.w * zs;
+  xx = Q.x * xs;
+  xy = Q.x * ys;
+  xz = Q.x * zs;
+  yy = Q.y * ys;
+  yz = Q.y * zs;
+  zz = Q.z * zs;
 
   result.SetElemYX(0, 0, T(1.0f) - (yy + zz));
   result.SetElemYX(1, 0, xy - wz);
@@ -184,38 +190,14 @@ template <typename T> Matrix44<T> Quaternion<T>::ToMatrix(void) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename T> Matrix44<T> Quaternion<T>::ToMatrix(void) const {
+  return QuaternionToMatrix<Matrix44<T>>(*this);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T> Matrix33<T> Quaternion<T>::ToMatrix3(void) const {
-  Matrix33<T> result;
-
-  T s, xs, ys, zs, wx, wy, wz, xx, xy, xz, yy, yz, zz, l;
-
-  l = x * x + y * y + z * z + w * w;
-
-  // should this be T::Epsilon() ?
-  if (fabs(l) < T(EPSILON)) {
-    s = T(1.0f);
-  } else {
-    s = T(2.0f) / l;
-  }
-
-  xs = x * s;
-  ys = y * s;
-  zs = z * s;
-  wx = w * xs;
-  wy = w * ys;
-  wz = w * zs;
-  xx = x * xs;
-  xy = x * ys;
-  xz = x * zs;
-  yy = y * ys;
-  yz = y * zs;
-  zz = z * zs;
-
-  result.SetColumn(0, Vector3<T>(T(1.0f) - (yy + zz), xy - wz, xz + wy));
-  result.SetColumn(1, Vector3<T>(xy + wz, T(1.0f) - (xx + zz), yz - wx));
-  result.SetColumn(2, Vector3<T>(xz - wy, yz + wx, T(1.0f) - (xx + yy)));
-
-  return result;
+  return QuaternionToMatrix<Matrix33<T>>(*this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

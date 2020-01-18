@@ -144,7 +144,7 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
         auto its        = skelnodes.find(channel_name);
         auto skelnode   = its->second;
         auto bindmatrix = skelnode->bindMatrix();
-        auto invbindmtx = skelnode->mBindMatrixInverse;
+        auto invbindmtx = skelnode->_bindMatrixInverse;
 
         auto it = channel_remap.find(channel_name);
         if (it != channel_remap.end()) {

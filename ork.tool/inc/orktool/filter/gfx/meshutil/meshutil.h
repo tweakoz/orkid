@@ -510,30 +510,20 @@ struct submesh {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class toolmesh {
-  orkmap<std::string, ork::tool::ColladaMaterial*> mMaterialsByShadingGroup;
-  orkmap<std::string, ork::tool::ColladaMaterial*> mMaterialsByName;
-
-  fvec4 mRangeScale;
-  fvec4 mRangeTranslate;
-  fmtx4 mMatRange;
-  orkmap<std::string, std::string> mAnnotations;
-  orklut<std::string, submesh*> mPolyGroupLut;
-  material_semanticmap_t mShadingGroupToMaterialMap;
-  LightContainer mLights;
-  bool mbMergeEdges;
-  ork::lev2::MaterialMap mFxmMaterialMap;
-
-public:
-  void SetMergeEdges(bool bflg) {
-    mbMergeEdges = bflg;
-  }
+struct toolmesh {
 
   /////////////////////////////////////////////////////////////////////////
+
+  toolmesh();
+  ~toolmesh();
 
   void Dump(const std::string& comment) const;
 
   /////////////////////////////////////////////////////////////////////////
+
+  void SetMergeEdges(bool bflg) {
+    mbMergeEdges = bflg;
+  }
 
   const ork::lev2::MaterialMap& RefFxmMaterialMap() const {
     return mFxmMaterialMap;
@@ -618,10 +608,21 @@ public:
 
   /////////////////////////////////////////////////////////////////////////
 
-  toolmesh();
-  ~toolmesh();
-
   varmap::VarMap _varmap;
+  orkmap<std::string, ork::tool::ColladaMaterial*> mMaterialsByShadingGroup;
+  orkmap<std::string, ork::tool::ColladaMaterial*> mMaterialsByName;
+
+  AABox _vertexExtents;
+  AABox _skeletonExtents;
+  fvec4 mRangeScale;
+  fvec4 mRangeTranslate;
+  fmtx4 mMatRange;
+  orkmap<std::string, std::string> mAnnotations;
+  orklut<std::string, submesh*> mPolyGroupLut;
+  material_semanticmap_t mShadingGroupToMaterialMap;
+  LightContainer mLights;
+  bool mbMergeEdges;
+  ork::lev2::MaterialMap mFxmMaterialMap;
 
 private:
   toolmesh(const toolmesh& oth) {

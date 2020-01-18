@@ -408,19 +408,42 @@ public:
 /// ///////////////////////////////////////////////////////////////////////////
 
 struct XgmSkelNode {
-  std::string mNodeName;
-  fmtx4 mBindMatrixInverse;
-  fmtx4 mJointMatrix;
-  fmtx4 mNodeMatrix;
-  XgmSkelNode* mpParent = nullptr;
+
+  XgmSkelNode(const std::string& Name);
+
+  ///////////////////////////
+
+  enum NodeType {
+    ENODE_ROOT = 0,
+    ENODE_NONLEAF,
+    ENODE_LEAF,
+  };
+
+  typedef std::function<void(XgmSkelNode* node)> nodevisitfn_t;
+
+  ///////////////////////////
+
+  fmtx4 bindMatrix() const;
+  fmtx4 concatenated() const;
+  NodeType nodetype() const;
+  void visitHierarchy(nodevisitfn_t visitfn);
+  void visitHierarchyUp(nodevisitfn_t visitfn);
+  XgmSkelNode* findCentimeterToMeterNode();
+  bool applyCentimeterToMeterScale();
+  bool isParentOf(XgmSkelNode* testnode);     // is this node a parent of testnode
+  bool isDescendantOf(XgmSkelNode* testnode); // is this node a descendant of testnode
+
+  ///////////////////////////
+
+  std::string _name;
+  fmtx4 _bindMatrixInverse;
+  fmtx4 _bindMatrix;
+  fmtx4 _jointMatrix;
+  fmtx4 _nodeMatrix;
+  XgmSkelNode* _parent = nullptr;
   orkvector<XgmSkelNode*> mChildren;
   int miSkelIndex = -1;
   ork::varmap::VarMap _varmap;
-
-  fmtx4 bindMatrix() const;
-
-  XgmSkelNode(const std::string& Name);
-  fmtx4 concatenated() const;
 };
 
 /// ///////////////////////////////////////////////////////////////////////////
@@ -428,8 +451,8 @@ struct XgmSkelNode {
 /// ///////////////////////////////////////////////////////////////////////////
 
 struct XgmBone {
-  int miParent;
-  int miChild;
+  int _parentIndex = -1;
+  int _childIndex  = -1;
 };
 
 /// ///////////////////////////////////////////////////////////////////////////
@@ -585,33 +608,11 @@ public:
 /// ///////////////////////////////////////////////////////////////////////////
 /// Skeleton
 ///  transformation hierarchy for skinned characters
-///	 mFlattenedBones:	flattened hierarchy (runtime)
+///	 _bones:	flattened hierarchy (runtime)
 ///	 mpRootNode:		tree hierarchy (export) (move to collada land)
 /// ///////////////////////////////////////////////////////////////////////////
 
 struct XgmSkeleton {
-
-  orkvector<fmtx4> _inverseBindMatrices;
-  orkvector<fmtx4> _jointMatrices;
-  orkvector<fmtx4> _nodeMatrices;
-  int miNumJoints;
-  orkvector<PoolString> mvJointNameVect;
-  orkvector<XgmBone> mFlattenedBones;
-  orkvector<int> maJointParents;
-  PoolString msSkelName;
-
-  int miRootNode;
-  XgmSkelNode* mpRootNode;
-
-  orklut<PoolString, int> mmJointNameMap;
-
-  fvec4 mBoundMin;
-  fvec4 mBoundMax;
-  void* mpUserData;
-  U32* mpJointFlags;
-
-  fmtx4 mBindShapeMatrix;
-  fmtx4 mTopNodesMatrix;
 
   /////////////////////////////////////
 
@@ -620,9 +621,15 @@ struct XgmSkeleton {
 
   /////////////////////////////////////
 
-  int GetNumJoints(void) const {
+  int numJoints(void) const {
     return miNumJoints;
   }
+  int numBones(void) const {
+    return int(_bones.size());
+  }
+
+  float boneLength(int ibone) const;
+
   const PoolString& GetJointName(int idx) const {
     return mvJointNameVect[idx];
   }
@@ -632,22 +639,16 @@ struct XgmSkeleton {
   void* GetUserData(void) {
     return mpUserData;
   }
-  const XgmBone& GetFlattenedBone(int idx) const {
-    return mFlattenedBones[idx];
-  }
-  int GetNumBones(void) const {
-    return int(mFlattenedBones.size());
+  const XgmBone& bone(int idx) const {
+    return _bones[idx];
   }
   int jointIndex(const PoolString& Named) const;
 
-  int numJoints(void) const {
-    return miNumJoints;
-  }
   /////////////////////////////////////
 
-  void SetNumJoints(int inumjoints);
+  void resize(int inumjoints); // set number of joints
   void AddJoint(int iskelindex, int iparindex, const PoolString& name);
-  void AddFlatBone(const XgmBone& bone);
+  void addBone(const XgmBone& bone);
 
   /////////////////////////////////////
 
@@ -676,6 +677,28 @@ struct XgmSkeleton {
 
   std::string dump(fvec3 color) const;
   std::string dumpInvBind(fvec3 color) const;
-};
 
+  /////////////////////////////////////
+
+  orkvector<fmtx4> _inverseBindMatrices;
+  orkvector<fmtx4> _jointMatrices;
+  orkvector<fmtx4> _nodeMatrices;
+  int miNumJoints;
+  orkvector<PoolString> mvJointNameVect;
+  orkvector<XgmBone> _bones;
+  orkvector<int> maJointParents;
+  PoolString msSkelName;
+
+  int miRootNode;
+  XgmSkelNode* mpRootNode;
+
+  orklut<PoolString, int> mmJointNameMap;
+
+  fvec4 mBoundMin;
+  fvec4 mBoundMax;
+  void* mpUserData;
+
+  fmtx4 mBindShapeMatrix;
+  fmtx4 mTopNodesMatrix;
+};
 }} // namespace ork::lev2

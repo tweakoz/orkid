@@ -127,7 +127,7 @@ void TransformNode::ReParent(const TransformNode* ppar) {
     fquat NewQ;
     float NewScale;
 
-    CorMatrix.DecomposeMatrix(NewPos, NewQ, NewScale);
+    CorMatrix.decompose(NewPos, NewQ, NewScale);
 
     // ppar->GetWorldTransform()->SetRotation( NewQ );
 
@@ -155,8 +155,8 @@ template <> void Serialize(const TransformNode* in, TransformNode* out, Bidirect
     fquat oq;
     fvec3 pos;
     float Scale;
-    temp.DecomposeMatrix(pos, oq, Scale);
-    result.ComposeMatrix(pos, oq, Scale);
+    temp.decompose(pos, oq, Scale);
+    result.compose(pos, oq, Scale);
 
     ////////////////////////////////////////
 
@@ -209,7 +209,7 @@ fquat Transform3DMatrix::GetRotation() const {
   fquat q;
   fvec3 pos;
   float Scale;
-  mMatrix.DecomposeMatrix(pos, q, Scale);
+  mMatrix.decompose(pos, q, Scale);
   return q;
 }
 
@@ -217,7 +217,7 @@ float Transform3DMatrix::GetScale() const {
   fquat q;
   fvec3 pos;
   float Scale;
-  mMatrix.DecomposeMatrix(pos, q, Scale);
+  mMatrix.decompose(pos, q, Scale);
   return Scale;
 }
 
@@ -225,24 +225,24 @@ void Transform3DMatrix::SetRotation(const fquat& nq) {
   fquat oq;
   fvec3 pos;
   float Scale;
-  mMatrix.DecomposeMatrix(pos, oq, Scale);
-  mMatrix.ComposeMatrix(pos, nq, Scale);
+  mMatrix.decompose(pos, oq, Scale);
+  mMatrix.compose(pos, nq, Scale);
 }
 
 void Transform3DMatrix::SetScale(const float nscale) {
   fquat q;
   fvec3 pos;
   float Scale;
-  mMatrix.DecomposeMatrix(pos, q, Scale);
-  mMatrix.ComposeMatrix(pos, q, nscale);
+  mMatrix.decompose(pos, q, Scale);
+  mMatrix.compose(pos, q, nscale);
 }
 
 void Transform3DMatrix::SetPosition(const fvec3& npos) {
   fquat q;
   fvec3 pos;
   float Scale;
-  mMatrix.DecomposeMatrix(pos, q, Scale);
-  mMatrix.ComposeMatrix(npos, q, Scale);
+  mMatrix.decompose(pos, q, Scale);
+  mMatrix.compose(npos, q, Scale);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

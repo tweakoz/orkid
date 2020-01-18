@@ -57,7 +57,7 @@ XgmModelInst::XgmModelInst(const XgmModel* Model)
   EnableAllMeshes();
 
   OrkAssert(Model != 0);
-  miNumChannels = Model->skeleton().GetNumJoints();
+  miNumChannels = Model->skeleton().numJoints();
   if (miNumChannels == 0) {
     miNumChannels = 1;
   }
