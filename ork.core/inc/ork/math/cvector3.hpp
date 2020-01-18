@@ -66,6 +66,10 @@ template <typename T> const Vector3<T>& Vector3<T>::Red(void) {
   static const Vector3<T> Red(T(1.0f), T(0.0f), T(0.0f));
   return Red;
 }
+template <typename T> const Vector3<T>& Vector3<T>::LightRed(void) {
+  static const Vector3<T> LightRed(T(1.0f), T(0.5f), T(0.5f));
+  return LightRed;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -73,12 +77,20 @@ template <typename T> const Vector3<T>& Vector3<T>::Green(void) {
   static const Vector3<T> Green(T(0.0f), T(1.0f), T(0.0f));
   return Green;
 }
+template <typename T> const Vector3<T>& Vector3<T>::LightGreen(void) {
+  static const Vector3<T> LightGreen(T(0.5f), T(1.0f), T(0.5f));
+  return LightGreen;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> const Vector3<T>& Vector3<T>::Blue(void) {
   static const Vector3<T> Blue(T(0.0f), T(0.0f), T(1.0f));
   return Blue;
+}
+template <typename T> const Vector3<T>& Vector3<T>::LightBlue(void) {
+  static const Vector3<T> LightBlue(T(0.5f), T(0.5f), T(1.0f));
+  return LightBlue;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

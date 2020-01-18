@@ -12,10 +12,10 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>-0.0623241 0.848483 0.0571431</property>
+                                                <property name='Center'>0.282066 0.564413 0.0846975</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>7.27528</property>
-                                                <property name='QuatC'>0.061536 -0.762229 0.0756069 0.64224</property>
+                                                <property name='Loc'>1.84532</property>
+                                                <property name='QuatC'>0.0521735 0.39001 -0.0829978 0.917171</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -120,7 +120,7 @@
                                         <property name='AnimationMap'>
                                             <item key='start'>
                                                 <reference category='AssetClass'>
-                                                    "xganim" "data:///test/rigtest_anim"
+                                                    "xganim" "data:///test/char_anim"
                                                 </reference>
                                             </item>
                                         </property>
@@ -186,7 +186,7 @@
                                         <property name='MaterialOverrides'></property>
                                         <property name='Model'>
                                             <reference category='AssetClass'>
-                                                "xgmodel" "data://test/rigtest_exp"
+                                                "xgmodel" "data://test/char_mesh"
                                             </reference>
                                         </property>
                                         <property name='Offset'>0 0 0</property>
@@ -304,12 +304,12 @@
                                                                                         <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
                                                                                         <property name='DiffuseLevel'>1</property>
-                                                                                        <property name='EnvironmentIntensity'>5.72519</property>
-                                                                                        <property name='EnvironmentMipBias'>1.74046</property>
-                                                                                        <property name='EnvironmentMipScale'>4</property>
+                                                                                        <property name='EnvironmentIntensity'>1.9084</property>
+                                                                                        <property name='EnvironmentMipBias'>0.549618</property>
+                                                                                        <property name='EnvironmentMipScale'>10.3053</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
-                                                                                                "lev2tex" "data://environ/envmaps/blender_forest"
+                                                                                                "lev2tex" "data://environ/envmaps/tozenv_nebula"
                                                                                             </reference>
                                                                                         </property>
                                                                                         <property name='FogColor'>0 0 0 1</property>

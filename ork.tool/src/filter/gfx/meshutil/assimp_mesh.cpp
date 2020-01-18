@@ -11,6 +11,8 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::MeshUtil::ASS_XGM_Filter, "ASS_XGM_Filter");
 namespace ork::MeshUtil {
 ///////////////////////////////////////////////////////////////////////////////
 
+typedef std::set<std::string> bonemarkset_t;
+
 void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& readopts) {
 
   ork::file::Path GlbPath = BasePath;
@@ -211,14 +213,15 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
 
     //////////////////////////////////////////////
 
+    auto& bonemarkset = _varmap["bonemarkset"].Make<bonemarkset_t>();
+
     std::queue<aiNode*> nodestack;
 
     auto parsedskel = parseSkeleton(scene);
-    bool is_skinned = parsedskel._isSkinned;
 
-    auto& xgmskelnodes = _varmap["xgmskelnodes"].Make<skelnodemap_t>();
-
-    xgmskelnodes = parsedskel._xgmskelmap;
+    _varmap["parsedskel"].Make<parsedskeletonptr_t>(parsedskel);
+    bool is_skinned    = parsedskel->_isSkinned;
+    auto& xgmskelnodes = parsedskel->_xgmskelmap;
 
     //////////////////////////////////////////////
     // count, visit dagnodes
@@ -250,6 +253,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
           auto bone     = mesh->mBones[b];
           auto bonename = remapSkelName(bone->mName.data);
           auto itb      = xgmskelnodes.find(bonename);
+          bonemarkset.insert(bonename);
           /////////////////////////////////////////////
           // yuk -- assimp is not like gltf, or collada...
           // https://github.com/assimp/assimp/blob/master/code/glTF2/glTF2Importer.cpp#L904
@@ -268,6 +272,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
               // xgmjointmatrix.dump(bonename.c_str());
               // remember effected verts
               /////////////////////////////
+              xgmnode->_numBoundVertices += numvertsaffected;
               for (int v = 0; v < numvertsaffected; v++) {
                 const aiVertexWeight& vw                   = bone->mWeights[v];
                 int vertexID                               = vw.mVertexId;
@@ -532,7 +537,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
                     totw += w;
                     windex++;
                   }
-                  printf("numw<%d> totw<%g>\n", muvtx.miNumWeights, totw);
+                  // printf("numw<%d> totw<%g>\n", muvtx.miNumWeights, totw);
                   fwtest = fabs(1.0f - totw);
                   if (fwtest >= 0.01f) { // ensure within tolerable error limit
                     OrkAssert(false);
@@ -604,7 +609,9 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
 
 void configureXgmSkeleton(const toolmesh& input, lev2::XgmModel& xgmmdlout) {
 
-  const skelnodemap_t& xgmskelnodes = input._varmap.valueForKey("xgmskelnodes").Get<skelnodemap_t>();
+  auto parsedskel = input._varmap.valueForKey("parsedskel").Get<parsedskeletonptr_t>();
+
+  const auto& xgmskelnodes = parsedskel->_xgmskelmap;
 
   printf("NumSkelNodes<%d>\n", int(xgmskelnodes.size()));
   xgmmdlout.SetSkinned(true);
@@ -629,42 +636,27 @@ void configureXgmSkeleton(const toolmesh& input, lev2::XgmModel& xgmmdlout) {
   /////////////////////////////////////
 
   printf("Flatten Skeleton\n");
+  const auto& bonemarkset = input._varmap["bonemarkset"].Get<bonemarkset_t>();
 
-  auto itroot = xgmskelnodes.find("ROOT");
-  std::set<lev2::XgmSkelNode*> flatten_visited;
-  if (itroot != xgmskelnodes.end()) {
-    auto root = itroot->second;
-
-    xgmskel.miRootNode = root ? root->miSkelIndex : -1;
-
-    if (root) {
-      orkstack<lev2::XgmSkelNode*> NodeStack;
-      NodeStack.push(root);
-      flatten_visited.insert(root);
-
-      while (false == NodeStack.empty()) {
-        lev2::XgmSkelNode* ParNode = NodeStack.top();
-        int iparentindex           = ParNode->miSkelIndex;
-        NodeStack.pop();
-        int inumchildren = ParNode->mChildren.size();
-        for (int ic = 0; ic < inumchildren; ic++) {
-          lev2::XgmSkelNode* Child = ParNode->mChildren[ic];
-          auto itc                 = flatten_visited.find(Child);
-          if (itc == flatten_visited.end()) {
-            int ichildindex = Child->miSkelIndex;
-
-            lev2::XgmBone Bone = {iparentindex, ichildindex};
-
-            xgmskel.addBone(Bone);
-            NodeStack.push(Child);
-            flatten_visited.insert(Child);
-          } else {
-            printf("trying to visit node twice<%p>\n", Child);
-          }
+  auto root          = parsedskel->rootXgmSkelNode();
+  xgmskel.miRootNode = root ? root->miSkelIndex : -1;
+  if (root) {
+    root->visitHierarchy([&xgmskel, root](lev2::XgmSkelNode* node) {
+      auto parent = node->_parent;
+      if (parent) {
+        bool ignore = (parent->_numBoundVertices == 0);
+        ignore      = ignore and (node->_numBoundVertices == 0);
+        if (ignore)
+          printf("IGNORE<%s>\n", node->_name.c_str());
+        else {
+          printf("ADD<%s>\n", node->_name.c_str());
+          int iparentindex   = parent->miSkelIndex;
+          int ichildindex    = node->miSkelIndex;
+          lev2::XgmBone Bone = {iparentindex, ichildindex};
+          xgmskel.addBone(Bone);
         }
       }
-    }
-    xgmskel.mpRootNode = root;
+    });
     // xgmskel.dump();
   }
 

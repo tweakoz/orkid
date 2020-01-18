@@ -15,7 +15,7 @@
                                                 <property name='Center'>0.00388462 1.21193 0.208354</property>
                                                 <property name='Focus'>0 0 0</property>
                                                 <property name='Loc'>9.46322</property>
-                                                <property name='QuatC'>-0.0843226 0.509496 -0.0324217 -0.857421</property>
+                                                <property name='QuatC'>-0.0462398 0.451737 -0.0614521 -0.890473</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -86,9 +86,9 @@
                                                             "lev2tex" "data://particle_textures/mask_crack1"
                                                         </reference>
                                                     </property>
-                                                    <property name='Scale'>1</property>
+                                                    <property name='Extent'>10</property>
                                                     <property name='SpinRate'>0</property>
-                                                    <property name='UvScale'>1</property>
+                                                    <property name='TileDim'>1</property>
                                                 </object>
                                             </reference>
                                         </item>
@@ -304,9 +304,9 @@
                                                                                         <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
                                                                                         <property name='DiffuseLevel'>1</property>
-                                                                                        <property name='EnvironmentIntensity'>1.14504</property>
+                                                                                        <property name='EnvironmentIntensity'>2.67176</property>
                                                                                         <property name='EnvironmentMipBias'>0</property>
-                                                                                        <property name='EnvironmentMipScale'>4</property>
+                                                                                        <property name='EnvironmentMipScale'>63.7405</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
                                                                                                 "lev2tex" "data://environ/envmaps/tozenv_nebula"

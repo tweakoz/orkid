@@ -23,7 +23,8 @@ namespace ork::lev2 {
 
 XgmSkelNode::XgmSkelNode(const std::string& Name)
     : _name(Name)
-    , _parent(0) {
+    , _parent(0)
+    , _numBoundVertices(0) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

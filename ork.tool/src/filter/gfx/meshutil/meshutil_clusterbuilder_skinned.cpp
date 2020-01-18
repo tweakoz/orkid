@@ -179,7 +179,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4() // binormal p
     for (auto item : wvec) {
       int w     = item.first;
       int index = item.second;
-      printf("seq<%d> w<%d>\n", sequence, w);
+      // printf("seq<%d> w<%d>\n", sequence, w);
       if (w) {
         if (w > points_remaining) {
           w = points_remaining;

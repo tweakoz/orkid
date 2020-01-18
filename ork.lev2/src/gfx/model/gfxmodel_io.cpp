@@ -21,10 +21,6 @@
 #include <ork/pch.h>
 #include <ork/rtti/downcast.h>
 
-#if defined(WII)
-#include <ork/mem/wii_mem.h>
-#endif
-
 #if !defined(USE_XGM_FILES)
 #include <miniork_tool/filter/gfx/collada/collada.h>
 #endif
@@ -160,7 +156,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
       }
     }
     ///////////////////////////////////
-    // write out flattened bones
+    // read flattened bones
     ///////////////////////////////////
     int inumbones = 0;
     HeaderStream->GetItem(inumbones);

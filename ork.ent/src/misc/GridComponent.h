@@ -22,13 +22,16 @@ class GridControllerData : public ent::ComponentData {
   void GetTextureAccessor(ork::rtti::ICastable*& model) const;
   void SetTextureAccessor(ork::rtti::ICastable* const& model);
   lev2::TextureAsset* _colorTexture;
-  float _scale;
-  float _uvscale;
+  float _extent;
+  float _tiledim;
 
 public:
   lev2::Texture* GetTexture() const;
-  float GetScale() const {
-    return _scale;
+  float extent() const {
+    return _extent;
+  }
+  float tileDim() const {
+    return _tiledim;
   }
   ent::ComponentInst* createComponent(ent::Entity* pent) const final;
 

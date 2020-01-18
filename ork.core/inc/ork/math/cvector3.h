@@ -237,8 +237,11 @@ public:
   static const Vector3& White(void);
 
   static const Vector3& Red(void);
+  static const Vector3& LightRed(void);
   static const Vector3& Green(void);
+  static const Vector3& LightGreen(void);
   static const Vector3& Blue(void);
+  static const Vector3& LightBlue(void);
   static const Vector3& Magenta(void);
   static const Vector3& Cyan(void);
   static const Vector3& Yellow(void);

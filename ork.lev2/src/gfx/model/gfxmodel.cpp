@@ -587,27 +587,119 @@ void XgmModel::RenderSkinned(
     pTARG->debugPushGroup("DrawSkeleton");
     pTARG->PushModColor(fvec4::White());
 
+    auto material = GfxEnv::GetDefault3DMaterial();
+
     //////////////
     // bone x-ray
     //////////////
 
-    GfxEnv::GetDefault3DMaterial()->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+    material->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
 
     //////////////
 
-    pTARG->BindMaterial(GfxEnv::GetDefault3DMaterial());
+    pTARG->PushMaterial(material);
     {
-      int inumjoints = skeleton().numJoints();
+      typedef SVtxV12N12B12T8C4 vertex_t;
+      auto& vtxbuf = GfxEnv::GetSharedDynamicVB2();
+      VtxWriter<vertex_t> vw;
+      int inumbones = skeleton().numBones();
+      printf("inumbones<%d>\n", inumbones);
+      if (inumbones) {
+        vertex_t hvtx, t;
+        hvtx.mColor    = uint32_t(0xff00ffff);
+        t.mColor       = uint32_t(0xff0000ff);
+        hvtx.mUV0      = fvec2(0, 0);
+        t.mUV0         = fvec2(1, 1);
+        hvtx.mNormal   = fvec3(1, 0, 0);
+        t.mNormal      = fvec3(1, 0, 0);
+        hvtx.mBiNormal = fvec3(1, 1, 0);
+        t.mBiNormal    = fvec3(1, 1, 0);
+        int numlines   = inumbones * (30);
+        vw.Lock(pTARG, &vtxbuf, numlines);
+        for (int ib = 0; ib < inumbones; ib++) {
+          const XgmBone& bone = skeleton().bone(ib);
+          fmtx4 bone_head     = WorldMat * LocalPose.RefLocalMatrix(bone._parentIndex);
+          fmtx4 bone_tail     = WorldMat * LocalPose.RefLocalMatrix(bone._childIndex);
+          fvec3 h             = bone_head.GetTranslation();
+          fvec3 t             = bone_tail.GetTranslation();
 
-      for (int ij = 0; ij < inumjoints; ij++) {
-        fmtx4 MatAnimJCat = LocalPose.RefLocalMatrix(ij);
-        auto InvBind      = skeleton().RefInverseBindMatrix(ij);
-        auto finalmtx     = WorldMat * MatAnimJCat;
-        pTARG->MTXI()->PushMMatrix(finalmtx);
-        GfxPrimitives::GetRef().RenderAxis(pTARG);
-        pTARG->MTXI()->PopMMatrix();
+          fvec3 hnx, hny, hnz;
+          bone_head.toNormalVectors(hnx, hny, hnz);
+
+          fvec3 delta      = (t - h);
+          float bonelength = delta.length();
+          fvec3 n          = delta.Normal();
+          float bl2        = bonelength * 0.1;
+          fvec3 hh         = h + n * bl2;
+          fvec3 a          = hh + hnx * bl2;
+          fvec3 b          = hh - hnx * bl2;
+          fvec3 c          = hh + hnz * bl2;
+          fvec3 d          = hh - hnz * bl2;
+
+          auto add_vertex = [&](const fvec3 pos, const fvec3& col) {
+            hvtx.mPosition = pos;
+            hvtx.mColor    = col.GetABGRU32();
+            vw.AddVertex(hvtx);
+          };
+          // printf("n<%g %g %g>\n", n.x, n.y, n.z);
+          // printf("hnx<%g %g %g>\n", hnx.x, hnx.y, hnx.z);
+          // printf("hny<%g %g %g>\n", hny.x, hny.y, hny.z);
+          // printf("hnz<%g %g %g>\n", hnz.x, hnz.y, hnz.z);
+
+          add_vertex(h, fvec3::Green());
+          add_vertex(hh + n * bl2, fvec3::Green());
+
+          auto red = fvec3(1, .2, .2);
+          auto blu = fvec3(.2, .2, 1);
+
+          add_vertex(hh, red);
+          add_vertex(a, red);
+
+          add_vertex(hh, blu);
+          add_vertex(c, blu);
+
+          add_vertex(h, red);
+          add_vertex(a, red);
+          add_vertex(a, fvec3::White());
+          add_vertex(t, fvec3::White());
+
+          add_vertex(h, fvec3::White());
+          add_vertex(b, fvec3::White());
+          add_vertex(b, fvec3::White());
+          add_vertex(t, fvec3::White());
+
+          add_vertex(h, blu);
+          add_vertex(c, blu);
+          add_vertex(c, fvec3::White());
+          add_vertex(t, fvec3::White());
+
+          add_vertex(h, fvec3::White());
+          add_vertex(d, fvec3::White());
+          add_vertex(d, fvec3::White());
+          add_vertex(t, fvec3::White());
+
+          add_vertex(a, fvec3::White());
+          add_vertex(c, fvec3::White());
+          add_vertex(c, fvec3::White());
+          add_vertex(b, fvec3::White());
+
+          add_vertex(b, fvec3::White());
+          add_vertex(d, fvec3::White());
+          add_vertex(d, fvec3::White());
+          add_vertex(a, fvec3::White());
+
+          // fmtx4 head = fmtx4 MatAnimJCat = LocalPose.RefLocalMatrix(ij);
+          // auto InvBind                   = skeleton().RefInverseBindMatrix(ij);
+          // auto finalmtx                  = WorldMat * MatAnimJCat;
+          // pTARG->MTXI()->PushMMatrix(finalmtx);
+          // GfxPrimitives::GetRef().RenderAxis(pTARG);
+          // pTARG->MTXI()->PopMMatrix();
+        }
+        vw.UnLock(pTARG);
+        pTARG->GBI()->DrawPrimitive(vw, EPRIM_LINES, numlines);
       }
     }
+    pTARG->PopMaterial();
     pTARG->PopModColor();
     pTARG->debugPopGroup();
   }

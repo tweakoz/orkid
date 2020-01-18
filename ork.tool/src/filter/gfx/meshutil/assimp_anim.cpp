@@ -67,7 +67,7 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
     // get skeleton
 
     auto parsedskel = parseSkeleton(scene);
-    auto& skelnodes = parsedskel._xgmskelmap;
+    auto& skelnodes = parsedskel->_xgmskelmap;
     /////////////////////////////
     // we assume a single animation per file
     /////////////////////////////

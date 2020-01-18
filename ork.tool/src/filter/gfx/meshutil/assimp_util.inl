@@ -109,15 +109,18 @@ struct ParsedSkeleton {
     return _xgmskelmap.find(remapSkelName(_rootname))->second;
   }
 };
+typedef std::shared_ptr<ParsedSkeleton> parsedskeletonptr_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline ParsedSkeleton parseSkeleton(const aiScene* scene) {
+inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
+
+  auto rval = std::make_shared<ParsedSkeleton>();
+
   std::queue<aiNode*> nodestack;
   std::set<std::string> uniqskelnodeset;
 
-  ParsedSkeleton rval;
-  skelnodemap_t& xgmskelnodes = rval._xgmskelmap;
+  skelnodemap_t& xgmskelnodes = rval->_xgmskelmap;
 
   /////////////////////////////////////////////////
   // get nodes
@@ -126,7 +129,7 @@ inline ParsedSkeleton parseSkeleton(const aiScene* scene) {
   nodestack = std::queue<aiNode*>();
   nodestack.push(scene->mRootNode);
 
-  rval._rootname = scene->mRootNode->mName.data;
+  rval->_rootname = scene->mRootNode->mName.data;
 
   while (not nodestack.empty()) {
     auto n = nodestack.front();
@@ -184,7 +187,7 @@ inline ParsedSkeleton parseSkeleton(const aiScene* scene) {
               }
             }
             xgmnode->_bindMatrixInverse = invbindpose;
-            rval._isSkinned             = true;
+            rval->_isSkinned            = true;
           }
         }
       }
@@ -230,7 +233,7 @@ inline ParsedSkeleton parseSkeleton(const aiScene* scene) {
     /////////////////////////////////////////////////
   } // while (not nodestack.empty())
   /////////////////////////////////////////////////
-  auto root = rval.rootXgmSkelNode();
+  auto root = rval->rootXgmSkelNode();
   // bool fixup_applied = root->applyCentimeterToMeterScale();
 
   root->visitHierarchy([root](lev2::XgmSkelNode* node) {
