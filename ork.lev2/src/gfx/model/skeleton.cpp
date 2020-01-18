@@ -32,6 +32,9 @@ XgmSkelNode::XgmSkelNode(const std::string& Name)
 fmtx4 XgmSkelNode::concatenated() const {
   return _parent ? (_parent->concatenated() * _jointMatrix) : _jointMatrix;
 }
+fmtx4 XgmSkelNode::concatenatednode() const {
+  return _parent ? (_nodeMatrix * _parent->concatenatednode()) : _nodeMatrix;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -203,6 +206,28 @@ float XgmSkeleton::boneLength(int ibone) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+std::string XgmSkeleton::dumpBind(fvec3 color) const {
+  std::string rval;
+  if (miRootNode >= 0) {
+    int inumjoints = numJoints();
+    fvec3 ca       = color;
+    fvec3 cb       = color * 0.7;
+
+    for (int ij = 0; ij < inumjoints; ij++) {
+      fvec3 cc         = (ij & 1) ? cb : ca;
+      std::string name = GetJointName(ij).c_str();
+      auto jmtx        = _inverseBindMatrices[ij].inverse();
+      rval += deco::asciic_rgb(cc);
+      rval += FormatString("%28s", name.c_str());
+      rval += ": "s + jmtx.dump(cc) + "\n"s;
+      rval += deco::asciic_reset();
+    }
+  }
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 std::string XgmSkeleton::dumpInvBind(fvec3 color) const {
   std::string rval;
   if (miRootNode >= 0) {
@@ -215,7 +240,7 @@ std::string XgmSkeleton::dumpInvBind(fvec3 color) const {
       std::string name = GetJointName(ij).c_str();
       const auto& jmtx = _inverseBindMatrices[ij];
       rval += deco::asciic_rgb(cc);
-      rval += FormatString("%16s", name.c_str());
+      rval += FormatString("%28s", name.c_str());
       rval += ": "s + jmtx.dump(cc) + "\n"s;
       rval += deco::asciic_reset();
     }

@@ -16,6 +16,8 @@
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/kernel/string/deco.inl>
 
+#define ENABLE_ANIM
+
 using namespace std::string_literals;
 
 namespace ork::lev2 {
@@ -303,8 +305,6 @@ void XgmLocalPose::UnBindAnimInst(XgmAnimInst& AnimInst) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define ENABLE_ANIM
-
 void XgmLocalPose::ApplyAnimInst(const XgmAnimInst& AnimInst) {
 #ifdef ENABLE_ANIM
   const XgmAnimMask& Mask = AnimInst.RefMask();
@@ -506,7 +506,7 @@ std::string XgmLocalPose::dump() const {
     for (int ij = 0; ij < inumjoints; ij++) {
       std::string name = mSkeleton.GetJointName(ij).c_str();
       const auto& jmtx = RefLocalMatrix(ij);
-      rval += FormatString("%16s", name.c_str());
+      rval += FormatString("%28s", name.c_str());
       rval += ": "s + jmtx.dump() + "\n"s;
     }
   }
@@ -528,7 +528,30 @@ std::string XgmLocalPose::dumpc(fvec3 color) const {
       std::string name = mSkeleton.GetJointName(ij).c_str();
       const auto& jmtx = RefLocalMatrix(ij);
       rval += deco::asciic_rgb(cc);
-      rval += FormatString("%16s", name.c_str());
+      rval += FormatString("%28s", name.c_str());
+      rval += ": "s + jmtx.dump(cc) + "\n"s;
+      rval += deco::asciic_reset();
+    }
+  }
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::string XgmLocalPose::invdumpc(fvec3 color) const {
+  std::string rval;
+  if (mSkeleton.miRootNode >= 0) {
+    const fmtx4& RootAnimMat = RefLocalMatrix(mSkeleton.miRootNode);
+    int inumjoints           = mSkeleton.numJoints();
+    fvec3 ca                 = color;
+    fvec3 cb                 = color * 0.7;
+
+    for (int ij = 0; ij < inumjoints; ij++) {
+      fvec3 cc         = (ij & 1) ? cb : ca;
+      std::string name = mSkeleton.GetJointName(ij).c_str();
+      auto jmtx        = RefLocalMatrix(ij).inverse();
+      rval += deco::asciic_rgb(cc);
+      rval += FormatString("%28s", name.c_str());
       rval += ": "s + jmtx.dump(cc) + "\n"s;
       rval += deco::asciic_reset();
     }
@@ -559,8 +582,7 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
     fmtx4 MatAnimJCat = localpose.RefLocalMatrix(ij);
     auto InvBind      = mSkeleton.RefInverseBindMatrix(ij);
     auto finalmtx     = worldmtx * (InvBind * MatAnimJCat);
-    // auto finalmtx = worldmtx * (InvBind.inverse());
-    // auto finalmtx      = (MatAnimJCat)*worldmtx;
+    // auto finalmtx      = InvBind;
     mWorldMatrices[ij] = finalmtx;
   }
 }
@@ -579,7 +601,7 @@ std::string XgmWorldPose::dumpc(fvec3 color) const {
       std::string name = mSkeleton.GetJointName(ij).c_str();
       const auto& jmtx = mWorldMatrices[ij];
       rval += deco::asciic_rgb(cc);
-      rval += FormatString("%16s", name.c_str());
+      rval += FormatString("%28s", name.c_str());
       rval += ": "s + jmtx.dump(cc) + "\n"s;
       rval += deco::asciic_reset();
     }

@@ -425,6 +425,7 @@ struct XgmSkelNode {
 
   fmtx4 bindMatrix() const;
   fmtx4 concatenated() const;
+  fmtx4 concatenatednode() const;
   NodeType nodetype() const;
   void visitHierarchy(nodevisitfn_t visitfn);
   void visitHierarchyUp(nodevisitfn_t visitfn);
@@ -525,6 +526,7 @@ public:
   void Concatenate(void);
   int NumJoints() const;
   std::string dumpc(fvec3 color) const;
+  std::string invdumpc(fvec3 color) const;
   std::string dump() const;
 
   fmtx4& RefLocalMatrix(int idx) {
@@ -561,6 +563,27 @@ public:
   ////////////////////////////////////////////////////////////////
 };
 
+/// ///////////////////////////////////////////////////////////////////////////
+/// World Pose
+///  a world space joint buffer for rendering or other purposes
+/// ///////////////////////////////////////////////////////////////////////////
+
+class XgmWorldPose {
+  const XgmSkeleton& mSkeleton;
+  orkvector<fmtx4> mWorldMatrices;
+
+public:
+  XgmWorldPose(const XgmSkeleton& Skeleton);
+  orkvector<fmtx4>& GetMatrices() {
+    return mWorldMatrices;
+  }
+  const orkvector<fmtx4>& GetMatrices() const {
+    return mWorldMatrices;
+  }
+  void apply(const fmtx4& worldmtx, const XgmLocalPose& LocalPose);
+  std::string dumpc(fvec3 color) const;
+};
+
 /// ////////////////////////////////////////////////////////////////////////////
 /// material state instance (analogous to XgmLocalPose for materials)
 /// ////////////////////////////////////////////////////////////////////////////
@@ -584,27 +607,6 @@ public:
   void ApplyAnimInst(const XgmAnimInst& AnimInst); /// Apply an Animation Instance (weighted) to this pose
 
   XgmMaterialStateInst(const XgmModelInst& minst);
-};
-
-/// ///////////////////////////////////////////////////////////////////////////
-/// World Pose
-///  a world space joint buffer for rendering or other purposes
-/// ///////////////////////////////////////////////////////////////////////////
-
-class XgmWorldPose {
-  const XgmSkeleton& mSkeleton;
-  orkvector<fmtx4> mWorldMatrices;
-
-public:
-  XgmWorldPose(const XgmSkeleton& Skeleton);
-  orkvector<fmtx4>& GetMatrices() {
-    return mWorldMatrices;
-  }
-  const orkvector<fmtx4>& GetMatrices() const {
-    return mWorldMatrices;
-  }
-  void apply(const fmtx4& worldmtx, const XgmLocalPose& LocalPose);
-  std::string dumpc(fvec3 color) const;
 };
 
 /// ///////////////////////////////////////////////////////////////////////////
@@ -679,6 +681,7 @@ struct XgmSkeleton {
 
   std::string dump(fvec3 color) const;
   std::string dumpInvBind(fvec3 color) const;
+  std::string dumpBind(fvec3 color) const;
 
   /////////////////////////////////////
 

@@ -19,6 +19,8 @@ TEST(gfxanim1) {
   auto magenta = fvec3(1, 0, 1);
   auto indigo  = fvec3(0.7, 0.2, 1);
   auto blugrn  = fvec3(0, 1, .5);
+  auto aqua    = fvec3(0, .5, 1);
+  auto somc    = fvec3(1, .5, 1);
 
   fmtx4 t, r, it;
   t.SetTranslation(1, 0, 0);
@@ -72,17 +74,22 @@ TEST(gfxanim1) {
     deco::printf(cyan, "// skeleton pose info\n");
     deco::printf(cyan, "//////////////////////////////////////////////\n");
 
-    deco::printe(blugrn, "SkelInvBind (post-concat)", true);
+    deco::printe(blugrn, "SkelInvBind (ref-post-concat)", true);
     deco::prints(skel.dumpInvBind(blugrn), true);
+    deco::printe(aqua, "SkelBind (ref-post-concat)", true);
+    deco::prints(skel.dumpBind(aqua), true);
 
     auto& localpose = modelinst->RefLocalPose();
     localpose.BindPose();
-    deco::printe(white, "BindPose (pre-concat)", true);
+    deco::printe(white, "LocalPose (pre-concat)", true);
     deco::prints(localpose.dumpc(white), true);
 
     localpose.Concatenate();
-    deco::printe(orange, "BindPose (post-concat)", true);
+    deco::printe(orange, "LocalPose (post-concat)", true);
     deco::prints(localpose.dumpc(orange), true);
+
+    deco::printf(somc, "LocalPose (inv-post-concat)\n");
+    deco::prints(localpose.invdumpc(somc), true);
 
     localpose.BindAnimInst(*animinst);
 
@@ -93,6 +100,7 @@ TEST(gfxanim1) {
     worldpose.apply(ork::fmtx4(), localpose);
     deco::printf(magenta, "WorldPose (bind-post-concat)\n");
     deco::prints(worldpose.dumpc(magenta), true);
+
     usleep(1 << 20);
 
     deco::printf(cyan, "//////////////////////////////////////////////\n");
@@ -115,7 +123,7 @@ TEST(gfxanim1) {
       deco::prints(localpose.dumpc(orange), true);
 
       worldpose.apply(ork::fmtx4(), localpose);
-      deco::printf(magenta, "fr<%d> WorldPose (post-concat)", iframe);
+      deco::printf(magenta, "fr<%d> WorldPose (post-concat)\n", iframe);
       deco::prints(worldpose.dumpc(magenta), true);
       usleep(1 << 20);
     }

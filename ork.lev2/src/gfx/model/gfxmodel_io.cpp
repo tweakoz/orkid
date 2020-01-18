@@ -227,207 +227,27 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
       const char* pmatclassname           = chunkreader.GetString(imatclass);
       ork::object::ObjectClass* pmatclass = rtti::autocast(rtti::Class::FindClass(pmatclassname));
 
-      lev2::GfxMaterial* pmat = 0;
-
       static const int kdefaulttranssortpass = 100;
 
-      // printf("MODEL USEMATCLASS<%s>\n", pmatclassname);
+      ///////////////////////////////////////////////////////////
+      // check xgm reader annotation
+      ///////////////////////////////////////////////////////////
 
-      /////////////////////////////////////////////////////////////
-      // wii (basic) material
-      /////////////////////////////////////////////////////////////
-      if (pmatclass == GfxMaterialWiiBasic::GetClassStatic()) {
-        int ibastek    = -1;
-        int iblendmode = -1;
-
-        HeaderStream->GetItem(ibastek);
-
-        const char* bastek = chunkreader.GetString(ibastek);
-
-        // printf("MODEL USETEK<%s>\n", bastek);
-        // assert(false);
-        GfxMaterialWiiBasic* pbasmat = new GfxMaterialWiiBasic(bastek);
-        pbasmat->Init(pTARG);
-        pmat = pbasmat;
+      auto anno = pmatclass->annotation("xgm.reader");
+      if (auto as_reader = anno.TryAs<chunkfile::materialreader_t>()) {
+        lev2::GfxMaterial* pmat = as_reader.value()(materialread_ctx);
         pmat->SetName(AddPooledString(pmatname));
-        HeaderStream->GetItem(iblendmode);
-        const char* blendmodestring          = chunkreader.GetString(iblendmode);
-        lev2::EBlending eblend               = PropType<lev2::EBlending>::FromString(blendmodestring);
-        lev2::RenderQueueSortingData& rqdata = pbasmat->GetRenderQueueSortingData();
-
-        if ((eblend != lev2::EBLENDING_OFF)) {
-          rqdata.miSortingPass = kdefaulttranssortpass;
-          pbasmat->_rasterstate.SetAlphaTest(EALPHATEST_GREATER, 0.0f);
-        }
-        pbasmat->_rasterstate.SetBlending(eblend);
-      }
-      /////////////////////////////////////////////////////////////
-      // minimal solid material
-      /////////////////////////////////////////////////////////////
-      else if (pmatclass == lev2::GfxMaterial3DSolid::GetClassStatic()) {
-        lev2::GfxMaterial3DSolid* pmatsld = new lev2::GfxMaterial3DSolid;
-        int imode;
-        fvec4 color;
-        //				float fr, fg, fb, fa;
-        HeaderStream->GetItem(imode);
-        HeaderStream->GetItem(color);
-
-        // printf( "READCOLOR %f %f %f %f\n", color.GetX(), color.GetY(), color.GetZ(), color.GetW() );
-
-        pmatsld->Init(pTARG);
-        pmatsld->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_INTERNAL_COLOR);
-        pmatsld->SetColor(color);
-        pmat = pmatsld;
-        pmat->SetName(AddPooledString(pmatname));
-      }
-      /////////////////////////////////////////////////////////////
-      // data driven FX material
-      /////////////////////////////////////////////////////////////
-      else if (pmatclass == lev2::GfxMaterialFx::GetClassStatic()) {
-        lev2::GfxMaterialFx* pmatfx          = rtti::autocast(pmatclass->CreateObject());
-        lev2::RenderQueueSortingData& rqdata = pmatfx->GetRenderQueueSortingData();
-        rqdata.miSortingPass                 = 0; // kdefaulttranssortpass;
-        pmat                                 = pmatfx;
-        pmat->SetName(AddPooledString(pmatname));
-        int iparamcount = -1;
-        HeaderStream->GetItem(iparamcount);
-        for (int ic = 0; ic < iparamcount; ic++) {
-          int ipt = -1;
-          int ipn = -1;
-          int ipv = -1;
-          HeaderStream->GetItem(ipt);
-          HeaderStream->GetItem(ipn);
-          HeaderStream->GetItem(ipv);
-          const char* paramname = chunkreader.GetString(ipn);
-          const char* paramval  = chunkreader.GetString(ipv);
-          // orkprintf( "READXGM paramtype<%d> paramname<%s> paramval<%s>\n", ipt, paramname, paramval );
-          EPropType ept                 = EPropType(ipt);
-          GfxMaterialFxParamBase* param = 0;
-          switch (ept) {
-            case EPROPTYPE_VEC2REAL: {
-              GfxMaterialFxParamArtist<fvec2>* paramf = new GfxMaterialFxParamArtist<fvec2>;
-              paramf->mValue                          = PropType<fvec2>::FromString(paramval);
-              param                                   = paramf;
-              break;
-            }
-            case EPROPTYPE_VEC3FLOAT: {
-              GfxMaterialFxParamArtist<fvec3>* paramf = new GfxMaterialFxParamArtist<fvec3>;
-              paramf->mValue                          = PropType<fvec3>::FromString(paramval);
-              param                                   = paramf;
-              break;
-            }
-            case EPROPTYPE_VEC4REAL: {
-              GfxMaterialFxParamArtist<fvec4>* paramf = new GfxMaterialFxParamArtist<fvec4>;
-              paramf->mValue                          = PropType<fvec4>::FromString(paramval);
-              param                                   = paramf;
-              break;
-            }
-            case EPROPTYPE_MAT44REAL: {
-              GfxMaterialFxParamArtist<fmtx4>* paramf = new GfxMaterialFxParamArtist<fmtx4>;
-              paramf->mValue                          = PropType<fmtx4>::FromString(paramval);
-              param                                   = paramf;
-              break;
-            }
-            case EPROPTYPE_REAL: {
-              GfxMaterialFxParamArtist<float>* paramf = new GfxMaterialFxParamArtist<float>;
-              paramf->mValue                          = PropType<float>::FromString(paramval);
-              param                                   = paramf;
-              orkprintf("ModelIO::LoadFloatParam mdl<> param<%s> val<%s>\n", paramname, paramval);
-              break;
-            }
-            case EPROPTYPE_S32: {
-              ////////////////////////////////////////////////////////
-              // read artist supplied renderqueue sorting key
-              ////////////////////////////////////////////////////////
-              int ival = PropType<int>::FromString(paramval);
-              if (strcmp(paramname, "ork_rqsort") == 0) {
-                rqdata.miSortingOffset = ival;
-              } else if (strcmp(paramname, "ork_rqsort_pass") == 0) {
-                rqdata.miSortingPass = ival;
-              } else {
-                GfxMaterialFxParamArtist<int>* paramf = new GfxMaterialFxParamArtist<int>;
-                paramf->mValue                        = ival;
-                param                                 = paramf;
-              }
-              break;
-            }
-            case EPROPTYPE_SAMPLER: {
-              GfxMaterialFxParamArtist<lev2::Texture*>* paramf = new GfxMaterialFxParamArtist<lev2::Texture*>;
-
-              AssetPath texname(paramval);
-              const char* ptexnam = texname.c_str();
-              printf("texname<%s>\n", ptexnam);
-              Texture* ptex(NULL);
-              if (0 != strcmp(texname.c_str(), "None")) {
-                ork::lev2::TextureAsset* ptexa = asset::AssetManager<TextureAsset>::Create(texname.c_str());
-                ptex                           = ptexa ? ptexa->GetTexture() : 0;
-              }
-              // orkprintf( "ModelIO::LoadTexture mdl<%s> tex<%s> ptex<%p>\n", "", texname.c_str(), ptex );
-              paramf->mValue = ptex;
-              param          = paramf;
-              break;
-            }
-            case EPROPTYPE_STRING: {
-              GfxMaterialFxParamArtist<std::string>* paramstr = new GfxMaterialFxParamArtist<std::string>;
-              paramstr->mValue                                = paramval;
-              param                                           = paramstr;
-              param->SetBindable(false);
-              break;
-            }
-            default:
-              OrkAssert(false);
-              break;
-          }
-          if (param) {
-            param->GetRecord()._name = paramname;
-            pmatfx->AddParameter(param);
-          }
-        }
-        // pmat->Init( pTARG );
-      } else {
-
-        ///////////////////////////////////////////////////////////
-        // check xgm reader annotation
-        ///////////////////////////////////////////////////////////
-
-        auto anno = pmatclass->annotation("xgm.reader");
-        if (auto as_reader = anno.TryAs<chunkfile::materialreader_t>()) {
-          pmat = as_reader.value()(materialread_ctx);
-          pmat->SetName(AddPooledString(pmatname));
-        }
-
-        ///////////////////////////////////////////////////////////
-        // material class not supported in XGM
-        ///////////////////////////////////////////////////////////
-        else {
-          OrkAssert(false);
-        }
+        mdl->AddMaterial(pmat);
       }
 
-      mdl->AddMaterial(pmat);
-
-      for (int idest = int(ETEXDEST_AMBIENT); idest != int(ETEXDEST_END); idest++) {
-        int itexdest = -1;
-        HeaderStream->GetItem(itexdest);
-        const char* texdest    = chunkreader.GetString(itexdest);
-        ETextureDest TexDest   = PropType<ETextureDest>::FromString(texdest);
-        TextureContext& TexCtx = pmat->GetTexture(TexDest);
-        int itexname;
-        HeaderStream->GetItem(itexname);
-        AssetPath texname(chunkreader.GetString(itexname));
-        Texture* ptex(NULL);
-        if (0 != strcmp(texname.c_str(), "None")) {
-          // orkprintf( "Loadtexture<%s>\n", texname.c_str());
-          texname.SetUrlBase(Filename.GetUrlBase().c_str());
-          texname.SetFolder(Filename.GetFolder(ork::file::Path::EPATHTYPE_NATIVE).c_str());
-
-          ptex = asset::AssetManager<TextureAsset>::Create(texname.c_str())->GetTexture();
-        }
-        pmat->SetTexture(TexDest, ptex);
-        HeaderStream->GetItem(TexCtx.mfRepeatU);
-        HeaderStream->GetItem(TexCtx.mfRepeatV);
+      ///////////////////////////////////////////////////////////
+      // material class not supported in XGM
+      ///////////////////////////////////////////////////////////
+      else {
+        OrkAssert(false);
       }
     }
+    ///////////////////////////////////
     for (int imesh = 0; imesh < inummeshes; imesh++) {
       XgmMesh* Mesh = new XgmMesh;
 
@@ -648,17 +468,8 @@ XgmModel* XgmModel::Load(const std::string& Filename) {
 
 bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
   printf("Writing Xgm<%p> to path<%s>\n", mdl, Filename.c_str());
-  EndianContext* pendianctx = 0;
-
-  bool bwii   = (0 != strstr(Filename.c_str(), "wii"));
-  bool bxb360 = (0 != strstr(Filename.c_str(), "xb360"));
 
   lev2::ContextDummy DummyTarget;
-
-  if (bwii || bxb360) {
-    pendianctx          = new EndianContext;
-    pendianctx->mendian = ork::EENDIAN_BIG;
-  }
 
   ///////////////////////////////////
   chunkfile::Writer chunkwriter("xgm");
@@ -674,8 +485,10 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
   HeaderStream->AddItem(iVERSIONTAG);
   HeaderStream->AddItem(iVERSION);
   printf("WriteXgm<%s> VERSION<%d>\n", Filename.c_str(), iVERSION);
+
   ///////////////////////////////////
-  // write out Joints
+  // write out joints
+  ///////////////////////////////////
 
   const lev2::XgmSkeleton& skel = mdl->skeleton();
 
@@ -688,10 +501,11 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
   for (int32_t ib = 0; ib < inumjoints; ib++) {
     const PoolString& JointName = skel.GetJointName(ib);
-    int32_t JointParentIndex    = skel.GetJointParent(ib);
-    const fmtx4& InvRestMatrix  = skel.RefInverseBindMatrix(ib);
-    const fmtx4& JointMatrix    = skel.RefJointMatrix(ib);
-    const fmtx4& NodeMatrix     = skel.RefNodeMatrix(ib);
+
+    int32_t JointParentIndex   = skel.GetJointParent(ib);
+    const fmtx4& InvRestMatrix = skel.RefInverseBindMatrix(ib);
+    const fmtx4& JointMatrix   = skel.RefJointMatrix(ib);
+    const fmtx4& NodeMatrix    = skel.RefNodeMatrix(ib);
 
     HeaderStream->AddItem(ib);
     HeaderStream->AddItem(JointParentIndex);
@@ -714,6 +528,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
   ///////////////////////////////////
   // write out flattened bones
+  ///////////////////////////////////
 
   int32_t inumbones = skel.numBones();
 
@@ -728,6 +543,8 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
     HeaderStream->AddItem(Bone._childIndex);
   }
 
+  ///////////////////////////////////
+  // basic model data
   ///////////////////////////////////
 
   int32_t inummeshes = mdl->numMeshes();
@@ -785,6 +602,8 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////
+  // materials
+  ///////////////////////////////////////////////////////////////////////////////////////////
 
   for (int32_t imat = 0; imat < inummats; imat++) {
     const lev2::GfxMaterial* pmat = mdl->GetMaterial(imat);
@@ -816,145 +635,16 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
       writer(mtlwctx);
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-    // basic materials (fixed, simple materials
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    else if (pmat->GetClass()->IsSubclassOf(lev2::GfxMaterialWiiBasic::GetClassStatic())) {
-      auto pbasmat = rtti::safe_downcast<const lev2::GfxMaterialWiiBasic*>(pmat);
-      istring      = chunkwriter.stringIndex(pbasmat->GetBasicTechName().c_str());
-      HeaderStream->AddItem(istring);
-
-      lev2::EBlending eblend = pbasmat->_rasterstate.GetBlending();
-
-      PropTypeString BlendModeString;
-      PropType<lev2::EBlending>::ToString(eblend, BlendModeString);
-
-      istring = chunkwriter.stringIndex(BlendModeString.c_str());
-      HeaderStream->AddItem(istring);
-    }
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    // solid material
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    else if (pmat->GetClass()->IsSubclassOf(lev2::GfxMaterial3DSolid::GetClassStatic())) {
-      const lev2::GfxMaterial3DSolid* pbasmat = rtti::safe_downcast<const lev2::GfxMaterial3DSolid*>(pmat);
-
-      int32_t imode    = int(pbasmat->GetColorMode());
-      const fvec4& clr = pbasmat->GetColor();
-
-      HeaderStream->AddItem(imode);
-
-      HeaderStream->AddItem(clr);
-
-    }
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    // fx materials (data driven materials)
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    else if (pmat->GetClass()->IsSubclassOf(lev2::GfxMaterialFx::GetClassStatic())) {
-      const lev2::GfxMaterialFx* pfxmat                               = rtti::safe_downcast<const lev2::GfxMaterialFx*>(pmat);
-      const lev2::GfxMaterialFxEffectInstance& fxinst                 = pfxmat->GetEffectInstance();
-      const orklut<std::string, lev2::GfxMaterialFxParamBase*>& parms = fxinst.mParameterInstances;
-
-      int32_t iparamcount = 0;
-
-      for (orklut<std::string, lev2::GfxMaterialFxParamBase*>::const_iterator itf = parms.begin(); itf != parms.end(); itf++) {
-        const std::string& paramname              = itf->first;
-        const lev2::GfxMaterialFxParamBase* pbase = itf->second;
-
-        bool bignore = ParameterIgnoreSet.find(paramname) != ParameterIgnoreSet.end();
-
-        if (false == bignore) {
-          iparamcount++;
-        }
-      }
-      HeaderStream->AddItem(iparamcount);
-
-      for (orklut<std::string, lev2::GfxMaterialFxParamBase*>::const_iterator itf = parms.begin(); itf != parms.end(); itf++) {
-        const std::string& paramname              = itf->first;
-        const lev2::GfxMaterialFxParamBase* pbase = itf->second;
-
-        bool bignore = ParameterIgnoreSet.find(paramname) != ParameterIgnoreSet.end();
-
-        if (false == bignore) {
-          EPropType etype = pbase->GetRecord().meParameterType;
-
-          std::string valstr = pbase->GetValueString();
-
-          printf("SaveXGM paramtype<%d> paramname<%s> valstr<%s>\n", int(etype), paramname.c_str(), valstr.c_str());
-
-          const lev2::GfxMaterialFxParamArtist<lev2::Texture*>* ptexparam = rtti::autocast(pbase);
-
-          if (ptexparam) {
-            const char* ptexnam = pbase->GetInitString().c_str();
-            std::string tmpstr(ptexnam);
-            printf("texname<%s>\n", ptexnam);
-#ifdef WIN32
-            std::string::size_type loc = tmpstr.find("data\\src\\");
-#else
-            std::string::size_type loc = tmpstr.find("data/src/");
-#endif
-            if (loc == std::string::npos) {
-              orkerrorlog("ERROR: Output texture path is outside of 'data\\src\\'! (%s)\n", tmpstr.c_str());
-              return false;
-            }
-            tmpstr = std::string("data://") + tmpstr.substr(loc + 9);
-            for (std::string::size_type i = 0; i < tmpstr.length(); i++)
-              if (tmpstr[i] == '\\')
-                tmpstr[i] = '/';
-            file::Path AsPath(tmpstr.c_str());
-            AsPath.SetExtension("");
-            valstr = AsPath.c_str();
-
-            printf("SaveXGM paramtype<%d> paramname<%s> valstr<%s>\n", int(etype), paramname.c_str(), valstr.c_str());
-          }
-
-          HeaderStream->AddItem(int32_t(etype));
-          istring = chunkwriter.stringIndex(paramname.c_str());
-          HeaderStream->AddItem(istring);
-          istring = chunkwriter.stringIndex(valstr.c_str());
-          HeaderStream->AddItem(istring);
-        }
-      }
-
-    }
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
     // material class not supported for XGM
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     else {
       OrkAssert(false);
     }
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    for (int32_t idest = int(lev2::ETEXDEST_AMBIENT); idest != int(lev2::ETEXDEST_END); idest++) {
-      lev2::ETextureDest edest = lev2::ETextureDest(idest);
-
-      const lev2::TextureContext& TexCtx = pmat->GetTexture(edest);
-
-      PropTypeString tstr;
-      PropType<lev2::ETextureDest>::ToString(edest, tstr);
-      std::string TexDest = tstr.c_str();
-
-      std::string TexName = "None";
-      if (TexCtx.mpTexture) {
-        auto tname = TexCtx.mpTexture->_varmap.typedValueForKey<std::string>("abspath").value();
-        ork::AssetPath pth(tname.c_str());
-        pth.SetExtension("");
-        pth.SetUrlBase("");
-        pth.SetFolder("");
-        TexName = pth.c_str();
-      }
-
-      if (TexName != "None") {
-        // orkprintf( " WRITING slot<%s> texname<%s>\n", tstr.c_str(), TexName.c_str() );
-      }
-
-      istring = chunkwriter.stringIndex(TexDest.c_str());
-      HeaderStream->AddItem(istring);
-      istring = chunkwriter.stringIndex(TexName.c_str());
-      HeaderStream->AddItem(istring);
-      HeaderStream->AddItem(TexCtx.mfRepeatU);
-      HeaderStream->AddItem(TexCtx.mfRepeatV);
-    }
   }
+
+  ///////////////////////////////////////////////////////////////////////////////////////////
+  // meshes
+  ///////////////////////////////////////////////////////////////////////////////////////////
 
   for (int32_t imesh = 0; imesh < inummeshes; imesh++) {
     const lev2::XgmMesh& Mesh = *mdl->mesh(imesh);
@@ -1097,16 +787,8 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
   }
 
   ////////////////////////////////////////////////////////////////////////////////////
-
-  // file::Path outpath = Filename;
-  //	outpath.SetExtension( "xgm" );
   chunkwriter.WriteToFile(Filename);
-
   ////////////////////////////////////////////////////////////////////////////////////
-
-  if (pendianctx) {
-    delete pendianctx;
-  }
 
   return true;
 }
@@ -1114,5 +796,4 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }} // namespace ork::lev2
