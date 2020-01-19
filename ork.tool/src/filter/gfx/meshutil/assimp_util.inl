@@ -135,18 +135,16 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     auto n = nodestack.front();
     nodestack.pop();
     auto name = remapSkelName(n->mName.data);
-    printf("name<%s> remapped<%s>\n", n->mName.data, name.c_str());
-    auto itb = uniqskelnodeset.find(name);
+    auto itb  = uniqskelnodeset.find(name);
     if (itb == uniqskelnodeset.end()) {
       int index = uniqskelnodeset.size();
       uniqskelnodeset.insert(name);
       auto xgmnode         = new ork::lev2::XgmSkelNode(name);
       xgmnode->miSkelIndex = index;
       xgmskelnodes[name]   = xgmnode;
-      auto matrix          = n->mTransformation;
-      printf("uniqNODE<%d:%p> xgmnode<%p> <%s>\n", index, n, xgmnode, name.c_str());
-      xgmnode->_nodeMatrix = convertMatrix44(matrix);
-      xgmnode->_nodeMatrix.dump(name);
+      printf("aiNode<%d:%s> xgmnode<%p> remapped<%s>\n", index, n->mName.data, xgmnode, name.c_str());
+      xgmnode->_nodeMatrix = convertMatrix44(n->mTransformation);
+      deco::prints(xgmnode->_nodeMatrix.dump4x3(), true);
     }
     for (int i = 0; i < n->mNumChildren; ++i) {
       nodestack.push(n->mChildren[i]);
@@ -185,7 +183,7 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
             // invbindpose.decompose(decomp1.mTrans, decomp1.mRot, decomp1.mScale);
             // invbindpose.rotMatrix44().decompose(decomp2.mTrans, decomp2.mRot, decomp2.mScale);
             // invbindpose.compose(decomp1.mTrans * 0.01, decomp2.mRot, 1.0f);
-            // invbindpose                 = xgmnode->concatenatednode().inverse();
+            // invbindpose = xgmnode->concatenatednode().inverse();
             xgmnode->_bindMatrixInverse = invbindpose;
             rval->_isSkinned            = true;
           }
@@ -236,10 +234,25 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
   /////////////////////////////////////////////////
 
   root->visitHierarchy([root](lev2::XgmSkelNode* node) {
-    fmtx4 cmtx = node->bindMatrix();
-    auto par   = node->_parent;
-    fmtx4 pmtx = par ? par->bindMatrix() : fmtx4::Identity;
-    node->_jointMatrix.CorrectionMatrix(pmtx, cmtx);
+    fmtx4 N  = node->_nodeMatrix;
+    fmtx4 K  = node->concatenatednode();
+    fmtx4 I  = node->_bindMatrixInverse;
+    fmtx4 C  = node->bindMatrix();
+    auto par = node->_parent;
+    fmtx4 P  = par ? par->bindMatrix() : fmtx4::Identity;
+    node->_jointMatrix.CorrectionMatrix(P, C);
+    fmtx4 P2C = node->_jointMatrix;
+    fmtx4 D   = P * P2C;
+    // fmtx4 D = P2C * P;
+    auto n = node->_name;
+    deco::printe(fvec3::White(), n + ".N: " + N.dump4x3(fvec3::White()), true);
+    deco::printe(fvec3::White(), n + ".K: " + K.dump4x3(fvec3::White()), true);
+    deco::printe(fvec3::White(), n + ".I: " + I.dump4x3(fvec3::White()), true);
+    deco::printe(fvec3::White(), n + ".P: " + P.dump4x3(fvec3::White()), true);
+    deco::printe(fvec3::White(), n + ".C: " + C.dump4x3(fvec3::White()), true);
+    deco::printe(fvec3::White(), n + ".P2C: " + P2C.dump4x3(fvec3::White()), true);
+    deco::printe(fvec3::White(), n + ".P*P2C: " + D.dump4x3(fvec3::White()), true);
+    printf("\n");
   });
 
   /////////////////////////////////////////////////

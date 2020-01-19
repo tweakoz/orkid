@@ -219,7 +219,7 @@ std::string XgmSkeleton::dumpBind(fvec3 color) const {
       auto jmtx        = _inverseBindMatrices[ij].inverse();
       rval += deco::asciic_rgb(cc);
       rval += FormatString("%28s", name.c_str());
-      rval += ": "s + jmtx.dump(cc) + "\n"s;
+      rval += ": "s + jmtx.dump4x3(cc) + "\n"s;
       rval += deco::asciic_reset();
     }
   }
@@ -241,7 +241,7 @@ std::string XgmSkeleton::dumpInvBind(fvec3 color) const {
       const auto& jmtx = _inverseBindMatrices[ij];
       rval += deco::asciic_rgb(cc);
       rval += FormatString("%28s", name.c_str());
-      rval += ": "s + jmtx.dump(cc) + "\n"s;
+      rval += ": "s + jmtx.dump4x3(cc) + "\n"s;
       rval += deco::asciic_reset();
     }
   }
@@ -277,8 +277,8 @@ std::string XgmSkeleton::dump(fvec3 color) const {
     i++;
   }
 
-  rval += deco::format(color, " topmat: ") + mTopNodesMatrix.dump(color) + "\n";
-  rval += deco::format(color, " bindmat: ") + mBindShapeMatrix.dump(color) + "\n";
+  rval += deco::format(color, " topmat: ") + mTopNodesMatrix.dump4x3(color) + "\n";
+  rval += deco::format(color, " bindmat: ") + mBindShapeMatrix.dump4x3(color) + "\n";
 
   for (int ij = 0; ij < miNumJoints; ij++) {
     auto name = GetJointName(ij);
@@ -288,9 +288,9 @@ std::string XgmSkeleton::dump(fvec3 color) const {
     const char* parname = (parent >= 0) ? GetJointName(parent).c_str() : "none";
     rval += deco::format(color, "     parent<%d:%s>\n", parent, parname);
 
-    rval += deco::format(color, "     ljmat: ") + _jointMatrices[ij].dump(color) + "\n";
-    rval += deco::format(color, "     ibmat: ") + _inverseBindMatrices[ij].dump(color) + "\n";
-    rval += deco::format(color, "     ndmat: ") + _nodeMatrices[ij].dump(color) + "\n";
+    rval += deco::format(color, "     ljmat: ") + _jointMatrices[ij].dump4x3(color) + "\n";
+    rval += deco::format(color, "     ibmat: ") + _inverseBindMatrices[ij].dump4x3(color) + "\n";
+    rval += deco::format(color, "     ndmat: ") + _nodeMatrices[ij].dump4x3(color) + "\n";
   }
   return rval;
 }

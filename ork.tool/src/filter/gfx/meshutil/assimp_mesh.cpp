@@ -28,7 +28,11 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
   auto& embtexmap = _varmap.makeValueForKey<lev2::embtexmap_t>("embtexmap");
 
   printf("BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
-  auto scene = aiImportFile(GlbPath.c_str(), aiProcessPreset_TargetRealtime_MaxQuality);
+
+  uint32_t flags = aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_LimitBoneWeights | aiProcess_CalcTangentSpace |
+                   aiProcess_MakeLeftHanded | aiProcess_RemoveRedundantMaterials;
+
+  auto scene = aiImportFile(GlbPath.c_str(), flags);
   printf("END: importing scene<%p>\n", scene);
   if (scene) {
     aiVector3D scene_min, scene_max, scene_center;
@@ -318,7 +322,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
 
       auto n = nodestack.front();
 
-      aiMatrix4x4 mtx = n->mTransformation;
+      // aiMatrix4x4 mtx = n->mTransformation;
 
       nodestack.pop();
 
@@ -327,6 +331,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       auto it_nod_skelnode                 = xgmskelnodes.find(nren);
       ork::lev2::XgmSkelNode* nod_skelnode = (it_nod_skelnode != xgmskelnodes.end()) ? it_nod_skelnode->second : nullptr;
 
+      printf("xgmnode<%p:%s>\n", nod_skelnode, nod_skelnode->_name.c_str());
       // auto ppar_skelnode = nod_skelnode->_parent;
       std::string name = nod_skelnode->_name;
       auto nodematrix  = nod_skelnode->_nodeMatrix;
@@ -334,19 +339,19 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       fmtx4 invbind    = nod_skelnode->_bindMatrixInverse;
       fmtx4 bind       = nod_skelnode->bindMatrix();
 
-      deco::prints(deco::decorate(fvec3::Yellow(), (name + ".node") + nodematrix.dump()), true);
-      // invbind.dump((name + ".inversebind").c_str());
-      deco::prints(deco::decorate(fvec3::Red(), (name + ".bind") + bind.dump()), true);
-      // local.dump((name + ".local").c_str());
+      deco::prints(deco::decorate(fvec3::Yellow(), (name + ".node") + nodematrix.dump4x3()), true);
+      // invbind.dump4x3((name + ".inversebind").c_str());
+      deco::prints(deco::decorate(fvec3::Red(), (name + ".bind") + bind.dump4x3()), true);
+      // local.dump4x3((name + ".local").c_str());
 
       fmtx4 concat = nod_skelnode->concatenated();
       fmtx4 check  = concat * invbind;
-      // concat.dump((name + ".concat").c_str());
-      // check.dump((name + ".check").c_str());
+      // concat.dump4x3((name + ".concat").c_str());
+      // check.dump4x3((name + ".check").c_str());
 
       fmtx4 xxx;
       xxx.CorrectionMatrix(nodematrix, bind);
-      deco::prints(deco::decorate(fvec3(1, 1, .5), (name + ".corr") + xxx.dump()), true);
+      deco::prints(deco::decorate(fvec3(1, 1, .5), (name + ".corr") + xxx.dump4x3()), true);
 
       fvec3 trans = bind.GetTranslation();
 
@@ -370,7 +375,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
         while (not done) {
           nodehier.push_back(n);
           fmtx4 test = convertMatrix44(walk->mTransformation);
-          // test.dump(walk->mName.data);
+          // test.dump4x3(walk->mName.data);
           walk = walk->mParent;
           done = (walk == nullptr);
         }

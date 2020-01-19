@@ -43,13 +43,14 @@ TEST(gfxanim1) {
 
     auto anim = new XgmAnim;
     // bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/bonetest_anim");
-    bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/rigtest_anim");
-    // bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/char_anim");
+    // bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/rigtest_anim");
+    bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/hfs_rigtest_anim");
     OrkAssert(loadOK);
     auto animinst = new XgmAnimInst;
 
     // auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/bonetest_mesh");
-    auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/rigtest_exp");
+    // auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/rigtest_exp");
+    auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/hfs_rigtest_mesh");
     // auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/char_mesh");
     printf("modl_asset<%p>\n", modl_asset);
     CHECK(modl_asset != nullptr);
@@ -70,6 +71,16 @@ TEST(gfxanim1) {
 
     deco::prints(skel.dump(cyan), true);
 
+    fmtx4 A, B, C;
+    A.fromNormalVectors(fvec3(0, 0, -1), fvec3(-1, 0, 0), fvec3(0, 1, 0));
+    A.SetTranslation(0, -1.4, 0);
+    B.fromNormalVectors(fvec3(0, 0, -1), fvec3(-1, 0, 0), fvec3(0, 1, 0));
+    B.SetTranslation(-1, -1.4, 0);
+    C.CorrectionMatrix(A, B);
+    deco::printe(white, "A: " + A.dump4x3(white), true);
+    deco::printe(white, "B: " + B.dump4x3(white), true);
+    deco::printe(white, "C: " + C.dump4x3(white), true);
+
     deco::printf(cyan, "//////////////////////////////////////////////\n");
     deco::printf(cyan, "// skeleton pose info\n");
     deco::printf(cyan, "//////////////////////////////////////////////\n");
@@ -81,14 +92,14 @@ TEST(gfxanim1) {
 
     auto& localpose = modelinst->RefLocalPose();
     localpose.BindPose();
-    deco::printe(white, "LocalPose (pre-concat)", true);
+    deco::printe(white, "BindPose (dyn-pre-concat)", true);
     deco::prints(localpose.dumpc(white), true);
 
     localpose.Concatenate();
-    deco::printe(orange, "LocalPose (post-concat)", true);
+    deco::printe(orange, "BindPose (dyn-post-concat)", true);
     deco::prints(localpose.dumpc(orange), true);
 
-    deco::printf(somc, "LocalPose (inv-post-concat)\n");
+    deco::printf(somc, "BindPose (dyn-inv-post-concat)\n");
     deco::prints(localpose.invdumpc(somc), true);
 
     localpose.BindAnimInst(*animinst);

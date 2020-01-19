@@ -12,10 +12,10 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>0.00388462 1.21193 0.208354</property>
+                                                <property name='Center'>-0.499677 0.391623 0.419881</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>9.46322</property>
-                                                <property name='QuatC'>-0.0462398 0.451737 -0.0614521 -0.890473</property>
+                                                <property name='Loc'>6.47848</property>
+                                                <property name='QuatC'>0.187134 -0.327739 -0.00682406 0.927661</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -86,7 +86,7 @@
                                                             "lev2tex" "lev2://textures/gridcell_blue"
                                                         </reference>
                                                     </property>
-                                                    <property name='Extent'>10</property>
+                                                    <property name='Extent'>25</property>
                                                     <property name='SpinRate'>0</property>
                                                     <property name='TileDim'>1</property>
                                                 </object>
@@ -120,7 +120,7 @@
                                         <property name='AnimationMap'>
                                             <item key='start'>
                                                 <reference category='AssetClass'>
-                                                    "xganim" "data:///test/bonetest_anim"
+                                                    "xganim" "data:///test/hfs_rigtest_anim"
                                                 </reference>
                                             </item>
                                         </property>
@@ -186,7 +186,7 @@
                                         <property name='MaterialOverrides'></property>
                                         <property name='Model'>
                                             <reference category='AssetClass'>
-                                                "xgmodel" "data://test/bonetest_mesh"
+                                                "xgmodel" "data://test/hfs_rigtest_mesh"
                                             </reference>
                                         </property>
                                         <property name='Offset'>0 0 0</property>
@@ -303,17 +303,18 @@
                                                                                     <object type='DeferredCompositingNodePbr' id='34'>
                                                                                         <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
-                                                                                        <property name='DiffuseLevel'>1</property>
-                                                                                        <property name='EnvironmentIntensity'>2.67176</property>
+                                                                                        <property name='DiffuseLevel'>0.152672</property>
+                                                                                        <property name='EnvironmentIntensity'>11.8321</property>
                                                                                         <property name='EnvironmentMipBias'>0</property>
-                                                                                        <property name='EnvironmentMipScale'>63.7405</property>
+                                                                                        <property name='EnvironmentMipScale'>1.14504</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
                                                                                                 "lev2tex" "data://environ/envmaps/tozenv_nebula"
                                                                                             </reference>
                                                                                         </property>
                                                                                         <property name='FogColor'>0 0 0 1</property>
-                                                                                        <property name='SpecularLevel'>1</property>
+                                                                                        <property name='SkyboxLevel'>2.06107</property>
+                                                                                        <property name='SpecularLevel'>10</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>

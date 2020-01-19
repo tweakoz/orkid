@@ -100,7 +100,7 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
         channel_remap[name] = remapped_name;
         auto a              = deco::decorate(fvec3(0, 1, 1), name);
         auto b              = deco::decorate(fvec3(1, 1, 1), remapped_name);
-        printf("name<%s> remapped -> <%s>\n", a.c_str(), b.c_str());
+        printf("aiNode<%s> remapped -> <%s>\n", a.c_str(), b.c_str());
         matrix.dump(name);
       }
       for (int i = 0; i < n->mNumChildren; ++i) {
@@ -189,6 +189,7 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
             aiVector3D sca            = scakey.mValue;
             cursca                    = fvec3(sca.x, sca.y, sca.z);
           }
+
           // deco::printf(color, "frame<%s.%d> pos<%g %g %g>\n", channel_name.c_str(), f, curpos.x, curpos.y, curpos.z);
           // deco::printf(color, "frame<%s.%d> rot<%g %g %g %g>\n", channel_name.c_str(), f, currot.x, currot.y, currot.z,
           // currot.w);
@@ -205,10 +206,29 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
           // x.Transpose();
           // x.SetTranslation(curpos);
 
+          /////////////////////////////
+
           ork::lev2::DecompMtx44 decomp;
           decomp.mRot   = currot;
-          decomp.mTrans = curpos;
+          decomp.mTrans = fvec3(curpos.x, curpos.z, curpos.y);
           decomp.mScale = 1.0f;
+          fmtx4 as_matrix;
+          as_matrix.compose(decomp.mTrans, decomp.mRot, decomp.mScale);
+
+          /////////////////////////////
+
+          if (skelnode->_parent) {
+            const auto& pinvbind       = skelnode->_bindMatrixInverse;
+            fmtx4 objspace_jointmatrix = (pinvbind * as_matrix); //.inverse();
+            std::string xxx;
+            auto color = fvec3(1, 1, .5);
+            xxx += deco::decorate(color, channel_name + ":");
+            xxx += objspace_jointmatrix.dump4x3(color);
+            // deco::prints(xxx, true);
+            // objspace_jointmatrix.decompose(decomp.mTrans, decomp.mRot, decomp.mScale);
+          }
+
+          /////////////////////////////
 
           XgmChan->AddFrame(decomp);
 
@@ -219,7 +239,7 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
           auto whi        = fvec3(1, 1, 1);
           std::string xxx = deco::format(color, "fr<%d> ", f);
           xxx += deco::decorate(yel, channel_name + ":");
-          xxx += x.dump(whi);
+          xxx += x.dump4x3(whi);
           deco::prints(xxx, true);
         }
       }

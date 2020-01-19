@@ -101,7 +101,52 @@ template <typename T> std::string Matrix44<T>::dump(Vector3<T> color) const {
       float elem = elements[i][j];
       elem       = float(int(elem * 10000)) / 10000.0f;
       //////////////////////////////////
-      rval += FormatString(" %+4.4g ", elem);
+      rval += FormatString(" %+0.4g ", elem);
+    }
+    if (use_color) {
+      rval += ork::deco::asciic_rgb(color4);
+    }
+    rval += "] ";
+  }
+  {
+    Quaternion<T> q(*this);
+    auto rot = q.ToAxisAngle();
+    if (rot.w < 0.0f) {
+      rot *= -1.0f;
+    }
+    if (use_color) {
+      rval += ork::deco::asciic_rgb(color);
+    }
+    // rval += FormatString("  quat<%0.1g %0.1g %0.1g %0.1g>", q.x, q.y, q.z, q.w);
+    rval += FormatString("  axis<%0.1g %0.1g %0.1g> angle<%g>", rot.x, rot.y, rot.z, round(rot.w * RTOD));
+  }
+  if (use_color) {
+    rval += ork::deco::asciic_reset();
+  }
+  return rval;
+}
+template <typename T> std::string Matrix44<T>::dump4x3(Vector3<T> color) const {
+  std::string rval;
+  bool use_color = color.length() > 0.0f;
+  auto color2    = color * 0.6;
+  auto color3    = color * 0.8;
+  auto color4    = color * 0.3;
+  for (int i = 0; i < 4; i++) {
+    if (use_color) {
+      rval += ork::deco::asciic_rgb(color4);
+    }
+    rval += "[";
+    for (int j = 0; j < 3; j++) {
+      if (use_color) {
+        rval += ork::deco::asciic_rgb(color2);
+      }
+      //////////////////////////////////
+      // round down small numbers
+      //////////////////////////////////
+      float elem = elements[i][j];
+      elem       = float(int(elem * 10000)) / 10000.0f;
+      //////////////////////////////////
+      rval += FormatString(" %+0.4g ", elem);
     }
     if (use_color) {
       rval += ork::deco::asciic_rgb(color4);
@@ -130,7 +175,25 @@ template <typename T> std::string Matrix44<T>::dump() const {
   for (int i = 0; i < 4; i++) {
     rval += "[";
     for (int j = 0; j < 4; j++) {
-      rval += FormatString(" %+0.3g ", elements[i][j]);
+      rval += FormatString(" %+0.4g ", elements[i][j]);
+    }
+    rval += "] ";
+  }
+  Quaternion<T> q(*this);
+  auto rot = q.ToAxisAngle();
+  if (rot.w < 0.0f) {
+    rot *= -1.0f;
+  }
+  // rval += FormatString("  quat<%0.1g %0.1g %0.1g %0.1g>", q.x, q.y, q.z, q.w);
+  rval += FormatString("  axis<%0.1g %0.1g %0.1g> angle<%g>", rot.x, rot.y, rot.z, round(rot.w * RTOD));
+  return rval;
+}
+template <typename T> std::string Matrix44<T>::dump4x3() const {
+  std::string rval;
+  for (int i = 0; i < 4; i++) {
+    rval += "[";
+    for (int j = 0; j < 3; j++) {
+      rval += FormatString(" %+0.4g ", elements[i][j]);
     }
     rval += "] ";
   }
@@ -667,12 +730,10 @@ template <typename T> void Matrix44<T>::CorrectionMatrix(const Matrix44<T>& from
   //
   /////////////////////////
 
-  Matrix44<T> iFrom = from;
-
-  // iFrom.Inverse();
-  GEMSMatrixInverse(from, iFrom);
-
-  *this = (iFrom * to); // B
+  Matrix44<T> inv_from = from.inverse();
+  inv_from.dump();
+  *this = (inv_from * to); // B
+  this->dump();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

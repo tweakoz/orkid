@@ -124,15 +124,16 @@ void XgmBlendPoseInfo::ComputeMatrix(fmtx4& outmatrix) const {
   switch (miNumAnims) {
     case 1: // just copy the first matrix
     {
-      // Callback for decomposed, pre-concatenated, blended joint info
-      if (mPoseCallback) {
-        DecompMtx44 c = AnimMat[0];
+      DecompMtx44 c = AnimMat[0];
+      if (mPoseCallback) // Callback for decomposed, pre-concatenated, blended joint info
         mPoseCallback->PostBlendPreConcat(c);
-        c.Compose(outmatrix, Ani_components[0]);
-      } else {
-        const DecompMtx44& c = AnimMat[0];
-        c.Compose(outmatrix, Ani_components[0]);
-      }
+      c.Compose(outmatrix, Ani_components[0]);
+      // fmtx4 R;
+      // R.FromQuaternion(c.mRot);
+      // fmtx4 T;
+      // T.SetTranslation(c.mTrans);
+      // outmatrix = R * T;
+
     } break;
 
     case 2: // decompose 2 matrices and lerp components (ideally anims will be stored pre-decomposed)
@@ -323,10 +324,11 @@ void XgmLocalPose::ApplyAnimInst(const XgmAnimInst& AnimInst) {
       const XgmAnimInst::Binding& binding = AnimInst.GetPoseBinding(ipidx);
       int iskelindex                      = binding.mSkelIndex;
       if (iskelindex != 0xffff) {
+
         int iposeindex                = binding.mChanIndex;
-        const DecompMtx44& PoseMatrix = StaticPose.GetItemAtIndex(iposeindex).second;
+        const DecompMtx44& decompPose = StaticPose.GetItemAtIndex(iposeindex).second;
         EXFORM_COMPONENT components   = AnimInst.RefMask().GetComponents(iskelindex);
-        RefBlendPoseInfo(iskelindex).AddPose(PoseMatrix, fweight, components);
+        RefBlendPoseInfo(iskelindex).AddPose(decompPose, fweight, components);
       } else {
         break;
       }
@@ -454,19 +456,20 @@ void XgmLocalPose::Concatenate(void) {
       const fmtx4& ParentMatrix = pmats[iparent];
       const fmtx4& LocMatrix    = pmats[ichild];
 
-      pmats[ichild] = (LocMatrix * ParentMatrix);
       // pmats[ichild] = InvBind.inverse();
       // auto bind    = invbind.inverse();
 
       // pmats[ichild] = ParentMatrix.Concat43(LocMatrix);
-      auto parname = mSkeleton.GetJointName(iparent);
-      auto chname  = std::string(mSkeleton.GetJointName(ichild).c_str());
+      std::string parname = mSkeleton.GetJointName(iparent).c_str();
+      std::string chiname = mSkeleton.GetJointName(ichild).c_str();
 
-      // ParentMatrix.dump(chname + ".par");
-      // LocMatrix.dump(chname + ".loc");
-      // pmats[ichild].dump(chname + ".concat");
-      // invbind.dump(chname + ".invbind");
-      //(invbind * pmats[ichild]).dump(chname + ".check");
+      // ParentMatrix.dump("par<" + parname + ">");
+      // LocMatrix.dump("chi<" + chiname + ">");
+      // pmats[ichild] = (LocMatrix * ParentMatrix);
+      fmtx4 temp    = (ParentMatrix * LocMatrix);
+      pmats[ichild] = temp;
+      // pmats[ichild].dump("(" + parname + "*" + chiname + ")");
+      // printf("\n");
 
       if (RefBlendPoseInfo(ichild).GetPoseCallback())
         RefBlendPoseInfo(ichild).GetPoseCallback()->PostBlendPostConcat(pmats[ichild]);
@@ -529,7 +532,7 @@ std::string XgmLocalPose::dumpc(fvec3 color) const {
       const auto& jmtx = RefLocalMatrix(ij);
       rval += deco::asciic_rgb(cc);
       rval += FormatString("%28s", name.c_str());
-      rval += ": "s + jmtx.dump(cc) + "\n"s;
+      rval += ": "s + jmtx.dump4x3(cc) + "\n"s;
       rval += deco::asciic_reset();
     }
   }
@@ -552,7 +555,7 @@ std::string XgmLocalPose::invdumpc(fvec3 color) const {
       auto jmtx        = RefLocalMatrix(ij).inverse();
       rval += deco::asciic_rgb(cc);
       rval += FormatString("%28s", name.c_str());
-      rval += ": "s + jmtx.dump(cc) + "\n"s;
+      rval += ": "s + jmtx.dump4x3(cc) + "\n"s;
       rval += deco::asciic_reset();
     }
   }
@@ -602,7 +605,7 @@ std::string XgmWorldPose::dumpc(fvec3 color) const {
       const auto& jmtx = mWorldMatrices[ij];
       rval += deco::asciic_rgb(cc);
       rval += FormatString("%28s", name.c_str());
-      rval += ": "s + jmtx.dump(cc) + "\n"s;
+      rval += ": "s + jmtx.dump4x3(cc) + "\n"s;
       rval += deco::asciic_reset();
     }
   }

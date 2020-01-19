@@ -46,8 +46,9 @@ void DeferredCompositingNodePbr::describeX(class_t* c) {
   c->floatProperty("EnvironmentIntensity", float_range{0, 100}, &DeferredCompositingNodePbr::_environmentIntensity);
   c->floatProperty("EnvironmentMipBias", float_range{0, 12}, &DeferredCompositingNodePbr::_environmentMipBias);
   c->floatProperty("EnvironmentMipScale", float_range{0, 100}, &DeferredCompositingNodePbr::_environmentMipScale);
-  c->floatProperty("DiffuseLevel", float_range{0, 1}, &DeferredCompositingNodePbr::_diffuseLevel);
-  c->floatProperty("SpecularLevel", float_range{0, 1}, &DeferredCompositingNodePbr::_specularLevel);
+  c->floatProperty("DiffuseLevel", float_range{0, 10}, &DeferredCompositingNodePbr::_diffuseLevel);
+  c->floatProperty("SpecularLevel", float_range{0, 10}, &DeferredCompositingNodePbr::_specularLevel);
+  c->floatProperty("SkyboxLevel", float_range{0, 10}, &DeferredCompositingNodePbr::_skyboxLevel);
 
   c->accessorProperty(
        "EnvironmentTexture", &DeferredCompositingNodePbr::_readEnvTexture, &DeferredCompositingNodePbr::_writeEnvTexture)
