@@ -242,6 +242,7 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     fmtx4 P  = par ? par->bindMatrix() : fmtx4::Identity;
     node->_jointMatrix.CorrectionMatrix(P, C);
     fmtx4 P2C = node->_jointMatrix;
+    fmtx4 C2P = P2C.inverse();
     fmtx4 D   = P * P2C;
     // fmtx4 D = P2C * P;
     auto n = node->_name;
@@ -250,6 +251,7 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     deco::printe(fvec3::White(), n + ".I: " + I.dump4x3(fvec3::White()), true);
     deco::printe(fvec3::White(), n + ".P: " + P.dump4x3(fvec3::White()), true);
     deco::printe(fvec3::White(), n + ".C: " + C.dump4x3(fvec3::White()), true);
+    deco::printe(fvec3::White(), n + ".C2P: " + C2P.dump4x3(fvec3::White()), true);
     deco::printe(fvec3::White(), n + ".P2C: " + P2C.dump4x3(fvec3::White()), true);
     deco::printe(fvec3::White(), n + ".P*P2C: " + D.dump4x3(fvec3::White()), true);
     printf("\n");

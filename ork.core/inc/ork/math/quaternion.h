@@ -25,7 +25,8 @@ struct QuatCodec {
       , miElem0(0)
       , miElem1(0)
       , miElem2(0)
-      , miwsign(0) {}
+      , miwsign(0) {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -37,20 +38,31 @@ template <typename T> class Vector3;
 template <typename T> struct Quaternion {
   /////////
 
-  Quaternion(void) { Identity(); }
+  Quaternion(void) {
+    Identity();
+  }
 
   Quaternion(T _x, T _y, T _z, T _w);
 
   Quaternion(const Matrix44<T>& matrix);
 
-  ~Quaternion() {}
+  ~Quaternion() {
+  }
 
   /////////
 
-  const T& GetX() const { return x; }
-  const T& GetY() const { return y; }
-  const T& GetZ() const { return z; }
-  const T& GetW() const { return w; }
+  const T& GetX() const {
+    return x;
+  }
+  const T& GetY() const {
+    return y;
+  }
+  const T& GetZ() const {
+    return z;
+  }
+  const T& GetW() const {
+    return w;
+  }
 
   /////////
 
@@ -81,6 +93,8 @@ template <typename T> struct Quaternion {
 
   void Identity(void);
   void ShortestRotationArc(Vector4<T> v0, Vector4<T> v1);
+
+  Vector3<T> toEuler() const;
 
   /////////
 

@@ -21,6 +21,29 @@ template <typename T> Quaternion<T>::Quaternion(T _x, T _y, T _z, T _w) {
   w = (_w);
 }
 
+template <typename T> Vector3<T> Quaternion<T>::toEuler() const {
+  Vector3<T> angles;
+
+  // roll (x-axis rotation)
+  double sinr_cosp = 2 * (w * x + y * z);
+  double cosr_cosp = 1 - 2 * (x * x + y * y);
+  angles.x         = std::atan2(sinr_cosp, cosr_cosp);
+
+  // pitch (y-axis rotation)
+  double sinp = 2 * (w * y - z * x);
+  if (std::abs(sinp) >= 1)
+    angles.y = std::copysign(M_PI / 2, sinp); // use 90 degrees if out of range
+  else
+    angles.y = std::asin(sinp);
+
+  // yaw (z-axis rotation)
+  double siny_cosp = 2 * (w * z + x * y);
+  double cosy_cosp = 1 - 2 * (y * y + z * z);
+  angles.z         = std::atan2(siny_cosp, cosy_cosp);
+
+  return angles;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Quaternion<T> Quaternion<T>::Lerp(const Quaternion<T>& a, const Quaternion<T>& b, T alpha) {

@@ -181,7 +181,7 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
             const aiQuatKey& rotkey = channel->mRotationKeys[f];
             double time             = rotkey.mTime;
             aiQuaternion rot        = rotkey.mValue;
-            currot                  = fquat(-rot.x, -rot.y, -rot.z, rot.w);
+            currot                  = fquat(rot.x, rot.y, rot.z, rot.w);
           }
           if (f < channel->mNumScalingKeys) {
             const aiVectorKey& scakey = channel->mScalingKeys[f];
@@ -214,18 +214,15 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
           decomp.mScale = 1.0f;
           fmtx4 as_matrix;
           as_matrix.compose(decomp.mTrans, decomp.mRot, decomp.mScale);
+          // as_matrix.inverse().decompose(decomp.mTrans, decomp.mRot, decomp.mScale);
 
           /////////////////////////////
 
           if (skelnode->_parent) {
-            const auto& pinvbind       = skelnode->_bindMatrixInverse;
-            fmtx4 objspace_jointmatrix = (pinvbind * as_matrix); //.inverse();
-            std::string xxx;
-            auto color = fvec3(1, 1, .5);
-            xxx += deco::decorate(color, channel_name + ":");
-            xxx += objspace_jointmatrix.dump4x3(color);
-            // deco::prints(xxx, true);
-            // objspace_jointmatrix.decompose(decomp.mTrans, decomp.mRot, decomp.mScale);
+            const auto& pinvbind       = skelnode->_parent->concatenatednode().inverse();
+            auto cat                   = skelnode->concatenatednode();
+            fmtx4 objspace_jointmatrix = pinvbind * (as_matrix * cat);
+            objspace_jointmatrix.decompose(decomp.mTrans, decomp.mRot, decomp.mScale);
           }
 
           /////////////////////////////

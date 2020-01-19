@@ -155,15 +155,12 @@ template <typename T> std::string Matrix44<T>::dump4x3(Vector3<T> color) const {
   }
   {
     Quaternion<T> q(*this);
-    auto rot = q.ToAxisAngle();
-    if (rot.w < 0.0f) {
-      rot *= -1.0f;
-    }
+    auto rot = q.toEuler();
     if (use_color) {
       rval += ork::deco::asciic_rgb(color);
     }
     // rval += FormatString("  quat<%0.1g %0.1g %0.1g %0.1g>", q.x, q.y, q.z, q.w);
-    rval += FormatString("  axis<%0.1g %0.1g %0.1g> angle<%g>", rot.x, rot.y, rot.z, round(rot.w * RTOD));
+    rval += FormatString("  euler<%g %g %g>", round(rot.x * RTOD), round(rot.y * RTOD), round(rot.z * RTOD));
   }
   if (use_color) {
     rval += ork::deco::asciic_reset();
