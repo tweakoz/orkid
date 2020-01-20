@@ -90,9 +90,9 @@ void GfxPrimitives::Init(Context* pTarg) {
 
   vwpbr.Lock(pTarg, &GetRef().mVtxBuf_Axis, 6);
 
-  auto RED = fvec4::Red().GetARGBU32();
-  auto GRN = fvec4::Green().GetARGBU32();
-  auto BLU = fvec4::Blue().GetARGBU32();
+  auto RED = fvec4::Red().GetABGRU32();
+  auto GRN = fvec4::Green().GetABGRU32();
+  auto BLU = fvec4::Blue().GetABGRU32();
   vwpbr.AddVertex(SVtxV12N12B12T8C4(fvec3(0, 0, 0), fvec3(1, 0, 0), fvec3(0, 1, 0), fvec2(), RED));
   vwpbr.AddVertex(SVtxV12N12B12T8C4(fvec3(fLineSize, 0, 0), fvec3(1, 0, 0), fvec3(0, 1, 0), fvec2(), RED));
   vwpbr.AddVertex(SVtxV12N12B12T8C4(fvec3(0, 0, 0), fvec3(0, 1, 0), fvec3(1, 0, 0), fvec2(), GRN));

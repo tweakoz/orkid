@@ -614,7 +614,7 @@ void XgmModel::RenderSkinned(
         t.mNormal      = fvec3(1, 0, 0);
         hvtx.mBiNormal = fvec3(1, 1, 0);
         t.mBiNormal    = fvec3(1, 1, 0);
-        int numlines   = inumbones * (30);
+        int numlines   = inumbones * (24);
         vw.Lock(pTARG, &vtxbuf, numlines);
         for (int ib = 0; ib < inumbones; ib++) {
           const XgmBone& bone = skeleton().bone(ib);
@@ -625,16 +625,30 @@ void XgmModel::RenderSkinned(
 
           fvec3 hnx, hny, hnz;
           bone_head.toNormalVectors(hnx, hny, hnz);
+          hnx.Normalize();
+          hny.Normalize();
+          hnz.Normalize();
 
           fvec3 delta      = (t - h);
           float bonelength = delta.length();
           fvec3 n          = delta.Normal();
           float bl2        = bonelength * 0.1;
           fvec3 hh         = h + n * bl2;
-          fvec3 a          = hh + hnx * bl2;
-          fvec3 b          = hh - hnx * bl2;
-          fvec3 c          = hh + hnz * bl2;
-          fvec3 d          = hh - hnz * bl2;
+
+          fvec3 a, b, c, d;
+
+          if (math::areValuesClose(abs(n.Dot(hnz)), 1, 0.01)) {
+            a = hh + hnx * bl2;
+            b = hh - hnx * bl2;
+            c = hh + hny * bl2;
+            d = hh - hny * bl2;
+          } else {
+
+            a = hh + hnx * bl2;
+            b = hh - hnx * bl2;
+            c = hh + hnz * bl2;
+            d = hh - hnz * bl2;
+          }
 
           auto add_vertex = [&](const fvec3 pos, const fvec3& col) {
             hvtx.mPosition = pos;
@@ -646,20 +660,8 @@ void XgmModel::RenderSkinned(
           // printf("hny<%g %g %g>\n", hny.x, hny.y, hny.z);
           // printf("hnz<%g %g %g>\n", hnz.x, hnz.y, hnz.z);
 
-          add_vertex(h, fvec3::Green());
-          add_vertex(hh + n * bl2, fvec3::Green());
-
-          auto red = fvec3(1, .2, .2);
-          auto blu = fvec3(.2, .2, 1);
-
-          add_vertex(hh, red);
-          add_vertex(a, red);
-
-          add_vertex(hh, blu);
-          add_vertex(c, blu);
-
-          add_vertex(h, red);
-          add_vertex(a, red);
+          add_vertex(h, fvec3::White());
+          add_vertex(a, fvec3::White());
           add_vertex(a, fvec3::White());
           add_vertex(t, fvec3::White());
 
@@ -668,8 +670,8 @@ void XgmModel::RenderSkinned(
           add_vertex(b, fvec3::White());
           add_vertex(t, fvec3::White());
 
-          add_vertex(h, blu);
-          add_vertex(c, blu);
+          add_vertex(h, fvec3::White());
+          add_vertex(c, fvec3::White());
           add_vertex(c, fvec3::White());
           add_vertex(t, fvec3::White());
 
@@ -689,7 +691,9 @@ void XgmModel::RenderSkinned(
           add_vertex(a, fvec3::White());
         }
         vw.UnLock(pTARG);
+        pTARG->MTXI()->PushMMatrix(fmtx4::Identity);
         pTARG->GBI()->DrawPrimitive(vw, EPRIM_LINES, numlines);
+        pTARG->MTXI()->PopMMatrix();
       }
       for (int ib = 0; ib < inumbones; ib++) {
         const XgmBone& bone = skeleton().bone(ib);
