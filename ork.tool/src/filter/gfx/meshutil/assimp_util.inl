@@ -223,9 +223,13 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
       auto itc = xgmskelnodes.find(remapSkelName(c->mName.data));
       OrkAssert(itc != xgmskelnodes.end());
       auto cskelnode = itc->second;
-      nodestack.push(c);
-      cskelnode->_parent = pskelnode;
-      pskelnode->mChildren.push_back(cskelnode);
+
+      if (false == cskelnode->_varmap["visited_2nd"].IsA<bool>()) {
+        cskelnode->_varmap["visited_2nd"].Set<bool>(true);
+        nodestack.push(c);
+        cskelnode->_parent = pskelnode;
+        pskelnode->mChildren.push_back(cskelnode);
+      }
     }
     /////////////////////////////////////////////////
   } // while (not nodestack.empty())
