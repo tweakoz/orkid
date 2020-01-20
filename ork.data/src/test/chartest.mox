@@ -12,10 +12,10 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>0.282066 0.564413 0.0846975</property>
+                                                <property name='Center'>-0.0107107 1.05313 -0.460965</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>1.84532</property>
-                                                <property name='QuatC'>0.0521735 0.39001 -0.0829978 0.917171</property>
+                                                <property name='Loc'>2.1112</property>
+                                                <property name='QuatC'>0.0201407 0.977481 -0.0397929 -0.213267</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -303,17 +303,18 @@
                                                                                     <object type='DeferredCompositingNodePbr' id='34'>
                                                                                         <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
-                                                                                        <property name='DiffuseLevel'>1</property>
-                                                                                        <property name='EnvironmentIntensity'>1.9084</property>
-                                                                                        <property name='EnvironmentMipBias'>0.549618</property>
-                                                                                        <property name='EnvironmentMipScale'>10.3053</property>
+                                                                                        <property name='DiffuseLevel'>0.954198</property>
+                                                                                        <property name='EnvironmentIntensity'>4.58015</property>
+                                                                                        <property name='EnvironmentMipBias'>0</property>
+                                                                                        <property name='EnvironmentMipScale'>4.58015</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
-                                                                                                "lev2tex" "data://environ/envmaps/tozenv_nebula"
+                                                                                                "lev2tex" "data://environ/envmaps/blender_studio"
                                                                                             </reference>
                                                                                         </property>
                                                                                         <property name='FogColor'>0 0 0 1</property>
-                                                                                        <property name='SpecularLevel'>1</property>
+                                                                                        <property name='SkyboxLevel'>1.75573</property>
+                                                                                        <property name='SpecularLevel'>0.648855</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>

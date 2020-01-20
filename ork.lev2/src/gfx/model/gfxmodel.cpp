@@ -687,16 +687,17 @@ void XgmModel::RenderSkinned(
           add_vertex(d, fvec3::White());
           add_vertex(d, fvec3::White());
           add_vertex(a, fvec3::White());
-
-          // fmtx4 head = fmtx4 MatAnimJCat = LocalPose.RefLocalMatrix(ij);
-          // auto InvBind                   = skeleton().RefInverseBindMatrix(ij);
-          // auto finalmtx                  = WorldMat * MatAnimJCat;
-          // pTARG->MTXI()->PushMMatrix(finalmtx);
-          // GfxPrimitives::GetRef().RenderAxis(pTARG);
-          // pTARG->MTXI()->PopMMatrix();
         }
         vw.UnLock(pTARG);
         pTARG->GBI()->DrawPrimitive(vw, EPRIM_LINES, numlines);
+      }
+      for (int ib = 0; ib < inumbones; ib++) {
+        const XgmBone& bone = skeleton().bone(ib);
+        fmtx4 bone_head     = WorldMat * LocalPose.RefLocalMatrix(bone._parentIndex);
+        fmtx4 bone_tail     = WorldMat * LocalPose.RefLocalMatrix(bone._childIndex);
+        pTARG->MTXI()->PushMMatrix(bone_head);
+        GfxPrimitives::GetRef().RenderAxis(pTARG);
+        pTARG->MTXI()->PopMMatrix();
       }
     }
     pTARG->PopMaterial();

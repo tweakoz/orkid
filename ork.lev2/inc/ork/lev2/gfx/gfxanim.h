@@ -423,7 +423,9 @@ struct XgmSkelNode {
 
   fmtx4 bindMatrix() const;
   fmtx4 concatenated() const;
+  fmtx4 concatenated2() const;
   fmtx4 concatenatednode() const;
+  fmtx4 concatenatednode2() const;
   NodeType nodetype() const;
   void visitHierarchy(nodevisitfn_t visitfn);
   void visitHierarchyUp(nodevisitfn_t visitfn);

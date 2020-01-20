@@ -167,6 +167,43 @@ template <typename T> std::string Matrix44<T>::dump4x3(Vector3<T> color) const {
   }
   return rval;
 }
+template <typename T> std::string Matrix44<T>::dump4x3cn() const {
+  std::string rval;
+  auto brace_color = fvec3(0.7, 0.7, 0.7);
+  for (int i = 0; i < 4; i++) {
+    rval += ork::deco::decorate(brace_color, "[");
+    fvec3 fcol;
+    switch (i) {
+      case 0:
+        fcol = fvec3(1, .5, .5);
+        break;
+      case 1:
+        fcol = fvec3(.5, 1, .5);
+        break;
+      case 2:
+        fcol = fvec3(.5, .5, 1);
+        break;
+      case 3:
+        fcol = fvec3(0.7, 0.7, 0.7);
+        break;
+    }
+    for (int j = 0; j < 3; j++) {
+      //////////////////////////////////
+      // round down small numbers
+      //////////////////////////////////
+      float elem = elements[i][j];
+      elem       = float(int(elem * 10000)) / 10000.0f;
+      //////////////////////////////////
+      rval += ork::deco::format(fcol, " %+0.4g ", elem);
+    }
+    rval += ork::deco::decorate(brace_color, "]");
+  }
+  Quaternion<T> q(*this);
+  auto rot = q.toEuler();
+  rval +=
+      ork::deco::format(fvec3(0.8, 0.8, 0.8), "  euler<%g %g %g>", round(rot.x * RTOD), round(rot.y * RTOD), round(rot.z * RTOD));
+  return rval;
+}
 template <typename T> std::string Matrix44<T>::dump() const {
   std::string rval;
   for (int i = 0; i < 4; i++) {

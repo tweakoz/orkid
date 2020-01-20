@@ -38,6 +38,15 @@ fmtx4 XgmSkelNode::concatenatednode() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+fmtx4 XgmSkelNode::concatenated2() const {
+  return _parent ? (_parent->concatenated2() * _jointMatrix) : _jointMatrix;
+}
+fmtx4 XgmSkelNode::concatenatednode2() const {
+  return _parent ? (_parent->concatenatednode2() * _nodeMatrix) : _nodeMatrix;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 fmtx4 XgmSkelNode::bindMatrix() const {
   return _bindMatrixInverse.inverse();
 }

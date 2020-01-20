@@ -124,6 +124,7 @@ public:
   void dump(std::string name) const;
   std::string dump(Vector3<T> color) const;
   std::string dump4x3(Vector3<T> color) const;
+  std::string dump4x3cn() const;
   std::string dump() const;
   std::string dump4x3() const;
 

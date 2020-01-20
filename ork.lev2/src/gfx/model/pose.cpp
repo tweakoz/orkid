@@ -376,7 +376,7 @@ void XgmLocalPose::BuildPose(void) {
     if (inumanms) {
       mBlendPoseInfos[i].ComputeMatrix(mLocalMatrices[i]);
 
-      if (0) //( i == ((gctr/1000)%inumjoints) )
+      if (1) //( i == ((gctr/1000)%inumjoints) )
       {
         const auto& name = mSkeleton.GetJointName(i);
         ork::FixedString<64> fxs;
@@ -480,10 +480,8 @@ std::string XgmLocalPose::dumpc(fvec3 color) const {
       fvec3 cc         = (ij & 1) ? cb : ca;
       std::string name = mSkeleton.GetJointName(ij).c_str();
       const auto& jmtx = RefLocalMatrix(ij);
-      rval += deco::asciic_rgb(cc);
-      rval += FormatString("%28s", name.c_str());
-      rval += ": "s + jmtx.dump4x3(cc) + "\n"s;
-      rval += deco::asciic_reset();
+      rval += deco::format(cc, "%28s: ", name.c_str());
+      rval += jmtx.dump4x3cn() + "\n"s;
     }
   }
   return rval;
@@ -534,7 +532,7 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
   for (int ij = 0; ij < inumj; ij++) {
     fmtx4 MatAnimJCat = localpose.RefLocalMatrix(ij);
     auto InvBind      = mSkeleton.RefInverseBindMatrix(ij);
-    auto finalmtx     = worldmtx * (InvBind * MatAnimJCat);
+    auto finalmtx     = worldmtx * (MatAnimJCat * InvBind);
     // auto finalmtx      = InvBind;
     mWorldMatrices[ij] = finalmtx;
   }
@@ -553,10 +551,8 @@ std::string XgmWorldPose::dumpc(fvec3 color) const {
       fvec3 cc         = (ij & 1) ? cb : ca;
       std::string name = mSkeleton.GetJointName(ij).c_str();
       const auto& jmtx = mWorldMatrices[ij];
-      rval += deco::asciic_rgb(cc);
-      rval += FormatString("%28s", name.c_str());
-      rval += ": "s + jmtx.dump4x3(cc) + "\n"s;
-      rval += deco::asciic_reset();
+      rval += deco::format(cc, "%28s: ", name.c_str());
+      rval += jmtx.dump4x3cn() + "\n"s;
     }
   }
   return rval;

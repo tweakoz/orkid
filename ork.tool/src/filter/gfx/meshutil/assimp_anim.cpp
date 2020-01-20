@@ -154,8 +154,7 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
       auto invbindmtx = skelnode->_bindMatrixInverse;
 
       auto& skelnode_framevect_n = skelnode->_varmap["framevect_n"].Make<framevect_t>();
-      auto& skelnode_framevect_j = skelnode->_varmap["framevect_j"].Make<framevect_t>();
-      auto& skelnode_framevect_k = skelnode->_varmap["framevect_k"].Make<framevect_t>();
+      skelnode->_varmap["framevect_j"].Make<framevect_t>();
 
       auto it = channel_remap.find(channel_name);
       if (it != channel_remap.end()) {
@@ -222,70 +221,123 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
         R.FromQuaternion(currot);
         S.SetScale(cursca.x, cursca.x, cursca.x);
         T.SetTranslation(curpos);
-        fmtx4 XF_NODESPACE = R * T;
-        // fmtx4 XF_NODESPACE = T * R;
-        skelnode_framevect_n.push_back(XF_NODESPACE);
-        ork::lev2::DecompMtx44 decomp;
+        fmtx4 XF_NSPACE = R * T;
+        // fmtx4 XF_NSPACE = T * R;
+        skelnode_framevect_n.push_back(XF_NSPACE);
 
         auto yel        = fvec3(1, 1, 0);
         auto whi        = fvec3(1, 1, 1);
         std::string xxx = deco::format(color, "fr<%d> ", f);
         xxx += deco::decorate(yel, channel_name + "(N):");
-        xxx += XF_NODESPACE.dump4x3(whi);
+        xxx += XF_NSPACE.dump4x3cn();
         deco::prints(xxx, true);
 
-        if (skelnode->_parent) {
-          auto pcat = skelnode->_parent->concatenatednode();
-          auto C    = skelnode->bindMatrix();
-          auto K    = skelnode->concatenatednode();
-          fmtx4 J   = skelnode->_jointMatrix;
-          fmtx4 K2J;
-          K2J.CorrectionMatrix(K, J);
-          // transform it to K space
-          fmtx4 joint_KSPACE = XF_NODESPACE * pcat;
-          // now transform it to J space
-          fmtx4 joint_JSPACE = joint_KSPACE * K2J;
-
-          skelnode_framevect_k.push_back(joint_KSPACE);
-          skelnode_framevect_j.push_back(joint_JSPACE);
-          joint_JSPACE.decompose(decomp.mTrans, decomp.mRot, decomp.mScale);
-        }
-        XgmChan->AddFrame(decomp);
       } // for (int f = 0; f < framecount; f++) {
     }   // for (int i = 0; i < anim->mNumChannels; i++) {
-    deco::printf(fvec3::White(), "/////////////////////////////////////////////\n");
-    deco::printf(fvec3::White(), "// K Space Anim\n");
-    deco::printf(fvec3::White(), "/////////////////////////////////////////////\n");
     auto yel = fvec3(1, 1, 0);
     auto whi = fvec3(1, 1, 1);
-    ////////////////////////////////////////////////////////////////////
-    for (int i = 0; i < anim->mNumChannels; i++) {
-      aiNodeAnim* channel        = anim->mChannels[i];
-      std::string channel_name   = remapSkelName(channel->mNodeName.data);
-      auto its                   = skelnodes.find(channel_name);
-      auto skelnode              = its->second;
-      auto& skelnode_framevect_k = skelnode->_varmap["framevect_k"].Get<framevect_t>();
-      deco::printf(color, "///////////\n");
-      for (int f = 0; f < framecount; f++) {
-        fmtx4 joint_KSPACE = skelnode_framevect_k[f];
-        deco::printf(yel, "fr<%d> ch<%s> (K): ", f, channel_name.c_str());
-        deco::prints(joint_KSPACE.dump4x3(whi), true);
+    if (1) {
+      deco::printf(fvec3::White(), "/////////////////////////////////////////////\n");
+      deco::printf(fvec3::White(), "// O Space Anim\n");
+      deco::printf(fvec3::White(), "/////////////////////////////////////////////\n");
+      for (int i = 0; i < anim->mNumChannels; i++) {
+        deco::printf(color, "///////////\n");
+        for (int f = 0; f < framecount; f++) {
+          ////////////////////////////////////////////////////
+          // apply anim channels to generate pose
+          ////////////////////////////////////////////////////
+          for (int c = 0; c < anim->mNumChannels; c++) {
+            aiNodeAnim* channel        = anim->mChannels[c];
+            std::string channel_name   = remapSkelName(channel->mNodeName.data);
+            auto its                   = skelnodes.find(channel_name);
+            auto skelnode              = its->second;
+            auto& skelnode_framevect_j = skelnode->_varmap["framevect_n"].Get<framevect_t>();
+            fmtx4 joint_JSPACE         = skelnode_framevect_j[f];
+            skelnode->_nodeMatrix      = joint_JSPACE;
+          }
+          ////////////////////////////////////////////////////
+          aiNodeAnim* channel      = anim->mChannels[i];
+          std::string channel_name = remapSkelName(channel->mNodeName.data);
+          auto its                 = skelnodes.find(channel_name);
+          auto skelnode            = its->second;
+          auto XgmChan             = skelnode->_varmap["xgmchan"].Get<lev2::XgmDecompAnimChannel*>();
+          fmtx4 OSPACE             = skelnode->concatenatednode();
+          deco::printf(color, "fr<%d> ", f);
+          deco::printf(yel, "%s (O): ", channel_name.c_str());
+          deco::prints(OSPACE.dump4x3cn(), true);
+        }
       }
     }
-    deco::printf(fvec3::White(), "/////////////////////////////////////////////\n");
-    deco::printf(fvec3::White(), "// J Space Anim\n");
-    deco::printf(fvec3::White(), "/////////////////////////////////////////////\n");
-    for (int i = 0; i < anim->mNumChannels; i++) {
-      aiNodeAnim* channel        = anim->mChannels[i];
-      std::string channel_name   = remapSkelName(channel->mNodeName.data);
-      auto its                   = skelnodes.find(channel_name);
-      auto skelnode              = its->second;
-      auto& skelnode_framevect_j = skelnode->_varmap["framevect_j"].Get<framevect_t>();
-      deco::printf(color, "///////////\n");
-      for (int f = 0; f < framecount; f++) {
-        fmtx4 joint_JSPACE = skelnode_framevect_j[f];
-        deco::printf(yel, "fr<%d> ch<%s> (J): ", f, channel_name.c_str());
-        deco::prints(joint_JSPACE.dump4x3(whi), true);
+    if (1) {
+      deco::printf(fvec3::White(), "/////////////////////////////////////////////\n");
+      deco::printf(fvec3::White(), "// J Space Anim\n");
+      deco::printf(fvec3::White(), "/////////////////////////////////////////////\n");
+      for (int i = 0; i < anim->mNumChannels; i++) {
+        deco::printf(color, "///////////\n");
+        for (int f = 0; f < framecount; f++) {
+          ////////////////////////////////////////////////////
+          // apply anim channels to generate pose
+          ////////////////////////////////////////////////////
+          for (int c = 0; c < anim->mNumChannels; c++) {
+            aiNodeAnim* channel        = anim->mChannels[c];
+            std::string channel_name   = remapSkelName(channel->mNodeName.data);
+            auto its                   = skelnodes.find(channel_name);
+            auto skelnode              = its->second;
+            auto& skelnode_framevect_n = skelnode->_varmap["framevect_n"].Get<framevect_t>();
+            fmtx4 joint_NSPACE         = skelnode_framevect_n[f];
+            skelnode->_nodeMatrix      = joint_NSPACE;
+          }
+          ////////////////////////////////////////////////////
+          aiNodeAnim* channel      = anim->mChannels[i];
+          std::string channel_name = remapSkelName(channel->mNodeName.data);
+          auto its                 = skelnodes.find(channel_name);
+          auto skelnode            = its->second;
+          auto XgmChan             = skelnode->_varmap["xgmchan"].Get<lev2::XgmDecompAnimChannel*>();
+          fmtx4 OSPACE             = skelnode->concatenatednode();
+          auto par                 = skelnode->_parent;
+          fmtx4 POSPACE            = par ? skelnode->_parent->bindMatrix() : fmtx4();
+          fmtx4 JSPACE             = POSPACE.inverse() * OSPACE;
+          deco::printf(color, "fr<%d> ", f);
+          deco::printf(yel, "%s (J): ", channel_name.c_str());
+          deco::prints(JSPACE.dump4x3cn(), true);
+
+          skelnode->_varmap["framevect_j"].Get<framevect_t>().push_back(JSPACE);
+
+          ork::lev2::DecompMtx44 decomp;
+          JSPACE.decompose(decomp.mTrans, decomp.mRot, decomp.mScale);
+          XgmChan->AddFrame(decomp);
+        }
+      }
+    }
+    if (1) {
+      deco::printf(fvec3::White(), "/////////////////////////////////////////////\n");
+      deco::printf(fvec3::White(), "// O Space Anim (reconstruct from J)\n");
+      deco::printf(fvec3::White(), "/////////////////////////////////////////////\n");
+      for (int i = 0; i < anim->mNumChannels; i++) {
+        deco::printf(color, "///////////\n");
+        for (int f = 0; f < framecount; f++) {
+          ////////////////////////////////////////////////////
+          // apply anim channels to generate pose
+          ////////////////////////////////////////////////////
+          for (int c = 0; c < anim->mNumChannels; c++) {
+            aiNodeAnim* channel        = anim->mChannels[c];
+            std::string channel_name   = remapSkelName(channel->mNodeName.data);
+            auto its                   = skelnodes.find(channel_name);
+            auto skelnode              = its->second;
+            auto& skelnode_framevect_j = skelnode->_varmap["framevect_j"].Get<framevect_t>();
+            fmtx4 joint_JSPACE         = skelnode_framevect_j[f];
+            skelnode->_jointMatrix     = joint_JSPACE;
+          }
+          ////////////////////////////////////////////////////
+          aiNodeAnim* channel      = anim->mChannels[i];
+          std::string channel_name = remapSkelName(channel->mNodeName.data);
+          auto its                 = skelnodes.find(channel_name);
+          auto skelnode            = its->second;
+          fmtx4 OSPACE             = skelnode->concatenated2();
+          deco::printf(color, "fr<%d> ", f);
+          deco::printf(yel, "%s (O): ", channel_name.c_str());
+          deco::prints(OSPACE.dump4x3cn(), true);
+        }
       }
     }
     ////////////////////////////////////////////////////////////////

@@ -133,6 +133,9 @@ TEST(gfxanim1) {
       deco::printf(orange, "AnimPose (K) fr<%d>\n", iframe);
       deco::prints(localpose.dumpc(orange), true);
 
+      deco::printf(somc, "AnimPose-LocalPose-Cat (Bi)\n");
+      deco::prints(localpose.invdumpc(somc), true);
+
       worldpose.apply(ork::fmtx4(), localpose);
       deco::printf(magenta, "AnimPose-Final (V2O) fr<%d>\n", iframe);
       deco::prints(worldpose.dumpc(magenta), true);
