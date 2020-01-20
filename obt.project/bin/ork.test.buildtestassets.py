@@ -35,6 +35,6 @@ animlist = ["bonetest_anim.dae","rigtest_anim.gltf","chartest/char_anim.gltf","h
 for item in animlist:
     exp_anim(item)
 
-meshlist = ["bonetest_mesh.gltf","rigtest_exp.gltf","chartest/char_mesh.gltf","hfstest/hfs_rigtest.fbx"]
+meshlist = ["bonetest_mesh.gltf","rigtest_exp.gltf","chartest/char_mesh.gltf","hfstest/hfs_rigtest.fbx","hfstest/hfs_chartest.fbx","hfstest/bakeprocedural.gltf"]
 for item in meshlist:
     exp_mesh(item)

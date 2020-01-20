@@ -430,7 +430,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
               /////////////////////////////////////////////
               if (is_skinned) {
                 auto itw = assimpweightlut.find(index);
-                OrkAssert(itw != assimpweightlut.end());
+                // OrkAssert(itw != assimpweightlut.end());
                 if (itw != assimpweightlut.end()) {
                   auto influences = itw->second;
                   int numinf      = influences->_items.size();
