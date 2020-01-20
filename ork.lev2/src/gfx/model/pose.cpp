@@ -376,7 +376,7 @@ void XgmLocalPose::BuildPose(void) {
     if (inumanms) {
       mBlendPoseInfos[i].ComputeMatrix(mLocalMatrices[i]);
 
-      if (1) //( i == ((gctr/1000)%inumjoints) )
+      if (0) //( i == ((gctr/1000)%inumjoints) )
       {
         const auto& name = mSkeleton.GetJointName(i);
         ork::FixedString<64> fxs;

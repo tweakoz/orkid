@@ -480,20 +480,25 @@ void XgmModel::RenderSkinned(
   const auto& CPD  = RCFD->topCPD();
   bool stereo1pass = CPD.isStereoOnePass();
 
-  // printf("rendering skinned!!\n");
+  ///////////////////////////////////
+  // apply local pose to world pose
+  ///////////////////////////////////
 
-  fvec3 c1(1, .8, .8);
-  fvec3 c2(.8, .8, 1);
   const auto& localpose = minst->RefLocalPose();
-  deco::printe(c1, "LocalPose (post-concat)", true);
-  deco::prints(localpose.dumpc(c1), true);
-  // deco::printe(fvec3(1, 1, 1), xfdata.mWorldMatrix.dump(), true);
   minst->_worldPose.apply(WorldMat, localpose);
-  deco::printe(c2, "WorldPose (post-concat)", true);
-  deco::prints(minst->_worldPose.dumpc(c2), true);
 
-  ////////////////////
+  if (0) {
+    fvec3 c1(1, .8, .8);
+    fvec3 c2(.8, .8, 1);
+    deco::printe(c1, "LocalPose (post-concat)", true);
+    deco::prints(localpose.dumpc(c1), true);
+    deco::printe(c2, "WorldPose (post-concat)", true);
+    deco::prints(minst->_worldPose.dumpc(c2), true);
+  }
+
+  ///////////////////////////////////
   // Draw Skinned Mesh
+  ///////////////////////////////////
 
   if (1) // draw mesh
   {
@@ -603,7 +608,7 @@ void XgmModel::RenderSkinned(
       auto& vtxbuf = GfxEnv::GetSharedDynamicVB2();
       VtxWriter<vertex_t> vw;
       int inumbones = skeleton().numBones();
-      printf("inumbones<%d>\n", inumbones);
+      //printf("inumbones<%d>\n", inumbones);
       if (inumbones) {
         vertex_t hvtx, t;
         hvtx.mColor    = uint32_t(0xff00ffff);
