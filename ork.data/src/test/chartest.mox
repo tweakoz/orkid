@@ -120,7 +120,7 @@
                                         <property name='AnimationMap'>
                                             <item key='start'>
                                                 <reference category='AssetClass'>
-                                                    "xganim" "data:///test/char_anim"
+                                                    "xganim" "data:///test/chartest/char_anim"
                                                 </reference>
                                             </item>
                                         </property>
@@ -186,7 +186,7 @@
                                         <property name='MaterialOverrides'></property>
                                         <property name='Model'>
                                             <reference category='AssetClass'>
-                                                "xgmodel" "data://test/char_mesh"
+                                                "xgmodel" "data://test/chartest/char_mesh"
                                             </reference>
                                         </property>
                                         <property name='Offset'>0 0 0</property>

@@ -120,7 +120,7 @@
                                         <property name='AnimationMap'>
                                             <item key='start'>
                                                 <reference category='AssetClass'>
-                                                    "xganim" "data:///test/hfs_rigtest_anim"
+                                                    "xganim" "data:///test/hfstest/hfs_rigtest_anim"
                                                 </reference>
                                             </item>
                                         </property>
@@ -186,7 +186,7 @@
                                         <property name='MaterialOverrides'></property>
                                         <property name='Model'>
                                             <reference category='AssetClass'>
-                                                "xgmodel" "data://test/hfs_rigtest_mesh"
+                                                "xgmodel" "data://test/hfstest/hfs_rigtest"
                                             </reference>
                                         </property>
                                         <property name='Offset'>0 0 0</property>
