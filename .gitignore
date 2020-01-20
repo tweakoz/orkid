@@ -18,6 +18,8 @@ hotkeys.ork
 .idea
 cmake-build*
 mocs
+nocommit/*
+*/nocommit/*
 .mayaSwatches/*
 ork.build.ini
 workspace.mel
