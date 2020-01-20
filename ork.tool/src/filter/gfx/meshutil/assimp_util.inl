@@ -249,11 +249,13 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
   root->_jointMatrix = root->bindMatrix();
 
   /////////////////////////////////////////////////
+  // set joints matrices from nodes
+  /////////////////////////////////////////////////
 
   root->visitHierarchy([root](lev2::XgmSkelNode* node) {
-    fmtx4 Bc = node->bindMatrix();
+    fmtx4 Bc = node->concatenatednode2();
     auto par = node->_parent;
-    fmtx4 Bp = par ? par->bindMatrix() : fmtx4::Identity;
+    fmtx4 Bp = par ? par->concatenatednode2() : fmtx4::Identity;
     fmtx4 J;
     J.CorrectionMatrix(Bp, Bc);
     J                  = Bp.inverse() * Bc;
@@ -261,14 +263,21 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
   });
 
   /////////////////////////////////////////////////
-  // set parents
+  // set inversebind pose (from nodes)
+  /////////////////////////////////////////////////
+
+  root->visitHierarchy([root](lev2::XgmSkelNode* node) { node->_bindMatrixInverse = node->concatenated().inverse(); });
+
+  /////////////////////////////////////////////////
+  // debug dump
   /////////////////////////////////////////////////
 
   deco::printf(fvec3::Green(), "// result debug dump\n");
 
   root->visitHierarchy([root](lev2::XgmSkelNode* node) {
     fmtx4 N  = node->_nodeMatrix;
-    fmtx4 K  = node->concatenatednode(); // object space
+    fmtx4 K  = node->concatenatednode();  // object space
+    fmtx4 K2 = node->concatenatednode2(); // object space
     fmtx4 Bi = node->_bindMatrixInverse;
     fmtx4 Bc = node->bindMatrix();
     auto par = node->_parent;
@@ -279,11 +288,12 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     fmtx4 D  = Bp * J;
     auto n   = node->_name;
     deco::printe(fvec3::White(), n + ".N: " + N.dump4x3cn(), true);
+    deco::printe(fvec3::White(), n + ".J: " + J.dump4x3cn(), true);
     deco::printe(fvec3::White(), n + ".K: " + K.dump4x3cn(), true);
+    deco::printe(fvec3::White(), n + ".K2: " + K2.dump4x3cn(), true);
     deco::printe(fvec3::White(), n + ".Bi: " + Bi.dump4x3cn(), true);
     deco::printe(fvec3::White(), n + ".Bc: " + Bc.dump4x3cn(), true);
     deco::printe(fvec3::White(), n + ".Bp: " + Bp.dump4x3cn(), true);
-    deco::printe(fvec3::White(), n + ".J: " + J.dump4x3cn(), true);
     deco::printe(fvec3::White(), n + ".Ji: " + Ji.dump4x3cn(), true);
     deco::printe(fvec3::White(), n + ".Jk: " + Jk.dump4x3cn(), true);
     deco::printe(fvec3::White(), n + ".Bp*J: " + D.dump4x3cn(), true);

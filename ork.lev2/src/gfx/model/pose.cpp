@@ -418,7 +418,8 @@ void XgmLocalPose::Concatenate(void) {
       std::string parname = mSkeleton.GetJointName(iparent).c_str();
       std::string chiname = mSkeleton.GetJointName(ichild).c_str();
 
-      fmtx4 temp    = (ParentMatrix * LocMatrix);
+      // fmtx4 temp    = (ParentMatrix * LocMatrix);
+      fmtx4 temp    = (LocMatrix * ParentMatrix);
       pmats[ichild] = temp;
 
       if (RefBlendPoseInfo(ichild).GetPoseCallback())
@@ -532,7 +533,7 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
   for (int ij = 0; ij < inumj; ij++) {
     fmtx4 MatAnimJCat = localpose.RefLocalMatrix(ij);
     auto InvBind      = mSkeleton.RefInverseBindMatrix(ij);
-    auto finalmtx     = worldmtx * (MatAnimJCat * InvBind);
+    auto finalmtx     = worldmtx * (InvBind * MatAnimJCat);
     // auto finalmtx      = InvBind;
     mWorldMatrices[ij] = finalmtx;
   }

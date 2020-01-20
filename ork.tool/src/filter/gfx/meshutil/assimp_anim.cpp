@@ -285,7 +285,7 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
             auto skelnode              = its->second;
             auto& skelnode_framevect_n = skelnode->_varmap["framevect_n"].Get<framevect_t>();
             fmtx4 joint_NSPACE         = skelnode_framevect_n[f];
-            skelnode->_nodeMatrix      = joint_NSPACE;
+            skelnode->_jointMatrix     = joint_NSPACE;
           }
           ////////////////////////////////////////////////////
           aiNodeAnim* channel      = anim->mChannels[i];
@@ -293,9 +293,9 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
           auto its                 = skelnodes.find(channel_name);
           auto skelnode            = its->second;
           auto XgmChan             = skelnode->_varmap["xgmchan"].Get<lev2::XgmDecompAnimChannel*>();
-          fmtx4 OSPACE             = skelnode->concatenatednode();
+          fmtx4 OSPACE             = skelnode->concatenated2();
           auto par                 = skelnode->_parent;
-          fmtx4 POSPACE            = par ? skelnode->_parent->bindMatrix() : fmtx4();
+          fmtx4 POSPACE            = par ? skelnode->_parent->concatenated2() : fmtx4();
           fmtx4 JSPACE             = POSPACE.inverse() * OSPACE;
           deco::printf(color, "fr<%d> ", f);
           deco::printf(yel, "%s (J): ", channel_name.c_str());
@@ -333,7 +333,7 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
           std::string channel_name = remapSkelName(channel->mNodeName.data);
           auto its                 = skelnodes.find(channel_name);
           auto skelnode            = its->second;
-          fmtx4 OSPACE             = skelnode->concatenated2();
+          fmtx4 OSPACE             = skelnode->concatenated();
           deco::printf(color, "fr<%d> ", f);
           deco::printf(yel, "%s (O): ", channel_name.c_str());
           deco::prints(OSPACE.dump4x3cn(), true);
