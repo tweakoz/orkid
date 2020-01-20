@@ -442,6 +442,7 @@ struct XgmSkelNode {
   fmtx4 _jointMatrix;
   fmtx4 _nodeMatrix;
   int _numBoundVertices;
+  fmtx4 _assimpOffsetMatrix;
 
   XgmSkelNode* _parent = nullptr;
   orkvector<XgmSkelNode*> mChildren;

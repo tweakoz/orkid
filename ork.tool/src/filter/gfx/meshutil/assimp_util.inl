@@ -188,21 +188,8 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
           auto xgmnode = itb->second;
           if (false == xgmnode->_varmap["visited_bone"].IsA<bool>()) {
             xgmnode->_varmap["visited_bone"].Set<bool>(true);
-            //////////////////////////////////////////
-            // according to what I read
-            //  aiBone::mOffsetMatrix is the inverse bind pose
-            //  an odd name to be sure. we shall see..
-            //////////////////////////////////////////
-
-            auto invbindpose = convertMatrix44(bone->mOffsetMatrix);
-            // lev2::DecompMtx44 decomp1;
-            // lev2::DecompMtx44 decomp2;
-            // invbindpose.decompose(decomp1.mTrans, decomp1.mRot, decomp1.mScale);
-            // invbindpose.rotMatrix44().decompose(decomp2.mTrans, decomp2.mRot, decomp2.mScale);
-            // invbindpose.compose(decomp1.mTrans * 0.01, decomp2.mRot, 1.0f);
-            // invbindpose = xgmnode->concatenatednode().inverse();
-            xgmnode->_bindMatrixInverse = invbindpose;
-            rval->_isSkinned            = true;
+            xgmnode->_assimpOffsetMatrix = convertMatrix44(bone->mOffsetMatrix);
+            rval->_isSkinned             = true;
           }
         }
       }
@@ -246,7 +233,7 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
 
   auto root = rval->rootXgmSkelNode();
 
-  root->_jointMatrix = root->bindMatrix();
+  root->_jointMatrix = root->_assimpOffsetMatrix.inverse();
 
   /////////////////////////////////////////////////
   // set joints matrices from nodes
@@ -275,18 +262,20 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
   deco::printf(fvec3::Green(), "// result debug dump\n");
 
   root->visitHierarchy([root](lev2::XgmSkelNode* node) {
-    fmtx4 N  = node->_nodeMatrix;
-    fmtx4 K  = node->concatenatednode();  // object space
-    fmtx4 K2 = node->concatenatednode2(); // object space
-    fmtx4 Bi = node->_bindMatrixInverse;
-    fmtx4 Bc = node->bindMatrix();
-    auto par = node->_parent;
-    fmtx4 Bp = par ? par->bindMatrix() : fmtx4::Identity;
-    fmtx4 J  = node->_jointMatrix;
-    fmtx4 Jk = node->concatenated(); // object space
-    fmtx4 Ji = J.inverse();
-    fmtx4 D  = Bp * J;
-    auto n   = node->_name;
+    fmtx4 ASSO = node->_assimpOffsetMatrix;
+    fmtx4 N    = node->_nodeMatrix;
+    fmtx4 K    = node->concatenatednode();  // object space
+    fmtx4 K2   = node->concatenatednode2(); // object space
+    fmtx4 Bi   = node->_bindMatrixInverse;
+    fmtx4 Bc   = node->bindMatrix();
+    auto par   = node->_parent;
+    fmtx4 Bp   = par ? par->bindMatrix() : fmtx4::Identity;
+    fmtx4 J    = node->_jointMatrix;
+    fmtx4 Jk   = node->concatenated(); // object space
+    fmtx4 Ji   = J.inverse();
+    fmtx4 D    = Bp * J;
+    auto n     = node->_name;
+    deco::printe(fvec3::White(), n + ".ASSO: " + ASSO.dump4x3cn(), true);
     deco::printe(fvec3::White(), n + ".N: " + N.dump4x3cn(), true);
     deco::printe(fvec3::White(), n + ".J: " + J.dump4x3cn(), true);
     deco::printe(fvec3::White(), n + ".K: " + K.dump4x3cn(), true);

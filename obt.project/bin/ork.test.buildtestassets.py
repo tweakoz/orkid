@@ -18,7 +18,7 @@ def exp_anim( name ):
 
 def exp_mesh( name ):
     src = base/"ork.data"/"src"/"test"/name
-    dst = (base/"ork.data"/"pc"/"test"/name).with_suffix('.xga')
+    dst = (base/"ork.data"/"pc"/"test"/name).with_suffix('.xgm')
     cmd = [tool,"--filter","ass:xgm", "--in",src, "--out", dst]
     ork.command.run(cmd)
     print(cmd)
