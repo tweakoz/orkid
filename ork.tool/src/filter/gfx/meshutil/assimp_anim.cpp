@@ -113,7 +113,7 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
 
     ////////////////////////////////////////
 
-    OrkAssert(scene->mNumAnimations == 1);
+    OrkAssert(scene->mNumAnimations >= 1);
 
     aiAnimation* anim = scene->mAnimations[0];
 
