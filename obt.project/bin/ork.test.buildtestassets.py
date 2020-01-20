@@ -30,11 +30,12 @@ def exp_mesh( name ):
 
 mkdir("chartest")
 mkdir("hfstest")
+mkdir("pbr1")
 
 animlist = ["bonetest_anim.dae","rigtest_anim.gltf","chartest/char_anim.gltf","hfstest/hfs_rigtest_anim.fbx"]
 for item in animlist:
     exp_anim(item)
 
-meshlist = ["bonetest_mesh.gltf","rigtest_exp.gltf","chartest/char_mesh.gltf","hfstest/hfs_rigtest.fbx","hfstest/hfs_chartest.fbx","hfstest/bakeprocedural.gltf"]
+meshlist = ["pbr_calib.gltf","pbr1/pbr1.gltf","bonetest_mesh.gltf","rigtest_exp.gltf","chartest/char_mesh.gltf","hfstest/hfs_rigtest.fbx","hfstest/hfs_chartest.fbx","hfstest/bakeprocedural.gltf"]
 for item in meshlist:
     exp_mesh(item)

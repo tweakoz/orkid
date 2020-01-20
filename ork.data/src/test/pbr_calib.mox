@@ -12,10 +12,10 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>0.135048 0.822216 0.673042</property>
+                                                <property name='Center'>0 0 0</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>5.62171</property>
-                                                <property name='QuatC'>-0.297912 -0.832731 0.463212 0.062868</property>
+                                                <property name='Loc'>3.86482</property>
+                                                <property name='QuatC'>-0.0258036 0.992946 -0.0187162 -0.125426</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -49,7 +49,7 @@
                                         <property name='MaterialOverrides'></property>
                                         <property name='Model'>
                                             <reference category='AssetClass'>
-                                                "xgmodel" "data://environ/pbrtest.xgm"
+                                                "xgmodel" "data://test/pbr_calib"
                                             </reference>
                                         </property>
                                         <property name='Offset'>0 0 0</property>
@@ -63,43 +63,12 @@
                     </object>
                 </reference>
             </item>
-            <item key='EntData1'>
-                <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='7'>
-                        <property name='Name'>"EntData1"</property>
-                        <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='8'>
-                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
-                            </object>
-                        </property>
-                        <property name='Parent'>"scene"</property>
-                        <property name='Archetype'>
-                            <reference category='SceneObjectClass'>
-                                <object type='PerformanceAnalyzerArchetype' id='9'>
-                                    <property name='Name'>"SceneObject1"</property>
-                                    <property name='Components'>
-                                        <item key='control'>
-                                            <reference category='ComponentDataClass'>
-                                                <object type='PerfAnalyzerControllerData' id='10'>
-                                                    <property name='EnableDisplay'>true</property>
-                                                </object>
-                                            </reference>
-                                        </item>
-                                    </property>
-                                </object>
-                            </reference>
-                        </property>
-                        <property name='UserProperties'></property>
-                    </object>
-                </reference>
-            </item>
-            <item key='SceneObject1'><backreference id='9'/></item>
             <item key='spawncam'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='11'>
+                    <object type='Ent3dEntData' id='7'>
                         <property name='Name'>"spawncam"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='12'>
+                            <object type='Ent3dDagNode' id='8'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -111,10 +80,10 @@
             </item>
             <item key='spawnloc'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='13'>
+                    <object type='Ent3dEntData' id='9'>
                         <property name='Name'>"spawnloc"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='14'>
+                            <object type='Ent3dDagNode' id='10'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -129,9 +98,9 @@
         <property name='SystemData'>
             <item key='CompositingSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='CompositingSystemData' id='15'>
+                    <object type='CompositingSystemData' id='11'>
                         <property name='CompositorData'>
-                            <object type='CompositingData' id='16'>
+                            <object type='CompositingData' id='12'>
                                 <property name='ActiveItem'>"item1"</property>
                                 <property name='ActiveScene'>"scene1"</property>
                                 <property name='Enable'>true</property>
@@ -139,38 +108,39 @@
                                 <property name='Scenes'>
                                     <item key='scene1'>
                                         <reference category='ObjectClass'>
-                                            <object type='CompositingScene' id='17'>
+                                            <object type='CompositingScene' id='13'>
                                                 <property name='Items'>
                                                     <item key='item1'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='CompositingSceneItem' id='18'>
+                                                            <object type='CompositingSceneItem' id='14'>
                                                                 <property name='Technique'>
                                                                     <reference category='ObjectClass'>
-                                                                        <object type='NodeCompositingTechnique' id='19'>
+                                                                        <object type='NodeCompositingTechnique' id='15'>
                                                                             <property name='OutputNode'>
                                                                                 <reference category='ObjectClass'>
-                                                                                    <object type='ScreenOutputCompositingNode' id='20'>
-                                                                                        <property name='Layer'>"All"</property>
+                                                                                    <object type='ScreenOutputCompositingNode' id='16'>
+                                                                                        <property name='Layer'>""</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>
                                                                             <property name='PostFxNode'><backreference id='-1'/></property>
                                                                             <property name='RenderNode'>
                                                                                 <reference category='ObjectClass'>
-                                                                                    <object type='DeferredCompositingNodePbr' id='21'>
+                                                                                    <object type='DeferredCompositingNodePbr' id='17'>
                                                                                         <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
-                                                                                        <property name='DiffuseLevel'>1</property>
+                                                                                        <property name='DiffuseLevel'>3.20611</property>
                                                                                         <property name='EnvironmentIntensity'>1.7</property>
                                                                                         <property name='EnvironmentMipBias'>0</property>
-                                                                                        <property name='EnvironmentMipScale'>7</property>
+                                                                                        <property name='EnvironmentMipScale'>6.10687</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
                                                                                                 "lev2tex" "data://environ/envmaps/blender_courtyard"
                                                                                             </reference>
                                                                                         </property>
                                                                                         <property name='FogColor'>0 0 0 1</property>
-                                                                                        <property name='SpecularLevel'>1</property>
+                                                                                        <property name='SkyboxLevel'>0.419847</property>
+                                                                                        <property name='SpecularLevel'>4.27481</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>
@@ -192,7 +162,7 @@
             </item>
             <item key='LightingSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='VrSystemData' id='22'>
+                    <object type='VrSystemData' id='18'>
                     </object>
                 </reference>
             </item>

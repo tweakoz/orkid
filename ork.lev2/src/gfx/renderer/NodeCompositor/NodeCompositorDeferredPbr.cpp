@@ -157,6 +157,7 @@ struct IMPL {
     _context._accumCPD._stereo1pass          = false;
     _context._specularLevel                  = node->specularLevel() * node->environmentIntensity();
     _context._diffuseLevel                   = node->diffuseLevel() * node->environmentIntensity();
+    float skybox_level                       = node->skyboxLevel() * node->environmentIntensity();
     CIMPL->pushCPD(_context._accumCPD); // base lighting
     FBI->SetAutoClear(true);
     FBI->PushRtGroup(_context._rtgLaccum);
@@ -191,7 +192,7 @@ struct IMPL {
 
     /////////////////////////
 
-    _context._lightingmtl.bindParamFloat(_context._parSkyboxLevel, node->skyboxLevel());
+    _context._lightingmtl.bindParamFloat(_context._parSkyboxLevel, skybox_level);
     _context._lightingmtl.bindParamVec3(_context._parAmbientLevel, node->ambientLevel());
     _context._lightingmtl.bindParamFloat(_context._parSpecularLevel, _context._specularLevel);
     _context._lightingmtl.bindParamFloat(_context._parDiffuseLevel, _context._diffuseLevel);

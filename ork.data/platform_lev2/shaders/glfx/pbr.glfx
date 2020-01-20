@@ -66,6 +66,7 @@ vertex_shader vs_rigid_gbuffer
 	vec3 wtangent = cross(wbinorm,wnorm);
 	gl_Position = mvp*position;
 	frg_clr = vtxcolor;
+	// frg_clr = vec4(1,1,1,1); TODO - split vs_rigid_gbuffer into vertexcolor vs identity 
 	frg_uv0 = uv0*vec2(1,-1);
 	vec4 nrmd = vec4(wnorm,-cpos.z);
 	frg_camdist = nrmd.w;
