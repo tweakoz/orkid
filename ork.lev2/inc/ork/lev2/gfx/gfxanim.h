@@ -189,8 +189,6 @@ struct DecompMtx44 {
   float mScale;
 
   void Compose(fmtx4& mtx, EXFORM_COMPONENT components) const;
-
-  void EndianSwap();
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -30,7 +30,7 @@ XgmSkelNode::XgmSkelNode(const std::string& Name)
 ///////////////////////////////////////////////////////////////////////////////
 
 fmtx4 XgmSkelNode::concatenated() const {
-  return _parent ? (_parent->concatenated() * _jointMatrix) : _jointMatrix;
+  return _parent ? (_jointMatrix * _parent->concatenated()) : _jointMatrix;
 }
 fmtx4 XgmSkelNode::concatenatednode() const {
   return _parent ? (_nodeMatrix * _parent->concatenatednode()) : _nodeMatrix;

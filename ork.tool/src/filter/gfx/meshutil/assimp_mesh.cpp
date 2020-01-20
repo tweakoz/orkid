@@ -29,10 +29,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
 
   printf("BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
 
-  uint32_t flags = aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_LimitBoneWeights | aiProcess_CalcTangentSpace |
-                   aiProcess_MakeLeftHanded | aiProcess_RemoveRedundantMaterials;
-
-  auto scene = aiImportFile(GlbPath.c_str(), flags);
+  auto scene = aiImportFile(GlbPath.c_str(), assimpImportFlags());
   printf("END: importing scene<%p>\n", scene);
   if (scene) {
     aiVector3D scene_min, scene_max, scene_center;
@@ -339,26 +336,9 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       fmtx4 invbind    = nod_skelnode->_bindMatrixInverse;
       fmtx4 bind       = nod_skelnode->bindMatrix();
 
-      deco::prints(deco::decorate(fvec3::Yellow(), (name + ".node") + nodematrix.dump4x3()), true);
-      // invbind.dump4x3((name + ".inversebind").c_str());
-      deco::prints(deco::decorate(fvec3::Red(), (name + ".bind") + bind.dump4x3()), true);
-      // local.dump4x3((name + ".local").c_str());
-
-      fmtx4 concat = nod_skelnode->concatenated();
-      fmtx4 check  = concat * invbind;
-      // concat.dump4x3((name + ".concat").c_str());
-      // check.dump4x3((name + ".check").c_str());
-
-      fmtx4 xxx;
-      xxx.CorrectionMatrix(nodematrix, bind);
-      deco::prints(deco::decorate(fvec3(1, 1, .5), (name + ".corr") + xxx.dump4x3()), true);
-
       fvec3 trans = bind.GetTranslation();
 
       _skeletonExtents.Grow(trans);
-
-      // corr(node,bind) == par.bind
-      // node*par.bind == bind
 
       //////////////////////////////////////////////
       // for rigid meshes, preapply transforms

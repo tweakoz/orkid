@@ -26,6 +26,15 @@
 #include <ork/lev2/gfx/material_pbr.inl>
 
 namespace ork::MeshUtil {
+
+///////////////////////////////////////////////////////////////////////////////
+
+inline uint32_t assimpImportFlags() {
+  uint32_t flags = aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_LimitBoneWeights | aiProcess_CalcTangentSpace |
+                   aiProcess_RemoveRedundantMaterials; // aiProcess_MakeLeftHanded
+  return flags;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 inline fmtx4 convertMatrix44(const aiMatrix4x4& inp) {
@@ -131,6 +140,12 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
 
   rval->_rootname = scene->mRootNode->mName.data;
 
+  deco::printf(fvec3::Green(), "//////////////////////////////////////////////////\n");
+  deco::printf(fvec3::Green(), "// Parsing Assimp Skeleton\n");
+  deco::printf(fvec3::Green(), "//////////////////////////////////////////////////\n");
+
+  deco::printf(fvec3::Green(), "// traversing nodes\n");
+
   while (not nodestack.empty()) {
     auto n = nodestack.front();
     nodestack.pop();
@@ -142,9 +157,9 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
       auto xgmnode         = new ork::lev2::XgmSkelNode(name);
       xgmnode->miSkelIndex = index;
       xgmskelnodes[name]   = xgmnode;
-      printf("aiNode<%d:%s> xgmnode<%p> remapped<%s>\n", index, n->mName.data, xgmnode, name.c_str());
+      deco::printf(fvec3::White(), "aiNode<%d:%s> xgmnode<%p> remapped<%s>\n", index, n->mName.data, xgmnode, name.c_str());
       xgmnode->_nodeMatrix = convertMatrix44(n->mTransformation);
-      deco::prints(xgmnode->_nodeMatrix.dump4x3(), true);
+      deco::printe(fvec3::Yellow(), xgmnode->_nodeMatrix.dump4x3(), true);
     }
     for (int i = 0; i < n->mNumChildren; ++i) {
       nodestack.push(n->mChildren[i]);
@@ -154,6 +169,8 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
   /////////////////////////////////////////////////
   // get bones
   /////////////////////////////////////////////////
+
+  deco::printf(fvec3::Green(), "// traversing bones\n");
 
   nodestack = std::queue<aiNode*>();
   nodestack.push(scene->mRootNode);
@@ -199,6 +216,8 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
   // set parents
   /////////////////////////////////////////////////
 
+  deco::printf(fvec3::Green(), "// creating xgm topology\n");
+
   nodestack = std::queue<aiNode*>();
   nodestack.push(scene->mRootNode);
   while (not nodestack.empty()) {
@@ -233,28 +252,31 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
   // set parents
   /////////////////////////////////////////////////
 
+  deco::printf(fvec3::Green(), "// result debug dump\n");
+
   root->visitHierarchy([root](lev2::XgmSkelNode* node) {
     fmtx4 N  = node->_nodeMatrix;
-    fmtx4 K  = node->concatenatednode();
-    fmtx4 I  = node->_bindMatrixInverse;
-    fmtx4 C  = node->bindMatrix();
+    fmtx4 K  = node->concatenatednode(); // object space
+    fmtx4 Bi = node->_bindMatrixInverse;
+    fmtx4 Bc = node->bindMatrix();
     auto par = node->_parent;
-    fmtx4 P  = par ? par->bindMatrix() : fmtx4::Identity;
-    node->_jointMatrix.CorrectionMatrix(P, C);
-    fmtx4 P2C = node->_jointMatrix;
-    fmtx4 C2P = P2C.inverse();
-    fmtx4 D   = P * P2C;
-    // fmtx4 D = P2C * P;
-    auto n = node->_name;
+    fmtx4 Bp = par ? par->bindMatrix() : fmtx4::Identity;
+    fmtx4 J;
+    J.CorrectionMatrix(Bp, Bc);
+    fmtx4 Ji = J.inverse();
+    fmtx4 D  = Bp * J;
+    auto n   = node->_name;
     deco::printe(fvec3::White(), n + ".N: " + N.dump4x3(fvec3::White()), true);
     deco::printe(fvec3::White(), n + ".K: " + K.dump4x3(fvec3::White()), true);
-    deco::printe(fvec3::White(), n + ".I: " + I.dump4x3(fvec3::White()), true);
-    deco::printe(fvec3::White(), n + ".P: " + P.dump4x3(fvec3::White()), true);
-    deco::printe(fvec3::White(), n + ".C: " + C.dump4x3(fvec3::White()), true);
-    deco::printe(fvec3::White(), n + ".C2P: " + C2P.dump4x3(fvec3::White()), true);
-    deco::printe(fvec3::White(), n + ".P2C: " + P2C.dump4x3(fvec3::White()), true);
-    deco::printe(fvec3::White(), n + ".P*P2C: " + D.dump4x3(fvec3::White()), true);
+    deco::printe(fvec3::White(), n + ".Bi: " + Bi.dump4x3(fvec3::White()), true);
+    deco::printe(fvec3::White(), n + ".Bc: " + Bc.dump4x3(fvec3::White()), true);
+    deco::printe(fvec3::White(), n + ".Bp: " + Bp.dump4x3(fvec3::White()), true);
+    deco::printe(fvec3::White(), n + ".J: " + J.dump4x3(fvec3::White()), true);
+    deco::printe(fvec3::White(), n + ".Ji: " + Ji.dump4x3(fvec3::White()), true);
+    deco::printe(fvec3::White(), n + ".Bp*J: " + D.dump4x3(fvec3::White()), true);
     printf("\n");
+
+    node->_jointMatrix = J;
   });
 
   /////////////////////////////////////////////////

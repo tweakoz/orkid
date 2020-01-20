@@ -85,21 +85,21 @@ TEST(gfxanim1) {
     deco::printf(cyan, "// skeleton pose info\n");
     deco::printf(cyan, "//////////////////////////////////////////////\n");
 
-    deco::printe(blugrn, "SkelInvBind (ref-post-concat)", true);
+    deco::printe(blugrn, "Skel-BindPose (Bi)", true);
     deco::prints(skel.dumpInvBind(blugrn), true);
-    deco::printe(aqua, "SkelBind (ref-post-concat)", true);
+    deco::printe(aqua, "Skel-BindPose (Bc)", true);
     deco::prints(skel.dumpBind(aqua), true);
 
     auto& localpose = modelinst->RefLocalPose();
     localpose.BindPose();
-    deco::printe(white, "BindPose (dyn-pre-concat)", true);
+    deco::printe(white, "Skel-LocalPose-Bind (J)", true);
     deco::prints(localpose.dumpc(white), true);
 
     localpose.Concatenate();
-    deco::printe(orange, "BindPose (dyn-post-concat)", true);
+    deco::printe(orange, "Skel-LocalPose-Cat (K)", true);
     deco::prints(localpose.dumpc(orange), true);
 
-    deco::printf(somc, "BindPose (dyn-inv-post-concat)\n");
+    deco::printf(somc, "Skel-LocalPose-Cat (Bi)\n");
     deco::prints(localpose.invdumpc(somc), true);
 
     localpose.BindAnimInst(*animinst);
@@ -109,7 +109,7 @@ TEST(gfxanim1) {
     XgmWorldPose worldpose(skel);
 
     worldpose.apply(ork::fmtx4(), localpose);
-    deco::printf(magenta, "WorldPose (bind-post-concat)\n");
+    deco::printf(magenta, "Skel-Final (V2O)\n");
     deco::prints(worldpose.dumpc(magenta), true);
 
     usleep(1 << 20);
@@ -126,15 +126,15 @@ TEST(gfxanim1) {
       animinst->SetWeight(1);
       localpose.ApplyAnimInst(*animinst);
       localpose.BuildPose();
-      deco::printf(white, "fr<%d> AnimPose (pre-concat)\n", iframe);
+      deco::printf(white, "AnimPose (J) fr<%d>\n", iframe);
       deco::prints(localpose.dumpc(white), true);
 
       localpose.Concatenate();
-      deco::printf(orange, "fr<%d> AnimPose (post-concat)\n", iframe);
+      deco::printf(orange, "AnimPose (K) fr<%d>\n", iframe);
       deco::prints(localpose.dumpc(orange), true);
 
       worldpose.apply(ork::fmtx4(), localpose);
-      deco::printf(magenta, "fr<%d> WorldPose (post-concat)\n", iframe);
+      deco::printf(magenta, "AnimPose-Final (V2O) fr<%d>\n", iframe);
       deco::prints(worldpose.dumpc(magenta), true);
       usleep(1 << 20);
     }

@@ -81,43 +81,6 @@ void DecompMtx44::Compose(fmtx4& mtx, EXFORM_COMPONENT components) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DecompMtx44::EndianSwap() {
-  float fqx = mRot.GetX();
-  float fqy = mRot.GetY();
-  float fqz = mRot.GetZ();
-  float fqw = mRot.GetW();
-
-  float ftx = mTrans.GetX();
-  float fty = mTrans.GetY();
-  float ftz = mTrans.GetZ();
-
-  float fs = mScale;
-
-  swapbytes_dynamic(fqx);
-  swapbytes_dynamic(fqy);
-  swapbytes_dynamic(fqz);
-  swapbytes_dynamic(fqw);
-
-  swapbytes_dynamic(ftx);
-  swapbytes_dynamic(fty);
-  swapbytes_dynamic(ftz);
-
-  swapbytes_dynamic(fs);
-
-  mRot.x = (fqx);
-  mRot.y = (fqy);
-  mRot.z = (fqz);
-  mRot.w = (fqw);
-
-  mTrans.SetX(ftx);
-  mTrans.SetY(fty);
-  mTrans.SetZ(ftz);
-
-  mScale = fs;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void XgmBlendPoseInfo::ComputeMatrix(fmtx4& outmatrix) const {
   // printf("miNumAnims<%d>\n", miNumAnims);
 
@@ -125,15 +88,11 @@ void XgmBlendPoseInfo::ComputeMatrix(fmtx4& outmatrix) const {
     case 1: // just copy the first matrix
     {
       DecompMtx44 c = AnimMat[0];
+
       if (mPoseCallback) // Callback for decomposed, pre-concatenated, blended joint info
         mPoseCallback->PostBlendPreConcat(c);
-      c.Compose(outmatrix, Ani_components[0]);
-      // fmtx4 R;
-      // R.FromQuaternion(c.mRot);
-      // fmtx4 T;
-      // T.SetTranslation(c.mTrans);
-      // outmatrix = R * T;
 
+      c.Compose(outmatrix, Ani_components[0]);
     } break;
 
     case 2: // decompose 2 matrices and lerp components (ideally anims will be stored pre-decomposed)
@@ -456,20 +415,11 @@ void XgmLocalPose::Concatenate(void) {
       const fmtx4& ParentMatrix = pmats[iparent];
       const fmtx4& LocMatrix    = pmats[ichild];
 
-      // pmats[ichild] = InvBind.inverse();
-      // auto bind    = invbind.inverse();
-
-      // pmats[ichild] = ParentMatrix.Concat43(LocMatrix);
       std::string parname = mSkeleton.GetJointName(iparent).c_str();
       std::string chiname = mSkeleton.GetJointName(ichild).c_str();
 
-      // ParentMatrix.dump("par<" + parname + ">");
-      // LocMatrix.dump("chi<" + chiname + ">");
-      // pmats[ichild] = (LocMatrix * ParentMatrix);
       fmtx4 temp    = (ParentMatrix * LocMatrix);
       pmats[ichild] = temp;
-      // pmats[ichild].dump("(" + parname + "*" + chiname + ")");
-      // printf("\n");
 
       if (RefBlendPoseInfo(ichild).GetPoseCallback())
         RefBlendPoseInfo(ichild).GetPoseCallback()->PostBlendPostConcat(pmats[ichild]);

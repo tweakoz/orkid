@@ -48,7 +48,8 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
   auto color = fvec3(1, 0, 1);
 
   deco::printf(color, "BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
-  auto scene = aiImportFile(GlbPath.c_str(), aiProcessPreset_TargetRealtime_MaxQuality);
+
+  auto scene = aiImportFile(GlbPath.c_str(), assimpImportFlags());
   deco::printf(color, "END: importing scene<%p>\n", scene);
   if (scene) {
     lev2::XgmAnim xgmanim;
@@ -188,41 +189,48 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
             double time               = scakey.mTime;
             aiVector3D sca            = scakey.mValue;
             cursca                    = fvec3(sca.x, sca.y, sca.z);
+
+            ////////////////////////////////////////////////////
+            // we dont support non uniform scale at this time..
+            //   we will probably add it at some point
+            ////////////////////////////////////////////////////
+
+            OrkAssert(math::areValuesClose(cursca.x, cursca.y, 0.00001f));
+            OrkAssert(math::areValuesClose(cursca.x, cursca.z, 0.00001f));
           }
 
-          // deco::printf(color, "frame<%s.%d> pos<%g %g %g>\n", channel_name.c_str(), f, curpos.x, curpos.y, curpos.z);
-          // deco::printf(color, "frame<%s.%d> rot<%g %g %g %g>\n", channel_name.c_str(), f, currot.x, currot.y, currot.z,
-          // currot.w);
-          // deco::printf(color, "frame<%s.%d> sca<%g %g %g>\n", channel_name.c_str(), f, cursca.x, cursca.y, cursca.z);
-          // const fmtx4& Matrix = MatrixChannelData->GetFrame(ifr);
+          /////////////////////////////
+          // compose matrix
+          //  generates node space matrix
+          /////////////////////////////
 
-          // float s = 0.0f;
-          // fmtx4 t;
-          // t.SetTranslation(curpos);
-          // fmtx4 r;
-          // r = currot.ToMatrix();
+          fmtx4 R, S, T;
+          R.FromQuaternion(currot);
+          S.SetScale(cursca.x, cursca.x, cursca.x);
+          T.SetTranslation(curpos);
+          fmtx4 XF_NODESPACE = R * T;
+          // fmtx4 XF_NODESPACE = T * R;
 
-          // fmtx4 x = r;
-          // x.Transpose();
-          // x.SetTranslation(curpos);
-
+          /////////////////////////////
+          // data from assimp comes in a weird space
+          // we need to convert it to parent-restpose relative
           /////////////////////////////
 
           ork::lev2::DecompMtx44 decomp;
-          decomp.mRot   = currot;
-          decomp.mTrans = fvec3(curpos.x, curpos.z, curpos.y);
-          decomp.mScale = 1.0f;
-          fmtx4 as_matrix;
-          as_matrix.compose(decomp.mTrans, decomp.mRot, decomp.mScale);
-          // as_matrix.inverse().decompose(decomp.mTrans, decomp.mRot, decomp.mScale);
-
-          /////////////////////////////
 
           if (skelnode->_parent) {
-            const auto& pinvbind       = skelnode->_parent->concatenatednode().inverse();
-            auto cat                   = skelnode->concatenatednode();
-            fmtx4 objspace_jointmatrix = pinvbind * (as_matrix * cat);
-            objspace_jointmatrix.decompose(decomp.mTrans, decomp.mRot, decomp.mScale);
+            auto pcat = skelnode->_parent->concatenatednode();
+            auto C    = skelnode->bindMatrix();
+            auto K    = skelnode->concatenatednode();
+            fmtx4 J   = skelnode->_jointMatrix;
+            fmtx4 K2J;
+            K2J.CorrectionMatrix(K, J);
+            // transform it to K space
+            fmtx4 joint_KSPACE = XF_NODESPACE * pcat;
+            // now transform it to J space
+            fmtx4 joint_JSPACE = joint_KSPACE * K2J;
+            //
+            joint_JSPACE.decompose(decomp.mTrans, decomp.mRot, decomp.mScale);
           }
 
           /////////////////////////////
