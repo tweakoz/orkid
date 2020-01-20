@@ -47,7 +47,11 @@
                                         <property name='BlenderZup'>true</property>
                                         <property name='EditorDagDebug'>false</property>
                                         <property name='MaterialOverrides'></property>
-                                        <property name='Model'><backreference id='-1'/></property>
+                                        <property name='Model'>
+                                            <reference category='AssetClass'>
+                                                "xgmodel" "data://test/pbr1/pbr1"
+                                            </reference>
+                                        </property>
                                         <property name='Offset'>0 0 0</property>
                                         <property name='Rotate'>0 0 0</property>
                                         <property name='Scale'>1</property>
@@ -354,6 +358,7 @@
                                                                                             </reference>
                                                                                         </property>
                                                                                         <property name='FogColor'>0 0 0 1</property>
+                                                                                        <property name='SkyboxLevel'>1</property>
                                                                                         <property name='SpecularLevel'>1</property>
                                                                                     </object>
                                                                                 </reference>
