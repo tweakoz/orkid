@@ -608,14 +608,14 @@ void XgmModel::RenderSkinned(
       auto& vtxbuf = GfxEnv::GetSharedDynamicVB2();
       VtxWriter<vertex_t> vw;
       int inumbones = skeleton().numBones();
-      //printf("inumbones<%d>\n", inumbones);
+      // printf("inumbones<%d>\n", inumbones);
       if (inumbones) {
         vertex_t hvtx, t;
         hvtx.mColor    = uint32_t(0xff00ffff);
         t.mColor       = uint32_t(0xff0000ff);
         hvtx.mUV0      = fvec2(0, 0);
         t.mUV0         = fvec2(1, 1);
-        hvtx.mNormal   = fvec3(1, 0, 0);
+        hvtx.mNormal   = fvec3(0, 0, 0);
         t.mNormal      = fvec3(1, 0, 0);
         hvtx.mBiNormal = fvec3(1, 1, 0);
         t.mBiNormal    = fvec3(1, 1, 0);
