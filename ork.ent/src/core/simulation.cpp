@@ -1264,7 +1264,13 @@ void Simulation::addSystem(systemkey_t key, System* system) {
   // todo this atomic will go away when we
   //  complete opq refactor
   _systems.atomicOp([&](SystemLut& syslut) {
-    assert(syslut.find(key) == syslut.end());
+    // assert(syslut.find(key) == syslut.end());
+    auto it = syslut.find(key);
+    if (it != syslut.end()) {
+      auto old_sys = it->second;
+      syslut.erase(it);
+      // todo - dont delete yet, we need to unlink and relink..
+    }
     syslut.AddSorted(key, system);
   });
 }

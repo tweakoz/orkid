@@ -260,6 +260,7 @@ public:
 
   fmtx4 GetEffectiveMatrix() const;    // get Entity matrix if scene is running, EntData matrix if scene is stopped
   void SetDynMatrix(const fmtx4& mtx); // set this (Entity) matrix
+  void setRotAxisAngle(fvec4 axisaa);  // set this (Entity) matrix
 
   const EntData* data() const {
     return _entdata;

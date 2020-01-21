@@ -11,6 +11,7 @@
 #include <pkg/ent/bullet.h>
 #include <pkg/ent/entity.hpp>
 #include <ork/application/application.h>
+#include <ork/kernel/string/deco.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::reflect;
@@ -26,15 +27,23 @@ class LocomotionForceData : public BulletObjectForceControllerData {
   RttiDeclareConcrete(LocomotionForceData, BulletObjectForceControllerData);
 
 public:
-  LocomotionForceData() : mForce(1.0f), mDirection(0.0f, 0.0f, 0.0f) {}
+  LocomotionForceData()
+      : mForce(1.0f)
+      , mDirection(0.0f, 0.0f, 0.0f) {
+  }
 
-  float GetForce() const { return mForce; }
-  const fvec3& GetDirection() const { return mDirection; }
+  float GetForce() const {
+    return mForce;
+  }
+  const fvec3& GetDirection() const {
+    return mDirection;
+  }
 
 private:
-  ~LocomotionForceData() final {}
-  BulletObjectForceControllerInst* CreateForceControllerInst(const BulletObjectControllerData& data,
-                                                             ork::ent::Entity* pent) const final;
+  ~LocomotionForceData() final {
+  }
+  BulletObjectForceControllerInst*
+  CreateForceControllerInst(const BulletObjectControllerData& data, ork::ent::Entity* pent) const final;
 
   float mForce;
   fvec3 mDirection;
@@ -48,8 +57,8 @@ struct LocomotionForceInst : public BulletObjectForceControllerInst {
   void UpdateForces(ork::ent::Simulation* inst, BulletObjectControllerInst* boci) final;
   bool DoLink(Simulation* psi) final;
   void setForce(fvec3 force) {
-    //printf( "setting force<%g %g %g>\n", force.x, force.y, force.z );
-    _force=force;
+    // printf( "setting force<%g %g %g>\n", force.x, force.y, force.z );
+    _force = force;
   }
 
   const LocomotionForceData& mData;
@@ -59,8 +68,8 @@ struct LocomotionForceInst : public BulletObjectForceControllerInst {
 void LocomotionForceData::Describe() {
 }
 
-BulletObjectForceControllerInst* LocomotionForceData::CreateForceControllerInst(const BulletObjectControllerData& data,
-                                                                                 ork::ent::Entity* pent) const {
+BulletObjectForceControllerInst*
+LocomotionForceData::CreateForceControllerInst(const BulletObjectControllerData& data, ork::ent::Entity* pent) const {
   LocomotionForceInst* rval = new LocomotionForceInst(*this);
   return rval;
 }
@@ -68,9 +77,11 @@ BulletObjectForceControllerInst* LocomotionForceData::CreateForceControllerInst(
 ///////////////////////////////////////////////////////////////////////////////
 
 LocomotionForceInst::LocomotionForceInst(const LocomotionForceData& data)
-  : BulletObjectForceControllerInst(data), mData(data) {
-  }
-LocomotionForceInst::~LocomotionForceInst() {}
+    : BulletObjectForceControllerInst(data)
+    , mData(data) {
+}
+LocomotionForceInst::~LocomotionForceInst() {
+}
 
 bool LocomotionForceInst::DoLink(Simulation* psi) {
   return true;
@@ -90,65 +101,56 @@ class CharacterLocoComponent : public ComponentInst {
       ///////////////////////////////////////////////////////////////////////////
 
       CharacterLocoComponent(const CharacterLocoData& data, Entity* pent)
-      : ComponentInst(&data, pent), _data(data), _boci(nullptr) {
+      : ComponentInst(&data, pent)
+      , _data(data)
+      , _boci(nullptr) {
 
-        _subscriber = msgrouter::channel("eggytest")->subscribe([this](msgrouter::content_t c) {
-
-          fmtx4 hmdrmtx = c.Get<fmtx4>();
-          hmdrmtx.SetTranslation(fvec3(0,0,0));
-          this->_headingmatrix.inverseOf(hmdrmtx);
-        });
-
-
-      }
-  ~CharacterLocoComponent() {}
+    _subscriber = msgrouter::channel("eggytest")->subscribe([this](msgrouter::content_t c) {
+      fmtx4 hmdrmtx = c.Get<fmtx4>();
+      hmdrmtx.SetTranslation(fvec3(0, 0, 0));
+      this->_headingmatrix.inverseOf(hmdrmtx);
+    });
+  }
+  ~CharacterLocoComponent() {
+  }
 
   ///////////////////////////////////////////////////////////////////////////
 
   void DoUpdate(Simulation* psi) final {
-    if( nullptr == _locoforce )
+    if (nullptr == _locoforce)
       return;
 
-      fvec4 nn(0,0,+1);
-      auto nnn = nn.Transform(_headingmatrix);
-      float forc = _arewalking
-                 ?_walkingForce
-                 :0.0;
-      bool dirset = _setDir.Mag()>0.0f;
-      auto f = dirset
-             ? _setDir
-             : nnn.xyz();
-      f = f * forc;
-      //printf( "force<%g %g %g>\n", f.x, f.y, f.z );
-      _locoforce->setForce(f);
+    fvec4 nn(0, 0, -1);
+    auto nnn    = nn.Transform(_headingmatrix);
+    float forc  = _arewalking ? _walkingForce : 0.0;
+    bool dirset = _setDir.Mag() > 0.0f;
+    auto f      = dirset ? _setDir : nnn.xyz();
+    f           = f * forc;
+    // printf("force<%g %g %g>\n", f.x, f.y, f.z);
+    _locoforce->setForce(f);
   }
 
   void doNotify(const ComponentEvent& e) final {
-    if(e._eventID == "locostate")
-    {   auto state = e._eventData.Get<std::string>();
-        if( state=="stop" ){
-          _arewalking = false;
-        }
-        else if( state=="walk" ){
-          _arewalking = true;
-        }
-        else{
-          assert(false);
-        }
-        //printf( "loco got state change request id<%s>\n", state.c_str() );
+    if (e._eventID == "locostate") {
+      auto state = e._eventData.Get<std::string>();
+      if (state == "stop") {
+        _arewalking = false;
+      } else if (state == "walk") {
+        _arewalking = true;
+      } else {
+        assert(false);
+      }
+      deco::printf(fvec3::Yellow(), "loco got state change request id<%s>\n", state.c_str());
+    } else if (e._eventID == "setDir") {
+      _setDir     = e._eventData.Get<fvec3>();
+      _arewalking = true;
+    } else if (e._eventID == "setWalkingForce") {
+      _walkingForce = e._eventData.Get<double>();
     }
-    else if(e._eventID == "setDir"){
-        _setDir = e._eventData.Get<fvec3>();
-        _arewalking=true;
-    }
-    else if(e._eventID == "setWalkingForce"){
-        _walkingForce = e._eventData.Get<double>();
-    }
-
   }
 
   const char* scriptName() final {
-      return "Loco";
+    return "Loco";
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -159,17 +161,16 @@ class CharacterLocoComponent : public ComponentInst {
     return true;
   }
 
-  void onActivate(Simulation *psi) final {
-    if( _boci ){
+  void onActivate(Simulation* psi) final {
+    if (_boci) {
       _locoforce = dynamic_cast<LocomotionForceInst*>(_boci->getForceController(AddPooledString("loco")));
-      if( _locoforce ){
-        printf( "yep, got locoforce<%p>\n", _locoforce );
+      if (_locoforce) {
+        printf("yep, got locoforce<%p>\n", _locoforce);
+      } else {
+        printf("nope, no locoforce\n");
       }
-      else {
-        printf( "nope, no locoforce\n" );
-      }
+    }
   }
-}
 
   ///////////////////////////////////////////////////////////////////////////
 
@@ -183,11 +184,14 @@ class CharacterLocoComponent : public ComponentInst {
   float _walkingForce = 20.0f;
 };
 
-void CharacterLocoComponent::Describe() {}
+void CharacterLocoComponent::Describe() {
+}
 
 //////////////////////////////////////////////////////////
 
-ComponentInst* CharacterLocoData::createComponent(Entity* pent) const { return new CharacterLocoComponent(*this, pent); }
+ComponentInst* CharacterLocoData::createComponent(Entity* pent) const {
+  return new CharacterLocoComponent(*this, pent);
+}
 
 }} // namespace ork::ent
 

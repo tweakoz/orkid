@@ -53,6 +53,8 @@ uniform_set ub_frg {
   vec3 AmbientLevel;
   float EnvironmentMipBias;
   float EnvironmentMipScale;
+  float DepthFogDistance;
+  float DepthFogPower;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ub_light {
@@ -76,6 +78,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     vec3 _wnrm;
     vec3 _albedo;
     float _zeye;
+    float _fogZ;
   };
   struct WPosData {
     vec2 _muv;
@@ -98,7 +101,12 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     return pos;
   }
   /////////////////////////////////////////////////////////
-  vec4 defwpos(WPosData wpd) {
+  struct wposout {
+    vec4 _out;
+    float _fogZ;
+  };
+  /////////////////////////////////////////////////////////
+  wposout defwpos(WPosData wpd) {
     float depthtex = texture(MapDepth, wpd._muv).r;
     vec2 scrxy     = wpd._scruv * 2.0 - vec2(1, 1);
     vec3 inpos     = vec3(scrxy.x, scrxy.y, depthtex * 2 - 1.0);
@@ -106,11 +114,16 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     float ndc      = depthtex * 2.0 - 1.0;
     float zeye     = Zndc2eye.x / (ndc - Zndc2eye.y);
     vec3 wpos      = vec3(rr.xyz / rr.w);
-    return vec4(wpos, zeye);
+    wposout o;
+    o._out = vec4(wpos, zeye);
+            // Zndc2eye.x / (ndc-Zndc2eye.y)
+    o._fogZ = -0.5 / (ndc - 1.00005); // temp hack until we get VR linear depth working
+    return o;
   }
   /////////////////////////////////////////////////////////
   GBufData decodeGBUF(WPosData wpd) {
-    vec4 wpres = defwpos(wpd);
+    wposout o = defwpos(wpd);
+    vec4 wpres = o._out;
     GBufData decoded;
 
     decoded._uv     = wpd._muv;
@@ -119,6 +132,8 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     vec4 n_mdl      = texture(MapNormalL, decoded._uv);
     decoded._wnrm   = normalize(n_mdl.xyz);
     decoded._albedo = texture(MapAlbedoAo, decoded._uv).xyz;
+    decoded._fogZ = o._fogZ;
+
     return decoded;
   }
   /////////////////////////////////////////////////////////
@@ -205,6 +220,15 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     vec4 rmao = texture(MapRufMtlAlpha,uv); // ruf mtl ao opa
 
     vec3 metalbase = vec3(0.04);
+
+    vec3 view_epos0 = posatdepth(wpd,0.0);
+    vec3 view_epos1 = posatdepth(wpd,1.0);
+    vec3 VIEW_N = normalize(view_epos1-view_epos0);
+    vec3 skybox_n = vec3(VIEW_N.x,-VIEW_N.y,VIEW_N.z);
+    vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,EnvironmentMipBias)*SkyboxLevel;
+
+    float depth_fogval = clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
+
     if( rmao.w==0 ){
       /////////////////////////
       // pixel was written to in the gbuffer
@@ -257,7 +281,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       /////////////////////////
       // final linear color
       /////////////////////////
-      rval = diffuse+specular;
+      vec3 finallitcolor = diffuse+specular;
       //rval = vec3(n);
       /////////////////////////
       // HDR tonemapping
@@ -266,19 +290,13 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       /////////////////////////
       // gamma correct
       /////////////////////////
-      rval = pow(rval, vec3(1.0/1.6));
-      /////////////////////////
-
-
+      vec3 postfog = mix(finallitcolor,skyboxColor,depth_fogval);
+      rval = pow(postfog, vec3(1.0/1.6));
     }
     else{
       // pixel was blank to in the gbuffer
       //  replace with environment
-      vec3 epos0 = posatdepth(wpd,0.0);
-      vec3 epos1 = posatdepth(wpd,1.0);
-      vec3 N = normalize(epos1-epos0);
-      vec3 nn = vec3(N.x,-N.y,N.z);
-      rval = env_equirectangularFlipV(nn,MapSpecularEnv,EnvironmentMipBias)*SkyboxLevel;
+      rval = pow(skyboxColor, vec3(1.0/1.6));
     }
     return rval;
   } // vec3 environmentLighting(){

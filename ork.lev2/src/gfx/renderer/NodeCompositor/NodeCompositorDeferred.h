@@ -141,6 +141,8 @@ struct DeferredContext {
   const FxShaderParam* _parSkyboxLevel         = nullptr;
   const FxShaderParam* _parEnvironmentMipBias  = nullptr;
   const FxShaderParam* _parEnvironmentMipScale = nullptr;
+  const FxShaderParam* _parDepthFogDistance    = nullptr;
+  const FxShaderParam* _parDepthFogPower       = nullptr;
   const FxShaderParamBlock* _lightblock        = nullptr;
 
   ////////////////////////////////////////////////////////////////////
@@ -211,9 +213,14 @@ public:
   float skyboxLevel() const {
     return _skyboxLevel;
   }
+  float depthFogDistance() const {
+    return _depthFogDistance;
+  }
+  float depthFogPower() const {
+    return _depthFogPower;
+  }
 
   fvec4 _clearColor;
-  fvec4 _fogColor;
 
 private:
   void DoInit(lev2::Context* pTARG, int w, int h) final;
@@ -230,6 +237,8 @@ private:
   float _diffuseLevel         = 1.0f;
   float _specularLevel        = 1.0f;
   float _skyboxLevel          = 1.0f;
+  float _depthFogDistance     = 1000.0f;
+  float _depthFogPower        = 1.0f;
   fvec3 _ambientLevel;
   lev2::Texture* _filtenvSpecularMap = nullptr;
   lev2::Texture* _filtenvDiffuseMap  = nullptr;

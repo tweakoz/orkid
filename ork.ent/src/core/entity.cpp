@@ -177,8 +177,8 @@ void Entity::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 PoolString Entity::name() const {
   static const PoolString noname = ork::AddPooledString("noname");
-  auto ed = data();
-  PoolString ename = ed ? ed->GetName() : noname;
+  auto ed                        = data();
+  PoolString ename               = ed ? ed->GetName() : noname;
   return ename;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -209,7 +209,7 @@ Entity::Entity(const EntData* edata, Simulation* inst)
     , mDagNode(edata->GetDagNode())
     , mComponentTable(_components)
     , mSimulation(inst) {
-  OrkAssert(edata!=nullptr);
+  OrkAssert(edata != nullptr);
 }
 ///////////////////////////////////////////////////////////////////////////////
 fmtx4 Entity::GetEffectiveMatrix() const {
@@ -235,6 +235,21 @@ fmtx4 Entity::GetEffectiveMatrix() const {
 
 void Entity::SetDynMatrix(const fmtx4& mtx) {
   this->GetDagNode().SetTransformMatrix(mtx);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Entity::setRotAxisAngle(fvec4 axisang) {
+
+  fvec3 pos;
+  fquat rot;
+  float sca     = 0.0f;
+  DagNode& dagn = this->GetDagNode();
+  auto xf       = dagn.GetTransformNode().GetTransform().GetMatrix();
+  xf.decompose(pos, rot, sca);
+  rot.FromAxisAngle(axisang);
+  xf.compose(pos, rot, sca);
+  dagn.SetTransformMatrix(xf);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -313,9 +328,9 @@ ComponentTable& Entity::GetComponents() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Entity::addDrawableToDefaultLayer(lev2::Drawable* pdrw) {
-  auto layername         = AddPooledString("Default");
-  if( auto ED = data() ){
-    ConstString layer      = ED->GetUserProperty("DrawLayer");
+  auto layername = AddPooledString("Default");
+  if (auto ED = data()) {
+    ConstString layer = ED->GetUserProperty("DrawLayer");
     if (strlen(layer.c_str()) != 0) {
       layername = AddPooledString(layer.c_str());
     }

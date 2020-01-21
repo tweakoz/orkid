@@ -39,7 +39,7 @@ struct VrProjFrustumPar {
   float _right = 1.0f;
   float _top = -1.0f;
   float _bottom = 1.0f;
-  float _near = .1f;
+  float _near   = .1f;
   float _far = 50000.0f;
 };
 

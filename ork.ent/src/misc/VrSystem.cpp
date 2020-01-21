@@ -5,7 +5,6 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>
@@ -25,76 +24,75 @@
 #include "VrSystem.h"
 
 ///////////////////////////////////////////////////////////////////////////////
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::VrSystemData, "VrSystemData");
+ImplementReflectionX(ork::ent::VrSystemData, "VrSystemData");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void VrSystemData::Describe()
-{
-    using namespace ork::reflect;
-
+void VrSystemData::describeX(class_t* c) {
+  c->memberProperty("TrackingObjectEntity", &VrSystemData::_vrTrackedObject);
+  c->memberProperty("VrCameraEntity", &VrSystemData::_vrCamera);
+  // todo - property annotation which pops up a choicelist with the current set of entities
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 VrSystemData::VrSystemData()
-{
+    : _vrTrackedObject(AddPooledString("vrtrackedobject"))
+    , _vrCamera(AddPooledString("vrcamera")) {
 }
 
-void VrSystemData::defaultSetup(){
-
+void VrSystemData::defaultSetup() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::ent::System* VrSystemData::createSystem(ork::ent::Simulation *pinst) const
-{
-	return new VrSystem( *this, pinst );
+ork::ent::System* VrSystemData::createSystem(ork::ent::Simulation* pinst) const {
+  return new VrSystem(*this, pinst);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-VrSystem::VrSystem( const VrSystemData& data, Simulation *psim )
-	: ork::ent::System( &data, psim )
-	, _vrSystemData(data)
-{
-  _vrstate=0;
+VrSystem::VrSystem(const VrSystemData& data, Simulation* psim)
+    : ork::ent::System(&data, psim)
+    , _vrSystemData(data)
+    , _vrCamDat(nullptr) {
+  _vrstate = 0;
 }
 
 bool VrSystem::enabled() const {
   return true;
 }
 
-VrSystem::~VrSystem()
-{
+VrSystem::~VrSystem() {
 }
 
 void VrSystem::DoUpdate(Simulation* psim) {
 }
 
-
 void VrSystem::enqueueDrawables(lev2::DrawableBuffer& buffer) {
-  if( _vrstate != 0 ){
-    fmtx4 vrmtx = this->_spawncam->GetEffectiveMatrix(); // copy (updthread->renderthread)
-    buffer.setPreRenderCallback(0,[=](lev2::RenderContextFrameData&RCFD){
-          RCFD.setUserProperty("vrroot"_crc,vrmtx);
-          RCFD.setUserProperty("vrcam"_crc,this->_spawncamdat);
+  if (_vrstate != 0) {
+    //////////////////////////////////////////////////
+    // copy vr matrix from updthread to renderthread
+    //////////////////////////////////////////////////
+    fmtx4 vrmtx = this->_trackedObject->GetEffectiveMatrix();
+    buffer.setPreRenderCallback(0, [=](lev2::RenderContextFrameData& RCFD) {
+      RCFD.setUserProperty("vrroot"_crc, vrmtx);
+      RCFD.setUserProperty("vrcam"_crc, this->_vrCamDat);
     });
   }
 }
 
 bool VrSystem::DoLink(Simulation* psim) {
-  _spawnloc = psim->FindEntity(AddPooledString("spawnloc"));
-  _spawncam = psim->FindEntity(AddPooledString("spawncam"));
-  _spawncamdat = psim->cameraData(AddPooledString("spawncam"));
-  bool good2go = (_spawnloc!=nullptr) and (_spawncamdat!=nullptr);
-  _vrstate = int(good2go);
-  return good2go or (false==enabled());
+  _trackedObject = psim->FindEntity(AddPooledString(_vrSystemData.vrTrackedObject()));
+  _vrCamDat      = psim->cameraData(AddPooledString(_vrSystemData.vrCamera()));
+  bool good2go   = (_trackedObject != nullptr) and (_vrCamDat != nullptr);
+  _vrstate       = int(good2go);
+  return good2go or (false == enabled());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork { namespace ent {
+}} // namespace ork::ent
 ///////////////////////////////////////////////////////////////////////////////

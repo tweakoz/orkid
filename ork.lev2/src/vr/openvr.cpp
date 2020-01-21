@@ -16,9 +16,7 @@ namespace ork::lev2::orkidvr {
 
 static ork::LockedResource<VrTrackingNotificationReceiver_set> gnotifset;
 void addVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t recvr) {
-  gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset){
-    notifset.insert(recvr);
-  });
+  gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset) { notifset.insert(recvr); });
 }
 
 fmtx4 steam34tofmtx4(const _ovr::HmdMatrix34_t& matPose) {
@@ -36,9 +34,10 @@ fmtx4 steam44tofmtx4(const _ovr::HmdMatrix44_t& matPose) {
   return orkmtx;
 }
 
-std::string trackedDeviceString(_ovr::TrackedDeviceIndex_t unDevice,
-                                _ovr::TrackedDeviceProperty prop,
-                                _ovr::TrackedPropertyError* peError = NULL) {
+std::string trackedDeviceString(
+    _ovr::TrackedDeviceIndex_t unDevice,
+    _ovr::TrackedDeviceProperty prop,
+    _ovr::TrackedPropertyError* peError = NULL) {
   uint32_t unRequiredBufferLen = _ovr::VRSystem()->GetStringTrackedDeviceProperty(unDevice, prop, NULL, 0, peError);
   if (unRequiredBufferLen == 0)
     return "";
@@ -52,69 +51,78 @@ std::string trackedDeviceString(_ovr::TrackedDeviceIndex_t unDevice,
 
 ////////////////////////////////////////////////////////////////////////////////
 
-fmtx4 VrProjFrustumPar::composeProjection() const
-{
-    fmtx4 rval;
-    float idx = 1.0f / (_right - _left);
-    float idy = 1.0f / (_bottom - _top);
-    float idz = 1.0f / (_far - _near);
-    float sx = _right + _left;
-    float sy = _bottom + _top;
+fmtx4 VrProjFrustumPar::composeProjection() const {
+  fmtx4 rval;
+  float idx = 1.0f / (_right - _left);
+  float idy = 1.0f / (_bottom - _top);
+  float idz = 1.0f / (_far - _near);
+  float sx  = _right + _left;
+  float sy  = _bottom + _top;
 
-    auto& p = rval.elements;
-    p[0][0] = 2*idx; p[0][1] = 0;     p[0][2] = sx*idx;    p[0][3] = 0;
-    p[1][0] = 0;     p[1][1] = 2*idy; p[1][2] = sy*idy;    p[1][3] = 0;
-    p[2][0] = 0;     p[2][1] = 0;     p[2][2] = -_far*idz; p[2][3] = -_far*_near*idz;
-    p[3][0] = 0;     p[3][1] = 0;     p[3][2] = -1.0f;     p[3][3] = 0;
-    rval.Transpose();
-    return rval;
+  auto& p = rval.elements;
+  p[0][0] = 2 * idx;
+  p[0][1] = 0;
+  p[0][2] = sx * idx;
+  p[0][3] = 0;
+  p[1][0] = 0;
+  p[1][1] = 2 * idy;
+  p[1][2] = sy * idy;
+  p[1][3] = 0;
+  p[2][0] = 0;
+  p[2][1] = 0;
+  p[2][2] = -_far * idz;
+  p[2][3] = -_far * _near * idz;
+  p[3][0] = 0;
+  p[3][1] = 0;
+  p[3][2] = -1.0f;
+  p[3][3] = 0;
+  rval.Transpose();
+  return rval;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 OpenVrDevice::OpenVrDevice() {
 
-  _leftControllerDeviceIndex = 1;
+  _leftControllerDeviceIndex  = 1;
   _rightControllerDeviceIndex = 2;
 
-    ///////////////////////////////////////////////////////////
-    // override with controller.json
-    ///////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////
+  // override with controller.json
+  ///////////////////////////////////////////////////////////
 
-    std::string configpath;
-    if( genviron.get("OVR_CONTROLLER_JSON",configpath) ){
-      // we already have the config path...
-    }
-    else {
-      genviron.get("OBT_STAGE",configpath);
-      configpath = configpath+"/controller.json";
-    }
-    if(boost::filesystem::exists(configpath)){
-    	FILE* fin = fopen(configpath.c_str(),"rt");
-      assert(fin!=nullptr);
-    	fseek(fin,0,SEEK_END);
-    	int size = ftell(fin);
-    	printf( "filesize<%d>\n", size );
-    	fseek(fin,0,SEEK_SET);
-    	auto jsondata = (char*) malloc(size+1);
-    	fread(jsondata,size,1,fin);
-    	jsondata[size] = 0;
-    	fclose(fin);
+  std::string configpath;
+  if (genviron.get("OVR_CONTROLLER_JSON", configpath)) {
+    // we already have the config path...
+  } else {
+    genviron.get("OBT_STAGE", configpath);
+    configpath = configpath + "/controller.json";
+  }
+  if (boost::filesystem::exists(configpath)) {
+    FILE* fin = fopen(configpath.c_str(), "rt");
+    assert(fin != nullptr);
+    fseek(fin, 0, SEEK_END);
+    int size = ftell(fin);
+    printf("filesize<%d>\n", size);
+    fseek(fin, 0, SEEK_SET);
+    auto jsondata = (char*)malloc(size + 1);
+    fread(jsondata, size, 1, fin);
+    jsondata[size] = 0;
+    fclose(fin);
 
-    	rapidjson::Document document;
-    	document.Parse(jsondata);
-    	free((void*)jsondata);
-      assert(document.IsObject());
-    	assert(document.HasMember("ControllerIds"));
-      const auto& root = document["ControllerIds"];
-    	_leftControllerDeviceIndex = root["left"].GetInt();
-      _rightControllerDeviceIndex = root["right"].GetInt();
-      printf( "LeftId<%d>\n", _leftControllerDeviceIndex );
-      printf( "RightId<%d>\n", _rightControllerDeviceIndex );
-    }
+    rapidjson::Document document;
+    document.Parse(jsondata);
+    free((void*)jsondata);
+    assert(document.IsObject());
+    assert(document.HasMember("ControllerIds"));
+    const auto& root            = document["ControllerIds"];
+    _leftControllerDeviceIndex  = root["left"].GetInt();
+    _rightControllerDeviceIndex = root["right"].GetInt();
+    printf("LeftId<%d>\n", _leftControllerDeviceIndex);
+    printf("RightId<%d>\n", _rightControllerDeviceIndex);
+  }
 
-    ///////////////////////////////////////////////////////////
-
+  ///////////////////////////////////////////////////////////
 
   _ovr::EVRInitError error = _ovr::VRInitError_None;
   _hmd                     = _ovr::VR_Init(&error, _ovr::VRApplication_Scene);
@@ -134,9 +142,9 @@ OpenVrDevice::OpenVrDevice() {
     _hmd->GetProjectionRaw(
         _ovr::Eye_Right, &_frustumRight._left, &_frustumRight._right, &_frustumRight._top, &_frustumRight._bottom);
 
-    _frustumCenter._left = (_frustumLeft._left + _frustumRight._left) * 0.5f;
-    _frustumCenter._right = (_frustumLeft._right + _frustumRight._right) * 0.5f;
-    _frustumCenter._top = (_frustumLeft._top + _frustumRight._top) * 0.5f;
+    _frustumCenter._left   = (_frustumLeft._left + _frustumRight._left) * 0.5f;
+    _frustumCenter._right  = (_frustumLeft._right + _frustumRight._right) * 0.5f;
+    _frustumCenter._top    = (_frustumLeft._top + _frustumRight._top) * 0.5f;
     _frustumCenter._bottom = (_frustumLeft._bottom + _frustumRight._bottom) * 0.5f;
 
     auto proj_mtx_l = _frustumLeft.composeProjection();
@@ -229,10 +237,10 @@ void OpenVrDevice::_processControllerEvents() {
         break;
       case _ovr::VREvent_DualAnalog_Move: {
         auto dualana = data.dualAnalog;
-        printf("dualanalog<%d> untouched\n", dualana.x, dualana.y, int(dualana.which));
+        printf("dualanalog<%g %g> %d moved\n", dualana.x, dualana.y, int(dualana.which));
       }
       default:
-        printf("unknown event<%d>\n", int(event.eventType));
+        // printf("unknown event<%d>\n", int(event.eventType));
         break;
     }
     if (_rightControllerDeviceIndex >= 0 and _leftControllerDeviceIndex >= 0) {
@@ -325,13 +333,13 @@ void OpenVrDevice::_processControllerEvents() {
       ///////////////////////////////////////////////////////////
 
       ork::svar256_t notifvar;
-      auto& ctrlnotiffram = notifvar.Make<VrTrackingControllerNotificationFrame>();
-      ctrlnotiffram._left = LCONTROLLER;
+      auto& ctrlnotiffram  = notifvar.Make<VrTrackingControllerNotificationFrame>();
+      ctrlnotiffram._left  = LCONTROLLER;
       ctrlnotiffram._right = RCONTROLLER;
-      gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset){
-        for( auto recvr : notifset ){
-            recvr->_callback(notifvar);
-          }
+      gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset) {
+        for (auto recvr : notifset) {
+          recvr->_callback(notifvar);
+        }
       });
 
     } // if( _rightControllerDeviceIndex>=0 and _leftControllerDeviceIndex>=0 ){
@@ -487,14 +495,13 @@ void OpenVrDevice::_updatePoses(fmtx4 observermatrix) {
       _hmdinputgroup.setChannel("hmdmatrix").as<fmtx4>(hmdmatrix);
 
       ork::svar256_t notifvar;
-      auto& hmdnotiffram = notifvar.Make<VrTrackingHmdPoseNotificationFrame>();
+      auto& hmdnotiffram      = notifvar.Make<VrTrackingHmdPoseNotificationFrame>();
       hmdnotiffram._hmdMatrix = _poseMatrices[_ovr::k_unTrackedDeviceIndex_Hmd];
-      gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset){
-        for( auto recvr : notifset ){
-            recvr->_callback(notifvar);
-          }
+      gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset) {
+        for (auto recvr : notifset) {
+          recvr->_callback(notifvar);
+        }
       });
-
     }
 
     _updatePosesCommon(observermatrix);
@@ -506,7 +513,9 @@ OpenVrDevice& concrete_get() {
   static OpenVrDevice _device;
   return _device;
 }
-Device& device() { return concrete_get(); }
+Device& device() {
+  return concrete_get();
+}
 ////////////////////////////////////////////////////////////////////////////////
 
 void gpuUpdate(RenderContextFrameData& RCFD) {

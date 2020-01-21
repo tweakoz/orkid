@@ -17,29 +17,41 @@ namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
 class VrSystemData : public ork::ent::SystemData {
-  RttiDeclareConcrete(VrSystemData, ork::ent::SystemData);
+  DeclareConcreteX(VrSystemData, ork::ent::SystemData);
+
 public:
   VrSystemData();
 
   void defaultSetup();
 
+  const PoolString& vrTrackedObject() const {
+    return _vrTrackedObject;
+  }
+  const PoolString& vrCamera() const {
+    return _vrCamera;
+  }
+
 private:
   ork::ent::System* createSystem(ork::ent::Simulation* pinst) const final;
+  PoolString _vrTrackedObject;
+  PoolString _vrCamera;
 };
 
 ///////////////////////////////////////////////////////////////////////////
 
 class VrSystem : public ork::ent::System {
 public:
-
   static constexpr systemkey_t SystemType = "VrSystem";
-  systemkey_t systemTypeDynamic() final { return SystemType; }
-
+  systemkey_t systemTypeDynamic() final {
+    return SystemType;
+  }
 
   VrSystem(const VrSystemData& data, ork::ent::Simulation* pinst);
   ~VrSystem();
 
-  const VrSystemData& vrSystemData() const { return _vrSystemData; }
+  const VrSystemData& vrSystemData() const {
+    return _vrSystemData;
+  }
   bool DoLink(Simulation* psi) final;
 
   bool enabled() const;
@@ -47,11 +59,11 @@ public:
 
 private:
   const VrSystemData& _vrSystemData;
-  Entity* _spawnloc = nullptr;
-  Entity* _spawncam = nullptr;
-  const lev2::CameraData* _spawncamdat = nullptr; // todo clean this up..
-  int _vrstate = 0;
-  int _prv_vrstate = 0;
+  Entity* _trackedObject            = nullptr;
+  const lev2::CameraData* _vrCamDat = nullptr; // todo clean this up..
+  int _vrstate                      = 0;
+  int _prv_vrstate                  = 0;
+
   void DoUpdate(Simulation* psi) final;
 };
 

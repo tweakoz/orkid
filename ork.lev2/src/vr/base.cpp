@@ -3,6 +3,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/vr/vr.h>
+#include <ork/kernel/string/deco.inl>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::orkidvr {
@@ -15,9 +16,9 @@ Device::Device()
     , _supportsStereo(false)
     , _hmdinputgroup(*lev2::InputManager::inputGroup("hmd")) {
 
-  _leftcamera = new CameraMatrices;
+  _leftcamera   = new CameraMatrices;
   _centercamera = new CameraMatrices;
-  _rightcamera = new CameraMatrices;
+  _rightcamera  = new CameraMatrices;
 
   auto handgroup = lev2::InputManager::inputGroup("hands");
   handgroup->setChannel("left.button1").as<bool>(false);
@@ -41,59 +42,61 @@ Device::~Device() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Device::_updatePosesCommon(fmtx4 observermatrix){
-    fmtx4 hmd  = _posemap["hmd"];
-    fmtx4 eyeL = _posemap["eyel"];
-    fmtx4 eyeR = _posemap["eyer"];
+void Device::_updatePosesCommon(fmtx4 observermatrix) {
+  fmtx4 hmd  = _posemap["hmd"];
+  fmtx4 eyeL = _posemap["eyel"];
+  fmtx4 eyeR = _posemap["eyer"];
 
-    fvec3 hmdpos;
-    fquat hmdrot;
-    float hmdscl;
+  fvec3 hmdpos;
+  fquat hmdrot;
+  float hmdscl;
 
-    hmd.decompose(hmdpos, hmdrot, hmdscl);
+  hmd.decompose(hmdpos, hmdrot, hmdscl);
 
-    _rotMatrix = hmdrot.ToMatrix();
-    _rotMatrix      = _headingmatrix * _rotMatrix;
-    _rotMatrix.Transpose();
+  _rotMatrix = hmdrot.ToMatrix();
+  _rotMatrix = _headingmatrix * _rotMatrix;
+  _rotMatrix.Transpose();
 
-    //_rotMatrix.dump("rotmtx");
-    ///////////////////////////////////////////////////////////
+  //_rotMatrix.dump("rotmtx");
+  ///////////////////////////////////////////////////////////
 
-    _hmdMatrix = hmd;
-    //_hmdMatrix.dump("hmdmtx");
+  _hmdMatrix = hmd;
+  //_hmdMatrix.dump("hmdmtx");
 
-    fmtx4 VVMTX = observermatrix;
+  fmtx4 VVMTX = observermatrix;
 
-    fvec3 vvtrans = VVMTX.GetTranslation();
+  fvec3 vvtrans = VVMTX.GetTranslation();
 
-    fmtx4 wmtx;
-    wmtx.SetTranslation(vvtrans + fvec3(0, 0.5, 0));
-    wmtx = _headingmatrix * wmtx;
+  fmtx4 wmtx;
+  wmtx.SetTranslation(vvtrans + fvec3(0, 0.5, 0));
+  wmtx = _headingmatrix * wmtx;
 
-    VVMTX.inverseOf(wmtx);
+  VVMTX.inverseOf(wmtx);
 
-    _outputViewOffsetMatrix = VVMTX;
+  _outputViewOffsetMatrix = VVMTX;
 
-    fmtx4 cmv = VVMTX * hmd;
-    fmtx4 lmv = VVMTX * hmd * eyeL;
-    fmtx4 rmv = VVMTX * hmd * eyeR;
+  // deco::prints(VVMTX.dump4x3(), true);
 
-    msgrouter::content_t c;
-    c.Set<fmtx4>(cmv);
+  fmtx4 cmv = VVMTX * hmd;
+  fmtx4 lmv = VVMTX * hmd * eyeL;
+  fmtx4 rmv = VVMTX * hmd * eyeR;
 
-    msgrouter::channel("eggytest")->post(c);
+  msgrouter::content_t c;
+  c.Set<fmtx4>(cmv);
 
-    _hmdinputgroup.setChannel("leye.matrix").as<fmtx4>(lmv);
-    _hmdinputgroup.setChannel("ceye.matrix").as<fmtx4>(cmv);
-    _hmdinputgroup.setChannel("reye.matrix").as<fmtx4>(rmv);
+  msgrouter::channel("eggytest")->post(c);
 
-    _leftcamera->setCustomView(lmv);
-    _leftcamera->setCustomProjection(_posemap["projl"]);
-    _rightcamera->setCustomView(rmv);
-    _rightcamera->setCustomProjection(_posemap["projr"]);
-    _centercamera->setCustomView(cmv);
-    _centercamera->setCustomProjection(_posemap["projc"]);
-    // printf( "pose_classes<%s>\n", pose_classes.c_str() );
+  _hmdinputgroup.setChannel("leye.matrix").as<fmtx4>(lmv);
+  _hmdinputgroup.setChannel("ceye.matrix").as<fmtx4>(cmv);
+  _hmdinputgroup.setChannel("reye.matrix").as<fmtx4>(rmv);
+
+  _leftcamera->setCustomView(lmv);
+  _leftcamera->setCustomProjection(_posemap["projl"]);
+  _rightcamera->setCustomView(rmv);
+  _rightcamera->setCustomProjection(_posemap["projr"]);
+  _centercamera->setCustomView(cmv);
+  _centercamera->setCustomProjection(_posemap["projc"]);
+  // printf( "pose_classes<%s>\n", pose_classes.c_str() );
 }
 
 ////////////////////////////////////////////////////////////////////////////////

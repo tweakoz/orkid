@@ -41,7 +41,6 @@ void DeferredCompositingNodePbr::describeX(class_t* c) {
   class_t::CreateClassAlias("DeferredCompositingNodeDebugNormal", c);
 
   c->memberProperty("ClearColor", &DeferredCompositingNodePbr::_clearColor);
-  c->memberProperty("FogColor", &DeferredCompositingNodePbr::_fogColor);
   c->memberProperty("AmbientLevel", &DeferredCompositingNodePbr::_ambientLevel);
   c->floatProperty("EnvironmentIntensity", float_range{0, 100}, &DeferredCompositingNodePbr::_environmentIntensity);
   c->floatProperty("EnvironmentMipBias", float_range{0, 12}, &DeferredCompositingNodePbr::_environmentMipBias);
@@ -49,6 +48,8 @@ void DeferredCompositingNodePbr::describeX(class_t* c) {
   c->floatProperty("DiffuseLevel", float_range{0, 10}, &DeferredCompositingNodePbr::_diffuseLevel);
   c->floatProperty("SpecularLevel", float_range{0, 10}, &DeferredCompositingNodePbr::_specularLevel);
   c->floatProperty("SkyboxLevel", float_range{0, 10}, &DeferredCompositingNodePbr::_skyboxLevel);
+  c->floatProperty("DepthFogDistance", float_range{0.1, 5000}, &DeferredCompositingNodePbr::_depthFogDistance);
+  c->floatProperty("DepthFogPower", float_range{0.01, 100.0}, &DeferredCompositingNodePbr::_depthFogPower);
 
   c->accessorProperty(
        "EnvironmentTexture", &DeferredCompositingNodePbr::_readEnvTexture, &DeferredCompositingNodePbr::_writeEnvTexture)
@@ -176,6 +177,12 @@ struct IMPL {
     _context._lightingmtl.bindParamMatrixArray(_context._parMatIVPArray, VD._ivp, 2);
     _context._lightingmtl.bindParamMatrixArray(_context._parMatVArray, VD._v, 2);
     _context._lightingmtl.bindParamMatrixArray(_context._parMatPArray, VD._p, 2);
+    _context._lightingmtl.bindParamVec2(_context._parZndc2eye, VD._zndc2eye);
+
+    /////////////////////////
+
+    _context._lightingmtl.bindParamFloat(_context._parDepthFogDistance, 1.0f / node->depthFogDistance());
+    _context._lightingmtl.bindParamFloat(_context._parDepthFogPower, node->depthFogPower());
 
     /////////////////////////
 

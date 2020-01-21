@@ -106,6 +106,8 @@ void DeferredContext::gpuInit(Context* target) {
     _parDiffuseLevel        = _lightingmtl.param("DiffuseLevel");
     _parAmbientLevel        = _lightingmtl.param("AmbientLevel");
     _parSkyboxLevel         = _lightingmtl.param("SkyboxLevel");
+    _parDepthFogDistance    = _lightingmtl.param("DepthFogDistance");
+    _parDepthFogPower       = _lightingmtl.param("DepthFogPower");
     //////////////////////////////////////////////////////////////
     _rtgGbuffer      = new RtGroup(target, 8, 8, 1);
     auto buf0        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, 8, 8);
@@ -312,6 +314,8 @@ ViewData DeferredContext::computeViewData(CompositorDrawData& drawdata) {
     VD.VPL = VD.VL * VD.PL;
     VD.VPR = VD.VR * VD.PR;
     VD.VPM = VD.VM * VD.PM;
+    // VR projection matrix
+    //[ +0.7842  +0  +0  +0 ] [ +0  +0.7048  +0  +0 ] [ -0.05671  +0.0023  -1  -1 ] [ +0  +0  -0.1  +0 ]   axis<-0.001 -0.04 -0>
   } else {
     auto M = TOPCPD._cameraMatrices;
     VD.VM  = M->_vmatrix;
@@ -323,6 +327,9 @@ ViewData DeferredContext::computeViewData(CompositorDrawData& drawdata) {
     VD.VPM = VD.VM * VD.PM;
     VD.VPL = VD.VPM;
     VD.VPR = VD.VPM;
+    // editor projection matrix
+    //[ -1.433  +0  +0  +0 ] [ +0  +2.748  +0  +0 ] [ +0  +0  +1  +1 ] [ +0  +0  -17.01  +0 ]   axis<-0 -0 -0> angle<72>
+    // printf("%g %g\n", VD._zndc2eye.x, VD._zndc2eye.y);
   }
   VD.IVPM.inverseOf(VD.VPM);
   VD.IVPL.inverseOf(VD.VPL);
@@ -338,7 +345,8 @@ ViewData DeferredContext::computeViewData(CompositorDrawData& drawdata) {
   IVL.inverseOf(VD.VL);
   VD._camposmono = IVL.GetColumn(3).xyz();
 
-  VD._zndc2eye = fvec2(VD._p[0].GetElemXY(3, 2), VD._p[0].GetElemXY(2, 2));
+  const auto& PZ = VD._p[0];
+  VD._zndc2eye   = fvec2(PZ.GetElemXY(3, 2), PZ.GetElemXY(2, 2));
 
   return VD;
 }

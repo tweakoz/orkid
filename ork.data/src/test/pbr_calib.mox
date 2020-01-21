@@ -14,8 +14,8 @@
                                             <object type='EzUiCam' id='3'>
                                                 <property name='Center'>0 0 0</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>3.86482</property>
-                                                <property name='QuatC'>-0.0258036 0.992946 -0.0187162 -0.125426</property>
+                                                <property name='Loc'>3.38065</property>
+                                                <property name='QuatC'>0.199459 -0.846831 0.260465 0.421902</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -129,18 +129,19 @@
                                                                                     <object type='DeferredCompositingNodePbr' id='17'>
                                                                                         <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
-                                                                                        <property name='DiffuseLevel'>3.20611</property>
-                                                                                        <property name='EnvironmentIntensity'>1.7</property>
+                                                                                        <property name='DepthFogDistance'>13</property>
+                                                                                        <property name='DepthFogPower'>15.6573</property>
+                                                                                        <property name='DiffuseLevel'>1</property>
+                                                                                        <property name='EnvironmentIntensity'>1</property>
                                                                                         <property name='EnvironmentMipBias'>0</property>
-                                                                                        <property name='EnvironmentMipScale'>6.10687</property>
+                                                                                        <property name='EnvironmentMipScale'>4</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
                                                                                                 "lev2tex" "data://environ/envmaps/blender_courtyard"
                                                                                             </reference>
                                                                                         </property>
-                                                                                        <property name='FogColor'>0 0 0 1</property>
-                                                                                        <property name='SkyboxLevel'>0.419847</property>
-                                                                                        <property name='SpecularLevel'>4.27481</property>
+                                                                                        <property name='SkyboxLevel'>0.619469</property>
+                                                                                        <property name='SpecularLevel'>1</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>
@@ -163,6 +164,8 @@
             <item key='LightingSystemData'>
                 <reference category='SystemDataClass'>
                     <object type='VrSystemData' id='18'>
+                        <property name='TrackingObjectEntity'>"vrtrackedobject"</property>
+                        <property name='VrCameraEntity'>"vrcamera"</property>
                     </object>
                 </reference>
             </item>

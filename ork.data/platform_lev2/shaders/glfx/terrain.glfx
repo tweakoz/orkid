@@ -235,7 +235,8 @@ fragment_interface iface_deferred : iface_fdefault {
   //   any explicit layout is performed
   // layout(location = 0) out vec4 out_clr; // albedo ao
   outputs {
-    layout(location = 1) vec4 out_norml_mdl;
+    layout(location = 1) vec4 out_normal_mdl;
+    layout(location = 2) vec4 out_rufmtl;
   }
 }
 fragment_shader ps_terrain_gbuf1 : iface_deferred : lib_terrain_frg {
@@ -243,7 +244,8 @@ fragment_shader ps_terrain_gbuf1 : iface_deferred : lib_terrain_frg {
   vec3 c = albedo(n);
   out_clr = vec4(c, 1);
   vec3 yo = (n + vec3(1, 1, 1)) * 0.5;
-  out_norml_mdl = vec4(n, 1);
+  out_normal_mdl = vec4(n, 1);
+  out_rufmtl = vec4(0,0,1,0); // ruf==1, mtl==0,ao==0
 }
 ///////////////////////////////////////////////////////////////
 // pick
@@ -262,7 +264,8 @@ fragment_interface iface_fpick : ublock_frg {
   }
   outputs {
     layout(location = 0) vec4 out_clr;
-    layout(location = 1) vec4 out_nrmd;
+    layout(location = 1) vec4 out_normal_mdl;
+    layout(location = 2) vec4 out_rufmtl;
   }
 }
 vertex_shader vs_pick : iface_vpick : lib_terrain_vtx {
@@ -275,7 +278,7 @@ vertex_shader vs_pick : iface_vpick : lib_terrain_vtx {
 }
 fragment_shader ps_pick : iface_fpick {
   out_clr = ModColor;
-  out_nrmd = frg_nrmd;
+  out_normal_mdl = frg_nrmd;
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks

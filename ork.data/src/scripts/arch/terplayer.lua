@@ -11,6 +11,7 @@ function TerPlayer:OnEntityLink()
     self.charcon = c["SimpleCharController"]
     self.input = c["Input"]
     self.loco = c["Loco"]
+    self.locostate = "none"
     printf( "charcon: %s", tostring(self.charcon) );
     printf( "input: %s", tostring(self.input) );
     printf( "loco: %s", tostring(self.loco) );
@@ -51,13 +52,15 @@ function TerPlayer:OnEntityUpdate(dt)
 
     --printf( "TERPLAYER::ltrigger %s", tostring(ltrigger) )
 
-    local mode = "stop";
+    local locostate = "stop";
     if ltrigger then
-      mode="walk"
-      --assert(false)
+      locostate="walk"
     end
 
-    self.loco:notify("locostate",mode )
+    if self.locostate ~= locostate then
+      self.loco:notify("locostate",locostate )
+      self.locostate = locostate
+    end
 
 end
 -------------------------------------------------------------------------------

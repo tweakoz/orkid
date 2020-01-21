@@ -39,18 +39,30 @@ void ScriptComponentData::Describe() {
   ork::reflect::annotatePropertyForEditor<ScriptComponentData>("ScriptFile", "editor.filetype", "lua");
   ork::reflect::annotatePropertyForEditor<ScriptComponentData>("ScriptFile", "editor.filebase", "src://scripts/");
 }
-ScriptComponentData::ScriptComponentData() { printf("ScriptComponentData::ScriptComponentData() this: %p\n", this); }
+ScriptComponentData::ScriptComponentData() {
+  printf("ScriptComponentData::ScriptComponentData() this: %p\n", this);
+}
 
-ent::ComponentInst* ScriptComponentData::createComponent(ent::Entity* pent) const { return new ScriptComponentInst(*this, pent); }
-void ScriptComponentData::DoRegisterWithScene(ork::ent::SceneComposer& sc) { sc.Register<ork::ent::ScriptSystemData>(); }
+ent::ComponentInst* ScriptComponentData::createComponent(ent::Entity* pent) const {
+  return new ScriptComponentInst(*this, pent);
+}
+void ScriptComponentData::DoRegisterWithScene(ork::ent::SceneComposer& sc) {
+  sc.Register<ork::ent::ScriptSystemData>();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ScriptObject::ScriptObject() : mScriptRef(LUA_NOREF) {}
-void ScriptComponentInst::Describe() {}
+ScriptObject::ScriptObject()
+    : mScriptRef(LUA_NOREF) {
+}
+void ScriptComponentInst::Describe() {
+}
 
 ScriptComponentInst::ScriptComponentInst(const ScriptComponentData& data, ent::Entity* pent)
-    : ork::ent::ComponentInst(&data, pent), mCD(data), mScriptObject(nullptr) {}
+    : ork::ent::ComponentInst(&data, pent)
+    , mCD(data)
+    , mScriptObject(nullptr) {
+}
 
 bool ScriptComponentInst::DoLink(ork::ent::Simulation* psi) {
   auto path = mCD.GetPath();
@@ -71,8 +83,8 @@ bool ScriptComponentInst::DoLink(ork::ent::Simulation* psi) {
       auto ent = this->GetEntity();
 
       LuaIntf::LuaState lua = L;
-      mEntTable = LuaIntf::LuaRef::createTable(L);
-      mEntTable["ent"] = ent;
+      mEntTable             = LuaIntf::LuaRef::createTable(L);
+      mEntTable["ent"]      = ent;
 
       lua.getRef(mScriptObject->mOnEntLink);
       assert(lua.isFunction(-1));
@@ -99,7 +111,7 @@ bool ScriptComponentInst::DoStart(Simulation* psi, const fmtx4& world) {
     OrkAssert(asluasys);
     auto L = asluasys->mLuaState;
 
-    auto ent = this->GetEntity();
+    auto ent  = this->GetEntity();
     auto name = ent->name().c_str();
 
     printf("Starting SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name);
@@ -122,7 +134,7 @@ void ScriptComponentInst::onActivate(Simulation* psi) {
     OrkAssert(asluasys);
     auto L = asluasys->mLuaState;
 
-    auto ent = this->GetEntity();
+    auto ent  = this->GetEntity();
     auto name = ent->name().c_str();
 
     printf("Activating SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name);
@@ -142,7 +154,7 @@ void ScriptComponentInst::onDeactivate(Simulation* psi) {
     OrkAssert(asluasys);
     auto L = asluasys->mLuaState;
 
-    auto ent = this->GetEntity();
+    auto ent  = this->GetEntity();
     auto name = ent->name().c_str();
 
     printf("Activating SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name);
@@ -163,7 +175,7 @@ void ScriptComponentInst::DoStop(Simulation* psi) {
     OrkAssert(asluasys);
     auto L = asluasys->mLuaState;
 
-    auto ent = this->GetEntity();
+    auto ent  = this->GetEntity();
     auto name = ent->name().c_str();
 
     LuaIntf::LuaState lua = L;
@@ -186,8 +198,8 @@ void ScriptComponentInst::DoUpdate(ork::ent::Simulation* psi) {
     if (scm && mScriptObject) {
       auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
       OrkAssert(asluasys);
-      auto L = asluasys->mLuaState;
-      auto ent = this->GetEntity();
+      auto L    = asluasys->mLuaState;
+      auto ent  = this->GetEntity();
       double dt = psi->GetDeltaTime();
       double gt = psi->GetGameTime();
 
@@ -204,21 +216,26 @@ void ScriptComponentInst::DoUpdate(ork::ent::Simulation* psi) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ScriptSystemData::Describe() {}
-ScriptSystemData::ScriptSystemData() {}
+void ScriptSystemData::Describe() {
+}
+ScriptSystemData::ScriptSystemData() {
+}
 
-System* ScriptSystemData::createSystem(ork::ent::Simulation* pinst) const { return new ScriptSystem(*this, pinst); }
+System* ScriptSystemData::createSystem(ork::ent::Simulation* pinst) const {
+  return new ScriptSystem(*this, pinst);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 ScriptSystem::ScriptSystem(const ScriptSystemData& data, ork::ent::Simulation* pinst)
-    : ork::ent::System(&data, pinst), mScriptRef(LUA_NOREF) {
+    : ork::ent::System(&data, pinst)
+    , mScriptRef(LUA_NOREF) {
   printf("SCMI<%p>\n", this);
   auto luasys = new LuaSystem(pinst);
   mLuaManager.Set<LuaSystem*>(luasys);
 
   auto luapath = getenv("LUA_PATH");
-  assert(luapath!=nullptr);
+  assert(luapath != nullptr);
 
   ///////////////////////////////////////////////
 
@@ -239,7 +256,7 @@ ScriptSystem::ScriptSystem(const ScriptSystemData& data, ork::ent::Simulation* p
   // Set Lua Search Path
   ///////////////////////////////////////////////
 
-  auto searchpath = file::Path("src://scripts/");
+  auto searchpath  = file::Path("src://scripts/");
   auto abssrchpath = searchpath.ToAbsolute();
 
   if (abssrchpath.DoesPathExist()) {
@@ -253,8 +270,8 @@ ScriptSystem::ScriptSystem(const ScriptSystemData& data, ork::ent::Simulation* p
   ///////////////////////////////////////////////
 
   const auto& scenedata = pinst->GetData();
-  auto path = scenedata._sceneScriptPath;
-  auto abspath = path.ToAbsolute();
+  auto path             = scenedata._sceneScriptPath;
+  auto abspath          = path.ToAbsolute();
 
   if (abspath.DoesPathExist()) {
     File scriptfile(abspath, EFM_READ);
@@ -263,7 +280,7 @@ ScriptSystem::ScriptSystem(const ScriptSystemData& data, ork::ent::Simulation* p
     char* scripttext = (char*)malloc(filesize + 1);
     scriptfile.Read(scripttext, filesize);
     scripttext[filesize] = 0;
-    mScriptText = scripttext;
+    mScriptText          = scripttext;
     // printf( "%s\n", scripttext);
     free(scripttext);
 
@@ -354,7 +371,7 @@ void ScriptSystem::DoUpdate(Simulation* psi) // final
 ///////////////////////////////////////////////////////////////////////////////
 
 ScriptObject* ScriptSystem::FlyweightScriptObject(const ork::file::Path& pth) {
-  auto abspath = pth.ToAbsolute();
+  auto abspath  = pth.ToAbsolute();
   auto asluasys = GetLuaManager().Get<LuaSystem*>();
   OrkAssert(asluasys);
   auto luast = asluasys->mLuaState;
@@ -376,7 +393,7 @@ ScriptObject* ScriptSystem::FlyweightScriptObject(const ork::file::Path& pth) {
       char* scripttext = (char*)malloc(filesize + 1);
       scriptfile.Read(scripttext, filesize);
       scripttext[filesize] = 0;
-      rval->mScriptText = scripttext;
+      rval->mScriptText    = scripttext;
       // printf( "%s\n", scripttext);
       free(scripttext);
 
@@ -396,8 +413,8 @@ ScriptObject* ScriptSystem::FlyweightScriptObject(const ork::file::Path& pth) {
 
       // int ret = luaL_loadstring(luast,rval->mScriptText.c_str());
       auto script_text = rval->mScriptText.c_str();
-      auto script_len = rval->mScriptText.length();
-      int ret = luaL_loadbuffer(luast, script_text, script_len, pth.c_str());
+      auto script_len  = rval->mScriptText.length();
+      int ret          = luaL_loadbuffer(luast, script_text, script_len, pth.c_str());
 
       rval->mScriptRef = luaL_ref(luast, LUA_REGISTRYINDEX);
 
@@ -422,12 +439,12 @@ ScriptObject* ScriptSystem::FlyweightScriptObject(const ork::file::Path& pth) {
         return rval;
       };
 
-      rval->mOnEntLink = getMethodRef("OnEntityLink");
-      rval->mOnEntStart = getMethodRef("OnEntityStart");
-      rval->mOnEntActivate = getMethodRef("OnEntityActivate");
+      rval->mOnEntLink       = getMethodRef("OnEntityLink");
+      rval->mOnEntStart      = getMethodRef("OnEntityStart");
+      rval->mOnEntActivate   = getMethodRef("OnEntityActivate");
       rval->mOnEntDeactivate = getMethodRef("OnEntityDeactivate");
-      rval->mOnEntStop = getMethodRef("OnEntityStop");
-      rval->mOnEntUpdate = getMethodRef("OnEntityUpdate");
+      rval->mOnEntStop       = getMethodRef("OnEntityStop");
+      rval->mOnEntUpdate     = getMethodRef("OnEntityUpdate");
 
       // LuaProtectedCallByRef( luast, rval->mScriptRef );
 

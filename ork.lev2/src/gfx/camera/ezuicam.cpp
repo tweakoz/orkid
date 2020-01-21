@@ -595,6 +595,8 @@ void EzUiCam::updateMatrices(void) {
   _camcamdata.Persp(fnear, ffar, aper);
   _camcamdata.Lookat(veye, vtarget, vup);
 
+  // printf("near<%g> far<%g>\n", fnear, ffar);
+
   ///////////////////////////////////////////////////////////////
   // CameraMatrices ctx = _camcamdata.computeMatrices(ctx);
   ///////////////////////////////////////////////////////////////
