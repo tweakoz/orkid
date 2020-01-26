@@ -281,14 +281,15 @@ int OldSchool::GetNumCores()
 #if defined(IX)
 	int numCPUs = sysconf(_SC_NPROCESSORS_ONLN);
 #else
-	int numCPUs;
-	size_t count_len = sizeof(numCPUs);
-	sysctlbyname("hw.logicalcpu", &numCPUs, &count_len, NULL, 0);
-	fprintf(stderr,"you have %i cpu cores", numCPUs);
+	static int numCPUs = -1;
+	if(-1 == numCPUs ){
+    size_t count_len = sizeof(numCPUs);
+	 sysctlbyname("hw.logicalcpu", &numCPUs, &count_len, NULL, 0);
 
-#endif
-	//orkprintf( "OrkiNumCpus<%d>\n", numCPUs );
+	//fprintf(stderr,"you have %i cpu cores\n", numCPUs);
 	fflush(stdout);
+}
+#endif
 	return numCPUs;
 
 }

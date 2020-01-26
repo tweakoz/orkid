@@ -28,6 +28,7 @@
 
 #include "NodeCompositorDeferred.h"
 #include "CpuLightProcessor.h"
+#include "SimpleLightProcessor.h"
 
 ImplementReflectionX(ork::lev2::deferrednode::DeferredCompositingNodePbr, "DeferredCompositingNodePbr");
 
@@ -227,7 +228,7 @@ struct IMPL {
     if (auto lmgr = CIMPL->lightManager()) {
 
       // printf("lightmgr<%p>\n", lmgr);
-      if (0) {
+      if (1) {
         lmgr->enumerateInPass(_context._accumCPD, _enumeratedLights);
         auto& lights = _enumeratedLights._enumeratedLights;
 
@@ -257,7 +258,7 @@ struct IMPL {
   std::atomic<int> _lightjobcount;
   ork::Timer _timer;
   EnumeratedLights _enumeratedLights;
-  CpuLightProcessor _lightProcessor;
+  SimpleLightProcessor _lightProcessor;
 
 }; // IMPL
 

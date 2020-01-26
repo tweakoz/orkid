@@ -16,24 +16,21 @@
 namespace ork::lev2::deferrednode {
 
 ///////////////////////////////////////////////////////////////////////////////
-// CpuLightProcessor :
-//  render depthcluster map on GPU
-//  transfer depthcluster map to CPU
-//  cull and chunkify lights on CPU
+// SimpleLightProcessor :
+//  no light culling and only 1 chunk
+//  so lights have to fit in 1 UBO
 //  submit light primitives on CPU
+//  primarily used for simple test cases
 ///////////////////////////////////////////////////////////////////////////////
 
-struct CpuLightProcessor {
+struct SimpleLightProcessor {
 
-  static constexpr size_t KMAXLIGHTS         = 512;
-  static constexpr int KMAXNUMTILESX         = 512;
-  static constexpr int KMAXNUMTILESY         = 256;
-  static constexpr int KMAXTILECOUNT         = KMAXNUMTILESX * KMAXNUMTILESY;
   static constexpr size_t KMAXLIGHTSPERCHUNK = 32768 / sizeof(fvec4);
+  static constexpr size_t KMAXLIGHTS         = KMAXLIGHTSPERCHUNK;
 
   /////////////////////////////////////////////////////
 
-  CpuLightProcessor(DeferredContext& defctx,DeferredCompositingNodePbr* compnode);
+  SimpleLightProcessor(DeferredContext& defctx,DeferredCompositingNodePbr* compnode);
 
   /////////////////////////////////////////////////////
 
@@ -47,19 +44,10 @@ struct CpuLightProcessor {
   typedef std::vector<PointLight> pllist_t;
   typedef ork::LockedResource<pllist_t> locked_pllist_t;
 
-  ork::fixedvector<locked_pllist_t, KMAXTILECOUNT> _lighttiles;
-  int _pendingtiles[KMAXTILECOUNT];
-  ork::fixedvector<int, KMAXTILECOUNT> _chunktiles;
-  ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_pos;
-  ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uva;
-  ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uvb;
-  std::atomic<int> _lightjobcount;
-  std::atomic<int> _pendingtilecounter;
   FxShaderParamBuffer* _lightbuffer = nullptr;
   DeferredContext& _deferredContext;
-  const uint32_t* _depthClusterBase = nullptr;
   DeferredCompositingNodePbr* _defcompnode;
-  std::vector<PointLight> _pointlights;
+  pllist_t _pointlights;
 
 };
 
