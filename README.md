@@ -34,7 +34,9 @@ Some Features Include:
 
 Other (video) examples of content: 
 
-[Deferred-PBR-PointLightProjectors](https://www.youtube.com/watch?v=Xem37Nfp-d8)
+[Deferred-PBR-PointLightProjectors-1](https://www.youtube.com/watch?v=ffEbkF9l4yw)
+
+[Deferred-PBR-PointLightProjectors-2](https://www.youtube.com/watch?v=Xem37Nfp-d8)
 
 [MoonDiver](https://youtu.be/2zNd4k_6I6s)
 
