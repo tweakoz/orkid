@@ -32,7 +32,9 @@ Some Features Include:
 
 ![TerrainGen](http://tweakoz.com/resources/images/th_terrain03.jpg)
 
-for other examples of content: 
+Other (video) examples of content: 
+
+[Deferred-PBR-PointLightProjectors](https://www.youtube.com/watch?v=Xem37Nfp-d8)
 
 [MoonDiver](https://youtu.be/2zNd4k_6I6s)
 
