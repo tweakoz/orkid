@@ -39,13 +39,21 @@ void ScriptComponentData::Describe() {
   ork::reflect::annotatePropertyForEditor<ScriptComponentData>("ScriptFile", "editor.filetype", "lua");
   ork::reflect::annotatePropertyForEditor<ScriptComponentData>("ScriptFile", "editor.filebase", "src://scripts/");
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 ScriptComponentData::ScriptComponentData() {
   printf("ScriptComponentData::ScriptComponentData() this: %p\n", this);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 ent::ComponentInst* ScriptComponentData::createComponent(ent::Entity* pent) const {
   return new ScriptComponentInst(*this, pent);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void ScriptComponentData::DoRegisterWithScene(ork::ent::SceneComposer& sc) {
   sc.Register<ork::ent::ScriptSystemData>();
 }
@@ -55,14 +63,21 @@ void ScriptComponentData::DoRegisterWithScene(ork::ent::SceneComposer& sc) {
 ScriptObject::ScriptObject()
     : mScriptRef(LUA_NOREF) {
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void ScriptComponentInst::Describe() {
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 ScriptComponentInst::ScriptComponentInst(const ScriptComponentData& data, ent::Entity* pent)
     : ork::ent::ComponentInst(&data, pent)
     , mCD(data)
     , mScriptObject(nullptr) {
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 bool ScriptComponentInst::DoLink(ork::ent::Simulation* psi) {
   auto path = mCD.GetPath();
@@ -83,17 +98,20 @@ bool ScriptComponentInst::DoLink(ork::ent::Simulation* psi) {
       auto ent = this->GetEntity();
 
       LuaIntf::LuaState lua = L;
-      mEntTable             = LuaIntf::LuaRef::createTable(L);
-      mEntTable["ent"]      = ent;
+      _luaentity            = LuaIntf::LuaRef::createTable(L);
+      _luaentity["ent"]     = ent;
 
       lua.getRef(mScriptObject->mOnEntLink);
       assert(lua.isFunction(-1));
-      lua.push(mEntTable);
-      lua.ppcall(1, 0, 0);
+      lua.push(_luaentity);
+      lua.pcall(1, 0, 0);
     }
   }
   return true;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void ScriptComponentInst::DoUnLink(ork::ent::Simulation* psi) {
   auto scm = psi->findSystem<ScriptSystem>();
 
@@ -102,6 +120,8 @@ void ScriptComponentInst::DoUnLink(ork::ent::Simulation* psi) {
     OrkAssert(asluasys);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 bool ScriptComponentInst::DoStart(Simulation* psi, const fmtx4& world) {
   auto scm = psi->findSystem<ScriptSystem>();
@@ -119,11 +139,13 @@ bool ScriptComponentInst::DoStart(Simulation* psi, const fmtx4& world) {
     LuaIntf::LuaState lua = L;
     lua.getRef(mScriptObject->mOnEntStart);
     assert(lua.isFunction(-1));
-    lua.push(mEntTable);
-    lua.ppcall(1, 0, 0);
+    lua.push(_luaentity);
+    lua.pcall(1, 0, 0);
   }
   return true;
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void ScriptComponentInst::onActivate(Simulation* psi) {
 
@@ -142,10 +164,13 @@ void ScriptComponentInst::onActivate(Simulation* psi) {
     LuaIntf::LuaState lua = L;
     lua.getRef(mScriptObject->mOnEntActivate);
     assert(lua.isFunction(-1));
-    lua.push(mEntTable);
-    lua.ppcall(1, 0, 0);
+    lua.push(_luaentity);
+    lua.pcall(1, 0, 0);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void ScriptComponentInst::onDeactivate(Simulation* psi) {
   auto scm = psi->findSystem<ScriptSystem>();
 
@@ -162,10 +187,12 @@ void ScriptComponentInst::onDeactivate(Simulation* psi) {
     LuaIntf::LuaState lua = L;
     lua.getRef(mScriptObject->mOnEntDeactivate);
     assert(lua.isFunction(-1));
-    lua.push(mEntTable);
-    lua.ppcall(1, 0, 0);
+    lua.push(_luaentity);
+    lua.pcall(1, 0, 0);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void ScriptComponentInst::DoStop(Simulation* psi) {
   auto scm = psi->findSystem<ScriptSystem>();
@@ -181,14 +208,16 @@ void ScriptComponentInst::DoStop(Simulation* psi) {
     LuaIntf::LuaState lua = L;
     lua.getRef(mScriptObject->mOnEntStop);
     assert(lua.isFunction(-1));
-    lua.push(mEntTable);
-    lua.ppcall(1, 0, 0);
+    lua.push(_luaentity);
+    lua.pcall(1, 0, 0);
 
     //////////////////////////////////////////
 
     // printf( "LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void ScriptComponentInst::DoUpdate(ork::ent::Simulation* psi) {
 
@@ -206,9 +235,9 @@ void ScriptComponentInst::DoUpdate(ork::ent::Simulation* psi) {
       LuaIntf::LuaState lua = L;
       lua.getRef(mScriptObject->mOnEntUpdate);
       assert(lua.isFunction(-1));
-      lua.push(mEntTable);
+      lua.push(_luaentity);
       lua.push(dt);
-      lua.ppcall(2, 0, 0);
+      lua.pcall(2, 0, 0);
     }
   }
   // NOP (scriptmanager will execute)
@@ -218,8 +247,13 @@ void ScriptComponentInst::DoUpdate(ork::ent::Simulation* psi) {
 
 void ScriptSystemData::Describe() {
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 ScriptSystemData::ScriptSystemData() {
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 System* ScriptSystemData::createSystem(ork::ent::Simulation* pinst) const {
   return new ScriptSystem(*this, pinst);
@@ -299,6 +333,8 @@ ScriptSystem::ScriptSystem(const ScriptSystemData& data, ork::ent::Simulation* p
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 ScriptSystem::~ScriptSystem() {
   //////////////////////////////
   // delete flyweighted scriptobjects
@@ -317,6 +353,8 @@ ScriptSystem::~ScriptSystem() {
   delete asluasys;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 bool ScriptSystem::DoLink(Simulation* psi) // final
 {
   // printf( "ScriptSystem::DoLink()\n" );
@@ -326,6 +364,9 @@ bool ScriptSystem::DoLink(Simulation* psi) // final
 
   return true;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void ScriptSystem::DoUnLink(Simulation* psi) // final
 {
   printf("ScriptSystem::DoUnLink()\n");
@@ -333,6 +374,9 @@ void ScriptSystem::DoUnLink(Simulation* psi) // final
   OrkAssert(asluasys);
   // LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneUnLink");
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void ScriptSystem::DoStart(Simulation* psi) // final
 {
   // printf( "ScriptSystem::DoStart()\n" );
@@ -340,6 +384,9 @@ void ScriptSystem::DoStart(Simulation* psi) // final
   OrkAssert(asluasys);
   // LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneStart");
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void ScriptSystem::DoStop(Simulation* inst) // final
 {
   // printf( "ScriptSystem::DoStop()\n" );
@@ -347,6 +394,8 @@ void ScriptSystem::DoStop(Simulation* inst) // final
   OrkAssert(asluasys);
   // LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneStop");
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void ScriptSystem::DoUpdate(Simulation* psi) // final
 {

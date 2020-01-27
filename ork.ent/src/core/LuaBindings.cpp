@@ -152,7 +152,7 @@ bool DoString(lua_State* L, const char* str) {
 LuaSystem::LuaSystem(Simulation* psi)
     : mSimulation(psi) {
   mLuaState = ::luaL_newstate(); // aka lua_open
-  assert(mLuaState != nullptr);
+  OrkAssert(mLuaState != nullptr);
   luaL_openlibs(mLuaState);
   auto L = mLuaState;
 
@@ -195,10 +195,12 @@ LuaSystem::LuaSystem(Simulation* psi)
           })
       ////////////////////////////////////////
       .addMetaFunction("__add", [](const fvec3* a, const fvec3* b) -> fvec3 { return (*a) + (*b); })
-      .addMetaFunction("__sub", [](const fvec3* a, const fvec3* b) -> fvec3 {
-        printf( "vec3.sub a<%p> b<%p>\n", a, b);
-        return (*a) - (*b);
-      })
+      .addMetaFunction(
+          "__sub",
+          [](const fvec3* a, const fvec3* b) -> fvec3 {
+            printf("vec3.sub a<%p> b<%p>\n", a, b);
+            return (*a) - (*b);
+          })
       .addMetaFunction("__mul", [](const fvec3* a, float b) -> fvec3 { return (*a) * b; })
       .endClass()
       ////////////////////////////////////////
@@ -261,15 +263,11 @@ LuaSystem::LuaSystem(Simulation* psi)
       .addFunction(
           "pos",
           [](Entity* pent) {
-            fvec3 pos;// = pent->GetEntityPosition();
+            fvec3 pos; // = pent->GetEntityPosition();
             return pos;
           })
       ////////////////////////////////////////
-      .addFunction(
-          "setPos",
-          [](Entity* pent, fvec3 pos)  {
-            pent->setPos(pos);
-          })
+      .addFunction("setPos", [](Entity* pent, fvec3 pos) { pent->setPos(pos); })
       ////////////////////////////////////////
       .addFunction(
           "setRotAxisAngle",

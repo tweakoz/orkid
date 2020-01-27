@@ -15,87 +15,85 @@
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include "LuaBindings.h"
 
-//using namespace LuaIntf;
-
+// using namespace LuaIntf;
 
 namespace ork { namespace ent {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ScriptComponentData : public ent::ComponentData
-{
-	ScriptComponentData();
+struct ScriptComponentData : public ent::ComponentData {
+  ScriptComponentData();
 
-	const file::Path& GetPath() const { return mScriptPath; }
-	void SetPath(const file::Path& pth) { mScriptPath=pth; }
+  const file::Path& GetPath() const {
+    return mScriptPath;
+  }
+  void SetPath(const file::Path& pth) {
+    mScriptPath = pth;
+  }
 
 private:
-	RttiDeclareConcrete( ScriptComponentData, ent::ComponentData );
-	ent::ComponentInst* createComponent(ent::Entity* pent) const final;
-	void DoRegisterWithScene( ork::ent::SceneComposer& sc ) final;
+  RttiDeclareConcrete(ScriptComponentData, ent::ComponentData);
+  ent::ComponentInst* createComponent(ent::Entity* pent) const final;
+  void DoRegisterWithScene(ork::ent::SceneComposer& sc) final;
 
-	file::Path mScriptPath;
+  file::Path mScriptPath;
 };
-
 
 typedef ork::FixedString<65536> script_text_t;
 typedef ork::FixedString<256> script_funcname_t;
 
-struct ScriptObject
-{
-	ScriptObject();
+struct ScriptObject {
+  ScriptObject();
 
-	script_text_t mScriptText;
-	std::string mMD5Digest;
-	int mOnEntLink;
-	int mOnEntStart;
-	int mOnEntStop;
-	int mOnEntActivate;
-	int mOnEntDeactivate;
-	int mOnEntUpdate;
+  script_text_t mScriptText;
+  std::string mMD5Digest;
+  int mOnEntLink;
+  int mOnEntStart;
+  int mOnEntStop;
+  int mOnEntActivate;
+  int mOnEntDeactivate;
+  int mOnEntUpdate;
   int mModTabRef;
-	int mScriptRef;
+  int mScriptRef;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ScriptComponentInst : public ent::ComponentInst
-{
-	ScriptComponentInst( const ScriptComponentData& cd, ork::ent::Entity* pent );
-	const ScriptComponentData&	GetCD() const { return mCD; }
+struct ScriptComponentInst : public ent::ComponentInst {
+  ScriptComponentInst(const ScriptComponentData& cd, ork::ent::Entity* pent);
+  const ScriptComponentData& GetCD() const {
+    return mCD;
+  }
 
 private:
+  RttiDeclareAbstract(ScriptComponentInst, ent::ComponentInst);
+  void DoUpdate(ent::Simulation* sinst) final;
+  bool DoLink(Simulation* psi) final;
+  void DoUnLink(Simulation* psi) final;
+  bool DoStart(Simulation* psi, const fmtx4& world) final;
+  void DoStop(Simulation* psi) final;
+  void onActivate(Simulation* psi) final;
+  void onDeactivate(Simulation* psi) final;
+  const ScriptComponentData& mCD;
+  std::string mScriptText;
+  ScriptObject* mScriptObject;
 
-	RttiDeclareAbstract( ScriptComponentInst, ent::ComponentInst );
-	void DoUpdate(ent::Simulation* sinst) final;
-	bool DoLink(Simulation *psi) final;
-	void DoUnLink(Simulation *psi) final;
-	bool DoStart(Simulation *psi, const fmtx4 &world) final;
-	void DoStop(Simulation *psi) final;
-	void onActivate(Simulation* psi) final;
-	void onDeactivate(Simulation* psi) final;
-	const ScriptComponentData&		mCD;
-	std::string mScriptText;
-	ScriptObject* mScriptObject;
-
-	any<64> mLuaData;
-    LuaIntf::LuaRef mEntTable;
+  any<64> mLuaData;
+  LuaIntf::LuaRef _luaentity; // its a table
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class ScriptSystemData : public ork::ent::SystemData
-{
-	RttiDeclareConcrete(ScriptSystemData, ork::ent::SystemData);
+class ScriptSystemData : public ork::ent::SystemData {
+  RttiDeclareConcrete(ScriptSystemData, ork::ent::SystemData);
 
 public:
-	///////////////////////////////////////////////////////
-	ScriptSystemData();
-	///////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////
+  ScriptSystemData();
+  ///////////////////////////////////////////////////////
 
 private:
-    ork::ent::System* createSystem(ork::ent::Simulation *pinst) const final;
-
+  ork::ent::System* createSystem(ork::ent::Simulation* pinst) const final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -103,30 +101,32 @@ private:
 class ScriptSystem : public ork::ent::System {
 
 public:
-
   static constexpr systemkey_t SystemType = "ScriptSystem";
-	systemkey_t systemTypeDynamic() final { return SystemType; }
+  systemkey_t systemTypeDynamic() final {
+    return SystemType;
+  }
 
-	ScriptSystem( const ScriptSystemData &data, ork::ent::Simulation *pinst );
+  ScriptSystem(const ScriptSystemData& data, ork::ent::Simulation* pinst);
 
-	anyp GetLuaManager() { return mLuaManager; }
+  anyp GetLuaManager() {
+    return mLuaManager;
+  }
 
-	ScriptObject* FlyweightScriptObject( const ork::file::Path& key );
+  ScriptObject* FlyweightScriptObject(const ork::file::Path& key);
 
 private:
-
   ~ScriptSystem() final;
 
-	bool DoLink(Simulation *psi) final;
-	void DoUnLink(Simulation *psi) final;
-	void DoUpdate(Simulation *inst) final;
-	void DoStart(Simulation *psi) final;
-	void DoStop(Simulation *inst) final;
+  bool DoLink(Simulation* psi) final;
+  void DoUnLink(Simulation* psi) final;
+  void DoUpdate(Simulation* inst) final;
+  void DoStart(Simulation* psi) final;
+  void DoStop(Simulation* inst) final;
 
-	anyp mLuaManager;
-	std::string mScriptText;
-	std::map<ork::file::Path,ScriptObject*> mScriptObjects;
-	int mScriptRef;
+  anyp mLuaManager;
+  std::string mScriptText;
+  std::map<ork::file::Path, ScriptObject*> mScriptObjects;
+  int mScriptRef;
 };
 
-}} // namespace ork/ent
+}} // namespace ork::ent
