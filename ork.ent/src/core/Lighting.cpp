@@ -68,7 +68,7 @@ void LightingComponentInst::Describe() {
 
 LightingComponentInst::LightingComponentInst(const LightingComponentData& data, ork::ent::Entity* pent)
     : ork::ent::ComponentInst(&data, pent)
-    , mLight(0)
+    , _light(nullptr)
     , mLightData(data) {
   ork::lev2::LightData* lightdata = data.GetLightData();
 
@@ -77,26 +77,26 @@ LightingComponentInst::LightingComponentInst(const LightingComponentData& data, 
   ork::lev2::SpotLightData* sptlight_data        = ork::rtti::autocast(lightdata);
   ork::lev2::AmbientLightData* amblight_data     = ork::rtti::autocast(lightdata);
 
-  auto& ent_xf = GetEntity()->data()->GetDagNode().GetTransformNode().GetTransform().GetMatrix();
+  auto& ent_xf = _entity->GetDagNode().GetTransformNode().GetTransform().GetMatrix();
 
   if (amblight_data) {
-    mLight = new ork::lev2::AmbientLight(ent_xf, amblight_data);
+    _light = new ork::lev2::AmbientLight(ent_xf, amblight_data);
   }
   if (dirlight_data) {
-    mLight = new ork::lev2::DirectionalLight(ent_xf, dirlight_data);
+    _light = new ork::lev2::DirectionalLight(ent_xf, dirlight_data);
   }
   if (pntlight_data) {
-    mLight = new ork::lev2::PointLight(ent_xf, pntlight_data);
+    _light = new ork::lev2::PointLight(ent_xf, pntlight_data);
   }
   if (sptlight_data) {
-    mLight = new ork::lev2::SpotLight(ent_xf, sptlight_data);
+    _light = new ork::lev2::SpotLight(ent_xf, sptlight_data);
   }
 
   struct yo {
     //
     ork::lev2::XgmModelAsset* mpModel;
     ork::ent::Entity* mpEntity;
-    ork::lev2::Light* mpLight;
+    ork::lev2::Light* _light;
 
     static void draw_tricircle(
         ork::lev2::RenderContextInstData& rcid,
@@ -187,8 +187,8 @@ LightingComponentInst::LightingComponentInst(const LightingComponentData& data, 
     static void doit(ork::lev2::RenderContextInstData& rcid, ork::lev2::Context* targ, const ork::lev2::CallbackRenderable* pren) {
       const yo* pyo = pren->GetUserData0().Get<const yo*>();
 
-      if (pyo->mpLight) {
-        auto ppntlight = dynamic_cast<ork::lev2::PointLight*>(pyo->mpLight);
+      if (pyo->_light) {
+        auto ppntlight = dynamic_cast<ork::lev2::PointLight*>(pyo->_light);
         if (ppntlight) {
           draw_tricircle(rcid, targ, pren, ppntlight);
         } else {
@@ -206,7 +206,7 @@ LightingComponentInst::LightingComponentInst(const LightingComponentData& data, 
 #if 0 // DRAWTHREADS
 	yo* pyo = new yo;
 	pyo->mpEntity = pent;
-	pyo->mpLight = GetLight();
+	pyo->_light = GetLight();
 
 	ork::ent::CallbackDrawable* pdrw = new ork::ent::CallbackDrawable(pent);
 	pent->addDrawableToDefaultLayer(pdrw);
@@ -254,15 +254,20 @@ LightingComponentInst::~LightingComponentInst() {
 
     ork::lev2::LightContainer& global_container = lightmanager.mGlobalMovingLights;
 
-    if (mLight) {
-      global_container.RemoveLight(mLight);
+    if (_light) {
+      global_container.RemoveLight(_light);
     }
   }
-  if (mLight)
-    delete mLight;
+  if (_light)
+    delete _light;
 }
 
 void LightingComponentInst::DoUpdate(ork::ent::Simulation* inst) {
+  if (mLightData.IsDynamic()) {
+    if (_light) {
+      //_light->_worldMatrix = _entity->GetEffectiveMatrix();
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

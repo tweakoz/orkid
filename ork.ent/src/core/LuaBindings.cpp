@@ -198,7 +198,7 @@ LuaSystem::LuaSystem(Simulation* psi)
       .addMetaFunction(
           "__sub",
           [](const fvec3* a, const fvec3* b) -> fvec3 {
-            printf("vec3.sub a<%p> b<%p>\n", a, b);
+            // printf("vec3.sub a<%p> b<%p>\n", a, b);
             return (*a) - (*b);
           })
       .addMetaFunction("__mul", [](const fvec3* a, float b) -> fvec3 { return (*a) * b; })
@@ -263,7 +263,7 @@ LuaSystem::LuaSystem(Simulation* psi)
       .addFunction(
           "pos",
           [](Entity* pent) {
-            fvec3 pos; // = pent->GetEntityPosition();
+            fvec3 pos = pent->GetEntityPosition();
             return pos;
           })
       ////////////////////////////////////////
@@ -284,7 +284,7 @@ LuaSystem::LuaSystem(Simulation* psi)
               auto c                = item.second;
               rval[c->scriptName()] = c;
             }
-            printf("ent<%p> components size<%zu>\n", e, rval.size());
+            // printf("ent<%p> components size<%zu>\n", e, rval.size());
             return rval;
           })
       ////////////////////////////////////////
@@ -313,7 +313,7 @@ LuaSystem::LuaSystem(Simulation* psi)
 
             auto position = spdata.get<fvec3>("pos");
 
-            printf("SPAWN<%s:%p> ename<%s>\n", archnamestr.c_str(), archso, entnamestr.c_str());
+            // printf("SPAWN<%s:%p> ename<%s>\n", archnamestr.c_str(), archso, entnamestr.c_str());
 
             if (const Archetype* as_arch = rtti::autocast(archso)) {
               EntData* spawner = new EntData;

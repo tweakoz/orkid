@@ -82,7 +82,7 @@ ConstString EditorPropMapData::GetProperty(const ConstString& key) const {
 
 ComponentInst::ComponentInst(const ComponentData* data, Entity* pent)
     : mComponentData(data)
-    , mEntity(pent)
+    , _entity(pent)
     , mbStarted(false)
     , mbValid(false) {
   // printf( "ComponentInst::ComponentInst<%p> ent<%p>\n", this, pent );
@@ -92,8 +92,8 @@ void ComponentInst::Link(Simulation* psi) {
   mbValid = DoLink(psi);
 
   /*if(!mbValid) orkprintf("WARNING: Failed to Link component %s of entity %s with archetype %s\n"
-      , GetClass()->Name().c_str(), mEntity->GetEntData().GetName().c_str()
-      , mEntity->GetEntData().GetArchetype() ? mEntity->GetEntData().GetArchetype()->GetName().c_str() : "null");*/
+      , GetClass()->Name().c_str(), _entity->GetEntData().GetName().c_str()
+      , _entity->GetEntData().GetArchetype() ? _entity->GetEntData().GetArchetype()->GetName().c_str() : "null");*/
 }
 void ComponentInst::UnLink(Simulation* psi) {
   DoUnLink(psi);
@@ -117,11 +117,11 @@ void ComponentInst::Stop(Simulation* psi) {
 }
 
 const char* ComponentInst::GetEntityName() const {
-  return mEntity->name().c_str();
+  return _entity->name().c_str();
 }
 
 Simulation* ComponentInst::sceneInst() const {
-  return mEntity->simulation();
+  return _entity->simulation();
 }
 
 }} // namespace ork::ent
