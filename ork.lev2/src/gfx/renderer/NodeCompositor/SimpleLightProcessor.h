@@ -26,12 +26,12 @@ namespace ork::lev2::deferrednode {
 
 struct SimpleLightProcessor {
 
-  static constexpr size_t KMAXLIGHTSPERCHUNK = 32768 / sizeof(fvec4);
+  static constexpr size_t KMAXLIGHTSPERCHUNK = 256;
   static constexpr size_t KMAXLIGHTS         = KMAXLIGHTSPERCHUNK;
 
   /////////////////////////////////////////////////////
 
-  SimpleLightProcessor(DeferredContext& defctx,DeferredCompositingNodePbr* compnode);
+  SimpleLightProcessor(DeferredContext& defctx, DeferredCompositingNodePbr* compnode);
 
   /////////////////////////////////////////////////////
 
@@ -43,14 +43,13 @@ struct SimpleLightProcessor {
   void _renderUnshadowedTexturedPointLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
 
   typedef std::vector<lev2::PointLight*> pllist_t;
-  typedef std::map<lev2::Texture*,pllist_t> tex2plmap_t;
+  typedef std::map<lev2::Texture*, pllist_t> tex2plmap_t;
 
   FxShaderParamBuffer* _lightbuffer = nullptr;
   DeferredContext& _deferredContext;
   DeferredCompositingNodePbr* _defcompnode;
   pllist_t _pointlights;
   tex2plmap_t _tex2pointmap;
-
 };
 
-} // namespace ork::lev2::deferrednode {
+} // namespace ork::lev2::deferrednode

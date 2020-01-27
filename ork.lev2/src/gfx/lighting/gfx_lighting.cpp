@@ -14,12 +14,6 @@
 #include <ork/math/collision_test.h>
 #include <ork/reflect/RegisterProperty.h>
 
-//INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::Light, "Light");
-//INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::PointLight, "PointLight");
-//INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::DirectionalLight, "DirectionalLight");
-//INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::AmbientLight, "AmbientLight");
-//INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::SpotLight, "SpotLight");
-
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::LightManagerData, "LightManagerData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::LightData, "LightData");
 ImplementReflectionX(ork::lev2::PointLightData, "PointLightData");
@@ -108,12 +102,6 @@ bool PointLight::IsInFrustum(const Frustum& frustum) {
 bool PointLight::AffectsSphere(const fvec3& center, float radius_) {
   float dist          = (worldPosition() - center).Mag();
   float combinedradii = (radius_ + radius());
-
-  //	orkprintf( "PointLight::AffectsSphere point<%f %f %f> center<%f %f %f>\n",
-  //				mWorldPosition.GetX(), mWorldPosition.GetY(), mWorldPosition.GetZ(),
-  //				center.GetX(), center.GetY(), center.GetZ() );
-
-  // float crsq = combinedradii; //(combinedradii*combinedradii);
   return (dist < combinedradii);
 }
 
@@ -129,12 +117,6 @@ bool PointLight::AffectsCircleXZ(const Circle& cirXZ) {
   fvec3 center(cirXZ.mCenter.GetX(), worldPosition().GetY(), cirXZ.mCenter.GetY());
   float dist          = (worldPosition() - center).Mag();
   float combinedradii = (cirXZ.mRadius + radius());
-
-  //	orkprintf( "PointLight::AffectsSphere point<%f %f %f> center<%f %f %f>\n",
-  //				mWorldPosition.GetX(), mWorldPosition.GetY(), mWorldPosition.GetZ(),
-  //				center.GetX(), center.GetY(), center.GetZ() );
-
-  // float crsq = combinedradii; //(combinedradii*combinedradii);
   return (dist < combinedradii);
 }
 
@@ -227,10 +209,10 @@ SpotLight::SpotLight(const fmtx4& mtx, const SpotLightData* sld)
 
 bool SpotLight::IsInFrustum(const Frustum& frustum) {
   const auto& mtx = worldMatrix();
-  fvec3 pos  = mtx.GetTranslation();
-  fvec3 tgt  = pos + mtx.GetZNormal() * GetRange();
-  fvec3 up   = mtx.GetYNormal();
-  float fovy = 15.0f;
+  fvec3 pos       = mtx.GetTranslation();
+  fvec3 tgt       = pos + mtx.GetZNormal() * GetRange();
+  fvec3 up        = mtx.GetYNormal();
+  float fovy      = 15.0f;
 
   Set(pos, tgt, up, fovy);
 

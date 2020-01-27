@@ -24,8 +24,6 @@ end
 function Spinny:OnEntityActivate()
     printf( "SPINNY::OnEntityActivate()" )
     self.timer = 1.0
-    self.input:notify("whatup",{
-    })
 end
 -------------------------------------------------------------------------------
 function Spinny:OnEntityDeactivate()

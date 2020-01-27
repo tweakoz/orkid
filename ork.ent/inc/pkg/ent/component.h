@@ -99,13 +99,13 @@ class ComponentInst : public Object {
 
 public:
   void SetEntity(Entity* entity) {
-    mEntity = entity;
+    _entity = entity;
   }
   Entity* GetEntity() {
-    return mEntity;
+    return _entity;
   }
   const Entity* GetEntity() const {
-    return mEntity;
+    return _entity;
   }
   Simulation* sceneInst() const;
   // Shortcut to make debugging printfs easier
@@ -143,7 +143,7 @@ public:
 protected:
   ComponentInst(const ComponentData* data, Entity* entity);
 
-  Entity* mEntity;
+  Entity* _entity;
 
 private:
   virtual svar64_t doQuery(const ComponentQuery& q) {

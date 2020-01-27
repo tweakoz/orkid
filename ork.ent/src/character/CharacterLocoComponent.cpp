@@ -157,7 +157,7 @@ class CharacterLocoComponent : public ComponentInst {
 
   bool DoLink(ork::ent::Simulation* psi) final {
 
-    _boci = mEntity->GetTypedComponent<BulletObjectControllerInst>();
+    _boci = _entity->GetTypedComponent<BulletObjectControllerInst>();
     return true;
   }
 

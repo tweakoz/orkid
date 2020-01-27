@@ -22,17 +22,18 @@ add_library (ork_ecs SHARED ${orksrcs})
 ###################################
 
 set( libs ork_core ork_lev2 ork_tuio )
-list(APPEND libs OpenImageIO OpenImageIO_Util portaudio luajit-5.1 )
+list(APPEND libs OpenImageIO OpenImageIO_Util portaudio )
 list(APPEND libs BulletCollision BulletDynamics LinearMath )
-list(APPEND libs boost_filesystem )
+list(APPEND libs boost_filesystem lua )
 IF(${APPLE})
     target_include_directories (ork_ecs PRIVATE /usr/local/include)
     list(APPEND libs m pthread )
 ELSEIF(${UNIX})
     list(APPEND libs rt dl pthread GL )
 ENDIF()
+list(APPEND libs lua )
 
-target_link_libraries(ork_ecs ${libs})
+target_link_libraries(ork_ecs LINK_PUBLIC ${libs})
 
 target_include_directories (ork_ecs PRIVATE ${INCD} )
 target_include_directories (ork_ecs PRIVATE ${SRCD} )
@@ -40,7 +41,7 @@ target_include_directories (ork_ecs PRIVATE ${SRCD}/LuaIntf )
 target_include_directories (ork_ecs PRIVATE ${COREINCD} )
 target_include_directories (ork_ecs PRIVATE ${LEV2INCD} )
 target_include_directories (ork_ecs PRIVATE $ENV{OBT_STAGE}/include )
-target_include_directories (ork_ecs PRIVATE $ENV{OBT_STAGE}/include/luajit-2.0 )
+target_include_directories (ork_ecs PRIVATE $ENV{OBT_STAGE}/include/lua )
 target_include_directories (ork_ecs PRIVATE $ENV{OBT_STAGE}/include/bullet )
 
 ###################################
