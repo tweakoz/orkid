@@ -12,10 +12,10 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>-0.876468 2.45393 -0.560314</property>
+                                                <property name='Center'>-0.660022 2.01074 -0.54658</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>12.2979</property>
-                                                <property name='QuatC'>-0.00782347 -0.983555 0.127967 0.130756</property>
+                                                <property name='Loc'>13.4145</property>
+                                                <property name='QuatC'>0.0599363 -0.919365 0.189051 0.341207</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -210,14 +210,14 @@
                                                         <reference category='ObjectClass'>
                                                             <object type='PointLightData' id='24'>
                                                                 <property name='AffectsSpecular'>false</property>
-                                                                <property name='Color'>250 250 250</property>
+                                                                <property name='Color'>125 250 250</property>
                                                                 <property name='ShadowBias'>0.2</property>
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>false</property>
                                                                 <property name='ShadowSamples'>1</property>
                                                                 <property name='EquirectMap'>
                                                                     <reference category='AssetClass'>
-                                                                        "lev2tex" "data://environ/envmaps/tozenv_colornoise"
+                                                                        "lev2tex" "data://effect_textures/NoiseKern"
                                                                     </reference>
                                                                 </property>
                                                                 <property name='Falloff'>1</property>
@@ -346,14 +346,14 @@
                                                         <reference category='ObjectClass'>
                                                             <object type='PointLightData' id='38'>
                                                                 <property name='AffectsSpecular'>false</property>
-                                                                <property name='Color'>250 250 250</property>
+                                                                <property name='Color'>0 250 250</property>
                                                                 <property name='ShadowBias'>0.2</property>
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>false</property>
                                                                 <property name='ShadowSamples'>1</property>
                                                                 <property name='EquirectMap'>
                                                                     <reference category='AssetClass'>
-                                                                        "lev2tex" "data://environ/envmaps/tozenv_nebula"
+                                                                        "lev2tex" "data://effect_textures/NoiseKern"
                                                                     </reference>
                                                                 </property>
                                                                 <property name='Falloff'>1</property>

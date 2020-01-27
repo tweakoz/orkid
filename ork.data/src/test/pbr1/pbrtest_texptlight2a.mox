@@ -12,10 +12,10 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>-0.876468 2.45393 -0.560314</property>
+                                                <property name='Center'>-0.609828 1.55077 -0.461714</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>12.2979</property>
-                                                <property name='QuatC'>-0.00782347 -0.983555 0.127967 0.130756</property>
+                                                <property name='Loc'>13.4145</property>
+                                                <property name='QuatC'>-0.0177796 -0.988898 0.150567 -0.00560013</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -217,7 +217,7 @@
                                                                 <property name='ShadowSamples'>1</property>
                                                                 <property name='EquirectMap'>
                                                                     <reference category='AssetClass'>
-                                                                        "lev2tex" "data://environ/envmaps/tozenv_colornoise"
+                                                                        "lev2tex" "data://environ/envmaps/tozenv_caustic1"
                                                                     </reference>
                                                                 </property>
                                                                 <property name='Falloff'>1</property>
@@ -353,7 +353,7 @@
                                                                 <property name='ShadowSamples'>1</property>
                                                                 <property name='EquirectMap'>
                                                                     <reference category='AssetClass'>
-                                                                        "lev2tex" "data://environ/envmaps/tozenv_nebula"
+                                                                        "lev2tex" "data://environ/envmaps/tozenv_caustic1"
                                                                     </reference>
                                                                 </property>
                                                                 <property name='Falloff'>1</property>
