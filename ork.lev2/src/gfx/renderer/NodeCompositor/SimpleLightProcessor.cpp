@@ -205,7 +205,7 @@ void SimpleLightProcessor::_renderUnshadowedTexturedPointLights(
       mapping->ref<fvec4>(chunk_offset)            = fvec4(color, dist2cam);
       mapping->ref<fvec4>(KPOSPASE + chunk_offset) = fvec4(pos, radius);
       chunk_offset += sizeof(fvec4);
-      printf("lidx<%d> light_color<%g %g %g>\n", lidx, color.x, color.y, color.z);
+      //printf("lidx<%d> light_color<%g %g %g>\n", lidx, color.x, color.y, color.z);
     }
     /////////////////////////////////////
     // chunk ready, fire it off..

@@ -1,0 +1,485 @@
+
+<reference category='ObjectClass'>
+    <object type='Ent3dSceneData' id='0'>
+        <property name='SceneObjects'>
+            <item key='/arch/edcam'>
+                <reference category='SceneObjectClass'>
+                    <object type='EditorCamArchetype' id='1'>
+                        <property name='Name'>"/arch/edcam"</property>
+                        <property name='Components'>
+                            <item key='camera'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='EditorCamControllerData' id='2'>
+                                        <property name='Camera'>
+                                            <object type='EzUiCam' id='3'>
+                                                <property name='Center'>-0.0508708 2.03557 0.662156</property>
+                                                <property name='Focus'>0 0 0</property>
+                                                <property name='Loc'>15.5877</property>
+                                                <property name='QuatC'>0.000742903 -0.99672 0.0167085 -0.0841926</property>
+                                                <property name='Aperature'>40</property>
+                                                <property name='MaxFar'>10000</property>
+                                                <property name='MinNear'>0.1</property>
+                                            </object>
+                                        </property>
+                                    </object>
+                                </reference>
+                            </item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='/arch/object'>
+                <reference category='SceneObjectClass'>
+                    <object type='ModelArchetype' id='4'>
+                        <property name='Name'>"/arch/object"</property>
+                        <property name='Components'>
+                            <item key=''>
+                                <reference category='ComponentDataClass'>
+                                    <object type='EditorPropMapData' id='5'>
+                                        <property name='Properties'></property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='ModelComponentData' id='6'>
+                                        <property name='AlwaysVisible'>false</property>
+                                        <property name='BlenderZup'>false</property>
+                                        <property name='EditorDagDebug'>false</property>
+                                        <property name='MaterialOverrides'></property>
+                                        <property name='Model'>
+                                            <reference category='AssetClass'>
+                                                "xgmodel" "data://test/pbr1/pbr1"
+                                            </reference>
+                                        </property>
+                                        <property name='Offset'>0 0 0</property>
+                                        <property name='Rotate'>0 0 0</property>
+                                        <property name='Scale'>1</property>
+                                        <property name='ShowBoundingSphere'>false</property>
+                                    </object>
+                                </reference>
+                            </item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='Grid'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='7'>
+                        <property name='Name'>"Grid"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='8'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'>
+                            <reference category='SceneObjectClass'>
+                                <object type='GridArchetype' id='9'>
+                                    <property name='Name'>"SceneObject4"</property>
+                                    <property name='Components'>
+                                        <item key='control'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='GridControllerData' id='10'>
+                                                    <property name='ColorTexture'>
+                                                        <reference category='AssetClass'>
+                                                            "lev2tex" "lev2://textures/gridcell_blue"
+                                                        </reference>
+                                                    </property>
+                                                    <property name='Extent'>100</property>
+                                                    <property name='SpinRate'>-3.36284</property>
+                                                    <property name='TileDim'>10</property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                    </property>
+                                </object>
+                            </reference>
+                        </property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+            <item key='Light1'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='11'>
+                        <property name='Name'>"Light1"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='12'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 6 -3 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'>
+                            <reference category='SceneObjectClass'>
+                                <object type='LightArchetype' id='13'>
+                                    <property name='Name'>"SceneObject3"</property>
+                                    <property name='Components'>
+                                        <item key='lighting'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='LightingComponentData' id='14'>
+                                                    <property name='Dynamic'>false</property>
+                                                    <property name='LightData'>
+                                                        <reference category='ObjectClass'>
+                                                            <object type='PointLightData' id='15'>
+                                                                <property name='AffectsSpecular'>false</property>
+                                                                <property name='Color'>400 400 400</property>
+                                                                <property name='ShadowBias'>0.2</property>
+                                                                <property name='ShadowBlur'>0</property>
+                                                                <property name='ShadowCaster'>false</property>
+                                                                <property name='ShadowSamples'>1</property>
+                                                                <property name='EquirectMap'>
+                                                                    <reference category='AssetClass'>
+                                                                        "lev2tex" "data://environ/envmaps/tozenv_hellscape"
+                                                                    </reference>
+                                                                </property>
+                                                                <property name='Falloff'>1</property>
+                                                                <property name='Radius'>10</property>
+                                                            </object>
+                                                        </reference>
+                                                    </property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                    </property>
+                                </object>
+                            </reference>
+                        </property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+            <item key='Light2'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='16'>
+                        <property name='Name'>"Light2"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='17'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 9 5 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'>
+                            <reference category='SceneObjectClass'>
+                                <object type='LightArchetype' id='18'>
+                                    <property name='Name'>"SceneObject5"</property>
+                                    <property name='Components'>
+                                        <item key='lighting'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='LightingComponentData' id='19'>
+                                                    <property name='Dynamic'>false</property>
+                                                    <property name='LightData'>
+                                                        <reference category='ObjectClass'>
+                                                            <object type='PointLightData' id='20'>
+                                                                <property name='AffectsSpecular'>false</property>
+                                                                <property name='Color'>1000 1000 1000</property>
+                                                                <property name='ShadowBias'>0.2</property>
+                                                                <property name='ShadowBlur'>0</property>
+                                                                <property name='ShadowCaster'>false</property>
+                                                                <property name='ShadowSamples'>1</property>
+                                                                <property name='EquirectMap'>
+                                                                    <reference category='AssetClass'>
+                                                                        "lev2tex" "data://environ/envmaps/blender_forest"
+                                                                    </reference>
+                                                                </property>
+                                                                <property name='Falloff'>1</property>
+                                                                <property name='Radius'>3000</property>
+                                                            </object>
+                                                        </reference>
+                                                    </property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                    </property>
+                                </object>
+                            </reference>
+                        </property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+            <item key='Nubby'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='21'>
+                        <property name='Name'>"Nubby"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='22'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 3 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'>
+                            <reference category='SceneObjectClass'>
+                                <object type='SimpleCharacterArchetype' id='23'>
+                                    <property name='Name'>"SceneObject2"</property>
+                                    <property name='Components'>
+                                        <item key=''>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='EditorPropMapData' id='24'>
+                                                    <property name='Properties'></property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                        <item key='animate'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='SimpleAnimatableData' id='25'>
+                                                    <property name='AnimMaskMap'></property>
+                                                    <property name='AnimSeqTableMap'></property>
+                                                    <property name='AnimationMap'></property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                        <item key='audio'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='AudioEffectComponentData' id='26'>
+                                                    <property name='BankMap'></property>
+                                                    <property name='MutexGroups'>""</property>
+                                                    <property name='SoundMap'></property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                        <item key='bullet'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='BulletObjectControllerData' id='27'>
+                                                    <property name='AllowSleeping'>true</property>
+                                                    <property name='AngularDamping'>0.5</property>
+                                                    <property name='Disable'>false</property>
+                                                    <property name='ForceControllers'></property>
+                                                    <property name='Friction'>0.5</property>
+                                                    <property name='IsKinematic'>false</property>
+                                                    <property name='LinearDamping'>0.5</property>
+                                                    <property name='Mass'>1</property>
+                                                    <property name='Restitution'>0.5</property>
+                                                    <property name='Shape'><backreference id='-1'/></property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                        <item key='control'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='CharacterLocoData' id='28'>
+                                                    <property name='RunSpeed'>50</property>
+                                                    <property name='SpeedLerpRate'>1</property>
+                                                    <property name='WalkSpeed'>30</property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                        <item key='control'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='SimpleCharControllerData' id='29'>
+                                                    <property name='RunSpeed'>50</property>
+                                                    <property name='SpeedLerpRate'>1</property>
+                                                    <property name='WalkSpeed'>30</property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                        <item key='control'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='ScriptComponentData' id='30'>
+                                                    <property name='ScriptFile'>"src://scripts/arch/spinny.lua"</property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                        <item key='control'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='ModelComponentData' id='31'>
+                                                    <property name='AlwaysVisible'>false</property>
+                                                    <property name='BlenderZup'>false</property>
+                                                    <property name='EditorDagDebug'>false</property>
+                                                    <property name='MaterialOverrides'></property>
+                                                    <property name='Model'>
+                                                        <reference category='AssetClass'>
+                                                            "xgmodel" "data://test/pbr1/pbr1"
+                                                        </reference>
+                                                    </property>
+                                                    <property name='Offset'>0 0 0</property>
+                                                    <property name='Rotate'>0 0 0</property>
+                                                    <property name='Scale'>1</property>
+                                                    <property name='ShowBoundingSphere'>false</property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                        <item key='input'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='InputComponentData' id='32'>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                    </property>
+                                </object>
+                            </reference>
+                        </property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+            <item key='PerformanceAnalyzer'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='33'>
+                        <property name='Name'>"PerformanceAnalyzer"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='34'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 1 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'>
+                            <reference category='SceneObjectClass'>
+                                <object type='PerformanceAnalyzerArchetype' id='35'>
+                                    <property name='Name'>"SceneObject1"</property>
+                                    <property name='Components'>
+                                        <item key='control'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='PerfAnalyzerControllerData' id='36'>
+                                                    <property name='EnableDisplay'>true</property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                    </property>
+                                </object>
+                            </reference>
+                        </property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+            <item key='SceneObject1'><backreference id='35'/></item>
+            <item key='SceneObject2'><backreference id='23'/></item>
+            <item key='SceneObject3'><backreference id='13'/></item>
+            <item key='SceneObject4'><backreference id='9'/></item>
+            <item key='SceneObject5'><backreference id='18'/></item>
+            <item key='spawncam'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='37'>
+                        <property name='Name'>"spawncam"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='38'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'><backreference id='1'/></property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+        </property>
+        <property name='ScriptFile'>""</property>
+        <property name='SystemData'>
+            <item key='AudioSystemData'>
+                <reference category='SystemDataClass'>
+                    <object type='AudioSystemData' id='39'>
+                        <property name='DistanceAttenPower'>0</property>
+                        <property name='DistanceMax'>10</property>
+                        <property name='DistanceMin'>0.1</property>
+                        <property name='DistanceScale'>0.003</property>
+                        <property name='Reverb'>
+                            <object type='lev2::AudioReverbProperties' id='40'>
+                                <property name='DecayTime'>1.49</property>
+                                <property name='EnvDiffusion'>1</property>
+                                <property name='ModulationDepth'>0</property>
+                                <property name='Reflections'>-2602</property>
+                                <property name='ReverbDelay'>0.011</property>
+                                <property name='Room'>-1000</property>
+                            </object>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='BulletSystemData'>
+                <reference category='SystemDataClass'>
+                    <object type='BulletSystemData' id='41'>
+                        <property name='Debug'>false</property>
+                        <property name='Gravity'>0 0 0</property>
+                        <property name='SimulationRate'>120</property>
+                        <property name='TimeScale'>1</property>
+                    </object>
+                </reference>
+            </item>
+            <item key='CompositingSystemData'>
+                <reference category='SystemDataClass'>
+                    <object type='CompositingSystemData' id='42'>
+                        <property name='CompositorData'>
+                            <object type='CompositingData' id='43'>
+                                <property name='ActiveItem'>"item1"</property>
+                                <property name='ActiveScene'>"scene1"</property>
+                                <property name='Enable'>true</property>
+                                <property name='Groups'></property>
+                                <property name='Scenes'>
+                                    <item key='scene1'>
+                                        <reference category='ObjectClass'>
+                                            <object type='CompositingScene' id='44'>
+                                                <property name='Items'>
+                                                    <item key='item1'>
+                                                        <reference category='ObjectClass'>
+                                                            <object type='CompositingSceneItem' id='45'>
+                                                                <property name='Technique'>
+                                                                    <reference category='ObjectClass'>
+                                                                        <object type='NodeCompositingTechnique' id='46'>
+                                                                            <property name='OutputNode'>
+                                                                                <reference category='ObjectClass'>
+                                                                                    <object type='ScreenOutputCompositingNode' id='47'>
+                                                                                        <property name='Layer'>"All"</property>
+                                                                                    </object>
+                                                                                </reference>
+                                                                            </property>
+                                                                            <property name='PostFxNode'><backreference id='-1'/></property>
+                                                                            <property name='RenderNode'>
+                                                                                <reference category='ObjectClass'>
+                                                                                    <object type='DeferredCompositingNodePbr' id='48'>
+                                                                                        <property name='AmbientLevel'>0 0 0</property>
+                                                                                        <property name='ClearColor'>0 0 0 1</property>
+                                                                                        <property name='DepthFogDistance'>100</property>
+                                                                                        <property name='DepthFogPower'>22.1452</property>
+                                                                                        <property name='DiffuseLevel'>1</property>
+                                                                                        <property name='EnvironmentIntensity'>2</property>
+                                                                                        <property name='EnvironmentMipBias'>0</property>
+                                                                                        <property name='EnvironmentMipScale'>6.48855</property>
+                                                                                        <property name='EnvironmentTexture'>
+                                                                                            <reference category='AssetClass'>
+                                                                                                "lev2tex" "data://environ/envmaps/tozenv_nebula"
+                                                                                            </reference>
+                                                                                        </property>
+                                                                                        <property name='SkyboxLevel'>0.610687</property>
+                                                                                        <property name='SpecularLevel'>1</property>
+                                                                                    </object>
+                                                                                </reference>
+                                                                            </property>
+                                                                        </object>
+                                                                    </reference>
+                                                                </property>
+                                                            </object>
+                                                        </reference>
+                                                    </item>
+                                                </property>
+                                            </object>
+                                        </reference>
+                                    </item>
+                                </property>
+                            </object>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='LightingSystemData'>
+                <reference category='SystemDataClass'>
+                    <object type='VrSystemData' id='49'>
+                        <property name='TrackingObjectEntity'>"vrtrackedobject"</property>
+                        <property name='VrCameraEntity'>"vrcamera"</property>
+                    </object>
+                </reference>
+            </item>
+            <item key='LightingSystemSystemData'>
+                <reference category='SystemDataClass'>
+                    <object type='LightingSystemSystemData' id='50'>
+                    </object>
+                </reference>
+            </item>
+            <item key='ScriptSystemData'>
+                <reference category='SystemDataClass'>
+                    <object type='ScriptSystemData' id='51'>
+                    </object>
+                </reference>
+            </item>
+        </property>
+    </object>
+</reference>
