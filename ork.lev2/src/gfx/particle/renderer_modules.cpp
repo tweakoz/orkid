@@ -929,7 +929,7 @@ void ModelRenderer::Render(
     // setup headlight (default lighting)
     ///////////////////////////////////////////////////////////
     ork::fmtx4 HeadLightMatrix;
-    ork::lev2::LightingGroup HeadLightGroup;
+    /*ork::lev2::LightingGroup HeadLightGroup;
     ork::lev2::AmbientLightData HeadLightData;
     ork::lev2::AmbientLight HeadLight(HeadLightMatrix, &HeadLightData);
     ork::lev2::LightManagerData HeadLightManagerData;
@@ -942,7 +942,7 @@ void ModelRenderer::Render(
     HeadLightMatrix              = cdata->GetIVMatrix();
     HeadLightManager.mGlobalMovingLights.AddLight(&HeadLight);
     // HeadLightManager.mLightsInFrustum.push_back(& HeadLight);
-    MatCtx.SetLightingGroup(&HeadLightGroup);
+    MatCtx.SetLightingGroup(&HeadLightGroup);*/
     // FrameData.SetLightManager( & HeadLightManager );
     // targ->SetRenderContextInstData( & rcid );
     ///////////////////////////////////////////////////////////

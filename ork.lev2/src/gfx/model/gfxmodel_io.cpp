@@ -12,8 +12,6 @@
 #include <ork/kernel/string/StringBlock.h>
 #include <ork/kernel/string/string.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/gfx/gfxmaterial_basic.h>
-#include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/texman.h>

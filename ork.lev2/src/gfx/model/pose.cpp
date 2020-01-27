@@ -12,8 +12,6 @@
 #include <ork/file/chunkfile.inl>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmodel.h>
-#include <ork/lev2/gfx/gfxmaterial_basic.h>
-#include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/kernel/string/deco.inl>
 
 #define ENABLE_ANIM

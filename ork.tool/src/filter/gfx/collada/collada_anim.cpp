@@ -42,17 +42,11 @@
 
 #include <cstring>
 
-typedef ork::tool::ColladaFxAnimChannel<float> ColladaFxAnimChannelFloat;
-typedef ork::tool::ColladaFxAnimChannel<ork::fvec3> ColladaFxAnimChannelFloat3;
-
 ///////////////////////////////////////////////////////////////////////////////
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::ColladaAnimChannel, "ColladaAnimChannel");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::ColladaUvAnimChannel, "ColladaUvAnimChannel");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::ColladaMatrixAnimChannel, "ColladaMatrixAnimChannel");
-
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(ColladaFxAnimChannelFloat, "ColladaFxAnimChannelFloat");
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(ColladaFxAnimChannelFloat3, "ColladaFxAnimChannelFloat3");
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -82,16 +76,6 @@ void ColladaUvAnimChannel::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ColladaMatrixAnimChannel::Describe() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <> void ColladaFxAnimChannel<float>::Describe() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <> void ColladaFxAnimChannel<ork::fvec3>::Describe() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -262,33 +246,6 @@ void CColladaAnim::ParseMaterials() {
 
       mMaterialMap[MaterialName] = colladamaterial;
 
-      lev2::GfxMaterialFx* pmatfx = rtti::autocast(colladamaterial._orkMaterial);
-
-      if (pmatfx) {
-        const GfxMaterialFxEffectInstance& fxi = pmatfx->GetEffectInstance();
-
-        for (orklut<std::string, GfxMaterialFxParamBase*>::const_iterator it2 = fxi.mParameterInstances.begin();
-             it2 != fxi.mParameterInstances.end();
-             it2++) {
-          const std::string& paramname = it2->first;
-
-          GfxMaterialFxParamBase* param = it2->second;
-
-          GfxMaterialFxParamArtist<float>* paramfloat = rtti::autocast(param);
-          if (paramfloat) {
-            std::string FullParamName = MaterialName + std::string("_") + paramname;
-            mFxAnimatables.insert(std::make_pair(FullParamName, param));
-            continue;
-          }
-
-          GfxMaterialFxParamArtist<fvec3>* paramvect3 = rtti::autocast(param);
-          if (paramvect3) {
-            std::string FullParamName = MaterialName + std::string("_") + paramname;
-            mFxAnimatables.insert(std::make_pair(FullParamName, param));
-            continue;
-          }
-        }
-      }
     }
   }
 

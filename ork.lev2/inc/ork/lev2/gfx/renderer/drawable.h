@@ -37,8 +37,6 @@ class XgmModelAsset;
 class XgmModelInst;
 class IRenderer;
 class LightManager;
-class GfxMaterialFx;
-class GfxMaterialFxEffectInstance;
 
 ///////////////////////////////////////////////////////////////////////////
 // todo find a better name

@@ -16,6 +16,7 @@
 #include <ork/lev2/gfx/texman.h>
 #include <orktool/toolcore/selection.h>
 #include <pkg/ent/editor/editor.h>
+#include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include "vpRenderer.h"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -138,7 +139,7 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   // printf( "Renderer::RenderModel() rable<%p>\n", & ModelRen );
   lev2::LightingGroup lgrp;
   lgrp.mLightManager = target->topRenderContextFrameData()->GetLightManager();
-  lgrp.mLightMask    = ModelRen.GetLightMask();
+  //lgrp.mLightMask    = ModelRen.GetLightMask();
   MatCtx.SetLightingGroup(&lgrp);
   bool model_is_skinned = model->isSkinned();
   MatCtx._isSkinned     = model_is_skinned;

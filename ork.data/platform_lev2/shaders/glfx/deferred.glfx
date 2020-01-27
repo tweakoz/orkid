@@ -41,6 +41,7 @@ uniform_set ub_frg {
   sampler2D MapSpecularEnv;
   sampler2D MapDiffuseEnv;
   sampler2D MapBrdfIntegration;
+  sampler2D MapLightingCookie;
   vec2 InvViewportSize; // inverse target size
   float Time;
   vec2 NearFar;
@@ -145,8 +146,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     return gbd._albedo * l;
   }
   /////////////////////////////////////////////////////////
-  vec3 pntlighting(WPosData wpd) {
-    GBufData gbd = decodeGBUF(wpd);
+  vec3 pntlighting(WPosData wpd,GBufData gbd) {
     vec2 uv   = wpd._muv;
     vec4 rmao = texture(MapRufMtlAlpha,uv); // ruf mtl ao opa
 
@@ -185,13 +185,17 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
         if (sphere_intersects_depth){
           vec3 lightpos = LightPosR[lidx].xyz;
           vec3 lightdel = lightpos - wpos;
+          vec3 lightn = normalize(lightdel);
+
+          vec3 lighttex = env_equirectangularFlipV(lightn,MapLightingCookie,0);
+
           float dist2lightsq = lightdel.x*lightdel.x
                              + lightdel.y*lightdel.y
                              + lightdel.z*lightdel.z;
           float atten = 1.0 / dist2lightsq;
           vec3 lightdir = normalize(lightdel);
           vec3 halfdir = normalize(v + lightdir);
-          vec3 radiance = LightColorD[lidx].xyz * atten;
+          vec3 radiance = LightColorD[lidx].xyz * atten*lighttex;
           float ggx = computeGGX(n, halfdir, roughness);
           float geo = geometrySmith(n, v, lightdir, roughness);
           vec3 fres = fresnelSchlickRoughness(satdot(halfdir,v), F0,roughness);
@@ -205,7 +209,6 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
           l += (diffuse_term + specular) * radiance * ndotl;
         }
       }
-      //l = vec3(brdf,0);
     }
     return l;
   }
@@ -361,7 +364,8 @@ fragment_shader ps_pointlight : iface_f2uv : lib_deferred {
   wpd._muv   = gl_FragCoord.xy * InvViewportSize;
   wpd._ivp   = IVPArray[0];
   wpd._scruv = wpd._muv;
-  vec3 c     = pntlighting(wpd);
+  GBufData gbd = decodeGBUF(wpd);
+  vec3 c     = pntlighting(wpd,gbd);
   /////////////////////////////////////////
   // show lighting tiles
   /////////////////////////////////////////

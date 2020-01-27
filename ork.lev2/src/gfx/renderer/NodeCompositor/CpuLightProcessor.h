@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>
+#include <ork/lev2/gfx/lighting/gfx_lighting.h>
 
 namespace ork::lev2::deferrednode {
 

@@ -10,7 +10,6 @@
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>
 #include <ork/lev2/gfx/gfxmodel.h>
-#include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
@@ -65,7 +64,7 @@ QuartzComposerArchetype::QuartzComposerArchetype()
 {
 }
 
-void QuartzComposerArchetype::DoCompose(ork::ent::ArchComposer& composer) 
+void QuartzComposerArchetype::DoCompose(ork::ent::ArchComposer& composer)
 {
 	composer.Register<EditorPropMapData>();
 	composer.Register<ork::ent::QuartzComposerData>();
@@ -155,11 +154,11 @@ QuartzComposerInst::QuartzComposerInst(const QuartzComposerData &data, Entity *p
 					file:PathToComp];
 
 		OrkAssert( pqcren!=nil );
-					
+
 		mQCRenderer = pqcren;
 		mQCRenderer.Dump();
 	}
-				
+
 	//////////////////////////////////////////
 	// gen RTT texture
 	//////////////////////////////////////////
@@ -200,7 +199,7 @@ QuartzComposerInst::QuartzComposerInst(const QuartzComposerData &data, Entity *p
 	GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
 
 	OrkAssert( status == GL_FRAMEBUFFER_COMPLETE_EXT );
-	
+
 	UpdateFBO();
 
 }
@@ -236,7 +235,7 @@ void DrawCross(float depth )
 {
 	float kmin = -0.9f;
 	float kmax = +0.9f;
-	
+
 	glBegin( GL_LINES );
 		glVertex3f( kmin, kmin, depth );
 		glVertex3f( kmax, kmax, depth );
@@ -268,7 +267,7 @@ void QuartzComposerInst::UpdateFBO()
 	QCRenderer* prenderer = (QCRenderer*) mQCRenderer.mInstance;
 	NSOpenGLContext* poglctx = MainCtx()->mInstance;
 
-	GLenum buffers[] =	{	GL_COLOR_ATTACHMENT0_EXT, 
+	GLenum buffers[] =	{	GL_COLOR_ATTACHMENT0_EXT,
 						};
 
 	//printf( "BindFBO<%d> numattachments<%d>\n", int(FboObj->mFBOMaster), inumtargets );
@@ -315,25 +314,25 @@ struct QuartzComposerDrawable
 	static void doit( lev2::RenderContextInstData& rcid, lev2::Context* targ, const lev2::CallbackRenderable* pren )
 	{
 		if( targ->FBI()->isPickState() ) return;
-		
+
 		const QuartzComposerDrawable* pyo = pren->GetUserData0().Get<const QuartzComposerDrawable*>();
 		QuartzComposerInst* pQCI = pyo->mpQCI;
-		
+
 		ork::Objc::Object& QCR = pQCI->mQCRenderer;
-				
+
 		int iframe = 0;
-				
+
 		QCRenderer* prenderer = (QCRenderer*) QCR.mInstance;
 
 		//printf( "iframe<%d> texobj<%d> qcr<%p>\n", iframe, pQCI->mTEX, prenderer );
 		//fflush( stdout );
-		
+
 		////////////////////////////////////////////////////////////////
-				
+
 		OrkAssert( prenderer != 0 );
 
 		//pQCI->UpdateFBO();
-		
+
 		////////////////////////////////////////////////////////////////
 
 		PushIdentity();
@@ -393,9 +392,9 @@ void QuartzComposerInst::DoUpdate( ork::ent::Simulation* psi )
 {
 	float fdeltaT = psi->GetDeltaTime();
 	mfUpdateTime += fdeltaT;
-	
+
 	UpdateFBO();
-	
+
 	miFrame++;
 }
 bool QuartzComposerInst::DoNotify(const ork::event::Event *event)
@@ -406,4 +405,3 @@ bool QuartzComposerInst::DoNotify(const ork::event::Event *event)
 }}
 ///////////////////////////////////////////////////////////////////////////////
 #endif
-

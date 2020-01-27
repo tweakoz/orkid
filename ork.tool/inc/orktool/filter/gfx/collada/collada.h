@@ -7,7 +7,6 @@
 
 #include <orktool/filter/filter.h>
 #include <ork/lev2/gfx/gfxmodel.h>
-#include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <orktool/filter/gfx/meshutil/meshutil.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -301,7 +300,6 @@ struct ColladaMaterial
 
 	ColladaMaterial();
 
-	void ParseFxMaterial( FCDMaterial* FxProf );
 	void ParseStdMaterial( FCDEffectStandard *StdProf );
 	void ParseMaterial( FCDocument* doc, const std::string & ShadingGroupName, const std::string& MaterialName );
 
@@ -548,33 +546,6 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> class ColladaFxAnimChannel : public ColladaAnimChannel
-{
-	DECLARE_TRANSPARENT_TEMPLATE_ABSTRACT_RTTI(ColladaUvAnimChannel,ColladaAnimChannel);
-
-	orkvector<T>								mSampledFrames;
-
-public:
-
-	ork::lev2::GfxMaterialFxParamArtist<T>*		mTargetParameter;
-	std::string									mTargetMaterialName;
-	std::string									mTargetPropertyName;
-
-	ColladaFxAnimChannel( const std::string & ChannelName, const std::string & TargetMaterialName, const std::string & TargetPropertyName )
-		: ColladaAnimChannel( ChannelName )
-		, mTargetParameter(0)
-		, mTargetMaterialName( TargetMaterialName )
-		, mTargetPropertyName( TargetPropertyName )
-	{
-	}
-	const T& GetFrame( int idx ) const { return mSampledFrames[idx]; }
-	int GetNumFrames() const { return int(mSampledFrames.size()); } // virtual
-	void AddFrame( const T& val ) { mSampledFrames.push_back(val); }
-
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 class CColladaAnim : public CColladaAsset
 {
 public:
@@ -590,7 +561,6 @@ public:
 	///////////////////////////////////////////////////////////////////
 	MeshUtil::material_semanticmap_t						mShadingGroupMap;
 	orkmap<std::string,ColladaMaterial>					mMaterialMap;
-	orkmap<std::string,ork::lev2::GfxMaterialFxParamBase*>	mFxAnimatables;
 	orkmap<std::string,ColladaUvAnimChannel*>				mUvAnimatables;
 
 	///////////////////////////////////////////////////////////////////

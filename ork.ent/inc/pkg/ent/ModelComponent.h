@@ -34,8 +34,6 @@ class XgmModelAsset;
 class XgmModelInst;
 class IRenderer;
 class LightManager;
-class GfxMaterialFx;
-class GfxMaterialFxEffectInstance;
 } // namespace lev2
 
 namespace ent {
@@ -108,7 +106,6 @@ public:
 protected:
   const ModelComponentData& mData;
   lev2::ModelDrawable* mModelDrawable;
-  orklut<PoolString, lev2::GfxMaterialFx*> mFxMaterials;
   ork::lev2::XgmModelInst* mXgmModelInst;
   bool _yo = false;
   const char* scriptName() final { return "ModelComponent"; }

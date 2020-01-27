@@ -6,22 +6,22 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
+#include <ork/kernel/timer.h>
+#include <ork/dataflow/dataflow.h>
+#include <ork/lev2/init.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/proctex/proctex.h>
 #include <ork/lev2/gfx/texman.h>
-#include <ork/kernel/timer.h>
+#include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/kernel/string/string.h>
-#include <ork/lev2/gfx/gfxmaterial_basic.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/targetinterfaces.h>
 #include <ork/lev2/gfx/particle/modular_particles.h>
-#include <ork/lev2/init.h>
-#include <ork/dataflow/dataflow.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include "gfx/renderer/NodeCompositor/NodeCompositorVr.h"
 #include "gfx/renderer/NodeCompositor/NodeCompositorFx3.h"
@@ -62,8 +62,6 @@ void ClassInit() {
 
   GfxEnv::GetRef();
   GfxPrimitives::GetRef();
-
-  GfxMaterialWiiBasic::StaticInit();
 
   //////////////////////////////////////////
   // touch of class
@@ -123,6 +121,8 @@ void ClassInit() {
   proctex::H2N::GetClassStatic();
   proctex::UvMap::GetClassStatic();
   proctex::Kaled::GetClassStatic();
+
+  RegisterClassX(PointLightData);
 
   RegisterClassX(OutputCompositingNode);
   RegisterClassX(VrCompositingNode);

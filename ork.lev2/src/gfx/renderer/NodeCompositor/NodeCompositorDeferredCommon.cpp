@@ -71,6 +71,7 @@ void DeferredContext::gpuInit(Context* target) {
     _lightingmtl.gpuInit(target, _shadername);
     _tekBaseLighting              = _lightingmtl.technique("baselight");
     _tekPointLighting             = _lightingmtl.technique("pointlight");
+    _tekPointLightingTextured     = _lightingmtl.technique("pointlight_textured");
     _tekBaseLightingStereo        = _lightingmtl.technique("baselight_stereo");
     _tekPointLightingStereo       = _lightingmtl.technique("pointlight_stereo");
     _tekDownsampleDepthCluster    = _lightingmtl.technique("downsampledepthcluster");
@@ -89,7 +90,7 @@ void DeferredContext::gpuInit(Context* target) {
     _parMapDepth           = _lightingmtl.param("MapDepth");
     _parMapGBufRufMtlAlpha = _lightingmtl.param("MapRufMtlAlpha");
     _parMapDepthCluster    = _lightingmtl.param("MapDepthCluster");
-
+    _parLightCookieTexture = _lightingmtl.param("MapLightingCookie");
     _parMapSpecularEnv     = _lightingmtl.param("MapSpecularEnv");
     _parMapDiffuseEnv      = _lightingmtl.param("MapDiffuseEnv");
     _parMapBrdfIntegration = _lightingmtl.param("MapBrdfIntegration");
@@ -133,6 +134,8 @@ void DeferredContext::gpuInit(Context* target) {
     _rtgLaccum->SetMrt(0, bufLA);
     _accumRT = new RtGroupRenderTarget(_rtgLaccum);
     //////////////////////////////////////////////////////////////
+    _whiteTexture = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/white")->GetTexture();
+
   }
   target->debugPopGroup();
 }
@@ -407,7 +410,7 @@ void DeferredContext::renderBaseLighting(CompositorDrawData& drawdata, const Vie
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const ViewData& VD) {
+void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const ViewData& VD, lev2::Texture* cookietexture) {
   auto CIMPL                   = drawdata._cimpl;
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
   RenderContextFrameData& RCFD = framerenderer.framedata();
@@ -420,7 +423,16 @@ void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const Vie
   FBI->SetAutoClear(false);
   FBI->PushRtGroup(_rtgLaccum);
   targ->beginFrame();
-  _lightingmtl.bindTechnique(VD._isStereo ? _tekPointLightingStereo : _tekPointLighting);
+  const FxShaderTechnique* tek = nullptr;
+  if (VD._isStereo)
+    tek = _tekPointLightingStereo;
+  else
+    tek = _tekPointLighting;
+
+  if( nullptr == cookietexture ){
+    cookietexture = _whiteTexture;
+  }
+  _lightingmtl.bindTechnique(tek);
   _lightingmtl.begin(RCFD);
   //////////////////////////////////////////////////////
   _lightingmtl.bindParamMatrixArray(_parMatIVPArray, VD._ivp, 2);
@@ -432,6 +444,7 @@ void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const Vie
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
   _lightingmtl.bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->GetTexture());
   _lightingmtl.bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap);
+  _lightingmtl.bindParamCTex(_parLightCookieTexture, cookietexture);
   _lightingmtl.bindParamVec2(_parNearFar, fvec2(DeferredContext::KNEAR, DeferredContext::KFAR));
   _lightingmtl.bindParamVec2(_parZndc2eye, VD._zndc2eye);
   _lightingmtl.bindParamVec2(_parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));

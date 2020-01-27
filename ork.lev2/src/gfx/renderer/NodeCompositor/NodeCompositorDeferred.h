@@ -86,7 +86,7 @@ struct DeferredContext {
   void renderUpdate(CompositorDrawData& drawdata);
   void renderGbuffer(CompositorDrawData& drawdata, const ViewData& VD);
   void renderBaseLighting(CompositorDrawData& drawdata, const ViewData& VD);
-  void beginPointLighting(CompositorDrawData& drawdata, const ViewData& VD);
+  void beginPointLighting(CompositorDrawData& drawdata, const ViewData& VD, Texture* cookietexture);
   void endPointLighting(CompositorDrawData& drawdata, const ViewData& VD);
   ////////////////////////////////////////////////////////////////////
   RenderCompositingNode* _node;
@@ -100,18 +100,21 @@ struct DeferredContext {
   int _height   = 0;
   int _clusterW = 0;
   int _clusterH = 0;
+  lev2::Texture* _whiteTexture = nullptr;
   ////////////////////////////////////////////////////////////////////
   std::vector<PointLight*> _pointlights;
 
   ////////////////////////////////////////////////////////////////////
 
-  const FxShaderTechnique* _tekBaseLighting              = nullptr;
-  const FxShaderTechnique* _tekPointLighting             = nullptr;
-  const FxShaderTechnique* _tekEnvironmentLighting       = nullptr;
-  const FxShaderTechnique* _tekEnvironmentLightingStereo = nullptr;
-  const FxShaderTechnique* _tekBaseLightingStereo        = nullptr;
-  const FxShaderTechnique* _tekPointLightingStereo       = nullptr;
-  const FxShaderTechnique* _tekDownsampleDepthCluster    = nullptr;
+  const FxShaderTechnique* _tekBaseLighting                = nullptr;
+  const FxShaderTechnique* _tekEnvironmentLighting         = nullptr;
+  const FxShaderTechnique* _tekEnvironmentLightingStereo   = nullptr;
+  const FxShaderTechnique* _tekBaseLightingStereo          = nullptr;
+  const FxShaderTechnique* _tekDownsampleDepthCluster      = nullptr;
+  const FxShaderTechnique* _tekPointLighting               = nullptr;
+  const FxShaderTechnique* _tekPointLightingStereo         = nullptr;
+  const FxShaderTechnique* _tekPointLightingTextured       = nullptr;
+  const FxShaderTechnique* _tekPointLightingTexturedStereo = nullptr;
 
 #if defined(ENABLE_COMPUTE_SHADERS)
   FxComputeShader* _lightcollectcomputeshader = nullptr;
@@ -144,6 +147,7 @@ struct DeferredContext {
   const FxShaderParam* _parDepthFogDistance    = nullptr;
   const FxShaderParam* _parDepthFogPower       = nullptr;
   const FxShaderParamBlock* _lightblock        = nullptr;
+  const FxShaderParam* _parLightCookieTexture  = nullptr;
 
   ////////////////////////////////////////////////////////////////////
 

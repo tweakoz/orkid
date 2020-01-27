@@ -11,21 +11,18 @@
 #include <ork/kernel/fixedlut.hpp>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
-#include <ork/lev2/gfx/renderer/renderable.h>
-#include <ork/lev2/gfx/renderer/renderer.h>
-#include <ork/lev2/lev2_asset.h>
 #include <ork/math/collision_test.h>
 #include <ork/reflect/RegisterProperty.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::Light, "Light");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::PointLight, "PointLight");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::DirectionalLight, "DirectionalLight");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::AmbientLight, "AmbientLight");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::SpotLight, "SpotLight");
+//INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::Light, "Light");
+//INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::PointLight, "PointLight");
+//INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::DirectionalLight, "DirectionalLight");
+//INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::AmbientLight, "AmbientLight");
+//INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::SpotLight, "SpotLight");
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::LightManagerData, "LightManagerData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::LightData, "LightData");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::PointLightData, "PointLightData");
+ImplementReflectionX(ork::lev2::PointLightData, "PointLightData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::DirectionalLightData, "DirectionalLightData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::AmbientLightData, "AmbientLightData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::SpotLightData, "SpotLightData");
@@ -41,11 +38,8 @@ template class ork::fixedvector<lev2::LightingGroup, lev2::LightCollector::kmaxo
 namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-void Light::Describe() {
-}
-
 bool Light::isShadowCaster() const {
-  return mLd->IsShadowCaster();
+  return _data->IsShadowCaster();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -71,48 +65,49 @@ void LightData::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void PointLight::Describe() {
+void PointLightData::describeX(class_t* c) {
+
+  c->accessorProperty("EquirectMap", &PointLightData::_readEquiMap, &PointLightData::_writeEquiMap)
+      ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
+      ->annotate<ConstString>("editor.assettype", "lev2tex")
+      ->annotate<ConstString>("editor.assetclass", "lev2tex");
+
+  c->floatProperty("Radius", float_range{1, 3000}, &PointLightData::_radius)->annotate<ConstString>("editor.range.log", "true");
+  c->floatProperty("Falloff", float_range{1, 10}, &PointLightData::_falloff)->annotate<ConstString>("editor.range.log", "true");
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-void PointLightData::Describe() {
-  ork::reflect::RegisterProperty("Radius", &PointLightData::_radius);
-  ork::reflect::annotatePropertyForEditor<PointLightData>("Radius", "editor.range.min", "1");
-  ork::reflect::annotatePropertyForEditor<PointLightData>("Radius", "editor.range.max", "3000.00");
-  ork::reflect::annotatePropertyForEditor<PointLightData>("Radius", "editor.range.log", "true");
-
-  ork::reflect::RegisterProperty("Falloff", &PointLightData::_falloff);
-  ork::reflect::annotatePropertyForEditor<PointLightData>("Falloff", "editor.range.min", "0");
-  ork::reflect::annotatePropertyForEditor<PointLightData>("Falloff", "editor.range.max", "10.00");
-  ork::reflect::annotatePropertyForEditor<PointLightData>("Falloff", "editor.range.log", "true");
+void PointLightData::_readEquiMap(ork::rtti::ICastable*& tex) const {
+  tex = _equirectTexture;
+}
+void PointLightData::_writeEquiMap(ork::rtti::ICastable* const& tex) {
+  _equirectTexture = tex ? ork::rtti::autocast(tex) : nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 PointLight::PointLight(const fmtx4& mtx, const PointLightData* pld)
     : Light(mtx, pld)
-    , mPld(pld) {
+    , _pldata(pld) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool PointLight::IsInFrustum(const Frustum& frustum) {
-  const fvec3& wpos = GetWorldPosition();
+  const fvec3& wpos = worldPosition();
 
   float fd = frustum._nearPlane.pointDistance(wpos);
 
   if (fd > 200.0f)
     return false;
 
-  return CollisionTester::FrustumSphereTest(frustum, Sphere(GetWorldPosition(), GetRadius()));
+  return CollisionTester::FrustumSphereTest(frustum, Sphere(worldPosition(), radius()));
 }
 
 ///////////////////////////////////////////////////////////
 
-bool PointLight::AffectsSphere(const fvec3& center, float radius) {
-  float dist          = (GetWorldPosition() - center).Mag();
-  float combinedradii = (radius + GetRadius());
+bool PointLight::AffectsSphere(const fvec3& center, float radius_) {
+  float dist          = (worldPosition() - center).Mag();
+  float combinedradii = (radius_ + radius());
 
   //	orkprintf( "PointLight::AffectsSphere point<%f %f %f> center<%f %f %f>\n",
   //				mWorldPosition.GetX(), mWorldPosition.GetY(), mWorldPosition.GetZ(),
@@ -125,15 +120,15 @@ bool PointLight::AffectsSphere(const fvec3& center, float radius) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool PointLight::AffectsAABox(const AABox& aab) {
-  return CollisionTester::SphereAABoxTest(Sphere(GetWorldPosition(), GetRadius()), aab);
+  return CollisionTester::SphereAABoxTest(Sphere(worldPosition(), radius()), aab);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool PointLight::AffectsCircleXZ(const Circle& cirXZ) {
-  fvec3 center(cirXZ.mCenter.GetX(), GetWorldPosition().GetY(), cirXZ.mCenter.GetY());
-  float dist          = (GetWorldPosition() - center).Mag();
-  float combinedradii = (cirXZ.mRadius + GetRadius());
+  fvec3 center(cirXZ.mCenter.GetX(), worldPosition().GetY(), cirXZ.mCenter.GetY());
+  float dist          = (worldPosition() - center).Mag();
+  float combinedradii = (cirXZ.mRadius + radius());
 
   //	orkprintf( "PointLight::AffectsSphere point<%f %f %f> center<%f %f %f>\n",
   //				mWorldPosition.GetX(), mWorldPosition.GetY(), mWorldPosition.GetZ(),
@@ -146,9 +141,6 @@ bool PointLight::AffectsCircleXZ(const Circle& cirXZ) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-
-void DirectionalLight::Describe() {
-}
 
 DirectionalLight::DirectionalLight(const fmtx4& mtx, const DirectionalLightData* dld)
     : Light(mtx, dld) {
@@ -168,9 +160,6 @@ bool DirectionalLight::IsInFrustum(const Frustum& frustum) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-
-void AmbientLight::Describe() {
-}
 
 AmbientLight::AmbientLight(const fmtx4& mtx, const AmbientLightData* dld)
     : Light(mtx, dld)
@@ -195,9 +184,6 @@ bool AmbientLight::IsInFrustum(const Frustum& frustum) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-
-void SpotLight::Describe() {
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -240,9 +226,10 @@ SpotLight::SpotLight(const fmtx4& mtx, const SpotLightData* sld)
 ///////////////////////////////////////////////////////////////////////////////
 
 bool SpotLight::IsInFrustum(const Frustum& frustum) {
-  fvec3 pos  = GetMatrix().GetTranslation();
-  fvec3 tgt  = pos + GetMatrix().GetZNormal() * GetRange();
-  fvec3 up   = GetMatrix().GetYNormal();
+  const auto& mtx = worldMatrix();
+  fvec3 pos  = mtx.GetTranslation();
+  fvec3 tgt  = pos + mtx.GetZNormal() * GetRange();
+  fvec3 up   = mtx.GetYNormal();
   float fovy = 15.0f;
 
   Set(pos, tgt, up, fovy);

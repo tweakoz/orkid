@@ -99,15 +99,15 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
     if (l->isShadowCaster())
       continue;
 
-    fvec3 color = l->GetColor();
+    fvec3 color = l->color();
 
     if (auto as_point = dynamic_cast<lev2::PointLight*>(l)) {
-      float radius = as_point->GetRadius();
-      fvec3 pos    = as_point->GetWorldPosition();
-      float faloff = as_point->GetFalloff();
+      float radius = as_point->radius();
+      fvec3 pos    = as_point->worldPosition();
+      float faloff = as_point->falloff();
 
       deferred_pointlight._radius = radius;
-      deferred_pointlight._pos    = as_point->GetWorldPosition();
+      deferred_pointlight._pos    = as_point->worldPosition();
       deferred_pointlight._color  = color;
 
       Sphere sph(pos, radius);
@@ -205,7 +205,7 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
   size_t lidxbase  = 0;
   /////////////////////////////////////
   auto& lightmtl = _deferredContext._lightingmtl;
-  _deferredContext.beginPointLighting(drawdata, VD);
+  _deferredContext.beginPointLighting(drawdata, VD,nullptr);
   FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
   while (num_pending_tiles) {
     /////////////////////////////////////

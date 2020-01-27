@@ -128,6 +128,11 @@
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>false</property>
                                                                 <property name='ShadowSamples'>1</property>
+                                                                <property name='EquirectMap'>
+                                                                    <reference category='AssetClass'>
+                                                                        "lev2tex" "data://environ/envmaps/tozenv_hellscape"
+                                                                    </reference>
+                                                                </property>
                                                                 <property name='Falloff'>1</property>
                                                                 <property name='Radius'>10</property>
                                                             </object>

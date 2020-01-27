@@ -7,7 +7,6 @@
 
 #include <ork/asset/DynamicAssetLoader.h>
 #include <ork/kernel/string/string.h>
-#include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxprimitives.h>

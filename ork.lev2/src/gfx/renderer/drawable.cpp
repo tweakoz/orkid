@@ -510,7 +510,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
             renderable.SetCluster(&cluster);
             renderable.SetModColor(renderer->GetTarget()->RefModColor());
             renderable.SetMatrix(matw);
-            renderable.SetLightMask(lmask);
+            //renderable.SetLightMask(lmask);
             renderable.SetScale(mfScale);
             renderable.SetRotate(mRotate);
             renderable.SetOffset(mOffset);

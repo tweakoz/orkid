@@ -15,7 +15,6 @@
 
 #include <functional>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
-#include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/math/TransformNode.h>
@@ -30,6 +29,8 @@ struct Frustum;
 
 namespace lev2 {
 
+class Light;
+class LightMask;
 class CameraData;
 class XgmCluster;
 class XgmSubMesh;
@@ -199,7 +200,7 @@ public:
     mSortKey = skey;
   }
 
-  void AddLight(Light* plight) {
+  /*void AddLight(Light* plight) {
     mLightMask.AddLight(plight);
   }
   void SetLightMask(const lev2::LightMask& lmask) {
@@ -208,7 +209,7 @@ public:
 
   const lev2::LightMask& GetLightMask() const {
     return mLightMask;
-  }
+  }*/
 
   void SetRotate(const fvec3& v) {
     mRotate = v;
@@ -248,7 +249,7 @@ private:
   const lev2::XgmSubMesh* mSubMesh;
   const lev2::XgmCluster* mCluster;
   const lev2::XgmMesh* mMesh;
-  lev2::LightMask mLightMask;
+  //lev2::LightMask mLightMask;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

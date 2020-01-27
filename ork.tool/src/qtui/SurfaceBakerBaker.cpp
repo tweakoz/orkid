@@ -539,22 +539,22 @@ void CollectLights( MeshUtil::LightContainer& lc, const SceneData* psd, const st
 						MeshUtil::Light* pgl = 0;
 						if( pdld )
 						{	ork::lev2::DirectionalLight dlight( MtxWorld, pdld );
-							ork::fvec3 LightDir = dlight.GetDirection();
+							ork::fvec3 LightDir = dlight.direction();
 							MeshUtil::DirLight* pgdl = new MeshUtil::DirLight;
 							pgdl->mWorldMatrix = MtxWorld;
-							pgdl->mFrom = dlight.GetWorldPosition();
+							pgdl->mFrom = dlight.worldPosition();
 							pgdl->mTo = pgdl->mFrom+(LightDir*1.0f);
 							pgdl->mShadowBias = pdld->GetShadowBias();
 							pgl = pgdl;
 						}
 						if( ppld )
 						{	ork::lev2::PointLight plight( MtxWorld, ppld );
-							ork::fvec3 LightDir = plight.GetDirection();
+							ork::fvec3 LightDir = plight.direction();
 							MeshUtil::PointLight* pgpl = new MeshUtil::PointLight;
 							pgpl->mWorldMatrix = MtxWorld;
-							pgpl->mPoint = plight.GetWorldPosition();
-							pgpl->mFalloff = ppld->GetFalloff();
-							pgpl->mRadius = ppld->GetRadius();
+							pgpl->mPoint = plight.worldPosition();
+							pgpl->mFalloff = ppld->falloff();
+							pgpl->mRadius = ppld->radius();
 							pgpl->mShadowBias = ppld->GetShadowBias();
 							pgl = pgpl;
 						}

@@ -101,7 +101,7 @@ struct IMPL {
     auto FXI                     = framerenderer.framedata().GetTarget()->FXI();
     auto this_buf                = framerenderer.framedata().GetTarget()->FBI()->GetThisBuffer();
     /////////////////////////////////////////////////////////////////
-    _context.beginPointLighting(drawdata, VD);
+    _context.beginPointLighting(drawdata, VD,nullptr);
     FXI->bindParamBlockBuffer(_context._lightblock, _lightbuffer);
     /////////////////////////////////////
     // float time_tile_cpa = _timer.SecsSinceStart();

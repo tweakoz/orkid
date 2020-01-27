@@ -383,9 +383,10 @@ FCDMaterial* PreserveMaterial(const toolmesh& tmesh, FCDocument& daedoc, const s
     ork::tool::ColladaMaterial* pmaterial = it->second;
 
     // orkprintf( "omat1\n" );
-    lev2::GfxMaterialFx* pfx = rtti::autocast(pmaterial->_orkMaterial);
-    auto pcfx                = pmaterial->mFxProfile;
 
+    //lev2::GfxMaterialFx* pfx = rtti::autocast(pmaterial->_orkMaterial);
+    auto pcfx                = pmaterial->mFxProfile;
+    #if 0
     if (0 == pfx) {
       orkprintf("ERROR: material<%s> not an FX Shader!\n", mtlname.c_str());
     }
@@ -403,22 +404,6 @@ FCDMaterial* PreserveMaterial(const toolmesh& tmesh, FCDocument& daedoc, const s
       DaeMat                     = MatLib->AddEntity();
       DaeMat->SetDaeId(CreateFormattedString("%s", omatname.c_str()).c_str());
       DaeMat->SetEffect(DaeEfx);
-
-      /*size_t numtek = pcfx->techniqueCount();
-      for( size_t t=0; t<numtek; t++ )
-      {
-          FCDEffectTechnique* ptemptek = pcfx->technique(t);
-          FCDEffectTechnique* pnewtek = pcfx->AddTechnique();
-
-          size_t npasses = ptemptek->GetPassCount();
-          for( size_t tpas=0; tpas<npasses; tpas++ )
-          {
-              FCDEffectPass* ppass = ptemptek->GetPass(tpas);
-              FCDEffectPass* pnewpass = pnewtek->AddPass();
-
-
-          }
-      }*/
 
       const lev2::GfxMaterialFxEffectInstance& fxi                     = pfx->GetEffectInstance();
       const orklut<std::string, lev2::GfxMaterialFxParamBase*>& params = fxi.mParameterInstances;
@@ -565,6 +550,7 @@ FCDMaterial* PreserveMaterial(const toolmesh& tmesh, FCDocument& daedoc, const s
       }
       // orkprintf( "omat5\n" );
     }
+#endif
   }
   return DaeMat;
 }

@@ -6,7 +6,6 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/gfx/renderer/compositormaterial.h>
-#include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxprimitives.h>

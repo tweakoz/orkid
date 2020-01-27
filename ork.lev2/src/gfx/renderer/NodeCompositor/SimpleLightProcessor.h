@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>
+#include <ork/lev2/gfx/lighting/gfx_lighting.h>
 
 namespace ork::lev2::deferrednode {
 
@@ -38,16 +39,17 @@ struct SimpleLightProcessor {
 
   /////////////////////////////////////////////////////
   void _gpuInit(lev2::Context* target);
-  void _clearFrameLighting();
-  void _renderUnshadowedUnTexturedPointLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
+  void _renderUnshadowedUntexturedPointLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
+  void _renderUnshadowedTexturedPointLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
 
-  typedef std::vector<PointLight> pllist_t;
-  typedef ork::LockedResource<pllist_t> locked_pllist_t;
+  typedef std::vector<lev2::PointLight*> pllist_t;
+  typedef std::map<lev2::Texture*,pllist_t> tex2plmap_t;
 
   FxShaderParamBuffer* _lightbuffer = nullptr;
   DeferredContext& _deferredContext;
   DeferredCompositingNodePbr* _defcompnode;
   pllist_t _pointlights;
+  tex2plmap_t _tex2pointmap;
 
 };
 

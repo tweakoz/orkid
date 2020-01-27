@@ -19,12 +19,15 @@
 #include <ork/kernel/Array.h>
 
 #include <ork/config/config.h>
+#include <ork/lev2/gfx/renderer/renderable.h>
+#include <ork/lev2/gfx/renderer/renderer.h>
+#include <ork/lev2/lev2_asset.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 
-class TextureAsset;
-class Texture;
+//class TextureAsset;
+//class Texture;
 class RenderContextFrameData;
 class FxShader;
 class FxShaderParam;
@@ -98,16 +101,15 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class Light : public ork::Object {
-  RttiDeclareAbstract(Light, ork::Object);
+struct Light {
 
-  const LightData* mLd;
-  const fmtx4& mWorldMatrix;
-
-public:
-  float mPriority;
-  int miInFrustumID;
-  bool mbIsDynamic;
+  Light(const fmtx4& mtx, const LightData* ld = 0)
+      : _worldMatrix(mtx)
+      , _data(ld)
+      , mbIsDynamic(false)
+      , mPriority(0.0f) {
+  }
+  virtual ~Light() {}
 
   bool isShadowCaster() const;
   virtual bool IsInFrustum(const Frustum& frustum)              = 0;
@@ -116,74 +118,84 @@ public:
   virtual bool AffectsCircleXZ(const Circle& cir)               = 0;
   virtual ELightType LightType() const                          = 0;
 
-  const fvec3& GetColor() const {
-    return mLd->GetColor();
+  const fvec3& color() const {
+    return _data->GetColor();
   }
-  const fmtx4& GetMatrix() const {
-    return mWorldMatrix;
+  const fmtx4& worldMatrix() const {
+    return _worldMatrix;
   }
-  fvec3 GetWorldPosition() const {
-    return mWorldMatrix.GetTranslation();
+  fvec3 worldPosition() const {
+    return _worldMatrix.GetTranslation();
   }
-  fvec3 GetDirection() const {
-    return mWorldMatrix.GetZNormal();
+  fvec3 direction() const {
+    return _worldMatrix.GetZNormal();
   }
 
-  Light(const fmtx4& mtx, const LightData* ld = 0)
-      : mWorldMatrix(mtx)
-      , mLd(ld)
-      , mbIsDynamic(false)
-      , mPriority(0.0f) {
-  }
+
+  const LightData* _data;
+  const fmtx4& _worldMatrix;
+
+  float mPriority;
+  int miInFrustumID;
+  bool mbIsDynamic;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct PointLightData : public LightData {
-  RttiDeclareConcrete(PointLightData, LightData);
+  DeclareConcreteX(PointLightData, LightData);
 
 public:
   float _radius;
   float _falloff;
+  textureassetptr_t _equirectTexture = nullptr;
 
 public:
-  float GetRadius() const {
+  float radius() const {
     return _radius;
   }
-  float GetFalloff() const {
+  float falloff() const {
     return _falloff;
   }
 
   PointLightData()
       : _radius(1.0f)
-      , _falloff(1.0f) {
+      , _falloff(1.0f)
+      , _equirectTexture(nullptr){
   }
+
+private:
+
+	void _readEquiMap(ork::rtti::ICastable *&model) const;
+	void _writeEquiMap(ork::rtti::ICastable *const &model);
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class PointLight : public Light {
-  RttiDeclareAbstract(PointLight, ork::Object);
+struct PointLight : public Light {
 
-  const PointLightData* mPld;
-
-public:
-  /*virtual*/ bool IsInFrustum(const Frustum& frustum) override;
-  /*virtual*/ bool AffectsSphere(const fvec3& center, float radius) override;
-  /*virtual*/ bool AffectsAABox(const AABox& aab) override;
-  /*virtual*/ bool AffectsCircleXZ(const Circle& cir) override;
-  /*virtual*/ ELightType LightType() const override {
+  bool IsInFrustum(const Frustum& frustum) override;
+  bool AffectsSphere(const fvec3& center, float radius) override;
+  bool AffectsAABox(const AABox& aab) override;
+  bool AffectsCircleXZ(const Circle& cir) override;
+  ELightType LightType() const override {
     return ELIGHTTYPE_POINT;
   }
 
-  float GetRadius() const {
-    return mPld->GetRadius();
+  float falloff() const {
+    return _pldata->falloff();
   }
-  float GetFalloff() const {
-    return mPld->GetFalloff();
+  float radius() const {
+    return _pldata->radius();
+  }
+  Texture* texture() const {
+    return _pldata->_equirectTexture ? _pldata->_equirectTexture->GetTexture() : nullptr;
   }
 
   PointLight(const fmtx4& mtx, const PointLightData* pld = 0);
+
+  const PointLightData* _pldata;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -199,22 +211,21 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class DirectionalLight : public Light {
-  RttiDeclareAbstract(DirectionalLight, ork::Object);
 
   const DirectionalLightData* mDld;
 
 public:
-  /*virtual*/ bool IsInFrustum(const Frustum& frustum) override;
-  /*virtual*/ bool AffectsSphere(const fvec3& center, float radius) override {
+  bool IsInFrustum(const Frustum& frustum) override;
+  bool AffectsSphere(const fvec3& center, float radius) override {
     return true;
   }
-  /*virtual*/ bool AffectsCircleXZ(const Circle& cir) override {
+  bool AffectsCircleXZ(const Circle& cir) override {
     return true;
   }
-  /*virtual*/ bool AffectsAABox(const AABox& aab) override {
+  bool AffectsAABox(const AABox& aab) override {
     return true;
   }
-  /*virtual*/ ELightType LightType() const override {
+  ELightType LightType() const override {
     return ELIGHTTYPE_DIRECTIONAL;
   }
 
@@ -251,22 +262,21 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class AmbientLight : public Light {
-  RttiDeclareAbstract(AmbientLight, ork::Object);
 
   const AmbientLightData* mAld;
 
 public:
-  /*virtual*/ bool IsInFrustum(const Frustum& frustum) override;
-  /*virtual*/ bool AffectsSphere(const fvec3& center, float radius) override {
+  bool IsInFrustum(const Frustum& frustum) override;
+  bool AffectsSphere(const fvec3& center, float radius) override {
     return true;
   }
-  /*virtual*/ bool AffectsCircleXZ(const Circle& cir) override {
+  bool AffectsCircleXZ(const Circle& cir) override {
     return true;
   }
-  /*virtual*/ bool AffectsAABox(const AABox& aab) override {
+  bool AffectsAABox(const AABox& aab) override {
     return true;
   }
-  /*virtual*/ ELightType LightType() const override {
+  ELightType LightType() const override {
     return ELIGHTTYPE_AMBIENT;
   }
   float GetAmbientShade() const {
@@ -309,7 +319,6 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class SpotLight : public Light {
-  RttiDeclareAbstract(PointLight, ork::Object);
 
   const SpotLightData* mSld;
 
@@ -321,11 +330,11 @@ public:
   // float			mRange;
   lev2::TextureAsset* mTexture;
 
-  /*virtual*/ bool IsInFrustum(const Frustum& frustum) override;
-  /*virtual*/ bool AffectsSphere(const fvec3& center, float radius) override;
-  /*virtual*/ bool AffectsAABox(const AABox& aab) override;
-  /*virtual*/ bool AffectsCircleXZ(const Circle& cir) override;
-  /*virtual*/ ELightType LightType() const override {
+  bool IsInFrustum(const Frustum& frustum) override;
+  bool AffectsSphere(const fvec3& center, float radius) override;
+  bool AffectsAABox(const AABox& aab) override;
+  bool AffectsCircleXZ(const Circle& cir) override;
+  ELightType LightType() const override {
     return ELIGHTTYPE_SPOT;
   }
 

@@ -62,7 +62,6 @@ BakingGroup::BakingGroup()
 	, mMatchLights()
 	, mShadowCasters()
 {
-	ork::lev2::GfxMaterialFx::gEnableLightPreview = true;
 }
 
 void BakersChoiceDelegate::Describe()
@@ -126,7 +125,7 @@ void LightMapperArchetype::Describe()
 {
 	ork::reflect::RegisterMapProperty( "Settings", & LightMapperArchetype::mSettingsMap );
 	ork::reflect::annotatePropertyForEditor< LightMapperArchetype >("Settings", "editor.factorylistbase", "EditorOnly/BakerSettings" );
-	
+
 	ork::reflect::RegisterMapProperty( "FarmNodeGroups", & LightMapperArchetype::mFarmNodeGroups );
 	ork::reflect::annotatePropertyForEditor< LightMapperArchetype >("FarmNodeGroups", "editor.factorylistbase", "EditorOnly/FarmNodeGroup" );
 
@@ -211,7 +210,7 @@ void BakingGroup::Describe()
 {
 	ork::reflect::RegisterProperty( "BakeType", & BakingGroup::meBakeMapType );
 	ork::reflect::annotatePropertyForEditor<BakingGroup>(	"BakeType", "editor.class", "ged.factory.enum" );
-	
+
 	ork::reflect::RegisterProperty( "MatchItem", & BakingGroup::mMatchItem );
 	ork::reflect::RegisterProperty( "MatchLights", & BakingGroup::mMatchLights );
 	ork::reflect::RegisterProperty( "ShadowCasters", & BakingGroup::mShadowCasters );
@@ -246,7 +245,7 @@ void BakingGroup::Describe()
 	ork::reflect::RegisterProperty("DiceSize", &BakingGroup::miDiceSize);
 	ork::reflect::annotatePropertyForEditor< BakingGroup >( "DiceSize", "editor.range.min", "256" );
 	ork::reflect::annotatePropertyForEditor< BakingGroup >( "DiceSize", "editor.range.max", "2048" );
-	
+
 	ork::reflect::RegisterProperty("NumSamples", &BakingGroup::miNumSamples);
 	ork::reflect::annotatePropertyForEditor< BakingGroup >( "NumSamples", "editor.range.min", "8" );
 	ork::reflect::annotatePropertyForEditor< BakingGroup >( "NumSamples", "editor.range.max", "1024" );
@@ -308,11 +307,11 @@ void BakerSettings::Describe()
 	ork::reflect::RegisterMapProperty( "JobSets", & BakerSettings::mFarmJobSets );
 
 	ork::reflect::RegisterProperty("ActiveJobSet", &BakerSettings::mCurrentJobSet);
-	
+
 	ork::reflect::annotatePropertyForEditor< BakerSettings >( "ActiveJobSet", "ged.userchoice.delegate", "JobSetChoiceDelegate" );
 
 	reflect::annotatePropertyForEditor<BakerSettings>( "JobSets", "editor.factorylistbase", "EditorOnly/FarmJobSet" );
-	
+
 
 	static const char* EdGrpStr =
 				"sort://DaeInput BakingGroups ActiveJobSet JobSets DebugPyg DebugPygEmbedGeom";
@@ -347,21 +346,21 @@ BakingGroupMatchItem BakerSettings::Match( const std::string& TestName ) const
 			it=mBakingGroupMap.begin();
 			it!=mBakingGroupMap.end();
 			it++ )
-	{		
+	{
 		BakingGroup* pgroup = it->second;
 		const ork::PoolString& groupmatch = pgroup->MatchItem();
 		const char* pitem = groupmatch.c_str();
 		std::string matchitem = pitem ? pitem : "";
 		if( matchitem.length() )
 		{	tokenlist match_toklist = CreateTokenList( matchitem.c_str(), " " );
-			for(	tokenlist::const_iterator 
+			for(	tokenlist::const_iterator
 					itm=match_toklist.begin();
 					itm!=match_toklist.end();
 					itm++ )
 			{	const std::string& str = (*itm);
 				size_t itfind = TestName.find(str);
 				if( itfind != std::string::npos )
-				{	
+				{
 					BakingGroupMatchItem retitem;
 					retitem.mMatchName = it->first;
 					retitem.mMatchGroup = pgroup;
@@ -376,26 +375,26 @@ BakingGroupMatchItem BakerSettings::Match( const std::string& TestName ) const
 ///////////////////////////////////////////////////////////////////////////////
 
 LightingGroupMatchItem BakerSettings::LightMatch( const std::string& TestName ) const
-{	
+{
 	/*for(	orklut<PoolString,BakingGroup*>::const_iterator
 			it=mBakingGroupMap.begin();
 			it!=mBakingGroupMap.end();
 			it++ )
-	{		
+	{
 		BakingGroup* pgroup = it->second;
 		const ork::PoolString& groupmatch = pgroup->MatchItem();
 		const char* pitem = groupmatch.c_str();
 		std::string matchitem = pitem ? pitem : "";
 		if( matchitem.length() )
 		{	tokenlist match_toklist = CreateTokenList( matchitem.c_str(), " " );
-			for(	tokenlist::const_iterator 
+			for(	tokenlist::const_iterator
 					itm=match_toklist.begin();
 					itm!=match_toklist.end();
 					itm++ )
 			{	const std::string& str = (*itm);
 				u32 itfind = TestName.find(str);
 				if( itfind != std::string::npos )
-				{	
+				{
 					BakingGroupMatchItem retitem;
 					retitem.mMatchName = it->first;
 					retitem.mMatchGroup = pgroup;
@@ -414,7 +413,7 @@ LightingGroupMatchItem BakerSettings::LightMatch( const std::string& TestName ) 
 void AtlasMapperOps::Describe(){}
 
 class AtlasProcessThread : public ork::Thread
-{	
+{
 	void run() final
 	{
 		static ork::recursive_mutex gproc_mutex("atlaser");
@@ -454,7 +453,7 @@ void BakeOps::Describe(){}
 ///////////////////////////////////////////////////////////////////////////////
 
 class BakeProcessThread : public ork::Thread
-{	
+{
 	void run() final
 	{	static ork::mutex gproc_mutex("lightmapper");
 		gproc_mutex.Lock();
@@ -483,9 +482,9 @@ void BakeOps::Execute( ork::Object* ptarget )
 	BakeProcessThread bthread;
 	bthread._userdata.Set<BakeOps*>(this);
 	bthread.runSynchronous();
-	
+
 	//DWORD ThreadId;
-	//HANDLE thread_h = CreateThread( 
+	//HANDLE thread_h = CreateThread(
 	//						NULL,
 	//						0,
 	//						& BakeProcessThread,
@@ -501,7 +500,7 @@ void ImtMapperOps::Describe(){}
 ///////////////////////////////////////////////////////////////////////////////
 
 class ImtProcessThread : public ork::Thread
-{	
+{
 	void run() final
 	{	static ork::mutex gproc_mutex("lightmapper");
 		gproc_mutex.Lock();
@@ -570,4 +569,3 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::FarmJobSet, "EditorOnly/FarmJobSet");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::BakersChoiceDelegate, "BakersChoiceDelegate");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::FarmGroupChoiceDelegate, "FarmGroupChoiceDelegate");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::JobSetChoiceDelegate, "JobSetChoiceDelegate");
-

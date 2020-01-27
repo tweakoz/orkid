@@ -8,8 +8,6 @@
 #include <orktool/orktool_pch.h>
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/gfx/gfxmaterial_basic.h>
-#include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/kernel/string/string.h>
 #include <ork/kernel/prop.h>
@@ -38,12 +36,12 @@ bool DAEXGAFilter::ConvertAsset( const tokenlist& toklist )
 	policy.mUnits = UNITS_METER;
 
 	bool brval = false;
-	
+
 	bool bwii = (0!=strstr(outf.c_str(),"wii"));
 	bool bxb360 = (0!=strstr(outf.c_str(),"xb360"));
 
 	EndianContext* pendianctx = 0;
-	
+
 	if( bwii || bxb360 )
 	{
 		pendianctx = new EndianContext;
@@ -68,7 +66,6 @@ bool DAEXGAFilter::ConvertAsset( const tokenlist& toklist )
 
 		const PoolString JointPS = AddPooledString( "Joint" );
 		const PoolString UvXfPS = AddPooledString( "UvTransform" );
-		const PoolString FxpPS = AddPooledString( "FxParam" );
 
 		for( CColladaAnim::ChannelsMap::const_iterator it=Channels.begin(); it!=Channels.end(); it++ )
 		{
@@ -79,8 +76,6 @@ bool DAEXGAFilter::ConvertAsset( const tokenlist& toklist )
 
 			const ColladaMatrixAnimChannel* MatrixChannelData = rtti::autocast( ChannelData );
 			const ColladaUvAnimChannel* UvChannelData = rtti::autocast( ChannelData );
-			const ColladaFxAnimChannel<float>* FloatChannelData = rtti::autocast( ChannelData );
-			const ColladaFxAnimChannel<fvec3>* Float3ChannelData = rtti::autocast( ChannelData );
 
 			if( MatrixChannelData )
 			{
@@ -119,32 +114,6 @@ bool DAEXGAFilter::ConvertAsset( const tokenlist& toklist )
 					mtx = mtxT*(mtxRIO*mtxR*mtxRO); //*mtxS;
 
 					XgmChan->AddFrame(mtx);
-				}
-				colanim->mXgmAnim.AddChannel( ChannelPooledName, XgmChan );
-			}
-			else if( FloatChannelData )
-			{
-				const std::string& materialname = FloatChannelData->mTargetMaterialName;
-				PoolString objnameps = AddPooledString(materialname.c_str());
-				ork::lev2::XgmFloatAnimChannel *XgmChan = new ork::lev2::XgmFloatAnimChannel(objnameps,ChannelPooledName,FxpPS);
-				XgmChan->ReserveFrames(inumframes);
-				for( int ifr=0; ifr<inumframes; ifr++ )
-				{
-					float fval = FloatChannelData->GetFrame( ifr );
-					XgmChan->AddFrame(fval);
-				}
-				colanim->mXgmAnim.AddChannel( ChannelPooledName, XgmChan );
-			}
-			else if( Float3ChannelData )
-			{
-				const std::string& materialname = FloatChannelData->mTargetMaterialName;
-				PoolString objnameps = AddPooledString(materialname.c_str());
-				ork::lev2::XgmVect3AnimChannel *XgmChan = new ork::lev2::XgmVect3AnimChannel(objnameps,ChannelPooledName,FxpPS);
-				XgmChan->ReserveFrames(inumframes);
-				for( int ifr=0; ifr<inumframes; ifr++ )
-				{
-					ork::fvec3 fval = Float3ChannelData->GetFrame( ifr );
-					XgmChan->AddFrame(fval);
 				}
 				colanim->mXgmAnim.AddChannel( ChannelPooledName, XgmChan );
 			}
@@ -187,7 +156,7 @@ bool DAEXGAFilter::ConvertAsset( const tokenlist& toklist )
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmAnim::Save( const AssetPath& Filename, const XgmAnim *anm )	
+bool XgmAnim::Save( const AssetPath& Filename, const XgmAnim *anm )
 {
 	chunkfile::Writer chunkwriter( "xga" );
 	///////////////////////////////////
@@ -232,7 +201,7 @@ bool XgmAnim::Save( const AssetPath& Filename, const XgmAnim *anm )
 		int iobjname = chunkwriter.stringIndex( ObjectName.c_str() );
 		int ichnname = chunkwriter.stringIndex( ChannelName.c_str() );
 		int iusgname = chunkwriter.stringIndex( ChannelUsage.c_str() );
-		
+
         printf( "XGAOUT channelname<%s>\n", ChannelName.c_str() );
 		HeaderStream->AddItem( ichnclas );
 		HeaderStream->AddItem( iobjname );
@@ -295,12 +264,12 @@ bool XgmAnim::Save( const AssetPath& Filename, const XgmAnim *anm )
 	}
 
 	///////////////////////////////////
-	// write out pose information 
-	
+	// write out pose information
+
 	int inumposebones = (int) anm->mPose.size();
 
 	HeaderStream->AddItem( inumposebones );
-	
+
 	for( orklut<PoolString,ork::lev2::DecompMtx44>::const_iterator it=anm->mPose.begin(); it!=anm->mPose.end(); it++ )
 	{
 		const PoolString & name = (*it).first;
@@ -322,7 +291,7 @@ bool XgmAnim::Save( const AssetPath& Filename, const XgmAnim *anm )
 
 	////////////////////////////////////////////////////////////////////////////////////
 
-	return true;	
+	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

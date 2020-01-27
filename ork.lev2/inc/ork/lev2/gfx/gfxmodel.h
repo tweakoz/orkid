@@ -17,8 +17,6 @@
 #include <ork/lev2/gfx/gfxctxdummy.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial.h>
-#include <ork/lev2/gfx/gfxmaterial_basic.h>
-#include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/math/box.h>
 #include <ork/math/cmatrix4.h>
@@ -322,8 +320,6 @@ struct XgmModel {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-class GfxMaterialFx;
 
 struct XgmModelInst {
 

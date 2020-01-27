@@ -7,8 +7,6 @@
 #include <ork/application/application.h>
 #if defined(USE_FCOLLADA)
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/gfx/gfxmaterial_basic.h>
-#include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/gfxctxdummy.h>
 #include <ork/kernel/string/string.h>
@@ -179,180 +177,6 @@ struct TexSetter {
 
 static TexSetter gtex_setter;
 
-void ConfigureFxMaterial(CColladaModel* ColModel, MeshUtil::ToolMaterialGroup* ColMatGroup, lev2::XgmSubMesh& XgmClusSet) {
-  const bool bskinned = ColMatGroup->mMeshConfigurationFlags.mbSkinned;
-
-  const std::string& ShadingGroupName    = ColMatGroup->mShadingGroupName;
-  const ColladaMaterial& ColladaMaterial = ColModel->GetMaterialFromShadingGroup(ShadingGroupName);
-
-  // TODO: The dependency on the "data://" URL prefix should be removed so any URL can work.
-  const file::Path::NameType mdlname         = FileEnv::filespec_strip_base(ColModel->mFileName.c_str(), "data://");
-  const file::Path::NameType model_directory = FileEnv::FilespecToContainingDirectory(mdlname);
-
-  ///////////////////////////////////////////////
-
-  ork::lev2::GfxMaterial* pmat = ColMatGroup->_orkMaterial;
-
-  ork::lev2::GfxMaterialFx* pmatfx = rtti::autocast(pmat);
-
-  const ork::lev2::GfxMaterialFxEffectInstance& fxinst = pmatfx->GetEffectInstance();
-
-  const orklut<std::string, ork::lev2::GfxMaterialFxParamBase*>& parms = fxinst.mParameterInstances;
-
-  int inump = parms.size();
-
-  for (int ip = 0; ip < inump; ip++) {
-    lev2::GfxMaterialFxParamBase* param = fxinst.mParameterInstances.GetItemAtIndex(ip).second;
-
-    if (param->GetRecord().meParameterType == ork::EPROPTYPE_SAMPLER) {
-      lev2::GfxMaterialFxParamArtist<lev2::Texture*>* paramf = (lev2::GfxMaterialFxParamArtist<lev2::Texture*>*)param;
-
-      const std::string initstr = paramf->GetInitString();
-
-      ColladaMaterialChannel matchan;
-      matchan.mTextureName = initstr;
-      matchan.mRepeatU     = 1.0f;
-      matchan.mRepeatV     = 1.0f;
-
-      std::string foundtexname;
-
-      ork::lev2::TextureAsset* ptexture = gtex_setter.get(matchan, model_directory.c_str(), foundtexname);
-
-      if (ptexture) {
-        ptexture->GetTexture()->_varmap.makeValueForKey<std::string>("usage") = param->GetRecord()._name;
-        ColModel->AddTexture(ptexture);
-        paramf->mValue = ptexture->GetTexture();
-      }
-    }
-  }
-
-  ///////////////////////////////////////////////
-
-  OrkAssert(ColMatGroup->_orkMaterial != 0);
-
-  ///////////////////////////////////////////////
-
-  XgmClusSet.mpMaterial = ColMatGroup->_orkMaterial;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void ConfigureStdMaterial(CColladaModel* ColModel, MeshUtil::ToolMaterialGroup* ColMatGroup, lev2::XgmSubMesh& XgmClusSet) {
-  const ColladaExportPolicy* policy = ColladaExportPolicy::context();
-
-  const bool bskinned = ColMatGroup->mMeshConfigurationFlags.mbSkinned;
-
-  const std::string& ShadingGroupName    = ColMatGroup->mShadingGroupName;
-  const ColladaMaterial& ColladaMaterial = ColModel->GetMaterialFromShadingGroup(ShadingGroupName);
-  const std::string& MaterialName        = ColladaMaterial.mMaterialName;
-
-  const file::Path mdlname                   = FileEnv::GetPathFromUrlExt(ColModel->mFileName.c_str());
-  const file::Path::NameType model_directory = FileEnv::FilespecToContainingDirectory(ColModel->mFileName.c_str());
-
-  ///////////////////////////////////////////////
-
-  std::string diftexfname, nrmtexfname, spctexfname, ambtexfname;
-
-  ork::lev2::TextureAsset* DiffuseTex  = gtex_setter.get(ColladaMaterial.mDiffuseMapChannel, model_directory.c_str(), diftexfname);
-  ork::lev2::TextureAsset* NormalTex   = gtex_setter.get(ColladaMaterial.mNormalMapChannel, model_directory.c_str(), nrmtexfname);
-  ork::lev2::TextureAsset* SpecularTex = gtex_setter.get(ColladaMaterial.mSpecularMapChannel, model_directory.c_str(), spctexfname);
-  ork::lev2::TextureAsset* AmbientTex  = gtex_setter.get(ColladaMaterial.mAmbientMapChannel, model_directory.c_str(), ambtexfname);
-
-  if (DiffuseTex) {
-    DiffuseTex->GetTexture()->_varmap.makeValueForKey<std::string>("usage") = "diffusemap";
-    ColModel->AddTexture(DiffuseTex);
-  }
-  if (NormalTex) {
-    NormalTex->GetTexture()->_varmap.makeValueForKey<std::string>("usage") = "normalmap";
-    ColModel->AddTexture(NormalTex);
-  }
-  if (SpecularTex) {
-    SpecularTex->GetTexture()->_varmap.makeValueForKey<std::string>("usage") = "specularmap";
-    ColModel->AddTexture(SpecularTex);
-  }
-  if (AmbientTex) {
-    AmbientTex->GetTexture()->_varmap.makeValueForKey<std::string>("usage") = "ambientmap";
-    ColModel->AddTexture(AmbientTex);
-  }
-
-  ///////////////////////////////////////////////
-
-  bool bNormalMapPresent  = (0 != NormalTex);
-  bool bDiffuseMapPresent = (0 != DiffuseTex);
-
-  if (0 == DiffuseTex) {
-    orkerrorlog(
-        "WARNING:  <ColladaModel %s> <ShadingGroup %s> <Texture %s> UhOh, There is no diffuse texture (or it can't be found). Dont "
-        "be suprised when your model is fubar!\n",
-        ColModel->mFileName.c_str(),
-        ShadingGroupName.c_str(),
-        diftexfname.c_str());
-  }
-  if (ShadingGroupName == "initialShadingGroup") {
-    orkerrorlog("WARNING: <ColladaModel %s> Why the fuck are you using initialShadingGroup?!\n", ColModel->mFileName.c_str());
-  }
-  ///////////////////////////////////////////////
-
-  std::string stdtechname;
-
-  switch (ColladaMaterial.mLightingType) {
-    case ColladaMaterial::ELIGHTING_LAMBERT:
-      stdtechname += bNormalMapPresent ? "/lambert/tex/bump" : bDiffuseMapPresent ? "/lambert/tex" : "/modvtx";
-      break;
-    case ColladaMaterial::ELIGHTING_BLINN:
-      stdtechname += bNormalMapPresent ? "/blinn/tex/bump" : "/lambert/tex";
-      break;
-    case ColladaMaterial::ELIGHTING_PHONG:
-      stdtechname += bNormalMapPresent ? "/phong/tex/bump" : "/lambert/tex";
-      break;
-    default:
-      stdtechname += "/modvtx";
-      orkerrorlog("WARNING: <ColladaModel %s> you have a mesh with no material on it!\n", ColModel->mFileName.c_str());
-      // OrkAssert( false );
-      break;
-  }
-
-  if (bskinned) {
-    stdtechname += "/skinned";
-  }
-
-  printf(
-      "StdMaterial shgrp<%s> shnam<%s> using technique<%s>\n", ShadingGroupName.c_str(), MaterialName.c_str(), stdtechname.c_str());
-
-  FCDEffectStandard::TransparencyMode transmode = ColladaMaterial.mTransparencyMode;
-
-  ///////////////////////////////////////////////
-
-  ork::lev2::GfxMaterialWiiBasic* MatVct = new ork::lev2::GfxMaterialWiiBasic(stdtechname.c_str());
-
-  ork::lev2::Texture* ptexD = DiffuseTex ? DiffuseTex->GetTexture() : 0;
-  ork::lev2::Texture* ptexN = NormalTex ? NormalTex->GetTexture() : 0;
-  ork::lev2::Texture* ptexS = SpecularTex ? SpecularTex->GetTexture() : 0;
-  ork::lev2::Texture* ptexA = AmbientTex ? AmbientTex->GetTexture() : 0;
-
-  ork::lev2::TextureContext difctx(ptexD, ColladaMaterial.mDiffuseMapChannel.mRepeatU, ColladaMaterial.mDiffuseMapChannel.mRepeatV);
-  ork::lev2::TextureContext bmpctx(ptexN, ColladaMaterial.mNormalMapChannel.mRepeatU, ColladaMaterial.mNormalMapChannel.mRepeatV);
-  ork::lev2::TextureContext spcctx(
-      ptexS, ColladaMaterial.mSpecularMapChannel.mRepeatU, ColladaMaterial.mSpecularMapChannel.mRepeatV);
-  ork::lev2::TextureContext ambctx(ptexA, ColladaMaterial.mAmbientMapChannel.mRepeatU, ColladaMaterial.mAmbientMapChannel.mRepeatV);
-
-  MatVct->SetTexture(ork::lev2::ETEXDEST_DIFFUSE, difctx);
-  MatVct->SetTexture(ork::lev2::ETEXDEST_BUMP, bmpctx);
-  MatVct->SetTexture(ork::lev2::ETEXDEST_SPECULAR, spcctx);
-  MatVct->SetTexture(ork::lev2::ETEXDEST_AMBIENT, ambctx);
-
-  MatVct->mSpecularPower = ColladaMaterial.mSpecularPower;
-  MatVct->mEmissiveColor = ColladaMaterial.mEmissiveColor;
-
-  XgmClusSet.mpMaterial = MatVct;
-
-  MatVct->SetName(AddPooledString(ColladaMaterial.mMaterialName.c_str()));
-
-  if (transmode == FCDEffectStandard::A_ONE) {
-    MatVct->_rasterstate.SetBlending(ork::lev2::EBLENDING_ALPHA);
-  }
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void CColladaModel::BuildXgmTriStripMesh(lev2::XgmMesh& XgmMesh, SColladaMesh* ColMesh) {
@@ -381,11 +205,12 @@ void CColladaModel::BuildXgmTriStripMesh(lev2::XgmMesh& XgmMesh, SColladaMesh* C
     XgmClusSet.mbVertexLit   = ColMatGroup->mbVertexLit;
     ///////////////////////////////////////////////
 
-    if (ColMatGroup->meMaterialClass == MeshUtil::ToolMaterialGroup::EMATCLASS_FX) {
-      ConfigureFxMaterial(this, ColMatGroup, XgmClusSet);
-    } else if (ColMatGroup->meMaterialClass == MeshUtil::ToolMaterialGroup::EMATCLASS_STANDARD) {
-      ConfigureStdMaterial(this, ColMatGroup, XgmClusSet);
-    } else {
+    //if (ColMatGroup->meMaterialClass == MeshUtil::ToolMaterialGroup::EMATCLASS_FX) {
+      //ConfigureFxMaterial(this, ColMatGroup, XgmClusSet);
+    //} else if (ColMatGroup->meMaterialClass == MeshUtil::ToolMaterialGroup::EMATCLASS_STANDARD) {
+      //ConfigureStdMaterial(this, ColMatGroup, XgmClusSet);
+    //} else
+ {
       OrkAssert(false);
     }
 

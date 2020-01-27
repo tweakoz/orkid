@@ -27,12 +27,6 @@ void BuildXgmClusterPrimGroups( lev2::XgmCluster & XgmCluster, const std::vector
 
 void ToolMaterialGroup::ComputeVtxStreamFormat()
 {
-	ork::lev2::GfxMaterialFx* MatFx = 0;
-
-	if( _orkMaterial )
-	{
-		MatFx = rtti::downcast<ork::lev2::GfxMaterialFx*>( _orkMaterial );
-	}
 
 	meVtxFormat = lev2::EVTXSTREAMFMT_END;
 
@@ -52,19 +46,19 @@ void ToolMaterialGroup::ComputeVtxStreamFormat()
 	int	imin_bin = 0;
 	int	imin_tan = 0;
 
-	if( MatFx ) // fx material
-	{	const orkvector<ork::lev2::VertexConfig>& VertexConfigDataMtl = MatFx->RefVertexConfig();
-		int inumvtxcfgmaterial = VertexConfigDataMtl.size();
-		for( int iv=0; iv<inumvtxcfgmaterial; iv++ )
-		{	const ork::lev2::VertexConfig& vcfg = VertexConfigDataMtl[iv];
-			if( vcfg.Semantic.find("COLOR") != std::string::npos ) imin_clr++;
-			if( vcfg.Semantic.find("TEXCOORD") != std::string::npos ) imin_tex++;
-			if( vcfg.Semantic.find("BINORMAL") != std::string::npos ) imin_bin++;
-			if( vcfg.Semantic.find("TANGENT") != std::string::npos ) imin_tan++;
-			if( vcfg.Semantic == "NORMAL") imin_nrm++;
-		}
-	}
-	else // basic materials
+	//if( MatFx ) // fx material
+	//{	const orkvector<ork::lev2::VertexConfig>& VertexConfigDataMtl = MatFx->RefVertexConfig();
+		//int inumvtxcfgmaterial = VertexConfigDataMtl.size();
+		//for( int iv=0; iv<inumvtxcfgmaterial; iv++ )
+		//{	const ork::lev2::VertexConfig& vcfg = VertexConfigDataMtl[iv];
+			//if( vcfg.Semantic.find("COLOR") != std::string::npos ) imin_clr++;
+			//if( vcfg.Semantic.find("TEXCOORD") != std::string::npos ) imin_tex++;
+			//if( vcfg.Semantic.find("BINORMAL") != std::string::npos ) imin_bin++;
+			//if( vcfg.Semantic.find("TANGENT") != std::string::npos ) imin_tan++;
+			//if( vcfg.Semantic == "NORMAL") imin_nrm++;
+		//}
+	//}
+	//else // basic materials
 	{
 		imin_clr = mMeshConfigurationFlags.mbSkinned ? 0 : 1;
 		imin_tex = 1;
@@ -112,27 +106,13 @@ void ToolMaterialGroup::ComputeVtxStreamFormat()
 
 	//////////////////////////////////////////
 
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void ToolMaterialGroup::Parse( const tool::ColladaMaterial& colmat )
 {
-	ork::lev2::GfxMaterial* pmat = colmat._orkMaterial;
-
-	ork::lev2::GfxMaterialFx* pmatfx = rtti::autocast( pmat );
-
-	if( pmatfx )
-	{
-		meMaterialClass = EMATCLASS_FX;
-		mVertexConfigData = pmatfx->RefVertexConfig();
-		_orkMaterial = colmat._orkMaterial;
-	}
-	else
-	{
 		meMaterialClass = EMATCLASS_STANDARD;
-	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

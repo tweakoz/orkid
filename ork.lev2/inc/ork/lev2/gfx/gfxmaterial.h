@@ -26,6 +26,13 @@ class Texture;
 
 #define MAX_MATERIAL_TEXTURES 4
 
+struct VertexConfig {
+  std::string Name;
+  std::string Type;
+  std::string Source;
+  std::string Semantic;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct TextureContext
@@ -101,7 +108,7 @@ public:
 	const fmtx4*		GetMatrices() const { return mpMatrices; }
 
 private:
-    
+
 	void Set() final {}
 
 };
@@ -152,7 +159,7 @@ struct GfxMaterial : public ork::Object
 
 	const RenderQueueSortingData& GetRenderQueueSortingData() const { return mSortingData; }
 	RenderQueueSortingData& GetRenderQueueSortingData() { return mSortingData; }
-	
+
 	virtual void SetMaterialProperty( const char* prop, const char* val ) {}
 
 	void PushDebug(bool bdbg);
@@ -211,4 +218,3 @@ namespace chunkfile {
 } // namespace chunkfile
 
 }
-

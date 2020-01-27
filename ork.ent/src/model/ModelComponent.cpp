@@ -8,7 +8,6 @@
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>
-#include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/gfxmodel.h>
@@ -216,14 +215,14 @@ bool ModelComponentInst::DoNotify(const ork::event::Event* event) {
     }
   } else if (const event::MeshLayerFxEvent* lfxev = ork::rtti::autocast(event)) {
     if (modelDrawable().GetModelInst()) {
-      lev2::GfxMaterialFx* pmaterial = 0;
+      /*lev2::GfxMaterialFx* pmaterial = 0;
       if (lfxev->IsEnable()) {
         orklut<PoolString, lev2::GfxMaterialFx*>::const_iterator it = mFxMaterials.find(lfxev->GetName());
         if (it != mFxMaterials.end()) {
           lev2::GfxMaterialFx* pmaterial = it->second;
         }
       }
-      modelDrawable().GetModelInst()->_overrideMaterial = pmaterial;
+      modelDrawable().GetModelInst()->_overrideMaterial = pmaterial;*/
       return true;
     }
   }

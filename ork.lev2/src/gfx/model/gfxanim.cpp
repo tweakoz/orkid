@@ -12,8 +12,6 @@
 #include <ork/file/chunkfile.inl>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmodel.h>
-#include <ork/lev2/gfx/gfxmaterial_basic.h>
-#include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/kernel/string/deco.inl>
 
 using namespace std::string_literals;
@@ -274,6 +272,7 @@ void XgmMaterialStateInst::BindAnimInst(const XgmAnimInst& AnimInst) {
           const PoolString& matname              = material->GetName();
 
           if (matname == objectname) {
+            /*
             const GfxMaterialWiiBasic* __restrict material_basic = rtti::autocast(material);
             const GfxMaterialFx* __restrict material_fx          = rtti::autocast(material);
 
@@ -288,7 +287,7 @@ void XgmMaterialStateInst::BindAnimInst(const XgmAnimInst& AnimInst) {
               material_basic->BindMaterialInstItem(pxmsis);
               mVarMap.AddSorted(&AnimInst, pxmsis);
             } else if (material_fx) {
-            }
+            }*/
           }
         }
       }

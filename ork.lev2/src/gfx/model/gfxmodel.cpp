@@ -9,7 +9,6 @@
 #include <ork/kernel/orklut.hpp>
 #include <ork/kernel/prop.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/renderer/renderer.h>

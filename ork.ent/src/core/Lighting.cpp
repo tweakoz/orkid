@@ -188,7 +188,7 @@ LightingComponentInst::LightingComponentInst(const LightingComponentData& data, 
       const yo* pyo = pren->GetUserData0().Get<const yo*>();
 
       if (pyo->mpLight) {
-        ork::lev2::PointLight* ppntlight = rtti::autocast(pyo->mpLight);
+        auto ppntlight = dynamic_cast<ork::lev2::PointLight*>(pyo->mpLight);
         if (ppntlight) {
           draw_tricircle(rcid, targ, pren, ppntlight);
         } else {
