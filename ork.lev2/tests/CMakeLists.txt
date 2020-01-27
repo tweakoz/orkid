@@ -29,7 +29,7 @@ set_target_properties(ork.lev2.test PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories (ork.lev2.test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../ork.core/inc )
 target_include_directories (ork.lev2.test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../ork.lev2/inc )
 target_include_directories (ork.lev2.test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../ork.ent/inc )
-target_include_directories (ork.lev2.test PRIVATE $ENV{OBT_STAGE}/include/luajit-2.0 )
+target_include_directories (ork.lev2.test PRIVATE $ENV{OBT_STAGE}/include/luajit-2.1 )
 target_include_directories (ork.lev2.test PRIVATE ${SRCD} )
 
 install(TARGETS ork.lev2.test DESTINATION $ENV{OBT_STAGE}/bin )

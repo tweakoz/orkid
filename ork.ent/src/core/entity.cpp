@@ -253,6 +253,20 @@ void Entity::setRotAxisAngle(fvec4 axisang) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void Entity::setPos( fvec3 newpos ){
+  fvec3 tmppos;
+  fquat rot;
+  float sca     = 0.0f;
+  DagNode& dagn = this->GetDagNode();
+  auto xf       = dagn.GetTransformNode().GetTransform().GetMatrix();
+  xf.decompose(tmppos, rot, sca);
+  xf.compose(newpos, rot, sca);
+  dagn.SetTransformMatrix(xf);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 Entity::~Entity() {
   // printf( "Delete Entity<%p>\n", this );
   for (ComponentTable::LutType::const_iterator it = _components.begin(); it != _components.end(); it++) {

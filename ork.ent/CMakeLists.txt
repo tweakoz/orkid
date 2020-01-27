@@ -22,7 +22,7 @@ add_library (ork_ecs SHARED ${orksrcs})
 ###################################
 
 set( libs ork_core ork_lev2 ork_tuio )
-list(APPEND libs OpenImageIO OpenImageIO_Util portaudio luajit-5.1 )
+list(APPEND libs OpenImageIO OpenImageIO_Util portaudio luajit-5.1.2.1.0 )
 list(APPEND libs BulletCollision BulletDynamics LinearMath )
 list(APPEND libs boost_filesystem )
 IF(${APPLE})
@@ -40,7 +40,7 @@ target_include_directories (ork_ecs PRIVATE ${SRCD}/LuaIntf )
 target_include_directories (ork_ecs PRIVATE ${COREINCD} )
 target_include_directories (ork_ecs PRIVATE ${LEV2INCD} )
 target_include_directories (ork_ecs PRIVATE $ENV{OBT_STAGE}/include )
-target_include_directories (ork_ecs PRIVATE $ENV{OBT_STAGE}/include/luajit-2.0 )
+target_include_directories (ork_ecs PRIVATE $ENV{OBT_STAGE}/include/luajit-2.1 )
 target_include_directories (ork_ecs PRIVATE $ENV{OBT_STAGE}/include/bullet )
 
 ###################################

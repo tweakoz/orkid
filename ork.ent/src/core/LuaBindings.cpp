@@ -64,6 +64,8 @@ namespace ork { namespace ent {
 
 void ScriptVar::fromLua(lua_State* L, int index) {
 
+  OrkAssert(false);
+
   int type = lua_type(L, index);
 
   switch (type) {
@@ -193,7 +195,11 @@ LuaSystem::LuaSystem(Simulation* psi)
           })
       ////////////////////////////////////////
       .addMetaFunction("__add", [](const fvec3* a, const fvec3* b) -> fvec3 { return (*a) + (*b); })
-      .addMetaFunction("__sub", [](const fvec3* a, const fvec3* b) -> fvec3 { return (*a) - (*b); })
+      .addMetaFunction("__sub", [](const fvec3* a, const fvec3* b) -> fvec3 {
+        printf( "vec3.sub a<%p> b<%p>\n", a, b);
+        return (*a) - (*b);
+      })
+      .addMetaFunction("__mul", [](const fvec3* a, float b) -> fvec3 { return (*a) * b; })
       .endClass()
       ////////////////////////////////////////
       ////////////////////////////////////////
@@ -252,11 +258,17 @@ LuaSystem::LuaSystem(Simulation* psi)
       .beginClass<Entity>("entity")
       .addPropertyReadOnly("name", &Entity::name)
       ////////////////////////////////////////
-      .addPropertyReadOnly(
+      .addFunction(
           "pos",
-          [](Entity* pent) -> fvec3 {
-            fvec3 pos = pent->GetEntityPosition();
+          [](Entity* pent) {
+            fvec3 pos;// = pent->GetEntityPosition();
             return pos;
+          })
+      ////////////////////////////////////////
+      .addFunction(
+          "setPos",
+          [](Entity* pent, fvec3 pos)  {
+            pent->setPos(pos);
           })
       ////////////////////////////////////////
       .addFunction(

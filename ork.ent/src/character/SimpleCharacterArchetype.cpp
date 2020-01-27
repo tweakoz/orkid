@@ -8,6 +8,7 @@
 #include "SimpleCharacterArchetype.h"
 #include "CharacterLocoComponent.h"
 #include <ork/kernel/msgrouter.inl>
+#include <pkg/ent/LightingSystem.h>
 ///////////////////////////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::SimpleCharacterArchetype, "SimpleCharacterArchetype" );
 ///////////////////////////////////////////////////////////////////////////////
@@ -218,10 +219,11 @@ void SimpleCharacterArchetype::DoCompose(ork::ent::ArchComposer& composer)
 	composer.Register<ork::ent::ScriptComponentData>();
   composer.Register<ork::ent::InputComponentData>();
 	composer.Register<SimpleCharControllerData>();
-    composer.Register<BulletObjectControllerData>();
-    composer.Register<AudioEffectComponentData>();
-    composer.Register<CharacterLocoData>();
-	//pedpropmapdata->SetProperty( "visual.lighting.reciever.scope", "static" );
+  composer.Register<BulletObjectControllerData>();
+  composer.Register<AudioEffectComponentData>();
+  composer.Register<CharacterLocoData>();
+  composer.Register<LightingComponentData>();
+    // pedpropmapdata->SetProperty( "visual.lighting.reciever.scope", "static" );
 }
 
 }} // namespace ork { namespace ent {
