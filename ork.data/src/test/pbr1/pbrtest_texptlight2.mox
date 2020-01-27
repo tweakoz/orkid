@@ -12,10 +12,10 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>0.0848626 2.90481 -0.0855216</property>
+                                                <property name='Center'>-0.0609608 2.24831 -0.731681</property>
                                                 <property name='Focus'>0 0 0</property>
                                                 <property name='Loc'>13.6089</property>
-                                                <property name='QuatC'>-0.0518947 -0.976688 0.137485 -0.159246</property>
+                                                <property name='QuatC'>-0.00782347 -0.983555 0.127967 0.130756</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -210,7 +210,7 @@
                                                         <reference category='ObjectClass'>
                                                             <object type='PointLightData' id='24'>
                                                                 <property name='AffectsSpecular'>false</property>
-                                                                <property name='Color'>1000 1000 1000</property>
+                                                                <property name='Color'>500 500 500</property>
                                                                 <property name='ShadowBias'>0.2</property>
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>false</property>
@@ -346,7 +346,7 @@
                                                         <reference category='ObjectClass'>
                                                             <object type='PointLightData' id='38'>
                                                                 <property name='AffectsSpecular'>false</property>
-                                                                <property name='Color'>1000 1000 1000</property>
+                                                                <property name='Color'>500 500 500</property>
                                                                 <property name='ShadowBias'>0.2</property>
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>false</property>
@@ -680,8 +680,8 @@
                                                                                     <object type='DeferredCompositingNodePbr' id='73'>
                                                                                         <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
-                                                                                        <property name='DepthFogDistance'>100</property>
-                                                                                        <property name='DepthFogPower'>22.1452</property>
+                                                                                        <property name='DepthFogDistance'>248.187</property>
+                                                                                        <property name='DepthFogPower'>1.53656</property>
                                                                                         <property name='DiffuseLevel'>1</property>
                                                                                         <property name='EnvironmentIntensity'>1</property>
                                                                                         <property name='EnvironmentMipBias'>0</property>

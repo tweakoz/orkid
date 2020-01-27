@@ -68,25 +68,25 @@ public:
   ~LightingComponentData();
   ///////////////////////////////////////////////////////
   ork::lev2::LightData* GetLightData() const {
-    return mLightData;
+    return _lightdata;
   }
-  bool IsDynamic() const {
-    return mbDynamic;
+  bool isDynamic() const {
+    return _dynamic;
   }
 
 private:
   ork::ent::ComponentInst* createComponent(ork::ent::Entity* pent) const final;
 
   void LdGetter(ork::rtti::ICastable*& val) const {
-    val = mLightData;
+    val = _lightdata;
   }
   void LdSetter(ork::rtti::ICastable* const& val) {
-    mLightData = ork::rtti::downcast<ork::lev2::LightData*>(val);
+    _lightdata = ork::rtti::downcast<ork::lev2::LightData*>(val);
   }
   void DoRegisterWithScene(ork::ent::SceneComposer& sc) final;
 
-  ork::lev2::LightData* mLightData;
-  bool mbDynamic;
+  ork::lev2::LightData* _lightdata;
+  bool _dynamic;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -107,7 +107,7 @@ private:
   bool DoLink(ork::ent::Simulation* psi) final;
 
   ork::lev2::Light* _light;
-  const LightingComponentData& mLightData;
+  const LightingComponentData& _lcdata;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

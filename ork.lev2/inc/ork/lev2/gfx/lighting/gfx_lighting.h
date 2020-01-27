@@ -26,8 +26,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 
-//class TextureAsset;
-//class Texture;
+// class TextureAsset;
+// class Texture;
 class RenderContextFrameData;
 class FxShader;
 class FxShaderParam;
@@ -106,10 +106,11 @@ struct Light {
   Light(const fmtx4& mtx, const LightData* ld = 0)
       : _worldMatrix(mtx)
       , _data(ld)
-      , mbIsDynamic(false)
+      , _dynamic(false)
       , mPriority(0.0f) {
   }
-  virtual ~Light() {}
+  virtual ~Light() {
+  }
 
   bool isShadowCaster() const;
   virtual bool IsInFrustum(const Frustum& frustum)              = 0;
@@ -131,13 +132,12 @@ struct Light {
     return _worldMatrix.GetZNormal();
   }
 
-
   const LightData* _data;
   const fmtx4& _worldMatrix;
 
   float mPriority;
   int miInFrustumID;
-  bool mbIsDynamic;
+  bool _dynamic;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -161,14 +161,12 @@ public:
   PointLightData()
       : _radius(1.0f)
       , _falloff(1.0f)
-      , _equirectTexture(nullptr){
+      , _equirectTexture(nullptr) {
   }
 
 private:
-
-	void _readEquiMap(ork::rtti::ICastable *&model) const;
-	void _writeEquiMap(ork::rtti::ICastable *const &model);
-
+  void _readEquiMap(ork::rtti::ICastable*& model) const;
+  void _writeEquiMap(ork::rtti::ICastable* const& model);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

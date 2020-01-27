@@ -36,20 +36,20 @@ namespace ork { namespace ent {
 
 void LightingComponentData::Describe() {
   ork::reflect::RegisterProperty("LightData", &LightingComponentData::LdGetter, &LightingComponentData::LdSetter);
-  ork::reflect::RegisterProperty("Dynamic", &LightingComponentData::mbDynamic);
+  ork::reflect::RegisterProperty("Dynamic", &LightingComponentData::_dynamic);
   ork::reflect::annotatePropertyForEditor<LightingComponentData>("LightData", "editor.factorylistbase", "LightData");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 LightingComponentData::LightingComponentData()
-    : mLightData(0)
-    , mbDynamic(false) {
+    : _lightdata(0)
+    , _dynamic(false) {
 }
 
 LightingComponentData::~LightingComponentData() {
-  if (mLightData)
-    delete mLightData;
+  if (_lightdata)
+    delete _lightdata;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -69,7 +69,7 @@ void LightingComponentInst::Describe() {
 LightingComponentInst::LightingComponentInst(const LightingComponentData& data, ork::ent::Entity* pent)
     : ork::ent::ComponentInst(&data, pent)
     , _light(nullptr)
-    , mLightData(data) {
+    , _lcdata(data) {
   ork::lev2::LightData* lightdata = data.GetLightData();
 
   ork::lev2::DirectionalLightData* dirlight_data = ork::rtti::autocast(lightdata);
@@ -95,7 +95,7 @@ LightingComponentInst::LightingComponentInst(const LightingComponentData& data, 
   struct yo {
     //
     ork::lev2::XgmModelAsset* mpModel;
-    ork::ent::Entity* mpEntity;
+    ork::ent::Entity* _entity;
     ork::lev2::Light* _light;
 
     static void draw_tricircle(
@@ -108,7 +108,7 @@ LightingComponentInst::LightingComponentInst(const LightingComponentData& data, 
 
       const ork::lev2::Renderer* prenderer = rcid.GetRenderer();
 
-      const ork::TransformNode& xf = &pyo->mpEntity->GetEntData().GetDagNode().GetTransformNode();
+      const ork::TransformNode& xf = &pyo->_entity->GetEntData().GetDagNode().GetTransformNode();
       ork::fmtx4 mtxw              = xf.GetTransform()->GetMatrix();
 
       if (false == targ->FBI()->isPickState()) {
@@ -140,7 +140,7 @@ LightingComponentInst::LightingComponentInst(const LightingComponentData& data, 
       const yo* pyo               = pren->GetUserData0().Get<const yo*>();
       ork::lev2::XgmModel* pmodel = (pyo->mpModel == 0) ? 0 : pyo->mpModel->GetModel();
       if (pmodel) {
-        const ork::TransformNode3D& xf = &pyo->mpEntity->GetEntData().GetDagNode().GetTransformNode();
+        const ork::TransformNode3D& xf = &pyo->_entity->GetEntData().GetDagNode().GetTransformNode();
         // const ork::lev2::RenderContextFrameData* fdata = renderer->GetTarget()->topRenderContextFrameData();
         int inummeshes = pmodel->numMeshes();
         for (int imesh = 0; imesh < inummeshes; imesh++) {
@@ -205,7 +205,7 @@ LightingComponentInst::LightingComponentInst(const LightingComponentData& data, 
 
 #if 0 // DRAWTHREADS
 	yo* pyo = new yo;
-	pyo->mpEntity = pent;
+	pyo->_entity = pent;
 	pyo->_light = GetLight();
 
 	ork::ent::CallbackDrawable* pdrw = new ork::ent::CallbackDrawable(pent);
@@ -227,11 +227,11 @@ bool LightingComponentInst::DoLink(ork::ent::Simulation* psi) {
     return false;
 
   ork::lev2::LightManager& lightmanager = lmi->GetLightManager();
-  bool bisdyn                           = mLightData.IsDynamic();
+  bool bisdyn                           = _lcdata.isDynamic();
 
   auto light_instance = GetLight();
   if (light_instance) {
-    light_instance->mbIsDynamic = bisdyn;
+    light_instance->_dynamic = bisdyn;
     switch (light_instance->LightType()) {
       case ork::lev2::ELIGHTTYPE_SPOT:
       case ork::lev2::ELIGHTTYPE_POINT:
@@ -263,7 +263,7 @@ LightingComponentInst::~LightingComponentInst() {
 }
 
 void LightingComponentInst::DoUpdate(ork::ent::Simulation* inst) {
-  if (mLightData.IsDynamic()) {
+  if (_lcdata.isDynamic()) {
     if (_light) {
       //_light->_worldMatrix = _entity->GetEffectiveMatrix();
     }
