@@ -15,8 +15,8 @@ Some Features Include:
 * Game-Genre agnostic.. 
 * Integrated Bullet Physics Engine.
 * GlFx shader based renderer. Uses OpenGL 4.1 on OSX and 4.5 on Linux.
-* PBR Shader support
-* GLTF/assimp import support
+* Deferred Renderer with MetallicRoughness-PBR / Light Projection support
+* GLTF2-PBR/FBX/assimp import support
 * Realtime fixed function and node based compositor with offline rendering mode (dumps to image files on disk).
 * QT5/OpenGL based UI
 * Singularity - Pro synthesizer inspired audio engine. Loads Kurzweil k2000, CZ101, TX81Z and SF2 patches.
