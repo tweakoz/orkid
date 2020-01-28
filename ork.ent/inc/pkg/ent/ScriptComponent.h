@@ -39,22 +39,23 @@ private:
   file::Path mScriptPath;
 };
 
-typedef ork::FixedString<65536> script_text_t;
 typedef ork::FixedString<256> script_funcname_t;
 
 struct ScriptObject {
   ScriptObject();
+  ~ScriptObject();
 
-  script_text_t mScriptText;
+  std::string mScriptPath;
+  std::string mScriptText;
   std::string mMD5Digest;
-  int mOnEntLink;
-  int mOnEntStart;
-  int mOnEntStop;
-  int mOnEntActivate;
-  int mOnEntDeactivate;
-  int mOnEntUpdate;
-  int mModTabRef;
-  int mScriptRef;
+  int mOnEntLink       = LUA_NOREF;
+  int mOnEntStart      = LUA_NOREF;
+  int mOnEntStop       = LUA_NOREF;
+  int mOnEntActivate   = LUA_NOREF;
+  int mOnEntDeactivate = LUA_NOREF;
+  int mOnEntUpdate     = LUA_NOREF;
+  int mModTabRef       = LUA_NOREF;
+  int mScriptRef       = LUA_NOREF;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -75,7 +76,6 @@ private:
   void onActivate(Simulation* psi) final;
   void onDeactivate(Simulation* psi) final;
   const ScriptComponentData& mCD;
-  std::string mScriptText;
   ScriptObject* mScriptObject;
 
   any<64> mLuaData;

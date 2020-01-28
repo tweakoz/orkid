@@ -144,7 +144,6 @@ EntData::EntData()
 }
 ///////////////////////////////////////////////////////////////////////////////
 EntData::~EntData() {
-  OrkAssert(false);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void EntData::ArchetypeGetter(ork::rtti::ICastable*& val) const {
@@ -254,7 +253,7 @@ void Entity::setRotAxisAngle(fvec4 axisang) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Entity::setPos( fvec3 newpos ){
+void Entity::setPos(fvec3 newpos) {
   fvec3 tmppos;
   fquat rot;
   float sca     = 0.0f;

@@ -1,3 +1,4 @@
+Blender Version Tested: 2.81a
 
 To export a rigid mesh with blender:
 ==================================
@@ -5,7 +6,7 @@ To export a rigid mesh with blender:
 * format: GLTF-embedded
 * Transform: +y up
 * Geom: NO-Apply Modifiers(see below), UV's, Normals, Tangents, VertexColors, Materials, PNG, no-compression
-* Skinning: enabled. do not include all bone influences
+* Skinning: disabled
 * convert to xgm : ork.tool.release --filter ass:xgm --in infile.gltf --out outfile.xgm
 
 To export a rigged character with blender:

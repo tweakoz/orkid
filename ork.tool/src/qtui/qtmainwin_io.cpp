@@ -29,8 +29,7 @@
 #include <pkg/ent/editor/edmainwin.h>
 #include "vpSceneEditor.h"
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork {
-namespace ent {
+namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SetRecentSceneFile(ConstString file, int);
@@ -48,19 +47,17 @@ void EditorMainWindow::OpenSceneFile() {
   PerfMarkerDisable();
 
   static auto orkdatapath = tool::getDataDir() + "scene.mox";
-  auto datapath = qs(orkdatapath);
+  auto datapath           = qs(orkdatapath);
   printf("LOADSCNE from<%s>\n", datapath.toStdString().c_str());
   gUpdateStatus.SetState(EUPD_STOP);
 
-  auto openfiledialog =
-      new QFileDialog(this, tr("Load OrkidScene File"),
-                      datapath);
+  auto openfiledialog = new QFileDialog(nullptr, tr("Load OrkidScene File"), datapath);
   openfiledialog->setFileMode(QFileDialog::ExistingFiles);
   openfiledialog->setDirectory(datapath);
   openfiledialog->setNameFilter(tr("OrkSceneFile (*.mox *.mob)"));
   openfiledialog->setViewMode(QFileDialog::Detail);
 
-  //openfiledialog->setOption(QFileDialog::DontUseNativeDialog, true);
+  openfiledialog->setOption(QFileDialog::DontUseNativeDialog, false);
   openfiledialog->setOption(QFileDialog::DontConfirmOverwrite, false);
 
   openfiledialog->setOption(QFileDialog::HideNameFilterDetails, false);
@@ -70,7 +67,7 @@ void EditorMainWindow::OpenSceneFile() {
   std::string fname;
   if (openfiledialog->exec()) {
     selectedFiles = openfiledialog->selectedFiles();
-    fname = selectedFiles.first().toStdString();
+    fname         = selectedFiles.first().toStdString();
   }
 
   gUpdateStatus.SetState(EUPD_START);
@@ -80,7 +77,7 @@ void EditorMainWindow::OpenSceneFile() {
   if (fname.length() == 0)
     return;
 
-	orkdatapath = fname;
+  orkdatapath = fname;
 
   ///////////////////////////////////////////////
   // Check if Read-Only flag is set (SVN requires lock?)
@@ -89,8 +86,12 @@ void EditorMainWindow::OpenSceneFile() {
   if (!writable) {
     gUpdateStatus.SetState(EUPD_STOP);
     int result = QMessageBox::question(
-        this, "File is Read-Only", "Do you want to open the file Read-Only?",
-        QMessageBox::Yes, QMessageBox::No, QMessageBox::Cancel);
+        this,
+        "File is Read-Only",
+        "Do you want to open the file Read-Only?",
+        QMessageBox::Yes,
+        QMessageBox::No,
+        QMessageBox::Cancel);
     gUpdateStatus.SetState(EUPD_START);
     if (result == QMessageBox::Yes)
       this->SetReadOnly(true);
@@ -104,7 +105,7 @@ void EditorMainWindow::OpenSceneFile() {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void EditorMainWindow::QueueLoadScene(const std::string &filename) {
+void EditorMainWindow::QueueLoadScene(const std::string& filename) {
   ///////////////////////////////////////////////
   // outer load on concurrent thread
   ///////////////////////////////////////////////
@@ -113,9 +114,9 @@ void EditorMainWindow::QueueLoadScene(const std::string &filename) {
       printf("Scene<%s> Loaded\n", filename.c_str());
       SetRecentSceneFile(filename.c_str(), SCENEFILE_DIR);
       this->mCurrentFileName = QString(filename.c_str());
-      //printf("calling SlotUpdateAll\n");
+      // printf("calling SlotUpdateAll\n");
       this->SlotUpdateAll();
-      //printf("called SlotUpdateAll\n");
+      // printf("called SlotUpdateAll\n");
     }));
   };
   ///////////////////////////////////////////////
@@ -132,9 +133,7 @@ void EditorMainWindow::SaveSceneFile() {
 
   // mEditorBase.EditorUnGroup();
 
-  QString FileName =
-      QFileDialog::getSaveFileName(0, "Save OrkidScene File", mCurrentFileName,
-                                   "OrkSceneFile (*.mox *.mob)");
+  QString FileName = QFileDialog::getSaveFileName(0, "Save OrkidScene File", mCurrentFileName, "OrkSceneFile (*.mox *.mob)");
   this->activateWindow();
   file::Path::NameType fname = FileName.toStdString().c_str();
   if (fname.length()) {
@@ -164,30 +163,29 @@ void EditorMainWindow::SaveSceneFile() {
 ///////////////////////////////////////////////////////////////////////////
 
 void EditorMainWindow::SaveSelected() {
-  orkset<ork::Object *> SelectedObjects;
+  orkset<ork::Object*> SelectedObjects;
   SelectedObjects = mEditorBase.selectionManager().getActiveSelection();
 
   if (SelectedObjects.size() == 1) {
-    const ork::Object *pobj = *SelectedObjects.begin();
+    const ork::Object* pobj = *SelectedObjects.begin();
 
-    const EntData *pent = rtti::autocast(pobj);
+    const EntData* pent = rtti::autocast(pobj);
 
     if (pent) {
-      const Archetype *parch = pent->GetArchetype();
+      const Archetype* parch = pent->GetArchetype();
 
       if (parch) {
         pobj = parch;
       }
     }
 
-    const Archetype *parch = rtti::autocast(pobj);
+    const Archetype* parch = rtti::autocast(pobj);
 
     if (parch) {
       tool::GetGlobalDataFlowScheduler()->GraphSet().LockForRead();
       {
-        QString FileName = QFileDialog::getSaveFileName(
-            0, "Export Archetype", GetRecentSceneFile(EXPORT_DIR).c_str(),
-            "OrkSceneFile (*.mox)");
+        QString FileName =
+            QFileDialog::getSaveFileName(0, "Export Archetype", GetRecentSceneFile(EXPORT_DIR).c_str(), "OrkSceneFile (*.mox)");
 
         file::Path::NameType fname = FileName.toStdString().c_str();
         if (fname.length()) {
@@ -214,9 +212,8 @@ void EditorMainWindow::SaveSelected() {
 void EditorMainWindow::MergeFile() {
   tool::GetGlobalDataFlowScheduler()->GraphSet().LockForRead();
   {
-    QString FileName = QFileDialog::getOpenFileName(
-        0, "Import Archetype", GetRecentSceneFile(EXPORT_DIR).c_str(),
-        "OrkMergeFile (*.mox *.arch)");
+    QString FileName =
+        QFileDialog::getOpenFileName(0, "Import Archetype", GetRecentSceneFile(EXPORT_DIR).c_str(), "OrkMergeFile (*.mox *.arch)");
     std::string fname = FileName.toStdString();
     if (fname.length()) {
       SetRecentSceneFile(FileName.toStdString().c_str(), EXPORT_DIR);
@@ -224,10 +221,10 @@ void EditorMainWindow::MergeFile() {
       stream::FileInputStream istream(fname.c_str());
       reflect::serialize::XMLDeserializer dser(istream);
 
-      rtti::ICastable *pcastable = 0;
-      bool bOK = dser.Deserialize(pcastable);
+      rtti::ICastable* pcastable = 0;
+      bool bOK                   = dser.Deserialize(pcastable);
       if (bOK) {
-        Archetype *parch = rtti::autocast(pcastable);
+        Archetype* parch = rtti::autocast(pcastable);
 
         if (parch) {
           SigNewObject(parch);
@@ -264,6 +261,5 @@ void SetRecentSceneFile(ConstString file, int dialog_id) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ent
-} // namespace ork
+}} // namespace ork::ent
 ///////////////////////////////////////////////////////////////////////////////

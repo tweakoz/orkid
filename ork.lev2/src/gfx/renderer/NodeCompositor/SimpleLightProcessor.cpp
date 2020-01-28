@@ -226,9 +226,10 @@ void SimpleLightProcessor::_renderUnshadowedTexturedPointLights(
     lightmtl.commit();
     //////////////////////////////////////////////////
     if (VD._isStereo) {
-      // float L = (float(ix) / float(_clusterW));
-      // this_buf->Render2dQuadEML(fvec4(L - 1.0f, T, KTILESIZX * 0.5, KTILESIZY), fvec4(0, 0, 1, 1));
-      // this_buf->Render2dQuadEML(fvec4(L, T, KTILESIZX * 0.5, KTILESIZY), fvec4(0, 0, 1, 1));
+      fvec4 quad_pos(-1, -1, 2, 2);
+      fvec4 quad_uva(0, 0, 1, 1);
+      fvec4 quad_uvb(0, numlights, 0, 0);
+      this_buf->Render2dQuadsEML(1, &quad_pos, &quad_uva, &quad_uvb);
     } else {
       fvec4 quad_pos(-1, -1, 2, 2);
       fvec4 quad_uva(0, 0, 1, 1);

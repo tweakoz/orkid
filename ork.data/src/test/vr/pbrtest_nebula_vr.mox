@@ -349,16 +349,24 @@
                                     </object>
                                 </reference>
                             </item>
+                            <item key='lighting'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='LightingComponentData' id='34'>
+                                        <property name='Dynamic'>false</property>
+                                        <property name='LightData'><backreference id='-1'/></property>
+                                    </object>
+                                </reference>
+                            </item>
                         </property>
                     </object>
                 </reference>
             </item>
             <item key='moncase'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='34'>
+                    <object type='Ent3dEntData' id='35'>
                         <property name='Name'>"moncase"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='35'>
+                            <object type='Ent3dDagNode' id='36'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -370,10 +378,10 @@
             </item>
             <item key='monstand'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='36'>
+                    <object type='Ent3dEntData' id='37'>
                         <property name='Name'>"monstand"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='37'>
+                            <object type='Ent3dDagNode' id='38'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -385,10 +393,10 @@
             </item>
             <item key='spawncam'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='38'>
+                    <object type='Ent3dEntData' id='39'>
                         <property name='Name'>"spawncam"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='39'>
+                            <object type='Ent3dDagNode' id='40'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -400,10 +408,10 @@
             </item>
             <item key='spawnloc'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='40'>
+                    <object type='Ent3dEntData' id='41'>
                         <property name='Name'>"spawnloc"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='41'>
+                            <object type='Ent3dDagNode' id='42'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -418,13 +426,13 @@
         <property name='SystemData'>
             <item key='AudioSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='AudioSystemData' id='42'>
+                    <object type='AudioSystemData' id='43'>
                         <property name='DistanceAttenPower'>0</property>
                         <property name='DistanceMax'>10</property>
                         <property name='DistanceMin'>0.1</property>
                         <property name='DistanceScale'>0.003</property>
                         <property name='Reverb'>
-                            <object type='lev2::AudioReverbProperties' id='43'>
+                            <object type='lev2::AudioReverbProperties' id='44'>
                                 <property name='DecayTime'>1.49</property>
                                 <property name='EnvDiffusion'>1</property>
                                 <property name='ModulationDepth'>0</property>
@@ -438,7 +446,7 @@
             </item>
             <item key='BulletSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='BulletSystemData' id='44'>
+                    <object type='BulletSystemData' id='45'>
                         <property name='Debug'>false</property>
                         <property name='Gravity'>0 0 0</property>
                         <property name='SimulationRate'>120</property>
@@ -448,9 +456,9 @@
             </item>
             <item key='CompositingSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='CompositingSystemData' id='45'>
+                    <object type='CompositingSystemData' id='46'>
                         <property name='CompositorData'>
-                            <object type='CompositingData' id='46'>
+                            <object type='CompositingData' id='47'>
                                 <property name='ActiveItem'>"item1"</property>
                                 <property name='ActiveScene'>"scene1"</property>
                                 <property name='Enable'>true</property>
@@ -458,32 +466,32 @@
                                 <property name='Scenes'>
                                     <item key='scene1'>
                                         <reference category='ObjectClass'>
-                                            <object type='CompositingScene' id='47'>
+                                            <object type='CompositingScene' id='48'>
                                                 <property name='Items'>
                                                     <item key='item1'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='CompositingSceneItem' id='48'>
+                                                            <object type='CompositingSceneItem' id='49'>
                                                                 <property name='Technique'>
                                                                     <reference category='ObjectClass'>
-                                                                        <object type='NodeCompositingTechnique' id='49'>
+                                                                        <object type='NodeCompositingTechnique' id='50'>
                                                                             <property name='OutputNode'>
                                                                                 <reference category='ObjectClass'>
-                                                                                    <object type='VrCompositingNode' id='50'>
+                                                                                    <object type='VrCompositingNode' id='51'>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>
                                                                             <property name='PostFxNode'><backreference id='-1'/></property>
                                                                             <property name='RenderNode'>
                                                                                 <reference category='ObjectClass'>
-                                                                                    <object type='DeferredCompositingNodePbr' id='51'>
+                                                                                    <object type='DeferredCompositingNodePbr' id='52'>
                                                                                         <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
                                                                                         <property name='DepthFogDistance'>1000</property>
                                                                                         <property name='DepthFogPower'>1</property>
                                                                                         <property name='DiffuseLevel'>1</property>
-                                                                                        <property name='EnvironmentIntensity'>1.3</property>
+                                                                                        <property name='EnvironmentIntensity'>2.5</property>
                                                                                         <property name='EnvironmentMipBias'>0</property>
-                                                                                        <property name='EnvironmentMipScale'>7</property>
+                                                                                        <property name='EnvironmentMipScale'>8</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
                                                                                                 "lev2tex" "data://environ/envmaps/tozenv_nebula"
@@ -512,19 +520,25 @@
             </item>
             <item key='LightingSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='LightingSystemSystemData' id='52'>
+                    <object type='LightingSystemSystemData' id='53'>
+                    </object>
+                </reference>
+            </item>
+            <item key='LightingSystemSystemData'>
+                <reference category='SystemDataClass'>
+                    <object type='LightingSystemSystemData' id='54'>
                     </object>
                 </reference>
             </item>
             <item key='ScriptSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='ScriptSystemData' id='53'>
+                    <object type='ScriptSystemData' id='55'>
                     </object>
                 </reference>
             </item>
             <item key='VrSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='VrSystemData' id='54'>
+                    <object type='VrSystemData' id='56'>
                         <property name='TrackingObjectEntity'>"spawncam"</property>
                         <property name='VrCameraEntity'>"spawncam"</property>
                     </object>

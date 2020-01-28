@@ -40,7 +40,7 @@ function TerPlayer:OnEntityDeactivate()
 end
 -------------------------------------------------------------------------------
 function TerPlayer:OnEntityUpdate(dt)
-  --printf( "TERPLAYER::OnEntityUpdate()::begin" )
+   --printf( "TERPLAYER::OnEntityUpdate()::begin" )
     self.timer = self.timer-dt
     if self.timer<0 then
         self.timer = math.random(1,3)

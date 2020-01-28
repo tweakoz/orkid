@@ -33,6 +33,8 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ScriptSystemData, "ScriptSystemData");
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
+constexpr int LUA_STACKINDEX_TOP = -1;
+
 void ScriptComponentData::Describe() {
   ork::reflect::RegisterProperty("ScriptFile", &ScriptComponentData::mScriptPath);
   ork::reflect::annotatePropertyForEditor<ScriptComponentData>("ScriptFile", "editor.class", "ged.factory.filelist");
@@ -62,6 +64,18 @@ void ScriptComponentData::DoRegisterWithScene(ork::ent::SceneComposer& sc) {
 
 ScriptObject::ScriptObject()
     : mScriptRef(LUA_NOREF) {
+  printf("new ScriptObject<%p>\n", this);
+}
+ScriptObject::~ScriptObject() {
+  printf("deleting ScriptObject<%p>\n", this);
+  mOnEntLink       = LUA_NOREF;
+  mOnEntStart      = LUA_NOREF;
+  mOnEntStop       = LUA_NOREF;
+  mOnEntActivate   = LUA_NOREF;
+  mOnEntDeactivate = LUA_NOREF;
+  mOnEntUpdate     = LUA_NOREF;
+  mModTabRef       = LUA_NOREF;
+  mScriptRef       = LUA_NOREF;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -102,9 +116,10 @@ bool ScriptComponentInst::DoLink(ork::ent::Simulation* psi) {
       _luaentity["ent"]     = ent;
 
       lua.getRef(mScriptObject->mOnEntLink);
-      assert(lua.isFunction(-1));
+      assert(lua.isFunction(LUA_STACKINDEX_TOP));
       lua.push(_luaentity);
-      lua.pcall(1, 0, 0);
+      int iret = lua.pcall(1, 0, 0);
+      OrkAssert(iret == 0);
     }
   }
   return true;
@@ -134,13 +149,15 @@ bool ScriptComponentInst::DoStart(Simulation* psi, const fmtx4& world) {
     auto ent  = this->GetEntity();
     auto name = ent->name().c_str();
 
-    printf("Starting SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name);
+    // printf("Starting SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name);
+    // printf("start ScriptObject<%p:%s>\n", mScriptObject, mScriptObject->mScriptPath.c_str());
 
     LuaIntf::LuaState lua = L;
     lua.getRef(mScriptObject->mOnEntStart);
-    assert(lua.isFunction(-1));
+    assert(lua.isFunction(LUA_STACKINDEX_TOP));
     lua.push(_luaentity);
-    lua.pcall(1, 0, 0);
+    int iret = lua.pcall(1, 0, 0);
+    OrkAssert(iret == 0);
   }
   return true;
 }
@@ -159,13 +176,15 @@ void ScriptComponentInst::onActivate(Simulation* psi) {
     auto ent  = this->GetEntity();
     auto name = ent->name().c_str();
 
-    printf("Activating SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name);
+    // printf("Activating SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name);
+    // printf("activate ScriptObject<%p:%s>\n", mScriptObject, mScriptObject->mScriptPath.c_str());
 
     LuaIntf::LuaState lua = L;
     lua.getRef(mScriptObject->mOnEntActivate);
-    assert(lua.isFunction(-1));
+    assert(lua.isFunction(LUA_STACKINDEX_TOP));
     lua.push(_luaentity);
-    lua.pcall(1, 0, 0);
+    int iret = lua.pcall(1, 0, 0);
+    OrkAssert(iret == 0);
   }
 }
 
@@ -182,13 +201,14 @@ void ScriptComponentInst::onDeactivate(Simulation* psi) {
     auto ent  = this->GetEntity();
     auto name = ent->name().c_str();
 
-    printf("Activating SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name);
+    // printf("Deactivating SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name);
 
     LuaIntf::LuaState lua = L;
     lua.getRef(mScriptObject->mOnEntDeactivate);
-    assert(lua.isFunction(-1));
+    assert(lua.isFunction(LUA_STACKINDEX_TOP));
     lua.push(_luaentity);
-    lua.pcall(1, 0, 0);
+    int iret = lua.pcall(1, 0, 0);
+    OrkAssert(iret == 0);
   }
 }
 
@@ -207,10 +227,10 @@ void ScriptComponentInst::DoStop(Simulation* psi) {
 
     LuaIntf::LuaState lua = L;
     lua.getRef(mScriptObject->mOnEntStop);
-    assert(lua.isFunction(-1));
+    assert(lua.isFunction(LUA_STACKINDEX_TOP));
     lua.push(_luaentity);
-    lua.pcall(1, 0, 0);
-
+    int iret = lua.pcall(1, 0, 0);
+    OrkAssert(iret == 0);
     //////////////////////////////////////////
 
     // printf( "LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
@@ -232,12 +252,15 @@ void ScriptComponentInst::DoUpdate(ork::ent::Simulation* psi) {
       double dt = psi->GetDeltaTime();
       double gt = psi->GetGameTime();
 
+      // printf("update ScriptObject<%p:%s>\n", mScriptObject, mScriptObject->mScriptPath.c_str());
+
       LuaIntf::LuaState lua = L;
       lua.getRef(mScriptObject->mOnEntUpdate);
-      assert(lua.isFunction(-1));
+      OrkAssert(lua.isFunction(LUA_STACKINDEX_TOP));
       lua.push(_luaentity);
       lua.push(dt);
-      lua.pcall(2, 0, 0);
+      int iret = lua.pcall(2, 0, 0);
+      OrkAssert(iret == 0);
     }
   }
   // NOP (scriptmanager will execute)
@@ -357,7 +380,7 @@ ScriptSystem::~ScriptSystem() {
 
 bool ScriptSystem::DoLink(Simulation* psi) // final
 {
-  // printf( "ScriptSystem::DoLink()\n" );
+  printf("ScriptSystem::DoLink()\n");
   auto asluasys = mLuaManager.Get<LuaSystem*>();
   OrkAssert(asluasys);
   // LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneLink");
@@ -379,7 +402,7 @@ void ScriptSystem::DoUnLink(Simulation* psi) // final
 
 void ScriptSystem::DoStart(Simulation* psi) // final
 {
-  // printf( "ScriptSystem::DoStart()\n" );
+  printf("ScriptSystem::DoStart()\n");
   auto asluasys = mLuaManager.Get<LuaSystem*>();
   OrkAssert(asluasys);
   // LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneStart");
@@ -389,7 +412,7 @@ void ScriptSystem::DoStart(Simulation* psi) // final
 
 void ScriptSystem::DoStop(Simulation* inst) // final
 {
-  // printf( "ScriptSystem::DoStop()\n" );
+  printf("ScriptSystem::DoStop()\n");
   auto asluasys = mLuaManager.Get<LuaSystem*>();
   OrkAssert(asluasys);
   // LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneStop");
@@ -443,8 +466,7 @@ ScriptObject* ScriptSystem::FlyweightScriptObject(const ork::file::Path& pth) {
       scriptfile.Read(scripttext, filesize);
       scripttext[filesize] = 0;
       rval->mScriptText    = scripttext;
-      // printf( "%s\n", scripttext);
-      free(scripttext);
+      rval->mScriptPath    = abspath.c_str();
 
       //////////////////////////////////////////
       // prefix global method names to scope them

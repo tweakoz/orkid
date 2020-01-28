@@ -49,7 +49,7 @@ function Diver:OnEntityStop()
     --printf( "Yo::OnEntityStop(%s)", tostring(e))
 end
 -------------------------------------------------------------------------------
-function Diver.SpawnBallz(self)
+function Diver:SpawnBallz()
     local r = math.random(1000)
 
     if r<2 then
@@ -74,38 +74,22 @@ end
 -------------------------------------------------------------------------------
 function Diver:OnEntityUpdate(dt)
     --printf( "DIVER::OnEntityUpdate()::begin" )
-    --printf( "entname<%s> dt<%g>",self.ent.name,dt )
-    --printf( "ent<%s> pos<%s>",tostring(self.ent),tostring(self.ent.pos) )
     self.timer = self.timer-dt
-
     self.phase = self.phase+dt*0.1
     px = math.sin(self.phase)*3.0
     pz = math.cos(self.phase)*-3.0
-    --self.charcon:notify("setPos",ork.vec3(px,0,pz))
-
-    --printf("selfent<%s>",tostring(self.ent))
-    --printf("plyrent<%s>",tostring(self.playerent))
-
-    local ppos = self.playerent.pos
-    local mpos = self.ent.pos
+    local ppos = self.playerent:pos()
+    local mpos = self.ent:pos()
     local del = (ppos-mpos)
     self.loco:notify("setDir",del:normal())
     self.loco:notify("setWalkingForce",0)
-    --printf("ppos<%g %g %g>",ppos.x,ppos.y,ppos.z)
-    --printf("mpos<%g %g %g>",mpos.x,mpos.y,mpos.z)
-    --printf("del.mag<%g>", del:mag())
     if self.timer<0 then
         self.timer = math.random(1,3)
         local stnum = math.random(1,6)
         local statename = self.statetable[stnum]
         if statename ~= nil then
-            --self.charcon:notify("state",statename);
+            self.charcon:notify("state",statename);
         end
-        --------------
-        dir = math.random(-180,180)
-        --self.charcon:notify("setDir",dir*math.pi/180)
-        --------------
-        --Diver.SpawnBallz(self)
     end
     --printf( "DIVER::OnEntityUpdate()::end" )
 end

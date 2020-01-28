@@ -69,14 +69,15 @@ void DeferredContext::gpuInit(Context* target) {
     _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(target);
     //////////////////////////////////////////////////////////////
     _lightingmtl.gpuInit(target, _shadername);
-    _tekBaseLighting              = _lightingmtl.technique("baselight");
-    _tekPointLighting             = _lightingmtl.technique("pointlight");
-    _tekPointLightingTextured     = _lightingmtl.technique("pointlight_textured");
-    _tekBaseLightingStereo        = _lightingmtl.technique("baselight_stereo");
-    _tekPointLightingStereo       = _lightingmtl.technique("pointlight_stereo");
-    _tekDownsampleDepthCluster    = _lightingmtl.technique("downsampledepthcluster");
-    _tekEnvironmentLighting       = _lightingmtl.technique("environmentlighting");
-    _tekEnvironmentLightingStereo = _lightingmtl.technique("environmentlighting_stereo");
+    _tekBaseLighting                = _lightingmtl.technique("baselight");
+    _tekPointLighting               = _lightingmtl.technique("pointlight");
+    _tekPointLightingTextured       = _lightingmtl.technique("pointlight_textured");
+    _tekPointLightingTexturedStereo = _lightingmtl.technique("pointlight_textured_stereo");
+    _tekBaseLightingStereo          = _lightingmtl.technique("baselight_stereo");
+    _tekPointLightingStereo         = _lightingmtl.technique("pointlight_stereo");
+    _tekDownsampleDepthCluster      = _lightingmtl.technique("downsampledepthcluster");
+    _tekEnvironmentLighting         = _lightingmtl.technique("environmentlighting");
+    _tekEnvironmentLightingStereo   = _lightingmtl.technique("environmentlighting_stereo");
     //////////////////////////////////////////////////////////////
     // init lightblock
     //////////////////////////////////////////////////////////////
@@ -135,7 +136,6 @@ void DeferredContext::gpuInit(Context* target) {
     _accumRT = new RtGroupRenderTarget(_rtgLaccum);
     //////////////////////////////////////////////////////////////
     _whiteTexture = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/white")->GetTexture();
-
   }
   target->debugPopGroup();
 }
@@ -429,7 +429,7 @@ void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const Vie
   else
     tek = _tekPointLighting;
 
-  if( nullptr == cookietexture ){
+  if (nullptr == cookietexture) {
     cookietexture = _whiteTexture;
   }
   _lightingmtl.bindTechnique(tek);

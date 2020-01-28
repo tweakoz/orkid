@@ -64,8 +64,6 @@ namespace ork { namespace ent {
 
 void ScriptVar::fromLua(lua_State* L, int index) {
 
-  OrkAssert(false);
-
   int type = lua_type(L, index);
 
   switch (type) {

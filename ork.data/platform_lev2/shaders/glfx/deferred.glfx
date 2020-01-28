@@ -300,6 +300,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       /////////////////////////
       vec3 postfog = mix(finallitcolor,skyboxColor,depth_fogval);
       rval = pow(postfog, vec3(1.0/1.6));
+      //rval = basecolor;
     }
     else{
       // pixel was blank to in the gbuffer
@@ -308,6 +309,25 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     }
     return rval;
   } // vec3 environmentLighting(){
+
+WPosData stereoWPD(){
+    WPosData wpd;
+    wpd._muv   = gl_FragCoord.xy * InvViewportSize;
+    int index = int(wpd._muv.x >= 0.5);
+    wpd._ivp   = IVPArray[index];
+    wpd._scruv = wpd._muv;
+    wpd._scruv.x = mod(wpd._scruv.x * 2, 1);
+    wpd._index = index;
+    return wpd;
+}
+WPosData monoWPD(){
+  WPosData wpd;
+  wpd._muv   = gl_FragCoord.xy * InvViewportSize;
+  wpd._index = 0;
+  wpd._ivp   = IVPArray[0];
+  wpd._scruv = wpd._muv;
+  return wpd;
+}
 ///////////////////////////////////////////////////////////////
 } // libblock lib_deferred : ub_light : ub_frg {
 ///////////////////////////////////////////////////////////////
@@ -342,29 +362,19 @@ fragment_shader ps_downsampledepthcluster : iface_fdownsampledepthcluster : lib_
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_baselight : iface_f2uv : lib_deferred {
-  WPosData wpd;
-  wpd._muv   = gl_FragCoord.xy * InvViewportSize;
-  wpd._scruv = wpd._muv;
-  wpd._ivp   = IVPArray[int(wpd._muv.x >= 0.5)];
+  WPosData wpd = monoWPD();
   vec3 c     = baselighting(wpd);
   out_clr    = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_baselight_stereo : iface_f2uv : lib_deferred {
-  WPosData wpd;
-  wpd._muv     = gl_FragCoord.xy * InvViewportSize;
-  wpd._ivp     = IVPArray[int(wpd._muv.x >= 0.5)];
-  wpd._scruv   = wpd._muv;
-  wpd._scruv.x = mod(wpd._scruv.x * 2, 1);
+  WPosData wpd = stereoWPD();
   vec3 c       = baselighting(wpd);
   out_clr      = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_pointlight : iface_f2uv : lib_deferred {
-  WPosData wpd;
-  wpd._muv   = gl_FragCoord.xy * InvViewportSize;
-  wpd._ivp   = IVPArray[0];
-  wpd._scruv = wpd._muv;
+  WPosData wpd = monoWPD();
   GBufData gbd = decodeGBUF(wpd);
   vec3 c     = pntlighting(wpd,gbd);
   /////////////////////////////////////////
@@ -376,37 +386,22 @@ fragment_shader ps_pointlight : iface_f2uv : lib_deferred {
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
+fragment_shader ps_pointlight_stereo : iface_f2uv : lib_deferred {
+  WPosData wpd = stereoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  vec3 c       = pntlighting(wpd,gbd);
+  out_clr = vec4(clamp(c,0,1000), 1);
+}
+///////////////////////////////////////////////////////////////
 fragment_shader ps_environment : iface_f2uv : lib_deferred  {
-  WPosData wpd;
-  wpd._muv   = gl_FragCoord.xy * InvViewportSize;
-  wpd._index = 0;
-  wpd._ivp   = IVPArray[0];
-  wpd._scruv = wpd._muv;
+  WPosData wpd = monoWPD();
   out_clr = vec4(pbrEnvironmentLighting(wpd),1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_environment_stereo : iface_f2uv : lib_deferred  {
-  WPosData wpd;
-  wpd._muv   = gl_FragCoord.xy * InvViewportSize;
-  int index = int(wpd._muv.x >= 0.5);
-  wpd._ivp   = IVPArray[index];
-  wpd._scruv = wpd._muv;
-  wpd._scruv.x = mod(wpd._scruv.x * 2, 1);
-  wpd._index = index;
+  WPosData wpd = stereoWPD();
   vec3 c = pbrEnvironmentLighting(wpd);
   out_clr = vec4(c,1);
-}
-///////////////////////////////////////////////////////////////
-fragment_shader ps_pointlight_stereo : iface_f2uv : lib_deferred {
-  WPosData wpd;
-  wpd._muv     = gl_FragCoord.xy * InvViewportSize;
-  wpd._ivp     = IVPArray[int(wpd._muv.x >= 0.5)];
-  wpd._scruv   = wpd._muv;
-  wpd._scruv.x = mod(wpd._scruv.x * 2, 1);
-  vec3 c       = pntlighting(wpd);
-  // c = vec3(wpd._muv,0);
-  // vec3 c = vec3(frg_uva,0);
-  out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
