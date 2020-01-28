@@ -1,3 +1,13 @@
+
+To export a rigid mesh with blender:
+==================================
+* start an export as GLTF
+* format: GLTF-embedded
+* Transform: +y up
+* Geom: NO-Apply Modifiers(see below), UV's, Normals, Tangents, VertexColors, Materials, PNG, no-compression
+* Skinning: enabled. do not include all bone influences
+* convert to xgm : ork.tool.release --filter ass:xgm --in infile.gltf --out outfile.xgm
+
 To export a rigged character with blender:
 ==================================
 * select both the mesh and full-armature (easiest in object mode)
@@ -26,3 +36,7 @@ To export a rigged animation with blender:
 * Skinning: on, but probably does not matter.
 * convert to xga : ork.tool.release --filter ass:xga --in infile.gltf --out outfile.xga
 * note: currently bone "Roll" does not work, set to 0
+
+regarding apply modifiers:
+This can mess up normals when exporting glTF
+see: https://github.com/KhronosGroup/glTF-Blender-IO/issues/799
