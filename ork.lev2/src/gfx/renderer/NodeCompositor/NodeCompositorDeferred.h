@@ -111,9 +111,9 @@ struct DeferredContext {
   const FxShaderTechnique* _tekEnvironmentLightingStereo   = nullptr;
   const FxShaderTechnique* _tekBaseLightingStereo          = nullptr;
   const FxShaderTechnique* _tekDownsampleDepthCluster      = nullptr;
-  const FxShaderTechnique* _tekPointLighting               = nullptr;
-  const FxShaderTechnique* _tekPointLightingStereo         = nullptr;
+  const FxShaderTechnique* _tekPointLightingUntextured     = nullptr;
   const FxShaderTechnique* _tekPointLightingTextured       = nullptr;
+  const FxShaderTechnique* _tekPointLightingStereo         = nullptr;
   const FxShaderTechnique* _tekPointLightingTexturedStereo = nullptr;
 
 #if defined(ENABLE_COMPUTE_SHADERS)

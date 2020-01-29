@@ -221,7 +221,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     return l;
   }
   /////////////////////////////////////////////////////////
-  vec3 pntlighting_simple(WPosData wpd,GBufData gbd) {
+  vec3 pntlighting_textured_simple(WPosData wpd,GBufData gbd) {
     vec4 rmao = texture(MapRufMtlAlpha,wpd._muv); // ruf mtl ao opa
     int lbas     = int(frg_uvb.x);
     int numl     = int(frg_uvb.y);
@@ -236,6 +236,24 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
         vec3 lighttex = env_equirectangularFlipV(lightn,MapLightingCookie,0);
         vec3 lightcol = LightColorD[lidx].xyz;
         l += plcalc2(plc,gbd)*lighttex*lightcol;
+      }
+    }
+    return l;
+  }
+  /////////////////////////////////////////////////////////
+  vec3 pntlighting_untextured_simple(WPosData wpd,GBufData gbd) {
+    vec4 rmao = texture(MapRufMtlAlpha,wpd._muv); // ruf mtl ao opa
+    int lbas     = int(frg_uvb.x);
+    int numl     = int(frg_uvb.y);
+    vec3 l       = vec3(0, 0, 0);
+    if( rmao.w==0 ){
+      PointLightCtx plc = plcalc1(wpd,gbd,rmao);
+      for (int i = 0; i < numl; i++) {
+        int lidx                     = lbas + i;
+        vec3 lightpos = LightMatrix[lidx][3].xyz;
+        plc._lightdel = lightpos - gbd._wpos;
+        vec3 lightcol = LightColorD[lidx].xyz;
+        l += plcalc2(plc,gbd)*lightcol;
       }
     }
     return l;
@@ -400,17 +418,22 @@ fragment_shader ps_baselight_stereo : iface_f2uv : lib_deferred {
   out_clr      = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_pointlight : iface_f2uv : lib_deferred {
+fragment_shader ps_pointlight_textured : iface_f2uv : lib_deferred {
   WPosData wpd = monoWPD();
   GBufData gbd = decodeGBUF(wpd);
-  vec3 c     = pntlighting_simple(wpd,gbd);
+  out_clr = vec4(pntlighting_textured_simple(wpd,gbd), 1);
   /////////////////////////////////////////
   // show lighting tiles
   /////////////////////////////////////////
   //float dp5  = distance(frg_uva, vec2(.5, .5));
   //c += vec3(pow(dp5, 17) * 256.0);
   /////////////////////////////////////////
-  out_clr = vec4(c, 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_pointlight_untextured : iface_f2uv : lib_deferred {
+  WPosData wpd = monoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  out_clr = vec4(pntlighting_untextured_simple(wpd,gbd), 1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_pointlight_stereo : iface_f2uv : lib_deferred {
@@ -444,11 +467,20 @@ technique baselight {
   }
 }
 ///////////////////////////////////////////////////////////////
-technique pointlight {
+technique pointlight_textured {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_passthru2uv;
-    fragment_shader = ps_pointlight;
+    fragment_shader = ps_pointlight_textured;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique pointlight_untextured {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_pointlight_untextured;
     state_block     = sb_default;
   }
 }

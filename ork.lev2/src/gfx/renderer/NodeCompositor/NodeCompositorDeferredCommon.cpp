@@ -70,7 +70,7 @@ void DeferredContext::gpuInit(Context* target) {
     //////////////////////////////////////////////////////////////
     _lightingmtl.gpuInit(target, _shadername);
     _tekBaseLighting                = _lightingmtl.technique("baselight");
-    _tekPointLighting               = _lightingmtl.technique("pointlight");
+    _tekPointLightingUntextured     = _lightingmtl.technique("pointlight_untextured");
     _tekPointLightingTextured       = _lightingmtl.technique("pointlight_textured");
     _tekPointLightingTexturedStereo = _lightingmtl.technique("pointlight_textured_stereo");
     _tekBaseLightingStereo          = _lightingmtl.technique("baselight_stereo");
@@ -427,11 +427,11 @@ void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const Vie
   if (VD._isStereo)
     tek = _tekPointLightingStereo;
   else
-    tek = _tekPointLighting;
+    if (cookietexture)
+      tek = _tekPointLightingTextured;
+    else
+      tek = _tekPointLightingUntextured;
 
-  if (nullptr == cookietexture) {
-    cookietexture = _whiteTexture;
-  }
   _lightingmtl.bindTechnique(tek);
   _lightingmtl.begin(RCFD);
   //////////////////////////////////////////////////////
@@ -444,7 +444,8 @@ void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const Vie
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
   _lightingmtl.bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->GetTexture());
   _lightingmtl.bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap);
-  _lightingmtl.bindParamCTex(_parLightCookieTexture, cookietexture);
+  if(cookietexture)
+    _lightingmtl.bindParamCTex(_parLightCookieTexture, cookietexture);
   _lightingmtl.bindParamVec2(_parNearFar, fvec2(DeferredContext::KNEAR, DeferredContext::KFAR));
   _lightingmtl.bindParamVec2(_parZndc2eye, VD._zndc2eye);
   _lightingmtl.bindParamVec2(_parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
