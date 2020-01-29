@@ -1,67 +1,61 @@
 ///////////////////////////////////////////////////////////////
 // FxConfigs
 ///////////////////////////////////////////////////////////////
-fxconfig fxcfg_default
-{
+fxconfig fxcfg_default {
 	glsl_version = "130";
 	import "skintools.i";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-uniform_set ub_vtx
-{
-	mat4        mv;
-	mat4        mvp;
-	mat4 		mvp_l;
-	mat4 		mvp_r;
-	mat3        mrot;
-	vec4        modcolor;
+uniform_set ub_vtx {
+	mat4 mv;
+	mat4 mvp;
+	mat4 mvp_l;
+	mat4 mvp_r;
+	mat3 mrot;
+	vec4 modcolor;
 	vec2 InvViewportSize; // inverse target size
 }
 ///////////////////////////////////////////////////////////////
-uniform_set ub_frg
-{
-    sampler2D ColorMap;
-    sampler2D NormalMap;
-    sampler2D MtlRufMap;
-		vec4 ModColor;
-		vec2 InvViewportSize; // inverse target size
-		float MetallicFactor;
-		float RoughnessFactor;
+uniform_set ub_frg {
+  sampler2D ColorMap;
+  sampler2D NormalMap;
+  sampler2D MtlRufMap;
+	vec4 ModColor;
+	vec2 InvViewportSize; // inverse target size
+	float MetallicFactor;
+	float RoughnessFactor;
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
 ///////////////////////////////////////////////////////////////
-state_block sb_default : default
-{
+state_block sb_default : default {
 }
 ///////////////////////////////////////////////////////////////
 // shaders
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vgbuffer
-	: ub_vtx
-{
-    inputs {
-	    vec4 position : POSITION;
-      vec3 normal : NORMAL;
-      vec3 binormal : BINORMAL;
-      vec4 vtxcolor : COLOR0;
-	    vec2 uv0 : TEXCOORD0;
+	: ub_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec3 binormal : BINORMAL;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
 	}
-    outputs {
-      vec4 frg_clr;
-	    vec2 frg_uv0;
-	    mat3 frg_tbn;
-			float frg_camdist;
-			vec3 frg_camz;
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    mat3 frg_tbn;
+		float frg_camdist;
+		vec3 frg_camz;
 	}
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vgbuffer_skinned
 	: iface_vgbuffer
-	: iface_skintools
-{
+	: iface_skintools {
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vgbuffer_stereo : iface_vgbuffer {
@@ -90,17 +84,16 @@ libblock lib_pbr_vtx {
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer
-	: iface_vgbuffer : lib_pbr_vtx
-{
+	: iface_vgbuffer
+  : lib_pbr_vtx {
 		vs_common(position,normal,binormal);
 		gl_Position = mvp*position;
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_stereo
 	: extension(GL_NV_stereo_view_rendering)
-  	: extension(GL_NV_viewport_array2)
-	: iface_vgbuffer_stereo  : lib_pbr_vtx
-{
+  : extension(GL_NV_viewport_array2)
+	: iface_vgbuffer_stereo  : lib_pbr_vtx {
 		vs_common(position,normal,binormal);
 		gl_Position = mvp_l*position;
 		gl_SecondaryPositionNV = mvp_r*position;
@@ -110,8 +103,9 @@ vertex_shader vs_rigid_gbuffer_stereo
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_skinned_gbuffer
-	: iface_vgbuffer_skinned : skin_tools  : lib_pbr_vtx
-{
+	: iface_vgbuffer_skinned
+  : skin_tools
+  : lib_pbr_vtx {
   vec4 skn_pos = vec4(SkinPosition(position.xyz),1);
 	vec3 skn_nrm  = SkinNormal(normal);
 	vec3 skn_bit  = SkinNormal(binormal); // // technically binormal is a bitangent
@@ -120,26 +114,24 @@ vertex_shader vs_skinned_gbuffer
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fgbuffer
-	: ub_frg
-{
-    inputs {
-        vec4 frg_clr;
-	    	vec2 frg_uv0;
-	    	mat3 frg_tbn;
-				float frg_camdist;
-				vec3 frg_camz;
+	: ub_frg {
+  inputs {
+    vec4 frg_clr;
+  	vec2 frg_uv0;
+  	mat3 frg_tbn;
+		float frg_camdist;
+		vec3 frg_camz;
 	}
 	outputs {
-        layout(location = 0) vec4 out_clr;
-        layout(location = 1) vec4 out_normal_mdl;
-        layout(location = 2) vec4 out_rufmtl;
+    layout(location = 0) vec4 out_clr;
+    layout(location = 1) vec4 out_normal_mdl;
+    layout(location = 2) vec4 out_rufmtl;
 	}
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_pbr_frg {
-	void ps_common_n(vec2 UV) {
-		vec3 nrm_tanspace = texture(NormalMap,UV).xyz*2.0-vec3(1,1,1);
-		vec3 nrm_w = frg_tbn*nrm_tanspace;
+	void ps_common_n(vec3 N,vec2 UV) {
+		vec3 nrm_w = frg_tbn*N;
 		vec3 rufmtlamb = texture(MtlRufMap,UV).zyx;
 		rufmtlamb.x *= MetallicFactor;
 		rufmtlamb.y *= RoughnessFactor;
@@ -152,88 +144,78 @@ libblock lib_pbr_frg {
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer
 	: iface_fgbuffer
-{
-	vec3 nrm_tanspace = vec3(0,0,1);
-	vec3 nrm_w = nrm_tanspace*frg_tbn;
-	vec3 rufmtlamb = texture(MtlRufMap,frg_uv0).zyx;
-	rufmtlamb.x *= MetallicFactor;
-	rufmtlamb.y *= RoughnessFactor;
-	out_clr = texture(ColorMap,frg_uv0).xyzw;
-	out_normal_mdl.xyz = (nrm_w*0.5)+vec3(0.5,0.5,0.5);
-	out_normal_mdl.w = frg_camdist;
-	out_rufmtl = vec4(rufmtlamb,0);
+  : lib_pbr_frg {
+	ps_common_n(vec3(0,0,1),frg_uv0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n // normalmap
-	: iface_fgbuffer : lib_pbr_frg
-{
-	ps_common_n(frg_uv0);
+	: iface_fgbuffer
+  : lib_pbr_frg {
+	vec3 N = texture(NormalMap,frg_uv0).xyz*2.0-vec3(1,1,1);
+	ps_common_n(N,frg_uv0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_stereo // normalmap
-	: iface_fgbuffer : lib_pbr_frg
-{
-	ps_common_n(frg_uv0);
+	: iface_fgbuffer
+  : lib_pbr_frg {
+	vec3 N = texture(NormalMap,frg_uv0).xyz*2.0-vec3(1,1,1);
+	ps_common_n(N,frg_uv0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_tex_stereo // normalmap (stereo texture - vsplit)
-	: iface_fgbuffer : lib_pbr_frg
-{		vec2 screen_uv   = gl_FragCoord.xy * InvViewportSize;
+	: iface_fgbuffer
+  : lib_pbr_frg {
+		vec2 screen_uv   = gl_FragCoord.xy * InvViewportSize;
 		bool is_right = bool(screen_uv.x <= 0.5);
 		vec2 map_uv = frg_uv0*vec2(1,0.5);
 		if( is_right )
 			map_uv += vec2(0,0.5);
-		ps_common_n(map_uv);
+  	vec3 N = texture(NormalMap,map_uv).xyz*2.0-vec3(1,1,1);
+		ps_common_n(N,map_uv);
 }
 ///////////////////////////////////////////////////////////////
-state_block sb_pick : sb_default
-{
+state_block sb_pick : sb_default {
 	DepthTest=OFF;
 	DepthMask=true;
 	CullTest=OFF;
 	BlendMode = OFF;
 }
-technique rigid_gbuffer
-{
+technique rigid_gbuffer {
 	fxconfig=fxcfg_default;
-	pass p0
-	{	vertex_shader=vs_rigid_gbuffer;
+	pass p0 {
+    vertex_shader=vs_rigid_gbuffer;
 		fragment_shader=ps_gbuffer;
 		state_block=sb_default;
 	}
 }
-technique rigid_gbuffer_n
-{
+technique rigid_gbuffer_n {
 	fxconfig=fxcfg_default;
-	pass p0
-	{	vertex_shader=vs_rigid_gbuffer;
+	pass p0 {
+    vertex_shader=vs_rigid_gbuffer;
 		fragment_shader=ps_gbuffer_n;
 		state_block=sb_default;
 	}
 }
-technique skinned_gbuffer_n
-{
+technique skinned_gbuffer_n {
 	fxconfig=fxcfg_default;
-	pass p0
-	{	vertex_shader=vs_skinned_gbuffer;
+	pass p0 {
+    vertex_shader=vs_skinned_gbuffer;
 		fragment_shader=ps_gbuffer_n;
 		state_block=sb_default;
 	}
 }
-technique rigid_gbuffer_n_stereo
-{
+technique rigid_gbuffer_n_stereo {
 	fxconfig=fxcfg_default;
-	pass p0
-	{	vertex_shader=vs_rigid_gbuffer_stereo;
+	pass p0 {
+    vertex_shader=vs_rigid_gbuffer_stereo;
 		fragment_shader=ps_gbuffer_n_stereo;
 		state_block=sb_default;
 	}
 }
-technique rigid_gbuffer_n_tex_stereo
-{
+technique rigid_gbuffer_n_tex_stereo {
 	fxconfig=fxcfg_default;
-	pass p0
-	{	vertex_shader=vs_rigid_gbuffer_stereo;
+	pass p0 {
+    vertex_shader=vs_rigid_gbuffer_stereo;
 		fragment_shader=ps_gbuffer_n_tex_stereo;
 		state_block=sb_default;
 	}

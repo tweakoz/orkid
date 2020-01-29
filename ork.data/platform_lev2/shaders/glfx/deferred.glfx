@@ -116,6 +116,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     float ndc      = depthtex * 2.0 - 1.0;
     float zeye     = Zndc2eye.x / (ndc - Zndc2eye.y);
     vec3 wpos      = vec3(rr.xyz / rr.w);
+
     wposout o;
     o._out = vec4(wpos, zeye);
             // Zndc2eye.x / (ndc-Zndc2eye.y)
@@ -147,68 +148,96 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     return gbd._albedo * l;
   }
   /////////////////////////////////////////////////////////
-  vec3 pntlighting(WPosData wpd,GBufData gbd) {
-    vec2 uv   = wpd._muv;
-    vec4 rmao = texture(MapRufMtlAlpha,uv); // ruf mtl ao opa
-
-    vec3 l       = vec3(0, 0, 0);
+  struct PointLightCtx {
+    vec3 _viewdir;
+    vec3 _normal;
+    vec3 _lightdel;
+    vec3 _F0;
+    float _roughness;
+    float _metallic;
+  };
+  /////////////////////////////////////////////////////////
+  PointLightCtx plcalc1(WPosData wpd,GBufData gbd,vec4 rmao){
+    PointLightCtx plc;
+    const vec3 metalbase = vec3(0.04);
+    float metallic = clamp(rmao.x,0.02,0.99);
+    vec3 basecolor = gbd._albedo;
+    vec3 diffcolor = mix(basecolor,vec3(0),metallic);
+    vec3 speccolor = mix(vec3(0.02),basecolor,metallic);
+    /////////////////////////
+    vec3 wpos = gbd._wpos;
+    vec3 epos = posatdepth(wpd,0.0);
+    /////////////////////////
+    plc._viewdir = normalize(epos-wpos);
+    plc._metallic = metallic;
+    plc._roughness = rmao.y;
+    plc._normal = normalize(texture(MapNormalL, wpd._muv).xyz*2-vec3(1));
+    plc._F0 = mix(metalbase,basecolor,metallic);
+    return plc;
+  }
+  /////////////////////////////////////////////////////////
+  vec3 plcalc2(PointLightCtx plc,GBufData gbd){
+      float dist2lightsq = plc._lightdel.x*plc._lightdel.x
+                         + plc._lightdel.y*plc._lightdel.y
+                         + plc._lightdel.z*plc._lightdel.z;
+      float atten = 1.0 / dist2lightsq;
+      vec3 lightdir = normalize(plc._lightdel);
+      vec3 halfdir = normalize(plc._viewdir + lightdir);
+      float ggx = computeGGX(plc._normal, halfdir, plc._roughness);
+      float geo = geometrySmith(plc._normal, plc._viewdir, lightdir, plc._roughness);
+      vec3 fres = fresnelSchlickRoughness(satdot(halfdir,plc._viewdir), plc._F0,plc._roughness);
+      vec3 numerator  = ggx * geo * fres * SpecularLevel;
+      float denominator = 4 * satdot(plc._normal,plc._viewdir) * satdot(plc._normal, lightdir) + EPSILON;
+      vec3 diffusel = vec3(1) - fres;
+      diffusel *= (1 - plc._metallic);
+      float ndotl = satdot(plc._normal,lightdir);
+      vec3 diffuse_term = (diffusel*gbd._albedo*INV_PI)*DiffuseLevel;
+      vec3 specular_term = numerator / denominator;
+      return (diffuse_term + specular_term) * atten * ndotl;
+  }
+  /////////////////////////////////////////////////////////
+  vec3 pntlighting_clustered(WPosData wpd,GBufData gbd) {
+    vec4 rmao = texture(MapRufMtlAlpha,wpd._muv); // ruf mtl ao opa
     int lbas     = int(frg_uvb.x);
     int numl     = int(frg_uvb.y);
-    vec3 metalbase = vec3(0.04);
+    vec3 l       = vec3(0, 0, 0);
     if( rmao.w==0 ){
-      /////////////////////////
-      // pixel was written to in the gbuffer
-      float metallic = clamp(rmao.x,0.02,0.99);
-      float roughness = rmao.y;
-      float roughnessE = roughness*roughness;
-      float roughnessL = max(.01,roughness);
-      float dialetric = 1.0-metallic;
-      /////////////////////////
-      vec3 basecolor = gbd._albedo;
-      vec3 diffcolor = mix(basecolor,vec3(0),metallic);
-      vec3 speccolor = mix(vec3(0.02),basecolor,metallic);
-      vec3 F0 = mix(metalbase,basecolor,metallic);
-      /////////////////////////
-      vec3 wpos = gbd._wpos;
-      vec3 epos = posatdepth(wpd,0.0);
-      vec3 edir = normalize(wpos-epos);
-      vec3 n    = normalize(texture(MapNormalL, uv).xyz*2-vec3(1));
-      vec3 refl = normalize(reflect(edir,n));
-      /////////////////////////
-      float costheta = clamp(dot(n, edir),0.01,1.0);
-      vec2 brdf  = textureGather(MapBrdfIntegration, vec2(costheta,pow(roughness,0.25)),0).rg;
-      vec3 v = -edir;
-      /////////////////////////
+      PointLightCtx plc = plcalc1(wpd,gbd,rmao);
       for (int i = 0; i < numl; i++) {
         int lidx                     = lbas + i;
         float lightcamdepth          = LightColorD[lidx].w;
         bool sphere_intersects_depth = (gbd._zeye - lightcamdepth) < LightRadius[lidx];
         if (sphere_intersects_depth){
           vec3 lightpos = (LightMatrix[lidx]*vec4(0,0,0,1)).xyz;
-          vec3 lightdel = lightpos - wpos;
+          vec3 lightdel = lightpos - gbd._wpos;
+          plc._lightdel = lightdel;
           vec3 lightn = normalize(lightdel)*mat3(LightMatrix[lidx]);
-
           vec3 lighttex = env_equirectangularFlipV(lightn,MapLightingCookie,0);
-
-          float dist2lightsq = lightdel.x*lightdel.x
-                             + lightdel.y*lightdel.y
-                             + lightdel.z*lightdel.z;
-          float atten = 1.0 / dist2lightsq;
-          vec3 lightdir = normalize(lightdel);
-          vec3 halfdir = normalize(v + lightdir);
-          vec3 radiance = LightColorD[lidx].xyz * atten*lighttex;
-          float ggx = computeGGX(n, halfdir, roughness);
-          float geo = geometrySmith(n, v, lightdir, roughness);
-          vec3 fres = fresnelSchlickRoughness(satdot(halfdir,v), F0,roughness);
-          vec3 numerator  = ggx * geo * fres * SpecularLevel;
-          float denominator = 4.0 * satdot(n,v) * satdot(n, lightdir) + EPSILON;
-          vec3 specular = numerator / denominator;
-          vec3 diffusel = vec3(1.0) - fres;
-          diffusel *= (1.0 - metallic);
-          float ndotl = satdot(n,lightdir);
-          vec3 diffuse_term = (diffusel*gbd._albedo*INV_PI)*DiffuseLevel;
-          l += (diffuse_term + specular) * radiance * ndotl;
+          vec3 lightcol = LightColorD[lidx].xyz;
+          l += plcalc2(plc,gbd)*lighttex*lightcol;
         }
+      }
+    }
+    return l;
+  }
+  /////////////////////////////////////////////////////////
+  vec3 pntlighting_simple(WPosData wpd,GBufData gbd) {
+    vec4 rmao = texture(MapRufMtlAlpha,wpd._muv); // ruf mtl ao opa
+    int lbas     = int(frg_uvb.x);
+    int numl     = int(frg_uvb.y);
+    vec3 l       = vec3(0, 0, 0);
+    if( rmao.w==0 ){
+      PointLightCtx plc = plcalc1(wpd,gbd,rmao);
+      for (int i = 0; i < numl; i++) {
+        int lidx                     = lbas + i;
+        float lightcamdepth          = LightColorD[lidx].w;
+        vec3 lightpos = (LightMatrix[lidx]*vec4(0,0,0,1)).xyz;
+        vec3 lightdel = lightpos - gbd._wpos;
+        plc._lightdel = lightdel;
+        vec3 lightn = normalize(lightdel)*mat3(LightMatrix[lidx]);
+        vec3 lighttex = env_equirectangularFlipV(lightn,MapLightingCookie,0);
+        vec3 lightcol = LightColorD[lidx].xyz;
+        l += plcalc2(plc,gbd)*lighttex*lightcol;
       }
     }
     return l;
@@ -376,7 +405,7 @@ fragment_shader ps_baselight_stereo : iface_f2uv : lib_deferred {
 fragment_shader ps_pointlight : iface_f2uv : lib_deferred {
   WPosData wpd = monoWPD();
   GBufData gbd = decodeGBUF(wpd);
-  vec3 c     = pntlighting(wpd,gbd);
+  vec3 c     = pntlighting_simple(wpd,gbd);
   /////////////////////////////////////////
   // show lighting tiles
   /////////////////////////////////////////
@@ -389,7 +418,7 @@ fragment_shader ps_pointlight : iface_f2uv : lib_deferred {
 fragment_shader ps_pointlight_stereo : iface_f2uv : lib_deferred {
   WPosData wpd = stereoWPD();
   GBufData gbd = decodeGBUF(wpd);
-  vec3 c       = pntlighting(wpd,gbd);
+  vec3 c       = pntlighting_simple(wpd,gbd);
   out_clr = vec4(clamp(c,0,1000), 1);
 }
 ///////////////////////////////////////////////////////////////

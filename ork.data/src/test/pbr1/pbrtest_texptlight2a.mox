@@ -210,7 +210,7 @@
                                                         <reference category='ObjectClass'>
                                                             <object type='PointLightData' id='24'>
                                                                 <property name='AffectsSpecular'>false</property>
-                                                                <property name='Color'>250 250 250</property>
+                                                                <property name='Color'>2000 0 0</property>
                                                                 <property name='ShadowBias'>0.2</property>
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>false</property>
@@ -346,7 +346,7 @@
                                                         <reference category='ObjectClass'>
                                                             <object type='PointLightData' id='38'>
                                                                 <property name='AffectsSpecular'>false</property>
-                                                                <property name='Color'>250 250 250</property>
+                                                                <property name='Color'>0 2000 0</property>
                                                                 <property name='ShadowBias'>0.2</property>
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>false</property>
