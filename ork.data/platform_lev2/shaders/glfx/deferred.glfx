@@ -230,11 +230,9 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       PointLightCtx plc = plcalc1(wpd,gbd,rmao);
       for (int i = 0; i < numl; i++) {
         int lidx                     = lbas + i;
-        float lightcamdepth          = LightColorD[lidx].w;
         vec3 lightpos = LightMatrix[lidx][3].xyz;
-        vec3 lightdel = lightpos - gbd._wpos;
-        plc._lightdel = lightdel;
-        vec3 lightn = normalize(lightdel)*mat3(LightMatrix[lidx]);
+        plc._lightdel = lightpos - gbd._wpos;
+        vec3 lightn = normalize(plc._lightdel)*mat3(LightMatrix[lidx]);
         vec3 lighttex = env_equirectangularFlipV(lightn,MapLightingCookie,0);
         vec3 lightcol = LightColorD[lidx].xyz;
         l += plcalc2(plc,gbd)*lighttex*lightcol;
