@@ -231,7 +231,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       for (int i = 0; i < numl; i++) {
         int lidx                     = lbas + i;
         float lightcamdepth          = LightColorD[lidx].w;
-        vec3 lightpos = (LightMatrix[lidx]*vec4(0,0,0,1)).xyz;
+        vec3 lightpos = LightMatrix[lidx][3].xyz;
         vec3 lightdel = lightpos - gbd._wpos;
         plc._lightdel = lightdel;
         vec3 lightn = normalize(lightdel)*mat3(LightMatrix[lidx]);
