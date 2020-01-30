@@ -245,7 +245,7 @@ fragment_shader ps_terrain_gbuf1 : iface_deferred : lib_terrain_frg {
   out_clr = vec4(c, 1);
   vec3 yo = (n + vec3(1, 1, 1)) * 0.5;
   out_normal_mdl = vec4(n, 1);
-  out_rufmtl = vec4(0,0,1,0); // ruf==1, mtl==0,ao==0
+  out_rufmtl = vec4(0,1,1,0); // ruf==1, mtl==0,ao==0
 }
 ///////////////////////////////////////////////////////////////
 // pick

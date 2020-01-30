@@ -351,27 +351,12 @@
                     </object>
                 </reference>
             </item>
-            <item key='EntData1'>
-                <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='30'>
-                        <property name='Name'>"EntData1"</property>
-                        <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='31'>
-                                <property name='TransformNode'>-0.392116 -0.253524 0.884291 0 -0.879062 0.386555 -0.278973 0 -0.271101 -0.886736 -0.374438 0 -368.701 494.305 -83.7342 1</property>
-                            </object>
-                        </property>
-                        <property name='Parent'>"scene"</property>
-                        <property name='Archetype'><backreference id='-1'/></property>
-                        <property name='UserProperties'></property>
-                    </object>
-                </reference>
-            </item>
             <item key='Ground'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='32'>
+                    <object type='Ent3dEntData' id='30'>
                         <property name='Name'>"Ground"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='33'>
+                            <object type='Ent3dDagNode' id='31'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 4.35403 -1.659 1</property>
                             </object>
                         </property>
@@ -381,24 +366,159 @@
                     </object>
                 </reference>
             </item>
+            <item key='Light'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='32'>
+                        <property name='Name'>"Light"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='33'>
+                                <property name='TransformNode'>0.980777 -0.183289 -0.0669269 0 0.1869 0.980982 0.0523524 0 0.0560585 -0.0638547 0.996382 0 -54.5493 199.323 465.812 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'>
+                            <reference category='SceneObjectClass'>
+                                <object type='SimpleCharacterArchetype' id='34'>
+                                    <property name='Name'>"SceneObject7"</property>
+                                    <property name='Components'>
+                                        <item key=''>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='EditorPropMapData' id='35'>
+                                                    <property name='Properties'></property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                        <item key='animate'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='SimpleAnimatableData' id='36'>
+                                                    <property name='AnimMaskMap'></property>
+                                                    <property name='AnimSeqTableMap'></property>
+                                                    <property name='AnimationMap'></property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                        <item key='audio'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='AudioEffectComponentData' id='37'>
+                                                    <property name='BankMap'></property>
+                                                    <property name='MutexGroups'>""</property>
+                                                    <property name='SoundMap'></property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                        <item key='bullet'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='BulletObjectControllerData' id='38'>
+                                                    <property name='AllowSleeping'>true</property>
+                                                    <property name='AngularDamping'>0.5</property>
+                                                    <property name='Disable'>false</property>
+                                                    <property name='ForceControllers'></property>
+                                                    <property name='Friction'>0.5</property>
+                                                    <property name='IsKinematic'>false</property>
+                                                    <property name='LinearDamping'>0.5</property>
+                                                    <property name='Mass'>1</property>
+                                                    <property name='Restitution'>0.5</property>
+                                                    <property name='Shape'><backreference id='-1'/></property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                        <item key='control'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='CharacterLocoData' id='39'>
+                                                    <property name='RunSpeed'>50</property>
+                                                    <property name='SpeedLerpRate'>1</property>
+                                                    <property name='WalkSpeed'>30</property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                        <item key='control'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='SimpleCharControllerData' id='40'>
+                                                    <property name='RunSpeed'>50</property>
+                                                    <property name='SpeedLerpRate'>1</property>
+                                                    <property name='WalkSpeed'>30</property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                        <item key='control'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='ScriptComponentData' id='41'>
+                                                    <property name='ScriptFile'>""</property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                        <item key='control'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='ModelComponentData' id='42'>
+                                                    <property name='AlwaysVisible'>false</property>
+                                                    <property name='BlenderZup'>false</property>
+                                                    <property name='EditorDagDebug'>false</property>
+                                                    <property name='MaterialOverrides'></property>
+                                                    <property name='Model'><backreference id='-1'/></property>
+                                                    <property name='Offset'>0 0 0</property>
+                                                    <property name='Rotate'>0 0 0</property>
+                                                    <property name='Scale'>1</property>
+                                                    <property name='ShowBoundingSphere'>false</property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                        <item key='input'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='InputComponentData' id='43'>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                        <item key='lighting'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='LightingComponentData' id='44'>
+                                                    <property name='Dynamic'>false</property>
+                                                    <property name='LightData'>
+                                                        <reference category='ObjectClass'>
+                                                            <object type='PointLightData' id='45'>
+                                                                <property name='Color'>1000 1000 1000</property>
+                                                                <property name='Cookie'>
+                                                                    <reference category='AssetClass'>
+                                                                        "lev2tex" "data://environ/envmaps/tozenv_colornoise"
+                                                                    </reference>
+                                                                </property>
+                                                                <property name='ShadowBias'>0.2</property>
+                                                                <property name='ShadowBlur'>0</property>
+                                                                <property name='ShadowCaster'>false</property>
+                                                                <property name='ShadowSamples'>1</property>
+                                                                <property name='Falloff'>1.66346</property>
+                                                                <property name='Radius'>502.395</property>
+                                                            </object>
+                                                        </reference>
+                                                    </property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                    </property>
+                                </object>
+                            </reference>
+                        </property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
             <item key='PerfAnal'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='34'>
+                    <object type='Ent3dEntData' id='46'>
                         <property name='Name'>"PerfAnal"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='35'>
+                            <object type='Ent3dDagNode' id='47'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
                         <property name='Archetype'>
                             <reference category='SceneObjectClass'>
-                                <object type='PerformanceAnalyzerArchetype' id='36'>
+                                <object type='PerformanceAnalyzerArchetype' id='48'>
                                     <property name='Name'>"SceneObject3"</property>
                                     <property name='Components'>
                                         <item key='control'>
                                             <reference category='ComponentDataClass'>
-                                                <object type='PerfAnalyzerControllerData' id='37'>
+                                                <object type='PerfAnalyzerControllerData' id='49'>
                                                     <property name='EnableDisplay'>false</property>
                                                 </object>
                                             </reference>
@@ -413,14 +533,14 @@
             </item>
             <item key='SceneObject1'>
                 <reference category='SceneObjectClass'>
-                    <object type='EditorCamArchetype' id='38'>
+                    <object type='EditorCamArchetype' id='50'>
                         <property name='Name'>"SceneObject1"</property>
                         <property name='Components'>
                             <item key='camera'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='EditorCamControllerData' id='39'>
+                                    <object type='EditorCamControllerData' id='51'>
                                         <property name='Camera'>
-                                            <object type='EzUiCam' id='40'>
+                                            <object type='EzUiCam' id='52'>
                                                 <property name='Center'>0 0 0</property>
                                                 <property name='Focus'>0 0 0</property>
                                                 <property name='Loc'>100</property>
@@ -439,19 +559,19 @@
             </item>
             <item key='SceneObject2'>
                 <reference category='SceneObjectClass'>
-                    <object type='ModelArchetype' id='41'>
+                    <object type='ModelArchetype' id='53'>
                         <property name='Name'>"SceneObject2"</property>
                         <property name='Components'>
                             <item key=''>
                                 <reference category='ComponentDataClass'>
-                                    <object type='EditorPropMapData' id='42'>
+                                    <object type='EditorPropMapData' id='54'>
                                         <property name='Properties'></property>
                                     </object>
                                 </reference>
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ModelComponentData' id='43'>
+                                    <object type='ModelComponentData' id='55'>
                                         <property name='AlwaysVisible'>false</property>
                                         <property name='BlenderZup'>false</property>
                                         <property name='EditorDagDebug'>false</property>
@@ -472,44 +592,44 @@
                     </object>
                 </reference>
             </item>
-            <item key='SceneObject3'><backreference id='36'/></item>
+            <item key='SceneObject3'><backreference id='48'/></item>
             <item key='SceneObject4'>
                 <reference category='SceneObjectClass'>
-                    <object type='ProcTexArchetype' id='44'>
+                    <object type='ProcTexArchetype' id='56'>
                         <property name='Name'>"SceneObject4"</property>
                         <property name='Components'>
                             <item key='animate'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ProcTexControllerData' id='45'>
+                                    <object type='ProcTexControllerData' id='57'>
                                         <property name='BufferDim'>512</property>
                                         <property name='FrameRate'>1</property>
                                         <property name='Output'>
                                             <reference category='ObjectClass'>
-                                                <object type='ProcTexOutputSkybox' id='46'>
+                                                <object type='ProcTexOutputSkybox' id='58'>
                                                     <property name='Scale'>3000</property>
                                                     <property name='VerticalAdjust'>-1000</property>
                                                 </object>
                                             </reference>
                                         </property>
                                         <property name='Template'>
-                                            <object type='proctex' id='47'>
+                                            <object type='proctex' id='59'>
                                                 <property name='Modules'>
                                                     <item key='a'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='proctex::Cells' id='48'>
+                                                            <object type='proctex::Cells' id='60'>
                                                                 <property name='mgvpos'>-10 -70</property>
                                                                 <property name='ImgOut'>
-                                                                    <object type='proctex::OutImgPlug' id='49'>
+                                                                    <object type='proctex::OutImgPlug' id='61'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='AntiAlias'>false</property>
                                                                 <property name='DimU'>2</property>
                                                                 <property name='DimV'>3</property>
                                                                 <property name='Dispersion'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='50'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='62'>
                                                                         <property name='value'>0.610626</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='51'>
+                                                                            <object type='dflow/floatxf' id='63'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
@@ -519,10 +639,10 @@
                                                                 <property name='SeedA'>0</property>
                                                                 <property name='SeedB'>0</property>
                                                                 <property name='SeedLerp'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='52'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='64'>
                                                                         <property name='value'>0.409449</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='53'>
+                                                                            <object type='dflow/floatxf' id='65'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
@@ -530,10 +650,10 @@
                                                                 </property>
                                                                 <property name='Smoothing'>4</property>
                                                                 <property name='SmoothingRadius'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='54'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='66'>
                                                                         <property name='value'>0.909449</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='55'>
+                                                                            <object type='dflow/floatxf' id='67'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
@@ -544,92 +664,92 @@
                                                     </item>
                                                     <item key='b'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='proctex::Octaves' id='56'>
+                                                            <object type='proctex::Octaves' id='68'>
                                                                 <property name='mgvpos'>0 0</property>
                                                                 <property name='ImgOut'>
-                                                                    <object type='proctex::OutImgPlug' id='57'>
+                                                                    <object type='proctex::OutImgPlug' id='69'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='BaseAmp'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='58'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='70'>
                                                                         <property name='value'>1</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='59'>
+                                                                            <object type='dflow/floatxf' id='71'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
                                                                     </object>
                                                                 </property>
                                                                 <property name='BaseFreq'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='60'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='72'>
                                                                         <property name='value'>1</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='61'>
+                                                                            <object type='dflow/floatxf' id='73'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
                                                                     </object>
                                                                 </property>
                                                                 <property name='BaseOffsetX'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='62'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='74'>
                                                                         <property name='value'>0</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='63'>
+                                                                            <object type='dflow/floatxf' id='75'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
                                                                     </object>
                                                                 </property>
                                                                 <property name='BaseOffsetY'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='64'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='76'>
                                                                         <property name='value'>0</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='65'>
+                                                                            <object type='dflow/floatxf' id='77'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
                                                                     </object>
                                                                 </property>
                                                                 <property name='Input'>
-                                                                    <object type='proctex::InImgPlug' id='66'>
+                                                                    <object type='proctex::InImgPlug' id='78'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='NumOctaves'>3</property>
                                                                 <property name='ScalAmp'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='67'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='79'>
                                                                         <property name='value'>0.5</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='68'>
+                                                                            <object type='dflow/floatxf' id='80'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
                                                                     </object>
                                                                 </property>
                                                                 <property name='ScalFreq'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='69'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='81'>
                                                                         <property name='value'>2</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='70'>
+                                                                            <object type='dflow/floatxf' id='82'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
                                                                     </object>
                                                                 </property>
                                                                 <property name='ScalOffsetX'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='71'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='83'>
                                                                         <property name='value'>1</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='72'>
+                                                                            <object type='dflow/floatxf' id='84'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
                                                                     </object>
                                                                 </property>
                                                                 <property name='ScalOffsetY'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='73'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='85'>
                                                                         <property name='value'>1</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='74'>
+                                                                            <object type='dflow/floatxf' id='86'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
@@ -640,10 +760,10 @@
                                                     </item>
                                                     <item key='c'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='proctex::Gradient' id='75'>
+                                                            <object type='proctex::Gradient' id='87'>
                                                                 <property name='mgvpos'>-80 0</property>
                                                                 <property name='ImgOut'>
-                                                                    <object type='proctex::OutImgPlug' id='76'>
+                                                                    <object type='proctex::OutImgPlug' id='88'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='AntiAlias'>false</property>
@@ -651,7 +771,7 @@
                                                                 <property name='RepeatMode'>"EGS_PINGPONG"</property>
                                                                 <property name='Type'>"EGT_HORIZONTAL"</property>
                                                                 <property name='gradient'>
-                                                                    <object type='GradientV4' id='77'>
+                                                                    <object type='GradientV4' id='89'>
                                                                         <property name='points'>
                                                                             <item key='0'>0.539062 0.539062 0.683594 0.972656</item>
                                                                             <item key='0.37457'>0.59375 0.617188 0.742188 0.992188</item>
@@ -664,19 +784,19 @@
                                                     </item>
                                                     <item key='d'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='proctex::Colorize' id='78'>
+                                                            <object type='proctex::Colorize' id='90'>
                                                                 <property name='mgvpos'>0 80</property>
                                                                 <property name='ImgOut'>
-                                                                    <object type='proctex::OutImgPlug' id='79'>
+                                                                    <object type='proctex::OutImgPlug' id='91'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='AntiAlias'>false</property>
                                                                 <property name='InputA'>
-                                                                    <object type='proctex::InImgPlug' id='80'>
+                                                                    <object type='proctex::InImgPlug' id='92'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='InputB'>
-                                                                    <object type='proctex::InImgPlug' id='81'>
+                                                                    <object type='proctex::InImgPlug' id='93'>
                                                                     </object>
                                                                 </property>
                                                             </object>
@@ -695,19 +815,19 @@
             </item>
             <item key='SceneObject5'>
                 <reference category='SceneObjectClass'>
-                    <object type='ModelArchetype' id='82'>
+                    <object type='ModelArchetype' id='94'>
                         <property name='Name'>"SceneObject5"</property>
                         <property name='Components'>
                             <item key=''>
                                 <reference category='ComponentDataClass'>
-                                    <object type='EditorPropMapData' id='83'>
+                                    <object type='EditorPropMapData' id='95'>
                                         <property name='Properties'></property>
                                     </object>
                                 </reference>
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ModelComponentData' id='84'>
+                                    <object type='ModelComponentData' id='96'>
                                         <property name='AlwaysVisible'>true</property>
                                         <property name='BlenderZup'>false</property>
                                         <property name='EditorDagDebug'>false</property>
@@ -730,19 +850,19 @@
             </item>
             <item key='SceneObject6'>
                 <reference category='SceneObjectClass'>
-                    <object type='SimpleCharacterArchetype' id='85'>
+                    <object type='SimpleCharacterArchetype' id='97'>
                         <property name='Name'>"SceneObject6"</property>
                         <property name='Components'>
                             <item key=''>
                                 <reference category='ComponentDataClass'>
-                                    <object type='EditorPropMapData' id='86'>
+                                    <object type='EditorPropMapData' id='98'>
                                         <property name='Properties'></property>
                                     </object>
                                 </reference>
                             </item>
                             <item key='animate'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='SimpleAnimatableData' id='87'>
+                                    <object type='SimpleAnimatableData' id='99'>
                                         <property name='AnimMaskMap'></property>
                                         <property name='AnimSeqTableMap'></property>
                                         <property name='AnimationMap'></property>
@@ -751,7 +871,7 @@
                             </item>
                             <item key='audio'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='AudioEffectComponentData' id='88'>
+                                    <object type='AudioEffectComponentData' id='100'>
                                         <property name='BankMap'></property>
                                         <property name='MutexGroups'>""</property>
                                         <property name='SoundMap'></property>
@@ -760,14 +880,14 @@
                             </item>
                             <item key='bullet'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='BulletObjectControllerData' id='89'>
+                                    <object type='BulletObjectControllerData' id='101'>
                                         <property name='AllowSleeping'>false</property>
                                         <property name='AngularDamping'>0.8</property>
                                         <property name='Disable'>false</property>
                                         <property name='ForceControllers'>
                                             <item key='loco'>
                                                 <reference category='ObjectClass'>
-                                                    <object type='LocomotionForceData' id='90'>
+                                                    <object type='LocomotionForceData' id='102'>
                                                     </object>
                                                 </reference>
                                             </item>
@@ -779,7 +899,7 @@
                                         <property name='Restitution'>0</property>
                                         <property name='Shape'>
                                             <reference category='ObjectClass'>
-                                                <object type='BulletShapeSphereData' id='91'>
+                                                <object type='BulletShapeSphereData' id='103'>
                                                     <property name='Radius'>1</property>
                                                 </object>
                                             </reference>
@@ -789,7 +909,7 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='CharacterLocoData' id='92'>
+                                    <object type='CharacterLocoData' id='104'>
                                         <property name='RunSpeed'>50</property>
                                         <property name='SpeedLerpRate'>1</property>
                                         <property name='WalkSpeed'>30</property>
@@ -798,7 +918,7 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='SimpleCharControllerData' id='93'>
+                                    <object type='SimpleCharControllerData' id='105'>
                                         <property name='RunSpeed'>50</property>
                                         <property name='SpeedLerpRate'>1</property>
                                         <property name='WalkSpeed'>30</property>
@@ -807,14 +927,14 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ScriptComponentData' id='94'>
+                                    <object type='ScriptComponentData' id='106'>
                                         <property name='ScriptFile'>"src://scripts/arch/terplayer.lua"</property>
                                     </object>
                                 </reference>
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ModelComponentData' id='95'>
+                                    <object type='ModelComponentData' id='107'>
                                         <property name='AlwaysVisible'>false</property>
                                         <property name='BlenderZup'>false</property>
                                         <property name='EditorDagDebug'>false</property>
@@ -829,23 +949,25 @@
                             </item>
                             <item key='input'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='InputComponentData' id='96'>
+                                    <object type='InputComponentData' id='108'>
                                     </object>
                                 </reference>
                             </item>
                             <item key='lighting'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='LightingComponentData' id='97'>
+                                    <object type='LightingComponentData' id='109'>
                                         <property name='Dynamic'>false</property>
                                         <property name='LightData'>
                                             <reference category='ObjectClass'>
-                                                <object type='DirectionalLightData' id='98'>
-                                                    <property name='AffectsSpecular'>false</property>
-                                                    <property name='Color'>1 0 0</property>
+                                                <object type='PointLightData' id='110'>
+                                                    <property name='Color'>2 1.5 0</property>
+                                                    <property name='Cookie'><backreference id='-1'/></property>
                                                     <property name='ShadowBias'>0.2</property>
                                                     <property name='ShadowBlur'>0</property>
                                                     <property name='ShadowCaster'>false</property>
                                                     <property name='ShadowSamples'>1</property>
+                                                    <property name='Falloff'>1</property>
+                                                    <property name='Radius'>684.446</property>
                                                 </object>
                                             </reference>
                                         </property>
@@ -856,12 +978,13 @@
                     </object>
                 </reference>
             </item>
+            <item key='SceneObject7'><backreference id='34'/></item>
             <item key='SkyBox'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='99'>
+                    <object type='Ent3dEntData' id='111'>
                         <property name='Name'>"SkyBox"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='100'>
+                            <object type='Ent3dDagNode' id='112'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -873,10 +996,10 @@
             </item>
             <item key='ball'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='101'>
+                    <object type='Ent3dEntData' id='113'>
                         <property name='Name'>"ball"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='102'>
+                            <object type='Ent3dDagNode' id='114'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 249.078 0 1</property>
                             </object>
                         </property>
@@ -888,10 +1011,10 @@
             </item>
             <item key='comp'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='103'>
+                    <object type='Ent3dEntData' id='115'>
                         <property name='Name'>"comp"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='104'>
+                            <object type='Ent3dDagNode' id='116'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -903,10 +1026,10 @@
             </item>
             <item key='diver'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='105'>
+                    <object type='Ent3dEntData' id='117'>
                         <property name='Name'>"diver"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='106'>
+                            <object type='Ent3dDagNode' id='118'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 -144.005 155.321 419.295 1</property>
                             </object>
                         </property>
@@ -921,10 +1044,10 @@
             </item>
             <item key='spawncam'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='107'>
+                    <object type='Ent3dEntData' id='119'>
                         <property name='Name'>"spawncam"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='108'>
+                            <object type='Ent3dDagNode' id='120'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -936,15 +1059,15 @@
             </item>
             <item key='spawnloc'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='109'>
+                    <object type='Ent3dEntData' id='121'>
                         <property name='Name'>"spawnloc"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='110'>
-                                <property name='TransformNode'>0.980777 -0.183289 -0.0669268 0 0.1869 0.980982 0.0523524 0 0.0560584 -0.0638547 0.996382 0 -54.5493 199.323 465.812 1</property>
+                            <object type='Ent3dDagNode' id='122'>
+                                <property name='TransformNode'>0.980777 -0.183289 -0.0669269 0 0.1869 0.980982 0.0523524 0 0.0560585 -0.0638547 0.996382 0 -54.5493 199.323 465.812 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
-                        <property name='Archetype'><backreference id='85'/></property>
+                        <property name='Archetype'><backreference id='97'/></property>
                         <property name='UserProperties'></property>
                     </object>
                 </reference>
@@ -954,13 +1077,13 @@
         <property name='SystemData'>
             <item key='AudioSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='AudioSystemData' id='111'>
+                    <object type='AudioSystemData' id='123'>
                         <property name='DistanceAttenPower'>0.5</property>
                         <property name='DistanceMax'>10</property>
                         <property name='DistanceMin'>0.1</property>
                         <property name='DistanceScale'>0.003</property>
                         <property name='Reverb'>
-                            <object type='lev2::AudioReverbProperties' id='112'>
+                            <object type='lev2::AudioReverbProperties' id='124'>
                                 <property name='DecayTime'>1.49</property>
                                 <property name='EnvDiffusion'>1</property>
                                 <property name='ModulationDepth'>0</property>
@@ -974,7 +1097,7 @@
             </item>
             <item key='BulletSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='BulletSystemData' id='113'>
+                    <object type='BulletSystemData' id='125'>
                         <property name='Debug'>false</property>
                         <property name='Gravity'>0 -4 0</property>
                         <property name='SimulationRate'>480</property>
@@ -984,9 +1107,9 @@
             </item>
             <item key='CompositingSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='CompositingSystemData' id='114'>
+                    <object type='CompositingSystemData' id='126'>
                         <property name='CompositorData'>
-                            <object type='CompositingData' id='115'>
+                            <object type='CompositingData' id='127'>
                                 <property name='ActiveItem'>"i1"</property>
                                 <property name='ActiveScene'>"s1"</property>
                                 <property name='Enable'>true</property>
@@ -994,24 +1117,24 @@
                                 <property name='Scenes'>
                                     <item key='s1'>
                                         <reference category='ObjectClass'>
-                                            <object type='CompositingScene' id='116'>
+                                            <object type='CompositingScene' id='128'>
                                                 <property name='Items'>
                                                     <item key='i1'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='CompositingSceneItem' id='117'>
+                                                            <object type='CompositingSceneItem' id='129'>
                                                                 <property name='Technique'>
                                                                     <reference category='ObjectClass'>
-                                                                        <object type='NodeCompositingTechnique' id='118'>
+                                                                        <object type='NodeCompositingTechnique' id='130'>
                                                                             <property name='OutputNode'>
                                                                                 <reference category='ObjectClass'>
-                                                                                    <object type='VrCompositingNode' id='119'>
+                                                                                    <object type='VrCompositingNode' id='131'>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>
                                                                             <property name='PostFxNode'><backreference id='-1'/></property>
                                                                             <property name='RenderNode'>
                                                                                 <reference category='ObjectClass'>
-                                                                                    <object type='DeferredCompositingNodePbr' id='120'>
+                                                                                    <object type='DeferredCompositingNodePbr' id='132'>
                                                                                         <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
                                                                                         <property name='DepthFogDistance'>4436.1</property>
@@ -1048,13 +1171,13 @@
             </item>
             <item key='InputSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='InputSystemData' id='121'>
+                    <object type='InputSystemData' id='133'>
                     </object>
                 </reference>
             </item>
             <item key='LightingSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='VrSystemData' id='122'>
+                    <object type='VrSystemData' id='134'>
                         <property name='TrackingObjectEntity'>"vrtrackedobject"</property>
                         <property name='VrCameraEntity'>"vrcamera"</property>
                     </object>
@@ -1062,19 +1185,19 @@
             </item>
             <item key='LightingSystemSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='LightingSystemSystemData' id='123'>
+                    <object type='LightingSystemSystemData' id='135'>
                     </object>
                 </reference>
             </item>
             <item key='ScriptSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='ScriptSystemData' id='124'>
+                    <object type='ScriptSystemData' id='136'>
                     </object>
                 </reference>
             </item>
             <item key='VrSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='VrSystemData' id='125'>
+                    <object type='VrSystemData' id='137'>
                         <property name='TrackingObjectEntity'>"spawnloc"</property>
                         <property name='VrCameraEntity'>"spawncam"</property>
                     </object>
