@@ -517,8 +517,8 @@ void CollectLights(MeshUtil::LightContainer& lc, const SceneData* psd, const std
               pgl->mbIsShadowCaster = plightdata->IsShadowCaster();
               pgl->mShadowSamples   = plightdata->GetShadowSamples();
               pgl->mShadowBlur      = plightdata->GetShadowBlur();
-              pgl->mbSpecular       = plightdata->GetSpecular();
-              pgl->mShadowBias      = plightdata->GetShadowBias();
+              // pgl->mbSpecular       = plightdata->GetSpecular();
+              pgl->mShadowBias = plightdata->GetShadowBias();
               lc.mLights.AddSorted(itso->first, pgl);
             }
           }

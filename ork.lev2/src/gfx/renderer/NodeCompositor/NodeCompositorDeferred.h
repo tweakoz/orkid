@@ -86,8 +86,12 @@ struct DeferredContext {
   void renderUpdate(CompositorDrawData& drawdata);
   void renderGbuffer(CompositorDrawData& drawdata, const ViewData& VD);
   void renderBaseLighting(CompositorDrawData& drawdata, const ViewData& VD);
+  ////////////////////////////////////////////////////////////////////
   void beginPointLighting(CompositorDrawData& drawdata, const ViewData& VD, Texture* cookietexture);
   void endPointLighting(CompositorDrawData& drawdata, const ViewData& VD);
+  ////////////////////////////////////////////////////////////////////
+  void beginSpotLighting(CompositorDrawData& drawdata, const ViewData& VD, Texture* cookietexture);
+  void endSpotLighting(CompositorDrawData& drawdata, const ViewData& VD);
   ////////////////////////////////////////////////////////////////////
   RenderCompositingNode* _node;
   FreestyleMaterial _lightingmtl;
@@ -106,15 +110,22 @@ struct DeferredContext {
 
   ////////////////////////////////////////////////////////////////////
 
-  const FxShaderTechnique* _tekBaseLighting                  = nullptr;
-  const FxShaderTechnique* _tekEnvironmentLighting           = nullptr;
-  const FxShaderTechnique* _tekEnvironmentLightingStereo     = nullptr;
-  const FxShaderTechnique* _tekBaseLightingStereo            = nullptr;
-  const FxShaderTechnique* _tekDownsampleDepthCluster        = nullptr;
+  const FxShaderTechnique* _tekBaseLighting              = nullptr;
+  const FxShaderTechnique* _tekEnvironmentLighting       = nullptr;
+  const FxShaderTechnique* _tekEnvironmentLightingStereo = nullptr;
+  const FxShaderTechnique* _tekBaseLightingStereo        = nullptr;
+  const FxShaderTechnique* _tekDownsampleDepthCluster    = nullptr;
+  //
   const FxShaderTechnique* _tekPointLightingUntextured       = nullptr;
   const FxShaderTechnique* _tekPointLightingTextured         = nullptr;
   const FxShaderTechnique* _tekPointLightingUntexturedStereo = nullptr;
   const FxShaderTechnique* _tekPointLightingTexturedStereo   = nullptr;
+  //
+  const FxShaderTechnique* _tekSpotLightingUntextured       = nullptr;
+  const FxShaderTechnique* _tekSpotLightingTextured         = nullptr;
+  const FxShaderTechnique* _tekSpotLightingUntexturedStereo = nullptr;
+  const FxShaderTechnique* _tekSpotLightingTexturedStereo   = nullptr;
+  //
 
 #if defined(ENABLE_COMPUTE_SHADERS)
   FxComputeShader* _lightcollectcomputeshader = nullptr;
@@ -161,10 +172,10 @@ struct DeferredContext {
   RtGroup* _rtgDepthCluster = nullptr;
   RtGroup* _rtgLaccum       = nullptr;
   PoolString _layername;
-  float _specularLevel = 1.0f;
-  float _diffuseLevel  = 1.0f;
-  float _depthFogPower = 1.0f;
-  float _depthFogDistance  = 1.0f;
+  float _specularLevel    = 1.0f;
+  float _diffuseLevel     = 1.0f;
+  float _depthFogPower    = 1.0f;
+  float _depthFogDistance = 1.0f;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

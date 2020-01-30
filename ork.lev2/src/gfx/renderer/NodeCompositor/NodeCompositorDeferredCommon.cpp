@@ -77,6 +77,11 @@ void DeferredContext::gpuInit(Context* target) {
     _tekPointLightingUntexturedStereo = _lightingmtl.technique("pointlight_untextured_stereo");
     _tekPointLightingTexturedStereo   = _lightingmtl.technique("pointlight_textured_stereo");
     //
+    _tekSpotLightingUntextured       = _lightingmtl.technique("spotlight_untextured");
+    _tekSpotLightingTextured         = _lightingmtl.technique("spotlight_textured");
+    _tekSpotLightingUntexturedStereo = _lightingmtl.technique("spotlight_untextured_stereo");
+    _tekSpotLightingTexturedStereo   = _lightingmtl.technique("spotlight_textured_stereo");
+    //
     _tekDownsampleDepthCluster    = _lightingmtl.technique("downsampledepthcluster");
     _tekEnvironmentLighting       = _lightingmtl.technique("environmentlighting");
     _tekEnvironmentLightingStereo = _lightingmtl.technique("environmentlighting_stereo");
@@ -464,6 +469,72 @@ void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const Vie
 ///////////////////////////////////////////////////////////////////////////////
 
 void DeferredContext::endPointLighting(CompositorDrawData& drawdata, const ViewData& VD) {
+  auto CIMPL                   = drawdata._cimpl;
+  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
+  RenderContextFrameData& RCFD = framerenderer.framedata();
+  auto targ                    = RCFD.GetTarget();
+  auto FBI                     = targ->FBI();
+  _lightingmtl.end(RCFD);
+  CIMPL->popCPD();       // _accumCPD
+  targ->debugPopGroup(); // Deferred::PointLighting
+  targ->endFrame();
+  FBI->PopRtGroup(); // _rtgLaccum
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void DeferredContext::beginSpotLighting(CompositorDrawData& drawdata, const ViewData& VD, lev2::Texture* cookietexture) {
+  auto CIMPL                   = drawdata._cimpl;
+  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
+  RenderContextFrameData& RCFD = framerenderer.framedata();
+  auto targ                    = RCFD.GetTarget();
+  auto FBI                     = targ->FBI();
+  auto FXI                     = targ->FXI();
+  auto RSI                     = targ->RSI();
+  targ->debugPushGroup("Deferred::PointLighting");
+  CIMPL->pushCPD(_accumCPD);
+  FBI->SetAutoClear(false);
+  FBI->PushRtGroup(_rtgLaccum);
+  targ->beginFrame();
+  const FxShaderTechnique* tek = nullptr;
+  if (VD._isStereo) {
+    tek = cookietexture ? _tekSpotLightingTexturedStereo : _tekSpotLightingUntexturedStereo;
+  } else {
+    tek = cookietexture ? _tekSpotLightingTextured : _tekSpotLightingUntextured;
+  }
+  _lightingmtl.bindTechnique(tek);
+  _lightingmtl.begin(RCFD);
+  //////////////////////////////////////////////////////
+  _lightingmtl.bindParamMatrixArray(_parMatIVPArray, VD._ivp, 2);
+  _lightingmtl.bindParamMatrixArray(_parMatVArray, VD._v, 2);
+  _lightingmtl.bindParamMatrixArray(_parMatPArray, VD._p, 2);
+  _lightingmtl.bindParamVec2(_parZndc2eye, VD._zndc2eye);
+  //////////////////////////////////////////////////////
+  _lightingmtl.bindParamCTex(_parMapGBufAlbAo, _rtgGbuffer->GetMrt(0)->GetTexture());
+  _lightingmtl.bindParamCTex(_parMapGBufNrmL, _rtgGbuffer->GetMrt(1)->GetTexture());
+  _lightingmtl.bindParamCTex(_parMapGBufRufMtlAlpha, _rtgGbuffer->GetMrt(2)->GetTexture());
+  _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
+  _lightingmtl.bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->GetTexture());
+  _lightingmtl.bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap);
+  ///////////////////////////
+  if (cookietexture)
+    _lightingmtl.bindParamCTex(_parLightCookieTexture, cookietexture);
+  ///////////////////////////
+  _lightingmtl.bindParamVec2(_parNearFar, fvec2(DeferredContext::KNEAR, DeferredContext::KFAR));
+  _lightingmtl.bindParamVec2(_parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
+  _lightingmtl.bindParamFloat(_parSpecularLevel, _specularLevel);
+  _lightingmtl.bindParamFloat(_parDiffuseLevel, _diffuseLevel);
+  //////////////////////////////////////////////////
+  _lightingmtl._rasterstate.SetCullTest(ECULLTEST_OFF);
+  _lightingmtl._rasterstate.SetBlending(EBLENDING_ADDITIVE);
+  //_lightingmtl._rasterstate.SetBlending(EBLENDING_OFF);
+  _lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
+  RSI->BindRasterState(_lightingmtl._rasterstate);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void DeferredContext::endSpotLighting(CompositorDrawData& drawdata, const ViewData& VD) {
   auto CIMPL                   = drawdata._cimpl;
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
   RenderContextFrameData& RCFD = framerenderer.framedata();

@@ -263,6 +263,53 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     return gammaCorrect(l*depth_fogval);
   }
   /////////////////////////////////////////////////////////
+  vec3 spotlighting_textured_simple(WPosData wpd,GBufData gbd) {
+    vec4 rmao = texture(MapRufMtlAlpha,wpd._muv); // ruf mtl ao opa
+    vec3 l       = vec3(0, 0, 0);
+    if( rmao.w==0 ){
+      PointLightCtx plc = plcalc1(wpd,gbd,rmao);
+      int lbeg = int(frg_uvb.x);
+      int lend = lbeg+int(frg_uvb.y);
+      for (int lidx = lbeg; lidx<lend; lidx++) {
+        vec3 lightpos = -LightMatrix[lidx][3].xyz;
+        plc._lightdel = lightpos - gbd._wpos;
+        //vec3 lightn = normalize(plc._lightdel)*mat3(LightMatrix[lidx]);
+        float lightrange = LightRadius[lidx];
+        vec4 light_hpos = LightMatrix[lidx]*vec4(gbd._wpos,1);
+        vec3 light_ndc = (light_hpos.xyz / light_hpos.w);
+        vec2 light_uv = light_ndc.xy*0.5+vec2(0.5);
+        float mask = float(light_ndc.x>=-1 && light_ndc.x<1) *
+                     float(light_ndc.y>=-1 && light_ndc.y<1) *
+                     float(light_hpos.z>=0.0 && light_hpos.z<=lightrange) ;
+        vec3 lightcol = LightColorD[lidx].xyz;
+        vec3 lighttex = texture(MapLightingCookie,light_uv).xyz;
+        vec3 lightoutput = lightcol*lighttex*mask;
+
+        l += plcalc2(plc,gbd)*lightoutput;
+      }
+    }
+    float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
+    return gammaCorrect(l*depth_fogval);
+  }
+  /////////////////////////////////////////////////////////
+  vec3 spotlighting_untextured_simple(WPosData wpd,GBufData gbd) {
+    vec4 rmao = texture(MapRufMtlAlpha,wpd._muv); // ruf mtl ao opa
+    vec3 l       = vec3(0, 0, 0);
+    if( rmao.w==0 ){
+      PointLightCtx plc = plcalc1(wpd,gbd,rmao);
+      int lbeg = int(frg_uvb.x);
+      int lend = lbeg+int(frg_uvb.y);
+      for (int lidx = lbeg; lidx<lend; lidx++) {
+        vec3 lightpos = LightMatrix[lidx][3].xyz;
+        plc._lightdel = lightpos - gbd._wpos;
+        vec3 lightcol = LightColorD[lidx].xyz;
+        l += plcalc2(plc,gbd)*lightcol;
+      }
+    }
+    float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
+    return gammaCorrect(l*depth_fogval);
+  }
+  /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLighting(WPosData wpd){
 
     vec3 rval;
@@ -451,6 +498,38 @@ fragment_shader ps_pointlight_untextured_stereo : iface_f2uv : lib_deferred {
   out_clr = vec4(pntlighting_untextured_simple(wpd,gbd), 1);
 }
 ///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+fragment_shader ps_spotlight_textured : iface_f2uv : lib_deferred {
+  WPosData wpd = monoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  out_clr = vec4(spotlighting_textured_simple(wpd,gbd), 1);
+  /////////////////////////////////////////
+  // show lighting tiles
+  /////////////////////////////////////////
+  //float dp5  = distance(frg_uva, vec2(.5, .5));
+  //c += vec3(pow(dp5, 17) * 256.0);
+  /////////////////////////////////////////
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_spotlight_untextured : iface_f2uv : lib_deferred {
+  WPosData wpd = monoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  out_clr = vec4(spotlighting_untextured_simple(wpd,gbd), 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_spotlight_textured_stereo : iface_f2uv : lib_deferred {
+  WPosData wpd = stereoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  out_clr = vec4(spotlighting_textured_simple(wpd,gbd), 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_spotlight_untextured_stereo : iface_f2uv : lib_deferred {
+  WPosData wpd = stereoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  out_clr = vec4(spotlighting_untextured_simple(wpd,gbd), 1);
+}
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
 fragment_shader ps_environment : iface_f2uv : lib_deferred  {
   WPosData wpd = monoWPD();
   out_clr = vec4(pbrEnvironmentLighting(wpd),1);
@@ -471,6 +550,15 @@ technique baselight {
   pass p0 {
     vertex_shader   = vs_passthru2uv;
     fragment_shader = ps_baselight;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique baselight_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_baselight_stereo;
     state_block     = sb_default;
   }
 }
@@ -511,15 +599,41 @@ technique pointlight_untextured_stereo {
   }
 }
 ///////////////////////////////////////////////////////////////
-technique baselight_stereo {
+technique spotlight_textured {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_passthru2uv;
-    fragment_shader = ps_baselight_stereo;
+    fragment_shader = ps_spotlight_textured;
     state_block     = sb_default;
   }
 }
 ///////////////////////////////////////////////////////////////
+technique spotlight_untextured {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_spotlight_untextured;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique spotlight_textured_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_spotlight_textured_stereo;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique spotlight_untextured_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_spotlight_untextured_stereo;
+    state_block     = sb_default;
+  }
+}///////////////////////////////////////////////////////////////
 technique downsampledepthcluster {
   fxconfig = fxcfg_default;
   pass p0 {

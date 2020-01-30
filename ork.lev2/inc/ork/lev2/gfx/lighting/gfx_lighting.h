@@ -68,9 +68,6 @@ public:
   float GetShadowBlur() const {
     return mShadowBlur;
   }
-  bool GetSpecular() const {
-    return mbSpecular;
-  }
   bool IsShadowCaster() const {
     return mbShadowCaster;
   }
@@ -94,7 +91,6 @@ private:
   float mShadowSamples;
   float mShadowBlur;
   float mShadowBias;
-  bool mbSpecular;
   textureassetptr_t _cookie = nullptr;
 
   void _readCookie(ork::rtti::ICastable*& cookietex) const;
@@ -290,10 +286,6 @@ class SpotLightData : public LightData {
 
   float mFovy;
   float mRange;
-  lev2::TextureAsset* mTexture;
-
-  void SetTextureAccessor(ork::rtti::ICastable* const& tex);
-  void GetTextureAccessor(ork::rtti::ICastable*& tex) const;
 
 public:
   float GetFovy() const {
@@ -303,11 +295,7 @@ public:
     return mRange;
   }
 
-  SpotLightData()
-      : mFovy(10.0f)
-      , mRange(1.0f)
-      , mTexture(0) {
-  }
+  SpotLightData();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -322,7 +310,6 @@ public:
   Frustum mWorldSpaceLightFrustum;
   // float			mFovy;
   // float			mRange;
-  lev2::TextureAsset* mTexture;
 
   bool IsInFrustum(const Frustum& frustum) override;
   bool AffectsSphere(const fvec3& center, float radius) override;
@@ -333,13 +320,6 @@ public:
   }
 
   void Set(const fvec3& pos, const fvec3& target, const fvec3& up, float fovy);
-
-  void SetTexture(lev2::TextureAsset* ptex) {
-    mTexture = ptex;
-  }
-  lev2::TextureAsset* GetTexture() const {
-    return mTexture;
-  }
 
   float GetFovy() const {
     return mSld->GetFovy();

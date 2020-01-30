@@ -41,7 +41,6 @@ bool Light::isShadowCaster() const {
 void LightData::describeX(class_t* c) {
 
   c->memberProperty("Color", &LightData::mColor);
-  c->memberProperty("AffectsSpecular", &LightData::mbSpecular);
   c->memberProperty("ShadowCaster", &LightData::mbShadowCaster);
 
   c->floatProperty("ShadowBias", float_range{0.0, 2.0}, &LightData::mShadowBias)->annotate<ConstString>("editor.range.log", "true");
@@ -63,7 +62,6 @@ void LightData::_writeCookie(ork::rtti::ICastable* const& tex) {
 
 LightData::LightData()
     : mColor(1.0f, 0.0f, 0.0f)
-    , mbSpecular(false)
     , _cookie(nullptr)
     , mbShadowCaster(false)
     , mShadowSamples(1.0f)
@@ -176,10 +174,6 @@ bool AmbientLight::IsInFrustum(const Frustum& frustum) {
 void SpotLightData::Describe() {
   ork::reflect::RegisterProperty("Fovy", &SpotLightData::mFovy);
   ork::reflect::RegisterProperty("Range", &SpotLightData::mRange);
-  ork::reflect::RegisterProperty("Texture", &SpotLightData::GetTextureAccessor, &SpotLightData::SetTextureAccessor);
-
-  ork::reflect::annotatePropertyForEditor<SpotLightData>("Texture", "editor.class", "ged.factory.assetlist");
-  ork::reflect::annotatePropertyForEditor<SpotLightData>("Texture", "editor.assettype", "lev2tex");
 
   ork::reflect::annotatePropertyForEditor<SpotLightData>("Fovy", "editor.range.min", "0.0");
   ork::reflect::annotatePropertyForEditor<SpotLightData>("Fovy", "editor.range.max", "180.0");
@@ -189,24 +183,16 @@ void SpotLightData::Describe() {
   ork::reflect::annotatePropertyForEditor<SpotLightData>("Range", "editor.range.log", "true");
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-void SpotLightData::SetTextureAccessor(ork::rtti::ICastable* const& tex) {
-  mTexture = tex ? ork::rtti::autocast(tex) : 0;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void SpotLightData::GetTextureAccessor(ork::rtti::ICastable*& tex) const {
-  tex = mTexture;
+SpotLightData::SpotLightData()
+    : mFovy(10.0f)
+    , mRange(1.0f) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 SpotLight::SpotLight(const fmtx4& mtx, const SpotLightData* sld)
     : Light(mtx, sld)
-    , mSld(sld)
-    , mTexture(0) {
+    , mSld(sld) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
