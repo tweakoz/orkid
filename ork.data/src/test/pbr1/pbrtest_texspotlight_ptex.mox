@@ -12,10 +12,10 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>1.32582 3.31349 -0.249972</property>
+                                                <property name='Center'>1.42103 2.94764 -0.22218</property>
                                                 <property name='Focus'>0 0 0</property>
                                                 <property name='Loc'>7.83004</property>
-                                                <property name='QuatC'>-0.179217 0.322179 -0.079278 -0.926659</property>
+                                                <property name='QuatC'>-0.0909132 0.324395 -0.00168267 -0.942022</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -405,7 +405,7 @@
                                         <item key='animate'>
                                             <reference category='ComponentDataClass'>
                                                 <object type='ProcTexControllerData' id='45'>
-                                                    <property name='BufferDim'>2048</property>
+                                                    <property name='BufferDim'>1024</property>
                                                     <property name='FrameRate'>0</property>
                                                     <property name='Output'>
                                                         <reference category='ObjectClass'>
@@ -433,15 +433,16 @@
                                                                                 </object>
                                                                             </property>
                                                                             <property name='AntiAlias'>true</property>
-                                                                            <property name='Repeat'>2</property>
-                                                                            <property name='RepeatMode'>"EGS_PINGPONG"</property>
-                                                                            <property name='Type'>"EGT_HORIZONTAL"</property>
+                                                                            <property name='Repeat'>11</property>
+                                                                            <property name='RepeatMode'>"EGS_REPEAT"</property>
+                                                                            <property name='Type'>"EGT_CONICAL"</property>
                                                                             <property name='gradient'>
                                                                                 <object type='GradientV4' id='51'>
                                                                                     <property name='points'>
                                                                                         <item key='0'>0 0 0 1</item>
-                                                                                        <item key='0.354962'>0.851562 0.90625 0.226562 0.988281</item>
-                                                                                        <item key='1'>0.0234375 0.28125 0.996094 0.996094</item>
+                                                                                        <item key='0.490991'>0 0 0 0.988281</item>
+                                                                                        <item key='0.608108'>0.894531 0.894531 0.0546875 0.976562</item>
+                                                                                        <item key='1'>0.625 0.0390625 0.261719 0.984375</item>
                                                                                     </property>
                                                                                 </object>
                                                                             </property>
@@ -543,7 +544,7 @@
                                                                             </property>
                                                                             <property name='BaseOffsetY'>
                                                                                 <object type='dflow/inplugxf<float,floatxf>' id='68'>
-                                                                                    <property name='value'>0</property>
+                                                                                    <property name='value'>2.73315</property>
                                                                                     <property name='xf'>
                                                                                         <object type='dflow/floatxf' id='69'>
                                                                                             <property name='Transforms'>
@@ -588,7 +589,7 @@
                                                                                 <object type='proctex::InImgPlug' id='74'>
                                                                                 </object>
                                                                             </property>
-                                                                            <property name='NumOctaves'>6</property>
+                                                                            <property name='NumOctaves'>4</property>
                                                                             <property name='ScalAmp'>
                                                                                 <object type='dflow/inplugxf<float,floatxf>' id='75'>
                                                                                     <property name='value'>1.08411</property>
@@ -785,14 +786,14 @@
                                                                                         <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
                                                                                         <property name='DepthFogDistance'>100</property>
-                                                                                        <property name='DepthFogPower'>31.6862</property>
+                                                                                        <property name='DepthFogPower'>4.28885</property>
                                                                                         <property name='DiffuseLevel'>1</property>
-                                                                                        <property name='EnvironmentIntensity'>1.14504</property>
+                                                                                        <property name='EnvironmentIntensity'>1</property>
                                                                                         <property name='EnvironmentMipBias'>0</property>
                                                                                         <property name='EnvironmentMipScale'>6.48855</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
-                                                                                                "lev2tex" "data://environ/envmaps/tozenv_nebula"
+                                                                                                "lev2tex" "data://environ/envmaps/tozenv_caustic1"
                                                                                             </reference>
                                                                                         </property>
                                                                                         <property name='SkyboxLevel'>0.610687</property>
