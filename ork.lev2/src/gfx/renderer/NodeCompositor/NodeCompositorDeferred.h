@@ -163,6 +163,8 @@ struct DeferredContext {
   PoolString _layername;
   float _specularLevel = 1.0f;
   float _diffuseLevel  = 1.0f;
+  float _depthFogPower = 1.0f;
+  float _depthFogDistance  = 1.0f;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

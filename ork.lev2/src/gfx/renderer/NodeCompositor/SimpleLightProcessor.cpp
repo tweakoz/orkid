@@ -130,6 +130,8 @@ void SimpleLightProcessor::_renderUnshadowedUntexturedPointLights(
   // set number of lights for tile
   //////////////////////////////////////////////////
   lightmtl.bindParamInt(_deferredContext._parNumLights, numlights);
+  lightmtl.bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
+  lightmtl.bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
   lightmtl.commit();
   //////////////////////////////////////////////////
   // accumulate light for tile
@@ -215,6 +217,8 @@ void SimpleLightProcessor::_renderUnshadowedTexturedPointLights(
     //////////////////////////////////////////////////
     // set number of lights for tile
     //////////////////////////////////////////////////
+    lightmtl.bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
+    lightmtl.bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
     lightmtl.bindParamInt(_deferredContext._parNumLights, numlights);
     lightmtl.commit();
     //////////////////////////////////////////////////

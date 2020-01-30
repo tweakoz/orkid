@@ -259,7 +259,8 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
         l += plcalc2(plc,gbd)*lightcol;
       }
     }
-    return gammaCorrect(l);
+    float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
+    return gammaCorrect(l*depth_fogval);
   }
   /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLighting(WPosData wpd){

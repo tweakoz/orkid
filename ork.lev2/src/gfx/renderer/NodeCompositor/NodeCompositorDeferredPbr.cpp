@@ -159,6 +159,8 @@ struct IMPL {
     _context._accumCPD._stereo1pass          = false;
     _context._specularLevel                  = node->specularLevel() * node->environmentIntensity();
     _context._diffuseLevel                   = node->diffuseLevel() * node->environmentIntensity();
+    _context._depthFogDistance = node->depthFogDistance();
+    _context._depthFogPower = node->depthFogPower();
     float skybox_level                       = node->skyboxLevel() * node->environmentIntensity();
     CIMPL->pushCPD(_context._accumCPD); // base lighting
     FBI->SetAutoClear(true);
