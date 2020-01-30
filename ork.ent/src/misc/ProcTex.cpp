@@ -47,16 +47,18 @@ file::Path SaveFileRequester(const std::string& title, const std::string& ext);
 namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-void ProcTexArchetype::Describe() {}
+void ProcTexArchetype::Describe() {
+}
 
-ProcTexArchetype::ProcTexArchetype() {}
+ProcTexArchetype::ProcTexArchetype() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void ProcTexArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
-  ProcTexControllerInst* ssci = pent->GetTypedComponent<ProcTexControllerInst>();
+  ProcTexControllerInst* ssci     = pent->GetTypedComponent<ProcTexControllerInst>();
   const ProcTexControllerData& cd = ssci->GetCD();
-  auto output = cd.GetOutput();
+  auto output                     = cd.GetOutput();
 
   if (nullptr == output)
     return;
@@ -66,20 +68,22 @@ void ProcTexArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ProcTexArchetype::DoCompose(ork::ent::ArchComposer& composer) { composer.Register<ProcTexControllerData>(); }
+void ProcTexArchetype::DoCompose(ork::ent::ArchComposer& composer) {
+  composer.Register<ProcTexControllerData>();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void ProcTexControllerData::OutputGetter(ork::rtti::ICastable*& val) const {
   auto nonconst = const_cast<ProcTexOutputBase*>(mOutput);
-  val = nonconst;
+  val           = nonconst;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void ProcTexControllerData::OutputSetter(ork::rtti::ICastable* const& val) {
   ork::rtti::ICastable* ptr = val;
-  mOutput = ((ptr == 0) ? 0 : rtti::safe_downcast<ProcTexOutputBase*>(ptr));
+  mOutput                   = ((ptr == 0) ? 0 : rtti::safe_downcast<ProcTexOutputBase*>(ptr));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -110,7 +114,7 @@ void ProcTexControllerData::Describe() {
   // ops map
   ////////////////////////////////////////
 
-  auto opm = new ork::reflect::OpMap;
+  auto opm                   = new ork::reflect::OpMap;
   opm->mLambdaMap["Refresh"] = [=](Object* pobj) {
     ProcTexControllerData* as_ptcd = rtti::autocast(pobj);
     if (as_ptcd) {
@@ -123,7 +127,12 @@ void ProcTexControllerData::Describe() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ProcTexControllerData::ProcTexControllerData() : mBufferDim(256), mMaxFrameRate(0.0), mNeedsRefresh(true), mOutput(nullptr) {}
+ProcTexControllerData::ProcTexControllerData()
+    : mBufferDim(256)
+    , mMaxFrameRate(0.0)
+    , mNeedsRefresh(true)
+    , mOutput(nullptr) {
+}
 
 ProcTexControllerData::~ProcTexControllerData() {
   if (mOutput)
@@ -132,12 +141,14 @@ ProcTexControllerData::~ProcTexControllerData() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ProcTexControllerInst::Describe() {}
+void ProcTexControllerInst::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 ProcTexControllerInst::ProcTexControllerInst(const ProcTexControllerData& data, ent::Entity* pent)
-    : ork::ent::ComponentInst(&data, pent), mCD(data) {
+    : ork::ent::ComponentInst(&data, pent)
+    , mCD(data) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -156,14 +167,18 @@ void ProcTexControllerInst::DoUpdate(ent::Simulation* sinst) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void ProcTexOutputBase::Describe() {}
+void ProcTexOutputBase::Describe() {
+}
 ///////////////////////////////////////////////////////////////////////////////
 void ProcTexOutputQuad::Describe() {
   ork::reflect::RegisterProperty("Scale", &ProcTexOutputQuad::mScale);
   ork::reflect::annotatePropertyForEditor<ProcTexOutputQuad>("Scale", "editor.range.min", "-1000");
   ork::reflect::annotatePropertyForEditor<ProcTexOutputQuad>("Scale", "editor.range.max", "1000");
 }
-ProcTexOutputQuad::ProcTexOutputQuad() : mScale(1.0f), mMaterial(nullptr) {}
+ProcTexOutputQuad::ProcTexOutputQuad()
+    : mScale(1.0f)
+    , mMaterial(nullptr) {
+}
 ///////////////////////////////////////////////////////////////////////////////
 void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
   auto l_render_quad = [=](lev2::RenderContextInstData& rcid, lev2::Context* targ, const lev2::CallbackRenderable* pren) {
@@ -179,14 +194,14 @@ void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
       quad->mMaterial->_rasterstate.SetZWriteMask(true);
     }
 
-    auto mtl = quad->mMaterial;
+    auto mtl  = quad->mMaterial;
     auto RCFD = targ->topRenderContextFrameData();
 
-    auto ssci = pren->GetDrawableDataB().Get<ProcTexControllerInst*>();
-    auto ent = ssci->GetEntity();
-    auto psi = ent->simulation();
+    auto ssci                       = pren->GetDrawableDataB().Get<ProcTexControllerInst*>();
+    auto ent                        = ssci->GetEntity();
+    auto psi                        = ent->simulation();
     const ProcTexControllerData& cd = ssci->GetCD();
-    proctex::ProcTex& templ = cd.GetTemplate();
+    proctex::ProcTex& templ         = cd.GetTemplate();
     // auto md5 = templ.CalcMd5().hex_digest();
     // printf( "ptex MD5<%s>\n", md5.c_str() );
     float fcurtime = psi->GetGameTime();
@@ -195,7 +210,7 @@ void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
     ssci->mContext.mdflowctx.Clear();
     ssci->mContext.mCurrentTime = fcurtime;
     ssci->mContext.mWriteFrames = false;
-    ssci->mContext.mWritePath = ""; // cd.GetWritePath();
+    ssci->mContext.mWritePath   = ""; // cd.GetWritePath();
     templ.compute(ssci->mContext);
     cd.DidRefresh();
     mtl->SetTexture(templ.ResultTexture());
@@ -207,12 +222,12 @@ void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
 
     vw.Lock(targ, &lev2::GfxEnv::GetSharedDynamicVB(), 6);
     {
-      float fZ = 0.0f;
+      float fZ   = 0.0f;
       u32 ucolor = 0xffffffff;
-      f32 x0 = -quad->mScale;
-      f32 y0 = -quad->mScale;
-      f32 x1 = quad->mScale;
-      f32 y1 = quad->mScale;
+      f32 x0     = -quad->mScale;
+      f32 y0     = -quad->mScale;
+      f32 x1     = quad->mScale;
+      f32 y1     = quad->mScale;
       ork::fvec2 uv0(0.0f, 1.0f);
       ork::fvec2 uv1(1.0f, 1.0f);
       ork::fvec2 uv2(1.0f, 0.0f);
@@ -245,7 +260,7 @@ void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
     targ->PopMaterial();
   };
 
-  ProcTexControllerInst* ssci = pent->GetTypedComponent<ProcTexControllerInst>();
+  ProcTexControllerInst* ssci     = pent->GetTypedComponent<ProcTexControllerInst>();
   const ProcTexControllerData& cd = ssci->GetCD();
 
   auto pdrw = new lev2::CallbackDrawable(pent);
@@ -269,7 +284,11 @@ void ProcTexOutputSkybox::Describe() {
   ork::reflect::annotatePropertyForEditor<ProcTexOutputSkybox>("Scale", "editor.range.max", "10000.0");
 }
 ///////////////////////////////////////////////////////////////////////////////
-ProcTexOutputSkybox::ProcTexOutputSkybox() : mVerticalAdjust(0.0f), mMaterial(nullptr), mScale(1.0f) {}
+ProcTexOutputSkybox::ProcTexOutputSkybox()
+    : mVerticalAdjust(0.0f)
+    , mMaterial(nullptr)
+    , mScale(1.0f) {
+}
 ///////////////////////////////////////////////////////////////////////////////
 void ProcTexOutputSkybox::OnLinkEntity(Simulation* psi, Entity* pent) {
   auto l_render_skybox = [=](lev2::RenderContextInstData& rcid, lev2::Context* targ, const lev2::CallbackRenderable* pren) {
@@ -277,58 +296,58 @@ void ProcTexOutputSkybox::OnLinkEntity(Simulation* psi, Entity* pent) {
     if (isPickState)
       return;
 
-      auto skybox = pren->GetDrawableDataA().Get<ProcTexOutputSkybox*>();
-    if( skybox->_timer.SecsSinceStart() > skybox->_timeperupdate ){
-        printf( "ProcTexOutputSkybox UPDATE\n");
-        skybox->_timer.Start();
+    auto skybox = pren->GetDrawableDataA().Get<ProcTexOutputSkybox*>();
+    if (skybox->_timer.SecsSinceStart() > skybox->_timeperupdate) {
+      printf("ProcTexOutputSkybox UPDATE\n");
+      skybox->_timer.Start();
 
-        if (0 == skybox->mMaterial) {
-          skybox->mMaterial = new lev2::GfxMaterial3DSolid(targ);
-          skybox->mMaterial->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
-          skybox->mMaterial->_rasterstate.SetZWriteMask(false);
-        }
+      if (0 == skybox->mMaterial) {
+        skybox->mMaterial = new lev2::GfxMaterial3DSolid(targ);
+        skybox->mMaterial->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
+        skybox->mMaterial->_rasterstate.SetZWriteMask(false);
+      }
 
-        auto mtl = skybox->mMaterial;
-        auto RCFD = targ->topRenderContextFrameData();
-        const auto& CPD = RCFD->topCPD();
-        float fscale = skybox->mScale;
-        float fphase = 0.0f;
-        fvec3 pos = CPD.cameraMatrices()->_camdat.GetEye();
-        pos.SetY(pos.GetY() + skybox->mVerticalAdjust);
-        fmtx4 mtxSPIN;
-        mtxSPIN.RotateY(fphase);
-        fmtx4 mtxSKY;
-        mtxSKY.SetScale(fscale);
-        mtxSKY.SetTranslation(pos);
-        mtxSKY = mtxSPIN * mtxSKY;
-        // rcid.ForceNoZWrite( true );
-        auto ssci = pren->GetDrawableDataB().Get<ProcTexControllerInst*>();
-        auto ent = ssci->GetEntity();
-        auto psi = ent->simulation();
-        const ProcTexControllerData& cd = ssci->GetCD();
-        proctex::ProcTex& templ = cd.GetTemplate();
-        // auto md5 = templ.CalcMd5().hex_digest();
-        // printf( "ptex MD5<%s>\n", md5.c_str() );
-        float fcurtime = psi->GetGameTime();
-        ssci->mContext.SetBufferDim(cd.GetBufferDim());
-        ssci->mContext.mTarget = targ;
-        ssci->mContext.mdflowctx.Clear();
-        ssci->mContext.mCurrentTime = fcurtime;
-        ssci->mContext.mWriteFrames = false;
-        ssci->mContext.mWritePath = ""; // cd.GetWritePath();
-        templ.compute(ssci->mContext);
-        cd.DidRefresh();
-        lev2::Texture* ptx = templ.ResultTexture();
-        mtl->SetTexture(ptx);
-        targ->PushMaterial(mtl);
-        targ->MTXI()->PushMMatrix(mtxSKY);
-        lev2::GfxPrimitives::GetRef().RenderSkySphere(targ);
-        targ->MTXI()->PopMMatrix();
-        targ->PopMaterial();
+      auto mtl        = skybox->mMaterial;
+      auto RCFD       = targ->topRenderContextFrameData();
+      const auto& CPD = RCFD->topCPD();
+      float fscale    = skybox->mScale;
+      float fphase    = 0.0f;
+      fvec3 pos       = CPD.cameraMatrices()->_camdat.GetEye();
+      pos.SetY(pos.GetY() + skybox->mVerticalAdjust);
+      fmtx4 mtxSPIN;
+      mtxSPIN.RotateY(fphase);
+      fmtx4 mtxSKY;
+      mtxSKY.SetScale(fscale);
+      mtxSKY.SetTranslation(pos);
+      mtxSKY = mtxSPIN * mtxSKY;
+      // rcid.ForceNoZWrite( true );
+      auto ssci                       = pren->GetDrawableDataB().Get<ProcTexControllerInst*>();
+      auto ent                        = ssci->GetEntity();
+      auto psi                        = ent->simulation();
+      const ProcTexControllerData& cd = ssci->GetCD();
+      proctex::ProcTex& templ         = cd.GetTemplate();
+      // auto md5 = templ.CalcMd5().hex_digest();
+      // printf( "ptex MD5<%s>\n", md5.c_str() );
+      float fcurtime = psi->GetGameTime();
+      ssci->mContext.SetBufferDim(cd.GetBufferDim());
+      ssci->mContext.mTarget = targ;
+      ssci->mContext.mdflowctx.Clear();
+      ssci->mContext.mCurrentTime = fcurtime;
+      ssci->mContext.mWriteFrames = false;
+      ssci->mContext.mWritePath   = ""; // cd.GetWritePath();
+      templ.compute(ssci->mContext);
+      cd.DidRefresh();
+      lev2::Texture* ptx = templ.ResultTexture();
+      mtl->SetTexture(ptx);
+      targ->PushMaterial(mtl);
+      targ->MTXI()->PushMMatrix(mtxSKY);
+      lev2::GfxPrimitives::GetRef().RenderSkySphere(targ);
+      targ->MTXI()->PopMMatrix();
+      targ->PopMaterial();
     }
   };
 
-  ProcTexControllerInst* ssci = pent->GetTypedComponent<ProcTexControllerInst>();
+  ProcTexControllerInst* ssci     = pent->GetTypedComponent<ProcTexControllerInst>();
   const ProcTexControllerData& cd = ssci->GetCD();
 
   auto pdrw = new lev2::CallbackDrawable(pent);
@@ -354,11 +373,10 @@ void ProcTexOutputDynTex::Describe() {
   auto ptex_loader = new asset::DynamicAssetLoader;
 
   ptex_loader->mEnumFn = [=]() {
-    printf( "PTEX enumerate()\n");
+    printf("PTEX enumerate()\n");
     std::set<file::Path> rval;
     gdyntexset.atomicOp([&](dyntex_set_t& dset) {
-
-     printf( "NumPTEX<%zu>\n",dset.size());
+      printf("NumPTEX<%zu>\n", dset.size());
 
       for (auto item : dset) {
         std::string pstr("ptex://");
@@ -369,11 +387,9 @@ void ProcTexOutputDynTex::Describe() {
     });
     return rval;
   };
-  ptex_loader->mCheckFn = [=](const PieceString& name) {
-      return ork::IsSubStringPresent("ptex://", name.data());
-  };
-  ptex_loader->mLoadFn = [=](asset::Asset* asset) {
-    auto asset_name = asset->GetName().c_str();
+  ptex_loader->mCheckFn = [=](const PieceString& name) { return ork::IsSubStringPresent("ptex://", name.data()); };
+  ptex_loader->mLoadFn  = [=](asset::Asset* asset) {
+    auto asset_name            = asset->GetName().c_str();
     lev2::TextureAsset* as_tex = rtti::autocast(asset);
     gdyntexset.atomicOp([&](dyntex_set_t& dset) {
       for (auto item : dset) {
@@ -391,7 +407,8 @@ void ProcTexOutputDynTex::Describe() {
 
   lev2::TextureAsset::GetClassStatic()->AddLoader(ptex_loader);
 }
-ProcTexOutputDynTex::ProcTexOutputDynTex() : mAsset(nullptr) {
+ProcTexOutputDynTex::ProcTexOutputDynTex()
+    : mAsset(nullptr) {
   gdyntexset.atomicOp([&](dyntex_set_t& dset) { dset.insert(this); });
 }
 ProcTexOutputDynTex::~ProcTexOutputDynTex() {
@@ -406,7 +423,6 @@ ProcTexOutputDynTex::~ProcTexOutputDynTex() {
 ///////////////////////////////////////////////////////////////////////////////
 void ProcTexOutputDynTex::OnLinkEntity(Simulation* psi, Entity* pent) {
 
-
   auto l_compute = [=](lev2::RenderContextInstData& rcid, lev2::Context* targ, const lev2::CallbackRenderable* pren) {
     bool isPickState = targ->FBI()->isPickState();
     if (isPickState)
@@ -414,26 +430,28 @@ void ProcTexOutputDynTex::OnLinkEntity(Simulation* psi, Entity* pent) {
 
     auto dyn = pren->GetDrawableDataA().Get<ProcTexOutputDynTex*>();
 
-    if( dyn->_timer.SecsSinceStart() > dyn->_timeperupdate ){
-        printf( "ProcTexUPDATE\n");
-        dyn->_timer.Start();
-        auto ssci = pren->GetDrawableDataB().Get<ProcTexControllerInst*>();
-        auto ent = ssci->GetEntity();
-        auto psi = ent->simulation();
-        const ProcTexControllerData& cd = ssci->GetCD();
-        proctex::ProcTex& templ = cd.GetTemplate();
-        float fcurtime = psi->GetGameTime();
-        ssci->mContext.SetBufferDim(cd.GetBufferDim());
-        ssci->mContext.mTarget = targ;
-        ssci->mContext.mdflowctx.Clear();
-        ssci->mContext.mCurrentTime = fcurtime;
-        ssci->mContext.mWriteFrames = false;
-        ssci->mContext.mWritePath = ""; // cd.GetWritePath();
-        templ.compute(ssci->mContext);
-        cd.DidRefresh();
+    if (dyn->_timer.SecsSinceStart() > dyn->_timeperupdate) {
+      // printf("ProcTexUPDATE\n");
+      dyn->_timer.Start();
+      auto ssci                       = pren->GetDrawableDataB().Get<ProcTexControllerInst*>();
+      auto ent                        = ssci->GetEntity();
+      auto psi                        = ent->simulation();
+      const ProcTexControllerData& cd = ssci->GetCD();
+      proctex::ProcTex& templ         = cd.GetTemplate();
+      float fcurtime                  = psi->GetGameTime();
+      ssci->mContext.SetBufferDim(cd.GetBufferDim());
+      ssci->mContext.mTarget = targ;
+      ssci->mContext.mdflowctx.Clear();
+      ssci->mContext.mCurrentTime = fcurtime;
+      ssci->mContext.mWriteFrames = false;
+      ssci->mContext.mWritePath   = ""; // cd.GetWritePath();
+      templ.compute(ssci->mContext);
+      cd.DidRefresh();
+      if (templ.ResultTexture()) {
         targ->TXI()->generateMipMaps(templ.ResultTexture());
         if (dyn->mAsset)
           dyn->mAsset->SetTexture(templ.ResultTexture());
+      }
     }
   };
 
@@ -451,16 +469,16 @@ void ProcTexOutputDynTex::OnLinkEntity(Simulation* psi, Entity* pent) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void ProcTexOutputBase::DoLinkEntity( Simulation* psi, Entity *pent ){
-  ProcTexControllerInst* ssci = pent->GetTypedComponent<ProcTexControllerInst>();
+void ProcTexOutputBase::DoLinkEntity(Simulation* psi, Entity* pent) {
+  ProcTexControllerInst* ssci     = pent->GetTypedComponent<ProcTexControllerInst>();
   const ProcTexControllerData& cd = ssci->GetCD();
-  if( cd.GetMaxFrameRate() == 0.0f )
+  if (cd.GetMaxFrameRate() == 0.0f)
     _timeperupdate = 0.0f;
   else
     _timeperupdate = 1.0f / cd.GetMaxFrameRate();
-  OnLinkEntity(psi,pent);
+  OnLinkEntity(psi, pent);
 }
-ProcTexOutputBase::ProcTexOutputBase(){
+ProcTexOutputBase::ProcTexOutputBase() {
   _timer.Start();
 }
 

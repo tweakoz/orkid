@@ -34,6 +34,8 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
           if (b->_mipgen == RtBuffer::EMG_AUTOCOMPUTE) {
             glBindTexture(GL_TEXTURE_2D, tex_obj);
             glGenerateMipmap(GL_TEXTURE_2D);
+            b->mTexture->TexSamplingMode().PresetPointAndClamp();
+            mTargetGL.TXI()->ApplySamplingMode(b->mTexture);
           }
         }
       }

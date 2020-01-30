@@ -117,7 +117,8 @@ Periodic::Periodic()
     , mPlugInpFrequency(this, dataflow::EPR_UNIFORM, mfFrequency, "frq")
     , mPlugInpAmplitude(this, dataflow::EPR_UNIFORM, mfAmplitude, "amp")
     , mPlugInpPhaseOffset(this, dataflow::EPR_UNIFORM, mfPhaseOffset, "pho")
-    , mPlugInpBias(this, dataflow::EPR_UNIFORM, mfBias, "bia") {}
+    , mPlugInpBias(this, dataflow::EPR_UNIFORM, mfBias, "bia") {
+}
 void Periodic::Hash(dataflow::node_hash& hash) {
   hash.Hash(mPlugInpFrequency.GetValue());
   hash.Hash(mPlugInpAmplitude.GetValue());
@@ -151,7 +152,8 @@ float Periodic::compute(float unitphase) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void Global::Describe() {}
+void Global::Describe() {
+}
 Global::Global()
     : ConstructOutPlug(Time, dataflow::EPR_UNIFORM)
     , ConstructOutPlug(TimeDiv10, dataflow::EPR_UNIFORM)
@@ -160,7 +162,8 @@ Global::Global()
     , mfTimeScale(1.0f)
     , mOutDataTime(0.0f)
     , mOutDataTimeDiv10(0.0f)
-    , mOutDataTimeDiv100(0.0f) {}
+    , mOutDataTimeDiv100(0.0f) {
+}
 void Global::Compute(dataflow::workunit* wu) // virtual
 {
   auto ptex = wu->GetContextData().Get<ProcTex*>();
@@ -198,7 +201,8 @@ Curve1D::Curve1D()
     : mOutput(this, dataflow::EPR_UNIFORM, &mOutValue, "Output")
     , mPlugInpInput(this, dataflow::EPR_UNIFORM, mInValue, "Input")
     , mOutValue(0.0f)
-    , mInValue(0.0f) {}
+    , mInValue(0.0f) {
+}
 void Curve1D::Compute(dataflow::workunit* wu) // virtual
 {
   float finp = fmod(mPlugInpInput.GetValue(), 1.0f);
@@ -251,7 +255,8 @@ RotSolid::RotSolid()
     , mVBHash()
     , mfPhaseOffset(0.0f)
     , mPlugInpPhaseOffset(this, dataflow::EPR_UNIFORM, mfPhaseOffset, "pho")
-    , mbAA(false) {}
+    , mbAA(false) {
+}
 ///////////////////////////////////////////////////////////////////////////////
 void RotSolid::ComputeVB(ork::lev2::Context* pTARG) {
   int inumv = miNumSides * 3;
@@ -391,7 +396,8 @@ ork::dataflow::inplugbase* ImgOp2::GetInput(int idx) {
 ImgOp2::ImgOp2()
     : ConstructInpPlug(InputA, dataflow::EPR_UNIFORM, gNoCon)
     , ConstructInpPlug(InputB, dataflow::EPR_UNIFORM, gNoCon)
-    , meOp(EIO2_ADD) {}
+    , meOp(EIO2_ADD) {
+}
 void ImgOp2::compute(ProcTex& ptex) {
   auto proc_ctx = ptex.GetPTC();
   auto pTARG    = ptex.GetTarget();
@@ -425,8 +431,11 @@ void ImgOp2::compute(ProcTex& ptex) {
     gridmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
     gridmat._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
     gridmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
-    gridmat.SetTexture(conplugA->GetValue().GetTexture(ptex));
-    gridmat.SetTexture2(conplugB->GetValue().GetTexture(ptex));
+
+    auto texa = conplugA->GetValue().GetTexture(ptex);
+    auto texb = conplugB->GetValue().GetTexture(ptex);
+    gridmat.SetTexture(texa);
+    gridmat.SetTexture2(texb);
     gridmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(buffer.miW)));
     pTARG->BindMaterial(&gridmat);
     ////////////////////////////////////////////////////////////////
@@ -472,7 +481,8 @@ ImgOp3::ImgOp3()
     , mMtlLerp(nullptr)
     , mMtlAddw(nullptr)
     , mMtlSubw(nullptr)
-    , mMtlMul3(nullptr) {}
+    , mMtlMul3(nullptr) {
+}
 void ImgOp3::compute(ProcTex& ptex) {
   auto proc_ctx = ptex.GetPTC();
   auto pTARG    = ptex.GetTarget();
@@ -604,7 +614,8 @@ Transform::Transform()
     , mfOffsetX(0.0f)
     , mfOffsetY(0.0f)
     , mfRotate(0.0f)
-    , mMaterial(nullptr) {}
+    , mMaterial(nullptr) {
+}
 void Transform::compute(ProcTex& ptex) {
   auto proc_ctx = ptex.GetPTC();
   auto pTARG    = ptex.GetTarget();
@@ -658,7 +669,8 @@ void Texture::Describe() {
   ork::reflect::annotatePropertyForEditor<Texture>("Input", "editor.assetclass", "lev2tex");
 }
 Texture::Texture()
-    : mpTexture(0) {}
+    : mpTexture(0) {
+}
 void Texture::compute(ProcTex& ptex) {
   auto proc_ctx = ptex.GetPTC();
   auto pTARG    = ptex.GetTarget();
@@ -750,7 +762,8 @@ ShaderQuad::ShaderQuad()
     , mfUser0X(0.0f)
     , mfUser0Y(0.0f)
     , mfUser0Z(0.0f)
-    , mpTexture(nullptr) {}
+    , mpTexture(nullptr) {
+}
 ork::dataflow::inplugbase* ShaderQuad::GetInput(int idx) {
   ork::dataflow::inplugbase* rval = 0;
   switch (idx) {
@@ -799,13 +812,14 @@ void ShaderQuad::compute(ProcTex& ptex) {
       auto con_mod       = conplug->GetModule();
       auto mod_nam       = con_mod->GetName();
 
-      printf(" ShaderQuad<%p> input con_mod<%p:%s> conplug<%p:%s> rtg<%p>\n",
-             this,
-             con_mod,
-             mod_nam.c_str(),
-             conplug,
-             plug_name.c_str(),
-             conrtg);
+      printf(
+          " ShaderQuad<%p> input con_mod<%p:%s> conplug<%p:%s> rtg<%p>\n",
+          this,
+          con_mod,
+          mod_nam.c_str(),
+          conplug,
+          plug_name.c_str(),
+          conrtg);
 
       mShader->SetTexture(conplug->GetValue().GetTexture(ptex));
     } else
@@ -859,7 +873,8 @@ SolidColor::SolidColor()
     , mfg(1.0f)
     , mfb(1.0f)
     , mfa(1.0f)
-    , mMaterial(nullptr) {}
+    , mMaterial(nullptr) {
+}
 void SolidColor::compute(ProcTex& ptex) {
   auto proc_ctx = ptex.GetPTC();
   auto pTARG    = ptex.GetTarget();
@@ -925,7 +940,8 @@ Gradient::Gradient()
     , meRepeatMode(EGS_REPEAT)
     , meGradientType(EGT_HORIZONTAL)
     , mbAA(false)
-    , mMtl(nullptr) {}
+    , mMtl(nullptr) {
+}
 void Gradient::compute(ProcTex& ptex) {
   auto proc_ctx = ptex.GetPTC();
   auto pTARG    = ptex.GetTarget();
@@ -1144,10 +1160,11 @@ void Gradient::compute(ProcTex& ptex) {
     }
     lev2::GfxMaterial3DSolid* mMtl;
     ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>& mVertexBuffer;
-    AA16RenderGrad(ProcTex& ptex,
-                   Buffer& bo,
-                   ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>& vb,
-                   lev2::GfxMaterial3DSolid* mtl)
+    AA16RenderGrad(
+        ProcTex& ptex,
+        Buffer& bo,
+        ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>& vb,
+        lev2::GfxMaterial3DSolid* mtl)
         : AA16Render(ptex, bo)
         , mMtl(mtl)
         , mVertexBuffer(vb) {
@@ -1175,7 +1192,8 @@ void Group::Describe() {
   ork::reflect::annotateClassForEditor<Group>("editor.object.ops", ConstString("load:proctexgroupload save:proctexgroupsave"));
 }
 Group::Group()
-    : mpProcTex(0) {}
+    : mpProcTex(0) {
+}
 void Group::compute(ProcTex& ptex) {
   auto proc_ctx = ptex.GetPTC();
   auto pTARG    = ptex.GetTarget();

@@ -113,7 +113,7 @@ const DrawableBuffer* RenderContextFrameData::GetDB() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 const CompositingPassData& RenderContextFrameData::topCPD() const {
-  assert(_cimpl != nullptr);
+  OrkAssert(_cimpl != nullptr);
   return _cimpl->topCPD();
 }
 

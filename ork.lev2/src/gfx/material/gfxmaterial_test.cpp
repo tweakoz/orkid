@@ -17,7 +17,8 @@ namespace ork { namespace lev2 {
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterial3DSolid::Describe() {}
+void GfxMaterial3DSolid::Describe() {
+}
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -44,7 +45,11 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(Context* pTARG)
 }
 
 GfxMaterial3DSolid::GfxMaterial3DSolid(
-    Context* pTARG, const char* puserfx, const char* pusertek, bool allowcompilefailure, bool unmanaged)
+    Context* pTARG,
+    const char* puserfx,
+    const char* pusertek,
+    bool allowcompilefailure,
+    bool unmanaged)
     : meColorMode(EMODE_USER)
     , mUserFxName(puserfx)
     , mUserTekName(pusertek)
@@ -120,9 +125,9 @@ void GfxMaterial3DSolid::Init(ork::lev2::Context* pTarg) {
 
   hTekPick = fxi->technique(hModFX, "tek_pick");
 
-  hMatAux = fxi->parameter(hModFX, "MatAux");
+  hMatAux  = fxi->parameter(hModFX, "MatAux");
   hMatAux2 = fxi->parameter(hModFX, "MatAux2");
-  hMatRot = fxi->parameter(hModFX, "MatRotW");
+  hMatRot  = fxi->parameter(hModFX, "MatRotW");
 
   hMatMVPL       = fxi->parameter(hModFX, "MatMVPL");
   hMatMVPR       = fxi->parameter(hModFX, "MatMVPR");
@@ -165,7 +170,7 @@ bool GfxMaterial3DSolid::IsUserFxOk() const {
 int GfxMaterial3DSolid::BeginBlock(Context* pTarg, const RenderContextInstData& RCID) {
 
   const RenderContextFrameData* RCFD = pTarg->topRenderContextFrameData();
-  const auto& CPD = RCFD->topCPD();
+  const auto& CPD                    = RCFD->topCPD();
   bool is_picking                    = CPD.isPicking();
   bool is_stereo                     = CPD.isStereoOnePass();
 
@@ -207,7 +212,9 @@ int GfxMaterial3DSolid::BeginBlock(Context* pTarg, const RenderContextInstData& 
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterial3DSolid::EndBlock(Context* pTarg) { pTarg->FXI()->EndBlock(hModFX); }
+void GfxMaterial3DSolid::EndBlock(Context* pTarg) {
+  pTarg->FXI()->EndBlock(hModFX);
+}
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -219,7 +226,7 @@ bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
 
   const RenderContextInstData* RCID  = pTarg->GetRenderContextInstData();
   const RenderContextFrameData* RCFD = pTarg->topRenderContextFrameData();
-  const auto& CPD = RCFD->topCPD();
+  const auto& CPD                    = RCFD->topCPD();
   bool is_picking                    = CPD.isPicking();
   bool is_stereo                     = CPD.isStereoOnePass();
   bool is_forcenoz                   = RCID ? RCID->IsForceNoZWrite() : false;
@@ -227,7 +234,7 @@ bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
   pTarg->RSI()->BindRasterState(_rasterstate);
   pTarg->FXI()->BindPass(hModFX, iPass);
 
-  if (hModFX->GetFailedCompile()){
+  if (hModFX->GetFailedCompile()) {
     assert(false);
     return false;
   }
@@ -242,24 +249,23 @@ bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
   const auto& world = MTXI->RefMMatrix();
   if (is_stereo and CPD._stereoCameraMatrices) {
     auto stereomtx = CPD._stereoCameraMatrices;
-    auto MVPL = stereomtx->MVPL(world);
-    auto MVPR = stereomtx->MVPR(world);
+    auto MVPL      = stereomtx->MVPL(world);
+    auto MVPR      = stereomtx->MVPR(world);
     FXI->BindParamMatrix(hModFX, hMatMVPL, MVPL);
     FXI->BindParamMatrix(hModFX, hMatMVPR, MVPR);
   } else if (CPD._cameraMatrices) {
     auto mcams = CPD._cameraMatrices;
-    auto MVP = world
-             * mcams->_vmatrix
-             * mcams->_pmatrix;
+    auto MVP   = world * mcams->_vmatrix * mcams->_pmatrix;
     FXI->BindParamMatrix(hModFX, hMatMVP, MVP);
   } else {
-    FXI->BindParamMatrix(hModFX, hMatMVP, MTXI->RefMVPMatrix());
+    auto MVP = MTXI->RefMVPMatrix();
+    FXI->BindParamMatrix(hModFX, hMatMVP, MVP);
   }
 
-  if( hMatAux )
+  if (hMatAux)
     FXI->BindParamMatrix(hModFX, hMatAux, mMatAux);
 
-  if( hMatAux2 )
+  if (hMatAux2)
     FXI->BindParamMatrix(hModFX, hMatAux2, mMatAux2);
 
   if (hMatV) {
@@ -313,8 +319,8 @@ bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
   }
 
   if (mCurrentTexture && hColorMap) {
-    //if (IsDebug())
-    //printf("Binding texmap<%p:%s> to param<%p>\n", mCurrentTexture, mCurrentTexture->_debugName.c_str(), hColorMap);
+    // if (IsDebug())
+    // printf("Binding texmap<%p:%s> to param<%p>\n", mCurrentTexture, mCurrentTexture->_debugName.c_str(), hColorMap);
     FXI->BindParamCTex(hModFX, hColorMap, mCurrentTexture);
   }
   if (mCurrentTexture2 && hColorMap2) {

@@ -211,17 +211,27 @@ Buffer& ImgModule::GetWriteBuffer(ProcTex& ptex) {
 void ImgModule::Compute(dataflow::workunit* wu) {
   auto ptex                = wu->GetContextData().Get<ProcTex*>();
   ProcTexContext* ptex_ctx = ptex->GetPTC();
+
+  auto pTARG = ptex->GetTarget();
+  auto fbi   = pTARG->FBI();
+
+  const RenderContextFrameData* RCFD = pTARG->topRenderContextFrameData();
+  auto CIMPL                         = RCFD->_cimpl;
+  CompositingPassData CPD;
+  CIMPL->pushCPD(CPD);
+
   const_cast<ImgModule*>(this)->compute(*ptex);
 
+  auto& wrbuf   = GetWriteBuffer(*ptex);
+  auto ptexture = wrbuf.OutputTexture();
+  pTARG->TXI()->generateMipMaps(ptexture);
+  ptexture->TexSamplingMode().PresetPointAndClamp();
+  pTARG->TXI()->ApplySamplingMode(ptexture);
+
   if (mExport) {
-    auto& wrbuf   = GetWriteBuffer(*ptex);
-    auto ptexture = wrbuf.OutputTexture();
 
     if (nullptr == ptexture)
       return;
-
-    auto pTARG = ptex->GetTarget();
-    auto fbi   = pTARG->FBI();
 
     auto rtg = wrbuf.GetRtGroup(pTARG);
 
@@ -237,6 +247,7 @@ void ImgModule::Compute(dataflow::workunit* wu) {
 
     mExport = false;
   }
+  CIMPL->popCPD();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ImgModule::UnitTexQuad(
@@ -257,16 +268,7 @@ void ImgModule::MarkClean() {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void RenderQuad(
-    ork::lev2::Context* pTARG,
-    float fX1,
-    float fY1,
-    float fX2,
-    float fY2,
-    float fu1,
-    float fv1,
-    float fu2,
-    float fv2) {
+void RenderQuad(ork::lev2::Context* pTARG, float fX1, float fY1, float fX2, float fY2, float fu1, float fv1, float fu2, float fv2) {
   U32 uColor = 0xffffffff; // gGfxEnv.GetColor().GetABGRU32();
 
   float maxuv = 1.0f;
@@ -378,6 +380,9 @@ void ProcTex::compute(ProcTexContext& ptctx) {
 
   mpResTex = nullptr;
 
+  auto pTARG = GetTarget();
+  pTARG->debugPushGroup(FormatString("ptx::compute"));
+
   //////////////////////////////////
   // execute df graph
   //////////////////////////////////
@@ -431,7 +436,7 @@ void ProcTex::compute(ProcTexContext& ptctx) {
       }
       ///////////////////////////////////
       if (img_module_updthumb) {
-        img_module_updthumb->UpdateThumb(*this);
+        // img_module_updthumb->UpdateThumb(*this);
       }
     }
   }
@@ -465,6 +470,7 @@ void ProcTex::compute(ProcTexContext& ptctx) {
       fbi->Capture(*rtg, 0, indexed_path);
     }
   }
+  pTARG->debugPopGroup();
 
   //////////////////////////////////
   // mpctx = 0;
