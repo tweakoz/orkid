@@ -69,15 +69,17 @@ void DeferredContext::gpuInit(Context* target) {
     _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(target);
     //////////////////////////////////////////////////////////////
     _lightingmtl.gpuInit(target, _shadername);
-    _tekBaseLighting                = _lightingmtl.technique("baselight");
-    _tekPointLightingUntextured     = _lightingmtl.technique("pointlight_untextured");
-    _tekPointLightingTextured       = _lightingmtl.technique("pointlight_textured");
-    _tekPointLightingTexturedStereo = _lightingmtl.technique("pointlight_textured_stereo");
-    _tekBaseLightingStereo          = _lightingmtl.technique("baselight_stereo");
-    _tekPointLightingStereo         = _lightingmtl.technique("pointlight_stereo");
-    _tekDownsampleDepthCluster      = _lightingmtl.technique("downsampledepthcluster");
-    _tekEnvironmentLighting         = _lightingmtl.technique("environmentlighting");
-    _tekEnvironmentLightingStereo   = _lightingmtl.technique("environmentlighting_stereo");
+    _tekBaseLighting       = _lightingmtl.technique("baselight");
+    _tekBaseLightingStereo = _lightingmtl.technique("baselight_stereo");
+    //
+    _tekPointLightingUntextured       = _lightingmtl.technique("pointlight_untextured");
+    _tekPointLightingTextured         = _lightingmtl.technique("pointlight_textured");
+    _tekPointLightingUntexturedStereo = _lightingmtl.technique("pointlight_untextured_stereo");
+    _tekPointLightingTexturedStereo   = _lightingmtl.technique("pointlight_textured_stereo");
+    //
+    _tekDownsampleDepthCluster    = _lightingmtl.technique("downsampledepthcluster");
+    _tekEnvironmentLighting       = _lightingmtl.technique("environmentlighting");
+    _tekEnvironmentLightingStereo = _lightingmtl.technique("environmentlighting_stereo");
     //////////////////////////////////////////////////////////////
     // init lightblock
     //////////////////////////////////////////////////////////////
@@ -424,30 +426,30 @@ void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const Vie
   FBI->PushRtGroup(_rtgLaccum);
   targ->beginFrame();
   const FxShaderTechnique* tek = nullptr;
-  if (VD._isStereo)
-    tek = _tekPointLightingStereo;
-  else
-    if (cookietexture)
-      tek = _tekPointLightingTextured;
-    else
-      tek = _tekPointLightingUntextured;
-
+  if (VD._isStereo) {
+    tek = cookietexture ? _tekPointLightingTexturedStereo : _tekPointLightingUntexturedStereo;
+  } else {
+    tek = cookietexture ? _tekPointLightingTextured : _tekPointLightingUntextured;
+  }
   _lightingmtl.bindTechnique(tek);
   _lightingmtl.begin(RCFD);
   //////////////////////////////////////////////////////
   _lightingmtl.bindParamMatrixArray(_parMatIVPArray, VD._ivp, 2);
   _lightingmtl.bindParamMatrixArray(_parMatVArray, VD._v, 2);
   _lightingmtl.bindParamMatrixArray(_parMatPArray, VD._p, 2);
+  _lightingmtl.bindParamVec2(_parZndc2eye, VD._zndc2eye);
+  //////////////////////////////////////////////////////
   _lightingmtl.bindParamCTex(_parMapGBufAlbAo, _rtgGbuffer->GetMrt(0)->GetTexture());
   _lightingmtl.bindParamCTex(_parMapGBufNrmL, _rtgGbuffer->GetMrt(1)->GetTexture());
   _lightingmtl.bindParamCTex(_parMapGBufRufMtlAlpha, _rtgGbuffer->GetMrt(2)->GetTexture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
   _lightingmtl.bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->GetTexture());
   _lightingmtl.bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap);
-  if(cookietexture)
+  ///////////////////////////
+  if (cookietexture)
     _lightingmtl.bindParamCTex(_parLightCookieTexture, cookietexture);
+  ///////////////////////////
   _lightingmtl.bindParamVec2(_parNearFar, fvec2(DeferredContext::KNEAR, DeferredContext::KFAR));
-  _lightingmtl.bindParamVec2(_parZndc2eye, VD._zndc2eye);
   _lightingmtl.bindParamVec2(_parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
   _lightingmtl.bindParamFloat(_parSpecularLevel, _specularLevel);
   _lightingmtl.bindParamFloat(_parDiffuseLevel, _diffuseLevel);

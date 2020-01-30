@@ -689,6 +689,7 @@ void StreakRenderer::Render(
     ork::lev2::RenderContextInstData& rcid,
     const ParticlePoolRenderBuffer& buffer,
     ork::lev2::Context* targ) {
+
   const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
   const auto& CPD                    = RCFD->topCPD();
   const CameraMatrices* cmtcs        = CPD.cameraMatrices();

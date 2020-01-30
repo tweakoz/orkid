@@ -12,6 +12,8 @@ uniform_set ublock_vtx {
   mat4 MatP;
   mat4 MatMV;
   mat4 MatMVP;
+  mat4 MatMVPL;
+  mat4 MatMVPR;
   mat4 MatAux;
   vec4 modcolor;
   vec4 User0;
@@ -22,17 +24,6 @@ uniform_set ublock_vtx {
   vec4 NoiseShift;
   vec4 NoiseFreq;
   vec4 NoiseAmp;
-}
-
-uniform_set ublock_geo {
-  mat4 MatP;
-  mat4 MatV;
-  mat4 MatMVP;
-  mat4 MatMVPL;
-  mat4 MatMVPR;
-  vec4 User0;
-  vec4 User1;
-  vec4 User2;
 }
 
 uniform_set ublock_frg {
@@ -57,7 +48,11 @@ fragment_interface fface_psys : ublock_frg {
     vec4 frg_uv0;
     vec4 frg_uv1;
   }
-  outputs { vec4 out_clr; }
+  outputs {
+    layout(location = 0) vec4 out_clr;
+    layout(location = 1) vec4 out_normal_mdl;
+    layout(location = 2) vec4 out_rufmtl;
+  	}
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
@@ -100,7 +95,7 @@ vertex_shader vs_vtxtexcolor : vface_bill {
   geo_uv1     = uv1;
 }
 ///////////////////////////////////////////////////////////////
-geometry_interface gface_base : ublock_geo {
+geometry_interface gface_base {
   inputs { layout(points); }
   outputs { layout(triangle_strip, max_vertices = 4); }
 }
@@ -270,10 +265,10 @@ vertex_interface vface_streak : ublock_vtx {
     vec4 uv0 : TEXCOORD0;
   }
   outputs {
-    vec4 geo_cnrm;
-    vec4 geo_vel;
-    vec4 geo_clr;
-    vec4 geo_lw;
+    vec4 geo_cnrm[1];
+    vec4 geo_vel[1];
+    vec4 geo_clr[1];
+    vec4 geo_lw[1];
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -382,11 +377,21 @@ geometry_shader gs_streak_stereo : extension(GL_NV_stereo_view_rendering)
   EndPrimitive();
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_modclr : fface_psys { out_clr = modcolor; }
-fragment_shader ps_fragclr : fface_minimal { out_clr = frg_clr; }
+fragment_shader ps_modclr : fface_psys {
+  out_clr = modcolor;
+  out_rufmtl = vec4(0,1,0,0);
+  out_normal_mdl = vec4(0,0,0,5.0);
+}
+fragment_shader ps_fragclr : fface_minimal {
+  out_clr = frg_clr;
+  out_rufmtl = vec4(0,1,0,0);
+  out_normal_mdl = vec4(0,0,0,5.0);
+}
 fragment_shader ps_modtex : fface_psys {
   vec4 texc = texture(ColorMap, frg_uv0.xy);
   out_clr   = texc * modcolor;
+  out_rufmtl = vec4(0,1,0,0);
+  out_normal_mdl = vec4(0,0,0,5.0);
   if (out_clr.a == 0.0f)
     discard;
 }
@@ -397,6 +402,8 @@ fragment_shader ps_modtexclr : fface_psys {
   float alp = out_clr.r * User0.r + out_clr.g * User0.g + out_clr.b * User0.b + out_clr.a * User0.a;
 
   out_clr.a = alp;
+  out_rufmtl = vec4(0,1,0,0);
+  out_normal_mdl = vec4(0,0,5.00);
 
   if (alp == 0.0f)
     discard;
@@ -407,6 +414,8 @@ fragment_shader ps_volume : fface_psys {
   vec3 uvw     = vec3(uv, w);
   vec4 TexInp0 = texture(VolumeMap, uvw).xyzw;
   out_clr      = TexInp0.bgra * modcolor * frg_clr.bgra;
+  out_rufmtl = vec4(0,1,0,0);
+  out_normal_mdl = vec4(0,0,0,5.0);
 }
 ///////////////////////////////////////////////////////////////
 technique tbasicparticle {

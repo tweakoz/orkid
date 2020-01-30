@@ -1175,7 +1175,7 @@ void Simulation::Update() {
       float frame_rate           = desiredFrameRate();
       bool externally_fixed_rate = (frame_rate != 0.0f);
 
-      // float fdelta = 1.0f/60.0f; //GetDeltaTime();
+      // float fdelta = 1.0f / 60.0f; // GetDeltaTime();
       float fdelta = GetDeltaTime();
 
       float step = 0.0f; // ideally should be (1.0f/vsync rate) / some integer

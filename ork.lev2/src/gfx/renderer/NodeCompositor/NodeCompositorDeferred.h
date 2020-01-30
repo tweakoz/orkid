@@ -96,25 +96,25 @@ struct DeferredContext {
   std::string _shadername;
   lev2::Texture* brdfIntegrationTexture() const;
   ////////////////////////////////////////////////////////////////////
-  int _width    = 0;
-  int _height   = 0;
-  int _clusterW = 0;
-  int _clusterH = 0;
+  int _width                   = 0;
+  int _height                  = 0;
+  int _clusterW                = 0;
+  int _clusterH                = 0;
   lev2::Texture* _whiteTexture = nullptr;
   ////////////////////////////////////////////////////////////////////
   std::vector<PointLight*> _pointlights;
 
   ////////////////////////////////////////////////////////////////////
 
-  const FxShaderTechnique* _tekBaseLighting                = nullptr;
-  const FxShaderTechnique* _tekEnvironmentLighting         = nullptr;
-  const FxShaderTechnique* _tekEnvironmentLightingStereo   = nullptr;
-  const FxShaderTechnique* _tekBaseLightingStereo          = nullptr;
-  const FxShaderTechnique* _tekDownsampleDepthCluster      = nullptr;
-  const FxShaderTechnique* _tekPointLightingUntextured     = nullptr;
-  const FxShaderTechnique* _tekPointLightingTextured       = nullptr;
-  const FxShaderTechnique* _tekPointLightingStereo         = nullptr;
-  const FxShaderTechnique* _tekPointLightingTexturedStereo = nullptr;
+  const FxShaderTechnique* _tekBaseLighting                  = nullptr;
+  const FxShaderTechnique* _tekEnvironmentLighting           = nullptr;
+  const FxShaderTechnique* _tekEnvironmentLightingStereo     = nullptr;
+  const FxShaderTechnique* _tekBaseLightingStereo            = nullptr;
+  const FxShaderTechnique* _tekDownsampleDepthCluster        = nullptr;
+  const FxShaderTechnique* _tekPointLightingUntextured       = nullptr;
+  const FxShaderTechnique* _tekPointLightingTextured         = nullptr;
+  const FxShaderTechnique* _tekPointLightingUntexturedStereo = nullptr;
+  const FxShaderTechnique* _tekPointLightingTexturedStereo   = nullptr;
 
 #if defined(ENABLE_COMPUTE_SHADERS)
   FxComputeShader* _lightcollectcomputeshader = nullptr;

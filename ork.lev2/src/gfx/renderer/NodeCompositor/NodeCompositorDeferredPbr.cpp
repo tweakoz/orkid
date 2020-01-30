@@ -227,14 +227,11 @@ struct IMPL {
 
     if (auto lmgr = CIMPL->lightManager()) {
 
-      // printf("lightmgr<%p>\n", lmgr);
-      if (1) {
-        lmgr->enumerateInPass(_context._accumCPD, _enumeratedLights);
-        auto& lights = _enumeratedLights._enumeratedLights;
+      lmgr->enumerateInPass(_context._accumCPD, _enumeratedLights);
+      auto& lights = _enumeratedLights._enumeratedLights;
 
-        if (lights.size())
-          _lightProcessor.render(drawdata, VD, _enumeratedLights);
-      }
+      if (lights.size())
+        _lightProcessor.render(drawdata, VD, _enumeratedLights);
     }
 
     /////////////////////////////////

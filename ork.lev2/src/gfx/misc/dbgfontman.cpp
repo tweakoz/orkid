@@ -34,7 +34,7 @@ void FontMan::BeginTextBlock(Context* pTARG, int imaxcharcount) {
 #endif
 
   if (0 == imaxcharcount)
-    imaxcharcount = 1024;
+    imaxcharcount = 2048;
   int inumv = imaxcharcount * 8;
 
   VertexBufferBase& VB = pTARG->IMI()->RefTextVB();

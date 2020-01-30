@@ -89,83 +89,50 @@ struct impl {
     const auto& CPD  = RCFD->topCPD();
     auto cammatrices = CPD.cameraMatrices();
     const auto& FRUS = cammatrices->GetFrustum();
+    bool stereo1pass = CPD.isStereoOnePass();
 
-    fvec2 topl(-1, -1), topr(+1, -1);
-    fvec2 botl(-1, +1), botr(+1, +1);
-    fray3 ray_topl, ray_topr, ray_botl, ray_botr;
+    float extent = data.extent();
+    fvec3 topl(-extent, 0, -extent);
+    fvec3 topr(+extent, 0, -extent);
+    fvec3 botr(+extent, 0, +extent);
+    fvec3 botl(-extent, 0, +extent);
 
-    cammatrices->projectDepthRay(topl, ray_topl);
-    cammatrices->projectDepthRay(topr, ray_topr);
-    cammatrices->projectDepthRay(botr, ray_botr);
-    cammatrices->projectDepthRay(botl, ray_botl);
-    fplane3 groundplane(0, 1, 0, 0);
+    float uvextent = extent / data.tileDim();
 
-    float dtl, dtr, dbl, dbr;
-    bool does_topl_isect = groundplane.Intersect(ray_topl, dtl);
-    bool does_topr_isect = groundplane.Intersect(ray_topr, dtr);
-    bool does_botr_isect = groundplane.Intersect(ray_botr, dbr);
-    bool does_botl_isect = groundplane.Intersect(ray_botl, dbl);
+    auto uv_topl  = fvec2(-uvextent, -uvextent);
+    auto uv_topr  = fvec2(+uvextent, -uvextent);
+    auto uv_botr  = fvec2(+uvextent, +uvextent);
+    auto uv_botl  = fvec2(-uvextent, +uvextent);
+    auto normal   = fvec3(0, 1, 0);
+    auto binormal = fvec3(1, 0, 0);
 
-    if (true) // does_topl_isect&&does_topr_isect&&does_botl_isect&&does_botr_isect)
-    {
-      float extent = data.extent();
-      fvec3 topl(-extent, 0, -extent); // ray_topl.mOrigin + ray_topl.mDirection*dtl;
-      fvec3 topr(+extent, 0, -extent); // = ray_topr.mOrigin + ray_topr.mDirection*dtr;
-      fvec3 botr(+extent, 0, +extent); // = ray_botr.mOrigin + ray_botr.mDirection*dbr;
-      fvec3 botl(-extent, 0, +extent); // = ray_botl.mOrigin + ray_botl.mDirection*dbl;
+    auto v0 = SVtxV12N12B12T8C4(topl, normal, binormal, uv_topl, 0xffffffff);
+    auto v1 = SVtxV12N12B12T8C4(topr, normal, binormal, uv_topr, 0xffffffff);
+    auto v2 = SVtxV12N12B12T8C4(botr, normal, binormal, uv_botr, 0xffffffff);
+    auto v3 = SVtxV12N12B12T8C4(botl, normal, binormal, uv_botl, 0xffffffff);
 
-      float uvextent = extent / data.tileDim();
+    auto& VB = GfxEnv::GetSharedDynamicVB2();
+    VtxWriter<SVtxV12N12B12T8C4> vw;
+    vw.Lock(targ, &VB, 6);
 
-      auto uv_topl  = fvec2(-uvextent, -uvextent);
-      auto uv_topr  = fvec2(+uvextent, -uvextent);
-      auto uv_botr  = fvec2(+uvextent, +uvextent);
-      auto uv_botl  = fvec2(-uvextent, +uvextent);
-      auto normal   = fvec3(0, 1, 0);
-      auto binormal = fvec3(1, 0, 0);
+    vw.AddVertex(v0);
+    vw.AddVertex(v1);
+    vw.AddVertex(v2);
 
-      auto v0 = SVtxV12N12B12T8C4(topl, normal, binormal, uv_topl, 0xffffffff);
-      auto v1 = SVtxV12N12B12T8C4(topr, normal, binormal, uv_topr, 0xffffffff);
-      auto v2 = SVtxV12N12B12T8C4(botr, normal, binormal, uv_botr, 0xffffffff);
-      auto v3 = SVtxV12N12B12T8C4(botl, normal, binormal, uv_botl, 0xffffffff);
+    vw.AddVertex(v0);
+    vw.AddVertex(v2);
+    vw.AddVertex(v3);
 
-      auto& VB = GfxEnv::GetSharedDynamicVB2();
-      VtxWriter<SVtxV12N12B12T8C4> vw;
-      vw.Lock(targ, &VB, 6);
+    vw.UnLock(targ);
 
-      vw.AddVertex(v0);
-      vw.AddVertex(v1);
-      vw.AddVertex(v2);
-
-      vw.AddVertex(v0);
-      vw.AddVertex(v2);
-      vw.AddVertex(v3);
-
-      vw.UnLock(targ);
-
-      const fmtx4& PMTX = cammatrices->_pmatrix;
-      const fmtx4& VMTX = cammatrices->_vmatrix;
-
-      auto mtxi = targ->MTXI();
-      auto gbi  = targ->GBI();
-      mtxi->PushMMatrix(fmtx4());
-      mtxi->PushVMatrix(VMTX);
-      mtxi->PushPMatrix(PMTX);
-      targ->PushModColor(fcolor4::Green());
-      targ->PushMaterial(pimpl->_material);
-      gbi->DrawPrimitive(vw, EPRIM_TRIANGLES, 6);
-      targ->PopModColor();
-      mtxi->PopPMatrix();
-      mtxi->PopVMatrix();
-      mtxi->PopMMatrix();
-
-    } else {
-      printf(
-          "itl<%d> itr<%d> ibl<%d> ibr<%d>\n",
-          int(does_topl_isect),
-          int(does_topr_isect),
-          int(does_botl_isect),
-          int(does_botr_isect));
-    }
+    auto mtxi = targ->MTXI();
+    auto gbi  = targ->GBI();
+    mtxi->PushMMatrix(pent->GetEffectiveMatrix());
+    targ->PushModColor(fcolor4::Green());
+    targ->PushMaterial(pimpl->_material);
+    gbi->DrawPrimitive(vw, EPRIM_TRIANGLES, 6);
+    targ->PopModColor();
+    mtxi->PopMMatrix();
   }
   static void enqueueOnLayerCallback(DrawableBufItem& cdb) {
     // AssertOnOpQ2( updateSerialQueue() );

@@ -22,7 +22,6 @@
 #include <ork/kernel/datacache.inl>
 #include <ork/gfx/brdf.inl>
 #include <ork/gfx/dds.h>
-//#include <ork/gfx/image.inl>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/texman.h>
 
@@ -137,16 +136,10 @@ void SimpleLightProcessor::_renderUnshadowedUntexturedPointLights(
   //////////////////////////////////////////////////
 
   // printf("numlighttiles<%zu>\n", _chunktiles_pos.size());
-  if (VD._isStereo) {
-    // float L = (float(ix) / float(_clusterW));
-    // this_buf->Render2dQuadEML(fvec4(L - 1.0f, T, KTILESIZX * 0.5, KTILESIZY), fvec4(0, 0, 1, 1));
-    // this_buf->Render2dQuadEML(fvec4(L, T, KTILESIZX * 0.5, KTILESIZY), fvec4(0, 0, 1, 1));
-  } else {
-    fvec4 quad_pos(-1, -1, 2, 2);
-    fvec4 quad_uva(0, 0, 1, 1);
-    fvec4 quad_uvb(0, numlights, 0, 0);
-    this_buf->Render2dQuadsEML(1, &quad_pos, &quad_uva, &quad_uvb);
-  }
+  fvec4 quad_pos(-1, -1, 2, 2);
+  fvec4 quad_uva(0, 0, 1, 1);
+  fvec4 quad_uvb(0, numlights, 0, 0);
+  this_buf->Render2dQuadsEML(1, &quad_pos, &quad_uva, &quad_uvb);
   /////////////////////////////////////
   _deferredContext.endPointLighting(drawdata, VD);
 }
@@ -225,17 +218,10 @@ void SimpleLightProcessor::_renderUnshadowedTexturedPointLights(
     lightmtl.bindParamInt(_deferredContext._parNumLights, numlights);
     lightmtl.commit();
     //////////////////////////////////////////////////
-    if (VD._isStereo) {
-      fvec4 quad_pos(-1, -1, 2, 2);
-      fvec4 quad_uva(0, 0, 1, 1);
-      fvec4 quad_uvb(0, numlights, 0, 0);
-      this_buf->Render2dQuadsEML(1, &quad_pos, &quad_uva, &quad_uvb);
-    } else {
-      fvec4 quad_pos(-1, -1, 2, 2);
-      fvec4 quad_uva(0, 0, 1, 1);
-      fvec4 quad_uvb(0, numlights, 0, 0);
-      this_buf->Render2dQuadsEML(1, &quad_pos, &quad_uva, &quad_uvb);
-    }
+    fvec4 quad_pos(-1, -1, 2, 2);
+    fvec4 quad_uva(0, 0, 1, 1);
+    fvec4 quad_uvb(0, numlights, 0, 0);
+    this_buf->Render2dQuadsEML(1, &quad_pos, &quad_uva, &quad_uvb);
     /////////////////////////////////////
     _deferredContext.endPointLighting(drawdata, VD);
   } // for (auto texture_item : _tex2pointmap ){

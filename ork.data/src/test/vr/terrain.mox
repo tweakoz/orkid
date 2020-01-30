@@ -1012,20 +1012,20 @@
                                                                             <property name='RenderNode'>
                                                                                 <reference category='ObjectClass'>
                                                                                     <object type='DeferredCompositingNodePbr' id='120'>
-                                                                                        <property name='AmbientLevel'>0.05 0.05 0.06</property>
+                                                                                        <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
-                                                                                        <property name='DepthFogDistance'>4809.16</property>
-                                                                                        <property name='DepthFogPower'>2.29985</property>
+                                                                                        <property name='DepthFogDistance'>4436.1</property>
+                                                                                        <property name='DepthFogPower'>2.26541</property>
                                                                                         <property name='DiffuseLevel'>1</property>
                                                                                         <property name='EnvironmentIntensity'>1</property>
-                                                                                        <property name='EnvironmentMipBias'>1.78166</property>
+                                                                                        <property name='EnvironmentMipBias'>2.56489</property>
                                                                                         <property name='EnvironmentMipScale'>0</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
                                                                                                 "lev2tex" "data://environ/envmaps/tozenv_nebula"
                                                                                             </reference>
                                                                                         </property>
-                                                                                        <property name='SkyboxLevel'>0.541516</property>
+                                                                                        <property name='SkyboxLevel'>1.33588</property>
                                                                                         <property name='SpecularLevel'>1</property>
                                                                                     </object>
                                                                                 </reference>

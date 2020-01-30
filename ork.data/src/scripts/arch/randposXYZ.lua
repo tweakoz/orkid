@@ -52,7 +52,7 @@ function RandPosXYZ:OnEntityUpdate(dt)
     self.ent:setPos(self.pos)
     self.angle = self.angle + 0.1*dt
     delta = (self.targetaxis-self.axis):normal()
-    self.axis = (self.axis+delta*(0.1*dt)):normal()
+    self.axis = (self.axis+delta*(0.25*dt)):normal()
     self.ent:setRotAxisAngle(self.axis,self.angle)
   --printf( "RANDPOSZYX::OnEntityUpdate()::end" )
 end
