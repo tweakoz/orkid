@@ -83,7 +83,7 @@
                                                 <object type='GridControllerData' id='10'>
                                                     <property name='ColorTexture'>
                                                         <reference category='AssetClass'>
-                                                            "lev2tex" "lev2://textures/gridcell_blue"
+                                                            "lev2tex" "lev2://textures/gridcell_grey"
                                                         </reference>
                                                     </property>
                                                     <property name='Extent'>100</property>
