@@ -56,14 +56,7 @@ enum ELightType {
 ///////////////////////////////////////////////////////////////////////////////
 
 class LightData : public ork::Object {
-  RttiDeclareAbstract(LightData, ork::Object);
-
-  fvec3 mColor;
-  bool mbShadowCaster;
-  float mShadowSamples;
-  float mShadowBlur;
-  float mShadowBias;
-  bool mbSpecular;
+  DeclareAbstractX(LightData, ork::Object);
 
 public:
   float GetShadowBias() const {
@@ -89,14 +82,23 @@ public:
     mColor = clr;
   }
 
-  LightData()
-      : mColor(1.0f, 0.0f, 0.0f)
-      , mbSpecular(false)
-      , mbShadowCaster(false)
-      , mShadowSamples(1.0f)
-      , mShadowBlur(0.0f)
-      , mShadowBias(0.2f) {
+  LightData();
+
+  lev2::Texture* cookie() const {
+    return _cookie ? _cookie->GetTexture() : nullptr;
   }
+
+private:
+  fvec3 mColor;
+  bool mbShadowCaster;
+  float mShadowSamples;
+  float mShadowBlur;
+  float mShadowBias;
+  bool mbSpecular;
+  textureassetptr_t _cookie = nullptr;
+
+  void _readCookie(ork::rtti::ICastable*& cookietex) const;
+  void _writeCookie(ork::rtti::ICastable* const& cookietex);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -132,6 +134,10 @@ struct Light {
     return _worldMatrix.GetZNormal();
   }
 
+  Texture* cookie() const {
+    return _data->cookie();
+  }
+
   const LightData* _data;
   const fmtx4& _worldMatrix;
 
@@ -146,11 +152,6 @@ struct PointLightData : public LightData {
   DeclareConcreteX(PointLightData, LightData);
 
 public:
-  float _radius;
-  float _falloff;
-  textureassetptr_t _equirectTexture = nullptr;
-
-public:
   float radius() const {
     return _radius;
   }
@@ -158,16 +159,14 @@ public:
     return _falloff;
   }
 
+  float _radius;
+  float _falloff;
+
   PointLightData()
       : _radius(1.0f)
-      , _falloff(1.0f)
-      , _equirectTexture(nullptr) {
+      , _falloff(1.0f) {
   }
-
-private:
-  void _readEquiMap(ork::rtti::ICastable*& model) const;
-  void _writeEquiMap(ork::rtti::ICastable* const& model);
-};
+}; // namespace lev2
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -186,9 +185,6 @@ struct PointLight : public Light {
   }
   float radius() const {
     return _pldata->radius();
-  }
-  Texture* texture() const {
-    return _pldata->_equirectTexture ? _pldata->_equirectTexture->GetTexture() : nullptr;
   }
 
   PointLight(const fmtx4& mtx, const PointLightData* pld = 0);

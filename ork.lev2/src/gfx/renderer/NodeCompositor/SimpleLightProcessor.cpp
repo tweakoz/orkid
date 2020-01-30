@@ -55,6 +55,38 @@ void SimpleLightProcessor::render(CompositorDrawData& drawdata, const ViewData& 
   RenderContextFrameData& RCFD = framerenderer.framedata();
   auto context                 = RCFD.GetTarget();
   _gpuInit(context);
+
+  /////////////////////////////////////
+  // convert enumerated scenelights to deferred format
+  /////////////////////////////////////
+
+  const auto& scene_lights = enumlights._enumeratedLights;
+
+  _untexturedpointlights.clear();
+  _untexturedspotlights.clear();
+  _tex2pointlightmap.clear();
+  _tex2spotlightmap.clear();
+
+  for (auto l : scene_lights) {
+    if (l->isShadowCaster())
+      continue;
+    if (auto as_point = dynamic_cast<lev2::PointLight*>(l)) {
+      auto cookie = as_point->cookie();
+      if (cookie)
+        _tex2pointlightmap[cookie].push_back(as_point);
+      else
+        _untexturedpointlights.push_back(as_point);
+    } else if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
+      auto cookie = as_spot->cookie();
+      if (cookie)
+        _tex2spotlightmap[cookie].push_back(as_spot);
+      else
+        _untexturedspotlights.push_back(as_spot);
+    }
+  }
+
+  /////////////////////////////////////
+
   _renderUnshadowedUntexturedPointLights(drawdata, VD, enumlights);
   _renderUnshadowedTexturedPointLights(drawdata, VD, enumlights);
 }
@@ -73,30 +105,14 @@ void SimpleLightProcessor::_renderUnshadowedUntexturedPointLights(
   auto this_buf                = gfxctx->FBI()->GetThisBuffer();
 
   /////////////////////////////////////
-  // filter enumerated scenelights
-  /////////////////////////////////////
-
-  const auto& scene_lights = enumlights._enumeratedLights;
-
-  _pointlights.clear();
-  for (auto l : scene_lights) {
-    if (l->isShadowCaster())
-      continue;
-    if (auto as_point = dynamic_cast<lev2::PointLight*>(l)) {
-      if (as_point->texture() == nullptr)
-        _pointlights.push_back(as_point);
-    }
-  }
-
-  /////////////////////////////////////
-  // render all pointlights
+  // render all (untextured) pointlights
   /////////////////////////////////////
 
   auto& lightmtl = _deferredContext._lightingmtl;
   _deferredContext.beginPointLighting(drawdata, VD, nullptr);
   FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
   auto mapping     = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
-  size_t numlights = _pointlights.size();
+  size_t numlights = _untexturedpointlights.size();
   OrkAssert(numlights < KMAXLIGHTSPERCHUNK);
   /////////////////////////////////////////////////////////
   size_t offset_cd  = 0;
@@ -105,7 +121,7 @@ void SimpleLightProcessor::_renderUnshadowedUntexturedPointLights(
   /////////////////////////////////////////////////////////
   constexpr size_t KPOSPASE = KMAXLIGHTSPERCHUNK * sizeof(fvec4);
   for (size_t lidx = 0; lidx < numlights; lidx++) {
-    auto light     = _pointlights[lidx];
+    auto light     = _untexturedpointlights[lidx];
     fvec3 color    = light->color();
     float radius   = light->radius();
     fvec3 pos      = light->worldPosition();
@@ -160,30 +176,12 @@ void SimpleLightProcessor::_renderUnshadowedTexturedPointLights(
   auto this_buf                = gfxctx->FBI()->GetThisBuffer();
 
   /////////////////////////////////////
-  // convert enumerated scenelights to deferred format
-  /////////////////////////////////////
-
-  const auto& scene_lights = enumlights._enumeratedLights;
-
-  _tex2pointmap.clear();
-  for (auto l : scene_lights) {
-    if (l->isShadowCaster())
-      continue;
-    if (auto as_point = dynamic_cast<lev2::PointLight*>(l)) {
-      auto texture = as_point->texture();
-      if (texture) {
-        _tex2pointmap[texture].push_back(as_point);
-      }
-    }
-  }
-
-  /////////////////////////////////////
   // render all pointlights for all pointlight textures
   /////////////////////////////////////
 
   auto& lightmtl = _deferredContext._lightingmtl;
   /////////////////////////////////////////////////////////
-  for (auto texture_item : _tex2pointmap) {
+  for (auto texture_item : _tex2pointlightmap) {
     auto texture = texture_item.first;
     int lidx     = 0;
     _deferredContext.beginPointLighting(drawdata, VD, texture);

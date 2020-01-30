@@ -15,7 +15,7 @@
 #include <ork/reflect/RegisterProperty.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::LightManagerData, "LightManagerData");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::LightData, "LightData");
+ImplementReflectionX(ork::lev2::LightData, "LightData");
 ImplementReflectionX(ork::lev2::PointLightData, "PointLightData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::DirectionalLightData, "DirectionalLightData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::AmbientLightData, "AmbientLightData");
@@ -38,21 +38,37 @@ bool Light::isShadowCaster() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightData::Describe() {
-  ork::reflect::RegisterProperty("Color", &LightData::mColor);
-  ork::reflect::RegisterProperty("AffectsSpecular", &LightData::mbSpecular);
-  ork::reflect::RegisterProperty("ShadowSamples", &LightData::mShadowSamples);
-  ork::reflect::RegisterProperty("ShadowBlur", &LightData::mShadowBlur);
-  ork::reflect::RegisterProperty("ShadowBias", &LightData::mShadowBias);
-  ork::reflect::RegisterProperty("ShadowCaster", &LightData::mbShadowCaster);
+void LightData::describeX(class_t* c) {
 
-  ork::reflect::annotatePropertyForEditor<LightData>("ShadowBias", "editor.range.min", "0.0");
-  ork::reflect::annotatePropertyForEditor<LightData>("ShadowBias", "editor.range.max", "2.0");
-  ork::reflect::annotatePropertyForEditor<LightData>("ShadowBias", "editor.range.log", "true");
-  ork::reflect::annotatePropertyForEditor<LightData>("ShadowSamples", "editor.range.min", "1");
-  ork::reflect::annotatePropertyForEditor<LightData>("ShadowSamples", "editor.range.max", "256.0");
-  ork::reflect::annotatePropertyForEditor<LightData>("ShadowBlur", "editor.range.min", "0");
-  ork::reflect::annotatePropertyForEditor<LightData>("ShadowBlur", "editor.range.max", "1.0");
+  c->memberProperty("Color", &LightData::mColor);
+  c->memberProperty("AffectsSpecular", &LightData::mbSpecular);
+  c->memberProperty("ShadowCaster", &LightData::mbShadowCaster);
+
+  c->floatProperty("ShadowBias", float_range{0.0, 2.0}, &LightData::mShadowBias)->annotate<ConstString>("editor.range.log", "true");
+  c->floatProperty("ShadowBlur", float_range{0.0, 1.0}, &LightData::mShadowBlur);
+  c->floatProperty("ShadowSamples", float_range{1.0, 256.0}, &LightData::mShadowSamples);
+
+  c->accessorProperty("Cookie", &LightData::_readCookie, &LightData::_writeCookie)
+      ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
+      ->annotate<ConstString>("editor.assettype", "lev2tex")
+      ->annotate<ConstString>("editor.assetclass", "lev2tex");
+}
+
+void LightData::_readCookie(ork::rtti::ICastable*& tex) const {
+  tex = _cookie;
+}
+void LightData::_writeCookie(ork::rtti::ICastable* const& tex) {
+  _cookie = tex ? ork::rtti::autocast(tex) : nullptr;
+}
+
+LightData::LightData()
+    : mColor(1.0f, 0.0f, 0.0f)
+    , mbSpecular(false)
+    , _cookie(nullptr)
+    , mbShadowCaster(false)
+    , mShadowSamples(1.0f)
+    , mShadowBlur(0.0f)
+    , mShadowBias(0.2f) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -61,20 +77,8 @@ void LightData::Describe() {
 
 void PointLightData::describeX(class_t* c) {
 
-  c->accessorProperty("EquirectMap", &PointLightData::_readEquiMap, &PointLightData::_writeEquiMap)
-      ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
-      ->annotate<ConstString>("editor.assettype", "lev2tex")
-      ->annotate<ConstString>("editor.assetclass", "lev2tex");
-
   c->floatProperty("Radius", float_range{1, 3000}, &PointLightData::_radius)->annotate<ConstString>("editor.range.log", "true");
   c->floatProperty("Falloff", float_range{1, 10}, &PointLightData::_falloff)->annotate<ConstString>("editor.range.log", "true");
-}
-
-void PointLightData::_readEquiMap(ork::rtti::ICastable*& tex) const {
-  tex = _equirectTexture;
-}
-void PointLightData::_writeEquiMap(ork::rtti::ICastable* const& tex) {
-  _equirectTexture = tex ? ork::rtti::autocast(tex) : nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

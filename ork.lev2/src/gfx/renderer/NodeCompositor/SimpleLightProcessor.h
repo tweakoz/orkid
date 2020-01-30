@@ -41,15 +41,20 @@ struct SimpleLightProcessor {
   void _gpuInit(lev2::Context* target);
   void _renderUnshadowedUntexturedPointLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
   void _renderUnshadowedTexturedPointLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
+  void _renderUnshadowedTexturedSpotLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
 
-  typedef std::vector<lev2::PointLight*> pllist_t;
-  typedef std::map<lev2::Texture*, pllist_t> tex2plmap_t;
+  using pointlightlist_t    = std::vector<lev2::PointLight*>;
+  using spotlightlist_t     = std::vector<lev2::SpotLight*>;
+  using tex2pointlightmap_t = std::map<lev2::Texture*, pointlightlist_t>;
+  using tex2spotlightmap_t  = std::map<lev2::Texture*, spotlightlist_t>;
 
   FxShaderParamBuffer* _lightbuffer = nullptr;
   DeferredContext& _deferredContext;
   DeferredCompositingNodePbr* _defcompnode;
-  pllist_t _pointlights;
-  tex2plmap_t _tex2pointmap;
+  pointlightlist_t _untexturedpointlights;
+  tex2pointlightmap_t _tex2pointlightmap;
+  spotlightlist_t _untexturedspotlights;
+  tex2spotlightmap_t _tex2spotlightmap;
 };
 
 } // namespace ork::lev2::deferrednode

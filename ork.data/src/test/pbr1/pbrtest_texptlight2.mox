@@ -215,7 +215,7 @@
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>false</property>
                                                                 <property name='ShadowSamples'>1</property>
-                                                                <property name='EquirectMap'>
+                                                                <property name='Cookie'>
                                                                     <reference category='AssetClass'>
                                                                         "lev2tex" "data://environ/envmaps/tozenv_colornoise"
                                                                     </reference>
@@ -351,7 +351,7 @@
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>false</property>
                                                                 <property name='ShadowSamples'>1</property>
-                                                                <property name='EquirectMap'>
+                                                                <property name='Cookie'>
                                                                     <reference category='AssetClass'>
                                                                         "lev2tex" "data://environ/envmaps/tozenv_nebula"
                                                                     </reference>
