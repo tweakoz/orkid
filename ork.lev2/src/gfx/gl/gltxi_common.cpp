@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
+#include <ork/kernel/memcpy.inl>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/gfx/dds.h>
 #include "gl.h"

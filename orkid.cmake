@@ -24,7 +24,7 @@ add_compile_definitions(QTVER=$ENV{QTVER})
 
 add_compile_options(-Wno-deprecated -Wno-register -fexceptions)
 add_compile_options(-Wno-unused-command-line-argument)
-add_compile_options(-fPIE -fPIC -fno-common -fno-strict-aliasing -g -Wno-switch-enum)
+add_compile_options(-mavx -fPIE -fPIC -fno-common -fno-strict-aliasing -g -Wno-switch-enum)
 
 set( ORKROOT $ENV{ORKID_WORKSPACE_DIR} )
 

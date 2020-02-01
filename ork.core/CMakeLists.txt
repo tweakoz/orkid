@@ -27,6 +27,8 @@ list( APPEND orksrcs ${src_math} ${src_object} ${src_reflect} )
 list( APPEND orksrcs ${src_rtti} ${src_stream} ${src_util} )
 list( APPEND orksrcs ${src_gfx} )
 
+add_compile_options(-mavx)
+
 ###################################
 
 add_library (ork_core SHARED ${orksrcs})
