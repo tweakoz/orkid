@@ -80,8 +80,8 @@ PboSet::~PboSet() {
 
 GLuint PboSet::alloc() {
   GLuint rval = 0xffffffff;
-  auto it = _pbos.begin();
-  if (it==_pbos.end()) {
+  auto it     = _pbos.begin();
+  if (it == _pbos.end()) {
     GL_ERRORCHECK();
     glGenBuffers(1, &rval);
     GL_ERRORCHECK();
@@ -93,7 +93,7 @@ GLuint PboSet::alloc() {
     GL_ERRORCHECK();
     _pbos_perm.insert(rval);
   } else {
-    rval    = *it;
+    rval = *it;
     _pbos.erase(it);
   }
   return rval;
@@ -122,8 +122,8 @@ GLuint GlTextureInterface::_getPBO(size_t isize) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::_returnPBO(size_t isize, GLuint pbo) {
-  auto it     = mPBOSets.find(isize);
-  OrkAssert(it!=mPBOSets.end());
+  auto it = mPBOSets.find(isize);
+  OrkAssert(it != mPBOSets.end());
   PboSet* pbs = it->second;
   pbs->free(pbo);
 }
@@ -305,7 +305,7 @@ struct TexSetter {
 
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-        txi->_returnPBO(isiz2,PBOOBJ);
+        txi->_returnPBO(isiz2, PBOOBJ);
         GL_ERRORCHECK();
       } else // not PBO
       {
@@ -386,7 +386,7 @@ struct TexSetter {
 
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-        txi->_returnPBO(isize,PBOOBJ);
+        txi->_returnPBO(isize, PBOOBJ);
 
       }
       /////////////////////////////
@@ -500,8 +500,7 @@ struct TexSetter {
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
         GL_ERRORCHECK();
 
-        txi->_returnPBO(isize,PBOOBJ);
-
+        txi->_returnPBO(isize, PBOOBJ);
       }
       ////////////////////////
 
@@ -729,8 +728,7 @@ void VdsTextureAnimation::UpdateTexture(TextureInterface* txi, lev2::Texture* pt
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-    pgltxi->_returnPBO(miFrameBaseSize,PBOOBJ);
-
+    pgltxi->_returnPBO(miFrameBaseSize, PBOOBJ);
   }
   if (dds::IsDXT5(mpDDSHEADER->ddspf)) {
     /////////////////////////////////////////////////
@@ -770,7 +768,7 @@ void VdsTextureAnimation::UpdateTexture(TextureInterface* txi, lev2::Texture* pt
     ////////////////////////
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-    pgltxi->_returnPBO(miFrameBaseSize,PBOOBJ);
+    pgltxi->_returnPBO(miFrameBaseSize, PBOOBJ);
   }
 }
 float VdsTextureAnimation::GetLengthOfTime() const {
@@ -1255,7 +1253,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tid._w, tid._h, format, type, nullptr);
   ///////////////////////////////////
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0); // unbind pbo
-  this->_returnPBO(length,PBOOBJ);
+  this->_returnPBO(length, PBOOBJ);
   ///////////////////////////////////
 
   ptex->_width     = tid._w;
@@ -1268,9 +1266,11 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  if( size_or_fmt_dirty ){
+  if (tid._autogenmips)
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+  if (size_or_fmt_dirty) {
     if (tid._autogenmips) {
-      glGenerateMipmap(GL_TEXTURE_2D);
       glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
       glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 3);
     } else {

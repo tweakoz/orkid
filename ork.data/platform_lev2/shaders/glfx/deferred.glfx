@@ -141,7 +141,8 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
   }
   /////////////////////////////////////////////////////////
   vec3 gammaCorrect(vec3 inp){
-    return pow(inp, vec3(1.0/1.6));
+    return inp;
+    //return pow(inp, vec3(1.0/1.6));
   }
   /////////////////////////////////////////////////////////
   vec3 baselighting(WPosData wpd) {
@@ -373,7 +374,6 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       vec3 diffuse = basecolor*diffuse_light*dialetric*ambocc;//*invF;
       if( rawn==vec3(0,0,0) )
         diffuse = basecolor;
-
       /////////////////////////
       float spec_miplevel = clamp(EnvironmentMipBias + (roughness * EnvironmentMipScale), 0, 10);
       refl = vec3(refl.x,-refl.y,refl.z);
