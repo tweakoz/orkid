@@ -1230,7 +1230,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       break;
     }
     case EBUFFMT_RGBA16F: {
-      internalformat = GL_RGBA16F_ARB;
+      internalformat = GL_RGBA16F;
       format         = GL_RGBA;
       type           = GL_HALF_FLOAT;
       break;
