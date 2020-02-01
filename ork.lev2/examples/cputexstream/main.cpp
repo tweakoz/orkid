@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
   const FxShaderParam* fxparameterMVP  = nullptr;
   const FxShaderParam* fxparameterTexture = nullptr;
   auto texture = new Texture;
-  constexpr int DIM = 2048;
+  constexpr int DIM = 1024;
   auto texturedata = std::make_shared<std::vector<float>>();
   texturedata->resize(DIM*DIM*4);
   texture->_debugName = "cpugeneratedtexture";
@@ -100,9 +100,11 @@ int main(int argc, char** argv) {
 
     if( timer.SecsSinceStart()>5.0f ){
       float FPS = float(framecounter)/timer.SecsSinceStart();
-      float MPPS = float(DIM*DIM)/1e6;
-      deco::printf( fvec3::White(), "FPS<%g> ", FPS);
-      deco::printf( fvec3::Magenta(), "MPPS<%g>\n", MPPS);
+      float MPPS = FPS*float(DIM*DIM)/1e6;
+      float MiBPPS = FPS*float(DIM*DIM*16)/float(1<<20);
+      deco::printf( fvec3::White(), "Frames/Sec<%g> ", FPS);
+      deco::printf( fvec3::Magenta(), "MPIX/Sec<%g> ", MPPS);
+      deco::printf( fvec3::Yellow(), "MiB/Sec<%g>\n", MiBPPS);
       timer.Start();
       framecounter = 0;
     }

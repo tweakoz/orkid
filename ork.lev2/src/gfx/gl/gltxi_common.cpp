@@ -29,8 +29,7 @@ GLTextureObject::GLTextureObject()
     : mObject(0)
     , mFbo(0)
     , mDbo(0)
-    , mTarget(GL_NONE)
-{
+    , mTarget(GL_NONE) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1166,28 +1165,49 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   glBindTexture(GL_TEXTURE_2D, pTEXOBJ->mObject);
 
-  bool size_or_fmt_dirty = (ptex->_width!=tid._w) or (ptex->_height!=tid._h) or (ptex->_texFormat!=tid._format);
+  bool size_or_fmt_dirty = (ptex->_width != tid._w) or
+                           (ptex->_height != tid._h) or
+                           (ptex->_texFormat != tid._format);
 
   switch (tid._format) {
-    case EBUFFMT_RGBA8:
-      if(size_or_fmt_dirty)
+    case EBUFFMT_RGBA8: {
+      int size   = tid._w * tid._h * 16;
+      GLuint PBOOBJ = GetPBO(size);
+      if (size_or_fmt_dirty)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, tid._w, tid._h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tid._data);
       else
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0,0, tid._w, tid._h, GL_RGBA, GL_UNSIGNED_BYTE, tid._data);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tid._w, tid._h, GL_RGBA, GL_UNSIGNED_BYTE, tid._data);
       // printf( "tex<%p:%s> updatedata<%p>\n", ptex, ptex->_debugName.c_str(), tid._data);
       break;
-    default:
-      if(size_or_fmt_dirty)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, tid._w, tid._h, 0, GL_RGBA, GL_FLOAT, tid._data);
-      else
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tid._w, tid._h, GL_RGBA, GL_FLOAT, tid._data);
+    }
+    default: {
+      if (size_or_fmt_dirty) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, tid._w, tid._h, 0, GL_RGBA, GL_FLOAT, nullptr);
+      } else {
+        int size   = tid._w * tid._h * 16;
+        GLuint PBOOBJ = GetPBO(size);
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
+        GL_ERRORCHECK();
+        u32 map_flags = GL_MAP_WRITE_BIT;
+        map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
+        map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
+        void* pgfxmem = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, size, map_flags);
+        // printf( "UPDATE IMAGE UNC imip<%d> iw<%d> ih<%d> isiz<%d> pbo<%d> mem<%p>\n", imip, iw, ih, isiz2, PBOOBJ, pgfxmem );
+        memcpy(pgfxmem, tid._data, size);
+        glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+        GL_ERRORCHECK();
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tid._w, tid._h, GL_RGBA, GL_FLOAT, nullptr);
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+        GL_ERRORCHECK();
+      }
       break;
+    }
   }
 
   ///////////////////////////////////
 
-  ptex->_width = tid._w;
-  ptex->_height = tid._h;
+  ptex->_width     = tid._w;
+  ptex->_height    = tid._h;
   ptex->_texFormat = tid._format;
 
   ///////////////////////////////////
