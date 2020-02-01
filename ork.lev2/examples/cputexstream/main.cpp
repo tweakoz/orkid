@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
   const FxShaderParam* fxparameterMVP  = nullptr;
   const FxShaderParam* fxparameterTexture = nullptr;
   auto texture = new Texture;
-  constexpr int DIM = 1024;
+  constexpr int DIM = 2048;
   auto texturedata = std::make_shared<std::vector<float>>();
   texturedata->resize(DIM*DIM*4);
   texture->_debugName = "cpugeneratedtexture";

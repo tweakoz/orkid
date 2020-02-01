@@ -10,6 +10,9 @@ struct MipChainLevel;
 struct MipChain;
 
 struct TextureInitData {
+
+  size_t computeSize() const;
+
   int _w = 0;
   int _h = 0;
   EBufferFormat _format = EBUFFMT_END;

@@ -231,6 +231,8 @@ protected:
 
 struct GLTextureObject;
 
+///////////////////////////////////////////////////////////////////////////////
+
 class VdsTextureAnimation : public TextureAnimationBase {
 public:
   VdsTextureAnimation(const AssetPath& pth);
@@ -269,17 +271,20 @@ struct GLTextureObject {
 
 };
 
-class PboSet {
-public:
-  PboSet(int isize);
-  ~PboSet();
-  GLuint Get();
+///////////////////////////////////////////////////////////////////////////////
 
-private:
-  static const int knumpbos = 1;
-  GLuint mPBOS[knumpbos];
-  int miCurIndex;
+struct PboSet {
+
+  PboSet(size_t size);
+  ~PboSet();
+  GLuint alloc();
+  void free(GLuint pbo);
+  std::set<GLuint> _pbos;
+  std::set<GLuint> _pbos_perm;
+  const size_t _size;
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct GlTexLoadReq {
   Texture* ptex = nullptr;
@@ -288,6 +293,8 @@ struct GlTexLoadReq {
   std::string _texname;
   DataBlockInputStream _inpstream;
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 class GlTextureInterface : public TextureInterface {
 public:
@@ -299,7 +306,8 @@ public:
   bool LoadVDSTexture(const AssetPath& fname, Texture* ptex);
   bool LoadQTZTexture(const AssetPath& fname, Texture* ptex);
 
-  GLuint GetPBO(int isize);
+  GLuint _getPBO(size_t isize);
+  void _returnPBO(size_t isize,GLuint pbo);
 
   GlTextureInterface(ContextGL& tgt);
 
@@ -314,7 +322,7 @@ private:
   void generateMipMaps(Texture* ptex) final;
   Texture* createFromMipChain(MipChain* from_chain) final;
 
-  std::map<int, PboSet*> mPBOSets;
+  std::map<size_t, PboSet*> mPBOSets;
   ContextGL& mTargetGL;
 };
 

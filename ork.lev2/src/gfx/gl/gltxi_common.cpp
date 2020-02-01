@@ -63,29 +63,50 @@ void GlTextureInterface::TexManInit(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PboSet::PboSet(int isize)
-    : miCurIndex(0) {
-  GL_ERRORCHECK();
-  glGenBuffers(knumpbos, mPBOS);
-  GL_ERRORCHECK();
+PboSet::PboSet(size_t size)
+    : _size(size) {
+}
 
-  for (int i = 0; i < knumpbos; i++) {
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, mPBOS[i]);
+///////////////////////////////////////////////////////////////////////////////
+
+PboSet::~PboSet() {
+  for (GLuint item : _pbos_perm) {
+    glDeleteBuffers(1, &item);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+GLuint PboSet::alloc() {
+  GLuint rval = 0xffffffff;
+  auto it = _pbos.begin();
+  if (it==_pbos.end()) {
     GL_ERRORCHECK();
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, isize, NULL, GL_DYNAMIC_DRAW);
+    glGenBuffers(1, &rval);
+    GL_ERRORCHECK();
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, rval);
+    GL_ERRORCHECK();
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, _size, NULL, GL_DYNAMIC_DRAW);
     GL_ERRORCHECK();
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     GL_ERRORCHECK();
+    _pbos_perm.insert(rval);
+  } else {
+    rval    = *it;
+    _pbos.erase(it);
   }
-}
-PboSet::~PboSet() {
-}
-GLuint PboSet::Get() {
-  GLuint rval = mPBOS[miCurIndex];
-  miCurIndex  = (miCurIndex + 1) % knumpbos;
   return rval;
 }
-GLuint GlTextureInterface::GetPBO(int isize) {
+
+///////////////////////////////////////////////////////////////////////////////
+
+void PboSet::free(GLuint item) {
+  _pbos.insert(item);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+GLuint GlTextureInterface::_getPBO(size_t isize) {
   PboSet* pbs = 0;
   auto it     = mPBOSets.find(isize);
   if (it == mPBOSets.end()) {
@@ -94,7 +115,16 @@ GLuint GlTextureInterface::GetPBO(int isize) {
   } else {
     pbs = it->second;
   }
-  return pbs->Get();
+  return pbs->alloc();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void GlTextureInterface::_returnPBO(size_t isize, GLuint pbo) {
+  auto it     = mPBOSets.find(isize);
+  OrkAssert(it!=mPBOSets.end());
+  PboSet* pbs = it->second;
+  pbs->free(pbo);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -244,7 +274,7 @@ struct TexSetter {
         // imgdata->PBO
         /////////////////////////////
 
-        const GLuint PBOOBJ = txi->GetPBO(isiz2);
+        const GLuint PBOOBJ = txi->_getPBO(isiz2);
 
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
         GL_ERRORCHECK();
@@ -274,6 +304,7 @@ struct TexSetter {
 
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
+        txi->_returnPBO(isiz2,PBOOBJ);
         GL_ERRORCHECK();
       } else // not PBO
       {
@@ -333,7 +364,7 @@ struct TexSetter {
       if (bUSEPBO) {
         glTexImage3D(tgt, imip, tc.mInternalFormat, iw, ih, id, 0, tc.mFormat, typ, 0);
 
-        const GLuint PBOOBJ = txi->GetPBO(isize);
+        const GLuint PBOOBJ = txi->_getPBO(isize);
 
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
         void* pgfxmem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
@@ -353,6 +384,9 @@ struct TexSetter {
         ////////////////////////
 
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+        txi->_returnPBO(isize,PBOOBJ);
+
       }
       /////////////////////////////
       else {
@@ -427,7 +461,7 @@ struct TexSetter {
 
         // printf( "UPDATE IMAGE  S3TC\n" );
 
-        const GLuint PBOOBJ = txi->GetPBO(isize);
+        const GLuint PBOOBJ = txi->_getPBO(isize);
 
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
         GL_ERRORCHECK();
@@ -464,6 +498,9 @@ struct TexSetter {
 
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
         GL_ERRORCHECK();
+
+        txi->_returnPBO(isize,PBOOBJ);
+
       }
       ////////////////////////
 
@@ -671,7 +708,7 @@ void VdsTextureAnimation::UpdateTexture(TextureInterface* txi, lev2::Texture* pt
 
     // printf( "UPDATE IMAGE UNC iw<%d> ih<%d> to<%d>\n", miW, miH, int(pTEXOBJ->mObject) );
 
-    const GLuint PBOOBJ = pgltxi->GetPBO(miFrameBaseSize);
+    const GLuint PBOOBJ = pgltxi->_getPBO(miFrameBaseSize);
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
     void* pgfxmem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
@@ -690,6 +727,9 @@ void VdsTextureAnimation::UpdateTexture(TextureInterface* txi, lev2::Texture* pt
     ////////////////////////
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+    pgltxi->_returnPBO(miFrameBaseSize,PBOOBJ);
+
   }
   if (dds::IsDXT5(mpDDSHEADER->ddspf)) {
     /////////////////////////////////////////////////
@@ -710,7 +750,7 @@ void VdsTextureAnimation::UpdateTexture(TextureInterface* txi, lev2::Texture* pt
 
     // printf( "UPDATE IMAGE UNC iw<%d> ih<%d> to<%d>\n", miW, miH, int(pTEXOBJ->mObject) );
 
-    const GLuint PBOOBJ = pgltxi->GetPBO(miFrameBaseSize);
+    const GLuint PBOOBJ = pgltxi->_getPBO(miFrameBaseSize);
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
     void* pgfxmem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
@@ -729,6 +769,7 @@ void VdsTextureAnimation::UpdateTexture(TextureInterface* txi, lev2::Texture* pt
     ////////////////////////
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+    pgltxi->_returnPBO(miFrameBaseSize,PBOOBJ);
   }
 }
 float VdsTextureAnimation::GetLengthOfTime() const {
@@ -954,7 +995,6 @@ bool GlTextureInterface::LoadTexture(Texture* ptex, datablockptr_t datablock) {
 }
 
 bool GlTextureInterface::LoadDDSTexture(Texture* ptex, datablockptr_t datablock) {
-
   GlTexLoadReq load_req;
   load_req.ptex                  = ptex;
   load_req._inpstream._datablock = datablock;
@@ -1140,7 +1180,6 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
 }
 
 void GlTextureInterface::generateMipMaps(Texture* ptex) {
-
   auto plattex = (GLTextureObject*)ptex->_internalHandle;
   glBindTexture(GL_TEXTURE_2D, plattex->mObject);
   glGenerateMipmap(GL_TEXTURE_2D);
@@ -1155,7 +1194,6 @@ void GlTextureInterface::generateMipMaps(Texture* ptex) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
-
   if (nullptr == ptex->_internalHandle) {
     auto texobj           = new GLTextureObject;
     ptex->_internalHandle = (void*)texobj;
@@ -1165,45 +1203,58 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   glBindTexture(GL_TEXTURE_2D, pTEXOBJ->mObject);
 
-  bool size_or_fmt_dirty = (ptex->_width != tid._w) or
-                           (ptex->_height != tid._h) or
-                           (ptex->_texFormat != tid._format);
+  bool size_or_fmt_dirty = (ptex->_width != tid._w) or (ptex->_height != tid._h) or (ptex->_texFormat != tid._format);
 
+  ///////////////////////////////////
+
+  size_t length = tid.computeSize();
+  // printf( "UPDATE IMAGE UNC imip<%d> iw<%d> ih<%d> isiz<%d> pbo<%d> mem<%p>\n", imip, iw, ih, isiz2, PBOOBJ, pgfxmem );
+  GLuint PBOOBJ = this->_getPBO(length);
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
+  GL_ERRORCHECK();
+  u32 map_flags = GL_MAP_WRITE_BIT;
+  map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
+  map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
+  void* pgfxmem = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, length, map_flags);
+  memcpy(pgfxmem, tid._data, length);
+  glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+  GL_ERRORCHECK();
+
+  ///////////////////////////////////
+  GLenum internalformat, format, type;
   switch (tid._format) {
     case EBUFFMT_RGBA8: {
-      int size   = tid._w * tid._h * 16;
-      GLuint PBOOBJ = GetPBO(size);
-      if (size_or_fmt_dirty)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, tid._w, tid._h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tid._data);
-      else
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tid._w, tid._h, GL_RGBA, GL_UNSIGNED_BYTE, tid._data);
-      // printf( "tex<%p:%s> updatedata<%p>\n", ptex, ptex->_debugName.c_str(), tid._data);
+      internalformat = GL_RGBA8;
+      format         = GL_RGBA;
+      type           = GL_UNSIGNED_BYTE;
       break;
     }
-    default: {
-      if (size_or_fmt_dirty) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, tid._w, tid._h, 0, GL_RGBA, GL_FLOAT, nullptr);
-      } else {
-        int size   = tid._w * tid._h * 16;
-        GLuint PBOOBJ = GetPBO(size);
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
-        GL_ERRORCHECK();
-        u32 map_flags = GL_MAP_WRITE_BIT;
-        map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
-        map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
-        void* pgfxmem = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, size, map_flags);
-        // printf( "UPDATE IMAGE UNC imip<%d> iw<%d> ih<%d> isiz<%d> pbo<%d> mem<%p>\n", imip, iw, ih, isiz2, PBOOBJ, pgfxmem );
-        memcpy(pgfxmem, tid._data, size);
-        glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-        GL_ERRORCHECK();
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tid._w, tid._h, GL_RGBA, GL_FLOAT, nullptr);
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-        GL_ERRORCHECK();
-      }
+    case EBUFFMT_RGBA16F: {
+      internalformat = GL_RGBA16F_ARB;
+      format         = GL_RGBA;
+      type           = GL_HALF_FLOAT;
       break;
     }
+    case EBUFFMT_RGBA32F: {
+      internalformat = GL_RGBA32F;
+      format         = GL_RGBA;
+      type           = GL_FLOAT;
+      break;
+    }
+    default:
+      OrkAssert(false);
+      break;
   }
-
+  ///////////////////////////////////
+  // update texels
+  ///////////////////////////////////
+  if (size_or_fmt_dirty)
+    glTexImage2D(GL_TEXTURE_2D, 0, internalformat, tid._w, tid._h, 0, format, type, nullptr);
+  else
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tid._w, tid._h, format, type, nullptr);
+  ///////////////////////////////////
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0); // unbind pbo
+  this->_returnPBO(length,PBOOBJ);
   ///////////////////////////////////
 
   ptex->_width     = tid._w;
@@ -1211,18 +1262,24 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   ptex->_texFormat = tid._format;
 
   ///////////////////////////////////
+  // update texture parameters
+  ///////////////////////////////////
 
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  if (tid._autogenmips) {
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 3);
-  } else {
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+  if( size_or_fmt_dirty ){
+    if (tid._autogenmips) {
+      glGenerateMipmap(GL_TEXTURE_2D);
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 3);
+    } else {
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    }
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   }
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+  ///////////////////////////////////
 
   glBindTexture(GL_TEXTURE_2D, 0);
 }
