@@ -13,7 +13,7 @@ add_executable (ork.core.test.exe ${testsrcs} )
 
 target_link_libraries(ork.core.test.exe LINK_PRIVATE ork_utpp )
 target_link_libraries(ork.core.test.exe LINK_PRIVATE ork_core )
-target_link_libraries(ork.core.test.exe LINK_PRIVATE boost_filesystem )
+target_link_libraries(ork.core.test.exe LINK_PRIVATE boost_filesystem boost_system )
 
 set_target_properties(ork.core.test.exe PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories (ork.core.test.exe PRIVATE ${ORKROOT}/ork.core/inc )
