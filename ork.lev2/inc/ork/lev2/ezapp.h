@@ -74,6 +74,9 @@ public:
   void onResize(EzMainWin::onresizecb_t cb);
   void onGpuInit(EzMainWin::ongpuinit_t cb);
   void onUiEvent(EzMainWin::onuieventcb_t cb);
+  void setRefreshPolicy(RefreshPolicyItem policy);
+
+  int runloop();
 
 public slots:
   void OnTimer();

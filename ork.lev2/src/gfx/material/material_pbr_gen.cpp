@@ -40,9 +40,6 @@ Texture* PBRMaterial::brdfIntegrationMap(Context* targ) {
     _map              = new lev2::Texture;
     _map->_debugName  = "brdfIntegrationMap";
     constexpr int DIM = 1024;
-    _map->_width      = DIM;
-    _map->_height     = DIM;
-    _map->_texFormat  = EBUFFMT_RGBA32F;
 
     ///////////////////////////////
     // dblock cache
@@ -85,8 +82,6 @@ Texture* PBRMaterial::brdfIntegrationMap(Context* targ) {
       DataBlockCache::setDataBlock(brdfhash, dblock);
     }
 
-    _map->_data = dblock->data();
-
     ///////////////////////////////
     // verify (debug)
     ///////////////////////////////
@@ -103,7 +98,14 @@ Texture* PBRMaterial::brdfIntegrationMap(Context* targ) {
 
     ///////////////////////////////
 
-    targ->TXI()->initTextureFromData(_map, true);
+    TextureInitData tid;
+    tid._w = DIM;
+    tid._h = DIM;
+    tid._format = EBUFFMT_RGBA32F;
+    tid._autogenmips = true;
+    tid._data =  dblock->data();
+
+    targ->TXI()->initTextureFromData(_map, tid);
   }
   return _map;
 }

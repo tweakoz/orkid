@@ -25,6 +25,14 @@ static const uint16_t kRGBA_DXT1 = 0x83F1;
 static const uint16_t kRGBA_DXT3 = 0x83F2;
 static const uint16_t kRGBA_DXT5 = 0x83F3;
 
+GLTextureObject::GLTextureObject()
+    : mObject(0)
+    , mFbo(0)
+    , mDbo(0)
+    , mTarget(GL_NONE)
+{
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 GlTextureInterface::GlTextureInterface(ContextGL& tgt)
@@ -1147,7 +1155,7 @@ void GlTextureInterface::generateMipMaps(Texture* ptex) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlTextureInterface::initTextureFromData(Texture* ptex, bool autogenmips) {
+void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
 
   if (nullptr == ptex->_internalHandle) {
     auto texobj           = new GLTextureObject;
@@ -1158,19 +1166,35 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, bool autogenmips) {
 
   glBindTexture(GL_TEXTURE_2D, pTEXOBJ->mObject);
 
-  switch (ptex->_texFormat) {
+  bool size_or_fmt_dirty = (ptex->_width!=tid._w) or (ptex->_height!=tid._h) or (ptex->_texFormat!=tid._format);
+
+  switch (tid._format) {
     case EBUFFMT_RGBA8:
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, ptex->_width, ptex->_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex->_data);
-      // printf( "tex<%p:%s> updatedata<%p>\n", ptex, ptex->_debugName.c_str(), ptex->_data);
+      if(size_or_fmt_dirty)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, tid._w, tid._h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tid._data);
+      else
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0,0, tid._w, tid._h, GL_RGBA, GL_UNSIGNED_BYTE, tid._data);
+      // printf( "tex<%p:%s> updatedata<%p>\n", ptex, ptex->_debugName.c_str(), tid._data);
       break;
     default:
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, ptex->_width, ptex->_height, 0, GL_RGBA, GL_FLOAT, ptex->_data);
+      if(size_or_fmt_dirty)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, tid._w, tid._h, 0, GL_RGBA, GL_FLOAT, tid._data);
+      else
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tid._w, tid._h, GL_RGBA, GL_FLOAT, tid._data);
       break;
   }
 
+  ///////////////////////////////////
+
+  ptex->_width = tid._w;
+  ptex->_height = tid._h;
+  ptex->_texFormat = tid._format;
+
+  ///////////////////////////////////
+
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  if (autogenmips) {
+  if (tid._autogenmips) {
     glGenerateMipmap(GL_TEXTURE_2D);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 3);

@@ -9,6 +9,14 @@
 struct MipChainLevel;
 struct MipChain;
 
+struct TextureInitData {
+  int _w = 0;
+  int _h = 0;
+  EBufferFormat _format = EBUFFMT_END;
+  bool _autogenmips = false;
+  const void* _data = nullptr;
+};
+
 class TextureInterface {
 public:
   virtual void TexManInit(void) = 0;
@@ -19,7 +27,7 @@ public:
   virtual void SaveTexture(const ork::AssetPath& fname, Texture* ptex) = 0;
   virtual void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) {}
   virtual void ApplySamplingMode(Texture* ptex) {}
-  virtual void initTextureFromData(Texture* ptex, bool autogenmips) {}
+  virtual void initTextureFromData(Texture* ptex, TextureInitData tid) {}
   virtual Texture* createFromMipChain(MipChain* from_chain) { return nullptr; }
   virtual void generateMipMaps(Texture* ptex) = 0;
 

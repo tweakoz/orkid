@@ -1,34 +1,22 @@
-project (ork_test CXX)
+cmake_minimum_required (VERSION 3.13.4)
+set( CMAKE_MODULE_PATH $ENV{ORKID_WORKSPACE_DIR} )
+include(orkid)
+project (ork.core.test CXX)
 
-set( INCD ${CMAKE_CURRENT_SOURCE_DIR}/../inc )
-
-link_directories(${CMAKE_INSTALL_PREFIX}/lib)
-set( destbin $ENV{ORKDOTBUILD_STAGE_DIR}/bin/ )
-set( destlib $ENV{ORKDOTBUILD_STAGE_DIR}/lib/ )
-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
-if(${APPLE})
-set(CMAKE_MACOSX_RPATH 1)
-include_directories(AFTER /usr/local/include)
-endif()
 include_directories(AFTER ${CMAKE_INSTALL_PREFIX}/include)
 
-
+set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/../src )
 message(${proj_unittestpp_SOURCE_DIR}/src )
 set( TESTSRCD ${CMAKE_CURRENT_SOURCE_DIR} )
 file(GLOB testsrcs ${TESTSRCD}/*.cpp)
-add_executable (ork.core.test ${testsrcs} )
+add_executable (ork.core.test.exe ${testsrcs} )
 
-target_link_libraries(ork.core.test LINK_PRIVATE ork_utpp )
-target_link_libraries(ork.core.test LINK_PRIVATE ork_core )
-target_link_libraries(ork.core.test LINK_PRIVATE boost_filesystem boost_system)
+target_link_libraries(ork.core.test.exe LINK_PRIVATE ork_utpp )
+target_link_libraries(ork.core.test.exe LINK_PRIVATE ork_core )
+target_link_libraries(ork.core.test.exe LINK_PRIVATE boost_filesystem )
 
-set_target_properties(ork.core.test PROPERTIES LINKER_LANGUAGE CXX)
-target_include_directories (ork.core.test PRIVATE ${INCD} )
+set_target_properties(ork.core.test.exe PROPERTIES LINKER_LANGUAGE CXX)
+target_include_directories (ork.core.test.exe PRIVATE ${ORKROOT}/ork.core/inc )
+target_include_directories (ork.core.test.exe PRIVATE ${SRCD} )
 
-install(TARGETS ork.core.test DESTINATION $ENV{OBT_STAGE}/bin )
-
-# copy to staging bin folder (so we can run without installing)
-#add_custom_command(TARGET ork_test POST_BUILD
-#                   COMMAND ${CMAKE_COMMAND} -E copy
-#                   $<TARGET_FILE:ork_test> ${destbin} )
+install(TARGETS ork.core.test.exe DESTINATION $ENV{OBT_STAGE}/bin )

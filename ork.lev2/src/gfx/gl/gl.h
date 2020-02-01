@@ -258,17 +258,15 @@ private:
 };
 
 struct GLTextureObject {
+
+  GLTextureObject();
+
   GLuint mObject;
   GLuint mFbo;
   GLuint mDbo;
   GLenum mTarget;
   int _maxmip = 0;
 
-  GLTextureObject()
-      : mObject(0)
-      , mFbo(0)
-      , mDbo(0)
-      , mTarget(GL_NONE) {} //, mfQtzTime(0.0f) {}
 };
 
 class PboSet {
@@ -312,7 +310,7 @@ private:
   void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final;
   void ApplySamplingMode(Texture* ptex) final;
   void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) final;
-  void initTextureFromData(Texture* ptex, bool autogenmips) final;
+  void initTextureFromData(Texture* ptex, TextureInitData tid) final;
   void generateMipMaps(Texture* ptex) final;
   Texture* createFromMipChain(MipChain* from_chain) final;
 

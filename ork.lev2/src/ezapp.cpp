@@ -168,6 +168,14 @@ filedevctxptr_t OrkEzQtApp::newFileDevContext(std::string uribase) {
   return ctx;
 }
 
+int OrkEzQtApp::runloop(){
+  return exec();
+}
+
+void OrkEzQtApp::setRefreshPolicy(RefreshPolicyItem policy) {
+  _mainWindow->_ctqt->_setRefreshPolicy(policy);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 EzMainWin::EzMainWin()
