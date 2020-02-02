@@ -49,7 +49,7 @@ void EzUiCam::Describe() {
   ork::reflect::annotatePropertyForEditor<EzUiCam>("MaxFar", "editor.range.max", "100000.0f");
 
   ork::reflect::RegisterProperty("MinNear", &EzUiCam::near_min);
-  ork::reflect::annotatePropertyForEditor<EzUiCam>("MinNear", "editor.range.min", "0.1f");
+  ork::reflect::annotatePropertyForEditor<EzUiCam>("MinNear", "editor.range.min", "0.01f");
   ork::reflect::annotatePropertyForEditor<EzUiCam>("MinNear", "editor.range.max", "10000.0f");
 
   // temporary until old mox files converted
@@ -62,7 +62,7 @@ EzUiCam::EzUiCam()
     : UiCamera()
     , aper(40.0f)
     , far_max(10000.0f)
-    , near_min(0.1f)
+    , near_min(0.01f)
     , tx(0.0f)
     , ty(0.0f)
     , tz(0.0f)
@@ -98,7 +98,7 @@ void EzUiCam::draw(Context* pT) {
     pT->PushModColor(fcolor4::Black());
     ork::lev2::FontMan::PushFont("i14");
     FontMan::BeginTextBlock(pT);
-    FontMan::DrawText(pT, 41, 9, "CamFocus %f %f %f", mvCenter.GetX(), mvCenter.GetY(), mvCenter.GetZ());
+    FontMan::DrawText(pT, 41, 9, "Center %f %f %f", mvCenter.GetX(), mvCenter.GetY(), mvCenter.GetZ());
     FontMan::DrawText(pT, 41, 21, "CamLoc   %f %f %f", CamLoc.GetX(), CamLoc.GetY(), CamLoc.GetZ());
     FontMan::DrawText(pT, 41, 33, "zf %f", (_camcamdata.GetFar()));
     FontMan::DrawText(pT, 41, 45, "zn %f", (_camcamdata.GetNear()));
@@ -112,7 +112,7 @@ void EzUiCam::draw(Context* pT) {
 
     pT->PushModColor(fcolor4::Yellow());
     FontMan::BeginTextBlock(pT);
-    FontMan::DrawText(pT, 41, 9, "CamFocus %f %f %f", mvCenter.GetX(), mvCenter.GetY(), mvCenter.GetZ());
+    FontMan::DrawText(pT, 41, 9, "Center %f %f %f", mvCenter.GetX(), mvCenter.GetY(), mvCenter.GetZ());
     FontMan::DrawText(pT, 41, 21, "CamLoc   %f %f %f", CamLoc.GetX(), CamLoc.GetY(), CamLoc.GetZ());
     FontMan::DrawText(pT, 41, 33, "zf %f", (_camcamdata.GetFar()));
     FontMan::DrawText(pT, 41, 45, "zn %f", (_camcamdata.GetNear()));
@@ -144,7 +144,6 @@ void EzUiCam::draw(Context* pT) {
     }
     pT->MTXI()->PopMMatrix();
     ///////////////////////////////
-    MatT.SetTranslation(CamFocus);
     pT->MTXI()->PushMMatrix(MatT);
     { GfxPrimitives::GetRef().RenderTriCircle(pT); }
     pT->MTXI()->PopMMatrix();
@@ -568,7 +567,7 @@ void EzUiCam::updateMatrices(void) {
   float flerpidx    = (flog10 + 1.0f) / 6.0f;
   float finvlerpidx = float(1.0f) - flerpidx;
 
-  float neardiv = (0.5f * finvlerpidx + 100.0f) * flerpidx;
+  float neardiv = (0.5f * finvlerpidx + 1000.0f) * flerpidx;
   float farmul  = (500.0f * finvlerpidx + 0.5f) * flerpidx;
 
   float fnear = mfLoc / neardiv;
@@ -595,7 +594,11 @@ void EzUiCam::updateMatrices(void) {
   _camcamdata.Persp(fnear, ffar, aper);
   _camcamdata.Lookat(veye, vtarget, vup);
 
-  // printf("near<%g> far<%g>\n", fnear, ffar);
+  // printf("near<%g> far<%g> mfLoc<%g>\n", fnear, ffar, mfLoc);
+  // printf("mvCenter<%g %g %g>\n", mvCenter.x, mvCenter.y, mvCenter.z);
+  // printf("veye<%g %g %g>\n", veye.x, veye.y, veye.z);
+  // printf("vtarget<%g %g %g>\n", vtarget.x, vtarget.y, vtarget.z);
+  // printf("vup<%g %g %g>\n", vup.x, vup.y, vup.z);
 
   ///////////////////////////////////////////////////////////////
   // CameraMatrices ctx = _camcamdata.computeMatrices(ctx);

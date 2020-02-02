@@ -19,7 +19,6 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 void UiCamera::Describe() {
-  ork::reflect::RegisterProperty("Focus", &UiCamera::CamFocus);
   ork::reflect::RegisterProperty("Center", &UiCamera::mvCenter);
   ork::reflect::RegisterProperty("Loc", &UiCamera::mfLoc);
   ork::reflect::RegisterProperty("QuatC", &UiCamera::QuatC);
@@ -31,8 +30,7 @@ void UiCamera::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 
 UiCamera::UiCamera()
-    : CamFocus(0.0f, 0.0f, 0.0f)
-    , mfLoc(3.0f)
+    : mfLoc(3.0f)
     , mvCenter(0.0f, 0.0, 0.0f)
     , QuatC(0.0f, -1.0f, 0.0f, 0.0f)
     , locscale(1.0f)
@@ -142,10 +140,10 @@ void UiCamera::CommonPostSetup(void) {
   auto v3rt = vec_billboardRight.xyz();
   auto v3in = v3up.Cross(v3rt);
 
-  //printf( "CPS: aspect<%g>\n", aspect );
-  //printf( "CPS: v3up<%g %g %g>\n", v3up.x, v3up.y, v3up.z );
-  //printf( "CPS: v3rt<%g %g %g>\n", v3rt.x, v3rt.y, v3rt.z );
-  //printf( "CPS: v3in<%g %g %g>\n", v3in.x, v3in.y, v3in.z );
+  // printf( "CPS: aspect<%g>\n", aspect );
+  // printf( "CPS: v3up<%g %g %g>\n", v3up.x, v3up.y, v3up.z );
+  // printf( "CPS: v3rt<%g %g %g>\n", v3rt.x, v3rt.y, v3rt.z );
+  // printf( "CPS: v3in<%g %g %g>\n", v3in.x, v3in.y, v3in.z );
 
   ///////////////////////////////
   // generate frustum (useful for many things, like billboarding, clipping, LOD, etc.. )
@@ -162,6 +160,8 @@ void UiCamera::CommonPostSetup(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float UiCamera::ViewLengthToWorldLength(const fvec4& pos, float ViewLength) { return float(0.0f); }
+float UiCamera::ViewLengthToWorldLength(const fvec4& pos, float ViewLength) {
+  return float(0.0f);
+}
 
 }} // namespace ork::lev2

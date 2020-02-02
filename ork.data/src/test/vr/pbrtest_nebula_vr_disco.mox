@@ -12,10 +12,9 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>0.0223915 -4.09865 -4.08188</property>
-                                                <property name='Focus'>0 0 0</property>
+                                                <property name='Center'>-0.204199 -0.426632 -4.45597</property>
                                                 <property name='Loc'>9.52364</property>
-                                                <property name='QuatC'>-0.00327337 -0.989113 0.149695 0.00350903</property>
+                                                <property name='QuatC'>-0.00359205 -0.985146 0.17376 0.00770105</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -258,17 +257,16 @@
                                                     <property name='LightData'>
                                                         <reference category='ObjectClass'>
                                                             <object type='PointLightData' id='29'>
-                                                                <property name='AffectsSpecular'>false</property>
                                                                 <property name='Color'>1000 1000 1000</property>
-                                                                <property name='ShadowBias'>0.2</property>
-                                                                <property name='ShadowBlur'>0</property>
-                                                                <property name='ShadowCaster'>false</property>
-                                                                <property name='ShadowSamples'>1</property>
                                                                 <property name='Cookie'>
                                                                     <reference category='AssetClass'>
                                                                         "lev2tex" "data://effect_textures/NoiseKern"
                                                                     </reference>
                                                                 </property>
+                                                                <property name='ShadowBias'>0.2</property>
+                                                                <property name='ShadowBlur'>0</property>
+                                                                <property name='ShadowCaster'>false</property>
+                                                                <property name='ShadowSamples'>1</property>
                                                                 <property name='Falloff'>1</property>
                                                                 <property name='Radius'>100</property>
                                                             </object>
@@ -561,17 +559,12 @@
                                         <property name='LightData'>
                                             <reference category='ObjectClass'>
                                                 <object type='PointLightData' id='57'>
-                                                    <property name='AffectsSpecular'>false</property>
                                                     <property name='Color'>100 70 0</property>
+                                                    <property name='Cookie'><backreference id='-1'/></property>
                                                     <property name='ShadowBias'>0.2</property>
                                                     <property name='ShadowBlur'>0</property>
                                                     <property name='ShadowCaster'>false</property>
                                                     <property name='ShadowSamples'>1</property>
-                                                    <property name='EquirectMap'>
-                                                        <reference category='AssetClass'>
-                                                            "lev2tex" "data://environ/envmaps/tozenv_caustic1"
-                                                        </reference>
-                                                    </property>
                                                     <property name='Falloff'>1</property>
                                                     <property name='Radius'>300.9</property>
                                                 </object>

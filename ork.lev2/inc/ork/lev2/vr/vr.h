@@ -35,12 +35,12 @@ struct VrProjFrustumPar {
 
   fmtx4 composeProjection() const;
 
-  float _left = -1.0f;
-  float _right = 1.0f;
-  float _top = -1.0f;
+  float _left   = -1.0f;
+  float _right  = 1.0f;
+  float _top    = -1.0f;
   float _bottom = 1.0f;
   float _near   = .1f;
-  float _far = 50000.0f;
+  float _far    = 50000.0f;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,7 +59,7 @@ struct VrTrackingControllerNotificationFrame {
 };
 
 struct VrTrackingNotificationReceiver {
-  typedef std::function<void(const svar256_t &)> callback_t;
+  typedef std::function<void(const svar256_t&)> callback_t;
   callback_t _callback;
 };
 typedef std::shared_ptr<VrTrackingNotificationReceiver> VrTrackingNotificationReceiver_ptr_t;
@@ -73,9 +73,9 @@ struct Device {
   Device();
   virtual ~Device();
   std::map<std::string, fmtx4> _posemap;
-  CameraMatrices* _leftcamera = nullptr;
+  CameraMatrices* _leftcamera   = nullptr;
   CameraMatrices* _centercamera = nullptr;
-  CameraMatrices* _rightcamera = nullptr;
+  CameraMatrices* _rightcamera  = nullptr;
   std::map<int, ControllerState> _controllers;
   bool _active;
   bool _supportsStereo;
@@ -83,6 +83,8 @@ struct Device {
   fmtx4 _headingmatrix;
   fmtx4 _hmdMatrix;
   fmtx4 _rotMatrix;
+  fmtx4 _baseMatrix;
+  fmtx4 _userOffsetMatrix;
 
   VrProjFrustumPar _frustumLeft;
   VrProjFrustumPar _frustumCenter;
@@ -95,6 +97,12 @@ struct Device {
   uint32_t _width, _height;
   void _updatePosesCommon(fmtx4 observermatrix);
   svar512_t _private;
+  int _calibstate;
+  int _calibstateFrame;
+  std::vector<fvec3> _calibposvect;
+  std::vector<fvec3> _calibnxvect;
+  std::vector<fvec3> _calibnyvect;
+  std::vector<fvec3> _calibnzvect;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

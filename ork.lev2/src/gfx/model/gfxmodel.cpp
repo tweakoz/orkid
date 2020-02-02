@@ -52,7 +52,7 @@ XgmModelInst::XgmModelInst(const XgmModel* Model)
     , mMaterialStateInst(*this)
     , mbSkinned(false)
     , mBlenderZup(false)
-    , _drawSkeleton(true) {
+    , _drawSkeleton(false) {
   EnableAllMeshes();
 
   OrkAssert(Model != 0);

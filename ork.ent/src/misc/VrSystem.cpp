@@ -19,6 +19,7 @@
 #include <pkg/ent/scene.hpp>
 #include <pkg/ent/entity.hpp>
 #include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/lev2/vr/vr.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include "VrSystem.h"
 
@@ -76,7 +77,7 @@ void VrSystem::enqueueDrawables(lev2::DrawableBuffer& buffer) {
     //////////////////////////////////////////////////
     // copy vr matrix from updthread to renderthread
     //////////////////////////////////////////////////
-    fmtx4 vrmtx = this->_trackedObject->GetEffectiveMatrix();
+    fmtx4 vrmtx; // = this->_trackedObject->GetEffectiveMatrix();
     buffer.setPreRenderCallback(0, [=](lev2::RenderContextFrameData& RCFD) {
       RCFD.setUserProperty("vrroot"_crc, vrmtx);
       RCFD.setUserProperty("vrcam"_crc, this->_vrCamDat);
@@ -85,10 +86,23 @@ void VrSystem::enqueueDrawables(lev2::DrawableBuffer& buffer) {
 }
 
 bool VrSystem::DoLink(Simulation* psim) {
+
+  lev2::orkidvr::device()._calibstate = 0;
+
   _trackedObject = psim->FindEntity(AddPooledString(_vrSystemData.vrTrackedObject()));
   _vrCamDat      = psim->cameraData(AddPooledString(_vrSystemData.vrCamera()));
   bool good2go   = (_trackedObject != nullptr) and (_vrCamDat != nullptr);
   _vrstate       = int(good2go);
+  if (good2go) {
+    _baseCamDat = *_vrCamDat;
+    auto& uoff  = lev2::orkidvr::device()._userOffsetMatrix;
+    auto cammtx = _baseCamDat.computeMatrices(1);
+
+    fquat r;
+    r.FromAxisAngle(fvec4(0, 1, 0, PI));
+
+    uoff = cammtx._vmatrix * r.ToMatrix();
+  }
   return good2go or (false == enabled());
 }
 

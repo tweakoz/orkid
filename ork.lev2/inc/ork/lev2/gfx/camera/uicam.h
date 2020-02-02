@@ -111,8 +111,6 @@ public:
   fmtx4 clipmatrix;
 
   fvec3 camrayN, camrayF;
-  fvec3 CamFocus, CamFocusZNormal;
-  fvec4 CamFocusYNormal;
   fvec4 CamSet;
   fvec3 CamLoc;
   fvec3 PrevCamLoc;
@@ -132,7 +130,6 @@ public:
 
   bool mbInMotion;
 
-
   //////////////////////////////////////////////////////////////////////////////
 
   bool IsXVertical() const;
@@ -144,25 +141,33 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
-  CameraData& cameraMatrices() { return _camcamdata; }
-  const CameraData& cameraMatrices() const { return _camcamdata; }
+  CameraData& cameraMatrices() {
+    return _camcamdata;
+  }
+  const CameraData& cameraMatrices() const {
+    return _camcamdata;
+  }
 
   //////////////////////////////////////////////////////////////////////////////
 
   virtual bool UIEventHandler(const ui::Event& EV) = 0;
-  virtual void draw(Context* pT) = 0;
+  virtual void draw(Context* pT)                   = 0;
 
   virtual void SetFromWorldSpaceMatrix(const fmtx4&) = 0;
 
-  virtual float ViewLengthToWorldLength(const fvec4& pos, float ViewLength) = 0;
+  virtual float ViewLengthToWorldLength(const fvec4& pos, float ViewLength)                            = 0;
   virtual void GenerateDepthRay(const fvec2& pos2D, fvec3& rayN, fvec3& rayF, const fmtx4& IMat) const = 0;
 
   std::string get_full_name();
 
   void CommonPostSetup(void);
 
-  void SetName(const std::string& Name) { instance_name = Name; }
-  const std::string& GetName() const { return instance_name; }
+  void SetName(const std::string& Name) {
+    instance_name = Name;
+  }
+  const std::string& GetName() const {
+    return instance_name;
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -12,10 +12,9 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>0.0223915 -4.09865 -4.08188</property>
-                                                <property name='Focus'>0 0 0</property>
+                                                <property name='Center'>-0.0213221 -0.698289 -4.22117</property>
                                                 <property name='Loc'>9.52364</property>
-                                                <property name='QuatC'>-0.00327337 -0.989113 0.149695 0.00350903</property>
+                                                <property name='QuatC'>-0.00323024 -0.999348 -0.045515 -0.00148066</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -258,13 +257,12 @@
                                                     <property name='LightData'>
                                                         <reference category='ObjectClass'>
                                                             <object type='PointLightData' id='29'>
-                                                                <property name='AffectsSpecular'>false</property>
                                                                 <property name='Color'>100 100 100</property>
+                                                                <property name='Cookie'><backreference id='-1'/></property>
                                                                 <property name='ShadowBias'>0.2</property>
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>false</property>
                                                                 <property name='ShadowSamples'>1</property>
-                                                                <property name='Cookie'><backreference id='-1'/></property>
                                                                 <property name='Falloff'>1</property>
                                                                 <property name='Radius'>100</property>
                                                             </object>
@@ -390,17 +388,12 @@
                                                     <property name='LightData'>
                                                         <reference category='ObjectClass'>
                                                             <object type='PointLightData' id='43'>
-                                                                <property name='AffectsSpecular'>false</property>
                                                                 <property name='Color'>1000 0 0</property>
+                                                                <property name='Cookie'><backreference id='-1'/></property>
                                                                 <property name='ShadowBias'>0.2</property>
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>false</property>
                                                                 <property name='ShadowSamples'>1</property>
-                                                                <property name='EquirectMap'>
-                                                                    <reference category='AssetClass'>
-                                                                        "lev2tex" "data://particle_textures/skull1"
-                                                                    </reference>
-                                                                </property>
                                                                 <property name='Falloff'>1</property>
                                                                 <property name='Radius'>10</property>
                                                             </object>
@@ -679,17 +672,12 @@
                                         <property name='LightData'>
                                             <reference category='ObjectClass'>
                                                 <object type='PointLightData' id='69'>
-                                                    <property name='AffectsSpecular'>false</property>
                                                     <property name='Color'>100 70 0</property>
+                                                    <property name='Cookie'><backreference id='-1'/></property>
                                                     <property name='ShadowBias'>0.2</property>
                                                     <property name='ShadowBlur'>0</property>
                                                     <property name='ShadowCaster'>false</property>
                                                     <property name='ShadowSamples'>1</property>
-                                                    <property name='EquirectMap'>
-                                                        <reference category='AssetClass'>
-                                                            "lev2tex" "data://environ/envmaps/tozenv_caustic1"
-                                                        </reference>
-                                                    </property>
                                                     <property name='Falloff'>1</property>
                                                     <property name='Radius'>300.9</property>
                                                 </object>

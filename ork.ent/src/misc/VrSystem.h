@@ -61,8 +61,9 @@ private:
   const VrSystemData& _vrSystemData;
   Entity* _trackedObject            = nullptr;
   const lev2::CameraData* _vrCamDat = nullptr; // todo clean this up..
-  int _vrstate                      = 0;
-  int _prv_vrstate                  = 0;
+  lev2::CameraData _baseCamDat;                // todo clean this up..
+  int _vrstate     = 0;
+  int _prv_vrstate = 0;
 
   void DoUpdate(Simulation* psi) final;
 };

@@ -531,8 +531,8 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
   for (int ij = 0; ij < inumj; ij++) {
     fmtx4 MatAnimJCat = localpose.RefLocalMatrix(ij);
     auto InvBind      = mSkeleton.RefInverseBindMatrix(ij);
-    auto finalmtx     = worldmtx * (InvBind * MatAnimJCat);
-    // auto finalmtx      = InvBind;
+    // auto finalmtx     = worldmtx * (InvBind * MatAnimJCat);
+    auto finalmtx      = worldmtx;
     mWorldMatrices[ij] = finalmtx;
   }
 }
