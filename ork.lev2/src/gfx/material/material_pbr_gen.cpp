@@ -99,11 +99,11 @@ Texture* PBRMaterial::brdfIntegrationMap(Context* targ) {
     ///////////////////////////////
 
     TextureInitData tid;
-    tid._w = DIM;
-    tid._h = DIM;
-    tid._format = EBUFFMT_RGBA32F;
+    tid._w           = DIM;
+    tid._h           = DIM;
+    tid._format      = EBUFFMT_RGBA32F;
     tid._autogenmips = true;
-    tid._data =  dblock->data();
+    tid._data        = dblock->data();
 
     targ->TXI()->initTextureFromData(_map, tid);
   }
@@ -152,7 +152,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
   while (numpix != 0) {
 
     auto outgroup = std::make_shared<RtGroup>(targ, w, h, 1);
-    auto outbuffr = std::make_shared<RtBuffer>(outgroup.get(), lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32F, w, h);
+    auto outbuffr = std::make_shared<RtBuffer>(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32F, w, h);
     auto captureb = std::make_shared<CaptureBuffer>();
 
     filtex->_rtgroup     = outgroup;
@@ -257,7 +257,7 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
   while (numpix != 0) {
 
     auto outgroup = std::make_shared<RtGroup>(targ, w, h, 1);
-    auto outbuffr = std::make_shared<RtBuffer>(outgroup.get(), lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32F, w, h);
+    auto outbuffr = std::make_shared<RtBuffer>(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32F, w, h);
     auto captureb = std::make_shared<CaptureBuffer>();
 
     filtex->_rtgroup     = outgroup;

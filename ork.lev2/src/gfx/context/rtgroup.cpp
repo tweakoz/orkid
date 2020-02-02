@@ -15,9 +15,8 @@
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-RtBuffer::RtBuffer(RtGroup* pgroup, ETargetType etype, EBufferFormat efmt, int iW, int iH)
-    : mParentGroup(pgroup)
-    , miW(iW)
+RtBuffer::RtBuffer(ETargetType etype, EBufferFormat efmt, int iW, int iH)
+    : miW(iW)
     , miH(iH)
     , mType(etype)
     , mFormat(efmt)
@@ -59,9 +58,6 @@ void RtGroup::SetMrt(int idx, RtBuffer* buf) {
   OrkAssert(idx == mNumMrts); // ensure we add mrt's sequentially
   mMrt[mNumMrts] = buf;
   mNumMrts++;
-  OrkAssert(buf->mParentGroup == this);
-  // buf->mParentGroup = buf;
-  // buf->SetParentMrt( this );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

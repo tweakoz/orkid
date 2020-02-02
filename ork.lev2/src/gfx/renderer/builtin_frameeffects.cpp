@@ -35,7 +35,7 @@ namespace ork { namespace lev2 {
 TexBuffer::TexBuffer(OffscreenBuffer* parent, EBufferFormat efmt, int iW, int iH)
     : OffscreenBuffer(parent, 0, 0, iW, iH, efmt, ETGTTYPE_EXTBUFFER) {
   lev2::ContextCreationParams params = lev2::GfxEnv::GetRef().GetCreationParams();
-  params.miNumSharedVerts              = 4 << 10;
+  params.miNumSharedVerts            = 4 << 10;
   lev2::GfxEnv::GetRef().PushCreationParams(params);
   this->initContext();
   lev2::GfxEnv::GetRef().PopCreationParams();
@@ -114,10 +114,10 @@ void BuiltinFrameTechniques::ResizeFxBuffer(int iw, int ih) {
 }
 void BuiltinFrameTechniques::DoInit(Context* pTARG) {
   // ork::lev2::Context* pTARG = Parent->context();
-  auto fbi          = pTARG->FBI();
+  auto fbi                = pTARG->FBI();
   OffscreenBuffer* Parent = fbi->GetThisBuffer();
-  pTARG             = Parent ? Parent->context() : pTARG;
-  auto clear_color  = Parent ? Parent->GetClearColor() : fbi->GetClearColor();
+  pTARG                   = Parent ? Parent->context() : pTARG;
+  auto clear_color        = Parent ? Parent->GetClearColor() : fbi->GetClearColor();
 
   static const int kmultisamplesH = 2;
   static const int kmultisamplesL = 1;
@@ -131,7 +131,7 @@ void BuiltinFrameTechniques::DoInit(Context* pTARG) {
 
   for (int i = 0; i < knumpingpongbufs; i++) {
     auto grp = new RtGroup(pTARG, miW, miH, kmultisamplesH);
-    auto buf = new RtBuffer(grp, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, miW, miH);
+    auto buf = new RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, miW, miH);
 
     buf->_debugName = FormatString("BFTEK::PingPongBuf%d", i);
     mpHDRRtGroup[i] = grp;
@@ -145,9 +145,9 @@ void BuiltinFrameTechniques::DoInit(Context* pTARG) {
   mpMrtAux0 = new RtGroup(pTARG, kGLOWBUFSIZE, kGLOWBUFSIZE, 1);
   mpMrtAux1 = new RtGroup(pTARG, kGLOWBUFSIZE, kGLOWBUFSIZE, 1);
 
-  auto bufa = new RtBuffer(mpMrtAux0, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, kGLOWBUFSIZE, kGLOWBUFSIZE);
+  auto bufa = new RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, kGLOWBUFSIZE, kGLOWBUFSIZE);
 
-  auto bufb = new RtBuffer(mpMrtAux1, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, kGLOWBUFSIZE, kGLOWBUFSIZE);
+  auto bufb = new RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, kGLOWBUFSIZE, kGLOWBUFSIZE);
 
   bufa->_debugName = FormatString("BFTEK::Aux0");
   bufb->_debugName = FormatString("BFTEK::Aux1");
@@ -168,7 +168,7 @@ void BuiltinFrameTechniques::DoInit(Context* pTARG) {
 
   mpMrtFinalHD = new RtGroup(pTARG, kFINALHDW, kFINALHDH, kmultisamplesH);
 
-  auto buff = new RtBuffer(mpMrtFinalHD, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, kFINALHDW, kFINALHDH);
+  auto buff = new RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, kFINALHDW, kFINALHDH);
 
   mpMrtFinalHD->SetMrt(0, buff);
 
@@ -877,7 +877,7 @@ BasicFrameTechnique::BasicFrameTechnique()
 
 void BasicFrameTechnique::Render(FrameRenderer& frenderer) {
   RenderContextFrameData& FrameData = frenderer.framedata();
-  Context* pTARG                  = FrameData.GetTarget();
+  Context* pTARG                    = FrameData.GetTarget();
   SRect tgt_rect                    = pTARG->mainSurfaceRectAtOrigin();
   // FrameData.SetDstRect( tgt_rect );
   /*
@@ -902,7 +902,7 @@ PickFrameTechnique::PickFrameTechnique()
 
 void PickFrameTechnique::Render(FrameRenderer& frenderer) {
   RenderContextFrameData& FrameData = frenderer.framedata();
-  Context* pTARG                  = FrameData.GetTarget();
+  Context* pTARG                    = FrameData.GetTarget();
   SRect tgt_rect                    = pTARG->mainSurfaceRectAtOrigin();
   // FrameData.SetDstRect( tgt_rect );
   {
@@ -923,7 +923,7 @@ ShadowFrameTechnique::ShadowFrameTechnique(Window* Parent, ui::Viewport* pvp, in
 
 void ShadowFrameTechnique::Render(FrameRenderer& frenderer) {
   RenderContextFrameData& FrameData = frenderer.framedata();
-  Context* pTARG                  = FrameData.GetTarget();
+  Context* pTARG                    = FrameData.GetTarget();
   /////////////////////////////////////////////////
   int itx0 = pTARG->mainSurfaceWindowPosX();
   int itx1 = pTARG->mainSurfaceWindowPosX() + pTARG->mainSurfaceWidth();

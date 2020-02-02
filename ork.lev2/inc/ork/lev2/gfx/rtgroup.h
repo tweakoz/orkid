@@ -27,7 +27,7 @@ class RtBuffer //: public OffscreenBuffer
 public:
   enum EMipGen { EMG_NONE, EMG_AUTOCOMPUTE, EMG_USER };
 
-  RtBuffer(RtGroup* pgroup, ETargetType etype, EBufferFormat efmt, int iW, int iH);
+  RtBuffer(ETargetType etype, EBufferFormat efmt, int iW, int iH);
 
   Texture* GetTexture() const {
     return mTexture;
@@ -49,13 +49,12 @@ public:
     mMaterial = pmtl;
   }
 
-  RtGroup* mParentGroup;
   int miW, miH;
   Texture* mTexture;
   GfxMaterial* mMaterial;
   ETargetType mType;
   EBufferFormat mFormat;
-  svarp_t mPlatformHandle;
+  svarp_t _impl;
   bool mSizeDirty;
   EMipGen _mipgen;
   std::string _debugName;
@@ -116,6 +115,7 @@ public:
   int miSamples;
   bool mbSizeDirty;
   void* mInternalHandle;
+  bool _needsDepth = true;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

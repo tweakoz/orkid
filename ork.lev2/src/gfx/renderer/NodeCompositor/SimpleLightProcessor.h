@@ -34,14 +34,17 @@ struct SimpleLightProcessor {
   SimpleLightProcessor(DeferredContext& defctx, DeferredCompositingNodePbr* compnode);
 
   /////////////////////////////////////////////////////
+  void gpuUpdate(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
 
-  void render(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
+  void renderDecals(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
+  void renderLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
 
   /////////////////////////////////////////////////////
   void _gpuInit(lev2::Context* target);
   void _renderUnshadowedUntexturedPointLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
   void _renderUnshadowedTexturedPointLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
   void _renderUnshadowedTexturedSpotLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
+  void _renderTexturedSpotDecals(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
 
   using pointlightlist_t    = std::vector<lev2::PointLight*>;
   using spotlightlist_t     = std::vector<lev2::SpotLight*>;
@@ -55,6 +58,7 @@ struct SimpleLightProcessor {
   tex2pointlightmap_t _tex2pointlightmap;
   spotlightlist_t _untexturedspotlights;
   tex2spotlightmap_t _tex2spotlightmap;
+  tex2spotlightmap_t _tex2spotdecalmap;
 };
 
 } // namespace ork::lev2::deferrednode

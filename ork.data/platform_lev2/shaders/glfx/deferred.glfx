@@ -293,6 +293,29 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     return gammaCorrect(l*depth_fogval);
   }
   /////////////////////////////////////////////////////////
+  vec4 spotdecaling_textured_simple(WPosData wpd,GBufData gbd) {
+    vec4 rmao = texture(MapRufMtlAlpha,wpd._muv); // ruf mtl ao opa
+    vec4 l       = vec4(0, 0, 0,0);
+    if( rmao.w==0 ){
+      int lbeg = int(frg_uvb.x);
+      int lend = lbeg+int(frg_uvb.y);
+      for (int lidx = lbeg; lidx<lend; lidx++) {
+        float lightrange = LightRadius[lidx];
+        vec4 light_hpos = LightMatrix[lidx]*vec4(gbd._wpos,1);
+        vec3 light_ndc = (light_hpos.xyz / light_hpos.w);
+        vec2 light_uv = light_ndc.xy*0.5+vec2(0.5);
+        float mask = float(light_ndc.x>=-1 && light_ndc.x<1) *
+                     float(light_ndc.y>=-1 && light_ndc.y<1) *
+                     float(light_hpos.z>=0.0 && light_hpos.z<=lightrange) ;
+        vec3 lightcol = LightColorD[lidx].xyz;
+        vec3 lighttex = texture(MapLightingCookie,light_uv).xyz;
+        vec3 lightoutput = lightcol*lighttex;
+        l += vec4(lightoutput,mask);
+      }
+    }
+    return l;
+  }
+  /////////////////////////////////////////////////////////
   vec3 spotlighting_untextured_simple(WPosData wpd,GBufData gbd) {
     vec4 rmao = texture(MapRufMtlAlpha,wpd._muv); // ruf mtl ao opa
     vec3 l       = vec3(0, 0, 0);
@@ -529,6 +552,20 @@ fragment_shader ps_spotlight_untextured_stereo : iface_f2uv : lib_deferred {
   out_clr = vec4(spotlighting_untextured_simple(wpd,gbd), 1);
 }
 ///////////////////////////////////////////////////////////////
+fragment_shader ps_spotdecal_textured : iface_f2uv : lib_deferred {
+  WPosData wpd = monoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  vec4 oc = spotdecaling_textured_simple(wpd,gbd);
+  out_clr = vec4(oc.xyz,1);
+  if( oc.w < 0.5)
+    discard;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_spotdecal_textured_stereo : iface_f2uv : lib_deferred {
+  WPosData wpd = stereoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  out_clr = vec4(1,1,0,1);
+}
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_environment : iface_f2uv : lib_deferred  {
   WPosData wpd = monoWPD();
@@ -633,7 +670,26 @@ technique spotlight_untextured_stereo {
     fragment_shader = ps_spotlight_untextured_stereo;
     state_block     = sb_default;
   }
-}///////////////////////////////////////////////////////////////
+}
+///////////////////////////////////////////////////////////////
+technique spotdecal_textured {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_spotdecal_textured;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique spotdecal_textured_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_spotdecal_textured_stereo;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
 technique downsampledepthcluster {
   fxconfig = fxcfg_default;
   pass p0 {

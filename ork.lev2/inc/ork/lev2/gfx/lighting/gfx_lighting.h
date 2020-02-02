@@ -85,12 +85,17 @@ public:
     return _cookie ? _cookie->GetTexture() : nullptr;
   }
 
+  bool decal() const {
+    return _decal;
+  }
+
 private:
   fvec3 mColor;
   bool mbShadowCaster;
   float mShadowSamples;
   float mShadowBlur;
   float mShadowBias;
+  bool _decal               = false;
   textureassetptr_t _cookie = nullptr;
 
   void _readCookie(ork::rtti::ICastable*& cookietex) const;
@@ -132,6 +137,9 @@ struct Light {
 
   Texture* cookie() const {
     return _data->cookie();
+  }
+  bool decal() const {
+    return _data->decal();
   }
 
   const LightData* _data;

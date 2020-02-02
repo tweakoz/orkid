@@ -159,14 +159,23 @@ struct IMPL {
     _context._accumCPD._stereo1pass          = false;
     _context._specularLevel                  = node->specularLevel() * node->environmentIntensity();
     _context._diffuseLevel                   = node->diffuseLevel() * node->environmentIntensity();
-    _context._depthFogDistance = node->depthFogDistance();
-    _context._depthFogPower = node->depthFogPower();
+    _context._depthFogDistance               = node->depthFogDistance();
+    _context._depthFogPower                  = node->depthFogPower();
     float skybox_level                       = node->skyboxLevel() * node->environmentIntensity();
     CIMPL->pushCPD(_context._accumCPD); // base lighting
     FBI->SetAutoClear(true);
     FBI->PushRtGroup(_context._rtgLaccum);
     targ->beginFrame();
     FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
+    //////////////////////////////////////////////////////////////////
+    if (auto lmgr = CIMPL->lightManager()) {
+
+      lmgr->enumerateInPass(_context._accumCPD, _enumeratedLights);
+      _lightProcessor.gpuUpdate(drawdata, VD, _enumeratedLights);
+      auto& lights = _enumeratedLights._enumeratedLights;
+      if (lights.size())
+        _lightProcessor.renderDecals(drawdata, VD, _enumeratedLights);
+    }
     //////////////////////////////////////////////////////////////////
     // base lighting (environent IBL lighting)
     //////////////////////////////////////////////////////////////////
@@ -228,12 +237,8 @@ struct IMPL {
     /////////////////////////////////
 
     if (auto lmgr = CIMPL->lightManager()) {
-
-      lmgr->enumerateInPass(_context._accumCPD, _enumeratedLights);
-      auto& lights = _enumeratedLights._enumeratedLights;
-
-      if (lights.size())
-        _lightProcessor.render(drawdata, VD, _enumeratedLights);
+      if (_enumeratedLights._enumeratedLights.size())
+        _lightProcessor.renderLights(drawdata, VD, _enumeratedLights);
     }
 
     /////////////////////////////////

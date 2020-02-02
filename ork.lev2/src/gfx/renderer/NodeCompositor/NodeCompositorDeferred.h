@@ -93,9 +93,13 @@ struct DeferredContext {
   void beginSpotLighting(CompositorDrawData& drawdata, const ViewData& VD, Texture* cookietexture);
   void endSpotLighting(CompositorDrawData& drawdata, const ViewData& VD);
   ////////////////////////////////////////////////////////////////////
+  void beginSpotDecaling(CompositorDrawData& drawdata, const ViewData& VD, Texture* cookietexture);
+  void endSpotDecaling(CompositorDrawData& drawdata, const ViewData& VD);
+  ////////////////////////////////////////////////////////////////////
   RenderCompositingNode* _node;
   FreestyleMaterial _lightingmtl;
   CompositingPassData _accumCPD;
+  CompositingPassData _decalCPD;
   fvec4 _clearColor;
   std::string _shadername;
   lev2::Texture* brdfIntegrationTexture() const;
@@ -125,6 +129,9 @@ struct DeferredContext {
   const FxShaderTechnique* _tekSpotLightingTextured         = nullptr;
   const FxShaderTechnique* _tekSpotLightingUntexturedStereo = nullptr;
   const FxShaderTechnique* _tekSpotLightingTexturedStereo   = nullptr;
+  //
+  const FxShaderTechnique* _tekSpotDecalingTextured       = nullptr;
+  const FxShaderTechnique* _tekSpotDecalingTexturedStereo = nullptr;
   //
 
 #if defined(ENABLE_COMPUTE_SHADERS)
@@ -164,11 +171,13 @@ struct DeferredContext {
 
   RtGroupRenderTarget* _accumRT      = nullptr;
   RtGroupRenderTarget* _gbuffRT      = nullptr;
+  RtGroupRenderTarget* _decalRT      = nullptr;
   RtGroupRenderTarget* _clusterRT    = nullptr;
   lev2::Texture* _brdfIntegrationMap = nullptr;
 
   CaptureBuffer _clustercapture;
   RtGroup* _rtgGbuffer      = nullptr;
+  RtGroup* _rtgDecal        = nullptr;
   RtGroup* _rtgDepthCluster = nullptr;
   RtGroup* _rtgLaccum       = nullptr;
   PoolString _layername;

@@ -24,33 +24,36 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::PickBufferBase, "ork::lev2::PickBufferBa
 
 namespace ork { namespace lev2 {
 
-void PickBufferBase::Describe() {}
+void PickBufferBase::Describe() {
+}
 
 PickBufferBase::PickBufferBase(lev2::OffscreenBuffer* Parent, int iX, int iY, int iW, int iH, EPickBufferType etyp)
-    : ork::lev2::OffscreenBuffer(Parent, iX, iY, iW, iH, lev2::EBUFFMT_RGBA8, lev2::ETGTTYPE_EXTBUFFER), meType(etyp), mbInitTex(true),
-      mpPickRtGroup(new lev2::RtGroup(context(), iW, iH)) {
+    : ork::lev2::OffscreenBuffer(Parent, iX, iY, iW, iH, lev2::EBUFFMT_RGBA8, lev2::ETGTTYPE_EXTBUFFER)
+    , meType(etyp)
+    , mbInitTex(true)
+    , mpPickRtGroup(new lev2::RtGroup(context(), iW, iH)) {
   mpUIMaterial = new ork::lev2::GfxMaterialUITextured(context());
 }
 
 uint64_t PickBufferBase::AssignPickId(ork::Object* pobj) {
-	uint64_t pid = uint64_t(pobj);
+  uint64_t pid  = uint64_t(pobj);
   mPickIds[pid] = pobj;
   return pid;
 }
 ork::Object* PickBufferBase::GetObjectFromPickId(uint64_t pid) {
   printf("pickid <0x%llx>\n", pid);
-  auto it = mPickIds.find(pid);
+  auto it           = mPickIds.find(pid);
   ork::Object* pobj = (it == mPickIds.end()) ? nullptr : it->second;
   return pobj;
 }
 
 void PickBufferBase::Init() {
-  auto buf0 = new ork::lev2::RtBuffer(mpPickRtGroup, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32F, miWidth, miHeight);
-  auto buf1 = new ork::lev2::RtBuffer(mpPickRtGroup, lev2::ETGTTYPE_MRT1, lev2::EBUFFMT_RGBA32F, miWidth, miHeight);
+  auto buf0        = new ork::lev2::RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32F, miWidth, miHeight);
+  auto buf1        = new ork::lev2::RtBuffer(lev2::ETGTTYPE_MRT1, lev2::EBUFFMT_RGBA32F, miWidth, miHeight);
   buf0->_debugName = FormatString("Pickbuf::mrt0");
   buf0->_debugName = FormatString("Pickbuf::mrt1");
-  mpPickRtGroup->SetMrt(0,buf0);
-  mpPickRtGroup->SetMrt(1,buf1);
+  mpPickRtGroup->SetMrt(0, buf0);
+  mpPickRtGroup->SetMrt(1, buf1);
 }
 
 }} // namespace ork::lev2

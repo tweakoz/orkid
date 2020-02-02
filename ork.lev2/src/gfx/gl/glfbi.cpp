@@ -338,7 +338,11 @@ void GlFrameBufferInterface::Capture(const RtGroup& rtg, int irt, const file::Pa
   if ((nullptr == FboObj) || (irt >= rtg.GetNumTargets()))
     return;
 
-  auto tex_id = FboObj->mTEX[irt];
+  auto buffer = rtg.GetMrt(irt);
+  if (buffer->_impl.IsSet() == false)
+    return;
+
+  auto tex_id = buffer->_impl.Get<GlRtBufferImpl*>()->_texture;
 
   int iw        = rtg.GetW();
   int ih        = rtg.GetH();
@@ -547,9 +551,6 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
 ///////////////////////////////////////////////////////////////////////////////
 
 GlFboObject::GlFboObject() {
-  for (int i = 0; i < kmaxrt; i++) {
-    mTEX[i] = 0;
-  }
   mDSBO      = 0;
   mFBOMaster = 0;
 }

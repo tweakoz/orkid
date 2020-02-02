@@ -76,7 +76,7 @@ void Surface::DoDraw(DrawEvent& drwev) {
 
   if (nullptr == mRtGroup) {
     mRtGroup  = new lev2::RtGroup(tgt, miW, miH, 1);
-    auto mrt0 = new lev2::RtBuffer(mRtGroup, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, 1280, 720);
+    auto mrt0 = new lev2::RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, 1280, 720);
     mRtGroup->SetMrt(0, mrt0);
   }
   if (mRtGroup) {
@@ -199,11 +199,11 @@ lev2::FrameTechniqueBase* Surface::GetFrameTechnique() const {
 
 void Surface::BeginSurface(lev2::FrameRenderer& frenderer) {
   lev2::RenderContextFrameData& FrameData = frenderer.framedata();
-  lev2::Context* pTARG                  = FrameData.GetTarget();
+  lev2::Context* pTARG                    = FrameData.GetTarget();
 }
 void Surface::EndSurface(lev2::FrameRenderer& frenderer) {
   lev2::RenderContextFrameData& FrameData = frenderer.framedata();
-  lev2::Context* pTARG                  = FrameData.GetTarget();
+  lev2::Context* pTARG                    = FrameData.GetTarget();
 }
 
 /////////////////////////////////////////////////////////////////////////

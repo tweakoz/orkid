@@ -44,7 +44,7 @@ struct IMPL {
     if (nullptr == _rtg) {
       _material.Init(pTARG);
       _rtg            = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
-      auto buf        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, 8, 8);
+      auto buf        = new RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, 8, 8);
       buf->_debugName = "ForwardRt";
       _rtg->SetMrt(0, buf);
       _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");

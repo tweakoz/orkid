@@ -50,7 +50,7 @@ void SimpleLightProcessor::_gpuInit(lev2::Context* target) {
   }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void SimpleLightProcessor::render(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights) {
+void SimpleLightProcessor::gpuUpdate(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights) {
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
   RenderContextFrameData& RCFD = framerenderer.framedata();
   auto context                 = RCFD.GetTarget();
@@ -66,6 +66,7 @@ void SimpleLightProcessor::render(CompositorDrawData& drawdata, const ViewData& 
   _untexturedspotlights.clear();
   _tex2pointlightmap.clear();
   _tex2spotlightmap.clear();
+  _tex2spotdecalmap.clear();
 
   for (auto l : scene_lights) {
     if (l->isShadowCaster())
@@ -78,15 +79,25 @@ void SimpleLightProcessor::render(CompositorDrawData& drawdata, const ViewData& 
         _untexturedpointlights.push_back(as_point);
     } else if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
       auto cookie = as_spot->cookie();
-      if (cookie)
-        _tex2spotlightmap[cookie].push_back(as_spot);
-      else
-        _untexturedspotlights.push_back(as_spot);
+      bool decal  = as_spot->decal();
+      if (decal) {
+        if (cookie)
+          _tex2spotdecalmap[cookie].push_back(as_spot);
+      } else {
+        if (cookie)
+          _tex2spotlightmap[cookie].push_back(as_spot);
+        else
+          _untexturedspotlights.push_back(as_spot);
+      }
     }
   }
-
-  /////////////////////////////////////
-
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SimpleLightProcessor::renderDecals(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights) {
+  _renderTexturedSpotDecals(drawdata, VD, enumlights);
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SimpleLightProcessor::renderLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights) {
   _renderUnshadowedUntexturedPointLights(drawdata, VD, enumlights);
   _renderUnshadowedTexturedPointLights(drawdata, VD, enumlights);
   _renderUnshadowedTexturedSpotLights(drawdata, VD, enumlights);
@@ -310,6 +321,88 @@ void SimpleLightProcessor::_renderUnshadowedTexturedSpotLights(
     this_buf->Render2dQuadsEML(1, &quad_pos, &quad_uva, &quad_uvb);
     /////////////////////////////////////
     _deferredContext.endSpotLighting(drawdata, VD);
+  } // for (auto texture_item : _tex2pointmap ){
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SimpleLightProcessor::_renderTexturedSpotDecals(
+    CompositorDrawData& drawdata,
+    const ViewData& VD,
+    const EnumeratedLights& enumlights) {
+  bool is_stereo = VD._isStereo;
+  /////////////////////////////////////////////////////////////////
+  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
+  const auto& RCFD             = framerenderer.framedata();
+  auto gfxctx                  = RCFD.GetTarget();
+  auto FXI                     = gfxctx->FXI();
+  auto RSI                     = gfxctx->RSI();
+  auto this_buf                = gfxctx->FBI()->GetThisBuffer();
+
+  /////////////////////////////////////
+  // render all pointlights for all pointlight textures
+  /////////////////////////////////////
+
+  auto& lightmtl = _deferredContext._lightingmtl;
+  /////////////////////////////////////////////////////////
+  for (auto texture_item : _tex2spotdecalmap) {
+    auto texture = texture_item.first;
+    int lidx     = 0;
+    _deferredContext.beginSpotDecaling(drawdata, VD, texture);
+    FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
+    auto mapping     = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
+    size_t numlights = texture_item.second.size();
+    OrkAssert(numlights < KMAXLIGHTSPERCHUNK);
+    size_t offset_cd  = 0;
+    size_t offset_mtx = offset_cd + KMAXLIGHTSPERCHUNK * sizeof(fvec4);
+    size_t offset_rad = offset_mtx + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
+    for (auto light : texture_item.second) {
+      fvec3 color    = light->color();
+      float fovy     = light->GetFovy();
+      float range    = light->GetRange();
+      float dist2cam = (light->worldPosition() - VD._camposmono).Mag();
+      /////////////////////////////////////////////////////////
+      // embed chunk's lights into lighting UBO
+      /////////////////////////////////////////////////////////
+      mapping->ref<fvec4>(offset_cd)  = fvec4(color, dist2cam);
+      mapping->ref<float>(offset_rad) = range;
+
+      fmtx4 matV, matP;
+      float near   = range / 1000.0f;
+      float far    = range;
+      float aspect = 1.0;
+
+      fvec3 wnx, wny, wnz, wpos;
+      light->worldMatrix().toNormalVectors(wnx, wny, wnz);
+      wpos      = light->worldMatrix().GetTranslation();
+      fvec3 ctr = wpos + wnz;
+      // matV = light->worldMatrix();
+      matV.LookAt(wpos, ctr, wny);
+
+      matP.Perspective(fovy, aspect, near, far);
+      mapping->ref<fmtx4>(offset_mtx) = matV * matP;
+
+      offset_cd += sizeof(fvec4);
+      offset_mtx += sizeof(fmtx4);
+      offset_rad += sizeof(float);
+      // printf("tex-light<%p> pos<%g %g %g> color<%g %g %g>\n", light, pos.x, pos.y, pos.z, color.x, color.y, color.z);
+    }
+    /////////////////////////////////////
+    // chunk ready, fire it off..
+    /////////////////////////////////////
+    FXI->unmapParamBuffer(mapping.get());
+    //////////////////////////////////////////////////
+    // set number of lights for tile
+    //////////////////////////////////////////////////
+    lightmtl.bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
+    lightmtl.bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
+    lightmtl.bindParamInt(_deferredContext._parNumLights, numlights);
+    lightmtl.commit();
+    //////////////////////////////////////////////////
+    fvec4 quad_pos(-1, -1, 2, 2);
+    fvec4 quad_uva(0, 0, 1, 1);
+    fvec4 quad_uvb(0, numlights, 0, 0);
+    this_buf->Render2dQuadsEML(1, &quad_pos, &quad_uva, &quad_uvb);
+    /////////////////////////////////////
+    _deferredContext.endSpotDecaling(drawdata, VD);
   } // for (auto texture_item : _tex2pointmap ){
 }
 /////////////////////////////////////

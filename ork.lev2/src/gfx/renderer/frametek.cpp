@@ -32,9 +32,9 @@ template class ork::orklut<ork::PoolString, anyp>;
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-FrameRenderer::FrameRenderer(RenderContextFrameData& RCFD,rendermisccb_t cb)
-  : _framedata(RCFD)
-  , _rendermisccb(cb){
+FrameRenderer::FrameRenderer(RenderContextFrameData& RCFD, rendermisccb_t cb)
+    : _framedata(RCFD)
+    , _rendermisccb(cb) {
 }
 ///////////////////////////////////////////
 void FrameRenderer::renderMisc() {
@@ -43,45 +43,65 @@ void FrameRenderer::renderMisc() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-IRenderTarget::IRenderTarget() {}
+IRenderTarget::IRenderTarget() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 RtGroupRenderTarget::RtGroupRenderTarget(RtGroup* prtgroup)
-    : mpRtGroup(prtgroup) {}
+    : mpRtGroup(prtgroup) {
+}
 int RtGroupRenderTarget::GetW() {
   // printf( "RtGroup W<%d> H<%d>\n", mpRtGroup->GetW(), mpRtGroup->GetH() );
   return mpRtGroup->GetW();
 }
-int RtGroupRenderTarget::GetH() { return mpRtGroup->GetH(); }
-void RtGroupRenderTarget::BeginFrame(FrameRenderer& frenderer) {}
-void RtGroupRenderTarget::EndFrame(FrameRenderer& frenderer) {}
+int RtGroupRenderTarget::GetH() {
+  return mpRtGroup->GetH();
+}
+void RtGroupRenderTarget::BeginFrame(FrameRenderer& frenderer) {
+}
+void RtGroupRenderTarget::EndFrame(FrameRenderer& frenderer) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 UiViewportRenderTarget::UiViewportRenderTarget(ui::Viewport* pVP)
-    : mpViewport(pVP) {}
-int UiViewportRenderTarget::GetW() { return mpViewport->GetW(); }
-int UiViewportRenderTarget::GetH() { return mpViewport->GetH(); }
+    : mpViewport(pVP) {
+}
+int UiViewportRenderTarget::GetW() {
+  return mpViewport->GetW();
+}
+int UiViewportRenderTarget::GetH() {
+  return mpViewport->GetH();
+}
 void UiViewportRenderTarget::BeginFrame(FrameRenderer& frenderer) {
   RenderContextFrameData& FrameData = frenderer.framedata();
-  Context* pTARG                  = FrameData.GetTarget();
+  Context* pTARG                    = FrameData.GetTarget();
   mpViewport->BeginFrame(pTARG);
 }
 void UiViewportRenderTarget::EndFrame(FrameRenderer& frenderer) {
   RenderContextFrameData& FrameData = frenderer.framedata();
-  Context* pTARG                  = FrameData.GetTarget();
+  Context* pTARG                    = FrameData.GetTarget();
   mpViewport->EndFrame(pTARG);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 UiSurfaceRenderTarget::UiSurfaceRenderTarget(ui::Surface* pVP)
-    : mSurface(pVP) {}
-int UiSurfaceRenderTarget::GetW() { return mSurface->GetW(); }
-int UiSurfaceRenderTarget::GetH() { return mSurface->GetH(); }
-void UiSurfaceRenderTarget::BeginFrame(FrameRenderer& frenderer) { mSurface->BeginSurface(frenderer); }
-void UiSurfaceRenderTarget::EndFrame(FrameRenderer& frenderer) { mSurface->EndSurface(frenderer); }
+    : mSurface(pVP) {
+}
+int UiSurfaceRenderTarget::GetW() {
+  return mSurface->GetW();
+}
+int UiSurfaceRenderTarget::GetH() {
+  return mSurface->GetH();
+}
+void UiSurfaceRenderTarget::BeginFrame(FrameRenderer& frenderer) {
+  mSurface->BeginSurface(frenderer);
+}
+void UiSurfaceRenderTarget::EndFrame(FrameRenderer& frenderer) {
+  mSurface->EndSurface(frenderer);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -91,19 +111,20 @@ static const int kFINALH = 512;
 FrameTechniqueBase::FrameTechniqueBase(int iW, int iH)
     : miW(iW)
     , miH(iH)
-    , mpMrtFinal(0) {}
+    , mpMrtFinal(0) {
+}
 
 void FrameTechniqueBase::Init(Context* targ) {
   static const int kmultisamples = 1;
 
-  auto fbi          = targ->FBI();
+  auto fbi                = targ->FBI();
   OffscreenBuffer* parent = fbi->GetThisBuffer();
-  targ              = parent ? parent->context() : targ;
-  auto clear_color  = fbi->GetClearColor();
+  targ                    = parent ? parent->context() : targ;
+  auto clear_color        = fbi->GetClearColor();
 
   mpMrtFinal = new RtGroup(targ, kFINALW, kFINALH, kmultisamples);
 
-  mpMrtFinal->SetMrt(0, new RtBuffer(mpMrtFinal, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, kFINALW, kFINALH));
+  mpMrtFinal->SetMrt(0, new RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, kFINALW, kFINALH));
 
   // mpMrtFinal->GetMrt(0)->RefClearColor() = clear_color;
   // mpMrtFinal->GetMrt(0)->SetContext( targ );
@@ -112,4 +133,4 @@ void FrameTechniqueBase::Init(Context* targ) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2 {
+} // namespace ork::lev2

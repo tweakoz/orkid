@@ -42,6 +42,7 @@ void LightData::describeX(class_t* c) {
 
   c->memberProperty("Color", &LightData::mColor);
   c->memberProperty("ShadowCaster", &LightData::mbShadowCaster);
+  c->memberProperty("Decal", &LightData::_decal);
 
   c->floatProperty("ShadowBias", float_range{0.0, 2.0}, &LightData::mShadowBias)->annotate<ConstString>("editor.range.log", "true");
   c->floatProperty("ShadowBlur", float_range{0.0, 1.0}, &LightData::mShadowBlur);

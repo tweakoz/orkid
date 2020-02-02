@@ -63,6 +63,7 @@ namespace ork { namespace lev2 {
 
 class ContextGL;
 class GlslFxInterface;
+struct GLTextureObject;
 
 
 struct GlFboObject {
@@ -70,8 +71,13 @@ struct GlFboObject {
   GLuint mFBOMaster;
   GLuint mDSBO;
   GLuint _depthTexture;
-  GLuint mTEX[kmaxrt];
   GlFboObject();
+};
+
+struct GlRtBufferImpl {
+  GLuint _texture           = 0;
+  GLTextureObject* _teximpl = nullptr;
+  bool _init                = true;
 };
 
 int GetGlError(void);
@@ -228,8 +234,6 @@ protected:
   int miCurScissorW;
   int miCurScissorH;
 };
-
-struct GLTextureObject;
 
 ///////////////////////////////////////////////////////////////////////////////
 

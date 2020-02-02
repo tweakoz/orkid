@@ -114,7 +114,7 @@ lev2::RtGroup* Buffer::GetRtGroup(lev2::Context* ptgt) {
   if (mRtGroup == nullptr) {
     mRtGroup = new RtGroup(ptgt, miW, miH);
 
-    auto mrt = new ork::lev2::RtBuffer(mRtGroup, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, miW, miH);
+    auto mrt = new ork::lev2::RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, miW, miH);
 
     mrt->_debugName = FormatString("ptx::Reg32");
     mrt->_mipgen    = RtBuffer::EMG_AUTOCOMPUTE;
