@@ -77,7 +77,8 @@ float RenderContextInstData::GetEngineParamFloat(int idx) const {
 
 RenderContextFrameData::RenderContextFrameData(Context* ptarg)
     : _lightmgr(0)
-    , mpTarget(ptarg) {
+    , mpTarget(ptarg)
+    , _cimpl(nullptr) {
 }
 
 void RenderContextFrameData::setUserProperty(CrcString key, rendervar_t val) {
@@ -115,6 +116,24 @@ const DrawableBuffer* RenderContextFrameData::GetDB() const {
 const CompositingPassData& RenderContextFrameData::topCPD() const {
   OrkAssert(_cimpl != nullptr);
   return _cimpl->topCPD();
+}
+bool RenderContextFrameData::hasCPD() const {
+  bool rval = false;
+  if (_cimpl != nullptr) {
+    rval = _cimpl->hasCPD();
+  }
+  return rval;
+}
+
+bool RenderContextFrameData::isStereo() const {
+  bool stereo = false;
+  if (_cimpl != nullptr) {
+    if (_cimpl->hasCPD()) {
+      const auto& CPD = topCPD();
+      stereo          = CPD.isStereoOnePass();
+    }
+  }
+  return stereo;
 }
 
 } // namespace ork::lev2

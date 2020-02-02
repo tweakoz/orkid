@@ -203,6 +203,9 @@ struct RenderContextFrameData {
   const DrawableBuffer* GetDB() const;
 
   const CompositingPassData& topCPD() const;
+  bool hasCPD() const;
+
+  bool isStereo() const;
 
   //////////////////////////////////////
 

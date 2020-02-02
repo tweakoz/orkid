@@ -253,6 +253,7 @@ public:
   const CompositingPassData& topCPD() const;
   const CompositingPassData& pushCPD(const CompositingPassData& cpd);
   const CompositingPassData& popCPD();
+  bool hasCPD() const;
 
 private:
   const CompositingData& _compositingData;

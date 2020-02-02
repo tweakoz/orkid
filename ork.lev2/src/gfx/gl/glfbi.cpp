@@ -299,11 +299,7 @@ void GlFrameBufferInterface::SetViewport(int iX, int iY, int iW, int iH) {
   // printf( "SetViewport<%d %d %d %d>\n", iX, iY, iW, iH );
 
   auto framedata = mTargetGL.topRenderContextFrameData();
-  bool stereo    = false;
-  if (framedata) {
-    const auto& CPD = framedata->topCPD();
-    stereo          = CPD.isStereoOnePass();
-  }
+  bool stereo    = (framedata and framedata->isStereo());
 
   GL_ERRORCHECK();
 

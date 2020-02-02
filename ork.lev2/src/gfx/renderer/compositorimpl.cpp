@@ -258,6 +258,9 @@ void CompositingImpl::update(float dt) {
     miActiveSceneItem++;
 }
 
+bool CompositingImpl::hasCPD() const {
+  return (_stack.size() != 0);
+}
 const CompositingPassData& CompositingImpl::topCPD() const {
   return _stack.top();
 }

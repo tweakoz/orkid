@@ -13,8 +13,7 @@
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
                                                 <property name='Center'>1.42103 2.94764 -0.22218</property>
-                                                <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>7.83004</property>
+                                                <property name='Loc'>4.37011</property>
                                                 <property name='QuatC'>-0.0909132 0.324395 -0.00168267 -0.942022</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
@@ -88,7 +87,7 @@
                                                     </property>
                                                     <property name='Extent'>100</property>
                                                     <property name='SpinRate'>-3.36284</property>
-                                                    <property name='TileDim'>1</property>
+                                                    <property name='TileDim'>10</property>
                                                 </object>
                                             </reference>
                                         </item>
@@ -725,7 +724,7 @@
             <item key='AudioSystemData'>
                 <reference category='SystemDataClass'>
                     <object type='AudioSystemData' id='90'>
-                        <property name='DistanceAttenPower'>0</property>
+                        <property name='DistanceAttenPower'>0.5</property>
                         <property name='DistanceMax'>10</property>
                         <property name='DistanceMin'>0.1</property>
                         <property name='DistanceScale'>0.003</property>
@@ -775,7 +774,6 @@
                                                                             <property name='OutputNode'>
                                                                                 <reference category='ObjectClass'>
                                                                                     <object type='VrCompositingNode' id='98'>
-                                                                                        <property name='Layer'>"All"</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>
@@ -785,11 +783,11 @@
                                                                                     <object type='DeferredCompositingNodePbr' id='99'>
                                                                                         <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
-                                                                                        <property name='DepthFogDistance'>100</property>
-                                                                                        <property name='DepthFogPower'>4.28885</property>
+                                                                                        <property name='DepthFogDistance'>515.357</property>
+                                                                                        <property name='DepthFogPower'>3.06313</property>
                                                                                         <property name='DiffuseLevel'>1</property>
                                                                                         <property name='EnvironmentIntensity'>1</property>
-                                                                                        <property name='EnvironmentMipBias'>0</property>
+                                                                                        <property name='EnvironmentMipBias'>0.549618</property>
                                                                                         <property name='EnvironmentMipScale'>6.48855</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
@@ -819,9 +817,7 @@
             </item>
             <item key='LightingSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='VrSystemData' id='100'>
-                        <property name='TrackingObjectEntity'>"vrtrackedobject"</property>
-                        <property name='VrCameraEntity'>"vrcamera"</property>
+                    <object type='LightingSystemSystemData' id='100'>
                     </object>
                 </reference>
             </item>
@@ -834,6 +830,16 @@
             <item key='ScriptSystemData'>
                 <reference category='SystemDataClass'>
                     <object type='ScriptSystemData' id='102'>
+                    </object>
+                </reference>
+            </item>
+            <item key='VrSystemData'>
+                <reference category='SystemDataClass'>
+                    <object type='VrSystemData' id='103'>
+                        <property name='TrackingObjectEntity'>"xxx"</property>
+                        <property name='UseCameraView'>true</property>
+                        <property name='VisualOffset'>0 0 0</property>
+                        <property name='VrCameraEntity'>"spawncam"</property>
                     </object>
                 </reference>
             </item>
