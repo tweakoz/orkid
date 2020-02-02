@@ -72,7 +72,7 @@ struct VRIMPL {
       ivomatrix.inverseOf(_viewOffsetMatrix);
 
       fmtx4 scalemtx;
-      scalemtx.SetScale(c._button1down ? 0.05 : 0.025);
+      scalemtx.SetScale(c._button1Down ? 0.05 : 0.025);
 
       fmtx4 controller_worldspace = (c._matrix * ivomatrix);
 
@@ -83,7 +83,7 @@ struct VRIMPL {
       targ->MTXI()->PushPMatrix(camdat->GetPMatrix());
       targ->PushModColor(fvec4::White());
       {
-        if (c._button2down)
+        if (c._button2Down)
           ork::lev2::GfxPrimitives::GetRef().RenderBox(targ);
         else
           ork::lev2::GfxPrimitives::GetRef().RenderAxis(targ);
@@ -101,7 +101,7 @@ struct VRIMPL {
     RenderContextFrameData& RCFD = framerenderer.framedata();
     auto CIMPL                   = drawdata._cimpl;
     auto DB                      = RCFD.GetDB();
-    Context* targ              = drawdata.target();
+    Context* targ                = drawdata.target();
 
     bool simrunning = drawdata._properties["simrunning"_crcu].Get<bool>();
     bool use_vr     = (orkidvr::device()._active and simrunning);
@@ -228,7 +228,7 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////////////////////////
   FrameRenderer& framerenderer      = drawdata.mFrameRenderer;
   RenderContextFrameData& framedata = framerenderer.framedata();
-  Context* targ                   = framedata.GetTarget();
+  Context* targ                     = framedata.GetTarget();
   if (auto try_final = drawdata._properties["final_out"_crcu].TryAs<RtBuffer*>()) {
     auto buffer = try_final.value();
     if (buffer) {

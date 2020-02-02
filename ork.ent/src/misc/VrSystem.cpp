@@ -19,7 +19,6 @@
 #include <pkg/ent/scene.hpp>
 #include <pkg/ent/entity.hpp>
 #include <ork/lev2/gfx/renderer/drawable.h>
-#include <ork/lev2/vr/vr.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include "VrSystem.h"
 
@@ -27,6 +26,7 @@
 ImplementReflectionX(ork::ent::VrSystemData, "VrSystemData");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
+using namespace ork::lev2::orkidvr;
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -111,6 +111,11 @@ bool VrSystem::DoLink(Simulation* psim) {
   bool good2go      = (_vrCamDat != nullptr);
   _vrstate          = int(good2go);
   if (good2go) {
+
+    ////////////////////////////////////////////////////////
+    // view matrix generator
+    ////////////////////////////////////////////////////////
+
     _baseCamDat = *_vrCamDat;
     auto cammtx = _baseCamDat.computeMatrices(1);
     fquat r;
@@ -118,10 +123,69 @@ bool VrSystem::DoLink(Simulation* psim) {
     fmtx4 offsetmtx   = cammtx._vmatrix * r.ToMatrix();
     vrdev._usermtxgen = [=]() -> fmtx4 {
       return _vrSystemData.useCamView() //
-                 ? (offsetmtx * _trackedMatrix.inverse())
-                 : _trackedMatrix.inverse();
+                 ? (offsetmtx * _trackedMatrix.inverse()) * _headingMatrix
+                 : _trackedMatrix.inverse() * _headingMatrix;
     };
+
+    ////////////////////////////////////////////////////////
+    // turn with thumb buttons
+    //  TODO move somewhere more appropriate
+    ////////////////////////////////////////////////////////
+
+    _trackingnotif            = std::make_shared<VrTrackingNotificationReceiver>();
+    _trackingnotif->_callback = [this](const svar256_t& msg) {
+      if (auto as_ctrlr = msg.TryAs<VrTrackingControllerNotificationFrame>()) {
+        auto& ctrlr = as_ctrlr.value();
+        if (ctrlr._left._buttonThumbGatedDown) {
+          fquat q;
+          q.FromAxisAngle(fvec4(0, 1, 0, -PI / 12.0));
+          _headingMatrix = _headingMatrix * q.ToMatrix();
+        } else if (ctrlr._right._buttonThumbGatedDown) {
+          fquat q;
+          q.FromAxisAngle(fvec4(0, 1, 0, PI / 12.0));
+          _headingMatrix = _headingMatrix * q.ToMatrix();
+        }
+#if 0
+        fmtx4 xlate;
+        float xlaterate = 12.0 / 80.0;
+
+        if (LCONTROLLER._button1Down) {
+          xlate.SetTranslation(0, xlaterate, 0);
+          auto trans = (xlate * _rotMatrix).GetTranslation();
+          printf("trans<%g %g %g>\n", trans.x, trans.y, trans.z);
+          xlate.SetTranslation(trans);
+          _offsetmatrix = _offsetmatrix * xlate;
+        }
+        if (LCONTROLLER._button2Down) {
+          xlate.SetTranslation(0, -xlaterate, 0);
+          auto trans = (xlate * _rotMatrix).GetTranslation();
+          printf("trans<%g %g %g>\n", trans.x, trans.y, trans.z);
+          xlate.SetTranslation(trans);
+          _offsetmatrix = _offsetmatrix * xlate;
+        }
+        ///////////////////////////////////////////////////////////
+        // fwd back
+        ///////////////////////////////////////////////////////////
+        if (RCONTROLLER._button1Down) {
+          xlate.SetTranslation(0, 0, xlaterate);
+          auto trans = (xlate * _rotMatrix).GetTranslation();
+          xlate.SetTranslation(trans);
+          _offsetmatrix = _offsetmatrix * xlate;
+        }
+        if (RCONTROLLER._button2Down) {
+          xlate.SetTranslation(0, 0, -xlaterate);
+          auto trans = (xlate * _rotMatrix).GetTranslation();
+          xlate.SetTranslation(trans);
+          _offsetmatrix = _offsetmatrix * xlate;
+        }
+#endif
+      }
+    };
+    lev2::orkidvr::addVrTrackingNotificationReceiver(_trackingnotif);
   }
+
+  ////////////////////////////////////////////////////////
+
   return good2go or (false == enabled());
 }
 
@@ -129,6 +193,9 @@ bool VrSystem::DoLink(Simulation* psim) {
 
 void VrSystem::DoUnLink(Simulation* psim) {
   lev2::orkidvr::device()._usermtxgen = nullptr;
+  if (_trackingnotif) {
+    removeVrTrackingNotificationReceiver(_trackingnotif);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

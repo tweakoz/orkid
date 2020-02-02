@@ -18,6 +18,13 @@ static ork::LockedResource<VrTrackingNotificationReceiver_set> gnotifset;
 void addVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t recvr) {
   gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset) { notifset.insert(recvr); });
 }
+void removeVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t recvr) {
+  gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset) {
+    auto it = notifset.find(recvr);
+    OrkAssert(it != notifset.end());
+    notifset.erase(it);
+  });
+}
 
 fmtx4 steam34tofmtx4(const _ovr::HmdMatrix34_t& matPose) {
   fmtx4 orkmtx = fmtx4::Identity;
@@ -193,13 +200,13 @@ void OpenVrDevice::_processControllerEvents() {
         _controllerindexset.insert(event.trackedDeviceIndex);
         switch (button) {
           case 1:
-            c._button1down = true;
+            c._button1Down = true;
             break;
           case 2:
-            c._button2down = true;
+            c._button2Down = true;
             break;
           case 32:
-            c._buttonThumbdown = true;
+            c._buttonThumbDown = true;
             break;
           case 33:
             c._triggerDown = true;
@@ -213,13 +220,13 @@ void OpenVrDevice::_processControllerEvents() {
         _controllerindexset.insert(event.trackedDeviceIndex);
         switch (button) {
           case 1:
-            c._button1down = false;
+            c._button1Down = false;
             break;
           case 2:
-            c._button2down = false;
+            c._button2Down = false;
             break;
           case 32:
-            c._buttonThumbdown = false;
+            c._buttonThumbDown = false;
             break;
           case 33:
             c._triggerDown = false;
@@ -251,15 +258,15 @@ void OpenVrDevice::_processControllerEvents() {
       auto& LCONTROLLER = _controllers[_leftControllerDeviceIndex];
       auto& RCONTROLLER = _controllers[_rightControllerDeviceIndex];
 
-      handgroup.setChannel("left.button1").as<bool>(LCONTROLLER._button1down);
-      handgroup.setChannel("left.button2").as<bool>(LCONTROLLER._button2down);
+      handgroup.setChannel("left.button1").as<bool>(LCONTROLLER._button1Down);
+      handgroup.setChannel("left.button2").as<bool>(LCONTROLLER._button2Down);
       handgroup.setChannel("left.trigger").as<bool>(LCONTROLLER._triggerDown);
-      handgroup.setChannel("left.thumb").as<bool>(LCONTROLLER._buttonThumbdown);
+      handgroup.setChannel("left.thumb").as<bool>(LCONTROLLER._buttonThumbDown);
 
-      handgroup.setChannel("right.button1").as<bool>(RCONTROLLER._button1down);
-      handgroup.setChannel("right.button2").as<bool>(RCONTROLLER._button2down);
+      handgroup.setChannel("right.button1").as<bool>(RCONTROLLER._button1Down);
+      handgroup.setChannel("right.button2").as<bool>(RCONTROLLER._button2Down);
       handgroup.setChannel("right.trigger").as<bool>(RCONTROLLER._triggerDown);
-      handgroup.setChannel("right.thumb").as<bool>(RCONTROLLER._buttonThumbdown);
+      handgroup.setChannel("right.thumb").as<bool>(RCONTROLLER._buttonThumbDown);
 
       //////////////////////////////////////
       // hand positions
@@ -275,75 +282,8 @@ void OpenVrDevice::_processControllerEvents() {
       handgroup.setChannel("left.matrix").as<fmtx4>(rx * ry * rz * lworld);
       handgroup.setChannel("right.matrix").as<fmtx4>(rx * ry * rz * rworld);
 
-      //////////////////////////////////////
-
-      fmtx4 xlate;
-      float xlaterate = 12.0 / 80.0;
-
-      if (LCONTROLLER._button1down) {
-        xlate.SetTranslation(0, xlaterate, 0);
-        auto trans = (xlate * _rotMatrix).GetTranslation();
-        printf("trans<%g %g %g>\n", trans.x, trans.y, trans.z);
-        xlate.SetTranslation(trans);
-        _offsetmatrix = _offsetmatrix * xlate;
-      }
-      if (LCONTROLLER._button2down) {
-        xlate.SetTranslation(0, -xlaterate, 0);
-        auto trans = (xlate * _rotMatrix).GetTranslation();
-        printf("trans<%g %g %g>\n", trans.x, trans.y, trans.z);
-        xlate.SetTranslation(trans);
-        _offsetmatrix = _offsetmatrix * xlate;
-      }
-      ///////////////////////////////////////////////////////////
-      // fwd back
-      ///////////////////////////////////////////////////////////
-      if (RCONTROLLER._button1down) {
-        xlate.SetTranslation(0, 0, xlaterate);
-        auto trans = (xlate * _rotMatrix).GetTranslation();
-        xlate.SetTranslation(trans);
-        _offsetmatrix = _offsetmatrix * xlate;
-      }
-      if (RCONTROLLER._button2down) {
-        xlate.SetTranslation(0, 0, -xlaterate);
-        auto trans = (xlate * _rotMatrix).GetTranslation();
-        xlate.SetTranslation(trans);
-        _offsetmatrix = _offsetmatrix * xlate;
-      }
-      bool curthumbL = LCONTROLLER._buttonThumbdown;
-      bool curthumbR = RCONTROLLER._buttonThumbdown;
-      ///////////////////////////////////////////////////////////
-      // turn left,right ( we rotate in discrete steps here, because it causes eye strain otherwise)
-      ///////////////////////////////////////////////////////////
-
-      if (curthumbL and false == _prevthumbL) {
-
-        fquat q;
-        q.FromAxisAngle(fvec4(0, 1, 0, PI / 12.0));
-        _headingmatrix = _headingmatrix * q.ToMatrix();
-      } else if (curthumbR and false == _prevthumbR) {
-        fquat q;
-        q.FromAxisAngle(fvec4(0, 1, 0, -PI / 12.0));
-        _headingmatrix = _headingmatrix * q.ToMatrix();
-      }
-      _prevthumbL = curthumbL;
-      _prevthumbR = curthumbR;
-
-      ///////////////////////////////////////////////////////////
-      // notification receivers
-      ///////////////////////////////////////////////////////////
-
-      ork::svar256_t notifvar;
-      auto& ctrlnotiffram  = notifvar.Make<VrTrackingControllerNotificationFrame>();
-      ctrlnotiffram._left  = LCONTROLLER;
-      ctrlnotiffram._right = RCONTROLLER;
-      gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset) {
-        for (auto recvr : notifset) {
-          recvr->_callback(notifvar);
-        }
-      });
-
     } // if( _rightControllerDeviceIndex>=0 and _leftControllerDeviceIndex>=0 ){
-  }
+  }   // while (_active and _hmd->PollNextEvent(&event, sizeof(event))) {
 
   //////////////////////////////////////////////
   if (_active) {
@@ -351,15 +291,28 @@ void OpenVrDevice::_processControllerEvents() {
     _ovr::VRActiveActionSet_t actionSet   = {0};
     actionSet.ulActionSet                 = actset_demo;
     // _ovr::VRInput()->UpdateActionState( &actionSet, sizeof(actionSet), 1 );
-  }
 
-  if (_rightControllerDeviceIndex >= 0 and _leftControllerDeviceIndex >= 0) {
+    if (_rightControllerDeviceIndex >= 0 and _leftControllerDeviceIndex >= 0) {
 
-    using inpmgr    = lev2::InputManager;
-    auto& handgroup = *inpmgr::inputGroup("hands");
+      using inpmgr    = lev2::InputManager;
+      auto& handgroup = *inpmgr::inputGroup("hands");
 
-    auto& LCONTROLLER = _controllers[_leftControllerDeviceIndex];
-    auto& RCONTROLLER = _controllers[_rightControllerDeviceIndex];
+      auto& LCONTROLLER = _controllers[_leftControllerDeviceIndex];
+      auto& RCONTROLLER = _controllers[_rightControllerDeviceIndex];
+
+      LCONTROLLER.updateGated();
+      RCONTROLLER.updateGated();
+
+      gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset) {
+        ork::svar256_t notifvar;
+        auto& ctrlnotiffram  = notifvar.Make<VrTrackingControllerNotificationFrame>();
+        ctrlnotiffram._left  = LCONTROLLER;
+        ctrlnotiffram._right = RCONTROLLER;
+        for (auto recvr : notifset) {
+          recvr->_callback(notifvar);
+        }
+      });
+    }
   }
 
   //////////////////////////////////////////////
@@ -526,6 +479,25 @@ void gpuUpdate(RenderContextFrameData& RCFD) {
   }
   mgr._processControllerEvents();
   mgr._updatePoses();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void ControllerState::updateGated() {
+  _button1GatedDown     = _button1Down and (not _button1DownPrev);
+  _button2GatedDown     = _button2Down and (not _button2DownPrev);
+  _buttonThumbGatedDown = _buttonThumbDown and (not _buttonThumbDownPrev);
+  _triggerGatedDown     = _triggerDown and (not _triggerDownPrev);
+
+  _button1GatedUp     = _button1DownPrev and (not _button1Down);
+  _button2GatedUp     = _button2DownPrev and (not _button2Down);
+  _buttonThumbGatedUp = _buttonThumbDownPrev and (not _buttonThumbDown);
+  _triggerGatedUp     = _triggerDownPrev and (not _triggerDown);
+
+  _button1DownPrev     = _button1Down;
+  _button2DownPrev     = _button2Down;
+  _buttonThumbDownPrev = _buttonThumbDown;
+  _triggerDownPrev     = _triggerDown;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

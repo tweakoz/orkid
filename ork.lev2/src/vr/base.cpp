@@ -57,7 +57,6 @@ void Device::_updatePosesCommon() {
   hmd.decompose(hmdpos, hmdrot, hmdscl);
 
   _rotMatrix = hmdrot.ToMatrix();
-  _rotMatrix = _headingmatrix * _rotMatrix;
   _rotMatrix.Transpose();
 
   //_rotMatrix.dump("rotmtx");
@@ -128,25 +127,17 @@ void Device::_updatePosesCommon() {
 
   ///////////////////////////////////////////////////////////
 
-  _hmdMatrix = hmd; //_userOffsetMatrix * relmtx;
+  _hmdMatrix = hmd;
 
   ///////////////////////////////////////////////////////////
 
   fmtx4 usermtx = _usermtxgen ? _usermtxgen() : fmtx4();
 
-  // fvec3 vvtrans = VVMTX.GetTranslation();
-  // fmtx4 wmtx;
-  // wmtx.SetTranslation(vvtrans + fvec3(0, 0.0, 0));
-  // wmtx = _headingmatrix * wmtx;
-  // VVMTX.inverseOf(wmtx);
-
   _outputViewOffsetMatrix = usermtx;
-
-  // deco::prints(VVMTX.dump4x3(), true);
 
   fmtx4 relmtx = (_baseMatrix * _hmdMatrix);
 
-  fmtx4 cmv = usermtx * _headingmatrix * relmtx;
+  fmtx4 cmv = usermtx * relmtx;
 
   if (_calibstate == 2) {
     deco::printf(fvec3::White(), "_baseMatrix: %s\n", _baseMatrix.dump4x3cn().c_str());

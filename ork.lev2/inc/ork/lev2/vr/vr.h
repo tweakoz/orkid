@@ -23,10 +23,25 @@ namespace ork::lev2::orkidvr {
 
 struct ControllerState {
   fmtx4 _matrix;
-  bool _button1down     = false;
-  bool _button2down     = false;
-  bool _buttonThumbdown = false;
-  bool _triggerDown     = false;
+  bool _button1Down         = false;
+  bool _button2Down         = false;
+  bool _buttonThumbDown     = false;
+  bool _triggerDown         = false;
+  bool _button1DownPrev     = false;
+  bool _button2DownPrev     = false;
+  bool _buttonThumbDownPrev = false;
+  bool _triggerDownPrev     = false;
+
+  void updateGated();
+
+  bool _button1GatedDown     = false;
+  bool _button2GatedDown     = false;
+  bool _buttonThumbGatedDown = false;
+  bool _triggerGatedDown     = false;
+  bool _button1GatedUp       = false;
+  bool _button2GatedUp       = false;
+  bool _buttonThumbGatedUp   = false;
+  bool _triggerGatedUp       = false;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -66,6 +81,7 @@ typedef std::shared_ptr<VrTrackingNotificationReceiver> VrTrackingNotificationRe
 typedef std::set<VrTrackingNotificationReceiver_ptr_t> VrTrackingNotificationReceiver_set;
 
 void addVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t recvr);
+void removeVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t recvr);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -83,8 +99,6 @@ struct Device {
   std::map<int, ControllerState> _controllers;
   bool _active;
   bool _supportsStereo;
-  fmtx4 _offsetmatrix;
-  fmtx4 _headingmatrix;
   fmtx4 _hmdMatrix;
   fmtx4 _rotMatrix;
   fmtx4 _baseMatrix;
@@ -96,8 +110,6 @@ struct Device {
   VrProjFrustumPar _frustumRight;
 
   fmtx4 _outputViewOffsetMatrix;
-  bool _prevthumbL = false;
-  bool _prevthumbR = false;
   lev2::InputGroup& _hmdinputgroup;
   uint32_t _width, _height;
   svar512_t _private;

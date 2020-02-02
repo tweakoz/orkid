@@ -11,6 +11,7 @@
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <pkg/ent/scene.h>
 #include <pkg/ent/system.h>
+#include <ork/lev2/vr/vr.h>
 
 namespace ork { namespace ent {
 
@@ -74,6 +75,8 @@ private:
   lev2::CameraData _baseCamDat;                // todo clean this up..
   int _vrstate     = 0;
   int _prv_vrstate = 0;
+  fmtx4 _headingMatrix;
+  lev2::orkidvr::VrTrackingNotificationReceiver_ptr_t _trackingnotif;
 
   void DoUpdate(Simulation* psi) final;
 };
