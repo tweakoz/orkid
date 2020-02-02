@@ -9,7 +9,18 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::orkidvr {
 ////////////////////////////////////////////////////////////////////////////////
-
+static ork::LockedResource<VrTrackingNotificationReceiver_set> gnotifset;
+void addVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t recvr) {
+  gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset) { notifset.insert(recvr); });
+}
+void removeVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t recvr) {
+  gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset) {
+    auto it = notifset.find(recvr);
+    OrkAssert(it != notifset.end());
+    notifset.erase(it);
+  });
+}
+////////////////////////////////////////////////////////////////////////////////
 NoVrDevice::NoVrDevice() {
   auto handgroup = lev2::InputManager::inputGroup("hands");
   _qtmousesubsc  = msgrouter::channel("qtmousepos")->subscribe([this](msgrouter::content_t c) { _qtmousepos = c.Get<fvec2>(); });
@@ -80,21 +91,6 @@ void NoVrDevice::_processControllerEvents() {
   bool curthumbL = handgroup->tryAs<bool>("left.thumb").value();
   bool curthumbR = handgroup->tryAs<bool>("right.thumb").value();
   ///////////////////////////////////////////////////////////
-  // turn left,right ( we rotate in discrete steps here, because it causes eye strain otherwise)
-  ///////////////////////////////////////////////////////////
-
-  if (curthumbL and false == _prevthumbL) {
-
-    fquat q;
-    q.FromAxisAngle(fvec4(0, 1, 0, PI / 12.0));
-    _headingmatrix = _headingmatrix * q.ToMatrix();
-  } else if (curthumbR and false == _prevthumbR) {
-    fquat q;
-    q.FromAxisAngle(fvec4(0, 1, 0, -PI / 12.0));
-    _headingmatrix = _headingmatrix * q.ToMatrix();
-  }
-  _prevthumbL = curthumbL;
-  _prevthumbR = curthumbR;
 }
 ////////////////////////////////////////////////////////////////////////////////
 NoVrDevice& concrete_get() {
