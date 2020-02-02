@@ -12,8 +12,8 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>-0.109591 -0.748933 -5.11839</property>
-                                                <property name='Loc'>8.79922</property>
+                                                <property name='Center'>-0.0996634 -1.13721 -4.9982</property>
+                                                <property name='Loc'>8.36277</property>
                                                 <property name='QuatC'>-0.00327337 -0.989113 0.149695 0.00350903</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
@@ -538,7 +538,9 @@
             <item key='VrSystemData'>
                 <reference category='SystemDataClass'>
                     <object type='VrSystemData' id='56'>
-                        <property name='TrackingObjectEntity'>"spawncam"</property>
+                        <property name='TrackingObjectEntity'>"xxx"</property>
+                        <property name='UseCameraView'>true</property>
+                        <property name='VisualOffset'>0 0 0</property>
                         <property name='VrCameraEntity'>"spawncam"</property>
                     </object>
                 </reference>

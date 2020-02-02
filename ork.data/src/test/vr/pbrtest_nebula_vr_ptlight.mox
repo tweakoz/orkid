@@ -840,7 +840,9 @@
             <item key='VrSystemData'>
                 <reference category='SystemDataClass'>
                     <object type='VrSystemData' id='87'>
-                        <property name='TrackingObjectEntity'>"spawncam"</property>
+                        <property name='TrackingObjectEntity'>"xxx"</property>
+                        <property name='UseCameraView'>true</property>
+                        <property name='VisualOffset'>0 0 0</property>
                         <property name='VrCameraEntity'>"spawncam"</property>
                     </object>
                 </reference>

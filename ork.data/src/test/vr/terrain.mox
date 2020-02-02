@@ -225,7 +225,6 @@
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='20'>
                                                 <property name='Center'>-150.801 216.885 508.754</property>
-                                                <property name='Focus'>0 0 0</property>
                                                 <property name='Loc'>1000</property>
                                                 <property name='QuatC'>-0.190229 -0.774655 0.103412 -0.594837</property>
                                                 <property name='Aperature'>40</property>
@@ -542,7 +541,6 @@
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='52'>
                                                 <property name='Center'>0 0 0</property>
-                                                <property name='Focus'>0 0 0</property>
                                                 <property name='Loc'>100</property>
                                                 <property name='QuatC'>0 -1 0 0</property>
                                                 <property name='Aperature'>40</property>
@@ -1179,6 +1177,7 @@
                 <reference category='SystemDataClass'>
                     <object type='VrSystemData' id='134'>
                         <property name='TrackingObjectEntity'>"vrtrackedobject"</property>
+                        <property name='VisualOffset'>0 0 0</property>
                         <property name='VrCameraEntity'>"vrcamera"</property>
                     </object>
                 </reference>
@@ -1199,6 +1198,7 @@
                 <reference category='SystemDataClass'>
                     <object type='VrSystemData' id='137'>
                         <property name='TrackingObjectEntity'>"spawnloc"</property>
+                        <property name='VisualOffset'>0 2 0</property>
                         <property name='VrCameraEntity'>"spawncam"</property>
                     </object>
                 </reference>

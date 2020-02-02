@@ -34,6 +34,8 @@ namespace ork { namespace ent {
 void VrSystemData::describeX(class_t* c) {
   c->memberProperty("TrackingObjectEntity", &VrSystemData::_vrTrackedObject);
   c->memberProperty("VrCameraEntity", &VrSystemData::_vrCamera);
+  c->memberProperty("VisualOffset", &VrSystemData::_visualoffset);
+  c->memberProperty("UseCameraView", &VrSystemData::_useCamView);
   // todo - property annotation which pops up a choicelist with the current set of entities
 }
 
@@ -41,7 +43,8 @@ void VrSystemData::describeX(class_t* c) {
 
 VrSystemData::VrSystemData()
     : _vrTrackedObject(AddPooledString("vrtrackedobject"))
-    , _vrCamera(AddPooledString("vrcamera")) {
+    , _vrCamera(AddPooledString("vrcamera"))
+    , _useCamView(false) {
 }
 
 void VrSystemData::defaultSetup() {
@@ -62,48 +65,70 @@ VrSystem::VrSystem(const VrSystemData& data, Simulation* psim)
   _vrstate = 0;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 bool VrSystem::enabled() const {
   return true;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 VrSystem::~VrSystem() {
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 void VrSystem::DoUpdate(Simulation* psim) {
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void VrSystem::enqueueDrawables(lev2::DrawableBuffer& buffer) {
   if (_vrstate != 0) {
     //////////////////////////////////////////////////
     // copy vr matrix from updthread to renderthread
     //////////////////////////////////////////////////
-    fmtx4 vrmtx; // = this->_trackedObject->GetEffectiveMatrix();
+    fmtx4 mtx = _trackedObject ? _trackedObject->GetEffectiveMatrix() : fmtx4();
+    fvec3 pos;
+    fquat rot;
+    float scal;
+    mtx.decompose(pos, rot, scal);
+    _trackedMatrix.compose(pos + _vrSystemData.visualOffset(), fquat(), 1.0f);
     buffer.setPreRenderCallback(0, [=](lev2::RenderContextFrameData& RCFD) {
-      RCFD.setUserProperty("vrroot"_crc, vrmtx);
+      //
       RCFD.setUserProperty("vrcam"_crc, this->_vrCamDat);
     });
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 bool VrSystem::DoLink(Simulation* psim) {
-
-  lev2::orkidvr::device()._calibstate = 0;
-
-  _trackedObject = psim->FindEntity(AddPooledString(_vrSystemData.vrTrackedObject()));
-  _vrCamDat      = psim->cameraData(AddPooledString(_vrSystemData.vrCamera()));
-  bool good2go   = (_trackedObject != nullptr) and (_vrCamDat != nullptr);
-  _vrstate       = int(good2go);
+  auto& vrdev       = lev2::orkidvr::device();
+  vrdev._calibstate = 0;
+  _trackedObject    = psim->FindEntity(AddPooledString(_vrSystemData.vrTrackedObject()));
+  _vrCamDat         = psim->cameraData(AddPooledString(_vrSystemData.vrCamera()));
+  bool good2go      = (_vrCamDat != nullptr);
+  _vrstate          = int(good2go);
   if (good2go) {
     _baseCamDat = *_vrCamDat;
-    auto& uoff  = lev2::orkidvr::device()._userOffsetMatrix;
     auto cammtx = _baseCamDat.computeMatrices(1);
-
     fquat r;
     r.FromAxisAngle(fvec4(0, 1, 0, PI));
-
-    uoff = cammtx._vmatrix * r.ToMatrix();
+    fmtx4 offsetmtx   = cammtx._vmatrix * r.ToMatrix();
+    vrdev._usermtxgen = [=]() -> fmtx4 {
+      return _vrSystemData.useCamView() //
+                 ? (offsetmtx * _trackedMatrix.inverse())
+                 : _trackedMatrix.inverse();
+    };
   }
   return good2go or (false == enabled());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VrSystem::DoUnLink(Simulation* psim) {
+  lev2::orkidvr::device()._usermtxgen = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -30,11 +30,19 @@ public:
   const PoolString& vrCamera() const {
     return _vrCamera;
   }
+  const fvec3& visualOffset() const {
+    return _visualoffset;
+  }
+  bool useCamView() const {
+    return _useCamView;
+  }
 
 private:
   ork::ent::System* createSystem(ork::ent::Simulation* pinst) const final;
   PoolString _vrTrackedObject;
   PoolString _vrCamera;
+  fvec3 _visualoffset;
+  bool _useCamView;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -53,13 +61,15 @@ public:
     return _vrSystemData;
   }
   bool DoLink(Simulation* psi) final;
+  void DoUnLink(Simulation* psi) final;
 
   bool enabled() const;
   void enqueueDrawables(lev2::DrawableBuffer& buffer) final;
 
 private:
   const VrSystemData& _vrSystemData;
-  Entity* _trackedObject            = nullptr;
+  Entity* _trackedObject;
+  fmtx4 _trackedMatrix;
   const lev2::CameraData* _vrCamDat = nullptr; // todo clean this up..
   lev2::CameraData _baseCamDat;                // todo clean this up..
   int _vrstate     = 0;

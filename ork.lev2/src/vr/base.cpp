@@ -16,7 +16,8 @@ Device::Device()
     , _supportsStereo(false)
     , _hmdinputgroup(*lev2::InputManager::inputGroup("hmd"))
     , _calibstate(0)
-    , _calibstateFrame(0) {
+    , _calibstateFrame(0)
+    , _usermtxgen(nullptr) {
 
   _leftcamera   = new CameraMatrices;
   _centercamera = new CameraMatrices;
@@ -44,7 +45,7 @@ Device::~Device() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Device::_updatePosesCommon(fmtx4 observermatrix) {
+void Device::_updatePosesCommon() {
   fmtx4 hmd  = _posemap["hmd"];
   fmtx4 eyeL = _posemap["eyel"];
   fmtx4 eyeR = _posemap["eyer"];
@@ -131,7 +132,7 @@ void Device::_updatePosesCommon(fmtx4 observermatrix) {
 
   ///////////////////////////////////////////////////////////
 
-  fmtx4 VVMTX = observermatrix.inverse();
+  fmtx4 usermtx = _usermtxgen ? _usermtxgen() : fmtx4();
 
   // fvec3 vvtrans = VVMTX.GetTranslation();
   // fmtx4 wmtx;
@@ -139,19 +140,19 @@ void Device::_updatePosesCommon(fmtx4 observermatrix) {
   // wmtx = _headingmatrix * wmtx;
   // VVMTX.inverseOf(wmtx);
 
-  _outputViewOffsetMatrix = VVMTX;
+  _outputViewOffsetMatrix = usermtx;
 
   // deco::prints(VVMTX.dump4x3(), true);
 
   fmtx4 relmtx = (_baseMatrix * _hmdMatrix);
 
-  fmtx4 cmv = _userOffsetMatrix * (VVMTX * relmtx);
+  fmtx4 cmv = usermtx * _headingmatrix * relmtx;
 
   if (_calibstate == 2) {
     deco::printf(fvec3::White(), "_baseMatrix: %s\n", _baseMatrix.dump4x3cn().c_str());
     deco::printf(fvec3::White(), "_hmdMatrix: %s\n", _hmdMatrix.dump4x3cn().c_str());
     deco::printf(fvec3::White(), "relmtx: %s\n", relmtx.dump4x3cn().c_str());
-    deco::printf(fvec3::White(), "VVMTX: %s\n", VVMTX.dump4x3cn().c_str());
+    deco::printf(fvec3::White(), "usermtx: %s\n", usermtx.dump4x3cn().c_str());
     deco::printf(fvec3::White(), "cmv: %s\n", cmv.dump4x3cn().c_str());
   }
 

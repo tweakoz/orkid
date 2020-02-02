@@ -417,7 +417,7 @@ void composite(lev2::Context* targ, Texture* twoeyetex) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void OpenVrDevice::_updatePoses(fmtx4 observermatrix) {
+void OpenVrDevice::_updatePoses() {
 
   if (_active and _hmd->IsInputAvailable()) {
 
@@ -504,7 +504,7 @@ void OpenVrDevice::_updatePoses(fmtx4 observermatrix) {
       });
     }
 
-    _updatePosesCommon(observermatrix);
+    _updatePosesCommon();
   }
 }
 
@@ -525,10 +525,7 @@ void gpuUpdate(RenderContextFrameData& RCFD) {
     assert(ovr_compositor_ok);
   }
   mgr._processControllerEvents();
-  auto vrroot = RCFD.getUserProperty("vrroot"_crc);
-  if (auto as_mtx = vrroot.TryAs<fmtx4>()) {
-    mgr._updatePoses(as_mtx.value());
-  }
+  mgr._updatePoses();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -14,7 +14,7 @@ NoVrDevice::NoVrDevice() {
   auto handgroup = lev2::InputManager::inputGroup("hands");
   _qtmousesubsc  = msgrouter::channel("qtmousepos")->subscribe([this](msgrouter::content_t c) { _qtmousepos = c.Get<fvec2>(); });
 
-  _active = true;
+  _active       = true;
   _qtkbdownsubs = msgrouter::channel("qtkeyboard.down")->subscribe([this, handgroup](msgrouter::content_t c) {
     int key = c.Get<int>();
     switch (key) {
@@ -53,9 +53,9 @@ NoVrDevice::NoVrDevice() {
   _posemap["projc"].Perspective(45, 16.0 / 9.0, .1, 100000);
   _posemap["eyel"] = fmtx4::Identity;
   _posemap["eyer"] = fmtx4::Identity;
-
 }
-NoVrDevice::~NoVrDevice() {}
+NoVrDevice::~NoVrDevice() {
+}
 ////////////////////////////////////////////////////////////////////////////////
 void NoVrDevice::_updatePoses(RenderContextFrameData& RCFD) {
   auto mpos = _qtmousepos;
@@ -65,17 +65,14 @@ void NoVrDevice::_updatePoses(RenderContextFrameData& RCFD) {
   fmtx4 w;
   w.LookAt(fvec3(0, 0, 0), v3, fvec3(0, 1, 0));
   _posemap["hmd"] = w;
-   //printf("v3<%g %g %g>\n", v3.x, v3.y, v3.z);
-  auto vrroot = RCFD.getUserProperty("vrroot"_crc);
-  if (auto as_mtx = vrroot.TryAs<fmtx4>()) {
-    auto& CPD = RCFD.topCPD();
-    auto rt = CPD._irendertarget;
-    float aspect = float(rt->GetW())/float(rt->GetH());
-    _posemap["projl"].Perspective(45, aspect, .1, 100000);
-    _posemap["projr"].Perspective(45, aspect, .1, 100000);
-    _posemap["projc"].Perspective(45, aspect, .1, 100000);
-    _updatePosesCommon(as_mtx.value());
-  }
+  // printf("v3<%g %g %g>\n", v3.x, v3.y, v3.z);
+  auto& CPD    = RCFD.topCPD();
+  auto rt      = CPD._irendertarget;
+  float aspect = float(rt->GetW()) / float(rt->GetH());
+  _posemap["projl"].Perspective(45, aspect, .1, 100000);
+  _posemap["projr"].Perspective(45, aspect, .1, 100000);
+  _posemap["projc"].Perspective(45, aspect, .1, 100000);
+  _updatePosesCommon();
 }
 ////////////////////////////////////////////////////////////////////////////////
 void NoVrDevice::_processControllerEvents() {

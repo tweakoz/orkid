@@ -12,9 +12,9 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>-0.204199 -0.426632 -4.45597</property>
-                                                <property name='Loc'>9.52364</property>
-                                                <property name='QuatC'>-0.00359205 -0.985146 0.17376 0.00770105</property>
+                                                <property name='Center'>0.00547314 2.84506 -4.58928</property>
+                                                <property name='Loc'>8.05489</property>
+                                                <property name='QuatC'>-0.00484431 -0.998924 -0.0539394 -0.00125151</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -697,7 +697,7 @@
                                                                                         <property name='EnvironmentMipScale'>8</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
-                                                                                                "lev2tex" "data://environ/envmaps/tozenv_basic"
+                                                                                                "lev2tex" "data://environ/envmaps/tozenv_hellscape"
                                                                                             </reference>
                                                                                         </property>
                                                                                         <property name='SkyboxLevel'>1</property>
@@ -742,7 +742,9 @@
             <item key='VrSystemData'>
                 <reference category='SystemDataClass'>
                     <object type='VrSystemData' id='77'>
-                        <property name='TrackingObjectEntity'>"spawncam"</property>
+                        <property name='TrackingObjectEntity'>"xxx"</property>
+                        <property name='UseCameraView'>true</property>
+                        <property name='VisualOffset'>0 0 0</property>
                         <property name='VrCameraEntity'>"spawncam"</property>
                     </object>
                 </reference>

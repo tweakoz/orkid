@@ -36,7 +36,7 @@ function Spinny:OnEntityUpdate(dt)
         self.timer = math.random(1,3)
     end
 
-    self.angle = self.angle + 0.5*dt
+    self.angle = self.angle + 0.1*dt
     self.ent:setRotAxisAngle(self.axis,self.angle)
 end
 -------------------------------------------------------------------------------

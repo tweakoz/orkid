@@ -69,9 +69,13 @@ void addVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t recv
 
 ////////////////////////////////////////////////////////////////////////////////
 
+typedef std::function<fmtx4()> usermatrixgenerator_t;
+
 struct Device {
   Device();
   virtual ~Device();
+  void _updatePosesCommon();
+
   std::map<std::string, fmtx4> _posemap;
   CameraMatrices* _leftcamera   = nullptr;
   CameraMatrices* _centercamera = nullptr;
@@ -84,7 +88,8 @@ struct Device {
   fmtx4 _hmdMatrix;
   fmtx4 _rotMatrix;
   fmtx4 _baseMatrix;
-  fmtx4 _userOffsetMatrix;
+
+  usermatrixgenerator_t _usermtxgen;
 
   VrProjFrustumPar _frustumLeft;
   VrProjFrustumPar _frustumCenter;
@@ -95,7 +100,6 @@ struct Device {
   bool _prevthumbR = false;
   lev2::InputGroup& _hmdinputgroup;
   uint32_t _width, _height;
-  void _updatePosesCommon(fmtx4 observermatrix);
   svar512_t _private;
   int _calibstate;
   int _calibstateFrame;
@@ -103,6 +107,9 @@ struct Device {
   std::vector<fvec3> _calibnxvect;
   std::vector<fvec3> _calibnyvect;
   std::vector<fvec3> _calibnzvect;
+
+private:
+  Device(const Device& rhs) = delete;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -123,7 +130,7 @@ struct OpenVrDevice : public Device {
   int _leftControllerDeviceIndex  = -1;
 
   void _processControllerEvents();
-  void _updatePoses(fmtx4 observermatrix);
+  void _updatePoses();
 };
 #else
 ////////////////////////////////////////////////////////////////////////////////
