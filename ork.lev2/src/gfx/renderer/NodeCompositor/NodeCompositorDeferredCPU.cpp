@@ -33,7 +33,7 @@ void DeferredCompositingNode::describeX(class_t* c) {
   c->memberProperty("FogColor", &DeferredCompositingNode::_fogColor);
 }
 ///////////////////////////////////////////////////////////////////////////////
-struct IMPL {
+struct CpuNodeImpl {
   static constexpr size_t KMAXLIGHTS         = 512;
   static constexpr int KMAXNUMTILESX         = 512;
   static constexpr int KMAXNUMTILESY         = 256;
@@ -41,7 +41,7 @@ struct IMPL {
   static constexpr size_t KMAXLIGHTSPERCHUNK = 32768 / sizeof(fvec4);
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  IMPL(DeferredCompositingNode* node)
+  CpuNodeImpl(DeferredCompositingNode* node)
       : _camname(AddPooledString("Camera"))
       , _context(node, "orkshader://deferred", KMAXLIGHTS)
       , _lighttiles(KMAXTILECOUNT)
@@ -50,7 +50,7 @@ struct IMPL {
       _lighttiles[i] = new locked_pllist_t;
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ~IMPL() {
+  ~CpuNodeImpl() {
     for (locked_pllist_t* item : _lighttiles) {
       delete item;
     }
@@ -287,11 +287,11 @@ struct IMPL {
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uvb;
   FxShaderParamBuffer* _lightbuffer = nullptr;
   std::atomic<int> _pendingtilecounter;
-}; // IMPL
+}; // CpuNodeImpl
 
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNode::DeferredCompositingNode() {
-  _impl = std::make_shared<IMPL>(this);
+  _impl.makeShared<CpuNodeImpl>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNode::~DeferredCompositingNode() {
@@ -299,18 +299,18 @@ DeferredCompositingNode::~DeferredCompositingNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNode::DoInit(lev2::Context* pTARG, int iW, int iH) {
-  _impl.Get<std::shared_ptr<IMPL>>()->init(pTARG);
+  _impl.Get<std::shared_ptr<CpuNodeImpl>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNode::DoRender(CompositorDrawData& drawdata) {
-  auto impl = _impl.Get<std::shared_ptr<IMPL>>();
+  auto impl = _impl.Get<std::shared_ptr<CpuNodeImpl>>();
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 RtBuffer* DeferredCompositingNode::GetOutput() const {
   static int i = 0;
   i++;
-  return _impl.Get<std::shared_ptr<IMPL>>()->_context._rtgLaccum->GetMrt(0);
+  return _impl.Get<std::shared_ptr<CpuNodeImpl>>()->_context._rtgLaccum->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::deferrednode

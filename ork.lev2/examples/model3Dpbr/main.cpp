@@ -34,14 +34,12 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////
   DefaultRenderer renderer;
   LightManagerData lmd;
-  auto lightmgr      = std::make_shared<LightManager>(lmd);
-  auto compscene     = std::make_shared<CompositingScene>();
-  auto compsceneitem = std::make_shared<CompositingSceneItem>();
-  auto comptek       = std::make_shared<NodeCompositingTechnique>();
-  auto pbrnode       = std::make_shared<DeferredCompositingNodePbr>();
-  auto outnode       = std::make_shared<ScreenOutputCompositingNode>();
-  comptek->_writeRenderNode(pbrnode.get());
-  comptek->_writeOutputNode(outnode.get());
+  auto lightmgr              = std::make_shared<LightManager>(lmd);
+  auto compscene             = std::make_shared<CompositingScene>();
+  auto compsceneitem         = std::make_shared<CompositingSceneItem>();
+  auto comptek               = std::make_shared<NodeCompositingTechnique>();
+  auto pbrnode               = comptek->createRenderNode<DeferredCompositingNodePbr>();
+  auto outnode               = comptek->createOutputNode<ScreenOutputCompositingNode>();
   compsceneitem->mpTechnique = comptek.get();
   compscene->items().AddSorted("item1"_pool, compsceneitem.get());
   CompositingData compositordata;

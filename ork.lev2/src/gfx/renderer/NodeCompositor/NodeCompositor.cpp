@@ -53,6 +53,12 @@ NodeCompositingTechnique::NodeCompositingTechnique()
 }
 ///////////////////////////////////////////////////////////////////////////////
 NodeCompositingTechnique::~NodeCompositingTechnique() {
+  if (_renderNode)
+    delete _renderNode;
+  if (_postfxNode)
+    delete _postfxNode;
+  if (_outputNode)
+    delete _outputNode;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::_readRenderNode(ork::rtti::ICastable*& val) const {

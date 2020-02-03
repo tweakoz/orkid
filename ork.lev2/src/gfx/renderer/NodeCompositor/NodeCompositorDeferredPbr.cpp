@@ -119,16 +119,16 @@ lev2::Texture* DeferredCompositingNodePbr::envDiffuseTexture() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-struct IMPL {
+struct PbrNodeImpl {
   static const int KMAXLIGHTS = 8;
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  IMPL(DeferredCompositingNodePbr* node)
+  PbrNodeImpl(DeferredCompositingNodePbr* node)
       : _camname(AddPooledString("Camera"))
       , _context(node, "orkshader://deferred", KMAXLIGHTS)
       , _lightProcessor(_context, node) {
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ~IMPL() {
+  ~PbrNodeImpl() {
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void init(lev2::Context* context) {
@@ -276,25 +276,25 @@ struct IMPL {
 
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
-  _impl = std::make_shared<IMPL>(this);
+  _impl = std::make_shared<PbrNodeImpl>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNodePbr::~DeferredCompositingNodePbr() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNodePbr::DoInit(lev2::Context* pTARG, int iW, int iH) {
-  _impl.Get<std::shared_ptr<IMPL>>()->init(pTARG);
+  _impl.Get<std::shared_ptr<PbrNodeImpl>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNodePbr::DoRender(CompositorDrawData& drawdata) {
-  auto impl = _impl.Get<std::shared_ptr<IMPL>>();
+  auto impl = _impl.Get<std::shared_ptr<PbrNodeImpl>>();
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 RtBuffer* DeferredCompositingNodePbr::GetOutput() const {
   static int i = 0;
   i++;
-  return _impl.Get<std::shared_ptr<IMPL>>()->_context._rtgLaccum->GetMrt(0);
+  return _impl.Get<std::shared_ptr<PbrNodeImpl>>()->_context._rtgLaccum->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::deferrednode

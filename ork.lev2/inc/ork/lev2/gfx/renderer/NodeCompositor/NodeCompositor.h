@@ -18,128 +18,154 @@
 
 namespace ork::lev2 {
 
-  ///////////////////////////////////////////////////////////////////////////////
-  class OutputCompositingNode : public ork::Object {
-    DeclareAbstractX(OutputCompositingNode, ork::Object);
+///////////////////////////////////////////////////////////////////////////////
+class OutputCompositingNode : public ork::Object {
+  DeclareAbstractX(OutputCompositingNode, ork::Object);
 
-  public:
-    OutputCompositingNode();
-    ~OutputCompositingNode();
-    virtual void gpuInit(lev2::Context* pTARG, int w, int h) {}
-    virtual void beginAssemble(CompositorDrawData& drawdata) {}
-    virtual void endAssemble(CompositorDrawData& drawdata) {}
-    virtual void composite(CompositorDrawData& drawdata) {}
-  };
-  ///////////////////////////////////////////////////////////////////////////////
-  class RenderCompositingNode : public ork::Object {
-    DeclareAbstractX(RenderCompositingNode, ork::Object);
+public:
+  OutputCompositingNode();
+  ~OutputCompositingNode();
+  virtual void gpuInit(lev2::Context* pTARG, int w, int h) {
+  }
+  virtual void beginAssemble(CompositorDrawData& drawdata) {
+  }
+  virtual void endAssemble(CompositorDrawData& drawdata) {
+  }
+  virtual void composite(CompositorDrawData& drawdata) {
+  }
+};
+///////////////////////////////////////////////////////////////////////////////
+class RenderCompositingNode : public ork::Object {
+  DeclareAbstractX(RenderCompositingNode, ork::Object);
 
-  public:
-    RenderCompositingNode();
-    ~RenderCompositingNode();
-    void Init(lev2::Context* pTARG, int w, int h);
-    void Render(CompositorDrawData& drawdata);
-    virtual lev2::RtBuffer* GetOutput() const { return nullptr; }
+public:
+  RenderCompositingNode();
+  ~RenderCompositingNode();
+  void Init(lev2::Context* pTARG, int w, int h);
+  void Render(CompositorDrawData& drawdata);
+  virtual lev2::RtBuffer* GetOutput() const {
+    return nullptr;
+  }
 
-  private:
-    virtual void DoInit(lev2::Context* pTARG, int w, int h) = 0;
-    virtual void DoRender(CompositorDrawData& drawdata) = 0;
-  };
-  ///////////////////////////////////////////////////////////////////////////////
-  class PostCompositingNode : public ork::Object {
-    DeclareAbstractX(PostCompositingNode, ork::Object);
+private:
+  virtual void DoInit(lev2::Context* pTARG, int w, int h) = 0;
+  virtual void DoRender(CompositorDrawData& drawdata)     = 0;
+};
+///////////////////////////////////////////////////////////////////////////////
+class PostCompositingNode : public ork::Object {
+  DeclareAbstractX(PostCompositingNode, ork::Object);
 
-  public:
-    PostCompositingNode();
-    ~PostCompositingNode();
-    void Init(lev2::Context* pTARG, int w, int h);
-    void Render(CompositorDrawData& drawdata);
-    virtual lev2::RtBuffer* GetOutput() const { return nullptr; }
+public:
+  PostCompositingNode();
+  ~PostCompositingNode();
+  void Init(lev2::Context* pTARG, int w, int h);
+  void Render(CompositorDrawData& drawdata);
+  virtual lev2::RtBuffer* GetOutput() const {
+    return nullptr;
+  }
 
-  private:
-    virtual void DoInit(lev2::Context* pTARG, int w, int h) = 0;
-    virtual void DoRender(CompositorDrawData& drawdata) = 0;
-  };
-  ///////////////////////////////////////////////////////////////////////////////
-  class ChainCompositingNode : public PostCompositingNode {
-    DeclareAbstractX(ChainCompositingNode, PostCompositingNode);
-  };
-  ///////////////////////////////////////////////////////////////////////////////
-  class SeriesCompositingNode : public PostCompositingNode {
-    DeclareConcreteX(SeriesCompositingNode, PostCompositingNode);
+private:
+  virtual void DoInit(lev2::Context* pTARG, int w, int h) = 0;
+  virtual void DoRender(CompositorDrawData& drawdata)     = 0;
+};
+///////////////////////////////////////////////////////////////////////////////
+class ChainCompositingNode : public PostCompositingNode {
+  DeclareAbstractX(ChainCompositingNode, PostCompositingNode);
+};
+///////////////////////////////////////////////////////////////////////////////
+class SeriesCompositingNode : public PostCompositingNode {
+  DeclareConcreteX(SeriesCompositingNode, PostCompositingNode);
 
-  public:
-    SeriesCompositingNode();
-    ~SeriesCompositingNode();
+public:
+  SeriesCompositingNode();
+  ~SeriesCompositingNode();
 
-  private:
-    void DoInit(lev2::Context* pTARG, int w, int h) final;                          // virtual
-    void DoRender(CompositorDrawData& drawdata) final; // virtual
+private:
+  void DoInit(lev2::Context* pTARG, int w, int h) final; // virtual
+  void DoRender(CompositorDrawData& drawdata) final;     // virtual
 
-    void GetNode(ork::rtti::ICastable*& val) const;
-    void SetNode(ork::rtti::ICastable* const& val);
+  void GetNode(ork::rtti::ICastable*& val) const;
+  void SetNode(ork::rtti::ICastable* const& val);
 
-    lev2::RtBuffer* GetOutput() const final;
+  lev2::RtBuffer* GetOutput() const final;
 
-    CompositingMaterial mCompositingMaterial;
-    PostCompositingNode* mNode = nullptr;
-    lev2::RtBuffer* mOutput = nullptr;
-    lev2::RtGroup* _rtg = nullptr;
-    lev2::BuiltinFrameTechniques* mFTEK;
-  };
-  ///////////////////////////////////////////////////////////////////////////////
-  class Op2CompositingNode : public PostCompositingNode {
-    DeclareConcreteX(Op2CompositingNode, PostCompositingNode);
+  CompositingMaterial mCompositingMaterial;
+  PostCompositingNode* mNode = nullptr;
+  lev2::RtBuffer* mOutput    = nullptr;
+  lev2::RtGroup* _rtg        = nullptr;
+  lev2::BuiltinFrameTechniques* mFTEK;
+};
+///////////////////////////////////////////////////////////////////////////////
+class Op2CompositingNode : public PostCompositingNode {
+  DeclareConcreteX(Op2CompositingNode, PostCompositingNode);
 
-  public:
-    Op2CompositingNode();
-    ~Op2CompositingNode();
+public:
+  Op2CompositingNode();
+  ~Op2CompositingNode();
 
-  private:
-    void DoInit(lev2::Context* pTARG, int w, int h) override;                          // virtual
-    void DoRender(CompositorDrawData& drawdata) override; // virtual
-    void GetNodeA(ork::rtti::ICastable*& val) const;
-    void SetNodeA(ork::rtti::ICastable* const& val);
-    void GetNodeB(ork::rtti::ICastable*& val) const;
-    void SetNodeB(ork::rtti::ICastable* const& val);
-    lev2::RtBuffer* GetOutput() const override { return mOutput; }
+private:
+  void DoInit(lev2::Context* pTARG, int w, int h) override; // virtual
+  void DoRender(CompositorDrawData& drawdata) override;     // virtual
+  void GetNodeA(ork::rtti::ICastable*& val) const;
+  void SetNodeA(ork::rtti::ICastable* const& val);
+  void GetNodeB(ork::rtti::ICastable*& val) const;
+  void SetNodeB(ork::rtti::ICastable* const& val);
+  lev2::RtBuffer* GetOutput() const override {
+    return mOutput;
+  }
 
-    PostCompositingNode* mSubA = nullptr;
-    PostCompositingNode* mSubB = nullptr;
-    CompositingMaterial mCompositingMaterial;
-    lev2::RtBuffer* mOutput = nullptr;
-    lev2::RtGroup* _rtg = nullptr;
-    EOp2CompositeMode mMode;
-    fvec4 mLevelA;
-    fvec4 mLevelB;
-    fvec4 mBiasA;
-    fvec4 mBiasB;
-  };
-  ///////////////////////////////////////////////////////////////////////////////
-  class NodeCompositingTechnique : public CompositingTechnique {
-    DeclareConcreteX(NodeCompositingTechnique, CompositingTechnique);
+  PostCompositingNode* mSubA = nullptr;
+  PostCompositingNode* mSubB = nullptr;
+  CompositingMaterial mCompositingMaterial;
+  lev2::RtBuffer* mOutput = nullptr;
+  lev2::RtGroup* _rtg     = nullptr;
+  EOp2CompositeMode mMode;
+  fvec4 mLevelA;
+  fvec4 mLevelB;
+  fvec4 mBiasA;
+  fvec4 mBiasB;
+};
+///////////////////////////////////////////////////////////////////////////////
+class NodeCompositingTechnique : public CompositingTechnique {
+  DeclareConcreteX(NodeCompositingTechnique, CompositingTechnique);
 
-  public:
-    NodeCompositingTechnique();
-    ~NodeCompositingTechnique();
+public:
+  NodeCompositingTechnique();
+  ~NodeCompositingTechnique();
 
-    void _readRenderNode(ork::rtti::ICastable*& val) const;
-    void _writeRenderNode(ork::rtti::ICastable* const& val);
-    void _readPostFxNode(ork::rtti::ICastable*& val) const;
-    void _writePostFxNode(ork::rtti::ICastable* const& val);
-    void _readOutputNode(ork::rtti::ICastable*& val) const;
-    void _writeOutputNode(ork::rtti::ICastable* const& val);
+  template <typename T> T* createRenderNode() {
+    auto rval = new T;
+    _writeRenderNode(rval);
+    return rval;
+  }
+  template <typename T> T* createPostFxNode() {
+    auto rval = new T;
+    _writePostFxNode(rval);
+    return rval;
+  }
+  template <typename T> T* createOutputNode() {
+    auto rval = new T;
+    _writeOutputNode(rval);
+    return rval;
+  }
 
-  private:
-    void Init(lev2::Context* pTARG, int w, int h) override;
-    bool assemble(CompositorDrawData& drawdata) override;
-    void composite(CompositorDrawData& drawdata) override;
-    //
+  void _readRenderNode(ork::rtti::ICastable*& val) const;
+  void _writeRenderNode(ork::rtti::ICastable* const& val);
+  void _readPostFxNode(ork::rtti::ICastable*& val) const;
+  void _writePostFxNode(ork::rtti::ICastable* const& val);
+  void _readOutputNode(ork::rtti::ICastable*& val) const;
+  void _writeOutputNode(ork::rtti::ICastable* const& val);
 
-    ork::ObjectMap mBufferMap;
-    RenderCompositingNode* _renderNode;
-    PostCompositingNode* _postfxNode;
-    OutputCompositingNode* _outputNode;
-    CompositingMaterial mCompositingMaterial;
-  };
-} // namespace ork::lev2 {
+private:
+  void Init(lev2::Context* pTARG, int w, int h) override;
+  bool assemble(CompositorDrawData& drawdata) override;
+  void composite(CompositorDrawData& drawdata) override;
+  //
+
+  ork::ObjectMap mBufferMap;
+  RenderCompositingNode* _renderNode;
+  PostCompositingNode* _postfxNode;
+  OutputCompositingNode* _outputNode;
+  CompositingMaterial mCompositingMaterial;
+};
+} // namespace ork::lev2
