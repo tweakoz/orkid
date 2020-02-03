@@ -145,7 +145,7 @@ int main(int argc, char** argv) {
       fvec3 delta = inst._target - inst._curpos;
       inst._curpos += delta.Normal() * dt * 0.3;
 
-      delta         = inst._target - inst._curpos;
+      delta         = inst._targetaxis - inst._curaxis;
       inst._curaxis = (inst._curaxis + delta.Normal() * dt * 0.1).Normal();
       inst._curangle += (inst._targetangle - inst._curangle) * dt * 0.1;
 
