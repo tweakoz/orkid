@@ -51,13 +51,13 @@ Texture* PBRMaterial::brdfIntegrationMap(Context* targ) {
     brdfhasher.accumulateItem<float>(DIM);         // dimension
     brdfhasher.finish();
     uint64_t brdfhash = brdfhasher.result();
-    printf("brdfIntegrationMap hashkey<%zx>\n", brdfhash);
+    // printf("brdfIntegrationMap hashkey<%zx>\n", brdfhash);
     auto dblock = DataBlockCache::findDataBlock(brdfhash);
     if (dblock) {
       // loaded from cache
-      printf("brdfIntegrationMap loaded from cache\n");
+      // printf("brdfIntegrationMap loaded from cache\n");
     } else { // recompute and cache
-      printf("Begin Compute brdfIntegrationMap\n");
+      // printf("Begin Compute brdfIntegrationMap\n");
       dblock        = std::make_shared<DataBlock>();
       float* texels = dblock->allocateItems<float>(DIM * DIM * 4);
       auto group    = opq::createCompletionGroup(opq::concurrentQueue());
@@ -77,7 +77,7 @@ Texture* PBRMaterial::brdfIntegrationMap(Context* targ) {
         });
       }
       group->join();
-      printf("End Compute brdfIntegrationMap\n");
+      // printf("End Compute brdfIntegrationMap\n");
       fflush(stdout);
       DataBlockCache::setDataBlock(brdfhash, dblock);
     }
@@ -130,7 +130,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
     mtl->gpuInit(targ, "orkshader://pbr_filterenv");
     tekFilterSpecMap = mtl->technique("tek_filterSpecularMap");
     OrkAssert(tekFilterSpecMap != nullptr);
-    printf("filterenv mtl<%p> tekFilterSpecMap<%p>\n", mtl.get(), tekFilterSpecMap);
+    // printf("filterenv mtl<%p> tekFilterSpecMap<%p>\n", mtl.get(), tekFilterSpecMap);
     param_mvp = mtl->param("mvp");
     param_pfm = mtl->param("prefiltmap");
     param_ruf = mtl->param("roughness");
@@ -161,8 +161,8 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
     // outbuffer->
     outgroup->SetMrt(0, outbuffr.get());
 
-    printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
-    printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
+    // printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
+    // printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
 
     fbi->PushRtGroup(outgroup.get());
     fbi->BeginFrame();
@@ -188,7 +188,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
     if (1) {
       auto outpath = file::Path::temp_dir() / FormatString("filteredenv-specmap-mip%d.exr", imip);
       auto out     = ImageOutput::create(outpath.c_str());
-      printf("filterenv write dbgout<%s> <%p>\n", outpath.c_str(), out.get());
+      // printf("filterenv write dbgout<%s> <%p>\n", outpath.c_str(), out.get());
       OrkAssert(out != nullptr);
       ImageSpec spec(w, h, 4, TypeDesc::FLOAT);
       out->open(outpath.c_str(), spec);
@@ -234,7 +234,7 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
     mtl->gpuInit(targ, "orkshader://pbr_filterenv");
     tekFilterDiffMap = mtl->technique("tek_filterDiffuseMap");
     OrkAssert(tekFilterDiffMap != nullptr);
-    printf("filterenv mtl<%p> tekFilterDiffMap<%p>\n", mtl.get(), tekFilterDiffMap);
+    // printf("filterenv mtl<%p> tekFilterDiffMap<%p>\n", mtl.get(), tekFilterDiffMap);
     param_mvp = mtl->param("mvp");
     param_pfm = mtl->param("prefiltmap");
     param_ruf = mtl->param("roughness");
@@ -266,8 +266,8 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
     // outbuffer->
     outgroup->SetMrt(0, outbuffr.get());
 
-    printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
-    printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
+    /// printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
+    // printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
 
     fbi->PushRtGroup(outgroup.get());
     fbi->BeginFrame();
@@ -293,7 +293,7 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
     if (1) {
       auto outpath = file::Path::temp_dir() / FormatString("filteredenv-diffmap-mip%d.exr", imip);
       auto out     = ImageOutput::create(outpath.c_str());
-      printf("filterenv write dbgout<%s> <%p>\n", outpath.c_str(), out.get());
+      // printf("filterenv write dbgout<%s> <%p>\n", outpath.c_str(), out.get());
       OrkAssert(out != nullptr);
       ImageSpec spec(w, h, 4, TypeDesc::FLOAT);
       out->open(outpath.c_str(), spec);

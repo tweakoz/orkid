@@ -13,7 +13,6 @@
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
                                                 <property name='Center'>1.42103 2.94764 -0.22218</property>
-                                                <property name='Focus'>0 0 0</property>
                                                 <property name='Loc'>7.83004</property>
                                                 <property name='QuatC'>-0.0909132 0.324395 -0.00168267 -0.942022</property>
                                                 <property name='Aperature'>40</property>
@@ -215,6 +214,7 @@
                                                                         "lev2tex" "ptex://proctex1"
                                                                     </reference>
                                                                 </property>
+                                                                <property name='Decal'>false</property>
                                                                 <property name='ShadowBias'>0.2</property>
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>false</property>
@@ -685,6 +685,7 @@
                                                             "lev2tex" "lev2://textures/particle04"
                                                         </reference>
                                                     </property>
+                                                    <property name='Decal'>false</property>
                                                     <property name='ShadowBias'>0.2</property>
                                                     <property name='ShadowBlur'>0</property>
                                                     <property name='ShadowCaster'>false</property>
@@ -774,7 +775,7 @@
                                                                         <object type='NodeCompositingTechnique' id='97'>
                                                                             <property name='OutputNode'>
                                                                                 <reference category='ObjectClass'>
-                                                                                    <object type='VrCompositingNode' id='98'>
+                                                                                    <object type='ScreenOutputCompositingNode' id='98'>
                                                                                         <property name='Layer'>"All"</property>
                                                                                     </object>
                                                                                 </reference>
@@ -821,6 +822,8 @@
                 <reference category='SystemDataClass'>
                     <object type='VrSystemData' id='100'>
                         <property name='TrackingObjectEntity'>"vrtrackedobject"</property>
+                        <property name='UseCameraView'>false</property>
+                        <property name='VisualOffset'>0 0 0</property>
                         <property name='VrCameraEntity'>"vrcamera"</property>
                     </object>
                 </reference>

@@ -847,9 +847,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
 
   auto infname = req._texname;
 
-  // printf("  tex<%p:%s> ORKTEXOBJECT<%p>\n", ptex, ptex->_debugName.c_str(), pTEXOBJ);
+  // printf("  tex<%p:%s> ORKTEXOBJECT<%p> GLTEXOBJECT<%d>\n", ptex, ptex->_debugName.c_str(), pTEXOBJ, int(pTEXOBJ->mObject));
 
-  // printf( "  tex<%s> GLTEXOBJECT<%d>\n", infname.c_str(), int(pTEXOBJ->mObject) );
   ////////////////////////////////////////////////////////////////////
   //
   ////////////////////////////////////////////////////////////////////

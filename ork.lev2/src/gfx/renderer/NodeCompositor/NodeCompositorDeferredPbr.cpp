@@ -63,6 +63,12 @@ void DeferredCompositingNodePbr::_readEnvTexture(ork::rtti::ICastable*& tex) con
   tex = _environmentTextureAsset;
 }
 
+void DeferredCompositingNodePbr::setEnvTexturePath(file::Path path) {
+  auto envl_asset = asset::AssetManager<TextureAsset>::Create(path.c_str());
+
+  asset::AssetManager<TextureAsset>::AutoLoad();
+}
+
 void DeferredCompositingNodePbr::_writeEnvTexture(ork::rtti::ICastable* const& tex) {
   _environmentTextureAsset = tex ? rtti::autocast(tex) : nullptr;
   if (nullptr == _environmentTextureAsset)
@@ -71,13 +77,15 @@ void DeferredCompositingNodePbr::_writeEnvTexture(ork::rtti::ICastable* const& t
   ////////////////////////////////////////////////////////////////////////////////
   // irradiance map preprocessor
   ////////////////////////////////////////////////////////////////////////////////
+  auto loadingcontext = GfxEnv::GetRef().loadingContext();
+
   _environmentTextureAsset->_varmap.makeValueForKey<Texture::proc_t>("postproc") =
       [this](Texture* tex, Context* targ, datablockptr_t datablock) -> datablockptr_t {
-    printf(
+    /*printf(
         "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>...\n",
         tex,
         tex->_debugName.c_str(),
-        datablock->length());
+        datablock->length());*/
     boost::Crc64 hasher;
     hasher.accumulateString("irradiancemap");
     hasher.accumulateItem<uint64_t>(datablock->hash()); // data content

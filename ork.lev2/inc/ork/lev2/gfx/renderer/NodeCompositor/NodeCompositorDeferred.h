@@ -250,6 +250,9 @@ public:
   void DoRender(CompositorDrawData& drawdata) final;
   void _readEnvTexture(ork::rtti::ICastable*& tex) const;
   void _writeEnvTexture(ork::rtti::ICastable* const& tex);
+
+  void setEnvTexturePath(file::Path path);
+
   lev2::TextureAsset* _environmentTextureAsset = nullptr;
 
   lev2::RtBuffer* GetOutput() const final;

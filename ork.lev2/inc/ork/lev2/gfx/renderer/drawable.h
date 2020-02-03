@@ -145,7 +145,7 @@ public:
   static ork::MpMcBoundedQueue<RenderSyncToken> mOfflineUpdateSynchro;
   static ork::atomic<bool> gbInsideClearAndSync;
 
-
+  void copyCameras(const CameraDataLut& cameras);
   void Reset();
   DrawableBuffer(int ibidx);
   ~DrawableBuffer();

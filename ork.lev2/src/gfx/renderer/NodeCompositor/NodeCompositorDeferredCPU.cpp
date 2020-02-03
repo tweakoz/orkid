@@ -46,9 +46,15 @@ struct IMPL {
       , _context(node, "orkshader://deferred", KMAXLIGHTS)
       , _lighttiles(KMAXTILECOUNT)
       , _lightbuffer(nullptr) {
+    for (int i = 0; i < KMAXTILECOUNT; i++)
+      _lighttiles[i] = new locked_pllist_t;
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ~IMPL() {
+    for (locked_pllist_t* item : _lighttiles) {
+      delete item;
+    }
+    _lighttiles.clear();
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void init(lev2::Context* target) {
@@ -81,7 +87,7 @@ struct IMPL {
     //////////////////////////////////////////////////////////////////
     int numtiles = _context._clusterW * _context._clusterH;
     for (int i = 0; i < numtiles; i++)
-      _lighttiles[i].atomicOp([](pllist_t& item) { item.clear(); });
+      _lighttiles[i]->atomicOp([](pllist_t& item) { item.clear(); });
     /////////////////////////////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::render");
     _context.renderGbuffer(drawdata, VD);
@@ -136,7 +142,7 @@ struct IMPL {
                 } // while(depthsample)
                 if (overlapZ) {
                   int numlintile = 0;
-                  _lighttiles[tileindex].atomicOp([&](pllist_t& item) {
+                  _lighttiles[tileindex]->atomicOp([&](pllist_t& item) {
                     item.push_back(light);
                     numlintile = item.size();
                   });
@@ -186,7 +192,7 @@ struct IMPL {
       /////////////////////////////////////
       while (false == chunk_done) {
         int index = _pendingtiles[actindex];
-        _lighttiles[index].atomicOp([&](pllist_t& lightlist) {
+        _lighttiles[index]->atomicOp([&](pllist_t& lightlist) {
           int iy                 = index / _context._clusterW;
           int ix                 = index % _context._clusterW;
           float T                = float(iy) * KTILESIZY - 1.0f;
@@ -273,7 +279,7 @@ struct IMPL {
   int _sequence = 0;
   std::atomic<int> _lightjobcount;
   ork::Timer _timer;
-  ork::fixedvector<locked_pllist_t, KMAXTILECOUNT> _lighttiles;
+  ork::fixedvector<locked_pllist_t*, KMAXTILECOUNT> _lighttiles;
   int _pendingtiles[KMAXTILECOUNT];
   ork::fixedvector<int, KMAXTILECOUNT> _chunktiles;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_pos;
@@ -289,6 +295,7 @@ DeferredCompositingNode::DeferredCompositingNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNode::~DeferredCompositingNode() {
+  _impl = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNode::DoInit(lev2::Context* pTARG, int iW, int iH) {

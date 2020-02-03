@@ -102,9 +102,9 @@ public:
     TextureAsset* tex_asset          = rtti::safe_downcast<TextureAsset*>(pAsset);
     tex_asset->GetTexture()->_varmap = tex_asset->_varmap;
     if (tex_asset->_varmap.hasKey("postproc")) {
-      printf("texasset<%p> has postproc\n", tex_asset);
+      printf("texasset<%p:%s> has postproc\n", tex_asset, filename.c_str());
     } else {
-      printf("texasset<%p> does NOT have postproc\n", tex_asset);
+      printf("texasset<%p:%s> does NOT have postproc\n", tex_asset, filename.c_str());
     }
 
     // OrkAssert(false == tex_asset->GetTexture()->_varmap.hasKey("preproc"));

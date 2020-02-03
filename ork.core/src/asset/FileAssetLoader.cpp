@@ -99,7 +99,7 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
     }
   }
 
-  printf("FindAsset<%s> has_valid_extension<%d>\n", ork::Application::AddPooledString(name).c_str(), int(has_valid_extension));
+  // printf("FindAsset<%s> has_valid_extension<%d>\n", ork::Application::AddPooledString(name).c_str(), int(has_valid_extension));
 
   //////////////////////////////////////////
   // check Munged Paths first (Munged path is a path run thru 1 or more path converters)
@@ -109,7 +109,7 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
 
   auto filedevctx = ork::FileEnv::UrlBaseToContext(url);
 
-  printf("filedevctx<%p>\n", filedevctx.get());
+  // printf("filedevctx<%p>\n", filedevctx.get());
 
   //////////////////////
   // munge the path
@@ -133,7 +133,7 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
   // original path has lower priority
   MungedPaths.push_back(pathobjnoq);
   //////////////////////////////////////
-  printf("MungedPaths<%s>\n", pathobjnoq.c_str());
+  // printf("MungedPaths<%s>\n", pathobjnoq.c_str());
 
   //////////////////////
   // path is munged
@@ -155,7 +155,7 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
       for (auto l : mLocations) {
         MungedPath.SetExtension(l.mExt.c_str());
 
-        printf("munged_ext<%s>\n", MungedPath.c_str());
+        // printf("munged_ext<%s>\n", MungedPath.c_str());
 
         if (FileEnv::DoesFileExist(MungedPath)) {
           // pathobj.SetExtension( extension.c_str() );

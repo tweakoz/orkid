@@ -109,9 +109,6 @@ struct CompositingPassData {
   const CameraMatrices* cameraMatrices() const {
     return _cameraMatrices;
   }
-  void setCameraMatrices(const CameraMatrices* m) {
-    _cameraMatrices = m;
-  }
   static CompositingPassData FromRCFD(const RenderContextFrameData& RCFD);
   std::vector<PoolString> getLayerNames() const;
   void updateCompositingSize(int w, int h);

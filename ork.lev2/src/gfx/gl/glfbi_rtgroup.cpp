@@ -98,15 +98,15 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     }
     glGenFramebuffers(1, &FboObj->mFBOMaster);
     GL_ERRORCHECK();
-    printf("RtGroup<%p> GenFBO<%d>\n", Base, int(FboObj->mFBOMaster));
+    // printf("RtGroup<%p> GenFBO<%d>\n", Base, int(FboObj->mFBOMaster));
 
     //////////////////////////////////////////
 
     for (int it = 0; it < inumtargets; it++) {
       RtBuffer* pB = Base->GetMrt(it);
-      if (pB->_impl.IsSet() == false) {
+      if (pB->_impl.IsA<GlRtBufferImpl*>() == false) {
         auto bufferimpl = new GlRtBufferImpl;
-        printf("RtGroup<%p> RtBuffer<%p> initcolor1\n", Base, pB);
+        // printf("RtGroup<%p> RtBuffer<%p> initcolor1\n", Base, pB);
         pB->SetSizeDirty(true);
         //////////////////////////////////////////
         Texture* ptex            = new Texture;
@@ -140,7 +140,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       }
     }
     if (Base->_needsDepth) {
-      printf("RtGroup<%p> initdepth1\n", Base);
+      // printf("RtGroup<%p> initdepth1\n", Base);
       Base->_depthTexture                  = new Texture;
       Base->_depthTexture->_width          = iw;
       Base->_depthTexture->_height         = ih;
@@ -159,7 +159,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     //////////////////////////////////////////
     // initialize depth renderbuffer
     if (Base->_needsDepth) {
-      printf("RtGroup<%p> initdepth2\n", Base);
+      // printf("RtGroup<%p> initdepth2\n", Base);
       GL_ERRORCHECK();
       glBindRenderbuffer(GL_RENDERBUFFER, FboObj->mDSBO);
       GL_ERRORCHECK();
@@ -185,7 +185,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     glBindFramebuffer(GL_FRAMEBUFFER, FboObj->mFBOMaster);
     GL_ERRORCHECK();
     if (Base->_needsDepth) {
-      printf("RtGroup<%p> initdepth3\n", Base);
+      // printf("RtGroup<%p> initdepth3\n", Base);
       glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, FboObj->mDSBO);
       GL_ERRORCHECK();
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, FboObj->_depthTexture, 0);
@@ -201,8 +201,8 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       RtBuffer* rtbuffer = Base->GetMrt(it);
       auto bufferimpl    = rtbuffer->_impl.Get<GlRtBufferImpl*>();
 
-      if (bufferimpl->_init) {
-        printf("RtGroup<%p> RtBuffer<%p> initcolor2\n", Base, rtbuffer);
+      if (bufferimpl->_init or rtbuffer->mSizeDirty) {
+        // printf("RtGroup<%p> RtBuffer<%p> initcolor2\n", Base, rtbuffer);
         // D3DFORMAT efmt = D3DFMT_A8R8G8B8;
         GLuint glinternalformat = 0;
         GLuint glformat         = GL_RGBA;
@@ -283,7 +283,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
             glGenerateMipmap(GL_TEXTURE_2D);
             int nummips         = std::ceil(log_base(2, std::max(iw, ih))) + 1;
             orkteximpl->_maxmip = nummips - 2;
-            printf("SetRtg::gentex<%d> w<%d> h<%d> nummips<%d>\n", int(bufferimpl->_texture), iw, ih, nummips);
+            // printf("SetRtg::gentex<%d> w<%d> h<%d> nummips<%d>\n", int(bufferimpl->_texture), iw, ih, nummips);
             break;
           }
           default:
@@ -299,18 +299,17 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       //////////////////////////////////////////
       // attach texture to framebuffercolor buffer
 
-      printf("RtGroup<%p> RtBuffer<%p> attachcoloridx<%d> fbo<%d>\n", Base, rtbuffer, it, int(bufferimpl->_texture));
+      // printf("RtGroup<%p> RtBuffer<%p> attachcoloridx<%d> fbo<%d>\n", Base, rtbuffer, it, int(bufferimpl->_texture));
 
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + it, GL_TEXTURE_2D, bufferimpl->_texture, 0);
       GL_ERRORCHECK();
 
-      rtbuffer->SetSizeDirty(false);
-      // mTargetGL.debugPopGroup();
-
-      if (bufferimpl->_init) {
+      if (bufferimpl->_init or rtbuffer->mSizeDirty) {
         bufferimpl->_init = false;
         mTargetGL.debugPopGroup();
       }
+      rtbuffer->SetSizeDirty(false);
+      // mTargetGL.debugPopGroup();
     }
     Base->SetSizeDirty(false);
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -330,7 +329,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
         OrkAssert(false);
         break;
       default:
-        deco::printf(fvec3::Red(), "GL_FRAMEBUFFER incomplete (???)\n");
+        deco::printf(fvec3::Red(), "GL_FRAMEBUFFER incomplete (?)\n");
         OrkAssert(false);
         break;
     }

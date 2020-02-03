@@ -86,8 +86,10 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName, lev2
   const ork::lev2::RenderContextFrameData* RCFD = target->topRenderContextFrameData();
   const auto& topCPD                            = RCFD->topCPD();
 
-  if (false == topCPD.isValid())
+  if (false == topCPD.isValid()) {
+    OrkAssert(false);
     return;
+  }
 
   bool DoAll = (0 == strcmp(LayerName.c_str(), "All"));
   target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue doall<%d>", int(DoAll)));
@@ -188,6 +190,19 @@ DrawableBufLayer::DrawableBufLayer()
 ///////////////////////////////////////////////////////////////////////////////
 
 DrawableBuffer::~DrawableBuffer() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void DrawableBuffer::copyCameras(const CameraDataLut& cameras) {
+  _cameraDataLUT.clear();
+  for (auto itCAM = cameras.begin(); itCAM != cameras.end(); itCAM++) {
+    const PoolString& CameraName        = itCAM->first;
+    const lev2::CameraData* pcameradata = itCAM->second;
+    if (pcameradata) {
+      _cameraDataLUT.AddSorted(CameraName, pcameradata);
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -346,7 +361,7 @@ void ModelDrawable::SetModelInst(lev2::XgmModelInst* pModelInst) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ModelDrawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
-  ork::opq::assertOnQueue2(opq::updateSerialQueue());
+  // ork::opq::assertOnQueue2(opq::updateSerialQueue());
   DrawableBufItem& item = buffer.Queue(xfdata, this);
 }
 

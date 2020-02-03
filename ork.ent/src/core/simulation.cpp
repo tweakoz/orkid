@@ -915,28 +915,6 @@ Entity* Simulation::SpawnDynamicEntity(const ent::EntData* spawn_rec) {
 }
 
 ///////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-
-static void CopyCameraData(const Simulation::CameraDataLut& srclut, Simulation::CameraDataLut& dstlut) {
-  dstlut.clear();
-  int idx = 0;
-  // printf( "Copying CameraData\n" );
-  for (Simulation::CameraDataLut::const_iterator itCAM = srclut.begin(); itCAM != srclut.end(); itCAM++) {
-    const PoolString& CameraName        = itCAM->first;
-    const lev2::CameraData* pcameradata = itCAM->second;
-    const lev2::UiCamera* pcam          = pcameradata ? pcameradata->getEditorCamera() : 0;
-    // printf( "CopyCameraData Idx<%d> CamName<%s> pcamdata<%p> pcam<%p>\n",
-    // idx, CameraName.c_str(), pcameradata, pcam );
-    if (pcameradata) {
-      dstlut.AddSorted(CameraName, pcameradata);
-    }
-    idx++;
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
 
 void Simulation::updateThreadTick() {
   auto dbuf = ork::lev2::DrawableBuffer::LockWriteBuffer(7);
@@ -969,7 +947,7 @@ void Simulation::enqueueDrawablesToBuffer(ork::lev2::DrawableBuffer& buffer) con
   // copy camera data from simulation to dbuffer
   ////////////////////////////////////////////////////////////////
 
-  CopyCameraData(_cameraDataLUT, buffer._cameraDataLUT);
+  buffer.copyCameras(_cameraDataLUT);
 
   ////////////////////////////////////////////////////////////////
 

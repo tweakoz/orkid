@@ -147,6 +147,7 @@ void DefaultRenderer::RenderModelGroup(const modelgroup_t& mdlgroup) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DefaultRenderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::RenderGroupState rgs) const {
+
   lev2::Context* target = GetTarget();
 
   const lev2::XgmModelInst* minst = ModelRen.GetModelInst();

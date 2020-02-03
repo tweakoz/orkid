@@ -5,117 +5,108 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-
 #include <ork/pch.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::IRenderable, "IRenderable" )
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::IRenderableDag, "IRenderableDag" )
-INSTANTIATE_TRANSPARENT_RTTI( ork::lev2::ModelRenderable, "ModelRenderable" );
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::IRenderable, "IRenderable")
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::IRenderableDag, "IRenderableDag")
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ModelRenderable, "ModelRenderable");
 
 namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void IRenderable::Describe() {}
-void IRenderableDag::Describe() {}
-void ModelRenderable::Describe() {}
+void IRenderable::Describe() {
+}
+void IRenderableDag::Describe() {
+}
+void ModelRenderable::Describe() {
+}
 
-IRenderable::IRenderable()
-{
+IRenderable::IRenderable() {
 }
 
 IRenderableDag::IRenderableDag()
-	: IRenderable()
-	, mpObject(0)
-	, mModColor( fcolor4::White() )
-	, mDrwDataA(nullptr)
-	, mDrwDataB(nullptr)
-{
+    : IRenderable()
+    , mpObject(0)
+    , mModColor(fcolor4::White())
+    , mDrwDataA(nullptr)
+    , mDrwDataB(nullptr) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CallbackRenderable::CallbackRenderable(IRenderer *renderer)
-	: IRenderableDag()
-	, mSortKey( 0 )
-	, mMaterialIndex( 0 )
-	, mMaterialPassIndex( 0 )
-	, mUserData0()
-	, mUserData1()
-	, mRenderCallback( 0 )
-{
+CallbackRenderable::CallbackRenderable(IRenderer* renderer)
+    : IRenderableDag()
+    , mSortKey(0)
+    , mMaterialIndex(0)
+    , mMaterialPassIndex(0)
+    , mUserData0()
+    , mUserData1()
+    , mRenderCallback(0) {
 }
 
-void CallbackRenderable::Render(const IRenderer *renderer) const
-{
-	renderer->RenderCallback( *this );
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
-
-ModelRenderable::ModelRenderable(IRenderer *renderer)
-	: IRenderableDag()
-	, mModelInst( 0 )
-	, mSortKey( 0 )
-	, mMaterialIndex( 0 )
-	, mMaterialPassIndex( 0 )
-	, mScale(1.0f)
-	, mEdgeColor(-1)
-///////////////////////////
-	, mMesh(0)
-	, mSubMesh(0)
-	, mCluster(0)
-	, mRotate(0.0f,0.0f,0.0f)
-	, mOffset(0.0f,0.0f,0.0f)
-{
-	for(int i = 0; i < kMaxEngineParamFloats; i++)
-		mEngineParamFloats[i] = 0.0f;
+void CallbackRenderable::Render(const IRenderer* renderer) const {
+  renderer->RenderCallback(*this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ModelRenderable::SetEngineParamFloat(int idx, float fv)
-{
-	OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
-
-	mEngineParamFloats[idx] = fv;
+ModelRenderable::ModelRenderable(IRenderer* renderer)
+    : IRenderableDag()
+    , mModelInst(0)
+    , mSortKey(0)
+    , mMaterialIndex(0)
+    , mMaterialPassIndex(0)
+    , mScale(1.0f)
+    , mEdgeColor(-1)
+    ///////////////////////////
+    , mMesh(0)
+    , mSubMesh(0)
+    , mCluster(0)
+    , mRotate(0.0f, 0.0f, 0.0f)
+    , mOffset(0.0f, 0.0f, 0.0f) {
+  for (int i = 0; i < kMaxEngineParamFloats; i++)
+    mEngineParamFloats[i] = 0.0f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float ModelRenderable::GetEngineParamFloat(int idx) const
-{
-	OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
+void ModelRenderable::SetEngineParamFloat(int idx, float fv) {
+  OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
 
-	return mEngineParamFloats[idx];
+  mEngineParamFloats[idx] = fv;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ModelRenderable::Render(const IRenderer *renderer) const
-{
-	renderer->RenderModel( *this );
+float ModelRenderable::GetEngineParamFloat(int idx) const {
+  OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
+
+  return mEngineParamFloats[idx];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool ModelRenderable::CanGroup( const IRenderable* oth ) const
-{
-	const ModelRenderable* pren = ork::rtti::autocast(oth);
-	if( pren )
-	{
-		const lev2::XgmSubMesh* submesh = pren->subMesh();
-		const GfxMaterial* mtl = submesh->GetMaterial();
-		const GfxMaterial* mtl2 = subMesh()->GetMaterial();
-		return (mtl==mtl2);
-	}
-	return false;
+void ModelRenderable::Render(const IRenderer* renderer) const {
+  renderer->RenderModel(*this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} } // namespace ork
+bool ModelRenderable::CanGroup(const IRenderable* oth) const {
+  const ModelRenderable* pren = ork::rtti::autocast(oth);
+  if (pren) {
+    const lev2::XgmSubMesh* submesh = pren->subMesh();
+    const GfxMaterial* mtl          = submesh->GetMaterial();
+    const GfxMaterial* mtl2         = subMesh()->GetMaterial();
+    return (mtl == mtl2);
+  }
+  return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+}} // namespace ork::lev2
