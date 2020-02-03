@@ -47,18 +47,16 @@ protected:
   ork::fixedvector<ModelRenderable, kmaxrables> mModels;
   ork::fixedvector<CallbackRenderable, kmaxrablesmed> mCallbacks;
 
-  typedef ork::fixedvector<const ModelRenderable*,kmaxrablesmed> modelgroup_t;
+  typedef ork::fixedvector<const ModelRenderable*, kmaxrablesmed> modelgroup_t;
   modelgroup_t _groupedModels;
 
 public:
-
-
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Immediate Rendering (sort of, actually just submit the renderable to the target, which might itself place into a display list)
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   virtual void RenderModel(const ModelRenderable& ModelRen, RenderGroupState rgs = ERGST_NONE) const = 0;
-  virtual void RenderModelGroup(const modelgroup_t& group) const                = 0;
+  virtual void RenderModelGroup(const modelgroup_t& group) const                                     = 0;
   void RenderCallback(const CallbackRenderable& cbren) const;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -84,12 +82,20 @@ public:
 
   void drawEnqueuedRenderables();
 
-  inline void SetPerformanceItem(PerformanceItem* perfitem) { mPerformanceItem = perfitem; }
+  inline void SetPerformanceItem(PerformanceItem* perfitem) {
+    mPerformanceItem = perfitem;
+  }
 
-  Context* GetTarget() const { return mpTarget; }
-  void setContext(Context* ptarg) { mpTarget = ptarg; }
+  Context* GetTarget() const {
+    return mpTarget;
+  }
+  void setContext(Context* ptarg) {
+    mpTarget = ptarg;
+  }
 
-  void FakeDraw() { ResetQueue(); }
+  void FakeDraw() {
+    ResetQueue();
+  }
 
 protected:
   void ResetQueue(void);
@@ -98,6 +104,18 @@ protected:
   PerformanceItem* mPerformanceItem;
 
   IRenderer(Context* pTARG);
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class DefaultRenderer : public lev2::IRenderer {
+
+public:
+  DefaultRenderer(lev2::Context* ptarg = nullptr);
+
+private:
+  void RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::RenderGroupState rgs = ork::lev2::ERGST_NONE) const final;
+  void RenderModelGroup(const lev2::IRenderer::modelgroup_t&) const final;
 };
 
 } // namespace lev2

@@ -192,6 +192,12 @@ public:
   const orklut<PoolString, ork::Object*>& GetScenes() const {
     return _scenes;
   }
+  orklut<PoolString, ork::Object*>& groups() {
+    return _groups;
+  }
+  orklut<PoolString, ork::Object*>& scenes() {
+    return _scenes;
+  }
 
   PoolString& GetActiveScene() const {
     return _activeScene;

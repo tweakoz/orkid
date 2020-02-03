@@ -20,7 +20,7 @@
 #include <ork/lev2/gfx/material_freestyle.inl>
 #include <ork/lev2/gfx/material_pbr.inl>
 
-#include "NodeCompositorDeferred.h"
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
 
 namespace ork::lev2::deferrednode {
 ///////////////////////////////////////////////////////////////////////////////

@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include "NodeCompositorPtx.h"
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorPtx.h>
 #include <ork/asset/DynamicAssetLoader.h>
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>

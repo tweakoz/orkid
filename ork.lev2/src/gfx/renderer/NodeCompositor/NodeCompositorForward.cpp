@@ -15,7 +15,7 @@
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
 
-#include "NodeCompositorForward.h"
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
 
 ImplementReflectionX(ork::lev2::ForwardCompositingNode, "ForwardCompositingNode");
 

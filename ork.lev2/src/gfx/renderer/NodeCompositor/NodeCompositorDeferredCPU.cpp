@@ -19,7 +19,7 @@
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/material_freestyle.inl>
 
-#include "NodeCompositorDeferred.h"
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
 
 ImplementReflectionX(ork::lev2::deferrednode::DeferredCompositingNode, "DeferredCompositingNode");
 
@@ -101,7 +101,7 @@ struct IMPL {
     auto FXI                     = framerenderer.framedata().GetTarget()->FXI();
     auto this_buf                = framerenderer.framedata().GetTarget()->FBI()->GetThisBuffer();
     /////////////////////////////////////////////////////////////////
-    _context.beginPointLighting(drawdata, VD,nullptr);
+    _context.beginPointLighting(drawdata, VD, nullptr);
     FXI->bindParamBlockBuffer(_context._lightblock, _lightbuffer);
     /////////////////////////////////////
     // float time_tile_cpa = _timer.SecsSinceStart();

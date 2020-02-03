@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include "NodeCompositor.h"
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositor.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
@@ -34,21 +34,23 @@ ImplementReflectionX(ork::lev2::ChainCompositingNode, "ChainCompositingNode");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-void ChainCompositingNode::describeX(class_t*c) {}
+void ChainCompositingNode::describeX(class_t* c) {
+}
 ///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::describeX(class_t*c) {
+void NodeCompositingTechnique::describeX(class_t* c) {
   c->accessorProperty("RenderNode", &NodeCompositingTechnique::_readRenderNode, &NodeCompositingTechnique::_writeRenderNode)
-   ->annotate<ConstString>("editor.factorylistbase", "RenderCompositingNode");
+      ->annotate<ConstString>("editor.factorylistbase", "RenderCompositingNode");
   c->accessorProperty("PostFxNode", &NodeCompositingTechnique::_readPostFxNode, &NodeCompositingTechnique::_writePostFxNode)
-   ->annotate<ConstString>("editor.factorylistbase", "PostCompositingNode");
+      ->annotate<ConstString>("editor.factorylistbase", "PostCompositingNode");
   c->accessorProperty("OutputNode", &NodeCompositingTechnique::_readOutputNode, &NodeCompositingTechnique::_writeOutputNode)
-   ->annotate<ConstString>("editor.factorylistbase", "OutputCompositingNode");
+      ->annotate<ConstString>("editor.factorylistbase", "OutputCompositingNode");
 }
 ///////////////////////////////////////////////////////////////////////////////
 NodeCompositingTechnique::NodeCompositingTechnique()
-  : _renderNode(nullptr)
-  , _postfxNode(nullptr)
-  , _outputNode(nullptr) {}
+    : _renderNode(nullptr)
+    , _postfxNode(nullptr)
+    , _outputNode(nullptr) {
+}
 ///////////////////////////////////////////////////////////////////////////////
 NodeCompositingTechnique::~NodeCompositingTechnique() {
   if (_renderNode)
@@ -61,32 +63,32 @@ NodeCompositingTechnique::~NodeCompositingTechnique() {
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::_readRenderNode(ork::rtti::ICastable*& val) const {
   auto nonconst = const_cast<RenderCompositingNode*>(_renderNode);
-  val = nonconst;
+  val           = nonconst;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::_writeRenderNode(ork::rtti::ICastable* const& val) {
   ork::rtti::ICastable* ptr = val;
-  _renderNode = ((ptr == nullptr) ? nullptr : rtti::safe_downcast<RenderCompositingNode*>(ptr));
+  _renderNode               = ((ptr == nullptr) ? nullptr : rtti::safe_downcast<RenderCompositingNode*>(ptr));
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::_readPostFxNode(ork::rtti::ICastable*& val) const {
   auto nonconst = const_cast<PostCompositingNode*>(_postfxNode);
-  val = nonconst;
+  val           = nonconst;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::_writePostFxNode(ork::rtti::ICastable* const& val) {
   ork::rtti::ICastable* ptr = val;
-  _postfxNode = ((ptr == nullptr) ? nullptr : rtti::safe_downcast<PostCompositingNode*>(ptr));
+  _postfxNode               = ((ptr == nullptr) ? nullptr : rtti::safe_downcast<PostCompositingNode*>(ptr));
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::_readOutputNode(ork::rtti::ICastable*& val) const {
   auto nonconst = const_cast<OutputCompositingNode*>(_outputNode);
-  val = nonconst;
+  val           = nonconst;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::_writeOutputNode(ork::rtti::ICastable* const& val) {
   ork::rtti::ICastable* ptr = val;
-  _outputNode = ((ptr == nullptr) ? nullptr : rtti::safe_downcast<OutputCompositingNode*>(ptr));
+  _outputNode               = ((ptr == nullptr) ? nullptr : rtti::safe_downcast<OutputCompositingNode*>(ptr));
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::Init(lev2::Context* pTARG, int w, int h) {
@@ -113,7 +115,7 @@ bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
     ////////////////////////////////////////////////////////////////////////////
     RtBuffer* render_out = _renderNode ? _renderNode->GetOutput() : nullptr;
     RtBuffer* postfx_out = _postfxNode ? _postfxNode->GetOutput() : nullptr;
-    RtBuffer*  final_out = postfx_out ? postfx_out : render_out;
+    RtBuffer* final_out  = postfx_out ? postfx_out : render_out;
     drawdata._properties["render_out"_crcu].Set<RtBuffer*>(render_out);
     // todo - techinically only the 'root' postfx node should get input
     //  from the render out... we need to isolate the root node somehow..
@@ -121,8 +123,9 @@ bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
     drawdata._properties["final_out"_crcu].Set<RtBuffer*>(final_out);
     ////////////////////////////////////////////////////////////////////////////
     _outputNode->beginAssemble(drawdata);
-        _renderNode->Render(drawdata);
-        if (_postfxNode) _postfxNode->Render(drawdata);
+    _renderNode->Render(drawdata);
+    if (_postfxNode)
+      _postfxNode->Render(drawdata);
     _outputNode->endAssemble(drawdata);
   }
   drawdata.target()->debugPopGroup();
@@ -138,35 +141,50 @@ void NodeCompositingTechnique::composite(CompositorDrawData& drawdata) {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-CompositingBuffer::CompositingBuffer() {}
+CompositingBuffer::CompositingBuffer() {
+}
 ///////////////////////////////////////////////////////////////////////////////
-CompositingBuffer::~CompositingBuffer() {}
+CompositingBuffer::~CompositingBuffer() {
+}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void RenderCompositingNode::describeX(class_t*c) {}
-RenderCompositingNode::RenderCompositingNode() {}
-RenderCompositingNode::~RenderCompositingNode() {}
-void RenderCompositingNode::Init(lev2::Context* pTARG, int w, int h) { DoInit(pTARG, w, h); }
+void RenderCompositingNode::describeX(class_t* c) {
+}
+RenderCompositingNode::RenderCompositingNode() {
+}
+RenderCompositingNode::~RenderCompositingNode() {
+}
+void RenderCompositingNode::Init(lev2::Context* pTARG, int w, int h) {
+  DoInit(pTARG, w, h);
+}
 void RenderCompositingNode::Render(CompositorDrawData& drawdata) {
   drawdata.target()->debugPushGroup("RenderCompositingNode::Render");
   DoRender(drawdata);
   drawdata.target()->debugPopGroup();
 }
 
-void PostCompositingNode::describeX(class_t*c) {}
-PostCompositingNode::PostCompositingNode() {}
-PostCompositingNode::~PostCompositingNode() {}
-void PostCompositingNode::Init(lev2::Context* pTARG, int w, int h) { DoInit(pTARG, w, h); }
+void PostCompositingNode::describeX(class_t* c) {
+}
+PostCompositingNode::PostCompositingNode() {
+}
+PostCompositingNode::~PostCompositingNode() {
+}
+void PostCompositingNode::Init(lev2::Context* pTARG, int w, int h) {
+  DoInit(pTARG, w, h);
+}
 void PostCompositingNode::Render(CompositorDrawData& drawdata) {
   drawdata.target()->debugPushGroup("PostCompositingNode::Render");
   DoRender(drawdata);
   drawdata.target()->debugPopGroup();
 }
 
-void OutputCompositingNode::describeX(class_t*c) {}
-OutputCompositingNode::OutputCompositingNode() {}
-OutputCompositingNode::~OutputCompositingNode() {}
+void OutputCompositingNode::describeX(class_t* c) {
+}
+OutputCompositingNode::OutputCompositingNode() {
+}
+OutputCompositingNode::~OutputCompositingNode() {
+}
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

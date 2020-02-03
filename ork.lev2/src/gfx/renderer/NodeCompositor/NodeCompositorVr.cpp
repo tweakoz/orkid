@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include "NodeCompositorVr.h"
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/gfxprimitives.h>

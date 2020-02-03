@@ -26,9 +26,9 @@
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/texman.h>
 
-#include "NodeCompositorDeferred.h"
-#include "CpuLightProcessor.h"
-#include "SimpleLightProcessor.h"
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/CpuLightProcessor.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/SimpleLightProcessor.h>
 
 ImplementReflectionX(ork::lev2::deferrednode::DeferredCompositingNodePbr, "DeferredCompositingNodePbr");
 

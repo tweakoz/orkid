@@ -26,8 +26,8 @@
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/texman.h>
 
-#include "NodeCompositorDeferred.h"
-#include "CpuLightProcessor.h"
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/CpuLightProcessor.h>
 
 ////////////////////////////////////////////////////////////////
 namespace ork::lev2::deferrednode {
@@ -205,7 +205,7 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
   size_t lidxbase  = 0;
   /////////////////////////////////////
   auto& lightmtl = _deferredContext._lightingmtl;
-  _deferredContext.beginPointLighting(drawdata, VD,nullptr);
+  _deferredContext.beginPointLighting(drawdata, VD, nullptr);
   FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
   while (num_pending_tiles) {
     /////////////////////////////////////

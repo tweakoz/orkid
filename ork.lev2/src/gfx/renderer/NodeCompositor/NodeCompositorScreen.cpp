@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include "NodeCompositorScreen.h"
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
@@ -51,7 +51,7 @@ struct SCRIMPL {
     RenderContextFrameData& RCFD = framerenderer.framedata();
     auto CIMPL                   = drawdata._cimpl;
     auto DB                      = RCFD.GetDB();
-    Context* targ              = drawdata.target();
+    Context* targ                = drawdata.target();
     int w                        = targ->mainSurfaceWidth();
     int h                        = targ->mainSurfaceHeight();
     if (targ->hiDPI()) {
@@ -111,7 +111,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////////////////////////
   FrameRenderer& framerenderer      = drawdata.mFrameRenderer;
   RenderContextFrameData& framedata = framerenderer.framedata();
-  Context* targ                   = framedata.GetTarget();
+  Context* targ                     = framedata.GetTarget();
   if (auto try_final = drawdata._properties["final_out"_crcu].TryAs<RtBuffer*>()) {
     auto buffer = try_final.value();
     if (buffer) {

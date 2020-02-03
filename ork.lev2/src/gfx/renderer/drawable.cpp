@@ -143,7 +143,7 @@ void DrawableBufLayer::Reset(const DrawableBuffer& dB) {
 ///////////////////////////////////////////////////////////////////////////////
 
 DrawableBufLayer* DrawableBuffer::MergeLayer(const PoolString& layername) {
-  ork::opq::assertOnQueue2(opq::updateSerialQueue());
+  // ork::opq::assertOnQueue2(opq::updateSerialQueue());
   DrawableBufLayer* player     = 0;
   LayerLut::const_iterator itL = mLayerLut.find(layername);
   if (itL != mLayerLut.end()) {
@@ -160,7 +160,7 @@ DrawableBufLayer* DrawableBuffer::MergeLayer(const PoolString& layername) {
 ///////////////////////////////////////////////////////////////////////////////
 
 DrawableBufItem& DrawableBufLayer::Queue(const DrawQueueXfData& xfdata, const Drawable* d) {
-  ork::opq::assertOnQueue2(opq::updateSerialQueue());
+  // ork::opq::assertOnQueue2(opq::updateSerialQueue());
   // mDrawBufItems.push_back(DrawableBufItem()); // replace std::vector with an array so we can amortize construction costs
   miItemIndex++;
   OrkAssert(miItemIndex < kmaxitems);
@@ -230,12 +230,12 @@ void DrawableBuffer::releaseReadDB(const DrawableBuffer* db) {
 }
 /////////////////////////////////////////////////////////////////////
 DrawableBuffer* DrawableBuffer::LockWriteBuffer(int lid) {
-  ork::opq::assertOnQueue2(opq::updateSerialQueue());
+  // ork::opq::assertOnQueue2(opq::updateSerialQueue());
   DrawableBuffer* wbuf = gBuffers.BeginWrite();
   return wbuf;
 }
 void DrawableBuffer::UnLockWriteBuffer(DrawableBuffer* db) {
-  ork::opq::assertOnQueue2(opq::updateSerialQueue());
+  // ork::opq::assertOnQueue2(opq::updateSerialQueue());
   gBuffers.EndWrite(db);
 }
 /////////////////////////////////////////////////////////////////////
@@ -289,11 +289,11 @@ Drawable::Drawable()
     : mDataA(nullptr)
     , mDataB(nullptr)
     , mEnabled(true) {
-  ork::opq::assertOnQueue2(opq::updateSerialQueue());
+  // ork::opq::assertOnQueue2(opq::updateSerialQueue());
   fflush(stdout);
 }
 Drawable::~Drawable() {
-  ork::opq::assertOnQueue2(opq::updateSerialQueue());
+  // ork::opq::assertOnQueue2(opq::updateSerialQueue());
   // printf( "Delete Drawable<%p>\n", this );
 }
 
@@ -510,7 +510,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
             renderable.SetCluster(&cluster);
             renderable.SetModColor(renderer->GetTarget()->RefModColor());
             renderable.SetMatrix(matw);
-            //renderable.SetLightMask(lmask);
+            // renderable.SetLightMask(lmask);
             renderable.SetScale(mfScale);
             renderable.SetRotate(mRotate);
             renderable.SetOffset(mOffset);

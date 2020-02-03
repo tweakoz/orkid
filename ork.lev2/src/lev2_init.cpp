@@ -23,13 +23,13 @@
 #include <ork/lev2/gfx/targetinterfaces.h>
 #include <ork/lev2/gfx/particle/modular_particles.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
-#include "gfx/renderer/NodeCompositor/NodeCompositorVr.h"
-#include "gfx/renderer/NodeCompositor/NodeCompositorFx3.h"
-#include "gfx/renderer/NodeCompositor/NodeCompositorPtx.h"
-#include "gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h"
-#include "gfx/renderer/NodeCompositor/NodeCompositorScreen.h"
-#include "gfx/renderer/NodeCompositor/NodeCompositorForward.h"
-#include "gfx/renderer/NodeCompositor/NodeCompositorDeferred.h"
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorFx3.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorPtx.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
 ///////////////////////////////////////////////////////////////////////////////
 //#define WIIEMU
 ///////////////////////////////////////////////////////////////////////////////

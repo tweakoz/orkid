@@ -208,7 +208,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class DeferredCompositingNodePbr : public RenderCompositingNode {
+struct DeferredCompositingNodePbr : public RenderCompositingNode {
   DeclareConcreteX(DeferredCompositingNodePbr, RenderCompositingNode);
 
 public:
@@ -246,9 +246,6 @@ public:
     return _depthFogPower;
   }
 
-  fvec4 _clearColor;
-
-private:
   void DoInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
   void _readEnvTexture(ork::rtti::ICastable*& tex) const;
@@ -268,6 +265,7 @@ private:
   fvec3 _ambientLevel;
   lev2::Texture* _filtenvSpecularMap = nullptr;
   lev2::Texture* _filtenvDiffuseMap  = nullptr;
+  fvec4 _clearColor;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

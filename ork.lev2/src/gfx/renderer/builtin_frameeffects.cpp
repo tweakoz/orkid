@@ -17,7 +17,7 @@
 #include <ork/kernel/prop.h>
 #include <ork/kernel/prop.hpp>
 #include <ork/reflect/enum_serializer.inl>
-#include "NodeCompositor/NodeCompositorFx3.h"
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorFx3.h>
 
 BEGIN_ENUM_SERIALIZER(ork::lev2, EFrameEffect)
 DECLARE_ENUM(EFRAMEFX_NONE)

@@ -19,7 +19,7 @@
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/material_freestyle.inl>
 
-#include "NodeCompositorDeferred.h"
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
 
 #if defined(ENABLE_NVMESH_SHADERS)
 

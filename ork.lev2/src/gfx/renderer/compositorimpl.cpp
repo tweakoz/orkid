@@ -16,12 +16,12 @@
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include "NodeCompositor/NodeCompositorDeferred.h"
-#include "NodeCompositor/NodeCompositorForward.h"
-#include "NodeCompositor/NodeCompositorFx3.h"
-#include "NodeCompositor/NodeCompositorScaleBias.h"
-#include "NodeCompositor/NodeCompositorScreen.h"
-#include "NodeCompositor/NodeCompositorVr.h"
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorFx3.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
 #include <ork/application/application.h>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/DirectObjectPropertyType.hpp>

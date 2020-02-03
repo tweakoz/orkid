@@ -8,6 +8,8 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
+#include <ork/lev2/gfx/gfxmodel.h>
+#include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/pch.h>
 
 #include <ork/kernel/Array.hpp>
@@ -29,11 +31,14 @@ static const int kRenderbufferSize = 1024 << 10;
 IRenderer::IRenderer(Context* pTARG)
     : mPerformanceItem(0)
     , mpTarget(pTARG)
-    , mRenderQueue() {}
+    , mRenderQueue() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void IRenderer::QueueRenderable(IRenderable* pRenderable) { mRenderQueue.QueueRenderable(pRenderable); }
+void IRenderer::QueueRenderable(IRenderable* pRenderable) {
+  mRenderQueue.QueueRenderable(pRenderable);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -44,7 +49,7 @@ void IRenderer::drawEnqueuedRenderables() {
 
   ///////////////////////////////////////////////////////
   size_t renderQueueSize = mRenderQueue.Size();
-  mpTarget->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables renderQueueSize<%zu>",renderQueueSize));
+  mpTarget->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables renderQueueSize<%zu>", renderQueueSize));
 
   if (renderQueueSize == 0) {
     mpTarget->debugPopGroup();
@@ -82,14 +87,14 @@ void IRenderer::drawEnqueuedRenderables() {
 
   for (size_t i = 0; i < renderQueueSize; i++) {
     int sorted = mQueueSortKeys[i];
-    mpTarget->debugMarker(FormatString("IRenderer::drawEnqueuedRenderables sorting index<%zu> sorted<%d>",i,sorted));
+    mpTarget->debugMarker(FormatString("IRenderer::drawEnqueuedRenderables sorting index<%zu> sorted<%d>", i, sorted));
   }
 
   for (size_t i = 0; i < renderQueueSize; i++) {
     int sorted = sortedRenderQueueIndices[i];
     OrkAssert(sorted < U32(renderQueueSize));
     const RenderQueue::Node* pnode = mQueueSortNodes[sorted];
-    mpTarget->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables render item<%zu> node<%p>",i,pnode));
+    mpTarget->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables render item<%zu> node<%p>", i, pnode));
     pnode->_renderable->Render(this);
     mpTarget->debugPopGroup();
   }
@@ -127,5 +132,98 @@ void IRenderer::RenderCallback(const lev2::CallbackRenderable& cbren) const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+DefaultRenderer::DefaultRenderer(lev2::Context* ptarg)
+    : lev2::IRenderer(ptarg) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void DefaultRenderer::RenderModelGroup(const modelgroup_t& mdlgroup) const {
+  for (auto r : mdlgroup)
+    RenderModel(*r);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void DefaultRenderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::RenderGroupState rgs) const {
+  lev2::Context* target = GetTarget();
+
+  const lev2::XgmModelInst* minst = ModelRen.GetModelInst();
+  const lev2::XgmModel* model     = minst->xgmModel();
+
+  target->debugPushGroup(FormatString("DefaultRenderer::RenderModel model<%p> minst<%p>", model, minst));
+
+  /////////////////////////////////////////////////////////////
+
+  float fscale = ModelRen.GetScale();
+
+  const ork::fvec3& offset = ModelRen.GetOffset();
+  const ork::fvec3& rotate = ModelRen.GetRotate();
+
+  fmtx4 smat;
+  fmtx4 tmat;
+  fmtx4 rmat;
+
+  smat.SetScale(fscale);
+  tmat.SetTranslation(offset);
+  rmat.SetRotateY(rotate.GetY() + rotate.GetZ());
+
+  fmtx4 wmat = ModelRen.GetMatrix();
+
+  /////////////////////////////////////////////////////////////
+  // compute world matrix
+  /////////////////////////////////////////////////////////////
+
+  fmtx4 nmat = tmat * rmat * smat * wmat;
+
+  if (minst->IsBlenderZup()) // zup to yup conversion matrix
+  {
+    fmtx4 rmatx, rmaty;
+    rmatx.RotateX(3.14159f * -0.5f);
+    rmaty.RotateX(3.14159f);
+    nmat = (rmatx * rmaty) * nmat;
+  }
+
+  /////////////////////////////////////////////////////////////
+
+  ork::lev2::RenderContextInstData MatCtx;
+
+  lev2::RenderContextInstModelData MdlCtx;
+
+  MatCtx.SetMaterialInst(&minst->RefMaterialInst());
+  MatCtx.BindLightMap(ModelRen.subMesh()->mLightMap);
+  MatCtx.SetVertexLit(ModelRen.subMesh()->mbVertexLit);
+
+  MdlCtx.mMesh    = ModelRen.mesh();
+  MdlCtx.mSubMesh = ModelRen.subMesh();
+  MdlCtx.mCluster = ModelRen.GetCluster();
+
+  MatCtx.SetMaterialIndex(0);
+  MatCtx.SetRenderer(this);
+
+  // target->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->isSkinned()), as_ent));
+
+  ///////////////////////////////////////
+
+  // printf( "Renderer::RenderModel() rable<%p>\n", & ModelRen );
+  lev2::LightingGroup lgrp;
+  lgrp.mLightManager = target->topRenderContextFrameData()->GetLightManager();
+  // lgrp.mLightMask    = ModelRen.GetLightMask();
+  MatCtx.SetLightingGroup(&lgrp);
+  bool model_is_skinned = model->isSkinned();
+  MatCtx._isSkinned     = model_is_skinned;
+  MdlCtx.SetSkinned(model_is_skinned);
+  MdlCtx.SetModelInst(minst);
+
+  auto ObjColor = fvec4::White();
+  if (model_is_skinned) {
+    model->RenderSkinned(minst, ObjColor, nmat, GetTarget(), MatCtx, MdlCtx);
+  } else {
+    model->RenderRigid(ObjColor, nmat, GetTarget(), MatCtx, MdlCtx);
+  }
+
+  target->debugPopGroup();
+}
 
 }} // namespace ork::lev2

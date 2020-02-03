@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include "NodeCompositorFx3.h"
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorFx3.h>
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 #include <ork/lev2/gfx/rtgroup.h>

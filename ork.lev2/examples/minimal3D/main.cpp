@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
     RenderContextFrameData RCFD(context); // renderer per/frame data
     auto fbi  = context->FBI();           // FrameBufferInterface
     auto fxi  = context->FXI();           // FX Interface
-    auto mtxi = context->MTXI();          // FX Interface
+    auto mtxi = context->MTXI();          // matrix Interface
     auto gbi  = context->GBI();           // GeometryBuffer Interface
     ///////////////////////////////////////
     // compute view and projection matrices
@@ -104,12 +104,13 @@ int main(int argc, char** argv) {
 
     vwriter.UnLock(context);
 
-    // draw the verts as triangles
     material.bindTechnique(fxtechnique);
     material.begin(RCFD);
     material.bindParamMatrix(fxparameterMVP, view * projection);
 
+    // draw the verts as triangles
     gbi->DrawPrimitiveEML(vwriter, EPRIM_TRIANGLES);
+
     material.end(RCFD);
     context->endFrame();
   });
