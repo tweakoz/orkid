@@ -72,33 +72,35 @@ int main(int argc, char** argv) {
     // create 4 quads in dynamic VB
     vwriter.Lock(context, &vtxbuf, 24); // reserve 24 verts (4 quads, or 8 triangles)
 
-    vwriter.AddVertex(vtx_t(N, N, N, 0, 0, 0, 0, red));
-    vwriter.AddVertex(vtx_t(P, N, N, 0, 0, 0, 0, red));
-    vwriter.AddVertex(vtx_t(N, P, N, 0, 0, 0, 0, red));
-    vwriter.AddVertex(vtx_t(N, P, N, 0, 0, 0, 0, red));
-    vwriter.AddVertex(vtx_t(P, N, N, 0, 0, 0, 0, red));
-    vwriter.AddVertex(vtx_t(P, P, N, 0, 0, 0, 0, red));
+    auto writevtx = [&](float x, float y, float z, uint32_t c) { vwriter.AddVertex(vtx_t(x, y, z, 0, 0, 0, 0, c)); };
 
-    vwriter.AddVertex(vtx_t(N, N, N, 0, 0, 0, 0, grn));
-    vwriter.AddVertex(vtx_t(N, N, P, 0, 0, 0, 0, grn));
-    vwriter.AddVertex(vtx_t(N, P, N, 0, 0, 0, 0, grn));
-    vwriter.AddVertex(vtx_t(N, P, N, 0, 0, 0, 0, grn));
-    vwriter.AddVertex(vtx_t(N, N, P, 0, 0, 0, 0, grn));
-    vwriter.AddVertex(vtx_t(N, P, P, 0, 0, 0, 0, grn));
+    writevtx(N, N, N, red);
+    writevtx(P, N, N, red);
+    writevtx(N, P, N, red);
+    writevtx(N, P, N, red);
+    writevtx(P, N, N, red);
+    writevtx(P, P, N, red);
 
-    vwriter.AddVertex(vtx_t(P, P, P, 0, 0, 0, 0, blu));
-    vwriter.AddVertex(vtx_t(N, P, P, 0, 0, 0, 0, blu));
-    vwriter.AddVertex(vtx_t(P, N, P, 0, 0, 0, 0, blu));
-    vwriter.AddVertex(vtx_t(P, N, P, 0, 0, 0, 0, blu));
-    vwriter.AddVertex(vtx_t(N, P, P, 0, 0, 0, 0, blu));
-    vwriter.AddVertex(vtx_t(N, N, P, 0, 0, 0, 0, blu));
+    writevtx(N, N, N, grn);
+    writevtx(N, N, P, grn);
+    writevtx(N, P, N, grn);
+    writevtx(N, P, N, grn);
+    writevtx(N, N, P, grn);
+    writevtx(N, P, P, grn);
 
-    vwriter.AddVertex(vtx_t(P, P, P, 0, 0, 0, 0, yel));
-    vwriter.AddVertex(vtx_t(P, P, N, 0, 0, 0, 0, yel));
-    vwriter.AddVertex(vtx_t(P, N, P, 0, 0, 0, 0, yel));
-    vwriter.AddVertex(vtx_t(P, N, P, 0, 0, 0, 0, yel));
-    vwriter.AddVertex(vtx_t(P, P, N, 0, 0, 0, 0, yel));
-    vwriter.AddVertex(vtx_t(P, N, N, 0, 0, 0, 0, yel));
+    writevtx(P, P, P, blu);
+    writevtx(N, P, P, blu);
+    writevtx(P, N, P, blu);
+    writevtx(P, N, P, blu);
+    writevtx(N, P, P, blu);
+    writevtx(N, N, P, blu);
+
+    writevtx(P, P, P, yel);
+    writevtx(P, P, N, yel);
+    writevtx(P, N, P, yel);
+    writevtx(P, N, P, yel);
+    writevtx(P, P, N, yel);
+    writevtx(P, N, N, yel);
 
     vwriter.UnLock(context);
 
