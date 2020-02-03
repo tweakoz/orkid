@@ -29,6 +29,7 @@ using ScanViewFilter = ork::ScanViewFilter;
 
 struct Container;
 struct Pass;
+struct Technique;
 struct UniformBlockBinding;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -69,7 +70,8 @@ struct Uniform {
       : _name(nam)
       , _semantic(sem)
       , _type(GL_ZERO)
-      , _arraySize(0) {}
+      , _arraySize(0) {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -83,7 +85,8 @@ struct UniformInstance {
   UniformInstance()
       : mLocation(-1)
       , mpUniform(nullptr)
-      , mSubItemIndex(0) {}
+      , mSubItemIndex(0) {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -108,7 +111,8 @@ struct Attribute {
       , mSemantic(sem)
       , meType(GL_ZERO)
       , mLocation(-1)
-      , mArraySize(0) {}
+      , mArraySize(0) {
+  }
 };
 
 typedef std::unordered_map<std::string, Uniform*> uniform_map_t;
@@ -117,7 +121,8 @@ typedef std::unordered_map<std::string, Uniform*> uniform_map_t;
 
 struct UniformSet {
 
-  UniformSet() {}
+  UniformSet() {
+  }
 
   std::string _name;
   uniform_map_t _uniforms;
@@ -127,7 +132,8 @@ struct UniformSet {
 
 struct UniformBlock {
 
-  UniformBlock() {}
+  UniformBlock() {
+  }
 
   std::string _name;
   std::vector<Uniform*> _subuniforms;
@@ -222,7 +228,9 @@ struct StateBlock {
   std::string mName;
   std::vector<state_applicator_t> mApplicators;
 
-  void addStateFn(const state_applicator_t& f) { mApplicators.push_back(f); }
+  void addStateFn(const state_applicator_t& f) {
+    mApplicators.push_back(f);
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -231,7 +239,8 @@ struct Shader {
 
   Shader(const std::string& nam, GLenum etyp)
       : mName(nam)
-      , mShaderType(etyp) {}
+      , mShaderType(etyp) {
+  }
 
   bool Compile();
   bool IsCompiled() const;
@@ -257,35 +266,40 @@ struct Shader {
 
 struct ShaderVtx : Shader {
   ShaderVtx(const std::string& nam = "")
-      : Shader(nam, GL_VERTEX_SHADER) {}
+      : Shader(nam, GL_VERTEX_SHADER) {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ShaderFrg : Shader {
   ShaderFrg(const std::string& nam = "")
-      : Shader(nam, GL_FRAGMENT_SHADER) {}
+      : Shader(nam, GL_FRAGMENT_SHADER) {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ShaderGeo : Shader {
   ShaderGeo(const std::string& nam = "")
-      : Shader(nam, GL_GEOMETRY_SHADER) {}
+      : Shader(nam, GL_GEOMETRY_SHADER) {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ShaderTsC : Shader {
   ShaderTsC(const std::string& nam = "")
-      : Shader(nam, GL_TESS_CONTROL_SHADER) {}
+      : Shader(nam, GL_TESS_CONTROL_SHADER) {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ShaderTsE : Shader {
   ShaderTsE(const std::string& nam = "")
-      : Shader(nam, GL_TESS_EVALUATION_SHADER) {}
+      : Shader(nam, GL_TESS_EVALUATION_SHADER) {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -305,11 +319,13 @@ struct PrimPipelineVTG {
 #if defined(ENABLE_NVMESH_SHADERS)
 struct ShaderNvMesh : Shader {
   ShaderNvMesh(const std::string& nam = "")
-      : Shader(nam, GL_MESH_SHADER_NV) {}
+      : Shader(nam, GL_MESH_SHADER_NV) {
+  }
 };
 struct ShaderNvTask : Shader {
   ShaderNvTask(const std::string& nam = "")
-      : Shader(nam, GL_TASK_SHADER_NV) {}
+      : Shader(nam, GL_TASK_SHADER_NV) {
+  }
 };
 struct PrimPipelineNVTM {
   ShaderNvTask* _nvTaskShader = nullptr;
@@ -346,7 +362,8 @@ struct PipelineCompute {
 };
 struct ComputeShader : Shader {
   ComputeShader(const std::string& nam = "")
-      : Shader(nam, GL_COMPUTE_SHADER) {}
+      : Shader(nam, GL_COMPUTE_SHADER) {
+  }
   PipelineCompute* _computePipe = nullptr;
 };
 #endif
@@ -363,7 +380,8 @@ struct Pass {
   attr_map_t _vtxAttributesBySemantic;
   ubb_map_t _uboBindingMap;
   Attribute* _vtxAttributeById[kmaxattrID];
-  int _samplerCount = 0;
+  int _samplerCount     = 0;
+  Technique* _technique = nullptr;
 
   Pass(const std::string& name)
       : _name(name)
@@ -390,11 +408,16 @@ struct Pass {
 
 struct Technique {
   orkvector<Pass*> mPasses;
-  std::string mName;
+  std::string _name;
 
-  Technique(const std::string& nam) { mName = nam; }
+  Technique(const std::string& nam) {
+    _name = nam;
+  }
 
-  void addPass(Pass* pps) { mPasses.push_back(pps); }
+  void addPass(Pass* pps) {
+    pps->_technique = this;
+    mPasses.push_back(pps);
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -553,7 +576,9 @@ public:
 
   void BindContainerToAbstract(Container* pcont, FxShader* fxh);
 
-  Container* GetActiveEffect() const { return mpActiveEffect; }
+  Container* GetActiveEffect() const {
+    return mpActiveEffect;
+  }
 
   bool compileAndLink(Container* container);
   bool compilePipelineVTG(Container* container);
@@ -594,7 +619,7 @@ struct ComputeInterface : public lev2::ComputeInterface {
   storagebuffermappingptr_t mapStorageBuffer(FxShaderStorageBuffer* b, size_t base = 0, size_t length = 0) final;
   void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) final;
   void bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) final;
-  void bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex, ImageBindAccess access ) final;
+  void bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex, ImageBindAccess access) final;
 
   PipelineCompute* createComputePipe(ComputeShader* csh);
   void bindComputeShader(ComputeShader* csh);

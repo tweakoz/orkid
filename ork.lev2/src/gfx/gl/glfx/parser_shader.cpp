@@ -26,15 +26,21 @@ void Shader::setInputInterface(StreamInterface* iface) {
     addUniformBlock(ublk);
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void Shader::addUniformSet(UniformSet* uset) { _unisets.push_back(uset); }
+void Shader::addUniformSet(UniformSet* uset) {
+  _unisets.push_back(uset);
+}
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void Shader::addUniformBlock(UniformBlock* ublk) { _uniblocks.push_back(ublk); }
+void Shader::addUniformBlock(UniformBlock* ublk) {
+  _uniblocks.push_back(ublk);
+}
 ///////////////////////////////////////////////////////////
 void ShaderNode::parse(const ScannerView& view) {
   DecoBlockNode::parse(view);
   _body.parse(view);
 }
-void ShaderNode::pregen(shaderbuilder::BackEnd& backend) { DecoBlockNode::_pregen(backend); }
+void ShaderNode::pregen(shaderbuilder::BackEnd& backend) {
+  DecoBlockNode::_pregen(backend);
+}
 ///////////////////////////////////////////////////////////
 void ShaderNode::_generateCommon(shaderbuilder::BackEnd& backend) const {
   auto pshader  = backend._statemap["curshader"].Get<Shader*>();
@@ -220,10 +226,10 @@ void ShaderNode::_generateCommon(shaderbuilder::BackEnd& backend) const {
   pshader->mShaderText = codegen.flush();
 
   ///////////////////////////////////
-  //printf("shaderbody\n");
- // printf("///////////////////////////////\n");
-  //printf("%s", pshader->mShaderText.c_str());
-  //printf("///////////////////////////////\n");
+  // printf("shaderbody\n");
+  // printf("///////////////////////////////\n");
+  // printf("%s", pshader->mShaderText.c_str());
+  // printf("///////////////////////////////\n");
 }
 
 ///////////////////////////////////////////////////////////

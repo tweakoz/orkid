@@ -33,16 +33,19 @@ namespace ork::lev2::glslfx {
 ///////////////////////////////////////////////////////////////////////////////
 
 Interface::Interface(ContextGL& glctx)
-    : mTarget(glctx) {}
+    : mTarget(glctx) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::_doBeginFrame() { mLastPass = 0; }
+void Interface::_doBeginFrame() {
+  mLastPass = 0;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Interface::LoadFxShader(const AssetPath& pth, FxShader* pfxshader) {
-  //printf( "GLSLFXI LoadShader<%s>\n", pth.c_str() );
+  // printf( "GLSLFXI LoadShader<%s>\n", pth.c_str() );
   GL_ERRORCHECK();
   bool bok = false;
   pfxshader->SetInternalHandle(0);
@@ -106,7 +109,9 @@ int Interface::BeginBlock(FxShader* hfx, const RenderContextInstData& data) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::EndBlock(FxShader* hfx) { mpActiveFxShader = 0; }
+void Interface::EndBlock(FxShader* hfx) {
+  mpActiveFxShader = 0;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -160,8 +165,7 @@ bool Interface::BindTechnique(FxShader* hfx, const FxShaderTechnique* htek) {
   container->mActiveTechnique = ptekcont;
   container->_activePass      = 0;
 
-  // orkprintf( "binding cgtek<%s:%x>\n", ptekcont->mName.c_str(), ptekcont );
-
+  // printf("binding tek<%p:%s>\n", ptekcont, ptekcont->_name.c_str());
   return (ptekcont->mPasses.size() > 0);
 }
 
@@ -180,6 +184,10 @@ bool Interface::BindPass(FxShader* hfx, int ipass) {
     bool complinkok = compileAndLink(container);
     hfx->SetFailedCompile(false == complinkok);
   }
+  auto pass = container->_activePass;
+  auto tek  = pass->_technique;
+  // printf("binding pass<%p:%s> tek<%s>\n", pass, pass->_name.c_str(), tek->_name.c_str());
+
   GL_ERRORCHECK();
   glUseProgram(container->_activePass->_programObjectId);
   GL_ERRORCHECK();
@@ -256,12 +264,13 @@ parambuffermappingptr_t Interface::mapParamBuffer(FxShaderParamBuffer* b, size_t
   // mapping->_mappedaddr = malloc(length);
   // glMapBuffer(GL_UNIFORM_BUFFER,
   //                                      GL_WRITE_ONLY);
-  mapping->_mappedaddr = glMapBufferRange(GL_UNIFORM_BUFFER,
-                                          base,
-                                          length,
-                                          GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT |
-                                              // GL_MAP_FLUSH_EXPLICIT_BIT |
-                                              0);
+  mapping->_mappedaddr = glMapBufferRange(
+      GL_UNIFORM_BUFFER,
+      base,
+      length,
+      GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT |
+          // GL_MAP_FLUSH_EXPLICIT_BIT |
+          0);
   assert(mapping->_mappedaddr != nullptr);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
   GL_ERRORCHECK();

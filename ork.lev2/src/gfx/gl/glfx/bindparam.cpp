@@ -13,7 +13,8 @@
 
 namespace ork::lev2::glslfx {
 ///////////////////////////////////////////////////////////////////////////////
-void Interface::BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bv) {}
+void Interface::BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bv) {
+}
 ///////////////////////////////////////////////////////////////////////////////
 void Interface::_stdbindparam(FxShader* hfx, const FxShaderParam* hpar, const stdparambinder_t& binder) {
   Container* container = static_cast<Container*>(hfx->GetInternalHandle());
@@ -26,107 +27,107 @@ void Interface::_stdbindparam(FxShader* hfx, const FxShaderParam* hpar, const st
       const char* psem = puni->_semantic.c_str();
       const char* pnam = puni->_name.c_str();
       GLenum etyp      = puni->_type;
-      binder(iloc,etyp);
+      binder(iloc, etyp);
     }
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Interface::BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int iv) {
-  _stdbindparam(hfx,hpar,[&](int iloc, GLenum checktype){
-      OrkAssert(checktype == GL_INT);
-      GL_ERRORCHECK();
-      glUniform1i(iloc, iv);
-      GL_ERRORCHECK();
+  _stdbindparam(hfx, hpar, [&](int iloc, GLenum checktype) {
+    OrkAssert(checktype == GL_INT);
+    GL_ERRORCHECK();
+    glUniform1i(iloc, iv);
+    GL_ERRORCHECK();
   });
 }
 void Interface::BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const fvec2& Vec) {
-  _stdbindparam(hfx,hpar,[&](int iloc, GLenum checktype){
-      OrkAssert(checktype == GL_FLOAT_VEC2);
-      GL_ERRORCHECK();
-      glUniform2fv(iloc, 1, Vec.GetArray());
-      GL_ERRORCHECK();
+  _stdbindparam(hfx, hpar, [&](int iloc, GLenum checktype) {
+    OrkAssert(checktype == GL_FLOAT_VEC2);
+    GL_ERRORCHECK();
+    glUniform2fv(iloc, 1, Vec.GetArray());
+    GL_ERRORCHECK();
   });
 }
 void Interface::BindParamVect3(FxShader* hfx, const FxShaderParam* hpar, const fvec3& Vec) {
-  _stdbindparam(hfx,hpar,[&](int iloc, GLenum checktype){
-      OrkAssert(checktype == GL_FLOAT_VEC3);
-      GL_ERRORCHECK();
-      glUniform3fv(iloc, 1, Vec.GetArray());
-      GL_ERRORCHECK();
+  _stdbindparam(hfx, hpar, [&](int iloc, GLenum checktype) {
+    OrkAssert(checktype == GL_FLOAT_VEC3);
+    GL_ERRORCHECK();
+    glUniform3fv(iloc, 1, Vec.GetArray());
+    GL_ERRORCHECK();
   });
 }
 void Interface::BindParamVect4(FxShader* hfx, const FxShaderParam* hpar, const fvec4& Vec) {
-  _stdbindparam(hfx,hpar,[&](int iloc, GLenum checktype){
-      OrkAssert(checktype == GL_FLOAT_VEC4);
-      GL_ERRORCHECK();
-      glUniform4fv(iloc, 1, Vec.GetArray());
-      GL_ERRORCHECK();
+  _stdbindparam(hfx, hpar, [&](int iloc, GLenum checktype) {
+    OrkAssert(checktype == GL_FLOAT_VEC4);
+    GL_ERRORCHECK();
+    glUniform4fv(iloc, 1, Vec.GetArray());
+    GL_ERRORCHECK();
   });
 }
 void Interface::BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, const fvec4* Vec, const int icount) {
-  _stdbindparam(hfx,hpar,[&](int iloc,GLenum checktype){
-      OrkAssert(checktype == GL_FLOAT_VEC4 );
-      GL_ERRORCHECK();
-      glUniform4fv( iloc, icount, (float*) Vec );
-      GL_ERRORCHECK();
+  _stdbindparam(hfx, hpar, [&](int iloc, GLenum checktype) {
+    OrkAssert(checktype == GL_FLOAT_VEC4);
+    GL_ERRORCHECK();
+    glUniform4fv(iloc, icount, (float*)Vec);
+    GL_ERRORCHECK();
   });
 }
 void Interface::BindParamFloat(FxShader* hfx, const FxShaderParam* hpar, float fA) {
-  _stdbindparam(hfx,hpar,[&](int iloc,GLenum checktype){
-      OrkAssert(checktype == GL_FLOAT );
-      GL_ERRORCHECK();
-      glUniform1f(iloc, fA);
-      GL_ERRORCHECK();
+  _stdbindparam(hfx, hpar, [&](int iloc, GLenum checktype) {
+    OrkAssert(checktype == GL_FLOAT);
+    GL_ERRORCHECK();
+    glUniform1f(iloc, fA);
+    GL_ERRORCHECK();
   });
 }
 void Interface::BindParamFloatArray(FxShader* hfx, const FxShaderParam* hpar, const float* pfa, const int icount) {
-  _stdbindparam(hfx,hpar,[&](int iloc,GLenum checktype){
-      OrkAssert(checktype == GL_FLOAT );
-      GL_ERRORCHECK();
-      glUniform1fv(iloc, icount, pfa);
-      GL_ERRORCHECK();
+  _stdbindparam(hfx, hpar, [&](int iloc, GLenum checktype) {
+    OrkAssert(checktype == GL_FLOAT);
+    GL_ERRORCHECK();
+    glUniform1fv(iloc, icount, pfa);
+    GL_ERRORCHECK();
   });
 }
 void Interface::BindParamU32(FxShader* hfx, const FxShaderParam* hpar, uint32_t uval) {
-  _stdbindparam(hfx,hpar,[&](int iloc,GLenum checktype){
-      OrkAssert(checktype == GL_UNSIGNED_INT );
-      GL_ERRORCHECK();
-      glUniform1ui(iloc, uval);
-      GL_ERRORCHECK();
+  _stdbindparam(hfx, hpar, [&](int iloc, GLenum checktype) {
+    OrkAssert(checktype == GL_UNSIGNED_INT);
+    GL_ERRORCHECK();
+    glUniform1ui(iloc, uval);
+    GL_ERRORCHECK();
   });
 }
-#if ! defined(__APPLE__)
+#if !defined(__APPLE__)
 void Interface::BindParamU64(FxShader* hfx, const FxShaderParam* hpar, uint64_t uval) {
-  _stdbindparam(hfx,hpar,[&](int iloc,GLenum checktype){
-      OrkAssert(checktype == GL_UNSIGNED_INT64_NV );
-      GL_ERRORCHECK();
-      glUniform1ui64NV(iloc, uval);
-      GL_ERRORCHECK();
+  _stdbindparam(hfx, hpar, [&](int iloc, GLenum checktype) {
+    OrkAssert(checktype == GL_UNSIGNED_INT64_NV);
+    GL_ERRORCHECK();
+    glUniform1ui64NV(iloc, uval);
+    GL_ERRORCHECK();
   });
 }
 #endif
 void Interface::BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx4& Mat) {
-  _stdbindparam(hfx,hpar,[&](int iloc,GLenum checktype){
-      OrkAssert(checktype == GL_FLOAT_MAT4);
-      GL_ERRORCHECK();
-      glUniformMatrix4fv(iloc, 1, GL_FALSE, Mat.GetArray());
-      GL_ERRORCHECK();
+  _stdbindparam(hfx, hpar, [&](int iloc, GLenum checktype) {
+    OrkAssert(checktype == GL_FLOAT_MAT4);
+    GL_ERRORCHECK();
+    glUniformMatrix4fv(iloc, 1, GL_FALSE, Mat.GetArray());
+    GL_ERRORCHECK();
   });
 }
 void Interface::BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx3& Mat) {
-  _stdbindparam(hfx,hpar,[&](int iloc,GLenum checktype){
-      OrkAssert(checktype == GL_FLOAT_MAT3);
-      GL_ERRORCHECK();
-      glUniformMatrix3fv(iloc, 1, GL_FALSE, Mat.GetArray());
-      GL_ERRORCHECK();
+  _stdbindparam(hfx, hpar, [&](int iloc, GLenum checktype) {
+    OrkAssert(checktype == GL_FLOAT_MAT3);
+    GL_ERRORCHECK();
+    glUniformMatrix3fv(iloc, 1, GL_FALSE, Mat.GetArray());
+    GL_ERRORCHECK();
   });
 }
 void Interface::BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const fmtx4* Mat, int iCount) {
-  _stdbindparam(hfx,hpar,[&](int iloc,GLenum checktype){
-      OrkAssert(checktype == GL_FLOAT_MAT4);
-      GL_ERRORCHECK();
-      glUniformMatrix4fv(iloc, iCount, GL_FALSE, (const float*)Mat);
-      GL_ERRORCHECK();
+  _stdbindparam(hfx, hpar, [&](int iloc, GLenum checktype) {
+    OrkAssert(checktype == GL_FLOAT_MAT4);
+    GL_ERRORCHECK();
+    glUniformMatrix4fv(iloc, iCount, GL_FALSE, (const float*)Mat);
+    GL_ERRORCHECK();
   });
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -140,7 +141,7 @@ void Interface::BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Te
   if (pinst) {
     int iloc = pinst->mLocation;
 
-    const char* teknam = container->mActiveTechnique->mName.c_str();
+    const char* teknam = container->mActiveTechnique->_name.c_str();
 
     // printf( "Bind2 Tex<%p> par<%s> iloc<%d> teknam<%s>\n",
     // pTex,hpar->mParameterName.c_str(), iloc, teknam );
@@ -197,4 +198,4 @@ void Interface::BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Te
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::glslfx {
+} // namespace ork::lev2::glslfx

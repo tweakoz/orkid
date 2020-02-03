@@ -15,22 +15,52 @@ namespace ork::lev2::glslfx {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Container::addConfig(Config* pcfg) { mConfigs[pcfg->mName] = pcfg; }
-void Container::addUniformBlock(UniformBlock* pif) { _uniformBlocks[pif->_name] = pif; }
-void Container::addUniformSet(UniformSet* pif) { _uniformSets[pif->_name] = pif; }
-void Container::addVertexInterface(StreamInterface* pif) { _vertexInterfaces[pif->mName] = pif; }
-void Container::addTessCtrlInterface(StreamInterface* pif) { _tessCtrlInterfaces[pif->mName] = pif; }
-void Container::addTessEvalInterface(StreamInterface* pif) { _tessEvalInterfaces[pif->mName] = pif; }
-void Container::addGeometryInterface(StreamInterface* pif) { _geometryInterfaces[pif->mName] = pif; }
-void Container::addFragmentInterface(StreamInterface* pif) { _fragmentInterfaces[pif->mName] = pif; }
-void Container::addStateBlock(StateBlock* psb) { _stateBlocks[psb->mName] = psb; }
+void Container::addConfig(Config* pcfg) {
+  mConfigs[pcfg->mName] = pcfg;
+}
+void Container::addUniformBlock(UniformBlock* pif) {
+  _uniformBlocks[pif->_name] = pif;
+}
+void Container::addUniformSet(UniformSet* pif) {
+  _uniformSets[pif->_name] = pif;
+}
+void Container::addVertexInterface(StreamInterface* pif) {
+  _vertexInterfaces[pif->mName] = pif;
+}
+void Container::addTessCtrlInterface(StreamInterface* pif) {
+  _tessCtrlInterfaces[pif->mName] = pif;
+}
+void Container::addTessEvalInterface(StreamInterface* pif) {
+  _tessEvalInterfaces[pif->mName] = pif;
+}
+void Container::addGeometryInterface(StreamInterface* pif) {
+  _geometryInterfaces[pif->mName] = pif;
+}
+void Container::addFragmentInterface(StreamInterface* pif) {
+  _fragmentInterfaces[pif->mName] = pif;
+}
+void Container::addStateBlock(StateBlock* psb) {
+  _stateBlocks[psb->mName] = psb;
+}
 // void Container::addLibBlock(LibBlock* plb) { _libBlocks[plb->mName] = plb; }
-void Container::addTechnique(Technique* ptek) { _techniqueMap[ptek->mName] = ptek; }
-void Container::addVertexShader(ShaderVtx* psha) { _vertexShaders[psha->mName] = psha; }
-void Container::addTessCtrlShader(ShaderTsC* psha) { _tessCtrlShaders[psha->mName] = psha; }
-void Container::addTessEvalShader(ShaderTsE* psha) { _tessEvalShaders[psha->mName] = psha; }
-void Container::addGeometryShader(ShaderGeo* psha) { _geometryShaders[psha->mName] = psha; }
-void Container::addFragmentShader(ShaderFrg* psha) { _fragmentShaders[psha->mName] = psha; }
+void Container::addTechnique(Technique* ptek) {
+  _techniqueMap[ptek->_name] = ptek;
+}
+void Container::addVertexShader(ShaderVtx* psha) {
+  _vertexShaders[psha->mName] = psha;
+}
+void Container::addTessCtrlShader(ShaderTsC* psha) {
+  _tessCtrlShaders[psha->mName] = psha;
+}
+void Container::addTessEvalShader(ShaderTsE* psha) {
+  _tessEvalShaders[psha->mName] = psha;
+}
+void Container::addGeometryShader(ShaderGeo* psha) {
+  _geometryShaders[psha->mName] = psha;
+}
+void Container::addFragmentShader(ShaderFrg* psha) {
+  _fragmentShaders[psha->mName] = psha;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -131,10 +161,18 @@ Uniform* Container::GetUniform(const std::string& name) const {
 }
 
 #if defined(ENABLE_NVMESH_SHADERS)
-void Container::addNvTaskInterface(StreamInterface* pif) { _nvTaskInterfaces[pif->mName] = pif; }
-void Container::addNvMeshInterface(StreamInterface* pif) { _nvMeshInterfaces[pif->mName] = pif; }
-void Container::addNvTaskShader(ShaderNvTask* psha) { _nvTaskShaders[psha->mName] = psha; }
-void Container::addNvMeshShader(ShaderNvMesh* psha) { _nvMeshShaders[psha->mName] = psha; }
+void Container::addNvTaskInterface(StreamInterface* pif) {
+  _nvTaskInterfaces[pif->mName] = pif;
+}
+void Container::addNvMeshInterface(StreamInterface* pif) {
+  _nvMeshInterfaces[pif->mName] = pif;
+}
+void Container::addNvTaskShader(ShaderNvTask* psha) {
+  _nvTaskShaders[psha->mName] = psha;
+}
+void Container::addNvMeshShader(ShaderNvMesh* psha) {
+  _nvMeshShaders[psha->mName] = psha;
+}
 ShaderNvTask* Container::nvTaskShader(const std::string& name) const {
   const auto& it = _nvTaskShaders.find(name);
   return (it == _nvTaskShaders.end()) ? nullptr : it->second;
@@ -154,12 +192,16 @@ StreamInterface* Container::nvMeshInterface(const std::string& name) const {
 #endif
 
 #if defined(ENABLE_COMPUTE_SHADERS)
-void Container::addComputeInterface(StreamInterface* pif) { _computeInterfaces[pif->mName] = pif; }
+void Container::addComputeInterface(StreamInterface* pif) {
+  _computeInterfaces[pif->mName] = pif;
+}
 StreamInterface* Container::computeInterface(const std::string& name) const {
   const auto& it = _computeInterfaces.find(name);
   return (it == _computeInterfaces.end()) ? nullptr : it->second;
 }
-void Container::addComputeShader(ComputeShader* psha) { _computeShaders[psha->mName] = psha; }
+void Container::addComputeShader(ComputeShader* psha) {
+  _computeShaders[psha->mName] = psha;
+}
 ComputeShader* Container::computeShader(const std::string& name) const {
   const auto& it = _computeShaders.find(name);
   return (it == _computeShaders.end()) ? nullptr : it->second;
@@ -196,11 +238,14 @@ Container::Container(const std::string& nam)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Container::Destroy(void) {}
+void Container::Destroy(void) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Container::IsValid(void) { return true; }
+bool Container::IsValid(void) {
+  return true;
+}
 
 std::unordered_map<std::string, Uniform*> Container::flatUniMap() const {
   std::unordered_map<std::string, Uniform*> flatunimap;

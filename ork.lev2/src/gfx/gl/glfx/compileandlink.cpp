@@ -11,6 +11,8 @@
 #include <ork/kernel/prop.h>
 #include <ork/kernel/string/string.h>
 
+constexpr bool _DEBUG_SHADER_COMPILE = false;
+
 namespace ork::lev2::glslfx {
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -33,7 +35,9 @@ bool Shader::Compile() {
   shadertext += "(); }\n";
   const char* c_str = shadertext.c_str();
 
-  // printf("Shader<%s>\n/////////////\n%s\n///////////////////\n", mName.c_str(), c_str);
+  if (_DEBUG_SHADER_COMPILE) {
+    printf("Shader<%s>\n/////////////\n%s\n///////////////////\n", mName.c_str(), c_str);
+  }
 
   GL_NF_ERRORCHECK();
   glShaderSource(mShaderObjectId, 1, &c_str, NULL);
@@ -137,7 +141,21 @@ bool Interface::compilePipelineVTG(Container* container) {
 
     StreamInterface* vtx_iface = pvtxshader->_inputInterface;
     StreamInterface* frg_iface = pfrgshader->_inputInterface;
-
+    if (_DEBUG_SHADER_COMPILE) {
+      auto tek = pass->_technique;
+      printf(
+          "	link tek<%s> pass<%s> vtxshader<%s> interface<%p>\n",
+          tek->_name.c_str(),
+          pass->_name.c_str(),
+          pvtxshader->mName.c_str(),
+          vtx_iface);
+      printf(
+          "	link tek<%s> pass<%s>frgshader<%s> interface<%p>\n",
+          tek->_name.c_str(),
+          pass->_name.c_str(),
+          pfrgshader->mName.c_str(),
+          frg_iface);
+    }
     if (nullptr == vtx_iface) {
       printf("	vtxshader<%s> has no interface!\n", pvtxshader->mName.c_str());
       OrkAssert(false);
