@@ -17,6 +17,20 @@ using namespace ork;
 using namespace ork::lev2;
 using namespace ork::lev2::deferrednode;
 typedef SVtxV12C4T16 vtx_t; // position, vertex color, 2 UV sets
+
+struct Instance {
+  XgmModelInst* _xgminst   = nullptr;
+  ModelDrawable* _drawable = nullptr;
+  DrawQueueXfData _xform;
+  fvec3 _curpos;
+  fvec3 _curaxis;
+  float _curangle = 0.0f;
+  fvec3 _target;
+  fvec3 _targetaxis;
+  float _targetangle = 0.0f;
+  float _timeout     = 0.0f;
+};
+
 int main(int argc, char** argv) {
   auto qtapp  = OrkEzQtApp::create(argc, argv);
   auto qtwin  = qtapp->_mainWindow;
@@ -27,6 +41,7 @@ int main(int argc, char** argv) {
   XgmModelInst* modelinst = nullptr;
   ModelDrawable* drawable = nullptr;
   DrawQueueXfData drawxf;
+  std::vector<Instance> instances;
   //////////////////////////////////////////////////////////
   // initialize compositor (necessary for PBR models)
   //  use a deferredPBR compositing node
@@ -54,22 +69,28 @@ int main(int argc, char** argv) {
   CameraDataLut cameras;
   CameraData camdata;
   cameras.AddSorted("spawncam"_pool, &camdata);
+  float prevtime = timer.SecsSinceStart();
   //////////////////////////////////////////////////////////
   timer.Start();
   //////////////////////////////////////////////////////////
   qtapp->onGpuInit([&](Context* ctx) {
     auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/pbr1/pbr1");
     model           = modl_asset->GetModel();
-    modelinst       = new XgmModelInst(model);
-    modelinst->EnableAllMeshes();
     renderer.setContext(ctx);
-    drawable = new ModelDrawable;
-    drawable->SetModelInst(modelinst);
     auto envl_asset = asset::AssetManager<TextureAsset>::Create("data://environ/envmaps/tozenv_nebula");
     OrkAssert(envl_asset->GetTexture() != nullptr);
     pbrnode->_writeEnvTexture(envl_asset);
 
     while (asset::AssetManager<TextureAsset>::AutoLoad()) {
+    }
+
+    for (int i = 0; i < 10; i++) {
+      Instance inst;
+      inst._drawable = new ModelDrawable;
+      inst._xgminst  = new XgmModelInst(model);
+      inst._xgminst->EnableAllMeshes();
+      inst._drawable->SetModelInst(inst._xgminst);
+      instances.push_back(inst);
     }
   });
   //////////////////////////////////////////////////////////
@@ -78,17 +99,20 @@ int main(int argc, char** argv) {
     RenderContextFrameData RCFD(context); // renderer per/frame data
     RCFD._cimpl = &compositorimpl;
     context->pushRenderContextFrameData(&RCFD);
-    auto fbi  = context->FBI();  // FrameBufferInterface
-    auto fxi  = context->FXI();  // FX Interface
-    auto mtxi = context->MTXI(); // matrix Interface
-    auto gbi  = context->GBI();  // GeometryBuffer Interface
+    auto fbi      = context->FBI();  // FrameBufferInterface
+    auto fxi      = context->FXI();  // FX Interface
+    auto mtxi     = context->MTXI(); // matrix Interface
+    auto gbi      = context->GBI();  // GeometryBuffer Interface
+    float curtime = timer.SecsSinceStart();
+    float dt      = curtime - prevtime;
+    prevtime      = curtime;
     ///////////////////////////////////////
     // compute view and projection matrices
     ///////////////////////////////////////
     float TARGW    = context->mainSurfaceWidth();
     float TARGH    = context->mainSurfaceHeight();
     float aspect   = TARGW / TARGH;
-    float phase    = timer.SecsSinceStart() * PI2 * 0.1f;
+    float phase    = curtime * PI2 * 0.1f;
     float distance = 10.0f;
     auto eye       = fvec3(sinf(phase), 1.0f, -cosf(phase)) * distance;
     fvec3 tgt(0, 0, 0);
@@ -110,7 +134,44 @@ int main(int argc, char** argv) {
     DB->Reset();
     DB->copyCameras(cameras);
     auto layer = DB->MergeLayer("Default"_pool);
-    ((Drawable*)drawable)->enqueueOnLayer(drawxf, *layer);
+
+    ////////////////////////////////////////
+    // animate instances
+    ////////////////////////////////////////
+
+    for (auto& inst : instances) {
+      auto drawable = static_cast<Drawable*>(inst._drawable);
+
+      fvec3 delta = inst._target - inst._curpos;
+      inst._curpos += delta.Normal() * dt * 0.3;
+
+      delta         = inst._target - inst._curpos;
+      inst._curaxis = (inst._curaxis + delta.Normal() * dt * 0.1).Normal();
+      inst._curangle += (inst._targetangle - inst._curangle) * dt * 0.1;
+
+      if (inst._timeout < curtime) {
+        inst._timeout  = curtime + float(rand() % 255) / 64.0;
+        inst._target.x = (float(rand() % 255) / 25.0f) - 5.0f;
+        inst._target.y = (float(rand() % 255) / 25.0f) - 5.0f;
+        inst._target.z = (float(rand() % 255) / 25.0f) - 5.0f;
+
+        fvec3 axis;
+        axis.x            = (float(rand() % 255) / 255.0f) - 0.5f;
+        axis.y            = (float(rand() % 255) / 255.0f) - 0.5f;
+        axis.z            = (float(rand() % 255) / 255.0f) - 0.5f;
+        inst._targetaxis  = axis.Normal();
+        inst._targetangle = PI2 * (float(rand() % 255) / 255.0f) - 0.5f;
+      }
+
+      fquat q;
+      q.FromAxisAngle(fvec4(inst._curaxis, inst._curangle));
+
+      inst._xform.mWorldMatrix.compose(inst._curpos, q, 1.0f);
+      drawable->enqueueOnLayer(inst._xform, *layer);
+    }
+
+    ////////////////////////////////////////
+
     DrawableBuffer::UnLockWriteBuffer(DB);
     ///////////////////////////////////////
     // Draw!
