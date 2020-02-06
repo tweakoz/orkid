@@ -16,17 +16,15 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class RtGroupRenderTarget : public IRenderTarget {
-public:
+struct RtGroupRenderTarget : public IRenderTarget {
   RtGroupRenderTarget(RtGroup* prtgroup);
-
-private:
-  RtGroup* mpRtGroup;
 
   int GetW() final;
   int GetH() final;
   void BeginFrame(FrameRenderer& frenderer) final;
   void EndFrame(FrameRenderer& frenderer) final;
+
+  RtGroup* _rtgroup;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

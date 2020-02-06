@@ -522,10 +522,10 @@ fragment_shader ps_pointlight_untextured_stereo : iface_f2uv : lib_deferred {
 }
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_spotlight_textured : iface_f2uv : lib_deferred {
+fragment_shader ps_spotlight_untextured : iface_f2uv : lib_deferred {
   WPosData wpd = monoWPD();
   GBufData gbd = decodeGBUF(wpd);
-  out_clr = vec4(spotlighting_textured_simple(wpd,gbd), 1);
+  out_clr = vec4(spotlighting_untextured_simple(wpd,gbd), 1);
   /////////////////////////////////////////
   // show lighting tiles
   /////////////////////////////////////////
@@ -534,10 +534,18 @@ fragment_shader ps_spotlight_textured : iface_f2uv : lib_deferred {
   /////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_spotlight_untextured : iface_f2uv : lib_deferred {
-  WPosData wpd = monoWPD();
+fragment_shader ps_spotlight_untextured_stereo : iface_f2uv : lib_deferred {
+  WPosData wpd = stereoWPD();
   GBufData gbd = decodeGBUF(wpd);
   out_clr = vec4(spotlighting_untextured_simple(wpd,gbd), 1);
+}
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+fragment_shader ps_spotlight_textured : iface_f2uv : lib_deferred {
+  WPosData wpd = monoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  out_clr = vec4(spotlighting_textured_simple(wpd,gbd), 1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_spotlight_textured_stereo : iface_f2uv : lib_deferred {
@@ -546,11 +554,21 @@ fragment_shader ps_spotlight_textured_stereo : iface_f2uv : lib_deferred {
   out_clr = vec4(spotlighting_textured_simple(wpd,gbd), 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_spotlight_untextured_stereo : iface_f2uv : lib_deferred {
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+fragment_shader ps_spotlight_textured_shadowed : iface_f2uv : lib_deferred {
+  WPosData wpd = monoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  out_clr = vec4(spotlighting_textured_simple(wpd,gbd)*0.1, 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_spotlight_textured_shadowed_stereo : iface_f2uv : lib_deferred {
   WPosData wpd = stereoWPD();
   GBufData gbd = decodeGBUF(wpd);
-  out_clr = vec4(spotlighting_untextured_simple(wpd,gbd), 1);
+  out_clr = vec4(spotlighting_textured_simple(wpd,gbd), 1);
 }
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_spotdecal_textured : iface_f2uv : lib_deferred {
   WPosData wpd = monoWPD();
@@ -636,20 +654,29 @@ technique pointlight_untextured_stereo {
   }
 }
 ///////////////////////////////////////////////////////////////
-technique spotlight_textured {
-  fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_passthru2uv;
-    fragment_shader = ps_spotlight_textured;
-    state_block     = sb_default;
-  }
-}
-///////////////////////////////////////////////////////////////
 technique spotlight_untextured {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_passthru2uv;
     fragment_shader = ps_spotlight_untextured;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique spotlight_untextured_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_spotlight_untextured_stereo;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique spotlight_textured {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_spotlight_textured;
     state_block     = sb_default;
   }
 }
@@ -663,11 +690,20 @@ technique spotlight_textured_stereo {
   }
 }
 ///////////////////////////////////////////////////////////////
-technique spotlight_untextured_stereo {
+technique spotlight_textured_shadowed {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_passthru2uv;
-    fragment_shader = ps_spotlight_untextured_stereo;
+    fragment_shader = ps_spotlight_textured_shadowed;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique spotlight_textured_shadowed_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_spotlight_textured_shadowed_stereo;
     state_block     = sb_default;
   }
 }

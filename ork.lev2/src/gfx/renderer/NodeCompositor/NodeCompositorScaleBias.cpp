@@ -50,7 +50,7 @@ struct IMPL {
   }
   ///////////////////////////////////////
   void _render(CompositorDrawData& drawdata) {
-    Context* target = drawdata.target();
+    Context* target = drawdata.context();
     //////////////////////////////////////////////////////
     target->FBI()->SetAutoClear(false);
     //////////////////////////////////////////////////////

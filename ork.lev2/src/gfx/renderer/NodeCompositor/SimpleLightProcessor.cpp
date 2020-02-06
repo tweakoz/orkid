@@ -53,11 +53,13 @@ void SimpleLightProcessor::_gpuInit(lev2::Context* target) {
 void SimpleLightProcessor::gpuUpdate(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights) {
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
   RenderContextFrameData& RCFD = framerenderer.framedata();
-  auto context                 = RCFD.GetTarget();
+  auto context                 = drawdata.context();
   _gpuInit(context);
 
   /////////////////////////////////////
   // convert enumerated scenelights to deferred format
+  // in a "real" light processor we will figure out how to
+  //  update items incrementally
   /////////////////////////////////////
 
   const auto& scene_lights = enumlights._enumeratedLights;
@@ -67,11 +69,16 @@ void SimpleLightProcessor::gpuUpdate(CompositorDrawData& drawdata, const ViewDat
   _tex2pointlightmap.clear();
   _tex2spotlightmap.clear();
   _tex2spotdecalmap.clear();
+  _tex2shadowedspotlightmap.clear();
 
   for (auto l : scene_lights) {
-    if (l->isShadowCaster())
-      continue;
-    if (auto as_point = dynamic_cast<lev2::PointLight*>(l)) {
+    if (l->isShadowCaster()) {
+      if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
+        auto cookie = as_spot->cookie();
+        if (cookie)
+          _tex2shadowedspotlightmap[cookie].push_back(as_spot);
+      }
+    } else if (auto as_point = dynamic_cast<lev2::PointLight*>(l)) {
       auto cookie = as_point->cookie();
       if (cookie)
         _tex2pointlightmap[cookie].push_back(as_point);
@@ -101,136 +108,103 @@ void SimpleLightProcessor::renderLights(CompositorDrawData& drawdata, const View
   _renderUnshadowedUntexturedPointLights(drawdata, VD, enumlights);
   _renderUnshadowedTexturedPointLights(drawdata, VD, enumlights);
   _renderUnshadowedTexturedSpotLights(drawdata, VD, enumlights);
+  _renderShadowedTexturedSpotLights(drawdata, VD, enumlights);
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SimpleLightProcessor::_updatePointLightUBOparams(Context* ctx, pointlightlist_t& lights, fvec3 campos) {
+  auto FXI          = ctx->FXI();
+  size_t offset_cd  = 0;
+  size_t offset_mtx = offset_cd + KMAXLIGHTSPERCHUNK * sizeof(fvec4);
+  size_t offset_rad = offset_mtx + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
+  size_t numlights  = lights.size();
+  OrkAssert(numlights < KMAXLIGHTSPERCHUNK);
+  ctx->debugPushGroup("SimpleLightProcessor::_updatePointLightUBOparams");
+  auto mapping = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
+  for (auto light : lights) {
+    fvec3 color                     = light->color();
+    float dist2cam                  = light->distance(campos);
+    mapping->ref<fvec4>(offset_cd)  = fvec4(color, dist2cam);
+    mapping->ref<float>(offset_rad) = light->radius();
+    mapping->ref<fmtx4>(offset_mtx) = light->worldMatrix();
+    offset_cd += sizeof(fvec4);
+    offset_mtx += sizeof(fmtx4);
+    offset_rad += sizeof(float);
+  }
+  FXI->unmapParamBuffer(mapping.get());
+  FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
+  _deferredContext._lightingmtl.bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
+  _deferredContext._lightingmtl.bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
+  _deferredContext._lightingmtl.bindParamInt(_deferredContext._parNumLights, numlights);
+  _deferredContext._lightingmtl.commit();
+  ctx->debugPopGroup();
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SimpleLightProcessor::_updateSpotLightUBOparams(Context* ctx, spotlightlist_t& lights, fvec3 campos) {
+  auto FXI          = ctx->FXI();
+  size_t offset_cd  = 0;
+  size_t offset_mtx = offset_cd + KMAXLIGHTSPERCHUNK * sizeof(fvec4);
+  size_t offset_rad = offset_mtx + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
+  size_t numlights  = lights.size();
+  OrkAssert(numlights < KMAXLIGHTSPERCHUNK);
+  ctx->debugPushGroup("SimpleLightProcessor::_updateSpotLightUBOparams");
+  auto mapping = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
+  for (auto light : lights) {
+    fvec3 color                     = light->color();
+    float dist2cam                  = light->distance(campos);
+    mapping->ref<fvec4>(offset_cd)  = fvec4(color, dist2cam);
+    mapping->ref<float>(offset_rad) = light->GetRange();
+    mapping->ref<fmtx4>(offset_mtx) = light->shadowMatrix();
+    offset_cd += sizeof(fvec4);
+    offset_mtx += sizeof(fmtx4);
+    offset_rad += sizeof(float);
+  }
+  FXI->unmapParamBuffer(mapping.get());
+  FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
+  _deferredContext._lightingmtl.bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
+  _deferredContext._lightingmtl.bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
+  _deferredContext._lightingmtl.bindParamInt(_deferredContext._parNumLights, numlights);
+  _deferredContext._lightingmtl.commit();
+  ctx->debugPopGroup();
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SimpleLightProcessor::_renderUnshadowedUntexturedPointLights(
     CompositorDrawData& drawdata,
     const ViewData& VD,
     const EnumeratedLights& enumlights) {
-  bool is_stereo = VD._isStereo;
   /////////////////////////////////////////////////////////////////
-  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-  const auto& RCFD             = framerenderer.framedata();
-  auto gfxctx                  = RCFD.GetTarget();
-  auto FXI                     = gfxctx->FXI();
-  auto RSI                     = gfxctx->RSI();
-  auto this_buf                = gfxctx->FBI()->GetThisBuffer();
-
-  /////////////////////////////////////
-  // render all (untextured) pointlights
-  /////////////////////////////////////
-
-  auto& lightmtl = _deferredContext._lightingmtl;
+  auto context  = drawdata.context();
+  auto FXI      = context->FXI();
+  auto this_buf = context->FBI()->GetThisBuffer();
+  context->debugPushGroup("SimpleLightProcessor::_renderUnshadowedUntexturedPointLights");
   _deferredContext.beginPointLighting(drawdata, VD, nullptr);
-  FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
-  auto mapping     = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
-  size_t numlights = _untexturedpointlights.size();
-  OrkAssert(numlights < KMAXLIGHTSPERCHUNK);
-  /////////////////////////////////////////////////////////
-  size_t offset_cd  = 0;
-  size_t offset_mtx = offset_cd + KMAXLIGHTSPERCHUNK * sizeof(fvec4);
-  size_t offset_rad = offset_mtx + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
-  /////////////////////////////////////////////////////////
-  constexpr size_t KPOSPASE = KMAXLIGHTSPERCHUNK * sizeof(fvec4);
-  for (size_t lidx = 0; lidx < numlights; lidx++) {
-    auto light     = _untexturedpointlights[lidx];
-    fvec3 color    = light->color();
-    float radius   = light->radius();
-    fvec3 pos      = light->worldPosition();
-    float falloff  = light->falloff();
-    float dist2cam = (pos - VD._camposmono).Mag();
-    /////////////////////////////////////////////////////////
-    // embed chunk's lights into lighting UBO
-    /////////////////////////////////////////////////////////
-    mapping->ref<fvec4>(offset_cd)  = fvec4(color, dist2cam);
-    mapping->ref<fmtx4>(offset_mtx) = light->worldMatrix();
-    mapping->ref<float>(offset_rad) = radius;
-    offset_cd += sizeof(fvec4);
-    offset_mtx += sizeof(fmtx4);
-    offset_rad += sizeof(float);
-    // printf("lidx<%zu> pos<%g %g %g> color<%g %g %g>\n", lidx, pos.x, pos.y, pos.z, color.x, color.y, color.z);
-  }
-  /////////////////////////////////////
-  // chunk ready, fire it off..
-  /////////////////////////////////////
-  FXI->unmapParamBuffer(mapping.get());
+  _updatePointLightUBOparams(context, _untexturedpointlights, VD._camposmono);
+  int numlights = _untexturedpointlights.size();
   //////////////////////////////////////////////////
-  // set number of lights for tile
-  //////////////////////////////////////////////////
-  lightmtl.bindParamInt(_deferredContext._parNumLights, numlights);
-  lightmtl.bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
-  lightmtl.bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
-  lightmtl.commit();
-  //////////////////////////////////////////////////
-  // accumulate light for tile
-  //////////////////////////////////////////////////
-
-  // printf("numlighttiles<%zu>\n", _chunktiles_pos.size());
   fvec4 quad_pos(-1, -1, 2, 2);
   fvec4 quad_uva(0, 0, 1, 1);
   fvec4 quad_uvb(0, numlights, 0, 0);
   this_buf->Render2dQuadsEML(1, &quad_pos, &quad_uva, &quad_uvb);
   /////////////////////////////////////
   _deferredContext.endPointLighting(drawdata, VD);
+  context->debugPopGroup();
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SimpleLightProcessor::_renderUnshadowedTexturedPointLights(
     CompositorDrawData& drawdata,
     const ViewData& VD,
     const EnumeratedLights& enumlights) {
-  bool is_stereo = VD._isStereo;
   /////////////////////////////////////////////////////////////////
-  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-  const auto& RCFD             = framerenderer.framedata();
-  auto gfxctx                  = RCFD.GetTarget();
-  auto FXI                     = gfxctx->FXI();
-  auto RSI                     = gfxctx->RSI();
-  auto this_buf                = gfxctx->FBI()->GetThisBuffer();
-
-  /////////////////////////////////////
-  // render all pointlights for all pointlight textures
-  /////////////////////////////////////
-
-  auto& lightmtl = _deferredContext._lightingmtl;
+  auto context  = drawdata.context();
+  auto FXI      = context->FXI();
+  auto this_buf = context->FBI()->GetThisBuffer();
   /////////////////////////////////////////////////////////
+  context->debugPushGroup("SimpleLightProcessor::_renderUnshadowedTexturedPointLights");
   for (auto texture_item : _tex2pointlightmap) {
     auto texture = texture_item.first;
     int lidx     = 0;
     _deferredContext.beginPointLighting(drawdata, VD, texture);
-    FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
-    auto mapping     = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
-    size_t numlights = texture_item.second.size();
-    OrkAssert(numlights < KMAXLIGHTSPERCHUNK);
-    size_t offset_cd  = 0;
-    size_t offset_mtx = offset_cd + KMAXLIGHTSPERCHUNK * sizeof(fvec4);
-    size_t offset_rad = offset_mtx + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
-    for (auto light : texture_item.second) {
-      fvec3 color    = light->color();
-      float radius   = light->radius();
-      float falloff  = light->falloff();
-      float dist2cam = (light->worldPosition() - VD._camposmono).Mag();
-      /////////////////////////////////////////////////////////
-      // embed chunk's lights into lighting UBO
-      /////////////////////////////////////////////////////////
-      mapping->ref<fvec4>(offset_cd)  = fvec4(color, dist2cam);
-      mapping->ref<fmtx4>(offset_mtx) = light->worldMatrix();
-      mapping->ref<float>(offset_rad) = radius;
-      offset_cd += sizeof(fvec4);
-      offset_mtx += sizeof(fmtx4);
-      offset_rad += sizeof(float);
-      // printf("tex-light<%p> pos<%g %g %g> color<%g %g %g>\n", light, pos.x, pos.y, pos.z, color.x, color.y, color.z);
-    }
-    /////////////////////////////////////
-    // chunk ready, fire it off..
-    /////////////////////////////////////
-    FXI->unmapParamBuffer(mapping.get());
-    //////////////////////////////////////////////////
-    // set number of lights for tile
-    //////////////////////////////////////////////////
-    lightmtl.bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
-    lightmtl.bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
-    lightmtl.bindParamInt(_deferredContext._parNumLights, numlights);
-    lightmtl.commit();
+    _updatePointLightUBOparams(context, texture_item.second, VD._camposmono);
+    int numlights = texture_item.second.size();
     //////////////////////////////////////////////////
     fvec4 quad_pos(-1, -1, 2, 2);
     fvec4 quad_uva(0, 0, 1, 1);
@@ -239,81 +213,25 @@ void SimpleLightProcessor::_renderUnshadowedTexturedPointLights(
     /////////////////////////////////////
     _deferredContext.endPointLighting(drawdata, VD);
   } // for (auto texture_item : _tex2pointmap ){
+  context->debugPopGroup();
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SimpleLightProcessor::_renderUnshadowedTexturedSpotLights(
     CompositorDrawData& drawdata,
     const ViewData& VD,
     const EnumeratedLights& enumlights) {
-  bool is_stereo = VD._isStereo;
   /////////////////////////////////////////////////////////////////
-  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-  const auto& RCFD             = framerenderer.framedata();
-  auto gfxctx                  = RCFD.GetTarget();
-  auto FXI                     = gfxctx->FXI();
-  auto RSI                     = gfxctx->RSI();
-  auto this_buf                = gfxctx->FBI()->GetThisBuffer();
-
-  /////////////////////////////////////
-  // render all pointlights for all pointlight textures
-  /////////////////////////////////////
-
-  auto& lightmtl = _deferredContext._lightingmtl;
+  auto context  = drawdata.context();
+  auto FXI      = context->FXI();
+  auto this_buf = context->FBI()->GetThisBuffer();
   /////////////////////////////////////////////////////////
+  context->debugPushGroup("SimpleLightProcessor::_renderUnshadowedTexturedSpotLights");
   for (auto texture_item : _tex2spotlightmap) {
     auto texture = texture_item.first;
     int lidx     = 0;
     _deferredContext.beginSpotLighting(drawdata, VD, texture);
-    FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
-    auto mapping     = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
-    size_t numlights = texture_item.second.size();
-    OrkAssert(numlights < KMAXLIGHTSPERCHUNK);
-    size_t offset_cd  = 0;
-    size_t offset_mtx = offset_cd + KMAXLIGHTSPERCHUNK * sizeof(fvec4);
-    size_t offset_rad = offset_mtx + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
-    for (auto light : texture_item.second) {
-      fvec3 color    = light->color();
-      float fovy     = light->GetFovy();
-      float range    = light->GetRange();
-      float dist2cam = (light->worldPosition() - VD._camposmono).Mag();
-      /////////////////////////////////////////////////////////
-      // embed chunk's lights into lighting UBO
-      /////////////////////////////////////////////////////////
-      mapping->ref<fvec4>(offset_cd)  = fvec4(color, dist2cam);
-      mapping->ref<float>(offset_rad) = range;
-
-      fmtx4 matV, matP;
-      float near   = range / 1000.0f;
-      float far    = range;
-      float aspect = 1.0;
-
-      fvec3 wnx, wny, wnz, wpos;
-      light->worldMatrix().toNormalVectors(wnx, wny, wnz);
-      wpos      = light->worldMatrix().GetTranslation();
-      fvec3 ctr = wpos + wnz;
-      // matV = light->worldMatrix();
-      matV.LookAt(wpos, ctr, wny);
-
-      matP.Perspective(fovy, aspect, near, far);
-      mapping->ref<fmtx4>(offset_mtx) = matV * matP;
-      // mapping->ref<fmtx4>(offset_mtx) = light->worldMatrix();
-
-      offset_cd += sizeof(fvec4);
-      offset_mtx += sizeof(fmtx4);
-      offset_rad += sizeof(float);
-      // printf("tex-light<%p> pos<%g %g %g> color<%g %g %g>\n", light, pos.x, pos.y, pos.z, color.x, color.y, color.z);
-    }
-    /////////////////////////////////////
-    // chunk ready, fire it off..
-    /////////////////////////////////////
-    FXI->unmapParamBuffer(mapping.get());
-    //////////////////////////////////////////////////
-    // set number of lights for tile
-    //////////////////////////////////////////////////
-    lightmtl.bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
-    lightmtl.bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
-    lightmtl.bindParamInt(_deferredContext._parNumLights, numlights);
-    lightmtl.commit();
+    _updateSpotLightUBOparams(context, texture_item.second, VD._camposmono);
+    int numlights = texture_item.second.size();
     //////////////////////////////////////////////////
     fvec4 quad_pos(-1, -1, 2, 2);
     fvec4 quad_uva(0, 0, 1, 1);
@@ -322,80 +240,25 @@ void SimpleLightProcessor::_renderUnshadowedTexturedSpotLights(
     /////////////////////////////////////
     _deferredContext.endSpotLighting(drawdata, VD);
   } // for (auto texture_item : _tex2pointmap ){
+  context->debugPopGroup();
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SimpleLightProcessor::_renderTexturedSpotDecals(
     CompositorDrawData& drawdata,
     const ViewData& VD,
     const EnumeratedLights& enumlights) {
-  bool is_stereo = VD._isStereo;
   /////////////////////////////////////////////////////////////////
-  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-  const auto& RCFD             = framerenderer.framedata();
-  auto gfxctx                  = RCFD.GetTarget();
-  auto FXI                     = gfxctx->FXI();
-  auto RSI                     = gfxctx->RSI();
-  auto this_buf                = gfxctx->FBI()->GetThisBuffer();
-
-  /////////////////////////////////////
-  // render all pointlights for all pointlight textures
-  /////////////////////////////////////
-
-  auto& lightmtl = _deferredContext._lightingmtl;
+  auto context  = drawdata.context();
+  auto FXI      = context->FXI();
+  auto this_buf = context->FBI()->GetThisBuffer();
   /////////////////////////////////////////////////////////
+  context->debugPushGroup("SimpleLightProcessor::_renderTexturedSpotDecals");
   for (auto texture_item : _tex2spotdecalmap) {
     auto texture = texture_item.first;
     int lidx     = 0;
     _deferredContext.beginSpotDecaling(drawdata, VD, texture);
-    FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
-    auto mapping     = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
-    size_t numlights = texture_item.second.size();
-    OrkAssert(numlights < KMAXLIGHTSPERCHUNK);
-    size_t offset_cd  = 0;
-    size_t offset_mtx = offset_cd + KMAXLIGHTSPERCHUNK * sizeof(fvec4);
-    size_t offset_rad = offset_mtx + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
-    for (auto light : texture_item.second) {
-      fvec3 color    = light->color();
-      float fovy     = light->GetFovy();
-      float range    = light->GetRange();
-      float dist2cam = (light->worldPosition() - VD._camposmono).Mag();
-      /////////////////////////////////////////////////////////
-      // embed chunk's lights into lighting UBO
-      /////////////////////////////////////////////////////////
-      mapping->ref<fvec4>(offset_cd)  = fvec4(color, dist2cam);
-      mapping->ref<float>(offset_rad) = range;
-
-      fmtx4 matV, matP;
-      float near   = range / 1000.0f;
-      float far    = range;
-      float aspect = 1.0;
-
-      fvec3 wnx, wny, wnz, wpos;
-      light->worldMatrix().toNormalVectors(wnx, wny, wnz);
-      wpos      = light->worldMatrix().GetTranslation();
-      fvec3 ctr = wpos + wnz;
-      // matV = light->worldMatrix();
-      matV.LookAt(wpos, ctr, wny);
-
-      matP.Perspective(fovy, aspect, near, far);
-      mapping->ref<fmtx4>(offset_mtx) = matV * matP;
-
-      offset_cd += sizeof(fvec4);
-      offset_mtx += sizeof(fmtx4);
-      offset_rad += sizeof(float);
-      // printf("tex-light<%p> pos<%g %g %g> color<%g %g %g>\n", light, pos.x, pos.y, pos.z, color.x, color.y, color.z);
-    }
-    /////////////////////////////////////
-    // chunk ready, fire it off..
-    /////////////////////////////////////
-    FXI->unmapParamBuffer(mapping.get());
-    //////////////////////////////////////////////////
-    // set number of lights for tile
-    //////////////////////////////////////////////////
-    lightmtl.bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
-    lightmtl.bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
-    lightmtl.bindParamInt(_deferredContext._parNumLights, numlights);
-    lightmtl.commit();
+    _updateSpotLightUBOparams(context, texture_item.second, VD._camposmono);
+    int numlights = texture_item.second.size();
     //////////////////////////////////////////////////
     fvec4 quad_pos(-1, -1, 2, 2);
     fvec4 quad_uva(0, 0, 1, 1);
@@ -404,6 +267,110 @@ void SimpleLightProcessor::_renderTexturedSpotDecals(
     /////////////////////////////////////
     _deferredContext.endSpotDecaling(drawdata, VD);
   } // for (auto texture_item : _tex2pointmap ){
+  context->debugPopGroup();
+}
+/////////////////////////////////////
+void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
+    CompositorDrawData& drawdata,
+    const ViewData& VD,
+    const EnumeratedLights& enumlights) {
+  auto& RCFD     = drawdata.RCFD();
+  auto context   = drawdata.context();
+  auto& ddprops  = drawdata._properties;
+  auto irenderer = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
+  auto FBI       = context->FBI();
+  auto CIMPL     = drawdata._cimpl;
+  auto FXI       = context->FXI();
+  auto this_buf  = context->FBI()->GetThisBuffer();
+
+  /////////////////////////////////////
+  // render depth maps
+  /////////////////////////////////////
+  context->debugPushGroup("SimpleLightProcessor::_renderShadowedTexturedSpotLights::depthmaps");
+
+  auto DEPTHRENDERCPD = CIMPL->topCPD();
+  for (auto texture_item : _tex2shadowedspotlightmap) {
+    for (auto light : texture_item.second) {
+      auto irt              = light->rendertarget(context);
+      auto shadowrect       = SRect(0, 0, light->_shadowmapDim, light->_shadowmapDim);
+      auto shadowmtx        = light->shadowMatrix();
+      auto lightcamdat      = light->shadowCamDat();
+      CameraMatrices cammtc = lightcamdat.computeMatrices(1.0f);
+
+      DEPTHRENDERCPD._irendertarget        = irt;
+      DEPTHRENDERCPD._cameraMatrices       = &cammtc;
+      DEPTHRENDERCPD._stereoCameraMatrices = nullptr;
+      DEPTHRENDERCPD._stereo1pass          = false;
+      DEPTHRENDERCPD.SetDstRect(shadowrect);
+      FBI->SetAutoClear(false);
+      CIMPL->pushCPD(DEPTHRENDERCPD); // base lighting
+      FBI->PushRtGroup(irt->_rtgroup);
+      context->beginFrame();
+      FBI->clearDepth(1.0f);
+      auto DB = RCFD.GetDB();
+      if (DB) {
+        for (const PoolString& layer_name : DEPTHRENDERCPD.getLayerNames()) {
+          context->debugMarker(FormatString("enqshadowlayer<%s>", layer_name.c_str()));
+          DB->enqueueLayerToRenderQueue(layer_name, irenderer);
+        }
+        irenderer->drawEnqueuedRenderables();
+      }
+      CIMPL->popCPD();
+      context->endFrame();
+      FBI->PopRtGroup();
+    }
+  }
+  FBI->SetAutoClear(false);
+  context->debugPopGroup();
+
+  /////////////////////////////////////
+  // accumulate all spotlight dept maps
+  /////////////////////////////////////
+
+  context->debugPushGroup("SimpleLightProcessor::_renderShadowedTexturedSpotLights::accum");
+  auto& lightmtl = _deferredContext._lightingmtl;
+
+  for (auto texture_item : _tex2shadowedspotlightmap) {
+    auto cookie = texture_item.first;
+
+    _deferredContext.beginShadowedSpotLighting(drawdata, VD, cookie);
+
+    _deferredContext._lightingmtl.bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
+    _deferredContext._lightingmtl.bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
+    //_deferredContext._lightingmtl.bindParamInt(_deferredContext._parNumLights, numlights);
+    _deferredContext._lightingmtl.commit();
+
+    ///////////////////////////////////////////////////////////////////
+    // size_t offset_cd  = 0;
+    // size_t offset_mtx = offset_cd + KMAXLIGHTSPERCHUNK * sizeof(fvec4);
+    // size_t offset_rad = offset_mtx + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
+    size_t numlights = texture_item.second.size();
+    OrkAssert(numlights < KMAXLIGHTSPERCHUNK);
+    // auto mapping = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
+    for (auto light : texture_item.second) {
+      auto depthtex  = light->_shadowRTG->_depthTexture;
+      fvec3 color    = light->color();
+      float dist2cam = light->distance(VD._camposmono);
+      // mapping->ref<fvec4>(offset_cd)  = fvec4(color, dist2cam);
+      // mapping->ref<float>(offset_rad) = light->GetRange();
+      // mapping->ref<fmtx4>(offset_mtx) = light->shadowMatrix();
+      // offset_cd += sizeof(fvec4);
+      // offset_mtx += sizeof(fmtx4);
+      // offset_rad += sizeof(float);
+    }
+    // FXI->unmapParamBuffer(mapping.get());
+    // FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
+
+    ///////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////
+    // fvec4 quad_pos(-1, -1, 2, 2);
+    // fvec4 quad_uva(0, 0, 1, 1);
+    // fvec4 quad_uvb(0, numlights, 0, 0);
+    // this_buf->Render2dQuadsEML(1, &quad_pos, &quad_uva, &quad_uvb);
+    /////////////////////////////////////
+    _deferredContext.endShadowedSpotLighting(drawdata, VD);
+  } // for (auto texture_item : _tex2pointmap ){
+  context->debugPopGroup();
 }
 /////////////////////////////////////
 } // namespace ork::lev2::deferrednode

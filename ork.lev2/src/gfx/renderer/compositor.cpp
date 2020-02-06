@@ -176,9 +176,9 @@ void CompositingContext::Resize(int iW, int iH) {
 
 bool CompositingContext::assemble(CompositorDrawData& drawdata) {
   bool rval = false;
-  Init(drawdata.target()); // fixme lazy init
+  Init(drawdata.context()); // fixme lazy init
   if (_compositingTechnique) {
-    _compositingTechnique->Init(drawdata.target(), miWidth, miHeight);
+    _compositingTechnique->Init(drawdata.context(), miWidth, miHeight);
     rval = _compositingTechnique->assemble(drawdata);
   }
   return rval;
@@ -186,14 +186,20 @@ bool CompositingContext::assemble(CompositorDrawData& drawdata) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Context* CompositorDrawData::target() const {
-  return mFrameRenderer.framedata().GetTarget();
+RenderContextFrameData& CompositorDrawData::RCFD() {
+  return mFrameRenderer.framedata();
+}
+const RenderContextFrameData& CompositorDrawData::RCFD() const {
+  return mFrameRenderer.framedata();
+}
+Context* CompositorDrawData::context() const {
+  return RCFD().GetTarget();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void CompositingContext::composite(CompositorDrawData& drawdata) {
-  Init(drawdata.target());
+  Init(drawdata.context());
   if (_compositingTechnique)
     _compositingTechnique->composite(drawdata);
 }

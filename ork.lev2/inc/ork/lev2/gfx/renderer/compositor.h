@@ -161,14 +161,18 @@ typedef std::stack<lev2::CompositingPassData> compositingpassdatastack_t;
 ///////////////////////////////////////////////////////////////////////////
 
 struct CompositorDrawData {
-  Context* target() const;
-  CompositingImpl* _cimpl = nullptr;
-  std::map<uint64_t, svar16_t> _properties;
-  lev2::FrameRenderer& mFrameRenderer;
 
   CompositorDrawData(lev2::FrameRenderer& renderer)
       : mFrameRenderer(renderer) {
   }
+
+  Context* context() const;
+  RenderContextFrameData& RCFD();
+  const RenderContextFrameData& RCFD() const;
+
+  CompositingImpl* _cimpl = nullptr;
+  std::map<uint64_t, svar16_t> _properties;
+  lev2::FrameRenderer& mFrameRenderer;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

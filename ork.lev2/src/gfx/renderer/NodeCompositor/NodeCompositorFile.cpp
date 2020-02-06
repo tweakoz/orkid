@@ -87,11 +87,11 @@ struct IMPL {
     drawdata._properties["OutputHeight"_crcu].Set<int>(targ->mainSurfaceHeight());
   }
   void endAssemble(CompositorDrawData& drawdata) {
-    drawdata.target()->debugMarker("File::endFrame");
+    drawdata.context()->debugMarker("File::endFrame");
   }
   void composite(CompositorDrawData& drawdata) {
     auto final = drawdata._properties["final"_crcu].Get<RtGroup*>();
-    drawdata.target()->debugMarker("File::endFrame");
+    drawdata.context()->debugMarker("File::endFrame");
   }
   ///////////////////////////////////////
   PoolString _camname, _layers;

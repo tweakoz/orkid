@@ -101,6 +101,8 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     // printf("RtGroup<%p> GenFBO<%d>\n", Base, int(FboObj->mFBOMaster));
 
     //////////////////////////////////////////
+    // color buffers
+    //////////////////////////////////////////
 
     for (int it = 0; it < inumtargets; it++) {
       RtBuffer* pB = Base->GetMrt(it);
@@ -139,6 +141,11 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
         pB->_impl.Set<GlRtBufferImpl*>(bufferimpl);
       }
     }
+
+    //////////////////////////////////////////
+    // depth buffer
+    //////////////////////////////////////////
+
     if (Base->_needsDepth) {
       // printf("RtGroup<%p> initdepth1\n", Base);
       Base->_depthTexture                  = new Texture;
@@ -255,7 +262,6 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
             break;
             // case EBUFFMT_RGBA32F: glinternalformat = GL_RGBA32; break;
         }
-        OrkAssert(glinternalformat != 0);
 
         //////////////////////////////////////////
         // initialize texture
@@ -293,7 +299,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
         // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, nummips - 1);
         mTargetGL.TXI()->ApplySamplingMode(tex);
         GL_ERRORCHECK();
-      }
+      } // if (bufferimpl->_init or rtbuffer->mSizeDirty) {
 
       //////////////////////////////////////////
       //////////////////////////////////////////
@@ -359,19 +365,19 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
   mCurrentRtGroup = Base;
 
   if (GetAutoClear()) {
-    glClearColor(mcClearColor.GetX(), mcClearColor.GetY(), mcClearColor.GetZ(), mcClearColor.GetW());
     // glClearColor( 1.0f,1.0f,0.0f,1.0f );
     GL_ERRORCHECK();
+    GLuint BufferBits = 0;
     if (mCurrentRtGroup->_needsDepth) {
+      BufferBits |= GL_DEPTH_BUFFER_BIT;
       glClearDepth(1.0f);
       glDepthRange(0.0, 1.0f);
     }
-    GL_ERRORCHECK();
-    if (mCurrentRtGroup->_needsDepth) {
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    } else {
-      glClear(GL_COLOR_BUFFER_BIT);
+    if (inumtargets) {
+      BufferBits |= GL_COLOR_BUFFER_BIT;
+      glClearColor(mcClearColor.GetX(), mcClearColor.GetY(), mcClearColor.GetZ(), mcClearColor.GetW());
     }
+    glClear(BufferBits);
     GL_ERRORCHECK();
   }
   // mTargetGL.debugPopGroup();

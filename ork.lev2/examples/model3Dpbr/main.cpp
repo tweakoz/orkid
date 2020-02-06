@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
     while (asset::AssetManager<TextureAsset>::AutoLoad()) {
     }
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 100; i++) {
       Instance inst;
       inst._drawable = new ModelDrawable;
       inst._xgminst  = new XgmModelInst(model);
@@ -143,7 +143,7 @@ int main(int argc, char** argv) {
       auto drawable = static_cast<Drawable*>(inst._drawable);
 
       fvec3 delta = inst._target - inst._curpos;
-      inst._curpos += delta.Normal() * dt * 0.3;
+      inst._curpos += delta.Normal() * dt * 1.0;
 
       delta         = inst._targetaxis - inst._curaxis;
       inst._curaxis = (inst._curaxis + delta.Normal() * dt * 0.1).Normal();
@@ -151,9 +151,10 @@ int main(int argc, char** argv) {
 
       if (inst._timeout < curtime) {
         inst._timeout  = curtime + float(rand() % 255) / 64.0;
-        inst._target.x = (float(rand() % 255) / 25.0f) - 5.0f;
-        inst._target.y = (float(rand() % 255) / 25.0f) - 5.0f;
-        inst._target.z = (float(rand() % 255) / 25.0f) - 5.0f;
+        inst._target.x = (float(rand() % 255) / 2.55) - 50;
+        inst._target.y = (float(rand() % 255) / 2.55) - 50;
+        inst._target.z = (float(rand() % 255) / 2.55) - 50;
+        inst._target *= 10.0f;
 
         fvec3 axis;
         axis.x            = (float(rand() % 255) / 255.0f) - 0.5f;

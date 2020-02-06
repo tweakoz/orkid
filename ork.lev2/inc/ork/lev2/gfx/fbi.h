@@ -11,19 +11,43 @@ public:
   FrameBufferInterface(Context& mTarget);
   ~FrameBufferInterface();
 
-  Texture* GetBufferTexture(void) { return mpBufferTex; }
-  void SetBufferTexture(Texture* ptex) { mpBufferTex = ptex; }
-  void SetClearColor(const fcolor4& scol) { mcClearColor = scol; }
-  const fcolor4& GetClearColor() const { return mcClearColor; }
-  void SetAutoClear(bool bv) { mbAutoClear = bv; }
-  bool GetAutoClear() const { return mbAutoClear; }
-  void SetVSyncEnable(bool bv) { mbEnableVSync = bv; }
-  OffscreenBuffer* GetThisBuffer(void) { return mpThisBuffer; }
-  void SetThisBuffer(OffscreenBuffer* pbuf) { mpThisBuffer = pbuf; }
-  bool IsOffscreenTarget(void) { return mbIsPbuffer; }
-  void SetOffscreenTarget(bool bv) { mbIsPbuffer = bv; }
+  Texture* GetBufferTexture(void) {
+    return mpBufferTex;
+  }
+  void SetBufferTexture(Texture* ptex) {
+    mpBufferTex = ptex;
+  }
+  void SetClearColor(const fcolor4& scol) {
+    mcClearColor = scol;
+  }
+  const fcolor4& GetClearColor() const {
+    return mcClearColor;
+  }
+  void SetAutoClear(bool bv) {
+    mbAutoClear = bv;
+  }
+  bool GetAutoClear() const {
+    return mbAutoClear;
+  }
+  void SetVSyncEnable(bool bv) {
+    mbEnableVSync = bv;
+  }
+  OffscreenBuffer* GetThisBuffer(void) {
+    return mpThisBuffer;
+  }
+  void SetThisBuffer(OffscreenBuffer* pbuf) {
+    mpThisBuffer = pbuf;
+  }
+  bool IsOffscreenTarget(void) {
+    return mbIsPbuffer;
+  }
+  void SetOffscreenTarget(bool bv) {
+    mbIsPbuffer = bv;
+  }
   virtual void SetRtGroup(RtGroup* Base) = 0;
-  RtGroup* GetRtGroup() const { return mCurrentRtGroup; }
+  RtGroup* GetRtGroup() const {
+    return mCurrentRtGroup;
+  }
 
   void PushRtGroup(RtGroup* Base);
   void PopRtGroup();
@@ -33,13 +57,22 @@ public:
   virtual void SetViewport(int iX, int iY, int iW, int iH) = 0;
   virtual void SetScissor(int iX, int iY, int iW, int iH)  = 0;
   virtual void Clear(const fcolor4& rCol, float fdepth)    = 0;
+  virtual void clearDepth(float fdepth)                    = 0;
   virtual void PushViewport(const SRect& rViewportRect);
   virtual SRect& PopViewport(void);
   SRect& GetViewport(void);
-  int GetVPX(void) { return miCurVPX; }
-  int GetVPY(void) { return miCurVPY; }
-  int GetVPW(void) { return miCurVPW; }
-  int GetVPH(void) { return miCurVPH; }
+  int GetVPX(void) {
+    return miCurVPX;
+  }
+  int GetVPY(void) {
+    return miCurVPY;
+  }
+  int GetVPW(void) {
+    return miCurVPW;
+  }
+  int GetVPH(void) {
+    return miCurVPH;
+  }
 
   ///////////////////////////////////////////////////////
 
@@ -50,9 +83,14 @@ public:
   //////////////////////////////////////////////
   // Capture Interface
 
-  virtual bool capture(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer) { return false; }
-  virtual void Capture(const RtGroup& inpbuf, int irt, const file::Path& pth) {}
-  virtual bool CaptureToTexture(const CaptureBuffer& capbuf, Texture& tex) { return false; }
+  virtual bool capture(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer) {
+    return false;
+  }
+  virtual void Capture(const RtGroup& inpbuf, int irt, const file::Path& pth) {
+  }
+  virtual bool CaptureToTexture(const CaptureBuffer& capbuf, Texture& tex) {
+    return false;
+  }
   virtual void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) = 0;
 
   //////////////////////////////////////////////
@@ -68,7 +106,9 @@ public:
     miPickState++;
     mpPickBuffer = pb;
   }
-  bool isPickState(void) { return (miPickState > 0); }
+  bool isPickState(void) {
+    return (miPickState > 0);
+  }
 
   void LeavePickState(void) {
     miPickState--;
@@ -76,7 +116,9 @@ public:
     mpPickBuffer = 0;
   }
 
-  PickBufferBase* GetCurrentPickBuffer() const { return mpPickBuffer; }
+  PickBufferBase* GetCurrentPickBuffer() const {
+    return mpPickBuffer;
+  }
 
   //////////////////////////////////////////////
 

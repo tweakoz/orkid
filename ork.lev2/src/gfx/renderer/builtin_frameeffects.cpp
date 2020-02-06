@@ -288,7 +288,7 @@ void BuiltinFrameEffectMaterial::Init(Context* pTarg) {
 void BuiltinFrameEffectMaterial::PostInit(Context* pTarg, const char* FxFile, const char* TekName) {
   mFxFile  = FxFile;
   mTekName = TekName;
-  // mpRtGroup = grp;
+  // _rtgroup = grp;
 
   if (FxShaderAsset* asset = asset::AssetManager<FxShaderAsset>::Load(mFxFile.c_str())) {
     // orkprintf( "Asset<%s> %p mTekName<%s>\n", FxFile, asset, mTekName.c_str() );

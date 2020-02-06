@@ -190,6 +190,8 @@ public:
   }
   virtual void Clear(const fcolor4& rCol, float fdepth) {
   }
+  virtual void clearDepth(float fdepth) {
+  }
 
   virtual void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) {
   }
@@ -285,7 +287,7 @@ private:
   void _doEndFrame(void) final {
   }
   void InitializeContext(Window* pWin, CTXBASE* pctxbase) final; // make a window
-  void InitializeContext(OffscreenBuffer* pBuf) final;                    // make a pbuffer
+  void InitializeContext(OffscreenBuffer* pBuf) final;           // make a pbuffer
   void _doResizeMainSurface(int iX, int iY, int iW, int iH) final;
 
   ///////////////////////////////////////////////////////////////////////

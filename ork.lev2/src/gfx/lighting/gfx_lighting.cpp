@@ -11,6 +11,8 @@
 #include <ork/kernel/fixedlut.hpp>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
+#include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/math/collision_test.h>
 #include <ork/reflect/RegisterProperty.h>
 
@@ -35,6 +37,9 @@ namespace lev2 {
 bool Light::isShadowCaster() const {
   return _data->IsShadowCaster();
 }
+float Light::distance(fvec3 pos) const {
+  return (worldPosition() - pos).Mag();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -46,7 +51,9 @@ void LightData::describeX(class_t* c) {
 
   c->floatProperty("ShadowBias", float_range{0.0, 2.0}, &LightData::mShadowBias)->annotate<ConstString>("editor.range.log", "true");
   c->floatProperty("ShadowBlur", float_range{0.0, 1.0}, &LightData::mShadowBlur);
-  c->floatProperty("ShadowSamples", float_range{1.0, 256.0}, &LightData::mShadowSamples);
+  c->memberProperty("ShadowSamples", &LightData::_shadowsamples)
+      ->annotate<ConstString>("editor.range.min", "1")
+      ->annotate<ConstString>("editor.range.max", "16");
 
   c->accessorProperty("Cookie", &LightData::_readCookie, &LightData::_writeCookie)
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
@@ -65,7 +72,7 @@ LightData::LightData()
     : mColor(1.0f, 0.0f, 0.0f)
     , _cookie(nullptr)
     , mbShadowCaster(false)
-    , mShadowSamples(1.0f)
+    , _shadowsamples(1)
     , mShadowBlur(0.0f)
     , mShadowBias(0.2f) {
 }
@@ -193,7 +200,20 @@ SpotLightData::SpotLightData()
 
 SpotLight::SpotLight(const fmtx4& mtx, const SpotLightData* sld)
     : Light(mtx, sld)
-    , mSld(sld) {
+    , _SLD(sld)
+    , _shadowRTG(nullptr)
+    , _shadowIRT(nullptr)
+    , _shadowmapDim(1024) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+RtGroupRenderTarget* SpotLight::rendertarget(Context* ctx) {
+  if (nullptr == _shadowIRT) {
+    _shadowRTG = new RtGroup(ctx, _shadowmapDim, _shadowmapDim, _SLD->shadowSamples());
+    _shadowIRT = new RtGroupRenderTarget(_shadowRTG);
+  }
+  return _shadowIRT;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -246,6 +266,52 @@ bool SpotLight::AffectsAABox(const AABox& aab) {
 
 bool SpotLight::AffectsCircleXZ(const Circle& cirXZ) {
   return CollisionTester::FrustumCircleXZTest(mWorldSpaceLightFrustum, cirXZ);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+fmtx4 SpotLight::shadowMatrix() const {
+  fmtx4 matW   = worldMatrix();
+  float fovy   = GetFovy();
+  float range  = GetRange();
+  float near   = range / 1000.0f;
+  float far    = range;
+  float aspect = 1.0;
+  fvec3 wnx, wny, wnz, wpos;
+  matW.toNormalVectors(wnx, wny, wnz);
+  wpos      = matW.GetTranslation();
+  fvec3 ctr = wpos + wnz;
+  fmtx4 matV, matP;
+  matV.LookAt(wpos, ctr, wny);
+  matP.Perspective(fovy, aspect, near, far);
+  return matV * matP;
+}
+
+CameraData SpotLight::shadowCamDat() const {
+  CameraData rval;
+  fmtx4 matW   = worldMatrix();
+  float fovy   = GetFovy();
+  float range  = GetRange();
+  float near   = range / 1000.0f;
+  float far    = range;
+  float aspect = 1.0;
+  fvec3 wnx, wny, wnz, wpos;
+  matW.toNormalVectors(wnx, wny, wnz);
+  wpos      = matW.GetTranslation();
+  fvec3 ctr = wpos + wnz;
+
+  rval.mEye       = wpos;
+  rval.mTarget    = ctr;
+  rval.mUp        = wny;
+  rval._xnormal   = wnx;
+  rval._ynormal   = wny;
+  rval._znormal   = wnz;
+  rval.mAper      = fovy;
+  rval.mHorizAper = fovy;
+  rval.mNear      = near;
+  rval.mFar       = far;
+
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

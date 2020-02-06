@@ -332,6 +332,15 @@ void GlFrameBufferInterface::Clear(const fcolor4& color, float fdepth) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void GlFrameBufferInterface::clearDepth(float fdepth) {
+  glClearDepth(fdepth);
+  GL_ERRORCHECK();
+  glClear(GL_DEPTH_BUFFER_BIT);
+  GL_ERRORCHECK();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void GlFrameBufferInterface::Capture(const RtGroup& rtg, int irt, const file::Path& pth) {
   auto FboObj = (GlFboObject*)rtg.GetInternalHandle();
 

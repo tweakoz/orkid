@@ -93,8 +93,14 @@ struct DeferredContext {
   void beginSpotLighting(CompositorDrawData& drawdata, const ViewData& VD, Texture* cookietexture);
   void endSpotLighting(CompositorDrawData& drawdata, const ViewData& VD);
   ////////////////////////////////////////////////////////////////////
+  void beginShadowedSpotLighting(CompositorDrawData& drawdata, const ViewData& VD, Texture* cookietexture);
+  void endShadowedSpotLighting(CompositorDrawData& drawdata, const ViewData& VD);
+  ////////////////////////////////////////////////////////////////////
   void beginSpotDecaling(CompositorDrawData& drawdata, const ViewData& VD, Texture* cookietexture);
   void endSpotDecaling(CompositorDrawData& drawdata, const ViewData& VD);
+  ////////////////////////////////////////////////////////////////////
+  void bindViewParams(const ViewData& VD);
+  void bindRasterState(Context* ctx, ECullTest culltest, EDepthTest depthtest, EBlending blending);
   ////////////////////////////////////////////////////////////////////
   RenderCompositingNode* _node;
   FreestyleMaterial _lightingmtl;
@@ -125,10 +131,12 @@ struct DeferredContext {
   const FxShaderTechnique* _tekPointLightingUntexturedStereo = nullptr;
   const FxShaderTechnique* _tekPointLightingTexturedStereo   = nullptr;
   //
-  const FxShaderTechnique* _tekSpotLightingUntextured       = nullptr;
-  const FxShaderTechnique* _tekSpotLightingTextured         = nullptr;
-  const FxShaderTechnique* _tekSpotLightingUntexturedStereo = nullptr;
-  const FxShaderTechnique* _tekSpotLightingTexturedStereo   = nullptr;
+  const FxShaderTechnique* _tekSpotLightingUntextured             = nullptr;
+  const FxShaderTechnique* _tekSpotLightingTextured               = nullptr;
+  const FxShaderTechnique* _tekSpotLightingUntexturedStereo       = nullptr;
+  const FxShaderTechnique* _tekSpotLightingTexturedStereo         = nullptr;
+  const FxShaderTechnique* _tekSpotLightingTexturedShadowed       = nullptr;
+  const FxShaderTechnique* _tekSpotLightingTexturedShadowedStereo = nullptr;
   //
   const FxShaderTechnique* _tekSpotDecalingTextured       = nullptr;
   const FxShaderTechnique* _tekSpotDecalingTexturedStereo = nullptr;

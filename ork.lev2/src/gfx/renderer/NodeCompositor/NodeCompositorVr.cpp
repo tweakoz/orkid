@@ -101,7 +101,7 @@ struct VRIMPL {
     RenderContextFrameData& RCFD = framerenderer.framedata();
     auto CIMPL                   = drawdata._cimpl;
     auto DB                      = RCFD.GetDB();
-    Context* targ                = drawdata.target();
+    Context* targ                = drawdata.context();
 
     bool simrunning = drawdata._properties["simrunning"_crcu].Get<bool>();
     bool use_vr     = (orkidvr::device()._active and simrunning);
@@ -210,18 +210,18 @@ void VrCompositingNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void VrCompositingNode::beginAssemble(CompositorDrawData& drawdata) {
-  drawdata.target()->debugPushGroup("VrCompositingNode::beginAssemble");
+  drawdata.context()->debugPushGroup("VrCompositingNode::beginAssemble");
   _impl.Get<std::shared_ptr<VRIMPL>>()->beginAssemble(drawdata);
-  drawdata.target()->debugPopGroup();
+  drawdata.context()->debugPopGroup();
 }
 void VrCompositingNode::endAssemble(CompositorDrawData& drawdata) {
-  drawdata.target()->debugPushGroup("VrCompositingNode::endAssemble");
+  drawdata.context()->debugPushGroup("VrCompositingNode::endAssemble");
   _impl.Get<std::shared_ptr<VRIMPL>>()->endAssemble(drawdata);
-  drawdata.target()->debugPopGroup();
+  drawdata.context()->debugPopGroup();
 }
 
 void VrCompositingNode::composite(CompositorDrawData& drawdata) {
-  drawdata.target()->debugPushGroup("VrCompositingNode::composite");
+  drawdata.context()->debugPushGroup("VrCompositingNode::composite");
   auto impl = _impl.Get<std::shared_ptr<VRIMPL>>();
   /////////////////////////////////////////////////////////////////////////////
   // VR compositor
@@ -235,15 +235,15 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
       assert(buffer != nullptr);
       auto tex = buffer->GetTexture();
       if (tex) {
-        drawdata.target()->debugPushGroup("VrCompositingNode::to_hmd");
+        drawdata.context()->debugPushGroup("VrCompositingNode::to_hmd");
         targ->FBI()->PushRtGroup(impl->_rtg);
         orkidvr::composite(targ, tex);
         targ->FBI()->PopRtGroup();
-        drawdata.target()->debugPopGroup();
+        drawdata.context()->debugPopGroup();
         /////////////////////////////////////////////////////////////////////////////
         // be nice and composite to main screen as well...
         /////////////////////////////////////////////////////////////////////////////
-        drawdata.target()->debugPushGroup("VrCompositingNode::to_screen");
+        drawdata.context()->debugPushGroup("VrCompositingNode::to_screen");
         auto this_buf = targ->FBI()->GetThisBuffer();
         auto& mtl     = impl->_blit2screenmtl;
         int iw        = targ->mainSurfaceWidth();
@@ -266,11 +266,11 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
             1.0f, // u1 v1
             nullptr,
             color);
-        drawdata.target()->debugPopGroup();
+        drawdata.context()->debugPopGroup();
       }
     }
   }
-  drawdata.target()->debugPopGroup();
+  drawdata.context()->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

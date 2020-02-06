@@ -211,6 +211,7 @@ public:
 
   void SetRtGroup(RtGroup* Base) final;
   void Clear(const fcolor4& rCol, float fdepth) final;
+  void clearDepth(float fdepth) final;
   void SetViewport(int iX, int iY, int iW, int iH) final;
   void SetScissor(int iX, int iY, int iW, int iH) final;
   void PushScissor(const SRect& rScissorRect) final;

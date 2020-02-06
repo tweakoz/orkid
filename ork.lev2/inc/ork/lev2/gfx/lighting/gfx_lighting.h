@@ -21,13 +21,13 @@
 #include <ork/config/config.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/lev2_asset.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 
-// class TextureAsset;
-// class Texture;
+class RtGroupRenderTarget;
 class RenderContextFrameData;
 class FxShader;
 class FxShaderParam;
@@ -62,8 +62,8 @@ public:
   float GetShadowBias() const {
     return mShadowBias;
   }
-  float GetShadowSamples() const {
-    return mShadowSamples;
+  int shadowSamples() const {
+    return _shadowsamples;
   }
   float GetShadowBlur() const {
     return mShadowBlur;
@@ -92,7 +92,7 @@ public:
 private:
   fvec3 mColor;
   bool mbShadowCaster;
-  float mShadowSamples;
+  int _shadowsamples;
   float mShadowBlur;
   float mShadowBias;
   bool _decal               = false;
@@ -134,7 +134,7 @@ struct Light {
   fvec3 direction() const {
     return _worldMatrix.GetZNormal();
   }
-
+  float distance(fvec3 pos) const;
   Texture* cookie() const {
     return _data->cookie();
   }
@@ -310,15 +310,7 @@ public:
 
 class SpotLight : public Light {
 
-  const SpotLightData* mSld;
-
 public:
-  fmtx4 mProjectionMatrix;
-  fmtx4 mViewMatrix;
-  Frustum mWorldSpaceLightFrustum;
-  // float			mFovy;
-  // float			mRange;
-
   bool IsInFrustum(const Frustum& frustum) override;
   bool AffectsSphere(const fvec3& center, float radius) override;
   bool AffectsAABox(const AABox& aab) override;
@@ -330,13 +322,25 @@ public:
   void Set(const fvec3& pos, const fvec3& target, const fvec3& up, float fovy);
 
   float GetFovy() const {
-    return mSld->GetFovy();
+    return _SLD->GetFovy();
   }
   float GetRange() const {
-    return mSld->GetRange();
+    return _SLD->GetRange();
   }
 
+  RtGroupRenderTarget* rendertarget(Context* ctx);
+  fmtx4 shadowMatrix() const;
+  CameraData shadowCamDat() const;
+
   SpotLight(const fmtx4& mtx, const SpotLightData* sld = 0);
+
+  fmtx4 mProjectionMatrix;
+  fmtx4 mViewMatrix;
+  Frustum mWorldSpaceLightFrustum;
+  RtGroup* _shadowRTG;
+  RtGroupRenderTarget* _shadowIRT;
+  int _shadowmapDim;
+  const SpotLightData* _SLD;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

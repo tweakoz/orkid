@@ -106,7 +106,7 @@ void NodeCompositingTechnique::Init(lev2::Context* pTARG, int w, int h) {
 ///////////////////////////////////////////////////////////////////////////////
 bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
   bool rval = false;
-  drawdata.target()->debugPushGroup("NodeCompositingTechnique::assemble");
+  drawdata.context()->debugPushGroup("NodeCompositingTechnique::assemble");
   if (_outputNode and _renderNode) {
     rval = true;
     ////////////////////////////////////////////////////////////////////////////
@@ -128,7 +128,7 @@ bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
       _postfxNode->Render(drawdata);
     _outputNode->endAssemble(drawdata);
   }
-  drawdata.target()->debugPopGroup();
+  drawdata.context()->debugPopGroup();
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -159,9 +159,9 @@ void RenderCompositingNode::Init(lev2::Context* pTARG, int w, int h) {
   DoInit(pTARG, w, h);
 }
 void RenderCompositingNode::Render(CompositorDrawData& drawdata) {
-  drawdata.target()->debugPushGroup("RenderCompositingNode::Render");
+  drawdata.context()->debugPushGroup("RenderCompositingNode::Render");
   DoRender(drawdata);
-  drawdata.target()->debugPopGroup();
+  drawdata.context()->debugPopGroup();
 }
 
 void PostCompositingNode::describeX(class_t* c) {
@@ -174,9 +174,9 @@ void PostCompositingNode::Init(lev2::Context* pTARG, int w, int h) {
   DoInit(pTARG, w, h);
 }
 void PostCompositingNode::Render(CompositorDrawData& drawdata) {
-  drawdata.target()->debugPushGroup("PostCompositingNode::Render");
+  drawdata.context()->debugPushGroup("PostCompositingNode::Render");
   DoRender(drawdata);
-  drawdata.target()->debugPopGroup();
+  drawdata.context()->debugPopGroup();
 }
 
 void OutputCompositingNode::describeX(class_t* c) {

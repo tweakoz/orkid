@@ -51,7 +51,7 @@ struct SCRIMPL {
     RenderContextFrameData& RCFD = framerenderer.framedata();
     auto CIMPL                   = drawdata._cimpl;
     auto DB                      = RCFD.GetDB();
-    Context* targ                = drawdata.target();
+    Context* targ                = drawdata.context();
     int w                        = targ->mainSurfaceWidth();
     int h                        = targ->mainSurfaceHeight();
     if (targ->hiDPI()) {
@@ -104,7 +104,7 @@ void ScreenOutputCompositingNode::endAssemble(CompositorDrawData& drawdata) {
   _impl.Get<std::shared_ptr<SCRIMPL>>()->endAssemble(drawdata);
 }
 void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
-  drawdata.target()->debugPushGroup("VrCompositingNode::composite");
+  drawdata.context()->debugPushGroup("VrCompositingNode::composite");
   auto impl = _impl.Get<std::shared_ptr<SCRIMPL>>();
   /////////////////////////////////////////////////////////////////////////////
   // VR compositor
@@ -121,7 +121,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         /////////////////////////////////////////////////////////////////////////////
         // be nice and composite to main screen as well...
         /////////////////////////////////////////////////////////////////////////////
-        drawdata.target()->debugPushGroup("ScreenCompositingNode::to_screen");
+        drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen");
         auto this_buf = targ->FBI()->GetThisBuffer();
         auto& mtl     = impl->_blit2screenmtl;
         int iw        = targ->mainSurfaceWidth();
@@ -144,11 +144,11 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
             1.0f, // u1 v1
             nullptr,
             color);
-        drawdata.target()->debugPopGroup();
+        drawdata.context()->debugPopGroup();
       }
     }
   }
-  drawdata.target()->debugPopGroup();
+  drawdata.context()->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

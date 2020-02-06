@@ -49,14 +49,14 @@ IRenderTarget::IRenderTarget() {
 ///////////////////////////////////////////////////////////////////////////////
 
 RtGroupRenderTarget::RtGroupRenderTarget(RtGroup* prtgroup)
-    : mpRtGroup(prtgroup) {
+    : _rtgroup(prtgroup) {
 }
 int RtGroupRenderTarget::GetW() {
-  // printf( "RtGroup W<%d> H<%d>\n", mpRtGroup->GetW(), mpRtGroup->GetH() );
-  return mpRtGroup->GetW();
+  // printf( "RtGroup W<%d> H<%d>\n", _rtgroup->GetW(), _rtgroup->GetH() );
+  return _rtgroup->GetW();
 }
 int RtGroupRenderTarget::GetH() {
-  return mpRtGroup->GetH();
+  return _rtgroup->GetH();
 }
 void RtGroupRenderTarget::BeginFrame(FrameRenderer& frenderer) {
 }
