@@ -89,6 +89,10 @@ public:
     return _decal;
   }
 
+  int shadowMapSize() const {
+    return _shadowMapSize;
+  }
+
 private:
   fvec3 mColor;
   bool mbShadowCaster;
@@ -97,6 +101,7 @@ private:
   float mShadowBias;
   bool _decal               = false;
   textureassetptr_t _cookie = nullptr;
+  int _shadowMapSize        = 1024;
 
   void _readCookie(ork::rtti::ICastable*& cookietex) const;
   void _writeCookie(ork::rtti::ICastable* const& cookietex);
@@ -141,7 +146,9 @@ struct Light {
   bool decal() const {
     return _data->decal();
   }
-
+  float shadowDepthBias() const {
+    return _data->GetShadowBias();
+  }
   const LightData* _data;
   const fmtx4& _worldMatrix;
 

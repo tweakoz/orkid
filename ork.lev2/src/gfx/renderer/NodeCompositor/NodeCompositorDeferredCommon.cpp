@@ -101,6 +101,7 @@ void DeferredContext::gpuInit(Context* target) {
     _parMapGBufAlbAo       = _lightingmtl.param("MapAlbedoAo");
     _parMapGBufNrmL        = _lightingmtl.param("MapNormalL");
     _parMapDepth           = _lightingmtl.param("MapDepth");
+    _parMapShadowDepth     = _lightingmtl.param("MapShadowDepth");
     _parMapGBufRufMtlAlpha = _lightingmtl.param("MapRufMtlAlpha");
     _parMapDepthCluster    = _lightingmtl.param("MapDepthCluster");
     _parLightCookieTexture = _lightingmtl.param("MapLightingCookie");
@@ -122,6 +123,7 @@ void DeferredContext::gpuInit(Context* target) {
     _parSkyboxLevel         = _lightingmtl.param("SkyboxLevel");
     _parDepthFogDistance    = _lightingmtl.param("DepthFogDistance");
     _parDepthFogPower       = _lightingmtl.param("DepthFogPower");
+    _parShadowParams        = _lightingmtl.param("ShadowParams");
     //////////////////////////////////////////////////////////////
     _rtgGbuffer            = new RtGroup(target, 8, 8, 1);
     _rtgDecal              = new RtGroup(target, 8, 8, 1);

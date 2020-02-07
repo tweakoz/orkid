@@ -909,7 +909,8 @@ struct ContainerNode : public AstNode {
 
   void parse();
 
-  bool validateTypeName(const std::string typeName) const;
+  bool isTypeName(const std::string typeName) const;
+  void validateTypeName(const std::string typeName) const;
   bool validateKeyword(const std::string typeName) const;
   bool validateIdentifierName(const std::string typeName) const;
   bool isIoAttrDecorator(const std::string typeName) const;

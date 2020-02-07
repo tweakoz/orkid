@@ -42,6 +42,7 @@ uniform_set ub_frg {
   sampler2D MapDiffuseEnv;
   sampler2D MapBrdfIntegration;
   sampler2D MapLightingCookie;
+  sampler2D MapShadowDepth;
   vec2 InvViewportSize; // inverse target size
   float Time;
   vec2 NearFar;
@@ -56,6 +57,7 @@ uniform_set ub_frg {
   float EnvironmentMipScale;
   float DepthFogDistance;
   float DepthFogPower;
+  vec4 ShadowParams;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ub_light {
@@ -81,6 +83,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     vec3 _albedo;
     float _zeye;
     float _fogZ;
+    float _rawDepth;
   };
   struct WPosData {
     vec2 _muv;
@@ -106,6 +109,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
   struct wposout {
     vec4 _out;
     float _fogZ;
+    float _rawDepth;
   };
   /////////////////////////////////////////////////////////
   wposout defwpos(WPosData wpd) {
@@ -118,6 +122,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     vec3 wpos      = vec3(rr.xyz / rr.w);
 
     wposout o;
+    o._rawDepth = depthtex;
     o._out = vec4(wpos, zeye);
             // Zndc2eye.x / (ndc-Zndc2eye.y)
     o._fogZ = -0.5 / (ndc - 1.00005); // temp hack until we get VR linear depth working
@@ -136,7 +141,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     decoded._wnrm   = normalize(n_mdl.xyz*2.0-vec3(1));
     decoded._albedo = texture(MapAlbedoAo, decoded._uv).xyz;
     decoded._fogZ = o._fogZ;
-
+    decoded._rawDepth = o._rawDepth;
     return decoded;
   }
   /////////////////////////////////////////////////////////
@@ -153,7 +158,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     return gbd._albedo * l;
   }
   /////////////////////////////////////////////////////////
-  struct PointLightCtx {
+  struct LightCtx {
     vec3 _viewdir;
     vec3 _normal;
     vec3 _lightdel;
@@ -162,8 +167,8 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     float _metallic;
   };
   /////////////////////////////////////////////////////////
-  PointLightCtx plcalc1(WPosData wpd,GBufData gbd,vec4 rmao){
-    PointLightCtx plc;
+  LightCtx lcalc1(WPosData wpd,GBufData gbd,vec4 rmao){
+    LightCtx plc;
     const vec3 metalbase = vec3(0.04);
     float metallic = clamp(rmao.x,0.02,0.99);
     vec3 basecolor = gbd._albedo;
@@ -181,7 +186,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     return plc;
   }
   /////////////////////////////////////////////////////////
-  vec3 plcalc2(PointLightCtx plc,GBufData gbd){
+  vec3 plcalc2(LightCtx plc,GBufData gbd){
       float dist2lightsq = plc._lightdel.x*plc._lightdel.x
                          + plc._lightdel.y*plc._lightdel.y
                          + plc._lightdel.z*plc._lightdel.z;
@@ -207,13 +212,13 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     int numl     = int(frg_uvb.y);
     vec3 l       = vec3(0, 0, 0);
     if( rmao.w==0 ){
-      PointLightCtx plc = plcalc1(wpd,gbd,rmao);
+      LightCtx plc = lcalc1(wpd,gbd,rmao);
       for (int i = 0; i < numl; i++) {
         int lidx                     = lbas + i;
         float lightcamdepth          = LightColorD[lidx].w;
         bool sphere_intersects_depth = (gbd._zeye - lightcamdepth) < LightRadius[lidx];
         if (sphere_intersects_depth){
-          vec3 lightpos = (LightMatrix[lidx]*vec4(0,0,0,1)).xyz;
+          vec3 lightpos = LightMatrix[lidx][3].xyz;
           vec3 lightdel = lightpos - gbd._wpos;
           plc._lightdel = lightdel;
           vec3 lightn = normalize(lightdel)*mat3(LightMatrix[lidx]);
@@ -230,7 +235,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     vec4 rmao = texture(MapRufMtlAlpha,wpd._muv); // ruf mtl ao opa
     vec3 l       = vec3(0, 0, 0);
     if( rmao.w==0 ){
-      PointLightCtx plc = plcalc1(wpd,gbd,rmao);
+      LightCtx plc = lcalc1(wpd,gbd,rmao);
       int lbeg = int(frg_uvb.x);
       int lend = lbeg+int(frg_uvb.y);
       for (int lidx = lbeg; lidx<lend; lidx++) {
@@ -250,7 +255,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     vec4 rmao = texture(MapRufMtlAlpha,wpd._muv); // ruf mtl ao opa
     vec3 l       = vec3(0, 0, 0);
     if( rmao.w==0 ){
-      PointLightCtx plc = plcalc1(wpd,gbd,rmao);
+      LightCtx plc = lcalc1(wpd,gbd,rmao);
       int lbeg = int(frg_uvb.x);
       int lend = lbeg+int(frg_uvb.y);
       for (int lidx = lbeg; lidx<lend; lidx++) {
@@ -264,29 +269,76 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     return gammaCorrect(l*depth_fogval);
   }
   /////////////////////////////////////////////////////////
+  struct SpotLightCalc2{
+    vec3 _lightoutput;
+    vec2 _lightuv;
+    float _mask;
+    float _lightz;
+    vec3 _lightdel;
+  };
+  SpotLightCalc2 slcalc(GBufData gbd,int lidx){
+    SpotLightCalc2 slc;
+    vec3 lightpos = -LightMatrix[lidx][3].xyz;
+    slc._lightdel = lightpos - gbd._wpos;
+    float lightrange = LightRadius[lidx];
+    vec4 light_hpos = LightMatrix[lidx]*vec4(gbd._wpos,1);
+    vec3 light_ndc = (light_hpos.xyz / light_hpos.w);
+    slc._lightz = light_ndc.z;
+    slc._lightuv = light_ndc.xy*0.5+vec2(0.5);
+    slc._mask = float(light_ndc.x>=-1 && light_ndc.x<1) *
+                 float(light_ndc.y>=-1 && light_ndc.y<1) *
+                 float(light_hpos.z>=0.0 && light_hpos.z<=lightrange) ;
+    vec3 lightcol = LightColorD[lidx].xyz;
+    vec3 lighttex = texture(MapLightingCookie,slc._lightuv).xyz;
+    slc._lightoutput = lightcol*lighttex*slc._mask;
+    return slc;
+  }
+  /////////////////////////////////////////////////////////
   vec3 spotlighting_textured_simple(WPosData wpd,GBufData gbd) {
     vec4 rmao = texture(MapRufMtlAlpha,wpd._muv); // ruf mtl ao opa
     vec3 l       = vec3(0, 0, 0);
     if( rmao.w==0 ){
-      PointLightCtx plc = plcalc1(wpd,gbd,rmao);
+      LightCtx plc = lcalc1(wpd,gbd,rmao);
       int lbeg = int(frg_uvb.x);
       int lend = lbeg+int(frg_uvb.y);
       for (int lidx = lbeg; lidx<lend; lidx++) {
-        vec3 lightpos = -LightMatrix[lidx][3].xyz;
-        plc._lightdel = lightpos - gbd._wpos;
-        //vec3 lightn = normalize(plc._lightdel)*mat3(LightMatrix[lidx]);
-        float lightrange = LightRadius[lidx];
-        vec4 light_hpos = LightMatrix[lidx]*vec4(gbd._wpos,1);
-        vec3 light_ndc = (light_hpos.xyz / light_hpos.w);
-        vec2 light_uv = light_ndc.xy*0.5+vec2(0.5);
-        float mask = float(light_ndc.x>=-1 && light_ndc.x<1) *
-                     float(light_ndc.y>=-1 && light_ndc.y<1) *
-                     float(light_hpos.z>=0.0 && light_hpos.z<=lightrange) ;
-        vec3 lightcol = LightColorD[lidx].xyz;
-        vec3 lighttex = texture(MapLightingCookie,light_uv).xyz;
-        vec3 lightoutput = lightcol*lighttex*mask;
-
-        l += plcalc2(plc,gbd)*lightoutput;
+        SpotLightCalc2 slc = slcalc(gbd,lidx);
+        plc._lightdel = slc._lightdel;
+        l += plcalc2(plc,gbd)*slc._lightoutput;
+      }
+    }
+    float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
+    return gammaCorrect(l*depth_fogval);
+  }
+  /////////////////////////////////////////////////////////
+  // non-pcf shadows
+  /////////////////////////////////////////////////////////
+  vec3 spotlighting_textured_shadowed(WPosData wpd,GBufData gbd) {
+    vec4 rmao = texture(MapRufMtlAlpha,wpd._muv); // ruf mtl ao opa
+    vec3 l       = vec3(0, 0, 0);
+    if( rmao.w==0 ){
+      LightCtx plc = lcalc1(wpd,gbd,rmao);
+      int lbeg = int(frg_uvb.x);
+      int lend = lbeg+int(frg_uvb.y);
+      for (int lidx = lbeg; lidx<lend; lidx++) {
+        SpotLightCalc2 slc = slcalc(gbd,lidx);
+        plc._lightdel = slc._lightdel;
+        /////////////////////////////////////////
+        // simple box filtered shadow
+        /////////////////////////////////////////
+        float shadow = 0.0;
+        for( int ys=-1; ys<2; ys++ ){
+          for( int xs=-1; xs<2; xs++ ){
+            vec2 uvd = vec2(xs,ys)*ShadowParams.x;
+            vec2 uvx = slc._lightuv+uvd;
+            float shadow_depth = texture(MapShadowDepth,uvx).r+ShadowParams.z;
+            float shadow_sample = float(shadow_depth>=slc._lightz);
+            shadow += mix(1,shadow_sample,slc._mask);
+          }
+        }
+        shadow *= ShadowParams.y;
+        /////////////////////////////////////////
+        l += plcalc2(plc,gbd)*slc._lightoutput*shadow;
       }
     }
     float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
@@ -320,7 +372,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     vec4 rmao = texture(MapRufMtlAlpha,wpd._muv); // ruf mtl ao opa
     vec3 l       = vec3(0, 0, 0);
     if( rmao.w==0 ){
-      PointLightCtx plc = plcalc1(wpd,gbd,rmao);
+      LightCtx plc = lcalc1(wpd,gbd,rmao);
       int lbeg = int(frg_uvb.x);
       int lend = lbeg+int(frg_uvb.y);
       for (int lidx = lbeg; lidx<lend; lidx++) {
@@ -559,7 +611,7 @@ fragment_shader ps_spotlight_textured_stereo : iface_f2uv : lib_deferred {
 fragment_shader ps_spotlight_textured_shadowed : iface_f2uv : lib_deferred {
   WPosData wpd = monoWPD();
   GBufData gbd = decodeGBUF(wpd);
-  out_clr = vec4(spotlighting_textured_simple(wpd,gbd)*0.1, 1);
+  out_clr = vec4(spotlighting_textured_shadowed(wpd,gbd), 1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_spotlight_textured_shadowed_stereo : iface_f2uv : lib_deferred {

@@ -331,42 +331,53 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
   auto& lightmtl = _deferredContext._lightingmtl;
 
   for (auto texture_item : _tex2shadowedspotlightmap) {
-    auto cookie = texture_item.first;
+    auto cookie  = texture_item.first;
+    auto& lights = texture_item.second;
 
     _deferredContext.beginShadowedSpotLighting(drawdata, VD, cookie);
 
-    _deferredContext._lightingmtl.bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
-    _deferredContext._lightingmtl.bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
-    //_deferredContext._lightingmtl.bindParamInt(_deferredContext._parNumLights, numlights);
-    _deferredContext._lightingmtl.commit();
+    lightmtl.bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
+    lightmtl.bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
+    lightmtl.commit();
 
     ///////////////////////////////////////////////////////////////////
-    // size_t offset_cd  = 0;
-    // size_t offset_mtx = offset_cd + KMAXLIGHTSPERCHUNK * sizeof(fvec4);
-    // size_t offset_rad = offset_mtx + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
-    size_t numlights = texture_item.second.size();
+    // TODO we would need texture arrays and all shadow buffers to be the same
+    // size in order to batch these lights together.
+    ///////////////////////////////////////////////////////////////////
+
+    size_t numlights = lights.size();
     OrkAssert(numlights < KMAXLIGHTSPERCHUNK);
-    // auto mapping = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
-    for (auto light : texture_item.second) {
-      auto depthtex  = light->_shadowRTG->_depthTexture;
-      fvec3 color    = light->color();
-      float dist2cam = light->distance(VD._camposmono);
-      // mapping->ref<fvec4>(offset_cd)  = fvec4(color, dist2cam);
-      // mapping->ref<float>(offset_rad) = light->GetRange();
-      // mapping->ref<fmtx4>(offset_mtx) = light->shadowMatrix();
+    for (auto light : lights) {
+      numlights                       = 1;
+      auto shadowtex                  = light->_shadowRTG->_depthTexture;
+      fvec3 color                     = light->color();
+      float dist2cam                  = light->distance(VD._camposmono);
+      auto mapping                    = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
+      size_t offset_cd                = 0;
+      size_t offset_mtx               = offset_cd + KMAXLIGHTSPERCHUNK * sizeof(fvec4);
+      size_t offset_rad               = offset_mtx + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
+      mapping->ref<fvec4>(offset_cd)  = fvec4(color, dist2cam);
+      mapping->ref<float>(offset_rad) = light->GetRange();
+      mapping->ref<fmtx4>(offset_mtx) = light->shadowMatrix();
+      FXI->unmapParamBuffer(mapping.get());
+      FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
+      lightmtl.bindParamCTex(_deferredContext._parMapShadowDepth, shadowtex);
+      fvec4 shadowp;
+      shadowp.x = (1.0f / float(light->_shadowmapDim));
+      shadowp.y = (1.0f / 9.0f);
+      shadowp.z = light->shadowDepthBias();
+      lightmtl.bindParamVec4(_deferredContext._parShadowParams, shadowp);
       // offset_cd += sizeof(fvec4);
       // offset_mtx += sizeof(fmtx4);
       // offset_rad += sizeof(float);
+      fvec4 quad_pos(-1, -1, 2, 2);
+      fvec4 quad_uva(0, 0, 1, 1);
+      fvec4 quad_uvb(0, numlights, 0, 0);
+      this_buf->Render2dQuadsEML(1, &quad_pos, &quad_uva, &quad_uvb);
     }
-    // FXI->unmapParamBuffer(mapping.get());
-    // FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
 
     ///////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////
-    // fvec4 quad_pos(-1, -1, 2, 2);
-    // fvec4 quad_uva(0, 0, 1, 1);
-    // fvec4 quad_uvb(0, numlights, 0, 0);
-    // this_buf->Render2dQuadsEML(1, &quad_pos, &quad_uva, &quad_uvb);
     /////////////////////////////////////
     _deferredContext.endShadowedSpotLighting(drawdata, VD);
   } // for (auto texture_item : _tex2pointmap ){

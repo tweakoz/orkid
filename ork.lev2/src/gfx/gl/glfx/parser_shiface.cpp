@@ -138,7 +138,7 @@ void InterfaceNode::parseIos(const ScannerView& view, IoContainerNode* ioc) {
     //////////////////////////////////
 
     // printf("  parseOutputs DtTok<%s>\n", dt_tok->text.c_str());
-    bool typeisvalid = _container->validateTypeName(dt_tok->text);
+    bool typeisvalid = _container->isTypeName(dt_tok->text);
     auto io          = new InterfaceIoNode(_container);
     ioc->_nodes.push_back(io);
     io->_typeName   = dt_tok->text;

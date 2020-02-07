@@ -155,6 +155,7 @@ struct DeferredContext {
   const FxShaderParam* _parMapGBufRufMtlAlpha  = nullptr;
   const FxShaderParam* _parMapDepth            = nullptr;
   const FxShaderParam* _parMapDepthCluster     = nullptr;
+  const FxShaderParam* _parMapShadowDepth      = nullptr;
   const FxShaderParam* _parMapSpecularEnv      = nullptr;
   const FxShaderParam* _parMapDiffuseEnv       = nullptr;
   const FxShaderParam* _parMapBrdfIntegration  = nullptr;
@@ -174,6 +175,7 @@ struct DeferredContext {
   const FxShaderParam* _parDepthFogPower       = nullptr;
   const FxShaderParamBlock* _lightblock        = nullptr;
   const FxShaderParam* _parLightCookieTexture  = nullptr;
+  const FxShaderParam* _parShadowParams        = nullptr;
 
   ////////////////////////////////////////////////////////////////////
 

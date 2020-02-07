@@ -32,33 +32,33 @@ int FunctionNode::parse(const ork::ScannerView& view) {
   /////////////////////////////////
   // arguments
   /////////////////////////////////
-  bool args_done = false;
+  bool args_done       = false;
   const Token* dirspec = nullptr;
   while (false == args_done) {
     auto argtype_tok = view.token(i);
     if (argtype_tok->text == ")") {
       args_done = true;
       i++;
-    } else if( argtype_tok->text=="in"){
+    } else if (argtype_tok->text == "in") {
       dirspec = argtype_tok;
       i++;
-    } else if( argtype_tok->text=="out"){
+    } else if (argtype_tok->text == "out") {
       dirspec = argtype_tok;
       i++;
-    } else if( argtype_tok->text=="inout"){
+    } else if (argtype_tok->text == "inout") {
       dirspec = argtype_tok;
       i++;
     } else {
-      assert(_container->validateTypeName(argtype_tok->text));
+      _container->validateTypeName(argtype_tok->text);
       i++;
       auto nam_tok = view.token(i);
       assert(_container->validateIdentifierName(nam_tok->text));
       i++;
-      auto argnode   = new FunctionArgumentNode(_container);
-      argnode->_type = argtype_tok;
-      argnode->_name = nam_tok;
+      auto argnode        = new FunctionArgumentNode(_container);
+      argnode->_type      = argtype_tok;
+      argnode->_name      = nam_tok;
       argnode->_direction = dirspec;
-      dirspec = nullptr;
+      dirspec             = nullptr;
       _arguments.push_back(argnode);
       auto try_comma = view.token(i)->text;
       if (try_comma == ",") {
@@ -79,8 +79,8 @@ int FunctionNode::parse(const ork::ScannerView& view) {
   // parsedfnnode
   /////////////////////////////////
   _parsedfnnode = new ParsedFunctionNode(_container);
-  //int j = _parsedfnnode->parse(bodyview);
-  //assert(j==bodycount);
+  // int j = _parsedfnnode->parse(bodyview);
+  // assert(j==bodycount);
   /////////////////////////////////
   return i;
 }
@@ -112,7 +112,7 @@ void FunctionNode::emit(shaderbuilder::BackEnd& backend) const {
     for (size_t i = 0; i < numargs; i++) {
       auto a = _arguments[i];
       codegen.beginLine();
-      if( a->_direction )
+      if (a->_direction)
         codegen.output(a->_direction->text + " ");
       codegen.output(a->_type->text + " ");
       codegen.output(a->_name->text);
@@ -129,12 +129,12 @@ void FunctionNode::emit(shaderbuilder::BackEnd& backend) const {
   // arguments
   ///////////////////////////////////////////////////
   codegen.formatLine("{");
-    codegen.incIndent();
+  codegen.incIndent();
   _body.emit(backend);
-    codegen.decIndent();
+  codegen.decIndent();
   codegen.formatLine("}");
-    codegen.decIndent();
+  codegen.decIndent();
 }
-  /////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::glslfx
 /////////////////////////////////////////////////////////////////////////////////////////////////

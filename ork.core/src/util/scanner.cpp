@@ -3,6 +3,7 @@
 #include <ork/pch.h>
 #include <ork/file/file.h>
 #include <ork/util/scanner.h>
+#include <ork/kernel/string/deco.inl>
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -10,7 +11,8 @@ namespace ork {
 
 ScanViewRegex::ScanViewRegex(const char* pr, bool inverse)
     : mRegex(pr)
-    , mInverse(inverse) {}
+    , mInverse(inverse) {
+}
 bool ScanViewRegex::Test(const Token& t) {
   bool match = std::regex_match(t.text, mRegex);
   return match xor mInverse;
@@ -24,27 +26,48 @@ ScannerView::ScannerView(const Scanner& s, ScanViewFilter& f)
     , _end(0)
     , _blockType(0)
     , _blockName(0)
-    , _blockOk(false) {}
-
-ScannerView::ScannerView( const ScannerView& oth, int startingpoint )
-  : _scanner(oth._scanner)
-  , _filter(oth._filter)
-  , _blockTerminators(_scanner._blockregex.c_str())
-  , _start(0)
-  , _end(0)
-  , _blockType(0)
-  , _blockName(0)
-  , _blockOk(false){
-
-  size_t idx = oth.globalTokenIndex(startingpoint);
-  scanBlock(idx,false,false);
+    , _blockOk(false) {
 }
 
-size_t ScannerView::blockEnd() const { return globalTokenIndex(_end); }
+ScannerView::ScannerView(const ScannerView& oth, int startingpoint)
+    : _scanner(oth._scanner)
+    , _filter(oth._filter)
+    , _blockTerminators(_scanner._blockregex.c_str())
+    , _start(0)
+    , _end(0)
+    , _blockType(0)
+    , _blockName(0)
+    , _blockOk(false) {
 
-std::string ScannerView::blockName() const { return token(_blockName)->text; }
+  size_t idx = oth.globalTokenIndex(startingpoint);
+  scanBlock(idx, false, false);
+}
 
-void ScannerView::scanBlock(size_t is,bool checkterm, bool checkdecos ) {
+void ScannerView::checktoken(int actual_index, std::string expected) const {
+  auto chktok = this->token(actual_index)->text;
+  if (chktok != expected) {
+    deco::printf(fvec3::Red(), "invalid token: ");
+    deco::printf(fvec3::White(), "%s ", chktok.c_str());
+    deco::printf(fvec3::Red(), ", expected '%s'\n", expected.c_str());
+
+    for (int i = -2; i < 3; i++) {
+      int tokidx = actual_index + i;
+      auto tok   = this->token(tokidx)->text;
+      deco::printf(fvec3::Yellow(), "tok<%d:%s>\n", tokidx, tok.c_str());
+    }
+    OrkAssert(false);
+  }
+}
+
+size_t ScannerView::blockEnd() const {
+  return globalTokenIndex(_end);
+}
+
+std::string ScannerView::blockName() const {
+  return token(_blockName)->text;
+}
+
+void ScannerView::scanBlock(size_t is, bool checkterm, bool checkdecos) {
 
   size_t max_t = _scanner.tokens.size();
 
@@ -53,8 +76,8 @@ void ScannerView::scanBlock(size_t is,bool checkterm, bool checkdecos ) {
 
   const Token& block_name = _scanner.tokens[is];
 
-  if( checkterm ){
-    _blockName              = is;
+  if (checkterm) {
+    _blockName = is;
   }
 
   _indices.clear();
@@ -68,7 +91,7 @@ void ScannerView::scanBlock(size_t is,bool checkterm, bool checkdecos ) {
     bool is_open  = (t.text == "{");
     bool is_close = (t.text == "}");
 
-     //printf( "itok<%zu> t<%s> istate<%d> is_open<%d> is_close<%d> is_term<%d>\n",
+    // printf( "itok<%zu> t<%s> istate<%d> is_open<%d> is_close<%d> is_term<%d>\n",
     //		i, t.text.c_str(), istate, int(is_open), int(is_close), int(is_term) );
 
     fflush(stdout);
@@ -128,19 +151,19 @@ void ScannerView::scanBlock(size_t is,bool checkterm, bool checkdecos ) {
   }
 }
 
-void ScannerView::scanUntil( size_t start, std::string terminator, bool includeterminator ){
+void ScannerView::scanUntil(size_t start, std::string terminator, bool includeterminator) {
   size_t max_t = _scanner.tokens.size();
-  size_t i = start;
-  bool done = false;
-  while( not done ){
+  size_t i     = start;
+  bool done    = false;
+  while (not done) {
     const auto& tok = _scanner.tokens[i].text;
-    done = ( tok == terminator );
-    if( (not done) or includeterminator )
-        _indices.push_back(i);
+    done            = (tok == terminator);
+    if ((not done) or includeterminator)
+      _indices.push_back(i);
     i++;
   }
   _start = 0;
-  _end = _indices.size()-1;
+  _end   = _indices.size() - 1;
 }
 
 void ScannerView::dump() {
@@ -202,13 +225,12 @@ Scanner::Scanner(std::string blockregex)
     , cur_token("", 0, 0)
     , ifilelen(0)
     , _blockregex(blockregex) {
-  
 }
 
 void Scanner::FlushToken() {
   if (cur_token.text.length())
     tokens.push_back(cur_token);
-  assert(cur_token.text!=".0");
+  assert(cur_token.text != ".0");
   cur_token.text  = "";
   cur_token.iline = 0;
   cur_token.icol  = 0;
@@ -216,7 +238,7 @@ void Scanner::FlushToken() {
 }
 /////////////////////////////////////////
 void Scanner::AddToken(const Token& tok) {
-  assert(tok.text!=".0");
+  assert(tok.text != ".0");
   tokens.push_back(tok);
   cur_token.text  = "";
   cur_token.iline = 0;
@@ -275,7 +297,7 @@ void Scanner::Scan() {
         } else if (CH == '\n') {
           AddToken(Token("\n", iline, icol));
           adv_lin = 1;
-        } else if (CH == '.' and not is_num(PCH) and not is_num(NCH) ) {
+        } else if (CH == '.' and not is_num(PCH) and not is_num(NCH)) {
           AddToken(Token(".", iline, icol));
         } else if (is_septok(CH)) {
           if (((CH == '=') && (NCH == '=')) || ((CH == '!') && (NCH == '=')) || ((CH == '*') && (NCH == '=')) ||
@@ -338,13 +360,11 @@ void Scanner::Scan() {
         }
         break;
       case ESTA_CONTENT: {
-        if( CH=='.' and is_num(PCH) ){
+        if (CH == '.' and is_num(PCH)) {
           benctok = true;
-        }
-        else if( PCH=='.' and is_num(CH) ){
+        } else if (PCH == '.' and is_num(CH)) {
           benctok = true;
-        }
-        else if (is_septok(CH) ) {
+        } else if (is_septok(CH)) {
           FlushToken();
           i--; // put sep back
         } else if (CH == '\n') {
@@ -352,7 +372,7 @@ void Scanner::Scan() {
           adv_lin = 1;
         } else if (is_spc(CH)) {
           FlushToken();
-        } else if (CH=='.') {
+        } else if (CH == '.') {
           FlushToken();
           i--; // put . back
         } else if (is_content(CH)) {

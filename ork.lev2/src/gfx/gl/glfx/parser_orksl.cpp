@@ -29,27 +29,25 @@ std::string FnParseContext::tokenValue(size_t offset) const {
 }
 
 FnParseContext::FnParseContext(ContainerNode* c, const ScannerView* v)
-      : _container(c)
-      , _view(v) {
-  
+    : _container(c)
+    , _view(v) {
 }
-FnParseContext::FnParseContext(const FnParseContext&oth)
+FnParseContext::FnParseContext(const FnParseContext& oth)
     : _container(oth._container)
     , _view(oth._view)
-    , _startIndex(oth._startIndex){
-
-  }
-FnParseContext& FnParseContext::operator = (const FnParseContext&oth){
-    _container = oth._container;
-    _startIndex = oth._startIndex;
-    _view = oth._view;
-    return *this;
-  }
-FnParseContext FnParseContext::advance (size_t count) const {
-    FnParseContext rval(*this);
-    rval._startIndex = count;
-    return rval;
-  }
+    , _startIndex(oth._startIndex) {
+}
+FnParseContext& FnParseContext::operator=(const FnParseContext& oth) {
+  _container  = oth._container;
+  _startIndex = oth._startIndex;
+  _view       = oth._view;
+  return *this;
+}
+FnParseContext FnParseContext::advance(size_t count) const {
+  FnParseContext rval(*this);
+  rval._startIndex = count;
+  return rval;
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -75,7 +73,7 @@ int ParsedFunctionNode::parse(const ork::ScannerView& view) {
     }
     done = i >= view._indices.size();
   }
-  auto close_tok = view.token(i-1);
+  auto close_tok = view.token(i - 1);
   assert(close_tok->text == "}");
   return i;
 }
@@ -96,11 +94,11 @@ match_results_t Constant::match(FnParseContext ctx) {
   ////////////////////////////////////
   // boolean constants
   ////////////////////////////////////
-  if( token=="true" or token =="false"){
-    rval = std::make_shared<match_t>(ctx);
+  if (token == "true" or token == "false") {
+    rval           = std::make_shared<match_t>(ctx);
     rval->_matched = true;
-    rval->_start = ctx._startIndex;
-    rval->_count = token.length();
+    rval->_start   = ctx._startIndex;
+    rval->_count   = token.length();
     return rval;
   }
   ////////////////////////////////////
@@ -109,61 +107,58 @@ match_results_t Constant::match(FnParseContext ctx) {
   bool done = false;
   int count = 0;
   char ch;
-  while( not done ){
+  while (not done) {
     ch = token[count];
-    if( is_num(ch) ){
+    if (is_num(ch)) {
       count++;
-    }
-    else
+    } else
       done = true;
   }
   ////////////////////////////////////
   // check decimal point
   ////////////////////////////////////
   ch = token[count];
-  if( ch == '.')
+  if (ch == '.')
     count++;
   ////////////////////////////////////
   // check following digits
   ////////////////////////////////////
   done = false;
-  while( not done ){
+  while (not done) {
     ch = token[count];
-    if( is_num(ch) ){
+    if (is_num(ch)) {
       count++;
-    }
-    else
+    } else
       done = true;
   }
   ////////////////////////////////////
   // early termination
   ////////////////////////////////////
-  if( 0 == count )
+  if (0 == count)
     return rval;
   ////////////////////////////////////
   // check e (scientific notation)
   ////////////////////////////////////
   ch = token[count];
-  if( ch == 'e')
+  if (ch == 'e')
     count++;
   ch = token[count];
-  if( ch == '-' or ch== '+')
+  if (ch == '-' or ch == '+')
     count++;
   done = false;
-  while( not done ){
+  while (not done) {
     ch = token[count];
-    if( is_num(ch) ){
+    if (is_num(ch)) {
       count++;
-    }
-    else
+    } else
       done = true;
   }
   ////////////////////////////////////
   if (count) {
-    rval = std::make_shared<match_t>(ctx);
+    rval           = std::make_shared<match_t>(ctx);
     rval->_matched = true;
     rval->_start   = ctx._startIndex;
-    rval->_count   = 1; //number of tokens, not characters
+    rval->_count   = 1; // number of tokens, not characters
   }
   return rval;
 
@@ -174,7 +169,7 @@ match_results_t Constant::match(FnParseContext ctx) {
 
 match_results_t StringLiteral::match(FnParseContext ctx) {
   match_results_t rval;
-  //std::make_shared<match_t>(ctx);
+  // std::make_shared<match_t>(ctx);
   // dont need these yet, GLSL does not natively support them
   return rval;
 };
@@ -192,8 +187,8 @@ match_results_t TypeName::match(FnParseContext ctx) {
     tokDT = ctx.tokenValue(count++);
   }
   ////////////////////////////////////
-  if (ctx._container->validateTypeName(tokDT)) {
-    rval = std::make_shared<match_t>(ctx);
+  if (ctx._container->isTypeName(tokDT)) {
+    rval           = std::make_shared<match_t>(ctx);
     rval->_matched = true;
     rval->_start   = ctx._startIndex;
     rval->_count   = count;
@@ -206,10 +201,10 @@ match_results_t TypeName::match(FnParseContext ctx) {
 match_results_t Identifier::match(FnParseContext ctx) {
   match_results_t rval;
   auto token = ctx.tokenValue(0);
-  if( token == "nrm"){
-    printf( "yo\n");
+  if (token == "nrm") {
+    printf("yo\n");
   }
-  if( ctx._container->validateKeyword(token) ){ // an identifer cannot be a keyword
+  if (ctx._container->validateKeyword(token)) { // an identifer cannot be a keyword
     return rval;
   }
   ////////////////////////////////////
@@ -217,29 +212,27 @@ match_results_t Identifier::match(FnParseContext ctx) {
   ////////////////////////////////////
   bool done = false;
   int count = 0;
-  while( not done ){
+  while (not done) {
     char ch = token[count];
-    if( is_alf(ch) or (ch=='_' )){
+    if (is_alf(ch) or (ch == '_')) {
       count++;
-    }
-    else
+    } else
       done = true;
   }
   ////////////////////////////////////
   // check leading alfnums or _'s
   ////////////////////////////////////
-  done = (count==0);
-  while( not done ){
+  done = (count == 0);
+  while (not done) {
     char ch = token[count];
-    if( is_alfnum(ch) or (ch=='_') ){
+    if (is_alfnum(ch) or (ch == '_')) {
       count++;
-    }
-    else
+    } else
       done = true;
   }
   ////////////////////////////////////
   if (count) {
-    rval = std::make_shared<match_t>(ctx);
+    rval           = std::make_shared<match_t>(ctx);
     rval->_matched = true;
     rval->_start   = ctx._startIndex;
     rval->_count   = 1;
@@ -252,20 +245,19 @@ match_results_t Identifier::match(FnParseContext ctx) {
 match_results_t IdentifierPath::match(FnParseContext ctx) {
   match_results_t rval;
   bool done = false;
-  while( not done ){
-    
-    if( auto mi = Identifier::match(ctx) ){
-      if( not rval ){
+  while (not done) {
+
+    if (auto mi = Identifier::match(ctx)) {
+      if (not rval) {
         rval = std::make_shared<match_t>(ctx);
       }
       rval = rval + mi;
-      ctx = rval->consume();
-      if( auto md = DotOp::match(ctx) ){
+      ctx  = rval->consume();
+      if (auto md = DotOp::match(ctx)) {
         rval = rval + md;
-        ctx = rval->consume();
+        ctx  = rval->consume();
       }
-    }
-    else
+    } else
       done = true;
   }
   return rval;
@@ -275,23 +267,23 @@ match_results_t IdentifierPath::match(FnParseContext ctx) {
 
 match_results_t Reference::match(FnParseContext ctx) {
   match_results_t rval;
-  if( auto mi = IdentifierPath::match(ctx) ){
-    if( not rval ){
+  if (auto mi = IdentifierPath::match(ctx)) {
+    if (not rval) {
       rval = std::make_shared<match_t>(ctx);
     }
     rval = rval + mi;
-    ctx = rval->consume();
-    if( auto mo = OpenSquare::match(ctx) ){
-      rval = rval + mo;
-      ctx = rval->consume();
+    ctx  = rval->consume();
+    if (auto mo = OpenSquare::match(ctx)) {
+      rval    = rval + mo;
+      ctx     = rval->consume();
       auto me = Expression::match(ctx);
       assert(me);
-      rval = rval + me;
-      ctx = rval->consume();
+      rval    = rval + me;
+      ctx     = rval->consume();
       auto mc = CloseSquare::match(ctx);
       assert(mc);
       rval = rval + mc;
-      ctx = rval->consume();
+      ctx  = rval->consume();
     }
   }
   return rval;
@@ -301,21 +293,21 @@ match_results_t Reference::match(FnParseContext ctx) {
 
 match_results_t VariableDeclaration::match(FnParseContext ctx) {
   match_results_t rval;
-  if( auto m = TypeName::match(ctx)){
-    if( ctx.tokenValue(m->_count)==";"){
-      rval = std::make_shared<match_t>(ctx);
+  if (auto m = TypeName::match(ctx)) {
+    if (ctx.tokenValue(m->_count) == ";") {
+      rval           = std::make_shared<match_t>(ctx);
       rval->_matched = true;
       rval->_start   = ctx._startIndex;
-      rval->_count   = m->_count+1;
+      rval->_count   = m->_count + 1;
     }
   }
   return rval;
 }
 
-//parsed_t VariableDeclaration::parse(const match_t& m) {
-  //parsed_t rval;
-  //assert(false);
-  //return rval;
+// parsed_t VariableDeclaration::parse(const match_t& m) {
+// parsed_t rval;
+// assert(false);
+// return rval;
 //}
 void VariableDeclaration::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
@@ -419,16 +411,16 @@ match_results_t DeclarationList::match(FnParseContext ctx) {
     }
   }
   if (count) {
-    rval = std::make_shared<match_t>(ctx);
+    rval           = std::make_shared<match_t>(ctx);
     rval->_count   = count;
     rval->_start   = start;
     rval->_matched = true;
   }
   return rval;
 }
-//DeclarationList::parsed_t DeclarationList::parse(const match_t& match) {
-  //parsed_t rval;
-  //return rval;
+// DeclarationList::parsed_t DeclarationList::parse(const match_t& match) {
+// parsed_t rval;
+// return rval;
 //}
 void DeclarationList::emit(shaderbuilder::BackEnd& backend) const {
   for (auto c : _children)

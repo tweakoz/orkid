@@ -12,9 +12,9 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>-2.81395 2.28826 4.77038</property>
-                                                <property name='Loc'>21.1761</property>
-                                                <property name='QuatC'>0.0852149 -0.431733 0.0193483 0.898271</property>
+                                                <property name='Center'>-1.19945 3.04318 2.02888</property>
+                                                <property name='Loc'>13.5099</property>
+                                                <property name='QuatC'>-0.0771247 -0.314751 -0.00130924 0.946542</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -128,7 +128,7 @@
                                                                     </reference>
                                                                 </property>
                                                                 <property name='Decal'>false</property>
-                                                                <property name='ShadowBias'>0.2</property>
+                                                                <property name='ShadowBias'>0.00047619</property>
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>true</property>
                                                                 <property name='ShadowSamples'>1</property>

@@ -49,8 +49,12 @@ void LightData::describeX(class_t* c) {
   c->memberProperty("ShadowCaster", &LightData::mbShadowCaster);
   c->memberProperty("Decal", &LightData::_decal);
 
-  c->floatProperty("ShadowBias", float_range{0.0, 2.0}, &LightData::mShadowBias)->annotate<ConstString>("editor.range.log", "true");
+  c->floatProperty("ShadowBias", float_range{0.0, 0.01}, &LightData::mShadowBias)
+      ->annotate<ConstString>("editor.range.log", "true");
   c->floatProperty("ShadowBlur", float_range{0.0, 1.0}, &LightData::mShadowBlur);
+  c->memberProperty("ShadowMapSize", &LightData::_shadowMapSize)
+      ->annotate<ConstString>("editor.range.min", "128")
+      ->annotate<ConstString>("editor.range.max", "4096");
   c->memberProperty("ShadowSamples", &LightData::_shadowsamples)
       ->annotate<ConstString>("editor.range.min", "1")
       ->annotate<ConstString>("editor.range.max", "16");
@@ -74,7 +78,7 @@ LightData::LightData()
     , mbShadowCaster(false)
     , _shadowsamples(1)
     , mShadowBlur(0.0f)
-    , mShadowBias(0.2f) {
+    , mShadowBias(0.002f) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -203,15 +207,16 @@ SpotLight::SpotLight(const fmtx4& mtx, const SpotLightData* sld)
     , _SLD(sld)
     , _shadowRTG(nullptr)
     , _shadowIRT(nullptr)
-    , _shadowmapDim(1024) {
+    , _shadowmapDim(0) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 RtGroupRenderTarget* SpotLight::rendertarget(Context* ctx) {
-  if (nullptr == _shadowIRT) {
-    _shadowRTG = new RtGroup(ctx, _shadowmapDim, _shadowmapDim, _SLD->shadowSamples());
-    _shadowIRT = new RtGroupRenderTarget(_shadowRTG);
+  if (nullptr == _shadowIRT or (_SLD->shadowMapSize() != _shadowmapDim)) {
+    _shadowmapDim = _SLD->shadowMapSize();
+    _shadowRTG    = new RtGroup(ctx, _shadowmapDim, _shadowmapDim, _SLD->shadowSamples());
+    _shadowIRT    = new RtGroupRenderTarget(_shadowRTG);
   }
   return _shadowIRT;
 }

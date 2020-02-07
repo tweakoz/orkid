@@ -17,11 +17,17 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/pch.h>
 #include <ork/kernel/string/string.h>
+#include <ork/kernel/string/deco.inl>
 #include <regex>
 #include <stdlib.h>
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::glslfx {
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void checktoken(const ScannerView& view, int actual_index, std::string expected) {
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void RequiredExtensionNode::emit(shaderbuilder::BackEnd& backend) {
@@ -106,9 +112,18 @@ bool ContainerNode::validateKeyword(const std::string keyword) const {
   return (it != _keywords.end());
 }
 ///////////////////////////////////////////////////////////
-bool ContainerNode::validateTypeName(const std::string typeName) const {
+bool ContainerNode::isTypeName(const std::string typeName) const {
   auto it = _validTypeNames.find(typeName);
   return (it != _validTypeNames.end());
+}
+///////////////////////////////////////////////////////////
+void ContainerNode::validateTypeName(const std::string typeName) const {
+  bool typeok = isTypeName(typeName);
+  if (false == typeok) {
+    deco::printf(fvec3::Red(), "type not found: ");
+    deco::printf(fvec3::White(), "%s\n", typeName.c_str());
+    assert(false);
+  }
 }
 ///////////////////////////////////////////////////////////
 bool ContainerNode::validateIdentifierName(const std::string typeName) const {
