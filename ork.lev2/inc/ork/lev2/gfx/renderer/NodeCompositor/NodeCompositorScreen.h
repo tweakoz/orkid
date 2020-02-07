@@ -20,6 +20,7 @@ public:
   ~ScreenOutputCompositingNode();
 
   PoolString _layername;
+  int supersample() const { return _supersample; }
 
 private:
   void gpuInit(lev2::Context* pTARG, int w, int h) final;
@@ -28,6 +29,7 @@ private:
   void composite(CompositorDrawData& drawdata) final;
 
   svar256_t _impl;
+  int _supersample;
 
 };
 

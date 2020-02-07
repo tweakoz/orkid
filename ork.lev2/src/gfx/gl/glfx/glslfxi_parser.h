@@ -13,6 +13,7 @@ struct UniformSetNode;
 struct UniformBlockNode;
 struct LibraryBlockNode;
 struct InterfaceNode;
+struct TechniqueNode;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -604,14 +605,16 @@ struct FunctionNode : public AstNode {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct PassNode : public NamedBlockNode {
-  PassNode(ContainerNode* cnode)
-      : NamedBlockNode(cnode) {
+  PassNode(ContainerNode* cnode,TechniqueNode*tek)
+      : NamedBlockNode(cnode)
+      , _techniqueNode(tek){
   }
 
   void generate(shaderbuilder::BackEnd& backend) const final;
 
   int parse(const ScannerView& view, int start);
 
+  TechniqueNode* _techniqueNode;
   std::string _vertexshader;
   std::string _fragmentshader;
   std::string _tessctrlshader;

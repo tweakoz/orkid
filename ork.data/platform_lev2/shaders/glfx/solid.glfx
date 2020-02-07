@@ -21,6 +21,8 @@ uniform_set ublock_vtx {
 ///////////////////////////////////////////////////////////////
 uniform_set ublock_frg {
   vec4 modcolor;
+  int downsampledim;
+  float downsampleamp;
   sampler2D ColorMap;
   sampler2D ColorMap2;
   sampler2D ColorMap3;
@@ -95,6 +97,59 @@ state_block sb_additive : sb_default { BlendMode = ADDITIVE; }
 fragment_shader ps_texcolor : iface_fmt {
   vec4 texc = texture(ColorMap, frg_uv0);
   out_clr   = vec4(texc.xyz, 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_downsample2x2 : iface_fmt {
+  const float kscale = 1.0/4.0;
+  vec2 uvb = gl_FragCoord.xy*2;
+  vec3 outc = vec3(0);
+  for(int iy=0; iy<2; iy++){
+    for(int ix=0; ix<2; ix++){
+    vec2 uvx = uvb+vec2(ix,iy);
+    vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz;
+    outc += texc;
+    }
+  }
+  out_clr = vec4(outc*kscale,1);
+}
+fragment_shader ps_downsample3x3 : iface_fmt {
+  const float kscale = 1.0/9.0;
+  vec2 uvb = gl_FragCoord.xy*3;
+  vec3 outc = vec3(0);
+  for(int iy=0; iy<3; iy++){
+    for(int ix=0; ix<3; ix++){
+    vec2 uvx = uvb+vec2(ix,iy);
+    vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz;
+    outc += texc;
+    }
+  }
+  out_clr = vec4(outc*kscale,1);
+}
+fragment_shader ps_downsample4x4 : iface_fmt {
+  const float kscale = 1.0/16.0;
+  vec2 uvb = gl_FragCoord.xy*4;
+  vec3 outc = vec3(0);
+  for(int iy=0; iy<4; iy++){
+    for(int ix=0; ix<4; ix++){
+    vec2 uvx = uvb+vec2(ix,iy);
+    vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz;
+    outc += texc;
+    }
+  }
+  out_clr = vec4(outc*kscale,1);
+}
+fragment_shader ps_downsample5x5 : iface_fmt {
+  const float kscale = 1.0/25.0;
+  vec2 uvb = gl_FragCoord.xy*5;
+  vec3 outc = vec3(0);
+  for(int iy=0; iy<5; iy++){
+    for(int ix=0; ix<5; ix++){
+    vec2 uvx = uvb+vec2(ix,iy);
+    vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz;
+    outc += texc;
+    }
+  }
+  out_clr = vec4(outc*kscale,1);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_vtxcolor : iface_vdefault {
@@ -182,6 +237,38 @@ technique texcolor {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_texcolor;
+    state_block     = sb_default;
+  }
+}
+technique downsample_2x2 {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_downsample2x2;
+    state_block     = sb_default;
+  }
+}
+technique downsample_3x3 {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_downsample3x3;
+    state_block     = sb_default;
+  }
+}
+technique downsample_4x4 {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_downsample4x4;
+    state_block     = sb_default;
+  }
+}
+technique downsample_5x5 {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_downsample5x5;
     state_block     = sb_default;
   }
 }

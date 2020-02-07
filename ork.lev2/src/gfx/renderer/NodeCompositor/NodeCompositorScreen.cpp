@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>
+#include <ork/lev2/gfx/material_freestyle.inl>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
@@ -24,6 +25,9 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void ScreenOutputCompositingNode::describeX(class_t* c) {
   c->memberProperty("Layer", &ScreenOutputCompositingNode::_layername);
+  c->memberProperty("SuperSample", &ScreenOutputCompositingNode::_supersample)
+    ->annotate<ConstString>("editor.range.min","0")
+    ->annotate<ConstString>("editor.range.max","4");
 }
 ///////////////////////////////////////////////////////////////////////////////
 struct SCRIMPL {
@@ -31,16 +35,22 @@ struct SCRIMPL {
   SCRIMPL(ScreenOutputCompositingNode* node)
       : _node(node)
       , _camname(AddPooledString("Camera"))
-      , _layers(AddPooledString("All")) {
+      , _layers(AddPooledString("All")){
   }
   ///////////////////////////////////////
   ~SCRIMPL() {
   }
   ///////////////////////////////////////
-  void gpuInit(lev2::Context* pTARG) {
+  void gpuInit(lev2::Context* ctx) {
     if (_needsinit) {
-      _blit2screenmtl.SetUserFx("orkshader://solid", "texcolor");
-      _blit2screenmtl.Init(pTARG);
+      _blit2screenmtl.gpuInit(ctx, "orkshader://solid");
+      _fxtechnique1x1     = _blit2screenmtl.technique("texcolor");
+      _fxtechnique2x2     = _blit2screenmtl.technique("downsample_2x2");
+      _fxtechnique3x3     = _blit2screenmtl.technique("downsample_3x3");
+      _fxtechnique4x4     = _blit2screenmtl.technique("downsample_4x4");
+      _fxtechnique5x5     = _blit2screenmtl.technique("downsample_5x5");
+      _fxpMVP  = _blit2screenmtl.param("MatMVP");
+      _fxpColorMap  = _blit2screenmtl.param("ColorMap");
       _needsinit = false;
     }
   }
@@ -58,6 +68,8 @@ struct SCRIMPL {
       w /= 2;
       h /= 2;
     }
+    _width = w*(_node->supersample()+1);
+    _height = h*(_node->supersample()+1);
     //////////////////////////////////////////////////////
     SRect tgt_rect(0, 0, w, h);
 
@@ -71,8 +83,8 @@ struct SCRIMPL {
     _CPD._cameraMatrices = ddprops["defcammtx"_crcu].Get<const CameraMatrices*>();
 
     _CPD.SetDstRect(tgt_rect);
-    drawdata._properties["OutputWidth"_crcu].Set<int>(w);
-    drawdata._properties["OutputHeight"_crcu].Set<int>(h);
+    drawdata._properties["OutputWidth"_crcu].Set<int>(_width);
+    drawdata._properties["OutputHeight"_crcu].Set<int>(_height);
     CIMPL->pushCPD(_CPD);
   }
   void endAssemble(CompositorDrawData& drawdata) {
@@ -85,11 +97,20 @@ struct SCRIMPL {
   PoolString _camname, _layers;
   ScreenOutputCompositingNode* _node = nullptr;
   CompositingPassData _CPD;
-  ork::lev2::GfxMaterial3DSolid _blit2screenmtl;
+  FreestyleMaterial _blit2screenmtl;
+  const FxShaderTechnique* _fxtechnique1x1;
+  const FxShaderTechnique* _fxtechnique2x2;
+  const FxShaderTechnique* _fxtechnique3x3;
+  const FxShaderTechnique* _fxtechnique4x4;
+  const FxShaderTechnique* _fxtechnique5x5;
+  const FxShaderParam* _fxpMVP;
+  const FxShaderParam* _fxpColorMap;
   bool _needsinit = true;
+  int _width=0;
+  int _height=0;
 };
 ///////////////////////////////////////////////////////////////////////////////
-ScreenOutputCompositingNode::ScreenOutputCompositingNode() {
+ScreenOutputCompositingNode::ScreenOutputCompositingNode()  : _supersample(0){
   _impl = std::make_shared<SCRIMPL>(this);
 }
 ScreenOutputCompositingNode::~ScreenOutputCompositingNode() {
@@ -111,7 +132,8 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////////////////////////
   FrameRenderer& framerenderer      = drawdata.mFrameRenderer;
   RenderContextFrameData& framedata = framerenderer.framedata();
-  Context* targ                     = framedata.GetTarget();
+  Context* context                     = framedata.GetTarget();
+  auto fbi = context->FBI();
   if (auto try_final = drawdata._properties["final_out"_crcu].TryAs<RtBuffer*>()) {
     auto buffer = try_final.value();
     if (buffer) {
@@ -122,28 +144,32 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         // be nice and composite to main screen as well...
         /////////////////////////////////////////////////////////////////////////////
         drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen");
-        auto this_buf = targ->FBI()->GetThisBuffer();
+        auto this_buf = context->FBI()->GetThisBuffer();
         auto& mtl     = impl->_blit2screenmtl;
-        int iw        = targ->mainSurfaceWidth();
-        int ih        = targ->mainSurfaceHeight();
-        SRect vprect(0, 0, iw, ih);
-        SRect quadrect(0, ih, iw, 0);
-        fvec4 color(1.0f, 1.0f, 1.0f, 1.0f);
-        mtl.SetAuxMatrix(fmtx4::Identity);
-        mtl.SetTexture(tex);
-        mtl.SetTexture2(nullptr);
-        mtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
+        switch(this->supersample()){
+          case 0:
+            mtl.bindTechnique(impl->_fxtechnique1x1);
+            break;
+          case 1:
+            mtl.bindTechnique(impl->_fxtechnique2x2);
+            break;
+          case 2:
+            mtl.bindTechnique(impl->_fxtechnique3x3);
+            break;
+          case 3:
+            mtl.bindTechnique(impl->_fxtechnique4x4);
+            break;
+          case 4:
+            mtl.bindTechnique(impl->_fxtechnique5x5);
+            break;
+        }
+        mtl.begin(framedata);
         mtl._rasterstate.SetBlending(EBLENDING_OFF);
-        this_buf->RenderMatOrthoQuad(
-            vprect,
-            quadrect,
-            &mtl,
-            0.0f,
-            0.0f, // u0 v0
-            1.0f,
-            1.0f, // u1 v1
-            nullptr,
-            color);
+        mtl.bindParamCTex(impl->_fxpColorMap,tex);
+        mtl.bindParamMatrix(impl->_fxpMVP,fmtx4::Identity);
+        this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+        mtl.end(framedata);
+
         drawdata.context()->debugPopGroup();
       }
     }

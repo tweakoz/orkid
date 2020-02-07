@@ -8,6 +8,7 @@
 #include <ork/file/file.h>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/string/string.h>
+#include <ork/kernel/string/deco.inl>
 #include <ork/util/crc.h>
 #include "../gl.h"
 #include "glslfxi_parser.h"
@@ -32,7 +33,7 @@ void TechniqueNode::parse(const ScannerView& view) {
       // printf( "parsing pass at i<%d>\n", i );
       // i is in view space, we need the globspace index to
       //  start the pass parse
-      auto passnode         = new PassNode(_container);
+      auto passnode         = new PassNode(_container,this);
       int globspac_passtoki = view.globalTokenIndex(i);
       ScannerView subview(view._scanner, view._filter);
       subview.scanBlock(globspac_passtoki);
@@ -153,7 +154,11 @@ void PassNode::generate(shaderbuilder::BackEnd& backend) const {
   /////////////////////////////////////////////////////////////
   if (_fragmentshader != "") {
     auto pshader = c->fragmentShader(_fragmentshader);
-    OrkAssert(pshader != nullptr);
+    if( pshader == nullptr ){
+      deco::printf(fvec3::Red(),"fragment shader not found!\n");
+      deco::printf(fvec3::Red(),"  fragshad<%s> pass<%s> tek<%s>\n", _fragmentshader.c_str(), _name.c_str(), _techniqueNode->_name.c_str());
+      OrkAssert(false);
+    }
     if (auto as_vtg = ppass->_primpipe.TryAs<PrimPipelineVTG>())
       as_vtg.value()._fragmentShader = pshader;
 #if defined(ENABLE_NVMESH_SHADERS)

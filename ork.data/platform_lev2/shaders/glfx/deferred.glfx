@@ -228,7 +228,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
         }
       }
     }
-    return gammaCorrect(l);
+    return l;
   }
   /////////////////////////////////////////////////////////
   vec3 pntlighting_textured_simple(WPosData wpd,GBufData gbd) {
@@ -248,7 +248,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       }
     }
     float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
-    return gammaCorrect(l*depth_fogval);
+    return l*depth_fogval;
   }
   /////////////////////////////////////////////////////////
   vec3 pntlighting_untextured_simple(WPosData wpd,GBufData gbd) {
@@ -266,7 +266,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       }
     }
     float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
-    return gammaCorrect(l*depth_fogval);
+    return l*depth_fogval;
   }
   /////////////////////////////////////////////////////////
   struct SpotLightCalc2{
@@ -308,7 +308,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       }
     }
     float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
-    return gammaCorrect(l*depth_fogval);
+    return l*depth_fogval;
   }
   /////////////////////////////////////////////////////////
   // non-pcf shadows
@@ -342,7 +342,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       }
     }
     float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
-    return gammaCorrect(l*depth_fogval);
+    return l*depth_fogval;
   }
   /////////////////////////////////////////////////////////
   vec4 spotdecaling_textured_simple(WPosData wpd,GBufData gbd) {
@@ -383,12 +383,10 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       }
     }
     float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
-    return gammaCorrect(l*depth_fogval);
+    return l*depth_fogval;
   }
   /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLighting(WPosData wpd){
-
-    vec3 rval;
 
     GBufData gbd = decodeGBUF(wpd);
 
@@ -405,79 +403,60 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
 
     float depth_fogval = clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
 
-    if( rmao.w==0 ){
-      /////////////////////////
-      // pixel was written to in the gbuffer
-      float metallic = clamp(rmao.x,0.02,0.99);
-      float roughness = rmao.y;
-      float roughnessE = roughness*roughness;
-      float roughnessL = max(.01,roughness);
-      float dialetric = 1.0-metallic;
-      /////////////////////////
-      vec3 basecolor = gbd._albedo;
-      vec3 diffcolor = mix(basecolor,vec3(0),metallic);
-      /////////////////////////
-      vec3 wpos = gbd._wpos;
-      vec3 epos = posatdepth(wpd,0.0);
-      vec3 edir = normalize(wpos-epos);
-      vec3 rawn = texture(MapNormalL, uv).xyz;
-      vec3 n    = normalize(rawn*2-vec3(1));
-      vec3 refl = normalize(reflect(edir,n));
-      /////////////////////////
-      float costheta = clamp(dot(n, edir),0.01,1.0);
-      vec2 brdf  = textureGather(MapBrdfIntegration, vec2(costheta,pow(roughness,0.25)),0).rg;
-      ///////////////////////////
-      // somethings wrong with the brdf output here
-      //   we get speckled black noise
-      //   the following 2 lines and the clamp above on
-      //   costheta are a temporary fix
-      ///////////////////////////
-      //brdf = vec2(pow(brdf.x,1),pow(brdf.y,1));
-      brdf = clamp(brdf,vec2(.001),vec2(1));
-      /////////////////////////
-      vec3 F0 = mix(metalbase,basecolor,metallic);
-      vec3 F        = fresnelSchlickRoughness(costheta, F0, roughness);
-      vec3 invF     = (vec3(1)-F);
-      vec3 diffn = vec3(n.x,-n.y,n.z);
-      /////////////////////////
-      float ambocc = rmao.z;
-      float ambientshade = ambocc*clamp(dot(n,-edir),0,1)*0.3+0.7;
-      vec3 ambient = AmbientLevel*ambientshade;
-      vec3 diffuse_env = env_equirectangular(diffn,MapDiffuseEnv,0)*DiffuseLevel;
-      vec3 diffuse_light = ambient+diffuse_env;
-      /////////////////////////
-      vec3 diffuse = basecolor*diffuse_light*dialetric*ambocc;//*invF;
-      if( rawn==vec3(0,0,0) )
-        diffuse = basecolor;
-      /////////////////////////
-      float spec_miplevel = clamp(EnvironmentMipBias + (roughness * EnvironmentMipScale), 0, 10);
-      refl = vec3(refl.x,-refl.y,refl.z);
-      vec3 spec_env = env_equirectangularFlipV(refl,MapSpecularEnv,spec_miplevel);
-      vec3 specular_light = ambient+spec_env;
-      vec3 specular = (F*brdf.x+brdf.y)*specular_light*F0*SpecularLevel;
-      //vec3 ambient = invF*AmbientLevel;
-      /////////////////////////
-      /////////////////////////
-      // final linear color
-      /////////////////////////
-      vec3 finallitcolor = diffuse+specular;
-      //rval = vec3(n);
-      /////////////////////////
-      // HDR tonemapping
-      /////////////////////////
-      //rval = rval / (rval + vec3(1.0));
-      /////////////////////////
-      // gamma correct
-      /////////////////////////
-      rval = mix(finallitcolor,skyboxColor,depth_fogval);
-      //rval = basecolor;
-    }
-    else{
-      // pixel was blank to in the gbuffer
-      //  replace with environment
-      rval = skyboxColor;
-    }
-    return gammaCorrect(rval);
+    /////////////////////////
+    // pixel was written to in the gbuffer
+    float metallic = clamp(rmao.x,0.02,0.99);
+    float roughness = rmao.y;
+    float roughnessE = roughness*roughness;
+    float roughnessL = max(.01,roughness);
+    float dialetric = 1.0-metallic;
+    /////////////////////////
+    vec3 basecolor = gbd._albedo;
+    vec3 diffcolor = mix(basecolor,vec3(0),metallic);
+    /////////////////////////
+    vec3 wpos = gbd._wpos;
+    vec3 epos = posatdepth(wpd,0.0);
+    vec3 edir = normalize(wpos-epos);
+    vec3 rawn = normalize(texture(MapNormalL, uv).xyz);
+    vec3 n    = normalize(rawn*2-vec3(1));
+    vec3 refl = normalize(reflect(edir,n));
+    /////////////////////////
+    float costheta = clamp(dot(n, edir),0.01,1.0);
+    vec2 brdf  = textureGather(MapBrdfIntegration, vec2(costheta,pow(roughness,0.25)),0).rg;
+    ///////////////////////////
+    // somethings wrong with the brdf output here
+    //   we get speckled black noise
+    //   the following 2 lines and the clamp above on
+    //   costheta are a temporary fix
+    ///////////////////////////
+    //brdf = vec2(pow(brdf.x,1),pow(brdf.y,1));
+    brdf = clamp(brdf,vec2(.001),vec2(1));
+    /////////////////////////
+    vec3 F0 = mix(metalbase,basecolor,metallic);
+    vec3 F        = fresnelSchlickRoughness(costheta, F0, roughness);
+    vec3 invF     = (vec3(1)-F);
+    vec3 diffn = vec3(n.x,-n.y,n.z);
+    /////////////////////////
+    float ambocc = rmao.z;
+    float ambientshade = ambocc*clamp(dot(n,-edir),0,1)*0.3+0.7;
+    vec3 ambient = AmbientLevel*ambientshade;
+    vec3 diffuse_env = env_equirectangular(diffn,MapDiffuseEnv,0)*DiffuseLevel;
+    vec3 diffuse_light = ambient+diffuse_env;
+    /////////////////////////
+    vec3 diffuse1 = basecolor*diffuse_light*dialetric*ambocc;//*invF;
+    vec3 diffuse = mix( basecolor, diffuse1, length(rawn) );
+    /////////////////////////
+    float spec_miplevel = clamp(EnvironmentMipBias + (roughness * EnvironmentMipScale), 0, 10);
+    refl = vec3(refl.x,-refl.y,refl.z);
+    vec3 spec_env = env_equirectangularFlipV(refl,MapSpecularEnv,spec_miplevel);
+    vec3 specular_light = ambient+spec_env;
+    vec3 specular = (F*brdf.x+brdf.y)*specular_light*F0*SpecularLevel;
+    //vec3 ambient = invF*AmbientLevel;
+    /////////////////////////
+    vec3 finallitcolor = diffuse+specular;
+    vec3 rval = mix(finallitcolor,skyboxColor,saturateF(rmao.w+depth_fogval));
+    /////////////////////////
+    return rval;
   } // vec3 environmentLighting(){
 
 WPosData stereoWPD(){
@@ -493,6 +472,14 @@ WPosData stereoWPD(){
 WPosData monoWPD(){
   WPosData wpd;
   wpd._muv   = gl_FragCoord.xy * InvViewportSize;
+  wpd._index = 0;
+  wpd._ivp   = IVPArray[0];
+  wpd._scruv = wpd._muv;
+  return wpd;
+}
+WPosData monoWPDdisp(vec2 disp){
+  WPosData wpd;
+  wpd._muv   = (gl_FragCoord.xy+disp) * InvViewportSize;
   wpd._index = 0;
   wpd._ivp   = IVPArray[0];
   wpd._scruv = wpd._muv;
@@ -533,8 +520,8 @@ fragment_shader ps_downsampledepthcluster : iface_fdownsampledepthcluster : lib_
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_baselight : iface_f2uv : lib_deferred {
   WPosData wpd = monoWPD();
-  vec3 c     = baselighting(wpd);
-  out_clr    = vec4(c, 1);
+ vec3 c = baselighting(wpd);
+  out_clr    = vec4(c*1.0/25.0, 1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_baselight_stereo : iface_f2uv : lib_deferred {
