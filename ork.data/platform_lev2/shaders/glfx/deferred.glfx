@@ -401,8 +401,6 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     vec3 skybox_n = vec3(VIEW_N.x,-VIEW_N.y,VIEW_N.z);
     vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,EnvironmentMipBias)*SkyboxLevel;
 
-    float depth_fogval = clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
-
     /////////////////////////
     // pixel was written to in the gbuffer
     float metallic = clamp(rmao.x,0.02,0.99);
@@ -453,10 +451,9 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     vec3 specular = (F*brdf.x+brdf.y)*specular_light*F0*SpecularLevel;
     //vec3 ambient = invF*AmbientLevel;
     /////////////////////////
-    vec3 finallitcolor = diffuse+specular;
-    vec3 rval = mix(finallitcolor,skyboxColor,saturateF(rmao.w+depth_fogval));
-    /////////////////////////
-    return rval;
+    vec3 finallitcolor = saturateV(diffuse+specular);
+    float depth_fogval = saturateF(pow(gbd._fogZ*DepthFogDistance,DepthFogPower));
+    return mix(finallitcolor,skyboxColor,saturateF(rmao.w+depth_fogval));
   } // vec3 environmentLighting(){
 
 WPosData stereoWPD(){

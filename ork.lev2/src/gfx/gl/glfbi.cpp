@@ -263,10 +263,10 @@ SRect& GlFrameBufferInterface::PopScissor(void) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::SetScissor(int iX, int iY, int iW, int iH) {
-  iX = OldStlSchoolClampToRange(iX, 0, 8192);
-  iY = OldStlSchoolClampToRange(iY, 0, 8192);
-  iW = OldStlSchoolClampToRange(iW, 24, 8192);
-  iH = OldStlSchoolClampToRange(iH, 24, 8192);
+  iX = OldStlSchoolClampToRange(iX, 0, 16384);
+  iY = OldStlSchoolClampToRange(iY, 0, 16384);
+  iW = OldStlSchoolClampToRange(iW, 24, 16384);
+  iH = OldStlSchoolClampToRange(iH, 24, 16384);
 
   // printf( "SetScissor<%d %d %d %d>\n", iX, iY, iW, iH );
   GL_ERRORCHECK();
@@ -287,10 +287,10 @@ void GlFrameBufferInterface::SetScissor(int iX, int iY, int iW, int iH) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::SetViewport(int iX, int iY, int iW, int iH) {
-  iX = OldStlSchoolClampToRange(iX, 0, 8192);
-  iY = OldStlSchoolClampToRange(iY, 0, 8192);
-  iW = OldStlSchoolClampToRange(iW, 32, 8192);
-  iH = OldStlSchoolClampToRange(iH, 32, 8192);
+  iX = OldStlSchoolClampToRange(iX, 0, 16384);
+  iY = OldStlSchoolClampToRange(iY, 0, 16384);
+  iW = OldStlSchoolClampToRange(iW, 32, 16384);
+  iH = OldStlSchoolClampToRange(iH, 32, 16384);
 
   miCurVPX = iX;
   miCurVPY = iY;

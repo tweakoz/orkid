@@ -168,7 +168,7 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
   auto FBI                     = targ->FBI();
   auto& ddprops                = drawdata._properties;
   auto irenderer               = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
-  SRect tgt_rect(0, 0, targ->mainSurfaceWidth(), targ->mainSurfaceHeight());
+  SRect tgt_rect(0, 0, _rtgGbuffer->GetW(), _rtgGbuffer->GetH());
   SRect mrt_rect(0, 0, _rtgGbuffer->GetW(), _rtgGbuffer->GetH());
   ///////////////////////////////////////////////////////////////////////////
   FBI->PushRtGroup(_rtgGbuffer);
