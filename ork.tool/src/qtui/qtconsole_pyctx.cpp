@@ -251,8 +251,7 @@ void InitPython()
 
 	opq::mainSerialQueue().enqueue([&]() {
 		usleep(1500000);
-		char* strbuf = "TheMachine";
-		//Py_SetProgramName(strbuf);
+		Py_SetProgramName(L"TheMachine");
 		Py::Ctx();
 
 		PyGILState_STATE gstate = PyGILState_Ensure();
