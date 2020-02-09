@@ -1,4 +1,5 @@
 #include <ork/pch.h>
+#include <ork/kernel/string/deco.inl>
 #include <vulkan/vulkan.hpp>
 
 namespace ork::lev2::vk{
@@ -26,6 +27,9 @@ namespace ork::lev2::vk{
     VkInstance vkinst;
     VkResult res = vkCreateInstance(&vkinstancedata, NULL, &vkinst);
     OrkAssert(res == 0);
+
+    deco::printf(fvec3::Yellow(),"vk::init res<%d>\n", int(res));
+
     vkDestroyInstance(vkinst, NULL);
   }
 
