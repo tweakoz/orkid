@@ -9,6 +9,8 @@ set(CMAKE_INSTALL_RPATH "$ENV{OBT_STAGE}/lib")
 set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 
 IF(${APPLE})
+set(XCODE_SDKBASE /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs)
+set(CMAKE_OSX_SYSROOT ${XCODE_SDKBASE}/MacOSX10.15.sdk)
 set(CMAKE_MACOSX_RPATH 1)
 LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "$ENV{OBT_STAGE}/lib" isSystemDir)
 IF("${isSystemDir}" STREQUAL "-1")

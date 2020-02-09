@@ -48,9 +48,8 @@ static int fd_pty_inp_slave = -1;
 static struct termios stored_settings;
 extern int Py_NoSiteFlag;
 extern int Py_VerboseFlag;
-extern char *(*PyOS_ReadlineFunctionPointer)(FILE *sys_stdin, FILE *sys_stdout, char *prompt);
+
 extern "C" char *PyOS_StdioReadline(FILE *sys_stdin, FILE *sys_stdout, char *prompt);
-extern "C" char *(*PyOS_ReadlineFunctionPointer)(FILE *sys_stdin, FILE *sys_stdout, char *prompt);
 extern "C" int PyRun_InteractiveOneFlags(FILE *fp, const char *filename, PyCompilerFlags *flags);
 extern "C" int(*_orkpy_redirect_interactiveloopflags)(FILE *fp, const char *filename, PyCompilerFlags *flags);
 static PyCompilerFlags orkpy_cf;
@@ -110,11 +109,11 @@ Py::Py()
 	Py_NoSiteFlag = 1;
 	Py_VerboseFlag = 2;
 
-	PyOS_ReadlineFunctionPointer=orkpy_readline;
+	//PyOS_StdioReadline=orkpy_readline;
     orkpy_cf.cf_flags = 0;
 	Py_InitializeEx(0);
 	PyEval_InitThreads();
-	PyOS_ReadlineFunctionPointer=orkpy_readline;
+	//PyOS_StdioReadline=orkpy_readline;
 	//_orkpy_redirect_interactiveloopflags = orkpy_redirect_interactiveloopflags;
 }
 Py::~Py()
@@ -128,12 +127,12 @@ void orkpy_initst2()
     PyObject *v;
     v = PySys_GetObject("ps1");
     if (v == NULL) {
-        PySys_SetObject("ps1", v = PyString_FromString(">>> "));
+        //PySys_SetObject("ps1", v = PyString_FromString(">>> "));
         Py_XDECREF(v);
     }
     v = PySys_GetObject("ps2");
     if (v == NULL) {
-        PySys_SetObject("ps2", v = PyString_FromString("... "));
+        //PySys_SetObject("ps2", v = PyString_FromString("... "));
         Py_XDECREF(v);
     }
 }
@@ -253,7 +252,7 @@ void InitPython()
 	opq::mainSerialQueue().enqueue([&]() {
 		usleep(1500000);
 		char* strbuf = "TheMachine";
-		Py_SetProgramName(strbuf);
+		//Py_SetProgramName(strbuf);
 		Py::Ctx();
 
 		PyGILState_STATE gstate = PyGILState_Ensure();

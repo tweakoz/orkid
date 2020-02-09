@@ -3,6 +3,9 @@ include (GenerateExportHeader)
 
 ###################################
 
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
 set( INCD ${CMAKE_CURRENT_SOURCE_DIR}/inc )
 set( COREINCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.core/inc )
@@ -45,27 +48,30 @@ target_include_directories (ork_tool PRIVATE ${CLDABASE} )
 target_include_directories (ork_tool PRIVATE ${CLDABASE}/LibXML/include )
 target_include_directories (ork_tool PRIVATE $ENV{OBT_STAGE}/include )
 target_include_directories (ork_tool PRIVATE $ENV{OBT_STAGE}/include/bullet )
-target_include_directories (ork_tool PRIVATE /usr/include/python2.7 )
+target_include_directories (ork_tool PRIVATE $ENV{OBT_STAGE}/include/python3.8d )
+
+target_include_directories (ork_tool PRIVATE ${Python_INCLUDE_DIRS} )
 
 ###################################
 
-set( libs ork_core ork_tuio ork_lev2 ork_ecs ork_fcollada ork_utpp )
+set( libs ork_core ork_tuio ork_lev2 ork_ecs ork_fcollada ork_utpp python3.8d )
 list(APPEND libs OpenImageIO OpenImageIO_Util portaudio )
 
 IF(${APPLE})
     target_include_directories (ork_tool PRIVATE /usr/local/include)
     list(APPEND libs m pthread )
-    list(APPEND libs "-framework OpenGL" "-framework Python"  )
+    list(APPEND libs "-framework OpenGL" )
     list(APPEND libs "-framework CoreMIDI" "-framework CoreAudio" )
     list(APPEND libs "-framework AudioUnit" "-framework AudioToolbox" )
     list(APPEND libs "-framework Carbon" "-framework Foundation" )
     list(APPEND libs "-framework ApplicationServices" "-framework AppKit" )
     list(APPEND libs glfw.3 objc Qt5::Widgets Qt5::Core Qt5::Gui assimp )
+
 ELSEIF(${UNIX})
     list(APPEND libs rt dl pthread python2.7 GL Qt5::X11Extras assimp  )
 ENDIF()
 
-target_link_libraries(ork_tool ${libs})
+target_link_libraries(ork_tool PRIVATE ${libs})
 
 ###################################
 
