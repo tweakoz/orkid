@@ -38,6 +38,9 @@ namespace ork {
 
 namespace lev2 {
 
+namespace vk {
+  void init();
+}
 static FileDevContext LocPlatformLevel2FileContext;
 const FileDevContext& PlatformLevel2FileContext = LocPlatformLevel2FileContext;
 
@@ -162,6 +165,7 @@ void ClassInit() {
 }
 
 void GfxInit(const std::string& gfxlayer) {
+  vk::init();
   if (gfxlayer != "dummy") {
 #if defined(ORK_CONFIG_OPENGL)
     OpenGlContextInit();
