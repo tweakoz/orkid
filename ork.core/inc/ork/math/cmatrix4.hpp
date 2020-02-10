@@ -203,9 +203,10 @@ template <typename T> std::string Matrix44<T>::dump4x3cn() const {
     rval += ork::deco::decorate(brace_color, "]");
   }
   Quaternion<T> q(*this);
-  auto rot = q.toEuler();
-  rval +=
-      ork::deco::format(fvec3(0.8, 0.8, 0.8), "  euler<%g %g %g>", round(rot.x * RTOD), round(rot.y * RTOD), round(rot.z * RTOD));
+  // auto rot = q.toEuler();
+  auto rot = q.toAxisAngle();
+  rval += ork::deco::format(fvec3(0.8, 0.8, 0.8), "  axis<%g %g %g> ang<%g>", rot.x, rot.y, rot.z, round(rot.w * RTOD));
+  // rval += ork::deco::format(fvec3(0.8, 0.8, 0.8), "  quat<%g %g %g %g>", q.x, q.y, q.z, q.w);
   return rval;
 }
 template <typename T> std::string Matrix44<T>::dump() const {

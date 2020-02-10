@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from orkcore import *
-import math
 PI = 3.14159
 
 #coreappinit()
@@ -26,8 +25,24 @@ print("V: %s"%V)
 print("P: %s"%P)
 print("V*P: %s"%(V*P))
 
+R = mtx4.rotMatrix(vec3(0,1,0),PI)
+print("R: %s"%R)
+print("inverse(R): %s"%(R.inverse()))
+print("R*inverse(R): %s"%(R*R.inverse()))
+print("inverse(R)*R: %s"%(R.inverse()*R))
+T = mtx4.transMatrix(1,2,3)
+print("T: %s"%T)
+print("inverse(T): %s"%(T.inverse()))
 S = mtx4.scaleMatrix(1,2,3)
 print("S: %s"%S)
-print("V*S: %s"%(V*S))
+print("inverse(S): %s"%(S.inverse()))
+
+print("RST: %s"%(R*S*T))
+print("TSR: %s"%(T*S*R))
+
+C = mtx4()
+C.compose(x,qx,1)
+
+print("C: %s"%(C))
 
 print( "%08x"%vec4(1,0,0,1).rgbaU32 )

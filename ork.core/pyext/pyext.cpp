@@ -247,6 +247,34 @@ PYBIND11_MODULE(orkcore, m) {
       .def("decompose", &fmtx4::decompose)
       .def_static("perspective", &fmtx4::perspective)
       .def_static(
+          "rotMatrix",
+          [](const fquat& q) -> fmtx4 {
+            fmtx4 rval;
+            rval.FromQuaternion(q);
+            return rval;
+          })
+      .def_static(
+          "rotMatrix",
+          [](const fvec3& axis, float angle) -> fmtx4 {
+            fmtx4 rval;
+            rval.FromQuaternion(fquat(axis, angle));
+            return rval;
+          })
+      .def_static(
+          "transMatrix",
+          [](float x, float y, float z) -> fmtx4 {
+            fmtx4 rval;
+            rval.SetTranslation(x, y, z);
+            return rval;
+          })
+      .def_static(
+          "transMatrix",
+          [](const fvec3& t) -> fmtx4 {
+            fmtx4 rval;
+            rval.SetTranslation(t.x, t.y, t.z);
+            return rval;
+          })
+      .def_static(
           "scaleMatrix",
           [](float x, float y, float z) -> fmtx4 {
             fmtx4 rval;
