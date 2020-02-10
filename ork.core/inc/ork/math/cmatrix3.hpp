@@ -3,16 +3,21 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <cmath>
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
+#include <ork/kernel/string/deco.inl>
 
 namespace ork {
 
 template <typename T> const Matrix33<T> Matrix33<T>::Identity;
+
+template <typename T> Matrix33<T>::Matrix33(const Quaternion<T>& q) {
+  FromQuaternion(q);
+ }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,6 +54,41 @@ template <typename T> void Matrix33<T>::dump( STRING name )
 
 	orkprintf( "\n}\n" );
 
+}
+
+template <typename T> std::string Matrix33<T>::dumpcn() const {
+  std::string rval;
+  auto brace_color = Vector3<T>(0.7, 0.7, 0.7);
+  for (int i = 0; i < 3; i++) {
+    rval += ork::deco::decorate(brace_color, "[");
+    fvec3 fcol;
+    switch (i) {
+      case 0:
+        fcol = Vector3<T>(1, .5, .5);
+        break;
+      case 1:
+        fcol = Vector3<T>(.5, 1, .5);
+        break;
+      case 2:
+        fcol = Vector3<T>(.5, .5, 1);
+        break;
+    }
+    for (int j = 0; j < 3; j++) {
+      //////////////////////////////////
+      // round down small numbers
+      //////////////////////////////////
+      float elem = elements[i][j];
+      elem       = float(int(elem * 10000)) / 10000.0f;
+      //////////////////////////////////
+      rval += ork::deco::format(fcol, " %+0.4g ", elem);
+    }
+    rval += ork::deco::decorate(brace_color, "]");
+  }
+  //Quaternion<T> q(*this);
+  //auto rot = q.toEuler();
+  //rval +=
+    //  ork::deco::format(fvec3(0.8, 0.8, 0.8), "  euler<%g %g %g>", round(rot.x * RTOD), round(rot.y * RTOD), round(rot.z * RTOD));
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -308,7 +348,7 @@ template <typename T> Matrix33<T> Matrix33<T>::MatrixMult( const Matrix33<T> &ma
 	result.elements[0][2]	= (elements[0][0] * mat1.elements[0][2])
 							+ (elements[0][1] * mat1.elements[1][2])
 							+ (elements[0][2] * mat1.elements[2][2]);
-														
+
 	////////////////////////////////////////////////////////////////
 	//              i  j                i  k                  k  j
 
@@ -323,7 +363,7 @@ template <typename T> Matrix33<T> Matrix33<T>::MatrixMult( const Matrix33<T> &ma
 	result.elements[1][2]	= (elements[1][0] * mat1.elements[0][2])
 							+ (elements[1][1] * mat1.elements[1][2])
 							+ (elements[1][2] * mat1.elements[2][2]);
-							
+
 	////////////////////////////////////////////////////////////////
 	//              i  j                i  k                  k  j
 
@@ -338,9 +378,9 @@ template <typename T> Matrix33<T> Matrix33<T>::MatrixMult( const Matrix33<T> &ma
 	result.elements[2][2]	= (elements[2][0] * mat1.elements[0][2])
 							+ (elements[2][1] * mat1.elements[1][2])
 							+ (elements[2][2] * mat1.elements[2][2]);
-							
+
 	////////////////////////////////////////////////////////////////
-	
+
 	return( result );
 }
 
@@ -430,11 +470,11 @@ template <typename T> void Matrix33<T>::Lerp( const Matrix33<T> &from, const Mat
 
 					if( dQ.Magnitude() > T(0.0f) )
 						dQ.Negate();
-	
+
 	Quaternion<T>	newQrot = dQ;
 
 	matR = newQrot.ToMatrix3();
-	
+
 	//////////////////
 
 	*this = ( FromR * matR );
@@ -595,7 +635,7 @@ template <typename T> void Matrix33<T>::InverseTranspose( void )
 	}
 
 	////////////
-	
+
 	*this = result;
 
 }
@@ -605,7 +645,7 @@ template <typename T> void Matrix33<T>::InverseTranspose( void )
 template <typename T> void Matrix33<T>::Normalize( void )
 {
 	Matrix33<T> result;
-	
+
 	T Xx = GetElemXY( 0,0 );
 	T Xy = GetElemXY( 0,1 );
 	T Xz = GetElemXY( 0,2 );
@@ -623,11 +663,11 @@ template <typename T> void Matrix33<T>::Normalize( void )
 	Xx *= Xi;
 	Xy *= Xi;
 	Xz *= Xi;
-	
+
 	Yx *= Yi;
 	Yy *= Yi;
 	Yz *= Yi;
-	
+
 	Zx *= Zi;
 	Zy *= Zi;
 	Zz *= Zi;

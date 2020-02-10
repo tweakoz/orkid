@@ -886,7 +886,7 @@ void ModelRenderer::Render(
     fquat qrot;
     fvec4 axisang = mBaseRotAxisAngle;
     axisang.SetW(3.1415926 * axisang.GetW() / 90.0f);
-    qrot.FromAxisAngle(axisang);
+    qrot.fromAxisAngle(axisang);
     rmtx.FromQuaternion(qrot);
 
     fvec3 upvec = (mUpVector.Mag() == 0.0f) ? fvec3::Green() : mUpVector.Normal();
@@ -910,7 +910,7 @@ void ModelRenderer::Render(
 
       float fanimrot = mPlugInpAnimRot.GetValue();
       fvec4 anim_axis_angle(mAnimRotAxis, 3.1415926 * fanimrot / 90.0f);
-      qrot.FromAxisAngle(anim_axis_angle);
+      qrot.fromAxisAngle(anim_axis_angle);
       r2mtx.FromQuaternion(qrot);
 
       nmtx.fromNormalVectors(xaxis, yaxis, zaxis);

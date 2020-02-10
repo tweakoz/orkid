@@ -13,7 +13,7 @@ static const float MyEPSILON = 5.0e-07f; // std::numeric_limits<float>::epsilon(
 TEST(QuatStraightDown) {
   fvec4 v(1, 0, 0, PI * 0.5);
   fquat q;
-  q.FromAxisAngle(v);
+  q.fromAxisAngle(v);
   printf("axis<%g %g %g> angle<%g>\n", v.x, v.y, v.z, v.w);
   printf("q<%g %g %g %g>\n", q.x, q.y, q.z, q.w);
 }

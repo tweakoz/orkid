@@ -110,7 +110,7 @@ template <typename T> std::string Matrix44<T>::dump(Vector3<T> color) const {
   }
   {
     Quaternion<T> q(*this);
-    auto rot = q.ToAxisAngle();
+    auto rot = q.toAxisAngle();
     if (rot.w < 0.0f) {
       rot *= -1.0f;
     }
@@ -214,7 +214,7 @@ template <typename T> std::string Matrix44<T>::dump() const {
     rval += "] ";
   }
   Quaternion<T> q(*this);
-  auto rot = q.ToAxisAngle();
+  auto rot = q.toAxisAngle();
   if (rot.w < 0.0f) {
     rot *= -1.0f;
   }
@@ -232,7 +232,7 @@ template <typename T> std::string Matrix44<T>::dump4x3() const {
     rval += "] ";
   }
   Quaternion<T> q(*this);
-  auto rot = q.ToAxisAngle();
+  auto rot = q.toAxisAngle();
   if (rot.w < 0.0f) {
     rot *= -1.0f;
   }
@@ -837,12 +837,12 @@ void Matrix44<T>::Lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par) //
   Quaternion<T> Qrot;
   Qrot.FromMatrix(CORR);
 
-  // Vector4<T>  rawaxisang = Qrot.ToAxisAngle();
+  // Vector4<T>  rawaxisang = Qrot.toAxisAngle();
   // T rawangle = rawaxisang.GetW();
   // T	newangle = rawangle*par;
   // Vector4<T> newaxisang = rawaxisang;
   // newaxisang.SetW( newangle );
-  // Tfquat newQrot;	newQrot.FromAxisAngle( newaxisang );
+  // Tfquat newQrot;	newQrot.fromAxisAngle( newaxisang );
 
 #if 1
 

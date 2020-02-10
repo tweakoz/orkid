@@ -81,17 +81,17 @@ fquat UiCamera::VerticalRot(float amt) const {
 
   if (IsXVertical()) {
     fvec4 aarot(1.0f, 0.0f, 0.0f, amt);
-    qrot.FromAxisAngle(aarot);
+    qrot.fromAxisAngle(aarot);
   } else if (IsYVertical()) {
     const fvec3& yn = _camcamdata.yNormal();
     float dotY      = yn.Dot(fvec3(0.0f, 1.0f, 0.0f));
     float fsign     = (dotY > 0.0f) ? 1.0f : (dotY < 0.0f) ? -1.0f : 0.0f;
 
     fvec4 aarot(0.0f, 1.0f, 0.0f, amt * fsign);
-    qrot.FromAxisAngle(aarot);
+    qrot.fromAxisAngle(aarot);
   } else if (IsZVertical()) {
     fvec4 aarot(0.0f, 0.0f, 1.0f, amt);
-    qrot.FromAxisAngle(aarot);
+    qrot.fromAxisAngle(aarot);
   }
   return qrot;
 }
@@ -103,13 +103,13 @@ fquat UiCamera::HorizontalRot(float amt) const {
 
   if (IsYVertical()) {
     fvec4 aarot(1.0f, 0.0f, 0.0f, amt);
-    qrot.FromAxisAngle(aarot);
+    qrot.fromAxisAngle(aarot);
   } else if (IsXVertical()) {
     fvec4 aarot(0.0f, 1.0f, 0.0f, amt);
-    qrot.FromAxisAngle(aarot);
+    qrot.fromAxisAngle(aarot);
   } else if (IsZVertical()) {
     fvec4 aarot(0.0f, 0.0f, 1.0f, amt);
-    qrot.FromAxisAngle(aarot);
+    qrot.fromAxisAngle(aarot);
   }
   return qrot;
 }

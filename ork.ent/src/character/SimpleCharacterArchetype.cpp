@@ -118,7 +118,7 @@ public:
       }
       else if(e._eventID == "setDir")
       {   float dir = e._eventData.Get<double>();
-          mDesiredDirection.FromAxisAngle(fvec4(0,1,0,dir));
+          mDesiredDirection.fromAxisAngle(fvec4(0,1,0,dir));
           //printf( "charcon got direction change request dir<%f>\n", dir );
       }
       else if(e._eventID == "setPos")

@@ -246,7 +246,7 @@ void Entity::setRotAxisAngle(fvec4 axisang) {
   DagNode& dagn = this->GetDagNode();
   auto xf       = dagn.GetTransformNode().GetTransform().GetMatrix();
   xf.decompose(pos, rot, sca);
-  rot.FromAxisAngle(axisang);
+  rot.fromAxisAngle(axisang);
   xf.compose(pos, rot, sca);
   dagn.SetTransformMatrix(xf);
 }

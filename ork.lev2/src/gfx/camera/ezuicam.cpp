@@ -420,7 +420,7 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
             float dangle = (ang1 - ang0);
             fvec4 rotz   = fvec4(_pushNZ, dangle);
             fquat QuatZ;
-            QuatZ.FromAxisAngle(rotz);
+            QuatZ.fromAxisAngle(rotz);
             QuatC = QuatZ.Multiply(QuatCPushed);
             // printf( "v0 <%g %g> v1<%g %g>\n", v0.x, v0.y, v1.x, v1.y );
             // printf( "ang0 <%g> ang1<%g>\n", ang0, ang1 );
@@ -437,8 +437,8 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
 
             fquat QuatX, QuatY;
 
-            QuatX.FromAxisAngle(rotx);
-            QuatY.FromAxisAngle(roty);
+            QuatX.fromAxisAngle(rotx);
+            QuatY.fromAxisAngle(roty);
 
             QuatC = QuatY.Multiply(QuatC);
             QuatC = QuatX.Multiply(QuatC);

@@ -5,6 +5,8 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <ork/python/context.h>
+// python header must come before qt
 #include <orktool/qtui/qtui_tool.h>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/Array.hpp>
@@ -32,9 +34,10 @@ void QtConsoleWindow::Register()
     gPCON = this;
 
     opq::mainSerialQueue().enqueue([&]() {
+        /*
         //const char* inpname = slave_inp_name;
-        const char* outname = slave_out_name;
-        const char* errname = slave_err_name;
+        const char* outname = python::slave_out_name;
+        const char* errname = python::slave_err_name;
 
         //fd_tty_inp_slave = open( inpname, O_WRONLY|O_NONBLOCK );
         fd_tty_out_slave = open( outname, O_RDONLY|O_NONBLOCK );
@@ -46,7 +49,7 @@ void QtConsoleWindow::Register()
 
         usleep(1<<18);
 
-        console_handler();
+        console_handler();*/
     });
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -248,7 +251,7 @@ void QtConsoleWindow::InputDone( void )
 	if( sstr.length() )
 	{
     opq::mainSerialQueue().enqueue([&]() {
-			  Py::Ctx().Call(sstr);
+			  python::context().call(sstr);
 		});
 	}
 	mpConsoleInputTextEdit->clear();

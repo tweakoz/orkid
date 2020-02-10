@@ -28,18 +28,6 @@ class QSocketNotifier;
 namespace ork {
 namespace tool {
 
-void InitPython();
-
-class Py
-{
-public:
-	static Py& Ctx();
-	void Call(const std::string& cmdstr);
-private:
-	Py();
-	~Py();
-
-};
 ///////////////////////////////////////////////////////////////////////////////
 
 void ConsoleOutput( const std::string & outstr );
@@ -54,7 +42,7 @@ struct ConsoleLine
 	void Clear() { mBuffer[0] = 0; mSize=0; }
 	ConsoleLine() : mSize(0) { Clear(); }
 	void Set(const char*pdata)
-	{	
+	{
 		mSize = strlen(pdata);
 		strncpy( mBuffer, pdata, kmaxlinew );
 	}
@@ -67,7 +55,7 @@ class vp_cons : public ui::Viewport
 public:
 
 	vp_cons( const std::string& vname );
-	
+
 	void BindCTQT(lev2::CTQT*ct);
 
 	void AppendOutput( const std::string & outputline );
@@ -97,14 +85,14 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 class QtConsoleWindow : public QWidget
-{   
+{
     Q_OBJECT
 
 	QTextEdit*		mpConsoleOutputTextEdit;
 	QLineEdit *		mpConsoleInputTextEdit;
 	QDockWidget *	mpDockWidget;
 	QGroupBox*		mpGROUPBOX;
-	
+
 	std::string		mOutputText;
 	bool			mbEcho;
 	static QtConsoleWindow *gpWindow;
@@ -140,8 +128,4 @@ inline QDockWidget *QtConsoleWindow::GetDockWidget( void )
 {
 	return mpDockWidget;
 }
-
-extern char slave_out_name[256];
-extern char slave_err_name[256];
-extern char slave_inp_name[256];
 } }	// namespace ork::tool

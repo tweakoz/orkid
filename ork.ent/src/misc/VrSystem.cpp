@@ -119,7 +119,7 @@ bool VrSystem::DoLink(Simulation* psim) {
     _baseCamDat = *_vrCamDat;
     auto cammtx = _baseCamDat.computeMatrices(1);
     fquat r;
-    r.FromAxisAngle(fvec4(0, 1, 0, PI));
+    r.fromAxisAngle(fvec4(0, 1, 0, PI));
     fmtx4 offsetmtx   = cammtx._vmatrix * r.ToMatrix();
     vrdev._usermtxgen = [=]() -> fmtx4 {
       return _vrSystemData.useCamView() //
@@ -138,11 +138,11 @@ bool VrSystem::DoLink(Simulation* psim) {
         auto& ctrlr = as_ctrlr.value();
         if (ctrlr._left._buttonThumbGatedDown) {
           fquat q;
-          q.FromAxisAngle(fvec4(0, 1, 0, -PI / 12.0));
+          q.fromAxisAngle(fvec4(0, 1, 0, -PI / 12.0));
           _headingMatrix = _headingMatrix * q.ToMatrix();
         } else if (ctrlr._right._buttonThumbGatedDown) {
           fquat q;
-          q.FromAxisAngle(fvec4(0, 1, 0, PI / 12.0));
+          q.fromAxisAngle(fvec4(0, 1, 0, PI / 12.0));
           _headingMatrix = _headingMatrix * q.ToMatrix();
         }
 #if 0

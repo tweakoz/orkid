@@ -247,11 +247,11 @@ void ManipSingleTrans::Draw( Context *pTARG ) const
 	MatCur.compose(pos, rot, mManager.GetManipScale());
 
 	if( GetClass() == ManipTX::GetClassStatic() )
-		neg_rot.FromAxisAngle(fvec4(0.0f, 1.0f, 0.0f, PI));
+		neg_rot.fromAxisAngle(fvec4(0.0f, 1.0f, 0.0f, PI));
 	else if( GetClass() == ManipTY::GetClassStatic() )
-		neg_rot.FromAxisAngle(fvec4(1.0f, 0.0f, 0.0f, PI));
+		neg_rot.fromAxisAngle(fvec4(1.0f, 0.0f, 0.0f, PI));
 	else if( GetClass() == ManipTZ::GetClassStatic() )
-		neg_rot.FromAxisAngle(fvec4(1.0f, 0.0f, 0.0f, PI));
+		neg_rot.fromAxisAngle(fvec4(1.0f, 0.0f, 0.0f, PI));
 
 	////////////////////////
 	// Draw Positive Axis

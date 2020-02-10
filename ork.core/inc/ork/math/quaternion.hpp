@@ -20,6 +20,9 @@ template <typename T> Quaternion<T>::Quaternion(T _x, T _y, T _z, T _w) {
   z = (_z);
   w = (_w);
 }
+template <typename T> Quaternion<T>::Quaternion(const Vector3<T>& axis,float angle) {
+  this->fromAxisAngle(Vector4<T>(axis,angle));
+}
 
 template <typename T> Vector3<T> Quaternion<T>::toEuler() const {
   Vector3<T> angles;
@@ -78,6 +81,13 @@ template <typename T> Quaternion<T> Quaternion<T>::Lerp(const Quaternion<T>& a, 
 template <typename T> Quaternion<T>::Quaternion(const Matrix44<T>& matrix) {
   FromMatrix(matrix);
 }
+template <typename T> Quaternion<T>::Quaternion(const Matrix33<T>& matrix) {
+  FromMatrix3(matrix);
+}
+
+template <typename T> Quaternion<T> Quaternion<T>::operator*(const Quaternion<T>& rhs) const {
+    return this->Multiply(rhs);
+  }
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -340,7 +350,7 @@ template <typename T> T Quaternion<T>::Magnitude(void) {
 ///////////////////////////////////////////////////////////////////////////////
 //	DESC: Converts a normalized axis and angle to a unit quaternion.
 
-template <typename T> void Quaternion<T>::FromAxisAngle(const Vector4<T>& v) {
+template <typename T> void Quaternion<T>::fromAxisAngle(const Vector4<T>& v) {
   T l = v.Mag();
 
   if (l < Float::Epsilon()) {
@@ -359,7 +369,7 @@ template <typename T> void Quaternion<T>::FromAxisAngle(const Vector4<T>& v) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Vector4<T> Quaternion<T>::ToAxisAngle(void) const {
+template <typename T> Vector4<T> Quaternion<T>::toAxisAngle(void) const {
   static const double kAAC = (114.591559026 * DTOR);
   T tr                     = acosf(w);
   T dsin                   = sinf(tr);

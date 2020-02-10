@@ -38,7 +38,7 @@ public:
       }
     }
   }
-
+  Matrix33(const Quaternion<T>& m);
   ////////////////
 
   Matrix33(void) { SetToIdentity(); }
@@ -144,6 +144,7 @@ public:
   ///////////////////////////////////////////////////////////////////////////////
 
   static const Matrix33<T> Identity;
+  std::string dumpcn() const;
 
   T* GetArray(void) const { return (T*)&elements[0][0]; }
 

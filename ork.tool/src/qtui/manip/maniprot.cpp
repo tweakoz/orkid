@@ -235,7 +235,7 @@ bool ManipRot::UIEventHandler( const ui::Event& EV )
         MatWldToObj.inverseOf(mBaseTransform.GetTransform().GetMatrix());
 				fvec4 bAxisAngle = mLocalRotationAxis;
 				fquat brq;
-				brq.FromAxisAngle(bAxisAngle);
+				brq.fromAxisAngle(bAxisAngle);
 				fmtx4 MatObjToPln;
 				MatObjToPln.inverseOf(brq.ToMatrix());
 				fmtx4 MatWldToPln = MatObjToPln*MatWldToObj;
@@ -251,16 +251,16 @@ bool ManipRot::UIEventHandler( const ui::Event& EV )
 				//orkprintf( "D1I <%f %f %f>\n", float(D1I.GetX()), float(D1I.GetY()), float(D1I.GetZ()) );
 				AxisAngle.SetW( CalcAngle(D0I,D1I) );
 				fquat RotQ;
-				RotQ.FromAxisAngle( AxisAngle );
+				RotQ.fromAxisAngle( AxisAngle );
 				///////////////////
 				// Rot Snap
 				if( isshift )
 				{	float SnapAngleVal( PI2/16.0f );
-					fvec4 NewAxisAngle = RotQ.ToAxisAngle();
+					fvec4 NewAxisAngle = RotQ.toAxisAngle();
 					float Angle = NewAxisAngle.GetW();
 					Angle = SnapReal( Angle, SnapAngleVal );
 					NewAxisAngle.SetW( Angle );
-					RotQ.FromAxisAngle( NewAxisAngle );
+					RotQ.fromAxisAngle( NewAxisAngle );
 				}
 				///////////////////
 				// accum rotation
@@ -270,7 +270,7 @@ bool ManipRot::UIEventHandler( const ui::Event& EV )
 				// Rot Reset To Identity
 				if( isctrl && isshift )
 				{
-					NewQ.FromAxisAngle( fvec4( float(0.0f), float(1.0f), float(0.0f), float(0.0f) ) );
+					NewQ.fromAxisAngle( fvec4( float(0.0f), float(1.0f), float(0.0f), float(0.0f) ) );
 				}
 				///////////////////
 				TransformNode mset = mManager.mCurTransform;

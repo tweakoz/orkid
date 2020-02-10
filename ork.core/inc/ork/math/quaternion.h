@@ -43,11 +43,15 @@ template <typename T> struct Quaternion {
   }
 
   Quaternion(T _x, T _y, T _z, T _w);
+  Quaternion(const Vector3<T>& axis,float angle);
 
   Quaternion(const Matrix44<T>& matrix);
+  Quaternion(const Matrix33<T>& matrix);
 
   ~Quaternion() {
   }
+
+  Quaternion<T> operator*(const Quaternion<T>& rhs) const;
 
   /////////
 
@@ -78,8 +82,8 @@ template <typename T> struct Quaternion {
   void Sub(Quaternion& a);
   void Add(Quaternion& a);
 
-  Vector4<T> ToAxisAngle(void) const;
-  void FromAxisAngle(const Vector4<T>& v);
+  Vector4<T> toAxisAngle(void) const;
+  void fromAxisAngle(const Vector4<T>& v);
 
   T Magnitude(void);
   Quaternion Conjugate(Quaternion& a);
