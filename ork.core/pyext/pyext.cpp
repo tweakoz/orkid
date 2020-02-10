@@ -167,6 +167,11 @@ PYBIND11_MODULE(orkcore, m) {
       .def("roty", &fvec4::RotateY)
       .def("rotz", &fvec4::RotateZ)
       .def("xyz", &fvec4::xyz)
+      .def("transform", &fvec4::Transform)
+      .def("perspectiveDivided", &fvec4::perspectiveDivided)
+      .def_property_readonly("rgbaU32", [](const fvec4& v) -> uint32_t { return v.GetRGBAU32(); })
+      .def_property_readonly("argbU32", [](const fvec4& v) -> uint32_t { return v.GetARGBU32(); })
+      .def_property_readonly("abgrU32", [](const fvec4& v) -> uint32_t { return v.GetABGRU32(); })
       .def(py::self + py::self)
       .def(py::self - py::self)
       .def(py::self * py::self)
@@ -218,12 +223,8 @@ PYBIND11_MODULE(orkcore, m) {
       .def("zNormal", &fmtx3::GetXNormal)
       .def("yNormal", &fmtx3::GetYNormal)
       .def("xNormal", &fmtx3::GetZNormal)
-      .def(
-          "__str__",
-          [](const fmtx3& mtx) -> std::string {
-            auto str = mtx.dumpcn();
-            return str.c_str();
-          })
+      .def(py::self * py::self)
+      .def(py::self == py::self)
       .def("__repr__", [](const fmtx3& mtx) -> std::string {
         auto str = mtx.dumpcn();
         return str.c_str();
@@ -232,15 +233,48 @@ PYBIND11_MODULE(orkcore, m) {
   py::class_<fmtx4>(m, "mtx4")
       .def(py::init<>())
       .def(py::init<const fmtx4&>())
+      .def(py::init<const fquat&>())
+      .def("fromQuaternion", &fmtx4::FromQuaternion)
       .def("zNormal", &fmtx4::GetXNormal)
       .def("yNormal", &fmtx4::GetYNormal)
       .def("xNormal", &fmtx4::GetZNormal)
-      .def(
-          "__str__",
-          [](const fmtx4& mtx) -> std::string {
-            auto str = mtx.dump4x3cn();
-            return str.c_str();
+      .def("transpose", &fmtx4::Transpose)
+      .def("normalize", &fmtx4::Normalize)
+      .def("inverse", &fmtx4::inverse)
+      .def("inverseOf", &fmtx4::inverseOf)
+      .def("correctionOf", &fmtx4::CorrectionMatrix)
+      .def("compose", &fmtx4::compose)
+      .def("decompose", &fmtx4::decompose)
+      .def_static("perspective", &fmtx4::perspective)
+      .def_static(
+          "scaleMatrix",
+          [](float x, float y, float z) -> fmtx4 {
+            fmtx4 rval;
+            rval.SetScale(x, y, z);
+            return rval;
           })
+      .def_static(
+          "scaleMatrix",
+          [](const fvec3& scale) -> fmtx4 {
+            fmtx4 rval;
+            rval.SetScale(scale.x, scale.y, scale.z);
+            return rval;
+          })
+      .def_static(
+          "unproject",
+          [](const fmtx4& rIMVP, const fvec3& ClipCoord, fvec3& rVObj) -> bool {
+            return fmtx4::UnProject(rIMVP, ClipCoord, rVObj);
+          })
+      .def_static(
+          "lookAt",
+          [](const fvec3& eye, const fvec3& tgt, fvec3& up) -> fmtx4 {
+            fmtx4 rval;
+            rval.LookAt(eye, tgt, up);
+            return rval;
+          })
+      //.def("LookAt", &fmtx4::decompose)
+      .def(py::self * py::self)
+      .def(py::self == py::self)
       .def("__repr__", [](const fmtx4& mtx) -> std::string {
         auto str = mtx.dump4x3cn();
         return str.c_str();

@@ -39,6 +39,8 @@ public:
     }
   }
 
+  Matrix44(const Quaternion<T>& q);
+
   ////////////////
 
   Matrix44(void) {
@@ -183,6 +185,12 @@ public:
 
   static bool UnProject(const Matrix44<T>& rIMVP, const Vector3<T>& ClipCoord, Vector3<T>& rVObj);
   static bool UnProject(const Vector4<T>& rVWin, const Matrix44<T>& rIMVP, const SRect& rVP, Vector3<T>& rVObj);
+
+  static Matrix44<T> perspective(T fovy, T aspect, T near, T far) {
+    Matrix44<T> rval;
+    rval.Perspective(fovy, aspect, near, far);
+    return rval;
+  }
 
   static const Matrix44<T> Identity;
 

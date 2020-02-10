@@ -22,6 +22,10 @@ template <typename T> const Matrix44<T> Matrix44<T>::Identity;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename T> Matrix44<T>::Matrix44(const Quaternion<T>& q) {
+  this->FromQuaternion(q);
+}
+
 template <typename T> Matrix33<T> Matrix44<T>::rotMatrix33(void) const {
   Matrix33<T> rval;
   rval.fromNormalVectors(GetXNormal().Normal(), GetYNormal().Normal(), GetZNormal().Normal());
