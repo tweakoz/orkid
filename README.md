@@ -9,6 +9,7 @@ Some Features Include:
 * Data Driven Design.
 * Entity/Component (ECS) based scene/simulation system.
 * LuaScript ECS component
+* Embedded Python3 interpreter, and Python3 extension modules
 * External references of character archetypes (prefabs) for sharing across scenes.
 * Generic dataflow modeling primitives used for modular audio synthesis, modular particle systems and modular terrain synthesis .
 * Flexible simulation architecture does not to dictate game/simulation policy, but does provide tools to help with implementation.
@@ -21,7 +22,7 @@ Some Features Include:
 * QT5/OpenGL based UI
 * Singularity - Pro synthesizer inspired audio engine. Loads Kurzweil k2000, CZ101, TX81Z and SF2 patches.
 * Now has OpenVR/Linux support!
-* Fairly lightweight build. A clean build builds in about 5 mins on a 2.8ghz 4core ivybridge 2013 macbook pro or 80 seconds on a 2.8ghz 20core ivybridge xeon. That includes building the embedded bullet and fcollada.
+* Fairly lightweight build. A clean build builds in about 5 mins on a 2.8ghz 4core ivybridge 2013 macbook pro or 80 seconds on a 2.8ghz 20core ivybridge xeon. This time does not include time building dependencies (Qt5,OpenImageIO,etc..)
 * Many more...
 
 ![PBR](./ork.data/misc/th_screenshot_pbr.png )
