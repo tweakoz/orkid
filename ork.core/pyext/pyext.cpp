@@ -234,7 +234,6 @@ PYBIND11_MODULE(orkcore, m) {
       .def(py::init<>())
       .def(py::init<const fmtx4&>())
       .def(py::init<const fquat&>())
-      .def("fromQuaternion", &fmtx4::FromQuaternion)
       .def("zNormal", &fmtx4::GetXNormal)
       .def("yNormal", &fmtx4::GetYNormal)
       .def("xNormal", &fmtx4::GetZNormal)
