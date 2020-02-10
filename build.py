@@ -29,8 +29,9 @@ build_dest.chdir()
 prj_root = Path(os.environ["ORKID_WORKSPACE_DIR"])
 cmd = ["cmake"]
 
+stage_dir = Path(os.path.abspath(str(ork.path.stage())))
+
 if _args["ez"]!=False:
-    stage_dir = Path(os.path.abspath(str(ork.path.stage())))
     ork_root = stage_dir/".."
     this_script = ork_root/"build.py"
     init_env_script = ork_root/"ork.build"/"bin"/"init_env.py"
@@ -58,6 +59,8 @@ else:
     cmd += ["-DCMAKE_BUILD_TYPE=Release"]
 
 cmd += ["-DCMAKE_FIND_DEBUG_MODE=OFF","--target","install"]
+cmd += ["-DPYTHON_EXECUTABLE=%s/bin/python3"%(stage_dir)]
+cmd += ["-DPYTHON_LIBRARY=%s/lib/libpython3.8d.so"%(stage_dir)]
 
 cmd += [prj_root]
 

@@ -4,9 +4,9 @@ include (GenerateExportHeader)
 
 set( CMAKE_MODULE_PATH $ENV{ORKID_WORKSPACE_DIR}:$ENV{OBT_STAGE}/share/cmake/pybind11 )
 
+find_package (Python COMPONENTS Interpreter Development)
 FIND_PACKAGE( pybind11 REQUIRED )
-FIND_PACKAGE(PythonInterp 3 REQUIRED )
-FIND_PACKAGE(PythonLibs 3 REQUIRED)
+
 
 ###################################
 
@@ -52,9 +52,10 @@ FIND_PACKAGE(PythonLibs 3 REQUIRED)
 
 IF(${APPLE})
     target_include_directories (orkcore PRIVATE /usr/local/include)
-    target_link_libraries(orkcore LINK_PRIVATE ork_core)
-ELSEIF(${UNIX})
 ENDIF()
+
+target_link_libraries(orkcore LINK_PRIVATE ork_core)
+
 
 set( INCD ${CMAKE_CURRENT_SOURCE_DIR}/../inc )
 
