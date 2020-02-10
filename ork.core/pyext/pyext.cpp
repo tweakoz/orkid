@@ -242,10 +242,22 @@ PYBIND11_MODULE(orkcore, m) {
       .def("normalize", &fmtx4::Normalize)
       .def("inverse", &fmtx4::inverse)
       .def("inverseOf", &fmtx4::inverseOf)
-      .def("correctionOf", &fmtx4::CorrectionMatrix)
-      .def("compose", &fmtx4::compose)
       .def("decompose", &fmtx4::decompose)
       .def_static("perspective", &fmtx4::perspective)
+      .def_static(
+          "compose",
+          [](const fvec3& pos, const fquat& rot, float scale) -> fmtx4 {
+            fmtx4 rval;
+            rval.compose(pos, rot, scale);
+            return rval;
+          })
+      .def_static(
+          "deltaMatrix",
+          [](const fmtx4& from, const fmtx4& to) -> fmtx4 {
+            fmtx4 rval;
+            rval.CorrectionMatrix(from, to);
+            return rval;
+          })
       .def_static(
           "rotMatrix",
           [](const fquat& q) -> fmtx4 {

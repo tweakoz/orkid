@@ -40,9 +40,10 @@ print("inverse(S): %s"%(S.inverse()))
 print("RST: %s"%(R*S*T))
 print("TSR: %s"%(T*S*R))
 
-C = mtx4()
-C.compose(x,qx,1)
+C = mtx4.compose(x,qx,1)
 
 print("C: %s"%(C))
+
+print("R2RST: %s"%(mtx4.deltaMatrix(R,R*S*T)))
 
 print( "%08x"%vec4(1,0,0,1).rgbaU32 )
