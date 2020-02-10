@@ -174,10 +174,10 @@ struct FxComputeShader {
 struct FxShader {
   void *mInternalHandle;
 
-  typedef orkmap<std::string, const FxShaderParam *> parambynamemap_t;
-  typedef orkmap<std::string, const FxShaderParamBlock *> paramblockbynamemap_t;
-  typedef orkmap<std::string, const FxShaderTechnique *> techniquebynamemap_t;
-  typedef orkmap<std::string, const FxComputeShader *> computebynamemap_t;
+  typedef std::map<std::string, const FxShaderParam *> parambynamemap_t;
+  typedef std::map<std::string, const FxShaderParamBlock *> paramblockbynamemap_t;
+  typedef std::map<std::string, const FxShaderTechnique *> techniquebynamemap_t;
+  typedef std::map<std::string, const FxComputeShader *> computebynamemap_t;
 
   techniquebynamemap_t _techniques;
   parambynamemap_t _parameterByName;
@@ -223,7 +223,7 @@ struct FxShader {
   #if defined (ENABLE_COMPUTE_SHADERS)
   FxComputeShader* findComputeShader(const std::string &named);
   #endif
-  
+
   void SetAllowCompileFailure(bool bv) { mAllowCompileFailure = bv; }
   bool GetAllowCompileFailure() const { return mAllowCompileFailure; }
   void SetFailedCompile(bool bv) { mFailedCompile = bv; }

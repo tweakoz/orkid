@@ -58,7 +58,12 @@ PYBIND11_MODULE(orklev2, m) {
   using fxi_t      = ork::python::unmanaged_ptr<FxInterface>;
   using rsi_t      = ork::python::unmanaged_ptr<RasterStateInterface>;
   using txi_t      = ork::python::unmanaged_ptr<TextureInterface>;
-  using rcfd_ptr_t = ork::python::unmanaged_ptr<const RenderContextFrameData>;
+  using fxshader_t = ork::python::unmanaged_ptr<FxShader>;
+  using fxparam_t  = ork::python::unmanaged_ptr<FxShaderParam>;
+  using fxtechnique_t  = ork::python::unmanaged_ptr<FxShaderTechnique>;
+  using rcfd_ptr_t = ork::python::unmanaged_ptr<RenderContextFrameData>;
+  using fxparammap_t = std::map<std::string,fxparam_t>;
+  using fxtechniquemap_t = std::map<std::string,fxtechnique_t>;
   /////////////////////////////////////////////////////////////////////////////////
   m.doc() = "Orkid Lev2 Library (graphics,audio,vr,input,etc..)";
   /////////////////////////////////////////////////////////////////////////////////
@@ -87,7 +92,10 @@ PYBIND11_MODULE(orklev2, m) {
       .def("GBI", [](Context& c) -> gbi_t { return gbi_t(c.GBI()); })
       .def("TXI", [](Context& c) -> txi_t { return txi_t(c.TXI()); })
       .def("RSI", [](Context& c) -> rsi_t { return rsi_t(c.RSI()); })
-      .def("topRCFD", [](Context& c) -> rcfd_ptr_t { return rcfd_ptr_t(c.topRenderContextFrameData()); })
+      .def("topRCFD", [](Context& c) -> rcfd_ptr_t {
+        auto rcfd = c.topRenderContextFrameData();
+        return rcfd_ptr_t(const_cast<RenderContextFrameData*>(rcfd));
+      })
       .def_property_readonly("frameIndex", [](Context& c) -> int { return c.GetTargetFrame(); })
       .def_property("currentMaterial", &Context::currentMaterial, &Context::BindMaterial)
       .def("__repr__", [](const Context& c) -> std::string {
@@ -107,19 +115,99 @@ PYBIND11_MODULE(orklev2, m) {
   py::class_<FreestyleMaterial, GfxMaterial>(m, "FreestyleMaterial")
       .def(py::init<>())
       .def("gpuInit", &FreestyleMaterial::gpuInit)
-      .def_readonly("shader", &FreestyleMaterial::_shader)
-      .def("__repr__", [](const GfxMaterial& m) -> std::string {
+      .def_property_readonly("shader", [](const FreestyleMaterial& m) -> fxshader_t {
+        return fxshader_t(m._shader);
+      })
+      .def("bindTechnique",  [](FreestyleMaterial& m,const fxtechnique_t& tek) {
+        m.bindTechnique(tek.get());
+      })
+      .def("bindParamFloat",  [](FreestyleMaterial& m,fxparam_t& p,float value) {
+        m.bindParamFloat(p.get(),value);
+      })
+      .def("bindParamVec2",  [](FreestyleMaterial& m,fxparam_t& p,const fvec2& value) {
+        m.bindParamVec2(p.get(),value);
+      })
+      .def("bindParamVec3",  [](FreestyleMaterial& m,fxparam_t& p,const fvec3& value) {
+        m.bindParamVec3(p.get(),value);
+      })
+      .def("bindParamVec4",  [](FreestyleMaterial& m,fxparam_t& p,const fvec4& value) {
+        m.bindParamVec4(p.get(),value);
+      })
+      .def("bindParamMatrix",  [](FreestyleMaterial& m,fxparam_t& p,const fmtx4& value) {
+        m.bindParamMatrix(p.get(),value);
+      })
+      .def("begin",  [](FreestyleMaterial& m,rcfd_ptr_t& rcfd) {
+        m.begin(*rcfd.get());
+      })
+      .def("end",  [](FreestyleMaterial& m,rcfd_ptr_t& rcfd) {
+        m.end(*rcfd.get());
+      })
+      .def("__repr__", [](const FreestyleMaterial& m) -> std::string {
         fxstring<256> fxs;
         fxs.format("FreestyleMaterial(%p:%s)", &m, m.mMaterialName.c_str());
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<FxShader>(m, "FxShader")
+  py::class_<fxshader_t>(m, "FxShader")
       .def(py::init<>())
-      .def_property("name", &FxShader::GetName, &FxShader::SetName)
-      .def("__repr__", [](const FxShader& m) -> std::string {
+      .def_property_readonly("name", [](const fxshader_t& sh) -> std::string {
+        return sh->mName;
+      })
+      .def_property_readonly("params",  [](const fxshader_t& sh) -> fxparammap_t {
+        fxparammap_t rval;
+        for( auto item : sh->_parameterByName ){
+          // python has no concept of const
+          //  so we must cast away constness
+          rval[item.first] = fxparam_t(const_cast<FxShaderParam*>(item.second));
+        }
+        return rval;
+      })
+      .def("param",  [](const fxshader_t& sh,const std::string& named) -> fxparam_t {
+        auto it = sh->_parameterByName.find(named);
+        fxparam_t rval(nullptr);
+        if(it!=sh->_parameterByName.end())
+          rval = fxparam_t(const_cast<FxShaderParam*>(it->second));
+        return rval;
+      })
+      .def_property_readonly("techniques",  [](const fxshader_t& sh) -> fxtechniquemap_t {
+        fxtechniquemap_t rval;
+        for( auto item : sh->_techniques ){
+          // python has no concept of const
+          //  so we must cast away constness
+          rval[item.first] = fxtechnique_t(const_cast<FxShaderTechnique*>(item.second));
+        }
+        return rval;
+      })
+      .def("technique",  [](const fxshader_t& sh,const std::string& named) -> fxtechnique_t {
+        auto it = sh->_techniques.find(named);
+        fxtechnique_t rval(nullptr);
+        if(it!=sh->_techniques.end())
+          rval = fxtechnique_t(const_cast<FxShaderTechnique*>(it->second));
+        return rval;
+      })
+      .def("__repr__", [](const fxshader_t& sh) -> std::string {
         fxstring<256> fxs;
-        fxs.format("FxShader(%p:%s)", &m, m.mName.c_str());
+        fxs.format("FxShader(%p:%s)", sh.get(), sh->mName.c_str());
+        return fxs.c_str();
+      });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<fxparam_t>(m, "FxShaderParam")
+      .def_property_readonly("name",  [](const fxparam_t& p) -> std::string {
+        return p->_name;
+      })
+      .def("__repr__", [](const fxparam_t& p) -> std::string {
+        fxstring<256> fxs;
+        fxs.format("FxShader(%p:%s)", p.get(), p->_name.c_str());
+        return fxs.c_str();
+      });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<fxtechnique_t>(m, "FxShaderTechnique")
+      .def_property_readonly("name",  [](const fxtechnique_t& t) -> std::string {
+        return t->mTechniqueName;
+      })
+      .def("__repr__", [](const fxtechnique_t& t) -> std::string {
+        fxstring<256> fxs;
+        fxs.format("FxShaderTechnique(%p:%s)", t.get(), t->mTechniqueName.c_str());
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////

@@ -1,35 +1,37 @@
 #pragma once
 
 namespace ork::python {
-template <class T> class unmanaged_ptr {
-public:
+template <class T> struct unmanaged_ptr {
+  using value_type = T*;
   unmanaged_ptr()
-      : ptr(nullptr) {
+      : _ptr(nullptr) {
   }
   unmanaged_ptr(T* ptr)
-      : ptr(ptr) {
+      : _ptr(ptr) {
   }
   unmanaged_ptr(const unmanaged_ptr& other)
-      : ptr(other.ptr) {
+      : _ptr(other._ptr) {
   }
   T& operator*() const {
-    return *ptr;
+    return *_ptr;
   }
   T* operator->() const {
-    return ptr;
+    return _ptr;
   }
   T* get() const {
-    return ptr;
+    return _ptr;
   }
   void destroy() {
-    // delete ptr;
+    // delete _ptr;
+  }
+  void deallocate() {
+    // delete _ptr;
   }
   T& operator[](std::size_t idx) const {
-    return ptr[idx];
+    return _ptr[idx];
   }
 
-private:
-  T* ptr;
+  T* _ptr;
 };
 
 } // namespace ork::python
