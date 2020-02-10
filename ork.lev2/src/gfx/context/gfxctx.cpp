@@ -104,6 +104,8 @@ void Context::endFrame(void) {
   PopModColor();
   mbPostInitializeContext = false;
   _doEndFrame();
+
+  miTargetFrame++;
 }
 
 /////////////////////////////////////////////////////////////////////////

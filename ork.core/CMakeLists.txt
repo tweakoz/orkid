@@ -59,5 +59,5 @@ install(TARGETS ork_core LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )
 ###################################
 
 add_subdirectory (pyext)
-#add_subdirectory (examples)
+add_subdirectory (examples)
 add_subdirectory (tests)

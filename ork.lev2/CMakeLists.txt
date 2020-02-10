@@ -78,3 +78,4 @@ install(TARGETS ork_lev2 LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )
 
 add_subdirectory (tests)
 add_subdirectory (examples)
+add_subdirectory (pyext)

@@ -8,7 +8,7 @@ include_directories(AFTER ${CMAKE_INSTALL_PREFIX}/include)
 file(GLOB srcs ./*.cpp)
 add_executable (ork.python.repl.exe ${srcs} )
 
-target_link_libraries(ork.python.repl.exe LINK_PRIVATE ork_core )
+target_link_libraries(ork.python.repl.exe LINK_PRIVATE ork_core python3.8d )
 
 set_target_properties(ork.python.repl.exe PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories (ork.python.repl.exe PRIVATE ${ORKROOT}/ork.core/inc )

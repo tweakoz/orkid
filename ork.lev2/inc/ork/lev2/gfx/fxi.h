@@ -14,7 +14,6 @@ typedef std::shared_ptr<FxShaderParamBufferMapping> parambuffermappingptr_t;
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
 
-
 class FxInterface {
 public:
   void BeginFrame();
@@ -26,17 +25,17 @@ public:
   virtual void EndBlock(FxShader* hfx)                                     = 0;
   virtual void CommitParams(void)                                          = 0;
 
-  virtual const FxShaderTechnique* technique(FxShader* hfx, const std::string& name) = 0;
-  virtual const FxShaderParam* parameter(FxShader* hfx, const std::string& name)    = 0;
-  virtual const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name)    = 0;
+  virtual const FxShaderTechnique* technique(FxShader* hfx, const std::string& name)       = 0;
+  virtual const FxShaderParam* parameter(FxShader* hfx, const std::string& name)           = 0;
+  virtual const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) = 0;
 
-  #if defined(ENABLE_COMPUTE_SHADERS)
+#if defined(ENABLE_COMPUTE_SHADERS)
   virtual const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) = 0;
-  #endif
- 
-  #if defined(ENABLE_SHADER_STORAGE)
+#endif
+
+#if defined(ENABLE_SHADER_STORAGE)
   virtual const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) = 0;
-  #endif
+#endif
 
   virtual void BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bval)                          = 0;
   virtual void BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int ival)                            = 0;
@@ -49,38 +48,51 @@ public:
   virtual void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx4& Mat)                       = 0;
   virtual void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx3& Mat)                       = 0;
   virtual void BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) = 0;
-  virtual void BindParamU32(FxShader* hfx, const FxShaderParam* hpar, uint32_t uval)                                  = 0;
+  virtual void BindParamU32(FxShader* hfx, const FxShaderParam* hpar, uint32_t uval)                             = 0;
   virtual void BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Texture* pTex)                      = 0;
 
-#if ! defined(__APPLE__)
-  virtual void BindParamU64(FxShader* hfx, const FxShaderParam* hpar, uint64_t uval) {}
+#if !defined(__APPLE__)
+  virtual void BindParamU64(FxShader* hfx, const FxShaderParam* hpar, uint64_t uval) {
+  }
 #endif
-  
+
   void BindParamTex(FxShader* hfx, const FxShaderParam* hpar, const lev2::TextureAsset* tex);
 
   void BeginMaterialGroup(GfxMaterial* pmtl);
   void EndMaterialGroup();
-  GfxMaterial* GetGroupCurMaterial() const { return mpGroupCurMaterial; }
-  GfxMaterial* GetGroupMaterial() const { return mpGroupMaterial; }
+  GfxMaterial* GetGroupCurMaterial() const {
+    return mpGroupCurMaterial;
+  }
+  GfxMaterial* GetGroupMaterial() const {
+    return mpGroupMaterial;
+  }
 
   virtual bool LoadFxShader(const AssetPath& pth, FxShader* ptex) = 0;
 
   void InvalidateStateBlock(void);
 
-  GfxMaterial* GetLastFxMaterial(void) const { return mpLastFxMaterial; }
+  GfxMaterial* GetLastFxMaterial(void) const {
+    return mpLastFxMaterial;
+  }
 
   static void Reset();
 
+  virtual FxShaderParamBuffer* createParamBuffer(size_t length) {
+    return nullptr;
+  }
+  virtual parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer* b, size_t base = 0, size_t length = 0) {
+    return nullptr;
+  }
+  virtual void unmapParamBuffer(FxShaderParamBufferMapping* mapping) {
+  }
+  virtual void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) {
+  }
 
-  virtual FxShaderParamBuffer* createParamBuffer( size_t length ) { return nullptr; }
-  virtual parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer*b,size_t base=0, size_t length=0) { return nullptr; }
-  virtual void unmapParamBuffer(FxShaderParamBufferMapping* mapping) {}
-  virtual void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) {}
+  FxInterface();
+  virtual ~FxInterface() {
+  }
 
 protected:
-  FxInterface();
-  virtual ~FxInterface() {}
-  
   FxShader* mpActiveFxShader;
   GfxMaterial* mpLastFxMaterial;
   GfxMaterial* mpGroupMaterial;
@@ -88,5 +100,6 @@ protected:
 
 private:
   virtual void _doBeginFrame() = 0;
-  virtual void DoOnReset() {}
+  virtual void DoOnReset() {
+  }
 };

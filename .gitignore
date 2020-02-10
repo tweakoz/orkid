@@ -19,6 +19,7 @@ hotkeys.ork
 cmake-build*
 mocs
 nocommit/*
+*__pycache__*
 */nocommit/*
 .mayaSwatches/*
 ork.build.ini

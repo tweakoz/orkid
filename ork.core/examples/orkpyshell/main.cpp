@@ -7,7 +7,7 @@
 #include <ork/object/Object.h>
 #include <ork/rtti/downcast.h>
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/kernel/Thread.h>
+#include <ork/kernel/thread.h>
 #include <ork/kernel/opq.h>
 
 using namespace ork;
@@ -21,8 +21,7 @@ void TestApplication::Describe() {
 
 INSTANTIATE_TRANSPARENT_RTTI(TestApplication, "TestApplication");
 
-
-int main(int argc, const char** argv){
+int main(int argc, const char** argv) {
 
   SetCurrentThreadName("main");
 
@@ -36,7 +35,7 @@ int main(int argc, const char** argv){
   int iret      = 0;
   bool testdone = false;
   testthr.start([&](anyp data) {
-    while(false==testdone){
+    while (false == testdone) {
       usleep(1000);
     }
   });
@@ -50,16 +49,15 @@ int main(int argc, const char** argv){
     upddone = true;
   });
   /////////////////////////////////////////////
-    opq::TrackCurrent opqtest(&opq::mainSerialQueue());
-    python::init();
-    opq::mainSerialQueue().Process();
-    auto orkmodule = python::context().orkidModule();
+  opq::TrackCurrent opqtest(&opq::mainSerialQueue());
+  python::init();
+  opq::mainSerialQueue().Process();
   static PyCompilerFlags orkpy_cf;
-    orkpy_cf.cf_flags = 0;
+  orkpy_cf.cf_flags = 0;
   while (false == testdone) {
     printf("\npyork>>");
     fflush(stdout);
-    PyRun_InteractiveOneFlags(stdin,"orkshell",&orkpy_cf);
+    PyRun_InteractiveOneFlags(stdin, "orkshell", &orkpy_cf);
   }
 
   return 0;
