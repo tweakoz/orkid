@@ -5,34 +5,34 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <orktool/qtui/qtui_tool.h>
-///////////////////////////////////////////////////////////////////////////////
-#include <ork/lev2/qtui/qtui.hpp>
-///////////////////////////////////////////////////////////////////////////////
-#include <orktool/qtui/qtmainwin.h>
+#include <ork/python/context.h>
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
-#include <ork/lev2/gfx/gfxmodel.h>
-#include <ork/lev2/gfx/particle/particle.h>
-#include <ork/lev2/gfx/gfxmaterial_test.h>
-///////////////////////////////////////////////////////////////////////////
-#include <pkg/ent/editor/edmainwin.h>
-#include "vpSceneEditor.h"
 #include <ork/util/hotkey.h>
 #include <ork/stream/FileOutputStream.h>
 #include <ork/stream/FileInputStream.h>
 #include <ork/reflect/serialize/XMLSerializer.h>
 #include <ork/reflect/serialize/XMLDeserializer.h>
-#include <orktool/ged/ged.h>
-#include <orktool/ged/ged_delegate.h>
-#include <pkg/ent/ReferenceArchetype.h>
-#include <QtCore/QSettings>
 #include <ork/kernel/opq.h>
 #include <ork/application/application.h>
+///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/gfxmodel.h>
+#include <ork/lev2/gfx/particle/particle.h>
+#include <ork/lev2/gfx/gfxmaterial_test.h>
+#include <ork/lev2/qtui/qtui.hpp>
+///////////////////////////////////////////////////////////////////////////////
+#include <pkg/ent/editor/edmainwin.h>
+#include <pkg/ent/ReferenceArchetype.h>
+///////////////////////////////////////////////////////////////////////////////
+#include <orktool/qtui/qtui_tool.h>
+#include <orktool/qtui/qtmainwin.h>
+#include <orktool/ged/ged.h>
+#include <orktool/ged/ged_delegate.h>
+///////////////////////////////////////////////////////////////////////////
+#include "vpSceneEditor.h"
+#include <QtCore/QSettings>
 #include <QtWidgets/QDockWidget>
 #include <QtWidgets/QInputDialog>
-///////////////////////////////////////////////////////////////////////////////
-extern bool gPythonEnabled;
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////
@@ -223,7 +223,7 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 	auto genviewblk = [=](){
 		auto camwin = NewCamView(false);
 		SceneObjPropEdit();
-		if( gPythonEnabled ){
+		if( ork::python::isPythonEnabled() ){
 			//QDockWidget *pdw3 = NewPyConView(false);
 		}
 		//QDockWidget *pdw3 = NewDataflowView(false);

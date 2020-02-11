@@ -264,8 +264,8 @@ void GfxEnv::SetLoaderTarget(Context* target) {
     mp3DMaterial->Init(gLoaderTarget);
     ork::lev2::GfxPrimitives::Init(gLoaderTarget);
 
-    gLoaderTarget->beginFrame();
-    gLoaderTarget->endFrame();
+    //gLoaderTarget->beginFrame();
+    //gLoaderTarget->endFrame();
   };
   opq::mainSerialQueue().enqueue(gfxenvlateinit);
 }

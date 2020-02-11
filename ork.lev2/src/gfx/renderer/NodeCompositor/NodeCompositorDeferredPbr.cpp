@@ -77,7 +77,6 @@ void DeferredCompositingNodePbr::_writeEnvTexture(ork::rtti::ICastable* const& t
   ////////////////////////////////////////////////////////////////////////////////
   // irradiance map preprocessor
   ////////////////////////////////////////////////////////////////////////////////
-  auto loadingcontext = GfxEnv::GetRef().loadingContext();
 
   _environmentTextureAsset->_varmap.makeValueForKey<Texture::proc_t>("postproc") =
       [this](Texture* tex, Context* targ, datablockptr_t datablock) -> datablockptr_t {

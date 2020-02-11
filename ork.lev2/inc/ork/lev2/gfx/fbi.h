@@ -38,12 +38,6 @@ public:
   void SetThisBuffer(OffscreenBuffer* pbuf) {
     mpThisBuffer = pbuf;
   }
-  bool IsOffscreenTarget(void) {
-    return mbIsPbuffer;
-  }
-  void SetOffscreenTarget(bool bv) {
-    mbIsPbuffer = bv;
-  }
   virtual void SetRtGroup(RtGroup* Base) = 0;
   RtGroup* GetRtGroup() const {
     return mCurrentRtGroup;
@@ -137,7 +131,6 @@ protected:
   RtGroup* mCurrentRtGroup;
   fcolor4 mcClearColor;
   bool mbAutoClear;
-  bool mbIsPbuffer;
   bool mbEnableFullScreen;
   bool mbEnableVSync;
   int miCurVPX;

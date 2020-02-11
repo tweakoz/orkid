@@ -371,7 +371,7 @@ x11_window_t getHandleForWidget(const QWidget* widget) {
   }
   return 0;
 }
-void ContextGL::InitializeContext(Window* pWin, CTXBASE* pctxbase) {
+void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
   ///////////////////////
   GlIxPlatformObject* plato = new GlIxPlatformObject;
   mCtxBase                  = pctxbase;
@@ -525,7 +525,7 @@ float _currentDPI() {
 }
 /////////////////////////////////////////////////////////////////////////
 
-void ContextGL::InitializeContext(OffscreenBuffer* pBuf) {
+void ContextGL::initializeOffscreenContext(OffscreenBuffer* pBuf) {
   ///////////////////////
 
   miW = pBuf->GetBufferW();
@@ -570,6 +570,27 @@ void ContextGL::InitializeContext(OffscreenBuffer* pBuf) {
   //////////////////////////////////////////////
 
   pBuf->SetContext(this);
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+void ContextGL::initializeLoaderContext() {
+  miW = 8;
+  miH = 8;
+  miX = 0;
+  miY = 0;
+
+  mCtxBase = 0;
+
+  GlIxPlatformObject* plato = new GlIxPlatformObject;
+  mPlatformHandle           = (void*)plato;
+  mFbI.SetThisBuffer(pBuf);
+
+  plato->mGlxContext = GlIxPlatformObject::gShareMaster;
+  plato->mbInit      = false;
+  plato->mDisplay    = GlIxPlatformObject::gDisplay;
+  plato->mXWindowId  = g_rootwin;
+
 }
 
 /////////////////////////////////////////////////////////////////////////

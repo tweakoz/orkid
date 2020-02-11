@@ -391,7 +391,9 @@ public:
 
   GlFrameBufferInterface& GLFBI() { return mFbI; }
 
-  void InitializeContext(OffscreenBuffer* pBuf) final; // make a pbuffer
+  void initializeWindowContext(Window* pWin, CTXBASE* pctxbase) final; // make a window
+  void initializeOffscreenContext(OffscreenBuffer* pBuf) final; // make a pbuffer
+  void initializeLoaderContext() final;
 
   void debugPushGroup(const std::string str) final;
   void debugPopGroup() final;
@@ -399,7 +401,6 @@ public:
 
   void TakeThreadOwnership() final;
   bool SetDisplayMode(DisplayMode* mode) final;
-  void InitializeContext(Window* pWin, CTXBASE* pctxbase) final; // make a window
   void* _doBeginLoad() final;
   void _doEndLoad(void* ploadtok) final; // virtual
 

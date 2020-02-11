@@ -165,9 +165,9 @@ void OpenGlContextInit()
 	{
 		ContextGL::GLinit();
 		auto target = new ContextGL;
-		auto poutbuf = new OffscreenBuffer(0,0,0,1280,720);
+		target->initializeLoaderContext();
+		//auto poutbuf = new OffscreenBuffer(0,0,0,1280,720);
 		GfxEnv::GetRef().SetLoaderTarget(target);
-		target->InitializeContext(poutbuf);
 	}
 //	dispatch_once(&ginit_once, once_blk );
 }
@@ -212,7 +212,7 @@ ContextGL::~ContextGL()
 
 /////////////////////////////////////////////////////////////////////////
 
-void ContextGL::InitializeContext( Window *pWin, CTXBASE* pctxbase  )
+void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  )
 {
 	///////////////////////
 	GlOsxPlatformObject* plato = new GlOsxPlatformObject;
@@ -319,7 +319,7 @@ void ContextGL::InitializeContext( Window *pWin, CTXBASE* pctxbase  )
 				{
 					//printf( "MCC PATH D\n" );
 					OrkAssert(false);
-					tgt->InitializeContext( pWin,mCtxBase );
+					tgt->initializeWindowContext( pWin,mCtxBase );
 				}
 			}
 
@@ -345,7 +345,7 @@ void ContextGL::InitializeContext( Window *pWin, CTXBASE* pctxbase  )
 
 /////////////////////////////////////////////////////////////////////////
 
-void ContextGL::InitializeContext( OffscreenBuffer *pBuf )
+void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
 {
 	///////////////////////
 
@@ -365,9 +365,6 @@ void ContextGL::InitializeContext( OffscreenBuffer *pBuf )
 	plato->mOsxView = nullptr;
 	plato->mbNSOpenGlView = false;
 	plato->mbInit = false;
-
-	FBI()->SetOffscreenTarget( true );
-
 
 plato->_pixelbuffer = [[NSOpenGLPixelBuffer alloc]
                                initWithTextureTarget: GL_TEXTURE_2D
@@ -414,6 +411,31 @@ plato->_pixelbuffer = [[NSOpenGLPixelBuffer alloc]
 	};
 
 	//////////////////////////////////////////////
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+void ContextGL::initializeLoaderContext() {
+
+miW = 8;
+miH = 8;
+miX = 0;
+miY = 0;
+
+mCtxBase = 0;
+
+GlOsxPlatformObject* plato = new GlOsxPlatformObject;
+plato->mTarget = this;
+mPlatformHandle = (void*) plato;
+
+plato->mNSOpenGLContext = GlOsxPlatformObject::gShareMaster;
+plato->mOsxView = nullptr;
+plato->mbNSOpenGlView = false;
+plato->mbInit = false;
+
+plato->mBindOp = [=](){
+	[plato->mNSOpenGLContext makeCurrentContext];
+};
 }
 
 /////////////////////////////////////////////////////////////////////////

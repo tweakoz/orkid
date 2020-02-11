@@ -80,11 +80,13 @@ ContextDummy::ContextDummy()
   }
 }
 
-void ContextDummy::InitializeContext(Window* pWin, CTXBASE* pctxbase) {
+void ContextDummy::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
 }
 
-void ContextDummy::InitializeContext(OffscreenBuffer* pBuf) {
+void ContextDummy::initializeOffscreenContext(OffscreenBuffer* pBuf) {
 }
+
+void ContextDummy::initializeLoaderContext() {}
 
 void ContextDummy::_doResizeMainSurface(int ix, int iy, int iw, int ih) {
   miX = ix;

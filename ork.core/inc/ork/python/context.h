@@ -23,4 +23,6 @@ public:
 };
 Context& context();
 
+bool isPythonEnabled();
+
 }

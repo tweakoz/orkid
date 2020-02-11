@@ -140,12 +140,6 @@ void GlFrameBufferInterface::_doEndFrame(void) {
     GlFboObject* FboObj = (GlFboObject*)rtg->GetInternalHandle();
     int inumtargets     = rtg->GetNumTargets();
     // printf( "ENDFRAME<RtGroup>\n" );
-  } else if (IsOffscreenTarget()) {
-    // printf( "ENDFRAME<OST>\n" );
-    OffscreenBuffer* pbuf      = GetThisBuffer();
-    pbuf->GetTexture()->_dirty = false;
-    pbuf->SetDirty(false);
-    // mTargetGL.EndContextFBO();
   } else {
     glFinish();
     mTargetGL.SwapGLContext(mTargetGL.GetCtxBase());
@@ -485,7 +479,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
 
   bool bInBounds = ((sx < mTarget.mainSurfaceWidth()) && (sy < mTarget.mainSurfaceHeight()) && (sx > 0) && (sy > 0));
 
-  if (IsOffscreenTarget() && bInBounds) {
+  if (bInBounds) {
     if (ctx.mRtGroup) {
       GlFboObject* FboObj = (GlFboObject*)ctx.mRtGroup->GetInternalHandle();
 

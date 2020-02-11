@@ -149,8 +149,9 @@ public:
 
   ///////////////////////////////////////////////////////////////////////
 
-  virtual void InitializeContext(Window* pWin, CTXBASE* pctxbase) = 0;
-  virtual void InitializeContext(OffscreenBuffer* pBuf)           = 0;
+  virtual void initializeWindowContext(Window* pWin, CTXBASE* pctxbase) = 0;
+  virtual void initializeOffscreenContext(OffscreenBuffer* pBuf)           = 0;
+  virtual void initializeLoaderContext()                          = 0;
 
   ///////////////////////////////////////////////////////////////////////
 

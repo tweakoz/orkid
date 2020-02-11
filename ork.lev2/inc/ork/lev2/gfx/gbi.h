@@ -52,6 +52,7 @@ public:
 
   void DrawPrimitive(const VtxWriterBase& VW, EPrimitiveType eType, int icount = 0);
   void DrawPrimitiveEML(const VtxWriterBase& VW, EPrimitiveType eType, int icount = 0);
+  void render2dQuadEML(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2);
 
   //////////////////////////////////////////////
   // nvidia mesh shaders

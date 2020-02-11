@@ -116,6 +116,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
   auto txi = targ->TXI();
   auto fbi = targ->FBI();
   auto fxi = targ->FXI();
+  auto gbi = targ->GBI();
   ///////////////////////////////////////////////
   static std::shared_ptr<FreestyleMaterial> mtl;
   static const FxShaderTechnique* tekFilterSpecMap = nullptr;
@@ -174,7 +175,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
     mtl->bindParamCTex(param_pfm, rawenvmap);
     mtl->bindParamFloat(param_ruf, roughness);
     mtl->commit();
-    targ_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
+    gbi->render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
     ///////////////////////////////////////////////
     mtl->end(RCFD);
     fbi->EndFrame();
@@ -220,6 +221,7 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
   auto txi = targ->TXI();
   auto fbi = targ->FBI();
   auto fxi = targ->FXI();
+  auto gbi = targ->GBI();
   ///////////////////////////////////////////////
   static std::shared_ptr<FreestyleMaterial> mtl;
   static const FxShaderTechnique* tekFilterDiffMap = nullptr;
@@ -279,7 +281,7 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
     mtl->bindParamCTex(param_pfm, rawenvmap);
     mtl->bindParamFloat(param_ruf, roughness);
     mtl->commit();
-    targ_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
+    gbi->render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
     ///////////////////////////////////////////////
     mtl->end(RCFD);
     fbi->EndFrame();

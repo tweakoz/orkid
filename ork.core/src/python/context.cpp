@@ -46,6 +46,10 @@ char slave_out_name[256];
 char slave_err_name[256];
 char slave_inp_name[256];
 
+bool isPythonEnabled() {
+  return gPythonEnabled;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 char *orkpy_readline(FILE *sys_stdin, FILE *sys_stdout, char *prompt)
 {
