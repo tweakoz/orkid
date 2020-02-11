@@ -77,7 +77,7 @@ struct PtxImpl {
       auto buffer = try_render.value();
       if (buffer) {
         assert(buffer != nullptr);
-        input_tex = buffer->GetTexture();
+        input_tex = buffer->texture();
       }
     }
 

@@ -309,6 +309,7 @@ public:
   int miDrawLock;
   bool hiDPI() const;
   float currentDPI() const;
+  RtGroup* _defaultRTG = nullptr;
 
   static orkvector<DisplayMode*> mDisplayModes;
 

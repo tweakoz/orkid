@@ -141,7 +141,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
     auto buffer = try_final.value();
     if (buffer) {
       assert(buffer != nullptr);
-      auto tex = buffer->GetTexture();
+      auto tex = buffer->texture();
       if (tex) {
         /////////////////////////////////////////////////////////////////////////////
         // be nice and composite to main screen as well...

@@ -46,7 +46,6 @@ struct GlOsxPlatformObject
 	opq::OperationsQueue		mOpQ;
 	void_lambda_t       mBindOp;
 	ContextGL*		mTarget;
-  NSOpenGLPixelBuffer* _pixelbuffer = nullptr;
 
 	GlOsxPlatformObject()
 		: mNSOpenGLContext(nil)
@@ -365,30 +364,24 @@ void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
 	plato->mOsxView = nullptr;
 	plato->mbNSOpenGlView = false;
 	plato->mbInit = false;
-
-plato->_pixelbuffer = [[NSOpenGLPixelBuffer alloc]
-                               initWithTextureTarget: GL_TEXTURE_2D
-                               textureInternalFormat: GL_RGBA
-                               textureMaxMipMapLevel: 0
-                               pixelsWide: miW
-                               pixelsHigh: miH];
+  _defaultRTG = new RtGroup(this,miW,miH,1);
+  auto rtb = new RtBuffer(ETGTTYPE_MRT0,EBUFFMT_RGBA8,miW,miH);
+  _defaultRTG->SetMrt(0,rtb);
 
 	//////////////////////////////////////////
 	// Bind Texture
 
-	Texture* pTexture = new Texture();
-	pTexture->_width = miW;
-	pTexture->_height = miH ;
+  auto texture = _defaultRTG->GetMrt(0)->texture();
 
-	FBI()->SetBufferTexture( pTexture );
+	FBI()->SetBufferTexture( texture );
 
 	///////////////////////////////////////////
 	// create material
 
 	GfxMaterialUITextured* pmtl = new GfxMaterialUITextured(this);
 	pBuf->SetMaterial(pmtl);
-	pmtl->SetTexture( ETEXDEST_DIFFUSE, pTexture );
-	pBuf->SetTexture(pTexture);
+	pmtl->SetTexture( ETEXDEST_DIFFUSE, texture );
+	pBuf->SetTexture(texture);
 
 //	[plato->mNSOpenGLContext makeCurrentContext];
 
@@ -402,12 +395,6 @@ plato->_pixelbuffer = [[NSOpenGLPixelBuffer alloc]
 	plato->mBindOp = [=]()
 	{
 		[plato->mNSOpenGLContext makeCurrentContext];
-    [plato->mNSOpenGLContext setPixelBuffer: plato->_pixelbuffer
-                             cubeMapFace: 0
-                             mipMapLevel: 0
-                             currentVirtualScreen: 0];
-
-		[plato->mNSOpenGLContext update];
 	};
 
 	//////////////////////////////////////////////
@@ -432,6 +419,18 @@ plato->mNSOpenGLContext = GlOsxPlatformObject::gShareMaster;
 plato->mOsxView = nullptr;
 plato->mbNSOpenGlView = false;
 plato->mbInit = false;
+
+_defaultRTG = new RtGroup(this,miW,miH,1);
+auto rtb = new RtBuffer(ETGTTYPE_MRT0,EBUFFMT_RGBA8,miW,miH);
+_defaultRTG->SetMrt(0,rtb);
+
+//////////////////////////////////////////
+// Bind Texture
+//////////////////////////////////////////
+
+  auto texture = _defaultRTG->GetMrt(0)->texture();
+
+	FBI()->SetBufferTexture( texture );
 
 plato->mBindOp = [=](){
 	[plato->mNSOpenGLContext makeCurrentContext];

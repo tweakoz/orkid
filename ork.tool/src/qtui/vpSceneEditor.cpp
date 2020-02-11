@@ -663,7 +663,7 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
         if (mpPickBuffer->mpPickRtGroup) {
           auto mrt = mpPickBuffer->mpPickRtGroup->GetMrt(1);
           auto mtl = mrt->GetMaterial();
-          ptex     = mrt->GetTexture();
+          ptex     = mrt->texture();
           if (mtl) {
             pTARG->BindMaterial(mtl);
           }

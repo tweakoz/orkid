@@ -60,18 +60,25 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
   // glFinish();
   GL_ERRORCHECK();
 
-  if (mTargetGL.FBI()->GetRtGroup()) {
+  bool rtg_set = (nullptr != mTargetGL.FBI()->GetRtGroup());
+
+  if( (not rtg_set) and (mTargetGL._defaultRTG) ){
+    SetRtGroup(mTargetGL._defaultRTG);
+    rtg_set = true;
+  }
+
+  if (rtg_set) {
     glDepthRange(0.0, 1.0f);
     float fx = 0.0f; // mTargetGL.FBI()->GetRtGroup()->GetX();
     float fy = 0.0f; // mTargetGL.FBI()->GetRtGroup()->GetY();
-    float fw = mTargetGL.FBI()->GetRtGroup()->GetW();
-    float fh = mTargetGL.FBI()->GetRtGroup()->GetH();
-    // printf( "RTGroup begin x<%f> y<%f> w<%f> h<%f>\n", fx, fy, fw, fh );
+    float fw = GetRtGroup()->GetW();
+    float fh = GetRtGroup()->GetH();
+     printf( "RTGroup begin x<%f> y<%f> w<%f> h<%f>\n", fx, fy, fw, fh );
     SRect extents(fx, fy, fw, fh);
     // SRect extents( mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH() );
     PushViewport(extents);
     PushScissor(extents);
-    // printf( "BEGINFRAME<RtGroup>\n" );
+     printf( "BEGINFRAME<RtGroup>\n" );
     // mTargetGL.debugPopGroup();
   }
   /////////////////////////////////////////////////

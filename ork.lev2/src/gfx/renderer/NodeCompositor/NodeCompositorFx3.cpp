@@ -133,9 +133,9 @@ void Fx3CompositingTechnique::CompositeLayerToScreen(
   auto out_buf = this_buf;
 
   if (psrcgroupA) {
-    lev2::Texture* ptexA = (psrcgroupA != 0) ? psrcgroupA->GetMrt(0)->GetTexture() : 0;
-    lev2::Texture* ptexB = (psrcgroupB != 0) ? psrcgroupB->GetMrt(0)->GetTexture() : 0;
-    lev2::Texture* ptexC = (psrcgroupC != 0) ? psrcgroupC->GetMrt(0)->GetTexture() : 0;
+    lev2::Texture* ptexA = (psrcgroupA != 0) ? psrcgroupA->GetMrt(0)->texture() : 0;
+    lev2::Texture* ptexB = (psrcgroupB != 0) ? psrcgroupB->GetMrt(0)->texture() : 0;
+    lev2::Texture* ptexC = (psrcgroupC != 0) ? psrcgroupC->GetMrt(0)->texture() : 0;
     mCompositingMaterial.SetTextureA(ptexA);
     mCompositingMaterial.SetTextureB(ptexB);
     mCompositingMaterial.SetTextureC(ptexC);

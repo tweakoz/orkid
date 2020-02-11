@@ -82,7 +82,7 @@ static const int kFINALHDW = 1024;
 static const int kFINALHDH = 1024;
 
 void WriteRtgTex(const char* name, ork::lev2::Context* pT, RtGroup* pgrp, int imrt) {
-  Texture* ptex = pgrp->GetMrt(imrt)->GetTexture();
+  Texture* ptex = pgrp->GetMrt(imrt)->texture();
   pT->TXI()->SaveTexture(name, ptex);
 }
 
@@ -368,16 +368,16 @@ bool BuiltinFrameEffectMaterial::BeginPass(Context* pTarg, int iPass) {
 
   if (mpCurrentRtGroup) {
     int inumtargs = mpCurrentRtGroup->GetNumTargets();
-    ptex0         = (inumtargs > 0) ? mpCurrentRtGroup->GetMrt(0)->GetTexture() : 0;
-    ptex1         = (inumtargs > 1) ? mpCurrentRtGroup->GetMrt(1)->GetTexture() : 0;
-    ptex3         = (inumtargs > 3) ? mpCurrentRtGroup->GetMrt(2)->GetTexture() : 0;
+    ptex0         = (inumtargs > 0) ? mpCurrentRtGroup->GetMrt(0)->texture() : 0;
+    ptex1         = (inumtargs > 1) ? mpCurrentRtGroup->GetMrt(1)->texture() : 0;
+    ptex3         = (inumtargs > 3) ? mpCurrentRtGroup->GetMrt(2)->texture() : 0;
   }
   fxi->BindParamCTex(hFX, hMrtMap0, ptex0);
   fxi->BindParamCTex(hFX, hMrtMap1, ptex1);
   fxi->BindParamCTex(hFX, hMrtMap3, ptex3);
 
   if (mpPreviousRtGroup)
-    fxi->BindParamCTex(hFX, hMrtMap2, mpPreviousRtGroup->GetMrt(0)->GetTexture());
+    fxi->BindParamCTex(hFX, hMrtMap2, mpPreviousRtGroup->GetMrt(0)->texture());
   else
     fxi->BindParamCTex(hFX, hMrtMap2, 0);
 
@@ -516,7 +516,7 @@ void BuiltinFrameTechniques::Render(FrameRenderer& frenderer) {
               RtGroup* rtgroupFBR = GetReadRtGroup();
               if( rtgroupFBR )
               {
-                  Texture* ptex = rtgroupFBR->GetMrt(0)->GetTexture();
+                  Texture* ptex = rtgroupFBR->GetMrt(0)->texture();
                   if( ptex )
                   {
                       static const float kMAXW = 1;// - 1.0f/rtgroupFBW->GetW();
@@ -718,7 +718,7 @@ void BuiltinFrameTechniques::PreProcess(RenderContextFrameData& FrameData) {
     pTARG->GBI()->EndFrame();
     pTARG->FBI()->PopRtGroup();
     //
-    lev2::Texture* pAux0Tex = mpMrtAux0->GetMrt(0)->GetTexture();
+    lev2::Texture* pAux0Tex = mpMrtAux0->GetMrt(0)->texture();
 
     ////////////////////////////////////////
     // Blur in Y Direction
@@ -776,29 +776,29 @@ void BuiltinFrameTechniques::PostProcess(RenderContextFrameData& FrameData) {
     } else if (mEffectName == "glow") {
       mFrameEffectGlowJoin.BindRtGroups(cur, 0);
       mFrameEffectGlowJoin.SetAuxMaps(0, 0);
-      auto tex_aux0 = mpMrtAux0->GetMrt(0)->GetTexture();
-      auto tex_aux1 = mpMrtAux1->GetMrt(0)->GetTexture();
+      auto tex_aux0 = mpMrtAux0->GetMrt(0)->texture();
+      auto tex_aux1 = mpMrtAux1->GetMrt(0)->texture();
 
       mFrameEffectGlowJoin.SetAuxMaps(tex_aux0, tex_aux1);
       mFrameEffectGlowJoin.SetEffectAmount(mfAmount);
       pTARG->FBI()->GetThisBuffer()->RenderMatOrthoQuad(rect_vp, rect_quad, &mFrameEffectGlowJoin);
     } else if (mEffectName == "ghostly") {
       mFrameEffectGhostJoin.BindRtGroups(cur, 0);
-      auto tex_aux0 = mpMrtAux0->GetMrt(0)->GetTexture();
-      auto tex_aux1 = mpMrtAux1->GetMrt(0)->GetTexture();
+      auto tex_aux0 = mpMrtAux0->GetMrt(0)->texture();
+      auto tex_aux1 = mpMrtAux1->GetMrt(0)->texture();
       mFrameEffectGhostJoin.SetAuxMaps(tex_aux0, tex_aux1);
       mFrameEffectGhostJoin.SetEffectAmount(mfAmount);
       pTARG->FBI()->GetThisBuffer()->RenderMatOrthoQuad(rect_vp, rect_quad, &mFrameEffectGhostJoin);
     } else if (mEffectName == "dof") {
       mFrameEffectDofJoin.BindRtGroups(cur, 0);
-      lev2::Texture* pAux0Tex = mpMrtAux0->GetMrt(0)->GetTexture();
-      lev2::Texture* pAux1Tex = mpMrtAux1->GetMrt(0)->GetTexture();
+      lev2::Texture* pAux0Tex = mpMrtAux0->GetMrt(0)->texture();
+      lev2::Texture* pAux1Tex = mpMrtAux1->GetMrt(0)->texture();
       mFrameEffectDofJoin.SetAuxMaps(pAux0Tex, pAux1Tex);
       pTARG->FBI()->GetThisBuffer()->RenderMatOrthoQuad(rect_vp, rect_quad, &mFrameEffectDofJoin);
     } else if (mEffectName == "afterlife") {
       mFrameEffectAfterLifeJoin.BindRtGroups(cur, 0);
-      lev2::Texture* pAux0Tex = mpMrtAux0->GetMrt(0)->GetTexture();
-      lev2::Texture* pAux1Tex = mpMrtAux1->GetMrt(0)->GetTexture();
+      lev2::Texture* pAux0Tex = mpMrtAux0->GetMrt(0)->texture();
+      lev2::Texture* pAux1Tex = mpMrtAux1->GetMrt(0)->texture();
       mFrameEffectAfterLifeJoin.SetAuxMaps(pAux0Tex, pAux1Tex);
       mFrameEffectAfterLifeJoin.SetEffectAmount(mfAmount);
       pTARG->FBI()->GetThisBuffer()->RenderMatOrthoQuad(rect_vp, rect_quad, &mFrameEffectAfterLifeJoin);

@@ -19,8 +19,11 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
+
   mTargetGL.makeCurrentContext();
   // mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup");
+
+  printf("FBI<%p> SetRTG<%p>\n", this, Base );
 
   if (0 == Base) {
     if (mCurrentRtGroup) {
@@ -36,8 +39,8 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
           if (b->_mipgen == RtBuffer::EMG_AUTOCOMPUTE) {
             glBindTexture(GL_TEXTURE_2D, tex_obj);
             glGenerateMipmap(GL_TEXTURE_2D);
-            b->mTexture->TexSamplingMode().PresetPointAndClamp();
-            mTargetGL.TXI()->ApplySamplingMode(b->mTexture);
+            b->texture()->TexSamplingMode().PresetPointAndClamp();
+            mTargetGL.TXI()->ApplySamplingMode(b->texture());
           }
         }
       }
@@ -111,7 +114,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
         // printf("RtGroup<%p> RtBuffer<%p> initcolor1\n", Base, pB);
         pB->SetSizeDirty(true);
         //////////////////////////////////////////
-        Texture* ptex            = new Texture;
+        Texture* ptex            = pB->texture();
         GLTextureObject* ptexOBJ = new GLTextureObject;
         bufferimpl->_teximpl     = ptexOBJ;
 
@@ -132,7 +135,6 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
         ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = bufferimpl->_texture;
 
         mTargetGL.TXI()->ApplySamplingMode(ptex);
-        pB->SetTexture(ptex);
         //////////////////////////////////////////
         ork::lev2::GfxMaterialUITextured* pmtl = new ork::lev2::GfxMaterialUITextured(&mTarget);
         pmtl->SetTexture(ETEXDEST_DIFFUSE, ptex);
@@ -267,7 +269,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
         // initialize texture
         //////////////////////////////////////////
 
-        auto tex        = rtbuffer->GetTexture();
+        auto tex        = rtbuffer->texture();
         auto orkteximpl = (GLTextureObject*)tex->GetTexIH();
         GLuint texobj   = bufferimpl->_texture;
 

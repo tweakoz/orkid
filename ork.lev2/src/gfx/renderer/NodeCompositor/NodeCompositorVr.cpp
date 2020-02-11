@@ -233,7 +233,7 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
     auto buffer = try_final.value();
     if (buffer) {
       assert(buffer != nullptr);
-      auto tex = buffer->GetTexture();
+      auto tex = buffer->texture();
       if (tex) {
         drawdata.context()->debugPushGroup("VrCompositingNode::to_hmd");
         targ->FBI()->PushRtGroup(impl->_rtg);

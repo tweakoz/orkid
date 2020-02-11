@@ -131,8 +131,8 @@ void Op2CompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
   SRect vprect(0, 0, iw - 1, ih - 1);
   SRect quadrect(0, ih - 1, iw - 1, 0);
   if (mOutput && mSubA && mSubB) {
-    lev2::Texture* ptexa = mSubA->GetOutput()->GetTexture();
-    lev2::Texture* ptexb = mSubB->GetOutput()->GetTexture();
+    lev2::Texture* ptexa = mSubA->GetOutput()->texture();
+    lev2::Texture* ptexb = mSubB->GetOutput()->texture();
     mCompositingMaterial.SetTextureA(ptexa);
     mCompositingMaterial.SetTextureB(ptexb);
     mCompositingMaterial.SetBiasA(mBiasA);

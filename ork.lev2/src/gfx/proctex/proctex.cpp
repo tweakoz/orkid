@@ -128,7 +128,7 @@ lev2::RtGroup* Buffer::GetRtGroup(lev2::Context* ptgt) {
 
 ///////////////////////////////////////////////////////////////////////////////
 lev2::Texture* Buffer::OutputTexture() {
-  return (mRtGroup != nullptr) ? mRtGroup->GetMrt(0)->GetTexture() : nullptr;
+  return (mRtGroup != nullptr) ? mRtGroup->GetMrt(0)->texture() : nullptr;
 }
 
 Buffer32::Buffer32()

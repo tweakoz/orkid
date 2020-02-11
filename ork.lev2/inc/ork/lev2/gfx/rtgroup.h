@@ -29,8 +29,8 @@ public:
 
   RtBuffer(ETargetType etype, EBufferFormat efmt, int iW, int iH);
 
-  Texture* GetTexture() const {
-    return mTexture;
+  Texture* texture() const {
+    return _texture;
   }
   GfxMaterial* GetMaterial() const {
     return mMaterial;
@@ -42,15 +42,12 @@ public:
   void SetSizeDirty(bool sd) {
     mSizeDirty = sd;
   }
-  void SetTexture(Texture* ptex) {
-    mTexture = ptex;
-  }
   void SetMaterial(GfxMaterial* pmtl) {
     mMaterial = pmtl;
   }
 
   int miW, miH;
-  Texture* mTexture;
+  Texture* _texture;
   GfxMaterial* mMaterial;
   ETargetType mType;
   EBufferFormat mFormat;

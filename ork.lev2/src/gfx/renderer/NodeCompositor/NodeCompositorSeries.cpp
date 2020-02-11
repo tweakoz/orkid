@@ -97,7 +97,7 @@ void SeriesCompositingNode::DoRender(CompositorDrawData& drawdata) {
     fbi->PushRtGroup(_rtg);
     gbi->BeginFrame();
 
-    lev2::Texture* ptex = mNode->GetOutput()->GetTexture();
+    lev2::Texture* ptex = mNode->GetOutput()->texture();
 
     mCompositingMaterial.SetTextureA(ptex);
     mCompositingMaterial.SetTechnique("Asolo");

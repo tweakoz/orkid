@@ -21,8 +21,8 @@ RtBuffer::RtBuffer(ETargetType etype, EBufferFormat efmt, int iW, int iH)
     , mType(etype)
     , mFormat(efmt)
     , mMaterial(nullptr)
-    , mTexture(nullptr)
     , _mipgen(EMG_NONE) {
+  _texture = new Texture;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
