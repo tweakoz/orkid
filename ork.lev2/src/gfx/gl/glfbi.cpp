@@ -74,19 +74,8 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
     // printf( "BEGINFRAME<RtGroup>\n" );
     // mTargetGL.debugPopGroup();
   }
-  ////////////////////////////////
-  else if (IsOffscreenTarget())
-  ////////////////////////////////
-  {
-    glDepthRange(0.0, 1.0f);
-    SRect extents = mTarget.mainSurfaceRectAtOrigin();
-    // printf( "OST begin x<%d> y<%d> w<%d> h<%d>\n", mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH() );
-    PushViewport(extents);
-    PushScissor(extents);
-    // mTargetGL.debugPopGroup();
-  }
   /////////////////////////////////////////////////
-  else // window (On Screen Target)
+  else // (Main Target)
   /////////////////////////////////////////////////
   {
     GL_ERRORCHECK();
@@ -98,7 +87,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
     // printf( "WINtarg begin x<%d> y<%d> w<%d> h<%d>\n", mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH() );
     PushViewport(extents);
     PushScissor(extents);
-    // printf( "BEGINFRAME<WIN> w<%d> h<%d>\n", mTarget.GetW(), mTarget.GetH() );
+    printf( "BEGINFRAME<WIN> w<%d> h<%d>\n", extents.miW, extents.miH );
     /////////////////////////////////////////////////
 
     if (GetAutoClear()) {
@@ -109,7 +98,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
       else
         glClearColor(rCol.x, rCol.y, rCol.z, rCol.w);
 
-      // printf( "GlFrameBufferInterface::ClearViewport()\n" );
+       printf( "GlFrameBufferInterface::ClearViewport()\n" );
       GL_ERRORCHECK();
       glClearDepth(1.0f);
       GL_ERRORCHECK();

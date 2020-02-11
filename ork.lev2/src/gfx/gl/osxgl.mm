@@ -46,6 +46,7 @@ struct GlOsxPlatformObject
 	opq::OperationsQueue		mOpQ;
 	void_lambda_t       mBindOp;
 	ContextGL*		mTarget;
+  NSOpenGLPixelBuffer* _pixelbuffer = nullptr;
 
 	GlOsxPlatformObject()
 		: mNSOpenGLContext(nil)
@@ -367,6 +368,14 @@ void ContextGL::InitializeContext( OffscreenBuffer *pBuf )
 
 	FBI()->SetOffscreenTarget( true );
 
+
+plato->_pixelbuffer = [[NSOpenGLPixelBuffer alloc]
+                               initWithTextureTarget: GL_TEXTURE_2D
+                               textureInternalFormat: GL_RGBA
+                               textureMaxMipMapLevel: 0
+                               pixelsWide: miW
+                               pixelsHigh: miH];
+
 	//////////////////////////////////////////
 	// Bind Texture
 
@@ -396,7 +405,12 @@ void ContextGL::InitializeContext( OffscreenBuffer *pBuf )
 	plato->mBindOp = [=]()
 	{
 		[plato->mNSOpenGLContext makeCurrentContext];
-		//[plato->mNSOpenGLContext update];
+    [plato->mNSOpenGLContext setPixelBuffer: plato->_pixelbuffer
+                             cubeMapFace: 0
+                             mipMapLevel: 0
+                             currentVirtualScreen: 0];
+
+		[plato->mNSOpenGLContext update];
 	};
 
 	//////////////////////////////////////////////
