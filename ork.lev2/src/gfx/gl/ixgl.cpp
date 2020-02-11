@@ -323,10 +323,9 @@ std::string GetGlErrorString(void);
 void OpenGlContextInit() {
   GfxEnv::setContextClass(ContextGL::GetClassStatic());
   ContextGL::GLinit();
-  auto target  = new ContextGL;
-  auto poutbuf = new OffscreenBuffer(0, 0, 0, 1280, 720);
+  auto target = new ContextGL;
+  target->initializeLoaderContext();
   GfxEnv::GetRef().SetLoaderTarget(target);
-  target->InitializeContext(poutbuf);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -415,7 +414,6 @@ void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
   }
 
   mFbI.SetThisBuffer(pWin);
-  mFbI.SetOffscreenTarget(false);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -543,24 +541,20 @@ void ContextGL::initializeOffscreenContext(OffscreenBuffer* pBuf) {
   plato->mbInit      = false;
   plato->mDisplay    = GlIxPlatformObject::gDisplay;
   plato->mXWindowId  = g_rootwin;
-  mFbI.SetOffscreenTarget(true);
 
-  //////////////////////////////////////////
-  // Bind Texture
-
-  Texture* pTexture = new Texture();
-  pTexture->_width  = miW;
-  pTexture->_height = miH;
-
-  FBI()->SetBufferTexture(pTexture);
+  _defaultRTG = new RtGroup(this, miW, miH, 1);
+  auto rtb    = new RtBuffer(ETGTTYPE_MRT0, EBUFFMT_RGBA8, miW, miH);
+  _defaultRTG->SetMrt(0, rtb);
+  auto texture = _defaultRTG->GetMrt(0)->texture();
+  FBI()->SetBufferTexture(texture);
 
   ///////////////////////////////////////////
   // create material
 
   GfxMaterialUITextured* pmtl = new GfxMaterialUITextured(this);
   pBuf->SetMaterial(pmtl);
-  pmtl->SetTexture(ETEXDEST_DIFFUSE, pTexture);
-  pBuf->SetTexture(pTexture);
+  pmtl->SetTexture(ETEXDEST_DIFFUSE, texture);
+  pBuf->SetTexture(texture);
 
   //	makeCurrentContext();
 
@@ -584,13 +578,17 @@ void ContextGL::initializeLoaderContext() {
 
   GlIxPlatformObject* plato = new GlIxPlatformObject;
   mPlatformHandle           = (void*)plato;
-  mFbI.SetThisBuffer(pBuf);
 
   plato->mGlxContext = GlIxPlatformObject::gShareMaster;
   plato->mbInit      = false;
   plato->mDisplay    = GlIxPlatformObject::gDisplay;
   plato->mXWindowId  = g_rootwin;
 
+  _defaultRTG = new RtGroup(this, miW, miH, 1);
+  auto rtb    = new RtBuffer(ETGTTYPE_MRT0, EBUFFMT_RGBA8, miW, miH);
+  _defaultRTG->SetMrt(0, rtb);
+  auto texture = _defaultRTG->GetMrt(0)->texture();
+  FBI()->SetBufferTexture(texture);
 }
 
 /////////////////////////////////////////////////////////////////////////

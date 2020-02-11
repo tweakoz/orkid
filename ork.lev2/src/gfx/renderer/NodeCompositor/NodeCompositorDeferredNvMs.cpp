@@ -138,7 +138,7 @@ struct NVMSIMPL {
     // project lights
     /////////////////////////////////////
     CI->bindStorageBuffer(_lightprojectshader, 0, _storagebuffer);
-    CI->bindImage(_lightprojectshader, 1, _context._rtgDepthCluster->GetMrt(0)->GetTexture(), EIBA_READ_ONLY);
+    CI->bindImage(_lightprojectshader, 1, _context._rtgDepthCluster->GetMrt(0)->texture(), EIBA_READ_ONLY);
     CI->dispatchCompute(_lightprojectshader, numlights, 1, 1);
     /////////////////////////////////////
     // (collect/gather) lights
@@ -147,7 +147,7 @@ struct NVMSIMPL {
     // barrier here ?
 
     CI->bindStorageBuffer(_lightcollectshader, 0, _storagebuffer);
-    CI->bindImage(_lightcollectshader, 1, _context._rtgDepthCluster->GetMrt(0)->GetTexture(), EIBA_READ_ONLY);
+    CI->bindImage(_lightcollectshader, 1, _context._rtgDepthCluster->GetMrt(0)->texture(), EIBA_READ_ONLY);
     CI->dispatchCompute(_lightcollectshader, _context._clusterW, _context._clusterH, 1);
 
     const float KTILESIZX    = 2.0f / float(_context._clusterW);
