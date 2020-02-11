@@ -53,20 +53,21 @@ void lev2appinit() {
 PYBIND11_MODULE(orklev2, m) {
   using namespace ork;
   using namespace ork::lev2;
-  using fbi_t      = ork::python::unmanaged_ptr<FrameBufferInterface>;
-  using gbi_t      = ork::python::unmanaged_ptr<GeometryBufferInterface>;
-  using fxi_t      = ork::python::unmanaged_ptr<FxInterface>;
-  using rsi_t      = ork::python::unmanaged_ptr<RasterStateInterface>;
-  using txi_t      = ork::python::unmanaged_ptr<TextureInterface>;
-  using fxshader_t = ork::python::unmanaged_ptr<FxShader>;
-  using fxparam_t  = ork::python::unmanaged_ptr<FxShaderParam>;
-  using fxtechnique_t  = ork::python::unmanaged_ptr<FxShaderTechnique>;
-  using rcfd_ptr_t = ork::python::unmanaged_ptr<RenderContextFrameData>;
-  using fxparammap_t = std::map<std::string,fxparam_t>;
-  using fxtechniquemap_t = std::map<std::string,fxtechnique_t>;
-  using vtxa_t = SVtxV12N12B12T8C4;
+  using fbi_t            = ork::python::unmanaged_ptr<FrameBufferInterface>;
+  using gbi_t            = ork::python::unmanaged_ptr<GeometryBufferInterface>;
+  using fxi_t            = ork::python::unmanaged_ptr<FxInterface>;
+  using rsi_t            = ork::python::unmanaged_ptr<RasterStateInterface>;
+  using txi_t            = ork::python::unmanaged_ptr<TextureInterface>;
+  using rtg_t            = ork::python::unmanaged_ptr<RtGroup>;
+  using fxshader_t       = ork::python::unmanaged_ptr<FxShader>;
+  using fxparam_t        = ork::python::unmanaged_ptr<FxShaderParam>;
+  using fxtechnique_t    = ork::python::unmanaged_ptr<FxShaderTechnique>;
+  using rcfd_ptr_t       = ork::python::unmanaged_ptr<RenderContextFrameData>;
+  using fxparammap_t     = std::map<std::string, fxparam_t>;
+  using fxtechniquemap_t = std::map<std::string, fxtechnique_t>;
+  using vtxa_t           = SVtxV12N12B12T8C4;
   using vb_static_vtxa_t = StaticVertexBuffer<vtxa_t>;
-  using vw_vtxa_t = VtxWriter<vtxa_t>;
+  using vw_vtxa_t        = VtxWriter<vtxa_t>;
   /////////////////////////////////////////////////////////////////////////////////
   m.doc() = "Orkid Lev2 Library (graphics,audio,vr,input,etc..)";
   /////////////////////////////////////////////////////////////////////////////////
@@ -90,15 +91,18 @@ PYBIND11_MODULE(orklev2, m) {
       .def("debugPushGroup", &Context::debugPushGroup)
       .def("debugPopGroup", &Context::debugPopGroup)
       .def("debugMarker", &Context::debugMarker)
+      .def("defaultRTG", [](Context& c) -> rtg_t { return rtg_t(c._defaultRTG); })
       .def("FBI", [](Context& c) -> fbi_t { return fbi_t(c.FBI()); })
       .def("FXI", [](Context& c) -> fxi_t { return fxi_t(c.FXI()); })
       .def("GBI", [](Context& c) -> gbi_t { return gbi_t(c.GBI()); })
       .def("TXI", [](Context& c) -> txi_t { return txi_t(c.TXI()); })
       .def("RSI", [](Context& c) -> rsi_t { return rsi_t(c.RSI()); })
-      .def("topRCFD", [](Context& c) -> rcfd_ptr_t {
-        auto rcfd = c.topRenderContextFrameData();
-        return rcfd_ptr_t(const_cast<RenderContextFrameData*>(rcfd));
-      })
+      .def(
+          "topRCFD",
+          [](Context& c) -> rcfd_ptr_t {
+            auto rcfd = c.topRenderContextFrameData();
+            return rcfd_ptr_t(const_cast<RenderContextFrameData*>(rcfd));
+          })
       .def_property_readonly("frameIndex", [](Context& c) -> int { return c.GetTargetFrame(); })
       .def_property("currentMaterial", &Context::currentMaterial, &Context::BindMaterial)
       .def("__repr__", [](const Context& c) -> std::string {
@@ -118,33 +122,15 @@ PYBIND11_MODULE(orklev2, m) {
   py::class_<FreestyleMaterial, GfxMaterial>(m, "FreestyleMaterial")
       .def(py::init<>())
       .def("gpuInit", &FreestyleMaterial::gpuInit)
-      .def_property_readonly("shader", [](const FreestyleMaterial& m) -> fxshader_t {
-        return fxshader_t(m._shader);
-      })
-      .def("bindTechnique",  [](FreestyleMaterial& m,const fxtechnique_t& tek) {
-        m.bindTechnique(tek.get());
-      })
-      .def("bindParamFloat",  [](FreestyleMaterial& m,fxparam_t& p,float value) {
-        m.bindParamFloat(p.get(),value);
-      })
-      .def("bindParamVec2",  [](FreestyleMaterial& m,fxparam_t& p,const fvec2& value) {
-        m.bindParamVec2(p.get(),value);
-      })
-      .def("bindParamVec3",  [](FreestyleMaterial& m,fxparam_t& p,const fvec3& value) {
-        m.bindParamVec3(p.get(),value);
-      })
-      .def("bindParamVec4",  [](FreestyleMaterial& m,fxparam_t& p,const fvec4& value) {
-        m.bindParamVec4(p.get(),value);
-      })
-      .def("bindParamMatrix",  [](FreestyleMaterial& m,fxparam_t& p,const fmtx4& value) {
-        m.bindParamMatrix(p.get(),value);
-      })
-      .def("begin",  [](FreestyleMaterial& m,rcfd_ptr_t& rcfd) {
-        m.begin(*rcfd.get());
-      })
-      .def("end",  [](FreestyleMaterial& m,rcfd_ptr_t& rcfd) {
-        m.end(*rcfd.get());
-      })
+      .def_property_readonly("shader", [](const FreestyleMaterial& m) -> fxshader_t { return fxshader_t(m._shader); })
+      .def("bindTechnique", [](FreestyleMaterial& m, const fxtechnique_t& tek) { m.bindTechnique(tek.get()); })
+      .def("bindParamFloat", [](FreestyleMaterial& m, fxparam_t& p, float value) { m.bindParamFloat(p.get(), value); })
+      .def("bindParamVec2", [](FreestyleMaterial& m, fxparam_t& p, const fvec2& value) { m.bindParamVec2(p.get(), value); })
+      .def("bindParamVec3", [](FreestyleMaterial& m, fxparam_t& p, const fvec3& value) { m.bindParamVec3(p.get(), value); })
+      .def("bindParamVec4", [](FreestyleMaterial& m, fxparam_t& p, const fvec4& value) { m.bindParamVec4(p.get(), value); })
+      .def("bindParamMatrix", [](FreestyleMaterial& m, fxparam_t& p, const fmtx4& value) { m.bindParamMatrix(p.get(), value); })
+      .def("begin", [](FreestyleMaterial& m, rcfd_ptr_t& rcfd) { m.begin(*rcfd.get()); })
+      .def("end", [](FreestyleMaterial& m, rcfd_ptr_t& rcfd) { m.end(*rcfd.get()); })
       .def("__repr__", [](const FreestyleMaterial& m) -> std::string {
         fxstring<256> fxs;
         fxs.format("FreestyleMaterial(%p:%s)", &m, m.mMaterialName.c_str());
@@ -153,41 +139,47 @@ PYBIND11_MODULE(orklev2, m) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<fxshader_t>(m, "FxShader")
       .def(py::init<>())
-      .def_property_readonly("name", [](const fxshader_t& sh) -> std::string {
-        return sh->mName;
-      })
-      .def_property_readonly("params",  [](const fxshader_t& sh) -> fxparammap_t {
-        fxparammap_t rval;
-        for( auto item : sh->_parameterByName ){
-          // python has no concept of const
-          //  so we must cast away constness
-          rval[item.first] = fxparam_t(const_cast<FxShaderParam*>(item.second));
-        }
-        return rval;
-      })
-      .def("param",  [](const fxshader_t& sh,const std::string& named) -> fxparam_t {
-        auto it = sh->_parameterByName.find(named);
-        fxparam_t rval(nullptr);
-        if(it!=sh->_parameterByName.end())
-          rval = fxparam_t(const_cast<FxShaderParam*>(it->second));
-        return rval;
-      })
-      .def_property_readonly("techniques",  [](const fxshader_t& sh) -> fxtechniquemap_t {
-        fxtechniquemap_t rval;
-        for( auto item : sh->_techniques ){
-          // python has no concept of const
-          //  so we must cast away constness
-          rval[item.first] = fxtechnique_t(const_cast<FxShaderTechnique*>(item.second));
-        }
-        return rval;
-      })
-      .def("technique",  [](const fxshader_t& sh,const std::string& named) -> fxtechnique_t {
-        auto it = sh->_techniques.find(named);
-        fxtechnique_t rval(nullptr);
-        if(it!=sh->_techniques.end())
-          rval = fxtechnique_t(const_cast<FxShaderTechnique*>(it->second));
-        return rval;
-      })
+      .def_property_readonly("name", [](const fxshader_t& sh) -> std::string { return sh->mName; })
+      .def_property_readonly(
+          "params",
+          [](const fxshader_t& sh) -> fxparammap_t {
+            fxparammap_t rval;
+            for (auto item : sh->_parameterByName) {
+              // python has no concept of const
+              //  so we must cast away constness
+              rval[item.first] = fxparam_t(const_cast<FxShaderParam*>(item.second));
+            }
+            return rval;
+          })
+      .def(
+          "param",
+          [](const fxshader_t& sh, const std::string& named) -> fxparam_t {
+            auto it = sh->_parameterByName.find(named);
+            fxparam_t rval(nullptr);
+            if (it != sh->_parameterByName.end())
+              rval = fxparam_t(const_cast<FxShaderParam*>(it->second));
+            return rval;
+          })
+      .def_property_readonly(
+          "techniques",
+          [](const fxshader_t& sh) -> fxtechniquemap_t {
+            fxtechniquemap_t rval;
+            for (auto item : sh->_techniques) {
+              // python has no concept of const
+              //  so we must cast away constness
+              rval[item.first] = fxtechnique_t(const_cast<FxShaderTechnique*>(item.second));
+            }
+            return rval;
+          })
+      .def(
+          "technique",
+          [](const fxshader_t& sh, const std::string& named) -> fxtechnique_t {
+            auto it = sh->_techniques.find(named);
+            fxtechnique_t rval(nullptr);
+            if (it != sh->_techniques.end())
+              rval = fxtechnique_t(const_cast<FxShaderTechnique*>(it->second));
+            return rval;
+          })
       .def("__repr__", [](const fxshader_t& sh) -> std::string {
         fxstring<256> fxs;
         fxs.format("FxShader(%p:%s)", sh.get(), sh->mName.c_str());
@@ -195,9 +187,7 @@ PYBIND11_MODULE(orklev2, m) {
       });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<fxparam_t>(m, "FxShaderParam")
-      .def_property_readonly("name",  [](const fxparam_t& p) -> std::string {
-        return p->_name;
-      })
+      .def_property_readonly("name", [](const fxparam_t& p) -> std::string { return p->_name; })
       .def("__repr__", [](const fxparam_t& p) -> std::string {
         fxstring<256> fxs;
         fxs.format("FxShader(%p:%s)", p.get(), p->_name.c_str());
@@ -205,9 +195,7 @@ PYBIND11_MODULE(orklev2, m) {
       });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<fxtechnique_t>(m, "FxShaderTechnique")
-      .def_property_readonly("name",  [](const fxtechnique_t& t) -> std::string {
-        return t->mTechniqueName;
-      })
+      .def_property_readonly("name", [](const fxtechnique_t& t) -> std::string { return t->mTechniqueName; })
       .def("__repr__", [](const fxtechnique_t& t) -> std::string {
         fxstring<256> fxs;
         fxs.format("FxShaderTechnique(%p:%s)", t.get(), t->mTechniqueName.c_str());
@@ -236,34 +224,34 @@ PYBIND11_MODULE(orklev2, m) {
     return fxs.c_str();
   });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<gbi_t>(m, "GeometryBufferInterface").def("__repr__", [](const gbi_t& gbi) -> std::string {
-    fxstring<256> fxs;
-    fxs.format("GBI(%p)", gbi.get());
-    return fxs.c_str();
-  })
-  .def("lock",[](gbi_t gbi,vb_static_vtxa_t& vb,int icount)->vw_vtxa_t{
-    vw_vtxa_t vw;
-    vw.Lock(gbi.get(),&vb,icount);
-    return vw;
-  })
-  .def("unlock",[](gbi_t gbi,vw_vtxa_t& vw){
-    vw.UnLock(gbi.get());
-  })
-  .def("drawTriangles",[](gbi_t gbi,vw_vtxa_t& vw){
-    gbi.get()->DrawPrimitiveEML(vw,EPRIM_TRIANGLES);
-  })
-  .def("drawTriangleStrip",[](gbi_t gbi,vw_vtxa_t& vw){
-    gbi.get()->DrawPrimitiveEML(vw,EPRIM_TRIANGLESTRIP);
-  });
+  py::class_<gbi_t>(m, "GeometryBufferInterface")
+      .def(
+          "__repr__",
+          [](const gbi_t& gbi) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("GBI(%p)", gbi.get());
+            return fxs.c_str();
+          })
+      .def(
+          "lock",
+          [](gbi_t gbi, vb_static_vtxa_t& vb, int icount) -> vw_vtxa_t {
+            vw_vtxa_t vw;
+            vw.Lock(gbi.get(), &vb, icount);
+            return vw;
+          })
+      .def("unlock", [](gbi_t gbi, vw_vtxa_t& vw) { vw.UnLock(gbi.get()); })
+      .def("drawTriangles", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, EPRIM_TRIANGLES); })
+      .def("drawTriangleStrip", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, EPRIM_TRIANGLESTRIP); });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<vw_vtxa_t>(m, "Writer_V12N12B12T8C4").def("__repr__", [](const vw_vtxa_t& vw) -> std::string {
-    fxstring<256> fxs;
-    fxs.format("Writer_V12N12B12T8C4(%p)", &vw);
-    return fxs.c_str();
-  })
-  .def("add",[](vw_vtxa_t&vw, vtxa_t& vtx){
-    vw.AddVertex(vtx);
-  });
+  py::class_<vw_vtxa_t>(m, "Writer_V12N12B12T8C4")
+      .def(
+          "__repr__",
+          [](const vw_vtxa_t& vw) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("Writer_V12N12B12T8C4(%p)", &vw);
+            return fxs.c_str();
+          })
+      .def("add", [](vw_vtxa_t& vw, vtxa_t& vtx) { vw.AddVertex(vtx); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<txi_t>(m, "TextureInterface").def("__repr__", [](const txi_t& txi) -> std::string {
     fxstring<256> fxs;
@@ -277,6 +265,12 @@ PYBIND11_MODULE(orklev2, m) {
     return fxs.c_str();
   });
   /////////////////////////////////////////////////////////////////////////////////
+  py::class_<rtg_t>(m, "RtGroup").def("__repr__", [](const rtg_t& rtg) -> std::string {
+    fxstring<256> fxs;
+    fxs.format("RtGroup(%p)", rtg.get());
+    return fxs.c_str();
+  });
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<rcfd_ptr_t>(m, "RenderContextFrameData").def("__repr__", [](const rcfd_ptr_t& rcfd) -> std::string {
     fxstring<256> fxs;
     fxs.format("RCFD(%p)", rcfd.get());
@@ -285,6 +279,20 @@ PYBIND11_MODULE(orklev2, m) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<PixelFetchContext>(m, "PixelFetchContext")
       .def(py::init<>())
+      .def(py::init([](rtg_t& rtg, int mask) {
+        auto pfc       = std::unique_ptr<PixelFetchContext>(new PixelFetchContext);
+        pfc->mRtGroup  = rtg.get();
+        pfc->miMrtMask = mask;
+        return pfc;
+      }))
+      .def_property(
+          "rtgroup",
+          [](PixelFetchContext& pfc) -> rtg_t { return pfc.mRtGroup; },
+          [](PixelFetchContext& pfc, rtg_t& rtg) { pfc.mRtGroup = rtg.get(); })
+      .def_property(
+          "rtgmask",
+          [](PixelFetchContext& pfc) -> int { return pfc.miMrtMask; },
+          [](PixelFetchContext& pfc, int mask) { pfc.miMrtMask = mask; })
       .def(
           "color",
           [](const PixelFetchContext& pfc, int index) -> fvec4 {
@@ -301,11 +309,9 @@ PYBIND11_MODULE(orklev2, m) {
   py::class_<VertexBufferBase>(m, "VertexBufferBase");
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<vtxa_t>(m, "VtxV12N12B12T8C4")
-    .def(py::init<fvec3,fvec3,fvec3,fvec2,uint32_t>())
-    .def_static("staticBuffer",[](size_t size)->vb_static_vtxa_t{
-      return vb_static_vtxa_t(size,0,EPRIM_NONE);
-    });
+      .def(py::init<fvec3, fvec3, fvec3, fvec2, uint32_t>())
+      .def_static("staticBuffer", [](size_t size) -> vb_static_vtxa_t { return vb_static_vtxa_t(size, 0, EPRIM_NONE); });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<vb_static_vtxa_t,VertexBufferBase>(m, "VtxV12N12B12T8C4_StaticBuffer");
+  py::class_<vb_static_vtxa_t, VertexBufferBase>(m, "VtxV12N12B12T8C4_StaticBuffer");
   /////////////////////////////////////////////////////////////////////////////////
 };

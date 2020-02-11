@@ -62,7 +62,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
 
   bool rtg_set = (nullptr != mTargetGL.FBI()->GetRtGroup());
 
-  if( (not rtg_set) and (mTargetGL._defaultRTG) ){
+  if ((not rtg_set) and (mTargetGL._defaultRTG)) {
     SetRtGroup(mTargetGL._defaultRTG);
     rtg_set = true;
   }
@@ -73,12 +73,12 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
     float fy = 0.0f; // mTargetGL.FBI()->GetRtGroup()->GetY();
     float fw = GetRtGroup()->GetW();
     float fh = GetRtGroup()->GetH();
-     printf( "RTGroup begin x<%f> y<%f> w<%f> h<%f>\n", fx, fy, fw, fh );
+    printf("RTGroup begin x<%f> y<%f> w<%f> h<%f>\n", fx, fy, fw, fh);
     SRect extents(fx, fy, fw, fh);
     // SRect extents( mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH() );
     PushViewport(extents);
     PushScissor(extents);
-     printf( "BEGINFRAME<RtGroup>\n" );
+    printf("BEGINFRAME<RtGroup>\n");
     // mTargetGL.debugPopGroup();
   }
   /////////////////////////////////////////////////
@@ -94,7 +94,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
     // printf( "WINtarg begin x<%d> y<%d> w<%d> h<%d>\n", mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH() );
     PushViewport(extents);
     PushScissor(extents);
-    printf( "BEGINFRAME<WIN> w<%d> h<%d>\n", extents.miW, extents.miH );
+    printf("BEGINFRAME<WIN> w<%d> h<%d>\n", extents.miW, extents.miH);
     /////////////////////////////////////////////////
 
     if (GetAutoClear()) {
@@ -105,7 +105,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
       else
         glClearColor(rCol.x, rCol.y, rCol.z, rCol.w);
 
-       printf( "GlFrameBufferInterface::ClearViewport()\n" );
+      printf("GlFrameBufferInterface::ClearViewport()\n");
       GL_ERRORCHECK();
       glClearDepth(1.0f);
       GL_ERRORCHECK();
@@ -481,19 +481,28 @@ bool GlFrameBufferInterface::capture(const RtGroup& rtg, int irt, CaptureBuffer*
 void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) {
   fcolor4 Color(0.0f, 0.0f, 0.0f, 0.0f);
 
-  int sx = int((rAt.GetX()) * float(mTarget.mainSurfaceWidth()));
-  int sy = int((1.0f - rAt.GetY()) * float(mTarget.mainSurfaceHeight()));
+  int msw = mTarget.mainSurfaceWidth();
+  int msh = mTarget.mainSurfaceHeight();
 
-  bool bInBounds = ((sx < mTarget.mainSurfaceWidth()) && (sy < mTarget.mainSurfaceHeight()) && (sx > 0) && (sy > 0));
+  int sx = int((rAt.GetX()) * float(msw));
+  int sy = int((1.0f - rAt.GetY()) * float(msh));
+
+  bool bInBounds = ((sx < msw) && (sy < msh) && (sx >= 0) && (sy >= 0));
+
+  printf("GetPixel<%d %d> msdim<%d %d> inbounds<%d> rtg<%p>\n", sx, sy, msw, msh, int(bInBounds), ctx.mRtGroup);
 
   if (bInBounds) {
     if (ctx.mRtGroup) {
       GlFboObject* FboObj = (GlFboObject*)ctx.mRtGroup->GetInternalHandle();
 
+      printf("GetPixel<%d %d> FboObj<%p>\n", sx, sy, FboObj);
+
       if (FboObj) {
         GL_ERRORCHECK();
         glBindFramebuffer(GL_FRAMEBUFFER, FboObj->mFBOMaster);
         GL_ERRORCHECK();
+
+        printf("GetPixel<%d %d> FboMaster<%p>\n", sx, sy, FboObj->mFBOMaster);
 
         if (FboObj->mFBOMaster) {
 

@@ -45,6 +45,8 @@ GBI.unlock(vw)
 print(ctx.frameIndex)
 FBI.autoclear = True
 FBI.clearcolor = vec4(1,0,0,1)
+rtg = ctx.defaultRTG()
+print( "RTG<%s>"%rtg)
 ctx.beginFrame()
 ctx.debugMarker("yo")
 
@@ -68,11 +70,11 @@ print(ctx.TXI())
 print(ctx.RSI())
 print(ctx.topRCFD())
 
-pfc = PixelFetchContext()
+pfc = PixelFetchContext(rtg,1)
 print(pfc.color(0))
 
-ctx.endFrame()
-FBI.capturePixel(vec4(0.0,0.0,0.0,0.0), pfc)
+FBI.capturePixel(vec4(0,1,0,0), pfc)
 print(pfc.color(0))
+ctx.endFrame()
 
 print(ctx.frameIndex)
