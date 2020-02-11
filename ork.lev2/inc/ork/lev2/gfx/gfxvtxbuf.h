@@ -16,6 +16,7 @@
 namespace ork { namespace lev2 {
 
 class Context;
+class GeometryBufferInterface;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -169,6 +170,8 @@ struct VtxWriterBase {
 
   void Lock(Context* pT, VertexBufferBase* mpVB, int icount = 0);
   void UnLock(Context* pT, u32 UnLockFlags = EULFLG_NONE);
+  void Lock(GeometryBufferInterface* GBI, VertexBufferBase* mpVB, int icount = 0);
+  void UnLock(GeometryBufferInterface* GBI, u32 UnLockFlags = EULFLG_NONE);
 };
 
 template <typename T> struct VtxWriter : public VtxWriterBase {

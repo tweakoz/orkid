@@ -4,8 +4,10 @@ from orkcore import *
 from orklev2 import *
 
 lev2appinit()
-
-ctx = GfxEnv.ref.loadingContext()
+gfxenv = GfxEnv.ref
+ctx = gfxenv.loadingContext()
+FBI = ctx.FBI()
+GBI = ctx.GBI()
 print(ctx)
 w = ctx.mainSurfaceWidth()
 h = ctx.mainSurfaceHeight()
@@ -27,8 +29,20 @@ par_vec3 = mtl.shader.param("AmbientLevel")
 par_vec4 = mtl.shader.param("ShadowParams")
 par_mtx4 = mtl.shader.param("MVPC")
 
+###################################
+
+vtx_t = VtxV12N12B12T8C4
+vbuf = vtx_t.staticBuffer(3)
+vw = GBI.lock(vbuf,3)
+vtx = vtx_t(vec3(),vec3(),vec3(),vec2(),0xffffffff)
+vw.add(vtx)
+vw.add(vtx)
+vw.add(vtx)
+GBI.unlock(vw)
+
+###################################
+
 print(ctx.frameIndex)
-FBI = ctx.FBI()
 FBI.autoclear = True
 FBI.clearcolor = vec4(1,0,0,1)
 ctx.beginFrame()
@@ -42,6 +56,8 @@ mtl.bindParamVec2(par_vec2,vec2())
 mtl.bindParamVec3(par_vec3,vec3())
 mtl.bindParamVec4(par_vec4,vec4())
 mtl.bindParamMatrix(par_mtx4,mtx4())
+
+GBI.drawTriangles(vw)
 mtl.end(RCFD)
 
 print(FBI)

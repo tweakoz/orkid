@@ -132,8 +132,11 @@ VertexBufferBase::~VertexBufferBase()
 }
 
 /////////////////////////////////////////////////////////////////////////
+void VtxWriterBase::Lock( Context* pT, VertexBufferBase* pVB, int icount ){
+  Lock(pT->GBI(),pVB,icount);
+}
 
-void VtxWriterBase::Lock( Context* pT, VertexBufferBase* pVB, int icount )
+void VtxWriterBase::Lock( GeometryBufferInterface* GBI, VertexBufferBase* pVB, int icount )
 {
 	OrkAssert(pVB!=0);
 	bool bringlock = pVB->GetRingLock();
@@ -151,12 +154,12 @@ void VtxWriterBase::Lock( Context* pT, VertexBufferBase* pVB, int icount )
 			//printf( "ringcyc\n" );
 		}
 	}
-	else 
+	else
 	{
 		OrkAssert( (ivbase+icount) <= imax );
 	}
 	////////////////////////////////////////////
-	void* pdata = pT->GBI()->LockVB( *pVB, ivbase, icount );
+	void* pdata = GBI->LockVB( *pVB, ivbase, icount );
 	OrkAssert(pdata!=0);
 	////////////////////////////////////////////
 	mpBase = (char*) pdata;
@@ -167,10 +170,13 @@ void VtxWriterBase::Lock( Context* pT, VertexBufferBase* pVB, int icount )
 	////////////////////////////////////////////
 	pVB->SetNumVertices( inewbase );
 }
-void VtxWriterBase::UnLock( Context* pT, u32 ulflgs )
+void VtxWriterBase::UnLock( Context* pT, u32 ulflgs ){
+  UnLock( pT->GBI(), ulflgs );
+}
+void VtxWriterBase::UnLock( GeometryBufferInterface* GBI, u32 ulflgs )
 {
 	OrkAssert(mpVB!=0);
-	pT->GBI()->UnLockVB( *mpVB);
+	GBI->UnLockVB( *mpVB);
 
 	if( (ulflgs&EULFLG_ASSIGNVBLEN)!=0 )
 	{
@@ -179,6 +185,3 @@ void VtxWriterBase::UnLock( Context* pT, u32 ulflgs )
 }
 
 } }
-
-
-

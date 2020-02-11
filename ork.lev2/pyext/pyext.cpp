@@ -64,6 +64,9 @@ PYBIND11_MODULE(orklev2, m) {
   using rcfd_ptr_t = ork::python::unmanaged_ptr<RenderContextFrameData>;
   using fxparammap_t = std::map<std::string,fxparam_t>;
   using fxtechniquemap_t = std::map<std::string,fxtechnique_t>;
+  using vtxa_t = SVtxV12N12B12T8C4;
+  using vb_static_vtxa_t = StaticVertexBuffer<vtxa_t>;
+  using vw_vtxa_t = VtxWriter<vtxa_t>;
   /////////////////////////////////////////////////////////////////////////////////
   m.doc() = "Orkid Lev2 Library (graphics,audio,vr,input,etc..)";
   /////////////////////////////////////////////////////////////////////////////////
@@ -237,6 +240,29 @@ PYBIND11_MODULE(orklev2, m) {
     fxstring<256> fxs;
     fxs.format("GBI(%p)", gbi.get());
     return fxs.c_str();
+  })
+  .def("lock",[](gbi_t gbi,vb_static_vtxa_t& vb,int icount)->vw_vtxa_t{
+    vw_vtxa_t vw;
+    vw.Lock(gbi.get(),&vb,icount);
+    return vw;
+  })
+  .def("unlock",[](gbi_t gbi,vw_vtxa_t& vw){
+    vw.UnLock(gbi.get());
+  })
+  .def("drawTriangles",[](gbi_t gbi,vw_vtxa_t& vw){
+    gbi.get()->DrawPrimitiveEML(vw,EPRIM_TRIANGLES);
+  })
+  .def("drawTriangleStrip",[](gbi_t gbi,vw_vtxa_t& vw){
+    gbi.get()->DrawPrimitiveEML(vw,EPRIM_TRIANGLESTRIP);
+  });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<vw_vtxa_t>(m, "Writer_V12N12B12T8C4").def("__repr__", [](const vw_vtxa_t& vw) -> std::string {
+    fxstring<256> fxs;
+    fxs.format("Writer_V12N12B12T8C4(%p)", &vw);
+    return fxs.c_str();
+  })
+  .def("add",[](vw_vtxa_t&vw, vtxa_t& vtx){
+    vw.AddVertex(vtx);
   });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<txi_t>(m, "TextureInterface").def("__repr__", [](const txi_t& txi) -> std::string {
@@ -271,6 +297,15 @@ PYBIND11_MODULE(orklev2, m) {
         fxs.format("PixelFetchContext(%p)", &pfc);
         return fxs.c_str();
       });
-
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<VertexBufferBase>(m, "VertexBufferBase");
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<vtxa_t>(m, "VtxV12N12B12T8C4")
+    .def(py::init<fvec3,fvec3,fvec3,fvec2,uint32_t>())
+    .def_static("staticBuffer",[](size_t size)->vb_static_vtxa_t{
+      return vb_static_vtxa_t(size,0,EPRIM_NONE);
+    });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<vb_static_vtxa_t,VertexBufferBase>(m, "VtxV12N12B12T8C4_StaticBuffer");
   /////////////////////////////////////////////////////////////////////////////////
 };
