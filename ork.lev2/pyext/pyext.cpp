@@ -92,9 +92,9 @@ PYBIND11_MODULE(orklev2, m) {
       .def("makeCurrent", [](ctx_t& c) { c.get()->makeCurrentContext(); })
       .def("beginFrame", [](ctx_t& c) { return c.get()->beginFrame(); })
       .def("endFrame", [](ctx_t& c) { return c.get()->endFrame(); })
-      .def("debugPushGroup", [](ctx_t& c, cstrref_t str) { return c.get()->Context::debugPushGroup(str); })
-      .def("debugPopGroup", [](ctx_t& c) { return c.get()->Context::debugPopGroup(); })
-      .def("debugMarker", [](ctx_t& c, cstrref_t str) { return c.get()->Context::debugMarker(str); })
+      .def("debugPushGroup", [](ctx_t& c, cstrref_t str) { return c.get()->debugPushGroup(str); })
+      .def("debugPopGroup", [](ctx_t& c) { return c.get()->debugPopGroup(); })
+      .def("debugMarker", [](ctx_t& c, cstrref_t str) { return c.get()->debugMarker(str); })
       .def("defaultRTG", [](ctx_t& c) -> rtg_t { return rtg_t(c.get()->_defaultRTG); })
       .def("resize", [](ctx_t& rtg, int w, int h) { rtg.get()->resizeMainSurface(w, h); })
       .def("FBI", [](ctx_t& c) -> fbi_t { return fbi_t(c.get()->FBI()); })
@@ -102,6 +102,22 @@ PYBIND11_MODULE(orklev2, m) {
       .def("GBI", [](ctx_t& c) -> gbi_t { return gbi_t(c.get()->GBI()); })
       .def("TXI", [](ctx_t& c) -> txi_t { return txi_t(c.get()->TXI()); })
       .def("RSI", [](ctx_t& c) -> rsi_t { return rsi_t(c.get()->RSI()); })
+      //////////////////////
+      // todo move to mtxi when we add it
+      //////////////////////
+      .def(
+          "perspective",
+          [](ctx_t& c, float fovy, float aspect, float near, float ffar) -> fmtx4 {
+            fmtx4 rval = c.get()->MTXI()->Persp(fovy, aspect, near, ffar);
+            return rval;
+          })
+      .def(
+          "lookAt",
+          [](ctx_t& c, fvec3& eye, fvec3& tgt, fvec3& up) -> fmtx4 {
+            fmtx4 rval = c.get()->MTXI()->LookAt(eye, tgt, up);
+            return rval;
+          })
+      //////////////////////
       .def(
           "topRCFD",
           [](ctx_t& c) -> rcfd_ptr_t {
@@ -126,7 +142,12 @@ PYBIND11_MODULE(orklev2, m) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<FreestyleMaterial, GfxMaterial>(m, "FreestyleMaterial")
       .def(py::init<>())
-      .def("gpuInit", [](FreestyleMaterial& m, ctx_t& c, file::Path& path) { m.gpuInit(c.get(), path); })
+      .def(
+          "gpuInit",
+          [](FreestyleMaterial& m, ctx_t& c, file::Path& path) {
+            m.gpuInit(c.get(), path);
+            m._rasterstate.SetCullTest(ECULLTEST_OFF);
+          })
       .def_property_readonly("shader", [](const FreestyleMaterial& m) -> fxshader_t { return fxshader_t(m._shader); })
       .def("bindTechnique", [](FreestyleMaterial& m, const fxtechnique_t& tek) { m.bindTechnique(tek.get()); })
       .def("bindParamFloat", [](FreestyleMaterial& m, fxparam_t& p, float value) { m.bindParamFloat(p.get(), value); })
@@ -297,7 +318,7 @@ PYBIND11_MODULE(orklev2, m) {
             pybind11::format_descriptor<unsigned char>::format(),
             1,                 // Number of dimensions
             {capbuf.length()}, // Buffer dimensions
-            {1});              // Strides (in bytes) for each index
+            {0});              // Strides (in bytes) for each index
       })
       .def_property_readonly("length", [](CaptureBuffer& capbuf) -> int { return int(capbuf.length()); })
       .def_property_readonly("width", [](CaptureBuffer& capbuf) -> int { return int(capbuf.width()); })

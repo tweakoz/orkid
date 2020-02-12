@@ -352,7 +352,7 @@ void CaptureBuffer::setFormatAndSize(EBufferFormat fmt, int w, int h) {
       break;
     case EBUFFMT_NV12: {
       size_t ysize  = w * h;
-      size_t uvsize = ysize >> 2;
+      size_t uvsize = ysize >> 1;
       _buffersize   = ysize + uvsize;
       break;
     }

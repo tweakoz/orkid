@@ -62,7 +62,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
 
   bool rtg_set = (nullptr != mTargetGL.FBI()->GetRtGroup());
 
-  if ((not rtg_set) and (mTargetGL._defaultRTG)) {
+  if (mTargetGL._defaultRTG) {
     SetRtGroup(mTargetGL._defaultRTG);
     rtg_set = true;
   }
@@ -80,6 +80,14 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
     PushScissor(extents);
     // printf("BEGINFRAME<RtGroup>\n");
     // mTargetGL.debugPopGroup();
+    if (GetAutoClear()) {
+      fvec4 rCol = GetClearColor();
+      // printf("clear<%g %g %g %g>\n", rCol.x, rCol.y, rCol.z, rCol.w);
+      glClearColor(rCol.x, rCol.y, rCol.z, rCol.w);
+      glClearDepth(1.0f);
+      GL_ERRORCHECK();
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
   }
   /////////////////////////////////////////////////
   else // (Main Target)
@@ -405,7 +413,8 @@ void GlFrameBufferInterface::Capture(const RtGroup& rtg, int irt, const file::Pa
 ///////////////////////////////////////////////////////////////////////////////
 
 bool GlFrameBufferInterface::captureAsFormat(const RtGroup& rtg, int irt, CaptureBuffer* capbuf, EBufferFormat destfmt) {
-  GlFboObject* FboObj = (GlFboObject*)rtg.GetInternalHandle();
+
+  auto FboObj = (GlFboObject*)rtg.GetInternalHandle();
 
   if (nullptr == FboObj)
     return false;
@@ -444,6 +453,8 @@ bool GlFrameBufferInterface::captureAsFormat(const RtGroup& rtg, int irt, Captur
   // glPixelStore()
 
   GL_ERRORCHECK();
+  static size_t yo       = 0;
+  constexpr float inv256 = 1.0f / 255.0f;
   switch (rtb_format) {
     case EBUFFMT_NV12: {
       size_t rgbasize = w * h * 4;
@@ -451,7 +462,66 @@ bool GlFrameBufferInterface::captureAsFormat(const RtGroup& rtg, int irt, Captur
         capbuf->_tempbuffer.resize(rgbasize);
       }
       glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_tempbuffer.data());
-      // todo convert RGBA8 to NV12
+      GL_ERRORCHECK();
+      // todo convert RGBA8 to NV12 (on GPU)
+      auto outptr      = (uint8_t*)capbuf->_data;
+      size_t numpixels = w * h;
+      fvec3 avgcol;
+      for (size_t yin = 0; yin < h; yin++) {
+        int yout = (h - 1) - yin;
+        for (size_t x = 0; x < w; x++) {
+          int i_in       = (yin * w) + x;
+          int i_out      = (yout * w) + x;
+          size_t srcbase = i_in * 4;
+          int R          = capbuf->_tempbuffer[srcbase + 0];
+          int G          = capbuf->_tempbuffer[srcbase + 1];
+          int B          = capbuf->_tempbuffer[srcbase + 2];
+          // printf("RGB<%d %d %d>\n", R, G, B);
+          auto rgb = fvec3(R, G, B) * inv256;
+          avgcol += rgb;
+          auto yuv      = rgb.getYUV();
+          outptr[i_out] = uint8_t(yuv.x * 255.0f);
+        }
+      }
+      avgcol *= 1.0f / float(numpixels);
+      for (size_t yin = 0; yin < h / 2; yin++) {
+        int yout = ((h / 2) - 1) - yin;
+        for (size_t x = 0; x < w / 2; x++) {
+          size_t ybase    = yin * 2;
+          size_t xbase    = x * 2;
+          size_t srcbase1 = (((ybase + 0) * w) + (xbase + 0)) * 4;
+          size_t srcbase2 = (((ybase + 0) * w) + (xbase + 1)) * 4;
+          size_t srcbase3 = (((ybase + 1) * w) + (xbase + 0)) * 4;
+          size_t srcbase4 = (((ybase + 1) * w) + (xbase + 1)) * 4;
+          int R1          = capbuf->_tempbuffer[srcbase1 + 0];
+          int G1          = capbuf->_tempbuffer[srcbase1 + 1];
+          int B1          = capbuf->_tempbuffer[srcbase1 + 2];
+          int R2          = capbuf->_tempbuffer[srcbase2 + 0];
+          int G2          = capbuf->_tempbuffer[srcbase2 + 1];
+          int B2          = capbuf->_tempbuffer[srcbase2 + 2];
+          int R3          = capbuf->_tempbuffer[srcbase3 + 0];
+          int G3          = capbuf->_tempbuffer[srcbase3 + 1];
+          int B3          = capbuf->_tempbuffer[srcbase3 + 2];
+          int R4          = capbuf->_tempbuffer[srcbase4 + 0];
+          int G4          = capbuf->_tempbuffer[srcbase4 + 1];
+          int B4          = capbuf->_tempbuffer[srcbase4 + 2];
+          auto rgb1       = fvec3(R1, G1, B1) * inv256;
+          auto rgb2       = fvec3(R2, G2, B2) * inv256;
+          auto rgb3       = fvec3(R3, G3, B3) * inv256;
+          auto rgb4       = fvec3(R4, G4, B4) * inv256;
+          auto yuv1       = rgb1.getYUV();
+          auto yuv2       = rgb2.getYUV();
+          auto yuv3       = rgb3.getYUV();
+          auto yuv4       = rgb4.getYUV();
+          auto yuv        = (yuv1 + yuv2 + yuv3 + yuv4) * 0.125;
+          yuv += fvec3(0.5, 0.5, 0.5);
+          int u                            = int(yuv.y * 255.0f);
+          int v                            = int(yuv.z * 255.0f);
+          int outindex                     = (yout * (w / 2) + x) * 2;
+          outptr[numpixels + outindex + 0] = u;
+          outptr[numpixels + outindex + 1] = v;
+        }
+      }
       break;
     }
     case EBUFFMT_RGBA8:
@@ -646,5 +716,4 @@ GlFboObject::GlFboObject() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 }} // namespace ork::lev2

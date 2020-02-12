@@ -214,6 +214,7 @@ public:
     SetXYZ(r, g, b);
   }
   void setYUV(T Y, T U, T V);
+  Vector3<T> getYUV() const;
 
   U32 GetVtxColorAsU32(void) const;
   U32 GetARGBU32(void) const;

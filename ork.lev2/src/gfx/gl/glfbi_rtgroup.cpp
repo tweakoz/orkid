@@ -23,7 +23,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
   mTargetGL.makeCurrentContext();
   // mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup");
 
-  printf("FBI<%p> SetRTG<%p>\n", this, Base );
+  // printf("FBI<%p> SetRTG<%p>\n", this, Base );
 
   if (0 == Base) {
     if (mCurrentRtGroup) {

@@ -83,7 +83,6 @@ void ContextGL::_doResizeMainSurface(int iw, int ih) {
   miH                      = ih;
   mTargetDrawableSizeDirty = true;
   recomputeHIDPI(this);
-
 }
 
 /////////////////////////////////////////////////////////////////////////

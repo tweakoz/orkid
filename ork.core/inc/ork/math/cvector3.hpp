@@ -306,6 +306,16 @@ template <typename T> void Vector3<T>::setYUV(T Y, T U, T V) {
   z = 1.164 * Y + 2.017 * U;
 }
 
+template <typename T> Vector3<T> Vector3<T>::getYUV() const {
+  T R = T(x);
+  T G = T(y);
+  T B = T(z);
+  T Y = T(0.299) * R + T(0.587) * G + T(0.114) * B;
+  T U = T(0.492) * (B - Y);
+  T V = T(0.877) * (R - Y);
+  return Vector3<T>(Y, U, V);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Vector3<T>::Vector3(const Vector3<T>& vec) {
