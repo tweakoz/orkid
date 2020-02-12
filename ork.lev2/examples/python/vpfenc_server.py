@@ -11,6 +11,62 @@ from orklev2 import *
 from vpf import *
 import numpy as np
 import math
+import http.server
+from queue import Queue
+
+import time, threading, socket
+
+PORT = 8000
+
+#################################################
+# stream http server
+#################################################
+
+q = Queue(maxsize=500)
+
+class Handler(http.server.BaseHTTPRequestHandler):
+
+    def do_GET(self):
+        if self.path != '/':
+            self.send_error(404, "Object not found")
+            return
+        self.send_response(200)
+        self.send_header('Content-type','video/h264')
+        self.end_headers()
+
+        # serve up an infinite stream
+        i = 0
+        while True:
+            b = q.get(block=True,timeout=None)
+            self.wfile.write(b)
+
+# Create ONE socket.
+addr = ('', PORT)
+sock = socket.socket (socket.AF_INET, socket.SOCK_STREAM)
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+sock.bind(addr)
+sock.listen(1)
+
+# Launch 100 listener threads.
+class Thread(threading.Thread):
+    def __init__(self, i):
+        threading.Thread.__init__(self)
+        self.i = i
+        self.daemon = True
+        self.start()
+    def run(self):
+        httpd = http.server.HTTPServer(addr, Handler, False)
+
+        # Prevent the HTTP server from re-binding every handler.
+        # https://stackoverflow.com/questions/46210672/
+        httpd.socket = sock
+        httpd.server_bind = self.server_close = lambda self: None
+
+        httpd.serve_forever()
+
+thr = Thread(0)
+
+#################################################
 
 WIDTH = 1280
 HEIGHT = 720
@@ -63,7 +119,7 @@ gpuID = 0
 
 encoder = PyNvEncoder(
     {'preset': 'hq',
-     'codec': 'hevc',
+     'codec': 'h264',
      's': f"{WIDTH}x{HEIGHT}"}, gpuID)
 
 print(encoder)
@@ -75,11 +131,10 @@ print(encoder.PixelFormat())
 
 encoded_length = 0
 
-h264file = open("vfpencout.hevc",  "wb")
+print( "video server running, try 'vlc http://<hostname>:%d/'"%PORT)
 
-
-for i in range(0,1200):
-
+while True:
+    i = ctx.frameIndex
     phase = float(i)/60.0
     r = math.sin(phase)*0.5+0.5
     g = math.sin(phase*0.3)*0.5+0.5
@@ -120,22 +175,9 @@ for i in range(0,1200):
     encFrame = encoder.EncodeSingleFrame(as_np)
     if(encFrame.size):
         encByteArray = bytearray(encFrame)
-        h264file.write(encByteArray)
+        q.put(encByteArray,block=True,timeout=None)
         encoded_length += len(encByteArray)
-        print("fr<%d>: encoded_length<%d>"%(i,encoded_length))
 
     #############################################
 
     ctx.debugPopGroup()
-
-##################################
-# finish encoding
-##################################
-
-encFrames = encoder.Flush()
-for encFrame in encFrames:
-    if(encFrame.size):
-        encByteArray = bytearray(encFrame)
-        h264file.write(encByteArray)
-        encoded_length += len(encByteArray)
-        print("encoded_length<%d>"%encoded_length)
