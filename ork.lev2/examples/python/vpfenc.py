@@ -110,7 +110,6 @@ for i in range(0,1200):
 
 
     ctx.endFrame()
-    ctx.debugPopGroup()
 
     #############################################
     # nv encode !
@@ -127,6 +126,7 @@ for i in range(0,1200):
 
     #############################################
 
+    ctx.debugPopGroup()
 
 ##################################
 # finish encoding
