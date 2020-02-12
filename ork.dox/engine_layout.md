@@ -46,6 +46,7 @@ Orkid is divided into several shared libraries:
 		+ PortAudio (osx/iX)
 		+ OpenVR (iX)
 		+ Python3/PyBind11
+		+ Vulkan/MoltenVK
 ---
 
 * ork.ent : archetype / entity / component / scene system. Lets you load a pregenerated 'scene' document and run it as a simulation. Contains a collection of commonly useful components, including:
@@ -71,4 +72,6 @@ Orkid is divided into several shared libraries:
 	- Mesh Processing
 	- Asset conversion filters.
 	- Distributed Lightmapper (WIP)
+	- Notable dependencies:
+	    + Ork.Core,Ork.Lev2, Ork.Ent
 
