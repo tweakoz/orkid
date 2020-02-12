@@ -264,8 +264,8 @@ void GfxEnv::SetLoaderTarget(Context* target) {
     mp3DMaterial->Init(gLoaderTarget);
     ork::lev2::GfxPrimitives::Init(gLoaderTarget);
 
-    //gLoaderTarget->beginFrame();
-    //gLoaderTarget->endFrame();
+    // gLoaderTarget->beginFrame();
+    // gLoaderTarget->endFrame();
   };
   opq::mainSerialQueue().enqueue(gfxenvlateinit);
 }
@@ -274,7 +274,8 @@ void GfxEnv::SetLoaderTarget(Context* target) {
 
 CaptureBuffer::CaptureBuffer()
     : _data(0)
-    , meFormat(EBUFFMT_END) {
+    , meFormat(EBUFFMT_END)
+    , _buffersize(0) {
 }
 CaptureBuffer::~CaptureBuffer() {
   if (_data) {
@@ -284,6 +285,9 @@ CaptureBuffer::~CaptureBuffer() {
 int CaptureBuffer::GetStride() const {
   int istride = 0;
   switch (meFormat) {
+    case EBUFFMT_NV12:
+      istride = -1;
+      break;
     case EBUFFMT_RGBA8:
       istride = 4;
       break;
@@ -337,21 +341,26 @@ void CaptureBuffer::setFormatAndSize(EBufferFormat fmt, int w, int h) {
     case EBUFFMT_RGBA8:
     case EBUFFMT_R32F:
     case EBUFFMT_R32UI:
-      bytesperpix = 4;
+      _buffersize = 4 * w * h;
       break;
     case EBUFFMT_RGBA16F:
     case EBUFFMT_RG32F:
-      bytesperpix = 8;
+      _buffersize = 8 * w * h;
       break;
     case EBUFFMT_RGBA32F:
-      bytesperpix = 16;
+      _buffersize = 16 * w * h;
       break;
+    case EBUFFMT_NV12: {
+      size_t ysize  = w * h;
+      size_t uvsize = ysize >> 2;
+      _buffersize   = ysize + uvsize;
+      break;
+    }
     default:
       assert(false);
       break;
   }
-  assert(bytesperpix != 0);
-  _data    = malloc(bytesperpix * w * h);
+  _data    = malloc(_buffersize);
   meFormat = fmt;
   miW      = w;
   miH      = h;

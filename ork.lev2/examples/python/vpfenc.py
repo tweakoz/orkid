@@ -50,41 +50,41 @@ ctx.debugPopGroup()
 
 # rtg setup
 
+WIDTH = 1024
+HEIGHT = 1024
+
 print(ctx.frameIndex)
 FBI.autoclear = True
 FBI.clearcolor = vec4(1,0,0,1)
 rtg = ctx.defaultRTG()
-ctx.resize(1024,1024)
+ctx.resize(WIDTH,HEIGHT)
 
 ###################################
 # end gfx init
 ###################################
 
+capbufNV12 = CaptureBuffer()
+
 gpuID = 0
-convsrcfmt = PixelFormat.RGB
-convdstfmt = PixelFormat.NV12
 
-colorconv = PySurfaceConverter(1024,1024, convdstfmt, convsrcfmt, gpuID)
-gpu_uploader = PyFrameUploader(1024,1024, convsrcfmt, gpuID)
-
-print(colorconv)
+gpu_uploader = PyFrameUploader(WIDTH,HEIGHT, PixelFormat.NV12, gpuID)
 
 encoder = PyNvEncoder(
     {'preset': 'hq',
      'codec': 'h264',
-     's': '1024x1024'}, gpuID)
+     's': f"{WIDTH}x{HEIGHT}"}, gpuID)
 
-framesizeRGB = 1024 * 1024 * 3
+framesizeRGB = WIDTH * HEIGHT * 3
 
 print(encoder)
-
-rawBitmapRGB = np.zeros((framesizeRGB,),dtype = np.uint8)
 
 ###################################
 # frame loop
 ###################################
 
-for i in range(1,2):
+encoded_length = 0
+
+for i in range(0,50):
     ###################
     # render to default buffer
     ###################
@@ -104,12 +104,38 @@ for i in range(1,2):
     GBI.drawTriangles(vw)
     mtl.end(RCFD)
 
-    pfc = PixelFetchContext(rtg,1)
-    FBI.capturePixel(vec4(0,1,0,0), pfc)
-    print(pfc.color(0))
     ctx.endFrame()
+
+    #############################################
+    # nv encode !
+    #############################################
+
+    FBI.captureAsFormat(rtg,0,capbufNV12,9) # NV12
+    #print(capbufNV12.length)
+    #print(capbufNV12.width)
+    #print(capbufNV12.height)
+    #print(capbufNV12.format)
+    as_np = np.array(capbufNV12, copy=False)
+    rawSurfaceNV12 = gpu_uploader.UploadSingleFrame(as_np)
+    #print(rawSurfaceNV12)
+    if False==rawSurfaceNV12.Empty():
+        encFrame = encoder.EncodeSingleSurface(rawSurfaceNV12)
+        if(encFrame.size):
+            encByteArray = bytearray(encFrame)
+            encoded_length += len(encByteArray)
+            print("encoded_length<%d>"%encoded_length)
+
+    #############################################
+
     ctx.debugPopGroup()
 
-    #rawsurfaceRGB = gpu_uploader.UploadSingleFrame(rawBitmapRGB)
-    #print(rawsurfaceRGB)
-    #rawSurfaceNV12 = colorconv.Execute(rawsurfaceRGB)
+##################################
+# finish encoding
+##################################
+
+encFrames = encoder.Flush()
+for encFrame in encFrames:
+    if(encFrame.size):
+        encByteArray = bytearray(encFrame)
+        encoded_length += len(encByteArray)
+        print("encoded_length<%d>"%encoded_length)

@@ -21,6 +21,14 @@ template <class T> struct unmanaged_ptr {
   T* get() const {
     return _ptr;
   }
+  T& ref() const {
+    OrkAssert(_ptr != nullptr);
+    return *_ptr;
+  }
+  const T& const_ref() const {
+    OrkAssert(_ptr != nullptr);
+    return *_ptr;
+  }
   void destroy() {
     // delete _ptr;
   }

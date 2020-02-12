@@ -61,6 +61,7 @@ PYBIND11_MODULE(orklev2, m) {
   using rsi_t            = ork::python::unmanaged_ptr<RasterStateInterface>;
   using txi_t            = ork::python::unmanaged_ptr<TextureInterface>;
   using rtg_t            = ork::python::unmanaged_ptr<RtGroup>;
+  using capbuf_t         = ork::python::unmanaged_ptr<CaptureBuffer>;
   using fxshader_t       = ork::python::unmanaged_ptr<FxShader>;
   using fxparam_t        = ork::python::unmanaged_ptr<FxShaderParam>;
   using fxtechnique_t    = ork::python::unmanaged_ptr<FxShaderTechnique>;
@@ -216,6 +217,16 @@ PYBIND11_MODULE(orklev2, m) {
           [](const fbi_t& fbi) -> fvec4 { return fbi.get()->GetClearColor(); },
           [](fbi_t& fbi, const fvec4& value) { fbi.get()->SetClearColor(value); })
       .def("capturePixel", [](const fbi_t& fbi, const fvec4& at, PixelFetchContext& pfc) { return fbi.get()->GetPixel(at, pfc); })
+      .def(
+          "captureBuffer",
+          [](const fbi_t& fbi, rtg_t& rtg, int rtbindex, CaptureBuffer& capbuf) -> bool {
+            return fbi.get()->capture(rtg.ref(), rtbindex, &capbuf);
+          })
+      .def(
+          "captureAsFormat",
+          [](const fbi_t& fbi, rtg_t& rtg, int rtbindex, CaptureBuffer& capbuf, int format) -> bool {
+            return fbi.get()->captureAsFormat(rtg.ref(), rtbindex, &capbuf, EBufferFormat(format));
+          })
       .def("__repr__", [](const fbi_t& fbi) -> std::string {
         fxstring<256> fxs;
         fxs.format("FBI(%p)", fbi.get());
@@ -274,6 +285,27 @@ PYBIND11_MODULE(orklev2, m) {
       .def("__repr__", [](const rtg_t& rtg) -> std::string {
         fxstring<256> fxs;
         fxs.format("RtGroup(%p)", rtg.get());
+        return fxs.c_str();
+      });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<CaptureBuffer>(m, "CaptureBuffer", pybind11::buffer_protocol())
+      .def(py::init<>())
+      .def_buffer([](CaptureBuffer& capbuf) -> pybind11::buffer_info {
+        return pybind11::buffer_info(
+            capbuf._data,          // Pointer to buffer
+            sizeof(unsigned char), // Size of one scalar
+            pybind11::format_descriptor<unsigned char>::format(),
+            1,                 // Number of dimensions
+            {capbuf.length()}, // Buffer dimensions
+            {1});              // Strides (in bytes) for each index
+      })
+      .def_property_readonly("length", [](CaptureBuffer& capbuf) -> int { return int(capbuf.length()); })
+      .def_property_readonly("width", [](CaptureBuffer& capbuf) -> int { return int(capbuf.width()); })
+      .def_property_readonly("height", [](CaptureBuffer& capbuf) -> int { return int(capbuf.height()); })
+      .def_property_readonly("format", [](CaptureBuffer& capbuf) -> int { return int(capbuf.format()); })
+      .def("__repr__", [](const CaptureBuffer& capbuf) -> std::string {
+        fxstring<256> fxs;
+        fxs.format("CaptureBuffer(%p)", &capbuf);
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////

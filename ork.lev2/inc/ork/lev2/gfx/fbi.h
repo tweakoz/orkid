@@ -80,6 +80,9 @@ public:
   virtual bool capture(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer) {
     return false;
   }
+  virtual bool captureAsFormat(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer, EBufferFormat destfmt) {
+    return false;
+  }
   virtual void Capture(const RtGroup& inpbuf, int irt, const file::Path& pth) {
   }
   virtual bool CaptureToTexture(const CaptureBuffer& capbuf, Texture& tex) {

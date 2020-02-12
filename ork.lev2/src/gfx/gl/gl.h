@@ -220,6 +220,7 @@ public:
   bool capture(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer) final;
   void Capture(const RtGroup& inpbuf, int irt, const file::Path& pth) final;
   bool CaptureToTexture(const CaptureBuffer& capbuf, Texture& tex) final { return false; }
+  bool captureAsFormat(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer, EBufferFormat destfmt) final;
   void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) final;
   SRect& PopScissor(void) final;
 

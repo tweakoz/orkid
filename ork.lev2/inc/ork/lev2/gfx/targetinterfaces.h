@@ -81,6 +81,7 @@ struct CaptureBuffer {
 
   int GetStride() const;
   int CalcDataIndex(int ix, int iy) const;
+  size_t length() const { return _buffersize; }
   void SetWidth(int iw);
   void SetHeight(int ih);
   int width() const;
@@ -98,6 +99,9 @@ struct CaptureBuffer {
   int miW;
   int miH;
   void* _data;
+  std::vector<uint8_t> _tempbuffer;
+  size_t _buffersize;
+  //CaptureBuffer* _conversionBuffer = nullptr;
   ////////////////////////////
 };
 
