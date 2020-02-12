@@ -35,7 +35,6 @@ OffscreenBuffer::OffscreenBuffer(
     int iW,
     int iH,
     EBufferFormat efmt,
-    ETargetType etgttype,
     const std::string& name)
     : mpContext(nullptr)
     , mParent(Parent)
@@ -44,7 +43,6 @@ OffscreenBuffer::OffscreenBuffer(
     , mbDirty(true)
     , msName(name)
     , meFormat(efmt)
-    , meTargetType(etgttype)
     , mParentRtGroup(nullptr)
     , mpTexture(nullptr)
     , mRootWidget(nullptr)
@@ -69,7 +67,7 @@ void OffscreenBuffer::Resize(int ix, int iy, int iw, int ih) {
   //  though maybe no if we need offscreen hardware backed devices
   //  for commandline tools
 
-  context()->resizeMainSurface(ix, iy, iw, ih);
+  context()->resizeMainSurface(iw, ih);
 
   if (GetRootWidget()) {
     GetRootWidget()->SetRect(ix, iy, iw, ih);
@@ -80,7 +78,7 @@ void OffscreenBuffer::Resize(int ix, int iy, int iw, int ih) {
 /////////////////////////////////////////////////////////////////////////
 
 Window::Window(int iX, int iY, int iW, int iH, const std::string& name, void* pdata)
-    : OffscreenBuffer(0, iX, iY, iW, iH, EBUFFMT_RGBA8, ETGTTYPE_WINDOW, name)
+    : OffscreenBuffer(0, iX, iY, iW, iH, EBUFFMT_RGBA8, name)
     , mpCTXBASE(0) {
   gGfxEnv.SetMainWindow(this);
 }
@@ -140,7 +138,7 @@ void Window::initContext() {
 
 void OffscreenBuffer::Render2dQuadEML(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2) {
   auto ctx = context();
-  ctx->GBI()->render2dQuadEML(QuadRect,UvRect,UvRect2);
+  ctx->GBI()->render2dQuadEML(QuadRect, UvRect, UvRect2);
 }
 
 /////////////////////////////////////////////////////////////////////////

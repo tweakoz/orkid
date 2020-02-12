@@ -15,95 +15,79 @@
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/widget.h>
 
-#if ! defined (_CYGWIN) 
+#if !defined(_CYGWIN)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace ork {
-namespace lev2 {
+namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CQtWindow::CQtWindow( ui::Widget* prw )
-	: Window( 0, 0, 640, 448, "yo" ) 
-	, mbinit( true )
-	, mRootWidget( prw )
-{
+CQtWindow::CQtWindow(ui::Widget* prw)
+    : Window(0, 0, 640, 448, "yo")
+    , mbinit(true)
+    , mRootWidget(prw) {
 }
 
-CQtWindow::~CQtWindow()
-{
-	if( mRootWidget )
-	{
-		delete mRootWidget;
-	}
+CQtWindow::~CQtWindow() {
+  if (mRootWidget) {
+    delete mRootWidget;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CQtWindow::Draw( void )
-{
-	int ix = GetContextX();
-	int iy = GetContextY();
-	int iw = GetContextW();
-	int ih = GetContextH();
-	mRootWidget->SetRect( ix,iy,iw,ih );
+void CQtWindow::Draw(void) {
+  int iw = GetContextW();
+  int ih = GetContextH();
+  mRootWidget->SetRect(0, 0, iw, ih);
 
-	ui::DrawEvent drwev( context() );
-	mRootWidget->Draw( drwev );
+  ui::DrawEvent drwev(context());
+  mRootWidget->Draw(drwev);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CQtWindow::GotFocus( void )
-{
-	if( mRootWidget )
-	{
-		mRootWidget->GotKeyboardFocus();
+void CQtWindow::GotFocus(void) {
+  if (mRootWidget) {
+    mRootWidget->GotKeyboardFocus();
 
-		ui::Event uievent;
-		uievent.mEventCode = ork::ui::UIEV_GOT_KEYFOCUS;
-		mRootWidget->HandleUiEvent( uievent );
-	}
-	mbHasFocus = true;
+    ui::Event uievent;
+    uievent.mEventCode = ork::ui::UIEV_GOT_KEYFOCUS;
+    mRootWidget->HandleUiEvent(uievent);
+  }
+  mbHasFocus = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CQtWindow::LostFocus( void )
-{
-	if( mRootWidget )
-	{
-		mRootWidget->LostKeyboardFocus();
+void CQtWindow::LostFocus(void) {
+  if (mRootWidget) {
+    mRootWidget->LostKeyboardFocus();
 
-		ui::Event uievent;
-		uievent.mEventCode = ork::ui::UIEV_LOST_KEYFOCUS;
-		mRootWidget->HandleUiEvent( uievent );
-	}
-	mbHasFocus = false;
+    ui::Event uievent;
+    uievent.mEventCode = ork::ui::UIEV_LOST_KEYFOCUS;
+    mRootWidget->HandleUiEvent(uievent);
+  }
+  mbHasFocus = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CQtWindow::OnShow()
-{
-	ork::lev2::Context *pTARG = context();
+void CQtWindow::OnShow() {
+  ork::lev2::Context* pTARG = context();
 
-	//if( mbinit )
-	{
-		//mbinit = false;
-		/////////////////////////////////////////////////////////////////////
-		int ix = GetContextX();
-		int iy = GetContextY();
-		int iw = GetContextW();
-		int ih = GetContextH();
-		mRootWidget->SetRect( ix,iy,iw,ih );
-		SetRootWidget( mRootWidget );
-	}
+  // if( mbinit )
+  {
+    // mbinit = false;
+    /////////////////////////////////////////////////////////////////////
+    int iw = GetContextW();
+    int ih = GetContextH();
+    mRootWidget->SetRect(0, 0, iw, ih);
+    SetRootWidget(mRootWidget);
+  }
 }
 
-} // namespace tool
-} // namespace ork
+}} // namespace ork::lev2
 
 #endif
-

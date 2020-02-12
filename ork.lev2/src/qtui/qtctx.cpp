@@ -576,7 +576,7 @@ void CTQT::Resize(int X, int Y, int W, int H) {
   this->SetThisXID((CTFLXID)winId());
   // printf( "CTQT::Resize() mpTarget<%p>\n", mpTarget );
   if (mpTarget) {
-    mpTarget->resizeMainSurface(X, Y, W, H);
+    mpTarget->resizeMainSurface(W, H);
     mUIEvent.mpGfxWin = (Window*)mpTarget->FBI()->GetThisBuffer();
     if (mUIEvent.mpGfxWin)
       mUIEvent.mpGfxWin->Resize(X, Y, W, H);

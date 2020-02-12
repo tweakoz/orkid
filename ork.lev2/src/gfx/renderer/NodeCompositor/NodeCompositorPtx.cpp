@@ -34,7 +34,7 @@ struct PtxImpl {
       _blit2screenmtl.Init(pTARG);
 
       _output                   = new lev2::RtGroup(pTARG, iW, iH);
-      _outputbuffer             = new lev2::RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, iW, iH);
+      _outputbuffer             = new lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16F, iW, iH);
       _outputbuffer->_debugName = FormatString("PtxCompositingNode::output");
       _output->SetMrt(0, _outputbuffer);
     }

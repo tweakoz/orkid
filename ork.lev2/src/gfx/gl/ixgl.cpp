@@ -49,12 +49,14 @@ struct GlIxPlatformObject {
   Display* mDisplay;
   int mXWindowId;
   bool mbInit;
+  void_lambda_t _bindop;
 
   GlIxPlatformObject()
       : mbInit(true)
       , mGlxContext(nullptr)
       , mDisplay(nullptr)
       , mXWindowId(0) {
+    _bindop = [=]() {};
   }
 };
 
@@ -371,6 +373,8 @@ x11_window_t getHandleForWidget(const QWidget* widget) {
   return 0;
 }
 void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
+  meTargetType = ETGTTYPE_WINDOW;
+
   ///////////////////////
   GlIxPlatformObject* plato = new GlIxPlatformObject;
   mCtxBase                  = pctxbase;
@@ -420,9 +424,16 @@ void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
 // todo :: recomputeHIDPI on window move event
 /////////////////////////////////////////////////////////////////////////
 
-void recomputeHIDPI(void* plato) {
+void recomputeHIDPI(Context* ctx) {
 
-  auto ixplato = (GlIxPlatformObject*)plato;
+  switch (ctx->meTargetType) {
+    case ETGTTYPE_WINDOW:
+      break;
+    default:
+      return;
+  }
+
+  auto ixplato = (GlIxPlatformObject*)ctx->mPlatformHandle;
 
   ///////////////////////
   Display* x_dpy = QX11Info::display();
@@ -524,12 +535,13 @@ float _currentDPI() {
 /////////////////////////////////////////////////////////////////////////
 
 void ContextGL::initializeOffscreenContext(OffscreenBuffer* pBuf) {
+
+  meTargetType = ETGTTYPE_OFFSCREEN;
+
   ///////////////////////
 
   miW = pBuf->GetBufferW();
   miH = pBuf->GetBufferH();
-  miX = 0;
-  miY = 0;
 
   mCtxBase = 0;
 
@@ -543,7 +555,7 @@ void ContextGL::initializeOffscreenContext(OffscreenBuffer* pBuf) {
   plato->mXWindowId  = g_rootwin;
 
   _defaultRTG = new RtGroup(this, miW, miH, 1);
-  auto rtb    = new RtBuffer(ETGTTYPE_MRT0, EBUFFMT_RGBA8, miW, miH);
+  auto rtb    = new RtBuffer(ERTGSLOT0, EBUFFMT_RGBA8, miW, miH);
   _defaultRTG->SetMrt(0, rtb);
   auto texture = _defaultRTG->GetMrt(0)->texture();
   FBI()->SetBufferTexture(texture);
@@ -569,10 +581,11 @@ void ContextGL::initializeOffscreenContext(OffscreenBuffer* pBuf) {
 /////////////////////////////////////////////////////////////////////////
 
 void ContextGL::initializeLoaderContext() {
+
+  meTargetType = ETGTTYPE_LOADING;
+
   miW = 8;
   miH = 8;
-  miX = 0;
-  miY = 0;
 
   mCtxBase = 0;
 
@@ -585,10 +598,20 @@ void ContextGL::initializeLoaderContext() {
   plato->mXWindowId  = g_rootwin;
 
   _defaultRTG = new RtGroup(this, miW, miH, 1);
-  auto rtb    = new RtBuffer(ETGTTYPE_MRT0, EBUFFMT_RGBA8, miW, miH);
+  auto rtb    = new RtBuffer(ERTGSLOT0, EBUFFMT_RGBA8, miW, miH);
   _defaultRTG->SetMrt(0, rtb);
   auto texture = _defaultRTG->GetMrt(0)->texture();
   FBI()->SetBufferTexture(texture);
+
+  plato->_bindop = [=]() {
+    if (this->mTargetDrawableSizeDirty) {
+      int w = mainSurfaceWidth();
+      int h = mainSurfaceHeight();
+      printf("resizing defaultRTG<%p>\n", _defaultRTG);
+      _defaultRTG->Resize(w, h);
+      mTargetDrawableSizeDirty = false;
+    }
+  };
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -598,6 +621,7 @@ void ContextGL::makeCurrentContext(void) {
   OrkAssert(plato);
   if (plato) {
     bool bOK = glXMakeCurrent(plato->mDisplay, plato->mXWindowId, plato->mGlxContext);
+    plato->_bindop();
     //	OrkAssert(bOK);
   }
 }

@@ -76,16 +76,14 @@ bool ContextGL::SetDisplayMode(DisplayMode* mode) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void recomputeHIDPI(void* plato);
+void recomputeHIDPI(Context* ctx);
 
-void ContextGL::_doResizeMainSurface(int ix, int iy, int iw, int ih) {
-  miX                      = ix;
-  miY                      = iy;
+void ContextGL::_doResizeMainSurface(int iw, int ih) {
   miW                      = iw;
   miH                      = ih;
   mTargetDrawableSizeDirty = true;
-  recomputeHIDPI(mPlatformHandle);
-  // mFbI.DeviceReset(ix,iy,iw,ih );
+  recomputeHIDPI(this);
+
 }
 
 /////////////////////////////////////////////////////////////////////////

@@ -128,9 +128,9 @@ void DeferredContext::gpuInit(Context* target) {
     _rtgGbuffer            = new RtGroup(target, 8, 8, 1);
     _rtgDecal              = new RtGroup(target, 8, 8, 1);
     _rtgDecal->_needsDepth = false;
-    auto buf0              = new RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, 8, 8);
-    auto buf1              = new RtBuffer(lev2::ETGTTYPE_MRT1, lev2::EBUFFMT_RGB10A2, 8, 8);
-    auto buf2              = new RtBuffer(lev2::ETGTTYPE_MRT2, lev2::EBUFFMT_RGBA8, 8, 8);
+    auto buf0              = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA8, 8, 8);
+    auto buf1              = new RtBuffer(lev2::ERTGSLOT1, lev2::EBUFFMT_RGB10A2, 8, 8);
+    auto buf2              = new RtBuffer(lev2::ERTGSLOT2, lev2::EBUFFMT_RGBA8, 8, 8);
     buf0->_debugName       = "DeferredRtAlbAo";
     buf1->_debugName       = "DeferredRtNormalDist";
     buf2->_debugName       = "DeferredRtRufMtl";
@@ -142,13 +142,13 @@ void DeferredContext::gpuInit(Context* target) {
     _decalRT = new RtGroupRenderTarget(_rtgDecal);
     //////////////////////////////////////////////////////////////
     _rtgDepthCluster = new RtGroup(target, 8, 8, 1);
-    auto bufD        = new RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_R32UI, 8, 8);
+    auto bufD        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_R32UI, 8, 8);
     bufD->_debugName = "DeferredDepthCluster";
     _rtgDepthCluster->SetMrt(0, bufD);
     _clusterRT = new RtGroupRenderTarget(_rtgDepthCluster);
     //////////////////////////////////////////////////////////////
     _rtgLaccum        = new RtGroup(target, 8, 8, 1);
-    auto bufLA        = new RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, 8, 8);
+    auto bufLA        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16F, 8, 8);
     bufLA->_debugName = "DeferredLightAccum";
     _rtgLaccum->SetMrt(0, bufLA);
     _accumRT = new RtGroupRenderTarget(_rtgLaccum);

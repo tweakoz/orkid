@@ -350,7 +350,7 @@ public:
 
   ///////////////////////////////////////////////////////////////////////
 
-  void _doResizeMainSurface(int ix, int iy, int iw, int ih) final;
+  void _doResizeMainSurface(int iw, int ih) final;
   void _doBeginFrame(void) final {}
   void _doEndFrame(void) final {}
 

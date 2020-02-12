@@ -28,7 +28,7 @@ void PickBufferBase::Describe() {
 }
 
 PickBufferBase::PickBufferBase(lev2::OffscreenBuffer* Parent, int iX, int iY, int iW, int iH, EPickBufferType etyp)
-    : ork::lev2::OffscreenBuffer(Parent, iX, iY, iW, iH, lev2::EBUFFMT_RGBA8, lev2::ETGTTYPE_EXTBUFFER)
+    : ork::lev2::OffscreenBuffer(Parent, iX, iY, iW, iH, lev2::EBUFFMT_RGBA8)
     , meType(etyp)
     , mbInitTex(true)
     , mpPickRtGroup(new lev2::RtGroup(context(), iW, iH)) {
@@ -48,8 +48,8 @@ ork::Object* PickBufferBase::GetObjectFromPickId(uint64_t pid) {
 }
 
 void PickBufferBase::Init() {
-  auto buf0        = new ork::lev2::RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32F, miWidth, miHeight);
-  auto buf1        = new ork::lev2::RtBuffer(lev2::ETGTTYPE_MRT1, lev2::EBUFFMT_RGBA32F, miWidth, miHeight);
+  auto buf0        = new ork::lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA32F, miWidth, miHeight);
+  auto buf1        = new ork::lev2::RtBuffer(lev2::ERTGSLOT1, lev2::EBUFFMT_RGBA32F, miWidth, miHeight);
   buf0->_debugName = FormatString("Pickbuf::mrt0");
   buf0->_debugName = FormatString("Pickbuf::mrt1");
   mpPickRtGroup->SetMrt(0, buf0);

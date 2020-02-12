@@ -86,11 +86,10 @@ void ContextDummy::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
 void ContextDummy::initializeOffscreenContext(OffscreenBuffer* pBuf) {
 }
 
-void ContextDummy::initializeLoaderContext() {}
+void ContextDummy::initializeLoaderContext() {
+}
 
-void ContextDummy::_doResizeMainSurface(int ix, int iy, int iw, int ih) {
-  miX = ix;
-  miY = iy;
+void ContextDummy::_doResizeMainSurface(int iw, int ih) {
   miW = iw;
   miH = ih;
 }

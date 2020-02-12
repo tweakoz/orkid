@@ -150,17 +150,11 @@ public:
   ///////////////////////////////////////////////////////////////////////
 
   virtual void initializeWindowContext(Window* pWin, CTXBASE* pctxbase) = 0;
-  virtual void initializeOffscreenContext(OffscreenBuffer* pBuf)           = 0;
-  virtual void initializeLoaderContext()                          = 0;
+  virtual void initializeOffscreenContext(OffscreenBuffer* pBuf)        = 0;
+  virtual void initializeLoaderContext()                                = 0;
 
   ///////////////////////////////////////////////////////////////////////
 
-  inline int mainSurfaceWindowPosX(void) const {
-    return miX;
-  }
-  inline int mainSurfaceWindowPosY(void) const {
-    return miY;
-  }
   inline int mainSurfaceWidth(void) const {
     return miW;
   }
@@ -171,13 +165,13 @@ public:
     return float(miW) / float(miH);
   }
   inline SRect mainSurfaceRectAtWindowPos() const {
-    return SRect(miX, miY, miW, miH);
+    return SRect(0, 0, miW, miH);
   }
   inline SRect mainSurfaceRectAtOrigin() const {
     return SRect(0, 0, miW, miH);
   }
-  inline void resizeMainSurface(int ix, int iy, int iw, int ih) {
-    _doResizeMainSurface(ix, iy, iw, ih);
+  inline void resizeMainSurface(int iw, int ih) {
+    _doResizeMainSurface(iw, ih);
   }
 
   //////////////////////////////////////////////
@@ -291,7 +285,7 @@ public:
   void EndLoad(void* ploadtok);
 
   static const int kiModColorStackMax = 8;
-  int miX, miY, miW, miH;
+  int miW, miH;
   CTXBASE* mCtxBase;
   void* mPlatformHandle;
   ETargetType meTargetType;
@@ -324,7 +318,7 @@ private:
   virtual void _doEndLoad(void* ploadtok) {
   }
 
-  virtual void _doResizeMainSurface(int ix, int iy, int iw, int ih) = 0;
+  virtual void _doResizeMainSurface(int iw, int ih) = 0;
 
   const RenderContextFrameData* _defaultrcfd = nullptr;
 };
@@ -362,7 +356,6 @@ public:
       int iW,
       int iH,
       EBufferFormat efmt      = EBUFFMT_RGBA8,
-      ETargetType etype       = ETGTTYPE_EXTBUFFER,
       const std::string& name = "NoName");
 
   virtual ~OffscreenBuffer();
@@ -414,12 +407,6 @@ public:
   }
   Context* context(void) const;
 
-  int GetContextX(void) const {
-    return context()->mainSurfaceWindowPosX();
-  }
-  int GetContextY(void) const {
-    return context()->mainSurfaceWindowPosY();
-  }
   int GetContextW(void) const {
     return context()->mainSurfaceWidth();
   }

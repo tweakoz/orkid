@@ -153,7 +153,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
   while (numpix != 0) {
 
     auto outgroup = std::make_shared<RtGroup>(targ, w, h, 1);
-    auto outbuffr = std::make_shared<RtBuffer>(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32F, w, h);
+    auto outbuffr = std::make_shared<RtBuffer>(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA32F, w, h);
     auto captureb = std::make_shared<CaptureBuffer>();
 
     filtex->_rtgroup     = outgroup;
@@ -259,7 +259,7 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
   while (numpix != 0) {
 
     auto outgroup = std::make_shared<RtGroup>(targ, w, h, 1);
-    auto outbuffr = std::make_shared<RtBuffer>(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32F, w, h);
+    auto outbuffr = std::make_shared<RtBuffer>(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA32F, w, h);
     auto captureb = std::make_shared<CaptureBuffer>();
 
     filtex->_rtgroup     = outgroup;

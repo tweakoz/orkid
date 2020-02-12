@@ -27,7 +27,7 @@ class RtBuffer //: public OffscreenBuffer
 public:
   enum EMipGen { EMG_NONE, EMG_AUTOCOMPUTE, EMG_USER };
 
-  RtBuffer(ETargetType etype, EBufferFormat efmt, int iW, int iH);
+  RtBuffer(ERtgSlot etype, EBufferFormat efmt, int iW, int iH);
 
   Texture* texture() const {
     return _texture;
@@ -49,7 +49,7 @@ public:
   int miW, miH;
   Texture* _texture;
   GfxMaterial* mMaterial;
-  ETargetType mType;
+  ERtgSlot mType;
   EBufferFormat mFormat;
   svarp_t _impl;
   bool mSizeDirty;

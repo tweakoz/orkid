@@ -365,7 +365,7 @@ void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
 	plato->mbNSOpenGlView = false;
 	plato->mbInit = false;
   _defaultRTG = new RtGroup(this,miW,miH,1);
-  auto rtb = new RtBuffer(ETGTTYPE_MRT0,EBUFFMT_RGBA8,miW,miH);
+  auto rtb = new RtBuffer(ERTGSLOT0,EBUFFMT_RGBA8,miW,miH);
   _defaultRTG->SetMrt(0,rtb);
 
 	//////////////////////////////////////////
@@ -421,7 +421,7 @@ plato->mbNSOpenGlView = false;
 plato->mbInit = false;
 
 _defaultRTG = new RtGroup(this,miW,miH,1);
-auto rtb = new RtBuffer(ETGTTYPE_MRT0,EBUFFMT_RGBA8,miW,miH);
+auto rtb = new RtBuffer(ERTGSLOT0,EBUFFMT_RGBA8,miW,miH);
 _defaultRTG->SetMrt(0,rtb);
 
 //////////////////////////////////////////

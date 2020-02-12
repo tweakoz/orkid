@@ -37,8 +37,6 @@ template <> void PickBuffer<ork::tool::ged::GedVP>::Draw(lev2::PixelFetchContext
     // printf( "resize ged pickbuf rtgroup<%d %d>\n", isurfw, isurfh);
     this->SetBufferWidth(isurfw);
     this->SetBufferHeight(isurfh);
-    tgt->miX = 0;
-    tgt->miY = 0;
     tgt->miW = isurfw;
     tgt->miH = isurfh;
     mpPickRtGroup->Resize(isurfw, isurfh);

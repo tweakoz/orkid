@@ -101,7 +101,7 @@ void Op2CompositingNode::DoInit(lev2::Context* pTARG, int iW, int iH) // virtual
     mCompositingMaterial.Init(pTARG);
 
     _rtg                = new lev2::RtGroup(pTARG, iW, iH);
-    mOutput             = new lev2::RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, iW, iH);
+    mOutput             = new lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16F, iW, iH);
     mOutput->_debugName = FormatString("Op2CompositingNode::output");
     _rtg->SetMrt(0, mOutput);
   }

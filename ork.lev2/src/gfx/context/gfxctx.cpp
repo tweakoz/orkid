@@ -116,8 +116,6 @@ Context::Context()
     , mCtxBase(nullptr)
     , mpCurrentObject(nullptr)
     , mFramePerfItem(CreateFormattedString("<target:%p>", this))
-    , miX(0)
-    , miY(0)
     , miW(0)
     , miH(0)
     , miTargetFrame(0)
@@ -125,7 +123,8 @@ Context::Context()
     , mbDeviceAvailable(true)
     , miDrawLock(0)
     , mPlatformHandle(nullptr)
-    , mpCurMaterial(nullptr) {
+    , mpCurMaterial(nullptr)
+    , meTargetType(ETGTTYPE_NONE) {
 
   static CompositingData _gdata;
   static CompositingImpl _gimpl(_gdata);

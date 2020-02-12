@@ -42,7 +42,7 @@ struct IMPL {
       int w           = pTARG->mainSurfaceWidth();
       int h           = pTARG->mainSurfaceHeight();
       _rtg            = new RtGroup(pTARG, w, h, NUMSAMPLES);
-      auto buf        = new RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, w, h);
+      auto buf        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA8, w, h);
       buf->_debugName = FormatString("ScaleBiasCompositingNode::output");
       _rtg->SetMrt(0, buf);
       _material.Init(pTARG);

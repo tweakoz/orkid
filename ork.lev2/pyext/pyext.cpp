@@ -12,6 +12,7 @@
 #include <ork/lev2/init.h>
 #include <ork/lev2/gfx/gfxmaterial.h>
 #include <ork/lev2/gfx/material_freestyle.inl>
+#include <ork/lev2/gfx/rtgroup.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace py = pybind11;
@@ -53,6 +54,7 @@ void lev2appinit() {
 PYBIND11_MODULE(orklev2, m) {
   using namespace ork;
   using namespace ork::lev2;
+  using ctx_t            = ork::python::unmanaged_ptr<Context>;
   using fbi_t            = ork::python::unmanaged_ptr<FrameBufferInterface>;
   using gbi_t            = ork::python::unmanaged_ptr<GeometryBufferInterface>;
   using fxi_t            = ork::python::unmanaged_ptr<FxInterface>;
@@ -68,6 +70,7 @@ PYBIND11_MODULE(orklev2, m) {
   using vtxa_t           = SVtxV12N12B12T8C4;
   using vb_static_vtxa_t = StaticVertexBuffer<vtxa_t>;
   using vw_vtxa_t        = VtxWriter<vtxa_t>;
+  using cstrref_t        = const std::string&;
   /////////////////////////////////////////////////////////////////////////////////
   m.doc() = "Orkid Lev2 Library (graphics,audio,vr,input,etc..)";
   /////////////////////////////////////////////////////////////////////////////////
@@ -75,39 +78,40 @@ PYBIND11_MODULE(orklev2, m) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<GfxEnv>(m, "GfxEnv")
       .def_readonly_static("ref", &GfxEnv::GetRef())
-      .def("loadingContext", &GfxEnv::loadingContext)
+      .def("loadingContext", [](const GfxEnv& e) -> ctx_t { return ctx_t(GfxEnv::GetRef().loadingContext()); })
       .def("__repr__", [](const GfxEnv& e) -> std::string {
         fxstring<64> fxs;
         fxs.format("GfxEnv(%p)", &e);
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<Context>(m, "GfxContext")
-      .def("mainSurfaceWidth", &Context::mainSurfaceWidth)
-      .def("mainSurfaceHeight", &Context::mainSurfaceHeight)
-      .def("makeCurrent", &Context::makeCurrentContext)
-      .def("beginFrame", &Context::beginFrame)
-      .def("endFrame", &Context::endFrame)
-      .def("debugPushGroup", &Context::debugPushGroup)
-      .def("debugPopGroup", &Context::debugPopGroup)
-      .def("debugMarker", &Context::debugMarker)
-      .def("defaultRTG", [](Context& c) -> rtg_t { return rtg_t(c._defaultRTG); })
-      .def("FBI", [](Context& c) -> fbi_t { return fbi_t(c.FBI()); })
-      .def("FXI", [](Context& c) -> fxi_t { return fxi_t(c.FXI()); })
-      .def("GBI", [](Context& c) -> gbi_t { return gbi_t(c.GBI()); })
-      .def("TXI", [](Context& c) -> txi_t { return txi_t(c.TXI()); })
-      .def("RSI", [](Context& c) -> rsi_t { return rsi_t(c.RSI()); })
+  py::class_<ctx_t>(m, "GfxContext")
+      .def("mainSurfaceWidth", [](ctx_t& c) -> int { return c.get()->mainSurfaceWidth(); })
+      .def("mainSurfaceHeight", [](ctx_t& c) -> int { return c.get()->mainSurfaceHeight(); })
+      .def("makeCurrent", [](ctx_t& c) { c.get()->makeCurrentContext(); })
+      .def("beginFrame", [](ctx_t& c) { return c.get()->beginFrame(); })
+      .def("endFrame", [](ctx_t& c) { return c.get()->endFrame(); })
+      .def("debugPushGroup", [](ctx_t& c, cstrref_t str) { return c.get()->Context::debugPushGroup(str); })
+      .def("debugPopGroup", [](ctx_t& c) { return c.get()->Context::debugPopGroup(); })
+      .def("debugMarker", [](ctx_t& c, cstrref_t str) { return c.get()->Context::debugMarker(str); })
+      .def("defaultRTG", [](ctx_t& c) -> rtg_t { return rtg_t(c.get()->_defaultRTG); })
+      .def("resize", [](ctx_t& rtg, int w, int h) { rtg.get()->resizeMainSurface(w, h); })
+      .def("FBI", [](ctx_t& c) -> fbi_t { return fbi_t(c.get()->FBI()); })
+      .def("FXI", [](ctx_t& c) -> fxi_t { return fxi_t(c.get()->FXI()); })
+      .def("GBI", [](ctx_t& c) -> gbi_t { return gbi_t(c.get()->GBI()); })
+      .def("TXI", [](ctx_t& c) -> txi_t { return txi_t(c.get()->TXI()); })
+      .def("RSI", [](ctx_t& c) -> rsi_t { return rsi_t(c.get()->RSI()); })
       .def(
           "topRCFD",
-          [](Context& c) -> rcfd_ptr_t {
-            auto rcfd = c.topRenderContextFrameData();
+          [](ctx_t& c) -> rcfd_ptr_t {
+            auto rcfd = c.get()->topRenderContextFrameData();
             return rcfd_ptr_t(const_cast<RenderContextFrameData*>(rcfd));
           })
-      .def_property_readonly("frameIndex", [](Context& c) -> int { return c.GetTargetFrame(); })
-      .def_property("currentMaterial", &Context::currentMaterial, &Context::BindMaterial)
-      .def("__repr__", [](const Context& c) -> std::string {
+      .def_property_readonly("frameIndex", [](ctx_t& c) -> int { return c.get()->GetTargetFrame(); })
+      //.def_property("currentMaterial", [](ctx_t& c)&Context::currentMaterial, &Context::BindMaterial)
+      .def("__repr__", [](const ctx_t& c) -> std::string {
         fxstring<64> fxs;
-        fxs.format("Context(%p)", &c);
+        fxs.format("Context(%p)", c.get());
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
@@ -121,7 +125,7 @@ PYBIND11_MODULE(orklev2, m) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<FreestyleMaterial, GfxMaterial>(m, "FreestyleMaterial")
       .def(py::init<>())
-      .def("gpuInit", &FreestyleMaterial::gpuInit)
+      .def("gpuInit", [](FreestyleMaterial& m, ctx_t& c, file::Path& path) { m.gpuInit(c.get(), path); })
       .def_property_readonly("shader", [](const FreestyleMaterial& m) -> fxshader_t { return fxshader_t(m._shader); })
       .def("bindTechnique", [](FreestyleMaterial& m, const fxtechnique_t& tek) { m.bindTechnique(tek.get()); })
       .def("bindParamFloat", [](FreestyleMaterial& m, fxparam_t& p, float value) { m.bindParamFloat(p.get(), value); })
@@ -153,7 +157,7 @@ PYBIND11_MODULE(orklev2, m) {
           })
       .def(
           "param",
-          [](const fxshader_t& sh, const std::string& named) -> fxparam_t {
+          [](const fxshader_t& sh, cstrref_t named) -> fxparam_t {
             auto it = sh->_parameterByName.find(named);
             fxparam_t rval(nullptr);
             if (it != sh->_parameterByName.end())
@@ -173,7 +177,7 @@ PYBIND11_MODULE(orklev2, m) {
           })
       .def(
           "technique",
-          [](const fxshader_t& sh, const std::string& named) -> fxtechnique_t {
+          [](const fxshader_t& sh, cstrref_t named) -> fxtechnique_t {
             auto it = sh->_techniques.find(named);
             fxtechnique_t rval(nullptr);
             if (it != sh->_techniques.end())
@@ -265,11 +269,13 @@ PYBIND11_MODULE(orklev2, m) {
     return fxs.c_str();
   });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<rtg_t>(m, "RtGroup").def("__repr__", [](const rtg_t& rtg) -> std::string {
-    fxstring<256> fxs;
-    fxs.format("RtGroup(%p)", rtg.get());
-    return fxs.c_str();
-  });
+  py::class_<rtg_t>(m, "RtGroup")
+      .def("resize", [](rtg_t& rtg, int w, int h) { rtg.get()->Resize(w, h); })
+      .def("__repr__", [](const rtg_t& rtg) -> std::string {
+        fxstring<256> fxs;
+        fxs.format("RtGroup(%p)", rtg.get());
+        return fxs.c_str();
+      });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<rcfd_ptr_t>(m, "RenderContextFrameData").def("__repr__", [](const rcfd_ptr_t& rcfd) -> std::string {
     fxstring<256> fxs;

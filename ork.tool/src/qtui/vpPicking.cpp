@@ -187,10 +187,10 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::Pixe
   compositor_node.SetDstRect(tgt_rect);
   _gimpl.pushCPD(compositor_node);
   ///////////////////////////////////////////////////////////////////////////
-  int itx0 = GetContextX();
-  int itx1 = GetContextX() + GetContextW();
-  int ity0 = GetContextY();
-  int ity1 = GetContextY() + GetContextH();
+  int itx0 = 0;
+  int itx1 = itx0 + GetContextW();
+  int ity0 = 0;
+  int ity1 = ity0 + GetContextH();
   ///////////////////////////////////////////////////////////////////////////
   // force aspect ratio to that of the parent visible viewport
   //  as opposed to the pickbuffer size

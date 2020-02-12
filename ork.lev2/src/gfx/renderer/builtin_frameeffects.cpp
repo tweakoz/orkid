@@ -33,7 +33,7 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 TexBuffer::TexBuffer(OffscreenBuffer* parent, EBufferFormat efmt, int iW, int iH)
-    : OffscreenBuffer(parent, 0, 0, iW, iH, efmt, ETGTTYPE_EXTBUFFER) {
+    : OffscreenBuffer(parent, 0, 0, iW, iH, efmt) {
   lev2::ContextCreationParams params = lev2::GfxEnv::GetRef().GetCreationParams();
   params.miNumSharedVerts            = 4 << 10;
   lev2::GfxEnv::GetRef().PushCreationParams(params);
@@ -131,7 +131,7 @@ void BuiltinFrameTechniques::DoInit(Context* pTARG) {
 
   for (int i = 0; i < knumpingpongbufs; i++) {
     auto grp = new RtGroup(pTARG, miW, miH, kmultisamplesH);
-    auto buf = new RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, miW, miH);
+    auto buf = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16F, miW, miH);
 
     buf->_debugName = FormatString("BFTEK::PingPongBuf%d", i);
     mpHDRRtGroup[i] = grp;
@@ -145,9 +145,9 @@ void BuiltinFrameTechniques::DoInit(Context* pTARG) {
   mpMrtAux0 = new RtGroup(pTARG, kGLOWBUFSIZE, kGLOWBUFSIZE, 1);
   mpMrtAux1 = new RtGroup(pTARG, kGLOWBUFSIZE, kGLOWBUFSIZE, 1);
 
-  auto bufa = new RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, kGLOWBUFSIZE, kGLOWBUFSIZE);
+  auto bufa = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16F, kGLOWBUFSIZE, kGLOWBUFSIZE);
 
-  auto bufb = new RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, kGLOWBUFSIZE, kGLOWBUFSIZE);
+  auto bufb = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16F, kGLOWBUFSIZE, kGLOWBUFSIZE);
 
   bufa->_debugName = FormatString("BFTEK::Aux0");
   bufb->_debugName = FormatString("BFTEK::Aux1");
@@ -168,7 +168,7 @@ void BuiltinFrameTechniques::DoInit(Context* pTARG) {
 
   mpMrtFinalHD = new RtGroup(pTARG, kFINALHDW, kFINALHDH, kmultisamplesH);
 
-  auto buff = new RtBuffer(lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, kFINALHDW, kFINALHDH);
+  auto buff = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16F, kFINALHDW, kFINALHDH);
 
   mpMrtFinalHD->SetMrt(0, buff);
 
@@ -925,10 +925,10 @@ void ShadowFrameTechnique::Render(FrameRenderer& frenderer) {
   RenderContextFrameData& FrameData = frenderer.framedata();
   Context* pTARG                    = FrameData.GetTarget();
   /////////////////////////////////////////////////
-  int itx0 = pTARG->mainSurfaceWindowPosX();
-  int itx1 = pTARG->mainSurfaceWindowPosX() + pTARG->mainSurfaceWidth();
-  int ity0 = pTARG->mainSurfaceWindowPosY();
-  int ity1 = pTARG->mainSurfaceWindowPosY() + pTARG->mainSurfaceHeight();
+  int itx0 = 0;
+  int itx1 = itx0 + pTARG->mainSurfaceWidth();
+  int ity0 = 0;
+  int ity1 = ity0 + pTARG->mainSurfaceHeight();
   /////////////////////////////////////////////////
 
   /*
