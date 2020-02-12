@@ -68,6 +68,7 @@ Orkid is divided into several shared libraries:
 
 * ork.tool :
 	- Scene / Archetype / Component / Object editor.
+	- Mesh Processing
 	- Asset conversion filters.
 	- Distributed Lightmapper (WIP)
 
