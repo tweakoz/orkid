@@ -5,7 +5,7 @@
 Orkid is divided into several shared libraries:
 
 ---
-* ork.core 
+* ork.core (python3 module: orkcore)
 	- Reflection kernel
 	- Performance minded containers
 	- Math (LA/trig/audio/etc)
@@ -15,10 +15,11 @@ Orkid is divided into several shared libraries:
 	- General OS utilities.
 	- Notable dependencies: 
 		+ Boost
+		+ Python3/PyBind11
 
 ---
 
-* ork.lev2 : 
+* ork.lev2 :  (python3 module: orklev2)
 	- Platform a/v/input drivers.
 		- Graphics
 			+ OpenGL
@@ -38,11 +39,13 @@ Orkid is divided into several shared libraries:
 		+ Fixed Function and Modular particle systems
 		+ Spatialized audio effect system
 		+ Audio stream playback controllers.
-	- Notable dependencies: 
+	- Notable dependencies
+	        + Ork.Core
 		+ OpenGL (osx/iX)
 		+ QT5. (osx/iX)
 		+ PortAudio (osx/iX)
 		+ OpenVR (iX)
+		+ Python3/PyBind11
 ---
 
 * ork.ent : archetype / entity / component / scene system. Lets you load a pregenerated 'scene' document and run it as a simulation. Contains a collection of commonly useful components, including:
@@ -57,6 +60,9 @@ Orkid is divided into several shared libraries:
 	- Audio effect playback component with dataflow based modulation support
 	- Audio stream playback component
 	- Audio manager scene-component
+	- Notable dependencies:
+	    + Ork.Core,Ork.Lev2
+	    + BulletPhysics
 	 
 ---
 
