@@ -84,6 +84,8 @@ print(encoder)
 
 encoded_length = 0
 
+h264file = open("vfpencout.h264",  "wb")
+
 for i in range(0,50):
     ###################
     # render to default buffer
@@ -122,6 +124,7 @@ for i in range(0,50):
         encFrame = encoder.EncodeSingleSurface(rawSurfaceNV12)
         if(encFrame.size):
             encByteArray = bytearray(encFrame)
+            h264file.write(encByteArray)
             encoded_length += len(encByteArray)
             print("encoded_length<%d>"%encoded_length)
 
@@ -137,5 +140,6 @@ encFrames = encoder.Flush()
 for encFrame in encFrames:
     if(encFrame.size):
         encByteArray = bytearray(encFrame)
+        h264file.write(encByteArray)
         encoded_length += len(encByteArray)
         print("encoded_length<%d>"%encoded_length)
