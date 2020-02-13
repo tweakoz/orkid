@@ -3,7 +3,7 @@ jobs:
   build:
     docker:
       - image: tweakoz/ubuntu_builders:eoan5
-    resource_class: large
+    resource_class: xlarge
     steps:
       - checkout
       - run: git submodule update --init --recursive
