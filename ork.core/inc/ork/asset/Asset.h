@@ -4,7 +4,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #pragma once
 #if !defined(WII)
-//#define ORKCONFIG_ASSET_UNLOAD 
+//#define ORKCONFIG_ASSET_UNLOAD
 #endif
 #include <ork/asset/AssetClass.h>
 #include <ork/object/Object.h>
@@ -18,17 +18,18 @@ namespace ork { namespace asset {
 class Asset : public Object
 {
     RttiDeclareAbstractWithCategory( Asset, Object, AssetClass );
-    
-public:
-	void SetName(PoolString name);
-	PoolString GetName() const;
-	virtual PoolString GetType() const;
-	bool Load() const;
-	bool LoadUnManaged() const;
-	bool IsLoaded() const;
 
-    varmap::VarMap _varmap;
-    PoolString mName;
+public:
+  Asset();
+  void SetName(PoolString name);
+  PoolString GetName() const;
+  virtual PoolString GetType() const;
+  bool Load() const;
+  bool LoadUnManaged() const;
+  bool IsLoaded() const;
+
+  varmap::VarMap _varmap;
+  PoolString mName;
 };
 
 } }

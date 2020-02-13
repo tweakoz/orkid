@@ -4,8 +4,7 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
-
+////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
 
@@ -16,62 +15,58 @@
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::asset::Asset, "Asset2");
 
-
-//template ork::rtti::RTTI<ork::asset::Asset, ork::Object, ork::rtti::AbstractPolicy, ork::asset::AssetClass>;
+// template ork::rtti::RTTI<ork::asset::Asset, ork::Object, ork::rtti::AbstractPolicy, ork::asset::AssetClass>;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace asset {
 ///////////////////////////////////////////////////////////////////////////////
 
+void Asset::Describe() {
+}
 
-void Asset::Describe(){} 
-
-///////////////////////////////////////////////////////////////////////////////
-
-void Asset::SetName(PoolString name)
-{
-	mName = name;
+Asset::Asset() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PoolString Asset::GetName() const
-{
-	return mName;
+void Asset::SetName(PoolString name) {
+  mName = name;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PoolString Asset::GetType() const
-{
-	return rtti::safe_downcast<AssetClass *>(GetClass())->Name();
+PoolString Asset::GetName() const {
+  return mName;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Asset::Load() const
-{
-	AssetSetEntry *entry = GetAssetSetEntry(this);
-
-	return entry->Load(GetClass()->GetAssetSet().GetTopLevel());
-}
-
-bool Asset::LoadUnManaged() const
-{
-	AssetSetEntry *entry = GetAssetSetEntry(this);
-
-	return entry->Load(GetClass()->GetAssetSet().GetTopLevel());
+PoolString Asset::GetType() const {
+  return rtti::safe_downcast<AssetClass*>(GetClass())->Name();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Asset::IsLoaded() const
-{
-	AssetSetEntry *entry = GetAssetSetEntry(this);
+bool Asset::Load() const {
+  AssetSetEntry* entry = GetAssetSetEntry(this);
 
-	return entry && entry->IsLoaded();
+  return entry->Load(GetClass()->GetAssetSet().GetTopLevel());
+}
+
+bool Asset::LoadUnManaged() const {
+  AssetSetEntry* entry = GetAssetSetEntry(this);
+
+  return entry->Load(GetClass()->GetAssetSet().GetTopLevel());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} }
+
+bool Asset::IsLoaded() const {
+  AssetSetEntry* entry = GetAssetSetEntry(this);
+
+  return entry && entry->IsLoaded();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+}} // namespace ork::asset
 ///////////////////////////////////////////////////////////////////////////////

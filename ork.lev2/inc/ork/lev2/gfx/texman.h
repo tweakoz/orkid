@@ -21,6 +21,7 @@ namespace ork { namespace lev2 {
 void invoke_nvcompress(std::string inpath, std::string outpath, std::string outfmt);
 
 class Context;
+class TextureAsset;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -138,7 +139,7 @@ struct Texture {
 
   //////////////////////////////////////////////////////
 
-  Texture();
+  Texture(const TextureAsset* asset = nullptr);
   ~Texture();
 
   //////////////////////////////////////////////////////
@@ -214,10 +215,11 @@ struct Texture {
   const void* _data             = nullptr;
   TextureAnimationBase* _anim   = nullptr;
   mutable void* _internalHandle = nullptr;
-  Context* _creatingTarget    = nullptr;
+  Context* _creatingTarget      = nullptr;
   std::string _debugName;
   bool _isDepthTexture = false;
   varmap::VarMap _varmap;
+  const TextureAsset* _asset;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

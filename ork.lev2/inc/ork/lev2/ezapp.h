@@ -25,11 +25,11 @@ class EzApp : public ork::Application {
   RttiDeclareAbstract(EzApp, ork::Application);
 
 public:
-  static std::shared_ptr<EzApp> create(int argc, char** argv);
+  static std::shared_ptr<EzApp> create(int& argc, char** argv);
   ~EzApp() final;
 
 private:
-  EzApp(int argc, char** argv);
+  EzApp(int& argc, char** argv);
   ork::Thread _updateThread;
   bool _updatekill;
   opq::TrackCurrent* _trackq;
@@ -66,7 +66,7 @@ class OrkEzQtApp : public QApplication {
 public:
   ///////////////////////////////////
   ///////////////////////////////////
-  static std::shared_ptr<OrkEzQtApp> create(int argc, char** argv);
+  static std::shared_ptr<OrkEzQtApp> create(int& argc, char** argv);
 
   filedevctxptr_t newFileDevContext(std::string uribase);
 

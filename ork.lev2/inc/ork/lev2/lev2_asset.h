@@ -9,8 +9,7 @@
 // level2 assets
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef _LEV2_ASSET_H
-#define _LEV2_ASSET_H
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -25,79 +24,83 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class TextureAsset : public ork::asset::Asset
-{
-	RttiDeclareConcrete(TextureAsset,ork::asset::Asset);
+class TextureAsset : public ork::asset::Asset {
+  RttiDeclareConcrete(TextureAsset, ork::asset::Asset);
 
-	static const char *GetAssetTypeNameStatic( void ) { return "lev2tex"; }
+  static const char* GetAssetTypeNameStatic(void) {
+    return "lev2tex";
+  }
 
-	ork::atomic<Texture*> mData;
+  ork::atomic<Texture*> mData;
 
 public: //
+  TextureAsset();
+  ~TextureAsset() override;
 
-	TextureAsset();
-	~TextureAsset() override;
-
-	Texture* GetTexture() const { return mData; }
-	void SetTexture( Texture* pt );
+  Texture* GetTexture() const {
+    return mData;
+  }
+  void SetTexture(Texture* pt);
 };
 
 typedef TextureAsset* textureassetptr_t; // prep for shared_ptr
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmModelAsset : public ork::asset::Asset
-{
-	RttiDeclareConcrete(XgmModelAsset,ork::asset::Asset);
-	static const char *GetAssetTypeNameStatic( void ) { return "xgmodel"; }
-	XgmModel	mData;
+class XgmModelAsset : public ork::asset::Asset {
+  RttiDeclareConcrete(XgmModelAsset, ork::asset::Asset);
+  static const char* GetAssetTypeNameStatic(void) {
+    return "xgmodel";
+  }
+  XgmModel mData;
 
 public: //
+  ~XgmModelAsset() override;
 
-	~XgmModelAsset() override;
-
-	XgmModel* GetModel() { return & mData; }
-	const XgmModel* GetModel() const { return & mData; }
-
+  XgmModel* GetModel() {
+    return &mData;
+  }
+  const XgmModel* GetModel() const {
+    return &mData;
+  }
 };
 
 typedef XgmModelAsset* xgmmodelassetptr_t; // prep for shared_ptr
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmAnimAsset : public ork::asset::Asset
-{
-	RttiDeclareConcrete(XgmAnimAsset,ork::asset::Asset);
-	static const char *GetAssetTypeNameStatic( void ) { return "xganim"; }
-	XgmAnim	mData;
+class XgmAnimAsset : public ork::asset::Asset {
+  RttiDeclareConcrete(XgmAnimAsset, ork::asset::Asset);
+  static const char* GetAssetTypeNameStatic(void) {
+    return "xganim";
+  }
+  XgmAnim mData;
 
 public: //
-
-	XgmAnim* GetAnim() { return & mData; }
-
+  XgmAnim* GetAnim() {
+    return &mData;
+  }
 };
 
 typedef XgmAnimAsset* xgmanimassetptr_t; // prep for shared_ptr
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class FxShaderAsset : public ork::asset::Asset
-{
-	RttiDeclareConcrete(FxShaderAsset,ork::asset::Asset);
-	static const char *GetAssetTypeNameStatic( void ) { return "fxshader"; }
-	FxShader	mData;
+class FxShaderAsset : public ork::asset::Asset {
+  RttiDeclareConcrete(FxShaderAsset, ork::asset::Asset);
+  static const char* GetAssetTypeNameStatic(void) {
+    return "fxshader";
+  }
+  FxShader mData;
 
 public: //
-
-	FxShader* GetFxShader() { return & mData; }
-
+  FxShader* GetFxShader() {
+    return &mData;
+  }
 };
 
 typedef FxShaderAsset* fxshaderassetptr_t; // prep for shared_ptr
 
 ///////////////////////////////////////////////////////////////////////////////
-}}
+}} // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////
-
-
-#endif //_LEV2_ASSET_H

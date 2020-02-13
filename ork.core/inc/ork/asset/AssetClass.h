@@ -9,6 +9,7 @@
 #include <ork/asset/AssetCategory.h>
 #include <ork/asset/AssetSet.h>
 #include <ork/file/path.h>
+#include <ork/kernel/varmap.inl>
 
 namespace ork { namespace asset {
 
@@ -16,39 +17,36 @@ class Asset;
 class AssetLoader;
 class FileAssetNamer;
 
-class AssetClass 
-	: public object::ObjectClass
-{
-	RttiDeclareExplicit(AssetClass, object::ObjectClass, rtti::NamePolicy, AssetCategory);
+class AssetClass : public object::ObjectClass {
+  RttiDeclareExplicit(AssetClass, object::ObjectClass, rtti::NamePolicy, AssetCategory);
+  static const VarMap _gnovars;
 
 public:
-	AssetClass(const rtti::RTTIData &);
+  AssetClass(const rtti::RTTIData&);
 
-	AssetLoader* FindLoader(PieceString);
-	Asset* LoadUnManagedAsset(PieceString);
-	Asset* DeclareAsset(PieceString);
-	Asset* FindAsset(PieceString);
+  AssetLoader* FindLoader(PieceString);
+  Asset* LoadUnManagedAsset(PieceString, const VarMap& vmap = _gnovars);
+  Asset* DeclareAsset(PieceString, const VarMap& vmap = _gnovars);
+  Asset* FindAsset(PieceString, const VarMap& vmap = _gnovars);
 
-	void AddLoader(AssetLoader *loader);
+  void AddLoader(AssetLoader* loader);
 
-	Asset* CreateUnmanagedAsset(PieceString);
+  Asset* CreateUnmanagedAsset(PieceString, const VarMap& vmap = _gnovars);
 
-	AssetSet& GetAssetSet();
+  AssetSet& GetAssetSet();
 
-	void SetAssetNamer(const std::string& namer);
-	void AddTypeAlias(ConstString alias);
-	
-	bool AutoLoad(int depth = -1);
+  void SetAssetNamer(const std::string& namer);
+  void AddTypeAlias(ConstString alias);
 
-	std::set<file::Path> EnumerateExisting() const;
+  bool AutoLoad(int depth = -1);
+
+  std::set<file::Path> EnumerateExisting() const;
 
 private:
-
-	FileAssetNamer *GetAssetNamer() const;
-	FileAssetNamer *mAssetNamer;
-	std::set<AssetLoader*> mLoaders;
-	AssetSet mAssetSet;
-
+  FileAssetNamer* GetAssetNamer() const;
+  FileAssetNamer* mAssetNamer;
+  std::set<AssetLoader*> mLoaders;
+  AssetSet mAssetSet;
 };
 
-} }
+}} // namespace ork::asset

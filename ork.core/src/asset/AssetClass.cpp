@@ -5,7 +5,6 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-
 #include <ork/pch.h>
 #include <ork/asset/Asset.h>
 #include <ork/asset/AssetClass.h>
@@ -27,16 +26,16 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::asset::AssetClass, "AssetClass")
 namespace ork { namespace asset {
 ///////////////////////////////////////////////////////////////////////////////
 
-void AssetClass::Describe()
-{
+const VarMap AssetClass::_gnovars;
+
+void AssetClass::Describe() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AssetClass::AssetClass(const rtti::RTTIData &data)
-	: object::ObjectClass(data)
-	, mAssetNamer(NULL)
-{
+AssetClass::AssetClass(const rtti::RTTIData& data)
+    : object::ObjectClass(data)
+    , mAssetNamer(NULL) {
 }
 
 std::set<file::Path> AssetClass::EnumerateExisting() const {
@@ -45,7 +44,7 @@ std::set<file::Path> AssetClass::EnumerateExisting() const {
   for (auto& l : mLoaders) {
     auto s = l->EnumerateExisting();
     for (auto i : s) {
-       //printf( "enumexist loader<%p> asset<%s>\n", l, i.c_str() );
+      // printf( "enumexist loader<%p> asset<%s>\n", l, i.c_str() );
       rval.insert(i);
     }
   }
@@ -54,157 +53,138 @@ std::set<file::Path> AssetClass::EnumerateExisting() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AssetClass::AddLoader(AssetLoader* loader)
-{
-	mLoaders.insert(loader);
+void AssetClass::AddLoader(AssetLoader* loader) {
+  mLoaders.insert(loader);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class Renamer
-{
-	ArrayString<128> mRenamed;
+class Renamer {
+  ArrayString<128> mRenamed;
+
 public:
-	Renamer(FileAssetNamer* renamer, PieceString &name);
+  Renamer(FileAssetNamer* renamer, PieceString& name);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FileAssetNamer *AssetClass::GetAssetNamer() const
-{
-	return mAssetNamer;
+FileAssetNamer* AssetClass::GetAssetNamer() const {
+  return mAssetNamer;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AssetLoader *AssetClass::FindLoader(PieceString name)
-{
-	Renamer fix_name(GetAssetNamer(), name);
+AssetLoader* AssetClass::FindLoader(PieceString name) {
+  Renamer fix_name(GetAssetNamer(), name);
 
-	for( auto it : mLoaders )
-	{
-		if(it->CheckAsset(name))
-			return it;
-	}
+  for (auto it : mLoaders) {
+    if (it->CheckAsset(name))
+      return it;
+  }
 
-	return NULL;
+  return NULL;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Asset *AssetClass::CreateUnmanagedAsset(PieceString name)
-{
-	Renamer fix_name(GetAssetNamer(), name);
+Asset* AssetClass::CreateUnmanagedAsset(PieceString name, const VarMap& vmap) {
+  Renamer fix_name(GetAssetNamer(), name);
 
-	Asset *asset = NULL;
+  Asset* asset = NULL;
 
-	if(false == Class::HasFactory())
-	{
-		VirtualAsset *vasset = new VirtualAsset();
-		vasset->SetType(Name());
+  if (false == Class::HasFactory()) {
+    VirtualAsset* vasset = new VirtualAsset();
+    vasset->SetType(Name());
 
-		asset = vasset;
-	}
-	else
-	{
-		asset = rtti::safe_downcast<Asset *>(CreateObject());
-	}
+    asset = vasset;
+  } else {
+    asset = rtti::safe_downcast<Asset*>(CreateObject());
+  }
 
-	asset->SetName(ork::AddPooledString(name));
+  asset->SetName(ork::AddPooledString(name));
+  asset->_varmap = vmap;
 
-	return asset;
+  return asset;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Asset *AssetClass::FindAsset(PieceString name)
-{
-	Renamer fix_name(GetAssetNamer(), name);
+Asset* AssetClass::FindAsset(PieceString name, const VarMap& vmap) {
+  Renamer fix_name(GetAssetNamer(), name);
 
-	PoolString name_string = FindPooledString(name);
+  PoolString name_string = FindPooledString(name);
 
-	return mAssetSet.FindAsset(name_string);
+  return mAssetSet.FindAsset(name_string);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Asset *AssetClass::DeclareAsset(PieceString name)
-{
-	// Editor support that allows nulling out a previously set asset name.
-	if(name.empty())
-	{
-		return nullptr;
-	}
+Asset* AssetClass::DeclareAsset(PieceString name, const VarMap& vmap) {
+  // Editor support that allows nulling out a previously set asset name.
+  if (name.empty()) {
+    return nullptr;
+  }
 
-	if(Asset *asset = FindAsset(name))
-	{
-		mAssetSet.Register(asset->GetName());
-		return asset;
-	}
+  if (Asset* asset = FindAsset(name, vmap)) {
+    mAssetSet.Register(asset->GetName());
+    return asset;
+  }
 
-	Asset *new_asset = CreateUnmanagedAsset(name);
-	auto loader = FindLoader(name);
-	mAssetSet.Register(new_asset->GetName(), new_asset, loader );
+  Asset* new_asset = CreateUnmanagedAsset(name, vmap);
+  auto loader      = FindLoader(name);
+  mAssetSet.Register(new_asset->GetName(), new_asset, loader);
 
-	return new_asset;
+  return new_asset;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Asset *AssetClass::LoadUnManagedAsset(PieceString name)
-{
-	// Editor support that allows nulling out a previously set asset name.
-	if(name.empty())
-	{
-		return nullptr;
-	}
+Asset* AssetClass::LoadUnManagedAsset(PieceString name, const VarMap& vmap) {
+  // Editor support that allows nulling out a previously set asset name.
+  if (name.empty()) {
+    return nullptr;
+  }
 
-	Asset *new_asset = CreateUnmanagedAsset(name);
+  Asset* new_asset = CreateUnmanagedAsset(name, vmap);
 
-	auto loader = FindLoader(name);
+  auto loader = FindLoader(name);
 
-	loader->LoadAsset( new_asset );
-	return new_asset;
+  loader->LoadAsset(new_asset);
+  return new_asset;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AssetSet &AssetClass::GetAssetSet()
-{
-	return mAssetSet;
+AssetSet& AssetClass::GetAssetSet() {
+  return mAssetSet;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool AssetClass::AutoLoad(int depth)
-{
-	return GetAssetSet().Load(depth);
+bool AssetClass::AutoLoad(int depth) {
+  return GetAssetSet().Load(depth);
 }
 
-void AssetClass::SetAssetNamer(const std::string& namer)
-{
-	mAssetNamer = new FileAssetNamer(namer.c_str());
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void AssetClass::AddTypeAlias(ConstString alias)
-{
-	PoolString thealias = ork::AddPooledString(alias);
-	GetClassStatic()->AddTypeAlias(thealias, this);
+void AssetClass::SetAssetNamer(const std::string& namer) {
+  mAssetNamer = new FileAssetNamer(namer.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Renamer::Renamer(FileAssetNamer* renamer, PieceString &name)
-{
-	if(renamer)
-	{
-		if(renamer->Canonicalize(mRenamed, name))
-			name = mRenamed;
-	}
+void AssetClass::AddTypeAlias(ConstString alias) {
+  PoolString thealias = ork::AddPooledString(alias);
+  GetClassStatic()->AddTypeAlias(thealias, this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} }
+
+Renamer::Renamer(FileAssetNamer* renamer, PieceString& name) {
+  if (renamer) {
+    if (renamer->Canonicalize(mRenamed, name))
+      name = mRenamed;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+}} // namespace ork::asset
 ///////////////////////////////////////////////////////////////////////////////

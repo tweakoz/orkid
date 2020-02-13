@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>
+#include <ork/kernel/varmap.inl>
 
 namespace ork::lev2::deferrednode {
 
@@ -279,6 +280,8 @@ public:
   lev2::Texture* _filtenvSpecularMap = nullptr;
   lev2::Texture* _filtenvDiffuseMap  = nullptr;
   fvec4 _clearColor;
+
+  varmap::VarMap _texAssetVarMap;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

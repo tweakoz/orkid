@@ -9,14 +9,14 @@ namespace ork::lev2 {
 void ClassInit();
 void GfxInit(const std::string& gfxlayer);
 
-std::shared_ptr<EzApp> EzApp::create(int argc, char** argv) {
+std::shared_ptr<EzApp> EzApp::create(int& argc, char** argv) {
   static ork::lev2::StdFileSystemInitalizer filesysteminit(argc, argv);
   return std::shared_ptr<EzApp>(new EzApp(argc, argv));
 }
 
 void EzApp::Describe() {
 }
-EzApp::EzApp(int argc, char** argv)
+EzApp::EzApp(int& argc, char** argv)
     : _updateThread("updatethread")
     , _updatekill(false) {
   ork::SetCurrentThreadName("main");
@@ -54,7 +54,7 @@ EzApp::~EzApp() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::shared_ptr<OrkEzQtApp> OrkEzQtApp::create(int argc, char** argv) {
+std::shared_ptr<OrkEzQtApp> OrkEzQtApp::create(int& argc, char** argv) {
   QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
   return std::shared_ptr<OrkEzQtApp>(new OrkEzQtApp(argc, argv));
 }
@@ -168,7 +168,7 @@ filedevctxptr_t OrkEzQtApp::newFileDevContext(std::string uribase) {
   return ctx;
 }
 
-int OrkEzQtApp::runloop(){
+int OrkEzQtApp::runloop() {
   return exec();
 }
 

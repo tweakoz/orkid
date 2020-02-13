@@ -77,8 +77,10 @@ int main(int argc, char** argv) {
     auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/pbr1/pbr1");
     model           = modl_asset->GetModel();
     renderer.setContext(ctx);
-    auto envl_asset = asset::AssetManager<TextureAsset>::Create("data://environ/envmaps/tozenv_nebula");
+    auto& assetVars = pbrnode->_texAssetVarMap;
+    auto envl_asset = asset::AssetManager<TextureAsset>::Create("data://environ/envmaps/tozenv_nebula", assetVars);
     OrkAssert(envl_asset->GetTexture() != nullptr);
+    OrkAssert(envl_asset->_varmap.hasKey("postproc"));
     pbrnode->_writeEnvTexture(envl_asset);
 
     while (asset::AssetManager<TextureAsset>::AutoLoad()) {

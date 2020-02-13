@@ -36,6 +36,7 @@
 
 #include <ork/kernel/atomic.h>
 #include <ork/orkstd.h>
+#include <ork/util/crc64.h>
 #include <cxxabi.h>
 
 #if !defined(__APPLE__)
@@ -113,6 +114,7 @@ public:
       : mtinfo(nullptr) {
     mDestroyer = nullptr;
     mCopier    = nullptr;
+    _curlength = 0;
   }
   //////////////////////////////////////////////////////////////
   // copy constuctor
@@ -131,7 +133,7 @@ public:
     auto c = oth.mCopier.load();
     if (c)
       c(*this, oth);
-
+    _curlength = oth._curlength;
     return *this;
   }
   //////////////////////////////////////////////////////////////
@@ -167,15 +169,21 @@ public:
     destroyer_t pdestr = mDestroyer.exchange(nullptr);
     if (pdestr)
       pdestr(*this);
+    _curlength = 0;
   }
   //////////////////////////////////////////////////////////////
   //	assign a destroyer
   //////////////////////////////////////////////////////////////
-  template <typename T> void AssignDestroyer() { mDestroyer.store(&static_variant_destroyer_t<tsize, T>::destroy); }
+  template <typename T> void AssignDestroyer() {
+    mDestroyer.store(&static_variant_destroyer_t<tsize, T>::destroy);
+  }
   //////////////////////////////////////////////////////////////
   //	assign a copier
   //////////////////////////////////////////////////////////////
-  template <typename T> void AssignCopier() { mCopier.store(&static_variant_copier_t<tsize, T>::copy); }
+  template <typename T> void AssignCopier() {
+    mCopier.store(&static_variant_copier_t<tsize, T>::copy);
+    _curlength = sizeof(T);
+  }
   //////////////////////////////////////////////////////////////
   // return true if the contained object is a T
   //////////////////////////////////////////////////////////////
@@ -301,8 +309,17 @@ public:
   }
 #endif
 //////////////////////////////////////////////////////////////
+  uint64_t hash() const {
+    boost::Crc64 crcgen;
+    crcgen.init();
+    crcgen.accumulate((const void*)mbuffer,ksize);
+    crcgen.finish();
+    return crcgen.result();
+  }
+//////////////////////////////////////////////////////////////
 private:
   char mbuffer[ksize];
+  size_t _curlength;
   ork::atomic<destroyer_t> mDestroyer;
   ork::atomic<copier_t> mCopier;
   const std::type_info* mtinfo;

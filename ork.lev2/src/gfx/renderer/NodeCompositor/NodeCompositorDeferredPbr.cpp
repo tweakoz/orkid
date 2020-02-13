@@ -57,6 +57,31 @@ void DeferredCompositingNodePbr::describeX(class_t* c) {
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.assettype", "lev2tex")
       ->annotate<ConstString>("editor.assetclass", "lev2tex");
+
+  /*->annotate<Texture::proc_t>(
+      "asset.postproc", [this](Texture* tex, Context* targ, datablockptr_t datablock) -> datablockptr_t {
+        boost::Crc64 hasher;
+        hasher.accumulateString("irradiancemap");
+        hasher.accumulateItem<uint64_t>(datablock->hash()); // data content
+        hasher.finish();
+        uint64_t cachekey = hasher.result();
+        auto irrmapdblock = DataBlockCache::findDataBlock(cachekey);
+        if (0) { // irrmapdblock) {
+          // found in cache
+          datablock = irrmapdblock;
+        } else {
+          DataBlockInputStream istream(datablock);
+          // not found in cache, generate
+          irrmapdblock = std::make_shared<DataBlock>();
+          ///////////////////////////
+          _filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ);
+          _filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ);
+          //////////////////////////////////////////////////////////////
+          // DataBlockCache::setDataBlock(cachekey, irrmapdblock);
+          datablock = irrmapdblock;
+        }
+        return datablock;
+      });*/
 }
 
 void DeferredCompositingNodePbr::_readEnvTexture(ork::rtti::ICastable*& tex) const {
@@ -74,10 +99,10 @@ void DeferredCompositingNodePbr::_writeEnvTexture(ork::rtti::ICastable* const& t
   if (nullptr == _environmentTextureAsset)
     return;
   printf("WTF1 <%p>\n\n", _environmentTextureAsset);
-  ////////////////////////////////////////////////////////////////////////////////
-  // irradiance map preprocessor
-  ////////////////////////////////////////////////////////////////////////////////
-
+////////////////////////////////////////////////////////////////////////////////
+// irradiance map preprocessor
+////////////////////////////////////////////////////////////////////////////////
+#if 0
   _environmentTextureAsset->_varmap.makeValueForKey<Texture::proc_t>("postproc") =
       [this](Texture* tex, Context* targ, datablockptr_t datablock) -> datablockptr_t {
     /*printf(
@@ -107,6 +132,7 @@ void DeferredCompositingNodePbr::_writeEnvTexture(ork::rtti::ICastable* const& t
     }
     return datablock;
   };
+#endif
   ////////////////////////////////////////////////////////////////////////////////
 }
 
@@ -276,6 +302,36 @@ struct PbrNodeImpl {
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
   _impl = std::make_shared<PbrNodeImpl>(this);
+
+  _texAssetVarMap.makeValueForKey<Texture::proc_t>("postproc") =
+      [this](Texture* tex, Context* targ, datablockptr_t datablock) -> datablockptr_t {
+    printf(
+        "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>...\n",
+        tex,
+        tex->_debugName.c_str(),
+        datablock->length());
+    boost::Crc64 hasher;
+    hasher.accumulateString("irradiancemap");
+    hasher.accumulateItem<uint64_t>(datablock->hash()); // data content
+    hasher.finish();
+    uint64_t cachekey = hasher.result();
+    auto irrmapdblock = DataBlockCache::findDataBlock(cachekey);
+    if (0) { // irrmapdblock) {
+      // found in cache
+      datablock = irrmapdblock;
+    } else {
+      DataBlockInputStream istream(datablock);
+      // not found in cache, generate
+      irrmapdblock = std::make_shared<DataBlock>();
+      ///////////////////////////
+      _filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ);
+      _filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ);
+      //////////////////////////////////////////////////////////////
+      // DataBlockCache::setDataBlock(cachekey, irrmapdblock);
+      datablock = irrmapdblock;
+    }
+    return datablock;
+  };
 }
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNodePbr::~DeferredCompositingNodePbr() {

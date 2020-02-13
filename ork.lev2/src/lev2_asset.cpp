@@ -126,7 +126,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 TextureAsset::TextureAsset() {
-  mData = new Texture;
+  mData = new Texture(this);
 }
 TextureAsset::~TextureAsset() {
   auto i = mData.exchange(nullptr);
