@@ -27,11 +27,14 @@ build_dest.mkdir(parents=True,exist_ok=True)
 build_dest.chdir()
 
 prj_root = Path(os.environ["ORKID_WORKSPACE_DIR"])
-cmd = ["cmake"]
 
 stage_dir = Path(os.path.abspath(str(ork.path.stage())))
 
 ok = True
+
+######################################################################
+# ez install
+######################################################################
 
 if _args["ez"]!=False:
     ork_root = stage_dir/".."
@@ -68,6 +71,20 @@ if _args["ez"]!=False:
     else:
         sys.exit(-1)
 
+######################################################################
+# ensure deps present
+######################################################################
+
+ork.dep.require(["bullet","openexr","oiio","openvr","fcollada","assimp","nvtt","lua","python","pybind11"])
+
+######################################################################
+# prep for build
+######################################################################
+
+build_dest.chdir()
+
+cmd = ["cmake"]
+
 if _args["xcode"]!=False:
     debug = True
     cmd += ["-G","Xcode"]
@@ -83,13 +100,17 @@ cmd += ["-DPYTHON_LIBRARY=%s/lib/libpython3.8d.so"%(stage_dir)]
 
 cmd += [prj_root]
 
-ork.dep.require(["bullet","openexr","oiio","openvr","fcollada","assimp","nvtt","lua","python"])
 
-ok = Command(cmd).exec()==0
+ok = (Command(cmd).exec()==0)
 
+######################################################################
+# build
+######################################################################
+
+build_dest.chdir()
 
 if _args["clean"]!=False:
-    ok = Command(["make","clean"]).exec()==0
+    ok = (Command(["make","clean"]).exec()==0)
 
 cmd = ["make"]
 if _args["verbose"]!=False:
@@ -100,7 +121,7 @@ if _args["serial"]==False:
 
 cmd += ["install"]
 
-ok = Command(cmd).exec()==0
+ok = (Command(cmd).exec()==0)
 
 if ok:
     sys.exit(0)
