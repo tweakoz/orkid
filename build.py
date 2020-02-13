@@ -58,7 +58,7 @@ if _args["ez"]!=False:
     docmd(init_env+ch_ork_root+["--command","obt.pip.install.py numpi"])
     docmd(init_env+ch_ork_root+["--command","obt.pip.install.py scipy"])
     docmd(init_env+ch_ork_root+["--command","obt.pip.install.py zmq"])
-    docmd(init_env+ch_ork_root+["--command","obt.dep.build.py qt5"])
+    #docmd(init_env+ch_ork_root+["--command","obt.dep.build.py qt5"])
     docmd(init_env+ch_ork_root+["--command","./build.py --debug"])
     docmd(init_env+ch_tuio+["--command","make install"])
     docmd(init_env+ch_ork_root+["--command","./build.py --debug"])
