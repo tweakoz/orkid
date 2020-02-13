@@ -350,8 +350,6 @@ void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
 
 	miW = pBuf->GetBufferW();
 	miH = pBuf->GetBufferH();
-	miX = 0;
-	miY = 0;
 
 	mCtxBase = 0;
 
@@ -406,8 +404,6 @@ void ContextGL::initializeLoaderContext() {
 
 miW = 8;
 miH = 8;
-miX = 0;
-miY = 0;
 
 mCtxBase = 0;
 
@@ -499,9 +495,7 @@ void ContextGL::_doEndLoad(void*ploadtok)
 	_loadTokens.push(ploadtok);
 }
 
-void recomputeHIDPI(void*plato){
-	auto osxplato = (GlOsxPlatformObject*) plato;
-  // nop for now..
+void recomputeHIDPI(Context* ctx){
 }
 bool _HIDPI() {
   return false;

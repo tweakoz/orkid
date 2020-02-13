@@ -102,7 +102,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
     // printf( "WINtarg begin x<%d> y<%d> w<%d> h<%d>\n", mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH() );
     PushViewport(extents);
     PushScissor(extents);
-    printf("BEGINFRAME<WIN> w<%d> h<%d>\n", extents.miW, extents.miH);
+    //printf("BEGINFRAME<WIN> w<%d> h<%d>\n", extents.miW, extents.miH);
     /////////////////////////////////////////////////
 
     if (GetAutoClear()) {
@@ -113,7 +113,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
       else
         glClearColor(rCol.x, rCol.y, rCol.z, rCol.w);
 
-      printf("GlFrameBufferInterface::ClearViewport()\n");
+      //printf("GlFrameBufferInterface::ClearViewport()\n");
       GL_ERRORCHECK();
       glClearDepth(1.0f);
       GL_ERRORCHECK();
