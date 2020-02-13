@@ -31,6 +31,8 @@ cmd = ["cmake"]
 
 stage_dir = Path(os.path.abspath(str(ork.path.stage())))
 
+ok = True
+
 if _args["ez"]!=False:
     ork_root = stage_dir/".."
     this_script = ork_root/"build.py"
@@ -43,11 +45,19 @@ if _args["ez"]!=False:
     ################
     # workarounds
     ################
-    Command(init_env+ch_ork_root+["--command","obt.dep.build.py qt5"]).exec()
-    Command(init_env+ch_ork_root+["--command","./build.py --debug"]).exec()
-    Command(init_env+ch_tuio+["--command","make install"]).exec()
-    Command(init_env+ch_ork_root+["--command","./build.py --debug"]).exec()
-    sys.exit(0)
+
+    if ok:
+        ok = Command(init_env+ch_ork_root+["--command","obt.dep.build.py qt5"]).exec()==0
+    if ok:
+        ok = Command(init_env+ch_ork_root+["--command","./build.py --debug"]).exec()==0
+    if ok:
+        ok = Command(init_env+ch_tuio+["--command","make install"]).exec()==0
+    if ok:
+        ok = Command(init_env+ch_ork_root+["--command","./build.py --debug"]).exec()==0
+    if ok:
+        sys.exit(0)
+    else:
+        sys.exit(-1)
 
 if _args["xcode"]!=False:
     debug = True
@@ -66,12 +76,11 @@ cmd += [prj_root]
 
 ork.dep.require(["bullet","openexr","oiio","openvr","fcollada","assimp","nvtt","lua","python"])
 
-Command(cmd).exec()
-
+ok = Command(cmd).exec()==0
 
 
 if _args["clean"]!=False:
-    Command(["make","clean"]).exec()
+    ok = Command(["make","clean"]).exec()==0
 
 cmd = ["make"]
 if _args["verbose"]!=False:
@@ -82,4 +91,9 @@ if _args["serial"]==False:
 
 cmd += ["install"]
 
-Command(cmd).exec()
+ok = Command(cmd).exec()==0
+
+if ok:
+    sys.exit(0)
+else:
+    sys.exit(-1)
