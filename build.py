@@ -54,7 +54,7 @@ if _args["ez"]!=False:
     docmd(init_env+ch_ork_root+["--command","obt.dep.build.py pkgconfig"])
     docmd(init_env+ch_ork_root+["--command","obt.dep.build.py python"])
     docmd(init_env+ch_ork_root+["--command","obt.pip.install.py pytest"])
-    docmd(init_env+ch_ork_root+["--command","obt.dep.build.py yarl"])
+    docmd(init_env+ch_ork_root+["--command","obt.pip.install.py yarl"])
     docmd(init_env+ch_ork_root+["--command","obt.pip.install.py numpi"])
     docmd(init_env+ch_ork_root+["--command","obt.pip.install.py scipy"])
     docmd(init_env+ch_ork_root+["--command","obt.pip.install.py zmq"])
