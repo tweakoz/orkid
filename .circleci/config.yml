@@ -1,0 +1,8 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: tweakoz/ubuntu_builders:eoan2
+    steps:
+      - checkout
+      - run: ./ork.build/bin/init_env.py --create ~/obt_staging --command obt.dep.build.all.py
