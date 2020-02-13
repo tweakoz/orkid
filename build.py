@@ -46,14 +46,23 @@ if _args["ez"]!=False:
     # workarounds
     ################
 
-    if ok:
-        ok = Command(init_env+ch_ork_root+["--command","obt.dep.build.py qt5"]).exec()==0
-    if ok:
-        ok = Command(init_env+ch_ork_root+["--command","./build.py --debug"]).exec()==0
-    if ok:
-        ok = Command(init_env+ch_tuio+["--command","make install"]).exec()==0
-    if ok:
-        ok = Command(init_env+ch_ork_root+["--command","./build.py --debug"]).exec()==0
+    def docmd(cmdlist):
+        global ok
+        if ok:
+            ok = Command(cmdlist).exec()==0
+
+    docmd(init_env+ch_ork_root+["--command","obt.dep.build.py pkgconfig"])
+    docmd(init_env+ch_ork_root+["--command","obt.dep.build.py python"])
+    docmd(init_env+ch_ork_root+["--command","obt.pip.install.py pytest"])
+    docmd(init_env+ch_ork_root+["--command","obt.dep.build.py yarl"])
+    docmd(init_env+ch_ork_root+["--command","obt.pip.install.py numpi"])
+    docmd(init_env+ch_ork_root+["--command","obt.pip.install.py scipy"])
+    docmd(init_env+ch_ork_root+["--command","obt.pip.install.py zmq"])
+    docmd(init_env+ch_ork_root+["--command","obt.dep.build.py qt5"])
+    docmd(init_env+ch_ork_root+["--command","./build.py --debug"])
+    docmd(init_env+ch_tuio+["--command","make install"])
+    docmd(init_env+ch_ork_root+["--command","./build.py --debug"])
+
     if ok:
         sys.exit(0)
     else:
