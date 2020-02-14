@@ -86,6 +86,7 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
         pixel_ctx.mUsage[0] = lev2::PixelFetchContext::EPU_PTR64;
         pixel_ctx.mUsage[1] = lev2::PixelFetchContext::EPU_FLOAT;
         pixel_ctx.mUserData.Set<ork::lev2::RenderContextFrameData*>(&RCFD);
+        target->makeCurrentContext();
 
         viewport->GetPixel(pickctx->miX, pickctx->miY, pixel_ctx); // HERE<<<<<<
         pickctx->mpCastable = pixel_ctx.GetObject(viewport->GetPickBuffer(), 0);
@@ -155,6 +156,7 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::Pixe
     return;
 
   auto target = mpViewport->GetTarget();
+  target->makeCurrentContext();
   static CompositingData _gdata;
   static CompositingImpl _gimpl(_gdata);
   static ork::lev2::RenderContextFrameData RCFD(target); //

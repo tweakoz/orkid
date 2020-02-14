@@ -35,6 +35,7 @@ template <> void PickBuffer<ork::tool::GraphVP>::Draw(lev2::PixelFetchContext& c
   mPickIds.clear();
 
   auto tgt  = context();
+  tgt->makeCurrentContext();
   auto mtxi = tgt->MTXI();
   auto fbi  = tgt->FBI();
   auto fxi  = tgt->FXI();
