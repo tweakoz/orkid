@@ -250,6 +250,9 @@ void GfxEnv::SetLoaderTarget(Context* target) {
   gLoaderTarget = target;
 
   auto gfxenvlateinit = [=]() {
+    auto ctx = GfxEnv::loadingContext();
+    ctx->beginFrame();
+    ctx->debugPushGroup("GfxEnv.Lateinit");
     if (nullptr != mpUIMaterial) {
       delete GetRef().mpUIMaterial;
       delete GetRef().mp3DMaterial;
@@ -260,12 +263,11 @@ void GfxEnv::SetLoaderTarget(Context* target) {
     mpUIMaterial = new GfxMaterialUI();
     mp3DMaterial = matpbr;
 
-    mpUIMaterial->Init(gLoaderTarget);
-    mp3DMaterial->Init(gLoaderTarget);
-    ork::lev2::GfxPrimitives::Init(gLoaderTarget);
-
-    // gLoaderTarget->beginFrame();
-    // gLoaderTarget->endFrame();
+    mpUIMaterial->Init(ctx);
+    mp3DMaterial->Init(ctx);
+    ork::lev2::GfxPrimitives::Init(ctx);
+    ctx->debugPopGroup();
+    ctx->endFrame();
   };
   opq::mainSerialQueue().enqueue(gfxenvlateinit);
 }

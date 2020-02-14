@@ -60,14 +60,15 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
   // glFinish();
   GL_ERRORCHECK();
 
-  bool rtg_set = (nullptr != mTargetGL.FBI()->GetRtGroup());
+  RtGroup* rtg = mTargetGL.FBI()->GetRtGroup();
 
-  if (mTargetGL._defaultRTG) {
+  if (mTargetGL._defaultRTG and (rtg != nullptr)) {
     SetRtGroup(mTargetGL._defaultRTG);
-    rtg_set = true;
+    clearRtGroup(mTargetGL._defaultRTG);
+    rtg = mTargetGL._defaultRTG;
   }
 
-  if (rtg_set) {
+  if (rtg) {
     glDepthRange(0.0, 1.0f);
     float fx = 0.0f; // mTargetGL.FBI()->GetRtGroup()->GetX();
     float fy = 0.0f; // mTargetGL.FBI()->GetRtGroup()->GetY();
@@ -80,13 +81,8 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
     PushScissor(extents);
     // printf("BEGINFRAME<RtGroup>\n");
     // mTargetGL.debugPopGroup();
-    if (GetAutoClear()) {
-      fvec4 rCol = GetClearColor();
-      // printf("clear<%g %g %g %g>\n", rCol.x, rCol.y, rCol.z, rCol.w);
-      glClearColor(rCol.x, rCol.y, rCol.z, rCol.w);
-      glClearDepth(1.0f);
-      GL_ERRORCHECK();
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    if (rtg->_autoclear) {
+      clearRtGroup(rtg);
     }
   }
   /////////////////////////////////////////////////
@@ -102,7 +98,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
     // printf( "WINtarg begin x<%d> y<%d> w<%d> h<%d>\n", mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH() );
     PushViewport(extents);
     PushScissor(extents);
-    //printf("BEGINFRAME<WIN> w<%d> h<%d>\n", extents.miW, extents.miH);
+    // printf("BEGINFRAME<WIN> w<%d> h<%d>\n", extents.miW, extents.miH);
     /////////////////////////////////////////////////
 
     if (GetAutoClear()) {
@@ -113,7 +109,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
       else
         glClearColor(rCol.x, rCol.y, rCol.z, rCol.w);
 
-      //printf("GlFrameBufferInterface::ClearViewport()\n");
+      // printf("GlFrameBufferInterface::ClearViewport()\n");
       GL_ERRORCHECK();
       glClearDepth(1.0f);
       GL_ERRORCHECK();
@@ -631,6 +627,8 @@ bool GlFrameBufferInterface::capture(const RtGroup& rtg, int irt, CaptureBuffer*
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) {
+
+  mTarget.makeCurrentContext();
   fcolor4 Color(0.0f, 0.0f, 0.0f, 0.0f);
 
   int msw = mTarget.mainSurfaceWidth();
@@ -654,7 +652,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
         glBindFramebuffer(GL_FRAMEBUFFER, FboObj->mFBOMaster);
         GL_ERRORCHECK();
 
-        printf("GetPixel<%d %d> FboMaster<%p>\n", sx, sy, FboObj->mFBOMaster);
+        printf("GetPixel<%d %d> FboMaster<%u>\n", sx, sy, FboObj->mFBOMaster);
 
         if (FboObj->mFBOMaster) {
 

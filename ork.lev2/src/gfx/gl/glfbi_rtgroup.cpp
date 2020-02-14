@@ -20,7 +20,6 @@ namespace ork::lev2 {
 
 void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
 
-  mTargetGL.makeCurrentContext();
   // mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup");
 
   // printf("FBI<%p> SetRTG<%p>\n", this, Base );
@@ -366,23 +365,24 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
 
   mCurrentRtGroup = Base;
 
-  if (GetAutoClear()) {
-    // glClearColor( 1.0f,1.0f,0.0f,1.0f );
-    GL_ERRORCHECK();
-    GLuint BufferBits = 0;
-    if (mCurrentRtGroup->_needsDepth) {
-      BufferBits |= GL_DEPTH_BUFFER_BIT;
-      glClearDepth(1.0f);
-      glDepthRange(0.0, 1.0f);
-    }
-    if (inumtargets) {
-      BufferBits |= GL_COLOR_BUFFER_BIT;
-      glClearColor(mcClearColor.GetX(), mcClearColor.GetY(), mcClearColor.GetZ(), mcClearColor.GetW());
-    }
-    glClear(BufferBits);
-    GL_ERRORCHECK();
-  }
   // mTargetGL.debugPopGroup();
+}
+
+void GlFrameBufferInterface::clearRtGroup(RtGroup* rtg) {
+  // glClearColor( 1.0f,1.0f,0.0f,1.0f );
+  GL_ERRORCHECK();
+  GLuint BufferBits = 0;
+  if (rtg->_needsDepth) {
+    BufferBits |= GL_DEPTH_BUFFER_BIT;
+    glClearDepth(1.0f);
+    glDepthRange(0.0, 1.0f);
+  }
+  if (rtg->GetNumTargets()) {
+    BufferBits |= GL_COLOR_BUFFER_BIT;
+    glClearColor(mcClearColor.GetX(), mcClearColor.GetY(), mcClearColor.GetZ(), mcClearColor.GetW());
+  }
+  glClear(BufferBits);
+  GL_ERRORCHECK();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

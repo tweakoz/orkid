@@ -113,6 +113,7 @@ public:
   bool mbSizeDirty;
   void* mInternalHandle;
   bool _needsDepth = true;
+  bool _autoclear  = true;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

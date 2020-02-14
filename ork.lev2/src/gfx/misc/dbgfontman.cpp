@@ -183,6 +183,9 @@ void FontMan::InitFonts(Context* pTARG) {
   Transponder24.miAdvanceWidth  = 16;
   Transponder24.miAdvanceHeight = 24;
 
+  pTARG->beginFrame();
+  pTARG->debugPushGroup("FontMan::InitFonts");
+
   AddFont(pTARG, Inconsolata12);
   AddFont(pTARG, Inconsolata13);
   AddFont(pTARG, Inconsolata14);
@@ -191,6 +194,8 @@ void FontMan::InitFonts(Context* pTARG) {
   AddFont(pTARG, Transponder24);
 
   PushFont("i14");
+  pTARG->debugPopGroup();
+  pTARG->endFrame();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

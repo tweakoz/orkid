@@ -19,28 +19,50 @@
 
 namespace ork {
 
-PoolString::PoolString(const char* string) : mpString(string) {}
+PoolString::PoolString(const char* string)
+    : mpString(string) {
+}
 
-PoolString::operator PieceString() const { return PieceString(c_str()); }
-PoolString::operator ConstString() const { return ConstString(c_str()); }
+PoolString::operator PieceString() const {
+  return PieceString(c_str());
+}
+PoolString::operator ConstString() const {
+  return ConstString(c_str());
+}
 
-bool PoolString::operator==(const PoolString& other) const { return COMPARE(==, other); }
+bool PoolString::operator==(const PoolString& other) const {
+  return COMPARE(==, other);
+}
 
-bool PoolString::operator<(const PoolString& other) const { return COMPARE(<, other); }
+bool PoolString::operator<(const PoolString& other) const {
+  return COMPARE(<, other);
+}
 
-bool PoolString::operator<=(const PoolString& other) const { return COMPARE(<=, other); }
+bool PoolString::operator<=(const PoolString& other) const {
+  return COMPARE(<=, other);
+}
 
-bool PoolString::operator>=(const PoolString& other) const { return COMPARE(>=, other); }
+bool PoolString::operator>=(const PoolString& other) const {
+  return COMPARE(>=, other);
+}
 
-bool PoolString::operator>(const PoolString& other) const { return COMPARE(>, other); }
+bool PoolString::operator>(const PoolString& other) const {
+  return COMPARE(>, other);
+}
 
-bool PoolString::operator!=(const PoolString& other) const { return COMPARE(!=, other); }
+bool PoolString::operator!=(const PoolString& other) const {
+  return COMPARE(!=, other);
+}
 
-PoolString::operator bool() const { return mpString != NULL; }
+PoolString::operator bool() const {
+  return mpString != NULL;
+}
 
 ///////////////////////////////////////////////////////////
 
-bool PoolString::empty() const { return NULL == mpString || mpString[0] == '\0'; }
+bool PoolString::empty() const {
+  return NULL == mpString || mpString[0] == '\0';
+}
 
 ///////////////////////////////////////////////////////////
 
@@ -57,7 +79,10 @@ int PoolString::compare(const PoolString& rhs) const {
 
 ///////////////////////////////////////////////////////////
 
-StringPool::StringPool(const StringPool* parent) : mParent(parent), mStringPool(), mStringPoolMutex("StringPoolMutex") {
+StringPool::StringPool(const StringPool* parent)
+    : mParent(parent)
+    , mStringPool()
+    , mStringPoolMutex("StringPoolMutex") {
   // mStringPool.reserve( 2<<20 );
 }
 
@@ -128,7 +153,9 @@ int StringPool::LiteralIndex(const ConstString& string) {
   return FindIndex(pooled_string);
 }
 
-int StringPool::Size() const { return int(mStringPool.size()); }
+int StringPool::Size() const {
+  return int(mStringPool.size());
+}
 
 PoolString StringPool::FromIndex(int index) const {
   OrkAssert(mParent == NULL);
@@ -145,7 +172,7 @@ StringPool::VecType::size_type StringPool::BinarySearch(const PieceString& strin
 
   while (lo < hi) {
     orkvector<const char*>::size_type mid = (lo + hi) / 2;
-    int cmp = string.compare(mStringPool[mid]);
+    int cmp                               = string.compare(mStringPool[mid]);
 
     if (cmp < 0)
       hi = mid;
@@ -169,7 +196,7 @@ PoolString StringPool::String(const PieceString& s) {
     string = FindFirst(s, insertion_point);
     if (string == NULL) {
       char* new_string = new char[s.length() + 1];
-      std::memcpy(new_string, s.data(), s.length());
+      std::memcpy(new_string, s.c_str(), s.length());
       new_string[s.length()] = '\0';
 
       string = new_string;
@@ -185,7 +212,7 @@ PoolString StringPool::Literal(const ConstString& s) {
   Lock();
   {
     VecType::iterator insertion_point = mStringPool.end();
-    string = FindFirst(s, insertion_point);
+    string                            = FindFirst(s, insertion_point);
     if (string == NULL) {
       string = s.c_str();
       mStringPool.insert(insertion_point, string);
@@ -195,7 +222,9 @@ PoolString StringPool::Literal(const ConstString& s) {
   return PoolString(string);
 }
 
-PoolString StringPool::Find(const PieceString& s) const { return FindRecursive(s); }
+PoolString StringPool::Find(const PieceString& s) const {
+  return FindRecursive(s);
+}
 
 ///////////////////////////////////////////////////
 

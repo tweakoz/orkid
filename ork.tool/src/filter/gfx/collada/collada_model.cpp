@@ -197,7 +197,7 @@ bool CColladaModel::FindDaeMeshes(void) {
       FCDGeometry* GeoObj = GeoLib->GetEntity(ient);
 
       bool is_mesh = GeoObj->IsMesh();
-      printf("collada_ent<%d> is_mesh<%d>\n", ient, int(is_mesh));
+      printf("collada_ent<%zu> is_mesh<%d>\n", ient, int(is_mesh));
 
       if (is_mesh) {
         FCDGeometryMesh* mesh = GeoObj->GetMesh();
@@ -888,7 +888,7 @@ bool CColladaModel::ParseGeometries() {
           OrkAssert(3 == iface_numfverts);
           MeshUtil::XgmClusterTri ClusTri;
           if (iface % 1000 == 0)
-            printf("iface<%d> of %d\n", iface, imatnumfaces);
+            printf("iface<%zu> of %zu\n", iface, imatnumfaces);
           for (size_t iface_v = 0; iface_v < iface_numfverts; iface_v++) {
             MeshUtil::vertex& MuVtx = ClusTri._vertex[iface_v];
             /////////////////////////////////

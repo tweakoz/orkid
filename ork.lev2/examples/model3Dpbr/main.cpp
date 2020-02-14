@@ -74,6 +74,7 @@ int main(int argc, char** argv) {
   timer.Start();
   //////////////////////////////////////////////////////////
   qtapp->onGpuInit([&](Context* ctx) {
+    ctx->debugPushGroup("main.onGpuInit");
     auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/pbr1/pbr1");
     model           = modl_asset->GetModel();
     renderer.setContext(ctx);
@@ -86,7 +87,7 @@ int main(int argc, char** argv) {
     while (asset::AssetManager<TextureAsset>::AutoLoad()) {
     }
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 1; i++) {
       Instance inst;
       inst._drawable = new ModelDrawable;
       inst._xgminst  = new XgmModelInst(model);
@@ -94,6 +95,7 @@ int main(int argc, char** argv) {
       inst._drawable->SetModelInst(inst._xgminst);
       instances.push_back(inst);
     }
+    ctx->debugPopGroup();
   });
   //////////////////////////////////////////////////////////
   qtapp->onDraw([&](const ui::DrawEvent& drwev) {

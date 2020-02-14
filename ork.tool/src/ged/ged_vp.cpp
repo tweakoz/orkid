@@ -23,7 +23,9 @@ namespace ork { namespace lev2 {
 template <> void PickBuffer<ork::tool::ged::GedVP>::Draw(lev2::PixelFetchContext& ctx) {
   mPickIds.clear();
 
-  auto tgt  = context();
+  auto tgt = context();
+  tgt->makeCurrentContext();
+
   auto mtxi = tgt->MTXI();
   auto fbi  = tgt->FBI();
   auto fxi  = tgt->FXI();

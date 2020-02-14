@@ -20,6 +20,8 @@ class AssetClass;
 
 class AssetCategory : public object::ObjectCategory {
 public:
+  using vars_t     = VarMap;
+  using vars_gen_t = std::function<const vars_t&(Object*)>;
   static const VarMap _gnovars;
   AssetCategory(const rtti::RTTIData& data);
 

@@ -188,16 +188,11 @@ ContextGL::ContextGL()
 	FxInit();
 
 	NSOpenGLPixelFormat* nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithCGLPixelFormatObj:gpixfmt];
-	for( int i=0; i<4; i++ )
-	{
+	for( int i=0; i<4; i++ ){
 		GlOsxLoadContext* loadctx = new GlOsxLoadContext;
-
 		NSOpenGLContext* gctx = [[NSOpenGLContext alloc] initWithFormat:gNSPixelFormat shareContext:GlOsxPlatformObject::gShareMaster];
-
 		OrkAssert( gctx!=nil );
-
 		loadctx->mGlContext = gctx;
-
 		_loadTokens.push( (void*) loadctx );
 	}
 
@@ -205,14 +200,11 @@ ContextGL::ContextGL()
 
 /////////////////////////////////////////////////////////////////////////
 
-ContextGL::~ContextGL()
-{
-}
+ContextGL::~ContextGL(){}
 
 /////////////////////////////////////////////////////////////////////////
 
-void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  )
-{
+void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
 	///////////////////////
 	GlOsxPlatformObject* plato = new GlOsxPlatformObject;
 	mCtxBase = pctxbase;

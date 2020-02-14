@@ -46,6 +46,9 @@ public:
   void PushRtGroup(RtGroup* Base);
   void PopRtGroup();
 
+  virtual void clearRtGroup(RtGroup* rtg) {
+  }
+
   ///////////////////////////////////////////////////////
 
   virtual void SetViewport(int iX, int iY, int iW, int iH) = 0;

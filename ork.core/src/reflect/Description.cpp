@@ -16,15 +16,24 @@
 namespace ork { namespace reflect {
 
 Description::Description()
-    : mParentDescription(NULL) {}
+    : mParentDescription(NULL) {
+}
 
-void Description::SetParentDescription(const Description* parent) { mParentDescription = parent; }
+void Description::SetParentDescription(const Description* parent) {
+  mParentDescription = parent;
+}
 
-void Description::AddProperty(const char* key, IObjectProperty* value) { mProperties.AddSorted(key, value); }
+void Description::AddProperty(const char* key, IObjectProperty* value) {
+  mProperties.AddSorted(key, value);
+}
 
-Description::PropertyMapType& Description::Properties() { return mProperties; }
+Description::PropertyMapType& Description::Properties() {
+  return mProperties;
+}
 
-const Description::PropertyMapType& Description::Properties() const { return mProperties; }
+const Description::PropertyMapType& Description::Properties() const {
+  return mProperties;
+}
 
 const IObjectProperty* Description::FindProperty(const ConstString& name) const {
   for (const Description* description = this; description != NULL; description = description->mParentDescription) {
@@ -42,7 +51,9 @@ const IObjectProperty* Description::FindProperty(const ConstString& name) const 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void Description::AddFunctor(const char* key, IObjectFunctor* functor) { mFunctions.AddSorted(key, functor); }
+void Description::AddFunctor(const char* key, IObjectFunctor* functor) {
+  mFunctions.AddSorted(key, functor);
+}
 
 const IObjectFunctor* Description::FindFunctor(const ConstString& name) const {
   for (const Description* description = this; description != NULL; description = description->mParentDescription) {
@@ -60,8 +71,12 @@ const IObjectFunctor* Description::FindFunctor(const ConstString& name) const {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void Description::AddSignal(const char* key, object::Signal Object::*pmember) { mSignals.AddSorted(key, pmember); }
-void Description::AddAutoSlot(const char* key, object::AutoSlot Object::*pmember) { mAutoSlots.AddSorted(key, pmember); }
+void Description::AddSignal(const char* key, object::Signal Object::*pmember) {
+  mSignals.AddSorted(key, pmember);
+}
+void Description::AddAutoSlot(const char* key, object::AutoSlot Object::*pmember) {
+  mAutoSlots.AddSorted(key, pmember);
+}
 
 object::Signal Object::*Description::FindSignal(const ConstString& key) const {
   for (const Description* description = this; description != NULL; description = description->mParentDescription) {
@@ -163,13 +178,15 @@ bool Description::SerializeProperties(ISerializer& serializer, const Object* obj
 
 bool Description::DeserializeProperties(IDeserializer& deserializer, Object* object) const {
   Command command;
+  deserializer._currentObject = object;
 
   while (deserializer.BeginCommand(command)) {
     if (command.Type() != Command::EPROPERTY) {
-      orkprintf("Description::DeserializeProperties:: got command %s, wanted EPROPERTY\n",
-                command.Type() == Command::EOBJECT
-                    ? "EOBJECT"
-                    : command.Type() == Command::EITEM ? "EITEM" : command.Type() == Command::EATTRIBUTE ? "EATTRIBUTE" : "???");
+      orkprintf(
+          "Description::DeserializeProperties:: got command %s, wanted EPROPERTY\n",
+          command.Type() == Command::EOBJECT
+              ? "EOBJECT"
+              : command.Type() == Command::EITEM ? "EITEM" : command.Type() == Command::EATTRIBUTE ? "EATTRIBUTE" : "???");
     }
 
     OrkAssertI(command.Type() == Command::EPROPERTY, "Description::DeserializeProperties: expected a property!");
@@ -180,23 +197,29 @@ bool Description::DeserializeProperties(IDeserializer& deserializer, Object* obj
       // orkprintf( "deserialize prop<%s>\n", command.Name().c_str() );
 
       if (prop) {
+        deserializer._currentProperty = prop;
         if (false == deserializer.Deserialize(prop, object)) {
           deserializer.EndCommand(command);
+          deserializer._currentProperty = nullptr;
+          deserializer._currentObject   = nullptr;
           return false;
         }
+        deserializer._currentProperty = nullptr;
       } else {
         orkprintf("Could not find property <%p>'%s'\n", command.Name().c_str(), command.Name().c_str());
       }
 
       if (false == deserializer.EndCommand(command)) {
         OrkAssertI(prop, "Description::DeserializeProperties: could not skip property!");
+        deserializer._currentObject = nullptr;
         return false;
       }
     } else {
+      deserializer._currentObject = nullptr;
       return false;
     }
   }
-
+  deserializer._currentObject = nullptr;
   return true;
 }
 

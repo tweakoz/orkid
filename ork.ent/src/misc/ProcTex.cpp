@@ -387,7 +387,7 @@ void ProcTexOutputDynTex::Describe() {
     });
     return rval;
   };
-  ptex_loader->mCheckFn = [=](const PieceString& name) { return ork::IsSubStringPresent("ptex://", name.data()); };
+  ptex_loader->mCheckFn = [=](const PieceString& name) { return ork::IsSubStringPresent("ptex://", name.c_str()); };
   ptex_loader->mLoadFn  = [=](asset::Asset* asset) {
     auto asset_name            = asset->GetName().c_str();
     lev2::TextureAsset* as_tex = rtti::autocast(asset);

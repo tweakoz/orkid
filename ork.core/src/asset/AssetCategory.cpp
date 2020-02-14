@@ -10,6 +10,7 @@
 #include <ork/asset/VirtualAsset.h>
 #include <ork/application/application.h>
 #include <ork/kernel/string/ArrayString.h>
+#include <ork/reflect/IObjectProperty.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace asset {
@@ -67,7 +68,14 @@ bool AssetCategory::DeserializeReference(reflect::IDeserializer& deserializer, r
     if (asset_name == "none") {
       value = 0;
     } else if (asset_clazz->IsSubclassOf(Asset::GetClassStatic())) {
-      value = DeclareAsset(asset_type, asset_name);
+
+      const auto& anno = deserializer._currentProperty->annotation(ConstString("asset.deserialize.vargen"));
+      if (auto as_gen = anno.TryAs<vars_gen_t>()) {
+        const auto& assetvars = as_gen.value()(deserializer._currentObject);
+        value                 = DeclareAsset(asset_type, asset_name, assetvars);
+      } else {
+        value = DeclareAsset(asset_type, asset_name);
+      }
     }
   }
 

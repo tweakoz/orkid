@@ -84,7 +84,7 @@ Path::Path()
 
 ///////////////////////////////////////////////////////////////////////////////
 Path::Path(const PieceString& pathName)
-    : mPathString(pathName.data(), int(pathName.size()))
+    : mPathString(pathName.c_str(), int(pathName.size()))
     , mMarkers() {
   Set(mPathString.c_str());
 }

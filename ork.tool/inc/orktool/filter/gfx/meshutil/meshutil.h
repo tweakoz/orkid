@@ -456,7 +456,8 @@ struct submesh {
       return anno.Get<T>();
     }
     assert(false);
-    return T();
+    static T rval;
+    return rval;
   }
 
   //////////////////////////////////////////////////////////////////////////////

@@ -808,7 +808,7 @@ bool GlTextureInterface::LoadVDSTexture(const AssetPath& infname, Texture* ptex)
 
 void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   mTargetGL.makeCurrentContext();
-
+  mTargetGL.debugPushGroup("LoadDDSTextureMainThreadPart");
   const dds::DDS_HEADER* ddsh = req._ddsheader;
   Texture* ptex               = req.ptex;
   GLTextureObject* pTEXOBJ    = req.pTEXOBJ;
@@ -984,6 +984,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   } else {
     // printf("ptex<%p> no postproc\n", ptex);
   }
+
+  mTargetGL.debugPopGroup();
 }
 
 bool GlTextureInterface::LoadTexture(Texture* ptex, datablockptr_t datablock) {

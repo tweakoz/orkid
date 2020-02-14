@@ -297,6 +297,7 @@ void Outliner2View::DoInit(lev2::Context* pt) {
 ///////////////////////////////////////////////////////////////////////////////
 void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev) {
   auto tgt = drwev.GetTarget();
+  tgt->makeCurrentContext();
   tgt->debugPushGroup(FormatString("Outliner2View::repaint"));
   auto mtxi                            = tgt->MTXI();
   auto fbi                             = tgt->FBI();
@@ -659,7 +660,9 @@ namespace ork { namespace lev2 {
 template <> void PickBuffer<ork::ent::Outliner2View>::Draw(lev2::PixelFetchContext& ctx) {
   mPickIds.clear();
 
-  auto tgt  = context();
+  auto tgt = context();
+  tgt->makeCurrentContext();
+
   auto mtxi = tgt->MTXI();
   auto fbi  = tgt->FBI();
   auto fxi  = tgt->FXI();

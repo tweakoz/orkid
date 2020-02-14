@@ -59,6 +59,10 @@ void FrameBufferInterface::PushRtGroup(RtGroup* Base) {
 
   PushScissor(r);
   PushViewport(r);
+
+  if (Base->_autoclear) {
+    clearRtGroup(Base);
+  }
   // BeginFrame();
 }
 void FrameBufferInterface::PopRtGroup() {

@@ -80,22 +80,23 @@ void Buffer::SetBufferSize(int w, int h) {
 
 ///////////////////////////////////////////////////////////////////////////////
 void Buffer::PtexBegin(lev2::Context* ptgt, bool push_full_vp, bool clear_all) {
-  mTarget = ptgt;
-  mTarget->FBI()->SetAutoClear(false);
-  // mTarget->FBI()->BeginFrame();
+  mTarget  = ptgt;
+  auto FBI = mTarget->FBI();
+  FBI->SetAutoClear(false);
+  // FBI->BeginFrame();
   auto rtg = GetRtGroup(ptgt);
 
-  mTarget->FBI()->PushRtGroup(rtg);
+  FBI->PushRtGroup(rtg);
   SRect vprect_full(0, 0, miW, miH);
 
   // printf( "  buffer<%p> w<%d> h<%d> rtg<%p> begin\n", this, miW,miH,rtg);
 
   if (push_full_vp) {
-    mTarget->FBI()->PushViewport(vprect_full);
-    mTarget->FBI()->PushScissor(vprect_full);
+    FBI->PushViewport(vprect_full);
+    FBI->PushScissor(vprect_full);
   }
   if (clear_all)
-    mTarget->FBI()->Clear(CColor3::Black(), 1.0f);
+    FBI->Clear(CColor3::Black(), 1.0f);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Buffer::PtexEnd(bool pop_vp) {

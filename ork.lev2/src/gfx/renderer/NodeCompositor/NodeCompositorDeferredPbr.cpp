@@ -10,6 +10,7 @@
 #include <ork/rtti/Class.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/mutex.h>
+#include <ork/asset/AssetCategory.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
@@ -39,6 +40,8 @@ namespace ork::lev2::deferrednode {
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNodePbr::describeX(class_t* c) {
 
+  using namespace asset;
+
   class_t::CreateClassAlias("DeferredCompositingNodeDebugNormal", c);
 
   c->memberProperty("ClearColor", &DeferredCompositingNodePbr::_clearColor);
@@ -56,32 +59,12 @@ void DeferredCompositingNodePbr::describeX(class_t* c) {
        "EnvironmentTexture", &DeferredCompositingNodePbr::_readEnvTexture, &DeferredCompositingNodePbr::_writeEnvTexture)
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.assettype", "lev2tex")
-      ->annotate<ConstString>("editor.assetclass", "lev2tex");
-
-  /*->annotate<Texture::proc_t>(
-      "asset.postproc", [this](Texture* tex, Context* targ, datablockptr_t datablock) -> datablockptr_t {
-        boost::Crc64 hasher;
-        hasher.accumulateString("irradiancemap");
-        hasher.accumulateItem<uint64_t>(datablock->hash()); // data content
-        hasher.finish();
-        uint64_t cachekey = hasher.result();
-        auto irrmapdblock = DataBlockCache::findDataBlock(cachekey);
-        if (0) { // irrmapdblock) {
-          // found in cache
-          datablock = irrmapdblock;
-        } else {
-          DataBlockInputStream istream(datablock);
-          // not found in cache, generate
-          irrmapdblock = std::make_shared<DataBlock>();
-          ///////////////////////////
-          _filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ);
-          _filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ);
-          //////////////////////////////////////////////////////////////
-          // DataBlockCache::setDataBlock(cachekey, irrmapdblock);
-          datablock = irrmapdblock;
-        }
-        return datablock;
-      });*/
+      ->annotate<ConstString>("editor.assetclass", "lev2tex")
+      ->annotate<AssetCategory::vars_gen_t>("asset.deserialize.vargen", [](ork::Object* obj) -> const AssetCategory::vars_t& {
+        auto node = dynamic_cast<DeferredCompositingNodePbr*>(obj);
+        OrkAssert(node);
+        return node->_texAssetVarMap;
+      });
 }
 
 void DeferredCompositingNodePbr::_readEnvTexture(ork::rtti::ICastable*& tex) const {
@@ -99,41 +82,6 @@ void DeferredCompositingNodePbr::_writeEnvTexture(ork::rtti::ICastable* const& t
   if (nullptr == _environmentTextureAsset)
     return;
   printf("WTF1 <%p>\n\n", _environmentTextureAsset);
-////////////////////////////////////////////////////////////////////////////////
-// irradiance map preprocessor
-////////////////////////////////////////////////////////////////////////////////
-#if 0
-  _environmentTextureAsset->_varmap.makeValueForKey<Texture::proc_t>("postproc") =
-      [this](Texture* tex, Context* targ, datablockptr_t datablock) -> datablockptr_t {
-    /*printf(
-        "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>...\n",
-        tex,
-        tex->_debugName.c_str(),
-        datablock->length());*/
-    boost::Crc64 hasher;
-    hasher.accumulateString("irradiancemap");
-    hasher.accumulateItem<uint64_t>(datablock->hash()); // data content
-    hasher.finish();
-    uint64_t cachekey = hasher.result();
-    auto irrmapdblock = DataBlockCache::findDataBlock(cachekey);
-    if (0) { // irrmapdblock) {
-      // found in cache
-      datablock = irrmapdblock;
-    } else {
-      DataBlockInputStream istream(datablock);
-      // not found in cache, generate
-      irrmapdblock = std::make_shared<DataBlock>();
-      ///////////////////////////
-      _filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ);
-      _filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ);
-      //////////////////////////////////////////////////////////////
-      // DataBlockCache::setDataBlock(cachekey, irrmapdblock);
-      datablock = irrmapdblock;
-    }
-    return datablock;
-  };
-#endif
-  ////////////////////////////////////////////////////////////////////////////////
 }
 
 lev2::Texture* DeferredCompositingNodePbr::envSpecularTexture() const {
@@ -310,6 +258,7 @@ DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
         tex,
         tex->_debugName.c_str(),
         datablock->length());
+    targ->beginFrame();
     boost::Crc64 hasher;
     hasher.accumulateString("irradiancemap");
     hasher.accumulateItem<uint64_t>(datablock->hash()); // data content
@@ -330,6 +279,7 @@ DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
       // DataBlockCache::setDataBlock(cachekey, irrmapdblock);
       datablock = irrmapdblock;
     }
+    targ->endFrame();
     return datablock;
   };
 }

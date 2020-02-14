@@ -223,6 +223,7 @@ public:
   bool captureAsFormat(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer, EBufferFormat destfmt) final;
   void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) final;
   SRect& PopScissor(void) final;
+  void clearRtGroup(RtGroup*rtg) final;
 
   //////////////////////////////////////////////
 
