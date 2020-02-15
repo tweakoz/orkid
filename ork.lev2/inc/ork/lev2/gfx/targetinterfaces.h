@@ -126,6 +126,7 @@ struct PixelFetchContext {
 
   static const int kmaxitems = 4;
 
+  Context* _gfxContext = nullptr;
   OffscreenBuffer* mAsBuffer;
   RtGroup* mRtGroup;
   int miMrtMask;

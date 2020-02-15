@@ -40,7 +40,7 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
 
   SceneEditorVP* viewport = pickctx->mViewport;
 
-  auto target = viewport->GetTarget();
+  auto target = pickctx->_gfxContext;
 
   const ent::Simulation* psi   = viewport->simulation();
   const ent::SceneData* pscene = viewport->SceneEditor().mpScene;
@@ -48,6 +48,8 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
   if (nullptr == pscene)
     return;
   if (nullptr == psi)
+    return;
+  if (nullptr == target)
     return;
   if (false == viewport->IsSceneDisplayEnabled())
     return;
@@ -61,30 +63,33 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
     opq::updateSerialQueue().sync();
     ////////////
     static auto d_buf = new ork::lev2::DrawableBuffer(4);
-
-    rendervar_t db_var;
-    db_var.Set<const DrawableBuffer*>(d_buf);
-
     static CompositingData _gdata;
     static CompositingImpl _gimpl(_gdata);
-    static ork::lev2::RenderContextFrameData RCFD(target); //
-    RCFD._cimpl = &_gimpl;
-    RCFD.setUserProperty("DB"_crc, db_var);
 
     auto lamb = [&]() {
       ork::opq::assertOnQueue2(opq::updateSerialQueue());
       d_buf->miBufferIndex = 0;
+      //////////////////////////////////////////////////////////////////////////
+      // enqueue scene to picking specific DrawableBuffer
+      //////////////////////////////////////////////////////////////////////////
       psi->enqueueDrawablesToBuffer(*d_buf);
       ////////////
       opq::mainSerialQueue().sync();
       ////////////
-      auto op_pick = [&]() {
+      auto op_pick = [=]() {
+        auto target = pickctx->_gfxContext;
+        ork::lev2::RenderContextFrameData RCFD(target);
+        RCFD._cimpl = &_gimpl;
+        rendervar_t db_var;
+        db_var.Set<const DrawableBuffer*>(d_buf);
+        RCFD.setUserProperty("DB"_crc, db_var);
         ork::opq::assertOnQueue2(opq::mainSerialQueue());
-        pickctx->mState     = 1;
-        auto& pixel_ctx     = pickctx->_pixelctx;
-        pixel_ctx.miMrtMask = 3;
-        pixel_ctx.mUsage[0] = lev2::PixelFetchContext::EPU_PTR64;
-        pixel_ctx.mUsage[1] = lev2::PixelFetchContext::EPU_FLOAT;
+        pickctx->mState       = 1;
+        auto& pixel_ctx       = pickctx->_pixelctx;
+        pixel_ctx._gfxContext = target;
+        pixel_ctx.miMrtMask   = 3;
+        pixel_ctx.mUsage[0]   = lev2::PixelFetchContext::EPU_PTR64;
+        pixel_ctx.mUsage[1]   = lev2::PixelFetchContext::EPU_FLOAT;
         pixel_ctx.mUserData.Set<ork::lev2::RenderContextFrameData*>(&RCFD);
         target->makeCurrentContext();
 
@@ -123,16 +128,17 @@ void SceneEditorVP::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
   ctx.mAsBuffer = mpPickBuffer;
 
   /////////////////////////////////////////////////////////////
-  // force a pick refresh
-
-  mpPickBuffer->Draw(ctx);
-
-  /////////////////////////////////////////////////////////////
   int iW = mpPickBuffer->context()->mainSurfaceWidth();
   int iH = mpPickBuffer->context()->mainSurfaceHeight();
   /////////////////////////////////////////////////////////////
   mpPickBuffer->context()->FBI()->SetViewport(0, 0, iW, iH);
   mpPickBuffer->context()->FBI()->SetScissor(0, 0, iW, iH);
+  /////////////////////////////////////////////////////////////
+  // force a pick refresh
+  /////////////////////////////////////////////////////////////
+
+  mpPickBuffer->Draw(ctx);
+
   /////////////////////////////////////////////////////////////
 
   mpPickBuffer->context()->FBI()->GetPixel(fvec4(fx, fy, 0.0f), ctx);
@@ -155,7 +161,7 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::Pixe
   if (false == mpViewport->mbSceneDisplayEnable)
     return;
 
-  auto target = mpViewport->GetTarget();
+  auto target = ctx._gfxContext;
   target->makeCurrentContext();
   static CompositingData _gdata;
   static CompositingImpl _gimpl(_gdata);
@@ -214,6 +220,8 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::Pixe
     pTEXTARG->PushModColor(fcolor4::Yellow());
 
     //{ mpViewport->renderEnqueuedScene(*RCFD); }
+    // TODO - mayve we should just render the objid into the gbuffer?
+    //   instead of re-rendering the scene for picking
 
     pTEXTARG->PopModColor();
     pTEXTARG->FBI()->PopRtGroup();

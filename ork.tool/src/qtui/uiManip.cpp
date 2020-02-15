@@ -35,249 +35,221 @@ using namespace ork::lev2;
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-void OuterPickOp( DeferredPickOperationContext* pickctx );
+void OuterPickOp(DeferredPickOperationContext* pickctx);
 
-ManipHandler::ManipHandler( SceneEditorBase& editor )
-	: SceneEditorVPToolHandler( editor )
-{
+ManipHandler::ManipHandler(SceneEditorBase& editor)
+    : SceneEditorVPToolHandler(editor) {
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-ui::HandlerResult ManipHandler::DoOnUiEvent( const ui::Event& EV )
-{
-	auto& updQ = opq::updateSerialQueue();
+ui::HandlerResult ManipHandler::DoOnUiEvent(const ui::Event& EV) {
+  auto& updQ = opq::updateSerialQueue();
 
-	ui::HandlerResult ret;
+  ui::HandlerResult ret;
 
-	bool isshift = EV.mbSHIFT;
-	bool isctrl	 = EV.mbCTRL;
-	bool isleft = EV.mbLeftButton;
-	bool isright = EV.mbRightButton;
+  bool isshift = EV.mbSHIFT;
+  bool isctrl  = EV.mbCTRL;
+  bool isleft  = EV.mbLeftButton;
+  bool isright = EV.mbRightButton;
 
-	int ix = EV.miX;
-	int iy = EV.miY;
-	float fx = EV.mfUnitX;
-	float fy = EV.mfUnitY;
+  int ix   = EV.miX;
+  int iy   = EV.miY;
+  float fx = EV.mfUnitX;
+  float fy = EV.mfUnitY;
 
-	mEditor.ManipManager().SetGridSnap( isshift );
+  mEditor.ManipManager().SetGridSnap(isshift);
 
-	switch( EV.miEventCode )
-	{
-		case ui::UIEV_RELEASE:
-		{
-			if( false == GetViewport()->HasKeyboardFocus() ) break;
-			mEditor.ManipManager().DisableManip();
-			mEditor.ManipManager().SetActiveCamera( 0 );
-			ret.setHandled(this);
-		}
-		break;
-		case ui::UIEV_DOUBLECLICK:
-		{
-			if( false == GetViewport()->HasKeyboardFocus() ) break;
-			
-			if( isleft && false == isright )
-			{
-				opq::Op([&](){this->mEditor.ClearSelection();}).QueueSync(updQ);
-			}
+  switch (EV.miEventCode) {
+    case ui::UIEV_RELEASE: {
+      if (false == GetViewport()->HasKeyboardFocus())
+        break;
+      mEditor.ManipManager().DisableManip();
+      mEditor.ManipManager().SetActiveCamera(0);
+      ret.setHandled(this);
+    } break;
+    case ui::UIEV_DOUBLECLICK: {
+      if (false == GetViewport()->HasKeyboardFocus())
+        break;
 
-			DeferredPickOperationContext* pickctx = new DeferredPickOperationContext;
-			pickctx->miX = ix;
-			pickctx->miY = iy;
-			pickctx->is_shift = isshift;
-			pickctx->is_ctrl = isctrl;
-			pickctx->is_left = isleft;
-			//pickctx->is_mid = ismid;
-			pickctx->is_right = isright;
-			pickctx->mHandler = this;
-			pickctx->mViewport = GetViewport();
+      if (isleft && false == isright) {
+        opq::Op([&]() { this->mEditor.ClearSelection(); }).QueueSync(updQ);
+      }
 
-			static auto on_pick = [=](DeferredPickOperationContext*pctx)
-			{
-				/*ork::rtti::ICastable *pobj = ctx.GetObject(GetViewport()->GetPickBuffer(),0);
-				ork::rtti::ICastable *pillegal = (ork::rtti::ICastable *) 0xffffffff;
+      DeferredPickOperationContext* pickctx = new DeferredPickOperationContext;
+      pickctx->miX                          = ix;
+      pickctx->miY                          = iy;
+      pickctx->is_shift                     = isshift;
+      pickctx->is_ctrl                      = isctrl;
+      pickctx->is_left                      = isleft;
+      // pickctx->is_mid = ismid;
+      pickctx->is_right    = isright;
+      pickctx->mHandler    = this;
+      pickctx->mViewport   = GetViewport();
+      pickctx->_gfxContext = EV._context;
 
-				orkprintf( "obj<%p>\n", pobj );
+      static auto on_pick = [=](DeferredPickOperationContext* pctx) {
+        /*ork::rtti::ICastable *pobj = ctx.GetObject(GetViewport()->GetPickBuffer(),0);
+        ork::rtti::ICastable *pillegal = (ork::rtti::ICastable *) 0xffffffff;
 
-				if( isleft )
-				{
-					if( GetViewport()->getActiveCamera() )
-					{
-					//	printf( "setSpawnLoc fx<%f> fy<%f>\n", fx, fy );
-						setSpawnLoc( ctx, fx, fy );
-					}
+        orkprintf( "obj<%p>\n", pobj );
 
-				}*/
-		
-			};
-			OuterPickOp(pickctx);		
-		}
-		break;
-		case ui::UIEV_PUSH:
-		{
-			if( false == GetViewport()->HasKeyboardFocus() ) break;
+        if( isleft )
+        {
+            if( GetViewport()->getActiveCamera() )
+            {
+            //	printf( "setSpawnLoc fx<%f> fy<%f>\n", fx, fy );
+                setSpawnLoc( ctx, fx, fy );
+            }
 
-			///////////////////////////////////////////////////////////
+        }*/
+      };
+      OuterPickOp(pickctx);
+    } break;
+    case ui::UIEV_PUSH: {
+      if (false == GetViewport()->HasKeyboardFocus())
+        break;
 
-			auto the_block = [=](DeferredPickOperationContext*pctx)
-			{
-				SceneEditorVPToolHandler* handler = pctx->mHandler;
-				SceneEditorBase& editor = handler->GetEditor();
-				ork::Object* pobj = rtti::autocast(pctx->mpCastable);
-				ork::rtti::ICastable *pillegal = (ork::rtti::ICastable *) 0xffffffff;
-				//orkprintf( "maniph obj<%p>\n", pobj );
+      ///////////////////////////////////////////////////////////
 
-				if( pctx->is_left && false == pctx->is_right )
-				{
-					editor.ClearSelection();
+      auto the_block = [=](DeferredPickOperationContext* pctx) {
+        SceneEditorVPToolHandler* handler = pctx->mHandler;
+        SceneEditorBase& editor           = handler->GetEditor();
+        ork::Object* pobj                 = rtti::autocast(pctx->mpCastable);
+        ork::rtti::ICastable* pillegal    = (ork::rtti::ICastable*)0xffffffff;
+        // orkprintf( "maniph obj<%p>\n", pobj );
 
-					if( pobj && pobj!=pillegal)
-					{
-						//printf( "maniptest<%p>\n", pobj );
-						if(Manip *manip = ork::rtti::autocast(pobj))
-						{
-							//printf( "maniptest2<%p>\n", pobj );
-							//mEditor.ManipManager().SetActiveCamera(GetViewport()->GetCamera());
-							editor.ManipManager().EnableManip(manip);
-							editor.ManipManager().UIEventHandler( pctx->mEV );
-						}
-						else if(ork::Object *object = ork::rtti::autocast(pobj))
-						{
-							editor.AddObjectToSelection(object);
-							//printf( "maniptest3<%p>\n", pobj );
-						}
-					}
-					else
-					{	editor.ClearSelection();
-						//printf( "maniptest4<%p>\n", pobj );
-					}
-				}
-				else if( pctx->is_left && pctx->is_right )
-				{
-					//if( GetViewport()->GetCamera() )
-					{
-					//	setSpawnLoc( ctx, fx, fy );
-					}
+        if (pctx->is_left && false == pctx->is_right) {
+          editor.ClearSelection();
 
-				}
-			};
+          if (pobj && pobj != pillegal) {
+            // printf( "maniptest<%p>\n", pobj );
+            if (Manip* manip = ork::rtti::autocast(pobj)) {
+              // printf( "maniptest2<%p>\n", pobj );
+              // mEditor.ManipManager().SetActiveCamera(GetViewport()->GetCamera());
+              editor.ManipManager().EnableManip(manip);
+              editor.ManipManager().UIEventHandler(pctx->mEV);
+            } else if (ork::Object* object = ork::rtti::autocast(pobj)) {
+              editor.AddObjectToSelection(object);
+              // printf( "maniptest3<%p>\n", pobj );
+            }
+          } else {
+            editor.ClearSelection();
+            // printf( "maniptest4<%p>\n", pobj );
+          }
+        } else if (pctx->is_left && pctx->is_right) {
+          // if( GetViewport()->GetCamera() )
+          {
+            //	setSpawnLoc( ctx, fx, fy );
+          }
+        }
+      };
 
-			///////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////
 
-			DeferredPickOperationContext* pickctx = new DeferredPickOperationContext;
-			pickctx->mEV = EV;
-			pickctx->miX = ix;
-			pickctx->miY = iy;
-			pickctx->is_shift = isshift;
-			pickctx->is_ctrl = isctrl;
-			pickctx->is_left = isleft;
-			pickctx->is_right = isright;
-			pickctx->mHandler = this;
-			pickctx->mViewport = GetViewport();
-			pickctx->mOnPick = the_block;
-			OuterPickOp(pickctx);		
-			///////////////////////////////////////////////////////////
+      DeferredPickOperationContext* pickctx = new DeferredPickOperationContext;
+      pickctx->mEV                          = EV;
+      pickctx->miX                          = ix;
+      pickctx->miY                          = iy;
+      pickctx->is_shift                     = isshift;
+      pickctx->is_ctrl                      = isctrl;
+      pickctx->is_left                      = isleft;
+      pickctx->is_right                     = isright;
+      pickctx->mHandler                     = this;
+      pickctx->mViewport                    = GetViewport();
+      pickctx->mOnPick                      = the_block;
+      OuterPickOp(pickctx);
+      ///////////////////////////////////////////////////////////
 
-			mEditor.ManipManager().UIEventHandler( EV );
-			ret.setHandled(this);
-		}
-		break;
+      mEditor.ManipManager().UIEventHandler(EV);
+      ret.setHandled(this);
+    } break;
 
-		case ui::UIEV_DRAG:
-		{
-			if( false == GetViewport()->HasKeyboardFocus() ) break;
-			if(mEditor.ManipManager().UIEventHandler( EV ))
-				ret.setHandled(this);
-		}
-		break;
+    case ui::UIEV_DRAG: {
+      if (false == GetViewport()->HasKeyboardFocus())
+        break;
+      if (mEditor.ManipManager().UIEventHandler(EV))
+        ret.setHandled(this);
+    } break;
 
-		case ui::UIEV_MOVE:
-		{
-			if( false == GetViewport()->HasKeyboardFocus() ) break;
-			if(!mEditor.ManipManager().IsVisible())
-				return ret;
+    case ui::UIEV_MOVE: {
+      if (false == GetViewport()->HasKeyboardFocus())
+        break;
+      if (!mEditor.ManipManager().IsVisible())
+        return ret;
 
-			///////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////
 
-			auto process_pick = [=](DeferredPickOperationContext*pctx)
-			{
-				SceneEditorVPToolHandler* handler = pctx->mHandler;
-				SceneEditorBase& editor = handler->GetEditor();
-				ork::Object* pobj = rtti::autocast(pctx->mpCastable);
-				ork::rtti::ICastable *pillegal = (ork::rtti::ICastable *) 0xffffffff;
-				//orkprintf( "obj<%p>\n", pobj );
+      auto process_pick = [=](DeferredPickOperationContext* pctx) {
+        SceneEditorVPToolHandler* handler = pctx->mHandler;
+        SceneEditorBase& editor           = handler->GetEditor();
+        ork::Object* pobj                 = rtti::autocast(pctx->mpCastable);
+        ork::rtti::ICastable* pillegal    = (ork::rtti::ICastable*)0xffffffff;
+        // orkprintf( "obj<%p>\n", pobj );
 
-				if(pobj && pobj!=pillegal && pobj->GetClass()->IsSubclassOf( Manip::GetClassStatic() ))
-					editor.ManipManager().SetHover((Manip*)pobj);
-				else
-					editor.ManipManager().SetHover(NULL);
+        if (pobj && pobj != pillegal && pobj->GetClass()->IsSubclassOf(Manip::GetClassStatic()))
+          editor.ManipManager().SetHover((Manip*)pobj);
+        else
+          editor.ManipManager().SetHover(NULL);
 
-				if(pctx->is_shift)
-					editor.ManipManager().SetDualAxis(true);
-				else
-					editor.ManipManager().SetDualAxis(false);
-				
-			};
+        if (pctx->is_shift)
+          editor.ManipManager().SetDualAxis(true);
+        else
+          editor.ManipManager().SetDualAxis(false);
+      };
 
-			///////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////
 
-			DeferredPickOperationContext* pickctx = new DeferredPickOperationContext;
-			pickctx->miX = ix;
-			pickctx->miY = iy;
-			pickctx->is_shift = isshift;
-			pickctx->is_ctrl = isctrl;
-			pickctx->is_left = isleft;
-			pickctx->is_right = isright;
-			pickctx->mHandler = this;
-			pickctx->mViewport = GetViewport();
-			pickctx->mOnPick = process_pick;
-			//OuterPickOp(pickctx);		
-			///////////////////////////////////////////////////////////
+      DeferredPickOperationContext* pickctx = new DeferredPickOperationContext;
+      pickctx->miX                          = ix;
+      pickctx->miY                          = iy;
+      pickctx->is_shift                     = isshift;
+      pickctx->is_ctrl                      = isctrl;
+      pickctx->is_left                      = isleft;
+      pickctx->is_right                     = isright;
+      pickctx->mHandler                     = this;
+      pickctx->mViewport                    = GetViewport();
+      pickctx->mOnPick                      = process_pick;
+      // OuterPickOp(pickctx);
+      ///////////////////////////////////////////////////////////
 
-			//ret.setHandled(this);
-		}
-		break;
-	}
+      // ret.setHandled(this);
+    } break;
+  }
 
-	return ret;
+  return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-ManipTransHandler::ManipTransHandler( SceneEditorBase& editor )
-	: ManipHandler(editor)
-{
-	SetBaseIconName( "lev2://editor/ManipTrans" );
+ManipTransHandler::ManipTransHandler(SceneEditorBase& editor)
+    : ManipHandler(editor) {
+  SetBaseIconName("lev2://editor/ManipTrans");
 }
-void ManipTransHandler::DoAttach(SceneEditorVP* pvp)
-{
-	mEditor.ManipManager().SetWorldTrans( false );
-	mEditor.ManipManager().SetUIMode( ManipManager::EUIMODE_MANIP_WORLD_TRANSLATE );
-	mEditor.ManipManager().SetManipMode( ManipManager::EMANIPMODE_WORLD_TRANS );
+void ManipTransHandler::DoAttach(SceneEditorVP* pvp) {
+  mEditor.ManipManager().SetWorldTrans(false);
+  mEditor.ManipManager().SetUIMode(ManipManager::EUIMODE_MANIP_WORLD_TRANSLATE);
+  mEditor.ManipManager().SetManipMode(ManipManager::EMANIPMODE_WORLD_TRANS);
 }
-void ManipTransHandler::DoDetach(SceneEditorVP* pvp)
-{
-	mEditor.ManipManager().SetUIMode( ManipManager::EUIMODE_STD );
+void ManipTransHandler::DoDetach(SceneEditorVP* pvp) {
+  mEditor.ManipManager().SetUIMode(ManipManager::EUIMODE_STD);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-ManipRotHandler::ManipRotHandler( SceneEditorBase& editor )
-	: ManipHandler(editor)
-{
-	SetBaseIconName( "lev2://editor/ManipRot" );
+ManipRotHandler::ManipRotHandler(SceneEditorBase& editor)
+    : ManipHandler(editor) {
+  SetBaseIconName("lev2://editor/ManipRot");
 }
 
-void ManipRotHandler::DoAttach(SceneEditorVP* pvp)
-{
-	mEditor.ManipManager().SetWorldTrans( true );
-	mEditor.ManipManager().SetUIMode( ManipManager::EUIMODE_MANIP_LOCAL_ROTATE );
-	mEditor.ManipManager().SetManipMode( ManipManager::EMANIPMODE_LOCAL_ROTATE );
+void ManipRotHandler::DoAttach(SceneEditorVP* pvp) {
+  mEditor.ManipManager().SetWorldTrans(true);
+  mEditor.ManipManager().SetUIMode(ManipManager::EUIMODE_MANIP_LOCAL_ROTATE);
+  mEditor.ManipManager().SetManipMode(ManipManager::EMANIPMODE_LOCAL_ROTATE);
 }
-void ManipRotHandler::DoDetach(SceneEditorVP* pvp)
-{
-	mEditor.ManipManager().SetUIMode( ManipManager::EUIMODE_STD );
+void ManipRotHandler::DoDetach(SceneEditorVP* pvp) {
+  mEditor.ManipManager().SetUIMode(ManipManager::EUIMODE_STD);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork { namespace ent {
+}} // namespace ork::ent

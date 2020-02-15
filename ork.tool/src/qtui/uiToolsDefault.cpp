@@ -118,7 +118,7 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
   switch (EV.miEventCode) {
     case ui::UIEV_SHOW: {
       if (GetViewport()->GetTarget()) {
-        Context* pTARG       = GetViewport()->GetTarget();
+        Context* pTARG         = GetViewport()->GetTarget();
         lev2::CTXBASE* CtxBase = pTARG->GetCtxBase();
         // CtxBase->SetRefreshRate(0);
       }
@@ -181,16 +181,18 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
       if (AreAnyMoveKeysDown)
         break;
       if (GetViewport()->getActiveCamera()) {
-        auto pickctx       = new DeferredPickOperationContext;
-        pickctx->miX       = ix;
-        pickctx->miY       = iy;
-        pickctx->is_shift  = isshift;
-        pickctx->is_ctrl   = isctrl;
-        pickctx->is_left   = isleft;
-        pickctx->is_mid    = ismid;
-        pickctx->is_right  = isright;
-        pickctx->mHandler  = this;
-        pickctx->mViewport = GetViewport();
+        auto pickctx         = new DeferredPickOperationContext;
+        pickctx->miX         = ix;
+        pickctx->miY         = iy;
+        pickctx->is_shift    = isshift;
+        pickctx->is_ctrl     = isctrl;
+        pickctx->is_left     = isleft;
+        pickctx->is_mid      = ismid;
+        pickctx->is_right    = isright;
+        pickctx->mHandler    = this;
+        pickctx->mViewport   = GetViewport();
+        pickctx->_gfxContext = EV._context;
+        OrkAssert(EV._context);
 
         auto process_pick = [=](DeferredPickOperationContext* pickctx) {
           ork::opq::assertOnQueue2(opq::updateSerialQueue());
@@ -217,17 +219,18 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
       ret.mHoldFocus = true;
 
       if (isleft && false == isright) {
-        auto pickctx       = new DeferredPickOperationContext;
-        pickctx->miX       = ix;
-        pickctx->miY       = iy;
-        pickctx->is_shift  = isshift;
-        pickctx->is_ctrl   = isctrl;
-        pickctx->is_left   = isleft;
-        pickctx->is_mid    = ismid;
-        pickctx->is_right  = isright;
-        pickctx->mHandler  = this;
-        pickctx->mViewport = GetViewport();
-
+        auto pickctx         = new DeferredPickOperationContext;
+        pickctx->miX         = ix;
+        pickctx->miY         = iy;
+        pickctx->is_shift    = isshift;
+        pickctx->is_ctrl     = isctrl;
+        pickctx->is_left     = isleft;
+        pickctx->is_mid      = ismid;
+        pickctx->is_right    = isright;
+        pickctx->mHandler    = this;
+        pickctx->mViewport   = GetViewport();
+        pickctx->_gfxContext = EV._context;
+        OrkAssert(EV._context);
         HandlePickOperation(pickctx);
       }
       break;

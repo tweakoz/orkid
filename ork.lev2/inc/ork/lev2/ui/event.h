@@ -9,8 +9,12 @@ namespace ork { namespace ui {
 struct HandlerResult {
   HandlerResult(Widget* ph = nullptr);
 
-  bool wasHandled() const { return mHandler != nullptr; }
-  void setHandled(Widget* by) { mHandler = by; }
+  bool wasHandled() const {
+    return mHandler != nullptr;
+  }
+  void setHandled(Widget* by) {
+    mHandler = by;
+  }
 
   Widget* mHandler;
   bool mHoldFocus;
@@ -89,6 +93,7 @@ struct Event final // RawEvent
   int miNumMultiTouchPoints;
 
   bool isKeyDepressed(uint32_t key) const;
+  lev2::Context* _context = nullptr;
 
   fvec2 GetUnitCoordBP() const {
     fvec2 rval;
@@ -122,21 +127,31 @@ struct Event final // RawEvent
       , mvRayF(float(0.0f), float(0.0f), float(0.0f), float(0.0f))
       , mpBlindEventData(0)
       , mpGfxWin(0)
-      , miNumMultiTouchPoints(0) {}
+      , miNumMultiTouchPoints(0) {
+  }
 
   void GetFromOS(void);
 
-  bool IsButton0DownF() const { return mbLeftButton || mFilteredEvent.mBut0; }
-  bool IsButton1DownF() const { return mbMiddleButton || mFilteredEvent.mBut1; }
-  bool IsButton2DownF() const { return mbRightButton || mFilteredEvent.mBut2; }
+  bool IsButton0DownF() const {
+    return mbLeftButton || mFilteredEvent.mBut0;
+  }
+  bool IsButton1DownF() const {
+    return mbMiddleButton || mFilteredEvent.mBut1;
+  }
+  bool IsButton2DownF() const {
+    return mbRightButton || mFilteredEvent.mBut2;
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DrawEvent {
   DrawEvent(lev2::Context* ptarg)
-      : mpTarget(ptarg) {}
-  lev2::Context* GetTarget() const { return mpTarget; }
+      : mpTarget(ptarg) {
+  }
+  lev2::Context* GetTarget() const {
+    return mpTarget;
+  }
 
 private:
   lev2::Context* mpTarget;

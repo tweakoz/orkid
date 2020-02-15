@@ -23,19 +23,18 @@ typedef tool::UIToolHandler<SceneEditorVP> SceneEditorVPToolHandlerBase;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class SceneEditorVPToolHandler : public SceneEditorVPToolHandlerBase
-{
+class SceneEditorVPToolHandler : public SceneEditorVPToolHandlerBase {
 protected:
-	SceneEditorBase&	mEditor;
+  SceneEditorBase& mEditor;
 
-	void setSpawnLoc(const lev2::PixelFetchContext& ctx, float fx, float fy);
+  void setSpawnLoc(const lev2::PixelFetchContext& ctx, float fx, float fy);
 
 public:
-	SceneEditorVPToolHandler( SceneEditorBase& editor );
-	SceneEditorBase& GetEditor() { return mEditor; }
-
+  SceneEditorVPToolHandler(SceneEditorBase& editor);
+  SceneEditorBase& GetEditor() {
+    return mEditor;
+  }
 };
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -43,68 +42,64 @@ struct DeferredPickOperationContext;
 
 typedef std::function<void(DeferredPickOperationContext*)> on_pick_lambda_t;
 
-struct DeferredPickOperationContext
-{
-	DeferredPickOperationContext();
+struct DeferredPickOperationContext {
+  DeferredPickOperationContext();
 
-	int		miX;
-	int		miY;
-	bool	is_left;
-	bool	is_mid;
-	bool	is_right;
-	bool	is_ctrl;
-	bool	is_shift;
-	ui::Event mEV;
+  int miX;
+  int miY;
+  bool is_left;
+  bool is_mid;
+  bool is_right;
+  bool is_ctrl;
+  bool is_shift;
+  ui::Event mEV;
 
-	ork::rtti::ICastable*		mpCastable;
-	SceneEditorVPToolHandler*	mHandler;
-	SceneEditorVP*				mViewport;
-	on_pick_lambda_t 			mOnPick;
-	ork::atomic<int>			mState;
+  ork::rtti::ICastable* mpCastable;
+  SceneEditorVPToolHandler* mHandler;
+  SceneEditorVP* mViewport;
+  on_pick_lambda_t mOnPick;
+  ork::atomic<int> mState;
   lev2::PixelFetchContext _pixelctx;
-
+  lev2::Context* _gfxContext = nullptr;
 };
 
-struct TestVPDefaultHandler : public SceneEditorVPToolHandler
-{
-	TestVPDefaultHandler( SceneEditorBase& editor );
+struct TestVPDefaultHandler : public SceneEditorVPToolHandler {
+  TestVPDefaultHandler(SceneEditorBase& editor);
+
 private:
-	ui::HandlerResult DoOnUiEvent( const ui::Event& EV ) override;
-	void DoAttach(SceneEditorVP* ) override;
-	void DoDetach(SceneEditorVP* ) override;
-	void HandlePickOperation( DeferredPickOperationContext* ppickop );
+  ui::HandlerResult DoOnUiEvent(const ui::Event& EV) override;
+  void DoAttach(SceneEditorVP*) override;
+  void DoDetach(SceneEditorVP*) override;
+  void HandlePickOperation(DeferredPickOperationContext* ppickop);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ManipHandler : public SceneEditorVPToolHandler
-{
-	ui::HandlerResult DoOnUiEvent( const ui::Event& EV) override;
+struct ManipHandler : public SceneEditorVPToolHandler {
+  ui::HandlerResult DoOnUiEvent(const ui::Event& EV) override;
 
 protected:
-	ManipHandler( SceneEditorBase& editor );
+  ManipHandler(SceneEditorBase& editor);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ManipRotHandler : public ManipHandler
-{
-	ManipRotHandler( SceneEditorBase& editor );
-private:
-	void DoAttach(SceneEditorVP* ) override;
-	void DoDetach(SceneEditorVP* ) override;
+struct ManipRotHandler : public ManipHandler {
+  ManipRotHandler(SceneEditorBase& editor);
 
+private:
+  void DoAttach(SceneEditorVP*) override;
+  void DoDetach(SceneEditorVP*) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ManipTransHandler : public ManipHandler
-{
-	ManipTransHandler( SceneEditorBase& editor );
+struct ManipTransHandler : public ManipHandler {
+  ManipTransHandler(SceneEditorBase& editor);
+
 private:
-	void DoAttach(SceneEditorVP* ) override;
-	void DoDetach(SceneEditorVP* ) override;
+  void DoAttach(SceneEditorVP*) override;
+  void DoDetach(SceneEditorVP*) override;
 };
 
-}
-}
+}} // namespace ork::ent

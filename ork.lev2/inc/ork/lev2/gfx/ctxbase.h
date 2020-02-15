@@ -89,8 +89,9 @@ public:
   Window* GetWindow() const {
     return mpWindow;
   }
-  void setContext(Context* pt) {
-    mpTarget = pt;
+  void setContext(Context* ctx) {
+    mpTarget          = ctx;
+    mUIEvent._context = ctx;
   }
   void SetWindow(Window* pw) {
     mpWindow = pw;
