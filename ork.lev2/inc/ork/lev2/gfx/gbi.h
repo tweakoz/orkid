@@ -9,6 +9,9 @@
 class GeometryBufferInterface {
 
 public:
+  GeometryBufferInterface(Context& ctx);
+  virtual ~GeometryBufferInterface();
+
   void BeginFrame();
   void EndFrame();
 
@@ -78,11 +81,9 @@ public:
     return miTrianglesRendered;
   }
 
-  GeometryBufferInterface();
-  ~GeometryBufferInterface();
-
 protected:
   int miTrianglesRendered;
+  Context& _context;
 
 private:
   virtual void _doBeginFrame() {

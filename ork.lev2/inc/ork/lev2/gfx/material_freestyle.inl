@@ -20,6 +20,8 @@ struct FreestyleMaterial : public GfxMaterial {
   FreestyleMaterial();
   ~FreestyleMaterial() final;
 
+  void dump() const;
+
   ////////////////////////////////////////////
 
   void begin(const RenderContextFrameData& RCFD);
@@ -160,11 +162,44 @@ inline FreestyleMaterial::~FreestyleMaterial() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+inline void FreestyleMaterial::dump() const {
+
+  printf("freestylematerial<%p>\n", this);
+  printf("fxshader<%p>\n", _shader);
+
+  for (auto item : _shader->_techniques) {
+
+    auto name = item.first;
+    auto tek  = item.second;
+    printf("tek<%p:%s> valid<%d>\n", tek, name.c_str(), int(tek->mbValidated));
+  }
+  for (auto item : _shader->_parameterByName) {
+    auto name = item.first;
+    auto par  = item.second;
+    printf("par<%p:%s> type<%s>\n", par, name.c_str(), par->mParameterType.c_str());
+  }
+  for (auto item : _shader->_parameterBlockByName) {
+    auto name   = item.first;
+    auto parblk = item.second;
+    printf("parblk<%p:%s>\n", parblk, name.c_str());
+  }
+  for (auto item : _shader->_computeShaderByName) {
+    auto name = item.first;
+    auto csh  = item.second;
+    printf("csh<%p:%s>\n", csh, name.c_str());
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 inline void FreestyleMaterial::gpuInit(Context* targ, const AssetPath& assetname) {
-  _initialTarget = targ;
-  auto fxi       = targ->FXI();
-  auto shass     = asset::AssetManager<FxShaderAsset>::Load(assetname.c_str());
-  _shader        = shass->GetFxShader();
+  if (_initialTarget == nullptr) {
+    _initialTarget = targ;
+    auto fxi       = targ->FXI();
+    auto shass     = asset::AssetManager<FxShaderAsset>::Load(assetname.c_str());
+    _shader        = shass->GetFxShader();
+    OrkAssert(_shader);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

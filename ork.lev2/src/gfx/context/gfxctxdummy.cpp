@@ -31,6 +31,10 @@ DuRasterStateInterface::DuRasterStateInterface(Context& target)
 
 /////////////////////////////////////////////////////////////////////////
 
+DummyDrawingInterface::DummyDrawingInterface(ContextDummy& ctx)
+    : DrawingInterface(ctx) {
+}
+
 bool DummyFxInterface::LoadFxShader(const AssetPath& pth, FxShader* pfxshader) {
   AssetPath assetname = pth;
   assetname.SetExtension("fxml");
@@ -70,7 +74,9 @@ ContextDummy::ContextDummy()
     : Context()
     , mFbI(*this)
     , mMtxI(*this)
-    , mRsI(*this) {
+    , mRsI(*this)
+    , mGbI(*this)
+    , mDWI(*this) {
   DummyContextInit();
   static bool binit = true;
 
@@ -95,6 +101,11 @@ void ContextDummy::_doResizeMainSurface(int iw, int ih) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+DuGeometryBufferInterface::DuGeometryBufferInterface(ContextDummy& ctx)
+    : GeometryBufferInterface(ctx)
+    , _ducontext(ctx) {
+}
 
 void* DuGeometryBufferInterface::LockIB(IndexBufferBase& IdxBuf, int ibase, int icount) {
   if (0 == IdxBuf.GetHandle()) {

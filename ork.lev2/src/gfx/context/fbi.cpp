@@ -61,7 +61,7 @@ void FrameBufferInterface::PushRtGroup(RtGroup* Base) {
   PushViewport(r);
 
   if (Base->_autoclear) {
-    clearRtGroup(Base);
+    rtGroupClear(Base);
   }
   // BeginFrame();
 }

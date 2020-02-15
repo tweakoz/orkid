@@ -132,6 +132,7 @@ public:
   virtual GeometryBufferInterface* GBI() = 0; // Geometry Buffer Interface
   virtual FrameBufferInterface* FBI()    = 0; // FrameBuffer/Control Interface
   virtual TextureInterface* TXI()        = 0; // Texture Interface
+  virtual DrawingInterface* DWI()        = 0; // Drawing Interface
 
 #if defined(ENABLE_COMPUTE_SHADERS)
   virtual ComputeInterface* CI() = 0; // ComputeShader Interface

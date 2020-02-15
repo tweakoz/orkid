@@ -86,6 +86,10 @@ int GetGlError(void);
 
 class GlTextureInterface;
 
+struct GlDrawingInterface : public DrawingInterface {
+    GlDrawingInterface(ContextGL&ctx);
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class GlImiInterface : public ImmInterface {
@@ -223,7 +227,9 @@ public:
   bool captureAsFormat(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer, EBufferFormat destfmt) final;
   void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) final;
   SRect& PopScissor(void) final;
-  void clearRtGroup(RtGroup*rtg) final;
+
+  void rtGroupClear(RtGroup*rtg) final;
+  void rtGroupMipGen(RtGroup*rtg) final;
 
   //////////////////////////////////////////////
 
@@ -370,6 +376,7 @@ public:
 #if defined(ENABLE_COMPUTE_SHADERS)
   ComputeInterface* CI() final { return &mCI; };
 #endif
+  DrawingInterface* DWI() final { return &mDWI; }
 
   ///////////////////////////////////////////////////////////////////////
 
@@ -437,6 +444,7 @@ public:
   GlGeometryBufferInterface mGbI;
   GlFrameBufferInterface mFbI;
   GlTextureInterface mTxI;
+  GlDrawingInterface mDWI;
 
 #if defined(ENABLE_COMPUTE_SHADERS)
   glslfx::ComputeInterface mCI;

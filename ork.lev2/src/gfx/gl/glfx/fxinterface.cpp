@@ -101,7 +101,8 @@ int Interface::BeginBlock(FxShader* hfx, const RenderContextInstData& data) {
   mTarget.SetRenderContextInstData(&data);
   Container* container = static_cast<Container*>(hfx->GetInternalHandle());
   mpActiveEffect       = container;
-  mpActiveFxShader     = hfx;
+  OrkAssert(mpActiveEffect);
+  mpActiveFxShader = hfx;
   if (nullptr == container->mActiveTechnique)
     return 0;
   return container->mActiveTechnique->mPasses.size();
@@ -164,6 +165,7 @@ bool Interface::BindTechnique(FxShader* hfx, const FxShaderTechnique* htek) {
   const Technique* ptekcont   = static_cast<const Technique*>(htek->GetPlatformHandle());
   container->mActiveTechnique = ptekcont;
   container->_activePass      = 0;
+  OrkAssert(ptekcont != nullptr);
 
   // printf("binding tek<%p:%s>\n", ptekcont, ptekcont->_name.c_str());
   return (ptekcont->mPasses.size() > 0);

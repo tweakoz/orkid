@@ -143,6 +143,7 @@ struct PixelFetchContext {
 #include "txi.h"
 #include "rsi.h"
 #include "ci.h"
+#include "dwi.h"
 
 
 

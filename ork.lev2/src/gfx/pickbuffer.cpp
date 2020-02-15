@@ -41,7 +41,7 @@ uint64_t PickBufferBase::AssignPickId(ork::Object* pobj) {
   return pid;
 }
 ork::Object* PickBufferBase::GetObjectFromPickId(uint64_t pid) {
-  printf("pickid <0x%llx>\n", pid);
+  // printf("pickid <0x%llx>\n", pid);
   auto it           = mPickIds.find(pid);
   ork::Object* pobj = (it == mPickIds.end()) ? nullptr : it->second;
   return pobj;

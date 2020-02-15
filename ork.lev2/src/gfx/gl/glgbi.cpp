@@ -239,7 +239,8 @@ struct GLVtxBufHandle {
 ///////////////////////////////////////////////////////////////////////////////
 
 GlGeometryBufferInterface::GlGeometryBufferInterface(ContextGL& target)
-    : mTargetGL(target)
+    : GeometryBufferInterface(target)
+    , mTargetGL(target)
     , mLastComponentMask(0) {
 }
 

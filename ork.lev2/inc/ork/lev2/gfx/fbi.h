@@ -46,7 +46,9 @@ public:
   void PushRtGroup(RtGroup* Base);
   void PopRtGroup();
 
-  virtual void clearRtGroup(RtGroup* rtg) {
+  virtual void rtGroupClear(RtGroup* rtg) {
+  }
+  virtual void rtGroupMipGen(RtGroup* rtg) {
   }
 
   ///////////////////////////////////////////////////////

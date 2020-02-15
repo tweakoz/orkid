@@ -13,7 +13,13 @@
 
 namespace ork { namespace lev2 {
 
+class ContextDummy;
+
 ///////////////////////////////////////////////////////////////////////////////
+
+struct DummyDrawingInterface : public DrawingInterface {
+  DummyDrawingInterface(ContextDummy& ctx);
+};
 
 class DummyFxInterface : public FxInterface {
 public:
@@ -129,6 +135,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class DuGeometryBufferInterface : public GeometryBufferInterface {
+
   ///////////////////////////////////////////////////////////////////////
   // VtxBuf Interface
 
@@ -170,6 +177,8 @@ class DuGeometryBufferInterface : public GeometryBufferInterface {
   //////////////////////////////////////////////
 
 public:
+  DuGeometryBufferInterface(ContextDummy& ctx);
+  ContextDummy& _ducontext;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -268,6 +277,9 @@ public:
   FrameBufferInterface* FBI() final {
     return &mFbI;
   }
+  DrawingInterface* DWI() final {
+    return &mDWI;
+  }
 
 #if defined(ENABLE_COMPUTE_SHADERS)
   ComputeInterface* CI() final {
@@ -300,6 +312,7 @@ private:
   DuGeometryBufferInterface mGbI;
   DuTextureInterface mTxI;
   DuFrameBufferInterface mFbI;
+  DummyDrawingInterface mDWI;
 
 #if defined(ENABLE_COMPUTE_SHADERS)
   DuComputeInterface mCI;

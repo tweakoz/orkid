@@ -64,7 +64,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
 
   if (mTargetGL._defaultRTG and (rtg != nullptr)) {
     SetRtGroup(mTargetGL._defaultRTG);
-    clearRtGroup(mTargetGL._defaultRTG);
+    rtGroupClear(mTargetGL._defaultRTG);
     rtg = mTargetGL._defaultRTG;
   }
 
@@ -82,7 +82,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
     // printf("BEGINFRAME<RtGroup>\n");
     // mTargetGL.debugPopGroup();
     if (rtg->_autoclear) {
-      clearRtGroup(rtg);
+      rtGroupClear(rtg);
     }
   }
   /////////////////////////////////////////////////
@@ -639,20 +639,20 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
 
   bool bInBounds = ((sx < msw) && (sy < msh) && (sx >= 0) && (sy >= 0));
 
-  printf("GetPixel<%d %d> msdim<%d %d> inbounds<%d> rtg<%p>\n", sx, sy, msw, msh, int(bInBounds), ctx.mRtGroup);
+  // printf("GetPixel<%d %d> msdim<%d %d> inbounds<%d> rtg<%p>\n", sx, sy, msw, msh, int(bInBounds), ctx.mRtGroup);
 
   if (bInBounds) {
     if (ctx.mRtGroup) {
       GlFboObject* FboObj = (GlFboObject*)ctx.mRtGroup->GetInternalHandle();
 
-      printf("GetPixel<%d %d> FboObj<%p>\n", sx, sy, FboObj);
+      // printf("GetPixel<%d %d> FboObj<%p>\n", sx, sy, FboObj);
 
       if (FboObj) {
         GL_ERRORCHECK();
         glBindFramebuffer(GL_FRAMEBUFFER, FboObj->mFBOMaster);
         GL_ERRORCHECK();
 
-        printf("GetPixel<%d %d> FboMaster<%u>\n", sx, sy, FboObj->mFBOMaster);
+        // printf("GetPixel<%d %d> FboMaster<%u>\n", sx, sy, FboObj->mFBOMaster);
 
         if (FboObj->mFBOMaster) {
 
@@ -688,7 +688,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
               fvec4 rv                  = fvec4(rgba[0], rgba[1], rgba[2], rgba[3]);
               ctx.mPickColors[MrtIndex] = rv;
 
-              printf("getpix MrtIndex<%d> rx<%d> ry<%d> <%g %g %g %g>\n", MrtIndex, sx, sy, rv.x, rv.y, rv.z, rv.w);
+              // printf("getpix MrtIndex<%d> rx<%d> ry<%d> <%g %g %g %g>\n", MrtIndex, sx, sy, rv.x, rv.y, rv.z, rv.w);
             }
           }
           GL_ERRORCHECK();

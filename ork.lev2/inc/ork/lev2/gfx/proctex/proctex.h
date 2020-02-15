@@ -10,6 +10,7 @@
 #include <ork/kernel/concurrent_queue.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
+#include <ork/lev2/gfx/material_freestyle.inl>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/lev2_asset.h>
@@ -61,6 +62,7 @@ public:
   dataflow::node_hash mHash;
   lev2::RtGroup* mRtGroup;
   lev2::Context* mTarget;
+  std::string _basename;
   int miW, miH;
 
   lev2::Texture* OutputTexture();
@@ -185,6 +187,7 @@ protected:
   void MarkClean();
 
 public:
+  ProcTex* _ptex = nullptr;
   Buffer& GetWriteBuffer(ProcTex& ptex);
   Buffer& GetThumbBuffer() { return mThumbBuffer; }
   void UpdateThumb(ProcTex& ptex);
@@ -335,6 +338,9 @@ public:
   ork::lev2::Texture* ResultTexture();
 
   static ProcTex* Load(const ork::file::Path& pth);
+
+  bool _dogpuinit = true;
+  lev2::FreestyleMaterial _thumbmtl;
 
 private:
   bool CanConnect(const ork::dataflow::inplugbase* pin, const ork::dataflow::outplugbase* pout) const final;

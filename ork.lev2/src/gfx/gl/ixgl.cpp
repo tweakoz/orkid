@@ -341,6 +341,7 @@ ContextGL::ContextGL()
     , mFbI(*this)
     , mTxI(*this)
     , mMtxI(*this)
+    , mDWI(*this)
     , mCI(*this) {
   ContextGL::GLinit();
 

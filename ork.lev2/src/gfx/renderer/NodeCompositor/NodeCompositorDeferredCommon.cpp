@@ -424,7 +424,7 @@ void DeferredContext::renderBaseLighting(CompositorDrawData& drawdata, const Vie
   _decalCPD._stereo1pass          = false;
   CIMPL->pushCPD(_accumCPD); // base lighting
   FBI->PushRtGroup(_rtgLaccum);
-  FBI->clearRtGroup(_rtgLaccum);
+  FBI->rtGroupClear(_rtgLaccum);
   //////////////////////////////////////////////////////////////////
   // base lighting
   //////////////////////////////////////////////////////////////////

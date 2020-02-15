@@ -16,6 +16,7 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 
 namespace ork::lev2 {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
@@ -26,23 +27,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
 
   if (0 == Base) {
     if (mCurrentRtGroup) {
-      auto FboObj     = (GlFboObject*)mCurrentRtGroup->GetInternalHandle();
-      int inumtargets = mCurrentRtGroup->GetNumTargets();
-
-      for (int it = 0; it < inumtargets; it++) {
-        auto b = mCurrentRtGroup->GetMrt(it);
-
-        if (FboObj && b) {
-          auto bufferimpl = b->_impl.Get<GlRtBufferImpl*>();
-          auto tex_obj    = bufferimpl->_texture;
-          if (b->_mipgen == RtBuffer::EMG_AUTOCOMPUTE) {
-            glBindTexture(GL_TEXTURE_2D, tex_obj);
-            glGenerateMipmap(GL_TEXTURE_2D);
-            b->texture()->TexSamplingMode().PresetPointAndClamp();
-            mTargetGL.TXI()->ApplySamplingMode(b->texture());
-          }
-        }
-      }
+      rtGroupMipGen(mCurrentRtGroup); // TODO - make explicit!
     }
 
     // printf( "SetRtg::disable rt\n" );
@@ -114,6 +99,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
         pB->SetSizeDirty(true);
         //////////////////////////////////////////
         Texture* ptex            = pB->texture();
+        ptex->_debugName         = pB->_debugName;
         GLTextureObject* ptexOBJ = new GLTextureObject;
         bufferimpl->_teximpl     = ptexOBJ;
 
@@ -368,7 +354,9 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
   // mTargetGL.debugPopGroup();
 }
 
-void GlFrameBufferInterface::clearRtGroup(RtGroup* rtg) {
+///////////////////////////////////////////////////////////////////////////////
+
+void GlFrameBufferInterface::rtGroupClear(RtGroup* rtg) {
   // glClearColor( 1.0f,1.0f,0.0f,1.0f );
   GL_ERRORCHECK();
   GLuint BufferBits = 0;
@@ -383,6 +371,28 @@ void GlFrameBufferInterface::clearRtGroup(RtGroup* rtg) {
   }
   glClear(BufferBits);
   GL_ERRORCHECK();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void GlFrameBufferInterface::rtGroupMipGen(RtGroup* rtg) {
+  auto FboObj     = (GlFboObject*)rtg->GetInternalHandle();
+  int inumtargets = rtg->GetNumTargets();
+
+  for (int it = 0; it < inumtargets; it++) {
+    auto b = rtg->GetMrt(it);
+
+    if (FboObj && b) {
+      auto bufferimpl = b->_impl.Get<GlRtBufferImpl*>();
+      auto tex_obj    = bufferimpl->_texture;
+      if (b->_mipgen == RtBuffer::EMG_AUTOCOMPUTE) {
+        glBindTexture(GL_TEXTURE_2D, tex_obj);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        b->texture()->TexSamplingMode().PresetPointAndClamp();
+        mTargetGL.TXI()->ApplySamplingMode(b->texture());
+      }
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

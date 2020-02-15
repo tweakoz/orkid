@@ -34,7 +34,7 @@ namespace ork::lev2 {
 template <> void PickBuffer<ork::tool::GraphVP>::Draw(lev2::PixelFetchContext& ctx) {
   mPickIds.clear();
 
-  auto tgt  = context();
+  auto tgt = context();
   tgt->makeCurrentContext();
   auto mtxi = tgt->MTXI();
   auto fbi  = tgt->FBI();
@@ -95,6 +95,7 @@ GraphVP::GraphVP(DataFlowEditor& dfed, tool::ged::ObjModel& objmdl, const std::s
     , mGridMaterial(GfxEnv::GetRef().loadingContext())
 
 {
+  auto loadingctx = GfxEnv::GetRef().loadingContext();
   dflowgraphedit::GetClassStatic();
 
   gdfloweditor = &dfed;
@@ -114,7 +115,7 @@ GraphVP::GraphVP(DataFlowEditor& dfed, tool::ged::ObjModel& objmdl, const std::s
     opq::Op(lamb_inner).QueueASync(opq::mainSerialQueue());
   };
 
-  ptimer->OnInterval(0.3f, lamb_outer);
+  ptimer->OnInterval(0.01f, lamb_outer);
 
   // object::Connect( & mObjectModel.GetSigRepaint(), & mWidget.GetSlotRepaint() );
   // object::Connect( & mObjectModel.GetSigModelInvalidated(), & mDflowEditor.GetSlotModelInvalidated() );
@@ -229,18 +230,19 @@ void GraphVP::DoInit(lev2::Context* pt) {
   mpPickBuffer->context()->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
 }
 void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
-  auto tgt      = drwev.GetTarget();
-  auto mtxi     = tgt->MTXI();
-  auto fbi      = tgt->FBI();
-  auto fxi      = tgt->FXI();
-  auto rsi      = tgt->RSI();
-  auto gbi      = tgt->GBI();
+  auto ctx      = drwev.GetTarget();
+  auto mtxi     = ctx->MTXI();
+  auto fbi      = ctx->FBI();
+  auto fxi      = ctx->FXI();
+  auto rsi      = ctx->RSI();
+  auto gbi      = ctx->GBI();
   auto& primi   = lev2::GfxPrimitives::GetRef();
   auto defmtl   = lev2::GfxEnv::GetDefaultUIMaterial();
   auto& VB      = lev2::GfxEnv::GetSharedDynamicV16T16C16();
   bool has_foc  = HasMouseFocus();
   bool is_pick  = fbi->isPickState();
   auto& modules = GetTopGraph()->Modules();
+  RenderContextFrameData RCFD(ctx);
 
   if (nullptr == GetTopGraph()) {
     fbi->PushScissor(SRect(0, 0, miW, miH));
@@ -250,13 +252,11 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
     fbi->PopScissor();
     return;
   }
+  _nodematerial.gpuInit(ctx, "orkshader://solid");
 
-  // SRect tgt_rect = SRect( 0,0, pTARG->GetW(), pTARG->GetH() );
-  // RenderContextFrameData framedata;
-  // framedata.SetDstRect(tgt_rect);
-  // framedata.setContext( pTARG );
+  mGrid.updateMatrices(ctx, miW, miH);
 
-  // pTARG->SetRenderContextFrameData( & framedata );
+  ctx->debugPushGroup("GraphVP");
 
   fvec4 uv0(0.0f, 0.0f, 0, 0);
   fvec4 uv1(1.0f, 0.0f, 0, 0);
@@ -278,9 +278,9 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
   float fwd2 = fw * 0.5f;
   float fhd2 = fh * 0.5f;
 
-  mGridMaterial._rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
-  mGridMaterial._rasterstate.SetAlphaTest(EALPHATEST_GREATER, 0.0f);
-  //	mGridMaterial._rasterstate.SetAlphaTest( EALPHATEST_OFF, 0.0f );
+  _nodematerial._rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
+  _nodematerial._rasterstate.SetAlphaTest(EALPHATEST_OFF, 0.0f);
+  _nodematerial._rasterstate.SetCullTest(ECULLTEST_OFF);
 
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
@@ -291,10 +291,15 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
 
     vector<regstr> regstrs;
 
-    fbi->Clear(fvec4::Blue(), 1.0f);
-    mtxi->PushPMatrix(mGrid.GetOrthoMatrix());
-    mtxi->PushVMatrix(fmtx4::Identity);
-    mtxi->PushMMatrix(fmtx4::Identity);
+    fbi->Clear(fvec4::Red(), 1.0f);
+    auto tek_tex      = _nodematerial.technique("texcolor");
+    auto tek_vtx      = _nodematerial.technique("vtxcolor");
+    auto tek_mod      = _nodematerial.technique("mmodcolor");
+    auto par_mvp      = _nodematerial.param("MatMVP");
+    auto par_tex      = _nodematerial.param("ColorMap");
+    auto par_modcolor = _nodematerial.param("modcolor");
+    OrkAssert(tek_vtx);
+
     {
       uint64_t pickID = mpPickBuffer->AssignPickId(GetTopGraph());
       fvec4 color(1, 1, 1, 1);
@@ -315,11 +320,10 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
       SVtxV16T16C16 v2(fvec3(fxb, fyb, 0.0f), uv2, color);
       SVtxV16T16C16 v3(fvec3(fxa, fyb, 0.0f), uv3, color);
 
-      // int ivbbase = vbuf.GetNum();
       {
 
         lev2::VtxWriter<lev2::SVtxV16T16C16> vw;
-        vw.Lock(tgt, &VB, 6);
+        vw.Lock(ctx, &VB, 6);
         {
           vw.AddVertex(v0);
           vw.AddVertex(v1);
@@ -329,21 +333,20 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
           vw.AddVertex(v2);
           vw.AddVertex(v3);
         }
-        vw.UnLock(tgt);
+        vw.UnLock(ctx);
 
         static const char* assetname         = "lev2://textures/dfnodebg2";
         static lev2::TextureAsset* ptexasset = asset::AssetManager<lev2::TextureAsset>::Load(assetname);
 
-        mGridMaterial.SetTexture(ptexasset->GetTexture());
-
-        mGridMaterial.SetColorMode(
-            is_pick ? lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR : lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
-
-        mGridMaterial._rasterstate.SetBlending(lev2::EBLENDING_OFF);
-
-        tgt->BindMaterial(&mGridMaterial);
-
-        gbi->DrawPrimitive(vw, EPRIM_TRIANGLES, 6);
+        if (1) {
+          _nodematerial.bindTechnique(is_pick ? tek_vtx : tek_tex);
+          _nodematerial.begin(RCFD);
+          _nodematerial.bindParamMatrix(par_mvp, mGrid.GetOrthoMatrix());
+          _nodematerial.bindParamCTex(par_tex, ptexasset->GetTexture());
+          _nodematerial._rasterstate.SetBlending(lev2::EBLENDING_OFF);
+          gbi->DrawPrimitiveEML(vw, EPRIM_TRIANGLES, 6);
+          _nodematerial.end(RCFD);
+        }
       }
 
       ///////////////////////////////////////////////////////
@@ -351,17 +354,17 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
       ///////////////////////////////////////////////////////
 
       if (false == is_pick)
-        mGrid.Render(tgt, miW, miH);
+        mGrid.Render(ctx, miW, miH);
 
       ///////////////////////////////////////////////////////
 
-      draw_connections(tgt);
+      // draw_connections(ctx);
 
       ///////////////////////////////////////////////////////
       // draw modules
       ///////////////////////////////////////////////////////
 
-      tgt->PushMaterial(&mGridMaterial);
+      ctx->PushMaterial(&mGridMaterial);
 
       int inummod = (int)modules.size();
 
@@ -387,7 +390,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
           SVtxV16T16C16 v3(fvec3(pos + of3), uv3, color);
 
           lev2::VtxWriter<lev2::SVtxV16T16C16> vw;
-          vw.Lock(tgt, &VB, 6);
+          vw.Lock(ctx, &VB, 6);
 
           vw.AddVertex(v0);
           vw.AddVertex(v1);
@@ -397,7 +400,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
           vw.AddVertex(v2);
           vw.AddVertex(v3);
 
-          vw.UnLock(tgt);
+          vw.UnLock(ctx);
 
           //////////////////////
           // select texture (using dynamic interface if requested)
@@ -421,27 +424,30 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
               auto IconCB = iconcbanno.Get<icon_cb_t>();
 
               picon = IconCB(pmod);
+              // printf("picon<%p%s>\n", picon, picon->_debugName.c_str());
             }
           }
 
-          mGridMaterial.SetColorMode(
-              is_pick ? lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR
-                      : (picon != 0) ? lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR : lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
+          if (1) {
+            _nodematerial.bindTechnique(is_pick ? tek_vtx : tek_tex);
+            _nodematerial.begin(RCFD);
+            _nodematerial.bindParamMatrix(par_mvp, mGrid.GetOrthoMatrix());
+            _nodematerial.bindParamCTex(par_tex, picon);
 
-          do_blend &= (false == is_pick);
+            do_blend &= (false == is_pick);
 
-          auto blend_mode = do_blend ? lev2::EBLENDING_ALPHA : lev2::EBLENDING_OFF;
-          mGridMaterial._rasterstate.SetBlending(blend_mode);
-          mGridMaterial.SetTexture(picon);
+            auto blend_mode = do_blend ? lev2::EBLENDING_ALPHA : lev2::EBLENDING_OFF;
+            _nodematerial._rasterstate.SetBlending(blend_mode);
+            _nodematerial.commit();
+            //////////////////////
+            // draw the dataflow node
+            //////////////////////
 
-          //////////////////////
-          // draw the dataflow node
-          //////////////////////
+            fxi->InvalidateStateBlock();
 
-          fxi->InvalidateStateBlock();
-
-          gbi->DrawPrimitive(vw, EPRIM_TRIANGLES);
-
+            gbi->DrawPrimitiveEML(vw, EPRIM_TRIANGLES);
+            _nodematerial.end(RCFD);
+          }
           //////////////////////
           // enqueue register mapping for draw
           //////////////////////
@@ -456,23 +462,20 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
         }
         imod++;
       }
-      tgt->PopMaterial();
+      ctx->PopMaterial();
     }
-    mtxi->PopPMatrix();
-    mtxi->PopVMatrix();
-    mtxi->PopMMatrix();
 
     ////////////////////////////////////////////////////////////////
 
     mtxi->PushUIMatrix(miW, miH);
     if (false == is_pick) {
-      lev2::FontMan::BeginTextBlock(tgt);
-      tgt->PushModColor(fcolor4::Yellow());
+      lev2::FontMan::BeginTextBlock(ctx);
+      ctx->PushModColor(fcolor4::Yellow());
       {
-        lev2::FontMan::DrawText(tgt, 8, 8, "GroupDepth<%d>", mDflowEditor.StackDepth());
+        lev2::FontMan::DrawText(ctx, 8, 8, "GroupDepth<%d>", mDflowEditor.StackDepth());
         if (mDflowEditor.GetSelModule()) {
           dataflow::dgmodule* pdgmod = mDflowEditor.GetSelModule();
-          lev2::FontMan::DrawText(tgt, 8, 16, "Sel<%s>", pdgmod->GetName().c_str());
+          lev2::FontMan::DrawText(ctx, 8, 16, "Sel<%s>", pdgmod->GetName().c_str());
         }
 
         float fxa   = mGrid.GetTopLeft().GetX();
@@ -505,12 +508,12 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
           float ioff = fmodsizew * (ftw / fgw);
 
           if (false == is_pick) {
-            lev2::FontMan::DrawText(tgt, imx + ioff, imy + ioff, "%d:%d", rs.ser, rs.ireg);
+            lev2::FontMan::DrawText(ctx, imx + ioff, imy + ioff, "%d:%d", rs.ser, rs.ireg);
           }
         }
       }
-      lev2::FontMan::EndTextBlock(tgt);
-      tgt->PopModColor();
+      lev2::FontMan::EndTextBlock(ctx);
+      ctx->PopModColor();
     }
     mtxi->PopUIMatrix();
 
@@ -518,6 +521,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
   }
   fbi->PopViewport();
   fbi->PopScissor();
+  ctx->debugPopGroup();
   ////////////////////////////////////////////////////////////////
 }
 

@@ -8,6 +8,7 @@
 #include <ork/reflect/DirectObjectMapPropertyType.h>
 
 #include <ork/lev2/gfx/gfxmaterial_test.h>
+#include <ork/lev2/gfx/material_freestyle.inl>
 #include <ork/reflect/AccessorObjectPropertyObject.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/reflect/enum_serializer.inl>
@@ -67,6 +68,7 @@ Buffer::Buffer(ork::lev2::EBufferFormat efmt)
     : mRtGroup(nullptr)
     , miW(256)
     , miH(256) {
+  _basename = "ptex::Reg32";
 }
 void Buffer::SetBufferSize(int w, int h) {
   if (w != miW && h != miH) {
@@ -109,6 +111,7 @@ void Buffer::PtexEnd(bool pop_vp) {
   mTarget->FBI()->PopRtGroup();
   mTarget = nullptr;
 }
+///////////////////////////////////////////////////////////////////////////////
 lev2::RtGroup* Buffer::GetRtGroup(lev2::Context* ptgt) {
   if (mRtGroup == nullptr) {
     mRtGroup             = new RtGroup(ptgt, miW, miH);
@@ -116,12 +119,21 @@ lev2::RtGroup* Buffer::GetRtGroup(lev2::Context* ptgt) {
 
     auto mrt = new ork::lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA8, miW, miH);
 
-    mrt->_debugName = FormatString("ptx::Reg32");
-    mrt->_mipgen    = RtBuffer::EMG_AUTOCOMPUTE;
+    mrt->_debugName = FormatString("%s<%p>", _basename.c_str(), this);
+
+    mrt->_mipgen = RtBuffer::EMG_AUTOCOMPUTE;
     mRtGroup->SetMrt(0, mrt);
 
     ptgt->FBI()->PushRtGroup(mRtGroup);
     ptgt->FBI()->PopRtGroup();
+
+    printf(
+        "Buffer<%p:%s> RtGroup<%p> texture<%p:%s>\n",
+        this,
+        _basename.c_str(),
+        mRtGroup,
+        mrt->texture(),
+        mrt->texture()->_debugName.c_str());
   }
   return mRtGroup;
 }
@@ -164,6 +176,7 @@ Buffer& Img64::GetBuffer(ProcTex& ptex) const {
 static lev2::Texture* GetImgModuleIcon(ork::dataflow::dgmodule* pmod) {
   ImgModule* pimgmod = rtti::autocast(pmod);
   auto& buffer       = pimgmod->GetThumbBuffer();
+  // printf("GetThumbIcon Buf<%p:%s>\n", &buffer, buffer._basename.c_str());
   return buffer.OutputTexture();
 }
 
@@ -195,10 +208,12 @@ ImgModule::ImgModule()
 Img32Module::Img32Module()
     : ConstructOutTypPlug(ImgOut, dataflow::EPR_UNIFORM, typeid(Img32))
     , ImgModule() {
+  mThumbBuffer._basename = "Thumb32";
 }
 Img64Module::Img64Module()
     : ConstructOutTypPlug(ImgOut, dataflow::EPR_UNIFORM, typeid(Img64))
     , ImgModule() {
+  mThumbBuffer._basename = "Thumb64";
 }
 Buffer& ImgModule::GetWriteBuffer(ProcTex& ptex) {
   ImgOutPlug* outplug = 0;
@@ -269,7 +284,7 @@ void ImgModule::MarkClean() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void RenderQuad(ork::lev2::Context* pTARG, float fX1, float fY1, float fX2, float fY2, float fu1, float fv1, float fu2, float fv2) {
-  U32 uColor = 0xffffffff; // gGfxEnv.GetColor().GetABGRU32();
+  U32 uColor = 0xffffffff;
 
   float maxuv = 1.0f;
   float minuv = 0.0f;
@@ -292,45 +307,92 @@ void RenderQuad(ork::lev2::Context* pTARG, float fX1, float fY1, float fX2, floa
 
   pTARG->GBI()->DrawPrimitive(vw, EPRIM_TRIANGLES, ivcount);
 }
+///////////////////////////////////////////////////////////////////////////////
+void RenderQuadEML(
+    ork::lev2::Context* pTARG,
+    float fX1,
+    float fY1,
+    float fX2,
+    float fY2,
+    float fu1,
+    float fv1,
+    float fu2,
+    float fv2) {
+  U32 uColor = 0xffffffff;
+
+  float maxuv = 1.0f;
+  float minuv = 0.0f;
+
+  int ivcount = 6;
+
+  lev2::VtxWriter<SVtxV12C4T16> vw;
+  vw.Lock(pTARG, &GfxEnv::GetSharedDynamicVB(), ivcount);
+  float fZ = 0.0f;
+
+  vw.AddVertex(SVtxV12C4T16(fX1, fY1, fZ, fu1, fv1, uColor));
+  vw.AddVertex(SVtxV12C4T16(fX2, fY1, fZ, fu2, fv1, uColor));
+  vw.AddVertex(SVtxV12C4T16(fX2, fY2, fZ, fu2, fv2, uColor));
+
+  vw.AddVertex(SVtxV12C4T16(fX1, fY1, fZ, fu1, fv1, uColor));
+  vw.AddVertex(SVtxV12C4T16(fX2, fY2, fZ, fu2, fv2, uColor));
+  vw.AddVertex(SVtxV12C4T16(fX1, fY2, fZ, fu1, fv2, uColor));
+
+  vw.UnLock(pTARG);
+
+  pTARG->GBI()->DrawPrimitiveEML(vw, EPRIM_TRIANGLES, ivcount);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 void ImgModule::UpdateThumb(ProcTex& ptex) {
   auto pTARG    = ptex.GetTarget();
   auto fbi      = pTARG->FBI();
+  auto dwi      = pTARG->DWI();
   auto& wrbuf   = GetWriteBuffer(ptex);
   auto ptexture = wrbuf.OutputTexture();
-
-  if (nullptr == ptexture)
+  if (nullptr == ptexture) {
     return;
+  }
 
-  // mThumbBuffer.BeginFrame();
+  OrkAssert(_ptex != nullptr);
 
-  fbi->PushRtGroup(mThumbBuffer.GetRtGroup(pTARG));
-  GfxMaterial3DSolid gridmat(pTARG, "orkshader://proctex", "ttex");
-  gridmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-  gridmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-  gridmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-  gridmat._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
-  gridmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
-  gridmat.SetTexture(ptexture);
-  gridmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(wrbuf.miW)));
-  pTARG->BindMaterial(&gridmat);
+  const RenderContextFrameData* RCFD = pTARG->topRenderContextFrameData();
+  auto CIMPL                         = RCFD->_cimpl;
+  CompositingPassData CPD;
+  CIMPL->pushCPD(CPD);
+
+  pTARG->debugPushGroup("PtexUpdateThumb");
+
+  auto& thumbmtl = _ptex->_thumbmtl;
+  auto thumbrtg  = mThumbBuffer.GetRtGroup(pTARG);
+
+  fbi->PushRtGroup(thumbrtg);
+  auto tek    = thumbmtl.technique("ttex");
+  auto parmvp = thumbmtl.param("MatMVP");
+  auto partex = thumbmtl.param("ColorMap");
+  thumbmtl._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+  thumbmtl._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+  thumbmtl._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+  thumbmtl._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+  // thumbmtl.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(wrbuf.miW)));
+  thumbmtl.bindTechnique(tek);
+  thumbmtl.begin(*RCFD);
+  thumbmtl.bindParamCTex(partex, ptexture);
+  thumbmtl.bindParamMatrix(parmvp, fmtx4::Identity);
   ////////////////////////////////////////////////////////////////
-  float ftexw = ptexture ? ptexture->_width : 1.0f;
-  pTARG->PushModColor(ork::fvec4(ftexw, ftexw, ftexw, ftexw));
+  // float ftexw = ptexture ? ptexture->_width : 1.0f;
+  // pTARG->PushModColor(ork::fvec4(ftexw, ftexw, ftexw, ftexw));
   ////////////////////////////////////////////////////////////////
-  fmtx4 mtxortho = pTARG->MTXI()->Ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f);
-  // pTARG->MTXI()->PushPMatrix( mtxortho );
-  pTARG->MTXI()->PushPMatrix(fmtx4::Identity);
-  pTARG->MTXI()->PushVMatrix(fmtx4::Identity);
-  pTARG->MTXI()->PushMMatrix(fmtx4::Identity);
-  { RenderQuad(pTARG, -1.0f, -1.0f, 1.0f, 1.0f); }
-  pTARG->MTXI()->PopPMatrix();
-  pTARG->MTXI()->PopVMatrix();
-  pTARG->MTXI()->PopMMatrix();
-  pTARG->PopModColor();
+  {
+    fvec4 xywh(-1, -1, 2, 2);
+    fvec4 uv(0, 0, 1, 1);
+    dwi->quad2DEML(xywh, uv, uv);
+  }
+  thumbmtl.end(*RCFD);
   MarkClean();
   fbi->PopRtGroup();
+  fbi->rtGroupMipGen(thumbrtg);
+  pTARG->debugPopGroup();
+  CIMPL->popCPD();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ProcTex::Describe() { // ork::reflect::RegisterProperty( "Global", & ProcTex::GlobalAccessor );
@@ -381,6 +443,11 @@ void ProcTex::compute(ProcTexContext& ptctx) {
   mpResTex = nullptr;
 
   auto pTARG = GetTarget();
+
+  if (_dogpuinit) {
+    _thumbmtl.gpuInit(pTARG, "orkshader://proctex");
+    _dogpuinit = false;
+  }
   pTARG->debugPushGroup(FormatString("ptx::compute"));
 
   //////////////////////////////////
@@ -399,6 +466,7 @@ void ProcTex::compute(ProcTexContext& ptctx) {
       ImgModule* img_module_updthumb = nullptr;
       ///////////////////////////////////
       if (img_module) {
+        img_module->_ptex   = this;
         ImgOutPlug* outplug = 0;
         img_module->GetTypedOutput<ImgBase>(0, outplug);
         const ImgBase& base = outplug->GetValue();
@@ -436,7 +504,7 @@ void ProcTex::compute(ProcTexContext& ptctx) {
       }
       ///////////////////////////////////
       if (img_module_updthumb) {
-        // img_module_updthumb->UpdateThumb(*this);
+        img_module_updthumb->UpdateThumb(*this);
       }
     }
   }
