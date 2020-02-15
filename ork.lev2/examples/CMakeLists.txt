@@ -1,4 +1,4 @@
-add_subdirectory (cputexstream)
-add_subdirectory (minimal2D)
-add_subdirectory (minimal3D)
-add_subdirectory (model3Dpbr)
+add_subdirectory (c++/cputexstream)
+add_subdirectory (c++/minimal2D)
+add_subdirectory (c++/minimal3D)
+add_subdirectory (c++/model3Dpbr)
