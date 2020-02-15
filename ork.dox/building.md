@@ -2,7 +2,7 @@ At one time or another Orkid has been ported to the PS2, NintendoDS, Wii, XBox36
 
 Unfortunately, with my job and family, I have had only the bandwidth to maintain the Linux and Osx builds.
 
-If you want to minimize any pain, right now I would recommend Linux (Ubuntu 19.04 x86/64). The MacOsx build is only tested with latest Xcode on Mojave..
+If you want to minimize any pain, right now I would recommend Linux (Ubuntu 19.04 x86/64). The MacOsx build is only tested with Xcode11 on Catalina..
 
 I do not currently test on Intel gfx chips. If you have an NVidia or AMD/ATI card that should be fine. I also recommend proprietary drivers over the open source ones. Open source is great and all, but I find the open source video drivers are still not up to par with their proprietary counterparts.
 [UPDATE] - Since GL3 has been merged to master - Intel 4000 Graphics (Macbook Air 2011) on Osx 10.8 has been confirmed as working.
@@ -17,7 +17,7 @@ To build on Osx Mojave (10.14)+
 * ```git submodule init```
 * ```git submodule update```
 * ```./ork.build/bin/init_env.py --create .stage``` <- this creates a staging 'container' folder and launches an environment
-* ```./build.py``` <- builds deps and orkid (into staging folder)
+* ```./build.py --ez``` <- builds deps and orkid (into staging folder)
 * ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
 
 To build on Ubuntu19.04 x86/64
@@ -28,7 +28,7 @@ To build on Ubuntu19.04 x86/64
 * ```git submodule update```
 * ```./ork.build/bin/init_env.py --create .stage``` <- this creates a staging folder and launches an environment
 * ```ork.installdeps.ubuntu19.py``` <- install system deps
-* ```./build.py``` <- builds deps and orkid (into staging folder)
+* ```./build.py --ez``` <- builds deps and orkid (into staging folder)
 * ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
 
 everything will be built and installed into the staging folder.
