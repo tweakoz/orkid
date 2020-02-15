@@ -17,7 +17,7 @@ To build on Osx Mojave (10.14)+
 * ```git submodule init```
 * ```git submodule update```
 * ```./ork.build/bin/init_env.py --create .stage``` <- this creates a staging 'container' folder and launches an environment
-* ```./build.py``` <- builds deps and orkid (into staging folder)
+* ```./build.py --ez``` <- builds deps and orkid (into staging folder)
 * ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
 
 To build on Ubuntu19.04 x86/64
@@ -28,7 +28,7 @@ To build on Ubuntu19.04 x86/64
 * ```git submodule update```
 * ```./ork.build/bin/init_env.py --create .stage``` <- this creates a staging folder and launches an environment
 * ```ork.installdeps.ubuntu19.py``` <- install system deps
-* ```./build.py``` <- builds deps and orkid (into staging folder)
+* ```./build.py --ez``` <- builds deps and orkid (into staging folder)
 * ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
 
 everything will be built and installed into the staging folder.
