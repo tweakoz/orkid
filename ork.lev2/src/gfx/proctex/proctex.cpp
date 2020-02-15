@@ -689,7 +689,7 @@ void AA16Render::RenderAA() {
     //////////////////////////////////////////////////////
 
     {
-      temp_buffer->PtexBegin(target, true, true);
+      temp_buffer->PtexBegin(target, true, false);
       fmtx4 mtxortho = mtxi->Ortho(left, right, top, bottom, 0.0f, 1.0f);
       mtxi->PushMMatrix(fmtx4::Identity);
       mtxi->PushVMatrix(fmtx4::Identity);
