@@ -2,7 +2,7 @@ At one time or another Orkid has been ported to the PS2, NintendoDS, Wii, XBox36
 
 Unfortunately, with my job and family, I have had only the bandwidth to maintain the Linux and Osx builds.
 
-If you want to minimize any pain, right now I would recommend Linux (Ubuntu 19.04 x86/64). The MacOsx build is only tested with latest Xcode on Mojave..
+If you want to minimize any pain, right now I would recommend Linux (Ubuntu 19.04 x86/64). The MacOsx build is only tested with Xcode11 on Catalina..
 
 I do not currently test on Intel gfx chips. If you have an NVidia or AMD/ATI card that should be fine. I also recommend proprietary drivers over the open source ones. Open source is great and all, but I find the open source video drivers are still not up to par with their proprietary counterparts.
 [UPDATE] - Since GL3 has been merged to master - Intel 4000 Graphics (Macbook Air 2011) on Osx 10.8 has been confirmed as working.
