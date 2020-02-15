@@ -12,9 +12,9 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>1.42103 2.94764 -0.22218</property>
-                                                <property name='Loc'>7.83004</property>
-                                                <property name='QuatC'>-0.0909132 0.324395 -0.00168267 -0.942022</property>
+                                                <property name='Center'>1.05031 3.26785 -0.44348</property>
+                                                <property name='Loc'>12.2817</property>
+                                                <property name='QuatC'>-0.22456 0.441671 -0.0513395 -0.867624</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -218,6 +218,7 @@
                                                                 <property name='ShadowBias'>0.2</property>
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>false</property>
+                                                                <property name='ShadowMapSize'>1024</property>
                                                                 <property name='ShadowSamples'>1</property>
                                                                 <property name='Fovy'>112.653</property>
                                                                 <property name='Range'>17.9898</property>
@@ -420,14 +421,14 @@
                                                                 <item key='gl'>
                                                                     <reference category='ObjectClass'>
                                                                         <object type='proctex::Global' id='48'>
-                                                                            <property name='mgvpos'>0 0</property>
+                                                                            <property name='mgvpos'>0 -200</property>
                                                                         </object>
                                                                     </reference>
                                                                 </item>
                                                                 <item key='gr'>
                                                                     <reference category='ObjectClass'>
                                                                         <object type='proctex::Gradient' id='49'>
-                                                                            <property name='mgvpos'>0 0</property>
+                                                                            <property name='mgvpos'>100 0</property>
                                                                             <property name='ImgOut'>
                                                                                 <object type='proctex::OutImgPlug' id='50'>
                                                                                 </object>
@@ -452,7 +453,7 @@
                                                                 <item key='map'>
                                                                     <reference category='ObjectClass'>
                                                                         <object type='proctex::Colorize' id='52'>
-                                                                            <property name='mgvpos'>0 0</property>
+                                                                            <property name='mgvpos'>10 60</property>
                                                                             <property name='ImgOut'>
                                                                                 <object type='proctex::OutImgPlug' id='53'>
                                                                                 </object>
@@ -472,7 +473,7 @@
                                                                 <item key='oct'>
                                                                     <reference category='ObjectClass'>
                                                                         <object type='proctex::Octaves' id='56'>
-                                                                            <property name='mgvpos'>0 0</property>
+                                                                            <property name='mgvpos'>-100 0</property>
                                                                             <property name='ImgOut'>
                                                                                 <object type='proctex::OutImgPlug' id='57'>
                                                                                 </object>
@@ -544,7 +545,7 @@
                                                                             </property>
                                                                             <property name='BaseOffsetY'>
                                                                                 <object type='dflow/inplugxf<float,floatxf>' id='68'>
-                                                                                    <property name='value'>2.73315</property>
+                                                                                    <property name='value'>0.606611</property>
                                                                                     <property name='xf'>
                                                                                         <object type='dflow/floatxf' id='69'>
                                                                                             <property name='Transforms'>
@@ -636,7 +637,7 @@
                                                                 <item key='tx'>
                                                                     <reference category='ObjectClass'>
                                                                         <object type='proctex::Texture' id='83'>
-                                                                            <property name='mgvpos'>0 0</property>
+                                                                            <property name='mgvpos'>-100 -100</property>
                                                                             <property name='ImgOut'>
                                                                                 <object type='proctex::OutImgPlug' id='84'>
                                                                                 </object>
@@ -689,6 +690,7 @@
                                                     <property name='ShadowBias'>0.2</property>
                                                     <property name='ShadowBlur'>0</property>
                                                     <property name='ShadowCaster'>false</property>
+                                                    <property name='ShadowMapSize'>1024</property>
                                                     <property name='ShadowSamples'>1</property>
                                                     <property name='Fovy'>108.98</property>
                                                     <property name='Range'>82.551</property>
@@ -777,6 +779,7 @@
                                                                                 <reference category='ObjectClass'>
                                                                                     <object type='ScreenOutputCompositingNode' id='98'>
                                                                                         <property name='Layer'>"All"</property>
+                                                                                        <property name='SuperSample'>0</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>

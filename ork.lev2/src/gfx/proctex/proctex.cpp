@@ -83,7 +83,6 @@ void Buffer::PtexBegin(lev2::Context* ptgt, bool push_full_vp, bool clear_all) {
   mTarget  = ptgt;
   auto FBI = mTarget->FBI();
   FBI->SetAutoClear(false);
-  // FBI->BeginFrame();
   auto rtg = GetRtGroup(ptgt);
 
   FBI->PushRtGroup(rtg);
@@ -108,12 +107,12 @@ void Buffer::PtexEnd(bool pop_vp) {
   // printf( "  buffer<%p> end\n", this);
 
   mTarget->FBI()->PopRtGroup();
-  // mTarget->FBI()->EndFrame();
   mTarget = nullptr;
 }
 lev2::RtGroup* Buffer::GetRtGroup(lev2::Context* ptgt) {
   if (mRtGroup == nullptr) {
-    mRtGroup = new RtGroup(ptgt, miW, miH);
+    mRtGroup             = new RtGroup(ptgt, miW, miH);
+    mRtGroup->_autoclear = false;
 
     auto mrt = new ork::lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA8, miW, miH);
 

@@ -251,6 +251,11 @@ struct PbrNodeImpl {
 DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
   _impl = std::make_shared<PbrNodeImpl>(this);
 
+  ///////////////////////////////////////////////////////////////
+  // texture postprocessor for generating equirectangular environment
+  //  PBR irradiance diffuse and specular maps
+  ///////////////////////////////////////////////////////////////
+
   _texAssetVarMap.makeValueForKey<Texture::proc_t>("postproc") =
       [this](Texture* tex, Context* targ, datablockptr_t datablock) -> datablockptr_t {
     printf(
@@ -283,6 +288,7 @@ DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
     return datablock;
   };
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNodePbr::~DeferredCompositingNodePbr() {
 }
