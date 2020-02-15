@@ -534,66 +534,72 @@ void GfxPrimitives::Init(Context* pTarg) {
   ////////////////////////////////////////////////////
   // Axis Line
 
-  vw.Lock(pTarg, &GetRef().mVtxBuf_AxisLine, 36);
+  lev2::VtxWriter<SVtxV12N12B12T8C4> vwp;
+
+  using axis_vtx_t = SVtxV12N12B12T8C4;
+
+  vwp.Lock(pTarg, &GetRef().mVtxBuf_AxisLine, 36);
   {
     U32 uColor = fvec4(0.5f, 0.5f, 0.5f, 1.0f).GetARGBU32();
 
     float width  = 0.05f;
     float length = 0.8f;
+    fvec3 N, B;
+    fvec2 UV;
 
-    vw.AddVertex(SVtxV12C4T16(width, length, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, length, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, 0, width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, length, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(-width, length, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, 0, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, 0, width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, 0, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(width, 0, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, length, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, length, -width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, length, -width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(width, 0, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, 0, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, length, -width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, 0, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, -width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(width, length, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, length, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, length, width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, length, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, length, width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(width, length, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, length, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, length, width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, length, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(width, 0, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, 0, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, 0, -width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, 0, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, -width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(-width, 0, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, 0, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, 0, -width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, 0, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, 0, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, -width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(width, length, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, 0, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, length, -width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, length, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, length, -width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(width, 0, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, 0, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, length, -width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, length, -width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(-width, length, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, 0, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, length, width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, 0, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(-width, length, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, 0, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, 0, width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, 0, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, 0, width), N, B, UV, uColor));
   }
-  vw.UnLock(pTarg, EULFLG_ASSIGNVBLEN);
+  vwp.UnLock(pTarg, EULFLG_ASSIGNVBLEN);
 
   ////////////////////////////////////////////////////
   // Axis Cone
-  vw.Lock(pTarg, &GetRef().mVtxBuf_AxisCone, CONEDIVS * 3);
+  vwp.Lock(pTarg, &GetRef().mVtxBuf_AxisCone, CONEDIVS * 3);
   for (int i = 0; i < CONEDIVS; i++) {
     F32 fi  = i / (F32)CONEDIVS;
     F32 fi2 = (i + 1) / (F32)CONEDIVS;
@@ -606,73 +612,78 @@ void GfxPrimitives::Init(Context* pTarg) {
     F32 fZ2     = cosf(fPhase2) / 20.0f;
 
     U32 uColor = fvec4(0.5f, 0.5f, 0.5f, 1.0f).GetARGBU32();
+    fvec3 N, B;
+    fvec2 UV;
 
-    vw.AddVertex(SVtxV12C4T16(fX, 15.0f / 20.0f, fZ, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(fX2, 15.0f / 20.0f, fZ2, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(0.0f, 20.0f / 20.0f, 0.0f, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(fX, 15.0f / 20.0f, fZ), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(fX2, 15.0f / 20.0f, fZ2), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(0.0f, 20.0f / 20.0f, 0.0f), N, B, UV, uColor));
   }
-  vw.UnLock(pTarg, EULFLG_ASSIGNVBLEN);
+  vwp.UnLock(pTarg, EULFLG_ASSIGNVBLEN);
 
   // sm - for trans manip pick buffer
   ////////////////////////////////////////////////////
   // Axis Box
 
-  vw.Lock(pTarg, &GetRef().mVtxBuf_AxisBox, 36);
+  vwp.Lock(pTarg, &GetRef().mVtxBuf_AxisBox, 36);
   {
     U32 uColor = fvec4(0.5f, 0.5f, 0.5f, 1.0f).GetARGBU32();
 
     float width  = 0.1f;
     float length = 1.0f;
 
-    vw.AddVertex(SVtxV12C4T16(width, length, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, length, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, 0, width, 0, 0, uColor));
+    fvec3 N, B;
+    fvec2 UV;
 
-    vw.AddVertex(SVtxV12C4T16(-width, length, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, 0, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, 0, width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, length, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(width, length, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, length, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, 0, -width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, 0, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(-width, length, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, 0, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, 0, -width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, length, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, -width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(width, length, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, length, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, length, -width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, 0, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, -width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(-width, length, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, length, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, length, -width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, length, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, length, -width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(width, 0, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, 0, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, 0, -width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, length, -width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(-width, 0, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, 0, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, 0, -width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, 0, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, -width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(width, length, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, 0, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, length, -width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, 0, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, 0, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, -width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(width, 0, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, 0, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(width, length, -width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, length, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, length, -width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(-width, length, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, 0, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, length, -width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, 0, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(width, length, -width), N, B, UV, uColor));
 
-    vw.AddVertex(SVtxV12C4T16(-width, 0, width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, 0, -width, 0, 0, uColor));
-    vw.AddVertex(SVtxV12C4T16(-width, length, -width, 0, 0, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, 0, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, -width), N, B, UV, uColor));
+
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, 0, width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, 0, -width), N, B, UV, uColor));
+    vwp.AddVertex(axis_vtx_t(fvec3(-width, length, -width), N, B, UV, uColor));
   }
-  vw.UnLock(pTarg, EULFLG_ASSIGNVBLEN);
+  vwp.UnLock(pTarg, EULFLG_ASSIGNVBLEN);
 
   vw.Lock(pTarg, &GetRef().mVtxBuf_WireFrameBox, 24);
   {
@@ -1142,7 +1153,6 @@ void GfxPrimitives::Init(Context* pTarg) {
     fvec4 ColorB(0.4f, 0.5f, 0.3f, 1.0f);
     fvec4 ColorC(1.0f, 1.0f, 1.0f, 1.0f);
 
-    lev2::VtxWriter<SVtxV12N12B12T8C4> vwp;
     vwp.Lock(pTarg, &GetRef().mVtxBuf_PerlinTerrain, (iNumGroundLines - 1) * (iNumGroundLines - 1) * 6);
 
     for (int iX1 = 0; iX1 < iNumGroundLines - 1; iX1++) {

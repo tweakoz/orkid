@@ -131,13 +131,14 @@ fragment_interface iface_fgbuffer
 ///////////////////////////////////////////////////////////////
 libblock lib_pbr_frg {
 	void ps_common_n(vec3 N,vec2 UV) {
-		vec3 nrm_w = frg_tbn*N;
+		vec3 nrm_w = normalize(frg_tbn*N);
+		float emissive = float(length(N)<0.1);
 		vec3 rufmtlamb = texture(MtlRufMap,UV).zyx;
 		rufmtlamb.x *= MetallicFactor;
 		rufmtlamb.y *= RoughnessFactor;
     out_clr = ModColor*frg_clr*texture(ColorMap,UV).xyzw;
     out_normal_mdl.xyz = (nrm_w*0.5)+vec3(0.5,0.5,0.5);
-		out_normal_mdl.w = frg_camdist;
+		out_normal_mdl.w = emissive;
 		out_rufmtl = vec4(rufmtlamb,0);
 	}
 }
@@ -151,14 +152,18 @@ fragment_shader ps_gbuffer
 fragment_shader ps_gbuffer_n // normalmap
 	: iface_fgbuffer
   : lib_pbr_frg {
-	vec3 N = texture(NormalMap,frg_uv0).xyz*2.0-vec3(1,1,1);
+		vec3 TN = texture(NormalMap,frg_uv0).xyz;
+		vec3 N = normalize(TN*2.0-vec3(1,1,1));
+		if( length(TN)<0.1 ) N = vec3(0,0,0);
 	ps_common_n(N,frg_uv0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_stereo // normalmap
 	: iface_fgbuffer
   : lib_pbr_frg {
-	vec3 N = texture(NormalMap,frg_uv0).xyz*2.0-vec3(1,1,1);
+		vec3 TN = texture(NormalMap,frg_uv0).xyz;
+		vec3 N = normalize(TN*2.0-vec3(1,1,1));
+		if( length(TN)<0.1 ) N = vec3(0,0,0);
 	ps_common_n(N,frg_uv0);
 }
 ///////////////////////////////////////////////////////////////

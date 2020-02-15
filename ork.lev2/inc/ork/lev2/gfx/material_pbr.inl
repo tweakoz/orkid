@@ -75,6 +75,8 @@ public:
   void UnBindMaterialInstItem(MaterialInstItem* pitem) const final;
 
   ////////////////////////////////////////////
+  void setupCamera(const RenderContextFrameData& RCFD);
+  ////////////////////////////////////////////
 
   FxShader* _shader                        = nullptr;
   Context* _initialTarget                  = nullptr;

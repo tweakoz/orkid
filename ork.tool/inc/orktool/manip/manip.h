@@ -11,6 +11,8 @@
 #include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
+#include <ork/lev2/gfx/material_freestyle.inl>
+#include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/util/grid.h>
 #include <ork/math/TransformNode.h>
 #include <ork/object/AutoConnector.h>
@@ -58,7 +60,7 @@ public:
 
   Manip(ManipManager& mgr);
 
-  virtual void Draw(Context* pTARG) const        = 0;
+  virtual void Draw(Context* pTARG) const          = 0;
   virtual bool UIEventHandler(const ui::Event& EV) = 0;
 
   fvec3 IntersectWithPlanes(const ork::fvec2& posubp);
@@ -67,7 +69,9 @@ public:
 
   bool CheckIntersect(void) const;
 
-  fcolor4 GetColor() const { return mColor; }
+  fcolor4 GetColor() const {
+    return mColor;
+  }
 
 protected:
   fcolor4 mColor;
@@ -127,7 +131,9 @@ public:
   ManipTX(ManipManager& mgr);
 
 protected:
-  virtual ork::fvec3 GetNormal() const final { return ork::fvec3::UnitX(); };
+  virtual ork::fvec3 GetNormal() const final {
+    return ork::fvec3::UnitX();
+  };
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -139,7 +145,9 @@ public:
   ManipTY(ManipManager& mgr);
 
 protected:
-  virtual ork::fvec3 GetNormal() const final { return ork::fvec3::UnitY(); };
+  virtual ork::fvec3 GetNormal() const final {
+    return ork::fvec3::UnitY();
+  };
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -151,7 +159,9 @@ public:
   ManipTZ(ManipManager& mgr);
 
 protected:
-  virtual ork::fvec3 GetNormal() const final { return ork::fvec3::UnitZ(); };
+  virtual ork::fvec3 GetNormal() const final {
+    return ork::fvec3::UnitZ();
+  };
 };
 
 class ManipTXY : public ManipDualTrans {
@@ -243,7 +253,7 @@ enum EManipEnable {
   EMANIPMODE_ON,
 };
 
-class GfxMaterialManip : public GfxMaterial {
+/*class GfxMaterialManip : public GfxMaterial {
   ManipManager& mManager;
 
 public:
@@ -253,7 +263,8 @@ public:
 
   int BeginBlock(Context* pTarg, const RenderContextInstData& MatCtx) final;
   void EndBlock(Context* pTarg) final;
-  void Update(void) final {}
+  void Update(void) final {
+  }
   bool BeginPass(Context* pTarg, int iPass = 0) final;
   void EndPass(Context* pTarg) final;
   void UpdateMVPMatrix(Context* pTARG) final;
@@ -273,7 +284,7 @@ protected:
   fvec4 mColor;
 
   bool mbNoDepthTest;
-};
+};*/
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -331,16 +342,30 @@ public:
 
   ManipManager();
   static void ClassInit();
-  void ManipObjects(void) { mbDoComponents = false; }
-  void ManipComponents(void) { mbDoComponents = true; }
+  void ManipObjects(void) {
+    mbDoComponents = false;
+  }
+  void ManipComponents(void) {
+    mbDoComponents = true;
+  }
 
   //////////////////////////////////
 
-  void SetManipMode(EManipMode emode) { meManipMode = emode; }
-  EManipMode GetManipMode(void) { return meManipMode; }
-  bool IsVisible() { return meUIMode != EUIMODE_STD; }
-  EUIMode GetUIMode(void) const { return meUIMode; }
-  void SetUIMode(EUIMode emode) { meUIMode = emode; }
+  void SetManipMode(EManipMode emode) {
+    meManipMode = emode;
+  }
+  EManipMode GetManipMode(void) {
+    return meManipMode;
+  }
+  bool IsVisible() {
+    return meUIMode != EUIMODE_STD;
+  }
+  EUIMode GetUIMode(void) const {
+    return meUIMode;
+  }
+  void SetUIMode(EUIMode emode) {
+    meUIMode = emode;
+  }
 
   void AttachObject(ork::Object* pObject);
   void ReleaseObject(void);
@@ -352,43 +377,72 @@ public:
   void DrawManip(Manip* manip, Context* pTARG);
   void DrawCurrentManipSet(Context* pTARG);
 
-  void SetHover(Manip* manip) { mpHoverManip = manip; }
-  Manip* GetHover() { return mpHoverManip; }
+  void SetHover(Manip* manip) {
+    mpHoverManip = manip;
+  }
+  Manip* GetHover() {
+    return mpHoverManip;
+  }
 
-  void SetDualAxis(bool dual) { mDualAxis = dual; }
-  bool IsDualAxis() { return mDualAxis; }
+  void SetDualAxis(bool dual) {
+    mDualAxis = dual;
+  }
+  bool IsDualAxis() {
+    return mDualAxis;
+  }
 
   void ApplyTransform(const TransformNode& SetMat);
-  const TransformNode& GetCurTransform() { return mCurTransform; }
+  const TransformNode& GetCurTransform() {
+    return mCurTransform;
+  }
 
   void EnableManip(Manip* pOBJ);
   void DisableManip(void);
 
   bool UIEventHandler(const ui::Event& EV);
 
-  UiCamera* getActiveCamera(void) const { return mpActiveCamera; }
-  void SetActiveCamera(UiCamera* pCam) { mpActiveCamera = pCam; }
+  UiCamera* getActiveCamera(void) const {
+    return mpActiveCamera;
+  }
+  void SetActiveCamera(UiCamera* pCam) {
+    mpActiveCamera = pCam;
+  }
 
-  f32 GetManipScale(void) const { return mfManipScale; }
+  f32 GetManipScale(void) const {
+    return mfManipScale;
+  }
 
-  GfxMaterial* GetMaterial(void) { return mpManipMaterial; }
+  // GfxMaterial* GetMaterial(void) { return mpManipMaterial; }
 
   void CalcObjectScale(void);
 
-  void SetWorldTrans(bool bv) { mbWorldTrans = bv; }
-  void SetGridSnap(bool bv) { mbGridSnap = bv; }
+  void SetWorldTrans(bool bv) {
+    mbWorldTrans = bv;
+  }
+  void SetGridSnap(bool bv) {
+    mbGridSnap = bv;
+  }
 
   void RebaseMatrices(void);
 
-  Grid3d& Grid() { return mGrid; }
+  Grid3d& Grid() {
+    return mGrid;
+  }
 
-  void SetViewScale(float fvs) { mfViewScale = fvs; }
+  void SetViewScale(float fvs) {
+    mfViewScale = fvs;
+  }
   float CalcViewScale(float fW, float fH, const CameraMatrices* camdat) const;
 
-  void SetDrawMode(int imode) { miDrawMode = imode; }
-  int GetDrawMode() const { return miDrawMode; }
+  void SetDrawMode(int imode) {
+    miDrawMode = imode;
+  }
+  int GetDrawMode() const {
+    return miDrawMode;
+  }
+  void materialBegin(Context* ctx);
+  void materialEnd(Context* ctx);
 
-private:
   bool mbWorldTrans;
   bool mbGridSnap;
 
@@ -396,7 +450,8 @@ private:
 
   TransformNode mParentTransform;
 
-  GfxMaterialManip* mpManipMaterial;
+  RenderContextInstData _RCID;
+  PBRMaterial* _material;
   Manip* mpTXManip;
   Manip* mpTYManip;
   Manip* mpTZManip;

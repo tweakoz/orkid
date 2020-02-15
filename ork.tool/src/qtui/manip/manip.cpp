@@ -45,23 +45,37 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ManipManager, "ManipManager");
 namespace ork { namespace lev2 {
 ////////////////////////////////////////////////////////////////////////////////
 
-void Manip::Describe() {}
+void Manip::Describe() {
+}
 
-void ManipTrans::Describe() {}
-void ManipSingleTrans::Describe() {}
-void ManipDualTrans::Describe() {}
-void ManipRot::Describe() {}
+void ManipTrans::Describe() {
+}
+void ManipSingleTrans::Describe() {
+}
+void ManipDualTrans::Describe() {
+}
+void ManipRot::Describe() {
+}
 
-void ManipTX::Describe() {}
-void ManipTY::Describe() {}
-void ManipTZ::Describe() {}
-void ManipTXY::Describe() {}
-void ManipTXZ::Describe() {}
-void ManipTYZ::Describe() {}
+void ManipTX::Describe() {
+}
+void ManipTY::Describe() {
+}
+void ManipTZ::Describe() {
+}
+void ManipTXY::Describe() {
+}
+void ManipTXZ::Describe() {
+}
+void ManipTYZ::Describe() {
+}
 
-void ManipRX::Describe() {}
-void ManipRY::Describe() {}
-void ManipRZ::Describe() {}
+void ManipRX::Describe() {
+}
+void ManipRY::Describe() {
+}
+void ManipRZ::Describe() {
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -93,7 +107,6 @@ ManipManager::ManipManager()
     , mpCurrentObject(0)
     , mbWorldTrans(false)
     , mbGridSnap(false)
-    , mpManipMaterial(0)
     , meUIMode(EUIMODE_STD)
     , mDualAxis(false)
     , mfViewScale(1.0f)
@@ -104,6 +117,28 @@ ManipManager::ManipManager()
   SetupSignalsAndSlots();
 }
 
+void ManipManager::materialBegin(Context* targ) {
+  auto RCFD       = targ->topRenderContextFrameData();
+  auto FBI        = targ->FBI();
+  auto FXI        = targ->FXI();
+  auto CIMPL      = RCFD->_cimpl;
+  const auto& CPD = CIMPL->topCPD();
+  auto mtxi       = targ->MTXI();
+  bool is_pick    = FBI->isPickState();
+  bool is_stereo  = CPD.isStereoOnePass();
+
+  _material->_baseColor = targ->RefModColor().xyz();
+  _material->BeginBlock(targ, _RCID);
+  _material->BeginPass(targ, 0);
+  //  _material->setupCamera(*RCFD);
+}
+////////////////////////////////////////////////////////////////////////////////
+void ManipManager::materialEnd(Context* targ) {
+  auto RCFD = targ->topRenderContextFrameData();
+  _material->EndPass(targ);
+  _material->EndBlock(targ);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void ManipManager::SlotObjectDeleted(ork::Object* pOBJ) {
@@ -111,9 +146,12 @@ void ManipManager::SlotObjectDeleted(ork::Object* pOBJ) {
     DetachObject();
   }
 }
-void ManipManager::SlotObjectSelected(ork::Object* pOBJ) {}
-void ManipManager::SlotObjectDeSelected(ork::Object* pOBJ) {}
-void ManipManager::SlotClearSelection() {}
+void ManipManager::SlotObjectSelected(ork::Object* pOBJ) {
+}
+void ManipManager::SlotObjectDeSelected(ork::Object* pOBJ) {
+}
+void ManipManager::SlotClearSelection() {
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -144,7 +182,8 @@ IntersectionRecord::IntersectionRecord()
     : mIntersectionPoint(0.0f, 0.0f, 0.0f)
     , mOldIntersectionPoint(0.0f, 0.0f, 0.0f)
     , mBaseIntersectionPoint(0.0f, 0.0f, 0.0f)
-    , mbHasItersected(false) {}
+    , mbHasItersected(false) {
+}
 
 fvec4 IntersectionRecord::GetLocalSpaceDelta(const fmtx4& InvLocalMatrix) {
   return mIntersectionPoint.Transform(InvLocalMatrix) - mOldIntersectionPoint.Transform(InvLocalMatrix);
@@ -155,7 +194,8 @@ fvec4 IntersectionRecord::GetLocalSpaceDelta(const fmtx4& InvLocalMatrix) {
 Manip::Manip(ManipManager& mgr)
     : mManager(mgr)
     , mActiveIntersection(0)
-    , mColor() {}
+    , mColor() {
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -397,9 +437,14 @@ void ManipManager::Setup(ork::lev2::IRenderer* prend) {
 
   //////////////////////////////////////////////////////////////
 
-  if (0 == mpManipMaterial) {
-    mpManipMaterial = new GfxMaterialManip(pTARG, *this);
-    mpManipMaterial->_rasterstate.SetDepthTest(EDEPTHTEST_OFF);
+  if (0 == _material) {
+    _material = new PBRMaterial;
+    _material->Init(pTARG);
+    _material->_texColor  = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/white")->GetTexture();
+    _material->_texNormal = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/black")->GetTexture();
+    _material->_texMtlRuf = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/white")->GetTexture();
+    _material->_baseColor = fvec3(1, 1, 1);
+    _material->_rasterstate.SetDepthTest(EDEPTHTEST_OFF);
 
     if (mpTXManip == 0)
       mpTXManip = new ManipTX(*this);

@@ -178,6 +178,9 @@ struct RenderContextFrameData {
   RenderContextFrameData& operator=(const RenderContextFrameData&) = delete;
 
   Context* GetTarget(void) const {
+    return context(); // deprecated
+  }
+  Context* context(void) const {
     return mpTarget;
   }
   LightManager* GetLightManager() const {

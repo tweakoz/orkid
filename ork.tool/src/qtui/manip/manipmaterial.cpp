@@ -14,78 +14,78 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
-
+/*
 GfxMaterialManip::GfxMaterialManip(Context* pTARG,ManipManager&mgr)
-	: mbNoDepthTest( false )
-	, mManager(mgr)
+    : mbNoDepthTest( false )
+    , mManager(mgr)
 {
-	miNumPasses = 1;
+    miNumPasses = 1;
 
-	hModFX = asset::AssetManager<FxShaderAsset>::Load( "orkshader://manip" )->GetFxShader();
+    hModFX = asset::AssetManager<FxShaderAsset>::Load( "orkshader://manip" )->GetFxShader();
 
-	GfxMaterial::SetTexture( ETEXDEST_DIFFUSE, 0 );
+    GfxMaterial::SetTexture( ETEXDEST_DIFFUSE, 0 );
 
-	Init( pTARG );
+    Init( pTARG );
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void GfxMaterialManip::Init(ork::lev2::Context *pTarg)
 {
-	hTekStd = pTarg->FXI()->technique( hModFX, "std" );
-	hTekPick = pTarg->FXI()->technique( hModFX, "pick" );
-	hMVP = pTarg->FXI()->parameter( hModFX, "mvp" );
-	hCOLOR = pTarg->FXI()->parameter( hModFX, "modcolor" );
-	//hTekCurrent = hTekModColor;
+    hTekStd = pTarg->FXI()->technique( hModFX, "std" );
+    hTekPick = pTarg->FXI()->technique( hModFX, "pick" );
+    hMVP = pTarg->FXI()->parameter( hModFX, "mvp" );
+    hCOLOR = pTarg->FXI()->parameter( hModFX, "modcolor" );
+    //hTekCurrent = hTekModColor;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 int GfxMaterialManip::BeginBlock( Context* pTarg,const RenderContextInstData &MatCtx )
 {
-	int imode = mManager.GetDrawMode();
-	bool bpick = pTarg->FBI()->isPickState();
+    int imode = mManager.GetDrawMode();
+    bool bpick = pTarg->FBI()->isPickState();
 
-	pTarg->FXI()->BindTechnique( hModFX, bpick ? hTekPick : hTekStd );
-	int inumpasses = pTarg->FXI()->BeginBlock( hModFX, MatCtx );
-	return inumpasses;
+    pTarg->FXI()->BindTechnique( hModFX, bpick ? hTekPick : hTekStd );
+    int inumpasses = pTarg->FXI()->BeginBlock( hModFX, MatCtx );
+    return inumpasses;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void GfxMaterialManip::EndBlock( Context* pTarg )
 {
-	pTarg->FXI()->EndBlock( hModFX );
+    pTarg->FXI()->EndBlock( hModFX );
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 bool GfxMaterialManip::BeginPass( Context* pTarg, int ipass )
 {
-	pTarg->FXI()->BindPass( hModFX, ipass );
-	pTarg->FXI()->BindParamMatrix( hModFX, hMVP, pTarg->MTXI()->RefMVPMatrix() );
+    pTarg->FXI()->BindPass( hModFX, ipass );
+    pTarg->FXI()->BindParamMatrix( hModFX, hMVP, pTarg->MTXI()->RefMVPMatrix() );
 
-	fcolor4 Color = pTarg->RefModColor();
-	pTarg->FXI()->BindParamVect4( hModFX, hCOLOR, Color );
+    fcolor4 Color = pTarg->RefModColor();
+    pTarg->FXI()->BindParamVect4( hModFX, hCOLOR, Color );
 
-	pTarg->FXI()->CommitParams();
+    pTarg->FXI()->CommitParams();
 
-	return true;
+    return true;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void GfxMaterialManip::UpdateMVPMatrix( Context *pTARG )
 {
-	pTARG->FXI()->BindParamMatrix( hModFX, hMVP, pTARG->MTXI()->RefMVPMatrix() );
-	pTARG->FXI()->CommitParams();
+    pTARG->FXI()->BindParamMatrix( hModFX, hMVP, pTARG->MTXI()->RefMVPMatrix() );
+    pTARG->FXI()->CommitParams();
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void GfxMaterialManip::EndPass( Context* pTarg )
 {
- 	pTarg->FXI()->EndPass( hModFX );
+    pTarg->FXI()->EndPass( hModFX );
 }
-
-} } //namespace ork::lev2
+*/
+}} // namespace ork::lev2

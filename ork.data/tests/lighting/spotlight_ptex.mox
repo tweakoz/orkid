@@ -12,9 +12,9 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>1.05031 3.26785 -0.44348</property>
-                                                <property name='Loc'>12.2817</property>
-                                                <property name='QuatC'>-0.22456 0.441671 -0.0513395 -0.867624</property>
+                                                <property name='Center'>-0.930111 3.24644 -0.728312</property>
+                                                <property name='Loc'>13.9174</property>
+                                                <property name='QuatC'>-0.132209 0.401796 -0.071531 -0.903844</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -789,10 +789,10 @@
                                                                                     <object type='DeferredCompositingNodePbr' id='99'>
                                                                                         <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
-                                                                                        <property name='DepthFogDistance'>100</property>
+                                                                                        <property name='DepthFogDistance'>3148.89</property>
                                                                                         <property name='DepthFogPower'>4.28885</property>
                                                                                         <property name='DiffuseLevel'>1</property>
-                                                                                        <property name='EnvironmentIntensity'>1</property>
+                                                                                        <property name='EnvironmentIntensity'>1.9084</property>
                                                                                         <property name='EnvironmentMipBias'>0</property>
                                                                                         <property name='EnvironmentMipScale'>6.48855</property>
                                                                                         <property name='EnvironmentTexture'>

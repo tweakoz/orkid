@@ -83,13 +83,13 @@ public:
     return GetRef().mVtxBuf_CircleUI;
   }
 
-  static CVtxBuffer<SVtxV12C4T16>& GetAxisLineVB(void) {
+  static CVtxBuffer<SVtxV12N12B12T8C4>& GetAxisLineVB(void) {
     return GetRef().mVtxBuf_AxisLine;
   }
-  static CVtxBuffer<SVtxV12C4T16>& GetAxisConeVB(void) {
+  static CVtxBuffer<SVtxV12N12B12T8C4>& GetAxisConeVB(void) {
     return GetRef().mVtxBuf_AxisCone;
   }
-  static CVtxBuffer<SVtxV12C4T16>& GetAxisBoxVB(void) {
+  static CVtxBuffer<SVtxV12N12B12T8C4>& GetAxisBoxVB(void) {
     return GetRef().mVtxBuf_AxisBox;
   }
   static CVtxBuffer<SVtxV12C4T16>& GetEQSphere(void) {
@@ -133,9 +133,9 @@ private:
   StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_Capsule;
   StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_Dome;
   StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_Box;
-  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_AxisLine;
-  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_AxisCone;
-  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_AxisBox;
+  StaticVertexBuffer<SVtxV12N12B12T8C4> mVtxBuf_AxisLine;
+  StaticVertexBuffer<SVtxV12N12B12T8C4> mVtxBuf_AxisCone;
+  StaticVertexBuffer<SVtxV12N12B12T8C4> mVtxBuf_AxisBox;
   StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_WireFrameCylinder;
   StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_WireFrameBox;
   StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_WireFrameCapsule;

@@ -84,6 +84,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     float _zeye;
     float _fogZ;
     float _rawDepth;
+    float _emissive;
   };
   struct WPosData {
     vec2 _muv;
@@ -142,6 +143,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     decoded._albedo = texture(MapAlbedoAo, decoded._uv).xyz;
     decoded._fogZ = o._fogZ;
     decoded._rawDepth = o._rawDepth;
+    decoded._emissive = n_mdl.w;
     return decoded;
   }
   /////////////////////////////////////////////////////////
@@ -415,9 +417,10 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     vec3 wpos = gbd._wpos;
     vec3 epos = posatdepth(wpd,0.0);
     vec3 edir = normalize(wpos-epos);
-    vec3 rawn = normalize(texture(MapNormalL, uv).xyz);
+    vec3 rawn = texture(MapNormalL, uv).xyz;
     vec3 n    = normalize(rawn*2-vec3(1));
     vec3 refl = normalize(reflect(edir,n));
+    float emissive = gbd._emissive;
     /////////////////////////
     float costheta = clamp(dot(n, edir),0.01,1.0);
     vec2 brdf  = textureGather(MapBrdfIntegration, vec2(costheta,pow(roughness,0.25)),0).rg;
@@ -441,8 +444,8 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     vec3 diffuse_env = env_equirectangular(diffn,MapDiffuseEnv,0)*DiffuseLevel;
     vec3 diffuse_light = ambient+diffuse_env;
     /////////////////////////
-    vec3 diffuse1 = basecolor*diffuse_light*dialetric*ambocc;//*invF;
-    vec3 diffuse = mix( basecolor, diffuse1, length(rawn) );
+    vec3 diffuse1 = clamp(basecolor*diffuse_light*dialetric*ambocc,0,10000);
+    vec3 diffuse = mix( diffuse1, basecolor, emissive );
     /////////////////////////
     float spec_miplevel = clamp(EnvironmentMipBias + (roughness * EnvironmentMipScale), 0, 10);
     refl = vec3(refl.x,-refl.y,refl.z);
