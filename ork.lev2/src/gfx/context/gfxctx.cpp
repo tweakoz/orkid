@@ -69,6 +69,7 @@ float Context::currentDPI() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::beginFrame(void) {
+  makeCurrentContext();
   FBI()->BeginFrame();
   GBI()->BeginFrame();
   FXI()->BeginFrame();
