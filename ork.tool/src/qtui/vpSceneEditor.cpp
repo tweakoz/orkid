@@ -654,11 +654,20 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
 
       static lev2::GfxMaterialUITextured UiMat(pTARG);
 
+      //////////////////////////////////////////
+      // Test PickBuffer
+      //////////////////////////////////////////
+
       if (_pickbuffer) {
+        lev2::PixelFetchContext pfc;
+        pfc._gfxContext = pTARG;
+        _pickbuffer->Draw(pfc);
         if (_pickbuffer->_rtgroup) {
-          auto mrt = _pickbuffer->_rtgroup->GetMrt(1);
+          auto mrt = _pickbuffer->_rtgroup->GetMrt(0);
           auto mtl = mrt->GetMaterial();
           ptex     = mrt->texture();
+          ptex->TexSamplingMode().PresetPointAndClamp();
+          pTARG->TXI()->ApplySamplingMode(ptex);
           if (mtl) {
             pTARG->BindMaterial(mtl);
           }
@@ -667,6 +676,9 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
       } else {
         pTARG->BindMaterial(&UiMat);
       }
+
+      //////////////////////////////////////////
+
       UiMat._rasterstate.SetBlending(lev2::EBLENDING_OFF);
       pTARG->PushModColor(fcolor4::White());
       {

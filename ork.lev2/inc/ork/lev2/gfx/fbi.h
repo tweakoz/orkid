@@ -120,23 +120,10 @@ public:
 
   //////////////////////////////////////////////
 
-  void EnterPickState(PickBuffer* pb) {
-    miPickState++;
-    _pickbuffer = pb;
-  }
-  bool isPickState() {
-    return (miPickState > 0);
-  }
-
-  void LeavePickState() {
-    miPickState--;
-    OrkAssert(miPickState >= 0);
-    _pickbuffer = 0;
-  }
-
-  PickBuffer* GetCurrentPickBuffer() const {
-    return _pickbuffer;
-  }
+  void EnterPickState(PickBuffer* pb);
+  bool isPickState() const;
+  void LeavePickState();
+  PickBuffer* currentPickBuffer() const;
 
   //////////////////////////////////////////////
 

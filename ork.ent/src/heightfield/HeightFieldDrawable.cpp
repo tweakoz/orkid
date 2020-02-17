@@ -876,7 +876,7 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   //////////////////////////
   fvec4 color = fcolor4::White();
   if (bpick) {
-    auto pickbuf    = targ->FBI()->GetCurrentPickBuffer();
+    auto pickbuf    = targ->FBI()->currentPickBuffer();
     Object* pickobj = nullptr; // pent ? ((Object*) &pent->GetEntData()) : nullptr;
     uint64_t pickid = pickbuf->AssignPickId(pickobj);
     color.SetRGBAU64(pickid);

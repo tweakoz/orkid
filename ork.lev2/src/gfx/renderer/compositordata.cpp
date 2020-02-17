@@ -18,6 +18,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorPicking.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorFx3.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
@@ -86,7 +87,7 @@ void CompositingData::presetPicking() {
 
   auto t1 = new NodeCompositingTechnique;
   auto o1 = new ScreenOutputCompositingNode;
-  auto r1 = new ForwardCompositingNode;
+  auto r1 = new PickingCompositingNode;
   t1->_writeOutputNode(o1);
   t1->_writeRenderNode(r1);
   // t1->_writePostFxNode(p1);

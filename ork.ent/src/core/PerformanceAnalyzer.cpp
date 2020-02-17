@@ -168,10 +168,10 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(Simulation* inst, Entity* pent) 
       const Simulation* pSI                     = pyo->psi;
       const PerfAnalyzerControllerInst* ssci    = pent->GetTypedComponent<PerfAnalyzerControllerInst>();
       const PerfAnalyzerControllerData& cd      = ssci->GetCD();
-      ork::lev2::Context* pTARG               = rcid.GetRenderer()->GetTarget();
+      ork::lev2::Context* pTARG                 = rcid.GetRenderer()->GetTarget();
       bool isPickState                          = pTARG->FBI()->isPickState();
 
-      if (cd.mbEnable) {
+      if (cd.mbEnable and false == isPickState) {
 
         float frawdeltatime = pSI->GetUpDeltaTime();
 

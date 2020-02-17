@@ -115,7 +115,7 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   MatCtx.SetMaterialIndex(0);
   MatCtx.SetRenderer(this);
 
-  lev2::PickBuffer* pickBuf = target->FBI()->GetCurrentPickBuffer();
+  lev2::PickBuffer* pickBuf = target->FBI()->currentPickBuffer();
 
   ///////////////////////////////////////
   // select mod color

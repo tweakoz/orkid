@@ -218,7 +218,6 @@ int PBRMaterial::BeginBlock(Context* targ, const RenderContextInstData& RCID) {
 
   if (is_picking) {
     tek = _tekRigidPICKING;
-    OrkAssert(false);
   } else if (is_stereo) {
     if (_stereoVtex)
       tek = _tekRigidGBUFFER_N_TEX_STEREO;

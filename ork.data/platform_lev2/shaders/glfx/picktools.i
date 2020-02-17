@@ -30,7 +30,7 @@ fragment_interface iface_fpick : ub_pick {
 vertex_shader vs_rigid_picking
 	: iface_vpick {
 		gl_Position = mvp*position;
-    frg_color = modcolor;
+    frg_clr = modcolor;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader fs_picking

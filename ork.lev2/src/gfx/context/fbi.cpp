@@ -23,12 +23,12 @@ FrameBufferInterface::FrameBufferInterface(Context& tgt)
     , mbAutoClear(true)
     , mcClearColor(fcolor4::Black())
     , mpThisBuffer(0)
-    , miPickState(0)
     , miScissorStackIndex(0)
     , miViewportStackIndex(0)
     , maScissorStack(kiVPStackMax)
     , maViewportStack(kiVPStackMax)
     , mCurrentRtGroup(0)
+    , miPickState(0)
     , _pickbuffer(0) {
   // for( int i=0; i<kiVPStackMax; i++ )
   //	maViewportStack[i]
@@ -41,6 +41,25 @@ FrameBufferInterface::~FrameBufferInterface() {
   //{
   //	delete mpBufferTex;
   //}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void FrameBufferInterface::EnterPickState(PickBuffer* pb) {
+  miPickState++;
+  _pickbuffer = pb;
+}
+bool FrameBufferInterface::isPickState() const {
+  return (miPickState > 0);
+}
+
+void FrameBufferInterface::LeavePickState() {
+  miPickState--;
+  OrkAssert(miPickState >= 0);
+  _pickbuffer = 0;
+}
+PickBuffer* FrameBufferInterface::currentPickBuffer() const {
+  return _pickbuffer;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
