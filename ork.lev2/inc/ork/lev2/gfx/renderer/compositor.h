@@ -64,6 +64,13 @@ public:
   virtual void composite(CompositorDrawData& drawdata)  = 0;
 };
 
+class PickingCompositorTechnique : public CompositingTechnique {
+public:
+  void Init(lev2::Context* pTARG, int w, int h) final;
+  bool assemble(CompositorDrawData& drawdata) final;
+  void composite(CompositorDrawData& drawdata) final;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 class CompositingBuffer : public ork::Object {
   int miWidth;
@@ -113,16 +120,16 @@ struct CompositingPassData {
   std::vector<PoolString> getLayerNames() const;
   void updateCompositingSize(int w, int h);
   bool isPicking() const;
-  const SRect& GetDstRect() const {
+  const ViewportRect& GetDstRect() const {
     return mDstRect;
   }
-  const SRect& GetMrtRect() const {
+  const ViewportRect& GetMrtRect() const {
     return mMrtRect;
   }
-  void SetDstRect(const SRect& rect) {
+  void SetDstRect(const ViewportRect& rect) {
     mDstRect = rect;
   }
-  void SetMrtRect(const SRect& rect) {
+  void SetMrtRect(const ViewportRect& rect) {
     mMrtRect = rect;
   }
   void ClearLayers();
@@ -150,13 +157,29 @@ struct CompositingPassData {
   const CameraMatrices* _cameraMatrices             = nullptr;
   const StereoCameraMatrices* _stereoCameraMatrices = nullptr;
   ork::svarp_t _var;
-  SRect mDstRect;
-  SRect mMrtRect;
+  ViewportRect mDstRect;
+  ViewportRect mMrtRect;
   uint32_t _passID = 0;
   orkset<PoolString> mLayers;
+  bool _ispicking = false;
 };
 
 typedef std::stack<lev2::CompositingPassData> compositingpassdatastack_t;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ViewData {
+  bool _isStereo = false;
+  fmtx4 _ivp[2];
+  fmtx4 _v[2];
+  fmtx4 _p[2];
+  fvec3 _camposmono;
+  fmtx4 IVPL, IVPR, IVPM;
+  fmtx4 VL, VR, VM;
+  fmtx4 PL, PR, PM;
+  fmtx4 VPL, VPR, VPM;
+  fvec2 _zndc2eye;
+};
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -169,6 +192,7 @@ struct CompositorDrawData {
   Context* context() const;
   RenderContextFrameData& RCFD();
   const RenderContextFrameData& RCFD() const;
+  ViewData computeViewData() const;
 
   CompositingImpl* _cimpl = nullptr;
   std::map<uint64_t, svar16_t> _properties;
@@ -185,7 +209,9 @@ public:
   CompositingData();
   ///////////////////////////////////////////////////////
 
-  void defaultSetup();
+  void presetDefault();
+  void presetPicking();
+  void presetPBR();
 
   const orklut<PoolString, ork::Object*>& GetGroups() const {
     return _groups;

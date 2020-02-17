@@ -75,10 +75,10 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
     float fw = GetRtGroup()->GetW();
     float fh = GetRtGroup()->GetH();
     // printf("RTGroup begin x<%f> y<%f> w<%f> h<%f>\n", fx, fy, fw, fh);
-    SRect extents(fx, fy, fw, fh);
+    ViewportRect extents(fx, fy, fw, fh);
     // SRect extents( mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH() );
-    PushViewport(extents);
-    PushScissor(extents);
+    pushViewport(extents);
+    pushScissor(extents);
     // printf("BEGINFRAME<RtGroup>\n");
     // mTargetGL.debugPopGroup();
     if (rtg->_autoclear) {
@@ -94,10 +94,10 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
     GL_ERRORCHECK();
 
     glDepthRange(0.0, 1.0f);
-    SRect extents = mTarget.mainSurfaceRectAtOrigin();
+    ViewportRect extents = mTarget.mainSurfaceRectAtOrigin();
     // printf( "WINtarg begin x<%d> y<%d> w<%d> h<%d>\n", mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH() );
-    PushViewport(extents);
-    PushScissor(extents);
+    pushViewport(extents);
+    pushScissor(extents);
     // printf("BEGINFRAME<WIN> w<%d> h<%d>\n", extents.miW, extents.miH);
     /////////////////////////////////////////////////
 
@@ -156,8 +156,8 @@ void GlFrameBufferInterface::_doEndFrame(void) {
     mTargetGL.SwapGLContext(mTargetGL.GetCtxBase());
   }
   ////////////////////////////////
-  PopViewport();
-  PopScissor();
+  popViewport();
+  popScissor();
   GL_ERRORCHECK();
   ////////////////////////////////
   glBindTexture(GL_TEXTURE_2D, 0);
@@ -222,47 +222,13 @@ void GlFrameBufferInterface::_initializeContext(OffscreenBuffer* pBuf) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::PushScissor(const SRect& rScissorRect) {
-  SRect OldRect;
-  OldRect.miX  = miCurScissorX;
-  OldRect.miY  = miCurScissorY;
-  OldRect.miX2 = miCurScissorX + miCurScissorW;
-  OldRect.miY2 = miCurScissorY + miCurScissorH;
-  OldRect.miW  = miCurScissorW;
-  OldRect.miH  = miCurScissorH;
-
-  maScissorStack[miScissorStackIndex] = OldRect;
-
-  SetScissor(rScissorRect.miX, rScissorRect.miY, rScissorRect.miW, rScissorRect.miH);
-  GL_ERRORCHECK();
-
-  miScissorStackIndex++;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-SRect& GlFrameBufferInterface::PopScissor(void) {
-  miScissorStackIndex--;
-
-  SRect& OldRect = maScissorStack[miScissorStackIndex];
-  int W          = OldRect.miX2 - OldRect.miX;
-  int H          = OldRect.miY2 - OldRect.miY;
-
-  SetScissor(OldRect.miX, OldRect.miY, W, H);
-  GL_ERRORCHECK();
-
-  return OldRect;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void GlFrameBufferInterface::SetScissor(int iX, int iY, int iW, int iH) {
+void GlFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
   iX = OldStlSchoolClampToRange(iX, 0, 16384);
   iY = OldStlSchoolClampToRange(iY, 0, 16384);
   iW = OldStlSchoolClampToRange(iW, 24, 16384);
   iH = OldStlSchoolClampToRange(iH, 24, 16384);
 
-  // printf( "SetScissor<%d %d %d %d>\n", iX, iY, iW, iH );
+  // printf( "setScissor<%d %d %d %d>\n", iX, iY, iW, iH );
   GL_ERRORCHECK();
 
   glScissor(iX, iY, iW, iH);
@@ -280,17 +246,13 @@ void GlFrameBufferInterface::SetScissor(int iX, int iY, int iW, int iH) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::SetViewport(int iX, int iY, int iW, int iH) {
+void GlFrameBufferInterface::_setViewport(int iX, int iY, int iW, int iH) {
   iX = OldStlSchoolClampToRange(iX, 0, 16384);
   iY = OldStlSchoolClampToRange(iY, 0, 16384);
   iW = OldStlSchoolClampToRange(iW, 32, 16384);
   iH = OldStlSchoolClampToRange(iH, 32, 16384);
 
-  miCurVPX = iX;
-  miCurVPY = iY;
-  miCurVPW = iW;
-  miCurVPH = iH;
-  // printf( "SetViewport<%d %d %d %d>\n", iX, iY, iW, iH );
+  // printf( "setViewport<%d %d %d %d>\n", iX, iY, iW, iH );
 
   auto framedata = mTargetGL.topRenderContextFrameData();
   bool stereo    = (framedata and framedata->isStereo());
@@ -631,18 +593,19 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
   mTarget.makeCurrentContext();
   fcolor4 Color(0.0f, 0.0f, 0.0f, 0.0f);
 
-  int msw = mTarget.mainSurfaceWidth();
-  int msh = mTarget.mainSurfaceHeight();
+  mTarget.debugPushGroup("GetPixel");
 
-  int sx = int((rAt.GetX()) * float(msw));
-  int sy = int((1.0f - rAt.GetY()) * float(msh));
-
-  bool bInBounds = ((sx < msw) && (sy < msh) && (sx >= 0) && (sy >= 0));
+  bool bInBounds = (rAt.x >= 0.0f and rAt.x < 1.0f and rAt.y >= 0.0f and rAt.y < 1.0f);
 
   // printf("GetPixel<%d %d> msdim<%d %d> inbounds<%d> rtg<%p>\n", sx, sy, msw, msh, int(bInBounds), ctx.mRtGroup);
 
   if (bInBounds) {
     if (ctx.mRtGroup) {
+      int W  = ctx.mRtGroup->GetW();
+      int H  = ctx.mRtGroup->GetH();
+      int sx = int((rAt.GetX()) * float(W));
+      int sy = int((1.0f - rAt.GetY()) * float(H));
+
       GlFboObject* FboObj = (GlFboObject*)ctx.mRtGroup->GetInternalHandle();
 
       // printf("GetPixel<%d %d> FboObj<%p>\n", sx, sy, FboObj);
@@ -688,7 +651,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
               fvec4 rv                  = fvec4(rgba[0], rgba[1], rgba[2], rgba[3]);
               ctx.mPickColors[MrtIndex] = rv;
 
-              // printf("getpix MrtIndex<%d> rx<%d> ry<%d> <%g %g %g %g>\n", MrtIndex, sx, sy, rv.x, rv.y, rv.z, rv.w);
+              printf("getpix MrtIndex<%d> rx<%d> ry<%d> <%g %g %g %g>\n", MrtIndex, sx, sy, rv.x, rv.y, rv.z, rv.w);
             }
           }
           GL_ERRORCHECK();
@@ -704,6 +667,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
   } else if (bInBounds) {
     ctx.mPickColors[0] = Color;
   }
+  mTarget.debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

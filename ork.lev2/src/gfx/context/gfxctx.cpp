@@ -69,6 +69,11 @@ float Context::currentDPI() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::beginFrame(void) {
+
+  auto mainrect = mainSurfaceRectAtOrigin();
+  FBI()->setViewport(mainrect);
+  FBI()->setScissor(mainrect);
+
   FBI()->BeginFrame();
   GBI()->BeginFrame();
   FXI()->BeginFrame();

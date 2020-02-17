@@ -29,39 +29,6 @@
 using namespace ork::asset;
 using namespace ork::dataflow;
 using namespace ork::lev2;
-
-namespace ork::lev2 {
-template <> void PickBuffer<ork::tool::GraphVP>::Draw(lev2::PixelFetchContext& ctx) {
-  mPickIds.clear();
-
-  auto tgt = context();
-  tgt->makeCurrentContext();
-  auto mtxi = tgt->MTXI();
-  auto fbi  = tgt->FBI();
-  auto fxi  = tgt->FXI();
-  auto rsi  = tgt->RSI();
-
-  int irtgw  = mpPickRtGroup->GetW();
-  int irtgh  = mpPickRtGroup->GetH();
-  int isurfw = mpViewport->GetW();
-  int isurfh = mpViewport->GetH();
-  if (irtgw != isurfw || irtgh != isurfh) {
-    printf("resize ged pickbuf rtgroup<%d %d>\n", isurfw, isurfh);
-    this->SetBufferWidth(isurfw);
-    this->SetBufferHeight(isurfh);
-    tgt->miW = isurfw;
-    tgt->miH = isurfh;
-    mpPickRtGroup->Resize(isurfw, isurfh);
-  }
-  fbi->PushRtGroup(mpPickRtGroup);
-  fbi->EnterPickState(this);
-  ui::DrawEvent drwev(tgt);
-  mpViewport->RePaintSurface(drwev);
-  fbi->LeavePickState();
-  fbi->PopRtGroup();
-}
-} // namespace ork::lev2
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -223,11 +190,7 @@ struct regstr {
 void GraphVP::DoInit(lev2::Context* pt) {
   auto fbi     = pt->FBI();
   auto par     = fbi->GetThisBuffer();
-  mpPickBuffer = new lev2::PickBuffer<GraphVP>(par, this, 0, 0, miW, miH, lev2::PickBufferBase::EPICK_FACE_VTX);
-
-  mpPickBuffer->initContext();
-  mpPickBuffer->RefClearColor().SetRGBAU32(0);
-  mpPickBuffer->context()->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
+  _pickbuffer = new ork::lev2::PickBuffer(this, pt, 0, 0);
 }
 void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
   auto ctx      = drwev.GetTarget();
@@ -245,11 +208,11 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
   RenderContextFrameData RCFD(ctx);
 
   if (nullptr == GetTopGraph()) {
-    fbi->PushScissor(SRect(0, 0, miW, miH));
-    fbi->PushViewport(SRect(0, 0, miW, miH));
+    fbi->pushScissor(ViewportRect(0, 0, miW, miH));
+    fbi->pushViewport(ViewportRect(0, 0, miW, miH));
     fbi->Clear(fvec4::Black(), 1.0f);
-    fbi->PopViewport();
-    fbi->PopScissor();
+    fbi->popViewport();
+    fbi->popScissor();
     return;
   }
   _nodematerial.gpuInit(ctx, "orkshader://solid");
@@ -285,8 +248,8 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
-  fbi->PushScissor(SRect(0, 0, miW, miH));
-  fbi->PushViewport(SRect(0, 0, miW, miH));
+  fbi->pushScissor(ViewportRect(0, 0, miW, miH));
+  fbi->pushViewport(ViewportRect(0, 0, miW, miH));
   {
 
     vector<regstr> regstrs;
@@ -301,7 +264,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
     OrkAssert(tek_vtx);
 
     {
-      uint64_t pickID = mpPickBuffer->AssignPickId(GetTopGraph());
+      uint64_t pickID = _pickbuffer->AssignPickId(GetTopGraph());
       fvec4 color(1, 1, 1, 1);
       if (is_pick)
         color.SetRGBAU64(pickID);
@@ -378,7 +341,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
 
           const fvec2& pos = pmod->GetGVPos();
 
-          uint64_t pickID = mpPickBuffer->AssignPickId(pmod);
+          uint64_t pickID = _pickbuffer->AssignPickId(pmod);
 
           color = fvec4(1, 1, 1, 1);
           if (is_pick)
@@ -519,8 +482,8 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
 
     ////////////////////////////////////////////////////////////////
   }
-  fbi->PopViewport();
-  fbi->PopScissor();
+  fbi->popViewport();
+  fbi->popScissor();
   ctx->debugPopGroup();
   ////////////////////////////////////////////////////////////////
 }
@@ -615,7 +578,7 @@ ui::HandlerResult GraphVP::DoOnUiEvent(const ui::Event& EV) {
     case ui::UIEV_PUSH: {
       if (false == bisctrl && filtev.mBut0) {
         GetPixel(ilocx, ilocy, ctx);
-        ork::Object* pobj = (ork::Object*)ctx.GetObject(mpPickBuffer, 0);
+        ork::Object* pobj = (ork::Object*)ctx.GetObject(_pickbuffer, 0);
 
         printf("dflow pick pobj<%p>\n", pobj);
         if (ork::Object* object = ork::rtti::autocast(pobj))
@@ -631,7 +594,7 @@ ui::HandlerResult GraphVP::DoOnUiEvent(const ui::Event& EV) {
     }
     case ui::UIEV_DOUBLECLICK: {
       GetPixel(ilocx, ilocy, ctx);
-      ork::rtti::ICastable* pobj = ctx.GetObject(mpPickBuffer, 0);
+      ork::rtti::ICastable* pobj = ctx.GetObject(_pickbuffer, 0);
       gpmodule                   = rtti::autocast(pobj);
 
       if (bisctrl) {

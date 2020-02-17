@@ -166,6 +166,7 @@ void PBRMaterial::Init(Context* targ) /*final*/ {
   _tekRigidGBUFFER_N            = fxi->technique(_shader, "rigid_gbuffer_n");
   _tekRigidGBUFFER_N_STEREO     = fxi->technique(_shader, "rigid_gbuffer_n_stereo");
   _tekRigidGBUFFER_N_TEX_STEREO = fxi->technique(_shader, "rigid_gbuffer_n_tex_stereo");
+  _tekRigidPICKING              = fxi->technique(_shader, "picking_rigid");
 
   _tekRigidGBUFFER_SKINNED_N = fxi->technique(_shader, "skinned_gbuffer_n");
 
@@ -211,10 +212,14 @@ int PBRMaterial::BeginBlock(Context* targ, const RenderContextInstData& RCID) {
   const auto& CPD                    = RCFD->topCPD();
   bool is_stereo                     = CPD.isStereoOnePass();
   bool is_skinned                    = RCID._isSkinned;
+  bool is_picking                    = CPD.isPicking();
 
   const FxShaderTechnique* tek = _tekRigidGBUFFER;
 
-  if (is_stereo) {
+  if (is_picking) {
+    tek = _tekRigidPICKING;
+    OrkAssert(false);
+  } else if (is_stereo) {
     if (_stereoVtex)
       tek = _tekRigidGBUFFER_N_TEX_STEREO;
     else
@@ -269,8 +274,8 @@ bool PBRMaterial::BeginPass(Context* targ, int iPass) {
   const auto& world = mtxi->RefMMatrix();
   const auto& drect = CPD.GetDstRect();
   const auto& mrect = CPD.GetMrtRect();
-  float w           = mrect.miW;
-  float h           = mrect.miH;
+  float w           = mrect._w;
+  float h           = mrect._h;
   // printf( "w<%g> h<%g>\n", w, h );
   fxi->BindParamVect2(_shader, _parInvViewSize, fvec2(1.0 / w, 1.0f / h));
 

@@ -49,22 +49,23 @@ void ConfigNode::parse(const ScannerView& view) {
     OrkAssert(fx_file.IsOpen());
     EFileErrCode eFileErr = fx_file.GetLength(importscanner->ifilelen);
     OrkAssert(importscanner->ifilelen < importscanner->kmaxfxblen);
-    eFileErr                             = fx_file.Read(importscanner->fxbuffer, importscanner->ifilelen);
+    eFileErr                                         = fx_file.Read(importscanner->fxbuffer, importscanner->ifilelen);
     importscanner->fxbuffer[importscanner->ifilelen] = 0;
     importscanner->Scan();
     ///////////////////////////////////
-    auto childparser = new GlSlFxParser(imppath.c_str(),*importscanner);
+    auto childparser = new GlSlFxParser(imppath.c_str(), *importscanner);
     _imports.push_back(childparser);
 
     auto childnode = childparser->_rootNode;
 
-    for( auto n : childnode->_orderedBlockNodes ){
+    for (auto n : childnode->_orderedBlockNodes) {
+      printf("IMPORT NODE<%s>\n", n->_name.c_str());
       _container->_orderedBlockNodes.push_back(n);
     }
-    for( auto i : childnode->_blockNodes ){
-      auto k = i.first;
-      auto v = i.second;
-      _container->_blockNodes[k]=v;
+    for (auto i : childnode->_blockNodes) {
+      auto k                     = i.first;
+      auto v                     = i.second;
+      _container->_blockNodes[k] = v;
     }
   }
 }
@@ -76,5 +77,5 @@ void ConfigNode::generate(Container* c) const {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::glslfx {
+} // namespace ork::lev2::glslfx
 /////////////////////////////////////////////////////////////////////////////////////////////////

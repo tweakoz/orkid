@@ -63,9 +63,9 @@ struct PtxImpl {
     auto fbi                           = target->FBI();
     auto gbi                           = target->GBI();
 
-    auto CIMPL   = drawdata._cimpl;
-    auto CPD     = CIMPL->topCPD();
-    SRect vprect = target->mainSurfaceRectAtOrigin();
+    auto CIMPL  = drawdata._cimpl;
+    auto CPD    = CIMPL->topCPD();
+    auto vprect = target->mainSurfaceRectAtOrigin();
     CPD.SetDstRect(vprect);
     CPD._cameraMatrices       = nullptr;
     CPD._stereoCameraMatrices = nullptr;
@@ -107,9 +107,9 @@ struct PtxImpl {
       target->FBI()->PushRtGroup(_output);
       target->beginFrame();
       RtGroupRenderTarget rt(_output);
-      auto this_buf  = target->FBI()->GetThisBuffer();
-      auto& mtl      = _blit2screenmtl;
-      SRect quadrect = target->mainSurfaceRectAtOrigin();
+      auto this_buf = target->FBI()->GetThisBuffer();
+      auto& mtl     = _blit2screenmtl;
+      auto quadrect = vprect.asSRect();
       fvec4 color(1.0f, 1.0f, 1.0f, 1.0f);
       mtl.SetAuxMatrix(fmtx4::Identity);
       mtl.SetTexture(_resultTexture);
@@ -118,7 +118,7 @@ struct PtxImpl {
       mtl._rasterstate.SetBlending(EBLENDING_OFF);
       mtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
       this_buf->RenderMatOrthoQuad(
-          vprect,
+          vprect.asSRect(),
           quadrect,
           &mtl,
           0.0f,

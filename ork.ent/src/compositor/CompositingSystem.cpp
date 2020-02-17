@@ -5,7 +5,6 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>
@@ -33,58 +32,52 @@ namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingSystemData::Describe()
-{
-    using namespace ork::reflect;
-    reflect::RegisterProperty("CompositorData",&CompositingSystemData::_accessor);
-
+void CompositingSystemData::Describe() {
+  using namespace ork::reflect;
+  reflect::RegisterProperty("CompositorData", &CompositingSystemData::_accessor);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CompositingSystemData::CompositingSystemData()
-{
+CompositingSystemData::CompositingSystemData() {
 }
 
-void CompositingSystemData::defaultSetup(){
-  _compositingData.defaultSetup();
+void CompositingSystemData::defaultSetup() {
+  _compositingData.presetDefault();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::ent::System* CompositingSystemData::createSystem(ork::ent::Simulation *pinst) const
-{
-	return new CompositingSystem( *this, pinst );
+ork::ent::System* CompositingSystemData::createSystem(ork::ent::Simulation* pinst) const {
+  return new CompositingSystem(*this, pinst);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-CompositingSystem::CompositingSystem( const CompositingSystemData& data, Simulation *psim )
-	: ork::ent::System( &data, psim )
-	, _compositingSystemData(data)
-  , _impl(data._compositingData)
-{
+CompositingSystem::CompositingSystem(const CompositingSystemData& data, Simulation* psim)
+    : ork::ent::System(&data, psim)
+    , _compositingSystemData(data)
+    , _impl(data._compositingData) {
 }
 
 bool CompositingSystem::enabled() const {
   return _impl.IsEnabled();
 }
 
-CompositingSystem::~CompositingSystem()
-{
+CompositingSystem::~CompositingSystem() {
 }
 
 void CompositingSystem::DoUpdate(Simulation* psim) {
 }
 
 bool CompositingSystem::DoLink(Simulation* psi) {
-  if( auto lsys = psi->findSystem<LightingSystem>() ){
+  if (auto lsys = psi->findSystem<LightingSystem>()) {
     _impl.bindLighting(&lsys->GetLightManager());
   }
   return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork { namespace ent {
+}} // namespace ork::ent
 ///////////////////////////////////////////////////////////////////////////////

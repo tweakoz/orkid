@@ -92,10 +92,15 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////
+struct ScenePickBuffer : public ork::lev2::PickBuffer {
+  ScenePickBuffer(SceneEditorVP* vp, ork::lev2::Context* ctx);
+  void Draw(lev2::PixelFetchContext& ctx) final;
+  SceneEditorVP* _scenevp;
+};
+///////////////////////////////////////////////////////////////////////////
 class SceneEditorVP : public ui::Viewport {
   RttiDeclareAbstract(SceneEditorVP, ui::Viewport);
-  friend class lev2::PickBuffer<SceneEditorVP>;
-
+  friend class ScenePickBuffer;
 public:
   SceneEditorVP(const std::string& name, SceneEditorBase& Editor, EditorMainWindow& MainWin);
   ~SceneEditorVP();
@@ -106,7 +111,6 @@ public:
   //////////////////////
   void renderMisc(ork::lev2::RenderContextFrameData& RCFD);
   //////////////////////
-  // lev2::PickBuffer<SceneEditorVP>* GetPickBuffer() { return (lev2::PickBuffer<SceneEditorVP>*)mpPickBuffer; }
   void IncPickDirtyCount(int icount);
   void GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx);
   ork::Object* GetObject(lev2::PixelFetchContext& ctx, int ichan);
@@ -126,7 +130,7 @@ public:
   void DrawManip(lev2::RenderContextFrameData& fdata, lev2::Context* pProxyTarg);
   void DrawGrid(lev2::RenderContextFrameData& fdata);
   void DrawHUD(lev2::RenderContextFrameData& FrameData);
-  void DrawSpinner(lev2::RenderContextFrameData& FrameData);
+  void DrawBorder(lev2::RenderContextFrameData& FrameData);
   void Init();
   ///////////////////////////////////////////////////
 
@@ -157,7 +161,6 @@ protected:
   ork::atomic<int> mRenderLock;
 
   msgrouter::subscriber_t _simchannelsubscriber;
-  // lev2::PickBuffer<SceneEditorVP>*				mpPickBuffer;
   int miPickDirtyCount;
   SceneEditorBase& mEditor;
 

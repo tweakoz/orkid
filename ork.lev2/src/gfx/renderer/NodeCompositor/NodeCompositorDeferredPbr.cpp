@@ -120,7 +120,7 @@ struct PbrNodeImpl {
     const auto TOPCPD            = CIMPL->topCPD();
     //////////////////////////////////////////////////////
     _context.renderUpdate(drawdata);
-    auto VD = _context.computeViewData(drawdata);
+    auto VD = drawdata.computeViewData();
     _context.updateDebugLights(VD);
     _context._clearColor = node->_clearColor;
     /////////////////////////////////////////////////////////////////////////////////////////
@@ -131,7 +131,7 @@ struct PbrNodeImpl {
     targ->debugPushGroup("Deferred::LightAccum");
     _context._accumCPD = TOPCPD;
     /////////////////////////////////////////////////////////////////
-    auto vprect   = SRect(0, 0, _context._width, _context._height);
+    auto vprect   = ViewportRect(0, 0, _context._width, _context._height);
     auto quadrect = SRect(0, 0, _context._width, _context._height);
     _context._accumCPD.SetDstRect(vprect);
     _context._accumCPD._irendertarget        = _context._accumRT;
@@ -303,8 +303,6 @@ void DeferredCompositingNodePbr::DoRender(CompositorDrawData& drawdata) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 RtBuffer* DeferredCompositingNodePbr::GetOutput() const {
-  static int i = 0;
-  i++;
   return _impl.Get<std::shared_ptr<PbrNodeImpl>>()->_context._rtgLaccum->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////

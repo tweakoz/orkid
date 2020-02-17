@@ -292,7 +292,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
   for (auto texture_item : _tex2shadowedspotlightmap) {
     for (auto light : texture_item.second) {
       auto irt              = light->rendertarget(context);
-      auto shadowrect       = SRect(0, 0, light->_shadowmapDim, light->_shadowmapDim);
+      auto shadowrect       = ViewportRect(0, 0, light->_shadowmapDim, light->_shadowmapDim);
       auto shadowmtx        = light->shadowMatrix();
       auto lightcamdat      = light->shadowCamDat();
       CameraMatrices cammtc = lightcamdat.computeMatrices(1.0f);

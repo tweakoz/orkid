@@ -63,7 +63,7 @@ struct	SRasterState
 
 	/////////////////////////////
 
-	void				SetScissorTest( EScissorTest eVal ) { muScissorTest = eVal; }
+	void				setScissorTest( EScissorTest eVal ) { muScissorTest = eVal; }
 	void				SetAlphaTest( EAlphaTest eVal, f32 falpharef=0.0f ) { muAlphaTest = eVal; muAlphaRef=(unsigned)(falpharef*16.0f); }
 	void				SetBlending( EBlending eVal ) { muBlending = eVal; }
 	void				SetDepthTest( EDepthTest eVal ) { muDepthTest = eVal; }

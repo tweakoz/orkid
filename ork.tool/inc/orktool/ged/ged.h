@@ -662,7 +662,7 @@ public:
     return miRootH;
   }
 
-  void SetViewport(GedVP* pvp) {
+  void setViewport(GedVP* pvp) {
     mViewport = pvp;
   }
   U64 GetStackHash() const;
@@ -677,7 +677,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class GedVP : public ui::Surface {
 public:
-  friend class lev2::PickBuffer<GedVP>;
+  // friend class lev2::PickBuffer<GedVP>;
 
   fvec4 AssignPickId(GedObject* pobj);
   GedWidget& GetGedWidget() {

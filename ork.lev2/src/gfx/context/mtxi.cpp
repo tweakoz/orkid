@@ -32,8 +32,8 @@ void MatrixStackInterface::PushUIMatrix() {
   const RenderContextFrameData* pfdata = mTarget.topRenderContextFrameData();
   assert(pfdata);
   const auto& CPD = pfdata->topCPD();
-  float fw        = float(CPD.GetDstRect().miW);
-  float fh        = float(CPD.GetDstRect().miH);
+  float fw        = float(CPD.GetDstRect()._w);
+  float fh        = float(CPD.GetDstRect()._h);
   if (mTarget.hiDPI()) {
     fw *= 0.5f;
     fh *= 0.5f;

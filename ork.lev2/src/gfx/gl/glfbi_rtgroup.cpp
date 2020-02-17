@@ -26,9 +26,6 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
   // printf("FBI<%p> SetRTG<%p>\n", this, Base );
 
   if (0 == Base) {
-    if (mCurrentRtGroup) {
-      rtGroupMipGen(mCurrentRtGroup); // TODO - make explicit!
-    }
 
     // printf( "SetRtg::disable rt\n" );
 

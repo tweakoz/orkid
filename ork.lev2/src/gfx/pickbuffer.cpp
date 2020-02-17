@@ -12,48 +12,78 @@
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/gfx/rtgroup.h>
 
-#if defined(ORK_CONFIG_QT)
-#include <ork/lev2/qtui/qtui.h>
-#endif
 #include <ork/kernel/prop.h>
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/rtti/downcast.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::PickBufferBase, "ork::lev2::PickBufferBase");
-
 namespace ork { namespace lev2 {
 
-void PickBufferBase::Describe() {
+///////////////////////////////////////////////////////////////////////////////
+PickBuffer::PickBuffer(ui::Surface* surf, Context* ctx, int w, int h)
+    : _context(ctx)
+    , _surface(surf)
+    , _width(w)
+    , _height(h)
+    , _inittex(true) {
+  Init();
 }
-
-PickBufferBase::PickBufferBase(lev2::OffscreenBuffer* Parent, int iX, int iY, int iW, int iH, EPickBufferType etyp)
-    : ork::lev2::OffscreenBuffer(Parent, iX, iY, iW, iH, lev2::EBUFFMT_RGBA8)
-    , meType(etyp)
-    , mbInitTex(true)
-    , mpPickRtGroup(new lev2::RtGroup(context(), iW, iH)) {
-  mpUIMaterial = new ork::lev2::GfxMaterialUITextured(context());
-}
-
-uint64_t PickBufferBase::AssignPickId(ork::Object* pobj) {
+///////////////////////////////////////////////////////////////////////////////
+uint64_t PickBuffer::AssignPickId(ork::Object* pobj) {
   uint64_t pid  = uint64_t(pobj);
   mPickIds[pid] = pobj;
   return pid;
 }
-ork::Object* PickBufferBase::GetObjectFromPickId(uint64_t pid) {
-  // printf("pickid <0x%llx>\n", pid);
+///////////////////////////////////////////////////////////////////////////////
+ork::Object* PickBuffer::GetObjectFromPickId(uint64_t pid) {
+  printf("pickid <0x%zx>\n", pid);
   auto it           = mPickIds.find(pid);
   ork::Object* pobj = (it == mPickIds.end()) ? nullptr : it->second;
   return pobj;
 }
-
-void PickBufferBase::Init() {
-  auto buf0        = new ork::lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA32F, miWidth, miHeight);
-  auto buf1        = new ork::lev2::RtBuffer(lev2::ERTGSLOT1, lev2::EBUFFMT_RGBA32F, miWidth, miHeight);
+///////////////////////////////////////////////////////////////////////////////
+void PickBuffer::Init() {
+  _rtgroup         = new lev2::RtGroup(_context, _width, _height);
+  _uimaterial      = new ork::lev2::GfxMaterialUITextured(_context);
+  auto buf0        = new ork::lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA32F, _width, _height);
+  auto buf1        = new ork::lev2::RtBuffer(lev2::ERTGSLOT1, lev2::EBUFFMT_RGBA32F, _width, _height);
   buf0->_debugName = FormatString("Pickbuf::mrt0");
-  buf0->_debugName = FormatString("Pickbuf::mrt1");
-  mpPickRtGroup->SetMrt(0, buf0);
-  mpPickRtGroup->SetMrt(1, buf1);
+  // buf0->_debugName = FormatString("Pickbuf::mrt1");
+  _rtgroup->SetMrt(0, buf0);
+  //_rtgroup->SetMrt(1, buf1);
 }
+///////////////////////////////////////////////////////////////////////////////
+void PickBuffer::Draw(lev2::PixelFetchContext& ctx) {
+  mPickIds.clear();
+
+  auto tgt = context();
+  tgt->makeCurrentContext();
+  tgt->debugPushGroup("PickBufferDraw");
+  auto mtxi = tgt->MTXI();
+  auto fbi  = tgt->FBI();
+  auto fxi  = tgt->FXI();
+  auto rsi  = tgt->RSI();
+
+  int irtgw  = _rtgroup->GetW();
+  int irtgh  = _rtgroup->GetH();
+  int isurfw = _surface->GetW();
+  int isurfh = _surface->GetH();
+  if (irtgw != isurfw || irtgh != isurfh) {
+    printf("resize pickbuf size<%d %d>\n", isurfw, isurfh);
+    _width  = isurfw;
+    _height = isurfh;
+    _rtgroup->Resize(isurfw, isurfh);
+  }
+  printf("Begin Pickbuffer::Draw()\n");
+  fbi->PushRtGroup(_rtgroup);
+  fbi->EnterPickState(this);
+  ork::ui::DrawEvent drwev(tgt);
+  _surface->RePaintSurface(drwev);
+  fbi->LeavePickState();
+  fbi->PopRtGroup();
+  tgt->debugPopGroup();
+  printf("End Pickbuffer::Draw()\n");
+}
+///////////////////////////////////////////////////////////////////////////////
 
 }} // namespace ork::lev2

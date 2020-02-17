@@ -237,8 +237,8 @@ static void RenderFace( lev2::Context* pTARG, const fcolor4 & clr, lev2::Texture
 void SceneEditorVP::SaveCubeMap()
 {
 	const lev2::EzUiCam* persp = mPerspCam;
-	PickBuffer<SceneEditorVP>* pb = mpPickBuffer;
-	lev2::Context* pTEXTARG = mpPickBuffer->context();
+	PickBuffer<SceneEditorVP>* pb = _pickbuffer;
+	lev2::Context* pTEXTARG = _pickbuffer->context();
 
 	const fvec3 Locator = mPerspCam->CamFocus.xyz();
 
@@ -363,7 +363,7 @@ void SceneEditorVP::SaveCubeMap()
 		pTEXTARG->MTXI()->PushPMatrix( pTEXTARG->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f ) );
 		pTEXTARG->MTXI()->PushVMatrix( fmtx4::Identity );
 		pTEXTARG->MTXI()->PushMMatrix( fmtx4::Identity );
-		pTEXTARG->PushViewport( SRect(0,0,1024,1024) );
+		pTEXTARG->pushViewport( SRect(0,0,1024,1024) );
 		{
 
 			fmtx4 TexMatrix[6];
@@ -386,7 +386,7 @@ void SceneEditorVP::SaveCubeMap()
 			}
 
 		}
-		pTEXTARG->PopViewport();
+		pTEXTARG->popViewport();
 		pTEXTARG->MTXI()->PopMMatrix();
 		pTEXTARG->MTXI()->PopVMatrix();
 		pTEXTARG->MTXI()->PopPMatrix();
@@ -412,7 +412,7 @@ void SceneEditorVP::SaveCubeMap()
 		pTEXTARG->MTXI()->PushPMatrix( pTEXTARG->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f ) );
 		pTEXTARG->MTXI()->PushVMatrix( fmtx4::Identity );
 		pTEXTARG->MTXI()->PushMMatrix( fmtx4::Identity );
-		pTEXTARG->PushViewport( SRect(0,0,1024,1024) );
+		pTEXTARG->pushViewport( SRect(0,0,1024,1024) );
 		{
 			fmtx4 TexMatrix[6];
 
@@ -436,7 +436,7 @@ void SceneEditorVP::SaveCubeMap()
 			}
 
 		}
-		pTEXTARG->PopViewport();
+		pTEXTARG->popViewport();
 		pTEXTARG->MTXI()->PopMMatrix();
 		pTEXTARG->MTXI()->PopVMatrix();
 		pTEXTARG->MTXI()->PopPMatrix();

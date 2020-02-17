@@ -17,47 +17,13 @@
 #include <ork/math/basicfilters.h>
 #include <ork/kernel/msgrouter.inl>
 ///////////////////////////////////////////////////////////////////////////////
-template class ork::lev2::PickBuffer<ork::tool::ged::GedVP>;
-///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace lev2 {
-template <> void PickBuffer<ork::tool::ged::GedVP>::Draw(lev2::PixelFetchContext& ctx) {
-  mPickIds.clear();
-
-  auto tgt = context();
-  tgt->makeCurrentContext();
-
-  auto mtxi = tgt->MTXI();
-  auto fbi  = tgt->FBI();
-  auto fxi  = tgt->FXI();
-  auto rsi  = tgt->RSI();
-
-  int irtgw  = mpPickRtGroup->GetW();
-  int irtgh  = mpPickRtGroup->GetH();
-  int isurfw = mpViewport->GetW();
-  int isurfh = mpViewport->GetH();
-  if (irtgw != isurfw || irtgh != isurfh) {
-    // printf( "resize ged pickbuf rtgroup<%d %d>\n", isurfw, isurfh);
-    this->SetBufferWidth(isurfw);
-    this->SetBufferHeight(isurfh);
-    tgt->miW = isurfw;
-    tgt->miH = isurfh;
-    mpPickRtGroup->Resize(isurfw, isurfh);
-  }
-  fbi->PushRtGroup(mpPickRtGroup);
-  fbi->EnterPickState(this);
-  ui::DrawEvent drwev(tgt);
-  mpViewport->RePaintSurface(drwev);
-  fbi->LeavePickState();
-  fbi->PopRtGroup();
-}
-}} // namespace ork::lev2
+using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool {
-
 ///////////////////////////////////////////////////////////////////////////////
 fvec4 ged::GedVP::AssignPickId(GedObject* pobj) {
   fvec4 out;
-  out.SetRGBAU64(mpPickBuffer->AssignPickId(pobj));
+  out.SetRGBAU64(_pickbuffer->AssignPickId(pobj));
   return out;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -73,7 +39,7 @@ GedVP::GedVP(const std::string& name, ObjModel& model)
     , mpActiveNode(nullptr)
     , miScrollY(0)
     , mpMouseOverNode(0) {
-  mWidget.SetViewport(this);
+  mWidget.setViewport(this);
 
   gAllViewports.insert(this);
 
@@ -89,30 +55,26 @@ GedVP::~GedVP() {
     gAllViewports.erase(it);
   }
 
-  if (mpPickBuffer)
-    delete mpPickBuffer;
+  if (_pickbuffer)
+    delete _pickbuffer;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 void GedVP::DoInit(lev2::Context* pt) {
   auto par     = pt->FBI()->GetThisBuffer();
-  mpPickBuffer = new lev2::PickBuffer<GedVP>(par, this, 0, 0, miW, miH, lev2::PickBufferBase::EPICK_FACE_VTX);
-
-  mpPickBuffer->initContext();
-  mpPickBuffer->context()->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
-  mpPickBuffer->RefClearColor().SetRGBAU32(0);
+  _pickbuffer = new ork::lev2::PickBuffer(this, pt, 0, 0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GedVP::DoSurfaceResize() {
   mWidget.SetDims(miW, miH);
 
-  if (0 == mpPickBuffer && (nullptr != mpTarget)) {
+  if (0 == _pickbuffer && (nullptr != mpTarget)) {
   }
-  // TODO: mpPickBuffer->Resize()
+  // TODO: _pickbuffer->Resize()
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GedVP::DoRePaintSurface(ui::DrawEvent& drwev) {
-  // printf( "GedVP<%p>::Draw x<%d> y<%d> w<%d> h<%d>\n", this, miX, miY, miW, miH );
+  printf("GedVP<%p>::Draw x<%d> y<%d> w<%d> h<%d>\n", this, miX, miY, miW, miH);
 
   // ork::tool::ged::ObjModel::FlushAllQueues();
 
@@ -133,8 +95,8 @@ void GedVP::DoRePaintSurface(ui::DrawEvent& drwev) {
 
   //////////////////////////////////////////////////
 
-  fbi->PushScissor(SRect(0, 0, miW, miH));
-  fbi->PushViewport(SRect(0, 0, miW, miH));
+  fbi->pushScissor(ViewportRect(0, 0, miW, miH));
+  fbi->pushViewport(ViewportRect(0, 0, miW, miH));
   mtxi->PushMMatrix(matSCROLL);
   {
     fbi->Clear(GetClearColorRef(), 1.0f);
@@ -147,8 +109,8 @@ void GedVP::DoRePaintSurface(ui::DrawEvent& drwev) {
     }
   }
   mtxi->PopMMatrix();
-  fbi->PopViewport();
-  fbi->PopScissor();
+  fbi->popViewport();
+  fbi->popScissor();
   tgt->debugPopGroup();
 }
 
@@ -170,9 +132,9 @@ ui::HandlerResult GedVP::DoOnUiEvent(const ui::Event& EV) {
   RootToLocal(ix, iy, ilocx, ilocy);
 
   lev2::PixelFetchContext ctx;
-  ctx.miMrtMask = (1 << 0) | (1 << 1); // ObjectID and ObjectUVD
+  ctx.miMrtMask = (1 << 0); //| (1 << 1); // ObjectID and ObjectUVD
   ctx.mUsage[0] = lev2::PixelFetchContext::EPU_PTR64;
-  ctx.mUsage[1] = lev2::PixelFetchContext::EPU_FLOAT;
+  // ctx.mUsage[1] = lev2::PixelFetchContext::EPU_FLOAT;
 
   bool filt_kpush = (filtev.mAction == "keypush");
 
@@ -251,7 +213,7 @@ ui::HandlerResult GedVP::DoOnUiEvent(const ui::Event& EV) {
       static int gctr  = 0;
       if (0 == gctr % 4) {
         GetPixel(ilocx, ilocy, ctx);
-        rtti::ICastable* pobj = ctx.GetObject(mpPickBuffer, 0);
+        rtti::ICastable* pobj = ctx.GetObject(_pickbuffer, 0);
         if (0) // TODO pobj )
         {
           GedObject* pnode = rtti::autocast(pobj);
@@ -288,10 +250,11 @@ ui::HandlerResult GedVP::DoOnUiEvent(const ui::Event& EV) {
       GetPixel(ilocx, ilocy, ctx);
       float fx                   = float(ilocx) / float(GetW());
       float fy                   = float(ilocy) / float(GetH());
-      ork::rtti::ICastable* pobj = ctx.GetObject(mpPickBuffer, 0);
+      ork::rtti::ICastable* pobj = ctx.GetObject(_pickbuffer, 0);
 
       bool is_in_set = IsObjInSet(pobj);
-
+      const auto clr = ctx.mPickColors[0];
+      printf("GetPixel color<%g %g %g %g>\n", clr.x, clr.y, clr.z, clr.w);
       orkprintf("Object<%p> is_in_set<%d> ilocx<%d> ilocy<%d> fx<%f> fy<%f>\n", pobj, int(is_in_set), ilocx, ilocy, fx, fy);
 
       /////////////////////////////////////

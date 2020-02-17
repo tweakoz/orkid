@@ -27,62 +27,7 @@
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
-ImplementReflectionX(ork::lev2::CompositingData, "CompositingData");
-///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-void CompositingData::describeX(class_t* c) {
-  using namespace ork::reflect;
-
-  RegisterProperty("Enable", &CompositingData::mbEnable);
-
-  RegisterMapProperty("Groups", &CompositingData::_groups);
-  annotatePropertyForEditor<CompositingData>("Groups", "editor.factorylistbase", "CompositingGroup");
-
-  RegisterMapProperty("Scenes", &CompositingData::_scenes);
-  annotatePropertyForEditor<CompositingData>("Scenes", "editor.factorylistbase", "CompositingScene");
-
-  RegisterProperty("ActiveScene", &CompositingData::_activeScene);
-  RegisterProperty("ActiveItem", &CompositingData::_activeItem);
-
-  static const char* EdGrpStr = "grp://Main Enable ActiveScene ActiveItem "
-                                "grp://Data Groups Scenes ";
-  reflect::annotateClassForEditor<CompositingData>("editor.prop.groups", EdGrpStr);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-CompositingData::CompositingData()
-    : mbEnable(true)
-    , mToggle(true) {
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void CompositingData::defaultSetup() {
-
-  auto p1 = new ScaleBiasCompositingNode;
-
-  auto t1 = new NodeCompositingTechnique;
-  auto o1 = new ScreenOutputCompositingNode;
-  // auto o1 = new VrCompositingNode;
-  auto r1 = new deferrednode::DeferredCompositingNode;
-  t1->_writeOutputNode(o1);
-  t1->_writeRenderNode(r1);
-  // t1->_writePostFxNode(p1);
-
-  auto s1 = new CompositingScene;
-  auto i1 = new CompositingSceneItem;
-  i1->_writeTech(t1);
-  s1->items().AddSorted("item1"_pool, i1);
-  _activeScene = "scene1"_pool;
-  _activeItem  = "item1"_pool;
-  _scenes.AddSorted("scene1"_pool, s1);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 CompositingImpl* CompositingData::createImpl() const {

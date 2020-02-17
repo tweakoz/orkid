@@ -49,19 +49,10 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////
   DefaultRenderer renderer;
   LightManagerData lmd;
-  auto lightmgr              = std::make_shared<LightManager>(lmd);
-  auto compscene             = std::make_shared<CompositingScene>();
-  auto compsceneitem         = std::make_shared<CompositingSceneItem>();
-  auto comptek               = std::make_shared<NodeCompositingTechnique>();
-  auto pbrnode               = comptek->createRenderNode<DeferredCompositingNodePbr>();
-  auto outnode               = comptek->createOutputNode<ScreenOutputCompositingNode>();
-  compsceneitem->mpTechnique = comptek.get();
-  compscene->items().AddSorted("item1"_pool, compsceneitem.get());
+  auto lightmgr = std::make_shared<LightManager>(lmd);
   CompositingData compositordata;
-  compositordata.scenes().AddSorted("scene1"_pool, compscene.get());
-  compositordata._activeScene = "scene1"_pool;
-  compositordata._activeItem  = "item1"_pool;
-  compositordata.mbEnable     = true;
+  compositordata.presetPBR();
+  compositordata.mbEnable = true;
   CompositingImpl compositorimpl(compositordata);
   compositorimpl.bindLighting(lightmgr.get());
   lev2::CompositingPassData TOPCPD;
@@ -78,11 +69,6 @@ int main(int argc, char** argv) {
     auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/pbr1/pbr1");
     model           = modl_asset->GetModel();
     renderer.setContext(ctx);
-    auto& assetVars = pbrnode->_texAssetVarMap;
-    auto envl_asset = asset::AssetManager<TextureAsset>::Create("data://environ/envmaps/tozenv_nebula", assetVars);
-    OrkAssert(envl_asset->GetTexture() != nullptr);
-    OrkAssert(envl_asset->_varmap.hasKey("postproc"));
-    pbrnode->_writeEnvTexture(envl_asset);
 
     while (asset::AssetManager<TextureAsset>::AutoLoad()) {
     }
@@ -129,7 +115,7 @@ int main(int argc, char** argv) {
     // compositor setup
     ///////////////////////////////////////
     lev2::UiViewportRenderTarget rt(nullptr);
-    const SRect tgtrect   = SRect(0, 0, TARGW, TARGH);
+    auto tgtrect          = ViewportRect(0, 0, TARGW, TARGH);
     TOPCPD._irendertarget = &rt;
     TOPCPD.SetDstRect(tgtrect);
     compositorimpl.pushCPD(TOPCPD);
@@ -182,8 +168,8 @@ int main(int argc, char** argv) {
     // Draw!
     ///////////////////////////////////////
     fbi->SetClearColor(fvec4(0, 0, 0, 1));
-    fbi->SetViewport(0, 0, TARGW, TARGH);
-    fbi->SetScissor(0, 0, TARGW, TARGH);
+    fbi->setViewport(tgtrect);
+    fbi->setScissor(tgtrect);
     context->beginFrame();
     FrameRenderer framerenderer(RCFD, [&]() {});
     CompositorDrawData drawdata(framerenderer);

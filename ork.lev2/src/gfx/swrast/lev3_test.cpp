@@ -53,10 +53,10 @@ public:
   }
   void DoRePaintSurface(ork::ui::DrawEvent& ev) override {
     mpTarget->FBI()->SetAutoClear(true);
-    const SRect tgtrect = mpTarget->mainSurfaceRectAtOrigin();
+    auto tgtrect = mpTarget->mainSurfaceRectAtOrigin();
 
-    mpTarget->FBI()->SetViewport(0, 0, mpTarget->mainSurfaceWidth(), mpTarget->mainSurfaceHeight());
-    mpTarget->FBI()->SetScissor(0, 0, mpTarget->mainSurfaceWidth(), mpTarget->mainSurfaceHeight());
+    mpTarget->FBI()->setViewport(tgtrect);
+    mpTarget->FBI()->setScissor(tgtrect);
     mpTarget->beginFrame();
     {
       // mpTarget->TXI()->VRamUpload(tex);
@@ -65,7 +65,8 @@ public:
       // mtl.SetColorMode( ork::lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
       mtl.SetColorMode(ork::lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
       mtl._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
-      mpTarget->FBI()->GetThisBuffer()->RenderMatOrthoQuad(tgtrect, tgtrect, &mtl, 0.0f, 0.0f, 1.0f, 1.0f, 0, clr1);
+      mpTarget->FBI()->GetThisBuffer()->RenderMatOrthoQuad(
+          tgtrect.asSRect(), tgtrect.asSRect(), &mtl, 0.0f, 0.0f, 1.0f, 1.0f, 0, clr1);
 
       GLint curtex = 0;
       glGetIntegerv(GL_TEXTURE_BINDING_2D, &curtex);
@@ -125,7 +126,7 @@ DemoApp::DemoApp(int iw, int ih)
 
   ////////////////////
 
-  MyViewport* gpvp                 = new MyViewport("yo");
+  MyViewport* gpvp              = new MyViewport("yo");
   ork::lev2::CQtWindow* pgfxwin = new ork::lev2::CQtWindow(gpvp);
 
   ork::lev2::CTQT* pctqt = new ork::lev2::CTQT(pgfxwin, nullptr);

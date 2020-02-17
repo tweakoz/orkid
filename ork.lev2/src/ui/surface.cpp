@@ -20,7 +20,7 @@ Surface::Surface(const std::string& name, int x, int y, int w, int h, CColor3 co
     , mfClearDepth(depth)
     , mRtGroup(nullptr)
     , mNeedsSurfaceRepaint(true)
-    , mpPickBuffer(nullptr) {
+    , _pickbuffer(nullptr) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -31,19 +31,20 @@ void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
   float fx = float(ix) / float(iW);
   float fy = float(iy) / float(iH);
   /////////////////////////////////////////////////////////////
-  if (mpPickBuffer) {
-    auto tgt      = mpPickBuffer->context();
-    auto fbi      = tgt->FBI();
-    ctx.mRtGroup  = mpPickBuffer->mpPickRtGroup;
-    ctx.mAsBuffer = mpPickBuffer;
+  if (_pickbuffer) {
+    auto tgt     = _pickbuffer->context();
+    auto fbi     = tgt->FBI();
+    ctx.mRtGroup = _pickbuffer->_rtgroup;
     /////////////////////////////////////////////////////////////
-    fbi->SetViewport(0, 0, iW, iH);
-    fbi->SetScissor(0, 0, iW, iH);
+    fbi->pushViewport(0, 0, iW, iH); // ??
+    fbi->pushScissor(0, 0, iW, iH);  // ??
     /////////////////////////////////////////////////////////////
-    mpPickBuffer->Draw(ctx);
+    _pickbuffer->Draw(ctx);
     /////////////////////////////////////////////////////////////
     fbi->GetPixel(fvec4(fx, fy, 0.0f), ctx);
     /////////////////////////////////////////////////////////////
+    fbi->popViewport();
+    fbi->popScissor();
   }
   /////////////////////////////////////////////////////////////
 }
@@ -79,26 +80,36 @@ void Surface::DoDraw(DrawEvent& drwev) {
     auto mrt0 = new lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA8, 1280, 720);
     mRtGroup->SetMrt(0, mrt0);
   }
-  if (mRtGroup) {
-    int irtgw  = mRtGroup->GetW();
-    int irtgh  = mRtGroup->GetH();
-    int isurfw = GetW();
-    int isurfh = GetH();
-    if (irtgw != isurfw || irtgh != isurfh) {
-      // printf( "resize surface rtgroup<%d %d>\n", isurfw, isurfh);
-      mRtGroup->Resize(isurfw, isurfh);
-      mNeedsSurfaceRepaint = true;
-    }
-    if (mNeedsSurfaceRepaint || IsDirty()) {
-      fbi->PushRtGroup(mRtGroup);
-      RePaintSurface(drwev);
-      fbi->PopRtGroup();
-      mNeedsSurfaceRepaint = false;
-      mDirty               = false;
-    }
-  } else {
-    RePaintSurface(drwev);
+  ///////////////////////////////////////
+  int irtgw  = mRtGroup->GetW();
+  int irtgh  = mRtGroup->GetH();
+  int isurfw = GetW();
+  int isurfh = GetH();
+  if (irtgw != isurfw || irtgh != isurfh) {
+    // printf( "resize surface rtgroup<%d %d>\n", isurfw, isurfh);
+    mRtGroup->Resize(isurfw, isurfh);
+    mNeedsSurfaceRepaint = true;
   }
+  if (true) { // mNeedsSurfaceRepaint || IsDirty()) {
+    fbi->PushRtGroup(mRtGroup);
+    RePaintSurface(drwev);
+    fbi->PopRtGroup();
+    mNeedsSurfaceRepaint = false;
+    mDirty               = false;
+  }
+  ///////////////////////////////////
+  // pickbuffer debug ?
+  ///////////////////////////////////
+  if (false) {
+    if (_pickbuffer) {
+      ork::lev2::PixelFetchContext pfc;
+      pfc.miMrtMask = (1 << 0); // | (1 << 1); // ObjectID and ObjectUVD
+      pfc.mUsage[0] = lev2::PixelFetchContext::EPU_PTR64;
+      pfc.mUsage[1] = lev2::PixelFetchContext::EPU_FLOAT;
+      GetPixel(100, 100, pfc);
+    }
+  }
+  ///////////////////////////////////////
   // lev2::GfxMaterialUI UiMat(tgt);
   lev2::SRasterState defstate;
   rsi->BindRasterState(defstate);
@@ -151,17 +162,17 @@ void Surface::SurfaceRender(lev2::RenderContextFrameData& FrameData, const std::
 
 	auto fbi = pTARG->FBI();
 
-	//fbi->SetScissor( vpx, vpy, vpw, vph );
-	//fbi->SetViewport( vpx, vpy, vpw, vph );
+	//fbi->setScissor( vpx, vpy, vpw, vph );
+	//fbi->setViewport( vpx, vpy, vpw, vph );
 
 SRect VPRect( 0, 0, pIT->GetW(), pIT->GetH() );
-	pTARG->FBI()->PushViewport( VPRect );
-	pTARG->FBI()->PushScissor( VPRect );
+	pTARG->FBI()->pushViewport( VPRect );
+	pTARG->FBI()->pushScissor( VPRect );
 	{
 		render_lambda();
 	}
-	pTARG->FBI()->PopScissor();
-	pTARG->FBI()->PopViewport();
+	pTARG->FBI()->popScissor();
+	pTARG->FBI()->popViewport();
 #endif
 }
 

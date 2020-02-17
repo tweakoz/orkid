@@ -43,11 +43,13 @@ struct IMPL {
     pTARG->debugPushGroup("Forward::rendeinitr");
     if (nullptr == _rtg) {
       _material.Init(pTARG);
-      _rtg            = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
-      auto buf        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA8, 8, 8);
-      buf->_debugName = "ForwardRt";
-      _rtg->SetMrt(0, buf);
-      _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");
+      _rtg             = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
+      auto buf1        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA32F, 8, 8);
+      auto buf2        = new RtBuffer(lev2::ERTGSLOT1, lev2::EBUFFMT_RGBA32F, 8, 8);
+      buf1->_debugName = "ForwardRt0";
+      buf2->_debugName = "ForwardRt1";
+      _rtg->SetMrt(0, buf1);
+      _rtg->SetMrt(1, buf2);
     }
     pTARG->debugPopGroup();
   }
@@ -55,10 +57,14 @@ struct IMPL {
   void _render(ForwardCompositingNode* node, CompositorDrawData& drawdata) {
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
-    auto CIMPL                   = drawdata._cimpl;
     auto targ                    = RCFD.GetTarget();
+    auto CIMPL                   = drawdata._cimpl;
+    auto FBI                     = targ->FBI();
+    auto this_buf                = FBI->GetThisBuffer();
+    auto RSI                     = targ->RSI();
+    const auto TOPCPD            = CIMPL->topCPD();
+    auto tgt_rect                = targ->mainSurfaceRectAtOrigin();
     auto& ddprops                = drawdata._properties;
-    SRect tgt_rect               = targ->mainSurfaceRectAtOrigin();
     //////////////////////////////////////////////////////
     // Resize RenderTargets
     //////////////////////////////////////////////////////
@@ -77,11 +83,12 @@ struct IMPL {
       targ->FBI()->SetAutoClear(false); // explicit clear
       targ->beginFrame();
       /////////////////////////////////////////////////////////////////////////////////////////
-      auto DB            = RCFD.GetDB();
-      auto CPD           = CIMPL->topCPD();
-      CPD._clearColor    = node->_clearColor;
-      CPD.mpLayerName    = &_layername;
-      CPD._irendertarget = &rt;
+      auto DB             = RCFD.GetDB();
+      auto CPD            = CIMPL->topCPD();
+      CPD._clearColor     = node->_clearColor;
+      CPD.mpLayerName     = &_layername;
+      CPD._irendertarget  = &rt;
+      CPD._cameraMatrices = ddprops["defcammtx"_crcu].Get<const CameraMatrices*>();
       CPD.SetDstRect(tgt_rect);
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
@@ -112,7 +119,6 @@ struct IMPL {
   PoolString _camname, _layername;
   CompositingMaterial _material;
   RtGroup* _rtg = nullptr;
-  BuiltinFrameEffectMaterial _effect;
   fmtx4 _viewOffsetMatrix;
 };
 } // namespace forwardnode

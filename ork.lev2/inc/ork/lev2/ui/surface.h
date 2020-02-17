@@ -9,49 +9,56 @@ namespace ork { namespace ui {
 //  can redraw without repainting when clean!
 ////////////////////////////////////////////////////////////////////
 
-struct Surface : public Group
-{
+struct Surface : public Group {
 public:
+  Surface(const std::string& name, int x, int y, int w, int h, CColor3 color, F32 depth);
 
-	Surface( const std::string & name, int x, int y, int w, int h, CColor3 color, F32 depth );
+  void SurfaceRender(lev2::RenderContextFrameData& fd, const std::function<void()>& l);
+  void Clear();
 
-	void SurfaceRender(lev2::RenderContextFrameData&fd, const std::function<void()>& l);
-	void Clear();
+  CColor3& GetClearColorRef(void) {
+    return mcClearColor;
+  }
+  F32 GetClearDepth(void) {
+    return mfClearDepth;
+  }
 
-	CColor3 &GetClearColorRef( void ) { return mcClearColor; }
-	F32 GetClearDepth( void ) { return mfClearDepth; }
+  void PushFrameTechnique(lev2::FrameTechniqueBase* ftek);
+  void PopFrameTechnique();
+  lev2::FrameTechniqueBase* GetFrameTechnique() const;
 
-	void PushFrameTechnique( lev2::FrameTechniqueBase* ftek );
-	void PopFrameTechnique();
-	lev2::FrameTechniqueBase* GetFrameTechnique() const;
+  void BeginSurface(lev2::FrameRenderer& frenderer);
+  void EndSurface(lev2::FrameRenderer& frenderer);
 
-	void BeginSurface(lev2::FrameRenderer&frenderer);
-	void EndSurface(lev2::FrameRenderer&frenderer);
+  void GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx);
 
-	void GetPixel( int ix, int iy, lev2::PixelFetchContext& ctx );
+  void RePaintSurface(DrawEvent& drwev);
 
-	void RePaintSurface(DrawEvent& drwev);
-
-	void MarkSurfaceDirty() { mNeedsSurfaceRepaint=true; SetDirty(); }
+  void MarkSurfaceDirty() {
+    mNeedsSurfaceRepaint = true;
+    SetDirty();
+  }
+  lev2::PickBuffer* pickbuffer() {
+    return _pickbuffer;
+  }
 
 protected:
+  void RenderCached();
+  void OnResize(void) override;
+  virtual void DoSurfaceResize() {
+  }
 
-	void RenderCached();
-	void OnResize( void ) override;
-	virtual void DoSurfaceResize() {}
+  orkstack<lev2::FrameTechniqueBase*> mpActiveFrameTek;
+  bool mbClear;
+  CColor3 mcClearColor;
+  F32 mfClearDepth;
+  lev2::RtGroup* mRtGroup;
+  bool mNeedsSurfaceRepaint;
+  lev2::PickBuffer* _pickbuffer;
 
-	orkstack<lev2::FrameTechniqueBase*>	mpActiveFrameTek;
-	bool								mbClear;
-	CColor3								mcClearColor;
-	F32									mfClearDepth;
-	lev2::RtGroup*						mRtGroup;
-	bool 								mNeedsSurfaceRepaint;
-	lev2::PickBufferBase*				mpPickBuffer;
-
-	void DoDraw(DrawEvent& drwev) override;
-	virtual void DoRePaintSurface(DrawEvent& drwev) {}
-
+  void DoDraw(DrawEvent& drwev) override;
+  virtual void DoRePaintSurface(DrawEvent& drwev) {
+  }
 };
 
-}} // namespace ork { namespace ui {
-
+}} // namespace ork::ui

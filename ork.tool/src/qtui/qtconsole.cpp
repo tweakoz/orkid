@@ -92,8 +92,8 @@ void vp_cons::AppendOutput(const std::string& data) {
   boost::split(strsa, data, boost::is_any_of("\n"));
 
   lev2::Context* pTARG = mCTQT->GetTarget();
-  int IW                 = pTARG->mainSurfaceWidth();
-  int wrap               = IW / 10;
+  int IW               = pTARG->mainSurfaceWidth();
+  int wrap             = IW / 10;
 
   std::vector<std::string> strsb;
   for (auto& line : strsa) {
@@ -256,8 +256,8 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev) {
   pTARG->FBI()->SetAutoClear(true);
   pTARG->FBI()->SetClearColor(fcolor4(1.0f, 0.0f, 0.1f, 0.0f));
   BeginFrame(pTARG);
-  SRect VPRect = pTARG->mainSurfaceRectAtOrigin();
-  pTARG->FBI()->PushViewport(VPRect);
+  auto VPRect = pTARG->mainSurfaceRectAtOrigin();
+  pTARG->FBI()->pushViewport(VPRect);
   pTARG->MTXI()->PushUIMatrix();
   {
     /////////////////////////
@@ -382,7 +382,7 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev) {
     /////////////////////////
   }
   pTARG->MTXI()->PopUIMatrix();
-  pTARG->FBI()->PopViewport();
+  pTARG->FBI()->popViewport();
   EndFrame(pTARG);
 
   mPhase0 += 0.41f;

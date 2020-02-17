@@ -96,6 +96,9 @@ public:
   int GetH() const {
     return miH;
   }
+  ViewportRect viewportRect() const {
+    return ViewportRect(0, 0, miW, miH);
+  }
   int GetSamples() const {
     return miSamples;
   }

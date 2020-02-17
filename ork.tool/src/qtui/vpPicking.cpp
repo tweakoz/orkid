@@ -4,6 +4,7 @@
 #include <ork/kernel/future.hpp>
 #include <ork/kernel/opq.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>
+#include <ork/lev2/gfx/rtgroup.h>
 #include <orktool/qtui/qtui_tool.h>
 #include <pkg/ent/scene.h>
 #include <ork/lev2/gfx/material_pbr.inl>
@@ -12,6 +13,110 @@ using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork { namespace ent {
+
+ScenePickBuffer::ScenePickBuffer(SceneEditorVP* vp, Context* ctx)
+    : PickBuffer(vp, ctx, 0, 0) {
+  _scenevp = vp;
+}
+void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
+  ork::opq::assertOnQueue2(opq::mainSerialQueue());
+
+  const ent::Simulation* sim = _scenevp->simulation();
+  ent::SceneData* pscene     = _scenevp->mEditor.mpScene;
+
+  if (nullptr == pscene)
+    return;
+  if (nullptr == sim)
+    return;
+  if (false == _scenevp->mbSceneDisplayEnable)
+    return;
+
+  float mainvpW      = _scenevp->GetW();
+  float mainvpH      = _scenevp->GetH();
+  float mainVPAspect = mainvpW / mainvpH;
+
+  auto target = ctx._gfxContext;
+  target->makeCurrentContext();
+  ///////////////////////////////////////////////////////////////////////////
+  static CompositingData* _gdata = nullptr;
+  if (nullptr == _gdata) {
+    _gdata = new CompositingData;
+    _gdata->presetPicking();
+  }
+  ///////////////////////////////////////////////////////////////////////////
+  static CompositingImpl _gimpl(*_gdata);
+  ork::lev2::RenderContextFrameData RCFD(target); //
+  RCFD._cimpl = &_gimpl;
+  ///////////////////////////////////////////////////////////////////////////
+
+  mPickIds.clear();
+
+  ork::recursive_mutex& glock = lev2::GfxEnv::GetRef().GetGlobalLock();
+  glock.Lock(0x777);
+  PickFrameTechnique pktek;
+  _scenevp->PushFrameTechnique(&pktek);
+  Context* pTEXTARG = context();
+  pTEXTARG->pushRenderContextFrameData(&RCFD);
+  ViewportRect tgt_rect(0, 0, _scenevp->GetW(), _scenevp->GetH());
+  ///////////////////////////////////////////////////////////////////////////
+  auto irenderer = _scenevp->GetRenderer();
+  irenderer->setContext(pTEXTARG);
+  RCFD.SetLightManager(nullptr);
+  ///////////////////////////////////////////////////////////////////////////
+  // force aspect ratio to that of the parent visible viewport
+  //  as opposed to the pickbuffer size
+  ///////////////////////////////////////////////////////////////////////////
+  // CPD.cameraMatrices()->_aspectRatio = fW / fH;
+  ///////////////////////////////////////////////////////////////////////////
+  // ?? rt or irenderer ?
+  lev2::UiViewportRenderTarget rt(_scenevp);
+  rendervar_t passdata;
+  passdata.Set<compositingpassdatastack_t*>(&_scenevp->_compositingGroupStack);
+  RCFD.setUserProperty("nodes"_crc, passdata);
+  lev2::CompositingPassData CPD;
+  CPD.AddLayer("All"_pool);
+  CPD.SetDstRect(tgt_rect);
+  CPD._ispicking     = true;
+  CPD._irendertarget = &rt;
+  _gimpl.pushCPD(CPD);
+  ///////////////////////////////////////////////////////////////////////////
+  auto simmode = sim->GetSimulationMode();
+  bool running = (simmode == ent::ESCENEMODE_RUN);
+  lev2::FrameRenderer framerenderer(RCFD, [&]() {});
+  lev2::CompositorDrawData drawdata(framerenderer);
+  drawdata._cimpl = &_gimpl;
+  drawdata._properties["primarycamindex"_crcu].Set<int>(_scenevp->miCameraIndex);
+  drawdata._properties["cullcamindex"_crcu].Set<int>(_scenevp->miCullCameraIndex);
+  drawdata._properties["irenderer"_crcu].Set<lev2::IRenderer*>(irenderer);
+  drawdata._properties["simrunning"_crcu].Set<bool>(running);
+  // auto VD = drawdata.computeViewData();
+  ///////////////////////////////////////////////////////////////////////////
+  {
+    auto FBI    = pTEXTARG->FBI();
+    auto vprect = _rtgroup->viewportRect();
+    ///////////////////////////////////////////////////////////////////////////
+    FBI->PushRtGroup(_rtgroup); // Enable Mrt
+    FBI->EnterPickState(this);
+    _context->BindMaterial(GfxEnv::GetDefault3DMaterial());
+    _context->PushModColor(fcolor4::Yellow());
+
+    bool aok = _gimpl.assemble(drawdata);
+    if (aok)
+      _gimpl.composite(drawdata);
+
+    _context->PopModColor();
+    FBI->PopRtGroup();
+    FBI->LeavePickState();
+  }
+  _gimpl.popCPD();
+  ///////////////////////////////////////////////////////////////////////////
+  // SetDirty(false);
+  pTEXTARG->popRenderContextFrameData();
+  _scenevp->PopFrameTechnique();
+  lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
+
+  ///////////////////////////////////////////////////////////////////////////
+}
 
 DeferredPickOperationContext::DeferredPickOperationContext()
     : miX(0)
@@ -87,14 +192,16 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
         pickctx->mState       = 1;
         auto& pixel_ctx       = pickctx->_pixelctx;
         pixel_ctx._gfxContext = target;
-        pixel_ctx.miMrtMask   = 3;
+        pixel_ctx.miMrtMask   = 1;
         pixel_ctx.mUsage[0]   = lev2::PixelFetchContext::EPU_PTR64;
-        pixel_ctx.mUsage[1]   = lev2::PixelFetchContext::EPU_FLOAT;
+        // pixel_ctx.mUsage[1]   = lev2::PixelFetchContext::EPU_FLOAT;
         pixel_ctx.mUserData.Set<ork::lev2::RenderContextFrameData*>(&RCFD);
         target->makeCurrentContext();
 
         viewport->GetPixel(pickctx->miX, pickctx->miY, pixel_ctx); // HERE<<<<<<
-        pickctx->mpCastable = pixel_ctx.GetObject(viewport->GetPickBuffer(), 0);
+        const auto& colr    = pickctx->_pixelctx.mPickColors[0];
+        pickctx->mpCastable = pixel_ctx.GetObject(viewport->pickbuffer(), 0);
+        printf("GOTCLR<%g %g %g %g>\n", colr.x, colr.y, colr.z, colr.w);
         printf("GOTOBJ<%p>\n", pickctx->mpCastable);
         if (pickctx->mOnPick) {
           auto on_pick = [=]() {
@@ -118,123 +225,30 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
 ///////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
-  if (nullptr == mpPickBuffer)
+  if (nullptr == _pickbuffer)
     return;
 
   float fx = float(ix) / float(miW);
   float fy = float(iy) / float(miH);
 
-  ctx.mRtGroup  = mpPickBuffer->mpPickRtGroup;
-  ctx.mAsBuffer = mpPickBuffer;
+  ctx.mRtGroup = _pickbuffer->_rtgroup;
 
   /////////////////////////////////////////////////////////////
-  int iW = mpPickBuffer->context()->mainSurfaceWidth();
-  int iH = mpPickBuffer->context()->mainSurfaceHeight();
+  int iW = _pickbuffer->context()->mainSurfaceWidth();
+  int iH = _pickbuffer->context()->mainSurfaceHeight();
   /////////////////////////////////////////////////////////////
-  mpPickBuffer->context()->FBI()->SetViewport(0, 0, iW, iH);
-  mpPickBuffer->context()->FBI()->SetScissor(0, 0, iW, iH);
+  _pickbuffer->context()->FBI()->setViewport(ViewportRect(0, 0, iW, iH));
+  _pickbuffer->context()->FBI()->setScissor(ViewportRect(0, 0, iW, iH));
   /////////////////////////////////////////////////////////////
   // force a pick refresh
   /////////////////////////////////////////////////////////////
 
-  mpPickBuffer->Draw(ctx);
+  _pickbuffer->Draw(ctx);
 
   /////////////////////////////////////////////////////////////
 
-  mpPickBuffer->context()->FBI()->GetPixel(fvec4(fx, fy, 0.0f), ctx);
+  _pickbuffer->context()->FBI()->GetPixel(fvec4(fx, fy, 0.0f), ctx);
 }
-
 }} // namespace ork::ent
 
 ///////////////////////////////////////////////////////////////////////////////
-
-template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::PixelFetchContext& ctx) {
-  ork::opq::assertOnQueue2(opq::mainSerialQueue());
-
-  const ent::Simulation* psi = mpViewport->simulation();
-  ent::SceneData* pscene     = mpViewport->mEditor.mpScene;
-
-  if (nullptr == pscene)
-    return;
-  if (nullptr == psi)
-    return;
-  if (false == mpViewport->mbSceneDisplayEnable)
-    return;
-
-  auto target = ctx._gfxContext;
-  target->makeCurrentContext();
-  static CompositingData _gdata;
-  static CompositingImpl _gimpl(_gdata);
-  static ork::lev2::RenderContextFrameData RCFD(target); //
-  RCFD._cimpl = &_gimpl;
-
-  ///////////////////////////////////////////////////////////////////////////
-
-  mPickIds.clear();
-
-  ork::recursive_mutex& glock = lev2::GfxEnv::GetRef().GetGlobalLock();
-  glock.Lock(0x777);
-  PickFrameTechnique pktek;
-  mpViewport->PushFrameTechnique(&pktek);
-  Context* pTEXTARG    = context();
-  Context* pPARENTTARG = GetParent()->context();
-  pTEXTARG->pushRenderContextFrameData(&RCFD);
-  SRect tgt_rect(0, 0, mpViewport->GetW(), mpViewport->GetH());
-  ///////////////////////////////////////////////////////////////////////////
-  mpViewport->GetRenderer()->setContext(pTEXTARG);
-  RCFD.SetLightManager(nullptr);
-  ///////////////////////////////////////////////////////////////////////////
-  // use source viewport's W/H for camera matrix computation
-  ///////////////////////////////////////////////////////////////////////////
-  ///////////////////////////////////////////////////////////////////////////
-  rendervar_t passdata;
-  passdata.Set<compositingpassdatastack_t*>(&mpViewport->_compositingGroupStack);
-  RCFD.setUserProperty("nodes"_crc, passdata);
-  lev2::CompositingPassData compositor_node;
-  compositor_node.AddLayer("All"_pool);
-  compositor_node.SetDstRect(tgt_rect);
-  _gimpl.pushCPD(compositor_node);
-  ///////////////////////////////////////////////////////////////////////////
-  int itx0 = 0;
-  int itx1 = itx0 + GetContextW();
-  int ity0 = 0;
-  int ity1 = ity0 + GetContextH();
-  ///////////////////////////////////////////////////////////////////////////
-  // force aspect ratio to that of the parent visible viewport
-  //  as opposed to the pickbuffer size
-  ///////////////////////////////////////////////////////////////////////////
-  float fW = mpViewport->GetW();
-  float fH = mpViewport->GetH();
-  // compositor_node.cameraMatrices()->_aspectRatio = fW / fH;
-  ///////////////////////////////////////////////////////////////////////////
-  lev2::UiViewportRenderTarget rt(mpViewport);
-  compositor_node._irendertarget = &rt;
-  BeginFrame();
-  {
-    SRect VPRect(itx0, ity0, itx1, ity1);
-    ///////////////////////////////////////////////////////////////////////////
-    pTEXTARG->FBI()->PushRtGroup(mpPickRtGroup); // Enable Mrt
-    pTEXTARG->FBI()->EnterPickState(this);
-    pTEXTARG->FBI()->PushViewport(VPRect);
-    pTEXTARG->BindMaterial(GfxEnv::GetDefault3DMaterial());
-    pTEXTARG->PushModColor(fcolor4::Yellow());
-
-    //{ mpViewport->renderEnqueuedScene(*RCFD); }
-    // TODO - mayve we should just render the objid into the gbuffer?
-    //   instead of re-rendering the scene for picking
-
-    pTEXTARG->PopModColor();
-    pTEXTARG->FBI()->PopRtGroup();
-    pTEXTARG->FBI()->PopViewport();
-    pTEXTARG->FBI()->LeavePickState();
-  }
-  EndFrame();
-  _gimpl.popCPD();
-  ///////////////////////////////////////////////////////////////////////////
-  SetDirty(false);
-  pTEXTARG->popRenderContextFrameData();
-  mpViewport->PopFrameTechnique();
-  lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
-
-  ///////////////////////////////////////////////////////////////////////////
-}

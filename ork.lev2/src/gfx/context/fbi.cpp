@@ -19,15 +19,17 @@ FrameBufferInterface::FrameBufferInterface(Context& tgt)
     : mTarget(tgt)
     , mbEnableVSync(false)
     , mbEnableFullScreen(GfxEnv::GetRef().GetCreationParams().mbFullScreen)
-    , miScissorStackIndex(0)
     , mpBufferTex(0)
     , mbAutoClear(true)
     , mcClearColor(fcolor4::Black())
     , mpThisBuffer(0)
     , miPickState(0)
+    , miScissorStackIndex(0)
     , miViewportStackIndex(0)
+    , maScissorStack(kiVPStackMax)
+    , maViewportStack(kiVPStackMax)
     , mCurrentRtGroup(0)
-    , mpPickBuffer(0) {
+    , _pickbuffer(0) {
   // for( int i=0; i<kiVPStackMax; i++ )
   //	maViewportStack[i]
 }
@@ -44,6 +46,9 @@ FrameBufferInterface::~FrameBufferInterface() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void FrameBufferInterface::PushRtGroup(RtGroup* Base) {
+
+  bool first = mRtGroupStack.empty();
+
   mRtGroupStack.push(mCurrentRtGroup);
   SetRtGroup(Base);
 
@@ -55,10 +60,10 @@ void FrameBufferInterface::PushRtGroup(RtGroup* Base) {
     ih = Base->GetH();
   }
 
-  SRect r(0, 0, iw, ih);
+  ViewportRect r(0, 0, iw, ih);
 
-  PushScissor(r);
-  PushViewport(r);
+  pushScissor(r);
+  pushViewport(r);
 
   if (Base->_autoclear) {
     rtGroupClear(Base);
@@ -70,23 +75,8 @@ void FrameBufferInterface::PopRtGroup() {
   mRtGroupStack.pop();
   // EndFrame();
   SetRtGroup(prev); // Enable Mrt
-  PopViewport();
-  PopScissor();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-SRect& FrameBufferInterface::GetViewport(void) {
-  static SRect VP;
-
-  VP.miX  = miCurVPX;
-  VP.miY  = miCurVPY;
-  VP.miW  = miCurVPW;
-  VP.miH  = miCurVPH;
-  VP.miX2 = miCurVPW + miCurVPX;
-  VP.miY2 = miCurVPH + miCurVPY;
-
-  return VP;
+  popViewport();
+  popScissor();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -105,106 +95,89 @@ void FrameBufferInterface::EndFrame(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FrameBufferInterface::PushScissor(const SRect& rScissorRect) {
-  maScissorStack[miScissorStackIndex] = rScissorRect;
-
-  int X  = rScissorRect.miX;
-  int X2 = rScissorRect.miX2;
-
-  int Y  = rScissorRect.miY;
-  int Y2 = rScissorRect.miY2;
-
-  if (miScissorStackIndex > 0) {
-    SRect& rParentRect = maScissorStack[miScissorStackIndex - 1];
-
-    int PX  = rParentRect.miX;
-    int PX2 = rParentRect.miX2;
-    int PY  = rParentRect.miY;
-    int PY2 = rParentRect.miY2;
-
-    if (X < PX)
-      X = PX;
-    if (X > PX2)
-      X = PX2;
-    if (X2 < PX)
-      X2 = PX;
-    if (X2 > PX2)
-      X2 = PX2;
-
-    if (Y < PY)
-      Y = PY;
-    if (Y > PY2)
-      Y = PY2;
-    if (Y2 < PY)
-      Y2 = PY;
-    if (Y2 > PY2)
-      Y2 = PY2;
-  }
-
-  SetScissor(X, Y, X2 - X, Y2 - Y);
-
-  miScissorStackIndex++;
+ViewportRect::ViewportRect(int x, int y, int w, int h) {
+  _x = OldStlSchoolClampToRange(x, 0, 16384);
+  _y = OldStlSchoolClampToRange(y, 0, 16384);
+  _w = OldStlSchoolClampToRange(w, 32, 16384);
+  _h = OldStlSchoolClampToRange(h, 32, 16384);
+}
+ViewportRect::ViewportRect() {
+  _x = 0;
+  _y = 0;
+  _w = 32;
+  _h = 32;
+}
+SRect ViewportRect::asSRect() const {
+  SRect rval(_x, _y, _w, _h);
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SRect& FrameBufferInterface::GetScissor(void) {
+void FrameBufferInterface::pushScissor(const ViewportRect& rect) {
+  maScissorStack[++miScissorStackIndex] = rect;
+  _setScissor(rect._x, rect._y, rect._w, rect._h);
+}
+void FrameBufferInterface::pushViewport(const ViewportRect& rect) {
+  int oldlev                              = miViewportStackIndex;
+  auto oldvp                              = maViewportStack[miViewportStackIndex];
+  maViewportStack[++miViewportStackIndex] = rect;
+  _setViewport(rect._x, rect._y, rect._w, rect._h);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void FrameBufferInterface::pushScissor(int x, int y, int w, int h) {
+  OrkAssert((miScissorStackIndex + 1) < kiVPStackMax);
+  ViewportRect rect(x, y, w, h);
+  maScissorStack[++miScissorStackIndex] = rect;
+  _setScissor(x, y, w, h);
+}
+void FrameBufferInterface::pushViewport(int x, int y, int w, int h) {
+  OrkAssert((miViewportStackIndex + 1) < kiVPStackMax);
+  ViewportRect rect(x, y, w, h);
+  maViewportStack[++miViewportStackIndex] = rect;
+  _setViewport(x, y, w, h);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void FrameBufferInterface::setScissor(const ViewportRect& rect) {
+  maViewportStack[miScissorStackIndex] = rect;
+  _setScissor(rect._x, rect._y, rect._w, rect._h);
+}
+void FrameBufferInterface::setViewport(const ViewportRect& rect) {
+  maViewportStack[miViewportStackIndex] = rect;
+  _setViewport(rect._x, rect._y, rect._w, rect._h);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void FrameBufferInterface::popViewport() {
+  int oldlev = miViewportStackIndex;
+  auto oldvp = maViewportStack[miViewportStackIndex];
+  OrkAssert(miViewportStackIndex > 0);
+  ViewportRect& rect = maViewportStack[--miViewportStackIndex];
+  _setViewport(rect._x, rect._y, rect._w, rect._h);
+}
+void FrameBufferInterface::popScissor() {
+  OrkAssert(miScissorStackIndex > 0);
+  ViewportRect& rect = maScissorStack[--miScissorStackIndex];
+  _setScissor(rect._x, rect._y, rect._w, rect._h);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+
+const ViewportRect& FrameBufferInterface::viewport() const {
+  return maViewportStack[miViewportStackIndex];
+}
+
+const ViewportRect& FrameBufferInterface::scissor() const {
   OrkAssert(miScissorStackIndex >= 0);
   OrkAssert(miScissorStackIndex < kiVPStackMax);
   return maScissorStack[miScissorStackIndex];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-SRect& FrameBufferInterface::PopScissor(void) {
-  OrkAssert(miScissorStackIndex > 0);
-  miScissorStackIndex--;
-  if (miScissorStackIndex > 0) {
-    SRect& rRect = maScissorStack[miScissorStackIndex - 1];
-    int W        = rRect.miX2 - rRect.miX;
-    int H        = rRect.miY2 - rRect.miY;
-
-    SetScissor(rRect.miX, rRect.miY, W, H);
-
-    return rRect;
-  }
-  return maScissorStack[0];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void FrameBufferInterface::PushViewport(const SRect& rViewportRect) {
-  OrkAssert(miViewportStackIndex < (kiVPStackMax - 1));
-
-  int icvpx1 = miCurVPX;
-  int icvpy1 = miCurVPY;
-  int icvpx2 = miCurVPX + miCurVPW;
-  int icvpy2 = miCurVPY + miCurVPH;
-
-  maViewportStack[miViewportStackIndex] = SRect(icvpx1, icvpy1, icvpx2, icvpy2); // rViewportRect;
-
-  SetViewport(rViewportRect.miX, rViewportRect.miY, rViewportRect.miW, rViewportRect.miH);
-
-  // miCurVPX = rViewportRect.miX;
-  // miCurVPY = rViewportRect.miY;
-  // miCurVPW = rViewportRect.miW;
-  // miCurVPH = rViewportRect.miH;
-
-  miViewportStackIndex++;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-SRect& FrameBufferInterface::PopViewport(void) {
-  OrkAssert(miViewportStackIndex > 0);
-  miViewportStackIndex--;
-  SRect& rRect = maViewportStack[miViewportStackIndex];
-  int W        = rRect.miX2 - rRect.miX;
-  int H        = rRect.miY2 - rRect.miY;
-
-  SetViewport(rRect.miX, rRect.miY, W, H);
-
-  return rRect;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -19,7 +19,7 @@ class Context;
 class Window;
 class FrameTechniqueBase;
 class FrameRenderer;
-class PickBufferBase;
+class PickBuffer;
 class RenderContextFrameData;
 } // namespace lev2
 

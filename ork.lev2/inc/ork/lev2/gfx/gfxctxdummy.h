@@ -111,7 +111,7 @@ struct DuRasterStateInterface : public RasterStateInterface {
   }
   void SetCullTest(ECullTest eVal) override {
   }
-  void SetScissorTest(EScissorTest eVal) override {
+  void setScissorTest(EScissorTest eVal) override {
   }
 
 public:
@@ -193,9 +193,9 @@ public:
 
   ///////////////////////////////////////////////////////
 
-  virtual void SetViewport(int iX, int iY, int iW, int iH) {
+  virtual void _setViewport(int iX, int iY, int iW, int iH) {
   }
-  virtual void SetScissor(int iX, int iY, int iW, int iH) {
+  virtual void _setScissor(int iX, int iY, int iW, int iH) {
   }
   virtual void Clear(const fcolor4& rCol, float fdepth) {
   }

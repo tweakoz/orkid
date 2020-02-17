@@ -82,7 +82,7 @@ struct NVMSIMPL {
     auto targ                    = RCFD.GetTarget();
     //////////////////////////////////////////////////////
     _context.renderUpdate(drawdata);
-    auto VD = _context.computeViewData(drawdata);
+    auto VD = drawdata.computeViewData();
     _context.updateDebugLights(VD);
     _context._clearColor = node->_clearColor;
     //////////////////////////////////////////////////////////////////

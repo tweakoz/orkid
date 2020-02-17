@@ -189,7 +189,7 @@ void OffscreenBuffer::Render2dQuadsEML(size_t count, const fvec4* QuadRects, con
 /////////////////////////////////////////////////////////////////////////
 
 void OffscreenBuffer::RenderMatOrthoQuad(
-    const SRect& ViewportRect,
+    const SRect& vprect,
     const SRect& QuadRect,
     GfxMaterial* pmat,
     float fu0,
@@ -203,15 +203,17 @@ void OffscreenBuffer::RenderMatOrthoQuad(
   auto mtxi = ctx->MTXI();
   auto fbi  = ctx->FBI();
 
+  ViewportRect vprectNew(vprect.miX, vprect.miY, vprect.miX2 - vprect.miX, vprect.miY2 - vprect.miY);
+
   // align source pixels to target pixels if sizes match
   float fx0  = float(QuadRect.miX);
   float fy0  = float(QuadRect.miY);
   float fx1  = float(QuadRect.miX2);
   float fy1  = float(QuadRect.miY2);
-  float fvx0 = float(ViewportRect.miX);
-  float fvy0 = float(ViewportRect.miY);
-  float fvx1 = float(ViewportRect.miX2);
-  float fvy1 = float(ViewportRect.miY2);
+  float fvx0 = float(vprect.miX);
+  float fvy0 = float(vprect.miY);
+  float fvx1 = float(vprect.miX2);
+  float fvy1 = float(vprect.miY2);
 
   float zeros[8] = {0, 0, 0, 0, 0, 0, 0, 0};
   if (NULL == uv2)
@@ -221,8 +223,8 @@ void OffscreenBuffer::RenderMatOrthoQuad(
   mtxi->PushVMatrix(fmtx4::Identity);
   mtxi->PushMMatrix(fmtx4::Identity);
   ctx->RSI()->BindRasterState(DefaultRasterState, true);
-  fbi->PushViewport(ViewportRect);
-  fbi->PushScissor(ViewportRect);
+  fbi->pushViewport(vprectNew);
+  fbi->pushScissor(vprectNew);
   { // Draw Full Screen Quad with specified material
     ctx->PushMaterial(pmat);
     ctx->FXI()->InvalidateStateBlock();
@@ -248,8 +250,8 @@ void OffscreenBuffer::RenderMatOrthoQuad(
     ctx->PopModColor();
     ctx->PopMaterial();
   }
-  fbi->PopScissor();
-  fbi->PopViewport();
+  fbi->popScissor();
+  fbi->popViewport();
   mtxi->PopPMatrix();
   mtxi->PopVMatrix();
   mtxi->PopMMatrix();
@@ -268,16 +270,18 @@ OrthoQuad::OrthoQuad()
 }
 
 void OffscreenBuffer::RenderMatOrthoQuads(const OrthoQuads& oquads) {
-  int inumquads             = oquads.miNumQuads;
-  const SRect& ViewportRect = oquads.mViewportRect;
-  const SRect& OrthoRect    = oquads.mOrthoRect;
-  GfxMaterial* pmtl         = oquads.mpMaterial;
-  const OrthoQuad* pquads   = oquads.mpQUADS;
+  int inumquads           = oquads.miNumQuads;
+  const SRect& vprect     = oquads.mViewportRect;
+  const SRect& OrthoRect  = oquads.mOrthoRect;
+  GfxMaterial* pmtl       = oquads.mpMaterial;
+  const OrthoQuad* pquads = oquads.mpQUADS;
 
   if (0 == inumquads)
     return;
 
   static SRasterState DefaultRasterState;
+
+  ViewportRect vprectNew(vprect.miX, vprect.miY, vprect.miX2 - vprect.miX, vprect.miY2 - vprect.miY);
 
   // align source pixels to target pixels if sizes match
   float fvx0 = float(OrthoRect.miX);
@@ -289,8 +293,8 @@ void OffscreenBuffer::RenderMatOrthoQuads(const OrthoQuads& oquads) {
   context()->MTXI()->PushVMatrix(fmtx4::Identity);
   context()->MTXI()->PushMMatrix(fmtx4::Identity);
   context()->RSI()->BindRasterState(DefaultRasterState, true);
-  context()->FBI()->PushViewport(ViewportRect);
-  context()->FBI()->PushScissor(ViewportRect);
+  context()->FBI()->pushViewport(vprectNew);
+  context()->FBI()->pushScissor(vprectNew);
   { // Draw Full Screen Quad with specified material
     context()->BindMaterial(pmtl);
     context()->FXI()->InvalidateStateBlock();
@@ -359,8 +363,8 @@ void OffscreenBuffer::RenderMatOrthoQuads(const OrthoQuads& oquads) {
     }
     context()->PopModColor();
   }
-  context()->FBI()->PopScissor();
-  context()->FBI()->PopViewport();
+  context()->FBI()->popScissor();
+  context()->FBI()->popViewport();
   context()->MTXI()->PopPMatrix();
   context()->MTXI()->PopVMatrix();
   context()->MTXI()->PopMMatrix();

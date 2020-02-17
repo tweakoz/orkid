@@ -25,11 +25,10 @@ void Viewport::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 
 Viewport::Viewport(const std::string& name, int x, int y, int w, int h, CColor3 color, F32 depth)
-    : Surface(name, x, y, w, h, color, depth)
-    , mpPickBuffer(nullptr) {
+    : Surface(name, x, y, w, h, color, depth) {
   // mWidgetFlags.Enable();
   // mWidgetFlags.SetState( EUI_WIDGET_OFF );
-}
+} // namespace ui
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -51,8 +50,8 @@ void Viewport::BeginFrame(lev2::Context* pTARG) {
 
     pTARG->MTXI()->SetOrthoMatrix(MatOrtho);
 
-    SRect SciRect(miX, miY, miX + miW, miY + miH);
-    pTARG->FBI()->PushScissor(SciRect);
+    ork::lev2::ViewportRect SciRect(miX, miY, miW, miH);
+    pTARG->FBI()->pushScissor(SciRect);
     pTARG->MTXI()->PushPMatrix(pTARG->MTXI()->GetOrthoMatrix());
     pTARG->BindMaterial(lev2::GfxEnv::GetRef().GetDefaultUIMaterial());
   }
@@ -66,7 +65,7 @@ void Viewport::EndFrame(lev2::Context* pTARG) {
   if (mbDrawOK) {
     // orkprintf( "END Viewport::BeginFrame::mbDrawOK\n" );
     pTARG->MTXI()->PopPMatrix();
-    pTARG->FBI()->PopScissor();
+    pTARG->FBI()->popScissor();
     pTARG->BindMaterial(0);
   }
   pTARG->endFrame();

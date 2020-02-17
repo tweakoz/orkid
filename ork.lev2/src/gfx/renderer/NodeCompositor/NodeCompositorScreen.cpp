@@ -72,7 +72,7 @@ struct SCRIMPL {
     _width  = w * (_node->supersample() + 1);
     _height = h * (_node->supersample() + 1);
     //////////////////////////////////////////////////////
-    SRect tgt_rect(0, 0, _width, _height);
+    ViewportRect tgt_rect(0, 0, _width, _height);
 
     _CPD.AddLayer("All"_pool);
     _CPD.mbDrawSource = true;

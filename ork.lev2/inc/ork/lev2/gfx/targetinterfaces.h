@@ -49,10 +49,19 @@ class VertexBufferBase;
 class IndexBufferBase;
 class OffscreenBuffer;
 class TextureAnimationInst;
-class PickBufferBase;
+class PickBuffer;
 class RtGroup;
 class RtBuffer;
 class TextureAsset;
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct ViewportRect {
+  ViewportRect();
+  ViewportRect(int x, int y, int w, int h);
+  SRect asSRect() const;
+  int _x, _y, _w, _h;
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -113,7 +122,7 @@ struct CaptureBuffer {
 /// ////////////////////////////////////////////////////////////////////////////
 
 struct PixelFetchContext {
-  ork::rtti::ICastable* GetObject(PickBufferBase* pb, int ichan) const;
+  ork::rtti::ICastable* GetObject(PickBuffer* pb, int ichan) const;
   void* GetPointer(int ichan) const;
   PixelFetchContext();
 
@@ -127,7 +136,6 @@ struct PixelFetchContext {
   static const int kmaxitems = 4;
 
   Context* _gfxContext = nullptr;
-  OffscreenBuffer* mAsBuffer;
   RtGroup* mRtGroup;
   int miMrtMask;
   fcolor4 mPickColors[kmaxitems];

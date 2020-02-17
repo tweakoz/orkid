@@ -21,7 +21,7 @@ public:
   virtual void SetBlending(EBlending eVal)        = 0;
   virtual void SetDepthTest(EDepthTest eVal)      = 0;
   virtual void SetCullTest(ECullTest eVal)        = 0;
-  virtual void SetScissorTest(EScissorTest eVal)  = 0;
+  virtual void setScissorTest(EScissorTest eVal)  = 0;
 
 protected:
   Context& _target;

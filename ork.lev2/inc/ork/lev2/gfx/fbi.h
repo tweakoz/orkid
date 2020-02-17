@@ -1,5 +1,4 @@
 #pragma once
-
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
 /// Frame/Buffer / Control Interface
@@ -11,12 +10,8 @@ public:
   FrameBufferInterface(Context& mTarget);
   ~FrameBufferInterface();
 
-  Texture* GetBufferTexture(void) {
-    return mpBufferTex;
-  }
-  void SetBufferTexture(Texture* ptex) {
-    mpBufferTex = ptex;
-  }
+  ///////////////////////////////////////////////////////
+
   void SetClearColor(const fcolor4& scol) {
     mcClearColor = scol;
   }
@@ -32,12 +27,27 @@ public:
   void SetVSyncEnable(bool bv) {
     mbEnableVSync = bv;
   }
-  OffscreenBuffer* GetThisBuffer(void) {
+
+  ///////////////////////////////////////////////////////
+
+  Texture* GetBufferTexture() {
+    return mpBufferTex;
+  }
+  void SetBufferTexture(Texture* ptex) {
+    mpBufferTex = ptex;
+  }
+
+  ///////////////////////////////////////////////////////
+
+  OffscreenBuffer* GetThisBuffer() {
     return mpThisBuffer;
   }
   void SetThisBuffer(OffscreenBuffer* pbuf) {
     mpThisBuffer = pbuf;
   }
+
+  ///////////////////////////////////////////////////////
+
   virtual void SetRtGroup(RtGroup* Base) = 0;
   RtGroup* GetRtGroup() const {
     return mCurrentRtGroup;
@@ -52,35 +62,41 @@ public:
   }
 
   ///////////////////////////////////////////////////////
+  // viewport / scissor
+  ///////////////////////////////////////////////////////
 
-  virtual void SetViewport(int iX, int iY, int iW, int iH) = 0;
-  virtual void SetScissor(int iX, int iY, int iW, int iH)  = 0;
-  virtual void Clear(const fcolor4& rCol, float fdepth)    = 0;
-  virtual void clearDepth(float fdepth)                    = 0;
-  virtual void PushViewport(const SRect& rViewportRect);
-  virtual SRect& PopViewport(void);
-  SRect& GetViewport(void);
-  int GetVPX(void) {
-    return miCurVPX;
+  void pushViewport(int iX, int iY, int iW, int iH);
+  void pushViewport(const ViewportRect& rViewportRect);
+  void setViewport(const ViewportRect& rScissorRect);
+  void pushScissor(int iX, int iY, int iW, int iH);
+  void pushScissor(const ViewportRect& rScissorRect);
+  void setScissor(const ViewportRect& rScissorRect);
+  void popViewport();
+  void popScissor();
+  const ViewportRect& scissor() const;
+  const ViewportRect& viewport() const;
+
+  virtual void _setViewport(int iX, int iY, int iW, int iH) = 0;
+  virtual void _setScissor(int iX, int iY, int iW, int iH)  = 0;
+  virtual void Clear(const fcolor4& rCol, float fdepth)     = 0;
+  virtual void clearDepth(float fdepth)                     = 0;
+
+  int GetVPX() {
+    return viewport()._x;
   }
-  int GetVPY(void) {
-    return miCurVPY;
+  int GetVPY() {
+    return viewport()._y;
   }
-  int GetVPW(void) {
-    return miCurVPW;
+  int GetVPW() {
+    return viewport()._w;
   }
-  int GetVPH(void) {
-    return miCurVPH;
+  int GetVPH() {
+    return viewport()._h;
   }
 
   ///////////////////////////////////////////////////////
-
-  virtual void PushScissor(const SRect& rScissorRect);
-  virtual SRect& PopScissor(void);
-  inline SRect& GetScissor(void);
-
-  //////////////////////////////////////////////
   // Capture Interface
+  ///////////////////////////////////////////////////////
 
   virtual bool capture(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer) {
     return false;
@@ -97,29 +113,29 @@ public:
 
   //////////////////////////////////////////////
 
-  void BeginFrame(void);
-  void EndFrame(void);
-  virtual void _doBeginFrame(void) = 0;
-  virtual void _doEndFrame(void)   = 0;
+  void BeginFrame();
+  void EndFrame();
+  virtual void _doBeginFrame() = 0;
+  virtual void _doEndFrame()   = 0;
 
   //////////////////////////////////////////////
 
-  void EnterPickState(PickBufferBase* pb) {
+  void EnterPickState(PickBuffer* pb) {
     miPickState++;
-    mpPickBuffer = pb;
+    _pickbuffer = pb;
   }
-  bool isPickState(void) {
+  bool isPickState() {
     return (miPickState > 0);
   }
 
-  void LeavePickState(void) {
+  void LeavePickState() {
     miPickState--;
     OrkAssert(miPickState >= 0);
-    mpPickBuffer = 0;
+    _pickbuffer = 0;
   }
 
-  PickBufferBase* GetCurrentPickBuffer() const {
-    return mpPickBuffer;
+  PickBuffer* GetCurrentPickBuffer() const {
+    return _pickbuffer;
   }
 
   //////////////////////////////////////////////
@@ -131,8 +147,8 @@ protected:
 
   int miViewportStackIndex;
   int miScissorStackIndex;
-  SRect maScissorStack[kiVPStackMax];
-  SRect maViewportStack[kiVPStackMax];
+  ork::fixedvector<ViewportRect, kiVPStackMax> maScissorStack;
+  ork::fixedvector<ViewportRect, kiVPStackMax> maViewportStack;
 
   OffscreenBuffer* mpThisBuffer;
   Texture* mpBufferTex;
@@ -141,12 +157,8 @@ protected:
   bool mbAutoClear;
   bool mbEnableFullScreen;
   bool mbEnableVSync;
-  int miCurVPX;
-  int miCurVPY;
-  int miCurVPW;
-  int miCurVPH;
   int miPickState;
   Context& mTarget;
-  PickBufferBase* mpPickBuffer;
+  PickBuffer* _pickbuffer;
   std::stack<lev2::RtGroup*> mRtGroupStack;
 };

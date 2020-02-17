@@ -142,7 +142,7 @@ void GlRasterStateInterface::SetCullTest( ECullTest eVal )
 	}
 	GL_ERRORCHECK();
 }
-void GlRasterStateInterface::SetScissorTest( EScissorTest eVal )
+void GlRasterStateInterface::setScissorTest( EScissorTest eVal )
 {	GL_ERRORCHECK();
 	switch( eVal )
 	{
@@ -231,7 +231,7 @@ void GlRasterStateInterface::BindRasterState( SRasterState const &newstate, bool
 
 	if( bScissorTestChanged || bForce )
 	{
-		SetScissorTest( newstate.GetScissorTest() );
+		setScissorTest( newstate.GetScissorTest() );
 	}
 
 	/////////////////////////////////////////////////

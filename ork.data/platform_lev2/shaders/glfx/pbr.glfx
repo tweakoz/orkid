@@ -4,6 +4,7 @@
 fxconfig fxcfg_default {
 	glsl_version = "130";
 	import "skintools.i";
+	import "picktools.i";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
@@ -179,12 +180,6 @@ fragment_shader ps_gbuffer_n_tex_stereo // normalmap (stereo texture - vsplit)
 		ps_common_n(N,map_uv);
 }
 ///////////////////////////////////////////////////////////////
-state_block sb_pick : sb_default {
-	DepthTest=OFF;
-	DepthMask=true;
-	CullTest=OFF;
-	BlendMode = OFF;
-}
 technique rigid_gbuffer {
 	fxconfig=fxcfg_default;
 	pass p0 {

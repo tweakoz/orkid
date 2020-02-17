@@ -436,8 +436,8 @@ void BuiltinFrameTechniques::Render(FrameRenderer& frenderer) {
   bool bfeedback = true; //(CreationParams.miQuality>1);
 
   /////////////////////////////////////////////////
-  SRect dst_rect = topCPD.GetDstRect();
-  SRect mrt_rect = topCPD.GetMrtRect();
+  auto dst_rect = topCPD.GetDstRect();
+  auto mrt_rect = topCPD.GetMrtRect();
   /////////////////////////////////////////////////
 
   std::string dumpfname;
@@ -630,7 +630,7 @@ void BuiltinFrameTechniques::Render(FrameRenderer& frenderer) {
 void GlowRenderMatOrthoQuad(
     Context* pTARG,
     MatrixStackInterface* MTXIO,
-    const SRect& ViewportRect,
+    const SRect& vprect,
     const SRect& QuadRect,
     GfxMaterial* pmat,
     float fu0          = 0.0f,
@@ -640,6 +640,7 @@ void GlowRenderMatOrthoQuad(
     float* uv2         = 0,
     const fcolor4& clr = fcolor4::White()) {
   static SRasterState DefaultRasterState;
+  ViewportRect vprectNew(vprect.miX, vprect.miY, vprect.miX2 - vprect.miX, vprect.miY2 - vprect.miY);
 
   // align source pixels to target pixels if sizes match
   float fx0 = float(QuadRect.miX);
@@ -660,8 +661,8 @@ void GlowRenderMatOrthoQuad(
   MTXIO->PushVMatrix(fmtx4::Identity);
   MTXIO->PushMMatrix(fmtx4::Identity);
   pTARG->RSI()->BindRasterState(DefaultRasterState, true);
-  fbi->PushViewport(ViewportRect);
-  fbi->PushScissor(ViewportRect);
+  fbi->pushViewport(vprectNew);
+  fbi->pushScissor(vprectNew);
   { // Draw Full Screen Quad with specified material
     pTARG->BindMaterial(pmat);
     fxi->InvalidateStateBlock();
@@ -685,8 +686,8 @@ void GlowRenderMatOrthoQuad(
     }
     pTARG->PopModColor();
   }
-  fbi->PopScissor();
-  fbi->PopViewport();
+  fbi->popScissor();
+  fbi->popViewport();
   MTXIO->PopPMatrix();
   MTXIO->PopVMatrix();
   MTXIO->PopMMatrix();
@@ -878,7 +879,7 @@ BasicFrameTechnique::BasicFrameTechnique()
 void BasicFrameTechnique::Render(FrameRenderer& frenderer) {
   RenderContextFrameData& FrameData = frenderer.framedata();
   Context* pTARG                    = FrameData.GetTarget();
-  SRect tgt_rect                    = pTARG->mainSurfaceRectAtOrigin();
+  auto tgt_rect                     = pTARG->mainSurfaceRectAtOrigin();
   // FrameData.SetDstRect( tgt_rect );
   /*
   IRenderTarget* pTopRenderTarget = FrameData.GetRenderTarget();
@@ -903,7 +904,7 @@ PickFrameTechnique::PickFrameTechnique()
 void PickFrameTechnique::Render(FrameRenderer& frenderer) {
   RenderContextFrameData& FrameData = frenderer.framedata();
   Context* pTARG                    = FrameData.GetTarget();
-  SRect tgt_rect                    = pTARG->mainSurfaceRectAtOrigin();
+  auto tgt_rect                     = pTARG->mainSurfaceRectAtOrigin();
   // FrameData.SetDstRect( tgt_rect );
   {
     // frenderer.renderMisc();

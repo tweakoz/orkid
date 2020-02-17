@@ -88,13 +88,13 @@ void Buffer::PtexBegin(lev2::Context* ptgt, bool push_full_vp, bool clear_all) {
   auto rtg = GetRtGroup(ptgt);
 
   FBI->PushRtGroup(rtg);
-  SRect vprect_full(0, 0, miW, miH);
+  ViewportRect vprect_full(0, 0, miW, miH);
 
   // printf( "  buffer<%p> w<%d> h<%d> rtg<%p> begin\n", this, miW,miH,rtg);
 
   if (push_full_vp) {
-    FBI->PushViewport(vprect_full);
-    FBI->PushScissor(vprect_full);
+    FBI->pushViewport(vprect_full);
+    FBI->pushScissor(vprect_full);
   }
   if (clear_all)
     FBI->Clear(CColor3::Black(), 1.0f);
@@ -102,8 +102,8 @@ void Buffer::PtexBegin(lev2::Context* ptgt, bool push_full_vp, bool clear_all) {
 ///////////////////////////////////////////////////////////////////////////////
 void Buffer::PtexEnd(bool pop_vp) {
   if (pop_vp) {
-    mTarget->FBI()->PopViewport();
-    mTarget->FBI()->PopScissor();
+    mTarget->FBI()->popViewport();
+    mTarget->FBI()->popScissor();
   }
 
   // printf( "  buffer<%p> end\n", this);

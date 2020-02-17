@@ -103,6 +103,7 @@ public:
   const FxShaderTechnique* _tekRigidGBUFFER_N            = nullptr;
   const FxShaderTechnique* _tekRigidGBUFFER_N_STEREO     = nullptr;
   const FxShaderTechnique* _tekRigidGBUFFER_N_TEX_STEREO = nullptr;
+  const FxShaderTechnique* _tekRigidPICKING              = nullptr;
 
   std::string _colorMapName;
   std::string _normalMapName;

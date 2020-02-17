@@ -180,7 +180,7 @@ void IManipInterface::Describe() {
 /////////////////////////////////////////////////////////////////////////
 SRasterState::SRasterState() {
   mPointSize = 1;
-  SetScissorTest(ESCISSORTEST_OFF);
+  setScissorTest(ESCISSORTEST_OFF);
   SetAlphaTest(EALPHATEST_OFF, 0);
   SetBlending(EBLENDING_OFF);
   SetDepthTest(EDEPTHTEST_LEQUALS);

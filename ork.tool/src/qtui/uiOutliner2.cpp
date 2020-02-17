@@ -280,11 +280,7 @@ int Outliner2View::kitemh() const {
 ///////////////////////////////////////////////////////////////////////////////
 void Outliner2View::DoInit(lev2::Context* pt) {
   auto par     = pt->FBI()->GetThisBuffer();
-  mpPickBuffer = new lev2::PickBuffer<Outliner2View>(par, this, 0, 0, miW, miH, lev2::PickBufferBase::EPICK_FACE_VTX);
-
-  mpPickBuffer->initContext();
-  mpPickBuffer->context()->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
-  mpPickBuffer->RefClearColor().SetRGBAU32(0);
+  _pickbuffer = new lev2::PickBuffer(this, pt, miW, miH);
 
   mFont          = lev2::FontMan::GetFont("i13");
   auto& fontdesc = mFont->GetFontDesc();
@@ -321,8 +317,8 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev) {
 
   //////////////////////////////////////////////////
 
-  fbi->PushScissor(SRect(0, 0, miW, miH));
-  fbi->PushViewport(SRect(0, 0, miW, miH));
+  fbi->pushScissor(ViewportRect(0, 0, miW, miH));
+  fbi->pushViewport(ViewportRect(0, 0, miW, miH));
 
   {
     fbi->Clear(fvec4::Blue(), 1.0f);
@@ -373,7 +369,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev) {
         const std::string& name = item.mName;
         auto pobj               = item.mObject;
         fvec4 pick_color;
-        pick_color.SetRGBAU64(mpPickBuffer->AssignPickId(pobj));
+        pick_color.SetRGBAU64(_pickbuffer->AssignPickId(pobj));
         bool is_sel = item.mSelected;
 
         if (is_pick)
@@ -436,8 +432,8 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev) {
     mtxi->PopUIMatrix();
     tgt->PopMaterial();
   }
-  fbi->PopViewport();
-  fbi->PopScissor();
+  fbi->popViewport();
+  fbi->popScissor();
   tgt->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -494,9 +490,9 @@ ui::HandlerResult Outliner2View::DoOnUiEvent(const ui::Event& EV) {
   RootToLocal(ix, iy, ilocx, ilocy);
 
   lev2::PixelFetchContext ctx;
-  ctx.miMrtMask = (1 << 0) | (1 << 1); // ObjectID and ObjectUVD
+  ctx.miMrtMask = (1 << 0); // | (1 << 1); // ObjectID and ObjectUVD
   ctx.mUsage[0] = lev2::PixelFetchContext::EPU_PTR64;
-  ctx.mUsage[1] = lev2::PixelFetchContext::EPU_FLOAT;
+  // ctx.mUsage[1] = lev2::PixelFetchContext::EPU_FLOAT;
 
   QInputEvent* qip = (QInputEvent*)EV.mpBlindEventData;
 
@@ -612,7 +608,7 @@ ui::HandlerResult Outliner2View::DoOnUiEvent(const ui::Event& EV) {
       GetPixel(ilocx, ilocy, ctx);
       float fx                   = float(ilocx) / float(GetW());
       float fy                   = float(ilocy) / float(GetH());
-      ork::rtti::ICastable* pobj = ctx.GetObject(mpPickBuffer, 0);
+      ork::rtti::ICastable* pobj = ctx.GetObject(_pickbuffer, 0);
 
       bool is_in_set = true; // IsObjInSet(pobj);
 
@@ -651,40 +647,3 @@ ui::HandlerResult Outliner2View::DoOnUiEvent(const ui::Event& EV) {
 
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::ent
-///////////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////
-template class ork::lev2::PickBuffer<ork::ent::Outliner2View>;
-///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace lev2 {
-template <> void PickBuffer<ork::ent::Outliner2View>::Draw(lev2::PixelFetchContext& ctx) {
-  mPickIds.clear();
-
-  auto tgt = context();
-  tgt->makeCurrentContext();
-
-  auto mtxi = tgt->MTXI();
-  auto fbi  = tgt->FBI();
-  auto fxi  = tgt->FXI();
-  auto rsi  = tgt->RSI();
-
-  int irtgw  = mpPickRtGroup->GetW();
-  int irtgh  = mpPickRtGroup->GetH();
-  int isurfw = mpViewport->GetW();
-  int isurfh = mpViewport->GetH();
-  if (irtgw != isurfw || irtgh != isurfh) {
-    printf("resize ged pickbuf rtgroup<%d %d>\n", isurfw, isurfh);
-    this->SetBufferWidth(isurfw);
-    this->SetBufferHeight(isurfh);
-    tgt->miW = isurfw;
-    tgt->miH = isurfh;
-    mpPickRtGroup->Resize(isurfw, isurfh);
-  }
-  fbi->PushRtGroup(mpPickRtGroup);
-  fbi->EnterPickState(this);
-  ui::DrawEvent drwev(tgt);
-  mpViewport->RePaintSurface(drwev);
-  fbi->LeavePickState();
-  fbi->PopRtGroup();
-}
-}} // namespace ork::lev2

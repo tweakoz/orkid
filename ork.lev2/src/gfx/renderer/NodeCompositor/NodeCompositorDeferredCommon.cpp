@@ -170,8 +170,8 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
   auto FBI                     = targ->FBI();
   auto& ddprops                = drawdata._properties;
   auto irenderer               = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
-  SRect tgt_rect(0, 0, _rtgGbuffer->GetW(), _rtgGbuffer->GetH());
-  SRect mrt_rect(0, 0, _rtgGbuffer->GetW(), _rtgGbuffer->GetH());
+  ViewportRect tgt_rect(0, 0, _rtgGbuffer->GetW(), _rtgGbuffer->GetH());
+  ViewportRect mrt_rect(0, 0, _rtgGbuffer->GetW(), _rtgGbuffer->GetH());
   ///////////////////////////////////////////////////////////////////////////
   FBI->PushRtGroup(_rtgGbuffer);
   FBI->SetAutoClear(false); // explicit clear
@@ -219,7 +219,7 @@ const uint32_t* DeferredContext::captureDepthClusters(const CompositorDrawData& 
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto this_buf                = FBI->GetThisBuffer();
-  auto vprect                  = SRect(0, 0, _clusterW, _clusterH);
+  auto vprect                  = ViewportRect(0, 0, _clusterW, _clusterH);
   auto quadrect                = SRect(0, 0, _clusterW, _clusterH);
   auto tgt_rect                = targ->mainSurfaceRectAtOrigin();
 
@@ -321,64 +321,6 @@ void DeferredContext::updateDebugLights(const ViewData& VD) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ViewData DeferredContext::computeViewData(CompositorDrawData& drawdata) {
-  auto CIMPL        = drawdata._cimpl;
-  const auto TOPCPD = CIMPL->topCPD();
-  ViewData VD;
-  VD._isStereo   = TOPCPD.isStereoOnePass();
-  VD._camposmono = TOPCPD.monoCamPos(fmtx4());
-  if (VD._isStereo) {
-    auto L = TOPCPD._stereoCameraMatrices->_left;
-    auto R = TOPCPD._stereoCameraMatrices->_right;
-    auto M = TOPCPD._stereoCameraMatrices->_mono;
-    VD.VL  = L->_vmatrix;
-    VD.VR  = R->_vmatrix;
-    VD.VM  = M->_vmatrix;
-    VD.PL  = L->_pmatrix;
-    VD.PR  = R->_pmatrix;
-    VD.PM  = M->_pmatrix;
-    VD.VPL = VD.VL * VD.PL;
-    VD.VPR = VD.VR * VD.PR;
-    VD.VPM = VD.VM * VD.PM;
-    // VR projection matrix
-    //[ +0.7842  +0  +0  +0 ] [ +0  +0.7048  +0  +0 ] [ -0.05671  +0.0023  -1  -1 ] [ +0  +0  -0.1  +0 ]   axis<-0.001 -0.04 -0>
-  } else {
-    auto M = TOPCPD._cameraMatrices;
-    VD.VM  = M->_vmatrix;
-    VD.PM  = M->_pmatrix;
-    VD.VL  = VD.VM;
-    VD.VR  = VD.VM;
-    VD.PL  = VD.PM;
-    VD.PR  = VD.PM;
-    VD.VPM = VD.VM * VD.PM;
-    VD.VPL = VD.VPM;
-    VD.VPR = VD.VPM;
-    // editor projection matrix
-    //[ -1.433  +0  +0  +0 ] [ +0  +2.748  +0  +0 ] [ +0  +0  +1  +1 ] [ +0  +0  -17.01  +0 ]   axis<-0 -0 -0> angle<72>
-    // printf("%g %g\n", VD._zndc2eye.x, VD._zndc2eye.y);
-  }
-  VD.IVPM.inverseOf(VD.VPM);
-  VD.IVPL.inverseOf(VD.VPL);
-  VD.IVPR.inverseOf(VD.VPR);
-  VD._v[0]   = VD.VL;
-  VD._v[1]   = VD.VR;
-  VD._p[0]   = VD.PL; //_p[0].Transpose();
-  VD._p[1]   = VD.PR; //_p[1].Transpose();
-  VD._ivp[0] = VD.IVPL;
-  VD._ivp[1] = VD.IVPR;
-
-  fmtx4 IVL;
-  IVL.inverseOf(VD.VL);
-  VD._camposmono = IVL.GetColumn(3).xyz();
-
-  const auto& PZ = VD._p[0];
-  VD._zndc2eye   = fvec2(PZ.GetElemXY(3, 2), PZ.GetElemXY(2, 2));
-
-  return VD;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void DeferredContext::bindViewParams(const ViewData& VD) {
   _lightingmtl.bindParamMatrixArray(_parMatIVPArray, VD._ivp, 2);
   _lightingmtl.bindParamMatrixArray(_parMatVArray, VD._v, 2);
@@ -410,7 +352,7 @@ void DeferredContext::renderBaseLighting(CompositorDrawData& drawdata, const Vie
   _accumCPD                    = TOPCPD;
   _decalCPD                    = TOPCPD;
   /////////////////////////////////////////////////////////////////
-  auto vprect   = SRect(0, 0, _width, _height);
+  auto vprect   = ViewportRect(0, 0, _width, _height);
   auto quadrect = SRect(0, 0, _width, _height);
   _accumCPD.SetDstRect(vprect);
   _accumCPD._irendertarget        = _accumRT;

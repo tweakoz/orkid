@@ -138,7 +138,7 @@ struct VRIMPL {
     // float w = _rtg->GetW(); float h = _rtg->GetH();
     ///////////////////////////////////
 
-    SRect tgt_rect(0, 0, _width, _height);
+    ViewportRect tgt_rect(0, 0, _width, _height);
 
     _CPD.mbDrawSource = true;
     _CPD.mpFrameTek   = nullptr;

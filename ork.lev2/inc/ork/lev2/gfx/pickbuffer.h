@@ -15,72 +15,34 @@
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-class PickBufferBase : public ork::lev2::OffscreenBuffer
+class PickBuffer //: public ork::lev2::OffscreenBuffer
 {
-	RttiDeclareAbstract(PickBufferBase,ork::lev2::OffscreenBuffer);
+public:
+  PickBuffer(ui::Surface* surf, Context* ctx, int iW, int iH);
 
-	public:
+  void Init();
 
-	enum EPickBufferType
-	{
-		EPICK_FACE_VTX = 0,
-		EPICK_NORMAL ,
-		EPICK_WPOS ,
-		EPICK_ST
-	};
+  uint64_t AssignPickId(ork::Object*);
+  ork::Object* GetObjectFromPickId(uint64_t);
+  Context* context() {
+    return _context;
+  }
 
-	PickBufferBase( OffscreenBuffer *parent,
-					 int iX, int iY, int iW, int iH,
-					 EPickBufferType etyp );
+  virtual void Draw(lev2::PixelFetchContext& ctx);
 
-	void Init();
+  ///////////////////////
 
-    uint64_t        AssignPickId(ork::Object*);
-    ork::Object*    GetObjectFromPickId(uint64_t);
+  int _width;
+  int _height;
+  bool _inittex;
+  GfxMaterialUITextured* _uimaterial;
+  ork::lev2::RtGroup* _rtgroup;
+  Context* _context;
+  ui::Surface* _surface;
 
-	virtual void Draw( lev2::PixelFetchContext& ctx ) = 0;
-
-	///////////////////////
-
-	EPickBufferType				meType;
-	bool						mbInitTex;
-	GfxMaterialUITextured*		mpUIMaterial;
-  std::map<uint64_t,ork::Object*>	mPickIds;
-	ork::lev2::RtGroup*			mpPickRtGroup;
-
-};
-
-///////////////////////////////////////////////////////////////////////////
-
-template <typename VPT> class PickBuffer : public PickBufferBase
-{
-	public:
-
-	PickBuffer(	lev2::OffscreenBuffer* pbuf,
-					VPT* pVP,
-					int iX, int iY, int iW, int iH,
-					EPickBufferType etyp );
-
-
-	virtual void Draw( lev2::PixelFetchContext& ctx );
-
-	VPT* mpViewport;
+  std::map<uint64_t, ork::Object*> mPickIds;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-template <typename TLev2Viewport>
-PickBuffer<TLev2Viewport>::PickBuffer(	lev2::OffscreenBuffer *Parent,
-											TLev2Viewport *pVP,
-											int iX, int iY, int iW, int iH,
-											EPickBufferType etyp )
-
-	: PickBufferBase( Parent, iX, iY, iW, iH, etyp )
-	, mpViewport( pVP )
-{
-	Init();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-}} //namespace ork { namespace lev2 {
+}} // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

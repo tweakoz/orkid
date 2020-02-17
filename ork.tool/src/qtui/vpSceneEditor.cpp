@@ -62,10 +62,6 @@ using namespace ork::lev2;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template class ork::lev2::PickBuffer<ork::ent::SceneEditorVP>;
-
-///////////////////////////////////////////////////////////////////////////////
-
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SceneEditorView, "SceneEditorView");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SceneEditorVP, "SceneEditorVP");
 
@@ -230,7 +226,7 @@ void SceneEditorVP::RegisterInitCallback(ork::ent::SceneEditorInitCb icb) {
   mInitCallbacks.insert(icb);
 }
 void SceneEditorVP::IncPickDirtyCount(int icount) {
-  mpPickBuffer->SetDirty(true);
+  // _pickbuffer->SetDirty(true);
 }
 void SceneEditorView::SlotModelDirty() {
   mVP->IncPickDirtyCount(1);
@@ -244,15 +240,11 @@ SceneEditorView::SceneEditorView(SceneEditorVP* vp)
 ///////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::DoInit(ork::lev2::Context* pTARG) {
-  mpPickBuffer = new lev2::PickBuffer<SceneEditorVP>(
-      pTARG->FBI()->GetThisBuffer(), this, 0, 0, 1024, 1024, lev2::PickBufferBase::EPICK_FACE_VTX);
-  mpPickBuffer->RefClearColor().SetRGBAU32(0);
-  mpPickBuffer->initContext();
-  mpPickBuffer->context()->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
+  _pickbuffer = new ScenePickBuffer(this, pTARG);
 
   pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
 
-  // orkprintf("PickBuffer<%p>\n", mpPickBuffer);
+  // orkprintf("PickBuffer<%p>\n", _pickbuffer);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -279,9 +271,9 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     _ctxbase = mpTarget->GetCtxBase();
   }
 
-  int TARGW           = mpTarget->mainSurfaceWidth();
-  int TARGH           = mpTarget->mainSurfaceHeight();
-  const SRect tgtrect = SRect(0, 0, TARGW, TARGH);
+  int TARGW          = mpTarget->mainSurfaceWidth();
+  int TARGH          = mpTarget->mainSurfaceHeight();
+  const auto tgtrect = ViewportRect(0, 0, TARGW, TARGH);
   _renderer->setContext(mpTarget);
   ////////////////////////////////////////////////
   lev2::RenderContextFrameData RCFD(mpTarget);
@@ -307,6 +299,9 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   _gimpl.pushCPD(TOPCPD);
   GL_ERRORCHECK();
   if (nullptr == compsys or nullptr == sim) {
+    //////////////////////////////////////////////////////////////////////
+    // no compositor case
+    //////////////////////////////////////////////////////////////////////
     // still want to draw something so we know the editor is alive..
     GL_ERRORCHECK();
     mpTarget->beginFrame();
@@ -314,11 +309,11 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     // we must still consume DrawableBuffers (since the compositor cannot)
     const DrawableBuffer* DB = DrawableBuffer::acquireReadDB(7);
     FBI->SetAutoClear(true);
-    FBI->SetViewport(0, 0, TARGW, TARGH);
-    FBI->SetScissor(0, 0, TARGW, TARGH);
+    FBI->setViewport(ViewportRect(0, 0, TARGW, TARGH));
+    FBI->setScissor(ViewportRect(0, 0, TARGW, TARGH));
     this->Clear();
     DrawHUD(RCFD);
-    DrawSpinner(RCFD);
+    DrawBorder(RCFD);
     if (DB) {
       DrawableBuffer::releaseReadDB(DB);
     } // release consumed DB
@@ -345,10 +340,10 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
   _renderer->setContext(mpTarget);
   auto mainrect = mpTarget->mainSurfaceRectAtWindowPos();
-  SetRect(mainrect.miX, mainrect.miY, mainrect.miX2, mainrect.miY2);
+  SetRect(mainrect._x, mainrect._y, mainrect._w, mainrect._h);
   FBI->SetAutoClear(true);
-  FBI->SetViewport(0, 0, TARGW, TARGH);
-  FBI->SetScissor(0, 0, TARGW, TARGH);
+  FBI->setViewport(ViewportRect(0, 0, TARGW, TARGH));
+  FBI->setScissor(ViewportRect(0, 0, TARGW, TARGH));
   mpTarget->debugPopGroup();
   GL_ERRORCHECK();
   mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
@@ -405,7 +400,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     DrawChildren(drwev);
     mpTarget->debugPopGroup();
     if (false == FBI->isPickState())
-      DrawSpinner(RCFD);
+      DrawBorder(RCFD);
   }
   mpTarget->endFrame();
   mpTarget->debugPopGroup();
@@ -422,8 +417,8 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   // filth up the pick buffer
   ///////////////////////////////////////////////////////
   if (miPickDirtyCount > 0) {
-    if (mpPickBuffer) {
-      mpPickBuffer->SetDirty(true);
+    if (_pickbuffer) {
+      // _pickbuffer->SetDirty(true);
       miPickDirtyCount--;
     }
   }
@@ -552,15 +547,15 @@ void SceneEditorVP::UpdateRefreshPolicy() {
 void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
   lev2::Context* pTARG = FrameData.GetTarget();
   mpTarget->debugPushGroup("toolvp::DrawHUD");
-  auto MTXI               = pTARG->MTXI();
-  auto GBI                = pTARG->GBI();
-  const auto& topCPD      = FrameData.topCPD();
-  const SRect& frame_rect = topCPD.GetDstRect();
+  auto MTXI              = pTARG->MTXI();
+  auto GBI               = pTARG->GBI();
+  const auto& topCPD     = FrameData.topCPD();
+  const auto& frame_rect = topCPD.GetDstRect();
 
-  int itx0 = frame_rect.miX;
-  int itx1 = frame_rect.miX2;
-  int ity0 = frame_rect.miY;
-  int ity1 = frame_rect.miY2;
+  int itx0 = frame_rect._x;
+  int itx1 = frame_rect._x + frame_rect._w;
+  int ity0 = frame_rect._y;
+  int ity1 = frame_rect._y + frame_rect._h;
 
   if (pTARG->hiDPI()) {
     itx0 /= 2;
@@ -659,9 +654,9 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
 
       static lev2::GfxMaterialUITextured UiMat(pTARG);
 
-      if (mpPickBuffer) {
-        if (mpPickBuffer->mpPickRtGroup) {
-          auto mrt = mpPickBuffer->mpPickRtGroup->GetMrt(1);
+      if (_pickbuffer) {
+        if (_pickbuffer->_rtgroup) {
+          auto mrt = _pickbuffer->_rtgroup->GetMrt(1);
           auto mtl = mrt->GetMaterial();
           ptex     = mrt->texture();
           if (mtl) {
@@ -845,14 +840,14 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& RCFD, ork::lev2
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::DrawSpinner(lev2::RenderContextFrameData& RCFD) {
+void SceneEditorVP::DrawBorder(lev2::RenderContextFrameData& RCFD) {
   const auto& topCPD = RCFD.topCPD();
   bool bhasfocus     = HasKeyboardFocus();
-  float fw           = topCPD.GetDstRect().miW;
-  float fh           = topCPD.GetDstRect().miH;
+  float fw           = topCPD.GetDstRect()._w;
+  float fh           = topCPD.GetDstRect()._h;
   auto TGT           = RCFD.GetTarget();
 
-  mpTarget->debugPushGroup("toolvp::DrawSpinner");
+  mpTarget->debugPushGroup("toolvp::DrawBorder");
 
   auto MTXI       = TGT->MTXI();
   ork::fmtx4 mtxP = MTXI->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);

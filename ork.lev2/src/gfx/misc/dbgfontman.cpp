@@ -233,7 +233,7 @@ void FontMan::DrawText(Context* pTARG, int iX, int iY, const char* pFmt, ...) {
   int iSY     = fdesc.miAdvanceHeight;
   int ishifty = fdesc.miYShift;
 
-  SRect& VPRect = pTARG->FBI()->GetViewport();
+  auto VPRect = pTARG->FBI()->viewport();
 
   ///////////////////////////////////
   int iRow = 0;

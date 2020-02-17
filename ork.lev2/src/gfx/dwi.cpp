@@ -1,4 +1,3 @@
-#pragma once
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/ui/ui.h>

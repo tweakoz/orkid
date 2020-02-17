@@ -115,7 +115,7 @@ struct GlRasterStateInterface : public RasterStateInterface {
   void SetBlending(EBlending eVal) override;
   void SetDepthTest(EDepthTest eVal) override;
   void SetCullTest(ECullTest eVal) override;
-  void SetScissorTest(EScissorTest eVal) override;
+  void setScissorTest(EScissorTest eVal) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -216,9 +216,8 @@ public:
   void SetRtGroup(RtGroup* Base) final;
   void Clear(const fcolor4& rCol, float fdepth) final;
   void clearDepth(float fdepth) final;
-  void SetViewport(int iX, int iY, int iW, int iH) final;
-  void SetScissor(int iX, int iY, int iW, int iH) final;
-  void PushScissor(const SRect& rScissorRect) final;
+  void _setViewport(int iX, int iY, int iW, int iH) final;
+  void _setScissor(int iX, int iY, int iW, int iH) final;
   void _doBeginFrame(void) final;
   void _doEndFrame(void) final;
   bool capture(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer) final;
@@ -226,7 +225,6 @@ public:
   bool CaptureToTexture(const CaptureBuffer& capbuf, Texture& tex) final { return false; }
   bool captureAsFormat(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer, EBufferFormat destfmt) final;
   void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) final;
-  SRect& PopScissor(void) final;
 
   void rtGroupClear(RtGroup*rtg) final;
   void rtGroupMipGen(RtGroup*rtg) final;

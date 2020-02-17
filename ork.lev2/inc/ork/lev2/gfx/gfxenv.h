@@ -165,11 +165,11 @@ public:
   inline float mainSurfaceAspectRatio() const {
     return float(miW) / float(miH);
   }
-  inline SRect mainSurfaceRectAtWindowPos() const {
-    return SRect(0, 0, miW, miH);
+  inline ViewportRect mainSurfaceRectAtWindowPos() const {
+    return ViewportRect(0, 0, miW, miH);
   }
-  inline SRect mainSurfaceRectAtOrigin() const {
-    return SRect(0, 0, miW, miH);
+  inline ViewportRect mainSurfaceRectAtOrigin() const {
+    return ViewportRect(0, 0, miW, miH);
   }
   inline void resizeMainSurface(int iw, int ih) {
     _doResizeMainSurface(iw, ih);

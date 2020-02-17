@@ -473,7 +473,7 @@ void ManipManager::DrawManip(Manip* pmanip, Context* pTARG) {
   if (!pmanip)
     return;
 
-  lev2::PickBufferBase* pickBuf = pTARG->FBI()->GetCurrentPickBuffer();
+  lev2::PickBuffer* pickBuf = pTARG->FBI()->GetCurrentPickBuffer();
 
   uint64_t pickID = pickBuf ? pickBuf->AssignPickId((ork::Object*)pmanip) : 0;
   fcolor4 col     = pmanip->GetColor();

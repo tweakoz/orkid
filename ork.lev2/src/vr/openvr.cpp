@@ -347,9 +347,9 @@ void composite(lev2::Context* targ, Texture* twoeyetex) {
 
     int w = device()._width;
     int h = device()._height;
-    SRect VPRect(0, 0, w * 2, h);
-    fbi->PushViewport(VPRect);
-    fbi->PushScissor(VPRect);
+    ViewportRect VPRect(0, 0, w * 2, h);
+    fbi->pushViewport(VPRect);
+    fbi->pushScissor(VPRect);
 
     //////////////////////////////////////////////////
     // submit to openvr compositor
@@ -363,8 +363,8 @@ void composite(lev2::Context* targ, Texture* twoeyetex) {
     // undo above PushVp/Scissor
     //////////////////////////////////////////////////
 
-    fbi->PopViewport();
-    fbi->PopScissor();
+    fbi->popViewport();
+    fbi->popScissor();
   }
 }
 
