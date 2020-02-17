@@ -31,6 +31,7 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 extern bool _HIDPI();
+extern bool _MIXEDDPI();
 extern float _currentDPI();
 
 typedef SVtxV12C4T16 TEXT_VTXFMT;

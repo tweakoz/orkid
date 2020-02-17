@@ -224,9 +224,9 @@
                                     <object type='EditorCamControllerData' id='19'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='20'>
-                                                <property name='Center'>-150.801 216.885 508.754</property>
-                                                <property name='Loc'>1000</property>
-                                                <property name='QuatC'>-0.190229 -0.774655 0.103412 -0.594837</property>
+                                                <property name='Center'>-100.567 287.994 393.588</property>
+                                                <property name='Loc'>284.425</property>
+                                                <property name='QuatC'>0.00757645 -0.986855 0.139775 0.0861309</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>100000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -371,7 +371,7 @@
                         <property name='Name'>"Light"</property>
                         <property name='DagNode'>
                             <object type='Ent3dDagNode' id='33'>
-                                <property name='TransformNode'>0.980777 -0.183289 -0.0669269 0 0.1869 0.980982 0.0523524 0 0.0560585 -0.0638547 0.996382 0 -54.5493 199.323 465.812 1</property>
+                                <property name='TransformNode'>0.471899 -0.0540622 -0.879986 0 0.0644604 -0.993325 0.0955925 0 -0.879286 -0.101835 -0.465267 0 -43.595 288.301 470.739 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
@@ -473,19 +473,21 @@
                                                     <property name='Dynamic'>false</property>
                                                     <property name='LightData'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='PointLightData' id='45'>
-                                                                <property name='Color'>1000 1000 1000</property>
+                                                            <object type='SpotLightData' id='45'>
+                                                                <property name='Color'>0 -50000 -80000</property>
                                                                 <property name='Cookie'>
                                                                     <reference category='AssetClass'>
-                                                                        "lev2tex" "data://environ/envmaps/tozenv_colornoise"
+                                                                        "lev2tex" "data://particle_textures/skull1"
                                                                     </reference>
                                                                 </property>
-                                                                <property name='ShadowBias'>0.2</property>
+                                                                <property name='Decal'>false</property>
+                                                                <property name='ShadowBias'>0.002</property>
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>false</property>
+                                                                <property name='ShadowMapSize'>1024</property>
                                                                 <property name='ShadowSamples'>1</property>
-                                                                <property name='Falloff'>1.66346</property>
-                                                                <property name='Radius'>502.395</property>
+                                                                <property name='Fovy'>65.5102</property>
+                                                                <property name='Range'>300.02</property>
                                                             </object>
                                                         </reference>
                                                     </property>
@@ -960,9 +962,11 @@
                                                 <object type='PointLightData' id='110'>
                                                     <property name='Color'>2 1.5 0</property>
                                                     <property name='Cookie'><backreference id='-1'/></property>
+                                                    <property name='Decal'>false</property>
                                                     <property name='ShadowBias'>0.2</property>
                                                     <property name='ShadowBlur'>0</property>
                                                     <property name='ShadowCaster'>false</property>
+                                                    <property name='ShadowMapSize'>1024</property>
                                                     <property name='ShadowSamples'>1</property>
                                                     <property name='Falloff'>1</property>
                                                     <property name='Radius'>684.446</property>
@@ -1177,6 +1181,7 @@
                 <reference category='SystemDataClass'>
                     <object type='VrSystemData' id='134'>
                         <property name='TrackingObjectEntity'>"vrtrackedobject"</property>
+                        <property name='UseCameraView'>false</property>
                         <property name='VisualOffset'>0 0 0</property>
                         <property name='VrCameraEntity'>"vrcamera"</property>
                     </object>
@@ -1198,6 +1203,7 @@
                 <reference category='SystemDataClass'>
                     <object type='VrSystemData' id='137'>
                         <property name='TrackingObjectEntity'>"spawnloc"</property>
+                        <property name='UseCameraView'>false</property>
                         <property name='VisualOffset'>0 2 0</property>
                         <property name='VrCameraEntity'>"spawncam"</property>
                     </object>

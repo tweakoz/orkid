@@ -498,6 +498,9 @@ void recomputeHIDPI(Context* ctx){
 bool _HIDPI() {
   return false;
 }
+bool _MIXEDDPI() {
+  return false;
+}
 float _currentDPI(){
   return 221.0f; // hardcoded to macbook pro for now..
 }

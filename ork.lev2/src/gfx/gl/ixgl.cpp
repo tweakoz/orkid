@@ -35,6 +35,7 @@ namespace ork { namespace lev2 {
 typedef ::Window x11_window_t; // contained alias of X11 Window Class (conflicts with lev2::Window)
 
 bool _hakHIDPI       = false;
+bool _hakMixedDPI    = false;
 float _hakCurrentDPI = 95.0f;
 
 ork::MpMcBoundedQueue<void*> ContextGL::_loadTokens;
@@ -450,6 +451,9 @@ void recomputeHIDPI(Context* ctx) {
   XGetWindowAttributes(x_dpy, x_window, &xwa);
   winpos_x -= xwa.x;
   winpos_y -= xwa.y;
+
+  int numlodpi = 0;
+  int numhidpi = 0;
   // printf("winx: %d winy: %d\n", winpos_x, winpos_y);
   ///////////////////////
   // int DWMM       = DisplayWidthMM(x_dpy, x_screen);
@@ -493,13 +497,18 @@ void recomputeHIDPI(Context* ctx) {
         double pix_width  = crtc_info->width;
         double pix_height = crtc_info->height;
         int rot           = crtc_info->rotation;
+        float CDPIX       = pix_width / mm_width * 25.4f;
+        float CDPIY       = pix_height / mm_height * 25.4f;
+        float avgdpi      = (CDPIX + CDPIY) * 0.5f;
+        float is_hidpi    = avgdpi > 180.0f;
+        if (is_hidpi)
+          numhidpi++;
+        else
+          numlodpi++;
 
         if ((winpos_x >= pix_left) and (winpos_x < (pix_left + pix_width)) and (winpos_y >= pix_top) and
             (winpos_y < (pix_left + pix_height))) {
-          float CDPIX    = pix_width / mm_width * 25.4f;
-          float CDPIY    = pix_height / mm_height * 25.4f;
-          float avgdpi   = (CDPIX + CDPIY) * 0.5f;
-          _hakHIDPI      = avgdpi > 180.0f;
+          _hakHIDPI      = is_hidpi;
           _hakCurrentDPI = avgdpi;
           // printf("_hakHIDPI<%d>\n", int(_hakHIDPI));
         }
@@ -521,7 +530,11 @@ void recomputeHIDPI(Context* ctx) {
       }
 
       XRRFreeOutputInfo(info);
-    }
+    } // for each screen
+    // printf("numhidpi<%d>\n", numhidpi);
+    // printf("numlodpi<%d>\n", numlodpi);
+    _hakMixedDPI = (numhidpi > 0) and (numlodpi > 1);
+    // printf("_hakMixedDPI<%d>\n", int(_hakMixedDPI));
   }
 } // namespace lev2
 
@@ -529,6 +542,9 @@ void recomputeHIDPI(Context* ctx) {
 
 bool _HIDPI() {
   return _hakHIDPI;
+}
+bool _MIXEDDPI() {
+  return _hakMixedDPI;
 }
 float _currentDPI() {
   return _hakCurrentDPI;
