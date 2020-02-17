@@ -285,7 +285,7 @@ fmtx4 SpotLight::shadowMatrix() const {
   fvec3 wnx, wny, wnz, wpos;
   matW.toNormalVectors(wnx, wny, wnz);
   wpos      = matW.GetTranslation();
-  fvec3 ctr = wpos - wnz * 0.01;
+  fvec3 ctr = wpos + wnz * 0.01;
   fmtx4 matV, matP;
   matV.LookAt(wpos, ctr, wny);
   matP.Perspective(fovy, aspect, near, far);
