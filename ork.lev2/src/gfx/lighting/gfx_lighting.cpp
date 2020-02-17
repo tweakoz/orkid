@@ -93,7 +93,7 @@ void PointLightData::describeX(class_t* c) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PointLight::PointLight(const fmtx4& mtx, const PointLightData* pld)
+PointLight::PointLight(xform_generator_t mtx, const PointLightData* pld)
     : Light(mtx, pld)
     , _pldata(pld) {
 }
@@ -138,7 +138,7 @@ bool PointLight::AffectsCircleXZ(const Circle& cirXZ) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-DirectionalLight::DirectionalLight(const fmtx4& mtx, const DirectionalLightData* dld)
+DirectionalLight::DirectionalLight(xform_generator_t mtx, const DirectionalLightData* dld)
     : Light(mtx, dld) {
 }
 
@@ -157,7 +157,7 @@ bool DirectionalLight::IsInFrustum(const Frustum& frustum) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-AmbientLight::AmbientLight(const fmtx4& mtx, const AmbientLightData* dld)
+AmbientLight::AmbientLight(xform_generator_t mtx, const AmbientLightData* dld)
     : Light(mtx, dld)
     , mAld(dld) {
 }
@@ -202,7 +202,7 @@ SpotLightData::SpotLightData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SpotLight::SpotLight(const fmtx4& mtx, const SpotLightData* sld)
+SpotLight::SpotLight(xform_generator_t mtx, const SpotLightData* sld)
     : Light(mtx, sld)
     , _SLD(sld)
     , _shadowRTG(nullptr)
@@ -285,7 +285,7 @@ fmtx4 SpotLight::shadowMatrix() const {
   fvec3 wnx, wny, wnz, wpos;
   matW.toNormalVectors(wnx, wny, wnz);
   wpos      = matW.GetTranslation();
-  fvec3 ctr = wpos + wnz;
+  fvec3 ctr = wpos - wnz * 0.01;
   fmtx4 matV, matP;
   matV.LookAt(wpos, ctr, wny);
   matP.Perspective(fovy, aspect, near, far);
@@ -560,7 +560,7 @@ LightingGroup::LightingGroup()
 ///////////////////////////////////////////////////////////////////////////////
 
 HeadLightManager::HeadLightManager(RenderContextFrameData& FrameData)
-    : mHeadLight(mHeadLightMatrix, &mHeadLightData)
+    : mHeadLight([this]() -> fmtx4 { return mHeadLightMatrix; }, &mHeadLightData)
     , mHeadLightManager(mHeadLightManagerData) {
   auto cdata = FrameData.topCPD().cameraMatrices();
   /*

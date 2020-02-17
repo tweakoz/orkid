@@ -489,9 +489,11 @@ void CollectLights(MeshUtil::LightContainer& lc, const SceneData* psd, const std
             const ork::lev2::SpotLightData* psld        = rtti::autocast(plightdata);
             const ork::lev2::AmbientLightData* pald     = rtti::autocast(plightdata);
             fvec3 LightColor                            = plightdata->GetColor();
-            MeshUtil::Light* pgl                        = 0;
+            auto mtxgen                                 = [&MtxWorld]() -> fmtx4 { return MtxWorld; };
+
+            MeshUtil::Light* pgl = 0;
             if (pdld) {
-              ork::lev2::DirectionalLight dlight(MtxWorld, pdld);
+              ork::lev2::DirectionalLight dlight(mtxgen, pdld);
               ork::fvec3 LightDir      = dlight.direction();
               MeshUtil::DirLight* pgdl = new MeshUtil::DirLight;
               pgdl->mWorldMatrix       = MtxWorld;
@@ -501,7 +503,7 @@ void CollectLights(MeshUtil::LightContainer& lc, const SceneData* psd, const std
               pgl                      = pgdl;
             }
             if (ppld) {
-              ork::lev2::PointLight plight(MtxWorld, ppld);
+              ork::lev2::PointLight plight(mtxgen, ppld);
               ork::fvec3 LightDir        = plight.direction();
               MeshUtil::PointLight* pgpl = new MeshUtil::PointLight;
               pgpl->mWorldMatrix         = MtxWorld;

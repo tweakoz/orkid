@@ -109,10 +109,12 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+typedef std::function<fmtx4()> xform_generator_t;
+
 struct Light {
 
-  Light(const fmtx4& mtx, const LightData* ld = 0)
-      : _worldMatrix(mtx)
+  Light(xform_generator_t mtx, const LightData* ld = 0)
+      : _xformgenerator(mtx)
       , _data(ld)
       , _dynamic(false)
       , mPriority(0.0f) {
@@ -130,14 +132,14 @@ struct Light {
   const fvec3& color() const {
     return _data->GetColor();
   }
-  const fmtx4& worldMatrix() const {
-    return _worldMatrix;
+  fmtx4 worldMatrix() const {
+    return _xformgenerator();
   }
   fvec3 worldPosition() const {
-    return _worldMatrix.GetTranslation();
+    return worldMatrix().GetTranslation();
   }
   fvec3 direction() const {
-    return _worldMatrix.GetZNormal();
+    return worldMatrix().GetZNormal();
   }
   float distance(fvec3 pos) const;
   Texture* cookie() const {
@@ -150,7 +152,7 @@ struct Light {
     return _data->GetShadowBias();
   }
   const LightData* _data;
-  const fmtx4& _worldMatrix;
+  xform_generator_t _xformgenerator;
 
   float mPriority;
   int miInFrustumID;
@@ -198,7 +200,7 @@ struct PointLight : public Light {
     return _pldata->radius();
   }
 
-  PointLight(const fmtx4& mtx, const PointLightData* pld = 0);
+  PointLight(xform_generator_t mtx, const PointLightData* pld = 0);
 
   const PointLightData* _pldata;
 };
@@ -234,7 +236,7 @@ public:
     return ELIGHTTYPE_DIRECTIONAL;
   }
 
-  DirectionalLight(const fmtx4& mtx, const DirectionalLightData* dld = 0);
+  DirectionalLight(xform_generator_t mtx, const DirectionalLightData* dld = 0);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -291,7 +293,7 @@ public:
     return mAld->GetHeadlightDir();
   }
 
-  AmbientLight(const fmtx4& mtx, const AmbientLightData* dld = 0);
+  AmbientLight(xform_generator_t mtx, const AmbientLightData* dld = 0);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -339,7 +341,7 @@ public:
   fmtx4 shadowMatrix() const;
   CameraData shadowCamDat() const;
 
-  SpotLight(const fmtx4& mtx, const SpotLightData* sld = 0);
+  SpotLight(xform_generator_t mtx, const SpotLightData* sld = 0);
 
   fmtx4 mProjectionMatrix;
   fmtx4 mViewMatrix;

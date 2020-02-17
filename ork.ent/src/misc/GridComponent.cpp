@@ -11,6 +11,7 @@
 #include <ork/rtti/downcast.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/texman.h>
+#include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
@@ -128,7 +129,13 @@ struct impl {
     auto mtxi = targ->MTXI();
     auto gbi  = targ->GBI();
     mtxi->PushMMatrix(pent->GetEffectiveMatrix());
-    targ->PushModColor(fcolor4::Green());
+    fvec4 modcolor = fcolor4::Green();
+    if (isPickState) {
+      auto pickBuf = targ->FBI()->currentPickBuffer();
+      uint64_t pid = pickBuf ? pickBuf->AssignPickId((ork::Object*)pent) : 0;
+      modcolor.SetRGBAU64(pid);
+    }
+    targ->PushModColor(modcolor);
     targ->PushMaterial(pimpl->_material);
     gbi->DrawPrimitive(vw, EPRIM_TRIANGLES, 6);
     targ->PopModColor();
@@ -137,7 +144,7 @@ struct impl {
   static void enqueueOnLayerCallback(DrawableBufItem& cdb) {
     // AssertOnOpQ2( updateSerialQueue() );
   }
-};
+}; // namespace ent
 
 ///////////////////////////////////////////////////////////////////////////////
 

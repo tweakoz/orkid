@@ -444,8 +444,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     vec3 diffuse_env = env_equirectangular(diffn,MapDiffuseEnv,0)*DiffuseLevel;
     vec3 diffuse_light = ambient+diffuse_env;
     /////////////////////////
-    vec3 diffuse1 = clamp(basecolor*diffuse_light*dialetric*ambocc,0,10000);
-    vec3 diffuse = mix( diffuse1, basecolor, emissive );
+    vec3 diffuse = clamp(basecolor*diffuse_light*dialetric*ambocc,0,10000);
     /////////////////////////
     float spec_miplevel = clamp(EnvironmentMipBias + (roughness * EnvironmentMipScale), 0, 10);
     refl = vec3(refl.x,-refl.y,refl.z);
@@ -456,7 +455,8 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     /////////////////////////
     vec3 finallitcolor = saturateV(diffuse+specular);
     float depth_fogval = saturateF(pow(gbd._fogZ*DepthFogDistance,DepthFogPower));
-    return mix(finallitcolor,skyboxColor,saturateF(rmao.w+depth_fogval));
+    vec3 out1 = mix(finallitcolor,skyboxColor,saturateF(rmao.w+depth_fogval));
+    return out1; //mix(out1,basecolor,emissive);
   } // vec3 environmentLighting(){
 
 WPosData stereoWPD(){

@@ -157,6 +157,7 @@ ui::HandlerResult ManipHandler::DoOnUiEvent(const ui::Event& EV) {
       pickctx->is_right                     = isright;
       pickctx->mHandler                     = this;
       pickctx->mViewport                    = GetViewport();
+      pickctx->_gfxContext                  = EV._context;
       pickctx->mOnPick                      = the_block;
       OuterPickOp(pickctx);
       ///////////////////////////////////////////////////////////

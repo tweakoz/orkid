@@ -61,7 +61,7 @@ GedVP::~GedVP() {
 
 ///////////////////////////////////////////////////////////////////////////////
 void GedVP::DoInit(lev2::Context* pt) {
-  auto par     = pt->FBI()->GetThisBuffer();
+  auto par    = pt->FBI()->GetThisBuffer();
   _pickbuffer = new ork::lev2::PickBuffer(this, pt, 0, 0);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -74,7 +74,7 @@ void GedVP::DoSurfaceResize() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GedVP::DoRePaintSurface(ui::DrawEvent& drwev) {
-  printf("GedVP<%p>::Draw x<%d> y<%d> w<%d> h<%d>\n", this, miX, miY, miW, miH);
+  // printf("GedVP<%p>::Draw x<%d> y<%d> w<%d> h<%d>\n", this, miX, miY, miW, miH);
 
   // ork::tool::ged::ObjModel::FlushAllQueues();
 

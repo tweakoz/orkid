@@ -147,6 +147,11 @@ void ManipSingleTrans::Draw(Context* pTARG) const {
   fquat rot;
   float scale;
 
+  const RenderContextFrameData* RCFD = pTARG->topRenderContextFrameData();
+  const auto& CPD                    = RCFD->topCPD();
+  auto mcams                         = CPD._cameraMatrices;
+  auto vmatrix                       = mcams->_vmatrix;
+
   mManager.mCurTransform.GetMatrix(Mat);
   Mat.decompose(pos, rot, scale);
   VisMat.compose(pos, rot, 1.0f);
@@ -166,9 +171,8 @@ void ManipSingleTrans::Draw(Context* pTARG) const {
     v_dir = fvec4(0.0f, 0.0f, 1.0f, 0.0f);
   }
 
-  fmtx4 VMatrix   = pTARG->MTXI()->RefVMatrix();
   fvec4 wvx       = v_dir.Transform(VisMat);
-  fvec4 clip_vdir = wvx.Transform(VMatrix);
+  fvec4 clip_vdir = wvx.Transform(vmatrix);
   if (fabs(clip_vdir.GetZ()) >= vizthresh) {
     bdrawok = false;
   }

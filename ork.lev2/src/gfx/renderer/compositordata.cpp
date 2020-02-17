@@ -23,6 +23,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/application/application.h>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
@@ -86,7 +87,7 @@ void CompositingData::presetDefault() {
 void CompositingData::presetPicking() {
 
   auto t1 = new NodeCompositingTechnique;
-  auto o1 = new ScreenOutputCompositingNode;
+  auto o1 = new RtGroupOutputCompositingNode;
   auto r1 = new PickingCompositingNode;
   t1->_writeOutputNode(o1);
   t1->_writeRenderNode(r1);

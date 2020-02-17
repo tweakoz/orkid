@@ -130,7 +130,7 @@ void ManipManager::materialBegin(Context* targ) {
   _material->_baseColor = targ->RefModColor().xyz();
   _material->BeginBlock(targ, _RCID);
   _material->BeginPass(targ, 0);
-  //  _material->setupCamera(*RCFD);
+  _material->setupCamera(*RCFD);
 }
 ////////////////////////////////////////////////////////////////////////////////
 void ManipManager::materialEnd(Context* targ) {
@@ -442,7 +442,7 @@ void ManipManager::Setup(ork::lev2::IRenderer* prend) {
     _material->Init(pTARG);
     _material->_texColor  = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/white")->GetTexture();
     _material->_texNormal = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/black")->GetTexture();
-    _material->_texMtlRuf = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/white")->GetTexture();
+    _material->_texMtlRuf = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/white_1alpha")->GetTexture();
     _material->_baseColor = fvec3(1, 1, 1);
     _material->_rasterstate.SetDepthTest(EDEPTHTEST_OFF);
 

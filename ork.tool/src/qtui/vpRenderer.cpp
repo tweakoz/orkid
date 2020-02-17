@@ -127,6 +127,7 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
 
   if (is_pick_state) {
     uint64_t pid = pickBuf ? pickBuf->AssignPickId((ork::Object*)ModelRen.GetObject()) : 0;
+    printf("AssignPickId<%zx>\n", pid);
     ObjColor.SetRGBAU64(pid);
   } else if (is_sel) {
     ObjColor = fcolor4::Red();

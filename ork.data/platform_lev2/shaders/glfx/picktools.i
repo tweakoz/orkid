@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////
 uniform_set ub_pick {
-  vec4 modcolor;
+  vec4 ModColor;
   mat4 mvp;
 }
 ///////////////////////////////////////////////////////////////
@@ -30,12 +30,12 @@ fragment_interface iface_fpick : ub_pick {
 vertex_shader vs_rigid_picking
 	: iface_vpick {
 		gl_Position = mvp*position;
-    frg_clr = modcolor;
+    frg_clr = ModColor;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader fs_picking
 	: iface_fpick {
-		out_clr = vec4(1,0,0,1);
+		out_clr = ModColor;
     out_nrmd = vec4(0,1,0,0);
 }
 ///////////////////////////////////////////////////////////////

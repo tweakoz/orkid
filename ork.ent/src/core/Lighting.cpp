@@ -77,19 +77,19 @@ LightingComponentInst::LightingComponentInst(const LightingComponentData& data, 
   ork::lev2::SpotLightData* sptlight_data        = ork::rtti::autocast(lightdata);
   ork::lev2::AmbientLightData* amblight_data     = ork::rtti::autocast(lightdata);
 
-  auto& ent_xf = _entity->GetDagNode().GetTransformNode().GetTransform().GetMatrix();
+  auto xfgen = [this]() -> fmtx4 { return this->_entity->GetEffectiveMatrix(); };
 
   if (amblight_data) {
-    _light = new ork::lev2::AmbientLight(ent_xf, amblight_data);
+    _light = new ork::lev2::AmbientLight(xfgen, amblight_data);
   }
   if (dirlight_data) {
-    _light = new ork::lev2::DirectionalLight(ent_xf, dirlight_data);
+    _light = new ork::lev2::DirectionalLight(xfgen, dirlight_data);
   }
   if (pntlight_data) {
-    _light = new ork::lev2::PointLight(ent_xf, pntlight_data);
+    _light = new ork::lev2::PointLight(xfgen, pntlight_data);
   }
   if (sptlight_data) {
-    _light = new ork::lev2::SpotLight(ent_xf, sptlight_data);
+    _light = new ork::lev2::SpotLight(xfgen, sptlight_data);
   }
 
   struct yo {

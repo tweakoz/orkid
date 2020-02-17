@@ -258,25 +258,30 @@ bool PBRMaterial::BeginPass(Context* targ, int iPass) {
   const RenderContextInstData* RCID  = targ->GetRenderContextInstData();
   const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
   const auto& CPD                    = RCFD->topCPD();
+  bool is_picking                    = CPD.isPicking();
+  const auto& world                  = mtxi->RefMMatrix();
   fxi->BindPass(_shader, 0);
-  fxi->BindParamCTex(_shader, _paramMapColor, _texColor);
-  fxi->BindParamCTex(_shader, _paramMapNormal, _texNormal);
-  fxi->BindParamCTex(_shader, _paramMapMtlRuf, _texMtlRuf);
+
+  fvec4 modcolor = _baseColor;
+  if (is_picking) {
+    modcolor = targ->RefModColor();
+    // printf("modcolor<%g %g %g %g>\n", modcolor.x, modcolor.y, modcolor.z, modcolor.w);
+  } else {
+    fxi->BindParamCTex(_shader, _paramMapColor, _texColor);
+    fxi->BindParamCTex(_shader, _paramMapNormal, _texNormal);
+    fxi->BindParamCTex(_shader, _paramMapMtlRuf, _texMtlRuf);
+    fxi->BindParamFloat(_shader, _parMetallicFactor, _metallicFactor);
+    fxi->BindParamFloat(_shader, _parRoughnessFactor, _roughnessFactor);
+    auto brdfintegtex = PBRMaterial::brdfIntegrationMap(targ);
+    const auto& drect = CPD.GetDstRect();
+    const auto& mrect = CPD.GetMrtRect();
+    float w           = mrect._w;
+    float h           = mrect._h;
+    fxi->BindParamVect2(_shader, _parInvViewSize, fvec2(1.0 / w, 1.0f / h));
+  }
+
+  fxi->BindParamVect4(_shader, _parModColor, modcolor);
   fxi->BindParamMatrix(_shader, _paramMV, mvmtx);
-
-  fxi->BindParamFloat(_shader, _parMetallicFactor, _metallicFactor);
-  fxi->BindParamFloat(_shader, _parRoughnessFactor, _roughnessFactor);
-  fxi->BindParamVect4(_shader, _parModColor, _baseColor);
-
-  auto brdfintegtex = PBRMaterial::brdfIntegrationMap(targ);
-
-  const auto& world = mtxi->RefMMatrix();
-  const auto& drect = CPD.GetDstRect();
-  const auto& mrect = CPD.GetMrtRect();
-  float w           = mrect._w;
-  float h           = mrect._h;
-  // printf( "w<%g> h<%g>\n", w, h );
-  fxi->BindParamVect2(_shader, _parInvViewSize, fvec2(1.0 / w, 1.0f / h));
 
   if (CPD.isStereoOnePass() and CPD._stereoCameraMatrices) {
     auto stereomtx = CPD._stereoCameraMatrices;
