@@ -90,7 +90,7 @@ void Surface::DoDraw(DrawEvent& drwev) {
     mRtGroup->Resize(isurfw, isurfh);
     mNeedsSurfaceRepaint = true;
   }
-  if (true) { // mNeedsSurfaceRepaint || IsDirty()) {
+  if (mNeedsSurfaceRepaint || IsDirty()) {
     fbi->PushRtGroup(mRtGroup);
     RePaintSurface(drwev);
     fbi->PopRtGroup();

@@ -146,7 +146,7 @@ struct PbrNodeImpl {
     CIMPL->pushCPD(_context._accumCPD); // base lighting
     FBI->SetAutoClear(true);
     FBI->PushRtGroup(_context._rtgLaccum);
-    targ->beginFrame();
+    //targ->beginFrame();
     FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
     //////////////////////////////////////////////////////////////////
     if (auto lmgr = CIMPL->lightManager()) {
@@ -227,7 +227,7 @@ struct PbrNodeImpl {
     /////////////////////////////////
 
     CIMPL->popCPD(); // base lighting
-    targ->endFrame();
+    //targ->endFrame();
     FBI->PopRtGroup(); // deferredRtg
 
     targ->debugPopGroup(); // "Deferred::LightAccum"
@@ -263,7 +263,7 @@ DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
         tex,
         tex->_debugName.c_str(),
         datablock->length());
-    targ->beginFrame();
+    //targ->beginFrame();
     boost::Crc64 hasher;
     hasher.accumulateString("irradiancemap");
     hasher.accumulateItem<uint64_t>(datablock->hash()); // data content
@@ -284,7 +284,7 @@ DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
       // DataBlockCache::setDataBlock(cachekey, irrmapdblock);
       datablock = irrmapdblock;
     }
-    targ->endFrame();
+    //targ->endFrame();
     return datablock;
   };
 }

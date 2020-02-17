@@ -70,6 +70,7 @@ float Context::currentDPI() const {
 
 void Context::beginFrame(void) {
 
+  makeCurrentContext();
   auto mainrect = mainSurfaceRectAtOrigin();
   FBI()->setViewport(mainrect);
   FBI()->setScissor(mainrect);

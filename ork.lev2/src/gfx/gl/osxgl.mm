@@ -206,6 +206,7 @@ ContextGL::~ContextGL(){}
 /////////////////////////////////////////////////////////////////////////
 
 void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
+  meTargetType = ETGTTYPE_WINDOW;
 	///////////////////////
 	GlOsxPlatformObject* plato = new GlOsxPlatformObject;
 	mCtxBase = pctxbase;
@@ -339,6 +340,7 @@ void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
 
 void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
 {
+  meTargetType = ETGTTYPE_OFFSCREEN;
 	///////////////////////
 
 	miW = pBuf->GetBufferW();
@@ -395,6 +397,8 @@ void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
 
 void ContextGL::initializeLoaderContext() {
 
+  meTargetType = ETGTTYPE_LOADING;
+
 miW = 8;
 miH = 8;
 
@@ -412,17 +416,18 @@ plato->mbInit = false;
 _defaultRTG = new RtGroup(this,miW,miH,1);
 auto rtb = new RtBuffer(ERTGSLOT0,EBUFFMT_RGBA8,miW,miH);
 _defaultRTG->SetMrt(0,rtb);
-
-//////////////////////////////////////////
-// Bind Texture
-//////////////////////////////////////////
-
   auto texture = _defaultRTG->GetMrt(0)->texture();
-
-	FBI()->SetBufferTexture( texture );
+  FBI()->SetBufferTexture(texture);
 
 plato->mBindOp = [=](){
 	[plato->mNSOpenGLContext makeCurrentContext];
+    if (this->mTargetDrawableSizeDirty) {
+      int w = mainSurfaceWidth();
+      int h = mainSurfaceHeight();
+      printf("resizing defaultRTG<%p>\n", _defaultRTG);
+      _defaultRTG->Resize(w, h);
+      mTargetDrawableSizeDirty = false;
+    }
 };
 }
 
