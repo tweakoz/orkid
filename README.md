@@ -31,8 +31,8 @@ Some Features Include:
 * Fairly lightweight build. A clean build builds in about 5 mins on a 2.8ghz 4core ivybridge 2013 macbook pro or 80 seconds on a 2.8ghz 20core ivybridge xeon. This time does not include time building dependencies (Qt5,OpenImageIO,etc..)
 * Many more...
 
-![PBR](./ork.data/misc/th_screenshot_pbr.png )
-![PBR](./ork.data/misc/th_shadowedptexspotlight.png )
+<a href="https://media.githubusercontent.com/media/tweakoz/orkid/master/ork.data/misc/screenshot_pbr.png"><img src="https://github.com/tweakoz/orkid/blob/master/ork.data/misc/th_screenshot_pbr.png" title="Github Logo"></a>
+<a href="https://media.githubusercontent.com/media/tweakoz/orkid/master/ork.data/misc/shadowedptexspotlight.png"><img src="https://github.com/tweakoz/orkid/blob/master/ork.data/misc/th_shadowedptexspotlight.png" title="Github Logo"></a>
 
 ![Particles](http://tweakoz.com/resources/images/th_sshot_psys.jpg)
 
