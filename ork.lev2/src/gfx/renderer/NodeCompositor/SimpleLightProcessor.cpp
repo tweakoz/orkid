@@ -112,11 +112,12 @@ void SimpleLightProcessor::renderLights(CompositorDrawData& drawdata, const View
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SimpleLightProcessor::_updatePointLightUBOparams(Context* ctx, pointlightlist_t& lights, fvec3 campos) {
-  auto FXI          = ctx->FXI();
-  size_t offset_cd  = 0;
-  size_t offset_mtx = offset_cd + KMAXLIGHTSPERCHUNK * sizeof(fvec4);
-  size_t offset_rad = offset_mtx + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
-  size_t numlights  = lights.size();
+  auto FXI           = ctx->FXI();
+  size_t offset_cd   = 0;
+  size_t offset_mtx  = offset_cd + KMAXLIGHTSPERCHUNK * sizeof(fvec4);
+  size_t offset_mtx2 = offset_mtx + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
+  size_t offset_rad  = offset_mtx2 + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
+  size_t numlights   = lights.size();
   OrkAssert(numlights < KMAXLIGHTSPERCHUNK);
   ctx->debugPushGroup("SimpleLightProcessor::_updatePointLightUBOparams");
   auto mapping = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
@@ -128,6 +129,7 @@ void SimpleLightProcessor::_updatePointLightUBOparams(Context* ctx, pointlightli
     mapping->ref<fmtx4>(offset_mtx) = light->worldMatrix();
     offset_cd += sizeof(fvec4);
     offset_mtx += sizeof(fmtx4);
+    offset_mtx2 += sizeof(fmtx4);
     offset_rad += sizeof(float);
   }
   FXI->unmapParamBuffer(mapping.get());
@@ -140,22 +142,25 @@ void SimpleLightProcessor::_updatePointLightUBOparams(Context* ctx, pointlightli
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SimpleLightProcessor::_updateSpotLightUBOparams(Context* ctx, spotlightlist_t& lights, fvec3 campos) {
-  auto FXI          = ctx->FXI();
-  size_t offset_cd  = 0;
-  size_t offset_mtx = offset_cd + KMAXLIGHTSPERCHUNK * sizeof(fvec4);
-  size_t offset_rad = offset_mtx + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
-  size_t numlights  = lights.size();
+  auto FXI           = ctx->FXI();
+  size_t offset_cd   = 0;
+  size_t offset_mtx  = offset_cd + KMAXLIGHTSPERCHUNK * sizeof(fvec4);
+  size_t offset_mtx2 = offset_mtx + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
+  size_t offset_rad  = offset_mtx2 + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
+  size_t numlights   = lights.size();
   OrkAssert(numlights < KMAXLIGHTSPERCHUNK);
   ctx->debugPushGroup("SimpleLightProcessor::_updateSpotLightUBOparams");
   auto mapping = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
   for (auto light : lights) {
-    fvec3 color                     = light->color();
-    float dist2cam                  = light->distance(campos);
-    mapping->ref<fvec4>(offset_cd)  = fvec4(color, dist2cam);
-    mapping->ref<float>(offset_rad) = light->GetRange();
-    mapping->ref<fmtx4>(offset_mtx) = light->shadowMatrix();
+    fvec3 color                      = light->color();
+    float dist2cam                   = light->distance(campos);
+    mapping->ref<fvec4>(offset_cd)   = fvec4(color, dist2cam);
+    mapping->ref<float>(offset_rad)  = light->GetRange();
+    mapping->ref<fmtx4>(offset_mtx)  = light->worldMatrix();
+    mapping->ref<fmtx4>(offset_mtx2) = light->shadowMatrix();
     offset_cd += sizeof(fvec4);
     offset_mtx += sizeof(fmtx4);
+    offset_mtx2 += sizeof(fmtx4);
     offset_rad += sizeof(float);
   }
   FXI->unmapParamBuffer(mapping.get());

@@ -12,9 +12,9 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>-4.42835 1.34252 -0.982634</property>
-                                                <property name='Loc'>23.0471</property>
-                                                <property name='QuatC'>-0.303847 0.375265 -0.0978144 -0.87086</property>
+                                                <property name='Center'>-1.04172 1.58688 2.21234</property>
+                                                <property name='Loc'>40.4227</property>
+                                                <property name='QuatC'>-0.14189 0.490706 -0.0611757 -0.858164</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -105,7 +105,7 @@
                         <property name='Name'>"Light1"</property>
                         <property name='DagNode'>
                             <object type='Ent3dDagNode' id='12'>
-                                <property name='TransformNode'>1 -0 0 0 0 0.00925875 0.999957 0 -0 -0.999957 0.00925875 0 0 9.35601 0.136466 1</property>
+                                <property name='TransformNode'>1 -0 0 0 0 0.00925875 0.999957 0 -0 -0.999957 0.00925875 0 0 7.14705 0.156919 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>

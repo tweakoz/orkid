@@ -63,6 +63,7 @@ uniform_set ub_frg {
 uniform_block ub_light {
   vec4 LightColorD[256];
   mat4 LightMatrix[256];
+  mat4 ShadowMatrix[256];
   float LightRadius[256];
 }
 ///////////////////////////////////////////////////////////////
@@ -280,10 +281,12 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
   };
   SpotLightCalc2 slcalc(GBufData gbd,int lidx){
     SpotLightCalc2 slc;
-    vec3 lightpos = -LightMatrix[lidx][3].xyz;
-    slc._lightdel = lightpos - gbd._wpos;
-    float lightrange = LightRadius[lidx];
-    vec4 light_hpos = LightMatrix[lidx]*vec4(gbd._wpos,1);
+    mat4 lmtx = LightMatrix[lidx];
+    mat4 shmtx = ShadowMatrix[lidx];
+    vec3 lightpos = (lmtx)[3].xyz;
+    slc._lightdel = lightpos-gbd._wpos;
+    float lightrange = 100.0f;//LightRadius[lidx];
+    vec4 light_hpos = (shmtx)*vec4(gbd._wpos,1);
     vec3 light_ndc = (light_hpos.xyz / light_hpos.w);
     slc._lightz = light_ndc.z;
     slc._lightuv = light_ndc.xy*0.5+vec2(0.5);
@@ -378,7 +381,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       int lbeg = int(frg_uvb.x);
       int lend = lbeg+int(frg_uvb.y);
       for (int lidx = lbeg; lidx<lend; lidx++) {
-        vec3 lightpos = LightMatrix[lidx][3].xyz;
+        vec3 lightpos = inverse(LightMatrix[lidx])[3].xyz;
         plc._lightdel = lightpos - gbd._wpos;
         vec3 lightcol = LightColorD[lidx].xyz;
         l += plcalc2(plc,gbd)*lightcol;

@@ -289,6 +289,7 @@ void GlFrameBufferInterface::Clear(const fcolor4& color, float fdepth) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::clearDepth(float fdepth) {
+  glDepthRange(0.0, 1.0f);
   glClearDepth(fdepth);
   GL_ERRORCHECK();
   glClear(GL_DEPTH_BUFFER_BIT);

@@ -824,6 +824,7 @@ void SceneEditorVP::DrawManip(lev2::CompositorDrawData& CDD, ork::lev2::Context*
   const auto& topCPD = RCFD.topCPD();
   OrkAssert(RCFD._cimpl == CIMPL);
   pOutputTarget->debugPushGroup("toolvp::DrawManip");
+  pOutputTarget->FBI()->clearDepth(0.0);
   auto MTXI = pOutputTarget->MTXI();
   MTXI->PushPMatrix(these_cam_mats->_pmatrix);
   MTXI->PushVMatrix(these_cam_mats->_vmatrix);
