@@ -127,7 +127,7 @@ public:
   void UpdateScene(lev2::DrawableBuffer* pdb);
 
   ///////////////////////////////////////////////////
-  void DrawManip(lev2::RenderContextFrameData& fdata, lev2::Context* pProxyTarg);
+  void DrawManip(lev2::CompositorDrawData& CDD, lev2::Context* pProxyTarg);
   void DrawGrid(lev2::RenderContextFrameData& fdata);
   void DrawHUD(lev2::RenderContextFrameData& FrameData);
   void DrawBorder(lev2::RenderContextFrameData& FrameData);

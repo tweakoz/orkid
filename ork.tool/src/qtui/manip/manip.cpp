@@ -117,28 +117,6 @@ ManipManager::ManipManager()
   SetupSignalsAndSlots();
 }
 
-void ManipManager::materialBegin(Context* targ) {
-  auto RCFD       = targ->topRenderContextFrameData();
-  auto FBI        = targ->FBI();
-  auto FXI        = targ->FXI();
-  auto CIMPL      = RCFD->_cimpl;
-  const auto& CPD = CIMPL->topCPD();
-  auto mtxi       = targ->MTXI();
-  bool is_pick    = FBI->isPickState();
-  bool is_stereo  = CPD.isStereoOnePass();
-
-  _material->_baseColor = targ->RefModColor().xyz();
-  _material->BeginBlock(targ, _RCID);
-  _material->BeginPass(targ, 0);
-  _material->setupCamera(*RCFD);
-}
-////////////////////////////////////////////////////////////////////////////////
-void ManipManager::materialEnd(Context* targ) {
-  auto RCFD = targ->topRenderContextFrameData();
-  _material->EndPass(targ);
-  _material->EndBlock(targ);
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
 void ManipManager::SlotObjectDeleted(ork::Object* pOBJ) {
@@ -413,6 +391,45 @@ float ManipManager::CalcViewScale(float fW, float fH, const CameraMatrices* camm
   return rscale;
 }
 
+void ManipManager::materialBegin(Context* targ) {
+  auto RCFD       = targ->topRenderContextFrameData();
+  auto FBI        = targ->FBI();
+  auto FXI        = targ->FXI();
+  auto MTXI       = targ->MTXI();
+  auto CIMPL      = RCFD->_cimpl;
+  const auto& CPD = CIMPL->topCPD();
+  auto mtxi       = targ->MTXI();
+  bool is_pick    = FBI->isPickState();
+  bool is_stereo  = CPD.isStereoOnePass();
+
+  _material->bindTechnique(_tek_modcolor);
+  _material->begin(*RCFD);
+  _material->bindParamVec4(_par_modcolor, targ->RefModColor());
+
+  const auto& world = MTXI->RefMMatrix();
+  if (is_stereo and CPD._stereoCameraMatrices) {
+    auto stereomtx = CPD._stereoCameraMatrices;
+    auto MVPL      = stereomtx->MVPL(world);
+    auto MVPR      = stereomtx->MVPR(world);
+    // todo fix for stereo..
+    // FXI->BindParamMatrix(_shader, _paramMVPL, MVPL);
+    // FXI->BindParamMatrix(_shader, _paramMVPR, MVPR);
+  } else if (CPD._cameraMatrices) {
+    auto mcams = CPD._cameraMatrices;
+    auto MVP   = world * mcams->_vmatrix * mcams->_pmatrix;
+    _material->bindParamMatrix(_par_mvp, MVP);
+  } else {
+    auto MVP = MTXI->RefMVPMatrix();
+    _material->bindParamMatrix(_par_mvp, MVP);
+  }
+  //_material->setupCamera(*RCFD);
+}
+////////////////////////////////////////////////////////////////////////////////
+void ManipManager::materialEnd(Context* targ) {
+  auto RCFD = targ->topRenderContextFrameData();
+  _material->end(*RCFD);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void ManipManager::Setup(ork::lev2::IRenderer* prend) {
@@ -438,13 +455,14 @@ void ManipManager::Setup(ork::lev2::IRenderer* prend) {
   //////////////////////////////////////////////////////////////
 
   if (0 == _material) {
-    _material = new PBRMaterial;
-    _material->Init(pTARG);
-    _material->_texColor  = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/white")->GetTexture();
-    _material->_texNormal = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/black")->GetTexture();
-    _material->_texMtlRuf = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/white_1alpha")->GetTexture();
-    _material->_baseColor = fvec3(1, 1, 1);
+    _material = new FreestyleMaterial;
+    _material->gpuInit(pTARG, "orkshader://solid");
+    _tek_modcolor = _material->technique("mmodcolor");
+    _par_modcolor = _material->param("modcolor");
+    _par_mvp      = _material->param("MatMVP");
     _material->_rasterstate.SetDepthTest(EDEPTHTEST_OFF);
+    _material->_rasterstate.SetAlphaTest(EALPHATEST_OFF);
+    _material->_rasterstate.SetCullTest(ECULLTEST_OFF);
 
     if (mpTXManip == 0)
       mpTXManip = new ManipTX(*this);

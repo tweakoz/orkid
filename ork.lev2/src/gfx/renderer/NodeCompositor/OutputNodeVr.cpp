@@ -129,52 +129,31 @@ struct VRIMPL {
 
     /////////////////////////////////////////////////////////////////////////////
 
-    _CPD.AddLayer("All"_pool);
-
     if (use_vr)
       orkidvr::gpuUpdate(RCFD);
 
     ///////////////////////////////////
-    // float w = _rtg->GetW(); float h = _rtg->GetH();
-    ///////////////////////////////////
-
-    ViewportRect tgt_rect(0, 0, _width, _height);
-
-    _CPD.mbDrawSource = true;
-    _CPD.mpFrameTek   = nullptr;
-    _CPD.mpCameraName = nullptr;
-    _CPD.mpLayerName  = nullptr; // default == "All"
-    _CPD._clearColor  = fvec4(0.61, 0, 0, 1);
-
-    //////////////////////////////////////////////////////
-    // is stereo active
-    //////////////////////////////////////////////////////
 
     auto& VRDEV = orkidvr::device();
+
+    drawdata._properties["OutputWidth"_crcu].Set<int>(_width);
+    drawdata._properties["OutputHeight"_crcu].Set<int>(_height);
+    bool doing_stereo = (use_vr and VRDEV._supportsStereo);
+    drawdata._properties["StereoEnable"_crcu].Set<bool>(doing_stereo);
+    if (simrunning)
+      drawdata._properties["simcammtx"_crcu].Set<const CameraMatrices*>(VRDEV._centercamera);
 
     if (use_vr and VRDEV._supportsStereo) {
       _stereomatrices->_left  = VRDEV._leftcamera;
       _stereomatrices->_right = VRDEV._rightcamera;
       _stereomatrices->_mono  = VRDEV._leftcamera;
-      _CPD.setStereoOnePass(true);
-      _CPD._stereoCameraMatrices = _stereomatrices;
-      _CPD._cameraMatrices       = nullptr;
-    } else {
-      ////////////////////////////////////////////////
-      // no stereo cam support, override cam with center side of stereocam
-      //  eg. when using mac VR emulation
-      ////////////////////////////////////////////////
-      _CPD.setStereoOnePass(false);
-      _CPD._stereoCameraMatrices = nullptr;
-      _CPD._cameraMatrices       = simrunning ? VRDEV._centercamera : ddprops["defcammtx"_crcu].Get<const CameraMatrices*>();
-      ////////////////////////////////////////////////
+      drawdata._properties["StereoMatrices"_crcu].Set<const StereoCameraMatrices*>(_stereomatrices);
     }
+
+    _CPD.defaultSetup(drawdata);
 
     //////////////////////////////////////////////////////
 
-    _CPD.SetDstRect(tgt_rect);
-    drawdata._properties["OutputWidth"_crcu].Set<int>(_width);
-    drawdata._properties["OutputHeight"_crcu].Set<int>(_height);
     CIMPL->pushCPD(_CPD);
   }
   ///////////////////////////////////////

@@ -106,6 +106,8 @@ void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
     if (aok)
       _gimpl.composite(drawdata);
 
+    _scenevp->DrawManip(drawdata, target);
+
     _context->PopModColor();
     FBI->PopRtGroup();
     FBI->LeavePickState();

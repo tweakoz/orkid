@@ -451,7 +451,10 @@ public:
   TransformNode mParentTransform;
 
   RenderContextInstData _RCID;
-  PBRMaterial* _material;
+  FreestyleMaterial* _material;
+  const FxShaderTechnique* _tek_modcolor;
+  const FxShaderParam* _par_modcolor;
+  const FxShaderParam* _par_mvp;
   Manip* mpTXManip;
   Manip* mpTYManip;
   Manip* mpTZManip;

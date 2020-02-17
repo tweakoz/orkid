@@ -141,6 +141,8 @@ struct CompositingPassData {
     return _cameraMatrices or _stereoCameraMatrices;
   }
 
+  void defaultSetup(CompositorDrawData& drawdata);
+
   const Frustum& monoCamFrustum() const;
   const fvec3& monoCamZnormal() const;
   fvec3 monoCamPos(const fmtx4& vizoffsetmtx) const;
@@ -193,7 +195,6 @@ struct CompositorDrawData {
   RenderContextFrameData& RCFD();
   const RenderContextFrameData& RCFD() const;
   ViewData computeViewData() const;
-
   CompositingImpl* _cimpl = nullptr;
   std::map<uint64_t, svar16_t> _properties;
   lev2::FrameRenderer& mFrameRenderer;

@@ -35,6 +35,7 @@ const RenderContextFrameData& CompositorDrawData::RCFD() const {
 Context* CompositorDrawData::context() const {
   return RCFD().GetTarget();
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 
 ViewData CompositorDrawData::computeViewData() const {

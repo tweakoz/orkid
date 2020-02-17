@@ -64,22 +64,13 @@ struct RTGIMPL {
     _width  = w;
     _height = h;
     //////////////////////////////////////////////////////
-    ViewportRect tgt_rect(0, 0, _width, _height);
-
-    _CPD.AddLayer("All"_pool);
-    _CPD.mbDrawSource = true;
-    _CPD.mpFrameTek   = nullptr;
-    _CPD.mpCameraName = nullptr;
-    _CPD.mpLayerName  = nullptr; // default == "All"
-    _CPD._clearColor  = fvec4(0.61, 0, 0, 1);
-
-    _CPD._cameraMatrices = ddprops["defcammtx"_crcu].Get<const CameraMatrices*>();
-
-    _CPD.SetDstRect(tgt_rect);
     drawdata._properties["OutputWidth"_crcu].Set<int>(_width);
     drawdata._properties["OutputHeight"_crcu].Set<int>(_height);
+    drawdata._properties["StereoEnable"_crcu].Set<bool>(false);
+    _CPD.defaultSetup(drawdata);
     CIMPL->pushCPD(_CPD);
   }
+  ///////////////////////////////////////
   void endAssemble(CompositorDrawData& drawdata) {
     auto CIMPL                   = drawdata._cimpl;
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;

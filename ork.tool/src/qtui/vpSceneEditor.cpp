@@ -386,21 +386,24 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     compsys->_impl.composite(drawdata);
   mpTarget->debugPopGroup();
   // todo - lock sim
+  GL_ERRORCHECK();
   RCFD._cimpl->popCPD();
   RCFD._cimpl = &_gimpl;
-  GL_ERRORCHECK();
   //////////////////////////////////////////////////
   // after composite:
   //  render hud and other 2d non-content layers
   //////////////////////////////////////////////////
   mpTarget->debugPushGroup("toolvp::DRAWEND");
   if (gtoggle_hud) {
+
     DrawHUD(RCFD);
     mpTarget->debugPushGroup("toolvp::DRAWEND::Children");
     DrawChildren(drwev);
     mpTarget->debugPopGroup();
     if (false == FBI->isPickState())
       DrawBorder(RCFD);
+    // if (mEditor.mpScene)
+    DrawManip(drawdata, mpTarget);
   }
   mpTarget->endFrame();
   mpTarget->debugPopGroup();
@@ -485,10 +488,10 @@ void SceneEditorVP::renderMisc(lev2::RenderContextFrameData& RCFD) {
   static lev2::SRasterState defstate;
   gfxtarg->RSI()->BindRasterState(defstate, true);
   /////////////////////////////////////////
-  gfxtarg->debugPushGroup("toolvp::DrawManip");
-  if (mEditor.mpScene)
-    DrawManip(RCFD, gfxtarg);
-  gfxtarg->debugPopGroup();
+  // gfxtarg->debugPushGroup("toolvp::DrawManip");
+  // if (mEditor.mpScene)
+  // DrawManip(RCFD, gfxtarg);
+  // gfxtarg->debugPopGroup();
   /////////////////////////////////////////
   gfxtarg->debugPushGroup("toolvp::DrawGrid");
   if (false == FBI->isPickState())
@@ -791,16 +794,39 @@ void SceneEditorVP::DrawGrid(ork::lev2::RenderContextFrameData& RCFD) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& RCFD, ork::lev2::Context* pProxyTarg) {
-  const auto& topCPD = RCFD.topCPD();
-  auto cammatrices   = topCPD.cameraMatrices();
-  if (nullptr == cammatrices)
-    return;
-
+void SceneEditorVP::DrawManip(lev2::CompositorDrawData& CDD, ork::lev2::Context* pProxyTarg) {
+  FrameRenderer& framerenderer      = CDD.mFrameRenderer;
+  RenderContextFrameData& RCFD      = framerenderer.framedata();
+  auto CIMPL                        = RCFD._cimpl;
   ork::lev2::Context* pOutputTarget = RCFD.GetTarget();
-  auto MTXI                         = pOutputTarget->MTXI();
-  MTXI->PushPMatrix(cammatrices->_pmatrix);
-  MTXI->PushVMatrix(cammatrices->_vmatrix);
+
+  CDD._properties["OutputWidth"_crcu].Set<int>(miW);
+  CDD._properties["OutputHeight"_crcu].Set<int>(miH);
+  CDD._properties["StereoEnable"_crcu].Set<bool>(false);
+  lev2::CompositingPassData myCPD;
+  myCPD.defaultSetup(CDD);
+
+  /////////////////////////////////////////
+  static auto these_cam_mats = new CameraMatrices;
+  const DrawableBuffer* DB   = DrawableBuffer::acquireReadDB(7); // mDbLock.Aquire(7);
+  if (DB) {
+    auto spncam = (CameraData*)DB->cameraData("spawncam"_pool);
+    if (spncam) {
+      (*these_cam_mats) = spncam->computeMatrices(float(miW) / float(miH));
+    }
+    CDD._properties["defcammtx"_crcu].Set<const CameraMatrices*>(these_cam_mats);
+    DrawableBuffer::releaseReadDB(DB); // mDbLock.Aquire(7);
+  }
+  /////////////////////////////////////////
+
+  myCPD._cameraMatrices = these_cam_mats;
+  RCFD._cimpl->pushCPD(myCPD);
+  const auto& topCPD = RCFD.topCPD();
+  OrkAssert(RCFD._cimpl == CIMPL);
+  pOutputTarget->debugPushGroup("toolvp::DrawManip");
+  auto MTXI = pOutputTarget->MTXI();
+  MTXI->PushPMatrix(these_cam_mats->_pmatrix);
+  MTXI->PushVMatrix(these_cam_mats->_vmatrix);
   MTXI->PushMMatrix(fmtx4::Identity);
   {
     switch (ManipManager().GetUIMode()) {
@@ -819,25 +845,28 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& RCFD, ork::lev2
         fvec3 Pos = MatW.GetTranslation();
         fvec3 UpVector;
         fvec3 RightVector;
-        cammatrices->GetPixelLengthVectors(Pos, VP, UpVector, RightVector);
+        these_cam_mats->GetPixelLengthVectors(Pos, VP, UpVector, RightVector);
         float rscale = RightVector.Mag(); // float(100.0f);
         // printf( "OUTERmanip rscale<%f>\n", rscale );
 
         static float fRSCALE = 1.0f;
 
-        if (topCPD.isPicking()) {
+        if (myCPD.isPicking()) {
           ManipManager().SetViewScale(fRSCALE);
         } else {
           float fW = float(pOutputTarget->mainSurfaceWidth());
           float fH = float(pOutputTarget->mainSurfaceHeight());
-          fRSCALE  = ManipManager().CalcViewScale(fW, fH, cammatrices);
+          fRSCALE  = ManipManager().CalcViewScale(fW, fH, these_cam_mats);
           ManipManager().SetViewScale(fRSCALE);
         }
 
         ///////////////////////////////////////
 
         ManipManager().Setup(GetRenderer());
-        ManipManager().Queue(GetRenderer());
+        // ManipManager().Queue(GetRenderer());
+        ManipManager().SetDrawMode(0);
+        ManipManager().DrawCurrentManipSet(pOutputTarget);
+
         GetRenderer()->setContext(pOutputTarget);
         break;
       }
@@ -848,6 +877,8 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& RCFD, ork::lev2
   MTXI->PopPMatrix();
   MTXI->PopVMatrix();
   MTXI->PopMMatrix();
+  RCFD._cimpl->popCPD();
+  pOutputTarget->debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////

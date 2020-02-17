@@ -13,7 +13,7 @@
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
                                                 <property name='Center'>3.50665 3.30226 1.94168</property>
-                                                <property name='Loc'>15.2209</property>
+                                                <property name='Loc'>29.0211</property>
                                                 <property name='QuatC'>-0.167538 0.145049 -0.040033 -0.974807</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
@@ -218,6 +218,7 @@
                                                                 <property name='ShadowBias'>0.2</property>
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>false</property>
+                                                                <property name='ShadowMapSize'>1024</property>
                                                                 <property name='ShadowSamples'>1</property>
                                                                 <property name='Fovy'>48.3673</property>
                                                                 <property name='Range'>34.9796</property>
@@ -689,6 +690,7 @@
                                                     <property name='ShadowBias'>0.2</property>
                                                     <property name='ShadowBlur'>0</property>
                                                     <property name='ShadowCaster'>false</property>
+                                                    <property name='ShadowMapSize'>1024</property>
                                                     <property name='ShadowSamples'>1</property>
                                                     <property name='Fovy'>108.98</property>
                                                     <property name='Range'>82.551</property>
@@ -777,6 +779,7 @@
                                                                                 <reference category='ObjectClass'>
                                                                                     <object type='ScreenOutputCompositingNode' id='98'>
                                                                                         <property name='Layer'>"All"</property>
+                                                                                        <property name='SuperSample'>0</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>
@@ -786,7 +789,7 @@
                                                                                     <object type='DeferredCompositingNodePbr' id='99'>
                                                                                         <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
-                                                                                        <property name='DepthFogDistance'>458.106</property>
+                                                                                        <property name='DepthFogDistance'>2309.21</property>
                                                                                         <property name='DepthFogPower'>4.28885</property>
                                                                                         <property name='DiffuseLevel'>0.381679</property>
                                                                                         <property name='EnvironmentIntensity'>3.81679</property>

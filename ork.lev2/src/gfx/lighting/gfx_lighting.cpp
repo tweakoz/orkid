@@ -303,7 +303,7 @@ CameraData SpotLight::shadowCamDat() const {
   fvec3 wnx, wny, wnz, wpos;
   matW.toNormalVectors(wnx, wny, wnz);
   wpos      = matW.GetTranslation();
-  fvec3 ctr = wpos + wnz;
+  fvec3 ctr = wpos + wnz * 0.01;
 
   rval.mEye       = wpos;
   rval.mTarget    = ctr;

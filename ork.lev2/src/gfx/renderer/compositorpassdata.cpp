@@ -33,6 +33,36 @@ CompositingPassData CompositingPassData::FromRCFD(const RenderContextFrameData& 
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void CompositingPassData::defaultSetup(CompositorDrawData& drawdata) {
+  this->AddLayer("All"_pool);
+  this->mbDrawSource = true;
+  this->mpFrameTek   = nullptr;
+  this->mpCameraName = nullptr;
+  this->mpLayerName  = nullptr;
+  this->_clearColor  = fvec4(0, 0, 0, 0);
+  int w              = drawdata._properties["OutputWidth"_crcu].Get<int>();
+  int h              = drawdata._properties["OutputHeight"_crcu].Get<int>();
+  ViewportRect tgt_rect(0, 0, w, h);
+  this->SetDstRect(tgt_rect);
+  bool stereo = drawdata._properties["StereoEnable"_crcu].Get<bool>();
+  this->setStereoOnePass(stereo);
+  this->_cameraMatrices       = nullptr;
+  this->_stereoCameraMatrices = nullptr;
+  if (auto try_scm = drawdata._properties["StereoMatrices"_crcu].TryAs<const StereoCameraMatrices*>()) {
+    this->_stereoCameraMatrices = try_scm.value();
+  } else {
+    bool simrunning = drawdata._properties["simrunning"_crcu].Get<bool>();
+    if (auto try_def = drawdata._properties["defcammtx"_crcu].TryAs<const CameraMatrices*>()) {
+      this->_cameraMatrices = try_def.value();
+    }
+    if (auto try_sim = drawdata._properties["simcammtx"_crcu].TryAs<const CameraMatrices*>()) {
+      this->_cameraMatrices = try_sim.value();
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 fvec3 CompositingPassData::monoCamPos(const fmtx4& vizoffsetmtx) const {
   // vizoffsetmtx : use in visual offset cases such as the heightfield
   //   (todo: elaborate on this subject)
