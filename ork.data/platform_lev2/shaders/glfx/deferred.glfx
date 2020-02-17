@@ -285,7 +285,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     mat4 shmtx = ShadowMatrix[lidx];
     vec3 lightpos = (lmtx)[3].xyz;
     slc._lightdel = lightpos-gbd._wpos;
-    float lightrange = 100.0f;//LightRadius[lidx];
+    float lightrange = LightRadius[lidx];
     vec4 light_hpos = (shmtx)*vec4(gbd._wpos,1);
     vec3 light_ndc = (light_hpos.xyz / light_hpos.w);
     slc._lightz = light_ndc.z;
@@ -358,7 +358,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
       int lend = lbeg+int(frg_uvb.y);
       for (int lidx = lbeg; lidx<lend; lidx++) {
         float lightrange = LightRadius[lidx];
-        vec4 light_hpos = LightMatrix[lidx]*vec4(gbd._wpos,1);
+        vec4 light_hpos = ShadowMatrix[lidx]*vec4(gbd._wpos,1);
         vec3 light_ndc = (light_hpos.xyz / light_hpos.w);
         vec2 light_uv = light_ndc.xy*0.5+vec2(0.5);
         float mask = float(light_ndc.x>=-1 && light_ndc.x<1) *

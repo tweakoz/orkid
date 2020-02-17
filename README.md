@@ -6,7 +6,7 @@
 
 ### Description
 
-Orkid is a flexible media presentation engine. By media, we mean games, realtime 2d/3d graphics, and/or audio. Orkid itself is licensed with the permissive Boost Software License v1.0, that said Orkid does have dependencies on other libraries which will have different licenses and it is left up to the user to remain compliant with them. Orkid, being fairly modular can be run with less dependencies and reduced functionality to simplify license creep. 
+Orkid is a flexible media presentation engine. By media, we mean games, realtime 2d/3d graphics, and/or audio. Orkid itself is licensed with the permissive Boost Software License v1.0, that said Orkid does have dependencies on other libraries which will have different licenses and it is left up to the user to remain compliant with them. Orkid, being fairly modular can be run with less dependencies and reduced functionality to simplify license creep.
 
 Some Features Include:
 * Built in multiplatform asset management.
@@ -19,7 +19,7 @@ Some Features Include:
 * External references of character archetypes (prefabs) for sharing across scenes.
 * Generic dataflow modeling primitives used for modular audio synthesis, modular particle systems and modular terrain synthesis .
 * Flexible simulation architecture does not to dictate game/simulation policy, but does provide tools to help with implementation.
-* Game-Genre agnostic.. 
+* Game-Genre agnostic..
 * Integrated Bullet Physics Engine.
 * GlFx shader based renderer. Uses OpenGL 4.1 on OSX and 4.5 on Linux.
 * Deferred Renderer with MetallicRoughness-PBR / Light Projection support
@@ -32,6 +32,7 @@ Some Features Include:
 * Many more...
 
 ![PBR](./ork.data/misc/th_screenshot_pbr.png )
+![PBR](./ork.data/misc/th_shadowedptexspotlight.png )
 
 ![Particles](http://tweakoz.com/resources/images/th_sshot_psys.jpg)
 
@@ -39,7 +40,7 @@ Some Features Include:
 
 ![TerrainGen](http://tweakoz.com/resources/images/th_terrain03.jpg)
 
-Other (video) examples of content: 
+Other (video) examples of content:
 
 [Deferred-PBR-SpotLightProjectors-1](https://www.youtube.com/watch?v=AwhDNZPhcBk)
 
@@ -76,5 +77,3 @@ Other (video) examples of content:
 Doxygen
 ========
 http://tweakoz.com:8099/doxygen_html/index.html
-
-

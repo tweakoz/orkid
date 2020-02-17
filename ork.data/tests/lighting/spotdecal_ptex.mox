@@ -12,9 +12,9 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>3.50665 3.30226 1.94168</property>
-                                                <property name='Loc'>29.0211</property>
-                                                <property name='QuatC'>-0.167538 0.145049 -0.040033 -0.974807</property>
+                                                <property name='Center'>1.40325 1.90391 0.790088</property>
+                                                <property name='Loc'>35.3505</property>
+                                                <property name='QuatC'>-0.280661 0.194801 -0.0890303 -0.93612</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -105,7 +105,7 @@
                         <property name='Name'>"Light1"</property>
                         <property name='DagNode'>
                             <object type='Ent3dDagNode' id='12'>
-                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 6 -7 1</property>
+                                <property name='TransformNode'>0.993697 -1.86264e-08 0.11209 0 -0.112087 0.00744044 0.993669 0 -0.000834021 -0.999971 0.00739359 0 -0.185323 7.79392 0.276893 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
@@ -215,12 +215,12 @@
                                                                     </reference>
                                                                 </property>
                                                                 <property name='Decal'>true</property>
-                                                                <property name='ShadowBias'>0.2</property>
+                                                                <property name='ShadowBias'>0.01</property>
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>false</property>
                                                                 <property name='ShadowMapSize'>1024</property>
                                                                 <property name='ShadowSamples'>1</property>
-                                                                <property name='Fovy'>48.3673</property>
+                                                                <property name='Fovy'>91.8367</property>
                                                                 <property name='Range'>34.9796</property>
                                                             </object>
                                                         </reference>
@@ -791,7 +791,7 @@
                                                                                         <property name='ClearColor'>0 0 0 1</property>
                                                                                         <property name='DepthFogDistance'>2309.21</property>
                                                                                         <property name='DepthFogPower'>4.28885</property>
-                                                                                        <property name='DiffuseLevel'>0.381679</property>
+                                                                                        <property name='DiffuseLevel'>1.67939</property>
                                                                                         <property name='EnvironmentIntensity'>3.81679</property>
                                                                                         <property name='EnvironmentMipBias'>0</property>
                                                                                         <property name='EnvironmentMipScale'>9.16031</property>
@@ -801,7 +801,7 @@
                                                                                             </reference>
                                                                                         </property>
                                                                                         <property name='SkyboxLevel'>0.610687</property>
-                                                                                        <property name='SpecularLevel'>1.33588</property>
+                                                                                        <property name='SpecularLevel'>3.43511</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>

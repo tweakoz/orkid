@@ -12,9 +12,9 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>-1.04172 1.58688 2.21234</property>
-                                                <property name='Loc'>40.4227</property>
-                                                <property name='QuatC'>-0.14189 0.490706 -0.0611757 -0.858164</property>
+                                                <property name='Center'>-0.0947328 -2.30028 1.38003</property>
+                                                <property name='Loc'>41.001</property>
+                                                <property name='QuatC'>-0.0545239 0.910785 -0.186701 -0.365726</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -105,7 +105,7 @@
                         <property name='Name'>"Light1"</property>
                         <property name='DagNode'>
                             <object type='Ent3dDagNode' id='12'>
-                                <property name='TransformNode'>1 -0 0 0 0 0.00925875 0.999957 0 -0 -0.999957 0.00925875 0 0 7.14705 0.156919 1</property>
+                                <property name='TransformNode'>1 -0 0 0 0 0.00925881 0.999957 0 -0 -0.999957 0.00925881 0 0 6.25689 0.165161 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
@@ -215,13 +215,13 @@
                                                                     </reference>
                                                                 </property>
                                                                 <property name='Decal'>false</property>
-                                                                <property name='ShadowBias'>0.01</property>
+                                                                <property name='ShadowBias'>0.00105442</property>
                                                                 <property name='ShadowBlur'>0</property>
-                                                                <property name='ShadowCaster'>false</property>
+                                                                <property name='ShadowCaster'>true</property>
                                                                 <property name='ShadowMapSize'>1024</property>
                                                                 <property name='ShadowSamples'>1</property>
-                                                                <property name='Fovy'>112.653</property>
-                                                                <property name='Range'>17.9898</property>
+                                                                <property name='Fovy'>140.204</property>
+                                                                <property name='Range'>45.1735</property>
                                                             </object>
                                                         </reference>
                                                     </property>
@@ -441,7 +441,7 @@
                                                                                 <object type='GradientV4' id='51'>
                                                                                     <property name='points'>
                                                                                         <item key='0'>0 0 0 1</item>
-                                                                                        <item key='0.490991'>0 0 0 0.988281</item>
+                                                                                        <item key='0.458763'>0 0 0 0.988281</item>
                                                                                         <item key='0.608108'>0.894531 0.894531 0.0546875 0.976562</item>
                                                                                         <item key='1'>0.625 0.0390625 0.261719 0.984375</item>
                                                                                     </property>
@@ -545,7 +545,7 @@
                                                                             </property>
                                                                             <property name='BaseOffsetY'>
                                                                                 <object type='dflow/inplugxf<float,floatxf>' id='68'>
-                                                                                    <property name='value'>0.606611</property>
+                                                                                    <property name='value'>0</property>
                                                                                     <property name='xf'>
                                                                                         <object type='dflow/floatxf' id='69'>
                                                                                             <property name='Transforms'>
@@ -790,7 +790,7 @@
                                                                                         <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
                                                                                         <property name='DepthFogDistance'>419.939</property>
-                                                                                        <property name='DepthFogPower'>10.696</property>
+                                                                                        <property name='DepthFogPower'>22.5268</property>
                                                                                         <property name='DiffuseLevel'>1</property>
                                                                                         <property name='EnvironmentIntensity'>1.9084</property>
                                                                                         <property name='EnvironmentMipBias'>0</property>

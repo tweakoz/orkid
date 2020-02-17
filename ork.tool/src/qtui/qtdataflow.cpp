@@ -188,8 +188,8 @@ struct regstr {
 };
 
 void GraphVP::DoInit(lev2::Context* pt) {
-  auto fbi     = pt->FBI();
-  auto par     = fbi->GetThisBuffer();
+  auto fbi    = pt->FBI();
+  auto par    = fbi->GetThisBuffer();
   _pickbuffer = new ork::lev2::PickBuffer(this, pt, 0, 0);
 }
 void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
@@ -535,7 +535,7 @@ ui::HandlerResult GraphVP::DoOnUiEvent(const ui::Event& EV) {
   float fy = float(ilocy) / float(GetH());
 
   lev2::PixelFetchContext ctx;
-  ctx.miMrtMask = (1 << 0) | (1 << 1); // ObjectID and ObjectUVD
+  ctx.miMrtMask = (1 << 0); // | (1 << 1); // ObjectID and ObjectUVD
   ctx.mUsage[0] = lev2::PixelFetchContext::EPU_PTR64;
   ctx.mUsage[1] = lev2::PixelFetchContext::EPU_FLOAT;
 
