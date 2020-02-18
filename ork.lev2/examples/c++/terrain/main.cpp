@@ -17,7 +17,6 @@ using namespace std::string_literals;
 using namespace ork;
 using namespace ork::lev2;
 using namespace ork::lev2::deferrednode;
-typedef SVtxV12C4T16 vtx_t; // position, vertex color, 2 UV sets
 
 int main(int argc, char** argv) {
   auto qtapp  = OrkEzQtApp::create(argc, argv);
@@ -30,7 +29,7 @@ int main(int argc, char** argv) {
   CallbackDrawable* _terrainDrawable;
   DrawQueueXfData _terrainXform;
   //////////////////////////////////////////////////////////
-  // initialize compositor (necessary for PBR models)
+  // initialize compositor data
   //  use a deferredPBR compositing node
   //  which does all the gbuffer and lighting passes
   //////////////////////////////////////////////////////////
@@ -44,7 +43,9 @@ int main(int argc, char** argv) {
   auto rendnode               = nodetek->tryRenderNodeAs<deferrednode::DeferredCompositingNodePbr>();
   rendnode->_depthFogDistance = 4000.0f;
   rendnode->_depthFogPower    = 5.0f;
-
+  ///////////////////////////////////////
+  // compositor instance
+  ///////////////////////////////////////
   CompositingImpl compositorimpl(compositordata);
   compositorimpl.bindLighting(lightmgr.get());
   lev2::CompositingPassData TOPCPD;
@@ -78,22 +79,16 @@ int main(int argc, char** argv) {
     RenderContextFrameData RCFD(context); // renderer per/frame data
     RCFD._cimpl = &compositorimpl;
     context->pushRenderContextFrameData(&RCFD);
-    auto fbi      = context->FBI();  // FrameBufferInterface
-    auto fxi      = context->FXI();  // FX Interface
-    auto mtxi     = context->MTXI(); // matrix Interface
-    auto gbi      = context->GBI();  // GeometryBuffer Interface
+    auto fbi      = context->FBI(); // FrameBufferInterface
     float curtime = timer.SecsSinceStart();
     float dt      = curtime - prevtime;
     prevtime      = curtime;
     ///////////////////////////////////////
     // compute view and projection matrices
     ///////////////////////////////////////
-    float TARGW  = context->mainSurfaceWidth();
-    float TARGH  = context->mainSurfaceHeight();
-    float aspect = TARGW / TARGH;
-    float phase  = curtime * PI2 * 0.1f;
+    float phase = curtime * PI2 * 0.01f;
     fvec3 eye(245, 150, -330);
-    auto tgt = eye + fvec3(sinf(phase), -0.2f, -cosf(phase));
+    auto tgt = eye + fvec3(sinf(phase), -0.1f, -cosf(phase));
     fvec3 up(0, 1, 0);
     camdata.Lookat(eye, tgt, up);
     camdata.Persp(0.1, 6000.0, 45.0);
@@ -101,26 +96,24 @@ int main(int argc, char** argv) {
     // compositor setup
     ///////////////////////////////////////
     lev2::UiViewportRenderTarget rt(nullptr);
+    float TARGW           = context->mainSurfaceWidth();
+    float TARGH           = context->mainSurfaceHeight();
     auto tgtrect          = ViewportRect(0, 0, TARGW, TARGH);
     TOPCPD._irendertarget = &rt;
     TOPCPD.SetDstRect(tgtrect);
     compositorimpl.pushCPD(TOPCPD);
     ///////////////////////////////////////
+    // enqueue terrain
+    ///////////////////////////////////////
     auto DB = DrawableBuffer::LockWriteBuffer(0);
     DB->Reset();
     DB->copyCameras(cameras);
     auto layer = DB->MergeLayer("Default"_pool);
-
-    ////////////////////////////////////////
-
     _terrainXform.mWorldMatrix.compose(fvec3(), fquat(), 1.0f);
     _terrainDrawable->enqueueOnLayer(_terrainXform, *layer);
-
-    ////////////////////////////////////////
-
     DrawableBuffer::UnLockWriteBuffer(DB);
     ///////////////////////////////////////
-    // Draw!
+    // render !
     ///////////////////////////////////////
     fbi->SetClearColor(fvec4(0, 0, 0, 1));
     fbi->setViewport(tgtrect);
