@@ -84,14 +84,14 @@ struct SectorLodInfo {
     return triangle_count;
   }
   void createVB() {
-    vertex_count = _patches.size() * 6;
+    vertex_count = _patches.size() * 24;
     _vtxbuflist  = new TerVtxBuffersType;
     auto vbuf    = new StaticVertexBuffer<vertex_type>(vertex_count, 0, EPRIM_POINTS);
     vbuf->Reset();
     _vtxbuflist->push_back(vbuf);
 
-    //printf("sector<%p> triangle_count<%zu>\n", this, triangle_count);
-    //printf("sector<%p> vertex_count<%zu>\n", this, vertex_count);
+    // printf("sector<%p> triangle_count<%zu>\n", this, triangle_count);
+    // printf("sector<%p> vertex_count<%zu>\n", this, vertex_count);
   }
 };
 
@@ -112,18 +112,18 @@ struct HeightfieldRenderImpl {
   void render(const RenderContextInstData& RCID);
 
   datablockptr_t recomputeTextures(Context* ptarg);
-  void reloadCachedTextures(Context* ptarg,datablockptr_t dblock);
+  void reloadCachedTextures(Context* ptarg, datablockptr_t dblock);
 
   HeightFieldDrawable* _hfdrawable;
   hfptr_t _heightfield;
 
-  bool _gpuDataDirty                = true;
-  FreestyleMaterial* _terrainMaterial = nullptr;
-  const FxShaderTechnique* _tekBasic  = nullptr;
-  const FxShaderTechnique* _tekDefGbuf1 = nullptr;
-  const FxShaderTechnique* _tekStereo = nullptr;
+  bool _gpuDataDirty                          = true;
+  FreestyleMaterial* _terrainMaterial         = nullptr;
+  const FxShaderTechnique* _tekBasic          = nullptr;
+  const FxShaderTechnique* _tekDefGbuf1       = nullptr;
+  const FxShaderTechnique* _tekStereo         = nullptr;
   const FxShaderTechnique* _tekDefGbuf1Stereo = nullptr;
-  const FxShaderTechnique* _tekPick   = nullptr;
+  const FxShaderTechnique* _tekPick           = nullptr;
 
   const FxShaderParam* _parMatVPL       = nullptr;
   const FxShaderParam* _parMatVPC       = nullptr;
@@ -144,8 +144,8 @@ struct HeightfieldRenderImpl {
   const FxShaderParam* _parGblendYbias  = nullptr;
   const FxShaderParam* _parGblendStepLo = nullptr;
   const FxShaderParam* _parGblendStepHi = nullptr;
-  Texture* _heightmapTextureA       = nullptr;
-  Texture* _heightmapTextureB       = nullptr;
+  Texture* _heightmapTextureA           = nullptr;
+  Texture* _heightmapTextureB           = nullptr;
   fvec3 _aabbmin;
   fvec3 _aabbmax;
   SectorInfo _sector[8];
@@ -169,7 +169,6 @@ HeightfieldRenderImpl::~HeightfieldRenderImpl() {
     delete _heightmapTextureB;
   }
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 datablockptr_t HeightfieldRenderImpl::recomputeTextures(Context* ptarg) {
@@ -197,7 +196,7 @@ datablockptr_t HeightfieldRenderImpl::recomputeTextures(Context* ptarg) {
 
   fvec2 origin(0, 0);
 
-  auto heightdata = (float*) _heightfield->GetHeightData();
+  auto heightdata = (float*)_heightfield->GetHeightData();
 
   const bool debugmip = false;
 
@@ -217,9 +216,9 @@ datablockptr_t HeightfieldRenderImpl::recomputeTextures(Context* ptarg) {
       fvec3(0, 1, 1), // 3
   };
 
-  size_t miplen = sizeof(fvec4)*MIPW*MIPH;
+  size_t miplen = sizeof(fvec4) * MIPW * MIPH;
 
-  dblock->reserve(miplen*2);
+  dblock->reserve(miplen * 2);
 
   for (ssize_t z = 0; z < MIPH; z++) {
     ssize_t zz = z - (MIPH >> 1);
@@ -266,8 +265,8 @@ datablockptr_t HeightfieldRenderImpl::recomputeTextures(Context* ptarg) {
     }   // for( size_t x=0; x<MIPW; x++ ){
   }     // for( size_t z=0; z<MIPH; z++ ){
 
-  dblock->addData(pfloattexA,miplen);
-  dblock->addData(pfloattexB,miplen);
+  dblock->addData(pfloattexA, miplen);
+  dblock->addData(pfloattexB, miplen);
 
   /////////////////////////////
   // compute mips
@@ -277,13 +276,13 @@ datablockptr_t HeightfieldRenderImpl::recomputeTextures(Context* ptarg) {
   MIPW >>= 1;
   MIPH >>= 1;
   while (MIPW >= 2 and MIPH >= 2) {
-    size_t miplen = sizeof(fvec4)*MIPW*MIPH;
+    size_t miplen = sizeof(fvec4) * MIPW * MIPH;
     assert((levindex + 1) < chainA->_levels.size());
     auto prevlevA = chainA->_levels[levindex];
     auto nextlevA = chainA->_levels[levindex + 1];
     auto prevlevB = chainB->_levels[levindex];
     auto nextlevB = chainB->_levels[levindex + 1];
-    //printf("levindex<%d> prevlev<%p> nextlev<%p>\n", levindex, prevlevA.get(), nextlevA.get());
+    // printf("levindex<%d> prevlev<%p> nextlev<%p>\n", levindex, prevlevA.get(), nextlevA.get());
     auto prevbasA = (float*)prevlevA->_data;
     auto nextbasA = (float*)nextlevA->_data;
     auto prevbasB = (float*)prevlevB->_data;
@@ -345,8 +344,8 @@ datablockptr_t HeightfieldRenderImpl::recomputeTextures(Context* ptarg) {
       }
     }
     ////////////////////////////////////////////////
-    dblock->addData(nextbasA,miplen);
-    dblock->addData(nextbasB,miplen);
+    dblock->addData(nextbasA, miplen);
+    dblock->addData(nextbasB, miplen);
     ////////////////////////////////////////////////
     MIPW >>= 1;
     MIPH >>= 1;
@@ -362,42 +361,42 @@ datablockptr_t HeightfieldRenderImpl::recomputeTextures(Context* ptarg) {
   delete chainB;
 
   float runtime = timer.SecsSinceStart();
-  //printf( "recomputeTextures runtime<%g>\n", runtime );
-  //printf( "recomputeTextures dblocklen<%zu>\n", dblock->_data.GetSize() );
+  // printf( "recomputeTextures runtime<%g>\n", runtime );
+  // printf( "recomputeTextures dblocklen<%zu>\n", dblock->_data.GetSize() );
 
   return dblock;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void HeightfieldRenderImpl::reloadCachedTextures(Context* ptarg,datablockptr_t dblock) {
-  chunkfile::InputStream istr(dblock->data(),dblock->length());
+void HeightfieldRenderImpl::reloadCachedTextures(Context* ptarg, datablockptr_t dblock) {
+  chunkfile::InputStream istr(dblock->data(), dblock->length());
   int MIPW, MIPH;
   istr.GetItem<int>(MIPW);
   istr.GetItem<int>(MIPH);
-  assert(MIPW==_heightfield->GetGridSizeX());
-  assert(MIPH==_heightfield->GetGridSizeZ());
+  assert(MIPW == _heightfield->GetGridSizeX());
+  assert(MIPH == _heightfield->GetGridSizeZ());
   auto chainA = new MipChain(MIPW, MIPH, EBUFFMT_RGBA32F, ETEXTYPE_2D);
   auto chainB = new MipChain(MIPW, MIPH, EBUFFMT_RGBA32F, ETEXTYPE_2D);
-  //printf( "reloadCachedTextures ostr.len<%zu> nmips<%zu>\n", ostr.GetSize(), chainA->_levels.size() );
+  // printf( "reloadCachedTextures ostr.len<%zu> nmips<%zu>\n", ostr.GetSize(), chainA->_levels.size() );
   int levindex = 0;
   while (MIPW >= 2 and MIPH >= 2) {
     int CHECKMIPW, CHECKMIPH;
-    size_t levlen = sizeof(fvec4)*MIPW*MIPH;
-    auto pa = (const float*) istr.GetCurrent();
-    auto leva = chainA->_levels[levindex];
-    auto levb = chainB->_levels[levindex];
-    memcpy(leva->_data,pa,levlen);
+    size_t levlen = sizeof(fvec4) * MIPW * MIPH;
+    auto pa       = (const float*)istr.GetCurrent();
+    auto leva     = chainA->_levels[levindex];
+    auto levb     = chainB->_levels[levindex];
+    memcpy(leva->_data, pa, levlen);
     istr.advance(levlen);
-    auto pb = (const float*) istr.GetCurrent();
-    memcpy(levb->_data,pb,levlen);
+    auto pb = (const float*)istr.GetCurrent();
+    memcpy(levb->_data, pb, levlen);
     istr.advance(levlen);
-    //printf( "reloadmip lev<%d> w<%d> h<%d> pa<%p> pb<%p>\n", levindex, MIPW, MIPH, pa, pb );
+    // printf( "reloadmip lev<%d> w<%d> h<%d> pa<%p> pb<%p>\n", levindex, MIPW, MIPH, pa, pb );
     MIPW >>= 1;
     MIPH >>= 1;
     levindex++;
   }
-  assert(istr.midx==istr.GetLength());
+  assert(istr.midx == istr.GetLength());
   _heightmapTextureA = ptarg->TXI()->createFromMipChain(chainA);
   _heightmapTextureB = ptarg->TXI()->createFromMipChain(chainB);
   delete chainA;
@@ -410,13 +409,13 @@ void HeightfieldRenderImpl::gpuUpdate(Context* ptarg) {
   if (false == _gpuDataDirty)
     return;
 
-  if(nullptr==_terrainMaterial){
+  if (nullptr == _terrainMaterial) {
     _terrainMaterial = new FreestyleMaterial;
-    _terrainMaterial->gpuInit(ptarg,"orkshader://terrain");
-    _tekBasic    = _terrainMaterial->technique("terrain");
-    _tekStereo   = _terrainMaterial->technique("terrain_stereo");
-    _tekPick     = _terrainMaterial->technique("pick");
-    _tekDefGbuf1 = _terrainMaterial->technique("terrain_gbuf1");
+    _terrainMaterial->gpuInit(ptarg, "orkshader://terrain");
+    _tekBasic          = _terrainMaterial->technique("terrain");
+    _tekStereo         = _terrainMaterial->technique("terrain_stereo");
+    _tekPick           = _terrainMaterial->technique("pick");
+    _tekDefGbuf1       = _terrainMaterial->technique("terrain_gbuf1");
     _tekDefGbuf1Stereo = _terrainMaterial->technique("terrain_gbuf1_stereo");
 
     _parMatVPL   = _terrainMaterial->param("MatMVPL");
@@ -441,9 +440,6 @@ void HeightfieldRenderImpl::gpuUpdate(Context* ptarg) {
     _parGblendStepHi = _terrainMaterial->param("GBlendStepHi");
   }
 
-
-
-
   auto hmap    = _heightfield;
   bool _loadok = hmap->Load(_hfdrawable->_hfpath);
   hmap->SetWorldSize(_hfdrawable->_worldSizeXZ, _hfdrawable->_worldSizeXZ);
@@ -459,7 +455,7 @@ void HeightfieldRenderImpl::gpuUpdate(Context* ptarg) {
   ork::Timer timer;
   timer.Start();
 
-  //orkprintf("ComputingGeometry hashkey<0x%llx>\n", hashkey );
+  // orkprintf("ComputingGeometry hashkey<0x%llx>\n", hashkey );
 
   ////////////////////////////////////////////////////////////////
   // create and fill in gpu texture
@@ -474,25 +470,23 @@ void HeightfieldRenderImpl::gpuUpdate(Context* ptarg) {
 
   auto dblock = DataBlockCache::findDataBlock(hashkey);
 
-  if( dblock ){
-    reloadCachedTextures(ptarg,dblock);
-  }
-  else {
+  if (dblock) {
+    reloadCachedTextures(ptarg, dblock);
+  } else {
     dblock = recomputeTextures(ptarg);
-    DataBlockCache::setDataBlock(hashkey,dblock);
+    DataBlockCache::setDataBlock(hashkey, dblock);
   }
-
 
   ////////////////////////////////////////////////////////////////
 
   auto bbctr = (_aabbmin + _aabbmax) * 0.5f;
   auto bbdim = (_aabbmax - _aabbmin);
 
-  //printf("IGLX<%d> IGLZ<%d> kworldsizeXZ<%f %f>\n", iglX, iglZ);
-  //printf("bbmin<%f %f %f>\n", _aabbmin.GetX(), _aabbmin.GetY(), _aabbmin.GetZ());
-  //printf("bbmax<%f %f %f>\n", _aabbmax.GetX(), _aabbmax.GetY(), _aabbmax.GetZ());
-  //printf("bbctr<%f %f %f>\n", bbctr.GetX(), bbctr.GetY(), bbctr.GetZ());
-  //printf("bbdim<%f %f %f>\n", bbdim.GetX(), bbdim.GetY(), bbdim.GetZ());
+  // printf("IGLX<%d> IGLZ<%d> kworldsizeXZ<%f %f>\n", iglX, iglZ);
+  // printf("bbmin<%f %f %f>\n", _aabbmin.GetX(), _aabbmin.GetY(), _aabbmin.GetZ());
+  // printf("bbmax<%f %f %f>\n", _aabbmax.GetX(), _aabbmax.GetY(), _aabbmax.GetZ());
+  // printf("bbctr<%f %f %f>\n", bbctr.GetX(), bbctr.GetY(), bbctr.GetZ());
+  // printf("bbdim<%f %f %f>\n", bbdim.GetX(), bbdim.GetY(), bbdim.GetZ());
 
   auto sectorID = [&](int x, int z) -> int {
     int rval = 0;
@@ -627,7 +621,7 @@ void HeightfieldRenderImpl::gpuUpdate(Context* ptarg) {
   // iters.push_back(Iter{4, 128});
   // iters.push_back(Iter{5, 128});
 
-  //printf("Generating Patches..\n");
+  // printf("Generating Patches..\n");
 
   int iprevouterd2 = 0;
 
@@ -648,40 +642,45 @@ void HeightfieldRenderImpl::gpuUpdate(Context* ptarg) {
     int a_z       = a_start;
 
     if (0 == lod) {
-      patch_block(PT_A,
-                  lod, // Full Sector
-                  -newouterd2 + step,
-                  -newouterd2 + step,
-                  +newouterd2 - step,
-                  +newouterd2 - step);
+      patch_block(
+          PT_A,
+          lod, // Full Sector
+          -newouterd2 + step,
+          -newouterd2 + step,
+          +newouterd2 - step,
+          +newouterd2 - step);
     } else {
-      patch_block(PT_A,
-                  lod, // Top Sector
-                  -newouterd2 + step,
-                  -newouterd2 + step,
-                  +newouterd2 - step,
-                  -iprevouterd2);
+      patch_block(
+          PT_A,
+          lod, // Top Sector
+          -newouterd2 + step,
+          -newouterd2 + step,
+          +newouterd2 - step,
+          -iprevouterd2);
 
-      patch_block(PT_A,
-                  lod, // Left Sector
-                  -newouterd2 + step,
-                  -iprevouterd2,
-                  -iprevouterd2,
-                  +iprevouterd2);
+      patch_block(
+          PT_A,
+          lod, // Left Sector
+          -newouterd2 + step,
+          -iprevouterd2,
+          -iprevouterd2,
+          +iprevouterd2);
 
-      patch_block(PT_A,
-                  lod, // Right Sector
-                  iprevouterd2,
-                  -iprevouterd2,
-                  newouterd2 - step,
-                  +iprevouterd2);
+      patch_block(
+          PT_A,
+          lod, // Right Sector
+          iprevouterd2,
+          -iprevouterd2,
+          newouterd2 - step,
+          +iprevouterd2);
 
-      patch_block(PT_A,
-                  lod, // Bottom Sector
-                  -newouterd2 + step,
-                  iprevouterd2,
-                  +newouterd2 - step,
-                  newouterd2 - step);
+      patch_block(
+          PT_A,
+          lod, // Bottom Sector
+          -newouterd2 + step,
+          iprevouterd2,
+          +newouterd2 - step,
+          newouterd2 - step);
     }
 
     int bx0 = -newouterd2;
@@ -756,9 +755,11 @@ void HeightfieldRenderImpl::gpuUpdate(Context* ptarg) {
       uint32_t c2 = 0xff00ffff;
       uint32_t c3 = 0xff00ff00;
 
+      // here we should have the patches,
+      //  just need to create the prims
+
       switch (p._type) {
         case PT_A: //
-          linfo.triangle_count += 8;
           c0 = 0xff0000ff;
           break;
         case PT_BT:
@@ -780,33 +781,157 @@ void HeightfieldRenderImpl::gpuUpdate(Context* ptarg) {
       p2.y = lod;
       p3.y = lod;
 
-      auto v0 = vertex_type(p0, fvec2(), c0);
-      auto v1 = vertex_type(p1, fvec2(), c0);
-      auto v2 = vertex_type(p2, fvec2(), c0);
-      auto v3 = vertex_type(p3, fvec2(), c0);
-      auto vc = vertex_type((p0 + p1 + p2 + p3) * 0.25, fvec2(), c0);
+      auto v0   = vertex_type(p0, fvec2(), c0);
+      auto v1   = vertex_type(p1, fvec2(), c0);
+      auto v2   = vertex_type(p2, fvec2(), c0);
+      auto v3   = vertex_type(p3, fvec2(), c0);
+      auto vc   = vertex_type((p0 + p1 + p2 + p3) * 0.25, fvec2(), c0);
+      auto vc01 = vertex_type((p0 + p1) * 0.5, fvec2(), c0);
+      auto vc12 = vertex_type((p1 + p2) * 0.5, fvec2(), c0);
+      auto vc23 = vertex_type((p2 + p3) * 0.5, fvec2(), c0);
+      auto vc30 = vertex_type((p3 + p0) * 0.5, fvec2(), c0);
 
       switch (p._type) {
         case PT_A: //
-          linfo.triangle_count += 2;
+          linfo.triangle_count += 8;
           linfo.vwriter.AddVertex(v0);
+          linfo.vwriter.AddVertex(vc01);
+          linfo.vwriter.AddVertex(vc);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(vc01);
           linfo.vwriter.AddVertex(v1);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v1);
+          linfo.vwriter.AddVertex(vc12);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(vc12);
           linfo.vwriter.AddVertex(v2);
-          linfo.vwriter.AddVertex(v0);
+
+          linfo.vwriter.AddVertex(vc);
           linfo.vwriter.AddVertex(v2);
+          linfo.vwriter.AddVertex(vc23);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(vc23);
           linfo.vwriter.AddVertex(v3);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v3);
+          linfo.vwriter.AddVertex(vc30);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(vc30);
+          linfo.vwriter.AddVertex(v0);
+
           break;
         case PT_BT:
+          linfo.triangle_count += 5;
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v0);
+          linfo.vwriter.AddVertex(v1);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v1);
+          linfo.vwriter.AddVertex(v2);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v2);
+          linfo.vwriter.AddVertex(vc23);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(vc23);
+          linfo.vwriter.AddVertex(v3);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v3);
+          linfo.vwriter.AddVertex(v0);
+          break;
         case PT_BB:
           linfo.triangle_count += 5;
+          linfo.vwriter.AddVertex(v0);
+          linfo.vwriter.AddVertex(vc01);
+          linfo.vwriter.AddVertex(vc);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(vc01);
+          linfo.vwriter.AddVertex(v1);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v1);
+          linfo.vwriter.AddVertex(v2);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v2);
+          linfo.vwriter.AddVertex(v3);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v3);
+          linfo.vwriter.AddVertex(v0);
           break;
         case PT_BR:
           linfo.triangle_count += 5;
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v0);
+          linfo.vwriter.AddVertex(v1);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v1);
+          linfo.vwriter.AddVertex(vc12);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(vc12);
+          linfo.vwriter.AddVertex(v2);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v2);
+          linfo.vwriter.AddVertex(v3);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v3);
+          linfo.vwriter.AddVertex(v0);
           break;
         case PT_BL:
+          linfo.triangle_count += 5;
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v0);
+          linfo.vwriter.AddVertex(v1);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v1);
+          linfo.vwriter.AddVertex(v2);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v2);
+          linfo.vwriter.AddVertex(v3);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v3);
+          linfo.vwriter.AddVertex(vc30);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(vc30);
+          linfo.vwriter.AddVertex(v0);
           break;
         case PT_C:
           linfo.triangle_count += 4;
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v0);
+          linfo.vwriter.AddVertex(v1);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v1);
+          linfo.vwriter.AddVertex(v2);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v2);
+          linfo.vwriter.AddVertex(v3);
+
+          linfo.vwriter.AddVertex(vc);
+          linfo.vwriter.AddVertex(v3);
+          linfo.vwriter.AddVertex(v0);
           break;
       }
     }
@@ -828,12 +953,12 @@ void HeightfieldRenderImpl::gpuUpdate(Context* ptarg) {
   _aabbmin = geomin;
   _aabbmax = geomax;
 
-  //printf("geomin<%f %f %f>\n", geomin.GetX(), geomin.GetY(), geomin.GetZ());
-  //printf("geomax<%f %f %f>\n", geomax.GetX(), geomax.GetY(), geomax.GetZ());
-  //printf("geosiz<%f %f %f>\n", geosiz.GetX(), geosiz.GetY(), geosiz.GetZ());
+  // printf("geomin<%f %f %f>\n", geomin.GetX(), geomin.GetY(), geomin.GetZ());
+  // printf("geomax<%f %f %f>\n", geomax.GetX(), geomax.GetY(), geomax.GetZ());
+  // printf("geosiz<%f %f %f>\n", geosiz.GetX(), geosiz.GetY(), geosiz.GetZ());
 
   float runtime = timer.SecsSinceStart();
-  //printf( "runtime<%g>\n", runtime );
+  // printf( "runtime<%g>\n", runtime );
 
   _gpuDataDirty = false;
 }
@@ -843,10 +968,10 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
 
   auto raw_drawable         = _hfdrawable->_rawdrawable;
   const IRenderer* renderer = RCID.GetRenderer();
-  Context* targ           = renderer->GetTarget();
+  Context* targ             = renderer->GetTarget();
   auto RCFD                 = targ->topRenderContextFrameData();
-  const auto& CPD = RCFD->topCPD();
-  bool stereo1pass = CPD.isStereoOnePass();
+  const auto& CPD           = RCFD->topCPD();
+  bool stereo1pass          = CPD.isStereoOnePass();
   bool bpick                = CPD.isPicking();
   auto mtxi                 = targ->MTXI();
   auto fxi                  = targ->FXI();
@@ -895,35 +1020,35 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   //////////////////////////
 
   fvec3 campos_mono = CPD.monoCamPos(viz_offset);
-  fvec3 znormal = CPD.monoCamZnormal();
+  fvec3 znormal     = CPD.monoCamZnormal();
 
   if (stereo1pass) {
     auto stcams = CPD._stereoCameraMatrices;
-    MVPL     = stcams->MVPL(viz_offset);
-    MVPR     = stcams->MVPR(viz_offset);
-    MVPC = stcams->MVPMONO(viz_offset);
+    MVPL        = stcams->MVPL(viz_offset);
+    MVPR        = stcams->MVPR(viz_offset);
+    MVPC        = stcams->MVPMONO(viz_offset);
   } else {
-    auto mcams = CPD._cameraMatrices;
+    auto mcams             = CPD._cameraMatrices;
     const fmtx4& PMTX_mono = mcams->_pmatrix;
     const fmtx4& VMTX_mono = mcams->_vmatrix;
-    auto MV_mono = (viz_offset * VMTX_mono);
-    auto MVP = MV_mono * PMTX_mono;
-    MVPL = MVP;
-    MVPC = MVP;
-    MVPR = MVP;
+    auto MV_mono           = (viz_offset * VMTX_mono);
+    auto MVP               = MV_mono * PMTX_mono;
+    MVPL                   = MVP;
+    MVPC                   = MVP;
+    MVPR                   = MVP;
   }
 
   ///////////////////////////////////////////////////////////////////
   // render
   ///////////////////////////////////////////////////////////////////
 
-  auto drawable = _hfdrawable;
+  auto drawable    = _hfdrawable;
   const auto& HFDD = drawable->_data;
 
   // auto range = _aabbmax - _aabbmin;
 
   targ->PushMaterial(_terrainMaterial);
-  _terrainMaterial->bindTechnique(stereo1pass?_tekDefGbuf1Stereo:_tekDefGbuf1);
+  _terrainMaterial->bindTechnique(stereo1pass ? _tekDefGbuf1Stereo : _tekDefGbuf1);
   _terrainMaterial->begin(*RCFD);
   _terrainMaterial->bindParamMatrix(_parMatVPL, MVPL);
   _terrainMaterial->bindParamMatrix(_parMatVPC, MVPC);
@@ -937,7 +1062,7 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   //_terrainMaterial->bindParamTex(_parTexEnv, HFDD._sphericalenvmap);
   _terrainMaterial->bindParamFloat(_parTestXXX, HFDD._testxxx);
 
-  _terrainMaterial->bindParamVec3(_parFogColor, fvec3(0,0,0));
+  _terrainMaterial->bindParamVec3(_parFogColor, fvec3(0, 0, 0));
   _terrainMaterial->bindParamVec3(_parGrass, HFDD._grass);
   _terrainMaterial->bindParamVec3(_parSnow, HFDD._snow);
   _terrainMaterial->bindParamVec3(_parRock1, HFDD._rock1);
@@ -1019,7 +1144,7 @@ static void _RenderHeightfield(RenderContextInstData& rcid, Context* targ, const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void HeightFieldDrawableData::describeX(class_t*c) {
+void HeightFieldDrawableData::describeX(class_t* c) {
   c->memberProperty("Offset", &HeightFieldDrawableData::_visualOffset);
   c->memberProperty("FogColor", &HeightFieldDrawableData::_fogcolor);
   c->memberProperty("GrassColor", &HeightFieldDrawableData::_grass);
@@ -1028,54 +1153,57 @@ void HeightFieldDrawableData::describeX(class_t*c) {
   c->memberProperty("Rock2Color", &HeightFieldDrawableData::_rock2);
   ////////////////////////////////////////////////////////////////////////
   c->accessorProperty("HeightMap", &HeightFieldDrawableData::_readHmapPath, &HeightFieldDrawableData::_writeHmapPath)
-   ->annotate<ConstString>("editor.class","ged.factory.assetlist")
-   ->annotate<ConstString>("editor.filetype", "png");
+      ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
+      ->annotate<ConstString>("editor.filetype", "png");
   ////////////////////////////////////////////////////////////////////////
   c->accessorProperty("SphericalEnvMap", &HeightFieldDrawableData::_readEnvMap, &HeightFieldDrawableData::_writeEnvMap)
-   ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
-   ->annotate<ConstString>("editor.assettype", "lev2tex")
-   ->annotate<ConstString>("editor.assetclass", "lev2tex");
+      ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
+      ->annotate<ConstString>("editor.assettype", "lev2tex")
+      ->annotate<ConstString>("editor.assetclass", "lev2tex");
   ////////////////////////////////////////////////////////////////////////
-  c->floatProperty("TestXXX", float_range{-100,100}, &HeightFieldDrawableData::_testxxx);
-  c->floatProperty("GBlendYScale", float_range{-1,1}, &HeightFieldDrawableData::_gblend_yscale);
-  c->floatProperty("GBlendYBias", float_range{-5000,5000}, &HeightFieldDrawableData::_gblend_ybias);
-  c->floatProperty("GBlendStepLo", float_range{0,1}, &HeightFieldDrawableData::_gblend_steplo);
-  c->floatProperty("GBlendStepHi", float_range{0,1}, &HeightFieldDrawableData::_gblend_stephi);
+  c->floatProperty("TestXXX", float_range{-100, 100}, &HeightFieldDrawableData::_testxxx);
+  c->floatProperty("GBlendYScale", float_range{-1, 1}, &HeightFieldDrawableData::_gblend_yscale);
+  c->floatProperty("GBlendYBias", float_range{-5000, 5000}, &HeightFieldDrawableData::_gblend_ybias);
+  c->floatProperty("GBlendStepLo", float_range{0, 1}, &HeightFieldDrawableData::_gblend_steplo);
+  c->floatProperty("GBlendStepHi", float_range{0, 1}, &HeightFieldDrawableData::_gblend_stephi);
   ////////////////////////////////////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 hfdrawableptr_t HeightFieldDrawableData::createDrawable() const {
-  auto drw = std::make_shared<HeightFieldDrawable>(*this);
-    drw->_visualOffset    = _visualOffset;
-    drw->_hfpath          = _hfpath;
+  auto drw           = std::make_shared<HeightFieldDrawable>(*this);
+  drw->_visualOffset = _visualOffset;
+  drw->_hfpath       = _hfpath;
   return drw;
 }
 
 HeightFieldDrawableData::HeightFieldDrawableData()
-  : _hfpath("none")
-  , _testxxx(0){
-
+    : _hfpath("none")
+    , _testxxx(0) {
 }
-HeightFieldDrawableData::~HeightFieldDrawableData() {}
+HeightFieldDrawableData::~HeightFieldDrawableData() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 void HeightFieldDrawableData::_writeEnvMap(ork::rtti::ICastable* const& tex) {
   _sphericalenvmap = tex ? ork::rtti::autocast(tex) : nullptr;
 }
-void HeightFieldDrawableData::_readEnvMap(ork::rtti::ICastable*& tex) const { tex = _sphericalenvmap; }
-void HeightFieldDrawableData::_writeHmapPath(file::Path const& hmap){
+void HeightFieldDrawableData::_readEnvMap(ork::rtti::ICastable*& tex) const {
+  tex = _sphericalenvmap;
+}
+void HeightFieldDrawableData::_writeHmapPath(file::Path const& hmap) {
   _hfpath = hmap;
 }
-void HeightFieldDrawableData::_readHmapPath(file::Path& hmap) const{
+void HeightFieldDrawableData::_readHmapPath(file::Path& hmap) const {
   hmap = _hfpath;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 HeightFieldDrawable::HeightFieldDrawable(const HeightFieldDrawableData& data)
-    : _data(data) {}
+    : _data(data) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
