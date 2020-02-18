@@ -156,11 +156,14 @@ public:
   void _readOutputNode(ork::rtti::ICastable*& val) const;
   void _writeOutputNode(ork::rtti::ICastable* const& val);
 
-private:
   void Init(lev2::Context* pTARG, int w, int h) override;
   bool assemble(CompositorDrawData& drawdata) override;
   void composite(CompositorDrawData& drawdata) override;
   //
+
+  template <typename T> T* tryRenderNodeAs() {
+    return dynamic_cast<T*>(_renderNode);
+  }
 
   ork::ObjectMap mBufferMap;
   RenderCompositingNode* _renderNode;

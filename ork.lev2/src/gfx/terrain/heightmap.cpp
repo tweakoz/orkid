@@ -7,12 +7,12 @@
 #include <ork/file/file.h>
 #include <ork/pch.h>
 #include <ork/util/crc64.h>
-#include <pkg/ent/heightmap.h>
+#include <ork/lev2/gfx/terrain/heightmap.h>
 
 OIIO_NAMESPACE_USING
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace ent {
+namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 HeightMap HeightMap::gdefhm(3, 3);
@@ -190,12 +190,11 @@ bool HeightMap::Load(const ork::file::Path& pth) {
     bool read_ok = oiio_img->read_image(TypeDesc::UINT16, _pu16);
     oiio_img->close();
 
-
     OrkAssert(read_ok);
 
     int inumpix = (xres * yres);
 
-    hasher.accumulate(_pu16,xres * yres * num_channels*sizeof(uint16_t));
+    hasher.accumulate(_pu16, xres * yres * num_channels * sizeof(uint16_t));
     hasher.finish();
     _hash = hasher.result();
 
@@ -246,8 +245,8 @@ bool HeightMap::Load(const ork::file::Path& pth) {
     }
     this->GetLock().UnLock();
   }
-  printf("hfmin<%d> hfmax<%d>\n", int(hfmin), int(hfmax));
-  printf( "timer<%g>\n", timer.SecsSinceStart() );
+  printf("HeightMap<%p> hfmin<%d> hfmax<%d>\n", this, int(hfmin), int(hfmax));
+  printf("HeightMap<%p> timer<%g> abs_path<%s> exists<%d>\n", this, timer.SecsSinceStart(), abs_path.c_str(), int(bexists));
   return bexists;
 }
 
@@ -291,5 +290,5 @@ fvec4 GradientSet::Lerp(float fu, float fv) const {
   return result;
 }
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::ent
+} // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

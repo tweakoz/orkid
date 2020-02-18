@@ -6,10 +6,10 @@
 #include <ork/math/cvector4.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork::ent {
+namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef orkvector<lev2::CVtxBuffer<lev2::SVtxV12C4T16>*> TerVtxBuffersType;
+typedef orkvector<CVtxBuffer<SVtxV12C4T16>*> TerVtxBuffersType;
 
 struct HeightMap {
   HeightMap(int isx, int isz);
@@ -17,7 +17,9 @@ struct HeightMap {
 
   bool Load(const ork::file::Path& pth);
 
-  mutex& GetLock() { return mMutex; }
+  mutex& GetLock() {
+    return mMutex;
+  }
 
   void SetGridSize(int iw, int ih);
   void SetWorldSize(float fwsize, float fhsize) {
@@ -25,24 +27,46 @@ struct HeightMap {
     mfWorldSizeZ = fhsize;
   }
 
-  void SetWorldHeight(float fh) { mWorldHeight = fh; }
-  inline int CalcAddress(int ix, int iz) const { return (miGridSizeX * iz) + ix; }
-  float GetMaxHeight() const { return mMax; }
-  float GetMinHeight() const { return mMin; }
-  float GetHeightRange() const { return mRange; }
+  void SetWorldHeight(float fh) {
+    mWorldHeight = fh;
+  }
+  inline int CalcAddress(int ix, int iz) const {
+    return (miGridSizeX * iz) + ix;
+  }
+  float GetMaxHeight() const {
+    return mMax;
+  }
+  float GetMinHeight() const {
+    return mMin;
+  }
+  float GetHeightRange() const {
+    return mRange;
+  }
   void ResetMinMax();
-  int GetGridSizeX() const { return miGridSizeX; }
-  int GetGridSizeZ() const { return miGridSizeZ; }
+  int GetGridSizeX() const {
+    return miGridSizeX;
+  }
+  int GetGridSizeZ() const {
+    return miGridSizeZ;
+  }
 
-  float GetWorldSizeX() const { return mfWorldSizeX; }
-  float GetWorldSizeZ() const { return mfWorldSizeZ; }
+  float GetWorldSizeX() const {
+    return mfWorldSizeX;
+  }
+  float GetWorldSizeZ() const {
+    return mfWorldSizeZ;
+  }
 
-  float GetWorldHeight() const { return mWorldHeight; }
+  float GetWorldHeight() const {
+    return mWorldHeight;
+  }
 
   float GetHeight(int ix, int iz) const;
   void SetHeight(int ix, int iz, float fh);
 
-  const float* GetHeightData() const { return mHeightData.data(); }
+  const float* GetHeightData() const {
+    return mHeightData.data();
+  }
 
   fvec3 Min() const;
   fvec3 Max() const;
@@ -68,7 +92,7 @@ struct HeightMap {
   float mIndexToUnitX;
   float mIndexToUnitZ;
   uint16_t* _pu16 = nullptr;
-  uint64_t _hash = 0;
+  uint64_t _hash  = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -79,11 +103,16 @@ struct GradientSet {
   float mHeightLo;
   float mHeightHi;
 
-  GradientSet() : mGradientLo(0), mGradientHi(0), mHeightLo(0.0f), mHeightHi(0.0f) {}
+  GradientSet()
+      : mGradientLo(0)
+      , mGradientHi(0)
+      , mHeightLo(0.0f)
+      , mHeightHi(0.0f) {
+  }
 
   fvec4 Lerp(float fu, float fv) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::ent
+} // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

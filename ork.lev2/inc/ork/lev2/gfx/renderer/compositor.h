@@ -242,6 +242,8 @@ public:
     mToggle = !mToggle;
   }
 
+  template <typename T> T* tryNodeTecnique(PoolString scenename, PoolString itemname) const;
+
   orklut<PoolString, ork::Object*> _groups;
   orklut<PoolString, ork::Object*> _scenes;
   mutable PoolString _activeScene;
@@ -319,6 +321,21 @@ public:
 
   CompositingTechnique* mpTechnique;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+template <typename T> T* CompositingData::tryNodeTecnique(PoolString scenename, PoolString itemname) const {
+  T* rval  = nullptr;
+  auto its = _scenes.find(scenename);
+  if (its != _scenes.end()) {
+    auto scene = (CompositingScene*)its->second;
+    auto iti   = scene->items().find(itemname);
+    if (iti != scene->items().end()) {
+      auto sceneitem = (CompositingSceneItem*)iti->second;
+      rval           = dynamic_cast<T*>(sceneitem->mpTechnique);
+    }
+  }
+  return rval;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

@@ -11,25 +11,23 @@
 #include <ork/math/polar.h>
 #include <ork/pch.h>
 #include <ork/rtti/downcast.h>
-#include <pkg/ent/entity.hpp>
-#include <pkg/ent/scene.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/kernel/msgrouter.inl>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/material_freestyle.inl>
+#include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/util/endian.h>
-#include <pkg/ent/HeightFieldDrawable.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/kernel/datacache.inl>
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
-ImplementReflectionX(ork::ent::HeightFieldDrawableData, "HeightFieldDrawableData");
+ImplementReflectionX(ork::lev2::TerrainDrawableData, "TerrainDrawableData");
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork::ent {
+namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef SVtxV12C4T16 vertex_type;
@@ -104,17 +102,17 @@ struct SectorInfo {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct HeightfieldRenderImpl {
+struct TerrainRenderImpl {
 
-  HeightfieldRenderImpl(HeightFieldDrawable* hfdrw);
-  ~HeightfieldRenderImpl();
+  TerrainRenderImpl(TerrainDrawableInst* hfdrw);
+  ~TerrainRenderImpl();
   void gpuUpdate(Context* ptarg);
   void render(const RenderContextInstData& RCID);
 
   datablockptr_t recomputeTextures(Context* ptarg);
   void reloadCachedTextures(Context* ptarg, datablockptr_t dblock);
 
-  HeightFieldDrawable* _hfdrawable;
+  TerrainDrawableInst* _hfinstance;
   hfptr_t _heightfield;
 
   bool _gpuDataDirty                          = true;
@@ -154,14 +152,14 @@ struct HeightfieldRenderImpl {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-HeightfieldRenderImpl::HeightfieldRenderImpl(HeightFieldDrawable* hfdrw) {
-  _hfdrawable  = hfdrw;
+TerrainRenderImpl::TerrainRenderImpl(TerrainDrawableInst* hfinst) {
+  _hfinstance  = hfinst;
   _heightfield = std::make_shared<HeightMap>(0, 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-HeightfieldRenderImpl::~HeightfieldRenderImpl() {
+TerrainRenderImpl::~TerrainRenderImpl() {
   if (_heightmapTextureA) {
     delete _heightmapTextureA;
   }
@@ -171,7 +169,7 @@ HeightfieldRenderImpl::~HeightfieldRenderImpl() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-datablockptr_t HeightfieldRenderImpl::recomputeTextures(Context* ptarg) {
+datablockptr_t TerrainRenderImpl::recomputeTextures(Context* ptarg) {
 
   ork::Timer timer;
   timer.Start();
@@ -369,7 +367,7 @@ datablockptr_t HeightfieldRenderImpl::recomputeTextures(Context* ptarg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void HeightfieldRenderImpl::reloadCachedTextures(Context* ptarg, datablockptr_t dblock) {
+void TerrainRenderImpl::reloadCachedTextures(Context* ptarg, datablockptr_t dblock) {
   chunkfile::InputStream istr(dblock->data(), dblock->length());
   int MIPW, MIPH;
   istr.GetItem<int>(MIPW);
@@ -405,7 +403,7 @@ void HeightfieldRenderImpl::reloadCachedTextures(Context* ptarg, datablockptr_t 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void HeightfieldRenderImpl::gpuUpdate(Context* ptarg) {
+void TerrainRenderImpl::gpuUpdate(Context* ptarg) {
   if (false == _gpuDataDirty)
     return;
 
@@ -441,14 +439,14 @@ void HeightfieldRenderImpl::gpuUpdate(Context* ptarg) {
   }
 
   auto hmap    = _heightfield;
-  bool _loadok = hmap->Load(_hfdrawable->_hfpath);
-  hmap->SetWorldSize(_hfdrawable->_worldSizeXZ, _hfdrawable->_worldSizeXZ);
-  hmap->SetWorldHeight(_hfdrawable->_worldHeight);
+  bool _loadok = hmap->Load(_hfinstance->hfpath());
+  hmap->SetWorldSize(_hfinstance->_worldSizeXZ, _hfinstance->_worldSizeXZ);
+  hmap->SetWorldHeight(_hfinstance->_worldHeight);
 
   boost::Crc64 basehasher;
   basehasher.accumulateItem<uint64_t>(hmap->_hash);
-  basehasher.accumulateItem<float>(_hfdrawable->_worldSizeXZ);
-  basehasher.accumulateItem<float>(_hfdrawable->_worldHeight);
+  basehasher.accumulateItem<float>(_hfinstance->_worldSizeXZ);
+  basehasher.accumulateItem<float>(_hfinstance->_worldHeight);
   basehasher.finish();
   uint64_t hashkey = basehasher.result();
 
@@ -964,9 +962,9 @@ void HeightfieldRenderImpl::gpuUpdate(Context* ptarg) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
+void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
 
-  auto raw_drawable         = _hfdrawable->_rawdrawable;
+  auto raw_drawable         = _hfinstance->_rawdrawable;
   const IRenderer* renderer = RCID.GetRenderer();
   Context* targ             = renderer->GetTarget();
   auto RCFD                 = targ->topRenderContextFrameData();
@@ -980,7 +978,6 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   if (bpick)
     return;
   assert(raw_drawable != nullptr);
-  // auto pent = dynamic_cast<const ent::Entity*>(raw_drawable->GetOwner());
   ///////////////////////////////////////////////////////////////////
   // update
   ///////////////////////////////////////////////////////////////////
@@ -995,14 +992,14 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   ///////////////////////////////////////////////////////////////////
   //////////////////////////
   fmtx4 viz_offset;
-  viz_offset.SetTranslation(_hfdrawable->_visualOffset);
+  viz_offset.SetTranslation(_hfinstance->_visualOffset);
   //////////////////////////
   // color
   //////////////////////////
   fvec4 color = fcolor4::White();
   if (bpick) {
     auto pickbuf    = targ->FBI()->currentPickBuffer();
-    Object* pickobj = nullptr; // pent ? ((Object*) &pent->GetEntData()) : nullptr;
+    Object* pickobj = nullptr;
     uint64_t pickid = pickbuf->AssignPickId(pickobj);
     color.SetRGBAU64(pickid);
   } else if (false) { // is_sel ){
@@ -1042,8 +1039,8 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   // render
   ///////////////////////////////////////////////////////////////////
 
-  auto drawable    = _hfdrawable;
-  const auto& HFDD = drawable->_data;
+  auto instance    = _hfinstance;
+  const auto& HFDD = instance->_data;
 
   // auto range = _aabbmax - _aabbmin;
 
@@ -1139,77 +1136,84 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
 ///////////////////////////////////////////////////////////////////////////////
 
 static void _RenderHeightfield(RenderContextInstData& rcid, Context* targ, const CallbackRenderable* pren) {
-  pren->GetDrawableDataA().getShared<HeightfieldRenderImpl>()->render(rcid);
+  pren->GetDrawableDataA().getShared<TerrainRenderImpl>()->render(rcid);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void HeightFieldDrawableData::describeX(class_t* c) {
-  c->memberProperty("Offset", &HeightFieldDrawableData::_visualOffset);
-  c->memberProperty("FogColor", &HeightFieldDrawableData::_fogcolor);
-  c->memberProperty("GrassColor", &HeightFieldDrawableData::_grass);
-  c->memberProperty("SnowColor", &HeightFieldDrawableData::_snow);
-  c->memberProperty("rock1Color", &HeightFieldDrawableData::_rock1);
-  c->memberProperty("Rock2Color", &HeightFieldDrawableData::_rock2);
+void TerrainDrawableData::describeX(class_t* c) {
+  c->memberProperty("Offset", &TerrainDrawableData::_visualOffset);
+  c->memberProperty("FogColor", &TerrainDrawableData::_fogcolor);
+  c->memberProperty("GrassColor", &TerrainDrawableData::_grass);
+  c->memberProperty("SnowColor", &TerrainDrawableData::_snow);
+  c->memberProperty("rock1Color", &TerrainDrawableData::_rock1);
+  c->memberProperty("Rock2Color", &TerrainDrawableData::_rock2);
   ////////////////////////////////////////////////////////////////////////
-  c->accessorProperty("HeightMap", &HeightFieldDrawableData::_readHmapPath, &HeightFieldDrawableData::_writeHmapPath)
+  c->accessorProperty("HeightMap", &TerrainDrawableData::_readHmapPath, &TerrainDrawableData::_writeHmapPath)
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.filetype", "png");
   ////////////////////////////////////////////////////////////////////////
-  c->accessorProperty("SphericalEnvMap", &HeightFieldDrawableData::_readEnvMap, &HeightFieldDrawableData::_writeEnvMap)
+  c->accessorProperty("SphericalEnvMap", &TerrainDrawableData::_readEnvMap, &TerrainDrawableData::_writeEnvMap)
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.assettype", "lev2tex")
       ->annotate<ConstString>("editor.assetclass", "lev2tex");
   ////////////////////////////////////////////////////////////////////////
-  c->floatProperty("TestXXX", float_range{-100, 100}, &HeightFieldDrawableData::_testxxx);
-  c->floatProperty("GBlendYScale", float_range{-1, 1}, &HeightFieldDrawableData::_gblend_yscale);
-  c->floatProperty("GBlendYBias", float_range{-5000, 5000}, &HeightFieldDrawableData::_gblend_ybias);
-  c->floatProperty("GBlendStepLo", float_range{0, 1}, &HeightFieldDrawableData::_gblend_steplo);
-  c->floatProperty("GBlendStepHi", float_range{0, 1}, &HeightFieldDrawableData::_gblend_stephi);
+  c->floatProperty("TestXXX", float_range{-100, 100}, &TerrainDrawableData::_testxxx);
+  c->floatProperty("GBlendYScale", float_range{-1, 1}, &TerrainDrawableData::_gblend_yscale);
+  c->floatProperty("GBlendYBias", float_range{-5000, 5000}, &TerrainDrawableData::_gblend_ybias);
+  c->floatProperty("GBlendStepLo", float_range{0, 1}, &TerrainDrawableData::_gblend_steplo);
+  c->floatProperty("GBlendStepHi", float_range{0, 1}, &TerrainDrawableData::_gblend_stephi);
   ////////////////////////////////////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-hfdrawableptr_t HeightFieldDrawableData::createDrawable() const {
-  auto drw           = std::make_shared<HeightFieldDrawable>(*this);
+hfdrawableinstptr_t TerrainDrawableData::createInstance() const {
+  auto drw           = std::make_shared<TerrainDrawableInst>(*this);
   drw->_visualOffset = _visualOffset;
-  drw->_hfpath       = _hfpath;
   return drw;
 }
 
-HeightFieldDrawableData::HeightFieldDrawableData()
+TerrainDrawableData::TerrainDrawableData()
     : _hfpath("none")
     , _testxxx(0) {
 }
-HeightFieldDrawableData::~HeightFieldDrawableData() {
+TerrainDrawableData::~TerrainDrawableData() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void HeightFieldDrawableData::_writeEnvMap(ork::rtti::ICastable* const& tex) {
+void TerrainDrawableData::_writeEnvMap(ork::rtti::ICastable* const& tex) {
   _sphericalenvmap = tex ? ork::rtti::autocast(tex) : nullptr;
 }
-void HeightFieldDrawableData::_readEnvMap(ork::rtti::ICastable*& tex) const {
+void TerrainDrawableData::_readEnvMap(ork::rtti::ICastable*& tex) const {
   tex = _sphericalenvmap;
 }
-void HeightFieldDrawableData::_writeHmapPath(file::Path const& hmap) {
+static int count = 0;
+void TerrainDrawableData::_writeHmapPath(file::Path const& hmap) {
   _hfpath = hmap;
+  printf("set _hfpath<%s> count<%d>\n", _hfpath.c_str(), count++);
+  if (_hfpath == "none") {
+  }
 }
-void HeightFieldDrawableData::_readHmapPath(file::Path& hmap) const {
+void TerrainDrawableData::_readHmapPath(file::Path& hmap) const {
   hmap = _hfpath;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-HeightFieldDrawable::HeightFieldDrawable(const HeightFieldDrawableData& data)
+TerrainDrawableInst::TerrainDrawableInst(const TerrainDrawableData& data)
     : _data(data) {
+}
+
+file::Path TerrainDrawableInst::hfpath() const {
+  return _data._hfpath;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CallbackDrawable* HeightFieldDrawable::create() {
+CallbackDrawable* TerrainDrawableInst::createCallbackDrawable() {
 
-  auto impl    = _impl.makeShared<HeightfieldRenderImpl>(this);
+  auto impl    = _impl.makeShared<TerrainRenderImpl>(this);
   _rawdrawable = new CallbackDrawable(nullptr);
   _rawdrawable->SetRenderCallback(_RenderHeightfield);
   _rawdrawable->SetUserDataA(impl);
@@ -1219,11 +1223,11 @@ CallbackDrawable* HeightFieldDrawable::create() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-HeightFieldDrawable::~HeightFieldDrawable() {
+TerrainDrawableInst::~TerrainDrawableInst() {
   _rawdrawable->SetRenderCallback(nullptr);
   _rawdrawable->SetUserDataA(nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::ent
+} // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

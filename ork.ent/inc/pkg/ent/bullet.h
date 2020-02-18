@@ -20,9 +20,9 @@
 #include <ork/object/Object.h>
 #include <pkg/ent/component.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/lev2/gfx/terrain/heightmap.h>
+#include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <pkg/ent/entity.h>
-#include <pkg/ent/heightmap.h>
-#include <pkg/ent/HeightFieldDrawable.h>
 #include <pkg/ent/scene.h>
 #include <ork/kernel/concurrent_queue.h>
 
@@ -383,12 +383,12 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class BulletShapeHeightfieldData : public BulletShapeBaseData {
-  RttiDeclareConcrete(BulletShapeHeightfieldData, BulletShapeBaseData);
+class BulletShapeTerrainData : public BulletShapeBaseData {
+  RttiDeclareConcrete(BulletShapeTerrainData, BulletShapeBaseData);
 
 public:
-  BulletShapeHeightfieldData();
-  ~BulletShapeHeightfieldData();
+  BulletShapeTerrainData();
+  ~BulletShapeTerrainData();
 
   void SetHeightMapName(file::Path const& lmap);
   void GetHeightMapName(file::Path& lmap) const;
@@ -405,7 +405,7 @@ private:
   file::Path mHeightMapName;
   float mWorldHeight;
   float mWorldSize;
-  HeightFieldDrawableData _visualData;
+  lev2::TerrainDrawableData _visualData;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

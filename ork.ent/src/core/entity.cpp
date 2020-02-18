@@ -556,7 +556,6 @@ void Init() {
   EditorCamControllerData::GetClassStatic();
   EditorCamControllerInst::GetClassStatic();
 
-  RegisterClassX(HeightFieldDrawableData);
   RegisterClassX(DagNode);
   VrSystemData::GetClassStatic();
 

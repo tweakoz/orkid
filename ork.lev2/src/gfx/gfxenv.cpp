@@ -251,7 +251,10 @@ void GfxEnv::SetLoaderTarget(Context* target) {
 
   auto gfxenvlateinit = [=]() {
     auto ctx = GfxEnv::loadingContext();
-    //ctx->beginFrame();
+    ctx->makeCurrentContext();
+#if !defined(__APPLE__)
+    // ctx->beginFrame();
+#endif
     ctx->debugPushGroup("GfxEnv.Lateinit");
     if (nullptr != mpUIMaterial) {
       delete GetRef().mpUIMaterial;
@@ -267,7 +270,9 @@ void GfxEnv::SetLoaderTarget(Context* target) {
     mp3DMaterial->Init(ctx);
     ork::lev2::GfxPrimitives::Init(ctx);
     ctx->debugPopGroup();
-    //ctx->endFrame();
+#if !defined(__APPLE__)
+    // ctx->endFrame();
+#endif
   };
   opq::mainSerialQueue().enqueue(gfxenvlateinit);
 }

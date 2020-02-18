@@ -25,7 +25,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace ork::lev2{
+namespace ork::lev2 {
 
 typedef fixedlut<PoolString, const CameraData*, 16> CameraDataLut;
 typedef fixedlut<PoolString, CameraMatrices, 16> CameraMatricesLut;
@@ -43,24 +43,25 @@ class LightManager;
 ///////////////////////////////////////////////////////////////////////////
 
 struct DrawableOwner : public ork::Object {
-  typedef orkvector<Drawable *> DrawableVector;
-	typedef orklut<PoolString,DrawableVector*> LayerMap;
+  typedef orkvector<Drawable*> DrawableVector;
+  typedef orklut<PoolString, DrawableVector*> LayerMap;
 
   DrawableOwner();
   ~DrawableOwner();
 
-  void _addDrawable( const PoolString& layername, Drawable* pdrw );
+  void _addDrawable(const PoolString& layername, Drawable* pdrw);
 
-	DrawableVector* GetDrawables( const PoolString& layer );
-	const DrawableVector* GetDrawables( const PoolString& layer ) const;
+  DrawableVector* GetDrawables(const PoolString& layer);
+  const DrawableVector* GetDrawables(const PoolString& layer) const;
 
-	const LayerMap& GetLayers() const { return mLayerMap; }
+  const LayerMap& GetLayers() const {
+    return mLayerMap;
+  }
 
-  LayerMap								mLayerMap;
+  LayerMap mLayerMap;
 
 private:
-
-  RttiDeclareAbstract( DrawableOwner, ork::Object );
+  RttiDeclareAbstract(DrawableOwner, ork::Object);
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -73,15 +74,22 @@ struct DrawQueueXfData {
 
 class DrawableBufItem {
 public:
-
   typedef ork::lev2::IRenderable::var_t var_t;
 
-  DrawableBufItem() : mpDrawable(0), miBufferIndex(0) {}
+  DrawableBufItem()
+      : mpDrawable(0)
+      , miBufferIndex(0) {
+  }
 
-  ~DrawableBufItem() {}
+  ~DrawableBufItem() {
+  }
 
-  const Drawable* GetDrawable() const { return mpDrawable; }
-  void SetDrawable(const Drawable* pdrw) { mpDrawable = pdrw; }
+  const Drawable* GetDrawable() const {
+    return mpDrawable;
+  }
+  void SetDrawable(const Drawable* pdrw) {
+    mpDrawable = pdrw;
+  }
 
   DrawQueueXfData mXfData;
   var_t mUserData0;
@@ -107,7 +115,9 @@ struct DrawableBufLayer {
   DrawableBufItem mDrawBufItems[kmaxitems];
   int miItemIndex;
   int miBufferIndex;
-  bool HasData() const { return (miItemIndex != -1); }
+  bool HasData() const {
+    return (miItemIndex != -1);
+  }
   void Reset(const DrawableBuffer& dB);
   DrawableBufItem& Queue(const DrawQueueXfData& xfdata, const Drawable* d);
 
@@ -117,14 +127,18 @@ struct DrawableBufLayer {
 ///////////////////////////////////////////////////////////////////////////
 
 struct RenderSyncToken {
-  RenderSyncToken() : mFrameIndex(-1) {}
-  bool valid() const { return mFrameIndex!=-1; }
+  RenderSyncToken()
+      : mFrameIndex(-1) {
+  }
+  bool valid() const {
+    return mFrameIndex != -1;
+  }
   int mFrameIndex;
 };
 
 ///////////////////////////////////////////////////////////////////////////
 
-typedef std::function<void(lev2::RenderContextFrameData&RCFD)> prerendercallback_t;
+typedef std::function<void(lev2::RenderContextFrameData& RCFD)> prerendercallback_t;
 
 class DrawableBuffer {
 public:
@@ -150,8 +164,8 @@ public:
   DrawableBuffer(int ibidx);
   ~DrawableBuffer();
 
-  void setPreRenderCallback(int key,prerendercallback_t cb);
-  void invokePreRenderCallbacks(lev2::RenderContextFrameData&RCFD) const;
+  void setPreRenderCallback(int key, prerendercallback_t cb);
+  void invokePreRenderCallbacks(lev2::RenderContextFrameData& RCFD) const;
 
   static const int kmaxbuffers = 6;
 
@@ -176,7 +190,7 @@ public:
 
   DrawableBufLayer* MergeLayer(const PoolString& layername);
 
-  void enqueueLayerToRenderQueue(const PoolString& LayerName,lev2::IRenderer* renderer) const;
+  void enqueueLayerToRenderQueue(const PoolString& LayerName, lev2::IRenderer* renderer) const;
 
 }; // ~1MiB
 
@@ -186,27 +200,46 @@ class Drawable : public ork::Object {
   RttiDeclareAbstract(Drawable, ork::Object);
 
 public:
-
   typedef ork::lev2::IRenderable::var_t var_t;
 
   Drawable();
   virtual ~Drawable();
 
-  virtual void enqueueToRenderQueue(const DrawableBufItem& item,
-                               lev2::IRenderer* prenderer) const = 0; // 	AssertOnOpQ2( mainSerialQueue() );
-  virtual void enqueueOnLayer(const DrawQueueXfData& xfdata,
-                            DrawableBufLayer& buffer) const = 0; // AssertOnOpQ2( updateSerialQueue() );
+  virtual void enqueueToRenderQueue(
+      const DrawableBufItem& item,
+      lev2::IRenderer* prenderer) const = 0; // 	AssertOnOpQ2( mainSerialQueue() );
+  virtual void enqueueOnLayer(
+      const DrawQueueXfData& xfdata,
+      DrawableBufLayer& buffer) const; // AssertOnOpQ2( updateSerialQueue() );
 
-  const ork::Object* GetOwner() const { return mOwner; }
-  void SetOwner(const ork::Object* owner) { mOwner = owner; }
+  const ork::Object* GetOwner() const {
+    return mOwner;
+  }
+  void SetOwner(const ork::Object* owner) {
+    mOwner = owner;
+  }
 
-  void SetUserDataA(var_t data) { mDataA = data; }
-  const var_t& GetUserDataA() const { return mDataA; }
-  void SetUserDataB(var_t data) { mDataB = data; }
-  const var_t& GetUserDataB() const { return mDataB; }
-  bool IsEnabled() const { return mEnabled; }
-  void Enable() { mEnabled = true; }
-  void Disable() { mEnabled = false; }
+  void SetUserDataA(var_t data) {
+    mDataA = data;
+  }
+  const var_t& GetUserDataA() const {
+    return mDataA;
+  }
+  void SetUserDataB(var_t data) {
+    mDataB = data;
+  }
+  const var_t& GetUserDataB() const {
+    return mDataB;
+  }
+  bool IsEnabled() const {
+    return mEnabled;
+  }
+  void Enable() {
+    mEnabled = true;
+  }
+  void Disable() {
+    mEnabled = false;
+  }
 
 protected:
   const ork::Object* mOwner;
@@ -227,24 +260,39 @@ public:
   ~ModelDrawable();
 
   void SetModelInst(lev2::XgmModelInst* pModelInst); // { mModelInst = pModelInst; }
-  lev2::XgmModelInst* GetModelInst() const { return mModelInst; }
-  void SetScale(float fscale) { mfScale = fscale; }
-  float GetScale() const { return mfScale; }
+  lev2::XgmModelInst* GetModelInst() const {
+    return mModelInst;
+  }
+  void SetScale(float fscale) {
+    mfScale = fscale;
+  }
+  float GetScale() const {
+    return mfScale;
+  }
 
-  const fvec3& GetRotate() const { return mRotate; }
-  const fvec3& GetOffset() const { return mOffset; }
+  const fvec3& GetRotate() const {
+    return mRotate;
+  }
+  const fvec3& GetOffset() const {
+    return mOffset;
+  }
 
-  void SetRotate(const fvec3& v) { mRotate = v; }
-  void SetOffset(const fvec3& v) { mOffset = v; }
+  void SetRotate(const fvec3& v) {
+    mRotate = v;
+  }
+  void SetOffset(const fvec3& v) {
+    mOffset = v;
+  }
 
   void SetEngineParamFloat(int idx, float fv);
   float GetEngineParamFloat(int idx) const;
 
-  void ShowBoundingSphere(bool bflg) { mbShowBoundingSphere = bflg; }
+  void ShowBoundingSphere(bool bflg) {
+    mbShowBoundingSphere = bflg;
+  }
 
 private:
   void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const override;
-  void enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const override;
 
   lev2::XgmModelInst* mModelInst;
   lev2::XgmWorldPose* mpWorldPose;
@@ -261,7 +309,8 @@ private:
 
 class ICallbackDrawableDataDestroyer {
 protected:
-  virtual ~ICallbackDrawableDataDestroyer() {}
+  virtual ~ICallbackDrawableDataDestroyer() {
+  }
 
 public:
   virtual void Destroy() = 0;
@@ -278,11 +327,21 @@ public:
   CallbackDrawable(DrawableOwner* owner);
   ~CallbackDrawable();
 
-  void SetDataDestroyer(ICallbackDrawableDataDestroyer* pdestroyer) { mDataDestroyer = pdestroyer; }
-  void SetRenderCallback(lev2::CallbackRenderable::cbtype_t cb) { mRenderCallback = cb; }
-  void SetenqueueOnLayerCallback(Q2LCBType cb) { menqueueOnLayerCallback = cb; }
-  U32 GetSortKey() const { return mSortKey; }
-  void SetSortKey(U32 uv) { mSortKey = uv; }
+  void SetDataDestroyer(ICallbackDrawableDataDestroyer* pdestroyer) {
+    mDataDestroyer = pdestroyer;
+  }
+  void SetRenderCallback(lev2::CallbackRenderable::cbtype_t cb) {
+    mRenderCallback = cb;
+  }
+  void SetenqueueOnLayerCallback(Q2LCBType cb) {
+    menqueueOnLayerCallback = cb;
+  }
+  U32 GetSortKey() const {
+    return mSortKey;
+  }
+  void SetSortKey(U32 uv) {
+    mSortKey = uv;
+  }
   void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const final;
   void enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const final;
 

@@ -22,6 +22,7 @@
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/targetinterfaces.h>
 #include <ork/lev2/gfx/particle/modular_particles.h>
+#include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorFx3.h>
@@ -39,7 +40,7 @@ namespace ork {
 namespace lev2 {
 
 namespace vk {
-  void init();
+void init();
 }
 static FileDevContext LocPlatformLevel2FileContext;
 const FileDevContext& PlatformLevel2FileContext = LocPlatformLevel2FileContext;
@@ -155,6 +156,8 @@ void ClassInit() {
   RegisterClassX(Op2CompositingNode);
   RegisterClassX(NodeCompositingTechnique);
   RegisterClassX(PBRMaterial);
+
+  RegisterClassX(TerrainDrawableData);
 
   //////////////////////////////////////////
   // register lev2 graphics target classes
