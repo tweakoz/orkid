@@ -42,8 +42,8 @@ int main(int argc, char** argv) {
   compositordata.mbEnable     = true;
   auto nodetek                = compositordata.tryNodeTecnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
   auto rendnode               = nodetek->tryRenderNodeAs<deferrednode::DeferredCompositingNodePbr>();
-  rendnode->_depthFogDistance = 2000.0f;
-  rendnode->_depthFogPower    = 50.0f;
+  rendnode->_depthFogDistance = 4000.0f;
+  rendnode->_depthFogPower    = 5.0f;
 
   CompositingImpl compositorimpl(compositordata);
   compositorimpl.bindLighting(lightmgr.get());
@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
     _terrainData._rock1 = fvec3(1, 1, 1);
     _terrainData._writeHmapPath("data://terrain/testhmap2_2048.png");
     _terrainInst               = _terrainData.createInstance();
-    _terrainInst->_worldHeight = 1000.0f;
+    _terrainInst->_worldHeight = 5000.0f;
     _terrainInst->_worldSizeXZ = 8192.0f;
     _terrainDrawable           = _terrainInst->createCallbackDrawable();
     ctx->debugPopGroup();
@@ -88,18 +88,15 @@ int main(int argc, char** argv) {
     ///////////////////////////////////////
     // compute view and projection matrices
     ///////////////////////////////////////
-    float TARGW    = context->mainSurfaceWidth();
-    float TARGH    = context->mainSurfaceHeight();
-    float aspect   = TARGW / TARGH;
-    float phase    = curtime * PI2 * 0.1f;
-    float distance = 1100.0f;
-    auto tgt       = fvec3(sinf(phase), 0.1f, -cosf(phase)) * distance;
-    fvec3 eye(0, 1200, 0);
+    float TARGW  = context->mainSurfaceWidth();
+    float TARGH  = context->mainSurfaceHeight();
+    float aspect = TARGW / TARGH;
+    float phase  = curtime * PI2 * 0.1f;
+    fvec3 eye(245, 150, -330);
+    auto tgt = eye + fvec3(sinf(phase), -0.2f, -cosf(phase));
     fvec3 up(0, 1, 0);
-    auto projection = mtxi->Persp(45, aspect, 0.1, 4096.0);
-    auto view       = mtxi->LookAt(eye, tgt, up);
     camdata.Lookat(eye, tgt, up);
-    camdata.Persp(0.1, 100.0, 45.0);
+    camdata.Persp(0.1, 6000.0, 45.0);
     ///////////////////////////////////////
     // compositor setup
     ///////////////////////////////////////
