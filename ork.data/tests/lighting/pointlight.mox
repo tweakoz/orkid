@@ -14,7 +14,7 @@
                                             <object type='EzUiCam' id='3'>
                                                 <property name='Center'>-1.2152 1.5309 -1.51038</property>
                                                 <property name='Loc'>13.2917</property>
-                                                <property name='QuatC'>0.00667377 -0.914729 0.402198 0.0474568</property>
+                                                <property name='QuatC'>-0.0118087 -0.950073 0.303398 0.0772272</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -121,7 +121,7 @@
                                                     <property name='LightData'>
                                                         <reference category='ObjectClass'>
                                                             <object type='PointLightData' id='15'>
-                                                                <property name='Color'>0 0 0</property>
+                                                                <property name='Color'>10 10 0</property>
                                                                 <property name='Cookie'><backreference id='-1'/></property>
                                                                 <property name='Decal'>false</property>
                                                                 <property name='ShadowBias'>0.01</property>
