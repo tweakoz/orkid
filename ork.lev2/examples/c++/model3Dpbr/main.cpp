@@ -64,6 +64,9 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////
   timer.Start();
   //////////////////////////////////////////////////////////
+  // gpuInit handler, called once on main(rendering) thread
+  //  at startup time
+  //////////////////////////////////////////////////////////
   qtapp->onGpuInit([&](Context* ctx) {
     ctx->debugPushGroup("main.onGpuInit");
     auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/pbr1/pbr1");
@@ -73,7 +76,7 @@ int main(int argc, char** argv) {
     while (asset::AssetManager<TextureAsset>::AutoLoad()) {
     }
 
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 30; i++) {
       Instance inst;
       inst._drawable = new ModelDrawable;
       inst._xgminst  = new XgmModelInst(model);
@@ -83,6 +86,57 @@ int main(int argc, char** argv) {
     }
     ctx->debugPopGroup();
   });
+  //////////////////////////////////////////////////////////
+  // update handler (called on update thread)
+  //  it will never be called before onGpuInit() is complete...
+  //////////////////////////////////////////////////////////
+  qtapp->onUpdate([&](UpdateData updata){
+    double dt = updata._dt;
+    double abstime = updata._abstime;
+    ///////////////////////////////////////
+    auto DB = DrawableBuffer::LockWriteBuffer(0);
+    DB->Reset();
+    DB->copyCameras(cameras);
+    auto layer = DB->MergeLayer("Default"_pool);
+    ////////////////////////////////////////
+    // animate instances
+    ////////////////////////////////////////
+
+    for (auto& inst : instances) {
+      auto drawable = static_cast<Drawable*>(inst._drawable);
+      fvec3 delta = inst._target - inst._curpos;
+      inst._curpos += delta.Normal() * dt * 1.0;
+
+      delta         = inst._targetaxis - inst._curaxis;
+      inst._curaxis = (inst._curaxis + delta.Normal() * dt * 0.1).Normal();
+      inst._curangle += (inst._targetangle - inst._curangle) * dt * 0.1;
+
+      if (inst._timeout < abstime) {
+        inst._timeout  = abstime + float(rand() % 255) / 64.0;
+        inst._target.x = (float(rand() % 255) / 2.55) - 50;
+        inst._target.y = (float(rand() % 255) / 2.55) - 50;
+        inst._target.z = (float(rand() % 255) / 2.55) - 50;
+        inst._target *= 10.0f;
+
+        fvec3 axis;
+        axis.x            = (float(rand() % 255) / 255.0f) - 0.5f;
+        axis.y            = (float(rand() % 255) / 255.0f) - 0.5f;
+        axis.z            = (float(rand() % 255) / 255.0f) - 0.5f;
+        inst._targetaxis  = axis.Normal();
+        inst._targetangle = PI2 * (float(rand() % 255) / 255.0f) - 0.5f;
+      }
+
+      fquat q;
+      q.fromAxisAngle(fvec4(inst._curaxis, inst._curangle));
+
+      inst._xform.mWorldMatrix.compose(inst._curpos, q, 1.0f);
+      drawable->enqueueOnLayer(inst._xform, *layer);
+    }
+    ////////////////////////////////////////
+    DrawableBuffer::UnLockWriteBuffer(DB);
+  });
+  //////////////////////////////////////////////////////////
+  // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
   qtapp->onDraw([&](const ui::DrawEvent& drwev) {
     auto context = drwev.GetTarget();
@@ -94,7 +148,7 @@ int main(int argc, char** argv) {
     auto mtxi     = context->MTXI(); // matrix Interface
     auto gbi      = context->GBI();  // GeometryBuffer Interface
     float curtime = timer.SecsSinceStart();
-    float dt      = curtime - prevtime;
+    float dt_render      = curtime - prevtime;
     prevtime      = curtime;
     ///////////////////////////////////////
     // compute view and projection matrices
@@ -119,51 +173,6 @@ int main(int argc, char** argv) {
     TOPCPD._irendertarget = &rt;
     TOPCPD.SetDstRect(tgtrect);
     compositorimpl.pushCPD(TOPCPD);
-    ///////////////////////////////////////
-    auto DB = DrawableBuffer::LockWriteBuffer(0);
-    DB->Reset();
-    DB->copyCameras(cameras);
-    auto layer = DB->MergeLayer("Default"_pool);
-
-    ////////////////////////////////////////
-    // animate instances
-    ////////////////////////////////////////
-
-    for (auto& inst : instances) {
-      auto drawable = static_cast<Drawable*>(inst._drawable);
-
-      fvec3 delta = inst._target - inst._curpos;
-      inst._curpos += delta.Normal() * dt * 1.0;
-
-      delta         = inst._targetaxis - inst._curaxis;
-      inst._curaxis = (inst._curaxis + delta.Normal() * dt * 0.1).Normal();
-      inst._curangle += (inst._targetangle - inst._curangle) * dt * 0.1;
-
-      if (inst._timeout < curtime) {
-        inst._timeout  = curtime + float(rand() % 255) / 64.0;
-        inst._target.x = (float(rand() % 255) / 2.55) - 50;
-        inst._target.y = (float(rand() % 255) / 2.55) - 50;
-        inst._target.z = (float(rand() % 255) / 2.55) - 50;
-        inst._target *= 10.0f;
-
-        fvec3 axis;
-        axis.x            = (float(rand() % 255) / 255.0f) - 0.5f;
-        axis.y            = (float(rand() % 255) / 255.0f) - 0.5f;
-        axis.z            = (float(rand() % 255) / 255.0f) - 0.5f;
-        inst._targetaxis  = axis.Normal();
-        inst._targetangle = PI2 * (float(rand() % 255) / 255.0f) - 0.5f;
-      }
-
-      fquat q;
-      q.fromAxisAngle(fvec4(inst._curaxis, inst._curangle));
-
-      inst._xform.mWorldMatrix.compose(inst._curpos, q, 1.0f);
-      drawable->enqueueOnLayer(inst._xform, *layer);
-    }
-
-    ////////////////////////////////////////
-
-    DrawableBuffer::UnLockWriteBuffer(DB);
     ///////////////////////////////////////
     // Draw!
     ///////////////////////////////////////

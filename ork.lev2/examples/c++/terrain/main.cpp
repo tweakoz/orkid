@@ -53,9 +53,11 @@ int main(int argc, char** argv) {
   CameraDataLut cameras;
   CameraData camdata;
   cameras.AddSorted("spawncam"_pool, &camdata);
-  float prevtime = timer.SecsSinceStart();
   //////////////////////////////////////////////////////////
   timer.Start();
+  //////////////////////////////////////////////////////////
+  // gpuInit handler, called once on main(rendering) thread
+  //  at startup time
   //////////////////////////////////////////////////////////
   qtapp->onGpuInit([&](Context* ctx) {
     ctx->debugPushGroup("main.onGpuInit");
@@ -74,6 +76,26 @@ int main(int argc, char** argv) {
     ctx->debugPopGroup();
   });
   //////////////////////////////////////////////////////////
+  // update handler (called on update thread)
+  //  it will never be called before onGpuInit() is complete...
+  //////////////////////////////////////////////////////////
+  qtapp->onUpdate([&](UpdateData updata){
+    double dt = updata._dt;
+    double abstime = updata._abstime;
+    ///////////////////////////////////////
+    // enqueue terrain
+    ///////////////////////////////////////
+    auto DB = DrawableBuffer::LockWriteBuffer(0);
+    DB->Reset();
+    DB->copyCameras(cameras);
+    auto layer = DB->MergeLayer("Default"_pool);
+    _terrainXform.mWorldMatrix.compose(fvec3(), fquat(), 1.0f);
+    _terrainDrawable->enqueueOnLayer(_terrainXform, *layer);
+    DrawableBuffer::UnLockWriteBuffer(DB);
+  });
+  //////////////////////////////////////////////////////////
+  // draw handler (called on main(rendering) thread)
+  //////////////////////////////////////////////////////////
   qtapp->onDraw([&](const ui::DrawEvent& drwev) {
     auto context = drwev.GetTarget();
     RenderContextFrameData RCFD(context); // renderer per/frame data
@@ -81,8 +103,6 @@ int main(int argc, char** argv) {
     context->pushRenderContextFrameData(&RCFD);
     auto fbi      = context->FBI(); // FrameBufferInterface
     float curtime = timer.SecsSinceStart();
-    float dt      = curtime - prevtime;
-    prevtime      = curtime;
     ///////////////////////////////////////
     // compute view and projection matrices
     ///////////////////////////////////////
@@ -102,16 +122,6 @@ int main(int argc, char** argv) {
     TOPCPD._irendertarget = &rt;
     TOPCPD.SetDstRect(tgtrect);
     compositorimpl.pushCPD(TOPCPD);
-    ///////////////////////////////////////
-    // enqueue terrain
-    ///////////////////////////////////////
-    auto DB = DrawableBuffer::LockWriteBuffer(0);
-    DB->Reset();
-    DB->copyCameras(cameras);
-    auto layer = DB->MergeLayer("Default"_pool);
-    _terrainXform.mWorldMatrix.compose(fvec3(), fquat(), 1.0f);
-    _terrainDrawable->enqueueOnLayer(_terrainXform, *layer);
-    DrawableBuffer::UnLockWriteBuffer(DB);
     ///////////////////////////////////////
     // render !
     ///////////////////////////////////////

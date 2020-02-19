@@ -23,6 +23,7 @@
 #include <ork/math/collision_test.h>
 #include <ork/stream/ResizableStringOutputStream.h>
 #include <ork/kernel/string/deco.inl>
+#include <ork/util/triple_buffer.h>
 
 namespace ork::lev2 {
 
@@ -218,24 +219,24 @@ const CameraData* DrawableBuffer::cameraData(const PoolString& named) const {
 }
 
 /////////////////////////////////////////////////////////////////////
-static concurrent_multi_buffer<DrawableBuffer, 2> gBuffers;
+static concurrent_triple_buffer<DrawableBuffer> gBuffers;
 /////////////////////////////////////////////////////////////////////
 const DrawableBuffer* DrawableBuffer::acquireReadDB(int lid) {
-  return gBuffers.BeginRead();
+  return gBuffers.begin_pull();
 }
 /////////////////////
 void DrawableBuffer::releaseReadDB(const DrawableBuffer* db) {
-  gBuffers.EndRead(db);
+  gBuffers.end_pull(db);
 }
 /////////////////////////////////////////////////////////////////////
 DrawableBuffer* DrawableBuffer::LockWriteBuffer(int lid) {
   // ork::opq::assertOnQueue2(opq::updateSerialQueue());
-  DrawableBuffer* wbuf = gBuffers.BeginWrite();
+  DrawableBuffer* wbuf = gBuffers.begin_push();
   return wbuf;
 }
 void DrawableBuffer::UnLockWriteBuffer(DrawableBuffer* db) {
   // ork::opq::assertOnQueue2(opq::updateSerialQueue());
-  gBuffers.EndWrite(db);
+  gBuffers.end_push(db);
 }
 /////////////////////////////////////////////////////////////////////
 // flush all renderer side data

@@ -16,9 +16,7 @@ std::shared_ptr<EzApp> EzApp::create(int& argc, char** argv) {
 
 void EzApp::Describe() {
 }
-EzApp::EzApp(int& argc, char** argv)
-    : _updateThread("updatethread")
-    , _updatekill(false) {
+EzApp::EzApp(int& argc, char** argv){
   ork::SetCurrentThreadName("main");
 #if !defined(__APPLE__)
   setenv("QT_QPA_PLATFORMTHEME", "gtk2", 1); // qt5 file dialog crashes otherwise...
@@ -32,23 +30,8 @@ EzApp::EzApp(int& argc, char** argv)
   ork::lev2::ClassInit();
   ork::rtti::Class::InitializeClasses();
   ork::lev2::GfxInit("");
-  /////////////////////////////////////////////
-  _updateThread.start([&](anyp data) {
-    ork::SetCurrentThreadName("update");
-    opq::TrackCurrent opqtest(&opq::updateSerialQueue());
-    while (false == _updatekill)
-      opq::updateSerialQueue().Process();
-  });
 }
 EzApp::~EzApp() {
-  opq::mainSerialQueue().enqueue([this]() { _updatekill = true; });
-  /////////////////////////////////////////////
-  while (false == _updatekill) {
-    opq::TrackCurrent opqtest(&opq::mainSerialQueue());
-    opq::mainSerialQueue().Process();
-  }
-  opq::updateSerialQueue().drain();
-  DrawableBuffer::ClearAndSyncWriters();
   ApplicationStack::Pop();
 }
 
@@ -94,6 +77,8 @@ struct EzViewport : public ui::Viewport {
 
 OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
     : QApplication(argc, argv)
+    , _updateThread("updatethread")
+    , _updatekill(false)
     , _mainWindow(0) {
 
   _ezapp = EzApp::create(argc, argv);
@@ -139,6 +124,61 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
   _mainWindow->setCentralWidget(_mainWindow->_ctxw);
   //////////////////////////////////////////////
   _mainWindow->_ctqt->pushRefreshPolicy(RefreshPolicyItem{EREFRESH_WHENDIRTY});
+
+  /////////////////////////////////////////////
+  _updateThread.start([&](anyp data) {
+    _update_timer.Start();
+    _update_prevtime = _update_timer.SecsSinceStart();
+    _update_timeaccumulator = 0.0;
+    ork::SetCurrentThreadName("update");
+    opq::TrackCurrent opqtest(&opq::updateSerialQueue());
+    UpdateData updata;
+    double stats_timeaccum = 0;
+    double state_numiters = 0.0;
+    while (false == _updatekill){
+
+      double this_time = _update_timer.SecsSinceStart();
+      double raw_delta = this_time-_update_prevtime;
+      _update_prevtime = this_time;
+      _update_timeaccumulator += raw_delta;
+      double step = 1.0/120.0;
+      while(_update_timeaccumulator>step){
+
+        if( _mainWindow->_onUpdate and not _mainWindow->_dogpuinit ){
+          updata._dt = step;
+          updata._abstime += step;
+          _mainWindow->_onUpdate(updata);
+          state_numiters += 1.0;
+        }
+
+        _update_timeaccumulator -= step;
+        stats_timeaccum += step;
+        if( stats_timeaccum>=5.0 ){
+          printf( "UPS<%g>\n", state_numiters/stats_timeaccum);
+          stats_timeaccum = 0.0;
+           state_numiters = 0.0;
+        }
+      }
+
+      opq::updateSerialQueue().Process();
+      usleep(1000);
+      sched_yield();
+    }
+  });
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+OrkEzQtApp::~OrkEzQtApp(){
+  opq::mainSerialQueue().enqueue([this]() { _updatekill = true; });
+  /////////////////////////////////////////////
+  while (false == _updatekill) {
+    opq::TrackCurrent opqtest(&opq::mainSerialQueue());
+    opq::mainSerialQueue().Process();
+  }
+  opq::updateSerialQueue().drain();
+  DrawableBuffer::ClearAndSyncWriters();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -160,6 +200,9 @@ void OrkEzQtApp::onGpuInit(EzMainWin::ongpuinit_t cb) {
 }
 void OrkEzQtApp::onUiEvent(EzMainWin::onuieventcb_t cb) {
   _mainWindow->_onUiEvent = cb;
+}
+void OrkEzQtApp::onUpdate(EzMainWin::onupdate_t cb) {
+  _mainWindow->_onUpdate = cb;
 }
 
 filedevctxptr_t OrkEzQtApp::newFileDevContext(std::string uribase) {

@@ -30,9 +30,12 @@ public:
 
 private:
   EzApp(int& argc, char** argv);
-  ork::Thread _updateThread;
-  bool _updatekill;
   opq::TrackCurrent* _trackq;
+};
+
+struct UpdateData {
+  double _dt = 0.0;
+  double _abstime = 0.0;
 };
 
 class EzMainWin : public QMainWindow {
@@ -44,6 +47,7 @@ public:
   typedef std::function<void(const ui::DrawEvent&)> drawcb_t;
   typedef std::function<void(int w, int h)> onresizecb_t;
   typedef std::function<void(Context* ctx)> ongpuinit_t;
+  typedef std::function<void(UpdateData upd)> onupdate_t;
   typedef std::function<ui::HandlerResult(const ui::Event& ev)> onuieventcb_t;
 
   EzMainWin();
@@ -56,6 +60,8 @@ public:
   onresizecb_t _onResize   = nullptr;
   onuieventcb_t _onUiEvent = nullptr;
   ongpuinit_t _onGpuInit   = nullptr;
+  onupdate_t _onUpdate = nullptr;
+
 };
 
 class OrkEzQtApp : public QApplication {
@@ -65,6 +71,7 @@ class OrkEzQtApp : public QApplication {
 
 public:
   ///////////////////////////////////
+  ~OrkEzQtApp() final;
   ///////////////////////////////////
   static std::shared_ptr<OrkEzQtApp> create(int& argc, char** argv);
 
@@ -74,6 +81,7 @@ public:
   void onResize(EzMainWin::onresizecb_t cb);
   void onGpuInit(EzMainWin::ongpuinit_t cb);
   void onUiEvent(EzMainWin::onuieventcb_t cb);
+  void onUpdate(EzMainWin::onupdate_t cb);
   void setRefreshPolicy(RefreshPolicyItem policy);
 
   int runloop();
@@ -88,6 +96,11 @@ public:
   EzMainWin* _mainWindow;
   std::shared_ptr<EzApp> _ezapp;
   std::map<std::string, filedevctxptr_t> _fdevctxmap;
+  ork::Timer _update_timer;
+  double _update_prevtime = 0;
+  double _update_timeaccumulator = 0;
+  ork::Thread _updateThread;
+  bool _updatekill;
 };
 
 } // namespace ork::lev2
