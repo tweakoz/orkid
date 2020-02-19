@@ -12,10 +12,9 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>-1.23795 1.83661 -1.84228</property>
-                                                <property name='Focus'>0 0 0</property>
+                                                <property name='Center'>-1.2152 1.5309 -1.51038</property>
                                                 <property name='Loc'>13.2917</property>
-                                                <property name='QuatC'>-0.00875141 -0.993128 0.112979 0.0404295</property>
+                                                <property name='QuatC'>0.00667377 -0.914729 0.402198 0.0474568</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -122,11 +121,13 @@
                                                     <property name='LightData'>
                                                         <reference category='ObjectClass'>
                                                             <object type='PointLightData' id='15'>
-                                                                <property name='AffectsSpecular'>false</property>
-                                                                <property name='Color'>50 50 0</property>
-                                                                <property name='ShadowBias'>0.2</property>
+                                                                <property name='Color'>0 0 0</property>
+                                                                <property name='Cookie'><backreference id='-1'/></property>
+                                                                <property name='Decal'>false</property>
+                                                                <property name='ShadowBias'>0.01</property>
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>false</property>
+                                                                <property name='ShadowMapSize'>1024</property>
                                                                 <property name='ShadowSamples'>1</property>
                                                                 <property name='Falloff'>1</property>
                                                                 <property name='Radius'>10</property>
@@ -250,6 +251,14 @@
                                                 </object>
                                             </reference>
                                         </item>
+                                        <item key='lighting'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='LightingComponentData' id='28'>
+                                                    <property name='Dynamic'>false</property>
+                                                    <property name='LightData'><backreference id='-1'/></property>
+                                                </object>
+                                            </reference>
+                                        </item>
                                     </property>
                                 </object>
                             </reference>
@@ -260,22 +269,22 @@
             </item>
             <item key='PerformanceAnalyzer'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='28'>
+                    <object type='Ent3dEntData' id='29'>
                         <property name='Name'>"PerformanceAnalyzer"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='29'>
+                            <object type='Ent3dDagNode' id='30'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 1 0 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
                         <property name='Archetype'>
                             <reference category='SceneObjectClass'>
-                                <object type='PerformanceAnalyzerArchetype' id='30'>
+                                <object type='PerformanceAnalyzerArchetype' id='31'>
                                     <property name='Name'>"SceneObject1"</property>
                                     <property name='Components'>
                                         <item key='control'>
                                             <reference category='ComponentDataClass'>
-                                                <object type='PerfAnalyzerControllerData' id='31'>
+                                                <object type='PerfAnalyzerControllerData' id='32'>
                                                     <property name='EnableDisplay'>true</property>
                                                 </object>
                                             </reference>
@@ -288,16 +297,16 @@
                     </object>
                 </reference>
             </item>
-            <item key='SceneObject1'><backreference id='30'/></item>
+            <item key='SceneObject1'><backreference id='31'/></item>
             <item key='SceneObject2'><backreference id='18'/></item>
             <item key='SceneObject3'><backreference id='13'/></item>
             <item key='SceneObject4'><backreference id='9'/></item>
             <item key='spawncam'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='32'>
+                    <object type='Ent3dEntData' id='33'>
                         <property name='Name'>"spawncam"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='33'>
+                            <object type='Ent3dDagNode' id='34'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -312,13 +321,13 @@
         <property name='SystemData'>
             <item key='AudioSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='AudioSystemData' id='34'>
+                    <object type='AudioSystemData' id='35'>
                         <property name='DistanceAttenPower'>0</property>
                         <property name='DistanceMax'>10</property>
                         <property name='DistanceMin'>0.1</property>
                         <property name='DistanceScale'>0.003</property>
                         <property name='Reverb'>
-                            <object type='lev2::AudioReverbProperties' id='35'>
+                            <object type='lev2::AudioReverbProperties' id='36'>
                                 <property name='DecayTime'>1.49</property>
                                 <property name='EnvDiffusion'>1</property>
                                 <property name='ModulationDepth'>0</property>
@@ -332,7 +341,7 @@
             </item>
             <item key='BulletSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='BulletSystemData' id='36'>
+                    <object type='BulletSystemData' id='37'>
                         <property name='Debug'>false</property>
                         <property name='Gravity'>0 0 0</property>
                         <property name='SimulationRate'>120</property>
@@ -342,9 +351,9 @@
             </item>
             <item key='CompositingSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='CompositingSystemData' id='37'>
+                    <object type='CompositingSystemData' id='38'>
                         <property name='CompositorData'>
-                            <object type='CompositingData' id='38'>
+                            <object type='CompositingData' id='39'>
                                 <property name='ActiveItem'>"item1"</property>
                                 <property name='ActiveScene'>"scene1"</property>
                                 <property name='Enable'>true</property>
@@ -352,25 +361,26 @@
                                 <property name='Scenes'>
                                     <item key='scene1'>
                                         <reference category='ObjectClass'>
-                                            <object type='CompositingScene' id='39'>
+                                            <object type='CompositingScene' id='40'>
                                                 <property name='Items'>
                                                     <item key='item1'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='CompositingSceneItem' id='40'>
+                                                            <object type='CompositingSceneItem' id='41'>
                                                                 <property name='Technique'>
                                                                     <reference category='ObjectClass'>
-                                                                        <object type='NodeCompositingTechnique' id='41'>
+                                                                        <object type='NodeCompositingTechnique' id='42'>
                                                                             <property name='OutputNode'>
                                                                                 <reference category='ObjectClass'>
-                                                                                    <object type='ScreenOutputCompositingNode' id='42'>
+                                                                                    <object type='ScreenOutputCompositingNode' id='43'>
                                                                                         <property name='Layer'>"All"</property>
+                                                                                        <property name='SuperSample'>0</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>
                                                                             <property name='PostFxNode'><backreference id='-1'/></property>
                                                                             <property name='RenderNode'>
                                                                                 <reference category='ObjectClass'>
-                                                                                    <object type='DeferredCompositingNodePbr' id='43'>
+                                                                                    <object type='DeferredCompositingNodePbr' id='44'>
                                                                                         <property name='AmbientLevel'>0 0 0</property>
                                                                                         <property name='ClearColor'>0 0 0 1</property>
                                                                                         <property name='DepthFogDistance'>100</property>
@@ -407,21 +417,23 @@
             </item>
             <item key='LightingSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='VrSystemData' id='44'>
+                    <object type='VrSystemData' id='45'>
                         <property name='TrackingObjectEntity'>"vrtrackedobject"</property>
+                        <property name='UseCameraView'>false</property>
+                        <property name='VisualOffset'>0 0 0</property>
                         <property name='VrCameraEntity'>"vrcamera"</property>
                     </object>
                 </reference>
             </item>
             <item key='LightingSystemSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='LightingSystemSystemData' id='45'>
+                    <object type='LightingSystemSystemData' id='46'>
                     </object>
                 </reference>
             </item>
             <item key='ScriptSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='ScriptSystemData' id='46'>
+                    <object type='ScriptSystemData' id='47'>
                     </object>
                 </reference>
             </item>

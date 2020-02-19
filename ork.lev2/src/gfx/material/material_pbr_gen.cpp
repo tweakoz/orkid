@@ -119,6 +119,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
   auto fbi = targ->FBI();
   auto fxi = targ->FXI();
   auto gbi = targ->GBI();
+  auto dwi = targ->DWI();
   ///////////////////////////////////////////////
   static std::shared_ptr<FreestyleMaterial> mtl;
   static const FxShaderTechnique* tekFilterSpecMap = nullptr;
@@ -148,7 +149,6 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
 
   int numpix           = w * h;
   int imip             = 0;
-  auto targ_buf        = fbi->GetThisBuffer();
   float roughness      = 0.0f;
   auto mipchain        = new MipChain(w, h, EBUFFMT_RGBA32F, ETEXTYPE_2D);
   mipchain->_debugName = "filtenvmap-processed";
@@ -158,15 +158,15 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
     auto outbuffr = std::make_shared<RtBuffer>(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA32F, w, h);
     auto captureb = std::make_shared<CaptureBuffer>();
 
-    outgroup->_autoclear = false;
+    outgroup->_autoclear = true;
     filtex->_rtgroup     = outgroup;
     filtex->_rtbuffer    = outbuffr;
     outbuffr->_debugName = FormatString("filteredenvmap-specenv-mip%d", imip);
     // outbuffer->
     outgroup->SetMrt(0, outbuffr.get());
 
-    // printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
-    // printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
+    printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
+    printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
 
     fbi->PushRtGroup(outgroup.get());
     mtl->bindTechnique(tekFilterSpecMap);
@@ -176,7 +176,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
     mtl->bindParamCTex(param_pfm, rawenvmap);
     mtl->bindParamFloat(param_ruf, roughness);
     mtl->commit();
-    gbi->render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
+    dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
     ///////////////////////////////////////////////
     mtl->end(RCFD);
     fbi->PopRtGroup();
@@ -189,7 +189,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
     if (1) {
       auto outpath = file::Path::temp_dir() / FormatString("filteredenv-specmap-mip%d.exr", imip);
       auto out     = ImageOutput::create(outpath.c_str());
-      // printf("filterenv write dbgout<%s> <%p>\n", outpath.c_str(), out.get());
+       printf("filterenv write dbgout<%s> <%p>\n", outpath.c_str(), out.get());
       OrkAssert(out != nullptr);
       ImageSpec spec(w, h, 4, TypeDesc::FLOAT);
       out->open(outpath.c_str(), spec);
@@ -211,6 +211,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
 
   targ->debugPopGroup();
 
+
   return alt_tex;
 }
 
@@ -222,6 +223,7 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
   auto fbi = targ->FBI();
   auto fxi = targ->FXI();
   auto gbi = targ->GBI();
+  auto dwi = targ->DWI();
   ///////////////////////////////////////////////
   static std::shared_ptr<FreestyleMaterial> mtl;
   static const FxShaderTechnique* tekFilterDiffMap = nullptr;
@@ -251,7 +253,6 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
 
   int numpix      = w * h;
   int imip        = 0;
-  auto targ_buf   = fbi->GetThisBuffer();
   float roughness = 1.0f;
   std::map<int, std::shared_ptr<CaptureBuffer>> cap4mip;
   auto mipchain        = new MipChain(w, h, EBUFFMT_RGBA32F, ETEXTYPE_2D);
@@ -261,7 +262,7 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
     auto outgroup        = std::make_shared<RtGroup>(targ, w, h, 1);
     auto outbuffr        = std::make_shared<RtBuffer>(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA32F, w, h);
     auto captureb        = std::make_shared<CaptureBuffer>();
-    outgroup->_autoclear = false;
+    outgroup->_autoclear = true;
 
     filtex->_rtgroup     = outgroup;
     filtex->_rtbuffer    = outbuffr;
@@ -280,7 +281,7 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
     mtl->bindParamCTex(param_pfm, rawenvmap);
     mtl->bindParamFloat(param_ruf, roughness);
     mtl->commit();
-    gbi->render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
+    dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
     ///////////////////////////////////////////////
     mtl->end(RCFD);
     fbi->PopRtGroup();

@@ -459,7 +459,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     vec3 finallitcolor = saturateV(diffuse+specular);
     float depth_fogval = saturateF(pow(gbd._fogZ*DepthFogDistance,DepthFogPower));
     vec3 out1 = mix(finallitcolor,skyboxColor,saturateF(rmao.w+depth_fogval));
-    return out1; //mix(out1,basecolor,emissive);
+    return out1;
   } // vec3 environmentLighting(){
 
 WPosData stereoWPD(){
