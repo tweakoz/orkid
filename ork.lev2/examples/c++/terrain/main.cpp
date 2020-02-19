@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
     double dt = updata._dt;
     double abstime = updata._abstime;
     ///////////////////////////////////////
-    // compute view and projection matrices
+    // compute camera data
     ///////////////////////////////////////
     float phase = abstime * PI2 * 0.01f;
     fvec3 eye(245, 150, -330);
@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
     camdata.Lookat(eye, tgt, up);
     camdata.Persp(0.1, 6000.0, 45.0);
     ///////////////////////////////////////
-    // enqueue terrain
+    // enqueue terrain (and whole frame)
     ///////////////////////////////////////
     auto DB = DrawableBuffer::LockWriteBuffer(0);
     DB->Reset();

@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
     double dt = updata._dt;
     double abstime = updata._abstime;
     ///////////////////////////////////////
-    // compute view and projection matrices
+    // compute camera data
     ///////////////////////////////////////
     float phase    = abstime * PI2 * 0.1f;
     float distance = 10.0f;
@@ -105,9 +105,8 @@ int main(int argc, char** argv) {
     DB->copyCameras(cameras);
     auto layer = DB->MergeLayer("Default"_pool);
     ////////////////////////////////////////
-    // animate instances
+    // animate and enqueue all instances
     ////////////////////////////////////////
-
     for (auto& inst : instances) {
       auto drawable = static_cast<Drawable*>(inst._drawable);
       fvec3 delta = inst._target - inst._curpos;
