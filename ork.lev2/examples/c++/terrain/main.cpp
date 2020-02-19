@@ -22,7 +22,6 @@ int main(int argc, char** argv) {
   auto qtapp  = OrkEzQtApp::create(argc, argv);
   auto qtwin  = qtapp->_mainWindow;
   auto gfxwin = qtwin->_gfxwin;
-  Timer timer;
   Texture* envlight = nullptr;
   hfdrawableinstptr_t _terrainInst;
   TerrainDrawableData _terrainData;
@@ -54,8 +53,6 @@ int main(int argc, char** argv) {
   CameraData camdata;
   cameras.AddSorted("spawncam"_pool, &camdata);
   //////////////////////////////////////////////////////////
-  timer.Start();
-  //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
   //////////////////////////////////////////////////////////
@@ -83,6 +80,15 @@ int main(int argc, char** argv) {
     double dt = updata._dt;
     double abstime = updata._abstime;
     ///////////////////////////////////////
+    // compute view and projection matrices
+    ///////////////////////////////////////
+    float phase = abstime * PI2 * 0.01f;
+    fvec3 eye(245, 150, -330);
+    auto tgt = eye + fvec3(sinf(phase), -0.1f, -cosf(phase));
+    fvec3 up(0, 1, 0);
+    camdata.Lookat(eye, tgt, up);
+    camdata.Persp(0.1, 6000.0, 45.0);
+    ///////////////////////////////////////
     // enqueue terrain
     ///////////////////////////////////////
     auto DB = DrawableBuffer::LockWriteBuffer(0);
@@ -102,16 +108,6 @@ int main(int argc, char** argv) {
     RCFD._cimpl = &compositorimpl;
     context->pushRenderContextFrameData(&RCFD);
     auto fbi      = context->FBI(); // FrameBufferInterface
-    float curtime = timer.SecsSinceStart();
-    ///////////////////////////////////////
-    // compute view and projection matrices
-    ///////////////////////////////////////
-    float phase = curtime * PI2 * 0.01f;
-    fvec3 eye(245, 150, -330);
-    auto tgt = eye + fvec3(sinf(phase), -0.1f, -cosf(phase));
-    fvec3 up(0, 1, 0);
-    camdata.Lookat(eye, tgt, up);
-    camdata.Persp(0.1, 6000.0, 45.0);
     ///////////////////////////////////////
     // compositor setup
     ///////////////////////////////////////

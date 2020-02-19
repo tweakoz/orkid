@@ -35,7 +35,6 @@ int main(int argc, char** argv) {
   auto qtapp  = OrkEzQtApp::create(argc, argv);
   auto qtwin  = qtapp->_mainWindow;
   auto gfxwin = qtwin->_gfxwin;
-  Timer timer;
   XgmModel* model         = nullptr;
   Texture* envlight       = nullptr;
   XgmModelInst* modelinst = nullptr;
@@ -60,9 +59,6 @@ int main(int argc, char** argv) {
   CameraDataLut cameras;
   CameraData camdata;
   cameras.AddSorted("spawncam"_pool, &camdata);
-  float prevtime = timer.SecsSinceStart();
-  //////////////////////////////////////////////////////////
-  timer.Start();
   //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
@@ -93,6 +89,16 @@ int main(int argc, char** argv) {
   qtapp->onUpdate([&](UpdateData updata){
     double dt = updata._dt;
     double abstime = updata._abstime;
+    ///////////////////////////////////////
+    // compute view and projection matrices
+    ///////////////////////////////////////
+    float phase    = abstime * PI2 * 0.1f;
+    float distance = 10.0f;
+    auto eye       = fvec3(sinf(phase), 1.0f, -cosf(phase)) * distance;
+    fvec3 tgt(0, 0, 0);
+    fvec3 up(0, 1, 0);
+    camdata.Lookat(eye, tgt, up);
+    camdata.Persp(0.1, 100.0, 45.0);
     ///////////////////////////////////////
     auto DB = DrawableBuffer::LockWriteBuffer(0);
     DB->Reset();
@@ -147,27 +153,11 @@ int main(int argc, char** argv) {
     auto fxi      = context->FXI();  // FX Interface
     auto mtxi     = context->MTXI(); // matrix Interface
     auto gbi      = context->GBI();  // GeometryBuffer Interface
-    float curtime = timer.SecsSinceStart();
-    float dt_render      = curtime - prevtime;
-    prevtime      = curtime;
-    ///////////////////////////////////////
-    // compute view and projection matrices
-    ///////////////////////////////////////
-    float TARGW    = context->mainSurfaceWidth();
-    float TARGH    = context->mainSurfaceHeight();
-    float aspect   = TARGW / TARGH;
-    float phase    = curtime * PI2 * 0.1f;
-    float distance = 10.0f;
-    auto eye       = fvec3(sinf(phase), 1.0f, -cosf(phase)) * distance;
-    fvec3 tgt(0, 0, 0);
-    fvec3 up(0, 1, 0);
-    auto projection = mtxi->Persp(45, aspect, 0.1, 100.0);
-    auto view       = mtxi->LookAt(eye, tgt, up);
-    camdata.Lookat(eye, tgt, up);
-    camdata.Persp(0.1, 100.0, 45.0);
     ///////////////////////////////////////
     // compositor setup
     ///////////////////////////////////////
+    float TARGW    = context->mainSurfaceWidth();
+    float TARGH    = context->mainSurfaceHeight();
     lev2::UiViewportRenderTarget rt(nullptr);
     auto tgtrect          = ViewportRect(0, 0, TARGW, TARGH);
     TOPCPD._irendertarget = &rt;
