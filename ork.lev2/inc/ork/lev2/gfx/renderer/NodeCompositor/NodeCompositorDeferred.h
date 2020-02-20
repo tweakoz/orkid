@@ -174,6 +174,13 @@ struct DeferredContext {
   RtGroup* _rtgDecal        = nullptr;
   RtGroup* _rtgDepthCluster = nullptr;
   RtGroup* _rtgLaccum       = nullptr;
+
+  RtBuffer* _rtbAlbAo        = nullptr;
+  RtBuffer* _rtbNormalDist   = nullptr;
+  RtBuffer* _rtbRufMtl       = nullptr;
+  RtBuffer* _rtbDepthCluster = nullptr;
+  RtBuffer* _rtbLightAccum   = nullptr;
+
   PoolString _layername;
   float _specularLevel    = 1.0f;
   float _diffuseLevel     = 1.0f;

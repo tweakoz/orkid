@@ -139,9 +139,25 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     decoded._uv     = wpd._muv;
     decoded._wpos   = wpres.xyz;
     decoded._zeye   = wpres.w;
-    vec4 n_mdl      = texture(MapNormalL, decoded._uv);
+    vec4 n_mdl      = texture(MapNormalL, decoded._uv,0);
     decoded._wnrm   = normalize(n_mdl.xyz*2.0-vec3(1));
-    decoded._albedo = texture(MapAlbedoAo, decoded._uv).xyz;
+    decoded._albedo = texture(MapAlbedoAo, decoded._uv,0).xyz;
+    decoded._fogZ = o._fogZ;
+    decoded._rawDepth = o._rawDepth;
+    decoded._emissive = n_mdl.w;
+    return decoded;
+  }
+  /////////////////////////////////////////////////////////
+  GBufData decodeGBUF2(WPosData wpd) {
+    wposout o = defwpos(wpd);
+    vec4 wpres = o._out;
+    GBufData decoded;
+
+    decoded._uv     = wpd._muv;
+    decoded._wpos   = wpres.xyz;
+    decoded._zeye   = wpres.w;
+    vec4 n_mdl      = texture(MapNormalL, decoded._uv,0);
+    decoded._wnrm   = normalize(n_mdl.xyz*2.0-vec3(1));
     decoded._fogZ = o._fogZ;
     decoded._rawDepth = o._rawDepth;
     decoded._emissive = n_mdl.w;
@@ -184,7 +200,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     plc._viewdir = normalize(epos-wpos);
     plc._metallic = metallic;
     plc._roughness = rmao.y;
-    plc._normal = normalize(texture(MapNormalL, wpd._muv).xyz*2-vec3(1));
+    plc._normal = normalize(texture(MapNormalL, wpd._muv,0).xyz*2-vec3(1));
     plc._F0 = mix(metalbase,basecolor,metallic);
     return plc;
   }
@@ -300,7 +316,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
   }
   /////////////////////////////////////////////////////////
   vec3 spotlighting_textured_simple(WPosData wpd,GBufData gbd) {
-    vec4 rmao = texture(MapRufMtlAlpha,wpd._muv); // ruf mtl ao opa
+    vec4 rmao = texture(MapRufMtlAlpha,wpd._muv,0); // ruf mtl ao opa
     vec3 l       = vec3(0, 0, 0);
     if( rmao.w==0 ){
       LightCtx plc = lcalc1(wpd,gbd,rmao);
@@ -319,7 +335,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
   // non-pcf shadows
   /////////////////////////////////////////////////////////
   vec3 spotlighting_textured_shadowed(WPosData wpd,GBufData gbd) {
-    vec4 rmao = texture(MapRufMtlAlpha,wpd._muv); // ruf mtl ao opa
+    vec4 rmao = texture(MapRufMtlAlpha,wpd._muv,0); // ruf mtl ao opa
     vec3 l       = vec3(0, 0, 0);
     if( rmao.w==0 ){
       LightCtx plc = lcalc1(wpd,gbd,rmao);
@@ -351,7 +367,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
   }
   /////////////////////////////////////////////////////////
   vec4 spotdecaling_textured_simple(WPosData wpd,GBufData gbd) {
-    vec4 rmao = texture(MapRufMtlAlpha,wpd._muv); // ruf mtl ao opa
+    vec4 rmao = texture(MapRufMtlAlpha,wpd._muv,0); // ruf mtl ao opa
     vec4 l       = vec4(0, 0, 0,0);
     if( rmao.w==0 ){
       int lbeg = int(frg_uvb.x);
@@ -374,7 +390,7 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
   }
   /////////////////////////////////////////////////////////
   vec3 spotlighting_untextured_simple(WPosData wpd,GBufData gbd) {
-    vec4 rmao = texture(MapRufMtlAlpha,wpd._muv); // ruf mtl ao opa
+    vec4 rmao = texture(MapRufMtlAlpha,wpd._muv,0); // ruf mtl ao opa
     vec3 l       = vec3(0, 0, 0);
     if( rmao.w==0 ){
       LightCtx plc = lcalc1(wpd,gbd,rmao);
@@ -393,18 +409,21 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
   /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLighting(WPosData wpd){
 
-    GBufData gbd = decodeGBUF(wpd);
+    GBufData gbd = decodeGBUF2(wpd);
 
     vec2 uv   = wpd._muv;
-    vec4 rmao = texture(MapRufMtlAlpha,uv); // ruf mtl ao opa
-
-    vec3 metalbase = vec3(0.04);
+    vec4 rmao = texture(MapRufMtlAlpha,uv,0); // ruf mtl ao opa
 
     vec3 view_epos0 = posatdepth(wpd,0.0);
     vec3 view_epos1 = posatdepth(wpd,1.0);
     vec3 VIEW_N = normalize(view_epos1-view_epos0);
     vec3 skybox_n = vec3(VIEW_N.x,-VIEW_N.y,VIEW_N.z);
     vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,EnvironmentMipBias)*SkyboxLevel;
+
+    if( rmao.w == 0 ){
+    vec3 metalbase = vec3(0.04);
+    vec3 albedo = texture(MapAlbedoAo, gbd._uv,0).xyz;
+    vec3 rawn = texture(MapNormalL, uv,0).xyz;
 
     /////////////////////////
     // pixel was written to in the gbuffer
@@ -414,13 +433,12 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     float roughnessL = max(.01,roughness);
     float dialetric = 1.0-metallic;
     /////////////////////////
-    vec3 basecolor = gbd._albedo;
+    vec3 basecolor = albedo;
     vec3 diffcolor = mix(basecolor,vec3(0),metallic);
     /////////////////////////
     vec3 wpos = gbd._wpos;
     vec3 epos = posatdepth(wpd,0.0);
     vec3 edir = normalize(wpos-epos);
-    vec3 rawn = texture(MapNormalL, uv).xyz;
     vec3 n    = normalize(rawn*2-vec3(1));
     vec3 refl = normalize(reflect(edir,n));
     float emissive = gbd._emissive;
@@ -460,6 +478,10 @@ libblock lib_deferred : ub_light : ub_frg : lib_math : lib_envmapping : lib_cell
     float depth_fogval = saturateF(pow(gbd._fogZ*DepthFogDistance,DepthFogPower));
     vec3 out1 = mix(finallitcolor,skyboxColor,saturateF(rmao.w+depth_fogval));
     return out1;
+  }
+  else {
+    return skyboxColor;
+  }
   } // vec3 environmentLighting(){
 
 WPosData stereoWPD(){

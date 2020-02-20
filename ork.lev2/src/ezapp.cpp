@@ -16,7 +16,7 @@ std::shared_ptr<EzApp> EzApp::create(int& argc, char** argv) {
 
 void EzApp::Describe() {
 }
-EzApp::EzApp(int& argc, char** argv){
+EzApp::EzApp(int& argc, char** argv) {
   ork::SetCurrentThreadName("main");
 #if !defined(__APPLE__)
   setenv("QT_QPA_PLATFORMTHEME", "gtk2", 1); // qt5 file dialog crashes otherwise...
@@ -48,6 +48,8 @@ struct EzViewport : public ui::Viewport {
       : ui::Viewport("yo", 1, 1, 1, 1, fvec3(0, 0, 0), 1.0f)
       , _mainwin(mainwin) {
     lev2::DrawableBuffer::ClearAndSyncWriters();
+    _mainwin->_render_timer.Start();
+    _mainwin->_render_prevtime = _mainwin->_render_timer.SecsSinceStart();
   }
   void DoInit(ork::lev2::Context* pTARG) final {
     pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
@@ -60,6 +62,18 @@ struct EzViewport : public ui::Viewport {
     }
     if (_mainwin->_onDraw) {
       _mainwin->_onDraw(drwev);
+    }
+    double this_time           = _mainwin->_render_timer.SecsSinceStart();
+    double raw_delta           = this_time - _mainwin->_render_prevtime;
+    _mainwin->_render_prevtime = this_time;
+    _mainwin->_render_stats_timeaccum += raw_delta;
+    if (_mainwin->_render_stats_timeaccum >= 5.0) {
+      double FPS = _mainwin->_render_state_numiters / _mainwin->_render_stats_timeaccum;
+      printf("FPS<%g>\n", FPS);
+      _mainwin->_render_stats_timeaccum = 0.0;
+      _mainwin->_render_state_numiters  = 0.0;
+    } else {
+      _mainwin->_render_state_numiters += 1.0;
     }
   }
   void DoSurfaceResize() final {
@@ -128,23 +142,23 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
   /////////////////////////////////////////////
   _updateThread.start([&](anyp data) {
     _update_timer.Start();
-    _update_prevtime = _update_timer.SecsSinceStart();
+    _update_prevtime        = _update_timer.SecsSinceStart();
     _update_timeaccumulator = 0.0;
     ork::SetCurrentThreadName("update");
     opq::TrackCurrent opqtest(&opq::updateSerialQueue());
     UpdateData updata;
     double stats_timeaccum = 0;
-    double state_numiters = 0.0;
-    while (false == _updatekill){
+    double state_numiters  = 0.0;
+    while (false == _updatekill) {
 
       double this_time = _update_timer.SecsSinceStart();
-      double raw_delta = this_time-_update_prevtime;
+      double raw_delta = this_time - _update_prevtime;
       _update_prevtime = this_time;
       _update_timeaccumulator += raw_delta;
-      double step = 1.0/120.0;
-      while(_update_timeaccumulator>step){
+      double step = 1.0 / 120.0;
+      while (_update_timeaccumulator > step) {
 
-        if( _mainWindow->_onUpdate and not _mainWindow->_dogpuinit ){
+        if (_mainWindow->_onUpdate and not _mainWindow->_dogpuinit) {
           updata._dt = step;
           updata._abstime += step;
           _mainWindow->_onUpdate(updata);
@@ -153,10 +167,10 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
 
         _update_timeaccumulator -= step;
         stats_timeaccum += step;
-        if( stats_timeaccum>=5.0 ){
-          printf( "UPS<%g>\n", state_numiters/stats_timeaccum);
+        if (stats_timeaccum >= 5.0) {
+          printf("UPS<%g>\n", state_numiters / stats_timeaccum);
           stats_timeaccum = 0.0;
-           state_numiters = 0.0;
+          state_numiters  = 0.0;
         }
       }
 
@@ -165,12 +179,11 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
       sched_yield();
     }
   });
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-OrkEzQtApp::~OrkEzQtApp(){
+OrkEzQtApp::~OrkEzQtApp() {
   opq::mainSerialQueue().enqueue([this]() { _updatekill = true; });
   /////////////////////////////////////////////
   while (false == _updatekill) {

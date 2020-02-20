@@ -28,6 +28,17 @@ namespace ork::lev2::deferrednode {
 DeferredContext::DeferredContext(RenderCompositingNode* node, std::string shadername, int numlights)
     : _node(node) {
 
+  _rtbDepthCluster             = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_R32UI, 8, 8);
+  _rtbLightAccum               = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16F, 8, 8);
+  _rtbAlbAo                    = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA8, 8, 8);
+  _rtbNormalDist               = new RtBuffer(lev2::ERTGSLOT1, lev2::EBUFFMT_RGB10A2, 8, 8);
+  _rtbRufMtl                   = new RtBuffer(lev2::ERTGSLOT2, lev2::EBUFFMT_RGBA8, 8, 8);
+  _rtbAlbAo->_debugName        = "DeferredRtAlbAo";
+  _rtbNormalDist->_debugName   = "DeferredRtNormalDist";
+  _rtbRufMtl->_debugName       = "DeferredRtRufMtl";
+  _rtbDepthCluster->_debugName = "DeferredDepthCluster";
+  _rtbLightAccum->_debugName   = "DeferredLightAccum";
+
   _shadername = shadername;
   _layername  = "All"_pool;
 
@@ -129,30 +140,20 @@ void DeferredContext::gpuInit(Context* target) {
     _rtgGbuffer->_autoclear = false;
     _rtgDecal               = new RtGroup(target, 8, 8, 1);
     _rtgDecal->_needsDepth  = false;
-    auto buf0               = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA8, 8, 8);
-    auto buf1               = new RtBuffer(lev2::ERTGSLOT1, lev2::EBUFFMT_RGB10A2, 8, 8);
-    auto buf2               = new RtBuffer(lev2::ERTGSLOT2, lev2::EBUFFMT_RGBA8, 8, 8);
-    buf0->_debugName        = "DeferredRtAlbAo";
-    buf1->_debugName        = "DeferredRtNormalDist";
-    buf2->_debugName        = "DeferredRtRufMtl";
-    _rtgGbuffer->SetMrt(0, buf0);
-    _rtgGbuffer->SetMrt(1, buf1);
-    _rtgGbuffer->SetMrt(2, buf2);
-    _rtgDecal->SetMrt(0, buf0);
+    _rtgGbuffer->SetMrt(0, _rtbAlbAo);
+    _rtgGbuffer->SetMrt(1, _rtbNormalDist);
+    _rtgGbuffer->SetMrt(2, _rtbRufMtl);
+    _rtgDecal->SetMrt(0, _rtbAlbAo);
     _gbuffRT = new RtGroupRenderTarget(_rtgGbuffer);
     _decalRT = new RtGroupRenderTarget(_rtgDecal);
     //////////////////////////////////////////////////////////////
     _rtgDepthCluster = new RtGroup(target, 8, 8, 1);
-    auto bufD        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_R32UI, 8, 8);
-    bufD->_debugName = "DeferredDepthCluster";
-    _rtgDepthCluster->SetMrt(0, bufD);
+    _rtgDepthCluster->SetMrt(0, _rtbDepthCluster);
     _clusterRT = new RtGroupRenderTarget(_rtgDepthCluster);
     //////////////////////////////////////////////////////////////
     _rtgLaccum             = new RtGroup(target, 8, 8, 1);
-    auto bufLA             = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16F, 8, 8);
-    bufLA->_debugName      = "DeferredLightAccum";
     _rtgLaccum->_autoclear = false;
-    _rtgLaccum->SetMrt(0, bufLA);
+    _rtgLaccum->SetMrt(0, _rtbLightAccum);
     _accumRT = new RtGroupRenderTarget(_rtgLaccum);
     //////////////////////////////////////////////////////////////
     _whiteTexture = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/white")->GetTexture();

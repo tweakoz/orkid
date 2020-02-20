@@ -42,6 +42,9 @@ void CompositingContext::Init(lev2::Context* pTARG) {
   if ((miWidth != pTARG->mainSurfaceWidth()) || (miHeight != pTARG->mainSurfaceHeight())) {
     miWidth  = pTARG->mainSurfaceWidth();
     miHeight = pTARG->mainSurfaceHeight();
+    if (_compositingTechnique) {
+      _compositingTechnique->Init(pTARG, miWidth, miHeight);
+    }
   }
   _utilMaterial = new GfxMaterial3DSolid;
   _utilMaterial->Init(pTARG);

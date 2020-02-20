@@ -34,7 +34,7 @@ private:
 };
 
 struct UpdateData {
-  double _dt = 0.0;
+  double _dt      = 0.0;
   double _abstime = 0.0;
 };
 
@@ -60,8 +60,11 @@ public:
   onresizecb_t _onResize   = nullptr;
   onuieventcb_t _onUiEvent = nullptr;
   ongpuinit_t _onGpuInit   = nullptr;
-  onupdate_t _onUpdate = nullptr;
-
+  onupdate_t _onUpdate     = nullptr;
+  ork::Timer _render_timer;
+  double _render_prevtime        = 0;
+  double _render_stats_timeaccum = 0;
+  double _render_state_numiters  = 0.0;
 };
 
 class OrkEzQtApp : public QApplication {
@@ -97,7 +100,7 @@ public:
   std::shared_ptr<EzApp> _ezapp;
   std::map<std::string, filedevctxptr_t> _fdevctxmap;
   ork::Timer _update_timer;
-  double _update_prevtime = 0;
+  double _update_prevtime        = 0;
   double _update_timeaccumulator = 0;
   ork::Thread _updateThread;
   bool _updatekill;
