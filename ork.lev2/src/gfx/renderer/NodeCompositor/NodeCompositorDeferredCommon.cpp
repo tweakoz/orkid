@@ -28,11 +28,11 @@ namespace ork::lev2::deferrednode {
 DeferredContext::DeferredContext(RenderCompositingNode* node, std::string shadername, int numlights)
     : _node(node) {
   ///////////
-  _rtbDepthCluster             = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_R32UI, 8, 8);
-  _rtbLightAccum               = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16F, 8, 8);
-  _rtbAlbAo                    = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA8, 8, 8);
-  _rtbNormalDist               = new RtBuffer(lev2::ERTGSLOT1, lev2::EBUFFMT_RGB10A2, 8, 8);
-  _rtbRufMtl                   = new RtBuffer(lev2::ERTGSLOT2, lev2::EBUFFMT_RGBA8, 8, 8);
+  _rtbDepthCluster = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_R32UI, 8, 8);
+  _rtbLightAccum   = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16F, 8, 8);
+  _rtbAlbAo        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA8, 8, 8);
+  _rtbNormalDist   = new RtBuffer(lev2::ERTGSLOT1, lev2::EBUFFMT_RGB10A2, 8, 8);
+  _rtbRufMtl       = new RtBuffer(lev2::ERTGSLOT2, lev2::EBUFFMT_RGBA8, 8, 8);
   ///////////
   _rtbAlbAo->_debugName        = "DeferredRtAlbAo";
   _rtbNormalDist->_debugName   = "DeferredRtNormalDist";
@@ -356,6 +356,7 @@ void DeferredContext::renderBaseLighting(CompositorDrawData& drawdata, const Vie
   auto FBI                     = targ->FBI();
   auto this_buf                = FBI->GetThisBuffer();
   auto RSI                     = targ->RSI();
+  auto DWI                     = targ->DWI();
   const auto TOPCPD            = CIMPL->topCPD();
   _accumCPD                    = TOPCPD;
   _decalCPD                    = TOPCPD;
@@ -389,7 +390,7 @@ void DeferredContext::renderBaseLighting(CompositorDrawData& drawdata, const Vie
   _lightingmtl.bindParamCTex(_parMapGBufNrmL, _rtgGbuffer->GetMrt(1)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
   _lightingmtl.commit();
-  this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
+  DWI->quad2DEMLTiled(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0), 2);
   _lightingmtl.end(RCFD);
   CIMPL->popCPD();       // base lighting
   targ->debugPopGroup(); // BaseLighting

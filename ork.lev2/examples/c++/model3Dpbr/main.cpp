@@ -32,9 +32,9 @@ struct Instance {
 };
 
 int main(int argc, char** argv) {
-  auto qtapp  = OrkEzQtApp::create(argc, argv);
-  auto qtwin  = qtapp->_mainWindow;
-  auto gfxwin = qtwin->_gfxwin;
+  auto qtapp              = OrkEzQtApp::create(argc, argv);
+  auto qtwin              = qtapp->_mainWindow;
+  auto gfxwin             = qtwin->_gfxwin;
   XgmModel* model         = nullptr;
   Texture* envlight       = nullptr;
   XgmModelInst* modelinst = nullptr;
@@ -52,6 +52,9 @@ int main(int argc, char** argv) {
   CompositingData compositordata;
   compositordata.presetPBR();
   compositordata.mbEnable = true;
+  auto nodetek            = compositordata.tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+  auto outpnode           = nodetek->tryOutputNodeAs<ScreenOutputCompositingNode>();
+  // outpnode->setSuperSample(4);
   CompositingImpl compositorimpl(compositordata);
   compositorimpl.bindLighting(lightmgr.get());
   lev2::CompositingPassData TOPCPD;
@@ -86,8 +89,8 @@ int main(int argc, char** argv) {
   // update handler (called on update thread)
   //  it will never be called before onGpuInit() is complete...
   //////////////////////////////////////////////////////////
-  qtapp->onUpdate([&](UpdateData updata){
-    double dt = updata._dt;
+  qtapp->onUpdate([&](UpdateData updata) {
+    double dt      = updata._dt;
     double abstime = updata._abstime;
     ///////////////////////////////////////
     // compute camera data
@@ -109,7 +112,7 @@ int main(int argc, char** argv) {
     ////////////////////////////////////////
     for (auto& inst : instances) {
       auto drawable = static_cast<Drawable*>(inst._drawable);
-      fvec3 delta = inst._target - inst._curpos;
+      fvec3 delta   = inst._target - inst._curpos;
       inst._curpos += delta.Normal() * dt * 1.0;
 
       delta         = inst._targetaxis - inst._curaxis;
@@ -148,15 +151,15 @@ int main(int argc, char** argv) {
     RenderContextFrameData RCFD(context); // renderer per/frame data
     RCFD._cimpl = &compositorimpl;
     context->pushRenderContextFrameData(&RCFD);
-    auto fbi      = context->FBI();  // FrameBufferInterface
-    auto fxi      = context->FXI();  // FX Interface
-    auto mtxi     = context->MTXI(); // matrix Interface
-    auto gbi      = context->GBI();  // GeometryBuffer Interface
+    auto fbi  = context->FBI();  // FrameBufferInterface
+    auto fxi  = context->FXI();  // FX Interface
+    auto mtxi = context->MTXI(); // matrix Interface
+    auto gbi  = context->GBI();  // GeometryBuffer Interface
     ///////////////////////////////////////
     // compositor setup
     ///////////////////////////////////////
-    float TARGW    = context->mainSurfaceWidth();
-    float TARGH    = context->mainSurfaceHeight();
+    float TARGW = context->mainSurfaceWidth();
+    float TARGH = context->mainSurfaceHeight();
     lev2::UiViewportRenderTarget rt(nullptr);
     auto tgtrect          = ViewportRect(0, 0, TARGW, TARGH);
     TOPCPD._irendertarget = &rt;

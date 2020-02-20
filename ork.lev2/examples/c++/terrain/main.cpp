@@ -19,9 +19,9 @@ using namespace ork::lev2;
 using namespace ork::lev2::deferrednode;
 
 int main(int argc, char** argv) {
-  auto qtapp  = OrkEzQtApp::create(argc, argv);
-  auto qtwin  = qtapp->_mainWindow;
-  auto gfxwin = qtwin->_gfxwin;
+  auto qtapp        = OrkEzQtApp::create(argc, argv);
+  auto qtwin        = qtapp->_mainWindow;
+  auto gfxwin       = qtwin->_gfxwin;
   Texture* envlight = nullptr;
   hfdrawableinstptr_t _terrainInst;
   TerrainDrawableData _terrainData;
@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
   CompositingData compositordata;
   compositordata.presetPBR();
   compositordata.mbEnable     = true;
-  auto nodetek                = compositordata.tryNodeTecnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+  auto nodetek                = compositordata.tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
   auto rendnode               = nodetek->tryRenderNodeAs<deferrednode::DeferredCompositingNodePbr>();
   rendnode->_depthFogDistance = 4000.0f;
   rendnode->_depthFogPower    = 5.0f;
@@ -76,8 +76,8 @@ int main(int argc, char** argv) {
   // update handler (called on update thread)
   //  it will never be called before onGpuInit() is complete...
   //////////////////////////////////////////////////////////
-  qtapp->onUpdate([&](UpdateData updata){
-    double dt = updata._dt;
+  qtapp->onUpdate([&](UpdateData updata) {
+    double dt      = updata._dt;
     double abstime = updata._abstime;
     ///////////////////////////////////////
     // compute camera data
@@ -107,7 +107,7 @@ int main(int argc, char** argv) {
     RenderContextFrameData RCFD(context); // renderer per/frame data
     RCFD._cimpl = &compositorimpl;
     context->pushRenderContextFrameData(&RCFD);
-    auto fbi      = context->FBI(); // FrameBufferInterface
+    auto fbi = context->FBI(); // FrameBufferInterface
     ///////////////////////////////////////
     // compositor setup
     ///////////////////////////////////////

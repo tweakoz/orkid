@@ -117,6 +117,7 @@ struct PbrNodeImpl {
     auto FBI                     = targ->FBI();
     auto this_buf                = FBI->GetThisBuffer();
     auto RSI                     = targ->RSI();
+    auto DWI                     = targ->DWI();
     const auto TOPCPD            = CIMPL->topCPD();
     //////////////////////////////////////////////////////
     _context.renderUpdate(drawdata);
@@ -207,9 +208,12 @@ struct PbrNodeImpl {
     _context._lightingmtl.bindParamVec2(_context._parNearFar, fvec2(0.1, 1000));
     _context._lightingmtl.bindParamVec2(
         _context._parInvViewSize, fvec2(1.0 / float(_context._width), 1.0f / float(_context._height)));
+    _context._lightingmtl._rasterstate.SetZWriteMask(false);
+    _context._lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
+    _context._lightingmtl._rasterstate.SetAlphaTest(EALPHATEST_OFF);
     _context._lightingmtl.commit();
     RSI->BindRasterState(_context._lightingmtl._rasterstate);
-    this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
+    DWI->quad2DEMLTiled(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0), 64);
     _context._lightingmtl.end(RCFD);
     targ->debugPopGroup(); // BaseLighting
 

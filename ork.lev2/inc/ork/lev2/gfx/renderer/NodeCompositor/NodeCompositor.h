@@ -164,6 +164,9 @@ public:
   template <typename T> T* tryRenderNodeAs() {
     return dynamic_cast<T*>(_renderNode);
   }
+  template <typename T> T* tryOutputNodeAs() {
+    return dynamic_cast<T*>(_outputNode);
+  }
 
   ork::ObjectMap mBufferMap;
   RenderCompositingNode* _renderNode;

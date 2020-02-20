@@ -20,7 +20,12 @@ public:
   ~ScreenOutputCompositingNode();
 
   PoolString _layername;
-  int supersample() const { return _supersample; }
+  int supersample() const {
+    return _supersample;
+  }
+  void setSuperSample(int ss) {
+    _supersample = ss;
+  }
 
 private:
   void gpuInit(lev2::Context* pTARG, int w, int h) final;
@@ -30,8 +35,7 @@ private:
 
   svar256_t _impl;
   int _supersample;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2 {
+} // namespace ork::lev2

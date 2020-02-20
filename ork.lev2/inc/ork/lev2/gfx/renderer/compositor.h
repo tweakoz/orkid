@@ -242,7 +242,7 @@ public:
     mToggle = !mToggle;
   }
 
-  template <typename T> T* tryNodeTecnique(PoolString scenename, PoolString itemname) const;
+  template <typename T> T* tryNodeTechnique(PoolString scenename, PoolString itemname) const;
 
   orklut<PoolString, ork::Object*> _groups;
   orklut<PoolString, ork::Object*> _scenes;
@@ -323,7 +323,7 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-template <typename T> T* CompositingData::tryNodeTecnique(PoolString scenename, PoolString itemname) const {
+template <typename T> T* CompositingData::tryNodeTechnique(PoolString scenename, PoolString itemname) const {
   T* rval  = nullptr;
   auto its = _scenes.find(scenename);
   if (its != _scenes.end()) {
