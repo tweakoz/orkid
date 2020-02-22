@@ -30,21 +30,23 @@ DeferredContext::DeferredContext(RenderCompositingNode* node, std::string shader
   ///////////
   _rtbDepthCluster = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_R32UI, 8, 8);
   _rtbLightAccum   = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16F, 8, 8);
-  _rtbAlbAo        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA8, 8, 8);
-  _rtbNormalDist   = new RtBuffer(lev2::ERTGSLOT1, lev2::EBUFFMT_RGB10A2, 8, 8);
-  _rtbRufMtl       = new RtBuffer(lev2::ERTGSLOT2, lev2::EBUFFMT_RGBA8, 8, 8);
+  _rtbGbuffer      = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16UI, 8, 8);
+  //_rtbNormalDist   = new RtBuffer(lev2::ERTGSLOT1, lev2::EBUFFMT_RGB10A2, 8, 8);
+  //_rtbRufMtl       = new RtBuffer(lev2::ERTGSLOT2, lev2::EBUFFMT_RGBA8, 8, 8);
   ///////////
-  _rtbAlbAo->_debugName        = "DeferredRtAlbAo";
-  _rtbNormalDist->_debugName   = "DeferredRtNormalDist";
-  _rtbRufMtl->_debugName       = "DeferredRtRufMtl";
+  //_rtbAlbAo->_debugName        = "DeferredRtAlbAo";
+  //_rtbNormalDist->_debugName   = "DeferredRtNormalDist";
+  //_rtbRufMtl->_debugName       = "DeferredRtRufMtl";
+  _rtbGbuffer->_debugName      = "DeferredGbuffer";
   _rtbDepthCluster->_debugName = "DeferredDepthCluster";
   _rtbLightAccum->_debugName   = "DeferredLightAccum";
   ///////////
   _rtbDepthCluster->_texture->TexSamplingMode().PresetPointAndClamp();
   _rtbLightAccum->_texture->TexSamplingMode().PresetPointAndClamp();
-  _rtbAlbAo->_texture->TexSamplingMode().PresetPointAndClamp();
-  _rtbNormalDist->_texture->TexSamplingMode().PresetPointAndClamp();
-  _rtbRufMtl->_texture->TexSamplingMode().PresetPointAndClamp();
+  //_rtbAlbAo->_texture->TexSamplingMode().PresetPointAndClamp();
+  //_rtbNormalDist->_texture->TexSamplingMode().PresetPointAndClamp();
+  //_rtbRufMtl->_texture->TexSamplingMode().PresetPointAndClamp();
+  _rtbGbuffer->_texture->TexSamplingMode().PresetPointAndClamp();
   ///////////
   _shadername = shadername;
   _layername  = "All"_pool;
@@ -113,14 +115,16 @@ void DeferredContext::gpuInit(Context* target) {
     //////////////////////////////////////////////////////////////
     _lightblock = _lightingmtl.paramBlock("ub_light");
     //////////////////////////////////////////////////////////////
-    _parMatIVPArray        = _lightingmtl.param("IVPArray");
-    _parMatVArray          = _lightingmtl.param("VArray");
-    _parMatPArray          = _lightingmtl.param("PArray");
-    _parMapGBufAlbAo       = _lightingmtl.param("MapAlbedoAo");
-    _parMapGBufNrmL        = _lightingmtl.param("MapNormalL");
-    _parMapDepth           = _lightingmtl.param("MapDepth");
-    _parMapShadowDepth     = _lightingmtl.param("MapShadowDepth");
-    _parMapGBufRufMtlAlpha = _lightingmtl.param("MapRufMtlAlpha");
+    _parMatIVPArray = _lightingmtl.param("IVPArray");
+    _parMatVArray   = _lightingmtl.param("VArray");
+    _parMatPArray   = _lightingmtl.param("PArray");
+    _parMapGBuf     = _lightingmtl.param("MapGBuffer");
+
+    //_parMapGBufAlbAo       = _lightingmtl.param("MapAlbedoAo");
+    //_parMapGBufNrmL        = _lightingmtl.param("MapNormalL");
+    _parMapDepth       = _lightingmtl.param("MapDepth");
+    _parMapShadowDepth = _lightingmtl.param("MapShadowDepth");
+    //    _parMapGBufRufMtlAlpha = _lightingmtl.param("MapRufMtlAlpha");
     _parMapDepthCluster    = _lightingmtl.param("MapDepthCluster");
     _parLightCookieTexture = _lightingmtl.param("MapLightingCookie");
     _parMapSpecularEnv     = _lightingmtl.param("MapSpecularEnv");
@@ -147,10 +151,11 @@ void DeferredContext::gpuInit(Context* target) {
     _rtgGbuffer->_autoclear = false;
     _rtgDecal               = new RtGroup(target, 8, 8, 1);
     _rtgDecal->_needsDepth  = false;
-    _rtgGbuffer->SetMrt(0, _rtbAlbAo);
-    _rtgGbuffer->SetMrt(1, _rtbNormalDist);
-    _rtgGbuffer->SetMrt(2, _rtbRufMtl);
-    _rtgDecal->SetMrt(0, _rtbAlbAo);
+    _rtgGbuffer->SetMrt(0, _rtbGbuffer);
+    //_rtgGbuffer->SetMrt(0, _rtbAlbAo);
+    //_rtgGbuffer->SetMrt(1, _rtbNormalDist);
+    //_rtgGbuffer->SetMrt(2, _rtbRufMtl);
+    _rtgDecal->SetMrt(0, _rtbGbuffer);
     _gbuffRT = new RtGroupRenderTarget(_rtgGbuffer);
     _decalRT = new RtGroupRenderTarget(_rtgDecal);
     //////////////////////////////////////////////////////////////
@@ -187,7 +192,6 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
   ///////////////////////////////////////////////////////////////////////////
   const auto TOPCPD  = CIMPL->topCPD();
   auto CPD           = TOPCPD;
-  CPD._clearColor    = _clearColor;
   CPD.mpLayerName    = &_layername;
   CPD._irendertarget = _gbuffRT;
   CPD.SetDstRect(tgt_rect);
@@ -207,7 +211,8 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
     auto MTXI = targ->MTXI();
     CIMPL->pushCPD(CPD); // drawenq
     targ->debugPushGroup("toolvp::DrawEnqRenderables");
-    FBI->Clear(_clearColor, 1.0f);
+    FBI->SetClearColor(fvec4(0, 0, 0, 0));
+    FBI->rtGroupClear(_rtgGbuffer);
     irenderer->drawEnqueuedRenderables();
     framerenderer.renderMisc();
     targ->debugPopGroup(); // drawenq
@@ -386,8 +391,9 @@ void DeferredContext::renderBaseLighting(CompositorDrawData& drawdata, const Vie
   bindViewParams(VD);
   bindRasterState(targ, ECULLTEST_PASS_BACK, EDEPTHTEST_OFF, EBLENDING_OFF);
   //////////////////////////////////////////////////////
-  _lightingmtl.bindParamCTex(_parMapGBufAlbAo, _rtgGbuffer->GetMrt(0)->texture());
-  _lightingmtl.bindParamCTex(_parMapGBufNrmL, _rtgGbuffer->GetMrt(1)->texture());
+  _lightingmtl.bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  //_lightingmtl.bindParamCTex(_parMapGBufAlbAo, _rtgGbuffer->GetMrt(0)->texture());
+  //_lightingmtl.bindParamCTex(_parMapGBufNrmL, _rtgGbuffer->GetMrt(1)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
   _lightingmtl.commit();
   DWI->quad2DEMLTiled(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0), 2);
@@ -422,9 +428,10 @@ void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const Vie
   bindViewParams(VD);
   bindRasterState(targ, ECULLTEST_OFF, EDEPTHTEST_OFF, EBLENDING_ADDITIVE);
   //////////////////////////////////////////////////////
-  _lightingmtl.bindParamCTex(_parMapGBufAlbAo, _rtgGbuffer->GetMrt(0)->texture());
-  _lightingmtl.bindParamCTex(_parMapGBufNrmL, _rtgGbuffer->GetMrt(1)->texture());
-  _lightingmtl.bindParamCTex(_parMapGBufRufMtlAlpha, _rtgGbuffer->GetMrt(2)->texture());
+  _lightingmtl.bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  //_lightingmtl.bindParamCTex(_parMapGBufAlbAo, _rtgGbuffer->GetMrt(0)->texture());
+  //_lightingmtl.bindParamCTex(_parMapGBufNrmL, _rtgGbuffer->GetMrt(1)->texture());
+  //_lightingmtl.bindParamCTex(_parMapGBufRufMtlAlpha, _rtgGbuffer->GetMrt(2)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
   _lightingmtl.bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
   _lightingmtl.bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap);
@@ -476,9 +483,10 @@ void DeferredContext::beginSpotLighting(CompositorDrawData& drawdata, const View
   bindViewParams(VD);
   bindRasterState(targ, ECULLTEST_OFF, EDEPTHTEST_OFF, EBLENDING_ADDITIVE);
   //////////////////////////////////////////////////////
-  _lightingmtl.bindParamCTex(_parMapGBufAlbAo, _rtgGbuffer->GetMrt(0)->texture());
-  _lightingmtl.bindParamCTex(_parMapGBufNrmL, _rtgGbuffer->GetMrt(1)->texture());
-  _lightingmtl.bindParamCTex(_parMapGBufRufMtlAlpha, _rtgGbuffer->GetMrt(2)->texture());
+  _lightingmtl.bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  //_lightingmtl.bindParamCTex(_parMapGBufAlbAo, _rtgGbuffer->GetMrt(0)->texture());
+  //_lightingmtl.bindParamCTex(_parMapGBufNrmL, _rtgGbuffer->GetMrt(1)->texture());
+  //_lightingmtl.bindParamCTex(_parMapGBufRufMtlAlpha, _rtgGbuffer->GetMrt(2)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
   _lightingmtl.bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
   _lightingmtl.bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap);
@@ -527,9 +535,10 @@ void DeferredContext::beginShadowedSpotLighting(CompositorDrawData& drawdata, co
   bindViewParams(VD);
   bindRasterState(targ, ECULLTEST_OFF, EDEPTHTEST_OFF, EBLENDING_ADDITIVE);
   //////////////////////////////////////////////////////
-  _lightingmtl.bindParamCTex(_parMapGBufAlbAo, _rtgGbuffer->GetMrt(0)->texture());
-  _lightingmtl.bindParamCTex(_parMapGBufNrmL, _rtgGbuffer->GetMrt(1)->texture());
-  _lightingmtl.bindParamCTex(_parMapGBufRufMtlAlpha, _rtgGbuffer->GetMrt(2)->texture());
+  _lightingmtl.bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  //_lightingmtl.bindParamCTex(_parMapGBufAlbAo, _rtgGbuffer->GetMrt(0)->texture());
+  //_lightingmtl.bindParamCTex(_parMapGBufNrmL, _rtgGbuffer->GetMrt(1)->texture());
+  //_lightingmtl.bindParamCTex(_parMapGBufRufMtlAlpha, _rtgGbuffer->GetMrt(2)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
   _lightingmtl.bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
   _lightingmtl.bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap);
@@ -580,7 +589,8 @@ void DeferredContext::beginSpotDecaling(CompositorDrawData& drawdata, const View
   bindViewParams(VD);
   bindRasterState(targ, ECULLTEST_OFF, EDEPTHTEST_OFF, EBLENDING_OFF);
   ///////////////////////////
-  _lightingmtl.bindParamCTex(_parMapGBufRufMtlAlpha, _rtgGbuffer->GetMrt(2)->texture());
+  _lightingmtl.bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  //_lightingmtl.bindParamCTex(_parMapGBufRufMtlAlpha, _rtgGbuffer->GetMrt(2)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
   if (cookietexture)
     _lightingmtl.bindParamCTex(_parLightCookieTexture, cookietexture);

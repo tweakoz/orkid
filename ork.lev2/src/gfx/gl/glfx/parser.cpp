@@ -71,7 +71,8 @@ ContainerNode::ContainerNode(const AssetPath& pth, const Scanner& s)
                           "uimage1D uimage2D uimage3D "
                           "uimageCube uimage2DRect "
 #endif
-                          "sampler2D sampler3D sampler2DShadow";
+                          "sampler2D sampler3D sampler2DShadow "
+                          "usampler2D usampler3D";
 
   for (auto item : SplitString(typenames, ' '))
     _validTypeNames.insert(item);
