@@ -5,6 +5,7 @@ fxconfig fxcfg_default {
 	glsl_version = "130";
 	import "skintools.i";
 	import "picktools.i";
+	import "gbuftools.i";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
@@ -131,34 +132,15 @@ fragment_interface iface_fgbuffer
 	}
 }
 ///////////////////////////////////////////////////////////////
-libblock lib_pbr_frg {
+libblock lib_pbr_frg : lib_gbuf_encode {
 	void ps_common_n(vec3 N,vec2 UV) {
-		vec3 nrm_w = normalize(frg_tbn*N);
+		vec3 normal = normalize(frg_tbn*N);
 		vec3 rufmtlamb = texture(MtlRufMap,UV).zyx;
-		rufmtlamb.x *= MetallicFactor;
-		rufmtlamb.y *= RoughnessFactor;
+		float mtl = rufmtlamb.x * MetallicFactor;
+		float ruf = rufmtlamb.y * RoughnessFactor;
 		vec3 color = (ModColor*frg_clr*texture(ColorMap,UV)).xyz;
-		uvec3 ucolor = uvec3(color*255.0);
-		uint r = ucolor.r&0xff;
-		uint g = ucolor.g&0xff;
-		uint b = ucolor.b&0xff;
-		uint ruf = uint(rufmtlamb.y*255.0)&0xff;
-		uint mtl = uint(rufmtlamb.x*255.0)&0xff;
-		uint nx = uint((nrm_w.x+1.0)*511.5)&0x3ff;
-		uint ny = uint((nrm_w.y+1.0)*511.5)&0x3ff;
-
-		uint emissive = uint(length(N)<0.1)<<14;
-		uint snz = uint(nrm_w.z<0.0)<<14;
-		uint mask = 0x8000;
-		uint rout = r|(g<<8);
-		uint gout = b|(ruf<<8);
-		uint bout = nx|((mtl&0xf)<<10)|snz;
-		uint aout = ny|((mtl&0xf0)<<6)|emissive|mask;
-		out_gbuf = uvec4(rout,gout,bout,aout);
-    //out_normal_mdl.xyz = (nrm_w*0.5)+vec3(0.5,0.5,0.5);
-		//out_normal_mdl.w = emissive;
-		//out_rufmtl = vec4(rufmtlamb,0);
-		//out_gbuf = uvec4(0,0,0,0);
+		bool emissive = (length(N)<0.1);
+		out_gbuf = packGbuffer(color,normal,ruf,mtl,emissive);
 	}
 }
 ///////////////////////////////////////////////////////////////

@@ -3,7 +3,8 @@
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
   glsl_version = "330";
-import "misctools.i";
+  import "misctools.i";
+  import "gbuftools.i";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
@@ -228,24 +229,26 @@ fragment_shader ps_terrain : iface_fdefault : lib_terrain_frg {
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_deferred : iface_fdefault {
-  // todo (out_clr on 0 implicitly added)
-  //  and adding it here conflicts
-  //  so lets disable all implicit layout when
-  //   any explicit layout is performed
-  // layout(location = 0) out vec4 out_clr; // albedo ao
+fragment_interface iface_deferred : ublock_frg {
+  inputs {
+    vec3 frg_nrm;
+    vec2 frg_uvxp;
+    vec2 frg_uvyp;
+    vec2 frg_uvzp;
+    vec3 frg_wpos;
+    float frg_camdist;
+  }
   outputs {
-    layout(location = 1) vec4 out_normal_mdl;
-    layout(location = 2) vec4 out_rufmtl;
+    layout(location = 0) uvec4 out_gbuffer;
   }
 }
-fragment_shader ps_terrain_gbuf1 : iface_deferred : lib_terrain_frg {
+fragment_shader ps_terrain_gbuf1
+  : iface_deferred
+  : lib_terrain_frg
+  : lib_gbuf_encode {
   vec3 n = normalize(frg_nrm);
   vec3 c = albedo(n);
-  out_clr = vec4(c, 1);
-  vec3 yo = (n + vec3(1, 1, 1)) * 0.5;
-  out_normal_mdl = vec4(n, 1);
-  out_rufmtl = vec4(0,1,1,0); // ruf==1, mtl==0,ao==0
+  out_gbuffer = packGbuffer(c, n, 1, 0, false);
 }
 ///////////////////////////////////////////////////////////////
 // pick
