@@ -307,8 +307,16 @@ struct GlTexLoadReq {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+constexpr uint16_t kRGB_DXT1  = 0x83F0;
+constexpr uint16_t kRGBA_DXT1 = 0x83F1;
+constexpr uint16_t kRGBA_DXT3 = 0x83F2;
+constexpr uint16_t kRGBA_DXT5 = 0x83F3;
+constexpr GLuint PBOOBJBASE = 0x12340000;
+
 class GlTextureInterface : public TextureInterface {
 public:
+
+
   void TexManInit(void) override;
 
   void LoadDDSTextureMainThreadPart(GlTexLoadReq req);
@@ -335,7 +343,59 @@ private:
 
   std::map<size_t, PboSet*> mPBOSets;
   ContextGL& mTargetGL;
+
 };
+
+struct texcfg {
+  GLuint mInternalFormat;
+  GLuint mFormat;
+  int mBPP;
+  int mNumC;
+};
+
+texcfg GetInternalFormat(GLuint fmt, GLuint typ);
+void Set2D(
+    GlTextureInterface* txi,
+    Texture* tex,
+    GLuint numC,
+    GLuint fmt,
+    GLuint typ,
+    GLuint tgt,
+    int BPP,
+    int inummips,
+    int& iw,
+    int& ih,
+    DataBlockInputStream inpstream);
+void Set3D(
+    GlTextureInterface* txi,
+    /*GLuint numC,*/ GLuint fmt,
+    GLuint typ,
+    GLuint tgt,
+    /*int BPP,*/ int inummips,
+    int& iw,
+    int& ih,
+    int& id,
+    DataBlockInputStream inpstream);
+void Set2DC(
+    GlTextureInterface* txi,
+    GLuint fmt,
+    GLuint tgt,
+    int BPP,
+    int inummips,
+    int& iw,
+    int& ih,
+    DataBlockInputStream inpstream);
+void Set3DC(
+    GlTextureInterface* txi,
+    GLuint fmt,
+    GLuint tgt,
+    int BPP,
+    int inummips,
+    int& iw,
+    int& ih,
+    int& id,
+    DataBlockInputStream inpstream);
+    
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

@@ -29,10 +29,10 @@ datablockptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
 
   switch (_usage) {
     case ETEXUSAGE_COLOR:
-      invoke_nvcompress(srcpath, ddspath, "-rgb"); // -bc1
+      invoke_nvcompress(srcpath, ddspath, "-bc1"); // -bc1
       break;
     case ETEXUSAGE_NORMAL:
-      invoke_nvcompress(srcpath, ddspath, "-rgb"); // -normal
+      invoke_nvcompress(srcpath, ddspath, "-rgb -normal"); //
       break;
     case ETEXUSAGE_DATA:
       invoke_nvcompress(srcpath, ddspath, "-rgb");
