@@ -67,6 +67,12 @@ void ConfigNode::parse(const ScannerView& view) {
       auto v                     = i.second;
       _container->_blockNodes[k] = v;
     }
+    for (auto i : childnode->_keywords) {
+      _container->_keywords.insert(i);
+    }
+    for (auto i : childnode->_validTypeNames) {
+      _container->_validTypeNames.insert(i);
+    }
   }
 }
 

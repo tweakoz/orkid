@@ -44,7 +44,7 @@ ContainerNode::ContainerNode(const AssetPath& pth, const Scanner& s)
     : _path(pth)
     , _scanner(s) {
 
-  std::string typenames = "mat2 mat3 mat4 vec2 vec3 vec4 "
+  std::string typenames = "mat2 mat3 mat4 vec2 vec3 vec4 uvec2 uvec3 uvec4 "
                           "ivec2 ivec3 ivec4 "
                           "float double half uint int "
                           "void bool "

@@ -27,8 +27,17 @@ datablockptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
   fwrite(_srcdata, _srcdatalen, 1, fout);
   fclose(fout);
 
-  invoke_nvcompress(srcpath, ddspath, "rgb");
-
+  switch (_usage) {
+    case ETEXUSAGE_COLOR:
+      invoke_nvcompress(srcpath, ddspath, "-rgb"); // -bc1
+      break;
+    case ETEXUSAGE_NORMAL:
+      invoke_nvcompress(srcpath, ddspath, "-rgb"); // -normal
+      break;
+    case ETEXUSAGE_DATA:
+      invoke_nvcompress(srcpath, ddspath, "-rgb");
+      break;
+  }
   FILE* fin = fopen(ddspath.c_str(), "rb");
   fseek(fin, 0, SEEK_END);
   size_t ddslen = ftell(fin);
@@ -62,6 +71,7 @@ void EmbeddedTexture::fetchDDSdata() {
     _ddsdestdatablock = compressTexture(hashkey);
     DataBlockCache::setDataBlock(hashkey, _ddsdestdatablock);
   }
+  _compressionPending = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

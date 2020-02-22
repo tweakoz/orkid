@@ -19,7 +19,7 @@ namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void invoke_nvcompress(std::string inpath, std::string outpath, std::string outfmt) {
+void invoke_nvcompress(std::string inpath, std::string outpath, std::string other_args) {
   Spawner s;
 #if defined(__APPLE__)
   s.mCommandLine = "/usr/local/bin/nvcompress ";
@@ -27,7 +27,7 @@ void invoke_nvcompress(std::string inpath, std::string outpath, std::string outf
   s.mEnvironment.prependPath("LD_LIBRARY_PATH", file::Path::lib_dir());
   s.mCommandLine = "nvcompress ";
 #endif
-  s.mCommandLine += "-" + outfmt + " ";
+  s.mCommandLine += other_args + " ";
   s.mCommandLine += inpath + std::string(" ");
   s.mCommandLine += outpath + std::string(" ");
   s.spawnSynchronous();

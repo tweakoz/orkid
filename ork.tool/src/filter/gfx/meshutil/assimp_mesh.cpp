@@ -77,7 +77,6 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       }
 
       if (fmt == "png" or fmt == "jpg") {
-        embtex->fetchDDSdata();
         embtexmap[texname] = embtex;
       } else if (fmt == "rgba8888" or fmt == "argb8888") {
         int w                 = texture->mWidth;
@@ -92,11 +91,15 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
     // parse materials
     //////////////////////////////////////////////
 
-    auto find_texture = [&](const std::string texname) -> lev2::EmbeddedTexture* {
+    auto find_texture = [&](const std::string texname, lev2::ETextureUsage usage) -> lev2::EmbeddedTexture* {
       lev2::EmbeddedTexture* rval = nullptr;
       auto it                     = embtexmap.find(texname);
       if (it != embtexmap.end()) {
         rval = it->second;
+        if (rval->_compressionPending) {
+          rval->_usage = usage;
+          rval->fetchDDSdata();
+        }
       } else {
         // find by path
         printf("base_dir<%s> texname<%s>\n", base_dir.c_str(), texname.c_str());
@@ -116,6 +119,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
 
             auto embtex     = new ork::lev2::EmbeddedTexture;
             embtex->_format = tex_ext.substr(1);
+            embtex->_usage  = usage;
 
             void* dataptr = malloc(length);
             texfile.Read(dataptr, length);
@@ -183,28 +187,28 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_DIFFUSE, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_colormap = (const char*)string.data;
-        auto tex          = find_texture(outmtl->_colormap);
+        auto tex          = find_texture(outmtl->_colormap, lev2::ETEXUSAGE_COLOR);
         printf("has_pbr_colormap<%s> tex<%p>\n", outmtl->_colormap.c_str(), tex);
       }
       if (AI_SUCCESS == aiGetMaterialTexture(material, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &string)) {
         outmtl->_metallicAndRoughnessMap = (const char*)string.data;
-        auto tex                         = find_texture(outmtl->_metallicAndRoughnessMap);
+        auto tex                         = find_texture(outmtl->_metallicAndRoughnessMap, lev2::ETEXUSAGE_COLOR);
         printf("has_pbr_MetallicAndRoughnessMap<%s> tex<%p>\n", outmtl->_metallicAndRoughnessMap.c_str(), tex);
       }
 
       if (AI_SUCCESS == material->GetTexture(aiTextureType_NORMALS, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_normalmap = (const char*)string.data;
-        auto tex           = find_texture(outmtl->_normalmap);
+        auto tex           = find_texture(outmtl->_normalmap, lev2::ETEXUSAGE_NORMAL);
         printf("has_pbr_normalmap<%s> tex<%p>\n", outmtl->_normalmap.c_str(), tex);
       }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_AMBIENT, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_amboccmap = (const char*)string.data;
-        auto tex           = find_texture(outmtl->_amboccmap);
+        auto tex           = find_texture(outmtl->_amboccmap, lev2::ETEXUSAGE_GREYSCALE);
         printf("has_pbr_amboccmap<%s> tex<%p>", outmtl->_amboccmap.c_str(), tex);
       }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_EMISSIVE, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_emissivemap = (const char*)string.data;
-        auto tex             = find_texture(outmtl->_emissivemap);
+        auto tex             = find_texture(outmtl->_emissivemap, lev2::ETEXUSAGE_GREYSCALE);
         printf("has_pbr_emissivemap<%s> tex<%p> \n", outmtl->_emissivemap.c_str(), tex);
       }
       printf("\n");

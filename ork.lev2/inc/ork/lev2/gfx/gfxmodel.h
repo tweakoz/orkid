@@ -47,6 +47,13 @@ class XgmCluster;
 class XgmSubMesh;
 struct RenderContextInstModelData;
 
+enum ETextureUsage {
+    ETEXUSAGE_COLOR = 0,
+    ETEXUSAGE_COLOR_NC,
+    ETEXUSAGE_GREYSCALE,
+    ETEXUSAGE_NORMAL,
+    ETEXUSAGE_DATA,
+};
 struct EmbeddedTexture {
     int _w = 0;
     int _h = 0;
@@ -54,6 +61,8 @@ struct EmbeddedTexture {
     const void* _srcdata = nullptr;
     std::string _format;
     std::string _name;
+    bool _compressionPending = true;
+    ETextureUsage _usage = ETEXUSAGE_DATA;
     datablockptr_t _ddsdestdatablock;
     datablockptr_t compressTexture(uint64_t hash) const;
     void fetchDDSdata();
