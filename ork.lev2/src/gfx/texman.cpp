@@ -13,8 +13,9 @@
 #include <ork/gfx/dds.h>
 #include <ork/lev2/gfx/texman.h>
 #include <math.h>
+#include <ispc_texcomp.h>
 
-namespace ork { namespace lev2 {
+namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -130,4 +131,123 @@ MipChain::~MipChain() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-}} // namespace ork::lev2
+void bc7testcomp() {
+
+  printf("Generating uncompressed texture...\n");
+
+  constexpr size_t DIM = 4096;
+  rgba_surface surface;
+  surface.ptr     = (uint8_t*)malloc(DIM * DIM * 4);
+  auto compressed = (uint8_t*)malloc(DIM * DIM);
+  surface.width   = DIM;
+  surface.height  = DIM;
+  surface.stride  = DIM * 4;
+  for (size_t i = 0; i < DIM * DIM * 4; i++) {
+    surface.ptr[i] = uint8_t(rand() & 0xff);
+  }
+
+  ork::Timer timer;
+
+  bc7_enc_settings settings;
+
+  /////////////////////////////////////////////////////
+  // ULTRAFAST
+  /////////////////////////////////////////////////////
+
+  printf("STARTING BC7 compression [ULTRAFAST]...\n");
+  timer.Start();
+  GetProfile_ultrafast(&settings);
+  CompressBlocksBC7(&surface, compressed, &settings);
+  float time = timer.SecsSinceStart();
+  float MPPS = 16.0 / time;
+  printf("DONE BC7 compression [ULTRAFAST] time<%g> MPPS<%g>\n", time, MPPS);
+
+  /////////////////////////////////////////////////////
+  // FAST
+  /////////////////////////////////////////////////////
+
+  printf("STARTING BC7 compression [FAST]...\n");
+  timer.Start();
+  GetProfile_fast(&settings);
+  CompressBlocksBC7(&surface, compressed, &settings);
+  time = timer.SecsSinceStart();
+  MPPS = 16.0 / time;
+  printf("DONE BC7 compression [FAST] time<%g> MPPS<%g>\n", time, MPPS);
+
+  /////////////////////////////////////////////////////
+  // BASIC
+  /////////////////////////////////////////////////////
+
+  printf("STARTING BC7 compression [BASIC]...\n");
+  timer.Start();
+  GetProfile_basic(&settings);
+  CompressBlocksBC7(&surface, compressed, &settings);
+  time = timer.SecsSinceStart();
+  MPPS = 16.0 / time;
+  printf("DONE BC7 compression [BASIC] time<%g> MPPS<%g>\n", time, MPPS);
+
+  /////////////////////////////////////////////////////
+  // SLOW
+  /////////////////////////////////////////////////////
+
+  printf("STARTING BC7 compression [SLOW]...\n");
+  timer.Start();
+  GetProfile_slow(&settings);
+  CompressBlocksBC7(&surface, compressed, &settings);
+  time = timer.SecsSinceStart();
+  MPPS = 16.0 / time;
+  printf("DONE BC7 compression [SLOW] time<%g> MPPS<%g>\n", time, MPPS);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void astctestcomp() {
+
+  printf("Generating uncompressed texture...\n");
+
+  constexpr size_t DIM = 4096;
+  rgba_surface surface;
+  surface.ptr     = (uint8_t*)malloc(DIM * DIM * 4);
+  auto compressed = (uint8_t*)malloc(DIM * DIM);
+  surface.width   = DIM;
+  surface.height  = DIM;
+  surface.stride  = DIM * 4;
+  for (size_t i = 0; i < DIM * DIM * 4; i++) {
+    surface.ptr[i] = uint8_t(rand() & 0xff);
+  }
+
+  ork::Timer timer;
+
+  astc_enc_settings settings;
+
+  constexpr int block_width  = 8;
+  constexpr int block_height = 8;
+
+  /////////////////////////////////////////////////////
+  // ULTRAFAST
+  /////////////////////////////////////////////////////
+
+  printf("STARTING ASTC compression [FAST]...\n");
+  timer.Start();
+  GetProfile_astc_alpha_fast(&settings, block_width, block_height);
+  CompressBlocksASTC(&surface, compressed, &settings);
+  float time = timer.SecsSinceStart();
+  float MPPS = 16.0 / time;
+  printf("DONE ASTC compression [FAST] time<%g> MPPS<%g>\n", time, MPPS);
+
+  /////////////////////////////////////////////////////
+  // FAST
+  /////////////////////////////////////////////////////
+
+  printf("STARTING ASTC compression [SLOW]...\n");
+  timer.Start();
+  GetProfile_astc_alpha_slow(&settings, block_width, block_height);
+  CompressBlocksASTC(&surface, compressed, &settings);
+  time = timer.SecsSinceStart();
+  MPPS = 16.0 / time;
+  printf("DONE ASTC compression [SLOW] time<%g> MPPS<%g>\n", time, MPPS);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // namespace ork::lev2

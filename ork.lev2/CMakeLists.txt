@@ -56,7 +56,7 @@ ELSEIF(${UNIX})
     set(ENV{PATH}=$ENV{PATH}:${VULKAN_SDK}/bin)
     set(ENV{LD_LIBRARY_PATH}=$ENV{LD_LIBRARY_PATH}:${VULKAN_SDK}/lib)
     set(ENV{VK_LAYER_PATH}=${VULKAN_SDK}/etc/vulkan/explicit_layer.d)
-    list(APPEND libs rt dl pthread GL Qt5::X11Extras openvr_api Xrandr vulkan )
+    list(APPEND libs rt dl pthread GL Qt5::X11Extras openvr_api Xrandr vulkan ispc_texcomp )
     include_directories(${Qt5Gui_PRIVATE_INCLUDE_DIRS})
 ENDIF()
 

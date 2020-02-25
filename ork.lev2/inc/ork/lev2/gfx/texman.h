@@ -23,6 +23,14 @@ void invoke_nvcompress(std::string inpath, std::string outpath, std::string othe
 class Context;
 class TextureAsset;
 
+enum ETextureUsage {
+  ETEXUSAGE_COLOR = 0,
+  ETEXUSAGE_COLOR_NC,
+  ETEXUSAGE_GREYSCALE,
+  ETEXUSAGE_NORMAL,
+  ETEXUSAGE_DATA,
+};
+
 //////////////////////////////////////////////////////////////////////////
 
 struct TextureSamplingModeData {

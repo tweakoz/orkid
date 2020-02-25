@@ -75,7 +75,7 @@ if _args["ez"]!=False:
 # ensure deps present
 ######################################################################
 
-ork.dep.require(["bullet","openexr","oiio","openvr","fcollada","assimp","nvtt","lua","python","pybind11"])
+ork.dep.require(["bullet","openexr","oiio","openvr","fcollada","assimp","nvtt","lua","python","pybind11","ispctexc"])
 
 ######################################################################
 # prep for build

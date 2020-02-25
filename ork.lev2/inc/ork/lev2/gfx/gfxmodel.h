@@ -47,13 +47,6 @@ class XgmCluster;
 class XgmSubMesh;
 struct RenderContextInstModelData;
 
-enum ETextureUsage {
-    ETEXUSAGE_COLOR = 0,
-    ETEXUSAGE_COLOR_NC,
-    ETEXUSAGE_GREYSCALE,
-    ETEXUSAGE_NORMAL,
-    ETEXUSAGE_DATA,
-};
 struct EmbeddedTexture {
     int _w = 0;
     int _h = 0;
