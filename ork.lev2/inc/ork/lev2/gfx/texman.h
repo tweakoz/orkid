@@ -126,6 +126,8 @@ struct MipChainLevel {
   void* _data    = nullptr;
 };
 
+//////////////////////////////////////////////////////////////////////////
+
 struct MipChain {
   MipChain(int w, int h, EBufferFormat fmt, ETextureType typ);
   ~MipChain();

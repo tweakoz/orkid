@@ -855,6 +855,8 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 Texture* GlTextureInterface::createFromMipChain(MipChain* from_chain) {
   auto tex             = new Texture;
   tex->_creatingTarget = &mTargetGL;
@@ -864,7 +866,6 @@ Texture* GlTextureInterface::createFromMipChain(MipChain* from_chain) {
   tex->_texFormat      = from_chain->_format;
   tex->_texType        = from_chain->_type;
 
-  assert(tex->_texFormat == EBUFFMT_RGBA32F);
   assert(tex->_texType == ETEXTYPE_2D);
 
   GLTextureObject* texobj = new GLTextureObject;
@@ -881,8 +882,37 @@ Texture* GlTextureInterface::createFromMipChain(MipChain* from_chain) {
 
   for (size_t l = 0; l < nummips; l++) {
     auto pchl = from_chain->_levels[l];
-    assert(pchl->_length == pchl->_width * pchl->_height * sizeof(fvec4));
-    glTexImage2D(GL_TEXTURE_2D, l, GL_RGBA32F, pchl->_width, pchl->_height, 0, GL_RGBA, GL_FLOAT, pchl->_data);
+    switch (from_chain->_format) {
+      case EBUFFMT_RGBA32F:
+        OrkAssert(pchl->_length == pchl->_width * pchl->_height * sizeof(fvec4));
+        glTexImage2D(GL_TEXTURE_2D, l, GL_RGBA32F, pchl->_width, pchl->_height, 0, GL_RGBA, GL_FLOAT, pchl->_data);
+        break;
+#if !defined(__APPLE__)
+      case EBUFFMT_RGBA_BPTC_UNORM:
+        OrkAssert(pchl->_length == pchl->_width * pchl->_height);
+        glCompressedTexImage2D(
+            GL_TEXTURE_2D, l, GL_COMPRESSED_RGBA_BPTC_UNORM, pchl->_width, pchl->_height, 0, pchl->_length, pchl->_data);
+        break;
+      case EBUFFMT_SRGB_ALPHA_BPTC_UNORM:
+        OrkAssert(pchl->_length == pchl->_width * pchl->_height);
+        glCompressedTexImage2D(
+            GL_TEXTURE_2D, l, GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM, pchl->_width, pchl->_height, 0, pchl->_length, pchl->_data);
+        break;
+      case EBUFFMT_RGBA_ASTC_4X4:
+        OrkAssert(pchl->_length == pchl->_width * pchl->_height);
+        glCompressedTexImage2D(
+            GL_TEXTURE_2D, l, GL_COMPRESSED_RGBA_ASTC_4x4_KHR, pchl->_width, pchl->_height, 0, pchl->_length, pchl->_data);
+        break;
+      case EBUFFMT_SRGB_ASTC_4X4:
+        OrkAssert(pchl->_length == pchl->_width * pchl->_height);
+        glCompressedTexImage2D(
+            GL_TEXTURE_2D, l, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR, pchl->_width, pchl->_height, 0, pchl->_length, pchl->_data);
+        break;
+#endif
+      default:
+        OrkAssert(false);
+        break;
+    }
   }
 
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
