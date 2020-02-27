@@ -2,7 +2,7 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: tweakoz/ubuntu_builders:eoan6
+      - image: tweakoz/ubuntu_builders:eoan7
     resource_class: xlarge
     steps:
       - checkout
