@@ -15,3 +15,9 @@ jobs:
       - checkout
       - run: git submodule update --init --recursive
       - run: ./ork.build/bin/init_env.py --create ./.staging --command "./build.py --ez"
+workflows:
+  version: 2
+  build: # name of your workflow
+    jobs:
+      - build_ix
+      - build_osx
