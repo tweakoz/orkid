@@ -14,7 +14,7 @@ jobs:
     steps:
       - checkout
       - run: git submodule update --init --recursive
-      - run: ./ork.build/bin/obt.osx.installdeps.py"
+      - run: ./ork.build/bin/obt.osx.installdeps.py
       - run: ./ork.build/bin/init_env.py --create ./.staging --command "./build.py --ez"
 workflows:
   version: 2
