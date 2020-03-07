@@ -5,17 +5,29 @@
 namespace ork::lev2::primitives {
 
 typedef SVtxV12N12B12T8C4 vtx_t;
+typedef StaticIndexBuffer<uint16_t> idxbuf_t;
 
 struct Cube {
 
-  inline void gpuInit(Context* context, DynamicVertexBuffer<vtx_t>& vtxbuf) {
-    _vwriter.Lock(context, &vtxbuf, 36);
+  //////////////////////////////////////////////////////////////////////////////
 
+  inline void gpuInit(Context* context, DynamicVertexBuffer<vtx_t>& vtxbuf) {
+
+    ///////////////////////////////////////////////
+    // merge vertices into vertex pool
+    ///////////////////////////////////////////////
+
+    std::vector<uint16_t> indices;
     auto writevtx = [&](float x, float y, float z, float u, float v, fvec4 c) {
-      auto pos = fvec3(x, y, z);
-      auto nrm = pos;
-      auto bin = pos.Cross(fvec3(y, x, z));
-      _vwriter.AddVertex(vtx_t(pos, nrm, bin, fvec2(u, v), c.GetABGRU32()));
+      MeshUtil::vertex muvtx;
+      muvtx.mPos                = fvec3(x, y, z);
+      muvtx.mNrm                = muvtx.mPos;
+      muvtx.mUV[0].mMapTexCoord = fvec2(u, v);
+      muvtx.mUV[0].mMapBiNormal = muvtx.mPos.Cross(fvec3(y, x, z));
+      muvtx.mCol[0]             = c;
+      muvtx.miNumColors         = 1;
+      muvtx.miNumUvs            = 1;
+      indices.push_back(_submesh.MergeVertex(muvtx));
     };
 
     float v0 = 0.0f;
@@ -83,12 +95,46 @@ struct Cube {
     writevtx(P, N, N, u1, v0, _colorBottom);
     writevtx(P, N, P, u1, v1, _colorBottom);
 
+    ///////////////////////////////////////////////
+    // vertex pool -> vertex buffer
+    ///////////////////////////////////////////////
+
+    const auto& vpool = _submesh.RefVertexPool();
+    int numverts      = vpool.GetNumVertices();
+    _vwriter.Lock(context, &vtxbuf, numverts);
+    for (int i = 0; i < numverts; i++) {
+      const auto& inpvtx = vpool.GetVertex(i);
+      const auto& pos    = inpvtx.mPos;
+      const auto& nrm    = inpvtx.mNrm;
+      const auto& uv     = inpvtx.mUV[0].mMapTexCoord;
+      const auto& bin    = inpvtx.mUV[0].mMapBiNormal;
+      const auto& col    = inpvtx.mCol[0];
+      _vwriter.AddVertex(vtx_t(pos, nrm, bin, uv, col.GetABGRU32()));
+    }
     _vwriter.UnLock(context);
+
+    ///////////////////////////////////////////////
+    // submesh indices -> index buffer
+    ///////////////////////////////////////////////
+
+    int numidcs  = indices.size();
+    _indexbuffer = std::make_shared<idxbuf_t>(numidcs);
+    auto pidxout = (uint16_t*)context->GBI()->LockIB(*_indexbuffer.get(), 0, numidcs);
+    for (int i = 0; i < numidcs; i++) {
+      pidxout[i] = (uint16_t)indices[i];
+    }
+    context->GBI()->UnLockIB(*_indexbuffer.get());
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+
   inline void draw(Context* context) {
-    context->GBI()->DrawPrimitiveEML(_vwriter, EPRIM_TRIANGLES);
+    auto& VB = *_vwriter.mpVB;
+    auto& IB = *_indexbuffer.get();
+    context->GBI()->DrawIndexedPrimitiveEML(VB, IB, EPRIM_TRIANGLES);
   }
+
+  //////////////////////////////////////////////////////////////////////////////
 
   float _size = 0.0f;
 
@@ -99,6 +145,8 @@ struct Cube {
   fvec4 _colorLeft;
   fvec4 _colorRight;
   VtxWriter<vtx_t> _vwriter;
+  std::shared_ptr<idxbuf_t> _indexbuffer;
+  MeshUtil::submesh _submesh;
 
 }; // namespace ork::lev2::primitives
 
