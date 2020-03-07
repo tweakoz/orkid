@@ -4,11 +4,13 @@
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/material_freestyle.inl>
+#include <ork/lev2/gfx/primitives.inl>
 
 using namespace std::string_literals;
 using namespace ork;
 using namespace ork::lev2;
-typedef SVtxV12C4T16 vtx_t; // position, vertex color, 2 UV sets
+using vtx_t = ork::lev2::primitives::vtx_t;
+
 int main(int argc, char** argv) {
   auto qtapp  = OrkEzQtApp::create(argc, argv);
   auto qtwin  = qtapp->_mainWindow;
@@ -17,17 +19,27 @@ int main(int argc, char** argv) {
   const FxShaderTechnique* fxtechnique = nullptr;
   const FxShaderParam* fxparameterMVP  = nullptr;
   Timer timer;
+  primitives::Cube cube;
+  cube._size        = 1;
+  cube._colorTop    = fvec4::Red();
+  cube._colorBottom = fvec4::Red();
+  cube._colorFront  = fvec4::Green();
+  cube._colorBack   = fvec4::Green();
+  cube._colorLeft   = fvec4::Blue();
+  cube._colorRight  = fvec4::Blue();
   //////////////////////////////////////////////////////////
   timer.Start();
   //////////////////////////////////////////////////////////
   qtapp->onGpuInit([&](Context* ctx) {
     material.gpuInit(ctx, "orkshader://solid");
-    fxtechnique    = material.technique("vtxcolor");
+    fxtechnique    = material.technique("debuguv");
     fxparameterMVP = material.param("MatMVP");
     deco::printf(fvec3::White(), "gpuINIT - context<%p>\n", ctx, fxtechnique);
     deco::printf(fvec3::Yellow(), "  fxtechnique<%p>\n", fxtechnique);
     deco::printf(fvec3::Yellow(), "  fxparameterMVP<%p>\n", fxparameterMVP);
-    material._rasterstate.SetCullTest(ECULLTEST_OFF);
+    material._rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
+    auto& vtxbuf = GfxEnv::GetRef().GetSharedDynamicVB2();
+    cube.gpuInit(ctx, vtxbuf);
   });
   //////////////////////////////////////////////////////////
   qtapp->onDraw([&](const ui::DrawEvent& drwev) {
@@ -52,64 +64,16 @@ int main(int argc, char** argv) {
     auto projection = mtxi->Persp(45, aspect, 0.1, 100.0);
     auto view       = mtxi->LookAt(eye, tgt, up);
     ///////////////////////////////////////
-    // vertex colors
-    ///////////////////////////////////////
-    uint32_t red = fvec4::Red().GetABGRU32();
-    uint32_t grn = fvec4::Green().GetABGRU32();
-    uint32_t blu = fvec4::Blue().GetABGRU32();
-    uint32_t yel = fvec4::Yellow().GetABGRU32();
-    ///////////////////////////////////////
-    // get shared dynamic vertex buffer
-    ///////////////////////////////////////
-    DynamicVertexBuffer<vtx_t>& vtxbuf = GfxEnv::GetRef().GetSharedDynamicVB();
-    VtxWriter<vtx_t> vwriter;
-    ///////////////////////////////////////
     // Draw!
     ///////////////////////////////////////
     fbi->SetClearColor(fvec4(0, 0, 0, 1));
     context->beginFrame();
 
-    // create 4 quads in dynamic VB
-    vwriter.Lock(context, &vtxbuf, 24); // reserve 24 verts (4 quads, or 8 triangles)
-
-    auto writevtx = [&](float x, float y, float z, uint32_t c) { vwriter.AddVertex(vtx_t(x, y, z, 0, 0, 0, 0, c)); };
-
-    writevtx(N, N, N, red);
-    writevtx(P, N, N, red);
-    writevtx(N, P, N, red);
-    writevtx(N, P, N, red);
-    writevtx(P, N, N, red);
-    writevtx(P, P, N, red);
-
-    writevtx(N, N, N, grn);
-    writevtx(N, N, P, grn);
-    writevtx(N, P, N, grn);
-    writevtx(N, P, N, grn);
-    writevtx(N, N, P, grn);
-    writevtx(N, P, P, grn);
-
-    writevtx(P, P, P, blu);
-    writevtx(N, P, P, blu);
-    writevtx(P, N, P, blu);
-    writevtx(P, N, P, blu);
-    writevtx(N, P, P, blu);
-    writevtx(N, N, P, blu);
-
-    writevtx(P, P, P, yel);
-    writevtx(P, P, N, yel);
-    writevtx(P, N, P, yel);
-    writevtx(P, N, P, yel);
-    writevtx(P, P, N, yel);
-    writevtx(P, N, N, yel);
-
-    vwriter.UnLock(context);
-
     material.bindTechnique(fxtechnique);
     material.begin(RCFD);
     material.bindParamMatrix(fxparameterMVP, view * projection);
 
-    // draw the verts as triangles
-    gbi->DrawPrimitiveEML(vwriter, EPRIM_TRIANGLES);
+    cube.draw(context);
 
     material.end(RCFD);
     context->endFrame();
