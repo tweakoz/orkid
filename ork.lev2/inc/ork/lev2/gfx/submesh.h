@@ -22,6 +22,7 @@
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/lev2/gfx/gfxmaterial.h>
 #include <ork/lev2/gfx/gfxmodel.h>
+#include <ork/lev2/gfx/targetinterfaces.h>
 #include <unordered_map>
 #include <ork/kernel/datablock.inl>
 
@@ -168,6 +169,16 @@ struct vertex {
       mJointNames[i]   = "";
       mJointWeights[i] = float(0.0f);
     }
+  }
+
+  void set(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col) {
+    mPos                = pos;
+    mNrm                = nrm;
+    mUV[0].mMapTexCoord = uv;
+    mUV[0].mMapBiNormal = bin;
+    mCol[0]             = col;
+    miNumColors         = 1;
+    miNumUvs            = 1;
   }
 
   vertex Lerp(const vertex& vtx, float flerp) const;
@@ -342,6 +353,15 @@ struct annopolyposlut : public annopolylut {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct PrimitiveV12N12B12T8C4 {
+  PrimitiveV12N12B12T8C4(int numverts, int numidcs);
+  lev2::StaticIndexBuffer<uint16_t> _indexBuffer;
+  lev2::StaticVertexBuffer<lev2::SVtxV12N12B12T8C4> _vertexBuffer;
+  lev2::VtxWriter<lev2::SVtxV12N12B12T8C4> _writer;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct submesh {
 
   std::string name;
@@ -428,13 +448,21 @@ struct submesh {
     mvpool = vpool;
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+
+  void addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 u0v0, fvec2 u1v1, fvec4 c);
+
   /////////////////////////////////////////////////////////////////////////
 
-  void Triangulate(submesh* poutsmesh) const;
-  void TrianglesToQuads(submesh* poutsmesh) const;
+  void triangulate(submesh& poutsmesh) const;
+  void trianglesToQuads(submesh& poutsmesh) const;
   // void SubDivQuads(submesh* poutsmesh) const;
   // void SubDivTriangles(submesh* poutsmesh) const;
   // void SubDiv(submesh* poutsmesh) const;
+
+  /////////////////////////////////////////////////////////////////////////
+
+  std::shared_ptr<PrimitiveV12N12B12T8C4> generatePrimitive_V12N12B12T8C4(lev2::Context* ctx);
 
   /////////////////////////////////////////////////////////////////////////
 

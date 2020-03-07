@@ -12,7 +12,7 @@
 namespace ork { namespace MeshUtil {
 ///////////////////////////////////////////////////////////////////////////////
 
-void submesh::Triangulate(submesh* poutmesh) const {
+void submesh::triangulate(submesh& outmesh) const {
   int inump = GetNumPolys();
 
   for (int ip = 0; ip < inump; ip++) {
@@ -28,10 +28,10 @@ void submesh::Triangulate(submesh* poutmesh) const {
         const vertex& v0 = mvpool.VertexPool[idx0];
         const vertex& v1 = mvpool.VertexPool[idx1];
         const vertex& v2 = mvpool.VertexPool[idx2];
-        int imerged0     = poutmesh->mvpool.MergeVertex(v0);
-        int imerged1     = poutmesh->mvpool.MergeVertex(v1);
-        int imerged2     = poutmesh->mvpool.MergeVertex(v2);
-        poutmesh->MergePoly(poly(imerged0, imerged1, imerged2));
+        int imerged0     = outmesh.mvpool.MergeVertex(v0);
+        int imerged1     = outmesh.mvpool.MergeVertex(v1);
+        int imerged2     = outmesh.mvpool.MergeVertex(v2);
+        outmesh.MergePoly(poly(imerged0, imerged1, imerged2));
         break;
       }
       case 4: {
@@ -43,12 +43,12 @@ void submesh::Triangulate(submesh* poutmesh) const {
         const vertex& v1 = mvpool.VertexPool[idx1];
         const vertex& v2 = mvpool.VertexPool[idx2];
         const vertex& v3 = mvpool.VertexPool[idx3];
-        int imerged0     = poutmesh->mvpool.MergeVertex(v0);
-        int imerged1     = poutmesh->mvpool.MergeVertex(v1);
-        int imerged2     = poutmesh->mvpool.MergeVertex(v2);
-        int imerged3     = poutmesh->mvpool.MergeVertex(v3);
-        poutmesh->MergePoly(poly(imerged0, imerged1, imerged2));
-        poutmesh->MergePoly(poly(imerged2, imerged3, imerged0));
+        int imerged0     = outmesh.mvpool.MergeVertex(v0);
+        int imerged1     = outmesh.mvpool.MergeVertex(v1);
+        int imerged2     = outmesh.mvpool.MergeVertex(v2);
+        int imerged3     = outmesh.mvpool.MergeVertex(v3);
+        outmesh.MergePoly(poly(imerged0, imerged1, imerged2));
+        outmesh.MergePoly(poly(imerged2, imerged3, imerged0));
         break;
       }
       default:
@@ -59,7 +59,7 @@ void submesh::Triangulate(submesh* poutmesh) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void submesh::TrianglesToQuads(submesh* poutmesh) const {
+void submesh::trianglesToQuads(submesh& outmesh) const {
   ///////////////////////////////////////
 
   fplane3 P0, P1;
@@ -252,10 +252,10 @@ void submesh::TrianglesToQuads(submesh* poutmesh) const {
                   //////////////////////////////////////
 
                   if ((float(1.0f) - fdot) < float(0.001f)) {
-                    poutmesh->MergePoly(MeshUtil::poly(i0, i1, i3, i2));
+                    outmesh.MergePoly(MeshUtil::poly(i0, i1, i3, i2));
                     basquad = true;
                   } else if ((float(1.0f) + fdot) < float(0.001f)) {
-                    poutmesh->MergePoly(MeshUtil::poly(i0, i2, i3, i1));
+                    outmesh.MergePoly(MeshUtil::poly(i0, i2, i3, i1));
                     basquad = true;
                   }
                 }
@@ -268,7 +268,7 @@ void submesh::TrianglesToQuads(submesh* poutmesh) const {
     } // for( set<int>::iterator it=ConnectedPolySet.begin(); it!=ConnectedPolySet.end(); it++ )
 
     if (false == basquad) {
-      poutmesh->MergePoly(MeshUtil::poly(ici[0], ici[1], ici[2]));
+      outmesh.MergePoly(MeshUtil::poly(ici[0], ici[1], ici[2]));
     }
   }
 }

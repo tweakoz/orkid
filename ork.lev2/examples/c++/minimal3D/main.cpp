@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////
   qtapp->onGpuInit([&](Context* ctx) {
     material.gpuInit(ctx, "orkshader://solid");
-    fxtechnique    = material.technique("debuguv");
+    fxtechnique    = material.technique("vtxcolor");
     fxparameterMVP = material.param("MatMVP");
     deco::printf(fvec3::White(), "gpuINIT - context<%p>\n", ctx, fxtechnique);
     deco::printf(fvec3::Yellow(), "  fxtechnique<%p>\n", fxtechnique);
