@@ -1,5 +1,6 @@
 #pragma once
 #include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/submesh.h>
 
 namespace ork::lev2::primitives {
 
