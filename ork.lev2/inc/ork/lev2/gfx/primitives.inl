@@ -13,7 +13,7 @@ struct Cube {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  inline void gpuInit(Context* context, DynamicVertexBuffer<vtx_t>& vtxbuf) {
+  inline void gpuInit(Context* context) {
 
     float N = -_size * 0.5f;
     float P = +_size * 0.5f;

@@ -21,12 +21,13 @@ int main(int argc, char** argv) {
   Timer timer;
   primitives::Cube cube;
   cube._size        = 1;
-  cube._colorTop    = fvec4::Red();
-  cube._colorBottom = fvec4::Red();
-  cube._colorFront  = fvec4::Green();
-  cube._colorBack   = fvec4::Green();
-  cube._colorLeft   = fvec4::Blue();
-  cube._colorRight  = fvec4::Blue();
+  cube._colorTop    = fvec3(.5, 1, .5);
+  cube._colorBottom = fvec3(.5, 0, .5);
+  cube._colorFront  = fvec3(.5, .5, 1);
+  cube._colorBack   = fvec3(.5, .5, 0);
+  cube._colorLeft   = fvec3(0, .5, .5);
+  cube._colorRight  = fvec3(1, .5, .5);
+
   //////////////////////////////////////////////////////////
   timer.Start();
   //////////////////////////////////////////////////////////
@@ -38,8 +39,7 @@ int main(int argc, char** argv) {
     deco::printf(fvec3::Yellow(), "  fxtechnique<%p>\n", fxtechnique);
     deco::printf(fvec3::Yellow(), "  fxparameterMVP<%p>\n", fxparameterMVP);
     material._rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
-    auto& vtxbuf = GfxEnv::GetRef().GetSharedDynamicVB2();
-    cube.gpuInit(ctx, vtxbuf);
+    cube.gpuInit(ctx);
   });
   //////////////////////////////////////////////////////////
   qtapp->onDraw([&](const ui::DrawEvent& drwev) {
