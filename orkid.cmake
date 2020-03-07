@@ -2,11 +2,23 @@ cmake_minimum_required (VERSION 3.13.4)
 include (GenerateExportHeader)
 project (Orkid)
 
+################################################################################
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED on)
 
+################################################################################
+
 set(CMAKE_INSTALL_RPATH "$ENV{OBT_STAGE}/lib")
 set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+
+################################################################################
+
+set(CMAKE_FIND_DEBUG_MODE OFF)
+set(PYTHON_EXECUTABLE $ENV{OBT_STAGE}/bin/python3)
+set(PYTHON_LIBRARY $ENV{OBT_STAGE}/lib/libpython3.8d.so)
+
+################################################################################
 
 IF(${APPLE})
 
@@ -52,6 +64,7 @@ link_directories(${destlib})
 include_directories(AFTER $ENV{OBT_STAGE}/include)
 include_directories(AFTER $ENV{OBT_STAGE}/include/tuio/oscpack)
 link_directories($ENV{OBT_STAGE}/lib/)
+link_directories($ENV{OBT_STAGE}/qt5/lib )
 
 link_directories($ENV{OBT_STAGE}/orkid/ork.tuio )
 link_directories($ENV{OBT_STAGE}/orkid/ork.utpp )
@@ -61,34 +74,65 @@ link_directories($ENV{OBT_STAGE}/orkid/ork.ent )
 link_directories($ENV{OBT_STAGE}/orkid/ork.tool )
 
 
-###################################
+set( ORK_CORE_INCD ${ORKROOT}/ork.core/inc )
+set( ORK_LEV2_INCD ${ORKROOT}/ork.lev2/inc )
+set( ORK_ECS_INCD ${ORKROOT}/ork.ecs/inc )
 
-IF(${APPLE})
-set(QT5BASE /usr/local/opt/qt/lib/cmake)
-set(CMAKE_MACOSX_RPATH 1)
-ELSE()
-set(QT5BASE $ENV{OBT_STAGE}/qt5/lib/cmake)
-ENDIF()
+################################################################################
+# QT5
+################################################################################
 
-###################################
+# use a macro, not a function because of variable scoping issues
+#  there does not seem to be an easy way to propagate variables
+#  that were set by find_package up to the PARENT_SCOPE
 
-set(Qt5Widgets_DIR ${QT5BASE}/Qt5Widgets)
-set(Qt5Test_DIR ${QT5BASE}/Qt5Test)
-set(Qt5Core_DIR ${QT5BASE}/Qt5Core)
-set(Qt5_DIR ${QT5BASE})
-set(Qt5Concurrent_DIR ${QT5BASE}/Qt5Concurrent)
-set(Qt5Gui_DIR ${QT5BASE}/Qt5Gui)
-set(Qt5Network_DIR ${QT5BASE}/Qt5Network)
+macro(enableQt5)
 
-find_package(Qt5 COMPONENTS Core Widgets Gui REQUIRED)
+  list(PREPEND CMAKE_MODULE_PATH $ENV{OBT_STAGE}/qt5/lib/cmake)
 
-if(${APPLE})
-else()
-#find_package(Qt5X11Extras REQUIRED)
-endif()
+  IF(${APPLE})
+  set(QT5BASE /usr/local/opt/qt/lib/cmake)
+  ELSE()
+  set(QT5BASE $ENV{OBT_STAGE}/qt5/lib/cmake)
+  ENDIF()
 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
+  ###################################
+
+  set(CMAKE_AUTOMOC ON)
+  set(CMAKE_AUTOUIC ON)
+  set(CMAKE_AUTORCC ON)
+
+  add_compile_options(-D_REENTRANT -DQT_NO_EXCEPTIONS -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE -DQT_GUI_LIB -DQT_CORE_LIB)
+  add_compile_definitions(QTVER=$ENV{QTVER})
+
+  set(Qt5_DIR ${QT5BASE})
+  set(Qt5Widgets_DIR ${QT5BASE}/Qt5Widgets)
+  set(Qt5Test_DIR ${QT5BASE}/Qt5Test)
+  set(Qt5Core_DIR ${QT5BASE}/Qt5Core)
+  set(Qt5Concurrent_DIR ${QT5BASE}/Qt5Concurrent)
+  set(Qt5Gui_DIR ${QT5BASE}/Qt5Gui)
+  set(Qt5Network_DIR ${QT5BASE}/Qt5Network)
+  set(Qt5X11Extras_DIR ${QT5BASE}/Qt5X11Extras)
+
+  set(QT5_COMPONENTS Core Widgets Gui )
+
+  # find_component(Qt5 ...) not working with X11Extras!
+  #  so we will explicitly add our qt5 modules
+  include(${Qt5Core_DIR}/Qt5CoreConfig.cmake )
+  include(${Qt5Gui_DIR}/Qt5GuiConfig.cmake )
+  include(${Qt5Widgets_DIR}/Qt5WidgetsConfig.cmake )
+
+  if(${APPLE})
+  else()
+    include(${Qt5X11Extras_DIR}/Qt5X11ExtrasConfig.cmake )
+    list(APPEND QT5_COMPONENTS X11Extras )
+  endif()
+
+  find_package(Qt5 COMPONENTS ${QT5_COMPONENTS} REQUIRED )
+
+  include_directories(${Qt5Gui_PRIVATE_INCLUDE_DIRS})
+
+
+endmacro()
 
 ##############################

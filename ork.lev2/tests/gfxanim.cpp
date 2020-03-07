@@ -11,7 +11,7 @@ using namespace ork::lev2;
 
 TEST(gfxanim1) {
   // we must load shaders on the main thread!
-
+  //
   auto white   = fvec3(1, 1, 1);
   auto yellow  = fvec3(1, 1, 0);
   auto orange  = fvec3(1, 0.5, 0);

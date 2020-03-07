@@ -1,5 +1,7 @@
-project (ork CXX)
+project (orklev2 CXX)
 include (GenerateExportHeader)
+
+enableQt5()
 
 ###################################
 
@@ -28,12 +30,11 @@ file(GLOB_RECURSE src_glad ${SRCD}/gfx/gl/glad/*.c)
 set( orksrcs ${src_aud} ${src_gfx} ${src_input} )
 list( APPEND orksrcs ${src_qtui} ${src_ui} ${src_lev2} )
 list( APPEND orksrcs ${src_apple} ${src_ovr} ${src_glad} )
-
 list( APPEND orksrcs ${INCD}/ork/lev2/ezapp.h )
 
 ###################################
 
-add_library (ork_lev2 SHARED ${orksrcs})
+add_library (ork_lev2 SHARED ${orksrcs} )
 
 ###################################
 
@@ -57,7 +58,6 @@ ELSEIF(${UNIX})
     set(ENV{LD_LIBRARY_PATH}=$ENV{LD_LIBRARY_PATH}:${VULKAN_SDK}/lib)
     set(ENV{VK_LAYER_PATH}=${VULKAN_SDK}/etc/vulkan/explicit_layer.d)
     list(APPEND libs rt dl pthread GL Qt5::X11Extras openvr_api Xrandr vulkan ispc_texcomp )
-    include_directories(${Qt5Gui_PRIVATE_INCLUDE_DIRS})
 ENDIF()
 
 list(APPEND libs Qt5::Widgets Qt5::Core Qt5::Gui)

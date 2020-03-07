@@ -1,5 +1,6 @@
 project (ork CXX)
 include (GenerateExportHeader)
+enableQt5()
 
 ###################################
 

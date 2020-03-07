@@ -95,6 +95,7 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
     , _updatekill(false)
     , _mainWindow(0) {
 
+  OrkAssert(false);
   _ezapp = EzApp::create(argc, argv);
 
   QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath());
