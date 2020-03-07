@@ -407,53 +407,6 @@ void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 u0v0, fvec2 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-PrimitiveV12N12B12T8C4::PrimitiveV12N12B12T8C4(int numverts, int numidcs)
-    : _indexBuffer(numidcs)
-    , _vertexBuffer(numverts, 0, lev2::EPRIM_NONE)
-    , _writer() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-std::shared_ptr<PrimitiveV12N12B12T8C4> submesh::generatePrimitive_V12N12B12T8C4(lev2::Context* context) {
-
-  const auto& vpool = RefVertexPool();
-  int numverts      = vpool.GetNumVertices();
-  int inumpolys     = GetNumPolys(3);
-  int numidcs       = inumpolys * 3;
-
-  auto rval = std::make_shared<PrimitiveV12N12B12T8C4>(numverts, numidcs);
-
-  rval->_writer.Lock(context, &rval->_vertexBuffer, numverts);
-  for (int i = 0; i < numverts; i++) {
-    const auto& inpvtx = vpool.GetVertex(i);
-    const auto& pos    = inpvtx.mPos;
-    const auto& nrm    = inpvtx.mNrm;
-    const auto& uv     = inpvtx.mUV[0].mMapTexCoord;
-    const auto& bin    = inpvtx.mUV[0].mMapBiNormal;
-    const auto& col    = inpvtx.mCol[0];
-    rval->_writer.AddVertex(lev2::SVtxV12N12B12T8C4(pos, nrm, bin, uv, col.GetABGRU32()));
-  }
-  rval->_writer.UnLock(context);
-
-  ///////////////////////////////////////////////
-  // submesh indices -> index buffer
-  ///////////////////////////////////////////////
-  auto pidxout = (uint16_t*)context->GBI()->LockIB(rval->_indexBuffer, 0, numidcs);
-  int index    = 0;
-  for (int p = 0; p < inumpolys; p++) {
-    const auto& poly = RefPoly(p);
-    pidxout[index++] = (uint16_t)poly.miVertices[0];
-    pidxout[index++] = (uint16_t)poly.miVertices[1];
-    pidxout[index++] = (uint16_t)poly.miVertices[2];
-  }
-  context->GBI()->UnLockIB(rval->_indexBuffer);
-
-  return rval;
-}
-
-///////////////////////////////////////////////////////////////////////////////
 /*
 void SubMesh::GenIndexBuffers( void )
 {

@@ -9,7 +9,6 @@
 using namespace std::string_literals;
 using namespace ork;
 using namespace ork::lev2;
-using vtx_t = ork::lev2::primitives::vtx_t;
 
 int main(int argc, char** argv) {
   auto qtapp  = OrkEzQtApp::create(argc, argv);

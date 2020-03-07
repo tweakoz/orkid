@@ -353,15 +353,6 @@ struct annopolyposlut : public annopolylut {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct PrimitiveV12N12B12T8C4 {
-  PrimitiveV12N12B12T8C4(int numverts, int numidcs);
-  lev2::StaticIndexBuffer<uint16_t> _indexBuffer;
-  lev2::StaticVertexBuffer<lev2::SVtxV12N12B12T8C4> _vertexBuffer;
-  lev2::VtxWriter<lev2::SVtxV12N12B12T8C4> _writer;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct submesh {
 
   std::string name;
@@ -462,12 +453,23 @@ struct submesh {
 
   /////////////////////////////////////////////////////////////////////////
 
-  std::shared_ptr<PrimitiveV12N12B12T8C4> generatePrimitive_V12N12B12T8C4(lev2::Context* ctx);
-
-  /////////////////////////////////////////////////////////////////////////
-
   submesh(const vertexpool& vpool = vertexpool::EmptyPool);
   ~submesh();
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct PrimitiveV12N12B12T8C4 {
+
+  PrimitiveV12N12B12T8C4();
+  void gpuInit(const submesh& submesh, lev2::Context* context);
+  void draw(lev2::Context* context) const;
+
+  using idxbuf_t = lev2::StaticIndexBuffer<uint16_t>;
+  using vtxbuf_t = lev2::StaticVertexBuffer<lev2::SVtxV12N12B12T8C4>;
+  std::shared_ptr<idxbuf_t> _indexBuffer;
+  std::shared_ptr<vtxbuf_t> _vertexBuffer;
+  lev2::VtxWriter<lev2::SVtxV12N12B12T8C4> _writer;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
