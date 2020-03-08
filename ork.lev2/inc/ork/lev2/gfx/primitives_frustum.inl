@@ -57,7 +57,7 @@ struct FrustumPrimitive {
         _frustum.mFarCorners[0],
         _frustum.mFarCorners[3],
         _frustum.mNearCorners[3], //
-        fvec2(0.0f, 0.0f),
+        fvec2(1.0f, 0.0f),
         fvec2(1.0f, 1.0f),
         _colorLeft);
     submeshQuads.addQuad(
