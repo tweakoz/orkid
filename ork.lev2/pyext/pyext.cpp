@@ -15,6 +15,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/submesh.h>
 #include <ork/lev2/gfx/primitives.inl>
+#include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/kernel/opq.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -50,6 +51,7 @@ void lev2appinit() {
   ork::lev2::ClassInit();
   ork::rtti::Class::InitializeClasses();
   ork::lev2::GfxInit("");
+  ork::lev2::FontMan::GetRef();
 }
 
 void lev2apppoll() {
@@ -71,6 +73,7 @@ PYBIND11_MODULE(orklev2, m) {
   using tex_t            = ork::python::unmanaged_ptr<Texture>;
   using rtb_t            = ork::python::unmanaged_ptr<RtBuffer>;
   using rtg_t            = ork::python::unmanaged_ptr<RtGroup>;
+  using font_t           = ork::python::unmanaged_ptr<Font>;
   using capbuf_t         = ork::python::unmanaged_ptr<CaptureBuffer>;
   using fxshader_t       = ork::python::unmanaged_ptr<FxShader>;
   using fxparam_t        = ork::python::unmanaged_ptr<FxShaderParam>;
@@ -414,6 +417,47 @@ PYBIND11_MODULE(orklev2, m) {
       .def_static("staticBuffer", [](size_t size) -> vb_static_vtxa_t { return vb_static_vtxa_t(size, 0, EPRIM_NONE); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<vb_static_vtxa_t, VertexBufferBase>(m, "VtxV12N12B12T8C4_StaticBuffer");
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<FontMan>(m, "FontManager")
+      .def_static("gpuInit", [](ctx_t& ctx) { FontMan::gpuInit(ctx.get()); })
+      .def_static(
+          "beginTextBlock",
+          [](ctx_t& ctx, const std::string& fontid, fvec4 color, int uiw, int uih, int maxchars) {
+            ctx->MTXI()->PushMMatrix(fmtx4());
+            ctx->MTXI()->PushUIMatrix(uiw, uih);
+            ctx->PushModColor(color);
+            FontMan::PushFont(fontid);
+            FontMan::BeginTextBlock(ctx.get(), maxchars);
+          })
+      .def_static(
+          "endTextBlock",
+          [](ctx_t& ctx) {
+            FontMan::EndTextBlock(ctx.get());
+            FontMan::PopFont();
+            ctx->PopModColor();
+            ctx->MTXI()->PopMMatrix();
+            ctx->MTXI()->PopUIMatrix();
+          })
+      .def_static("draw", [](ctx_t& ctx, int x, int y, std::string text) { FontMan::DrawText(ctx.get(), x, y, text.c_str()); });
+  /////////////////////////////////////////////////////////////////////////////////
+  /*py::class_<font_t>(m, "Font")
+      .def(
+          "__repr__",
+          [](const font_t& font) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("Font(\"%s\")", font->msFontName.c_str());
+            return fxs.c_str();
+          })
+      .def("bind", [](const font_t& font) { return FontMan::GetRef().bindFont(font.get()); })
+      .def_property_readonly("filename", [](const font_t& font) -> std::string { return font->msFileName; })
+      .def_property_readonly("fontname", [](const font_t& font) -> std::string { return font->msFontName; })
+      .def_property_readonly("charWidth", [](const font_t& font) -> int { return font->mFontDesc.miCharWidth; })
+      .def_property_readonly("charHeight", [](const font_t& font) -> int { return font->mFontDesc.miCharHeight; })
+      .def_property_readonly("cellWidth", [](const font_t& font) -> int { return font->mFontDesc.miCellWidth; })
+      .def_property_readonly("cellHeight", [](const font_t& font) -> int { return font->mFontDesc.miCellHeight; })
+      .def_property_readonly("advanceWidth", [](const font_t& font) -> int { return font->mFontDesc.miAdvanceWidth; })
+      .def_property_readonly("advanceHeight", [](const font_t& font) -> int { return font->mFontDesc.miAdvanceHeight; });
+*/
   /////////////////////////////////////////////////////////////////////////////////
   auto meshutil = m.def_submodule("meshutil", "Mesh operations");
   {

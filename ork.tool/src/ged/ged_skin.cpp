@@ -25,7 +25,13 @@ namespace ork { namespace tool { namespace ged {
 
 typedef SVtxV16T16C16 vtx_t;
 
-GedSkin::GedSkin(Context* ptarg) : miScrollY(0), mpCurrentGedVp(nullptr), mpFONT(nullptr), miCHARW(0), miCHARH(0) {}
+GedSkin::GedSkin(Context* ptarg)
+    : miScrollY(0)
+    , mpCurrentGedVp(nullptr)
+    , mpFONT(nullptr)
+    , miCHARW(0)
+    , miCHARH(0) {
+}
 
 struct GedText {
   typedef ork::ArrayString<128> StringType;
@@ -38,7 +44,7 @@ struct GedText {
 //'ork::tool::ged::GedSkin::PrimContainer *'
 
 void GedSkin::AddPrim(const GedPrim& cb) {
-  int isort = calcsort(cb.miSortKey);
+  int isort                   = calcsort(cb.miSortKey);
   PrimContainers::iterator it = mPrimContainers.find(isort);
   if (it == mPrimContainers.end()) {
     PrimContainer* pcontainer = mPrimContainerPool.allocate();
@@ -49,19 +55,19 @@ void GedSkin::AddPrim(const GedPrim& cb) {
   PrimContainer* pctr = it->second;
   if (cb.mDrawCB) {
     GedPrim* pooledprim = pctr->mPrimPool.allocate();
-    *pooledprim = cb;
+    *pooledprim         = cb;
     pctr->mCustomPrims.push_back(pooledprim);
   } else
     switch (cb.meType) {
       case EPRIM_LINES: {
         GedPrim* pooledprim = pctr->mPrimPool.allocate();
-        *pooledprim = cb;
+        *pooledprim         = cb;
         pctr->mLinePrims.push_back(pooledprim);
         break;
       }
       case EPRIM_QUADS: {
         GedPrim* pooledprim = pctr->mPrimPool.allocate();
-        *pooledprim = cb;
+        *pooledprim         = cb;
         pctr->mQuadPrims.push_back(pooledprim);
         break;
       }
@@ -87,8 +93,9 @@ void GedSkin::clear() {
 struct GedSkin0 : public GedSkin { ///////////////////////////////////////////////////////////////////
   bool mbPickMode;
   orkvector<GedText> mTexts;
-  GedSkin0(Context* ptarg) : GedSkin(ptarg) {
-    mpFONT = lev2::FontMan::GetFont("i14");
+  GedSkin0(Context* ptarg)
+      : GedSkin(ptarg) {
+    mpFONT  = lev2::FontMan::GetFont("i14");
     miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
     miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
   }
@@ -99,7 +106,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     bool bismapnode = (pmapnode != 0);
 
     fvec3 color;
-    bool bsc = true;
+    bool bsc        = true;
     bool balternate = true;
     switch (ic) {
       case ESTYLE_BACKGROUND_1:
@@ -118,19 +125,19 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
         color = fvec3(0.8f, 0.8f, 0.5f);
         break;
       case ESTYLE_BACKGROUND_OPS:
-        color = fvec3(0.8f, 0.4f, 0.4f);
+        color      = fvec3(0.8f, 0.4f, 0.4f);
         balternate = false;
         break;
       case ESTYLE_BACKGROUND_OBJNODE_LABEL:
-        color = fvec3(0.4f, 0.4f, 1.0f);
+        color      = fvec3(0.4f, 0.4f, 1.0f);
         balternate = false;
         break;
       case ESTYLE_BACKGROUND_GROUP_LABEL:
-        color = fvec3(0.5f, 0.5f, 0.7f);
+        color      = fvec3(0.5f, 0.5f, 0.7f);
         balternate = false;
         break;
       case ESTYLE_BACKGROUND_MAPNODE_LABEL:
-        color = fvec3(0.7f, 0.5f, 0.5f);
+        color      = fvec3(0.7f, 0.5f, 0.5f);
         balternate = false;
         break;
       case ESTYLE_DEFAULT_HIGHLIGHT:
@@ -141,11 +148,11 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
         break;
       case ESTYLE_DEFAULT_CHECKBOX:
         color = fvec3(0.0f, 0.0f, 0.0f);
-        bsc = false;
+        bsc   = false;
         break;
       case ESTYLE_BUTTON_OUTLINE:
         color = fvec3(0.0f, 0.0f, 0.0f);
-        bsc = false;
+        bsc   = false;
         break;
       default:
         color = fvec3(1.0f, 0.0f, 0.0f);
@@ -180,15 +187,15 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     prim.iy1 = iy;
     prim.iy2 = iy + ih;
 
-		fvec4 uobj = mpCurrentGedVp->AssignPickId(pnode);
+    fvec4 uobj = mpCurrentGedVp->AssignPickId(pnode);
 
     if (mbPickMode) {
       AddToObjSet((void*)pnode);
       // printf( "insert obj<%p>\n", (void*) pnode );
     }
 
-    prim._ucolor = mbPickMode ? uobj : GetStyleColor(pnode, ic); // Default Outline
-    prim.meType = EPRIM_QUADS;
+    prim._ucolor   = mbPickMode ? uobj : GetStyleColor(pnode, ic); // Default Outline
+    prim.meType    = EPRIM_QUADS;
     prim.miSortKey = calcsort(isort);
     AddPrim(prim);
   }
@@ -196,8 +203,8 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
   void DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) {
     if (false == mbPickMode) {
       GedPrim prim;
-      prim._ucolor = GetStyleColor(pnode, ic);
-      prim.meType = EPRIM_LINES;
+      prim._ucolor   = GetStyleColor(pnode, ic);
+      prim.meType    = EPRIM_LINES;
       prim.miSortKey = calcsort(isort + 1);
 
       prim.ix1 = ix;
@@ -229,12 +236,12 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
   void DrawLine(GedObject* pnode, int ix, int iy, int ix2, int iy2, ESTYLE ic) {
     if (false == mbPickMode) {
       GedPrim prim;
-      prim._ucolor = GetStyleColor(pnode, ic);
-      prim.meType = EPRIM_LINES;
-      prim.ix1 = ix;
-      prim.ix2 = ix2;
-      prim.iy1 = iy;
-      prim.iy2 = iy2;
+      prim._ucolor   = GetStyleColor(pnode, ic);
+      prim.meType    = EPRIM_LINES;
+      prim.ix1       = ix;
+      prim.ix2       = ix2;
+      prim.iy1       = iy;
+      prim.iy2       = iy2;
       prim.miSortKey = calcsort(4);
       AddPrim(prim);
     }
@@ -242,8 +249,8 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////
   void DrawCheckBox(GedObject* pnode, int ix, int iy, int iw, int ih) {
     if (false == mbPickMode) {
-      int ixi = ix + 2;
-      int iyi = iy + 2;
+      int ixi  = ix + 2;
+      int iyi  = iy + 2;
       int ixi2 = ix + iw - 2;
       int iyi2 = iy + ih - 2;
       DrawLine(pnode, ixi, iyi, ixi2, iyi2, ESTYLE_DEFAULT_CHECKBOX);
@@ -266,15 +273,15 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
   virtual void DrawText(GedObject* pnode, int ix, int iy, const char* ptext) {
     if (false == mbPickMode) {
       GedText text;
-      text.ix = ix;
-      text.iy = iy;
+      text.ix      = ix;
+      text.iy      = iy;
       text.mString = GedText::StringType(ptext);
       mTexts.push_back(text);
     }
   }
   ///////////////////////////////////////////////////////////////////
   void Begin(Context* pTARG, GedVP* pVP) {
-    mbPickMode = pTARG->FBI()->isPickState();
+    mbPickMode     = pTARG->FBI()->isPickState();
     mpCurrentGedVp = pVP;
     mTexts.clear();
     clear();
@@ -285,8 +292,8 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     int iw = mpCurrentGedVp->GetW();
     int ih = mpCurrentGedVp->GetH();
     lev2::GfxMaterialUI uimat(pTARG);
-    miRejected = 0;
-    miAccepted = 0;
+    miRejected                           = 0;
+    miAccepted                           = 0;
     lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
     ////////////////////////
     ork::fmtx4 mtxW = pTARG->MTXI()->RefMMatrix();
@@ -396,8 +403,9 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   bool mbPickMode;
   orkvector<GedText> mTexts;
   ///////////////////////////////////////////////////////////////////
-  GedSkin1(Context* ptarg) : GedSkin(ptarg) {
-    mpFONT = lev2::FontMan::GetFont("i14");
+  GedSkin1(Context* ptarg)
+      : GedSkin(ptarg) {
+    mpFONT  = lev2::FontMan::GetFont("i14");
     miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
     miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
   }
@@ -408,7 +416,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     bool bismapnode = (pmapnode != 0);
 
     fvec3 color;
-    bool bsc = true;
+    bool bsc        = true;
     bool balternate = true;
     switch (ic) {
       case ESTYLE_BACKGROUND_1:
@@ -427,19 +435,19 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
         color = fvec3(0.7f, 0.0f, 0.0f);
         break;
       case ESTYLE_BACKGROUND_OPS:
-        color = fvec3(0.8f, 0.4f, 0.4f);
+        color      = fvec3(0.8f, 0.4f, 0.4f);
         balternate = false;
         break;
       case ESTYLE_BACKGROUND_OBJNODE_LABEL:
-        color = fvec3(0.4f, 0.4f, 1.0f);
+        color      = fvec3(0.4f, 0.4f, 1.0f);
         balternate = false;
         break;
       case ESTYLE_BACKGROUND_GROUP_LABEL:
-        color = fvec3(0.5f, 0.5f, 0.7f);
+        color      = fvec3(0.5f, 0.5f, 0.7f);
         balternate = false;
         break;
       case ESTYLE_BACKGROUND_MAPNODE_LABEL:
-        color = fvec3(0.7f, 0.5f, 0.5f);
+        color      = fvec3(0.7f, 0.5f, 0.5f);
         balternate = false;
         break;
       case ESTYLE_DEFAULT_HIGHLIGHT:
@@ -449,13 +457,13 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
         color = fvec3(0.7f, 0.7f, 0.7f);
         break;
       case ESTYLE_BUTTON_OUTLINE:
-        color = fvec3(0.6f, 0.6f, 0.7f);
+        color      = fvec3(0.6f, 0.6f, 0.7f);
         balternate = false;
-        bsc = false;
+        bsc        = false;
         break;
       case ESTYLE_DEFAULT_CHECKBOX:
         color = fvec3(0.6f, 0.6f, 0.7f);
-        bsc = false;
+        bsc   = false;
         break;
       default:
         color = fvec3(0.0f, 0.0f, 0.0f);
@@ -485,15 +493,15 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     prim.iy1 = iy;
     prim.iy2 = iy + ih;
 
-		fvec4 uobj = mpCurrentGedVp->AssignPickId(pnode);
+    fvec4 uobj = mpCurrentGedVp->AssignPickId(pnode);
 
     if (mbPickMode) {
       AddToObjSet((void*)pnode);
       // printf( "insert obj<%p>\n", (void*) pnode );
     }
 
-    prim._ucolor = mbPickMode ? uobj : GetStyleColor(pnode, ic); // Default Outline
-    prim.meType = EPRIM_QUADS;
+    prim._ucolor   = mbPickMode ? uobj : GetStyleColor(pnode, ic); // Default Outline
+    prim.meType    = EPRIM_QUADS;
     prim.miSortKey = calcsort(isort);
     AddPrim(prim);
   }
@@ -501,8 +509,8 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   void DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) {
     if (false == mbPickMode) {
       GedPrim prim;
-      prim._ucolor = GetStyleColor(pnode, ic);
-      prim.meType = EPRIM_LINES;
+      prim._ucolor   = GetStyleColor(pnode, ic);
+      prim.meType    = EPRIM_LINES;
       prim.miSortKey = calcsort(isort + 1);
 
       prim.ix1 = ix;
@@ -534,12 +542,12 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   void DrawLine(GedObject* pnode, int ix, int iy, int ix2, int iy2, ESTYLE ic) {
     if (false == mbPickMode) {
       GedPrim prim;
-      prim._ucolor = GetStyleColor(pnode, ic);
-      prim.meType = EPRIM_LINES;
-      prim.ix1 = ix;
-      prim.ix2 = ix2;
-      prim.iy1 = iy;
-      prim.iy2 = iy2;
+      prim._ucolor   = GetStyleColor(pnode, ic);
+      prim.meType    = EPRIM_LINES;
+      prim.ix1       = ix;
+      prim.ix2       = ix2;
+      prim.iy1       = iy;
+      prim.iy2       = iy2;
       prim.miSortKey = calcsort(4);
       AddPrim(prim);
     }
@@ -547,8 +555,8 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////
   void DrawCheckBox(GedObject* pnode, int ix, int iy, int iw, int ih) {
     if (false == mbPickMode) {
-      int ixi = ix + 2;
-      int iyi = iy + 2;
+      int ixi  = ix + 2;
+      int iyi  = iy + 2;
       int ixi2 = ix + iw - 2;
       int iyi2 = iy + ih - 2;
       DrawLine(pnode, ixi, iyi, ixi2, iyi2, ESTYLE_DEFAULT_CHECKBOX);
@@ -571,15 +579,15 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   virtual void DrawText(GedObject* pnode, int ix, int iy, const char* ptext) {
     if (false == mbPickMode) {
       GedText text;
-      text.ix = ix;
-      text.iy = iy;
+      text.ix      = ix;
+      text.iy      = iy;
       text.mString = GedText::StringType(ptext);
       mTexts.push_back(text);
     }
   }
   ///////////////////////////////////////////////////////////////////
   void Begin(Context* pTARG, GedVP* pVP) {
-    mbPickMode = pTARG->FBI()->isPickState();
+    mbPickMode     = pTARG->FBI()->isPickState();
     mpCurrentGedVp = pVP;
     mTexts.clear();
     clear();
@@ -590,8 +598,8 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     int iw = mpCurrentGedVp->GetW();
     int ih = mpCurrentGedVp->GetH();
     lev2::GfxMaterialUI uimat(pTARG);
-    miRejected = 0;
-    miAccepted = 0;
+    miRejected                           = 0;
+    miAccepted                           = 0;
     lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
     ////////////////////////
     const ork::fmtx4& mtxW = pTARG->MTXI()->RefMMatrix();
@@ -700,7 +708,7 @@ orkvector<GedSkin*> InstantiateSkins() {
     ork::msleep(100);
   }
   auto targ = lev2::GfxEnv::GetRef().loadingContext();
-
+  FontMan::gpuInit(targ);
   orkvector<GedSkin*> skins;
   skins.push_back(new GedSkin0(targ));
   skins.push_back(new GedSkin1(targ));

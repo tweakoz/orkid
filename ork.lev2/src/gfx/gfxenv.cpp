@@ -20,6 +20,7 @@
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/texman.h>
+#include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/ui/ui.h>
 #include <ork/reflect/enum_serializer.inl>
 
@@ -250,6 +251,7 @@ void GfxEnv::SetLoaderTarget(Context* target) {
   auto gfxenvlateinit = [=]() {
     auto ctx = GfxEnv::loadingContext();
     ctx->makeCurrentContext();
+
 #if !defined(__APPLE__)
     // ctx->beginFrame();
 #endif

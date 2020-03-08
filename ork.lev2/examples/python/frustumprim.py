@@ -25,6 +25,7 @@ FBI = ctx.FBI()
 GBI = ctx.GBI()
 print(ctx)
 ctx.makeCurrent()
+FontManager.gpuInit(ctx)
 mtl = FreestyleMaterial()
 mtl.gpuInit(ctx,Path("orkshader://solid"))
 tek = mtl.shader.technique("texvtxcolor_noalpha")
@@ -91,6 +92,11 @@ mtl.bindParamTexture(par_tex,texture)
 
 prim.draw(ctx)
 mtl.end(RCFD)
+
+FontManager.beginTextBlock(ctx,"i48",vec4(0.2,0.2,0.5,1),WIDTH,HEIGHT,100)
+FontManager.draw(ctx,0,0,"!!! YO !!!\nThis is a textured Frustum.")
+FontManager.endTextBlock(ctx)
+
 FBI.rtGroupPop()
 ctx.endFrame()
 

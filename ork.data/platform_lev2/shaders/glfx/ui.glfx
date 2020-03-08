@@ -70,10 +70,9 @@ vertex_shader vs_uitext : iface_vdefault {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_uitext : iface_fmt {
-  float texv = texture(ColorMap, frg_uv).r;
-  if (texv == 0.0)
-    discard;
-  out_clr = vec4(ModColor.xyz, texv);
+  vec4 s = texture(ColorMap, frg_uv);
+  float texa = pow(s.a*s.r,0.75);
+  out_clr = vec4(ModColor.xyz, texa*ModColor.w);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_uitextured : iface_fmt {
