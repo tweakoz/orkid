@@ -1,5 +1,9 @@
 stage
 *.blend1
+*.png
+*.trace
+*.hevc
+*.log
 *autosave*
 .build
 .stage

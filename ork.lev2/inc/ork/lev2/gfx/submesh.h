@@ -355,22 +355,10 @@ struct annopolyposlut : public annopolylut {
 
 struct submesh {
 
-  std::string name;
-  AnnotationMap mAnnotations;
-  float mfSurfaceArea;
-  vertexpool mvpool;
-  HashU64IntMap mpolyhashmap;
-  orkvector<edge> mEdges;
-  HashU64IntMap mEdgeMap;
-  orkvector<poly> mMergedPolys;
-  int mPolyTypeCounter[kmaxsidesperpoly];
-  bool mbMergeEdges;
+  submesh(const vertexpool& vpool = vertexpool::EmptyPool);
+  ~submesh();
 
-  /////////////////////////////////////
-  // these are mutable so we can get bounding boxes faster with const refs to toolmesh's
-  mutable AABox mAABox;
-  mutable bool mAABoxDirty;
-  /////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
 
   void ImportPolyAnnotations(const annopolylut& apl);
   void ExportPolyAnnotations(annopolylut& apl) const;
@@ -410,6 +398,12 @@ struct submesh {
   const vertexpool& RefVertexPool() const {
     return mvpool;
   }
+  void SetVertexPool(const vertexpool& vpool) {
+    mvpool = vpool;
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
   const edge& RefEdge(U64 edgekey) const;
   poly& RefPoly(int i);
   const poly& RefPoly(int i) const;
@@ -431,45 +425,62 @@ struct submesh {
   void GetAdjacentPolys(int ply, orkset<int>& output) const;
   const U64 GetEdgeBetween(int a, int b) const;
 
-  const AABox& GetAABox() const;
-
   /////////////////////////////////////////////////////////////////////////
 
-  void SetVertexPool(const vertexpool& vpool) {
-    mvpool = vpool;
-  }
+  const AABox& aabox() const; /// compute axis aligned bounding box from the current state of the vertex pool
 
   //////////////////////////////////////////////////////////////////////////////
 
-  void addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 u0v0, fvec2 u1v1, fvec4 c);
+  void addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 u0v0, fvec2 u1v1, fvec4 c); /// add quad helper method
 
   /////////////////////////////////////////////////////////////////////////
 
-  void triangulate(submesh& poutsmesh) const;
-  void trianglesToQuads(submesh& poutsmesh) const;
-  // void SubDivQuads(submesh* poutsmesh) const;
-  // void SubDivTriangles(submesh* poutsmesh) const;
-  // void SubDiv(submesh* poutsmesh) const;
+  std::string name;
+  AnnotationMap mAnnotations;
+  float mfSurfaceArea;
+  vertexpool mvpool;
+  HashU64IntMap mpolyhashmap;
+  orkvector<edge> mEdges;
+  HashU64IntMap mEdgeMap;
+  orkvector<poly> mMergedPolys;
+  int mPolyTypeCounter[kmaxsidesperpoly];
+  bool mbMergeEdges;
 
-  /////////////////////////////////////////////////////////////////////////
-
-  submesh(const vertexpool& vpool = vertexpool::EmptyPool);
-  ~submesh();
+  /////////////////////////////////////
+  // these are mutable so we can get bounding boxes faster with const refs to toolmesh's
+  mutable AABox mAABox;
+  mutable bool mAABoxDirty;
+  /////////////////////////////////////
 };
 
+void submeshTriangulate(const submesh& inpsubmesh, submesh& outsmesh);
+void submeshTrianglesToQuads(const submesh& inpsubmesh, submesh& outsmesh);
+// void SubDivQuads(submesh* poutsmesh) const;
+// void SubDivTriangles(submesh* poutsmesh) const;
+// void SubDiv(submesh* poutsmesh) const;
+
+///////////////////////////////////////////////////////////////////////////////
+/// PrimitiveV12N12B12T8C4 SubMesh Primitive with V12N12B12T8C4 vertex format
 ///////////////////////////////////////////////////////////////////////////////
 
 struct PrimitiveV12N12B12T8C4 {
 
-  PrimitiveV12N12B12T8C4();
-  void gpuInit(const submesh& submesh, lev2::Context* context);
-  void draw(lev2::Context* context) const;
-
+  using vtx_t    = lev2::SVtxV12N12B12T8C4;
   using idxbuf_t = lev2::StaticIndexBuffer<uint16_t>;
-  using vtxbuf_t = lev2::StaticVertexBuffer<lev2::SVtxV12N12B12T8C4>;
+  using vtxbuf_t = lev2::StaticVertexBuffer<vtx_t>;
+
+  PrimitiveV12N12B12T8C4();
+
+  void fromSubMesh(const submesh& submesh, lev2::Context* context); /// generate from submesh using internal vertexbuffer
+  void fromSubMesh(
+      const submesh& submesh,
+      std::shared_ptr<vtxbuf_t> vtxbuf,
+      lev2::Context* context);             /// generate from submesh using shared vertexbuffer
+  void draw(lev2::Context* context) const; /// draw with context
+
   std::shared_ptr<idxbuf_t> _indexBuffer;
   std::shared_ptr<vtxbuf_t> _vertexBuffer;
-  lev2::VtxWriter<lev2::SVtxV12N12B12T8C4> _writer;
+  lev2::VtxWriter<vtx_t> _writer;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

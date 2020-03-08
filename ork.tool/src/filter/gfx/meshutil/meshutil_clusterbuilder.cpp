@@ -14,166 +14,155 @@
 #include "../meshutil/meshutil_stripper.h"
 
 const bool gbFORCEDICE = true;
-const int kDICESIZE = 512;
+const int kDICESIZE    = 512;
 
 using namespace ork::tool;
 
 namespace ork::MeshUtil {
 ///////////////////////////////////////////////////////////////////////////////
 
-XgmClusterBuilder::XgmClusterBuilder() : _vertexBuffer(NULL)
-{
+XgmClusterBuilder::XgmClusterBuilder()
+    : _vertexBuffer(NULL) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-XgmClusterBuilder::~XgmClusterBuilder()
-{
-
+XgmClusterBuilder::~XgmClusterBuilder() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmClusterBuilder::Dump( void )
-{
-	/*orkprintf( "[CLUSDUMP] Cluster[%08x] NUBI %02d\n", this, GetNumUniqueBonIndices() );
-	int iNumBones = _boneRegisterMap.size();
-	orkprintf( "/////////////////////////////////////////\n" );
-	orkprintf( "[CLUSDUMP] [Cluster %08x] [NumBones %d]\n", this, iNumBones );
-	orkprintf( "//////////////////\n" );
-	orkprintf( "[CLUSDUMP] " );
-	/////////////////////////////////////////////////////////////////
-	static int RegMap[256];
-	for( orkmap<int,int>::const_iterator it=_boneRegisterMap.begin(); it!=_boneRegisterMap.end(); it++ )
-	{	std::pair<int,int> BoneMapItem = *it;
-		int BoneIDX = BoneMapItem.first;
-		int BoneREG = BoneMapItem.second;
-		RegMap[ BoneREG ] = BoneIDX;
-		orkprintf( " B%02d:R%02d", BoneMapItem.first, BoneMapItem.second );
-	}
-	orkprintf( "\n[CLUSDUMP] " );
-	////////////////////////////////////////////////////////////////
-	for( int r=0; r<iNumBones; r++ )
-	{	orkprintf( " R%02d:B%02d", r, RegMap[r] );
-	}
-	orkprintf( "\n//////////////////\n" );*/
+void XgmClusterBuilder::Dump(void) {
+  /*orkprintf( "[CLUSDUMP] Cluster[%08x] NUBI %02d\n", this, GetNumUniqueBonIndices() );
+  int iNumBones = _boneRegisterMap.size();
+  orkprintf( "/////////////////////////////////////////\n" );
+  orkprintf( "[CLUSDUMP] [Cluster %08x] [NumBones %d]\n", this, iNumBones );
+  orkprintf( "//////////////////\n" );
+  orkprintf( "[CLUSDUMP] " );
+  /////////////////////////////////////////////////////////////////
+  static int RegMap[256];
+  for( orkmap<int,int>::const_iterator it=_boneRegisterMap.begin(); it!=_boneRegisterMap.end(); it++ )
+  {	std::pair<int,int> BoneMapItem = *it;
+      int BoneIDX = BoneMapItem.first;
+      int BoneREG = BoneMapItem.second;
+      RegMap[ BoneREG ] = BoneIDX;
+      orkprintf( " B%02d:R%02d", BoneMapItem.first, BoneMapItem.second );
+  }
+  orkprintf( "\n[CLUSDUMP] " );
+  ////////////////////////////////////////////////////////////////
+  for( int r=0; r<iNumBones; r++ )
+  {	orkprintf( " R%02d:B%02d", r, RegMap[r] );
+  }
+  orkprintf( "\n//////////////////\n" );*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BuildXgmClusterPrimGroups( lev2::XgmCluster & XgmCluster, const std::vector<unsigned int> & TriangleIndices )
-{
-	lev2::ContextDummy DummyTarget;
+void BuildXgmClusterPrimGroups(lev2::XgmCluster& XgmCluster, const std::vector<unsigned int>& TriangleIndices) {
+  lev2::ContextDummy DummyTarget;
 
-	const int imaxvtx = XgmCluster._vertexBuffer->GetNumVertices();
+  const int imaxvtx = XgmCluster._vertexBuffer->GetNumVertices();
 
-	const ColladaExportPolicy* policy = ColladaExportPolicy::context();
-	// TODO: Is this correct? Why?
-	static const int WII_PRIM_GROUP_MAX_INDICES = 0xFFFF;
+  const ColladaExportPolicy* policy = ColladaExportPolicy::context();
+  // TODO: Is this correct? Why?
+  static const int WII_PRIM_GROUP_MAX_INDICES = 0xFFFF;
 
-	////////////////////////////////////////////////////////////
-	// Build TriStrips
+  ////////////////////////////////////////////////////////////
+  // Build TriStrips
 
-	MeshUtil::TriStripper MyStripper( TriangleIndices, 16, 4 );
+  MeshUtil::TriStripper MyStripper(TriangleIndices, 16, 4);
 
-	bool bhastris = (MyStripper.GetTriIndices().size()>0);
+  bool bhastris = (MyStripper.GetTriIndices().size() > 0);
 
-	int inumstripgroups = MyStripper.GetStripGroups().size();
+  int inumstripgroups = MyStripper.GetStripGroups().size();
 
-	bool bhasstrips = (inumstripgroups>0);
+  bool bhasstrips = (inumstripgroups > 0);
 
-	int inumpg = inumstripgroups + int(bhastris);
+  int inumpg = inumstripgroups + int(bhastris);
 
-	////////////////////////////////////////////////////////////
-	// Create PrimGroups
+  ////////////////////////////////////////////////////////////
+  // Create PrimGroups
 
-	XgmCluster.mpPrimGroups = new ork::lev2::XgmPrimGroup[ inumpg ];
-	XgmCluster.miNumPrimGroups = inumpg;
+  XgmCluster.mpPrimGroups    = new ork::lev2::XgmPrimGroup[inumpg];
+  XgmCluster.miNumPrimGroups = inumpg;
 
-	////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////
 
-	int ipg = 0;
+  int ipg = 0;
 
-	////////////////////////////////////////////////////////////
-	if( bhasstrips )
-	////////////////////////////////////////////////////////////
-	{
-		const orkvector<MeshUtil::TriStripperPrimGroup>& StripGroups = MyStripper.GetStripGroups();
-		for( int i=0; i<inumstripgroups; i++ )
-		{
-			const orkvector<unsigned int>& StripIndices = MyStripper.GetStripIndices(i);
-			int inumidx = StripIndices.size();
+  ////////////////////////////////////////////////////////////
+  if (bhasstrips)
+  ////////////////////////////////////////////////////////////
+  {
+    const orkvector<MeshUtil::TriStripperPrimGroup>& StripGroups = MyStripper.GetStripGroups();
+    for (int i = 0; i < inumstripgroups; i++) {
+      const orkvector<unsigned int>& StripIndices = MyStripper.GetStripIndices(i);
+      int inumidx                                 = StripIndices.size();
 
-			/////////////////////////////////
-			// check index buffer size policy
-			//  (some platforms do not have 32bit indices)
-			/////////////////////////////////
+      /////////////////////////////////
+      // check index buffer size policy
+      //  (some platforms do not have 32bit indices)
+      /////////////////////////////////
 
-			if(ColladaExportPolicy::context()->mPrimGroupPolicy.mMaxIndices == ColladaPrimGroupPolicy::EPOLICY_MAXINDICES_WII)
-			{
-				if(inumidx > WII_PRIM_GROUP_MAX_INDICES)
-				{
-					orkerrorlog("ERROR: <%s> Wii prim group max indices exceeded: %d\n", policy->mColladaOutName.c_str(), inumidx);
-					throw std::exception();
-				}
-			}
+      if (ColladaExportPolicy::context()->mPrimGroupPolicy.mMaxIndices == ColladaPrimGroupPolicy::EPOLICY_MAXINDICES_WII) {
+        if (inumidx > WII_PRIM_GROUP_MAX_INDICES) {
+          orkerrorlog("ERROR: <%s> Wii prim group max indices exceeded: %d\n", policy->mColladaOutName.c_str(), inumidx);
+          throw std::exception();
+        }
+      }
 
-			/////////////////////////////////
+      /////////////////////////////////
 
-			ork::lev2::StaticIndexBuffer<U16> *pidxbuf = new ork::lev2::StaticIndexBuffer<U16>(inumidx);
-			U16 *pidx = (U16*) DummyTarget.GBI()->LockIB( *pidxbuf );
-			OrkAssert(pidx!=0);
-			{
-				for( int ii=0; ii<inumidx; ii++ )
-				{
-					int index = StripIndices[ii];
-					OrkAssert(index<imaxvtx);
-					pidx[ii] = U16(index);
-				}
-			}
-			DummyTarget.GBI()->UnLockIB( *pidxbuf );
+      ork::lev2::StaticIndexBuffer<U16>* pidxbuf = new ork::lev2::StaticIndexBuffer<U16>(inumidx);
+      U16* pidx                                  = (U16*)DummyTarget.GBI()->LockIB(*pidxbuf);
+      OrkAssert(pidx != 0);
+      {
+        for (int ii = 0; ii < inumidx; ii++) {
+          int index = StripIndices[ii];
+          OrkAssert(index < imaxvtx);
+          pidx[ii] = U16(index);
+        }
+      }
+      DummyTarget.GBI()->UnLockIB(*pidxbuf);
 
-			/////////////////////////////////
+      /////////////////////////////////
 
-			ork::lev2::XgmPrimGroup & StripGroup = XgmCluster.mpPrimGroups[ ipg++ ];
+      ork::lev2::XgmPrimGroup& StripGroup = XgmCluster.mpPrimGroups[ipg++];
 
-			StripGroup.miNumIndices = inumidx;
-			StripGroup.mpIndices = pidxbuf;
-			StripGroup.mePrimType = lev2::EPRIM_TRIANGLESTRIP;
-		}
-	}
+      StripGroup.miNumIndices = inumidx;
+      StripGroup.mpIndices    = pidxbuf;
+      StripGroup.mePrimType   = lev2::EPRIM_TRIANGLESTRIP;
+    }
+  }
 
-	////////////////////////////////////////////////////////////
-	if( bhastris )
-	////////////////////////////////////////////////////////////
-	{
-		int inumidx = MyStripper.GetTriIndices().size();
+  ////////////////////////////////////////////////////////////
+  if (bhastris)
+  ////////////////////////////////////////////////////////////
+  {
+    int inumidx = MyStripper.GetTriIndices().size();
 
-		/////////////////////////////////////////////////////
-		ork::lev2::StaticIndexBuffer<U16> *pidxbuf = new ork::lev2::StaticIndexBuffer<U16>(inumidx);
-		U16 *pidx = (U16*) DummyTarget.GBI()->LockIB( *pidxbuf );
-		OrkAssert(pidx!=0);
-		for( int ii=0; ii<inumidx; ii++ )
-		{
-			pidx[ii] = U16(MyStripper.GetTriIndices()[ii]);
-		}
-		DummyTarget.GBI()->UnLockIB( *pidxbuf );
-		/////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////
+    ork::lev2::StaticIndexBuffer<U16>* pidxbuf = new ork::lev2::StaticIndexBuffer<U16>(inumidx);
+    U16* pidx                                  = (U16*)DummyTarget.GBI()->LockIB(*pidxbuf);
+    OrkAssert(pidx != 0);
+    for (int ii = 0; ii < inumidx; ii++) {
+      pidx[ii] = U16(MyStripper.GetTriIndices()[ii]);
+    }
+    DummyTarget.GBI()->UnLockIB(*pidxbuf);
+    /////////////////////////////////////////////////////
 
-		ork::lev2::XgmPrimGroup & StripGroup = XgmCluster.mpPrimGroups[ ipg++ ];
+    ork::lev2::XgmPrimGroup& StripGroup = XgmCluster.mpPrimGroups[ipg++];
 
-		if(ColladaExportPolicy::context()->mPrimGroupPolicy.mMaxIndices == ColladaPrimGroupPolicy::EPOLICY_MAXINDICES_WII)
-			if(inumidx > WII_PRIM_GROUP_MAX_INDICES)
-			{
-				orkerrorlog("ERROR: <%s> Wii prim group max indices exceeded: %d\n", policy->mColladaOutName.c_str(), inumidx);
-				throw std::exception();
-			}
+    if (ColladaExportPolicy::context()->mPrimGroupPolicy.mMaxIndices == ColladaPrimGroupPolicy::EPOLICY_MAXINDICES_WII)
+      if (inumidx > WII_PRIM_GROUP_MAX_INDICES) {
+        orkerrorlog("ERROR: <%s> Wii prim group max indices exceeded: %d\n", policy->mColladaOutName.c_str(), inumidx);
+        throw std::exception();
+      }
 
-		StripGroup.miNumIndices = inumidx;
-		StripGroup.mpIndices = pidxbuf;
-		StripGroup.mePrimType = lev2::EPRIM_TRIANGLES;
-
-	}
+    StripGroup.miNumIndices = inumidx;
+    StripGroup.mpIndices    = pidxbuf;
+    StripGroup.mePrimType   = lev2::EPRIM_TRIANGLES;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -210,7 +199,7 @@ void buildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, const XgmClusterBuild
 
   BuildXgmClusterPrimGroups(XgmCluster, TriangleIndices);
 
-  XgmCluster.mBoundingBox    = clusterbuilder->_submesh.GetAABox();
+  XgmCluster.mBoundingBox    = clusterbuilder->_submesh.aabox();
   XgmCluster.mBoundingSphere = Sphere(XgmCluster.mBoundingBox.Min(), XgmCluster.mBoundingBox.Max());
 
   /////////////////////////////////////////////////////////////
@@ -236,4 +225,4 @@ void buildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, const XgmClusterBuild
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::MeshUtil {
+} // namespace ork::MeshUtil

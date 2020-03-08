@@ -14,14 +14,15 @@ namespace ork::MeshUtil {
 PrimitiveV12N12B12T8C4::PrimitiveV12N12B12T8C4() {
 }
 
-void PrimitiveV12N12B12T8C4::gpuInit(const submesh& submesh, lev2::Context* context) {
+////////////////////////////////////////////////////////////////////////////////
 
+void PrimitiveV12N12B12T8C4::fromSubMesh(const submesh& submesh, std::shared_ptr<vtxbuf_t> vtxbuf, lev2::Context* context) {
   const auto& vpool = submesh.RefVertexPool();
   int numverts      = vpool.GetNumVertices();
   int inumpolys     = submesh.GetNumPolys(3);
   int numidcs       = inumpolys * 3;
 
-  _vertexBuffer = std::make_shared<vtxbuf_t>(numverts, 0, lev2::EPRIM_NONE);
+  _vertexBuffer = vtxbuf;
   _indexBuffer  = std::make_shared<idxbuf_t>(numidcs);
 
   _writer.Lock(context, _vertexBuffer.get(), numverts);
@@ -49,6 +50,17 @@ void PrimitiveV12N12B12T8C4::gpuInit(const submesh& submesh, lev2::Context* cont
   }
   context->GBI()->UnLockIB(*_indexBuffer.get());
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+void PrimitiveV12N12B12T8C4::fromSubMesh(const submesh& submesh, lev2::Context* context) {
+  const auto& vpool = submesh.RefVertexPool();
+  int numverts      = vpool.GetNumVertices();
+  _vertexBuffer     = std::make_shared<vtxbuf_t>(numverts, 0, lev2::EPRIM_NONE);
+  fromSubMesh(submesh, _vertexBuffer, context);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 void PrimitiveV12N12B12T8C4::draw(lev2::Context* context) const {
   auto& VB = *_vertexBuffer.get();

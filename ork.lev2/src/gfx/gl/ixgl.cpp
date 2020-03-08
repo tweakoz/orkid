@@ -624,7 +624,7 @@ void ContextGL::initializeLoaderContext() {
     if (this->mTargetDrawableSizeDirty) {
       int w = mainSurfaceWidth();
       int h = mainSurfaceHeight();
-      printf("resizing defaultRTG<%p>\n", _defaultRTG);
+      // printf("resizing defaultRTG<%p>\n", _defaultRTG);
       _defaultRTG->Resize(w, h);
       mTargetDrawableSizeDirty = false;
     }

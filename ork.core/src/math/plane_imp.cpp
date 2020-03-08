@@ -3,8 +3,7 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
-
+////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
 
@@ -18,49 +17,39 @@
 
 namespace ork {
 
-
-template< typename T>
-bool Plane<T>::PlaneIntersect( const Plane<T>& oth, Vector3<T>& outpos, Vector3<T>& outdir )
-{
-    outdir = GetNormal().Cross( oth.GetNormal() );
-    T num = outdir.MagSquared();
-	Vector3<T> c1 = (GetD()*oth.GetNormal()) + (oth.GetD()*GetNormal());
-	outpos = c1.Cross( outdir ) * T(1.0)/num;
-    return true; 
+template <typename T> bool Plane<T>::PlaneIntersect(const Plane<T>& oth, Vector3<T>& outpos, Vector3<T>& outdir) const {
+  outdir        = GetNormal().Cross(oth.GetNormal());
+  T num         = outdir.MagSquared();
+  Vector3<T> c1 = (GetD() * oth.GetNormal()) + (oth.GetD() * GetNormal());
+  outpos        = c1.Cross(outdir) * T(1.0) / num;
+  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<> float Plane<float>::Abs( float in )
-{
-	return fabs( in );
+template <> float Plane<float>::Abs(float in) {
+  return fabs(in);
 }
-template<> float Plane<float>::Epsilon()
-{
-	return Float::Epsilon();
+template <> float Plane<float>::Epsilon() {
+  return Float::Epsilon();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<> double Plane<double>::Abs( double in )
-{
-	return fabs( in );
+template <> double Plane<double>::Abs(double in) {
+  return fabs(in);
 }
-template<> double Plane<double>::Epsilon()
-{
-	return double(Float::Epsilon())*0.0001;
+template <> double Plane<double>::Epsilon() {
+  return double(Float::Epsilon()) * 0.0001;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-
 ///////////////////////////////////////////////////////////////////////////////
 
+} // namespace ork
 
-}
+template class ork::Plane<float>;  // explicit template instantiation
+template class ork::Plane<double>; // explicit template instantiation
 
-template class ork::Plane<float>;		// explicit template instantiation
-template class ork::Plane<double>;		// explicit template instantiation
-
-//template class ork::chunkfile::Reader<ork::lev2::CollisionLoadAllocator>;
-
+// template class ork::chunkfile::Reader<ork::lev2::CollisionLoadAllocator>;

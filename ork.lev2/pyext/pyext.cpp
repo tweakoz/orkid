@@ -13,6 +13,8 @@
 #include <ork/lev2/gfx/gfxmaterial.h>
 #include <ork/lev2/gfx/material_freestyle.inl>
 #include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/gfx/submesh.h>
+#include <ork/lev2/gfx/primitives.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace py = pybind11;
@@ -248,6 +250,10 @@ PYBIND11_MODULE(orklev2, m) {
           [](const fbi_t& fbi, rtg_t& rtg, int rtbindex, CaptureBuffer& capbuf, int format) -> bool {
             return fbi.get()->captureAsFormat(rtg.ref(), rtbindex, &capbuf, EBufferFormat(format));
           })
+      .def("clear", [](const fbi_t& fbi, const fcolor4& color, float depth) { return fbi.get()->Clear(color, depth); })
+      .def("rtGroupPush", [](const fbi_t& fbi, rtg_t& rtg) { return fbi.get()->PushRtGroup(rtg.get()); })
+      .def("rtGroupPop", [](const fbi_t& fbi) { return fbi.get()->PopRtGroup(); })
+      .def("rtGroupClear", [](const fbi_t& fbi, rtg_t& rtg) { return fbi.get()->rtGroupClear(rtg.get()); })
       .def("__repr__", [](const fbi_t& fbi) -> std::string {
         fxstring<256> fxs;
         fxs.format("FBI(%p)", fbi.get());
@@ -318,12 +324,13 @@ PYBIND11_MODULE(orklev2, m) {
             pybind11::format_descriptor<unsigned char>::format(),
             1,                 // Number of dimensions
             {capbuf.length()}, // Buffer dimensions
-            {0});              // Strides (in bytes) for each index
+            {1});              // Strides (in bytes) for each index
       })
       .def_property_readonly("length", [](CaptureBuffer& capbuf) -> int { return int(capbuf.length()); })
       .def_property_readonly("width", [](CaptureBuffer& capbuf) -> int { return int(capbuf.width()); })
       .def_property_readonly("height", [](CaptureBuffer& capbuf) -> int { return int(capbuf.height()); })
       .def_property_readonly("format", [](CaptureBuffer& capbuf) -> int { return int(capbuf.format()); })
+      .def("__len__", [](const CaptureBuffer& capbuf) -> int { return int(capbuf.length()); })
       .def("__repr__", [](const CaptureBuffer& capbuf) -> std::string {
         fxstring<256> fxs;
         fxs.format("CaptureBuffer(%p)", &capbuf);
@@ -372,5 +379,124 @@ PYBIND11_MODULE(orklev2, m) {
       .def_static("staticBuffer", [](size_t size) -> vb_static_vtxa_t { return vb_static_vtxa_t(size, 0, EPRIM_NONE); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<vb_static_vtxa_t, VertexBufferBase>(m, "VtxV12N12B12T8C4_StaticBuffer");
+  /////////////////////////////////////////////////////////////////////////////////
+  auto meshutil = m.def_submodule("meshutil", "Mesh operations");
+  {
+    /////////////////////////////////////////////////////////////////////////////////
+    py::class_<MeshUtil::PrimitiveV12N12B12T8C4>(meshutil, "PrimitiveV12N12B12T8C4")
+        .def(py::init<>())
+        .def(py::init([](const MeshUtil::submesh& submesh, Context* context) {
+          auto prim = std::unique_ptr<MeshUtil::PrimitiveV12N12B12T8C4>(new MeshUtil::PrimitiveV12N12B12T8C4);
+          prim->fromSubMesh(submesh, context);
+          return prim;
+        }))
+        .def(
+            "fromSubMesh",
+            [](MeshUtil::PrimitiveV12N12B12T8C4& prim, const MeshUtil::submesh& submesh, Context* context) {
+              prim.fromSubMesh(submesh, context);
+            })
+        .def("draw", [](MeshUtil::PrimitiveV12N12B12T8C4& prim, Context* context) { prim.draw(context); });
+    /////////////////////////////////////////////////////////////////////////////////
+    py::class_<MeshUtil::submesh>(meshutil, "SubMesh")
+        .def(py::init<>())
+        .def("numPolys", [](const MeshUtil::submesh& submesh, int numsides = 0) -> int { return submesh.GetNumPolys(numsides); })
+        .def("numVertices", [](const MeshUtil::submesh& submesh) -> int { return submesh.mvpool.GetNumVertices(); })
+        .def("addQuad", [](MeshUtil::submesh& submesh, fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 u0v0, fvec2 u1v1, fvec4 c) {
+          return submesh.addQuad(p0, p1, p2, p3, u0v0, u1v1, c);
+        });
+
+    /////////////////////////////////////////////////////////////////////////////////
+    py::class_<MeshUtil::vertexpool>(meshutil, "VertexPool").def(py::init<>());
+    /////////////////////////////////////////////////////////////////////////////////
+    py::class_<MeshUtil::poly>(meshutil, "Poly").def(py::init<>());
+    /////////////////////////////////////////////////////////////////////////////////
+    py::class_<MeshUtil::edge>(meshutil, "Edge").def(py::init<>());
+    /////////////////////////////////////////////////////////////////////////////////
+  }
+  /////////////////////////////////////////////////////////////////////////////////
+  auto primitives = m.def_submodule("primitives", "BuiltIn Primitives");
+  {
+    /////////////////////////////////////////////////////////////////////////////////
+    py::class_<primitives::CubePrimitive>(primitives, "CubePrimitive")
+        .def(py::init<>())
+        .def_property(
+            "size",
+            [](const primitives::CubePrimitive& prim) -> float { return prim._size; },
+            [](primitives::CubePrimitive& prim, const float& value) { prim._size = value; })
+
+        .def_property(
+            "topColor",
+            [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorTop; },
+            [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorTop = value; })
+
+        .def_property(
+            "bottomColor",
+            [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorBottom; },
+            [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorBottom = value; })
+
+        .def_property(
+            "frontColor",
+            [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorFront; },
+            [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorFront = value; })
+
+        .def_property(
+            "backColor",
+            [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorBack; },
+            [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorBack = value; })
+
+        .def_property(
+            "leftColor",
+            [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorLeft; },
+            [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorLeft = value; })
+
+        .def_property(
+            "rightColor",
+            [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorRight; },
+            [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorRight = value; })
+
+        .def("gpuInit", [](primitives::CubePrimitive& prim, ctx_t& context) { prim.gpuInit(context.get()); })
+        .def("draw", [](primitives::CubePrimitive& prim, ctx_t& context) { prim.draw(context.get()); });
+    /////////////////////////////////////////////////////////////////////////////////
+    py::class_<primitives::FrustumPrimitive>(primitives, "FrustumPrimitive")
+        .def(py::init<>())
+        .def_property(
+            "frustum",
+            [](const primitives::FrustumPrimitive& prim) -> Frustum { return prim._frustum; },
+            [](primitives::FrustumPrimitive& prim, const Frustum& value) { prim._frustum = value; })
+
+        .def_property(
+            "topColor",
+            [](const primitives::FrustumPrimitive& prim) -> fvec4 { return prim._colorTop; },
+            [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorTop = value; })
+
+        .def_property(
+            "bottomColor",
+            [](const primitives::FrustumPrimitive& prim) -> fvec4 { return prim._colorBottom; },
+            [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorBottom = value; })
+
+        .def_property(
+            "frontColor",
+            [](const primitives::FrustumPrimitive& prim) -> fvec4 { return prim._colorFront; },
+            [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorFront = value; })
+
+        .def_property(
+            "backColor",
+            [](const primitives::FrustumPrimitive& prim) -> fvec4 { return prim._colorBack; },
+            [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorBack = value; })
+
+        .def_property(
+            "leftColor",
+            [](const primitives::FrustumPrimitive& prim) -> fvec4 { return prim._colorLeft; },
+            [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorLeft = value; })
+
+        .def_property(
+            "rightColor",
+            [](const primitives::FrustumPrimitive& prim) -> fvec4 { return prim._colorRight; },
+            [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorRight = value; })
+
+        .def("gpuInit", [](primitives::FrustumPrimitive& prim, ctx_t& context) { prim.gpuInit(context.get()); })
+        .def("draw", [](primitives::FrustumPrimitive& prim, ctx_t& context) { prim.draw(context.get()); });
+    /////////////////////////////////////////////////////////////////////////////////
+  }
   /////////////////////////////////////////////////////////////////////////////////
 };

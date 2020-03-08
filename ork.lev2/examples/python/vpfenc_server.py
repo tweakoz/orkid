@@ -170,7 +170,7 @@ while True:
     # nv encode !
     #############################################
 
-    FBI.captureAsFormat(rtg,0,capbufNV12,9) # NV12
+    FBI.captureAsFormat(rtg,0,capbufNV12,10) # NV12
     as_np = np.array(capbufNV12, copy=False)
     encFrame = encoder.EncodeSingleFrame(as_np)
     if(encFrame.size):

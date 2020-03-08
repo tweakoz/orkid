@@ -12,11 +12,11 @@
 namespace ork { namespace MeshUtil {
 ///////////////////////////////////////////////////////////////////////////////
 
-void submesh::triangulate(submesh& outmesh) const {
-  int inump = GetNumPolys();
+void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
+  int inump = inpmesh.GetNumPolys();
 
   for (int ip = 0; ip < inump; ip++) {
-    const poly& ply = mMergedPolys[ip];
+    const poly& ply = inpmesh.mMergedPolys[ip];
 
     int inumv = ply.GetNumSides();
 
@@ -25,9 +25,9 @@ void submesh::triangulate(submesh& outmesh) const {
         int idx0         = ply.miVertices[0];
         int idx1         = ply.miVertices[1];
         int idx2         = ply.miVertices[2];
-        const vertex& v0 = mvpool.VertexPool[idx0];
-        const vertex& v1 = mvpool.VertexPool[idx1];
-        const vertex& v2 = mvpool.VertexPool[idx2];
+        const vertex& v0 = inpmesh.mvpool.VertexPool[idx0];
+        const vertex& v1 = inpmesh.mvpool.VertexPool[idx1];
+        const vertex& v2 = inpmesh.mvpool.VertexPool[idx2];
         int imerged0     = outmesh.mvpool.MergeVertex(v0);
         int imerged1     = outmesh.mvpool.MergeVertex(v1);
         int imerged2     = outmesh.mvpool.MergeVertex(v2);
@@ -39,10 +39,10 @@ void submesh::triangulate(submesh& outmesh) const {
         int idx1         = ply.miVertices[1];
         int idx2         = ply.miVertices[2];
         int idx3         = ply.miVertices[3];
-        const vertex& v0 = mvpool.VertexPool[idx0];
-        const vertex& v1 = mvpool.VertexPool[idx1];
-        const vertex& v2 = mvpool.VertexPool[idx2];
-        const vertex& v3 = mvpool.VertexPool[idx3];
+        const vertex& v0 = inpmesh.mvpool.VertexPool[idx0];
+        const vertex& v1 = inpmesh.mvpool.VertexPool[idx1];
+        const vertex& v2 = inpmesh.mvpool.VertexPool[idx2];
+        const vertex& v3 = inpmesh.mvpool.VertexPool[idx3];
         int imerged0     = outmesh.mvpool.MergeVertex(v0);
         int imerged1     = outmesh.mvpool.MergeVertex(v1);
         int imerged2     = outmesh.mvpool.MergeVertex(v2);
@@ -59,7 +59,7 @@ void submesh::triangulate(submesh& outmesh) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void submesh::trianglesToQuads(submesh& outmesh) const {
+void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
   ///////////////////////////////////////
 
   fplane3 P0, P1;
@@ -68,20 +68,20 @@ void submesh::trianglesToQuads(submesh& outmesh) const {
 
   ///////////////////////////////////////
 
-  int inumtri = GetNumPolys(3);
+  int inumtri = inpmesh.GetNumPolys(3);
 
   for (int ip = 0; ip < inumtri; ip++) {
     bool basquad = false;
 
-    const MeshUtil::poly& inpoly = RefPoly(ip);
+    const MeshUtil::poly& inpoly = inpmesh.RefPoly(ip);
 
     ici[0] = inpoly.miVertices[0];
     ici[1] = inpoly.miVertices[1];
     ici[2] = inpoly.miVertices[2];
 
-    VPos[0] = mvpool.VertexPool[ici[0]].mPos;
-    VPos[1] = mvpool.VertexPool[ici[1]].mPos;
-    VPos[2] = mvpool.VertexPool[ici[2]].mPos;
+    VPos[0] = inpmesh.mvpool.VertexPool[ici[0]].mPos;
+    VPos[1] = inpmesh.mvpool.VertexPool[ici[1]].mPos;
+    VPos[2] = inpmesh.mvpool.VertexPool[ici[2]].mPos;
     P0.CalcPlaneFromTriangle(VPos[0], VPos[1], VPos[2]);
     // fvec4 VArea012[3] = { VPos[0],VPos[1],VPos[2] };
 
@@ -99,9 +99,9 @@ void submesh::trianglesToQuads(submesh& outmesh) const {
     orkset<int> ConnectedPolySetA;
     orkset<int> ConnectedPolySetB;
     orkset<int> ConnectedPolySetC;
-    GetConnectedPolys(MeshUtil::edge(ici[0], ici[1]), ConnectedPolySetA);
-    GetConnectedPolys(MeshUtil::edge(ici[1], ici[2]), ConnectedPolySetB);
-    GetConnectedPolys(MeshUtil::edge(ici[2], ici[0]), ConnectedPolySetC);
+    inpmesh.GetConnectedPolys(MeshUtil::edge(ici[0], ici[1]), ConnectedPolySetA);
+    inpmesh.GetConnectedPolys(MeshUtil::edge(ici[1], ici[2]), ConnectedPolySetB);
+    inpmesh.GetConnectedPolys(MeshUtil::edge(ici[2], ici[0]), ConnectedPolySetC);
 
     for (orkset<int>::iterator it = ConnectedPolySetA.begin(); it != ConnectedPolySetA.end(); it++) {
       ConnectedPolySet.insert(*it);
@@ -119,7 +119,7 @@ void submesh::trianglesToQuads(submesh& outmesh) const {
     for (orkset<int>::iterator it = ConnectedPolySet.begin(); it != ConnectedPolySet.end(); it++) {
       int iotherpoly = *it;
 
-      const MeshUtil::poly& ply = RefPoly(iotherpoly);
+      const MeshUtil::poly& ply = inpmesh.RefPoly(iotherpoly);
 
       int inumsides = ply.GetNumSides();
 
@@ -133,9 +133,9 @@ void submesh::trianglesToQuads(submesh& outmesh) const {
         ici[4] = ply.miVertices[1];
         ici[5] = ply.miVertices[2];
 
-        VPos[3] = mvpool.VertexPool[ici[3]].mPos;
-        VPos[4] = mvpool.VertexPool[ici[4]].mPos;
-        VPos[5] = mvpool.VertexPool[ici[5]].mPos;
+        VPos[3] = inpmesh.mvpool.VertexPool[ici[3]].mPos;
+        VPos[4] = inpmesh.mvpool.VertexPool[ici[4]].mPos;
+        VPos[5] = inpmesh.mvpool.VertexPool[ici[5]].mPos;
 
         P1.CalcPlaneFromTriangle(VPos[3], VPos[4], VPos[5]);
         // fvec4 VArea345[3] = { VPos[3],VPos[4],VPos[5] };

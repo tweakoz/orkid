@@ -18,14 +18,14 @@ int main(int argc, char** argv) {
   const FxShaderTechnique* fxtechnique = nullptr;
   const FxShaderParam* fxparameterMVP  = nullptr;
   Timer timer;
-  primitives::Cube cube;
-  cube._size        = 1;
-  cube._colorTop    = fvec3(.5, 1, .5);
-  cube._colorBottom = fvec3(.5, 0, .5);
-  cube._colorFront  = fvec3(.5, .5, 1);
-  cube._colorBack   = fvec3(.5, .5, 0);
-  cube._colorLeft   = fvec3(0, .5, .5);
-  cube._colorRight  = fvec3(1, .5, .5);
+  primitives::FrustumPrimitive primitive;
+  primitive._size        = 1;
+  primitive._colorTop    = fvec3(.5, 1, .5);
+  primitive._colorBottom = fvec3(.5, 0, .5);
+  primitive._colorFront  = fvec3(.5, .5, 1);
+  primitive._colorBack   = fvec3(.5, .5, 0);
+  primitive._colorLeft   = fvec3(0, .5, .5);
+  primitive._colorRight  = fvec3(1, .5, .5);
 
   //////////////////////////////////////////////////////////
   timer.Start();
@@ -38,7 +38,18 @@ int main(int argc, char** argv) {
     deco::printf(fvec3::Yellow(), "  fxtechnique<%p>\n", fxtechnique);
     deco::printf(fvec3::Yellow(), "  fxparameterMVP<%p>\n", fxparameterMVP);
     material._rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
-    cube.gpuInit(ctx);
+
+    ///////////////////////////////////////////////////
+    // init frustum primitive
+    ///////////////////////////////////////////////////
+
+    auto frus_p = ctx->MTXI()->Persp(45.0, 1.0f, .1, 3);
+    auto frus_v = ctx->MTXI()->LookAt(fvec3(0, 0, -1), fvec3(0, 0, 0), fvec3(0, 1, 0));
+    primitive._frustum.Set(frus_v, frus_p);
+
+    primitive.gpuInit(ctx);
+
+    ///////////////////////////////////////////////////
   });
   //////////////////////////////////////////////////////////
   qtapp->onDraw([&](const ui::DrawEvent& drwev) {
@@ -72,7 +83,7 @@ int main(int argc, char** argv) {
     material.begin(RCFD);
     material.bindParamMatrix(fxparameterMVP, view * projection);
 
-    cube.draw(context);
+    primitive.draw(context);
 
     material.end(RCFD);
     context->endFrame();

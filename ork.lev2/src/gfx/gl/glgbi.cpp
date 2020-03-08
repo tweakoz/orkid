@@ -944,51 +944,36 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
 
   // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
+  GLenum glprimtype = 0;
   if (iNum) {
     GL_ERRORCHECK();
     switch (eType) {
       case EPRIM_LINES: { // orkprintf( "drawarrays: %d lines\n", iNum );
-        glDrawElements(GL_LINES, iNum, GL_UNSIGNED_SHORT, nullptr);
+        glprimtype = GL_LINES;
         break;
       }
-      case EPRIM_QUADS:
-        // GL_ERRORCHECK();
-        // glDrawElements( GL_QUADS, iNum, GL_UNSIGNED_SHORT, nullptr );
-        // GL_ERRORCHECK();
-        // miTrianglesRendered += (iNum/2);
-        break;
       case EPRIM_TRIANGLES:
         // printf( "drawindexedtris inum<%d> imin<%d> imax<%d>\n", iNum/3, imin, imax );
-        glDrawRangeElements(GL_TRIANGLES, imin, imax, iNum, GL_UNSIGNED_SHORT, nullptr);
+        glprimtype = GL_TRIANGLES;
         miTrianglesRendered += (iNum / 3);
         break;
       case EPRIM_TRIANGLESTRIP:
         // printf( "drawindexedtristrip inum<%d>\n", iNum-2 );
-        // glDrawElements( GL_TRIANGLE_STRIP, iNum, GL_UNSIGNED_SHORT, nullptr );
-        glDrawRangeElements(GL_TRIANGLE_STRIP, imin, imax, iNum, GL_UNSIGNED_SHORT, nullptr);
+        glprimtype = GL_TRIANGLE_STRIP;
         miTrianglesRendered += (iNum - 2);
         break;
       case EPRIM_POINTS:
-        glDrawElements(GL_POINTS, iNum, GL_UNSIGNED_SHORT, nullptr);
-        break;
-      case EPRIM_POINTSPRITES:
-        // GL_ERRORCHECK();
-        // glPointSize( mTargetGL.currentMaterial()->mfParticleSize );
-        // GL_ERRORCHECK();
-
-        // glEnable( GL_POINT_SPRITE_ARB );
-        //	GL_ERRORCHECK();
-        //				glDrawElements( GL_POINTS, iNum, GL_UNSIGNED_SHORT, pindices );
-        //	GL_ERRORCHECK();
-        //				glDisable( GL_POINT_SPRITE_ARB );
-        //	GL_ERRORCHECK();
-
-        //				GL_ERRORCHECK();
+        glprimtype = GL_POINTS;
         break;
       default:
-        // glDrawArrays( GL_POINTS, 0, iNum );
         OrkAssert(false);
         break;
+    }
+    if (glprimtype != 0) {
+      if (ivbase != 0)
+        glDrawElementsBaseVertex(glprimtype, iNum, GL_UNSIGNED_SHORT, nullptr, ivbase);
+      else
+        glDrawRangeElements(glprimtype, imin, imax, iNum, GL_UNSIGNED_SHORT, nullptr);
     }
     GL_ERRORCHECK();
   }

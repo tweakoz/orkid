@@ -119,7 +119,7 @@ void submesh::ExportPolyAnnotations(annopolylut& apl) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const AABox& submesh::GetAABox() const {
+const AABox& submesh::aabox() const {
   if (mAABoxDirty) {
     mAABox.BeginGrow();
     int inumvtx = (int)RefVertexPool().GetNumVertices();

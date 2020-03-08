@@ -247,8 +247,8 @@ AABox toolmesh::GetAABox() const {
   int inumsub = (int)mPolyGroupLut.size();
   for (int is = 0; is < inumsub; is++) {
     const submesh& sub = *mPolyGroupLut.GetItemAtIndex(is).second;
-    outp.Grow(sub.GetAABox().Min());
-    outp.Grow(sub.GetAABox().Max());
+    outp.Grow(sub.aabox().Min());
+    outp.Grow(sub.aabox().Max());
   }
   outp.EndGrow();
   return outp;
