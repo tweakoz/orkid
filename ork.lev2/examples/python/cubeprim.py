@@ -11,8 +11,8 @@ from orkcore import *
 from orklev2 import *
 from PIL import Image
 
-WIDTH = 1280
-HEIGHT = 720
+WIDTH = 2560
+HEIGHT = 1440
 
 lev2appinit()
 gfxenv = GfxEnv.ref
@@ -27,10 +27,18 @@ print(mtl)
 print(mtl.shader)
 print(mtl.shader.params)
 print(mtl.shader.techniques)
-tek = mtl.shader.technique("vtxcolor")
+tek = mtl.shader.technique("texvtxcolor_noalpha")
 print(tek)
 
 par_mvp = mtl.shader.param("MatMVP")
+par_tex = mtl.shader.param("ColorMap")
+
+###################################
+# load texture
+###################################
+
+texture = Texture.load("data://effect_textures/noise01")
+lev2apppoll() # process opq
 
 ###################################
 
@@ -76,6 +84,7 @@ RCFD = ctx.topRCFD()
 
 mtl.begin(RCFD)
 mtl.bindParamMatrix(par_mvp,mvp_matrix)
+mtl.bindParamTexture(par_tex,texture)
 cubeprim.draw(ctx)
 mtl.end(RCFD)
 FBI.rtGroupPop()

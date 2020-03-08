@@ -15,6 +15,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/submesh.h>
 #include <ork/lev2/gfx/primitives.inl>
+#include <ork/kernel/opq.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace py = pybind11;
@@ -51,6 +52,11 @@ void lev2appinit() {
   ork::lev2::GfxInit("");
 }
 
+void lev2apppoll() {
+  while (ork::opq::mainSerialQueue().Process()) {
+  }
+}
+
 ////////////////////////////////////////////////////////
 
 PYBIND11_MODULE(orklev2, m) {
@@ -62,6 +68,8 @@ PYBIND11_MODULE(orklev2, m) {
   using fxi_t            = ork::python::unmanaged_ptr<FxInterface>;
   using rsi_t            = ork::python::unmanaged_ptr<RasterStateInterface>;
   using txi_t            = ork::python::unmanaged_ptr<TextureInterface>;
+  using tex_t            = ork::python::unmanaged_ptr<Texture>;
+  using rtb_t            = ork::python::unmanaged_ptr<RtBuffer>;
   using rtg_t            = ork::python::unmanaged_ptr<RtGroup>;
   using capbuf_t         = ork::python::unmanaged_ptr<CaptureBuffer>;
   using fxshader_t       = ork::python::unmanaged_ptr<FxShader>;
@@ -78,6 +86,7 @@ PYBIND11_MODULE(orklev2, m) {
   m.doc() = "Orkid Lev2 Library (graphics,audio,vr,input,etc..)";
   /////////////////////////////////////////////////////////////////////////////////
   m.def("lev2appinit", &lev2appinit);
+  m.def("lev2apppoll", &lev2apppoll);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<GfxEnv>(m, "GfxEnv")
       .def_readonly_static("ref", &GfxEnv::GetRef())
@@ -157,6 +166,8 @@ PYBIND11_MODULE(orklev2, m) {
       .def("bindParamVec3", [](FreestyleMaterial& m, fxparam_t& p, const fvec3& value) { m.bindParamVec3(p.get(), value); })
       .def("bindParamVec4", [](FreestyleMaterial& m, fxparam_t& p, const fvec4& value) { m.bindParamVec4(p.get(), value); })
       .def("bindParamMatrix", [](FreestyleMaterial& m, fxparam_t& p, const fmtx4& value) { m.bindParamMatrix(p.get(), value); })
+      .def(
+          "bindParamTexture", [](FreestyleMaterial& m, fxparam_t& p, const tex_t& value) { m.bindParamCTex(p.get(), value.get()); })
       .def("begin", [](FreestyleMaterial& m, rcfd_ptr_t& rcfd) { m.begin(*rcfd.get()); })
       .def("end", [](FreestyleMaterial& m, rcfd_ptr_t& rcfd) { m.end(*rcfd.get()); })
       .def("__repr__", [](const FreestyleMaterial& m) -> std::string {
@@ -307,13 +318,27 @@ PYBIND11_MODULE(orklev2, m) {
     return fxs.c_str();
   });
   /////////////////////////////////////////////////////////////////////////////////
+  py::class_<rtb_t>(m, "RtBuffer")
+      .def(
+          "__repr__",
+          [](const rtb_t& rtb) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("RtBuffer(%p)", rtb.get());
+            return fxs.c_str();
+          })
+      .def_property_readonly("texture", [](rtb_t& rtb) -> tex_t { return tex_t(rtb->texture()); });
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<rtg_t>(m, "RtGroup")
       .def("resize", [](rtg_t& rtg, int w, int h) { rtg.get()->Resize(w, h); })
-      .def("__repr__", [](const rtg_t& rtg) -> std::string {
-        fxstring<256> fxs;
-        fxs.format("RtGroup(%p)", rtg.get());
-        return fxs.c_str();
-      });
+      .def(
+          "__repr__",
+          [](const rtg_t& rtg) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("RtGroup(%p)", rtg.get());
+            return fxs.c_str();
+          })
+      .def("buffer", [](const rtg_t& rtg, int irtb) -> rtb_t { return rtg->GetMrt(irtb); })
+      .def("texture", [](const rtg_t& rtg, int irtb) -> tex_t { return rtg->GetMrt(irtb)->texture(); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<CaptureBuffer>(m, "CaptureBuffer", pybind11::buffer_protocol())
       .def(py::init<>())
@@ -336,6 +361,16 @@ PYBIND11_MODULE(orklev2, m) {
         fxs.format("CaptureBuffer(%p)", &capbuf);
         return fxs.c_str();
       });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<tex_t>(m, "Texture")
+      .def(
+          "__repr__",
+          [](const tex_t& tex) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("Texture(%p:\"%s\") w<%d> h<%d>", tex.get(), tex->_debugName.c_str(), tex->_width, tex->_height);
+            return fxs.c_str();
+          })
+      .def_static("load", [](std::string path) -> tex_t { return Texture::LoadUnManaged(path); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<rcfd_ptr_t>(m, "RenderContextFrameData").def("__repr__", [](const rcfd_ptr_t& rcfd) -> std::string {
     fxstring<256> fxs;
