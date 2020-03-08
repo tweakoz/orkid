@@ -26,9 +26,13 @@ GBI = ctx.GBI()
 print(ctx)
 ctx.makeCurrent()
 FontManager.gpuInit(ctx)
+
+###################################
+
 mtl = FreestyleMaterial()
 mtl.gpuInit(ctx,Path("orkshader://solid"))
 tek = mtl.shader.technique("texvtxcolor_noalpha")
+tek2 = mtl.shader.technique("vtxcolor")
 
 par_mvp = mtl.shader.param("MatMVP")
 par_tex = mtl.shader.param("ColorMap")
@@ -75,6 +79,15 @@ vmatrix = ctx.lookAt(vec3(-5,3,3),
 mvp_matrix = vmatrix*pmatrix
 
 ###################################
+
+vtx_t = VtxV12N12B12T8C4
+vbuf = vtx_t.staticBuffer(2)
+vw = GBI.lock(vbuf,2)
+vw.add(vtx_t(vec3(-.7,.78,0.5),vec3(),vec3(),vec2(),0xffffffff))
+vw.add(vtx_t(vec3(0,0,0.5),vec3(),vec3(),vec2(),0xffffffff))
+GBI.unlock(vw)
+
+###################################
 # render frame
 ###################################
 
@@ -83,17 +96,22 @@ FBI.rtGroupPush(rtg)
 FBI.clear(vec4(0.6,0.6,0.7,1),1.0)
 ctx.debugMarker("yo")
 
-mtl.bindTechnique(tek)
 RCFD = ctx.topRCFD()
 
+mtl.bindTechnique(tek)
 mtl.begin(RCFD)
 mtl.bindParamMatrix(par_mvp,mvp_matrix)
 mtl.bindParamTexture(par_tex,texture)
-
 prim.draw(ctx)
 mtl.end(RCFD)
 
-FontManager.beginTextBlock(ctx,"i48",vec4(0.2,0.2,0.5,1),WIDTH,HEIGHT,100)
+mtl.bindTechnique(tek2)
+mtl.begin(RCFD)
+mtl.bindParamMatrix(par_mvp,mtx4())
+GBI.drawLines(vw)
+mtl.end(RCFD)
+
+FontManager.beginTextBlock(ctx,"i48",vec4(.8,.8,1,1),WIDTH,HEIGHT,100)
 FontManager.draw(ctx,0,0,"!!! YO !!!\nThis is a textured Frustum.")
 FontManager.endTextBlock(ctx)
 
