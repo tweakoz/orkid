@@ -26,6 +26,8 @@ struct CubePrimitive {
         fvec3(N, P, P), //
         fvec2(0.0f, 0.0f),
         fvec2(0.25f, 0.5f),
+        fvec2(0.0f, 0.0f),
+        fvec2(0.25f, 0.5f),
         _colorFront);
 
     submeshQuads.addQuad(
@@ -33,6 +35,8 @@ struct CubePrimitive {
         fvec3(P, N, N),
         fvec3(P, P, N),
         fvec3(P, P, P), //
+        fvec2(0.25f, 0.0f),
+        fvec2(0.5f, 0.5f),
         fvec2(0.25f, 0.0f),
         fvec2(0.5f, 0.5f),
         _colorRight);
@@ -44,6 +48,8 @@ struct CubePrimitive {
         fvec3(P, P, N), //
         fvec2(0.5f, 0.0f),
         fvec2(0.75f, 0.5f),
+        fvec2(0.5f, 0.0f),
+        fvec2(0.75f, 0.5f),
         _colorBack);
 
     submeshQuads.addQuad(
@@ -53,6 +59,8 @@ struct CubePrimitive {
         fvec3(N, P, N), //
         fvec2(0.75f, 0.0f),
         fvec2(1.0f, 0.5f),
+        fvec2(0.5f, 0.0f),
+        fvec2(0.75f, 0.5f),
         _colorLeft);
 
     submeshQuads.addQuad(
@@ -62,6 +70,8 @@ struct CubePrimitive {
         fvec3(P, P, N), //
         fvec2(0.0f, 0.5f),
         fvec2(1.0f, 1.5f),
+        fvec2(0.5f, 0.0f),
+        fvec2(0.75f, 0.5f),
         _colorTop);
 
     submeshQuads.addQuad(
@@ -71,6 +81,8 @@ struct CubePrimitive {
         fvec3(P, N, P),
         fvec2(0.0f, 0.5f),
         fvec2(1.0f, 1.5f),
+        fvec2(0.5f, 0.0f),
+        fvec2(0.75f, 0.5f),
         _colorBottom);
 
     submeshTriangulate(submeshQuads, submeshTris);

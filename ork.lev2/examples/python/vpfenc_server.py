@@ -159,7 +159,7 @@ while True:
 
 
     mtl.begin(RCFD)
-    mtl.bindParamMatrix(par_mvp,mvp_matrix)
+    mtl.bindParamMatrix4(par_mvp,mvp_matrix)
     GBI.drawTriangles(vw)
     mtl.end(RCFD)
 

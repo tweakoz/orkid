@@ -34,6 +34,7 @@ struct FreestyleMaterial : public GfxMaterial {
   int BeginBlock(Context* targ, const RenderContextInstData& RCID) final;
   void EndBlock(Context* targ) final;
   void gpuInit(Context* targ, const AssetPath& assetname);
+  void gpuInitFromShaderText(Context* targ, const std::string& shadername, const std::string& shadertext);
   void Init(Context* targ) final {
   }
   void Update() final {
@@ -122,6 +123,10 @@ struct FreestyleMaterial : public GfxMaterial {
     auto fxi = _initialTarget->FXI();
     fxi->BindParamMatrix(_shader, par, m);
   }
+  inline void bindParamMatrix(const FxShaderParam* par, const fmtx3& m) {
+    auto fxi = _initialTarget->FXI();
+    fxi->BindParamMatrix(_shader, par, m);
+  }
   inline void bindParamMatrixArray(const FxShaderParam* par, const fmtx4* m, size_t len) {
     auto fxi = _initialTarget->FXI();
     fxi->BindParamMatrixArray(_shader, par, m, len);
@@ -198,6 +203,16 @@ inline void FreestyleMaterial::gpuInit(Context* targ, const AssetPath& assetname
     auto fxi       = targ->FXI();
     auto shass     = asset::AssetManager<FxShaderAsset>::Load(assetname.c_str());
     _shader        = shass->GetFxShader();
+    OrkAssert(_shader);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+inline void FreestyleMaterial::gpuInitFromShaderText(Context* targ, const std::string& shadername, const std::string& shadertext) {
+  if (_initialTarget == nullptr) {
+    _initialTarget = targ;
+    _shader        = targ->FXI()->shaderFromShaderText(shadername, shadertext);
     OrkAssert(_shader);
   }
 }

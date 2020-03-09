@@ -245,6 +245,7 @@ PYBIND11_MODULE(orkcore, m) {
       .def("inverse", &fmtx4::inverse)
       .def("inverseOf", &fmtx4::inverseOf)
       .def("decompose", &fmtx4::decompose)
+      .def("toRotMatrix3", &fmtx4::rotMatrix33)
       .def_static("perspective", &fmtx4::perspective)
       .def_static(
           "compose",

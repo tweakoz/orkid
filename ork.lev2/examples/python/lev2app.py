@@ -62,7 +62,7 @@ mtl.bindParamFloat(par_float,1.0)
 mtl.bindParamVec2(par_vec2,vec2(2,3))
 mtl.bindParamVec3(par_vec3,vec3(4,5,6))
 mtl.bindParamVec4(par_vec4,vec4(7,8,9,10))
-mtl.bindParamMatrix(par_mtx4,mtx4())
+mtl.bindParamMatrix4(par_mtx4,mtx4())
 
 GBI.drawTriangles(vw)
 mtl.end(RCFD)

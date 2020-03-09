@@ -31,11 +31,8 @@ FontManager.gpuInit(ctx)
 
 mtl = FreestyleMaterial()
 mtl.gpuInit(ctx,Path("orkshader://solid"))
-tek = mtl.shader.technique("texvtxcolor_noalpha")
-tek2 = mtl.shader.technique("vtxcolor")
-
+tek = mtl.shader.technique("vtxcolor")
 par_mvp = mtl.shader.param("MatMVP")
-par_tex = mtl.shader.param("ColorMap")
 
 ###################################
 # setup primitive
@@ -62,8 +59,6 @@ prim.gpuInit(ctx)
 rtg = ctx.defaultRTG()
 ctx.resize(WIDTH,HEIGHT)
 capbuf = CaptureBuffer()
-
-texture = Texture.load("data://effect_textures/spinner")
 
 lev2apppoll() # process opq
 
@@ -100,19 +95,18 @@ RCFD = ctx.topRCFD()
 
 mtl.bindTechnique(tek)
 mtl.begin(RCFD)
-mtl.bindParamMatrix(par_mvp,mvp_matrix)
-mtl.bindParamTexture(par_tex,texture)
+mtl.bindParamMatrix4(par_mvp,mvp_matrix)
 prim.draw(ctx)
 mtl.end(RCFD)
 
-mtl.bindTechnique(tek2)
+mtl.bindTechnique(tek)
 mtl.begin(RCFD)
-mtl.bindParamMatrix(par_mvp,mtx4())
+mtl.bindParamMatrix4(par_mvp,mtx4())
 GBI.drawLines(vw)
 mtl.end(RCFD)
 
 FontManager.beginTextBlock(ctx,"i48",vec4(.8,.8,1,1),WIDTH,HEIGHT,100)
-FontManager.draw(ctx,0,0,"!!! YO !!!\nThis is a textured Frustum.")
+FontManager.draw(ctx,0,0,"!!! YO !!!\nThis is a Frustum.")
 FontManager.endTextBlock(ctx)
 
 FBI.rtGroupPop()

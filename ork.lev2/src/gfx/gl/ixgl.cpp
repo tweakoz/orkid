@@ -614,7 +614,7 @@ void ContextGL::initializeLoaderContext() {
   plato->mDisplay    = GlIxPlatformObject::gDisplay;
   plato->mXWindowId  = g_rootwin;
 
-  _defaultRTG = new RtGroup(this, miW, miH, 1);
+  _defaultRTG = new RtGroup(this, miW, miH, 16);
   auto rtb    = new RtBuffer(ERTGSLOT0, EBUFFMT_RGBA8, miW, miH);
   _defaultRTG->SetMrt(0, rtb);
   auto texture = _defaultRTG->GetMrt(0)->texture();

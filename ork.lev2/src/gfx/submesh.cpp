@@ -387,17 +387,17 @@ U64 submesh::MergeEdge(const edge& ed, int ipolyindex) {
 // addPoly helper methods
 ///////////////////////////////////////////////////////////////////////////////
 
-void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 u0v0, fvec2 u1v1, fvec4 c) {
+void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 uv0, fvec2 uv1, fvec2 uv2, fvec2 uv3, fvec4 c) {
   vertex muvtx[4];
   fvec3 p0p1 = (p1 - p0).Normal();
   fvec3 p0p2 = (p2 - p0).Normal();
   fvec3 nrm  = p0p1.Cross(p0p2);
   // todo compute tangent space from uv gradients
   fvec3 bin = p0p1;
-  muvtx[0].set(p0, nrm, bin, fvec2(u0v0.x, u0v0.y), c);
-  muvtx[1].set(p1, nrm, bin, fvec2(u1v1.x, u0v0.y), c);
-  muvtx[2].set(p2, nrm, bin, fvec2(u1v1.x, u1v1.y), c);
-  muvtx[3].set(p3, nrm, bin, fvec2(u0v0.x, u1v1.y), c);
+  muvtx[0].set(p0, nrm, bin, uv0, c);
+  muvtx[1].set(p1, nrm, bin, uv1, c);
+  muvtx[2].set(p2, nrm, bin, uv2, c);
+  muvtx[3].set(p3, nrm, bin, uv3, c);
 
   int i0 = MergeVertex(muvtx[0]);
   int i1 = MergeVertex(muvtx[1]);
@@ -406,6 +406,34 @@ void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 u0v0, fvec2 
   MergePoly(poly(i0, i1, i2, i3));
 }
 
+void submesh::addQuad(
+    fvec3 p0,
+    fvec3 p1,
+    fvec3 p2,
+    fvec3 p3,
+    fvec3 n0,
+    fvec3 n1,
+    fvec3 n2,
+    fvec3 n3,
+    fvec2 uv0,
+    fvec2 uv1,
+    fvec2 uv2,
+    fvec2 uv3,
+    fvec4 c) { /// add quad helper method
+  vertex muvtx[4];
+  fvec3 p0p1 = (p1 - p0).Normal();
+  fvec3 bin  = p0p1;
+  muvtx[0].set(p0, n0, bin, uv0, c);
+  muvtx[1].set(p1, n1, bin, uv1, c);
+  muvtx[2].set(p2, n2, bin, uv2, c);
+  muvtx[3].set(p3, n3, bin, uv3, c);
+
+  int i0 = MergeVertex(muvtx[0]);
+  int i1 = MergeVertex(muvtx[1]);
+  int i2 = MergeVertex(muvtx[2]);
+  int i3 = MergeVertex(muvtx[3]);
+  MergePoly(poly(i0, i1, i2, i3));
+}
 ///////////////////////////////////////////////////////////////////////////////
 /*
 void SubMesh::GenIndexBuffers( void )

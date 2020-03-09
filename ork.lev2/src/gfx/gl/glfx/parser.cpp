@@ -421,6 +421,27 @@ Container* LoadFxFromFile(const AssetPath& pth) {
   return pcont;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+Container* LoadFxFromText(const std::string& name, const std::string& shadertext) {
+  Scanner scanner(block_regex);
+  ///////////////////////////////////
+  scanner.ifilelen = shadertext.length();
+  OrkAssert(scanner.ifilelen < scanner.kmaxfxblen);
+  memcpy(scanner.fxbuffer, shadertext.c_str(), scanner.ifilelen);
+  scanner.fxbuffer[scanner.ifilelen] = 0;
+  ///////////////////////////////////
+  scanner.Scan();
+  ///////////////////////////////////
+  GlSlFxParser parser(name, scanner);
+  auto pcont = new Container(name);
+  shaderbuilder::BackEnd backend(parser._rootNode, pcont);
+  bool ok = backend.generate();
+  assert(ok);
+  ///////////////////////////////////
+  return pcont;
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::glslfx
 /////////////////////////////////////////////////////////////////////////////////////////////////

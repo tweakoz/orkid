@@ -162,13 +162,20 @@ PYBIND11_MODULE(orklev2, m) {
             m.gpuInit(c.get(), path);
             m._rasterstate.SetCullTest(ECULLTEST_OFF);
           })
+      .def(
+          "gpuInitFromShaderText",
+          [](FreestyleMaterial& m, ctx_t& c, const std::string& name, const std::string& shadertext) {
+            m.gpuInitFromShaderText(c.get(), name, shadertext);
+            m._rasterstate.SetCullTest(ECULLTEST_OFF);
+          })
       .def_property_readonly("shader", [](const FreestyleMaterial& m) -> fxshader_t { return fxshader_t(m._shader); })
       .def("bindTechnique", [](FreestyleMaterial& m, const fxtechnique_t& tek) { m.bindTechnique(tek.get()); })
       .def("bindParamFloat", [](FreestyleMaterial& m, fxparam_t& p, float value) { m.bindParamFloat(p.get(), value); })
       .def("bindParamVec2", [](FreestyleMaterial& m, fxparam_t& p, const fvec2& value) { m.bindParamVec2(p.get(), value); })
       .def("bindParamVec3", [](FreestyleMaterial& m, fxparam_t& p, const fvec3& value) { m.bindParamVec3(p.get(), value); })
       .def("bindParamVec4", [](FreestyleMaterial& m, fxparam_t& p, const fvec4& value) { m.bindParamVec4(p.get(), value); })
-      .def("bindParamMatrix", [](FreestyleMaterial& m, fxparam_t& p, const fmtx4& value) { m.bindParamMatrix(p.get(), value); })
+      .def("bindParamMatrix3", [](FreestyleMaterial& m, fxparam_t& p, const fmtx3& value) { m.bindParamMatrix(p.get(), value); })
+      .def("bindParamMatrix4", [](FreestyleMaterial& m, fxparam_t& p, const fmtx4& value) { m.bindParamMatrix(p.get(), value); })
       .def(
           "bindParamTexture", [](FreestyleMaterial& m, fxparam_t& p, const tex_t& value) { m.bindParamCTex(p.get(), value.get()); })
       .def("begin", [](FreestyleMaterial& m, rcfd_ptr_t& rcfd) { m.begin(*rcfd.get()); })
@@ -371,7 +378,8 @@ PYBIND11_MODULE(orklev2, m) {
           "__repr__",
           [](const tex_t& tex) -> std::string {
             fxstring<256> fxs;
-            fxs.format("Texture(%p:\"%s\") w<%d> h<%d>", tex.get(), tex->_debugName.c_str(), tex->_width, tex->_height);
+            fxs.format(
+                "Texture(%p:\"%s\") w<%d> h<%d> d<%d>", tex.get(), tex->_debugName.c_str(), tex->_width, tex->_height, tex->_depth);
             return fxs.c_str();
           })
       .def_static("load", [](std::string path) -> tex_t { return Texture::LoadUnManaged(path); });
@@ -465,12 +473,15 @@ PYBIND11_MODULE(orklev2, m) {
   /////////////////////////////////////////////////////////////////////////////////
   auto meshutil = m.def_submodule("meshutil", "Mesh operations");
   {
+    meshutil.def("triangulate", [](const MeshUtil::submesh& inpsubmesh, MeshUtil::submesh& outsubmesh) {
+      MeshUtil::submeshTriangulate(inpsubmesh, outsubmesh);
+    });
     /////////////////////////////////////////////////////////////////////////////////
     py::class_<MeshUtil::PrimitiveV12N12B12T8C4>(meshutil, "PrimitiveV12N12B12T8C4")
         .def(py::init<>())
-        .def(py::init([](const MeshUtil::submesh& submesh, Context* context) {
+        .def(py::init([](MeshUtil::submesh& submesh, ctx_t context) {
           auto prim = std::unique_ptr<MeshUtil::PrimitiveV12N12B12T8C4>(new MeshUtil::PrimitiveV12N12B12T8C4);
-          prim->fromSubMesh(submesh, context);
+          prim->fromSubMesh(submesh, context.get());
           return prim;
         }))
         .def(
@@ -478,15 +489,40 @@ PYBIND11_MODULE(orklev2, m) {
             [](MeshUtil::PrimitiveV12N12B12T8C4& prim, const MeshUtil::submesh& submesh, Context* context) {
               prim.fromSubMesh(submesh, context);
             })
-        .def("draw", [](MeshUtil::PrimitiveV12N12B12T8C4& prim, Context* context) { prim.draw(context); });
+        .def("draw", [](MeshUtil::PrimitiveV12N12B12T8C4& prim, ctx_t context) { prim.draw(context.get()); });
     /////////////////////////////////////////////////////////////////////////////////
     py::class_<MeshUtil::submesh>(meshutil, "SubMesh")
         .def(py::init<>())
         .def("numPolys", [](const MeshUtil::submesh& submesh, int numsides = 0) -> int { return submesh.GetNumPolys(numsides); })
         .def("numVertices", [](const MeshUtil::submesh& submesh) -> int { return submesh.mvpool.GetNumVertices(); })
-        .def("addQuad", [](MeshUtil::submesh& submesh, fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 u0v0, fvec2 u1v1, fvec4 c) {
-          return submesh.addQuad(p0, p1, p2, p3, u0v0, u1v1, c);
-        });
+        .def(
+            "addQuad",
+            [](MeshUtil::submesh& submesh,
+               fvec3 p0,
+               fvec3 p1,
+               fvec3 p2,
+               fvec3 p3,
+               fvec2 uv0,
+               fvec2 uv1,
+               fvec2 uv2,
+               fvec2 uv3,
+               fvec4 c) { return submesh.addQuad(p0, p1, p2, p3, uv0, uv1, uv2, uv3, c); })
+        .def(
+            "addQuad",
+            [](MeshUtil::submesh& submesh,
+               fvec3 p0,
+               fvec3 p1,
+               fvec3 p2,
+               fvec3 p3,
+               fvec3 n0,
+               fvec3 n1,
+               fvec3 n2,
+               fvec3 n3,
+               fvec2 uv0,
+               fvec2 uv1,
+               fvec2 uv2,
+               fvec2 uv3,
+               fvec4 c) { return submesh.addQuad(p0, p1, p2, p3, n0, n1, n2, n3, uv0, uv1, uv2, uv3, c); });
 
     /////////////////////////////////////////////////////////////////////////////////
     py::class_<MeshUtil::vertexpool>(meshutil, "VertexPool").def(py::init<>());

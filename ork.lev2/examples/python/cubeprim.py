@@ -83,7 +83,7 @@ mtl.bindTechnique(tek)
 RCFD = ctx.topRCFD()
 
 mtl.begin(RCFD)
-mtl.bindParamMatrix(par_mvp,mvp_matrix)
+mtl.bindParamMatrix4(par_mvp,mvp_matrix)
 mtl.bindParamTexture(par_tex,texture)
 cubeprim.draw(ctx)
 mtl.end(RCFD)

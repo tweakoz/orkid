@@ -431,7 +431,23 @@ struct submesh {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  void addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 u0v0, fvec2 u1v1, fvec4 c); /// add quad helper method
+  void
+  addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 uv0, fvec2 uv1, fvec2 uv2, fvec2 uv3, fvec4 c); /// add quad helper method
+
+  void addQuad(
+      fvec3 p0,
+      fvec3 p1,
+      fvec3 p2,
+      fvec3 p3,
+      fvec3 n0,
+      fvec3 n1,
+      fvec3 n2,
+      fvec3 n3,
+      fvec2 uv0,
+      fvec2 uv1,
+      fvec2 uv2,
+      fvec2 uv3,
+      fvec4 c); /// add quad helper method
 
   /////////////////////////////////////////////////////////////////////////
 
