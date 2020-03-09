@@ -471,6 +471,7 @@ struct submesh {
 
 void submeshTriangulate(const submesh& inpsubmesh, submesh& outsmesh);
 void submeshTrianglesToQuads(const submesh& inpsubmesh, submesh& outsmesh);
+void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath);
 // void SubDivQuads(submesh* poutsmesh) const;
 // void SubDivTriangles(submesh* poutsmesh) const;
 // void SubDiv(submesh* poutsmesh) const;

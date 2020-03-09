@@ -496,6 +496,9 @@ PYBIND11_MODULE(orklev2, m) {
         .def("numPolys", [](const MeshUtil::submesh& submesh, int numsides = 0) -> int { return submesh.GetNumPolys(numsides); })
         .def("numVertices", [](const MeshUtil::submesh& submesh) -> int { return submesh.mvpool.GetNumVertices(); })
         .def(
+            "writeObj",
+            [](const MeshUtil::submesh& submesh, const std::string& outpath) { return submeshWriteObj(submesh, outpath); })
+        .def(
             "addQuad",
             [](MeshUtil::submesh& submesh,
                fvec3 p0,
