@@ -28,7 +28,7 @@ build_dest.mkdir(parents=True,exist_ok=True)
 build_dest.chdir()
 
 prj_root = Path(os.environ["ORKID_WORKSPACE_DIR"])
-
+print(os.environ)
 stage_dir = Path(os.path.abspath(str(ork.path.stage())))
 ork_root = prj_root
 ok = True
