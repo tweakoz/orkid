@@ -29,6 +29,7 @@ build_dest.chdir()
 prj_root = Path(os.environ["ORKID_WORKSPACE_DIR"])
 
 stage_dir = Path(os.path.abspath(str(ork.path.stage())))
+ork_root = prj_root
 
 ok = True
 
@@ -37,7 +38,6 @@ ok = True
 ######################################################################
 
 if _args["ez"]!=False:
-    ork_root = stage_dir/".."
     this_script = ork_root/"build.py"
     init_env_script = ork_root/"ork.build"/"bin"/"init_env.py"
     print(this_script)
