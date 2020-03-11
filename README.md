@@ -1,6 +1,9 @@
+
 ![logo](https://github.com/tweakoz/orkid/blob/compositor2system/ork.data/dox/doxylogo.png "OrkidLogo")
 
+
 [![CISTATUS](http://tweakoz.com:16888/builds/master/status.svg)](http://tweakoz.com:16888/)
+
 ### Description
 
 Orkid is a flexible media presentation engine. By media, we mean games, realtime 2d/3d graphics, and/or audio. Orkid itself is licensed with the permissive Boost Software License v1.0, that said Orkid does have dependencies on other libraries which will have different licenses and it is left up to the user to remain compliant with them. Orkid, being fairly modular can be run with less dependencies and reduced functionality to simplify license creep.
