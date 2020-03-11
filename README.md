@@ -2,7 +2,7 @@
 
 ### Status
 
-[CircleCI(IX)](https://circleci.com/gh/tweakoz/orkid) [![CircleCI](https://circleci.com/gh/tweakoz/orkid.svg?style=svg)](https://circleci.com/gh/tweakoz/orkid)
+[BuildStatus(IX)](http://tweakoz.com:16888/) [![CISTATUS](http://tweakoz.com:16888/builds/smallGbuffer/status.png)](http://tweakoz.com:16888/)
 
 ### Description
 
