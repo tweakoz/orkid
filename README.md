@@ -1,7 +1,5 @@
 ![logo](https://github.com/tweakoz/orkid/blob/compositor2system/ork.data/dox/doxylogo.png "OrkidLogo")
 
-### Status
-
 [![CISTATUS](http://tweakoz.com:16888/builds/master/status.svg)](http://tweakoz.com:16888/)
 ### Description
 
