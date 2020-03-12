@@ -2,7 +2,7 @@
 
 ### Status
 
-[BuildStatus(IX)](http://tweakoz.com:16888/) [![CISTATUS](http://tweakoz.com:16888/builds/smallGbuffer/status.png)](http://tweakoz.com:16888/)
+[![CISTATUS](http://tweakoz.com:16888/builds/smallGbuffer/status.svg)](http://tweakoz.com:16888/)
 
 ### Description
 
