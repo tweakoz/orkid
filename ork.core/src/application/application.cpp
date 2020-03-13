@@ -21,88 +21,87 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::Application, "Application");
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-PoolString AddPooledString(const PieceString &ps) { return Application::AddPooledString(ps); }
-PoolString AddPooledLiteral(const ConstString &cs) { return Application::AddPooledLiteral(cs); }
-PoolString FindPooledString(const PieceString &ps) { return Application::FindPooledString(ps); }
+PoolString AddPooledString(const PieceString& ps) {
+  return Application::AddPooledString(ps);
+}
+PoolString AddPooledLiteral(const ConstString& cs) {
+  return Application::AddPooledLiteral(cs);
+}
+PoolString FindPooledString(const PieceString& ps) {
+  return Application::FindPooledString(ps);
+}
 
-Application* Application::gctx = 0;
+Application* Application::gctx = nullptr;
 
-Application::Application()
-{
-	OrkAssert(gctx==0);
-	gctx = this;
+Application::Application() {
+  OrkAssert(gctx == nullptr);
+  gctx = this;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-anyp Application::GetProperty( const std::string& key ) const
-{
-    auto it=mAppPropertyMap.find(key);
-    auto rval = (it==mAppPropertyMap.end())?anyp():it->second;
-    return rval;
+anyp Application::GetProperty(const std::string& key) const {
+  auto it   = mAppPropertyMap.find(key);
+  auto rval = (it == mAppPropertyMap.end()) ? anyp() : it->second;
+  return rval;
 }
-void Application::SetProperty( const std::string& key, anyp val )
-{
-    mAppPropertyMap[key]=val;
+void Application::SetProperty(const std::string& key, anyp val) {
+  mAppPropertyMap[key] = val;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PoolString Application::AddPooledString(const PieceString &string)
-{
-	PoolString result = FindPooledString(string);
-	if(result)
-		return result;
+PoolString Application::AddPooledString(const PieceString& string) {
+  PoolString result = FindPooledString(string);
+  if (result)
+    return result;
 
-	ResizableString copy(string);
-	const char *data = copy.c_str();
-	new(&copy) ResizableString;
+  ResizableString copy(string);
+  const char* data = copy.c_str();
+  new (&copy) ResizableString;
 
-    ork::Application* papp = ApplicationStack::Top();
-	OrkAssert(papp);
+  ork::Application* papp = ApplicationStack::Top();
+  OrkAssert(papp);
 
-	return papp->GetStringPool().String(data);
+  return papp->GetStringPool().String(data);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PoolString Application::AddPooledLiteral(const ConstString &string)
-{
-	PoolString result = FindPooledString(string);
-	if(result)
-		return result;
+PoolString Application::AddPooledLiteral(const ConstString& string) {
+  PoolString result = FindPooledString(string);
+  if (result)
+    return result;
 
-    ork::Application* papp = ApplicationStack::Top();
-	OrkAssert(papp);
+  ork::Application* papp = ApplicationStack::Top();
+  OrkAssert(papp);
 
-	return papp->GetStringPool().Literal(string);
+  return papp->GetStringPool().Literal(string);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PoolString Application::FindPooledString(const PieceString &string)
-{
-	//OrkAssert(ork::util::Context<ork::Application>::context());
+PoolString Application::FindPooledString(const PieceString& string) {
+  // OrkAssert(ork::util::Context<ork::Application>::context());
 
-    auto pAPP = ApplicationStack::Top();
-    PoolString result = pAPP->GetStringPool().Find(string);
-    if(result)
-        return result;
+  auto pAPP         = ApplicationStack::Top();
+  PoolString result = pAPP->GetStringPool().Find(string);
+  if (result)
+    return result;
 
-//	for(auto ApplicationStack::;
-//			application; application = application->PreviousContext())
-//	{
-//		PoolString result = application->GetStringPool().Find(string);
-//		if(result)
-//			return result;
-//	}
-	return PoolString();
+  //	for(auto ApplicationStack::;
+  //			application; application = application->PreviousContext())
+  //	{
+  //		PoolString result = application->GetStringPool().Find(string);
+  //		if(result)
+  //			return result;
+  //	}
+  return PoolString();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Application::Describe()
-{
+void Application::Describe() {
 }
 
 PoolString operator"" _pool(const char* s, size_t len) {

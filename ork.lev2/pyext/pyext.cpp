@@ -17,6 +17,8 @@
 #include <ork/lev2/gfx/primitives.inl>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/kernel/opq.h>
+#include <ork/lev2/ezapp.h>
+#include <ork/lev2/ui/event.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace py = pybind11;
@@ -69,6 +71,7 @@ PYBIND11_MODULE(orklev2, m) {
   using gbi_t            = ork::python::unmanaged_ptr<GeometryBufferInterface>;
   using fxi_t            = ork::python::unmanaged_ptr<FxInterface>;
   using rsi_t            = ork::python::unmanaged_ptr<RasterStateInterface>;
+  using drwev_t          = ork::python::unmanaged_ptr<ui::DrawEvent>;
   using txi_t            = ork::python::unmanaged_ptr<TextureInterface>;
   using tex_t            = ork::python::unmanaged_ptr<Texture>;
   using rtb_t            = ork::python::unmanaged_ptr<RtBuffer>;
@@ -78,13 +81,13 @@ PYBIND11_MODULE(orklev2, m) {
   using fxshader_t       = ork::python::unmanaged_ptr<FxShader>;
   using fxparam_t        = ork::python::unmanaged_ptr<FxShaderParam>;
   using fxtechnique_t    = ork::python::unmanaged_ptr<FxShaderTechnique>;
-  using rcfd_ptr_t       = ork::python::unmanaged_ptr<RenderContextFrameData>;
   using fxparammap_t     = std::map<std::string, fxparam_t>;
   using fxtechniquemap_t = std::map<std::string, fxtechnique_t>;
   using vtxa_t           = SVtxV12N12B12T8C4;
   using vb_static_vtxa_t = StaticVertexBuffer<vtxa_t>;
   using vw_vtxa_t        = VtxWriter<vtxa_t>;
   using cstrref_t        = const std::string&;
+  using rcfd_t           = RenderContextFrameData;
   /////////////////////////////////////////////////////////////////////////////////
   m.doc() = "Orkid Lev2 Library (graphics,audio,vr,input,etc..)";
   /////////////////////////////////////////////////////////////////////////////////
@@ -132,12 +135,12 @@ PYBIND11_MODULE(orklev2, m) {
             return rval;
           })
       //////////////////////
-      .def(
-          "topRCFD",
-          [](ctx_t& c) -> rcfd_ptr_t {
-            auto rcfd = c.get()->topRenderContextFrameData();
-            return rcfd_ptr_t(const_cast<RenderContextFrameData*>(rcfd));
-          })
+      //.def(
+      //    "topRCFD",
+      //  [](ctx_t& c) -> rcfd_ptr_t {
+      //  auto rcfd = c.get()->topRenderContextFrameData();
+      // return rcfd_ptr_t(const_cast<RenderContextFrameData*>(rcfd));
+      //})
       .def_property_readonly("frameIndex", [](ctx_t& c) -> int { return c.get()->GetTargetFrame(); })
       //.def_property("currentMaterial", [](ctx_t& c)&Context::currentMaterial, &Context::BindMaterial)
       .def("__repr__", [](const ctx_t& c) -> std::string {
@@ -178,8 +181,8 @@ PYBIND11_MODULE(orklev2, m) {
       .def("bindParamMatrix4", [](FreestyleMaterial& m, fxparam_t& p, const fmtx4& value) { m.bindParamMatrix(p.get(), value); })
       .def(
           "bindParamTexture", [](FreestyleMaterial& m, fxparam_t& p, const tex_t& value) { m.bindParamCTex(p.get(), value.get()); })
-      .def("begin", [](FreestyleMaterial& m, rcfd_ptr_t& rcfd) { m.begin(*rcfd.get()); })
-      .def("end", [](FreestyleMaterial& m, rcfd_ptr_t& rcfd) { m.end(*rcfd.get()); })
+      .def("begin", [](FreestyleMaterial& m, RenderContextFrameData& rcfd) { m.begin(rcfd); })
+      .def("end", [](FreestyleMaterial& m, RenderContextFrameData& rcfd) { m.end(rcfd); })
       .def("__repr__", [](const FreestyleMaterial& m) -> std::string {
         fxstring<256> fxs;
         fxs.format("FreestyleMaterial(%p:%s)", &m, m.mMaterialName.c_str());
@@ -384,11 +387,10 @@ PYBIND11_MODULE(orklev2, m) {
           })
       .def_static("load", [](std::string path) -> tex_t { return Texture::LoadUnManaged(path); });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<rcfd_ptr_t>(m, "RenderContextFrameData").def("__repr__", [](const rcfd_ptr_t& rcfd) -> std::string {
-    fxstring<256> fxs;
-    fxs.format("RCFD(%p)", rcfd.get());
-    return fxs.c_str();
-  });
+  py::class_<RenderContextFrameData>(m, "RenderContextFrameData").def(py::init([](ctx_t& ctx) { //
+    auto rcfd = std::unique_ptr<RenderContextFrameData>(new RenderContextFrameData(ctx.get()));
+    return rcfd;
+  }));
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<PixelFetchContext>(m, "PixelFetchContext")
       .def(py::init<>())
@@ -470,6 +472,41 @@ PYBIND11_MODULE(orklev2, m) {
       .def_property_readonly("advanceWidth", [](const font_t& font) -> int { return font->mFontDesc.miAdvanceWidth; })
       .def_property_readonly("advanceHeight", [](const font_t& font) -> int { return font->mFontDesc.miAdvanceHeight; });
 */
+  py::class_<drwev_t>(m, "DrawEvent").def_property_readonly("context", [](drwev_t& event) -> ctx_t { //
+    return ctx_t(event->GetTarget());
+  });
+  py::class_<OrkEzQtApp, std::shared_ptr<OrkEzQtApp>>(m, "OrkEzQtApp")
+      .def_static(
+          "create",
+          [](py::function gpuinitfn, py::function drawfn) { //
+            int* argc  = new int(1);
+            auto argv  = (char**)malloc(sizeof(char**));
+            argv[0]    = (char*)malloc(1);
+            argv[0][0] = 0;
+            auto rval  = OrkEzQtApp::create(*argc, argv);
+
+            rval->_vars.makeValueForKey<py::function>("gpuinitfn") = gpuinitfn;
+            rval->_vars.makeValueForKey<py::function>("drawfn")    = drawfn;
+            drwev_t d_ev                                           = drwev_t(new ui::DrawEvent(nullptr));
+            rval->_vars.makeValueForKey<drwev_t>("drawev")         = d_ev;
+
+            rval->onGpuInit([=](Context* ctx) { //
+              auto pyfn = rval->_vars.typedValueForKey<py::function>("gpuinitfn");
+              pyfn.value()(ctx_t(ctx));
+            });
+            rval->onDraw([=](const ui::DrawEvent& drwev) { //
+              auto pyfn                = rval->_vars.typedValueForKey<py::function>("drawfn");
+              auto mydrev              = rval->_vars.typedValueForKey<drwev_t>("drawev");
+              mydrev.value()->mpTarget = drwev.GetTarget();
+              pyfn.value()(drwev_t(mydrev.value()));
+            });
+
+            return rval;
+          })
+      .def("exec", [](std::shared_ptr<OrkEzQtApp>& app) -> int { //
+        return app->exec();
+      });
+
   /////////////////////////////////////////////////////////////////////////////////
   auto meshutil = m.def_submodule("meshutil", "Mesh operations");
   {

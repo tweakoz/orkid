@@ -990,7 +990,6 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
 void* GlGeometryBufferInterface::LockIB(IndexBufferBase& IdxBuf, int ibase, int icount) {
   void* rval = nullptr;
   assert(ibase == 0);
-  assert(icount == 0);
 
   if (icount == 0)
     icount = IdxBuf.GetNumIndices();
