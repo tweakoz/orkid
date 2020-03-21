@@ -1,8 +1,12 @@
+
 ![logo](https://github.com/tweakoz/orkid/blob/compositor2system/ork.data/dox/doxylogo.png "OrkidLogo")
 
-### Status
 
-[![CISTATUS](http://tweakoz.com:16888/builds/smallGbuffer/status.svg)](http://tweakoz.com:16888/)
+### BuildStatus
+
+* Ubuntu 19.10 [![CISTATUS](http://tweakoz.com:16999/orkid-ix-ub1910/smallGbuffer/status.svg)](http://tweakoz.com:16999/)
+* Ubuntu 20.04 [![CISTATUS](http://tweakoz.com:16999/orkid-ix-ub2004/smallGbuffer/status.svg)](http://tweakoz.com:16999/)
+* Osx Catalina [![CISTATUS](http://tweakoz.com:16999/orkid-osx-catalina/smallGbuffer/status.svg)](http://tweakoz.com:16999/)
 
 ### Description
 
