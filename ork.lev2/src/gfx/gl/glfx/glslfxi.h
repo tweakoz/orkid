@@ -571,6 +571,7 @@ public:
 #endif
 
   bool LoadFxShader(const AssetPath& pth, FxShader* ptex) final;
+  FxShader* shaderFromShaderText(const std::string& name, const std::string& shadertext) final;
 
   Interface(ContextGL& glctx);
 

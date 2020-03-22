@@ -12,9 +12,9 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>-1.19945 3.04318 2.02888</property>
-                                                <property name='Loc'>28.9757</property>
-                                                <property name='QuatC'>0.20268 -0.334075 0.0945512 0.916154</property>
+                                                <property name='Center'>-0.69186 4.49794 1.14841</property>
+                                                <property name='Loc'>7.99906</property>
+                                                <property name='QuatC'>0.210147 -0.368016 0.154455 0.893036</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -105,7 +105,7 @@
                         <property name='Name'>"Light1"</property>
                         <property name='DagNode'>
                             <object type='Ent3dDagNode' id='12'>
-                                <property name='TransformNode'>1 -0 0 0 0 -0.0582179 0.998304 0 -0 -0.998304 -0.0582179 0 0 6.89166 -0.280918 1</property>
+                                <property name='TransformNode'>1 -0 0 0 0 -0.0582179 0.998304 0 -0 -0.998304 -0.0582179 0 0 17.187 0.319471 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
@@ -124,14 +124,14 @@
                                                                 <property name='Color'>100 100 100</property>
                                                                 <property name='Cookie'>
                                                                     <reference category='AssetClass'>
-                                                                        "lev2tex" "data://effect_textures/white"
+                                                                        "lev2tex" "data://effect_textures/NoiseKern"
                                                                     </reference>
                                                                 </property>
                                                                 <property name='Decal'>false</property>
                                                                 <property name='ShadowBias'>0</property>
                                                                 <property name='ShadowBlur'>0</property>
                                                                 <property name='ShadowCaster'>true</property>
-                                                                <property name='ShadowMapSize'>1024</property>
+                                                                <property name='ShadowMapSize'>4096</property>
                                                                 <property name='ShadowSamples'>1</property>
                                                                 <property name='Fovy'>110.204</property>
                                                                 <property name='Range'>60</property>
@@ -377,7 +377,7 @@
                                                                                 <reference category='ObjectClass'>
                                                                                     <object type='ScreenOutputCompositingNode' id='43'>
                                                                                         <property name='Layer'>"All"</property>
-                                                                                        <property name='SuperSample'>0</property>
+                                                                                        <property name='SuperSample'>4</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>

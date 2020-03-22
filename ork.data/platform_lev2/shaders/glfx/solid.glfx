@@ -174,6 +174,12 @@ vertex_shader vs_vtxcolor : iface_vdefault {
   frg_clr     = vtxcolor;
   frg_uv0     = uv0;
 }
+vertex_shader vs_debuguv : iface_vdefault {
+  gl_Position = MatMVP * position;
+  frg_clr     = vec4(uv0,0,1);
+  frg_uv0     = uv0;
+}
+
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_vtxcolor_stereo
   : extension(GL_NV_stereo_view_rendering)
@@ -191,6 +197,11 @@ vertex_shader vs_vtxcolor_stereo
 fragment_shader ps_texvtxcolor : iface_fdefault {
   vec4 texc = texture(ColorMap, frg_uv0);
   out_clr   = vec4(texc.xyz * frg_clr.xyz, texc.r);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_texvtxcolor_noalpha : iface_fdefault {
+  vec4 texc = texture(ColorMap, frg_uv0);
+  out_clr   = vec4(texc.xyz * frg_clr.xyz, 1.0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_distortedfeedback : iface_fdefault {
@@ -229,6 +240,14 @@ technique vtxcolor {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_fragclr;
+    state_block     = sb_default;
+  }
+}
+technique debuguv {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_debuguv;
     fragment_shader = ps_fragclr;
     state_block     = sb_default;
   }
@@ -337,11 +356,20 @@ technique feedbackatten {
     state_block     = sb_default;
   }
 }
+
 technique texvtxcolor {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_texvtxcolor;
+    state_block     = sb_default;
+  }
+}
+technique texvtxcolor_noalpha {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_texvtxcolor_noalpha;
     state_block     = sb_default;
   }
 }

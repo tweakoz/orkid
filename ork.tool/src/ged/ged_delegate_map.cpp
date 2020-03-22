@@ -1155,13 +1155,13 @@ void GedMapNode::DoDraw(lev2::Context* pTARG) {
     int dbxc = dbx1 + idimh;
 
     GetSkin()->DrawOutlineBox(this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    GetSkin()->DrawText(this, dbx1 + 1, dby1 + 1, "R");
+    GetSkin()->DrawText(this, dbx1, dby1 - 1, "R");
 
     dbx1 += (idim + 4);
     dbx2 = dbx1 + idim;
     dbxc = dbx1 + idimh;
     GetSkin()->DrawOutlineBox(this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    GetSkin()->DrawText(this, dbx1 + 1, dby1 + 1, "D");
+    GetSkin()->DrawText(this, dbx1, dby1 - 1, "D");
 
     dbx1 += (idim + 4);
     dbx2 = dbx1 + idim;
@@ -1171,21 +1171,21 @@ void GedMapNode::DoDraw(lev2::Context* pTARG) {
     int idimh = idim >> 1;
 
     GetSkin()->DrawOutlineBox(this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    GetSkin()->DrawText(this, dbx1 + 1, dby1 + 1, "I");
+    GetSkin()->DrawText(this, dbx1, dby1 - 1, "I");
 
     dbx1 += (idim + 4);
     dbx2     = dbx1 + idim;
     int dbxc = dbx1 + idimh;
 
     GetSkin()->DrawOutlineBox(this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    GetSkin()->DrawText(this, dbx1 + 1, dby1 + 1, "O");
+    GetSkin()->DrawText(this, dbx1, dby1 - 1, "O");
 
     dbx1 += (idim + 4);
     dbx2 = dbx1 + idim;
     // GetSkin()->DrawLine( this, dbx1, dby1, dbxc, dby1+idimh, GedSkin::ESTYLE_BUTTON_OUTLINE );
     // GetSkin()->DrawLine( this, dbxc, dby1+idimh, dbx2, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE );
   }
-  GetSkin()->DrawText(this, dbx1, ity, _propname.c_str());
+  GetSkin()->DrawText(this, dbx1, ity - 2, _propname.c_str());
 }
 ///////////////////////////////////////////////////////////////////////////////
 

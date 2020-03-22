@@ -5,14 +5,12 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _GFX_PRIMITIVES_H
-#define _GFX_PRIMITIVES_H
-
+#pragma once
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/kernel/core/singleton.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 
-namespace ork { namespace lev2 {
+namespace ork::lev2 {
 
 class GfxPrimitives : public NoRttiSingleton<GfxPrimitives> {
 public:
@@ -146,6 +144,4 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-}} // namespace ork::lev2
-
-#endif
+} // namespace ork::lev2

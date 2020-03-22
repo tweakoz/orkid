@@ -68,6 +68,9 @@ public:
   }
 
   virtual bool LoadFxShader(const AssetPath& pth, FxShader* ptex) = 0;
+  virtual FxShader* shaderFromShaderText(const std::string& name, const std::string& shadertext) {
+    return nullptr;
+  }
 
   void InvalidateStateBlock(void);
 

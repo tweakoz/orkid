@@ -2,6 +2,7 @@
 
 #include <ork/pch.h>
 #include <ork/kernel/opq.h>
+#include <ork/kernel/varmap.inl>
 #include <ork/lev2/init.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/file/file.h>
@@ -104,6 +105,7 @@ public:
   double _update_timeaccumulator = 0;
   ork::Thread _updateThread;
   bool _updatekill;
+  varmap::VarMap _vars;
 };
 
 } // namespace ork::lev2

@@ -19,12 +19,7 @@
 
 GLuint gLastBoundNonZeroTex = 0;
 
-namespace ork { namespace lev2 {
-
-static const uint16_t kRGB_DXT1  = 0x83F0;
-static const uint16_t kRGBA_DXT1 = 0x83F1;
-static const uint16_t kRGBA_DXT3 = 0x83F2;
-static const uint16_t kRGBA_DXT5 = 0x83F3;
+namespace ork::lev2 {
 
 GLTextureObject::GLTextureObject()
     : mObject(0)
@@ -127,422 +122,6 @@ void GlTextureInterface::_returnPBO(size_t isize, GLuint pbo) {
   PboSet* pbs = it->second;
   pbs->free(pbo);
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct TexSetter {
-  static const GLuint PBOOBJBASE = 0x12340000;
-
-  struct texcfg {
-    GLuint mInternalFormat;
-    GLuint mFormat;
-    int mBPP;
-    int mNumC;
-  };
-
-  static texcfg GetInternalFormat(GLuint fmt, GLuint typ) {
-    texcfg rval;
-    rval.mInternalFormat = 0;
-    rval.mFormat         = fmt;
-    rval.mBPP            = 4;
-    rval.mNumC           = 4;
-    // printf( "fmt<%04x> typ<%04x>\n", fmt, typ );
-    switch (fmt) {
-      case GL_RGB:
-        rval.mInternalFormat = GL_RGB;
-        rval.mFormat         = GL_RGB;
-        rval.mNumC           = 3;
-        rval.mBPP            = 3;
-        break;
-      case GL_BGR:
-        rval.mInternalFormat = GL_RGB;
-        rval.mFormat         = GL_BGR;
-        rval.mNumC           = 3;
-        rval.mBPP            = 3;
-        break;
-      case GL_BGRA:
-      case GL_RGBA:
-        rval.mInternalFormat = GL_RGBA;
-        rval.mNumC           = 4;
-        rval.mBPP            = 4;
-        break;
-      default:
-        break;
-    }
-    switch (typ) {
-      case GL_UNSIGNED_BYTE:
-        break;
-      case GL_UNSIGNED_SHORT_5_5_5_1:
-        rval.mBPP = 2;
-        break;
-    }
-    OrkAssert(rval.mInternalFormat != 0);
-    return rval;
-  }
-
-  static void Set2D(
-      GlTextureInterface* txi,
-      Texture* tex,
-      GLuint numC,
-      GLuint fmt,
-      GLuint typ,
-      GLuint tgt,
-      int BPP,
-      int inummips,
-      int& iw,
-      int& ih,
-      DataBlockInputStream inpstream) {
-
-    DataBlockInputStream copy_stream = inpstream;
-
-    // size_t ifilelen       = 0;
-    // EFileErrCode eFileErr = file.GetLength(ifilelen);
-
-    int isize = iw * ih * BPP;
-    auto glto = (GLTextureObject*)tex->_internalHandle;
-
-    glto->_maxmip = 0;
-
-    int mipbias = 0;
-#if defined(__APPLE__) // todo move to gfx user settings
-    if (iw >= 4096) {
-      // mipbias = 2;
-    }
-#endif
-
-    for (int imip = 0; imip < inummips; imip++) {
-      if (iw < 4)
-        continue;
-      if (ih < 4)
-        continue;
-
-      GLuint nfmt = fmt;
-
-      /////////////////////////////////////////////////
-      // allocate space for image
-      // see http://www.opengl.org/discussion_boards/ubbthreads.php?ubb=showflat&Board=3&Number=159972
-      // and http://www.opengl.org/discussion_boards/ubbthreads.php?ubb=showflat&Number=240547
-      // basically you can call glTexImage2D once with the s3tc format as the internalformat
-      //  and a null data ptr to let the driver 'allocate' space for the texture
-      //  then use the glCompressedTexSubImage2D to overwrite the data in the pre allocated space
-      //  this decouples allocation from writing, allowing you to overwrite more efficiently
-      /////////////////////////////////////////////////
-
-      GLint intfmt = 0;
-      // printf( "fmt<%04x>\n", fmt );
-      int isiz2 = isize;
-      // printf( "numC<%d> typ<%04x>\n", numC, typ );
-      switch (nfmt) {
-        case GL_BGR:
-          intfmt = GL_RGB;
-          nfmt   = GL_BGR;
-          break;
-        case GL_BGRA:
-          if ((numC == 4) && (typ == GL_UNSIGNED_BYTE))
-            intfmt = GL_RGBA;
-          break;
-        case GL_RGBA:
-          if (numC == 4)
-            switch (typ) {
-              case GL_UNSIGNED_SHORT_5_5_5_1:
-              case GL_UNSIGNED_BYTE:
-                intfmt = GL_RGBA;
-                break;
-              default:
-                assert(false);
-            }
-          break;
-        case GL_RGB:
-          if ((numC == 3) && (typ == GL_UNSIGNED_BYTE))
-            intfmt = GL_RGB;
-          break;
-        default:
-          break;
-      }
-      OrkAssert(intfmt != 0);
-
-      // printf( "tgt<%04x> imip<%d> intfmt<%04x> w<%d> h<%d> isiz2<%d> fmt<%04x> typ<%04x>\n", tgt, imip, intfmt,
-      // iw,ih,isiz2,nfmt,typ);
-      GL_ERRORCHECK();
-
-      bool bUSEPBO = false;
-
-      if (bUSEPBO) {
-        glTexImage2D(tgt, imip, intfmt, iw, ih, 0, nfmt, typ, 0);
-        GL_ERRORCHECK();
-
-        /////////////////////////////
-        // imgdata->PBO
-        /////////////////////////////
-
-        const GLuint PBOOBJ = txi->_getPBO(isiz2);
-
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
-        GL_ERRORCHECK();
-
-        u32 map_flags = GL_MAP_WRITE_BIT;
-        map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
-        map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
-        void* pgfxmem = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, isiz2, map_flags);
-        // printf( "UPDATE IMAGE UNC imip<%d> iw<%d> ih<%d> isiz<%d> pbo<%d> mem<%p>\n", imip, iw, ih, isiz2, PBOOBJ, pgfxmem );
-        auto copy_src = inpstream.current();
-        memcpy(pgfxmem, copy_src, isiz2);
-        inpstream.advance(isiz2);
-        glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-        GL_ERRORCHECK();
-
-        ////////////////////////
-        // PBO->texture
-        ////////////////////////
-
-        glTexSubImage2D(tgt, imip, 0, 0, iw, ih, nfmt, typ, 0);
-
-        GL_ERRORCHECK();
-
-        ////////////////////////
-        // unbind the PBO
-        ////////////////////////
-
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
-        txi->_returnPBO(isiz2, PBOOBJ);
-        GL_ERRORCHECK();
-      } else // not PBO
-      {
-        auto pgfxmem = inpstream.current();
-        inpstream.advance(isiz2);
-        if (imip >= mipbias) {
-          glTexImage2D(tgt, imip - mipbias, intfmt, iw, ih, 0, nfmt, typ, pgfxmem);
-          glto->_maxmip = imip - mipbias;
-        }
-        GL_ERRORCHECK();
-      }
-
-      ////////////////////////
-
-      // irdptr+=isize;
-      // pimgdata = & dataBASE[irdptr];
-
-      iw >>= 1;
-      ih >>= 1;
-      isize = iw * ih * BPP;
-    }
-  }
-  static void Set3D(
-      GlTextureInterface* txi,
-      /*GLuint numC,*/ GLuint fmt,
-      GLuint typ,
-      GLuint tgt,
-      /*int BPP,*/ int inummips,
-      int& iw,
-      int& ih,
-      int& id,
-      DataBlockInputStream inpstream) //, int& irdptr, const u8* dataBASE )
-  {
-    for (int imip = 0; imip < inummips; imip++) {
-      /////////////////////////////////////////////////
-      // allocate space for image
-      // see http://www.opengl.org/discussion_boards/ubbthreads.php?ubb=showflat&Board=3&Number=159972
-      // and http://www.opengl.org/discussion_boards/ubbthreads.php?ubb=showflat&Number=240547
-      // basically you can call glTexImage2D once with the s3tc format as the internalformat
-      //  and a null data ptr to let the driver 'allocate' space for the texture
-      //  then use the glCompressedTexSubImage2D to overwrite the data in the pre allocated space
-      //  this decouples allocation from writing, allowing you to overwrite more efficiently
-      /////////////////////////////////////////////////
-
-      texcfg tc = GetInternalFormat(fmt, typ);
-
-      /////////////////////////////
-      // imgdata->PBO
-      /////////////////////////////
-
-      int isize = id * iw * ih * tc.mBPP;
-
-      // printf( "UPDATE IMAGE 3dUNC imip<%d> iw<%d> ih<%d> id<%d> isiz<%d>\n", imip, iw, ih, id, isize );
-      GL_ERRORCHECK();
-
-      bool bUSEPBO = false;
-      if (bUSEPBO) {
-        glTexImage3D(tgt, imip, tc.mInternalFormat, iw, ih, id, 0, tc.mFormat, typ, 0);
-
-        const GLuint PBOOBJ = txi->_getPBO(isize);
-
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
-        void* pgfxmem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
-        auto copy_src = inpstream.current();
-        memcpy(pgfxmem, copy_src, isize);
-        inpstream.advance(isize);
-        glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-
-        ////////////////////////
-        // PBO->texture
-        ////////////////////////
-
-        glTexSubImage3D(tgt, imip, 0, 0, 0, iw, ih, id, tc.mFormat, typ, 0);
-
-        ////////////////////////
-        // unbind the PBO
-        ////////////////////////
-
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
-        txi->_returnPBO(isize, PBOOBJ);
-
-      }
-      /////////////////////////////
-      else {
-        auto pgfxmem = inpstream.current();
-        glTexImage3D(tgt, imip, tc.mInternalFormat, iw, ih, id, 0, tc.mFormat, typ, pgfxmem);
-        inpstream.advance(isize);
-      }
-      GL_ERRORCHECK();
-      /////////////////////////////
-
-      iw >>= 1;
-      ih >>= 1;
-      id >>= 1;
-      // irdptr+=isize;
-    }
-  }
-  static void Set2DC(
-      GlTextureInterface* txi,
-      GLuint fmt,
-      GLuint tgt,
-      int BPP,
-      int inummips,
-      int& iw,
-      int& ih,
-      DataBlockInputStream inpstream) //, int& irdptr, const u8* dataBASE )
-  {
-    for (int imip = 0; imip < inummips; imip++) {
-      int iBwidth  = (iw + 3) / 4;
-      int iBheight = (ih + 3) / 4;
-      int isize    = (iBwidth * iBheight) * BPP;
-      // const u8* pimgdata = & dataBASE[irdptr];
-      // irdptr+=isize;
-
-      /////////////////////////////////////////////////
-      // allocate space for image
-      // see http://www.opengl.org/discussion_boards/ubbthreads.php?ubb=showflat&Board=3&Number=159972
-      // and http://www.opengl.org/discussion_boards/ubbthreads.php?ubb=showflat&Number=240547
-      // basically you can call glTexImage2D once with the s3tc format as the internalformat
-      //  and a null data ptr to let the driver 'allocate' space for the texture
-      //  then use the glCompressedTexSubImage2D to overwrite the data in the pre allocated space
-      //  this decouples allocation from writing, allowing you to overwrite more efficiently
-      /////////////////////////////////////////////////
-
-      bool hasalpha = (fmt == kRGBA_DXT5) || (fmt == kRGBA_DXT3);
-      GLenum extfmt = hasalpha ? GL_RGBA : GL_RGB;
-
-      bool bUSEPBO = false;
-
-      // printf("alloc texdata tgt<%d> imip<%d> fmt<%d> iw<%d> ih<%d> extfmt<%d>\n",
-      //	tgt,imip,fmt,iw,ih,extfmt );
-
-      if (false == bUSEPBO) {
-        // static const int kloadbufsize = 16 << 20;
-        // static void* gloadbuf         = malloc(kloadbufsize);
-        // OrkAssert(isize < kloadbufsize);
-        auto copy_src = inpstream.current();
-        // memcpy(gloadbuf, copy_src, isize);
-        inpstream.advance(isize);
-        GL_ERRORCHECK();
-        glCompressedTexImage2D(tgt, imip, fmt, iw, ih, 0, isize, copy_src);
-
-        GL_ERRORCHECK();
-      } else // PBO
-      {
-        GL_ERRORCHECK();
-        glTexImage2D(tgt, imip, fmt, iw, ih, 0, extfmt, GL_UNSIGNED_BYTE, NULL);
-        GL_ERRORCHECK();
-
-        /////////////////////////////
-        // imgdata->PBO
-        /////////////////////////////
-
-        // printf( "UPDATE IMAGE  S3TC\n" );
-
-        const GLuint PBOOBJ = txi->_getPBO(isize);
-
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
-        GL_ERRORCHECK();
-        void* pgfxmem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
-        GL_ERRORCHECK();
-        OrkAssert(pgfxmem != 0);
-        auto copy_src = inpstream.current();
-        memcpy(pgfxmem, copy_src, isize);
-        inpstream.advance(isize);
-        glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-        GL_ERRORCHECK();
-
-        ////////////////////////
-        // PBO->texture
-        ////////////////////////
-
-        glCompressedTexSubImage2D(
-            tgt,
-            imip,
-            0,
-            0,
-            iw,
-            ih,
-            fmt,
-            //										0,
-            isize,
-            0);
-
-        GL_ERRORCHECK();
-
-        ////////////////////////
-        // unbind the PBO
-        ////////////////////////
-
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-        GL_ERRORCHECK();
-
-        txi->_returnPBO(isize, PBOOBJ);
-      }
-      ////////////////////////
-
-      iw >>= 1;
-      ih >>= 1;
-    }
-  }
-  static void Set3DC(
-      GlTextureInterface* txi,
-      GLuint fmt,
-      GLuint tgt,
-      int BPP,
-      int inummips,
-      int& iw,
-      int& ih,
-      int& id,
-      DataBlockInputStream inpstream) //, int& irdptr, const u8* dataBASE )
-  {
-    for (int imip = 0; imip < inummips; imip++) {
-      int iBwidth  = (iw + 3) / 4;
-      int iBheight = (ih + 3) / 4;
-      int isize    = id * (iBwidth * iBheight) * BPP;
-      // const u8* pimgdata = & dataBASE[irdptr];
-      // printf( "READ3DT iw<%d> ih<%d> id<%d> isize<%d>\n", iw, ih, id, isize );
-      // irdptr+=isize;
-
-      if (isize) {
-        // glCompressedTexImage3D(	tgt,
-        //						imip,
-        //						fmt,
-        //						iw, ih, id,
-        //						0,
-        //						isize,
-        //						pimgdata );
-        // GL_ERRORCHECK();
-      }
-      iw >>= 1;
-      ih >>= 1;
-      id >>= 1;
-    }
-  }
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -859,34 +438,29 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   if (dds::IsLUM(ddsh->ddspf)) {
     // printf( "  tex<%s> LUM\n", infname.c_str() );
     if (bVOLUMETEX)
-      TexSetter::Set3D(
-          this, GL_RED, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+      Set3D(this, GL_RED, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
     else
-      TexSetter::Set2D(
-          this, ptex, 1, GL_RED, GL_UNSIGNED_BYTE, TARGET, 1, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
+      Set2D(this, ptex, 1, GL_RED, GL_UNSIGNED_BYTE, TARGET, 1, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
   } else if (dds::IsBGR5A1(ddsh->ddspf)) {
     const dds::DdsLoadInfo& li = dds::loadInfoBGR5A1;
     // printf( "  tex<%s> BGR5A1\n", infname.c_str() );
     // printf( "  tex<%s> size<%d>\n", infname.c_str(), 2 );
     if (bVOLUMETEX)
-      TexSetter::Set3D(
+      Set3D(
           this, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
     else
-      TexSetter::Set2D(
-          this, ptex, 4, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, 2, NumMips, iwidth, iheight, req._inpstream); // ireadptr,
-                                                                                                                   // pdata
-                                                                                                                   // );
+      Set2D(this, ptex, 4, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, 2, NumMips, iwidth, iheight, req._inpstream); // ireadptr,
+                                                                                                                     // pdata
+                                                                                                                     // );
   } else if (dds::IsBGRA8(ddsh->ddspf)) {
     const dds::DdsLoadInfo& li = dds::loadInfoBGRA8;
     int size                   = idepth * iwidth * iheight * 4;
     // printf("  tex<%s> BGRA8\n", infname.c_str());
     // printf( "  tex<%s> size<%d>\n", infname.c_str(), size );
     if (bVOLUMETEX)
-      TexSetter::Set3D(
-          this, GL_RGBA, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+      Set3D(this, GL_RGBA, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
     else {
-      TexSetter::Set2D(
-          this, ptex, 4, GL_BGRA, GL_UNSIGNED_BYTE, TARGET, 4, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
+      Set2D(this, ptex, 4, GL_BGRA, GL_UNSIGNED_BYTE, TARGET, 4, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
 
       if (NumMips > 3) {
         ptex->TexSamplingMode().PresetTrilinearWrap();
@@ -901,11 +475,9 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
     // printf( "  tex<%s> size<%d>\n", TextureFile.msFileName.c_str(), size );
     // printf( "  tex<%s> BGR8\n", infname.c_str() );
     if (bVOLUMETEX)
-      TexSetter::Set3D(
-          this, GL_BGR, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+      Set3D(this, GL_BGR, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
     else
-      TexSetter::Set2D(
-          this, ptex, 3, GL_BGR, GL_UNSIGNED_BYTE, TARGET, 3, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
+      Set2D(this, ptex, 3, GL_BGR, GL_UNSIGNED_BYTE, TARGET, 3, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
     GL_ERRORCHECK();
     if (NumMips > 3) {
       ptex->TexSamplingMode().PresetTrilinearWrap();
@@ -922,10 +494,9 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
     // printf("  tex<%s> DXT5\n", infname.c_str());
     // printf("  tex<%s> size<%d>\n", infname.c_str(), size);
     if (bVOLUMETEX)
-      TexSetter::Set3DC(
-          this, kRGBA_DXT5, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+      Set3DC(this, kRGBA_DXT5, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
     else
-      TexSetter::Set2DC(this, kRGBA_DXT5, TARGET, li.blockBytes, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
+      Set2DC(this, kRGBA_DXT5, TARGET, li.blockBytes, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
     GL_ERRORCHECK();
     //////////////////////////////////////
   }
@@ -939,10 +510,9 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
     // printf("  tex<%s> size<%d>\n", infname.c_str(), size);
 
     if (bVOLUMETEX)
-      TexSetter::Set3DC(
-          this, kRGBA_DXT3, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+      Set3DC(this, kRGBA_DXT3, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
     else
-      TexSetter::Set2DC(this, kRGBA_DXT3, TARGET, li.blockBytes, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
+      Set2DC(this, kRGBA_DXT3, TARGET, li.blockBytes, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
   }
   //////////////////////////////////////////////////////////
   // DXT1: texturing fast path (4 bits per pixel true color)
@@ -953,10 +523,9 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
     // printf("  tex<%s> DXT1\n", infname.c_str());
     // printf("  tex<%s> size<%d>\n", infname.c_str(), size);
     if (bVOLUMETEX)
-      TexSetter::Set3DC(
-          this, kRGBA_DXT1, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+      Set3DC(this, kRGBA_DXT1, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
     else
-      TexSetter::Set2DC(this, kRGBA_DXT1, TARGET, li.blockBytes, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
+      Set2DC(this, kRGBA_DXT1, TARGET, li.blockBytes, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
   }
   //////////////////////////////////////////////////////////
   // ???
@@ -1286,6 +855,8 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 Texture* GlTextureInterface::createFromMipChain(MipChain* from_chain) {
   auto tex             = new Texture;
   tex->_creatingTarget = &mTargetGL;
@@ -1295,7 +866,6 @@ Texture* GlTextureInterface::createFromMipChain(MipChain* from_chain) {
   tex->_texFormat      = from_chain->_format;
   tex->_texType        = from_chain->_type;
 
-  assert(tex->_texFormat == EBUFFMT_RGBA32F);
   assert(tex->_texType == ETEXTYPE_2D);
 
   GLTextureObject* texobj = new GLTextureObject;
@@ -1312,8 +882,37 @@ Texture* GlTextureInterface::createFromMipChain(MipChain* from_chain) {
 
   for (size_t l = 0; l < nummips; l++) {
     auto pchl = from_chain->_levels[l];
-    assert(pchl->_length == pchl->_width * pchl->_height * sizeof(fvec4));
-    glTexImage2D(GL_TEXTURE_2D, l, GL_RGBA32F, pchl->_width, pchl->_height, 0, GL_RGBA, GL_FLOAT, pchl->_data);
+    switch (from_chain->_format) {
+      case EBUFFMT_RGBA32F:
+        OrkAssert(pchl->_length == pchl->_width * pchl->_height * sizeof(fvec4));
+        glTexImage2D(GL_TEXTURE_2D, l, GL_RGBA32F, pchl->_width, pchl->_height, 0, GL_RGBA, GL_FLOAT, pchl->_data);
+        break;
+#if !defined(__APPLE__)
+      case EBUFFMT_RGBA_BPTC_UNORM:
+        OrkAssert(pchl->_length == pchl->_width * pchl->_height);
+        glCompressedTexImage2D(
+            GL_TEXTURE_2D, l, GL_COMPRESSED_RGBA_BPTC_UNORM, pchl->_width, pchl->_height, 0, pchl->_length, pchl->_data);
+        break;
+      case EBUFFMT_SRGB_ALPHA_BPTC_UNORM:
+        OrkAssert(pchl->_length == pchl->_width * pchl->_height);
+        glCompressedTexImage2D(
+            GL_TEXTURE_2D, l, GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM, pchl->_width, pchl->_height, 0, pchl->_length, pchl->_data);
+        break;
+      case EBUFFMT_RGBA_ASTC_4X4:
+        OrkAssert(pchl->_length == pchl->_width * pchl->_height);
+        glCompressedTexImage2D(
+            GL_TEXTURE_2D, l, GL_COMPRESSED_RGBA_ASTC_4x4_KHR, pchl->_width, pchl->_height, 0, pchl->_length, pchl->_data);
+        break;
+      case EBUFFMT_SRGB_ASTC_4X4:
+        OrkAssert(pchl->_length == pchl->_width * pchl->_height);
+        glCompressedTexImage2D(
+            GL_TEXTURE_2D, l, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR, pchl->_width, pchl->_height, 0, pchl->_length, pchl->_data);
+        break;
+#endif
+      default:
+        OrkAssert(false);
+        break;
+    }
   }
 
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -1329,4 +928,4 @@ Texture* GlTextureInterface::createFromMipChain(MipChain* from_chain) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-}} // namespace ork::lev2
+} // namespace ork::lev2

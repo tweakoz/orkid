@@ -13,6 +13,12 @@
 #include <ork/lev2/gfx/gfxmaterial.h>
 #include <ork/lev2/gfx/material_freestyle.inl>
 #include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/gfx/submesh.h>
+#include <ork/lev2/gfx/primitives.inl>
+#include <ork/lev2/gfx/dbgfontman.h>
+#include <ork/kernel/opq.h>
+#include <ork/lev2/ezapp.h>
+#include <ork/lev2/ui/event.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace py = pybind11;
@@ -47,6 +53,12 @@ void lev2appinit() {
   ork::lev2::ClassInit();
   ork::rtti::Class::InitializeClasses();
   ork::lev2::GfxInit("");
+  ork::lev2::FontMan::GetRef();
+}
+
+void lev2apppoll() {
+  while (ork::opq::mainSerialQueue().Process()) {
+  }
 }
 
 ////////////////////////////////////////////////////////
@@ -59,23 +71,28 @@ PYBIND11_MODULE(orklev2, m) {
   using gbi_t            = ork::python::unmanaged_ptr<GeometryBufferInterface>;
   using fxi_t            = ork::python::unmanaged_ptr<FxInterface>;
   using rsi_t            = ork::python::unmanaged_ptr<RasterStateInterface>;
+  using drwev_t          = ork::python::unmanaged_ptr<ui::DrawEvent>;
   using txi_t            = ork::python::unmanaged_ptr<TextureInterface>;
+  using tex_t            = ork::python::unmanaged_ptr<Texture>;
+  using rtb_t            = ork::python::unmanaged_ptr<RtBuffer>;
   using rtg_t            = ork::python::unmanaged_ptr<RtGroup>;
+  using font_t           = ork::python::unmanaged_ptr<Font>;
   using capbuf_t         = ork::python::unmanaged_ptr<CaptureBuffer>;
   using fxshader_t       = ork::python::unmanaged_ptr<FxShader>;
   using fxparam_t        = ork::python::unmanaged_ptr<FxShaderParam>;
   using fxtechnique_t    = ork::python::unmanaged_ptr<FxShaderTechnique>;
-  using rcfd_ptr_t       = ork::python::unmanaged_ptr<RenderContextFrameData>;
   using fxparammap_t     = std::map<std::string, fxparam_t>;
   using fxtechniquemap_t = std::map<std::string, fxtechnique_t>;
   using vtxa_t           = SVtxV12N12B12T8C4;
   using vb_static_vtxa_t = StaticVertexBuffer<vtxa_t>;
   using vw_vtxa_t        = VtxWriter<vtxa_t>;
   using cstrref_t        = const std::string&;
+  using rcfd_t           = RenderContextFrameData;
   /////////////////////////////////////////////////////////////////////////////////
   m.doc() = "Orkid Lev2 Library (graphics,audio,vr,input,etc..)";
   /////////////////////////////////////////////////////////////////////////////////
   m.def("lev2appinit", &lev2appinit);
+  m.def("lev2apppoll", &lev2apppoll);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<GfxEnv>(m, "GfxEnv")
       .def_readonly_static("ref", &GfxEnv::GetRef())
@@ -118,12 +135,12 @@ PYBIND11_MODULE(orklev2, m) {
             return rval;
           })
       //////////////////////
-      .def(
-          "topRCFD",
-          [](ctx_t& c) -> rcfd_ptr_t {
-            auto rcfd = c.get()->topRenderContextFrameData();
-            return rcfd_ptr_t(const_cast<RenderContextFrameData*>(rcfd));
-          })
+      //.def(
+      //    "topRCFD",
+      //  [](ctx_t& c) -> rcfd_ptr_t {
+      //  auto rcfd = c.get()->topRenderContextFrameData();
+      // return rcfd_ptr_t(const_cast<RenderContextFrameData*>(rcfd));
+      //})
       .def_property_readonly("frameIndex", [](ctx_t& c) -> int { return c.get()->GetTargetFrame(); })
       //.def_property("currentMaterial", [](ctx_t& c)&Context::currentMaterial, &Context::BindMaterial)
       .def("__repr__", [](const ctx_t& c) -> std::string {
@@ -148,15 +165,24 @@ PYBIND11_MODULE(orklev2, m) {
             m.gpuInit(c.get(), path);
             m._rasterstate.SetCullTest(ECULLTEST_OFF);
           })
+      .def(
+          "gpuInitFromShaderText",
+          [](FreestyleMaterial& m, ctx_t& c, const std::string& name, const std::string& shadertext) {
+            m.gpuInitFromShaderText(c.get(), name, shadertext);
+            m._rasterstate.SetCullTest(ECULLTEST_OFF);
+          })
       .def_property_readonly("shader", [](const FreestyleMaterial& m) -> fxshader_t { return fxshader_t(m._shader); })
       .def("bindTechnique", [](FreestyleMaterial& m, const fxtechnique_t& tek) { m.bindTechnique(tek.get()); })
       .def("bindParamFloat", [](FreestyleMaterial& m, fxparam_t& p, float value) { m.bindParamFloat(p.get(), value); })
       .def("bindParamVec2", [](FreestyleMaterial& m, fxparam_t& p, const fvec2& value) { m.bindParamVec2(p.get(), value); })
       .def("bindParamVec3", [](FreestyleMaterial& m, fxparam_t& p, const fvec3& value) { m.bindParamVec3(p.get(), value); })
       .def("bindParamVec4", [](FreestyleMaterial& m, fxparam_t& p, const fvec4& value) { m.bindParamVec4(p.get(), value); })
-      .def("bindParamMatrix", [](FreestyleMaterial& m, fxparam_t& p, const fmtx4& value) { m.bindParamMatrix(p.get(), value); })
-      .def("begin", [](FreestyleMaterial& m, rcfd_ptr_t& rcfd) { m.begin(*rcfd.get()); })
-      .def("end", [](FreestyleMaterial& m, rcfd_ptr_t& rcfd) { m.end(*rcfd.get()); })
+      .def("bindParamMatrix3", [](FreestyleMaterial& m, fxparam_t& p, const fmtx3& value) { m.bindParamMatrix(p.get(), value); })
+      .def("bindParamMatrix4", [](FreestyleMaterial& m, fxparam_t& p, const fmtx4& value) { m.bindParamMatrix(p.get(), value); })
+      .def(
+          "bindParamTexture", [](FreestyleMaterial& m, fxparam_t& p, const tex_t& value) { m.bindParamCTex(p.get(), value.get()); })
+      .def("begin", [](FreestyleMaterial& m, RenderContextFrameData& rcfd) { m.begin(rcfd); })
+      .def("end", [](FreestyleMaterial& m, RenderContextFrameData& rcfd) { m.end(rcfd); })
       .def("__repr__", [](const FreestyleMaterial& m) -> std::string {
         fxstring<256> fxs;
         fxs.format("FreestyleMaterial(%p:%s)", &m, m.mMaterialName.c_str());
@@ -248,6 +274,10 @@ PYBIND11_MODULE(orklev2, m) {
           [](const fbi_t& fbi, rtg_t& rtg, int rtbindex, CaptureBuffer& capbuf, int format) -> bool {
             return fbi.get()->captureAsFormat(rtg.ref(), rtbindex, &capbuf, EBufferFormat(format));
           })
+      .def("clear", [](const fbi_t& fbi, const fcolor4& color, float depth) { return fbi.get()->Clear(color, depth); })
+      .def("rtGroupPush", [](const fbi_t& fbi, rtg_t& rtg) { return fbi.get()->PushRtGroup(rtg.get()); })
+      .def("rtGroupPop", [](const fbi_t& fbi) { return fbi.get()->PopRtGroup(); })
+      .def("rtGroupClear", [](const fbi_t& fbi, rtg_t& rtg) { return fbi.get()->rtGroupClear(rtg.get()); })
       .def("__repr__", [](const fbi_t& fbi) -> std::string {
         fxstring<256> fxs;
         fxs.format("FBI(%p)", fbi.get());
@@ -277,7 +307,8 @@ PYBIND11_MODULE(orklev2, m) {
           })
       .def("unlock", [](gbi_t gbi, vw_vtxa_t& vw) { vw.UnLock(gbi.get()); })
       .def("drawTriangles", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, EPRIM_TRIANGLES); })
-      .def("drawTriangleStrip", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, EPRIM_TRIANGLESTRIP); });
+      .def("drawTriangleStrip", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, EPRIM_TRIANGLESTRIP); })
+      .def("drawLines", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, EPRIM_LINES); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<vw_vtxa_t>(m, "Writer_V12N12B12T8C4")
       .def(
@@ -301,13 +332,27 @@ PYBIND11_MODULE(orklev2, m) {
     return fxs.c_str();
   });
   /////////////////////////////////////////////////////////////////////////////////
+  py::class_<rtb_t>(m, "RtBuffer")
+      .def(
+          "__repr__",
+          [](const rtb_t& rtb) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("RtBuffer(%p)", rtb.get());
+            return fxs.c_str();
+          })
+      .def_property_readonly("texture", [](rtb_t& rtb) -> tex_t { return tex_t(rtb->texture()); });
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<rtg_t>(m, "RtGroup")
       .def("resize", [](rtg_t& rtg, int w, int h) { rtg.get()->Resize(w, h); })
-      .def("__repr__", [](const rtg_t& rtg) -> std::string {
-        fxstring<256> fxs;
-        fxs.format("RtGroup(%p)", rtg.get());
-        return fxs.c_str();
-      });
+      .def(
+          "__repr__",
+          [](const rtg_t& rtg) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("RtGroup(%p)", rtg.get());
+            return fxs.c_str();
+          })
+      .def("buffer", [](const rtg_t& rtg, int irtb) -> rtb_t { return rtg->GetMrt(irtb); })
+      .def("texture", [](const rtg_t& rtg, int irtb) -> tex_t { return rtg->GetMrt(irtb)->texture(); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<CaptureBuffer>(m, "CaptureBuffer", pybind11::buffer_protocol())
       .def(py::init<>())
@@ -318,23 +363,34 @@ PYBIND11_MODULE(orklev2, m) {
             pybind11::format_descriptor<unsigned char>::format(),
             1,                 // Number of dimensions
             {capbuf.length()}, // Buffer dimensions
-            {0});              // Strides (in bytes) for each index
+            {1});              // Strides (in bytes) for each index
       })
       .def_property_readonly("length", [](CaptureBuffer& capbuf) -> int { return int(capbuf.length()); })
       .def_property_readonly("width", [](CaptureBuffer& capbuf) -> int { return int(capbuf.width()); })
       .def_property_readonly("height", [](CaptureBuffer& capbuf) -> int { return int(capbuf.height()); })
       .def_property_readonly("format", [](CaptureBuffer& capbuf) -> int { return int(capbuf.format()); })
+      .def("__len__", [](const CaptureBuffer& capbuf) -> int { return int(capbuf.length()); })
       .def("__repr__", [](const CaptureBuffer& capbuf) -> std::string {
         fxstring<256> fxs;
         fxs.format("CaptureBuffer(%p)", &capbuf);
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<rcfd_ptr_t>(m, "RenderContextFrameData").def("__repr__", [](const rcfd_ptr_t& rcfd) -> std::string {
-    fxstring<256> fxs;
-    fxs.format("RCFD(%p)", rcfd.get());
-    return fxs.c_str();
-  });
+  py::class_<tex_t>(m, "Texture")
+      .def(
+          "__repr__",
+          [](const tex_t& tex) -> std::string {
+            fxstring<256> fxs;
+            fxs.format(
+                "Texture(%p:\"%s\") w<%d> h<%d> d<%d>", tex.get(), tex->_debugName.c_str(), tex->_width, tex->_height, tex->_depth);
+            return fxs.c_str();
+          })
+      .def_static("load", [](std::string path) -> tex_t { return Texture::LoadUnManaged(path); });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<RenderContextFrameData>(m, "RenderContextFrameData").def(py::init([](ctx_t& ctx) { //
+    auto rcfd = std::unique_ptr<RenderContextFrameData>(new RenderContextFrameData(ctx.get()));
+    return rcfd;
+  }));
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<PixelFetchContext>(m, "PixelFetchContext")
       .def(py::init<>())
@@ -369,8 +425,237 @@ PYBIND11_MODULE(orklev2, m) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<vtxa_t>(m, "VtxV12N12B12T8C4")
       .def(py::init<fvec3, fvec3, fvec3, fvec2, uint32_t>())
-      .def_static("staticBuffer", [](size_t size) -> vb_static_vtxa_t { return vb_static_vtxa_t(size, 0, EPRIM_NONE); });
+      .def_static(
+          "staticBuffer",
+          [](size_t size) -> vb_static_vtxa_t //
+          { return vb_static_vtxa_t(size, 0, EPRIM_NONE); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<vb_static_vtxa_t, VertexBufferBase>(m, "VtxV12N12B12T8C4_StaticBuffer");
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<FontMan>(m, "FontManager")
+      .def_static("gpuInit", [](ctx_t& ctx) { FontMan::gpuInit(ctx.get()); })
+      .def_static(
+          "beginTextBlock",
+          [](ctx_t& ctx, const std::string& fontid, fvec4 color, int uiw, int uih, int maxchars) {
+            ctx->MTXI()->PushMMatrix(fmtx4());
+            ctx->MTXI()->PushUIMatrix(uiw, uih);
+            ctx->PushModColor(color);
+            FontMan::PushFont(fontid);
+            FontMan::BeginTextBlock(ctx.get(), maxchars);
+          })
+      .def_static(
+          "endTextBlock",
+          [](ctx_t& ctx) {
+            FontMan::EndTextBlock(ctx.get());
+            FontMan::PopFont();
+            ctx->PopModColor();
+            ctx->MTXI()->PopMMatrix();
+            ctx->MTXI()->PopUIMatrix();
+          })
+      .def_static("draw", [](ctx_t& ctx, int x, int y, std::string text) { FontMan::DrawText(ctx.get(), x, y, text.c_str()); });
+  /////////////////////////////////////////////////////////////////////////////////
+  /*py::class_<font_t>(m, "Font")
+      .def(
+          "__repr__",
+          [](const font_t& font) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("Font(\"%s\")", font->msFontName.c_str());
+            return fxs.c_str();
+          })
+      .def("bind", [](const font_t& font) { return FontMan::GetRef().bindFont(font.get()); })
+      .def_property_readonly("filename", [](const font_t& font) -> std::string { return font->msFileName; })
+      .def_property_readonly("fontname", [](const font_t& font) -> std::string { return font->msFontName; })
+      .def_property_readonly("charWidth", [](const font_t& font) -> int { return font->mFontDesc.miCharWidth; })
+      .def_property_readonly("charHeight", [](const font_t& font) -> int { return font->mFontDesc.miCharHeight; })
+      .def_property_readonly("cellWidth", [](const font_t& font) -> int { return font->mFontDesc.miCellWidth; })
+      .def_property_readonly("cellHeight", [](const font_t& font) -> int { return font->mFontDesc.miCellHeight; })
+      .def_property_readonly("advanceWidth", [](const font_t& font) -> int { return font->mFontDesc.miAdvanceWidth; })
+      .def_property_readonly("advanceHeight", [](const font_t& font) -> int { return font->mFontDesc.miAdvanceHeight; });
+*/
+  py::class_<drwev_t>(m, "DrawEvent").def_property_readonly("context", [](drwev_t& event) -> ctx_t { //
+    return ctx_t(event->GetTarget());
+  });
+  py::class_<OrkEzQtApp, std::shared_ptr<OrkEzQtApp>>(m, "OrkEzQtApp")
+      .def_static(
+          "create",
+          [](py::function gpuinitfn, py::function drawfn) { //
+            int* argc  = new int(1);
+            auto argv  = (char**)malloc(sizeof(char**));
+            argv[0]    = (char*)malloc(1);
+            argv[0][0] = 0;
+            auto rval  = OrkEzQtApp::create(*argc, argv);
+
+            rval->_vars.makeValueForKey<py::function>("gpuinitfn") = gpuinitfn;
+            rval->_vars.makeValueForKey<py::function>("drawfn")    = drawfn;
+            drwev_t d_ev                                           = drwev_t(new ui::DrawEvent(nullptr));
+            rval->_vars.makeValueForKey<drwev_t>("drawev")         = d_ev;
+
+            rval->onGpuInit([=](Context* ctx) { //
+              auto pyfn = rval->_vars.typedValueForKey<py::function>("gpuinitfn");
+              pyfn.value()(ctx_t(ctx));
+            });
+            rval->onDraw([=](const ui::DrawEvent& drwev) { //
+              auto pyfn                = rval->_vars.typedValueForKey<py::function>("drawfn");
+              auto mydrev              = rval->_vars.typedValueForKey<drwev_t>("drawev");
+              mydrev.value()->mpTarget = drwev.GetTarget();
+              pyfn.value()(drwev_t(mydrev.value()));
+            });
+
+            return rval;
+          })
+      .def("exec", [](std::shared_ptr<OrkEzQtApp>& app) -> int { //
+        return app->exec();
+      });
+
+  /////////////////////////////////////////////////////////////////////////////////
+  auto meshutil = m.def_submodule("meshutil", "Mesh operations");
+  {
+    meshutil.def("triangulate", [](const MeshUtil::submesh& inpsubmesh, MeshUtil::submesh& outsubmesh) {
+      MeshUtil::submeshTriangulate(inpsubmesh, outsubmesh);
+    });
+    /////////////////////////////////////////////////////////////////////////////////
+    py::class_<MeshUtil::PrimitiveV12N12B12T8C4>(meshutil, "PrimitiveV12N12B12T8C4")
+        .def(py::init<>())
+        .def(py::init([](MeshUtil::submesh& submesh, ctx_t context) {
+          auto prim = std::unique_ptr<MeshUtil::PrimitiveV12N12B12T8C4>(new MeshUtil::PrimitiveV12N12B12T8C4);
+          prim->fromSubMesh(submesh, context.get());
+          return prim;
+        }))
+        .def(
+            "fromSubMesh",
+            [](MeshUtil::PrimitiveV12N12B12T8C4& prim, const MeshUtil::submesh& submesh, Context* context) {
+              prim.fromSubMesh(submesh, context);
+            })
+        .def("draw", [](MeshUtil::PrimitiveV12N12B12T8C4& prim, ctx_t context) { prim.draw(context.get()); });
+    /////////////////////////////////////////////////////////////////////////////////
+    py::class_<MeshUtil::submesh>(meshutil, "SubMesh")
+        .def(py::init<>())
+        .def("numPolys", [](const MeshUtil::submesh& submesh, int numsides = 0) -> int { return submesh.GetNumPolys(numsides); })
+        .def("numVertices", [](const MeshUtil::submesh& submesh) -> int { return submesh.mvpool.GetNumVertices(); })
+        .def(
+            "writeObj",
+            [](const MeshUtil::submesh& submesh, const std::string& outpath) { return submeshWriteObj(submesh, outpath); })
+        .def(
+            "addQuad",
+            [](MeshUtil::submesh& submesh,
+               fvec3 p0,
+               fvec3 p1,
+               fvec3 p2,
+               fvec3 p3,
+               fvec2 uv0,
+               fvec2 uv1,
+               fvec2 uv2,
+               fvec2 uv3,
+               fvec4 c) { return submesh.addQuad(p0, p1, p2, p3, uv0, uv1, uv2, uv3, c); })
+        .def(
+            "addQuad",
+            [](MeshUtil::submesh& submesh,
+               fvec3 p0,
+               fvec3 p1,
+               fvec3 p2,
+               fvec3 p3,
+               fvec3 n0,
+               fvec3 n1,
+               fvec3 n2,
+               fvec3 n3,
+               fvec2 uv0,
+               fvec2 uv1,
+               fvec2 uv2,
+               fvec2 uv3,
+               fvec4 c) { return submesh.addQuad(p0, p1, p2, p3, n0, n1, n2, n3, uv0, uv1, uv2, uv3, c); });
+
+    /////////////////////////////////////////////////////////////////////////////////
+    py::class_<MeshUtil::vertexpool>(meshutil, "VertexPool").def(py::init<>());
+    /////////////////////////////////////////////////////////////////////////////////
+    py::class_<MeshUtil::poly>(meshutil, "Poly").def(py::init<>());
+    /////////////////////////////////////////////////////////////////////////////////
+    py::class_<MeshUtil::edge>(meshutil, "Edge").def(py::init<>());
+    /////////////////////////////////////////////////////////////////////////////////
+  }
+  /////////////////////////////////////////////////////////////////////////////////
+  auto primitives = m.def_submodule("primitives", "BuiltIn Primitives");
+  {
+    /////////////////////////////////////////////////////////////////////////////////
+    py::class_<primitives::CubePrimitive>(primitives, "CubePrimitive")
+        .def(py::init<>())
+        .def_property(
+            "size",
+            [](const primitives::CubePrimitive& prim) -> float { return prim._size; },
+            [](primitives::CubePrimitive& prim, const float& value) { prim._size = value; })
+
+        .def_property(
+            "topColor",
+            [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorTop; },
+            [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorTop = value; })
+
+        .def_property(
+            "bottomColor",
+            [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorBottom; },
+            [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorBottom = value; })
+
+        .def_property(
+            "frontColor",
+            [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorFront; },
+            [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorFront = value; })
+
+        .def_property(
+            "backColor",
+            [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorBack; },
+            [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorBack = value; })
+
+        .def_property(
+            "leftColor",
+            [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorLeft; },
+            [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorLeft = value; })
+
+        .def_property(
+            "rightColor",
+            [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorRight; },
+            [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorRight = value; })
+
+        .def("gpuInit", [](primitives::CubePrimitive& prim, ctx_t& context) { prim.gpuInit(context.get()); })
+        .def("draw", [](primitives::CubePrimitive& prim, ctx_t& context) { prim.draw(context.get()); });
+    /////////////////////////////////////////////////////////////////////////////////
+    py::class_<primitives::FrustumPrimitive>(primitives, "FrustumPrimitive")
+        .def(py::init<>())
+        .def_property(
+            "frustum",
+            [](const primitives::FrustumPrimitive& prim) -> Frustum { return prim._frustum; },
+            [](primitives::FrustumPrimitive& prim, const Frustum& value) { prim._frustum = value; })
+
+        .def_property(
+            "topColor",
+            [](const primitives::FrustumPrimitive& prim) -> fvec4 { return prim._colorTop; },
+            [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorTop = value; })
+
+        .def_property(
+            "bottomColor",
+            [](const primitives::FrustumPrimitive& prim) -> fvec4 { return prim._colorBottom; },
+            [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorBottom = value; })
+
+        .def_property(
+            "frontColor",
+            [](const primitives::FrustumPrimitive& prim) -> fvec4 { return prim._colorFront; },
+            [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorFront = value; })
+
+        .def_property(
+            "backColor",
+            [](const primitives::FrustumPrimitive& prim) -> fvec4 { return prim._colorBack; },
+            [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorBack = value; })
+
+        .def_property(
+            "leftColor",
+            [](const primitives::FrustumPrimitive& prim) -> fvec4 { return prim._colorLeft; },
+            [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorLeft = value; })
+
+        .def_property(
+            "rightColor",
+            [](const primitives::FrustumPrimitive& prim) -> fvec4 { return prim._colorRight; },
+            [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorRight = value; })
+
+        .def("gpuInit", [](primitives::FrustumPrimitive& prim, ctx_t& context) { prim.gpuInit(context.get()); })
+        .def("draw", [](primitives::FrustumPrimitive& prim, ctx_t& context) { prim.draw(context.get()); });
+    /////////////////////////////////////////////////////////////////////////////////
+  }
   /////////////////////////////////////////////////////////////////////////////////
 };

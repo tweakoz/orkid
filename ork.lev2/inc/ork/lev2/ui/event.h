@@ -153,7 +153,6 @@ struct DrawEvent {
     return mpTarget;
   }
 
-private:
   lev2::Context* mpTarget;
 };
 

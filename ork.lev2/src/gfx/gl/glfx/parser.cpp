@@ -44,7 +44,7 @@ ContainerNode::ContainerNode(const AssetPath& pth, const Scanner& s)
     : _path(pth)
     , _scanner(s) {
 
-  std::string typenames = "mat2 mat3 mat4 vec2 vec3 vec4 "
+  std::string typenames = "mat2 mat3 mat4 vec2 vec3 vec4 uvec2 uvec3 uvec4 "
                           "ivec2 ivec3 ivec4 "
                           "float double half uint int "
                           "void bool "
@@ -71,7 +71,8 @@ ContainerNode::ContainerNode(const AssetPath& pth, const Scanner& s)
                           "uimage1D uimage2D uimage3D "
                           "uimageCube uimage2DRect "
 #endif
-                          "sampler2D sampler3D sampler2DShadow";
+                          "sampler2D sampler3D sampler2DShadow "
+                          "usampler2D usampler3D";
 
   for (auto item : SplitString(typenames, ' '))
     _validTypeNames.insert(item);
@@ -413,6 +414,27 @@ Container* LoadFxFromFile(const AssetPath& pth) {
   ///////////////////////////////////
   GlSlFxParser parser(pth.c_str(), scanner);
   auto pcont = new Container(pth.c_str());
+  shaderbuilder::BackEnd backend(parser._rootNode, pcont);
+  bool ok = backend.generate();
+  assert(ok);
+  ///////////////////////////////////
+  return pcont;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+Container* LoadFxFromText(const std::string& name, const std::string& shadertext) {
+  Scanner scanner(block_regex);
+  ///////////////////////////////////
+  scanner.ifilelen = shadertext.length();
+  OrkAssert(scanner.ifilelen < scanner.kmaxfxblen);
+  memcpy(scanner.fxbuffer, shadertext.c_str(), scanner.ifilelen);
+  scanner.fxbuffer[scanner.ifilelen] = 0;
+  ///////////////////////////////////
+  scanner.Scan();
+  ///////////////////////////////////
+  GlSlFxParser parser(name, scanner);
+  auto pcont = new Container(name);
   shaderbuilder::BackEnd backend(parser._rootNode, pcont);
   bool ok = backend.generate();
   assert(ok);

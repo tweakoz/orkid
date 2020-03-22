@@ -310,6 +310,8 @@ void OpsNode::DoDraw(lev2::Context* pTARG) // virtual
 
   const int ops_size = ((miW - inumops * 3) / inumops);
 
+  int icentery = get_text_center_y();
+
   GetSkin()->DrawOutlineBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_DEFAULT_OUTLINE);
   for (int i = 0; i < int(mOps.size()); i++) {
     int ix = miX + ops_ioff + (i * ops_size + 2);
@@ -326,7 +328,7 @@ void OpsNode::DoDraw(lev2::Context* pTARG) // virtual
         GetSkin()->DrawBgBox(this, ix, miY + 2, (ops_size - ops_ioff), miH - 4, GedSkin::ESTYLE_BACKGROUND_OPS);
       else
         GetSkin()->DrawBgBox(this, ix, miY + 2, (ops_size - ops_ioff), miH - 4, GedSkin::ESTYLE_DEFAULT_OUTLINE);
-      GetSkin()->DrawText(this, ix + 6, miY + 4, mOps[i].first.c_str());
+      GetSkin()->DrawText(this, ix + 6, icentery, mOps[i].first.c_str());
 
     } else if (is_iopsdeleg) {
       auto pclass = mOps[i].second.Get<ork::object::ObjectClass*>();
@@ -347,7 +349,7 @@ void OpsNode::DoDraw(lev2::Context* pTARG) // virtual
         GetSkin()->DrawBgBox(this, ix + 1, miY + 3, inw, miH - 6, GedSkin::ESTYLE_BACKGROUND_2);
 
         std::string Label = CreateFormattedString("%s(%d)", mOps[i].first.c_str(), int(fprogress * 100.0f));
-        GetSkin()->DrawText(this, ix, miY + 4, Label.c_str());
+        GetSkin()->DrawText(this, ix, icentery, Label.c_str());
 
         float fspinner = float(ispinner) / 100.0f;
         float fxo      = sinf(fspinner) * float(miH / 3);
@@ -365,7 +367,7 @@ void OpsNode::DoDraw(lev2::Context* pTARG) // virtual
 
         ispinner++;
       } else {
-        GetSkin()->DrawText(this, ix + 6, miY + 4, mOps[i].first.c_str());
+        GetSkin()->DrawText(this, ix + 6, icentery, mOps[i].first.c_str());
       }
     }
   }
@@ -465,6 +467,7 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
   /////////////////
   // drop down box
   /////////////////
+  int icentery = get_text_center_y();
 
   int ioff = koff;
   int idim = get_charh();
@@ -491,7 +494,7 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
   int ihx = il + (iw / 2);
 
   GetSkin()->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);
-  GetSkin()->DrawText(this, labx, miY + 2, _propname.c_str());
+  GetSkin()->DrawText(this, labx, icentery, _propname.c_str());
   GetSkin()->DrawBgBox(this, miX, miY, miW, get_charh(), GedSkin::ESTYLE_BACKGROUND_GROUP_LABEL);
 
   ////////////////////////////////
@@ -502,7 +505,7 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
     std::string arrs;
     for (int i = 0; i < (stack_depth - 1); i++)
       arrs += "<";
-    GetSkin()->DrawText(this, il - idim - ((stack_depth - 1) * get_charw()), miY + 4, arrs.c_str());
+    GetSkin()->DrawText(this, il - idim - ((stack_depth - 1) * get_charw()), icentery, arrs.c_str());
   }
 
   ////////////////////////////////

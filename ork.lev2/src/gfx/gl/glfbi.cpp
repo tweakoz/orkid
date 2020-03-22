@@ -228,7 +228,7 @@ void GlFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
   iW = OldStlSchoolClampToRange(iW, 24, 16384);
   iH = OldStlSchoolClampToRange(iH, 24, 16384);
 
-  // printf( "setScissor<%d %d %d %d>\n", iX, iY, iW, iH );
+  // printf("setScissor<%d %d %d %d>\n", iX, iY, iW, iH);
   GL_ERRORCHECK();
 
   glScissor(iX, iY, iW, iH);
@@ -252,7 +252,7 @@ void GlFrameBufferInterface::_setViewport(int iX, int iY, int iW, int iH) {
   iW = OldStlSchoolClampToRange(iW, 32, 16384);
   iH = OldStlSchoolClampToRange(iH, 32, 16384);
 
-  // printf( "setViewport<%d %d %d %d>\n", iX, iY, iW, iH );
+  // printf("setViewport<%d %d %d %d>\n", iX, iY, iW, iH);
 
   auto framedata = mTargetGL.topRenderContextFrameData();
   bool stereo    = (framedata and framedata->isStereo());
@@ -278,7 +278,7 @@ void GlFrameBufferInterface::Clear(const fcolor4& color, float fdepth) {
   else
     glClearColor(color.GetX(), color.GetY(), color.GetZ(), color.GetW());
 
-  // printf( "GlFrameBufferInterface::ClearViewport()\n" );
+  // printf("GlFrameBufferInterface::ClearViewport() color<%g %g %g %g>\n", color.x, color.y, color.z, color.w);
   GL_ERRORCHECK();
   glClearDepth(fdepth);
   GL_ERRORCHECK();
@@ -373,48 +373,67 @@ void GlFrameBufferInterface::Capture(const RtGroup& rtg, int irt, const file::Pa
 
 bool GlFrameBufferInterface::captureAsFormat(const RtGroup& rtg, int irt, CaptureBuffer* capbuf, EBufferFormat destfmt) {
 
-  auto FboObj = (GlFboObject*)rtg.GetInternalHandle();
-
-  if (nullptr == FboObj)
+  if (nullptr == capbuf) {
+    OrkAssert(false);
     return false;
-  if (nullptr == capbuf)
-    return false;
-  if (0 == FboObj->mFBOMaster)
-    return false;
-
-  GL_ERRORCHECK();
-  glBindFramebuffer(GL_FRAMEBUFFER, FboObj->mFBOMaster);
-  GL_ERRORCHECK();
+  }
 
   OrkAssert(irt < rtg.GetNumTargets());
-  auto rtb        = rtg.mMrt[irt];
-  auto rtb_format = destfmt;
+  auto rtb    = rtg.mMrt[irt];
+  auto FboObj = (GlFboObject*)rtg.GetInternalHandle();
+
+  /*if (0 == FboObj) {
+    FboObj = (GlFboObject*)mTargetGL._defaultRTG->GetInternalHandle();
+    OrkAssert(irt < mTargetGL._defaultRTG->GetNumTargets());
+    rtb = mTargetGL._defaultRTG->mMrt[irt];
+  }*/
 
   GLint readbuffer = 0;
   GL_ERRORCHECK();
   glGetIntegerv(GL_READ_BUFFER, &readbuffer);
   GL_ERRORCHECK();
 
-  // glDepthMask(GL_TRUE); ??? wtf ???
-  GL_ERRORCHECK();
-  glReadBuffer(GL_COLOR_ATTACHMENT0 + irt);
-  GL_ERRORCHECK();
+  if (FboObj) {
 
-  bool fmtmatch = (capbuf->format() == rtb_format);
+    if (0 == FboObj->mFBOMaster) {
+      OrkAssert(false);
+      return false;
+    }
+
+    GL_ERRORCHECK();
+    glBindFramebuffer(GL_FRAMEBUFFER, FboObj->mFBOMaster);
+    GL_ERRORCHECK();
+    glReadBuffer(GL_COLOR_ATTACHMENT0 + irt);
+    GL_ERRORCHECK();
+
+  } else {
+    OrkAssert(false);
+    GL_ERRORCHECK();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    GL_ERRORCHECK();
+    glReadBuffer(GL_BACK);
+    GL_ERRORCHECK();
+  }
+
+  // glDepthMask(GL_TRUE); ??? wtf ???
+
+  bool fmtmatch = (capbuf->format() == destfmt);
   bool sizmatch = (capbuf->width() == rtb->miW);
   sizmatch &= (capbuf->height() == rtb->miH);
   int w = rtb->miW;
   int h = rtb->miH;
 
+  // printf("captureAsFormat w<%d> h<%d>\n", w, h);
+
   if (not(fmtmatch and sizmatch))
-    capbuf->setFormatAndSize(rtb_format, w, h);
+    capbuf->setFormatAndSize(destfmt, w, h);
 
   // glPixelStore()
 
   GL_ERRORCHECK();
   static size_t yo       = 0;
   constexpr float inv256 = 1.0f / 255.0f;
-  switch (rtb_format) {
+  switch (destfmt) {
     case EBUFFMT_NV12: {
       size_t rgbasize = w * h * 4;
       if (capbuf->_tempbuffer.size() != rgbasize) {
@@ -483,9 +502,10 @@ bool GlFrameBufferInterface::captureAsFormat(const RtGroup& rtg, int irt, Captur
       }
       break;
     }
-    case EBUFFMT_RGBA8:
+    case EBUFFMT_RGBA8: {
       glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_data);
       break;
+    }
     case EBUFFMT_RGBA16F:
       glReadPixels(0, 0, w, h, GL_RGBA, GL_HALF_FLOAT, capbuf->_data);
       break;
@@ -516,75 +536,10 @@ bool GlFrameBufferInterface::captureAsFormat(const RtGroup& rtg, int irt, Captur
 ///////////////////////////////////////////////////////////////////////////////
 
 bool GlFrameBufferInterface::capture(const RtGroup& rtg, int irt, CaptureBuffer* capbuf) {
-
-  GlFboObject* FboObj = (GlFboObject*)rtg.GetInternalHandle();
-
-  if (nullptr == FboObj)
-    return false;
-  if (nullptr == capbuf)
-    return false;
-  if (0 == FboObj->mFBOMaster)
-    return false;
-
-  GL_ERRORCHECK();
-  glBindFramebuffer(GL_FRAMEBUFFER, FboObj->mFBOMaster);
-  GL_ERRORCHECK();
-
   OrkAssert(irt < rtg.GetNumTargets());
   auto rtb        = rtg.mMrt[irt];
   auto rtb_format = rtb->format();
-
-  GLint readbuffer = 0;
-  GL_ERRORCHECK();
-  glGetIntegerv(GL_READ_BUFFER, &readbuffer);
-  GL_ERRORCHECK();
-
-  // glDepthMask(GL_TRUE); ??? wtf ???
-  GL_ERRORCHECK();
-  glReadBuffer(GL_COLOR_ATTACHMENT0 + irt);
-  GL_ERRORCHECK();
-
-  bool fmtmatch = (capbuf->format() == rtb_format);
-  bool sizmatch = (capbuf->width() == rtb->miW);
-  sizmatch &= (capbuf->height() == rtb->miH);
-  int w = rtb->miW;
-  int h = rtb->miH;
-
-  if (not(fmtmatch and sizmatch))
-    capbuf->setFormatAndSize(rtb_format, w, h);
-
-  // glPixelStore()
-
-  GL_ERRORCHECK();
-  switch (rtb_format) {
-    case EBUFFMT_RGBA8:
-      glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_data);
-      break;
-    case EBUFFMT_RGBA16F:
-      glReadPixels(0, 0, w, h, GL_RGBA, GL_HALF_FLOAT, capbuf->_data);
-      break;
-    case EBUFFMT_RGBA32F:
-      glReadPixels(0, 0, w, h, GL_RGBA, GL_FLOAT, capbuf->_data);
-      break;
-    case EBUFFMT_R32F:
-      glReadPixels(0, 0, w, h, GL_RED, GL_FLOAT, capbuf->_data);
-      break;
-    case EBUFFMT_R32UI:
-      glReadPixels(0, 0, w, h, GL_RED_INTEGER, GL_UNSIGNED_INT, capbuf->_data);
-      break;
-    case EBUFFMT_RG32F:
-      glReadPixels(0, 0, w, h, GL_RG, GL_FLOAT, capbuf->_data);
-      break;
-    default:
-      OrkAssert(false);
-      break;
-  }
-  GL_ERRORCHECK();
-
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  //  glReadBuffer( readbuffer ); // restore read buffer
-  GL_ERRORCHECK();
-  return true;
+  return captureAsFormat(rtg, irt, capbuf, rtb_format);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

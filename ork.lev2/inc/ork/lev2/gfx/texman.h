@@ -18,10 +18,18 @@
 
 namespace ork { namespace lev2 {
 
-void invoke_nvcompress(std::string inpath, std::string outpath, std::string outfmt);
+void invoke_nvcompress(std::string inpath, std::string outpath, std::string other_args);
 
 class Context;
 class TextureAsset;
+
+enum ETextureUsage {
+  ETEXUSAGE_COLOR = 0,
+  ETEXUSAGE_COLOR_NC,
+  ETEXUSAGE_GREYSCALE,
+  ETEXUSAGE_NORMAL,
+  ETEXUSAGE_DATA,
+};
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -117,6 +125,8 @@ struct MipChainLevel {
   size_t _length = 0;
   void* _data    = nullptr;
 };
+
+//////////////////////////////////////////////////////////////////////////
 
 struct MipChain {
   MipChain(int w, int h, EBufferFormat fmt, ETextureType typ);

@@ -1,6 +1,7 @@
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/lev2/gfx/dbgfontman.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::EzApp, "Lev2EzApp");
 using namespace std::string_literals;
@@ -57,6 +58,7 @@ struct EzViewport : public ui::Viewport {
   void DoDraw(ui::DrawEvent& drwev) final {
 
     if (_mainwin->_onGpuInit and _mainwin->_dogpuinit) {
+      FontMan::gpuInit(drwev.GetTarget());
       _mainwin->_onGpuInit(drwev.GetTarget());
       _mainwin->_dogpuinit = false;
     }

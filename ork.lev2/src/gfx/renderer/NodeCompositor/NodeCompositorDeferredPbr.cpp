@@ -180,9 +180,11 @@ struct PbrNodeImpl {
 
     /////////////////////////
 
-    _context._lightingmtl.bindParamCTex(_context._parMapGBufAlbAo, _context._rtgGbuffer->GetMrt(0)->texture());
-    _context._lightingmtl.bindParamCTex(_context._parMapGBufNrmL, _context._rtgGbuffer->GetMrt(1)->texture());
-    _context._lightingmtl.bindParamCTex(_context._parMapGBufRufMtlAlpha, _context._rtgGbuffer->GetMrt(2)->texture());
+    _context._lightingmtl.bindParamCTex(_context._parMapGBuf, _context._rtgGbuffer->GetMrt(0)->texture());
+
+    //_context._lightingmtl.bindParamCTex(_context._parMapGBufAlbAo, _context._rtgGbuffer->GetMrt(0)->texture());
+    //_context._lightingmtl.bindParamCTex(_context._parMapGBufNrmL, _context._rtgGbuffer->GetMrt(1)->texture());
+    //_context._lightingmtl.bindParamCTex(_context._parMapGBufRufMtlAlpha, _context._rtgGbuffer->GetMrt(2)->texture());
     _context._lightingmtl.bindParamCTex(_context._parMapDepth, _context._rtgGbuffer->_depthTexture);
 
     _context._lightingmtl.bindParamCTex(_context._parMapSpecularEnv, node->envSpecularTexture());
@@ -213,7 +215,7 @@ struct PbrNodeImpl {
     _context._lightingmtl._rasterstate.SetAlphaTest(EALPHATEST_OFF);
     _context._lightingmtl.commit();
     RSI->BindRasterState(_context._lightingmtl._rasterstate);
-    DWI->quad2DEMLTiled(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0), 64);
+    DWI->quad2DEMLTiled(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0), 16);
     _context._lightingmtl.end(RCFD);
     targ->debugPopGroup(); // BaseLighting
 

@@ -136,15 +136,13 @@ void Interface::BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Te
   Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
   const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
-  // printf( "Bind1 Tex<%p> par<%s> pinst<%p>\n",
-  // pTex,hpar->mParameterName.c_str(), pinst );
+  // printf("Bind1 Tex<%p> puni<%p> par<%s> pinst<%p>\n", pTex, puni, hpar->_name.c_str(), pinst);
   if (pinst) {
     int iloc = pinst->mLocation;
 
     const char* teknam = container->mActiveTechnique->_name.c_str();
 
-    // printf( "Bind2 Tex<%p> par<%s> iloc<%d> teknam<%s>\n",
-    // pTex,hpar->mParameterName.c_str(), iloc, teknam );
+    // printf("Bind2 Tex<%p> par<%s> iloc<%d> teknam<%s>\n", pTex, hpar->_name.c_str(), iloc, teknam);
     if (iloc >= 0) {
       const char* psem = puni->_semantic.c_str();
       const char* pnam = puni->_name.c_str();
@@ -158,9 +156,13 @@ void Interface::BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Te
 
         GLenum textgt = pinst->mPrivData.Get<GLenum>();
 
-        // printf( "Bind3 ISDEPTH<%d> tex<%p> texobj<%d> itexunit<%d>
-        // textgt<%d>\n", int(pTex->_isDepthTexture), pTex, texID, itexunit,
-        // int(textgt) );
+        /*printf(
+            "Bind3 ISDEPTH<%d> tex<%p> texobj<%d> itexunit<%d> textgt<% d>\n ",
+            int(pTex->_isDepthTexture),
+            pTex,
+            texID,
+            itexunit,
+            int(textgt));*/
 
         GL_ERRORCHECK();
         glActiveTexture(GL_TEXTURE0 + itexunit);

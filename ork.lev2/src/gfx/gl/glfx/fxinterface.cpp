@@ -66,6 +66,27 @@ bool Interface::LoadFxShader(const AssetPath& pth, FxShader* pfxshader) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+Container* LoadFxFromText(const std::string& name, const std::string& shadertext);
+
+FxShader* Interface::shaderFromShaderText(const std::string& name, const std::string& shadertext) {
+  FxShader* pfxshader = new FxShader;
+  pfxshader->SetInternalHandle(0);
+  Container* pcontainer = LoadFxFromText(name, shadertext);
+  OrkAssert(pcontainer != nullptr);
+  pfxshader->SetInternalHandle((void*)pcontainer);
+  bool bok = pcontainer->IsValid();
+
+  pcontainer->mFxShader = pfxshader;
+
+  if (bok) {
+    BindContainerToAbstract(pcontainer, pfxshader);
+  }
+  GL_ERRORCHECK();
+
+  return pfxshader;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void Interface::BindContainerToAbstract(Container* pcont, FxShader* fxh) {
   for (const auto& ittek : pcont->_techniqueMap) {

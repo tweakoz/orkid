@@ -81,10 +81,6 @@ public:
   }
   void QueChar(Context* pTarg, VtxWriter<SVtxV12C4T16>& vw, int ix, int iy, int iu, int iv, U32 ucolor);
 
-  /////////////////////////////////////////////
-private:
-  /////////////////////////////////////////////
-
   std::string msFileName;
   std::string msFontName;
   GfxMaterial* mpMaterial;
@@ -93,17 +89,40 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class FontMan : public NoRttiSingleton<FontMan> {
-  /////////////////////////////////////////////
-public: //
+struct FontMan { //: public NoRttiSingleton<FontMan> {
   /////////////////////////////////////////////
 
-  FontMan();
+  static FontMan* instance();
+  static FontMan& GetRef();
+
   ~FontMan();
 
-  static void InitFonts(Context* pTARG);
+  //////////////////////////////////////////////////////
 
-  static void AddFont(Context* pTARG, const FontDesc& fdesc);
+  void _addFont(Context* pTARG, const FontDesc& fdesc);
+  void _gpuInit(Context* pTARG);
+  void _bindFont(Font* pFont) {
+    OrkAssert(pFont);
+    mpCurrentFont = pFont;
+  }
+  Font* _pushFont(const std::string& name) {
+    Font* pFont = OldStlSchoolFindValFromKey(mFontMap, name, (Font*)nullptr);
+    OrkAssert(pFont);
+    mFontStack.push(mpCurrentFont);
+    mpCurrentFont = pFont;
+    return pFont;
+  }
+  static constexpr size_t KFIXEDSTRINGLEN = 1024;
+  using fixedstring_t                     = FixedString<KFIXEDSTRINGLEN>;
+
+  void _beginTextBlock(Context* pTARG, int imaxcharcount = 0);
+  void _endTextBlock(Context* pTARG);
+  void _drawText(Context* pTARG, int iX, int iY, const fixedstring_t& text);
+
+  //////////////////////////////////////////////////////
+
+  static void gpuInit(Context* pTARG);
+
   static void DrawText(Context* pTARG, int iX, int iY, const char* pFmt, ...);
 
   static Font* GetCurrentFont(void) {
@@ -127,11 +146,7 @@ public: //
     GetRef().mpCurrentFont = pFont;
   }
   static Font* PushFont(const std::string& name) {
-    Font* pFont = OldStlSchoolFindValFromKey(GetRef().mFontMap, name, (Font*)0);
-    OrkAssert(pFont);
-    GetRef().mFontStack.push(GetRef().mpCurrentFont);
-    GetRef().mpCurrentFont = pFont;
-    return pFont;
+    return instance()->_pushFont(name);
   }
   static Font* PopFont() {
     GetRef().mFontStack.pop();
@@ -160,6 +175,12 @@ protected:
   Font* mpDefaultFont;
   VtxWriter<SVtxV12C4T16> mTextWriter;
   CharDesc mCharDescriptions[256];
+  bool _doGpuInit = true;
+
+  FontMan();
+
+private:
+  FontMan(const FontMan& other) = delete;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

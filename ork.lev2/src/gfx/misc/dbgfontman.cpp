@@ -16,61 +16,19 @@ namespace ork { namespace lev2 {
 
 const int Font::kMaxChars = 16384;
 
-///////////////////////////////////////////////////////////////////////////////
-
-int FontDesc::stringWidth(int numchars) const {
-  return miAdvanceWidth * numchars;
+FontMan* FontMan::instance() {
+  struct PublicFontMan : public FontMan {};
+  static std::shared_ptr<PublicFontMan> _instance = std::make_shared<PublicFontMan>();
+  // printf("FontMan::instance<%p>\n", _instance.get());
+  return _instance.get();
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-void FontMan::BeginTextBlock(Context* pTARG, int imaxcharcount) {
-#if !defined(_XBOX)
-  static bool bLoadFonts = true;
-  if (bLoadFonts) {
-    FontMan::InitFonts(pTARG);
-    bLoadFonts = false;
-  }
-#endif
-
-  if (0 == imaxcharcount)
-    imaxcharcount = 2048;
-  int inumv = imaxcharcount * 8;
-
-  VertexBufferBase& VB = pTARG->IMI()->RefTextVB();
-  OrkAssert(false == VB.IsLocked());
-  VtxWriter<SVtxV12C4T16>& vw = GetRef().mTextWriter;
-  new (&vw) VtxWriter<SVtxV12C4T16>;
-  vw.miWriteCounter = 0;
-  vw.miWriteBase    = 0;
-  int inuminvb      = VB.GetNumVertices();
-  int imaxinvb      = VB.GetMax();
-  // printf( "inuminvb<%d> imaxinvb<%d> inumv<%d>\n", inuminvb, imaxinvb, inumv );
-  if ((inuminvb + inumv) >= imaxinvb) {
-    VB.Reset();
-    VB.SetNumVertices(0);
-  }
-  vw.Lock(pTARG, &pTARG->IMI()->RefTextVB(), inumv);
+FontMan& FontMan::GetRef() {
+  return *instance();
 }
-
-void FontMan::EndTextBlock(Context* pTARG) {
-  FontMan& fm = GetRef();
-  OrkAssert(pTARG->IMI()->RefTextVB().IsLocked());
-  fm.mTextWriter.UnLock(pTARG);
-  pTARG->BindMaterial(fm.mpCurrentFont->GetMaterial());
-  bool bdraw = fm.mTextWriter.miWriteCounter != 0;
-  if (bdraw) {
-    pTARG->GBI()->DrawPrimitive(fm.mTextWriter, ork::lev2::EPRIM_TRIANGLES);
-  }
-  pTARG->BindMaterial(0);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 FontMan::FontMan()
-    : NoRttiSingleton<FontMan>()
-    , mpCurrentFont(0) {
-  InitFonts(ork::lev2::GfxEnv::GetRef().loadingContext());
+    : mpCurrentFont(nullptr) {
 
   for (int ich = 0; ich <= 255; ich++) {
     CharDesc& desc = mCharDescriptions[ich];
@@ -85,6 +43,57 @@ FontMan::~FontMan() {
   GetRef().mFontMap.clear();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+int FontDesc::stringWidth(int numchars) const {
+  return miAdvanceWidth * numchars;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void FontMan::_beginTextBlock(Context* pTARG, int imaxcharcount) {
+  _gpuInit(pTARG);
+
+  if (0 == imaxcharcount)
+    imaxcharcount = 2048;
+  int inumv = imaxcharcount * 8;
+
+  VertexBufferBase& VB = pTARG->IMI()->RefTextVB();
+  OrkAssert(false == VB.IsLocked());
+  VtxWriter<SVtxV12C4T16>& vw = mTextWriter;
+  new (&vw) VtxWriter<SVtxV12C4T16>;
+  vw.miWriteCounter = 0;
+  vw.miWriteBase    = 0;
+  int inuminvb      = VB.GetNumVertices();
+  int imaxinvb      = VB.GetMax();
+  // printf( "inuminvb<%d> imaxinvb<%d> inumv<%d>\n", inuminvb, imaxinvb, inumv );
+  if ((inuminvb + inumv) >= imaxinvb) {
+    VB.Reset();
+    VB.SetNumVertices(0);
+  }
+  vw.Lock(pTARG, &pTARG->IMI()->RefTextVB(), inumv);
+}
+void FontMan::_endTextBlock(Context* pTARG) {
+  OrkAssert(pTARG->IMI()->RefTextVB().IsLocked());
+  mTextWriter.UnLock(pTARG);
+  pTARG->BindMaterial(mpCurrentFont->GetMaterial());
+  bool bdraw = mTextWriter.miWriteCounter != 0;
+  if (bdraw) {
+    pTARG->GBI()->DrawPrimitive(mTextWriter, ork::lev2::EPRIM_TRIANGLES);
+  }
+  pTARG->BindMaterial(0);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void FontMan::BeginTextBlock(Context* pTARG, int imaxcharcount) {
+  instance()->_beginTextBlock(pTARG, imaxcharcount);
+}
+
+void FontMan::EndTextBlock(Context* pTARG) {
+  instance()->_endTextBlock(pTARG);
+}
+
 // Inconsolata font from http://www.levien.com/type/myfonts/inconsolata.html
 // font textures built with F2IBuilder http://sourceforge.net/projects/f2ibuilder/
 //  set texture size to 512
@@ -94,7 +103,11 @@ FontMan::~FontMan() {
 //  a 'cell' is one of the 256(16x16) tiles in the texture,
 //   if the texture size is 512x512, then a single cell will be 32x32
 
-void FontMan::InitFonts(Context* pTARG) {
+void FontMan::gpuInit(Context* pTARG) {
+  instance()->_gpuInit(pTARG);
+}
+
+void FontMan::_gpuInit(Context* pTARG) {
   FontDesc Inconsolata12;
   Inconsolata12.mFontName       = "i12";
   Inconsolata12.mFontFile       = "lev2://textures/Inconsolata12";
@@ -133,11 +146,11 @@ void FontMan::InitFonts(Context* pTARG) {
   Inconsolata14.miCellHeight    = (512 / 16);
   Inconsolata14.miCharWidth     = 14;
   Inconsolata14.miCharHeight    = 24;
-  Inconsolata14.miCharOffsetX   = 10;
+  Inconsolata14.miCharOffsetX   = 12;
   Inconsolata14.miCharOffsetY   = 8;
   Inconsolata14.miYShift        = -1;
   Inconsolata14.miAdvanceWidth  = 7;
-  Inconsolata14.miAdvanceHeight = 16;
+  Inconsolata14.miAdvanceHeight = 12;
 
   FontDesc Inconsolata16;
   Inconsolata16.mFontName       = "i16";
@@ -148,11 +161,11 @@ void FontMan::InitFonts(Context* pTARG) {
   Inconsolata16.miCellHeight    = (512 / 16);
   Inconsolata16.miCharWidth     = 16;
   Inconsolata16.miCharHeight    = 16;
-  Inconsolata16.miCharOffsetX   = 9;
+  Inconsolata16.miCharOffsetX   = 11;
   Inconsolata16.miCharOffsetY   = 11;
   Inconsolata16.miYShift        = 1;
-  Inconsolata16.miAdvanceWidth  = 9;
-  Inconsolata16.miAdvanceHeight = 18;
+  Inconsolata16.miAdvanceWidth  = 8;
+  Inconsolata16.miAdvanceHeight = 12;
 
   FontDesc Inconsolata24;
   Inconsolata24.mFontName       = "i24";
@@ -162,12 +175,42 @@ void FontMan::InitFonts(Context* pTARG) {
   Inconsolata24.miCellWidth     = (512 / 16);
   Inconsolata24.miCellHeight    = (512 / 16);
   Inconsolata24.miCharWidth     = 24;
-  Inconsolata24.miCharHeight    = 22;
-  Inconsolata24.miCharOffsetX   = 6;
-  Inconsolata24.miCharOffsetY   = 6;
-  Inconsolata24.miYShift        = 1;
+  Inconsolata24.miCharHeight    = 24;
+  Inconsolata24.miCharOffsetX   = 9;
+  Inconsolata24.miCharOffsetY   = 0;
+  Inconsolata24.miYShift        = -5;
   Inconsolata24.miAdvanceWidth  = 11;
-  Inconsolata24.miAdvanceHeight = 26;
+  Inconsolata24.miAdvanceHeight = 20;
+
+  FontDesc Inconsolata32;
+  Inconsolata32.mFontName       = "i32";
+  Inconsolata32.mFontFile       = "lev2://textures/Inconsolata32";
+  Inconsolata32.miTexWidth      = 800;
+  Inconsolata32.miTexHeight     = 800;
+  Inconsolata32.miCellWidth     = (800 / 16);
+  Inconsolata32.miCellHeight    = (800 / 16);
+  Inconsolata32.miCharWidth     = 32;
+  Inconsolata32.miCharHeight    = 32;
+  Inconsolata32.miCharOffsetX   = 0;
+  Inconsolata32.miCharOffsetY   = 0;
+  Inconsolata32.miYShift        = -4;
+  Inconsolata32.miAdvanceWidth  = 16;
+  Inconsolata32.miAdvanceHeight = 24;
+
+  FontDesc Inconsolata48;
+  Inconsolata48.mFontName       = "i48";
+  Inconsolata48.mFontFile       = "lev2://textures/Inconsolata48";
+  Inconsolata48.miTexWidth      = 800;
+  Inconsolata48.miTexHeight     = 800;
+  Inconsolata48.miCellWidth     = (800 / 16);
+  Inconsolata48.miCellHeight    = (800 / 16);
+  Inconsolata48.miCharWidth     = 48;
+  Inconsolata48.miCharHeight    = 48;
+  Inconsolata48.miCharOffsetX   = 0;
+  Inconsolata48.miCharOffsetY   = 0;
+  Inconsolata48.miYShift        = -7;
+  Inconsolata48.miAdvanceWidth  = 24;
+  Inconsolata48.miAdvanceHeight = 40;
 
   FontDesc Transponder24;
   Transponder24.mFontName       = "d24";
@@ -178,55 +221,53 @@ void FontMan::InitFonts(Context* pTARG) {
   Transponder24.miCellHeight    = (512 / 16);
   Transponder24.miCharWidth     = 24;
   Transponder24.miCharHeight    = 24;
-  Transponder24.miCharOffsetX   = 6;
-  Transponder24.miCharOffsetY   = 6;
+  Transponder24.miCharOffsetX   = 9;
+  Transponder24.miCharOffsetY   = 7;
   Transponder24.miAdvanceWidth  = 16;
   Transponder24.miAdvanceHeight = 24;
 
-  pTARG->makeCurrentContext();
-  pTARG->debugPushGroup("FontMan::InitFonts");
+  if (_doGpuInit) {
+    pTARG->makeCurrentContext();
+    pTARG->debugPushGroup("FontMan::InitFonts");
 
-  AddFont(pTARG, Inconsolata12);
-  AddFont(pTARG, Inconsolata13);
-  AddFont(pTARG, Inconsolata14);
-  AddFont(pTARG, Inconsolata16);
-  AddFont(pTARG, Inconsolata24);
-  AddFont(pTARG, Transponder24);
+    _addFont(pTARG, Inconsolata12);
+    _addFont(pTARG, Inconsolata13);
+    _addFont(pTARG, Inconsolata14);
+    _addFont(pTARG, Inconsolata16);
+    _addFont(pTARG, Inconsolata24);
+    _addFont(pTARG, Inconsolata32);
+    _addFont(pTARG, Inconsolata48);
+    _addFont(pTARG, Transponder24);
 
-  PushFont("i14");
-  pTARG->debugPopGroup();
+    _pushFont("i14");
+    pTARG->debugPopGroup();
+    _doGpuInit = false;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FontMan::AddFont(Context* pTARG, const FontDesc& fdesc) {
-  Font* pFontAlreadyLoaded = OldStlSchoolFindValFromKey(GetRef().mFontMap, fdesc.mFontName, (Font*)0);
+void FontMan::_addFont(Context* pTARG, const FontDesc& fdesc) {
+  Font* pFontAlreadyLoaded = OldStlSchoolFindValFromKey(mFontMap, fdesc.mFontName, (Font*)0);
 
   if (0 == pFontAlreadyLoaded) {
     Font* pNewFont = new Font(fdesc.mFontName, fdesc.mFontFile);
 
     pNewFont->LoadFromDisk(pTARG, fdesc);
 
-    GetRef().mFontVect.push_back(pNewFont);
-    OldStlSchoolMapInsert(GetRef().mFontMap, fdesc.mFontName, pNewFont);
-    GetRef().mpCurrentFont = pNewFont;
+    mFontVect.push_back(pNewFont);
+    OldStlSchoolMapInsert(mFontMap, fdesc.mFontName, pNewFont);
+    mpCurrentFont = pNewFont;
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-void FontMan::DrawText(Context* pTARG, int iX, int iY, const char* pFmt, ...) {
-  char TextBuffer[1024];
-  va_list argp;
-  va_start(argp, pFmt);
-  vsnprintf(TextBuffer, sizeof(TextBuffer), pFmt, argp);
-  va_end(argp);
-
+void FontMan::_drawText(Context* pTARG, int iX, int iY, const fixedstring_t& text) {
   ///////////////////////////////////
-
-  Font* pFont           = GetRef().mpCurrentFont;
-  size_t iLen           = strlen(TextBuffer);
-  const FontDesc& fdesc = pFont->GetFontDesc();
+  const char* textbuffer = text.c_str();
+  Font* pFont            = mpCurrentFont;
+  size_t iLen            = strlen(textbuffer);
+  const FontDesc& fdesc  = pFont->GetFontDesc();
 
   int iSX     = fdesc.miAdvanceWidth;
   int iSY     = fdesc.miAdvanceHeight;
@@ -239,7 +280,7 @@ void FontMan::DrawText(Context* pTARG, int iX, int iY, const char* pFmt, ...) {
   int iCol = 0;
 
   for (size_t i = 0; i < iLen; i++) {
-    char ch = TextBuffer[i];
+    char ch = textbuffer[i];
 
     switch (ch) {
       case 0x0a: // linefeed
@@ -257,7 +298,7 @@ void FontMan::DrawText(Context* pTARG, int iX, int iY, const char* pFmt, ...) {
         int iCharRow = -1;
         int iCharCol = -1;
 
-        const CharDesc& desc = GetRef().mCharDescriptions[int(ch)];
+        const CharDesc& desc = mCharDescriptions[int(ch)];
 
         if (desc.ch != 0) {
           iCharRow = desc.miRow;
@@ -268,7 +309,7 @@ void FontMan::DrawText(Context* pTARG, int iX, int iY, const char* pFmt, ...) {
           int iX0 = iX + (iCol * iSX);
           int iY0 = iY + (iRow * iSY) + ishifty;
           // pFont->QueChar( pTARG, GetRef().mTextWriter, iX0, iY0, iCharCol, iCharRow, pTARG->RefModColor().GetABGRU32() );
-          pFont->QueChar(pTARG, GetRef().mTextWriter, iX0, iY0, iCharCol, iCharRow, pTARG->RefModColor().GetBGRAU32());
+          pFont->QueChar(pTARG, mTextWriter, iX0, iY0, iCharCol, iCharRow, pTARG->RefModColor().GetBGRAU32());
           iCol++;
         }
 
@@ -280,6 +321,17 @@ void FontMan::DrawText(Context* pTARG, int iX, int iY, const char* pFmt, ...) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void FontMan::DrawText(Context* pTARG, int iX, int iY, const char* pFmt, ...) {
+  fixedstring_t fxs;
+  va_list argp;
+  va_start(argp, pFmt);
+  vsnprintf(fxs.mutable_c_str(), KFIXEDSTRINGLEN, pFmt, argp);
+  va_end(argp);
+  instance()->_drawText(pTARG, iX, iY, fxs);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 Font::Font(const std::string& fontname, const std::string& filename)
     : msFileName(filename)
     , msFontName(fontname) {
@@ -287,12 +339,12 @@ Font::Font(const std::string& fontname, const std::string& filename)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline void Font::QueChar(Context* pTARG, VtxWriter<SVtxV12C4T16>& vw, int ix, int iy, int iu, int iv, U32 ucolor) {
-  static const float kftexsiz   = float(mFontDesc.miTexWidth);
-  static const float kfU0offset = +0.0f;
-  static const float kfV0offset = 0.0f;
-  static const float kfU1offset = -0.0f;
-  static const float kfV1offset = 0.0f;
+void Font::QueChar(Context* pTARG, VtxWriter<SVtxV12C4T16>& vw, int ix, int iy, int iu, int iv, U32 ucolor) {
+  const float kftexsiz   = float(mFontDesc.miTexWidth);
+  const float kfU0offset = +0.0f;
+  const float kfV0offset = 0.0f;
+  const float kfU1offset = -0.0f;
+  const float kfV1offset = 0.0f;
   ///////////////////////////////////////////////
   const float kfcharW = float(mFontDesc.miCharWidth);
   const float kfcharH = float(mFontDesc.miCharHeight);
@@ -306,37 +358,36 @@ inline void Font::QueChar(Context* pTARG, VtxWriter<SVtxV12C4T16>& vw, int ix, i
   ///////////////////////////////////////////////
   // calc UVs
   ///////////////////////////////////////////////
-  float fiu = float(iu);
-  float fiv = float(iv);
-#if defined(IX) // REALLY GL
+  float fiu        = float(iu);
+  float fiv        = float(iv);
   float fcellbaseU = kfcellW * fiu;
   float fcellbaseV = kfcellH * fiv;
-  float fuW        = kfcharW;
-  float fvH        = kfcharH;
   const float fix2 = fix1 + kfcharW;
   const float fiy2 = fiy1 + kfcharH;
-#else // DX
-  const float khalftexoffsetX = 0.5f / float(mFontDesc.miTexWidth);
-  const float khalftexoffsetY = 0.5f / float(mFontDesc.miTexHeight);
-  float fcellbaseU            = kfcellW * fiu; //-khalftexoffsetX;
-  float fcellbaseV            = kfcellH * fiv; //-khalftexoffsetY;
-  float fuW                   = kfcharW;       //+khalftexoffsetX;
-  float fvH                   = kfcharH;       //+khalftexoffsetY;
-  fix1 -= 0.5f;
-  fiy1 -= 0.5f;
-  const float fix2 = fix1 + kfcharW;
-  const float fiy2 = fiy1 + kfcharH;
-#endif
-  float fu1 = fcellbaseU + float(mFontDesc.miCharOffsetX);
-  float fv1 = fcellbaseV + float(mFontDesc.miCharOffsetY);
-  float fu2 = fu1 + fuW;
-  float fv2 = fv1 + fvH;
+  float fu1        = fcellbaseU + float(mFontDesc.miCharOffsetX);
+  float fv1        = fcellbaseV + float(mFontDesc.miCharOffsetY);
+  float fu2        = fu1 + kfcharW;
+  float fv2        = fv1 + kfcharH;
   //
   float kitexs = 1.0f / kftexsiz;
   fu1 *= kitexs;
   fu2 *= kitexs;
   fv1 *= kitexs;
   fv2 *= kitexs;
+  ///////////////////////////////////////////////
+  /*printf(
+      "queuechar font<%s> ix<%d> iy<%d> iu<%d> iv<%d> fix1<%g> fiy1<%g> fix2<%g> fiy2<%g> fu1<%g> fu2<%g>\n",
+      msFontName.c_str(),
+      ix,
+      iy,
+      iu,
+      iv,
+      fix1,
+      fiy1,
+      fix2,
+      fiy2,
+      fu1,
+      fu2);*/
   ///////////////////////////////////////////////
   vw.AddVertex(TEXT_VTXFMT(fix1, fiy1, 0.0f, fu1, fv1, ucolor));
   vw.AddVertex(TEXT_VTXFMT(fix2, fiy1, 0.0f, fu2, fv1, ucolor));

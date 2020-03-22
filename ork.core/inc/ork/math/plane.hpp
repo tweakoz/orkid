@@ -3,8 +3,7 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
-
+////////////////////////////////////////////////////////////////
 
 #include <cmath>
 #include <ork/util/endian.h>
@@ -15,403 +14,366 @@ using fabs;
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork
-{
+namespace ork {
 
-template< typename T> bool Plane<T>::IsCoPlanar( const Plane<T> & OtherPlane ) const
-{
-	T fdot = Abs( n.Dot( OtherPlane.n ) - T(1.0f) );
-	T fDelD = Abs( d-OtherPlane.d );
-	return ( (fdot<T(0.01f)) && (fDelD<T(0.01f)) );
+template <typename T> bool Plane<T>::IsCoPlanar(const Plane<T>& OtherPlane) const {
+  T fdot  = Abs(n.Dot(OtherPlane.n) - T(1.0f));
+  T fDelD = Abs(d - OtherPlane.d);
+  return ((fdot < T(0.01f)) && (fDelD < T(0.01f)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<typename T> Plane<T>::Plane()
-	: n()
-	, d( T(0) )
-{
+template <typename T>
+Plane<T>::Plane()
+    : n()
+    , d(T(0)) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> Plane<T>::Plane( const Vector4<T> &vec )
-	: n( vec.xyz() )
-	, d( vec.GetW() )
-{
+template <typename T>
+Plane<T>::Plane(const Vector4<T>& vec)
+    : n(vec.xyz())
+    , d(vec.GetW()) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> Plane<T>::Plane( const Vector3<T> &vec, T nd )
-	: n( vec )
-    , d( nd )
-{
+template <typename T>
+Plane<T>::Plane(const Vector3<T>& vec, T nd)
+    : n(vec)
+    , d(nd) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> Plane<T>::Plane( T nx, T ny, T nz, T dist )
-	: n( nx, ny, nz )
-	, d( dist )
-{
-
+template <typename T> Plane<T>::Plane(const Vector3<T>& pta, const Vector3<T>& ptb, const Vector3<T>& ptc) {
+  CalcPlaneFromTriangle(pta, ptb, ptc);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> Plane<T>::Plane( T *Tp ) //! set explicitly
-{
-    n = Vector3<T>( Tp[0], Tp[1], Tp[2] );
-    d = Tp[3];
+template <typename T>
+Plane<T>::Plane(T nx, T ny, T nz, T dist)
+    : n(nx, ny, nz)
+    , d(dist) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> Plane<T>::Plane( const Vector3<T> &NormalVec, const Vector3<T> &PosVec ) //! calc given normal and position of plane origin
+template <typename T>
+Plane<T>::Plane(T* Tp) //! set explicitly
 {
-    CalcFromNormalAndOrigin( NormalVec, PosVec );
+  n = Vector3<T>(Tp[0], Tp[1], Tp[2]);
+  d = Tp[3];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> Plane<T>::~Plane()
+template <typename T>
+Plane<T>::Plane(const Vector3<T>& NormalVec, const Vector3<T>& PosVec) //! calc given normal and position of plane origin
 {
+  CalcFromNormalAndOrigin(NormalVec, PosVec);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> void Plane<T>::CalcFromNormalAndOrigin( const Vector3<T> &NormalVec, const Vector3<T> &PosVec ) //! calc given normal and position of plane origin
-{
-    n = NormalVec;
-    d = T(0.0f);
-    d =  pointDistance( PosVec ) * T(-1.0f);
+template <typename T> Plane<T>::~Plane() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> void Plane<T>::Reset(void)
+template <typename T>
+void Plane<T>::CalcFromNormalAndOrigin(
+    const Vector3<T>& NormalVec,
+    const Vector3<T>& PosVec) //! calc given normal and position of plane origin
 {
-    n = Vector3<T>( T(0.0f), T(0.0f), T(0.0f) );
-    d = T(0.0f);
+  n = NormalVec;
+  d = T(0.0f);
+  d = pointDistance(PosVec) * T(-1.0f);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> bool Plane<T>::IsPointInFront( const Vector3<T> &point ) const
-{
-	T distance = pointDistance(point);
-    return (distance >= T(0.0f));
+template <typename T> void Plane<T>::Reset(void) {
+  n = Vector3<T>(T(0.0f), T(0.0f), T(0.0f));
+  d = T(0.0f);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> bool Plane<T>::IsPointBehind( const Vector3<T> &point ) const
-{
-	return (!IsPointInFront(point));
+template <typename T> bool Plane<T>::IsPointInFront(const Vector3<T>& point) const {
+  T distance = pointDistance(point);
+  return (distance >= T(0.0f));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> void Plane<T>::CalcD( const Vector3<T> &pt )
-{
-    d = - pt.Dot( n );
+template <typename T> bool Plane<T>::IsPointBehind(const Vector3<T>& point) const {
+  return (!IsPointInFront(point));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> T Plane<T>::pointDistance( const Vector3<T> &pt ) const
-{
-    return n.Dot(pt) + d;
+template <typename T> void Plane<T>::CalcD(const Vector3<T>& pt) {
+  d = -pt.Dot(n);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> const Vector3<T> &Plane<T>::GetNormal(void) const
-{
-    return n;
+template <typename T> T Plane<T>::pointDistance(const Vector3<T>& pt) const {
+  return n.Dot(pt) + d;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> const T &Plane<T>::GetD(void) const
-{
-    return d;
+template <typename T> const Vector3<T>& Plane<T>::GetNormal(void) const {
+  return n;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> void Plane<T>::crossProduct( F64 ii1, F64 jj1, F64 kk1, F64 ii2, F64 jj2, F64 kk2, F64 &iicp, F64 &jjcp, F64 &kkcp) const
-{	iicp= (jj1*kk2) - (jj2*kk1);
-	jjcp= (ii2*kk1) - (ii1*kk2);
-	kkcp= (ii1*jj2) - (ii2*jj1);
+template <typename T> const T& Plane<T>::GetD(void) const {
+  return d;
 }
-	
+
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> static bool AreValuesCloseEnoughtToBeEqual( f64 a,f64 b, f64 ftolerance )
-{
-	return (fabs(a-b) >= ftolerance) ? false : true;
+template <typename T>
+void Plane<T>::crossProduct(F64 ii1, F64 jj1, F64 kk1, F64 ii2, F64 jj2, F64 kk2, F64& iicp, F64& jjcp, F64& kkcp) const {
+  iicp = (jj1 * kk2) - (jj2 * kk1);
+  jjcp = (ii2 * kk1) - (ii1 * kk2);
+  kkcp = (ii1 * jj2) - (ii2 * jj1);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> static bool AreValuesCloseEnoughtToBeEqual(f64 a, f64 b, f64 ftolerance) {
+  return (fabs(a - b) >= ftolerance) ? false : true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // ftolerance = smallest distance to consider a point colinear
 
-template <typename T> void Plane<T>::CalcPlaneFromTriangle( const Vector3<T> & p0, const Vector3<T> & p1, const Vector3<T> & p2, F64 ftolerance )
-{
-    F64 ii1,jj1,kk1;
-    F64 ii2,jj2,kk2;
-    F64 iicp, jjcp, kkcp;
-    F64 len0,len1,len2;
+template <typename T>
+void Plane<T>::CalcPlaneFromTriangle(const Vector3<T>& p0, const Vector3<T>& p1, const Vector3<T>& p2, F64 ftolerance) {
+  F64 ii1, jj1, kk1;
+  F64 ii2, jj2, kk2;
+  F64 iicp, jjcp, kkcp;
+  F64 len0, len1, len2;
 
-	Vector4<T> p1mp0 = p1-p0;
-	Vector4<T> p2mp1 = p2-p1;
-	Vector4<T> p0mp2 = p0-p2;
+  Vector4<T> p1mp0 = p1 - p0;
+  Vector4<T> p2mp1 = p2 - p1;
+  Vector4<T> p0mp2 = p0 - p2;
 
-    len0=p1mp0.Mag();
-    len1=p2mp1.Mag();
-    len2=p0mp2.Mag();
+  len0 = p1mp0.Mag();
+  len1 = p2mp1.Mag();
+  len2 = p0mp2.Mag();
 
-    if((len0>=len1) && (len0>=len2))
-    {
-        ii1= (p0.GetX() - p2.GetX());
-        ii2= (p1.GetX() - p2.GetX());
-        jj1= (p0.GetY() - p2.GetY());
-        jj2= (p1.GetY() - p2.GetY());
-        kk1= (p0.GetZ() - p2.GetZ());
-        kk2= (p1.GetZ() - p2.GetZ());
+  if ((len0 >= len1) && (len0 >= len2)) {
+    ii1 = (p0.GetX() - p2.GetX());
+    ii2 = (p1.GetX() - p2.GetX());
+    jj1 = (p0.GetY() - p2.GetY());
+    jj2 = (p1.GetY() - p2.GetY());
+    kk1 = (p0.GetZ() - p2.GetZ());
+    kk2 = (p1.GetZ() - p2.GetZ());
+  } else if ((len1 >= len0) && (len1 >= len2)) {
+    ii1 = (p1.GetX() - p0.GetX());
+    ii2 = (p2.GetX() - p0.GetX());
+    jj1 = (p1.GetY() - p0.GetY());
+    jj2 = (p2.GetY() - p0.GetY());
+    kk1 = (p1.GetZ() - p0.GetZ());
+    kk2 = (p2.GetZ() - p0.GetZ());
+  } else {
+    ii1 = (p2.GetX() - p1.GetX());
+    ii2 = (p0.GetX() - p1.GetX());
+    jj1 = (p2.GetY() - p1.GetY());
+    jj2 = (p0.GetY() - p1.GetY());
+    kk1 = (p2.GetZ() - p1.GetZ());
+    kk2 = (p0.GetZ() - p1.GetZ());
+  }
+
+  crossProduct(ii2, jj2, kk2, ii1, jj1, kk1, iicp, jjcp, kkcp);
+
+  //   assert(!(IS_EQ(iicp,0.0) && IS_EQ(jjcp,0.0) && IS_EQ(kkcp,0.0)));
+  if (AreValuesCloseEnoughtToBeEqual<T>(iicp, 0.0, ftolerance) && AreValuesCloseEnoughtToBeEqual<T>(jjcp, 0.0, ftolerance) &&
+      AreValuesCloseEnoughtToBeEqual<T>(kkcp, 0.0, ftolerance)) {
+    // orkprintf( "Whoops, 3 colinear points in a quad.\n");
+    return;
+  }
+  // if(IS_EQ_TIGHT(plane->aa,0)&&IS_EQ_TIGHT(plane->bb,0)&&IS_EQ_TIGHT(plane->cc,0))
+  //{	//messageh( DEBUG_PANE, "Plane error\n");
+  //}
+
+  // get plane normal
+
+  n.SetXYZ((T)iicp, (T)jjcp, (T)kkcp);
+  n.Normalize();
+
+  // get plane distance from origin
+  d = T(0.0f);
+  d = pointDistance(p0) * T(-1.0f);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> bool Plane<T>::IsOn(const Vector3<T>& pt) const {
+  T d = pointDistance(pt);
+  return (Abs(d) < Epsilon()) ? true : false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> void Plane<T>::CalcNormal(const Vector3<T>& pta, const Vector3<T>& ptb, const Vector3<T>& ptc) {
+  Vector3<T> bminusa = (ptb - pta);
+  Vector3<T> cminusa = (ptc - pta);
+
+  n = bminusa.Cross(cminusa);
+  n.Normalize();
+  d = -ptc.Dot(n);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> bool Plane<T>::Intersect(const TLineSegment3<T>& lseg, T& dis, Vector3<T>& result) const {
+  Vector3<T> dif = (lseg.mEnd - lseg.mStart);
+  T length       = dif.Mag();
+
+  Ray3<T> ray;
+  ray.mDirection = dif * (T(1.0f) / length); // cheaper normalize since we need the length anyway
+  ray.mOrigin    = lseg.mStart;
+
+  bool bOK = Intersect(ray, dis, result);
+
+  bOK &= ((dis >= 0.0f) && (dis < length));
+
+  return bOK;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> bool Plane<T>::Intersect(const Ray3<T>& ray, T& dis, Vector3<T>& res) const {
+  bool bOK = Intersect(ray, dis);
+
+  if (bOK) {
+    res = ray.mOrigin + (ray.mDirection * dis);
+  }
+  return bOK;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> bool Plane<T>::Intersect(const Ray3<T>& ray, T& dis) const {
+  T denom = n.Dot(ray.mDirection);
+  // Line is parallel to the plane or plane normal faces away from ray
+  if (Abs(denom) < Epsilon())
+    return false;
+
+  T pointdist = pointDistance(ray.mOrigin);
+  T u         = -pointdist / (denom);
+
+  dis = u;
+
+  return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> template <typename PolyType> bool Plane<T>::ClipPoly(const PolyType& PolyToClip, PolyType& OutPoly) {
+  const int inuminverts = (int)PolyToClip.GetNumVertices();
+  if (inuminverts) {
+    const typename PolyType::VertexType& StartVtx = PolyToClip.GetVertex(0);
+    bool IsVtxAIn                                 = IsPointInFront(StartVtx.Pos());
+    // get the side of each vert to the plane
+    for (int iva = 0; iva < inuminverts; iva++) {
+      int ivb                                 = ((iva == inuminverts - 1) ? 0 : iva + 1);
+      const typename PolyType::VertexType& vA = PolyToClip.GetVertex(iva);
+      const typename PolyType::VertexType& vB = PolyToClip.GetVertex(ivb);
+      if (IsVtxAIn) {
+        OutPoly.AddVertex(vA);
+      }
+      bool IsVtxBIn = IsPointInFront(vB.Pos());
+      if (IsVtxBIn != IsVtxAIn) {
+        fvec3 vPos;
+        T isectdist;
+        LineSegment3 lseg(vA.Pos(), vB.Pos());
+        if (Intersect(lseg, isectdist, vPos)) {
+          T fDist   = (vA.Pos() - vB.Pos()).Mag();
+          T fDist2  = (vA.Pos() - vPos).Mag();
+          T fScalar = (Abs(fDist) < Epsilon()) ? 0.0f : fDist2 / fDist;
+          typename PolyType::VertexType LerpedVertex;
+          LerpedVertex.Lerp(vA, vB, fScalar);
+          OutPoly.AddVertex(LerpedVertex);
+        }
+      }
+      IsVtxAIn = IsVtxBIn;
     }
-    else if((len1>=len0) && (len1>=len2))
-    {
-        ii1= (p1.GetX() - p0.GetX());
-        ii2= (p2.GetX() - p0.GetX());
-        jj1= (p1.GetY() - p0.GetY());
-        jj2= (p2.GetY() - p0.GetY());
-        kk1= (p1.GetZ() - p0.GetZ());
-        kk2= (p2.GetZ() - p0.GetZ());
+  }
+  return (OutPoly.GetNumVertices() >= 3);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+template <typename PolyType>
+bool Plane<T>::ClipPoly(const PolyType& PolyToClip, PolyType& OutPolyFront, PolyType& OutPolyBack) {
+  const int inuminverts                         = PolyToClip.GetNumVertices();
+  const typename PolyType::VertexType& StartVtx = PolyToClip.GetVertex(0);
+  bool IsVtxAIn                                 = IsPointInFront(StartVtx.Pos());
+  // get the side of each vert to the plane
+  for (int iva = 0; iva < inuminverts; iva++) {
+    int ivb                                 = ((iva == inuminverts - 1) ? 0 : iva + 1);
+    const typename PolyType::VertexType& vA = PolyToClip.GetVertex(iva);
+    const typename PolyType::VertexType& vB = PolyToClip.GetVertex(ivb);
+    if (IsVtxAIn) {
+      OutPolyFront.AddVertex(vA);
+    } else {
+      OutPolyBack.AddVertex(vA);
     }
-    else
-    {
-        ii1= (p2.GetX() - p1.GetX());
-        ii2= (p0.GetX() - p1.GetX());
-        jj1= (p2.GetY() - p1.GetY());
-        jj2= (p0.GetY() - p1.GetY());
-        kk1= (p2.GetZ() - p1.GetZ());
-        kk2= (p0.GetZ() - p1.GetZ());
+    bool IsVtxBIn = IsPointInFront(vB.Pos());
+    if (IsVtxBIn != IsVtxAIn) {
+      Vector3<T> vPos;
+      T isectdist;
+      TLineSegment3<T> lseg(vA.Pos(), vB.Pos());
+      if (Intersect(lseg, isectdist, vPos)) {
+        T fDist   = (vA.Pos() - vB.Pos()).Mag();
+        T fDist2  = (vA.Pos() - vPos).Mag();
+        T fScalar = (Abs(fDist) < Epsilon()) ? T(0.0) : fDist2 / fDist;
+        typename PolyType::VertexType LerpedVertex;
+        LerpedVertex.Lerp(vA, vB, fScalar);
+        OutPolyFront.AddVertex(LerpedVertex);
+        OutPolyBack.AddVertex(LerpedVertex);
+      }
     }
-
-    crossProduct(ii2,jj2,kk2,ii1,jj1,kk1,iicp,jjcp,kkcp);
-
-    //   assert(!(IS_EQ(iicp,0.0) && IS_EQ(jjcp,0.0) && IS_EQ(kkcp,0.0)));
-    if(		AreValuesCloseEnoughtToBeEqual<T>(iicp,0.0,ftolerance)
-		&&	AreValuesCloseEnoughtToBeEqual<T>(jjcp,0.0,ftolerance)
-		&&	AreValuesCloseEnoughtToBeEqual<T>(kkcp,0.0,ftolerance)
-	  )
-    {
-		//orkprintf( "Whoops, 3 colinear points in a quad.\n");
-        return;
-    }
-	//if(IS_EQ_TIGHT(plane->aa,0)&&IS_EQ_TIGHT(plane->bb,0)&&IS_EQ_TIGHT(plane->cc,0))
-	//{	//messageh( DEBUG_PANE, "Plane error\n");
-	//}
-
-    // get plane normal
-
-	n.SetXYZ( (T) iicp, (T) jjcp, (T) kkcp );
-	n.Normalize();
-    
-	// get plane distance from origin
-	d = T(0.0f);
-    d =  pointDistance( p0 ) * T(-1.0f);
-
-
-
-
+    IsVtxAIn = IsVtxBIn;
+  }
+  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> bool Plane<T>::IsOn( const Vector3<T> &pt ) const
-{
-    T d = pointDistance(pt);
-    return (Abs(d) < Epsilon()) ? true : false;
+template <typename T> void Plane<T>::EndianSwap() {
+  swapbytes_dynamic(n[0]);
+  swapbytes_dynamic(n[1]);
+  swapbytes_dynamic(n[2]);
+  swapbytes_dynamic(d);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> void Plane<T>::CalcNormal( const Vector3<T> &pta, const Vector3<T> &ptb, const Vector3<T> &ptc)
-{
-    Vector3<T> bminusa = (ptb - pta);
-    Vector3<T> cminusa = (ptc - pta);
-
-    n = bminusa.Cross( cminusa );
-    n.Normalize();
-    d = -ptc.Dot(n);
+template <typename T> void Plane<T>::SimpleTransform(const Matrix44<T>& transform) {
+  Vector3<T> point(n * -d);
+  point = point.Transform(transform).xyz();
+  n     = n.Transform3x3(transform);
+  n.Normalize();
+  d = -n.Dot(point);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename T> bool Plane<T>::Intersect(  const TLineSegment3<T>& lseg, T& dis, Vector3<T> &result ) const
-{
-	Vector3<T> dif = (lseg.mEnd-lseg.mStart);
-	T length = dif.Mag();
-
-	Ray3<T> ray;
-	ray.mDirection = dif*(T(1.0f)/length); // cheaper normalize since we need the length anyway
-	ray.mOrigin = lseg.mStart;
-
-	bool bOK = Intersect( ray, dis, result ); 
-
-	bOK &= ( (dis>=0.0f) && (dis<length) );
-
-	return bOK;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template< typename T> bool Plane<T>::Intersect( const Ray3<T>& ray, T& dis, Vector3<T> &res ) const
-{
-    bool bOK = Intersect( ray, dis ); 
-
-	if( bOK )
-	{
-		res = ray.mOrigin + (ray.mDirection*dis);
-	}
-	return bOK;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template< typename T> bool Plane<T>::Intersect( const Ray3<T>& ray, T &dis ) const
-{
-    T denom = n.Dot(ray.mDirection);
-    // Line is parallel to the plane or plane normal faces away from ray
-	if( Abs(denom) < Epsilon())
-        return false;
-
-	T pointdist = pointDistance(ray.mOrigin);
-	T u = -pointdist/(denom);
-	
-	dis = u;
-
-	return true;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template< typename T>
-template< typename PolyType >
-bool Plane<T>::ClipPoly( const PolyType& PolyToClip, PolyType& OutPoly )
-{
-	const int inuminverts = (int) PolyToClip.GetNumVertices();
-	if( inuminverts )
-	{
-		const typename PolyType::VertexType& StartVtx = PolyToClip.GetVertex(0);
-		bool IsVtxAIn = IsPointInFront( StartVtx.Pos() );
-		//get the side of each vert to the plane
-		for(int iva=0;iva<inuminverts;iva++)
-		{
-			int ivb = ((iva == inuminverts-1) ? 0 : iva+1);
-			const typename PolyType::VertexType& vA = PolyToClip.GetVertex(iva);
-			const typename PolyType::VertexType& vB = PolyToClip.GetVertex(ivb);
-			if(IsVtxAIn)
-			{
-				OutPoly.AddVertex( vA );
-			}
-			bool IsVtxBIn  = IsPointInFront( vB.Pos() ); 
-			if(IsVtxBIn != IsVtxAIn)
-			{
-				fvec3 vPos;
-				T isectdist;
-				LineSegment3 lseg( vA.Pos(), vB.Pos() );
-				if( Intersect( lseg, isectdist, vPos ) )
-				{
-					T fDist = (vA.Pos()-vB.Pos()).Mag();
-					T fDist2 = (vA.Pos()-vPos).Mag();
-					T fScalar = (Abs(fDist)<Epsilon()) ? 0.0f : fDist2 / fDist;
-					typename PolyType::VertexType LerpedVertex;
-					LerpedVertex.Lerp( vA, vB, fScalar );
-					OutPoly.AddVertex( LerpedVertex );
-				}
-			}
-			IsVtxAIn = IsVtxBIn;
-		}
-	}
-	return (OutPoly.GetNumVertices() >= 3);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template< typename T>
-template< typename PolyType >
-bool Plane<T>::ClipPoly( const PolyType& PolyToClip, PolyType& OutPolyFront, PolyType& OutPolyBack )
-{
-	const int inuminverts = PolyToClip.GetNumVertices();
-	const typename PolyType::VertexType& StartVtx = PolyToClip.GetVertex(0);
-	bool IsVtxAIn = IsPointInFront( StartVtx.Pos() );
-	//get the side of each vert to the plane
-	for(int iva=0;iva<inuminverts;iva++)
-	{
-		int ivb = ((iva == inuminverts-1) ? 0 : iva+1);
-		const typename PolyType::VertexType& vA = PolyToClip.GetVertex(iva);
-		const typename PolyType::VertexType& vB = PolyToClip.GetVertex(ivb);
-		if(IsVtxAIn)
-		{
-			OutPolyFront.AddVertex( vA );
-		}
-		else
-		{
-			OutPolyBack.AddVertex( vA );
-		}
-		bool IsVtxBIn  = IsPointInFront( vB.Pos() ); 
-		if(IsVtxBIn != IsVtxAIn)
-		{
-			Vector3<T> vPos;
-			T isectdist;
-			TLineSegment3<T> lseg( vA.Pos(), vB.Pos() );
-			if( Intersect( lseg, isectdist, vPos ) )
-			{
-				T fDist = (vA.Pos()-vB.Pos()).Mag();
-				T fDist2 = (vA.Pos()-vPos).Mag();
-				T fScalar = (Abs(fDist)<Epsilon()) ? T(0.0) : fDist2 / fDist;
-				typename PolyType::VertexType LerpedVertex;
-				LerpedVertex.Lerp( vA, vB, fScalar );
-				OutPolyFront.AddVertex( LerpedVertex );
-				OutPolyBack.AddVertex( LerpedVertex );
-			}
-		}
-		IsVtxAIn = IsVtxBIn;
-	}
-	return true;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template< typename T> void Plane<T>::EndianSwap()
-{
-	swapbytes_dynamic( n[0] );
-	swapbytes_dynamic( n[1] );
-	swapbytes_dynamic( n[2] );
-	swapbytes_dynamic( d );
-
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template< typename T> void Plane<T>::SimpleTransform(const Matrix44<T>& transform)
-{
-	Vector3<T> point(n * -d);
-	point = point.Transform(transform).xyz();
-	n = n.Transform3x3(transform);
-	n.Normalize();
-	d = -n.Dot(point);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template<typename T> Plane<T> Plane<T>::operator-() const
-{
-	return Plane<T>(-n, n * -d);
+template <typename T> Plane<T> Plane<T>::operator-() const {
+  return Plane<T>(-n, n * -d);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

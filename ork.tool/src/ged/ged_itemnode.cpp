@@ -125,7 +125,7 @@ int GedItemNode::get_charw() const {
 int GedItemNode::get_text_center_y() const {
   int ich = get_charh();
   int iwd = ich >> 3; //(miH-ich)>>1;
-  int ity = miY + iwd + 1;
+  int ity = miY + iwd;
   return ity;
 }
 //////////////////////////////////////////////////////////////////////////////

@@ -1,6 +1,8 @@
 project (ork CXX)
 include (GenerateExportHeader)
 
+enableQt5()
+
 ###################################
 
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
@@ -57,6 +59,7 @@ target_include_directories (ork_tool PRIVATE ${Python_INCLUDE_DIRS} )
 set( libs ork_core ork_tuio ork_lev2 ork_ecs ork_fcollada ork_utpp python3.8d )
 list(APPEND libs OpenImageIO OpenImageIO_Util portaudio )
 
+list(APPEND libs Qt5::Widgets Qt5::Core Qt5::Gui)
 IF(${APPLE})
     target_include_directories (ork_tool PRIVATE /usr/local/include)
     list(APPEND libs m pthread )
@@ -65,7 +68,7 @@ IF(${APPLE})
     list(APPEND libs "-framework AudioUnit" "-framework AudioToolbox" )
     list(APPEND libs "-framework Carbon" "-framework Foundation" )
     list(APPEND libs "-framework ApplicationServices" "-framework AppKit" )
-    list(APPEND libs glfw.3 objc Qt5::Widgets Qt5::Core Qt5::Gui assimp )
+    list(APPEND libs glfw.3 objc assimp )
 
 ELSEIF(${UNIX})
     list(APPEND libs rt dl pthread GL Qt5::X11Extras assimp  )

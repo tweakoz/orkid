@@ -6,6 +6,7 @@
 #include <ork/math/cmatrix3.h>
 #include <ork/math/cmatrix4.h>
 #include <ork/math/quaternion.h>
+#include <ork/math/frustum.h>
 #include <ork/kernel/fixedstring.h>
 #include <ork/kernel/fixedstring.hpp>
 #include <ork/kernel/thread.h>
@@ -130,6 +131,7 @@ PYBIND11_MODULE(orkcore, m) {
       .def(py::self + py::self)
       .def(py::self - py::self)
       .def(py::self * py::self)
+      .def(py::self * float())
       .def(
           "__str__",
           [](const fvec3& v) -> std::string {
@@ -175,6 +177,7 @@ PYBIND11_MODULE(orkcore, m) {
       .def(py::self + py::self)
       .def(py::self - py::self)
       .def(py::self * py::self)
+      .def(py::self * float())
       .def(
           "__str__",
           [](const fvec4& v) -> std::string {
@@ -242,6 +245,7 @@ PYBIND11_MODULE(orkcore, m) {
       .def("inverse", &fmtx4::inverse)
       .def("inverseOf", &fmtx4::inverseOf)
       .def("decompose", &fmtx4::decompose)
+      .def("toRotMatrix3", &fmtx4::rotMatrix33)
       .def_static("perspective", &fmtx4::perspective)
       .def_static(
           "compose",
@@ -317,6 +321,55 @@ PYBIND11_MODULE(orkcore, m) {
       .def("__repr__", [](const fmtx4& mtx) -> std::string {
         auto str = mtx.dump4x3cn();
         return str.c_str();
+      });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<Frustum>(m, "Frustum")
+      .def(py::init<>())
+      .def("set", [](Frustum& frustum, const fmtx4& VMatrix, const fmtx4& PMatrix) { frustum.Set(VMatrix, PMatrix); })
+      .def("set", [](Frustum& frustum, const fmtx4& IVPMatrix) { frustum.Set(IVPMatrix); })
+      .def("nearCorner", [](const Frustum& frustum, int index) -> fvec3 { return frustum.mNearCorners[std::clamp(index, 0, 3)]; })
+      .def("farCorner", [](const Frustum& frustum, int index) -> fvec3 { return frustum.mFarCorners[std::clamp(index, 0, 3)]; })
+      .def_property_readonly("center", [](const Frustum& frustum) -> fvec3 { return frustum.mCenter; })
+      .def_property_readonly("xNormal", [](const Frustum& frustum) -> fvec3 { return frustum.mXNormal; })
+      .def_property_readonly("yNormal", [](const Frustum& frustum) -> fvec3 { return frustum.mYNormal; })
+      .def_property_readonly("zNormal", [](const Frustum& frustum) -> fvec3 { return frustum.mZNormal; })
+      .def_property_readonly("nearPlane", [](const Frustum& frustum) -> fplane3 { return frustum._nearPlane; })
+      .def_property_readonly("farPlane", [](const Frustum& frustum) -> fplane3 { return frustum._farPlane; })
+      .def_property_readonly("leftPlane", [](const Frustum& frustum) -> fplane3 { return frustum._leftPlane; })
+      .def_property_readonly("rightPlane", [](const Frustum& frustum) -> fplane3 { return frustum._rightPlane; })
+      .def_property_readonly("topPlane", [](const Frustum& frustum) -> fplane3 { return frustum._topPlane; })
+      .def_property_readonly("bottomPlane", [](const Frustum& frustum) -> fplane3 { return frustum._bottomPlane; })
+      .def("contains", [](const Frustum& frustum, const fvec3& point) -> bool { return frustum.contains(point); });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<fplane3>(m, "plane")
+      .def(py::init<>())
+      .def(py::init<const fvec4&>())
+      .def(py::init<const fvec3&, float>())
+      .def(py::init<const fvec3&, const fvec3&, const fvec3&>())
+      .def(py::init<float, float, float, float>())
+      .def_property_readonly("d", [](const fplane3& thisplane) -> float { return thisplane.d; })
+      .def_property_readonly("normal", [](const fplane3& thisplane) -> fvec3 { return thisplane.n; })
+      .def(
+          "fromNormalAndOrigin",
+          [](fplane3& plane, const fvec3& normal, const fvec3& origin) { plane.CalcFromNormalAndOrigin(normal, origin); })
+      .def(
+          "fromTriangle",
+          [](fplane3& plane, const fvec3& pta, const fvec3& ptb, const fvec3& ptc) { plane.CalcPlaneFromTriangle(pta, ptb, ptc); })
+      .def("isPointInFront", [](const fplane3& plane, const fvec3& point) -> bool { return plane.IsPointInFront(point); })
+      .def("isPointBehind", [](const fplane3& plane, const fvec3& point) -> bool { return plane.IsPointBehind(point); })
+      .def("isPointOn", [](const fplane3& plane, const fvec3& point) -> bool { return plane.IsOn(point); })
+      .def("distanceToPoint", [](const fplane3& plane, const fvec3& point) -> float { return plane.pointDistance(point); })
+      .def(
+          "intersectWithPlane",
+          [](const fplane3& thisplane, const fplane3& otherplane, fvec3& outorigin, fvec3& outdir) -> bool {
+            return thisplane.PlaneIntersect(otherplane, outorigin, outdir);
+          })
+      .def("__repr__", [](const fplane3& thisplane) -> std::string {
+        fxstring<64> fxs;
+        fvec3 n = thisplane.n;
+        float d = thisplane.d;
+        fxs.format("Plane(n<%g %g %g> d<%g>)", n.x, n.y, n.z, d);
+        return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<ork::Object>(m, "ork_Object").def("clazz", [](ork::Object* o) -> std::string {

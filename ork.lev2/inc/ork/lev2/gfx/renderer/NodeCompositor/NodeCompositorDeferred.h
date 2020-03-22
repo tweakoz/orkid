@@ -130,13 +130,14 @@ struct DeferredContext {
   FxComputeShader* _lightcollectcomputeshader = nullptr;
 #endif
 
-  const FxShaderParam* _parMatIVPArray         = nullptr;
-  const FxShaderParam* _parMatPArray           = nullptr;
-  const FxShaderParam* _parMatVArray           = nullptr;
-  const FxShaderParam* _parZndc2eye            = nullptr;
-  const FxShaderParam* _parMapGBufAlbAo        = nullptr;
-  const FxShaderParam* _parMapGBufNrmL         = nullptr;
-  const FxShaderParam* _parMapGBufRufMtlAlpha  = nullptr;
+  const FxShaderParam* _parMatIVPArray = nullptr;
+  const FxShaderParam* _parMatPArray   = nullptr;
+  const FxShaderParam* _parMatVArray   = nullptr;
+  const FxShaderParam* _parZndc2eye    = nullptr;
+  const FxShaderParam* _parMapGBuf     = nullptr;
+  // const FxShaderParam* _parMapGBufAlbAo        = nullptr;
+  // const FxShaderParam* _parMapGBufNrmL         = nullptr;
+  // const FxShaderParam* _parMapGBufRufMtlAlpha  = nullptr;
   const FxShaderParam* _parMapDepth            = nullptr;
   const FxShaderParam* _parMapDepthCluster     = nullptr;
   const FxShaderParam* _parMapShadowDepth      = nullptr;
@@ -175,9 +176,9 @@ struct DeferredContext {
   RtGroup* _rtgDepthCluster = nullptr;
   RtGroup* _rtgLaccum       = nullptr;
 
-  RtBuffer* _rtbAlbAo        = nullptr;
-  RtBuffer* _rtbNormalDist   = nullptr;
-  RtBuffer* _rtbRufMtl       = nullptr;
+  RtBuffer* _rtbGbuffer = nullptr;
+  // RtBuffer* _rtbNormalDist   = nullptr;
+  // RtBuffer* _rtbRufMtl       = nullptr;
   RtBuffer* _rtbDepthCluster = nullptr;
   RtBuffer* _rtbLightAccum   = nullptr;
 

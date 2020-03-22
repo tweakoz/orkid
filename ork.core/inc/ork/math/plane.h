@@ -27,14 +27,16 @@ public: //
   Vector3<T> n;
   T d;
   //////////
-  Plane();                                                      //! set explicitly to 0,0,0,0
-  Plane(const Vector4<T>& vec);                                 //! set explicitly
-  Plane(const Vector3<T>& vec, T dist);                         //! set explicitly
-  Plane(T nx, T ny, T nz, T dist);                              //! set explicitly
-  Plane(T* f32p);                                               //! set explicitly
-  Plane(const Vector3<T>& NormalVec, const Vector3<T>& PosVec); //! calc given normal and position of plane origin
-  void CalcFromNormalAndOrigin(const Vector3<T>& NormalVec,
-                               const Vector3<T>& PosVec); //! calc given normal and position of plane origin
+  Plane();                                                                    /// set explicitly to 0,0,0,0
+  Plane(const Vector4<T>& vec);                                               /// init from normal and distance
+  Plane(const Vector3<T>& vec, T dist);                                       /// init from normal and distance
+  Plane(const Vector3<T>& pta, const Vector3<T>& ptb, const Vector3<T>& ptc); /// init from triangle
+  Plane(T nx, T ny, T nz, T dist);                                            /// init from normal and distance
+  Plane(T* f32p);                                                             /// set explicitly
+  Plane(const Vector3<T>& NormalVec, const Vector3<T>& PosVec);               /// calc given normal and position of plane origin
+  void CalcFromNormalAndOrigin(
+      const Vector3<T>& NormalVec,
+      const Vector3<T>& PosVec); //! calc given normal and position of plane origin
   ~Plane();
   void Reset(void);
   bool IsPointInFront(const Vector3<T>& pt) const;
@@ -59,7 +61,7 @@ public: //
 
   bool IsCoPlanar(const Plane<T>& OtherPlane) const;
 
-  bool PlaneIntersect(const Plane<T>& oth, Vector3<T>& outpos, Vector3<T>& outdir);
+  bool PlaneIntersect(const Plane<T>& oth, Vector3<T>& outpos, Vector3<T>& outdir) const;
 
   template <typename PolyType> bool ClipPoly(const PolyType& PolyToClip, PolyType& OutPoly);
 

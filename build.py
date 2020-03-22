@@ -12,6 +12,7 @@ parser.add_argument('--clean', action="store_true", help='force clean build' )
 parser.add_argument('--verbose', action="store_true", help='verbose build' )
 parser.add_argument('--serial',action="store_true", help="non-parallel-build")
 parser.add_argument('--debug',action="store_true", help=" debug build")
+parser.add_argument('--trace',action="store_true", help=" cmake trace")
 parser.add_argument('--xcode',action="store_true", help=" xcode debug build")
 parser.add_argument('--ez',action="store_true", help=" ez build (use workarounds)")
 
@@ -27,10 +28,9 @@ build_dest.mkdir(parents=True,exist_ok=True)
 build_dest.chdir()
 
 prj_root = Path(os.environ["ORKID_WORKSPACE_DIR"])
-
+print(os.environ)
 stage_dir = Path(os.path.abspath(str(ork.path.stage())))
 ork_root = prj_root
-
 ok = True
 
 ######################################################################
@@ -75,7 +75,9 @@ if _args["ez"]!=False:
 # ensure deps present
 ######################################################################
 
-ork.dep.require(["bullet","openexr","oiio","openvr","fcollada","assimp","nvtt","lua","python","pybind11"])
+ork.dep.require(["bullet","openexr","oiio","fcollada","assimp","nvtt","lua","python","pybind11"])
+if ork.host.IsLinux:
+    ork.dep.require(["openvr","ispctexc"])
 
 ######################################################################
 # prep for build
@@ -94,14 +96,17 @@ if debug:
 else:
     cmd += ["-DCMAKE_BUILD_TYPE=Release"]
 
-cmd += ["-DCMAKE_FIND_DEBUG_MODE=OFF","--target","install"]
-cmd += ["-DPYTHON_EXECUTABLE=%s/bin/python3"%(stage_dir)]
-cmd += ["-DPYTHON_LIBRARY=%s/lib/libpython3.8d.so"%(stage_dir)]
+if _args["trace"]==True:
+    cmd += ["--trace"]
+
+cmd += ["--target","install"]
 
 cmd += [prj_root]
 
 
+
 ok = (Command(cmd).exec()==0)
+
 
 ######################################################################
 # build

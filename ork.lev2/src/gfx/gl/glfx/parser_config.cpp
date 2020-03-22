@@ -37,12 +37,22 @@ void ConfigNode::parse(const ScannerView& view) {
   ///////////////////////////////////
   // handle imports
   ///////////////////////////////////
-  for (const auto& imp : imports) {
+  for (auto imp : imports) {
     file::Path::NameType a, b;
-    _container->_path.Split(a, b, ':');
-    ork::FixedString<256> fxs;
-    fxs.format("%s://%s", a.c_str(), imp.c_str());
-    file::Path imppath = fxs.c_str();
+    file::Path imppath;
+    //////////////////////////////////
+    // if import file has datasource (xxx://), use that
+    //  instead of inferring from container's path
+    //////////////////////////////////
+    file::Path(imp).Split(a, b, ':');
+    if (b.length() != 0) { // use from import
+      imppath = imp;
+    } else { // infer from container
+      _container->_path.Split(a, b, ':');
+      ork::FixedString<256> fxs;
+      fxs.format("%s://%s", a.c_str(), imp.c_str());
+      imppath = fxs.c_str();
+    }
     auto importscanner = new Scanner(block_regex);
     ///////////////////////////////////
     File fx_file(imppath.c_str(), EFM_READ);
@@ -66,6 +76,12 @@ void ConfigNode::parse(const ScannerView& view) {
       auto k                     = i.first;
       auto v                     = i.second;
       _container->_blockNodes[k] = v;
+    }
+    for (auto i : childnode->_keywords) {
+      _container->_keywords.insert(i);
+    }
+    for (auto i : childnode->_validTypeNames) {
+      _container->_validTypeNames.insert(i);
     }
   }
 }

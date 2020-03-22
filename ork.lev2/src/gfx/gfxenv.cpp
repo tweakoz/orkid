@@ -20,6 +20,7 @@
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/texman.h>
+#include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/ui/ui.h>
 #include <ork/reflect/enum_serializer.inl>
 
@@ -54,7 +55,6 @@ DECLARE_ENUM(EPRIM_TRIANGLESTRIP)
 DECLARE_ENUM(EPRIM_TRIANGLEFAN)
 DECLARE_ENUM(EPRIM_QUADSTRIP)
 DECLARE_ENUM(EPRIM_MULTI)
-DECLARE_ENUM(EPRIM_POINTSPRITES)
 DECLARE_ENUM(EPRIM_END)
 END_ENUM_SERIALIZER()
 
@@ -107,7 +107,6 @@ static const std::string PrimTypeStrings[EPRIM_END + 2] = {
     "EPRIM_TRIANGLEFAN",
     "EPRIM_QUADSTRIP",
     "EPRIM_MULTI",
-    "EPRIM_POINTSPRITES",
     "EPRIM_END",
     ""};
 static const std::string BlendingStrings[EBLENDING_END + 2] = {
@@ -252,6 +251,7 @@ void GfxEnv::SetLoaderTarget(Context* target) {
   auto gfxenvlateinit = [=]() {
     auto ctx = GfxEnv::loadingContext();
     ctx->makeCurrentContext();
+
 #if !defined(__APPLE__)
     // ctx->beginFrame();
 #endif

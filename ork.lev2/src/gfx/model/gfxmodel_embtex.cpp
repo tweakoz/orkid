@@ -17,6 +17,29 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
+
+///////////////////////////////////////////////////////////////////////////////
+
+static std::string compressionOptsForUsage(ETextureUsage usage) {
+  std::string rval = "???";
+  switch (usage) {
+    case ETEXUSAGE_COLOR:
+#if defined(__APPLE__)
+      rval = "-bc7 -nocuda";
+#else
+      rval = "-bc1";
+#endif
+      break;
+    case ETEXUSAGE_NORMAL:
+      rval = "-rgb -normal";
+      break;
+    case ETEXUSAGE_DATA:
+      rval = "-rgb";
+      break;
+  }
+  return rval;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 datablockptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
@@ -27,7 +50,8 @@ datablockptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
   fwrite(_srcdata, _srcdatalen, 1, fout);
   fclose(fout);
 
-  invoke_nvcompress(srcpath, ddspath, "rgb");
+  auto options = compressionOptsForUsage(_usage);
+  invoke_nvcompress(srcpath, ddspath, options);
 
   FILE* fin = fopen(ddspath.c_str(), "rb");
   fseek(fin, 0, SEEK_END);
@@ -48,7 +72,10 @@ datablockptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
 
 void EmbeddedTexture::fetchDDSdata() {
 
+  auto options = compressionOptsForUsage(_usage);
+
   boost::Crc64 basehasher;
+  basehasher.accumulateString(options);
   basehasher.accumulateString(_format);
   basehasher.accumulateString(_name);
   basehasher.accumulate(_srcdata, _srcdatalen);
@@ -62,6 +89,7 @@ void EmbeddedTexture::fetchDDSdata() {
     _ddsdestdatablock = compressTexture(hashkey);
     DataBlockCache::setDataBlock(hashkey, _ddsdestdatablock);
   }
+  _compressionPending = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
