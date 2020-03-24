@@ -14,10 +14,9 @@ def setup():
   ork.env.set("ORKID_WORKSPACE_DIR",orkid_dir)
   ork.env.prepend("PATH",orkbin_dir)
 
-
   ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.core")
   ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.lev2")
   ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.ent")
   ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.tool")
   ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.data"/"platform_lev2"/"shaders"/"glfx")
-  ork.env.set("LUA_PATH",orkid_dir/"ork.data"/"src"/"scripts"/"?.lua")
+  ork.env.append("LUA_PATH",orkid_dir/"ork.data"/"src"/"scripts"/"?.lua")
