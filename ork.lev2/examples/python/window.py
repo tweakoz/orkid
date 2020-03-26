@@ -97,6 +97,6 @@ def onDraw(drawev):
   pass
 
 qtapp = OrkEzQtApp.create( onGpuInit, onDraw)
-qtapp.setRefreshPolicy(FixedFPS, 60)
+qtapp.setRefreshPolicy(RefreshFixedFPS, 60)
 
 qtapp.exec()

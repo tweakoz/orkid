@@ -95,9 +95,9 @@ PYBIND11_MODULE(orklev2, m) {
   m.def("lev2apppoll", &lev2apppoll);
   /////////////////////////////////////////////////////////////////////////////////
   py::enum_<ERefreshPolicy>(m, "RefreshPolicy")
-      .value("Fastest", EREFRESH_FASTEST)
-      .value("WhenDirty", EREFRESH_WHENDIRTY)
-      .value("FixedFPS", EREFRESH_FIXEDFPS)
+      .value("RefreshFastest", EREFRESH_FASTEST)
+      .value("RefreshWhenDirty", EREFRESH_WHENDIRTY)
+      .value("RefreshFixedFPS", EREFRESH_FIXEDFPS)
       .export_values();
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<GfxEnv>(m, "GfxEnv")
