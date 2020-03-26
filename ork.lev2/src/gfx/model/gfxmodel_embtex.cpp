@@ -25,9 +25,11 @@ static std::string compressionOptsForUsage(ETextureUsage usage) {
   switch (usage) {
     case ETEXUSAGE_COLOR:
 #if defined(__APPLE__)
-      rval = "-bc7 -nocuda";
+      // rval = "-bc7 -nocuda";
+      rval = "-rgb -color";
 #else
-      rval = "-bc1";
+      // rval = "-bc1";
+      rval = "-rgb -color";
 #endif
       break;
     case ETEXUSAGE_NORMAL:
