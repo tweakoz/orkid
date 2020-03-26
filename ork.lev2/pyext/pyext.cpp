@@ -94,6 +94,12 @@ PYBIND11_MODULE(orklev2, m) {
   m.def("lev2appinit", &lev2appinit);
   m.def("lev2apppoll", &lev2apppoll);
   /////////////////////////////////////////////////////////////////////////////////
+  py::enum_<ERefreshPolicy>(m, "RefreshPolicy")
+      .value("Fastest", EREFRESH_FASTEST)
+      .value("WhenDirty", EREFRESH_WHENDIRTY)
+      .value("FixedFPS", EREFRESH_FIXEDFPS)
+      .export_values();
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<GfxEnv>(m, "GfxEnv")
       .def_readonly_static("ref", &GfxEnv::GetRef())
       .def("loadingContext", [](const GfxEnv& e) -> ctx_t { return ctx_t(GfxEnv::GetRef().loadingContext()); })
@@ -502,6 +508,11 @@ PYBIND11_MODULE(orklev2, m) {
             });
 
             return rval;
+          })
+      .def(
+          "setRefreshPolicy",
+          [](std::shared_ptr<OrkEzQtApp>& app, ERefreshPolicy policy, int fps) { //
+            app->setRefreshPolicy(RefreshPolicyItem{policy, fps});
           })
       .def("exec", [](std::shared_ptr<OrkEzQtApp>& app) -> int { //
         return app->exec();

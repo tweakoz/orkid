@@ -6,22 +6,21 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 
-import numpy, time
+import numpy, time, math
 from orkcore import *
 from orklev2 import *
 from PIL import Image
 
-#lev2appinit()
-#gfxenv = GfxEnv.ref
-#ctx = gfxenv.loadingContext()
-#print(ctx)
-#ctx.makeCurrent()
-
 class MyApp:
+
   ###########################
+
   def __init__(self):
+    self._time_base = time.time()
     pass
+
   ###########################
+
   def gpuInit(self,ctx):
     FBI = ctx.FBI()
     GBI = ctx.GBI()
@@ -51,19 +50,6 @@ class MyApp:
     self.prim.frustum = frust
     self.prim.gpuInit(ctx)
 
-    print(self.prim)
-    ###################################
-    # rtg setup
-    ###################################
-
-    FBI.autoclear = True
-    FBI.autoclear = True
-    #self.rtg = ctx.defaultRTG()
-    #ctx.resize(WIDTH,HEIGHT)
-    #capbuf = CaptureBuffer()
-
-    ###################################
-
   ###########################
 
   def draw(self,drawev):
@@ -73,8 +59,14 @@ class MyApp:
     WIDTH = ctx.mainSurfaceWidth()
     HEIGHT = ctx.mainSurfaceHeight()
 
+    elapsed = time.time()-self._time_base
+    phase = elapsed*0.1
+
+    x = math.sin(phase)*5
+    z = -math.cos(phase)*5
+
     pmatrix = ctx.perspective(70,WIDTH/HEIGHT,0.01,100.0)
-    vmatrix = ctx.lookAt(vec3(1,0.8,1),
+    vmatrix = ctx.lookAt(vec3(x,0.8,z),
                          vec3(0,0,0),
                          vec3(0,1,0))
 
@@ -83,10 +75,9 @@ class MyApp:
     FBI = ctx.FBI()
     GBI = ctx.GBI()
 
-    FBI.clearcolor = vec4(1,0,0,1)
+    FBI.autoclear = True
+    FBI.clearcolor = vec4(0,0,0,1)
     ctx.beginFrame()
-    #FBI.clear(vec4(0.6,0.6,0.7,1),1.0)
-    #ctx.debugMarker("yo")
     self.material.bindTechnique(self.tek)
     self.material.begin(RCFD)
     self.material.bindParamMatrix4(self.par_mvp,mvp_matrix)
@@ -106,4 +97,6 @@ def onDraw(drawev):
   pass
 
 qtapp = OrkEzQtApp.create( onGpuInit, onDraw)
+qtapp.setRefreshPolicy(FixedFPS, 60)
+
 qtapp.exec()

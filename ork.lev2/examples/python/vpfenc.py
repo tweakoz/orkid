@@ -100,8 +100,8 @@ for i in range(0,1200):
     ctx.beginFrame()
 
     mtl.bindTechnique(tek_vtxcolor)
-    RCFD = ctx.topRCFD()
 
+    RCFD = RenderContextFrameData(ctx)
 
     mtl.begin(RCFD)
     mtl.bindParamMatrix4(par_mvp,mvp_matrix)

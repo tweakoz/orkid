@@ -80,7 +80,7 @@ FBI.clear(vec4(0.6,0.6,0.7,1),1.0)
 ctx.debugMarker("yo")
 
 mtl.bindTechnique(tek)
-RCFD = ctx.topRCFD()
+RCFD = RenderContextFrameData(ctx)
 
 mtl.begin(RCFD)
 mtl.bindParamMatrix4(par_mvp,mvp_matrix)

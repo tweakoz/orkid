@@ -91,7 +91,7 @@ FBI.rtGroupPush(rtg)
 FBI.clear(vec4(0.6,0.6,0.7,1),1.0)
 ctx.debugMarker("yo")
 
-RCFD = ctx.topRCFD()
+RCFD = RenderContextFrameData(ctx)
 
 mtl.bindTechnique(tek)
 mtl.begin(RCFD)
