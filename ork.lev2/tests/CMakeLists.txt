@@ -7,7 +7,6 @@ project (ork.lev2.test CXX)
 include_directories(AFTER ${CMAKE_INSTALL_PREFIX}/include)
 
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/../src )
-message(${proj_unittestpp_SOURCE_DIR}/src )
 set( TESTSRCD ${CMAKE_CURRENT_SOURCE_DIR} )
 file(GLOB testsrcs ${TESTSRCD}/*.cpp)
 add_executable (ork.lev2.test.exe ${testsrcs} )

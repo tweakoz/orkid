@@ -21,30 +21,40 @@ set(PYTHON_LIBRARY $ENV{OBT_STAGE}/lib/libpython3.8d.so)
 ################################################################################
 
 IF(${APPLE})
+    set(XCODE_SDKBASE /Library/Developer/CommandLineTools/SDKs)
+    set(CMAKE_OSX_SYSROOT ${XCODE_SDKBASE}/MacOSX10.15.sdk)
+    set(CMAKE_MACOSX_RPATH 1)
+    LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "$ENV{OBT_STAGE}/lib" isSystemDir)
+    IF("${isSystemDir}" STREQUAL "-1")
+       SET(CMAKE_INSTALL_RPATH "$ENV{OBT_STAGE}/lib")
+    ENDIF("${isSystemDir}" STREQUAL "-1")
+    add_definitions(-DOSX -DORK_OSX)
 
-macro(ADD_OSX_FRAMEWORK fwname target)
-    find_library(FRAMEWORK_${fwname}
-    NAMES ${fwname}
-    PATHS ${CMAKE_OSX_SYSROOT}/System/Library
-    PATH_SUFFIXES Frameworks
-    NO_DEFAULT_PATH)
-    if( ${FRAMEWORK_${fwname}} STREQUAL FRAMEWORK_${fwname}-NOTFOUND)
-        MESSAGE(ERROR ": Framework ${fwname} not found")
-    else()
-        TARGET_LINK_LIBRARIES(${target} PUBLIC "${FRAMEWORK_${fwname}}/${fwname}")
-        MESSAGE(STATUS "Framework ${fwname} found at ${FRAMEWORK_${fwname}}")
-    endif()
-endmacro(ADD_OSX_FRAMEWORK)
+    macro(ADD_OSX_FRAMEWORK fwname target)
+        find_library(FRAMEWORK_${fwname}
+        NAMES ${fwname}
+        PATHS ${CMAKE_OSX_SYSROOT}/System/Library
+        PATH_SUFFIXES Frameworks
+        NO_DEFAULT_PATH)
+        if( ${FRAMEWORK_${fwname}} STREQUAL FRAMEWORK_${fwname}-NOTFOUND)
+            MESSAGE(ERROR ": Framework ${fwname} not found")
+        else()
+            TARGET_LINK_LIBRARIES(${target} PUBLIC "${FRAMEWORK_${fwname}}/${fwname}")
+            MESSAGE(STATUS "Framework ${fwname} found at ${FRAMEWORK_${fwname}}")
+        endif()
+    endmacro(ADD_OSX_FRAMEWORK)
 
-set(CMAKE_MACOSX_RPATH 1)
-LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "$ENV{OBT_STAGE}/lib" isSystemDir)
-IF("${isSystemDir}" STREQUAL "-1")
-   SET(CMAKE_INSTALL_RPATH "$ENV{OBT_STAGE}/lib")
-ENDIF("${isSystemDir}" STREQUAL "-1")
-add_definitions(-DOSX -DORK_OSX)
+    set(CMAKE_MACOSX_RPATH 1)
+    LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "$ENV{OBT_STAGE}/lib" isSystemDir)
+    IF("${isSystemDir}" STREQUAL "-1")
+       SET(CMAKE_INSTALL_RPATH "$ENV{OBT_STAGE}/lib")
+    ENDIF("${isSystemDir}" STREQUAL "-1")
+    add_definitions(-DOSX -DORK_OSX)
+    link_directories(/usr/local/lib) # homebrew
+
 ELSE()
-add_definitions(-DIX -DLINUX -DGCC)
-add_compile_options(-D_REENTRANT -DQT_NO_EXCEPTIONS -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE -DQT_GUI_LIB -DQT_CORE_LIB)
+    add_definitions(-DIX -DLINUX -DGCC)
+    add_compile_options(-D_REENTRANT -DQT_NO_EXCEPTIONS -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE -DQT_GUI_LIB -DQT_CORE_LIB)
 ENDIF()
 
 add_compile_definitions(QTVER=$ENV{QTVER})

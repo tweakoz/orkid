@@ -10,7 +10,6 @@ FIND_PACKAGE( pybind11 REQUIRED )
 
 ###################################
 
-  MESSAGE("YO")
   INCLUDE_DIRECTORIES(
     ${PYTHON_INCLUDE_DIRS}
     ${PYBIND11_INCLUDE_DIRS}

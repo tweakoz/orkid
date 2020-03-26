@@ -28,7 +28,6 @@ build_dest.mkdir(parents=True,exist_ok=True)
 build_dest.chdir()
 
 prj_root = Path(os.environ["ORKID_WORKSPACE_DIR"])
-print(os.environ)
 stage_dir = Path(os.path.abspath(str(ork.path.stage())))
 ork_root = prj_root
 ok = True
@@ -40,8 +39,6 @@ ok = True
 if _args["ez"]!=False:
     this_script = ork_root/"build.py"
     init_env_script = ork_root/"ork.build"/"bin"/"init_env.py"
-    print(this_script)
-    print(init_env_script)
     init_env = [init_env_script,"--launch",stage_dir]
     ch_ork_root = ["--chdir",ork_root]
     ch_tuio = ["--chdir",stage_dir/"orkid"/"ork.tuio"]
@@ -56,12 +53,6 @@ if _args["ez"]!=False:
 
     docmd(init_env+ch_ork_root+["--command","obt.dep.build.py pkgconfig"])
     docmd(init_env+ch_ork_root+["--command","obt.dep.build.py python"])
-    #docmd(init_env+ch_ork_root+["--command","obt.pip.install.py pytest"])
-    #docmd(init_env+ch_ork_root+["--command","obt.pip.install.py yarl"])
-    #docmd(init_env+ch_ork_root+["--command","obt.pip.install.py numpi"])
-    #docmd(init_env+ch_ork_root+["--command","obt.pip.install.py scipy"])
-    #docmd(init_env+ch_ork_root+["--command","obt.pip.install.py zmq"])
-    #docmd(init_env+ch_ork_root+["--command","obt.dep.build.py qt5"])
     Command(init_env+ch_ork_root+["--command","./build.py --debug"]).exec()
     docmd(init_env+ch_tuio+["--command","make install"])
     docmd(init_env+ch_ork_root+["--command","./build.py --debug"])
@@ -75,9 +66,11 @@ if _args["ez"]!=False:
 # ensure deps present
 ######################################################################
 
-ork.dep.require(["bullet","openexr","oiio","fcollada","assimp","nvtt","lua","python","pybind11"])
+ork.dep.require(["bullet","openexr","oiio","fcollada","assimp","nvtt","lua","python","pybind11","glfw","ispctexc"])
+if ork.host.IsOsx:
+   ork.dep.require(["moltenvk"])
 if ork.host.IsLinux:
-    ork.dep.require(["openvr","ispctexc"])
+   ork.dep.require(["vulkan","openvr"])
 
 ######################################################################
 # prep for build

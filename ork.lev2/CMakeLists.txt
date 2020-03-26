@@ -39,7 +39,7 @@ add_library (ork_lev2 SHARED ${orksrcs} )
 ###################################
 
 set( libs ork_core ork_tuio )
-list(APPEND libs OpenImageIO OpenImageIO_Util portaudio )
+list(APPEND libs OpenImageIO OpenImageIO_Util portaudio ispc_texcomp )
 
 IF(${APPLE})
     target_include_directories (ork_lev2 PRIVATE /usr/local/include)
@@ -57,7 +57,7 @@ ELSEIF(${UNIX})
     set(ENV{PATH}=$ENV{PATH}:${VULKAN_SDK}/bin)
     set(ENV{LD_LIBRARY_PATH}=$ENV{LD_LIBRARY_PATH}:${VULKAN_SDK}/lib)
     set(ENV{VK_LAYER_PATH}=${VULKAN_SDK}/etc/vulkan/explicit_layer.d)
-    list(APPEND libs rt dl pthread GL Qt5::X11Extras openvr_api Xrandr vulkan ispc_texcomp )
+    list(APPEND libs rt dl pthread GL Qt5::X11Extras openvr_api Xrandr vulkan )
 ENDIF()
 
 list(APPEND libs Qt5::Widgets Qt5::Core Qt5::Gui)

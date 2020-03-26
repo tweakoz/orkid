@@ -12,8 +12,8 @@
 
 #include <ork/kernel/atomic.h>
 
-#include "mutex.h"
-#include "semaphore.h"
+#include <ork/kernel/mutex.h>
+#include <ork/kernel/semaphore.h>
 #include <queue>
 #include <set>
 
@@ -227,7 +227,7 @@ struct TrackCurrent : public ork::util::ContextTLS<TrackCurrent> {
   inline TrackCurrent(OperationsQueue* q)
       : _queue(q) {
   }
-  static bool is(const OperationsQueue&rhs);
+  static bool is(const OperationsQueue& rhs);
   OperationsQueue* _queue;
 };
 void assertOnQueue2(OperationsQueue& the_opQ);
