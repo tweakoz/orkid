@@ -66,11 +66,11 @@ if _args["ez"]!=False:
 # ensure deps present
 ######################################################################
 
-ork.dep.require(["bullet","openexr","oiio","fcollada","assimp","nvtt","lua","python","pybind11","glfw"])
-#if ork.host.IsOsx:
-#   ork.dep.require(["moltenvk"])
+ork.dep.require(["bullet","openexr","oiio","fcollada","assimp","nvtt","lua","python","pybind11","glfw","ispctexc"])
+if ork.host.IsOsx:
+   ork.dep.require(["moltenvk"])
 if ork.host.IsLinux:
-    ork.dep.require(["openvr","ispctexc","vulkan"])
+   ork.dep.require(["vulkan","openvr"])
 
 ######################################################################
 # prep for build
