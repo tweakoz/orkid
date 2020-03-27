@@ -54,7 +54,8 @@ vertex_shader vs_lines : iface_vdefault {
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_frustum : iface_vdefault : lib_math {
   gl_Position = MatMVP * position;
-  frg_pos = position.xyz;
+  frg_pos = MatNormal*position.xyz;
+
   float light = 3*saturateF(dot(MatNormal*normal,vec3(0,0,1)));
   frg_clr     = vec4(vtxcolor.xyz*light,1);
   frg_uv0     = uv0;
@@ -67,20 +68,20 @@ fragment_shader ps_texvtxcolor_noalpha : iface_fdefault {
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_frustum : iface_fdefault : lib_math {
   // octave noise with volume texture
-  int numoctaves = 2;
+  int numoctaves = 8;
   float val = 0;
-  float freq = 0.5;
-  float amp = 0.3;
+  float freq = 1.0;
+  float amp = 0.25;
   float timesh = time;
   for( int i=0; i<numoctaves; i++ ){
     vec3 uvw = frg_pos*freq;
-    uvw += vec3(timesh*0.02/freq,0,0);
+    uvw += vec3(timesh*0.1/freq);
     val += texture(VolumeMap,uvw).x*amp;
-    freq *= 0.3;
-    //amp *= 0.2;
+    freq *= 0.7;
+    amp *= 0.8;
     timesh *= 0.5;
   }
-  val = saturateF(val);
+  val = pow(saturateF(val),2);
   vec3 color = vec3(val,val,val)*frg_clr.xyz;
   out_clr = vec4(color,1);
 }

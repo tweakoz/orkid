@@ -78,7 +78,7 @@ class MyApp:
     GBI = ctx.GBI()
 
     FBI.autoclear = True
-    FBI.clearcolor = vec4(0,0,0,1)
+    FBI.clearcolor = vec4(.15,.15,.2,1)
     ctx.beginFrame()
     self.nsh.beginNoise(RCFD,Δtime)
     self.nsh.bindMvpMatrix(mvp_matrix)
