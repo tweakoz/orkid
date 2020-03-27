@@ -368,6 +368,7 @@ void Set2D(
     DataBlockInputStream inpstream);
 void Set3D(
     GlTextureInterface* txi,
+    Texture* tex,
     /*GLuint numC,*/ GLuint fmt,
     GLuint typ,
     GLuint tgt,
@@ -378,6 +379,7 @@ void Set3D(
     DataBlockInputStream inpstream);
 void Set2DC(
     GlTextureInterface* txi,
+    Texture* tex,
     GLuint fmt,
     GLuint tgt,
     int BPP,
@@ -387,6 +389,7 @@ void Set2DC(
     DataBlockInputStream inpstream);
 void Set3DC(
     GlTextureInterface* txi,
+    Texture* tex,
     GLuint fmt,
     GLuint tgt,
     int BPP,
@@ -395,7 +398,7 @@ void Set3DC(
     int& ih,
     int& id,
     DataBlockInputStream inpstream);
-    
+
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

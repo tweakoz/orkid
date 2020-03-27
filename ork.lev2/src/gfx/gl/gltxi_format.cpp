@@ -215,6 +215,7 @@ void Set2D(
 
 void Set3D(
     GlTextureInterface* txi,
+    Texture* tex,
     /*GLuint numC,*/ GLuint fmt,
     GLuint typ,
     GLuint tgt,
@@ -262,6 +263,7 @@ void Set3D(
 
 void Set2DC(
     GlTextureInterface* txi,
+    Texture* tex,
     GLuint fmt,
     GLuint tgt,
     int BPP,
@@ -314,6 +316,7 @@ void Set2DC(
 
 void Set3DC(
     GlTextureInterface* txi,
+    Texture* tex,
     GLuint fmt,
     GLuint tgt,
     int BPP,

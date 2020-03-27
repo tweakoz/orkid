@@ -107,6 +107,20 @@ private:
   TextureAnimationBase* mpAnim;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct Image {
+
+  ~Image();
+  void init(size_t w, size_t h, size_t numc);
+  void downsample(Image& imgout) const;
+
+  uint8_t* _pixels      = nullptr;
+  size_t _width         = 0;
+  size_t _height        = 0;
+  size_t _numcomponents = 4; // 3 or 4
+};
+
 //////////////////////////////////////////////////////////////////////////
 
 struct MipChainLevel {

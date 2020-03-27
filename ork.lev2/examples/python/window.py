@@ -10,6 +10,7 @@ import numpy, time, math
 from orkcore import *
 from orklev2 import *
 from PIL import Image
+import _shaders
 
 class MyApp:
 
@@ -24,14 +25,14 @@ class MyApp:
   def gpuInit(self,ctx):
     FBI = ctx.FBI()
     GBI = ctx.GBI()
+    self.nsh = _shaders.Shader(ctx)
+
     self.material = FreestyleMaterial()
     self.material.gpuInit(ctx,Path("orkshader://solid"))
     self.tek = self.material.shader.technique("vtxcolor")
     self.par_mvp = self.material.shader.param("MatMVP")
 
-    print(self.material)
-    print(self.tek)
-    print(self.par_mvp)
+    self.volumetexture = Texture.load("lev2://textures/voltex_pn3")
 
     ###################################
 
@@ -59,16 +60,17 @@ class MyApp:
     WIDTH = ctx.mainSurfaceWidth()
     HEIGHT = ctx.mainSurfaceHeight()
 
-    elapsed = time.time()-self._time_base
-    phase = elapsed*0.1
+    Δtime = time.time()-self._time_base
+    θ = Δtime*0.1
 
-    x = math.sin(phase)*5
-    z = -math.cos(phase)*5
+    x = math.sin(θ)*5
+    z = -math.cos(θ)*5
 
     pmatrix = ctx.perspective(70,WIDTH/HEIGHT,0.01,100.0)
     vmatrix = ctx.lookAt(vec3(x,0.8,z),
                          vec3(0,0,0),
                          vec3(0,1,0))
+    rotmatrix = vmatrix.toRotMatrix3()
 
     mvp_matrix = vmatrix*pmatrix
 
@@ -78,11 +80,12 @@ class MyApp:
     FBI.autoclear = True
     FBI.clearcolor = vec4(0,0,0,1)
     ctx.beginFrame()
-    self.material.bindTechnique(self.tek)
-    self.material.begin(RCFD)
-    self.material.bindParamMatrix4(self.par_mvp,mvp_matrix)
+    self.nsh.beginNoise(RCFD,Δtime)
+    self.nsh.bindMvpMatrix(mvp_matrix)
+    self.nsh.bindRotMatrix(rotmatrix)
+    self.nsh.bindVolumeTex(self.volumetexture)
     self.prim.draw(ctx)
-    self.material.end(RCFD)
+    self.nsh.end(RCFD)
     ctx.endFrame()
 
 ##############################################

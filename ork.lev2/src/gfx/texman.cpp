@@ -144,25 +144,21 @@ MipChain::~MipChain() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-struct Image {
 
-  ~Image() {
-    if (_pixels)
-      free(_pixels);
-  }
-  inline void init(size_t w, size_t h, size_t numc) {
-    _numcomponents = numc;
-    _width         = w;
-    _height        = h;
-    _pixels        = (uint8_t*)malloc(_width * _height * numc);
-  }
-  void downsample(Image& imgout) const;
+Image::~Image() {
+  if (_pixels)
+    free(_pixels);
+}
 
-  uint8_t* _pixels      = nullptr;
-  size_t _width         = 0;
-  size_t _height        = 0;
-  size_t _numcomponents = 4; // 3 or 4
-};
+///////////////////////////////////////////////////////////////////////////////
+
+void Image::init(size_t w, size_t h, size_t numc) {
+  _numcomponents = numc;
+  _width         = w;
+  _height        = h;
+  _pixels        = (uint8_t*)malloc(_width * _height * numc);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void Image::downsample(Image& imgout) const {

@@ -58,11 +58,16 @@ struct EzViewport : public ui::Viewport {
   void DoDraw(ui::DrawEvent& drwev) final {
 
     if (_mainwin->_onGpuInit and _mainwin->_dogpuinit) {
+      drwev.GetTarget()->makeCurrentContext();
       FontMan::gpuInit(drwev.GetTarget());
+      drwev.GetTarget()->makeCurrentContext();
       _mainwin->_onGpuInit(drwev.GetTarget());
+      while (ork::opq::mainSerialQueue().Process()) {
+      }
       _mainwin->_dogpuinit = false;
     }
     if (_mainwin->_onDraw) {
+      drwev.GetTarget()->makeCurrentContext();
       _mainwin->_onDraw(drwev);
     }
     double this_time           = _mainwin->_render_timer.SecsSinceStart();

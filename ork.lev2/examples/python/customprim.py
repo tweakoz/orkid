@@ -10,6 +10,7 @@ import numpy, time
 from orkcore import *
 from orklev2 import *
 from PIL import Image
+import _shaders
 
 ################################################################################
 # set up image dimensions, with antialiasing
@@ -21,109 +22,6 @@ HEIGHT = 640
 AAWIDTH = WIDTH*ANTIALIASDIM
 AAHEIGHT = HEIGHT*ANTIALIASDIM
 
-################################################################################
-
-shadertext = """
-fxconfig fxcfg_default {
-    glsl_version = "410";
-    import "orkshader://mathtools.i"
-}
-///////////////////////////////////////////////////////////////
-uniform_set ublock_vtx {
-  mat4 MatMVP;
-  mat3 MatNormal;
-}
-///////////////////////////////////////////////////////////////
-uniform_set ublock_frg {
-  sampler2D ColorMap;
-  sampler3D VolumeMap;
-}
-///////////////////////////////////////////////////////////////
-vertex_interface iface_vdefault : ublock_vtx {
-  inputs {
-    vec4 position : POSITION;
-    vec4 vtxcolor : COLOR0;
-    vec3 normal : NORMAL;
-    vec2 uv0 : TEXCOORD0;
-  }
-  outputs {
-    vec4 frg_clr;
-    vec3 frg_pos;
-    vec2 frg_uv0;
-  }
-}
-///////////////////////////////////////////////////////////////
-fragment_interface iface_fdefault : ublock_frg {
-  inputs {
-    vec4 frg_clr;
-    vec3 frg_pos;
-    vec2 frg_uv0;
-  }
-  outputs { layout(location = 0) vec4 out_clr; }
-}
-///////////////////////////////////////////////////////////////
-state_block sb_default : default { CullTest = PASS_FRONT; }
-state_block sb_additive : sb_default { BlendMode = ADDITIVE; }
-///////////////////////////////////////////////////////////////
-vertex_shader vs_lines : iface_vdefault {
-  gl_Position = MatMVP * position;
-  frg_pos = position.xyz;
-  frg_clr     = vtxcolor;
-  frg_uv0     = uv0;
-}
-///////////////////////////////////////////////////////////////
-vertex_shader vs_frustum : iface_vdefault : lib_math {
-  gl_Position = MatMVP * position;
-  frg_pos = position.xyz;
-  float light = 3*saturateF(dot(MatNormal*normal,vec3(0,0,1)));
-  frg_clr     = vec4(vtxcolor.xyz*light,1);
-  frg_uv0     = uv0;
-}
-///////////////////////////////////////////////////////////////
-fragment_shader ps_texvtxcolor_noalpha : iface_fdefault {
-  vec4 texc = texture(ColorMap, frg_uv0);
-  out_clr   = vec4(texc.xyz * frg_clr.xyz, 1.0);
-}
-///////////////////////////////////////////////////////////////
-fragment_shader ps_frustum : iface_fdefault {
-  // octave noise with volume texture
-  int numoctaves = 8;
-  float val = 0;
-  float freq = 0.1;
-  float amp = 1.0;
-  for( int i=0; i<numoctaves; i++ ){
-    val += texture(VolumeMap, frg_pos*freq).x*amp;
-    freq *= 2.1;
-    amp *= 0.7;
-  }
-  val = pow(val,5.5)*.02;
-  vec4 tex = vec4(val,val,val,0);
-  out_clr = frg_clr-tex;
-}
-///////////////////////////////////////////////////////////////
-fragment_shader ps_lines : iface_fdefault {
-  out_clr = frg_clr;
-}
-///////////////////////////////////////////////////////////////
-technique tek_frustum {
-  fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_frustum;
-    fragment_shader = ps_frustum;
-    state_block     = sb_additive;
-  }
-}
-///////////////////////////////////////////////////////////////
-technique tek_lines {
-  fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_lines;
-    fragment_shader = ps_lines;
-    state_block     = sb_default;
-  }
-}
-///////////////////////////////////////////////////////////////
-"""
 ###################################
 # setup context, shaders
 ###################################
@@ -137,18 +35,7 @@ print(ctx)
 ctx.makeCurrent()
 FontManager.gpuInit(ctx)
 
-###################################
-
-mtl = FreestyleMaterial()
-mtl.gpuInitFromShaderText(ctx,"frusprim",shadertext)
-tek_frustum = mtl.shader.technique("tek_frustum")
-tek_lines = mtl.shader.technique("tek_lines")
-
-par_mvp = mtl.shader.param("MatMVP")
-par_mnormal = mtl.shader.param("MatNormal")
-par_tex = mtl.shader.param("ColorMap")
-par_tex3d = mtl.shader.param("VolumeMap")
-
+sh = _shaders.Shader(ctx)
 ###################################
 # setup primitive
 ###################################
@@ -226,7 +113,7 @@ rtg = ctx.defaultRTG()
 ctx.resize(AAWIDTH,AAHEIGHT)
 capbuf = CaptureBuffer()
 
-texture = Texture.load("lev2://textures/voltex_pn0")
+texture = Texture.load("lev2://textures/voltex_pn3")
 print(texture)
 lev2apppoll() # process opq
 
@@ -262,21 +149,20 @@ ctx.debugMarker("yo")
 
 RCFD = RenderContextFrameData(ctx)
 
-mtl.bindTechnique(tek_frustum)
-mtl.begin(RCFD)
-mtl.bindParamMatrix4(par_mvp,mvp_matrix)
-mtl.bindParamMatrix3(par_mnormal,rotmatrix)
-#mtl.bindParamTexture(par_tex,texture)
-mtl.bindParamTexture(par_tex3d,texture)
+sh._mtl.bindTechnique(sh._tek_frustum)
+sh.beginNoise(RCFD,0.0)
+sh.bindMvpMatrix(mvp_matrix)
+sh.bindRotMatrix(rotmatrix)
+sh.bindVolumeTex(texture)
 
 prim.draw(ctx)
-mtl.end(RCFD)
+sh.end(RCFD)
 
-mtl.bindTechnique(tek_lines)
-mtl.begin(RCFD)
-mtl.bindParamMatrix4(par_mvp,mtx4())
+sh._mtl.bindTechnique(sh._tek_lines)
+sh.beginLines(RCFD)
+sh._mtl.bindParamMatrix4(sh._par_mvp,mtx4())
 GBI.drawLines(vw)
-mtl.end(RCFD)
+sh.end(RCFD)
 
 FontManager.beginTextBlock(ctx,"i32",vec4(0,0,.1,1),WIDTH,HEIGHT,100)
 FontManager.draw(ctx,0,0,"!!! YO !!!\nThis is a textured Frustum.")

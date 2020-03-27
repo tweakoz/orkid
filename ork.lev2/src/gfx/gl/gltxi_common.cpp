@@ -438,17 +438,16 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
   if (dds::IsLUM(ddsh->ddspf)) {
     // printf( "  tex<%s> LUM\n", infname.c_str() );
     if (bVOLUMETEX)
-      Set3D(this, GL_RED, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+      Set3D(this, ptex, GL_RED, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
     else
       Set2D(this, ptex, 1, GL_RED, GL_UNSIGNED_BYTE, TARGET, 1, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
   } else if (dds::IsBGR5A1(ddsh->ddspf)) {
     const dds::DdsLoadInfo& li = dds::loadInfoBGR5A1;
     // printf( "  tex<%s> BGR5A1\n", infname.c_str() );
     // printf( "  tex<%s> size<%d>\n", infname.c_str(), 2 );
-    if (bVOLUMETEX)
-      Set3D(
-          this, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
-    else
+    if (bVOLUMETEX) {
+      Set3D(this, ptex, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr,
+    } else
       Set2D(this, ptex, 4, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, 2, NumMips, iwidth, iheight, req._inpstream); // ireadptr,
                                                                                                                      // pdata
                                                                                                                      // );
@@ -457,9 +456,9 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
     int size                   = idepth * iwidth * iheight * 4;
     // printf("  tex<%s> BGRA8\n", infname.c_str());
     // printf( "  tex<%s> size<%d>\n", infname.c_str(), size );
-    if (bVOLUMETEX)
-      Set3D(this, GL_RGBA, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
-    else {
+    if (bVOLUMETEX) {
+      Set3D(this, ptex, GL_RGBA, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+    } else {
       Set2D(this, ptex, 4, GL_BGRA, GL_UNSIGNED_BYTE, TARGET, 4, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
 
       if (NumMips > 3) {
@@ -474,15 +473,13 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
     // printf( "  tex<%s> BGR8\n", TextureFile.msFileName.c_str() );
     // printf( "  tex<%s> size<%d>\n", TextureFile.msFileName.c_str(), size );
     // printf( "  tex<%s> BGR8\n", infname.c_str() );
-    if (bVOLUMETEX)
-      Set3D(this, GL_BGR, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
-    else
+    if (bVOLUMETEX) {
+      Set3D(this, ptex, GL_BGR, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+    } else
       Set2D(this, ptex, 3, GL_BGR, GL_UNSIGNED_BYTE, TARGET, 3, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
     GL_ERRORCHECK();
     if (NumMips > 3) {
       ptex->TexSamplingMode().PresetTrilinearWrap();
-      ApplySamplingMode(ptex);
-      // assert(false);
     }
   }
   //////////////////////////////////////////////////////////
@@ -493,10 +490,10 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
     int size                   = (iBwidth * iBheight) * li.blockBytes;
     // printf("  tex<%s> DXT5\n", infname.c_str());
     // printf("  tex<%s> size<%d>\n", infname.c_str(), size);
-    if (bVOLUMETEX)
-      Set3DC(this, kRGBA_DXT5, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
-    else
-      Set2DC(this, kRGBA_DXT5, TARGET, li.blockBytes, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
+    if (bVOLUMETEX) {
+      Set3DC(this, ptex, kRGBA_DXT5, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+    } else
+      Set2DC(this, ptex, kRGBA_DXT5, TARGET, li.blockBytes, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
     GL_ERRORCHECK();
     //////////////////////////////////////
   }
@@ -509,10 +506,10 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
     // printf("  tex<%s> DXT3\n", infname.c_str());
     // printf("  tex<%s> size<%d>\n", infname.c_str(), size);
 
-    if (bVOLUMETEX)
-      Set3DC(this, kRGBA_DXT3, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
-    else
-      Set2DC(this, kRGBA_DXT3, TARGET, li.blockBytes, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
+    if (bVOLUMETEX) {
+      Set3DC(this, ptex, kRGBA_DXT3, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+    } else
+      Set2DC(this, ptex, kRGBA_DXT3, TARGET, li.blockBytes, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
   }
   //////////////////////////////////////////////////////////
   // DXT1: texturing fast path (4 bits per pixel true color)
@@ -522,16 +519,20 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
     int size                   = (iBwidth * iBheight) * li.blockBytes;
     // printf("  tex<%s> DXT1\n", infname.c_str());
     // printf("  tex<%s> size<%d>\n", infname.c_str(), size);
-    if (bVOLUMETEX)
-      Set3DC(this, kRGBA_DXT1, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
-    else
-      Set2DC(this, kRGBA_DXT1, TARGET, li.blockBytes, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
+    if (bVOLUMETEX) {
+      Set3DC(this, ptex, kRGBA_DXT1, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+    } else
+      Set2DC(this, ptex, kRGBA_DXT1, TARGET, li.blockBytes, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
   }
   //////////////////////////////////////////////////////////
   // ???
   //////////////////////////////////////////////////////////
   else {
     OrkAssert(false);
+  }
+
+  if (bVOLUMETEX) {
+    ptex->TexSamplingMode().PresetTrilinearWrap();
   }
 
   this->ApplySamplingMode(ptex);

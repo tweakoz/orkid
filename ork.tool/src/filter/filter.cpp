@@ -23,6 +23,7 @@
 #include <ork/reflect/Functor.h>
 #include <ork/rtti/downcast.h>
 #include <orktool/toolcore/FunctionManager.h>
+#include <ork/kernel/datacache.inl>
 
 namespace ork { namespace MeshUtil {
 void PartitionMesh_FixedGrid3d_Driver(const tokenlist& options);
@@ -296,6 +297,11 @@ int Main_Filter(tokenlist toklist) {
       tokenlist newtoklist;
 
       newtoklist.insert(newtoklist.begin(), it, toklist.end());
+      for (auto tok : newtoklist) {
+        if (tok == "--nocache") {
+          DataBlockCache::_enabled = false;
+        }
+      }
 
       bool bret = AssetFilter::ConvertFile(ftype.c_str(), newtoklist);
       return bret ? 0 : -1;

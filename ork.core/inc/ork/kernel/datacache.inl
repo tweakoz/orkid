@@ -13,6 +13,7 @@ namespace ork {
 typedef std::unordered_map<uint64_t, datablockptr_t> datablockmap_t;
 
 struct DataBlockCache {
+  static bool _enabled;
   //////////////////////////////////////////////////////////////////////////////
   DataBlockCache() {
   }
@@ -31,6 +32,9 @@ struct DataBlockCache {
   }
   //////////////////////////////////////////////////////////////////////////////
   static inline datablockptr_t findDataBlock(uint64_t key) {
+    if (not _enabled) {
+      return nullptr;
+    }
     auto& inst          = instance();
     datablockptr_t rval = nullptr;
     auto cache_path     = _generateCachePath(key);

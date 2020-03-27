@@ -67,13 +67,10 @@ int main(int argc, char** argv) {
   //  at startup time
   //////////////////////////////////////////////////////////
   qtapp->onGpuInit([&](Context* ctx) {
-    ctx->debugPushGroup("main.onGpuInit");
+    // ctx->debugPushGroup("main.onGpuInit");
     auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/pbr1/pbr1");
     model           = modl_asset->GetModel();
     renderer.setContext(ctx);
-
-    while (asset::AssetManager<TextureAsset>::AutoLoad()) {
-    }
 
     for (int i = 0; i < 30; i++) {
       Instance inst;
@@ -83,7 +80,7 @@ int main(int argc, char** argv) {
       inst._drawable->SetModelInst(inst._xgminst);
       instances.push_back(inst);
     }
-    ctx->debugPopGroup();
+    // ctx->debugPopGroup();
   });
   //////////////////////////////////////////////////////////
   // update handler (called on update thread)
