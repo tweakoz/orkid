@@ -31,6 +31,17 @@ void Image::init(size_t w, size_t h, size_t numc) {
   _data->allocateBlock(_width * _height * _numcomponents);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+Image Image::clone() const {
+  Image rval;
+  rval._numcomponents = _numcomponents;
+  rval._width         = _width;
+  rval._height        = _height;
+  rval._data          = std::make_shared<DataBlock>(_data->data(), _data->length());
+  return rval;
+}
+
 static fvec3 _image_deco(0.1, 0.2, 0.3);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -143,6 +154,27 @@ void Image::compressBC7(CompressedImage& imgout) const {
   deco::printf(_image_deco, "// compression time<%g> MPPS<%g>\n", time, MPPS);
   deco::printf(_image_deco, "///////////////////////////////////\n");
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+CompressedImageMipChain Image::compressedMipChainBC7() const {
+  CompressedImageMipChain rval;
+  rval._width         = _width;
+  rval._height        = _height;
+  rval._format        = EBUFFMT_RGBA_BPTC_UNORM;
+  rval._numcomponents = 4;
+  Image imga          = this->clone();
+  Image imgb;
+  while ((imga._width > 4) and (imga._height > 4)) {
+    CompressedImage cimg;
+    imga.compressBC7(cimg);
+    rval._levels.push_back(cimg);
+    imgb = imga;
+    imgb.downsample(imga);
+  }
+  return rval;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////

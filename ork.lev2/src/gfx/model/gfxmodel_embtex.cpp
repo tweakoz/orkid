@@ -56,10 +56,7 @@ datablockptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
   if (0) { // ISPC compressor (WIP)
     Image img;
     img.initFromInMemoryFile(_format, _srcdata, _srcdatalen);
-    Image img2;
-    img.downsample(img2);
-    CompressedImage cimg;
-    img.compressBC7(cimg);
+    auto cimgchain = img.compressedMipChainBC7();
     OrkAssert(false);
   } else { // nvtt compressor
     auto options = compressionOptsForUsage(_usage);
