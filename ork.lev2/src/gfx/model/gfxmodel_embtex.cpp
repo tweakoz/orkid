@@ -14,6 +14,7 @@
 
 #include <ork/file/cfs.inl>
 #include <ork/kernel/spawner.h>
+#include <ork/lev2/gfx/image.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
@@ -28,8 +29,8 @@ static std::string compressionOptsForUsage(ETextureUsage usage) {
       // rval = "-bc7 -nocuda";
       rval = "-rgb -color";
 #else
-      rval = "-bc1";
-      // rval = "-rgb -color";
+      // rval = "-bc7 -fast -nocuda";
+      rval = "-rgb -color";
 #endif
       break;
     case ETEXUSAGE_NORMAL:
@@ -52,21 +53,30 @@ datablockptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
   fwrite(_srcdata, _srcdatalen, 1, fout);
   fclose(fout);
 
-  auto options = compressionOptsForUsage(_usage);
-  invoke_nvcompress(srcpath, ddspath, options);
+  if (0) { // ISPC compressor (WIP)
+    Image img;
+    img.initFromInMemoryFile(_format, _srcdata, _srcdatalen);
+    Image img2;
+    img.downsample(img2);
+    CompressedImage cimg;
+    img.compressBC7(cimg);
+    OrkAssert(false);
+  } else { // nvtt compressor
+    auto options = compressionOptsForUsage(_usage);
+    invoke_nvcompress(srcpath, ddspath, options);
 
-  FILE* fin = fopen(ddspath.c_str(), "rb");
-  fseek(fin, 0, SEEK_END);
-  size_t ddslen = ftell(fin);
-  fseek(fin, 0, SEEK_SET);
-  dblock->reserve(ddslen);
-  void* ddsdata  = malloc(ddslen);
-  size_t numread = fread(ddsdata, 1, ddslen, fin);
-  OrkAssert(numread == ddslen);
-  fclose(fin);
-  dblock->addData(ddsdata, ddslen);
-  free(ddsdata);
-
+    FILE* fin = fopen(ddspath.c_str(), "rb");
+    fseek(fin, 0, SEEK_END);
+    size_t ddslen = ftell(fin);
+    fseek(fin, 0, SEEK_SET);
+    dblock->reserve(ddslen);
+    void* ddsdata  = malloc(ddslen);
+    size_t numread = fread(ddsdata, 1, ddslen, fin);
+    OrkAssert(numread == ddslen);
+    fclose(fin);
+    dblock->addData(ddsdata, ddslen);
+    free(ddsdata);
+  }
   return dblock;
 }
 

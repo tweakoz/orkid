@@ -143,55 +143,6 @@ MipChain::~MipChain() {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-Image::~Image() {
-  if (_pixels)
-    free(_pixels);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void Image::init(size_t w, size_t h, size_t numc) {
-  _numcomponents = numc;
-  _width         = w;
-  _height        = h;
-  _pixels        = (uint8_t*)malloc(_width * _height * numc);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void Image::downsample(Image& imgout) const {
-  OrkAssert(_width & 1 == 0);
-  OrkAssert(_height & 1 == 0);
-  imgout.init(_width >> 1, _height >> 1, _numcomponents);
-  // todo parallelize (CPU(ISPC) or GPU(CUDA))
-  for (size_t y = 0; y < imgout._height; y++) {
-    size_t ya = y * 2;
-    size_t yb = ya + 1;
-    for (size_t x = 0; x < imgout._width; x++) {
-      size_t xa             = x * 2;
-      size_t xb             = xa + 1;
-      size_t out_index      = (y * imgout._width + x) * _numcomponents;
-      size_t inp_index_xaya = (ya * _width + xa) * _numcomponents;
-      size_t inp_index_xbya = (ya * _width + xb) * _numcomponents;
-      size_t inp_index_xayb = (yb * _width + xa) * _numcomponents;
-      size_t inp_index_xbyb = (yb * _width + xb) * _numcomponents;
-      for (size_t c = 0; c < _numcomponents; c++) {
-        double xaya                   = double(_pixels[inp_index_xaya + c]);
-        double xbya                   = double(_pixels[inp_index_xbya + c]);
-        double xayb                   = double(_pixels[inp_index_xayb + c]);
-        double xbyb                   = double(_pixels[inp_index_xbyb + c]);
-        double avg                    = (xaya + xbya + xayb + xbyb) * 0.25;
-        uint8_t uavg                  = uint8_t(avg * 255.0f);
-        imgout._pixels[out_index + c] = uavg;
-      }
-    }
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void bc7testcomp() {
 
   printf("Generating uncompressed texture...\n");

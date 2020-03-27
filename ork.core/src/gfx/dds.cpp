@@ -17,22 +17,29 @@ const DdsLoadInfo loadInfoDXT1 = {
     true,
     false,
     false,
-    4,
-    8 //, 0 //GL_COMPRESSED_RGBA_S3TC_DXT1
+    4, // tile size 4x4
+    8  // block size (bytes)
 };
 const DdsLoadInfo loadInfoDXT3 = {
     true,
     false,
     false,
-    4,
-    16 //, 0 //GL_COMPRESSED_RGBA_S3TC_DXT3
+    4, // tile size 4x4
+    16 // block size (bytes)
 };
 const DdsLoadInfo loadInfoDXT5 = {
     true,
     false,
     false,
-    4,
-    16 //, 0 //GL_COMPRESSED_RGBA_S3TC_DXT5
+    4, // tile size 4x4
+    16 // block size (bytes)
+};
+const DdsLoadInfo loadInfoBC7 = {
+    true,
+    false,
+    false,
+    4, // tile size 4x4
+    16 // block size (bytes)
 };
 const DdsLoadInfo loadInfoRGBA8 = {
     false,
@@ -145,6 +152,24 @@ bool IsDXT5(const DDS_PIXELFORMAT& pf) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+bool IsDX10(const DDS_PIXELFORMAT& pf) {
+  bool bv = (pf.dwFlags & DDS_FOURCC);
+  bv &= (pf.dwFourCC == FOURCC_DX10);
+  return bv;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool IsBC7(const DDS_PIXELFORMAT& pf) {
+  bool bv = IsDX10(pf);
+  if (bv) {
+    OrkAssert(false);
+  }
+  return bv;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 bool IsABGR8(const DDS_PIXELFORMAT& pf) {
   bool bv =
       ((pf.dwFlags & DDSD_RGBA) && (pf.dwRGBBitCount == 32) && (pf.dwRBitMask == 0x00ff0000) && (pf.dwGBitMask == 0x0000ff00) &&
@@ -191,10 +216,18 @@ Image::Image(datablockptr_t dblock) {
   const auto& ddsh = inpstream.getItem<DDS_HEADER>();
   mHeader          = ddsh;
   ////////////////////////////////////////////////////////////////////
-  int NumMips        = (ddsh.dwFlags & DDSD_MIPMAPCOUNT) ? ddsh.dwMipMapCount : 1;
-  _width             = ddsh.dwWidth;
-  _height            = ddsh.dwHeight;
-  _depth             = (ddsh.dwDepth > 1) ? ddsh.dwDepth : 1;
+  int NumMips = (ddsh.dwFlags & DDSD_MIPMAPCOUNT) ? ddsh.dwMipMapCount : 1;
+  _width      = ddsh.dwWidth;
+  _height     = ddsh.dwHeight;
+  _depth      = (ddsh.dwDepth > 1) ? ddsh.dwDepth : 1;
+  ////////////////////////////////////////////////////////////////////
+  if (IsDX10(ddsh.ddspf)) {
+    const auto& dx10header = inpstream.getItem<DDS_HEADER_DX10_EXT>();
+    uint32_t dxgiFormat    = dx10header.dxgiFormat;
+    printf("dxgiFormat<0x%08x>\n", dxgiFormat);
+    assert(false);
+  }
+  ////////////////////////////////////////////////////////////////////
   size_t imagedatlen = ifilelen - sizeof(DDS_HEADER);
   auto imagedata     = malloc(imagedatlen);
   _imagedata         = imagedata;
@@ -214,6 +247,11 @@ Image::Image(datablockptr_t dblock) {
   } else if (IsDXT5(ddsh.ddspf)) {
     _format   = EFMT_DXT5;
     mLoadInfo = loadInfoDXT5;
+  } else if (IsBC7(ddsh.ddspf)) {
+    _format   = EFMT_BC7;
+    mLoadInfo = loadInfoBC7;
+  } else if (IsDX10(ddsh.ddspf)) {
+    OrkAssert(false);
   } else if (IsBGRA8(ddsh.ddspf)) {
     _format   = EFMT_BGRA8;
     mLoadInfo = loadInfoBGRA8;

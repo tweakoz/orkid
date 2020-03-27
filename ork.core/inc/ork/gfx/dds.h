@@ -15,6 +15,7 @@ enum DxtFormat {
   EFMT_DXT1 = 0,
   EFMT_DXT3,
   EFMT_DXT5,
+  EFMT_BC7,
   EFMT_BGRA8,
   EFMT_BGR8,
   EFMT_RGB8,
@@ -39,6 +40,7 @@ struct DdsLoadInfo {
 extern const DdsLoadInfo loadInfoDXT1;
 extern const DdsLoadInfo loadInfoDXT3;
 extern const DdsLoadInfo loadInfoDXT5;
+extern const DdsLoadInfo loadInfoBC7;
 extern const DdsLoadInfo loadInfoBGRA8;
 extern const DdsLoadInfo loadInfoBGR8;
 extern const DdsLoadInfo loadInfoBGR5A1;
@@ -67,6 +69,7 @@ const uint32_t DDS_VOLUME  = 0x00200000;
 const uint32_t FOURCC_DXT1 = 0x31545844; //(MAKEFOURCC('D','X','T','1'))
 const uint32_t FOURCC_DXT3 = 0x33545844; //(MAKEFOURCC('D','X','T','3'))
 const uint32_t FOURCC_DXT5 = 0x35545844; //(MAKEFOURCC('D','X','T','5'))
+const uint32_t FOURCC_DX10 = 0x30315844; //(MAKEFOURCC('D','X','T','5'))
 
 struct DDS_PIXELFORMAT {
   uint32_t dwSize;
@@ -99,6 +102,14 @@ struct DXT5AlphaBlock {
   unsigned char row[6];
 };
 
+struct DDS_HEADER_DX10_EXT {
+  uint32_t dxgiFormat;        // see https://docs.microsoft.com/en-us/windows/win32/api/dxgiformat/ne-dxgiformat-dxgi_format
+  uint32_t resourceDimension; // 0: unknown, 1: buffer, 2: tex1d, 3: tex2d, 4: tex3d
+  uint32_t miscFlag;
+  uint32_t arraySize;
+  uint32_t miscFlags2;
+};
+
 struct DDS_HEADER {
   uint32_t dwMagic;
   uint32_t dwSize;
@@ -112,7 +123,9 @@ struct DDS_HEADER {
   DDS_PIXELFORMAT ddspf;
   uint32_t dwCaps1;
   uint32_t dwCaps2;
-  uint32_t dwReserved2[3];
+  uint32_t dwCaps3;
+  uint32_t dwCaps4;
+  uint32_t dwReserved2;
 
   void FixEndian();
 };
@@ -125,6 +138,8 @@ bool IsRGBA8(const DDS_PIXELFORMAT& pf);
 bool IsDXT1(const DDS_PIXELFORMAT& pf);
 bool IsDXT3(const DDS_PIXELFORMAT& pf);
 bool IsDXT5(const DDS_PIXELFORMAT& pf);
+bool IsDX10(const DDS_PIXELFORMAT& pf);
+bool IsBC7(const DDS_PIXELFORMAT& pf);
 
 bool IsABGR8(const DDS_PIXELFORMAT& pf);
 bool IsRGB8(const DDS_PIXELFORMAT& pf);
