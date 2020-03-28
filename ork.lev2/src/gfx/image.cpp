@@ -41,6 +41,7 @@ Image Image::clone() const {
   rval._width         = _width;
   rval._height        = _height;
   rval._data          = std::make_shared<DataBlock>(_data->data(), _data->length());
+  rval._debugName     = _debugName;
   return rval;
 }
 
@@ -67,12 +68,36 @@ void Image::initFromInMemoryFile(std::string fmtguess, const void* srcdata, size
   in->read_image(TypeDesc::UINT8, &pixels[0]);
   in->close();
 
-  deco::printf(_image_deco, "///////////////////////////////////\n");
-  deco::printf(_image_deco, "// Image::initFromInMemoryFile()\n");
-  deco::printf(_image_deco, "// _width<%zu>\n", _width);
-  deco::printf(_image_deco, "// _height<%zu>\n", _height);
-  deco::printf(_image_deco, "// _numcomponents<%zu>\n", _numcomponents);
-  deco::printf(_image_deco, "///////////////////////////////////\n");
+  // deco::printf(_image_deco, "///////////////////////////////////\n");
+  // deco::printf(_image_deco, "// Image::initFromInMemoryFile()\n");
+  // deco::printf(_image_deco, "// _width<%zu>\n", _width);
+  // deco::printf(_image_deco, "// _height<%zu>\n", _height);
+  // deco::printf(_image_deco, "// _numcomponents<%zu>\n", _numcomponents);
+  // adeco::printf(_image_deco, "///////////////////////////////////\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Image::writeToFile(ork::file::Path outpath) const {
+  auto cstrpath = outpath.c_str();
+  auto out      = ImageOutput::create(cstrpath);
+  if (!out)
+    return;
+  ImageSpec spec(_width, _height, _numcomponents, TypeDesc::UINT8);
+  out->open(cstrpath, spec);
+  out->write_image(TypeDesc::UINT8, _data->data());
+  out->close();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+uint8_t* Image::pixel(int x, int y) {
+  int index = (y * _width + x) * _numcomponents;
+  return ((uint8_t*)_data->data()) + index;
+}
+const uint8_t* Image::pixel(int x, int y) const {
+  int index = (y * _width + x) * _numcomponents;
+  return ((const uint8_t*)_data->data()) + index;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -81,37 +106,79 @@ void Image::downsample(Image& imgout) const {
   OrkAssert((_width & 1) == 0);
   OrkAssert((_height & 1) == 0);
   imgout.init(_width >> 1, _height >> 1, _numcomponents);
-  // todo parallelize (CPU(ISPC) or GPU(CUDA))
   auto inp_pixels = (const uint8_t*)_data->data();
   auto out_pixels = (uint8_t*)imgout._data->data();
   for (size_t y = 0; y < imgout._height; y++) {
     size_t ya = y * 2;
     size_t yb = ya + 1;
     for (size_t x = 0; x < imgout._width; x++) {
-      size_t xa             = x * 2;
-      size_t xb             = xa + 1;
-      size_t out_index      = (y * imgout._width + x) * _numcomponents;
-      size_t inp_index_xaya = (ya * _width + xa) * _numcomponents;
-      size_t inp_index_xbya = (ya * _width + xb) * _numcomponents;
-      size_t inp_index_xayb = (yb * _width + xa) * _numcomponents;
-      size_t inp_index_xbyb = (yb * _width + xb) * _numcomponents;
+      size_t xa = x * 2;
+      size_t xb = xa + 1;
+
+      auto outpixel     = imgout.pixel(x, y);
+      auto inppixelXAYA = pixel(xa, ya);
+      auto inppixelXBYA = pixel(xb, ya);
+      auto inppixelXAYB = pixel(xa, yb);
+      auto inppixelXBYB = pixel(xb, yb);
       for (size_t c = 0; c < _numcomponents; c++) {
-        double xaya               = double(inp_pixels[inp_index_xaya + c]);
-        double xbya               = double(inp_pixels[inp_index_xbya + c]);
-        double xayb               = double(inp_pixels[inp_index_xayb + c]);
-        double xbyb               = double(inp_pixels[inp_index_xbyb + c]);
-        double avg                = (xaya + xbya + xayb + xbyb) * 0.25;
-        uint8_t uavg              = uint8_t(avg * 255.0f);
-        out_pixels[out_index + c] = uavg;
+        double xaya  = double(inppixelXAYA[c]);
+        double xbya  = double(inppixelXBYA[c]);
+        double xayb  = double(inppixelXAYB[c]);
+        double xbyb  = double(inppixelXBYB[c]);
+        double avg   = (xaya + xbya + xayb + xbyb) * 0.25;
+        uint8_t uavg = uint8_t(avg);
+        outpixel[c]  = uavg;
       }
     }
   }
-  deco::printf(_image_deco, "///////////////////////////////////\n");
-  deco::printf(_image_deco, "// Image::downsample()\n");
-  deco::printf(_image_deco, "// imgout._width<%zu>\n", imgout._width);
-  deco::printf(_image_deco, "// imgout._height<%zu>\n", imgout._height);
-  deco::printf(_image_deco, "// imgout._numcomponents<%zu>\n", imgout._numcomponents);
-  deco::printf(_image_deco, "///////////////////////////////////\n");
+  imgout._debugName = _debugName + "_ds";
+  // auto pathr        = FormatString("%s.png", imgout._debugName.c_str());
+  // auto path         = file::Path::temp_dir() / pathr;
+  // writeToFile(path);
+  // deco::printf(_image_deco, "///////////////////////////////////\n");
+  // deco::printf(_image_deco, "// Image::downsample(%s)\n", imgout._debugName.c_str());
+  // deco::printf(_image_deco, "// imgout._width<%zu>\n", imgout._width);
+  // deco::printf(_image_deco, "// imgout._height<%zu>\n", imgout._height);
+  // deco::printf(_image_deco, "// imgout._numcomponents<%zu>\n", imgout._numcomponents);
+  // deco::printf(_image_deco, "///////////////////////////////////\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Image::convertToRGBA(Image& imgout) const {
+  imgout.init(_width, _height, 4);
+  auto inp_pixels = (const uint8_t*)_data->data();
+  auto out_pixels = (uint8_t*)imgout._data->data();
+  switch (_numcomponents) {
+    case 3:
+      for (size_t y = 0; y < imgout._height; y++) {
+        for (size_t x = 0; x < imgout._width; x++) {
+          auto inppixel = pixel(x, y);
+          auto outpixel = imgout.pixel(x, y);
+          outpixel[0]   = inppixel[0];
+          outpixel[1]   = inppixel[1];
+          outpixel[2]   = inppixel[2];
+          outpixel[3]   = 0xff;
+        }
+      }
+      break;
+    case 4:
+      memcpy(out_pixels, inp_pixels, _width * _height * 4);
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  imgout._debugName = _debugName + "_2rgba";
+  // auto pathr        = FormatString("%s.png", imgout._debugName.c_str());
+  // auto path         = file::Path::temp_dir() / pathr;
+  // imgout.writeToFile(path);
+  // deco::printf(_image_deco, "///////////////////////////////////\n");
+  // deco::printf(_image_deco, "// Image::convertToRGBA(%s)\n", imgout._debugName.c_str());
+  // deco::printf(_image_deco, "// imgout._width<%zu>\n", imgout._width);
+  // deco::printf(_image_deco, "// imgout._height<%zu>\n", imgout._height);
+  // deco::printf(_image_deco, "// imgout._numcomponents<%zu>\n", imgout._numcomponents);
+  // deco::printf(_image_deco, "///////////////////////////////////\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -127,29 +194,22 @@ void Image::compressBC7(CompressedImage& imgout) const {
   imgout._data          = std::make_shared<DataBlock>();
   auto dest             = (uint8_t*)imgout._data->allocateBlock(_width * _height);
   bc7_enc_settings settings;
-  switch (_numcomponents) {
-    case 3:
-      GetProfile_fast(&settings);
-      break;
-    case 4:
-      GetProfile_alpha_fast(&settings);
-      break;
-    default:
-      OrkAssert(false);
-      break;
-  }
+  GetProfile_alpha_basic(&settings);
+
+  Image src_as_rgba;
+  convertToRGBA(src_as_rgba);
+
   rgba_surface surface;
   surface.width  = _width;
   surface.height = _height;
-  surface.stride = _width * _numcomponents;
-  surface.ptr    = (uint8_t*)_data->data();
+  surface.stride = _width * 4;
+  surface.ptr    = (uint8_t*)src_as_rgba._data->data();
   ork::Timer timer;
   timer.Start();
   deco::printf(_image_deco, "///////////////////////////////////\n");
-  deco::printf(_image_deco, "// Image::compressBC7()\n");
-  deco::printf(_image_deco, "// imgout._width<%zu>\n", imgout._width);
-  deco::printf(_image_deco, "// imgout._height<%zu>\n", imgout._height);
-  deco::printf(_image_deco, "// imgout._numcomponents<%zu>\n", imgout._numcomponents);
+  deco::printf(_image_deco, "// Image::compressBC7(%s)\n", _debugName.c_str());
+  deco::printf(_image_deco, "// imgout._width<%zu>\n", _width);
+  deco::printf(_image_deco, "// imgout._height<%zu>\n", _height);
   CompressBlocksBC7(&surface, dest, &settings);
   float time = timer.SecsSinceStart();
   float MPPS = float(_width * _height) * 1e-6 / time;
@@ -167,12 +227,14 @@ CompressedImageMipChain Image::compressedMipChainBC7() const {
   rval._numcomponents = 4;
   Image imga          = this->clone();
   Image imgb;
+  int mipindex = 0;
   while ((imga._width >= 4) and (imga._height >= 4)) {
     CompressedImage cimg;
     imga.compressBC7(cimg);
     rval._levels.push_back(cimg);
     imgb = imga;
     imgb.downsample(imga);
+    mipindex++;
   }
   return rval;
 }

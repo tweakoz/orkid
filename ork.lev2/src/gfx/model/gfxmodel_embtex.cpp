@@ -55,6 +55,7 @@ datablockptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
   if (1) { // ISPC compressor (WIP)
     Image img;
     img.initFromInMemoryFile(_format, _srcdata, _srcdatalen);
+    img._debugName    = FormatString("emtex_%s", _name.c_str());
     auto cimgchain    = img.compressedMipChainBC7();
     cimgchain._varmap = _varmap;
     compressed_path   = ork::file::generateContentTempPath(hash, "xtx");

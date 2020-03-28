@@ -91,6 +91,19 @@ void GlTextureInterface::LoadXTXTextureMainThreadPart(GlTexLoadReq req) {
   this->ApplySamplingMode(req.ptex);
   req.ptex->_dirty = false;
   glBindTexture(GL_TEXTURE_2D, 0);
+  ////////////////////////////////////////////////
+  // done loading texture,
+  //  perform postprocessing, if any..
+  ////////////////////////////////////////////////
+
+  if (req.ptex->_varmap.hasKey("postproc")) {
+    auto dblock    = req._inpstream._datablock;
+    auto postproc  = req.ptex->_varmap.typedValueForKey<Texture::proc_t>("postproc").value();
+    auto postblock = postproc(req.ptex, &mTargetGL, dblock);
+    OrkAssert(postblock);
+  } else {
+    // printf("ptex<%p> no postproc\n", ptex);
+  }
   GL_ERRORCHECK();
 }
 

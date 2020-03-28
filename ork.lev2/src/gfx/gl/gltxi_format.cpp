@@ -223,39 +223,18 @@ void Set3D(
     int& iw,
     int& ih,
     int& id,
-    DataBlockInputStream inpstream) //, int& irdptr, const u8* dataBASE )
-{
+    DataBlockInputStream inpstream) {
   for (int imip = 0; imip < inummips; imip++) {
-    /////////////////////////////////////////////////
-    // allocate space for image
-    // see http://www.opengl.org/discussion_boards/ubbthreads.php?ubb=showflat&Board=3&Number=159972
-    // and http://www.opengl.org/discussion_boards/ubbthreads.php?ubb=showflat&Number=240547
-    // basically you can call glTexImage2D once with the s3tc format as the internalformat
-    //  and a null data ptr to let the driver 'allocate' space for the texture
-    //  then use the glCompressedTexSubImage2D to overwrite the data in the pre allocated space
-    //  this decouples allocation from writing, allowing you to overwrite more efficiently
-    /////////////////////////////////////////////////
-
     texcfg tc = GetInternalFormat(fmt, typ);
-
-    /////////////////////////////
-    // imgdata->PBO
-    /////////////////////////////
-
     int isize = id * iw * ih * tc.mBPP;
-
-    // printf( "UPDATE IMAGE 3dUNC imip<%d> iw<%d> ih<%d> id<%d> isiz<%d>\n", imip, iw, ih, id, isize );
     GL_ERRORCHECK();
     auto pgfxmem = inpstream.current();
     glTexImage3D(tgt, imip, tc.mInternalFormat, iw, ih, id, 0, tc.mFormat, typ, pgfxmem);
     inpstream.advance(isize);
     GL_ERRORCHECK();
-    /////////////////////////////
-
     iw >>= 1;
     ih >>= 1;
     id >>= 1;
-    // irdptr+=isize;
   }
 }
 
@@ -273,40 +252,15 @@ void Set2DC(
     DataBlockInputStream inpstream) //, int& irdptr, const u8* dataBASE )
 {
   for (int imip = 0; imip < inummips; imip++) {
-    int iBwidth  = (iw + 3) / 4;
-    int iBheight = (ih + 3) / 4;
-    int isize    = (iBwidth * iBheight) * BPP;
-    // const u8* pimgdata = & dataBASE[irdptr];
-    // irdptr+=isize;
-
-    /////////////////////////////////////////////////
-    // allocate space for image
-    // see http://www.opengl.org/discussion_boards/ubbthreads.php?ubb=showflat&Board=3&Number=159972
-    // and http://www.opengl.org/discussion_boards/ubbthreads.php?ubb=showflat&Number=240547
-    // basically you can call glTexImage2D once with the s3tc format as the internalformat
-    //  and a null data ptr to let the driver 'allocate' space for the texture
-    //  then use the glCompressedTexSubImage2D to overwrite the data in the pre allocated space
-    //  this decouples allocation from writing, allowing you to overwrite more efficiently
-    /////////////////////////////////////////////////
-
-    bool hasalpha = (fmt == kRGBA_DXT5) || (fmt == kRGBA_DXT3);
-    GLenum extfmt = hasalpha ? GL_RGBA : GL_RGB;
-
-    // printf("alloc texdata tgt<%d> imip<%d> fmt<%d> iw<%d> ih<%d> extfmt<%d>\n",
-    //	tgt,imip,fmt,iw,ih,extfmt );
-
-    // static const int kloadbufsize = 16 << 20;
-    // static void* gloadbuf         = malloc(kloadbufsize);
-    // OrkAssert(isize < kloadbufsize);
+    int iBwidth   = (iw + 3) / 4;
+    int iBheight  = (ih + 3) / 4;
+    int isize     = (iBwidth * iBheight) * BPP;
     auto copy_src = inpstream.current();
-    // memcpy(gloadbuf, copy_src, isize);
     inpstream.advance(isize);
     GL_ERRORCHECK();
     glCompressedTexImage2D(tgt, imip, fmt, iw, ih, 0, isize, copy_src);
-
     GL_ERRORCHECK();
     ////////////////////////
-
     iw >>= 1;
     ih >>= 1;
   }
