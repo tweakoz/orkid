@@ -17,7 +17,9 @@ class Crc32 {
   static const uint16_t crc_table[256];
 
 public:
-  static void Init(uint16_t& _v) { _v = CRC_INIT; }
+  static void Init(uint16_t& _v) {
+    _v = CRC_INIT;
+  }
   static void Add(uint16_t& _v, uint8_t _d);
   static void Add(uint16_t& _v, int32_t _d);
   static void Add(uint16_t& _v, int16_t _d);
@@ -76,13 +78,20 @@ constexpr uint64_t crc32_rec(uint64_t crc, const char* s) {
                  : crc32_rec(crc32_table[static_cast<unsigned char>(crc) ^ static_cast<unsigned char>(*s)] ^ (crc >> 8), s + 1);
 }
 
-constexpr uint64_t operator"" _crcu(const char* s, size_t len) { return crc32_rec(0xFFFFFFFF, s); }
+constexpr uint64_t operator"" _crcu(const char* s, size_t len) {
+  return crc32_rec(0xFFFFFFFF, s);
+}
 
 static_assert("Hello"_crcu == Crc32Ch<'H', 'e', 'l', 'l', 'o'>::value, "CRC32 values don't match");
 
 static_assert("0"_crcu == Crc32Ch<'0'>::value, "CRC32 values don't match");
 
-int constexpr conststrlength(const char* str) { return *str ? 1 + conststrlength(str + 1) : 0; }
+typedef uint64_t crc_enum_t;
+#define CrcEnum(X) X = crc32_rec(0xFFFFFFFF, #X /**/)
+
+int constexpr conststrlength(const char* str) {
+  return *str ? 1 + conststrlength(str + 1) : 0;
+}
 
 //#define CRC_DEBUG
 
@@ -96,18 +105,29 @@ struct CrcString {
     _debugval = strval;
   }
   CrcString()
-      : _hashed(0) {}
+      : _hashed(0) {
+  }
 #else
   constexpr CrcString(const char* strval)
-      : _hashed(operator""_crcu(strval, conststrlength(strval))) {}
+      : _hashed(operator""_crcu(strval, conststrlength(strval))) {
+  }
   constexpr CrcString()
-      : _hashed(0) {}
+      : _hashed(0) {
+  }
 #endif
 
-  bool operator==(const CrcString& other) const { return _hashed == other._hashed; }
-  bool operator!=(const CrcString& other) const { return _hashed != other._hashed; }
-  bool operator<(const CrcString& other) const { return _hashed < other._hashed; }
-  bool operator>(const CrcString& other) const { return _hashed > other._hashed; }
+  bool operator==(const CrcString& other) const {
+    return _hashed == other._hashed;
+  }
+  bool operator!=(const CrcString& other) const {
+    return _hashed != other._hashed;
+  }
+  bool operator<(const CrcString& other) const {
+    return _hashed < other._hashed;
+  }
+  bool operator>(const CrcString& other) const {
+    return _hashed > other._hashed;
+  }
 
   uint64_t _hashed;
 
@@ -126,6 +146,8 @@ constexpr CrcString operator"" _crc(const char* s, size_t len) {
 
 namespace std {
 template <> struct hash<ork::CrcString> {
-  std::size_t operator()(const ork::CrcString& crcString) const { return crcString._hashed; }
+  std::size_t operator()(const ork::CrcString& crcString) const {
+    return crcString._hashed;
+  }
 };
 } // namespace std

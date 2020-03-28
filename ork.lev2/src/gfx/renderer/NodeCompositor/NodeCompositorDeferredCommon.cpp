@@ -28,11 +28,11 @@ namespace ork::lev2::deferrednode {
 DeferredContext::DeferredContext(RenderCompositingNode* node, std::string shadername, int numlights)
     : _node(node) {
   ///////////
-  _rtbDepthCluster = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_R32UI, 8, 8);
-  _rtbLightAccum   = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16F, 8, 8);
-  _rtbGbuffer      = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16UI, 8, 8);
-  //_rtbNormalDist   = new RtBuffer(lev2::ERTGSLOT1, lev2::EBUFFMT_RGB10A2, 8, 8);
-  //_rtbRufMtl       = new RtBuffer(lev2::ERTGSLOT2, lev2::EBUFFMT_RGBA8, 8, 8);
+  _rtbDepthCluster = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::R32UI, 8, 8);
+  _rtbLightAccum   = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA16F, 8, 8);
+  _rtbGbuffer      = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA16UI, 8, 8);
+  //_rtbNormalDist   = new RtBuffer(lev2::ERTGSLOT1, lev2::EBufferFormat::RGB10A2, 8, 8);
+  //_rtbRufMtl       = new RtBuffer(lev2::ERTGSLOT2, lev2::EBufferFormat::RGBA8, 8, 8);
   ///////////
   //_rtbAlbAo->_debugName        = "DeferredRtAlbAo";
   //_rtbNormalDist->_debugName   = "DeferredRtNormalDist";

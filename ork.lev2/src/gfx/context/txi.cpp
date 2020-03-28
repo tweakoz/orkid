@@ -22,20 +22,20 @@ namespace ork::lev2 {
 size_t TextureInitData::computeSize() const {
   size_t length = _w*_h;
   switch(_format){
-    case EBUFFMT_R32F:
-    case EBUFFMT_RG16F:
-    case EBUFFMT_RGB10A2:
-    case EBUFFMT_RGBA8:
-    case EBUFFMT_Z32:
-    case EBUFFMT_Z24S8:
+    case EBufferFormat::R32F:
+    case EBufferFormat::RG16F:
+    case EBufferFormat::RGB10A2:
+    case EBufferFormat::RGBA8:
+    case EBufferFormat::Z32:
+    case EBufferFormat::Z24S8:
       length *= 4;
       break;
-    case EBUFFMT_RG32F:
-    case EBUFFMT_RGBA16F:
+    case EBufferFormat::RG32F:
+    case EBufferFormat::RGBA16F:
       length *= 8;
       break;
-    case EBUFFMT_RGBA32F:
-    case EBUFFMT_RGB32UI:
+    case EBufferFormat::RGBA32F:
+    case EBufferFormat::RGB32UI:
       length *= 16;
       break;
     default:

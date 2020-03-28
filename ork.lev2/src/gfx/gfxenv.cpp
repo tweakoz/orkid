@@ -281,7 +281,7 @@ void GfxEnv::SetLoaderTarget(Context* target) {
 
 CaptureBuffer::CaptureBuffer()
     : _data(0)
-    , meFormat(EBUFFMT_END)
+    , meFormat(EBufferFormat::NONE)
     , _buffersize(0) {
 }
 CaptureBuffer::~CaptureBuffer() {
@@ -292,20 +292,20 @@ CaptureBuffer::~CaptureBuffer() {
 int CaptureBuffer::GetStride() const {
   int istride = 0;
   switch (meFormat) {
-    case EBUFFMT_NV12:
+    case EBufferFormat::NV12:
       istride = -1;
       break;
-    case EBUFFMT_RGBA8:
+    case EBufferFormat::RGBA8:
       istride = 4;
       break;
-    case EBUFFMT_RGBA16F:
+    case EBufferFormat::RGBA16F:
       istride = 8;
       break;
-    case EBUFFMT_RGBA32F:
+    case EBufferFormat::RGBA32F:
       istride = 16;
       break;
-    case EBUFFMT_R32F:
-    case EBUFFMT_R32UI:
+    case EBufferFormat::R32F:
+    case EBufferFormat::R32UI:
       istride = 4;
       break;
     default:
@@ -345,19 +345,19 @@ void CaptureBuffer::setFormatAndSize(EBufferFormat fmt, int w, int h) {
   int bytesperpix = 0;
   switch (fmt) {
 
-    case EBUFFMT_RGBA8:
-    case EBUFFMT_R32F:
-    case EBUFFMT_R32UI:
+    case EBufferFormat::RGBA8:
+    case EBufferFormat::R32F:
+    case EBufferFormat::R32UI:
       _buffersize = 4 * w * h;
       break;
-    case EBUFFMT_RGBA16F:
-    case EBUFFMT_RG32F:
+    case EBufferFormat::RGBA16F:
+    case EBufferFormat::RG32F:
       _buffersize = 8 * w * h;
       break;
-    case EBUFFMT_RGBA32F:
+    case EBufferFormat::RGBA32F:
       _buffersize = 16 * w * h;
       break;
-    case EBUFFMT_NV12: {
+    case EBufferFormat::NV12: {
       size_t ysize  = w * h;
       size_t uvsize = ysize >> 1;
       _buffersize   = ysize + uvsize;

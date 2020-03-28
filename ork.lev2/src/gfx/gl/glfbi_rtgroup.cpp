@@ -200,48 +200,48 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
         GLenum gltype           = 0;
 
         switch (rtbuffer->format()) {
-          case EBUFFMT_R32F:
+          case EBufferFormat::R32F:
             glformat         = GL_RED;
             glinternalformat = GL_R32F;
             gltype           = GL_FLOAT;
             break;
-          case EBUFFMT_R32UI:
+          case EBufferFormat::R32UI:
             glformat         = GL_RED_INTEGER;
             glinternalformat = GL_R32UI;
             gltype           = GL_UNSIGNED_INT;
             break;
-          case EBUFFMT_RG16F:
+          case EBufferFormat::RG16F:
             glformat         = GL_RG;
             glinternalformat = GL_RG16F;
             gltype           = GL_HALF_FLOAT;
             break;
-          case EBUFFMT_RG32F:
+          case EBufferFormat::RG32F:
             glformat         = GL_RG;
             glinternalformat = GL_RG32F;
             gltype           = GL_FLOAT;
             break;
-          case EBUFFMT_RGBA8:
+          case EBufferFormat::RGBA8:
             glinternalformat = GL_RGBA8;
             gltype           = GL_UNSIGNED_BYTE;
             break;
-          case EBUFFMT_RGBA16F:
+          case EBufferFormat::RGBA16F:
             glinternalformat = GL_RGBA16F;
             gltype           = GL_HALF_FLOAT;
             break;
-          case EBUFFMT_RGBA16UI:
+          case EBufferFormat::RGBA16UI:
             glformat         = GL_RGBA_INTEGER;
             glinternalformat = GL_RGBA16UI;
             gltype           = GL_UNSIGNED_SHORT;
             break;
-          case EBUFFMT_RGBA32F:
+          case EBufferFormat::RGBA32F:
             glinternalformat = GL_RGBA32F;
             gltype           = GL_FLOAT;
             break;
-          case EBUFFMT_RGB10A2:
+          case EBufferFormat::RGB10A2:
             glinternalformat = GL_RGB10_A2;
             gltype           = GL_UNSIGNED_INT_10_10_10_2;
             break;
-          case EBUFFMT_RGB32UI:
+          case EBufferFormat::RGB32UI:
             glformat         = GL_RGB_INTEGER;
             glinternalformat = GL_RGB32UI;
             gltype           = GL_UNSIGNED_INT;
@@ -249,7 +249,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
           default:
             OrkAssert(false);
             break;
-            // case EBUFFMT_RGBA32F: glinternalformat = GL_RGBA32; break;
+            // case EBufferFormat::RGBA32F: glinternalformat = GL_RGBA32; break;
         }
 
         //////////////////////////////////////////

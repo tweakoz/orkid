@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
     TextureInitData tid;
     tid._w = DIM;
     tid._h = DIM;
-    tid._format = EBUFFMT_RGBA32F;
+    tid._format = EBufferFormat::RGBA32F;
     tid._autogenmips = false;
     tid._data =  texturedata->data();
 

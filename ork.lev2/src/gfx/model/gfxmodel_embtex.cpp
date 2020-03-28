@@ -48,32 +48,33 @@ static std::string compressionOptsForUsage(ETextureUsage usage) {
 datablockptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
   datablockptr_t dblock = std::make_shared<DataBlock>();
   auto srcpath          = ork::file::generateContentTempPath(hash, _format);
-  auto ddspath          = ork::file::generateContentTempPath(hash, "dds");
   FILE* fout            = fopen(srcpath.c_str(), "wb");
   fwrite(_srcdata, _srcdatalen, 1, fout);
   fclose(fout);
-
+  std::string compressed_path;
   if (0) { // ISPC compressor (WIP)
     Image img;
     img.initFromInMemoryFile(_format, _srcdata, _srcdatalen);
-    auto cimgchain = img.compressedMipChainBC7();
-    OrkAssert(false);
+    auto cimgchain    = img.compressedMipChainBC7();
+    cimgchain._varmap = _varmap;
+    compressed_path   = ork::file::generateContentTempPath(hash, "xtx");
+    cimgchain.writeXTX(compressed_path);
   } else { // nvtt compressor
-    auto options = compressionOptsForUsage(_usage);
-    invoke_nvcompress(srcpath, ddspath, options);
-
-    FILE* fin = fopen(ddspath.c_str(), "rb");
-    fseek(fin, 0, SEEK_END);
-    size_t ddslen = ftell(fin);
-    fseek(fin, 0, SEEK_SET);
-    dblock->reserve(ddslen);
-    void* ddsdata  = malloc(ddslen);
-    size_t numread = fread(ddsdata, 1, ddslen, fin);
-    OrkAssert(numread == ddslen);
-    fclose(fin);
-    dblock->addData(ddsdata, ddslen);
-    free(ddsdata);
+    compressed_path = ork::file::generateContentTempPath(hash, "dds");
+    auto options    = compressionOptsForUsage(_usage);
+    invoke_nvcompress(srcpath, compressed_path, options);
   }
+  FILE* fin = fopen(compressed_path.c_str(), "rb");
+  fseek(fin, 0, SEEK_END);
+  size_t compressed_length = ftell(fin);
+  fseek(fin, 0, SEEK_SET);
+  dblock->reserve(compressed_length);
+  void* compressed_data = malloc(compressed_length);
+  size_t numread        = fread(compressed_data, 1, compressed_length, fin);
+  OrkAssert(numread == compressed_length);
+  fclose(fin);
+  dblock->addData(compressed_data, compressed_length);
+  free(compressed_data);
   return dblock;
 }
 

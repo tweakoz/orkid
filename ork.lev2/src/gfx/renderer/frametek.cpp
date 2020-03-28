@@ -124,7 +124,7 @@ void FrameTechniqueBase::Init(Context* targ) {
 
   mpMrtFinal = new RtGroup(targ, kFINALW, kFINALH, kmultisamples);
 
-  mpMrtFinal->SetMrt(0, new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA8, kFINALW, kFINALH));
+  mpMrtFinal->SetMrt(0, new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA8, kFINALW, kFINALH));
 
   // mpMrtFinal->GetMrt(0)->RefClearColor() = clear_color;
   // mpMrtFinal->GetMrt(0)->SetContext( targ );

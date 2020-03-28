@@ -44,8 +44,8 @@ struct IMPL {
     if (nullptr == _rtg) {
       _material.Init(pTARG);
       _rtg             = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
-      auto buf1        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA32F, 8, 8);
-      auto buf2        = new RtBuffer(lev2::ERTGSLOT1, lev2::EBUFFMT_RGBA32F, 8, 8);
+      auto buf1        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA32F, 8, 8);
+      auto buf2        = new RtBuffer(lev2::ERTGSLOT1, lev2::EBufferFormat::RGBA32F, 8, 8);
       buf1->_debugName = "PickingRt0";
       buf2->_debugName = "PickingRt1";
       _rtg->SetMrt(0, buf1);

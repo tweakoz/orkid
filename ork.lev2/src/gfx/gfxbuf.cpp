@@ -78,7 +78,7 @@ void OffscreenBuffer::Resize(int ix, int iy, int iw, int ih) {
 /////////////////////////////////////////////////////////////////////////
 
 Window::Window(int iX, int iY, int iW, int iH, const std::string& name, void* pdata)
-    : OffscreenBuffer(0, iX, iY, iW, iH, EBUFFMT_RGBA8, name)
+    : OffscreenBuffer(0, iX, iY, iW, iH, EBufferFormat::RGBA8, name)
     , mpCTXBASE(0) {
   gGfxEnv.SetMainWindow(this);
 }

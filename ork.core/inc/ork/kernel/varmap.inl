@@ -46,7 +46,7 @@ struct VarMap {
     return _themap[key].Make<T>(std::forward(args)...);
   }
   ///////////////////////////////////////////////////////////////////////////
-  inline const void setValueForKey(const key_t& key, const val_t& val) {
+  inline void setValueForKey(const key_t& key, const val_t& val) {
     _themap[key] = val;
   }
   ///////////////////////////////////////////////////////////////////////////

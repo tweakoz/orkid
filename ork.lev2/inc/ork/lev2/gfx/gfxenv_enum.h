@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #pragma once
+#include <ork/util/crc.h>
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
@@ -85,28 +86,27 @@ enum ETextureType {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-enum EBufferFormat {
-  EBUFFMT_RGBA8 = 0,
-  EBUFFMT_RG16F,
-  EBUFFMT_RG32F,
-  EBUFFMT_RGBA16F,
-  EBUFFMT_RGBA16UI,
-  EBUFFMT_RGBA32F,
-  EBUFFMT_RGB10A2, // r10g10b10a2
-  EBUFFMT_RGB32UI,
-  EBUFFMT_R32F,
-  EBUFFMT_R32UI,
-  EBUFFMT_NV12, // yuv420
-  EBUFFMT_Z16,
-  EBUFFMT_Z24S8,
-  EBUFFMT_Z32,
-  EBUFFMT_DEPTH,
-  EBUFFMT_RGBA_BPTC_UNORM,
-  EBUFFMT_SRGB_ALPHA_BPTC_UNORM,
-  EBUFFMT_RGBA_ASTC_4X4,
-  EBUFFMT_SRGB_ASTC_4X4,
-  EBUFFMT_END
+enum struct EBufferFormat : crc_enum_t {
+  CrcEnum(RGBA8),
+  CrcEnum(RG16F),
+  CrcEnum(RG32F),
+  CrcEnum(RGBA16F),
+  CrcEnum(RGBA16UI),
+  CrcEnum(RGBA32F),
+  CrcEnum(RGB10A2),
+  CrcEnum(RGB32UI),
+  CrcEnum(R32F),
+  CrcEnum(R32UI),
+  CrcEnum(NV12),
+  CrcEnum(Z16),
+  CrcEnum(Z24S8),
+  CrcEnum(Z32),
+  CrcEnum(DEPTH),
+  CrcEnum(RGBA_BPTC_UNORM),
+  CrcEnum(SRGB_ALPHA_BPTC_UNORM),
+  CrcEnum(RGBA_ASTC_4X4),
+  CrcEnum(SRGB_ASTC_4X4),
+  CrcEnum(NONE)
 };
 
 ///////////////////////////////////////////////////////////////////////////////

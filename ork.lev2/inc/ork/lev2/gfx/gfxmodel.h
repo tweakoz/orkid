@@ -21,6 +21,7 @@
 #include <ork/math/box.h>
 #include <ork/math/cmatrix4.h>
 #include <ork/math/sphere.h>
+#include <ork/kernel/varmap.inl>
 
 #define USE_XGM_FILES
 #define USE_XGA_FILES
@@ -59,6 +60,7 @@ struct EmbeddedTexture {
     datablockptr_t _ddsdestdatablock;
     datablockptr_t compressTexture(uint64_t hash) const;
     void fetchDDSdata();
+    varmap::VarMap _varmap;
 };
 
 typedef std::map<std::string,EmbeddedTexture*> embtexmap_t;

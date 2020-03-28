@@ -357,7 +357,7 @@ public:
       int iY,
       int iW,
       int iH,
-      EBufferFormat efmt      = EBUFFMT_RGBA8,
+      EBufferFormat efmt      = EBufferFormat::RGBA8,
       const std::string& name = "NoName");
 
   virtual ~OffscreenBuffer();

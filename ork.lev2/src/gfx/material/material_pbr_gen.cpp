@@ -102,7 +102,7 @@ Texture* PBRMaterial::brdfIntegrationMap(Context* targ) {
     TextureInitData tid;
     tid._w           = DIM;
     tid._h           = DIM;
-    tid._format      = EBUFFMT_RGBA32F;
+    tid._format      = EBufferFormat::RGBA32F;
     tid._autogenmips = true;
     tid._data        = dblock->data();
 
@@ -150,12 +150,12 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
   int numpix           = w * h;
   int imip             = 0;
   float roughness      = 0.0f;
-  auto mipchain        = new MipChain(w, h, EBUFFMT_RGBA32F, ETEXTYPE_2D);
+  auto mipchain        = new MipChain(w, h, EBufferFormat::RGBA32F, ETEXTYPE_2D);
   mipchain->_debugName = "filtenvmap-processed";
   while (numpix != 0) {
 
     auto outgroup = std::make_shared<RtGroup>(targ, w, h, 1);
-    auto outbuffr = std::make_shared<RtBuffer>(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA32F, w, h);
+    auto outbuffr = std::make_shared<RtBuffer>(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA32F, w, h);
     auto captureb = std::make_shared<CaptureBuffer>();
 
     outgroup->_autoclear = true;
@@ -255,12 +255,12 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
   int imip        = 0;
   float roughness = 1.0f;
   std::map<int, std::shared_ptr<CaptureBuffer>> cap4mip;
-  auto mipchain        = new MipChain(w, h, EBUFFMT_RGBA32F, ETEXTYPE_2D);
+  auto mipchain        = new MipChain(w, h, EBufferFormat::RGBA32F, ETEXTYPE_2D);
   mipchain->_debugName = "filtenvmap-processed-diffenv";
   while (numpix != 0) {
 
     auto outgroup        = std::make_shared<RtGroup>(targ, w, h, 1);
-    auto outbuffr        = std::make_shared<RtBuffer>(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA32F, w, h);
+    auto outbuffr        = std::make_shared<RtBuffer>(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA32F, w, h);
     auto captureb        = std::make_shared<CaptureBuffer>();
     outgroup->_autoclear = true;
 

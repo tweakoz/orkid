@@ -793,19 +793,19 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   ///////////////////////////////////
   GLenum internalformat, format, type;
   switch (tid._format) {
-    case EBUFFMT_RGBA8: {
+    case EBufferFormat::RGBA8: {
       internalformat = GL_RGBA8;
       format         = GL_RGBA;
       type           = GL_UNSIGNED_BYTE;
       break;
     }
-    case EBUFFMT_RGBA16F: {
+    case EBufferFormat::RGBA16F: {
       internalformat = GL_RGBA16F;
       format         = GL_RGBA;
       type           = GL_HALF_FLOAT;
       break;
     }
-    case EBUFFMT_RGBA32F: {
+    case EBufferFormat::RGBA32F: {
       internalformat = GL_RGBA32F;
       format         = GL_RGBA;
       type           = GL_FLOAT;
@@ -884,27 +884,27 @@ Texture* GlTextureInterface::createFromMipChain(MipChain* from_chain) {
   for (size_t l = 0; l < nummips; l++) {
     auto pchl = from_chain->_levels[l];
     switch (from_chain->_format) {
-      case EBUFFMT_RGBA32F:
+      case EBufferFormat::RGBA32F:
         OrkAssert(pchl->_length == pchl->_width * pchl->_height * sizeof(fvec4));
         glTexImage2D(GL_TEXTURE_2D, l, GL_RGBA32F, pchl->_width, pchl->_height, 0, GL_RGBA, GL_FLOAT, pchl->_data);
         break;
 #if !defined(__APPLE__)
-      case EBUFFMT_RGBA_BPTC_UNORM:
+      case EBufferFormat::RGBA_BPTC_UNORM:
         OrkAssert(pchl->_length == pchl->_width * pchl->_height);
         glCompressedTexImage2D(
             GL_TEXTURE_2D, l, GL_COMPRESSED_RGBA_BPTC_UNORM, pchl->_width, pchl->_height, 0, pchl->_length, pchl->_data);
         break;
-      case EBUFFMT_SRGB_ALPHA_BPTC_UNORM:
+      case EBufferFormat::SRGB_ALPHA_BPTC_UNORM:
         OrkAssert(pchl->_length == pchl->_width * pchl->_height);
         glCompressedTexImage2D(
             GL_TEXTURE_2D, l, GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM, pchl->_width, pchl->_height, 0, pchl->_length, pchl->_data);
         break;
-      case EBUFFMT_RGBA_ASTC_4X4:
+      case EBufferFormat::RGBA_ASTC_4X4:
         OrkAssert(pchl->_length == pchl->_width * pchl->_height);
         glCompressedTexImage2D(
             GL_TEXTURE_2D, l, GL_COMPRESSED_RGBA_ASTC_4x4_KHR, pchl->_width, pchl->_height, 0, pchl->_length, pchl->_data);
         break;
-      case EBUFFMT_SRGB_ASTC_4X4:
+      case EBufferFormat::SRGB_ASTC_4X4:
         OrkAssert(pchl->_length == pchl->_width * pchl->_height);
         glCompressedTexImage2D(
             GL_TEXTURE_2D, l, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR, pchl->_width, pchl->_height, 0, pchl->_length, pchl->_data);

@@ -131,7 +131,7 @@ void BuiltinFrameTechniques::DoInit(Context* pTARG) {
 
   for (int i = 0; i < knumpingpongbufs; i++) {
     auto grp = new RtGroup(pTARG, miW, miH, kmultisamplesH);
-    auto buf = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16F, miW, miH);
+    auto buf = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA16F, miW, miH);
 
     buf->_debugName = FormatString("BFTEK::PingPongBuf%d", i);
     mpHDRRtGroup[i] = grp;
@@ -145,9 +145,9 @@ void BuiltinFrameTechniques::DoInit(Context* pTARG) {
   mpMrtAux0 = new RtGroup(pTARG, kGLOWBUFSIZE, kGLOWBUFSIZE, 1);
   mpMrtAux1 = new RtGroup(pTARG, kGLOWBUFSIZE, kGLOWBUFSIZE, 1);
 
-  auto bufa = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16F, kGLOWBUFSIZE, kGLOWBUFSIZE);
+  auto bufa = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA16F, kGLOWBUFSIZE, kGLOWBUFSIZE);
 
-  auto bufb = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16F, kGLOWBUFSIZE, kGLOWBUFSIZE);
+  auto bufb = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA16F, kGLOWBUFSIZE, kGLOWBUFSIZE);
 
   bufa->_debugName = FormatString("BFTEK::Aux0");
   bufb->_debugName = FormatString("BFTEK::Aux1");
@@ -161,14 +161,14 @@ void BuiltinFrameTechniques::DoInit(Context* pTARG) {
 
   // mpMrtAux0->GetMrt(0)->SetContext(pTARG);
   // mpMrtAux1->GetMrt(0)->SetContext(pTARG);
-  mpAuxBuffer0 = new TexBuffer(Parent, lev2::EBUFFMT_RGBA16F, kGLOWBUFSIZE, kGLOWBUFSIZE);
-  mpAuxBuffer1 = new TexBuffer(Parent, lev2::EBUFFMT_RGBA16F, kGLOWBUFSIZE, kGLOWBUFSIZE);
+  mpAuxBuffer0 = new TexBuffer(Parent, lev2::EBufferFormat::RGBA16F, kGLOWBUFSIZE, kGLOWBUFSIZE);
+  mpAuxBuffer1 = new TexBuffer(Parent, lev2::EBufferFormat::RGBA16F, kGLOWBUFSIZE, kGLOWBUFSIZE);
 
   ////////////////////////////////////////////////////////////////
 
   mpMrtFinalHD = new RtGroup(pTARG, kFINALHDW, kFINALHDH, kmultisamplesH);
 
-  auto buff = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA16F, kFINALHDW, kFINALHDH);
+  auto buff = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA16F, kFINALHDW, kFINALHDH);
 
   mpMrtFinalHD->SetMrt(0, buff);
 
@@ -916,7 +916,7 @@ void PickFrameTechnique::Render(FrameRenderer& frenderer) {
 ShadowFrameTechnique::ShadowFrameTechnique(Window* Parent, ui::Viewport* pvp, int iW, int iH)
     : FrameTechniqueBase(iW, iH)
     , _pShadowBuffer(0) {
-  _pShadowBuffer                  = new TexBuffer(Parent, EBUFFMT_Z32, 1024, 1024);
+  _pShadowBuffer                  = new TexBuffer(Parent, EBufferFormat::Z32, 1024, 1024);
   _pShadowBuffer->RefClearColor() = fvec4::Black();
 }
 

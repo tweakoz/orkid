@@ -117,7 +117,7 @@ lev2::RtGroup* Buffer::GetRtGroup(lev2::Context* ptgt) {
     mRtGroup             = new RtGroup(ptgt, miW, miH);
     mRtGroup->_autoclear = false;
 
-    auto mrt = new ork::lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA8, miW, miH);
+    auto mrt = new ork::lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA8, miW, miH);
 
     mrt->_debugName = FormatString("%s<%p>", _basename.c_str(), this);
 
@@ -144,11 +144,11 @@ lev2::Texture* Buffer::OutputTexture() {
 }
 
 Buffer32::Buffer32()
-    : Buffer(lev2::EBUFFMT_RGBA8) {
-} // EBUFFMT_RGBA8
+    : Buffer(lev2::EBufferFormat::RGBA8) {
+} // EBufferFormat::RGBA8
 Buffer64::Buffer64()
-    : Buffer(lev2::EBUFFMT_RGBA16F) {
-} // EBUFFMT_RGBA16F
+    : Buffer(lev2::EBufferFormat::RGBA16F) {
+} // EBufferFormat::RGBA16F
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

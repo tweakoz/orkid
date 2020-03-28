@@ -138,7 +138,7 @@ struct MipChain {
   int _height = 0;
   std::string _debugName;
 
-  EBufferFormat _format = EBUFFMT_END;
+  EBufferFormat _format = EBufferFormat::NONE;
   ETextureType _type    = ETEXTYPE_END;
 };
 
@@ -214,7 +214,7 @@ struct Texture {
 
   ETextureDest _texDest    = ETEXDEST_END;
   ETextureType _texType    = ETEXTYPE_END;
-  EBufferFormat _texFormat = EBUFFMT_END;
+  EBufferFormat _texFormat = EBufferFormat::NONE;
 
   int _width                    = 0;
   int _height                   = 0;

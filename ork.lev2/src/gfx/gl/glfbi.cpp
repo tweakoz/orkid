@@ -176,24 +176,24 @@ void GlFrameBufferInterface::_initializeContext(OffscreenBuffer* pBuf) {
   bool Zonly = false;
 
   switch (pBuf->format()) {
-    case EBUFFMT_RGBA8:
+    case EBufferFormat::RGBA8:
       // efmt = D3DFMT_A8R8G8B8;
       ibytesperpix = 4;
       break;
-    case EBUFFMT_RGBA16F:
+    case EBufferFormat::RGBA16F:
       // efmt = D3DFMT_A16B16G16R16F;
       ibytesperpix = 8;
       break;
-    case EBUFFMT_RGBA32F:
+    case EBufferFormat::RGBA32F:
       // efmt = D3DFMT_A32B32G32R32F;
       ibytesperpix = 16;
       break;
-    case EBUFFMT_Z16:
+    case EBufferFormat::Z16:
       // efmt = D3DFMT_R16F;
       ibytesperpix = 2;
       Zonly        = true;
       break;
-    case EBUFFMT_Z32:
+    case EBufferFormat::Z32:
       // efmt = D3DFMT_R32F;
       ibytesperpix = 2;
       Zonly        = true;
@@ -434,7 +434,7 @@ bool GlFrameBufferInterface::captureAsFormat(const RtGroup& rtg, int irt, Captur
   static size_t yo       = 0;
   constexpr float inv256 = 1.0f / 255.0f;
   switch (destfmt) {
-    case EBUFFMT_NV12: {
+    case EBufferFormat::NV12: {
       size_t rgbasize = w * h * 4;
       if (capbuf->_tempbuffer.size() != rgbasize) {
         capbuf->_tempbuffer.resize(rgbasize);
@@ -502,23 +502,23 @@ bool GlFrameBufferInterface::captureAsFormat(const RtGroup& rtg, int irt, Captur
       }
       break;
     }
-    case EBUFFMT_RGBA8: {
+    case EBufferFormat::RGBA8: {
       glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_data);
       break;
     }
-    case EBUFFMT_RGBA16F:
+    case EBufferFormat::RGBA16F:
       glReadPixels(0, 0, w, h, GL_RGBA, GL_HALF_FLOAT, capbuf->_data);
       break;
-    case EBUFFMT_RGBA32F:
+    case EBufferFormat::RGBA32F:
       glReadPixels(0, 0, w, h, GL_RGBA, GL_FLOAT, capbuf->_data);
       break;
-    case EBUFFMT_R32F:
+    case EBufferFormat::R32F:
       glReadPixels(0, 0, w, h, GL_RED, GL_FLOAT, capbuf->_data);
       break;
-    case EBUFFMT_R32UI:
+    case EBufferFormat::R32UI:
       glReadPixels(0, 0, w, h, GL_RED_INTEGER, GL_UNSIGNED_INT, capbuf->_data);
       break;
-    case EBUFFMT_RG32F:
+    case EBufferFormat::RG32F:
       glReadPixels(0, 0, w, h, GL_RG, GL_FLOAT, capbuf->_data);
       break;
     default:

@@ -3,6 +3,7 @@
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/kernel/datablock.inl>
 #include <ork/kernel/varmap.inl>
+#include <ork/file/chunkfile.h>
 
 namespace ork::lev2 {
 
@@ -12,10 +13,11 @@ namespace ork::lev2 {
 
   struct CompressedImage {
 
-    EBufferFormat _format = EBUFFMT_END;
+    EBufferFormat _format = EBufferFormat::NONE;
     datablockptr_t _data  = nullptr;
     size_t _width         = 0;
     size_t _height        = 0;
+    size_t _depth         = 1;
     size_t _numcomponents = 4; // 3 or 4
     varmap::VarMap _varmap;
   };
@@ -24,9 +26,13 @@ namespace ork::lev2 {
 
   struct CompressedImageMipChain{
 
-    EBufferFormat _format = EBUFFMT_END;
+    void writeXTX( const file::Path& outpath );
+    void readXTX( const file::Path& inppath );
+
+    EBufferFormat _format = EBufferFormat::NONE;
     size_t _width         = 0;
     size_t _height        = 0;
+    size_t _depth         = 1;
     size_t _numcomponents = 4; // 3 or 4
     varmap::VarMap _varmap;
     std::vector<CompressedImage> _levels;
@@ -46,6 +52,7 @@ namespace ork::lev2 {
     datablockptr_t _data  = nullptr;
     size_t _width         = 0;
     size_t _height        = 0;
+    size_t _depth         = 1;
     size_t _numcomponents = 4; // 3 or 4
     varmap::VarMap _varmap;
   };

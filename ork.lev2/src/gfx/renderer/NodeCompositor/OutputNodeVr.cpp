@@ -46,7 +46,7 @@ struct VRIMPL {
       _blit2screenmtl.Init(pTARG);
 
       _rtg            = new RtGroup(pTARG, _width, _height, 1);
-      auto buf        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBUFFMT_RGBA8, _width, _height);
+      auto buf        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA8, _width, _height);
       buf->_debugName = "WtfVrRt";
       _rtg->SetMrt(0, buf);
 

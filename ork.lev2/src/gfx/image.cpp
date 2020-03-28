@@ -18,6 +18,8 @@
 #include <ispc_texcomp.h>
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/filesystem.h>
+#include <ork/file/chunkfile.inl>
+
 OIIO_NAMESPACE_USING
 
 namespace ork::lev2 {
@@ -115,7 +117,7 @@ void Image::downsample(Image& imgout) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Image::compressBC7(CompressedImage& imgout) const {
-  imgout._format = EBUFFMT_RGBA_BPTC_UNORM;
+  imgout._format = EBufferFormat::RGBA_BPTC_UNORM;
   OrkAssert((_width & 3) == 0);
   OrkAssert((_height & 3) == 0);
   OrkAssert((_numcomponents == 3) or (_numcomponents == 4));
@@ -161,11 +163,11 @@ CompressedImageMipChain Image::compressedMipChainBC7() const {
   CompressedImageMipChain rval;
   rval._width         = _width;
   rval._height        = _height;
-  rval._format        = EBUFFMT_RGBA_BPTC_UNORM;
+  rval._format        = EBufferFormat::RGBA_BPTC_UNORM;
   rval._numcomponents = 4;
   Image imga          = this->clone();
   Image imgb;
-  while ((imga._width > 4) and (imga._height > 4)) {
+  while ((imga._width >= 4) and (imga._height >= 4)) {
     CompressedImage cimg;
     imga.compressBC7(cimg);
     rval._levels.push_back(cimg);
@@ -173,6 +175,83 @@ CompressedImageMipChain Image::compressedMipChainBC7() const {
     imgb.downsample(imga);
   }
   return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+constexpr size_t KXTXVERSION = "xtx-ver0"_crcu;
+
+void CompressedImageMipChain::writeXTX(const file::Path& outpath) {
+  //////////////////////////////////////////
+  chunkfile::Writer chunkwriter("xtx");
+  auto hdrstream = chunkwriter.AddStream("header");
+  auto imgstream = chunkwriter.AddStream("image");
+  hdrstream->AddItem<size_t>(KXTXVERSION);
+  hdrstream->AddItem<size_t>(_width);
+  hdrstream->AddItem<size_t>(_height);
+  hdrstream->AddItem<size_t>(_depth);
+  hdrstream->AddItem<size_t>(_numcomponents);
+  hdrstream->AddItem<EBufferFormat>(_format);
+  hdrstream->AddItem<size_t>(_levels.size());
+  hdrstream->addVarMap(_varmap, chunkwriter);
+  //////////////////////////////////////////
+  OrkAssert(_depth == 1); // only 2D for now..
+  //////////////////////////////////////////
+  for (size_t levidx = 0; levidx < _levels.size(); levidx++) {
+    const auto& level = _levels[levidx];
+    hdrstream->AddItem<size_t>(levidx);
+    hdrstream->AddItem<size_t>(level._width);
+    hdrstream->AddItem<size_t>(level._height);
+
+    size_t mipbase   = imgstream->GetSize();
+    auto mipdata     = (const void*)level._data->data();
+    size_t miplength = level._data->length();
+
+    hdrstream->AddItem<size_t>(mipbase);
+    hdrstream->AddItem<size_t>(miplength);
+    imgstream->AddData(mipdata, miplength);
+  }
+  chunkwriter.WriteToFile(outpath);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CompressedImageMipChain::readXTX(const file::Path& inppath) {
+  //////////////////////////////////////////
+  chunkfile::DefaultLoadAllocator allocator;
+  chunkfile::Reader chunkreader(inppath, "xtx", allocator);
+  if (chunkreader.IsOk()) {
+    auto hdrstream     = chunkreader.GetStream("header");
+    auto imgstream     = chunkreader.GetStream("image");
+    size_t xtx_version = 0;
+    size_t numlevels   = 0;
+    hdrstream->GetItem<size_t>(xtx_version);
+    OrkAssert(xtx_version == KXTXVERSION);
+    hdrstream->GetItem<size_t>(_width);
+    hdrstream->GetItem<size_t>(_height);
+    hdrstream->GetItem<size_t>(_depth);
+    hdrstream->GetItem<size_t>(_numcomponents);
+    hdrstream->GetItem<EBufferFormat>(_format);
+    hdrstream->GetItem<size_t>(numlevels);
+    hdrstream->getVarMap(_varmap, chunkreader);
+    //////////////////////////////////////////
+    OrkAssert(_depth == 1); // only 2D for now..
+    //////////////////////////////////////////
+    for (size_t levidx = 0; levidx < _levels.size(); levidx++) {
+      CompressedImage level;
+      size_t lidx      = 0;
+      size_t mipbase   = 0;
+      size_t miplength = 0;
+      hdrstream->GetItem<size_t>(lidx);
+      hdrstream->GetItem<size_t>(level._width);
+      hdrstream->GetItem<size_t>(level._height);
+      hdrstream->GetItem<size_t>(mipbase);
+      hdrstream->GetItem<size_t>(miplength);
+      auto mipdata = imgstream->GetDataAt(mipbase);
+      level._data  = std::make_shared<DataBlock>(mipdata, miplength);
+      _levels.push_back(level);
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -59,11 +59,11 @@ Texture* Texture::CreateBlank(int iw, int ih, EBufferFormat efmt) {
   pTex->_height = ih;
 
   switch (efmt) {
-    case EBUFFMT_RGBA8:
-    case EBUFFMT_R32F:
+    case EBufferFormat::RGBA8:
+    case EBufferFormat::R32F:
       pTex->_data = calloc(iw * ih * 4, 1);
       break;
-    case EBUFFMT_RGBA32F:
+    case EBufferFormat::RGBA32F:
       pTex->_data = calloc(iw * ih * 16, 1);
       break;
     default:
@@ -97,38 +97,38 @@ MipChain::MipChain(int w, int h, EBufferFormat fmt, ETextureType typ) {
     level->_width  = w;
     level->_height = h;
     switch (fmt) {
-      case EBUFFMT_RGBA32F:
+      case EBufferFormat::RGBA32F:
         level->_length = w * h * 4 * sizeof(float);
         break;
-      case EBUFFMT_RGBA16F:
+      case EBufferFormat::RGBA16F:
         level->_length = w * h * 4 * sizeof(uint16_t);
         break;
-      case EBUFFMT_RGBA8:
+      case EBufferFormat::RGBA8:
         level->_length = w * h * 4 * sizeof(uint8_t);
         break;
-      case EBUFFMT_R32F:
-      case EBUFFMT_Z24S8:
-      case EBUFFMT_Z32:
+      case EBufferFormat::R32F:
+      case EBufferFormat::Z24S8:
+      case EBufferFormat::Z32:
         level->_length = w * h * 4 * sizeof(float);
         break;
-      case EBUFFMT_Z16:
+      case EBufferFormat::Z16:
         level->_length = w * h * sizeof(uint16_t);
         break;
 #if !defined(__APPLE__)
-      case EBUFFMT_RGBA_BPTC_UNORM:
+      case EBufferFormat::RGBA_BPTC_UNORM:
         level->_length = w * h;
         break;
-      case EBUFFMT_SRGB_ALPHA_BPTC_UNORM:
+      case EBufferFormat::SRGB_ALPHA_BPTC_UNORM:
         level->_length = w * h;
         break;
-      case EBUFFMT_RGBA_ASTC_4X4:
+      case EBufferFormat::RGBA_ASTC_4X4:
         level->_length = w * h;
         break;
-      case EBUFFMT_SRGB_ASTC_4X4:
+      case EBufferFormat::SRGB_ASTC_4X4:
         level->_length = w * h;
         break;
 #endif
-      case EBUFFMT_DEPTH:
+      case EBufferFormat::DEPTH:
       default:
         assert(false);
     }

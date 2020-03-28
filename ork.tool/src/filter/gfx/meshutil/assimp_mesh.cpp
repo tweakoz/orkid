@@ -61,7 +61,11 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
       const void* dataptr = nullptr;
       size_t datalen      = 0;
 
-      auto embtex     = new lev2::EmbeddedTexture;
+      auto embtex = new lev2::EmbeddedTexture;
+
+      embtex->_varmap["src.filename"].Set<std::string>(texname);
+      embtex->_varmap["src.format"].Set<std::string>(texname);
+
       embtex->_format = fmt;
 
       if (texname.length() == 0) {
