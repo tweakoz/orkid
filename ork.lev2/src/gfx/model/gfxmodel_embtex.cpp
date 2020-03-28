@@ -52,7 +52,7 @@ datablockptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
   fwrite(_srcdata, _srcdatalen, 1, fout);
   fclose(fout);
   std::string compressed_path;
-  if (0) { // ISPC compressor (WIP)
+  if (1) { // ISPC compressor (WIP)
     Image img;
     img.initFromInMemoryFile(_format, _srcdata, _srcdatalen);
     auto cimgchain    = img.compressedMipChainBC7();

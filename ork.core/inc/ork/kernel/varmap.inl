@@ -71,6 +71,15 @@ struct VarMap {
     return crcgen.result();
   }
   ///////////////////////////////////////////////////////////////////////////
+  std::vector<std::string> dumpkeys() {
+    std::vector<std::string> rval;
+    for (const auto& item : _themap) {
+      const auto& key = item.first;
+      rval.push_back(key);
+    }
+    return rval;
+  }
+  ///////////////////////////////////////////////////////////////////////////
 
   std::map<key_t, val_t> _themap;
 };

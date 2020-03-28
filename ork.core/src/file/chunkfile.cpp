@@ -269,8 +269,6 @@ void InputStream::getVarMap(varmap::VarMap& out_vmap, const Reader& reader) {
         OrkAssert(false);
     }
   }
-
-  OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -291,61 +289,81 @@ Reader::Reader(const file::Path& inpath, const char* ptype, ILoadAllocator& allo
     , mistrtablen(0)
     , mbOk(false)
     , _allocator(allocator) {
-  const Char4 good_chunk_magic("chkf");
-  OrkHeapCheck();
+
   if (FileEnv::GetRef().DoesFileExist(inpath)) {
     ork::File inputfile(inpath, ork::EFM_READ);
-    OrkHeapCheck();
-
-    ///////////////////////////
-    Char4 bad_chunk_magic;
-    inputfile.Read(&bad_chunk_magic, sizeof(bad_chunk_magic));
-    OrkAssert(bad_chunk_magic == good_chunk_magic);
-    OrkHeapCheck();
-    ///////////////////////////
-    inputfile.Read(&mistrtablen, sizeof(mistrtablen));
-    char* pst = new char[mistrtablen];
-    inputfile.Read(pst, mistrtablen);
-    mpstrtab = pst;
-    OrkHeapCheck();
-    ///////////////////////////
-    int32_t ifiletype = 0;
-    inputfile.Read(&ifiletype, sizeof(ifiletype));
-    const char* pthistype = mpstrtab + ifiletype;
-    OrkAssert(0 == strcmp(pthistype, ptype));
-    OrkHeapCheck();
-    ///////////////////////////
-    int32_t inumchunks = 0;
-    inputfile.Read(&inumchunks, sizeof(inumchunks));
-    mbOk = true;
-    ///////////////////////////
-    for (int ic = 0; ic < inumchunks; ic++) {
-      int32_t ichunkid, ioffset, ichunklen;
-      inputfile.Read(&ichunkid, sizeof(ichunkid));
-      inputfile.Read(&ioffset, sizeof(ioffset));
-      inputfile.Read(&ichunklen, sizeof(ichunklen));
-      PoolString psname   = AddPooledString(GetString(ichunkid));
-      InputStream* stream = &mStreamBank[ic];
-      OrkHeapCheck();
-      if (ichunklen) {
-        void* pdata = _allocator.alloc(psname.c_str(), ichunklen);
-        OrkAssert(pdata != 0);
-        new (stream) InputStream(pdata, ichunklen);
-        mInputStreams.AddSorted(psname, stream);
-      } else {
-        new (stream) InputStream(0, 0);
-        mInputStreams.AddSorted(psname, stream);
-      }
-      OrkHeapCheck();
-    }
-    ///////////////////////////
-    for (int ic = 0; ic < inumchunks; ic++) {
-      if (mStreamBank[ic].GetLength()) {
-        inputfile.Read(mStreamBank[ic].GetDataAt(0), mStreamBank[ic].GetLength());
-      }
-    }
-    ///////////////////////////
+    size_t length = 0;
+    inputfile.GetLength(length);
+    auto dblock = std::make_shared<DataBlock>();
+    void* dest  = dblock->allocateBlock(length);
+    inputfile.Read(dest, length);
+    inputfile.Close();
+    readFromDataBlock(dblock);
+    OrkAssert(_chunkfiletype == std::string(ptype));
   }
+}
+///////////////////////////////////////////////////////////////////////////////
+Reader::Reader(datablockptr_t datablock, ILoadAllocator& allocator)
+    : mpstrtab(0)
+    , mistrtablen(0)
+    , mbOk(false)
+    , _allocator(allocator) {
+
+  readFromDataBlock(datablock);
+}
+///////////////////////////////////////////////////////////////////////////////
+void Reader::readFromDataBlock(datablockptr_t datablock) {
+  DataBlockInputStream dblockstream(datablock);
+
+  const Char4 good_chunk_magic("chkf");
+  OrkHeapCheck();
+  ///////////////////////////
+  Char4 check_chunk_magic(dblockstream.getItem<uint32_t>());
+  OrkAssert(check_chunk_magic == good_chunk_magic);
+  ///////////////////////////
+  mistrtablen = dblockstream.getItem<int>();
+  char* pst   = new char[mistrtablen];
+  memcpy(pst, dblockstream.current(), mistrtablen);
+  dblockstream.advance(mistrtablen);
+  mpstrtab = pst;
+  OrkHeapCheck();
+  ///////////////////////////
+  int32_t ifiletype     = dblockstream.getItem<int32_t>();
+  const char* pthistype = mpstrtab + ifiletype;
+  _chunkfiletype        = pthistype;
+  OrkHeapCheck();
+  ///////////////////////////
+  int32_t inumchunks = dblockstream.getItem<int32_t>();
+  ///////////////////////////
+  for (int ic = 0; ic < inumchunks; ic++) {
+    int32_t ichunkid    = dblockstream.getItem<int32_t>();
+    int32_t ioffset     = dblockstream.getItem<int32_t>();
+    int32_t ichunklen   = dblockstream.getItem<int32_t>();
+    PoolString psname   = AddPooledString(GetString(ichunkid));
+    InputStream* stream = &mStreamBank[ic];
+    OrkHeapCheck();
+    if (ichunklen) {
+      void* pdata = _allocator.alloc(psname.c_str(), ichunklen);
+      OrkAssert(pdata != 0);
+      new (stream) InputStream(pdata, ichunklen);
+      mInputStreams.AddSorted(psname, stream);
+    } else {
+      new (stream) InputStream(0, 0);
+      mInputStreams.AddSorted(psname, stream);
+    }
+    OrkHeapCheck();
+  }
+  ///////////////////////////
+  for (int ic = 0; ic < inumchunks; ic++) {
+    if (mStreamBank[ic].GetLength()) {
+      auto destaddr = mStreamBank[ic].GetDataAt(0);
+      size_t length = mStreamBank[ic].GetLength();
+      memcpy(destaddr, dblockstream.current(), length);
+      dblockstream.advance(length);
+    }
+  }
+  ///////////////////////////
+  mbOk = true;
 }
 ////////////////////////////////////////////////////////////////////////////////////
 InputStream* Reader::GetStream(const char* streamname) {

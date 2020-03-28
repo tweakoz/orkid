@@ -217,9 +217,25 @@ void CompressedImageMipChain::writeXTX(const file::Path& outpath) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void CompressedImageMipChain::readXTX(const file::Path& inppath) {
+  if (FileEnv::GetRef().DoesFileExist(inppath)) {
+    ork::File inputfile(inppath, ork::EFM_READ);
+    size_t length = 0;
+    inputfile.GetLength(length);
+    auto dblock = std::make_shared<DataBlock>();
+    void* dest  = dblock->allocateBlock(length);
+    inputfile.Read(dest, length);
+    inputfile.Close();
+    readXTX(dblock);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CompressedImageMipChain::readXTX(datablockptr_t datablock) {
   //////////////////////////////////////////
   chunkfile::DefaultLoadAllocator allocator;
-  chunkfile::Reader chunkreader(inppath, "xtx", allocator);
+  chunkfile::Reader chunkreader(datablock, allocator);
+  OrkAssert(chunkreader._chunkfiletype == "xtx");
   if (chunkreader.IsOk()) {
     auto hdrstream     = chunkreader.GetStream("header");
     auto imgstream     = chunkreader.GetStream("image");

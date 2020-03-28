@@ -33,6 +33,7 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/file/chunkfile.inl>
 #include <ork/kernel/datablock.inl>
+#include <ork/lev2/gfx/image.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -303,6 +304,7 @@ struct GlTexLoadReq {
   GLTextureObject* pTEXOBJ = nullptr;
   std::string _texname;
   DataBlockInputStream _inpstream;
+  std::shared_ptr<CompressedImageMipChain> _cmipchain;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -318,6 +320,9 @@ public:
 
 
   void TexManInit(void) override;
+
+  bool LoadXTXTexture(Texture* ptex, datablockptr_t inpdata);
+  void LoadXTXTextureMainThreadPart(GlTexLoadReq req);
 
   void LoadDDSTextureMainThreadPart(GlTexLoadReq req);
   bool LoadDDSTexture(const AssetPath& fname, Texture* ptex);

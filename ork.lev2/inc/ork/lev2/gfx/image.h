@@ -28,6 +28,7 @@ namespace ork::lev2 {
 
     void writeXTX( const file::Path& outpath );
     void readXTX( const file::Path& inppath );
+    void readXTX( datablockptr_t datablock );
 
     EBufferFormat _format = EBufferFormat::NONE;
     size_t _width         = 0;

@@ -19,6 +19,7 @@
 #include <ork/kernel/fixedlut.hpp>
 #include <ork/kernel/string/PoolString.h>
 #include <ork/kernel/varmap.inl>
+#include <ork/kernel/datablock.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -136,7 +137,10 @@ struct DefaultLoadAllocator : public ILoadAllocator { //////////////////////////
 struct Reader {
 
   Reader(const file::Path& inpath, const char* ptype, ILoadAllocator& allocator);
+  Reader(datablockptr_t datablock, ILoadAllocator& allocator);
   ~Reader();
+
+  void readFromDataBlock(datablockptr_t datablock);
 
   InputStream* GetStream(const char* streamname);
   const char* GetString(int index) const;
@@ -152,6 +156,7 @@ struct Reader {
   int mistrtablen;
   const char* mpstrtab;
   bool mbOk;
+  std::string _chunkfiletype;
 
   StreamLut mInputStreams;
   ILoadAllocator& _allocator;
