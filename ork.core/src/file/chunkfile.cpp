@@ -84,6 +84,7 @@ void OutputStream::AddItem(const fvec2& data) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OutputStream::addVarMap(const varmap::VarMap& vmap, Writer& writer) {
+  AddItem<size_t>("BeginVarMap"_crcu);
   AddItem<size_t>(vmap._themap.size());
   for (const auto& item : vmap._themap) {
     const auto& key        = item.first;
@@ -92,6 +93,8 @@ void OutputStream::addVarMap(const varmap::VarMap& vmap, Writer& writer) {
     AddItem<size_t>(keystring_index);
     if (auto as = val.TryAs<std::string>()) {
       AddItem<uint64_t>("std::string"_crcu);
+      size_t str_index = writer.stringIndex(as.value().c_str());
+      AddItem<size_t>(str_index);
     } else if (auto as = val.TryAs<bool>()) {
       AddItem<uint64_t>("bool"_crcu);
       AddItem<bool>(as.value());
@@ -138,6 +141,7 @@ void OutputStream::addVarMap(const varmap::VarMap& vmap, Writer& writer) {
       OrkAssert(false);
     }
   }
+  AddItem<size_t>("EndVarMap"_crcu);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -173,7 +177,12 @@ void* InputStream::GetDataAt(size_t idx) {
   return (void*)&pchbase[idx];
 }
 void InputStream::getVarMap(varmap::VarMap& out_vmap, const Reader& reader) {
+  size_t mkr_beginvarmap = 0;
+  size_t mkr_endvarmap   = 0;
+  GetItem<size_t>(mkr_beginvarmap);
+  OrkAssert(mkr_beginvarmap == "BeginVarMap"_crcu);
   size_t num_items = 0;
+  GetItem<size_t>(num_items);
   for (size_t index = 0; index < num_items; index++) {
     size_t keystring_index = 0;
     uint64_t typeID        = 0;
@@ -183,8 +192,9 @@ void InputStream::getVarMap(varmap::VarMap& out_vmap, const Reader& reader) {
     switch (typeID) {
       case "std::string"_crcu: {
         std::string value;
-        GetItem<std::string>(value);
-        out_vmap[key_string] = value;
+        size_t sidx = 0;
+        GetItem<size_t>(sidx);
+        out_vmap[key_string] = reader.GetString(sidx);
         break;
       }
       case "bool"_crcu: {
@@ -269,6 +279,8 @@ void InputStream::getVarMap(varmap::VarMap& out_vmap, const Reader& reader) {
         OrkAssert(false);
     }
   }
+  GetItem<size_t>(mkr_endvarmap);
+  OrkAssert(mkr_endvarmap == "EndVarMap"_crcu);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

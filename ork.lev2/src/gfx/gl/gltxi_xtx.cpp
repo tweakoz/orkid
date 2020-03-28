@@ -26,6 +26,10 @@ bool GlTextureInterface::LoadXTXTexture(Texture* ptex, datablockptr_t datablock)
   load_req._inpstream._datablock = datablock;
   load_req._cmipchain            = std::make_shared<CompressedImageMipChain>();
   load_req._cmipchain->readXTX(datablock);
+  ///////////////////////////////////////////////
+  GLTextureObject* pTEXOBJ = new GLTextureObject;
+  ptex->_internalHandle    = (void*)pTEXOBJ;
+  ///////////////////////////////////////////////
   auto keys = load_req._cmipchain->_varmap.dumpkeys();
   printf("\nxtx w<%lu>\n", load_req._cmipchain->_width);
   printf("xtx h<%lu>\n", load_req._cmipchain->_height);
@@ -55,7 +59,39 @@ bool GlTextureInterface::LoadXTXTexture(Texture* ptex, datablockptr_t datablock)
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::LoadXTXTextureMainThreadPart(GlTexLoadReq req) {
-  OrkAssert(false);
+  OrkAssert(req._cmipchain.get() != nullptr);
+  auto teximpl = (GLTextureObject*)req.ptex->_internalHandle;
+  glGenTextures(1, &teximpl->mObject);
+  glBindTexture(GL_TEXTURE_2D, teximpl->mObject);
+  GL_ERRORCHECK();
+  if (req.ptex->_debugName.length()) {
+    mTargetGL.debugLabel(GL_TEXTURE, teximpl->mObject, req.ptex->_debugName);
+  }
+  int inummips = req._cmipchain->_levels.size();
+  OrkAssert(inummips > 0);
+  GL_ERRORCHECK();
+  for (int imip = 0; imip < inummips; imip++) {
+    auto& level = req._cmipchain->_levels[imip];
+    glCompressedTexImage2D( //
+        GL_TEXTURE_2D,      //
+        imip,               //
+        GL_COMPRESSED_RGBA_BPTC_UNORM,
+        level._width,
+        level._height,
+        0,
+        level._data->length(),
+        level._data->data());
+    GL_ERRORCHECK();
+  }
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+  GL_ERRORCHECK();
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, inummips - 1);
+  GL_ERRORCHECK();
+  req.ptex->TexSamplingMode().PresetTrilinearWrap();
+  this->ApplySamplingMode(req.ptex);
+  req.ptex->_dirty = false;
+  glBindTexture(GL_TEXTURE_2D, 0);
+  GL_ERRORCHECK();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

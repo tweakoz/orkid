@@ -253,7 +253,7 @@ void CompressedImageMipChain::readXTX(datablockptr_t datablock) {
     //////////////////////////////////////////
     OrkAssert(_depth == 1); // only 2D for now..
     //////////////////////////////////////////
-    for (size_t levidx = 0; levidx < _levels.size(); levidx++) {
+    for (size_t levidx = 0; levidx < numlevels; levidx++) {
       CompressedImage level;
       size_t lidx      = 0;
       size_t mipbase   = 0;
