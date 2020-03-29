@@ -20,7 +20,7 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlTextureInterface::LoadXTXTexture(Texture* ptex, datablockptr_t datablock) {
+bool GlTextureInterface::_loadXTXTexture(Texture* ptex, datablockptr_t datablock) {
   GlTexLoadReq load_req;
   load_req.ptex                  = ptex;
   load_req._inpstream._datablock = datablock;
@@ -49,7 +49,7 @@ bool GlTextureInterface::LoadXTXTexture(Texture* ptex, datablockptr_t datablock)
       auto orig_datablock = datablock;
       auto postblock      = preproc(ptex, &mTargetGL, orig_datablock);
     }
-    this->LoadXTXTextureMainThreadPart(load_req);
+    this->_loadXTXTextureMainThreadPart(load_req);
   };
   opq::mainSerialQueue().enqueue(lamb);
   ///////////////////////////////////////////////
@@ -58,7 +58,7 @@ bool GlTextureInterface::LoadXTXTexture(Texture* ptex, datablockptr_t datablock)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlTextureInterface::LoadXTXTextureMainThreadPart(GlTexLoadReq req) {
+void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
   OrkAssert(req._cmipchain.get() != nullptr);
   auto teximpl = (GLTextureObject*)req.ptex->_internalHandle;
   glGenTextures(1, &teximpl->mObject);

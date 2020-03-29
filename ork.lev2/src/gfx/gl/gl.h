@@ -318,17 +318,8 @@ constexpr GLuint PBOOBJBASE = 0x12340000;
 class GlTextureInterface : public TextureInterface {
 public:
 
-
   void TexManInit(void) override;
 
-  bool LoadXTXTexture(Texture* ptex, datablockptr_t inpdata);
-  void LoadXTXTextureMainThreadPart(GlTexLoadReq req);
-
-  void LoadDDSTextureMainThreadPart(GlTexLoadReq req);
-  bool LoadDDSTexture(const AssetPath& fname, Texture* ptex);
-  bool LoadDDSTexture(Texture* ptex, datablockptr_t inpdata);
-  bool LoadVDSTexture(const AssetPath& fname, Texture* ptex);
-  bool LoadQTZTexture(const AssetPath& fname, Texture* ptex);
 
   GLuint _getPBO(size_t isize);
   void _returnPBO(size_t isize,GLuint pbo);
@@ -336,6 +327,19 @@ public:
   GlTextureInterface(ContextGL& tgt);
 
 private:
+
+  bool _loadImageTexture(Texture* ptex, datablockptr_t inpdata);
+
+
+  bool _loadXTXTexture(Texture* ptex, datablockptr_t inpdata);
+  void _loadXTXTextureMainThreadPart(GlTexLoadReq req);
+
+  void _loadDDSTextureMainThreadPart(GlTexLoadReq req);
+  bool _loadDDSTexture(const AssetPath& fname, Texture* ptex);
+  bool _loadDDSTexture(Texture* ptex, datablockptr_t inpdata);
+  bool _loadVDSTexture(const AssetPath& fname, Texture* ptex);
+
+
   bool LoadTexture(Texture* ptex, datablockptr_t inpdata) final;
   bool DestroyTexture(Texture* ptex) final;
   bool LoadTexture(const AssetPath& fname, Texture* ptex) final;

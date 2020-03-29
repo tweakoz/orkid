@@ -22,6 +22,7 @@ namespace ork {
 
 class FileDev;
 class File;
+struct DataBlock;
 
 struct FileEnvDir {
   long handle;                 /* -1 for failed rewind */
@@ -30,6 +31,8 @@ struct FileEnvDir {
 
   u8 info;
 };
+
+std::shared_ptr<DataBlock> datablockFromFileAtPath(const file::Path& path);
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace file {

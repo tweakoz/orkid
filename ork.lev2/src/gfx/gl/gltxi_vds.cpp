@@ -223,7 +223,7 @@ float VdsTextureAnimation::GetLengthOfTime() const {
   return 10.0f;
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool GlTextureInterface::LoadVDSTexture(const AssetPath& infname, Texture* ptex) {
+bool GlTextureInterface::_loadVDSTexture(const AssetPath& infname, Texture* ptex) {
   GLTextureObject* pTEXOBJ = new GLTextureObject;
   ptex->_internalHandle    = (void*)pTEXOBJ;
   glGenTextures(1, &pTEXOBJ->mObject);

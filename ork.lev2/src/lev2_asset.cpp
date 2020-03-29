@@ -32,7 +32,7 @@ template class ork::asset::AssetManager<ork::lev2::AudioBank>;
 
 using namespace ork::asset;
 
-namespace ork { namespace lev2 {
+namespace ork::lev2 {
 
 XgmModelAsset::~XgmModelAsset() {
 }
@@ -91,7 +91,7 @@ public:
     AddLocation("data://", ".vds");
     AddLocation("data://", ".qtz");
     AddLocation("data://", ".dds");
-    // AddLocation( "data://", ".png" );
+    AddLocation("data://", ".png");
     // AddLocation( "lev2://", ".tga" );
     // AddLocation( "lev2://", ".png" );
     AddLocation("lev2://", ".dds");
@@ -243,4 +243,4 @@ void FxShaderAsset::Describe() {
 
 // template class asset::AssetManager<FxShaderAsset>;
 
-}} // namespace ork::lev2
+} // namespace ork::lev2

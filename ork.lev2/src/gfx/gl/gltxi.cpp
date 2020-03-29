@@ -36,6 +36,47 @@ GlTextureInterface::GlTextureInterface(ContextGL& tgt)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+bool GlTextureInterface::LoadTexture(const AssetPath& infname, Texture* ptex) {
+  AssetPath DdsFilename = infname;
+  AssetPath PngFilename = infname;
+  AssetPath XtxFilename = infname;
+  DdsFilename.SetExtension("dds");
+  PngFilename.SetExtension("png");
+  XtxFilename.SetExtension("xtx");
+  AssetPath final_fname;
+  if (FileEnv::GetRef().DoesFileExist(PngFilename))
+    final_fname = PngFilename;
+  if (FileEnv::GetRef().DoesFileExist(DdsFilename))
+    final_fname = DdsFilename;
+  if (FileEnv::GetRef().DoesFileExist(XtxFilename))
+    final_fname = XtxFilename;
+
+  printf("infname<%s>\n", infname.c_str());
+  printf("final_fname<%s>\n", final_fname.c_str());
+
+  if (auto dblock = datablockFromFileAtPath(final_fname))
+    return LoadTexture(ptex, dblock);
+  else
+    return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool GlTextureInterface::LoadTexture(Texture* ptex, datablockptr_t datablock) {
+  DataBlockInputStream checkstream(datablock);
+  uint32_t magic = checkstream.getItem<uint32_t>();
+  bool ok        = false;
+  if (Char4("chkf") == Char4(magic))
+    ok = _loadXTXTexture(ptex, datablock);
+  else if (Char4("DDS ") == Char4(magic))
+    ok = _loadDDSTexture(ptex, datablock);
+  else
+    ok = _loadImageTexture(ptex, datablock);
+  return ok;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 bool GlTextureInterface::DestroyTexture(Texture* tex) {
   auto glto            = (GLTextureObject*)tex->_internalHandle;
   tex->_internalHandle = nullptr;
@@ -125,46 +166,12 @@ void GlTextureInterface::_returnPBO(size_t isize, GLuint pbo) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlTextureInterface::LoadTexture(const AssetPath& infname, Texture* ptex) {
-  ///////////////////////////////////////////////
-  AssetPath DdsFilename = infname;
-  AssetPath VdsFilename = infname;
-  DdsFilename.SetExtension("dds");
-  VdsFilename.SetExtension("vds");
-  bool bDDSPRESENT = FileEnv::GetRef().DoesFileExist(DdsFilename);
-  bool bVDSPRESENT = FileEnv::GetRef().DoesFileExist(VdsFilename);
-
-  if (bVDSPRESENT)
-    return LoadVDSTexture(VdsFilename, ptex);
-  else if (bDDSPRESENT)
-    return LoadDDSTexture(DdsFilename, ptex);
-  else
-    return false;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void GlTextureInterface::UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) {
   // printf( "GlTextureInterface::UpdateAnimatedTexture( ptex<%p> tai<%p> )\n", ptex, tai );
   GLTextureObject* pTEXOBJ = (GLTextureObject*)ptex->GetTexIH();
   if (pTEXOBJ && ptex->GetTexAnim()) {
     ptex->GetTexAnim()->UpdateTexture(this, ptex, tai);
   }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool GlTextureInterface::LoadTexture(Texture* ptex, datablockptr_t datablock) {
-  DataBlockInputStream checkstream(datablock);
-  uint32_t magic = checkstream.getItem<uint32_t>();
-  bool ok        = false;
-  if (Char4("chkf") == Char4(magic)) {
-    ok = LoadXTXTexture(ptex, datablock);
-  } else {
-    ok = LoadDDSTexture(ptex, datablock);
-  }
-
-  return ok;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

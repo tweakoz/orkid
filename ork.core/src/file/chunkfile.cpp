@@ -23,6 +23,10 @@ void OutputStream::AddData(const void* ptr, size_t length) {
   Write((unsigned char*)ptr, length);
 }
 ///////////////////////////////////////////////////////////////////////////////
+void OutputStream::AddDataBlock(datablockptr_t dblock) {
+  AddData(dblock->data(), dblock->length());
+}
+///////////////////////////////////////////////////////////////////////////////
 void OutputStream::AddItem(const bool& data) {
   bool temp = data;
   swapbytes_dynamic(temp);
@@ -414,58 +418,54 @@ int Writer::stringIndex(const char* pstr) {
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-void Writer::WriteToFile(const file::Path& outpath) {
-  ork::File outputfile(outpath, ork::EFM_WRITE);
-
+void Writer::writeToDataBlock(datablockptr_t& out_datablock) {
+  ////////////////////////
   Char4 chunk_magic("chkf");
-  // swapbytes_dynamic( chunk_magic );
-
+  out_datablock->addItem<Char4>(chunk_magic);
   ////////////////////////
-  outputfile.Write(&chunk_magic, sizeof(chunk_magic));
-  ////////////////////////
-
   OutputStream StringBlockStream;
   StringBlockStream.Write((const unsigned char*)_stringblock.data(), _stringblock.size());
   int istringblksize = StringBlockStream.GetSize();
-
   ////////////////////////
-  swapbytes_dynamic(istringblksize);
-  outputfile.Write(&istringblksize, sizeof(istringblksize));
-  outputfile.Write(StringBlockStream.GetData(), StringBlockStream.GetSize());
+  out_datablock->addItem<Char4>(chunk_magic);
+  out_datablock->addItem<int>(istringblksize);
+  out_datablock->addData(StringBlockStream.GetData(), StringBlockStream.GetSize());
   ////////////////////////
-  swapbytes_dynamic(_filetype);
-  outputfile.Write(&_filetype, sizeof(_filetype));
+  out_datablock->addItem<int>(_filetype);
   ////////////////////////
   int inumchunks = (int)mOutputStreams.size();
-  swapbytes_dynamic(inumchunks);
-  outputfile.Write(&inumchunks, sizeof(inumchunks));
+  out_datablock->addItem<int>(inumchunks);
   ////////////////////////
-
   int ioffset = 0;
   for (orkmap<int, OutputStream*>::const_iterator it = mOutputStreams.begin(); it != mOutputStreams.end(); it++) {
     int ichunkid         = it->first;
     OutputStream* stream = it->second;
     int ichunklen        = stream->GetSize();
     ////////////////////////
-    swapbytes_dynamic(ichunkid);
-    swapbytes_dynamic(ioffset);
-    swapbytes_dynamic(ichunklen);
-    outputfile.Write(&ichunkid, sizeof(ichunkid));
-    outputfile.Write(&ioffset, sizeof(ioffset));
-    outputfile.Write(&ichunklen, sizeof(ichunklen));
+    out_datablock->addItem<int>(ichunkid);
+    out_datablock->addItem<int>(ioffset);
+    out_datablock->addItem<int>(ichunklen);
     ////////////////////////
-
     ioffset += ichunklen;
   }
-
   ////////////////////////
   for (orkmap<int, OutputStream*>::const_iterator it = mOutputStreams.begin(); it != mOutputStreams.end(); it++) {
     int ichunkid         = it->first;
     OutputStream* stream = it->second;
     int ichunklen        = stream->GetSize();
     if (ichunklen && stream->GetData()) {
-      outputfile.Write(stream->GetData(), ichunklen);
+      out_datablock->addData(stream->GetData(), ichunklen);
     }
   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////
+
+void Writer::WriteToFile(const file::Path& outpath) {
+
+  auto datablock = std::make_shared<DataBlock>();
+  writeToDataBlock(datablock);
+  ork::File outputfile(outpath, ork::EFM_WRITE);
+  outputfile.Write(datablock->data(), datablock->length());
 }
 }} // namespace ork::chunkfile

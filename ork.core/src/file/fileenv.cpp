@@ -13,8 +13,24 @@
 
 #include <ork/file/filestd.h>
 #include <unistd.h>
+#include <ork/kernel/datablock.inl>
 
 namespace ork {
+
+datablockptr_t datablockFromFileAtPath(const file::Path& path) {
+
+  datablockptr_t rval = nullptr;
+  if (FileEnv::GetRef().DoesFileExist(path)) {
+    ork::File inputfile(path, ork::EFM_READ);
+    size_t length = 0;
+    inputfile.GetLength(length);
+    rval       = std::make_shared<DataBlock>();
+    void* dest = rval->allocateBlock(length);
+    inputfile.Read(dest, length);
+    inputfile.Close();
+  }
+  return rval;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

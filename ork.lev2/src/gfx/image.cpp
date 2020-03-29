@@ -184,15 +184,28 @@ void Image::convertToRGBA(Image& imgout) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Image::compressBC7(CompressedImage& imgout) const {
-  imgout._format = EBufferFormat::RGBA_BPTC_UNORM;
-  OrkAssert((_width & 3) == 0);
-  OrkAssert((_height & 3) == 0);
+  deco::printf(_image_deco, "///////////////////////////////////\n");
+  deco::printf(_image_deco, "// Image::compressBC7(%s)\n", _debugName.c_str());
+  deco::printf(_image_deco, "// imgout._width<%zu>\n", _width);
+  deco::printf(_image_deco, "// imgout._height<%zu>\n", _height);
+  imgout._format               = EBufferFormat::RGBA_BPTC_UNORM;
+  bool width_is_multiple_of_4  = ((_width & 3) == 0);
+  bool height_is_multiple_of_4 = ((_height & 3) == 0);
   OrkAssert((_numcomponents == 3) or (_numcomponents == 4));
-  imgout._width         = _width;
-  imgout._height        = _height;
-  imgout._numcomponents = 4;
-  imgout._data          = std::make_shared<DataBlock>();
-  auto dest             = (uint8_t*)imgout._data->allocateBlock(_width * _height);
+  imgout._width          = _width;
+  imgout._height         = _height;
+  imgout._blocked_width  = _width;
+  imgout._blocked_height = _height;
+  imgout._numcomponents  = 4;
+  //////////////////////////////////////////////////////////////////
+  // pad images which do not line up with block sizes
+  //////////////////////////////////////////////////////////////////
+  if (not(width_is_multiple_of_4 and height_is_multiple_of_4)) {
+    OrkAssert(false);
+  }
+  //////////////////////////////////////////////////////////////////
+  imgout._data = std::make_shared<DataBlock>();
+  auto dest    = (uint8_t*)imgout._data->allocateBlock(_width * _height);
   bc7_enc_settings settings;
   GetProfile_alpha_basic(&settings);
 
@@ -206,10 +219,6 @@ void Image::compressBC7(CompressedImage& imgout) const {
   surface.ptr    = (uint8_t*)src_as_rgba._data->data();
   ork::Timer timer;
   timer.Start();
-  deco::printf(_image_deco, "///////////////////////////////////\n");
-  deco::printf(_image_deco, "// Image::compressBC7(%s)\n", _debugName.c_str());
-  deco::printf(_image_deco, "// imgout._width<%zu>\n", _width);
-  deco::printf(_image_deco, "// imgout._height<%zu>\n", _height);
   CompressBlocksBC7(&surface, dest, &settings);
   float time = timer.SecsSinceStart();
   float MPPS = float(_width * _height) * 1e-6 / time;
@@ -242,6 +251,41 @@ CompressedImageMipChain Image::compressedMipChainBC7() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 constexpr size_t KXTXVERSION = "xtx-ver0"_crcu;
+
+void CompressedImageMipChain::writeXTX(datablockptr_t& out_datablock) {
+  //////////////////////////////////////////
+  chunkfile::Writer chunkwriter("xtx");
+  auto hdrstream = chunkwriter.AddStream("header");
+  auto imgstream = chunkwriter.AddStream("image");
+  hdrstream->AddItem<size_t>(KXTXVERSION);
+  hdrstream->AddItem<size_t>(_width);
+  hdrstream->AddItem<size_t>(_height);
+  hdrstream->AddItem<size_t>(_depth);
+  hdrstream->AddItem<size_t>(_numcomponents);
+  hdrstream->AddItem<EBufferFormat>(_format);
+  hdrstream->AddItem<size_t>(_levels.size());
+  hdrstream->addVarMap(_varmap, chunkwriter);
+  //////////////////////////////////////////
+  OrkAssert(_depth == 1); // only 2D for now..
+  //////////////////////////////////////////
+  for (size_t levidx = 0; levidx < _levels.size(); levidx++) {
+    const auto& level = _levels[levidx];
+    hdrstream->AddItem<size_t>(levidx);
+    hdrstream->AddItem<size_t>(level._width);
+    hdrstream->AddItem<size_t>(level._height);
+
+    size_t mipbase   = imgstream->GetSize();
+    auto mipdata     = (const void*)level._data->data();
+    size_t miplength = level._data->length();
+
+    hdrstream->AddItem<size_t>(mipbase);
+    hdrstream->AddItem<size_t>(miplength);
+    imgstream->AddData(mipdata, miplength);
+  }
+  chunkwriter.writeToDataBlock(out_datablock);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void CompressedImageMipChain::writeXTX(const file::Path& outpath) {
   //////////////////////////////////////////
@@ -279,16 +323,9 @@ void CompressedImageMipChain::writeXTX(const file::Path& outpath) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void CompressedImageMipChain::readXTX(const file::Path& inppath) {
-  if (FileEnv::GetRef().DoesFileExist(inppath)) {
-    ork::File inputfile(inppath, ork::EFM_READ);
-    size_t length = 0;
-    inputfile.GetLength(length);
-    auto dblock = std::make_shared<DataBlock>();
-    void* dest  = dblock->allocateBlock(length);
-    inputfile.Read(dest, length);
-    inputfile.Close();
+  auto dblock = datablockFromFileAtPath(inppath);
+  if (dblock)
     readXTX(dblock);
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

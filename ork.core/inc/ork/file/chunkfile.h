@@ -61,6 +61,7 @@ public:
   void AddItem(const fquat& data);
   void addVarMap(const varmap::VarMap& vmap, Writer& writer);
   void AddData(const void* ptr, size_t length);
+  void AddDataBlock(datablockptr_t dblock);
   /////////////////////////////////////////////
 
   size_t GetSize() const {
@@ -86,6 +87,7 @@ struct Writer {
   OutputStream* AddStream(std::string stream_name);
   int stringIndex(const char* pstr);
   void WriteToFile(const file::Path& outpath);
+  void writeToDataBlock(datablockptr_t& out_datablock);
 
   ////////////////////////////////////////////////////////////////////////////////////
 

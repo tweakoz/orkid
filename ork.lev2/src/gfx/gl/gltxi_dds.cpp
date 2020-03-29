@@ -20,7 +20,7 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlTextureInterface::LoadDDSTexture(Texture* ptex, datablockptr_t datablock) {
+bool GlTextureInterface::_loadDDSTexture(Texture* ptex, datablockptr_t datablock) {
   GlTexLoadReq load_req;
   load_req.ptex                  = ptex;
   load_req._inpstream._datablock = datablock;
@@ -53,7 +53,7 @@ bool GlTextureInterface::LoadDDSTexture(Texture* ptex, datablockptr_t datablock)
       auto orig_datablock = datablock;
       auto postblock      = preproc(ptex, &mTargetGL, orig_datablock);
     }
-    this->LoadDDSTextureMainThreadPart(load_req);
+    this->_loadDDSTextureMainThreadPart(load_req);
   };
   opq::mainSerialQueue().enqueue(lamb);
   ///////////////////////////////////////////////
@@ -62,7 +62,7 @@ bool GlTextureInterface::LoadDDSTexture(Texture* ptex, datablockptr_t datablock)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlTextureInterface::LoadDDSTexture(const AssetPath& infname, Texture* ptex) {
+bool GlTextureInterface::_loadDDSTexture(const AssetPath& infname, Texture* ptex) {
   AssetPath Filename = infname;
   ptex->_debugName   = infname.c_str();
   ///////////////////////////////////////////////
@@ -93,14 +93,14 @@ bool GlTextureInterface::LoadDDSTexture(const AssetPath& infname, Texture* ptex)
   }*/
   auto inpdata   = std::make_shared<DataBlock>(pdata, ifilelen);
   inpdata->_name = infname.toStdString();
-  return LoadDDSTexture(ptex, inpdata);
+  return _loadDDSTexture(ptex, inpdata);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlTextureInterface::LoadDDSTextureMainThreadPart(GlTexLoadReq req) {
+void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
   mTargetGL.makeCurrentContext();
-  mTargetGL.debugPushGroup("LoadDDSTextureMainThreadPart");
+  mTargetGL.debugPushGroup("loadDDSTextureMainThreadPart");
   const dds::DDS_HEADER* ddsh = req._ddsheader;
   Texture* ptex               = req.ptex;
   GLTextureObject* pTEXOBJ    = req.pTEXOBJ;

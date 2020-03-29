@@ -6,6 +6,7 @@
 namespace ork {
 
 struct DataBlock {
+
   DataBlock(const void* buffer = nullptr, size_t length = 0);
   void reserve(size_t len);
   void addData(const void* data, size_t len);

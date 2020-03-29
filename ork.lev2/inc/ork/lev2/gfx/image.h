@@ -17,6 +17,8 @@ namespace ork::lev2 {
     datablockptr_t _data  = nullptr;
     size_t _width         = 0;
     size_t _height        = 0;
+    size_t _blocked_width = 0;
+    size_t _blocked_height = 0;
     size_t _depth         = 1;
     size_t _numcomponents = 4; // 3 or 4
     varmap::VarMap _varmap;
@@ -27,6 +29,7 @@ namespace ork::lev2 {
   struct CompressedImageMipChain{
 
     void writeXTX( const file::Path& outpath );
+    void writeXTX( datablockptr_t& out_datablock );
     void readXTX( const file::Path& inppath );
     void readXTX( datablockptr_t datablock );
 
