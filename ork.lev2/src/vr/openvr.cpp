@@ -372,7 +372,12 @@ void composite(lev2::Context* targ, Texture* twoeyetex) {
 
 void OpenVrDevice::_updatePoses() {
 
-  if (_active and _hmd->IsInputAvailable()) {
+  if (_active) {
+
+    // OrkAssert(false);
+  }
+
+  if (_active) {
 
     // we call this on rendering thread, I suppose since
     // the vrcompositor needs the absolute latest pose
