@@ -103,17 +103,19 @@ const uint8_t* Image::pixel(int x, int y) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Image::downsample(Image& imgout) const {
-  OrkAssert((_width & 1) == 0);
-  OrkAssert((_height & 1) == 0);
   imgout.init(_width >> 1, _height >> 1, _numcomponents);
   auto inp_pixels = (const uint8_t*)_data->data();
   auto out_pixels = (uint8_t*)imgout._data->data();
   for (size_t y = 0; y < imgout._height; y++) {
     size_t ya = y * 2;
     size_t yb = ya + 1;
+    if (yb > (_height - 1))
+      yb = _height - 1;
     for (size_t x = 0; x < imgout._width; x++) {
       size_t xa = x * 2;
       size_t xb = xa + 1;
+      if (xb > (_width - 1))
+        xb = _width - 1;
 
       auto outpixel     = imgout.pixel(x, y);
       auto inppixelXAYA = pixel(xa, ya);
@@ -188,24 +190,16 @@ void Image::compressBC7(CompressedImage& imgout) const {
   deco::printf(_image_deco, "// Image::compressBC7(%s)\n", _debugName.c_str());
   deco::printf(_image_deco, "// imgout._width<%zu>\n", _width);
   deco::printf(_image_deco, "// imgout._height<%zu>\n", _height);
-  imgout._format               = EBufferFormat::RGBA_BPTC_UNORM;
-  bool width_is_multiple_of_4  = ((_width & 3) == 0);
-  bool height_is_multiple_of_4 = ((_height & 3) == 0);
+  imgout._format = EBufferFormat::RGBA_BPTC_UNORM;
   OrkAssert((_numcomponents == 3) or (_numcomponents == 4));
   imgout._width          = _width;
   imgout._height         = _height;
-  imgout._blocked_width  = _width;
-  imgout._blocked_height = _height;
+  imgout._blocked_width  = (_width + 3) & 0xfffffffc;
+  imgout._blocked_height = (_height + 3) & 0xfffffffc;
   imgout._numcomponents  = 4;
   //////////////////////////////////////////////////////////////////
-  // pad images which do not line up with block sizes
-  //////////////////////////////////////////////////////////////////
-  if (not(width_is_multiple_of_4 and height_is_multiple_of_4)) {
-    OrkAssert(false);
-  }
-  //////////////////////////////////////////////////////////////////
   imgout._data = std::make_shared<DataBlock>();
-  auto dest    = (uint8_t*)imgout._data->allocateBlock(_width * _height);
+  auto dest    = (uint8_t*)imgout._data->allocateBlock(imgout._blocked_width * imgout._blocked_height);
   bc7_enc_settings settings;
   GetProfile_alpha_basic(&settings);
 

@@ -427,7 +427,6 @@ void Writer::writeToDataBlock(datablockptr_t& out_datablock) {
   StringBlockStream.Write((const unsigned char*)_stringblock.data(), _stringblock.size());
   int istringblksize = StringBlockStream.GetSize();
   ////////////////////////
-  out_datablock->addItem<Char4>(chunk_magic);
   out_datablock->addItem<int>(istringblksize);
   out_datablock->addData(StringBlockStream.GetData(), StringBlockStream.GetSize());
   ////////////////////////
