@@ -36,7 +36,9 @@ bool GlTextureInterface::_loadImageTexture(Texture* ptex, datablockptr_t src_dat
   printf("magic2<%c>\n", magic[2]);
   printf("magic3<%c>\n", magic[3]);
 
-  if (magic[1] == 'P' and magic[2] == 'N' and magic[3] == 'G') {
+  if (magic[1] == 'P' and //
+      magic[2] == 'N' and //
+      magic[3] == 'G') {
 
     boost::Crc64 basehasher;
     basehasher.accumulateString("GlTextureInterface::_loadImageTexture");
@@ -47,14 +49,15 @@ bool GlTextureInterface::_loadImageTexture(Texture* ptex, datablockptr_t src_dat
     uint64_t hashkey = basehasher.result();
     xtx_datablock    = DataBlockCache::findDataBlock(hashkey);
 
-    if (not xtx_datablock) {
+    if (1) { // not xtx_datablock) {
       Image img;
       img.initFromInMemoryFile("png", src_datablock->data(), src_datablock->length());
       img._debugName = ptex->_debugName;
-      auto cimgchain = img.compressedMipChainBC7();
+      auto cmipchain = img.compressedMipChainBC7();
       xtx_datablock  = std::make_shared<DataBlock>();
-      cimgchain.writeXTX(xtx_datablock);
-      DataBlockCache::setDataBlock(hashkey, xtx_datablock);
+      cmipchain.writeXTX(xtx_datablock);
+      // DataBlockCache::setDataBlock(hashkey, xtx_datablock);
+      // OrkAssert(false);
     }
   } else {
     OrkAssert(false);

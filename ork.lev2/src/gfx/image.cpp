@@ -147,6 +147,22 @@ void Image::downsample(Image& imgout) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void Image::initWithNormalizedFloatBuffer(size_t w, size_t h, size_t numc, const float* buffer) {
+  init(w, h, numc);
+  auto outptr = (uint8_t*)_data->data();
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
+      int pixelindex = y * w + x;
+      int elembase   = pixelindex * numc;
+      for (int c = 0; c < numc; c++) {
+        outptr[elembase + c] = uint8_t(buffer[elembase + c] * 255.0f);
+      }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Image::convertToRGBA(Image& imgout) const {
   imgout.init(_width, _height, 4);
   auto inp_pixels = (const uint8_t*)_data->data();
@@ -240,6 +256,16 @@ CompressedImageMipChain Image::compressedMipChainBC7() const {
     mipindex++;
   }
   return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CompressedImageMipChain::initWithPrecompressedMipLevels(miplevels_t levels) {
+  _levels        = levels;
+  _width         = levels[0]._width;
+  _height        = levels[0]._height;
+  _format        = levels[0]._format;
+  _numcomponents = levels[0]._numcomponents;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

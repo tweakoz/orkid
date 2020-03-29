@@ -22,6 +22,7 @@
 #include <ork/gfx/brdf.inl>
 #include <ork/pch.h>
 #include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/gfx/image.h>
 #include <OpenImageIO/imageio.h>
 #include <ork/kernel/datacache.inl>
 
@@ -126,7 +127,6 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
   static const FxShaderParam* param_mvp            = nullptr;
   static const FxShaderParam* param_pfm            = nullptr;
   static const FxShaderParam* param_ruf            = nullptr;
-
   targ->debugPushGroup("PBRMaterial::filterSpecularEnvMap");
   if (not mtl) {
     mtl = std::make_shared<FreestyleMaterial>();
@@ -134,7 +134,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
     mtl->gpuInit(targ, "orkshader://pbr_filterenv");
     tekFilterSpecMap = mtl->technique("tek_filterSpecularMap");
     OrkAssert(tekFilterSpecMap != nullptr);
-    // printf("filterenv mtl<%p> tekFilterSpecMap<%p>\n", mtl.get(), tekFilterSpecMap);
+    printf("filterenv mtl<%p> tekFilterSpecMap<%p>\n", mtl.get(), tekFilterSpecMap);
     param_mvp = mtl->param("mvp");
     param_pfm = mtl->param("prefiltmap");
     param_ruf = mtl->param("roughness");
@@ -147,11 +147,10 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
   int w = rawenvmap->_width;
   int h = rawenvmap->_height;
 
-  int numpix           = w * h;
-  int imip             = 0;
-  float roughness      = 0.0f;
-  auto mipchain        = new MipChain(w, h, EBufferFormat::RGBA32F, ETEXTYPE_2D);
-  mipchain->_debugName = "filtenvmap-processed";
+  int numpix      = w * h;
+  int imip        = 0;
+  float roughness = 0.0f;
+  CompressedImageMipChain::miplevels_t compressed_levels;
   while (numpix != 0) {
 
     auto outgroup = std::make_shared<RtGroup>(targ, w, h, 1);
@@ -162,7 +161,6 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
     filtex->_rtgroup     = outgroup;
     filtex->_rtbuffer    = outbuffr;
     outbuffr->_debugName = FormatString("filteredenvmap-specenv-mip%d", imip);
-    // outbuffer->
     outgroup->SetMrt(0, outbuffr.get());
 
     printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
@@ -183,19 +181,22 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
 
     fbi->capture(*outgroup.get(), 0, captureb.get());
 
-    auto mipchain_level = mipchain->_levels[imip];
-    memcpy(mipchain_level->_data, captureb->_data, w * h * 4 * sizeof(float));
-
     if (1) {
       auto outpath = file::Path::temp_dir() / FormatString("filteredenv-specmap-mip%d.exr", imip);
       auto out     = ImageOutput::create(outpath.c_str());
-       printf("filterenv write dbgout<%s> <%p>\n", outpath.c_str(), out.get());
+      printf("filterenv write dbgout<%s> <%p>\n", outpath.c_str(), out.get());
       OrkAssert(out != nullptr);
       ImageSpec spec(w, h, 4, TypeDesc::FLOAT);
       out->open(outpath.c_str(), spec);
       out->write_image(TypeDesc::FLOAT, captureb->_data);
       out->close();
     }
+
+    Image im;
+    im.initWithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
+    CompressedImage cim;
+    im.compressBC7(cim);
+    compressed_levels.push_back(cim);
 
     rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtGroup>>(FormatString("alt-tex-specenv-group-mip%d", imip))   = outgroup;
     rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtBuffer>>(FormatString("alt-tex-specenv-buffer-mip%d", imip)) = outbuffr;
@@ -206,11 +207,18 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
     imip++;
   }
 
-  auto alt_tex                                                    = txi->createFromMipChain(mipchain);
+  CompressedImageMipChain mipchain;
+  mipchain.initWithPrecompressedMipLevels(compressed_levels);
+  auto xtx_datablock = std::make_shared<DataBlock>();
+  mipchain.writeXTX(xtx_datablock);
+
+  auto alt_tex        = new Texture;
+  alt_tex->_debugName = "filtenvmap-processed-specular";
+  txi->LoadTexture(alt_tex, xtx_datablock);
+
   rawenvmap->_varmap.makeValueForKey<Texture*>("alt-tex-specenv") = alt_tex;
 
   targ->debugPopGroup();
-
 
   return alt_tex;
 }
@@ -255,8 +263,7 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
   int imip        = 0;
   float roughness = 1.0f;
   std::map<int, std::shared_ptr<CaptureBuffer>> cap4mip;
-  auto mipchain        = new MipChain(w, h, EBufferFormat::RGBA32F, ETEXTYPE_2D);
-  mipchain->_debugName = "filtenvmap-processed-diffenv";
+  CompressedImageMipChain::miplevels_t compressed_levels;
   while (numpix != 0) {
 
     auto outgroup        = std::make_shared<RtGroup>(targ, w, h, 1);
@@ -288,9 +295,6 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
 
     fbi->capture(*outgroup.get(), 0, captureb.get());
 
-    auto mipchain_level = mipchain->_levels[imip];
-    memcpy(mipchain_level->_data, captureb->_data, w * h * 4 * sizeof(float));
-
     if (1) {
       auto outpath = file::Path::temp_dir() / FormatString("filteredenv-diffmap-mip%d.exr", imip);
       auto out     = ImageOutput::create(outpath.c_str());
@@ -301,6 +305,12 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
       out->write_image(TypeDesc::FLOAT, captureb->_data);
       out->close();
     }
+
+    Image im;
+    im.initWithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
+    CompressedImage cim;
+    im.compressBC7(cim);
+    compressed_levels.push_back(cim);
 
     rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtGroup>>(FormatString("alt-tex-diffenv-group-mip%d", imip))   = outgroup;
     rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtBuffer>>(FormatString("alt-tex-diffenv-buffer-mip%d", imip)) = outbuffr;
@@ -313,7 +323,14 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
     imip++;
   }
 
-  auto alt_tex                                                    = txi->createFromMipChain(mipchain);
+  CompressedImageMipChain mipchain;
+  mipchain.initWithPrecompressedMipLevels(compressed_levels);
+  auto xtx_datablock = std::make_shared<DataBlock>();
+  mipchain.writeXTX(xtx_datablock);
+
+  auto alt_tex        = new Texture;
+  alt_tex->_debugName = "filtenvmap-processed-diffuse";
+  txi->LoadTexture(alt_tex, xtx_datablock);
   rawenvmap->_varmap.makeValueForKey<Texture*>("alt-tex-diffenv") = alt_tex;
 
   targ->debugPopGroup();
