@@ -790,10 +790,23 @@ void TerrainRenderImpl::gpuUpdate(Context* ptarg) {
       auto vc30 = vertex_type((p3 + p0) * 0.5, fvec2(), c0);
 
       // TODO: use indexed primitives here..
+      //   perhaps use tristrips
+      //   try to use 16 bit indices
 
       switch (p._type) {
         case PT_A: //
           linfo.triangle_count += 8;
+          // vc: 8
+          // v0: 2
+          // v1: 2
+          // v2: 2
+          // v3: 2
+          // vc01: 2
+          // vc12: 2
+          // vc23: 2
+          // vc30: 2
+          // oldtot: 24
+          // newtot: 9 vtx + 24 indices
           linfo.vwriter.AddVertex(v0);
           linfo.vwriter.AddVertex(vc01);
           linfo.vwriter.AddVertex(vc);
@@ -829,6 +842,14 @@ void TerrainRenderImpl::gpuUpdate(Context* ptarg) {
           break;
         case PT_BT:
           linfo.triangle_count += 5;
+          // vc: 5
+          // v0: 2
+          // v1: 2
+          // v2: 2
+          // v3: 2
+          // vc23: 2
+          // oldtot: 15
+          // newtot: 5 vtx + 15 indices
           linfo.vwriter.AddVertex(vc);
           linfo.vwriter.AddVertex(v0);
           linfo.vwriter.AddVertex(v1);
@@ -851,6 +872,14 @@ void TerrainRenderImpl::gpuUpdate(Context* ptarg) {
           break;
         case PT_BB:
           linfo.triangle_count += 5;
+          // vc: 5
+          // v0: 2
+          // v1: 2
+          // v2: 2
+          // v3: 2
+          // vc01: 2
+          // oldtot: 15
+          // newtot: 5 vtx + 15 indices
           linfo.vwriter.AddVertex(v0);
           linfo.vwriter.AddVertex(vc01);
           linfo.vwriter.AddVertex(vc);
@@ -873,6 +902,14 @@ void TerrainRenderImpl::gpuUpdate(Context* ptarg) {
           break;
         case PT_BR:
           linfo.triangle_count += 5;
+          // vc: 5
+          // v0: 2
+          // v1: 2
+          // v2: 2
+          // v3: 2
+          // vc12: 2
+          // oldtot: 15
+          // newtot: 5 vtx + 15 indices
           linfo.vwriter.AddVertex(vc);
           linfo.vwriter.AddVertex(v0);
           linfo.vwriter.AddVertex(v1);
@@ -895,6 +932,14 @@ void TerrainRenderImpl::gpuUpdate(Context* ptarg) {
           break;
         case PT_BL:
           linfo.triangle_count += 5;
+          // vc: 5
+          // v0: 2
+          // v1: 2
+          // v2: 2
+          // v3: 2
+          // vc30: 2
+          // oldtot: 15
+          // newtot: 4 vtx + 15 indices
           linfo.vwriter.AddVertex(vc);
           linfo.vwriter.AddVertex(v0);
           linfo.vwriter.AddVertex(v1);
@@ -917,6 +962,13 @@ void TerrainRenderImpl::gpuUpdate(Context* ptarg) {
           break;
         case PT_C:
           linfo.triangle_count += 4;
+          // vc: 4
+          // v0: 2
+          // v1: 2
+          // v2: 2
+          // v3: 2
+          // oldtot: 12
+          // newtot: 4 vtx + 12 indices
           linfo.vwriter.AddVertex(vc);
           linfo.vwriter.AddVertex(v0);
           linfo.vwriter.AddVertex(v1);
