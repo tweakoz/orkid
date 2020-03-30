@@ -30,7 +30,11 @@ ImplementReflectionX(ork::lev2::TerrainDrawableData, "TerrainDrawableData");
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef SVtxV12C4T16 vertex_type;
+using vertex_type         = SVtxV12C4T16;
+using vertexbuffer_t      = StaticVertexBuffer<vertex_type>;
+using vertexbuffer_ptr_t  = vertexbuffer_t*;
+using vertexbuffer_list_t = std::vector<vertexbuffer_t*>;
+using idxbuf_t            = StaticIndexBuffer<uint16_t>;
 
 enum PatchType {
   PT_A = 0,
@@ -51,14 +55,39 @@ struct Patch {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct SectorLodInfo {
-  std::vector<Patch> _patches;
-  size_t triangle_count = 0;
-  size_t vertex_count   = 0;
-  VtxWriter<vertex_type> vwriter;
-  TerVtxBuffersType* _vtxbuflist;
-  bool _islod0 = false;
+struct TerrainPrimitive {
 
+  VtxWriter<vertex_type> _vtxwriter;
+  vertexbuffer_ptr_t _vtxbuffer = nullptr;
+  idxbuf_t* _idxbuffer          = nullptr;
+  std::vector<vertex_type> _tempverts;
+  std::vector<uint16_t> _tempidcs;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct SectorLodInfo {
+
+  // LOD0 is the inner LOD
+  // LODX is all outer LODs (combined)
+
+  ////////////////////////////////////////
+  void beginPatch() {
+  }
+  ////////////////////////////////////////
+  void endPatch() {
+  }
+  ////////////////////////////////////////
+  void gpuInit(Context* ctx) {
+  }
+  ////////////////////////////////////////
+  int addVertex(const vertex_type& vtx) {
+    return 0;
+  }
+  ////////////////////////////////////////
+  void addIndex(int index) {
+  }
+  ////////////////////////////////////////
   size_t countTriangles() {
     triangle_count = 0;
     for (auto p : _patches) {
@@ -81,16 +110,13 @@ struct SectorLodInfo {
     }
     return triangle_count;
   }
-  void createVB() {
-    vertex_count = _patches.size() * 24;
-    _vtxbuflist  = new TerVtxBuffersType;
-    auto vbuf    = new StaticVertexBuffer<vertex_type>(vertex_count, 0, EPRIM_POINTS);
-    vbuf->Reset();
-    _vtxbuflist->push_back(vbuf);
+  ////////////////////////////////////////
 
-    // printf("sector<%p> triangle_count<%zu>\n", this, triangle_count);
-    // printf("sector<%p> vertex_count<%zu>\n", this, vertex_count);
-  }
+  std::vector<Patch> _patches;
+  size_t triangle_count = 0;
+  size_t vertex_count   = 0;
+  std::vector<TerrainPrimitive*> _primitives;
+  bool _islod0 = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -106,11 +132,11 @@ struct TerrainRenderImpl {
 
   TerrainRenderImpl(TerrainDrawableInst* hfdrw);
   ~TerrainRenderImpl();
-  void gpuUpdate(Context* ptarg);
+  void gpuUpdate(Context* context);
   void render(const RenderContextInstData& RCID);
 
-  datablockptr_t recomputeTextures(Context* ptarg);
-  void reloadCachedTextures(Context* ptarg, datablockptr_t dblock);
+  datablockptr_t recomputeTextures(Context* context);
+  void reloadCachedTextures(Context* context, datablockptr_t dblock);
 
   TerrainDrawableInst* _hfinstance;
   hfptr_t _heightfield;
@@ -169,7 +195,7 @@ TerrainRenderImpl::~TerrainRenderImpl() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-datablockptr_t TerrainRenderImpl::recomputeTextures(Context* ptarg) {
+datablockptr_t TerrainRenderImpl::recomputeTextures(Context* context) {
 
   ork::Timer timer;
   timer.Start();
@@ -352,8 +378,8 @@ datablockptr_t TerrainRenderImpl::recomputeTextures(Context* ptarg) {
 
   ////////////////////////////////////////////////////////////////
 
-  _heightmapTextureA = ptarg->TXI()->createFromMipChain(chainA);
-  _heightmapTextureB = ptarg->TXI()->createFromMipChain(chainB);
+  _heightmapTextureA = context->TXI()->createFromMipChain(chainA);
+  _heightmapTextureB = context->TXI()->createFromMipChain(chainB);
 
   delete chainA;
   delete chainB;
@@ -367,7 +393,7 @@ datablockptr_t TerrainRenderImpl::recomputeTextures(Context* ptarg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void TerrainRenderImpl::reloadCachedTextures(Context* ptarg, datablockptr_t dblock) {
+void TerrainRenderImpl::reloadCachedTextures(Context* context, datablockptr_t dblock) {
   chunkfile::InputStream istr(dblock->data(), dblock->length());
   int MIPW, MIPH;
   istr.GetItem<int>(MIPW);
@@ -395,21 +421,21 @@ void TerrainRenderImpl::reloadCachedTextures(Context* ptarg, datablockptr_t dblo
     levindex++;
   }
   assert(istr.midx == istr.GetLength());
-  _heightmapTextureA = ptarg->TXI()->createFromMipChain(chainA);
-  _heightmapTextureB = ptarg->TXI()->createFromMipChain(chainB);
+  _heightmapTextureA = context->TXI()->createFromMipChain(chainA);
+  _heightmapTextureB = context->TXI()->createFromMipChain(chainB);
   delete chainA;
   delete chainB;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void TerrainRenderImpl::gpuUpdate(Context* ptarg) {
+void TerrainRenderImpl::gpuUpdate(Context* context) {
   if (false == _gpuDataDirty)
     return;
 
   if (nullptr == _terrainMaterial) {
     _terrainMaterial = new FreestyleMaterial;
-    _terrainMaterial->gpuInit(ptarg, "orkshader://terrain");
+    _terrainMaterial->gpuInit(context, "orkshader://terrain");
     _tekBasic          = _terrainMaterial->technique("terrain");
     _tekStereo         = _terrainMaterial->technique("terrain_stereo");
     _tekPick           = _terrainMaterial->technique("pick");
@@ -469,9 +495,9 @@ void TerrainRenderImpl::gpuUpdate(Context* ptarg) {
   auto dblock = DataBlockCache::findDataBlock(hashkey);
 
   if (dblock) {
-    reloadCachedTextures(ptarg, dblock);
+    reloadCachedTextures(context, dblock);
   } else {
-    dblock = recomputeTextures(ptarg);
+    dblock = recomputeTextures(context);
     DataBlockCache::setDataBlock(hashkey, dblock);
   }
 
@@ -704,8 +730,8 @@ void TerrainRenderImpl::gpuUpdate(Context* ptarg) {
     auto& sector = _sector[i];
     sector._lod0.countTriangles();
     sector._lodX.countTriangles();
-    sector._lod0.createVB();
-    sector._lodX.createVB();
+    // sector._lod0.createVB();
+    // sector._lodX.createVB();
     sector._lod0._islod0 = true;
     sector._lodX._islod0 = false;
   }
@@ -719,10 +745,7 @@ void TerrainRenderImpl::gpuUpdate(Context* ptarg) {
 
   ////////////////////////////////////////////
 
-  auto onlod = [&](SectorInfo& info, bool do_lod0) {
-    auto& linfo = do_lod0 ? info._lod0 : info._lodX;
-    auto vbuf   = (*linfo._vtxbuflist)[0];
-    linfo.vwriter.Lock(ptarg, vbuf, linfo.vertex_count);
+  auto build_lod_prims = [&](SectorLodInfo& linfo) {
     ////////////////////////////////////////////
     linfo.triangle_count = 0;
     auto& sector_patches = linfo._patches;
@@ -731,10 +754,16 @@ void TerrainRenderImpl::gpuUpdate(Context* ptarg) {
       int z   = p._z;
       int lod = p._lod;
 
-      if (lod != 0 and do_lod0)
-        continue;
-      if (lod == 0 and (false == do_lod0))
-        continue;
+      /////////////////////////////////////////////
+      // match patches destined for specific LODs
+      /////////////////////////////////////////////
+
+      if (lod != 0 and linfo._islod0)            // is patch destined for LOD0 ?
+        continue;                                // nope..
+      if (lod == 0 and (false == linfo._islod0)) // is patch destined for LODX ?
+        continue;                                // nope..
+
+      /////////////////////////////////////////////
 
       int step = 1 << lod;
 
@@ -789,213 +818,207 @@ void TerrainRenderImpl::gpuUpdate(Context* ptarg) {
       auto vc23 = vertex_type((p2 + p3) * 0.5, fvec2(), c0);
       auto vc30 = vertex_type((p3 + p0) * 0.5, fvec2(), c0);
 
-      // TODO: use indexed primitives here..
-      //   perhaps use tristrips
-      //   try to use 16 bit indices
+      linfo.beginPatch();
 
       switch (p._type) {
-        case PT_A: //
+        case PT_A: {
           linfo.triangle_count += 8;
-          // vc: 8
-          // v0: 2
-          // v1: 2
-          // v2: 2
-          // v3: 2
-          // vc01: 2
-          // vc12: 2
-          // vc23: 2
-          // vc30: 2
-          // oldtot: 24
-          // newtot: 9 vtx + 24 indices
-          linfo.vwriter.AddVertex(v0);
-          linfo.vwriter.AddVertex(vc01);
-          linfo.vwriter.AddVertex(vc);
+          int ivc   = linfo.addVertex(vc);
+          int iv0   = linfo.addVertex(v0);
+          int iv1   = linfo.addVertex(v1);
+          int iv2   = linfo.addVertex(v2);
+          int iv3   = linfo.addVertex(v3);
+          int ivc01 = linfo.addVertex(vc01);
+          int ivc12 = linfo.addVertex(vc12);
+          int ivc23 = linfo.addVertex(vc23);
+          int ivc30 = linfo.addVertex(vc30);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(vc01);
-          linfo.vwriter.AddVertex(v1);
+          linfo.addIndex(iv0);
+          linfo.addIndex(ivc01);
+          linfo.addIndex(ivc);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v1);
-          linfo.vwriter.AddVertex(vc12);
+          linfo.addIndex(ivc);
+          linfo.addIndex(ivc01);
+          linfo.addIndex(iv1);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(vc12);
-          linfo.vwriter.AddVertex(v2);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv1);
+          linfo.addIndex(ivc12);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v2);
-          linfo.vwriter.AddVertex(vc23);
+          linfo.addIndex(ivc);
+          linfo.addIndex(ivc12);
+          linfo.addIndex(iv2);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(vc23);
-          linfo.vwriter.AddVertex(v3);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv2);
+          linfo.addIndex(ivc23);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v3);
-          linfo.vwriter.AddVertex(vc30);
+          linfo.addIndex(ivc);
+          linfo.addIndex(ivc23);
+          linfo.addIndex(iv3);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(vc30);
-          linfo.vwriter.AddVertex(v0);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv3);
+          linfo.addIndex(ivc30);
+
+          linfo.addIndex(ivc);
+          linfo.addIndex(ivc30);
+          linfo.addIndex(iv0);
 
           break;
-        case PT_BT:
+        }
+        case PT_BT: {
           linfo.triangle_count += 5;
-          // vc: 5
-          // v0: 2
-          // v1: 2
-          // v2: 2
-          // v3: 2
-          // vc23: 2
-          // oldtot: 15
-          // newtot: 5 vtx + 15 indices
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v0);
-          linfo.vwriter.AddVertex(v1);
+          int ivc   = linfo.addVertex(vc);
+          int iv0   = linfo.addVertex(v0);
+          int iv1   = linfo.addVertex(v1);
+          int iv2   = linfo.addVertex(v2);
+          int iv3   = linfo.addVertex(v3);
+          int ivc23 = linfo.addVertex(vc23);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv0);
+          linfo.addIndex(iv1);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v1);
-          linfo.vwriter.AddVertex(v2);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv1);
+          linfo.addIndex(iv2);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v2);
-          linfo.vwriter.AddVertex(vc23);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv2);
+          linfo.addIndex(ivc23);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(vc23);
-          linfo.vwriter.AddVertex(v3);
+          linfo.addIndex(ivc);
+          linfo.addIndex(ivc23);
+          linfo.addIndex(iv3);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v3);
-          linfo.vwriter.AddVertex(v0);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv3);
+          linfo.addIndex(iv0);
           break;
-        case PT_BB:
+        }
+        case PT_BB: {
           linfo.triangle_count += 5;
-          // vc: 5
-          // v0: 2
-          // v1: 2
-          // v2: 2
-          // v3: 2
-          // vc01: 2
-          // oldtot: 15
-          // newtot: 5 vtx + 15 indices
-          linfo.vwriter.AddVertex(v0);
-          linfo.vwriter.AddVertex(vc01);
-          linfo.vwriter.AddVertex(vc);
+          int ivc   = linfo.addVertex(vc);
+          int iv0   = linfo.addVertex(v0);
+          int iv1   = linfo.addVertex(v1);
+          int iv2   = linfo.addVertex(v2);
+          int iv3   = linfo.addVertex(v3);
+          int ivc01 = linfo.addVertex(vc01);
+          linfo.addIndex(iv0);
+          linfo.addIndex(ivc01);
+          linfo.addIndex(ivc);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(vc01);
-          linfo.vwriter.AddVertex(v1);
+          linfo.addIndex(ivc);
+          linfo.addIndex(ivc01);
+          linfo.addIndex(iv1);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v1);
-          linfo.vwriter.AddVertex(v2);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv1);
+          linfo.addIndex(iv2);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v2);
-          linfo.vwriter.AddVertex(v3);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv2);
+          linfo.addIndex(iv3);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v3);
-          linfo.vwriter.AddVertex(v0);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv3);
+          linfo.addIndex(iv0);
           break;
-        case PT_BR:
+        }
+        case PT_BR: {
           linfo.triangle_count += 5;
-          // vc: 5
-          // v0: 2
-          // v1: 2
-          // v2: 2
-          // v3: 2
-          // vc12: 2
-          // oldtot: 15
-          // newtot: 5 vtx + 15 indices
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v0);
-          linfo.vwriter.AddVertex(v1);
+          int ivc   = linfo.addVertex(vc);
+          int iv0   = linfo.addVertex(v0);
+          int iv1   = linfo.addVertex(v1);
+          int iv2   = linfo.addVertex(v2);
+          int iv3   = linfo.addVertex(v3);
+          int ivc12 = linfo.addVertex(vc12);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv0);
+          linfo.addIndex(iv1);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v1);
-          linfo.vwriter.AddVertex(vc12);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv1);
+          linfo.addIndex(ivc12);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(vc12);
-          linfo.vwriter.AddVertex(v2);
+          linfo.addIndex(ivc);
+          linfo.addIndex(ivc12);
+          linfo.addIndex(iv2);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v2);
-          linfo.vwriter.AddVertex(v3);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv2);
+          linfo.addIndex(iv3);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v3);
-          linfo.vwriter.AddVertex(v0);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv3);
+          linfo.addIndex(iv0);
           break;
-        case PT_BL:
+        }
+        case PT_BL: {
           linfo.triangle_count += 5;
-          // vc: 5
-          // v0: 2
-          // v1: 2
-          // v2: 2
-          // v3: 2
-          // vc30: 2
-          // oldtot: 15
-          // newtot: 4 vtx + 15 indices
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v0);
-          linfo.vwriter.AddVertex(v1);
+          int ivc   = linfo.addVertex(vc);
+          int iv0   = linfo.addVertex(v0);
+          int iv1   = linfo.addVertex(v1);
+          int iv2   = linfo.addVertex(v2);
+          int iv3   = linfo.addVertex(v3);
+          int ivc30 = linfo.addVertex(vc30);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv0);
+          linfo.addIndex(iv1);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v1);
-          linfo.vwriter.AddVertex(v2);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv1);
+          linfo.addIndex(iv2);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v2);
-          linfo.vwriter.AddVertex(v3);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv2);
+          linfo.addIndex(iv3);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v3);
-          linfo.vwriter.AddVertex(vc30);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv3);
+          linfo.addIndex(ivc30);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(vc30);
-          linfo.vwriter.AddVertex(v0);
+          linfo.addIndex(ivc);
+          linfo.addIndex(ivc30);
+          linfo.addIndex(iv0);
           break;
-        case PT_C:
+        }
+        case PT_C: {
           linfo.triangle_count += 4;
-          // vc: 4
-          // v0: 2
-          // v1: 2
-          // v2: 2
-          // v3: 2
-          // oldtot: 12
-          // newtot: 4 vtx + 12 indices
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v0);
-          linfo.vwriter.AddVertex(v1);
+          int ivc = linfo.addVertex(vc);
+          int iv0 = linfo.addVertex(v0);
+          int iv1 = linfo.addVertex(v1);
+          int iv2 = linfo.addVertex(v2);
+          int iv3 = linfo.addVertex(v3);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv0);
+          linfo.addIndex(iv1);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v1);
-          linfo.vwriter.AddVertex(v2);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv1);
+          linfo.addIndex(iv2);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v2);
-          linfo.vwriter.AddVertex(v3);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv2);
+          linfo.addIndex(iv3);
 
-          linfo.vwriter.AddVertex(vc);
-          linfo.vwriter.AddVertex(v3);
-          linfo.vwriter.AddVertex(v0);
+          linfo.addIndex(ivc);
+          linfo.addIndex(iv3);
+          linfo.addIndex(iv0);
           break;
+        }
       }
-    }
-    ////////////////////////////////////////////
-    linfo.vwriter.UnLock(ptarg);
-  };
+
+      linfo.endPatch();
+    } // for (auto p : sector_patches) {
+    linfo.gpuInit(context);
+  }; // auto onlod = [&](SectorInfo& info, bool do_lod0) {
 
   ////////////////////////////////////////////
   for (int i = 0; i < 8; i++) {
     auto& sector = _sector[i];
-    onlod(sector, true);
-    onlod(sector, false);
+    build_lod_prims(sector._lod0);
+    build_lod_prims(sector._lodX);
   } // for each sector
   aab.EndGrow();
   auto geomin = aab.Min();
@@ -1124,64 +1147,23 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   _terrainMaterial->bindParamFloat(_parGblendStepLo, HFDD._gblend_steplo);
   _terrainMaterial->bindParamFloat(_parGblendStepHi, HFDD._gblend_stephi);
 
-  if (true) { // abs(znormal.y) > 0.8 ){ // looking up or down
-    ////////////////////////////////
-    // render L0
-    ////////////////////////////////
-    for (int isector = 0; isector < 8; isector++) {
-      auto& sector = _sector[isector];
-      auto L0      = sector._lod0;
-      auto vbufs   = L0._vtxbuflist;
-      int inumvb   = vbufs->size();
-      for (int ivb = 0; ivb < inumvb; ivb++) {
-        auto vertex_buf = (*vbufs)[ivb];
-        gbi->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
-      }
-    }
-    ////////////////////////////////
-    // render LX
-    ////////////////////////////////
-    for (int isector = 0; isector < 8; isector++) {
-      auto& sector = _sector[isector];
-      auto LX      = sector._lodX;
-      auto vbufs   = LX._vtxbuflist;
-      int inumvb   = vbufs->size();
-      for (int ivb = 0; ivb < inumvb; ivb++) {
-        auto vertex_buf = (*vbufs)[ivb];
-        gbi->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
-      }
-    }
-  } else { // sector based culling (WIP)
-
-    // lod0 - inner sectors - draw all
-    for (int sectID = 0; sectID < 8; sectID++) {
-      auto& sector = _sector[sectID];
-      auto L0      = sector._lod0;
-      auto vbufs   = L0._vtxbuflist;
-      int inumvb   = vbufs->size();
-      for (int ivb = 0; ivb < inumvb; ivb++) {
-        auto vertex_buf = (*vbufs)[ivb];
-        gbi->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
-      }
-    }
-
-    // lodXouter - inner sectors - draw visible
-    auto zn_xz  = znormal.GetXZ().Normal();
-    float angle = 8.0 * ((PI * 0.5) + rect2pol_ang(zn_xz.x, zn_xz.y)) / (PI * 2.0);
-    // printf( "znormal<%g %g> angle<%g>\n", zn_xz.x, zn_xz.y, angle );
-    int basesector = int(floor(angle)) + 2;
-    for (int soff = 6; soff < 10; soff++) {
-      int sectID   = (basesector + soff) & 7;
-      auto& sector = _sector[sectID];
-      auto LX      = sector._lodX;
-      auto vbufs   = LX._vtxbuflist;
-      int inumvb   = vbufs->size();
-      for (int ivb = 0; ivb < inumvb; ivb++) {
-        auto vertex_buf = (*vbufs)[ivb];
-        gbi->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
-      }
-    }
-    _terrainMaterial->end(*RCFD);
+  ////////////////////////////////
+  // render L0
+  ////////////////////////////////
+  for (int isector = 0; isector < 8; isector++) {
+    auto& sector = _sector[isector];
+    auto L0      = sector._lod0;
+    for (const auto& prim : L0._primitives)
+      gbi->DrawIndexedPrimitiveEML(*prim->_vtxbuffer, *prim->_idxbuffer, EPRIM_TRIANGLES);
+  }
+  ////////////////////////////////
+  // render LX
+  ////////////////////////////////
+  for (int isector = 0; isector < 8; isector++) {
+    auto& sector = _sector[isector];
+    auto LX      = sector._lodX;
+    for (const auto& prim : LX._primitives)
+      gbi->DrawIndexedPrimitiveEML(*prim->_vtxbuffer, *prim->_idxbuffer, EPRIM_TRIANGLES);
   }
 
   targ->PopMaterial();
