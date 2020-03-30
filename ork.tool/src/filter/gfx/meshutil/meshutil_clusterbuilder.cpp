@@ -11,7 +11,7 @@
 #include <orktool/filter/gfx/meshutil/meshutil_fixedgrid.h>
 #include <orktool/filter/gfx/meshutil/clusterizer.h>
 #include <ork/application/application.h>
-#include "../meshutil/meshutil_stripper.h"
+#include <ork/lev2/gfx/meshutil_stripper.h>
 
 const bool gbFORCEDICE = true;
 const int kDICESIZE    = 512;

@@ -20,9 +20,16 @@
 //     misrepresented as being the original software.
 //  3. This notice may not be removed or altered from any source distribution.
 //
-//  Tanguy Fautré
+//  Tanguy Fautrï¿½
 //  softdev@pandora.be
 //
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+// Additional Modifications
+//  2008 .. 2020 : Michael T. Mayers
+//////////////////////////////////////////////////////////////////////
+
 //////////////////////////////////////////////////////////////////////
 //
 //							Tri Stripper
@@ -31,13 +38,13 @@
 // Current version: 1.00 Final (23/04/2003)
 //
 // Comment: Triangle stripper in O(n.log(n)).
-//          
+//
 //          Currently there are no protection against crazy values
 //          given via SetMinStripSize() and SetCacheSize().
 //          So be careful. (Min. strip size should be equal or greater
 //          than 2, cache size should be about 10 for GeForce 256/2
-//          and about 10-16 for GeForce 3/4.) 
-//          
+//          and about 10-16 for GeForce 3/4.)
+//
 // History: - 1.00 FINAL  (23/04/2003) - Separated cache simulator into another class
 //                                     - Fixed English: "indice" -> "index"
 //                                     - Fixed one or two points for better compatibility
@@ -59,23 +66,24 @@
 
 #pragma once
 
+#include <cassert>
+#include <cstdlib>
 
-
+#include <algorithm>
+#include <deque>
+#include <fstream>
+#include <iostream>
+#include <list>
+#include <map>
+#include <string>
+#include <vector>
 
 #include "cache_simulator.h"
-
-
-
-
-// namespace triangle_stripper
-namespace triangle_stripper {
-
-
-
-
 #include "graph_array.h"
 #include "heap_array.h"
 
+// namespace triangle_stripper
+namespace triangle_stripper {
 
 
 class tri_stripper
@@ -105,7 +113,7 @@ public:
 
 	// constructor/initializer
 	tri_stripper(const indices & TriIndices);
-	
+
 	// Settings functions
 	void SetCacheSize(const size_t CacheSize = 16);			// = 0 will disable the cache optimizer
 	void SetMinStripSize(const size_t MinStripSize = 2);
@@ -207,7 +215,7 @@ private:
 	typedef common_structures::heap_array<triangle_degree, _cmp_tri_degree_gt> triangles_heap;
 	typedef std::vector<triangle_edge> triangle_edges;
 	typedef std::vector<size_t> triangle_indices;
-	typedef std::deque<index> indices_cache; 
+	typedef std::deque<index> indices_cache;
 
 
 	void InitCache();
@@ -374,7 +382,7 @@ inline bool tri_stripper::_cmp_tri_interface_lt::operator() (const triangle_edge
 
 
 inline bool tri_stripper::_cmp_tri_degree_gt::operator () (const triangle_degree & a, const triangle_degree & b) const {
-	// the triangle with a smaller degree has more priority 
+	// the triangle with a smaller degree has more priority
 	return a.Degree() > b.Degree();
 }
 
@@ -382,5 +390,3 @@ inline bool tri_stripper::_cmp_tri_degree_gt::operator () (const triangle_degree
 
 
 } // namespace triangle_stripper
-
-

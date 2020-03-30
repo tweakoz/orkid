@@ -2,7 +2,7 @@
 //
 //////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2002 Tanguy Fautré.
+//  Copyright (C) 2002 Tanguy Fautrï¿½.
 //
 //  This software is provided 'as-is', without any express or implied
 //  warranty.  In no event will the authors be held liable for any damages
@@ -20,7 +20,7 @@
 //     misrepresented as being the original software.
 //  3. This notice may not be removed or altered from any source distribution.
 //
-//  Tanguy Fautré
+//  Tanguy Fautrï¿½
 //  softdev@pandora.be
 //
 //////////////////////////////////////////////////////////////////////
@@ -36,7 +36,7 @@
 //          of the graph once you created it (setsize() will delete
 //          any previous nodes and arcs).
 //          But you can add or remove arcs.
-//          
+//
 // History: - 3.00 BETA 6 (22/09/2003) - Improved std C++ compliance
 //          - 3.00 BETA 5 (17/04/2003) - Fixed template graph related functions
 //          - 3.00 BETA 4 (11/12/2002) - Fixed a typo in erase_arcs
@@ -50,12 +50,17 @@
 //
 //////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+// Additional Modifications
+//  2008 .. 2020 : Michael T. Mayers
+//////////////////////////////////////////////////////////////////////
+
 #pragma once
 
+#include <ork/pch.h>
 #include <ork/kernel/any.h>
 
-// namespace common_structures
-namespace common_structures {
+namespace triangle_stripper::common_structures {
 
 typedef ork::svar128_t 						var_t;
 typedef std::list<var_t> 					arc_list_t;
@@ -64,7 +69,7 @@ typedef typename arc_list_t::const_iterator	const_out_arc_iterator;
 
 // graph_array main class
 template <class nodetype, class arctype>
-class graph_array 
+class graph_array
 {
 public:
 
@@ -80,7 +85,7 @@ public:
 	typedef typename std::vector<node>::const_reverse_iterator	const_node_reverse_iterator;
 
 	typedef graph_array<nodetype, arctype> _mytype;
-	
+
 
 	// graph_array::arc class
 	class arc
@@ -106,7 +111,7 @@ public:
 
 		arc(const node_iterator & Initial, const node_iterator & Terminal, const arctype & Elem)
 			: m_Initial(Initial), m_Terminal(Terminal), m_Elem(Elem), m_Marker(false) { }
-	
+
 		node_iterator	m_Initial;
 		node_iterator	m_Terminal;
 		arctype			m_Elem;
@@ -428,5 +433,3 @@ void unmark_arcs(graph_array<nodetype, arctype> & G)
 
 
 } // namespace common_structures
-
-
