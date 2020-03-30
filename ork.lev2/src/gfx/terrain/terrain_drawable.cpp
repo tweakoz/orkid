@@ -789,6 +789,8 @@ void TerrainRenderImpl::gpuUpdate(Context* ptarg) {
       auto vc23 = vertex_type((p2 + p3) * 0.5, fvec2(), c0);
       auto vc30 = vertex_type((p3 + p0) * 0.5, fvec2(), c0);
 
+      // TODO: use indexed primitives here..
+
       switch (p._type) {
         case PT_A: //
           linfo.triangle_count += 8;

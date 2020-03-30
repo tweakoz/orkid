@@ -242,10 +242,10 @@ void OpenVrDevice::_processControllerEvents() {
         printf("button<%d> untouched\n", button);
         _controllerindexset.insert(event.trackedDeviceIndex);
         break;
-      case _ovr::VREvent_DualAnalog_Move: {
-        auto dualana = data.dualAnalog;
-        printf("dualanalog<%g %g> %d moved\n", dualana.x, dualana.y, int(dualana.which));
-      }
+      // case _ovr::VREvent_DualAnalog_Move: {
+      // auto dualana = data.dualAnalog;
+      // printf("dualanalog<%g %g> %d moved\n", dualana.x, dualana.y, int(dualana.which));
+      //}
       default:
         // printf("unknown event<%d>\n", int(event.eventType));
         break;
