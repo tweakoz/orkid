@@ -51,6 +51,11 @@ bool XgmRigidClusterBuilder::addTriangle(const XgmClusterTri& Triangle) {
 
 void XgmRigidClusterBuilder::buildVertexBuffer(lev2::EVtxStreamFormat format) {
   switch (format) {
+    case lev2::EVTXSTREAMFMT_V12C4T16: // basic wii environmen
+    {
+      BuildVertexBuffer_V12C4T16();
+      break;
+    }
     case lev2::EVTXSTREAMFMT_V12N6C2T4: // basic wii environmen
     {
       BuildVertexBuffer_V12N6C2T4();
@@ -76,6 +81,26 @@ void XgmRigidClusterBuilder::buildVertexBuffer(lev2::EVtxStreamFormat format) {
       break;
     }
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void XgmRigidClusterBuilder::BuildVertexBuffer_V12C4T16() {
+  int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
+  lev2::ContextDummy DummyTarget;
+  lev2::VtxWriter<ork::lev2::SVtxV12C4T16> vwriter;
+  _vertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12B12T8C4>(NumVertexIndices, 0, ork::lev2::EPRIM_MULTI);
+  vwriter.Lock(&DummyTarget, _vertexBuffer, NumVertexIndices);
+  for (int iv = 0; iv < NumVertexIndices; iv++) {
+    ork::lev2::SVtxV12C4T16 OutVtx;
+    const meshutil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
+    OutVtx._position              = InVtx.mPos;
+    OutVtx._uv0                   = InVtx.mUV[0].mMapTexCoord;
+    OutVtx._color                 = InVtx.mCol[0].GetRGBAU32();
+    vwriter.AddVertex(OutVtx);
+  }
+  vwriter.UnLock(&DummyTarget);
+  _vertexBuffer->SetNumVertices(NumVertexIndices);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

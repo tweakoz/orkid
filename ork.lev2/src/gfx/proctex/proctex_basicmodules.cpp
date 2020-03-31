@@ -266,12 +266,10 @@ void RotSolid::ComputeVB(ork::lev2::Context* pTARG) {
   ////////////////////////////////////////
   const float kfZ = 0.0f;
   ork::lev2::SVtxV12C4T16 ctrvertex, vertexa, vertexb;
-  ctrvertex.miX     = 0.0f;
-  ctrvertex.miY     = 0.0f;
-  ctrvertex.miZ     = kfZ;
-  ctrvertex.muColor = 0xff000000;
-  vertexa.muColor   = 0xffff0000;
-  vertexb.muColor   = 0xffffff00;
+  ctrvertex._position = fvec3(0.0f, 0.0f, kfZ);
+  ctrvertex._color    = 0xff000000;
+  vertexa._color      = 0xffff0000;
+  vertexb._color      = 0xffffff00;
   ////////////////////////////////////////
   for (int i = 0; i < miNumSides; i++) {
     float fiI = float(i) / float(miNumSides - 1);
@@ -293,17 +291,12 @@ void RotSolid::ComputeVB(ork::lev2::Context* pTARG) {
     float fsinB = sinf(fphB) * fradB;
     float fcosB = cosf(fphB) * fradB;
 
-    vertexa.muColor   = ucolora;
-    vertexb.muColor   = ucolora;
-    ctrvertex.muColor = ucolora;
+    vertexa._color   = ucolora;
+    vertexb._color   = ucolora;
+    ctrvertex._color = ucolora;
 
-    vertexa.miX = fsinA;
-    vertexa.miY = fcosA;
-    vertexa.miZ = kfZ;
-
-    vertexb.miX = fsinB;
-    vertexb.miY = fcosB;
-    vertexb.miZ = kfZ;
+    vertexa._position = fvec3(fsinA, fcosA, kfZ);
+    vertexb._position = fvec3(fsinB, fcosB, kfZ);
 
     vw.AddVertex(vertexa);
     vw.AddVertex(vertexb);

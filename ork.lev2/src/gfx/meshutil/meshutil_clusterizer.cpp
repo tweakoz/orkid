@@ -20,8 +20,6 @@ XgmClusterizer::XgmClusterizer() {
 ///////////////////////////////////////////////////////////////////////////////
 
 XgmClusterizer::~XgmClusterizer() {
-  for (auto item : _clusters)
-    delete item;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -43,8 +41,8 @@ bool XgmClusterizerStd::addTriangle(const XgmClusterTri& Triangle, const MeshCon
   bool bAdded = false;
 
   for (size_t i = 0; i < iNumClusters; i++) {
-    XgmClusterBuilder* pClus = _clusters[i];
-    bAdded                   = pClus->addTriangle(Triangle);
+    auto clusterbuilder = _clusters[i];
+    bAdded              = clusterbuilder->addTriangle(Triangle);
     if (bAdded) {
       break;
     }
@@ -52,20 +50,20 @@ bool XgmClusterizerStd::addTriangle(const XgmClusterTri& Triangle, const MeshCon
 
   if (false == bAdded) // start new cluster
   {
-    XgmClusterBuilder* pNewCluster = 0;
+    clusterbuilder_ptr_t new_builder = nullptr;
 
     bool do_skinned = _policy._skinned && flags._skinned;
 
     printf("do_skinned<%d>\n", int(do_skinned));
 
     if (do_skinned) {
-      pNewCluster = new XgmSkinnedClusterBuilder(*this);
+      new_builder = std::make_shared<XgmSkinnedClusterBuilder>(*this);
     } else {
-      pNewCluster = new XgmRigidClusterBuilder(*this);
+      new_builder = std::make_shared<XgmRigidClusterBuilder>(*this);
     }
 
-    _clusters.push_back(pNewCluster);
-    return pNewCluster->addTriangle(Triangle);
+    _clusters.push_back(new_builder);
+    return new_builder->addTriangle(Triangle);
   }
   return bAdded;
 }

@@ -132,8 +132,8 @@ void XgmClusterizerDiced::End() {
 
     inumpacc += inumpolys;
 
-    XgmClusterBuilder* pNewCluster = new XgmRigidClusterBuilder(*this);
-    _clusters.push_back(pNewCluster);
+    auto new_builder = std::make_shared<XgmRigidClusterBuilder>(*this);
+    _clusters.push_back(new_builder);
 
     for (int ip = 0; ip < inumpolys; ip++) {
       const poly& ply = pgrp.RefPoly(ip);
@@ -146,13 +146,13 @@ void XgmClusterizerDiced::End() {
       ClusTri._vertex[1] = pgrp.RefVertexPool().GetVertex(ply.GetVertexID(1));
       ClusTri._vertex[2] = pgrp.RefVertexPool().GetVertex(ply.GetVertexID(2));
 
-      bool bOK = pNewCluster->addTriangle(ClusTri);
+      bool bOK = new_builder->addTriangle(ClusTri);
 
       if (false == bOK) // cluster full, make new cluster
       {
-        pNewCluster = new XgmRigidClusterBuilder(*this);
-        _clusters.push_back(pNewCluster);
-        bOK = pNewCluster->addTriangle(ClusTri);
+        new_builder = std::make_shared<XgmRigidClusterBuilder>(*this);
+        _clusters.push_back(new_builder);
+        bOK = new_builder->addTriangle(ClusTri);
         OrkAssert(bOK);
       }
     }
@@ -167,13 +167,13 @@ void XgmClusterizerDiced::End() {
 
   size_t inumclus = _clusters.size();
   for (size_t ic = 0; ic < inumclus; ic++) {
-    const XgmClusterBuilder& clus = *_clusters[ic];
-    AABox bbox                    = clus._submesh.aabox();
-    fvec3 vmin                    = bbox.Min();
-    fvec3 vmax                    = bbox.Max();
-    float fdist                   = (vmax - vmin).Mag();
+    auto builder = _clusters[ic];
+    AABox bbox   = builder->_submesh.aabox();
+    fvec3 vmin   = bbox.Min();
+    fvec3 vmax   = bbox.Max();
+    float fdist  = (vmax - vmin).Mag();
 
-    int inumv = (int)clus._submesh.RefVertexPool().GetNumVertices();
+    int inumv = (int)builder->_submesh.RefVertexPool().GetNumVertices();
     orkprintf(
         "clus<%d> inumv<%d> bbmin<%g %g %g> bbmax<%g %g %g> diag<%g>\n",
         ic,

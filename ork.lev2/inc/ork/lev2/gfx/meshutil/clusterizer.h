@@ -63,6 +63,8 @@ struct XgmClusterBuilder {
   const XgmClusterizer& _clusterizer;
 };
 
+typedef std::shared_ptr<XgmClusterBuilder> clusterbuilder_ptr_t;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct XgmSkinnedClusterBuilder : public XgmClusterBuilder {
@@ -91,6 +93,7 @@ struct XgmRigidClusterBuilder : public XgmClusterBuilder {
   bool addTriangle(const XgmClusterTri& Triangle) final;
   void buildVertexBuffer(lev2::EVtxStreamFormat format) final;
 
+  void BuildVertexBuffer_V12C4T16();
   void BuildVertexBuffer_V12N6C2T4();
   void BuildVertexBuffer_V12N12B12T8C4();
   void BuildVertexBuffer_V12N12T16C4();
@@ -116,11 +119,11 @@ struct XgmClusterizer {
   size_t GetNumClusters() const {
     return _clusters.size();
   }
-  XgmClusterBuilder* GetCluster(int idx) const {
+  clusterbuilder_ptr_t GetCluster(int idx) const {
     return _clusters[idx];
   }
 
-  orkvector<XgmClusterBuilder*> _clusters;
+  std::vector<clusterbuilder_ptr_t> _clusters;
   ClusterizerPolicy _policy;
   ///////////////////////////////////////////////////////
 };
@@ -150,6 +153,6 @@ struct XgmClusterizerStd : public XgmClusterizer {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void buildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, const XgmClusterBuilder* pclusbuilder);
+void buildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, clusterbuilder_ptr_t pclusbuilder);
 
 } // namespace ork::meshutil

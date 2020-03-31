@@ -77,8 +77,7 @@ struct SectorLodInfo {
 
     int inumclus = _clusterizer.GetNumClusters();
     for (int icluster = 0; icluster < inumclus; icluster++) {
-      auto clusterbase         = _clusterizer.GetCluster(icluster);
-      auto clusterbuilder      = dynamic_cast<ork::meshutil::XgmClusterBuilder*>(clusterbase);
+      auto clusterbuilder      = _clusterizer.GetCluster(icluster);
       const auto& tool_submesh = clusterbuilder->_submesh;
       clusterbuilder->buildVertexBuffer(EVTXSTREAMFMT_V12C4T16);
       // lev2::XgmCluster& XgmClus = xgm_submesh->mpClusters[icluster];

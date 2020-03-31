@@ -147,7 +147,7 @@ void BuildXgmClusterPrimGroups(lev2::XgmCluster& XgmCluster, const std::vector<u
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void buildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, const XgmClusterBuilder* clusterbuilder) {
+void buildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, clusterbuilder_ptr_t clusterbuilder) {
   if (!clusterbuilder->_vertexBuffer)
     return;
 
@@ -185,10 +185,10 @@ void buildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, const XgmClusterBuild
   /////////////////////////////////////////////////////////////
   // bone -> matrix register mapping
 
-  auto skinner = dynamic_cast<const XgmSkinnedClusterBuilder*>(clusterbuilder);
+  auto skinned_builder = std::static_pointer_cast<XgmSkinnedClusterBuilder>(clusterbuilder);
 
-  if (skinner) {
-    const orkmap<std::string, int>& BoneMap = skinner->RefBoneRegMap();
+  if (skinned_builder) {
+    const orkmap<std::string, int>& BoneMap = skinned_builder->RefBoneRegMap();
 
     int inumjointsmapped = BoneMap.size();
 

@@ -225,7 +225,7 @@ void CColladaModel::BuildXgmTriStripMesh(lev2::XgmMesh& XgmMesh, SColladaMesh* C
     XgmClusSet.mpClusters = new lev2::XgmCluster[inumclus];
 
     for (int ic = 0; ic < inumclus; ic++) {
-      ork::meshutil::XgmClusterBuilder* clusterbuilder = ColMatGroup->GetClusterizer()->GetCluster(ic);
+      auto clusterbuilder = ColMatGroup->GetClusterizer()->GetCluster(ic);
 
       auto format = ColMatGroup->GetVtxStreamFormat();
       clusterbuilder->buildVertexBuffer(format);

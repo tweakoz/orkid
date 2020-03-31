@@ -708,65 +708,43 @@ struct SVtxV6I2C4N3T2 {
 
 struct SVtxV12C4T16 // 32 BPV
 {
-  F32 miX; // 4
-  F32 miY; // 8
-  F32 miZ; // 12
-
-  U32 muColor; // 16
-
-  F32 mfU; // 20
-  F32 mfV; // 24
-
-  F32 mfU2; // 28
-  F32 mfV2; // 32
-
   SVtxV12C4T16(F32 iX = 0.0f, F32 iY = 0.0f, F32 iZ = 0.0f, F32 fU = 0.0f, F32 fV = 0.0f, U32 uColor = 0xffffffff)
-      : miX(iX)
-      , miY(iY)
-      , miZ(iZ)
-      , muColor(uColor)
-      , mfU(fU)
-      , mfV(fV) {
+      : _position(iX, iY, iZ)
+      , _color(uColor)
+      , _uv0(fU, fV) {
   }
 
   SVtxV12C4T16(F32 iX, F32 iY, F32 iZ, F32 fU, F32 fV, F32 fU2, F32 fV2, U32 uColor = 0xffffffff)
-      : miX(iX)
-      , miY(iY)
-      , miZ(iZ)
-      , muColor(uColor)
-      , mfU(fU)
-      , mfV(fV)
-      , mfU2(fU2)
-      , mfV2(fV2) {
+      : _position(iX, iY, iZ)
+      , _color(uColor)
+      , _uv0(fU, fV)
+      , _uv1(fU2, fV2) {
   }
 
   SVtxV12C4T16(const fvec3& pos, const fvec2& uv, U32 uColor = 0xffffffff)
-      : miX(pos.GetX())
-      , miY(pos.GetY())
-      , miZ(pos.GetZ())
-      , muColor(uColor)
-      , mfU(uv.GetX())
-      , mfV(uv.GetY())
-      , mfU2(0.0f)
-      , mfV2(0.0f) {
+      : _position(pos)
+      , _color(uColor)
+      , _uv0(uv)
+      , _uv1(uv) {
   }
 
   SVtxV12C4T16(const fvec3& pos, const fvec2& uv, const fvec2& uv2, U32 uColor = 0xffffffff)
-      : miX(pos.GetX())
-      , miY(pos.GetY())
-      , miZ(pos.GetZ())
-      , muColor(uColor)
-      , mfU(uv.GetX())
-      , mfV(uv.GetY())
-      , mfU2(uv2.GetX())
-      , mfV2(uv2.GetY()) {
+      : _position(pos)
+      , _color(uColor)
+      , _uv0(uv)
+      , _uv1(uv2) {
   }
 
   void EndianSwap() {
   }
 
+  fvec3 _position; // 12
+  U32 _color;      // 16
+  fvec2 _uv0;      // 24
+  fvec2 _uv1;      // 32
+
   const static EVtxStreamFormat meFormat = EVTXSTREAMFMT_V12C4T16;
-};
+}; // namespace lev2
 
 ///////////////////////////////////////////////////////////////////////////////
 // UI Vertex Format for lines/quads (non Textured, colored)

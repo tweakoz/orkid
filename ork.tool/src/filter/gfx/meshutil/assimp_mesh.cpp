@@ -793,7 +793,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
       xgm_submesh->miNumClusters = inumclus;
       xgm_submesh->mpClusters    = new lev2::XgmCluster[inumclus];
       for (int icluster = 0; icluster < inumclus; icluster++) {
-        auto clusterbuilder      = dynamic_cast<ork::meshutil::XgmClusterBuilder*>(clusterizer->GetCluster(icluster));
+        auto clusterbuilder      = clusterizer->GetCluster(icluster);
         const auto& tool_submesh = clusterbuilder->_submesh;
         clusterbuilder->buildVertexBuffer(VertexFormat);
 
