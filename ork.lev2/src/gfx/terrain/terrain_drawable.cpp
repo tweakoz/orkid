@@ -73,22 +73,6 @@ struct SectorLodInfo {
   // LODX is all outer LODs (combined)
 
   ////////////////////////////////////////
-  void gpuInit(Context* ctx) {
-
-    int inumclus = _clusterizer.GetNumClusters();
-    for (int icluster = 0; icluster < inumclus; icluster++) {
-      auto clusterbuilder      = _clusterizer.GetCluster(icluster);
-      const auto& tool_submesh = clusterbuilder->_submesh;
-      clusterbuilder->buildVertexBuffer(EVTXSTREAMFMT_V12C4T16);
-      XgmCluster xgmcluster;
-      buildTriStripXgmCluster(xgmcluster, clusterbuilder);
-      // TODO: cluster was build using the dummy interface,
-      //  so the data is sitting in CPU memory.
-      // implement datablock caching and
-      //  load into to GPU memory
-    }
-  }
-  ////////////////////////////////////////
   void addTriangle(
       const meshutil::vertex& vtxa, //
       const meshutil::vertex& vtxb, //
@@ -97,7 +81,8 @@ struct SectorLodInfo {
     _clusterizer.addTriangle(tri, _meshflags);
   }
   ////////////////////////////////////////
-  void buildPrims(AABox& aabb, datablockptr_t dblock);
+  void buildClusters(AABox& aabb);
+  void buildPrimitives(datablockptr_t dblock);
   ////////////////////////////////////////
 
   std::vector<Patch> _patches;
@@ -424,7 +409,7 @@ void TerrainRenderImpl::reloadCachedTextures(Context* context, datablockptr_t db
 
 ////////////////////////////////////////
 
-void SectorLodInfo::buildPrims(AABox& aabb, datablockptr_t dblock) {
+void SectorLodInfo::buildClusters(AABox& aabb) {
 
   _clusterizer.Begin();
 
@@ -551,6 +536,23 @@ void SectorLodInfo::buildPrims(AABox& aabb, datablockptr_t dblock) {
     }
   } // for (auto p : _patches) {
   _clusterizer.End();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SectorLodInfo::buildPrimitives(datablockptr_t dblock) {
+  int inumclus = _clusterizer.GetNumClusters();
+  for (int icluster = 0; icluster < inumclus; icluster++) {
+    auto clusterbuilder      = _clusterizer.GetCluster(icluster);
+    const auto& tool_submesh = clusterbuilder->_submesh;
+    clusterbuilder->buildVertexBuffer(EVTXSTREAMFMT_V12C4T16);
+    XgmCluster xgmcluster;
+    buildTriStripXgmCluster(xgmcluster, clusterbuilder);
+    // TODO: cluster was build using the dummy interface,
+    //  so the data is sitting in CPU memory.
+    // implement datablock caching and
+    //  load into to GPU memory
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -800,10 +802,10 @@ datablockptr_t TerrainRenderImpl::recomputeGeometry() {
   _aabox.BeginGrow();
   for (int i = 0; i < 8; i++) {
     auto& sector = _sector[i];
-    sector._lod0.buildPrims(_aabox, dblock);
-    sector._lodX.buildPrims(_aabox, dblock);
-    // sector._lod0.initGeometry();
-    // sector._lodX.initGeometry();
+    sector._lod0.buildClusters(_aabox);
+    sector._lodX.buildClusters(_aabox);
+    sector._lod0.buildPrimitives(dblock);
+    sector._lodX.buildPrimitives(dblock);
   } // for each sector
   _aabox.EndGrow();
 
