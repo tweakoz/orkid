@@ -14,8 +14,6 @@
 const bool gbFORCEDICE = true;
 const int kDICESIZE    = 512;
 
-using namespace ork::tool;
-
 namespace ork::meshutil {
 
 ///////////////////////////////////////////////////////////////////////////////

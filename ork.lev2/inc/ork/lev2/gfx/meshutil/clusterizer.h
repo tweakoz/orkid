@@ -12,7 +12,6 @@
 
 #include <ork/util/crc.h>
 #include <ork/util/crc64.h>
-#include <orktool/filter/filter.h>
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
 #include <ork/math/box.h>
