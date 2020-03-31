@@ -4,10 +4,9 @@
 // See License at OrkidRoot/license.html or http://www.tweakoz.com/orkid/license.html
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <orktool/orktool_pch.h>
+#include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmodel.h>
-#include <orktool/filter/gfx/collada/collada.h>
 #include <ork/lev2/gfx/meshutil/meshutil_fixedgrid.h>
 #include <ork/lev2/gfx/meshutil/clusterizer.h>
 #include <ork/application/application.h>
