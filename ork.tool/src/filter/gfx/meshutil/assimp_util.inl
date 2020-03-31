@@ -7,7 +7,6 @@
 #include <ork/file/cfs.inl>
 #include <ork/application/application.h>
 #include <ork/math/plane.h>
-#include <orktool/filter/gfx/meshutil/meshutil.h>
 #include <orktool/filter/filter.h>
 #include <ork/kernel/spawner.h>
 #include <ork/kernel/string/deco.inl>
@@ -20,12 +19,12 @@
 #include <assimp/material.h>
 
 #include <orktool/filter/gfx/collada/collada.h>
-#include <orktool/filter/gfx/meshutil/meshutil.h>
-#include <orktool/filter/gfx/meshutil/clusterizer.h>
+#include <orktool/filter/gfx/meshutil/meshutil_tool.h>
+#include <ork/lev2/gfx/meshutil/clusterizer.h>
 
 #include <ork/lev2/gfx/material_pbr.inl>
 
-namespace ork::MeshUtil {
+namespace ork::tool::meshutil {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -308,4 +307,4 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} // namespace ork::MeshUtil
+} // namespace ork::tool::meshutil

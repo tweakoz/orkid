@@ -16,7 +16,7 @@
 #include <ork/file/fileenv.h>
 
 // Filters
-#include <orktool/filter/gfx/meshutil/meshutil.h>
+#include <orktool/filter/gfx/meshutil/meshutil_tool.h>
 
 #include <ork/kernel/string/string.h>
 #include <ork/lev2/gfx/gfxctxdummy.h>
@@ -25,16 +25,15 @@
 #include <orktool/toolcore/FunctionManager.h>
 #include <ork/kernel/datacache.inl>
 
-namespace ork { namespace MeshUtil {
+namespace ork::tool {
+namespace meshutil {
 void PartitionMesh_FixedGrid3d_Driver(const tokenlist& options);
 void TerrainTest(const tokenlist& toklist);
-}} // namespace ork::MeshUtil
-
-namespace ork { namespace tool {
+void RegisterColladaFilters();
+} // namespace meshutil
 
 bool WavToMkr(const tokenlist& toklist);
 
-void RegisterColladaFilters();
 void RegisterArchFilters();
 
 void AssetFilterBase::Describe() {
@@ -106,7 +105,7 @@ public: //
   fg3dFilter() {
   }
   bool ConvertAsset(const tokenlist& toklist) final {
-    MeshUtil::PartitionMesh_FixedGrid3d_Driver(toklist);
+    meshutil::PartitionMesh_FixedGrid3d_Driver(toklist);
     return true;
   }
 };
@@ -144,16 +143,16 @@ static void RegisterFilters() {
 #endif
 ///////////////////////////////////////////////////
 #if defined(USE_FCOLLADA)
-    ork::tool::RegisterColladaFilters();
+    ork::tool::meshutil::RegisterColladaFilters();
 #endif
     ///////////////////////////////////////////////////
     ork::tool::RegisterArchFilters();
     ///////////////////////////////////////////////////
-    AssetFilter::RegisterFilter("xgm:obj", MeshUtil::XGM_OBJ_Filter::DesignNameStatic().c_str());
-    AssetFilter::RegisterFilter("obj:obj", MeshUtil::OBJ_OBJ_Filter::DesignNameStatic().c_str());
-    AssetFilter::RegisterFilter("obj:xgm", MeshUtil::OBJ_XGM_Filter::DesignNameStatic().c_str());
-    AssetFilter::RegisterFilter("ass:xgm", MeshUtil::ASS_XGM_Filter::DesignNameStatic().c_str());
-    AssetFilter::RegisterFilter("ass:xga", MeshUtil::ASS_XGA_Filter::DesignNameStatic().c_str());
+    AssetFilter::RegisterFilter("xgm:obj", meshutil::XGM_OBJ_Filter::DesignNameStatic().c_str());
+    AssetFilter::RegisterFilter("obj:obj", meshutil::OBJ_OBJ_Filter::DesignNameStatic().c_str());
+    AssetFilter::RegisterFilter("obj:xgm", meshutil::OBJ_XGM_Filter::DesignNameStatic().c_str());
+    AssetFilter::RegisterFilter("ass:xgm", meshutil::ASS_XGM_Filter::DesignNameStatic().c_str());
+    AssetFilter::RegisterFilter("ass:xga", meshutil::ASS_XGA_Filter::DesignNameStatic().c_str());
     AssetFilter::RegisterFilter("tga:dds", TGADDSFilter::DesignNameStatic().c_str());
     AssetFilter::RegisterFilter("png:dds", TGADDSFilter::DesignNameStatic().c_str());
     AssetFilter::RegisterFilter("fg3d", fg3dFilter::DesignNameStatic().c_str());
@@ -475,7 +474,7 @@ void FilterOptMap::DumpOptions() const {
   orkprintf("/////////////////////////////\n");
 }
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::tool
+} // namespace ork::tool
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

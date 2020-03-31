@@ -60,7 +60,7 @@
 #include <ork/pch.h>
 #include <ork/kernel/any.h>
 
-namespace triangle_stripper::common_structures {
+namespace ork::meshutil::triangle_stripper::common_structures {
 
 typedef ork::svar128_t 						var_t;
 typedef std::list<var_t> 					arc_list_t;

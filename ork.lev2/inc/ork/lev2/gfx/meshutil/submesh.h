@@ -26,7 +26,7 @@
 #include <unordered_map>
 #include <ork/kernel/datablock.inl>
 
-namespace ork::MeshUtil {
+namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 typedef orkmap<std::string, svar64_t> AnnotationMap;
 
@@ -463,7 +463,7 @@ struct submesh {
   bool mbMergeEdges;
 
   /////////////////////////////////////
-  // these are mutable so we can get bounding boxes faster with const refs to toolmesh's
+  // these are mutable so we can get bounding boxes faster with const refs to Mesh's
   mutable AABox mAABox;
   mutable bool mAABoxDirty;
   /////////////////////////////////////
@@ -501,4 +501,4 @@ struct PrimitiveV12N12B12T8C4 {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::MeshUtil
+} // namespace ork::meshutil

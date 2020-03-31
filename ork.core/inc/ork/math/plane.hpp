@@ -5,13 +5,11 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <cmath>
-#include <ork/util/endian.h>
+#pragma once
 
-// As psp-gcc does _not_ qualify sqrtf with std:: we must make CW 'using' it
-#ifdef NITRO
-using fabs;
-#endif
+#include <cmath>
+#include <ork/math/plane.h>
+#include <ork/util/endian.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {

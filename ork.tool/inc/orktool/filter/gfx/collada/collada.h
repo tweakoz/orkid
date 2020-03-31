@@ -7,7 +7,7 @@
 
 #include <orktool/filter/filter.h>
 #include <ork/lev2/gfx/gfxmodel.h>
-#include <orktool/filter/gfx/meshutil/meshutil.h>
+#include <ork/lev2/gfx/meshutil/meshutil.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -41,11 +41,7 @@ class FCDEffectStandard;
 class FCDEffectProfileFX;
 class FCDAsset;
 
-namespace ork::MeshUtil {
-  struct ToolMaterialGroup;
-}
-
-namespace ork::tool {
+namespace ork::tool::meshutil {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -251,59 +247,23 @@ struct DaeExtraNode
 
 fmtx4 FCDMatrixTofmtx4( const FMMatrix44 & inmat );
 
-///////////////////////////////////////////////////////////////////////////////
-
-struct ColladaMaterialChannel
-{
-	std::string						mTextureName;
-	std::string						mPlacementNodeName;
-	float							mRepeatU;
-	float							mRepeatV;
-
-	ColladaMaterialChannel()
-		: mRepeatU( 1.0f )
-		, mRepeatV( 1.0f )
-	{
-	}
-
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ColladaMaterial
+struct ColladaMaterialInfo : public ork::meshutil::MaterialInfo
 {
-	enum ELightingType
-	{
-		ELIGHTING_LAMBERT = 0,
-		ELIGHTING_BLINN ,
-		ELIGHTING_PHONG ,
-		ELIGHTING_NONE
-	};
+  ColladaMaterialInfo();
 
-	std::string							mShadingGroupName;
-	std::string							mMaterialName;
-	ELightingType						mLightingType;
-	float								mSpecularPower;
-	ColladaMaterialChannel				mDiffuseMapChannel;
-	ColladaMaterialChannel				mSpecularMapChannel;
-	ColladaMaterialChannel				mNormalMapChannel;
-	ColladaMaterialChannel				mAmbientMapChannel;
+  void ParseStdMaterial( FCDEffectStandard *StdProf );
+	void ParseMaterial( FCDocument* doc, const std::string & ShadingGroupName, const std::string& MaterialName );
 
-	ork::lev2::GfxMaterial*				_orkMaterial;
-	fvec4							    mEmissiveColor;
-	fvec4							    mTransparencyColor;
 	FCDEffect*							mFx;
 	FCDMaterial*					    mFxProfile;
 	FCDEffectStandard*					mStdProfile;
 	FCDEffectStandard::TransparencyMode	mTransparencyMode;
-	orkmap<std::string,std::string>		mAnnotations;
-
-	ColladaMaterial();
-
-	void ParseStdMaterial( FCDEffectStandard *StdProf );
-	void ParseMaterial( FCDocument* doc, const std::string & ShadingGroupName, const std::string& MaterialName );
 
 };
+using collada_material_info_ptr_t = std::shared_ptr<ColladaMaterialInfo>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -332,7 +292,7 @@ struct SColladaVertexWeightingInfo
 
 class SColladaMesh
 {
-	orkvector<MeshUtil::ToolMaterialGroup*>			mMatGroups;
+	orkvector<ork::meshutil::MaterialGroup*>			mMatGroups;
 	orkvector<SColladaVertexWeightingInfo>	mVertexWeighting;
 	bool									mbSkinned;
 	std::string								mMeshName;
@@ -343,7 +303,7 @@ public:
 
 	void SetSkinned( bool bv ) { mbSkinned=bv; }
 	bool isSkinned( void ) const { return mbSkinned; }
-	orkvector<MeshUtil::ToolMaterialGroup*>& RefMatGroups( void ) { return mMatGroups; }
+	orkvector<ork::meshutil::MaterialGroup*>& RefMatGroups( void ) { return mMatGroups; }
 	orkvector<SColladaVertexWeightingInfo>& RefWeightingInfo( void ) { return mVertexWeighting; }
 	void SetMeshName( const std::string& name ) { mMeshName=name; }
 	const std::string& meshName() const { return mMeshName; }
@@ -405,10 +365,11 @@ public:
 		EUSAGE_COLLISION,
 	};
 
+
 	orkmap<std::string,ColMeshRec*>				mMeshIdMap;
 	lev2::XgmModel 								mXgmModel;
-	orkmap<std::string,ColladaMaterial>		mMaterialMap;
-	MeshUtil::material_semanticmap_t			mMaterialSemanticBindingMap;
+	orkmap<std::string,collada_material_info_ptr_t>		mMaterialMap;
+	ork::meshutil::material_semanticmap_t			mMaterialSemanticBindingMap;
 	orkmap<std::string,ork::lev2::XgmSkelNode*>	mSkeleton;
 	ork::lev2::XgmSkelNode*						mSkeletonRoot;
 	fvec3									mAABoundXYZ;
@@ -424,7 +385,7 @@ public:
 	static CColladaModel* Load( const AssetPath & fname );
 	bool FindDaeMeshes();
 	bool ParseGeometries();
-	void ParseMaterial( MeshUtil::ToolMaterialGroup * MatGroup );
+	void ParseMaterial( ork::meshutil::MaterialGroup * MatGroup );
 
 	bool ParseMaterialBindings();
 	bool ParseControllers( );
@@ -435,7 +396,7 @@ public:
 
 	bool ConvertTextures(const file::Path& outmdlpth, ork::tool::FilterOptMap& options );
 
-	const ColladaMaterial & GetMaterialFromShadingGroup( const std::string & ShadingGroupName ) const;
+	collada_material_info_ptr_t GetMaterialFromShadingGroup( const std::string & ShadingGroupName ) const;
 
 	bool isSkinned() const { return mSkeleton.size()>0; }
 
@@ -550,7 +511,7 @@ class CColladaAnim : public CColladaAsset
 {
 public:
 
-	typedef orkmap<std::string,ork::tool::ColladaAnimChannel*> ChannelsMap;
+	typedef orkmap<std::string,ColladaAnimChannel*> ChannelsMap;
 
 	ork::lev2::XgmAnim	mXgmAnim;
 
@@ -559,8 +520,8 @@ public:
 	ChannelsMap	mAnimationChannels;
 
 	///////////////////////////////////////////////////////////////////
-	MeshUtil::material_semanticmap_t						mShadingGroupMap;
-	orkmap<std::string,ColladaMaterial>					mMaterialMap;
+	ork::meshutil::material_semanticmap_t						mShadingGroupMap;
+	orkmap<std::string,collada_material_info_ptr_t>					mMaterialMap;
 	orkmap<std::string,ColladaUvAnimChannel*>				mUvAnimatables;
 
 	///////////////////////////////////////////////////////////////////

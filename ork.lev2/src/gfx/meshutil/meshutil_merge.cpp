@@ -5,19 +5,18 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <orktool/orktool_pch.h>
+#include <ork/pch.h>
 #include <ork/math/plane.h>
-#include <orktool/filter/gfx/meshutil/meshutil.h>
 #include <ork/kernel/csystem.h>
 #include <ork/kernel/mutex.h>
-
 #include <ork/kernel/thread.h>
+#include <ork/lev2/gfx/meshutil/meshutil.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace MeshUtil {
+namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::MergeMaterialsFromToolMesh(const toolmesh& from) {
+void Mesh::MergeMaterialsFromToolMesh(const Mesh& from) {
   for (const auto& item : from.mShadingGroupToMaterialMap) {
     const std::string& key = item.first;
     const auto& val        = item.second;
@@ -26,37 +25,33 @@ void toolmesh::MergeMaterialsFromToolMesh(const toolmesh& from) {
     OrkAssert(itf == mShadingGroupToMaterialMap.end());
     mShadingGroupToMaterialMap[key] = val;
   }
-  for (orkmap<std::string, ork::tool::ColladaMaterial*>::const_iterator itm = from.mMaterialsByShadingGroup.begin();
-       itm != from.mMaterialsByShadingGroup.end();
-       itm++) {
-    const std::string& key          = itm->first;
-    ork::tool::ColladaMaterial* val = itm->second;
+  for (auto itm : from._materialsByShadingGroup) {
+    const std::string& key = itm.first;
+    auto val               = itm.second;
 
-    orkmap<std::string, ork::tool::ColladaMaterial*>::const_iterator itf = mMaterialsByShadingGroup.find(key);
-    OrkAssert(itf == mMaterialsByShadingGroup.end());
-    mMaterialsByShadingGroup[key] = val;
+    auto itf = _materialsByShadingGroup.find(key);
+    OrkAssert(itf == _materialsByShadingGroup.end());
+    _materialsByShadingGroup[key] = val;
   }
-  for (orkmap<std::string, ork::tool::ColladaMaterial*>::const_iterator itm = from.mMaterialsByName.begin();
-       itm != from.mMaterialsByName.end();
-       itm++) {
-    const std::string& key          = itm->first;
-    ork::tool::ColladaMaterial* val = itm->second;
+  for (auto itm : from._materialsByName) {
+    const std::string& key = itm.first;
+    auto val               = itm.second;
 
-    orkmap<std::string, ork::tool::ColladaMaterial*>::const_iterator itf = mMaterialsByName.find(key);
-    OrkAssert(itf == mMaterialsByName.end());
-    mMaterialsByName[key] = val;
+    auto itf = _materialsByName.find(key);
+    OrkAssert(itf == _materialsByName.end());
+    _materialsByName[key] = val;
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::MergeSubMesh(const submesh& src) {
+void Mesh::MergeSubMesh(const submesh& src) {
   MergeSubMesh(src, "default");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::MergeSubMesh(const toolmesh& src, const submesh* pgrp, const char* newname) {
+void Mesh::MergeSubMesh(const Mesh& src, const submesh* pgrp, const char* newname) {
   float ftimeA       = float(OldSchool::GetRef().GetLoResTime());
   submesh* pnewgroup = FindSubMesh(newname);
   if (0 == pnewgroup) {
@@ -79,7 +74,7 @@ void toolmesh::MergeSubMesh(const toolmesh& src, const submesh* pgrp, const char
   }
   float ftimeB = float(OldSchool::GetRef().GetLoResTime());
   float ftime  = (ftimeB - ftimeA);
-  orkprintf("<<PROFILE>> <<toolmesh::MergeSubMesh %f seconds>>\n", ftime);
+  orkprintf("<<PROFILE>> <<Mesh::MergeSubMesh %f seconds>>\n", ftime);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -88,8 +83,8 @@ void toolmesh::MergeSubMesh(const toolmesh& src, const submesh* pgrp, const char
 ///////////////////////////////////////////////////////////////////////////////
 
 struct MergeToolMeshQueueItem {
-  const MeshUtil::submesh* mpSourceSubMesh;
-  MeshUtil::submesh* mpDestSubMesh;
+  const submesh* mpSourceSubMesh;
+  submesh* mpDestSubMesh;
   std::string destname;
 
   MergeToolMeshQueueItem()
@@ -138,7 +133,7 @@ void MergeToolMeshQueueItem::DoIt(int ithread) const {
   float ftimeB = float(OldSchool::GetRef().GetLoResTime());
   float ftime  = (ftimeB - ftimeA);
   orkprintf(
-      "<<PROFILE>> <<toolmesh::MergeToolMeshThreaded  Thread<%d> Dest<%s> NumPolys<%d> %f seconds>>\n",
+      "<<PROFILE>> <<Mesh::MergeToolMeshThreaded  Thread<%d> Dest<%s> NumPolys<%d> %f seconds>>\n",
       ithread,
       destname.c_str(),
       inump,
@@ -191,7 +186,7 @@ struct MergeToolMeshJobThread : public ork::Thread {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::MergeToolMeshThreadedExcluding(const toolmesh& sr, int inumthreads, const std::set<std::string>& ExcludeSet) {
+void Mesh::MergeToolMeshThreadedExcluding(const Mesh& sr, int inumthreads, const std::set<std::string>& ExcludeSet) {
   float ftimeA = float(OldSchool::GetRef().GetLoResTime());
 
   MergeToolMeshQueue Q;
@@ -240,17 +235,17 @@ void toolmesh::MergeToolMeshThreadedExcluding(const toolmesh& sr, int inumthread
   MergeMaterialsFromToolMesh(sr);
   float ftimeB = float(OldSchool::GetRef().GetLoResTime());
   float ftime  = (ftimeB - ftimeA);
-  orkprintf("<<PROFILE>> <<toolmesh::MergeToolMeshThreaded %f seconds>>\n", ftime);
+  orkprintf("<<PROFILE>> <<Mesh::MergeToolMeshThreaded %f seconds>>\n", ftime);
 }
 
-void toolmesh::MergeToolMeshThreaded(const toolmesh& sr, int inumthreads) {
+void Mesh::MergeToolMeshThreaded(const Mesh& sr, int inumthreads) {
   const std::set<std::string> EmptySet;
   MergeToolMeshThreadedExcluding(sr, inumthreads, EmptySet);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::MergeToolMeshAs(const toolmesh& sr, const char* pgroupname) {
+void Mesh::MergeToolMeshAs(const Mesh& sr, const char* pgroupname) {
   submesh& dest_group = MergeSubMesh(pgroupname);
   for (orklut<std::string, submesh*>::const_iterator itpg = sr.mPolyGroupLut.begin(); itpg != sr.mPolyGroupLut.end(); itpg++) {
     const submesh& src_group = *itpg->second;
@@ -276,7 +271,7 @@ void toolmesh::MergeToolMeshAs(const toolmesh& sr, const char* pgroupname) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-submesh& toolmesh::MergeSubMesh(const char* pname) {
+submesh& Mesh::MergeSubMesh(const char* pname) {
   orklut<std::string, submesh*>::iterator itpg = mPolyGroupLut.find(pname);
   if (itpg == mPolyGroupLut.end()) {
     itpg               = mPolyGroupLut.AddSorted(pname, new submesh);
@@ -288,7 +283,7 @@ submesh& toolmesh::MergeSubMesh(const char* pname) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-submesh& toolmesh::MergeSubMesh(const char* pname, const AnnotationMap& merge_annos) {
+submesh& Mesh::MergeSubMesh(const char* pname, const AnnotationMap& merge_annos) {
   orklut<std::string, submesh*>::iterator itpg = mPolyGroupLut.find(pname);
   if (itpg == mPolyGroupLut.end()) {
     submesh* nsm = new submesh;
@@ -301,11 +296,11 @@ submesh& toolmesh::MergeSubMesh(const char* pname, const AnnotationMap& merge_an
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::MergeSubMesh(const submesh& inp_mesh, const char* pasgroup) {
+void Mesh::MergeSubMesh(const submesh& inp_mesh, const char* pasgroup) {
   submesh& sub_mesh = MergeSubMesh(pasgroup);
   sub_mesh.MergeSubMesh(inp_mesh);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::MeshUtil
+} // namespace ork::meshutil
 ///////////////////////////////////////////////////////////////////////////////

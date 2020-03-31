@@ -25,9 +25,9 @@
 #include <orktool/ged/ged.h>
 #include <orktool/ged/ged_delegate.h>
 #include <ork/reflect/enum_serializer.inl>
-#include <orktool/filter/gfx/meshutil/meshutil.h>
+#include <orktool/filter/gfx/meshutil/meshutil_tool.h>
 #include <orktool/filter/gfx/collada/collada.h>
-#include <orktool/filter/gfx/meshutil/meshutil_fixedgrid.h>
+#include <ork/lev2/gfx/meshutil/meshutil_fixedgrid.h>
 #include <ork/math/audiomath.h>
 #include <ork/kernel/mutex.h>
 #include <ork/reflect/serialize/XMLSerializer.h>
@@ -63,7 +63,7 @@
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-void WriteAtlasedDae( const MeshUtil::toolmesh& tmesh, const file::Path& BasePath );
+void WriteAtlasedDae( const MeshUtil::Mesh& tmesh, const file::Path& BasePath );
 void CollectLights( MeshUtil::LightContainer& lc, const SceneData* psd, const std::string& match );
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -80,8 +80,8 @@ struct AtlasSubMeshQItem
 	std::string str_lights;
 	std::string bgroupname;
 
-	ork::MeshUtil::toolmesh*		OutputMesh;
-	ork::MeshUtil::toolmesh*		DicedMesh;
+	ork::MeshUtil::Mesh*		OutputMesh;
+	ork::MeshUtil::Mesh*		DicedMesh;
 	const ork::MeshUtil::submesh*	sub_group;
 	ork::MeshUtil::submesh*			out_sub_group;
 	float							filterwidth;
@@ -93,7 +93,7 @@ struct AtlasSubMeshQItem
 
 	AtlasSubMeshQ*					mpQ;
 
-	AtlasSubMeshQItem() 
+	AtlasSubMeshQItem()
 		: OutputMesh(0)
 		, DicedMesh(0)
 		, sub_group(0)
@@ -234,9 +234,9 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 	const file::Path::NameType outname = ColFile.GetName();
 	ork::file::Path::NameType outfile;
 	outfile.format( "data/temp/uvatlasdbg/%s", outname.c_str() );
-	ork::MeshUtil::toolmesh OutputMesh;
+	ork::MeshUtil::Mesh OutputMesh;
 	{
-		MeshUtil::toolmesh InpMesh;
+		MeshUtil::Mesh InpMesh;
 		ColladaExportPolicy policy;
 		policy.mNormalPolicy.meNormalPolicy = ColladaNormalPolicy::ENP_ALLOW_SPLIT_NORMALS;
 		policy.mColladaInpName = daepath.c_str();
@@ -330,7 +330,7 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 		// iterate thru the matched items
 		/////////////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////////
-		//ork::MeshUtil::toolmesh LightMapMesh;
+		//ork::MeshUtil::Mesh LightMapMesh;
 		CollectLights( OutputMesh.RefLightContainer(), psd, "" );
 		/////////////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////////
@@ -339,7 +339,7 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 		int inumpgs = material_pgmap.size();
 		int ipg = 0;
 			OutputMesh.Dump( "OutputMesh::MergeToolMesh(InpMesh)" );
-		
+
 		{
 			ork::MeshUtil::submesh& VtxColSub = OutputMesh.MergeSubMesh("vtxlit");
 			VtxColSub.SetAnnotation("vtxlit","true");
@@ -380,7 +380,7 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 			float fbaseprogress = 0.0f;
 			float fnextprogresspart = 0.0f;
 			std::string bgroupname;
-			PropTypeString vtxfmt; 
+			PropTypeString vtxfmt;
 			float filterwidth = baking_group->GetFilterWidth();
 
 			///////////////////////////////////////////////////////////////////////////
@@ -432,8 +432,8 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 								{
 									fvec3 wtol = (in_vtx.mPos-pplight->mWorldMatrix.GetTranslation());
 									float fdot = Normal.Normal().Dot( -wtol.Normal() );
-									
-									
+
+
 									if( fdot<0.0f ) fdot=0.0f;
 									if( fdot>1.0f ) fdot=1.0f;
 									float fdist = wtol.Mag();
@@ -464,12 +464,12 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 					//OutputMesh.MergeSubMesh(bakinggroup_submesh);
 					ExludeWhenMerging.insert(material_pgname);
 				}
-				
+
 			}
 			///////////////////////////////////////////////////////////////////////////
 			else // LightMaps
 			///////////////////////////////////////////////////////////////////////////
-			{	ork::MeshUtil::toolmesh DicedMesh;
+			{	ork::MeshUtil::Mesh DicedMesh;
 				{
 					ork::MeshUtil::submesh bakinggroup_submesh;
 					int inumitems = int(itemlist.size());
@@ -501,7 +501,7 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 								fsurface_area,
 								fnumpolys,
 								favgareaperpoly,
-								ftexperpoly, 
+								ftexperpoly,
 								flog );
 					int itexperpoly = int(ftexperpoly);
 					int idicesize = baking_group->GetDiceSize();
@@ -703,10 +703,10 @@ static void* AtlasSubMeshJobThread( void* pval )
 
 struct DaeSplitQueueItem
 {
-	const MeshUtil::toolmesh*			mpSourceToolMesh;
+	const MeshUtil::Mesh*			mpSourceToolMesh;
 	const MeshUtil::submesh*			mpSourceSubMesh;
 	MeshUtil::submesh*					mpDestSubMesh;
-	std::string							mMaterial;	
+	std::string							mMaterial;
 	std::string							mMergedName;
 	std::string							mSourceSubName;
 
@@ -759,7 +759,7 @@ static void* AtlasSplitJobThread( void* pval )
 					}
 					NewPoly.SetAnnoMap(ply.GetAnnoMap());
 					qitem.mpDestSubMesh->MergePoly(NewPoly);
-				}					
+				}
 			}
 			q->mSourceLock.Lock();
 			{
@@ -781,14 +781,14 @@ static void* AtlasSplitJobThread( void* pval )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void WriteAtlasedDae( const MeshUtil::toolmesh& tmesh, const file::Path& OutputPath )
+void WriteAtlasedDae( const MeshUtil::Mesh& tmesh, const file::Path& OutputPath )
 {
 	DaeWriteOpts out_opts;
 	out_opts.meMaterialSetup = DaeWriteOpts::EMS_PRESERVEMATERIALS;
 	const std::string& BaseName = tmesh.GetAnnotation("BaseName");
 	const orklut<std::string,MeshUtil::submesh*>& SubMeshLut = tmesh.RefSubMeshLut();
 	///////////////////////////////////////////////////
-	MeshUtil::toolmesh outputmesh;
+	MeshUtil::Mesh outputmesh;
 	outputmesh.CopyMaterialsFromToolMesh( tmesh );
 	///////////////////////////////////////////////////
 	// split into material groups
@@ -815,7 +815,7 @@ void WriteAtlasedDae( const MeshUtil::toolmesh& tmesh, const file::Path& OutputP
 					if( it==MaterialSet.end() )
 					{	MaterialSet.insert( pmaterial );
 					}
-				}	
+				}
 			}
 			///////////////////////////////////////////////////
 			// create jobs

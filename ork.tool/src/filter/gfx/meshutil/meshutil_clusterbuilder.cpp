@@ -8,21 +8,22 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <orktool/filter/gfx/collada/collada.h>
-#include <orktool/filter/gfx/meshutil/meshutil_fixedgrid.h>
-#include <orktool/filter/gfx/meshutil/clusterizer.h>
+#include <ork/lev2/gfx/meshutil/meshutil_fixedgrid.h>
+#include <ork/lev2/gfx/meshutil/clusterizer.h>
 #include <ork/application/application.h>
-#include <ork/lev2/gfx/meshutil_stripper.h>
+#include <ork/lev2/gfx/meshutil/meshutil_stripper.h>
 
 const bool gbFORCEDICE = true;
 const int kDICESIZE    = 512;
 
 using namespace ork::tool;
 
-namespace ork::MeshUtil {
+namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
-XgmClusterBuilder::XgmClusterBuilder()
-    : _vertexBuffer(NULL) {
+XgmClusterBuilder::XgmClusterBuilder(const XgmClusterizer& clusterizer)
+    : _vertexBuffer(NULL)
+    , _clusterizer(clusterizer) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -63,14 +64,14 @@ void BuildXgmClusterPrimGroups(lev2::XgmCluster& XgmCluster, const std::vector<u
 
   const int imaxvtx = XgmCluster._vertexBuffer->GetNumVertices();
 
-  const ColladaExportPolicy* policy = ColladaExportPolicy::context();
+  // const ColladaExportPolicy* policy = ColladaExportPolicy::context();
   // TODO: Is this correct? Why?
   static const int WII_PRIM_GROUP_MAX_INDICES = 0xFFFF;
 
   ////////////////////////////////////////////////////////////
   // Build TriStrips
 
-  MeshUtil::TriStripper MyStripper(TriangleIndices, 16, 4);
+  meshutil::TriStripper MyStripper(TriangleIndices, 16, 4);
 
   bool bhastris = (MyStripper.GetTriIndices().size() > 0);
 
@@ -94,22 +95,10 @@ void BuildXgmClusterPrimGroups(lev2::XgmCluster& XgmCluster, const std::vector<u
   if (bhasstrips)
   ////////////////////////////////////////////////////////////
   {
-    const orkvector<MeshUtil::TriStripperPrimGroup>& StripGroups = MyStripper.GetStripGroups();
+    const orkvector<meshutil::TriStripperPrimGroup>& StripGroups = MyStripper.GetStripGroups();
     for (int i = 0; i < inumstripgroups; i++) {
       const orkvector<unsigned int>& StripIndices = MyStripper.GetStripIndices(i);
       int inumidx                                 = StripIndices.size();
-
-      /////////////////////////////////
-      // check index buffer size policy
-      //  (some platforms do not have 32bit indices)
-      /////////////////////////////////
-
-      if (ColladaExportPolicy::context()->mPrimGroupPolicy.mMaxIndices == ColladaPrimGroupPolicy::EPOLICY_MAXINDICES_WII) {
-        if (inumidx > WII_PRIM_GROUP_MAX_INDICES) {
-          orkerrorlog("ERROR: <%s> Wii prim group max indices exceeded: %d\n", policy->mColladaOutName.c_str(), inumidx);
-          throw std::exception();
-        }
-      }
 
       /////////////////////////////////
 
@@ -153,12 +142,6 @@ void BuildXgmClusterPrimGroups(lev2::XgmCluster& XgmCluster, const std::vector<u
 
     ork::lev2::XgmPrimGroup& StripGroup = XgmCluster.mpPrimGroups[ipg++];
 
-    if (ColladaExportPolicy::context()->mPrimGroupPolicy.mMaxIndices == ColladaPrimGroupPolicy::EPOLICY_MAXINDICES_WII)
-      if (inumidx > WII_PRIM_GROUP_MAX_INDICES) {
-        orkerrorlog("ERROR: <%s> Wii prim group max indices exceeded: %d\n", policy->mColladaOutName.c_str(), inumidx);
-        throw std::exception();
-      }
-
     StripGroup.miNumIndices = inumidx;
     StripGroup.mpIndices    = pidxbuf;
     StripGroup.mePrimType   = lev2::EPRIM_TRIANGLES;
@@ -188,7 +171,7 @@ void buildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, const XgmClusterBuild
   for (int i = 0; i < inumtriangles; i++) {
     int itri_i = ToolMeshTriangles[i];
 
-    const ork::MeshUtil::poly& ClusTri = clusterbuilder->_submesh.RefPoly(itri_i);
+    const ork::meshutil::poly& ClusTri = clusterbuilder->_submesh.RefPoly(itri_i);
 
     TriangleIndices.push_back(ClusTri.GetVertexID(0));
     TriangleIndices.push_back(ClusTri.GetVertexID(1));
@@ -225,4 +208,4 @@ void buildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, const XgmClusterBuild
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::MeshUtil
+} // namespace ork::meshutil

@@ -5,10 +5,10 @@
 
 #include "assimp_util.inl"
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::MeshUtil::ASS_XGA_Filter, "ASS_XGA_Filter");
+INSTANTIATE_TRANSPARENT_RTTI(ork::tool::meshutil::ASS_XGA_Filter, "ASS_XGA_Filter");
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork::MeshUtil {
+namespace ork::tool::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
 ASS_XGA_Filter::ASS_XGA_Filter() {
@@ -33,8 +33,8 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
   std::string inf  = options.GetOption("--in")->GetValue();
   std::string outf = options.GetOption("--out")->GetValue();
 
-  ork::tool::ColladaExportPolicy policy;
-  policy.mUnits            = ork::tool::UNITS_METER;
+  ColladaExportPolicy policy;
+  policy.mUnits            = UNITS_METER;
   const PoolString JointPS = AddPooledString("Joint");
 
   ork::file::Path GlbPath = inf;
@@ -346,8 +346,8 @@ bool ASS_XGA_Filter::ConvertAsset(const tokenlist& toklist) {
   } // if scene
 
   return rval;
-} // namespace ork::MeshUtil
+} // namespace ork::meshutil
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::MeshUtil
+} // namespace ork::tool::meshutil
 ///////////////////////////////////////////////////////////////////////////////

@@ -26,9 +26,9 @@
 #include <orktool/ged/ged.h>
 #include <orktool/ged/ged_delegate.h>
 #include <ork/reflect/enum_serializer.inl>
-#include <orktool/filter/gfx/meshutil/meshutil.h>
+#include <orktool/filter/gfx/meshutil/meshutil_tool.h>
 #include <orktool/filter/gfx/collada/collada.h>
-#include <orktool/filter/gfx/meshutil/meshutil_fixedgrid.h>
+#include <ork/lev2/gfx/meshutil/meshutil_fixedgrid.h>
 #include <ork/math/audiomath.h>
 #include <ork/kernel/mutex.h>
 #include <ork/reflect/serialize/XMLSerializer.h>
@@ -381,12 +381,12 @@ void BakeJobThread::run() {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void WriteLightsFile(const MeshUtil::LightContainer& lights, const file::Path& outpath);
-void CollectLights(MeshUtil::LightContainer& lc, const SceneData* psd, const std::string& match);
+void WriteLightsFile(const ork::meshutil::LightContainer& lights, const file::Path& outpath);
+void CollectLights(ork::meshutil::LightContainer& lc, const SceneData* psd, const std::string& match);
 
 bool PerformBake(BakeOps* pOPS, const BakerSettings* psetting, const FarmNodeGroup* pfarmgroup) {
   const SceneData* psd = pOPS->mpARCH->GetSceneData();
-  MeshUtil::LightContainer lights;
+  ork::meshutil::LightContainer lights;
   CollectLights(lights, psd, "");
 
   ///////////////////////////////////////////
@@ -454,7 +454,7 @@ bool PerformBake(BakeOps* pOPS, const BakerSettings* psetting, const FarmNodeGro
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void CollectLights(MeshUtil::LightContainer& lc, const SceneData* psd, const std::string& match) {
+void CollectLights(ork::meshutil::LightContainer& lc, const SceneData* psd, const std::string& match) {
   const tokenlist match_toklist = CreateTokenList(match.c_str(), " ");
   bool bmatchAll                = match_toklist.size() == 0;
 
@@ -491,27 +491,27 @@ void CollectLights(MeshUtil::LightContainer& lc, const SceneData* psd, const std
             fvec3 LightColor                            = plightdata->GetColor();
             auto mtxgen                                 = [&MtxWorld]() -> fmtx4 { return MtxWorld; };
 
-            MeshUtil::Light* pgl = 0;
+            ork::meshutil::Light* pgl = 0;
             if (pdld) {
               ork::lev2::DirectionalLight dlight(mtxgen, pdld);
-              ork::fvec3 LightDir      = dlight.direction();
-              MeshUtil::DirLight* pgdl = new MeshUtil::DirLight;
-              pgdl->mWorldMatrix       = MtxWorld;
-              pgdl->mFrom              = dlight.worldPosition();
-              pgdl->mTo                = pgdl->mFrom + (LightDir * 1.0f);
-              pgdl->mShadowBias        = pdld->GetShadowBias();
-              pgl                      = pgdl;
+              ork::fvec3 LightDir           = dlight.direction();
+              ork::meshutil::DirLight* pgdl = new ork::meshutil::DirLight;
+              pgdl->mWorldMatrix            = MtxWorld;
+              pgdl->mFrom                   = dlight.worldPosition();
+              pgdl->mTo                     = pgdl->mFrom + (LightDir * 1.0f);
+              pgdl->mShadowBias             = pdld->GetShadowBias();
+              pgl                           = pgdl;
             }
             if (ppld) {
               ork::lev2::PointLight plight(mtxgen, ppld);
-              ork::fvec3 LightDir        = plight.direction();
-              MeshUtil::PointLight* pgpl = new MeshUtil::PointLight;
-              pgpl->mWorldMatrix         = MtxWorld;
-              pgpl->mPoint               = plight.worldPosition();
-              pgpl->mFalloff             = ppld->falloff();
-              pgpl->mRadius              = ppld->radius();
-              pgpl->mShadowBias          = ppld->GetShadowBias();
-              pgl                        = pgpl;
+              ork::fvec3 LightDir             = plight.direction();
+              ork::meshutil::PointLight* pgpl = new ork::meshutil::PointLight;
+              pgpl->mWorldMatrix              = MtxWorld;
+              pgpl->mPoint                    = plight.worldPosition();
+              pgpl->mFalloff                  = ppld->falloff();
+              pgpl->mRadius                   = ppld->radius();
+              pgpl->mShadowBias               = ppld->GetShadowBias();
+              pgl                             = pgpl;
             }
             if (pgl) {
               pgl->mColor           = LightColor;
@@ -530,16 +530,16 @@ void CollectLights(MeshUtil::LightContainer& lc, const SceneData* psd, const std
   }
 }
 
-void WriteLightsFile(const MeshUtil::LightContainer& lights, const file::Path& outpath) {
+void WriteLightsFile(const ork::meshutil::LightContainer& lights, const file::Path& outpath) {
   chunkfile::Writer chunkwriter("lit");
   chunkfile::OutputStream* HeaderStream = chunkwriter.AddStream("header");
 
   int inumlights = (int)lights.mLights.size();
   HeaderStream->AddItem(inumlights);
-  for (orklut<PoolString, MeshUtil::Light*>::const_iterator itl = lights.mLights.begin(); itl != lights.mLights.end(); itl++) {
-    const PoolString& name        = itl->first;
-    const MeshUtil::Light* plight = itl->second;
-    int iname                     = chunkwriter.stringIndex(name.c_str());
+  for (orklut<PoolString, ork::meshutil::Light*>::const_iterator itl = lights.mLights.begin(); itl != lights.mLights.end(); itl++) {
+    const PoolString& name             = itl->first;
+    const ork::meshutil::Light* plight = itl->second;
+    int iname                          = chunkwriter.stringIndex(name.c_str());
     HeaderStream->AddItem(iname);
     HeaderStream->AddItem(plight->mWorldMatrix);
     HeaderStream->AddItem(plight->mColor);
@@ -547,7 +547,7 @@ void WriteLightsFile(const MeshUtil::LightContainer& lights, const file::Path& o
     int icastsshadows = int(plight->mbIsShadowCaster);
     HeaderStream->AddItem(icastsshadows);
 
-    const MeshUtil::PointLight* pplight = rtti::autocast(plight);
+    const ork::meshutil::PointLight* pplight = rtti::autocast(plight);
     if (pplight) {
       int itype = chunkwriter.stringIndex("PointLight");
       HeaderStream->AddItem(itype);

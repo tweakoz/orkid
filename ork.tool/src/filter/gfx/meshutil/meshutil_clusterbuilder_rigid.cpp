@@ -4,20 +4,26 @@
 // See License at OrkidRoot/license.html or http://www.tweakoz.com/orkid/license.html
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <orktool/orktool_pch.h>
+#include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmodel.h>
-#include <orktool/filter/gfx/collada/collada.h>
-#include <orktool/filter/gfx/meshutil/meshutil_fixedgrid.h>
-#include <orktool/filter/gfx/meshutil/clusterizer.h>
-#include <ork/lev2/gfx/meshutil_stripper.h>
+#include <ork/lev2/gfx/meshutil/clusterizer.h>
+#include <ork/lev2/gfx/meshutil/meshutil_stripper.h>
+#include <ork/lev2/gfx/meshutil/meshutil_fixedgrid.h>
 
 const bool gbFORCEDICE = true;
 const int kDICESIZE    = 512;
 
 using namespace ork::tool;
 
-namespace ork::MeshUtil {
+namespace ork::meshutil {
+
+///////////////////////////////////////////////////////////////////////////////
+
+XgmRigidClusterBuilder::XgmRigidClusterBuilder(const XgmClusterizer& clusterizer)
+    : XgmClusterBuilder(clusterizer) {
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 bool XgmRigidClusterBuilder::addTriangle(const XgmClusterTri& Triangle) {
@@ -87,7 +93,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N6C2T4() // basic wii environm
   vwriter.Lock(&DummyTarget, _vertexBuffer, NumVertexIndices);
   for (int iv = 0; iv < NumVertexIndices; iv++) {
     ork::lev2::SVtxV12N6C2T4 OutVtx;
-    const MeshUtil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
+    const meshutil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
 
     OutVtx.mX = InVtx.mPos.GetX() * kVertexScale;
     OutVtx.mY = InVtx.mPos.GetY() * kVertexScale;
@@ -124,7 +130,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12B12T8C4() // basic pc envir
   vwriter.Lock(&DummyTarget, _vertexBuffer, NumVertexIndices);
   for (int iv = 0; iv < NumVertexIndices; iv++) {
     ork::lev2::SVtxV12N12B12T8C4 OutVtx;
-    const MeshUtil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
+    const meshutil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
     OutVtx.mPosition              = InVtx.mPos * kVertexScale;
     OutVtx.mUV0                   = InVtx.mUV[0].mMapTexCoord * UVScale;
     OutVtx.mNormal                = InVtx.mNrm;
@@ -149,7 +155,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12T16C4() // basic pc environ
   vwriter.Lock(&DummyTarget, _vertexBuffer, NumVertexIndices);
   for (int iv = 0; iv < NumVertexIndices; iv++) {
     ork::lev2::SVtxV12N12T16C4 OutVtx;
-    const MeshUtil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
+    const meshutil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
     OutVtx.mPosition              = InVtx.mPos * kVertexScale;
     OutVtx.mUV0                   = InVtx.mUV[0].mMapTexCoord * UVScale;
     OutVtx.mUV1                   = InVtx.mUV[1].mMapTexCoord * UVScale;
@@ -174,7 +180,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12B12T16() // basic pc enviro
   vwriter.Lock(&DummyTarget, _vertexBuffer, NumVertexIndices);
   for (int iv = 0; iv < NumVertexIndices; iv++) {
     ork::lev2::SVtxV12N12B12T16 OutVtx;
-    const MeshUtil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
+    const meshutil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
     OutVtx.mPosition              = InVtx.mPos * kVertexScale;
     OutVtx.mUV0                   = InVtx.mUV[0].mMapTexCoord * UVScale;
     OutVtx.mUV1                   = InVtx.mUV[1].mMapTexCoord * UVScale;
@@ -188,4 +194,4 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12B12T16() // basic pc enviro
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::MeshUtil
+} // namespace ork::meshutil

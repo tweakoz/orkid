@@ -5,10 +5,10 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <orktool/orktool_pch.h>
+#include <ork/pch.h>
 #include <ork/application/application.h>
 #include <ork/math/plane.h>
-#include <orktool/filter/gfx/meshutil/meshutil.h>
+#include <ork/lev2/gfx/meshutil/meshutil.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/gfxmodel.h>
@@ -16,13 +16,13 @@
 #include <ork/lev2/gfx/gfxctxdummy.h>
 #include <ork/file/chunkfile.h>
 #include <ork/application/application.h>
-#include <orktool/filter/gfx/collada/collada.h>
+//#include <orktool/filter/gfx/collada/collada.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork::MeshUtil {
+namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::WriteToRgmFile(const file::Path& outpath) const {
+void Mesh::WriteToRgmFile(const file::Path& outpath) const {
   chunkfile::Writer chunkwriter("rgm");
   chunkfile::OutputStream* HeaderStream    = chunkwriter.AddStream("header");
   chunkfile::OutputStream* ModelDataStream = chunkwriter.AddStream("modeldata");
@@ -97,7 +97,7 @@ void toolmesh::WriteToRgmFile(const file::Path& outpath) const {
 //   work with meshes that have more than 64K vertices (because of 16 bit indices)
 ///////////////////////////////////////////////////////////////////////////////
 
-void simpleToolSubMeshToXgmSubMesh(const toolmesh& mesh, const submesh& smesh, ork::lev2::XgmSubMesh& meshout) {
+void simpleToolSubMeshToXgmSubMesh(const Mesh& mesh, const submesh& smesh, ork::lev2::XgmSubMesh& meshout) {
   lev2::ContextDummy DummyTarget;
   FlatSubMesh fsub(smesh);
   const ork::lev2::MaterialMap& FxmMtlMap = mesh.RefFxmMaterialMap();
@@ -176,7 +176,7 @@ void simpleToolSubMeshToXgmSubMesh(const toolmesh& mesh, const submesh& smesh, o
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmeshToXgmModel(const toolmesh& tmesh, ork::lev2::XgmModel& mdlout) {
+void MeshToXgmModel(const Mesh& tmesh, ork::lev2::XgmModel& mdlout) {
   int inumsubs = tmesh.numSubMeshes();
   mdlout.ReserveMeshes(1);
   ork::lev2::XgmMesh* outmesh = new ork::lev2::XgmMesh;
@@ -184,11 +184,11 @@ void toolmeshToXgmModel(const toolmesh& tmesh, ork::lev2::XgmModel& mdlout) {
   mdlout.AddMesh(ork::AddPooledString("Mesh1"), outmesh);
   /////////////////////////////////////////////////////////
   outmesh->ReserveSubMeshes(inumsubs);
-  const orklut<std::string, ork::MeshUtil::submesh*>& submeshlut = tmesh.RefSubMeshLut();
+  const orklut<std::string, submesh*>& submeshlut = tmesh.RefSubMeshLut();
 
-  for (orklut<std::string, ork::MeshUtil::submesh*>::const_iterator it = submeshlut.begin(); it != submeshlut.end(); it++) {
-    const std::string& pgname            = it->first;
-    const ork::MeshUtil::submesh* srcsub = it->second;
+  for (orklut<std::string, submesh*>::const_iterator it = submeshlut.begin(); it != submeshlut.end(); it++) {
+    const std::string& pgname = it->first;
+    const submesh* srcsub     = it->second;
 
     ork::lev2::XgmSubMesh* dstsub = new ork::lev2::XgmSubMesh;
     simpleToolSubMeshToXgmSubMesh(tmesh, *srcsub, *dstsub);
@@ -200,15 +200,15 @@ void toolmeshToXgmModel(const toolmesh& tmesh, ork::lev2::XgmModel& mdlout) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::WriteToXgmFile(const file::Path& outpath) const {
+void Mesh::WriteToXgmFile(const file::Path& outpath) const {
   ork::lev2::XgmModel outmodel;
-  toolmeshToXgmModel(*this, outmodel);
+  MeshToXgmModel(*this, outmodel);
   bool rv = ork::lev2::SaveXGM(outpath, &outmodel);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::ReadFromXGM(const file::Path& BasePath) {
+void Mesh::ReadFromXGM(const file::Path& BasePath) {
   lev2::ContextDummy DummyTarget;
 
   lev2::XgmModel* mdl = new lev2::XgmModel;
@@ -323,7 +323,7 @@ void toolmesh::ReadFromXGM(const file::Path& BasePath) {
                     break;
                   }
                   default: {
-                    orkprintf("toolmesh::ReadFromXGM() vtxfmt<%d> not supported\n", int(pvb->GetStreamFormat()));
+                    orkprintf("Mesh::ReadFromXGM() vtxfmt<%d> not supported\n", int(pvb->GetStreamFormat()));
                     OrkAssert(false);
                     break;
                   }
@@ -339,5 +339,5 @@ void toolmesh::ReadFromXGM(const file::Path& BasePath) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::MeshUtil
+} // namespace ork::meshutil
 ///////////////////////////////////////////////////////////////////////////////

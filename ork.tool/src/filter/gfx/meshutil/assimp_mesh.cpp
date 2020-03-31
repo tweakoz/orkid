@@ -5,15 +5,15 @@
 
 #include "assimp_util.inl"
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::MeshUtil::ASS_XGM_Filter, "ASS_XGM_Filter");
+INSTANTIATE_TRANSPARENT_RTTI(ork::tool::meshutil::ASS_XGM_Filter, "ASS_XGM_Filter");
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork::MeshUtil {
+namespace ork::tool::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef std::set<std::string> bonemarkset_t;
 
-void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& readopts) {
+void ToolMesh::readFromAssimp(const file::Path& BasePath, DaeReadOpts& readopts) {
 
   ork::file::Path GlbPath = BasePath;
   auto base_dir           = BasePath.toBFS().parent_path();
@@ -404,7 +404,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
         mtlset.insert(mesh->mMaterialIndex);
         auto& mtlref = out_submesh.typedAnnotation<GltfMaterial*>("gltfmaterial");
         mtlref       = outmtl;
-        MeshUtil::vertex muverts[4];
+        ork::meshutil::vertex muverts[4];
         // printf("processing numfaces<%d>\n", mesh->mNumFaces);
         for (int t = 0; t < mesh->mNumFaces; ++t) {
           const aiFace* face = &mesh->mFaces[t];
@@ -543,7 +543,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
             outpoly_indices[0]     = out_submesh.MergeVertex(muverts[0]);
             outpoly_indices[1]     = out_submesh.MergeVertex(muverts[1]);
             outpoly_indices[2]     = out_submesh.MergeVertex(muverts[2]);
-            poly ply(outpoly_indices, 3);
+            ork::meshutil::poly ply(outpoly_indices, 3);
             out_submesh.MergePoly(ply);
           } else {
             printf("non triangle\n");
@@ -600,7 +600,7 @@ void toolmesh::readFromAssimp(const file::Path& BasePath, tool::DaeReadOpts& rea
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void configureXgmSkeleton(const toolmesh& input, lev2::XgmModel& xgmmdlout) {
+void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmmdlout) {
 
   auto parsedskel = input._varmap.valueForKey("parsedskel").Get<parsedskeletonptr_t>();
 
@@ -668,7 +668,8 @@ void ASS_XGM_Filter::Describe() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolmesh& inp_model, ork::lev2::XgmModel& out_model) {
+template <typename ClusterizerType>
+void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2::XgmModel& out_model) {
 
   // printf("BEGIN: clusterizing model\n");
   bool is_skinned = false;
@@ -686,15 +687,15 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
 
   auto VertexFormat = is_skinned ? ork::lev2::EVTXSTREAMFMT_V12N12B12T8I4W4 : ork::lev2::EVTXSTREAMFMT_V12N12B12T16;
   struct SubRec {
-    submesh* _toolsub                    = nullptr;
-    ToolMaterialGroup* _toolmgrp         = nullptr;
-    XgmClusterizer* _clusterizer         = nullptr;
-    ork::lev2::PBRMaterial* _pbrmaterial = nullptr;
+    ork::meshutil::submesh* _toolsub            = nullptr;
+    ork::meshutil::MaterialGroup* _toolmgrp     = nullptr;
+    ork::meshutil::XgmClusterizer* _clusterizer = nullptr;
+    ork::lev2::PBRMaterial* _pbrmaterial        = nullptr;
   };
 
   typedef std::vector<SubRec> xgmsubvect_t;
   typedef std::map<GltfMaterial*, xgmsubvect_t> mtl2submap_t;
-  typedef std::map<GltfMaterial*, ToolMaterialGroup*> mtl2mtlmap_t;
+  typedef std::map<GltfMaterial*, ork::meshutil::MaterialGroup*> mtl2mtlmap_t;
 
   mtl2submap_t mtlsubmap;
   mtl2mtlmap_t mtlmtlmap;
@@ -703,9 +704,9 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
   for (auto item : inp_model.RefSubMeshLut()) {
     // printf("BEGIN: clusterizing submesh<%d>\n", subindex);
     subindex++;
-    submesh* inp_submesh = item.second;
-    auto& mtlset         = inp_submesh->typedAnnotation<std::set<int>>("materialset");
-    auto gltfmtl         = inp_submesh->typedAnnotation<GltfMaterial*>("gltfmaterial");
+    ork::meshutil::submesh* inp_submesh = item.second;
+    auto& mtlset                        = inp_submesh->typedAnnotation<std::set<int>>("materialset");
+    auto gltfmtl                        = inp_submesh->typedAnnotation<GltfMaterial*>("gltfmaterial");
     assert(mtlset.size() == 1); // assimp does 1 material per submesh
 
     auto mtlout = new ork::lev2::PBRMaterial();
@@ -720,12 +721,12 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
     mtlout->_baseColor       = gltfmtl->_baseColor;
     out_model.AddMaterial(mtlout);
 
-    auto clusterizer                 = new ClusterizerType;
-    ToolMaterialGroup* materialGroup = nullptr;
-    auto it                          = mtlmtlmap.find(gltfmtl);
+    auto clusterizer                            = new ClusterizerType;
+    ork::meshutil::MaterialGroup* materialGroup = nullptr;
+    auto it                                     = mtlmtlmap.find(gltfmtl);
     if (it == mtlmtlmap.end()) {
-      materialGroup                  = new ToolMaterialGroup;
-      materialGroup->meMaterialClass = ToolMaterialGroup::EMATCLASS_PBR;
+      materialGroup                  = new ork::meshutil::MaterialGroup;
+      materialGroup->meMaterialClass = ork::meshutil::MaterialGroup::EMATCLASS_PBR;
       materialGroup->SetClusterizer(clusterizer);
       materialGroup->mMeshConfigurationFlags.mbSkinned = is_skinned;
       materialGroup->meVtxFormat                       = VertexFormat;
@@ -733,7 +734,7 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
     } else
       materialGroup = it->second;
 
-    XgmClusterTri clustertri;
+    ork::meshutil::XgmClusterTri clustertri;
     clusterizer->Begin();
 
     const auto& vertexpool = inp_submesh->RefVertexPool();
@@ -792,7 +793,7 @@ template <typename ClusterizerType> void clusterizeToolMeshToXgmMesh(const toolm
       xgm_submesh->miNumClusters = inumclus;
       xgm_submesh->mpClusters    = new lev2::XgmCluster[inumclus];
       for (int icluster = 0; icluster < inumclus; icluster++) {
-        auto clusterbuilder      = dynamic_cast<XgmClusterBuilder*>(clusterizer->GetCluster(icluster));
+        auto clusterbuilder      = dynamic_cast<ork::meshutil::XgmClusterBuilder*>(clusterizer->GetCluster(icluster));
         const auto& tool_submesh = clusterbuilder->_submesh;
         clusterbuilder->buildVertexBuffer(VertexFormat);
 
@@ -834,15 +835,15 @@ bool ASS_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
 
   ///////////////////////////////////////////////////
 
-  tool::ColladaExportPolicy policy;
+  ColladaExportPolicy policy;
   policy.mDDSInputOnly          = true; // TODO
-  policy.mUnits                 = tool::UNITS_METER;
-  policy.mSkinPolicy.mWeighting = tool::ColladaSkinPolicy::EPOLICY_MATRIXPALETTESKIN_W4;
+  policy.mUnits                 = UNITS_METER;
+  policy.mSkinPolicy.mWeighting = ColladaSkinPolicy::EPOLICY_MATRIXPALETTESKIN_W4;
   policy.miNumBonesPerCluster   = 32;
   policy.mColladaInpName        = inf;
   policy.mColladaOutName        = outf;
-  policy.mDicingPolicy.SetPolicy(bDICE ? tool::ColladaDicingPolicy::ECTP_DICE : tool::ColladaDicingPolicy::ECTP_DONT_DICE);
-  policy.mTriangulation.SetPolicy(tool::ColladaTriangulationPolicy::ECTP_TRIANGULATE);
+  policy.mDicingPolicy.SetPolicy(bDICE ? ColladaDicingPolicy::ECTP_DICE : ColladaDicingPolicy::ECTP_DONT_DICE);
+  policy.mTriangulation.SetPolicy(ColladaTriangulationPolicy::ECTP_TRIANGULATE);
 
   ////////////////////////////////////////////////////////////////
   // PC vertex formats supported
@@ -853,8 +854,8 @@ bool ASS_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
   policy.mAvailableVertexFormats.add(lev2::EVTXSTREAMFMT_V12N12T16C4);     // PC 2UV 1 color unskinned
   ////////////////////////////////////////////////////////////////
 
-  toolmesh tmesh;
-  tool::DaeReadOpts opts;
+  ToolMesh tmesh;
+  DaeReadOpts opts;
   tmesh.readFromAssimp(inf, opts);
 
   ork::lev2::XgmModel xgmmdlout;
@@ -866,7 +867,7 @@ bool ASS_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
   }
   policy.mbisSkinned = is_skinned;
   printf("clusterizing..\n");
-  clusterizeToolMeshToXgmMesh<XgmClusterizerStd>(tmesh, xgmmdlout);
+  clusterizeToolMeshToXgmMesh<ork::meshutil::XgmClusterizerStd>(tmesh, xgmmdlout);
   printf("saving XGM file <%s>..\n", outf.c_str());
   bool rv = ork::lev2::SaveXGM(outf, &xgmmdlout);
 
@@ -882,4 +883,4 @@ bool ASS_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
 
   return rv;
 }
-} // namespace ork::MeshUtil
+} // namespace ork::tool::meshutil

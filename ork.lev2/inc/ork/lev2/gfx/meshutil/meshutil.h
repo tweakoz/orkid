@@ -9,9 +9,9 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <ork/pch.h>
 #include <ork/util/crc.h>
 #include <ork/util/crc64.h>
-#include <orktool/filter/filter.h>
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
 #include <ork/math/box.h>
@@ -23,19 +23,13 @@
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/lev2/gfx/gfxmaterial.h>
 #include <ork/lev2/gfx/gfxmodel.h>
-#include <ork/lev2/gfx/submesh.h>
+#include <ork/lev2/gfx/meshutil/submesh.h>
 #include <unordered_map>
 #include <ork/kernel/datablock.inl>
 
-namespace ork::tool {
-struct ColladaMaterial;
-struct DaeReadOpts;
-struct DaeWriteOpts;
-} // namespace ork::tool
-
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace ork::MeshUtil {
+namespace ork::meshutil {
 
 struct XgmClusterizer;
 struct XgmClusterBuilder;
@@ -91,16 +85,114 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class toolmesh;
+struct MaterialChannel {
+  std::string mTextureName;
+  std::string mPlacementNodeName;
+  float mRepeatU;
+  float mRepeatV;
+
+  MaterialChannel()
+      : mRepeatU(1.0f)
+      , mRepeatV(1.0f) {
+  }
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct toolmesh {
+struct MaterialInfo {
 
+  enum ELightingType { ELIGHTING_LAMBERT = 0, ELIGHTING_BLINN, ELIGHTING_PHONG, ELIGHTING_NONE };
+
+  std::string mShadingGroupName;
+  std::string mMaterialName;
+  ELightingType mLightingType;
+  float mSpecularPower;
+  MaterialChannel mDiffuseMapChannel;
+  MaterialChannel mSpecularMapChannel;
+  MaterialChannel mNormalMapChannel;
+  MaterialChannel mAmbientMapChannel;
+
+  ork::lev2::GfxMaterial* _orkMaterial;
+  fvec4 mEmissiveColor;
+  fvec4 mTransparencyColor;
+  orkmap<std::string, std::string> mAnnotations;
+
+  MaterialInfo();
+  virtual ~MaterialInfo() {
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct MeshConfigurationFlags {
+  bool mbSkinned;
+
+  MeshConfigurationFlags()
+      : mbSkinned(false) {
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct MaterialGroup {
+  enum EMatClass {
+    EMATCLASS_STANDARD = 0,
+    EMATCLASS_PBR,
+    EMATCLASS_FX,
+  };
+
+  void Parse(const MaterialInfo& colladamat);
+
+  ///////////////////////////////////////////////////////////////////
+  // Build Clusters
+  ///////////////////////////////////////////////////////////////////
+
+  lev2::EVtxStreamFormat GetVtxStreamFormat() const {
+    return meVtxFormat;
+  }
+
+  void ComputeVtxStreamFormat();
+
+  XgmClusterizer* GetClusterizer() const {
+    return _clusterizer;
+  }
+  void SetClusterizer(XgmClusterizer* pcl) {
+    _clusterizer = pcl;
+  }
+
+  ///////////////////////////////////////////////////////////////////
+
+  MaterialGroup()
+      : meMaterialClass(EMATCLASS_STANDARD)
+      , _orkMaterial(0)
+      , _clusterizer(nullptr)
+      , mbVertexLit(false) {
+  }
+
+  ///////////////////////////////////////////////////////////////////
+
+  XgmClusterizer* _clusterizer;
+  std::string mShadingGroupName;
+  MeshConfigurationFlags mMeshConfigurationFlags;
+  EMatClass meMaterialClass;
+  ork::lev2::GfxMaterial* _orkMaterial;
+  orkvector<ork::lev2::VertexConfig> mVertexConfigData;
+  orkvector<ork::lev2::VertexConfig> mAvailVertexConfigData;
+  lev2::EVtxStreamFormat meVtxFormat;
+  ork::file::Path mLightMapPath;
+  bool mbVertexLit;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct Mesh {
+
+  using material_info_ptr_t = std::shared_ptr<MaterialInfo>;
+  using material_info_map_t = std::map<std::string, material_info_ptr_t>;
   /////////////////////////////////////////////////////////////////////////
 
-  toolmesh();
-  ~toolmesh();
+  Mesh();
+  virtual ~Mesh();
 
   void Dump(const std::string& comment) const;
 
@@ -113,11 +205,11 @@ struct toolmesh {
   const ork::lev2::MaterialMap& RefFxmMaterialMap() const {
     return mFxmMaterialMap;
   }
-  const orkmap<std::string, ork::tool::ColladaMaterial*>& RefMaterialsBySG() const {
-    return mMaterialsByShadingGroup;
+  const material_info_map_t& materialInfosByShadingGroup() const {
+    return _materialsByShadingGroup;
   }
-  const orkmap<std::string, ork::tool::ColladaMaterial*>& RefMaterialsByName() const {
-    return mMaterialsByName;
+  const material_info_map_t& materialInfosByName() const {
+    return _materialsByName;
   }
   const LightContainer& RefLightContainer() const {
     return mLights;
@@ -126,8 +218,8 @@ struct toolmesh {
     return mLights;
   }
 
-  void CopyMaterialsFromToolMesh(const toolmesh& from);
-  void MergeMaterialsFromToolMesh(const toolmesh& from);
+  void CopyMaterialsFromToolMesh(const Mesh& from);
+  void MergeMaterialsFromToolMesh(const Mesh& from);
 
   void RemoveSubMesh(const std::string& pgroup);
   void Prune();
@@ -145,19 +237,13 @@ struct toolmesh {
 
   /////////////////////////////////////////////////////////////////////////
   void WriteToWavefrontObj(const file::Path& outpath) const;
-  void WriteToDaeFile(const file::Path& outpath, const tool::DaeWriteOpts& writeopts) const;
   void WriteToRgmFile(const file::Path& outpath) const;
   void WriteToXgmFile(const file::Path& outpath) const;
-  void WriteAuto(const file::Path& outpath) const;
   /////////////////////////////////////////////////////////////////////////
   void ReadFromXGM(const file::Path& inpath);
   void ReadFromWavefrontObj(const file::Path& inpath);
-  void ReadFromDaeFile(const file::Path& inpath, tool::DaeReadOpts& readopts);
-  void readFromAssimp(const file::Path& inpath, tool::DaeReadOpts& readopts);
 
   /////////////////////////////////////////////////////////////////////////
-
-  void ReadAuto(const file::Path& outpath);
 
   /////////////////////////////////////////////////////////////////////////
 
@@ -169,10 +255,10 @@ struct toolmesh {
 
   /////////////////////////////////////////////////////////////////////////
 
-  void MergeToolMeshAs(const toolmesh& sr, const char* pgroupname);
-  void MergeToolMeshThreadedExcluding(const toolmesh& sr, int inumthreads, const std::set<std::string>& ExcludeSet);
-  void MergeToolMeshThreaded(const toolmesh& sr, int inumthreads);
-  void MergeSubMesh(const toolmesh& src, const submesh* pgrp, const char* newname);
+  void MergeToolMeshAs(const Mesh& sr, const char* pgroupname);
+  void MergeToolMeshThreadedExcluding(const Mesh& sr, int inumthreads, const std::set<std::string>& ExcludeSet);
+  void MergeToolMeshThreaded(const Mesh& sr, int inumthreads);
+  void MergeSubMesh(const Mesh& src, const submesh* pgrp, const char* newname);
   void MergeSubMesh(const submesh& pgrp, const char* newname);
   void MergeSubMesh(const submesh& pgrp);
   submesh& MergeSubMesh(const char* pname);
@@ -200,8 +286,8 @@ struct toolmesh {
   /////////////////////////////////////////////////////////////////////////
 
   varmap::VarMap _varmap;
-  orkmap<std::string, ork::tool::ColladaMaterial*> mMaterialsByShadingGroup;
-  orkmap<std::string, ork::tool::ColladaMaterial*> mMaterialsByName;
+  material_info_map_t _materialsByShadingGroup;
+  material_info_map_t _materialsByName;
 
   AABox _vertexExtents;
   AABox _skeletonExtents;
@@ -216,7 +302,7 @@ struct toolmesh {
   ork::lev2::MaterialMap mFxmMaterialMap;
 
 private:
-  toolmesh(const toolmesh& oth) {
+  Mesh(const Mesh& oth) {
     OrkAssert(false);
   }
 };
@@ -252,45 +338,6 @@ public:
 
 };
 */
-
-///////////////////////////////////////////////////////////////////////////////
-
-class OBJ_OBJ_Filter : public ork::tool::AssetFilterBase {
-  RttiDeclareConcrete(OBJ_OBJ_Filter, ork::tool::AssetFilterBase);
-
-public: //
-  OBJ_OBJ_Filter();
-  bool ConvertAsset(const tokenlist& toklist) final;
-};
-class XGM_OBJ_Filter : public ork::tool::AssetFilterBase {
-  RttiDeclareConcrete(XGM_OBJ_Filter, ork::tool::AssetFilterBase);
-
-public: //
-  XGM_OBJ_Filter();
-  bool ConvertAsset(const tokenlist& toklist) final;
-};
-class OBJ_XGM_Filter : public ork::tool::AssetFilterBase {
-  RttiDeclareConcrete(OBJ_XGM_Filter, ork::tool::AssetFilterBase);
-
-public: //
-  OBJ_XGM_Filter();
-  bool ConvertAsset(const tokenlist& toklist) final;
-};
-
-class ASS_XGM_Filter : public ork::tool::AssetFilterBase {
-  RttiDeclareConcrete(ASS_XGM_Filter, ork::tool::AssetFilterBase);
-
-public: //
-  ASS_XGM_Filter();
-  bool ConvertAsset(const tokenlist& toklist) final;
-};
-class ASS_XGA_Filter : public ork::tool::AssetFilterBase {
-  RttiDeclareConcrete(ASS_XGA_Filter, ork::tool::AssetFilterBase);
-
-public: //
-  ASS_XGA_Filter();
-  bool ConvertAsset(const tokenlist& toklist) final;
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -366,65 +413,4 @@ struct FlatSubMesh {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ToolMeshConfigurationFlags {
-  bool mbSkinned;
-
-  ToolMeshConfigurationFlags()
-      : mbSkinned(false) {
-  }
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct ToolMaterialGroup {
-  enum EMatClass {
-    EMATCLASS_STANDARD = 0,
-    EMATCLASS_PBR,
-    EMATCLASS_FX,
-  };
-
-  void Parse(const ork::tool::ColladaMaterial& colladamat);
-
-  ///////////////////////////////////////////////////////////////////
-  // Build Clusters
-  ///////////////////////////////////////////////////////////////////
-
-  lev2::EVtxStreamFormat GetVtxStreamFormat() const {
-    return meVtxFormat;
-  }
-
-  void ComputeVtxStreamFormat();
-
-  XgmClusterizer* GetClusterizer() const {
-    return _clusterizer;
-  }
-  void SetClusterizer(XgmClusterizer* pcl) {
-    _clusterizer = pcl;
-  }
-
-  ///////////////////////////////////////////////////////////////////
-
-  ToolMaterialGroup()
-      : meMaterialClass(EMATCLASS_STANDARD)
-      , _orkMaterial(0)
-      , _clusterizer(nullptr)
-      , mbVertexLit(false) {
-  }
-
-  ///////////////////////////////////////////////////////////////////
-
-  XgmClusterizer* _clusterizer;
-  std::string mShadingGroupName;
-  ToolMeshConfigurationFlags mMeshConfigurationFlags;
-  EMatClass meMaterialClass;
-  ork::lev2::GfxMaterial* _orkMaterial;
-  orkvector<ork::lev2::VertexConfig> mVertexConfigData;
-  orkvector<ork::lev2::VertexConfig> mAvailVertexConfigData;
-  lev2::EVtxStreamFormat meVtxFormat;
-  ork::file::Path mLightMapPath;
-  bool mbVertexLit;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-} // namespace ork::MeshUtil
+} // namespace ork::meshutil

@@ -44,14 +44,14 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::tool::ColladaAnimChannel, "ColladaAnimChannel");
-INSTANTIATE_TRANSPARENT_RTTI(ork::tool::ColladaUvAnimChannel, "ColladaUvAnimChannel");
-INSTANTIATE_TRANSPARENT_RTTI(ork::tool::ColladaMatrixAnimChannel, "ColladaMatrixAnimChannel");
+INSTANTIATE_TRANSPARENT_RTTI(ork::tool::meshutil::ColladaAnimChannel, "ColladaAnimChannel");
+INSTANTIATE_TRANSPARENT_RTTI(ork::tool::meshutil::ColladaUvAnimChannel, "ColladaUvAnimChannel");
+INSTANTIATE_TRANSPARENT_RTTI(ork::tool::meshutil::ColladaMatrixAnimChannel, "ColladaMatrixAnimChannel");
 
 ///////////////////////////////////////////////////////////////////////////////
 
 using namespace ork::lev2;
-namespace ork { namespace tool {
+namespace ork::tool::meshutil {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -172,18 +172,18 @@ bool CColladaAnim::GetPose(void) {
 
 void CColladaAnim::ParseTextures() {
   // TODO: Skip textures/materials on shapes in the ref layer
-  for (orkmap<std::string, ColladaMaterial>::iterator it = mMaterialMap.begin(); it != mMaterialMap.end(); it++) {
-    ColladaMaterial& mat = it->second;
+  for (auto it = mMaterialMap.begin(); it != mMaterialMap.end(); it++) {
+    collada_material_info_ptr_t mat = it->second;
 
-    if (mat.mStdProfile) {
-      int TexCount(mat.mStdProfile->GetTextureCount(FUDaeTextureChannel::DIFFUSE));
+    if (mat->mStdProfile) {
+      int TexCount(mat->mStdProfile->GetTextureCount(FUDaeTextureChannel::DIFFUSE));
       if (TexCount < 1)
         orkerrorlog(
             "ERROR: Collada Parse Textures: Diffuse texture count is zero for %s (%s)\n",
-            mat.mMaterialName.c_str(),
-            mat.mShadingGroupName.c_str());
+            mat->mMaterialName.c_str(),
+            mat->mShadingGroupName.c_str());
       else {
-        const FCDTexture* ptex = mat.mStdProfile->GetTexture(FUDaeTextureChannel::DIFFUSE, 0);
+        const FCDTexture* ptex = mat->mStdProfile->GetTexture(FUDaeTextureChannel::DIFFUSE, 0);
         if (ptex) {
           const FCDExtra* TexExtra = ptex->GetExtra();
 
@@ -217,13 +217,13 @@ void CColladaAnim::ParseTextures() {
 
             ////////////////////////////////////////////////////////////
 
-            mat.mDiffuseMapChannel.mPlacementNodeName = Place2dNodeNameStr;
+            mat->mDiffuseMapChannel.mPlacementNodeName = Place2dNodeNameStr;
 
             ColladaUvAnimChannel* pchannel = new ColladaUvAnimChannel(Place2dNodeNameStr);
 
             mUvAnimatables.insert(std::make_pair(Place2dNodeNameStr, pchannel));
 
-            pchannel->SetMaterialName(mat.mMaterialName.c_str());
+            pchannel->SetMaterialName(mat->mMaterialName.c_str());
           }
         }
       }
@@ -241,11 +241,10 @@ void CColladaAnim::ParseMaterials() {
       const std::string& ShadingGroupName = item.first;
       const std::string& MaterialName     = item.second.mMaterialDaeId;
 
-      ColladaMaterial colladamaterial;
-      colladamaterial.ParseMaterial(mDocument, ShadingGroupName, MaterialName);
+      auto colladamaterial = std::make_shared<ColladaMaterialInfo>();
+      colladamaterial->ParseMaterial(mDocument, ShadingGroupName, MaterialName);
 
       mMaterialMap[MaterialName] = colladamaterial;
-
     }
   }
 
@@ -614,5 +613,5 @@ bool CColladaAnim::Parse(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-}}     // namespace ork::tool
+} // namespace ork::tool::meshutil
 #endif // USE_FCOLLADA

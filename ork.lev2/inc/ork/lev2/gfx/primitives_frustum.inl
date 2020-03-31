@@ -1,5 +1,5 @@
 #pragma once
-#include <ork/lev2/gfx/submesh.h>
+#include <ork/lev2/gfx/meshutil/submesh.h>
 #include <ork/math/frustum.h>
 
 namespace ork::lev2::primitives {
@@ -12,7 +12,7 @@ struct FrustumPrimitive {
 
   inline void gpuInit(Context* context) {
 
-    using namespace MeshUtil;
+    using namespace meshutil;
 
     submesh submeshQuads;
     submesh submeshTris;
@@ -104,7 +104,7 @@ struct FrustumPrimitive {
   fvec4 _colorRight;
 
   ork::Frustum _frustum;
-  MeshUtil::PrimitiveV12N12B12T8C4 _primitive;
+  meshutil::PrimitiveV12N12B12T8C4 _primitive;
 };
 
 } // namespace ork::lev2::primitives

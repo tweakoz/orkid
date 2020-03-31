@@ -7,11 +7,11 @@
 
 #include <ork/kernel/orklut.hpp>
 #include <ork/math/plane.h>
-#include <ork/lev2/gfx/submesh.h>
+#include <ork/lev2/gfx/meshutil/submesh.h>
 
-template class ork::orklut<std::string, ork::MeshUtil::submesh*>;
+template class ork::orklut<std::string, ork::meshutil::submesh*>;
 
-namespace ork::MeshUtil {
+namespace ork::meshutil {
 
 const vertexpool vertexpool::EmptyPool;
 
@@ -295,8 +295,7 @@ void submesh::MergePoly(const poly& ply) {
     case 3: {
       if ((ply.miVertices[0] == ply.miVertices[1]) || (ply.miVertices[1] == ply.miVertices[2]) ||
           (ply.miVertices[2] == ply.miVertices[0])) {
-        orkprintf(
-            "toolmesh::MergePoly() removing zero area tri<%d %d %d>\n", ply.miVertices[0], ply.miVertices[1], ply.miVertices[2]);
+        orkprintf("Mesh::MergePoly() removing zero area tri<%d %d %d>\n", ply.miVertices[0], ply.miVertices[1], ply.miVertices[2]);
 
         return;
       }
@@ -306,7 +305,7 @@ void submesh::MergePoly(const poly& ply) {
           (ply.miVertices[0] == ply.miVertices[3]) || (ply.miVertices[1] == ply.miVertices[2]) ||
           (ply.miVertices[1] == ply.miVertices[3]) || (ply.miVertices[2] == ply.miVertices[3])) {
         orkprintf(
-            "toolmesh::MergePoly() removing zero area quad<%d %d %d %d>\n",
+            "Mesh::MergePoly() removing zero area quad<%d %d %d %d>\n",
             ply.miVertices[0],
             ply.miVertices[1],
             ply.miVertices[2],
@@ -495,4 +494,4 @@ void SubMesh::GenIndexBuffers( void )
 
 }*/
 
-} // namespace ork::MeshUtil
+} // namespace ork::meshutil

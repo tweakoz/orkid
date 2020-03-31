@@ -14,11 +14,11 @@
 
 #include <orktool/filter/gfx/collada/collada.h>
 #include <ork/lev2/lev2_asset.h>
-#include <orktool/filter/gfx/meshutil/clusterizer.h>
+#include <ork/lev2/gfx/meshutil/clusterizer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace ork::tool {
+namespace ork::tool::meshutil {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -104,7 +104,7 @@ struct TexSetter {
   orkmap<file::Path, ork::lev2::TextureAsset*> mTextureMap;
 
   ork::lev2::TextureAsset*
-  get(const ColladaMaterialChannel& MatChanIn, const std::string& model_directory, std::string& ActualFileName) {
+  get(const ork::meshutil::MaterialChannel& MatChanIn, const std::string& model_directory, std::string& ActualFileName) {
     ork::lev2::TextureAsset* htexture = 0;
 
     if (MatChanIn.mTextureName.length()) {
@@ -182,10 +182,10 @@ static TexSetter gtex_setter;
 void CColladaModel::BuildXgmTriStripMesh(lev2::XgmMesh& XgmMesh, SColladaMesh* ColMesh) {
   int inummatgroups = ColMesh->RefMatGroups().size();
 
-  orkvector<MeshUtil::ToolMaterialGroup*> clustersets;
+  orkvector<ork::meshutil::MaterialGroup*> clustersets;
 
   for (int imat = 0; imat < inummatgroups; imat++) {
-    MeshUtil::ToolMaterialGroup* ColMatGroup = ColMesh->RefMatGroups()[imat];
+    ork::meshutil::MaterialGroup* ColMatGroup = ColMesh->RefMatGroups()[imat];
     clustersets.push_back(ColMatGroup);
   }
 
@@ -199,20 +199,18 @@ void CColladaModel::BuildXgmTriStripMesh(lev2::XgmMesh& XgmMesh, SColladaMesh* C
     lev2::XgmSubMesh& XgmClusSet = *new lev2::XgmSubMesh;
     XgmMesh.AddSubMesh(&XgmClusSet);
 
-    MeshUtil::ToolMaterialGroup* ColMatGroup = clustersets[imat];
+    ork::meshutil::MaterialGroup* ColMatGroup = clustersets[imat];
 
     XgmClusSet.mLightMapPath = ColMatGroup->mLightMapPath;
     XgmClusSet.mbVertexLit   = ColMatGroup->mbVertexLit;
     ///////////////////////////////////////////////
 
-    //if (ColMatGroup->meMaterialClass == MeshUtil::ToolMaterialGroup::EMATCLASS_FX) {
-      //ConfigureFxMaterial(this, ColMatGroup, XgmClusSet);
-    //} else if (ColMatGroup->meMaterialClass == MeshUtil::ToolMaterialGroup::EMATCLASS_STANDARD) {
-      //ConfigureStdMaterial(this, ColMatGroup, XgmClusSet);
+    // if (ColMatGroup->meMaterialClass == meshutil::ToolMaterialGroup::EMATCLASS_FX) {
+    // ConfigureFxMaterial(this, ColMatGroup, XgmClusSet);
+    //} else if (ColMatGroup->meMaterialClass == meshutil::ToolMaterialGroup::EMATCLASS_STANDARD) {
+    // ConfigureStdMaterial(this, ColMatGroup, XgmClusSet);
     //} else
- {
-      OrkAssert(false);
-    }
+    { OrkAssert(false); }
 
     ColMatGroup->ComputeVtxStreamFormat();
 
@@ -227,7 +225,7 @@ void CColladaModel::BuildXgmTriStripMesh(lev2::XgmMesh& XgmMesh, SColladaMesh* C
     XgmClusSet.mpClusters = new lev2::XgmCluster[inumclus];
 
     for (int ic = 0; ic < inumclus; ic++) {
-      MeshUtil::XgmClusterBuilder* clusterbuilder = ColMatGroup->GetClusterizer()->GetCluster(ic);
+      ork::meshutil::XgmClusterBuilder* clusterbuilder = ColMatGroup->GetClusterizer()->GetCluster(ic);
 
       auto format = ColMatGroup->GetVtxStreamFormat();
       clusterbuilder->buildVertexBuffer(format);
@@ -281,7 +279,7 @@ bool CColladaModel::BuildXgmTriStripModel(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} // namespace ork::tool
+} // namespace ork::tool::meshutil
 
 ///////////////////////////////////////////////////////////////////////////////
 

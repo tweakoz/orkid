@@ -6,10 +6,10 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/math/plane.h>
-#include <ork/lev2/gfx/submesh.h>
+#include <ork/lev2/gfx/meshutil/submesh.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace MeshUtil {
+namespace ork { namespace meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
 void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
@@ -73,7 +73,7 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
   for (int ip = 0; ip < inumtri; ip++) {
     bool basquad = false;
 
-    const MeshUtil::poly& inpoly = inpmesh.RefPoly(ip);
+    const poly& inpoly = inpmesh.RefPoly(ip);
 
     ici[0] = inpoly.miVertices[0];
     ici[1] = inpoly.miVertices[1];
@@ -99,9 +99,9 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
     orkset<int> ConnectedPolySetA;
     orkset<int> ConnectedPolySetB;
     orkset<int> ConnectedPolySetC;
-    inpmesh.GetConnectedPolys(MeshUtil::edge(ici[0], ici[1]), ConnectedPolySetA);
-    inpmesh.GetConnectedPolys(MeshUtil::edge(ici[1], ici[2]), ConnectedPolySetB);
-    inpmesh.GetConnectedPolys(MeshUtil::edge(ici[2], ici[0]), ConnectedPolySetC);
+    inpmesh.GetConnectedPolys(edge(ici[0], ici[1]), ConnectedPolySetA);
+    inpmesh.GetConnectedPolys(edge(ici[1], ici[2]), ConnectedPolySetB);
+    inpmesh.GetConnectedPolys(edge(ici[2], ici[0]), ConnectedPolySetC);
 
     for (orkset<int>::iterator it = ConnectedPolySetA.begin(); it != ConnectedPolySetA.end(); it++) {
       ConnectedPolySet.insert(*it);
@@ -119,7 +119,7 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
     for (orkset<int>::iterator it = ConnectedPolySet.begin(); it != ConnectedPolySet.end(); it++) {
       int iotherpoly = *it;
 
-      const MeshUtil::poly& ply = inpmesh.RefPoly(iotherpoly);
+      const poly& ply = inpmesh.RefPoly(iotherpoly);
 
       int inumsides = ply.GetNumSides();
 
@@ -252,10 +252,10 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
                   //////////////////////////////////////
 
                   if ((float(1.0f) - fdot) < float(0.001f)) {
-                    outmesh.MergePoly(MeshUtil::poly(i0, i1, i3, i2));
+                    outmesh.MergePoly(poly(i0, i1, i3, i2));
                     basquad = true;
                   } else if ((float(1.0f) + fdot) < float(0.001f)) {
-                    outmesh.MergePoly(MeshUtil::poly(i0, i2, i3, i1));
+                    outmesh.MergePoly(poly(i0, i2, i3, i1));
                     basquad = true;
                   }
                 }
@@ -268,11 +268,11 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
     } // for( set<int>::iterator it=ConnectedPolySet.begin(); it!=ConnectedPolySet.end(); it++ )
 
     if (false == basquad) {
-      outmesh.MergePoly(MeshUtil::poly(ici[0], ici[1], ici[2]));
+      outmesh.MergePoly(poly(ici[0], ici[1], ici[2]));
     }
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::MeshUtil
+}} // namespace ork::meshutil
 ///////////////////////////////////////////////////////////////////////////////

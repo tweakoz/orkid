@@ -1,5 +1,5 @@
 #pragma once
-#include <ork/lev2/gfx/submesh.h>
+#include <ork/lev2/gfx/meshutil/submesh.h>
 
 namespace ork::lev2::primitives {
 
@@ -11,7 +11,7 @@ struct CubePrimitive {
 
   inline void gpuInit(Context* context) {
 
-    using namespace MeshUtil;
+    using namespace meshutil;
 
     submesh submeshQuads;
     submesh submeshTris;
@@ -107,7 +107,7 @@ struct CubePrimitive {
   fvec4 _colorLeft;
   fvec4 _colorRight;
 
-  MeshUtil::PrimitiveV12N12B12T8C4 _primitive;
+  meshutil::PrimitiveV12N12B12T8C4 _primitive;
 };
 
 } // namespace ork::lev2::primitives

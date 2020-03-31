@@ -83,7 +83,7 @@
 #include "heap_array.h"
 
 // namespace triangle_stripper
-namespace triangle_stripper {
+namespace ork::meshutil::triangle_stripper {
 
 
 class tri_stripper

@@ -7,12 +7,12 @@
 
 #include <ork/pch.h>
 #include <ork/math/plane.h>
-#include <ork/lev2/gfx/meshutil_stripper.h>
+#include <ork/lev2/gfx/meshutil/meshutil_stripper.h>
 
 #include <ork/kernel/csystem.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace MeshUtil {
+namespace ork { namespace meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
 TriStripper::TriStripper(const std::vector<unsigned int>& InTriIndices, int icachesize, int iminstripsize)
@@ -156,5 +156,5 @@ TriStripper::TriStripper(const std::vector<unsigned int>& InTriIndices, int icac
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::MeshUtil
+}} // namespace ork::meshutil
 ///////////////////////////////////////////////////////////////////////////////

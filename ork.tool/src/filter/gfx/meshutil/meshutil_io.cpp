@@ -7,198 +7,137 @@
 
 #include <orktool/orktool_pch.h>
 #include <ork/math/plane.h>
-#include <orktool/filter/gfx/meshutil/meshutil.h>
+#include <orktool/filter/gfx/meshutil/meshutil_tool.h>
 #include <orktool/filter/gfx/collada/collada.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::MeshUtil::XGM_OBJ_Filter,"XGM_OBJ_Filter");
-INSTANTIATE_TRANSPARENT_RTTI(ork::MeshUtil::OBJ_OBJ_Filter,"OBJ_OBJ_Filter");
-INSTANTIATE_TRANSPARENT_RTTI(ork::MeshUtil::OBJ_XGM_Filter,"OBJ_XGM_Filter");
+INSTANTIATE_TRANSPARENT_RTTI(ork::tool::meshutil::XGM_OBJ_Filter, "XGM_OBJ_Filter");
+INSTANTIATE_TRANSPARENT_RTTI(ork::tool::meshutil::OBJ_OBJ_Filter, "OBJ_OBJ_Filter");
+INSTANTIATE_TRANSPARENT_RTTI(ork::tool::meshutil::OBJ_XGM_Filter, "OBJ_XGM_Filter");
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace MeshUtil {
+namespace ork::tool::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
-void OBJ_XGM_Filter::Describe() {}
-void XGM_OBJ_Filter::Describe() {}
-void OBJ_OBJ_Filter::Describe() {}
-
-OBJ_XGM_Filter::OBJ_XGM_Filter( ){}
-XGM_OBJ_Filter::XGM_OBJ_Filter( ){}
-OBJ_OBJ_Filter::OBJ_OBJ_Filter( ){}
-
-bool OBJ_XGM_Filter::ConvertAsset( const tokenlist& toklist )
-{
-	tokenlist::const_iterator it = toklist.begin();
-	const std::string& inf = *it++;
-	const std::string& outf = *it++;
-	MeshUtil::toolmesh tmesh;
-	tmesh.ReadFromWavefrontObj( inf.c_str());
-	tmesh.WriteToXgmFile( outf.c_str() );
-	return true;
+void OBJ_XGM_Filter::Describe() {
 }
-bool XGM_OBJ_Filter::ConvertAsset( const tokenlist& toklist )
-{
-	tokenlist::const_iterator it = toklist.begin();
-	const std::string& inf = *it++;
-	const std::string& outf = *it++;
-	MeshUtil::toolmesh tmesh;
-	tmesh.ReadFromXGM( inf.c_str());
-	tmesh.WriteToWavefrontObj( outf.c_str() );
-	return true;
+void XGM_OBJ_Filter::Describe() {
 }
-bool OBJ_OBJ_Filter::ConvertAsset( const tokenlist& toklist )
-{
-	tokenlist::const_iterator it = toklist.begin();
-	const std::string& inf = *it++;
-	const std::string& outf = *it++;
-	MeshUtil::toolmesh tmesh;
-	tmesh.ReadFromWavefrontObj( inf.c_str() );
-	tmesh.WriteToWavefrontObj( outf.c_str() );
-	return true;
+void OBJ_OBJ_Filter::Describe() {
 }
 
-///////////////////////////////////////////////////////////////////////////////
+OBJ_XGM_Filter::OBJ_XGM_Filter() {
+}
+XGM_OBJ_Filter::XGM_OBJ_Filter() {
+}
+OBJ_OBJ_Filter::OBJ_OBJ_Filter() {
+}
 
-void toolmesh::ReadAuto( const file::Path& BasePath )
-{
-	ork::file::Path::SmallNameType ext = BasePath.GetExtension();
-
-	if( ext == "dae" )
-	{
-		tool::DaeReadOpts opts;
-		ReadFromDaeFile( BasePath, opts );
-	}
-	else
-	if( ext == "obj" )
-	{
-		ReadFromWavefrontObj( BasePath );
-	}
-	else if( ext == "xgm" )
-	{
-		ReadFromXGM( BasePath );
-	}
+bool OBJ_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
+  tokenlist::const_iterator it = toklist.begin();
+  const std::string& inf       = *it++;
+  const std::string& outf      = *it++;
+  ToolMesh tmesh;
+  tmesh.ReadFromWavefrontObj(inf.c_str());
+  tmesh.WriteToXgmFile(outf.c_str());
+  return true;
+}
+bool XGM_OBJ_Filter::ConvertAsset(const tokenlist& toklist) {
+  tokenlist::const_iterator it = toklist.begin();
+  const std::string& inf       = *it++;
+  const std::string& outf      = *it++;
+  ToolMesh tmesh;
+  tmesh.ReadFromXGM(inf.c_str());
+  tmesh.WriteToWavefrontObj(outf.c_str());
+  return true;
+}
+bool OBJ_OBJ_Filter::ConvertAsset(const tokenlist& toklist) {
+  tokenlist::const_iterator it = toklist.begin();
+  const std::string& inf       = *it++;
+  const std::string& outf      = *it++;
+  ToolMesh tmesh;
+  tmesh.ReadFromWavefrontObj(inf.c_str());
+  tmesh.WriteToWavefrontObj(outf.c_str());
+  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::WriteAuto( const file::Path& BasePath ) const
-{
-	ork::file::Path::SmallNameType ext = BasePath.GetExtension();
+void ToolMesh::ReadAuto(const file::Path& BasePath) {
+  ork::file::Path::SmallNameType ext = BasePath.GetExtension();
 
-	if( ext == "dae" )
-	{
-		tool::DaeWriteOpts out_opts;
-		WriteToDaeFile( BasePath, out_opts );
-	}
-	else
-		if( ext == "obj" )
-	{
-		WriteToWavefrontObj( BasePath );
-	}
-}
-///////////////////////////////////////////////////////////////////////////////
-
-FlatSubMesh::FlatSubMesh( const submesh& mesh )
-{
-	const vertexpool& vpool = mesh.RefVertexPool();
-
-	mesh.FindNSidedPolys( TrianglePolyIndices, 3 );
-	mesh.FindNSidedPolys( QuadPolyIndices, 4 );
-
-	auto vtxformat = mesh.typedAnnotation<std::string>("OutVtxFormat");
-	evtxformat = PropType<lev2::EVtxStreamFormat>::FromString( vtxformat.c_str() );
-
-	orkprintf( "vtxformat<%s>\n", vtxformat.c_str() );
-
-	////////////////////////////////////////////////////////
-	int inumv = (int) vpool.GetNumVertices();
-	int inumtri = int(TrianglePolyIndices.size());
-	int inumqua = int(QuadPolyIndices.size());
-	////////////////////////////////////////////////////////
-
-	switch( evtxformat )
-	{
-		case lev2::EVTXSTREAMFMT_V12N12B12T16:
-		{
-			lev2::SVtxV12N12B12T16 OutVertex;
-			for( int iv0=0; iv0<inumv; iv0++ )
-			{
-				const vertex& invtx =  vpool.GetVertex(iv0);
-
-				OutVertex.mPosition = invtx.mPos;
-				OutVertex.mNormal = invtx.mNrm;
-				OutVertex.mBiNormal = invtx.mUV[0].mMapBiNormal;
-				OutVertex.mUV0 = invtx.mUV[0].mMapTexCoord;
-				OutVertex.mUV1 = invtx.mUV[1].mMapTexCoord;
-
-				MergeVertsT16.push_back( OutVertex );
-			}
-			inumverts = int(MergeVertsT16.size());
-			ivtxsize = sizeof(lev2::SVtxV12N12B12T16);
-			poutvtxdata = (void*) & MergeVertsT16.at(0);
-			break;
-		}
-		case lev2::EVTXSTREAMFMT_V12N12B12T8C4:
-		{
-			orkvector<lev2::SVtxV12N12B12T8C4>	MergeVerts;
-			lev2::SVtxV12N12B12T8C4 OutVertex;
-			for( int iv0=0; iv0<inumv; iv0++ )
-			{
-				const vertex& invtx =  vpool.GetVertex(iv0);
-
-				OutVertex.mPosition = invtx.mPos;
-				OutVertex.mNormal = invtx.mNrm;
-				OutVertex.mBiNormal = invtx.mUV[0].mMapBiNormal;
-				OutVertex.mUV0 = invtx.mUV[0].mMapTexCoord;
-				OutVertex.mColor = invtx.mCol[0].GetRGBAU32();
-
-				MergeVertsT8.push_back( OutVertex );
-			}
-			inumverts = int(MergeVertsT8.size());
-			ivtxsize = sizeof(lev2::SVtxV12N12B12T8C4);
-			poutvtxdata = (void*) & MergeVertsT8.at(0);
-			break;
-		}
-		default: // vertex format not supported
-			OrkAssert(false);
-			break;
-	}
-
-	for( int it=0; it<inumtri; it++ )
-	{
-		int idx = TrianglePolyIndices[it];
-		const poly& intri = mesh.RefPoly(idx);
-		int inumsides = intri.GetNumSides();
-		for( int iv=0; iv<inumsides; iv++ )
-		{
-			int idx = intri.GetVertexID(iv);
-			MergeTriIndices.push_back( idx );
-		}
-	}
-
-	for( int iq=0; iq<inumqua; iq++ )
-	{
-		int idx = QuadPolyIndices[iq];
-		const poly& inqua = mesh.RefPoly(idx);
-		int inumsides = inqua.GetNumSides();
-		int idx0 = inqua.GetVertexID(0);
-		int idx1 = inqua.GetVertexID(1);
-		int idx2 = inqua.GetVertexID(2);
-		int idx3 = inqua.GetVertexID(3);
-
-		MergeTriIndices.push_back( idx0 );
-		MergeTriIndices.push_back( idx1 );
-		MergeTriIndices.push_back( idx2 );
-
-		MergeTriIndices.push_back( idx0 );
-		MergeTriIndices.push_back( idx2 );
-		MergeTriIndices.push_back( idx3 );
-	}
+  if (ext == "dae") {
+    DaeReadOpts opts;
+    ReadFromDaeFile(BasePath, opts);
+  } else if (ext == "obj") {
+    ReadFromWavefrontObj(BasePath);
+  } else if (ext == "xgm") {
+    ReadFromXGM(BasePath);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-}}
+void ToolMesh::WriteAuto(const file::Path& BasePath) const {
+  ork::file::Path::SmallNameType ext = BasePath.GetExtension();
+
+  if (ext == "dae") {
+    DaeWriteOpts out_opts;
+    WriteToDaeFile(BasePath, out_opts);
+  } else if (ext == "obj") {
+    WriteToWavefrontObj(BasePath);
+  }
+}
+
+void PartitionMesh_FixedGrid3d(const ToolMesh& MeshIn, orkvector<ToolMesh*>& OutMeshes) {
+  /*GridGraph thegraph;
+
+  thegraph.BeginPreMerge();
+  {
+      thegraph.PreMergeMesh( MeshIn );
+  }
+  thegraph.EndPreMerge();
+
+  Mesh OutMesh;
+
+  thegraph.MergeMesh( MeshIn,OutMesh );
+
+  //const Mesh& outmesh = thegraph.RefOutMesh();
+
+  if( OutMesh.GetNumPolys() > 0 )
+  {
+      ork::file::Path outpath( "tmp/yo.obj" );
+
+      OutMesh.WriteToWavefrontObj( outpath );
+  }*/
+}
+
+void PartitionMesh_FixedGrid3d_Driver(const tokenlist& options) {
+  ////////////////////////////////////////
+
+  ork::tool::FilterOptMap OptionsMap;
+  OptionsMap.SetDefault("-inobj", "partition_in.obj");
+  OptionsMap.SetDefault("-outobj", "partition_out.obj");
+  OptionsMap.SetOptions(options);
+
+  OptionsMap.DumpOptions();
+
+  ToolMesh inmesh;
+
+  std::string uva_in  = OptionsMap.GetOption("-inobj")->GetValue();
+  std::string uva_out = OptionsMap.GetOption("-outobj")->GetValue();
+
+  inmesh.ReadAuto(uva_in.c_str());
+
+  orkprintf("uvain<%s> uvaout<%s>\n", uva_in.c_str(), uva_out.c_str());
+
+  orkvector<ToolMesh*> OutMeshes;
+
+  PartitionMesh_FixedGrid3d(inmesh, OutMeshes);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // namespace ork::tool::meshutil
 ///////////////////////////////////////////////////////////////////////////////

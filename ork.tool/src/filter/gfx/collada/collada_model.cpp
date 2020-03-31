@@ -34,12 +34,12 @@
 
 #include <orktool/filter/gfx/collada/collada.h>
 #include <orktool/filter/gfx/collada/daeutil.h>
-#include <orktool/filter/gfx/meshutil/clusterizer.h>
+#include <ork/lev2/gfx/meshutil/clusterizer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
 using namespace ork::lev2;
-namespace ork { namespace tool {
+namespace ork::tool::meshutil {
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -645,7 +645,7 @@ bool CColladaModel::ParseGeometries() {
         if (0 == inumpolys)
           continue;
 
-        auto ColMatGroup                               = new MeshUtil::ToolMaterialGroup;
+        auto ColMatGroup                               = new ork::meshutil::MaterialGroup;
         ColMatGroup->mMeshConfigurationFlags.mbSkinned = ColMesh->isSkinned();
         ColMesh->RefMatGroups().push_back(ColMatGroup);
 
@@ -696,16 +696,22 @@ bool CColladaModel::ParseGeometries() {
         ////////////////////////////////////////////////
 
         if (buselightmap) {
-          ColMatGroup->SetClusterizer(new MeshUtil::XgmClusterizerStd);
+          auto clusterizer = new ork::meshutil::XgmClusterizerStd;
+          ColMatGroup->SetClusterizer(clusterizer);
         } else
           switch (policy->mDicingPolicy.GetPolicy()) {
-            case ColladaDicingPolicy::ECTP_DICE:
-              ColMatGroup->SetClusterizer(new MeshUtil::XgmClusterizerDiced);
+            case ColladaDicingPolicy::ECTP_DICE: {
+              auto clusterizer = new ork::meshutil::XgmClusterizerStd;
+              ColMatGroup->SetClusterizer(clusterizer);
               // ColMatGroup->SetClusterizer( new XgmClusterizerStd );
+
               break;
-            case ColladaDicingPolicy::ECTP_DONT_DICE:
-              ColMatGroup->SetClusterizer(new MeshUtil::XgmClusterizerStd);
+            }
+            case ColladaDicingPolicy::ECTP_DONT_DICE: {
+              auto clusterizer = new ork::meshutil::XgmClusterizerStd;
+              ColMatGroup->SetClusterizer(clusterizer);
               break;
+            }
             default:
               OrkAssert(false);
               break;
@@ -792,23 +798,23 @@ bool CColladaModel::ParseGeometries() {
 
         ColMatGroup->mShadingGroupName = ShadingGroupName;
 
-        orkmap<std::string, ColladaMaterial>::iterator itmat = mMaterialMap.find(ShadingGroupName);
+        auto itmat = mMaterialMap.find(ShadingGroupName);
 
         if (mMaterialMap.end() == itmat) {
-          ColladaMaterial colladamaterial;
-          colladamaterial.ParseMaterial(mDocument, ShadingGroupName, MaterialName);
-          std::pair<std::string, ColladaMaterial> item(ShadingGroupName, colladamaterial);
+          auto colladamaterial = std::make_shared<ColladaMaterialInfo>();
+          colladamaterial->ParseMaterial(mDocument, ShadingGroupName, MaterialName);
+          std::pair<std::string, collada_material_info_ptr_t> item(ShadingGroupName, colladamaterial);
           mMaterialMap.insert(item);
           itmat = mMaterialMap.find(ShadingGroupName);
         }
 
-        ColMatGroup->Parse(itmat->second);
+        ColMatGroup->Parse(*itmat->second.get());
 
-        if (icounter_clr > MeshUtil::vertex::kmaxcolors) {
+        if (icounter_clr > ork::meshutil::vertex::kmaxcolors) {
           orkerrorlog("ERROR: <Model %s> UhOh, There are too many colorsets [%d]\n", mFileName.c_str(), icounter_clr);
           return false;
         }
-        if (icounter_tex > MeshUtil::vertex::kmaxuvs) {
+        if (icounter_tex > ork::meshutil::vertex::kmaxuvs) {
           orkerrorlog("ERROR: <Model %s> UhOh, There are too many uvsets [%d]\n", mFileName.c_str(), icounter_tex);
           return false;
         }
@@ -886,11 +892,11 @@ bool CColladaModel::ParseGeometries() {
           size_t iface_numfverts = GetFaceVertexCount(iface);
           size_t iface_fvertbase = GetFaceVertexOffset(iface);
           OrkAssert(3 == iface_numfverts);
-          MeshUtil::XgmClusterTri ClusTri;
+          ork::meshutil::XgmClusterTri ClusTri;
           if (iface % 1000 == 0)
             printf("iface<%zu> of %zu\n", iface, imatnumfaces);
           for (size_t iface_v = 0; iface_v < iface_numfverts; iface_v++) {
-            MeshUtil::vertex& MuVtx = ClusTri._vertex[iface_v];
+            ork::meshutil::vertex& MuVtx = ClusTri._vertex[iface_v];
             /////////////////////////////////
             // position
             /////////////////////////////////
@@ -1053,5 +1059,6 @@ void CColladaModel::GetNodeMatricesByName(MatrixVector& nodeMatrices, const char
 
 ///////////////////////////////////////////////////////////////////////////////
 
-}} // namespace ork::tool
+} // namespace ork::tool::meshutil
+
 #endif

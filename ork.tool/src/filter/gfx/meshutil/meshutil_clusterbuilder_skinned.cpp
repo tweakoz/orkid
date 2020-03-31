@@ -4,21 +4,25 @@
 // See License at OrkidRoot/license.html or http://www.tweakoz.com/orkid/license.html
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <orktool/orktool_pch.h>
+#include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmodel.h>
-#include <orktool/filter/gfx/collada/collada.h>
-#include <orktool/filter/gfx/meshutil/meshutil_fixedgrid.h>
-#include <orktool/filter/gfx/meshutil/clusterizer.h>
-#include <ork/lev2/gfx/meshutil_stripper.h>
+#include <ork/lev2/gfx/meshutil/clusterizer.h>
+#include <ork/lev2/gfx/meshutil/meshutil_stripper.h>
+#include <ork/lev2/gfx/meshutil/meshutil_fixedgrid.h>
 
 const bool gbFORCEDICE = true;
 const int kDICESIZE    = 512;
 
 using namespace ork::tool;
 
-namespace ork::MeshUtil {
+namespace ork::meshutil {
+
 ///////////////////////////////////////////////////////////////////////////////
+
+XgmSkinnedClusterBuilder::XgmSkinnedClusterBuilder(const XgmClusterizer& clusterizer)
+    : XgmClusterBuilder(clusterizer) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -52,7 +56,7 @@ bool XgmSkinnedClusterBuilder::addTriangle(const XgmClusterTri& Triangle) {
   ///////////////////////////////////////
 
   bool bAddTriangle             = false;
-  const int kMaxBonesPerCluster = ColladaExportPolicy::context()->miNumBonesPerCluster;
+  const int kMaxBonesPerCluster = _clusterizer._policy._maxBonesPerCluster;
   orkset<std::string> AddThisRun;
   for (int i = 0; i < 3; i++) {
     int inumw = Triangle._vertex[i].miNumWeights;
@@ -136,7 +140,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4() // binormal p
 
   for (int iv = 0; iv < NumVertexIndices; iv++) {
     ork::lev2::SVtxV12N12B12T8I4W4 OutVtx;
-    const MeshUtil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
+    const meshutil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
     OutVtx.mPosition              = InVtx.mPos * kVertexScale;
     OutVtx.mUV0                   = InVtx.mUV[0].mMapTexCoord * UVScale;
     OutVtx.mNormal                = InVtx.mNrm;
@@ -216,7 +220,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4() // basic pc skin
   vwriter.Lock(&DummyTarget, _vertexBuffer, NumVertexIndices);
   for (int iv = 0; iv < NumVertexIndices; iv++) {
     ork::lev2::SVtxV12N12T8I4W4 OutVtx;
-    const MeshUtil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
+    const meshutil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
     OutVtx.mPosition              = InVtx.mPos * kVertexScale;
     OutVtx.mUV0                   = InVtx.mUV[0].mMapTexCoord * UVScale;
     OutVtx.mNormal                = InVtx.mNrm;
@@ -264,7 +268,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N6I1T4() // basic wii skinne
   vwriter.Lock(&DummyTarget, _vertexBuffer, NumVertexIndices);
   for (int iv = 0; iv < NumVertexIndices; iv++) {
     ork::lev2::SVtxV12N6I1T4 OutVtx;
-    const MeshUtil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
+    const meshutil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
 
     OutVtx.mX = InVtx.mPos.GetX() * kVertexScale;
     OutVtx.mY = InVtx.mPos.GetY() * kVertexScale;
@@ -311,4 +315,4 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N6I1T4() // basic wii skinne
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::MeshUtil
+} // namespace ork::meshutil

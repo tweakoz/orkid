@@ -46,7 +46,7 @@
 
 
 // namespace common_structures
-namespace triangle_stripper::common_structures {
+namespace ork::meshutil::triangle_stripper::common_structures {
 
 template <class T, class CmpT = std::less<T> >
 class heap_array

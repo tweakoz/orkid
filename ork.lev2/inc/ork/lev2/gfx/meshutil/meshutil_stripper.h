@@ -1,8 +1,8 @@
 #pragma once
 
-#include <ork/lev2/gfx/tristripper/tri_stripper.h>
+#include <ork/lev2/gfx/meshutil/tristripper/tri_stripper.h>
 
-namespace ork { namespace MeshUtil {
+namespace ork { namespace meshutil {
 
 struct TriStripperPrimGroup {
   orkvector<unsigned int> mIndices;
@@ -29,4 +29,4 @@ public:
   }
 };
 
-}} // namespace ork::MeshUtil
+}} // namespace ork::meshutil

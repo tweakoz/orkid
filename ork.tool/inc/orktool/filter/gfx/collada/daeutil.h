@@ -5,23 +5,21 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-class DaeDataSource
-{
-	int							miStride;
-	int							miCount;
-	//const float*				mData;
-	uint32*						mpIndices;
-	const FCDGeometrySource*	mSource;
-	FCDGeometryPolygons *		mMatGroup;
+class DaeDataSource {
+  int miStride;
+  int miCount;
+  // const float*				mData;
+  uint32* mpIndices;
+  const FCDGeometrySource* mSource;
+  FCDGeometryPolygons* mMatGroup;
 
 public:
-
-	DaeDataSource( const FCDGeometrySource* pcolladasrc=0, FCDGeometryPolygons* MatGroup=0 );
-	void Bind( const FCDGeometrySource * pcolladasrc, FCDGeometryPolygons * MatGroup );
-	int GetSourceIndex( int ifacevertbase, int ivertinface ) const;
-	size_t GetDataSize() const;
-	float GetData( int idx ) const;
-	int GetStride() const;
+  DaeDataSource(const FCDGeometrySource* pcolladasrc = 0, FCDGeometryPolygons* MatGroup = 0);
+  void Bind(const FCDGeometrySource* pcolladasrc, FCDGeometryPolygons* MatGroup);
+  int GetSourceIndex(int ifacevertbase, int ivertinface) const;
+  size_t GetDataSize() const;
+  float GetData(int idx) const;
+  int GetStride() const;
 };
 
-bool ParseColladaMaterialBindings( FCDocument& daedoc, ork::MeshUtil::material_semanticmap_t& MatSemMap );
+bool ParseColladaMaterialBindings(FCDocument& daedoc, ork::meshutil::material_semanticmap_t& MatSemMap);

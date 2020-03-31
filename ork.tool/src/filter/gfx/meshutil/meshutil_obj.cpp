@@ -7,12 +7,12 @@
 
 #include <orktool/orktool_pch.h>
 #include <ork/math/plane.h>
-#include <orktool/filter/gfx/meshutil/meshutil.h>
+#include <ork/lev2/gfx/meshutil/meshutil.h>
 #include <ork/file/chunkfile.h>
 #include <ork/lev2/gfx/gfxmaterial.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace MeshUtil {
+namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -32,7 +32,7 @@ struct objmesh {
 struct objmat {
   fvec3 mColor;
 };
-void toolmesh::WriteToWavefrontObj(const file::Path& BasePath) const {
+void Mesh::WriteToWavefrontObj(const file::Path& BasePath) const {
   /*ork::file::Path ObjPath = BasePath;
   ork::file::Path MtlPath = BasePath;
   ObjPath.SetExtension("obj");
@@ -217,7 +217,7 @@ struct dos2unix_Pred {
   }
 };
 
-void toolmesh::ReadFromWavefrontObj(const file::Path& BasePath) {
+void Mesh::ReadFromWavefrontObj(const file::Path& BasePath) {
   ork::file::Path ObjPath = BasePath;
   ork::file::Path MtlPath = BasePath;
   ork::file::Path FxmPath = BasePath;
@@ -512,5 +512,5 @@ void toolmesh::ReadFromWavefrontObj(const file::Path& BasePath) {
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::MeshUtil
+} // namespace ork::meshutil
 ///////////////////////////////////////////////////////////////////////////////

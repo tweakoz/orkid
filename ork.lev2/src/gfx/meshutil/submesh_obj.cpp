@@ -7,9 +7,9 @@
 
 #include <ork/kernel/orklut.hpp>
 #include <ork/math/plane.h>
-#include <ork/lev2/gfx/submesh.h>
+#include <ork/lev2/gfx/meshutil/submesh.h>
 
-namespace ork::MeshUtil {
+namespace ork::meshutil {
 
 struct objpoly {
   std::string group;
@@ -188,4 +188,4 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
   mtloutfile.Close();
 }
 
-} // namespace ork::MeshUtil
+} // namespace ork::meshutil

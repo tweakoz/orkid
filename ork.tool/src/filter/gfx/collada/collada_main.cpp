@@ -41,229 +41,215 @@
 
 using namespace ork::lev2;
 
-namespace ork { namespace tool {
+namespace ork::tool::meshutil {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CColladaAsset::~CColladaAsset()
-{
-	if( mDocument )
-	{
-		delete( mDocument );
-	}
+CColladaAsset::~CColladaAsset() {
+  if (mDocument) {
+    delete (mDocument);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CColladaAsset::EAssetType CColladaAsset::GetAssetType( const AssetPath & fname )
-{
-	CColladaAsset::EAssetType etype = CColladaAsset::ECOLLADA_END;
-	File ColladaFile;
-	ColladaFile.OpenFile( fname, EFM_READ );
-	size_t isize = 0;
-	ColladaFile.GetLength(isize);
-	printf( "ColladaFile<%s> Size<%d>\n", fname.c_str(), int(isize) );
-	//OrkAssert( isize >= 1024 );
-	char* buffer = new char[isize+1];
-	ColladaFile.Read( (void*) buffer, isize );
-	buffer[isize] = 0;
-	etype = CColladaAsset::ECOLLADA_MODEL;
-	const char* AnimEq0 = strstr( buffer, "exportAnimations=0" );
-	const char* AnimEq1 = strstr( buffer, "exportAnimations=1" );
-	const char* AnimEq2 = strstr( buffer, "library_animations" );
-	const char* GeomLib = strstr( buffer, "library_geometries" );
+CColladaAsset::EAssetType CColladaAsset::GetAssetType(const AssetPath& fname) {
+  CColladaAsset::EAssetType etype = CColladaAsset::ECOLLADA_END;
+  File ColladaFile;
+  ColladaFile.OpenFile(fname, EFM_READ);
+  size_t isize = 0;
+  ColladaFile.GetLength(isize);
+  printf("ColladaFile<%s> Size<%d>\n", fname.c_str(), int(isize));
+  // OrkAssert( isize >= 1024 );
+  char* buffer = new char[isize + 1];
+  ColladaFile.Read((void*)buffer, isize);
+  buffer[isize]       = 0;
+  etype               = CColladaAsset::ECOLLADA_MODEL;
+  const char* AnimEq0 = strstr(buffer, "exportAnimations=0");
+  const char* AnimEq1 = strstr(buffer, "exportAnimations=1");
+  const char* AnimEq2 = strstr(buffer, "library_animations");
+  const char* GeomLib = strstr(buffer, "library_geometries");
 
-	printf( "AnimEq0<%p>\n", AnimEq0 );
-	printf( "AnimEq1<%p>\n", AnimEq1 );
-	printf( "AnimEq2<%p>\n", AnimEq2 );
-	printf( "GeomLib<%p>\n", GeomLib );
+  printf("AnimEq0<%p>\n", AnimEq0);
+  printf("AnimEq1<%p>\n", AnimEq1);
+  printf("AnimEq2<%p>\n", AnimEq2);
+  printf("GeomLib<%p>\n", GeomLib);
 
-	if( /*(nullptr==GeomLib)  &&*/ (AnimEq1 || AnimEq2) )
-	{
-		etype = CColladaAsset::ECOLLADA_ANIM;
-	}
-	OrkAssert( etype!=CColladaAsset::ECOLLADA_END );
+  if (/*(nullptr==GeomLib)  &&*/ (AnimEq1 || AnimEq2)) {
+    etype = CColladaAsset::ECOLLADA_ANIM;
+  }
+  OrkAssert(etype != CColladaAsset::ECOLLADA_END);
 
-	printf( "AssetType<%d>\n", int(etype) );
+  printf("AssetType<%d>\n", int(etype));
 
-	return etype;
+  return etype;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CColladaAsset::LoadDocument(const AssetPath& fname)
-{
-	printf( "CColladaAsset::LoadDocument fname<%s>\n", fname.c_str() );
-	FCollada::Initialize();
-	mDocument = new FCDocument;
+bool CColladaAsset::LoadDocument(const AssetPath& fname) {
+  printf("CColladaAsset::LoadDocument fname<%s>\n", fname.c_str());
+  FCollada::Initialize();
+  mDocument = new FCDocument;
 
-	AssetPath ActualPath = fname.ToAbsolute();
+  AssetPath ActualPath = fname.ToAbsolute();
 
-	ActualPath.SetExtension("dae");
+  ActualPath.SetExtension("dae");
 
-	meAssetType = GetAssetType(ActualPath);
+  meAssetType = GetAssetType(ActualPath);
 
-	bool bok = FCollada::LoadDocumentFromFile( mDocument, ActualPath.c_str() );
+  bool bok = FCollada::LoadDocumentFromFile(mDocument, ActualPath.c_str());
 
-	mpColladaAsset = mDocument->GetAsset();
-	mUnitsPerMeter = mpColladaAsset->GetUnitConversionFactor();
-	std::string UnitName(mpColladaAsset->GetUnitName().c_str());
+  mpColladaAsset = mDocument->GetAsset();
+  mUnitsPerMeter = mpColladaAsset->GetUnitConversionFactor();
+  std::string UnitName(mpColladaAsset->GetUnitName().c_str());
 
-	if(ColladaExportPolicy::context() && ColladaExportPolicy::context()->mUnits != UNITS_ANY)
-	{
-		/*if(ColladaExportPolicy::context()->mUnits == UNITS_METER
-				&& std::string("meter") != UnitName)
-		{
-			orkerrorlog("ERROR: Units must be in meters! Set your Maya preferences accordingly. (%s)\n", fname.c_str());
-			FCollada::Release();
-			return false;
-		}
-		else if(ColladaExportPolicy::context()->mUnits == UNITS_CENTIMETER
-				&& std::string("centimeter") != UnitName)
-		{
-			orkerrorlog("ERROR: Units must be in centimeters! Set your Maya preferences accordingly. (%s)\n", fname.c_str());
+  if (ColladaExportPolicy::context() && ColladaExportPolicy::context()->mUnits != UNITS_ANY) {
+    /*if(ColladaExportPolicy::context()->mUnits == UNITS_METER
+            && std::string("meter") != UnitName)
+    {
+        orkerrorlog("ERROR: Units must be in meters! Set your Maya preferences accordingly. (%s)\n", fname.c_str());
+        FCollada::Release();
+        return false;
+    }
+    else if(ColladaExportPolicy::context()->mUnits == UNITS_CENTIMETER
+            && std::string("centimeter") != UnitName)
+    {
+        orkerrorlog("ERROR: Units must be in centimeters! Set your Maya preferences accordingly. (%s)\n", fname.c_str());
 
-			FCollada::Release();
-			return false;
-		}*/
-	}
-	FCollada::Release();
+        FCollada::Release();
+        return false;
+    }*/
+  }
+  FCollada::Release();
 
-	return bok;
-
+  return bok;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CColladaModel * CColladaModel::Load( const AssetPath & fname )
-{
-	DaeReadOpts opts;
+CColladaModel* CColladaModel::Load(const AssetPath& fname) {
+  DaeReadOpts opts;
 
-	CColladaModel *Model = new CColladaModel( fname.c_str(), opts );
+  CColladaModel* Model = new CColladaModel(fname.c_str(), opts);
 
-	bool bok = Model->LoadDocument( fname );
+  bool bok = Model->LoadDocument(fname);
 
-	printf( "model loaded<%d>\n", int(bok) );
+  printf("model loaded<%d>\n", int(bok));
 
-	bok &= (CColladaAsset::ECOLLADA_MODEL==Model->meAssetType);
+  bok &= (CColladaAsset::ECOLLADA_MODEL == Model->meAssetType);
 
-	printf( "model loaded2<%d>\n", int(bok) );
+  printf("model loaded2<%d>\n", int(bok));
 
-	if( bok )
-	{
-		///////////////////////////
-		// is it a model ?
+  if (bok) {
+    ///////////////////////////
+    // is it a model ?
 
-		FCDGeometryLibrary* GeoLib = Model->mDocument->GetGeometryLibrary();
+    FCDGeometryLibrary* GeoLib = Model->mDocument->GetGeometryLibrary();
 
-		printf( "has geolib<%p>\n", GeoLib );
+    printf("has geolib<%p>\n", GeoLib);
 
-		bok = false;
+    bok = false;
 
-		if( GeoLib )
-		{
-			size_t inument =  GeoLib->GetEntityCount ();
+    if (GeoLib) {
+      size_t inument = GeoLib->GetEntityCount();
 
-			for( size_t ient=0; ient<inument; ient++ )
-			{
-				FCDGeometry *GeoObj = GeoLib->GetEntity(ient);
-				if( GeoObj->IsMesh() )
-				{
-					bok = true;
-				}
-			}
-		}
+      for (size_t ient = 0; ient < inument; ient++) {
+        FCDGeometry* GeoObj = GeoLib->GetEntity(ient);
+        if (GeoObj->IsMesh()) {
+          bok = true;
+        }
+      }
+    }
 
-		///////////////////////////
-		// is it an anim ?
+    ///////////////////////////
+    // is it an anim ?
 
-		FCDAnimationLibrary *AnimLib = Model->mDocument->GetAnimationLibrary();
-		int inument( AnimLib->GetEntityCount() );
+    FCDAnimationLibrary* AnimLib = Model->mDocument->GetAnimationLibrary();
+    int inument(AnimLib->GetEntityCount());
 
-		//if( inument ) bok=false;
+    // if( inument ) bok=false;
 
-		printf( "has animlib<%p>\n", AnimLib );
+    printf("has animlib<%p>\n", AnimLib);
 
-		/////////////////////////////////////
-		if(bok) bok=Model->FindDaeMeshes();
-		/////////////////////////////////////
-		if(bok) bok=Model->ParseMaterialBindings();
-		/////////////////////////////////////
-		if(bok) bok=Model->ParseControllers();
-		if(bok) bok=Model->BuildXgmSkeleton();
-		/////////////////////////////////////
-		if(bok) bok=Model->ParseGeometries();
-		if(bok) bok=Model->BuildXgmTriStripModel();
-		/////////////////////////////////////
-	}
+    /////////////////////////////////////
+    if (bok)
+      bok = Model->FindDaeMeshes();
+    /////////////////////////////////////
+    if (bok)
+      bok = Model->ParseMaterialBindings();
+    /////////////////////////////////////
+    if (bok)
+      bok = Model->ParseControllers();
+    if (bok)
+      bok = Model->BuildXgmSkeleton();
+    /////////////////////////////////////
+    if (bok)
+      bok = Model->ParseGeometries();
+    if (bok)
+      bok = Model->BuildXgmTriStripModel();
+    /////////////////////////////////////
+  }
 
-	int ibonespercluster = ColladaExportPolicy::context()->miNumBonesPerCluster;
+  int ibonespercluster = ColladaExportPolicy::context()->miNumBonesPerCluster;
 
-	Model->mXgmModel.SetBonesPerCluster( ibonespercluster );
+  Model->mXgmModel.SetBonesPerCluster(ibonespercluster);
 
-	if( false == bok )
-	{
-		delete Model;
-		Model = 0;
+  if (false == bok) {
+    delete Model;
+    Model = 0;
 
-		orkerrorlog( "ERROR: <xgmconvert> failed to load model<%s>\n", fname.c_str() );
-	}
+    orkerrorlog("ERROR: <xgmconvert> failed to load model<%s>\n", fname.c_str());
+  }
 
-	return Model;
+  return Model;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CColladaAnim *CColladaAnim::Load(const AssetPath &fname)
-{
-	CColladaAnim *Anim = new CColladaAnim( fname.c_str() );
+CColladaAnim* CColladaAnim::Load(const AssetPath& fname) {
+  CColladaAnim* Anim = new CColladaAnim(fname.c_str());
 
-	bool bok = Anim->LoadDocument( fname );
+  bool bok = Anim->LoadDocument(fname);
 
-	assert( bok );
+  assert(bok);
 
-	bok &= (CColladaAsset::ECOLLADA_ANIM==Anim->meAssetType);
+  bok &= (CColladaAsset::ECOLLADA_ANIM == Anim->meAssetType);
 
-	if( bok )
-	{
-		FCDAnimationLibrary *AnimLib = Anim->mDocument->GetAnimationLibrary();
-		printf( "AnimLib<%p>\n", AnimLib );
-		assert(AnimLib!=nullptr);
-		bok = Anim->Parse();
-		bok = Anim->GetPose();
-	}
-	else
-	{
-		printf( "Not an AnimAsset!\n" );
-	}
-	if( false == bok )
-	{
-		delete Anim;
-		Anim = 0;
-		orkerrorlog( "ERROR: <xgaconvert> could not open anim<%s>\n", fname.c_str() );
-	}
-	return Anim;
+  if (bok) {
+    FCDAnimationLibrary* AnimLib = Anim->mDocument->GetAnimationLibrary();
+    printf("AnimLib<%p>\n", AnimLib);
+    assert(AnimLib != nullptr);
+    bok = Anim->Parse();
+    bok = Anim->GetPose();
+  } else {
+    printf("Not an AnimAsset!\n");
+  }
+  if (false == bok) {
+    delete Anim;
+    Anim = 0;
+    orkerrorlog("ERROR: <xgaconvert> could not open anim<%s>\n", fname.c_str());
+  }
+  return Anim;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fmtx4 FCDMatrixTofmtx4( const FMMatrix44 & inmat )
-{
-	fmtx4 ret = fmtx4::Identity;
+fmtx4 FCDMatrixTofmtx4(const FMMatrix44& inmat) {
+  fmtx4 ret = fmtx4::Identity;
 
-	const float *psrc = inmat;
+  const float* psrc = inmat;
 
-	for( int i=0; i<16; i++ )
-	{
-		int irow = (i%4);
-		int icol = (i/4);
-		ret.SetElemYX( irow, icol, psrc[ i ] );
-	}
+  for (int i = 0; i < 16; i++) {
+    int irow = (i % 4);
+    int icol = (i / 4);
+    ret.SetElemYX(irow, icol, psrc[i]);
+  }
 
-	return ret;
+  return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} }
+} // namespace ork::tool::meshutil
 #endif

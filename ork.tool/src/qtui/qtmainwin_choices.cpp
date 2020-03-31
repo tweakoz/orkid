@@ -53,7 +53,8 @@ bool ChoiceList::DoesSlashNodePassFilter(const SlashNode* pnode, const ChoiceLis
 
               if (chcval) {
                 for (orkmultimap<std::string, std::string>::const_iterator it = Filter->mFilterMap.begin();
-                     it != Filter->mFilterMap.end(); it++) {
+                     it != Filter->mFilterMap.end();
+                     it++) {
                   const std::string& key = it->first;
                   const std::string& val = it->second;
 
@@ -119,7 +120,8 @@ QMenu* ChoiceList::CreateMenu(const ChoiceListFilters* Filter) const {
 
             if (chcval) {
               for (orkmultimap<std::string, std::string>::const_iterator it = Filter->mFilterMap.begin();
-                   it != Filter->mFilterMap.end(); it++) {
+                   it != Filter->mFilterMap.end();
+                   it++) {
                 const std::string& key = it->first;
                 const std::string& val = it->second;
 
@@ -158,16 +160,19 @@ QMenu* ChoiceList::CreateMenu(const ChoiceListFilters* Filter) const {
 ///////////////////////////////////////////////////////////////////////////
 
 #if defined(USE_FCOLLADA)
-void ColladaChoiceCache(const file::Path& sdir, ChoiceList* ChcList, const std::string& ext,
-                        const CColladaAsset::EAssetType TestType) {
+void ColladaChoiceCache(
+    const file::Path& sdir,
+    ChoiceList* ChcList,
+    const std::string& ext,
+    const ork::tool::meshutil::CColladaAsset::EAssetType TestType) {
   // TiXmlDeclaration * XmlDeclNode = new TiXmlDeclaration( "1.0", "", "" );
   // TiXmlElement *CacheRootNode = new TiXmlElement( CacheName );
   // CacheDoc.LinkEndChild( XmlDeclNode );
   // CacheDoc.LinkEndChild( CacheRootNode );
   // file::Path searchdir = FileEnv::GetRef().GetPathFromUrlExt("data://");
-  file::Path::NameType wildcard = CreateFormattedString("*.%s", ext.c_str()).c_str();
+  file::Path::NameType wildcard         = CreateFormattedString("*.%s", ext.c_str()).c_str();
   orkvector<file::Path::NameType> files = FileEnv::filespec_search(wildcard, sdir);
-  int inumfiles = (int)files.size();
+  int inumfiles                         = (int)files.size();
   file::Path::NameType searchdir(sdir.ToAbsolute().c_str());
   searchdir.replace_in_place("\\", "/");
   for (int ifile = 0; ifile < inumfiles; ifile++) {
@@ -182,7 +187,7 @@ void ColladaChoiceCache(const file::Path& sdir, ChoiceList* ChcList, const std::
 
 void ModelChoices::EnumerateChoices(bool bforcenocache) {
   clear();
-  //FindAssetChoices("data://", "*.xgm");
+  // FindAssetChoices("data://", "*.xgm");
   auto items = lev2::XgmModelAsset::GetClassStatic()->EnumerateExisting();
   for (const auto& i : items)
     add(AttrChoiceValue(i.c_str(), i.c_str()));
@@ -195,7 +200,7 @@ void ModelChoices::EnumerateChoices(bool bforcenocache) {
 void AnimChoices::EnumerateChoices(bool bforcenocache) {
   clear();
 #if defined(USE_FCOLLADA)
-  ColladaChoiceCache("data://", this, "xga", CColladaAsset::ECOLLADA_ANIM);
+  ColladaChoiceCache("data://", this, "xga", ork::tool::meshutil::CColladaAsset::ECOLLADA_ANIM);
 #endif
 }
 
@@ -203,12 +208,12 @@ void AnimChoices::EnumerateChoices(bool bforcenocache) {
 
 void ChoiceList::FindAssetChoices(const file::Path& sdir, const std::string& wildcard) {
   orkvector<file::Path::NameType> files = FileEnv::filespec_search(wildcard.c_str(), sdir.c_str());
-  int inumfiles = (int)files.size();
+  int inumfiles                         = (int)files.size();
   file::Path::NameType searchdir(sdir.ToAbsolute().c_str());
   searchdir.replace_in_place("\\", "/");
   for (int ifile = 0; ifile < inumfiles; ifile++) {
-    auto the_file = files[ifile];
-    auto the_stripped = FileEnv::filespec_strip_base(the_file, "./");
+    auto the_file                  = files[ifile];
+    auto the_stripped              = FileEnv::filespec_strip_base(the_file, "./");
     file::Path::NameType ObjPtrStr = FileEnv::filespec_no_extension(the_stripped);
     file::Path::NameType ObjPtrStrA;
     ObjPtrStrA.replace(ObjPtrStr.c_str(), searchdir.c_str(), "");
@@ -271,21 +276,37 @@ void ChsmChoices::EnumerateChoices(bool bforcenocache) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-ChsmChoices::ChsmChoices() { EnumerateChoices(); }
+ChsmChoices::ChsmChoices() {
+  EnumerateChoices();
+}
 
 ///////////////////////////////////////////////////////////////////////////
 
-FxShaderChoices::FxShaderChoices() { EnumerateChoices(); }
+FxShaderChoices::FxShaderChoices() {
+  EnumerateChoices();
+}
 
-AudioStreamChoices::AudioStreamChoices() { EnumerateChoices(); }
+AudioStreamChoices::AudioStreamChoices() {
+  EnumerateChoices();
+}
 
-AudioBankChoices::AudioBankChoices() { EnumerateChoices(); }
+AudioBankChoices::AudioBankChoices() {
+  EnumerateChoices();
+}
 
-ModelChoices::ModelChoices() { EnumerateChoices(); }
+ModelChoices::ModelChoices() {
+  EnumerateChoices();
+}
 
-AnimChoices::AnimChoices() { EnumerateChoices(); }
+AnimChoices::AnimChoices() {
+  EnumerateChoices();
+}
 
-TextureChoices::TextureChoices() { EnumerateChoices(); }
-ScriptChoices::ScriptChoices() { EnumerateChoices(); }
+TextureChoices::TextureChoices() {
+  EnumerateChoices();
+}
+ScriptChoices::ScriptChoices() {
+  EnumerateChoices();
+}
 
 }} // namespace ork::tool

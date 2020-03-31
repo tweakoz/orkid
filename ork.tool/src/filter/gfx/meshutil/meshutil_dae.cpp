@@ -5,7 +5,7 @@
 
 #include <orktool/orktool_pch.h>
 #include <ork/math/plane.h>
-#include <orktool/filter/gfx/meshutil/meshutil.h>
+#include <orktool/filter/gfx/meshutil/meshutil_tool.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 #include <FCollada.h>
@@ -36,7 +36,7 @@
 using namespace ork::tool;
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace MeshUtil {
+namespace ork::tool::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DaeNodeQ {
@@ -55,7 +55,7 @@ static void CreateDaeMesh(
     FCDSceneNode* Child,
     const std::string& grpname,
     FCDMaterial* DaeMat,
-    const submesh& pgroup,
+    const ork::meshutil::submesh& pgroup,
     const DaeExtraNode* extranodes) {
   const fm::string GrpNameFmStr(grpname.c_str());
 
@@ -169,8 +169,8 @@ static void CreateDaeMesh(
 
   ///////////////////////////////////////////////////
 
-  const orkvector<poly>& polys = pgroup.RefPolys();
-  int inump                    = polys.size();
+  const auto& polys = pgroup.RefPolys();
+  int inump         = polys.size();
   orkprintf("NumPolys<%d>\n", inump);
 
   ///////////////////////////////////////////////////
@@ -199,7 +199,7 @@ static void CreateDaeMesh(
   daeout_uv1.reserve(inumv * 2);
   ///////////////////////////////////////////////////
   for (int iv0 = 0; iv0 < inumv; iv0++) {
-    const vertex& invtx = pgroup.RefVertexPool().GetVertex(iv0);
+    const auto& invtx = pgroup.RefVertexPool().GetVertex(iv0);
     ///////////////////////////////////////////////
     daeout_pos.push_back(invtx.mPos.GetX());
     daeout_pos.push_back(invtx.mPos.GetY());
@@ -250,8 +250,8 @@ static void CreateDaeMesh(
 
   orkprintf("NumPolys<%d>\n", inump);
 
-  for (orkvector<poly>::const_iterator itp = polys.begin(); itp != polys.end(); itp++) {
-    const poly& ply = *itp;
+  for (auto itp = polys.begin(); itp != polys.end(); itp++) {
+    const auto& ply = *itp;
 
     int inumsides = ply.GetNumSides();
 
@@ -300,7 +300,8 @@ template <typename T> static void CloneParam(FCDEffectProfileFX* pfx, const FCDE
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FCDMaterial* AddDaeShader(const toolmesh& tmesh, FCDocument& daedoc, std::string baseName, const DaeWriteOpts& writeopts) {
+FCDMaterial*
+AddDaeShader(const ork::meshutil::Mesh& tmesh, FCDocument& daedoc, std::string baseName, const DaeWriteOpts& writeopts) {
   ///////////////////////////////////////////////////
   FCDEffectLibrary* EfxLib = daedoc.GetEffectLibrary();
   FCDMaterial* DaeMat      = 0;
@@ -372,21 +373,21 @@ FCDMaterial* AddDaeShader(const toolmesh& tmesh, FCDocument& daedoc, std::string
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FCDMaterial* PreserveMaterial(const toolmesh& tmesh, FCDocument& daedoc, const std::string& mtlname) {
+FCDMaterial* PreserveMaterial(const ork::meshutil::Mesh& tmesh, FCDocument& daedoc, const std::string& mtlname) {
   FCDEffectLibrary* EfxLib = daedoc.GetEffectLibrary();
   FCDMaterial* DaeMat      = 0;
 
-  const orkmap<std::string, ork::tool::ColladaMaterial*>& materials   = tmesh.RefMaterialsByName();
-  orkmap<std::string, ork::tool::ColladaMaterial*>::const_iterator it = materials.find(mtlname);
+  auto& materials = tmesh._materialsByName;
+  auto it         = materials.find(mtlname);
 
   if (it != materials.end()) {
-    ork::tool::ColladaMaterial* pmaterial = it->second;
+    auto pmaterial = std::static_pointer_cast<ColladaMaterialInfo>(it->second);
 
     // orkprintf( "omat1\n" );
 
-    //lev2::GfxMaterialFx* pfx = rtti::autocast(pmaterial->_orkMaterial);
-    auto pcfx                = pmaterial->mFxProfile;
-    #if 0
+    // lev2::GfxMaterialFx* pfx = rtti::autocast(pmaterial->_orkMaterial);
+    auto pcfx = pmaterial->mFxProfile;
+#if 0
     if (0 == pfx) {
       orkprintf("ERROR: material<%s> not an FX Shader!\n", mtlname.c_str());
     }
@@ -557,23 +558,21 @@ FCDMaterial* PreserveMaterial(const toolmesh& tmesh, FCDocument& daedoc, const s
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void WriteDaeMeshPreservingMaterials(const toolmesh& tmesh, FCDocument& daedoc, FCDSceneNode* Child) {
+void WriteDaeMeshPreservingMaterials(const ork::meshutil::Mesh& tmesh, FCDocument& daedoc, FCDSceneNode* Child) {
   std::map<std::string, FCDMaterial*> DaeMaterials;
-  const orkmap<std::string, ork::tool::ColladaMaterial*>& origmaterialsbyname = tmesh.RefMaterialsByName();
+  const auto& origmaterialsbyname = tmesh._materialsByName;
   ///////////////////////////////////////////////////
-  for (orkmap<std::string, ork::tool::ColladaMaterial*>::const_iterator it = origmaterialsbyname.begin();
-       it != origmaterialsbyname.end();
-       it++) {
-    const std::string& matname          = it->first;
-    const tool::ColladaMaterial* colmat = it->second;
-    FCDMaterial* DaeMat                 = PreserveMaterial(tmesh, daedoc, matname);
-    DaeMaterials[matname]               = DaeMat;
+  for (auto it = origmaterialsbyname.begin(); it != origmaterialsbyname.end(); it++) {
+    const std::string& matname = it->first;
+    auto colmat                = it->second;
+    FCDMaterial* DaeMat        = PreserveMaterial(tmesh, daedoc, matname);
+    DaeMaterials[matname]      = DaeMat;
     orkprintf("DaeMaterial<%s><%p>\n", matname.c_str(), DaeMat);
   }
   ///////////////////////////////////////////////////
-  const orklut<std::string, submesh*>& SubMeshLut2 = tmesh.RefSubMeshLut();
-  for (orklut<std::string, submesh*>::const_iterator it = SubMeshLut2.begin(); it != SubMeshLut2.end(); it++) {
-    const submesh& pgroup                                   = *it->second;
+  const auto& SubMeshLut2 = tmesh.RefSubMeshLut();
+  for (auto it = SubMeshLut2.begin(); it != SubMeshLut2.end(); it++) {
+    const ork::meshutil::submesh& pgroup                    = *it->second;
     const std::string& polygroupname                        = it->first;
     std::string lmapgrp                                     = pgroup.typedAnnotation<std::string>("LightMapGroup");
     std::string vtxlit                                      = pgroup.typedAnnotation<std::string>("vtxlit");
@@ -608,7 +607,7 @@ void WriteDaeMeshPreservingMaterials(const toolmesh& tmesh, FCDocument& daedoc, 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::WriteToDaeFile(const file::Path& BasePath, const DaeWriteOpts& writeopts) const {
+void ToolMesh::WriteToDaeFile(const file::Path& BasePath, const DaeWriteOpts& writeopts) const {
   FCollada::Initialize();
   ork::file::Path DaePath = BasePath;
   DaePath.SetExtension("dae");
@@ -636,11 +635,11 @@ void toolmesh::WriteToDaeFile(const file::Path& BasePath, const DaeWriteOpts& wr
   if (writeopts.meMaterialSetup == DaeWriteOpts::EMS_PRESERVEMATERIALS) {
     WriteDaeMeshPreservingMaterials(*this, daedoc, Child);
   } else {
-    for (orklut<std::string, submesh*>::const_iterator it = mPolyGroupLut.begin(); it != mPolyGroupLut.end(); it++) {
+    for (auto it = mPolyGroupLut.begin(); it != mPolyGroupLut.end(); it++) {
 
-      const submesh& pgroup      = *it->second;
+      const auto& pgroup         = *it->second;
       const std::string& grpname = it->first;
-      const vertexpool& vpool    = pgroup.RefVertexPool();
+      const auto& vpool          = pgroup.RefVertexPool();
       FCDMaterial* DaeMat        = AddDaeShader(*this, daedoc, grpname, writeopts);
       if (DaeMat) {
         orkprintf("Creating DaeMesh grp<%d> of<%d> name<%s>\n", igidx, inumgrps, grpname.c_str());
@@ -676,14 +675,14 @@ struct DaeSrcRec {
 };
 
 struct DaeReadQueueItem {
-  MeshUtil::submesh* mpDestSubMesh;
+  ork::meshutil::submesh* mpDestSubMesh;
   const FCDGeometryPolygons* mpMatGroup;
   DaeDataSource mPosSource;
   DaeDataSource mNrmSource;
   orkvector<DaeSrcRec> mVtxColorSources;
   orkvector<DaeSrcRec> mUvSources;
   orkvector<DaeSrcRec> mBinSources;
-  const AnnoMap* mpAnnoMap;
+  const ork::meshutil::AnnoMap* mpAnnoMap;
   const file::Path* mBasePath;
   std::string MeshDaeID;
   std::string ShadingGroupName;
@@ -771,10 +770,10 @@ void DaeReadQueueItem::ReadPolys(int ithreadidx) const {
     size_t iface_numfverts = mpMatGroup->GetFaceVertexCount(iface);
     size_t iface_fvertbase = mpMatGroup->GetFaceVertexOffset(iface);
 
-    int ivertexcache[kmaxsidesperpoly];
+    int ivertexcache[ork::meshutil::kmaxsidesperpoly];
 
     for (size_t iface_v = 0; iface_v < iface_numfverts; iface_v++) {
-      MeshUtil::vertex muvtx;
+      ork::meshutil::vertex muvtx;
       /////////////////////////////////
       // position
       /////////////////////////////////
@@ -866,8 +865,8 @@ void DaeReadQueueItem::ReadPolys(int ithreadidx) const {
       ivertexcache[iface_v] = iv;
 
       if (iface_v == iface_numfverts - 1) {
-        if (iface_numfverts <= MeshUtil::kmaxsidesperpoly) {
-          MeshUtil::poly ply(ivertexcache, iface_numfverts);
+        if (iface_numfverts <= ork::meshutil::kmaxsidesperpoly) {
+          ork::meshutil::poly ply(ivertexcache, iface_numfverts);
           ply.SetAnnoMap(mpAnnoMap);
           mpDestSubMesh->MergePoly(ply);
         } else {
@@ -895,7 +894,7 @@ void DaeReadQueueItem::ReadPolys(int ithreadidx) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::ReadFromDaeFile(const file::Path& BasePath, DaeReadOpts& readopts) {
+void ToolMesh::ReadFromDaeFile(const file::Path& BasePath, DaeReadOpts& readopts) {
   float ftimeA = float(OldSchool::GetRef().GetLoResTime());
 
   FCollada::Initialize();
@@ -1158,23 +1157,23 @@ void toolmesh::ReadFromDaeFile(const file::Path& BasePath, DaeReadOpts& readopts
       const auto& mtl_bind         = mShadingGroupToMaterialMap[ShadingGroupName];
       std::string MaterialName     = mtl_bind.mMaterialDaeId;
 
-      AnnoMap* anno_map = new AnnoMap;
+      auto anno_map = new ork::meshutil::AnnoMap;
       anno_map->SetAnnotation("shadinggroup", ShadingGroupName);
       anno_map->SetAnnotation("material", MaterialName);
       anno_map->SetAnnotation("daemesh", MeshDaeID);
 
-      ork::tool::ColladaMaterial* colladamaterial = new ork::tool::ColladaMaterial;
+      auto colladamaterial = std::make_shared<ColladaMaterialInfo>();
       colladamaterial->ParseMaterial(&daedoc, ShadingGroupName, MaterialName);
       // mMaterialMap[ ShadingGroupName ] = colladamaterial;
       // ColMatGroup->Parse( colladamaterial );
-      mMaterialsByShadingGroup[ShadingGroupName] = colladamaterial;
-      mMaterialsByName[MaterialName]             = colladamaterial;
+      _materialsByShadingGroup[ShadingGroupName] = std::static_pointer_cast<ork::meshutil::MaterialInfo>(colladamaterial);
+      _materialsByName[MaterialName]             = std::static_pointer_cast<ork::meshutil::MaterialInfo>(colladamaterial);
 
       FCDGeometryPolygons::PrimitiveType eprimtype = MatGroup->GetPrimitiveType();
       orkvector<unsigned int> TriangleIndices;
       size_t imatnumfaces = MatGroup->GetFaceCount();
 
-      MeshUtil::submesh& out_submesh = MergeSubMesh(ShadingGroupName.c_str());
+      auto& out_submesh = MergeSubMesh(ShadingGroupName.c_str());
 
       if (readopts.mbMergeMeshShGrpName) {
         out_submesh.mAnnotations["shadinggroup"] = ShadingGroupName;
@@ -1280,7 +1279,7 @@ bool DAEToDAE(const tokenlist& options) {
   // Read sectors from the DAE file and grab sector info as well as last resort collision data
   DaeReadOpts daeReadOptions;
   // sectorReadOptions.mReadLayers.insert("sectors");
-  MeshUtil::toolmesh daeMesh;
+  ork::tool::meshutil::ToolMesh daeMesh;
   daeMesh.ReadFromDaeFile(inPath, daeReadOptions);
 
   DaeWriteOpts out_opts;
@@ -1293,6 +1292,6 @@ bool DAEToDAE(const tokenlist& options) {
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::MeshUtil
+} // namespace ork::tool::meshutil
 ///////////////////////////////////////////////////////////////////////////////
 #endif

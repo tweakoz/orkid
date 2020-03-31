@@ -11,20 +11,19 @@
 
 #include <orktool/orktool_pch.h>
 #include <ork/math/plane.h>
-#include <orktool/filter/gfx/meshutil/meshutil.h>
 #include <ork/kernel/string/StringBlock.h>
 #include <ork/file/chunkfile.h>
+#include <orktool/filter/gfx/meshutil/meshutil_tool.h>
 #include <orktool/filter/gfx/collada/collada.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace MeshUtil {
+namespace ork::tool::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
-bool NAVOutput( const file::Path& outpath, const toolmesh& mesh );
+bool NAVOutput(const file::Path& outpath, const ToolMesh& mesh);
 
-bool DAEToNAVCollision( const tokenlist& options )
-{
-	return true;
+bool DAEToNAVCollision(const tokenlist& options) {
+  return true;
 #if 0
 	ork::tool::FilterOptMap	OptionsMap;
 	OptionsMap.SetDefault("--in", "coldae_in.dae" );
@@ -32,7 +31,7 @@ bool DAEToNAVCollision( const tokenlist& options )
 	OptionsMap.SetDefault("-layer", "collision" );
 	OptionsMap.SetOptions( options );
 
-	MeshUtil::toolmesh inmesh;
+	ToolMesh inmesh;
 
 	std::string ttv_in = OptionsMap.GetOption( "--in" )->GetValue();
 	std::string ttv_out = OptionsMap.GetOption( "--out" )->GetValue();
@@ -67,9 +66,8 @@ bool DAEToNAVCollision( const tokenlist& options )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool NAVOutput( const file::Path& outpath, const toolmesh& inmesh )
-{
-	return true;
+bool NAVOutput(const file::Path& outpath, const ToolMesh& inmesh) {
+  return true;
 #if 0
 	bool error = false;
 
@@ -77,7 +75,7 @@ bool NAVOutput( const file::Path& outpath, const toolmesh& inmesh )
 	bool bxb360 = (0!=strstr(outpath.c_str(),"xb360"));
 
 	EndianContext* pendianctx = 0;
-	
+
 	if( bxb360 || bwii )
 	{
 		pendianctx = new EndianContext;
@@ -251,7 +249,7 @@ bool NAVOutput( const file::Path& outpath, const toolmesh& inmesh )
 		{
 			U64 uei = ply.mEdges[iv];
 			const edge& edg = inmesh.GetEdge( uei );
-			
+
 			int inumcon = edg.GetNumConnectedPolys();
 			OrkAssertI(inumcon > 0, "There should never exist an edge with no connected triangles!");
 			if(inumcon > 2)
@@ -309,5 +307,5 @@ bool NAVOutput( const file::Path& outpath, const toolmesh& inmesh )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-}}
+} // namespace ork::tool::meshutil
 ///////////////////////////////////////////////////////////////////////////////

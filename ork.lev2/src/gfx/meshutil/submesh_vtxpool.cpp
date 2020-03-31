@@ -6,10 +6,10 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/math/plane.h>
-#include <ork/lev2/gfx/submesh.h>
+#include <ork/lev2/gfx/meshutil/submesh.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace MeshUtil {
+namespace ork { namespace meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
 static const std::string gnomatch("");
@@ -339,7 +339,7 @@ const std::string& poly::GetAnnotation(const std::string& annoname) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void uvmapcoord::Lerp(const MeshUtil::uvmapcoord& ina, const MeshUtil::uvmapcoord& inb, float flerp) {
+void uvmapcoord::Lerp(const uvmapcoord& ina, const uvmapcoord& inb, float flerp) {
   mMapTexCoord.Lerp(ina.mMapTexCoord, inb.mMapTexCoord, flerp);
   mMapBiNormal.Lerp(ina.mMapBiNormal, inb.mMapBiNormal, flerp);
   mMapTangent.Lerp(ina.mMapTangent, inb.mMapTangent, flerp);
@@ -348,7 +348,7 @@ void uvmapcoord::Lerp(const MeshUtil::uvmapcoord& ina, const MeshUtil::uvmapcoor
 
 ///////////////////////////////////////////////////////////////////////////////
 
-uvmapcoord uvmapcoord::operator+(const MeshUtil::uvmapcoord& ina) const {
+uvmapcoord uvmapcoord::operator+(const uvmapcoord& ina) const {
   uvmapcoord out;
   out.mMapTexCoord = mMapTexCoord + ina.mMapTexCoord;
   out.mMapBiNormal = mMapBiNormal + ina.mMapBiNormal;
@@ -394,5 +394,5 @@ int vertexpool::MergeVertex(const vertex& vtx, int inidx) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::MeshUtil
+}} // namespace ork::meshutil
 ///////////////////////////////////////////////////////////////////////////////

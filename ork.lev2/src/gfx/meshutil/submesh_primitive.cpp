@@ -7,9 +7,9 @@
 
 #include <ork/kernel/orklut.hpp>
 #include <ork/math/plane.h>
-#include <ork/lev2/gfx/submesh.h>
+#include <ork/lev2/gfx/meshutil/submesh.h>
 
-namespace ork::MeshUtil {
+namespace ork::meshutil {
 
 PrimitiveV12N12B12T8C4::PrimitiveV12N12B12T8C4() {
 }
@@ -68,4 +68,4 @@ void PrimitiveV12N12B12T8C4::draw(lev2::Context* context) const {
   context->GBI()->DrawIndexedPrimitiveEML(VB, IB, lev2::EPRIM_TRIANGLES);
 }
 
-} // namespace ork::MeshUtil
+} // namespace ork::meshutil

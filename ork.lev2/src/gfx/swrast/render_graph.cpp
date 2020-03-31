@@ -446,7 +446,7 @@ static rend_srcmesh* LoadRgm( const char* pfname, RenderData& rdata )
 #if 0
 static rend_srcmesh* LoadObj( const char* pfname, RenderData& rdata )
 {
-	ork::MeshUtil::toolmesh tmesh;
+	ork::MeshUtil::Mesh tmesh;
 	tmesh.ReadFromWavefrontObj( pfname );
 
 	int inumsubs = tmesh.numSubMeshes();

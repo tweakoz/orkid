@@ -5,22 +5,22 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <ork/pch.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/math/plane.h>
-#include <orktool/filter/gfx/meshutil/meshutil.h>
-#include <orktool/orktool_pch.h>
+#include <ork/lev2/gfx/meshutil/meshutil.h>
 
-namespace ork { namespace MeshUtil {
+namespace ork { namespace meshutil {
 
 /////////////////////////////////////////////////////////////////////////
 
-toolmesh::toolmesh()
+Mesh::Mesh()
     : mbMergeEdges(true) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-toolmesh::~toolmesh() {
+Mesh::~Mesh() {
   int icnt = int(mPolyGroupLut.size());
   for (int i = 0; i < icnt; i++) {
     submesh* psub = mPolyGroupLut.GetIterAtIndex(i)->second;
@@ -33,7 +33,7 @@ toolmesh::~toolmesh() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::Prune() {
+void Mesh::Prune() {
   orkset<std::string> SubsToPrune;
   for (orklut<std::string, submesh*>::const_iterator it = mPolyGroupLut.begin(); it != mPolyGroupLut.end(); it++) {
     const submesh& src_grp  = *it->second;
@@ -52,7 +52,7 @@ void toolmesh::Prune() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::Dump(const std::string& comment) const {
+void Mesh::Dump(const std::string& comment) const {
   if (1)
     return; //
   /*
@@ -62,14 +62,14 @@ void toolmesh::Dump(const std::string& comment) const {
     FILE* fout = fopen(fname.c_str(), "wt");
     fprintf(fout, "////////////////////////////////////////////////\n");
     fprintf(fout, "////////////////////////////////////////////////\n");
-    fprintf(fout, "// toolmesh dump<%s>\n", comment.c_str());
+    fprintf(fout, "// Mesh dump<%s>\n", comment.c_str());
     fprintf(fout, "////////////////////////////////////////////////\n");
     fprintf(fout, "////////////////////////////////////////////////\n");
     for (const auto& item : mShadingGroupToMaterialMap) {
       const std::string& key = item.first;
       const auto& val        = item.second;
       fprintf(fout,
-              "// toolmesh::shadinggroup<%s> material_id<%s> material_name<%s>\n",
+              "// Mesh::shadinggroup<%s> material_id<%s> material_name<%s>\n",
               key.c_str(),
               val.mMaterialDaeId.c_str(),
               val.mMaterialName.c_str());
@@ -78,14 +78,14 @@ void toolmesh::Dump(const std::string& comment) const {
     for (orkmap<std::string, std::string>::const_iterator itm = mAnnotations.begin(); itm != mAnnotations.end(); itm++) {
       const std::string& key = itm->first;
       const std::string& val = itm->second;
-      fprintf(fout, "// toolmesh::annokey<%s> annoval<%s>\n", key.c_str(), val.c_str());
+      fprintf(fout, "// Mesh::annokey<%s> annoval<%s>\n", key.c_str(), val.c_str());
     }
     fprintf(fout, "////////////////////////////////////////////////\n");
     for (orklut<std::string, submesh*>::const_iterator it = mPolyGroupLut.begin(); it != mPolyGroupLut.end(); it++) {
       const submesh& src_grp  = *it->second;
       const std::string& name = it->first;
       int inump               = src_grp.GetNumPolys();
-      fprintf(fout, "// toolmesh::polygroup<%s> numpolys<%d>\n", name.c_str(), inump);
+      fprintf(fout, "// Mesh::polygroup<%s> numpolys<%d>\n", name.c_str(), inump);
       const submesh::AnnotationMap& subannos = src_grp.RefAnnotations();
       for (orkmap<std::string, std::string>::const_iterator itm = subannos.begin(); itm != subannos.end(); itm++) {
         const std::string& key = itm->first;
@@ -134,15 +134,15 @@ void toolmesh::Dump(const std::string& comment) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::CopyMaterialsFromToolMesh(const toolmesh& from) {
-  mMaterialsByShadingGroup   = from.mMaterialsByShadingGroup;
-  mMaterialsByName           = from.mMaterialsByName;
+void Mesh::CopyMaterialsFromToolMesh(const Mesh& from) {
+  _materialsByShadingGroup   = from._materialsByShadingGroup;
+  _materialsByName           = from._materialsByName;
   mShadingGroupToMaterialMap = from.mShadingGroupToMaterialMap;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::SetAnnotation(const char* annokey, const char* annoval) {
+void Mesh::SetAnnotation(const char* annokey, const char* annoval) {
   std::string aval = "";
   if (annoval != 0)
     aval = annoval;
@@ -154,7 +154,7 @@ void submesh::setStringAnnotation(const char* annokey, std::string annoval) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const char* toolmesh::GetAnnotation(const char* annokey) const {
+const char* Mesh::GetAnnotation(const char* annokey) const {
   static const char* defret("");
   orkmap<std::string, std::string>::const_iterator it = mAnnotations.find(std::string(annokey));
   if (it != mAnnotations.end()) {
@@ -165,7 +165,7 @@ const char* toolmesh::GetAnnotation(const char* annokey) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 /*
-void submesh::SplitOnAnno(toolmesh& out, const std::string& annokey) const {
+void submesh::SplitOnAnno(Mesh& out, const std::string& annokey) const {
   int inumpolys = (int)mMergedPolys.size();
   for (int ip = 0; ip < inumpolys; ip++) {
     const poly& ply    = mMergedPolys[ip];
@@ -189,7 +189,7 @@ void submesh::SplitOnAnno(toolmesh& out, const std::string& annokey) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 /*
-void submesh::SplitOnAnno(toolmesh& out, const std::string& prefix, const std::string& annokey) const {
+void submesh::SplitOnAnno(Mesh& out, const std::string& prefix, const std::string& annokey) const {
   int inumpolys = (int)mMergedPolys.size();
   AnnotationMap merge_annos;
   merge_annos["SplitPrefix"] = prefix;
@@ -216,7 +216,7 @@ void submesh::SplitOnAnno(toolmesh& out, const std::string& prefix, const std::s
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void submesh::SplitOnAnno(toolmesh& out, const std::string& annokey, const AnnotationMap& mrgannos) const {
+void submesh::SplitOnAnno(Mesh& out, const std::string& annokey, const AnnotationMap& mrgannos) const {
   int inumpolys = (int)mMergedPolys.size();
   for (int ip = 0; ip < inumpolys; ip++) {
     const poly& ply    = mMergedPolys[ip];
@@ -241,7 +241,7 @@ void submesh::SplitOnAnno(toolmesh& out, const std::string& annokey, const Annot
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AABox toolmesh::GetAABox() const {
+AABox Mesh::GetAABox() const {
   AABox outp;
   outp.BeginGrow();
   int inumsub = (int)mPolyGroupLut.size();
@@ -256,20 +256,20 @@ AABox toolmesh::GetAABox() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const orklut<std::string, submesh*>& toolmesh::RefSubMeshLut() const {
+const orklut<std::string, submesh*>& Mesh::RefSubMeshLut() const {
   return mPolyGroupLut;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/*const orkvector<submesh *> &toolmesh::RefPolyGroupByPolyIndex() const
+/*const orkvector<submesh *> &Mesh::RefPolyGroupByPolyIndex() const
 {
     return mPolyGroupByPolyIndex;
 }*/
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const submesh* toolmesh::FindSubMeshFromMaterialName(const std::string& materialname) const {
+const submesh* Mesh::FindSubMeshFromMaterialName(const std::string& materialname) const {
   for (const auto& item : mShadingGroupToMaterialMap) {
     if (materialname == item.second.mMaterialDaeId) {
       const std::string& shgrpname                       = item.first;
@@ -284,7 +284,7 @@ const submesh* toolmesh::FindSubMeshFromMaterialName(const std::string& material
 
 ///////////////////////////////////////////////////////////////////////////////
 
-submesh* toolmesh::FindSubMeshFromMaterialName(const std::string& materialname) {
+submesh* Mesh::FindSubMeshFromMaterialName(const std::string& materialname) {
   for (const auto& item : mShadingGroupToMaterialMap) {
     if (materialname == item.second.mMaterialDaeId) {
       const std::string& shgrpname                 = item.first;
@@ -299,21 +299,21 @@ submesh* toolmesh::FindSubMeshFromMaterialName(const std::string& materialname) 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const submesh* toolmesh::FindSubMesh(const std::string& polygroupname) const {
+const submesh* Mesh::FindSubMesh(const std::string& polygroupname) const {
   orklut<std::string, submesh*>::const_iterator it = mPolyGroupLut.find(polygroupname);
   return (it == mPolyGroupLut.end()) ? 0 : it->second;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-submesh* toolmesh::FindSubMesh(const std::string& polygroupname) {
+submesh* Mesh::FindSubMesh(const std::string& polygroupname) {
   orklut<std::string, submesh*>::iterator it = mPolyGroupLut.find(polygroupname);
   return (it == mPolyGroupLut.end()) ? 0 : it->second;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::SetRangeTransform(const fvec4& vscale, const fvec4& vtrans) {
+void Mesh::SetRangeTransform(const fvec4& vscale, const fvec4& vtrans) {
   fmtx4 MatS, MatT;
   MatS.Scale(vscale.GetX(), vscale.GetY(), vscale.GetZ());
   MatT.SetTranslation(vtrans.GetX(), vtrans.GetY(), vtrans.GetZ());
@@ -322,7 +322,7 @@ void toolmesh::SetRangeTransform(const fvec4& vscale, const fvec4& vtrans) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::RemoveSubMesh(const std::string& pgroup) {
+void Mesh::RemoveSubMesh(const std::string& pgroup) {
   orklut<std::string, submesh*>::iterator it = mPolyGroupLut.find(pgroup);
   if (it != mPolyGroupLut.end()) {
     submesh* psub = it->second;
@@ -331,6 +331,101 @@ void toolmesh::RemoveSubMesh(const std::string& pgroup) {
   }
 }
 
+MaterialInfo::MaterialInfo()
+    : _orkMaterial(0) {
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
-}} // namespace ork::MeshUtil
+FlatSubMesh::FlatSubMesh(const ork::meshutil::submesh& mesh) {
+  const auto& vpool = mesh.RefVertexPool();
+
+  mesh.FindNSidedPolys(TrianglePolyIndices, 3);
+  mesh.FindNSidedPolys(QuadPolyIndices, 4);
+
+  auto vtxformat = mesh.typedAnnotation<std::string>("OutVtxFormat");
+  evtxformat     = PropType<lev2::EVtxStreamFormat>::FromString(vtxformat.c_str());
+
+  orkprintf("vtxformat<%s>\n", vtxformat.c_str());
+
+  ////////////////////////////////////////////////////////
+  int inumv   = (int)vpool.GetNumVertices();
+  int inumtri = int(TrianglePolyIndices.size());
+  int inumqua = int(QuadPolyIndices.size());
+  ////////////////////////////////////////////////////////
+
+  switch (evtxformat) {
+    case lev2::EVTXSTREAMFMT_V12N12B12T16: {
+      lev2::SVtxV12N12B12T16 OutVertex;
+      for (int iv0 = 0; iv0 < inumv; iv0++) {
+        const vertex& invtx = vpool.GetVertex(iv0);
+
+        OutVertex.mPosition = invtx.mPos;
+        OutVertex.mNormal   = invtx.mNrm;
+        OutVertex.mBiNormal = invtx.mUV[0].mMapBiNormal;
+        OutVertex.mUV0      = invtx.mUV[0].mMapTexCoord;
+        OutVertex.mUV1      = invtx.mUV[1].mMapTexCoord;
+
+        MergeVertsT16.push_back(OutVertex);
+      }
+      inumverts   = int(MergeVertsT16.size());
+      ivtxsize    = sizeof(lev2::SVtxV12N12B12T16);
+      poutvtxdata = (void*)&MergeVertsT16.at(0);
+      break;
+    }
+    case lev2::EVTXSTREAMFMT_V12N12B12T8C4: {
+      orkvector<lev2::SVtxV12N12B12T8C4> MergeVerts;
+      lev2::SVtxV12N12B12T8C4 OutVertex;
+      for (int iv0 = 0; iv0 < inumv; iv0++) {
+        const vertex& invtx = vpool.GetVertex(iv0);
+
+        OutVertex.mPosition = invtx.mPos;
+        OutVertex.mNormal   = invtx.mNrm;
+        OutVertex.mBiNormal = invtx.mUV[0].mMapBiNormal;
+        OutVertex.mUV0      = invtx.mUV[0].mMapTexCoord;
+        OutVertex.mColor    = invtx.mCol[0].GetRGBAU32();
+
+        MergeVertsT8.push_back(OutVertex);
+      }
+      inumverts   = int(MergeVertsT8.size());
+      ivtxsize    = sizeof(lev2::SVtxV12N12B12T8C4);
+      poutvtxdata = (void*)&MergeVertsT8.at(0);
+      break;
+    }
+    default: // vertex format not supported
+      OrkAssert(false);
+      break;
+  }
+
+  for (int it = 0; it < inumtri; it++) {
+    int idx           = TrianglePolyIndices[it];
+    const poly& intri = mesh.RefPoly(idx);
+    int inumsides     = intri.GetNumSides();
+    for (int iv = 0; iv < inumsides; iv++) {
+      int idx = intri.GetVertexID(iv);
+      MergeTriIndices.push_back(idx);
+    }
+  }
+
+  for (int iq = 0; iq < inumqua; iq++) {
+    int idx           = QuadPolyIndices[iq];
+    const poly& inqua = mesh.RefPoly(idx);
+    int inumsides     = inqua.GetNumSides();
+    int idx0          = inqua.GetVertexID(0);
+    int idx1          = inqua.GetVertexID(1);
+    int idx2          = inqua.GetVertexID(2);
+    int idx3          = inqua.GetVertexID(3);
+
+    MergeTriIndices.push_back(idx0);
+    MergeTriIndices.push_back(idx1);
+    MergeTriIndices.push_back(idx2);
+
+    MergeTriIndices.push_back(idx0);
+    MergeTriIndices.push_back(idx2);
+    MergeTriIndices.push_back(idx3);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+}} // namespace ork::meshutil

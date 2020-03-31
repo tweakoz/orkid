@@ -6,9 +6,9 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include <ork/lev2/gfx/tristripper/tri_stripper.h>
+#include <ork/lev2/gfx/meshutil/tristripper/tri_stripper.h>
 
-namespace triangle_stripper {
+namespace ork::meshutil::triangle_stripper {
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -506,4 +506,4 @@ void tri_stripper::AddLeftTriangles() {
     m_PrimitivesVector.pop_back();
 }
 
-} // namespace triangle_stripper
+} // namespace ork::meshutil::triangle_stripper
