@@ -61,10 +61,10 @@ void DataBlockCache::setDataBlock(uint64_t key, datablockptr_t item, bool cachea
   auto cache_path = _generateCachePath(key);
   inst._blockmap.atomicOp([item, key, cache_path, cacheable](datablockmap_t& m) {
     auto it = m.find(key);
-    assert(it == m.end());
+    // assert(it == m.end());
     m[key] = item;
     using namespace boost::filesystem;
-    if (false == exists(cache_path) and cacheable) {
+    if (cacheable) {
       FILE* fout = fopen(cache_path.c_str(), "wb");
       fwrite(item->data(), item->length(), 1, fout);
       fclose(fout);

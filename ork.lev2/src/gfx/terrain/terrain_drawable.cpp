@@ -1,7 +1,9 @@
-///////////////////////////////////////////////////////////////////////////////
-//
-//
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2020, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
@@ -82,7 +84,7 @@ struct SectorLodInfo {
   }
   ////////////////////////////////////////
   void buildClusters(AABox& aabb);
-  void buildPrimitives(datablockptr_t out_datablock);
+  void buildPrimitives(chunkfile::OutputStream* hdrstream, chunkfile::OutputStream* geostream);
   ////////////////////////////////////////
 
   std::vector<Patch> _patches;
@@ -109,7 +111,7 @@ struct TerrainRenderImpl {
   void gpuUpdate(Context* context);
   void render(const RenderContextInstData& RCID);
 
-  datablockptr_t recomputeGeometry();
+  void recomputeGeometry(chunkfile::OutputStream* hdrstream, chunkfile::OutputStream* geostream);
   void gpuLoadGeometry(Context* context, datablockptr_t dblock);
   void gpuInitGeometry(Context* context);
   void gpuInitTextures(Context* context);
@@ -540,12 +542,10 @@ void SectorLodInfo::buildClusters(AABox& aabb) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-datablockptr_t TerrainRenderImpl::recomputeGeometry() {
+void TerrainRenderImpl::recomputeGeometry(chunkfile::OutputStream* hdrstream, chunkfile::OutputStream* geostream) {
 
   ork::Timer timer;
   timer.Start();
-
-  datablockptr_t dblock = std::make_shared<DataBlock>();
 
   ////////////////////////////////////////////////////////////////
 
@@ -787,8 +787,8 @@ datablockptr_t TerrainRenderImpl::recomputeGeometry() {
     auto& sector = _sector[i];
     sector._lod0.buildClusters(_aabox);
     sector._lodX.buildClusters(_aabox);
-    sector._lod0.buildPrimitives(dblock);
-    sector._lodX.buildPrimitives(dblock);
+    sector._lod0.buildPrimitives(hdrstream, geostream);
+    sector._lodX.buildPrimitives(hdrstream, geostream);
   } // for each sector
   _aabox.EndGrow();
 
@@ -802,16 +802,12 @@ datablockptr_t TerrainRenderImpl::recomputeGeometry() {
   // printf("geosiz<%f %f %f>\n", geosiz.GetX(), geosiz.GetY(), geosiz.GetZ());
 
   float runtime = timer.SecsSinceStart();
-
-  return dblock;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SectorLodInfo::buildPrimitives(datablockptr_t out_datablock) {
-  chunkfile::Writer chunkwriter("tergeom");
-  auto hdrstream  = chunkwriter.AddStream("header");
-  auto geostream  = chunkwriter.AddStream("geometry");
+void SectorLodInfo::buildPrimitives(chunkfile::OutputStream* hdrstream, chunkfile::OutputStream* geostream) {
+  lev2::ContextDummy DummyTarget;
   size_t inumclus = _clusterizer.GetNumClusters();
   hdrstream->AddItem<size_t>(inumclus);
   auto vertex_stream_format = EVtxStreamFormat::V12C4T16;
@@ -821,25 +817,44 @@ void SectorLodInfo::buildPrimitives(datablockptr_t out_datablock) {
     clusterbuilder->buildVertexBuffer(vertex_stream_format);
     XgmCluster xgmcluster;
     buildTriStripXgmCluster(xgmcluster, clusterbuilder);
-    auto VB = xgmcluster._vertexBuffer;
+    ////////////////////////////////////////////////////////////////
+    hdrstream->AddItem<size_t>("begin-sector-lod"_crcu);
     hdrstream->AddItem<size_t>(icluster);
     hdrstream->AddItem<fvec3>(xgmcluster.mBoundingBox.Min());
     hdrstream->AddItem<fvec3>(xgmcluster.mBoundingBox.Max());
+    ////////////////////////////////////////////////////////////////
+    auto VB           = xgmcluster._vertexBuffer;
+    size_t vbufoffset = geostream->GetSize();
+    auto vertexdata   = (const uint8_t*)DummyTarget.GBI()->LockVB(*VB);
+    OrkAssert(vertexdata != nullptr);
+    size_t numverts      = VB->GetNumVertices();
+    size_t vtxsize       = VB->GetVtxSize();
+    size_t vertexdatalen = numverts * vtxsize;
     hdrstream->AddItem<lev2::EVtxStreamFormat>(xgmcluster.meVtxStrFmt);
-    hdrstream->AddItem(VB->GetNumVertices());
+    hdrstream->AddItem<size_t>(numverts);
+    hdrstream->AddItem<size_t>(vtxsize);
+    hdrstream->AddItem<size_t>(vertexdatalen);
+    hdrstream->AddItem<size_t>(vbufoffset);
+    geostream->Write(vertexdata, vertexdatalen);
+    DummyTarget.GBI()->UnLockVB(*VB);
+    ////////////////////////////////////////////////////////////////
     hdrstream->AddItem<int>(xgmcluster.miNumPrimGroups);
     for (size_t ipg = 0; ipg < xgmcluster.miNumPrimGroups; ipg++) {
-      const auto& PG = xgmcluster.RefPrimGroup(ipg);
+      const auto& PG    = xgmcluster.RefPrimGroup(ipg);
+      size_t ibufoffset = geostream->GetSize();
+      size_t numindices = PG.GetNumIndices();
+      auto indexdata    = (uint16_t*)DummyTarget.GBI()->LockIB(*PG.GetIndexBuffer());
+      OrkAssert(indexdata != nullptr);
       hdrstream->AddItem<size_t>(ipg);
-      hdrstream->AddItem<int>(PG.miNumIndices);
       hdrstream->AddItem<lev2::EPrimitiveType>(PG.mePrimType);
+      hdrstream->AddItem<size_t>(PG.miNumIndices);
+      hdrstream->AddItem<size_t>(ibufoffset);
+      geostream->Write((const uint8_t*)indexdata, numindices * sizeof(uint16_t));
+      DummyTarget.GBI()->UnLockIB(*PG.GetIndexBuffer());
     }
-    // TODO: cluster was build using the dummy interface,
-    //  so the data is sitting in CPU memory.
-    // implement datablock caching and
-    //  load into to GPU memory
+    ////////////////////////////////////////////////////////////////
+    hdrstream->AddItem<size_t>("end-sector-lod"_crcu);
   }
-  chunkwriter.writeToDataBlock(out_datablock);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -869,8 +884,14 @@ void TerrainRenderImpl::gpuInitGeometry(Context* context) {
   auto dblock = DataBlockCache::findDataBlock(hashkey);
 
   if (1) { // (not dblock) {
-    dblock = recomputeGeometry();
-    // DataBlockCache::setDataBlock(hashkey, dblock);
+    chunkfile::Writer chunkwriter("tergeom");
+    auto hdrstream = chunkwriter.AddStream("header");
+    auto geostream = chunkwriter.AddStream("geometry");
+    recomputeGeometry(hdrstream, geostream);
+    dblock = std::make_shared<DataBlock>();
+    chunkwriter.writeToDataBlock(dblock);
+    printf("Writing geometrycache hash<0x%zx>\n", hashkey);
+    DataBlockCache::setDataBlock(hashkey, dblock);
   }
   gpuLoadGeometry(context, dblock);
 }
