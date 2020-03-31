@@ -57,15 +57,18 @@ struct Patch {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
 struct TerrainPrimitive {
-
-  VtxWriter<vertex_type> _vtxwriter;
-  vertexbuffer_ptr_t _vtxbuffer = nullptr;
-  idxbuf_t* _idxbuffer          = nullptr;
-  std::vector<vertex_type> _tempverts;
-  std::vector<uint16_t> _tempidcs;
+  std::shared_ptr<idxbuf_t> _idxbuffer;
+  lev2::EPrimitiveType _primtype = lev2::EPrimitiveType::NONE;
 };
+typedef std::shared_ptr<TerrainPrimitive> terprim_ptr_t;
+
+struct TerrainCluster {
+  std::shared_ptr<vertexbuffer_t> _vtxbuffer;
+  std::vector<terprim_ptr_t> _primitives;
+};
+
+typedef std::shared_ptr<TerrainCluster> tercluster_ptr_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -85,12 +88,13 @@ struct SectorLodInfo {
   ////////////////////////////////////////
   void buildClusters(AABox& aabb);
   void buildPrimitives(chunkfile::OutputStream* hdrstream, chunkfile::OutputStream* geostream);
+  void gpuLoadGeometry(Context* context, chunkfile::InputStream* hdrstream, chunkfile::InputStream* geostream);
   ////////////////////////////////////////
 
   std::vector<Patch> _patches;
   meshutil::XgmClusterizerStd _clusterizer;
   meshutil::MeshConfigurationFlags _meshflags;
-  std::vector<TerrainPrimitive*> _primitives;
+  std::vector<tercluster_ptr_t> _gpuClusters;
 
   bool _islod0 = false;
 };
@@ -820,25 +824,32 @@ void SectorLodInfo::buildPrimitives(chunkfile::OutputStream* hdrstream, chunkfil
     ////////////////////////////////////////////////////////////////
     hdrstream->AddItem<size_t>("begin-sector-lod"_crcu);
     hdrstream->AddItem<size_t>(icluster);
+    // printf("write icluster<%zu>\n", icluster);
     hdrstream->AddItem<fvec3>(xgmcluster.mBoundingBox.Min());
     hdrstream->AddItem<fvec3>(xgmcluster.mBoundingBox.Max());
     ////////////////////////////////////////////////////////////////
-    auto VB           = xgmcluster._vertexBuffer;
-    size_t vbufoffset = geostream->GetSize();
-    auto vertexdata   = (const uint8_t*)DummyTarget.GBI()->LockVB(*VB);
+    auto VB                 = clusterbuilder->_vertexBuffer;
+    size_t numverts         = VB->GetNumVertices();
+    size_t vtxsize          = VB->GetVtxSize();
+    size_t vertexdatalen    = numverts * vtxsize;
+    size_t vertexdataoffset = geostream->GetSize();
+    auto vertexdata         = (const uint8_t*)DummyTarget.GBI()->LockVB(*VB);
     OrkAssert(vertexdata != nullptr);
-    size_t numverts      = VB->GetNumVertices();
-    size_t vtxsize       = VB->GetVtxSize();
-    size_t vertexdatalen = numverts * vtxsize;
-    hdrstream->AddItem<lev2::EVtxStreamFormat>(xgmcluster.meVtxStrFmt);
+    hdrstream->AddItem<lev2::EVtxStreamFormat>(vertex_stream_format);
     hdrstream->AddItem<size_t>(numverts);
     hdrstream->AddItem<size_t>(vtxsize);
     hdrstream->AddItem<size_t>(vertexdatalen);
-    hdrstream->AddItem<size_t>(vbufoffset);
+    hdrstream->AddItem<size_t>(vertexdataoffset);
     geostream->Write(vertexdata, vertexdatalen);
+
+    // printf("write numverts<%zu>\n", numverts);
+    // printf("write vtxsize<%zu>\n", vtxsize);
+    // printf("write vertexdatalen<%zu>\n", vertexdatalen);
+    // printf("write vertexdataoffset<%zu>\n", vertexdataoffset);
+
     DummyTarget.GBI()->UnLockVB(*VB);
     ////////////////////////////////////////////////////////////////
-    hdrstream->AddItem<int>(xgmcluster.miNumPrimGroups);
+    hdrstream->AddItem<size_t>(xgmcluster.miNumPrimGroups);
     for (size_t ipg = 0; ipg < xgmcluster.miNumPrimGroups; ipg++) {
       const auto& PG    = xgmcluster.RefPrimGroup(ipg);
       size_t ibufoffset = geostream->GetSize();
@@ -849,7 +860,9 @@ void SectorLodInfo::buildPrimitives(chunkfile::OutputStream* hdrstream, chunkfil
       hdrstream->AddItem<lev2::EPrimitiveType>(PG.mePrimType);
       hdrstream->AddItem<size_t>(PG.miNumIndices);
       hdrstream->AddItem<size_t>(ibufoffset);
-      geostream->Write((const uint8_t*)indexdata, numindices * sizeof(uint16_t));
+      geostream->Write(
+          (const uint8_t*)indexdata, //
+          numindices * sizeof(uint16_t));
       DummyTarget.GBI()->UnLockIB(*PG.GetIndexBuffer());
     }
     ////////////////////////////////////////////////////////////////
@@ -859,7 +872,84 @@ void SectorLodInfo::buildPrimitives(chunkfile::OutputStream* hdrstream, chunkfil
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void SectorLodInfo::gpuLoadGeometry(Context* ctx, chunkfile::InputStream* hdrstream, chunkfile::InputStream* geostream) {
+  size_t num_clusters     = 0;
+  size_t begin_lod_marker = 0;
+  size_t end_lod_marker   = 0;
+  size_t check_cluster    = 0;
+  fvec3 bbmin, bbmax;
+  lev2::EVtxStreamFormat streamfmt;
+  size_t numverts         = 0;
+  size_t vtxsize          = 0;
+  size_t vertexdatalen    = 0;
+  size_t vertexdataoffset = 0;
+  size_t numprimgroups    = 0;
+  size_t check_pgindex    = 0;
+  lev2::EPrimitiveType primtype;
+  size_t numindices      = 0;
+  size_t indexdataoffset = 0;
+  ////////////////////////////////////////////////////////////////
+  hdrstream->GetItem<size_t>(num_clusters);
+  for (size_t icluster = 0; icluster < num_clusters; icluster++) {
+
+    auto gpu_cluster = std::make_shared<TerrainCluster>();
+    _gpuClusters.push_back(gpu_cluster);
+
+    hdrstream->GetItem<size_t>(begin_lod_marker);
+    OrkAssert(begin_lod_marker == "begin-sector-lod"_crcu);
+    hdrstream->GetItem<size_t>(check_cluster);
+    // printf("checkcluster<%zu>\n", check_cluster);
+    hdrstream->GetItem<fvec3>(bbmin);
+    hdrstream->GetItem<fvec3>(bbmax);
+    hdrstream->GetItem<lev2::EVtxStreamFormat>(streamfmt);
+    // printf("checkcluster<%zu>\n", size_t(streamfmt));
+    hdrstream->GetItem<size_t>(numverts);
+    hdrstream->GetItem<size_t>(vtxsize);
+    hdrstream->GetItem<size_t>(vertexdatalen);
+    hdrstream->GetItem<size_t>(vertexdataoffset);
+    hdrstream->GetItem<size_t>(numprimgroups);
+    // printf("numverts<%zu>\n", numverts);
+    // printf("vtxsize<%zu>\n", vtxsize);
+    // printf("vertexdatalen<%zu>\n", vertexdatalen);
+    // printf("vertexdataoffset<%zu>\n", vertexdataoffset);
+    // printf("numprimgroups<%zu>\n", numprimgroups);
+
+    auto vertexbufferdata = (const void*)geostream->GetDataAt(vertexdataoffset);
+
+    auto VB            = (vertexbuffer_t*)VertexBufferBase::CreateVertexBuffer(streamfmt, numverts, true);
+    auto gpuvtxpointer = (void*)ctx->GBI()->LockVB(*VB, 0, numverts);
+    memcpy(gpuvtxpointer, vertexbufferdata, vertexdatalen);
+    ctx->GBI()->UnLockVB(*VB);
+
+    gpu_cluster->_vtxbuffer = std::shared_ptr<vertexbuffer_t>(VB);
+
+    for (size_t ipg = 0; ipg < numprimgroups; ipg++) {
+      hdrstream->GetItem<size_t>(check_pgindex);
+      OrkAssert(ipg == check_pgindex);
+      // printf("pg index<%zu>\n", check_pgindex);
+      hdrstream->GetItem<lev2::EPrimitiveType>(primtype);
+      hdrstream->GetItem<size_t>(numindices);
+      hdrstream->GetItem<size_t>(indexdataoffset);
+      // printf("indexdataoffset<%zu>\n", indexdataoffset);
+      auto indexbufferdata = (const uint16_t*)geostream->GetDataAt(indexdataoffset);
+
+      auto gpu_prim = std::make_shared<TerrainPrimitive>();
+      gpu_cluster->_primitives.push_back(gpu_prim);
+
+      gpu_prim->_primtype  = primtype;
+      gpu_prim->_idxbuffer = std::make_shared<idxbuf_t>(numindices);
+      auto gpuindexptr     = (void*)ctx->GBI()->LockIB(*gpu_prim->_idxbuffer.get());
+      memcpy(gpuindexptr, indexbufferdata, numindices * sizeof(uint16_t));
+      ctx->GBI()->UnLockIB(*gpu_prim->_idxbuffer.get());
+    }
+    hdrstream->GetItem<size_t>(end_lod_marker);
+    OrkAssert(end_lod_marker == "end-sector-lod"_crcu);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+
 void TerrainRenderImpl::gpuLoadGeometry(Context* context, datablockptr_t dblock) {
+  printf("TerrainRenderImpl::gpuLoadGeometry dblock len<0x%zx>\n", dblock->length());
   //////////////////////////////////////////
   chunkfile::DefaultLoadAllocator allocator;
   chunkfile::Reader chunkreader(dblock, allocator);
@@ -867,9 +957,17 @@ void TerrainRenderImpl::gpuLoadGeometry(Context* context, datablockptr_t dblock)
   if (chunkreader.IsOk()) {
     auto hdrstream = chunkreader.GetStream("header");
     auto geostream = chunkreader.GetStream("geometry");
+    printf("hdrstream len<0x%zx>\n", hdrstream->GetLength());
+    printf("geostream len<0x%zx>\n", geostream->GetLength());
+    ////////////////////////////////////////////////////////////////
+    for (int i = 0; i < 8; i++) {
+      auto& sector = _sector[i];
+      sector._lod0.gpuLoadGeometry(context, hdrstream, geostream);
+      sector._lodX.gpuLoadGeometry(context, hdrstream, geostream);
+    } // for each sector
   }
+  ////////////////////////////////////////////////////////////////
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void TerrainRenderImpl::gpuInitGeometry(Context* context) {
@@ -883,7 +981,9 @@ void TerrainRenderImpl::gpuInitGeometry(Context* context) {
 
   auto dblock = DataBlockCache::findDataBlock(hashkey);
 
-  if (1) { // (not dblock) {
+  if (dblock) {
+    printf("Read geometrycache hash<0x%zx>\n", hashkey);
+  } else {
     chunkfile::Writer chunkwriter("tergeom");
     auto hdrstream = chunkwriter.AddStream("header");
     auto geostream = chunkwriter.AddStream("geometry");
@@ -1100,8 +1200,14 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   for (int isector = 0; isector < 8; isector++) {
     auto& sector = _sector[isector];
     auto L0      = sector._lod0;
-    for (const auto& prim : L0._primitives)
-      gbi->DrawIndexedPrimitiveEML(*prim->_vtxbuffer, *prim->_idxbuffer, EPrimitiveType::TRIANGLES);
+    for (auto cluster : L0._gpuClusters) {
+      for (auto primitive : cluster->_primitives) {
+        gbi->DrawIndexedPrimitiveEML(
+            *cluster->_vtxbuffer.get(), //
+            *primitive->_idxbuffer.get(),
+            primitive->_primtype);
+      }
+    }
   }
   ////////////////////////////////
   // render LX
@@ -1109,8 +1215,14 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   for (int isector = 0; isector < 8; isector++) {
     auto& sector = _sector[isector];
     auto LX      = sector._lodX;
-    for (const auto& prim : LX._primitives)
-      gbi->DrawIndexedPrimitiveEML(*prim->_vtxbuffer, *prim->_idxbuffer, EPrimitiveType::TRIANGLES);
+    for (auto cluster : LX._gpuClusters) {
+      for (auto primitive : cluster->_primitives) {
+        gbi->DrawIndexedPrimitiveEML(
+            *cluster->_vtxbuffer.get(), //
+            *primitive->_idxbuffer.get(),
+            primitive->_primtype);
+      }
+    }
   }
 
   targ->PopMaterial();

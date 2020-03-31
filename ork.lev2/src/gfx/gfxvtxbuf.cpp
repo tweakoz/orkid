@@ -79,6 +79,9 @@ VertexBufferBase* VertexBufferBase::CreateVertexBuffer(EVtxStreamFormat eformat,
   VertexBufferBase* pvb = 0;
 
   switch (eformat) {
+    case EVtxStreamFormat::V12C4T16:
+      pvb = _createvb<SVtxV12C4T16>(inumverts, bstatic);
+      break;
     case EVtxStreamFormat::V12N6C2T4:
       pvb = _createvb<SVtxV12N6C2T4>(inumverts, bstatic);
       break;
