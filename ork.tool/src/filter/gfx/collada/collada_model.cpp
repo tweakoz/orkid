@@ -645,8 +645,8 @@ bool CColladaModel::ParseGeometries() {
         if (0 == inumpolys)
           continue;
 
-        auto ColMatGroup                               = new ork::meshutil::MaterialGroup;
-        ColMatGroup->mMeshConfigurationFlags.mbSkinned = ColMesh->isSkinned();
+        auto ColMatGroup                              = new ork::meshutil::MaterialGroup;
+        ColMatGroup->mMeshConfigurationFlags._skinned = ColMesh->isSkinned();
         ColMesh->RefMatGroups().push_back(ColMatGroup);
 
         ////////////////////////////////////////////////
@@ -819,7 +819,7 @@ bool CColladaModel::ParseGeometries() {
           return false;
         }
 
-        if (policy->mbisSkinned && (false == ColMatGroup->mMeshConfigurationFlags.mbSkinned)) {
+        if (policy->mbisSkinned && (false == ColMatGroup->mMeshConfigurationFlags._skinned)) {
           orkerrorlog(
               "ERROR: <Model %s> ShadingGroup<%s> UhOh, Skinned Model with RigidMesh in it\n",
               mFileName.c_str(),
@@ -1011,7 +1011,7 @@ bool CColladaModel::ParseGeometries() {
           ///////////////////////////////////////////////////////////////////////
           // Add Triangle
           ///////////////////////////////////////////////////////////////////////
-          ColMatGroup->GetClusterizer()->AddTriangle(ClusTri, ColMatGroup);
+          ColMatGroup->GetClusterizer()->addTriangle(ClusTri, ColMatGroup->mMeshConfigurationFlags);
           ///////////////////////////////////////////////////////////////////////
           // end Add Triangle
           ///////////////////////////////////////////////////////////////////////

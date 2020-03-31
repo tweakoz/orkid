@@ -728,9 +728,9 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
       materialGroup                  = new ork::meshutil::MaterialGroup;
       materialGroup->meMaterialClass = ork::meshutil::MaterialGroup::EMATCLASS_PBR;
       materialGroup->SetClusterizer(clusterizer);
-      materialGroup->mMeshConfigurationFlags.mbSkinned = is_skinned;
-      materialGroup->meVtxFormat                       = VertexFormat;
-      mtlmtlmap[gltfmtl]                               = materialGroup;
+      materialGroup->mMeshConfigurationFlags._skinned = is_skinned;
+      materialGroup->meVtxFormat                      = VertexFormat;
+      mtlmtlmap[gltfmtl]                              = materialGroup;
     } else
       materialGroup = it->second;
 
@@ -743,7 +743,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
       assert(poly.GetNumSides() == 3);
       for (int i = 0; i < 3; i++)
         clustertri._vertex[i] = vertexpool.GetVertex(poly.GetVertexID(i));
-      clusterizer->AddTriangle(clustertri, materialGroup);
+      clusterizer->addTriangle(clustertri, materialGroup->mMeshConfigurationFlags);
     }
 
     clusterizer->End();

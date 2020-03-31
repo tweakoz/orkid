@@ -36,7 +36,7 @@ XgmClusterizerStd::~XgmClusterizerStd() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmClusterizerStd::AddTriangle(const XgmClusterTri& Triangle, const MaterialGroup* cmg) {
+bool XgmClusterizerStd::addTriangle(const XgmClusterTri& Triangle, const MeshConfigurationFlags& flags) {
 
   size_t iNumClusters = _clusters.size();
 
@@ -54,7 +54,7 @@ bool XgmClusterizerStd::AddTriangle(const XgmClusterTri& Triangle, const Materia
   {
     XgmClusterBuilder* pNewCluster = 0;
 
-    bool do_skinned = _policy._skinned && cmg->mMeshConfigurationFlags.mbSkinned;
+    bool do_skinned = _policy._skinned && flags._skinned;
 
     printf("do_skinned<%d>\n", int(do_skinned));
 

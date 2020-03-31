@@ -34,7 +34,7 @@ void XgmClusterizerDiced::Begin() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmClusterizerDiced::AddTriangle(const XgmClusterTri& Triangle, const MaterialGroup* cmg) {
+bool XgmClusterizerDiced::addTriangle(const XgmClusterTri& Triangle, const MeshConfigurationFlags& flags) {
   int iv0 = _preDicedMesh.MergeVertex(Triangle._vertex[0]);
   int iv1 = _preDicedMesh.MergeVertex(Triangle._vertex[1]);
   int iv2 = _preDicedMesh.MergeVertex(Triangle._vertex[2]);

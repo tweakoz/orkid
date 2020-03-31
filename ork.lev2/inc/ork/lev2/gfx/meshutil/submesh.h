@@ -171,6 +171,11 @@ struct vertex {
     }
   }
 
+  vertex(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col)
+      : vertex() {
+    set(pos, nrm, bin, uv, col);
+  }
+
   void set(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col) {
     mPos                = pos;
     mNrm                = nrm;

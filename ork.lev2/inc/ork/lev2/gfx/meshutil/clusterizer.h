@@ -107,7 +107,7 @@ struct XgmClusterizer {
   XgmClusterizer();
   virtual ~XgmClusterizer();
   ///////////////////////////////////////////////////////
-  virtual bool AddTriangle(const XgmClusterTri& Triangle, const MaterialGroup* cmg) = 0;
+  virtual bool addTriangle(const XgmClusterTri& Triangle, const MeshConfigurationFlags& flags) = 0;
   virtual void Begin() {
   }
   virtual void End() {
@@ -132,7 +132,7 @@ struct XgmClusterizerDiced : public XgmClusterizer {
   XgmClusterizerDiced();
   virtual ~XgmClusterizerDiced();
   ///////////////////////////////////////////////////////
-  bool AddTriangle(const XgmClusterTri& Triangle, const MaterialGroup* cmg);
+  bool addTriangle(const XgmClusterTri& Triangle, const MeshConfigurationFlags& flags);
   void Begin(); // virtual
   void End();   // virtual
   ///////////////////////////////////////////////////////
@@ -145,7 +145,7 @@ struct XgmClusterizerDiced : public XgmClusterizer {
 struct XgmClusterizerStd : public XgmClusterizer {
   XgmClusterizerStd();
   virtual ~XgmClusterizerStd();
-  bool AddTriangle(const XgmClusterTri& Triangle, const MaterialGroup* cmg);
+  bool addTriangle(const XgmClusterTri& Triangle, const MeshConfigurationFlags& flags);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

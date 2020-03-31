@@ -18,7 +18,8 @@
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/material_freestyle.inl>
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
-#include <ork/util/endian.h>
+#include <ork/lev2/gfx/meshutil/meshutil.h>
+#include <ork/lev2/gfx/meshutil/clusterizer.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
@@ -72,20 +73,25 @@ struct SectorLodInfo {
   // LODX is all outer LODs (combined)
 
   ////////////////////////////////////////
-  void beginPatch() {
-  }
-  ////////////////////////////////////////
-  void endPatch() {
-  }
-  ////////////////////////////////////////
   void gpuInit(Context* ctx) {
+
+    int inumclus = _clusterizer.GetNumClusters();
+    for (int icluster = 0; icluster < inumclus; icluster++) {
+      auto clusterbase         = _clusterizer.GetCluster(icluster);
+      auto clusterbuilder      = dynamic_cast<ork::meshutil::XgmClusterBuilder*>(clusterbase);
+      const auto& tool_submesh = clusterbuilder->_submesh;
+      clusterbuilder->buildVertexBuffer(EVTXSTREAMFMT_V12C4T16);
+      // lev2::XgmCluster& XgmClus = xgm_submesh->mpClusters[icluster];
+      // buildTriStripXgmCluster(XgmClus, clusterbuilder);
+    }
   }
   ////////////////////////////////////////
-  int addVertex(const vertex_type& vtx) {
-    return 0;
-  }
-  ////////////////////////////////////////
-  void addIndex(int index) {
+  void addTriangle(
+      const meshutil::vertex& vtxa, //
+      const meshutil::vertex& vtxb, //
+      const meshutil::vertex& vtxc) {
+    meshutil::XgmClusterTri tri{vtxa, vtxb, vtxc};
+    _clusterizer.addTriangle(tri, _meshflags);
   }
   ////////////////////////////////////////
   size_t countTriangles() {
@@ -115,6 +121,8 @@ struct SectorLodInfo {
   std::vector<Patch> _patches;
   size_t triangle_count = 0;
   size_t vertex_count   = 0;
+  meshutil::XgmClusterizerStd _clusterizer;
+  meshutil::MeshConfigurationFlags _meshflags;
   std::vector<TerrainPrimitive*> _primitives;
   bool _islod0 = false;
 };
@@ -749,6 +757,9 @@ void TerrainRenderImpl::gpuUpdate(Context* context) {
     ////////////////////////////////////////////
     linfo.triangle_count = 0;
     auto& sector_patches = linfo._patches;
+
+    linfo._clusterizer.Begin();
+
     for (auto p : sector_patches) {
       int x   = p._x;
       int z   = p._z;
@@ -808,209 +819,84 @@ void TerrainRenderImpl::gpuUpdate(Context* context) {
       p2.y = lod;
       p3.y = lod;
 
-      auto v0   = vertex_type(p0, fvec2(), c0);
-      auto v1   = vertex_type(p1, fvec2(), c0);
-      auto v2   = vertex_type(p2, fvec2(), c0);
-      auto v3   = vertex_type(p3, fvec2(), c0);
-      auto vc   = vertex_type((p0 + p1 + p2 + p3) * 0.25, fvec2(), c0);
-      auto vc01 = vertex_type((p0 + p1) * 0.5, fvec2(), c0);
-      auto vc12 = vertex_type((p1 + p2) * 0.5, fvec2(), c0);
-      auto vc23 = vertex_type((p2 + p3) * 0.5, fvec2(), c0);
-      auto vc30 = vertex_type((p3 + p0) * 0.5, fvec2(), c0);
-
-      linfo.beginPatch();
+      auto v0   = meshutil::vertex(p0, fvec3(), fvec3(), fvec2(), c0);
+      auto v1   = meshutil::vertex(p1, fvec3(), fvec3(), fvec2(), c0);
+      auto v2   = meshutil::vertex(p2, fvec3(), fvec3(), fvec2(), c0);
+      auto v3   = meshutil::vertex(p3, fvec3(), fvec3(), fvec2(), c0);
+      auto vc   = meshutil::vertex((p0 + p1 + p2 + p3) * 0.25, fvec3(), fvec3(), fvec2(), c0);
+      auto vc01 = meshutil::vertex((p0 + p1) * 0.5, fvec3(), fvec3(), fvec2(), c0);
+      auto vc12 = meshutil::vertex((p1 + p2) * 0.5, fvec3(), fvec3(), fvec2(), c0);
+      auto vc23 = meshutil::vertex((p2 + p3) * 0.5, fvec3(), fvec3(), fvec2(), c0);
+      auto vc30 = meshutil::vertex((p3 + p0) * 0.5, fvec3(), fvec3(), fvec2(), c0);
 
       switch (p._type) {
         case PT_A: {
           linfo.triangle_count += 8;
-          int ivc   = linfo.addVertex(vc);
-          int iv0   = linfo.addVertex(v0);
-          int iv1   = linfo.addVertex(v1);
-          int iv2   = linfo.addVertex(v2);
-          int iv3   = linfo.addVertex(v3);
-          int ivc01 = linfo.addVertex(vc01);
-          int ivc12 = linfo.addVertex(vc12);
-          int ivc23 = linfo.addVertex(vc23);
-          int ivc30 = linfo.addVertex(vc30);
 
-          linfo.addIndex(iv0);
-          linfo.addIndex(ivc01);
-          linfo.addIndex(ivc);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(ivc01);
-          linfo.addIndex(iv1);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv1);
-          linfo.addIndex(ivc12);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(ivc12);
-          linfo.addIndex(iv2);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv2);
-          linfo.addIndex(ivc23);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(ivc23);
-          linfo.addIndex(iv3);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv3);
-          linfo.addIndex(ivc30);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(ivc30);
-          linfo.addIndex(iv0);
+          linfo.addTriangle(v0, vc01, vc);
+          linfo.addTriangle(vc, vc01, v1);
+          linfo.addTriangle(vc, v1, vc12);
+          linfo.addTriangle(vc, vc12, v2);
+          linfo.addTriangle(vc, v2, vc23);
+          linfo.addTriangle(vc, vc23, v3);
+          linfo.addTriangle(vc, v3, vc30);
+          linfo.addTriangle(vc, vc30, v0);
 
           break;
         }
         case PT_BT: {
           linfo.triangle_count += 5;
-          int ivc   = linfo.addVertex(vc);
-          int iv0   = linfo.addVertex(v0);
-          int iv1   = linfo.addVertex(v1);
-          int iv2   = linfo.addVertex(v2);
-          int iv3   = linfo.addVertex(v3);
-          int ivc23 = linfo.addVertex(vc23);
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv0);
-          linfo.addIndex(iv1);
 
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv1);
-          linfo.addIndex(iv2);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv2);
-          linfo.addIndex(ivc23);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(ivc23);
-          linfo.addIndex(iv3);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv3);
-          linfo.addIndex(iv0);
+          linfo.addTriangle(vc, v0, v1);
+          linfo.addTriangle(vc, v1, v2);
+          linfo.addTriangle(vc, v2, vc23);
+          linfo.addTriangle(vc, vc23, v3);
+          linfo.addTriangle(vc, v3, v0);
           break;
         }
         case PT_BB: {
           linfo.triangle_count += 5;
-          int ivc   = linfo.addVertex(vc);
-          int iv0   = linfo.addVertex(v0);
-          int iv1   = linfo.addVertex(v1);
-          int iv2   = linfo.addVertex(v2);
-          int iv3   = linfo.addVertex(v3);
-          int ivc01 = linfo.addVertex(vc01);
-          linfo.addIndex(iv0);
-          linfo.addIndex(ivc01);
-          linfo.addIndex(ivc);
 
-          linfo.addIndex(ivc);
-          linfo.addIndex(ivc01);
-          linfo.addIndex(iv1);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv1);
-          linfo.addIndex(iv2);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv2);
-          linfo.addIndex(iv3);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv3);
-          linfo.addIndex(iv0);
+          linfo.addTriangle(v0, vc01, vc);
+          linfo.addTriangle(vc, vc01, v1);
+          linfo.addTriangle(vc, v1, v2);
+          linfo.addTriangle(vc, v2, v3);
+          linfo.addTriangle(vc, v3, v0);
           break;
         }
         case PT_BR: {
           linfo.triangle_count += 5;
-          int ivc   = linfo.addVertex(vc);
-          int iv0   = linfo.addVertex(v0);
-          int iv1   = linfo.addVertex(v1);
-          int iv2   = linfo.addVertex(v2);
-          int iv3   = linfo.addVertex(v3);
-          int ivc12 = linfo.addVertex(vc12);
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv0);
-          linfo.addIndex(iv1);
 
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv1);
-          linfo.addIndex(ivc12);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(ivc12);
-          linfo.addIndex(iv2);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv2);
-          linfo.addIndex(iv3);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv3);
-          linfo.addIndex(iv0);
+          linfo.addTriangle(vc, v0, v1);
+          linfo.addTriangle(vc, v1, vc12);
+          linfo.addTriangle(vc, vc12, v2);
+          linfo.addTriangle(vc, v2, v3);
+          linfo.addTriangle(vc, v3, v0);
           break;
         }
         case PT_BL: {
           linfo.triangle_count += 5;
-          int ivc   = linfo.addVertex(vc);
-          int iv0   = linfo.addVertex(v0);
-          int iv1   = linfo.addVertex(v1);
-          int iv2   = linfo.addVertex(v2);
-          int iv3   = linfo.addVertex(v3);
-          int ivc30 = linfo.addVertex(vc30);
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv0);
-          linfo.addIndex(iv1);
 
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv1);
-          linfo.addIndex(iv2);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv2);
-          linfo.addIndex(iv3);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv3);
-          linfo.addIndex(ivc30);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(ivc30);
-          linfo.addIndex(iv0);
+          linfo.addTriangle(vc, v0, v1);
+          linfo.addTriangle(vc, v1, v2);
+          linfo.addTriangle(vc, v2, v3);
+          linfo.addTriangle(vc, v3, vc30);
+          linfo.addTriangle(vc, vc30, v0);
           break;
         }
         case PT_C: {
           linfo.triangle_count += 4;
-          int ivc = linfo.addVertex(vc);
-          int iv0 = linfo.addVertex(v0);
-          int iv1 = linfo.addVertex(v1);
-          int iv2 = linfo.addVertex(v2);
-          int iv3 = linfo.addVertex(v3);
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv0);
-          linfo.addIndex(iv1);
 
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv1);
-          linfo.addIndex(iv2);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv2);
-          linfo.addIndex(iv3);
-
-          linfo.addIndex(ivc);
-          linfo.addIndex(iv3);
-          linfo.addIndex(iv0);
+          linfo.addTriangle(vc, v0, v1);
+          linfo.addTriangle(vc, v1, v2);
+          linfo.addTriangle(vc, v2, v3);
+          linfo.addTriangle(vc, v3, v0);
           break;
         }
       }
-
-      linfo.endPatch();
     } // for (auto p : sector_patches) {
+    linfo._clusterizer.End();
+
     linfo.gpuInit(context);
   }; // auto onlod = [&](SectorInfo& info, bool do_lod0) {
 
