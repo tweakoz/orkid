@@ -5,7 +5,7 @@
 
 #include <ork/kernel/orklut.hpp>
 #include <ork/kernel/prop.h>
-#include <ork/kernel/datacache.inl>
+#include <ork/kernel/datacache.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxprimitives.h>

@@ -16,7 +16,7 @@
 #include <ork/math/misc_math.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/debug.h>
-#include <ork/kernel/datacache.inl>
+#include <ork/kernel/datacache.h>
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////

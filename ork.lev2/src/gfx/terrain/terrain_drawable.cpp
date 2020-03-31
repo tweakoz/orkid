@@ -23,7 +23,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/kernel/datacache.inl>
+#include <ork/kernel/datacache.h>
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
 ImplementReflectionX(ork::lev2::TerrainDrawableData, "TerrainDrawableData");
@@ -97,11 +97,14 @@ struct SectorLodInfo {
     _clusterizer.addTriangle(tri, _meshflags);
   }
   ////////////////////////////////////////
+  void buildPrims(AABox& aabb, datablockptr_t dblock);
+  ////////////////////////////////////////
 
   std::vector<Patch> _patches;
   meshutil::XgmClusterizerStd _clusterizer;
   meshutil::MeshConfigurationFlags _meshflags;
   std::vector<TerrainPrimitive*> _primitives;
+
   bool _islod0 = false;
 };
 
@@ -120,6 +123,11 @@ struct TerrainRenderImpl {
   ~TerrainRenderImpl();
   void gpuUpdate(Context* context);
   void render(const RenderContextInstData& RCID);
+
+  datablockptr_t recomputeGeometry();
+  void loadGeometry(Context* context, datablockptr_t dblock);
+  void gpuInitGeometry(Context* context);
+  void gpuInitTextures(Context* context);
 
   datablockptr_t recomputeTextures(Context* context);
   void reloadCachedTextures(Context* context, datablockptr_t dblock);
@@ -158,6 +166,7 @@ struct TerrainRenderImpl {
   Texture* _heightmapTextureB           = nullptr;
   fvec3 _aabbmin;
   fvec3 _aabbmax;
+  AABox _aabox;
   SectorInfo _sector[8];
   lev2::textureassetptr_t _sphericalenvmap = nullptr;
 };
@@ -413,79 +422,145 @@ void TerrainRenderImpl::reloadCachedTextures(Context* context, datablockptr_t db
   delete chainB;
 }
 
+////////////////////////////////////////
+
+void SectorLodInfo::buildPrims(AABox& aabb, datablockptr_t dblock) {
+
+  _clusterizer.Begin();
+
+  for (auto p : _patches) {
+    int x   = p._x;
+    int z   = p._z;
+    int lod = p._lod;
+
+    /////////////////////////////////////////////
+    // match patches destined for specific LODs
+    /////////////////////////////////////////////
+
+    if (lod != 0 and _islod0)            // is patch destined for LOD0 ?
+      continue;                          // nope..
+    if (lod == 0 and (false == _islod0)) // is patch destined for LODX ?
+      continue;                          // nope..
+
+    /////////////////////////////////////////////
+
+    int step = 1 << lod;
+
+    fvec3 p0(x, lod, z);
+    fvec3 p1(x + step, lod, z);
+    fvec3 p2(x + step, lod, z + step);
+    fvec3 p3(x, lod, z + step);
+
+    aabb.Grow(p0);
+    aabb.Grow(p1);
+    aabb.Grow(p2);
+    aabb.Grow(p3);
+
+    uint32_t c0 = 0xff000000;
+    uint32_t c1 = 0xff0000ff;
+    uint32_t c2 = 0xff00ffff;
+    uint32_t c3 = 0xff00ff00;
+
+    // here we should have the patches,
+    //  just need to create the prims
+
+    switch (p._type) {
+      case PT_A: //
+        c0 = 0xff0000ff;
+        break;
+      case PT_BT:
+      case PT_BB:
+        c0 = 0xff800080;
+        break;
+      case PT_BL:
+      case PT_BR:
+        c0 = 0xff00ff00;
+        break;
+        break;
+      case PT_C:
+        c0 = 0xff808080;
+        break;
+    }
+
+    p0.y = lod;
+    p1.y = lod;
+    p2.y = lod;
+    p3.y = lod;
+
+    auto v0   = meshutil::vertex(p0, fvec3(), fvec3(), fvec2(), c0);
+    auto v1   = meshutil::vertex(p1, fvec3(), fvec3(), fvec2(), c0);
+    auto v2   = meshutil::vertex(p2, fvec3(), fvec3(), fvec2(), c0);
+    auto v3   = meshutil::vertex(p3, fvec3(), fvec3(), fvec2(), c0);
+    auto vc   = meshutil::vertex((p0 + p1 + p2 + p3) * 0.25, fvec3(), fvec3(), fvec2(), c0);
+    auto vc01 = meshutil::vertex((p0 + p1) * 0.5, fvec3(), fvec3(), fvec2(), c0);
+    auto vc12 = meshutil::vertex((p1 + p2) * 0.5, fvec3(), fvec3(), fvec2(), c0);
+    auto vc23 = meshutil::vertex((p2 + p3) * 0.5, fvec3(), fvec3(), fvec2(), c0);
+    auto vc30 = meshutil::vertex((p3 + p0) * 0.5, fvec3(), fvec3(), fvec2(), c0);
+
+    switch (p._type) {
+      case PT_A: {
+        addTriangle(v0, vc01, vc);
+        addTriangle(vc, vc01, v1);
+        addTriangle(vc, v1, vc12);
+        addTriangle(vc, vc12, v2);
+        addTriangle(vc, v2, vc23);
+        addTriangle(vc, vc23, v3);
+        addTriangle(vc, v3, vc30);
+        addTriangle(vc, vc30, v0);
+        break;
+      }
+      case PT_BT: {
+        addTriangle(vc, v0, v1);
+        addTriangle(vc, v1, v2);
+        addTriangle(vc, v2, vc23);
+        addTriangle(vc, vc23, v3);
+        addTriangle(vc, v3, v0);
+        break;
+      }
+      case PT_BB: {
+        addTriangle(v0, vc01, vc);
+        addTriangle(vc, vc01, v1);
+        addTriangle(vc, v1, v2);
+        addTriangle(vc, v2, v3);
+        addTriangle(vc, v3, v0);
+        break;
+      }
+      case PT_BR: {
+        addTriangle(vc, v0, v1);
+        addTriangle(vc, v1, vc12);
+        addTriangle(vc, vc12, v2);
+        addTriangle(vc, v2, v3);
+        addTriangle(vc, v3, v0);
+        break;
+      }
+      case PT_BL: {
+        addTriangle(vc, v0, v1);
+        addTriangle(vc, v1, v2);
+        addTriangle(vc, v2, v3);
+        addTriangle(vc, v3, vc30);
+        addTriangle(vc, vc30, v0);
+        break;
+      }
+      case PT_C: {
+        addTriangle(vc, v0, v1);
+        addTriangle(vc, v1, v2);
+        addTriangle(vc, v2, v3);
+        addTriangle(vc, v3, v0);
+        break;
+      }
+    }
+  } // for (auto p : _patches) {
+  _clusterizer.End();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
-void TerrainRenderImpl::gpuUpdate(Context* context) {
-  if (false == _gpuDataDirty)
-    return;
-
-  if (nullptr == _terrainMaterial) {
-    _terrainMaterial = new FreestyleMaterial;
-    _terrainMaterial->gpuInit(context, "orkshader://terrain");
-    _tekBasic          = _terrainMaterial->technique("terrain");
-    _tekStereo         = _terrainMaterial->technique("terrain_stereo");
-    _tekPick           = _terrainMaterial->technique("pick");
-    _tekDefGbuf1       = _terrainMaterial->technique("terrain_gbuf1");
-    _tekDefGbuf1Stereo = _terrainMaterial->technique("terrain_gbuf1_stereo");
-
-    _parMatVPL   = _terrainMaterial->param("MatMVPL");
-    _parMatVPC   = _terrainMaterial->param("MatMVPC");
-    _parMatVPR   = _terrainMaterial->param("MatMVPR");
-    _parCamPos   = _terrainMaterial->param("CamPos");
-    _parTexA     = _terrainMaterial->param("HFAMap");
-    _parTexB     = _terrainMaterial->param("HFBMap");
-    _parTexEnv   = _terrainMaterial->param("EnvMap");
-    _parModColor = _terrainMaterial->param("ModColor");
-    _parTime     = _terrainMaterial->param("Time");
-    _parTestXXX  = _terrainMaterial->param("testxxx");
-
-    _parFogColor     = _terrainMaterial->param("FogColor");
-    _parGrass        = _terrainMaterial->param("GrassColor");
-    _parSnow         = _terrainMaterial->param("SnowColor");
-    _parRock1        = _terrainMaterial->param("Rock1Color");
-    _parRock2        = _terrainMaterial->param("Rock2Color");
-    _parGblendYscale = _terrainMaterial->param("GBlendYScale");
-    _parGblendYbias  = _terrainMaterial->param("GBlendYBias");
-    _parGblendStepLo = _terrainMaterial->param("GBlendStepLo");
-    _parGblendStepHi = _terrainMaterial->param("GBlendStepHi");
-  }
-
-  auto hmap    = _heightfield;
-  bool _loadok = hmap->Load(_hfinstance->hfpath());
-  hmap->SetWorldSize(_hfinstance->_worldSizeXZ, _hfinstance->_worldSizeXZ);
-  hmap->SetWorldHeight(_hfinstance->_worldHeight);
-
-  boost::Crc64 basehasher;
-  basehasher.accumulateItem<uint64_t>(hmap->_hash);
-  basehasher.accumulateItem<float>(_hfinstance->_worldSizeXZ);
-  basehasher.accumulateItem<float>(_hfinstance->_worldHeight);
-  basehasher.finish();
-  uint64_t hashkey = basehasher.result();
+datablockptr_t TerrainRenderImpl::recomputeGeometry() {
 
   ork::Timer timer;
   timer.Start();
 
-  // orkprintf("ComputingGeometry hashkey<0x%llx>\n", hashkey );
-
-  ////////////////////////////////////////////////////////////////
-  // create and fill in gpu texture
-  ////////////////////////////////////////////////////////////////
-
-  const int iglX           = hmap->GetGridSizeX();
-  const int iglZ           = hmap->GetGridSizeZ();
-  const int terrain_ngrids = iglX * iglZ;
-
-  if (0 == iglX)
-    return;
-
-  auto dblock = DataBlockCache::findDataBlock(hashkey);
-
-  if (dblock) {
-    reloadCachedTextures(context, dblock);
-  } else {
-    dblock = recomputeTextures(context);
-    DataBlockCache::setDataBlock(hashkey, dblock);
-  }
+  datablockptr_t dblock = std::make_shared<DataBlock>();
 
   ////////////////////////////////////////////////////////////////
 
@@ -719,165 +794,141 @@ void TerrainRenderImpl::gpuUpdate(Context* context) {
   }
 
   ////////////////////////////////////////////
-  // find/create vertexbuffers
+  // find/create vertexbuffers / primitives
   ////////////////////////////////////////////
 
-  AABox aab;
-  aab.BeginGrow();
-
-  ////////////////////////////////////////////
-
-  auto build_lod_prims = [&](SectorLodInfo& linfo) {
-    ////////////////////////////////////////////
-    auto& sector_patches = linfo._patches;
-
-    linfo._clusterizer.Begin();
-
-    for (auto p : sector_patches) {
-      int x   = p._x;
-      int z   = p._z;
-      int lod = p._lod;
-
-      /////////////////////////////////////////////
-      // match patches destined for specific LODs
-      /////////////////////////////////////////////
-
-      if (lod != 0 and linfo._islod0)            // is patch destined for LOD0 ?
-        continue;                                // nope..
-      if (lod == 0 and (false == linfo._islod0)) // is patch destined for LODX ?
-        continue;                                // nope..
-
-      /////////////////////////////////////////////
-
-      int step = 1 << lod;
-
-      fvec3 p0(x, lod, z);
-      fvec3 p1(x + step, lod, z);
-      fvec3 p2(x + step, lod, z + step);
-      fvec3 p3(x, lod, z + step);
-
-      aab.Grow(p0);
-      aab.Grow(p1);
-      aab.Grow(p2);
-      aab.Grow(p3);
-
-      uint32_t c0 = 0xff000000;
-      uint32_t c1 = 0xff0000ff;
-      uint32_t c2 = 0xff00ffff;
-      uint32_t c3 = 0xff00ff00;
-
-      // here we should have the patches,
-      //  just need to create the prims
-
-      switch (p._type) {
-        case PT_A: //
-          c0 = 0xff0000ff;
-          break;
-        case PT_BT:
-        case PT_BB:
-          c0 = 0xff800080;
-          break;
-        case PT_BL:
-        case PT_BR:
-          c0 = 0xff00ff00;
-          break;
-          break;
-        case PT_C:
-          c0 = 0xff808080;
-          break;
-      }
-
-      p0.y = lod;
-      p1.y = lod;
-      p2.y = lod;
-      p3.y = lod;
-
-      auto v0   = meshutil::vertex(p0, fvec3(), fvec3(), fvec2(), c0);
-      auto v1   = meshutil::vertex(p1, fvec3(), fvec3(), fvec2(), c0);
-      auto v2   = meshutil::vertex(p2, fvec3(), fvec3(), fvec2(), c0);
-      auto v3   = meshutil::vertex(p3, fvec3(), fvec3(), fvec2(), c0);
-      auto vc   = meshutil::vertex((p0 + p1 + p2 + p3) * 0.25, fvec3(), fvec3(), fvec2(), c0);
-      auto vc01 = meshutil::vertex((p0 + p1) * 0.5, fvec3(), fvec3(), fvec2(), c0);
-      auto vc12 = meshutil::vertex((p1 + p2) * 0.5, fvec3(), fvec3(), fvec2(), c0);
-      auto vc23 = meshutil::vertex((p2 + p3) * 0.5, fvec3(), fvec3(), fvec2(), c0);
-      auto vc30 = meshutil::vertex((p3 + p0) * 0.5, fvec3(), fvec3(), fvec2(), c0);
-
-      switch (p._type) {
-        case PT_A: {
-          linfo.addTriangle(v0, vc01, vc);
-          linfo.addTriangle(vc, vc01, v1);
-          linfo.addTriangle(vc, v1, vc12);
-          linfo.addTriangle(vc, vc12, v2);
-          linfo.addTriangle(vc, v2, vc23);
-          linfo.addTriangle(vc, vc23, v3);
-          linfo.addTriangle(vc, v3, vc30);
-          linfo.addTriangle(vc, vc30, v0);
-          break;
-        }
-        case PT_BT: {
-          linfo.addTriangle(vc, v0, v1);
-          linfo.addTriangle(vc, v1, v2);
-          linfo.addTriangle(vc, v2, vc23);
-          linfo.addTriangle(vc, vc23, v3);
-          linfo.addTriangle(vc, v3, v0);
-          break;
-        }
-        case PT_BB: {
-          linfo.addTriangle(v0, vc01, vc);
-          linfo.addTriangle(vc, vc01, v1);
-          linfo.addTriangle(vc, v1, v2);
-          linfo.addTriangle(vc, v2, v3);
-          linfo.addTriangle(vc, v3, v0);
-          break;
-        }
-        case PT_BR: {
-          linfo.addTriangle(vc, v0, v1);
-          linfo.addTriangle(vc, v1, vc12);
-          linfo.addTriangle(vc, vc12, v2);
-          linfo.addTriangle(vc, v2, v3);
-          linfo.addTriangle(vc, v3, v0);
-          break;
-        }
-        case PT_BL: {
-          linfo.addTriangle(vc, v0, v1);
-          linfo.addTriangle(vc, v1, v2);
-          linfo.addTriangle(vc, v2, v3);
-          linfo.addTriangle(vc, v3, vc30);
-          linfo.addTriangle(vc, vc30, v0);
-          break;
-        }
-        case PT_C: {
-          linfo.addTriangle(vc, v0, v1);
-          linfo.addTriangle(vc, v1, v2);
-          linfo.addTriangle(vc, v2, v3);
-          linfo.addTriangle(vc, v3, v0);
-          break;
-        }
-      }
-    } // for (auto p : sector_patches) {
-    linfo._clusterizer.End();
-
-    linfo.gpuInit(context);
-  }; // auto onlod = [&](SectorInfo& info, bool do_lod0) {
-
-  ////////////////////////////////////////////
+  _aabox.BeginGrow();
   for (int i = 0; i < 8; i++) {
     auto& sector = _sector[i];
-    build_lod_prims(sector._lod0);
-    build_lod_prims(sector._lodX);
+    sector._lod0.buildPrims(_aabox, dblock);
+    sector._lodX.buildPrims(_aabox, dblock);
+    // sector._lod0.initGeometry();
+    // sector._lodX.initGeometry();
   } // for each sector
-  aab.EndGrow();
-  auto geomin = aab.Min();
-  auto geomax = aab.Max();
-  auto geosiz = aab.GetSize();
+  _aabox.EndGrow();
 
-  _aabbmin = geomin;
-  _aabbmax = geomax;
-
+  auto geomin = _aabox.Min();
+  auto geomax = _aabox.Max();
+  auto geosiz = _aabox.GetSize();
+  _aabbmin    = geomin;
+  _aabbmax    = geomax;
   // printf("geomin<%f %f %f>\n", geomin.GetX(), geomin.GetY(), geomin.GetZ());
   // printf("geomax<%f %f %f>\n", geomax.GetX(), geomax.GetY(), geomax.GetZ());
   // printf("geosiz<%f %f %f>\n", geosiz.GetX(), geosiz.GetY(), geosiz.GetZ());
 
+  float runtime = timer.SecsSinceStart();
+
+  return dblock;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void TerrainRenderImpl::loadGeometry(Context* context, datablockptr_t dblock) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void TerrainRenderImpl::gpuInitGeometry(Context* context) {
+  boost::Crc64 geometry_hasher;
+  geometry_hasher.accumulateItem<uint64_t>(_heightfield->_hash);
+  geometry_hasher.accumulateItem<float>(_hfinstance->_worldSizeXZ);
+  geometry_hasher.accumulateItem<float>(_hfinstance->_worldHeight);
+  geometry_hasher.accumulateString("geometry-v0");
+  geometry_hasher.finish();
+  uint64_t hashkey = geometry_hasher.result();
+
+  auto dblock = DataBlockCache::findDataBlock(hashkey);
+
+  if (1) { // (not dblock) {
+    dblock = recomputeGeometry();
+    // DataBlockCache::setDataBlock(hashkey, dblock);
+  }
+  loadGeometry(context, dblock);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void TerrainRenderImpl::gpuInitTextures(Context* context) {
+  const int iglX           = _heightfield->GetGridSizeX();
+  const int iglZ           = _heightfield->GetGridSizeZ();
+  const int terrain_ngrids = iglX * iglZ;
+
+  boost::Crc64 texture_hasher;
+  texture_hasher.accumulateItem<uint64_t>(_heightfield->_hash);
+  texture_hasher.accumulateItem<float>(_hfinstance->_worldSizeXZ);
+  texture_hasher.accumulateItem<float>(_hfinstance->_worldHeight);
+  texture_hasher.accumulateString("texture-v0");
+  texture_hasher.finish();
+  uint64_t texture_hashkey = texture_hasher.result();
+
+  auto dblock = DataBlockCache::findDataBlock(texture_hashkey);
+
+  if (dblock) {
+    reloadCachedTextures(context, dblock);
+  } else {
+    dblock = recomputeTextures(context);
+    DataBlockCache::setDataBlock(texture_hashkey, dblock);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void TerrainRenderImpl::gpuUpdate(Context* context) {
+  if (false == _gpuDataDirty)
+    return;
+
+  if (nullptr == _terrainMaterial) {
+    _terrainMaterial = new FreestyleMaterial;
+    _terrainMaterial->gpuInit(context, "orkshader://terrain");
+    _tekBasic          = _terrainMaterial->technique("terrain");
+    _tekStereo         = _terrainMaterial->technique("terrain_stereo");
+    _tekPick           = _terrainMaterial->technique("pick");
+    _tekDefGbuf1       = _terrainMaterial->technique("terrain_gbuf1");
+    _tekDefGbuf1Stereo = _terrainMaterial->technique("terrain_gbuf1_stereo");
+
+    _parMatVPL   = _terrainMaterial->param("MatMVPL");
+    _parMatVPC   = _terrainMaterial->param("MatMVPC");
+    _parMatVPR   = _terrainMaterial->param("MatMVPR");
+    _parCamPos   = _terrainMaterial->param("CamPos");
+    _parTexA     = _terrainMaterial->param("HFAMap");
+    _parTexB     = _terrainMaterial->param("HFBMap");
+    _parTexEnv   = _terrainMaterial->param("EnvMap");
+    _parModColor = _terrainMaterial->param("ModColor");
+    _parTime     = _terrainMaterial->param("Time");
+    _parTestXXX  = _terrainMaterial->param("testxxx");
+
+    _parFogColor     = _terrainMaterial->param("FogColor");
+    _parGrass        = _terrainMaterial->param("GrassColor");
+    _parSnow         = _terrainMaterial->param("SnowColor");
+    _parRock1        = _terrainMaterial->param("Rock1Color");
+    _parRock2        = _terrainMaterial->param("Rock2Color");
+    _parGblendYscale = _terrainMaterial->param("GBlendYScale");
+    _parGblendYbias  = _terrainMaterial->param("GBlendYBias");
+    _parGblendStepLo = _terrainMaterial->param("GBlendStepLo");
+    _parGblendStepHi = _terrainMaterial->param("GBlendStepHi");
+  }
+
+  bool _loadok = _heightfield->Load(_hfinstance->hfpath());
+  _heightfield->SetWorldSize(_hfinstance->_worldSizeXZ, _hfinstance->_worldSizeXZ);
+  _heightfield->SetWorldHeight(_hfinstance->_worldHeight);
+
+  // orkprintf("ComputingGeometry hashkey<0x%llx>\n", hashkey );
+
+  const int iglX           = _heightfield->GetGridSizeX();
+  const int iglZ           = _heightfield->GetGridSizeZ();
+  const int terrain_ngrids = iglX * iglZ;
+
+  if (0 == iglX)
+    return;
+
+  ////////////////////////////////////////////////////////////////
+  // create and fill in gpu data
+  ////////////////////////////////////////////////////////////////
+
+  ork::Timer timer;
+  timer.Start();
+  gpuInitTextures(context);
+  gpuInitGeometry(context);
   float runtime = timer.SecsSinceStart();
   // printf( "runtime<%g>\n", runtime );
 

@@ -10,7 +10,6 @@
 
 #include <ork/kernel/core_interface.h>
 #include <ork/kernel/opq.h>
-#include <ork/kernel/datacache.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -39,8 +38,6 @@ const std::string gstring_noval("");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
-
-bool DataBlockCache::_enabled = true;
 
 void OldSchool::SetGlobalFloatVariable(const std::string& variable, f32 value) {
   GetRef().mmGlobalFloatVariables[variable] = value;

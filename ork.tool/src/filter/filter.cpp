@@ -23,7 +23,7 @@
 #include <ork/reflect/Functor.h>
 #include <ork/rtti/downcast.h>
 #include <orktool/toolcore/FunctionManager.h>
-#include <ork/kernel/datacache.inl>
+#include <ork/kernel/datacache.h>
 
 namespace ork::tool {
 namespace meshutil {

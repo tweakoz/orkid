@@ -1,5 +1,6 @@
 #include <QWindow>
 #include <ork/application/application.h>
+#include <ork/kernel/datacache.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/timer.h>
 #include <ork/lev2/ezapp.h>
@@ -19,6 +20,7 @@ using namespace ork::lev2;
 using namespace ork::lev2::deferrednode;
 
 int main(int argc, char** argv) {
+
   auto qtapp        = OrkEzQtApp::create(argc, argv);
   auto qtwin        = qtapp->_mainWindow;
   auto gfxwin       = qtwin->_gfxwin;

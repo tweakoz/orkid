@@ -23,7 +23,7 @@
 #include <ork/pch.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <OpenImageIO/imageio.h>
-#include <ork/kernel/datacache.inl>
+#include <ork/kernel/datacache.h>
 
 OIIO_NAMESPACE_USING
 

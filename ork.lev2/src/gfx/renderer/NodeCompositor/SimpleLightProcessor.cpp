@@ -19,7 +19,7 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/material_freestyle.inl>
-#include <ork/kernel/datacache.inl>
+#include <ork/kernel/datacache.h>
 #include <ork/gfx/brdf.inl>
 #include <ork/gfx/dds.h>
 #include <ork/lev2/gfx/material_pbr.inl>
