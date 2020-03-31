@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <orktool/orktool_pch.h>
+#include <ork/pch.h>
 #include <ork/application/application.h>
 #include <ork/math/plane.h>
 #include <ork/lev2/gfx/gfxenv.h>
@@ -15,7 +15,6 @@
 #include <ork/lev2/gfx/gfxctxdummy.h>
 #include <ork/file/chunkfile.h>
 #include <ork/application/application.h>
-#include <orktool/filter/gfx/collada/collada.h>
 #include <ork/lev2/gfx/meshutil/meshutil.h>
 #include <ork/lev2/gfx/meshutil/clusterizer.h>
 

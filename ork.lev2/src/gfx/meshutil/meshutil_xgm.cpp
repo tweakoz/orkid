@@ -16,7 +16,6 @@
 #include <ork/lev2/gfx/gfxctxdummy.h>
 #include <ork/file/chunkfile.h>
 #include <ork/application/application.h>
-//#include <orktool/filter/gfx/collada/collada.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::meshutil {
