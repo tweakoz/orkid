@@ -183,7 +183,7 @@ void OffscreenBuffer::Render2dQuadsEML(size_t count, const fvec4* QuadRects, con
   }
   vw.UnLock(context());
 
-  ctx->GBI()->DrawPrimitiveEML(vw, EPRIM_TRIANGLES, 6 * count);
+  ctx->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES, 6 * count);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -245,7 +245,7 @@ void OffscreenBuffer::RenderMatOrthoQuad(
       vw.AddVertex(SVtxV12C4T16(fx1, fy1, 0.0f, fu1, fv1, uv2[4], uv2[5], uc));
       vw.UnLock(context());
 
-      ctx->GBI()->DrawPrimitive(vw, EPRIM_TRIANGLES);
+      ctx->GBI()->DrawPrimitive(vw, EPrimitiveType::TRIANGLES);
     }
     ctx->PopModColor();
     ctx->PopMaterial();
@@ -359,7 +359,7 @@ void OffscreenBuffer::RenderMatOrthoQuads(const OrthoQuads& oquads) {
       }
       vw.UnLock(context());
 
-      context()->GBI()->DrawPrimitive(vw, ork::lev2::EPRIM_TRIANGLES);
+      context()->GBI()->DrawPrimitive(vw, ork::lev2::EPrimitiveType::TRIANGLES);
     }
     context()->PopModColor();
   }

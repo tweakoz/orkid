@@ -685,7 +685,9 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
   out_mesh->SetMeshName("Mesh1"_pool);
   out_model.AddMesh("Mesh1"_pool, out_mesh);
 
-  auto VertexFormat = is_skinned ? ork::lev2::EVTXSTREAMFMT_V12N12B12T8I4W4 : ork::lev2::EVTXSTREAMFMT_V12N12B12T16;
+  auto VertexFormat = is_skinned //
+                          ? ork::lev2::EVtxStreamFormat::V12N12B12T8I4W4
+                          : ork::lev2::EVtxStreamFormat::V12N12B12T16;
   struct SubRec {
     ork::meshutil::submesh* _toolsub            = nullptr;
     ork::meshutil::MaterialGroup* _toolmgrp     = nullptr;
@@ -722,6 +724,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
     out_model.AddMaterial(mtlout);
 
     auto clusterizer                            = new ClusterizerType;
+    clusterizer->_policy._skinned               = is_skinned;
     ork::meshutil::MaterialGroup* materialGroup = nullptr;
     auto it                                     = mtlmtlmap.find(gltfmtl);
     if (it == mtlmtlmap.end()) {
@@ -847,11 +850,11 @@ bool ASS_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
 
   ////////////////////////////////////////////////////////////////
   // PC vertex formats supported
-  policy.mAvailableVertexFormats.add(lev2::EVTXSTREAMFMT_V12N12T8I4W4);    // PC basic skinned
-  policy.mAvailableVertexFormats.add(lev2::EVTXSTREAMFMT_V12N12B12T8I4W4); // PC 1 tanspace skinned
-  policy.mAvailableVertexFormats.add(lev2::EVTXSTREAMFMT_V12N12B12T8C4);   // PC 1 tanspace unskinned
-  policy.mAvailableVertexFormats.add(lev2::EVTXSTREAMFMT_V12N12B12T16);    // PC 1 tanspace, 2UV unskinned
-  policy.mAvailableVertexFormats.add(lev2::EVTXSTREAMFMT_V12N12T16C4);     // PC 2UV 1 color unskinned
+  policy.mAvailableVertexFormats.add(lev2::EVtxStreamFormat::V12N12T8I4W4);    // PC basic skinned
+  policy.mAvailableVertexFormats.add(lev2::EVtxStreamFormat::V12N12B12T8I4W4); // PC 1 tanspace skinned
+  policy.mAvailableVertexFormats.add(lev2::EVtxStreamFormat::V12N12B12T8C4);   // PC 1 tanspace unskinned
+  policy.mAvailableVertexFormats.add(lev2::EVtxStreamFormat::V12N12B12T16);    // PC 1 tanspace, 2UV unskinned
+  policy.mAvailableVertexFormats.add(lev2::EVtxStreamFormat::V12N12T16C4);     // PC 2UV 1 color unskinned
   ////////////////////////////////////////////////////////////////
 
   ToolMesh tmesh;

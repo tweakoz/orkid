@@ -37,54 +37,6 @@ namespace ork { namespace lev2 {
 #if defined(USE_XGM_FILES)
 
 ////////////////////////////////////////////////////////////
-// account for bug in old XGM files (version 0)
-// since EVTXSTREAMFMT_V12N12T16C4 was missing,
-// old xgm files had bad enum strings
-// => when loading old xgm files
-//     and seeing EVTXSTREAMFMT_V12N12B12T8C4 or higher , subtract one
-// we will add a xgm version string to the format
-//  and attempt to make the PropTypeString for enums more robust
-////////////////////////////////////////////////////////////
-
-EVtxStreamFormat GetVersion0VertexStreamFormat(const char* fmtstr) {
-  static bool gbINIT = true;
-  static orkmap<std::string, EVtxStreamFormat> formatmap;
-  if (gbINIT) {
-    formatmap["EVTXSTREAMFMT_V16"]      = EVTXSTREAMFMT_V16;      // 0
-    formatmap["EVTXSTREAMFMT_V4T4"]     = EVTXSTREAMFMT_V4T4;     // 1
-    formatmap["EVTXSTREAMFMT_V4C4"]     = EVTXSTREAMFMT_V4C4;     // 2
-    formatmap["EVTXSTREAMFMT_V4T4C4"]   = EVTXSTREAMFMT_V4T4C4;   // 3
-    formatmap["EVTXSTREAMFMT_V12C4T16"] = EVTXSTREAMFMT_V12C4T16; // 4
-
-    formatmap["EVTXSTREAMFMT_V12N6I1T4"] = EVTXSTREAMFMT_V12N6I1T4; // 5
-    formatmap["EVTXSTREAMFMT_V12N6C2T4"] = EVTXSTREAMFMT_V12N6C2T4;
-
-    formatmap["EVTXSTREAMFMT_V16T16C16"]   = EVTXSTREAMFMT_V16T16C16; // 7
-    formatmap["EVTXSTREAMFMT_V12I4N12T8"]  = EVTXSTREAMFMT_V12I4N12T8;
-    formatmap["EVTXSTREAMFMT_V12C4N6I2T8"] = EVTXSTREAMFMT_V12C4N6I2T8;
-    formatmap["EVTXSTREAMFMT_V6I2C4N3T2"]  = EVTXSTREAMFMT_V6I2C4N3T2;
-    formatmap["EVTXSTREAMFMT_V12I4N6W4T4"] = EVTXSTREAMFMT_V12I4N6W4T4; // 11
-
-    formatmap["EVTXSTREAMFMT_V12N12T8I4W4"]    = EVTXSTREAMFMT_V12N12T8I4W4; // 12
-    formatmap["EVTXSTREAMFMT_V12N12B12T8"]     = EVTXSTREAMFMT_V12N12B12T8;
-    formatmap["EVTXSTREAMFMT_V12N12T16C4"]     = EVTXSTREAMFMT_V12N12B12T8; // uhoh ! << this was missing
-    formatmap["EVTXSTREAMFMT_V12N12B12T8C4"]   = EVTXSTREAMFMT_V12N12T16C4; // 15
-    formatmap["EVTXSTREAMFMT_V12N12B12T16"]    = EVTXSTREAMFMT_V12N12B12T8C4;
-    formatmap["EVTXSTREAMFMT_V12N12B12T8I4W4"] = EVTXSTREAMFMT_V12N12B12T8I4W4; // 17
-
-    formatmap["EVTXSTREAMFMT_MODELERRIGID"] = EVTXSTREAMFMT_MODELERRIGID; // 18
-
-    formatmap["EVTXSTREAMFMT_XP_VCNT"]  = EVTXSTREAMFMT_MODELERRIGID; // 19
-    formatmap["EVTXSTREAMFMT_XP_VCNTI"] = EVTXSTREAMFMT_END;
-    formatmap["EVTXSTREAMFMT_END"]      = EVTXSTREAMFMT_END;
-  }
-  orkmap<std::string, EVtxStreamFormat>::const_iterator it = formatmap.find(fmtstr);
-  EVtxStreamFormat eret                                    = EVTXSTREAMFMT_END;
-  if (it != formatmap.end())
-    eret = it->second;
-  return eret;
-}
-////////////////////////////////////////////////////////////
 
 bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
   Context* pTARG               = GfxEnv::GetRef().loadingContext();
@@ -314,11 +266,11 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
         for (int ic = 0; ic < CS.miNumClusters; ic++) {
           int iclusindex = -1;
           int inumbb     = -1;
-          int ivbformat  = -1;
           int ivboffset  = -1;
           int ivbnum     = -1;
           int ivbsize    = -1;
           fvec3 boxmin, boxmax;
+          EVtxStreamFormat efmt;
 
           ////////////////////////////////////////////////////////////////////////
           HeaderStream->GetItem(iclusindex);
@@ -326,7 +278,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
           XgmCluster& Clus = CS.cluster(ic);
           HeaderStream->GetItem(Clus.miNumPrimGroups);
           HeaderStream->GetItem(inumbb);
-          HeaderStream->GetItem(ivbformat);
+          HeaderStream->GetItem<EVtxStreamFormat>(efmt);
           HeaderStream->GetItem(ivboffset);
           HeaderStream->GetItem(ivbnum);
           HeaderStream->GetItem(ivbsize);
@@ -336,15 +288,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
           Clus.mBoundingBox.SetMinMax(boxmin, boxmax);
           Clus.mBoundingSphere = Sphere(boxmin, boxmax);
           ////////////////////////////////////////////////////////////////////////
-          const char* vbfmt     = chunkreader.GetString(ivbformat);
-          EVtxStreamFormat efmt = PropType<EVtxStreamFormat>::FromString(vbfmt);
           // printf( "XGMLOAD vbfmt<%s> efmt<%d>\n", vbfmt, int(efmt) );
-          ////////////////////////////////////////////////////////////////////////
-          // fix a bug in old files
-          if (0 == XGMVERSIONCODE) {
-            efmt = GetVersion0VertexStreamFormat(vbfmt);
-            // printf( "XGMLOAD(V0FIX) new efmt<%d>\n", efmt );
-          }
           ////////////////////////////////////////////////////////////////////////
           // lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
           VertexBufferBase* pvb = VertexBufferBase::CreateVertexBuffer(efmt, ivbnum, true);
@@ -356,7 +300,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
           {
             memcpy(poutverts, pverts, ivblen);
             pvb->SetNumVertices(ivbnum);
-            if (efmt == EVTXSTREAMFMT_V12N12B12T8I4W4) {
+            if (efmt == EVtxStreamFormat::V12N12B12T8I4W4) {
               auto pv = (const SVtxV12N12B12T8I4W4*)pverts;
               for (int iv = 0; iv < ivbnum; iv++) {
                 auto& v = pv[iv];
@@ -380,9 +324,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
             OrkAssert(ipgindex == ipg);
 
             XgmPrimGroup& PG = Clus.RefPrimGroup(ipg);
-            HeaderStream->GetItem<int32_t>(ipgprimtype);
-            const char* primtype = chunkreader.GetString(ipgprimtype);
-            PG.mePrimType        = PropType<EPrimitiveType>::FromString(primtype);
+            HeaderStream->GetItem<EPrimitiveType>(PG.mePrimType);
             HeaderStream->GetItem<int32_t>(PG.miNumIndices);
 
             int32_t idxdataoffset = -1;
@@ -708,9 +650,6 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
         int32_t inumjb = (int)Clus.GetNumJointBindings();
 
         printf("clus<%d> numjb<%d>\n", ic, inumjb);
-        PropTypeString tstr;
-        PropType<lev2::EVtxStreamFormat>::ToString(VB->GetStreamFormat(), tstr);
-        std::string VertexFmt = tstr.c_str();
 
         int32_t ivbufoffset = ModelDataStream->GetSize();
         const u8* VBdata    = (const u8*)DummyTarget.GBI()->LockVB(*VB);
@@ -724,9 +663,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
           HeaderStream->AddItem(ic);
           HeaderStream->AddItem(inumpg);
           HeaderStream->AddItem(inumjb);
-
-          istring = chunkwriter.stringIndex(VertexFmt.c_str());
-          HeaderStream->AddItem(istring);
+          HeaderStream->AddItem<lev2::EVtxStreamFormat>(VB->GetStreamFormat());
           HeaderStream->AddItem(ivbufoffset);
           HeaderStream->AddItem(VB->GetNumVertices());
           HeaderStream->AddItem(VB->GetVtxSize());
@@ -743,16 +680,12 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
         for (int32_t ipg = 0; ipg < inumpg; ipg++) {
           const lev2::XgmPrimGroup& PG = Clus.RefPrimGroup(ipg);
 
-          PropType<lev2::EPrimitiveType>::ToString(PG.GetPrimType(), tstr);
-          std::string PrimType = tstr.c_str();
-
           int32_t inumidx = PG.GetNumIndices();
 
           printf("WritePG<%d> NumIndices<%d>\n", ipg, inumidx);
 
           HeaderStream->AddItem(ipg);
-          istring = chunkwriter.stringIndex(PrimType.c_str());
-          HeaderStream->AddItem<int32_t>(istring);
+          HeaderStream->AddItem<EPrimitiveType>(PG.GetPrimType());
           HeaderStream->AddItem<int32_t>(inumidx);
           HeaderStream->AddItem<int32_t>(ModelDataStream->GetSize());
 

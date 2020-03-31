@@ -609,7 +609,7 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
       vw.UnLock(pTARG);
       MTXI->PushUIMatrix();
       pTARG->BindMaterial(&UiMat);
-      GBI->DrawPrimitive(vw, lev2::EPRIM_LINES, 2);
+      GBI->DrawPrimitive(vw, lev2::EPrimitiveType::LINES, 2);
       pTARG->BindMaterial(0);
       MTXI->PopUIMatrix();
       gfspinner += (PI2 / 60.0f);
@@ -643,7 +643,7 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
       vw.UnLock(pTARG);
       MTXI->PushUIMatrix();
       pTARG->BindMaterial(&UiMat);
-      GBI->DrawPrimitive(vw, lev2::EPRIM_LINES, 2);
+      GBI->DrawPrimitive(vw, lev2::EPrimitiveType::LINES, 2);
       pTARG->BindMaterial(0);
       MTXI->PopUIMatrix();
     }
@@ -722,7 +722,7 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
         }
         vw.UnLock(pTARG);
         MTXI->PushUIMatrix();
-        GBI->DrawPrimitive(vw, lev2::EPRIM_TRIANGLES, 6);
+        GBI->DrawPrimitive(vw, lev2::EPrimitiveType::TRIANGLES, 6);
         MTXI->PopUIMatrix();
       }
       pTARG->PopModColor();
@@ -934,7 +934,7 @@ void SceneEditorVP::DrawBorder(lev2::RenderContextFrameData& RCFD) {
 
     vwriter.UnLock(TGT);
 
-    TGT->GBI()->DrawPrimitive(vwriter, ork::lev2::EPRIM_LINES);
+    TGT->GBI()->DrawPrimitive(vwriter, ork::lev2::EPrimitiveType::LINES);
   }
   MTXI->PopPMatrix(); // back to ortho
   MTXI->PopVMatrix(); // back to ortho

@@ -250,7 +250,7 @@ void RotSolid::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 RotSolid::RotSolid()
     : miNumSides(3)
-    , mVertexBuffer(2048, 0, ork::lev2::EPRIM_TRIANGLES)
+    , mVertexBuffer(2048, 0, ork::lev2::EPrimitiveType::TRIANGLES)
     , meBlendMode(ork::lev2::EBLENDING_OFF)
     , mVBHash()
     , mfPhaseOffset(0.0f)
@@ -332,7 +332,7 @@ void RotSolid::compute(ProcTex& ptex) {
     virtual void DoRender(float left, float right, float top, float bot, Buffer& buf) {
       auto targ = mPTX.GetTarget();
       targ->PushMaterial(&stdmat);
-      targ->GBI()->DrawPrimitive(mVB, ork::lev2::EPRIM_TRIANGLES, 0, mVB.GetNumVertices());
+      targ->GBI()->DrawPrimitive(mVB, ork::lev2::EPrimitiveType::TRIANGLES, 0, mVB.GetNumVertices());
       targ->PopMaterial();
     }
 
@@ -928,7 +928,7 @@ void Gradient::Describe() {
 }
 Gradient::Gradient()
     : mpTexture(0)
-    , mVertexBuffer(1 << 20, 0, ork::lev2::EPRIM_TRIANGLES)
+    , mVertexBuffer(1 << 20, 0, ork::lev2::EPrimitiveType::TRIANGLES)
     , miRepeat(1)
     , meRepeatMode(EGS_REPEAT)
     , meGradientType(EGT_HORIZONTAL)
@@ -1146,7 +1146,7 @@ void Gradient::compute(ProcTex& ptex) {
       mPTX.GetTarget()->PushModColor(fvec3::White());
       mPTX.GetTarget()->PushMaterial(mMtl);
       mPTX.GetTarget()->MTXI()->PushPMatrix(mtxortho);
-      mPTX.GetTarget()->GBI()->DrawPrimitive(mVertexBuffer, ork::lev2::EPRIM_TRIANGLES, 0, mVertexBuffer.GetNumVertices());
+      mPTX.GetTarget()->GBI()->DrawPrimitive(mVertexBuffer, ork::lev2::EPrimitiveType::TRIANGLES, 0, mVertexBuffer.GetNumVertices());
       mPTX.GetTarget()->MTXI()->PopPMatrix();
       mPTX.GetTarget()->PopMaterial();
       mPTX.GetTarget()->PopModColor();

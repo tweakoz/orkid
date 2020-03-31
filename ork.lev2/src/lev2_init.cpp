@@ -399,7 +399,7 @@ void PerformanceTracker::Draw(ork::lev2::Context* pTARG) {
           Vertices[4].SetXYZ( fx2, (f32) ipY+1, 0.5f );
           Vertices[5].SetXYZ( fx2, (f32) ipY2-1, 0.5f );
 
-          pTARG->IMI()->DrawPrim( Vertices, 6, ork::lev2::EPRIM_TRIANGLES );
+          pTARG->IMI()->DrawPrim( Vertices, 6, ork::lev2::EPrimitiveType::TRIANGLES );
 
           ipY -= iih;
           ipY2 -= iih;

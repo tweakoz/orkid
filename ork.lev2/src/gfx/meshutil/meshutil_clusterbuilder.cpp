@@ -117,7 +117,7 @@ void BuildXgmClusterPrimGroups(lev2::XgmCluster& XgmCluster, const std::vector<u
 
       StripGroup.miNumIndices = inumidx;
       StripGroup.mpIndices    = pidxbuf;
-      StripGroup.mePrimType   = lev2::EPRIM_TRIANGLESTRIP;
+      StripGroup.mePrimType   = lev2::EPrimitiveType::TRIANGLESTRIP;
     }
   }
 
@@ -141,7 +141,7 @@ void BuildXgmClusterPrimGroups(lev2::XgmCluster& XgmCluster, const std::vector<u
 
     StripGroup.miNumIndices = inumidx;
     StripGroup.mpIndices    = pidxbuf;
-    StripGroup.mePrimType   = lev2::EPRIM_TRIANGLES;
+    StripGroup.mePrimType   = lev2::EPrimitiveType::TRIANGLES;
   }
 }
 

@@ -246,8 +246,8 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 		////////////////////////////////////////////////////////////////
 		// PC vertex formats supported
 		////////////////////////////////////////////////////////////////
-		policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12B12T8C4 );	// PC 1 tanspace unskinned
-		policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12T16C4 );	// PC 1 tanspace unskinned
+		policy.mAvailableVertexFormats.Add( lev2::EVtxStreamFormat::V12N12B12T8C4 );	// PC 1 tanspace unskinned
+		policy.mAvailableVertexFormats.Add( lev2::EVtxStreamFormat::V12N12T16C4 );	// PC 1 tanspace unskinned
 		////////////////////////////////////////////////////////////////
 		DaeReadOpts opts;
 		opts.mExcludeLayers.insert( "sectors" );
@@ -510,9 +510,8 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 					/////////////////////////////////////////////////////////
 					fbaseprogress = float(ipg)/float(inumpgs);
 					fnextprogresspart = 1.0f/float(inumpgs);
-					PropType<lev2::EVtxStreamFormat>::ToString(lev2::EVTXSTREAMFMT_V12N12B12T16,vtxfmt);
-					DicedMesh.SetAnnotation( "OutVtxFormat", vtxfmt.c_str() );
-					bakinggroup_submesh.SetAnnotation( "OutVtxFormat", vtxfmt.c_str() );
+					DicedMesh.typedAnnotation<lev2::EVtxStreamFormat>("OutVtxFormat") = ork::lev2::EVtxStreamFormat::V12N12B12T16;
+					bakinggroup_submesh.typedAnnotation<lev2::EVtxStreamFormat>( "OutVtxFormat")=ork::lev2::EVtxStreamFormat::V12N12B12T16;
 					ork::MeshUtil::GridGraph thegraph(idicesize);
 					thegraph.BeginPreMerge();
 						thegraph.PreMergeMesh( bakinggroup_submesh );

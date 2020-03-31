@@ -164,16 +164,16 @@ private:
   bool BindVertexStreamSource(const VertexBufferBase& VBuf);
   void BindVertexDeclaration(EVtxStreamFormat efmt);
 
-  void DrawPrimitive(const VertexBufferBase& VBuf, EPrimitiveType eType = EPRIM_NONE, int ivbase = 0, int ivcount = 0) final;
+  void DrawPrimitive(const VertexBufferBase& VBuf, EPrimitiveType eType = EPrimitiveType::NONE, int ivbase = 0, int ivcount = 0) final;
   void DrawIndexedPrimitive(const VertexBufferBase& VBuf,
                             const IndexBufferBase& IdxBuf,
-                            EPrimitiveType eType = EPRIM_NONE,
+                            EPrimitiveType eType = EPrimitiveType::NONE,
                             int ivbase           = 0,
                             int ivcount          = 0) final;
-  void DrawPrimitiveEML(const VertexBufferBase& VBuf, EPrimitiveType eType = EPRIM_NONE, int ivbase = 0, int ivcount = 0) final;
+  void DrawPrimitiveEML(const VertexBufferBase& VBuf, EPrimitiveType eType = EPrimitiveType::NONE, int ivbase = 0, int ivcount = 0) final;
   void DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf,
                                const IndexBufferBase& IdxBuf,
-                               EPrimitiveType eType = EPRIM_NONE,
+                               EPrimitiveType eType = EPrimitiveType::NONE,
                                int ivbase           = 0,
                                int ivcount          = 0) final;
 

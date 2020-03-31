@@ -184,7 +184,7 @@ void Cells::Describe()
 }
 ///////////////////////////////////////////////////////////////////////////////
 Cells::Cells()
-	: mVertexBuffer(65536, 0, ork::lev2::EPRIM_MULTI)
+	: mVertexBuffer(65536, 0, ork::lev2::EPrimitiveType::MULTI)
 	, miSeedA(0)
 	, miSeedB(0)
 	, miDimU(2)
@@ -390,7 +390,7 @@ void Cells::compute( ProcTex& ptex )
 				fmtx4 mtx;
 				mtx.SetTranslation( wpu+wpv );
 				mPTX.GetTarget()->MTXI()->PushMMatrix( mtx );
-				mPTX.GetTarget()->GBI()->DrawPrimitive( mVW, ork::lev2::EPRIM_TRIANGLES );
+				mPTX.GetTarget()->GBI()->DrawPrimitive( mVW, ork::lev2::EPrimitiveType::TRIANGLES );
 				mPTX.GetTarget()->MTXI()->PopMMatrix();
 			}
 			mPTX.GetTarget()->MTXI()->PopPMatrix();

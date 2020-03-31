@@ -245,9 +245,9 @@ void FnBallArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
                 targ->BindMaterial( fd.mpMaterial );
                 targ->MTXI()->PushMMatrix(mtx);
                 if( use_tess )
-                    targ->GBI()->DrawPrimitive( vw, EPRIM_PATCHES, knumv );
+                    targ->GBI()->DrawPrimitive( vw, EPrimitiveType::PATCHES, knumv );
                 else
-                    targ->GBI()->DrawPrimitive( vw, EPRIM_POINTS, knumv );
+                    targ->GBI()->DrawPrimitive( vw, EPrimitiveType::POINTS, knumv );
                 targ->MTXI()->PopMMatrix();
                 targ->BindMaterial( 0 );
 

@@ -76,7 +76,7 @@ void Panel::DoDraw(ui::DrawEvent& drwev)
 		vw.AddVertex( lev2::SVtxV12C4T16( x, y, 0.0f, 0.0f, 0.0f, 0xffffffff ) );
 		vw.AddVertex( lev2::SVtxV12C4T16( x2, y2, 0.0f, 0.0f, 0.0f, 0xffffffff ) );
 		vw.UnLock( tgt );
-		tgt->GBI()->DrawPrimitive( vw, lev2::EPRIM_LINES );
+		tgt->GBI()->DrawPrimitive( vw, lev2::EPrimitiveType::LINES );
 	};
 
 	mtxi->PushUIMatrix();

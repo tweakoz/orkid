@@ -26,7 +26,7 @@ void BuildXgmClusterPrimGroups(lev2::XgmCluster& XgmCluster, const std::vector<u
 
 void MaterialGroup::ComputeVtxStreamFormat() {
 
-  meVtxFormat = lev2::EVTXSTREAMFMT_V12N12B12T16;
+  meVtxFormat = lev2::EVtxStreamFormat::V12N12B12T16;
 
 #if 0
 	const orkvector<ork::lev2::VertexConfig>& VertexConfigDataAvl = mAvailVertexConfigData;

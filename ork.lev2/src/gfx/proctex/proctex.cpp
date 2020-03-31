@@ -305,7 +305,7 @@ void RenderQuad(ork::lev2::Context* pTARG, float fX1, float fY1, float fX2, floa
 
   vw.UnLock(pTARG);
 
-  pTARG->GBI()->DrawPrimitive(vw, EPRIM_TRIANGLES, ivcount);
+  pTARG->GBI()->DrawPrimitive(vw, EPrimitiveType::TRIANGLES, ivcount);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void RenderQuadEML(
@@ -339,7 +339,7 @@ void RenderQuadEML(
 
   vw.UnLock(pTARG);
 
-  pTARG->GBI()->DrawPrimitiveEML(vw, EPRIM_TRIANGLES, ivcount);
+  pTARG->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES, ivcount);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

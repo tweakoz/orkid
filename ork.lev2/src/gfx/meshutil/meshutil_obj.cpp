@@ -442,9 +442,7 @@ void Mesh::ReadFromWavefrontObj(const file::Path& BasePath) {
     const objpoly& opoly = ObjPolys[ip];
     submesh& smesh       = MergeSubMesh(opoly.group.c_str());
     /////////////////////////////////////////////
-    PropTypeString outstr;
-    PropType<lev2::EVtxStreamFormat>::ToString(ork::lev2::EVTXSTREAMFMT_V12N12B12T16, outstr);
-    smesh.setStringAnnotation("OutVtxFormat", outstr.c_str());
+    smesh.typedAnnotation<lev2::EVtxStreamFormat>("OutVtxFormat") = ork::lev2::EVtxStreamFormat::V12N12B12T16;
     /////////////////////////////////////////////
 
     size_t inumv = opoly.mvtxindices.size();

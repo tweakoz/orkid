@@ -81,7 +81,7 @@ void DAEDAEFilter::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 
 ColladaVertexFormat::ColladaVertexFormat()
-    : meVertexStreamFormat(ork::lev2::EVTXSTREAMFMT_END)
+    : meVertexStreamFormat(ork::lev2::EVtxStreamFormat::NONE)
     , miNumJoints(0)
     , miNumColors(0)
     , mbNormals(false)
@@ -95,46 +95,46 @@ void ColladaVertexFormat::SetFormat(ork::lev2::EVtxStreamFormat efmt) {
   meVertexStreamFormat = efmt;
 
   switch (efmt) {
-    case ork::lev2::EVTXSTREAMFMT_V12N12T8I4W4: // PC basic skinned
+    case ork::lev2::EVtxStreamFormat::V12N12T8I4W4: // PC basic skinned
       mbNormals    = true;
       miNumJoints  = 4;
       miNumUvs     = 1;
       miVertexSize = sizeof(ork::lev2::SVtxV12N12T8I4W4);
       break;
-    case ork::lev2::EVTXSTREAMFMT_V12N12B12T8I4W4: // PC binormal skinned
+    case ork::lev2::EVtxStreamFormat::V12N12B12T8I4W4: // PC binormal skinned
       mbNormals      = true;
       miNumBinormals = 1;
       miNumJoints    = 4;
       miNumUvs       = 1;
       miVertexSize   = sizeof(ork::lev2::SVtxV12N12B12T8I4W4);
       break;
-    case ork::lev2::EVTXSTREAMFMT_V12N12B12T8C4: // PC basic rigid
+    case ork::lev2::EVtxStreamFormat::V12N12B12T8C4: // PC basic rigid
       mbNormals      = true;
       miNumUvs       = 1;
       miNumColors    = 1;
       miNumBinormals = 1;
       miVertexSize   = sizeof(ork::lev2::SVtxV12N12B12T8C4);
       break;
-    case ork::lev2::EVTXSTREAMFMT_V12N12T16C4: // PC rigid
+    case ork::lev2::EVtxStreamFormat::V12N12T16C4: // PC rigid
       mbNormals    = true;
       miNumUvs     = 2;
       miNumColors  = 1;
       miVertexSize = sizeof(ork::lev2::SVtxV12N12T16C4);
       break;
-    case ork::lev2::EVTXSTREAMFMT_V12N12B12T16: // PC basic rigid
+    case ork::lev2::EVtxStreamFormat::V12N12B12T16: // PC basic rigid
       mbNormals      = true;
       miNumUvs       = 2;
       miNumColors    = 1;
       miNumBinormals = 1;
       miVertexSize   = sizeof(ork::lev2::SVtxV12N12B12T16);
       break;
-    case ork::lev2::EVTXSTREAMFMT_V12N6I1T4: // WII basic skinned
+    case ork::lev2::EVtxStreamFormat::V12N6I1T4: // WII basic skinned
       mbNormals    = true;
       miNumJoints  = 1;
       miNumUvs     = 1;
       miVertexSize = sizeof(ork::lev2::SVtxV12N6I1T4);
       break;
-    case ork::lev2::EVTXSTREAMFMT_V12N6C2T4: // WII basic rigid
+    case ork::lev2::EVtxStreamFormat::V12N6C2T4: // WII basic rigid
       mbNormals    = true;
       miNumUvs     = 1;
       miNumColors  = 1;
@@ -211,11 +211,11 @@ bool DAEXGMFilter::ConvertAsset(const tokenlist& toklist) {
 
   ////////////////////////////////////////////////////////////////
   // PC vertex formats supported
-  policy.mAvailableVertexFormats.add(lev2::EVTXSTREAMFMT_V12N12T8I4W4);    // PC basic skinned
-  policy.mAvailableVertexFormats.add(lev2::EVTXSTREAMFMT_V12N12B12T8I4W4); // PC 1 tanspace skinned
-  policy.mAvailableVertexFormats.add(lev2::EVTXSTREAMFMT_V12N12B12T8C4);   // PC 1 tanspace unskinned
-  policy.mAvailableVertexFormats.add(lev2::EVTXSTREAMFMT_V12N12B12T16);    // PC 1 tanspace, 2UV unskinned
-  policy.mAvailableVertexFormats.add(lev2::EVTXSTREAMFMT_V12N12T16C4);     // PC 2UV 1 color unskinned
+  policy.mAvailableVertexFormats.add(lev2::EVtxStreamFormat::V12N12T8I4W4);    // PC basic skinned
+  policy.mAvailableVertexFormats.add(lev2::EVtxStreamFormat::V12N12B12T8I4W4); // PC 1 tanspace skinned
+  policy.mAvailableVertexFormats.add(lev2::EVtxStreamFormat::V12N12B12T8C4);   // PC 1 tanspace unskinned
+  policy.mAvailableVertexFormats.add(lev2::EVtxStreamFormat::V12N12B12T16);    // PC 1 tanspace, 2UV unskinned
+  policy.mAvailableVertexFormats.add(lev2::EVtxStreamFormat::V12N12T16C4);     // PC 2UV 1 color unskinned
   ////////////////////////////////////////////////////////////////
 
   CColladaModel* colmdl = CColladaModel::Load(inf.c_str());

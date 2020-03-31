@@ -137,7 +137,7 @@ struct impl {
     }
     targ->PushModColor(modcolor);
     targ->PushMaterial(pimpl->_material);
-    gbi->DrawPrimitive(vw, EPRIM_TRIANGLES, 6);
+    gbi->DrawPrimitive(vw, EPrimitiveType::TRIANGLES, 6);
     targ->PopModColor();
     mtxi->PopMMatrix();
   }

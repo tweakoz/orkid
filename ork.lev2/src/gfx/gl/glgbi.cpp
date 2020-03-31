@@ -554,7 +554,7 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf, const svarp_t p
   //////////////////////////////////////////////
   GL_ERRORCHECK();
   switch (eStrFmt) {
-    case lev2::EVTXSTREAMFMT_V12N12B12T16: {
+    case lev2::EVtxStreamFormat::V12N12B12T16: {
       static vtx_config cfgs[] = {
           {"POSITION", 3, GL_FLOAT, false, 0, 0, 0},
           {"NORMAL", 3, GL_FLOAT, true, 12, 0, 0},
@@ -567,7 +567,7 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf, const svarp_t p
       rval = true;
       break;
     }
-    case lev2::EVTXSTREAMFMT_V12N12B12T8I4W4: {
+    case lev2::EVtxStreamFormat::V12N12B12T8I4W4: {
       static vtx_config cfgs[] = {
           {"POSITION", 3, GL_FLOAT, false, 0, 0, 0},
           {"NORMAL", 3, GL_FLOAT, true, 12, 0, 0},
@@ -581,7 +581,7 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf, const svarp_t p
       rval = true;
       break;
     }
-    case lev2::EVTXSTREAMFMT_V12N12T8I4W4: {
+    case lev2::EVtxStreamFormat::V12N12T8I4W4: {
       static vtx_config cfgs[] = {
           {"POSITION", 3, GL_FLOAT, false, 0, 0, 0},
           {"NORMAL", 3, GL_FLOAT, true, 12, 0, 0},
@@ -594,13 +594,13 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf, const svarp_t p
       rval = true;
       break;
     }
-    case EVTXSTREAMFMT_V12C4N6I2T8: {
+    case EVtxStreamFormat::V12C4N6I2T8: {
       break;
     }
-    case EVTXSTREAMFMT_V12I4N12T8: {
+    case EVtxStreamFormat::V12I4N12T8: {
       break;
     }
-    case EVTXSTREAMFMT_V12N12B12T8C4: {
+    case EVtxStreamFormat::V12N12B12T8C4: {
       static vtx_config cfgs[] = {
           {"POSITION", 3, GL_FLOAT, false, 0, 0, 0},
           {"NORMAL", 3, GL_FLOAT, false, 12, 0, 0},
@@ -613,7 +613,7 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf, const svarp_t p
       rval = true;
       break;
     }
-    case lev2::EVTXSTREAMFMT_V12N12T16C4: {
+    case lev2::EVtxStreamFormat::V12N12T16C4: {
       static vtx_config cfgs[] = {
           {"POSITION", 3, GL_FLOAT, false, 0, 0, 0},
           {"NORMAL", 3, GL_FLOAT, true, 12, 0, 0},
@@ -626,7 +626,7 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf, const svarp_t p
       rval = true;
       break;
     }
-    case EVTXSTREAMFMT_V12C4T16: {
+    case EVtxStreamFormat::V12C4T16: {
       static vtx_config cfgs[] = {
           {"POSITION", 3, GL_FLOAT, false, 0, 0, 0},
           {"COLOR0", 4, GL_UNSIGNED_BYTE, true, 12, 0, 0},
@@ -637,7 +637,7 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf, const svarp_t p
       rval = true;
       break;
     }
-    case EVTXSTREAMFMT_V16T16C16: {
+    case EVtxStreamFormat::V16T16C16: {
       static vtx_config cfgs[] = {
           {"POSITION", 4, GL_FLOAT, false, 0, 0, 0},
           {"TEXCOORD0", 4, GL_FLOAT, false, 16, 0, 0},
@@ -648,15 +648,15 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf, const svarp_t p
       rval = true;
       break;
     }
-    case EVTXSTREAMFMT_V4C4: {
+    case EVtxStreamFormat::V4C4: {
       rval = false;
       break;
     }
-    case EVTXSTREAMFMT_V4T4: {
+    case EVtxStreamFormat::V4T4: {
       rval = false;
       break;
     }
-    case EVTXSTREAMFMT_V4T4C4: {
+    case EVtxStreamFormat::V4T4C4: {
       rval = false;
       break;
     }
@@ -784,7 +784,7 @@ void GlGeometryBufferInterface::DrawPrimitive(const VertexBufferBase& VBuf, EPri
       if (bDRAW) {
         static bool lbwire = false;
 
-        if (EPRIM_NONE == eTyp) {
+        if (EPrimitiveType::NONE == eTyp) {
           eTyp = VBuf.GetPrimType();
         }
 
@@ -820,7 +820,7 @@ void GlGeometryBufferInterface::DrawIndexedPrimitive(
       if (bDRAW) {
         static bool lbwire = false;
 
-        if (EPRIM_NONE == eType) {
+        if (EPrimitiveType::NONE == eType) {
           eType = VBuf.GetPrimType();
         }
 
@@ -850,40 +850,40 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, E
 
   int inum = (ivcount == 0) ? VBuf.GetNumVertices() : ivcount;
 
-  if (eType == EPRIM_NONE) {
+  if (eType == EPrimitiveType::NONE) {
     eType = VBuf.GetPrimType();
   }
   if (inum) {
     GL_ERRORCHECK();
     switch (eType) {
-      case EPRIM_LINES: { // orkprintf( "drawarrays: <ivbase %d> <inum %d> lines\n", ivbase, inum );
+      case EPrimitiveType::LINES: { // orkprintf( "drawarrays: <ivbase %d> <inum %d> lines\n", ivbase, inum );
         glDrawArrays(GL_LINES, ivbase, inum);
         break;
       }
-      case EPRIM_QUADS:
+      case EPrimitiveType::QUADS:
         // orkprintf( "drawarrays: %d quads\n", inum );
         // GL_ERRORCHECK();
         // glDrawArrays( GL_QUADS, ivbase, inum );
         // GL_ERRORCHECK();
         // miTrianglesRendered += (inum/2);
         break;
-      case EPRIM_TRIANGLES:
+      case EPrimitiveType::TRIANGLES:
         // printf( "drawarrays: <ivbase %d> <inum %d> tris\n", ivbase, inum );
         glDrawArrays(GL_TRIANGLES, ivbase, inum);
         miTrianglesRendered += (inum / 3);
         break;
-      case EPRIM_TRIANGLESTRIP:
+      case EPrimitiveType::TRIANGLESTRIP:
         // printf( "drawarrays: <ivbase %d> <inum %d> tristrip\n", ivbase, inum );
         glDrawArrays(GL_TRIANGLE_STRIP, ivbase, inum);
         miTrianglesRendered += (inum - 2);
         break;
-      case EPRIM_POINTS:
+      case EPrimitiveType::POINTS:
         GL_ERRORCHECK();
         glPointSize(1.0f);
         glDrawArrays(GL_POINTS, ivbase, inum);
         GL_ERRORCHECK();
         break;
-      case EPRIM_PATCHES:
+      case EPrimitiveType::PATCHES:
         GL_ERRORCHECK();
         glPointSize(32.0f);
 #if defined(ORK_OSX)
@@ -895,7 +895,7 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, E
         glDrawArrays(GL_PATCHES, ivbase, inum);
         GL_ERRORCHECK();
         break;
-        /*			case EPRIM_POINTSPRITES:
+        /*			case EPrimitiveType::POINTSPRITES:
                         GL_ERRORCHECK();
                         glPointSize( mTargetGL.currentMaterial()->mfParticleSize );
 
@@ -948,21 +948,21 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
   if (iNum) {
     GL_ERRORCHECK();
     switch (eType) {
-      case EPRIM_LINES: { // orkprintf( "drawarrays: %d lines\n", iNum );
+      case EPrimitiveType::LINES: { // orkprintf( "drawarrays: %d lines\n", iNum );
         glprimtype = GL_LINES;
         break;
       }
-      case EPRIM_TRIANGLES:
+      case EPrimitiveType::TRIANGLES:
         // printf( "drawindexedtris inum<%d> imin<%d> imax<%d>\n", iNum/3, imin, imax );
         glprimtype = GL_TRIANGLES;
         miTrianglesRendered += (iNum / 3);
         break;
-      case EPRIM_TRIANGLESTRIP:
+      case EPrimitiveType::TRIANGLESTRIP:
         // printf( "drawindexedtristrip inum<%d>\n", iNum-2 );
         glprimtype = GL_TRIANGLE_STRIP;
         miTrianglesRendered += (iNum - 2);
         break;
-      case EPRIM_POINTS:
+      case EPrimitiveType::POINTS:
         glprimtype = GL_POINTS;
         break;
       default:

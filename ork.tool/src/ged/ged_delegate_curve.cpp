@@ -195,7 +195,7 @@ class GedCurveV4Widget : public GedItemNode
 		GedSkin::GedPrim prim;
 		prim.mDrawCB = CurveCustomPrim;
 		prim.mpNode = this;
-		prim.meType = ork::lev2::EPRIM_MULTI;
+		prim.meType = ork::lev2::EPrimitiveType::MULTI;
 		prim.iy1 = miY;
 		prim.iy2 = miY+kh;
 		GetSkin()->AddPrim( prim );
@@ -422,10 +422,10 @@ class GedCurveV4Widget : public GedItemNode
 			pTARG->MTXI()->PushMMatrix( fmtx4::Identity );
 				pTARG->BindMaterial( & gridmat );
 				pTARG->PushModColor( fvec3::Blue() );
-					pTARG->GBI()->DrawPrimitive( VB, ork::lev2::EPRIM_TRIANGLES, ivbaseA, 6 );
+					pTARG->GBI()->DrawPrimitive( VB, ork::lev2::EPrimitiveType::TRIANGLES, ivbaseA, 6 );
 				pTARG->PopModColor();
 				pTARG->PushModColor( fvec3::White() );
-					pTARG->GBI()->DrawPrimitive( VB, ork::lev2::EPRIM_LINES, ivbaseA+6, icountA-6 );
+					pTARG->GBI()->DrawPrimitive( VB, ork::lev2::EPrimitiveType::LINES, ivbaseA+6, icountA-6 );
 				pTARG->PopModColor();
 			pTARG->MTXI()->PopPMatrix();
 			pTARG->MTXI()->PopVMatrix();
@@ -446,7 +446,7 @@ public:
 	GedCurveV4Widget( ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj )
 		: GedItemNode( mdl, name, prop, obj)
 		, mCurveObject( 0 )
-		//, mVertexBuffer( 512, 0, ork::lev2::EPRIM_TRIANGLES )
+		//, mVertexBuffer( 512, 0, ork::lev2::EPrimitiveType::TRIANGLES )
 		, mEditPoints(kpoolsize)
 		, mEditSegs(kpoolsize)
 	{

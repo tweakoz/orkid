@@ -111,20 +111,20 @@ enum struct EBufferFormat : crc_enum_t {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum EPrimitiveType {
-  EPRIM_NONE = 0,
-  EPRIM_POINTS,
-  EPRIM_LINES,
-  EPRIM_LINESTRIP,
-  EPRIM_LINELOOP,
-  EPRIM_TRIANGLES,
-  EPRIM_QUADS,
-  EPRIM_TRIANGLESTRIP,
-  EPRIM_TRIANGLEFAN,
-  EPRIM_QUADSTRIP,
-  EPRIM_MULTI,
-  EPRIM_PATCHES,
-  EPRIM_END
+enum struct EPrimitiveType : crc_enum_t {
+  CrcEnum(NONE),
+  CrcEnum(POINTS),
+  CrcEnum(LINES),
+  CrcEnum(LINESTRIP),
+  CrcEnum(LINELOOP),
+  CrcEnum(TRIANGLES),
+  CrcEnum(QUADS),
+  CrcEnum(TRIANGLESTRIP),
+  CrcEnum(TRIANGLEFAN),
+  CrcEnum(QUADSTRIP),
+  CrcEnum(MULTI),
+  CrcEnum(PATCHES),
+  CrcEnum(END)
 };
 
 //////////////////////////////////////
@@ -217,40 +217,40 @@ enum ECullTest {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum EVtxStreamFormat {
-  EVTXSTREAMFMT_V16 = 0,  // 16 BPV	flat fvec4's
-  EVTXSTREAMFMT_V4T4,     // 8 BPV	2D text (or textured quads) no vtxcolors
-  EVTXSTREAMFMT_V4C4,     // 8 BPV	2D Colored
-  EVTXSTREAMFMT_V4T4C4,   // 12 BPV	2D text (or textured quads) w / vtxcolors
-  EVTXSTREAMFMT_V12C4T16, // 20 BPV	3D Textured Colored
+enum struct EVtxStreamFormat : crc_enum_t {
+  CrcEnum(V16),      // 16 BPV	flat fvec4's
+  CrcEnum(V4T4),     // 8 BPV	2D text (or textured quads) no vtxcolors
+  CrcEnum(V4C4),     // 8 BPV	2D Colored
+  CrcEnum(V4T4C4),   // 12 BPV	2D text (or textured quads) w / vtxcolors
+  CrcEnum(V12C4T16), // 20 BPV	3D Textured Colored
 
-  EVTXSTREAMFMT_V12N6I1T4, // 24 BPV	3D Textured hard skinned w/normals  (gamecube/wii basic)
-  EVTXSTREAMFMT_V12N6C2T4, // 24 BPV	3D Textured colored rigid w/normals (gamecube/wii basic)
+  CrcEnum(V12N6I1T4), // 24 BPV	3D Textured hard skinned w/normals  (gamecube/wii basic)
+  CrcEnum(V12N6C2T4), // 24 BPV	3D Textured colored rigid w/normals (gamecube/wii basic)
 
-  EVTXSTREAMFMT_V16T16C16,   // 48 BPV	Fat Testing Format
-  EVTXSTREAMFMT_V12I4N12T8,  // 36 BPV	I4 = Bone Index (SKINNED)
-  EVTXSTREAMFMT_V12C4N6I2T8, // 32 BPV	I2 = Bone Index (SKINNED)
-  EVTXSTREAMFMT_V6I2C4N3T2,  // 16 BPV	I2 = Bone Index (SKINNED)
-  EVTXSTREAMFMT_V12I4N6W4T4, // 32 BPV	I4 = Bone Index, W4 = Bone Weights
+  CrcEnum(V16T16C16),   // 48 BPV	Fat Testing Format
+  CrcEnum(V12I4N12T8),  // 36 BPV	I4 = Bone Index (SKINNED)
+  CrcEnum(V12C4N6I2T8), // 32 BPV	I2 = Bone Index (SKINNED)
+  CrcEnum(V6I2C4N3T2),  // 16 BPV	I2 = Bone Index (SKINNED)
+  CrcEnum(V12I4N6W4T4), // 32 BPV	I4 = Bone Index, W4 = Bone Weights
 
-  EVTXSTREAMFMT_V12N12T8I4W4,    // 40BPV	Normals,1UV,4 bone weighting
-  EVTXSTREAMFMT_V12N12B12T8,     // 44BPV	Normals,Binormals,1UV
-  EVTXSTREAMFMT_V12N12T16C4,     // 44BPV	Normals,2UV,Color
-  EVTXSTREAMFMT_V12N12B12T8C4,   // 48BPV	Normals,Binormals,1UV
-  EVTXSTREAMFMT_V12N12B12T16,    // 52BPV	Normals,Binormals,2UV (lightmapped)
-  EVTXSTREAMFMT_V12N12B12T8I4W4, // 52BPV	Normals,Binormals,1UV,4 bone weighting
+  CrcEnum(V12N12T8I4W4),    // 40BPV	Normals,1UV,4 bone weighting
+  CrcEnum(V12N12B12T8),     // 44BPV	Normals,Binormals,1UV
+  CrcEnum(V12N12T16C4),     // 44BPV	Normals,2UV,Color
+  CrcEnum(V12N12B12T8C4),   // 48BPV	Normals,Binormals,1UV
+  CrcEnum(V12N12B12T16),    // 52BPV	Normals,Binormals,2UV (lightmapped)
+  CrcEnum(V12N12B12T8I4W4), // 52BPV	Normals,Binormals,1UV,4 bone weighting
 
-  EVTXSTREAMFMT_MODELERRIGID, // 32 BPV	I4 = Bone Index, W4 = Bone Weights
+  CrcEnum(MODELERRIGID), // 32 BPV	I4 = Bone Index, W4 = Bone Weights
 
   //////////////////////////////
   // Platform Specific
 
-  EVTXSTREAMFMT_XP_VCNT,  // unskinned, colors, normals, UV's
-  EVTXSTREAMFMT_XP_VCNTI, // skinned, colors, normals, UV's
+  CrcEnum(XP_VCNT),  // unskinned, colors, normals, UV's
+  CrcEnum(XP_VCNTI), // skinned, colors, normals, UV's
 
   //////////////////////////////
 
-  EVTXSTREAMFMT_END,
+  CrcEnum(NONE)
 };
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

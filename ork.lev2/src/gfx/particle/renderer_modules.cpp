@@ -592,7 +592,7 @@ void SpriteRenderer::Render(
 
         bound_mtl->_rasterstate.SetBlending(meBlendMode);
         targ->MTXI()->PushMMatrix(MatScale * mtx);
-        targ->GBI()->DrawPrimitive(vw, ork::lev2::EPRIM_POINTS, ivertexlockcount);
+        targ->GBI()->DrawPrimitive(vw, ork::lev2::EPrimitiveType::POINTS, ivertexlockcount);
         mpVB = 0;
         targ->MTXI()->PopMMatrix();
         targ->BindMaterial(0);
@@ -783,7 +783,7 @@ void StreakRenderer::Render(
     // Draw Particles
     //////////////////////////////////////////
     targ->MTXI()->PushMMatrix(mtx_scale * mtx);
-    targ->GBI()->DrawPrimitive(vw, ork::lev2::EPRIM_POINTS, icnt);
+    targ->GBI()->DrawPrimitive(vw, ork::lev2::EPrimitiveType::POINTS, icnt);
     targ->MTXI()->PopMMatrix();
     //////////////////////////////////////////
     targ->BindMaterial(0);

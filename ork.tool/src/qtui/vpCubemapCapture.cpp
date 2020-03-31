@@ -88,7 +88,7 @@ static void RenderFace( lev2::Context* pTARG, const fcolor4 & clr, lev2::Texture
 
 	static lev2::GfxMaterial3DSolid MyMaterial( pTARG );
 
-	static ork::lev2::CVtxBuffer<ork::lev2::SVtxV12C4T16> WarpVtxBuffer( 32768, 0, lev2::EPRIM_TRIANGLES );
+	static ork::lev2::CVtxBuffer<ork::lev2::SVtxV12C4T16> WarpVtxBuffer( 32768, 0, lev2::EPrimitiveType::TRIANGLES );
 
 	MyMaterial.SetTexture( ptex );
 	MyMaterial.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR );
@@ -223,7 +223,7 @@ static void RenderFace( lev2::Context* pTARG, const fcolor4 & clr, lev2::Texture
 	pTARG->PushModColor( clr );
 	pTARG->BindMaterial( & MyMaterial );
 	{
-		pTARG->GBI()->DrawPrimitive( WarpVtxBuffer, lev2::EPRIM_TRIANGLES );
+		pTARG->GBI()->DrawPrimitive( WarpVtxBuffer, lev2::EPrimitiveType::TRIANGLES );
 	}
 	pTARG->PopModColor();
 	/////////////////////////////////////////////

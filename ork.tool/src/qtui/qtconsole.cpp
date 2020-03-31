@@ -293,7 +293,7 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev) {
       }
       vw.UnLock(pTARG);
 
-      pTARG->GBI()->DrawPrimitive(vw, ork::lev2::EPRIM_TRIANGLES, 6);
+      pTARG->GBI()->DrawPrimitive(vw, ork::lev2::EPrimitiveType::TRIANGLES, 6);
     };
 
     drawquad(0xff200020, 0xff400030, 0, 0, IW, IH);

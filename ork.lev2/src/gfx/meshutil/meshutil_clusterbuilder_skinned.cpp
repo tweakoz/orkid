@@ -102,17 +102,17 @@ bool XgmSkinnedClusterBuilder::addTriangle(const XgmClusterTri& Triangle) {
 
 void XgmSkinnedClusterBuilder::buildVertexBuffer(lev2::EVtxStreamFormat format) {
   switch (format) {
-    case lev2::EVTXSTREAMFMT_V12N12T8I4W4: // PC skinned format
+    case lev2::EVtxStreamFormat::V12N12T8I4W4: // PC skinned format
     {
       BuildVertexBuffer_V12N12T8I4W4();
       break;
     }
-    case lev2::EVTXSTREAMFMT_V12N12B12T8I4W4: // PC binormal skinned format
+    case lev2::EVtxStreamFormat::V12N12B12T8I4W4: // PC binormal skinned format
     {
       BuildVertexBuffer_V12N12B12T8I4W4();
       break;
     }
-    case lev2::EVTXSTREAMFMT_V12N6I1T4: // WII skinned format
+    case lev2::EVtxStreamFormat::V12N6I1T4: // WII skinned format
     {
       BuildVertexBuffer_V12N6I1T4();
       break;
@@ -132,7 +132,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4() // binormal p
   const float kVertexScale(1.0f);
   const fvec2 UVScale(1.0f, 1.0f);
   int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
-  _vertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12B12T8I4W4>(NumVertexIndices, 0, ork::lev2::EPRIM_MULTI);
+  _vertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12B12T8I4W4>(NumVertexIndices, 0, ork::lev2::EPrimitiveType::MULTI);
   lev2::VtxWriter<ork::lev2::SVtxV12N12B12T8I4W4> vwriter;
   vwriter.Lock(&DummyTarget, _vertexBuffer, NumVertexIndices);
 
@@ -214,7 +214,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4() // basic pc skin
 
   lev2::ContextDummy DummyTarget;
   lev2::VtxWriter<ork::lev2::SVtxV12N12T8I4W4> vwriter;
-  _vertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12T8I4W4>(NumVertexIndices, 0, ork::lev2::EPRIM_MULTI);
+  _vertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12T8I4W4>(NumVertexIndices, 0, ork::lev2::EPrimitiveType::MULTI);
   vwriter.Lock(&DummyTarget, _vertexBuffer, NumVertexIndices);
   for (int iv = 0; iv < NumVertexIndices; iv++) {
     ork::lev2::SVtxV12N12T8I4W4 OutVtx;
@@ -262,7 +262,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N6I1T4() // basic wii skinne
   int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
   lev2::ContextDummy DummyTarget;
   lev2::VtxWriter<ork::lev2::SVtxV12N6I1T4> vwriter;
-  _vertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N6I1T4>(NumVertexIndices, 0, ork::lev2::EPRIM_MULTI);
+  _vertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N6I1T4>(NumVertexIndices, 0, ork::lev2::EPrimitiveType::MULTI);
   vwriter.Lock(&DummyTarget, _vertexBuffer, NumVertexIndices);
   for (int iv = 0; iv < NumVertexIndices; iv++) {
     ork::lev2::SVtxV12N6I1T4 OutVtx;

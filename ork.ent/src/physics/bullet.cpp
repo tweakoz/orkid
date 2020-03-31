@@ -200,7 +200,7 @@ btTriangleIndexVertexArray* XgmClusterToTriVertArray(const ork::lev2::XgmCluster
 
 			switch( ept )
 			{
-				case lev2::EPRIM_TRIANGLESTRIP:
+				case lev2::EPrimitiveType::TRIANGLESTRIP:
 				{
 					for( int ii=0; ii<(inumindices-2); ii++ )
 					{
@@ -222,7 +222,7 @@ btTriangleIndexVertexArray* XgmClusterToTriVertArray(const ork::lev2::XgmCluster
 					}
 					break;
 				}
-				case lev2::EPRIM_TRIANGLES:
+				case lev2::EPrimitiveType::TRIANGLES:
 				{
 					for( int ii=0; ii<inumindices; ii+=3 )
 					{
@@ -272,7 +272,7 @@ btTriangleIndexVertexArray* XgmClusterToTriVertArray(const ork::lev2::XgmCluster
 			switch( efmt )
 			{
 				////////////////////////////////////////////////////////
-				case lev2::EVTXSTREAMFMT_V12N12B12T8C4:
+				case lev2::EVtxStreamFormat::V12N12B12T8C4:
 				{	const int knfloats = 9;
 					btScalar* pVERTS = new btScalar[ mesh.m_numVertices*knfloats ];
 					mesh.m_vertexBase = (const unsigned char*) pVERTS;
@@ -295,7 +295,7 @@ btTriangleIndexVertexArray* XgmClusterToTriVertArray(const ork::lev2::XgmCluster
 					break;
 				}
 				////////////////////////////////////////////////////////
-				case lev2::EVTXSTREAMFMT_V12N12T16C4:
+				case lev2::EVtxStreamFormat::V12N12T16C4:
 				{	const int knfloats = 3;
 					btScalar* pVERTS = new btScalar[ mesh.m_numVertices*knfloats ];
 					mesh.m_vertexBase = (const unsigned char*) pVERTS;

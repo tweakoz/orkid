@@ -44,18 +44,18 @@ DECLARE_ENUM(EBLENDING_MODULATE)
 END_ENUM_SERIALIZER()
 
 BEGIN_ENUM_SERIALIZER(ork::lev2, EPrimitiveType)
-DECLARE_ENUM(EPRIM_NONE)
-DECLARE_ENUM(EPRIM_POINTS)
-DECLARE_ENUM(EPRIM_LINES)
-DECLARE_ENUM(EPRIM_LINESTRIP)
-DECLARE_ENUM(EPRIM_LINELOOP)
-DECLARE_ENUM(EPRIM_TRIANGLES)
-DECLARE_ENUM(EPRIM_QUADS)
-DECLARE_ENUM(EPRIM_TRIANGLESTRIP)
-DECLARE_ENUM(EPRIM_TRIANGLEFAN)
-DECLARE_ENUM(EPRIM_QUADSTRIP)
-DECLARE_ENUM(EPRIM_MULTI)
-DECLARE_ENUM(EPRIM_END)
+DECLARE_ENUM(EPrimitiveType::NONE)
+DECLARE_ENUM(EPrimitiveType::POINTS)
+DECLARE_ENUM(EPrimitiveType::LINES)
+DECLARE_ENUM(EPrimitiveType::LINESTRIP)
+DECLARE_ENUM(EPrimitiveType::LINELOOP)
+DECLARE_ENUM(EPrimitiveType::TRIANGLES)
+DECLARE_ENUM(EPrimitiveType::QUADS)
+DECLARE_ENUM(EPrimitiveType::TRIANGLESTRIP)
+DECLARE_ENUM(EPrimitiveType::TRIANGLEFAN)
+DECLARE_ENUM(EPrimitiveType::QUADSTRIP)
+DECLARE_ENUM(EPrimitiveType::MULTI)
+DECLARE_ENUM(EPrimitiveType::END)
 END_ENUM_SERIALIZER()
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -76,39 +76,6 @@ using namespace ork::lev2; // too many things to add ork::lev2:: in front of in 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-static const std::string VertexFormatStrings[EVTXSTREAMFMT_END + 2] = {
-    "EVTXSTREAMFMT_V16",          "EVTXSTREAMFMT_V4T4",
-    "EVTXSTREAMFMT_V4C4",         "EVTXSTREAMFMT_V4T4C4",
-    "EVTXSTREAMFMT_V12C4T16",
-
-    "EVTXSTREAMFMT_V12N6I1T4",    "EVTXSTREAMFMT_V12N6C2T4",
-
-    "EVTXSTREAMFMT_V16T16C16",    "EVTXSTREAMFMT_V12I4N12T8",
-    "EVTXSTREAMFMT_V12C4N6I2T8",  "EVTXSTREAMFMT_V6I2C4N3T2",
-    "EVTXSTREAMFMT_V12I4N6W4T4",
-
-    "EVTXSTREAMFMT_V12N12T8I4W4", "EVTXSTREAMFMT_V12N12B12T8",
-    "EVTXSTREAMFMT_V12N12T16C4",  "EVTXSTREAMFMT_V12N12B12T8C4",
-    "EVTXSTREAMFMT_V12N12B12T16", "EVTXSTREAMFMT_V12N12B12T8I4W4",
-
-    "EVTXSTREAMFMT_MODELERRIGID",
-
-    "EVTXSTREAMFMT_XP_VCNT",      "EVTXSTREAMFMT_XP_VCNTI",
-    "EVTXSTREAMFMT_END",          ""};
-static const std::string PrimTypeStrings[EPRIM_END + 2] = {
-    "EPRIM_NONE",
-    "EPRIM_POINTS",
-    "EPRIM_LINES",
-    "EPRIM_LINESTRIP",
-    "EPRIM_LINELOOP",
-    "EPRIM_TRIANGLES",
-    "EPRIM_QUADS",
-    "EPRIM_TRIANGLESTRIP",
-    "EPRIM_TRIANGLEFAN",
-    "EPRIM_QUADSTRIP",
-    "EPRIM_MULTI",
-    "EPRIM_END",
-    ""};
 static const std::string BlendingStrings[EBLENDING_END + 2] = {
     "EBLENDING_OFF",
     "EBLENDING_ALPHA",
@@ -124,42 +91,18 @@ static const std::string BlendingStrings[EBLENDING_END + 2] = {
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-template <> const EPropType PropType<EVtxStreamFormat>::meType = EPROPTYPE_ENUM;
-template <> const EPropType PropType<EPrimitiveType>::meType   = EPROPTYPE_ENUM;
-template <> const EPropType PropType<EBlending>::meType        = EPROPTYPE_ENUM;
+template <> const EPropType PropType<EBlending>::meType = EPROPTYPE_ENUM;
 ///////////////////////////////////////////////////////////////////////////////
-template <> const char* PropType<EVtxStreamFormat>::mstrTypeName = "GfxEnv::EVtxStreamFormat";
-template <> const char* PropType<EPrimitiveType>::mstrTypeName   = "GfxEnv::EPrimitiveType";
-template <> const char* PropType<EBlending>::mstrTypeName        = "GfxEnv::EBlending";
+template <> const char* PropType<EBlending>::mstrTypeName = "GfxEnv::EBlending";
 ///////////////////////////////////////////////////////////////////////////////
-template <> EVtxStreamFormat PropType<EVtxStreamFormat>::FromString(const PropTypeString& String) {
-  return PropType::FindValFromStrings<EVtxStreamFormat>(String.c_str(), VertexFormatStrings, EVTXSTREAMFMT_END);
-}
-template <> EPrimitiveType PropType<EPrimitiveType>::FromString(const PropTypeString& String) {
-  return PropType::FindValFromStrings<EPrimitiveType>(String.c_str(), PrimTypeStrings, EPRIM_END);
-}
 template <> EBlending PropType<EBlending>::FromString(const PropTypeString& String) {
   return PropType::FindValFromStrings<EBlending>(String.c_str(), BlendingStrings, EBLENDING_END);
 }
 ///////////////////////////////////////////////////////////////////////////////
-template <> void PropType<EVtxStreamFormat>::ToString(const EVtxStreamFormat& e, PropTypeString& tstr) {
-  tstr.set(VertexFormatStrings[int(e)].c_str());
-}
-template <> void PropType<EPrimitiveType>::ToString(const EPrimitiveType& e, PropTypeString& tstr) {
-  tstr.set(PrimTypeStrings[int(e)].c_str());
-}
 template <> void PropType<EBlending>::ToString(const EBlending& e, PropTypeString& tstr) {
   tstr.set(BlendingStrings[int(e)].c_str());
 }
 ///////////////////////////////////////////////////////////////////////////////
-template <> void PropType<EVtxStreamFormat>::GetValueSet(const std::string*& ValueStrings, int& NumStrings) {
-  NumStrings   = EVTXSTREAMFMT_END + 1;
-  ValueStrings = VertexFormatStrings;
-}
-template <> void PropType<EPrimitiveType>::GetValueSet(const std::string*& ValueStrings, int& NumStrings) {
-  NumStrings   = EPRIM_END + 1;
-  ValueStrings = PrimTypeStrings;
-}
 template <> void PropType<EBlending>::GetValueSet(const std::string*& ValueStrings, int& NumStrings) {
   NumStrings   = EBLENDING_END + 1;
   ValueStrings = BlendingStrings;
@@ -224,9 +167,9 @@ GfxEnv::GfxEnv()
     , mp3DMaterial(nullptr)
     , mGfxEnvMutex("GfxEnvGlobalMutex")
     , gLoaderTarget(nullptr)
-    , mVtxBufSharedVect(256 << 10, 0, EPRIM_TRIANGLES)    // SVtxV12C4T16==32bytes
-    , mVtxBufSharedVect2(256 << 10, 0, EPRIM_TRIANGLES)   // SvtxV12N12B12T8C4==48bytes
-    , _vtxBufSharedV16T16C16(1 << 20, 0, EPRIM_TRIANGLES) // SvtxV12N12B12T8C4==48bytes
+    , mVtxBufSharedVect(256 << 10, 0, EPrimitiveType::TRIANGLES)    // SVtxV12C4T16==32bytes
+    , mVtxBufSharedVect2(256 << 10, 0, EPrimitiveType::TRIANGLES)   // SvtxV12N12B12T8C4==48bytes
+    , _vtxBufSharedV16T16C16(1 << 20, 0, EPrimitiveType::TRIANGLES) // SvtxV12N12B12T8C4==48bytes
 {
   mVtxBufSharedVect.SetRingLock(true);
   mVtxBufSharedVect2.SetRingLock(true);

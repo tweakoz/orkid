@@ -59,13 +59,13 @@ void GedSkin::AddPrim(const GedPrim& cb) {
     pctr->mCustomPrims.push_back(pooledprim);
   } else
     switch (cb.meType) {
-      case EPRIM_LINES: {
+      case EPrimitiveType::LINES: {
         GedPrim* pooledprim = pctr->mPrimPool.allocate();
         *pooledprim         = cb;
         pctr->mLinePrims.push_back(pooledprim);
         break;
       }
-      case EPRIM_QUADS: {
+      case EPrimitiveType::QUADS: {
         GedPrim* pooledprim = pctr->mPrimPool.allocate();
         *pooledprim         = cb;
         pctr->mQuadPrims.push_back(pooledprim);
@@ -195,7 +195,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     }
 
     prim._ucolor   = mbPickMode ? uobj : GetStyleColor(pnode, ic); // Default Outline
-    prim.meType    = EPRIM_QUADS;
+    prim.meType    = EPrimitiveType::QUADS;
     prim.miSortKey = calcsort(isort);
     AddPrim(prim);
   }
@@ -204,7 +204,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     if (false == mbPickMode) {
       GedPrim prim;
       prim._ucolor   = GetStyleColor(pnode, ic);
-      prim.meType    = EPRIM_LINES;
+      prim.meType    = EPrimitiveType::LINES;
       prim.miSortKey = calcsort(isort + 1);
 
       prim.ix1 = ix;
@@ -237,7 +237,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     if (false == mbPickMode) {
       GedPrim prim;
       prim._ucolor   = GetStyleColor(pnode, ic);
-      prim.meType    = EPRIM_LINES;
+      prim.meType    = EPrimitiveType::LINES;
       prim.ix1       = ix;
       prim.ix2       = ix2;
       prim.iy1       = iy;
@@ -337,7 +337,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
       vw.UnLock(pTARG);
       pTARG->BindMaterial(&uimat);
 
-      pTARG->GBI()->DrawPrimitive(vw, EPRIM_TRIANGLES);
+      pTARG->GBI()->DrawPrimitive(vw, EPrimitiveType::TRIANGLES);
       icount = 0;
       // ivbase += inumquads*6;
       ///////////////////////////////////////////////////////////
@@ -366,7 +366,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
           vw.UnLock(pTARG);
           pTARG->BindMaterial(&uimat);
           if (icount)
-            pTARG->GBI()->DrawPrimitive(vw, EPRIM_LINES);
+            pTARG->GBI()->DrawPrimitive(vw, EPrimitiveType::LINES);
         }
       }
     }
@@ -501,7 +501,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     }
 
     prim._ucolor   = mbPickMode ? uobj : GetStyleColor(pnode, ic); // Default Outline
-    prim.meType    = EPRIM_QUADS;
+    prim.meType    = EPrimitiveType::QUADS;
     prim.miSortKey = calcsort(isort);
     AddPrim(prim);
   }
@@ -510,7 +510,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     if (false == mbPickMode) {
       GedPrim prim;
       prim._ucolor   = GetStyleColor(pnode, ic);
-      prim.meType    = EPRIM_LINES;
+      prim.meType    = EPrimitiveType::LINES;
       prim.miSortKey = calcsort(isort + 1);
 
       prim.ix1 = ix;
@@ -543,7 +543,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     if (false == mbPickMode) {
       GedPrim prim;
       prim._ucolor   = GetStyleColor(pnode, ic);
-      prim.meType    = EPRIM_LINES;
+      prim.meType    = EPrimitiveType::LINES;
       prim.ix1       = ix;
       prim.ix2       = ix2;
       prim.iy1       = iy;
@@ -643,7 +643,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
 
       pTARG->BindMaterial(&uimat);
 
-      pTARG->GBI()->DrawPrimitive(vw, EPRIM_TRIANGLES);
+      pTARG->GBI()->DrawPrimitive(vw, EPrimitiveType::TRIANGLES);
       icount = 0;
       // ivbase += inumquads*6;
       ///////////////////////////////////////////////////////////
@@ -672,7 +672,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
           vw.UnLock(pTARG);
           pTARG->BindMaterial(&uimat);
           if (icount)
-            pTARG->GBI()->DrawPrimitive(vw, EPRIM_LINES);
+            pTARG->GBI()->DrawPrimitive(vw, EPrimitiveType::LINES);
         }
       }
     }

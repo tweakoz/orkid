@@ -214,7 +214,7 @@ class GedGradientV4Widget : public GedItemNode
 		GedSkin::GedPrim prim;
 		prim.mDrawCB = GradientCustomPrim;
 		prim.mpNode = this;
-		prim.meType = ork::lev2::EPRIM_MULTI;
+		prim.meType = ork::lev2::EPrimitiveType::MULTI;
 		prim.iy1 = miY;
 		prim.iy2 = miY+kh;
 		GetSkin()->AddPrim( prim );
@@ -368,7 +368,7 @@ class GedGradientV4Widget : public GedItemNode
 			pTARG->MTXI()->PushVMatrix( fmtx4::Identity );
 			pTARG->MTXI()->PushMMatrix( fmtx4::Identity );
 			pTARG->PushModColor( fvec3::White() );
-				pTARG->GBI()->DrawPrimitive( vw, ork::lev2::EPRIM_TRIANGLES );
+				pTARG->GBI()->DrawPrimitive( vw, ork::lev2::EPrimitiveType::TRIANGLES );
 			pTARG->PopModColor();
 			pTARG->MTXI()->PopPMatrix();
 			pTARG->MTXI()->PopVMatrix();
@@ -391,7 +391,7 @@ public:
 	GedGradientV4Widget( ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj )
 		: GedItemNode( mdl, name, prop, obj)
 		, mGradientObject( 0 )
-		, mVertexBuffer( 256, 0, ork::lev2::EPRIM_TRIANGLES )
+		, mVertexBuffer( 256, 0, ork::lev2::EPrimitiveType::TRIANGLES )
 		, mEditPoints(kpoolsize)
 		, mEditSegs(kpoolsize)
 	{

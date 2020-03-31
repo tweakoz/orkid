@@ -56,7 +56,7 @@ void PrimitiveV12N12B12T8C4::fromSubMesh(const submesh& submesh, std::shared_ptr
 void PrimitiveV12N12B12T8C4::fromSubMesh(const submesh& submesh, lev2::Context* context) {
   const auto& vpool = submesh.RefVertexPool();
   int numverts      = vpool.GetNumVertices();
-  _vertexBuffer     = std::make_shared<vtxbuf_t>(numverts, 0, lev2::EPRIM_NONE);
+  _vertexBuffer     = std::make_shared<vtxbuf_t>(numverts, 0, lev2::EPrimitiveType::NONE);
   fromSubMesh(submesh, _vertexBuffer, context);
 }
 
@@ -65,7 +65,7 @@ void PrimitiveV12N12B12T8C4::fromSubMesh(const submesh& submesh, lev2::Context* 
 void PrimitiveV12N12B12T8C4::draw(lev2::Context* context) const {
   auto& VB = *_vertexBuffer.get();
   auto& IB = *_indexBuffer.get();
-  context->GBI()->DrawIndexedPrimitiveEML(VB, IB, lev2::EPRIM_TRIANGLES);
+  context->GBI()->DrawIndexedPrimitiveEML(VB, IB, lev2::EPrimitiveType::TRIANGLES);
 }
 
 } // namespace ork::meshutil

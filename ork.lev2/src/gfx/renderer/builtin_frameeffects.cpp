@@ -682,7 +682,7 @@ void GlowRenderMatOrthoQuad(
       vw.AddVertex(ork::lev2::SVtxV12C4T16(fx1, fy1, 0.0f, fu1, fv1, uv2[4], uv2[5], uc));
       vw.UnLock(pTARG);
 
-      gbi->DrawPrimitive(vw, ork::lev2::EPRIM_TRIANGLES);
+      gbi->DrawPrimitive(vw, ork::lev2::EPrimitiveType::TRIANGLES);
     }
     pTARG->PopModColor();
   }

@@ -158,7 +158,7 @@ void simpleToolSubMeshToXgmSubMesh(const Mesh& mesh, const submesh& smesh, ork::
   ////////////////////////////////////////////////////////
   lev2::XgmPrimGroup& pg = cluster.mpPrimGroups[0];
   ////////////////////////////////////////////////////////
-  pg.mePrimType                              = lev2::EPRIM_TRIANGLES;
+  pg.mePrimType                              = lev2::EPrimitiveType::TRIANGLES;
   pg.miNumIndices                            = inumtriindices;
   ork::lev2::StaticIndexBuffer<U16>* pidxbuf = new ork::lev2::StaticIndexBuffer<U16>(pg.miNumIndices);
   pg.mpIndices                               = pidxbuf;
@@ -243,7 +243,7 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
             int inumpg = clus.GetNumPrimGroups();
             for (int ipg = 0; ipg < inumpg; ipg++) {
               const lev2::XgmPrimGroup& pg = clus.RefPrimGroup(ipg);
-              if (pg.GetPrimType() == lev2::EPRIM_TRIANGLES) {
+              if (pg.GetPrimType() == lev2::EPrimitiveType::TRIANGLES) {
                 const lev2::IndexBufferBase* pidxbuf          = pg.GetIndexBuffer();
                 const lev2::StaticIndexBuffer<U16>* pidxbuf16 = (const lev2::StaticIndexBuffer<U16>*)pidxbuf;
                 // const U16* pidx16 = pidxbuf16->GetIndexPointer();
@@ -255,7 +255,7 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
 
                 switch (pvb->GetStreamFormat()) {
                   //////////////////////////////////////////////////////////////////
-                  case lev2::EVTXSTREAMFMT_V12N12T8I4W4: {
+                  case lev2::EVtxStreamFormat::V12N12T8I4W4: {
                     const lev2::SVtxV12N12T8I4W4* ptypedsource = (const lev2::SVtxV12N12T8I4W4*)pvertbase;
                     OrkAssert(0 == (inumidx % 3));
                     int indexcache[3];
@@ -277,7 +277,7 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                     break;
                   }
                   //////////////////////////////////////////////////////////////////
-                  case lev2::EVTXSTREAMFMT_V12N12B12T8C4: {
+                  case lev2::EVtxStreamFormat::V12N12B12T8C4: {
                     const lev2::SVtxV12N12B12T8C4* ptypedsource = (const lev2::SVtxV12N12B12T8C4*)pvertbase;
                     OrkAssert(0 == (inumidx % 3));
                     int indexcache[3];
@@ -299,7 +299,7 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                     break;
                   }
                   //////////////////////////////////////////////////////////////////
-                  case lev2::EVTXSTREAMFMT_V12N12T16C4: {
+                  case lev2::EVtxStreamFormat::V12N12T16C4: {
                     const lev2::SVtxV12N12T16C4* ptypedsource = (const lev2::SVtxV12N12T16C4*)pvertbase;
                     OrkAssert(0 == (inumidx % 3));
                     int indexcache[3];

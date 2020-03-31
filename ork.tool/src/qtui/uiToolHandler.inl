@@ -121,7 +121,7 @@ void UIToolHandler<VPTYPE>::DrawToolIcon( lev2::Context* pTARG, int ix, int iy, 
 				UiMat._rasterstate.SetBlending( lev2::EBLENDING_OFF );
 				pTARG->BindMaterial( & UiMat );
 				pTARG->PushModColor( fcolor4::Green() );
-					pTARG->GBI()->DrawPrimitive( vb, lev2::EPRIM_TRIANGLES, ibase, 6 );
+					pTARG->GBI()->DrawPrimitive( vb, lev2::EPrimitiveType::TRIANGLES, ibase, 6 );
 				pTARG->PopModColor();
 			}
 			////////////////////////////////
@@ -132,7 +132,7 @@ void UIToolHandler<VPTYPE>::DrawToolIcon( lev2::Context* pTARG, int ix, int iy, 
 			UiMatTex._rasterstate.SetDepthTest( lev2::EDEPTHTEST_ALWAYS );
 			pTARG->BindMaterial( & UiMatTex );
 			pTARG->PushModColor( fcolor4::White() );
-				pTARG->GBI()->DrawPrimitive( vb, lev2::EPRIM_TRIANGLES, bhilite ? ibase+6 : ibase, 6 );
+				pTARG->GBI()->DrawPrimitive( vb, lev2::EPrimitiveType::TRIANGLES, bhilite ? ibase+6 : ibase, 6 );
 			pTARG->PopModColor();
 		}
 		pTARG->MTXI()->PopUIMatrix();

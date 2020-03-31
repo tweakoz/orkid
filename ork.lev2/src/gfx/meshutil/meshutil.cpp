@@ -343,10 +343,9 @@ FlatSubMesh::FlatSubMesh(const ork::meshutil::submesh& mesh) {
   mesh.FindNSidedPolys(TrianglePolyIndices, 3);
   mesh.FindNSidedPolys(QuadPolyIndices, 4);
 
-  auto vtxformat = mesh.typedAnnotation<std::string>("OutVtxFormat");
-  evtxformat     = PropType<lev2::EVtxStreamFormat>::FromString(vtxformat.c_str());
+  auto evtxformat = mesh.typedAnnotation<lev2::EVtxStreamFormat>("OutVtxFormat");
 
-  orkprintf("vtxformat<%s>\n", vtxformat.c_str());
+  // orkprintf("vtxformat<%s>\n", vtxformat.c_str());
 
   ////////////////////////////////////////////////////////
   int inumv   = (int)vpool.GetNumVertices();
@@ -355,7 +354,7 @@ FlatSubMesh::FlatSubMesh(const ork::meshutil::submesh& mesh) {
   ////////////////////////////////////////////////////////
 
   switch (evtxformat) {
-    case lev2::EVTXSTREAMFMT_V12N12B12T16: {
+    case lev2::EVtxStreamFormat::V12N12B12T16: {
       lev2::SVtxV12N12B12T16 OutVertex;
       for (int iv0 = 0; iv0 < inumv; iv0++) {
         const vertex& invtx = vpool.GetVertex(iv0);
@@ -373,7 +372,7 @@ FlatSubMesh::FlatSubMesh(const ork::meshutil::submesh& mesh) {
       poutvtxdata = (void*)&MergeVertsT16.at(0);
       break;
     }
-    case lev2::EVTXSTREAMFMT_V12N12B12T8C4: {
+    case lev2::EVtxStreamFormat::V12N12B12T8C4: {
       orkvector<lev2::SVtxV12N12B12T8C4> MergeVerts;
       lev2::SVtxV12N12B12T8C4 OutVertex;
       for (int iv0 = 0; iv0 < inumv; iv0++) {

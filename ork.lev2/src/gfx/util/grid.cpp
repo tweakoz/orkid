@@ -405,7 +405,7 @@ void Grid2d::Render(Context* pTARG, int iw, int ih) {
         vw.AddVertex(v1);
       }
       vw.UnLock(pTARG);
-      pTARG->GBI()->DrawPrimitive(vw, ork::lev2::EPRIM_LINES);
+      pTARG->GBI()->DrawPrimitive(vw, ork::lev2::EPrimitiveType::LINES);
     }
     pTARG->PopMaterial();
   }

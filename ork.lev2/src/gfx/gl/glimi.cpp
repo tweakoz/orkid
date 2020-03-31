@@ -34,7 +34,7 @@ void GlImiInterface::DrawPrim( const fvec4 *Points, int inumpoints, EPrimitiveTy
 		{
 			switch( eType )
 			{
-				case EPRIM_QUADS:
+				case EPrimitiveType::QUADS:
 				{
 					glBegin( GL_QUADS );
 					for( int itri=0; itri<inumpoints; itri++ )
@@ -50,7 +50,7 @@ void GlImiInterface::DrawPrim( const fvec4 *Points, int inumpoints, EPrimitiveTy
 					break;
 				}
 
-				case EPRIM_TRIANGLES:
+				case EPrimitiveType::TRIANGLES:
 				{
 					glBegin( GL_TRIANGLES );
 					for( int itri=0; itri<inumpoints; itri++ )

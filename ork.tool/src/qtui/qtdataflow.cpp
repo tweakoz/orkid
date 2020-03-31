@@ -174,7 +174,7 @@ void GraphVP::draw_connections(Context* pTARG) {
       mGridMaterial._rasterstate.SetAlphaTest(EALPHATEST_OFF, 0.0f);
       mGridMaterial._rasterstate.SetBlending(lev2::EBLENDING_OFF);
       pTARG->BindMaterial(&mGridMaterial);
-      pTARG->GBI()->DrawPrimitive(vw, EPRIM_TRIANGLES, ivcount);
+      pTARG->GBI()->DrawPrimitive(vw, EPrimitiveType::TRIANGLES, ivcount);
     }
   }
 }
@@ -307,7 +307,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
           _nodematerial.bindParamMatrix(par_mvp, mGrid.GetOrthoMatrix());
           _nodematerial.bindParamCTex(par_tex, ptexasset->GetTexture());
           _nodematerial._rasterstate.SetBlending(lev2::EBLENDING_OFF);
-          gbi->DrawPrimitiveEML(vw, EPRIM_TRIANGLES, 6);
+          gbi->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES, 6);
           _nodematerial.end(RCFD);
         }
       }
@@ -408,7 +408,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
 
             fxi->InvalidateStateBlock();
 
-            gbi->DrawPrimitiveEML(vw, EPRIM_TRIANGLES);
+            gbi->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES);
             _nodematerial.end(RCFD);
           }
           //////////////////////

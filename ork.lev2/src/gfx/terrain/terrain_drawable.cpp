@@ -82,7 +82,7 @@ struct SectorLodInfo {
   }
   ////////////////////////////////////////
   void buildClusters(AABox& aabb);
-  void buildPrimitives(datablockptr_t dblock);
+  void buildPrimitives(datablockptr_t out_datablock);
   ////////////////////////////////////////
 
   std::vector<Patch> _patches;
@@ -110,7 +110,7 @@ struct TerrainRenderImpl {
   void render(const RenderContextInstData& RCID);
 
   datablockptr_t recomputeGeometry();
-  void loadGeometry(Context* context, datablockptr_t dblock);
+  void gpuLoadGeometry(Context* context, datablockptr_t dblock);
   void gpuInitGeometry(Context* context);
   void gpuInitTextures(Context* context);
 
@@ -540,23 +540,6 @@ void SectorLodInfo::buildClusters(AABox& aabb) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SectorLodInfo::buildPrimitives(datablockptr_t dblock) {
-  int inumclus = _clusterizer.GetNumClusters();
-  for (int icluster = 0; icluster < inumclus; icluster++) {
-    auto clusterbuilder      = _clusterizer.GetCluster(icluster);
-    const auto& tool_submesh = clusterbuilder->_submesh;
-    clusterbuilder->buildVertexBuffer(EVTXSTREAMFMT_V12C4T16);
-    XgmCluster xgmcluster;
-    buildTriStripXgmCluster(xgmcluster, clusterbuilder);
-    // TODO: cluster was build using the dummy interface,
-    //  so the data is sitting in CPU memory.
-    // implement datablock caching and
-    //  load into to GPU memory
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 datablockptr_t TerrainRenderImpl::recomputeGeometry() {
 
   ork::Timer timer;
@@ -825,7 +808,51 @@ datablockptr_t TerrainRenderImpl::recomputeGeometry() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void TerrainRenderImpl::loadGeometry(Context* context, datablockptr_t dblock) {
+void SectorLodInfo::buildPrimitives(datablockptr_t out_datablock) {
+  chunkfile::Writer chunkwriter("tergeom");
+  auto hdrstream  = chunkwriter.AddStream("header");
+  auto geostream  = chunkwriter.AddStream("geometry");
+  size_t inumclus = _clusterizer.GetNumClusters();
+  hdrstream->AddItem<size_t>(inumclus);
+  auto vertex_stream_format = EVtxStreamFormat::V12C4T16;
+  for (size_t icluster = 0; icluster < inumclus; icluster++) {
+    auto clusterbuilder      = _clusterizer.GetCluster(icluster);
+    const auto& tool_submesh = clusterbuilder->_submesh;
+    clusterbuilder->buildVertexBuffer(vertex_stream_format);
+    XgmCluster xgmcluster;
+    buildTriStripXgmCluster(xgmcluster, clusterbuilder);
+    auto VB = xgmcluster._vertexBuffer;
+    hdrstream->AddItem<size_t>(icluster);
+    hdrstream->AddItem<fvec3>(xgmcluster.mBoundingBox.Min());
+    hdrstream->AddItem<fvec3>(xgmcluster.mBoundingBox.Max());
+    hdrstream->AddItem<lev2::EVtxStreamFormat>(xgmcluster.meVtxStrFmt);
+    hdrstream->AddItem(VB->GetNumVertices());
+    hdrstream->AddItem<int>(xgmcluster.miNumPrimGroups);
+    for (size_t ipg = 0; ipg < xgmcluster.miNumPrimGroups; ipg++) {
+      const auto& PG = xgmcluster.RefPrimGroup(ipg);
+      hdrstream->AddItem<size_t>(ipg);
+      hdrstream->AddItem<int>(PG.miNumIndices);
+      hdrstream->AddItem<lev2::EPrimitiveType>(PG.mePrimType);
+    }
+    // TODO: cluster was build using the dummy interface,
+    //  so the data is sitting in CPU memory.
+    // implement datablock caching and
+    //  load into to GPU memory
+  }
+  chunkwriter.writeToDataBlock(out_datablock);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void TerrainRenderImpl::gpuLoadGeometry(Context* context, datablockptr_t dblock) {
+  //////////////////////////////////////////
+  chunkfile::DefaultLoadAllocator allocator;
+  chunkfile::Reader chunkreader(dblock, allocator);
+  OrkAssert(chunkreader._chunkfiletype == "tergeom");
+  if (chunkreader.IsOk()) {
+    auto hdrstream = chunkreader.GetStream("header");
+    auto geostream = chunkreader.GetStream("geometry");
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -845,7 +872,7 @@ void TerrainRenderImpl::gpuInitGeometry(Context* context) {
     dblock = recomputeGeometry();
     // DataBlockCache::setDataBlock(hashkey, dblock);
   }
-  loadGeometry(context, dblock);
+  gpuLoadGeometry(context, dblock);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1053,7 +1080,7 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
     auto& sector = _sector[isector];
     auto L0      = sector._lod0;
     for (const auto& prim : L0._primitives)
-      gbi->DrawIndexedPrimitiveEML(*prim->_vtxbuffer, *prim->_idxbuffer, EPRIM_TRIANGLES);
+      gbi->DrawIndexedPrimitiveEML(*prim->_vtxbuffer, *prim->_idxbuffer, EPrimitiveType::TRIANGLES);
   }
   ////////////////////////////////
   // render LX
@@ -1062,7 +1089,7 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
     auto& sector = _sector[isector];
     auto LX      = sector._lodX;
     for (const auto& prim : LX._primitives)
-      gbi->DrawIndexedPrimitiveEML(*prim->_vtxbuffer, *prim->_idxbuffer, EPRIM_TRIANGLES);
+      gbi->DrawIndexedPrimitiveEML(*prim->_vtxbuffer, *prim->_idxbuffer, EPrimitiveType::TRIANGLES);
   }
 
   targ->PopMaterial();

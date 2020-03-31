@@ -79,7 +79,7 @@ void FontMan::_endTextBlock(Context* pTARG) {
   pTARG->BindMaterial(mpCurrentFont->GetMaterial());
   bool bdraw = mTextWriter.miWriteCounter != 0;
   if (bdraw) {
-    pTARG->GBI()->DrawPrimitive(mTextWriter, ork::lev2::EPRIM_TRIANGLES);
+    pTARG->GBI()->DrawPrimitive(mTextWriter, ork::lev2::EPrimitiveType::TRIANGLES);
   }
   pTARG->BindMaterial(0);
 }

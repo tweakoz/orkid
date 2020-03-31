@@ -437,7 +437,7 @@ Kaled::Kaled()
 	, ConstructInpPlug( OffsetX,dataflow::EPR_UNIFORM, mfOffsetX )
 	, ConstructInpPlug( OffsetY,dataflow::EPR_UNIFORM, mfOffsetY )
 	, mPlugInpSize( this,dataflow::EPR_UNIFORM, mfSize, "si" )
-	, mVertexBuffer(256, 0, ork::lev2::EPRIM_MULTI)
+	, mVertexBuffer(256, 0, ork::lev2::EPrimitiveType::MULTI)
 	, meMode( EKM_4SQU )
 	, mfSize( 0.5f )
 	, mfOffsetX( 0.5f )
@@ -577,7 +577,7 @@ void Kaled::compute( ProcTex& ptex )
 				}
 			}
 			mVW.UnLock(targ);
-			targ->GBI()->DrawPrimitive( mVW, ork::lev2::EPRIM_TRIANGLES );
+			targ->GBI()->DrawPrimitive( mVW, ork::lev2::EPrimitiveType::TRIANGLES );
 		}
 		mtxi->PopPMatrix();
 		mtxi->PopVMatrix();

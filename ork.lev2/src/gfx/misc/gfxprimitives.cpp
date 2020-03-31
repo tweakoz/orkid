@@ -37,31 +37,31 @@ static const int NUM_DOME_TRIANGLES   = 10 * 50 * 6;
 
 GfxPrimitives::GfxPrimitives()
     : NoRttiSingleton<GfxPrimitives>()
-    , mVtxBuf_Axis(6, 6, EPRIM_LINES)
-    , mVtxBuf_GridX100(1000, 400, EPRIM_LINES)
-    , mVtxBuf_Cone(1000, 400, EPRIM_TRIANGLES)
-    , mVtxBuf_DirCone(1000, 400, EPRIM_TRIANGLES)
-    , mVtxBuf_TriCircle(6 * (CIRCSEGS + 2), 6 * (CIRCSEGS + 2), EPRIM_LINES)
-    , mVtxBuf_Diamond(3 * 6, 3 * 6, EPRIM_TRIANGLES)
-    , mVtxBuf_EQSphere(1024, 1024, EPRIM_POINTS)
-    , mVtxBuf_FullSphere(8192, 8192, EPRIM_TRIANGLES)
-    , mVtxBuf_SkySphere(32768, 32768, EPRIM_TRIANGLES) // EPRIM_TRIANGLES
-    , mVtxBuf_GroundPlane(6, 6, EPRIM_TRIANGLES)
-    , mVtxBuf_PerlinTerrain(inumgroundverts, inumgroundverts, EPRIM_TRIANGLES)
-    , mVtxBuf_CircleStrip(1000, 1000, EPRIM_TRIANGLES)
-    , mVtxBuf_CircleStripUI(1000, 1000, EPRIM_QUADS)
-    , mVtxBuf_CircleUI(1000, 1000, EPRIM_TRIANGLES)
-    , mVtxBuf_Cylinder(12 * NUM_CYLINDER_FACES + 2, 12 * NUM_CYLINDER_FACES + 2, EPRIM_TRIANGLES)
-    , mVtxBuf_Capsule((6 * NUM_CYLINDER_FACES + 2), (6 * NUM_CYLINDER_FACES + 2), EPRIM_TRIANGLES)
-    , mVtxBuf_Box(6 * 2 * 3, 6 * 2 * 3, EPRIM_TRIANGLES)
-    , mVtxBuf_AxisLine(6 * 2 * 3, 6 * 2 * 3, EPRIM_TRIANGLES)
-    , mVtxBuf_AxisCone(1000, 400, EPRIM_TRIANGLES)
-    , mVtxBuf_AxisBox(36, 36, EPRIM_TRIANGLES)
-    , mVtxBuf_Dome(NUM_DOME_TRIANGLES, NUM_DOME_TRIANGLES, EPRIM_TRIANGLES)
-    , mVtxBuf_WireFrameCylinder(4 * NUM_CYLINDER_FACES + 2, 4 * NUM_CYLINDER_FACES + 2, EPRIM_LINES)
-    , mVtxBuf_WireFrameBox(6 * 4 * 2, 6 * 4 * 2, EPRIM_LINES)
-    , mVtxBuf_WireFrameCapsule(6 * 4 * 2, 6 * 4 * 2, EPRIM_LINES)
-    , mVtxBuf_WireFrameDome(6 * (CIRCSEGS + 2), 6 * (CIRCSEGS + 2), EPRIM_LINES) {
+    , mVtxBuf_Axis(6, 6, EPrimitiveType::LINES)
+    , mVtxBuf_GridX100(1000, 400, EPrimitiveType::LINES)
+    , mVtxBuf_Cone(1000, 400, EPrimitiveType::TRIANGLES)
+    , mVtxBuf_DirCone(1000, 400, EPrimitiveType::TRIANGLES)
+    , mVtxBuf_TriCircle(6 * (CIRCSEGS + 2), 6 * (CIRCSEGS + 2), EPrimitiveType::LINES)
+    , mVtxBuf_Diamond(3 * 6, 3 * 6, EPrimitiveType::TRIANGLES)
+    , mVtxBuf_EQSphere(1024, 1024, EPrimitiveType::POINTS)
+    , mVtxBuf_FullSphere(8192, 8192, EPrimitiveType::TRIANGLES)
+    , mVtxBuf_SkySphere(32768, 32768, EPrimitiveType::TRIANGLES) // EPrimitiveType::TRIANGLES
+    , mVtxBuf_GroundPlane(6, 6, EPrimitiveType::TRIANGLES)
+    , mVtxBuf_PerlinTerrain(inumgroundverts, inumgroundverts, EPrimitiveType::TRIANGLES)
+    , mVtxBuf_CircleStrip(1000, 1000, EPrimitiveType::TRIANGLES)
+    , mVtxBuf_CircleStripUI(1000, 1000, EPrimitiveType::QUADS)
+    , mVtxBuf_CircleUI(1000, 1000, EPrimitiveType::TRIANGLES)
+    , mVtxBuf_Cylinder(12 * NUM_CYLINDER_FACES + 2, 12 * NUM_CYLINDER_FACES + 2, EPrimitiveType::TRIANGLES)
+    , mVtxBuf_Capsule((6 * NUM_CYLINDER_FACES + 2), (6 * NUM_CYLINDER_FACES + 2), EPrimitiveType::TRIANGLES)
+    , mVtxBuf_Box(6 * 2 * 3, 6 * 2 * 3, EPrimitiveType::TRIANGLES)
+    , mVtxBuf_AxisLine(6 * 2 * 3, 6 * 2 * 3, EPrimitiveType::TRIANGLES)
+    , mVtxBuf_AxisCone(1000, 400, EPrimitiveType::TRIANGLES)
+    , mVtxBuf_AxisBox(36, 36, EPrimitiveType::TRIANGLES)
+    , mVtxBuf_Dome(NUM_DOME_TRIANGLES, NUM_DOME_TRIANGLES, EPrimitiveType::TRIANGLES)
+    , mVtxBuf_WireFrameCylinder(4 * NUM_CYLINDER_FACES + 2, 4 * NUM_CYLINDER_FACES + 2, EPrimitiveType::LINES)
+    , mVtxBuf_WireFrameBox(6 * 4 * 2, 6 * 4 * 2, EPrimitiveType::LINES)
+    , mVtxBuf_WireFrameCapsule(6 * 4 * 2, 6 * 4 * 2, EPrimitiveType::LINES)
+    , mVtxBuf_WireFrameDome(6 * (CIRCSEGS + 2), 6 * (CIRCSEGS + 2), EPrimitiveType::LINES) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1443,7 +1443,7 @@ void GfxPrimitives::RenderOrthoQuad(
   pTarg->MTXI()->PushPMatrix(OrthoMat);
   pTarg->MTXI()->PushVMatrix(MatTrans * MatScale);
   pTarg->MTXI()->PushMMatrix(fmtx4::Identity);
-  { pTarg->GBI()->DrawPrimitive(vw, EPRIM_TRIANGLES); }
+  { pTarg->GBI()->DrawPrimitive(vw, EPrimitiveType::TRIANGLES); }
   pTarg->MTXI()->PopPMatrix(); // back to ortho
   pTarg->MTXI()->PopVMatrix(); // back to ortho
   pTarg->MTXI()->PopMMatrix(); // back to ortho
@@ -1475,7 +1475,7 @@ void GfxPrimitives::
 
   ///////////////////////////////////////////
 
-  pTarg->GBI()->DrawPrimitive(vw, EPRIM_TRIANGLES);
+  pTarg->GBI()->DrawPrimitive(vw, EPrimitiveType::TRIANGLES);
 
   ///////////////////////////////////////////
 }
@@ -1504,7 +1504,7 @@ void GfxPrimitives::
 
   ///////////////////////////////////////////
 
-  pTarg->GBI()->DrawPrimitive(vw, EPRIM_TRIANGLES);
+  pTarg->GBI()->DrawPrimitive(vw, EPrimitiveType::TRIANGLES);
 
   ///////////////////////////////////////////
 }
@@ -1533,7 +1533,7 @@ void GfxPrimitives::
 
   ///////////////////////////////////////////
 
-  pTarg->GBI()->DrawPrimitive(vw, EPRIM_TRIANGLES);
+  pTarg->GBI()->DrawPrimitive(vw, EPrimitiveType::TRIANGLES);
 
   ///////////////////////////////////////////
 }
@@ -1562,7 +1562,7 @@ void GfxPrimitives::
 
   ///////////////////////////////////////////
 
-  pTarg->GBI()->DrawPrimitive(vw, EPRIM_TRIANGLES);
+  pTarg->GBI()->DrawPrimitive(vw, EPrimitiveType::TRIANGLES);
 
   ///////////////////////////////////////////
 }
@@ -1595,7 +1595,7 @@ void GfxPrimitives::RenderQuad(Context* pTarg, fvec4& V0, fvec4& V1, fvec4& V2, 
 
   ///////////////////////////////////////////
 
-  pTarg->GBI()->DrawPrimitive(vw, EPRIM_TRIANGLES);
+  pTarg->GBI()->DrawPrimitive(vw, EPrimitiveType::TRIANGLES);
 
   ///////////////////////////////////////////
 }

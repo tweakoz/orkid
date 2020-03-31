@@ -257,7 +257,7 @@ public:
         , iy2(0)
         , _ucolor(0)
         , miSortKey(0)
-        , meType(ork::lev2::EPRIM_END) {
+        , meType(ork::lev2::EPrimitiveType::END) {
     }
   };
 
