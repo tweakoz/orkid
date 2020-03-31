@@ -54,8 +54,6 @@ bool XgmClusterizerStd::addTriangle(const XgmClusterTri& Triangle, const MeshCon
 
     bool do_skinned = _policy._skinned && flags._skinned;
 
-    printf("do_skinned<%d>\n", int(do_skinned));
-
     if (do_skinned) {
       new_builder = std::make_shared<XgmSkinnedClusterBuilder>(*this);
     } else {

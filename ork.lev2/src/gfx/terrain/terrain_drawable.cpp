@@ -80,8 +80,12 @@ struct SectorLodInfo {
       auto clusterbuilder      = _clusterizer.GetCluster(icluster);
       const auto& tool_submesh = clusterbuilder->_submesh;
       clusterbuilder->buildVertexBuffer(EVTXSTREAMFMT_V12C4T16);
-      // lev2::XgmCluster& XgmClus = xgm_submesh->mpClusters[icluster];
-      // buildTriStripXgmCluster(XgmClus, clusterbuilder);
+      XgmCluster xgmcluster;
+      buildTriStripXgmCluster(xgmcluster, clusterbuilder);
+      // TODO: cluster was build using the dummy interface,
+      //  so the data is sitting in CPU memory.
+      // implement datablock caching and
+      //  load into to GPU memory
     }
   }
   ////////////////////////////////////////
@@ -93,33 +97,8 @@ struct SectorLodInfo {
     _clusterizer.addTriangle(tri, _meshflags);
   }
   ////////////////////////////////////////
-  size_t countTriangles() {
-    triangle_count = 0;
-    for (auto p : _patches) {
-
-      // printf("p<%d %d> t<%d>\n", p._x, p._z, p._type);
-      switch (p._type) {
-        case PT_A: //
-          triangle_count += 8;
-          break;
-        case PT_BT:
-        case PT_BL:
-        case PT_BB:
-        case PT_BR:
-          triangle_count += 5;
-          break;
-        case PT_C:
-          triangle_count += 4;
-          break;
-      }
-    }
-    return triangle_count;
-  }
-  ////////////////////////////////////////
 
   std::vector<Patch> _patches;
-  size_t triangle_count = 0;
-  size_t vertex_count   = 0;
   meshutil::XgmClusterizerStd _clusterizer;
   meshutil::MeshConfigurationFlags _meshflags;
   std::vector<TerrainPrimitive*> _primitives;
@@ -730,15 +709,11 @@ void TerrainRenderImpl::gpuUpdate(Context* context) {
   }
 
   ////////////////////////////////////////////////////////////////
-  // create 1 vertex buffer per 45 degree arc
+  // create 1 PrimGroup per 45 degree arc
   ////////////////////////////////////////////////////////////////
 
   for (int i = 0; i < 8; i++) {
-    auto& sector = _sector[i];
-    sector._lod0.countTriangles();
-    sector._lodX.countTriangles();
-    // sector._lod0.createVB();
-    // sector._lodX.createVB();
+    auto& sector         = _sector[i];
     sector._lod0._islod0 = true;
     sector._lodX._islod0 = false;
   }
@@ -754,7 +729,6 @@ void TerrainRenderImpl::gpuUpdate(Context* context) {
 
   auto build_lod_prims = [&](SectorLodInfo& linfo) {
     ////////////////////////////////////////////
-    linfo.triangle_count = 0;
     auto& sector_patches = linfo._patches;
 
     linfo._clusterizer.Begin();
@@ -830,8 +804,6 @@ void TerrainRenderImpl::gpuUpdate(Context* context) {
 
       switch (p._type) {
         case PT_A: {
-          linfo.triangle_count += 8;
-
           linfo.addTriangle(v0, vc01, vc);
           linfo.addTriangle(vc, vc01, v1);
           linfo.addTriangle(vc, v1, vc12);
@@ -840,12 +812,9 @@ void TerrainRenderImpl::gpuUpdate(Context* context) {
           linfo.addTriangle(vc, vc23, v3);
           linfo.addTriangle(vc, v3, vc30);
           linfo.addTriangle(vc, vc30, v0);
-
           break;
         }
         case PT_BT: {
-          linfo.triangle_count += 5;
-
           linfo.addTriangle(vc, v0, v1);
           linfo.addTriangle(vc, v1, v2);
           linfo.addTriangle(vc, v2, vc23);
@@ -854,8 +823,6 @@ void TerrainRenderImpl::gpuUpdate(Context* context) {
           break;
         }
         case PT_BB: {
-          linfo.triangle_count += 5;
-
           linfo.addTriangle(v0, vc01, vc);
           linfo.addTriangle(vc, vc01, v1);
           linfo.addTriangle(vc, v1, v2);
@@ -864,8 +831,6 @@ void TerrainRenderImpl::gpuUpdate(Context* context) {
           break;
         }
         case PT_BR: {
-          linfo.triangle_count += 5;
-
           linfo.addTriangle(vc, v0, v1);
           linfo.addTriangle(vc, v1, vc12);
           linfo.addTriangle(vc, vc12, v2);
@@ -874,8 +839,6 @@ void TerrainRenderImpl::gpuUpdate(Context* context) {
           break;
         }
         case PT_BL: {
-          linfo.triangle_count += 5;
-
           linfo.addTriangle(vc, v0, v1);
           linfo.addTriangle(vc, v1, v2);
           linfo.addTriangle(vc, v2, v3);
@@ -884,8 +847,6 @@ void TerrainRenderImpl::gpuUpdate(Context* context) {
           break;
         }
         case PT_C: {
-          linfo.triangle_count += 4;
-
           linfo.addTriangle(vc, v0, v1);
           linfo.addTriangle(vc, v1, v2);
           linfo.addTriangle(vc, v2, v3);

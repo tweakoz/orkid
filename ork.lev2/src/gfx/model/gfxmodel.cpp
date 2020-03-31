@@ -189,9 +189,10 @@ XgmCluster::XgmCluster()
 }
 
 XgmCluster::~XgmCluster() {
-  delete[] mpPrimGroups;
-
-  delete _vertexBuffer;
+  if (mpPrimGroups)
+    delete[] mpPrimGroups;
+  if (_vertexBuffer)
+    delete _vertexBuffer;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

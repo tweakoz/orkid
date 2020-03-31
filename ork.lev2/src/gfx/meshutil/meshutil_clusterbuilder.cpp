@@ -185,7 +185,7 @@ void buildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, clusterbuilder_ptr_t 
   /////////////////////////////////////////////////////////////
   // bone -> matrix register mapping
 
-  auto skinned_builder = std::static_pointer_cast<XgmSkinnedClusterBuilder>(clusterbuilder);
+  auto skinned_builder = std::dynamic_pointer_cast<XgmSkinnedClusterBuilder>(clusterbuilder);
 
   if (skinned_builder) {
     const orkmap<std::string, int>& BoneMap = skinned_builder->RefBoneRegMap();
