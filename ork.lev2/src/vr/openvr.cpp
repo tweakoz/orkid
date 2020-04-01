@@ -7,6 +7,7 @@
 #include <rapidjson/document.h>
 #include <ork/kernel/environment.h>
 #include <boost/filesystem.hpp>
+#include <ork/profiling.inl>
 
 #if defined(ENABLE_OPENVR)
 
@@ -89,7 +90,8 @@ fmtx4 VrProjFrustumPar::composeProjection() const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-OpenVrDevice::OpenVrDevice() {
+OpenVrDevice::OpenVrDevice()
+    : _vrmutex("vrmutex") {
 
   _leftControllerDeviceIndex  = 1;
   _rightControllerDeviceIndex = 2;
@@ -170,6 +172,8 @@ OpenVrDevice::OpenVrDevice() {
   } else {
     printf("VR NOT INITIALIZED for some reason...\n");
   }
+
+  _vrthread.start([=](anyp arg) { this->_vrthread_loop(); });
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -181,7 +185,19 @@ OpenVrDevice::~OpenVrDevice() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void OpenVrDevice::_vrthread_loop() {
+
+  while (true) {
+    _processControllerEvents();
+    //_updatePoses();
+    ::usleep(100);
+  }
+} // namespace ork::lev2::orkidvr
+
+////////////////////////////////////////////////////////////////////////////////
+
 void OpenVrDevice::_processControllerEvents() {
+  EASY_BLOCK("openvr-pce");
   _ovr::VREvent_t event;
   while (_active and _hmd->PollNextEvent(&event, sizeof(event))) {
     auto data  = event.data;
@@ -371,20 +387,18 @@ void composite(lev2::Context* targ, Texture* twoeyetex) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void OpenVrDevice::_updatePoses() {
-
-  if (_active) {
-
-    // OrkAssert(false);
-  }
+  EASY_BLOCK("openvr-upd");
 
   if (_active) {
 
     // we call this on rendering thread, I suppose since
     // the vrcompositor needs the absolute latest pose
     // for the sake of reducing tracking latency
+    {
+      EASY_BLOCK("openvr-upd-w");
 
-    _ovr::VRCompositor()->WaitGetPoses(_trackedPoses, _ovr::k_unMaxTrackedDeviceCount, NULL, 0);
-
+      _ovr::VRCompositor()->WaitGetPoses(_trackedPoses, _ovr::k_unMaxTrackedDeviceCount, NULL, 0);
+    }
     int validposecount       = 0;
     std::string pose_classes = "";
 
@@ -455,6 +469,7 @@ void OpenVrDevice::_updatePoses() {
       ork::svar256_t notifvar;
       auto& hmdnotiffram      = notifvar.Make<VrTrackingHmdPoseNotificationFrame>();
       hmdnotiffram._hmdMatrix = _poseMatrices[_ovr::k_unTrackedDeviceIndex_Hmd];
+      EASY_BLOCK("openvr-aop");
       gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset) {
         for (auto recvr : notifset) {
           recvr->_callback(notifvar);
@@ -477,12 +492,12 @@ Device& device() {
 ////////////////////////////////////////////////////////////////////////////////
 
 void gpuUpdate(RenderContextFrameData& RCFD) {
+  EASY_BLOCK("openvr-gpuUpdate");
   auto& mgr = concrete_get();
   if (mgr._active) {
     bool ovr_compositor_ok = (bool)_ovr::VRCompositor();
     assert(ovr_compositor_ok);
   }
-  mgr._processControllerEvents();
   mgr._updatePoses();
 }
 

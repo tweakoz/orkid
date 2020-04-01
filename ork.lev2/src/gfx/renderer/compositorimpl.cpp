@@ -25,6 +25,7 @@
 #include <ork/application/application.h>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/profiling.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
@@ -97,6 +98,7 @@ bool CompositingImpl::IsEnabled() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
+  EASY_BLOCK("assemble-ci");
   bool rval                          = false;
   auto& ddprops                      = drawdata._properties;
   auto the_renderer                  = drawdata.mFrameRenderer;
@@ -124,13 +126,19 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   // Lock Drawable Buffer
   /////////////////////////////////
 
-  const DrawableBuffer* DB = DrawableBuffer::acquireReadDB(7); // mDbLock.Aquire(7);
+  const DrawableBuffer* DB = nullptr;
+
+  {
+    EASY_BLOCK("acquireDB");
+    DB = DrawableBuffer::acquireReadDB(7); // mDbLock.Aquire(7);
+  }
   RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
 
   int primarycamindex = ddprops["primarycamindex"_crcu].Get<int>();
   int cullcamindex    = ddprops["cullcamindex"_crcu].Get<int>();
 
   if (DB) {
+    EASY_BLOCK("haveDB");
 
     /////////////////////////////////////////////////////////////////////////////
     // default camera selection

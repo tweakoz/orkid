@@ -27,6 +27,7 @@
 
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/SimpleLightProcessor.h>
+#include <ork/profiling.inl>
 
 ////////////////////////////////////////////////////////////////
 namespace ork::lev2::deferrednode {

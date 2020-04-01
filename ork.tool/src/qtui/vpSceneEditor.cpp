@@ -373,11 +373,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   //////////////////////////////////////////////////
   GL_ERRORCHECK();
   mpTarget->debugPushGroup("toolvp::assemble");
-  bool aok;
-  {
-    EASY_BLOCK("assemble");
-    aok = compsys->_impl.assemble(drawdata);
-  }
+  bool aok = compsys->_impl.assemble(drawdata);
   GL_ERRORCHECK();
   mpTarget->debugMarker(FormatString("toolvp::aok<%d>", int(aok)));
   GL_ERRORCHECK();

@@ -111,7 +111,7 @@ struct PbrNodeImpl {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void _render(DeferredCompositingNodePbr* node, CompositorDrawData& drawdata) {
     //_timer.Start();
-    EASY_BLOCK("PbrCompNode::_render");
+    EASY_BLOCK("pbr-_render");
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
     auto targ                    = RCFD.GetTarget();
@@ -306,6 +306,7 @@ void DeferredCompositingNodePbr::DoInit(lev2::Context* pTARG, int iW, int iH) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNodePbr::DoRender(CompositorDrawData& drawdata) {
+  EASY_BLOCK("pbr-DoRender");
   auto impl = _impl.Get<std::shared_ptr<PbrNodeImpl>>();
   impl->_render(this, drawdata);
 }

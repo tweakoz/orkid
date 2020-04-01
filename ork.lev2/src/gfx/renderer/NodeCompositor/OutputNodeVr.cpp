@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/vr/vr.h>
+#include <ork/profiling.inl>
 
 ImplementReflectionX(ork::lev2::VrCompositingNode, "VrCompositingNode");
 
@@ -96,6 +97,7 @@ struct VRIMPL {
   }
   ///////////////////////////////////////
   void beginAssemble(CompositorDrawData& drawdata) {
+    EASY_BLOCK("onodevr-begass");
     auto& ddprops                = drawdata._properties;
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
@@ -158,6 +160,7 @@ struct VRIMPL {
   }
   ///////////////////////////////////////
   void endAssemble(CompositorDrawData& drawdata) {
+    EASY_BLOCK("onodevr-endass");
     auto CIMPL                   = drawdata._cimpl;
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();

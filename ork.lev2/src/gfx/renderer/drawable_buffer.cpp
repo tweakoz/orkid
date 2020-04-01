@@ -24,6 +24,7 @@
 #include <ork/stream/ResizableStringOutputStream.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/util/triple_buffer.h>
+#include <ork/profiling.inl>
 
 namespace ork::lev2 {
 
@@ -60,6 +61,7 @@ void DrawableBuffer::setPreRenderCallback(int key, prerendercallback_t cb) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DrawableBuffer::invokePreRenderCallbacks(lev2::RenderContextFrameData& RCFD) const {
+  EASY_BLOCK("prerender");
   for (auto item : _preRenderCallbacks)
     item.second(RCFD);
 }

@@ -4,6 +4,7 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/vr/vr.h>
 #include <ork/kernel/string/deco.inl>
+#include <ork/profiling.inl>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::orkidvr {
@@ -46,6 +47,7 @@ Device::~Device() {
 ////////////////////////////////////////////////////////////////////////////////
 
 void Device::_updatePosesCommon() {
+  EASY_BLOCK("vr-upc");
   fmtx4 hmd  = _posemap["hmd"];
   fmtx4 eyeL = _posemap["eyel"];
   fmtx4 eyeR = _posemap["eyer"];

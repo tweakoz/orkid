@@ -22,6 +22,7 @@
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
+#include <ork/profiling.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::RenderCompositingNode, "RenderCompositingNode");
@@ -105,6 +106,7 @@ void NodeCompositingTechnique::Init(lev2::Context* pTARG, int w, int h) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
+  EASY_BLOCK("assemble-ctek");
   bool rval = false;
   drawdata.context()->debugPushGroup("NodeCompositingTechnique::assemble");
   if (_outputNode and _renderNode) {

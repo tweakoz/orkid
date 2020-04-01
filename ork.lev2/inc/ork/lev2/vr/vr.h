@@ -4,6 +4,8 @@
 #include <ork/kernel/msgrouter.inl>
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/math/cmatrix4.h>
+#include <ork/kernel/thread.h>
+#include <ork/kernel/mutex.h>
 
 #if !defined(__APPLE__)
 #define ENABLE_OPENVR
@@ -133,6 +135,10 @@ struct OpenVrDevice : public Device {
   OpenVrDevice();
   ~OpenVrDevice() final;
 
+  void _processControllerEvents();
+  void _updatePoses();
+  void _vrthread_loop();
+
   _ovr::IVRSystem* _hmd;
   _ovr::TrackedDevicePose_t _trackedPoses[_ovr::k_unMaxTrackedDeviceCount];
   fmtx4 _poseMatrices[_ovr::k_unMaxTrackedDeviceCount];
@@ -140,9 +146,8 @@ struct OpenVrDevice : public Device {
   std::set<_ovr::TrackedDeviceIndex_t> _controllerindexset;
   int _rightControllerDeviceIndex = -1;
   int _leftControllerDeviceIndex  = -1;
-
-  void _processControllerEvents();
-  void _updatePoses();
+  ork::Thread _vrthread;
+  ork::mutex _vrmutex;
 };
 #else
 ////////////////////////////////////////////////////////////////////////////////
