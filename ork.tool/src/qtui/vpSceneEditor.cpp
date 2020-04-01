@@ -46,6 +46,7 @@
 #include "vpRenderer.h"
 #include "vpSceneEditor.h"
 #include <ork/lev2/gfx/material_pbr.inl>
+#include <ork/profiling.inl>
 
 #define GL_ERRORCHECK()                                                                                                            \
   {                                                                                                                                \
@@ -267,6 +268,8 @@ bool SceneEditorVP::isCompositorEnabled() {
 
 void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
 
+  EASY_BLOCK("SceneEditorVP::DoDraw");
+
   if (nullptr == _ctxbase) {
     _ctxbase = mpTarget->GetCtxBase();
   }
@@ -370,7 +373,11 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   //////////////////////////////////////////////////
   GL_ERRORCHECK();
   mpTarget->debugPushGroup("toolvp::assemble");
-  bool aok = compsys->_impl.assemble(drawdata);
+  bool aok;
+  {
+    EASY_BLOCK("assemble");
+    aok = compsys->_impl.assemble(drawdata);
+  }
   GL_ERRORCHECK();
   mpTarget->debugMarker(FormatString("toolvp::aok<%d>", int(aok)));
   GL_ERRORCHECK();
@@ -382,8 +389,10 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   //   into final image
   //////////////////////////////////////////////////
   mpTarget->debugPushGroup("toolvp::composite");
-  if (aok)
+  if (aok) {
+    EASY_BLOCK("composite");
     compsys->_impl.composite(drawdata);
+  }
   mpTarget->debugPopGroup();
   // todo - lock sim
   GL_ERRORCHECK();
@@ -396,6 +405,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   mpTarget->debugPushGroup("toolvp::DRAWEND");
   if (gtoggle_hud) {
 
+    EASY_BLOCK("HUD");
     DrawHUD(RCFD);
     mpTarget->debugPushGroup("toolvp::DRAWEND::Children");
     DrawChildren(drwev);
@@ -405,8 +415,12 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     // if (mEditor.mpScene)
     DrawManip(drawdata, mpTarget);
   }
-  mpTarget->endFrame();
-  mpTarget->debugPopGroup();
+  //////////////////////////////////////////////////
+  {
+    EASY_BLOCK("ENDFRAME");
+    mpTarget->endFrame();
+    mpTarget->debugPopGroup();
+  }
   //////////////////////////////////////////////////
   // update editor camera (TODO - move to engine)
   //////////////////////////////////////////////////

@@ -105,28 +105,31 @@ int main(int argc, char** argv) {
       }
     }
     printf("//////////////////////////////////\n");
-    printf( "Tests finished!\n");
+    printf("Tests finished!\n");
     printf("//////////////////////////////////\n");
     testdone = true;
+    return 0;
   });
   /////////////////////////////////////////////
   ork::Thread updthr("updatethread");
   bool upddone = false;
+  auto updq    = opq::updateSerialQueue();
+  auto mainq   = opq::mainSerialQueue();
   updthr.start([&](anyp data) {
-    opq::TrackCurrent opqtest(&opq::updateSerialQueue());
+    opq::TrackCurrent opqtest(updq);
     while (false == testdone)
-      opq::updateSerialQueue().Process();
+      opq::updateSerialQueue()->Process();
     upddone = true;
   });
   /////////////////////////////////////////////
   while (false == testdone) {
-    opq::TrackCurrent opqtest(&opq::mainSerialQueue());
-    opq::mainSerialQueue().Process();
+    opq::TrackCurrent opqtest(mainq);
+    mainq->Process();
   }
   /////////////////////////////////////////////
 
-  opq::mainSerialQueue().drain();
-  opq::updateSerialQueue().drain();
+  mainq->drain();
+  updq->drain();
 
   ApplicationStack::Pop();
 

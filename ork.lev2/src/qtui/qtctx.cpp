@@ -628,7 +628,7 @@ void CTQT::SlotRepaint() {
     // already on main Q
     lamb();
   } else {
-    opq::mainSerialQueue().enqueue(lamb);
+    opq::mainSerialQueue()->enqueue(lamb);
   }
 }
 

@@ -50,7 +50,7 @@ public:
                 mpMaterial = new GfxMaterial3DSolid(targ, "orkshader://fnball", "fb_pnt");
             mpMaterial->SetColorMode( GfxMaterial3DSolid::EMODE_USER );
         };
-        opq::mainSerialQueue().enqueue(lamb);
+        opq::mainSerialQueue()->enqueue(lamb);
     }
     ~FnBallComponentData() {}
     ComponentInst* createComponent(Entity *pent) const override;

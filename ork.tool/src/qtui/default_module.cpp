@@ -16,6 +16,7 @@
 #include <ork/util/hotkey.h>
 #include <orktool/toolcore/FunctionManager.h>
 #include <pkg/ent/editor/edmainwin.h>
+#include <ork/profiling.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -28,7 +29,9 @@ class MainWinDefaultModule : public tool::EditorModule {
   EditorMainWindow& mEditWin;
 
 public:
-  MainWinDefaultModule(EditorMainWindow& emw) : mEditWin(emw) {}
+  MainWinDefaultModule(EditorMainWindow& emw)
+      : mEditWin(emw) {
+  }
 };
 ///////////////////////////////////////////////////////////////////////////////
 void MainWinDefaultModule::Activate(QMenuBar* qmb) {
@@ -49,6 +52,9 @@ void MainWinDefaultModule::Activate(QMenuBar* qmb) {
 
   AddAction("/Game/Local/Run", QKeySequence(Qt::CTRL + Qt::Key_Period));
   AddAction("/Game/Local/Stop", QKeySequence(Qt::CTRL + Qt::Key_Comma));
+
+  AddAction("/Game/BeginProfile", QKeySequence(Qt::CTRL + Qt::Key_9));
+  AddAction("/Game/EndProfile", QKeySequence(Qt::CTRL + Qt::Key_0));
 
   AddAction("/Entity/New Entity", QKeySequence(Qt::CTRL + Qt::Key_E));
   AddAction("/Entity/New Entities...", QKeySequence(tr("Ctrl+Shift+E")));
@@ -107,6 +113,15 @@ void MainWinDefaultModule::OnAction(const char* pact) {
     mEditWin.StopLocal();
   }
   ///////////////////////////////////////////////////////
+  else if (0 == strcmp("/Game/BeginProfile", pact)) {
+    EASY_PROFILER_ENABLE;
+    EASY_MAIN_THREAD;
+  } else if (0 == strcmp("/Game/EndProfile", pact)) {
+    auto profoutpath = (file::Path::stage_dir() / "orktool.prof").ToAbsolute();
+    printf("wrinting profiler info to <%s>\n", profoutpath.c_str());
+    auto blocks_count = profiler::dumpBlocksToFile(profoutpath.c_str());
+  }
+  ///////////////////////////////////////////////////////
   else if (0 == strcmp("/Entity/New Entity", pact)) {
     mEditWin.NewEntity();
   } else if (0 == strcmp("/Entity/New Entities...", pact)) {
@@ -145,7 +160,9 @@ void MainWinDefaultModule::OnAction(const char* pact) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void RegisterMainWinDefaultModule(EditorMainWindow& emw) { emw.ModuleMgr().AddModule("Default", new MainWinDefaultModule(emw)); }
+void RegisterMainWinDefaultModule(EditorMainWindow& emw) {
+  emw.ModuleMgr().AddModule("Default", new MainWinDefaultModule(emw));
+}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -155,23 +172,35 @@ void EditorMainWindow::NewScene() {
   SetSceneFile(QString("UNTITLED"));
 }
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::RunLocal() { mEditorBase.QueueOpASync(RunLocalReq()); }
+void EditorMainWindow::RunLocal() {
+  mEditorBase.QueueOpASync(RunLocalReq());
+}
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::StopLocal() { mEditorBase.QueueOpASync(StopLocalReq()); }
+void EditorMainWindow::StopLocal() {
+  mEditorBase.QueueOpASync(StopLocalReq());
+}
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::RunGame() {}
+void EditorMainWindow::RunGame() {
+}
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::RunLevel() {}
+void EditorMainWindow::RunLevel() {
+}
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::RefreshAnims() { mEditorBase.EditorRefreshAnims(); }
+void EditorMainWindow::RefreshAnims() {
+  mEditorBase.EditorRefreshAnims();
+}
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::RefreshModels() { mEditorBase.EditorRefreshModels(); }
+void EditorMainWindow::RefreshModels() {
+  mEditorBase.EditorRefreshModels();
+}
 ///////////////////////////////////////////////////////////////////////////
 void EditorMainWindow::RefreshHFSMs() {
   // mEditorBase.EditorRefreshHFSMs();
 }
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::RefreshTextures() { mEditorBase.EditorRefreshTextures(); }
+void EditorMainWindow::RefreshTextures() {
+  mEditorBase.EditorRefreshTextures();
+}
 
 }} // namespace ork::ent
 ///////////////////////////////////////////////////////////////////////////////

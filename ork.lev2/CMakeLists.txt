@@ -61,6 +61,9 @@ ELSEIF(${UNIX})
 ENDIF()
 
 list(APPEND libs Qt5::Widgets Qt5::Core Qt5::Gui)
+IF(PROFILER)
+  list(APPEND libs easy_profiler)
+ENDIF()
 
 target_link_libraries(ork_lev2 ${libs})
 

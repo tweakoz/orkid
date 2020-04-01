@@ -50,7 +50,7 @@ static vp_cons* gPCON = nullptr;
 void vp_cons::Register() {
   gPCON = this;
 
-  opq::mainSerialQueue().enqueue([&]() {
+  opq::mainSerialQueue()->enqueue([&]() {
     /*
     const char* inpname = python::slave_inp_name;
     const char* outname = python::slave_out_name;
@@ -153,7 +153,7 @@ static void getPythonOutput() {
 
   /////////////////////
 
-  opq::mainSerialQueue().enqueue([&]() { getPythonOutput(); });
+  opq::mainSerialQueue()->enqueue([&]() { getPythonOutput(); });
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ork::tool::vp_cons::BindCTQT(ork::lev2::CTQT* pctqt) {

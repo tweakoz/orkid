@@ -88,8 +88,8 @@ bool GlTextureInterface::DestroyTexture(Texture* tex) {
       delete glto;
     }
   };
-  // opq::mainSerialQueue().push(lamb,get_backtrace());
-  opq::mainSerialQueue().enqueue(lamb);
+  // opq::mainSerialQueue()->push(lamb,get_backtrace());
+  opq::mainSerialQueue()->enqueue(lamb);
   return true;
 }
 

@@ -140,7 +140,7 @@ DeferredPickOperationContext::DeferredPickOperationContext()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-static opq::OperationsQueue gPickOPQ(1, "PickOpQ");
+static auto gPickOPQ = std::make_shared<opq::OperationsQueue>(1, "PickOpQ");
 void OuterPickOp(DeferredPickOperationContext* pickctx) {
 
   assert(pickctx->mViewport != nullptr);
@@ -169,7 +169,7 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
     // stop updates, and wait for mainthread to acknowledge
     ////////////
     gUpdateStatus.SetState(EUPD_STOP);
-    opq::updateSerialQueue().sync();
+    opq::updateSerialQueue()->sync();
     ////////////
     static auto d_buf = new ork::lev2::DrawableBuffer(4);
     static CompositingData _gdata;
@@ -183,7 +183,7 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
       //////////////////////////////////////////////////////////////////////////
       psi->enqueueDrawablesToBuffer(*d_buf);
       ////////////
-      opq::mainSerialQueue().sync();
+      opq::mainSerialQueue()->sync();
       ////////////
       auto op_pick = [=]() {
         auto target = pickctx->_gfxContext;

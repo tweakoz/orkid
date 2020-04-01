@@ -50,11 +50,16 @@ namespace ork { namespace ent {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-UpdateThread::UpdateThread(SceneEditorVP* pVP) : mpVP(pVP), mbEXITING(false) {}
+UpdateThread::UpdateThread(SceneEditorVP* pVP)
+    : mpVP(pVP)
+    , mbEXITING(false) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-UpdateThread::~UpdateThread() { mbEXITING = true; }
+UpdateThread::~UpdateThread() {
+  mbEXITING = true;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -62,11 +67,13 @@ void UpdateThread::run() // virtual
 {
   SetCurrentThreadName("UpdateRunLoop");
 
+  _updq = opq::updateSerialQueue();
+
   ork::Timer timr;
   timr.Start();
   int icounter = 0;
 
-  opq::TrackCurrent opqtest(&opq::updateSerialQueue());
+  opq::TrackCurrent opqtest(_updq);
 
   while (false == mbEXITING) {
     icounter++;
@@ -79,13 +86,13 @@ void UpdateThread::run() // virtual
     ////////////////////////////////////////////////
     // process serial update opQ
     ////////////////////////////////////////////////
-    while (opq::updateSerialQueue().Process())
+    while (_updq->Process())
       ;
     ////////////////////////////////////////////////
     // update scene
     ////////////////////////////////////////////////
 
-    auto simulation = (ent::Simulation*) mpVP->simulation();
+    auto simulation = (ent::Simulation*)mpVP->simulation();
     if (simulation)
       simulation->updateThreadTick();
 
@@ -101,7 +108,7 @@ void UpdateThread::run() // virtual
         mpVP->NotInDrawSync();
         gUpdateStatus.SetState(EUPD_STOPPED);
         break;
-      case EUPD_STOPPED:{
+      case EUPD_STOPPED: {
         usleep(100);
         mpVP->NotInDrawSync();
         break;

@@ -30,6 +30,8 @@ int main(int argc, const char** argv) {
 
   rtti::Class::InitializeClasses();
 
+  auto mainq   = opq::mainSerialQueue();
+  auto updateq = opq::updateSerialQueue();
   /////////////////////////////////////////////
   Thread testthr("testthread");
   int iret      = 0;
@@ -43,15 +45,15 @@ int main(int argc, const char** argv) {
   Thread updthr("updatethread");
   bool upddone = false;
   updthr.start([&](anyp data) {
-    opq::TrackCurrent opqtest(&opq::updateSerialQueue());
+    opq::TrackCurrent opqtest(updateq);
     while (false == testdone)
-      opq::updateSerialQueue().Process();
+      updateq->Process();
     upddone = true;
   });
   /////////////////////////////////////////////
-  opq::TrackCurrent opqtest(&opq::mainSerialQueue());
+  opq::TrackCurrent opqtest(mainq);
   python::init();
-  opq::mainSerialQueue().Process();
+  mainq->Process();
   static PyCompilerFlags orkpy_cf;
   orkpy_cf.cf_flags = 0;
   while (false == testdone) {

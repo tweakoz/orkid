@@ -80,6 +80,7 @@ struct ManipHandler : public SceneEditorVPToolHandler {
 
 protected:
   ManipHandler(SceneEditorBase& editor);
+  opq::opq_ptr_t _updq;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

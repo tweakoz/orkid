@@ -45,7 +45,7 @@ NewEntityReq::shared_t NewEntityReq::makeShared(Future& f) {
   return std::make_shared<NewEntityReq>(f);
 }
 
-static opq::OperationsQueue gImplSerQ(0, "eddummyopq");
+static auto gImplSerQ = std::make_shared<opq::OperationsQueue>(0, "eddummyopq");
 
 static ork::PoolString gEdChanName;
 
@@ -233,11 +233,11 @@ void SceneEditorBase::QueueOpSync(const var_t& op) {
 void SceneEditorBase::RunLoop() {
   SetCurrentThreadName("SceneEdRunLoop");
 
-  opq::TrackCurrent opqt(&gImplSerQ);
+  opq::TrackCurrent opqt(gImplSerQ);
 
   var_t event;
 
-  auto& updQ = opq::updateSerialQueue();
+  auto updQ = opq::updateSerialQueue();
 
   auto disable_op = [&]() {
     gUpdateStatus.SetState(EUPD_STOP);
@@ -1237,8 +1237,7 @@ void SceneEditorBase::SigSceneTopoChanged() {
   if (opq::TrackCurrent::is(opq::updateSerialQueue())) {
     // we are already on update thread, just execute the lambda directly
     lamb();
-  }
-  else {
+  } else {
     // enqueue lambda on update thread
     opq::Op(lamb).QueueASync(opq::updateSerialQueue());
   }

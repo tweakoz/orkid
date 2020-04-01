@@ -21,6 +21,7 @@
 #include <ork/lev2/gfx/material_pbr.inl>
 
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
+#include <ork/profiling.inl>
 
 namespace ork::lev2::deferrednode {
 ///////////////////////////////////////////////////////////////////////////////
@@ -176,6 +177,7 @@ void DeferredContext::gpuInit(Context* target) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData& VD) {
+  EASY_BLOCK("renderGbuffer");
   auto CIMPL                   = drawdata._cimpl;
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
   RenderContextFrameData& RCFD = framerenderer.framedata();

@@ -37,6 +37,10 @@ void dispersed_sleep(int idx, int iquantausec) {
   };
   usleep(ktab[idx & 0xf] * iquantausec);
 }
+static void _assertNotOnQueue(OperationsQueue* the_opQ) {
+  auto ot = TrackCurrent::context();
+  assert(ot->_queue != the_opQ);
+}
 ////////////////////////////////////////////////////////////////////////////////
 void CompletionGroup::enqueue(const ork::void_lambda_t& the_op) {
   this->_numpending.fetch_add(1);
@@ -45,14 +49,14 @@ void CompletionGroup::enqueue(const ork::void_lambda_t& the_op) {
     int num_pending = this->_numpending.fetch_add(-1);
     printf("num_pending<%d>\n", num_pending);
   };
-  _q.enqueue(wrapped);
+  _q->enqueue(wrapped);
 }
 void CompletionGroup::join() {
   while (_numpending.load()) {
     ::usleep(1000);
   }
 }
-CompletionGroup::CompletionGroup(OperationsQueue& q)
+CompletionGroup::CompletionGroup(opq_ptr_t q)
     : _q(q) {
   _numpending.store(0);
 }
@@ -103,15 +107,15 @@ void Op::invoke() {
   }
 }
 ///////////////////////////////////////////////////////////////////////////
-void Op::QueueASync(OperationsQueue& q) const {
-  q.enqueue(*this);
+void Op::QueueASync(opq_ptr_t q) const {
+  q->enqueue(*this);
 }
-void Op::QueueSync(OperationsQueue& q) const {
+void Op::QueueSync(opq_ptr_t q) const {
   assertNotOnQueue(q);
-  q.enqueue(*this);
+  q->enqueue(*this);
   Future the_fut;
   BarrierSyncReq R(the_fut);
-  q.enqueue(R);
+  q->enqueue(R);
   the_fut.GetResult();
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -121,8 +125,8 @@ struct OpqDrained : public IOpqSynchrComparison {
   }
 };
 ///////////////////////////////////////////////////////////////////////////
-OpqThread::OpqThread(OperationsQueue* popq, int thid) {
-  _data._queue    = popq;
+OpqThread::OpqThread(OperationsQueue* q, int thid) {
+  _data._queue    = q;
   _data._threadID = thid;
   _state.store(EPOQSTATE_NEW);
 }
@@ -134,17 +138,17 @@ void OpqThread::run() // virtual
 {
   _state.store(EPOQSTATE_RUNNING);
   OpqThreadData* opqthreaddata = &_data;
-  OperationsQueue* popq        = opqthreaddata->_queue;
-  std::string opqn             = popq->_name;
+  OperationsQueue* q           = opqthreaddata->_queue;
+  std::string opqn             = q->_name;
   SetCurrentThreadName(opqn.c_str());
 
-  popq->_numThreadsRunning++;
+  q->_numThreadsRunning++;
 
   static int icounter = 0;
   int thid            = opqthreaddata->_threadID + 4;
   std::string channam = CreateFormattedString("opqth%d", int(thid));
 
-  TrackCurrent opqtest(popq);
+  TrackCurrent opqtest(q);
 
   int slindex = 0;
 
@@ -155,7 +159,7 @@ void OpqThread::run() // virtual
     switch (_state.load()) {
 
       case EPOQSTATE_RUNNING: {
-        bool item_processed = popq->Process();
+        bool item_processed = q->Process();
         if (item_processed)
           slindex = 0;
         break;
@@ -173,7 +177,7 @@ void OpqThread::run() // virtual
     }
   }
 
-  popq->_numThreadsRunning--;
+  q->_numThreadsRunning--;
 
   // printf( "popq<%p> thread exiting...\n", popq );
 }
@@ -222,7 +226,7 @@ bool OperationsQueue::Process() {
 
   ConcurrencyGroup* pexecgrp = nullptr;
 
-  _linearconcurrencygroups.atomicOp([&pexecgrp](concgroupvect_t&cgv){
+  _linearconcurrencygroups.atomicOp([&pexecgrp](concgroupvect_t& cgv) {
     size_t numgroups   = cgv.size();
     size_t numattempts = 0;
     while ((pexecgrp == nullptr) and (numattempts < numgroups)) {
@@ -296,7 +300,7 @@ void OperationsQueue::enqueue(const BarrierSyncReq& s) {
 }
 ///////////////////////////////////////////////////////////////////////////
 void OperationsQueue::enqueueAndWait(const Op& the_op) {
-  assertNotOnQueue(*this);
+  _assertNotOnQueue(this);
   enqueue(the_op);
   Future the_fut;
   BarrierSyncReq R(the_fut);
@@ -309,8 +313,8 @@ void OperationsQueue::sync() {
   BarrierSyncReq R(the_fut);
   enqueue(R);
   auto ot = TrackCurrent::context();
-  if(ot->_queue == this) {
-    while(false==the_fut.IsSignaled()){
+  if (ot->_queue == this) {
+    while (false == the_fut.IsSignaled()) {
       this->Process();
     }
   }
@@ -320,21 +324,17 @@ void OperationsQueue::sync() {
 void OperationsQueue::drain() {
   // todo - drain all groups atomically
   concgroupvect_t copy_cgv;
-  _linearconcurrencygroups.atomicOp([&copy_cgv](concgroupvect_t&cgv){
-    copy_cgv = cgv;
-    });
+  _linearconcurrencygroups.atomicOp([&copy_cgv](concgroupvect_t& cgv) { copy_cgv = cgv; });
   for (auto g : copy_cgv)
-     g->drain();
+    g->drain();
   for (auto g : copy_cgv)
-      g->drain();
+    g->drain();
 }
 ///////////////////////////////////////////////////////////////////////////
 ConcurrencyGroup* OperationsQueue::createConcurrencyGroup(const char* pname) {
-  ConcurrencyGroup* pgrp = new ConcurrencyGroup(this, pname);
+  ConcurrencyGroup* pgrp = new ConcurrencyGroup(*this, pname);
   _concurrencygroups.insert(pgrp);
-  _linearconcurrencygroups.atomicOp([pgrp](concgroupvect_t&cgv){
-    cgv.push_back(pgrp);
-    });
+  _linearconcurrencygroups.atomicOp([pgrp](concgroupvect_t& cgv) { cgv.push_back(pgrp); });
   mGroupCounter++;
   return pgrp;
 }
@@ -342,10 +342,10 @@ ConcurrencyGroup* OperationsQueue::createConcurrencyGroup(const char* pname) {
 OperationsQueue::OperationsQueue(int inumthreads, const char* name)
     : _name(name)
     , mSemaphore(name) {
-  _lock              = false;
-  _goingdown         = false;
-  mGroupCounter      = 0;
-  _numThreadsRunning = 0;
+  _lock                 = false;
+  _goingdown            = false;
+  mGroupCounter         = 0;
+  _numThreadsRunning    = 0;
   _numPendingOperations = 0;
 
   _defaultConcurrencyGroup = createConcurrencyGroup("defconq");
@@ -368,16 +368,16 @@ OperationsQueue::~OperationsQueue() {
 
   // printf( "Opq<%s> signalling OK2KILL\n", _name.c_str());
   size_t numthreads = 0;
-  _threads.atomicOp([=,&numthreads](threadset_t& thset) {
+  _threads.atomicOp([=, &numthreads](threadset_t& thset) {
     numthreads = thset.size();
     for (auto thread : thset)
       thread->_state.store(EPOQSTATE_OK2KILL);
   });
 
-  //printf( "Opq<%s> joining numthreads<%zu>\n", _name.c_str(),numthreads);
+  // printf( "Opq<%s> joining numthreads<%zu>\n", _name.c_str(),numthreads);
   bool done = false;
   while (false == done) {
-    _threads.atomicOp([=, &done,&numthreads](threadset_t& thset) {
+    _threads.atomicOp([=, &done, &numthreads](threadset_t& thset) {
       done = thset.empty();
       if (false == done) {
         this->mSemaphore.notify();
@@ -390,7 +390,7 @@ OperationsQueue::~OperationsQueue() {
     usleep(0);
   }
 
-   //printf( "Opq<%p:%s> joined numthreadsrem<%zu>\n", this,_name.c_str(), numthreads);
+  // printf( "Opq<%p:%s> joined numthreadsrem<%zu>\n", this,_name.c_str(), numthreads);
 
   /////////////////////////////////
   // trash the groups
@@ -400,14 +400,12 @@ OperationsQueue::~OperationsQueue() {
     delete it;
   }
   _concurrencygroups.clear();
-  _linearconcurrencygroups.atomicOp([](concgroupvect_t&cgv){
-    cgv.clear();
-    });
+  _linearconcurrencygroups.atomicOp([](concgroupvect_t& cgv) { cgv.clear(); });
   /////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////
-ConcurrencyGroup::ConcurrencyGroup(OperationsQueue* popq, const char* pname)
-    : _queue(popq)
+ConcurrencyGroup::ConcurrencyGroup(OperationsQueue& q, const char* pname)
+    : _queue(q)
     , _limit_maxops_inflight(0)
     , _limit_maxops_enqueued(0)
     , _limit_maxrunlength(256)
@@ -436,7 +434,7 @@ void ConcurrencyGroup::enqueue(const Op& the_op) {
       dispersed_sleep(slindex++, 10); // semaphores are slowing us down
     }
   }
-  _queue->mSemaphore.notify();
+  _queue.mSemaphore.notify();
 }
 ///////////////////////////////////////////////////////////////////////////
 void ConcurrencyGroup::drain() {
@@ -494,17 +492,17 @@ int OpqSynchro::pendingOps() const {
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-OperationsQueue& updateSerialQueue() {
-  static OperationsQueue gupdserq(0, "updateSerialQueue");
+opq_ptr_t updateSerialQueue() {
+  static opq_ptr_t gupdserq = std::make_shared<OperationsQueue>(0, "updateSerialQueue");
   return gupdserq;
 }
 ///////////////////////////////////////////////////////////////////////
-OperationsQueue& mainSerialQueue() {
-  static OperationsQueue gmainthrq(0, "mainSerialQueue");
+opq_ptr_t mainSerialQueue() {
+  static opq_ptr_t gmainthrq = std::make_shared<OperationsQueue>(0, "mainSerialQueue");
   return gmainthrq;
 }
 ///////////////////////////////////////////////////////////////////////
-OperationsQueue& concurrentQueue() {
+opq_ptr_t concurrentQueue() {
   int numcores   = OldSchool::GetNumCores();
   int numthreads = 1;
   switch (numcores) {
@@ -515,8 +513,8 @@ OperationsQueue& concurrentQueue() {
       numthreads = (numcores / 2) - 2;
       break;
   }
-  static auto gconcurrentq = std::make_shared<OperationsQueue>(numthreads, "concurrentQueue");
-  return *(gconcurrentq.get());
+  static opq_ptr_t gconcurrentq = std::make_shared<OperationsQueue>(numthreads, "concurrentQueue");
+  return gconcurrentq;
 }
 ///////////////////////////////////////////////////////////////////////
 std::shared_ptr<OperationsQueue::InternalLock> OperationsQueue::scopedLock() {
@@ -531,20 +529,20 @@ OperationsQueue::InternalLock::~InternalLock() {
   _queue._internalEndLock();
 }
 ///////////////////////////////////////////////////////////////////////
-void assertOnQueue2(OperationsQueue& the_opQ) {
+void assertOnQueue2(opq_ptr_t the_opQ) {
   auto ot = TrackCurrent::context();
-  assert(ot->_queue == &the_opQ);
+  assert(ot->_queue == the_opQ.get());
 }
-void assertOnQueue(OperationsQueue& the_opQ) {
+void assertOnQueue(opq_ptr_t the_opQ) {
   assertOnQueue2(the_opQ);
 }
-void assertNotOnQueue(OperationsQueue& the_opQ) {
+void assertNotOnQueue(opq_ptr_t the_opQ) {
   auto ot = TrackCurrent::context();
-  assert(ot->_queue != &the_opQ);
+  assert(ot->_queue != the_opQ.get());
 }
-bool TrackCurrent::is(const OperationsQueue&rhs) {
+bool TrackCurrent::is(opq_ptr_t rhs) {
   auto ot = TrackCurrent::context();
-  return &rhs==ot->_queue;
+  return rhs.get() == ot->_queue;
 }
 
 ///////////////////////////////////////////////////////////////////////////

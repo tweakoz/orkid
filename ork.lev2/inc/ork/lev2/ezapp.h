@@ -32,6 +32,9 @@ public:
 private:
   EzApp(int& argc, char** argv);
   opq::TrackCurrent* _trackq;
+
+  ork::opq::opq_ptr_t _mainq;
+  ork::opq::opq_ptr_t _conq;
 };
 
 struct UpdateData {
@@ -105,6 +108,9 @@ public:
   double _update_timeaccumulator = 0;
   ork::Thread _updateThread;
   bool _updatekill;
+  ork::opq::opq_ptr_t _mainq;
+  ork::opq::opq_ptr_t _updq;
+  ork::opq::opq_ptr_t _conq;
   varmap::VarMap _vars;
 };
 

@@ -126,14 +126,14 @@ ObjModel::~ObjModel() {
 
 void ObjModel::QueueUpdate() {
   auto lamb = [=]() { FlushQueue(); };
-  opq::updateSerialQueue().enqueue(lamb);
+  opq::updateSerialQueue()->enqueue(lamb);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void ObjModel::QueueUpdateAll() {
   auto lamb = [=]() { FlushAllQueues(); };
-  opq::updateSerialQueue().enqueue(lamb);
+  opq::updateSerialQueue()->enqueue(lamb);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -153,14 +153,14 @@ void ObjModel::SigModelInvalidated() {
 }
 void ObjModel::SigPreNewObject() {
   auto lamb = [=]() { this->mSignalPreNewObject(&ObjModel::SigPreNewObject); };
-  opq::updateSerialQueue().enqueue(lamb);
+  opq::updateSerialQueue()->enqueue(lamb);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void ObjModel::SigPropertyInvalidated(ork::Object* pobj, const reflect::IObjectProperty* prop) {
   auto lamb = [=]() { this->mSignalPropertyInvalidated(&ObjModel::SigPropertyInvalidated, pobj, prop); };
-  opq::updateSerialQueue().enqueue(lamb);
+  opq::updateSerialQueue()->enqueue(lamb);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

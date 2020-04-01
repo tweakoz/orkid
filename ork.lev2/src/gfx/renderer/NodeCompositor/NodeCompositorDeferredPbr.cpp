@@ -30,6 +30,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/CpuLightProcessor.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/SimpleLightProcessor.h>
+#include <ork/profiling.inl>
 
 ImplementReflectionX(ork::lev2::deferrednode::DeferredCompositingNodePbr, "DeferredCompositingNodePbr");
 
@@ -110,6 +111,7 @@ struct PbrNodeImpl {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void _render(DeferredCompositingNodePbr* node, CompositorDrawData& drawdata) {
     //_timer.Start();
+    EASY_BLOCK("PbrCompNode::_render");
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
     auto targ                    = RCFD.GetTarget();
@@ -151,7 +153,7 @@ struct PbrNodeImpl {
     FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
     //////////////////////////////////////////////////////////////////
     if (auto lmgr = CIMPL->lightManager()) {
-
+      EASY_BLOCK("lights-1");
       lmgr->enumerateInPass(_context._accumCPD, _enumeratedLights);
       _lightProcessor.gpuUpdate(drawdata, VD, _enumeratedLights);
       auto& lights = _enumeratedLights._enumeratedLights;
@@ -224,6 +226,7 @@ struct PbrNodeImpl {
     /////////////////////////////////
 
     if (auto lmgr = CIMPL->lightManager()) {
+      EASY_BLOCK("lights-2");
       if (_enumeratedLights._enumeratedLights.size())
         _lightProcessor.renderLights(drawdata, VD, _enumeratedLights);
     }

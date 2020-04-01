@@ -176,10 +176,10 @@ void GridArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
   pdrw->SetRenderCallback(impl::RenderCallback);
   pdrw->SetenqueueOnLayerCallback(impl::enqueueOnLayerCallback);
 
-  mainSerialQueue().enqueue([pimpl]() {
+  mainSerialQueue()->enqueue([pimpl]() {
     auto ctx = lev2::GfxEnv::GetRef().loadingContext();
     pimpl->gpuInit(ctx);
-    updateSerialQueue().enqueue([pimpl]() {
+    updateSerialQueue()->enqueue([pimpl]() {
       // todo - we need a method to put above impl replated initialization
       //   code into this opq op -
       //   while enforcing that it gets executed before any scene state changes occur

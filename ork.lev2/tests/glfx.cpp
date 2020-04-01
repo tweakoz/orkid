@@ -6,7 +6,7 @@
 
 TEST(glfx1) {
   // we must load shaders on the main thread!
-  ork::opq::mainSerialQueue().enqueue([&]() {
+  ork::opq::mainSerialQueue()->enqueue([&]() {
     auto targ = ork::lev2::GfxEnv::GetRef().loadingContext();
     printf("targ<%p>\n", targ);
     CHECK(targ != nullptr);
@@ -37,5 +37,5 @@ TEST(glfx1) {
     }
   });
 
-  ork::opq::mainSerialQueue().drain();
+  ork::opq::mainSerialQueue()->drain();
 }

@@ -31,6 +31,7 @@ namespace ork::opq {
 typedef any128 op_wrap_t;
 
 struct OperationsQueue;
+using opq_ptr_t = std::shared_ptr<OperationsQueue>;
 
 struct BarrierSyncReq {
   BarrierSyncReq(Future& f)
@@ -51,8 +52,8 @@ struct Op {
   void SetOp(const op_wrap_t& op);
   void invoke();
 
-  void QueueASync(OperationsQueue& q) const;
-  void QueueSync(OperationsQueue& q) const;
+  void QueueASync(opq_ptr_t q) const;
+  void QueueSync(opq_ptr_t q) const;
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -93,7 +94,7 @@ struct IOpqSynchrComparison {
 
 struct ConcurrencyGroup {
 
-  ConcurrencyGroup(OperationsQueue* popq, const char* pname);
+  ConcurrencyGroup(OperationsQueue& q, const char* pname);
   void enqueue(const Op& the_op);
   bool try_pop(Op& out_op);
   void drain();
@@ -111,7 +112,7 @@ struct ConcurrencyGroup {
   std::atomic<int> _opsinflight;
   std::atomic<int> _serialopindex;
   std::string _name;
-  OperationsQueue* _queue;
+  OperationsQueue& _queue;
 
   size_t _limit_maxops_inflight;
   size_t _limit_maxops_enqueued;
@@ -140,19 +141,19 @@ private:
     return std::unique_ptr<CompletionGroup>(new CompletionGroup(std::forward<Args>(args)...));
   }
 
-  CompletionGroup(OperationsQueue& q);
+  CompletionGroup(opq_ptr_t q);
   CompletionGroup(const CompletionGroup& oth) = delete;
   CompletionGroup& operator=(const CompletionGroup&) = delete;
 
-  OperationsQueue& _q;
+  opq_ptr_t _q;
   std::atomic<int> _numpending;
 };
 
 ///////////////////////////////////////////////////////////////////////////
 
 struct OpqThreadData {
-  OperationsQueue* _queue = nullptr;
-  int _threadID           = 0;
+  OperationsQueue* _queue;
+  int _threadID = 0;
 };
 enum OpqThreadState {
   EPOQSTATE_NEW = 0,
@@ -166,7 +167,7 @@ enum OpqThreadState {
 struct OpqThread : public ork::Thread {
   OpqThreadData _data;
   std::atomic<int> _state;
-  OpqThread(OperationsQueue* popq, int thid);
+  OpqThread(OperationsQueue* q, int thid);
   ~OpqThread();
   void run() final;
 };
@@ -227,19 +228,22 @@ struct TrackCurrent : public ork::util::ContextTLS<TrackCurrent> {
   inline TrackCurrent(OperationsQueue* q)
       : _queue(q) {
   }
-  static bool is(const OperationsQueue& rhs);
+  inline TrackCurrent(opq_ptr_t q)
+      : _queue(q.get()) {
+  }
+  static bool is(opq_ptr_t rhs);
   OperationsQueue* _queue;
 };
-void assertOnQueue2(OperationsQueue& the_opQ);
-void assertOnQueue(OperationsQueue& the_opQ);
-void assertNotOnQueue(OperationsQueue& the_opQ);
+void assertOnQueue2(opq_ptr_t the_opQ);
+void assertOnQueue(opq_ptr_t the_opQ);
+void assertNotOnQueue(opq_ptr_t the_opQ);
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-OperationsQueue& updateSerialQueue();
-OperationsQueue& mainSerialQueue();
-OperationsQueue& concurrentQueue();
+opq_ptr_t updateSerialQueue();
+opq_ptr_t mainSerialQueue();
+opq_ptr_t concurrentQueue();
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::opq

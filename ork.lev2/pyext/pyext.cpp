@@ -57,7 +57,7 @@ void lev2appinit() {
 }
 
 void lev2apppoll() {
-  while (ork::opq::mainSerialQueue().Process()) {
+  while (ork::opq::mainSerialQueue()->Process()) {
   }
 }
 

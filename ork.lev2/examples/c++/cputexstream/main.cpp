@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
     while(0==appstate){
       for( int y=0; y<DIM; y++ ){
         float fy = float(y)*finvdim;
-        opq::concurrentQueue().enqueue([=](){
+        opq::concurrentQueue()->enqueue([=](){
           int index = y*DIM*4;
           float* ptexels = texturedata->data();
           for( int x=0; x<DIM; x++ ){
@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
           }
         });
       }
-      opq::concurrentQueue().drain();
+      opq::concurrentQueue()->drain();
       fi += 0.01f;
     }
     appstate=2;
@@ -131,5 +131,5 @@ int main(int argc, char** argv) {
   int rval = qtapp->runloop();
   appstate=1;
   while(1==appstate) usleep(1);
-  opq::concurrentQueue().drain();
+  opq::concurrentQueue()->drain();
 }

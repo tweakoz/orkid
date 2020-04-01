@@ -55,7 +55,7 @@ bool GlTextureInterface::_loadDDSTexture(Texture* ptex, datablockptr_t datablock
     }
     this->_loadDDSTextureMainThreadPart(load_req);
   };
-  opq::mainSerialQueue().enqueue(lamb);
+  opq::mainSerialQueue()->enqueue(lamb);
   ///////////////////////////////////////////////
   return true;
 }

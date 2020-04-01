@@ -177,7 +177,7 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
       }; // job =
       int jobindex = _lightjobcount++;
       // job();
-      opq::concurrentQueue().enqueue(job);
+      opq::concurrentQueue()->enqueue(job);
     } // for (int ix = 0; ix <= _clusterW; ix++) {
   }   // for (int iy = 0; iy <= _clusterH; iy++) {
 
@@ -186,7 +186,7 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
   /////////////////////////////////////
 
   while (_lightjobcount) {
-    opq::concurrentQueue().sync();
+    opq::concurrentQueue()->sync();
   }
 
   /////////////////////////////////////

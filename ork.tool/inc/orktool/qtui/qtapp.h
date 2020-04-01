@@ -11,30 +11,27 @@
 #include <QtWidgets/QMainWindow>
 #include <QtCore/QTimer>
 #include <QtWidgets/QApplication>
+#include <ork/kernel/opq.h>
 
 namespace ork { namespace tool {
 
-class OrkQtApp : public QApplication
-{
-    Q_OBJECT
+class OrkQtApp : public QApplication {
+  Q_OBJECT
 
 public:
-	///////////////////////////////////
-	OrkQtApp( int& argc, char** argv );
-	///////////////////////////////////
+  ///////////////////////////////////
+  OrkQtApp(int& argc, char** argv);
+  ///////////////////////////////////
 
 public slots:
-    void OnTimer();
+  void OnTimer();
 
-    ///////////////////////////////////
+  ///////////////////////////////////
 public:
-
 public:
-
-	QTimer				mIdleTimer;
-	QMainWindow*		mpMainWindow;
-
-
+  QTimer mIdleTimer;
+  QMainWindow* mpMainWindow;
+  opq::opq_ptr_t _mainq;
 };
 
-}}
+}} // namespace ork::tool

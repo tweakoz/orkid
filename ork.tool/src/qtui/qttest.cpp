@@ -7,6 +7,9 @@
 
 #include <orktool/qtui/qtui_tool.h>
 #include <orktool/qtui/qtapp.h>
+#include <ork/kernel/environment.h>
+
+bool ENABLE_PROFILER = false;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -35,6 +38,8 @@
 #include <pkg/ent/editor/edmainwin.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/thread.h>
+
+#include <ork/profiling.inl>
 
 //#define USE_PYTHON
 
@@ -166,6 +171,8 @@ OrkQtApp::OrkQtApp(int& argc, char** argv)
 
   bool bcon = mIdleTimer.connect(&mIdleTimer, SIGNAL(timeout()), this, SLOT(OnTimer()));
 
+  _mainq = ork::opq::mainSerialQueue();
+
   mIdleTimer.setInterval(1);
   mIdleTimer.setSingleShot(false);
   mIdleTimer.start();
@@ -174,8 +181,8 @@ OrkQtApp::OrkQtApp(int& argc, char** argv)
 ///////////////////////////////////////////////////////////////////////////////
 
 void OrkQtApp::OnTimer() {
-  opq::TrackCurrent opqtest(&opq::mainSerialQueue());
-  while (opq::mainSerialQueue().Process())
+  opq::TrackCurrent opqtest(_mainq);
+  while (_mainq->Process())
     ;
 }
 
@@ -194,6 +201,7 @@ struct InputArgs {
 OrkQtApp* gpQtApplication = nullptr;
 
 int BootQtThreadImpl(void* arg_opaq) {
+
 #if !defined(__APPLE__)
   setenv("QT_QPA_PLATFORMTHEME", "gtk2", 1); // qt5 file dialog crashes otherwise...
 // QFont arialFont("Ubuntu Regular", 15);
@@ -202,8 +210,8 @@ int BootQtThreadImpl(void* arg_opaq) {
 
   InputArgs* args = (InputArgs*)arg_opaq;
 
-  auto& mainthreadopq = ork::opq::mainSerialQueue();
-  opq::TrackCurrent ot(&mainthreadopq);
+  auto mainthreadopq = ork::opq::mainSerialQueue();
+  opq::TrackCurrent ot(mainthreadopq);
 
   int iret = 0;
 
@@ -247,22 +255,32 @@ int BootQtThreadImpl(void* arg_opaq) {
 
   iret = gpQtApplication->exec();
 
+  // TODO - we never get here...
+  //  guessing qtapp.exec never returns ?
+
+  OrkAssert(false);
+
   lev2::DrawableBuffer::ClearAndSyncWriters();
 
-  delete paudio;
-  delete gpQtApplication;
+  // delete paudio;
+  // delete gpQtApplication;
 
   gpQtApplication = nullptr;
+
+  OrkAssert(false);
 
   return 0;
 }
 ////////////////////////////////////////////////////////////////////////////////
 int QtTest(int& argc, char** argv, bool bgamemode, bool bmenumode) {
+
 #if defined(USE_PYTHON)
   InitPython();
 #endif
   InputArgs args(argc, argv);
-  return BootQtThreadImpl(&args);
+  int rval = BootQtThreadImpl(&args);
+
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

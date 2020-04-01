@@ -39,12 +39,12 @@ void OuterPickOp(DeferredPickOperationContext* pickctx);
 
 ManipHandler::ManipHandler(SceneEditorBase& editor)
     : SceneEditorVPToolHandler(editor) {
+  _updq = opq::updateSerialQueue();
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
 ui::HandlerResult ManipHandler::DoOnUiEvent(const ui::Event& EV) {
-  auto& updQ = opq::updateSerialQueue();
 
   ui::HandlerResult ret;
 
@@ -73,7 +73,7 @@ ui::HandlerResult ManipHandler::DoOnUiEvent(const ui::Event& EV) {
         break;
 
       if (isleft && false == isright) {
-        opq::Op([&]() { this->mEditor.ClearSelection(); }).QueueSync(updQ);
+        opq::Op([&]() { this->mEditor.ClearSelection(); }).QueueSync(_updq);
       }
 
       DeferredPickOperationContext* pickctx = new DeferredPickOperationContext;

@@ -32,7 +32,7 @@ TEST(gfxanim1) {
   printf("xx<%g %g %g>\n", xx.x, xx.y, xx.z);
   // OrkAssert(false);
 
-  opq::mainSerialQueue().enqueue([&]() {
+  opq::mainSerialQueue()->enqueue([&]() {
     auto targ = GfxEnv::GetRef().loadingContext();
     printf("targ<%p>\n", targ);
     CHECK(targ != nullptr);
@@ -145,5 +145,5 @@ TEST(gfxanim1) {
     delete animinst;
     delete modelinst;
   });
-  opq::mainSerialQueue().drain();
+  opq::mainSerialQueue()->drain();
 }

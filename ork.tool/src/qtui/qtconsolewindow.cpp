@@ -33,7 +33,7 @@ void QtConsoleWindow::Register()
 {
     gPCON = this;
 
-    opq::mainSerialQueue().enqueue([&]() {
+    opq::mainSerialQueue()->enqueue([&]() {
         /*
         //const char* inpname = slave_inp_name;
         const char* outname = python::slave_out_name;
@@ -157,7 +157,7 @@ void console_handler()
 
     /////////////////////
 
-    opq::mainSerialQueue().enqueue([&]() {
+    opq::mainSerialQueue()->enqueue([&]() {
         console_handler();
     });
 }
@@ -250,7 +250,7 @@ void QtConsoleWindow::InputDone( void )
 	//printf( "INPUT<%s>\n", sstr.c_str() );
 	if( sstr.length() )
 	{
-    opq::mainSerialQueue().enqueue([&]() {
+    opq::mainSerialQueue()->enqueue([&]() {
 			  python::context().call(sstr);
 		});
 	}

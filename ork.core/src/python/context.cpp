@@ -102,7 +102,7 @@ void runiter()
 	fflush(fp_pty_out_master);
 	fflush(fp_pty_err_master);
 	int ret = PyRun_InteractiveOneFlags(stdin, "<stdin>", & orkpy_cf );
-	opq::mainSerialQueue().enqueue([&]() {
+	opq::mainSerialQueue()->enqueue([&]() {
 		runiter();
 	});
 }
@@ -205,17 +205,17 @@ void init()
 {
 	gPythonEnabled = true;
 
-	opq::mainSerialQueue().enqueue([&]() {
+	opq::mainSerialQueue()->enqueue([&]() {
 		usleep(1500000);
 		Py_SetProgramName(L"TheMachine");
 		auto& ctx = context();
 
 		PyGILState_STATE gstate = PyGILState_Ensure();
 		PyGILState_Release(gstate);
-		//opq::mainSerialQueue().enqueue([&]() {initst2();});
-		//opq::mainSerialQueue().enqueue([&]() {initpty();});
-		//opq::mainSerialQueue().enqueue([&]() {init_bindings();});
-		//opq::mainSerialQueue().enqueue([&]() {runiter();});
+		//opq::mainSerialQueue()->enqueue([&]() {initst2();});
+		//opq::mainSerialQueue()->enqueue([&]() {initpty();});
+		//opq::mainSerialQueue()->enqueue([&]() {init_bindings();});
+		//opq::mainSerialQueue()->enqueue([&]() {runiter();});
 
 	});
 }

@@ -72,8 +72,8 @@ void init(char** argp) {
   CreationParams.miNumSharedVerts = 4 << 10;
   ork::lev2::GfxEnv::GetRef().PushCreationParams(CreationParams);
 
-  auto& mainthreadopq = ork::opq::mainSerialQueue();
-  ork::opq::TrackCurrent ot(&mainthreadopq);
+  auto mainthreadopq = ork::opq::mainSerialQueue();
+  ork::opq::TrackCurrent ot(mainthreadopq);
 
   //////////////////////////
   // init

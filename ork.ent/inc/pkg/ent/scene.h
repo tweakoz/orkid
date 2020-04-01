@@ -14,6 +14,7 @@
 #include <ork/object/Object.h>
 #include <ork/object/ObjectClass.h>
 #include <ork/kernel/tempstring.h>
+#include <ork/kernel/opq.h>
 #include "componentfamily.h"
 #include <ork/event/Event.h>
 #include <ork/kernel/any.h>
@@ -25,9 +26,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork {
-namespace opq {
-class OperationsQueue;
-}
 class Application;
 
 namespace lev2 {
@@ -102,7 +100,7 @@ public:
   PoolString NewObjectName() const;
 
   void cleanup();
-  void defaultSetup(opq::OperationsQueue& editopq);
+  void defaultSetup(opq::opq_ptr_t editopq);
 
   //////////////////////////////////////////////////////////
 

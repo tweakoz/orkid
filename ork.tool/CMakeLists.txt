@@ -74,6 +74,11 @@ ELSEIF(${UNIX})
     list(APPEND libs rt dl pthread GL Qt5::X11Extras assimp  )
 ENDIF()
 
+IF(PROFILER)
+  list(APPEND libs easy_profiler)
+ENDIF()
+
+
 target_link_libraries(ork_tool PRIVATE ${libs})
 
 ###################################

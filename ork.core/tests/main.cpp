@@ -94,23 +94,30 @@ int main(int argc, char** argv) {
     testdone = true;
   });
   /////////////////////////////////////////////
+  auto mainq   = opq::mainSerialQueue();
+  auto updateq = opq::updateSerialQueue();
+  auto conq    = opq::concurrentQueue();
+  /////////////////////////////////////////////
   ork::Thread updthr("updatethread");
   bool upddone = false;
   updthr.start([&](anyp data) {
-    opq::TrackCurrent opqtest(&opq::updateSerialQueue());
+    opq::TrackCurrent opqtest(updateq);
     while (false == testdone)
-      opq::updateSerialQueue().Process();
+      updateq->Process();
     upddone = true;
   });
   /////////////////////////////////////////////
   while (false == testdone) {
-    opq::TrackCurrent opqtest(&opq::mainSerialQueue());
-    opq::mainSerialQueue().Process();
+    opq::TrackCurrent opqtest(mainq);
+    mainq->Process();
   }
   /////////////////////////////////////////////
 
-  opq::mainSerialQueue().drain();
-  opq::updateSerialQueue().drain();
+  for (int i = 0; i < 10; i++) {
+    mainq->drain();
+    updateq->drain();
+    conq->drain();
+  }
 
   ApplicationStack::Pop();
 

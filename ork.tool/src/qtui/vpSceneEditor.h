@@ -73,6 +73,7 @@ private:
   SceneEditorVP* mpVP;
   bool mbOKTOEXIT;
   bool mbEXITING;
+  ork::opq::opq_ptr_t _updq;
 };
 ///////////////////////////////////////////////////////////////////////////////
 

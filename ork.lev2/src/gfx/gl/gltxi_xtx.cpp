@@ -58,7 +58,7 @@ bool GlTextureInterface::_loadXTXTexture(Texture* ptex, datablockptr_t datablock
     }
     this->_loadXTXTextureMainThreadPart(load_req);
   };
-  opq::mainSerialQueue().enqueue(lamb);
+  opq::mainSerialQueue()->enqueue(lamb);
   ///////////////////////////////////////////////
   return true;
 }

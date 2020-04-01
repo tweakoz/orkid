@@ -19,6 +19,12 @@ add_compile_options(-fPIE -fPIC -fno-common -fno-strict-aliasing -g -Wno-switch-
 
 ##############################
 
+IF(PROFILER)
+  add_compile_options(-DBUILD_WITH_EASY_PROFILER)
+ENDIF()
+
+##############################
+
 set( destinc ${CMAKE_CURRENT_SOURCE_DIR}/ork/inc )
 include_directories(BEFORE ${destinc})
 link_directories(${destlib})

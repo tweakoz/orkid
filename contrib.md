@@ -33,6 +33,6 @@
  * QT5
  * Radix Sort Revisited : Pierre Terdiman
  * tri_stripper: Copyright (C) 2002 Tanguy Fautre
-
+ * EasyProfiler : https://github.com/yse/easy_profiler
 ### Additional Thanks:
  * Santa Cruz Games (RIP)

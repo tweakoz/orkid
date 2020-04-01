@@ -26,7 +26,8 @@ EzApp::EzApp(int& argc, char** argv) {
 #endif
   ApplicationStack::Push(this);
   /////////////////////////////////////////////
-  _trackq = new opq::TrackCurrent(&ork::opq::mainSerialQueue());
+  _mainq  = ork::opq::mainSerialQueue();
+  _trackq = new opq::TrackCurrent(_mainq);
   /////////////////////////////////////////////
   ork::lev2::ClassInit();
   ork::rtti::Class::InitializeClasses();
@@ -62,7 +63,7 @@ struct EzViewport : public ui::Viewport {
       FontMan::gpuInit(drwev.GetTarget());
       drwev.GetTarget()->makeCurrentContext();
       _mainwin->_onGpuInit(drwev.GetTarget());
-      while (ork::opq::mainSerialQueue().Process()) {
+      while (ork::opq::mainSerialQueue()->Process()) {
       }
       _mainwin->_dogpuinit = false;
     }
@@ -147,12 +148,15 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
   _mainWindow->_ctqt->pushRefreshPolicy(RefreshPolicyItem{EREFRESH_WHENDIRTY});
 
   /////////////////////////////////////////////
+  _updq  = ork::opq::updateSerialQueue();
+  _conq  = ork::opq::concurrentQueue();
+  _mainq = ork::opq::mainSerialQueue();
   _updateThread.start([&](anyp data) {
     _update_timer.Start();
     _update_prevtime        = _update_timer.SecsSinceStart();
     _update_timeaccumulator = 0.0;
     ork::SetCurrentThreadName("update");
-    opq::TrackCurrent opqtest(&opq::updateSerialQueue());
+    opq::TrackCurrent opqtest(_updq);
     UpdateData updata;
     double stats_timeaccum = 0;
     double state_numiters  = 0.0;
@@ -181,7 +185,7 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
         }
       }
 
-      opq::updateSerialQueue().Process();
+      opq::updateSerialQueue()->Process();
       usleep(1000);
       sched_yield();
     }
@@ -191,21 +195,21 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
 ///////////////////////////////////////////////////////////////////////////////
 
 OrkEzQtApp::~OrkEzQtApp() {
-  opq::mainSerialQueue().enqueue([this]() { _updatekill = true; });
+  opq::mainSerialQueue()->enqueue([this]() { _updatekill = true; });
   /////////////////////////////////////////////
   while (false == _updatekill) {
-    opq::TrackCurrent opqtest(&opq::mainSerialQueue());
-    opq::mainSerialQueue().Process();
+    opq::TrackCurrent opqtest(_mainq);
+    _mainq->Process();
   }
-  opq::updateSerialQueue().drain();
+  _updq->drain();
   DrawableBuffer::ClearAndSyncWriters();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void OrkEzQtApp::OnTimer() {
-  opq::TrackCurrent opqtest(&opq::mainSerialQueue());
-  while (opq::mainSerialQueue().Process())
+  opq::TrackCurrent opqtest(_mainq);
+  while (_mainq->Process())
     ;
 }
 

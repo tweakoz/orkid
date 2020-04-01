@@ -284,7 +284,7 @@ void Simulation::SlotSceneTopoChanged() {
     this->GetData().AutoLoadAssets();
     this->EnterEditState();
   };
-  opq::updateSerialQueue().enqueue(opq::Op(topo_op));
+  opq::updateSerialQueue()->enqueue(opq::Op(topo_op));
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Simulation::UpdateEntityComponents(const Simulation::ComponentList& components) {
@@ -918,21 +918,22 @@ Entity* Simulation::SpawnDynamicEntity(const ent::EntData* spawn_rec) {
 
 void Simulation::updateThreadTick() {
   auto dbuf = ork::lev2::DrawableBuffer::LockWriteBuffer(7);
-  OrkAssert(dbuf);
-  float frame_rate           = desiredFrameRate();
-  bool externally_fixed_rate = (frame_rate != 0.0f);
-  if (externally_fixed_rate) {
-    lev2::RenderSyncToken syntok;
-    if (lev2::DrawableBuffer::mOfflineUpdateSynchro.try_pop(syntok)) {
-      syntok.mFrameIndex++;
+  if (dbuf) {
+    float frame_rate           = desiredFrameRate();
+    bool externally_fixed_rate = (frame_rate != 0.0f);
+    if (externally_fixed_rate) {
+      lev2::RenderSyncToken syntok;
+      if (lev2::DrawableBuffer::mOfflineUpdateSynchro.try_pop(syntok)) {
+        syntok.mFrameIndex++;
+        this->Update();
+        lev2::DrawableBuffer::mOfflineRenderSynchro.push(syntok);
+      }
+    } else {
       this->Update();
-      lev2::DrawableBuffer::mOfflineRenderSynchro.push(syntok);
+      this->enqueueDrawablesToBuffer(*dbuf);
     }
-  } else {
-    this->Update();
-    this->enqueueDrawablesToBuffer(*dbuf);
+    ork::lev2::DrawableBuffer::UnLockWriteBuffer(dbuf);
   }
-  ork::lev2::DrawableBuffer::UnLockWriteBuffer(dbuf);
 }
 
 ///////////////////////////////////////////////////////////////////////////

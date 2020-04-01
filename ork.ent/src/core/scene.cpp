@@ -454,9 +454,10 @@ void SceneData::cleanup() {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneData::defaultSetup(opq::OperationsQueue& editopq) {
+void SceneData::defaultSetup(opq::opq_ptr_t editopq) {
+  auto updq = opq::updateSerialQueue();
   opq::Op editOP([=]() {
-    auto updlock = opq::updateSerialQueue().scopedLock();
+    auto updlock = updq->scopedLock();
     //////////////////////////////////////////
     // do required stuff
     //////////////////////////////////////////

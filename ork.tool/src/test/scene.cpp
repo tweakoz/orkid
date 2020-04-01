@@ -42,8 +42,8 @@ TEST(SceneManip1)
 	    printf( "DONE\n");
 	};
 
-	opq::updateSerialQueue().enqueue(op);
-	opq::updateSerialQueue().drain();
+	opq::updateSerialQueue()->enqueue(op);
+	opq::updateSerialQueue()->drain();
 
 	//WaitForOpqExit();
 }

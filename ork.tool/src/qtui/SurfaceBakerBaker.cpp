@@ -162,7 +162,7 @@ private:
     UiFarmNode* fn = mJobThread->GetFarmNode();
     if (fn->mProcessViewer) {
       auto lamb = [&]() { fn->mProcessViewer->start(cmdstr.c_str()); };
-      opq::mainSerialQueue().enqueueAndWait(opq::Op(lamb));
+      opq::mainSerialQueue()->enqueueAndWait(opq::Op(lamb));
       return fn->mProcessViewer->wait();
     }
     return -1000;
