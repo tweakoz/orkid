@@ -166,7 +166,7 @@ OrkQtApp::OrkQtApp(int& argc, char** argv)
 
   bool bcon = mIdleTimer.connect(&mIdleTimer, SIGNAL(timeout()), this, SLOT(OnTimer()));
 
-  mIdleTimer.setInterval(5);
+  mIdleTimer.setInterval(1);
   mIdleTimer.setSingleShot(false);
   mIdleTimer.start();
 }

@@ -46,7 +46,7 @@ RenderSyncToken DrawableBuffer::acquireRenderToken() {
   totim.Start();
   while (false == have_token && (totim.SecsSinceStart() < 2.0f)) {
     have_token = lev2::DrawableBuffer::mOfflineRenderSynchro.try_pop(syntok);
-    usleep(1000);
+    usleep(100);
   }
   return syntok;
 }

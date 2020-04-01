@@ -1075,12 +1075,8 @@ void TerrainRenderImpl::gpuUpdate(Context* context) {
   // create and fill in gpu data
   ////////////////////////////////////////////////////////////////
 
-  ork::Timer timer;
-  timer.Start();
   gpuInitTextures(context);
   gpuInitGeometry(context);
-  float runtime = timer.SecsSinceStart();
-  // printf( "runtime<%g>\n", runtime );
 
   _gpuDataDirty = false;
 }
