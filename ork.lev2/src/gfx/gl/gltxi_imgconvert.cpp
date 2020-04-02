@@ -45,18 +45,20 @@ bool GlTextureInterface::_loadImageTexture(Texture* ptex, datablockptr_t src_dat
     basehasher.accumulateString("png2xtx");
     basehasher.accumulateItem(src_datablock->hash());
     basehasher.finish();
-
     uint64_t hashkey = basehasher.result();
     xtx_datablock    = DataBlockCache::findDataBlock(hashkey);
 
-    if (1) { // not xtx_datablock) {
+    if (xtx_datablock) {
+      printf( "GlTextureInterface::_loadImageTexture tex<%p> precompressed!\n", ptex);
+    }
+    else {
       Image img;
       img.initFromInMemoryFile("png", src_datablock->data(), src_datablock->length());
       img._debugName = ptex->_debugName;
       auto cmipchain = img.compressedMipChainBC7();
       xtx_datablock  = std::make_shared<DataBlock>();
       cmipchain.writeXTX(xtx_datablock);
-      // DataBlockCache::setDataBlock(hashkey, xtx_datablock);
+      DataBlockCache::setDataBlock(hashkey, xtx_datablock);
       // OrkAssert(false);
     }
   } else {

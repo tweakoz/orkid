@@ -143,78 +143,91 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
   auto filtex                                                       = std::make_shared<FilteredEnvMap>();
   rawenvmap->_varmap.makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
   ///////////////////////////////////////////////
-  RenderContextFrameData RCFD(targ);
-  int w = rawenvmap->_width;
-  int h = rawenvmap->_height;
+  printf("filterenv-spec tex<%p> hash<0x%zx>\n", rawenvmap, rawenvmap->_contentHash );
+  boost::Crc64 basehasher;
+  basehasher.accumulateString("filterenv-spec-v0");
+  basehasher.accumulateItem<uint64_t>(rawenvmap->_contentHash);
+  basehasher.finish();
+  uint64_t cmipchain_hashkey  = basehasher.result();
+  auto cmipchain_datablock = DataBlockCache::findDataBlock(cmipchain_hashkey);
+  ///////////////////////////////////////////////
+  if( cmipchain_datablock ){
+    printf("filterenv-spec tex<%p> loading precomputed!\n", rawenvmap );
+  }
+  else {
+    RenderContextFrameData RCFD(targ);
+    int w = rawenvmap->_width;
+    int h = rawenvmap->_height;
 
-  int numpix      = w * h;
-  int imip        = 0;
-  float roughness = 0.0f;
-  CompressedImageMipChain::miplevels_t compressed_levels;
-  while (numpix != 0) {
+    int numpix      = w * h;
+    int imip        = 0;
+    float roughness = 0.0f;
+    CompressedImageMipChain::miplevels_t compressed_levels;
+    while (numpix != 0) {
 
-    auto outgroup = std::make_shared<RtGroup>(targ, w, h, 1);
-    auto outbuffr = std::make_shared<RtBuffer>(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA32F, w, h);
-    auto captureb = std::make_shared<CaptureBuffer>();
+      auto outgroup = std::make_shared<RtGroup>(targ, w, h, 1);
+      auto outbuffr = std::make_shared<RtBuffer>(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA32F, w, h);
+      auto captureb = std::make_shared<CaptureBuffer>();
 
-    outgroup->_autoclear = true;
-    filtex->_rtgroup     = outgroup;
-    filtex->_rtbuffer    = outbuffr;
-    outbuffr->_debugName = FormatString("filteredenvmap-specenv-mip%d", imip);
-    outgroup->SetMrt(0, outbuffr.get());
+      outgroup->_autoclear = true;
+      filtex->_rtgroup     = outgroup;
+      filtex->_rtbuffer    = outbuffr;
+      outbuffr->_debugName = FormatString("filteredenvmap-specenv-mip%d", imip);
+      outgroup->SetMrt(0, outbuffr.get());
 
-    printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
-    printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
+      printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
+      printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
 
-    fbi->PushRtGroup(outgroup.get());
-    mtl->bindTechnique(tekFilterSpecMap);
-    mtl->begin(RCFD);
-    ///////////////////////////////////////////////
-    mtl->bindParamMatrix(param_mvp, fmtx4::Identity);
-    mtl->bindParamCTex(param_pfm, rawenvmap);
-    mtl->bindParamFloat(param_ruf, roughness);
-    mtl->commit();
-    dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
-    ///////////////////////////////////////////////
-    mtl->end(RCFD);
-    fbi->PopRtGroup();
+      fbi->PushRtGroup(outgroup.get());
+      mtl->bindTechnique(tekFilterSpecMap);
+      mtl->begin(RCFD);
+      ///////////////////////////////////////////////
+      mtl->bindParamMatrix(param_mvp, fmtx4::Identity);
+      mtl->bindParamCTex(param_pfm, rawenvmap);
+      mtl->bindParamFloat(param_ruf, roughness);
+      mtl->commit();
+      dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
+      ///////////////////////////////////////////////
+      mtl->end(RCFD);
+      fbi->PopRtGroup();
 
-    fbi->capture(*outgroup.get(), 0, captureb.get());
+      fbi->capture(*outgroup.get(), 0, captureb.get());
 
-    if (1) {
-      auto outpath = file::Path::temp_dir() / FormatString("filteredenv-specmap-mip%d.exr", imip);
-      auto out     = ImageOutput::create(outpath.c_str());
-      printf("filterenv write dbgout<%s> <%p>\n", outpath.c_str(), out.get());
-      OrkAssert(out != nullptr);
-      ImageSpec spec(w, h, 4, TypeDesc::FLOAT);
-      out->open(outpath.c_str(), spec);
-      out->write_image(TypeDesc::FLOAT, captureb->_data);
-      out->close();
+      if (1) {
+        auto outpath = file::Path::temp_dir() / FormatString("filteredenv-specmap-mip%d.exr", imip);
+        auto out     = ImageOutput::create(outpath.c_str());
+        printf("filterenv write dbgout<%s> <%p>\n", outpath.c_str(), out.get());
+        OrkAssert(out != nullptr);
+        ImageSpec spec(w, h, 4, TypeDesc::FLOAT);
+        out->open(outpath.c_str(), spec);
+        out->write_image(TypeDesc::FLOAT, captureb->_data);
+        out->close();
+      }
+
+      Image im;
+      im.initWithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
+      CompressedImage cim;
+      im.compressBC7(cim);
+      compressed_levels.push_back(cim);
+
+      rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtGroup>>(FormatString("alt-tex-specenv-group-mip%d", imip))   = outgroup;
+      rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtBuffer>>(FormatString("alt-tex-specenv-buffer-mip%d", imip)) = outbuffr;
+      w >>= 1;
+      h >>= 1;
+      roughness += 0.1f;
+      numpix = w * h;
+      imip++;
     }
 
-    Image im;
-    im.initWithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
-    CompressedImage cim;
-    im.compressBC7(cim);
-    compressed_levels.push_back(cim);
-
-    rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtGroup>>(FormatString("alt-tex-specenv-group-mip%d", imip))   = outgroup;
-    rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtBuffer>>(FormatString("alt-tex-specenv-buffer-mip%d", imip)) = outbuffr;
-    w >>= 1;
-    h >>= 1;
-    roughness += 0.1f;
-    numpix = w * h;
-    imip++;
+    CompressedImageMipChain mipchain;
+    mipchain.initWithPrecompressedMipLevels(compressed_levels);
+    cmipchain_datablock = std::make_shared<DataBlock>();
+    mipchain.writeXTX(cmipchain_datablock);
+    DataBlockCache::setDataBlock(cmipchain_hashkey, cmipchain_datablock);
   }
-
-  CompressedImageMipChain mipchain;
-  mipchain.initWithPrecompressedMipLevels(compressed_levels);
-  auto xtx_datablock = std::make_shared<DataBlock>();
-  mipchain.writeXTX(xtx_datablock);
-
   auto alt_tex        = new Texture;
   alt_tex->_debugName = "filtenvmap-processed-specular";
-  txi->LoadTexture(alt_tex, xtx_datablock);
+  txi->LoadTexture(alt_tex, cmipchain_datablock);
 
   rawenvmap->_varmap.makeValueForKey<Texture*>("alt-tex-specenv") = alt_tex;
 
@@ -255,82 +268,96 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
   auto filtex                                                       = std::make_shared<FilteredEnvMap>();
   rawenvmap->_varmap.makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
   ///////////////////////////////////////////////
-  RenderContextFrameData RCFD(targ);
-  int w = rawenvmap->_width;
-  int h = rawenvmap->_height;
+  printf("filterenv-diff tex<%p> hash<0x%zx>\n", rawenvmap, rawenvmap->_contentHash );
+  boost::Crc64 basehasher;
+  basehasher.accumulateString("filterenv-diff-v0");
+  basehasher.accumulateItem<uint64_t>(rawenvmap->_contentHash);
+  basehasher.finish();
+  uint64_t cmipchain_hashkey  = basehasher.result();
+  auto cmipchain_datablock = DataBlockCache::findDataBlock(cmipchain_hashkey);
+  ///////////////////////////////////////////////
+  if( cmipchain_datablock ){
+    printf("filterenv-diff tex<%p> loading precomputed!\n", rawenvmap );
+  }
+  else {
+    RenderContextFrameData RCFD(targ);
+    int w = rawenvmap->_width;
+    int h = rawenvmap->_height;
 
-  int numpix      = w * h;
-  int imip        = 0;
-  float roughness = 1.0f;
-  std::map<int, std::shared_ptr<CaptureBuffer>> cap4mip;
-  CompressedImageMipChain::miplevels_t compressed_levels;
-  while (numpix != 0) {
+    int numpix      = w * h;
+    int imip        = 0;
+    float roughness = 1.0f;
+    std::map<int, std::shared_ptr<CaptureBuffer>> cap4mip;
+    CompressedImageMipChain::miplevels_t compressed_levels;
+    while (numpix != 0) {
 
-    auto outgroup        = std::make_shared<RtGroup>(targ, w, h, 1);
-    auto outbuffr        = std::make_shared<RtBuffer>(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA32F, w, h);
-    auto captureb        = std::make_shared<CaptureBuffer>();
-    outgroup->_autoclear = true;
+      auto outgroup        = std::make_shared<RtGroup>(targ, w, h, 1);
+      auto outbuffr        = std::make_shared<RtBuffer>(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA32F, w, h);
+      auto captureb        = std::make_shared<CaptureBuffer>();
+      outgroup->_autoclear = true;
 
-    filtex->_rtgroup     = outgroup;
-    filtex->_rtbuffer    = outbuffr;
-    outbuffr->_debugName = FormatString("filteredenvmap-diffenv-mip%d", imip);
-    // outbuffer->
-    outgroup->SetMrt(0, outbuffr.get());
+      filtex->_rtgroup     = outgroup;
+      filtex->_rtbuffer    = outbuffr;
+      outbuffr->_debugName = FormatString("filteredenvmap-diffenv-mip%d", imip);
+      // outbuffer->
+      outgroup->SetMrt(0, outbuffr.get());
 
-    /// printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
-    // printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
+      /// printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
+      // printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
 
-    fbi->PushRtGroup(outgroup.get());
-    mtl->bindTechnique(tekFilterDiffMap);
-    mtl->begin(RCFD);
-    ///////////////////////////////////////////////
-    mtl->bindParamMatrix(param_mvp, fmtx4::Identity);
-    mtl->bindParamCTex(param_pfm, rawenvmap);
-    mtl->bindParamFloat(param_ruf, roughness);
-    mtl->commit();
-    dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
-    ///////////////////////////////////////////////
-    mtl->end(RCFD);
-    fbi->PopRtGroup();
+      fbi->PushRtGroup(outgroup.get());
+      mtl->bindTechnique(tekFilterDiffMap);
+      mtl->begin(RCFD);
+      ///////////////////////////////////////////////
+      mtl->bindParamMatrix(param_mvp, fmtx4::Identity);
+      mtl->bindParamCTex(param_pfm, rawenvmap);
+      mtl->bindParamFloat(param_ruf, roughness);
+      mtl->commit();
+      dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
+      ///////////////////////////////////////////////
+      mtl->end(RCFD);
+      fbi->PopRtGroup();
 
-    fbi->capture(*outgroup.get(), 0, captureb.get());
+      fbi->capture(*outgroup.get(), 0, captureb.get());
 
-    if (1) {
-      auto outpath = file::Path::temp_dir() / FormatString("filteredenv-diffmap-mip%d.exr", imip);
-      auto out     = ImageOutput::create(outpath.c_str());
-      // printf("filterenv write dbgout<%s> <%p>\n", outpath.c_str(), out.get());
-      OrkAssert(out != nullptr);
-      ImageSpec spec(w, h, 4, TypeDesc::FLOAT);
-      out->open(outpath.c_str(), spec);
-      out->write_image(TypeDesc::FLOAT, captureb->_data);
-      out->close();
+      if (1) {
+        auto outpath = file::Path::temp_dir() / FormatString("filteredenv-diffmap-mip%d.exr", imip);
+        auto out     = ImageOutput::create(outpath.c_str());
+        // printf("filterenv write dbgout<%s> <%p>\n", outpath.c_str(), out.get());
+        OrkAssert(out != nullptr);
+        ImageSpec spec(w, h, 4, TypeDesc::FLOAT);
+        out->open(outpath.c_str(), spec);
+        out->write_image(TypeDesc::FLOAT, captureb->_data);
+        out->close();
+      }
+
+      Image im;
+      im.initWithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
+      CompressedImage cim;
+      im.compressBC7(cim);
+      compressed_levels.push_back(cim);
+
+      rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtGroup>>(FormatString("alt-tex-diffenv-group-mip%d", imip))   = outgroup;
+      rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtBuffer>>(FormatString("alt-tex-diffenv-buffer-mip%d", imip)) = outbuffr;
+
+      cap4mip[imip] = captureb;
+      w >>= 1;
+      h >>= 1;
+      roughness += 0.1f;
+      numpix = w * h;
+      imip++;
     }
 
-    Image im;
-    im.initWithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
-    CompressedImage cim;
-    im.compressBC7(cim);
-    compressed_levels.push_back(cim);
-
-    rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtGroup>>(FormatString("alt-tex-diffenv-group-mip%d", imip))   = outgroup;
-    rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtBuffer>>(FormatString("alt-tex-diffenv-buffer-mip%d", imip)) = outbuffr;
-
-    cap4mip[imip] = captureb;
-    w >>= 1;
-    h >>= 1;
-    roughness += 0.1f;
-    numpix = w * h;
-    imip++;
+    CompressedImageMipChain cmipchain;
+    cmipchain.initWithPrecompressedMipLevels(compressed_levels);
+    cmipchain_datablock = std::make_shared<DataBlock>();
+    cmipchain.writeXTX(cmipchain_datablock);
+    DataBlockCache::setDataBlock(cmipchain_hashkey, cmipchain_datablock);
   }
-
-  CompressedImageMipChain mipchain;
-  mipchain.initWithPrecompressedMipLevels(compressed_levels);
-  auto xtx_datablock = std::make_shared<DataBlock>();
-  mipchain.writeXTX(xtx_datablock);
 
   auto alt_tex        = new Texture;
   alt_tex->_debugName = "filtenvmap-processed-diffuse";
-  txi->LoadTexture(alt_tex, xtx_datablock);
+  txi->LoadTexture(alt_tex, cmipchain_datablock);
   rawenvmap->_varmap.makeValueForKey<Texture*>("alt-tex-diffenv") = alt_tex;
 
   targ->debugPopGroup();

@@ -220,6 +220,7 @@ struct Texture {
   int _height                   = 0;
   int _depth                    = 0;
   uint64_t _flags               = 0;
+  uint64_t _contentHash = 0;
   MipChain* _chain              = nullptr;
   mutable bool _dirty           = true;
   const void* _data             = nullptr;

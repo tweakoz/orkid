@@ -273,12 +273,12 @@ DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
         datablock->length());
     // targ->beginFrame();
     boost::Crc64 hasher;
-    hasher.accumulateString("irradiancemap");
+    hasher.accumulateString("irradiancemap-v0");
     hasher.accumulateItem<uint64_t>(datablock->hash()); // data content
     hasher.finish();
     uint64_t cachekey = hasher.result();
     auto irrmapdblock = DataBlockCache::findDataBlock(cachekey);
-    if (0) { // irrmapdblock) {
+    if (irrmapdblock) {
       // found in cache
       datablock = irrmapdblock;
     } else {

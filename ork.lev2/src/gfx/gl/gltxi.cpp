@@ -72,6 +72,9 @@ bool GlTextureInterface::LoadTexture(Texture* ptex, datablockptr_t datablock) {
     ok = _loadDDSTexture(ptex, datablock);
   else
     ok = _loadImageTexture(ptex, datablock);
+
+  ptex->_contentHash = datablock->hash();
+
   return ok;
 }
 
