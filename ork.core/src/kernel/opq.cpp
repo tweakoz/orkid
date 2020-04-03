@@ -7,6 +7,7 @@
 #include <ork/kernel/opq.h>
 #include <ork/kernel/csystem.h>
 #include <ork/kernel/string/string.h>
+#include <ork/kernel/string/deco.inl>
 #include <ork/pch.h>
 #include <ork/util/Context.hpp>
 
@@ -47,17 +48,28 @@ void CompletionGroup::enqueue(const ork::void_lambda_t& the_op) {
   auto wrapped = [=]() mutable {
     the_op();
     int num_pending = this->_numpending.fetch_add(-1);
-    printf("num_pending<%d>\n", num_pending);
+
+    // todo hook up to editor UI somehow..
+
+    auto name_str = deco::decorate(fvec3(1,0.5,0.1),_q->_name);
+    auto grpn_str = deco::decorate(fvec3(1,0.3,0.0),_name);
+    auto pend_str = deco::format(fvec3(1,1,0.1), "%d",num_pending);
+    printf("opq<%s> CompletionGroup<%s> ops pending<%s>     \r", 
+           name_str.c_str(), 
+           grpn_str.c_str(), 
+           pend_str.c_str());
   };
   _q->enqueue(wrapped);
 }
 void CompletionGroup::join() {
+  // todo implement with something better than sleep
   while (_numpending.load()) {
     ::usleep(1000);
   }
 }
-CompletionGroup::CompletionGroup(opq_ptr_t q)
-    : _q(q) {
+CompletionGroup::CompletionGroup(opq_ptr_t q,std::string name)
+    : _q(q)
+    , _name(name) {
   _numpending.store(0);
 }
 CompletionGroup::~CompletionGroup() {
@@ -224,7 +236,7 @@ bool OperationsQueue::Process() {
   // find a group with pending ops
   ///////////////////////////////////////
 
-  ConcurrencyGroup* pexecgrp = nullptr;
+  concurrency_group_ptr_t pexecgrp = nullptr;
 
   _linearconcurrencygroups.atomicOp([&pexecgrp](concgroupvect_t& cgv) {
     size_t numgroups   = cgv.size();
@@ -330,9 +342,9 @@ void OperationsQueue::drain() {
   for (auto g : copy_cgv)
     g->drain();
 }
-///////////////////////////////////////////////////////////////////////////
-ConcurrencyGroup* OperationsQueue::createConcurrencyGroup(const char* pname) {
-  ConcurrencyGroup* pgrp = new ConcurrencyGroup(*this, pname);
+/////////////////////////////////////////////////////////////////////////////
+concurrency_group_ptr_t OperationsQueue::createConcurrencyGroup(const char* pname) {
+  auto pgrp = std::make_shared<ConcurrencyGroup>(*this, pname);
   _concurrencygroups.insert(pgrp);
   _linearconcurrencygroups.atomicOp([pgrp](concgroupvect_t& cgv) { cgv.push_back(pgrp); });
   mGroupCounter++;
@@ -395,10 +407,6 @@ OperationsQueue::~OperationsQueue() {
   /////////////////////////////////
   // trash the groups
   /////////////////////////////////
-
-  for (auto& it : _concurrencygroups) {
-    delete it;
-  }
   _concurrencygroups.clear();
   _linearconcurrencygroups.atomicOp([](concgroupvect_t& cgv) { cgv.clear(); });
   /////////////////////////////////

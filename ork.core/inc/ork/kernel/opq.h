@@ -119,6 +119,9 @@ struct ConcurrencyGroup {
   size_t _limit_maxrunlength;
 };
 
+using concurrency_group_ptr_t = std::shared_ptr<ConcurrencyGroup>;
+//using concurrency_group_ptr_t = ConcurrencyGroup*;
+
 //////////////////////////////////////////////////////////////////////
 // CompletionGroup
 //  opq synchronization primitive which allows to batch together a set of
@@ -141,11 +144,12 @@ private:
     return std::unique_ptr<CompletionGroup>(new CompletionGroup(std::forward<Args>(args)...));
   }
 
-  CompletionGroup(opq_ptr_t q);
+  CompletionGroup(opq_ptr_t q,std::string name ="");
   CompletionGroup(const CompletionGroup& oth) = delete;
   CompletionGroup& operator=(const CompletionGroup&) = delete;
 
   opq_ptr_t _q;
+  std::string _name;
   std::atomic<int> _numpending;
 };
 
@@ -173,7 +177,7 @@ struct OpqThread : public ork::Thread {
 };
 //////////////////////////////////////////////////////////////////////
 
-struct OperationsQueue {
+struct OperationsQueue : public std::enable_shared_from_this<OperationsQueue>{
   OperationsQueue(int inumthreads, const char* name = "DefOpQ");
   ~OperationsQueue();
 
@@ -196,20 +200,20 @@ struct OperationsQueue {
   void _internalBeginLock();
   void _internalEndLock();
 
-  ConcurrencyGroup* createConcurrencyGroup(const char* pname);
+  concurrency_group_ptr_t createConcurrencyGroup(const char* pname);
 
   bool Process();
 
   typedef std::set<OpqThread*> threadset_t;
 
-  ConcurrencyGroup* _defaultConcurrencyGroup;
+  concurrency_group_ptr_t _defaultConcurrencyGroup;
   ork::atomic<int> mGroupCounter;
   LockedResource<threadset_t> _threads;
   OpqSynchro mSynchro;
 
-  typedef std::vector<ConcurrencyGroup*> concgroupvect_t;
+  typedef std::vector<concurrency_group_ptr_t> concgroupvect_t;
 
-  std::set<ConcurrencyGroup*> _concurrencygroups;
+  std::set<concurrency_group_ptr_t> _concurrencygroups;
   LockedResource<concgroupvect_t> _linearconcurrencygroups;
 
   ork::semaphore mSemaphore;

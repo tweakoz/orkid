@@ -62,7 +62,7 @@ Texture* PBRMaterial::brdfIntegrationMap(Context* targ) {
       // printf("Begin Compute brdfIntegrationMap\n");
       dblock        = std::make_shared<DataBlock>();
       float* texels = dblock->allocateItems<float>(DIM * DIM * 4);
-      auto group    = opq::createCompletionGroup(opq::concurrentQueue());
+      auto group    = opq::createCompletionGroup(opq::concurrentQueue(),"BRDFMAPGEN");
       for (int y = 0; y < DIM; y++) {
         float fy  = float(y) / float(DIM - 1);
         int ybase = y * DIM;

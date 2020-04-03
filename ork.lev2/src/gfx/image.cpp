@@ -8,6 +8,7 @@
 #include <ork/pch.h>
 #include <ork/file/file.h>
 #include <ork/kernel/spawner.h>
+#include <ork/kernel/opq.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/lev2/gfx/image.h>
 
@@ -215,21 +216,37 @@ void Image::compressBC7(CompressedImage& imgout) const {
   imgout._numcomponents  = 4;
   //////////////////////////////////////////////////////////////////
   imgout._data = std::make_shared<DataBlock>();
-  auto dest    = (uint8_t*)imgout._data->allocateBlock(imgout._blocked_width * imgout._blocked_height);
-  bc7_enc_settings settings;
-  GetProfile_alpha_basic(&settings);
 
   Image src_as_rgba;
   convertToRGBA(src_as_rgba);
 
-  rgba_surface surface;
-  surface.width  = _width;
-  surface.height = _height;
-  surface.stride = _width * 4;
-  surface.ptr    = (uint8_t*)src_as_rgba._data->data();
   ork::Timer timer;
   timer.Start();
-  CompressBlocksBC7(&surface, dest, &settings);
+  ////////////////////////////////////////
+  // parallel ISPC-BC7 compressor
+  ////////////////////////////////////////
+  auto opgroup = opq::createCompletionGroup(opq::concurrentQueue(),"BC7ENC");
+  auto src_base = (uint8_t*) src_as_rgba._data->data();
+  auto dst_base = (uint8_t*)imgout._data->allocateBlock(imgout._blocked_width * imgout._blocked_height);
+  size_t src_stride = _width * 4;
+  size_t dst_stride = _width;
+  for( int y=0; y<_height; y+=4 ){
+    opgroup->enqueue([=](){
+      bc7_enc_settings settings;
+      GetProfile_alpha_basic(&settings);
+      rgba_surface surface;
+      surface.width  = _width;
+      surface.height = 4;
+      surface.stride = src_stride;
+      surface.ptr    = src_base;
+      CompressBlocksBC7(&surface, dst_base, &settings);
+    });
+    src_base += src_stride*4;
+    dst_base += dst_stride*4;
+  }
+  opgroup->join();
+  ////////////////////////////////////////
+
   float time = timer.SecsSinceStart();
   float MPPS = float(_width * _height) * 1e-6 / time;
   deco::printf(_image_deco, "// compression time<%g> MPPS<%g>\n", time, MPPS);
