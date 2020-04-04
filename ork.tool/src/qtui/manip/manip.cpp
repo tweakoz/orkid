@@ -87,29 +87,9 @@ void ManipManager::Describe() {
 }
 
 ManipManager::ManipManager()
-    : mpTXManip(0)
-    , mpTYManip(0)
-    , mpTZManip(0)
-    , mpTXYManip(0)
-    , mpTXZManip(0)
-    , mpTYZManip(0)
-    , mpRXManip(0)
-    , mpRYManip(0)
-    , mpRZManip(0)
-    , mpCurrentManip(0)
-    , mpHoverManip(0)
-    , meManipMode(EMANIPMODE_WORLD_TRANS)
+    : meManipMode(EMANIPMODE_WORLD_TRANS)
     , meManipEnable(EMANIPMODE_OFF)
-    , mbDoComponents(false)
-    , mfManipScale(1.0f)
-    , mfBaseManipSize(100.0f)
-    , mpCurrentInterface(0)
-    , mpCurrentObject(0)
-    , mbWorldTrans(false)
-    , mbGridSnap(false)
     , meUIMode(EUIMODE_STD)
-    , mDualAxis(false)
-    , mfViewScale(1.0f)
     , ConstructAutoSlot(ObjectDeSelected)
     , ConstructAutoSlot(ObjectSelected)
     , ConstructAutoSlot(ObjectDeleted)
@@ -488,6 +468,7 @@ void ManipManager::Setup(ork::lev2::IRenderer* prend) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ManipManager::DrawManip(Manip* pmanip, Context* pTARG) {
+
   if (!pmanip)
     return;
 
@@ -545,7 +526,6 @@ void ManipManager::DrawCurrentManipSet(Context* pTARG) {
 static void
 ManipRenderCallback(ork::lev2::RenderContextInstData& rcid, ork::lev2::Context* targ, const ork::lev2::CallbackRenderable* pren) {
   ManipManager* pmanipman = pren->GetUserData0().Get<ManipManager*>();
-  pmanipman->SetDrawMode(0);
   pmanipman->DrawCurrentManipSet(targ);
 }
 

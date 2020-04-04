@@ -858,7 +858,7 @@ void SceneEditorVP::DrawManip(lev2::CompositorDrawData& CDD, ork::lev2::Context*
         fvec3 RightVector;
         these_cam_mats->GetPixelLengthVectors(Pos, VP, UpVector, RightVector);
         float rscale = RightVector.Mag(); // float(100.0f);
-        // printf( "OUTERmanip rscale<%f>\n", rscale );
+        //printf( "OUTERmanip rscale<%f>\n", rscale );
 
         static float fRSCALE = 1.0f;
 
@@ -874,8 +874,6 @@ void SceneEditorVP::DrawManip(lev2::CompositorDrawData& CDD, ork::lev2::Context*
         ///////////////////////////////////////
 
         ManipManager().Setup(GetRenderer());
-        // ManipManager().Queue(GetRenderer());
-        ManipManager().SetDrawMode(0);
         ManipManager().DrawCurrentManipSet(pOutputTarget);
 
         GetRenderer()->setContext(pOutputTarget);

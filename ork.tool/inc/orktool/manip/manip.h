@@ -253,39 +253,6 @@ enum EManipEnable {
   EMANIPMODE_ON,
 };
 
-/*class GfxMaterialManip : public GfxMaterial {
-  ManipManager& mManager;
-
-public:
-  GfxMaterialManip(Context*, ManipManager& mgr);
-  ~GfxMaterialManip() final{};
-  void Init(Context* pTarg) final;
-
-  int BeginBlock(Context* pTarg, const RenderContextInstData& MatCtx) final;
-  void EndBlock(Context* pTarg) final;
-  void Update(void) final {
-  }
-  bool BeginPass(Context* pTarg, int iPass = 0) final;
-  void EndPass(Context* pTarg) final;
-  void UpdateMVPMatrix(Context* pTARG) final;
-
-protected:
-  FxShader* hModFX;
-  const FxShaderTechnique* hTekStd;
-  const FxShaderTechnique* hTekLuc;
-  const FxShaderTechnique* hTekPick;
-
-  // const FxShaderTechnique*	hTekCurrent;
-
-  const FxShaderParam* hMVP;
-  const FxShaderParam* hTEX;
-  const FxShaderParam* hCOLOR;
-
-  fvec4 mColor;
-
-  bool mbNoDepthTest;
-};*/
-
 ////////////////////////////////////////////////////////////////////////////////
 
 class ManipManager : public ork::AutoConnector {
@@ -434,64 +401,52 @@ public:
   }
   float CalcViewScale(float fW, float fH, const CameraMatrices* camdat) const;
 
-  void SetDrawMode(int imode) {
-    miDrawMode = imode;
-  }
-  int GetDrawMode() const {
-    return miDrawMode;
-  }
   void materialBegin(Context* ctx);
   void materialEnd(Context* ctx);
 
-  bool mbWorldTrans;
-  bool mbGridSnap;
+  FreestyleMaterial* _material = nullptr;
+  const FxShaderTechnique* _tek_modcolor = nullptr;
+  const FxShaderParam* _par_modcolor = nullptr;
+  const FxShaderParam* _par_mvp = nullptr;
+  Manip* mpTXManip = nullptr;
+  Manip* mpTYManip = nullptr;
+  Manip* mpTZManip = nullptr;
+  Manip* mpTXYManip = nullptr;
+  Manip* mpTXZManip = nullptr;
+  Manip* mpTYZManip = nullptr;
+  Manip* mpRXManip = nullptr;
+  Manip* mpRYManip = nullptr;
+  Manip* mpRZManip = nullptr;
+  Manip* mpCurrentManip = nullptr;
+  Manip* mpHoverManip = nullptr;
+  UiCamera* mpActiveCamera = nullptr;
+  IManipInterface* mpCurrentInterface = nullptr;
+  Object* mpCurrentObject = nullptr;
 
-  bool mDualAxis;
+  bool mbWorldTrans = false;
+  bool mbGridSnap = false;
+  bool mDualAxis = false;
+  bool mbDoComponents = false;
 
-  TransformNode mParentTransform;
+  float mfViewScale = 1.0f;
+  f32 mfManipScale = 1.0f;
+  float mfBaseManipSize = 100.0f;
+  float mObjScale = 1.0f;
+  float mObjInvScale = 1.0f;
 
   RenderContextInstData _RCID;
-  FreestyleMaterial* _material;
-  const FxShaderTechnique* _tek_modcolor;
-  const FxShaderParam* _par_modcolor;
-  const FxShaderParam* _par_mvp;
-  Manip* mpTXManip;
-  Manip* mpTYManip;
-  Manip* mpTZManip;
-  Manip* mpTXYManip;
-  Manip* mpTXZManip;
-  Manip* mpTYZManip;
-  Manip* mpRXManip;
-  Manip* mpRYManip;
-  Manip* mpRZManip;
-  Manip* mpCurrentManip;
-  Manip* mpHoverManip;
+
+  TransformNode mParentTransform;
   EManipMode meManipMode;
   EManipEnable meManipEnable;
-  float mfViewScale;
-  int miDrawMode;
 
   ManipHandler mManipHandler;
-  UiCamera* mpActiveCamera;
 
   fvec4 mPickCenter;
   fvec4 mPickAccum;
 
-  bool mbDoComponents;
-
-  f32 mfManipScale;
-
-  // float				mfGridSnap;
-  float mfBaseManipSize;
-
-  IManipInterface* mpCurrentInterface;
-  Object* mpCurrentObject;
-
   TransformNode mOldTransform;
   TransformNode mCurTransform;
-
-  float mObjScale;
-  float mObjInvScale;
 
   Grid3d mGrid;
 };
