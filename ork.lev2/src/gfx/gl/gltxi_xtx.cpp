@@ -81,6 +81,7 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
   for (int imip = 0; imip < inummips; imip++) {
     auto& level = req._cmipchain->_levels[imip];
     printf("mip<%d> w<%ld> h<%ld> len<%zu>\n", imip, level._width, level._height, level._data->length());
+    # if ! defined(__APPLE__)
     glCompressedTexImage2D( //
         GL_TEXTURE_2D,      //
         imip,               //
@@ -90,6 +91,7 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
         0,
         level._data->length(),
         level._data->data());
+    #endif
     GL_ERRORCHECK();
   }
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
