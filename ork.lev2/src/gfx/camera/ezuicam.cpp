@@ -65,10 +65,10 @@ struct UiCamPrivate {
   }
   void gpuUpdate(Context* ctx){
     if( _doGpuInit ){
-      auto shaderpath = file::Path("orkshader://solid");
+      auto shaderpath = file::Path("orkshader://manip");
       _material->gpuInit(ctx,shaderpath);
-      _material->setMvpParams("MatMVP","MatMVPL","MatMVPR");
-      _tek = _material->technique("vtxcolor");
+      _material->setMvpParams("mvp","mvp","mvp");
+      _tek = _material->technique("std");
       _doGpuInit = false;
     }
   }
@@ -109,7 +109,7 @@ EzUiCam::EzUiCam()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void EzUiCam::draw(Context* context) {
+void EzUiCam::draw(Context* context) const {
   extern fvec4 TRayN;
   extern fvec4 TRayF;
 

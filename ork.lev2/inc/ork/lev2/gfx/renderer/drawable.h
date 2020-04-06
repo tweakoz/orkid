@@ -321,7 +321,8 @@ public:
 class CallbackDrawable : public Drawable {
   RttiDeclareAbstract(CallbackDrawable, Drawable);
 
-  typedef void (*Q2LCBType)(DrawableBufItem& cdb);
+  using Q2LCBType = void(DrawableBufItem& cdb);
+  using Q2LLambdaType = std::function<void(DrawableBufItem&)>;
 
 public:
   CallbackDrawable(DrawableOwner* owner);
@@ -333,8 +334,11 @@ public:
   void SetRenderCallback(lev2::CallbackRenderable::cbtype_t cb) {
     mRenderCallback = cb;
   }
-  void SetenqueueOnLayerCallback(Q2LCBType cb) {
-    menqueueOnLayerCallback = cb;
+  void setEnqueueOnLayerCallback(Q2LCBType cb) {
+    _enqueueOnLayerCallback = cb;
+  }
+  void setLambda(Q2LLambdaType cb) {
+    _enqueueOnLayerLambda = cb;
   }
   U32 GetSortKey() const {
     return mSortKey;
@@ -348,7 +352,8 @@ public:
 private:
   ICallbackDrawableDataDestroyer* mDataDestroyer;
   lev2::CallbackRenderable::cbtype_t mRenderCallback;
-  Q2LCBType menqueueOnLayerCallback;
+  Q2LCBType* _enqueueOnLayerCallback;
+  Q2LLambdaType _enqueueOnLayerLambda;
   U32 mSortKey;
 };
 

@@ -306,7 +306,7 @@ CallbackDrawable::CallbackDrawable(DrawableOwner* pent)
     : Drawable()
     , mSortKey(4)
     , mRenderCallback(0)
-    , menqueueOnLayerCallback(0)
+    , _enqueueOnLayerCallback(0)
     , mDataDestroyer(0) {
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -315,7 +315,7 @@ CallbackDrawable::~CallbackDrawable() {
     mDataDestroyer->Destroy();
   }
   mDataDestroyer          = 0;
-  menqueueOnLayerCallback = 0;
+  _enqueueOnLayerCallback = 0;
   mRenderCallback         = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -326,8 +326,11 @@ void CallbackDrawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBuf
 
   DrawableBufItem& cdb = buffer.Queue(xfdata, this);
   cdb.mUserData0       = GetUserDataA();
-  if (menqueueOnLayerCallback) {
-    menqueueOnLayerCallback(cdb);
+  if (_enqueueOnLayerCallback) {
+    _enqueueOnLayerCallback(cdb);
+  }
+  if (_enqueueOnLayerLambda) {
+    _enqueueOnLayerLambda(cdb);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

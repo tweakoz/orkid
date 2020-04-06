@@ -174,7 +174,7 @@ void GridArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
   pdrw->SetUserDataA(ap);
 
   pdrw->SetRenderCallback(impl::RenderCallback);
-  pdrw->SetenqueueOnLayerCallback(impl::enqueueOnLayerCallback);
+  pdrw->setEnqueueOnLayerCallback(impl::enqueueOnLayerCallback);
 
   mainSerialQueue()->enqueue([pimpl]() {
     auto ctx = lev2::GfxEnv::GetRef().loadingContext();

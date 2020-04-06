@@ -99,7 +99,6 @@ bool CompositingImpl::IsEnabled() const {
 
 bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   EASY_BLOCK("assemble-ci");
-  bool rval                          = false;
   auto& ddprops                      = drawdata._properties;
   auto the_renderer                  = drawdata.mFrameRenderer;
   lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
@@ -126,51 +125,39 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   // Lock Drawable Buffer
   /////////////////////////////////
 
-  const DrawableBuffer* DB = nullptr;
-
-  {
-    EASY_BLOCK("acquireDB");
-    DB = DrawableBuffer::acquireReadDB(7); // mDbLock.Aquire(7);
-  }
-  RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
-
   int primarycamindex = ddprops["primarycamindex"_crcu].Get<int>();
   int cullcamindex    = ddprops["cullcamindex"_crcu].Get<int>();
+  auto DB    = ddprops["DB"_crcu].Get<const DrawableBuffer*>();
 
-  if (DB) {
-    EASY_BLOCK("haveDB");
 
-    /////////////////////////////////////////////////////////////////////////////
-    // default camera selection
-    //  todo - create actual camera mgr and select default camera there
-    /////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
+  // default camera selection
+  //  todo - create actual camera mgr and select default camera there
+  /////////////////////////////////////////////////////////////////////////////
 
-    auto spncam = (CameraData*)DB->cameraData("spawncam"_pool);
+  auto spncam = (CameraData*)DB->cameraData("spawncam"_pool);
 
-    target->debugMarker(FormatString("spncam<%p>", spncam));
+  target->debugMarker(FormatString("spncam<%p>", spncam));
 
-    if (spncam) {
-      (*_defaultCameraMatrices) = spncam->computeMatrices(aspectratio);
-    }
-
-    target->debugMarker(FormatString("defcammtx<%p>", _defaultCameraMatrices));
-    ddprops["defcammtx"_crcu].Set<const CameraMatrices*>(_defaultCameraMatrices);
-
-    if (spncam and spncam->getEditorCamera()) {
-      // spncam->computeMatrices(CAMCCTX);
-      // l2cam->_camcamdata.BindContext(target);
-      //_tempcamdat = l2cam->mCameraData;
-      target->debugMarker(FormatString("seleditcam<%p>", spncam));
-      ddprops["seleditcam"_crcu].Set<const CameraData*>(spncam);
-    }
-
-    /////////////////////////////////////////////////////////////////////////////
-
-    DB->invokePreRenderCallbacks(RCFD);
-    rval = _compcontext.assemble(drawdata);
-    DrawableBuffer::releaseReadDB(DB); // mDbLock.Aquire(7);
+  if (spncam) {
+    (*_defaultCameraMatrices) = spncam->computeMatrices(aspectratio);
   }
-  return rval;
+
+  target->debugMarker(FormatString("defcammtx<%p>", _defaultCameraMatrices));
+  ddprops["defcammtx"_crcu].Set<const CameraMatrices*>(_defaultCameraMatrices);
+
+  if (spncam and spncam->getEditorCamera()) {
+    // spncam->computeMatrices(CAMCCTX);
+    // l2cam->_camcamdata.BindContext(target);
+    //_tempcamdat = l2cam->mCameraData;
+    target->debugMarker(FormatString("seleditcam<%p>", spncam));
+    ddprops["seleditcam"_crcu].Set<const CameraData*>(spncam);
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+
+  DB->invokePreRenderCallbacks(RCFD);
+  return _compcontext.assemble(drawdata);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

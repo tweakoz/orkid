@@ -202,7 +202,7 @@ bool BulletSystem::DoLink(Simulation* psi) {
 
   _debugDrawable = new ork::lev2::CallbackDrawable(nullptr);
   _debugDrawable->SetSortKey(0x7fffffff);
-  _debugDrawable->SetenqueueOnLayerCallback(bulletDebugEnqueueToLayer);
+  _debugDrawable->setEnqueueOnLayerCallback(bulletDebugEnqueueToLayer);
   _debugDrawable->SetRenderCallback(bulletDebugRender);
   _debugDrawable->SetOwner(&_systemData);
   _debugDrawable->SetSortKey(0x3fffffff);

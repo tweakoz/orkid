@@ -70,30 +70,31 @@ void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
   ///////////////////////////////////////////////////////////////////////////
   // CPD.cameraMatrices()->_aspectRatio = fW / fH;
   ///////////////////////////////////////////////////////////////////////////
-  // ?? rt or irenderer ?
-  lev2::UiViewportRenderTarget rt(_scenevp);
-  rendervar_t passdata;
-  passdata.Set<compositingpassdatastack_t*>(&_scenevp->_compositingGroupStack);
-  RCFD.setUserProperty("nodes"_crc, passdata);
-  lev2::CompositingPassData CPD;
-  CPD.AddLayer("All"_pool);
-  CPD.SetDstRect(tgt_rect);
-  CPD._ispicking     = true;
-  CPD._irendertarget = &rt;
-  _gimpl.pushCPD(CPD);
-  ///////////////////////////////////////////////////////////////////////////
-  auto simmode = sim->GetSimulationMode();
-  bool running = (simmode == ent::ESCENEMODE_RUN);
-  lev2::FrameRenderer framerenderer(RCFD, [&]() {});
-  lev2::CompositorDrawData drawdata(framerenderer);
-  drawdata._cimpl = &_gimpl;
-  drawdata._properties["primarycamindex"_crcu].Set<int>(_scenevp->miCameraIndex);
-  drawdata._properties["cullcamindex"_crcu].Set<int>(_scenevp->miCullCameraIndex);
-  drawdata._properties["irenderer"_crcu].Set<lev2::IRenderer*>(irenderer);
-  drawdata._properties["simrunning"_crcu].Set<bool>(running);
-  // auto VD = drawdata.computeViewData();
-  ///////////////////////////////////////////////////////////////////////////
-  {
+  auto DB = DrawableBuffer::acquireReadDB(7); // mDbLock.Aquire(7);
+  if(DB){
+    lev2::UiViewportRenderTarget rt(_scenevp);
+    rendervar_t passdata;
+    passdata.Set<compositingpassdatastack_t*>(&_scenevp->_compositingGroupStack);
+    RCFD.setUserProperty("nodes"_crc, passdata);
+    RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+    lev2::CompositingPassData CPD;
+    CPD.AddLayer("All"_pool);
+    CPD.SetDstRect(tgt_rect);
+    CPD._ispicking     = true;
+    CPD._irendertarget = &rt;
+    _gimpl.pushCPD(CPD);
+    ///////////////////////////////////////////////////////////////////////////
+    auto simmode = sim->GetSimulationMode();
+    bool running = (simmode == ent::ESCENEMODE_RUN);
+    lev2::FrameRenderer framerenderer(RCFD, [&]() {});
+    lev2::CompositorDrawData drawdata(framerenderer);
+    drawdata._cimpl = &_gimpl;
+    drawdata._properties["primarycamindex"_crcu].Set<int>(_scenevp->miCameraIndex);
+    drawdata._properties["cullcamindex"_crcu].Set<int>(_scenevp->miCullCameraIndex);
+    drawdata._properties["irenderer"_crcu].Set<lev2::IRenderer*>(irenderer);
+    drawdata._properties["simrunning"_crcu].Set<bool>(running);
+    drawdata._properties["DB"_crcu].Set<const DrawableBuffer*>(DB);
+    ///////////////////////////////////////////////////////////////////////////
     auto FBI    = pTEXTARG->FBI();
     auto vprect = _rtgroup->viewportRect();
     ///////////////////////////////////////////////////////////////////////////
@@ -102,8 +103,11 @@ void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
     _context->BindMaterial(GfxEnv::GetDefault3DMaterial());
     _context->PushModColor(fcolor4::Yellow());
 
-    bool aok = _gimpl.assemble(drawdata);
-    if (aok)
+    bool assembled_ok = _gimpl.assemble(drawdata);
+
+    DrawableBuffer::releaseReadDB(DB); // mDbLock.Aquire(7);
+
+    if (assembled_ok)
       _gimpl.composite(drawdata);
 
     _scenevp->DrawManip(drawdata, target);
@@ -111,7 +115,8 @@ void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
     _context->PopModColor();
     FBI->PopRtGroup();
     FBI->LeavePickState();
-  }
+  } // if(DB)
+  ///////////////////////////////////////////////////////////////////////////
   _gimpl.popCPD();
   ///////////////////////////////////////////////////////////////////////////
   // SetDirty(false);

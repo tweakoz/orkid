@@ -196,7 +196,7 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(Simulation* inst, Entity* pent) 
   auto pdrw = new lev2::CallbackDrawable(pent);
   pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(yo::doit);
-  pdrw->SetenqueueOnLayerCallback(yo::BufferCB);
+  pdrw->setEnqueueOnLayerCallback(yo::BufferCB);
   pdrw->SetOwner(pent->data());
   pdrw->SetSortKey(0x7fffffff);
 

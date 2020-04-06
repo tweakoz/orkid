@@ -33,6 +33,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::EditorCamArchetype, "EditorCamArchetype")
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::EditorCamControllerData, "EditorCamControllerData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::EditorCamControllerInst, "EditorCamControllerInst");
 ///////////////////////////////////////////////////////////////////////////////
+using namespace ork::lev2;
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -56,7 +57,7 @@ void EditorCamControllerData::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 
 EditorCamControllerData::EditorCamControllerData() {
-  _camera = new lev2::EzUiCam;
+  _camera = new EzUiCam;
 
   _camera->mfLoc = 1.0f;
 
@@ -79,20 +80,46 @@ void EditorCamControllerInst::Describe() {}
 EditorCamControllerInst::EditorCamControllerInst(const EditorCamControllerData& occd, Entity* pent)
     : ComponentInst(&occd, pent)
     , mCD(occd) {
-  const lev2::UiCamera* pcam = mCD.GetCamera();
+  const UiCamera* pcam = mCD.GetCamera();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool EditorCamControllerInst::DoLink(Simulation* psi) {
-  const lev2::UiCamera* pcam = mCD.GetCamera();
-  if (GetEntity()) {
+  const UiCamera* pcam = mCD.GetCamera();
+  auto entity = GetEntity();
+  if (entity) {
     const auto& cammats = pcam->cameraMatrices();
-    psi->setCameraData(GetEntity()->name(), &cammats);
+    psi->setCameraData(entity->name(), &cammats);
     fmtx4 matrix, imatrix;
     matrix.LookAt(cammats.GetEye(),cammats.GetTarget(),cammats.GetUp());
     imatrix.inverseOf(matrix);
-    GetEntity()->SetDynMatrix(imatrix);
+    entity->SetDynMatrix(imatrix);
+
+
+  /*
+  auto pdrw = new CallbackDrawable(entity);
+  pdrw->SetOwner(entity->data());
+  pdrw->SetSortKey(0);
+
+  entity->addDrawableToDefaultLayer(pdrw);
+
+  Drawable::var_t ap;
+
+  auto rendermethod = [=](RenderContextInstData& rcid, 
+                          Context* targ, 
+                          const CallbackRenderable* pren){
+    auto ezcam = dynamic_cast<const EzUiCam*>(pcam);
+    if (ezcam)
+      ezcam->draw(targ);
+  };
+  //ap.Set<const impl*>(pimpl);
+  //pdrw->SetUserDataA(ap);
+
+  pdrw->SetRenderCallback(rendermethod);
+  //pdrw->setEnqueueOnLayerCallback(impl::enqueueOnLayerCallback);
+  */
+
   }
   return true;
 }

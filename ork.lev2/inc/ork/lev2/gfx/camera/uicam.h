@@ -97,7 +97,7 @@ public:
   /////////////////////////////////////////////////////////////////////
 
   CameraData _camcamdata;
-  CameraMatrices _curMatrices;
+  mutable CameraMatrices _curMatrices;
   fvec2 _vpdim;
 
   float mfWorldSizeAtLocator;
@@ -151,7 +151,7 @@ public:
   //////////////////////////////////////////////////////////////////////////////
 
   virtual bool UIEventHandler(const ui::Event& EV) = 0;
-  virtual void draw(Context* pT)                   = 0;
+  virtual void draw(Context* pT) const             = 0;
 
   virtual void SetFromWorldSpaceMatrix(const fmtx4&) = 0;
 
@@ -216,7 +216,7 @@ public: //
   svar32_t _private;
   
   bool UIEventHandler(const ui::Event& EV) final;
-  void draw(Context* pT) final;
+  void draw(Context* pT) const final;
 
   void SetFromWorldSpaceMatrix(const fmtx4& matrix) final;
 

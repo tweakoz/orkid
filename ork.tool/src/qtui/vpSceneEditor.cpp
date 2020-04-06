@@ -363,34 +363,47 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   //////////////////////////////////////////////////
   lev2::FrameRenderer framerenderer(RCFD, [&]() { renderMisc(RCFD); });
   lev2::CompositorDrawData drawdata(framerenderer);
-  drawdata._properties["primarycamindex"_crcu].Set<int>(miCameraIndex);
-  drawdata._properties["cullcamindex"_crcu].Set<int>(miCullCameraIndex);
-  drawdata._properties["irenderer"_crcu].Set<lev2::IRenderer*>(GetRenderer());
-  drawdata._properties["simrunning"_crcu].Set<bool>(running);
+  const DrawableBuffer* DB = nullptr;
+  bool assembled_ok = false;
+  {
+    EASY_BLOCK("acquireDB");
+    DB = DrawableBuffer::acquireReadDB(7); // mDbLock.Aquire(7);
+  }
   //////////////////////////////////////////////////
   // composite assembly:
   //   render (or assemble) content into pre-compositing buffers
   //////////////////////////////////////////////////
-  GL_ERRORCHECK();
-  mpTarget->debugPushGroup("toolvp::assemble");
-  bool aok = compsys->_impl.assemble(drawdata);
-  GL_ERRORCHECK();
-  mpTarget->debugMarker(FormatString("toolvp::aok<%d>", int(aok)));
-  GL_ERRORCHECK();
-  mpTarget->debugPopGroup();
-  GL_ERRORCHECK();
+  if( DB ){
+    RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+    drawdata._properties["primarycamindex"_crcu].Set<int>(miCameraIndex);
+    drawdata._properties["cullcamindex"_crcu].Set<int>(miCullCameraIndex);
+    drawdata._properties["irenderer"_crcu].Set<lev2::IRenderer*>(GetRenderer());
+    drawdata._properties["simrunning"_crcu].Set<bool>(running);
+    drawdata._properties["DB"_crcu].Set<const DrawableBuffer*>(DB);
+    GL_ERRORCHECK();
+    mpTarget->debugPushGroup("toolvp::assemble");
+    assembled_ok = compsys->_impl.assemble(drawdata);
+    DrawableBuffer::releaseReadDB(DB); // mDbLock.Aquire(7);
+    //////////////////////////////////////////////////
+    GL_ERRORCHECK();
+    mpTarget->debugMarker(FormatString("toolvp::assembled_ok<%d>", int(assembled_ok)));
+    GL_ERRORCHECK();
+    mpTarget->debugPopGroup();
+    GL_ERRORCHECK();
+  }
   //////////////////////////////////////////////////
   // final compositing :
   //   combine previously assembled content
   //   into final image
   //////////////////////////////////////////////////
-  mpTarget->debugPushGroup("toolvp::composite");
-  if (aok) {
+  if (assembled_ok) {
+    mpTarget->debugPushGroup("toolvp::composite");
     EASY_BLOCK("composite");
     compsys->_impl.composite(drawdata);
+    mpTarget->debugPopGroup();
   }
-  mpTarget->debugPopGroup();
   // todo - lock sim
+  //////////////////////////////////////////////////
   GL_ERRORCHECK();
   RCFD._cimpl->popCPD();
   RCFD._cimpl = &_gimpl;
@@ -402,6 +415,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   if (gtoggle_hud) {
 
     EASY_BLOCK("HUD");
+
     DrawHUD(RCFD);
     mpTarget->debugPushGroup("toolvp::DRAWEND::Children");
     DrawChildren(drwev);
@@ -409,7 +423,9 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     if (false == FBI->isPickState())
       DrawBorder(RCFD);
     // if (mEditor.mpScene)
-    DrawManip(drawdata, mpTarget);
+    //DrawManip(drawdata, mpTarget);
+    if( _editorCamera )
+      _editorCamera->draw(mpTarget);
   }
   //////////////////////////////////////////////////
   {
@@ -497,11 +513,6 @@ void SceneEditorVP::renderMisc(lev2::RenderContextFrameData& RCFD) {
   gfxtarg->BindMaterial(lev2::GfxEnv::GetDefault3DMaterial());
   static lev2::SRasterState defstate;
   gfxtarg->RSI()->BindRasterState(defstate, true);
-  /////////////////////////////////////////
-  // gfxtarg->debugPushGroup("toolvp::DrawManip");
-  // if (mEditor.mpScene)
-  // DrawManip(RCFD, gfxtarg);
-  // gfxtarg->debugPopGroup();
   /////////////////////////////////////////
   gfxtarg->debugPushGroup("toolvp::DrawGrid");
   if (false == FBI->isPickState())
@@ -763,10 +774,6 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
     /////////////////////////////////////////////////
   }
 
-  if (_editorCamera) {
-     _editorCamera->draw(pTARG);
-  }
-
   MTXI->PopPMatrix(); // back to ortho
   MTXI->PopVMatrix(); // back to ortho
   MTXI->PopMMatrix(); // back to ortho
@@ -819,7 +826,7 @@ void SceneEditorVP::DrawManip(lev2::CompositorDrawData& CDD, ork::lev2::Context*
 
   /////////////////////////////////////////
   static auto these_cam_mats = new CameraMatrices;
-  const DrawableBuffer* DB   = DrawableBuffer::acquireReadDB(7); // mDbLock.Aquire(7);
+  const DrawableBuffer* DB   = DrawableBuffer::acquireReadDB(7); 
   if (DB) {
     auto spncam = (CameraData*)DB->cameraData("spawncam"_pool);
     if (spncam) {

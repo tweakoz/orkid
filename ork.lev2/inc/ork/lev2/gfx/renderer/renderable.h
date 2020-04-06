@@ -256,7 +256,9 @@ private:
 
 class CallbackRenderable : public IRenderableDag {
 public:
-  typedef std::function<void(lev2::RenderContextInstData& rcid, lev2::Context* targ, const CallbackRenderable* pren)> cbtype_t;
+  using cbtype_t = std::function<void(lev2::RenderContextInstData& rcid, 
+                                      lev2::Context* targ, 
+                                      const CallbackRenderable* pren)>;
 
   CallbackRenderable(IRenderer* renderer = NULL);
 
