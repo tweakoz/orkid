@@ -67,7 +67,7 @@ struct UiCamPrivate {
     if( _doGpuInit ){
       auto shaderpath = file::Path("orkshader://solid");
       _material->gpuInit(ctx,shaderpath);
-      _material->setMvpParams("MatMVP","MatMVP","MatMVP");
+      _material->setMvpParams("MatMVP","MatMVPL","MatMVPR");
       _tek = _material->technique("vtxcolor");
       _doGpuInit = false;
     }
