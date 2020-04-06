@@ -22,7 +22,7 @@ public:
 
   void Init();
 
-  uint64_t AssignPickId(ork::Object*);
+  uint64_t AssignPickId(const ork::Object*);
   ork::Object* GetObjectFromPickId(uint64_t);
   Context* context() {
     return _context;

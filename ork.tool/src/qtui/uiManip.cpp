@@ -35,7 +35,7 @@ using namespace ork::lev2;
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-void OuterPickOp(DeferredPickOperationContext* pickctx);
+void OuterPickOp(defpickopctx_ptr_t pickctx);
 
 ManipHandler::ManipHandler(SceneEditorBase& editor)
     : SceneEditorVPToolHandler(editor) {
@@ -76,7 +76,7 @@ ui::HandlerResult ManipHandler::DoOnUiEvent(const ui::Event& EV) {
         opq::Op([&]() { this->mEditor.ClearSelection(); }).QueueSync(_updq);
       }
 
-      DeferredPickOperationContext* pickctx = new DeferredPickOperationContext;
+      auto pickctx = std::make_shared<DeferredPickOperationContext>();
       pickctx->miX                          = ix;
       pickctx->miY                          = iy;
       pickctx->is_shift                     = isshift;
@@ -112,7 +112,7 @@ ui::HandlerResult ManipHandler::DoOnUiEvent(const ui::Event& EV) {
 
       ///////////////////////////////////////////////////////////
 
-      auto the_block = [=](DeferredPickOperationContext* pctx) {
+      auto the_block = [=](defpickopctx_ptr_t pctx) {
         SceneEditorVPToolHandler* handler = pctx->mHandler;
         SceneEditorBase& editor           = handler->GetEditor();
         ork::Object* pobj                 = rtti::autocast(pctx->mpCastable);
@@ -147,7 +147,7 @@ ui::HandlerResult ManipHandler::DoOnUiEvent(const ui::Event& EV) {
 
       ///////////////////////////////////////////////////////////
 
-      DeferredPickOperationContext* pickctx = new DeferredPickOperationContext;
+      auto pickctx = std::make_shared<DeferredPickOperationContext>();
       pickctx->mEV                          = EV;
       pickctx->miX                          = ix;
       pickctx->miY                          = iy;
@@ -181,7 +181,7 @@ ui::HandlerResult ManipHandler::DoOnUiEvent(const ui::Event& EV) {
 
       ///////////////////////////////////////////////////////////
 
-      auto process_pick = [=](DeferredPickOperationContext* pctx) {
+      auto process_pick = [=](defpickopctx_ptr_t pctx) {
         SceneEditorVPToolHandler* handler = pctx->mHandler;
         SceneEditorBase& editor           = handler->GetEditor();
         ork::Object* pobj                 = rtti::autocast(pctx->mpCastable);
@@ -201,7 +201,7 @@ ui::HandlerResult ManipHandler::DoOnUiEvent(const ui::Event& EV) {
 
       ///////////////////////////////////////////////////////////
 
-      DeferredPickOperationContext* pickctx = new DeferredPickOperationContext;
+      auto pickctx = std::make_shared<DeferredPickOperationContext>();
       pickctx->miX                          = ix;
       pickctx->miY                          = iy;
       pickctx->is_shift                     = isshift;

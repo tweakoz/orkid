@@ -45,7 +45,7 @@ namespace ork { namespace ent {
 
 SceneEditorVPToolHandler::SceneEditorVPToolHandler(SceneEditorBase& editor) : mEditor(editor) {}
 
-void OuterPickOp(DeferredPickOperationContext* pickctx);
+void OuterPickOp(defpickopctx_ptr_t pickctx);
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -310,6 +310,10 @@ void SceneEditorVPToolHandler::setSpawnLoc(const lev2::PixelFetchContext& ctx, f
 
     auto& camdat = cam->_curMatrices;
 
+    fvec4 normal_d = ctx.mPickColors[1];
+
+    orkprintf("normal_d <%f,%f,%f,%f>\n", normal_d.x, normal_d.y, normal_d.z, normal_d.w);
+
     /////////////////////////////////////////////////////////
 
     fvec3 vdir, vori;
@@ -320,7 +324,6 @@ void SceneEditorVPToolHandler::setSpawnLoc(const lev2::PixelFetchContext& ctx, f
 
     /////////////////////////////////////////////////////////
 
-    fvec4 normal_d = ctx.mPickColors[1];
     fvec3 spawnloc = vori + vdir * normal_d.w;
 
     /////////////////////////////////////////////////////////

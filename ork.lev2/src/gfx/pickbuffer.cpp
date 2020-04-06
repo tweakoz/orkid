@@ -29,9 +29,9 @@ PickBuffer::PickBuffer(ui::Surface* surf, Context* ctx, int w, int h)
   Init();
 }
 ///////////////////////////////////////////////////////////////////////////////
-uint64_t PickBuffer::AssignPickId(ork::Object* pobj) {
+uint64_t PickBuffer::AssignPickId(const ork::Object* pobj) {
   uint64_t pid  = uint64_t(pobj);
-  mPickIds[pid] = pobj;
+  mPickIds[pid] = const_cast<ork::Object*>(pobj);
   return pid;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -48,9 +48,9 @@ void PickBuffer::Init() {
   auto buf0        = new ork::lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA32F, _width, _height);
   auto buf1        = new ork::lev2::RtBuffer(lev2::ERTGSLOT1, lev2::EBufferFormat::RGBA32F, _width, _height);
   buf0->_debugName = FormatString("Pickbuf::mrt0");
-  // buf0->_debugName = FormatString("Pickbuf::mrt1");
+  buf1->_debugName = FormatString("Pickbuf::mrt1");
   _rtgroup->SetMrt(0, buf0);
-  //_rtgroup->SetMrt(1, buf1);
+  _rtgroup->SetMrt(1, buf1);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PickBuffer::Draw(lev2::PixelFetchContext& ctx) {

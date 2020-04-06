@@ -133,6 +133,20 @@ OpenVrDevice::OpenVrDevice()
 
   ///////////////////////////////////////////////////////////
 
+  _vrthread.start([=](anyp arg) { this->_vrthread_loop(); });
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+OpenVrDevice::~OpenVrDevice() {
+  if (_hmd)
+    _ovr::VR_Shutdown();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void OpenVrDevice::_vrthread_loop() {
+
   _ovr::EVRInitError error = _ovr::VRInitError_None;
   _hmd                     = _ovr::VR_Init(&error, _ovr::VRApplication_Scene);
   _active                  = (error == _ovr::VRInitError_None);
@@ -172,20 +186,6 @@ OpenVrDevice::OpenVrDevice()
   } else {
     printf("VR NOT INITIALIZED for some reason...\n");
   }
-
-  _vrthread.start([=](anyp arg) { this->_vrthread_loop(); });
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-OpenVrDevice::~OpenVrDevice() {
-  if (_hmd)
-    _ovr::VR_Shutdown();
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-void OpenVrDevice::_vrthread_loop() {
 
   while (true) {
     _processControllerEvents();

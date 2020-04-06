@@ -36,7 +36,7 @@ using namespace ork::lev2;
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-void OuterPickOp(DeferredPickOperationContext* pickctx);
+void OuterPickOp(defpickopctx_ptr_t pickctx);
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -57,8 +57,8 @@ void TestVPDefaultHandler::DoDetach(SceneEditorVP* pvp) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void TestVPDefaultHandler::HandlePickOperation(DeferredPickOperationContext* ppickctx) {
-  auto process_pick = [=](DeferredPickOperationContext* pickctx) {
+void TestVPDefaultHandler::HandlePickOperation(defpickopctx_ptr_t ppickctx) {
+  auto process_pick = [=](defpickopctx_ptr_t pickctx) {
     ork::opq::assertOnQueue2(opq::updateSerialQueue());
 
     SceneEditorVPToolHandler* handler = pickctx->mHandler;
@@ -181,7 +181,7 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
       if (AreAnyMoveKeysDown)
         break;
       if (GetViewport()->getActiveCamera()) {
-        auto pickctx         = new DeferredPickOperationContext;
+        auto pickctx         = std::make_shared<DeferredPickOperationContext>();
         pickctx->miX         = ix;
         pickctx->miY         = iy;
         pickctx->is_shift    = isshift;
@@ -194,7 +194,7 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
         pickctx->_gfxContext = EV._context;
         OrkAssert(EV._context);
 
-        auto process_pick = [=](DeferredPickOperationContext* pickctx) {
+        auto process_pick = [=](defpickopctx_ptr_t pickctx) {
           ork::opq::assertOnQueue2(opq::updateSerialQueue());
 
           SceneEditorVPToolHandler* handler = pickctx->mHandler;
@@ -219,7 +219,7 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
       ret.mHoldFocus = true;
 
       if (isleft && false == isright) {
-        auto pickctx         = new DeferredPickOperationContext;
+        auto pickctx         = std::make_shared<DeferredPickOperationContext>();
         pickctx->miX         = ix;
         pickctx->miY         = iy;
         pickctx->is_shift    = isshift;

@@ -316,4 +316,9 @@ RtBuffer* DeferredCompositingNodePbr::GetOutput() const {
   return CTX._rtbLightAccum;
 }
 ///////////////////////////////////////////////////////////////////////////////
+RtGroup* DeferredCompositingNodePbr::GetOutputGroup() const {
+  auto& CTX = _impl.Get<std::shared_ptr<PbrNodeImpl>>()->_context;
+  return CTX._rtgGbuffer;
+}
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::deferrednode

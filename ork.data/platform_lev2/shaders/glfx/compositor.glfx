@@ -214,3 +214,42 @@ technique Csolo {
   }
 }
 ///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+vertex_interface iface_v_onrtgd : ub_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec2 uv0 : TEXCOORD0;
+  }
+  //
+  outputs {
+    vec2 frg_uv0;
+  }
+}
+fragment_interface iface_f_onrtgd : ub_frg {
+  inputs {
+    vec2 frg_uv0;
+    vec4 frg_nrmd;
+  }
+  outputs {
+    layout(location = 0) vec4 out_clr;
+    layout(location = 1) vec4 out_nrmd;
+  }
+}
+vertex_shader vs_onrtgd : iface_v_onrtgd {
+  gl_Position = MatMVP * position;
+  frg_uv0     = uv0;
+}
+fragment_shader ps_onrtgd : iface_f_onrtgd {
+  out_clr   = texture(MapA, frg_uv0);
+  out_nrmd   = texture(MapB, frg_uv0);
+}
+technique OutputNodeRtGroupDual {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_onrtgd;
+    fragment_shader = ps_onrtgd;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////

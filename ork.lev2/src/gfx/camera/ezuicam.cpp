@@ -25,6 +25,7 @@
 #include <ork/math/misc_math.h>
 #include <ork/lev2/qtui/qtui.h>
 #include <ork/lev2/gfx/material_pbr.inl>
+#include <ork/lev2/gfx/material_freestyle.inl>
 
 #include <QtGui/QCursor>
 
@@ -58,6 +59,27 @@ void EzUiCam::Describe() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct UiCamPrivate {
+  UiCamPrivate(){
+    _material = std::make_shared<FreestyleMaterial>();
+  }
+  void gpuUpdate(Context* ctx){
+    if( _doGpuInit ){
+      auto shaderpath = file::Path("orkshader://solid");
+      _material->gpuInit(ctx,shaderpath);
+      _material->setMvpParams("MatMVP","MatMVP","MatMVP");
+      _tek = _material->technique("vtxcolor");
+      _doGpuInit = false;
+    }
+  }
+  bool _doGpuInit = true;
+  freestyle_mtl_ptr_t _material;
+  const FxShaderTechnique* _tek = nullptr;
+};
+using uicamprivate_t = std::shared_ptr<UiCamPrivate>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 EzUiCam::EzUiCam()
     : UiCamera()
     , aper(40.0f)
@@ -79,76 +101,78 @@ EzUiCam::EzUiCam()
   rightbutton   = false;
 
   mfWorldSizeAtLocator = 150.0f;
+
+  auto uicampriv = std::make_shared<UiCamPrivate>();
+  _private.Set<uicamprivate_t>(uicampriv);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void EzUiCam::draw(Context* pT) {
+void EzUiCam::draw(Context* context) {
   extern fvec4 TRayN;
   extern fvec4 TRayF;
 
-  fmtx4 MatP, MatV, MatT;
+  auto priv = _private.Get<uicamprivate_t>();
+
+  priv->gpuUpdate(context);
+
 
   float CurVelMag = MeasuredCameraVelocity.Mag();
-
   //////////////////////////////////////
-  pT->MTXI()->PushUIMatrix();
+  /*context->MTXI()->PushUIMatrix();
   {
 
-    pT->PushModColor(fcolor4::Black());
+    context->PushModColor(fcolor4::Black());
     ork::lev2::FontMan::PushFont("i14");
-    FontMan::BeginTextBlock(pT);
-    FontMan::DrawText(pT, 41, 9, "Center %f %f %f", mvCenter.GetX(), mvCenter.GetY(), mvCenter.GetZ());
-    FontMan::DrawText(pT, 41, 21, "CamLoc   %f %f %f", CamLoc.GetX(), CamLoc.GetY(), CamLoc.GetZ());
-    FontMan::DrawText(pT, 41, 33, "zf %f", (_camcamdata.GetFar()));
-    FontMan::DrawText(pT, 41, 45, "zn %f", (_camcamdata.GetNear()));
-    FontMan::DrawText(pT, 41, 57, "zfoverzn %f", (_camcamdata.GetFar() / _camcamdata.GetNear()));
-    FontMan::DrawText(pT, 41, 69, "Loc(m) %f Speed(m/f) %f", mfLoc, CurVelMag);
-    FontMan::DrawText(pT, 41, 81, "RotMode %s", (meRotMode == EROT_SCREENZ) ? "ScreenZ" : "ScreenXY");
-    FontMan::DrawText(pT, 41, 93, "Aper %f", aper);
-    FontMan::DrawText(pT, 41, 105, "Name %s", GetName().c_str());
-    FontMan::EndTextBlock(pT);
-    pT->PopModColor();
+    FontMan::BeginTextBlock(context);
+    FontMan::DrawText(context, 41, 9, "Center %f %f %f", mvCenter.GetX(), mvCenter.GetY(), mvCenter.GetZ());
+    FontMan::DrawText(context, 41, 21, "CamLoc   %f %f %f", CamLoc.GetX(), CamLoc.GetY(), CamLoc.GetZ());
+    FontMan::DrawText(context, 41, 33, "zf %f", (_camcamdata.GetFar()));
+    FontMan::DrawText(context, 41, 45, "zn %f", (_camcamdata.GetNear()));
+    FontMan::DrawText(context, 41, 57, "zfoverzn %f", (_camcamdata.GetFar() / _camcamdata.GetNear()));
+    FontMan::DrawText(context, 41, 69, "Loc(m) %f Speed(m/f) %f", mfLoc, CurVelMag);
+    FontMan::DrawText(context, 41, 81, "RotMode %s", (meRotMode == EROT_SCREENZ) ? "ScreenZ" : "ScreenXY");
+    FontMan::DrawText(context, 41, 93, "Aper %f", aper);
+    FontMan::DrawText(context, 41, 105, "Name %s", GetName().c_str());
+    FontMan::EndTextBlock(context);
+    context->PopModColor();
 
-    pT->PushModColor(fcolor4::Yellow());
-    FontMan::BeginTextBlock(pT);
-    FontMan::DrawText(pT, 41, 9, "Center %f %f %f", mvCenter.GetX(), mvCenter.GetY(), mvCenter.GetZ());
-    FontMan::DrawText(pT, 41, 21, "CamLoc   %f %f %f", CamLoc.GetX(), CamLoc.GetY(), CamLoc.GetZ());
-    FontMan::DrawText(pT, 41, 33, "zf %f", (_camcamdata.GetFar()));
-    FontMan::DrawText(pT, 41, 45, "zn %f", (_camcamdata.GetNear()));
-    FontMan::DrawText(pT, 41, 57, "zfoverzn %f", (_camcamdata.GetFar() / _camcamdata.GetNear()));
-    FontMan::DrawText(pT, 41, 69, "Loc(m) %f Speed(m/f) %f", mfLoc, CurVelMag);
-    FontMan::DrawText(pT, 41, 81, "RotMode %s", (meRotMode == EROT_SCREENZ) ? "ScreenZ" : "ScreenXY");
-    FontMan::DrawText(pT, 41, 93, "Aper %f", aper);
-    FontMan::DrawText(pT, 41, 105, "Name %s", GetName().c_str());
-    FontMan::EndTextBlock(pT);
+    context->PushModColor(fcolor4::Yellow());
+    FontMan::BeginTextBlock(context);
+    FontMan::DrawText(context, 41, 9, "Center %f %f %f", mvCenter.GetX(), mvCenter.GetY(), mvCenter.GetZ());
+    FontMan::DrawText(context, 41, 21, "CamLoc   %f %f %f", CamLoc.GetX(), CamLoc.GetY(), CamLoc.GetZ());
+    FontMan::DrawText(context, 41, 33, "zf %f", (_camcamdata.GetFar()));
+    FontMan::DrawText(context, 41, 45, "zn %f", (_camcamdata.GetNear()));
+    FontMan::DrawText(context, 41, 57, "zfoverzn %f", (_camcamdata.GetFar() / _camcamdata.GetNear()));
+    FontMan::DrawText(context, 41, 69, "Loc(m) %f Speed(m/f) %f", mfLoc, CurVelMag);
+    FontMan::DrawText(context, 41, 81, "RotMode %s", (meRotMode == EROT_SCREENZ) ? "ScreenZ" : "ScreenXY");
+    FontMan::DrawText(context, 41, 93, "Aper %f", aper);
+    FontMan::DrawText(context, 41, 105, "Name %s", GetName().c_str());
+    FontMan::EndTextBlock(context);
     ork::lev2::FontMan::PopFont();
-    pT->PopModColor();
+    context->PopModColor();
   }
-  pT->MTXI()->PopUIMatrix();
+  context->MTXI()->PopUIMatrix();*/
   ///////////////////////////////////////////////////////////////
   // printf( "CAMHUD\n" );
-  float aspect = float(pT->mainSurfaceWidth()) / float(pT->mainSurfaceHeight());
+  float aspect = float(context->mainSurfaceWidth()) / float(context->mainSurfaceHeight());
   _curMatrices = _camcamdata.computeMatrices(aspect);
+  auto RCFD = context->topRenderContextFrameData();
+  fmtx4 worldmtx;
+  worldmtx.SetTranslation(mvCenter);
+  float Scale = mfLoc / 30.0f;
+  worldmtx.Scale(fvec4(Scale, Scale, Scale));
+  ///////////////////////////////////////////////////////////////
+  context->debugPushGroup("EzUiCam::draw");
+  priv->_material->begin(priv->_tek,*RCFD);
+  priv->_material->bindMvpMatrices(worldmtx);
+    GfxPrimitives::GetRef().RenderTriCircle(context);
+    //GfxPrimitives::GetRef().RenderAxis(context);
+  priv->_material->end(*RCFD);
+  context->debugPopGroup();
   ///////////////////////////////////////////////////////////////
 
-  pT->BindMaterial(GfxEnv::GetDefault3DMaterial());
-  {
-    MatT.SetTranslation(mvCenter);
-    float Scale = mfLoc / 30.0f;
-    MatT.Scale(fvec4(Scale, Scale, Scale));
-    pT->MTXI()->PushMMatrix(MatT);
-    {
-      GfxPrimitives::GetRef().RenderTriCircle(pT);
-      GfxPrimitives::GetRef().RenderAxis(pT);
-    }
-    pT->MTXI()->PopMMatrix();
-    ///////////////////////////////
-    pT->MTXI()->PushMMatrix(MatT);
-    { GfxPrimitives::GetRef().RenderTriCircle(pT); }
-    pT->MTXI()->PopMMatrix();
-    ///////////////////////////////
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

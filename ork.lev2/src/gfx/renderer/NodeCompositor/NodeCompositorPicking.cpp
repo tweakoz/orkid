@@ -145,4 +145,8 @@ RtBuffer* PickingCompositingNode::GetOutput() const {
   return _impl.Get<std::shared_ptr<forwardnode::IMPL>>()->_rtg->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
+RtGroup* PickingCompositingNode::GetOutputGroup() const {
+  return _impl.Get<std::shared_ptr<forwardnode::IMPL>>()->_rtg;
+}
+///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

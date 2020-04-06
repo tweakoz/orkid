@@ -14,15 +14,14 @@ uniform_set ublock_vtx {
   mat4 MatMVPC;
   mat4 MatMVPR;
   vec3 CamPos;
-  vec4 ModColor;
   float Time;
   sampler2D HFAMap; // technically a heightmap
   sampler2D HFBMap; // technically a heightmap
 }
 uniform_set ublock_frg {
-  vec4 modcolor;
   sampler2D EnvMap;
   float testxxx;
+  vec4 ModColor;
   vec3 FogColor;
   vec3 GrassColor;
   vec3 SnowColor;
@@ -259,30 +258,36 @@ vertex_interface iface_vpick : ublock_vtx {
     vec4 position : POSITION;
   }
   outputs {
-    vec4 frg_nrmd;
+    vec3 frg_nrm;
+    vec2 frg_uvxp;
+    vec2 frg_uvyp;
+    vec2 frg_uvzp;
+    vec3 frg_wpos;
+    float frg_camdist;
   }
 }
 fragment_interface iface_fpick : ublock_frg {
   inputs {
-    vec4 frg_nrmd;
+    vec3 frg_nrm;
+    vec2 frg_uvxp;
+    vec2 frg_uvyp;
+    vec2 frg_uvzp;
+    vec3 frg_wpos;
+    float frg_camdist;
   }
   outputs {
-    layout(location = 0) vec4 out_clr;
-    layout(location = 1) vec4 out_normal_mdl;
-    layout(location = 2) vec4 out_rufmtl;
+    layout(location = 0) vec4 out_pickbuffer_objid;
+    layout(location = 1) vec4 out_pickbuffer_normd;
   }
 }
 vertex_shader vs_pick : iface_vpick : lib_terrain_vtx {
   TerOut tero = computeTerrain(CamPos);
-  ///////////////////////////
-  // apply to GL
-  ///////////////////////////
+  applyTerrain(tero, CamPos);
   gl_Position = MatMVPC * vec4(tero.wpos, 1);
-  frg_nrmd = vec4(tero.wnrm, distance(tero.wpos, CamPos));
 }
 fragment_shader ps_pick : iface_fpick {
-  out_clr = ModColor;
-  out_normal_mdl = frg_nrmd;
+  out_pickbuffer_objid = ModColor;
+  out_pickbuffer_normd = vec4(frg_nrm,frg_camdist);
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
@@ -321,7 +326,7 @@ technique terrain_gbuf1_stereo {
     state_block = sb_default;
   }
 }
-technique tek_pick {
+technique pick {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader = vs_pick;

@@ -431,7 +431,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   ///////////////////////////////////////////////////////
   if (miPickDirtyCount > 0) {
     if (_pickbuffer) {
-      // _pickbuffer->SetDirty(true);
+      //_pickbuffer->SetDirty(true);
       miPickDirtyCount--;
     }
   }
@@ -763,13 +763,14 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
     /////////////////////////////////////////////////
   }
 
+  if (_editorCamera) {
+     _editorCamera->draw(pTARG);
+  }
+
   MTXI->PopPMatrix(); // back to ortho
   MTXI->PopVMatrix(); // back to ortho
   MTXI->PopMMatrix(); // back to ortho
 
-  // if (_editorCamera) {
-  //_editorCamera->draw(pTARG);
-  //}
   mpTarget->debugPopGroup();
 }
 

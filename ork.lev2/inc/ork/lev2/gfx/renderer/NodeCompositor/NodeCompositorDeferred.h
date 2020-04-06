@@ -177,8 +177,6 @@ struct DeferredContext {
   RtGroup* _rtgLaccum       = nullptr;
 
   RtBuffer* _rtbGbuffer = nullptr;
-  // RtBuffer* _rtbNormalDist   = nullptr;
-  // RtBuffer* _rtbRufMtl       = nullptr;
   RtBuffer* _rtbDepthCluster = nullptr;
   RtBuffer* _rtbLightAccum   = nullptr;
 
@@ -258,6 +256,8 @@ public:
   lev2::TextureAsset* _environmentTextureAsset = nullptr;
 
   lev2::RtBuffer* GetOutput() const final;
+  lev2::RtGroup* GetOutputGroup() const final;
+
   svar256_t _impl;
   float _environmentIntensity = 1.0f;
   float _environmentMipBias   = 0.0f;

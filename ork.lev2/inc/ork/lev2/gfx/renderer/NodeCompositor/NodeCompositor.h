@@ -46,6 +46,9 @@ public:
   virtual lev2::RtBuffer* GetOutput() const {
     return nullptr;
   }
+  virtual lev2::RtGroup* GetOutputGroup() const {
+    return nullptr;
+  }
 
 private:
   virtual void DoInit(lev2::Context* pTARG, int w, int h) = 0;

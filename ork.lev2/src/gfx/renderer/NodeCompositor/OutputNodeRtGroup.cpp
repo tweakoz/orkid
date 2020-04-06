@@ -40,10 +40,11 @@ struct RTGIMPL {
   ///////////////////////////////////////
   void gpuInit(lev2::Context* ctx) {
     if (_needsinit) {
-      _blit2screenmtl.gpuInit(ctx, "orkshader://solid");
-      _fxtechnique1x1 = _blit2screenmtl.technique("texcolor4");
+      _blit2screenmtl.gpuInit(ctx, "orkshader://compositor");
+      _fxtechnique1x1 = _blit2screenmtl.technique("OutputNodeRtGroupDual");
       _fxpMVP         = _blit2screenmtl.param("MatMVP");
-      _fxpColorMap    = _blit2screenmtl.param("ColorMap");
+      _fxpColorMapA    = _blit2screenmtl.param("MapA");
+      _fxpColorMapB    = _blit2screenmtl.param("MapB");
       _needsinit      = false;
     }
   }
@@ -84,7 +85,8 @@ struct RTGIMPL {
   FreestyleMaterial _blit2screenmtl;
   const FxShaderTechnique* _fxtechnique1x1;
   const FxShaderParam* _fxpMVP;
-  const FxShaderParam* _fxpColorMap;
+  const FxShaderParam* _fxpColorMapA;
+  const FxShaderParam* _fxpColorMapB;
   bool _needsinit = true;
   int _width      = 0;
   int _height     = 0;
@@ -114,12 +116,16 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   RenderContextFrameData& framedata = framerenderer.framedata();
   Context* context                  = framedata.GetTarget();
   auto fbi                          = context->FBI();
-  if (auto try_final = drawdata._properties["final_out"_crcu].TryAs<RtBuffer*>()) {
-    auto buffer = try_final.value();
-    if (buffer) {
-      assert(buffer != nullptr);
-      auto tex = buffer->texture();
-      if (tex) {
+  if (auto try_outgroup = drawdata._properties["render_outgroup"_crcu].TryAs<RtGroup*>()) {
+    auto rtgroup = try_outgroup.value();
+    if (rtgroup) {
+      auto bufA = rtgroup->GetMrt(0);
+      auto bufB = rtgroup->GetMrt(1);
+      assert(bufA != nullptr);
+      assert(bufB != nullptr);
+      auto texA = bufA->texture();
+      auto texB = bufB->texture();
+      if (texA and texB) {
         /////////////////////////////////////////////////////////////////////////////
         // be nice and composite to main screen as well...
         /////////////////////////////////////////////////////////////////////////////
@@ -129,7 +135,8 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         mtl.bindTechnique(impl->_fxtechnique1x1);
         mtl.begin(framedata);
         mtl._rasterstate.SetBlending(EBLENDING_OFF);
-        mtl.bindParamCTex(impl->_fxpColorMap, tex);
+        mtl.bindParamCTex(impl->_fxpColorMapA, texA);
+        mtl.bindParamCTex(impl->_fxpColorMapB, texB);
         mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity);
         this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
         mtl.end(framedata);

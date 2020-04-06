@@ -213,7 +213,8 @@ public: //
   bool mDoPan;
 
   fvec3 _pushNZ, _pushNX, _pushNY;
-
+  svar32_t _private;
+  
   bool UIEventHandler(const ui::Event& EV) final;
   void draw(Context* pT) final;
 

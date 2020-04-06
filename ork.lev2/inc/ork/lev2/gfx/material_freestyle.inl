@@ -25,6 +25,7 @@ struct FreestyleMaterial : public GfxMaterial {
   ////////////////////////////////////////////
 
   void begin(const RenderContextFrameData& RCFD);
+  void begin(const FxShaderTechnique* tek, const RenderContextFrameData& RCFD);
   void end(const RenderContextFrameData& RCFD);
 
   ////////////////////////////////////////////
@@ -83,6 +84,55 @@ struct FreestyleMaterial : public GfxMaterial {
     return blk;
   }
 #endif
+  ////////////////////////////////////////////
+
+  inline void setMvpParams(std::string monocam,std::string stereocamL,std::string stereocamR){
+    _mvp_Mono = param(monocam);
+    _mvp_StereoL = param(stereocamL);
+    _mvp_StereoR = param(stereocamR);
+  }
+
+  ////////////////////////////////////////////
+
+  inline void bindMvpMatrices(const fmtx4& world){
+    const RenderContextInstData* RCID  = _initialTarget->GetRenderContextInstData();
+    const RenderContextFrameData* RCFD = _initialTarget->topRenderContextFrameData();
+    const auto& CPD                    = RCFD->topCPD();
+    bool is_picking                    = CPD.isPicking();
+    bool is_stereo                     = CPD.isStereoOnePass();
+    bool is_forcenoz                   = RCID ? RCID->IsForceNoZWrite() : false;
+
+    //_initialTarget->RSI()->BindRasterState(_rasterstate);
+    //_initialTarget->FXI()->BindPass(_shader, iPass);
+
+    //if (_shader->GetFailedCompile()) {
+      //assert(false);
+      //return false;
+    //}
+
+    auto MTXI = _initialTarget->MTXI();
+    auto FXI  = _initialTarget->FXI();
+
+    //FXI->BindParamMatrix(_shader, hMatM, MTXI->RefMMatrix());
+    //FXI->BindParamMatrix(_shader, hMatMV, MTXI->RefMVMatrix());
+    //FXI->BindParamMatrix(_shader, hMatP, MTXI->RefPMatrix());
+
+    if (is_stereo and CPD._stereoCameraMatrices) {
+      auto stereomtx = CPD._stereoCameraMatrices;
+      auto MVPL      = stereomtx->MVPL(world);
+      auto MVPR      = stereomtx->MVPR(world);
+      FXI->BindParamMatrix(_shader, _mvp_StereoL, MVPL);
+      FXI->BindParamMatrix(_shader, _mvp_StereoR, MVPR);
+    } else if (CPD._cameraMatrices) {
+      auto mcams = CPD._cameraMatrices;
+      auto MVP   = world * mcams->_vmatrix * mcams->_pmatrix;
+      FXI->BindParamMatrix(_shader, _mvp_Mono, MVP);
+    } else {
+      auto MVP = MTXI->RefMVPMatrix();
+      FXI->BindParamMatrix(_shader, _mvp_Mono, MVP);
+    }
+  }
+
   ////////////////////////////////////////////
 
   inline void commit() {
@@ -146,7 +196,12 @@ struct FreestyleMaterial : public GfxMaterial {
   ////////////////////////////////////////////
 
   Context* _initialTarget = nullptr;
+  const FxShaderParam* _mvp_Mono = nullptr;
+  const FxShaderParam* _mvp_StereoL = nullptr;
+  const FxShaderParam* _mvp_StereoR = nullptr;
 };
+
+using freestyle_mtl_ptr_t = std::shared_ptr<FreestyleMaterial>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -247,6 +302,11 @@ inline void FreestyleMaterial::begin(const RenderContextFrameData& RCFD) {
   rsi->BindRasterState(_rasterstate);
   fxi->BindPass(_shader, 0);
 }
+inline void FreestyleMaterial::begin(const FxShaderTechnique* tek, const RenderContextFrameData& RCFD) {
+  bindTechnique(tek);
+  begin(RCFD);
+}
+
 inline void FreestyleMaterial::end(const RenderContextFrameData& RCFD) {
   auto targ = RCFD.GetTarget();
   targ->FXI()->EndPass(_shader);

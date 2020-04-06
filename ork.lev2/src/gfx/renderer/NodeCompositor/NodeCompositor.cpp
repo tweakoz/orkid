@@ -115,10 +115,12 @@ bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
     // if we have a postfx_out, then that is the "final" output
     //  otherwise it is render_out
     ////////////////////////////////////////////////////////////////////////////
+    RtGroup* render_outg = _renderNode ? _renderNode->GetOutputGroup() : nullptr;
     RtBuffer* render_out = _renderNode ? _renderNode->GetOutput() : nullptr;
     RtBuffer* postfx_out = _postfxNode ? _postfxNode->GetOutput() : nullptr;
     RtBuffer* final_out  = postfx_out ? postfx_out : render_out;
     drawdata._properties["render_out"_crcu].Set<RtBuffer*>(render_out);
+    drawdata._properties["render_outgroup"_crcu].Set<RtGroup*>(render_outg);
     // todo - techinically only the 'root' postfx node should get input
     //  from the render out... we need to isolate the root node somehow..
     drawdata._properties["postfx_out"_crcu].Set<RtBuffer*>(postfx_out);

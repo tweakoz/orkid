@@ -116,7 +116,7 @@ void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
   ///////////////////////////////////////////////////////////////////////////
   // SetDirty(false);
   pTEXTARG->popRenderContextFrameData();
-  _scenevp->PopFrameTechnique();
+  //_scenevp->PopFrameTechnique();
   lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
 
   ///////////////////////////////////////////////////////////////////////////
@@ -141,7 +141,7 @@ DeferredPickOperationContext::DeferredPickOperationContext()
 
 ///////////////////////////////////////////////////////////////////////////////
 static auto gPickOPQ = std::make_shared<opq::OperationsQueue>(1, "PickOpQ");
-void OuterPickOp(DeferredPickOperationContext* pickctx) {
+void OuterPickOp(defpickopctx_ptr_t pickctx) {
 
   assert(pickctx->mViewport != nullptr);
   if (pickctx->mViewport == nullptr)
@@ -196,16 +196,18 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
         pickctx->mState       = 1;
         auto& pixel_ctx       = pickctx->_pixelctx;
         pixel_ctx._gfxContext = target;
-        pixel_ctx.miMrtMask   = 1;
+        pixel_ctx.miMrtMask   = 3;
         pixel_ctx.mUsage[0]   = lev2::PixelFetchContext::EPU_PTR64;
-        // pixel_ctx.mUsage[1]   = lev2::PixelFetchContext::EPU_FLOAT;
+        pixel_ctx.mUsage[1]   = lev2::PixelFetchContext::EPU_FLOAT;
         pixel_ctx.mUserData.Set<ork::lev2::RenderContextFrameData*>(&RCFD);
         target->makeCurrentContext();
 
         viewport->GetPixel(pickctx->miX, pickctx->miY, pixel_ctx); // HERE<<<<<<
-        const auto& colr    = pickctx->_pixelctx.mPickColors[0];
+        const auto& colr0    = pickctx->_pixelctx.mPickColors[0];
+        const auto& colr1    = pickctx->_pixelctx.mPickColors[1];
         pickctx->mpCastable = pixel_ctx.GetObject(viewport->pickbuffer(), 0);
-        printf("GOTCLR<%g %g %g %g>\n", colr.x, colr.y, colr.z, colr.w);
+        printf("GOTCLR0<%g %g %g %g>\n", colr0.x, colr0.y, colr0.z, colr0.w);
+        printf("GOTCLR1<%g %g %g %g>\n", colr1.x, colr1.y, colr1.z, colr1.w);
         printf("GOTOBJ<%p>\n", pickctx->mpCastable);
         if (pickctx->mOnPick) {
           auto on_pick = [=]() {

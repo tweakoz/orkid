@@ -27,6 +27,7 @@ private:
   void DoRender(CompositorDrawData& drawdata) final;
 
   lev2::RtBuffer* GetOutput() const final;
+  lev2::RtGroup* GetOutputGroup() const final;
   svar256_t _impl;
 };
 

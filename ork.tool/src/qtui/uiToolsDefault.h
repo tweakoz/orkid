@@ -39,8 +39,8 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DeferredPickOperationContext;
-
-typedef std::function<void(DeferredPickOperationContext*)> on_pick_lambda_t;
+using defpickopctx_ptr_t = std::shared_ptr<DeferredPickOperationContext>;
+using on_pick_lambda_t = std::function<void(defpickopctx_ptr_t)>;
 
 struct DeferredPickOperationContext {
   DeferredPickOperationContext();
@@ -70,7 +70,7 @@ private:
   ui::HandlerResult DoOnUiEvent(const ui::Event& EV) override;
   void DoAttach(SceneEditorVP*) override;
   void DoDetach(SceneEditorVP*) override;
-  void HandlePickOperation(DeferredPickOperationContext* ppickop);
+  void HandlePickOperation(defpickopctx_ptr_t ppickop);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

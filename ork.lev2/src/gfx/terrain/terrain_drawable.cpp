@@ -1095,8 +1095,6 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   auto fxi                  = targ->FXI();
   auto gbi                  = targ->GBI();
   ///////////////////////////////////////////////////////////////////
-  if (bpick)
-    return;
   assert(raw_drawable != nullptr);
   ///////////////////////////////////////////////////////////////////
   // update
@@ -1119,8 +1117,7 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   fvec4 color = fcolor4::White();
   if (bpick) {
     auto pickbuf    = targ->FBI()->currentPickBuffer();
-    Object* pickobj = nullptr;
-    uint64_t pickid = pickbuf->AssignPickId(pickobj);
+    uint64_t pickid = pickbuf->AssignPickId(raw_drawable->GetOwner());
     color.SetRGBAU64(pickid);
   } else if (false) { // is_sel ){
     color = fcolor4::Red();
@@ -1139,7 +1136,7 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   fvec3 campos_mono = CPD.monoCamPos(viz_offset);
   fvec3 znormal     = CPD.monoCamZnormal();
 
-  if (stereo1pass) {
+  if (stereo1pass and not bpick) {
     auto stcams = CPD._stereoCameraMatrices;
     MVPL        = stcams->MVPL(viz_offset);
     MVPR        = stcams->MVPR(viz_offset);
@@ -1164,8 +1161,12 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
 
   // auto range = _aabbmax - _aabbmin;
 
+  auto tek_viz = stereo1pass ? _tekDefGbuf1Stereo : _tekDefGbuf1;
+  auto tek_pick = _tekPick;
+
+
   targ->PushMaterial(_terrainMaterial);
-  _terrainMaterial->bindTechnique(stereo1pass ? _tekDefGbuf1Stereo : _tekDefGbuf1);
+  _terrainMaterial->bindTechnique( bpick ? tek_pick : tek_viz);
   _terrainMaterial->begin(*RCFD);
   _terrainMaterial->bindParamMatrix(_parMatVPL, MVPL);
   _terrainMaterial->bindParamMatrix(_parMatVPC, MVPC);
@@ -1176,7 +1177,6 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   _terrainMaterial->bindParamVec4(_parModColor, color);
   _terrainMaterial->bindParamFloat(_parTime, 0.0f);
 
-  //_terrainMaterial->bindParamTex(_parTexEnv, HFDD._sphericalenvmap);
   _terrainMaterial->bindParamFloat(_parTestXXX, HFDD._testxxx);
 
   _terrainMaterial->bindParamVec3(_parFogColor, fvec3(0, 0, 0));
@@ -1195,7 +1195,7 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   ////////////////////////////////
   for (int isector = 0; isector < 8; isector++) {
     auto& sector = _sector[isector];
-    auto L0      = sector._lod0;
+    auto& L0      = sector._lod0;
     for (auto cluster : L0._gpuClusters) {
       for (auto primitive : cluster->_primitives) {
         gbi->DrawIndexedPrimitiveEML(
@@ -1210,7 +1210,7 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   ////////////////////////////////
   for (int isector = 0; isector < 8; isector++) {
     auto& sector = _sector[isector];
-    auto LX      = sector._lodX;
+    auto& LX      = sector._lodX;
     for (auto cluster : LX._gpuClusters) {
       for (auto primitive : cluster->_primitives) {
         gbi->DrawIndexedPrimitiveEML(

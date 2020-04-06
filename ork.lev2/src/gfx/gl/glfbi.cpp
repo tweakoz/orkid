@@ -553,7 +553,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
 
   bool bInBounds = (rAt.x >= 0.0f and rAt.x < 1.0f and rAt.y >= 0.0f and rAt.y < 1.0f);
 
-  // printf("GetPixel<%d %d> msdim<%d %d> inbounds<%d> rtg<%p>\n", sx, sy, msw, msh, int(bInBounds), ctx.mRtGroup);
+  printf("GetPixel rtg<%p> numbuf<%d>\n", ctx.mRtGroup, ctx.mRtGroup->mNumMrts );
 
   if (bInBounds) {
     if (ctx.mRtGroup) {
