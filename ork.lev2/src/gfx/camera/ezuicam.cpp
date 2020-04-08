@@ -161,14 +161,16 @@ void EzUiCam::draw(Context* context) const {
   auto RCFD = context->topRenderContextFrameData();
   fmtx4 worldmtx;
   worldmtx.SetTranslation(mvCenter);
-  float Scale = mfLoc / 30.0f;
+  float Scale = mfLoc / 60.0f;
   worldmtx.Scale(fvec4(Scale, Scale, Scale));
   ///////////////////////////////////////////////////////////////
   context->debugPushGroup("EzUiCam::draw");
   priv->_material->begin(priv->_tek,*RCFD);
   priv->_material->bindMvpMatrices(worldmtx);
-    GfxPrimitives::GetRef().RenderTriCircle(context);
-    //GfxPrimitives::GetRef().RenderAxis(context);
+    auto& tricircle = GfxPrimitives::GetRef().mVtxBuf_TriCircle;
+    auto& axis = GfxPrimitives::GetRef().mVtxBuf_Axis;
+    context->GBI()->DrawPrimitiveEML(tricircle);
+    context->GBI()->DrawPrimitiveEML(axis);
   priv->_material->end(*RCFD);
   context->debugPopGroup();
   ///////////////////////////////////////////////////////////////

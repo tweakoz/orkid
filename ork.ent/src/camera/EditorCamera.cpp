@@ -97,7 +97,6 @@ bool EditorCamControllerInst::DoLink(Simulation* psi) {
     entity->SetDynMatrix(imatrix);
 
 
-  /*
   auto pdrw = new CallbackDrawable(entity);
   pdrw->SetOwner(entity->data());
   pdrw->SetSortKey(0);
@@ -118,7 +117,6 @@ bool EditorCamControllerInst::DoLink(Simulation* psi) {
 
   pdrw->SetRenderCallback(rendermethod);
   //pdrw->setEnqueueOnLayerCallback(impl::enqueueOnLayerCallback);
-  */
 
   }
   return true;

@@ -337,7 +337,9 @@ libblock lib_deferred
       vec3 metalbase = vec3(0.04);
       vec3 albedo = gbd._albedo;
       vec3 rawn = gbd._wnrm;
-
+      /////////////////////////
+      if( gbd._emissive )
+        return albedo;
       /////////////////////////
       // pixel was written to in the gbuffer
       float metallic = clamp(gbd._metallic,0.02,0.99);
@@ -354,7 +356,6 @@ libblock lib_deferred
       vec3 edir = normalize(wpos-epos);
       vec3 n    = rawn; //normalize(rawn*2-vec3(1));
       vec3 refl = normalize(reflect(edir,n));
-      float emissive = gbd._emissive;
       /////////////////////////
       float costheta = clamp(dot(n, edir),0.01,1.0);
       vec2 brdf  = textureLod(MapBrdfIntegration, vec2(costheta,pow(roughness,0.25)),2).rg;

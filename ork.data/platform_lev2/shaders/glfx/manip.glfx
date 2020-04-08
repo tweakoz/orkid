@@ -4,6 +4,7 @@
 fxconfig fxcfg_default
 {
 	glsl_version = "130";
+	import "gbuftools.i"
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
@@ -76,6 +77,23 @@ fragment_shader ps_modclrd3
 	out_clr = vec4(modcolor.xyz*0.3,1.0);
 }
 ///////////////////////////////////////////////////////////////
+fragment_interface iface_pbr_deferred
+	: ub_frg
+{
+    inputs {
+        vec4 frg_clr;
+	    vec2 frg_uv;
+	}
+	outputs {
+		layout(location = 0) uvec4 out_gbuf;
+	}
+}
+fragment_shader ps_deferred_emissive_fragclr 
+  : iface_pbr_deferred 
+  : lib_gbuf_encode {
+	out_gbuf = packGbuffer_unlit(frg_clr.xyz);
+}
+///////////////////////////////////////////////////////////////
 state_block sb_m1 : sb_default
 {
 	DepthTest=OFF;
@@ -112,7 +130,7 @@ technique std
 	fxconfig=fxcfg_default;
 	pass p0
 	{	vertex_shader=vs_vtxcolor;
-		fragment_shader=ps_modclr;
+		fragment_shader=ps_deferred_emissive_fragclr;
 		state_block=sb_m1;
 	}
 }

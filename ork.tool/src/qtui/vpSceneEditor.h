@@ -18,6 +18,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/pickbuffer.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/ui/viewport.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -187,6 +188,7 @@ protected:
 
 private:
   UpdateThread* _updateThread;
+  std::shared_ptr<ork::lev2::CameraMatrices> _overlayCamMatrices;
 
   void DisableSceneDisplay();
   void EnableSceneDisplay();

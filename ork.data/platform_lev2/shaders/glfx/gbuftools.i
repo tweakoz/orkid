@@ -10,7 +10,7 @@ libblock lib_gbuf_decode {
     float _zeye;
     float _fogZ;
     float _rawDepth;
-    float _emissive;
+    bool _emissive;
     float _metallic;
     float _roughness;
     bool _mask;
@@ -86,7 +86,7 @@ libblock lib_gbuf_decode {
     decoded._albedo = vec3(float(ur),float(ug),float(ub))*1.0/255.0;
     decoded._fogZ = o._fogZ;
     decoded._rawDepth = o._rawDepth;
-    decoded._emissive = float((gbuf.w>>14)&1);
+    decoded._emissive = bool((gbuf.w>>14)&1);
     decoded._metallic = float(umtl)/255.0;;
     decoded._roughness = float((gbuf.y>>8)&0xff)/255.0;
     decoded._mask = bool(gbuf.w>>15);
@@ -117,5 +117,8 @@ libblock lib_gbuf_encode {
     uint bout = unx|((umtl&0xf)<<10)|snz;
     uint aout = uny|((umtl&0xf0)<<6)|uemissive|mask;
     return uvec4(rout,gout,bout,aout);
+  }
+  uvec4 packGbuffer_unlit(vec3 basecolor){
+    return packGbuffer(basecolor,vec3(0,1,0),1,0,true);
   }
 } // libblock lib_gbuf {

@@ -111,7 +111,6 @@ public:
 
   ///////////////////////////////////////////////////////////////////////////////
 
-private:
   StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_GridX100;
   StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_Cone;
   StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_DirCone;
