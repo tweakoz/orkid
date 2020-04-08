@@ -94,14 +94,14 @@ vertex_shader vs_rigid_gbuffer
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_stereo
 	: extension(GL_NV_stereo_view_rendering)
-  : extension(GL_NV_viewport_array2)
+    : extension(GL_NV_viewport_array2)
 	: iface_vgbuffer_stereo  : lib_pbr_vtx {
-		vs_common(position,normal,binormal);
-		gl_Position = mvp_l*position;
-		gl_SecondaryPositionNV = mvp_r*position;
-  	gl_Layer = 0;
-		gl_ViewportMask[0] = 1;
-  	gl_SecondaryViewportMaskNV[0] = 2;
+	  vs_common(position,normal,binormal);
+	  gl_Position = mvp_l*position;
+	  gl_SecondaryPositionNV = mvp_r*position;
+  	  gl_Layer = 0;
+	  gl_ViewportMask[0] = 1;
+  	  gl_SecondaryViewportMaskNV[0] = 2;
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_skinned_gbuffer

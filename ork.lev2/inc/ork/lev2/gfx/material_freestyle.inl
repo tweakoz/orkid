@@ -26,6 +26,7 @@ struct FreestyleMaterial : public GfxMaterial {
 
   void begin(const RenderContextFrameData& RCFD);
   void begin(const FxShaderTechnique* tek, const RenderContextFrameData& RCFD);
+  void begin(const FxShaderTechnique* tekMono,const FxShaderTechnique* tekStereo, const RenderContextFrameData& RCFD);
   void end(const RenderContextFrameData& RCFD);
 
   ////////////////////////////////////////////
@@ -102,20 +103,8 @@ struct FreestyleMaterial : public GfxMaterial {
     bool is_stereo                     = CPD.isStereoOnePass();
     bool is_forcenoz                   = RCID ? RCID->IsForceNoZWrite() : false;
 
-    //_initialTarget->RSI()->BindRasterState(_rasterstate);
-    //_initialTarget->FXI()->BindPass(_shader, iPass);
-
-    //if (_shader->GetFailedCompile()) {
-      //assert(false);
-      //return false;
-    //}
-
     auto MTXI = _initialTarget->MTXI();
     auto FXI  = _initialTarget->FXI();
-
-    //FXI->BindParamMatrix(_shader, hMatM, MTXI->RefMMatrix());
-    //FXI->BindParamMatrix(_shader, hMatMV, MTXI->RefMVMatrix());
-    //FXI->BindParamMatrix(_shader, hMatP, MTXI->RefPMatrix());
 
     if (is_stereo and CPD._stereoCameraMatrices) {
       auto stereomtx = CPD._stereoCameraMatrices;
@@ -305,6 +294,11 @@ inline void FreestyleMaterial::begin(const RenderContextFrameData& RCFD) {
 inline void FreestyleMaterial::begin(const FxShaderTechnique* tek, const RenderContextFrameData& RCFD) {
   bindTechnique(tek);
   begin(RCFD);
+}
+
+inline void FreestyleMaterial::begin(const FxShaderTechnique* tekMono,const FxShaderTechnique* tekStereo,const RenderContextFrameData& RCFD){
+  const auto& CPD                    = RCFD.topCPD();
+  begin( CPD.isStereoOnePass() ? tekStereo : tekMono, RCFD);
 }
 
 inline void FreestyleMaterial::end(const RenderContextFrameData& RCFD) {

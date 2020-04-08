@@ -12,10 +12,12 @@ fxconfig fxcfg_default
 uniform_set ub_vtx
 {
 	mat4        mvp;
+	mat4        mvpL;
+	mat4        mvpR;
 	vec4        modcolor;
 
 }
-vertex_interface iface_vdefault
+vertex_interface iface_v_mono
 	: ub_vtx
 {
     inputs {
@@ -28,6 +30,11 @@ vertex_interface iface_vdefault
         vec4 frg_clr;
 	    vec2 frg_uv;
 	}
+}
+vertex_interface iface_v_stereo : iface_v_mono {
+  outputs {
+    layout(secondary_view_offset=1) int gl_Layer;
+  }
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_frg
@@ -53,12 +60,24 @@ state_block sb_default : default
 ///////////////////////////////////////////////////////////////
 // shaders
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_vtxcolor
-	: iface_vdefault
+vertex_shader vs_vtxcolor_mono
+	: iface_v_mono
 {
 	gl_Position = mvp*position;
 	frg_clr = vtxcolor;
 	frg_uv = uv0;
+}
+vertex_shader vs_vtxcolor_stereo
+	: iface_v_stereo
+	: extension(GL_NV_stereo_view_rendering)
+    : extension(GL_NV_viewport_array2) {
+	gl_Position = mvpL*position;
+	gl_SecondaryPositionNV = mvpR*position;
+	frg_clr = vtxcolor;
+	frg_uv = uv0;
+  	gl_Layer = 0;
+	gl_ViewportMask[0] = 1;
+  	gl_SecondaryViewportMaskNV[0] = 2;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_modclr
@@ -101,22 +120,7 @@ state_block sb_m1 : sb_default
 	CullTest=OFF;
 	BlendMode = OFF;
 }
-/*
-state_block sb_m2  : sb_m1
-{
-	DepthTest=OFF;
-	DepthMask=false;
-	CullTest=PASS_FRONT;
-	BlendMode = ALPHA;
-}
-state_block sb_m3 : sb_m2
-{
-	DepthTest=LEQUALS;
-	DepthMask=true;
-	CullTest=PASS_BACK;
-	BlendMode = ADDITIVE;
-}
-*/
+
 state_block sb_pick : sb_default
 {
 	DepthTest=OFF;
@@ -125,11 +129,22 @@ state_block sb_pick : sb_default
 	BlendMode = OFF;
 }
 
-technique std
+///////////////////////////////////////////////////////////////
+
+technique std_mono
 {
 	fxconfig=fxcfg_default;
 	pass p0
-	{	vertex_shader=vs_vtxcolor;
+	{	vertex_shader=vs_vtxcolor_mono;
+		fragment_shader=ps_deferred_emissive_fragclr;
+		state_block=sb_m1;
+	}
+}
+technique std_stereo
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_vtxcolor_stereo;
 		fragment_shader=ps_deferred_emissive_fragclr;
 		state_block=sb_m1;
 	}
@@ -137,21 +152,10 @@ technique std
 technique pick {
 	fxconfig=fxcfg_default;
 	pass p0
-	{	vertex_shader=vs_vtxcolor;
+	{	vertex_shader=vs_vtxcolor_mono;
 		fragment_shader=ps_modclr;
 		state_block=sb_pick;
 	}
 }
-
-	/*pass p1
-	{	vertex_shader=vs_vtxcolor;
-		fragment_shader=ps_modclrd2;
-		state_block=sb_m2;
-	}
-	pass p2
-	{	vertex_shader=vs_vtxcolor;
-		fragment_shader=ps_modclrd3;
-		state_block=sb_m3;
-	}*/
 
 ///////////////////////////////////////////////////////////////

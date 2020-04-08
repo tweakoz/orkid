@@ -67,14 +67,16 @@ struct UiCamPrivate {
     if( _doGpuInit ){
       auto shaderpath = file::Path("orkshader://manip");
       _material->gpuInit(ctx,shaderpath);
-      _material->setMvpParams("mvp","mvp","mvp");
-      _tek = _material->technique("std");
+      _material->setMvpParams("mvp","mvpL","mvpR");
+      _tekMono = _material->technique("std_mono");
+      _tekStereo = _material->technique("std_stereo");
       _doGpuInit = false;
     }
   }
   bool _doGpuInit = true;
   freestyle_mtl_ptr_t _material;
-  const FxShaderTechnique* _tek = nullptr;
+  const FxShaderTechnique* _tekMono = nullptr;
+  const FxShaderTechnique* _tekStereo = nullptr;
 };
 using uicamprivate_t = std::shared_ptr<UiCamPrivate>;
 
@@ -165,7 +167,7 @@ void EzUiCam::draw(Context* context) const {
   worldmtx.Scale(fvec4(Scale, Scale, Scale));
   ///////////////////////////////////////////////////////////////
   context->debugPushGroup("EzUiCam::draw");
-  priv->_material->begin(priv->_tek,*RCFD);
+  priv->_material->begin(priv->_tekMono,priv->_tekStereo,*RCFD);
   priv->_material->bindMvpMatrices(worldmtx);
     auto& tricircle = GfxPrimitives::GetRef().mVtxBuf_TriCircle;
     auto& axis = GfxPrimitives::GetRef().mVtxBuf_Axis;
