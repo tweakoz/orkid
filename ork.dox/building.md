@@ -23,6 +23,8 @@ To build on Osx Catalina (10.15)+
 * ```ork.test.buildtestassets.py``` <- build test assets (using built orkid executable)
 * ```exit``` <- After an --ez build exit and reload the environment
 * ```.stage/.launch_env```
+* ```ork.example.lev2.gfx.minimal3D.exe``` <- run a c++ example
+* ```./ork.lev2/examples/python/window.py``` <- run a python example
 
 To build on Ubuntu19.10/Ubuntu20.04 x86/64
 ==================================
@@ -38,6 +40,8 @@ To build on Ubuntu19.10/Ubuntu20.04 x86/64
 * ```ork.test.buildtestassets.py``` <- build test assets (using built orkid executable)
 * ```exit``` <- After an --ez build exit and reload the environment
 * ```.stage/.launch_env```
+* ```ork.example.lev2.gfx.minimal3D.exe``` <- run a c++ example
+* ```./ork.lev2/examples/python/window.py``` <- run a python example
 
 everything will be built and installed into the staging folder.
 the ```<stage>/bin``` and ```<stage>/lib``` paths were added to your environment variables already when you launched the environment'.
