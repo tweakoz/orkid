@@ -210,7 +210,6 @@ bool BulletSystem::DoLink(Simulation* psi) {
   auto pdata = new BulletDebugDrawDBData(this);
   pdata->_debugger = &_debugger;
   _debugDrawable->SetUserDataA(pdata);
-  pdata->_drawLayer = psi->GetLayer(_dbgdrawlayername);
 
   return true;
 }

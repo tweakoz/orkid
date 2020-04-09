@@ -170,9 +170,9 @@ public:
 
 	typedef lev2::CameraDataLut CameraDataLut;
 
-	void AddLayer( const PoolString& name, lev2::Layer*player );
-	lev2::Layer* GetLayer( const PoolString& name );
-	const lev2::Layer* GetLayer( const PoolString& name ) const;
+	void AddLayerData( const PoolString& name, lev2::LayerData*player );
+	lev2::LayerData* GetLayerData( const PoolString& name );
+	const lev2::LayerData* GetLayerData( const PoolString& name ) const;
 
 	static const ork::PoolString& EventChannel();
 
@@ -213,7 +213,7 @@ protected:
 
 	orkmap<PoolString, Archetype*>			mDynamicArchetypes;
 
-	orkmap<PoolString,lev2::Layer*>				mLayers;
+	orkmap<PoolString,lev2::LayerData*>		_layerDataMap;
 	orkmap<PoolString,Entity*>				mEntities;
 	EntitySet								mActiveEntities;
 	float									mGameTime;			// current game clock time (stops on pause)
@@ -232,7 +232,7 @@ protected:
 	float									mfAvgDtCtr;
 	size_t 									mEntityUpdateCount;
 
-	CameraDataLut								_cameraDataLUT;		// camera list
+	CameraDataLut							_cameraDataLUT;		// camera list
 	//////////////////////////////////////////////////////////
 	ActiveComponentType						mActiveEntityComponents;
 	orkvector<EntityActivationQueueItem>	mEntityActivateQueue;

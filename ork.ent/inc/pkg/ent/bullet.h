@@ -143,7 +143,6 @@ struct BulletDebugDrawDBRec {};
 
 struct BulletDebugDrawDBData {
   BulletSystem* _bulletSystem;
-  lev2::Layer* _drawLayer = nullptr;
   BulletDebugDrawDBRec mDBRecs[lev2::DrawableBuffer::kmaxbuffers];
   PhysicsDebugger* _debugger;
   BulletDebugDrawDBData(BulletSystem* psi);

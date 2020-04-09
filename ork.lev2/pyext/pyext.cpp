@@ -16,6 +16,7 @@
 #include <ork/lev2/gfx/meshutil/submesh.h>
 #include <ork/lev2/gfx/primitives.inl>
 #include <ork/lev2/gfx/dbgfontman.h>
+#include <ork/lev2/gfx/scenegraph/scenegraph.h>
 #include <ork/kernel/opq.h>
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/ui/event.h>
@@ -518,7 +519,12 @@ PYBIND11_MODULE(orklev2, m) {
       .def("exec", [](std::shared_ptr<OrkEzQtApp>& app) -> int { //
         return app->exec();
       });
-
+    /////////////////////////////////////////////////////////////////////////////////
+    py::class_<scenegraph::SceneGraph,scenegraph::scenegraph_ptr_t>(m, "SceneGraph")
+        .def(py::init<>())
+        .def("enqueueToRenderer",[](scenegraph::scenegraph_ptr_t SG){
+          SG->enqueueToRenderer();
+        });
   /////////////////////////////////////////////////////////////////////////////////
   auto meshutil = m.def_submodule("meshutil", "Mesh operations");
   {
@@ -582,7 +588,6 @@ PYBIND11_MODULE(orklev2, m) {
     py::class_<meshutil::poly>(meshutil, "Poly").def(py::init<>());
     /////////////////////////////////////////////////////////////////////////////////
     py::class_<meshutil::edge>(meshutil, "Edge").def(py::init<>());
-    /////////////////////////////////////////////////////////////////////////////////
   }
   /////////////////////////////////////////////////////////////////////////////////
   auto primitives = m.def_submodule("primitives", "BuiltIn Primitives");

@@ -125,8 +125,8 @@ Simulation::Simulation(const SceneData* sdata, Application* application)
   ork::opq::assertOnQueue2(opq::updateSerialQueue());
   OrkAssertI(mApplication, "Simulation must be constructed with a non-NULL Application!");
 
-  auto player = new lev2::Layer;
-  AddLayer(AddPooledLiteral("Default"), player);
+  auto default_layer = new lev2::LayerData;
+  AddLayerData(AddPooledLiteral("Default"), default_layer);
 
   ////////////////////////////
   // create one token
@@ -554,10 +554,10 @@ void Simulation::ComposeEntities() {
         actualLayerName = AddPooledString(layer_name.c_str());
       }
 
-      lev2::Layer* player = GetLayer(actualLayerName);
-      if (0 == player) {
-        player = new lev2::Layer;
-        AddLayer(actualLayerName, player);
+      auto layer_data = GetLayerData(actualLayerName);
+      if (0 == layer_data) {
+        layer_data = new lev2::LayerData;
+        AddLayerData(actualLayerName, layer_data);
       }
       ////////////////////////////////////////////////////////////////
 
@@ -1067,23 +1067,23 @@ void Simulation::UpdateActiveComponents(ork::PoolString family) {
   UpdateEntityComponents(GetActiveComponents(family));
 }
 ///////////////////////////////////////////////////////////////////////////
-void Simulation::AddLayer(const PoolString& name, lev2::Layer* player) {
-  auto it = mLayers.find(name);
-  OrkAssert(it == mLayers.end());
-  mLayers[name]      = player;
-  player->mLayerName = name;
+void Simulation::AddLayerData(const PoolString& name, lev2::LayerData* player) {
+  auto it = _layerDataMap.find(name);
+  OrkAssert(it == _layerDataMap.end());
+  _layerDataMap[name]      = player;
+  player->_layerName = name;
 }
-lev2::Layer* Simulation::GetLayer(const PoolString& name) {
-  lev2::Layer* rval = 0;
-  auto it           = mLayers.find(name);
-  if (it != mLayers.end())
+lev2::LayerData* Simulation::GetLayerData(const PoolString& name) {
+  lev2::LayerData* rval = 0;
+  auto it           = _layerDataMap.find(name);
+  if (it != _layerDataMap.end())
     rval = it->second;
   return rval;
 }
-const lev2::Layer* Simulation::GetLayer(const PoolString& name) const {
-  const lev2::Layer* rval = 0;
-  auto it                 = mLayers.find(name);
-  if (it != mLayers.end())
+const lev2::LayerData* Simulation::GetLayerData(const PoolString& name) const {
+  const lev2::LayerData* rval = 0;
+  auto it                 = _layerDataMap.find(name);
+  if (it != _layerDataMap.end())
     rval = it->second;
   return rval;
 }
