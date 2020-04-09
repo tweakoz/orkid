@@ -77,13 +77,10 @@ class MyApp:
     FBI.clearcolor = vec4(.15,.15,.2,1)
     ctx.beginFrame()
 
-    self.SG.enqueueToRenderer()
-    #self.nsh.beginNoise(RCFD,Δtime)
-    #self.nsh.bindMvpMatrix(mvp_matrix)
-    #self.nsh.bindRotMatrix(rotmatrix)
-    #self.nsh.bindVolumeTex(self.volumetexture)
-    #self.prim.draw(ctx)
-    #self.nsh.end(RCFD)
+    self.SG.enqueueToRenderer() # technically enqueueToRenderer should work from any (single) python thread
+
+    self.SG.renderOnContext(ctx) # this must be on rendering thread
+
     ctx.endFrame()
 
 ##############################################

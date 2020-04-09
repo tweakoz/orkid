@@ -524,6 +524,9 @@ PYBIND11_MODULE(orklev2, m) {
         .def(py::init<>())
         .def("enqueueToRenderer",[](scenegraph::scenegraph_ptr_t SG){
           SG->enqueueToRenderer();
+        })
+        .def("renderOnContext",[](scenegraph::scenegraph_ptr_t SG,ctx_t context){
+          SG->renderOnContext(context.get());
         });
   /////////////////////////////////////////////////////////////////////////////////
   auto meshutil = m.def_submodule("meshutil", "Mesh operations");

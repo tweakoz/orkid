@@ -73,5 +73,11 @@ void SceneGraph::enqueueToRenderer() {
 
 }
 
+void SceneGraph::renderOnContext(Context* ctx) {
+  auto DB = DrawableBuffer::acquireReadDB(7); 
+  if(nullptr == DB) return;
+  DrawableBuffer::releaseReadDB(DB);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } // ork::lev2::scenegraph

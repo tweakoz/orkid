@@ -64,6 +64,7 @@ struct SceneGraph {
 
 	scenelayer_ptr_t createLayer(std::string named);
     void enqueueToRenderer();
+    void renderOnContext(Context* ctx);
 
 	std::map<std::string,scenelayer_ptr_t> _layers;
 
