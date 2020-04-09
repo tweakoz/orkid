@@ -28,6 +28,9 @@ To build on Osx Catalina (10.15)+
 
 To build on Ubuntu19.10/Ubuntu20.04 x86/64
 ==================================
+* ```update-alternatives --install /usr/bin/python python /usr/bin/python3 1``` <- set python3 as default
+* ```sudo apt install python3-pip python3-yarl``` <- we need python3-pip and a few packages to bootstrap
+* ```sudo apt install cmake wget curl libreadline-dev libxcb-xfixes0-dev``` <- we need a few packages to bootstrap
 * ```git clone https://github.com/tweakoz/orkid```
 * ```cd orkid```
 * ```git submodule init```
