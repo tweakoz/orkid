@@ -16,7 +16,7 @@ To bootstrap on Osx Catalina (10.15)+
 * ```cd orkid```
 * ```git submodule init```
 * ```git submodule init```
-* ```git lfs update```
+* ```git lfs init```
 * ```git lfs update```
 * ```obt.osx.installdeps.py``` <- install system deps (requires homebrew already setup)
 * ```./ork.build/bin/init_env.py --create .stage``` <- this creates a staging 'container' folder and launches an environment
