@@ -30,6 +30,7 @@ To build on Ubuntu19.04 x86/64
 * ```ork.installdeps.ubuntu19.py``` <- install system deps
 * ```./build.py --ez``` <- builds deps and orkid (into staging folder)
 * ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
+* ```ork.test.buildtestassets.py``` <- build test assets (using built orkid executable)
 
 everything will be built and installed into the staging folder.
 the ```<stage>/bin``` and ```<stage>/lib``` paths were added to your environment variables already when you launched the environment'.
