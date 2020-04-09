@@ -32,7 +32,7 @@ To build on Ubuntu19.10/Ubuntu20.04 x86/64
 * ```sudo apt install python3-pip python3-yarl``` <- we need python3-pip and a few packages to bootstrap
 * ```sudo apt install cmake wget curl git-lfs``` <- we need a few packages to bootstrap
 * ```sudo apt install libreadline-dev libxcb-xfixes0-dev``` <- packages not yet added to installdeps script.
-* ```git clone https://github.com/tweakoz/orkid```
+* ```git clone http://github.com/tweakoz/orkid```
 * ```cd orkid```
 * ```git submodule init```
 * ```git submodule update```
