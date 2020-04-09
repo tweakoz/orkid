@@ -115,7 +115,7 @@ ctx.endFrame()
 ###################################
 
 print(rtg.texture(0))
-ok = FBI.captureAsFormat(rtg,0,capbuf,0) # RGBA8
+ok = FBI.captureAsFormat(rtg,0,capbuf,"RGBA8") 
 as_np = numpy.array(capbuf,dtype=numpy.uint8).reshape( HEIGHT, WIDTH, 4 )
 img = Image.fromarray(as_np, 'RGBA')
 flipped = img.transpose(Image.FLIP_TOP_BOTTOM)

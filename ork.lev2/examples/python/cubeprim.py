@@ -90,7 +90,7 @@ mtl.end(RCFD)
 FBI.rtGroupPop()
 ctx.endFrame()
 
-ok = FBI.captureAsFormat(rtg,0,capbuf,0) # RGBA8
+ok = FBI.captureAsFormat(rtg,0,capbuf,"RGBA8")
 assert(ok)
 as_np = numpy.array(capbuf,dtype=numpy.uint8).reshape( HEIGHT, WIDTH, 4 )
 img = Image.fromarray(as_np, 'RGBA')

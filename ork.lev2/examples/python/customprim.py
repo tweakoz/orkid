@@ -178,7 +178,7 @@ ctx.endFrame()
 # 4. output png
 ###################################
 
-ok = FBI.captureAsFormat(rtg,0,capbuf,0) # RGBA8
+ok = FBI.captureAsFormat(rtg,0,capbuf,"RGBA8")
 as_np = numpy.array(capbuf,dtype=numpy.uint8).reshape( AAHEIGHT, AAWIDTH, 4 )
 img = Image.fromarray(as_np, 'RGBA')
 img = img.resize((WIDTH,HEIGHT), Image.ANTIALIAS)
