@@ -9,7 +9,7 @@ I do not currently test on Intel gfx chips. If you have an NVidia or AMD/ATI car
 
 In general building will require a bunch of dependencies which are not included. There is a script included that automates the downloading, building and installation of these dependencies.
 
-To build on Osx Catalina (10.15)+
+To bootstrap on Osx Catalina (10.15)+
 ==================================
 * install homebrew, and with install deps listed in ork.installdeps.ubuntu19.py
 * ```git clone https://github.com/tweakoz/orkid```
@@ -26,7 +26,7 @@ To build on Osx Catalina (10.15)+
 * ```ork.example.lev2.gfx.minimal3D.exe``` <- run a c++ example
 * ```./ork.lev2/examples/python/window.py``` <- run a python example
 
-To build on Ubuntu19.10/Ubuntu20.04 x86/64
+To bootstrap on Ubuntu19.10/Ubuntu20.04 x86/64
 ==================================
 * ```sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 1``` <- set python3 as default
 * ```sudo apt install python3-pip python3-yarl``` <- we need python3-pip and a few packages to bootstrap
