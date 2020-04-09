@@ -4,7 +4,7 @@
  * Michael T. Mayers
 
 ### Past Developers
- * Nasa (the person, not the governent agency)
+ * Nasa (the person, not the government agency)
  * Eggy
  * Fluffy
  * AJ
