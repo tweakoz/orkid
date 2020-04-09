@@ -9,7 +9,7 @@ I do not currently test on Intel gfx chips. If you have an NVidia or AMD/ATI car
 
 In general building will require a bunch of dependencies which are not included. There is a script included that automates the downloading, building and installation of these dependencies.
 
-To build on Osx Catalina (10.15)+
+To bootstrap on Osx Catalina (10.15)+
 ==================================
 * install homebrew, and with install deps listed in ork.installdeps.ubuntu19.py
 * ```git clone https://github.com/tweakoz/orkid```
@@ -26,20 +26,24 @@ To build on Osx Catalina (10.15)+
 * ```ork.example.lev2.gfx.minimal3D.exe``` <- run a c++ example
 * ```./ork.lev2/examples/python/window.py``` <- run a python example
 
-To build on Ubuntu19.10/Ubuntu20.04 x86/64
+To bootstrap on Ubuntu19.10/Ubuntu20.04 x86/64
 ==================================
-* ```git clone https://github.com/tweakoz/orkid```
+* ```sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 1``` <- set python3 as default
+* ```sudo apt install python3-pip python3-yarl``` <- we need python3-pip and a few packages to bootstrap
+* ```sudo apt install cmake wget curl git-lfs``` <- we need a few packages to bootstrap
+* ```sudo apt install libreadline-dev libxcb-xfixes0-dev``` <- packages not yet added to installdeps script.
+* ```git clone http://github.com/tweakoz/orkid```
 * ```cd orkid```
 * ```git submodule init```
 * ```git submodule update```
+* ```./ork.build/bin/obt.ix.installdeps.ubuntu19.py``` <- install obt system deps (this will ask for sudo password)
 * ```./ork.build/bin/init_env.py --create .stage``` <- this creates a staging folder and launches an environment
-* ```obt.ix.installdeps.ubuntu19.py``` <- install obt system deps
-* ```ork.installdeps.ubuntu19.py``` <- install orkid system deps
+* ```ork.installdeps.ubuntu19.py``` <- install orkid system deps (this will ask for sudo password)
 * ```./build.py --ez``` <- builds deps and orkid (into staging folder)
 * ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
 * ```ork.test.buildtestassets.py``` <- build test assets (using built orkid executable)
-* ```exit``` <- After an --ez build exit and reload the environment
-* ```.stage/.launch_env```
+* ```exit``` <- After an --ez build exit environment
+* ```.stage/.launch_env``` <- reload the environment (to get updated environment variables)
 * ```ork.example.lev2.gfx.minimal3D.exe``` <- run a c++ example
 * ```./ork.lev2/examples/python/window.py``` <- run a python example
 
