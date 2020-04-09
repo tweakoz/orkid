@@ -26,11 +26,6 @@ class MyApp:
     GBI = ctx.GBI()
     self.nsh = _shaders.Shader(ctx)
 
-    self.material = FreestyleMaterial()
-    self.material.gpuInit(ctx,Path("orkshader://solid"))
-    self.tek = self.material.shader.technique("vtxcolor")
-    self.par_mvp = self.material.shader.param("MatMVP")
-
     self.volumetexture = Texture.load("lev2://textures/voltex_pn3")
 
     ###################################
