@@ -20,7 +20,7 @@ To build on Osx Mojave (10.14)+
 * ```./build.py --ez``` <- builds deps and orkid (into staging folder)
 * ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
 
-To build on Ubuntu19.04 x86/64
+To build on Ubuntu19.10/Ubuntu20.04 x86/64
 ==================================
 * ```git clone https://github.com/tweakoz/orkid```
 * ```cd orkid```
