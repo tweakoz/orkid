@@ -43,7 +43,7 @@ void Layer::removeNode(node_ptr_t node) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SceneGraph::SceneGraph() {
+Scene::Scene() {
 
   // todo - allow user parameterization
 
@@ -65,12 +65,12 @@ SceneGraph::SceneGraph() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SceneGraph::~SceneGraph() {
+Scene::~Scene() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-layer_ptr_t SceneGraph::createLayer(std::string named) {
+layer_ptr_t Scene::createLayer(std::string named) {
 
   auto it = _layers.find(named);
   OrkAssert(it == _layers.end());
@@ -81,7 +81,7 @@ layer_ptr_t SceneGraph::createLayer(std::string named) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneGraph::enqueueToRenderer() {
+void Scene::enqueueToRenderer() {
   auto DB = DrawableBuffer::LockWriteBuffer(0);
   DB->Reset();
   DB->copyCameras(*_cameras.get());
@@ -99,7 +99,7 @@ void SceneGraph::enqueueToRenderer() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneGraph::renderOnContext(Context* context) {
+void Scene::renderOnContext(Context* context) {
   auto DB = DrawableBuffer::acquireReadDB(7);
   if (nullptr == DB)
     return;

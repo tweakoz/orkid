@@ -23,10 +23,10 @@ namespace ork::lev2::scenegraph {
 
 struct Layer;
 struct Node;
-struct SceneGraph;
+struct Scene;
 using layer_ptr_t = std::shared_ptr<Layer>;
 using node_ptr_t  = std::shared_ptr<Node>;
-using graph_ptr_t = std::shared_ptr<SceneGraph>;
+using scene_ptr_t = std::shared_ptr<Scene>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -56,10 +56,10 @@ struct Layer {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct SceneGraph {
+struct Scene {
 
-  SceneGraph();
-  ~SceneGraph();
+  Scene();
+  ~Scene();
 
   layer_ptr_t createLayer(std::string named);
   void enqueueToRenderer();

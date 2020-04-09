@@ -47,7 +47,7 @@ class MyApp:
     #self.drawable.bindMaterial()
     #self.nsh._mtl.bindTechnique(self.nsh._tek_frustum)
 
-    self.SG = SceneGraph()
+    self.SG = scenegraph.Scene()
     self.layer = self.SG.createLayer("layer1")
     self.primnode = self.prim.createNode("node1",self.layer,self.nsh._mtl)
     self.nsh._mtl.bindTechnique(self.nsh._tek_frustum)

@@ -21,8 +21,8 @@ int main(int argc, char** argv) {
   // create scenegraph
   //////////////////////////////////////////////////////////
 
-  auto sg_graph = std::make_shared<scenegraph::SceneGraph>();
-  auto sg_layer = sg_graph->createLayer("default");
+  auto sg_scene = std::make_shared<scenegraph::Scene>();
+  auto sg_layer = sg_scene->createLayer("default");
 
   //////////////////////////////////////////////////////////
   // create terrain drawable
@@ -58,20 +58,20 @@ int main(int argc, char** argv) {
     auto eye       = fvec3(sinf(phase), 1.0f, -cosf(phase)) * distance;
     fvec3 tgt(0, 0, 0);
     fvec3 up(0, 1, 0);
-    sg_graph->_camera->Lookat(eye, tgt, up);
-    sg_graph->_camera->Persp(0.1, 100.0, 45.0);
+    sg_scene->_camera->Lookat(eye, tgt, up);
+    sg_scene->_camera->Persp(0.1, 100.0, 45.0);
     ///////////////////////////////////////
-    sg_graph->enqueueToRenderer();
+    sg_scene->enqueueToRenderer();
     ////////////////////////////////////////
   });
   //////////////////////////////////////////////////////////
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
-  qtapp->onDraw([&](const ui::DrawEvent& drwev) { sg_graph->renderOnContext(drwev.GetTarget()); });
+  qtapp->onDraw([&](const ui::DrawEvent& drwev) { sg_scene->renderOnContext(drwev.GetTarget()); });
   //////////////////////////////////////////////////////////
   qtapp->onResize([&](int w, int h) {
     //
-    sg_graph->_compositorImpl->compositingContext().Resize(w, h);
+    sg_scene->_compositorImpl->compositingContext().Resize(w, h);
   });
   //////////////////////////////////////////////////////////
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
