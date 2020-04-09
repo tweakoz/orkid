@@ -16,6 +16,7 @@ To build on Osx Mojave (10.14)+
 * ```cd orkid```
 * ```git submodule init```
 * ```git submodule update```
+* ```obt.osx.installdeps.py``` <- install system deps (requires homebrew already setup)
 * ```./ork.build/bin/init_env.py --create .stage``` <- this creates a staging 'container' folder and launches an environment
 * ```./build.py --ez``` <- builds deps and orkid (into staging folder)
 * ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
