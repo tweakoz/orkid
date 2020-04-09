@@ -9,7 +9,6 @@
 import numpy, time, math
 from orkcore import *
 from orklev2 import *
-from PIL import Image
 import _shaders
 
 class MyApp:
