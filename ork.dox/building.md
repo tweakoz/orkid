@@ -36,6 +36,8 @@ To bootstrap on Ubuntu19.10/Ubuntu20.04 x86/64
 * ```cd orkid```
 * ```git submodule init```
 * ```git submodule update```
+* ```git lfs init```
+* ```git lfs update```
 * ```./ork.build/bin/obt.ix.installdeps.ubuntu19.py``` <- install obt system deps (this will ask for sudo password)
 * ```./ork.build/bin/init_env.py --create .stage``` <- this creates a staging folder and launches an environment
 * ```ork.installdeps.ubuntu19.py``` <- install orkid system deps (this will ask for sudo password)
