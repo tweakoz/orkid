@@ -13,6 +13,10 @@
 #include <ork/lev2/lev2_asset.h>
 
 namespace ork::lev2 {
+
+struct FreestyleMaterial;
+using freestyle_mtl_ptr_t = std::shared_ptr<FreestyleMaterial>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FreestyleMaterial : public GfxMaterial {
@@ -26,7 +30,7 @@ struct FreestyleMaterial : public GfxMaterial {
 
   void begin(const RenderContextFrameData& RCFD);
   void begin(const FxShaderTechnique* tek, const RenderContextFrameData& RCFD);
-  void begin(const FxShaderTechnique* tekMono,const FxShaderTechnique* tekStereo, const RenderContextFrameData& RCFD);
+  void begin(const FxShaderTechnique* tekMono, const FxShaderTechnique* tekStereo, const RenderContextFrameData& RCFD);
   void end(const RenderContextFrameData& RCFD);
 
   ////////////////////////////////////////////
@@ -87,15 +91,15 @@ struct FreestyleMaterial : public GfxMaterial {
 #endif
   ////////////////////////////////////////////
 
-  inline void setMvpParams(std::string monocam,std::string stereocamL,std::string stereocamR){
-    _mvp_Mono = param(monocam);
+  inline void setMvpParams(std::string monocam, std::string stereocamL, std::string stereocamR) {
+    _mvp_Mono    = param(monocam);
     _mvp_StereoL = param(stereocamL);
     _mvp_StereoR = param(stereocamR);
   }
 
   ////////////////////////////////////////////
 
-  inline void bindMvpMatrices(const fmtx4& world){
+  inline void bindMvpMatrices(const fmtx4& world) {
     const RenderContextInstData* RCID  = _initialTarget->GetRenderContextInstData();
     const RenderContextFrameData* RCFD = _initialTarget->topRenderContextFrameData();
     const auto& CPD                    = RCFD->topCPD();
@@ -184,13 +188,11 @@ struct FreestyleMaterial : public GfxMaterial {
 
   ////////////////////////////////////////////
 
-  Context* _initialTarget = nullptr;
-  const FxShaderParam* _mvp_Mono = nullptr;
+  Context* _initialTarget           = nullptr;
+  const FxShaderParam* _mvp_Mono    = nullptr;
   const FxShaderParam* _mvp_StereoL = nullptr;
   const FxShaderParam* _mvp_StereoR = nullptr;
 };
-
-using freestyle_mtl_ptr_t = std::shared_ptr<FreestyleMaterial>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -296,9 +298,10 @@ inline void FreestyleMaterial::begin(const FxShaderTechnique* tek, const RenderC
   begin(RCFD);
 }
 
-inline void FreestyleMaterial::begin(const FxShaderTechnique* tekMono,const FxShaderTechnique* tekStereo,const RenderContextFrameData& RCFD){
-  const auto& CPD                    = RCFD.topCPD();
-  begin( CPD.isStereoOnePass() ? tekStereo : tekMono, RCFD);
+inline void
+FreestyleMaterial::begin(const FxShaderTechnique* tekMono, const FxShaderTechnique* tekStereo, const RenderContextFrameData& RCFD) {
+  const auto& CPD = RCFD.topCPD();
+  begin(CPD.isStereoOnePass() ? tekStereo : tekMono, RCFD);
 }
 
 inline void FreestyleMaterial::end(const RenderContextFrameData& RCFD) {

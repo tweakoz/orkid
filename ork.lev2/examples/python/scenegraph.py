@@ -44,8 +44,13 @@ class MyApp:
     self.prim.backColor = vec4(0.5,0.5,0.0,1)
     self.prim.frustum = frust
     self.prim.gpuInit(ctx)
+    #self.drawable.bindMaterial()
+    #self.nsh._mtl.bindTechnique(self.nsh._tek_frustum)
 
     self.SG = SceneGraph()
+    self.layer = self.SG.createLayer("layer1")
+    self.primnode = self.prim.createNode("node1",self.layer,self.nsh._mtl)
+    self.nsh._mtl.bindTechnique(self.nsh._tek_frustum)
 
   ###########################
 

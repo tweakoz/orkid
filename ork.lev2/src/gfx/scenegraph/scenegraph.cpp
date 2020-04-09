@@ -29,16 +29,16 @@ Layer::~Layer() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-scenenode_ptr_t Layer::createNode(std::string named, drawable_ptr_t drawable) {
-  scenenode_ptr_t rval = std::make_shared<Node>(named, drawable);
-  _nodemap[named]      = rval;
+node_ptr_t Layer::createNode(std::string named, drawable_ptr_t drawable) {
+  node_ptr_t rval = std::make_shared<Node>(named, drawable);
+  _nodemap[named] = rval;
   _nodevect.push_back(rval);
   return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Layer::removeNode(scenenode_ptr_t node) {
+void Layer::removeNode(node_ptr_t node) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -70,7 +70,7 @@ SceneGraph::~SceneGraph() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-scenelayer_ptr_t SceneGraph::createLayer(std::string named) {
+layer_ptr_t SceneGraph::createLayer(std::string named) {
 
   auto it = _layers.find(named);
   OrkAssert(it == _layers.end());

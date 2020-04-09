@@ -24,9 +24,9 @@ namespace ork::lev2::scenegraph {
 struct Layer;
 struct Node;
 struct SceneGraph;
-using scenelayer_ptr_t = std::shared_ptr<Layer>;
-using scenenode_ptr_t  = std::shared_ptr<Node>;
-using scenegraph_ptr_t = std::shared_ptr<SceneGraph>;
+using layer_ptr_t = std::shared_ptr<Layer>;
+using node_ptr_t  = std::shared_ptr<Node>;
+using graph_ptr_t = std::shared_ptr<SceneGraph>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -46,12 +46,12 @@ struct Layer {
   Layer(std::string name);
   ~Layer();
 
-  scenenode_ptr_t createNode(std::string named, drawable_ptr_t drawable);
-  void removeNode(scenenode_ptr_t node);
+  node_ptr_t createNode(std::string named, drawable_ptr_t drawable);
+  void removeNode(node_ptr_t node);
 
   std::string _name;
-  std::map<std::string, scenenode_ptr_t> _nodemap;
-  std::vector<scenenode_ptr_t> _nodevect;
+  std::map<std::string, node_ptr_t> _nodemap;
+  std::vector<node_ptr_t> _nodevect;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -61,7 +61,7 @@ struct SceneGraph {
   SceneGraph();
   ~SceneGraph();
 
-  scenelayer_ptr_t createLayer(std::string named);
+  layer_ptr_t createLayer(std::string named);
   void enqueueToRenderer();
   void renderOnContext(Context* ctx);
 
@@ -76,7 +76,7 @@ struct SceneGraph {
   ScreenOutputCompositingNode* _outputNode      = nullptr;
   lev2::CompositingPassData _topCPD;
 
-  std::map<std::string, scenelayer_ptr_t> _layers;
+  std::map<std::string, layer_ptr_t> _layers;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

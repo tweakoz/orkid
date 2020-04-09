@@ -156,43 +156,44 @@ PYBIND11_MODULE(orklev2, m) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<GfxMaterial>(m, "GfxMaterial")
+  py::class_<GfxMaterial, material_ptr_t>(m, "GfxMaterial")
       .def_property("name", &GfxMaterial::GetName, &GfxMaterial::SetName)
-      .def("__repr__", [](const GfxMaterial& m) -> std::string {
+      .def("__repr__", [](material_ptr_t m) -> std::string {
         fxstring<64> fxs;
-        fxs.format("GfxMaterial(%p:%s)", &m, m.mMaterialName.c_str());
+        fxs.format("GfxMaterial(%p:%s)", m, m->mMaterialName.c_str());
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<FreestyleMaterial, GfxMaterial>(m, "FreestyleMaterial")
+  py::class_<FreestyleMaterial, GfxMaterial, freestyle_mtl_ptr_t>(m, "FreestyleMaterial")
       .def(py::init<>())
       .def(
           "gpuInit",
-          [](FreestyleMaterial& m, ctx_t& c, file::Path& path) {
-            m.gpuInit(c.get(), path);
-            m._rasterstate.SetCullTest(ECULLTEST_OFF);
+          [](freestyle_mtl_ptr_t m, ctx_t& c, file::Path& path) {
+            m->gpuInit(c.get(), path);
+            m->_rasterstate.SetCullTest(ECULLTEST_OFF);
           })
       .def(
           "gpuInitFromShaderText",
-          [](FreestyleMaterial& m, ctx_t& c, const std::string& name, const std::string& shadertext) {
-            m.gpuInitFromShaderText(c.get(), name, shadertext);
-            m._rasterstate.SetCullTest(ECULLTEST_OFF);
+          [](freestyle_mtl_ptr_t m, ctx_t& c, const std::string& name, const std::string& shadertext) {
+            m->gpuInitFromShaderText(c.get(), name, shadertext);
+            m->_rasterstate.SetCullTest(ECULLTEST_OFF);
           })
-      .def_property_readonly("shader", [](const FreestyleMaterial& m) -> fxshader_t { return fxshader_t(m._shader); })
-      .def("bindTechnique", [](FreestyleMaterial& m, const fxtechnique_t& tek) { m.bindTechnique(tek.get()); })
-      .def("bindParamFloat", [](FreestyleMaterial& m, fxparam_t& p, float value) { m.bindParamFloat(p.get(), value); })
-      .def("bindParamVec2", [](FreestyleMaterial& m, fxparam_t& p, const fvec2& value) { m.bindParamVec2(p.get(), value); })
-      .def("bindParamVec3", [](FreestyleMaterial& m, fxparam_t& p, const fvec3& value) { m.bindParamVec3(p.get(), value); })
-      .def("bindParamVec4", [](FreestyleMaterial& m, fxparam_t& p, const fvec4& value) { m.bindParamVec4(p.get(), value); })
-      .def("bindParamMatrix3", [](FreestyleMaterial& m, fxparam_t& p, const fmtx3& value) { m.bindParamMatrix(p.get(), value); })
-      .def("bindParamMatrix4", [](FreestyleMaterial& m, fxparam_t& p, const fmtx4& value) { m.bindParamMatrix(p.get(), value); })
+      .def_property_readonly("shader", [](const freestyle_mtl_ptr_t m) -> fxshader_t { return fxshader_t(m->_shader); })
+      .def("bindTechnique", [](freestyle_mtl_ptr_t m, const fxtechnique_t& tek) { m->bindTechnique(tek.get()); })
+      .def("bindParamFloat", [](freestyle_mtl_ptr_t m, fxparam_t& p, float value) { m->bindParamFloat(p.get(), value); })
+      .def("bindParamVec2", [](freestyle_mtl_ptr_t m, fxparam_t& p, const fvec2& value) { m->bindParamVec2(p.get(), value); })
+      .def("bindParamVec3", [](freestyle_mtl_ptr_t m, fxparam_t& p, const fvec3& value) { m->bindParamVec3(p.get(), value); })
+      .def("bindParamVec4", [](freestyle_mtl_ptr_t m, fxparam_t& p, const fvec4& value) { m->bindParamVec4(p.get(), value); })
+      .def("bindParamMatrix3", [](freestyle_mtl_ptr_t m, fxparam_t& p, const fmtx3& value) { m->bindParamMatrix(p.get(), value); })
+      .def("bindParamMatrix4", [](freestyle_mtl_ptr_t m, fxparam_t& p, const fmtx4& value) { m->bindParamMatrix(p.get(), value); })
       .def(
-          "bindParamTexture", [](FreestyleMaterial& m, fxparam_t& p, const tex_t& value) { m.bindParamCTex(p.get(), value.get()); })
-      .def("begin", [](FreestyleMaterial& m, RenderContextFrameData& rcfd) { m.begin(rcfd); })
-      .def("end", [](FreestyleMaterial& m, RenderContextFrameData& rcfd) { m.end(rcfd); })
-      .def("__repr__", [](const FreestyleMaterial& m) -> std::string {
+          "bindParamTexture",
+          [](freestyle_mtl_ptr_t m, fxparam_t& p, const tex_t& value) { m->bindParamCTex(p.get(), value.get()); })
+      .def("begin", [](freestyle_mtl_ptr_t m, RenderContextFrameData& rcfd) { m->begin(rcfd); })
+      .def("end", [](freestyle_mtl_ptr_t m, RenderContextFrameData& rcfd) { m->end(rcfd); })
+      .def("__repr__", [](const freestyle_mtl_ptr_t m) -> std::string {
         fxstring<256> fxs;
-        fxs.format("FreestyleMaterial(%p:%s)", &m, m.mMaterialName.c_str());
+        fxs.format("FreestyleMaterial(%p:%s)", m, m->mMaterialName.c_str());
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
@@ -519,15 +520,35 @@ PYBIND11_MODULE(orklev2, m) {
       .def("exec", [](std::shared_ptr<OrkEzQtApp>& app) -> int { //
         return app->exec();
       });
-    /////////////////////////////////////////////////////////////////////////////////
-    py::class_<scenegraph::SceneGraph,scenegraph::scenegraph_ptr_t>(m, "SceneGraph")
-        .def(py::init<>())
-        .def("enqueueToRenderer",[](scenegraph::scenegraph_ptr_t SG){
-          SG->enqueueToRenderer();
-        })
-        .def("renderOnContext",[](scenegraph::scenegraph_ptr_t SG,ctx_t context){
-          SG->renderOnContext(context.get());
-        });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<scenegraph::Node, scenegraph::node_ptr_t>(m, "SceneNode");
+  //.def("enqueueToRenderer", [](scenegraph::graph_ptr_t SG) { SG->enqueueToRenderer(); })
+  //.def("renderOnContext", [](scenegraph::graph_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<scenegraph::Layer, scenegraph::layer_ptr_t>(m, "SceneLayer")
+      .def("createNode", [](scenegraph::layer_ptr_t layer, std::string named, drawable_ptr_t drawable) -> scenegraph::node_ptr_t {
+        return layer->createNode(named, drawable);
+      });
+  //.def("renderOnContext", [](scenegraph::graph_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<Drawable, drawable_ptr_t>(m, "Drawable");
+  //.def("renderOnContext", [](scenegraph::graph_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<scenegraph::SceneGraph, scenegraph::graph_ptr_t>(m, "SceneGraph")
+      .def(py::init<>())
+      .def(
+          "createLayer",
+          [](scenegraph::graph_ptr_t SG, std::string named) -> scenegraph::layer_ptr_t { //
+            return SG->createLayer(named);
+          })
+      .def(
+          "enqueueToRenderer",
+          [](scenegraph::graph_ptr_t SG) { //
+            SG->enqueueToRenderer();
+          })
+      .def("renderOnContext", [](scenegraph::graph_ptr_t SG, ctx_t context) { //
+        SG->renderOnContext(context.get());
+      });
   /////////////////////////////////////////////////////////////////////////////////
   auto meshutil = m.def_submodule("meshutil", "Mesh operations");
   {
@@ -674,7 +695,15 @@ PYBIND11_MODULE(orklev2, m) {
             [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorRight = value; })
 
         .def("gpuInit", [](primitives::FrustumPrimitive& prim, ctx_t& context) { prim.gpuInit(context.get()); })
-        .def("draw", [](primitives::FrustumPrimitive& prim, ctx_t& context) { prim.draw(context.get()); });
+        .def("draw", [](primitives::FrustumPrimitive& prim, ctx_t& context) { prim.draw(context.get()); })
+        .def(
+            "createNode",
+            [](primitives::FrustumPrimitive& prim,
+               std::string named, //
+               scenegraph::layer_ptr_t layer,
+               freestyle_mtl_ptr_t material) -> scenegraph::node_ptr_t { //
+              return prim.createNode(named, layer, material);
+            });
     /////////////////////////////////////////////////////////////////////////////////
   }
   /////////////////////////////////////////////////////////////////////////////////

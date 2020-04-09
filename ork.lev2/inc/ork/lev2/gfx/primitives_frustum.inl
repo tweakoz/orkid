@@ -1,6 +1,7 @@
 #pragma once
 #include <ork/lev2/gfx/meshutil/submesh.h>
 #include <ork/math/frustum.h>
+#include <ork/lev2/gfx/scenegraph/scenegraph.h>
 
 namespace ork::lev2::primitives {
 
@@ -90,6 +91,29 @@ struct FrustumPrimitive {
 
   inline void draw(Context* context) {
     _primitive.draw(context);
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  inline scenegraph::node_ptr_t createNode(
+      std::string named, //
+      scenegraph::layer_ptr_t layer,
+      freestyle_mtl_ptr_t material) {
+
+    auto drw = std::make_shared<CallbackDrawable>(nullptr);
+    auto nod = layer->createNode("named", drw);
+
+    drw->SetRenderCallback([=](lev2::RenderContextInstData& rcid, //
+                               lev2::Context* context,
+                               const CallbackRenderable* pren) { //
+      auto RCFD = context->topRenderContextFrameData();
+      material->begin(*RCFD);
+      // todo - how to inject per instance data (controllable from c++ AND python)
+      this->draw(context);
+      material->end(*RCFD);
+    });
+
+    return nod;
   }
 
   //////////////////////////////////////////////////////////////////////////////
