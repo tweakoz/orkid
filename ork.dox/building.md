@@ -36,9 +36,9 @@ To build on Ubuntu19.10/Ubuntu20.04 x86/64
 * ```cd orkid```
 * ```git submodule init```
 * ```git submodule update```
-* ```./ork.build/bin/obt.ix.installdeps.ubuntu19.py``` <- install obt system deps
+* ```./ork.build/bin/obt.ix.installdeps.ubuntu19.py``` <- install obt system deps (this will ask for sudo password)
 * ```./ork.build/bin/init_env.py --create .stage``` <- this creates a staging folder and launches an environment
-* ```ork.installdeps.ubuntu19.py``` <- install orkid system deps
+* ```ork.installdeps.ubuntu19.py``` <- install orkid system deps (this will ask for sudo password)
 * ```./build.py --ez``` <- builds deps and orkid (into staging folder)
 * ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
 * ```ork.test.buildtestassets.py``` <- build test assets (using built orkid executable)
