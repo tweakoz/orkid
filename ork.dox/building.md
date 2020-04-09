@@ -19,6 +19,9 @@ To build on Osx Mojave (10.14)+
 * ```./ork.build/bin/init_env.py --create .stage``` <- this creates a staging 'container' folder and launches an environment
 * ```./build.py --ez``` <- builds deps and orkid (into staging folder)
 * ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
+* ```ork.test.buildtestassets.py``` <- build test assets (using built orkid executable)
+* ```exit``` <- After an --ez build exit and reload the environment
+* ```.stage/.launch_env```
 
 To build on Ubuntu19.10/Ubuntu20.04 x86/64
 ==================================
@@ -32,6 +35,8 @@ To build on Ubuntu19.10/Ubuntu20.04 x86/64
 * ```./build.py --ez``` <- builds deps and orkid (into staging folder)
 * ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
 * ```ork.test.buildtestassets.py``` <- build test assets (using built orkid executable)
+* ```exit``` <- After an --ez build exit and reload the environment
+* ```.stage/.launch_env```
 
 everything will be built and installed into the staging folder.
 the ```<stage>/bin``` and ```<stage>/lib``` paths were added to your environment variables already when you launched the environment'.
