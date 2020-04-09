@@ -263,7 +263,7 @@ void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
   ProcTexControllerInst* ssci     = pent->GetTypedComponent<ProcTexControllerInst>();
   const ProcTexControllerData& cd = ssci->GetCD();
 
-  auto pdrw = new lev2::CallbackDrawable(pent);
+  auto pdrw = std::make_shared<lev2::CallbackDrawable>(pent);
   pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(l_render_quad);
   pdrw->SetOwner(pent->data());
@@ -350,7 +350,7 @@ void ProcTexOutputSkybox::OnLinkEntity(Simulation* psi, Entity* pent) {
   ProcTexControllerInst* ssci     = pent->GetTypedComponent<ProcTexControllerInst>();
   const ProcTexControllerData& cd = ssci->GetCD();
 
-  auto pdrw = new lev2::CallbackDrawable(pent);
+  auto pdrw = std::make_shared<lev2::CallbackDrawable>(pent);
   pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(l_render_skybox);
   pdrw->SetOwner(pent->data());
@@ -457,7 +457,7 @@ void ProcTexOutputDynTex::OnLinkEntity(Simulation* psi, Entity* pent) {
 
   ProcTexControllerInst* ssci = pent->GetTypedComponent<ProcTexControllerInst>();
 
-  auto pdrw = new lev2::CallbackDrawable(pent);
+  auto pdrw = std::make_shared<lev2::CallbackDrawable>(pent);
   pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(l_compute);
   pdrw->SetOwner(pent->data());

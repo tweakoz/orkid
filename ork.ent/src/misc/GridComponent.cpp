@@ -163,7 +163,7 @@ void GridArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
   pimpl->_archetype    = this;
   pimpl->_entity       = pent;
   pimpl->_colortexture = texture;
-  auto pdrw            = new lev2::CallbackDrawable(pent);
+  auto pdrw            = std::make_shared<lev2::CallbackDrawable>(pent);
   pdrw->SetOwner(pent->data());
   pdrw->SetSortKey(0);
 

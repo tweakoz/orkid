@@ -178,9 +178,9 @@ BulletShapeTerrainData::BulletShapeTerrainData()
     impl->_hfinstance->_worldHeight = this->WorldHeight();
     impl->_hfinstance->_worldSizeXZ = this->WorldSize();
 
-    auto raw_drawable = impl->_hfinstance->createCallbackDrawable();
-    raw_drawable->SetOwner(data.mEntity);
-    data.mEntity->addDrawableToDefaultLayer(raw_drawable);
+    rval->_drawable = impl->_hfinstance->createCallbackDrawable();
+    rval->_drawable->SetOwner(data.mEntity);
+    data.mEntity->addDrawableToDefaultLayer(rval->_drawable);
 
     ////////////////////////////////////////////////////////////////////
 

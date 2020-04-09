@@ -45,29 +45,50 @@ class ModelComponentData : public ComponentData {
   RttiDeclareConcrete(ModelComponentData, ComponentData);
 
 public:
-
-  typedef orklut<PoolString,PoolString> mtloverridemap_t;
+  typedef orklut<PoolString, PoolString> mtloverridemap_t;
 
   ModelComponentData();
 
   lev2::XgmModel* GetModel() const;
   void SetModel(lev2::XgmModelAsset* mdl);
 
-  void SetAlwaysVisible(bool always) { mAlwaysVisible = always; }
-  bool IsAlwaysVisible() const { return mAlwaysVisible; }
-  float GetScale() const { return mfScale; }
-  void SetScale(float v) { mfScale = v; }
-  const fvec3& GetRotate() const { return mRotate; }
-  const fvec3& GetOffset() const { return mOffset; }
-  void SetRotate(const fvec3& r) { mRotate = r; }
+  void SetAlwaysVisible(bool always) {
+    mAlwaysVisible = always;
+  }
+  bool IsAlwaysVisible() const {
+    return mAlwaysVisible;
+  }
+  float GetScale() const {
+    return mfScale;
+  }
+  void SetScale(float v) {
+    mfScale = v;
+  }
+  const fvec3& GetRotate() const {
+    return mRotate;
+  }
+  const fvec3& GetOffset() const {
+    return mOffset;
+  }
+  void SetRotate(const fvec3& r) {
+    mRotate = r;
+  }
 
-  const mtloverridemap_t& MaterialOverrideMap() const { return _materialOverrides; }
+  const mtloverridemap_t& MaterialOverrideMap() const {
+    return _materialOverrides;
+  }
 
-  bool ShowBoundingSphere() const { return mbShowBoundingSphere; }
+  bool ShowBoundingSphere() const {
+    return mbShowBoundingSphere;
+  }
 
-  bool IsCopyDag() const { return mbCopyDag; }
+  bool IsCopyDag() const {
+    return mbCopyDag;
+  }
 
-  bool IsBlenderZup() const { return mBlenderZup; }
+  bool IsBlenderZup() const {
+    return mBlenderZup;
+  }
 
   ComponentInst* createComponent(Entity* pent) const final;
 
@@ -98,17 +119,25 @@ public:
 
   void Start();
 
-  lev2::ModelDrawable& modelDrawable() { return *mModelDrawable; }
-  const lev2::ModelDrawable& modelDrawable() const { return *mModelDrawable; }
+  lev2::ModelDrawable& modelDrawable() {
+    return *mModelDrawable;
+  }
+  const lev2::ModelDrawable& modelDrawable() const {
+    return *mModelDrawable;
+  }
 
-  const ModelComponentData& GetData() const { return mData; }
+  const ModelComponentData& GetData() const {
+    return mData;
+  }
 
 protected:
   const ModelComponentData& mData;
-  lev2::ModelDrawable* mModelDrawable;
+  lev2::model_drawable_ptr_t mModelDrawable;
   ork::lev2::XgmModelInst* mXgmModelInst;
   bool _yo = false;
-  const char* scriptName() final { return "ModelComponent"; }
+  const char* scriptName() final {
+    return "ModelComponent";
+  }
 
   void DoUpdate(ork::ent::Simulation* psi) final;
   bool DoNotify(const ork::event::Event* event) final;

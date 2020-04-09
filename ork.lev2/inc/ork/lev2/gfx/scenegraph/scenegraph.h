@@ -32,11 +32,12 @@ using scenegraph_ptr_t = std::shared_ptr<SceneGraph>;
 
 struct Node {
 
-  Node();
+  Node(std::string named, drawable_ptr_t drawable);
   ~Node();
 
+  std::string _name;
   drawable_ptr_t _drawable;
-  scenelayer_ptr_t _layer;
+  DrawQueueXfData _transform;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -45,11 +46,11 @@ struct Layer {
   Layer(std::string name);
   ~Layer();
 
-  void addNode(scenenode_ptr_t node);
+  scenenode_ptr_t createNode(std::string named, drawable_ptr_t drawable);
   void removeNode(scenenode_ptr_t node);
 
   std::string _name;
-  std::unordered_set<scenenode_ptr_t> _nodeset;
+  std::map<std::string, scenenode_ptr_t> _nodemap;
   std::vector<scenenode_ptr_t> _nodevect;
 };
 
@@ -66,7 +67,7 @@ struct SceneGraph {
 
   DefaultRenderer _renderer;
   lightmanager_ptr_t _lightManager;
-  lightmanagerdata_ptr_t _lmd;
+  lightmanagerdata_ptr_t _lightData;
   compositorimpl_ptr_t _compositorImpl;
   compositordata_ptr_t _compositorData;
   cameradata_ptr_t _camera;

@@ -193,7 +193,7 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(Simulation* inst, Entity* pent) 
     }
   };
 
-  auto pdrw = new lev2::CallbackDrawable(pent);
+  auto pdrw = std::make_shared<lev2::CallbackDrawable>(pent);
   pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(yo::doit);
   pdrw->setEnqueueOnLayerCallback(yo::BufferCB);

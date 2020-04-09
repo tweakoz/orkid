@@ -32,26 +32,31 @@ typedef fixedlut<PoolString, CameraMatrices, 16> CameraMatricesLut;
 class Simulation;
 class DrawableBuffer;
 class Drawable;
+class ModelDrawable;
+class CallbackDrawable;
 class XgmModel;
 class XgmModelAsset;
 class XgmModelInst;
 class IRenderer;
 class LightManager;
 
-using cameradatalut_ptr_t = std::shared_ptr<CameraDataLut>;
+using cameradatalut_ptr_t     = std::shared_ptr<CameraDataLut>;
+using drawable_ptr_t          = std::shared_ptr<Drawable>;
+using model_drawable_ptr_t    = std::shared_ptr<ModelDrawable>;
+using callback_drawable_ptr_t = std::shared_ptr<CallbackDrawable>;
 
 ///////////////////////////////////////////////////////////////////////////
 // todo find a better name
 ///////////////////////////////////////////////////////////////////////////
 
 struct DrawableOwner : public ork::Object {
-  typedef orkvector<Drawable*> DrawableVector;
+  typedef orkvector<drawable_ptr_t> DrawableVector;
   typedef orklut<PoolString, DrawableVector*> LayerMap;
 
   DrawableOwner();
   ~DrawableOwner();
 
-  void _addDrawable(const PoolString& layername, Drawable* pdrw);
+  void _addDrawable(const PoolString& layername, drawable_ptr_t pdrw);
 
   DrawableVector* GetDrawables(const PoolString& layer);
   const DrawableVector* GetDrawables(const PoolString& layer) const;
@@ -249,8 +254,6 @@ protected:
   var_t mDataB;
   bool mEnabled;
 };
-
-using drawable_ptr_t = std::shared_ptr<Drawable>;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

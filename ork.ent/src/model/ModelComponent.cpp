@@ -114,7 +114,7 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
     , mData(data)
     , mXgmModelInst(0) {
 
-  mModelDrawable        = new lev2::ModelDrawable(pent); // deleted when entity deleted
+  mModelDrawable        = std::make_shared<lev2::ModelDrawable>(pent); // deleted when entity deleted
   lev2::XgmModel* model = data.GetModel();
 
   if (model) {

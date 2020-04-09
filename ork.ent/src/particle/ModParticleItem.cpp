@@ -362,7 +362,7 @@ void ModularSystem::DoLinkSystem(ork::ent::Simulation* psi, ork::ent::Entity* pe
     for (int ir = 0; ir < inumrenderers; ir++) {
       RendererModule* renderer = GetRenderer(ir);
 
-      auto pdrw = new lev2::CallbackDrawable(pent);
+      auto pdrw = std::make_shared<lev2::CallbackDrawable>(pent);
       pdrw->SetRenderCallback(ModItemRenderData::enqueueToRendererCallback);
       pdrw->setEnqueueOnLayerCallback(ModItemRenderData::enqueueOnLayerCallback);
       pdrw->SetOwner(pent->data());
@@ -392,7 +392,7 @@ void ModularSystem::DoLinkSystem(ork::ent::Simulation* psi, ork::ent::Entity* pe
       ///////////////////////////////////////////////////////////
       // ModItemBufferData* srec = new ModItemBufferData;
 
-      mird->mMIBD.mpDrawable = pdrw;
+      mird->mMIBD.mpDrawable = pdrw.get();
 
       lev2::Drawable::var_t ap;
       ap.Set(mird);

@@ -285,11 +285,12 @@ void Entity::PrintName() {
 bool Entity::DoNotify(const ork::event::Event* event) {
   bool result = false;
   if (const event::DrawableEvent* drawable_event = rtti::autocast(event)) {
-    for (LayerMap::const_iterator itL = mLayerMap.begin(); itL != mLayerMap.end(); itL++) {
-      DrawableVector* pldrawables = itL->second;
+    for (auto itL : mLayerMap) {
+      DrawableVector& pldrawables = *itL.second;
 
-      for (ork::ent::Entity::DrawableVector::iterator it = pldrawables->begin(); it != pldrawables->end(); it++)
-        result = static_cast<ork::Object*>(*it)->Notify(drawable_event->GetEvent()) || result;
+      for (auto it : pldrawables) {
+        result = static_cast<ork::Object*>(it.get())->Notify(drawable_event->GetEvent()) || result;
+      }
     }
   } else if (const PerfSnapShotEvent* psse = rtti::autocast(event)) {
     ComponentTable::LutType& lut = mComponentTable.GetComponents();
@@ -340,7 +341,7 @@ ComponentTable& Entity::GetComponents() {
   return mComponentTable;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Entity::addDrawableToDefaultLayer(lev2::Drawable* pdrw) {
+void Entity::addDrawableToDefaultLayer(lev2::drawable_ptr_t pdrw) {
   auto layername = AddPooledString("Default");
   if (auto ED = data()) {
     ConstString layer = ED->GetUserProperty("DrawLayer");
@@ -352,7 +353,7 @@ void Entity::addDrawableToDefaultLayer(lev2::Drawable* pdrw) {
   _addDrawable(layername, pdrw);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Entity::addDrawableToLayer(lev2::Drawable* pdrw, const PoolString& layername) {
+void Entity::addDrawableToLayer(lev2::drawable_ptr_t pdrw, const PoolString& layername) {
   _addDrawable(layername, pdrw);
 }
 ///////////////////////////////////////////////////////////////////////////////

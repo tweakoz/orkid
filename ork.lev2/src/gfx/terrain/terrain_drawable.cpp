@@ -1161,12 +1161,11 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
 
   // auto range = _aabbmax - _aabbmin;
 
-  auto tek_viz = stereo1pass ? _tekDefGbuf1Stereo : _tekDefGbuf1;
+  auto tek_viz  = stereo1pass ? _tekDefGbuf1Stereo : _tekDefGbuf1;
   auto tek_pick = _tekPick;
 
-
   targ->PushMaterial(_terrainMaterial);
-  _terrainMaterial->bindTechnique( bpick ? tek_pick : tek_viz);
+  _terrainMaterial->bindTechnique(bpick ? tek_pick : tek_viz);
   _terrainMaterial->begin(*RCFD);
   _terrainMaterial->bindParamMatrix(_parMatVPL, MVPL);
   _terrainMaterial->bindParamMatrix(_parMatVPC, MVPC);
@@ -1195,7 +1194,7 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   ////////////////////////////////
   for (int isector = 0; isector < 8; isector++) {
     auto& sector = _sector[isector];
-    auto& L0      = sector._lod0;
+    auto& L0     = sector._lod0;
     for (auto cluster : L0._gpuClusters) {
       for (auto primitive : cluster->_primitives) {
         gbi->DrawIndexedPrimitiveEML(
@@ -1210,7 +1209,7 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   ////////////////////////////////
   for (int isector = 0; isector < 8; isector++) {
     auto& sector = _sector[isector];
-    auto& LX      = sector._lodX;
+    auto& LX     = sector._lodX;
     for (auto cluster : LX._gpuClusters) {
       for (auto primitive : cluster->_primitives) {
         gbi->DrawIndexedPrimitiveEML(
@@ -1302,10 +1301,11 @@ file::Path TerrainDrawableInst::hfpath() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CallbackDrawable* TerrainDrawableInst::createCallbackDrawable() {
+callback_drawable_ptr_t TerrainDrawableInst::createCallbackDrawable() {
 
-  auto impl    = _impl.makeShared<TerrainRenderImpl>(this);
-  _rawdrawable = new CallbackDrawable(nullptr);
+  auto impl = _impl.makeShared<TerrainRenderImpl>(this);
+
+  _rawdrawable = std::make_shared<CallbackDrawable>(nullptr);
   _rawdrawable->SetRenderCallback(_RenderHeightfield);
   _rawdrawable->SetUserDataA(impl);
   _rawdrawable->SetSortKey(1000);

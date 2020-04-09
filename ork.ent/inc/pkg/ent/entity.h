@@ -261,13 +261,13 @@ public:
   fmtx4 GetEffectiveMatrix() const;    // get Entity matrix if scene is running, EntData matrix if scene is stopped
   void SetDynMatrix(const fmtx4& mtx); // set this (Entity) matrix
   void setRotAxisAngle(fvec4 axisaa);  // set this (Entity) rotation
-  void setPos(fvec3 pos);  // set this (Entity) position
+  void setPos(fvec3 pos);              // set this (Entity) position
 
   const EntData* data() const {
     return _entdata;
   }
-  void addDrawableToDefaultLayer(lev2::Drawable* pdrw);
-  void addDrawableToLayer(lev2::Drawable* pdrw, const PoolString& layername);
+  void addDrawableToDefaultLayer(lev2::drawable_ptr_t pdrw);
+  void addDrawableToLayer(lev2::drawable_ptr_t pdrw, const PoolString& layername);
 
   ////////////////////////////////////////////////////////////////
 

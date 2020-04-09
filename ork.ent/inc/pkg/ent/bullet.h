@@ -323,7 +323,7 @@ struct BulletShapeBaseInst {
   const BulletShapeBaseData* _shapeData;
   btCollisionShape* mCollisionShape;
   AABox mBoundingBox;
-  lev2::CallbackDrawable* _drawable = nullptr;
+  lev2::callback_drawable_ptr_t _drawable;
   svar16_t _impl;
 };
 

@@ -41,14 +41,14 @@ struct TerrainDrawableInst {
 
   TerrainDrawableInst(const TerrainDrawableData& data);
   ~TerrainDrawableInst();
-  lev2::CallbackDrawable* createCallbackDrawable();
+  callback_drawable_ptr_t createCallbackDrawable();
 
   const TerrainDrawableData& _data;
   file::Path hfpath() const;
   fvec3 _visualOffset;
   float _worldHeight                   = 0.0f;
   float _worldSizeXZ                   = 0.0f;
-  lev2::CallbackDrawable* _rawdrawable = nullptr;
+  callback_drawable_ptr_t _rawdrawable = nullptr;
   ork::svar16_t _impl;
 };
 

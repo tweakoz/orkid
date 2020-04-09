@@ -144,7 +144,7 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
     }
   };
 
-  auto pdrw = new lev2::CallbackDrawable(pent);
+  auto pdrw = std::make_shared<lev2::CallbackDrawable>(pent);
   pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(yo::doit);
   // pdrw->SetBufferCallback(yo::BufferCB);

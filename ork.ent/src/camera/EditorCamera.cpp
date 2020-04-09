@@ -37,15 +37,19 @@ using namespace ork::lev2;
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-void EditorCamArchetype::DoCompose(ork::ent::ArchComposer& composer) { composer.Register<ork::ent::EditorCamControllerData>(); }
+void EditorCamArchetype::DoCompose(ork::ent::ArchComposer& composer) {
+  composer.Register<ork::ent::EditorCamControllerData>();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void EditorCamArchetype::Describe() {}
+void EditorCamArchetype::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EditorCamArchetype::EditorCamArchetype() {}
+EditorCamArchetype::EditorCamArchetype() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -73,7 +77,8 @@ ent::ComponentInst* EditorCamControllerData::createComponent(ent::Entity* pent) 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void EditorCamControllerInst::Describe() {}
+void EditorCamControllerInst::Describe() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -87,37 +92,33 @@ EditorCamControllerInst::EditorCamControllerInst(const EditorCamControllerData& 
 
 bool EditorCamControllerInst::DoLink(Simulation* psi) {
   const UiCamera* pcam = mCD.GetCamera();
-  auto entity = GetEntity();
+  auto entity          = GetEntity();
   if (entity) {
     const auto& cammats = pcam->cameraMatrices();
     psi->setCameraData(entity->name(), &cammats);
     fmtx4 matrix, imatrix;
-    matrix.LookAt(cammats.GetEye(),cammats.GetTarget(),cammats.GetUp());
+    matrix.LookAt(cammats.GetEye(), cammats.GetTarget(), cammats.GetUp());
     imatrix.inverseOf(matrix);
     entity->SetDynMatrix(imatrix);
 
+    auto pdrw = std::make_shared<CallbackDrawable>(entity);
+    pdrw->SetOwner(entity->data());
+    pdrw->SetSortKey(0);
 
-  auto pdrw = new CallbackDrawable(entity);
-  pdrw->SetOwner(entity->data());
-  pdrw->SetSortKey(0);
+    entity->addDrawableToDefaultLayer(pdrw);
 
-  entity->addDrawableToDefaultLayer(pdrw);
+    Drawable::var_t ap;
 
-  Drawable::var_t ap;
+    auto rendermethod = [=](RenderContextInstData& rcid, Context* targ, const CallbackRenderable* pren) {
+      auto ezcam = dynamic_cast<const EzUiCam*>(pcam);
+      if (ezcam)
+        ezcam->draw(targ);
+    };
+    // ap.Set<const impl*>(pimpl);
+    // pdrw->SetUserDataA(ap);
 
-  auto rendermethod = [=](RenderContextInstData& rcid, 
-                          Context* targ, 
-                          const CallbackRenderable* pren){
-    auto ezcam = dynamic_cast<const EzUiCam*>(pcam);
-    if (ezcam)
-      ezcam->draw(targ);
-  };
-  //ap.Set<const impl*>(pimpl);
-  //pdrw->SetUserDataA(ap);
-
-  pdrw->SetRenderCallback(rendermethod);
-  //pdrw->setEnqueueOnLayerCallback(impl::enqueueOnLayerCallback);
-
+    pdrw->SetRenderCallback(rendermethod);
+    // pdrw->setEnqueueOnLayerCallback(impl::enqueueOnLayerCallback);
   }
   return true;
 }
@@ -131,7 +132,8 @@ bool EditorCamControllerInst::DoStart(Simulation* psi, const fmtx4& world) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void EditorCamControllerInst::DoUpdate(Simulation* psi) {}
+void EditorCamControllerInst::DoUpdate(Simulation* psi) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::ent

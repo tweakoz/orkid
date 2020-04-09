@@ -358,17 +358,9 @@ void DrawableOwner::Describe() {
 DrawableOwner::DrawableOwner() {
 }
 DrawableOwner::~DrawableOwner() {
-  for (LayerMap::const_iterator itL = mLayerMap.begin(); itL != mLayerMap.end(); itL++) {
-    DrawableVector* pldrawables = itL->second;
-
-    for (DrawableVector::const_iterator it = pldrawables->begin(); it != pldrawables->end(); it++) {
-      Drawable* pdrw = *it;
-      delete pdrw;
-    }
-  }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void DrawableOwner::_addDrawable(const PoolString& layername, Drawable* pdrw) {
+void DrawableOwner::_addDrawable(const PoolString& layername, drawable_ptr_t pdrw) {
   DrawableVector* pldrawables = GetDrawables(layername);
   if (nullptr == pldrawables) {
     pldrawables = new DrawableVector;

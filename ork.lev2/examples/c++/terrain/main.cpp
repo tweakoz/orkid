@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
   Texture* envlight = nullptr;
   hfdrawableinstptr_t _terrainInst;
   TerrainDrawableData _terrainData;
-  CallbackDrawable* _terrainDrawable;
+  callback_drawable_ptr_t _terrainDrawable;
   DrawQueueXfData _terrainXform;
   //////////////////////////////////////////////////////////
   // initialize compositor data
@@ -105,8 +105,9 @@ int main(int argc, char** argv) {
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
   qtapp->onDraw([&](const ui::DrawEvent& drwev) {
-    auto DB = DrawableBuffer::acquireReadDB(7); 
-    if(nullptr == DB) return;
+    auto DB = DrawableBuffer::acquireReadDB(7);
+    if (nullptr == DB)
+      return;
     auto context = drwev.GetTarget();
     RenderContextFrameData RCFD(context); // renderer per/frame data
     RCFD._cimpl = &compositorimpl;

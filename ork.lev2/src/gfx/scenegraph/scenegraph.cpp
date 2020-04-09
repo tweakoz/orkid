@@ -6,7 +6,9 @@ using namespace ork;
 namespace ork::lev2::scenegraph {
 ///////////////////////////////////////////////////////////////////////////////
 
-Node::Node() {
+Node::Node(std::string named, drawable_ptr_t drawable)
+    : _name(named)
+    , _drawable(drawable) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -27,7 +29,11 @@ Layer::~Layer() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Layer::addNode(scenenode_ptr_t node) {
+scenenode_ptr_t Layer::createNode(std::string named, drawable_ptr_t drawable) {
+  scenenode_ptr_t rval = std::make_shared<Node>(named, drawable);
+  _nodemap[named]      = rval;
+  _nodevect.push_back(rval);
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -41,8 +47,8 @@ SceneGraph::SceneGraph() {
 
   // todo - allow user parameterization
 
-  _lmd            = std::make_shared<LightManagerData>();
-  _lightManager   = std::make_shared<LightManager>(*_lmd.get());
+  _lightData      = std::make_shared<LightManagerData>();
+  _lightManager   = std::make_shared<LightManager>(*_lightData.get());
   _compositorData = std::make_shared<CompositingData>();
   _compositorData->presetPBR();
   _compositorData->mbEnable = true;
@@ -68,7 +74,6 @@ scenelayer_ptr_t SceneGraph::createLayer(std::string named) {
 
   auto it = _layers.find(named);
   OrkAssert(it == _layers.end());
-
   auto l         = std::make_shared<Layer>(named);
   _layers[named] = l;
   return l;
@@ -79,9 +84,16 @@ scenelayer_ptr_t SceneGraph::createLayer(std::string named) {
 void SceneGraph::enqueueToRenderer() {
   auto DB = DrawableBuffer::LockWriteBuffer(0);
   DB->Reset();
-  // todo - enumerate SceneGraph Layers into DrawableBuffer Layers
-  // DB->copyCameras(cameras);
-  // auto layer = DB->MergeLayer("Default"_pool);
+  DB->copyCameras(*_cameras.get());
+  for (auto layer_item : _layers) {
+    auto scenegraph_layer = layer_item.second;
+    auto drawable_layer   = DB->MergeLayer("Default"_pool);
+    for (auto n : scenegraph_layer->_nodevect) {
+      if (n->_drawable) {
+        n->_drawable->enqueueOnLayer(n->_transform, *drawable_layer);
+      }
+    }
+  }
   DrawableBuffer::UnLockWriteBuffer(DB);
 }
 
@@ -91,6 +103,8 @@ void SceneGraph::renderOnContext(Context* context) {
   auto DB = DrawableBuffer::acquireReadDB(7);
   if (nullptr == DB)
     return;
+
+  _renderer.setContext(context);
 
   RenderContextFrameData RCFD(context); // renderer per/frame data
   RCFD._cimpl = _compositorImpl.get();
@@ -124,8 +138,8 @@ void SceneGraph::renderOnContext(Context* context) {
   drawdata._properties["irenderer"_crcu].Set<lev2::IRenderer*>(&_renderer);
   drawdata._properties["simrunning"_crcu].Set<bool>(true);
   drawdata._properties["DB"_crcu].Set<const DrawableBuffer*>(DB);
-  //_compositorImpl->assemble(drawdata);
-  //_compositorImpl->composite(drawdata);
+  _compositorImpl->assemble(drawdata);
+  _compositorImpl->composite(drawdata);
   _compositorImpl->popCPD();
   context->popRenderContextFrameData();
   context->endFrame();

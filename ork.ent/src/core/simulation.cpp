@@ -983,10 +983,10 @@ void Simulation::enqueueDrawablesToBuffer(ork::lev2::DrawableBuffer& buffer) con
         size_t inumdv = dv->size();
         // printf("sim::enqueue buflayer<%p> inumdv<%zu>\n", buflayer, inumdv);
         for (size_t i = 0; i < inumdv; i++) {
-          lev2::Drawable* pdrw = dv->operator[](i);
-          if (pdrw && pdrw->IsEnabled()) {
+          auto drawable = dv->operator[](i);
+          if (drawable && drawable->IsEnabled()) {
             // printf("queue drw<%p>\n", pdrw);
-            pdrw->enqueueOnLayer(xfdata, *buflayer);
+            drawable->enqueueOnLayer(xfdata, *buflayer);
           }
         }
       }
@@ -1070,19 +1070,19 @@ void Simulation::UpdateActiveComponents(ork::PoolString family) {
 void Simulation::AddLayerData(const PoolString& name, lev2::LayerData* player) {
   auto it = _layerDataMap.find(name);
   OrkAssert(it == _layerDataMap.end());
-  _layerDataMap[name]      = player;
-  player->_layerName = name;
+  _layerDataMap[name] = player;
+  player->_layerName  = name;
 }
 lev2::LayerData* Simulation::GetLayerData(const PoolString& name) {
   lev2::LayerData* rval = 0;
-  auto it           = _layerDataMap.find(name);
+  auto it               = _layerDataMap.find(name);
   if (it != _layerDataMap.end())
     rval = it->second;
   return rval;
 }
 const lev2::LayerData* Simulation::GetLayerData(const PoolString& name) const {
   const lev2::LayerData* rval = 0;
-  auto it                 = _layerDataMap.find(name);
+  auto it                     = _layerDataMap.find(name);
   if (it != _layerDataMap.end())
     rval = it->second;
   return rval;
