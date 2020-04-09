@@ -42,8 +42,8 @@ To build on Ubuntu19.10/Ubuntu20.04 x86/64
 * ```./build.py --ez``` <- builds deps and orkid (into staging folder)
 * ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
 * ```ork.test.buildtestassets.py``` <- build test assets (using built orkid executable)
-* ```exit``` <- After an --ez build exit and reload the environment
-* ```.stage/.launch_env```
+* ```exit``` <- After an --ez build exit environment
+* ```.stage/.launch_env``` <- reload the environment (to get updated environment variables)
 * ```ork.example.lev2.gfx.minimal3D.exe``` <- run a c++ example
 * ```./ork.lev2/examples/python/window.py``` <- run a python example
 
