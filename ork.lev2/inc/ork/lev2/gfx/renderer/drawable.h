@@ -38,6 +38,8 @@ class XgmModelInst;
 class IRenderer;
 class LightManager;
 
+using cameradatalut_ptr_t = std::shared_ptr<CameraDataLut>;
+
 ///////////////////////////////////////////////////////////////////////////
 // todo find a better name
 ///////////////////////////////////////////////////////////////////////////
@@ -322,7 +324,7 @@ public:
 class CallbackDrawable : public Drawable {
   RttiDeclareAbstract(CallbackDrawable, Drawable);
 
-  using Q2LCBType = void(DrawableBufItem& cdb);
+  using Q2LCBType     = void(DrawableBufItem& cdb);
   using Q2LLambdaType = std::function<void(DrawableBufItem&)>;
 
 public:

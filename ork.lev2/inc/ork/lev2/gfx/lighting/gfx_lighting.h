@@ -429,6 +429,8 @@ class LightManagerData : public ork::Object {
 public:
 };
 
+using lightmanagerdata_ptr_t = std::shared_ptr<LightManagerData>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class LightCollector {
@@ -484,6 +486,8 @@ public:
   size_t GetNumLightGroups() const;
   void Clear();
 };
+
+using lightmanager_ptr_t = std::shared_ptr<LightManager>;
 
 struct HeadLightManager {
   ork::fmtx4 mHeadLightMatrix;

@@ -254,6 +254,8 @@ public:
   CompositingImpl* createImpl() const;
 };
 
+using compositordata_ptr_t = std::shared_ptr<CompositingData>;
+
 ///////////////////////////////////////////////////////////////////////////
 
 class CompositingImpl {
@@ -304,6 +306,8 @@ private:
   CompositingContext _compcontext;
   compositingpassdatastack_t _stack;
 };
+
+using compositorimpl_ptr_t = std::shared_ptr<CompositingImpl>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

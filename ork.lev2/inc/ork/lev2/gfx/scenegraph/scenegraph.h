@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -25,49 +25,57 @@ struct Layer;
 struct Node;
 struct SceneGraph;
 using scenelayer_ptr_t = std::shared_ptr<Layer>;
-using scenenode_ptr_t = std::shared_ptr<Node>;
+using scenenode_ptr_t  = std::shared_ptr<Node>;
 using scenegraph_ptr_t = std::shared_ptr<SceneGraph>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Node {
 
-	Node();
-	~Node();
+  Node();
+  ~Node();
 
-	drawable_ptr_t _drawable;
-	scenelayer_ptr_t _layer;
+  drawable_ptr_t _drawable;
+  scenelayer_ptr_t _layer;
 };
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Layer {
-	Layer(std::string name);
-	~Layer();
+  Layer(std::string name);
+  ~Layer();
 
-	void addNode(scenenode_ptr_t node);
-	void removeNode(scenenode_ptr_t node);
+  void addNode(scenenode_ptr_t node);
+  void removeNode(scenenode_ptr_t node);
 
-	std::string _name;
-	std::unordered_set<scenenode_ptr_t> _nodeset;
-	std::vector<scenenode_ptr_t> _nodevect;
-};	
-
+  std::string _name;
+  std::unordered_set<scenenode_ptr_t> _nodeset;
+  std::vector<scenenode_ptr_t> _nodevect;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SceneGraph {
 
-	SceneGraph();
-	~SceneGraph();
+  SceneGraph();
+  ~SceneGraph();
 
-	scenelayer_ptr_t createLayer(std::string named);
-    void enqueueToRenderer();
-    void renderOnContext(Context* ctx);
+  scenelayer_ptr_t createLayer(std::string named);
+  void enqueueToRenderer();
+  void renderOnContext(Context* ctx);
 
-	std::map<std::string,scenelayer_ptr_t> _layers;
+  DefaultRenderer _renderer;
+  lightmanager_ptr_t _lightManager;
+  lightmanagerdata_ptr_t _lmd;
+  compositorimpl_ptr_t _compositorImpl;
+  compositordata_ptr_t _compositorData;
+  cameradata_ptr_t _camera;
+  cameradatalut_ptr_t _cameras;
+  NodeCompositingTechnique* _compostorTechnique = nullptr;
+  ScreenOutputCompositingNode* _outputNode      = nullptr;
+  lev2::CompositingPassData _topCPD;
 
+  std::map<std::string, scenelayer_ptr_t> _layers;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
