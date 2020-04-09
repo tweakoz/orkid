@@ -105,9 +105,12 @@ int main(int argc, char** argv) {
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
   qtapp->onDraw([&](const ui::DrawEvent& drwev) {
+    auto DB = DrawableBuffer::acquireReadDB(7); 
+    if(nullptr == DB) return;
     auto context = drwev.GetTarget();
     RenderContextFrameData RCFD(context); // renderer per/frame data
     RCFD._cimpl = &compositorimpl;
+    RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
     context->pushRenderContextFrameData(&RCFD);
     auto fbi = context->FBI(); // FrameBufferInterface
     ///////////////////////////////////////
@@ -133,11 +136,13 @@ int main(int argc, char** argv) {
     drawdata._properties["cullcamindex"_crcu].Set<int>(0);
     drawdata._properties["irenderer"_crcu].Set<lev2::IRenderer*>(&renderer);
     drawdata._properties["simrunning"_crcu].Set<bool>(true);
+    drawdata._properties["DB"_crcu].Set<const DrawableBuffer*>(DB);
     compositorimpl.assemble(drawdata);
     compositorimpl.composite(drawdata);
     compositorimpl.popCPD();
     context->popRenderContextFrameData();
     context->endFrame();
+    DrawableBuffer::releaseReadDB(DB);
   });
   //////////////////////////////////////////////////////////
   qtapp->onResize([&](int w, int h) {
