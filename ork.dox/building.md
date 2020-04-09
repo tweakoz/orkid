@@ -20,16 +20,18 @@ To build on Osx Mojave (10.14)+
 * ```./build.py --ez``` <- builds deps and orkid (into staging folder)
 * ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
 
-To build on Ubuntu19.04 x86/64
+To build on Ubuntu19.10/Ubuntu20.04 x86/64
 ==================================
 * ```git clone https://github.com/tweakoz/orkid```
 * ```cd orkid```
 * ```git submodule init```
 * ```git submodule update```
 * ```./ork.build/bin/init_env.py --create .stage``` <- this creates a staging folder and launches an environment
-* ```ork.installdeps.ubuntu19.py``` <- install system deps
+* ```obt.ix.installdeps.ubuntu19.py``` <- install obt system deps
+* ```ork.installdeps.ubuntu19.py``` <- install orkid system deps
 * ```./build.py --ez``` <- builds deps and orkid (into staging folder)
 * ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
+* ```ork.test.buildtestassets.py``` <- build test assets (using built orkid executable)
 
 everything will be built and installed into the staging folder.
 the ```<stage>/bin``` and ```<stage>/lib``` paths were added to your environment variables already when you launched the environment'.
