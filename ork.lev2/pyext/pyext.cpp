@@ -50,9 +50,9 @@ void lev2apppoll() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-PYBIND11_MODULE(lev2, module_lev2) {
+PYBIND11_MODULE(_lev2, module_lev2) {
 
-  module_lev2.attr("__name__") = "ork.lev2";
+  // module_lev2.attr("__name__") = "lev2";
 
   //////////////////////////////////////////////////////////////////////////////
   module_lev2.doc() = "Orkid Lev2 Library (graphics,audio,vr,input,etc..)";

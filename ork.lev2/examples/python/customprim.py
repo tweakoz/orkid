@@ -8,7 +8,7 @@
 
 import numpy, time
 from orkcore import *
-from lev2 import *
+from orkengine.lev2 import *
 from PIL import Image
 import _shaders
 

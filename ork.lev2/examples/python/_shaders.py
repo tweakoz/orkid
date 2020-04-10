@@ -1,5 +1,5 @@
 from orkcore import *
-from lev2 import *
+from orkengine.lev2 import *
 ################################################################################
 
 shadertext = """
