@@ -3,7 +3,7 @@
 namespace ork {
 void pyinit_math(py::module& module_core) {
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<fvec2>(module_core, "vec2")
+  py::class_<fvec2, fvec2_ptr_t>(module_core, "vec2")
       .def(py::init<>())
       .def(py::init<float, float>())
       .def_property("x", &fvec2::GetX, &fvec2::SetX)
@@ -32,7 +32,7 @@ void pyinit_math(py::module& module_core) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<fvec3>(module_core, "vec3")
+  py::class_<fvec3, fvec3_ptr_t>(module_core, "vec3")
       .def(py::init<>())
       .def(py::init<float, float, float>())
       .def_property("x", &fvec3::GetX, &fvec3::SetX)
@@ -72,7 +72,7 @@ void pyinit_math(py::module& module_core) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<fvec4>(module_core, "vec4")
+  py::class_<fvec4, fvec4_ptr_t>(module_core, "vec4")
       .def(py::init<>())
       .def(py::init<float, float, float, float>())
       .def(py::init<fvec3>())
@@ -118,7 +118,7 @@ void pyinit_math(py::module& module_core) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<fquat>(module_core, "quat")
+  py::class_<fquat, fquat_ptr_t>(module_core, "quat")
       .def(py::init<>())
       .def(py::init<float, float, float, float>())
       .def(py::init<fvec3, float>())
@@ -144,7 +144,7 @@ void pyinit_math(py::module& module_core) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<fmtx3>(module_core, "mtx3")
+  py::class_<fmtx3, fmtx3_ptr_t>(module_core, "mtx3")
       .def(py::init<>())
       .def(py::init<const fmtx3&>())
       .def(py::init<const fquat&>())
@@ -160,7 +160,7 @@ void pyinit_math(py::module& module_core) {
         return str.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<fmtx4>(module_core, "mtx4")
+  py::class_<fmtx4, fmtx4_ptr_t>(module_core, "mtx4")
       .def(py::init<>())
       .def(py::init<const fmtx4&>())
       .def(py::init<const fquat&>())
@@ -250,7 +250,7 @@ void pyinit_math(py::module& module_core) {
         return str.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<Frustum>(module_core, "Frustum")
+  py::class_<Frustum, frustum_ptr_t>(module_core, "Frustum")
       .def(py::init<>())
       .def("set", [](Frustum& frustum, const fmtx4& VMatrix, const fmtx4& PMatrix) { frustum.Set(VMatrix, PMatrix); })
       .def("set", [](Frustum& frustum, const fmtx4& IVPMatrix) { frustum.Set(IVPMatrix); })
@@ -268,7 +268,7 @@ void pyinit_math(py::module& module_core) {
       .def_property_readonly("bottomPlane", [](const Frustum& frustum) -> fplane3 { return frustum._bottomPlane; })
       .def("contains", [](const Frustum& frustum, const fvec3& point) -> bool { return frustum.contains(point); });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<fplane3>(module_core, "plane")
+  py::class_<fplane3, fplane3_ptr_t>(module_core, "plane")
       .def(py::init<>())
       .def(py::init<const fvec4&>())
       .def(py::init<const fvec3&, float>())

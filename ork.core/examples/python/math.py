@@ -4,6 +4,15 @@ from orkengine.core import *
 
 PI = 3.14159
 
+a = vec2(0,1)
+b = vec2(1,0)
+c = a+b
+d = a*b
+print("a: %s"%a)
+print("b: %s"%b)
+print("c: %s"%c)
+print("d: %s"%d)
+
 #coreappinit()
 x = vec3(1,0,0)
 y = vec3(0,1,0)
