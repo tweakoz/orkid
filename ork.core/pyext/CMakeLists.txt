@@ -6,62 +6,38 @@ set( CMAKE_MODULE_PATH $ENV{ORKID_WORKSPACE_DIR}:$ENV{OBT_STAGE}/share/cmake/pyb
 
 find_package (Python COMPONENTS Interpreter Development)
 FIND_PACKAGE( pybind11 REQUIRED )
-
+INCLUDE_DIRECTORIES( ${PYTHON_INCLUDE_DIRS} ${PYBIND11_INCLUDE_DIRS} )
 
 ###################################
 
-  INCLUDE_DIRECTORIES(
-    ${PYTHON_INCLUDE_DIRS}
-    ${PYBIND11_INCLUDE_DIRS}
-  )
+set( ORKPKGBASE $ENV{OBT_STAGE}/lib/python3.8/site-packages/orkengine )
+set( INSTALL_DEST ${ORKPKGBASE}/core )
+set( INCD $ENV{ORKID_WORKSPACE_DIR}/ork.core/inc )
 
-  ADD_LIBRARY( orkcore SHARED pyext.cpp )
+###################################
 
-  # The library must not have any prefix and should be located in
-  # a subfolder that includes the package name. The setup will be
-  # more complicated otherwise.
-  SET_TARGET_PROPERTIES( orkcore
+ADD_LIBRARY( _core SHARED pyext.cpp )
+
+target_include_directories (_core PRIVATE ${INCD} )
+target_link_libraries(_core LINK_PRIVATE ork_core)
+
+SET_TARGET_PROPERTIES( _core
+  PROPERTIES
+    PREFIX ""
+    LIBRARY_OUTPUT_DIRECTORY ${INSTALL_DEST}
+)
+
+IF( APPLE )
+  SET_TARGET_PROPERTIES( _core
     PROPERTIES
-      PREFIX ""
-      LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/orkcore"
+      LINK_FLAGS "-undefined dynamic_lookup"
+      SUFFIX     ".so"
   )
-
-  # This is required for linking the library under Mac OS X. Moreover,
-  # the suffix ensures that the module can be found by the interpreter
-  # later on.
-  IF( APPLE )
-    SET_TARGET_PROPERTIES( orkcore
-      PROPERTIES
-        LINK_FLAGS "-undefined dynamic_lookup"
-        SUFFIX     ".so"
-    )
-  ENDIF()
-
-
-  # Place the initialization file in the output directory for the Python
-  # bindings. This will simplify the installation.
-  CONFIGURE_FILE( orkcore/__init__.py
-    ${CMAKE_CURRENT_BINARY_DIR}/orkcore/__init__.py
-  )
-
-  # Ditto for the setup file.
-  CONFIGURE_FILE( orkcore/setup.py
-    ${CMAKE_CURRENT_BINARY_DIR}/orkcore/setup.py
-  )
-
-IF(${APPLE})
-    target_include_directories (orkcore PRIVATE /usr/local/include)
+  target_include_directories (_core PRIVATE /usr/local/include)
 ENDIF()
 
-target_link_libraries(orkcore LINK_PRIVATE ork_core)
+###################################
 
-
-set( INCD ${CMAKE_CURRENT_SOURCE_DIR}/../inc )
-
-install(TARGETS orkcore LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )
-target_include_directories (orkcore PRIVATE ${INCD} )
-
-set( INSTALL_DEST $ENV{OBT_STAGE}/lib/python3.8/site-packages/orkcore )
-install(TARGETS orkcore LIBRARY DESTINATION ${INSTALL_DEST} )
-install(FILES orkcore/__init__.py DESTINATION ${INSTALL_DEST})
-install(FILES orkcore/setup.py DESTINATION ${INSTALL_DEST})
+CONFIGURE_FILE( pyfiles/__orkengine_init__.py ${ORKPKGBASE}/__init__.py )
+CONFIGURE_FILE( pyfiles/__core_init__.py ${INSTALL_DEST}/__init__.py )
+#CONFIGURE_FILE( pyfiles/setup.py ${INSTALL_DEST}/setup.py)

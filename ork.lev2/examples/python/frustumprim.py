@@ -7,8 +7,8 @@
 ################################################################################
 
 import numpy, time
-from orkcore import *
-from orklev2 import *
+from orkengine.core import *
+from orkengine.lev2 import *
 from PIL import Image
 
 WIDTH = 1280
@@ -115,7 +115,7 @@ ctx.endFrame()
 ###################################
 
 print(rtg.texture(0))
-ok = FBI.captureAsFormat(rtg,0,capbuf,"RGBA8") 
+ok = FBI.captureAsFormat(rtg,0,capbuf,"RGBA8")
 as_np = numpy.array(capbuf,dtype=numpy.uint8).reshape( HEIGHT, WIDTH, 4 )
 img = Image.fromarray(as_np, 'RGBA')
 flipped = img.transpose(Image.FLIP_TOP_BOTTOM)

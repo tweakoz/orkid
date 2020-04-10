@@ -6,8 +6,8 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 
-from orkcore import *
-from orklev2 import *
+from orkengine.core import *
+from orkengine.lev2 import *
 from vpf import *
 import numpy as np
 import math

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-from orkcore import *
+from orkengine.core import *
+
 PI = 3.14159
 
 #coreappinit()

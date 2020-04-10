@@ -7,8 +7,8 @@
 ################################################################################
 
 import numpy, time, math
-from orkcore import *
-from orklev2 import *
+from orkengine.core import *
+from orkengine.lev2 import *
 import _shaders
 
 class MyApp:
