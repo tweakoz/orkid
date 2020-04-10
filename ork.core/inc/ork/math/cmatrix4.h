@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <memory>
 #include <ork/math/quaternion.h>
 #include <ork/orktypes.h>
 
@@ -201,9 +202,8 @@ public:
   ///////////////////////////////////////////////////////////////////////////////
 };
 
-typedef Matrix44<float> fmtx4;
-extern template class Matrix44<float>;
-extern template class Matrix44<double>;
+using fmtx4       = Matrix44<float>;
+using fmtx4_ptr_t = std::shared_ptr<fmtx4>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

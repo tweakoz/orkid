@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <memory>
 #include <ork/math/cmatrix4.h>
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
@@ -76,7 +77,8 @@ public: //
   //////////////////////////////////
 };
 
-typedef Plane<float> fplane3;
+using fplane3       = Plane<float>;
+using fplane3_ptr_t = std::shared_ptr<fplane3>;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork

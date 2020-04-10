@@ -13,7 +13,7 @@ namespace ork { namespace ui {
 
 /////////////////////////////////////////////////////////////////////////
 
-Surface::Surface(const std::string& name, int x, int y, int w, int h, CColor3 color, F32 depth)
+Surface::Surface(const std::string& name, int x, int y, int w, int h, fcolor3 color, F32 depth)
     : Group(name, x, y, w, h)
     , mbClear(true)
     , mcClearColor(color)
@@ -184,7 +184,7 @@ void Surface::RenderCached() {
 /////////////////////////////////////////////////////////////////////////
 
 void Surface::Clear() {
-  // const CColor3 &rCol = (surf!=nullptr) ? surf->GetClearColorRef() : CColor3::Black();
+  // const fcolor3 &rCol = (surf!=nullptr) ? surf->GetClearColorRef() : fcolor3::Black();
   auto fbi = mpTarget->FBI();
 
   fbi->Clear(GetClearColorRef(), 1.0f);

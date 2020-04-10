@@ -72,7 +72,7 @@ void Mesh::WriteToWavefrontObj(const file::Path& BasePath) const {
     ObjUv0Pool.push_back(invtx.mUV[0].mMapTexCoord);
   }
   ///////////////////////////////////////////////////
-  OutMaterial.mColor = CColor3::White();
+  OutMaterial.mColor = fcolor3::White();
   for (orkmap<std::string, submesh*>::const_iterator it = mPolyGroupMap.begin(); it != mPolyGroupMap.end(); it++) {
     objmesh OutMesh;
     OutMesh.name          = it->first;

@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <memory>
 #include <ork/config/config.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -43,7 +44,7 @@ template <typename T> struct Quaternion {
   }
 
   Quaternion(T _x, T _y, T _z, T _w);
-  Quaternion(const Vector3<T>& axis,float angle);
+  Quaternion(const Vector3<T>& axis, float angle);
 
   Quaternion(const Matrix44<T>& matrix);
   Quaternion(const Matrix33<T>& matrix);
@@ -110,7 +111,8 @@ template <typename T> struct Quaternion {
   T x, y, z, w;
 };
 
-typedef Quaternion<float> fquat;
+using fquat       = Quaternion<float>;
+using fquat_ptr_t = std::shared_ptr<fquat>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

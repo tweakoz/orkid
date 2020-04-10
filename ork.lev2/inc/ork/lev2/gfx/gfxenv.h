@@ -195,7 +195,7 @@ public:
   virtual U32 fcolor4ToU32(const fcolor4& clr) {
     return clr.GetRGBAU32();
   }
-  virtual U32 CColor3ToU32(const CColor3& clr) {
+  virtual U32 fcolor3ToU32(const fcolor3& clr) {
     return clr.GetRGBAU32();
   }
   virtual fcolor4 U32Tofcolor4(const U32 uclr) {
@@ -203,8 +203,8 @@ public:
     clr.SetRGBAU32(uclr);
     return clr;
   }
-  virtual CColor3 U32ToCColor3(const U32 uclr) {
-    CColor3 clr;
+  virtual fcolor3 U32Tofcolor3(const U32 uclr) {
+    fcolor3 clr;
     clr.SetRGBAU32(uclr);
     return clr;
   }

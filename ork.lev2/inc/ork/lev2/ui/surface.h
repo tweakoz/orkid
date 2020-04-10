@@ -11,12 +11,12 @@ namespace ork { namespace ui {
 
 struct Surface : public Group {
 public:
-  Surface(const std::string& name, int x, int y, int w, int h, CColor3 color, F32 depth);
+  Surface(const std::string& name, int x, int y, int w, int h, fcolor3 color, F32 depth);
 
   void SurfaceRender(lev2::RenderContextFrameData& fd, const std::function<void()>& l);
   void Clear();
 
-  CColor3& GetClearColorRef(void) {
+  fcolor3& GetClearColorRef(void) {
     return mcClearColor;
   }
   F32 GetClearDepth(void) {
@@ -50,7 +50,7 @@ protected:
 
   orkstack<lev2::FrameTechniqueBase*> mpActiveFrameTek;
   bool mbClear;
-  CColor3 mcClearColor;
+  fcolor3 mcClearColor;
   F32 mfClearDepth;
   lev2::RtGroup* mRtGroup;
   bool mNeedsSurfaceRepaint;

@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <memory>
 #include <ork/math/line.h>
 #include <ork/math/plane.h>
 
@@ -44,6 +45,8 @@ struct Frustum {
 
   bool contains(const vec3_type& v) const;
 };
+
+using frustum_ptr_t = std::shared_ptr<Frustum>;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork

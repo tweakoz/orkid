@@ -56,7 +56,7 @@ dataflow::graph_data* GraphVP::GetTopGraph() {
 }
 
 GraphVP::GraphVP(DataFlowEditor& dfed, tool::ged::ObjModel& objmdl, const std::string& name)
-    : ui::Surface(name, 0, 0, 0, 0, CColor3(0.1f, 0.1f, 0.1f), 0.0f)
+    : ui::Surface(name, 0, 0, 0, 0, fcolor3(0.1f, 0.1f, 0.1f), 0.0f)
     , mObjectModel(objmdl)
     , mDflowEditor(dfed)
     , mGridMaterial(GfxEnv::GetRef().loadingContext())

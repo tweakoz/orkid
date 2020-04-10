@@ -30,7 +30,7 @@ class MyViewport : public ork::ui::Viewport {
 
 public:
   MyViewport(const std::string& name)
-      : ork::ui::Viewport(name, 1, 1, 1, 1, ork::CColor3(0.0f, 0.0f, 0.0f), 1.0f)
+      : ork::ui::Viewport(name, 1, 1, 1, 1, ork::fcolor3(0.0f, 0.0f, 0.0f), 1.0f)
       , gltex(0) {
   }
 

@@ -16,7 +16,7 @@ set( INCD $ENV{ORKID_WORKSPACE_DIR}/ork.core/inc )
 
 ###################################
 
-ADD_LIBRARY( _core SHARED pyext.cpp )
+ADD_LIBRARY( _core SHARED pyext.cpp pyext_math.cpp )
 
 target_include_directories (_core PRIVATE ${INCD} )
 target_link_libraries(_core LINK_PRIVATE ork_core)

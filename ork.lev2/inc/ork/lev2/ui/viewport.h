@@ -29,7 +29,7 @@ public:
 
   ///////////////////////////////////////
 
-  Viewport(const std::string& name, int x, int y, int w, int h, CColor3 color, F32 depth);
+  Viewport(const std::string& name, int x, int y, int w, int h, fcolor3 color, F32 depth);
   virtual ~Viewport() {
   }
 

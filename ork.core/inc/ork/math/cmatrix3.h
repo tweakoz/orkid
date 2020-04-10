@@ -8,6 +8,7 @@
 #pragma once
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <memory>
 #include <ork/math/quaternion.h>
 #include <ork/orktypes.h>
 
@@ -41,9 +42,12 @@ public:
   Matrix33(const Quaternion<T>& m);
   ////////////////
 
-  Matrix33(void) { SetToIdentity(); }
+  Matrix33(void) {
+    SetToIdentity();
+  }
 
-  ~Matrix33() {}
+  ~Matrix33() {
+  }
 
   /////////
 
@@ -75,7 +79,9 @@ public:
   Matrix33<T> Mult(T scalar) const;
   Matrix33<T> MatrixMult(const Matrix33<T>& mat1) const;
 
-  inline Matrix33<T> operator*(const Matrix33<T>& mat) const { return MatrixMult(mat); }
+  inline Matrix33<T> operator*(const Matrix33<T>& mat) const {
+    return MatrixMult(mat);
+  }
 
   void Transpose(void);
   void InverseTranspose();
@@ -134,9 +140,15 @@ public:
   void SetRow(int irow, const Vector3<T>& v);
   void SetColumn(int icol, const Vector3<T>& v);
 
-  Vector3<T> GetXNormal(void) const { return GetColumn(0); }
-  Vector3<T> GetYNormal(void) const { return GetColumn(1); }
-  Vector3<T> GetZNormal(void) const { return GetColumn(2); }
+  Vector3<T> GetXNormal(void) const {
+    return GetColumn(0);
+  }
+  Vector3<T> GetYNormal(void) const {
+    return GetColumn(1);
+  }
+  Vector3<T> GetZNormal(void) const {
+    return GetColumn(2);
+  }
 
   void fromNormalVectors(const Vector3<T>& xv, const Vector3<T>& yv, const Vector3<T>& zv);
   void toNormalVectors(Vector3<T>& xv, Vector3<T>& yv, Vector3<T>& zv) const;
@@ -146,12 +158,15 @@ public:
   static const Matrix33<T> Identity;
   std::string dumpcn() const;
 
-  T* GetArray(void) const { return (T*)&elements[0][0]; }
+  T* GetArray(void) const {
+    return (T*)&elements[0][0];
+  }
 
   ///////////////////////////////////////////////////////////////////////////////
 };
 
-typedef Matrix33<float> fmtx3;
+using fmtx3       = Matrix33<float>;
+using fmtx3_ptr_t = std::shared_ptr<fmtx3>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -8,6 +8,7 @@
 #pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
+#include <memory>
 #include <ork/config/config.h>
 #include <ork/math/cvector3.h>
 #include <ork/orkstd.h>   // For OrkAssert
@@ -280,9 +281,11 @@ public:
   T w;
 };
 
-typedef Vector4<float> fvec4;
-typedef Vector4<double> dvec4;
-typedef Vector4<float> fcolor4;
+using fvec4       = Vector4<float>;
+using dvec4       = Vector4<double>;
+using fvec4_ptr_t = std::shared_ptr<fvec4>;
+using dvec4_ptr_t = std::shared_ptr<dvec4>;
+using fcolor4     = fvec4;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork

@@ -247,7 +247,7 @@ void Outliner2Model::SlotClearSelection() {
 ///////////////////////////////////////////////////////////////////////////////
 
 Outliner2View::Outliner2View(SceneEditorBase& ed)
-    : ui::Surface("outl2", 0, 0, 0, 0, CColor3::Black(), 0.0f)
+    : ui::Surface("outl2", 0, 0, 0, 0, fcolor3::Black(), 0.0f)
     , mOutlinerModel(ed, *this)
     , mFont(nullptr)
     , mCtxBase(nullptr)

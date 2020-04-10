@@ -33,7 +33,7 @@ static const int kscrollw = 32;
 orkset<GedVP*> GedVP::gAllViewports;
 ///////////////////////////////////////////////////////////////////////////////
 GedVP::GedVP(const std::string& name, ObjModel& model)
-    : ui::Surface(name, 0, 0, 0, 0, CColor3::Black(), 0.0f)
+    : ui::Surface(name, 0, 0, 0, 0, fcolor3::Black(), 0.0f)
     , mModel(model)
     , mWidget(model)
     , mpActiveNode(nullptr)

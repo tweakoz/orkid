@@ -106,7 +106,7 @@ void SceneEditorVP::EnableSceneDisplay() {
 }
 
 SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, EditorMainWindow& MainWin)
-    : ui::Viewport(name, 1, 1, 1, 1, CColor3(0.0f, 0.0f, 0.0f), 1.0f)
+    : ui::Viewport(name, 1, 1, 1, 1, fcolor3(0.0f, 0.0f, 0.0f), 1.0f)
     , mMainWindow(MainWin)
     , miPickDirtyCount(0)
     , mEditor(the_ed)

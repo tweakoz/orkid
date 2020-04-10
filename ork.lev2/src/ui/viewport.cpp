@@ -24,7 +24,7 @@ void Viewport::Describe() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Viewport::Viewport(const std::string& name, int x, int y, int w, int h, CColor3 color, F32 depth)
+Viewport::Viewport(const std::string& name, int x, int y, int w, int h, fcolor3 color, F32 depth)
     : Surface(name, x, y, w, h, color, depth) {
   // mWidgetFlags.Enable();
   // mWidgetFlags.SetState( EUI_WIDGET_OFF );

@@ -40,7 +40,7 @@ static int fd_tty_inp_slave = -1;
 static void getPythonOutput();
 ///////////////////////////////////////////////////////////////////////////////
 vp_cons::vp_cons(const std::string& name)
-    : ui::Viewport(name, 0, 0, 0, 0, CColor3::Red(), 0.0f)
+    : ui::Viewport(name, 0, 0, 0, 0, fcolor3::Red(), 0.0f)
     , mCTQT(nullptr)
     , mPhase0(0)
     , mPhase1(0) {

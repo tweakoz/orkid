@@ -61,7 +61,7 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
     ObjUv0Pool.push_back(invtx.mUV[0].mMapTexCoord);
   }
   ///////////////////////////////////////////////////
-  OutMaterial.mColor = CColor3::White();
+  OutMaterial.mColor = fcolor3::White();
   objmesh OutMesh;
   OutMesh.name = "submesh";
 

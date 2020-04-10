@@ -97,7 +97,7 @@ void Buffer::PtexBegin(lev2::Context* ptgt, bool push_full_vp, bool clear_all) {
     FBI->pushScissor(vprect_full);
   }
   if (clear_all)
-    FBI->Clear(CColor3::Black(), 1.0f);
+    FBI->Clear(fcolor3::Black(), 1.0f);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Buffer::PtexEnd(bool pop_vp) {

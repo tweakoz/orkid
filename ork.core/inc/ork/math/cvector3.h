@@ -9,6 +9,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <memory>
 #include <ork/orkstd.h> // For OrkAssert
 #include <ork/math/cvector2.h>
 
@@ -260,10 +261,11 @@ public:
   T z; // z component of this vector
 };
 
-typedef Vector3<float> fvec3;
-typedef Vector3<float> fvec3;
-typedef Vector3<double> dvec3;
-typedef fvec3 CColor3;
+using fvec3       = Vector3<float>;
+using dvec3       = Vector3<double>;
+using fvec3_ptr_t = std::shared_ptr<fvec3>;
+using dvec3_ptr_t = std::shared_ptr<dvec3>;
+using fcolor3     = fvec3;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
