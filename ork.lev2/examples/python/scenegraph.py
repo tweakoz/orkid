@@ -6,100 +6,78 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 
-import numpy, time, math
+import time, math
 from orkengine.core import *
 from orkengine.lev2 import *
 import _shaders
 
-class MyApp:
+###########################
+_time_base = time.time()
+global SG
+###########################
 
-  ###########################
-
-  def __init__(self):
-    self._time_base = time.time()
-    pass
-
-  ###########################
-
-  def gpuInit(self,ctx):
-    FBI = ctx.FBI()
-    GBI = ctx.GBI()
-    self.nsh = _shaders.Shader(ctx)
-
-    self.volumetexture = Texture.load("lev2://textures/voltex_pn3")
-
+def onGpuInit(ctx):
+    global SG
+    nsh = _shaders.Shader(ctx)
+    volumetexture = Texture.load("lev2://textures/voltex_pn3")
     ###################################
-
     fpmtx = ctx.perspective(45,1,0.1,3)
     fvmtx = ctx.lookAt(vec3(0,0,-1),vec3(0,0,0),vec3(0,1,0))
     frust = Frustum()
     frust.set(fvmtx,fpmtx)
+    ###################################
+    prim = primitives.FrustumPrimitive()
+    prim.topColor = vec4(0.5,1.0,0.5,1)
+    prim.bottomColor = vec4(0.5,0.0,0.5,1)
+    prim.leftColor = vec4(0.0,0.5,0.5,1)
+    prim.rightColor = vec4(1.0,0.5,0.5,1)
+    prim.frontColor = vec4(0.5,0.5,1.0,1)
+    prim.backColor = vec4(0.5,0.5,0.0,1)
+    prim.frustum = frust
+    prim.gpuInit(ctx)
+    ###################################
+    nsh._mtl.bindTechnique(nsh._tek_frustum)
+    ###################################
+    SG = scenegraph.Scene()
+    layer = SG.createLayer("layer1")
+    primnode = prim.createNode("node1",layer,nsh._mtl)
 
-    self.prim = primitives.FrustumPrimitive()
-    self.prim.topColor = vec4(0.5,1.0,0.5,1)
-    self.prim.bottomColor = vec4(0.5,0.0,0.5,1)
-    self.prim.leftColor = vec4(0.0,0.5,0.5,1)
-    self.prim.rightColor = vec4(1.0,0.5,0.5,1)
-    self.prim.frontColor = vec4(0.5,0.5,1.0,1)
-    self.prim.backColor = vec4(0.5,0.5,0.0,1)
-    self.prim.frustum = frust
-    self.prim.gpuInit(ctx)
-    #self.drawable.bindMaterial()
-    #self.nsh._mtl.bindTechnique(self.nsh._tek_frustum)
+###########################
 
-    self.SG = scenegraph.Scene()
-    self.layer = self.SG.createLayer("layer1")
-    self.primnode = self.prim.createNode("node1",self.layer,self.nsh._mtl)
-    self.nsh._mtl.bindTechnique(self.nsh._tek_frustum)
-
-  ###########################
-
-  def draw(self,drawev):
+def onDraw(drawev):
+    global SG
     ctx = drawev.context
+    FBI = ctx.FBI()
+    GBI = ctx.GBI()
     RCFD = RenderContextFrameData(ctx)
-
     WIDTH = ctx.mainSurfaceWidth()
     HEIGHT = ctx.mainSurfaceHeight()
-
-    Δtime = time.time()-self._time_base
+    ###################################
+    Δtime = time.time()-_time_base
     θ = Δtime*0.1
-
     x = math.sin(θ)*5
     z = -math.cos(θ)*5
-
+    ###################################
     pmatrix = ctx.perspective(70,WIDTH/HEIGHT,0.01,100.0)
     vmatrix = ctx.lookAt(vec3(x,0.8,z),
                          vec3(0,0,0),
                          vec3(0,1,0))
     rotmatrix = vmatrix.toRotMatrix3()
-
     mvp_matrix = vmatrix*pmatrix
-
-    FBI = ctx.FBI()
-    GBI = ctx.GBI()
-
+    ###################################
+    # update scene
+    ###################################
+    SG.enqueueToRenderer() # technically enqueueToRenderer should work from any (single) python thread
+    ###################################
+    # render scene
+    ###################################
     FBI.autoclear = True
     FBI.clearcolor = vec4(.15,.15,.2,1)
     ctx.beginFrame()
-
-    self.SG.enqueueToRenderer() # technically enqueueToRenderer should work from any (single) python thread
-
-    self.SG.renderOnContext(ctx) # this must be on rendering thread
-
+    SG.renderOnContext(ctx) # this must be on rendering thread
     ctx.endFrame()
 
 ##############################################
-
-myapp = MyApp()
-
-def onGpuInit(ctx):
-  myapp.gpuInit(ctx)
-
-def onDraw(drawev):
-  myapp.draw(drawev)
-  pass
-
-qtapp = OrkEzQtApp.create( onGpuInit, onDraw)
+qtapp = OrkEzQtApp.create( onGpuInit, onDraw )
 qtapp.setRefreshPolicy(RefreshFixedFPS, 60)
-
 qtapp.exec()

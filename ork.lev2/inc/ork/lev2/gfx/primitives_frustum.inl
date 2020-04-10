@@ -112,7 +112,7 @@ struct FrustumPrimitive {
       // possibility: use applicator pattern
       //  will need to figure out how to get c++ to access python owned data
       //  (so we dont have to callback into the python interpreter)
-      this->draw(context);
+      // this->draw(context);
       material->end(*RCFD);
     });
 

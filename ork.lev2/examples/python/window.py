@@ -6,7 +6,7 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 
-import numpy, time, math
+import time, math
 from orkengine.core import *
 from orkengine.lev2 import *
 import _shaders
