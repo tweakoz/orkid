@@ -37,10 +37,12 @@ def onGpuInit(ctx):
     prim.gpuInit(ctx)
     ###################################
     nsh._mtl.bindTechnique(nsh._tek_frustum)
+    mtl_inst = MaterialInstance(nsh._mtl)
+    mtl_inst["technique"] = "frustum" #nsh._tek_frustum
     ###################################
     SG = scenegraph.Scene()
     layer = SG.createLayer("layer1")
-    primnode = prim.createNode("node1",layer,nsh._mtl)
+    primnode = prim.createNode("node1",layer,mtl_inst)
 
 ###########################
 

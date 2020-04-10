@@ -17,10 +17,12 @@
 #include <ork/kernel/varmap.inl>
 
 namespace ork {
-
 namespace lev2 {
 
-using material_ptr_t = std::shared_ptr<GfxMaterial>;
+struct GfxMaterialInstance;
+
+using material_ptr_t     = std::shared_ptr<GfxMaterial>;
+using materialinst_ptr_t = std::shared_ptr<GfxMaterialInstance>;
 
 class Texture;
 
@@ -130,6 +132,14 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct GfxMaterialInstance {
+  GfxMaterialInstance(material_ptr_t mtl);
+  material_ptr_t _material;
+  varmap::VarMap _vars;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct GfxMaterial : public ork::Object {
   RttiDeclareAbstract(GfxMaterial, ork::Object);
   //////////////////////////////////////////////////////////////////////////////
@@ -175,6 +185,9 @@ public:
   void SetFogRange(F32 frange) {
     mfFogRange = float(frange);
   };
+
+  virtual void applyInstance(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
+  }
 
   virtual void UpdateMVPMatrix(Context* pTARG) {
   }

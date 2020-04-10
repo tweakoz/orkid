@@ -10,14 +10,16 @@ INCLUDE_DIRECTORIES( ${PYTHON_INCLUDE_DIRS} ${PYBIND11_INCLUDE_DIRS} )
 
 ###################################
 
+set( SRCD ${CMAKE_CURRENT_SOURCE_DIR} )
 set( ORKPKGBASE $ENV{OBT_STAGE}/lib/python3.8/site-packages/orkengine )
 set( INSTALL_DEST ${ORKPKGBASE}/lev2 )
 set( INCD $ENV{ORKID_WORKSPACE_DIR}/ork.core/inc )
 set( INCD2 $ENV{ORKID_WORKSPACE_DIR}/ork.lev2/inc )
 
 ###################################
+file(GLOB_RECURSE src_pyext ${SRCD}/*.cpp)
 
-ADD_LIBRARY( _lev2 SHARED pyext.cpp pyext_gfx.cpp pyext_meshutil.cpp pyext_primitives.cpp pyext_scenegraph.cpp )
+ADD_LIBRARY( _lev2 SHARED ${src_pyext} )
 
 target_include_directories (_lev2 PRIVATE ${INCD} ${INCD2} )
 target_link_libraries(_lev2 LINK_PRIVATE ork_lev2)

@@ -98,22 +98,26 @@ struct FrustumPrimitive {
   inline scenegraph::node_ptr_t createNode(
       std::string named, //
       scenegraph::layer_ptr_t layer,
-      freestyle_mtl_ptr_t material) {
+      materialinst_ptr_t material_inst) {
 
     auto drw = std::make_shared<CallbackDrawable>(nullptr);
     auto nod = layer->createNode("named", drw);
 
-    drw->SetRenderCallback([=](lev2::RenderContextInstData& rcid, //
+    drw->SetRenderCallback([=](lev2::RenderContextInstData& RCID, //
                                lev2::Context* context,
                                const CallbackRenderable* pren) { //
-      auto RCFD = context->topRenderContextFrameData();
-      material->begin(*RCFD);
+      auto RCFD     = context->topRenderContextFrameData();
+      auto material = material_inst->_material;
+      int npasses   = material->BeginBlock(context, RCID);
+      material->BeginPass(context, 0);
+      material->applyInstance(material_inst, RCID);
       // todo - how to inject per instance data (controllable from c++ AND python)
       // possibility: use applicator pattern
       //  will need to figure out how to get c++ to access python owned data
       //  (so we dont have to callback into the python interpreter)
       // this->draw(context);
-      material->end(*RCFD);
+      material->EndPass(context);
+      material->EndBlock(context);
     });
 
     return nod;

@@ -91,8 +91,8 @@ void pyinit_primitives(py::module& module_lev2) {
           [](primitives::FrustumPrimitive& prim,
              std::string named, //
              scenegraph::layer_ptr_t layer,
-             freestyle_mtl_ptr_t material) -> scenegraph::node_ptr_t { //
-            return prim.createNode(named, layer, material);
+             materialinst_ptr_t mtl_inst) -> scenegraph::node_ptr_t { //
+            return prim.createNode(named, layer, mtl_inst);
           });
 }
 } // namespace ork::lev2

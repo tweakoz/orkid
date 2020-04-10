@@ -48,6 +48,10 @@ struct FreestyleMaterial : public GfxMaterial {
 
   ////////////////////////////////////////////
 
+  void applyInstance(materialinst_ptr_t minst, const RenderContextInstData& RCID) final;
+
+  ////////////////////////////////////////////
+
   FxShader* _shader = nullptr;
 
   std::set<const FxShaderTechnique*> _techniques;
@@ -271,25 +275,25 @@ inline bool FreestyleMaterial::BeginPass(Context* targ, int iPass) {
   return true;
 }
 inline void FreestyleMaterial::EndPass(Context* targ) {
+  targ->FXI()->EndPass(_shader);
 }
 inline int FreestyleMaterial::BeginBlock(Context* targ, const RenderContextInstData& RCID) {
-  return 1;
+  auto fxi    = targ->FXI();
+  int npasses = fxi->BeginBlock(_shader, RCID);
+  return npasses;
 }
 inline void FreestyleMaterial::EndBlock(Context* targ) {
+  targ->FXI()->EndBlock(_shader);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 inline void FreestyleMaterial::begin(const RenderContextFrameData& RCFD) {
   auto targ = RCFD.GetTarget();
-  // const auto& CPD  = RCFD.topCPD();
-  // bool stereo1pass = CPD.isStereoOnePass();
-  auto mtxi = targ->MTXI();
   auto fxi  = targ->FXI();
   auto rsi  = targ->RSI();
-
   RenderContextInstData RCID(RCFD);
-  int npasses = fxi->BeginBlock(_shader, RCID);
+  int npasses = this->BeginBlock(targ, RCID);
   rsi->BindRasterState(_rasterstate);
   fxi->BindPass(_shader, 0);
 }
@@ -306,8 +310,14 @@ FreestyleMaterial::begin(const FxShaderTechnique* tekMono, const FxShaderTechniq
 
 inline void FreestyleMaterial::end(const RenderContextFrameData& RCFD) {
   auto targ = RCFD.GetTarget();
-  targ->FXI()->EndPass(_shader);
-  targ->FXI()->EndBlock(_shader);
+  this->EndPass(targ);
+  this->EndBlock(targ);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+inline void FreestyleMaterial::applyInstance(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
+  OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

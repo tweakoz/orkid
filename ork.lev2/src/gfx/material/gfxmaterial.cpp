@@ -19,8 +19,8 @@
 #include <ork/pch.h>
 
 namespace ork {
-static const std::string TexDestStrings[lev2::ETEXDEST_END + 2] = {
-    "ETEXDEST_AMBIENT", "ETEXDEST_DIFFUSE", "ETEXDEST_SPECULAR", "ETEXDEST_BUMP", "ETEXDEST_END", ""};
+static const std::string TexDestStrings[lev2::ETEXDEST_END + 2] =
+    {"ETEXDEST_AMBIENT", "ETEXDEST_DIFFUSE", "ETEXDEST_SPECULAR", "ETEXDEST_BUMP", "ETEXDEST_END", ""};
 template <> const EPropType PropType<lev2::ETextureDest>::meType   = EPROPTYPE_ENUM;
 template <> const char* PropType<lev2::ETextureDest>::mstrTypeName = "GfxEnv::ETextureDest";
 template <> lev2::ETextureDest PropType<lev2::ETextureDest>::FromString(const PropTypeString& String) {
@@ -43,38 +43,47 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::MaterialInstItem, "MaterialInstItem")
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::MaterialInstItemMatrix, "MaterialInstItemMatrix")
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::MaterialInstItemMatrixBlock, "MaterialInstItemMatrixBlock")
 
-
-
 namespace ork {
 
 namespace chunkfile {
 
-XgmMaterialWriterContext::XgmMaterialWriterContext(Writer& w) : _writer(w) {}
-XgmMaterialReaderContext::XgmMaterialReaderContext(Reader& r) : _reader(r) {}
-
+XgmMaterialWriterContext::XgmMaterialWriterContext(Writer& w)
+    : _writer(w) {
 }
+XgmMaterialReaderContext::XgmMaterialReaderContext(Reader& r)
+    : _reader(r) {
+}
+
+} // namespace chunkfile
 namespace lev2 {
 
-void MaterialInstApplicator::Describe() {}
-void MaterialInstItem::Describe() {}
-void MaterialInstItemMatrix::Describe() {}
-void MaterialInstItemMatrixBlock::Describe() {}
+void MaterialInstApplicator::Describe() {
+}
+void MaterialInstItem::Describe() {
+}
+void MaterialInstItemMatrix::Describe() {
+}
+void MaterialInstItemMatrixBlock::Describe() {
+}
 
-void GfxMaterial::Describe() {}
+void GfxMaterial::Describe() {
+}
 
 /////////////////////////////////////////////////////////////////////////
 
 RenderQueueSortingData::RenderQueueSortingData()
     : miSortingPass(4)
     , miSortingOffset(0)
-    , mbTransparency(false) {}
+    , mbTransparency(false) {
+}
 
 /////////////////////////////////////////////////////////////////////////
 
 TextureContext::TextureContext(const Texture* ptex, float repU, float repV)
     : mpTexture(ptex)
     , mfRepeatU(repU)
-    , mfRepeatV(repV) {}
+    , mfRepeatV(repV) {
+}
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -85,22 +94,42 @@ GfxMaterial::GfxMaterial()
   PushDebug(false);
 }
 
-GfxMaterial::~GfxMaterial() {}
+GfxMaterial::~GfxMaterial() {
+}
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterial::PushDebug(bool bdbg) { mDebug.push(bdbg); }
-void GfxMaterial::PopDebug() { mDebug.pop(); }
-bool GfxMaterial::IsDebug() { return mDebug.top(); }
+void GfxMaterial::PushDebug(bool bdbg) {
+  mDebug.push(bdbg);
+}
+void GfxMaterial::PopDebug() {
+  mDebug.pop();
+}
+bool GfxMaterial::IsDebug() {
+  return mDebug.top();
+}
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterial::SetTexture(ETextureDest edest, const TextureContext& tex) { mTextureMap[edest] = tex; }
+void GfxMaterial::SetTexture(ETextureDest edest, const TextureContext& tex) {
+  mTextureMap[edest] = tex;
+}
 
-const TextureContext& GfxMaterial::GetTexture(ETextureDest edest) const { return mTextureMap[edest]; }
+const TextureContext& GfxMaterial::GetTexture(ETextureDest edest) const {
+  return mTextureMap[edest];
+}
 
-TextureContext& GfxMaterial::GetTexture(ETextureDest edest) { return mTextureMap[edest]; }
+TextureContext& GfxMaterial::GetTexture(ETextureDest edest) {
+  return mTextureMap[edest];
+}
 
-}} // namespace ork::lev2
+/////////////////////////////////////////////////////////////////////////
+
+GfxMaterialInstance::GfxMaterialInstance(material_ptr_t mtl)
+    : _material(mtl) {
+}
+
+} // namespace lev2
+} // namespace ork
 
 /////////////////////////////////////////////////////////////////////////
