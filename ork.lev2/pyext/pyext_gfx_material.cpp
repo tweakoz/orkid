@@ -1,46 +1,11 @@
 #include "pyext.h"
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct PythonTypeCodec {
-  //////////////////////////////////
-  ork::varmap::val_t decode(const py::object& val) const {
-    ork::varmap::val_t rval;
-    auto type = val.get_type();
-    if (type.is(_int_type)) {
-      rval.Set<int>(val.cast<int>());
-    } else if (type.is(_float_type)) {
-      rval.Set<float>(val.cast<float>());
-    } else if (type.is(_str_type)) {
-      rval.Set<std::string>(val.cast<std::string>());
-    } else {
-      OrkAssert(false);
-    }
-    return rval;
-  }
-  //////////////////////////////////
-  PythonTypeCodec() {
-    _builtins   = py::module::import("builtins");
-    _int_type   = _builtins.attr("int");
-    _float_type = _builtins.attr("float");
-    _str_type   = _builtins.attr("str");
-  }
-  //////////////////////////////////
-  static std::shared_ptr<PythonTypeCodec> instance() {
-    static auto _instance = std::make_shared<PythonTypeCodec>();
-    return _instance;
-  }
-  //////////////////////////////////
-  py::module _builtins;
-  py::object _int_type;
-  py::object _float_type;
-  py::object _str_type;
-};
+#include <ork/kernel/string/deco.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
 void pyinit_gfx_material(py::module& module_lev2) {
+  auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<GfxMaterial, material_ptr_t>(module_lev2, "Material")
       .def_property("name", &GfxMaterial::GetName, &GfxMaterial::SetName)
@@ -52,10 +17,13 @@ void pyinit_gfx_material(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<GfxMaterialInstance, materialinst_ptr_t>(module_lev2, "MaterialInstance") //
       .def(py::init<material_ptr_t>())
-      .def("__setitem__", [](materialinst_ptr_t instance, const std::string& key, py::object val) { //
-        auto type_codec = PythonTypeCodec::instance();
+      .def("__setitem__", [type_codec](materialinst_ptr_t instance, const std::string& key, py::object val) { //
         auto varmap_val = type_codec->decode(val);
         instance->_vars.setValueForKey(key, varmap_val);
+        auto keys = instance->_vars.dumpkeys();
+        for (auto k : keys)
+          deco::printe(fvec3::Yellow(), k + " ", false);
+        printf("\n");
       });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<FreestyleMaterial, GfxMaterial, freestyle_mtl_ptr_t>(module_lev2, "FreestyleMaterial")
@@ -90,5 +58,6 @@ void pyinit_gfx_material(py::module& module_lev2) {
         fxs.format("FreestyleMaterial(%p:%s)", m, m->mMaterialName.c_str());
         return fxs.c_str();
       });
+  /////////////////////////////////////////////////////////////////////////////////
 }
 } // namespace ork::lev2

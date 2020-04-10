@@ -4,6 +4,7 @@
 
 namespace ork::lev2 {
 void pyinit_primitives(py::module& module_lev2) {
+  auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto primitives = module_lev2.def_submodule("primitives", "BuiltIn Primitives");
   /////////////////////////////////////////////////////////////////////////////////
@@ -94,5 +95,6 @@ void pyinit_primitives(py::module& module_lev2) {
              materialinst_ptr_t mtl_inst) -> scenegraph::node_ptr_t { //
             return prim.createNode(named, layer, mtl_inst);
           });
+  /////////////////////////////////////////////////////////////////////////////////
 }
 } // namespace ork::lev2

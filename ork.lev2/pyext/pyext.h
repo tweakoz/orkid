@@ -1,8 +1,6 @@
-# pragma once
+#pragma once
 
-#include <ork/pch.h>
-#include <ork/python/context.h>
-#include <ork/python/wraprawpointer.inl>
+#include <ork/python/pyext.h>
 #include <ork/kernel/fixedstring.h>
 #include <ork/kernel/fixedstring.hpp>
 #include <ork/lev2/gfx/gfxenv.h>
@@ -56,4 +54,4 @@ using vw_vtxa_t        = VtxWriter<vtxa_t>;
 using cstrref_t        = const std::string&;
 using rcfd_t           = RenderContextFrameData;
 
-}
+} // namespace ork::lev2

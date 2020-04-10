@@ -1,7 +1,5 @@
-# pragma once
-
-#include <ork/pch.h>
-#include <ork/python/context.h>
+#pragma once
+#include <ork/python/pyext.h>
 #include <ork/math/cvector2.h>
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>

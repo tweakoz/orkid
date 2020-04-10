@@ -16,6 +16,7 @@ include(orkid)
 add_compile_options(-Wno-deprecated -Wno-register -fexceptions)
 add_compile_options(-Wno-unused-command-line-argument)
 add_compile_options(-fPIE -fPIC -fno-common -fno-strict-aliasing -g -Wno-switch-enum)
+add_compile_options(-fvisibility=default)
 
 ##############################
 

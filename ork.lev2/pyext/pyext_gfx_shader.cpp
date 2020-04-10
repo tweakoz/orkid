@@ -4,6 +4,7 @@
 
 namespace ork::lev2 {
 void pyinit_gfx_shader(py::module& module_lev2) {
+  auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<fxshader_t>(module_lev2, "FxShader")
       .def(py::init<>())
@@ -62,12 +63,21 @@ void pyinit_gfx_shader(py::module& module_lev2) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<fxtechnique_t>(module_lev2, "FxShaderTechnique")
-      .def_property_readonly("name", [](const fxtechnique_t& t) -> std::string { return t->mTechniqueName; })
-      .def("__repr__", [](const fxtechnique_t& t) -> std::string {
-        fxstring<256> fxs;
-        fxs.format("FxShaderTechnique(%p:%s)", t.get(), t->mTechniqueName.c_str());
-        return fxs.c_str();
+  auto tek_type = //
+      py::class_<fxtechnique_t>(module_lev2, "FxShaderTechnique")
+          .def_property_readonly("name", [](const fxtechnique_t& t) -> std::string { return t->mTechniqueName; })
+          .def("__repr__", [](const fxtechnique_t& t) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("FxShaderTechnique(%p:%s)", t.get(), t->mTechniqueName.c_str());
+            return fxs.c_str();
+          });
+  /////////////////////////////////////////////////////////////////////////////////
+  type_codec->registerDecoder(
+      tek_type,                                                  //
+      [](const py::object& inpval, ork::varmap::val_t& outval) { //
+        auto tek = inpval.cast<fxtechnique_t>();
+        // printf("GOT TEK<%p:%s>\n", tek.get(), tek->mTechniqueName.c_str());
+        outval.Set<fxtechnique_t>(tek);
       });
 }
 } // namespace ork::lev2

@@ -22,7 +22,7 @@ file(GLOB_RECURSE src_pyext ${SRCD}/*.cpp)
 ADD_LIBRARY( _lev2 SHARED ${src_pyext} )
 
 target_include_directories (_lev2 PRIVATE ${INCD} ${INCD2} )
-target_link_libraries(_lev2 LINK_PRIVATE ork_lev2)
+target_link_libraries(_lev2 LINK_PUBLIC ork_core ork_lev2)
 
 SET_TARGET_PROPERTIES( _lev2
   PROPERTIES
