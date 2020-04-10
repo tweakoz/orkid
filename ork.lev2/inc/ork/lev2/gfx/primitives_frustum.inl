@@ -109,6 +109,9 @@ struct FrustumPrimitive {
       auto RCFD = context->topRenderContextFrameData();
       material->begin(*RCFD);
       // todo - how to inject per instance data (controllable from c++ AND python)
+      // possibility: use applicator pattern
+      //  will need to figure out how to get c++ to access python owned data
+      //  (so we dont have to callback into the python interpreter)
       this->draw(context);
       material->end(*RCFD);
     });
