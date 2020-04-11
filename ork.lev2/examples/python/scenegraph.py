@@ -10,6 +10,9 @@ import time, math
 from orkengine.core import *
 from orkengine.lev2 import *
 import _shaders
+from ork.deco import Deco
+from ork.log import log
+deco = Deco()
 
 ################################################
 _time_base = time.time()
@@ -38,8 +41,13 @@ def onGpuInit(ctx):
     ###################################
     #nsh._mtl.bindTechnique(nsh._tek_frustum)
     mtl_inst = MaterialInstance(nsh._mtl)
-    mtl_inst["technique"] = nsh._tek_frustum
-    print(mtl_inst["technique"])
+    mtl_inst.monoTek = nsh._tek_frustum
+    mtl_inst.param[nsh._par_mvp] = mtx4()
+    mtl_inst.param[nsh._par_mnormal] = mtx3()
+    log(deco.white("monotek: "+str(mtl_inst.monoTek)))
+    log(deco.yellow("param: "+str(mtl_inst.param)))
+    log(deco.orange("param.MatMVP: "+str(mtl_inst.param[nsh._par_mvp])))
+    log(deco.orange("param.MatNormal: "+str(mtl_inst.param[nsh._par_mnormal])))
     ###################################
     SG = scenegraph.Scene()
     layer = SG.createLayer("layer1")

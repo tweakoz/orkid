@@ -275,7 +275,7 @@ inline void FreestyleMaterial::gpuInitFromShaderText(Context* targ, const std::s
 ///////////////////////////////////////////////////////////////////////////////
 
 inline bool FreestyleMaterial::BeginPass(Context* targ, int iPass) {
-  return true;
+  return targ->FXI()->BindPass(_shader, iPass);
 }
 inline void FreestyleMaterial::EndPass(Context* targ) {
   targ->FXI()->EndPass(_shader);
@@ -320,14 +320,42 @@ inline void FreestyleMaterial::end(const RenderContextFrameData& RCFD) {
 ///////////////////////////////////////////////////////////////////////////////
 
 inline void FreestyleMaterial::materialInstanceBeginBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
-  auto context = RCID._RCFD->GetTarget();
-  auto tek     = minst->valueForKey("technique").Get<fxtechnique_constptr_t>();
-  this->bindTechnique(tek);
+  auto context    = RCID._RCFD->GetTarget();
+  const auto& CPD = RCID._RCFD->topCPD();
+  bool is_picking = CPD.isPicking();
+  bool is_stereo  = CPD.isStereoOnePass();
+  // auto tek     = minst->valueForKey("technique").Get<fxtechnique_constptr_t>();
+  this->bindTechnique(is_stereo ? minst->_stereoTek : minst->_monoTek);
   int npasses = this->BeginBlock(context, RCID);
 }
 inline void FreestyleMaterial::materialInstanceBeginPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
   auto context = RCID._RCFD->GetTarget();
   this->BeginPass(context, 0);
+  for (auto item : minst->_params) {
+    fxparam_constptr_t param = item.first;
+    const varmap::val_t& val = item.second;
+    if (auto as_fvec2 = val.TryAs<fvec2_ptr_t>()) {
+      this->bindParamVec2(param, *as_fvec2.value().get());
+    } else if (auto as_fvec3 = val.TryAs<fvec3_ptr_t>()) {
+      this->bindParamVec3(param, *as_fvec3.value().get());
+    } else if (auto as_fvec4_ = val.TryAs<fvec4_ptr_t>()) {
+      this->bindParamVec4(param, *as_fvec4_.value().get());
+    } else if (auto as_fmtx3 = val.TryAs<fmtx3_ptr_t>()) {
+      this->bindParamMatrix(param, *as_fmtx3.value().get());
+    } else if (auto as_mtx4 = val.TryAs<fmtx4_ptr_t>()) {
+      this->bindParamMatrix(param, *as_mtx4.value().get());
+    } else if (auto as_fquat = val.TryAs<fquat_ptr_t>()) {
+      const auto& Q = *as_fquat.value().get();
+      fvec4 as_vec4(Q.x, Q.y, Q.z, Q.w);
+      this->bindParamVec4(param, as_vec4);
+    } else if (auto as_fplane3 = val.TryAs<fplane3_ptr_t>()) {
+      const auto& P = *as_fplane3.value().get();
+      fvec4 as_vec4(P.n, P.d);
+      this->bindParamVec4(param, as_vec4);
+    } else {
+      OrkAssert(false);
+    }
+  }
 }
 inline void FreestyleMaterial::materialInstanceEndPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
   auto context = RCID._RCFD->GetTarget();

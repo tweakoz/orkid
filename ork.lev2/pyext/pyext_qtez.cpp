@@ -29,8 +29,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               pyfn.value()(ctx_t(ctx));
             });
             rval->onUpdate([=](UpdateData updata) { //
-              auto pyfn = rval->_vars.typedValueForKey<py::function>("updatefn");
               py::gil_scoped_acquire acquire;
+              auto pyfn = rval->_vars.typedValueForKey<py::function>("updatefn");
               pyfn.value()();
             });
 

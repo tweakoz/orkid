@@ -137,14 +137,17 @@ private:
 
 struct GfxMaterialInstance : public std::enable_shared_from_this<GfxMaterialInstance> {
   GfxMaterialInstance(material_ptr_t mtl);
-  varmap::val_t operator[](const std::string& key) const;
-  varmap::val_t valueForKey(const std::string& key) const;
+  // varmap::val_t operator[](const std::string& key) const;
+  // varmap::val_t valueForKey(const std::string& key) const;
   void beginBlock(const RenderContextInstData& RCID);
   void beginPass(const RenderContextInstData& RCID);
   void endPass(const RenderContextInstData& RCID);
   void endBlock(const RenderContextInstData& RCID);
   material_ptr_t _material;
-  varmap::VarMap _vars;
+  fxtechnique_constptr_t _monoTek   = nullptr;
+  fxtechnique_constptr_t _pickTek   = nullptr;
+  fxtechnique_constptr_t _stereoTek = nullptr;
+  std::unordered_map<fxparam_constptr_t, varmap::val_t> _params;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

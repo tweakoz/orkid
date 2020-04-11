@@ -141,12 +141,12 @@ void GfxMaterialInstance::endBlock(const RenderContextInstData& RCID) {
   _material->materialInstanceEndBlock(shared_from_this(), RCID);
 }
 
-varmap::val_t GfxMaterialInstance::operator[](const std::string& key) const {
+/*varmap::val_t GfxMaterialInstance::operator[](const std::string& key) const {
   return _vars.valueForKey(key);
 }
 varmap::val_t GfxMaterialInstance::valueForKey(const std::string& key) const {
   return _vars.valueForKey(key);
-}
+}*/
 
 } // namespace lev2
 } // namespace ork
