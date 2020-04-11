@@ -54,21 +54,21 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 m->gpuInitFromShaderText(c.get(), name, shadertext);
                 m->_rasterstate.SetCullTest(ECULLTEST_OFF);
               })
-          .def_property_readonly("shader", [](const freestyle_mtl_ptr_t m) -> fxshader_t { return fxshader_t(m->_shader); })
-          .def("bindTechnique", [](freestyle_mtl_ptr_t m, const fxtechnique_t& tek) { m->bindTechnique(tek.get()); })
-          .def("bindParamFloat", [](freestyle_mtl_ptr_t m, fxparam_t& p, float value) { m->bindParamFloat(p.get(), value); })
-          .def("bindParamVec2", [](freestyle_mtl_ptr_t m, fxparam_t& p, const fvec2& value) { m->bindParamVec2(p.get(), value); })
-          .def("bindParamVec3", [](freestyle_mtl_ptr_t m, fxparam_t& p, const fvec3& value) { m->bindParamVec3(p.get(), value); })
-          .def("bindParamVec4", [](freestyle_mtl_ptr_t m, fxparam_t& p, const fvec4& value) { m->bindParamVec4(p.get(), value); })
+          .def_property_readonly("shader", [](const freestyle_mtl_ptr_t m) -> pyfxshader_ptr_t { return pyfxshader_ptr_t(m->_shader); })
+          .def("bindTechnique", [](freestyle_mtl_ptr_t m, const pyfxtechnique_ptr_t& tek) { m->bindTechnique(tek.get()); })
+          .def("bindParamFloat", [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, float value) { m->bindParamFloat(p.get(), value); })
+          .def("bindParamVec2", [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const fvec2& value) { m->bindParamVec2(p.get(), value); })
+          .def("bindParamVec3", [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const fvec3& value) { m->bindParamVec3(p.get(), value); })
+          .def("bindParamVec4", [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const fvec4& value) { m->bindParamVec4(p.get(), value); })
           .def(
               "bindParamMatrix3",
-              [](freestyle_mtl_ptr_t m, fxparam_t& p, const fmtx3& value) { m->bindParamMatrix(p.get(), value); })
+              [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const fmtx3& value) { m->bindParamMatrix(p.get(), value); })
           .def(
               "bindParamMatrix4",
-              [](freestyle_mtl_ptr_t m, fxparam_t& p, const fmtx4& value) { m->bindParamMatrix(p.get(), value); })
+              [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const fmtx4& value) { m->bindParamMatrix(p.get(), value); })
           .def(
               "bindParamTexture",
-              [](freestyle_mtl_ptr_t m, fxparam_t& p, const tex_t& value) { m->bindParamCTex(p.get(), value.get()); })
+              [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const tex_t& value) { m->bindParamCTex(p.get(), value.get()); })
           .def("begin", [](freestyle_mtl_ptr_t m, RenderContextFrameData& rcfd) { m->begin(rcfd); })
           .def("end", [](freestyle_mtl_ptr_t m, RenderContextFrameData& rcfd) { m->end(rcfd); })
           .def("__repr__", [](const freestyle_mtl_ptr_t m) -> std::string {

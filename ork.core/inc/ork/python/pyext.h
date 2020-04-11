@@ -25,16 +25,33 @@ struct TypeCodec {
   //////////////////////////////////
   // register std codec (will reduce boilerplate for a lot of cases)
   //////////////////////////////////
-  template <typename T> void registerStdCodec(const pybind11::object& pytype) {
+  template <typename ORKTYPE> void registerStdCodec(const pybind11::object& pytype) {
     this->registerCodec(
         pytype, //
-        TypeId::of<T>(),
+        TypeId::of<ORKTYPE>(),
         [](const ork::varmap::val_t& inpval, pybind11::object& outval) { // encoder
-          outval = pybind11::cast(inpval.Get<T>());
+          outval = pybind11::cast(inpval.Get<ORKTYPE>());
         },
         [](const pybind11::object& inpval, ork::varmap::val_t& outval) { // decoder
-          auto tek = inpval.cast<T>();
-          outval.Set<T>(tek);
+          auto ork_val = inpval.cast<ORKTYPE>();
+          outval.Set<ORKTYPE>(ork_val);
+        });
+  }
+  //////////////////////////////////
+  // register std codec (will reduce boilerplate for a lot of cases)
+  //////////////////////////////////
+  template <typename PYREPR, typename ORKTYPE> void registerRawPtrCodec(const pybind11::object& pytype) {
+    this->registerCodec(
+        pytype, //
+        TypeId::of<ORKTYPE>(),
+        [](const ork::varmap::val_t& inpval, pybind11::object& outval) { // encoder
+          auto rawval = inpval.Get<ORKTYPE>();
+          outval      = pybind11::cast(PYREPR(rawval));
+        },
+        [](const pybind11::object& inpval, ork::varmap::val_t& outval) { // decoder
+          auto intermediate_val = inpval.cast<PYREPR>();
+          auto ptr_val          = intermediate_val.get();
+          outval.Set<ORKTYPE>(ptr_val);
         });
   }
   //////////////////////////////////
