@@ -6,70 +6,76 @@ namespace ork::lev2 {
 void pyinit_gfx_material(py::module& module_lev2);
 void pyinit_gfx_shader(py::module& module_lev2);
 void pyinit_gfx(py::module& module_lev2) {
+  auto type_codec = python::TypeCodec::instance();
   pyinit_gfx_material(module_lev2);
   pyinit_gfx_shader(module_lev2);
   /////////////////////////////////////////////////////////////////////////////////
-  py::enum_<ERefreshPolicy>(module_lev2, "RefreshPolicy")
-      .value("RefreshFastest", EREFRESH_FASTEST)
-      .value("RefreshWhenDirty", EREFRESH_WHENDIRTY)
-      .value("RefreshFixedFPS", EREFRESH_FIXEDFPS)
-      .export_values();
+  auto refresh_policy_type = //
+      py::enum_<ERefreshPolicy>(module_lev2, "RefreshPolicy")
+          .value("RefreshFastest", EREFRESH_FASTEST)
+          .value("RefreshWhenDirty", EREFRESH_WHENDIRTY)
+          .value("RefreshFixedFPS", EREFRESH_FIXEDFPS)
+          .export_values();
+  type_codec->registerStdCodec<ERefreshPolicy>(refresh_policy_type);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<GfxEnv>(module_lev2, "GfxEnv")
-      .def_readonly_static("ref", &GfxEnv::GetRef())
-      .def("loadingContext", [](const GfxEnv& e) -> ctx_t { return ctx_t(GfxEnv::GetRef().loadingContext()); })
-      .def("__repr__", [](const GfxEnv& e) -> std::string {
-        fxstring<64> fxs;
-        fxs.format("GfxEnv(%p)", &e);
-        return fxs.c_str();
-      });
+  auto gfxenv_type = //
+      py::class_<GfxEnv>(module_lev2, "GfxEnv")
+          .def_readonly_static("ref", &GfxEnv::GetRef())
+          .def("loadingContext", [](const GfxEnv& e) -> ctx_t { return ctx_t(GfxEnv::GetRef().loadingContext()); })
+          .def("__repr__", [](const GfxEnv& e) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("GfxEnv(%p)", &e);
+            return fxs.c_str();
+          });
+  // type_codec->registerStdCodec<GfxEnv>(gfxenv_type);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<ctx_t>(module_lev2, "GfxContext")
-      .def("mainSurfaceWidth", [](ctx_t& c) -> int { return c.get()->mainSurfaceWidth(); })
-      .def("mainSurfaceHeight", [](ctx_t& c) -> int { return c.get()->mainSurfaceHeight(); })
-      .def("makeCurrent", [](ctx_t& c) { c.get()->makeCurrentContext(); })
-      .def("beginFrame", [](ctx_t& c) { return c.get()->beginFrame(); })
-      .def("endFrame", [](ctx_t& c) { return c.get()->endFrame(); })
-      .def("debugPushGroup", [](ctx_t& c, cstrref_t str) { return c.get()->debugPushGroup(str); })
-      .def("debugPopGroup", [](ctx_t& c) { return c.get()->debugPopGroup(); })
-      .def("debugMarker", [](ctx_t& c, cstrref_t str) { return c.get()->debugMarker(str); })
-      .def("defaultRTG", [](ctx_t& c) -> rtg_t { return rtg_t(c.get()->_defaultRTG); })
-      .def("resize", [](ctx_t& rtg, int w, int h) { rtg.get()->resizeMainSurface(w, h); })
-      .def("FBI", [](ctx_t& c) -> fbi_t { return fbi_t(c.get()->FBI()); })
-      .def("FXI", [](ctx_t& c) -> fxi_t { return fxi_t(c.get()->FXI()); })
-      .def("GBI", [](ctx_t& c) -> gbi_t { return gbi_t(c.get()->GBI()); })
-      .def("TXI", [](ctx_t& c) -> txi_t { return txi_t(c.get()->TXI()); })
-      .def("RSI", [](ctx_t& c) -> rsi_t { return rsi_t(c.get()->RSI()); })
-      //////////////////////
-      // todo move to mtxi when we add it
-      //////////////////////
-      .def(
-          "perspective",
-          [](ctx_t& c, float fovy, float aspect, float near, float ffar) -> fmtx4 {
-            fmtx4 rval = c.get()->MTXI()->Persp(fovy, aspect, near, ffar);
-            return rval;
-          })
-      .def(
-          "lookAt",
-          [](ctx_t& c, fvec3& eye, fvec3& tgt, fvec3& up) -> fmtx4 {
-            fmtx4 rval = c.get()->MTXI()->LookAt(eye, tgt, up);
-            return rval;
-          })
-      //////////////////////
-      //.def(
-      //    "topRCFD",
-      //  [](ctx_t& c) -> rcfd_ptr_t {
-      //  auto rcfd = c.get()->topRenderContextFrameData();
-      // return rcfd_ptr_t(const_cast<RenderContextFrameData*>(rcfd));
-      //})
-      .def_property_readonly("frameIndex", [](ctx_t& c) -> int { return c.get()->GetTargetFrame(); })
-      //.def_property("currentMaterial", [](ctx_t& c)&Context::currentMaterial, &Context::BindMaterial)
-      .def("__repr__", [](const ctx_t& c) -> std::string {
-        fxstring<64> fxs;
-        fxs.format("Context(%p)", c.get());
-        return fxs.c_str();
-      });
-
+  auto ctx_type = //
+      py::class_<ctx_t>(module_lev2, "GfxContext")
+          .def("mainSurfaceWidth", [](ctx_t& c) -> int { return c.get()->mainSurfaceWidth(); })
+          .def("mainSurfaceHeight", [](ctx_t& c) -> int { return c.get()->mainSurfaceHeight(); })
+          .def("makeCurrent", [](ctx_t& c) { c.get()->makeCurrentContext(); })
+          .def("beginFrame", [](ctx_t& c) { return c.get()->beginFrame(); })
+          .def("endFrame", [](ctx_t& c) { return c.get()->endFrame(); })
+          .def("debugPushGroup", [](ctx_t& c, cstrref_t str) { return c.get()->debugPushGroup(str); })
+          .def("debugPopGroup", [](ctx_t& c) { return c.get()->debugPopGroup(); })
+          .def("debugMarker", [](ctx_t& c, cstrref_t str) { return c.get()->debugMarker(str); })
+          .def("defaultRTG", [](ctx_t& c) -> rtg_t { return rtg_t(c.get()->_defaultRTG); })
+          .def("resize", [](ctx_t& rtg, int w, int h) { rtg.get()->resizeMainSurface(w, h); })
+          .def("FBI", [](ctx_t& c) -> fbi_t { return fbi_t(c.get()->FBI()); })
+          .def("FXI", [](ctx_t& c) -> fxi_t { return fxi_t(c.get()->FXI()); })
+          .def("GBI", [](ctx_t& c) -> gbi_t { return gbi_t(c.get()->GBI()); })
+          .def("TXI", [](ctx_t& c) -> txi_t { return txi_t(c.get()->TXI()); })
+          .def("RSI", [](ctx_t& c) -> rsi_t { return rsi_t(c.get()->RSI()); })
+          //////////////////////
+          // todo move to mtxi when we add it
+          //////////////////////
+          .def(
+              "perspective",
+              [](ctx_t& c, float fovy, float aspect, float near, float ffar) -> fmtx4 {
+                fmtx4 rval = c.get()->MTXI()->Persp(fovy, aspect, near, ffar);
+                return rval;
+              })
+          .def(
+              "lookAt",
+              [](ctx_t& c, fvec3& eye, fvec3& tgt, fvec3& up) -> fmtx4 {
+                fmtx4 rval = c.get()->MTXI()->LookAt(eye, tgt, up);
+                return rval;
+              })
+          //////////////////////
+          //.def(
+          //    "topRCFD",
+          //  [](ctx_t& c) -> rcfd_ptr_t {
+          //  auto rcfd = c.get()->topRenderContextFrameData();
+          // return rcfd_ptr_t(const_cast<RenderContextFrameData*>(rcfd));
+          //})
+          .def_property_readonly("frameIndex", [](ctx_t& c) -> int { return c.get()->GetTargetFrame(); })
+          //.def_property("currentMaterial", [](ctx_t& c)&Context::currentMaterial, &Context::BindMaterial)
+          .def("__repr__", [](const ctx_t& c) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("Context(%p)", c.get());
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<ctx_t>(ctx_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<fbi_t>(module_lev2, "FrameBufferInterface")
       .def_property(

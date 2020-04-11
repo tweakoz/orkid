@@ -39,6 +39,7 @@ def onGpuInit(ctx):
     nsh._mtl.bindTechnique(nsh._tek_frustum)
     mtl_inst = MaterialInstance(nsh._mtl)
     mtl_inst["technique"] = nsh._tek_frustum
+    print(mtl_inst["technique"])
     ###################################
     SG = scenegraph.Scene()
     layer = SG.createLayer("layer1")

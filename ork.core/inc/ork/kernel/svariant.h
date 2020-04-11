@@ -100,6 +100,40 @@ template <typename T> struct attempt_cast_const {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// TypeId
+// todo: try to see if we can get the hash at compile time!
+///////////////////////////////////////////////////////////////////////////////
+
+struct TypeId {
+  using hashtype_t = uint64_t;
+  hashtype_t _hashed = 0;
+  std::string _typename;
+  template <typename T> static TypeId of() {
+    TypeId rval;
+    rval._typename = typeid(T).name();
+    boost::Crc64 crcgen;
+    crcgen.init();
+    crcgen.accumulate((const void*)rval._typename.c_str(),rval._typename.length());
+    crcgen.finish();
+    rval._hashed = crcgen.result();
+    return rval;
+    }
+
+  static TypeId fromStdTypeInfo(const std::type_info* tinfo){
+    TypeId rval;
+    rval._typename = tinfo->name();
+    boost::Crc64 crcgen;
+    crcgen.init();
+    crcgen.accumulate((const void*)rval._typename.c_str(),rval._typename.length());
+    crcgen.finish();
+    rval._hashed = crcgen.result();
+    return rval;
+
+  }
+};
+
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <int tsize> class static_variant {
 public:
@@ -315,6 +349,10 @@ public:
     crcgen.accumulate((const void*)mbuffer,ksize);
     crcgen.finish();
     return crcgen.result();
+  }
+  //////////////////////////////////////////////////////////////
+  TypeId getOrkTypeId() const {
+    return TypeId::fromStdTypeInfo(mtinfo);
   }
 //////////////////////////////////////////////////////////////
 private:
