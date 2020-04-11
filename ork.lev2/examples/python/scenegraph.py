@@ -36,7 +36,7 @@ def onGpuInit(ctx):
     prim.frustum = frust
     prim.gpuInit(ctx)
     ###################################
-    nsh._mtl.bindTechnique(nsh._tek_frustum)
+    #nsh._mtl.bindTechnique(nsh._tek_frustum)
     mtl_inst = MaterialInstance(nsh._mtl)
     mtl_inst["technique"] = nsh._tek_frustum
     print(mtl_inst["technique"])

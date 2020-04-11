@@ -48,7 +48,10 @@ struct FreestyleMaterial : public GfxMaterial {
 
   ////////////////////////////////////////////
 
-  void applyInstance(materialinst_ptr_t minst, const RenderContextInstData& RCID) final;
+  void materialInstanceBeginBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) final;
+  void materialInstanceBeginPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) final;
+  void materialInstanceEndPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) final;
+  void materialInstanceEndBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) final;
 
   ////////////////////////////////////////////
 
@@ -292,7 +295,7 @@ inline void FreestyleMaterial::begin(const RenderContextFrameData& RCFD) {
   auto targ = RCFD.GetTarget();
   auto fxi  = targ->FXI();
   auto rsi  = targ->RSI();
-  RenderContextInstData RCID(RCFD);
+  RenderContextInstData RCID(&RCFD);
   int npasses = this->BeginBlock(targ, RCID);
   rsi->BindRasterState(_rasterstate);
   fxi->BindPass(_shader, 0);
@@ -316,8 +319,23 @@ inline void FreestyleMaterial::end(const RenderContextFrameData& RCFD) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline void FreestyleMaterial::applyInstance(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
-  OrkAssert(false);
+inline void FreestyleMaterial::materialInstanceBeginBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
+  auto context = RCID._RCFD->GetTarget();
+  auto tek     = minst->valueForKey("technique").Get<fxtechnique_constptr_t>();
+  this->bindTechnique(tek);
+  int npasses = this->BeginBlock(context, RCID);
+}
+inline void FreestyleMaterial::materialInstanceBeginPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
+  auto context = RCID._RCFD->GetTarget();
+  this->BeginPass(context, 0);
+}
+inline void FreestyleMaterial::materialInstanceEndPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
+  auto context = RCID._RCFD->GetTarget();
+  this->EndPass(context);
+}
+inline void FreestyleMaterial::materialInstanceEndBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
+  auto context = RCID._RCFD->GetTarget();
+  this->EndBlock(context);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

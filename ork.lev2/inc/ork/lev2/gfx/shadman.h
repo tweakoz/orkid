@@ -11,13 +11,22 @@
 #include <ork/kernel/prop.h>
 #include <ork/lev2/gfx/gfxenv.h>
 
-namespace ork {
-namespace lev2 {
+namespace ork { namespace lev2 {
 
+struct FxShader;
 struct FxShaderParam;
 struct FxShaderParamBlock;
 struct FxShaderParamBlockMapping;
+struct FxShaderTechnique;
 typedef std::shared_ptr<FxShaderParamBufferMapping> parambuffermappingptr_t;
+using fxshader_ptr_t         = FxShader*;
+using fxparam_ptr_t          = FxShaderParam*;
+using fxtechnique_ptr_t      = FxShaderTechnique*;
+using fxshader_constptr_t    = const FxShader*;
+using fxparam_constptr_t     = const FxShaderParam*;
+using fxtechnique_constptr_t = const FxShaderTechnique*;
+using fxparamptrmap_t        = std::map<std::string, fxparam_constptr_t>;
+using fxtechniqueptrmap_t    = std::map<std::string, fxtechnique_constptr_t>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -36,7 +45,7 @@ public:
   std::string mParameterSemantic;
   EPropType meParameterType;
 
-  const FxShaderParam *mParameterHandle;
+  fxparam_constptr_t mParameterHandle;
   EBindingScope meBindingScope;
   U32 mTargetHash;
 };
@@ -45,26 +54,30 @@ public:
 
 struct FxShaderPass {
   std::string mPassName;
-  void *mInternalHandle;
+  void* mInternalHandle;
   bool mbRestorePass;
 
   RenderQueueSortingData mRenderQueueSortingData;
 
-  FxShaderPass(void *ih = 0);
-  void *GetPlatformHandle(void) const { return mInternalHandle; }
+  FxShaderPass(void* ih = 0);
+  void* GetPlatformHandle(void) const {
+    return mInternalHandle;
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FxShaderTechnique {
   std::string mTechniqueName;
-  const void *mInternalHandle;
-  orkvector<FxShaderPass *> mPasses;
+  const void* mInternalHandle;
+  orkvector<FxShaderPass*> mPasses;
   bool mbValidated;
 
-  FxShaderTechnique(void *ih = 0);
+  FxShaderTechnique(void* ih = 0);
 
-  const void *GetPlatformHandle(void) const { return mInternalHandle; }
+  const void* GetPlatformHandle(void) const {
+    return mInternalHandle;
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -78,20 +91,22 @@ struct FxShaderParam {
   std::string mParameterSemantic;
   std::string mParameterType;
   EPropType meParamType;
-  void *mInternalHandle;
+  void* mInternalHandle;
   bool mBindable;
   FxShaderParamInBlockInfo* _blockinfo = nullptr;
-  FxShaderParam *mChildParam;
+  FxShaderParam* mChildParam;
 
   orklut<std::string, std::string> mAnnotations;
-  FxShaderParam(void *ih = 0);
-  void *GetPlatformHandle(void) const { return mInternalHandle; }
+  FxShaderParam(void* ih = 0);
+  void* GetPlatformHandle(void) const {
+    return mInternalHandle;
+  }
 };
 
 struct FxShaderParamBlock {
   std::string _name;
-  FxShaderParam *param(const std::string &name) const;
-  std::map<std::string,FxShaderParam*> _subparams;
+  FxShaderParam* param(const std::string& name) const;
+  std::map<std::string, FxShaderParam*> _subparams;
   svarp_t _impl;
   FxInterface* _fxi = nullptr;
 };
@@ -104,22 +119,19 @@ struct FxShaderParamBufferMapping {
   ~FxShaderParamBufferMapping();
   void unmap();
   FxShaderParamBuffer* _buffer = nullptr;
-  FxInterface* _fxi = nullptr;
-  size_t _offset = 0;
-  size_t _length = 0;
+  FxInterface* _fxi            = nullptr;
+  size_t _offset               = 0;
+  size_t _length               = 0;
   svarp_t _impl;
 
   template <typename T> T& ref(size_t offset) {
     size_t end = offset + sizeof(T);
-    assert(end<=_length);
-    auto tstar = (T*) (((char*)_mappedaddr)+offset);
+    assert(end <= _length);
+    auto tstar = (T*)(((char*)_mappedaddr) + offset);
     return *tstar;
   }
 
-
   void* _mappedaddr = nullptr;
-
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -142,18 +154,17 @@ struct FxShaderStorageBufferMapping {
   ~FxShaderStorageBufferMapping();
   void unmap();
   FxShaderStorageBuffer* _buffer = nullptr;
-  ComputeInterface* _ci = nullptr;
-  size_t _offset = 0;
-  size_t _length = 0;
+  ComputeInterface* _ci          = nullptr;
+  size_t _offset                 = 0;
+  size_t _length                 = 0;
   svarp_t _impl;
 
   template <typename T> T& ref(size_t offset) {
     size_t end = offset + sizeof(T);
-    assert(end<=_length);
-    auto tstar = (T*) (((char*)_mappedaddr)+offset);
+    assert(end <= _length);
+    auto tstar = (T*)(((char*)_mappedaddr) + offset);
     return *tstar;
   }
-
 
   void* _mappedaddr = nullptr;
 };
@@ -162,22 +173,22 @@ struct FxShaderStorageBufferMapping {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined (ENABLE_COMPUTE_SHADERS)
+#if defined(ENABLE_COMPUTE_SHADERS)
 struct FxComputeShader {
-    svar64_t _impl;
-    std::string _name;
+  svar64_t _impl;
+  std::string _name;
 };
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FxShader {
-  void *mInternalHandle;
+  void* mInternalHandle;
 
-  typedef std::map<std::string, const FxShaderParam *> parambynamemap_t;
-  typedef std::map<std::string, const FxShaderParamBlock *> paramblockbynamemap_t;
-  typedef std::map<std::string, const FxShaderTechnique *> techniquebynamemap_t;
-  typedef std::map<std::string, const FxComputeShader *> computebynamemap_t;
+  typedef std::map<std::string, fxparam_constptr_t> parambynamemap_t;
+  typedef std::map<std::string, const FxShaderParamBlock*> paramblockbynamemap_t;
+  typedef std::map<std::string, fxtechnique_constptr_t> techniquebynamemap_t;
+  typedef std::map<std::string, const FxComputeShader*> computebynamemap_t;
 
   techniquebynamemap_t _techniques;
   parambynamemap_t _parameterByName;
@@ -190,67 +201,82 @@ struct FxShader {
 
   void OnReset();
 
-  static void SetLoaderTarget(Context *targ);
+  static void SetLoaderTarget(Context* targ);
 
   FxShader();
 
-  static void RegisterLoaders(const file::Path::NameType &base,
-                              const file::Path::NameType &ext);
+  static void RegisterLoaders(const file::Path::NameType& base, const file::Path::NameType& ext);
 
-  void SetInternalHandle(void *ph) { mInternalHandle = ph; }
-  void *GetInternalHandle(void) { return mInternalHandle; }
+  void SetInternalHandle(void* ph) {
+    mInternalHandle = ph;
+  }
+  void* GetInternalHandle(void) {
+    return mInternalHandle;
+  }
 
-  static const char *GetAssetTypeNameStatic(void) { return "fxshader"; }
+  static const char* GetAssetTypeNameStatic(void) {
+    return "fxshader";
+  }
 
-  void addTechnique(const FxShaderTechnique *tek);
-  void addParameter(const FxShaderParam *param);
-  void addParameterBlock(const FxShaderParamBlock *block);
-  void addComputeShader(const FxComputeShader *csh);
+  void addTechnique(fxtechnique_constptr_t tek);
+  void addParameter(fxparam_constptr_t param);
+  void addParameterBlock(const FxShaderParamBlock* block);
+  void addComputeShader(const FxComputeShader* csh);
 
-  const techniquebynamemap_t &techniques(void) const { return _techniques; }
-  const parambynamemap_t &namedParams(void) const { return _parameterByName; }
-  const paramblockbynamemap_t &namedParamBlocks(void) const {
+  const techniquebynamemap_t& techniques(void) const {
+    return _techniques;
+  }
+  const parambynamemap_t& namedParams(void) const {
+    return _parameterByName;
+  }
+  const paramblockbynamemap_t& namedParamBlocks(void) const {
     return _parameterBlockByName;
   }
-  const computebynamemap_t &namedComputeShaders(void) const {
+  const computebynamemap_t& namedComputeShaders(void) const {
     return _computeShaderByName;
   }
 
-  FxShaderParam *FindParamByName(const std::string &named);
-  FxShaderParamBlock *FindParamBlockByName(const std::string &named);
-  FxShaderTechnique *FindTechniqueByName(const std::string &named);
+  FxShaderParam* FindParamByName(const std::string& named);
+  FxShaderParamBlock* FindParamBlockByName(const std::string& named);
+  FxShaderTechnique* FindTechniqueByName(const std::string& named);
 
-  #if defined (ENABLE_COMPUTE_SHADERS)
-  FxComputeShader* findComputeShader(const std::string &named);
-  #endif
+#if defined(ENABLE_COMPUTE_SHADERS)
+  FxComputeShader* findComputeShader(const std::string& named);
+#endif
 
-  void SetAllowCompileFailure(bool bv) { mAllowCompileFailure = bv; }
-  bool GetAllowCompileFailure() const { return mAllowCompileFailure; }
-  void SetFailedCompile(bool bv) { mFailedCompile = bv; }
-  bool GetFailedCompile() const { return mFailedCompile; }
+  void SetAllowCompileFailure(bool bv) {
+    mAllowCompileFailure = bv;
+  }
+  bool GetAllowCompileFailure() const {
+    return mAllowCompileFailure;
+  }
+  void SetFailedCompile(bool bv) {
+    mFailedCompile = bv;
+  }
+  bool GetFailedCompile() const {
+    return mFailedCompile;
+  }
 
-  void SetName(const char *);
-  const char *GetName();
+  void SetName(const char*);
+  const char* GetName();
 
   ////////////////////////////////////////////////////
   // SSBO support
   ////////////////////////////////////////////////////
 
-  #if defined(ENABLE_SHADER_STORAGE)
-  typedef orkmap<std::string, const FxShaderStorageBlock *> storageblockbynamemap_t;
+#if defined(ENABLE_SHADER_STORAGE)
+  typedef orkmap<std::string, const FxShaderStorageBlock*> storageblockbynamemap_t;
   storageblockbynamemap_t _storageBlockByName;
-  const storageblockbynamemap_t &namedStorageBlocks(void) const {
+  const storageblockbynamemap_t& namedStorageBlocks(void) const {
     return _storageBlockByName;
   }
-  void addStorageBlock(const FxShaderStorageBlock *block);
-  FxShaderStorageBlock *storageBlockByName(const std::string &named);
-  #endif
+  void addStorageBlock(const FxShaderStorageBlock* block);
+  FxShaderStorageBlock* storageBlockByName(const std::string& named);
+#endif
 
   ////////////////////////////////////////////////////
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} // namespace lev2
-} // namespace ork
+}} // namespace ork::lev2

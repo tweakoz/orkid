@@ -75,7 +75,18 @@ void pyinit_gfx_shader(py::module& module_lev2) {
             fxs.format("FxShaderTechnique(%p:%s)", t.get(), t->mTechniqueName.c_str());
             return fxs.c_str();
           });
-  type_codec->registerStdCodec<fxtechnique_t>(tek_type);
+  type_codec->registerCodec( // special codec since using raw poiinters
+      tek_type,              //
+      TypeId::of<fxtechnique_constptr_t>(),
+      [](const ork::varmap::val_t& inpval, pybind11::object& outval) { // encoder
+        auto rawtek = inpval.Get<fxtechnique_constptr_t>();
+        auto muttek = const_cast<fxtechnique_ptr_t>(rawtek);
+        outval      = pybind11::cast(fxtechnique_t(muttek));
+      },
+      [](const pybind11::object& inpval, ork::varmap::val_t& outval) { // decoder
+        auto pytek = inpval.cast<fxtechnique_t>();
+        outval.Set<fxtechnique_constptr_t>(pytek.get());
+      });
   /////////////////////////////////////////////////////////////////////////////////
 }
 } // namespace ork::lev2

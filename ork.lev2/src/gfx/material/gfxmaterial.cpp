@@ -128,6 +128,25 @@ TextureContext& GfxMaterial::GetTexture(ETextureDest edest) {
 GfxMaterialInstance::GfxMaterialInstance(material_ptr_t mtl)
     : _material(mtl) {
 }
+void GfxMaterialInstance::beginBlock(const RenderContextInstData& RCID) {
+  _material->materialInstanceBeginBlock(shared_from_this(), RCID);
+}
+void GfxMaterialInstance::beginPass(const RenderContextInstData& RCID) {
+  _material->materialInstanceBeginPass(shared_from_this(), RCID);
+}
+void GfxMaterialInstance::endPass(const RenderContextInstData& RCID) {
+  _material->materialInstanceEndPass(shared_from_this(), RCID);
+}
+void GfxMaterialInstance::endBlock(const RenderContextInstData& RCID) {
+  _material->materialInstanceEndBlock(shared_from_this(), RCID);
+}
+
+varmap::val_t GfxMaterialInstance::operator[](const std::string& key) const {
+  return _vars.valueForKey(key);
+}
+varmap::val_t GfxMaterialInstance::valueForKey(const std::string& key) const {
+  return _vars.valueForKey(key);
+}
 
 } // namespace lev2
 } // namespace ork

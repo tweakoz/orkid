@@ -122,12 +122,12 @@ void IRenderer::ResetQueue(void) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void IRenderer::RenderCallback(const lev2::CallbackRenderable& cbren) const {
-  lev2::RenderContextInstData MatCtx;
-  lev2::Context* pTARG = GetTarget();
-  MatCtx.SetRenderer(this);
+  auto context = GetTarget();
+  lev2::RenderContextInstData RCID(context->topRenderContextFrameData());
+  RCID.SetRenderer(this);
 
   if (cbren.GetRenderCallback()) {
-    cbren.GetRenderCallback()(MatCtx, pTARG, &cbren);
+    cbren.GetRenderCallback()(RCID, context, &cbren);
   }
 }
 

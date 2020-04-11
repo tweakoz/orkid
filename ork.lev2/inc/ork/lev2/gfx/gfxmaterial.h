@@ -131,9 +131,18 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// GfxMaterialInstance : instance of a material
+//  with different settings
+///////////////////////////////////////////////////////////////////////////////
 
-struct GfxMaterialInstance {
+struct GfxMaterialInstance : public std::enable_shared_from_this<GfxMaterialInstance> {
   GfxMaterialInstance(material_ptr_t mtl);
+  varmap::val_t operator[](const std::string& key) const;
+  varmap::val_t valueForKey(const std::string& key) const;
+  void beginBlock(const RenderContextInstData& RCID);
+  void beginPass(const RenderContextInstData& RCID);
+  void endPass(const RenderContextInstData& RCID);
+  void endBlock(const RenderContextInstData& RCID);
   material_ptr_t _material;
   varmap::VarMap _vars;
 };
@@ -186,7 +195,13 @@ public:
     mfFogRange = float(frange);
   };
 
-  virtual void applyInstance(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
+  virtual void materialInstanceBeginBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
+  }
+  virtual void materialInstanceBeginPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
+  }
+  virtual void materialInstanceEndPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
+  }
+  virtual void materialInstanceEndBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
   }
 
   virtual void UpdateMVPMatrix(Context* pTARG) {

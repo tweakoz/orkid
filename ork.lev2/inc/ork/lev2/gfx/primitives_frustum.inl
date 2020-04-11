@@ -106,18 +106,15 @@ struct FrustumPrimitive {
     drw->SetRenderCallback([=](lev2::RenderContextInstData& RCID, //
                                lev2::Context* context,
                                const CallbackRenderable* pren) { //
-      auto RCFD     = context->topRenderContextFrameData();
-      auto material = material_inst->_material;
-      int npasses   = material->BeginBlock(context, RCID);
-      material->BeginPass(context, 0);
-      material->applyInstance(material_inst, RCID);
+      material_inst->beginBlock(RCID);
+      material_inst->beginPass(RCID);
       // todo - how to inject per instance data (controllable from c++ AND python)
       // possibility: use applicator pattern
       //  will need to figure out how to get c++ to access python owned data
       //  (so we dont have to callback into the python interpreter)
       // this->draw(context);
-      material->EndPass(context);
-      material->EndBlock(context);
+      material_inst->endPass(RCID);
+      material_inst->endBlock(RCID);
     });
 
     return nod;

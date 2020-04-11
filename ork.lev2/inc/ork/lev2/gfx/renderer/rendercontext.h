@@ -45,8 +45,7 @@ struct RenderContextInstData {
 
   static const RenderContextInstData Default;
 
-  RenderContextInstData();
-  RenderContextInstData(const RenderContextFrameData& RCFD);
+  RenderContextInstData(const RenderContextFrameData* RCFD = nullptr);
   //////////////////////////////////////
   // renderer interface
   //////////////////////////////////////
@@ -161,6 +160,7 @@ struct RenderContextInstData {
   bool mbVertexLit;
   float mEngineParamFloats[kMaxEngineParamFloats];
   RenderGroupState mRenderGroupState;
+  const RenderContextFrameData* _RCFD = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -38,12 +38,7 @@ const RenderContextInstData RenderContextInstData::Default;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RenderContextInstData::RenderContextInstData(const RenderContextFrameData& RCFD)
-    : RenderContextInstData() {
-  mpActiveRenderer = RCFD._renderer;
-}
-
-RenderContextInstData::RenderContextInstData()
+RenderContextInstData::RenderContextInstData(const RenderContextFrameData* RCFD)
     : miMaterialIndex(0)
     , miMaterialPassIndex(0)
     , mpActiveRenderer(0)
@@ -56,7 +51,12 @@ RenderContextInstData::RenderContextInstData()
     , mbForzeNoZWrite(false)
     , mLightMap(0)
     , mbVertexLit(false)
-    , mRenderGroupState(ERGST_NONE) {
+    , mRenderGroupState(ERGST_NONE)
+    , _RCFD(RCFD) {
+
+  if (_RCFD) {
+    mpActiveRenderer = _RCFD->_renderer;
+  }
   for (int i = 0; i < kMaxEngineParamFloats; i++)
     mEngineParamFloats[i] = 0.0f;
 }
