@@ -202,6 +202,7 @@ OrkEzQtApp::~OrkEzQtApp() {
     _mainq->Process();
   }
   _updq->drain();
+  _updateThread.join();
   DrawableBuffer::ClearAndSyncWriters();
 }
 

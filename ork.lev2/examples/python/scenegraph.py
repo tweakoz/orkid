@@ -11,10 +11,10 @@ from orkengine.core import *
 from orkengine.lev2 import *
 import _shaders
 
-###########################
+################################################
 _time_base = time.time()
 global SG
-###########################
+################################################
 
 def onGpuInit(ctx):
     global SG
@@ -45,7 +45,23 @@ def onGpuInit(ctx):
     layer = SG.createLayer("layer1")
     primnode = prim.createNode("node1",layer,mtl_inst)
 
-###########################
+################################################
+# update
+# technically this runs from the orkid update thread
+#  but since the GIL is still present
+#  it will be serialized with the main thread
+#  still useful for doing background computation
+#  while c++ is rendering
+################################################
+
+updcount = 0
+def onUpdate():
+  global updcount
+  updcount += 1
+  if(updcount%100==0):
+    print(updcount)
+
+################################################
 
 def onDraw(drawev):
     global SG
@@ -81,6 +97,6 @@ def onDraw(drawev):
     ctx.endFrame()
 
 ##############################################
-qtapp = OrkEzQtApp.create( onGpuInit, onDraw )
-qtapp.setRefreshPolicy(RefreshFixedFPS, 60)
+qtapp = OrkEzQtApp.create( onGpuInit, onUpdate, onDraw )
+qtapp.setRefreshPolicy(RefreshFastest, 0)
 qtapp.exec()

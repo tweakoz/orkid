@@ -89,11 +89,27 @@ myapp = MyApp()
 def onGpuInit(ctx):
   myapp.gpuInit(ctx)
 
+################################################
+# update
+# technically this runs from the orkid update thread
+#  but since the GIL is still present
+#  it will be serialized with the main thread
+#  still useful for doing background computation
+#  while c++ is rendering
+################################################
+
+updcount = 0
+def onUpdate():
+  global updcount
+  updcount += 1
+
+################################################
+
 def onDraw(drawev):
   myapp.draw(drawev)
   pass
 
-qtapp = OrkEzQtApp.create( onGpuInit, onDraw)
+qtapp = OrkEzQtApp.create( onGpuInit, onUpdate, onDraw )
 qtapp.setRefreshPolicy(RefreshFixedFPS, 60)
 
 qtapp.exec()

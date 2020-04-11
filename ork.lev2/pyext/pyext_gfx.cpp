@@ -299,42 +299,6 @@ void pyinit_gfx(py::module& module_lev2) {
   py::class_<drwev_t>(module_lev2, "DrawEvent").def_property_readonly("context", [](drwev_t& event) -> ctx_t { //
     return ctx_t(event->GetTarget());
   });
-  py::class_<OrkEzQtApp, std::shared_ptr<OrkEzQtApp>>(module_lev2, "OrkEzQtApp")
-      .def_static(
-          "create",
-          [](py::function gpuinitfn, py::function drawfn) { //
-            int* argc  = new int(1);
-            auto argv  = (char**)malloc(sizeof(char**));
-            argv[0]    = (char*)malloc(1);
-            argv[0][0] = 0;
-            auto rval  = OrkEzQtApp::create(*argc, argv);
-
-            rval->_vars.makeValueForKey<py::function>("gpuinitfn") = gpuinitfn;
-            rval->_vars.makeValueForKey<py::function>("drawfn")    = drawfn;
-            drwev_t d_ev                                           = drwev_t(new ui::DrawEvent(nullptr));
-            rval->_vars.makeValueForKey<drwev_t>("drawev")         = d_ev;
-
-            rval->onGpuInit([=](Context* ctx) { //
-              auto pyfn = rval->_vars.typedValueForKey<py::function>("gpuinitfn");
-              pyfn.value()(ctx_t(ctx));
-            });
-            rval->onDraw([=](const ui::DrawEvent& drwev) { //
-              auto pyfn                = rval->_vars.typedValueForKey<py::function>("drawfn");
-              auto mydrev              = rval->_vars.typedValueForKey<drwev_t>("drawev");
-              mydrev.value()->mpTarget = drwev.GetTarget();
-              pyfn.value()(drwev_t(mydrev.value()));
-            });
-
-            return rval;
-          })
-      .def(
-          "setRefreshPolicy",
-          [](std::shared_ptr<OrkEzQtApp>& app, ERefreshPolicy policy, int fps) { //
-            app->setRefreshPolicy(RefreshPolicyItem{policy, fps});
-          })
-      .def("exec", [](std::shared_ptr<OrkEzQtApp>& app) -> int { //
-        return app->exec();
-      });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<Drawable, drawable_ptr_t>(module_lev2, "Drawable");
 }
