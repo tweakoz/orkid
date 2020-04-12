@@ -13,77 +13,90 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 
 namespace ork::lev2 {
-
 ///////////////////////////////////////////////////////////////////////////////
 ModelDrawable::ModelDrawable(DrawableOwner* pent)
     : Drawable()
-    , mModelInst(NULL)
     , mfScale(1.0f)
     , mRotate(0.0f, 0.0f, 0.0f)
     , mOffset(0.0f, 0.0f, 0.0f)
-    , mpWorldPose(0)
     , mbShowBoundingSphere(false) {
   for (int i = 0; i < kMaxEngineParamFloats; i++)
     mEngineParamFloats[i] = 0.0f;
 }
 /////////////////////////////////////////////////////////////////////
 ModelDrawable::~ModelDrawable() {
-  if (mpWorldPose) {
-    delete mpWorldPose;
-    mpWorldPose = nullptr;
-  }
 }
+/////////////////////////////////////////////////////////////////////
 void ModelDrawable::SetEngineParamFloat(int idx, float fv) {
   OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
-
   mEngineParamFloats[idx] = fv;
 }
-
+/////////////////////////////////////////////////////////////////////
 float ModelDrawable::GetEngineParamFloat(int idx) const {
   OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
-
   return mEngineParamFloats[idx];
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
-void ModelDrawable::SetModelInst(lev2::XgmModelInst* pModelInst) {
-  mModelInst                          = pModelInst;
-  const lev2::XgmModel* Model         = mModelInst->xgmModel();
-  bool isSkinned                      = Model->isSkinned();
-  ork::lev2::XgmWorldPose* pworldpose = 0;
+void ModelDrawable::SetModelInst(xgmmodelinst_ptr_t pModelInst) {
+  _modelinst                  = pModelInst;
+  const lev2::XgmModel* Model = _modelinst->xgmModel();
+  bool isSkinned              = Model->isSkinned();
   if (isSkinned) {
-    mpWorldPose = new ork::lev2::XgmWorldPose(Model->skeleton());
+    _worldpose = std::make_shared<XgmWorldPose>(Model->skeleton());
   }
   Drawable::var_t ap;
-  ap.Set(mpWorldPose);
+  ap.Set(_worldpose);
   SetUserDataA(ap);
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
+xgmmodelinst_ptr_t ModelDrawable::GetModelInst() const {
+  return _modelinst;
+}
+///////////////////////////////////////////////////////////////////////////////
+void ModelDrawable::SetScale(float fscale) {
+  mfScale = fscale;
+}
+///////////////////////////////////////////////////////////////////////////////
+float ModelDrawable::GetScale() const {
+  return mfScale;
+}
+///////////////////////////////////////////////////////////////////////////////
+const fvec3& ModelDrawable::GetRotate() const {
+  return mRotate;
+}
+///////////////////////////////////////////////////////////////////////////////
+const fvec3& ModelDrawable::GetOffset() const {
+  return mOffset;
+}
+///////////////////////////////////////////////////////////////////////////////
+void ModelDrawable::SetRotate(const fvec3& v) {
+  mRotate = v;
+}
+///////////////////////////////////////////////////////////////////////////////
+void ModelDrawable::SetOffset(const fvec3& v) {
+  mOffset = v;
+}
+///////////////////////////////////////////////////////////////////////////////
+void ModelDrawable::ShowBoundingSphere(bool bflg) {
+  mbShowBoundingSphere = bflg;
+}
+///////////////////////////////////////////////////////////////////////////////
 void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
-  auto RCFD          = renderer->GetTarget()->topRenderContextFrameData();
-  const auto& topCPD = RCFD->topCPD();
-
-  const lev2::XgmModel* Model = mModelInst->xgmModel();
-
-  const auto& monofrustum = topCPD.monoCamFrustum();
+  auto RCFD                   = renderer->GetTarget()->topRenderContextFrameData();
+  const auto& topCPD          = RCFD->topCPD();
+  const lev2::XgmModel* Model = _modelinst->xgmModel();
+  const auto& monofrustum     = topCPD.monoCamFrustum();
 
   // TODO - resolve frustum in case of stereo camera
 
-  const ork::fmtx4& matw = item.mXfData.mWorldMatrix;
-
-  bool isPickState = renderer->GetTarget()->FBI()->isPickState();
-  bool isSkinned   = Model->isSkinned();
-
+  const ork::fmtx4& matw        = item.mXfData.mWorldMatrix;
+  bool isPickState              = renderer->GetTarget()->FBI()->isPickState();
+  bool isSkinned                = Model->isSkinned();
   ork::fvec3 center_plus_offset = mOffset + Model->boundingCenter();
-
-  ork::fvec3 ctr = ork::fvec4(center_plus_offset * mfScale).Transform(matw);
-
-  ork::fvec3 vwhd = Model->boundingAA_WHD();
-  float frad      = vwhd.GetX();
+  ork::fvec3 ctr                = ork::fvec4(center_plus_offset * mfScale).Transform(matw);
+  ork::fvec3 vwhd               = Model->boundingAA_WHD();
+  float frad                    = vwhd.GetX();
   if (vwhd.GetY() > frad)
     frad = vwhd.GetY();
   if (vwhd.GetZ() > frad)
@@ -94,37 +107,13 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
 
   //////////////////////////////////////////////////////////////////////
 
-  const ork::lev2::XgmWorldPose* pworldpose = GetUserDataA().Get<ork::lev2::XgmWorldPose*>();
+  auto worldpose = GetUserDataA().Get<xgmworldpose_ptr_t>();
 
   ork::fvec3 matw_trans;
   ork::fquat matw_rot;
   float matw_scale;
 
   matw.decompose(matw_trans, matw_rot, matw_scale);
-
-  //////////////////////////////////////////////////////////////////////
-  // generate coarse light mask
-
-  /*
-  ork::lev2::LightMask mdl_lmask;
-
-  ork::lev2::LightManager* light_manager = RCFD->GetLightManager();
-
-  size_t inuml = 0;
-
-  if (light_manager) {
-    inuml = light_manager->mLightsInFrustum.size();
-
-    for (size_t il = 0; il < inuml; il++) {
-      ork::lev2::Light* plight = light_manager->mLightsInFrustum[il];
-      OrkAssert(plight);
-
-      bool baf = plight->AffectsSphere(ctr, frad);
-      if (baf) {
-        mdl_lmask.AddLight(plight);
-      }
-    }
-  }*/
 
   //////////////////////////////////////////////////////////////////////
 
@@ -140,7 +129,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
     //	orkprintf( "yo\n" );
     //}
 
-    if (mModelInst->isMeshEnabled(imesh)) {
+    if (_modelinst->isMeshEnabled(imesh)) {
       int inumclusset = mesh.numSubMeshes();
 
       for (int ics = 0; ics < inumclusset; ics++) {
@@ -190,7 +179,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
             for (int i = 0; i < kMaxEngineParamFloats; i++)
               renderable.SetEngineParamFloat(i, mEngineParamFloats[i]);
 
-            renderable.SetModelInst(mModelInst);
+            renderable.SetModelInst(std::const_pointer_cast<const XgmModelInst>(_modelinst));
             renderable.SetObject(GetOwner());
             renderable.SetMesh(&mesh);
             renderable.SetSubMesh(&submesh);
@@ -226,18 +215,16 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
     }
   }
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
 ModelRenderable::ModelRenderable(IRenderer* renderer)
     : IRenderable()
-    , mModelInst(0)
     , mSortKey(0)
     , mMaterialIndex(0)
     , mMaterialPassIndex(0)
     , mScale(1.0f)
     , mEdgeColor(-1)
-    ///////////////////////////
     , mMesh(0)
     , mSubMesh(0)
     , mCluster(0)
@@ -246,31 +233,21 @@ ModelRenderable::ModelRenderable(IRenderer* renderer)
   for (int i = 0; i < kMaxEngineParamFloats; i++)
     mEngineParamFloats[i] = 0.0f;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void ModelRenderable::SetEngineParamFloat(int idx, float fv) {
   OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
-
   mEngineParamFloats[idx] = fv;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 float ModelRenderable::GetEngineParamFloat(int idx) const {
   OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
-
   return mEngineParamFloats[idx];
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void ModelRenderable::Render(const IRenderer* renderer) const {
   renderer->RenderModel(*this);
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 bool ModelRenderable::CanGroup(const IRenderable* oth) const {
   auto pren = dynamic_cast<const ModelRenderable*>(oth);
   if (pren) {
@@ -281,76 +258,93 @@ bool ModelRenderable::CanGroup(const IRenderable* oth) const {
   }
   return false;
 }
-
+/////////////////////////////////////////////////////////////////////
 void ModelRenderable::SetMaterialIndex(int idx) {
   mMaterialIndex = idx;
 }
+/////////////////////////////////////////////////////////////////////
 void ModelRenderable::SetMaterialPassIndex(int idx) {
   mMaterialPassIndex = idx;
 }
-void ModelRenderable::SetModelInst(const lev2::XgmModelInst* modelInst) {
-  mModelInst = modelInst;
+/////////////////////////////////////////////////////////////////////
+void ModelRenderable::SetModelInst(xgmmodelinst_constptr_t modelInst) {
+  _modelinst = modelInst;
 }
+/////////////////////////////////////////////////////////////////////
 void ModelRenderable::SetEdgeColor(int edge_color) {
   mEdgeColor = edge_color;
 }
+/////////////////////////////////////////////////////////////////////
 void ModelRenderable::SetScale(float scale) {
   mScale = scale;
 }
+/////////////////////////////////////////////////////////////////////
 void ModelRenderable::SetSubMesh(const lev2::XgmSubMesh* cs) {
   mSubMesh = cs;
 }
+/////////////////////////////////////////////////////////////////////
 void ModelRenderable::SetCluster(const lev2::XgmCluster* c) {
   mCluster = c;
 }
+/////////////////////////////////////////////////////////////////////
 void ModelRenderable::SetMesh(const lev2::XgmMesh* m) {
   mMesh = m;
 }
-
+/////////////////////////////////////////////////////////////////////
 float ModelRenderable::GetScale() const {
   return mScale;
 }
-const lev2::XgmModelInst* ModelRenderable::GetModelInst() const {
-  return mModelInst;
+/////////////////////////////////////////////////////////////////////
+xgmmodelinst_constptr_t ModelRenderable::GetModelInst() const {
+  return _modelinst;
 }
+/////////////////////////////////////////////////////////////////////
 int ModelRenderable::GetMaterialIndex(void) const {
   return mMaterialIndex;
 }
+/////////////////////////////////////////////////////////////////////
 int ModelRenderable::GetMaterialPassIndex(void) const {
   return mMaterialPassIndex;
 }
+/////////////////////////////////////////////////////////////////////
 int ModelRenderable::GetEdgeColor() const {
   return mEdgeColor;
 }
+/////////////////////////////////////////////////////////////////////
 const lev2::XgmSubMesh* ModelRenderable::subMesh(void) const {
   return mSubMesh;
 }
+/////////////////////////////////////////////////////////////////////
 const lev2::XgmCluster* ModelRenderable::GetCluster(void) const {
   return mCluster;
 }
+/////////////////////////////////////////////////////////////////////
 const lev2::XgmMesh* ModelRenderable::mesh(void) const {
   return mMesh;
 }
-
+/////////////////////////////////////////////////////////////////////
 void ModelRenderable::SetSortKey(uint32_t skey) {
   mSortKey = skey;
 }
-
+/////////////////////////////////////////////////////////////////////
 void ModelRenderable::SetRotate(const fvec3& v) {
   mRotate = v;
 }
+/////////////////////////////////////////////////////////////////////
 void ModelRenderable::SetOffset(const fvec3& v) {
   mOffset = v;
 }
-
+/////////////////////////////////////////////////////////////////////
 const fvec3& ModelRenderable::GetRotate() const {
   return mRotate;
 }
+/////////////////////////////////////////////////////////////////////
 const fvec3& ModelRenderable::GetOffset() const {
   return mOffset;
 }
+/////////////////////////////////////////////////////////////////////
 uint32_t ModelRenderable::ComposeSortKey(const IRenderer* renderer) const {
   return mSortKey;
 }
-
+/////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

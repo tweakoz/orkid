@@ -12,8 +12,6 @@
 #include <ork/lev2/gfx/renderer/renderer.h>
 
 namespace ork::lev2 {
-
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 CallbackDrawable::CallbackDrawable(DrawableOwner* pent)
     : Drawable()
@@ -32,11 +30,8 @@ CallbackDrawable::~CallbackDrawable() {
   mRenderCallback         = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
-// Multithreaded Renderer DB
-///////////////////////////////////////////////////////////////////////////////
 void CallbackDrawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
   // ork::opq::assertOnQueue2(opq::updateSerialQueue());
-
   DrawableBufItem& cdb = buffer.Queue(xfdata, this);
   cdb.mUserData0       = GetUserDataA();
   if (_enqueueOnLayerCallback) {
@@ -46,8 +41,6 @@ void CallbackDrawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBuf
     _enqueueOnLayerLambda(cdb);
   }
 }
-///////////////////////////////////////////////////////////////////////////////
-//
 ///////////////////////////////////////////////////////////////////////////////
 void CallbackDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
@@ -63,9 +56,9 @@ void CallbackDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::I
   renderable.SetUserData1(item.mUserData1);
   renderable.SetModColor(renderer->GetTarget()->RefModColor());
 }
-
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-
 CallbackRenderable::CallbackRenderable(IRenderer* renderer)
     : IRenderable()
     , mSortKey(0)
@@ -75,36 +68,41 @@ CallbackRenderable::CallbackRenderable(IRenderer* renderer)
     , mUserData1()
     , mRenderCallback(0) {
 }
-
+/////////////////////////////////////////////////////////////////////
 void CallbackRenderable::Render(const IRenderer* renderer) const {
   renderer->RenderCallback(*this);
 }
-
+/////////////////////////////////////////////////////////////////////
 void CallbackRenderable::SetSortKey(uint32_t skey) {
   mSortKey = skey;
 }
-
+/////////////////////////////////////////////////////////////////////
 void CallbackRenderable::SetUserData0(IRenderable::var_t pdata) {
   mUserData0 = pdata;
 }
+/////////////////////////////////////////////////////////////////////
 const IRenderable::var_t& CallbackRenderable::GetUserData0() const {
   return mUserData0;
 }
+/////////////////////////////////////////////////////////////////////
 void CallbackRenderable::SetUserData1(IRenderable::var_t pdata) {
   mUserData1 = pdata;
 }
+/////////////////////////////////////////////////////////////////////
 const IRenderable::var_t& CallbackRenderable::GetUserData1() const {
   return mUserData1;
 }
-
+/////////////////////////////////////////////////////////////////////
 void CallbackRenderable::SetRenderCallback(cbtype_t cb) {
   mRenderCallback = cb;
 }
+/////////////////////////////////////////////////////////////////////
 CallbackRenderable::cbtype_t CallbackRenderable::GetRenderCallback() const {
   return mRenderCallback;
 }
+/////////////////////////////////////////////////////////////////////
 uint32_t CallbackRenderable::ComposeSortKey(const IRenderer* renderer) const {
   return mSortKey;
 }
-
+/////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

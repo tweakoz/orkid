@@ -876,10 +876,9 @@ void XgmCluster::dump() const {
 
 RenderContextInstModelData::RenderContextInstModelData()
     : mbisSkinned(false)
-    , mpModelInst(0)
-    , mMesh(0)
-    , mSubMesh(0)
-    , mCluster(0) {
+    , mMesh(nullptr)
+    , mSubMesh(nullptr)
+    , mCluster(nullptr) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

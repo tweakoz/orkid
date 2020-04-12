@@ -42,8 +42,8 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
 
   const auto& SelMgr = mEditor.selectionManager();
 
-  const lev2::XgmModelInst* minst = ModelRen.GetModelInst();
-  const lev2::XgmModel* model     = minst->xgmModel();
+  auto minst                  = ModelRen.GetModelInst();
+  const lev2::XgmModel* model = minst->xgmModel();
 
   target->debugPushGroup(FormatString("toolrenderer::RenderModel model<%p> minst<%p>", model, minst));
 
@@ -147,7 +147,7 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   MdlCtx.SetSkinned(model_is_skinned);
   MdlCtx.SetModelInst(minst);
   if (model_is_skinned) {
-    model->RenderSkinned(minst, ObjColor, nmat, GetTarget(), MatCtx, MdlCtx);
+    model->RenderSkinned(minst.get(), ObjColor, nmat, GetTarget(), MatCtx, MdlCtx);
   } else {
     model->RenderRigid(ObjColor, nmat, GetTarget(), MatCtx, MdlCtx);
   }

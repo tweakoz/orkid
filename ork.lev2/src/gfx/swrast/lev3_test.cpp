@@ -11,6 +11,7 @@
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/math/cvector4.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/gfx/texman.h>
 
 #include "lev3_test.h"
 #include "render_graph.h"

@@ -150,8 +150,8 @@ void DefaultRenderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::le
 
   lev2::Context* target = GetTarget();
 
-  const lev2::XgmModelInst* minst = ModelRen.GetModelInst();
-  const lev2::XgmModel* model     = minst->xgmModel();
+  auto minst = ModelRen.GetModelInst();
+  auto model = minst->xgmModel();
 
   target->debugPushGroup(FormatString("DefaultRenderer::RenderModel model<%p> minst<%p>", model, minst));
 
@@ -219,7 +219,7 @@ void DefaultRenderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::le
 
   auto ObjColor = fvec4::White();
   if (model_is_skinned) {
-    model->RenderSkinned(minst, ObjColor, nmat, GetTarget(), MatCtx, MdlCtx);
+    model->RenderSkinned(minst.get(), ObjColor, nmat, GetTarget(), MatCtx, MdlCtx);
   } else {
     model->RenderRigid(ObjColor, nmat, GetTarget(), MatCtx, MdlCtx);
   }

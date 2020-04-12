@@ -22,6 +22,7 @@
 #include <ork/math/cmatrix4.h>
 #include <ork/math/sphere.h>
 #include <ork/kernel/varmap.inl>
+#include <ork/lev2/gfx/texman.h>
 
 #define USE_XGM_FILES
 #define USE_XGA_FILES
@@ -370,10 +371,13 @@ struct XgmModelInst {
   bool _drawSkeleton;
 };
 
+using xgmmodelinst_ptr_t = std::shared_ptr<XgmModelInst>;
+using xgmmodelinst_constptr_t = std::shared_ptr<const XgmModelInst>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct RenderContextInstModelData {
-  const XgmModelInst* mpModelInst;
+  xgmmodelinst_constptr_t _modelinst;
   const XgmMesh* mMesh;
   const XgmSubMesh* mSubMesh;
   const XgmCluster* mCluster;
@@ -388,8 +392,8 @@ struct RenderContextInstModelData {
   bool isSkinned(void) const { return mbisSkinned; }
   void SetSkinned(bool bv) { mbisSkinned = bv; }
 
-  void SetModelInst(const XgmModelInst* pinst) { mpModelInst = pinst; }
-  const XgmModelInst* GetModelInst(void) const { return mpModelInst; }
+  void SetModelInst(xgmmodelinst_constptr_t pinst) { _modelinst = pinst; }
+  xgmmodelinst_constptr_t GetModelInst(void) const { return _modelinst; }
 
   //////////////////////////////////////
 

@@ -19,7 +19,7 @@ using namespace ork::lev2::deferrednode;
 typedef SVtxV12C4T16 vtx_t; // position, vertex color, 2 UV sets
 
 struct Instance {
-  XgmModelInst* _xgminst   = nullptr;
+  xgmmodelinst_ptr_t _xgminst;
   ModelDrawable* _drawable = nullptr;
   DrawQueueXfData _xform;
   fvec3 _curpos;
@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < 30; i++) {
       Instance inst;
       inst._drawable = new ModelDrawable;
-      inst._xgminst  = new XgmModelInst(model);
+      inst._xgminst  = std::make_shared<XgmModelInst>(model);
       inst._xgminst->EnableAllMeshes();
       inst._drawable->SetModelInst(inst._xgminst);
       instances.push_back(inst);
@@ -144,8 +144,9 @@ int main(int argc, char** argv) {
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
   qtapp->onDraw([&](const ui::DrawEvent& drwev) {
-    auto DB = DrawableBuffer::acquireReadDB(7); 
-    if(nullptr == DB) return;
+    auto DB = DrawableBuffer::acquireReadDB(7);
+    if (nullptr == DB)
+      return;
     auto context = drwev.GetTarget();
     RenderContextFrameData RCFD(context); // renderer per/frame data
     RCFD._cimpl = &compositorimpl;

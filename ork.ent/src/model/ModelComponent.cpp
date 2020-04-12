@@ -106,13 +106,10 @@ void ModelComponentInst::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 
 ModelComponentInst::~ModelComponentInst() {
-  if (mXgmModelInst)
-    delete mXgmModelInst;
 }
 ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* pent)
     : ComponentInst(&data, pent)
-    , mData(data)
-    , mXgmModelInst(0) {
+    , mData(data) {
 
   mModelDrawable        = std::make_shared<lev2::ModelDrawable>(pent); // deleted when entity deleted
   lev2::XgmModel* model = data.GetModel();
@@ -124,16 +121,16 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
     fvec3 mag(1, 0, 1);
     fvec3 cyn(0, 1, 1);
 
-    mXgmModelInst = new lev2::XgmModelInst(model);
+    _modelinst = std::make_shared<lev2::XgmModelInst>(model);
 
-    mModelDrawable->SetModelInst(mXgmModelInst);
+    mModelDrawable->SetModelInst(_modelinst);
     mModelDrawable->SetScale(mData.GetScale());
 
     pent->addDrawableToDefaultLayer(mModelDrawable);
     mModelDrawable->SetOwner(pent);
 
-    mXgmModelInst->SetBlenderZup(mData.IsBlenderZup());
-    auto& localpose = mXgmModelInst->RefLocalPose();
+    _modelinst->SetBlenderZup(mData.IsBlenderZup());
+    auto& localpose = _modelinst->RefLocalPose();
     localpose.BindPose();
 
     deco::printf(whi, "ModelComponentInst<%p> constructor:\n", this);
@@ -153,7 +150,7 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
       if (0 == strcmp(it.first.c_str(), "all")) {
         auto overridemtl = new lev2::PBRMaterial();
         overridemtl->setTextureBaseName(mtlvaluename);
-        mXgmModelInst->_overrideMaterial = overridemtl;
+        _modelinst->_overrideMaterial = overridemtl;
       }
       // lev2::FxShaderAsset* passet = it.second;
 

@@ -260,42 +260,21 @@ struct ModelDrawable : public Drawable {
   ModelDrawable(DrawableOwner* owner = NULL);
   ~ModelDrawable();
 
-  void SetModelInst(lev2::XgmModelInst* pModelInst); // { mModelInst = pModelInst; }
-  lev2::XgmModelInst* GetModelInst() const {
-    return mModelInst;
-  }
-  void SetScale(float fscale) {
-    mfScale = fscale;
-  }
-  float GetScale() const {
-    return mfScale;
-  }
-
-  const fvec3& GetRotate() const {
-    return mRotate;
-  }
-  const fvec3& GetOffset() const {
-    return mOffset;
-  }
-
-  void SetRotate(const fvec3& v) {
-    mRotate = v;
-  }
-  void SetOffset(const fvec3& v) {
-    mOffset = v;
-  }
-
+  void SetModelInst(xgmmodelinst_ptr_t pModelInst); // { mModelInst = pModelInst; }
+  xgmmodelinst_ptr_t GetModelInst() const;
+  void SetScale(float fscale);
+  float GetScale() const;
+  const fvec3& GetRotate() const;
+  const fvec3& GetOffset() const;
+  void SetRotate(const fvec3& v);
+  void SetOffset(const fvec3& v);
   void SetEngineParamFloat(int idx, float fv);
   float GetEngineParamFloat(int idx) const;
+  void ShowBoundingSphere(bool bflg);
+  void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const final;
 
-  void ShowBoundingSphere(bool bflg) {
-    mbShowBoundingSphere = bflg;
-  }
-
-  void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const override;
-
-  lev2::XgmModelInst* mModelInst;
-  lev2::XgmWorldPose* mpWorldPose;
+  xgmmodelinst_ptr_t _modelinst;
+  xgmworldpose_ptr_t _worldpose;
   float mfScale;
   fvec3 mOffset;
   fvec3 mRotate;

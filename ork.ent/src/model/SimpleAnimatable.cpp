@@ -171,8 +171,7 @@ static void SetJointsFromExpression(
 
 SimpleAnimatableInst::SimpleAnimatableInst(const SimpleAnimatableData& data, ork::ent::Entity* pent)
     : ork::ent::ComponentInst(&data, pent)
-    , mData(data)
-    , mModelInst(NULL) {
+    , mData(data) {
   auto& maskmap = mData.GetAnimMaskMap();
   auto& animmap = mData.GetAnimationMap();
 
@@ -210,10 +209,10 @@ bool SimpleAnimatableInst::DoLink(ork::ent::Simulation* psi) {
     return false;
 
   auto& mdraw = modelcinst->modelDrawable();
-  mModelInst  = mdraw.GetModelInst();
+  _modelinst  = mdraw.GetModelInst();
 
-  if (mModelInst) {
-    const auto& skel = mModelInst->xgmModel()->skeleton();
+  if (_modelinst) {
+    const auto& skel = _modelinst->xgmModel()->skeleton();
 
     const auto& mask_map = mData.GetAnimMaskMap();
     // Cache joints from masks
@@ -229,7 +228,7 @@ bool SimpleAnimatableInst::DoLink(ork::ent::Simulation* psi) {
       auto it = mBodyPartMap.begin();
       SetJointsFromExpression(it->second->mCachedJoints, skel, &mData, sAsteriskString);
     }
-    mModelInst->EnableSkinning();
+    _modelinst->EnableSkinning();
   }
 
   return true;
@@ -418,7 +417,7 @@ void SimpleAnimatableInst::PlayAnimationOnMask(
     float speed,
     float interp_duration,
     bool loop) {
-  if (0 == mModelInst)
+  if (nullptr == _modelinst)
     return;
 
   if (!itanim->second) {
@@ -568,9 +567,9 @@ void SimpleAnimatableInst::PlayAnimationOnMask(
 }
 
 bool SimpleAnimatableInst::AnimDataUpdate(
-    AnimData& data,
+    AnimData& data, //
     float delta,
-    ork::lev2::XgmModelInst* modelInst,
+    ork::lev2::xgmmodelinst_ptr_t modelInst,
     ork::ent::Entity* entity) {
   OrkAssert(modelInst);
   OrkAssert(data.AnimInst().GetAnim());
@@ -630,7 +629,7 @@ bool SimpleAnimatableInst::AnimDataUpdate(
   return result;
 }
 float SimpleAnimatableInst::GetFrameNumOnAnimationOnFirstMask() {
-  if (mModelInst) {
+  if (_modelinst) {
     BodyPartMap::iterator itmask = mBodyPartMap.begin();
     return (itmask->second->mCurrentAnimData.GetFrame());
   }
@@ -642,8 +641,8 @@ void SimpleAnimatableInst::DoUpdate(ork::ent::Simulation* inst) {
   float dt = inst->GetDeltaTime();
   // printf("DoUpdate SimpleAnimatableInst<%p> mModelInst<%p>\n", this, mModelInst);
 
-  if (mModelInst) {
-    auto& localpose = mModelInst->RefLocalPose();
+  if (_modelinst) {
+    auto& localpose = _modelinst->RefLocalPose();
     // Put the model in the model pose
     localpose.BindPose();
 
@@ -668,7 +667,7 @@ void SimpleAnimatableInst::DoUpdate(ork::ent::Simulation* inst) {
         }
 
         // update current anim (weight is always greater than zero for current anim)
-        finish = AnimDataUpdate(the_animdat, dt, mModelInst, GetEntity());
+        finish = AnimDataUpdate(the_animdat, dt, _modelinst, GetEntity());
 
         DEBUG_ANIMATE_PRINT(
             "Current Anim: %s anim is on mask %s at frame %g with weight %g on entity %s\n",
@@ -691,7 +690,7 @@ void SimpleAnimatableInst::DoUpdate(ork::ent::Simulation* inst) {
 
         // if weight is greater than zero, update previous anim
         if (itmask->second->mPreviousAnimData.AnimInst().GetWeight() > 0.0f) {
-          AnimDataUpdate(itmask->second->mPreviousAnimData, dt, mModelInst);
+          AnimDataUpdate(itmask->second->mPreviousAnimData, dt, _modelinst);
 
           DEBUG_ANIMATE_PRINT(
               "Previous Anim: %s anim is on mask %s at frame %g with weight %g\n",
@@ -732,12 +731,12 @@ void SimpleAnimatableInst::DoUpdate(ork::ent::Simulation* inst) {
 }
 
 void SimpleAnimatableInst::AnimData::BindAnim(const ork::lev2::XgmAnim* anim) {
-  if (mSai.mModelInst) {
-    mSai.mModelInst->RefLocalPose().UnBindAnimInst(mAnimInst);
-    mSai.mModelInst->RefMaterialInst().UnBindAnimInst(mAnimInst);
+  if (mSai._modelinst) {
+    mSai._modelinst->RefLocalPose().UnBindAnimInst(mAnimInst);
+    mSai._modelinst->RefMaterialInst().UnBindAnimInst(mAnimInst);
     mAnimInst.BindAnim(anim);
-    mSai.mModelInst->RefMaterialInst().BindAnimInst(mAnimInst);
-    mSai.mModelInst->RefLocalPose().BindAnimInst(mAnimInst);
+    mSai._modelinst->RefMaterialInst().BindAnimInst(mAnimInst);
+    mSai._modelinst->RefLocalPose().BindAnimInst(mAnimInst);
   }
 }
 

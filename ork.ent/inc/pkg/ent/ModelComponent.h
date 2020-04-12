@@ -133,7 +133,7 @@ public:
 protected:
   const ModelComponentData& mData;
   lev2::model_drawable_ptr_t mModelDrawable;
-  ork::lev2::XgmModelInst* mXgmModelInst;
+  ork::lev2::xgmmodelinst_ptr_t _modelinst;
   bool _yo = false;
   const char* scriptName() final {
     return "ModelComponent";

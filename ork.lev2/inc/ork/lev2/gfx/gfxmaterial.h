@@ -8,7 +8,6 @@
 #pragma once
 
 #include <functional>
-#include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/gfxenv_enum.h> // For ETextureDest
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>

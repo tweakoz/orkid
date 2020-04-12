@@ -4,13 +4,7 @@
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////
-// Grpahics Environment (Driver/HAL)
-///////////////////////////////////////////////////////////////////////////////
-
 #pragma once
-
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <functional>
@@ -22,17 +16,13 @@
 #include <ork/math/plane.h>
 #include <ork/object/Object.h>
 #include <ork/rtti/Class.h>
+#include <ork/lev2/gfx/gfxmodel.h>
 
 namespace ork::lev2 {
 
 class Light;
 class LightMask;
 class CameraData;
-class XgmCluster;
-class XgmSubMesh;
-class XgmModel;
-class XgmMesh;
-class XgmModelInst;
 class Anim;
 class IRenderer;
 class GfxMaterial;
@@ -103,20 +93,20 @@ struct ModelRenderable : public IRenderable {
 
   void SetMaterialIndex(int idx);
   void SetMaterialPassIndex(int idx);
-  void SetModelInst(const lev2::XgmModelInst* modelInst);
+  void SetModelInst(xgmmodelinst_constptr_t modelInst);
   void SetEdgeColor(int edge_color);
   void SetScale(float scale);
-  void SetSubMesh(const lev2::XgmSubMesh* cs);
-  void SetCluster(const lev2::XgmCluster* c);
-  void SetMesh(const lev2::XgmMesh* m);
+  void SetSubMesh(const XgmSubMesh* cs);
+  void SetCluster(const XgmCluster* c);
+  void SetMesh(const XgmMesh* m);
   float GetScale() const;
-  const lev2::XgmModelInst* GetModelInst() const;
+  xgmmodelinst_constptr_t GetModelInst() const;
   int GetMaterialIndex(void) const;
   int GetMaterialPassIndex(void) const;
   int GetEdgeColor() const;
-  const lev2::XgmSubMesh* subMesh(void) const;
-  const lev2::XgmCluster* GetCluster(void) const;
-  const lev2::XgmMesh* mesh(void) const;
+  const XgmSubMesh* subMesh(void) const;
+  const XgmCluster* GetCluster(void) const;
+  const XgmMesh* mesh(void) const;
   void SetSortKey(uint32_t skey);
   void SetRotate(const fvec3& v);
   void SetOffset(const fvec3& v);
@@ -130,7 +120,7 @@ struct ModelRenderable : public IRenderable {
 
   float mEngineParamFloats[kMaxEngineParamFloats];
 
-  const lev2::XgmModelInst* mModelInst;
+  xgmmodelinst_constptr_t _modelinst;
   uint32_t mSortKey;
   int mSubMeshIndex;
   int mMaterialIndex;
@@ -139,9 +129,9 @@ struct ModelRenderable : public IRenderable {
   float mScale;
   fvec3 mOffset;
   fvec3 mRotate;
-  const lev2::XgmSubMesh* mSubMesh;
-  const lev2::XgmCluster* mCluster;
-  const lev2::XgmMesh* mMesh;
+  const XgmSubMesh* mSubMesh;
+  const XgmCluster* mCluster;
+  const XgmMesh* mMesh;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
