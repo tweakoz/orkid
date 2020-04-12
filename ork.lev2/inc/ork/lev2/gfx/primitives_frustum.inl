@@ -103,6 +103,11 @@ struct FrustumPrimitive {
     auto drw = std::make_shared<CallbackDrawable>(nullptr);
     auto nod = layer->createNode("named", drw);
 
+    drw->setEnqueueOnLayerLambda([=](DrawableBufItem& dbitem) {
+      // dbi.mXfData has copy of node's transform
+      //
+    });
+
     drw->SetRenderCallback([=](lev2::RenderContextInstData& RCID, //
                                lev2::Context* context,
                                const CallbackRenderable* pren) { //

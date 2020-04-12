@@ -39,9 +39,9 @@ struct RenderContextFrameData;
 
 struct RenderContextInstData {
 
-  static const int kMaxEngineParamFloats = 4;
-  static const int kmaxdirlights         = 4;
-  static const int kmaxpntlights         = 4;
+  static constexpr int kMaxEngineParamFloats = 4;
+  static constexpr int kmaxdirlights         = 4;
+  static constexpr int kmaxpntlights         = 4;
 
   static const RenderContextInstData Default;
 
@@ -54,13 +54,13 @@ struct RenderContextInstData {
     mpActiveRenderer = rnd;
   }
   void SetDagRenderable(const IRenderableDag* rnd) {
-    mpDagRenderable = rnd;
+    _dagrenderable = rnd;
   }
   const IRenderer* GetRenderer(void) const {
     return mpActiveRenderer;
   }
   const IRenderableDag* GetDagRenderable(void) const {
-    return mpDagRenderable;
+    return _dagrenderable;
   }
   const XgmMaterialStateInst* GetMaterialInst() const {
     return mMaterialInst;
@@ -148,7 +148,7 @@ struct RenderContextInstData {
   int miMaterialIndex;
   int miMaterialPassIndex;
   const IRenderer* mpActiveRenderer;
-  const IRenderableDag* mpDagRenderable;
+  const IRenderableDag* _dagrenderable;
 
   const LightingGroup* mpLightingGroup;
   const XgmMaterialStateInst* mMaterialInst;

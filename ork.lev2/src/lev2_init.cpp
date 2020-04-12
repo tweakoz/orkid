@@ -174,6 +174,7 @@ void GfxInit(const std::string& gfxlayer) {
     OpenGlContextInit();
 #endif
   }
+  DrawableBuffer::gbInsideClearAndSync = false;
 }
 
 StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {

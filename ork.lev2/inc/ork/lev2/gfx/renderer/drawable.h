@@ -203,10 +203,8 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////
 
-class Drawable : public ork::Object {
-  RttiDeclareAbstract(Drawable, ork::Object);
+struct Drawable {
 
-public:
   typedef ork::lev2::IRenderable::var_t var_t;
 
   Drawable();
@@ -248,7 +246,6 @@ public:
     mEnabled = false;
   }
 
-protected:
   const ork::Object* mOwner;
   var_t mDataA;
   var_t mDataB;
@@ -258,10 +255,8 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-class ModelDrawable : public Drawable {
-  RttiDeclareConcrete(ModelDrawable, Drawable);
+struct ModelDrawable : public Drawable {
 
-public:
   ModelDrawable(DrawableOwner* owner = NULL);
   ~ModelDrawable();
 
@@ -297,7 +292,6 @@ public:
     mbShowBoundingSphere = bflg;
   }
 
-private:
   void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const override;
 
   lev2::XgmModelInst* mModelInst;
@@ -324,13 +318,11 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CallbackDrawable : public Drawable {
-  RttiDeclareAbstract(CallbackDrawable, Drawable);
+struct CallbackDrawable : public Drawable {
 
   using Q2LCBType     = void(DrawableBufItem& cdb);
   using Q2LLambdaType = std::function<void(DrawableBufItem&)>;
 
-public:
   CallbackDrawable(DrawableOwner* owner);
   ~CallbackDrawable();
 
@@ -343,7 +335,7 @@ public:
   void setEnqueueOnLayerCallback(Q2LCBType cb) {
     _enqueueOnLayerCallback = cb;
   }
-  void setLambda(Q2LLambdaType cb) {
+  void setEnqueueOnLayerLambda(Q2LLambdaType cb) {
     _enqueueOnLayerLambda = cb;
   }
   U32 GetSortKey() const {
@@ -355,7 +347,6 @@ public:
   void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const final;
   void enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const final;
 
-private:
   ICallbackDrawableDataDestroyer* mDataDestroyer;
   lev2::CallbackRenderable::cbtype_t mRenderCallback;
   Q2LCBType* _enqueueOnLayerCallback;

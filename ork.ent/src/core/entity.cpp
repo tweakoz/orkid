@@ -23,7 +23,6 @@
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.h>
 
-#include <pkg/ent/PerfController.h>
 #include <pkg/ent/ReferenceArchetype.h>
 #include <pkg/ent/event/DrawableEvent.h>
 
@@ -38,7 +37,6 @@
 #include <pkg/ent/ModelArchetype.h>
 #include <pkg/ent/ModelComponent.h>
 #include <pkg/ent/ParticleControllable.h>
-#include <pkg/ent/PerfController.h>
 #include <pkg/ent/ScriptComponent.h>
 #include <pkg/ent/SimpleAnimatable.h>
 #include <pkg/ent/input.h>
@@ -283,57 +281,12 @@ void Entity::PrintName() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool Entity::DoNotify(const ork::event::Event* event) {
-  bool result = false;
-  if (const event::DrawableEvent* drawable_event = rtti::autocast(event)) {
-    for (auto itL : mLayerMap) {
-      DrawableVector& pldrawables = *itL.second;
-
-      for (auto it : pldrawables) {
-        result = static_cast<ork::Object*>(it.get())->Notify(drawable_event->GetEvent()) || result;
-      }
-    }
-  } else if (const PerfSnapShotEvent* psse = rtti::autocast(event)) {
-    ComponentTable::LutType& lut = mComponentTable.GetComponents();
-    for (ComponentTable::LutType::const_iterator it = lut.begin(); it != lut.end(); it++) {
-      ComponentInst* inst    = (*it).second;
-      const char* pshortname = inst->GetShortSelector();
-      if (pshortname) {
-        printf(" ent<%p>.component<%s>\n", this, pshortname);
-        psse->PushNode(pshortname);
-        ((ork::Object*)inst)->Notify(psse);
-        psse->PopNode();
-      }
-    }
-    result = true;
-  } else if (const PerfControlEvent* pce = rtti::autocast(event)) {
-    //		const FixedString<256>& tgt = pce->mTarget;
-    //		const FixedString<32>& val = pce->mValue;
-
-    PerfControlEvent pce2     = *pce;
-    std::string ComponentName = pce2.PopTargetNode();
-    std::string KeyName       = pce2.mTarget.c_str();
-
-    printf("Entity<%p> PerfControlEvent<%p> cname<%s> keyname<%s>\n", this, pce, ComponentName.c_str(), KeyName.c_str());
-
-    ComponentTable::LutType& lut = mComponentTable.GetComponents();
-    for (ComponentTable::LutType::const_iterator it = lut.begin(); it != lut.end(); it++) {
-      ComponentInst* inst    = (*it).second;
-      const char* pshortname = inst->GetShortSelector();
-      if (pshortname) {
-        printf("testing shortname<%s>\n", pshortname);
-        if (0 == strcmp(pshortname, ComponentName.c_str())) {
-          ((ork::Object*)inst)->Notify(&pce2);
-        }
-      }
-    }
-  } else {
-    ComponentTable::LutType& lut = mComponentTable.GetComponents();
-    for (ComponentTable::LutType::const_iterator it = lut.begin(); it != lut.end(); it++) {
-      ComponentInst* inst = (*it).second;
-      result              = static_cast<ork::Object*>(inst)->Notify(event) || result;
-    }
+  bool result                  = false;
+  ComponentTable::LutType& lut = mComponentTable.GetComponents();
+  for (ComponentTable::LutType::const_iterator it = lut.begin(); it != lut.end(); it++) {
+    ComponentInst* inst = (*it).second;
+    result              = static_cast<ork::Object*>(inst)->Notify(event) || result;
   }
-
   return result;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -524,7 +477,6 @@ void Init() {
   BulletObjectArchetype::GetClassStatic();
   auto bwcd = BulletSystemData::GetClassStatic();
   // printf("BWCD<%p>\n", bwcd);
-  PerfControllerArchetype::GetClassStatic();
   PerformanceAnalyzerArchetype::GetClassStatic();
   SimpleCharacterArchetype::GetClassStatic();
   EntData::GetClassStatic();
@@ -593,7 +545,6 @@ void Init() {
   RegisterFamily<SimpleCharControllerData>(AddPooledLiteral("control"));
   RegisterFamily<ScriptComponentData>(ork::AddPooledLiteral("control"));
   RegisterFamily<CompositingSystemData>(ork::AddPooledLiteral("control"));
-  RegisterFamily<PerfControllerComponentData>(ork::AddPooledLiteral("control"));
   RegisterFamily<CharacterLocoData>(ork::AddPooledLiteral("control"));
   RegisterFamily<GridControllerData>(ork::AddPooledLiteral("control"));
   RegisterFamily<SkyBoxControllerData>(ork::AddPooledLiteral("control"));

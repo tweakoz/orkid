@@ -25,7 +25,6 @@
 #include <ork/kernel/orklut.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <pkg/ent/PerfController.h>
 #include <pkg/ent/dataflow.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -256,45 +255,7 @@ void ModularSystem::DoUpdate(float fdt) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool ModularSystem::DoNotify(const event::Event* event) {
-  if (const ork::ent::PerfSnapShotEvent* psse = rtti::autocast(event)) {
-    psse->PushNode(mName.c_str()); // push psys name
-    psys_graph& template_graph                                    = mItem.GetTemplate();
-    const orklut<ork::PoolString, ork::Object*>& template_modules = template_graph.Modules();
-    for (orklut<ork::PoolString, ork::Object*>::const_iterator itm = template_modules.begin(); itm != template_modules.end();
-         itm++) {
-      const ork::PoolString& module_name = itm->first;
-      dataflow::dgmodule* pmodule        = rtti::autocast(itm->second);
-
-      psse->PushNode(module_name.c_str()); // push psys name
-      static_cast<ork::Object*>(pmodule)->Notify(psse);
-      psse->PopNode();
-    }
-    psse->PopNode();
-  } else if (const ork::ent::PerfControlEvent* pce = rtti::autocast(event)) {
-    PoolString k = AddPooledString(pce->mTarget.c_str());
-
-    ent::PerfControlEvent pce2 = *pce;
-    std::string KeyName        = pce2.mTarget.c_str();
-    std::string SystemName     = pce2.PopTargetNode();
-    std::string ModuleName     = pce2.PopTargetNode();
-
-    printf(
-        "ModularSystem<%p:%s> PerfControlEvent<%p> key<%s> ModuleName<%s>\n",
-        this,
-        mName.c_str(),
-        pce,
-        k.c_str(),
-        ModuleName.c_str());
-
-    if (0 == strcmp(SystemName.c_str(), mName.c_str())) {
-      psys_graph& template_graph = mItem.GetTemplate();
-
-      dataflow::dgmodule* pmodule = template_graph.GetChild(AddPooledString(ModuleName.c_str()));
-      printf(" Module<%s:%p>\n", ModuleName.c_str(), pmodule);
-      static_cast<ork::Object*>(pmodule)->Notify(&pce2);
-    }
-  }
-  return true;
+  return false;
 }
 
 void ModularSystem::DoReset() {

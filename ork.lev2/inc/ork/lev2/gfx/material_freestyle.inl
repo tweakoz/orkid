@@ -331,6 +331,9 @@ inline void FreestyleMaterial::materialInstanceBeginBlock(materialinst_ptr_t min
 inline void FreestyleMaterial::materialInstanceBeginPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
   auto context = RCID._RCFD->GetTarget();
   this->BeginPass(context, 0);
+
+  const auto& worldmatrix = RCID._dagrenderable->_worldMatrix;
+
   for (auto item : minst->_params) {
     fxparam_constptr_t param = item.first;
     const varmap::val_t& val = item.second;
