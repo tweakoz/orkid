@@ -42,7 +42,33 @@ PYBIND11_MODULE(_core, module_core) {
   /////////////////////////////////////////////////////////////////////////////////
   // core decoder tyoes
   /////////////////////////////////////////////////////////////////////////////////
-
+  auto type_codec = python::TypeCodec::instance();
+  /////////////////////////////////////////////////////////////////////////////////
+  auto crcstr_type =                                                   //
+      py::class_<CrcString, crcstring_ptr_t>(module_core, "CrcString") //
+          .def_property_readonly(
+              "hashed",
+              [](crcstring_ptr_t s) -> uint64_t { //
+                return s->hashed();
+              })
+          .def("__repr__", [](crcstring_ptr_t s) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("CrcString(0x%zx)", s->hashed());
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<crcstring_ptr_t>(crcstr_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  struct CrcStringProxy {};
+  using crcstrproxy_ptr_t = std::shared_ptr<CrcStringProxy>;
+  auto crcstrproxy_type   =                                                        //
+      py::class_<CrcStringProxy, crcstrproxy_ptr_t>(module_core, "CrcStringProxy") //
+          .def(py::init<>())
+          .def(
+              "__getattr__",                                                           //
+              [](crcstrproxy_ptr_t proxy, const std::string& key) -> crcstring_ptr_t { //
+                return std::make_shared<CrcString>(key.c_str());
+              });
+  type_codec->registerStdCodec<crcstrproxy_ptr_t>(crcstrproxy_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<PoolString>(module_core, "PoolString") //
       .def("__repr__", [](const PoolString& s) -> std::string {

@@ -11,6 +11,7 @@
 #include <ork/kernel/fixedstring.hpp>
 #include <ork/kernel/thread.h>
 #include <ork/kernel/csystem.h>
+#include <ork/util/crc.h>
 #include <ork/application/application.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/object/Object.h>

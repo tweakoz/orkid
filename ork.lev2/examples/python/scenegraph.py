@@ -13,6 +13,7 @@ import _shaders
 from ork.deco import Deco
 from ork.log import log
 deco = Deco()
+crcstr = CrcStringProxy()
 
 ################################################
 _time_base = time.time()
@@ -42,7 +43,7 @@ def onGpuInit(ctx):
     #nsh._mtl.bindTechnique(nsh._tek_frustum)
     mtl_inst = MaterialInstance(nsh._mtl)
     mtl_inst.monoTek = nsh._tek_frustum
-    mtl_inst.param[nsh._par_mvp] = mtx4()
+    mtl_inst.param[nsh._par_mvp] = crcstr.RCFD
     mtl_inst.param[nsh._par_mnormal] = mtx3()
     log(deco.white("monotek: "+str(mtl_inst.monoTek)))
     log(deco.yellow("param: "+str(mtl_inst.param)))

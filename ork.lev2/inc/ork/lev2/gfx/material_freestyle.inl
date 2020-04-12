@@ -352,6 +352,14 @@ inline void FreestyleMaterial::materialInstanceBeginPass(materialinst_ptr_t mins
       const auto& P = *as_fplane3.value().get();
       fvec4 as_vec4(P.n, P.d);
       this->bindParamVec4(param, as_vec4);
+    } else if (auto as_crcstr = val.TryAs<crcstring_ptr_t>()) {
+      const auto& crcstr = *as_crcstr.value().get();
+      switch (crcstr.hashed()) {
+        case "RCFD"_crcu:
+          break;
+        default:
+          break;
+      }
     } else {
       OrkAssert(false);
     }

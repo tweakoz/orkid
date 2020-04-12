@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <memory>
+
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork {
@@ -62,87 +64,84 @@ constexpr uint64_t crc32_table[] = {
     0xBDBDF21C, 0xCABAC28A, 0x53B39330, 0x24B4A3A6, 0xBAD03605, 0xCDD70693, 0x54DE5729, 0x23D967BF, 0xB3667A2E, 0xC4614AB8,
     0x5D681B02, 0x2A6F2B94, 0xB40BBE37, 0xC30C8EA1, 0x5A05DF1B, 0x2D02EF8D};
 
-template <uint64_t CRC, char... Chars> struct Crc32Impl {};
+///////////////////////////////////////////////////////////////////////////////
+constexpr uint64_t KENDHASH = 0xffffffff;
+///////////////////////////////////////////////////////////////////////////////
 
-template <uint64_t CRC, char Head, char... Tail> struct Crc32Impl<CRC, Head, Tail...> {
-  static constexpr uint64_t value =
-      Crc32Impl<crc32_table[static_cast<unsigned char>(CRC) ^ static_cast<unsigned char>(Head)] ^ (CRC >> 8), Tail...>::value;
-};
-
-template <uint64_t CRC> struct Crc32Impl<CRC> { static constexpr uint64_t value = CRC ^ 0xFFFFFFFF; };
-
-template <char... Chars> using Crc32Ch = Crc32Impl<0xFFFFFFFF, Chars...>;
-
-constexpr uint64_t crc32_rec(uint64_t crc, const char* s) {
-  return *s == 0 ? crc ^ 0xFFFFFFFF
-                 : crc32_rec(crc32_table[static_cast<unsigned char>(crc) ^ static_cast<unsigned char>(*s)] ^ (crc >> 8), s + 1);
+constexpr uint64_t crc32_recurse(uint64_t crc, const char* s) {
+  if (*s == 0) {           // last character ?
+    return crc ^ KENDHASH; // terminate with KENDHASH
+  } else {
+    return crc32_recurse(
+        crc32_table                                //
+                [static_cast<unsigned char>(crc)   //
+                 ^ static_cast<unsigned char>(*s)] //
+            ^ (crc >> 8),                          //
+        s + 1);                                    //
+  }
 }
 
-constexpr uint64_t operator"" _crcu(const char* s, size_t len) {
-  return crc32_rec(0xFFFFFFFF, s);
-}
-
-static_assert("Hello"_crcu == Crc32Ch<'H', 'e', 'l', 'l', 'o'>::value, "CRC32 values don't match");
-
-static_assert("0"_crcu == Crc32Ch<'0'>::value, "CRC32 values don't match");
+///////////////////////////////////////////////////////////////////////////////
 
 typedef uint64_t crc_enum_t;
-#define CrcEnum(X) X = crc32_rec(0xFFFFFFFF, #X /**/)
+#define CrcEnum(X) X = crc32_recurse(KENDHASH, #X /**/)
 
 int constexpr conststrlength(const char* str) {
   return *str ? 1 + conststrlength(str + 1) : 0;
 }
 
-//#define CRC_DEBUG
+///////////////////////////////////////////////////////////////////////////////
 
 struct CrcString {
 
-  static const bool kdebug = true;
-
-#if defined CRC_DEBUG
-  CrcString(const char* strval)
-      : _hashed(operator""_crcu(strval, conststrlength(strval))) {
-    _debugval = strval;
-  }
-  CrcString()
-      : _hashed(0) {
-  }
-#else
   constexpr CrcString(const char* strval)
-      : _hashed(operator""_crcu(strval, conststrlength(strval))) {
+      : _hashed(crc32_recurse(KENDHASH, strval)) {
+  }
+  constexpr CrcString(uint64_t h)
+      : _hashed(h) {
   }
   constexpr CrcString()
       : _hashed(0) {
   }
-#endif
 
-  bool operator==(const CrcString& other) const {
+  constexpr uint64_t hashed() const {
+    return _hashed;
+  }
+
+  constexpr bool operator==(const CrcString& other) const {
     return _hashed == other._hashed;
   }
-  bool operator!=(const CrcString& other) const {
+  constexpr bool operator!=(const CrcString& other) const {
     return _hashed != other._hashed;
   }
-  bool operator<(const CrcString& other) const {
+  constexpr bool operator<(const CrcString& other) const {
     return _hashed < other._hashed;
   }
-  bool operator>(const CrcString& other) const {
+  constexpr bool operator>(const CrcString& other) const {
     return _hashed > other._hashed;
   }
 
-  uint64_t _hashed;
-
-#if defined CRC_DEBUG
-  std::string _debugval;
-#endif
+  uint64_t _hashed; // cannot make this const or we get weird compile errors!
 };
 
+using crcstring_ptr_t = std::shared_ptr<CrcString>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 constexpr CrcString operator"" _crc(const char* s, size_t len) {
-  CrcString c;
-  c._hashed = crc32_rec(0xFFFFFFFF, s);
-  return c;
+  return CrcString(crc32_recurse(KENDHASH, s));
+}
+constexpr uint64_t operator"" _crcu(const char* s, size_t len) {
+  return crc32_recurse(KENDHASH, s);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+static_assert("Hello"_crcu == CrcString("Hello").hashed(), "CRC values don't match");
+
 } // end namespace ork
+
+///////////////////////////////////////////////////////////////////////////////
 
 namespace std {
 template <> struct hash<ork::CrcString> {
