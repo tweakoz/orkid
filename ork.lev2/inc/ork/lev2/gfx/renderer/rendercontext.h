@@ -27,7 +27,7 @@ class OffscreenBuffer;
 class RtGroup;
 class Window;
 class XgmMaterialStateInst;
-class IRenderableDag;
+class IRenderable;
 class IRenderTarget;
 class DrawableBuffer;
 struct RenderContextFrameData;
@@ -53,13 +53,13 @@ struct RenderContextInstData {
   void SetRenderer(const IRenderer* rnd) {
     mpActiveRenderer = rnd;
   }
-  void SetDagRenderable(const IRenderableDag* rnd) {
+  void SetRenderable(const IRenderable* rnd) {
     _dagrenderable = rnd;
   }
   const IRenderer* GetRenderer(void) const {
     return mpActiveRenderer;
   }
-  const IRenderableDag* GetDagRenderable(void) const {
+  const IRenderable* GetRenderable(void) const {
     return _dagrenderable;
   }
   const XgmMaterialStateInst* GetMaterialInst() const {
@@ -148,7 +148,7 @@ struct RenderContextInstData {
   int miMaterialIndex;
   int miMaterialPassIndex;
   const IRenderer* mpActiveRenderer;
-  const IRenderableDag* _dagrenderable;
+  const IRenderable* _dagrenderable;
 
   const LightingGroup* mpLightingGroup;
   const XgmMaterialStateInst* mMaterialInst;

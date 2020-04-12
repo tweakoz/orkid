@@ -23,11 +23,7 @@
 #include <ork/object/Object.h>
 #include <ork/rtti/Class.h>
 
-namespace ork {
-
-struct Frustum;
-
-namespace lev2 {
+namespace ork::lev2 {
 
 class Light;
 class LightMask;
@@ -60,37 +56,14 @@ class ManipManager;
 
 struct IRenderable {
 
-  using var_t = svar16_t;
-
-  IRenderable();
-  virtual ~IRenderable() {
-  }
-
-  virtual void Render(const IRenderer* renderer) const = 0;
-  virtual bool CanGroup(const IRenderable* oth) const {
-    return false;
-  }
-
-  /// Renderables implement this function to set the sort key used when all Renderables are sorted together.
-  /// The default is 0 for all Renderables. If no Renderable overrides this, then the RenderableQueue is not
-  /// sorted and all Renderables are drawn in the order they are queued.
-  /// Typically, a Renderable will use the IRenderer::ComposeSortKey() function as a helper when composing
-  /// its sort key.
-  virtual uint32_t ComposeSortKey(const IRenderer* renderer) const {
-    return 0;
-  }
-
+  using var_t                                  = svar16_t;
   static constexpr int kManipRenderableSortKey = 0x7fffffff;
   static constexpr int kLastRenderableSortKey  = 0x7ffffffe;
   static constexpr int kFirstRenderableSortKey = 0;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct IRenderableDag : public IRenderable {
-
-  IRenderableDag();
-
+  //////////////////////////////////////////////////////////////////////////////
+  IRenderable();
+  virtual ~IRenderable();
+  //////////////////////////////////////////////////////////////////////////////
   void SetObject(const ork::Object* o);
   const ork::Object* GetObject() const;
   const fcolor4& GetModColor() const;
@@ -101,6 +74,17 @@ struct IRenderableDag : public IRenderable {
   const var_t& GetDrawableDataA() const;
   void SetDrawableDataB(const var_t& ap);
   const var_t& GetDrawableDataB() const;
+  //////////////////////////////////////////////////////////////////////////////
+  virtual void Render(const IRenderer* renderer) const = 0;
+  virtual bool CanGroup(const IRenderable* oth) const;
+  //////////////////////////////////////////////////////////////////////////////
+  /// Renderables implement this function to set the sort key used when all Renderables are sorted together.
+  /// The default is 0 for all Renderables. If no Renderable overrides this, then the RenderableQueue is not
+  /// sorted and all Renderables are drawn in the order they are queued.
+  /// Typically, a Renderable will use the IRenderer::ComposeSortKey() function as a helper when composing
+  /// its sort key.
+  virtual uint32_t ComposeSortKey(const IRenderer* renderer) const;
+  //////////////////////////////////////////////////////////////////////////////
 
   fmtx4 _worldMatrix;
   fcolor4 _modColor;
@@ -111,87 +95,36 @@ struct IRenderableDag : public IRenderable {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ModelRenderable : public IRenderableDag {
+struct ModelRenderable : public IRenderable {
 
   static const int kMaxEngineParamFloats = ork::lev2::RenderContextInstData::kMaxEngineParamFloats;
 
   ModelRenderable(IRenderer* renderer = NULL);
 
-  inline void SetMaterialIndex(int idx) {
-    mMaterialIndex = idx;
-  }
-  inline void SetMaterialPassIndex(int idx) {
-    mMaterialPassIndex = idx;
-  }
-  inline void SetModelInst(const lev2::XgmModelInst* modelInst) {
-    mModelInst = modelInst;
-  }
-  inline void SetEdgeColor(int edge_color) {
-    mEdgeColor = edge_color;
-  }
-  void SetScale(float scale) {
-    mScale = scale;
-  }
-  inline void SetSubMesh(const lev2::XgmSubMesh* cs) {
-    mSubMesh = cs;
-  }
-  inline void SetCluster(const lev2::XgmCluster* c) {
-    mCluster = c;
-  }
-  inline void SetMesh(const lev2::XgmMesh* m) {
-    mMesh = m;
-  }
-
-  float GetScale() const {
-    return mScale;
-  }
-  inline const lev2::XgmModelInst* GetModelInst() const {
-    return mModelInst;
-  }
-  inline const fmtx4& GetWorldMatrix() const;
-  inline int GetMaterialIndex(void) const {
-    return mMaterialIndex;
-  }
-  inline int GetMaterialPassIndex(void) const {
-    return mMaterialPassIndex;
-  }
-  inline int GetEdgeColor() const {
-    return mEdgeColor;
-  }
-  inline const lev2::XgmSubMesh* subMesh(void) const {
-    return mSubMesh;
-  }
-  inline const lev2::XgmCluster* GetCluster(void) const {
-    return mCluster;
-  }
-  inline const lev2::XgmMesh* mesh(void) const {
-    return mMesh;
-  }
-
-  void SetSortKey(uint32_t skey) {
-    mSortKey = skey;
-  }
-
-  void SetRotate(const fvec3& v) {
-    mRotate = v;
-  }
-  void SetOffset(const fvec3& v) {
-    mOffset = v;
-  }
-
-  const fvec3& GetRotate() const {
-    return mRotate;
-  }
-  const fvec3& GetOffset() const {
-    return mOffset;
-  }
-
+  void SetMaterialIndex(int idx);
+  void SetMaterialPassIndex(int idx);
+  void SetModelInst(const lev2::XgmModelInst* modelInst);
+  void SetEdgeColor(int edge_color);
+  void SetScale(float scale);
+  void SetSubMesh(const lev2::XgmSubMesh* cs);
+  void SetCluster(const lev2::XgmCluster* c);
+  void SetMesh(const lev2::XgmMesh* m);
+  float GetScale() const;
+  const lev2::XgmModelInst* GetModelInst() const;
+  int GetMaterialIndex(void) const;
+  int GetMaterialPassIndex(void) const;
+  int GetEdgeColor() const;
+  const lev2::XgmSubMesh* subMesh(void) const;
+  const lev2::XgmCluster* GetCluster(void) const;
+  const lev2::XgmMesh* mesh(void) const;
+  void SetSortKey(uint32_t skey);
+  void SetRotate(const fvec3& v);
+  void SetOffset(const fvec3& v);
+  const fvec3& GetRotate() const;
+  const fvec3& GetOffset() const;
   void SetEngineParamFloat(int idx, float fv);
   float GetEngineParamFloat(int idx) const;
-
-  uint32_t ComposeSortKey(const IRenderer* renderer) const final {
-    return mSortKey;
-  }
+  uint32_t ComposeSortKey(const IRenderer* renderer) const final;
   void Render(const IRenderer* renderer) const final;
   bool CanGroup(const IRenderable* oth) const final;
 
@@ -213,41 +146,24 @@ struct ModelRenderable : public IRenderableDag {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CallbackRenderable : public IRenderableDag {
-public:
-  using cbtype_t = std::function<void(lev2::RenderContextInstData& rcid, lev2::Context* targ, const CallbackRenderable* pren)>;
+struct CallbackRenderable : public IRenderable {
+
+  using cbtype_t = std::function<void(
+      lev2::RenderContextInstData& rcid, //
+      lev2::Context* targ,
+      const CallbackRenderable* pren)>;
 
   CallbackRenderable(IRenderer* renderer = NULL);
 
-  void SetSortKey(uint32_t skey) {
-    mSortKey = skey;
-  }
-
-  void SetUserData0(var_t pdata) {
-    mUserData0 = pdata;
-  }
-  const var_t& GetUserData0() const {
-    return mUserData0;
-  }
-  void SetUserData1(var_t pdata) {
-    mUserData1 = pdata;
-  }
-  const var_t& GetUserData1() const {
-    return mUserData1;
-  }
-
-  void SetRenderCallback(cbtype_t cb) {
-    mRenderCallback = cb;
-  }
-  cbtype_t GetRenderCallback() const {
-    return mRenderCallback;
-  }
-
-private:
+  void SetSortKey(uint32_t skey);
+  void SetUserData0(var_t pdata);
+  const var_t& GetUserData0() const;
+  void SetUserData1(var_t pdata);
+  const var_t& GetUserData1() const;
+  void SetRenderCallback(cbtype_t cb);
+  cbtype_t GetRenderCallback() const;
   void Render(const IRenderer* renderer) const final;
-  uint32_t ComposeSortKey(const IRenderer* renderer) const final {
-    return mSortKey;
-  }
+  uint32_t ComposeSortKey(const IRenderer* renderer) const final;
 
   uint32_t mSortKey;
   int mMaterialIndex;
@@ -259,5 +175,4 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} // namespace lev2
-} // namespace ork
+} // namespace ork::lev2

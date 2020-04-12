@@ -14,48 +14,52 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-IRenderable::IRenderable() {
-}
-
-IRenderableDag::IRenderableDag()
-    : IRenderable()
-    , _object(0)
+IRenderable::IRenderable()
+    : _object(0)
     , _modColor(fcolor4::White())
     , _drawDataA(nullptr)
     , _drawDataB(nullptr) {
 }
+IRenderable::~IRenderable() { // virtual
+}
+bool IRenderable::CanGroup(const IRenderable* oth) const { // virtual
+  return false;
+}
+uint32_t IRenderable::ComposeSortKey(const IRenderer* renderer) const { // virtual
+  return 0;
+}
 
-void IRenderableDag::SetObject(const ork::Object* o) {
+void IRenderable::SetObject(const ork::Object* o) {
   _object = o;
 }
-const ork::Object* IRenderableDag::GetObject() const {
+const ork::Object* IRenderable::GetObject() const {
   return _object;
 }
 
-const fcolor4& IRenderableDag::GetModColor() const {
+const fcolor4& IRenderable::GetModColor() const {
   return _modColor;
 }
-void IRenderableDag::SetModColor(const fcolor4& Color) {
+void IRenderable::SetModColor(const fcolor4& Color) {
   _modColor = Color;
 }
 
-void IRenderableDag::SetMatrix(const fmtx4& mtx) {
+void IRenderable::SetMatrix(const fmtx4& mtx) {
   _worldMatrix = mtx;
 }
-const fmtx4& IRenderableDag::GetMatrix() const {
+const fmtx4& IRenderable::GetMatrix() const {
   return _worldMatrix;
 }
 
-void IRenderableDag::SetDrawableDataA(const IRenderable::var_t& ap) {
+void IRenderable::SetDrawableDataA(const IRenderable::var_t& ap) {
   _drawDataA = ap;
 }
-const IRenderable::var_t& IRenderableDag::GetDrawableDataA() const {
+const IRenderable::var_t& IRenderable::GetDrawableDataA() const {
   return _drawDataA;
 }
-void IRenderableDag::SetDrawableDataB(const IRenderable::var_t& ap) {
+void IRenderable::SetDrawableDataB(const IRenderable::var_t& ap) {
   _drawDataB = ap;
 }
-const IRenderable::var_t& IRenderableDag::GetDrawableDataB() const {
+const IRenderable::var_t& IRenderable::GetDrawableDataB() const {
   return _drawDataB;
 }
 

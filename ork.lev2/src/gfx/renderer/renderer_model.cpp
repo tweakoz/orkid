@@ -230,7 +230,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
 ///////////////////////////////////////////////////////////////////////////////
 
 ModelRenderable::ModelRenderable(IRenderer* renderer)
-    : IRenderableDag()
+    : IRenderable()
     , mModelInst(0)
     , mSortKey(0)
     , mMaterialIndex(0)
@@ -280,6 +280,77 @@ bool ModelRenderable::CanGroup(const IRenderable* oth) const {
     return (mtl == mtl2);
   }
   return false;
+}
+
+void ModelRenderable::SetMaterialIndex(int idx) {
+  mMaterialIndex = idx;
+}
+void ModelRenderable::SetMaterialPassIndex(int idx) {
+  mMaterialPassIndex = idx;
+}
+void ModelRenderable::SetModelInst(const lev2::XgmModelInst* modelInst) {
+  mModelInst = modelInst;
+}
+void ModelRenderable::SetEdgeColor(int edge_color) {
+  mEdgeColor = edge_color;
+}
+void ModelRenderable::SetScale(float scale) {
+  mScale = scale;
+}
+void ModelRenderable::SetSubMesh(const lev2::XgmSubMesh* cs) {
+  mSubMesh = cs;
+}
+void ModelRenderable::SetCluster(const lev2::XgmCluster* c) {
+  mCluster = c;
+}
+void ModelRenderable::SetMesh(const lev2::XgmMesh* m) {
+  mMesh = m;
+}
+
+float ModelRenderable::GetScale() const {
+  return mScale;
+}
+const lev2::XgmModelInst* ModelRenderable::GetModelInst() const {
+  return mModelInst;
+}
+int ModelRenderable::GetMaterialIndex(void) const {
+  return mMaterialIndex;
+}
+int ModelRenderable::GetMaterialPassIndex(void) const {
+  return mMaterialPassIndex;
+}
+int ModelRenderable::GetEdgeColor() const {
+  return mEdgeColor;
+}
+const lev2::XgmSubMesh* ModelRenderable::subMesh(void) const {
+  return mSubMesh;
+}
+const lev2::XgmCluster* ModelRenderable::GetCluster(void) const {
+  return mCluster;
+}
+const lev2::XgmMesh* ModelRenderable::mesh(void) const {
+  return mMesh;
+}
+
+void ModelRenderable::SetSortKey(uint32_t skey) {
+  mSortKey = skey;
+}
+
+void ModelRenderable::SetRotate(const fvec3& v) {
+  mRotate = v;
+}
+void ModelRenderable::SetOffset(const fvec3& v) {
+  mOffset = v;
+}
+
+const fvec3& ModelRenderable::GetRotate() const {
+  return mRotate;
+}
+const fvec3& ModelRenderable::GetOffset() const {
+  return mOffset;
+}
+uint32_t ModelRenderable::ComposeSortKey(const IRenderer* renderer) const {
+  return mSortKey;
 }
 
 } // namespace ork::lev2
