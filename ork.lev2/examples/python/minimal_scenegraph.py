@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 ################################################################################
-# lev2 sample which renders to an offscreen buffer
+# lev2 sample which renders to a window, using the scenegraph
 # Copyright 1996-2020, Michael T. Mayers.
 # Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 # see http://www.boost.org/LICENSE_1_0.txt
@@ -20,7 +20,7 @@ token = CrcStringProxy()
 ################################################
 
 _time_base = time.time()
-SG = None
+scene = None
 camera = None
 cameralut = None
 
@@ -31,16 +31,21 @@ cameralut = None
 ##############################################
 
 def onGpuInit(ctx):
-    global SG
+    global scene
     global camera
     global cameralut
-    nsh = _shaders.Shader(ctx)
-    volumetexture = Texture.load("lev2://textures/voltex_pn3")
     ###################################
-    fpmtx = ctx.perspective(45,1,0.1,3)
-    fvmtx = ctx.lookAt(vec3(0,0,-1),vec3(0,0,0),vec3(0,1,0))
-    frust = Frustum()
-    frust.set(fvmtx,fpmtx)
+    nsh = _shaders.Shader(ctx)
+    mtl_inst = MaterialInstance(nsh._mtl)
+    mtl_inst.monoTek = nsh._tek_frustum
+    mtl_inst.param[nsh._par_mvp] = token.RCFD_Camera
+    mtl_inst.param[nsh._par_mnormal] = mtx3()
+    mtl_inst.paramMvpMono = nsh._par_mvp
+    ###################################
+    frustum_pmtx = ctx.perspective(45,1,0.1,3)
+    frustum_vmtx = ctx.lookAt(vec3(0,0,-1),vec3(0,0,0),vec3(0,1,0))
+    frustum = Frustum()
+    frustum.set(frustum_vmtx,frustum_pmtx)
     ###################################
     prim = primitives.FrustumPrimitive()
     prim.topColor = vec4(0.5,1.0,0.5,1)
@@ -49,22 +54,11 @@ def onGpuInit(ctx):
     prim.rightColor = vec4(1.0,0.5,0.5,1)
     prim.frontColor = vec4(0.5,0.5,1.0,1)
     prim.backColor = vec4(0.5,0.5,0.0,1)
-    prim.frustum = frust
+    prim.frustum = frustum
     prim.gpuInit(ctx)
     ###################################
-    #nsh._mtl.bindTechnique(nsh._tek_frustum)
-    mtl_inst = MaterialInstance(nsh._mtl)
-    mtl_inst.monoTek = nsh._tek_frustum
-    mtl_inst.param[nsh._par_mvp] = token.RCFD_Camera
-    mtl_inst.param[nsh._par_mnormal] = mtx3()
-    mtl_inst.paramMvpMono = nsh._par_mvp
-    log(deco.white("monotek: "+str(mtl_inst.monoTek)))
-    log(deco.yellow("param: "+str(mtl_inst.param)))
-    log(deco.orange("param.MatMVP: "+str(mtl_inst.param[nsh._par_mvp])))
-    log(deco.orange("param.MatNormal: "+str(mtl_inst.param[nsh._par_mnormal])))
-    ###################################
-    SG = scenegraph.Scene()
-    layer = SG.createLayer("layer1")
+    scene = scenegraph.Scene()
+    layer = scene.createLayer("layer1")
     primnode = prim.createNode("node1",layer,mtl_inst)
     primnode.worldMatrix = mtx4()
     ###################################
@@ -92,7 +86,7 @@ def onUpdate():
     camera.perspective(0.1, 100.0, 45.0)
     camera.lookAt(eye, tgt, up)
     ###################################
-    SG.updateScene(cameralut)
+    scene.updateScene(cameralut)
     ###################################
     time.sleep(1.0/120.0)
 
@@ -104,7 +98,7 @@ def onDraw(drawev):
     drawev.context.FBI().autoclear = True
     drawev.context.FBI().clearcolor = vec4(.15,.15,.2,1)
     drawev.context.beginFrame()
-    SG.renderOnContext(drawev.context) # this must be on rendering thread
+    scene.renderOnContext(drawev.context) # this must be on rendering thread
     drawev.context.endFrame()
 
 ################################################
