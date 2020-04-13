@@ -131,6 +131,7 @@ struct blockmem {
     Reg produce(std::string key){
         auto r = Reg(key,width);
         r._depth = depth;
+        return r;
     }
 };
 

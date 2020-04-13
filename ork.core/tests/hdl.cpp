@@ -188,7 +188,7 @@ TEST(hdl1){
         s.mCommandLine += " -v -o test.iverilog test.v";
         s.spawn();
         s.collectZombie();
-    	system( "vvp -n test.iverilog");
+    	int iret = system( "vvp -n test.iverilog");
     }
     /////////////////////////////////////
 }
