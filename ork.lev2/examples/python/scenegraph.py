@@ -93,14 +93,14 @@ def onDraw(drawev):
     HEIGHT = ctx.mainSurfaceHeight()
     ###################################
     Δtime = time.time()-_time_base
-    θ = Δtime*0.1
-    x = math.sin(θ)*5
-    z = -math.cos(θ)*5
+    θ    = Δtime * math.pi * 2.0 * 0.1
+    distance = 100.0
+    eye = vec3(math.sin(θ), 1.0, -math.cos(θ)) * distance
+    tgt = vec3(0, 0, 0)
+    up = vec3(0, 1, 0)
     ###################################
-    camera.perspective(0.01,100.0,70)
-    camera.lookAt(vec3(x,0.8,z),
-                  vec3(0,0,0),
-                  vec3(0,1,0))
+    camera.perspective(0.1, 100.0, 45.0)
+    camera.lookAt(eye, tgt, up)
     ###################################
     # update scene
     ###################################
