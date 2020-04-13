@@ -146,6 +146,9 @@ struct GfxMaterialInstance : public std::enable_shared_from_this<GfxMaterialInst
   fxtechnique_constptr_t _monoTek   = nullptr;
   fxtechnique_constptr_t _pickTek   = nullptr;
   fxtechnique_constptr_t _stereoTek = nullptr;
+  fxparam_constptr_t _mvp_Mono      = nullptr;
+  fxparam_constptr_t _mvp_StereoL   = nullptr;
+  fxparam_constptr_t _mvp_StereoR   = nullptr;
   std::unordered_map<fxparam_constptr_t, varmap::val_t> _params;
 };
 

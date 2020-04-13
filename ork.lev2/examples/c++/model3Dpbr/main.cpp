@@ -134,7 +134,7 @@ int main(int argc, char** argv) {
       fquat q;
       q.fromAxisAngle(fvec4(inst._curaxis, inst._curangle));
 
-      inst._xform.mWorldMatrix.compose(inst._curpos, q, 1.0f);
+      inst._xform._worldMatrix.compose(inst._curpos, q, 1.0f);
       drawable->enqueueOnLayer(inst._xform, *layer);
     }
     ////////////////////////////////////////

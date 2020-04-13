@@ -81,6 +81,12 @@ void pyinit_gfx_material(py::module& module_lev2) {
                   instance->_pickTek = varmap_val.Get<fxtechnique_constptr_t>();
                 else if (key == "stereoTek")
                   instance->_stereoTek = varmap_val.Get<fxtechnique_constptr_t>();
+                else if (key == "paramMvpMono")
+                  instance->_mvp_Mono = varmap_val.Get<fxparam_constptr_t>();
+                else if (key == "paramMvpStereoL")
+                  instance->_mvp_StereoL = varmap_val.Get<fxparam_constptr_t>();
+                else if (key == "paramMvpStereoR")
+                  instance->_mvp_StereoR = varmap_val.Get<fxparam_constptr_t>();
                 else {
                   OrkAssert(false);
                 }

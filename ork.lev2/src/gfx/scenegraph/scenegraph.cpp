@@ -58,9 +58,6 @@ Scene::Scene() {
   _compositorImpl = std::make_shared<CompositingImpl>(*_compositorData.get());
   _compositorImpl->bindLighting(_lightManager.get());
   _topCPD.addStandardLayers();
-  _cameras = std::make_shared<CameraDataLut>();
-  _camera  = std::make_shared<CameraData>();
-  _cameras->AddSorted("spawncam"_pool, _camera.get());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -81,10 +78,10 @@ layer_ptr_t Scene::createLayer(std::string named) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Scene::enqueueToRenderer() {
+void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras) {
   auto DB = DrawableBuffer::LockWriteBuffer(0);
   DB->Reset();
-  DB->copyCameras(*_cameras.get());
+  DB->copyCameras(*cameras.get());
   for (auto layer_item : _layers) {
     auto scenegraph_layer = layer_item.second;
     auto drawable_layer   = DB->MergeLayer("Default"_pool);

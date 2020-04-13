@@ -62,7 +62,7 @@ struct Scene {
   ~Scene();
 
   layer_ptr_t createLayer(std::string named);
-  void enqueueToRenderer();
+  void enqueueToRenderer(cameradatalut_ptr_t cameras);
   void renderOnContext(Context* ctx);
 
   DefaultRenderer _renderer;
@@ -70,8 +70,6 @@ struct Scene {
   lightmanagerdata_ptr_t _lightData;
   compositorimpl_ptr_t _compositorImpl;
   compositordata_ptr_t _compositorData;
-  cameradata_ptr_t _camera;
-  cameradatalut_ptr_t _cameras;
   NodeCompositingTechnique* _compostorTechnique = nullptr;
   ScreenOutputCompositingNode* _outputNode      = nullptr;
   lev2::CompositingPassData _topCPD;

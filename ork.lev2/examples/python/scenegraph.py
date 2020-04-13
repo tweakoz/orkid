@@ -13,15 +13,19 @@ import _shaders
 from ork.deco import Deco
 from ork.log import log
 deco = Deco()
-crcstr = CrcStringProxy()
+token = CrcStringProxy()
 
 ################################################
 _time_base = time.time()
-global SG
+SG = None
+camera = None
+cameralut = None
 ################################################
 
 def onGpuInit(ctx):
     global SG
+    global camera
+    global cameralut
     nsh = _shaders.Shader(ctx)
     volumetexture = Texture.load("lev2://textures/voltex_pn3")
     ###################################
@@ -43,8 +47,9 @@ def onGpuInit(ctx):
     #nsh._mtl.bindTechnique(nsh._tek_frustum)
     mtl_inst = MaterialInstance(nsh._mtl)
     mtl_inst.monoTek = nsh._tek_frustum
-    mtl_inst.param[nsh._par_mvp] = crcstr.RCFD
+    mtl_inst.param[nsh._par_mvp] = token.RCFD_Camera
     mtl_inst.param[nsh._par_mnormal] = mtx3()
+    mtl_inst.paramMvpMono = nsh._par_mvp
     log(deco.white("monotek: "+str(mtl_inst.monoTek)))
     log(deco.yellow("param: "+str(mtl_inst.param)))
     log(deco.orange("param.MatMVP: "+str(mtl_inst.param[nsh._par_mvp])))
@@ -53,6 +58,11 @@ def onGpuInit(ctx):
     SG = scenegraph.Scene()
     layer = SG.createLayer("layer1")
     primnode = prim.createNode("node1",layer,mtl_inst)
+    primnode.worldMatrix = mtx4()
+    ###################################
+    camera = CameraData()
+    cameralut = CameraDataLut()
+    cameralut.addCamera("spawncam",camera)
 
 ################################################
 # update
@@ -74,6 +84,7 @@ def onUpdate():
 
 def onDraw(drawev):
     global SG
+    global cameralut
     ctx = drawev.context
     FBI = ctx.FBI()
     GBI = ctx.GBI()
@@ -86,16 +97,16 @@ def onDraw(drawev):
     x = math.sin(θ)*5
     z = -math.cos(θ)*5
     ###################################
-    pmatrix = ctx.perspective(70,WIDTH/HEIGHT,0.01,100.0)
-    vmatrix = ctx.lookAt(vec3(x,0.8,z),
-                         vec3(0,0,0),
-                         vec3(0,1,0))
-    rotmatrix = vmatrix.toRotMatrix3()
-    mvp_matrix = vmatrix*pmatrix
+    camera.perspective(0.01,100.0,70)
+    camera.lookAt(vec3(x,0.8,z),
+                  vec3(0,0,0),
+                  vec3(0,1,0))
     ###################################
     # update scene
     ###################################
-    SG.enqueueToRenderer() # technically enqueueToRenderer should work from any (single) python thread
+    # technically enqueueToRenderer should work
+    #  from any (single) python thread
+    SG.enqueueToRenderer(cameralut)
     ###################################
     # render scene
     ###################################

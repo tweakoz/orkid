@@ -296,10 +296,30 @@ void pyinit_gfx(py::module& module_lev2) {
       .def_property_readonly("advanceWidth", [](const font_t& font) -> int { return font->mFontDesc.miAdvanceWidth; })
       .def_property_readonly("advanceHeight", [](const font_t& font) -> int { return font->mFontDesc.miAdvanceHeight; });
   */
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<drwev_t>(module_lev2, "DrawEvent").def_property_readonly("context", [](drwev_t& event) -> ctx_t { //
     return ctx_t(event->GetTarget());
   });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<Drawable, drawable_ptr_t>(module_lev2, "Drawable");
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<CameraData, cameradata_ptr_t>(module_lev2, "CameraData")
+      .def(py::init<>())
+      .def(
+          "perspective",                                                    //
+          [](cameradata_ptr_t camera, float near, float ffar, float fovy) { //
+            camera->Persp(near, ffar, fovy);
+          })
+      .def(
+          "lookAt",                                                        //
+          [](cameradata_ptr_t camera, fvec3& eye, fvec3& tgt, fvec3& up) { //
+            camera->Lookat(eye, tgt, up);
+          });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<CameraDataLut, cameradatalut_ptr_t>(module_lev2, "CameraDataLut")
+      .def(py::init<>())
+      .def("addCamera", [](cameradatalut_ptr_t lut, std::string key, cameradata_ptr_t camera) {
+        lut->AddSorted(AddPooledString(key.c_str()), camera.get());
+      });
 }
 } // namespace ork::lev2

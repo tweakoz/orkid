@@ -966,11 +966,9 @@ void Simulation::enqueueDrawablesToBuffer(ork::lev2::DrawableBuffer& buffer) con
 
     lev2::DrawQueueXfData xfdata;
 
-    if (pent->_renderMtxProvider != nullptr) {
-      xfdata.mWorldMatrix = pent->_renderMtxProvider();
-    } else {
-      xfdata.mWorldMatrix = pent->GetEffectiveMatrix();
-    }
+    xfdata._worldMatrix = (pent->_renderMtxProvider == nullptr) //
+                              ? pent->GetEffectiveMatrix()
+                              : pent->_renderMtxProvider();
 
     for (auto L : entlayers) {
       const PoolString& layer_name = L.first;

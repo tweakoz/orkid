@@ -47,6 +47,9 @@ int main(int argc, char** argv) {
   // update handler (called on update thread)
   //  it will never be called before onGpuInit() is complete...
   //////////////////////////////////////////////////////////
+  auto cameralut = std::make_shared<CameraDataLut>();
+  auto camera    = std::make_shared<CameraData>();
+  cameralut->AddSorted("spawncam"_pool, camera.get());
   qtapp->onUpdate([&](UpdateData updata) {
     double dt      = updata._dt;
     double abstime = updata._abstime;
@@ -58,10 +61,10 @@ int main(int argc, char** argv) {
     auto eye       = fvec3(sinf(phase), 1.0f, -cosf(phase)) * distance;
     fvec3 tgt(0, 0, 0);
     fvec3 up(0, 1, 0);
-    sg_scene->_camera->Lookat(eye, tgt, up);
-    sg_scene->_camera->Persp(0.1, 100.0, 45.0);
+    camera->Lookat(eye, tgt, up);
+    camera->Persp(0.1, 100.0, 45.0);
     ///////////////////////////////////////
-    sg_scene->enqueueToRenderer();
+    sg_scene->enqueueToRenderer(cameralut);
     ////////////////////////////////////////
   });
   //////////////////////////////////////////////////////////

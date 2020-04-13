@@ -141,43 +141,52 @@ struct FreestyleMaterial : public GfxMaterial {
   }
 
   inline void bindTechnique(const FxShaderTechnique* tek) {
+    OrkAssert(tek);
     auto fxi = _initialTarget->FXI();
     fxi->BindTechnique(_shader, tek);
   }
   inline void bindParamInt(const FxShaderParam* par, int value) {
+    OrkAssert(par);
     auto fxi = _initialTarget->FXI();
     fxi->BindParamInt(_shader, par, value);
   }
   inline void bindParamFloat(const FxShaderParam* par, float value) {
+    OrkAssert(par);
     auto fxi = _initialTarget->FXI();
     fxi->BindParamFloat(_shader, par, value);
   }
   inline void bindParamCTex(const FxShaderParam* par, const Texture* tex) {
+    OrkAssert(par);
     auto fxi = _initialTarget->FXI();
     fxi->BindParamCTex(_shader, par, tex);
   }
   inline void bindParamVec2(const FxShaderParam* par, const fvec2& v) {
+    OrkAssert(par);
     auto fxi = _initialTarget->FXI();
     fxi->BindParamVect2(_shader, par, v);
   }
   inline void bindParamVec3(const FxShaderParam* par, const fvec3& v) {
+    OrkAssert(par);
     auto fxi = _initialTarget->FXI();
     fxi->BindParamVect3(_shader, par, v);
   }
   inline void bindParamVec4(const FxShaderParam* par, const fvec4& v) {
+    OrkAssert(par);
     auto fxi = _initialTarget->FXI();
     fxi->BindParamVect4(_shader, par, v);
   }
-
   inline void bindParamMatrix(const FxShaderParam* par, const fmtx4& m) {
+    OrkAssert(par);
     auto fxi = _initialTarget->FXI();
     fxi->BindParamMatrix(_shader, par, m);
   }
   inline void bindParamMatrix(const FxShaderParam* par, const fmtx3& m) {
+    OrkAssert(par);
     auto fxi = _initialTarget->FXI();
     fxi->BindParamMatrix(_shader, par, m);
   }
   inline void bindParamMatrixArray(const FxShaderParam* par, const fmtx4* m, size_t len) {
+    OrkAssert(par);
     auto fxi = _initialTarget->FXI();
     fxi->BindParamMatrixArray(_shader, par, m, len);
   }
@@ -310,15 +319,13 @@ FreestyleMaterial::begin(const FxShaderTechnique* tekMono, const FxShaderTechniq
   const auto& CPD = RCFD.topCPD();
   begin(CPD.isStereoOnePass() ? tekStereo : tekMono, RCFD);
 }
-
+///////////////////////////////////////////////////////////////////////////////
 inline void FreestyleMaterial::end(const RenderContextFrameData& RCFD) {
   auto targ = RCFD.GetTarget();
   this->EndPass(targ);
   this->EndBlock(targ);
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 inline void FreestyleMaterial::materialInstanceBeginBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
   auto context    = RCID._RCFD->GetTarget();
   const auto& CPD = RCID._RCFD->topCPD();
@@ -328,25 +335,56 @@ inline void FreestyleMaterial::materialInstanceBeginBlock(materialinst_ptr_t min
   this->bindTechnique(is_stereo ? minst->_stereoTek : minst->_monoTek);
   int npasses = this->BeginBlock(context, RCID);
 }
+///////////////////////////////////////////////////////////////////////////////
 inline void FreestyleMaterial::materialInstanceBeginPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
-  auto context = RCID._RCFD->GetTarget();
+  auto context    = RCID._RCFD->GetTarget();
+  auto MTXI       = context->MTXI();
+  const auto& CPD = RCID._RCFD->topCPD();
+  bool is_picking = CPD.isPicking();
+  bool is_stereo  = CPD.isStereoOnePass();
+
   this->BeginPass(context, 0);
 
-  const auto& worldmatrix = RCID._dagrenderable->_worldMatrix;
+  const auto& worldmatrix = RCID._dagrenderable //
+                                ? RCID._dagrenderable->_worldMatrix
+                                : MTXI->RefMMatrix();
 
   for (auto item : minst->_params) {
     fxparam_constptr_t param = item.first;
     const varmap::val_t& val = item.second;
-    if (auto as_fvec2 = val.TryAs<fvec2_ptr_t>()) {
-      this->bindParamVec2(param, *as_fvec2.value().get());
-    } else if (auto as_fvec3 = val.TryAs<fvec3_ptr_t>()) {
-      this->bindParamVec3(param, *as_fvec3.value().get());
+    if (auto as_mtx4 = val.TryAs<fmtx4_ptr_t>()) {
+      this->bindParamMatrix(param, *as_mtx4.value().get());
+    } else if (auto as_crcstr = val.TryAs<crcstring_ptr_t>()) {
+      const auto& crcstr = *as_crcstr.value().get();
+      switch (crcstr.hashed()) {
+        case "RCFD_Camera"_crcu:
+          if (is_stereo and CPD._stereoCameraMatrices) {
+            auto stereomtx = CPD._stereoCameraMatrices;
+            auto MVPL      = stereomtx->MVPL(worldmatrix);
+            auto MVPR      = stereomtx->MVPR(worldmatrix);
+            this->bindParamMatrix(minst->_mvp_StereoL, MVPL);
+            this->bindParamMatrix(minst->_mvp_StereoR, MVPR);
+          } else if (CPD._cameraMatrices) {
+            auto mcams = CPD._cameraMatrices;
+            OrkAssert(mcams != nullptr);
+            auto MVP = worldmatrix * mcams->_vmatrix * mcams->_pmatrix;
+            this->bindParamMatrix(minst->_mvp_Mono, MVP);
+          } else {
+            auto MVP = worldmatrix * MTXI->RefVPMatrix();
+            this->bindParamMatrix(minst->_mvp_Mono, MVP);
+          }
+          break;
+        default:
+          break;
+      }
     } else if (auto as_fvec4_ = val.TryAs<fvec4_ptr_t>()) {
       this->bindParamVec4(param, *as_fvec4_.value().get());
+    } else if (auto as_fvec3 = val.TryAs<fvec3_ptr_t>()) {
+      this->bindParamVec3(param, *as_fvec3.value().get());
+    } else if (auto as_fvec2 = val.TryAs<fvec2_ptr_t>()) {
+      this->bindParamVec2(param, *as_fvec2.value().get());
     } else if (auto as_fmtx3 = val.TryAs<fmtx3_ptr_t>()) {
       this->bindParamMatrix(param, *as_fmtx3.value().get());
-    } else if (auto as_mtx4 = val.TryAs<fmtx4_ptr_t>()) {
-      this->bindParamMatrix(param, *as_mtx4.value().get());
     } else if (auto as_fquat = val.TryAs<fquat_ptr_t>()) {
       const auto& Q = *as_fquat.value().get();
       fvec4 as_vec4(Q.x, Q.y, Q.z, Q.w);
@@ -355,14 +393,6 @@ inline void FreestyleMaterial::materialInstanceBeginPass(materialinst_ptr_t mins
       const auto& P = *as_fplane3.value().get();
       fvec4 as_vec4(P.n, P.d);
       this->bindParamVec4(param, as_vec4);
-    } else if (auto as_crcstr = val.TryAs<crcstring_ptr_t>()) {
-      const auto& crcstr = *as_crcstr.value().get();
-      switch (crcstr.hashed()) {
-        case "RCFD"_crcu:
-          break;
-        default:
-          break;
-      }
     } else {
       OrkAssert(false);
     }
