@@ -73,24 +73,7 @@ def onGpuInit(ctx):
 #  while c++ is rendering
 ################################################
 
-updcount = 0
 def onUpdate():
-  global updcount
-  updcount += 1
-  if(updcount%100==0):
-    print(updcount)
-
-################################################
-
-def onDraw(drawev):
-    global SG
-    global cameralut
-    ctx = drawev.context
-    FBI = ctx.FBI()
-    GBI = ctx.GBI()
-    RCFD = RenderContextFrameData(ctx)
-    WIDTH = ctx.mainSurfaceWidth()
-    HEIGHT = ctx.mainSurfaceHeight()
     ###################################
     Δtime = time.time()-_time_base
     θ    = Δtime * math.pi * 2.0 * 0.1
@@ -107,14 +90,19 @@ def onDraw(drawev):
     # technically enqueueToRenderer should work
     #  from any (single) python thread
     SG.enqueueToRenderer(cameralut)
+    time.sleep(1.0/120.0)
+
+################################################
+
+def onDraw(drawev):
     ###################################
     # render scene
     ###################################
-    FBI.autoclear = True
-    FBI.clearcolor = vec4(.15,.15,.2,1)
-    ctx.beginFrame()
-    SG.renderOnContext(ctx) # this must be on rendering thread
-    ctx.endFrame()
+    drawev.context.FBI().autoclear = True
+    drawev.context.FBI().clearcolor = vec4(.15,.15,.2,1)
+    drawev.context.beginFrame()
+    SG.renderOnContext(drawev.context) # this must be on rendering thread
+    drawev.context.endFrame()
 
 ##############################################
 qtapp = OrkEzQtApp.create( onGpuInit, onUpdate, onDraw )
