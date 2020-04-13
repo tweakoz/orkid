@@ -16,11 +16,19 @@ deco = Deco()
 token = CrcStringProxy()
 
 ################################################
+# globals
+################################################
+
 _time_base = time.time()
 SG = None
 camera = None
 cameralut = None
+
 ################################################
+# gpu data init:
+#  called on main thread when graphics context is
+#   made available
+##############################################
 
 def onGpuInit(ctx):
     global SG
@@ -65,46 +73,44 @@ def onGpuInit(ctx):
     cameralut.addCamera("spawncam",camera)
 
 ################################################
-# update
+# update:
 # technically this runs from the orkid update thread
-#  but since the GIL is still present
-#  it will be serialized with the main thread
-#  still useful for doing background computation
-#  while c++ is rendering
+#  but since the python GIL is in place,
+#  it will be serialized with the main thread.
+#  This is still useful for doing background computation.
+#   (eg. the scene can be updated from python, whilst
+#        concurrently c++ is rendering..)
 ################################################
 
 def onUpdate():
-    ###################################
     Δtime = time.time()-_time_base
     θ    = Δtime * math.pi * 2.0 * 0.1
     distance = 100.0
     eye = vec3(math.sin(θ), 1.0, -math.cos(θ)) * distance
     tgt = vec3(0, 0, 0)
     up = vec3(0, 1, 0)
-    ###################################
     camera.perspective(0.1, 100.0, 45.0)
     camera.lookAt(eye, tgt, up)
     ###################################
-    # update scene
+    SG.updateScene(cameralut)
     ###################################
-    # technically enqueueToRenderer should work
-    #  from any (single) python thread
-    SG.enqueueToRenderer(cameralut)
     time.sleep(1.0/120.0)
 
 ################################################
+# render scene (from main thread)
+################################################
 
 def onDraw(drawev):
-    ###################################
-    # render scene
-    ###################################
     drawev.context.FBI().autoclear = True
     drawev.context.FBI().clearcolor = vec4(.15,.15,.2,1)
     drawev.context.beginFrame()
     SG.renderOnContext(drawev.context) # this must be on rendering thread
     drawev.context.endFrame()
 
+################################################
+# event loop
 ##############################################
+
 qtapp = OrkEzQtApp.create( onGpuInit, onUpdate, onDraw )
 qtapp.setRefreshPolicy(RefreshFastest, 0)
 qtapp.exec()

@@ -38,7 +38,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
             return SG->createLayer(named);
           })
       .def(
-          "enqueueToRenderer",
+          "updateScene",
           [](scene_ptr_t SG, cameradatalut_ptr_t cameralut) { //
             SG->enqueueToRenderer(cameralut);
           })
