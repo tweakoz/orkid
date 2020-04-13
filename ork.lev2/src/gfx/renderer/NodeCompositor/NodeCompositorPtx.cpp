@@ -111,7 +111,7 @@ struct PtxImpl {
       auto& mtl     = _blit2screenmtl;
       auto quadrect = vprect.asSRect();
       fvec4 color(1.0f, 1.0f, 1.0f, 1.0f);
-      mtl.SetAuxMatrix(fmtx4::Identity);
+      mtl.SetAuxMatrix(fmtx4::Identity());
       mtl.SetTexture(_resultTexture);
       mtl.SetTexture2(nullptr);
       mtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);

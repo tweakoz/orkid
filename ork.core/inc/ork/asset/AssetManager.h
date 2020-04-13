@@ -19,8 +19,8 @@ class FileAssetLoader;
 
 template <typename AssetType> class AssetManager {
 public:
-  static VarMap _gnovars;
-  static AssetType* Create(const PieceString& asset_name, const VarMap& vmap = _gnovars);
+  static VarMap novars();
+  static AssetType* Create(const PieceString& asset_name, const VarMap& vmap = novars());
   static AssetType* Find(const PieceString& asset_name);
   static AssetType* Load(const PieceString& asset_name);
   static AssetType* LoadUnManaged(const PieceString& asset_name);

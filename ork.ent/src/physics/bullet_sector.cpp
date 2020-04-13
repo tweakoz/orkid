@@ -1207,7 +1207,7 @@ TrackInst::TrackInst(const TrackData &data, ork::ent::Entity *pent)
 	ork::fmtx4 trans = GetEntity()->GetDagNode().GetTransformNode().GetTransform().GetMatrix();
 
 	//Get the scale from the Data
-	ork::fmtx4 scale = fmtx4::Identity;
+	ork::fmtx4 scale = fmtx4::Identity();
 	float fscale = mData.GetTrackScale();
 	scale.SetScale( fscale );
 	trans = scale * trans;
@@ -1235,7 +1235,7 @@ bool TrackInst::DoLink(ork::ent::Simulation* psi)
 				btScalar mass(0.0);
 				btVector3 localInertia(0, 0, 0);
 
-				btTransform btTrans = !ork::fmtx4::Identity;
+				btTransform btTrans = !ork::fmtx4::Identity();
 
 				btDefaultMotionState* motionState = new btDefaultMotionState(btTrans);
 				btRigidBody::btRigidBodyConstructionInfo bodyInfo(mass, motionState, trackInst->GetTrack().GetTrackShape(), localInertia);

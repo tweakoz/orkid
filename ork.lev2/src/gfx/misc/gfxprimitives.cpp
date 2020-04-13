@@ -1442,7 +1442,7 @@ void GfxPrimitives::RenderOrthoQuad(
   fmtx4 OrthoMat = pTarg->MTXI()->GetUIOrthoProjectionMatrix();
   pTarg->MTXI()->PushPMatrix(OrthoMat);
   pTarg->MTXI()->PushVMatrix(MatTrans * MatScale);
-  pTarg->MTXI()->PushMMatrix(fmtx4::Identity);
+  pTarg->MTXI()->PushMMatrix(fmtx4::Identity());
   { pTarg->GBI()->DrawPrimitive(vw, EPrimitiveType::TRIANGLES); }
   pTarg->MTXI()->PopPMatrix(); // back to ortho
   pTarg->MTXI()->PopVMatrix(); // back to ortho

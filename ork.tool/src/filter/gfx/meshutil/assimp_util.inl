@@ -245,7 +245,7 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
   root->visitHierarchy([root](lev2::XgmSkelNode* node) {
     fmtx4 Bc = node->concatenatednode2();
     auto par = node->_parent;
-    fmtx4 Bp = par ? par->concatenatednode2() : fmtx4::Identity;
+    fmtx4 Bp = par ? par->concatenatednode2() : fmtx4::Identity();
     fmtx4 J;
     J.CorrectionMatrix(Bp, Bc);
     J                  = Bp.inverse() * Bc;
@@ -272,7 +272,7 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     fmtx4 Bi   = node->_bindMatrixInverse;
     fmtx4 Bc   = node->bindMatrix();
     auto par   = node->_parent;
-    fmtx4 Bp   = par ? par->bindMatrix() : fmtx4::Identity;
+    fmtx4 Bp   = par ? par->bindMatrix() : fmtx4::Identity();
     fmtx4 J    = node->_jointMatrix;
     fmtx4 Jk   = node->concatenated(); // object space
     fmtx4 Ji   = J.inverse();

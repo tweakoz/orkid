@@ -220,8 +220,8 @@ void OffscreenBuffer::RenderMatOrthoQuad(
     uv2 = zeros;
 
   mtxi->PushPMatrix(mtxi->Ortho(fvx0, fvx1, fvy0, fvy1, 0.0f, 1.0f));
-  mtxi->PushVMatrix(fmtx4::Identity);
-  mtxi->PushMMatrix(fmtx4::Identity);
+  mtxi->PushVMatrix(fmtx4::Identity());
+  mtxi->PushMMatrix(fmtx4::Identity());
   ctx->RSI()->BindRasterState(DefaultRasterState, true);
   fbi->pushViewport(vprectNew);
   fbi->pushScissor(vprectNew);
@@ -290,8 +290,8 @@ void OffscreenBuffer::RenderMatOrthoQuads(const OrthoQuads& oquads) {
   float fvy1 = float(OrthoRect.miY2);
 
   context()->MTXI()->PushPMatrix(context()->MTXI()->Ortho(fvx0, fvx1, fvy0, fvy1, 0.0f, 1.0f));
-  context()->MTXI()->PushVMatrix(fmtx4::Identity);
-  context()->MTXI()->PushMMatrix(fmtx4::Identity);
+  context()->MTXI()->PushVMatrix(fmtx4::Identity());
+  context()->MTXI()->PushMMatrix(fmtx4::Identity());
   context()->RSI()->BindRasterState(DefaultRasterState, true);
   context()->FBI()->pushViewport(vprectNew);
   context()->FBI()->pushScissor(vprectNew);

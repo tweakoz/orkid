@@ -696,7 +696,7 @@ void XgmModel::RenderSkinned(
           add_vertex(a, fvec3::White());
         }
         vw.UnLock(pTARG);
-        pTARG->MTXI()->PushMMatrix(fmtx4::Identity);
+        pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
         pTARG->GBI()->DrawPrimitive(vw, EPrimitiveType::LINES, numlines);
         pTARG->MTXI()->PopMMatrix();
       }

@@ -178,7 +178,7 @@ bool CColladaModel::FindDaeMeshes(void) {
   ////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////
 
-  mTopNodesMatrix = fmtx4::Identity;
+  mTopNodesMatrix = fmtx4::Identity();
 
   bool rval = false;
 
@@ -267,7 +267,7 @@ bool CColladaModel::ParseControllers() {
 
   ////////////////////////////////////////////////////////////////////
 
-  mTopNodesMatrix = fmtx4::Identity;
+  mTopNodesMatrix = fmtx4::Identity();
 
   orkmap<std::string, std::string> NodeSubIdMap;
 

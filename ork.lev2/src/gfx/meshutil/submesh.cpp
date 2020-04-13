@@ -350,7 +350,7 @@ void submesh::MergePoly(const poly& ply) {
     // add n sided counters
     mPolyTypeCounter[inumv]++;
     //////////////////////////////////////////////////
-    float farea = ply.ComputeArea(mvpool, ork::fmtx4::Identity);
+    float farea = ply.ComputeArea(mvpool, ork::fmtx4::Identity());
     mfSurfaceArea += farea;
   }
   mAABoxDirty = true;

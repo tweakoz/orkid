@@ -236,7 +236,7 @@ CColladaAnim* CColladaAnim::Load(const AssetPath& fname) {
 ///////////////////////////////////////////////////////////////////////////////
 
 fmtx4 FCDMatrixTofmtx4(const FMMatrix44& inmat) {
-  fmtx4 ret = fmtx4::Identity;
+  fmtx4 ret = fmtx4::Identity();
 
   const float* psrc = inmat;
 

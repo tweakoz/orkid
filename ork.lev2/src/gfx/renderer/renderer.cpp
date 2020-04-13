@@ -153,7 +153,7 @@ void DefaultRenderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::le
   auto minst = ModelRen.GetModelInst();
   auto model = minst->xgmModel();
 
-  target->debugPushGroup(FormatString("DefaultRenderer::RenderModel model<%p> minst<%p>", model, minst));
+  target->debugPushGroup(FormatString("DefaultRenderer::RenderModel model<%p> minst<%p>", model, minst.get()));
 
   /////////////////////////////////////////////////////////////
 

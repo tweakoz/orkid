@@ -193,7 +193,7 @@ public:
     return rval;
   }
 
-  static const Matrix44<T> Identity;
+  static const Matrix44<T> Identity();
 
   T* GetArray(void) const {
     return (T*)&elements[0][0];

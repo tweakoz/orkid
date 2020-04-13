@@ -687,8 +687,8 @@ void Texture::compute(ProcTex& ptex) {
   ////////////////////////////////////////////////////////////////
   fmtx4 mtxortho = pTARG->MTXI()->Ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f);
   pTARG->MTXI()->PushPMatrix(mtxortho);
-  pTARG->MTXI()->PushVMatrix(fmtx4::Identity);
-  pTARG->MTXI()->PushMMatrix(fmtx4::Identity);
+  pTARG->MTXI()->PushVMatrix(fmtx4::Identity());
+  pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
   // pTARG->PushModColor( fvec3::White() );
   {
     if (_flipy) {
@@ -890,9 +890,9 @@ void SolidColor::compute(ProcTex& ptex) {
   ////////////////////////////////////////////////////////////////
   pTARG->PushModColor(ork::fvec4(mfr, mfg, mfb, mfa));
   ////////////////////////////////////////////////////////////////
-  pTARG->MTXI()->PushPMatrix(fmtx4::Identity);
-  pTARG->MTXI()->PushVMatrix(fmtx4::Identity);
-  pTARG->MTXI()->PushMMatrix(fmtx4::Identity);
+  pTARG->MTXI()->PushPMatrix(fmtx4::Identity());
+  pTARG->MTXI()->PushVMatrix(fmtx4::Identity());
+  pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
   { RenderQuad(pTARG, -1, -1, 1, 1); }
   pTARG->MTXI()->PopPMatrix();
   pTARG->MTXI()->PopVMatrix();
@@ -1217,8 +1217,8 @@ void Group::compute(ProcTex& ptex) {
     ////////////////////////////////////////////////////////////////
     fmtx4 mtxortho = pTARG->MTXI()->Ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f);
     pTARG->MTXI()->PushPMatrix(mtxortho);
-    pTARG->MTXI()->PushVMatrix(fmtx4::Identity);
-    pTARG->MTXI()->PushMMatrix(fmtx4::Identity);
+    pTARG->MTXI()->PushVMatrix(fmtx4::Identity());
+    pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
     { RenderQuad(pTARG, -1, -1, 1, 1); }
     pTARG->MTXI()->PopPMatrix();
     pTARG->MTXI()->PopVMatrix();

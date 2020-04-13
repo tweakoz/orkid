@@ -48,7 +48,7 @@ void GeoPrimTable::AddPrim( IGeoPrim* prim )
 	int idx = (mListIndex.FetchAndIncrement())&kmaxdivs;
 
 	///////////////////////
-	// cycle thru multiple GeoPrimList's for finer grained locking 
+	// cycle thru multiple GeoPrimList's for finer grained locking
 	///////////////////////
 
 	GeoPrimList& list = mPrimLists[idx];
@@ -122,7 +122,7 @@ RenderData::RenderData()
 	mfAADim2d = float(miAADim2d);
 	miAATileDim = kTileDim*miAADim1d;
 }
-	
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void RenderData::operator=( const RenderData& oth )
@@ -134,8 +134,8 @@ void RenderData::operator=( const RenderData& oth )
 void RenderData::Update()
 {
 	float faspect = float(miImageWidth)/float(miImageHeight);
-	mMatrixV = ork::fmtx4::Identity;
-	mMatrixP = ork::fmtx4::Identity;
+	mMatrixV = ork::fmtx4::Identity();
+	mMatrixP = ork::fmtx4::Identity();
 //	mMatrixV.LookAt( mEye+ork::fvec3(0.0f,750.0f,0.0f), mTarget, -ork::fvec3::Green() );
 	mMatrixV.LookAt( mEye+ork::fvec3(0.0f,1.5f,0.0f), mTarget, -ork::fvec3::Green() );
 	//mMatrixP.Perspective( 25.0f, faspect, 1500.0f, 10000.0f );
@@ -174,7 +174,7 @@ void RenderData::Update()
 		float fity = float(ity)/float(miImageHeight);
 		float fiby = float(iby)/float(miImageHeight);
 		/////////////////////////////////////////////////////
-		
+
 		ork::fvec3 topn;
 		ork::fvec3 botn;
 		topn.Lerp( root_topn, -root_botn, fity );
@@ -193,7 +193,7 @@ void RenderData::Update()
 		LN[1].Lerp( mFrustum.mNearCorners[0], mFrustum.mNearCorners[3], fiby );	// left near bot
 		RN[0].Lerp( mFrustum.mNearCorners[1], mFrustum.mNearCorners[2], fity );	// right near top
 		RN[1].Lerp( mFrustum.mNearCorners[1], mFrustum.mNearCorners[2], fiby );	// right near bot
-		
+
 		LF[0].Lerp( mFrustum.mFarCorners[0], mFrustum.mFarCorners[3], fity );		// left far top
 		LF[1].Lerp( mFrustum.mFarCorners[0], mFrustum.mFarCorners[3], fiby );		// left far bot
 		RF[0].Lerp( mFrustum.mFarCorners[1], mFrustum.mFarCorners[2], fity );		// right far top
@@ -282,7 +282,7 @@ void RenderData::Update()
 
 			ork::fvec3 C; for( int i=0; i<4; i++ ) C += the_tile.mFrustum.mNearCorners[i];
 			for( int i=0; i<4; i++ ) C += the_tile.mFrustum.mFarCorners[i];
-		
+
 			the_tile.mFrustum.mCenter = C*0.125f;
 
 			float dT = the_tile.mFrustum._topPlane.pointDistance( the_tile.mFrustum.mCenter );
@@ -472,7 +472,7 @@ static rend_srcmesh* LoadObj( const char* pfname, RenderData& rdata )
 		rend_shader* pshader = new Shader1(/*rdata.mClEngine*/);
 		//rend_shader* pshader = new Shader2();
 		pshader->mRenderData = & rdata;
-				
+
 		int inumtri = psrcsub->GetNumPolys(3);
 
 		outsub.miNumTriangles = inumtri;
@@ -487,14 +487,14 @@ static rend_srcmesh* LoadObj( const char* pfname, RenderData& rdata )
 			int inumv = inpoly.GetNumSides();
 			OrkAssert(inumv==3);
 			outtri.mFaceNormal = inpoly.ComputeNormal( psrcsub->RefVertexPool() );
-			outtri.mSurfaceArea = inpoly.ComputeArea(psrcsub->RefVertexPool(), ork::fmtx4::Identity );
+			outtri.mSurfaceArea = inpoly.ComputeArea(psrcsub->RefVertexPool(), ork::fmtx4::Identity() );
 			int iv0 = inpoly.GetVertexID(0);
 			int iv1 = inpoly.GetVertexID(1);
 			int iv2 = inpoly.GetVertexID(2);
 			const ork::MeshUtil::vertex& v0 = psrcsub->RefVertexPool().GetVertex(iv0);
 			const ork::MeshUtil::vertex& v1 = psrcsub->RefVertexPool().GetVertex(iv1);
 			const ork::MeshUtil::vertex& v2 = psrcsub->RefVertexPool().GetVertex(iv2);
-			
+
 			outtri.mpVertices[0].mPos = v0.mPos;
 			outtri.mpVertices[0].mVertexNormal = v0.mNrm;
 			outtri.mpVertices[0].mUv = v0.mUV[0].mMapTexCoord;
@@ -628,7 +628,7 @@ private:
 		int ith = tile.miHeight;
 		int itx = tile.miScreenXBase;
 		int ity = tile.miScreenYBase;
-		
+
 		int imgW = mRenderData.miImageWidth;
 
 		int irand = rand()%0xff;
@@ -650,7 +650,7 @@ private:
 			{
 				int iabsx = (itx+ix);
 				float fx = float(iabsx)/float(mRenderData.miImageWidth);
-			
+
 				float fsx = 0.5f+0.5f*sinf( ftime+fx*10.0f );
 				float fcx = 0.5f+0.5f*cosf( ftime+fx*10.0f );
 
@@ -692,4 +692,3 @@ void render_graph::Compute(ork::threadpool::thread_pool*pool)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-

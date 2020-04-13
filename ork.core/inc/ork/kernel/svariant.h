@@ -39,9 +39,9 @@
 #include <ork/util/crc64.h>
 #include <cxxabi.h>
 
-#if !defined(__APPLE__)
+//#if !defined(__APPLE__)
 #define SVAR_DEBUG
-#endif
+//#endif
 
 namespace ork {
 #if defined(SVAR_DEBUG)

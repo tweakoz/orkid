@@ -658,8 +658,8 @@ void GlowRenderMatOrthoQuad(
   auto gbi = pTARG->GBI();
 
   MTXIO->PushPMatrix(MTXIO->Ortho(fx0, fx1, fy0, fy1, 0.0f, 1.0f));
-  MTXIO->PushVMatrix(fmtx4::Identity);
-  MTXIO->PushMMatrix(fmtx4::Identity);
+  MTXIO->PushVMatrix(fmtx4::Identity());
+  MTXIO->PushMMatrix(fmtx4::Identity());
   pTARG->RSI()->BindRasterState(DefaultRasterState, true);
   fbi->pushViewport(vprectNew);
   fbi->pushScissor(vprectNew);

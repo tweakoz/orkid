@@ -45,7 +45,7 @@ void ManipHandler::Init(const ork::fvec2& posubp, const fmtx4& RCurIMVPMat, cons
 bool ManipHandler::IntersectXZ(const ork::fvec2& posubp, fvec3& Intersection, float& Angle) {
   fvec3 RayZNormal;
   GenerateIntersectionRays(posubp, RayZNormal, RayNear);
-  YNormal = fmtx4::Identity.GetYNormal();
+  YNormal = fmtx4::Identity().GetYNormal();
   XZPlane.CalcFromNormalAndOrigin(YNormal, Origin);
   float isect_dist;
   fray3 ray;
@@ -66,7 +66,7 @@ bool ManipHandler::IntersectXZ(const ork::fvec2& posubp, fvec3& Intersection, fl
 bool ManipHandler::IntersectYZ(const ork::fvec2& posubp, fvec3& Intersection, float& Angle) {
   fvec3 RayZNormal;
   GenerateIntersectionRays(posubp, RayZNormal, RayNear);
-  XNormal = fmtx4::Identity.GetXNormal();
+  XNormal = fmtx4::Identity().GetXNormal();
   YZPlane.CalcFromNormalAndOrigin(XNormal, Origin);
 
   float isect_dist;
@@ -88,7 +88,7 @@ bool ManipHandler::IntersectYZ(const ork::fvec2& posubp, fvec3& Intersection, fl
 bool ManipHandler::IntersectXY(const ork::fvec2& posubp, fvec3& Intersection, float& Angle) {
   fvec3 RayZNormal;
   GenerateIntersectionRays(posubp, RayZNormal, RayNear);
-  ZNormal = fmtx4::Identity.GetZNormal();
+  ZNormal = fmtx4::Identity().GetZNormal();
   XYPlane.CalcFromNormalAndOrigin(ZNormal, Origin);
   float isect_dist;
   fray3 ray;

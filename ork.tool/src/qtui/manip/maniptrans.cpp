@@ -319,16 +319,16 @@ void ManipDualTrans::HandleDrag(const ork::fvec2& pos) {
   tform.inverseOf(tform);
 
   ork::fvec3 snear = pVP->UnProject(ork::fvec3(start.GetX(), start.GetY(), 0),
-      proj, view, ork::fmtx4::Identity);
+      proj, view, ork::fmtx4::Identity());
 
   ork::fvec3 sfar = pVP->UnProject(ork::fvec3(start.GetX(), start.GetY(), 1),
-      proj, view, ork::fmtx4::Identity);
+      proj, view, ork::fmtx4::Identity());
 
   ork::fvec3 enear = pVP->UnProject(ork::fvec3(end.GetX(), end.GetY(), 0),
-      proj, view, ork::fmtx4::Identity);
+      proj, view, ork::fmtx4::Identity());
 
   ork::fvec3 efar = pVP->UnProject(ork::fvec3(end.GetX(), end.GetY(), 1),
-      proj, view, ork::fmtx4::Identity);
+      proj, view, ork::fmtx4::Identity());
 
   ork::fray3 sray(snear.Transform(tform).xyz(), (sfar - snear).Transform(tform).xyz().Normal());
   ork::fray3 eray(enear.Transform(tform).xyz(), (efar - enear).Transform(tform).xyz().Normal());

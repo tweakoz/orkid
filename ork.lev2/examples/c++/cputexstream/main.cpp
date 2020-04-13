@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
     RenderContextFrameData RCFD(context);
     material.bindTechnique(fxtechnique);
     material.begin(RCFD);
-    material.bindParamMatrix(fxparameterMVP, fmtx4::Identity);
+    material.bindParamMatrix(fxparameterMVP, fmtx4::Identity());
     material.bindParamCTex(fxparameterTexture, texture);
     gfxwin->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
     material.end(RCFD);

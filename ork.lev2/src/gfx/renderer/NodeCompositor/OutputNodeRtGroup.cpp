@@ -137,7 +137,7 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         mtl._rasterstate.SetBlending(EBLENDING_OFF);
         mtl.bindParamCTex(impl->_fxpColorMapA, texA);
         mtl.bindParamCTex(impl->_fxpColorMapB, texB);
-        mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity);
+        mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
         this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
         mtl.end(framedata);
         drawdata.context()->debugPopGroup();

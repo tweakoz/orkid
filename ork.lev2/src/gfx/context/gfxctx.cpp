@@ -85,9 +85,9 @@ void Context::beginFrame(void) {
     BindMaterial(GfxEnv::GetRef().GetDefaultUIMaterial());
 
   PushModColor(fcolor4::White());
-  MTXI()->PushMMatrix(fmtx4::Identity);
-  MTXI()->PushVMatrix(fmtx4::Identity);
-  MTXI()->PushPMatrix(fmtx4::Identity);
+  MTXI()->PushMMatrix(fmtx4::Identity());
+  MTXI()->PushVMatrix(fmtx4::Identity());
+  MTXI()->PushPMatrix(fmtx4::Identity());
 
   mpCurrentObject = 0;
 

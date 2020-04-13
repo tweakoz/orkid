@@ -109,8 +109,8 @@ void Colorize::compute( ProcTex& ptex )
 ork::dataflow::inplugbase* Colorize::GetInput(int idx)
 {	ork::dataflow::inplugbase* rval = 0;
 	switch( idx )
-	{	case 0:	rval = & mPlugInpInputA; break; 
-		case 1:	rval = & mPlugInpInputB; break; 
+	{	case 0:	rval = & mPlugInpInputA; break;
+		case 1:	rval = & mPlugInpInputB; break;
 	}
 	return rval;
 }
@@ -188,8 +188,8 @@ void UvMap::compute( ProcTex& ptex )
 ork::dataflow::inplugbase* UvMap::GetInput(int idx)
 {	ork::dataflow::inplugbase* rval = 0;
 	switch( idx )
-	{	case 0:	rval = & mPlugInpInputA; break; 
-		case 1:	rval = & mPlugInpInputB; break; 
+	{	case 0:	rval = & mPlugInpInputA; break;
+		case 1:	rval = & mPlugInpInputB; break;
 	}
 	return rval;
 }
@@ -263,9 +263,9 @@ void SphMap::compute( ProcTex& ptex )
 ork::dataflow::inplugbase* SphMap::GetInput(int idx)
 {	ork::dataflow::inplugbase* rval = 0;
 	switch( idx )
-	{	case 0:	rval = & mPlugInpInputN; break; 
-		case 1:	rval = & mPlugInpInputR; break; 
-		case 2:	rval = & mPlugInpDirectionality; break; 
+	{	case 0:	rval = & mPlugInpInputN; break;
+		case 1:	rval = & mPlugInpInputR; break;
+		case 2:	rval = & mPlugInpDirectionality; break;
 	}
 	return rval;
 }
@@ -329,7 +329,7 @@ void SphRefract::compute( ProcTex& ptex )
 									mPlugInpDirectionality.GetValue(),
 									mPlugInpIOR.GetValue() );
 		renderer.Render( mbAA );
-		
+
 	}
 	MarkClean();
 	//buffer.mHash = testhash;
@@ -337,10 +337,10 @@ void SphRefract::compute( ProcTex& ptex )
 ork::dataflow::inplugbase* SphRefract::GetInput(int idx)
 {	ork::dataflow::inplugbase* rval = 0;
 	switch( idx )
-	{	case 0:	rval = & mPlugInpInputA; break; 
-		case 1:	rval = & mPlugInpInputB; break; 
-		case 2:	rval = & mPlugInpIOR; break; 
-		case 3:	rval = & mPlugInpDirectionality; break; 
+	{	case 0:	rval = & mPlugInpInputA; break;
+		case 1:	rval = & mPlugInpInputB; break;
+		case 2:	rval = & mPlugInpIOR; break;
+		case 3:	rval = & mPlugInpDirectionality; break;
 	}
 	return rval;
 }
@@ -356,8 +356,8 @@ void H2N::Describe()
 ork::dataflow::inplugbase* H2N::GetInput(int idx)
 {	ork::dataflow::inplugbase* rval = 0;
 	switch( idx )
-	{	case 0:	rval = & mPlugInpInput; break; 
-		case 1:	rval = & mPlugInpScaleY; break; 
+	{	case 0:	rval = & mPlugInpInput; break;
+		case 1:	rval = & mPlugInpScaleY; break;
 	}
 	return rval;
 }
@@ -398,7 +398,7 @@ void H2N::compute( ProcTex& ptex )
 	{
 		H2N& mH2N;
 		virtual void DoRender( float left, float right, float top, float bot, Buffer& buf  )
-		{	
+		{
 			RenderMapQuad(mPTX.GetTarget(),mH2N.mMTL,left,right,top,bot);
 			/*auto pTARG = mPTX.GetTarget();
 			pTARG->PushMaterial( & mH2N.mMTL );
@@ -427,7 +427,7 @@ void Kaled::Describe()
 {	RegisterObjInpPlug( Kaled, Input );
 	RegisterFloatXfPlug( Kaled, Size, -4.0f, 4.0f, ged::OutPlugChoiceDelegate );
 	RegisterFloatXfPlug( Kaled, OffsetX, -1.0f, 1.0f, ged::OutPlugChoiceDelegate );
-	RegisterFloatXfPlug( Kaled, OffsetY, -1.0f, 1.0f, ged::OutPlugChoiceDelegate );	
+	RegisterFloatXfPlug( Kaled, OffsetY, -1.0f, 1.0f, ged::OutPlugChoiceDelegate );
 	ork::reflect::RegisterProperty( "Mode", & Kaled::meMode );
 	ork::reflect::annotatePropertyForEditor< Kaled >( "Mode", "editor.class", "ged.factory.enum" );
 }
@@ -489,8 +489,8 @@ void Kaled::compute( ProcTex& ptex )
 		fmtx4 mtxortho = mtxi->Ortho( 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f );
 		buffer.PtexBegin(targ,true,false);
 		mtxi->PushPMatrix( mtxortho );
-		mtxi->PushVMatrix( fmtx4::Identity );
-		mtxi->PushMMatrix( fmtx4::Identity );
+		mtxi->PushVMatrix( fmtx4::Identity() );
+		mtxi->PushMMatrix( fmtx4::Identity() );
 		{	float fsize = mPlugInpSize.GetValue();
 			float foffsetx = mPlugInpOffsetX.GetValue();
 			float foffsety = mPlugInpOffsetY.GetValue();
@@ -552,15 +552,15 @@ void Kaled::compute( ProcTex& ptex )
 								float fbu0=0.0f, fbu1=0.0f, fbu2=0.0f;
 								float fbv0=0.0f, fbv1=0.0f, fbv2=0.0f;
 								switch( ix%7 )
-								{	case 0:	case 3:	case 6:	
+								{	case 0:	case 3:	case 6:
 										fbu0=fu0;	fbu1=fuc;	fbu2=fu1;
 										fbv0=fv0;	fbv1=fv1;	fbv2=fv1;
 										break;
-									case 1:	case 4:	
+									case 1:	case 4:
 										fbu0=fu1;	fbu1=fu0;	fbu2=fuc;
 										fbv0=fv1;	fbv1=fv0;	fbv2=fv1;
 										break;
-									case 2:	case 5:	
+									case 2:	case 5:
 										fbu0=fuc;	fbu1=fu1;	fbu2=fu0;
 										fbv0=fv1;	fbv1=fv1;	fbv2=fv0;
 										break;

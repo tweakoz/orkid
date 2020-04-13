@@ -62,8 +62,8 @@ NoVrDevice::NoVrDevice() {
   _posemap["projl"].Perspective(45, 16.0 / 9.0, .1, 100000);
   _posemap["projr"].Perspective(45, 16.0 / 9.0, .1, 100000);
   _posemap["projc"].Perspective(45, 16.0 / 9.0, .1, 100000);
-  _posemap["eyel"] = fmtx4::Identity;
-  _posemap["eyer"] = fmtx4::Identity;
+  _posemap["eyel"] = fmtx4::Identity();
+  _posemap["eyer"] = fmtx4::Identity();
 }
 NoVrDevice::~NoVrDevice() {
 }

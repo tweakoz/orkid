@@ -908,7 +908,7 @@ Entity* Simulation::SpawnDynamicEntity(const ent::EntData* spawn_rec) {
   auto arch   = spawn_rec->GetArchetype();
   arch->ComposeEntity(newent);
   arch->LinkEntity(this, newent);
-  EntityActivationQueueItem qi(fmtx4::Identity, newent);
+  EntityActivationQueueItem qi(fmtx4::Identity(), newent);
   this->QueueActivateEntity(qi);
   mEntities[spawn_rec->GetName()] = newent;
   return newent;

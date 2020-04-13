@@ -40,8 +40,8 @@ void MatrixStackInterface::PushUIMatrix() {
   }
   ork::fmtx4 mtxMVP = mTarget.MTXI()->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);
   PushPMatrix(mtxMVP);
-  PushVMatrix(ork::fmtx4::Identity);
-  PushMMatrix(ork::fmtx4::Identity);
+  PushVMatrix(ork::fmtx4::Identity());
+  PushMMatrix(ork::fmtx4::Identity());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,8 +53,8 @@ void MatrixStackInterface::PushUIMatrix(int iw, int ih) {
   }
   ork::fmtx4 mtxMVP = mTarget.MTXI()->Ortho(0.0f, float(iw), 0.0f, float(ih), 0.0f, 1.0f);
   PushPMatrix(mtxMVP);
-  PushVMatrix(ork::fmtx4::Identity);
-  PushMMatrix(ork::fmtx4::Identity);
+  PushVMatrix(ork::fmtx4::Identity());
+  PushMMatrix(ork::fmtx4::Identity());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

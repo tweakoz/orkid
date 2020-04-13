@@ -16,7 +16,9 @@
 namespace ork { namespace asset {
 ///////////////////////////////////////////////////////////////////////////////
 
-const VarMap AssetCategory::_gnovars;
+const VarMap AssetCategory::novars(){
+  return VarMap();
+}
 
 AssetCategory::AssetCategory(const rtti::RTTIData& data)
     : object::ObjectCategory(data) {

@@ -156,7 +156,7 @@ struct ModItemRenderData {
 
       db.mfStartTime = pmird->mpItem->GetStartTime();
 
-      db.mMatrix = fmtx4::Identity;
+      db.mMatrix = fmtx4::Identity();
       if (false == pmird->mpItem->IsWorldSpace()) {
         pent->GetDagNode().GetMatrix(db.mMatrix);
       }

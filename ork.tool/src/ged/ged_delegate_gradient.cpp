@@ -52,7 +52,7 @@ public:
 		switch( filtev.miEventCode )
 		{
 			case ui::UIEV_DRAG:
-			{	
+			{
 				if( mParent && mGradientObject )
 				{
 					orklut<float,ork::fvec4> & data = mGradientObject->Data();
@@ -84,14 +84,14 @@ public:
 							orklut<float,ork::fvec4>::iterator it = data.begin()+miPoint;
 							std::pair<float,ork::fvec4> pr = (*it);
 							data.RemoveItem( it );
-							data.AddSorted( fx, pr.second );			
+							data.AddSorted( fx, pr.second );
 						}
 					}
 				}
 				break;
 			}
 			case ui::UIEV_DOUBLECLICK:
-			{	
+			{
 
 				if( mParent && mGradientObject )
 				{
@@ -105,9 +105,9 @@ public:
 
 					if( is_left )
 					{
-						
+
 						bool bok = false;
-						
+
 						fvec4 inp = it->second;
 
 						QRgb rgba = qRgba( inp.GetX()*255.0f, inp.GetY()*255.0f, inp.GetZ()*255.0f, inp.GetW()*255.0f );
@@ -122,7 +122,7 @@ public:
 							int ib = qBlue(rgba);
 							int ia = qAlpha(rgba);
 							fvec4 nc( float(ir)/256.0f, float(ig)/256.0f, float(ib)/256.0f, float(ia)/256.0f );
-							data.AddSorted( pr.first, nc );			
+							data.AddSorted( pr.first, nc );
 						}
 					}
 					else if( is_right )
@@ -147,7 +147,7 @@ void GedGradientEditPoint::Describe()
 class GedGradientEditSeg : public GedObject
 {
 	RttiDeclareAbstract( GedGradientEditSeg, GedObject );
-	
+
 	ork::Gradient<ork::fvec4>*							mGradientObject;
 	GedItemNode*											mParent;
 	int														miSeg;
@@ -161,7 +161,7 @@ public:
 		switch( filtev.miEventCode )
 		{
 			case ui::UIEV_DOUBLECLICK:
-			{	
+			{
 				//printf( "GradSplit par<%p> go<%p>\n", mParent, mGradientObject );
 				if( mParent && mGradientObject )
 				{
@@ -251,8 +251,8 @@ class GedGradientV4Widget : public GedItemNode
 				GetSkin()->DrawBgBox( editseg, fx0, miY, fw0, kh, GedSkin::ESTYLE_DEFAULT_CHECKBOX, 2 );
 				GetSkin()->DrawOutlineBox( editseg, fx0, miY, fw0, kh, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT, 1 );
 
-			}		
-		}		
+			}
+		}
 
 		////////////////////////////////////
 		// draw points
@@ -284,13 +284,13 @@ class GedGradientV4Widget : public GedItemNode
 			}
 			GetSkin()->DrawOutlineBox( editpoint, fx0, fy0, kpntsize*2, kpntsize*2, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT, 2 );
 
-		}		
+		}
 
 		////////////////////////////////////
 
 	}
-	
-	static void GradientCustomPrim( GedSkin*pskin,GedObject*pnode,ork::lev2::Context* pTARG ) 
+
+	static void GradientCustomPrim( GedSkin*pskin,GedObject*pnode,ork::lev2::Context* pTARG )
 	{
 		GedGradientV4Widget* pthis = rtti::autocast(pnode);
 		const orklut<float,ork::fvec4> & data = pthis->mGradientObject->Data();
@@ -298,7 +298,7 @@ class GedGradientV4Widget : public GedItemNode
 		const int ksegs = knumpoints-1;
 
 		if( 0 == ksegs ) return;
-	
+
 		if( pTARG->FBI()->isPickState() )
 		{
 		}
@@ -338,9 +338,9 @@ class GedGradientV4Widget : public GedItemNode
 				float fx1 = fx+(fib*fw);
 				float fy0 = fy;
 				float fy1 = fy+fh;
-	
-				const fvec4& c0 = data_a.second;			
-				const fvec4& c1 = data_b.second;			
+
+				const fvec4& c0 = data_a.second;
+				const fvec4& c1 = data_b.second;
 
 				lev2::SVtxV12C4T16 v0( fvec3(fx0,fy0,kz), uv, c0.GetVtxColorAsU32() );
 				lev2::SVtxV12C4T16 v1( fvec3(fx1,fy0,kz), uv, c1.GetVtxColorAsU32() );
@@ -359,14 +359,14 @@ class GedGradientV4Widget : public GedItemNode
 			vw.UnLock(pTARG);
 
 			////////////////////////////////////////////////////////////////
-			F32 fVPW = (F32) pTARG->FBI()->GetVPW(); 
+			F32 fVPW = (F32) pTARG->FBI()->GetVPW();
 			F32 fVPH = (F32) pTARG->FBI()->GetVPH();
 			if( 0.0f == fVPW ) fVPW = 1.0f;
 			if( 0.0f == fVPH ) fVPH = 1.0f;
 			fmtx4 mtxortho = pTARG->MTXI()->Ortho( 0.0f, fVPW, 0.0f, fVPH, 0.0f, 1.0f );
 			pTARG->MTXI()->PushPMatrix( mtxortho );
-			pTARG->MTXI()->PushVMatrix( fmtx4::Identity );
-			pTARG->MTXI()->PushMMatrix( fmtx4::Identity );
+			pTARG->MTXI()->PushVMatrix( fmtx4::Identity() );
+			pTARG->MTXI()->PushMMatrix( fmtx4::Identity() );
 			pTARG->PushModColor( fvec3::White() );
 				pTARG->GBI()->DrawPrimitive( vw, ork::lev2::EPrimitiveType::TRIANGLES );
 			pTARG->PopModColor();
@@ -383,8 +383,8 @@ class GedGradientV4Widget : public GedItemNode
 
 		pTARG->BindMaterial(0);
 	}
-	
-	int CalcHeight(void) { return kh; } // virtual 
+
+	int CalcHeight(void) { return kh; } // virtual
 
 public:
 
@@ -411,8 +411,8 @@ public:
 	}
 
 };
-		
-void GedFactoryGradient::Describe() {}		
+
+void GedFactoryGradient::Describe() {}
 
 GedItemNode* GedFactoryGradient::CreateItemNode(ObjModel&mdl,const ConstString& Name,const reflect::IObjectProperty *prop,Object* obj) const
 {
@@ -420,8 +420,8 @@ GedItemNode* GedFactoryGradient::CreateItemNode(ObjModel&mdl,const ConstString& 
 
 	mdl.GetGedWidget()->PushItemNode( groupnode );
 
-	GedItemNode* itemnode = new GedGradientV4Widget( 
-		mdl, 
+	GedItemNode* itemnode = new GedGradientV4Widget(
+		mdl,
 		Name.c_str(),
 		prop,
 		obj

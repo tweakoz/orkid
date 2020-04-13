@@ -52,7 +52,7 @@ struct EntityActivationQueueItem
 	fmtx4	mMatrix;
 	Entity*		mpEntity;
 
-	EntityActivationQueueItem( const fmtx4& mtx = fmtx4::Identity, Entity* pent=0 )
+	EntityActivationQueueItem( const fmtx4& mtx = fmtx4::Identity(), Entity* pent=nullptr )
 		: mMatrix( mtx )
 		, mpEntity( pent )
 	{

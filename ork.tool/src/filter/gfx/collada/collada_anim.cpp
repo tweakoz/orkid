@@ -109,7 +109,7 @@ void ColladaUvAnimChannel::SetData(int iframe, const std::string& itemname, floa
 void ColladaMatrixAnimChannel::SetParam(int iframe, int irow, int icol, float fval) {
   if (iframe >= miSettingFrame) {
     OrkAssert(miSettingFrame == iframe); // only allow adding 1 at a time 4 now
-    mSampledFrames.push_back(fmtx4::Identity);
+    mSampledFrames.push_back(fmtx4::Identity());
 
     miSettingFrame = mSampledFrames.size();
   }

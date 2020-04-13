@@ -597,9 +597,9 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
 
   /////////////////////////////////////////////////
   lev2::GfxMaterialUI UiMat(pTARG);
-  MTXI->PushPMatrix(fmtx4::Identity);
-  MTXI->PushVMatrix(fmtx4::Identity);
-  MTXI->PushMMatrix(fmtx4::Identity);
+  MTXI->PushPMatrix(fmtx4::Identity());
+  MTXI->PushVMatrix(fmtx4::Identity());
+  MTXI->PushMMatrix(fmtx4::Identity());
 
   static SRasterState defstate;
   pTARG->RSI()->BindRasterState(defstate);
@@ -849,7 +849,7 @@ void SceneEditorVP::DrawManip(lev2::CompositorDrawData& CDD, ork::lev2::Context*
   auto MTXI = pOutputTarget->MTXI();
   MTXI->PushPMatrix(_overlayCamMatrices->_pmatrix);
   MTXI->PushVMatrix(_overlayCamMatrices->_vmatrix);
-  MTXI->PushMMatrix(fmtx4::Identity);
+  MTXI->PushMMatrix(fmtx4::Identity());
   {
     switch (ManipManager().GetUIMode()) {
       case ManipManager::EUIMODE_MANIP_WORLD_TRANSLATE:
@@ -918,8 +918,8 @@ void SceneEditorVP::DrawBorder(lev2::RenderContextFrameData& RCFD) {
   TGT->BindMaterial(&matui);
   TGT->PushModColor(bhasfocus ? ork::fcolor4::Red() : ork::fcolor4::Black());
   MTXI->PushPMatrix(mtxP);
-  MTXI->PushVMatrix(ork::fmtx4::Identity);
-  MTXI->PushMMatrix(ork::fmtx4::Identity);
+  MTXI->PushVMatrix(ork::fmtx4::Identity());
+  MTXI->PushMMatrix(ork::fmtx4::Identity());
   {
     typedef SVtxV12C4T16 vtx_t;
     DynamicVertexBuffer<vtx_t>& vb = GfxEnv::GetSharedDynamicVB();

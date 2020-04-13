@@ -145,7 +145,7 @@ void RigidBody::Close()
 		iyz += pm.mMass*(ry*rz);
 	}
 
-	mIniInertiaTensor = fmtx4::Identity;
+	mIniInertiaTensor = fmtx4::Identity();
 
 	mIniInertiaTensor.setelemGL( 0,0, +ixx );
 	mIniInertiaTensor.setelemGL( 0,1, -ixy );
@@ -541,7 +541,7 @@ void RigidBody_Draw( lev2::Context* targ, const fmtx4& matw, const RigidBody& rb
 
 	if( bdebug )
 	{
-		targ->MTXI()->PushMMatrix( fmtx4::Identity );
+		targ->MTXI()->PushMMatrix( fmtx4::Identity() );
 		{
 			for( int i=0; i<int(rbody.mPoints.size()); i++ )
 			{

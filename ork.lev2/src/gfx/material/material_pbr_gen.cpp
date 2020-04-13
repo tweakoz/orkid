@@ -182,7 +182,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
       mtl->bindTechnique(tekFilterSpecMap);
       mtl->begin(RCFD);
       ///////////////////////////////////////////////
-      mtl->bindParamMatrix(param_mvp, fmtx4::Identity);
+      mtl->bindParamMatrix(param_mvp, fmtx4::Identity());
       mtl->bindParamCTex(param_pfm, rawenvmap);
       mtl->bindParamFloat(param_ruf, roughness);
       mtl->commit();
@@ -309,7 +309,7 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
       mtl->bindTechnique(tekFilterDiffMap);
       mtl->begin(RCFD);
       ///////////////////////////////////////////////
-      mtl->bindParamMatrix(param_mvp, fmtx4::Identity);
+      mtl->bindParamMatrix(param_mvp, fmtx4::Identity());
       mtl->bindParamCTex(param_pfm, rawenvmap);
       mtl->bindParamFloat(param_ruf, roughness);
       mtl->commit();

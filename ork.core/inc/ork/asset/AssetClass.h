@@ -19,19 +19,19 @@ class FileAssetNamer;
 
 class AssetClass : public object::ObjectClass {
   RttiDeclareExplicit(AssetClass, object::ObjectClass, rtti::NamePolicy, AssetCategory);
-  static const VarMap _gnovars;
+  static const VarMap novars();
 
 public:
   AssetClass(const rtti::RTTIData&);
 
   AssetLoader* FindLoader(PieceString);
-  Asset* LoadUnManagedAsset(PieceString, const VarMap& vmap = _gnovars);
-  Asset* DeclareAsset(PieceString, const VarMap& vmap = _gnovars);
-  Asset* FindAsset(PieceString, const VarMap& vmap = _gnovars);
+  Asset* LoadUnManagedAsset(PieceString, const VarMap& vmap = novars());
+  Asset* DeclareAsset(PieceString, const VarMap& vmap = novars());
+  Asset* FindAsset(PieceString, const VarMap& vmap = novars());
 
   void AddLoader(AssetLoader* loader);
 
-  Asset* CreateUnmanagedAsset(PieceString, const VarMap& vmap = _gnovars);
+  Asset* CreateUnmanagedAsset(PieceString, const VarMap& vmap = novars());
 
   AssetSet& GetAssetSet();
 

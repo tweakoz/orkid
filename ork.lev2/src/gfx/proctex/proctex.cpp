@@ -267,9 +267,9 @@ void ImgModule::Compute(dataflow::workunit* wu) {
 ///////////////////////////////////////////////////////////////////////////////
 void ImgModule::UnitTexQuad(
     ork::lev2::Context* pTARG) { // fmtx4 mtxortho = pTARG->MTXI()->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
-  pTARG->MTXI()->PushPMatrix(fmtx4::Identity);
-  pTARG->MTXI()->PushVMatrix(fmtx4::Identity);
-  pTARG->MTXI()->PushMMatrix(fmtx4::Identity);
+  pTARG->MTXI()->PushPMatrix(fmtx4::Identity());
+  pTARG->MTXI()->PushVMatrix(fmtx4::Identity());
+  pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
   pTARG->PushModColor(fvec3::White());
   { RenderQuad(pTARG, -1.0f, -1.0f, 1.0f, 1.0f); }
   pTARG->PopModColor();
@@ -377,7 +377,7 @@ void ImgModule::UpdateThumb(ProcTex& ptex) {
   thumbmtl.bindTechnique(tek);
   thumbmtl.begin(*RCFD);
   thumbmtl.bindParamCTex(partex, ptexture);
-  thumbmtl.bindParamMatrix(parmvp, fmtx4::Identity);
+  thumbmtl.bindParamMatrix(parmvp, fmtx4::Identity());
   ////////////////////////////////////////////////////////////////
   // float ftexw = ptexture ? ptexture->_width : 1.0f;
   // pTARG->PushModColor(ork::fvec4(ftexw, ftexw, ftexw, ftexw));
@@ -759,8 +759,8 @@ void AA16Render::RenderAA() {
     {
       temp_buffer->PtexBegin(target, true, false);
       fmtx4 mtxortho = mtxi->Ortho(left, right, top, bottom, 0.0f, 1.0f);
-      mtxi->PushMMatrix(fmtx4::Identity);
-      mtxi->PushVMatrix(fmtx4::Identity);
+      mtxi->PushMMatrix(fmtx4::Identity());
+      mtxi->PushVMatrix(fmtx4::Identity());
       mtxi->PushPMatrix(mtxortho);
       DoRender(left, right, top, bottom, *temp_buffer);
       mtxi->PopPMatrix();
@@ -786,8 +786,8 @@ void AA16Render::RenderAA() {
       txi->ApplySamplingMode(tex);
 
       fmtx4 mtxortho = mtxi->Ortho(l, r, t, b, 0.0f, 1.0f);
-      mtxi->PushMMatrix(fmtx4::Identity);
-      mtxi->PushVMatrix(fmtx4::Identity);
+      mtxi->PushMMatrix(fmtx4::Identity());
+      mtxi->PushVMatrix(fmtx4::Identity());
       mtxi->PushPMatrix(mtxortho);
       target->PushMaterial(&downsamplemat);
       RenderQuad(target, q.fx0, q.fy1, q.fx1, q.fy0, 0.0f, 0.0f, 1.0f, 1.0f);
@@ -823,8 +823,8 @@ void AA16Render::RenderNoAA() {
   bufout.PtexBegin(target, true, true);
   {
     fmtx4 mtxortho = mtxi->Ortho(l, r, t, b, 0.0f, 1.0f);
-    mtxi->PushMMatrix(fmtx4::Identity);
-    mtxi->PushVMatrix(fmtx4::Identity);
+    mtxi->PushMMatrix(fmtx4::Identity());
+    mtxi->PushVMatrix(fmtx4::Identity());
     mtxi->PushPMatrix(mtxortho);
     DoRender(l, r, t, b, bufout);
     mtxi->PopPMatrix();

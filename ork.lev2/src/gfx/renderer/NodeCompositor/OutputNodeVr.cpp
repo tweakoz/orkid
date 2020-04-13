@@ -233,7 +233,7 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
         SRect vprect(0, 0, iw, ih);
         SRect quadrect(0, ih, iw, 0);
         fvec4 color(1.0f, 1.0f, 1.0f, 1.0f);
-        mtl.SetAuxMatrix(fmtx4::Identity);
+        mtl.SetAuxMatrix(fmtx4::Identity());
         mtl.SetTexture(tex);
         mtl.SetTexture2(nullptr);
         mtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);

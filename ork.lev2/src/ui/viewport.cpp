@@ -45,7 +45,7 @@ void Viewport::BeginFrame(lev2::Context* pTARG) {
 
   if (mbDrawOK) {
     // orkprintf( "BEG Viewport::BeginFrame::mbDrawOK\n" );
-    auto MatOrtho = fmtx4::Identity;
+    auto MatOrtho = fmtx4::Identity();
     MatOrtho.Ortho(0.0f, (F32)GetW(), 0.0f, (F32)GetH(), 0.0f, 1.0f);
 
     pTARG->MTXI()->SetOrthoMatrix(MatOrtho);

@@ -150,7 +150,7 @@ void XgmBlendPoseInfo::ComputeMatrix(fmtx4& outmatrix) const {
       // decent results. Try it.
       {
         OrkAssert(false);
-        outmatrix = fmtx4::Identity;
+        outmatrix = fmtx4::Identity();
       }
       break;
   }

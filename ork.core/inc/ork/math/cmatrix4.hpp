@@ -18,7 +18,9 @@
 
 namespace ork {
 
-template <typename T> const Matrix44<T> Matrix44<T>::Identity;
+template <typename T> const Matrix44<T> Matrix44<T>::Identity(){
+  return Matrix44<T>();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -60,7 +60,7 @@ match_results_t SizeofOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "sizeof") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -71,7 +71,7 @@ match_results_t DotOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == ".") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -82,7 +82,7 @@ match_results_t NotOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "!") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -92,7 +92,7 @@ match_results_t BitNotOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "~") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -103,7 +103,7 @@ match_results_t IncOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "++") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -113,7 +113,7 @@ match_results_t DecOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "--") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -124,7 +124,7 @@ match_results_t AddOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "+") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -134,7 +134,7 @@ match_results_t SubOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "-") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -144,7 +144,7 @@ match_results_t MulOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "*") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -154,7 +154,7 @@ match_results_t DivOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "/") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -164,7 +164,7 @@ match_results_t ModOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "%") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -175,7 +175,7 @@ match_results_t LeftOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "<<") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -185,7 +185,7 @@ match_results_t RightOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == ">>") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -196,7 +196,7 @@ match_results_t OrOrOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "||") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -206,7 +206,7 @@ match_results_t OrOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "|") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -216,7 +216,7 @@ match_results_t XorOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "^") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -226,7 +226,7 @@ match_results_t LtOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "<") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -236,7 +236,7 @@ match_results_t LtEqOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "<=") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -246,7 +246,7 @@ match_results_t GtOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == ">") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -256,7 +256,7 @@ match_results_t GtEqOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == ">=") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -266,7 +266,7 @@ match_results_t EqOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "==") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -276,7 +276,7 @@ match_results_t NeqOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "!=") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -289,7 +289,7 @@ match_results_t AndAndOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "&&") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -299,7 +299,7 @@ match_results_t AndOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "&") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -312,7 +312,7 @@ match_results_t CommaOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == ",") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }
@@ -323,7 +323,7 @@ match_results_t SemicolonOp::match(FnParseContext ctx) {
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == ";") {
-    rval->_start == ctx._startIndex;
+    rval->_start = ctx._startIndex;
     rval->_count   = 1;
     rval->_matched = true;
   }

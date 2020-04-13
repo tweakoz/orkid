@@ -101,7 +101,7 @@ public:
   T* begin_push(void) // get handle to a write buffer
   {
     while (1) {
-      uint32_t ost(mState.load(MemFullFence));
+      uint32_t ost(mState.load());
       StateField nsf(ost);
       nsf.CommonUpdate();
       uint32_t ord = nsf.mRead;
@@ -145,7 +145,7 @@ public:
   /////////////////////////////
   void end_push(T* pret) {
     while (1) {
-      uint32_t ost(mState.load(MemFullFence));
+      uint32_t ost(mState.load());
       StateField nsf(ost);
       nsf.mNxtR    = nsf.mWrit;
       uint32_t nst = nsf.Pack();
@@ -160,7 +160,7 @@ public:
   const T* begin_pull(void) const // get a read buffer
   {
     while (1) {
-      uint32_t ost(mState.load(MemFullFence));
+      uint32_t ost(mState.load());
       StateField nsf(ost);
       nsf.CommonUpdate();
       uint32_t nrd = (nsf.mEnab == 2) ? nsf.mNxtR : 0;
@@ -180,7 +180,7 @@ public:
   /////////////////////////////
   void end_pull(const T* pret) const {
     while (1) {
-      uint32_t ost(mState.load(MemFullFence));
+      uint32_t ost(mState.load());
       StateField nsf(ost);
       nsf.CommonUpdate();
       nsf.mRead    = 0;
@@ -197,7 +197,7 @@ public:
   void disable() {
     bool bc = true;
     while (bc) {
-      uint32_t ost(mState.load(MemFullFence));
+      uint32_t ost(mState.load());
       StateField sf(ost);
       sf.mEnab     = 3; // stopping
       sf.mWrit     = 0;
@@ -209,7 +209,7 @@ public:
     }
     bc = true;
     while (bc) {
-      uint32_t ost(mState.load(MemFullFence));
+      uint32_t ost(mState.load());
       StateField sf(ost);
       bc = (sf.mRead != 0);
       usleep(kquanta);
@@ -218,7 +218,7 @@ public:
   }
   /////////////////////////////
   void enable() {
-    mState.store(1 << 4, MemFullFence); // starting
+    mState.store(1 << 4); // starting
   }
   /////////////////////////////
 private: //

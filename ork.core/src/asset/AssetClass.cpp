@@ -26,7 +26,9 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::asset::AssetClass, "AssetClass")
 namespace ork { namespace asset {
 ///////////////////////////////////////////////////////////////////////////////
 
-const VarMap AssetClass::_gnovars;
+const VarMap AssetClass::novars(){
+  return VarMap();
+}
 
 void AssetClass::Describe() {
 }

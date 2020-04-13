@@ -124,7 +124,7 @@ void Grid3d::Render(RenderContextFrameData& FrameData) const {
 
   // pTARG->MTXI()->PushPMatrix( FrameData.cameraMatrices()->GetPMatrix() );
   // pTARG->MTXI()->PushVMatrix( FrameData.cameraMatrices()->GetVMatrix() );
-  pTARG->MTXI()->PushMMatrix(fmtx4::Identity);
+  pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
   {
     static GfxMaterial3DSolid gridmat(pTARG);
     gridmat.SetColorMode(GfxMaterial3DSolid::EMODE_MOD_COLOR);
@@ -346,8 +346,8 @@ void Grid2d::Render(Context* pTARG, int iw, int ih) {
   lev2::DynamicVertexBuffer<lev2::SVtxV12C4T16>& VB = lev2::GfxEnv::GetSharedDynamicVB();
 
   mtxi->PushPMatrix(mMtxOrtho);
-  mtxi->PushVMatrix(fmtx4::Identity);
-  mtxi->PushMMatrix(fmtx4::Identity);
+  mtxi->PushVMatrix(fmtx4::Identity());
+  mtxi->PushMMatrix(fmtx4::Identity());
   {
     static GfxMaterial3DSolid gridmat(pTARG);
     gridmat.SetColorMode(GfxMaterial3DSolid::EMODE_VERTEX_COLOR);

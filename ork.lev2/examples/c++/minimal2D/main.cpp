@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
     RenderContextFrameData RCFD(context);
     material.bindTechnique(fxtechnique);
     material.begin(RCFD);
-    material.bindParamMatrix(fxparameterMVP, fmtx4::Identity);
+    material.bindParamMatrix(fxparameterMVP, fmtx4::Identity());
     material.bindParamVec4(fxparameterMODC, fvec4::Red());
     gfxwin->Render2dQuadEML(fvec4(-0.5, -0.5, 1, 1), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
     material.end(RCFD);

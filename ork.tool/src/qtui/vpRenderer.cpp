@@ -45,7 +45,7 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   auto minst                  = ModelRen.GetModelInst();
   const lev2::XgmModel* model = minst->xgmModel();
 
-  target->debugPushGroup(FormatString("toolrenderer::RenderModel model<%p> minst<%p>", model, minst));
+  target->debugPushGroup(FormatString("toolrenderer::RenderModel model<%p> minst<%p>", model, minst.get()));
 
   /////////////////////////////////////////////////////////////
 

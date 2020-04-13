@@ -61,13 +61,13 @@ public:
         switch( filtev.miEventCode )
         {
             case ui::UIEV_DRAG:
-            {   
+            {
         		if( mParent && mCurveObject )
         		{	orklut<float,float> & data = mCurveObject->GetVertices();
         			const int knumpoints = (int) data.size();
         			const int ksegs = knumpoints-1;
         			if( miPoint>=0 && miPoint<knumpoints )
-        			{	
+        			{
                         int mouseposX = ev.miX-mParent->GetX();
                         int mouseposY = ev.miY-mParent->GetY();
     					float fx = float(mouseposX)/float(mParent->width());
@@ -232,8 +232,8 @@ class GedCurveV4Widget : public GedItemNode
 				GetSkin()->DrawBgBox( editseg, fx0, miY, fw0, kh, GedSkin::ESTYLE_DEFAULT_CHECKBOX, 1 );
 				GetSkin()->DrawOutlineBox( editseg, fx0, miY, fw0, kh, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT, 1 );
 
-			}		
-		}		
+			}
+		}
 
 		////////////////////////////////////
 		// draw points
@@ -265,13 +265,13 @@ class GedCurveV4Widget : public GedItemNode
 			}
 			GetSkin()->DrawOutlineBox( editpoint, fx0, fy0, kpntsize*2, kpntsize*2, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT, 2 );
 
-		}		
+		}
 
 		////////////////////////////////////
 
 	}
-	
-	static void CurveCustomPrim( GedSkin*pskin,GedObject*pnode,ork::lev2::Context* pTARG ) 
+
+	static void CurveCustomPrim( GedSkin*pskin,GedObject*pnode,ork::lev2::Context* pTARG )
 	{
 		GedCurveV4Widget* pthis = rtti::autocast(pnode);
 		const orklut<float,float> & data = pthis->mCurveObject->GetVertices();
@@ -279,7 +279,7 @@ class GedCurveV4Widget : public GedItemNode
 		const int ksegs = knumpoints-1;
 
 		if( 0 == ksegs ) return;
-	
+
 		if( pTARG->FBI()->isPickState() )
 		{
 		}
@@ -310,14 +310,14 @@ class GedCurveV4Widget : public GedItemNode
 
 			int ivbaseA = VB.GetNumVertices();
 			int reserveA = 1024;
-			
+
 			lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
 			vw.Lock( pTARG, & VB, reserveA );
 
 			fvec2 uv;
 
 			int icountA = 0;
-			
+
 			const float kz = 0.0f;
 
 			float fx = float(pthis->miX);
@@ -336,8 +336,8 @@ class GedCurveV4Widget : public GedItemNode
 
 			vw.AddVertex( v0 );
 			vw.AddVertex( v2 );
-			vw.AddVertex( v3 ); 
-			
+			vw.AddVertex( v3 );
+
 			icountA += 6;
 
 			float fmin = pthis->mCurveObject->GetMin();
@@ -358,12 +358,12 @@ class GedCurveV4Widget : public GedItemNode
 				float fx1 = fx+(fib*fw);
 				float fy0 = fy+fh-(fiya*fh);
 				float fy1 = fy+fh-(fiyb*fh);
-	
+
 				switch( pthis->mCurveObject->GetSegmentType(i) )
 				{
 					case EMCST_LOG:
 					case EMCST_EXP:
-					{	
+					{
 						for( int j=0; j<kexplogsegs; j++ )
 						{	int k=j+1;
 							float fj = float(j)/float(kexplogsegs);
@@ -412,14 +412,14 @@ class GedCurveV4Widget : public GedItemNode
 			vw.UnLock(pTARG);
 
 			////////////////////////////////////////////////////////////////
-			F32 fVPW = (F32) pTARG->FBI()->GetVPW(); 
+			F32 fVPW = (F32) pTARG->FBI()->GetVPW();
 			F32 fVPH = (F32) pTARG->FBI()->GetVPH();
 			if( 0.0f == fVPW ) fVPW = 1.0f;
 			if( 0.0f == fVPH ) fVPH = 1.0f;
 			fmtx4 mtxortho = pTARG->MTXI()->Ortho( 0.0f, fVPW, 0.0f, fVPH, 0.0f, 1.0f );
 			pTARG->MTXI()->PushPMatrix( mtxortho );
-			pTARG->MTXI()->PushVMatrix( fmtx4::Identity );
-			pTARG->MTXI()->PushMMatrix( fmtx4::Identity );
+			pTARG->MTXI()->PushVMatrix( fmtx4::Identity() );
+			pTARG->MTXI()->PushMMatrix( fmtx4::Identity() );
 				pTARG->BindMaterial( & gridmat );
 				pTARG->PushModColor( fvec3::Blue() );
 					pTARG->GBI()->DrawPrimitive( VB, ork::lev2::EPrimitiveType::TRIANGLES, ivbaseA, 6 );
@@ -438,8 +438,8 @@ class GedCurveV4Widget : public GedItemNode
 			OrkAssert(false);
 		}
 	}
-	
-	int CalcHeight(void) { return kh; } // virtual 
+
+	int CalcHeight(void) { return kh; } // virtual
 
 public:
 
@@ -464,12 +464,12 @@ public:
 			ObjProxy<MultiCurve1D>* proxy = rtti::autocast(pprop->Access(GetOrkObj()));
 			mCurveObject = proxy->mParent;
 		}
-		
+
 	}
 
 };
-		
-void GedFactoryCurve::Describe() {}		
+
+void GedFactoryCurve::Describe() {}
 
 GedItemNode* GedFactoryCurve::CreateItemNode(ObjModel&mdl,const ConstString& Name,const reflect::IObjectProperty *prop,Object* obj) const
 {
@@ -477,8 +477,8 @@ GedItemNode* GedFactoryCurve::CreateItemNode(ObjModel&mdl,const ConstString& Nam
 
 	mdl.GetGedWidget()->PushItemNode( groupnode );
 
-	GedItemNode* itemnode = new GedCurveV4Widget( 
-		mdl, 
+	GedItemNode* itemnode = new GedCurveV4Widget(
+		mdl,
 		Name.c_str(),
 		prop,
 		obj

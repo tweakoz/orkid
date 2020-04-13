@@ -13,7 +13,9 @@ namespace ork { namespace asset {
 
 template <typename AssetType> ork::recursive_mutex AssetManager<AssetType>::gLock("AssetManagerMutex");
 
-template <typename AssetType> VarMap AssetManager<AssetType>::_gnovars;
+template <typename AssetType> VarMap AssetManager<AssetType>::novars(){
+  return VarMap();
+};
 
 template <typename AssetType> bool AssetManager<AssetType>::gbAUTOLOAD = true;
 

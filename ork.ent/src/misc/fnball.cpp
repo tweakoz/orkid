@@ -221,7 +221,7 @@ void FnBallArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
                 vw.UnLock(targ);
 
                 ////////////////////////////////////////
-                auto mtx = fmtx4::Identity;
+                auto mtx = fmtx4::Identity();
                 auto RCFD = targ->topRenderContextFrameData();
                 auto& cdata = RCFD->topCPD().cameraMatrices()->_camdat;
                 fmtx4 matrs( mtx );

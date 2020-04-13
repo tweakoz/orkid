@@ -12,7 +12,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
           .def_property("name", &GfxMaterial::GetName, &GfxMaterial::SetName)
           .def("__repr__", [](material_ptr_t m) -> std::string {
             fxstring<64> fxs;
-            fxs.format("GfxMaterial(%p:%s)", m, m->mMaterialName.c_str());
+            fxs.format("GfxMaterial(%p:%s)", m.get(), m->mMaterialName.c_str());
             return fxs.c_str();
           });
   type_codec->registerStdCodec<material_ptr_t>(material_type);
@@ -162,7 +162,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
           .def("end", [](freestyle_mtl_ptr_t m, RenderContextFrameData& rcfd) { m->end(rcfd); })
           .def("__repr__", [](const freestyle_mtl_ptr_t m) -> std::string {
             fxstring<256> fxs;
-            fxs.format("FreestyleMaterial(%p:%s)", m, m->mMaterialName.c_str());
+            fxs.format("FreestyleMaterial(%p:%s)", m.get(), m->mMaterialName.c_str());
             return fxs.c_str();
           });
   type_codec->registerStdCodec<freestyle_mtl_ptr_t>(freestyle_type);
