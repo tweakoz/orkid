@@ -28,7 +28,7 @@ void removeVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t r
 }
 
 fmtx4 steam34tofmtx4(const _ovr::HmdMatrix34_t& matPose) {
-  fmtx4 orkmtx = fmtx4::Identity;
+  fmtx4 orkmtx = fmtx4::Identity();
   for (int i = 0; i < 3; i++)
     for (int j = 0; j < 4; j++)
       orkmtx.SetElemXY(j, i, matPose.m[i][j]);
