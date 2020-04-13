@@ -76,7 +76,7 @@ def onGpuInit(ctx):
 # update:
 # technically this runs from the orkid update thread
 #  but since the python GIL is in place,
-#  it will be serialized with the main thread.
+#  it will be serialized with the main thread python code.
 #  This is still useful for doing background computation.
 #   (eg. the scene can be updated from python, whilst
 #        concurrently c++ is rendering..)
