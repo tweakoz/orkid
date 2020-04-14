@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
     DB->Reset();
     DB->copyCameras(cameras);
     auto layer = DB->MergeLayer("Default"_pool);
-    _terrainXform._worldMatrix.compose(fvec3(), fquat(), 1.0f);
+    _terrainXform._worldMatrix->compose(fvec3(), fquat(), 1.0f);
     _terrainDrawable->enqueueOnLayer(_terrainXform, *layer);
     DrawableBuffer::UnLockWriteBuffer(DB);
   });

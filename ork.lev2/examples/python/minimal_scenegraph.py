@@ -23,7 +23,7 @@ _time_base = time.time()
 scene = None
 camera = None
 cameralut = None
-
+primnode = None
 ################################################
 # gpu data init:
 #  called on main thread when graphics context is
@@ -34,6 +34,7 @@ def onGpuInit(ctx):
     global scene
     global camera
     global cameralut
+    global primnode
     ###################################
     mtl = FreestyleMaterial()
     mtl.gpuInit(ctx,Path("orkshader://manip"))
@@ -59,7 +60,6 @@ def onGpuInit(ctx):
     scene = scenegraph.Scene()
     layer = scene.createLayer("layer1")
     primnode = prim.createNode("node1",layer,mtl_inst)
-    primnode.worldMatrix = mtx4()
     ###################################
     camera = CameraData()
     cameralut = CameraDataLut()
@@ -84,6 +84,11 @@ def onUpdate():
     up = vec3(0, 1, 0)
     camera.perspective(0.1, 100.0, 45.0)
     camera.lookAt(eye, tgt, up)
+    ###################################
+    primnode.worldMatrix.compose( vec3(0,0,0),
+                                  quat(),
+                                  math.sin(Δtime*2)*3)
+    #print(primnode.worldMatrix)
     ###################################
     scene.updateScene(cameralut)
     ###################################

@@ -26,6 +26,10 @@
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::DrawableOwner, "DrawableOwner");
 namespace ork::lev2 {
 
+DrawQueueXfData::DrawQueueXfData() {
+  _worldMatrix = std::make_shared<fmtx4>();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void Drawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {

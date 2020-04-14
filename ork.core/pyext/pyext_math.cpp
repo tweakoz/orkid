@@ -185,80 +185,85 @@ void pyinit_math(py::module& module_core) {
           .def("inverseOf", &fmtx4::inverseOf)
           .def("decompose", &fmtx4::decompose)
           .def("toRotMatrix3", &fmtx4::rotMatrix33)
+          .def(
+              "compose",
+              [](fmtx4_ptr_t mtx, const fvec3& pos, const fquat& rot, float scale) { //
+                mtx->compose(pos, rot, scale);
+              })
           .def_static("perspective", &fmtx4::perspective)
           .def_static(
-              "compose",
-              [](const fvec3& pos, const fquat& rot, float scale) -> fmtx4 {
-                fmtx4 rval;
-                rval.compose(pos, rot, scale);
+              "composed",
+              [](const fvec3& pos, const fquat& rot, float scale) -> fmtx4_ptr_t {
+                auto rval = std::make_shared<fmtx4>();
+                rval->compose(pos, rot, scale);
                 return rval;
               })
           .def_static(
               "deltaMatrix",
-              [](const fmtx4& from, const fmtx4& to) -> fmtx4 {
-                fmtx4 rval;
-                rval.CorrectionMatrix(from, to);
+              [](fmtx4_ptr_t from, fmtx4_ptr_t to) -> fmtx4_ptr_t {
+                auto rval = std::make_shared<fmtx4>();
+                rval->CorrectionMatrix(*from.get(), *to.get());
                 return rval;
               })
           .def_static(
               "rotMatrix",
-              [](const fquat& q) -> fmtx4 {
-                fmtx4 rval;
-                rval.FromQuaternion(q);
+              [](const fquat& q) -> fmtx4_ptr_t {
+                auto rval = std::make_shared<fmtx4>();
+                rval->FromQuaternion(q);
                 return rval;
               })
           .def_static(
               "rotMatrix",
-              [](const fvec3& axis, float angle) -> fmtx4 {
-                fmtx4 rval;
-                rval.FromQuaternion(fquat(axis, angle));
+              [](const fvec3& axis, float angle) -> fmtx4_ptr_t {
+                auto rval = std::make_shared<fmtx4>();
+                rval->FromQuaternion(fquat(axis, angle));
                 return rval;
               })
           .def_static(
               "transMatrix",
-              [](float x, float y, float z) -> fmtx4 {
-                fmtx4 rval;
-                rval.SetTranslation(x, y, z);
+              [](float x, float y, float z) -> fmtx4_ptr_t {
+                auto rval = std::make_shared<fmtx4>();
+                rval->SetTranslation(x, y, z);
                 return rval;
               })
           .def_static(
               "transMatrix",
-              [](const fvec3& t) -> fmtx4 {
-                fmtx4 rval;
-                rval.SetTranslation(t.x, t.y, t.z);
+              [](const fvec3& t) -> fmtx4_ptr_t {
+                auto rval = std::make_shared<fmtx4>();
+                rval->SetTranslation(t.x, t.y, t.z);
                 return rval;
               })
           .def_static(
               "scaleMatrix",
-              [](float x, float y, float z) -> fmtx4 {
-                fmtx4 rval;
-                rval.SetScale(x, y, z);
+              [](float x, float y, float z) -> fmtx4_ptr_t {
+                auto rval = std::make_shared<fmtx4>();
+                rval->SetScale(x, y, z);
                 return rval;
               })
           .def_static(
               "scaleMatrix",
-              [](const fvec3& scale) -> fmtx4 {
-                fmtx4 rval;
-                rval.SetScale(scale.x, scale.y, scale.z);
+              [](const fvec3& scale) -> fmtx4_ptr_t {
+                auto rval = std::make_shared<fmtx4>();
+                rval->SetScale(scale.x, scale.y, scale.z);
                 return rval;
               })
           .def_static(
               "unproject",
-              [](const fmtx4& rIMVP, const fvec3& ClipCoord, fvec3& rVObj) -> bool {
-                return fmtx4::UnProject(rIMVP, ClipCoord, rVObj);
+              [](fmtx4_ptr_t rIMVP, const fvec3& ClipCoord, fvec3& rVObj) -> bool {
+                return fmtx4::UnProject(*rIMVP.get(), ClipCoord, rVObj);
               })
           .def_static(
               "lookAt",
-              [](const fvec3& eye, const fvec3& tgt, fvec3& up) -> fmtx4 {
-                fmtx4 rval;
-                rval.LookAt(eye, tgt, up);
+              [](const fvec3& eye, const fvec3& tgt, fvec3& up) -> fmtx4_ptr_t {
+                auto rval = std::make_shared<fmtx4>();
+                rval->LookAt(eye, tgt, up);
                 return rval;
               })
           //.def("LookAt", &fmtx4::decompose)
           .def(py::self * py::self)
           .def(py::self == py::self)
-          .def("__repr__", [](const fmtx4& mtx) -> std::string {
-            auto str = mtx.dump4x3cn();
+          .def("__repr__", [](fmtx4_ptr_t mtx) -> std::string {
+            auto str = mtx->dump4x3cn();
             return str.c_str();
           });
   type_codec->registerStdCodec<fmtx4_ptr_t>(mtx4_type);

@@ -12,10 +12,10 @@ void pyinit_scenegraph(py::module& module_lev2) {
       .def_property(
           "worldMatrix",                       //
           [](node_ptr_t node) -> fmtx4_ptr_t { //
-            return std::make_shared<fmtx4>(node->_transform._worldMatrix);
+            return node->_transform._worldMatrix;
           },
           [](node_ptr_t node, fmtx4_ptr_t mtx) { //
-            node->_transform._worldMatrix = *mtx.get();
+            node->_transform._worldMatrix = mtx;
           });
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
   /////////////////////////////////////////////////////////////////////////////////

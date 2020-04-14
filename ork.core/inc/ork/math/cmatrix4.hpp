@@ -18,7 +18,7 @@
 
 namespace ork {
 
-template <typename T> const Matrix44<T> Matrix44<T>::Identity(){
+template <typename T> const Matrix44<T> Matrix44<T>::Identity() {
   return Matrix44<T>();
 }
 
@@ -909,13 +909,16 @@ template <typename T> void Matrix44<T>::decompose(Vector3<T>& pos, Quaternion<T>
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix44<T>::compose(const Vector3<T>& pos, const Quaternion<T>& qrot, const T& Scale) {
-  *this = qrot.ToMatrix();
+  auto mtx_rotscale = qrot.ToMatrix();
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
-      SetElemYX(i, j, GetElemYX(i, j) * Scale);
+      mtx_rotscale.SetElemYX(i, j, mtx_rotscale.GetElemYX(i, j) * Scale);
     }
   }
-  SetTranslation(pos.GetX(), pos.GetY(), pos.GetZ());
+  fmtx4 mtx_trans;
+  mtx_trans.SetTranslation(pos.GetX(), pos.GetY(), pos.GetZ());
+
+  (*this) = mtx_rotscale * mtx_trans;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

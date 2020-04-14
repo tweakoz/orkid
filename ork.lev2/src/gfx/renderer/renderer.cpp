@@ -122,11 +122,11 @@ void IRenderer::ResetQueue(void) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void IRenderer::RenderCallback(const lev2::CallbackRenderable& cbren) const {
-  auto context = GetTarget();
-  lev2::RenderContextInstData RCID(context->topRenderContextFrameData());
-  RCID.SetRenderer(this);
-
   if (cbren.GetRenderCallback()) {
+    auto context = GetTarget();
+    lev2::RenderContextInstData RCID(context->topRenderContextFrameData());
+    RCID.SetRenderer(this);
+    RCID._dagrenderable = &cbren;
     cbren.GetRenderCallback()(RCID, context, &cbren);
   }
 }
@@ -202,6 +202,7 @@ void DefaultRenderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::le
 
   MatCtx.SetMaterialIndex(0);
   MatCtx.SetRenderer(this);
+  MatCtx._dagrenderable = &ModelRen;
 
   // target->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->isSkinned()), as_ent));
 

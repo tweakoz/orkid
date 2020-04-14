@@ -90,7 +90,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
 
   // TODO - resolve frustum in case of stereo camera
 
-  const ork::fmtx4& matw        = item.mXfData._worldMatrix;
+  const ork::fmtx4& matw        = *item.mXfData._worldMatrix.get();
   bool isPickState              = renderer->GetTarget()->FBI()->isPickState();
   bool isSkinned                = Model->isSkinned();
   ork::fvec3 center_plus_offset = mOffset + Model->boundingCenter();

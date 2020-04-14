@@ -50,7 +50,7 @@ print("inverse(S): %s"%(S.inverse()))
 print("RST: %s"%(R*S*T))
 print("TSR: %s"%(T*S*R))
 
-C = mtx4.compose(x,qx,1)
+C = mtx4.composed(x,qx,1)
 
 print("C: %s"%(C))
 

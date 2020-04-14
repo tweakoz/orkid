@@ -46,7 +46,10 @@ void CallbackDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::I
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
 
   lev2::CallbackRenderable& renderable = renderer->enqueueCallback();
-  renderable.SetMatrix(item.mXfData._worldMatrix);
+  const auto& matrix                   = *item.mXfData._worldMatrix.get();
+  // auto str                             = matrix.dump4x3cn();
+  // printf("XFX: %s\n", str.c_str());
+  renderable.SetMatrix(matrix);
   renderable.SetObject(GetOwner());
   renderable.SetRenderCallback(mRenderCallback);
   renderable.SetSortKey(mSortKey);
