@@ -253,7 +253,7 @@ static void CreateDaeMesh(
   for (auto itp = polys.begin(); itp != polys.end(); itp++) {
     const auto& ply = *itp;
 
-    int inumsides = ply.GetNumSides();
+    int inumsides = ply->GetNumSides();
 
     switch (inumsides) {
       case 3:
@@ -261,7 +261,7 @@ static void CreateDaeMesh(
         int idxbase = idcp_pos->GetIndexCount();
         DaePolys->AddFace(inumsides);
         for (int iv = 0; iv < inumsides; iv++) {
-          int iraw_idx                          = ply.GetVertexID(iv);
+          int iraw_idx                          = ply->GetVertexID(iv);
           idcp_pos->GetIndices()[idxbase + iv]  = iraw_idx;
           idcp_clr0->GetIndices()[idxbase + iv] = iraw_idx;
           idcp_clr1->GetIndices()[idxbase + iv] = iraw_idx;

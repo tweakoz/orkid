@@ -230,15 +230,15 @@ vertex poly::ComputeCenter(const vertexpool& vpool) const {
   }
   float frecip = float(1.0f) / float(inumv);
   for (int iv = 0; iv < inumv; iv++) {
-    int idx         = miVertices[iv];
-    const vertex& v = vpool.VertexPool[idx];
-    vcenter.mPos    = vcenter.mPos + v.mPos;
-    vcenter.mNrm    = vcenter.mNrm + v.mNrm;
+    int idx      = miVertices[iv];
+    auto v       = vpool.VertexPool[idx];
+    vcenter.mPos = vcenter.mPos + v->mPos;
+    vcenter.mNrm = vcenter.mNrm + v->mNrm;
     for (int it = 0; it < vertex::kmaxuvs; it++) {
-      vcenter.mUV[it] = vcenter.mUV[it] + (v.mUV[it] * frecip);
+      vcenter.mUV[it] = vcenter.mUV[it] + (v->mUV[it] * frecip);
     }
     for (int ic = 0; ic < vertex::kmaxcolors; ic++) {
-      vcenter.mCol[ic] += (v.mCol[ic] * frecip);
+      vcenter.mCol[ic] += (v->mCol[ic] * frecip);
     }
   }
   vcenter.mPos = vcenter.mPos * frecip;
@@ -378,15 +378,15 @@ int vertexpool::MergeVertex(const vertex& vtx, int inidx) {
   U64 vhash                        = vtx.Hash();
   HashU64IntMap::const_iterator it = VertexPoolMap.find(vhash);
   if (VertexPoolMap.end() != it) {
-    int iother                = it->second;
-    const vertex& OtherVertex = VertexPool[iother];
+    int iother       = it->second;
+    auto OtherVertex = VertexPool[iother];
     // boost::Crc64 otherCRC = boost::crc64( (const void *) & vtx, sizeof( vertex ) );
     // U32 otherCRC = Crc32( (const unsigned char *) & OtherVertex, sizeof( vertex ) );
     // OrkAssert( Crc32::DoesDataMatch( & vtx, & OtherVertex, sizeof( vertex ) ) );
     ioutidx = iother;
   } else {
     int ipv = (int)VertexPool.size();
-    VertexPool.push_back(vtx);
+    VertexPool.push_back(std::make_shared<vertex>(vtx));
     VertexPoolMap[vhash] = ipv;
     ioutidx              = ipv;
   }

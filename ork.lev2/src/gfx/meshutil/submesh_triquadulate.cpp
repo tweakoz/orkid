@@ -16,37 +16,37 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
   int inump = inpmesh.GetNumPolys();
 
   for (int ip = 0; ip < inump; ip++) {
-    const poly& ply = inpmesh.mMergedPolys[ip];
+    const poly& ply = *inpmesh.mMergedPolys[ip];
 
     int inumv = ply.GetNumSides();
 
     switch (inumv) {
       case 3: {
-        int idx0         = ply.miVertices[0];
-        int idx1         = ply.miVertices[1];
-        int idx2         = ply.miVertices[2];
-        const vertex& v0 = inpmesh.mvpool.VertexPool[idx0];
-        const vertex& v1 = inpmesh.mvpool.VertexPool[idx1];
-        const vertex& v2 = inpmesh.mvpool.VertexPool[idx2];
-        int imerged0     = outmesh.mvpool.MergeVertex(v0);
-        int imerged1     = outmesh.mvpool.MergeVertex(v1);
-        int imerged2     = outmesh.mvpool.MergeVertex(v2);
+        int idx0     = ply.miVertices[0];
+        int idx1     = ply.miVertices[1];
+        int idx2     = ply.miVertices[2];
+        auto v0      = inpmesh.mvpool.VertexPool[idx0];
+        auto v1      = inpmesh.mvpool.VertexPool[idx1];
+        auto v2      = inpmesh.mvpool.VertexPool[idx2];
+        int imerged0 = outmesh.mvpool.MergeVertex(*v0);
+        int imerged1 = outmesh.mvpool.MergeVertex(*v1);
+        int imerged2 = outmesh.mvpool.MergeVertex(*v2);
         outmesh.MergePoly(poly(imerged0, imerged1, imerged2));
         break;
       }
       case 4: {
-        int idx0         = ply.miVertices[0];
-        int idx1         = ply.miVertices[1];
-        int idx2         = ply.miVertices[2];
-        int idx3         = ply.miVertices[3];
-        const vertex& v0 = inpmesh.mvpool.VertexPool[idx0];
-        const vertex& v1 = inpmesh.mvpool.VertexPool[idx1];
-        const vertex& v2 = inpmesh.mvpool.VertexPool[idx2];
-        const vertex& v3 = inpmesh.mvpool.VertexPool[idx3];
-        int imerged0     = outmesh.mvpool.MergeVertex(v0);
-        int imerged1     = outmesh.mvpool.MergeVertex(v1);
-        int imerged2     = outmesh.mvpool.MergeVertex(v2);
-        int imerged3     = outmesh.mvpool.MergeVertex(v3);
+        int idx0     = ply.miVertices[0];
+        int idx1     = ply.miVertices[1];
+        int idx2     = ply.miVertices[2];
+        int idx3     = ply.miVertices[3];
+        auto v0      = inpmesh.mvpool.VertexPool[idx0];
+        auto v1      = inpmesh.mvpool.VertexPool[idx1];
+        auto v2      = inpmesh.mvpool.VertexPool[idx2];
+        auto v3      = inpmesh.mvpool.VertexPool[idx3];
+        int imerged0 = outmesh.mvpool.MergeVertex(*v0);
+        int imerged1 = outmesh.mvpool.MergeVertex(*v1);
+        int imerged2 = outmesh.mvpool.MergeVertex(*v2);
+        int imerged3 = outmesh.mvpool.MergeVertex(*v3);
         outmesh.MergePoly(poly(imerged0, imerged1, imerged2));
         outmesh.MergePoly(poly(imerged2, imerged3, imerged0));
         break;
@@ -79,9 +79,9 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
     ici[1] = inpoly.miVertices[1];
     ici[2] = inpoly.miVertices[2];
 
-    VPos[0] = inpmesh.mvpool.VertexPool[ici[0]].mPos;
-    VPos[1] = inpmesh.mvpool.VertexPool[ici[1]].mPos;
-    VPos[2] = inpmesh.mvpool.VertexPool[ici[2]].mPos;
+    VPos[0] = inpmesh.mvpool.VertexPool[ici[0]]->mPos;
+    VPos[1] = inpmesh.mvpool.VertexPool[ici[1]]->mPos;
+    VPos[2] = inpmesh.mvpool.VertexPool[ici[2]]->mPos;
     P0.CalcPlaneFromTriangle(VPos[0], VPos[1], VPos[2]);
     // fvec4 VArea012[3] = { VPos[0],VPos[1],VPos[2] };
 
@@ -133,9 +133,9 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
         ici[4] = ply.miVertices[1];
         ici[5] = ply.miVertices[2];
 
-        VPos[3] = inpmesh.mvpool.VertexPool[ici[3]].mPos;
-        VPos[4] = inpmesh.mvpool.VertexPool[ici[4]].mPos;
-        VPos[5] = inpmesh.mvpool.VertexPool[ici[5]].mPos;
+        VPos[3] = inpmesh.mvpool.VertexPool[ici[3]]->mPos;
+        VPos[4] = inpmesh.mvpool.VertexPool[ici[4]]->mPos;
+        VPos[5] = inpmesh.mvpool.VertexPool[ici[5]]->mPos;
 
         P1.CalcPlaneFromTriangle(VPos[3], VPos[4], VPos[5]);
         // fvec4 VArea345[3] = { VPos[3],VPos[4],VPos[5] };

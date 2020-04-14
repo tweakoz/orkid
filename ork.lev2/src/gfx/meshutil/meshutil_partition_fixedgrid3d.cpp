@@ -61,8 +61,8 @@ void GridGraph::BeginPreMerge() {
 ////////////////////////////////////////////////////
 
 void GridGraph::PreMergeMesh(const submesh& MeshIn) {
-  const vertexpool& InVPool    = MeshIn.RefVertexPool();
-  const orkvector<poly>& polys = MeshIn.RefPolys();
+  const vertexpool& InVPool = MeshIn.RefVertexPool();
+  const auto& polys         = MeshIn.RefPolys();
 
   int inumpolys = int(polys.size());
 
@@ -77,7 +77,7 @@ void GridGraph::PreMergeMesh(const submesh& MeshIn) {
   float thisareaavg = 0.0f;
 
   for (int ipoly = 0; ipoly < inumpolys; ipoly++) {
-    const poly& ply = polys[ipoly];
+    const poly& ply = *polys[ipoly];
     // vertex center = ply.ComputeCenter( InVPool );
 
     int inumsides = ply.GetNumSides();
@@ -265,8 +265,8 @@ void GridGraph::EndPreMerge() {
 ////////////////////////////////////////////////////
 
 void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
-  const vertexpool& InVPool    = MeshIn.RefVertexPool();
-  const orkvector<poly>& polys = MeshIn.RefPolys();
+  const vertexpool& InVPool = MeshIn.RefVertexPool();
+  const auto& polys         = MeshIn.RefPolys();
 
   int inumpolys = int(polys.size());
 
@@ -278,7 +278,7 @@ void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
   fplane3 topplane, bottomplane, leftplane, rightplane, frontplane, backplane;
 
   for (int ipoly = 0; ipoly < inumpolys; ipoly++) {
-    const poly& ply = polys[ipoly];
+    const poly& ply = *polys[ipoly];
 
     ginumouters++;
 

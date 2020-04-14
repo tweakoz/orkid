@@ -32,6 +32,15 @@ typedef orkmap<std::string, svar64_t> AnnotationMap;
 struct XgmClusterizer;
 struct XgmClusterizerDiced;
 struct XgmClusterizerStd;
+struct edge;
+struct vertex;
+struct vertexpool;
+struct poly;
+
+using edge_ptr_t       = std::shared_ptr<edge>;
+using vertex_ptr_t     = std::shared_ptr<vertex>;
+using vertexpool_ptr_t = std::shared_ptr<vertexpool>;
+using poly_ptr_t       = std::shared_ptr<poly>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -62,13 +71,12 @@ typedef std::unordered_map<int, int, Hash3232> HashIntIntMap;
 
 static const int kmaxpolysperedge = 4;
 
-class edge {
+struct edge {
   int miVertexA;
   int miVertexB;
   int miNumConnectedPolys;
   int miConnectedPolys[kmaxpolysperedge];
 
-public:
   int GetVertexID(int iv) const {
     int id = -1;
 
@@ -207,17 +215,17 @@ struct vertexpool {
   static const vertexpool EmptyPool;
 
   HashU64IntMap VertexPoolMap;
-  orkvector<vertex> VertexPool;
+  orkvector<vertex_ptr_t> VertexPool;
 
   int MergeVertex(const vertex& vtx, int idx = -1);
 
   const vertex& GetVertex(int ivid) const {
     OrkAssert(orkvector<vertex>::size_type(ivid) < VertexPool.size());
-    return VertexPool[ivid];
+    return *VertexPool[ivid].get();
   }
   vertex& GetVertex(int ivid) {
     OrkAssert(orkvector<vertex>::size_type(ivid) < VertexPool.size());
-    return VertexPool[ivid];
+    return *VertexPool[ivid].get();
   }
 
   size_t GetNumVertices(void) const {
@@ -415,7 +423,7 @@ struct submesh {
   const edge& RefEdge(U64 edgekey) const;
   poly& RefPoly(int i);
   const poly& RefPoly(int i) const;
-  const orkvector<poly>& RefPolys() const;
+  const orkvector<poly_ptr_t>& RefPolys() const;
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -464,9 +472,9 @@ struct submesh {
   float mfSurfaceArea;
   vertexpool mvpool;
   HashU64IntMap mpolyhashmap;
-  orkvector<edge> mEdges;
+  orkvector<edge_ptr_t> mEdges;
   HashU64IntMap mEdgeMap;
-  orkvector<poly> mMergedPolys;
+  orkvector<poly_ptr_t> mMergedPolys;
   int mPolyTypeCounter[kmaxsidesperpoly];
   bool mbMergeEdges;
 

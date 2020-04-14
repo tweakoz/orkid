@@ -124,8 +124,10 @@ void MergeToolMeshQueueItem::DoIt(int ithread) const {
       continue;
     }
     int merged[kmaxsidesperpoly];
-    for (int i = 0; i < inumv; i++)
-      merged[i] = mpDestSubMesh->MergeVertex(mpSourceSubMesh->RefVertexPool().VertexPool[ply.miVertices[i]]);
+    for (int i = 0; i < inumv; i++) {
+      auto src  = mpSourceSubMesh->RefVertexPool().VertexPool[ply.miVertices[i]];
+      merged[i] = mpDestSubMesh->MergeVertex(*src);
+    }
     poly polyA(merged, inumv);
     polyA.SetAnnoMap(ply.GetAnnoMap());
     mpDestSubMesh->MergePoly(polyA);

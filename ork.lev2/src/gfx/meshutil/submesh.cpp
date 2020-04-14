@@ -97,10 +97,10 @@ void submesh::MergeAnnos(const AnnotationMap& mrgannos, bool boverwrite) {
 void submesh::ImportPolyAnnotations(const annopolylut& apl) {
   int inumpolys = (int)mMergedPolys.size();
   for (int ip = 0; ip < inumpolys; ip++) {
-    poly& ply           = mMergedPolys[ip];
-    const AnnoMap* amap = apl.Find(*this, ply);
+    auto ply            = mMergedPolys[ip];
+    const AnnoMap* amap = apl.Find(*this, *ply);
     if (amap) {
-      ply.SetAnnoMap(amap);
+      ply->SetAnnoMap(amap);
     }
   }
 }
@@ -110,9 +110,9 @@ void submesh::ImportPolyAnnotations(const annopolylut& apl) {
 void submesh::ExportPolyAnnotations(annopolylut& apl) const {
   int inumpolys = (int)mMergedPolys.size();
   for (int ip = 0; ip < inumpolys; ip++) {
-    const poly& ply     = mMergedPolys[ip];
-    U64 uhash           = apl.HashItem(*this, ply);
-    const AnnoMap* amap = ply.GetAnnoMap();
+    auto ply            = mMergedPolys[ip];
+    U64 uhash           = apl.HashItem(*this, *ply);
+    const AnnoMap* amap = ply->GetAnnoMap();
     apl.mAnnoMap[uhash] = amap;
   }
 }
@@ -141,7 +141,7 @@ const edge& submesh::RefEdge(U64 edgekey) const {
   OrkAssert(it != mEdgeMap.end());
   int index = it->second;
   OrkAssert(index < int(mEdges.size()));
-  return mEdges[index];
+  return *mEdges[index];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -155,19 +155,19 @@ int submesh::MergeVertex(const vertex& vtx, int idx) {
 
 poly& submesh::RefPoly(int i) {
   OrkAssert(orkvector<int>::size_type(i) < mMergedPolys.size());
-  return mMergedPolys[i];
+  return *mMergedPolys[i];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 const poly& submesh::RefPoly(int i) const {
   OrkAssert(orkvector<int>::size_type(i) < mMergedPolys.size());
-  return mMergedPolys[i];
+  return *mMergedPolys[i];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const orkvector<poly>& submesh::RefPolys() const {
+const orkvector<poly_ptr_t>& submesh::RefPolys() const {
   return mMergedPolys;
 }
 
@@ -206,7 +206,7 @@ void submesh::GetEdges(const poly& ply, orkvector<edge>& Edges) const {
     HashU64IntMap::const_iterator it = mEdgeMap.find(ue);
     if (it != mEdgeMap.end()) {
       int ie = it->second;
-      Edges.push_back(mEdges[ie]);
+      Edges.push_back(*mEdges[ie]);
       icntf++;
     }
     icnt++;
@@ -248,11 +248,11 @@ void submesh::GetConnectedPolys(const edge& ed, orkset<int>& output) const {
   U64 keyA                             = ed.GetHashKey();
   HashU64IntMap::const_iterator itfind = mEdgeMap.find(keyA);
   if (itfind != mEdgeMap.end()) {
-    int ie              = itfind->second;
-    const edge& edfound = mEdges[ie];
-    int inump           = edfound.GetNumConnectedPolys();
+    int ie       = itfind->second;
+    auto edfound = mEdges[ie];
+    int inump    = edfound->GetNumConnectedPolys();
     for (int ip = 0; ip < inump; ip++) {
-      int ipi = edfound.GetConnectedPoly(ip);
+      int ipi = edfound->GetConnectedPoly(ip);
       output.insert(ipi);
     }
   }
@@ -345,7 +345,7 @@ void submesh::MergePoly(const poly& ply) {
       }
     }
     nply.SetAnnoMap(ply.GetAnnoMap());
-    mMergedPolys.push_back(nply);
+    mMergedPolys.push_back(std::make_shared<poly>(nply));
     //////////////////////////////////////////////////
     // add n sided counters
     mPolyTypeCounter[inumv]++;
@@ -365,17 +365,17 @@ U64 submesh::MergeEdge(const edge& ed, int ipolyindex) {
   int ieee = -1;
 
   if (mEdgeMap.end() != itfind) {
-    ieee        = itfind->second;
-    edge& other = mEdges[ieee];
-    U64 crcB    = other.GetHashKey();
-    OrkAssert(ed.Matches(other));
+    ieee       = itfind->second;
+    auto other = mEdges[ieee];
+    U64 crcB   = other->GetHashKey();
+    OrkAssert(ed.Matches(*other));
   } else {
     ieee = (int)mEdges.size();
-    mEdges.push_back(ed);
+    mEdges.push_back(std::make_shared<edge>(ed));
     mEdgeMap[crcA] = ieee;
   }
   if (ipolyindex >= 0) {
-    mEdges[ieee].ConnectToPoly(ipolyindex);
+    mEdges[ieee]->ConnectToPoly(ipolyindex);
   }
 
   mAABoxDirty = true;
