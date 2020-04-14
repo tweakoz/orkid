@@ -17,22 +17,22 @@ static const std::string gnomatch("");
 ///////////////////////////////////////////////////////////////////////////////
 
 const std::string& AnnoMap::GetAnnotation(const std::string& annoname) const {
-  orkmap<std::string, std::string>::const_iterator it = mAnnotations.find(annoname);
-  if (it != mAnnotations.end()) {
+  orkmap<std::string, std::string>::const_iterator it = _annotations.find(annoname);
+  if (it != _annotations.end()) {
     return it->second;
   }
   return gnomatch;
 }
 
 void AnnoMap::SetAnnotation(const std::string& key, const std::string& val) {
-  mAnnotations[key] = val;
+  _annotations[key] = val;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 AnnoMap* AnnoMap::Fork() const {
   AnnoMap* newannomap      = new AnnoMap;
-  newannomap->mAnnotations = mAnnotations;
+  newannomap->_annotations = _annotations;
   return newannomap;
 }
 
@@ -309,8 +309,8 @@ U64 poly::HashIndices(void) const {
 
 const std::string& poly::GetAnnotation(const std::string& annoname) const {
   if (mAnnotationSet) {
-    orkmap<std::string, std::string>::const_iterator it = mAnnotationSet->mAnnotations.find(annoname);
-    if (it != mAnnotationSet->mAnnotations.end()) {
+    orkmap<std::string, std::string>::const_iterator it = mAnnotationSet->_annotations.find(annoname);
+    if (it != mAnnotationSet->_annotations.end()) {
       return it->second;
     }
   }

@@ -26,9 +26,9 @@ void Mesh::WriteToRgmFile(const file::Path& outpath) const {
   chunkfile::OutputStream* HeaderStream    = chunkwriter.AddStream("header");
   chunkfile::OutputStream* ModelDataStream = chunkwriter.AddStream("modeldata");
   ///////////////////////////////////////////////////////////
-  int inumannos = (int)mAnnotations.size();
+  int inumannos = (int)_annotations.size();
   HeaderStream->AddItem(inumannos);
-  for (orkmap<std::string, std::string>::const_iterator it = mAnnotations.begin(); it != mAnnotations.end(); it++) {
+  for (orkmap<std::string, std::string>::const_iterator it = _annotations.begin(); it != _annotations.end(); it++) {
     const std::string& key = it->first;
     const std::string& val = it->second;
     int ikey               = chunkwriter.stringIndex(key.c_str());

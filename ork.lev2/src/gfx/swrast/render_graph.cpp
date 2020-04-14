@@ -393,9 +393,9 @@ static rend_srcmesh* LoadRgm( const char* pfname, RenderData& rdata )
 
 	ShaderBuilder builder(&RayEngine,&rdata);
 	ork::RgmModel* prgmmodel = ork::LoadRgmFile( pfname, builder );
-	ork::fvec3 dist = (prgmmodel->mAABox.Max()-prgmmodel->mAABox.Min());
+	ork::fvec3 dist = (prgmmodel->_aaBox.Max()-prgmmodel->_aaBox.Min());
 
-	poutmesh->mTarget = (prgmmodel->mAABox.Min()+prgmmodel->mAABox.Max())*0.5f;
+	poutmesh->mTarget = (prgmmodel->_aaBox.Min()+prgmmodel->_aaBox.Max())*0.5f;
 	poutmesh->mEye = poutmesh->mTarget-ork::fvec3(0.0f,0.0f,dist.Mag());
 
 	int inumsub = prgmmodel->minumsubs;

@@ -96,7 +96,7 @@ struct FxShaderParam {
   FxShaderParamInBlockInfo* _blockinfo = nullptr;
   FxShaderParam* mChildParam;
 
-  orklut<std::string, std::string> mAnnotations;
+  orklut<std::string, std::string> _annotations;
   FxShaderParam(void* ih = 0);
   void* GetPlatformHandle(void) const {
     return mInternalHandle;

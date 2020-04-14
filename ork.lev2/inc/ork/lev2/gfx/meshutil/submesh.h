@@ -238,7 +238,7 @@ struct vertexpool {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct AnnoMap {
-  orkmap<std::string, std::string> mAnnotations;
+  orkmap<std::string, std::string> _annotations;
   AnnoMap* Fork() const;
   static orkset<AnnoMap*> gAllAnnoSets;
   void SetAnnotation(const std::string& key, const std::string& val);
@@ -360,10 +360,10 @@ struct submesh {
 
   void setStringAnnotation(const char* annokey, std::string annoval);
   AnnotationMap& annotations() {
-    return mAnnotations;
+    return _annotations;
   }
   const AnnotationMap& annotations() const {
-    return mAnnotations;
+    return _annotations;
   }
 
   void MergeAnnos(const AnnotationMap& mrgannos, bool boverwrite);
@@ -371,15 +371,15 @@ struct submesh {
   svar64_t annotation(const char* annokey) const;
 
   template <typename T> T& typedAnnotation(const std::string annokey) {
-    auto& anno = mAnnotations[annokey];
+    auto& anno = _annotations[annokey];
     if (anno.IsA<T>())
       return anno.Get<T>();
     return anno.Make<T>();
   }
 
   template <typename T> const T& typedAnnotation(const std::string annokey) const {
-    auto it = mAnnotations.find(annokey);
-    if (it != mAnnotations.end()) {
+    auto it = _annotations.find(annokey);
+    if (it != _annotations.end()) {
       const auto& anno = it->second;
       return anno.Get<T>();
     }
@@ -391,10 +391,10 @@ struct submesh {
   //////////////////////////////////////////////////////////////////////////////
 
   const vertexpool& RefVertexPool() const {
-    return mvpool;
+    return _vtxpool;
   }
   void SetVertexPool(const vertexpool& vpool) {
-    mvpool = vpool;
+    _vtxpool = vpool;
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -407,7 +407,6 @@ struct submesh {
   //////////////////////////////////////////////////////////////////////////////
 
   vertex_ptr_t newMergeVertex(const vertex& vtx);
-  int MergeVertex(const vertex& vtx, int idx = -1);
   edge_ptr_t MergeEdge(const edge& ed, int ipolyindex = -1);
   void MergePoly(const poly& ply);
   void MergeSubMesh(const submesh& oth);
@@ -448,19 +447,19 @@ struct submesh {
   /////////////////////////////////////////////////////////////////////////
 
   std::string name;
-  AnnotationMap mAnnotations;
-  float mfSurfaceArea;
-  vertexpool mvpool;
-  HashU64IntMap mpolyhashmap;
+  AnnotationMap _annotations;
+  float _surfaceArea;
+  vertexpool _vtxpool;
   std::unordered_map<uint64_t, edge_ptr_t, HashU6432> _edgemap;
-  orkvector<poly_ptr_t> mMergedPolys;
-  int mPolyTypeCounter[kmaxsidesperpoly];
-  bool mbMergeEdges;
+  std::unordered_map<uint64_t, poly_ptr_t, HashU6432> _polymap;
+  orkvector<poly_ptr_t> _orderedPolys;
+  int _polyTypeCounter[kmaxsidesperpoly];
+  bool _mergeEdges;
 
   /////////////////////////////////////
   // these are mutable so we can get bounding boxes faster with const refs to Mesh's
-  mutable AABox mAABox;
-  mutable bool mAABoxDirty;
+  mutable AABox _aaBox;
+  mutable bool _aaBoxDirty;
   /////////////////////////////////////
 };
 

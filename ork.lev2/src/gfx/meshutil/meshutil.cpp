@@ -15,7 +15,7 @@ namespace ork { namespace meshutil {
 /////////////////////////////////////////////////////////////////////////
 
 Mesh::Mesh()
-    : mbMergeEdges(true) {
+    : _mergeEdges(true) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -75,7 +75,7 @@ void Mesh::Dump(const std::string& comment) const {
               val.mMaterialName.c_str());
     }
     fprintf(fout, "////////////////////////////////////////////////\n");
-    for (orkmap<std::string, std::string>::const_iterator itm = mAnnotations.begin(); itm != mAnnotations.end(); itm++) {
+    for (orkmap<std::string, std::string>::const_iterator itm = _annotations.begin(); itm != _annotations.end(); itm++) {
       const std::string& key = itm->first;
       const std::string& val = itm->second;
       fprintf(fout, "// Mesh::annokey<%s> annoval<%s>\n", key.c_str(), val.c_str());
@@ -101,7 +101,7 @@ void Mesh::Dump(const std::string& comment) const {
       }
       for (orkset<const AnnoMap*>::const_iterator it2 = annosets.begin(); it2 != annosets.end(); it2++) {
         const AnnoMap* amapp                         = (*it2);
-        const orkmap<std::string, std::string>& amap = amapp->mAnnotations;
+        const orkmap<std::string, std::string>& amap = amapp->_annotations;
         for (orkmap<std::string, std::string>::const_iterator it3 = amap.begin(); it3 != amap.end(); it3++) {
           const std::string& key = it3->first;
           const std::string& val = it3->second;
@@ -146,18 +146,18 @@ void Mesh::SetAnnotation(const char* annokey, const char* annoval) {
   std::string aval = "";
   if (annoval != 0)
     aval = annoval;
-  mAnnotations[std::string(annokey)] = aval;
+  _annotations[std::string(annokey)] = aval;
 }
 void submesh::setStringAnnotation(const char* annokey, std::string annoval) {
-  mAnnotations[std::string(annokey)] = annoval;
+  _annotations[std::string(annokey)] = annoval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 const char* Mesh::GetAnnotation(const char* annokey) const {
   static const char* defret("");
-  orkmap<std::string, std::string>::const_iterator it = mAnnotations.find(std::string(annokey));
-  if (it != mAnnotations.end()) {
+  orkmap<std::string, std::string>::const_iterator it = _annotations.find(std::string(annokey));
+  if (it != _annotations.end()) {
     return (*it).second.c_str();
   }
   return defret;
@@ -166,9 +166,9 @@ const char* Mesh::GetAnnotation(const char* annokey) const {
 ///////////////////////////////////////////////////////////////////////////////
 /*
 void submesh::SplitOnAnno(Mesh& out, const std::string& annokey) const {
-  int inumpolys = (int)mMergedPolys.size();
+  int inumpolys = (int)_orderedPolys.size();
   for (int ip = 0; ip < inumpolys; ip++) {
-    const poly& ply    = mMergedPolys[ip];
+    const poly& ply    = _orderedPolys[ip];
     std::string pgroup = ply.GetAnnotation(annokey);
     if (pgroup != "") {
       submesh& sub = out.MergeSubMesh(pgroup.c_str());
@@ -190,11 +190,11 @@ void submesh::SplitOnAnno(Mesh& out, const std::string& annokey) const {
 ///////////////////////////////////////////////////////////////////////////////
 /*
 void submesh::SplitOnAnno(Mesh& out, const std::string& prefix, const std::string& annokey) const {
-  int inumpolys = (int)mMergedPolys.size();
+  int inumpolys = (int)_orderedPolys.size();
   AnnotationMap merge_annos;
   merge_annos["SplitPrefix"] = prefix;
   for (int ip = 0; ip < inumpolys; ip++) {
-    const poly& ply         = mMergedPolys[ip];
+    const poly& ply         = _orderedPolys[ip];
     std::string pgroup      = ply.GetAnnotation(annokey);
     std::string merged_name = prefix + std::string("_") + pgroup;
     if (pgroup != "") {
@@ -217,9 +217,9 @@ void submesh::SplitOnAnno(Mesh& out, const std::string& prefix, const std::strin
 ///////////////////////////////////////////////////////////////////////////////
 
 void submesh::SplitOnAnno(Mesh& out, const std::string& annokey, const AnnotationMap& mrgannos) const {
-  int inumpolys = (int)mMergedPolys.size();
+  int inumpolys = (int)_orderedPolys.size();
   for (int ip = 0; ip < inumpolys; ip++) {
-    const poly& ply    = mMergedPolys[ip];
+    const poly& ply    = _orderedPolys[ip];
     std::string pgroup = ply.GetAnnotation(annokey);
     if (pgroup != "") {
       submesh& sub = out.MergeSubMesh(pgroup.c_str());

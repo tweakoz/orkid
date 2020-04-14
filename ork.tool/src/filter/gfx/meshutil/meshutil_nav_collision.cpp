@@ -116,14 +116,14 @@ bool NAVOutput(const file::Path& outpath, const ToolMesh& inmesh) {
 	{
 		submesh *group = it->second;
 
-		int inumattr = group->mAnnotations.size();
+		int inumattr = group->_annotations.size();
 		DataStream->AddItem(inumattr);
 
 		std::string materialname = materialnames.find(group->name)->second;
 		fprintf(fdbgout, "GroupAttr<%s, %d>\n", materialname.c_str(), inumattr);
 
 		int num = 0;
-		for(orkmap<std::string, std::string>::const_iterator it = group->mAnnotations.begin(); it != group->mAnnotations.end(); it++)
+		for(orkmap<std::string, std::string>::const_iterator it = group->_annotations.begin(); it != group->_annotations.end(); it++)
 		{
 			fprintf(fdbgout, "Attr<%d> %s=%s\n", num, it->first.c_str(), it->second.c_str());
 

@@ -85,7 +85,7 @@ bool CollisionTester::SphereAABoxTest( const Sphere& sph, const AABox& aab )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CollisionTester::FrustumAABoxTest( const Frustum& frus, const AABox& box )
+bool CollisionTester::Frustu_aaBoxTest( const Frustum& frus, const AABox& box )
 {
 	OrkAssertNotImpl();
 	return true;

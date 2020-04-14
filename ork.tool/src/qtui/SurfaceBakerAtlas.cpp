@@ -396,7 +396,7 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 					const ork::MeshUtil::submesh* sub_mesh = item.mPolyGroup;
 					const std::string& material_pgname = item.mMaterialGroupName;
 					const std::string& bakinggrpname = item.mBakingGroupName;
-					const MeshUtil::submesh::AnnotationMap& annomap =  sub_mesh->mAnnotations;
+					const MeshUtil::submesh::AnnotationMap& annomap =  sub_mesh->_annotations;
 					MeshUtil::submesh::AnnotationMap::const_iterator ita = annomap.find("shadinggroup");
 					bgroupname = bakinggrpname;
 
@@ -478,7 +478,7 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 						const ork::MeshUtil::submesh* sub_mesh = item.mPolyGroup;
 						const std::string& material_pgname = item.mMaterialGroupName;
 						const std::string& bakinggrpname = item.mBakingGroupName;
-						const MeshUtil::submesh::AnnotationMap& annomap =  sub_mesh->mAnnotations;
+						const MeshUtil::submesh::AnnotationMap& annomap =  sub_mesh->_annotations;
 						MeshUtil::submesh::AnnotationMap::const_iterator ita = annomap.find("shadinggroup");
 						bgroupname = bakinggrpname;
 						bakinggroup_submesh.MergeSubMesh( *sub_mesh );
@@ -490,7 +490,7 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 					///////////////////////////////////////////
 					//ork::MeshUtil::submesh* submesh = bakinggroup_mesh.FindSubMesh(bgroupname);
 					int inumpolys = bakinggroup_submesh.GetNumPolys();
-					float fsurface_area = bakinggroup_submesh.mfSurfaceArea;
+					float fsurface_area = bakinggroup_submesh._surfaceArea;
 					float fnumpolys = float(inumpolys);
 					float favgareaperpoly = fsurface_area/fnumpolys;
 					int inumtexels = baking_group->GetResolution()*baking_group->GetResolution();
@@ -742,7 +742,7 @@ static void* AtlasSplitJobThread( void* pval )
 			qq.erase(it);
 			q->mJobSet.UnLock();
 
-			int inumpolys = qitem.mpSourceSubMesh->mMergedPolys.size();
+			int inumpolys = qitem.mpSourceSubMesh->_orderedPolys.size();
 			for( int ip=0; ip<inumpolys; ip++ )
 			{	const MeshUtil::poly& ply = qitem.mpSourceSubMesh->RefPoly(ip);
 				const std::string& pmaterial = ply.GetAnnotation( "material" );
@@ -801,7 +801,7 @@ void WriteAtlasedDae( const MeshUtil::Mesh& tmesh, const file::Path& OutputPath 
 			const std::string& shadinggroup = pgroup.GetAnnotation( "ShadingGroup" );
 			const std::string& vtxlit = pgroup.GetAnnotation( "vtxlit" );
 
-			int inumpolys = pgroup.mMergedPolys.size();
+			int inumpolys = pgroup._orderedPolys.size();
 			orkset<std::string> MaterialSet;
 			///////////////////////////////////////////////////
 			// collect materials

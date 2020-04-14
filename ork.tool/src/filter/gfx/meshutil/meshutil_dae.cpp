@@ -1175,7 +1175,7 @@ void ToolMesh::ReadFromDaeFile(const file::Path& BasePath, DaeReadOpts& readopts
       auto& out_submesh = MergeSubMesh(ShadingGroupName.c_str());
 
       if (readopts.mbMergeMeshShGrpName) {
-        out_submesh.mAnnotations["shadinggroup"] = ShadingGroupName;
+        out_submesh._annotations["shadinggroup"] = ShadingGroupName;
       }
 
       if (FCDMaterial* material = MatLib->FindDaeId(MaterialName.c_str())) {
@@ -1189,7 +1189,7 @@ void ToolMesh::ReadFromDaeFile(const file::Path& BasePath, DaeReadOpts& readopts
                 std::string shortName = (shortNameAttribute != NULL) ? shortNameAttribute->GetValue().c_str() : attributeName;
                 if (attributeNode->GetChildNodeCount() == 0) {
                   std::string value                   = attributeNode->GetContent();
-                  out_submesh.mAnnotations[shortName] = value;
+                  out_submesh._annotations[shortName] = value;
                 }
               }
             }

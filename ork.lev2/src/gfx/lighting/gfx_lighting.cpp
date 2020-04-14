@@ -264,7 +264,7 @@ bool SpotLight::AffectsSphere(const fvec3& center, float radius) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool SpotLight::AffectsAABox(const AABox& aab) {
-  return CollisionTester::FrustumAABoxTest(mWorldSpaceLightFrustum, aab);
+  return CollisionTester::Frustu_aaBoxTest(mWorldSpaceLightFrustum, aab);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

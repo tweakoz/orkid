@@ -18,16 +18,16 @@ const vertexpool vertexpool::EmptyPool;
 /////////////////////////////////////////////////////////////////////////
 
 submesh::submesh(const vertexpool& vpool)
-    : mvpool(vpool)
-    , mfSurfaceArea(0)
-    , mbMergeEdges(true) {
-  // mMergedPolys.reserve(32<<10);
-  // if( mbMergeEdges )
+    : _vtxpool(vpool)
+    , _surfaceArea(0)
+    , _mergeEdges(true) {
+  // _orderedPolys.reserve(32<<10);
+  // if( _mergeEdges )
   {
     // mEdges.reserve(32<<10);
   }
   for (int i = 0; i < kmaxsidesperpoly; i++) {
-    mPolyTypeCounter[i] = 0;
+    _polyTypeCounter[i] = 0;
   }
 }
 
@@ -39,12 +39,12 @@ submesh::~submesh() {
   static size_t gc5 = 0;
   static size_t gc6 = 0;
 
-  size_t ic1 = mpolyhashmap.size();
+  size_t ic1 = _polymap.size();
   size_t ic2 = _edgemap.size();
-  size_t ic3 = mvpool.VertexPoolMap.size();
-  size_t ic4 = mvpool.VertexPool.size();
+  size_t ic3 = _vtxpool.VertexPoolMap.size();
+  size_t ic4 = _vtxpool.VertexPool.size();
   size_t ic5 = _edgemap.size();
-  size_t ic6 = mMergedPolys.size();
+  size_t ic6 = _orderedPolys.size();
   gc1 += ic1;
 
   gc2 += ic2;
@@ -71,8 +71,8 @@ submesh::~submesh() {
 
 svar64_t submesh::annotation(const char* annokey) const {
   static const char* defret("");
-  auto it = mAnnotations.find(std::string(annokey));
-  if (it != mAnnotations.end()) {
+  auto it = _annotations.find(std::string(annokey));
+  if (it != _annotations.end()) {
     return (*it).second;
   }
   return defret;
@@ -83,9 +83,9 @@ void submesh::MergeAnnos(const AnnotationMap& mrgannos, bool boverwrite) {
     const std::string& key = it->first;
     const auto& val        = it->second;
 
-    AnnotationMap::iterator itf = mAnnotations.find(key);
-    if (itf == mAnnotations.end()) {
-      mAnnotations[key] = val;
+    AnnotationMap::iterator itf = _annotations.find(key);
+    if (itf == _annotations.end()) {
+      _annotations[key] = val;
     } else if (boverwrite) {
       itf->second = val;
     }
@@ -95,9 +95,9 @@ void submesh::MergeAnnos(const AnnotationMap& mrgannos, bool boverwrite) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void submesh::ImportPolyAnnotations(const annopolylut& apl) {
-  int inumpolys = (int)mMergedPolys.size();
+  int inumpolys = (int)_orderedPolys.size();
   for (int ip = 0; ip < inumpolys; ip++) {
-    auto ply            = mMergedPolys[ip];
+    auto ply            = _orderedPolys[ip];
     const AnnoMap* amap = apl.Find(*this, *ply);
     if (amap) {
       ply->SetAnnoMap(amap);
@@ -108,9 +108,9 @@ void submesh::ImportPolyAnnotations(const annopolylut& apl) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void submesh::ExportPolyAnnotations(annopolylut& apl) const {
-  int inumpolys = (int)mMergedPolys.size();
+  int inumpolys = (int)_orderedPolys.size();
   for (int ip = 0; ip < inumpolys; ip++) {
-    auto ply            = mMergedPolys[ip];
+    auto ply            = _orderedPolys[ip];
     U64 uhash           = apl.HashItem(*this, *ply);
     const AnnoMap* amap = ply->GetAnnoMap();
     apl.mAnnoMap[uhash] = amap;
@@ -120,17 +120,17 @@ void submesh::ExportPolyAnnotations(annopolylut& apl) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 const AABox& submesh::aabox() const {
-  if (mAABoxDirty) {
-    mAABox.BeginGrow();
+  if (_aaBoxDirty) {
+    _aaBox.BeginGrow();
     int inumvtx = (int)RefVertexPool().GetNumVertices();
     for (int i = 0; i < inumvtx; i++) {
       const vertex& v = RefVertexPool().GetVertex(i);
-      mAABox.Grow(v.mPos);
+      _aaBox.Grow(v.mPos);
     }
-    mAABox.EndGrow();
-    mAABoxDirty = false;
+    _aaBox.EndGrow();
+    _aaBoxDirty = false;
   }
-  return mAABox;
+  return _aaBox;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -144,40 +144,35 @@ const edge& submesh::RefEdge(U64 edgekey) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int submesh::MergeVertex(const vertex& vtx, int idx) {
-  mAABoxDirty = true;
-  return mvpool.MergeVertex(vtx, idx);
-}
-
 vertex_ptr_t submesh::newMergeVertex(const vertex& vtx) {
-  mAABoxDirty = true;
-  return mvpool.newMergeVertex(vtx);
+  _aaBoxDirty = true;
+  return _vtxpool.newMergeVertex(vtx);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 poly& submesh::RefPoly(int i) {
-  OrkAssert(orkvector<int>::size_type(i) < mMergedPolys.size());
-  return *mMergedPolys[i];
+  OrkAssert(orkvector<int>::size_type(i) < _orderedPolys.size());
+  return *_orderedPolys[i];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 const poly& submesh::RefPoly(int i) const {
-  OrkAssert(orkvector<int>::size_type(i) < mMergedPolys.size());
-  return *mMergedPolys[i];
+  OrkAssert(orkvector<int>::size_type(i) < _orderedPolys.size());
+  return *_orderedPolys[i];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 const orkvector<poly_ptr_t>& submesh::RefPolys() const {
-  return mMergedPolys;
+  return _orderedPolys;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void submesh::FindNSidedPolys(orkvector<int>& output, int inumsides) const {
-  int inump = (int)mMergedPolys.size();
+  int inump = (int)_orderedPolys.size();
   for (int i = 0; i < inump; i++) {
     const poly& ply = RefPoly(i);
     if (ply.GetNumSides() == inumsides) {
@@ -191,10 +186,10 @@ void submesh::FindNSidedPolys(orkvector<int>& output, int inumsides) const {
 int submesh::GetNumPolys(int inumsides) const {
   int iret = 0;
   if (0 == inumsides) {
-    iret = (int)mMergedPolys.size();
+    iret = (int)_orderedPolys.size();
   } else {
     OrkAssert(inumsides < kmaxsidesperpoly);
-    iret = mPolyTypeCounter[inumsides];
+    iret = _polyTypeCounter[inumsides];
   }
   return iret;
 }
@@ -330,13 +325,12 @@ void submesh::MergePoly(const poly& ply) {
   }
   //////////////////////////////
   // dupe check
-  U64 ucrc                      = ply.HashIndices();
-  HashU64IntMap::iterator itfhm = mpolyhashmap.find(ucrc);
+  U64 ucrc   = ply.HashIndices();
+  auto itfhm = _polymap.find(ucrc);
   ///////////////////////////////
-  if (itfhm == mpolyhashmap.end()) // no match
+  if (itfhm == _polymap.end()) // no match
   {
-    int inewpi         = (int)mMergedPolys.size();
-    mpolyhashmap[ucrc] = inewpi;
+    int inewpi = (int)_orderedPolys.size();
     //////////////////////////////////////////////////
     // connect to vertices
     for (int i = 0; i < inumv; i++) {
@@ -345,29 +339,31 @@ void submesh::MergePoly(const poly& ply) {
     }
     //////////////////////////////////////////////////
     // add edges
-    if (mbMergeEdges) {
+    if (_mergeEdges) {
       for (int i = 0; i < inumv; i++) {
         int i0  = (i);
         int i1  = (i + 1) % inumv;
         int iv0 = ply.GetVertexID(i0);
         int iv1 = ply.GetVertexID(i1);
-        auto v0 = mvpool.VertexPool[iv0];
-        auto v1 = mvpool.VertexPool[iv1];
+        auto v0 = _vtxpool.VertexPool[iv0];
+        auto v1 = _vtxpool.VertexPool[iv1];
 
         edge Edge(v0, v1);
         nply.mEdges[i] = MergeEdge(Edge, ipolyindex);
       }
     }
     nply.SetAnnoMap(ply.GetAnnoMap());
-    mMergedPolys.push_back(std::make_shared<poly>(nply));
+    auto new_poly = std::make_shared<poly>(nply);
+    _orderedPolys.push_back(new_poly);
+    _polymap[ucrc] = new_poly;
     //////////////////////////////////////////////////
     // add n sided counters
-    mPolyTypeCounter[inumv]++;
+    _polyTypeCounter[inumv]++;
     //////////////////////////////////////////////////
-    float farea = ply.ComputeArea(mvpool, ork::fmtx4::Identity());
-    mfSurfaceArea += farea;
+    float farea = ply.ComputeArea(_vtxpool, ork::fmtx4::Identity());
+    _surfaceArea += farea;
   }
-  mAABoxDirty = true;
+  _aaBoxDirty = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -390,7 +386,7 @@ edge_ptr_t submesh::MergeEdge(const edge& ed, int ipolyindex) {
     rval->ConnectToPoly(ipolyindex);
   }
 
-  mAABoxDirty = true;
+  _aaBoxDirty = true;
   return rval;
 }
 

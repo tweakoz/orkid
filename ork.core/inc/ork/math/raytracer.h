@@ -151,12 +151,12 @@ public:
     return mPrimitives;
   }
   AABox& GetAABox() {
-    return mAABox;
+    return _aaBox;
   }
 
 private:
   orkvector<const Primitive*> mPrimitives;
-  AABox mAABox;
+  AABox _aaBox;
 };
 
 struct RgmLight {
@@ -219,7 +219,7 @@ struct RgmModel {
   RgmSubMesh* msubmeshes;
   orkmap<std::string, RgmSubMesh*> mSubMeshMap;
   orkmap<std::string, std::string> mAnnos;
-  AABox mAABox;
+  AABox _aaBox;
 };
 struct RgmLightContainer {
   orkmap<std::string, RgmLight> mLights;

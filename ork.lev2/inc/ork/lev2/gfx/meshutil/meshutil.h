@@ -115,7 +115,7 @@ struct MaterialInfo {
   ork::lev2::GfxMaterial* _orkMaterial;
   fvec4 mEmissiveColor;
   fvec4 mTransparencyColor;
-  orkmap<std::string, std::string> mAnnotations;
+  orkmap<std::string, std::string> _annotations;
 
   MaterialInfo();
   virtual ~MaterialInfo() {
@@ -195,7 +195,7 @@ struct Mesh {
   /////////////////////////////////////////////////////////////////////////
 
   void SetMergeEdges(bool bflg) {
-    mbMergeEdges = bflg;
+    _mergeEdges = bflg;
   }
 
   const ork::lev2::MaterialMap& RefFxmMaterialMap() const {
@@ -290,11 +290,11 @@ struct Mesh {
   fvec4 mRangeScale;
   fvec4 mRangeTranslate;
   fmtx4 mMatRange;
-  orkmap<std::string, std::string> mAnnotations;
+  orkmap<std::string, std::string> _annotations;
   orklut<std::string, submesh*> mPolyGroupLut;
   material_semanticmap_t mShadingGroupToMaterialMap;
   LightContainer mLights;
-  bool mbMergeEdges;
+  bool _mergeEdges;
   ork::lev2::MaterialMap mFxmMaterialMap;
 
 private:

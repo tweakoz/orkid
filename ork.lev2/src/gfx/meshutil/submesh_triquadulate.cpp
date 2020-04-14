@@ -16,7 +16,7 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
   int inump = inpmesh.GetNumPolys();
 
   for (int ip = 0; ip < inump; ip++) {
-    const poly& ply = *inpmesh.mMergedPolys[ip];
+    const poly& ply = *inpmesh._orderedPolys[ip];
 
     int inumv = ply.GetNumSides();
 
@@ -25,9 +25,9 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
         auto v0 = ply._vertices[0];
         auto v1 = ply._vertices[1];
         auto v2 = ply._vertices[2];
-        auto m0 = outmesh.mvpool.newMergeVertex(*v0);
-        auto m1 = outmesh.mvpool.newMergeVertex(*v1);
-        auto m2 = outmesh.mvpool.newMergeVertex(*v2);
+        auto m0 = outmesh._vtxpool.newMergeVertex(*v0);
+        auto m1 = outmesh._vtxpool.newMergeVertex(*v1);
+        auto m2 = outmesh._vtxpool.newMergeVertex(*v2);
         outmesh.MergePoly(poly(m0, m1, m2));
         break;
       }
@@ -36,10 +36,10 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
         auto v1 = ply._vertices[1];
         auto v2 = ply._vertices[2];
         auto v3 = ply._vertices[3];
-        auto m0 = outmesh.mvpool.newMergeVertex(*v0);
-        auto m1 = outmesh.mvpool.newMergeVertex(*v1);
-        auto m2 = outmesh.mvpool.newMergeVertex(*v2);
-        auto m3 = outmesh.mvpool.newMergeVertex(*v3);
+        auto m0 = outmesh._vtxpool.newMergeVertex(*v0);
+        auto m1 = outmesh._vtxpool.newMergeVertex(*v1);
+        auto m2 = outmesh._vtxpool.newMergeVertex(*v2);
+        auto m3 = outmesh._vtxpool.newMergeVertex(*v3);
         outmesh.MergePoly(poly(m0, m1, m2));
         outmesh.MergePoly(poly(m2, m3, m0));
         break;

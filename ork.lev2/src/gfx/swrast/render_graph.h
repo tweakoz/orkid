@@ -59,7 +59,7 @@ struct rend_srcmesh
 {
 	int					miNumSubMesh;
 	rend_srcsubmesh*	mpSubMeshes;
-	ork::AABox			mAABox;
+	ork::AABox			_aaBox;
 	ork::fvec3		mTarget;
 	ork::fvec3		mEye;
 

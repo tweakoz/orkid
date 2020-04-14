@@ -23,7 +23,7 @@ TEST(MergeVertex) {
 
   submesh& group = testmesh.MergeSubMesh("default");
 
-  int iv1 = group.MergeVertex(vtx1);
+  auto v1 = group.newMergeVertex(vtx1);
 
   vertex vtx2;
 
@@ -37,9 +37,9 @@ TEST(MergeVertex) {
   vtx2.mJointNames[0] = "test";
   vtx2.mJointNames[0].clear();
 
-  int iv2 = group.MergeVertex(vtx2);
+  auto v2 = group.newMergeVertex(vtx2);
 
-  CHECK_EQUAL(iv1, iv2);
+  CHECK_EQUAL(v1, v2);
 }
 
 } // namespace ork::meshutil

@@ -591,7 +591,7 @@ void RgmLightContainer::LoadLitFile(const char* pfilename) {
 RgmModel* LoadRgmFile(const char* pfilename, RgmShaderBuilder& shbuilder) {
   RgmModel* mdl = new RgmModel;
 
-  mdl->mAABox.BeginGrow();
+  mdl->_aaBox.BeginGrow();
   chunkfile::DefaultLoadAllocator allocator;
   chunkfile::Reader chunkreader(pfilename, "rgm", allocator);
   if (chunkreader.IsOk()) {
@@ -682,14 +682,14 @@ RgmModel* LoadRgmFile(const char* pfilename, RgmShaderBuilder& shbuilder) {
         sub.mGeoSet->GetAABox().Grow(v0->pos);
         sub.mGeoSet->GetAABox().Grow(v1->pos);
         sub.mGeoSet->GetAABox().Grow(v2->pos);
-        mdl->mAABox.Grow(v0->pos);
-        mdl->mAABox.Grow(v1->pos);
-        mdl->mAABox.Grow(v2->pos);
+        mdl->_aaBox.Grow(v0->pos);
+        mdl->_aaBox.Grow(v1->pos);
+        mdl->_aaBox.Grow(v2->pos);
       }
       sub.mGeoSet->GetAABox().EndGrow();
     }
   }
-  mdl->mAABox.EndGrow();
+  mdl->_aaBox.EndGrow();
   return mdl;
 }
 

@@ -43,7 +43,7 @@ struct  CollisionTester
 	static bool FrustumSphereTest( const Frustum& frus, const Sphere& sph );
 	static bool FrustumCircleXZTest( const Frustum& frus, const Circle& cir );
 	static bool FrustumPointTest( const Frustum& frus, const fvec3& pnt );
-	static bool FrustumAABoxTest( const Frustum& frus, const AABox& aab );
+	static bool Frustu_aaBoxTest( const Frustum& frus, const AABox& aab );
 	static bool FrustumFrustumTest( const Frustum& frus1, const Frustum& frus2 );
 
 	static bool SphereSphereTest( const Sphere& sph1, const Sphere& sph2 );
