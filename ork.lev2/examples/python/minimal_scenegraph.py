@@ -36,10 +36,10 @@ def onGpuInit(ctx):
     global cameralut
     ###################################
     mtl = FreestyleMaterial()
-    mtl.gpuInit(ctx,Path("orkshader://solid"))
+    mtl.gpuInit(ctx,Path("orkshader://manip"))
     mtl_inst = MaterialInstance(mtl)
-    mtl_inst.monoTek = mtl.shader.technique("vtxcolor")
-    mtl.setInstanceMvpParams(mtl_inst,"MatMVP","","")
+    mtl_inst.monoTek = mtl.shader.technique("std_mono")
+    mtl.setInstanceMvpParams(mtl_inst,"mvp","","")
     ###################################
     frustum_pmtx = ctx.perspective(45,1,0.1,3)
     frustum_vmtx = ctx.lookAt(vec3(0,0,-1),vec3(0,0,0),vec3(0,1,0))
