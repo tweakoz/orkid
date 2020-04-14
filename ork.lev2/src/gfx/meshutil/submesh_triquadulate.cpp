@@ -79,9 +79,13 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
     ici[1] = inpoly.miVertices[1];
     ici[2] = inpoly.miVertices[2];
 
-    VPos[0] = inpmesh.mvpool.VertexPool[ici[0]]->mPos;
-    VPos[1] = inpmesh.mvpool.VertexPool[ici[1]]->mPos;
-    VPos[2] = inpmesh.mvpool.VertexPool[ici[2]]->mPos;
+    auto v0 = inpmesh.mvpool.VertexPool[ici[0]];
+    auto v1 = inpmesh.mvpool.VertexPool[ici[1]];
+    auto v2 = inpmesh.mvpool.VertexPool[ici[2]];
+
+    VPos[0] = v0->mPos;
+    VPos[1] = v1->mPos;
+    VPos[2] = v2->mPos;
     P0.CalcPlaneFromTriangle(VPos[0], VPos[1], VPos[2]);
     // fvec4 VArea012[3] = { VPos[0],VPos[1],VPos[2] };
 
@@ -99,9 +103,9 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
     orkset<int> ConnectedPolySetA;
     orkset<int> ConnectedPolySetB;
     orkset<int> ConnectedPolySetC;
-    inpmesh.GetConnectedPolys(edge(ici[0], ici[1]), ConnectedPolySetA);
-    inpmesh.GetConnectedPolys(edge(ici[1], ici[2]), ConnectedPolySetB);
-    inpmesh.GetConnectedPolys(edge(ici[2], ici[0]), ConnectedPolySetC);
+    inpmesh.GetConnectedPolys(edge(v0, v1), ConnectedPolySetA);
+    inpmesh.GetConnectedPolys(edge(v1, v2), ConnectedPolySetB);
+    inpmesh.GetConnectedPolys(edge(v2, v0), ConnectedPolySetC);
 
     for (orkset<int>::iterator it = ConnectedPolySetA.begin(); it != ConnectedPolySetA.end(); it++) {
       ConnectedPolySet.insert(*it);

@@ -73,44 +73,40 @@ typedef std::unordered_map<int, int, Hash3232> HashIntIntMap;
 static const int kmaxpolysperedge = 4;
 
 struct edge {
-  int miVertexA;
-  int miVertexB;
+  vertex_ptr_t _vertexA;
+  vertex_ptr_t _vertexB;
   int miNumConnectedPolys;
   int miConnectedPolys[kmaxpolysperedge];
 
-  int edgeVID(int iv) const {
-    int id = -1;
-
+  vertex_ptr_t edgeVertex(int iv) const {
     switch (iv) {
       case 0:
-        id = miVertexA;
+        return _vertexA;
         break;
       case 1:
-        id = miVertexB;
+        return _vertexB;
         break;
       default:
         OrkAssert(false);
         break;
     }
 
-    return id;
+    return nullptr;
   }
 
   U64 GetHashKey(void) const;
   bool Matches(const edge& other) const;
 
   edge()
-      : miVertexA(-1)
-      , miVertexB(-1)
-      , miNumConnectedPolys(0) {
+      : miNumConnectedPolys(0) {
     for (int i = 0; i < kmaxpolysperedge; i++)
       miConnectedPolys[i] = -1;
   }
 
-  edge(int iva, int ivb)
+  edge(vertex_ptr_t va, vertex_ptr_t vb)
       : miNumConnectedPolys(0)
-      , miVertexA(iva)
-      , miVertexB(ivb) {
+      , _vertexA(va)
+      , _vertexB(vb) {
     for (int i = 0; i < kmaxpolysperedge; i++)
       miConnectedPolys[i] = -1;
   }
@@ -156,6 +152,8 @@ struct vertex {
   static const int kmaxcolors     = 2;
   static const int kmaxuvs        = 2;
   static const int kmaxconpoly    = 8;
+
+  uint32_t _poolindex = 0xffffffff;
 
   fvec3 mPos;
   fvec3 mNrm;
@@ -335,9 +333,9 @@ public:
   }
 
   // vertex clockwise around the poly from the given one
-  int VertexCW(int vert) const;
+  // int VertexCW(int vert) const;
   // vertex counter-clockwise around the poly from the given one
-  int VertexCCW(int vert) const;
+  // int VertexCCW(int vert) const;
 
   vertex ComputeCenter(const vertexpool& vpool) const;
   float ComputeEdgeLength(const vertexpool& vpool, const fmtx4& MatRange, int iedge) const;

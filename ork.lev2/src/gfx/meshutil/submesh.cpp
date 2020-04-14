@@ -336,7 +336,10 @@ void submesh::MergePoly(const poly& ply) {
         int i1  = (i + 1) % inumv;
         int iv0 = ply.GetVertexID(i0);
         int iv1 = ply.GetVertexID(i1);
-        edge Edge(iv0, iv1);
+        auto v0 = mvpool.VertexPool[iv0];
+        auto v1 = mvpool.VertexPool[iv1];
+
+        edge Edge(v0, v1);
         nply.mEdges[i] = MergeEdge(Edge, ipolyindex);
       }
     }

@@ -162,18 +162,21 @@ void edge::ConnectToPoly(int ipoly) {
 ///////////////////////////////////////////////////////////////////////////////
 
 U64 edge::GetHashKey(void) const {
-  u64 uv = (miVertexA < miVertexB) ? u64(miVertexA) | (u64(miVertexB) << 32) : u64(miVertexB) | (u64(miVertexA) << 32);
+  u64 uv = (_vertexA->_poolindex < _vertexB->_poolindex) //
+               ? u64(_vertexA->_poolindex) | (u64(_vertexB->_poolindex) << 32)
+               : u64(_vertexB->_poolindex) | (u64(_vertexA->_poolindex) << 32);
   return uv;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool edge::Matches(const edge& other) const {
-  return ((miVertexA == other.miVertexA) && (miVertexB == other.miVertexB)) ||
-         ((miVertexB == other.miVertexA) && (miVertexA == other.miVertexB));
+  return ((_vertexA == other._vertexA) && (_vertexB == other._vertexB)) ||
+         ((_vertexB == other._vertexA) && (_vertexA == other._vertexB)); // should we care about order here ?
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+/*   // disabled during submesh refactor
 
 int poly::VertexCW(int vert) const {
   for (int i = 0; i < miNumSides; i++) {
@@ -192,7 +195,7 @@ int poly::VertexCCW(int vert) const {
   }
   return -1;
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 
 vertex poly::ComputeCenter(const vertexpool& vpool) const {
@@ -363,8 +366,10 @@ int vertexpool::MergeVertex(const vertex& vtx, int inidx) {
     // OrkAssert( Crc32::DoesDataMatch( & vtx, & OtherVertex, sizeof( vertex ) ) );
     ioutidx = iother;
   } else {
-    int ipv = (int)VertexPool.size();
-    VertexPool.push_back(std::make_shared<vertex>(vtx));
+    int ipv                = (int)VertexPool.size();
+    auto new_vertex        = std::make_shared<vertex>(vtx);
+    new_vertex->_poolindex = uint32_t(VertexPool.size());
+    VertexPool.push_back(new_vertex);
     VertexPoolMap[vhash] = ipv;
     ioutidx              = ipv;
   }

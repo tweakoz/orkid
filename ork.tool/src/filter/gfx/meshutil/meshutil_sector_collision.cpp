@@ -351,21 +351,22 @@ fvec3 SectorWalker::ComputeNormal(int polyIndex) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool SectorWalker::GatherSectorPolysStep(SectorPolys& polys, int first, int prev, int cur, int n) const {
-  if (n == 0)
+  // disabled during submesh refactor
+  /*if (n == 0)
     return cur == first;
   const auto& thePoly = Poly(cur);
-  int at;
-  int end;
+  vertex_ptr_t at;
+  vertex_ptr_t end;
   if (prev >= 0) {
     auto baseEdge = mSubmesh->edgeBetween(prev, cur);
 
-    at = thePoly.VertexCCW(baseEdge->edgeVID(0));
+    at = thePoly.VertexCCW(baseEdge->edgeVertex(0)->_poolindex);
 
-    if (at == baseEdge->edgeVID(1)) {
+    if (at == baseEdge->edgeVertex(1)->_poolindex) {
       at  = thePoly.VertexCCW(at);
-      end = thePoly.VertexCW(baseEdge->edgeVID(0));
+      end = thePoly.VertexCW(baseEdge->edgeVertex(0)->_poolindex);
     } else {
-      end = thePoly.VertexCW(baseEdge->edgeVID(1));
+      end = thePoly.VertexCW(baseEdge->edgeVertex(1)->_poolindex);
     }
   } else {
     at = end = thePoly.GetVertexID(0);
@@ -389,7 +390,7 @@ bool SectorWalker::GatherSectorPolysStep(SectorPolys& polys, int first, int prev
     }
 
     at = next;
-  } while (at != end);
+  } while (at != end);*/
   return false;
 }
 
@@ -442,12 +443,14 @@ void SectorWalker::InitPortal(ent::bullet::SectorPortal& portal, int bl, int tl,
   ork::meshutil::poly tmp(bl, tl, tr, br);
   portal.mPlane         = fplane3(tmp.ComputeNormal(mSubmesh->RefVertexPool()), tmp.ComputeCenter(mSubmesh->RefVertexPool()).mPos);
   portal.mTrackProgress = -1; // uncomputed
-  int startCheck        = Poly(mStartPoly).VertexCCW(bl);
-  if (startCheck == br) {
-    portal.mTrackProgress = 1;
-  } else if (startCheck == tl) {
-    portal.mTrackProgress = 0;
-  }
+
+  // disabled during submesh refactor
+  // int startCheck        = Poly(mStartPoly).VertexCCW(bl);
+  // if (startCheck == br) {
+  // portal.mTrackProgress = 1;
+  //} else if (startCheck == tl) {
+  // portal.mTrackProgress = 0;
+  //}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -455,147 +458,149 @@ void SectorWalker::InitPortal(ent::bullet::SectorPortal& portal, int bl, int tl,
 bool SectorWalker::ComputeSectorDefinition(ent::bullet::Sector& sector, const SectorPolys& polys) {
   const auto& bot = Poly(polys[0]);
   const auto& top = Poly(polys[3]);
+  /*
+    // disabled during submesh refactor
+    //	bool isPre = false, isPost = false;
+    {
+       auto startedge = mSubmesh->edgeBetween(polys[0], mStartPoly);
+       if (startedge != nullptr) {
+         uint64_t startedge_hash = startedge->GetHashKey();
+         int pt1                 = (int)(startedge_hash & 0x00FFFFFFFF);
+         int pt2                 = (int)((startedge_hash >> 32) & 0x00FFFFFFFF);
+         // looking at start, we want pt1 to be bottom-left and pt2 to be bottom-right
+         if (bot.VertexCW(pt1) != pt2) {
+           int tmp = pt2;
+           pt2     = pt1;
+           pt1     = tmp;
+         }
+         PolyAssertReturn(bot.VertexCW(pt1) == pt2, mStartPoly, "Failed to normalize start poly corners (internal - tell inio)");
+         if (Poly(mStartPoly).VertexCW(pt1) == pt2) {
+           //	isPre = true;
+           sector.FlagStart();
+         } else {
+           PolyAssertReturn(Poly(mStartPoly).VertexCCW(pt1) == pt2, mStartPoly, "post sector didn't check out (internal - tell
+     inio)");
+           //	isPost = true;
+         }
+       }
+     }
+     bool isSplit = IsPent(polys[0]) || IsPent(polys[1]);
 
-  //	bool isPre = false, isPost = false;
-  {
-    auto startedge = mSubmesh->edgeBetween(polys[0], mStartPoly);
-    if (startedge != nullptr) {
-      uint64_t startedge_hash = startedge->GetHashKey();
-      int pt1                 = (int)(startedge_hash & 0x00FFFFFFFF);
-      int pt2                 = (int)((startedge_hash >> 32) & 0x00FFFFFFFF);
-      // looking at start, we want pt1 to be bottom-left and pt2 to be bottom-right
-      if (bot.VertexCW(pt1) != pt2) {
-        int tmp = pt2;
-        pt2     = pt1;
-        pt1     = tmp;
-      }
-      PolyAssertReturn(bot.VertexCW(pt1) == pt2, mStartPoly, "Failed to normalize start poly corners (internal - tell inio)");
-      if (Poly(mStartPoly).VertexCW(pt1) == pt2) {
-        //	isPre = true;
-        sector.FlagStart();
-      } else {
-        PolyAssertReturn(Poly(mStartPoly).VertexCCW(pt1) == pt2, mStartPoly, "post sector didn't check out (internal - tell inio)");
-        //	isPost = true;
-      }
-    }
-  }
-  bool isSplit = IsPent(polys[0]) || IsPent(polys[1]);
+     int bl = bot.miVertices[0];
+     for (;; bl = bot.VertexCCW(bl)) {
+       int tl = Poly(polys[1]).VertexCCW(bl);
+       if (tl == -1)
+         tl = Poly(polys[2]).VertexCCW(bl);
+       if (tl != -1) {
+         int tr = top.VertexCCW(tl);
+         int br = Poly(polys[1]).VertexCCW(tr);
+         if (br == -1)
+           br = Poly(polys[2]).VertexCCW(tr);
+         if (br != -1) {
+           if (bot.VertexCCW(br) == bl)
+             break;
+         }
+       }
+       PolyAssertReturn(bot.VertexCCW(bl) != bot.miVertices[0], polys[0], "Failed to find singular portal");
+     }
 
-  int bl = bot.miVertices[0];
-  for (;; bl = bot.VertexCCW(bl)) {
-    int tl = Poly(polys[1]).VertexCCW(bl);
-    if (tl == -1)
-      tl = Poly(polys[2]).VertexCCW(bl);
-    if (tl != -1) {
-      int tr = top.VertexCCW(tl);
-      int br = Poly(polys[1]).VertexCCW(tr);
-      if (br == -1)
-        br = Poly(polys[2]).VertexCCW(tr);
-      if (br != -1) {
-        if (bot.VertexCCW(br) == bl)
-          break;
-      }
-    }
-    PolyAssertReturn(bot.VertexCCW(bl) != bot.miVertices[0], polys[0], "Failed to find singular portal");
-  }
+     // singular portal is alwys considered the input of a sector.  Looking out it, the "right" side
+     // of the sector is to our left so the bottom-left vertex should be on it.
+     bool flipped = (Poly(polys[2]).VertexCW(bl) == -1);
 
-  // singular portal is alwys considered the input of a sector.  Looking out it, the "right" side
-  // of the sector is to our left so the bottom-left vertex should be on it.
-  bool flipped = (Poly(polys[2]).VertexCW(bl) == -1);
+     const auto& left  = Poly(polys[flipped ? 2 : 1]);
+     const auto& right = Poly(polys[flipped ? 1 : 2]);
 
-  const auto& left  = Poly(polys[flipped ? 2 : 1]);
-  const auto& right = Poly(polys[flipped ? 1 : 2]);
+     PolyAssertReturn(right.VertexCCW(bl) != -1, polys[0], "Bottom-left of portal 0 is on right wall (internal - tell inio)");
 
-  PolyAssertReturn(right.VertexCCW(bl) != -1, polys[0], "Bottom-left of portal 0 is on right wall (internal - tell inio)");
+     if (left.miNumSides == 4) {
+       // not a V split, could be an H split
 
-  if (left.miNumSides == 4) {
-    // not a V split, could be an H split
+       int tl   = right.VertexCCW(bl);
+       int stop = bot.VertexCCW(bl);
 
-    int tl   = right.VertexCCW(bl);
-    int stop = bot.VertexCCW(bl);
+       int numPortals = 0;
 
-    int numPortals = 0;
+       for (; bl != stop; bl = bot.VertexCW(bl), tl = top.VertexCCW(tl)) {
+         if (left.VertexCCW(bl) == bot.VertexCW(bl) || right.VertexCCW(bl) == bot.VertexCW(bl))
+           continue;
 
-    for (; bl != stop; bl = bot.VertexCW(bl), tl = top.VertexCCW(tl)) {
-      if (left.VertexCCW(bl) == bot.VertexCW(bl) || right.VertexCCW(bl) == bot.VertexCW(bl))
-        continue;
+         int br = bot.VertexCW(bl);
+         int tr = top.VertexCCW(tl);
+         InitPortal(sector.mPortals[numPortals], bl, tl, tr, br);
+         numPortals++;
 
-      int br = bot.VertexCW(bl);
-      int tr = top.VertexCCW(tl);
-      InitPortal(sector.mPortals[numPortals], bl, tl, tr, br);
-      numPortals++;
+         PolyAssertReturn(numPortals <= 3, polys[0], "At most 3 portals (internal - tell inio)");
+       }
 
-      PolyAssertReturn(numPortals <= 3, polys[0], "At most 3 portals (internal - tell inio)");
-    }
+       PolyAssertReturn(numPortals >= 2, polys[0], "At least 2 portals (internal - tell inio)");
 
-    PolyAssertReturn(numPortals >= 2, polys[0], "At least 2 portals (internal - tell inio)");
+       if (numPortals == 3) {
+         sector.mFlags |= ork::ent::bullet::SECTORFLAG_SPLITH;
 
-    if (numPortals == 3) {
-      sector.mFlags |= ork::ent::bullet::SECTORFLAG_SPLITH;
+         // 2---3
+         // |   |
+         // 1---4
 
-      // 2---3
-      // |   |
-      // 1---4
+         fvec3 v1, v2, v3, v4;
+         v1.Lerp(
+             mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_BL]].mPos,
+             mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_BR]].mPos,
+             0.5);
+         v2.Lerp(
+             mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_TL]].mPos,
+             mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_TR]].mPos,
+             0.5);
+         v3 = mOutVerts[sector.mPortals[1].mCornerVerts[ent::bullet::PORTAL_CORNER_TR]].mPos;
+         v4 = mOutVerts[sector.mPortals[1].mCornerVerts[ent::bullet::PORTAL_CORNER_BR]].mPos;
+         sector.mSplitPlane.CalcFromNormalAndOrigin(
+             ((v3 - v2) + (v4 - v1)).Cross((v2 - v1) + (v3 - v4)).Normal(), (v1 + v2 + v3 + v4) * (1.0f / 4.0f));
+       }
 
-      fvec3 v1, v2, v3, v4;
-      v1.Lerp(
-          mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_BL]].mPos,
-          mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_BR]].mPos,
-          0.5);
-      v2.Lerp(
-          mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_TL]].mPos,
-          mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_TR]].mPos,
-          0.5);
-      v3 = mOutVerts[sector.mPortals[1].mCornerVerts[ent::bullet::PORTAL_CORNER_TR]].mPos;
-      v4 = mOutVerts[sector.mPortals[1].mCornerVerts[ent::bullet::PORTAL_CORNER_BR]].mPos;
-      sector.mSplitPlane.CalcFromNormalAndOrigin(
-          ((v3 - v2) + (v4 - v1)).Cross((v2 - v1) + (v3 - v4)).Normal(), (v1 + v2 + v3 + v4) * (1.0f / 4.0f));
-    }
+     } else {
+       // v split
 
-  } else {
-    // v split
+       int br = bot.VertexCW(bl);
+       int tl = right.VertexCCW(bl);
+       int tr = left.VertexCW(br);
 
-    int br = bot.VertexCW(bl);
-    int tl = right.VertexCCW(bl);
-    int tr = left.VertexCW(br);
+       InitPortal(sector.mPortals[0], bl, tl, tr, br);
 
-    InitPortal(sector.mPortals[0], bl, tl, tr, br);
+       bl = left.VertexCCW(br);
+       br = bot.VertexCW(bl);
+       tl = left.VertexCCW(bl);
+       tr = right.VertexCW(br);
 
-    bl = left.VertexCCW(br);
-    br = bot.VertexCW(bl);
-    tl = left.VertexCCW(bl);
-    tr = right.VertexCW(br);
+       InitPortal(sector.mPortals[1], bl, tl, tr, br);
 
-    InitPortal(sector.mPortals[1], bl, tl, tr, br);
+       bl = tl;
+       br = tr;
+       tl = left.VertexCCW(bl);
+       tr = right.VertexCW(br);
 
-    bl = tl;
-    br = tr;
-    tl = left.VertexCCW(bl);
-    tr = right.VertexCW(br);
+       InitPortal(sector.mPortals[2], bl, tl, tr, br);
 
-    InitPortal(sector.mPortals[2], bl, tl, tr, br);
+       sector.mFlags |= ork::ent::bullet::SECTORFLAG_SPLITV;
 
-    sector.mFlags |= ork::ent::bullet::SECTORFLAG_SPLITV;
+       // 2---3
+       // |   |
+       // 1---4
 
-    // 2---3
-    // |   |
-    // 1---4
-
-    fvec3 v1, v2, v3, v4;
-    v1.Lerp(
-        mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_BR]].mPos,
-        mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_TR]].mPos,
-        0.5);
-    v2.Lerp(
-        mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_BL]].mPos,
-        mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_BL]].mPos,
-        0.5);
-    v3 = mOutVerts[sector.mPortals[1].mCornerVerts[ent::bullet::PORTAL_CORNER_TL]].mPos;
-    v4 = mOutVerts[sector.mPortals[1].mCornerVerts[ent::bullet::PORTAL_CORNER_TR]].mPos;
-    sector.mSplitPlane.CalcFromNormalAndOrigin(
-        ((v3 - v2) + (v4 - v1)).Cross((v2 - v1) + (v3 - v4)).Normal(), (v1 + v2 + v3 + v4) * (1.0f / 4.0f));
-  }
-
+       fvec3 v1, v2, v3, v4;
+       v1.Lerp(
+           mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_BR]].mPos,
+           mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_TR]].mPos,
+           0.5);
+       v2.Lerp(
+           mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_BL]].mPos,
+           mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_BL]].mPos,
+           0.5);
+       v3 = mOutVerts[sector.mPortals[1].mCornerVerts[ent::bullet::PORTAL_CORNER_TL]].mPos;
+       v4 = mOutVerts[sector.mPortals[1].mCornerVerts[ent::bullet::PORTAL_CORNER_TR]].mPos;
+       sector.mSplitPlane.CalcFromNormalAndOrigin(
+           ((v3 - v2) + (v4 - v1)).Cross((v2 - v1) + (v3 - v4)).Normal(), (v1 + v2 + v3 + v4) * (1.0f / 4.0f));
+     }
+     */
   return true;
 }
 
