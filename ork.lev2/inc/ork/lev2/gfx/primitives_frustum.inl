@@ -100,26 +100,13 @@ struct FrustumPrimitive {
       std::string named, //
       scenegraph::layer_ptr_t layer,
       materialinst_ptr_t material_inst) {
-
     auto drw = std::make_shared<CallbackDrawable>(nullptr);
-    auto nod = layer->createNode("named", drw);
-
-    drw->setEnqueueOnLayerLambda([=](DrawableBufItem& dbitem) {
-      // dbi.mXfData has copy of node's transform
-      //
-    });
-
     drw->SetRenderCallback([=](lev2::RenderContextInstData& RCID, //
                                lev2::Context* context,
                                const CallbackRenderable* pren) { //
-      material_inst->beginBlock(RCID);
-      material_inst->beginPass(RCID);
-      this->draw(context);
-      material_inst->endPass(RCID);
-      material_inst->endBlock(RCID);
+      material_inst->wrappedDrawCall(RCID, [this, context]() { this->draw(context); });
     });
-
-    return nod;
+    return layer->createNode(named, drw);
   }
 
   //////////////////////////////////////////////////////////////////////////////

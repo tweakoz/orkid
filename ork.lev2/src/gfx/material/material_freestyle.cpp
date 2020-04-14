@@ -120,36 +120,25 @@ const FxShaderParamBlock* FreestyleMaterial::paramBlock(std::string named) {
   return par;
 }
 ////////////////////////////////////////////
-void FreestyleMaterial::setMvpParams(std::string monocam, std::string stereocamL, std::string stereocamR) {
-  _mvp_Mono    = param(monocam);
-  _mvp_StereoL = param(stereocamL);
-  _mvp_StereoR = param(stereocamR);
-}
-////////////////////////////////////////////
-void FreestyleMaterial::bindMvpMatrices(const fmtx4& world) {
-  const RenderContextInstData* RCID  = _initialTarget->GetRenderContextInstData();
-  const RenderContextFrameData* RCFD = _initialTarget->topRenderContextFrameData();
-  const auto& CPD                    = RCFD->topCPD();
-  bool is_picking                    = CPD.isPicking();
-  bool is_stereo                     = CPD.isStereoOnePass();
-  bool is_forcenoz                   = RCID ? RCID->IsForceNoZWrite() : false;
-
-  auto MTXI = _initialTarget->MTXI();
-  auto FXI  = _initialTarget->FXI();
-
-  if (is_stereo and CPD._stereoCameraMatrices) {
-    auto stereomtx = CPD._stereoCameraMatrices;
-    auto MVPL      = stereomtx->MVPL(world);
-    auto MVPR      = stereomtx->MVPR(world);
-    FXI->BindParamMatrix(_shader, _mvp_StereoL, MVPL);
-    FXI->BindParamMatrix(_shader, _mvp_StereoR, MVPR);
-  } else if (CPD._cameraMatrices) {
-    auto mcams = CPD._cameraMatrices;
-    auto MVP   = world * mcams->_vmatrix * mcams->_pmatrix;
-    FXI->BindParamMatrix(_shader, _mvp_Mono, MVP);
-  } else {
-    auto MVP = MTXI->RefMVPMatrix();
-    FXI->BindParamMatrix(_shader, _mvp_Mono, MVP);
+void FreestyleMaterial::setInstanceMvpParams(
+    materialinst_ptr_t materialinst, //
+    std::string monocam,
+    std::string stereocamL,
+    std::string stereocamR) {
+  if (auto mvp_mono = this->param(monocam)) {
+    crcstring_ptr_t tok_mono = std::make_shared<CrcString>("RCFD_Camera_MVP_Mono");
+    materialinst->_params[mvp_mono].Set<crcstring_ptr_t>(tok_mono);
+    printf("tok_mono<0x%zx:%zu>\n", tok_mono->hashed(), tok_mono->hashed());
+  }
+  if (auto mvp_left = this->param(stereocamL)) {
+    crcstring_ptr_t tok_stereoL = std::make_shared<CrcString>("RCFD_Camera_MVP_Left");
+    materialinst->_params[mvp_left].Set<crcstring_ptr_t>(tok_stereoL);
+    printf("tok_stereoL<0x%zx:%zu>\n", tok_stereoL->hashed(), tok_stereoL->hashed());
+  }
+  if (auto mvp_right = this->param(stereocamR)) {
+    crcstring_ptr_t tok_stereoR = std::make_shared<CrcString>("RCFD_Camera_MVP_Right");
+    materialinst->_params[mvp_right].Set<crcstring_ptr_t>(tok_stereoR);
+    printf("tok_stereoR<0x%zx:%zu>\n", tok_stereoR->hashed(), tok_stereoR->hashed());
   }
 }
 ////////////////////////////////////////////
@@ -247,28 +236,31 @@ void FreestyleMaterial::end(const RenderContextFrameData& RCFD) {
   this->EndBlock(targ);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FreestyleMaterial::materialInstanceBeginBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
+int FreestyleMaterial::materialInstanceBeginBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
   auto context    = RCID._RCFD->GetTarget();
   const auto& CPD = RCID._RCFD->topCPD();
   bool is_picking = CPD.isPicking();
   bool is_stereo  = CPD.isStereoOnePass();
   // auto tek     = minst->valueForKey("technique").Get<fxtechnique_constptr_t>();
   this->bindTechnique(is_stereo ? minst->_stereoTek : minst->_monoTek);
-  int npasses = this->BeginBlock(context, RCID);
+  return this->BeginBlock(context, RCID);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FreestyleMaterial::materialInstanceBeginPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
+bool FreestyleMaterial::materialInstanceBeginPass(materialinst_ptr_t minst, const RenderContextInstData& RCID, int ipass) {
   auto context    = RCID._RCFD->GetTarget();
   auto MTXI       = context->MTXI();
   const auto& CPD = RCID._RCFD->topCPD();
   bool is_picking = CPD.isPicking();
   bool is_stereo  = CPD.isStereoOnePass();
 
-  this->BeginPass(context, 0);
+  bool rval = this->BeginPass(context, ipass);
 
   const auto& worldmatrix = RCID._dagrenderable //
                                 ? RCID._dagrenderable->_worldMatrix
                                 : MTXI->RefMMatrix();
+
+  auto stereocams = CPD._stereoCameraMatrices;
+  auto monocams   = CPD._cameraMatrices;
 
   for (auto item : minst->_params) {
     fxparam_constptr_t param = item.first;
@@ -278,27 +270,29 @@ void FreestyleMaterial::materialInstanceBeginPass(materialinst_ptr_t minst, cons
     } else if (auto as_crcstr = val.TryAs<crcstring_ptr_t>()) {
       const auto& crcstr = *as_crcstr.value().get();
       switch (crcstr.hashed()) {
-        case "RCFD_Camera"_crcu:
-          if (is_stereo and CPD._stereoCameraMatrices) {
-            auto stereomtx = CPD._stereoCameraMatrices;
-            auto MVPL      = stereomtx->MVPL(worldmatrix);
-            auto MVPR      = stereomtx->MVPR(worldmatrix);
-            this->bindParamMatrix(minst->_mvp_StereoL, MVPL);
-            this->bindParamMatrix(minst->_mvp_StereoR, MVPR);
-          } else if (CPD._cameraMatrices) {
-            auto mcams = CPD._cameraMatrices;
-            OrkAssert(mcams != nullptr);
-            // printf("world: %s\n", worldmatrix.dump4x3cn().c_str());
-            auto MVP = mcams->MVPMONO(worldmatrix);
-            // printf("MVP: %s\n", MVP.dump4x3cn().c_str());
-            //[ +1.124  +0.6233  +0.2584 ][ +0  +1.707  -0.7078 ][ +0.4407  -1.589  -0.6589 ][ +0  +0  +141.5 ]
-            this->bindParamMatrix(minst->_mvp_Mono, MVP);
+        case "RCFD_Camera_MVP_Mono"_crcu: {
+          if (monocams) {
+            this->bindParamMatrix(param, monocams->MVPMONO(worldmatrix));
           } else {
             auto MVP = worldmatrix * MTXI->RefVPMatrix();
-            this->bindParamMatrix(minst->_mvp_Mono, MVP);
+            this->bindParamMatrix(param, MVP);
           }
           break;
+        }
+        case "RCFD_Camera_MVP_Left"_crcu: {
+          if (is_stereo and stereocams) {
+            this->bindParamMatrix(param, stereocams->MVPL(worldmatrix));
+          }
+          break;
+        }
+        case "RCFD_Camera_MVP_Right"_crcu: {
+          if (is_stereo and stereocams) {
+            this->bindParamMatrix(param, stereocams->MVPR(worldmatrix));
+          }
+          break;
+        }
         default:
+          OrkAssert(false);
           break;
       }
     } else if (auto as_fvec4_ = val.TryAs<fvec4_ptr_t>()) {
@@ -321,6 +315,7 @@ void FreestyleMaterial::materialInstanceBeginPass(materialinst_ptr_t minst, cons
       OrkAssert(false);
     }
   }
+  return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::materialInstanceEndPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) {

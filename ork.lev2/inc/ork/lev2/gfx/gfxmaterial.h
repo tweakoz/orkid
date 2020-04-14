@@ -137,19 +137,17 @@ private:
 
 struct GfxMaterialInstance : public std::enable_shared_from_this<GfxMaterialInstance> {
   GfxMaterialInstance(material_ptr_t mtl);
-  // varmap::val_t operator[](const std::string& key) const;
-  // varmap::val_t valueForKey(const std::string& key) const;
-  void beginBlock(const RenderContextInstData& RCID);
-  void beginPass(const RenderContextInstData& RCID);
+  int beginBlock(const RenderContextInstData& RCID);
+  bool beginPass(const RenderContextInstData& RCID, int ipass);
   void endPass(const RenderContextInstData& RCID);
   void endBlock(const RenderContextInstData& RCID);
+
+  void wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall);
+
   material_ptr_t _material;
   fxtechnique_constptr_t _monoTek   = nullptr;
   fxtechnique_constptr_t _pickTek   = nullptr;
   fxtechnique_constptr_t _stereoTek = nullptr;
-  fxparam_constptr_t _mvp_Mono      = nullptr;
-  fxparam_constptr_t _mvp_StereoL   = nullptr;
-  fxparam_constptr_t _mvp_StereoR   = nullptr;
   std::unordered_map<fxparam_constptr_t, varmap::val_t> _params;
 };
 
@@ -201,9 +199,11 @@ public:
     mfFogRange = float(frange);
   };
 
-  virtual void materialInstanceBeginBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
+  virtual int materialInstanceBeginBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
+    return 0;
   }
-  virtual void materialInstanceBeginPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
+  virtual bool materialInstanceBeginPass(materialinst_ptr_t minst, const RenderContextInstData& RCID, int ipass) {
+    return false;
   }
   virtual void materialInstanceEndPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
   }

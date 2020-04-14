@@ -124,15 +124,15 @@ TextureContext& GfxMaterial::GetTexture(ETextureDest edest) {
 }
 
 /////////////////////////////////////////////////////////////////////////
-
 GfxMaterialInstance::GfxMaterialInstance(material_ptr_t mtl)
     : _material(mtl) {
 }
-void GfxMaterialInstance::beginBlock(const RenderContextInstData& RCID) {
-  _material->materialInstanceBeginBlock(shared_from_this(), RCID);
+/////////////////////////////////////////////////////////////////////////
+int GfxMaterialInstance::beginBlock(const RenderContextInstData& RCID) {
+  return _material->materialInstanceBeginBlock(shared_from_this(), RCID);
 }
-void GfxMaterialInstance::beginPass(const RenderContextInstData& RCID) {
-  _material->materialInstanceBeginPass(shared_from_this(), RCID);
+bool GfxMaterialInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
+  return _material->materialInstanceBeginPass(shared_from_this(), RCID, ipass);
 }
 void GfxMaterialInstance::endPass(const RenderContextInstData& RCID) {
   _material->materialInstanceEndPass(shared_from_this(), RCID);
@@ -140,14 +140,18 @@ void GfxMaterialInstance::endPass(const RenderContextInstData& RCID) {
 void GfxMaterialInstance::endBlock(const RenderContextInstData& RCID) {
   _material->materialInstanceEndBlock(shared_from_this(), RCID);
 }
-
-/*varmap::val_t GfxMaterialInstance::operator[](const std::string& key) const {
-  return _vars.valueForKey(key);
+/////////////////////////////////////////////////////////////////////////
+void GfxMaterialInstance::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall) {
+  int inumpasses = beginBlock(RCID);
+  for (int ipass = 0; ipass < inumpasses; ipass++) {
+    if (beginPass(RCID, ipass)) {
+      drawcall();
+      endPass(RCID);
+    }
+  }
+  endBlock(RCID);
 }
-varmap::val_t GfxMaterialInstance::valueForKey(const std::string& key) const {
-  return _vars.valueForKey(key);
-}*/
-
+/////////////////////////////////////////////////////////////////////////
 } // namespace lev2
 } // namespace ork
 

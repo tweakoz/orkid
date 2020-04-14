@@ -37,11 +37,9 @@ def onGpuInit(ctx):
     ###################################
     mtl = FreestyleMaterial()
     mtl.gpuInit(ctx,Path("orkshader://solid"))
-    par_mvp = mtl.shader.param("MatMVP")
     mtl_inst = MaterialInstance(mtl)
     mtl_inst.monoTek = mtl.shader.technique("vtxcolor")
-    mtl_inst.param[par_mvp] = token.RCFD_Camera
-    mtl_inst.paramMvpMono = par_mvp
+    mtl.setInstanceMvpParams(mtl_inst,"MatMVP","","")
     ###################################
     frustum_pmtx = ctx.perspective(45,1,0.1,3)
     frustum_vmtx = ctx.lookAt(vec3(0,0,-1),vec3(0,0,0),vec3(0,1,0))

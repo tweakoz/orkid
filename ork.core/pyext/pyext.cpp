@@ -53,7 +53,7 @@ PYBIND11_MODULE(_core, module_core) {
               })
           .def("__repr__", [](crcstring_ptr_t s) -> std::string {
             fxstring<64> fxs;
-            fxs.format("CrcString(0x%zx)", s->hashed());
+            fxs.format("CrcString(0x%zx:%zu)", s->hashed(), s->hashed());
             return fxs.c_str();
           });
   type_codec->registerStdCodec<crcstring_ptr_t>(crcstr_type);

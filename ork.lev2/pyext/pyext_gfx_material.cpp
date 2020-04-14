@@ -81,20 +81,14 @@ void pyinit_gfx_material(py::module& module_lev2) {
                   instance->_pickTek = varmap_val.Get<fxtechnique_constptr_t>();
                 else if (key == "stereoTek")
                   instance->_stereoTek = varmap_val.Get<fxtechnique_constptr_t>();
-                else if (key == "paramMvpMono")
-                  instance->_mvp_Mono = varmap_val.Get<fxparam_constptr_t>();
-                else if (key == "paramMvpStereoL")
-                  instance->_mvp_StereoL = varmap_val.Get<fxparam_constptr_t>();
-                else if (key == "paramMvpStereoR")
-                  instance->_mvp_StereoR = varmap_val.Get<fxparam_constptr_t>();
                 else {
                   OrkAssert(false);
+                  // instance->_vars.setValueForKey(key, varmap_val);
+                  // auto keys = instance->_vars.dumpkeys();
+                  // for (auto k : keys)
+                  // deco::printe(fvec3::Yellow(), k + " ", false);
+                  // printf("\n");
                 }
-                // instance->_vars.setValueForKey(key, varmap_val);
-                // auto keys = instance->_vars.dumpkeys();
-                // for (auto k : keys)
-                // deco::printe(fvec3::Yellow(), k + " ", false);
-                // printf("\n");
               })
           .def(
               "__getattr__",                                                                    //
@@ -124,6 +118,15 @@ void pyinit_gfx_material(py::module& module_lev2) {
   auto freestyle_type = //
       py::class_<FreestyleMaterial, GfxMaterial, freestyle_mtl_ptr_t>(module_lev2, "FreestyleMaterial")
           .def(py::init<>())
+          .def(
+              "setInstanceMvpParams",
+              [](freestyle_mtl_ptr_t material,
+                 materialinst_ptr_t instance,
+                 std::string monomvp,
+                 std::string leftmvp,
+                 std::string rightmvp) { //
+                material->setInstanceMvpParams(instance, monomvp, leftmvp, rightmvp);
+              })
           .def(
               "gpuInit",
               [](freestyle_mtl_ptr_t m, ctx_t& c, file::Path& path) {

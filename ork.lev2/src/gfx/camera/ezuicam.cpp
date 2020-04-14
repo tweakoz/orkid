@@ -60,22 +60,24 @@ void EzUiCam::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct UiCamPrivate {
-  UiCamPrivate(){
-    _material = std::make_shared<FreestyleMaterial>();
+  UiCamPrivate() {
+    _material     = std::make_shared<FreestyleMaterial>();
+    _materialinst = std::make_shared<GfxMaterialInstance>(_material);
   }
-  void gpuUpdate(Context* ctx){
-    if( _doGpuInit ){
+  void gpuUpdate(Context* ctx) {
+    if (_doGpuInit) {
       auto shaderpath = file::Path("orkshader://manip");
-      _material->gpuInit(ctx,shaderpath);
-      _material->setMvpParams("mvp","mvpL","mvpR");
-      _tekMono = _material->technique("std_mono");
+      _material->gpuInit(ctx, shaderpath);
+      _material->setInstanceMvpParams(_materialinst, "mvp", "mvpL", "mvpR");
+      _tekMono   = _material->technique("std_mono");
       _tekStereo = _material->technique("std_stereo");
       _doGpuInit = false;
     }
   }
   bool _doGpuInit = true;
   freestyle_mtl_ptr_t _material;
-  const FxShaderTechnique* _tekMono = nullptr;
+  materialinst_ptr_t _materialinst;
+  const FxShaderTechnique* _tekMono   = nullptr;
   const FxShaderTechnique* _tekStereo = nullptr;
 };
 using uicamprivate_t = std::shared_ptr<UiCamPrivate>;
@@ -106,7 +108,6 @@ EzUiCam::EzUiCam()
 
   auto uicampriv = std::make_shared<UiCamPrivate>();
   _private.Set<uicamprivate_t>(uicampriv);
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -118,7 +119,6 @@ void EzUiCam::draw(Context* context) const {
   auto priv = _private.Get<uicamprivate_t>();
 
   priv->gpuUpdate(context);
-
 
   float CurVelMag = MeasuredCameraVelocity.Mag();
   //////////////////////////////////////
@@ -160,23 +160,22 @@ void EzUiCam::draw(Context* context) const {
   // printf( "CAMHUD\n" );
   float aspect = float(context->mainSurfaceWidth()) / float(context->mainSurfaceHeight());
   _curMatrices = _camcamdata.computeMatrices(aspect);
-  auto RCFD = context->topRenderContextFrameData();
+  auto RCFD    = context->topRenderContextFrameData();
+  lev2::RenderContextInstData RCID(RCFD);
   fmtx4 worldmtx;
   worldmtx.SetTranslation(mvCenter);
   float Scale = mfLoc / 60.0f;
   worldmtx.Scale(fvec4(Scale, Scale, Scale));
   ///////////////////////////////////////////////////////////////
   context->debugPushGroup("EzUiCam::draw");
-  priv->_material->begin(priv->_tekMono,priv->_tekStereo,*RCFD);
-  priv->_material->bindMvpMatrices(worldmtx);
+  priv->_materialinst->wrappedDrawCall(RCID, [context]() {
     auto& tricircle = GfxPrimitives::GetRef().mVtxBuf_TriCircle;
-    auto& axis = GfxPrimitives::GetRef().mVtxBuf_Axis;
+    auto& axis      = GfxPrimitives::GetRef().mVtxBuf_Axis;
     context->GBI()->DrawPrimitiveEML(tricircle);
     context->GBI()->DrawPrimitiveEML(axis);
-  priv->_material->end(*RCFD);
+  });
   context->debugPopGroup();
   ///////////////////////////////////////////////////////////////
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
