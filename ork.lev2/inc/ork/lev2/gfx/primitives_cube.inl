@@ -1,5 +1,5 @@
 #pragma once
-#include <ork/lev2/gfx/meshutil/submesh.h>
+#include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 
 namespace ork::lev2::primitives {
 
@@ -107,7 +107,8 @@ struct CubePrimitive {
   fvec4 _colorLeft;
   fvec4 _colorRight;
 
-  meshutil::RigidPrimitive _primitive;
+  using rigidprim_t = meshutil::RigidPrimitive<SVtxV12N12B12T8C4>;
+  rigidprim_t _primitive;
 };
 
 } // namespace ork::lev2::primitives

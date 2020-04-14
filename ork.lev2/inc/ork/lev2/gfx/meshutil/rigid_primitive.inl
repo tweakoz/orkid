@@ -5,20 +5,74 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <ork/kernel/orklut.hpp>
-#include <ork/math/plane.h>
+#pragma once
+
+///////////////////////////////////////////////////////////////////////////////
+
+#include <ork/util/crc.h>
+#include <ork/util/crc64.h>
+#include <ork/math/cvector3.h>
+#include <ork/math/cvector4.h>
+#include <ork/math/box.h>
+#include <algorithm>
+#include <ork/kernel/Array.h>
+#include <ork/kernel/varmap.inl>
+
+#include <ork/lev2/gfx/gfxenv_enum.h>
+#include <ork/lev2/gfx/gfxvtxbuf.h>
+#include <ork/lev2/gfx/gfxmaterial.h>
+#include <ork/lev2/gfx/gfxmodel.h>
+#include <ork/lev2/gfx/targetinterfaces.h>
+#include <unordered_map>
+#include <ork/kernel/datablock.inl>
 #include <ork/lev2/gfx/meshutil/submesh.h>
 #include <ork/lev2/gfx/meshutil/clusterizer.h>
-#include <ork/lev2/gfx/gfxenv_enum.h>
 
 namespace ork::meshutil {
+///////////////////////////////////////////////////////////////////////////////
+typedef orkmap<std::string, svar64_t> AnnotationMap;
+struct XgmClusterizer;
+struct XgmClusterizerDiced;
+struct XgmClusterizerStd;
+///////////////////////////////////////////////////////////////////////////////
+/// RigidPrimitive SubMesh Primitive with V12N12B12T8C4 vertex format
+///////////////////////////////////////////////////////////////////////////////
+template <typename vtx_t> struct RigidPrimitive {
 
-RigidPrimitive::RigidPrimitive() {
+  using idxbuf_t      = lev2::StaticIndexBuffer<uint16_t>;
+  using vtxbuf_t      = lev2::StaticVertexBuffer<vtx_t>;
+  using vtxbuf_ptr_t  = std::shared_ptr<vtxbuf_t>;
+  using vtxbuf_list_t = std::vector<vtxbuf_t>;
+  using idxbuf_ptr_t  = std::shared_ptr<idxbuf_t>;
+
+  struct PrimitiveGroup {
+    idxbuf_ptr_t _idxbuffer;
+    lev2::EPrimitiveType _primtype = lev2::EPrimitiveType::NONE;
+  };
+  using primgroup_ptr_t      = std::shared_ptr<PrimitiveGroup>;
+  using primgroup_ptr_list_t = std::vector<primgroup_ptr_t>;
+  struct PrimGroupCluster {
+    vtxbuf_ptr_t _vtxbuffer;
+    primgroup_ptr_list_t _primgroups;
+  };
+
+  using primgroupcluster_ptr_t = std::shared_ptr<PrimGroupCluster>;
+  using cluster_ptr_list_t     = std::vector<primgroupcluster_ptr_t>;
+
+  RigidPrimitive();
+
+  void fromSubMesh(const submesh& submesh, lev2::Context* context); /// generate from submesh using internal vertexbuffer
+  void fromClusterizer(const XgmClusterizerStd& cluz, lev2::Context* context);
+  void draw(lev2::Context* context) const; /// draw with context
+
+  cluster_ptr_list_t _gpuClusters;
+};
+///////////////////////////////////////////////////////////////////////////////
+template <typename vtx_t> RigidPrimitive<vtx_t>::RigidPrimitive() {
 }
-
 ////////////////////////////////////////////////////////////////////////////////
-
-void RigidPrimitive::fromClusterizer(const meshutil::XgmClusterizerStd& cluz, lev2::Context* context) {
+template <typename vtx_t>
+void RigidPrimitive<vtx_t>::fromClusterizer(const meshutil::XgmClusterizerStd& cluz, lev2::Context* context) {
   //////////////////////////////////////////////////////////////
   // create Indexed TriStripped Primitive Groups
   //////////////////////////////////////////////////////////////
@@ -27,7 +81,7 @@ void RigidPrimitive::fromClusterizer(const meshutil::XgmClusterizerStd& cluz, le
   OrkAssert(inumclus <= 1);
   for (size_t icluster = 0; icluster < inumclus; icluster++) {
     auto clusterbuilder = cluz.GetCluster(icluster);
-    clusterbuilder->buildVertexBuffer(*context, lev2::EVtxStreamFormat::V12N12B12T8C4);
+    clusterbuilder->buildVertexBuffer(*context, vtx_t::meFormat);
     lev2::XgmCluster xgmcluster;
     buildTriStripXgmCluster(*context, xgmcluster, clusterbuilder);
     primgroupcluster_ptr_t out_cluster = std::make_shared<PrimGroupCluster>();
@@ -48,21 +102,21 @@ void RigidPrimitive::fromClusterizer(const meshutil::XgmClusterizerStd& cluz, le
     _gpuClusters.push_back(out_cluster);
   } // for (size_t icluster = 0; icluster < inumclus; icluster++) {
 }
-
 ////////////////////////////////////////////////////////////////////////////////
-
-void RigidPrimitive::fromSubMesh(const submesh& submesh, lev2::Context* context) {
+template <typename vtx_t> void RigidPrimitive<vtx_t>::fromSubMesh(const submesh& inp_submesh, lev2::Context* context) {
+  submesh submeshTris;
+  submeshTriangulate(inp_submesh, submeshTris);
   //////////////////////////////////////////////////////////////
   // Fill In ClusterBuilder from submesh triangle soup
   //////////////////////////////////////////////////////////////
   meshutil::XgmClusterizerStd clusterizer;
   meshutil::MeshConfigurationFlags meshflags;
-  const auto& vpool = submesh.RefVertexPool();
+  const auto& vpool = submeshTris.RefVertexPool();
   int numverts      = vpool.GetNumVertices();
-  int inumpolys     = submesh.GetNumPolys(3);
+  int inumpolys     = submeshTris.GetNumPolys(3);
   clusterizer.Begin();
   for (int p = 0; p < inumpolys; p++) {
-    const auto& poly   = submesh.RefPoly(p);
+    const auto& poly   = submeshTris.RefPoly(p);
     const vertex& vtxa = vpool.GetVertex(poly.miVertices[0]);
     const vertex& vtxb = vpool.GetVertex(poly.miVertices[1]);
     const vertex& vtxc = vpool.GetVertex(poly.miVertices[2]);
@@ -75,10 +129,8 @@ void RigidPrimitive::fromSubMesh(const submesh& submesh, lev2::Context* context)
   //////////////////////////////////////////////////////////////
   fromClusterizer(clusterizer, context);
 }
-
 ////////////////////////////////////////////////////////////////////////////////
-
-void RigidPrimitive::draw(lev2::Context* context) const {
+template <typename vtx_t> void RigidPrimitive<vtx_t>::draw(lev2::Context* context) const {
   auto gbi = context->GBI();
   for (auto cluster : _gpuClusters) {
     for (auto primgroup : cluster->_primgroups) {
@@ -89,5 +141,5 @@ void RigidPrimitive::draw(lev2::Context* context) const {
     }
   }
 }
-
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

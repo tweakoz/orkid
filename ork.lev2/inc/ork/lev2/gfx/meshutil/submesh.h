@@ -485,40 +485,4 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath);
 // void SubDiv(submesh* poutsmesh) const;
 
 ///////////////////////////////////////////////////////////////////////////////
-/// RigidPrimitive SubMesh Primitive with V12N12B12T8C4 vertex format
-///////////////////////////////////////////////////////////////////////////////
-
-struct RigidPrimitive {
-
-  using vtx_t         = lev2::SVtxV12N12B12T8C4;
-  using idxbuf_t      = lev2::StaticIndexBuffer<uint16_t>;
-  using vtxbuf_t      = lev2::StaticVertexBuffer<vtx_t>;
-  using vtxbuf_ptr_t  = std::shared_ptr<vtxbuf_t>;
-  using vtxbuf_list_t = std::vector<vtxbuf_t>;
-  using idxbuf_ptr_t  = std::shared_ptr<idxbuf_t>;
-
-  struct PrimitiveGroup {
-    idxbuf_ptr_t _idxbuffer;
-    lev2::EPrimitiveType _primtype = lev2::EPrimitiveType::NONE;
-  };
-  using primgroup_ptr_t      = std::shared_ptr<PrimitiveGroup>;
-  using primgroup_ptr_list_t = std::vector<primgroup_ptr_t>;
-  struct PrimGroupCluster {
-    vtxbuf_ptr_t _vtxbuffer;
-    primgroup_ptr_list_t _primgroups;
-  };
-
-  using primgroupcluster_ptr_t = std::shared_ptr<PrimGroupCluster>;
-  using cluster_ptr_list_t     = std::vector<primgroupcluster_ptr_t>;
-
-  RigidPrimitive();
-
-  void fromSubMesh(const submesh& submesh, lev2::Context* context); /// generate from submesh using internal vertexbuffer
-  void fromClusterizer(const XgmClusterizerStd& cluz, lev2::Context* context);
-  void draw(lev2::Context* context) const; /// draw with context
-
-  cluster_ptr_list_t _gpuClusters;
-};
-
-///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

@@ -1,27 +1,27 @@
 #include "pyext.h"
+#include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
+using rigidprim_t = meshutil::RigidPrimitive<SVtxV12N12B12T8C4>;
 void pyinit_meshutil(py::module& module_lev2) {
   auto meshutil = module_lev2.def_submodule("meshutil", "Mesh operations");
   meshutil.def("triangulate", [](const meshutil::submesh& inpsubmesh, meshutil::submesh& outsubmesh) {
     meshutil::submeshTriangulate(inpsubmesh, outsubmesh);
   });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<meshutil::RigidPrimitive>(meshutil, "RigidPrimitive")
+  py::class_<rigidprim_t>(meshutil, "RigidPrimitive")
       .def(py::init<>())
       .def(py::init([](meshutil::submesh& submesh, ctx_t context) {
-        auto prim = std::unique_ptr<meshutil::RigidPrimitive>(new meshutil::RigidPrimitive);
+        auto prim = std::unique_ptr<rigidprim_t>(new rigidprim_t);
         prim->fromSubMesh(submesh, context.get());
         return prim;
       }))
       .def(
           "fromSubMesh",
-          [](meshutil::RigidPrimitive& prim, const meshutil::submesh& submesh, Context* context) {
-            prim.fromSubMesh(submesh, context);
-          })
-      .def("draw", [](meshutil::RigidPrimitive& prim, ctx_t context) { prim.draw(context.get()); });
+          [](rigidprim_t& prim, const meshutil::submesh& submesh, Context* context) { prim.fromSubMesh(submesh, context); })
+      .def("draw", [](rigidprim_t& prim, ctx_t context) { prim.draw(context.get()); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<meshutil::submesh>(meshutil, "SubMesh")
       .def(py::init<>())

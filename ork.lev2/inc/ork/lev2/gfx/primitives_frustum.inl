@@ -1,5 +1,5 @@
 #pragma once
-#include <ork/lev2/gfx/meshutil/submesh.h>
+#include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 #include <ork/math/frustum.h>
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
 
@@ -16,7 +16,6 @@ struct FrustumPrimitive {
     using namespace meshutil;
 
     submesh submeshQuads;
-    submesh submeshTris;
 
     float N = -_size * 0.5f;
     float P = +_size * 0.5f;
@@ -82,9 +81,7 @@ struct FrustumPrimitive {
         fvec2(0.0f, 1.0f),
         _colorRight);
 
-    submeshTriangulate(submeshQuads, submeshTris);
-
-    _primitive.fromSubMesh(submeshTris, context);
+    _primitive.fromSubMesh(submeshQuads, context);
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -119,7 +116,8 @@ struct FrustumPrimitive {
   fvec4 _colorRight;
 
   ork::Frustum _frustum;
-  meshutil::RigidPrimitive _primitive;
+  using rigidprim_t = meshutil::RigidPrimitive<SVtxV12N12B12T8C4>;
+  rigidprim_t _primitive;
 };
 
 using frustum_ptr_t = std::shared_ptr<FrustumPrimitive>;
