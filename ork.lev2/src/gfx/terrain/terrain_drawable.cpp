@@ -21,6 +21,7 @@
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/meshutil/meshutil.h>
+#include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 #include <ork/lev2/gfx/meshutil/clusterizer.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
@@ -33,11 +34,7 @@ ImplementReflectionX(ork::lev2::TerrainDrawableData, "TerrainDrawableData");
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-using vertex_type         = SVtxV12C4T16;
-using vertexbuffer_t      = StaticVertexBuffer<vertex_type>;
-using vertexbuffer_ptr_t  = std::shared_ptr<vertexbuffer_t>;
-using vertexbuffer_list_t = std::vector<vertexbuffer_t*>;
-using idxbuf_t            = StaticIndexBuffer<uint16_t>;
+using vertex_type = SVtxV12C4T16;
 
 enum PatchType {
   PT_A = 0,
@@ -55,20 +52,6 @@ struct Patch {
   int _lod;
   int _x, _z;
 };
-
-///////////////////////////////////////////////////////////////////////////////
-struct TerrainPrimitive {
-  std::shared_ptr<idxbuf_t> _idxbuffer;
-  lev2::EPrimitiveType _primtype = lev2::EPrimitiveType::NONE;
-};
-typedef std::shared_ptr<TerrainPrimitive> terprim_ptr_t;
-
-struct TerrainCluster {
-  vtxbufferbase_ptr_t _vtxbuffer;
-  std::vector<terprim_ptr_t> _primitives;
-};
-
-typedef std::shared_ptr<TerrainCluster> tercluster_ptr_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -94,7 +77,9 @@ struct SectorLodInfo {
   std::vector<Patch> _patches;
   meshutil::XgmClusterizerStd _clusterizer;
   meshutil::MeshConfigurationFlags _meshflags;
-  std::vector<tercluster_ptr_t> _gpuClusters;
+
+  using rigidprim_t = meshutil::RigidPrimitive<vertex_type>;
+  rigidprim_t _primitive;
 
   bool _islod0 = false;
 };
@@ -892,8 +877,8 @@ void SectorLodInfo::gpuLoadGeometry(Context* ctx, chunkfile::InputStream* hdrstr
   hdrstream->GetItem<size_t>(num_clusters);
   for (size_t icluster = 0; icluster < num_clusters; icluster++) {
 
-    auto gpu_cluster = std::make_shared<TerrainCluster>();
-    _gpuClusters.push_back(gpu_cluster);
+    auto gpu_cluster = std::make_shared<rigidprim_t::PrimGroupCluster>();
+    _primitive._gpuClusters.push_back(gpu_cluster);
 
     hdrstream->GetItem<size_t>(begin_lod_marker);
     OrkAssert(begin_lod_marker == "begin-sector-lod"_crcu);
@@ -921,7 +906,7 @@ void SectorLodInfo::gpuLoadGeometry(Context* ctx, chunkfile::InputStream* hdrstr
     memcpy(gpuvtxpointer, vertexbufferdata, vertexdatalen);
     ctx->GBI()->UnLockVB(*VB.get());
 
-    gpu_cluster->_vtxbuffer = VB;
+    gpu_cluster->_vtxbuffer = std::dynamic_pointer_cast<rigidprim_t::vtxbuf_t>(VB);
 
     for (size_t ipg = 0; ipg < numprimgroups; ipg++) {
       hdrstream->GetItem<size_t>(check_pgindex);
@@ -933,11 +918,11 @@ void SectorLodInfo::gpuLoadGeometry(Context* ctx, chunkfile::InputStream* hdrstr
       // printf("indexdataoffset<%zu>\n", indexdataoffset);
       auto indexbufferdata = (const uint16_t*)geostream->GetDataAt(indexdataoffset);
 
-      auto gpu_prim = std::make_shared<TerrainPrimitive>();
-      gpu_cluster->_primitives.push_back(gpu_prim);
+      auto gpu_prim = std::make_shared<rigidprim_t::PrimitiveGroup>();
+      gpu_cluster->_primgroups.push_back(gpu_prim);
 
       gpu_prim->_primtype  = primtype;
-      gpu_prim->_idxbuffer = std::make_shared<idxbuf_t>(numindices);
+      gpu_prim->_idxbuffer = std::make_shared<rigidprim_t::idxbuf_t>(numindices);
       auto gpuindexptr     = (void*)ctx->GBI()->LockIB(*gpu_prim->_idxbuffer.get());
       memcpy(gpuindexptr, indexbufferdata, numindices * sizeof(uint16_t));
       ctx->GBI()->UnLockIB(*gpu_prim->_idxbuffer.get());
@@ -1194,30 +1179,14 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   ////////////////////////////////
   for (int isector = 0; isector < 8; isector++) {
     auto& sector = _sector[isector];
-    auto& L0     = sector._lod0;
-    for (auto cluster : L0._gpuClusters) {
-      for (auto primitive : cluster->_primitives) {
-        gbi->DrawIndexedPrimitiveEML(
-            *cluster->_vtxbuffer.get(), //
-            *primitive->_idxbuffer.get(),
-            primitive->_primtype);
-      }
-    }
+    sector._lod0._primitive.draw(targ);
   }
   ////////////////////////////////
   // render LX
   ////////////////////////////////
   for (int isector = 0; isector < 8; isector++) {
     auto& sector = _sector[isector];
-    auto& LX     = sector._lodX;
-    for (auto cluster : LX._gpuClusters) {
-      for (auto primitive : cluster->_primitives) {
-        gbi->DrawIndexedPrimitiveEML(
-            *cluster->_vtxbuffer.get(), //
-            *primitive->_idxbuffer.get(),
-            primitive->_primtype);
-      }
-    }
+    sector._lodX._primitive.draw(targ);
   }
 
   targ->PopMaterial();
