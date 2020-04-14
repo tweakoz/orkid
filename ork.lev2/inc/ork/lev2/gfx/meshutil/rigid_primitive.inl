@@ -123,11 +123,11 @@ template <typename vtx_t> void RigidPrimitive<vtx_t>::fromSubMesh(const submesh&
   int inumpolys     = submeshTris.GetNumPolys(3);
   clusterizer.Begin();
   for (int p = 0; p < inumpolys; p++) {
-    const auto& poly   = submeshTris.RefPoly(p);
-    const vertex& vtxa = vpool.GetVertex(poly.miVertices[0]);
-    const vertex& vtxb = vpool.GetVertex(poly.miVertices[1]);
-    const vertex& vtxc = vpool.GetVertex(poly.miVertices[2]);
-    XgmClusterTri tri{vtxa, vtxb, vtxc};
+    const auto& poly = submeshTris.RefPoly(p);
+    auto vtxa        = poly._vertices[0];
+    auto vtxb        = poly._vertices[1];
+    auto vtxc        = poly._vertices[2];
+    XgmClusterTri tri{*vtxa, *vtxb, *vtxc};
     clusterizer.addTriangle(tri, meshflags);
   }
   clusterizer.End();

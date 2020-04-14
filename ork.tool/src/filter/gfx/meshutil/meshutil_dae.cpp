@@ -770,7 +770,7 @@ void DaeReadQueueItem::ReadPolys(int ithreadidx) const {
     size_t iface_numfverts = mpMatGroup->GetFaceVertexCount(iface);
     size_t iface_fvertbase = mpMatGroup->GetFaceVertexOffset(iface);
 
-    int ivertexcache[ork::meshutil::kmaxsidesperpoly];
+    ork::meshutil::vertex_ptr_t vertexcache[ork::meshutil::kmaxsidesperpoly];
 
     for (size_t iface_v = 0; iface_v < iface_numfverts; iface_v++) {
       ork::meshutil::vertex muvtx;
@@ -860,13 +860,12 @@ void DaeReadQueueItem::ReadPolys(int ithreadidx) const {
       // const std::string& PolyGroupName =	ShadingGroupName; //	readopts.mbMergeMeshShGrpName
       /////////////////////////////////
       /////////////////////////////////
-      int iv = mpDestSubMesh->MergeVertex(muvtx);
       // orkprintf("iface=%d, iposidx/3=%d, iface_v=%d, iv=%d\n", iface, iposidx/3, iface_v, iv);
-      ivertexcache[iface_v] = iv;
+      vertexcache[iface_v] = mpDestSubMesh->newMergeVertex(muvtx);
 
       if (iface_v == iface_numfverts - 1) {
         if (iface_numfverts <= ork::meshutil::kmaxsidesperpoly) {
-          ork::meshutil::poly ply(ivertexcache, iface_numfverts);
+          ork::meshutil::poly ply(vertexcache, iface_numfverts);
           ply.SetAnnoMap(mpAnnoMap);
           mpDestSubMesh->MergePoly(ply);
         } else {

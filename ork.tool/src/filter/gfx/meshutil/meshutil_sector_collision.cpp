@@ -436,15 +436,15 @@ bool SectorWalker::GatherSectorPolys(SectorPolys& polys, int botPolyIndex) const
 ///////////////////////////////////////////////////////////////////////////////
 
 void SectorWalker::InitPortal(ent::bullet::SectorPortal& portal, int bl, int tl, int tr, int br) {
-  portal.mCornerVerts[ent::bullet::PORTAL_CORNER_BL] = getOutVertID(bl);
-  portal.mCornerVerts[ent::bullet::PORTAL_CORNER_TL] = getOutVertID(tl);
-  portal.mCornerVerts[ent::bullet::PORTAL_CORNER_TR] = getOutVertID(tr);
-  portal.mCornerVerts[ent::bullet::PORTAL_CORNER_BR] = getOutVertID(br);
-  ork::meshutil::poly tmp(bl, tl, tr, br);
-  portal.mPlane         = fplane3(tmp.ComputeNormal(mSubmesh->RefVertexPool()), tmp.ComputeCenter(mSubmesh->RefVertexPool()).mPos);
-  portal.mTrackProgress = -1; // uncomputed
-
   // disabled during submesh refactor
+  // portal.mCornerVerts[ent::bullet::PORTAL_CORNER_BL] = getOutVertID(bl);
+  // portal.mCornerVerts[ent::bullet::PORTAL_CORNER_TL] = getOutVertID(tl);
+  // portal.mCornerVerts[ent::bullet::PORTAL_CORNER_TR] = getOutVertID(tr);
+  // portal.mCornerVerts[ent::bullet::PORTAL_CORNER_BR] = getOutVertID(br);
+  // ork::meshutil::poly tmp(bl, tl, tr, br);
+  // portal.mPlane         = fplane3(tmp.ComputeNormal(mSubmesh->RefVertexPool()),
+  // tmp.ComputeCenter(mSubmesh->RefVertexPool()).mPos); portal.mTrackProgress = -1; // uncomputed
+
   // int startCheck        = Poly(mStartPoly).VertexCCW(bl);
   // if (startCheck == br) {
   // portal.mTrackProgress = 1;
@@ -878,45 +878,49 @@ bool SectorWalker::ComputeSectors() {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool SectorWalker::AddMidlineInfo(const ork::meshutil::submesh& mesh) {
-  orkvector<int> vertexMap;
+  orkvector<ork::meshutil::vertex_ptr_t> vertexMap;
+  /*
   vertexMap.resize(mesh.RefVertexPool().GetNumVertices());
-  for (size_t i = 0; i < mesh.RefVertexPool().GetNumVertices(); i++)
-    vertexMap[i] = -1;
-  for (int secnum = 0; secnum < (int)mSectors.size(); secnum++) {
-    ent::bullet::Sector& sector = mSectors[secnum];
-    sector.mMidlineTriStart     = mTarget.mMidlineTris.size();
-    for (int polynum = 0; polynum < mesh.GetNumPolys(); polynum++) {
-      const auto& thePoly = mesh.RefPoly(polynum);
-      PolyAssertReturn(
-          thePoly.miNumSides == 3, polynum, "Gravity mesh only has triangles (importer should force, tell inio/tweak)");
-      bool in = false;
-      for (int vert = 0; vert < 3; vert++) {
-        if (sector.containsPoint(mTarget, mesh.RefVertexPool().GetVertex(thePoly.miVertices[vert]).mPos)) {
-          in = true;
-          break;
-        }
-      }
-      if (in) {
-        for (int vertind = 0; vertind < 3; vertind++) {
-          if (vertexMap[thePoly.miVertices[vertind]] == -1) {
-            vertexMap[thePoly.miVertices[vertind]] = mTarget.mMidlineVerts.size();
-            const auto& vert                       = mesh.RefVertexPool().GetVertex(thePoly.miVertices[vertind]);
-            mTarget.mMidlineVerts.push_back(ent::bullet::MidlineVert(
-                vert.mPos, 2 * (vert.mCol[0].GetX() - 0.5f), 2 * vert.mCol[0].GetY(), vert.mCol[0].GetZ()));
+    for (size_t i = 0; i < mesh.RefVertexPool().GetNumVertices(); i++)
+      vertexMap[i] = nullptr;
+    for (int secnum = 0; secnum < (int)mSectors.size(); secnum++) {
+      ent::bullet::Sector& sector = mSectors[secnum];
+      sector.mMidlineTriStart     = mTarget.mMidlineTris.size();
+      for (int polynum = 0; polynum < mesh.GetNumPolys(); polynum++) {
+        const auto& thePoly = mesh.RefPoly(polynum);
+        PolyAssertReturn(
+            thePoly.miNumSides == 3, polynum, "Gravity mesh only has triangles (importer should force, tell inio/tweak)");
+        bool in = false;
+        for (int vert = 0; vert < 3; vert++) {
+          auto check_vtx = thePoly._vertices[vert]->mPos;
+          if (sector.containsPoint(mTarget, check_vtx) {
+            in = true;
+            break;
           }
-          mTarget.mMidlineTris.push_back(vertexMap[thePoly.miVertices[vertind]]);
+        }
+        if (in) {
+          for (int vertind = 0; vertind < 3; vertind++) {
+            auto check_vtx = thePoly._vertices[vertind]->mPos;
+            if (check_vtx == nullptr) {
+              vertexMap[thePoly.miVertices[vertind]] = mTarget.mMidlineVerts.size();
+              const auto& vert                       = mesh.RefVertexPool().GetVertex(thePoly.miVertices[vertind]);
+              mTarget.mMidlineVerts.push_back(ent::bullet::MidlineVert(
+                  vert.mPos, 2 * (vert.mCol[0].GetX() - 0.5f), 2 * vert.mCol[0].GetY(), vert.mCol[0].GetZ()));
+            }
+            mTarget.mMidlineTris.push_back(vertexMap[thePoly.miVertices[vertind]]);
+          }
         }
       }
-    }
-    sector.mMidlineTriCount = (mTarget.mMidlineTris.size() - sector.mMidlineTriStart) / 3;
-  }
+      sector.mMidlineTriCount = (mTarget.mMidlineTris.size() - sector.mMidlineTriStart) / 3;
+    }*/
   return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool SectorWalker::AddKillInfo(const ork::meshutil::submesh& mesh) {
-  orkvector<int> vertexMap;
+  /*
+  orkvector<ork::meshutil::vertex_ptr_t> vertexMap;
   vertexMap.resize(mesh.RefVertexPool().GetNumVertices());
   for (size_t i = 0; i < mesh.RefVertexPool().GetNumVertices(); i++)
     vertexMap[i] = -1;
@@ -935,7 +939,8 @@ bool SectorWalker::AddKillInfo(const ork::meshutil::submesh& mesh) {
       }
       if (in) {
         for (int vertind = 0; vertind < 3; vertind++) {
-          if (vertexMap[thePoly.miVertices[vertind]] == -1) {
+          auto check_vtx = thePoly._vertices[vertind];
+          if (vertexMap[check_vtx->_poolindex] == nullptr) {
             vertexMap[thePoly.miVertices[vertind]] = mTarget.mKillVerts.size();
             const auto& vert                       = mesh.RefVertexPool().GetVertex(thePoly.miVertices[vertind]);
             mTarget.mKillVerts.push_back(vert.mPos);
@@ -945,7 +950,7 @@ bool SectorWalker::AddKillInfo(const ork::meshutil::submesh& mesh) {
       }
     }
     sector.mKillTriCount = mTarget.mKillTris.size() / 3 - sector.mKillTriStart;
-  }
+  }*/
   return true;
 }
 

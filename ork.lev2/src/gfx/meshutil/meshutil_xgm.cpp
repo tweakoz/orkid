@@ -257,7 +257,7 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                   case lev2::EVtxStreamFormat::V12N12T8I4W4: {
                     const lev2::SVtxV12N12T8I4W4* ptypedsource = (const lev2::SVtxV12N12T8I4W4*)pvertbase;
                     OrkAssert(0 == (inumidx % 3));
-                    int indexcache[3];
+                    vertex_ptr_t vertexcache[3];
                     for (int ii = 0; ii < inumidx; ii++) {
                       U16 uidx                            = pidx16[ii];
                       const lev2::SVtxV12N12T8I4W4& InVtx = ptypedsource[uidx];
@@ -266,10 +266,9 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                       ToolVertex.mNrm                = InVtx.mNormal;
                       ToolVertex.mUV[0].mMapTexCoord = InVtx.mUV0;
                       ToolVertex.mCol[0]             = fcolor4::White();
-                      int ioutidx                    = outsub.MergeVertex(ToolVertex);
-                      indexcache[(ii % 3)]           = ioutidx;
+                      vertexcache[(ii % 3)]          = outsub.newMergeVertex(ToolVertex);
                       if (2 == (ii % 3)) {
-                        poly ToolPoly(indexcache[0], indexcache[1], indexcache[2]);
+                        poly ToolPoly(vertexcache[0], vertexcache[1], vertexcache[2]);
                         outsub.MergePoly(ToolPoly);
                       }
                     }
@@ -279,7 +278,7 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                   case lev2::EVtxStreamFormat::V12N12B12T8C4: {
                     const lev2::SVtxV12N12B12T8C4* ptypedsource = (const lev2::SVtxV12N12B12T8C4*)pvertbase;
                     OrkAssert(0 == (inumidx % 3));
-                    int indexcache[3];
+                    vertex_ptr_t vertexcache[3];
                     for (int ii = 0; ii < inumidx; ii++) {
                       U16 uidx                             = pidx16[ii];
                       const lev2::SVtxV12N12B12T8C4& InVtx = ptypedsource[uidx];
@@ -288,10 +287,9 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                       ToolVertex.mNrm                = InVtx.mNormal;
                       ToolVertex.mUV[0].mMapTexCoord = InVtx.mUV0;
                       ToolVertex.mCol[0]             = fcolor4::White();
-                      int ioutidx                    = outsub.MergeVertex(ToolVertex);
-                      indexcache[(ii % 3)]           = ioutidx;
+                      vertexcache[(ii % 3)]          = outsub.newMergeVertex(ToolVertex);
                       if (2 == (ii % 3)) {
-                        poly ToolPoly(indexcache[0], indexcache[1], indexcache[2]);
+                        poly ToolPoly(vertexcache[0], vertexcache[1], vertexcache[2]);
                         outsub.MergePoly(ToolPoly);
                       }
                     }
@@ -301,7 +299,7 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                   case lev2::EVtxStreamFormat::V12N12T16C4: {
                     const lev2::SVtxV12N12T16C4* ptypedsource = (const lev2::SVtxV12N12T16C4*)pvertbase;
                     OrkAssert(0 == (inumidx % 3));
-                    int indexcache[3];
+                    vertex_ptr_t vertexcache[3];
                     printf("scanning numindices<%d>\n", inumidx);
                     for (int ii = 0; ii < inumidx; ii++) {
                       U16 uidx                           = pidx16[ii];
@@ -311,10 +309,9 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                       ToolVertex.mNrm                = InVtx.mNormal;
                       ToolVertex.mUV[0].mMapTexCoord = InVtx.mUV0;
                       ToolVertex.mCol[0]             = fcolor4::White();
-                      int ioutidx                    = outsub.MergeVertex(ToolVertex);
-                      indexcache[(ii % 3)]           = ioutidx;
+                      vertexcache[(ii % 3)]          = outsub.newMergeVertex(ToolVertex);
                       if (2 == (ii % 3)) {
-                        poly ToolPoly(indexcache[0], indexcache[1], indexcache[2]);
+                        poly ToolPoly(vertexcache[0], vertexcache[1], vertexcache[2]);
                         outsub.MergePoly(ToolPoly);
                       }
                     }

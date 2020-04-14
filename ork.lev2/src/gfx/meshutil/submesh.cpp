@@ -149,6 +149,11 @@ int submesh::MergeVertex(const vertex& vtx, int idx) {
   return mvpool.MergeVertex(vtx, idx);
 }
 
+vertex_ptr_t submesh::newMergeVertex(const vertex& vtx) {
+  mAABoxDirty = true;
+  return mvpool.newMergeVertex(vtx);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 poly& submesh::RefPoly(int i) {
@@ -265,10 +270,9 @@ void submesh::MergeSubMesh(const submesh& inp_mesh) {
     poly NewPoly;
     NewPoly.miNumSides = inumpv;
     for (int iv = 0; iv < inumpv; iv++) {
-      int ivi                = ply.GetVertexID(iv);
-      const vertex& vtx      = inp_mesh.RefVertexPool().GetVertex(ivi);
-      int inewvi             = MergeVertex(vtx);
-      NewPoly.miVertices[iv] = inewvi;
+      int ivi               = ply.GetVertexID(iv);
+      const vertex& src_vtx = inp_mesh.RefVertexPool().GetVertex(ivi);
+      NewPoly._vertices[iv] = newMergeVertex(src_vtx);
     }
     NewPoly.SetAnnoMap(ply.GetAnnoMap());
     MergePoly(NewPoly);
@@ -289,27 +293,39 @@ void submesh::MergePoly(const poly& ply) {
   // zero area poly removal
   switch (inumv) {
     case 3: {
-      if ((ply.miVertices[0] == ply.miVertices[1]) || (ply.miVertices[1] == ply.miVertices[2]) ||
-          (ply.miVertices[2] == ply.miVertices[0])) {
-        orkprintf("Mesh::MergePoly() removing zero area tri<%d %d %d>\n", ply.miVertices[0], ply.miVertices[1], ply.miVertices[2]);
+      if ((ply._vertices[0]->_poolindex == ply._vertices[1]->_poolindex) ||
+          (ply._vertices[1]->_poolindex == ply._vertices[2]->_poolindex) ||
+          (ply._vertices[2]->_poolindex == ply._vertices[0]->_poolindex)) {
+        orkprintf(
+            "Mesh::MergePoly() removing zero area tri<%d %d %d>\n",
+            ply._vertices[0]->_poolindex,
+            ply._vertices[1]->_poolindex,
+            ply._vertices[2]->_poolindex);
 
         return;
       }
+      break;
     }
     case 4: {
-      if ((ply.miVertices[0] == ply.miVertices[1]) || (ply.miVertices[0] == ply.miVertices[2]) ||
-          (ply.miVertices[0] == ply.miVertices[3]) || (ply.miVertices[1] == ply.miVertices[2]) ||
-          (ply.miVertices[1] == ply.miVertices[3]) || (ply.miVertices[2] == ply.miVertices[3])) {
+      if ((ply._vertices[0]->_poolindex == ply._vertices[1]->_poolindex) ||
+          (ply._vertices[0]->_poolindex == ply._vertices[2]->_poolindex) ||
+          (ply._vertices[0]->_poolindex == ply._vertices[3]->_poolindex) ||
+          (ply._vertices[1]->_poolindex == ply._vertices[2]->_poolindex) ||
+          (ply._vertices[1]->_poolindex == ply._vertices[3]->_poolindex) ||
+          (ply._vertices[2]->_poolindex == ply._vertices[3]->_poolindex)) {
         orkprintf(
             "Mesh::MergePoly() removing zero area quad<%d %d %d %d>\n",
-            ply.miVertices[0],
-            ply.miVertices[1],
-            ply.miVertices[2],
-            ply.miVertices[3]);
+            ply._vertices[0]->_poolindex,
+            ply._vertices[1]->_poolindex,
+            ply._vertices[2]->_poolindex,
+            ply._vertices[3]->_poolindex);
 
         return;
       }
+      break;
     }
+    default:
+      break;
       // TODO n-sided polys
   }
   //////////////////////////////
@@ -324,9 +340,8 @@ void submesh::MergePoly(const poly& ply) {
     //////////////////////////////////////////////////
     // connect to vertices
     for (int i = 0; i < inumv; i++) {
-      int iv      = ply.miVertices[i];
-      vertex& vtx = mvpool.GetVertex(iv);
-      // vtx.ConnectToPoly(inewpi);
+      auto vtx = ply._vertices[i];
+      // vtx->ConnectToPoly(inewpi);
     }
     //////////////////////////////////////////////////
     // add edges
@@ -395,11 +410,11 @@ void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 uv0, fvec2 u
   muvtx[2].set(p2, nrm, bin, uv2, c);
   muvtx[3].set(p3, nrm, bin, uv3, c);
 
-  int i0 = MergeVertex(muvtx[0]);
-  int i1 = MergeVertex(muvtx[1]);
-  int i2 = MergeVertex(muvtx[2]);
-  int i3 = MergeVertex(muvtx[3]);
-  MergePoly(poly(i0, i1, i2, i3));
+  auto v0 = newMergeVertex(muvtx[0]);
+  auto v1 = newMergeVertex(muvtx[1]);
+  auto v2 = newMergeVertex(muvtx[2]);
+  auto v3 = newMergeVertex(muvtx[3]);
+  MergePoly(poly(v0, v1, v2, v3));
 }
 
 void submesh::addQuad(
@@ -424,11 +439,11 @@ void submesh::addQuad(
   muvtx[2].set(p2, n2, bin, uv2, c);
   muvtx[3].set(p3, n3, bin, uv3, c);
 
-  int i0 = MergeVertex(muvtx[0]);
-  int i1 = MergeVertex(muvtx[1]);
-  int i2 = MergeVertex(muvtx[2]);
-  int i3 = MergeVertex(muvtx[3]);
-  MergePoly(poly(i0, i1, i2, i3));
+  auto v0 = newMergeVertex(muvtx[0]);
+  auto v1 = newMergeVertex(muvtx[1]);
+  auto v2 = newMergeVertex(muvtx[2]);
+  auto v3 = newMergeVertex(muvtx[3]);
+  MergePoly(poly(v0, v1, v2, v3));
 }
 ///////////////////////////////////////////////////////////////////////////////
 /*

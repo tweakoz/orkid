@@ -217,6 +217,7 @@ struct vertexpool {
   orkvector<vertex_ptr_t> VertexPool;
 
   int MergeVertex(const vertex& vtx, int idx = -1);
+  vertex_ptr_t newMergeVertex(const vertex& vtx);
 
   const vertex& GetVertex(int ivid) const {
     OrkAssert(orkvector<vertex>::size_type(ivid) < VertexPool.size());
@@ -265,7 +266,7 @@ public:
 
   const std::string& GetAnnotation(const std::string& annoname) const;
 
-  int miVertices[kmaxsidesperpoly];
+  vertex_ptr_t _vertices[kmaxsidesperpoly];
   edge_ptr_t mEdges[kmaxsidesperpoly];
   int miNumSides;
 
@@ -275,60 +276,39 @@ public:
 
   int GetVertexID(int i) const {
     OrkAssert(i < miNumSides);
-    return miVertices[i];
+    return _vertices[i]->_poolindex;
   }
 
-  poly()
+  poly(
+      vertex_ptr_t ia = nullptr, //
+      vertex_ptr_t ib = nullptr,
+      vertex_ptr_t ic = nullptr,
+      vertex_ptr_t id = nullptr)
       : miNumSides(0)
       , mAnnotationSet(0) {
-    for (int i = 0; i < kmaxsidesperpoly; i++) {
-      miVertices[i] = -1;
-      mEdges[i]     = nullptr;
-    }
-  }
-
-  poly(int ia, int ib, int ic)
-      : miNumSides(3)
-      , mAnnotationSet(0) {
-    miVertices[0] = ia;
-    miVertices[1] = ib;
-    miVertices[2] = ic;
-    mEdges[0]     = nullptr;
-    mEdges[1]     = nullptr;
-    mEdges[2]     = nullptr;
-    for (int i = 3; i < kmaxsidesperpoly; i++) {
-      miVertices[i] = -1;
-      mEdges[i]     = nullptr;
-    }
-  }
-
-  poly(int ia, int ib, int ic, int id)
-      : miNumSides(4)
-      , mAnnotationSet(0) {
-    miVertices[0] = ia;
-    miVertices[1] = ib;
-    miVertices[2] = ic;
-    miVertices[3] = id;
-    mEdges[0]     = nullptr;
-    mEdges[1]     = nullptr;
-    mEdges[2]     = nullptr;
-    mEdges[3]     = nullptr;
+    _vertices[0] = ia;
+    _vertices[1] = ib;
+    _vertices[2] = ic;
+    _vertices[3] = id;
+    if (ia)
+      miNumSides++;
+    if (ib)
+      miNumSides++;
+    if (ic)
+      miNumSides++;
+    if (id)
+      miNumSides++;
     for (int i = 4; i < kmaxsidesperpoly; i++) {
-      miVertices[i] = -1;
-      mEdges[i]     = nullptr;
+      mEdges[i] = nullptr;
     }
   }
 
-  poly(const int verts[], int numSides)
+  poly(const vertex_ptr_t verts[], int numSides)
       : miNumSides(numSides)
       , mAnnotationSet(0) {
     for (int i = 0; i < numSides; i++) {
-      miVertices[i] = verts[i];
-      mEdges[i]     = nullptr;
-    }
-    for (int i = numSides; i < kmaxsidesperpoly; i++) {
-      miVertices[i] = -1;
-      mEdges[i]     = nullptr;
+      _vertices[i] = verts[i];
+      mEdges[i]    = nullptr;
     }
   }
 
@@ -426,6 +406,7 @@ struct submesh {
 
   //////////////////////////////////////////////////////////////////////////////
 
+  vertex_ptr_t newMergeVertex(const vertex& vtx);
   int MergeVertex(const vertex& vtx, int idx = -1);
   edge_ptr_t MergeEdge(const edge& ed, int ipolyindex = -1);
   void MergePoly(const poly& ply);

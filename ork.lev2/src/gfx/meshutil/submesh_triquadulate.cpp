@@ -22,33 +22,26 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
 
     switch (inumv) {
       case 3: {
-        int idx0     = ply.miVertices[0];
-        int idx1     = ply.miVertices[1];
-        int idx2     = ply.miVertices[2];
-        auto v0      = inpmesh.mvpool.VertexPool[idx0];
-        auto v1      = inpmesh.mvpool.VertexPool[idx1];
-        auto v2      = inpmesh.mvpool.VertexPool[idx2];
-        int imerged0 = outmesh.mvpool.MergeVertex(*v0);
-        int imerged1 = outmesh.mvpool.MergeVertex(*v1);
-        int imerged2 = outmesh.mvpool.MergeVertex(*v2);
-        outmesh.MergePoly(poly(imerged0, imerged1, imerged2));
+        auto v0 = ply._vertices[0];
+        auto v1 = ply._vertices[1];
+        auto v2 = ply._vertices[2];
+        auto m0 = outmesh.mvpool.newMergeVertex(*v0);
+        auto m1 = outmesh.mvpool.newMergeVertex(*v1);
+        auto m2 = outmesh.mvpool.newMergeVertex(*v2);
+        outmesh.MergePoly(poly(m0, m1, m2));
         break;
       }
       case 4: {
-        int idx0     = ply.miVertices[0];
-        int idx1     = ply.miVertices[1];
-        int idx2     = ply.miVertices[2];
-        int idx3     = ply.miVertices[3];
-        auto v0      = inpmesh.mvpool.VertexPool[idx0];
-        auto v1      = inpmesh.mvpool.VertexPool[idx1];
-        auto v2      = inpmesh.mvpool.VertexPool[idx2];
-        auto v3      = inpmesh.mvpool.VertexPool[idx3];
-        int imerged0 = outmesh.mvpool.MergeVertex(*v0);
-        int imerged1 = outmesh.mvpool.MergeVertex(*v1);
-        int imerged2 = outmesh.mvpool.MergeVertex(*v2);
-        int imerged3 = outmesh.mvpool.MergeVertex(*v3);
-        outmesh.MergePoly(poly(imerged0, imerged1, imerged2));
-        outmesh.MergePoly(poly(imerged2, imerged3, imerged0));
+        auto v0 = ply._vertices[0];
+        auto v1 = ply._vertices[1];
+        auto v2 = ply._vertices[2];
+        auto v3 = ply._vertices[3];
+        auto m0 = outmesh.mvpool.newMergeVertex(*v0);
+        auto m1 = outmesh.mvpool.newMergeVertex(*v1);
+        auto m2 = outmesh.mvpool.newMergeVertex(*v2);
+        auto m3 = outmesh.mvpool.newMergeVertex(*v3);
+        outmesh.MergePoly(poly(m0, m1, m2));
+        outmesh.MergePoly(poly(m2, m3, m0));
         break;
       }
       default:
@@ -63,7 +56,7 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
   ///////////////////////////////////////
 
   fplane3 P0, P1;
-  int ici[6];
+  vertex_ptr_t ici[6];
   fvec4 VPos[6];
 
   ///////////////////////////////////////
@@ -75,13 +68,9 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
 
     const poly& inpoly = inpmesh.RefPoly(ip);
 
-    ici[0] = inpoly.miVertices[0];
-    ici[1] = inpoly.miVertices[1];
-    ici[2] = inpoly.miVertices[2];
-
-    auto v0 = inpmesh.mvpool.VertexPool[ici[0]];
-    auto v1 = inpmesh.mvpool.VertexPool[ici[1]];
-    auto v2 = inpmesh.mvpool.VertexPool[ici[2]];
+    auto v0 = inpoly._vertices[0];
+    auto v1 = inpoly._vertices[1];
+    auto v2 = inpoly._vertices[2];
 
     VPos[0] = v0->mPos;
     VPos[1] = v1->mPos;
@@ -133,13 +122,13 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
 
         IndexTestContext itestctx;
 
-        ici[3] = ply.miVertices[0];
-        ici[4] = ply.miVertices[1];
-        ici[5] = ply.miVertices[2];
+        auto v3 = ply._vertices[0];
+        auto v4 = ply._vertices[1];
+        auto v5 = ply._vertices[2];
 
-        VPos[3] = inpmesh.mvpool.VertexPool[ici[3]]->mPos;
-        VPos[4] = inpmesh.mvpool.VertexPool[ici[4]]->mPos;
-        VPos[5] = inpmesh.mvpool.VertexPool[ici[5]]->mPos;
+        VPos[3] = v3->mPos;
+        VPos[4] = v4->mPos;
+        VPos[5] = v5->mPos;
 
         P1.CalcPlaneFromTriangle(VPos[3], VPos[4], VPos[5]);
         // fvec4 VArea345[3] = { VPos[3],VPos[4],VPos[5] };
@@ -164,7 +153,7 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
             std::multimap<int, int> TestForQuadIdxMap;
 
             for (int it = 0; it < 6; it++) {
-              int idx = ici[it];
+              int idx = ici[it]->_poolindex;
 
               TestForQuadIdxMap.insert(std::make_pair(idx, it));
               TestForQuadIdxSet.insert(idx);
@@ -240,10 +229,10 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
                 // make sure its a rectangular quad by comparing edge directions
 
                 if ((fdotACBD > float(0.999f)) && (fabs(fdotACAB) < float(0.02f)) && (fabs(fdotDCBD) < float(0.02f))) {
-                  int i0 = ici[icorner0];
-                  int i1 = ici[ilo0];
-                  int i2 = ici[ilo1];
-                  int i3 = ici[icorner1];
+                  auto v0 = ici[icorner0];
+                  auto v1 = ici[ilo0];
+                  auto v2 = ici[ilo1];
+                  auto v3 = ici[icorner1];
 
                   //////////////////////////////////////
                   // ensure good winding order
@@ -256,10 +245,10 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
                   //////////////////////////////////////
 
                   if ((float(1.0f) - fdot) < float(0.001f)) {
-                    outmesh.MergePoly(poly(i0, i1, i3, i2));
+                    outmesh.MergePoly(poly(v0, v1, v3, v2));
                     basquad = true;
                   } else if ((float(1.0f) + fdot) < float(0.001f)) {
-                    outmesh.MergePoly(poly(i0, i2, i3, i1));
+                    outmesh.MergePoly(poly(v0, v2, v3, v1));
                     basquad = true;
                   }
                 }

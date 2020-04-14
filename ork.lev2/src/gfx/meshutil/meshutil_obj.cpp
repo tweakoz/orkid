@@ -451,7 +451,7 @@ void Mesh::ReadFromWavefrontObj(const file::Path& BasePath) {
 
     if (inumv <= 4) {
       static const int kmax = 4;
-      int imerged_cache[kmax];
+      vertex_ptr_t vertex_cache[kmax];
       OrkAssert(inumv <= kmax)
 
           for (size_t iv = 0; iv < inumv; iv++) {
@@ -472,22 +472,23 @@ void Mesh::ReadFromWavefrontObj(const file::Path& BasePath) {
         ToolVertex.mNrm                = nrm;
         ToolVertex.mUV[0].mMapTexCoord = uv0;
 
-        imerged_cache[iv] = smesh.MergeVertex(ToolVertex);
+        vertex_cache[iv] = smesh.newMergeVertex(ToolVertex);
       }
 
       switch (inumv) {
         case 3: {
-          bool bzeroarea = (imerged_cache[0] == imerged_cache[1]) || (imerged_cache[1] == imerged_cache[2]) ||
-                           (imerged_cache[2] == imerged_cache[0]);
+          bool bzeroarea = (vertex_cache[0] == vertex_cache[1]) || //
+                           (vertex_cache[1] == vertex_cache[2]) || //
+                           (vertex_cache[2] == vertex_cache[0]);
 
           if (false == bzeroarea) {
-            poly ToolPoly(imerged_cache[0], imerged_cache[1], imerged_cache[2]);
+            poly ToolPoly(vertex_cache[0], vertex_cache[1], vertex_cache[2]);
             smesh.MergePoly(ToolPoly);
           }
           break;
         }
         case 4: {
-          poly ToolPoly(imerged_cache[0], imerged_cache[1], imerged_cache[2], imerged_cache[3]);
+          poly ToolPoly(vertex_cache[0], vertex_cache[1], vertex_cache[2], vertex_cache[3]);
           smesh.MergePoly(ToolPoly);
           break;
         }

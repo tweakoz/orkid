@@ -539,11 +539,11 @@ void ToolMesh::readFromAssimp(const file::Path& BasePath, DaeReadOpts& readopts)
                 }
               }
             }
-            int outpoly_indices[3] = {-1, -1, -1};
-            outpoly_indices[0]     = out_submesh.MergeVertex(muverts[0]);
-            outpoly_indices[1]     = out_submesh.MergeVertex(muverts[1]);
-            outpoly_indices[2]     = out_submesh.MergeVertex(muverts[2]);
-            ork::meshutil::poly ply(outpoly_indices, 3);
+            ork::meshutil::vertex_ptr_t outvtx[3] = {nullptr, nullptr, nullptr};
+            outvtx[0]                             = out_submesh.newMergeVertex(muverts[0]);
+            outvtx[1]                             = out_submesh.newMergeVertex(muverts[1]);
+            outvtx[2]                             = out_submesh.newMergeVertex(muverts[2]);
+            ork::meshutil::poly ply(outvtx, 3);
             out_submesh.MergePoly(ply);
           } else {
             printf("non triangle\n");

@@ -211,8 +211,7 @@ vertex poly::ComputeCenter(const vertexpool& vpool) const {
   }
   float frecip = float(1.0f) / float(inumv);
   for (int iv = 0; iv < inumv; iv++) {
-    int idx      = miVertices[iv];
-    auto v       = vpool.VertexPool[idx];
+    auto v       = _vertices[iv];
     vcenter.mPos = vcenter.mPos + v->mPos;
     vcenter.mNrm = vcenter.mNrm + v->mNrm;
     for (int it = 0; it < vertex::kmaxuvs; it++) {
@@ -231,11 +230,11 @@ vertex poly::ComputeCenter(const vertexpool& vpool) const {
 
 float poly::ComputeArea(const vertexpool& vpool, const fmtx4& MatRange) const {
   float farea     = 0.0f;
-  ork::fvec3 base = vpool.GetVertex(miVertices[0]).mPos.Transform(MatRange);
-  ork::fvec3 prev = vpool.GetVertex(miVertices[1]).mPos.Transform(MatRange);
+  ork::fvec3 base = _vertices[0]->mPos.Transform(MatRange);
+  ork::fvec3 prev = _vertices[1]->mPos.Transform(MatRange);
   // compute area polygon as area of triangle fan
   for (int i = 2; i < miNumSides; i++) {
-    ork::fvec3 next = vpool.GetVertex(miVertices[i]).mPos.Transform(MatRange);
+    ork::fvec3 next = _vertices[i]->mPos.Transform(MatRange);
     // area of triangle 1/2 length of cross product the vector of any two edges
     farea += (prev - base).Cross(next - base).Mag() * 0.5f;
     prev = next;
@@ -247,9 +246,9 @@ float poly::ComputeArea(const vertexpool& vpool, const fmtx4& MatRange) const {
 
 float poly::ComputeEdgeLength(const vertexpool& vpool, const fmtx4& MatRange, int iedge) const {
   int inumvtx = miNumSides;
-  int iv0     = miVertices[(iedge + 0) % miNumSides];
-  int iv1     = miVertices[(iedge + 1) % miNumSides];
-  float elen  = (vpool.GetVertex(iv0).mPos.Transform(MatRange) - vpool.GetVertex(iv1).mPos.Transform(MatRange)).Mag();
+  auto v0     = _vertices[(iedge + 0) % miNumSides];
+  auto v1     = _vertices[(iedge + 1) % miNumSides];
+  float elen  = (v0->mPos.Transform(MatRange) - v1->mPos.Transform(MatRange)).Mag();
   return elen;
 }
 
@@ -257,11 +256,11 @@ float poly::ComputeEdgeLength(const vertexpool& vpool, const fmtx4& MatRange, in
 
 fvec3 poly::ComputeNormal(const vertexpool& vpool) const {
   fvec3 rval(0, 0, 0);
-  const fvec3* v0 = &vpool.GetVertex(miVertices[0]).mPos;
-  const fvec3* v1 = &vpool.GetVertex(miVertices[1]).mPos;
+  auto v0 = _vertices[0]->mPos;
+  auto v1 = _vertices[1]->mPos;
   for (int i = 2; i < miNumSides; i++) {
-    const fvec3* v2 = &vpool.GetVertex(miVertices[i % miNumSides]).mPos;
-    rval += (*v0 - *v1).Cross(*v2 - *v1);
+    auto v2 = _vertices[i % miNumSides]->mPos;
+    rval += (v0 - v1).Cross(v2 - v1);
     v0 = v1;
     v1 = v2;
   }
@@ -294,7 +293,7 @@ U64 poly::HashIndices(void) const {
   int myarray[kmaxsidesperpoly];
   int inumv = GetNumSides();
   for (int i = 0; i < inumv; i++) {
-    myarray[i] = miVertices[i];
+    myarray[i] = _vertices[i]->_poolindex;
   }
   for (int i = inumv; i < kmaxsidesperpoly; i++) {
     myarray[i] = 0;
@@ -350,6 +349,29 @@ uvmapcoord uvmapcoord::operator*(float Scalar) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 vertexpool::vertexpool() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+vertex_ptr_t vertexpool::newMergeVertex(const vertex& vtx) {
+  vertex_ptr_t rval;
+  U64 vhash                        = vtx.Hash();
+  HashU64IntMap::const_iterator it = VertexPoolMap.find(vhash);
+  if (VertexPoolMap.end() != it) {
+    int iother = it->second;
+    rval       = VertexPool[iother];
+    // boost::Crc64 otherCRC = boost::crc64( (const void *) & vtx, sizeof( vertex ) );
+    // U32 otherCRC = Crc32( (const unsigned char *) & OtherVertex, sizeof( vertex ) );
+    // OrkAssert( Crc32::DoesDataMatch( & vtx, & OtherVertex, sizeof( vertex ) ) );
+  } else {
+    int ipv                = (int)VertexPool.size();
+    auto new_vertex        = std::make_shared<vertex>(vtx);
+    rval                   = new_vertex;
+    new_vertex->_poolindex = uint32_t(VertexPool.size());
+    VertexPool.push_back(new_vertex);
+    VertexPoolMap[vhash] = ipv;
+  }
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -64,10 +64,10 @@ void Mesh::MergeSubMesh(const Mesh& src, const submesh* pgrp, const char* newnam
     poly NewPoly;
     NewPoly.miNumSides = inumpv;
     for (int iv = 0; iv < inumpv; iv++) {
-      int ivi                = ply.GetVertexID(iv);
-      const vertex& vtx      = pgrp->RefVertexPool().GetVertex(ivi);
-      int inewvi             = pnewgroup->MergeVertex(vtx);
-      NewPoly.miVertices[iv] = inewvi;
+      int ivi               = ply.GetVertexID(iv);
+      const vertex& vtx     = pgrp->RefVertexPool().GetVertex(ivi);
+      auto newvtx           = pnewgroup->newMergeVertex(vtx);
+      NewPoly._vertices[iv] = newvtx;
     }
     NewPoly.SetAnnoMap(ply.GetAnnoMap());
     pnewgroup->MergePoly(NewPoly);
@@ -123,10 +123,11 @@ void MergeToolMeshQueueItem::DoIt(int ithread) const {
       OrkAssert(false);
       continue;
     }
-    int merged[kmaxsidesperpoly];
+    vertex_ptr_t merged[kmaxsidesperpoly];
     for (int i = 0; i < inumv; i++) {
-      auto src  = mpSourceSubMesh->RefVertexPool().VertexPool[ply.miVertices[i]];
-      merged[i] = mpDestSubMesh->MergeVertex(*src);
+
+      auto src  = ply._vertices[i];
+      merged[i] = mpDestSubMesh->newMergeVertex(*src);
     }
     poly polyA(merged, inumv);
     polyA.SetAnnoMap(ply.GetAnnoMap());
@@ -259,9 +260,9 @@ void Mesh::MergeToolMeshAs(const Mesh& sr, const char* pgroupname) {
         OrkAssert(false);
         continue;
       }
-      int merged[kmaxsidesperpoly];
+      vertex_ptr_t merged[kmaxsidesperpoly];
       for (int i = 0; i < inumv; i++)
-        merged[i] = dest_group.MergeVertex(src_group.RefVertexPool().GetVertex(ply.miVertices[i]));
+        merged[i] = dest_group.newMergeVertex(*ply._vertices[i]);
       poly npoly(merged, inumv);
       npoly.SetAnnoMap(ply.GetAnnoMap());
       dest_group.MergePoly(npoly);

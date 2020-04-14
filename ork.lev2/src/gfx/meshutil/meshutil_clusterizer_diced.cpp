@@ -35,10 +35,10 @@ void XgmClusterizerDiced::Begin() {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool XgmClusterizerDiced::addTriangle(const XgmClusterTri& Triangle, const MeshConfigurationFlags& flags) {
-  int iv0 = _preDicedMesh.MergeVertex(Triangle._vertex[0]);
-  int iv1 = _preDicedMesh.MergeVertex(Triangle._vertex[1]);
-  int iv2 = _preDicedMesh.MergeVertex(Triangle._vertex[2]);
-  poly the_poly(iv0, iv1, iv2);
+  auto v0 = _preDicedMesh.newMergeVertex(Triangle._vertex[0]);
+  auto v1 = _preDicedMesh.newMergeVertex(Triangle._vertex[1]);
+  auto v2 = _preDicedMesh.newMergeVertex(Triangle._vertex[2]);
+  poly the_poly(v0, v1, v2);
   _preDicedMesh.MergePoly(the_poly);
   return true;
 }
