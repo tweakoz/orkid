@@ -18,7 +18,7 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/material_pbr.inl>
-#include <ork/lev2/gfx/material_freestyle.inl>
+#include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/gfx/brdf.inl>
 #include <ork/pch.h>
 #include <ork/lev2/gfx/rtgroup.h>

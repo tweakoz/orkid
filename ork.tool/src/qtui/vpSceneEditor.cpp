@@ -442,7 +442,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   //////////////////////////////////////////////////
   if (auto trycam = drawdata._properties["seleditcam"_crcu].TryAs<const CameraData*>()) {
     auto CAMDAT   = trycam.value();
-    _editorCamera = CAMDAT ? CAMDAT->getEditorCamera() : nullptr;
+    _editorCamera = CAMDAT ? CAMDAT->getUiCamera() : nullptr;
     ManipManager().SetActiveCamera(_editorCamera);
     mpTarget->debugMarker(FormatString("toolvp::_editorCamera<%p>", _editorCamera));
   }

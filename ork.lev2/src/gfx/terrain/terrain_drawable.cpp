@@ -18,7 +18,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
-#include <ork/lev2/gfx/material_freestyle.inl>
+#include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/meshutil/meshutil.h>
 #include <ork/lev2/gfx/meshutil/clusterizer.h>

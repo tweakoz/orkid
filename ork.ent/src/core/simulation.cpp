@@ -266,7 +266,7 @@ void Simulation::setCameraData(const PoolString& name, const lev2::CameraData* c
     }
   }
 
-  lev2::UiCamera* pcam = (camdat != 0) ? camdat->getEditorCamera() : 0;
+  lev2::UiCamera* pcam = (camdat != 0) ? camdat->getUiCamera() : 0;
 
   // orkprintf( "Simulation::setCameraData() name<%s> camdat<%p> l2cam<%p>\n",
   // name.c_str(), camdat, pcam );

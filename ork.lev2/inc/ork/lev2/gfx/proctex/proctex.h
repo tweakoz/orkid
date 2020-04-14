@@ -10,7 +10,7 @@
 #include <ork/kernel/concurrent_queue.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
-#include <ork/lev2/gfx/material_freestyle.inl>
+#include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/lev2_asset.h>

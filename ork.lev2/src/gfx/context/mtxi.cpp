@@ -9,13 +9,6 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 
-#if defined(ORK_OSX)
-#include <OpenGL/gl.h>
-#elif defined(IX)
-#include <GL/gl.h>
-#include <GL/glu.h>
-#endif
-
 namespace ork { namespace lev2 {
 
 MatrixStackInterface::MatrixStackInterface(Context& target)
@@ -69,7 +62,6 @@ void MatrixStackInterface::PopUIMatrix() {
 
 void MatrixStackInterface::OnMMatrixDirty(void) {
   const fmtx4& wmat = RefMMatrix();
-  mmR4Matrix        = wmat.rotMatrix44();
   //
   mmMVMatrix  = wmat * RefVMatrix();
   mmMVPMatrix = wmat * mmVPMatrix;
@@ -146,12 +138,6 @@ const fmtx4& MatrixStackInterface::RefMMatrix(void) const {
 
 const fmtx3& MatrixStackInterface::RefR3Matrix(void) const {
   return mmR3Matrix;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-const fmtx4& MatrixStackInterface::RefR4Matrix(void) const {
-  return mmR4Matrix;
 }
 
 ///////////////////////////////////////////////////////
@@ -244,19 +230,6 @@ const fmtx4& MatrixStackInterface::RefPMatrix(void) const {
 
 fmtx4 MatrixStackInterface::Persp(float fovy, float aspect, float fnear, float ffar) {
   fmtx4 mtx;
-#if 0
-//#if defined(_IOS)
-//#elif defined(_DSIX)
-//		printf( "yo2\n" );
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
-	gluPerspective( fovy, aspect, fnear, ffar );
-	glGetFloatv( GL_PROJECTION_MATRIX, mtx.GetArray() );
-	glPopMatrix();
-	//mtx.Transpose();
-	mtx.dump("GL");
-#else
   OrkAssert(fnear >= 0.0f);
 
   if (ffar <= fnear) {
@@ -273,7 +246,6 @@ fmtx4 MatrixStackInterface::Persp(float fovy, float aspect, float fnear, float f
 
   // mtx.Transpose();
   // mtx.dump("ORK");
-#endif
   return mtx;
 }
 
@@ -285,7 +257,6 @@ fmtx4 MatrixStackInterface::Frustum(float left, float right, float top, float bo
 {
   fmtx4 rval;
 
-  printf("yo3\n");
   rval.SetToIdentity();
 
   float width  = right - left;
@@ -313,28 +284,6 @@ fmtx4 MatrixStackInterface::Frustum(float left, float right, float top, float bo
 fmtx4 MatrixStackInterface::LookAt(const fvec3& eye, const fvec3& tgt, const fvec3& up) const {
   fmtx4 rval;
 
-#if 0 // defined(_IOS)
-//#elif defined(_DIIX)
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-	gluLookAt(
-		(GLdouble) eye.GetX(),
-		(GLdouble) eye.GetY(),
-		(GLdouble) eye.GetZ(),
-		(GLdouble) tgt.GetX(),
-		(GLdouble) tgt.GetY(),
-		(GLdouble) tgt.GetZ(),
-		(GLdouble) up.GetX(),
-		(GLdouble) up.GetY(),
-		(GLdouble) up.GetZ()
-	);
-	glGetFloatv( GL_MODELVIEW_MATRIX, rval.GetArray() );
-	glPopMatrix();
-
-	rval.dump("GL");
-	//rval.Transpose();
-#else
   fvec3 zaxis = (eye - tgt).Normal();
   fvec3 xaxis = (up.Cross(zaxis)).Normal();
   fvec3 yaxis = zaxis.Cross(xaxis);
@@ -354,10 +303,6 @@ fmtx4 MatrixStackInterface::LookAt(const fvec3& eye, const fvec3& tgt, const fve
   rval.SetElemYX(0, 3, -xaxis.Dot(eye));
   rval.SetElemYX(1, 3, -yaxis.Dot(eye));
   rval.SetElemYX(2, 3, -zaxis.Dot(eye));
-
-  // rval.dump("ORK");
-
-#endif
 
   return rval;
 }

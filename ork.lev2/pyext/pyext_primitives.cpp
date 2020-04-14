@@ -48,52 +48,54 @@ void pyinit_primitives(py::module& module_lev2) {
       .def("gpuInit", [](primitives::CubePrimitive& prim, ctx_t& context) { prim.gpuInit(context.get()); })
       .def("draw", [](primitives::CubePrimitive& prim, ctx_t& context) { prim.draw(context.get()); });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<primitives::FrustumPrimitive>(primitives, "FrustumPrimitive")
+  py::class_<primitives::FrustumPrimitive, primitives::frustum_ptr_t>(primitives, "FrustumPrimitive")
       .def(py::init<>())
       .def_property(
           "frustum",
-          [](const primitives::FrustumPrimitive& prim) -> Frustum { return prim._frustum; },
-          [](primitives::FrustumPrimitive& prim, const Frustum& value) { prim._frustum = value; })
+          [](primitives::frustum_ptr_t prim) -> Frustum { return prim->_frustum; },
+          [](primitives::frustum_ptr_t prim, const Frustum& value) { prim->_frustum = value; })
 
       .def_property(
           "topColor",
-          [](const primitives::FrustumPrimitive& prim) -> fvec4 { return prim._colorTop; },
-          [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorTop = value; })
+          [](primitives::frustum_ptr_t prim) -> fvec4 { return prim->_colorTop; },
+          [](primitives::frustum_ptr_t prim, const fvec4& value) { prim->_colorTop = value; })
 
       .def_property(
           "bottomColor",
-          [](const primitives::FrustumPrimitive& prim) -> fvec4 { return prim._colorBottom; },
-          [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorBottom = value; })
+          [](primitives::frustum_ptr_t prim) -> fvec4 { return prim->_colorBottom; },
+          [](primitives::frustum_ptr_t prim, const fvec4& value) { prim->_colorBottom = value; })
 
       .def_property(
           "frontColor",
-          [](const primitives::FrustumPrimitive& prim) -> fvec4 { return prim._colorFront; },
-          [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorFront = value; })
+          [](primitives::frustum_ptr_t prim) -> fvec4 { return prim->_colorFront; },
+          [](primitives::frustum_ptr_t prim, const fvec4& value) { prim->_colorFront = value; })
 
       .def_property(
           "backColor",
-          [](const primitives::FrustumPrimitive& prim) -> fvec4 { return prim._colorBack; },
-          [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorBack = value; })
+          [](primitives::frustum_ptr_t prim) -> fvec4 { return prim->_colorBack; },
+          [](primitives::frustum_ptr_t prim, const fvec4& value) { prim->_colorBack = value; })
 
       .def_property(
           "leftColor",
-          [](const primitives::FrustumPrimitive& prim) -> fvec4 { return prim._colorLeft; },
-          [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorLeft = value; })
+          [](primitives::frustum_ptr_t prim) -> fvec4 { return prim->_colorLeft; },
+          [](primitives::frustum_ptr_t prim, const fvec4& value) { prim->_colorLeft = value; })
 
       .def_property(
           "rightColor",
-          [](const primitives::FrustumPrimitive& prim) -> fvec4 { return prim._colorRight; },
-          [](primitives::FrustumPrimitive& prim, const fvec4& value) { prim._colorRight = value; })
+          [](primitives::frustum_ptr_t prim) -> fvec4 { return prim->_colorRight; },
+          [](primitives::frustum_ptr_t prim, const fvec4& value) { prim->_colorRight = value; })
 
-      .def("gpuInit", [](primitives::FrustumPrimitive& prim, ctx_t& context) { prim.gpuInit(context.get()); })
-      .def("draw", [](primitives::FrustumPrimitive& prim, ctx_t& context) { prim.draw(context.get()); })
+      .def("gpuInit", [](primitives::frustum_ptr_t prim, ctx_t& context) { prim->gpuInit(context.get()); })
+      .def("draw", [](primitives::frustum_ptr_t prim, ctx_t& context) { prim->draw(context.get()); })
       .def(
           "createNode",
-          [](primitives::FrustumPrimitive& prim,
+          [](primitives::frustum_ptr_t prim,
              std::string named, //
              scenegraph::layer_ptr_t layer,
              materialinst_ptr_t mtl_inst) -> scenegraph::node_ptr_t { //
-            return prim.createNode(named, layer, mtl_inst);
+            auto node = prim->createNode(named, layer, mtl_inst);
+            node->_userdata.Set<primitives::frustum_ptr_t>(prim); // hold on to reference
+            return node;
           });
   /////////////////////////////////////////////////////////////////////////////////
 }

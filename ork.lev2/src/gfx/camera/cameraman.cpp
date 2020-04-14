@@ -39,7 +39,7 @@ UiCamera::UiCamera()
     , mbInMotion(false)
     , mfWorldSizeAtLocator(1.0f) {
   other_info = (std::string) "";
-  _camcamdata.SetLev2Camera(this);
+  _camcamdata.setUiCamera(this);
   printf("SETLEV2CAM<%p>\n", this);
 }
 

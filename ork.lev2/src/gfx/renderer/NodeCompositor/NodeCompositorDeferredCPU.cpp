@@ -17,7 +17,7 @@
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>
-#include <ork/lev2/gfx/material_freestyle.inl>
+#include <ork/lev2/gfx/material_freestyle.h>
 
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
 

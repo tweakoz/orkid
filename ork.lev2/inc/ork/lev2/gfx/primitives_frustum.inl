@@ -90,6 +90,7 @@ struct FrustumPrimitive {
   //////////////////////////////////////////////////////////////////////////////
 
   inline void draw(Context* context) {
+    OrkAssert(_primitive._vertexBuffer.get() != nullptr);
     _primitive.draw(context);
   }
 
@@ -113,11 +114,7 @@ struct FrustumPrimitive {
                                const CallbackRenderable* pren) { //
       material_inst->beginBlock(RCID);
       material_inst->beginPass(RCID);
-      // todo - how to inject per instance data (controllable from c++ AND python)
-      // possibility: use applicator pattern
-      //  will need to figure out how to get c++ to access python owned data
-      //  (so we dont have to callback into the python interpreter)
-      // this->draw(context);
+      this->draw(context);
       material_inst->endPass(RCID);
       material_inst->endBlock(RCID);
     });
@@ -139,5 +136,7 @@ struct FrustumPrimitive {
   ork::Frustum _frustum;
   meshutil::PrimitiveV12N12B12T8C4 _primitive;
 };
+
+using frustum_ptr_t = std::shared_ptr<FrustumPrimitive>;
 
 } // namespace ork::lev2::primitives

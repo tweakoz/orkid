@@ -113,7 +113,7 @@ TetherCamControllerInst::TetherCamControllerInst(const TetherCamControllerData& 
 	_cameraData->Persp( 0.1f, 1.0f, 45.0f );
 	_cameraData->Lookat( fvec3(0.0f,0.0f,0.0f), fvec3(0.0f,0.0f,1.0f), fvec3(0.0f,1.0f,0.0f) );
 
-	printf( "OCCI<%p> camdat<%p> l2cam<%p>\n", this, _cameraData, _cameraData->getEditorCamera() );
+	printf( "OCCI<%p> camdat<%p> l2cam<%p>\n", this, _cameraData, _cameraData->getUiCamera() );
 }
 
 TetherCamControllerInst::~TetherCamControllerInst() {

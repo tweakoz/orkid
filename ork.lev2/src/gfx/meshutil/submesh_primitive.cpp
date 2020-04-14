@@ -56,8 +56,8 @@ void PrimitiveV12N12B12T8C4::fromSubMesh(const submesh& submesh, std::shared_ptr
 void PrimitiveV12N12B12T8C4::fromSubMesh(const submesh& submesh, lev2::Context* context) {
   const auto& vpool = submesh.RefVertexPool();
   int numverts      = vpool.GetNumVertices();
-  _vertexBuffer     = std::make_shared<vtxbuf_t>(numverts, 0, lev2::EPrimitiveType::NONE);
-  fromSubMesh(submesh, _vertexBuffer, context);
+  auto vtxbuffer    = std::make_shared<vtxbuf_t>(numverts, 0, lev2::EPrimitiveType::NONE);
+  fromSubMesh(submesh, vtxbuffer, context);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

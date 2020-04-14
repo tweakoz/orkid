@@ -146,7 +146,7 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   target->debugMarker(FormatString("defcammtx<%p>", _defaultCameraMatrices));
   ddprops["defcammtx"_crcu].Set<const CameraMatrices*>(_defaultCameraMatrices);
 
-  if (spncam and spncam->getEditorCamera()) {
+  if (spncam and spncam->getUiCamera()) {
     // spncam->computeMatrices(CAMCCTX);
     // l2cam->_camcamdata.BindContext(target);
     //_tempcamdat = l2cam->mCameraData;

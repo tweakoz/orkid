@@ -10,7 +10,7 @@
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
-#include <ork/lev2/gfx/material_freestyle.inl>
+#include <ork/lev2/gfx/material_freestyle.h>
 
 using namespace std::string_literals;
 using namespace ork;

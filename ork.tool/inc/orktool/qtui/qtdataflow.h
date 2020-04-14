@@ -12,7 +12,7 @@
 #include <ork/dataflow/scheduler.h>
 #include <ork/lev2/gfx/util/grid.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
-#include <ork/lev2/gfx/material_freestyle.inl>
+#include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/gfx/pickbuffer.h>
 

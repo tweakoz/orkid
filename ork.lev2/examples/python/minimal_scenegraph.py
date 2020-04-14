@@ -35,12 +35,13 @@ def onGpuInit(ctx):
     global camera
     global cameralut
     ###################################
-    nsh = _shaders.Shader(ctx)
-    mtl_inst = MaterialInstance(nsh._mtl)
-    mtl_inst.monoTek = nsh._tek_frustum
-    mtl_inst.param[nsh._par_mvp] = token.RCFD_Camera
-    mtl_inst.param[nsh._par_mnormal] = mtx3()
-    mtl_inst.paramMvpMono = nsh._par_mvp
+    mtl = FreestyleMaterial()
+    mtl.gpuInit(ctx,Path("orkshader://solid"))
+    par_mvp = mtl.shader.param("MatMVP")
+    mtl_inst = MaterialInstance(mtl)
+    mtl_inst.monoTek = mtl.shader.technique("vtxcolor")
+    mtl_inst.param[par_mvp] = token.RCFD_Camera
+    mtl_inst.paramMvpMono = par_mvp
     ###################################
     frustum_pmtx = ctx.perspective(45,1,0.1,3)
     frustum_vmtx = ctx.lookAt(vec3(0,0,-1),vec3(0,0,0),vec3(0,1,0))
@@ -79,7 +80,7 @@ def onGpuInit(ctx):
 def onUpdate():
     Δtime = time.time()-_time_base
     θ    = Δtime * math.pi * 2.0 * 0.1
-    distance = 100.0
+    distance = 10.0
     eye = vec3(math.sin(θ), 1.0, -math.cos(θ)) * distance
     tgt = vec3(0, 0, 0)
     up = vec3(0, 1, 0)

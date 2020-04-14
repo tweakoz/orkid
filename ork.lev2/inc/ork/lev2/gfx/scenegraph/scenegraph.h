@@ -17,7 +17,7 @@
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
-#include <ork/lev2/gfx/material_freestyle.inl>
+#include <ork/lev2/gfx/material_freestyle.h>
 
 namespace ork::lev2::scenegraph {
 
@@ -38,6 +38,7 @@ struct Node {
   std::string _name;
   drawable_ptr_t _drawable;
   DrawQueueXfData _transform;
+  varmap::val_t _userdata;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

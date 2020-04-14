@@ -11,7 +11,7 @@
 #include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
-#include <ork/lev2/gfx/material_freestyle.inl>
+#include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/util/grid.h>
 #include <ork/math/TransformNode.h>

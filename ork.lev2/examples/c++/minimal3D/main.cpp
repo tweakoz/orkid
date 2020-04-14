@@ -3,7 +3,7 @@
 #include <ork/kernel/timer.h>
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
-#include <ork/lev2/gfx/material_freestyle.inl>
+#include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/primitives.inl>
 
 using namespace std::string_literals;

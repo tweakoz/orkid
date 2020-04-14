@@ -178,7 +178,7 @@ public:
 
   ///////////////////////////////////////////////////////////////////////////////
 
-  void Perspective(T fovy, T aspect, T near, T far);
+  void Perspective(T fovy /*degrees*/, T aspect, T near, T far);
   void Frustum(T left, T right, T top, T bottom, T nearval, T farval);
   void LookAt(T eyex, T eyey, T eyez, T centerx, T centery, T centerz, T upx, T upy, T upz);
   void LookAt(const Vector3<T>& eye, const Vector3<T>& ctr, const Vector3<T>& up);
@@ -187,7 +187,7 @@ public:
   static bool UnProject(const Matrix44<T>& rIMVP, const Vector3<T>& ClipCoord, Vector3<T>& rVObj);
   static bool UnProject(const Vector4<T>& rVWin, const Matrix44<T>& rIMVP, const SRect& rVP, Vector3<T>& rVObj);
 
-  static Matrix44<T> perspective(T fovy, T aspect, T near, T far) {
+  static Matrix44<T> perspective(T fovy /*degrees*/, T aspect, T near, T far) {
     Matrix44<T> rval;
     rval.Perspective(fovy, aspect, near, far);
     return rval;

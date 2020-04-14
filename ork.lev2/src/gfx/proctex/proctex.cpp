@@ -8,7 +8,7 @@
 #include <ork/reflect/DirectObjectMapPropertyType.h>
 
 #include <ork/lev2/gfx/gfxmaterial_test.h>
-#include <ork/lev2/gfx/material_freestyle.inl>
+#include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/reflect/AccessorObjectPropertyObject.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/reflect/enum_serializer.inl>
