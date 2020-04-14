@@ -118,7 +118,7 @@ void Mesh::Dump(const std::string& comment) const {
           int iv0 = ply.GetVertexID(i0);
           int iv1 = ply.GetVertexID(i1);
           edge Edge(iv0, iv1);
-          u64 ue  = src_grp.GetEdgeBetween(iv0, iv1);
+          u64 ue  = src_grp.edgeBetween(iv0, iv1);
           u32 ue0 = u32(ue & 0xffffffff);
           u32 ue1 = u32((ue >> 32) & 0xffffffff);
 

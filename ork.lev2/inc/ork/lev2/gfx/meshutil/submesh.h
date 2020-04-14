@@ -38,6 +38,7 @@ struct vertexpool;
 struct poly;
 
 using edge_ptr_t       = std::shared_ptr<edge>;
+using edge_constptr_t  = std::shared_ptr<const edge>;
 using vertex_ptr_t     = std::shared_ptr<vertex>;
 using vertexpool_ptr_t = std::shared_ptr<vertexpool>;
 using poly_ptr_t       = std::shared_ptr<poly>;
@@ -267,7 +268,7 @@ public:
   const std::string& GetAnnotation(const std::string& annoname) const;
 
   int miVertices[kmaxsidesperpoly];
-  U64 mEdges[kmaxsidesperpoly];
+  edge_ptr_t mEdges[kmaxsidesperpoly];
   int miNumSides;
 
   int GetNumSides(void) const {
@@ -284,7 +285,7 @@ public:
       , mAnnotationSet(0) {
     for (int i = 0; i < kmaxsidesperpoly; i++) {
       miVertices[i] = -1;
-      mEdges[i]     = Inv;
+      mEdges[i]     = nullptr;
     }
   }
 
@@ -294,12 +295,12 @@ public:
     miVertices[0] = ia;
     miVertices[1] = ib;
     miVertices[2] = ic;
-    mEdges[0]     = Inv;
-    mEdges[1]     = Inv;
-    mEdges[2]     = Inv;
+    mEdges[0]     = nullptr;
+    mEdges[1]     = nullptr;
+    mEdges[2]     = nullptr;
     for (int i = 3; i < kmaxsidesperpoly; i++) {
       miVertices[i] = -1;
-      mEdges[i]     = Inv;
+      mEdges[i]     = nullptr;
     }
   }
 
@@ -310,13 +311,13 @@ public:
     miVertices[1] = ib;
     miVertices[2] = ic;
     miVertices[3] = id;
-    mEdges[0]     = Inv;
-    mEdges[1]     = Inv;
-    mEdges[2]     = Inv;
-    mEdges[3]     = Inv;
+    mEdges[0]     = nullptr;
+    mEdges[1]     = nullptr;
+    mEdges[2]     = nullptr;
+    mEdges[3]     = nullptr;
     for (int i = 4; i < kmaxsidesperpoly; i++) {
       miVertices[i] = -1;
-      mEdges[i]     = Inv;
+      mEdges[i]     = nullptr;
     }
   }
 
@@ -325,11 +326,11 @@ public:
       , mAnnotationSet(0) {
     for (int i = 0; i < numSides; i++) {
       miVertices[i] = verts[i];
-      mEdges[i]     = Inv;
+      mEdges[i]     = nullptr;
     }
     for (int i = numSides; i < kmaxsidesperpoly; i++) {
       miVertices[i] = -1;
-      mEdges[i]     = Inv;
+      mEdges[i]     = nullptr;
     }
   }
 
@@ -428,7 +429,7 @@ struct submesh {
   //////////////////////////////////////////////////////////////////////////////
 
   int MergeVertex(const vertex& vtx, int idx = -1);
-  U64 MergeEdge(const edge& ed, int ipolyindex = -1);
+  edge_ptr_t MergeEdge(const edge& ed, int ipolyindex = -1);
   void MergePoly(const poly& ply);
   void MergeSubMesh(const submesh& oth);
 
@@ -439,7 +440,7 @@ struct submesh {
   void GetConnectedPolys(const edge& ed, orkset<int>& output) const;
   void GetEdges(const poly& ply, orkvector<edge>& Edges) const;
   void GetAdjacentPolys(int ply, orkset<int>& output) const;
-  const U64 GetEdgeBetween(int a, int b) const;
+  edge_constptr_t edgeBetween(int a, int b) const;
 
   /////////////////////////////////////////////////////////////////////////
 
@@ -472,8 +473,7 @@ struct submesh {
   float mfSurfaceArea;
   vertexpool mvpool;
   HashU64IntMap mpolyhashmap;
-  orkvector<edge_ptr_t> mEdges;
-  HashU64IntMap mEdgeMap;
+  std::unordered_map<uint64_t, edge_ptr_t, HashU6432> _edgemap;
   orkvector<poly_ptr_t> mMergedPolys;
   int mPolyTypeCounter[kmaxsidesperpoly];
   bool mbMergeEdges;

@@ -357,15 +357,15 @@ bool SectorWalker::GatherSectorPolysStep(SectorPolys& polys, int first, int prev
   int at;
   int end;
   if (prev >= 0) {
-    const auto& baseEdge = mSubmesh->RefEdge(mSubmesh->GetEdgeBetween(prev, cur));
+    auto baseEdge = mSubmesh->edgeBetween(prev, cur);
 
-    at = thePoly.VertexCCW(baseEdge.GetVertexID(0));
+    at = thePoly.VertexCCW(baseEdge->GetVertexID(0));
 
-    if (at == baseEdge.GetVertexID(1)) {
+    if (at == baseEdge->GetVertexID(1)) {
       at  = thePoly.VertexCCW(at);
-      end = thePoly.VertexCW(baseEdge.GetVertexID(0));
+      end = thePoly.VertexCW(baseEdge->GetVertexID(0));
     } else {
-      end = thePoly.VertexCW(baseEdge.GetVertexID(1));
+      end = thePoly.VertexCW(baseEdge->GetVertexID(1));
     }
   } else {
     at = end = thePoly.GetVertexID(0);
@@ -486,9 +486,11 @@ bool SectorWalker::ComputeSectorDefinition(ent::bullet::Sector& sector, const Se
 
   //	bool isPre = false, isPost = false;
   {
-    U64 startedge = mSubmesh->GetEdgeBetween(polys[0], mStartPoly);
-    if (startedge != ork::meshutil::poly::Inv) {
-      int pt1 = (int)(startedge & 0x00FFFFFFFF), pt2 = (int)((startedge >> 32) & 0x00FFFFFFFF);
+    auto startedge = mSubmesh->edgeBetween(polys[0], mStartPoly);
+    if (startedge != nullptr) {
+      uint64_t startedge_hash = startedge->GetHashKey();
+      int pt1                 = (int)(startedge_hash & 0x00FFFFFFFF);
+      int pt2                 = (int)((startedge_hash >> 32) & 0x00FFFFFFFF);
       // looking at start, we want pt1 to be bottom-left and pt2 to be bottom-right
       if (bot.VertexCW(pt1) != pt2) {
         int tmp = pt2;

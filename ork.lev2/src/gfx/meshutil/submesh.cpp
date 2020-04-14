@@ -40,10 +40,10 @@ submesh::~submesh() {
   static size_t gc6 = 0;
 
   size_t ic1 = mpolyhashmap.size();
-  size_t ic2 = mEdgeMap.size();
+  size_t ic2 = _edgemap.size();
   size_t ic3 = mvpool.VertexPoolMap.size();
   size_t ic4 = mvpool.VertexPool.size();
-  size_t ic5 = mEdges.size();
+  size_t ic5 = _edgemap.size();
   size_t ic6 = mMergedPolys.size();
   gc1 += ic1;
 
@@ -137,11 +137,9 @@ const AABox& submesh::aabox() const {
 
 const edge& submesh::RefEdge(U64 edgekey) const {
   OrkAssert(edgekey != poly::Inv);
-  HashU64IntMap::const_iterator it = mEdgeMap.find(edgekey);
-  OrkAssert(it != mEdgeMap.end());
-  int index = it->second;
-  OrkAssert(index < int(mEdges.size()));
-  return *mEdges[index];
+  auto it = _edgemap.find(edgekey);
+  OrkAssert(it != _edgemap.end());
+  return *it->second;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -202,11 +200,10 @@ void submesh::GetEdges(const poly& ply, orkvector<edge>& Edges) const {
   int icnt  = 0;
   int icntf = 0;
   for (int is = 0; is < ply.GetNumSides(); is++) {
-    U64 ue                           = ply.mEdges[is];
-    HashU64IntMap::const_iterator it = mEdgeMap.find(ue);
-    if (it != mEdgeMap.end()) {
-      int ie = it->second;
-      Edges.push_back(*mEdges[ie]);
+    U64 ue  = ply.mEdges[is]->GetHashKey();
+    auto it = _edgemap.find(ue);
+    if (it != _edgemap.end()) {
+      Edges.push_back(*it->second);
       icntf++;
     }
     icnt++;
@@ -232,24 +229,23 @@ void submesh::GetAdjacentPolys(int ply, orkset<int>& output) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const U64 submesh::GetEdgeBetween(int aind, int bind) const {
+edge_constptr_t submesh::edgeBetween(int aind, int bind) const {
   const poly& a = RefPoly(aind);
   const poly& b = RefPoly(bind);
   for (int eaind = 0; eaind < a.miNumSides; eaind++)
     for (int ebind = 0; ebind < b.miNumSides; ebind++)
       if (a.mEdges[eaind] == b.mEdges[ebind])
-        return a.mEdges[eaind];
-  return poly::Inv;
+        return std::const_pointer_cast<const edge>(a.mEdges[eaind]);
+  return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void submesh::GetConnectedPolys(const edge& ed, orkset<int>& output) const {
-  U64 keyA                             = ed.GetHashKey();
-  HashU64IntMap::const_iterator itfind = mEdgeMap.find(keyA);
-  if (itfind != mEdgeMap.end()) {
-    int ie       = itfind->second;
-    auto edfound = mEdges[ie];
+  U64 keyA    = ed.GetHashKey();
+  auto itfind = _edgemap.find(keyA);
+  if (itfind != _edgemap.end()) {
+    auto edfound = itfind->second;
     int inump    = edfound->GetNumConnectedPolys();
     for (int ip = 0; ip < inump; ip++) {
       int ipi = edfound->GetConnectedPoly(ip);
@@ -358,28 +354,26 @@ void submesh::MergePoly(const poly& ply) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-U64 submesh::MergeEdge(const edge& ed, int ipolyindex) {
-  U64 crcA                             = ed.GetHashKey();
-  HashU64IntMap::const_iterator itfind = mEdgeMap.find(crcA);
+edge_ptr_t submesh::MergeEdge(const edge& ed, int ipolyindex) {
+  U64 crcA    = ed.GetHashKey();
+  auto itfind = _edgemap.find(crcA);
 
-  int ieee = -1;
+  edge_ptr_t rval;
 
-  if (mEdgeMap.end() != itfind) {
-    ieee       = itfind->second;
-    auto other = mEdges[ieee];
-    U64 crcB   = other->GetHashKey();
-    OrkAssert(ed.Matches(*other));
+  if (_edgemap.end() != itfind) {
+    rval     = itfind->second;
+    U64 crcB = rval->GetHashKey();
+    OrkAssert(ed.Matches(*rval));
   } else {
-    ieee = (int)mEdges.size();
-    mEdges.push_back(std::make_shared<edge>(ed));
-    mEdgeMap[crcA] = ieee;
+    rval           = std::make_shared<edge>(ed);
+    _edgemap[crcA] = rval;
   }
   if (ipolyindex >= 0) {
-    mEdges[ieee]->ConnectToPoly(ipolyindex);
+    rval->ConnectToPoly(ipolyindex);
   }
 
   mAABoxDirty = true;
-  return crcA;
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
