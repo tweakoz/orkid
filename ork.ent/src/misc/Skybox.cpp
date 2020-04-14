@@ -91,12 +91,12 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
           for (int ics = 0; ics < inumclusset; ics++) {
             const lev2::XgmSubMesh& submesh   = *mesh.subMesh(ics);
             const lev2::GfxMaterial* material = submesh.mpMaterial;
-            int inumclus                      = submesh.miNumClusters;
+            int inumclus                      = submesh._clusters.size();
             MatCtx.SetMaterialIndex(ics);
             for (int ic = 0; ic < inumclus; ic++) {
               MdlCtx.mMesh    = &mesh;
               MdlCtx.mSubMesh = &submesh;
-              MdlCtx.mCluster = &submesh.cluster(ic);
+              MdlCtx._cluster = submesh.cluster(ic);
               cd.GetModel()->RenderRigid(color, mtxSKY, context, MatCtx, MdlCtx);
             }
           }

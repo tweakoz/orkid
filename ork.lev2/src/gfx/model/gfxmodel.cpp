@@ -191,7 +191,6 @@ XgmCluster::~XgmCluster() {
 ///////////////////////////////////////////////////////////////////////////////
 
 XgmSubMesh::~XgmSubMesh() {
-  delete[] mpClusters;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -255,7 +254,7 @@ void XgmModel::RenderRigid(
   const auto& CPD                = RCFD->topCPD();
   bool stereo1pass               = CPD.isStereoOnePass();
   const XgmMesh& XgmMesh         = *mdlctx.mMesh;
-  const XgmCluster& XgmClus      = *mdlctx.mCluster;
+  auto cluster                   = mdlctx._cluster;
   const XgmSubMesh& XgmClusSet   = *mdlctx.mSubMesh;
   const Texture* LightMapTexture = XgmClusSet.mLightMap;
   int inummesh                   = numMeshes();
@@ -285,23 +284,19 @@ void XgmModel::RenderRigid(
     //////////////////////////////////////////////
 
     struct RenderClus {
-      static void RenderPrim(ork::lev2::Context* pTARG, const XgmCluster& XgmClus) {
-        auto vtxbuffer = XgmClus.GetVertexBuffer();
-        int inumprim   = XgmClus.numPrimGroups();
+      static void RenderPrim(ork::lev2::Context* pTARG, xgmcluster_ptr_t clust) {
+        auto vtxbuffer = clust->_vertexBuffer;
+        int inumprim   = clust->numPrimGroups();
         for (int iprim = 0; iprim < inumprim; iprim++) {
-          auto primgroup = XgmClus.primgroup(iprim);
+          auto primgroup = clust->primgroup(iprim);
           auto idxbuffer = primgroup->GetIndexBuffer();
           pTARG->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
         }
       }
-
-      static void RenderStd(ork::lev2::Context* pTARG, ork::lev2::GfxMaterial* pmat, const XgmCluster& XgmClus, int inumpasses) {
+      static void RenderStd(ork::lev2::Context* pTARG, ork::lev2::GfxMaterial* pmat, xgmcluster_ptr_t clust, int inumpasses) {
         for (int ipass = 0; ipass < inumpasses; ipass++) {
-          OrkAssert(ipass < inumpasses);
-          bool bDRAW = pmat->BeginPass(pTARG, ipass);
-
-          if (bDRAW) {
-            RenderClus::RenderPrim(pTARG, XgmClus);
+          if (pmat->BeginPass(pTARG, ipass)) {
+            RenderClus::RenderPrim(pTARG, clust);
             pmat->EndPass(pTARG);
           }
         }
@@ -321,7 +316,7 @@ void XgmModel::RenderRigid(
           pTARG->debugPushGroup("XgmModel::RenderRigid::ERGST_NONE");
           pTARG->BindMaterial(pmat);
           int inumpasses = pmat->BeginBlock(pTARG, RCID);
-          { RenderClus::RenderStd(pTARG, pmat, XgmClus, inumpasses); }
+          { RenderClus::RenderStd(pTARG, pmat, cluster, inumpasses); }
           pmat->EndBlock(pTARG);
           gbGROUPENABLED = false;
           pTARG->debugPopGroup();
@@ -335,12 +330,12 @@ void XgmModel::RenderRigid(
             gbGROUPENABLED = true;
             gbDRAW         = pmat->BeginPass(pTARG, 0);
             if (gbDRAW) {
-              RenderClus::RenderPrim(pTARG, XgmClus);
+              RenderClus::RenderPrim(pTARG, cluster);
             }
           } else {
             gbGROUPENABLED = false;
             {
-              RenderClus::RenderStd(pTARG, pmat, XgmClus, giNUMPASSES); // inumpasses );
+              RenderClus::RenderStd(pTARG, pmat, cluster, giNUMPASSES); // inumpasses );
             }
             pmat->EndBlock(pTARG);
           }
@@ -352,12 +347,12 @@ void XgmModel::RenderRigid(
           if (gbGROUPENABLED) {
             if (gbDRAW) {
               pmat->UpdateMVPMatrix(pTARG);
-              RenderClus::RenderPrim(pTARG, XgmClus);
+              RenderClus::RenderPrim(pTARG, cluster);
             }
           } else {
             pTARG->BindMaterial(pmat);
             int inumpasses = pmat->BeginBlock(pTARG, RCID);
-            { RenderClus::RenderStd(pTARG, pmat, XgmClus, inumpasses); }
+            { RenderClus::RenderStd(pTARG, pmat, cluster, inumpasses); }
             pmat->EndBlock(pTARG);
           }
           break;
@@ -369,14 +364,14 @@ void XgmModel::RenderRigid(
           if (gbGROUPENABLED) {
             if (gbDRAW) {
               pmat->UpdateMVPMatrix(pTARG);
-              RenderClus::RenderPrim(pTARG, XgmClus);
+              RenderClus::RenderPrim(pTARG, cluster);
               pmat->EndPass(pTARG);
             }
             pmat->EndBlock(pTARG);
           } else {
             pTARG->BindMaterial(pmat);
             int inumpasses = pmat->BeginBlock(pTARG, RCID);
-            { RenderClus::RenderStd(pTARG, pmat, XgmClus, inumpasses); }
+            { RenderClus::RenderStd(pTARG, pmat, cluster, inumpasses); }
             pmat->EndBlock(pTARG);
           }
           break;
@@ -407,7 +402,7 @@ void XgmModel::RenderMultipleRigid(
   pTARG->PushModColor(ModColor);
   {
     const XgmMesh& XgmMesh       = *mdlctx.mMesh;
-    const XgmCluster& XgmClus    = *mdlctx.mCluster;
+    auto cluster                 = mdlctx._cluster;
     const XgmSubMesh& XgmClusSet = *mdlctx.mSubMesh;
     const auto modelinst         = mdlctx.GetModelInst();
 
@@ -437,10 +432,10 @@ void XgmModel::RenderMultipleRigid(
             pTARG->MTXI()->SetMMatrix(mtxW);
             pmaterial->UpdateMVPMatrix(pTARG);
 
-            auto vtxbuffer = XgmClus.GetVertexBuffer();
-            int inumprim   = XgmClus.numPrimGroups();
+            auto vtxbuffer = cluster->GetVertexBuffer();
+            int inumprim   = cluster->numPrimGroups();
             for (int iprim = 0; iprim < inumprim; iprim++) {
-              auto primgroup = XgmClus.primgroup(iprim);
+              auto primgroup = cluster->primgroup(iprim);
               auto idxbuffer = primgroup->GetIndexBuffer();
               pTARG->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
             }
@@ -502,7 +497,7 @@ void XgmModel::RenderSkinned(
     pTARG->PushModColor(ModColor);
     {
       const XgmMesh& XgmMesh       = *mdlctx.mMesh;
-      const XgmCluster& XgmCluster = *mdlctx.mCluster;
+      auto cluster                 = mdlctx._cluster;
       const XgmSubMesh& XgmClusSet = *mdlctx.mSubMesh;
 
       bool bmatpushed = false;
@@ -527,13 +522,13 @@ void XgmModel::RenderSkinned(
             // upload bones to bone registers (probably vertex shader constant registers (Lev2), possibly matrix palette registers
             // (PSP, GameCube)
 
-            size_t inumjoints = XgmCluster.mJoints.size();
+            size_t inumjoints = cluster->mJoints.size();
 
             OrkAssert(miBonesPerCluster <= kMatrixBlockSize);
 
             for (size_t ijointreg = 0; ijointreg < inumjoints; ijointreg++) {
-              const PoolString& JointName = XgmCluster.mJoints[ijointreg];
-              int JointSkelIndex          = XgmCluster.mJointSkelIndices[ijointreg];
+              const PoolString& JointName = cluster->mJoints[ijointreg];
+              int JointSkelIndex          = cluster->mJointSkelIndices[ijointreg];
               const fmtx4& finalmtx       = minst->_worldPose.GetMatrices()[JointSkelIndex];
               //////////////////////////////////////
               MatrixBlock[ijointreg] = finalmtx;
@@ -553,11 +548,11 @@ void XgmModel::RenderSkinned(
             mtl->UpdateMVPMatrix(pTARG);
 
             //////////////////////////////////////////////////////
-            auto vtxbuffer = XgmCluster.GetVertexBuffer();
+            auto vtxbuffer = cluster->GetVertexBuffer();
             if (vtxbuffer) {
-              int inumprim = XgmCluster.numPrimGroups();
+              int inumprim = cluster->numPrimGroups();
               for (int iprim = 0; iprim < inumprim; iprim++) {
-                auto primgroup = XgmCluster.primgroup(iprim);
+                auto primgroup = cluster->primgroup(iprim);
                 auto idxbuffer = primgroup->GetIndexBuffer();
                 pTARG->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
               }
@@ -757,20 +752,20 @@ void XgmModel::RenderMultipleSkinned(
         pmat->BindMaterialInstItem(&mtxblockitem);
         {
           for (int iclus = 0; iclus < inumclus; iclus++) {
-            const XgmCluster& XgmClus = XgmClusSet.mpClusters[iclus];
+            auto cluster = XgmClusSet._clusters[iclus];
 
             //////////////////////////////////////////////////////
             // upload bones to bone registers (probably vertex shader constant registers (Lev2), possibly matrix palette registers
             // (PSP, GameCube)
 
-            size_t inumjoints = XgmClus.mJoints.size();
+            size_t inumjoints = cluster->mJoints.size();
 
             static const int kMaxBonesPerCluster = miBonesPerCluster;
             static fmtx4* MatrixBlock            = new fmtx4[kMaxBonesPerCluster];
 
             for (size_t ijointreg = 0; ijointreg < inumjoints; ijointreg++) {
-              const PoolString JointName = XgmClus.mJoints[ijointreg];
-              int JointSkelIndex         = XgmClus.mJointSkelIndices[ijointreg];
+              const PoolString JointName = cluster->mJoints[ijointreg];
+              int JointSkelIndex         = cluster->mJointSkelIndices[ijointreg];
               const fmtx4& MatIBind      = Skeleton.RefInverseBindMatrix(JointSkelIndex);
               const fmtx4& MatAnimJCat   = LocalPose.RefLocalMatrix(JointSkelIndex);
               fmtx4 MatCat               = MatIBind.Concat43(MatAnimJCat);
@@ -786,11 +781,11 @@ void XgmModel::RenderMultipleSkinned(
               {
                 mtxblockitem.mApplicator->ApplyToTarget(pTARG);
                 //////////////////////////////////////////////////////
-                auto vtxbuffer = XgmClus.GetVertexBuffer();
+                auto vtxbuffer = cluster->GetVertexBuffer();
                 if (vtxbuffer) {
-                  int inumprim = XgmClus.numPrimGroups();
+                  int inumprim = cluster->numPrimGroups();
                   for (int iprim = 0; iprim < inumprim; iprim++) {
-                    auto primgroup = XgmClus.primgroup(iprim);
+                    auto primgroup = cluster->primgroup(iprim);
                     auto idxbuffer = primgroup->GetIndexBuffer();
                     pTARG->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
                   }
@@ -839,9 +834,9 @@ void XgmMesh::dump() const {
 
 void XgmSubMesh::dump() const {
   orkprintf("  XgmSubMesh this<%p>\n", this);
-  orkprintf("   NumClusters<%d>\n", miNumClusters);
-  for (int i = 0; i < miNumClusters; i++) {
-    mpClusters[i].dump();
+  orkprintf("   NumClusters<%zu>\n", _clusters.size());
+  for (int i = 0; i < _clusters.size(); i++) {
+    _clusters[i]->dump();
   }
 }
 
@@ -868,8 +863,7 @@ void XgmCluster::dump() const {
 RenderContextInstModelData::RenderContextInstModelData()
     : mbisSkinned(false)
     , mMesh(nullptr)
-    , mSubMesh(nullptr)
-    , mCluster(nullptr) {
+    , mSubMesh(nullptr) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

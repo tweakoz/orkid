@@ -54,6 +54,8 @@ template <typename vtx_t> struct RigidPrimitive {
   struct PrimGroupCluster {
     vtxbuf_ptr_t _vtxbuffer;
     primgroup_ptr_list_t _primgroups;
+    AABox _aabb;
+    // Sphere _sphere;
   };
 
   using primgroupcluster_ptr_t = std::shared_ptr<PrimGroupCluster>;
@@ -64,6 +66,9 @@ template <typename vtx_t> struct RigidPrimitive {
   void fromSubMesh(const submesh& submesh, lev2::Context* context); /// generate from submesh using internal vertexbuffer
   void fromClusterizer(const XgmClusterizerStd& cluz, lev2::Context* context);
   void draw(lev2::Context* context) const; /// draw with context
+
+  void writeToChunks(const lev2::XgmSubMesh& xsubmesh, chunkfile::OutputStream* hdrstream, chunkfile::OutputStream* geostream);
+  void gpuLoadFromChunks(lev2::Context* context, chunkfile::InputStream* hdrstream, chunkfile::InputStream* geostream);
 
   cluster_ptr_list_t _gpuClusters;
 };
@@ -82,12 +87,14 @@ void RigidPrimitive<vtx_t>::fromClusterizer(const meshutil::XgmClusterizerStd& c
   for (size_t icluster = 0; icluster < inumclus; icluster++) {
     auto clusterbuilder = cluz.GetCluster(icluster);
     clusterbuilder->buildVertexBuffer(*context, vtx_t::meFormat);
-    lev2::XgmCluster xgmcluster;
+    auto xgmcluster = std::make_shared<lev2::XgmCluster>();
     buildTriStripXgmCluster(*context, xgmcluster, clusterbuilder);
     primgroupcluster_ptr_t out_cluster = std::make_shared<PrimGroupCluster>();
     out_cluster->_vtxbuffer            = std::dynamic_pointer_cast<vtxbuf_t>(clusterbuilder->_vertexBuffer);
-    for (size_t ipg = 0; ipg < xgmcluster.numPrimGroups(); ipg++) {
-      auto src_PG         = xgmcluster.primgroup(ipg);
+    out_cluster->_aabb                 = xgmcluster->mBoundingBox;
+    // out_cluster->_sphere               = xgmcluster->mBoundingSphere;
+    for (size_t ipg = 0; ipg < xgmcluster->numPrimGroups(); ipg++) {
+      auto src_PG         = xgmcluster->primgroup(ipg);
       auto gpu_prim       = std::make_shared<PrimitiveGroup>();
       gpu_prim->_primtype = src_PG->GetPrimType();
       out_cluster->_primgroups.push_back(gpu_prim);
@@ -128,6 +135,130 @@ template <typename vtx_t> void RigidPrimitive<vtx_t>::fromSubMesh(const submesh&
   // build primitives
   //////////////////////////////////////////////////////////////
   fromClusterizer(clusterizer, context);
+}
+////////////////////////////////////////////////////////////////////////////////
+template <typename vtx_t>
+void RigidPrimitive<vtx_t>::writeToChunks(
+    const lev2::XgmSubMesh& xsubmesh,
+    chunkfile::OutputStream* hdrstream, //
+    chunkfile::OutputStream* geostream) {
+  lev2::ContextDummy DummyTarget;
+  size_t inumclus = xsubmesh._clusters.size();
+  hdrstream->AddItem<size_t>(inumclus);
+  for (size_t icluster = 0; icluster < inumclus; icluster++) {
+    auto cluster = xsubmesh._clusters[icluster];
+    // XgmCluster xgmcluster;
+    // buildTriStripXgmCluster(DummyTarget, xgmcluster, clusterbuilder);
+    ////////////////////////////////////////////////////////////////
+    hdrstream->AddItem<size_t>("begin-sector-lod"_crcu);
+    hdrstream->AddItem<size_t>(icluster);
+    // printf("write icluster<%zu>\n", icluster);
+    hdrstream->AddItem<fvec3>(cluster->mBoundingBox.Min());
+    hdrstream->AddItem<fvec3>(cluster->mBoundingBox.Max());
+    ////////////////////////////////////////////////////////////////
+    auto VB                 = cluster->_vertexBuffer;
+    size_t numverts         = VB->GetNumVertices();
+    size_t vtxsize          = VB->GetVtxSize();
+    size_t vertexdatalen    = numverts * vtxsize;
+    size_t vertexdataoffset = geostream->GetSize();
+    auto vertexdata         = DummyTarget.GBI()->LockVB(*VB);
+    OrkAssert(vertexdata != nullptr);
+    hdrstream->AddItem<lev2::EVtxStreamFormat>(vtx_t::meFormat);
+    hdrstream->AddItem<size_t>(numverts);
+    hdrstream->AddItem<size_t>(vtxsize);
+    hdrstream->AddItem<size_t>(vertexdatalen);
+    hdrstream->AddItem<size_t>(vertexdataoffset);
+    geostream->Write((const uint8_t*)vertexdata, vertexdatalen);
+    DummyTarget.GBI()->UnLockVB(*VB);
+    ////////////////////////////////////////////////////////////////
+    hdrstream->AddItem<size_t>(cluster->_primgroups.size());
+    for (size_t ipg = 0; ipg < cluster->_primgroups.size(); ipg++) {
+      auto PG           = cluster->_primgroups[ipg];
+      size_t ibufoffset = geostream->GetSize();
+      size_t numindices = PG->mpIndices->GetNumIndices();
+      auto indexdata    = DummyTarget.GBI()->LockIB(*PG->mpIndices);
+      OrkAssert(indexdata != nullptr);
+      hdrstream->AddItem<size_t>(ipg);
+      hdrstream->AddItem<lev2::EPrimitiveType>(PG->mePrimType);
+      hdrstream->AddItem<size_t>(numindices);
+      hdrstream->AddItem<size_t>(ibufoffset);
+      geostream->Write(
+          (const uint8_t*)indexdata, //
+          numindices * sizeof(uint16_t));
+      DummyTarget.GBI()->UnLockIB(*PG->mpIndices);
+    }
+    ////////////////////////////////////////////////////////////////
+    hdrstream->AddItem<size_t>("end-sector-lod"_crcu);
+  }
+}
+template <typename vtx_t>
+void RigidPrimitive<vtx_t>::gpuLoadFromChunks(
+    lev2::Context* context,
+    chunkfile::InputStream* hdrstream,
+    chunkfile::InputStream* geostream) {
+  size_t num_clusters     = 0;
+  size_t begin_lod_marker = 0;
+  size_t end_lod_marker   = 0;
+  size_t check_cluster    = 0;
+  fvec3 bbmin, bbmax;
+  lev2::EVtxStreamFormat streamfmt;
+  size_t numverts         = 0;
+  size_t vtxsize          = 0;
+  size_t vertexdatalen    = 0;
+  size_t vertexdataoffset = 0;
+  size_t numprimgroups    = 0;
+  size_t check_pgindex    = 0;
+  lev2::EPrimitiveType primtype;
+  size_t numindices      = 0;
+  size_t indexdataoffset = 0;
+  ////////////////////////////////////////////////////////////////
+  hdrstream->GetItem<size_t>(num_clusters);
+  for (size_t icluster = 0; icluster < num_clusters; icluster++) {
+
+    auto gpu_cluster = std::make_shared<PrimGroupCluster>();
+    _gpuClusters.push_back(gpu_cluster);
+
+    hdrstream->GetItem<size_t>(begin_lod_marker);
+    OrkAssert(begin_lod_marker == "begin-sector-lod"_crcu);
+    hdrstream->GetItem<size_t>(check_cluster);
+    hdrstream->GetItem<fvec3>(bbmin);
+    hdrstream->GetItem<fvec3>(bbmax);
+    hdrstream->GetItem<lev2::EVtxStreamFormat>(streamfmt);
+    hdrstream->GetItem<size_t>(numverts);
+    hdrstream->GetItem<size_t>(vtxsize);
+    hdrstream->GetItem<size_t>(vertexdatalen);
+    hdrstream->GetItem<size_t>(vertexdataoffset);
+    hdrstream->GetItem<size_t>(numprimgroups);
+
+    auto vertexbufferdata = (const void*)geostream->GetDataAt(vertexdataoffset);
+
+    auto VB            = lev2::VertexBufferBase::CreateVertexBuffer(streamfmt, numverts, true);
+    auto gpuvtxpointer = (void*)context->GBI()->LockVB(*VB.get(), 0, numverts);
+    memcpy(gpuvtxpointer, vertexbufferdata, vertexdatalen);
+    context->GBI()->UnLockVB(*VB.get());
+
+    gpu_cluster->_vtxbuffer = std::dynamic_pointer_cast<vtxbuf_t>(VB);
+
+    for (size_t ipg = 0; ipg < numprimgroups; ipg++) {
+      hdrstream->GetItem<size_t>(check_pgindex);
+      OrkAssert(ipg == check_pgindex);
+      hdrstream->GetItem<lev2::EPrimitiveType>(primtype);
+      hdrstream->GetItem<size_t>(numindices);
+      hdrstream->GetItem<size_t>(indexdataoffset);
+      auto indexbufferdata = (const uint16_t*)geostream->GetDataAt(indexdataoffset);
+
+      auto gpu_prim = std::make_shared<PrimitiveGroup>();
+      gpu_cluster->_primgroups.push_back(gpu_prim);
+
+      gpu_prim->_primtype  = primtype;
+      gpu_prim->_idxbuffer = std::make_shared<idxbuf_t>(numindices);
+      auto gpuindexptr     = (void*)context->GBI()->LockIB(*gpu_prim->_idxbuffer.get());
+      memcpy(gpuindexptr, indexbufferdata, numindices * sizeof(uint16_t));
+      context->GBI()->UnLockIB(*gpu_prim->_idxbuffer.get());
+    }
+    hdrstream->GetItem<size_t>(end_lod_marker);
+    OrkAssert(end_lod_marker == "end-sector-lod"_crcu);
+  }
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename vtx_t> void RigidPrimitive<vtx_t>::draw(lev2::Context* context) const {

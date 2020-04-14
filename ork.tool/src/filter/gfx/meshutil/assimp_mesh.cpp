@@ -792,23 +792,21 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
       out_mesh->AddSubMesh(xgm_submesh);
       subindex++;
 
-      int inumclus               = clusterizer->GetNumClusters();
-      xgm_submesh->miNumClusters = inumclus;
-      xgm_submesh->mpClusters    = new lev2::XgmCluster[inumclus];
+      int inumclus = clusterizer->GetNumClusters();
       for (int icluster = 0; icluster < inumclus; icluster++) {
         lev2::ContextDummy DummyTarget;
-        auto clusterbuilder      = clusterizer->GetCluster(icluster);
-        const auto& tool_submesh = clusterbuilder->_submesh;
+        auto clusterbuilder = clusterizer->GetCluster(icluster);
         clusterbuilder->buildVertexBuffer(DummyTarget, VertexFormat);
 
-        lev2::XgmCluster& XgmClus = xgm_submesh->mpClusters[icluster];
+        auto xgm_cluster = std::make_shared<lev2::XgmCluster>();
+        xgm_submesh->_clusters.push_back(xgm_cluster);
 
         // printf("building tristrip cluster<%d>\n", icluster);
 
-        buildTriStripXgmCluster(DummyTarget, XgmClus, clusterbuilder);
+        buildTriStripXgmCluster(DummyTarget, xgm_cluster, clusterbuilder);
 
-        const int imaxvtx = XgmClus._vertexBuffer->GetNumVertices();
-        printf("XgmClus._vertexBuffer<%p> imaxvtx<%d>\n", XgmClus._vertexBuffer.get(), imaxvtx);
+        const int imaxvtx = xgm_cluster->_vertexBuffer->GetNumVertices();
+        printf("xgm_cluster->_vertexBuffer<%p> imaxvtx<%d>\n", xgm_cluster->_vertexBuffer.get(), imaxvtx);
         // OrkAssert(false);
         // int inumclusjoints = XgmClus.mJoints.size();
         // for( int ib=0; ib<inumclusjoints; ib++ )

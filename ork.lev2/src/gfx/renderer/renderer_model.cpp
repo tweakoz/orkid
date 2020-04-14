@@ -136,12 +136,12 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
         const lev2::XgmSubMesh& submesh   = *mesh.subMesh(ics);
         const lev2::GfxMaterial* material = submesh.mpMaterial;
 
-        int inumclus = submesh.miNumClusters;
+        int inumclus = submesh._clusters.size();
 
         for (int ic = 0; ic < inumclus; ic++) {
           bool btest = true;
 
-          const lev2::XgmCluster& cluster = submesh.cluster(ic);
+          auto cluster = submesh.cluster(ic);
 
           if (isSkinned) {
 
@@ -161,7 +161,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
             }
             btest = true; // todo fix culler
           } else {        // Rigid
-            const Sphere& bsph = cluster.mBoundingSphere;
+            const Sphere& bsph = cluster->mBoundingSphere;
 
             float clussphrad = bsph.mRadius * matw_scale * mfScale;
             fvec3 clussphctr = ((bsph.mCenter + mOffset) * mfScale).Transform(matw);
@@ -183,7 +183,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
             renderable.SetObject(GetOwner());
             renderable.SetMesh(&mesh);
             renderable.SetSubMesh(&submesh);
-            renderable.SetCluster(&cluster);
+            renderable._cluster = cluster;
             renderable.SetModColor(renderer->GetTarget()->RefModColor());
             renderable.SetMatrix(matw);
             // renderable.SetLightMask(lmask);
@@ -227,7 +227,6 @@ ModelRenderable::ModelRenderable(IRenderer* renderer)
     , mEdgeColor(-1)
     , mMesh(0)
     , mSubMesh(0)
-    , mCluster(0)
     , mRotate(0.0f, 0.0f, 0.0f)
     , mOffset(0.0f, 0.0f, 0.0f) {
   for (int i = 0; i < kMaxEngineParamFloats; i++)
@@ -283,10 +282,6 @@ void ModelRenderable::SetSubMesh(const lev2::XgmSubMesh* cs) {
   mSubMesh = cs;
 }
 /////////////////////////////////////////////////////////////////////
-void ModelRenderable::SetCluster(const lev2::XgmCluster* c) {
-  mCluster = c;
-}
-/////////////////////////////////////////////////////////////////////
 void ModelRenderable::SetMesh(const lev2::XgmMesh* m) {
   mMesh = m;
 }
@@ -315,8 +310,8 @@ const lev2::XgmSubMesh* ModelRenderable::subMesh(void) const {
   return mSubMesh;
 }
 /////////////////////////////////////////////////////////////////////
-const lev2::XgmCluster* ModelRenderable::GetCluster(void) const {
-  return mCluster;
+xgmcluster_ptr_t ModelRenderable::GetCluster(void) const {
+  return _cluster;
 }
 /////////////////////////////////////////////////////////////////////
 const lev2::XgmMesh* ModelRenderable::mesh(void) const {

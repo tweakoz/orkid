@@ -156,17 +156,17 @@ btSphereShape* XgmModelToSphereShape(const ork::lev2::XgmModel* xgmmodel, float 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-btTriangleIndexVertexArray* XgmClusterToTriVertArray(const ork::lev2::XgmCluster& xgmcluster, float fscale) {
+btTriangleIndexVertexArray* XgmClusterToTriVertArray(ork::lev2::xgmcluster_ptr_t xgmcluster, float fscale) {
   ork::lev2::Context* pTARG = ork::lev2::GfxEnv::GetRef().loadingContext();
 
   void* ploadtoken = pTARG->BeginLoad();
 
   btTriangleIndexVertexArray* indexVertexArrays = new btTriangleIndexVertexArray;
 
-  auto pVB = xgmcluster.GetVertexBuffer();
+  auto pVB = xgmcluster->GetVertexBuffer();
 
-  for (int pg = 0; pg < xgmcluster.numPrimGroups(); pg++) {
-    auto xgmprimgroup = xgmcluster.primgroup(pg);
+  for (int pg = 0; pg < xgmcluster->numPrimGroups(); pg++) {
+    auto xgmprimgroup = xgmcluster->primgroup(pg);
 
     lev2::EPrimitiveType ept = xgmprimgroup->GetPrimType();
 
@@ -328,8 +328,8 @@ btCompoundShape* XgmMeshToCompoundShape(const ork::lev2::XgmMesh* xgmmesh, float
 
   for (int sm = 0; sm < xgmmesh->numSubMeshes(); sm++) {
     const ork::lev2::XgmSubMesh* submesh = xgmmesh->subMesh(sm);
-    for (int c = 0; c < submesh->GetNumClusters(); c++) {
-      const ork::lev2::XgmCluster& xgmcluster = submesh->cluster(c);
+    for (int c = 0; c < submesh->_clusters.size(); c++) {
+      auto xgmcluster = submesh->cluster(c);
 
       if (btCollisionShape* shape = XgmClusterToBvhTriangleMeshShape(xgmcluster, fscale)) {
         btTransform tr;
@@ -344,7 +344,7 @@ btCompoundShape* XgmMeshToCompoundShape(const ork::lev2::XgmMesh* xgmmesh, float
 
 ///////////////////////////////////////////////////////////////////////////////
 
-btCollisionShape* XgmClusterToBvhTriangleMeshShape(const ork::lev2::XgmCluster& xgmcluster, float fscale) {
+btCollisionShape* XgmClusterToBvhTriangleMeshShape(ork::lev2::xgmcluster_ptr_t xgmcluster, float fscale) {
   btTriangleIndexVertexArray* arrays = XgmClusterToTriVertArray(xgmcluster, fscale);
 
   btVector3 aabbMin, aabbMax;
@@ -374,7 +374,7 @@ btCollisionShape* XgmClusterToBvhTriangleMeshShape(const ork::lev2::XgmCluster& 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-btCollisionShape* XgmClusterToGimpactMeshShape(const ork::lev2::XgmCluster& xgmcluster, float fscale) {
+btCollisionShape* XgmClusterToGimpactMeshShape(ork::lev2::xgmcluster_ptr_t xgmcluster, float fscale) {
   btCollisionShape* rval = 0;
 
   btTriangleIndexVertexArray* arrays = XgmClusterToTriVertArray(xgmcluster, fscale);
@@ -412,7 +412,7 @@ btCompoundShape* XgmMeshToGimpactShape(const ork::lev2::XgmMesh* xgmmesh, float 
   for (int sm = 0; sm < xgmmesh->numSubMeshes(); sm++) {
     const ork::lev2::XgmSubMesh* submesh = xgmmesh->subMesh(sm);
     for (int c = 0; c < submesh->GetNumClusters(); c++) {
-      const ork::lev2::XgmCluster& xgmcluster = submesh->cluster(c);
+      ork::lev2::xgmcluster_ptr_t xgmcluster = submesh->cluster(c);
 
       if (btCollisionShape* shape = XgmClusterToGimpactMeshShape(xgmcluster, fscale)) {
         btTransform tr;

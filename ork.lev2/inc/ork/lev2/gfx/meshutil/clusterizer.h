@@ -153,6 +153,6 @@ struct XgmClusterizerStd : public XgmClusterizer {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void buildTriStripXgmCluster(lev2::Context& context, lev2::XgmCluster& XgmCluster, clusterbuilder_ptr_t pclusbuilder);
+void buildTriStripXgmCluster(lev2::Context& context, lev2::xgmcluster_ptr_t xgm_cluster, clusterbuilder_ptr_t pclusbuilder);
 
 } // namespace ork::meshutil

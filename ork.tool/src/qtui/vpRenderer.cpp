@@ -108,7 +108,7 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
 
   MdlCtx.mMesh    = ModelRen.mesh();
   MdlCtx.mSubMesh = ModelRen.subMesh();
-  MdlCtx.mCluster = ModelRen.GetCluster();
+  MdlCtx._cluster = ModelRen.GetCluster();
 
   MatCtx.SetMaterialIndex(0);
   MatCtx.SetRenderer(this);

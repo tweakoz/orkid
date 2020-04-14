@@ -120,42 +120,37 @@ struct XgmCluster // Run Time Cluster
   Sphere mBoundingSphere;
 };
 
+using xgmcluster_ptr_t = std::shared_ptr<XgmCluster>;
+using xgmcluster_ptr_list_t = std::vector<xgmcluster_ptr_t>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct XgmSubMesh // Run Time Cluster Set
 {
 
   GfxMaterial* mpMaterial;
-  int miNumClusters;
-  XgmCluster* mpClusters;
+  xgmcluster_ptr_list_t _clusters;
   file::Path mLightMapPath;
   Texture* mLightMap;
   bool mbVertexLit;
 
   XgmSubMesh()
       : mpMaterial(0)
-      , miNumClusters(0)
-      , mpClusters(0)
       , mLightMapPath("")
       , mLightMap(0)
       , mbVertexLit(false) {}
   virtual ~XgmSubMesh();
 
-  int GetNumClusters(void) const { return miNumClusters; }
-  const XgmCluster& cluster(int idx) const {
-    OrkAssert(idx >= 0);
-    OrkAssert(idx < miNumClusters);
-    return mpClusters[idx];
-  }
-  XgmCluster& cluster(int idx) {
-    OrkAssert(idx >= 0);
-    OrkAssert(idx < miNumClusters);
-    return mpClusters[idx];
+  int GetNumClusters(void) const { return _clusters.size(); }
+  xgmcluster_ptr_t cluster(int idx) const {
+    return _clusters[idx];
   }
   GfxMaterial* GetMaterial(void) const { return mpMaterial; }
 
   void dump() const;
 };
+
+using xgmsubmesh_ptr_t = std::shared_ptr<XgmSubMesh>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -373,7 +368,7 @@ struct RenderContextInstModelData {
   xgmmodelinst_constptr_t _modelinst;
   const XgmMesh* mMesh;
   const XgmSubMesh* mSubMesh;
-  const XgmCluster* mCluster;
+  xgmcluster_ptr_t _cluster;
 
   bool mbisSkinned;
   int miSubMeshIndex;

@@ -323,7 +323,7 @@ struct SVtxV12N6I1T4 {
     swapbytes_dynamic(mV);
   }
 
-  const static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N6I1T4;
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N6I1T4;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -372,7 +372,7 @@ struct SVtxV12N6C2T4 // WII rigid format
     // orkprintf( "wii: SVtxV12N6C2T4 <u %08x> <v %08x>\n", int(mU), int(mV) );
   }
 
-  const static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N6C2T4;
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N6C2T4;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -393,7 +393,7 @@ struct SVtxV12I4N12T8 {
   void EndianSwap() {
   }
 
-  const static EVtxStreamFormat meFormat = EVtxStreamFormat::V12I4N12T8;
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12I4N12T8;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -414,7 +414,7 @@ struct SVtxV12N12B12T8 {
   void EndianSwap() {
   }
 
-  const static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N12B12T8;
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N12B12T8;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -458,7 +458,7 @@ struct SVtxV12N12B12T8C4 {
     swapbytes_dynamic(mColor);
   }
 
-  const static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N12B12T8C4;
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N12B12T8C4;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -503,7 +503,7 @@ struct SVtxV12N12B12T16 {
     swapbytes_dynamic(mUV1[1]);
   }
 
-  const static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N12B12T16;
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N12B12T16;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -546,7 +546,7 @@ struct SVtxV12N12T16C4 {
     swapbytes_dynamic(mColor);
   }
 
-  const static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N12T16C4;
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N12T16C4;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -587,7 +587,7 @@ struct SVtxV12N12T8I4W4 {
     swapbytes_dynamic(mUV0[1]);
   }
 
-  const static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N12T8I4W4;
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N12T8I4W4;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -635,7 +635,7 @@ struct SVtxV12N12B12T8I4W4 {
     swapbytes_dynamic(mUV0[1]);
   }
 
-  const static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N12B12T8I4W4;
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N12B12T8I4W4;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -676,7 +676,7 @@ struct SVtxV12C4N6I2T8 {
   void EndianSwap() {
   }
 
-  const static EVtxStreamFormat meFormat = EVtxStreamFormat::V12C4N6I2T8;
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12C4N6I2T8;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -704,7 +704,7 @@ struct SVtxV6I2C4N3T2 {
   void EndianSwap() {
   }
 
-  const static EVtxStreamFormat meFormat = EVtxStreamFormat::V6I2C4N3T2;
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V6I2C4N3T2;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -746,7 +746,7 @@ struct SVtxV12C4T16 // 32 BPV
   fvec2 _uv0;      // 24
   fvec2 _uv1;      // 32
 
-  const static EVtxStreamFormat meFormat = EVtxStreamFormat::V12C4T16;
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12C4T16;
 }; // namespace lev2
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -767,7 +767,7 @@ struct SVtxV4C4 // 8 BPV
   void EndianSwap() {
   }
 
-  const static EVtxStreamFormat meFormat = EVtxStreamFormat::V4C4;
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V4C4;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -789,7 +789,7 @@ struct SVtxV4T4 // 8 BPV	PreXF 2D (all on top)
   void EndianSwap() {
   }
 
-  const static EVtxStreamFormat meFormat = EVtxStreamFormat::V4T4;
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V4T4;
 };
 
 struct SVtxV4T4C4 // 8 BPV	PreXF 2D (all on top)
@@ -811,7 +811,7 @@ struct SVtxV4T4C4 // 8 BPV	PreXF 2D (all on top)
   void EndianSwap() {
   }
 
-  const static EVtxStreamFormat meFormat = EVtxStreamFormat::V4T4C4;
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V4T4C4;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -880,7 +880,7 @@ struct SVtxV16T16C16 // 48 BPV
   void EndianSwap() {
   }
 
-  const static EVtxStreamFormat meFormat = EVtxStreamFormat::V16T16C16;
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V16T16C16;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -959,7 +959,7 @@ struct SVtxMODELERRIGID {
   void EndianSwap() {
   }
 
-  const static EVtxStreamFormat meFormat = EVtxStreamFormat::MODELERRIGID;
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::MODELERRIGID;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

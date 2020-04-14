@@ -220,26 +220,23 @@ void CColladaModel::BuildXgmTriStripMesh(lev2::XgmMesh& XgmMesh, SColladaMesh* C
 
     int inumclus = ColMatGroup->GetClusterizer()->GetNumClusters();
 
-    XgmClusSet.miNumClusters = inumclus;
-
-    XgmClusSet.mpClusters = new lev2::XgmCluster[inumclus];
-
     for (int ic = 0; ic < inumclus; ic++) {
+      auto xgm_cluster = std::make_shared<lev2::XgmCluster>();
+      XgmClusSet._clusters.push_back(xgm_cluster);
       auto clusterbuilder = ColMatGroup->GetClusterizer()->GetCluster(ic);
 
       auto format = ColMatGroup->GetVtxStreamFormat();
       lev2::ContextDummy DummyTarget;
       clusterbuilder->buildVertexBuffer(DummyTarget, format);
-      lev2::XgmCluster& XgmClus = XgmClusSet.mpClusters[ic];
 
-      buildTriStripXgmCluster(DummyTarget, XgmClus, clusterbuilder);
+      buildTriStripXgmCluster(DummyTarget, xgm_cluster, clusterbuilder);
 
-      int inumclusjoints = XgmClus.mJoints.size();
+      int inumclusjoints = xgm_cluster->mJoints.size();
       for (int ib = 0; ib < inumclusjoints; ib++) {
-        const PoolString JointName                     = XgmClus.mJoints[ib];
+        const PoolString JointName                     = xgm_cluster->mJoints[ib];
         orklut<PoolString, int>::const_iterator itfind = mXgmModel.skeleton().mmJointNameMap.find(JointName);
         int iskelindex                                 = (*itfind).second;
-        XgmClus.mJointSkelIndices.push_back(iskelindex);
+        xgm_cluster->mJointSkelIndices.push_back(iskelindex);
       }
     }
   }

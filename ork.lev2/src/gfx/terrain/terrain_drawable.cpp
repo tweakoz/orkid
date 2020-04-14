@@ -798,138 +798,24 @@ void TerrainRenderImpl::recomputeGeometry(chunkfile::OutputStream* hdrstream, ch
 void SectorLodInfo::buildPrimitives(chunkfile::OutputStream* hdrstream, chunkfile::OutputStream* geostream) {
   lev2::ContextDummy DummyTarget;
   size_t inumclus = _clusterizer.GetNumClusters();
-  hdrstream->AddItem<size_t>(inumclus);
-  auto vertex_stream_format = EVtxStreamFormat::V12C4T16;
+  XgmSubMesh xgmsubmesh; // hack for today..
   for (size_t icluster = 0; icluster < inumclus; icluster++) {
-    auto clusterbuilder      = _clusterizer.GetCluster(icluster);
-    const auto& tool_submesh = clusterbuilder->_submesh;
-    clusterbuilder->buildVertexBuffer(DummyTarget, vertex_stream_format);
-    XgmCluster xgmcluster;
+    auto clusterbuilder = _clusterizer.GetCluster(icluster);
+    clusterbuilder->buildVertexBuffer(DummyTarget, vertex_type::meFormat);
+    auto xgmcluster = std::make_shared<XgmCluster>();
+    xgmsubmesh._clusters.push_back(xgmcluster);
     buildTriStripXgmCluster(DummyTarget, xgmcluster, clusterbuilder);
-    ////////////////////////////////////////////////////////////////
-    hdrstream->AddItem<size_t>("begin-sector-lod"_crcu);
-    hdrstream->AddItem<size_t>(icluster);
-    // printf("write icluster<%zu>\n", icluster);
-    hdrstream->AddItem<fvec3>(xgmcluster.mBoundingBox.Min());
-    hdrstream->AddItem<fvec3>(xgmcluster.mBoundingBox.Max());
-    ////////////////////////////////////////////////////////////////
-    auto VB                 = clusterbuilder->_vertexBuffer;
-    size_t numverts         = VB->GetNumVertices();
-    size_t vtxsize          = VB->GetVtxSize();
-    size_t vertexdatalen    = numverts * vtxsize;
-    size_t vertexdataoffset = geostream->GetSize();
-    auto vertexdata         = (const uint8_t*)DummyTarget.GBI()->LockVB(*VB);
-    OrkAssert(vertexdata != nullptr);
-    hdrstream->AddItem<lev2::EVtxStreamFormat>(vertex_stream_format);
-    hdrstream->AddItem<size_t>(numverts);
-    hdrstream->AddItem<size_t>(vtxsize);
-    hdrstream->AddItem<size_t>(vertexdatalen);
-    hdrstream->AddItem<size_t>(vertexdataoffset);
-    geostream->Write(vertexdata, vertexdatalen);
-
-    // printf("write numverts<%zu>\n", numverts);
-    // printf("write vtxsize<%zu>\n", vtxsize);
-    // printf("write vertexdatalen<%zu>\n", vertexdatalen);
-    // printf("write vertexdataoffset<%zu>\n", vertexdataoffset);
-
-    DummyTarget.GBI()->UnLockVB(*VB);
-    ////////////////////////////////////////////////////////////////
-    hdrstream->AddItem<size_t>(xgmcluster.numPrimGroups());
-    for (size_t ipg = 0; ipg < xgmcluster.numPrimGroups(); ipg++) {
-      auto PG           = xgmcluster.primgroup(ipg);
-      size_t ibufoffset = geostream->GetSize();
-      size_t numindices = PG->GetNumIndices();
-      auto indexdata    = (uint16_t*)DummyTarget.GBI()->LockIB(*PG->GetIndexBuffer());
-      OrkAssert(indexdata != nullptr);
-      hdrstream->AddItem<size_t>(ipg);
-      hdrstream->AddItem<lev2::EPrimitiveType>(PG->mePrimType);
-      hdrstream->AddItem<size_t>(PG->miNumIndices);
-      hdrstream->AddItem<size_t>(ibufoffset);
-      geostream->Write(
-          (const uint8_t*)indexdata, //
-          numindices * sizeof(uint16_t));
-      DummyTarget.GBI()->UnLockIB(*PG->GetIndexBuffer());
-    }
-    ////////////////////////////////////////////////////////////////
-    hdrstream->AddItem<size_t>("end-sector-lod"_crcu);
   }
+  _primitive.writeToChunks(xgmsubmesh, hdrstream, geostream);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SectorLodInfo::gpuLoadGeometry(Context* ctx, chunkfile::InputStream* hdrstream, chunkfile::InputStream* geostream) {
-  size_t num_clusters     = 0;
-  size_t begin_lod_marker = 0;
-  size_t end_lod_marker   = 0;
-  size_t check_cluster    = 0;
-  fvec3 bbmin, bbmax;
-  lev2::EVtxStreamFormat streamfmt;
-  size_t numverts         = 0;
-  size_t vtxsize          = 0;
-  size_t vertexdatalen    = 0;
-  size_t vertexdataoffset = 0;
-  size_t numprimgroups    = 0;
-  size_t check_pgindex    = 0;
-  lev2::EPrimitiveType primtype;
-  size_t numindices      = 0;
-  size_t indexdataoffset = 0;
-  ////////////////////////////////////////////////////////////////
-  hdrstream->GetItem<size_t>(num_clusters);
-  for (size_t icluster = 0; icluster < num_clusters; icluster++) {
-
-    auto gpu_cluster = std::make_shared<rigidprim_t::PrimGroupCluster>();
-    _primitive._gpuClusters.push_back(gpu_cluster);
-
-    hdrstream->GetItem<size_t>(begin_lod_marker);
-    OrkAssert(begin_lod_marker == "begin-sector-lod"_crcu);
-    hdrstream->GetItem<size_t>(check_cluster);
-    // printf("checkcluster<%zu>\n", check_cluster);
-    hdrstream->GetItem<fvec3>(bbmin);
-    hdrstream->GetItem<fvec3>(bbmax);
-    hdrstream->GetItem<lev2::EVtxStreamFormat>(streamfmt);
-    // printf("checkcluster<%zu>\n", size_t(streamfmt));
-    hdrstream->GetItem<size_t>(numverts);
-    hdrstream->GetItem<size_t>(vtxsize);
-    hdrstream->GetItem<size_t>(vertexdatalen);
-    hdrstream->GetItem<size_t>(vertexdataoffset);
-    hdrstream->GetItem<size_t>(numprimgroups);
-    // printf("numverts<%zu>\n", numverts);
-    // printf("vtxsize<%zu>\n", vtxsize);
-    // printf("vertexdatalen<%zu>\n", vertexdatalen);
-    // printf("vertexdataoffset<%zu>\n", vertexdataoffset);
-    // printf("numprimgroups<%zu>\n", numprimgroups);
-
-    auto vertexbufferdata = (const void*)geostream->GetDataAt(vertexdataoffset);
-
-    auto VB            = VertexBufferBase::CreateVertexBuffer(streamfmt, numverts, true);
-    auto gpuvtxpointer = (void*)ctx->GBI()->LockVB(*VB.get(), 0, numverts);
-    memcpy(gpuvtxpointer, vertexbufferdata, vertexdatalen);
-    ctx->GBI()->UnLockVB(*VB.get());
-
-    gpu_cluster->_vtxbuffer = std::dynamic_pointer_cast<rigidprim_t::vtxbuf_t>(VB);
-
-    for (size_t ipg = 0; ipg < numprimgroups; ipg++) {
-      hdrstream->GetItem<size_t>(check_pgindex);
-      OrkAssert(ipg == check_pgindex);
-      // printf("pg index<%zu>\n", check_pgindex);
-      hdrstream->GetItem<lev2::EPrimitiveType>(primtype);
-      hdrstream->GetItem<size_t>(numindices);
-      hdrstream->GetItem<size_t>(indexdataoffset);
-      // printf("indexdataoffset<%zu>\n", indexdataoffset);
-      auto indexbufferdata = (const uint16_t*)geostream->GetDataAt(indexdataoffset);
-
-      auto gpu_prim = std::make_shared<rigidprim_t::PrimitiveGroup>();
-      gpu_cluster->_primgroups.push_back(gpu_prim);
-
-      gpu_prim->_primtype  = primtype;
-      gpu_prim->_idxbuffer = std::make_shared<rigidprim_t::idxbuf_t>(numindices);
-      auto gpuindexptr     = (void*)ctx->GBI()->LockIB(*gpu_prim->_idxbuffer.get());
-      memcpy(gpuindexptr, indexbufferdata, numindices * sizeof(uint16_t));
-      ctx->GBI()->UnLockIB(*gpu_prim->_idxbuffer.get());
-    }
-    hdrstream->GetItem<size_t>(end_lod_marker);
-    OrkAssert(end_lod_marker == "end-sector-lod"_crcu);
-  }
+void SectorLodInfo::gpuLoadGeometry(
+    Context* ctx, //
+    chunkfile::InputStream* hdrstream,
+    chunkfile::InputStream* geostream) {
+  _primitive.gpuLoadFromChunks(ctx, hdrstream, geostream);
 }
 ///////////////////////////////////////////////////////////////////////////////
 

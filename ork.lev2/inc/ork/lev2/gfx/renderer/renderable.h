@@ -97,7 +97,6 @@ struct ModelRenderable : public IRenderable {
   void SetEdgeColor(int edge_color);
   void SetScale(float scale);
   void SetSubMesh(const XgmSubMesh* cs);
-  void SetCluster(const XgmCluster* c);
   void SetMesh(const XgmMesh* m);
   float GetScale() const;
   xgmmodelinst_constptr_t GetModelInst() const;
@@ -105,7 +104,7 @@ struct ModelRenderable : public IRenderable {
   int GetMaterialPassIndex(void) const;
   int GetEdgeColor() const;
   const XgmSubMesh* subMesh(void) const;
-  const XgmCluster* GetCluster(void) const;
+  xgmcluster_ptr_t GetCluster(void) const;
   const XgmMesh* mesh(void) const;
   void SetSortKey(uint32_t skey);
   void SetRotate(const fvec3& v);
@@ -130,7 +129,7 @@ struct ModelRenderable : public IRenderable {
   fvec3 mOffset;
   fvec3 mRotate;
   const XgmSubMesh* mSubMesh;
-  const XgmCluster* mCluster;
+  xgmcluster_ptr_t _cluster;
   const XgmMesh* mMesh;
 };
 

@@ -479,7 +479,7 @@ btBoxShape* XgmModelToBoxShape(const ork::lev2::XgmModel* xgmmodel, float fscale
 btSphereShape* XgmModelToSphereShape(const ork::lev2::XgmModel* xgmmodel, float fscale);
 btCompoundShape* XgmModelToCompoundShape(const ork::lev2::XgmModel* xgmmodel, float fscale);
 btCompoundShape* XgmMeshToCompoundShape(const ork::lev2::XgmMesh* xgmmesh, float fscale);
-btCollisionShape* XgmClusterToBvhTriangleMeshShape(const ork::lev2::XgmCluster& xgmcluster, float fscale);
+btCollisionShape* XgmClusterToBvhTriangleMeshShape(ork::lev2::xgmcluster_ptr_t xgmcluster, float fscale);
 btCollisionShape* XgmModelToGimpactShape(const ork::lev2::XgmModel* xgmmodel, float fscale);
 
 ///////////////////////////////////////////////////////////////////////////////

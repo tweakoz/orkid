@@ -57,10 +57,10 @@ void XgmClusterBuilder::Dump(void) {
 
 void BuildXgmClusterPrimGroups(
     lev2::Context& context,
-    lev2::XgmCluster& XgmCluster,
+    lev2::xgmcluster_ptr_t xgm_cluster,
     const std::vector<unsigned int>& TriangleIndices) {
 
-  const int imaxvtx = XgmCluster._vertexBuffer->GetNumVertices();
+  const int imaxvtx = xgm_cluster->_vertexBuffer->GetNumVertices();
 
   // const ColladaExportPolicy* policy = ColladaExportPolicy::context();
   // TODO: Is this correct? Why?
@@ -84,7 +84,7 @@ void BuildXgmClusterPrimGroups(
 
   for (int ipg = 0; ipg < inumpg; ipg++) {
     auto pg = std::make_shared<ork::lev2::XgmPrimGroup>();
-    XgmCluster._primgroups.push_back(pg);
+    xgm_cluster->_primgroups.push_back(pg);
   }
 
   ////////////////////////////////////////////////////////////
@@ -116,7 +116,7 @@ void BuildXgmClusterPrimGroups(
 
       /////////////////////////////////
 
-      auto stripgroup = XgmCluster.primgroup(ipg++);
+      auto stripgroup = xgm_cluster->primgroup(ipg++);
 
       stripgroup->miNumIndices = inumidx;
       stripgroup->mpIndices    = pidxbuf;
@@ -140,7 +140,7 @@ void BuildXgmClusterPrimGroups(
     context.GBI()->UnLockIB(*pidxbuf);
     /////////////////////////////////////////////////////
 
-    auto StripGroup = XgmCluster.primgroup(ipg++);
+    auto StripGroup = xgm_cluster->primgroup(ipg++);
 
     StripGroup->miNumIndices = inumidx;
     StripGroup->mpIndices    = pidxbuf;
@@ -150,14 +150,14 @@ void BuildXgmClusterPrimGroups(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void buildTriStripXgmCluster(lev2::Context& context, lev2::XgmCluster& XgmCluster, clusterbuilder_ptr_t clusterbuilder) {
+void buildTriStripXgmCluster(lev2::Context& context, lev2::xgmcluster_ptr_t xgm_cluster, clusterbuilder_ptr_t clusterbuilder) {
   if (!clusterbuilder->_vertexBuffer)
     return;
 
   // transfer VB to cluster
-  XgmCluster._vertexBuffer = clusterbuilder->_vertexBuffer;
+  xgm_cluster->_vertexBuffer = clusterbuilder->_vertexBuffer;
 
-  const int imaxvtx = XgmCluster._vertexBuffer->GetNumVertices();
+  const int imaxvtx = xgm_cluster->_vertexBuffer->GetNumVertices();
 
   // printf("imaxvtx<%d>\n", imaxvtx);
 
@@ -183,10 +183,10 @@ void buildTriStripXgmCluster(lev2::Context& context, lev2::XgmCluster& XgmCluste
 
   /////////////////////////////////////////////////////////////
 
-  BuildXgmClusterPrimGroups(context, XgmCluster, TriangleIndices);
+  BuildXgmClusterPrimGroups(context, xgm_cluster, TriangleIndices);
 
-  XgmCluster.mBoundingBox    = clusterbuilder->_submesh.aabox();
-  XgmCluster.mBoundingSphere = Sphere(XgmCluster.mBoundingBox.Min(), XgmCluster.mBoundingBox.Max());
+  xgm_cluster->mBoundingBox    = clusterbuilder->_submesh.aabox();
+  xgm_cluster->mBoundingSphere = Sphere(xgm_cluster->mBoundingBox.Min(), xgm_cluster->mBoundingBox.Max());
 
   /////////////////////////////////////////////////////////////
   // bone -> matrix register mapping
@@ -198,12 +198,12 @@ void buildTriStripXgmCluster(lev2::Context& context, lev2::XgmCluster& XgmCluste
 
     int inumjointsmapped = BoneMap.size();
 
-    XgmCluster.mJoints.resize(inumjointsmapped);
+    xgm_cluster->mJoints.resize(inumjointsmapped);
 
     for (orkmap<std::string, int>::const_iterator it = BoneMap.begin(); it != BoneMap.end(); it++) {
-      const std::string& JointName      = it->first;  // the index of the bone in the skeleton
-      int JointRegister                 = it->second; // the shader register index the bone goes into
-      XgmCluster.mJoints[JointRegister] = AddPooledString(JointName.c_str());
+      const std::string& JointName        = it->first;  // the index of the bone in the skeleton
+      int JointRegister                   = it->second; // the shader register index the bone goes into
+      xgm_cluster->mJoints[JointRegister] = AddPooledString(JointName.c_str());
     }
   }
 

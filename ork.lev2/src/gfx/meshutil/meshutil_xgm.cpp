@@ -120,11 +120,13 @@ void simpleToolSubMeshToXgmSubMesh(const Mesh& mesh, const submesh& smesh, ork::
       fvec4::Cyan(),    // 6
       fvec4::White(),   // 7
   };
-  fvec4 outcolor                               = gColors[gicolor];
-  gicolor                                      = (gicolor + 1) % 8;
-  meshout.miNumClusters                        = inumclus;
-  meshout.mpClusters                           = new ork::lev2::XgmCluster[inumclus];
-  ork::lev2::XgmCluster& cluster               = meshout.cluster(0);
+  fvec4 outcolor = gColors[gicolor];
+  gicolor        = (gicolor + 1) % 8;
+  for (int i = 0; i < inumclus; i++) {
+    auto cluster = std::make_shared<ork::lev2::XgmCluster>();
+    meshout._clusters.push_back(cluster);
+  }
+  auto cluster                                 = meshout.cluster(0);
   ork::lev2::MaterialMap::const_iterator itMTL = FxmMtlMap.find(smesh.name);
   ork::lev2::GfxMaterial* pmtl                 = 0;
   if (itMTL != FxmMtlMap.end()) // match from FXM file
@@ -143,11 +145,11 @@ void simpleToolSubMeshToXgmSubMesh(const Mesh& mesh, const submesh& smesh, ork::
   pmtl->SetName(ork::AddPooledString(mtlname.c_str()));
   ////////////////////////////////////////////////////////
   auto primgroup = std::make_shared<lev2::XgmPrimGroup>();
-  cluster._primgroups.push_back(primgroup);
+  cluster->_primgroups.push_back(primgroup);
   auto vbuf = lev2::VertexBufferBase::CreateVertexBuffer(fsub.evtxformat, inumvertices, true);
   // transfer vertexbuffer to cluster
-  cluster._vertexBuffer = vbuf;
-  void* poutverts       = DummyTarget.GBI()->LockVB(*vbuf);
+  cluster->_vertexBuffer = vbuf;
+  void* poutverts        = DummyTarget.GBI()->LockVB(*vbuf);
   OrkAssert(poutverts != 0);
   {
     const void* psrc = (const void*)fsub.poutvtxdata;
@@ -229,17 +231,17 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
         int inumclus = cs.GetNumClusters();
 
         for (int ic = 0; ic < inumclus; ic++) {
-          const lev2::XgmCluster& clus = cs.cluster(ic);
-          auto pvb                     = clus.GetVertexBuffer();
-          int inumv                    = pvb->GetMax();
-          int isrcsize                 = inumv * pvb->GetVtxSize();
-          const void* pvertbase        = static_cast<lev2::Context&>(DummyTarget).GBI()->LockVB(*pvb);
+          auto clus             = cs.cluster(ic);
+          auto pvb              = clus->GetVertexBuffer();
+          int inumv             = pvb->GetMax();
+          int isrcsize          = inumv * pvb->GetVtxSize();
+          const void* pvertbase = static_cast<lev2::Context&>(DummyTarget).GBI()->LockVB(*pvb);
           OrkAssert(pvertbase != 0);
           // pvb->GetVertexPointer();
           {
-            int inumpg = clus.numPrimGroups();
+            int inumpg = clus->numPrimGroups();
             for (int ipg = 0; ipg < inumpg; ipg++) {
-              auto primgroup = clus.primgroup(ipg);
+              auto primgroup = clus->primgroup(ipg);
               if (primgroup->GetPrimType() == lev2::EPrimitiveType::TRIANGLES) {
                 const lev2::IndexBufferBase* pidxbuf          = primgroup->GetIndexBuffer();
                 const lev2::StaticIndexBuffer<U16>* pidxbuf16 = (const lev2::StaticIndexBuffer<U16>*)pidxbuf;
