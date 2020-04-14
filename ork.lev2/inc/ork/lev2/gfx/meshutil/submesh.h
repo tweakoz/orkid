@@ -67,45 +67,38 @@ struct Hash3232 : public std::unary_function<int, std::size_t> {
 };
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef std::unordered_map<U64, int, HashU6432> HashU64IntMap;
-typedef std::unordered_map<int, int, Hash3232> HashIntIntMap;
-
 static const int kmaxpolysperedge = 4;
 
 struct edge {
-  vertex_ptr_t _vertexA;
-  vertex_ptr_t _vertexB;
-  int miNumConnectedPolys;
-  int miConnectedPolys[kmaxpolysperedge];
+  edge();
+  edge(vertex_ptr_t va, vertex_ptr_t vb);
 
   vertex_ptr_t edgeVertex(int iv) const;
 
   U64 GetHashKey(void) const;
   bool Matches(const edge& other) const;
-
-  edge();
-  edge(vertex_ptr_t va, vertex_ptr_t vb);
-
   void ConnectToPoly(int ipoly);
-
   int GetNumConnectedPolys(void) const;
   int GetConnectedPoly(int ip) const;
+
+  vertex_ptr_t _vertexA;
+  vertex_ptr_t _vertexB;
+  int miNumConnectedPolys;
+  int miConnectedPolys[kmaxpolysperedge];
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct uvmapcoord {
+  uvmapcoord();
+  void Lerp(const uvmapcoord& ina, const uvmapcoord& inb, float flerp);
+  uvmapcoord operator+(const uvmapcoord& ina) const;
+  uvmapcoord operator*(const float Scalar) const;
+  void Clear(void);
+
   fvec3 mMapBiNormal;
   fvec3 mMapTangent;
   fvec2 mMapTexCoord;
-
-  void Lerp(const uvmapcoord& ina, const uvmapcoord& inb, float flerp);
-
-  uvmapcoord operator+(const uvmapcoord& ina) const;
-  uvmapcoord operator*(const float Scalar) const;
-
-  uvmapcoord();
-  void Clear(void);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -115,6 +108,19 @@ struct vertex {
   static const int kmaxcolors     = 2;
   static const int kmaxuvs        = 2;
   static const int kmaxconpoly    = 8;
+
+  vertex();
+  vertex(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col);
+  void set(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col);
+
+  vertex Lerp(const vertex& vtx, float flerp) const;
+  void Lerp(const vertex& a, const vertex& b, float flerp);
+
+  const fvec3& Pos() const;
+
+  void Center(const vertex** pverts, int icnt);
+
+  U64 Hash() const;
 
   uint32_t _poolindex = 0xffffffff;
 
@@ -130,29 +136,13 @@ struct vertex {
   fvec4 mCol[kmaxcolors];
   uvmapcoord mUV[kmaxuvs];
   float mJointWeights[kmaxinfluences];
-
-  vertex();
-  vertex(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col);
-  void set(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col);
-
-  vertex Lerp(const vertex& vtx, float flerp) const;
-  void Lerp(const vertex& a, const vertex& b, float flerp);
-
-  const fvec3& Pos() const;
-
-  void Center(const vertex** pverts, int icnt);
-
-  U64 Hash() const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct vertexpool {
-  static const vertexpool EmptyPool;
 
-  std::unordered_map<uint64_t, vertex_ptr_t, HashU6432> _vtxmap;
-  orkvector<vertex_ptr_t> _orderedVertices;
-
+  vertexpool();
   vertex_ptr_t newMergeVertex(const vertex& vtx);
 
   const vertex& GetVertex(size_t ivid) const {
@@ -166,7 +156,10 @@ struct vertexpool {
     return _orderedVertices.size();
   }
 
-  vertexpool();
+  static const vertexpool EmptyPool;
+
+  std::unordered_map<uint64_t, vertex_ptr_t, HashU6432> _vtxmap;
+  orkvector<vertex_ptr_t> _orderedVertices;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -186,18 +179,12 @@ struct AnnoMap {
 
 static const int kmaxsidesperpoly = 5;
 
-class poly {
-  const AnnoMap* mAnnotationSet;
+struct poly {
 
-public:
   const AnnoMap* GetAnnoMap() const;
   void SetAnnoMap(const AnnoMap* pmap);
 
   const std::string& GetAnnotation(const std::string& annoname) const;
-
-  vertex_ptr_t _vertices[kmaxsidesperpoly];
-  edge_ptr_t mEdges[kmaxsidesperpoly];
-  int miNumSides;
 
   int GetNumSides(void) const;
   int GetVertexID(int i) const;
@@ -221,6 +208,11 @@ public:
   fvec3 ComputeNormal(const vertexpool& vpool) const;
 
   U64 HashIndices(void) const;
+
+  vertex_ptr_t _vertices[kmaxsidesperpoly];
+  edge_ptr_t mEdges[kmaxsidesperpoly];
+  int miNumSides;
+  const AnnoMap* mAnnotationSet;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
