@@ -89,15 +89,8 @@ struct XgmSkinnedClusterBuilder : public XgmClusterBuilder {
 
 struct XgmRigidClusterBuilder : public XgmClusterBuilder {
   XgmRigidClusterBuilder(const XgmClusterizer& clusterizer);
-  /////////////////////////////////////////////////
   bool addTriangle(const XgmClusterTri& Triangle) final;
   void buildVertexBuffer(lev2::Context& context, lev2::EVtxStreamFormat format) final;
-
-  void BuildVertexBuffer_V12C4T16(lev2::Context& context);
-  void BuildVertexBuffer_V12N6C2T4(lev2::Context& context);
-  void BuildVertexBuffer_V12N12B12T8C4(lev2::Context& context);
-  void BuildVertexBuffer_V12N12T16C4(lev2::Context& context);
-  void BuildVertexBuffer_V12N12B12T16(lev2::Context& context);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

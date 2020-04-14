@@ -49,176 +49,108 @@ bool XgmRigidClusterBuilder::addTriangle(const XgmClusterTri& Triangle) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename vtx_t>
+lev2::vtxbufferbase_ptr_t buildTypedVertexBuffer(
+    lev2::Context& context,
+    const meshutil::submesh& inp_submesh,
+    std::function<vtx_t(const meshutil::vertex&)> genOutVertex) {
+  using vtxbuf_t       = lev2::StaticVertexBuffer<vtx_t>;
+  const auto& vpool    = inp_submesh.RefVertexPool();
+  int NumVertexIndices = vpool.GetNumVertices();
+  auto out_vbuf        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0, ork::lev2::EPrimitiveType::MULTI);
+  lev2::VtxWriter<vtx_t> vwriter;
+  vwriter.Lock(&context, out_vbuf.get(), NumVertexIndices);
+  for (int iv = 0; iv < NumVertexIndices; iv++)
+    vwriter.AddVertex(genOutVertex(vpool.GetVertex(iv)));
+  vwriter.UnLock(&context);
+  out_vbuf->SetNumVertices(NumVertexIndices);
+  return std::static_pointer_cast<lev2::VertexBufferBase>(out_vbuf);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void XgmRigidClusterBuilder::buildVertexBuffer(lev2::Context& context, lev2::EVtxStreamFormat format) {
   switch (format) {
-    case lev2::EVtxStreamFormat::V12C4T16: // basic wii environmen
-    {
-      BuildVertexBuffer_V12C4T16(context);
+    ////////////////////////////////////////////////////////////////////////////
+    case lev2::EVtxStreamFormat::V12C4T16: {
+      _vertexBuffer = buildTypedVertexBuffer<lev2::SVtxV12C4T16>(context, _submesh, [](const meshutil::vertex& inpvtx) {
+        lev2::SVtxV12C4T16 out_vtx;
+        out_vtx._position = inpvtx.mPos;
+        out_vtx._uv0      = inpvtx.mUV[0].mMapTexCoord;
+        out_vtx._color    = inpvtx.mCol[0].GetARGBU32();
+        return out_vtx;
+      });
       break;
     }
-    case lev2::EVtxStreamFormat::V12N6C2T4: // basic wii environmen
-    {
-      BuildVertexBuffer_V12N6C2T4(context);
+    ////////////////////////////////////////////////////////////////////////////
+    case lev2::EVtxStreamFormat::V12N6C2T4: {
+      _vertexBuffer = buildTypedVertexBuffer<lev2::SVtxV12N6C2T4>(context, _submesh, [](const meshutil::vertex& inpvtx) {
+        lev2::SVtxV12N6C2T4 out_vtx;
+        out_vtx.mX = inpvtx.mPos.GetX();
+        out_vtx.mY = inpvtx.mPos.GetY();
+        out_vtx.mZ = inpvtx.mPos.GetZ();
+
+        out_vtx.mNX = s16(inpvtx.mNrm.GetX() * float(32767.0f));
+        out_vtx.mNY = s16(inpvtx.mNrm.GetY() * float(32767.0f));
+        out_vtx.mNZ = s16(inpvtx.mNrm.GetZ() * float(32767.0f));
+
+        out_vtx.mU = s16(inpvtx.mUV[0].mMapTexCoord.GetX() * float(1024.0f));
+        out_vtx.mV = s16(inpvtx.mUV[0].mMapTexCoord.GetY() * float(1024.0f));
+
+        int ir = int(inpvtx.mCol[0].GetY() * 255.0f);
+        int ig = int(inpvtx.mCol[0].GetZ() * 255.0f);
+        int ib = int(inpvtx.mCol[0].GetW() * 255.0f);
+
+        out_vtx.mColor = U16(((ir >> 3) << 11) | ((ig >> 2) << 5) | ((ib >> 3) << 0));
+        return out_vtx;
+      });
       break;
     }
-    case lev2::EVtxStreamFormat::V12N12B12T8C4: // basic pc environment
-    {
-      BuildVertexBuffer_V12N12B12T8C4(context);
+    ////////////////////////////////////////////////////////////////////////////
+    case lev2::EVtxStreamFormat::V12N12T16C4: {
+      _vertexBuffer = buildTypedVertexBuffer<lev2::SVtxV12N12T16C4>(context, _submesh, [](const meshutil::vertex& inpvtx) {
+        lev2::SVtxV12N12T16C4 out_vtx;
+        out_vtx.mPosition = inpvtx.mPos;
+        out_vtx.mUV0      = inpvtx.mUV[0].mMapTexCoord;
+        out_vtx.mUV1      = inpvtx.mUV[1].mMapTexCoord;
+        out_vtx.mNormal   = inpvtx.mNrm;
+        out_vtx.mColor    = inpvtx.mCol[0].GetARGBU32();
+        return out_vtx;
+      });
       break;
     }
-    case lev2::EVtxStreamFormat::V12N12B12T16: // basic pc environment
-    {
-      BuildVertexBuffer_V12N12B12T16(context);
+    ////////////////////////////////////////////////////////////////////////////
+    case lev2::EVtxStreamFormat::V12N12B12T8C4: {
+      _vertexBuffer = buildTypedVertexBuffer<lev2::SVtxV12N12B12T8C4>(context, _submesh, [](const meshutil::vertex& inpvtx) {
+        lev2::SVtxV12N12B12T8C4 out_vtx;
+        out_vtx.mPosition = inpvtx.mPos;
+        out_vtx.mUV0      = inpvtx.mUV[0].mMapTexCoord;
+        out_vtx.mNormal   = inpvtx.mNrm;
+        out_vtx.mBiNormal = inpvtx.mUV[0].mMapBiNormal;
+        out_vtx.mColor    = inpvtx.mCol[0].GetARGBU32();
+        return out_vtx;
+      });
       break;
     }
-    case lev2::EVtxStreamFormat::V12N12T16C4: // basic pc environment
-    {
-      BuildVertexBuffer_V12N12T16C4(context);
+    ////////////////////////////////////////////////////////////////////////////
+    case lev2::EVtxStreamFormat::V12N12B12T16: {
+      _vertexBuffer = buildTypedVertexBuffer<lev2::SVtxV12N12B12T16>(context, _submesh, [](const meshutil::vertex& inpvtx) {
+        lev2::SVtxV12N12B12T16 out_vtx;
+        out_vtx.mPosition = inpvtx.mPos;
+        out_vtx.mUV0      = inpvtx.mUV[0].mMapTexCoord;
+        out_vtx.mUV1      = inpvtx.mUV[1].mMapTexCoord;
+        out_vtx.mNormal   = inpvtx.mNrm;
+        out_vtx.mBiNormal = inpvtx.mUV[0].mMapBiNormal;
+        return out_vtx;
+      });
       break;
     }
+    ////////////////////////////////////////////////////////////////////////////
     default: {
       OrkAssert(false);
       break;
     }
   }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void XgmRigidClusterBuilder::BuildVertexBuffer_V12C4T16(lev2::Context& context) {
-  using vtx_t          = lev2::SVtxV12C4T16;
-  using vtxbuf_t       = lev2::StaticVertexBuffer<vtx_t>;
-  int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
-  lev2::VtxWriter<vtx_t> vwriter;
-  _vertexBuffer = std::make_shared<vtxbuf_t>(NumVertexIndices, 0, ork::lev2::EPrimitiveType::MULTI);
-  vwriter.Lock(&context, _vertexBuffer.get(), NumVertexIndices);
-  for (int iv = 0; iv < NumVertexIndices; iv++) {
-    vtx_t OutVtx;
-    const meshutil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
-    OutVtx._position              = InVtx.mPos;
-    OutVtx._uv0                   = InVtx.mUV[0].mMapTexCoord;
-    OutVtx._color                 = InVtx.mCol[0].GetRGBAU32();
-    vwriter.AddVertex(OutVtx);
-  }
-  vwriter.UnLock(&context);
-  _vertexBuffer->SetNumVertices(NumVertexIndices);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void XgmRigidClusterBuilder::BuildVertexBuffer_V12N6C2T4(lev2::Context& context) // basic wii environment
-{
-  using vtx_t    = lev2::SVtxV12N6C2T4;
-  using vtxbuf_t = lev2::StaticVertexBuffer<vtx_t>;
-  lev2::VtxWriter<vtx_t> vwriter;
-  const float kVertexScale(1.0f);
-  const fvec2 UVScale(1.0f, 1.0f);
-  int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
-  _vertexBuffer        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0, ork::lev2::EPrimitiveType::MULTI);
-  vwriter.Lock(&context, _vertexBuffer.get(), NumVertexIndices);
-  for (int iv = 0; iv < NumVertexIndices; iv++) {
-    vtx_t OutVtx;
-    const meshutil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
-
-    OutVtx.mX = InVtx.mPos.GetX() * kVertexScale;
-    OutVtx.mY = InVtx.mPos.GetY() * kVertexScale;
-    OutVtx.mZ = InVtx.mPos.GetZ() * kVertexScale;
-
-    OutVtx.mNX = s16(InVtx.mNrm.GetX() * float(32767.0f));
-    OutVtx.mNY = s16(InVtx.mNrm.GetY() * float(32767.0f));
-    OutVtx.mNZ = s16(InVtx.mNrm.GetZ() * float(32767.0f));
-
-    OutVtx.mU = s16(InVtx.mUV[0].mMapTexCoord.GetX() * float(1024.0f));
-    OutVtx.mV = s16(InVtx.mUV[0].mMapTexCoord.GetY() * float(1024.0f));
-
-    int ir = int(InVtx.mCol[0].GetY() * 255.0f);
-    int ig = int(InVtx.mCol[0].GetZ() * 255.0f);
-    int ib = int(InVtx.mCol[0].GetW() * 255.0f);
-
-    OutVtx.mColor = U16(((ir >> 3) << 11) | ((ig >> 2) << 5) | ((ib >> 3) << 0));
-    vwriter.AddVertex(OutVtx);
-  }
-  vwriter.UnLock(&context);
-  _vertexBuffer->SetNumVertices(NumVertexIndices);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12B12T8C4(lev2::Context& context) // basic pc environment
-{
-  using vtx_t    = lev2::SVtxV12N12B12T8C4;
-  using vtxbuf_t = lev2::StaticVertexBuffer<vtx_t>;
-  lev2::VtxWriter<vtx_t> vwriter;
-  const float kVertexScale(1.0f);
-  const fvec2 UVScale(1.0f, 1.0f);
-  int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
-  _vertexBuffer        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0, ork::lev2::EPrimitiveType::MULTI);
-  vwriter.Lock(&context, _vertexBuffer.get(), NumVertexIndices);
-  for (int iv = 0; iv < NumVertexIndices; iv++) {
-    vtx_t OutVtx;
-    const meshutil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
-    OutVtx.mPosition              = InVtx.mPos * kVertexScale;
-    OutVtx.mUV0                   = InVtx.mUV[0].mMapTexCoord * UVScale;
-    OutVtx.mNormal                = InVtx.mNrm;
-    OutVtx.mBiNormal              = InVtx.mUV[0].mMapBiNormal;
-    OutVtx.mColor                 = InVtx.mCol[0].GetRGBAU32();
-    vwriter.AddVertex(OutVtx);
-  }
-  vwriter.UnLock(&context);
-  _vertexBuffer->SetNumVertices(NumVertexIndices);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12T16C4(lev2::Context& context) // basic pc environment
-{
-  using vtx_t    = lev2::SVtxV12N12T16C4;
-  using vtxbuf_t = lev2::StaticVertexBuffer<vtx_t>;
-  lev2::VtxWriter<vtx_t> vwriter;
-  const float kVertexScale(1.0f);
-  const fvec2 UVScale(1.0f, 1.0f);
-  int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
-  _vertexBuffer        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0, ork::lev2::EPrimitiveType::MULTI);
-  vwriter.Lock(&context, _vertexBuffer.get(), NumVertexIndices);
-  for (int iv = 0; iv < NumVertexIndices; iv++) {
-    vtx_t OutVtx;
-    const meshutil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
-    OutVtx.mPosition              = InVtx.mPos * kVertexScale;
-    OutVtx.mUV0                   = InVtx.mUV[0].mMapTexCoord * UVScale;
-    OutVtx.mUV1                   = InVtx.mUV[1].mMapTexCoord * UVScale;
-    OutVtx.mNormal                = InVtx.mNrm;
-    OutVtx.mColor                 = InVtx.mCol[0].GetRGBAU32();
-    vwriter.AddVertex(OutVtx);
-  }
-  vwriter.UnLock(&context);
-  _vertexBuffer->SetNumVertices(NumVertexIndices);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12B12T16(lev2::Context& context) // basic pc environment
-{
-  using vtx_t    = lev2::SVtxV12N12B12T16;
-  using vtxbuf_t = lev2::StaticVertexBuffer<vtx_t>;
-  lev2::VtxWriter<vtx_t> vwriter;
-  const float kVertexScale(1.0f);
-  const fvec2 UVScale(1.0f, 1.0f);
-  int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
-  _vertexBuffer        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0, ork::lev2::EPrimitiveType::MULTI);
-  vwriter.Lock(&context, _vertexBuffer.get(), NumVertexIndices);
-  for (int iv = 0; iv < NumVertexIndices; iv++) {
-    vtx_t OutVtx;
-    const meshutil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
-    OutVtx.mPosition              = InVtx.mPos * kVertexScale;
-    OutVtx.mUV0                   = InVtx.mUV[0].mMapTexCoord * UVScale;
-    OutVtx.mUV1                   = InVtx.mUV[1].mMapTexCoord * UVScale;
-    OutVtx.mNormal                = InVtx.mNrm;
-    OutVtx.mBiNormal              = InVtx.mUV[0].mMapBiNormal;
-    // OutVtx.mColor = InVtx.mCol[0].GetRGBAU32();
-    vwriter.AddVertex(OutVtx);
-  }
-  vwriter.UnLock(&context);
-  _vertexBuffer->SetNumVertices(NumVertexIndices);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
