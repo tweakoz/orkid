@@ -796,16 +796,20 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
       xgm_submesh->miNumClusters = inumclus;
       xgm_submesh->mpClusters    = new lev2::XgmCluster[inumclus];
       for (int icluster = 0; icluster < inumclus; icluster++) {
+        lev2::ContextDummy DummyTarget;
         auto clusterbuilder      = clusterizer->GetCluster(icluster);
         const auto& tool_submesh = clusterbuilder->_submesh;
-        clusterbuilder->buildVertexBuffer(VertexFormat);
+        clusterbuilder->buildVertexBuffer(DummyTarget, VertexFormat);
 
         lev2::XgmCluster& XgmClus = xgm_submesh->mpClusters[icluster];
 
         // printf("building tristrip cluster<%d>\n", icluster);
 
-        buildTriStripXgmCluster(XgmClus, clusterbuilder);
+        buildTriStripXgmCluster(DummyTarget, XgmClus, clusterbuilder);
 
+        const int imaxvtx = XgmClus._vertexBuffer->GetNumVertices();
+        printf("XgmClus._vertexBuffer<%p> imaxvtx<%d>\n", XgmClus._vertexBuffer.get(), imaxvtx);
+        // OrkAssert(false);
         // int inumclusjoints = XgmClus.mJoints.size();
         // for( int ib=0; ib<inumclusjoints; ib++ )
         //{

@@ -51,15 +51,15 @@ struct XgmClusterBuilder {
   XgmClusterBuilder(const XgmClusterizer& clusterizer);
   virtual ~XgmClusterBuilder();
   //////////////////////////////////////////////////
-  virtual bool addTriangle(const XgmClusterTri& Triangle)       = 0;
-  virtual void buildVertexBuffer(lev2::EVtxStreamFormat format) = 0;
+  virtual bool addTriangle(const XgmClusterTri& Triangle)                               = 0;
+  virtual void buildVertexBuffer(lev2::Context& context, lev2::EVtxStreamFormat format) = 0;
   //////////////////////////////////////////////////
   void Dump(void);
   ///////////////////////////////////////////////////////////////////
   // Build Vertex Buffers
   ///////////////////////////////////////////////////////////////////
   submesh _submesh;
-  lev2::VertexBufferBase* _vertexBuffer;
+  lev2::vtxbufferbase_ptr_t _vertexBuffer;
   const XgmClusterizer& _clusterizer;
 };
 
@@ -75,12 +75,12 @@ struct XgmSkinnedClusterBuilder : public XgmClusterBuilder {
   }
 
   bool addTriangle(const XgmClusterTri& Triangle) final;
-  void buildVertexBuffer(lev2::EVtxStreamFormat format) final; // virtual
+  void buildVertexBuffer(lev2::Context& context, lev2::EVtxStreamFormat format) final; // virtual
 
   int FindNewBoneIndex(const std::string& BoneName);
-  void BuildVertexBuffer_V12N12T8I4W4();
-  void BuildVertexBuffer_V12N12B12T8I4W4();
-  void BuildVertexBuffer_V12N6I1T4();
+  void BuildVertexBuffer_V12N12T8I4W4(lev2::Context& context);
+  void BuildVertexBuffer_V12N12B12T8I4W4(lev2::Context& context);
+  void BuildVertexBuffer_V12N6I1T4(lev2::Context& context);
 
   orkmap<std::string, int> _boneRegisterMap;
 };
@@ -91,13 +91,13 @@ struct XgmRigidClusterBuilder : public XgmClusterBuilder {
   XgmRigidClusterBuilder(const XgmClusterizer& clusterizer);
   /////////////////////////////////////////////////
   bool addTriangle(const XgmClusterTri& Triangle) final;
-  void buildVertexBuffer(lev2::EVtxStreamFormat format) final;
+  void buildVertexBuffer(lev2::Context& context, lev2::EVtxStreamFormat format) final;
 
-  void BuildVertexBuffer_V12C4T16();
-  void BuildVertexBuffer_V12N6C2T4();
-  void BuildVertexBuffer_V12N12B12T8C4();
-  void BuildVertexBuffer_V12N12T16C4();
-  void BuildVertexBuffer_V12N12B12T16();
+  void BuildVertexBuffer_V12C4T16(lev2::Context& context);
+  void BuildVertexBuffer_V12N6C2T4(lev2::Context& context);
+  void BuildVertexBuffer_V12N12B12T8C4(lev2::Context& context);
+  void BuildVertexBuffer_V12N12T16C4(lev2::Context& context);
+  void BuildVertexBuffer_V12N12B12T16(lev2::Context& context);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -153,6 +153,6 @@ struct XgmClusterizerStd : public XgmClusterizer {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void buildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, clusterbuilder_ptr_t pclusbuilder);
+void buildTriStripXgmCluster(lev2::Context& context, lev2::XgmCluster& XgmCluster, clusterbuilder_ptr_t pclusbuilder);
 
 } // namespace ork::meshutil

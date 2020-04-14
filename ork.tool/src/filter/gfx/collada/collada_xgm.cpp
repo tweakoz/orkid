@@ -228,10 +228,11 @@ void CColladaModel::BuildXgmTriStripMesh(lev2::XgmMesh& XgmMesh, SColladaMesh* C
       auto clusterbuilder = ColMatGroup->GetClusterizer()->GetCluster(ic);
 
       auto format = ColMatGroup->GetVtxStreamFormat();
-      clusterbuilder->buildVertexBuffer(format);
-
+      lev2::ContextDummy DummyTarget;
+      clusterbuilder->buildVertexBuffer(DummyTarget, format);
       lev2::XgmCluster& XgmClus = XgmClusSet.mpClusters[ic];
-      buildTriStripXgmCluster(XgmClus, clusterbuilder);
+
+      buildTriStripXgmCluster(DummyTarget, XgmClus, clusterbuilder);
 
       int inumclusjoints = XgmClus.mJoints.size();
       for (int ib = 0; ib < inumclusjoints; ib++) {

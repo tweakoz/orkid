@@ -25,6 +25,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             rval->_vars.makeValueForKey<drwev_t>("drawev")         = d_ev;
 
             rval->onGpuInit([=](Context* ctx) { //
+              ctx->makeCurrentContext();
               auto pyfn = rval->_vars.typedValueForKey<py::function>("gpuinitfn");
               pyfn.value()(ctx_t(ctx));
             });

@@ -141,7 +141,7 @@ void* DuGeometryBufferInterface::LockVB(VertexBufferBase& VBuf, int ibase, int i
     VBuf.SetHandle(pdata);
   }
   VBuf.Lock();
-  VBuf.Reset();
+  // VBuf.Reset();
   return VBuf.GetHandle();
 }
 

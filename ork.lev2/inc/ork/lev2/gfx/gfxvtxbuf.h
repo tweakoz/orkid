@@ -17,6 +17,9 @@ namespace ork { namespace lev2 {
 
 class Context;
 class GeometryBufferInterface;
+class VertexBufferBase;
+
+using vtxbufferbase_ptr_t = std::shared_ptr<VertexBufferBase>;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -155,7 +158,7 @@ public:
 
   ///////////////////////////////////////////////////////////////
 
-  static VertexBufferBase* CreateVertexBuffer(EVtxStreamFormat eformat, int inumverts, bool bstatic);
+  static vtxbufferbase_ptr_t CreateVertexBuffer(EVtxStreamFormat eformat, int inumverts, bool bstatic);
 
   virtual bool IsStatic() const = 0;
 

@@ -89,42 +89,35 @@ public:
   EPrimitiveType GetPrimType(void) const { return mePrimType; }
 };
 
+using xgmprimgroup_ptr_t = std::shared_ptr<XgmPrimGroup>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmCluster // Run Time Cluster
+struct XgmCluster // Run Time Cluster
 {
-public:
-  orkvector<PoolString> mJoints;
-  orkvector<int> mJointSkelIndices;
-
-  int miNumPrimGroups;
-  XgmPrimGroup* mpPrimGroups;
-  VertexBufferBase* _vertexBuffer; // Our Models have 1 VB per cluster
-  EVtxStreamFormat meVtxStrFmt;
-
-  AABox mBoundingBox;
-  Sphere mBoundingSphere;
-
   XgmCluster();
   virtual ~XgmCluster();
   void Dump(void);
 
-  inline int GetNumPrimGroups(void) const { return miNumPrimGroups; }
-  const XgmPrimGroup& RefPrimGroup(int idx) const {
-    OrkAssert(idx >= 0);
-    OrkAssert(idx < miNumPrimGroups);
-    return mpPrimGroups[idx];
+  inline size_t numPrimGroups(void) const { return _primgroups.size(); }
+  inline xgmprimgroup_ptr_t primgroup(int idx) const {
+    return _primgroups[idx];
   }
-  XgmPrimGroup& RefPrimGroup(int idx) {
-    OrkAssert(idx >= 0);
-    OrkAssert(idx < miNumPrimGroups);
-    return mpPrimGroups[idx];
-  }
-  const VertexBufferBase* GetVertexBuffer(void) const { return _vertexBuffer; }
+  vtxbufferbase_ptr_t GetVertexBuffer(void) const { return _vertexBuffer; }
   const PoolString& GetJointBinding(int idx) const { return mJoints[idx]; }
   size_t GetNumJointBindings(void) const { return mJoints.size(); }
 
   void dump() const;
+
+  orkvector<PoolString> mJoints;
+  orkvector<int> mJointSkelIndices;
+
+  std::vector<xgmprimgroup_ptr_t> _primgroups;
+  vtxbufferbase_ptr_t _vertexBuffer; // Our Models have 1 VB per cluster
+  EVtxStreamFormat meVtxStrFmt;
+
+  AABox mBoundingBox;
+  Sphere mBoundingSphere;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -90,7 +90,6 @@ struct FrustumPrimitive {
   //////////////////////////////////////////////////////////////////////////////
 
   inline void draw(Context* context) {
-    OrkAssert(_primitive._vertexBuffer.get() != nullptr);
     _primitive.draw(context);
   }
 

@@ -66,17 +66,25 @@ template class StaticIndexBuffer<U32>;
 template class DynamicIndexBuffer<U32>;
 
 /////////////////////////////////////////////////////////////////////////
-template <typename T> VertexBufferBase* _createvb(int _numverts, bool _static) {
-  VertexBufferBase* rval = nullptr;
+template <typename T> vtxbufferbase_ptr_t _createvb(int _numverts, bool _static) {
+  vtxbufferbase_ptr_t rval;
 
-  rval = _static ? static_cast<VertexBufferBase*>(new StaticVertexBuffer<T>(_numverts, 0, ork::lev2::EPrimitiveType::MULTI))
-                 : static_cast<VertexBufferBase*>(new DynamicVertexBuffer<T>(_numverts, 0, ork::lev2::EPrimitiveType::MULTI));
+  using static_t  = StaticVertexBuffer<T>;
+  using dynamic_t = DynamicVertexBuffer<T>;
+
+  if (_static) {
+    rval = std::static_pointer_cast<VertexBufferBase> //
+        (std::make_shared<static_t>(_numverts, 0, ork::lev2::EPrimitiveType::MULTI));
+  } else {
+    rval = std::static_pointer_cast<VertexBufferBase> //
+        (std::make_shared<dynamic_t>(_numverts, 0, ork::lev2::EPrimitiveType::MULTI));
+  }
   return rval;
 }
 /////////////////////////////////////////////////////////////////////////
 
-VertexBufferBase* VertexBufferBase::CreateVertexBuffer(EVtxStreamFormat eformat, int inumverts, bool bstatic) {
-  VertexBufferBase* pvb = 0;
+vtxbufferbase_ptr_t VertexBufferBase::CreateVertexBuffer(EVtxStreamFormat eformat, int inumverts, bool bstatic) {
+  vtxbufferbase_ptr_t pvb;
 
   switch (eformat) {
     case EVtxStreamFormat::V12C4T16:
@@ -132,8 +140,6 @@ VertexBufferBase::VertexBufferBase(int iMax, int iFlush, int iSize, EPrimitiveTy
 }
 
 VertexBufferBase::~VertexBufferBase() {
-  Context* pTARG = GfxEnv::GetRef().loadingContext();
-  // pTARG->GBI()->ReleaseVB( *this );
 }
 
 /////////////////////////////////////////////////////////////////////////

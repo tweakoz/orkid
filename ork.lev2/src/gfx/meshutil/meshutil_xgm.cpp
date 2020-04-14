@@ -142,30 +142,29 @@ void simpleToolSubMeshToXgmSubMesh(const Mesh& mesh, const submesh& smesh, ork::
   std::string mtlname = smesh.name.c_str();
   pmtl->SetName(ork::AddPooledString(mtlname.c_str()));
   ////////////////////////////////////////////////////////
-  cluster.miNumPrimGroups    = 1;
-  cluster.mpPrimGroups       = new lev2::XgmPrimGroup[1];
-  cluster._vertexBuffer      = lev2::VertexBufferBase::CreateVertexBuffer(fsub.evtxformat, inumvertices, true);
-  lev2::VertexBufferBase& vb = *cluster._vertexBuffer;
-  void* poutverts            = DummyTarget.GBI()->LockVB(vb);
+  auto primgroup = std::make_shared<lev2::XgmPrimGroup>();
+  cluster._primgroups.push_back(primgroup);
+  auto vbuf = lev2::VertexBufferBase::CreateVertexBuffer(fsub.evtxformat, inumvertices, true);
+  // transfer vertexbuffer to cluster
+  cluster._vertexBuffer = vbuf;
+  void* poutverts       = DummyTarget.GBI()->LockVB(*vbuf);
   OrkAssert(poutverts != 0);
   {
     const void* psrc = (const void*)fsub.poutvtxdata;
     int ivblen       = inumvertices * ivtxsize;
     memcpy(poutverts, psrc, ivblen);
-    vb.SetNumVertices(inumvertices);
+    vbuf->SetNumVertices(inumvertices);
   }
-  DummyTarget.GBI()->UnLockVB(vb);
+  DummyTarget.GBI()->UnLockVB(*vbuf);
   ////////////////////////////////////////////////////////
-  lev2::XgmPrimGroup& pg = cluster.mpPrimGroups[0];
-  ////////////////////////////////////////////////////////
-  pg.mePrimType                              = lev2::EPrimitiveType::TRIANGLES;
-  pg.miNumIndices                            = inumtriindices;
-  ork::lev2::StaticIndexBuffer<U16>* pidxbuf = new ork::lev2::StaticIndexBuffer<U16>(pg.miNumIndices);
-  pg.mpIndices                               = pidxbuf;
+  primgroup->mePrimType                      = lev2::EPrimitiveType::TRIANGLES;
+  primgroup->miNumIndices                    = inumtriindices;
+  ork::lev2::StaticIndexBuffer<U16>* pidxbuf = new ork::lev2::StaticIndexBuffer<U16>(primgroup->miNumIndices);
+  primgroup->mpIndices                       = pidxbuf;
   ork::lev2::StaticIndexBuffer<U16>& ib      = *pidxbuf;
   U16* poutidx                               = (U16*)DummyTarget.GBI()->LockIB(ib);
   OrkAssert(poutidx != 0);
-  for (int ii = 0; ii < pg.miNumIndices; ii++) {
+  for (int ii = 0; ii < primgroup->miNumIndices; ii++) {
     int merged_idx = fsub.MergeTriIndices[ii];
     OrkAssert(merged_idx < 0x10000);
     poutidx[ii] = U16(merged_idx);
@@ -231,20 +230,18 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
 
         for (int ic = 0; ic < inumclus; ic++) {
           const lev2::XgmCluster& clus = cs.cluster(ic);
-          lev2::VertexBufferBase* pvb  = const_cast<lev2::VertexBufferBase*>(clus.GetVertexBuffer());
-
-          ;
-          int inumv             = pvb->GetMax();
-          int isrcsize          = inumv * pvb->GetVtxSize();
-          const void* pvertbase = static_cast<lev2::Context&>(DummyTarget).GBI()->LockVB(*pvb);
+          auto pvb                     = clus.GetVertexBuffer();
+          int inumv                    = pvb->GetMax();
+          int isrcsize                 = inumv * pvb->GetVtxSize();
+          const void* pvertbase        = static_cast<lev2::Context&>(DummyTarget).GBI()->LockVB(*pvb);
           OrkAssert(pvertbase != 0);
           // pvb->GetVertexPointer();
           {
-            int inumpg = clus.GetNumPrimGroups();
+            int inumpg = clus.numPrimGroups();
             for (int ipg = 0; ipg < inumpg; ipg++) {
-              const lev2::XgmPrimGroup& pg = clus.RefPrimGroup(ipg);
-              if (pg.GetPrimType() == lev2::EPrimitiveType::TRIANGLES) {
-                const lev2::IndexBufferBase* pidxbuf          = pg.GetIndexBuffer();
+              auto primgroup = clus.primgroup(ipg);
+              if (primgroup->GetPrimType() == lev2::EPrimitiveType::TRIANGLES) {
+                const lev2::IndexBufferBase* pidxbuf          = primgroup->GetIndexBuffer();
                 const lev2::StaticIndexBuffer<U16>* pidxbuf16 = (const lev2::StaticIndexBuffer<U16>*)pidxbuf;
                 // const U16* pidx16 = pidxbuf16->GetIndexPointer();
                 const U16* pidx16 = (const U16*)static_cast<lev2::Context&>(DummyTarget).GBI()->LockIB(*pidxbuf);

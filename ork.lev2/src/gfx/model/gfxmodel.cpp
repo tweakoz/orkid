@@ -182,17 +182,10 @@ XgmPrimGroup::XgmPrimGroup(XgmPrimGroup* pgrp)
 ///////////////////////////////////////////////////////////////////////////////
 
 XgmCluster::XgmCluster()
-    : miNumPrimGroups(0)
-    , mpPrimGroups(0)
-    , _vertexBuffer(0)
-    , mBoundingSphere(fvec3::Zero(), 0.0f) {
+    : mBoundingSphere(fvec3::Zero(), 0.0f) {
 }
 
 XgmCluster::~XgmCluster() {
-  if (mpPrimGroups)
-    delete[] mpPrimGroups;
-  if (_vertexBuffer)
-    delete _vertexBuffer;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -293,12 +286,12 @@ void XgmModel::RenderRigid(
 
     struct RenderClus {
       static void RenderPrim(ork::lev2::Context* pTARG, const XgmCluster& XgmClus) {
-        const ork::lev2::VertexBufferBase* pVertexBuffer = XgmClus.GetVertexBuffer();
-        int inumprim                                     = XgmClus.GetNumPrimGroups();
+        auto vtxbuffer = XgmClus.GetVertexBuffer();
+        int inumprim   = XgmClus.numPrimGroups();
         for (int iprim = 0; iprim < inumprim; iprim++) {
-          const XgmPrimGroup& PrimGroup                  = XgmClus.mpPrimGroups[iprim];
-          const ork::lev2::IndexBufferBase* pIndexBuffer = PrimGroup.GetIndexBuffer();
-          pTARG->GBI()->DrawIndexedPrimitiveEML(*pVertexBuffer, *pIndexBuffer, PrimGroup.GetPrimType());
+          auto primgroup = XgmClus.primgroup(iprim);
+          auto idxbuffer = primgroup->GetIndexBuffer();
+          pTARG->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
         }
       }
 
@@ -444,12 +437,12 @@ void XgmModel::RenderMultipleRigid(
             pTARG->MTXI()->SetMMatrix(mtxW);
             pmaterial->UpdateMVPMatrix(pTARG);
 
-            const ork::lev2::VertexBufferBase* pVertexBuffer = XgmClus.GetVertexBuffer();
-            int inumprim                                     = XgmClus.GetNumPrimGroups();
+            auto vtxbuffer = XgmClus.GetVertexBuffer();
+            int inumprim   = XgmClus.numPrimGroups();
             for (int iprim = 0; iprim < inumprim; iprim++) {
-              const XgmPrimGroup& PrimGroup                  = XgmClus.mpPrimGroups[iprim];
-              const ork::lev2::IndexBufferBase* pIndexBuffer = PrimGroup.GetIndexBuffer();
-              pTARG->GBI()->DrawIndexedPrimitiveEML(*pVertexBuffer, *pIndexBuffer, PrimGroup.GetPrimType());
+              auto primgroup = XgmClus.primgroup(iprim);
+              auto idxbuffer = primgroup->GetIndexBuffer();
+              pTARG->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
             }
           }
         }
@@ -560,15 +553,13 @@ void XgmModel::RenderSkinned(
             mtl->UpdateMVPMatrix(pTARG);
 
             //////////////////////////////////////////////////////
-            const ork::lev2::VertexBufferBase* pVertexBuffer = XgmCluster.GetVertexBuffer();
-            if (pVertexBuffer) {
-              int inumprim = XgmCluster.GetNumPrimGroups();
+            auto vtxbuffer = XgmCluster.GetVertexBuffer();
+            if (vtxbuffer) {
+              int inumprim = XgmCluster.numPrimGroups();
               for (int iprim = 0; iprim < inumprim; iprim++) {
-                const XgmPrimGroup& PrimGroup                  = XgmCluster.mpPrimGroups[iprim];
-                const ork::lev2::IndexBufferBase* pIndexBuffer = PrimGroup.GetIndexBuffer();
-
-                // printf( "rskin DrawIndexedPrimitiveEML iprim<%d>\n", iprim );
-                pTARG->GBI()->DrawIndexedPrimitiveEML(*pVertexBuffer, *pIndexBuffer, PrimGroup.GetPrimType());
+                auto primgroup = XgmCluster.primgroup(iprim);
+                auto idxbuffer = primgroup->GetIndexBuffer();
+                pTARG->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
               }
             }
             //////////////////////////////////////////////////////
@@ -795,13 +786,13 @@ void XgmModel::RenderMultipleSkinned(
               {
                 mtxblockitem.mApplicator->ApplyToTarget(pTARG);
                 //////////////////////////////////////////////////////
-                const ork::lev2::VertexBufferBase* pVertexBuffer = XgmClus.GetVertexBuffer();
-                if (pVertexBuffer) {
-                  int inumprim = XgmClus.GetNumPrimGroups();
+                auto vtxbuffer = XgmClus.GetVertexBuffer();
+                if (vtxbuffer) {
+                  int inumprim = XgmClus.numPrimGroups();
                   for (int iprim = 0; iprim < inumprim; iprim++) {
-                    const XgmPrimGroup& PrimGroup                  = XgmClus.mpPrimGroups[iprim];
-                    const ork::lev2::IndexBufferBase* pIndexBuffer = PrimGroup.GetIndexBuffer();
-                    pTARG->GBI()->DrawIndexedPrimitiveEML(*pVertexBuffer, *pIndexBuffer, PrimGroup.GetPrimType());
+                    auto primgroup = XgmClus.primgroup(iprim);
+                    auto idxbuffer = primgroup->GetIndexBuffer();
+                    pTARG->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
                   }
                 }
                 //////////////////////////////////////////////////////
@@ -861,7 +852,7 @@ void XgmCluster::dump() const {
   int inumjoints  = int(mJoints.size());
 
   orkprintf("   XgmCluster this<%p>\n", this);
-  orkprintf("    NumPrimGroups<%d>\n", miNumPrimGroups);
+  orkprintf("    NumPrimGroups<%zu>\n", numPrimGroups());
   orkprintf("    NumJointSkelIndices<%d>\n", inumskelidc);
   for (int i = 0; i < inumskelidc; i++) {
     orkprintf("     JointSkelIndices<%d>=<%d>\n", i, mJointSkelIndices[i]);

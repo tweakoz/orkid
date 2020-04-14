@@ -8,6 +8,8 @@
 #include <ork/kernel/orklut.hpp>
 #include <ork/math/plane.h>
 #include <ork/lev2/gfx/meshutil/submesh.h>
+#include <ork/lev2/gfx/meshutil/clusterizer.h>
+#include <ork/lev2/gfx/gfxenv_enum.h>
 
 namespace ork::meshutil {
 
@@ -16,56 +18,68 @@ PrimitiveV12N12B12T8C4::PrimitiveV12N12B12T8C4() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void PrimitiveV12N12B12T8C4::fromSubMesh(const submesh& submesh, std::shared_ptr<vtxbuf_t> vtxbuf, lev2::Context* context) {
+void PrimitiveV12N12B12T8C4::fromSubMesh(const submesh& submesh, lev2::Context* context) {
+  // OrkAssert(false);
+  //////////////////////////////////////////////////////////////
+  // Fill In ClusterBuilder from submesh triangle soup
+  //////////////////////////////////////////////////////////////
+  meshutil::XgmClusterizerStd clusterizer;
+  meshutil::MeshConfigurationFlags meshflags;
   const auto& vpool = submesh.RefVertexPool();
   int numverts      = vpool.GetNumVertices();
   int inumpolys     = submesh.GetNumPolys(3);
-  int numidcs       = inumpolys * 3;
-
-  _vertexBuffer = vtxbuf;
-  _indexBuffer  = std::make_shared<idxbuf_t>(numidcs);
-
-  _writer.Lock(context, _vertexBuffer.get(), numverts);
-  for (int i = 0; i < numverts; i++) {
-    const auto& inpvtx = vpool.GetVertex(i);
-    const auto& pos    = inpvtx.mPos;
-    const auto& nrm    = inpvtx.mNrm;
-    const auto& uv     = inpvtx.mUV[0].mMapTexCoord;
-    const auto& bin    = inpvtx.mUV[0].mMapBiNormal;
-    const auto& col    = inpvtx.mCol[0];
-    _writer.AddVertex(lev2::SVtxV12N12B12T8C4(pos, nrm, bin, uv, col.GetABGRU32()));
-  }
-  _writer.UnLock(context);
-
-  ///////////////////////////////////////////////
-  // submesh indices -> index buffer
-  ///////////////////////////////////////////////
-  auto pidxout = (uint16_t*)context->GBI()->LockIB(*_indexBuffer.get(), 0, numidcs);
-  int index    = 0;
+  clusterizer.Begin();
   for (int p = 0; p < inumpolys; p++) {
-    const auto& poly = submesh.RefPoly(p);
-    pidxout[index++] = (uint16_t)poly.miVertices[0];
-    pidxout[index++] = (uint16_t)poly.miVertices[1];
-    pidxout[index++] = (uint16_t)poly.miVertices[2];
+    const auto& poly   = submesh.RefPoly(p);
+    const vertex& vtxa = vpool.GetVertex(poly.miVertices[0]);
+    const vertex& vtxb = vpool.GetVertex(poly.miVertices[1]);
+    const vertex& vtxc = vpool.GetVertex(poly.miVertices[2]);
+    XgmClusterTri tri{vtxa, vtxb, vtxc};
+    clusterizer.addTriangle(tri, meshflags);
   }
-  context->GBI()->UnLockIB(*_indexBuffer.get());
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-void PrimitiveV12N12B12T8C4::fromSubMesh(const submesh& submesh, lev2::Context* context) {
-  const auto& vpool = submesh.RefVertexPool();
-  int numverts      = vpool.GetNumVertices();
-  auto vtxbuffer    = std::make_shared<vtxbuf_t>(numverts, 0, lev2::EPrimitiveType::NONE);
-  fromSubMesh(submesh, vtxbuffer, context);
+  clusterizer.End();
+  //////////////////////////////////////////////////////////////
+  // create Indexed TriStripped Primitive Groups
+  //////////////////////////////////////////////////////////////
+  size_t inumclus = clusterizer.GetNumClusters();
+  printf("inumclus<%zu>\n", inumclus);
+  OrkAssert(inumclus <= 1);
+  for (size_t icluster = 0; icluster < inumclus; icluster++) {
+    auto clusterbuilder = clusterizer.GetCluster(icluster);
+    clusterbuilder->buildVertexBuffer(*context, lev2::EVtxStreamFormat::V12N12B12T8C4);
+    lev2::XgmCluster xgmcluster;
+    buildTriStripXgmCluster(*context, xgmcluster, clusterbuilder);
+    primgroupcluster_ptr_t out_cluster = std::make_shared<PrimGroupCluster>();
+    out_cluster->_vtxbuffer            = std::dynamic_pointer_cast<vtxbuf_t>(clusterbuilder->_vertexBuffer);
+    for (size_t ipg = 0; ipg < xgmcluster.numPrimGroups(); ipg++) {
+      auto src_PG         = xgmcluster.primgroup(ipg);
+      auto gpu_prim       = std::make_shared<PrimitiveGroup>();
+      gpu_prim->_primtype = src_PG->GetPrimType();
+      out_cluster->_primgroups.push_back(gpu_prim);
+      size_t numindices    = src_PG->GetNumIndices();
+      auto src_indexdata   = (const uint16_t*)context->GBI()->LockIB(*src_PG->GetIndexBuffer());
+      gpu_prim->_idxbuffer = std::make_shared<idxbuf_t>(numindices);
+      auto gpuindexptr     = (void*)context->GBI()->LockIB(*gpu_prim->_idxbuffer.get());
+      memcpy(gpuindexptr, src_indexdata, numindices * sizeof(uint16_t));
+      context->GBI()->UnLockIB(*gpu_prim->_idxbuffer.get());
+      context->GBI()->UnLockIB(*src_PG->GetIndexBuffer());
+    }
+    _gpuClusters.push_back(out_cluster);
+  } // for (size_t icluster = 0; icluster < inumclus; icluster++) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void PrimitiveV12N12B12T8C4::draw(lev2::Context* context) const {
-  auto& VB = *_vertexBuffer.get();
-  auto& IB = *_indexBuffer.get();
-  context->GBI()->DrawIndexedPrimitiveEML(VB, IB, lev2::EPrimitiveType::TRIANGLES);
+  auto gbi = context->GBI();
+  for (auto cluster : _gpuClusters) {
+    for (auto primgroup : cluster->_primgroups) {
+      gbi->DrawIndexedPrimitiveEML(
+          *cluster->_vtxbuffer.get(), //
+          *primgroup->_idxbuffer.get(),
+          primgroup->_primtype);
+    }
+  }
 }
 
 } // namespace ork::meshutil

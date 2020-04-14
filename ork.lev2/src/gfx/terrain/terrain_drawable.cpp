@@ -35,7 +35,7 @@ namespace ork::lev2 {
 
 using vertex_type         = SVtxV12C4T16;
 using vertexbuffer_t      = StaticVertexBuffer<vertex_type>;
-using vertexbuffer_ptr_t  = vertexbuffer_t*;
+using vertexbuffer_ptr_t  = std::shared_ptr<vertexbuffer_t>;
 using vertexbuffer_list_t = std::vector<vertexbuffer_t*>;
 using idxbuf_t            = StaticIndexBuffer<uint16_t>;
 
@@ -64,7 +64,7 @@ struct TerrainPrimitive {
 typedef std::shared_ptr<TerrainPrimitive> terprim_ptr_t;
 
 struct TerrainCluster {
-  std::shared_ptr<vertexbuffer_t> _vtxbuffer;
+  vtxbufferbase_ptr_t _vtxbuffer;
   std::vector<terprim_ptr_t> _primitives;
 };
 
@@ -818,9 +818,9 @@ void SectorLodInfo::buildPrimitives(chunkfile::OutputStream* hdrstream, chunkfil
   for (size_t icluster = 0; icluster < inumclus; icluster++) {
     auto clusterbuilder      = _clusterizer.GetCluster(icluster);
     const auto& tool_submesh = clusterbuilder->_submesh;
-    clusterbuilder->buildVertexBuffer(vertex_stream_format);
+    clusterbuilder->buildVertexBuffer(DummyTarget, vertex_stream_format);
     XgmCluster xgmcluster;
-    buildTriStripXgmCluster(xgmcluster, clusterbuilder);
+    buildTriStripXgmCluster(DummyTarget, xgmcluster, clusterbuilder);
     ////////////////////////////////////////////////////////////////
     hdrstream->AddItem<size_t>("begin-sector-lod"_crcu);
     hdrstream->AddItem<size_t>(icluster);
@@ -849,21 +849,21 @@ void SectorLodInfo::buildPrimitives(chunkfile::OutputStream* hdrstream, chunkfil
 
     DummyTarget.GBI()->UnLockVB(*VB);
     ////////////////////////////////////////////////////////////////
-    hdrstream->AddItem<size_t>(xgmcluster.miNumPrimGroups);
-    for (size_t ipg = 0; ipg < xgmcluster.miNumPrimGroups; ipg++) {
-      const auto& PG    = xgmcluster.RefPrimGroup(ipg);
+    hdrstream->AddItem<size_t>(xgmcluster.numPrimGroups());
+    for (size_t ipg = 0; ipg < xgmcluster.numPrimGroups(); ipg++) {
+      auto PG           = xgmcluster.primgroup(ipg);
       size_t ibufoffset = geostream->GetSize();
-      size_t numindices = PG.GetNumIndices();
-      auto indexdata    = (uint16_t*)DummyTarget.GBI()->LockIB(*PG.GetIndexBuffer());
+      size_t numindices = PG->GetNumIndices();
+      auto indexdata    = (uint16_t*)DummyTarget.GBI()->LockIB(*PG->GetIndexBuffer());
       OrkAssert(indexdata != nullptr);
       hdrstream->AddItem<size_t>(ipg);
-      hdrstream->AddItem<lev2::EPrimitiveType>(PG.mePrimType);
-      hdrstream->AddItem<size_t>(PG.miNumIndices);
+      hdrstream->AddItem<lev2::EPrimitiveType>(PG->mePrimType);
+      hdrstream->AddItem<size_t>(PG->miNumIndices);
       hdrstream->AddItem<size_t>(ibufoffset);
       geostream->Write(
           (const uint8_t*)indexdata, //
           numindices * sizeof(uint16_t));
-      DummyTarget.GBI()->UnLockIB(*PG.GetIndexBuffer());
+      DummyTarget.GBI()->UnLockIB(*PG->GetIndexBuffer());
     }
     ////////////////////////////////////////////////////////////////
     hdrstream->AddItem<size_t>("end-sector-lod"_crcu);
@@ -916,12 +916,12 @@ void SectorLodInfo::gpuLoadGeometry(Context* ctx, chunkfile::InputStream* hdrstr
 
     auto vertexbufferdata = (const void*)geostream->GetDataAt(vertexdataoffset);
 
-    auto VB            = (vertexbuffer_t*)VertexBufferBase::CreateVertexBuffer(streamfmt, numverts, true);
-    auto gpuvtxpointer = (void*)ctx->GBI()->LockVB(*VB, 0, numverts);
+    auto VB            = VertexBufferBase::CreateVertexBuffer(streamfmt, numverts, true);
+    auto gpuvtxpointer = (void*)ctx->GBI()->LockVB(*VB.get(), 0, numverts);
     memcpy(gpuvtxpointer, vertexbufferdata, vertexdatalen);
-    ctx->GBI()->UnLockVB(*VB);
+    ctx->GBI()->UnLockVB(*VB.get());
 
-    gpu_cluster->_vtxbuffer = std::shared_ptr<vertexbuffer_t>(VB);
+    gpu_cluster->_vtxbuffer = VB;
 
     for (size_t ipg = 0; ipg < numprimgroups; ipg++) {
       hdrstream->GetItem<size_t>(check_pgindex);

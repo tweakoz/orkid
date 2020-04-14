@@ -487,22 +487,33 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath);
 
 struct PrimitiveV12N12B12T8C4 {
 
-  using vtx_t    = lev2::SVtxV12N12B12T8C4;
-  using idxbuf_t = lev2::StaticIndexBuffer<uint16_t>;
-  using vtxbuf_t = lev2::StaticVertexBuffer<vtx_t>;
+  using vtx_t         = lev2::SVtxV12N12B12T8C4;
+  using idxbuf_t      = lev2::StaticIndexBuffer<uint16_t>;
+  using vtxbuf_t      = lev2::StaticVertexBuffer<vtx_t>;
+  using vtxbuf_ptr_t  = std::shared_ptr<vtxbuf_t>;
+  using vtxbuf_list_t = std::vector<vtxbuf_t>;
+  using idxbuf_ptr_t  = std::shared_ptr<idxbuf_t>;
+
+  struct PrimitiveGroup {
+    idxbuf_ptr_t _idxbuffer;
+    lev2::EPrimitiveType _primtype = lev2::EPrimitiveType::NONE;
+  };
+  using primgroup_ptr_t      = std::shared_ptr<PrimitiveGroup>;
+  using primgroup_ptr_list_t = std::vector<primgroup_ptr_t>;
+  struct PrimGroupCluster {
+    vtxbuf_ptr_t _vtxbuffer;
+    primgroup_ptr_list_t _primgroups;
+  };
+
+  using primgroupcluster_ptr_t = std::shared_ptr<PrimGroupCluster>;
+  using cluster_ptr_list_t     = std::vector<primgroupcluster_ptr_t>;
 
   PrimitiveV12N12B12T8C4();
 
   void fromSubMesh(const submesh& submesh, lev2::Context* context); /// generate from submesh using internal vertexbuffer
-  void fromSubMesh(
-      const submesh& submesh,
-      std::shared_ptr<vtxbuf_t> vtxbuf,
-      lev2::Context* context);             /// generate from submesh using shared vertexbuffer
-  void draw(lev2::Context* context) const; /// draw with context
+  void draw(lev2::Context* context) const;                          /// draw with context
 
-  std::shared_ptr<idxbuf_t> _indexBuffer;
-  std::shared_ptr<vtxbuf_t> _vertexBuffer;
-  lev2::VtxWriter<vtx_t> _writer;
+  cluster_ptr_list_t _gpuClusters;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

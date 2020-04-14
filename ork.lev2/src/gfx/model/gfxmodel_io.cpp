@@ -226,9 +226,9 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
 
         XgmSubMesh* submesh = new XgmSubMesh;
         Mesh->AddSubMesh(submesh);
-        XgmSubMesh& CS = *submesh;
+        XgmSubMesh& xgm_sub_mesh = *submesh;
 
-        HeaderStream->GetItem(CS.miNumClusters);
+        HeaderStream->GetItem(xgm_sub_mesh.miNumClusters);
 
         int ilightmapname;
         int ivtxlitflg;
@@ -258,12 +258,12 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
         for (int imat = 0; imat < mdl->miNumMaterials; imat++) {
           GfxMaterial* pmat = mdl->GetMaterial(imat);
           if (strcmp(pmat->GetName().c_str(), matname) == 0) {
-            CS.mpMaterial = pmat;
+            xgm_sub_mesh.mpMaterial = pmat;
           }
         }
 
-        CS.mpClusters = new XgmCluster[CS.miNumClusters];
-        for (int ic = 0; ic < CS.miNumClusters; ic++) {
+        xgm_sub_mesh.mpClusters = new XgmCluster[xgm_sub_mesh.miNumClusters];
+        for (int ic = 0; ic < xgm_sub_mesh.miNumClusters; ic++) {
           int iclusindex = -1;
           int inumbb     = -1;
           int ivboffset  = -1;
@@ -275,8 +275,9 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
           ////////////////////////////////////////////////////////////////////////
           HeaderStream->GetItem(iclusindex);
           OrkAssert(ic == iclusindex);
-          XgmCluster& Clus = CS.cluster(ic);
-          HeaderStream->GetItem(Clus.miNumPrimGroups);
+          XgmCluster& Clus  = xgm_sub_mesh.cluster(ic);
+          int numprimgroups = 0;
+          HeaderStream->GetItem(numprimgroups);
           HeaderStream->GetItem(inumbb);
           HeaderStream->GetItem<EVtxStreamFormat>(efmt);
           HeaderStream->GetItem(ivboffset);
@@ -291,15 +292,15 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
           // printf( "XGMLOAD vbfmt<%s> efmt<%d>\n", vbfmt, int(efmt) );
           ////////////////////////////////////////////////////////////////////////
           // lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
-          VertexBufferBase* pvb = VertexBufferBase::CreateVertexBuffer(efmt, ivbnum, true);
-          void* pverts          = (void*)(ModelDataStream->GetDataAt(ivboffset));
-          int ivblen            = ivbnum * ivbsize;
+          Clus._vertexBuffer = VertexBufferBase::CreateVertexBuffer(efmt, ivbnum, true);
+          void* pverts       = (void*)(ModelDataStream->GetDataAt(ivboffset));
+          int ivblen         = ivbnum * ivbsize;
 
           // printf("ReadVB NumVerts<%d> VtxSize<%d>\n", ivbnum, pvb->GetVtxSize());
-          void* poutverts = pTARG->GBI()->LockVB(*pvb, 0, ivbnum); // ivblen );
+          void* poutverts = pTARG->GBI()->LockVB(*Clus._vertexBuffer.get(), 0, ivbnum); // ivblen );
           {
             memcpy(poutverts, pverts, ivblen);
-            pvb->SetNumVertices(ivbnum);
+            Clus._vertexBuffer->SetNumVertices(ivbnum);
             if (efmt == EVtxStreamFormat::V12N12B12T8I4W4) {
               auto pv = (const SVtxV12N12B12T8I4W4*)pverts;
               for (int iv = 0; iv < ivbnum; iv++) {
@@ -312,43 +313,42 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
               }
             }
           }
-          pTARG->GBI()->UnLockVB(*pvb);
+          pTARG->GBI()->UnLockVB(*Clus._vertexBuffer.get());
           // lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
-          Clus._vertexBuffer = pvb;
           ////////////////////////////////////////////////////////////////////////
-          Clus.mpPrimGroups = new XgmPrimGroup[Clus.miNumPrimGroups];
-          for (int32_t ipg = 0; ipg < Clus.miNumPrimGroups; ipg++) {
+          for (int32_t ipg = 0; ipg < numprimgroups; ipg++) {
+            auto newprimgroup = std::make_shared<XgmPrimGroup>();
+            Clus._primgroups.push_back(newprimgroup);
             int32_t ipgindex    = -1;
             int32_t ipgprimtype = -1;
             HeaderStream->GetItem<int32_t>(ipgindex);
             OrkAssert(ipgindex == ipg);
 
-            XgmPrimGroup& PG = Clus.RefPrimGroup(ipg);
-            HeaderStream->GetItem<EPrimitiveType>(PG.mePrimType);
-            HeaderStream->GetItem<int32_t>(PG.miNumIndices);
+            HeaderStream->GetItem<EPrimitiveType>(newprimgroup->mePrimType);
+            HeaderStream->GetItem<int32_t>(newprimgroup->miNumIndices);
 
             int32_t idxdataoffset = -1;
             HeaderStream->GetItem<int32_t>(idxdataoffset);
 
             U16* pidx = (U16*)ModelDataStream->GetDataAt(idxdataoffset);
 
-            auto pidxbuf = new StaticIndexBuffer<U16>(PG.miNumIndices);
+            auto pidxbuf = new StaticIndexBuffer<U16>(newprimgroup->miNumIndices);
 
             void* poutidx = (void*)pTARG->GBI()->LockIB(*pidxbuf);
             {
               // TODO: Make 16-bit indices a policy
-              if (PG.miNumIndices > 0xFFFF)
+              if (newprimgroup->miNumIndices > 0xFFFF)
                 orkerrorlog(
                     "WARNING: <%s> Wii cannot have num indices larger than 65535: MeshName=%s, MatName=%s\n",
                     Filename.c_str(),
                     MeshName,
                     matname);
 
-              memcpy(poutidx, pidx, PG.miNumIndices * sizeof(U16));
+              memcpy(poutidx, pidx, newprimgroup->miNumIndices * sizeof(U16));
             }
             pTARG->GBI()->UnLockIB(*pidxbuf);
 
-            PG.mpIndices = pidxbuf;
+            newprimgroup->mpIndices = pidxbuf;
           }
           ////////////////////////////////////////////////////////////////////////
           Clus.mJoints.resize(inumbb);
@@ -598,16 +598,16 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
     printf("WriteXgm<%s> mesh<%d:%s> numsubmeshes<%d>\n", Filename.c_str(), imesh, Mesh.meshName().c_str(), inumsubmeshes);
     for (int32_t ics = 0; ics < inumsubmeshes; ics++) {
-      const lev2::XgmSubMesh& CS    = *Mesh.subMesh(ics);
-      const lev2::GfxMaterial* pmat = CS.GetMaterial();
+      const lev2::XgmSubMesh& xgm_sub_mesh = *Mesh.subMesh(ics);
+      const lev2::GfxMaterial* pmat        = xgm_sub_mesh.GetMaterial();
 
-      int32_t inumclus = CS.GetNumClusters();
+      int32_t inumclus = xgm_sub_mesh.GetNumClusters();
 
       int32_t inumenabledclus = 0;
 
       for (int ic = 0; ic < inumclus; ic++) {
-        const lev2::XgmCluster& Clus     = CS.cluster(ic);
-        const lev2::VertexBufferBase* VB = Clus._vertexBuffer;
+        const lev2::XgmCluster& Clus = xgm_sub_mesh.cluster(ic);
+        auto VB                      = Clus._vertexBuffer;
 
         if (!VB)
           return false;
@@ -627,28 +627,28 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
       istring = chunkwriter.stringIndex(pmat ? pmat->GetName().c_str() : "None");
       HeaderStream->AddItem(istring);
       ////////////////////////////////////////////////////////////
-      const file::Path& LightMapPath = CS.mLightMapPath;
+      const file::Path& LightMapPath = xgm_sub_mesh.mLightMapPath;
       istring                        = chunkwriter.stringIndex(LightMapPath.c_str());
       HeaderStream->AddItem(istring);
       ////////////////////////////////////////////////////////////
       int32_t ivtxlitflg = 0;
-      if (CS.mbVertexLit)
+      if (xgm_sub_mesh.mbVertexLit)
         ivtxlitflg = 1;
       HeaderStream->AddItem(ivtxlitflg);
       ////////////////////////////////////////////////////////////
       for (int32_t ic = 0; ic < inumclus; ic++) {
-        const lev2::XgmCluster& Clus     = CS.cluster(ic);
-        const lev2::VertexBufferBase* VB = Clus._vertexBuffer;
-        lev2::VertexBufferBase* VBNC     = const_cast<lev2::VertexBufferBase*>(VB);
-        const Sphere& clus_sphere        = Clus.mBoundingSphere;
-        const AABox& clus_box            = Clus.mBoundingBox;
+        const lev2::XgmCluster& Clus = xgm_sub_mesh.cluster(ic);
+        auto VB                      = Clus._vertexBuffer;
+        const Sphere& clus_sphere    = Clus.mBoundingSphere;
+        const AABox& clus_box        = Clus.mBoundingBox;
 
         if (VB->GetNumVertices() == 0)
           continue;
 
-        int32_t inumpg = Clus.GetNumPrimGroups();
+        int32_t inumpg = Clus.numPrimGroups();
         int32_t inumjb = (int)Clus.GetNumJointBindings();
 
+        printf("VB<%p> NumVerts<%d>\n", VB.get(), VB->GetNumVertices());
         printf("clus<%d> numjb<%d>\n", ic, inumjb);
 
         int32_t ivbufoffset = ModelDataStream->GetSize();
@@ -658,7 +658,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
           int VBlen = VB->GetNumVertices() * VB->GetVtxSize();
 
-          printf("WriteVB NumVerts<%d> VtxSize<%d>\n", VB->GetNumVertices(), VB->GetVtxSize());
+          printf("WriteVB VB<%p> NumVerts<%d> VtxSize<%d>\n", VB.get(), VB->GetNumVertices(), VB->GetVtxSize());
 
           HeaderStream->AddItem(ic);
           HeaderStream->AddItem(inumpg);
@@ -678,19 +678,19 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
         DummyTarget.GBI()->UnLockVB(*VB);
 
         for (int32_t ipg = 0; ipg < inumpg; ipg++) {
-          const lev2::XgmPrimGroup& PG = Clus.RefPrimGroup(ipg);
+          auto PG = Clus.primgroup(ipg);
 
-          int32_t inumidx = PG.GetNumIndices();
+          int32_t inumidx = PG->GetNumIndices();
 
           printf("WritePG<%d> NumIndices<%d>\n", ipg, inumidx);
 
           HeaderStream->AddItem(ipg);
-          HeaderStream->AddItem<EPrimitiveType>(PG.GetPrimType());
+          HeaderStream->AddItem<EPrimitiveType>(PG->GetPrimType());
           HeaderStream->AddItem<int32_t>(inumidx);
           HeaderStream->AddItem<int32_t>(ModelDataStream->GetSize());
 
           //////////////////////////////////////////////////
-          U16* pidx = (U16*)DummyTarget.GBI()->LockIB(*PG.GetIndexBuffer()); //->GetDataPointer();
+          U16* pidx = (U16*)DummyTarget.GBI()->LockIB(*PG->GetIndexBuffer()); //->GetDataPointer();
           OrkAssert(pidx != 0);
           for (int32_t ii = 0; ii < inumidx; ii++) {
             int32_t iv = int32_t(pidx[ii]);
@@ -701,7 +701,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
             // swapbytes_dynamic<U16>( pidx[ii] );
           }
-          DummyTarget.GBI()->UnLockIB(*PG.GetIndexBuffer());
+          DummyTarget.GBI()->UnLockIB(*PG->GetIndexBuffer());
           //////////////////////////////////////////////////
 
           ModelDataStream->Write((const unsigned char*)pidx, inumidx * sizeof(U16));

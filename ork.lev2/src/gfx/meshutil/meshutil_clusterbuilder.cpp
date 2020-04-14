@@ -19,8 +19,7 @@ namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
 XgmClusterBuilder::XgmClusterBuilder(const XgmClusterizer& clusterizer)
-    : _vertexBuffer(NULL)
-    , _clusterizer(clusterizer) {
+    : _clusterizer(clusterizer) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -56,8 +55,10 @@ void XgmClusterBuilder::Dump(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BuildXgmClusterPrimGroups(lev2::XgmCluster& XgmCluster, const std::vector<unsigned int>& TriangleIndices) {
-  lev2::ContextDummy DummyTarget;
+void BuildXgmClusterPrimGroups(
+    lev2::Context& context,
+    lev2::XgmCluster& XgmCluster,
+    const std::vector<unsigned int>& TriangleIndices) {
 
   const int imaxvtx = XgmCluster._vertexBuffer->GetNumVertices();
 
@@ -81,8 +82,10 @@ void BuildXgmClusterPrimGroups(lev2::XgmCluster& XgmCluster, const std::vector<u
   ////////////////////////////////////////////////////////////
   // Create PrimGroups
 
-  XgmCluster.mpPrimGroups    = new ork::lev2::XgmPrimGroup[inumpg];
-  XgmCluster.miNumPrimGroups = inumpg;
+  for (int ipg = 0; ipg < inumpg; ipg++) {
+    auto pg = std::make_shared<ork::lev2::XgmPrimGroup>();
+    XgmCluster._primgroups.push_back(pg);
+  }
 
   ////////////////////////////////////////////////////////////
 
@@ -100,7 +103,7 @@ void BuildXgmClusterPrimGroups(lev2::XgmCluster& XgmCluster, const std::vector<u
       /////////////////////////////////
 
       ork::lev2::StaticIndexBuffer<U16>* pidxbuf = new ork::lev2::StaticIndexBuffer<U16>(inumidx);
-      U16* pidx                                  = (U16*)DummyTarget.GBI()->LockIB(*pidxbuf);
+      U16* pidx                                  = (U16*)context.GBI()->LockIB(*pidxbuf);
       OrkAssert(pidx != 0);
       {
         for (int ii = 0; ii < inumidx; ii++) {
@@ -109,15 +112,15 @@ void BuildXgmClusterPrimGroups(lev2::XgmCluster& XgmCluster, const std::vector<u
           pidx[ii] = U16(index);
         }
       }
-      DummyTarget.GBI()->UnLockIB(*pidxbuf);
+      context.GBI()->UnLockIB(*pidxbuf);
 
       /////////////////////////////////
 
-      ork::lev2::XgmPrimGroup& StripGroup = XgmCluster.mpPrimGroups[ipg++];
+      auto stripgroup = XgmCluster.primgroup(ipg++);
 
-      StripGroup.miNumIndices = inumidx;
-      StripGroup.mpIndices    = pidxbuf;
-      StripGroup.mePrimType   = lev2::EPrimitiveType::TRIANGLESTRIP;
+      stripgroup->miNumIndices = inumidx;
+      stripgroup->mpIndices    = pidxbuf;
+      stripgroup->mePrimType   = lev2::EPrimitiveType::TRIANGLESTRIP;
     }
   }
 
@@ -129,31 +132,34 @@ void BuildXgmClusterPrimGroups(lev2::XgmCluster& XgmCluster, const std::vector<u
 
     /////////////////////////////////////////////////////
     ork::lev2::StaticIndexBuffer<U16>* pidxbuf = new ork::lev2::StaticIndexBuffer<U16>(inumidx);
-    U16* pidx                                  = (U16*)DummyTarget.GBI()->LockIB(*pidxbuf);
+    U16* pidx                                  = (U16*)context.GBI()->LockIB(*pidxbuf);
     OrkAssert(pidx != 0);
     for (int ii = 0; ii < inumidx; ii++) {
       pidx[ii] = U16(MyStripper.GetTriIndices()[ii]);
     }
-    DummyTarget.GBI()->UnLockIB(*pidxbuf);
+    context.GBI()->UnLockIB(*pidxbuf);
     /////////////////////////////////////////////////////
 
-    ork::lev2::XgmPrimGroup& StripGroup = XgmCluster.mpPrimGroups[ipg++];
+    auto StripGroup = XgmCluster.primgroup(ipg++);
 
-    StripGroup.miNumIndices = inumidx;
-    StripGroup.mpIndices    = pidxbuf;
-    StripGroup.mePrimType   = lev2::EPrimitiveType::TRIANGLES;
+    StripGroup->miNumIndices = inumidx;
+    StripGroup->mpIndices    = pidxbuf;
+    StripGroup->mePrimType   = lev2::EPrimitiveType::TRIANGLES;
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void buildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, clusterbuilder_ptr_t clusterbuilder) {
+void buildTriStripXgmCluster(lev2::Context& context, lev2::XgmCluster& XgmCluster, clusterbuilder_ptr_t clusterbuilder) {
   if (!clusterbuilder->_vertexBuffer)
     return;
 
+  // transfer VB to cluster
   XgmCluster._vertexBuffer = clusterbuilder->_vertexBuffer;
 
   const int imaxvtx = XgmCluster._vertexBuffer->GetNumVertices();
+
+  // printf("imaxvtx<%d>\n", imaxvtx);
 
   /////////////////////////////////////////////////////////////
   // triangle indices come from the ClusterBuilder
@@ -177,7 +183,7 @@ void buildTriStripXgmCluster(lev2::XgmCluster& XgmCluster, clusterbuilder_ptr_t 
 
   /////////////////////////////////////////////////////////////
 
-  BuildXgmClusterPrimGroups(XgmCluster, TriangleIndices);
+  BuildXgmClusterPrimGroups(context, XgmCluster, TriangleIndices);
 
   XgmCluster.mBoundingBox    = clusterbuilder->_submesh.aabox();
   XgmCluster.mBoundingSphere = Sphere(XgmCluster.mBoundingBox.Min(), XgmCluster.mBoundingBox.Max());
