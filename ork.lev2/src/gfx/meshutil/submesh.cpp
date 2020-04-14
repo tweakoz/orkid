@@ -41,8 +41,8 @@ submesh::~submesh() {
 
   size_t ic1 = _polymap.size();
   size_t ic2 = _edgemap.size();
-  size_t ic3 = _vtxpool.VertexPoolMap.size();
-  size_t ic4 = _vtxpool.VertexPool.size();
+  size_t ic3 = _vtxpool._vtxmap.size();
+  size_t ic4 = _vtxpool._orderedVertices.size();
   size_t ic5 = _edgemap.size();
   size_t ic6 = _orderedPolys.size();
   gc1 += ic1;
@@ -136,7 +136,6 @@ const AABox& submesh::aabox() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 const edge& submesh::RefEdge(U64 edgekey) const {
-  OrkAssert(edgekey != poly::Inv);
   auto it = _edgemap.find(edgekey);
   OrkAssert(it != _edgemap.end());
   return *it->second;
@@ -345,8 +344,8 @@ void submesh::MergePoly(const poly& ply) {
         int i1  = (i + 1) % inumv;
         int iv0 = ply.GetVertexID(i0);
         int iv1 = ply.GetVertexID(i1);
-        auto v0 = _vtxpool.VertexPool[iv0];
-        auto v1 = _vtxpool.VertexPool[iv1];
+        auto v0 = _vtxpool._orderedVertices[iv0];
+        auto v1 = _vtxpool._orderedVertices[iv1];
 
         edge Edge(v0, v1);
         nply.mEdges[i] = MergeEdge(Edge, ipolyindex);

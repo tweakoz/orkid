@@ -78,49 +78,18 @@ struct edge {
   int miNumConnectedPolys;
   int miConnectedPolys[kmaxpolysperedge];
 
-  vertex_ptr_t edgeVertex(int iv) const {
-    switch (iv) {
-      case 0:
-        return _vertexA;
-        break;
-      case 1:
-        return _vertexB;
-        break;
-      default:
-        OrkAssert(false);
-        break;
-    }
-
-    return nullptr;
-  }
+  vertex_ptr_t edgeVertex(int iv) const;
 
   U64 GetHashKey(void) const;
   bool Matches(const edge& other) const;
 
-  edge()
-      : miNumConnectedPolys(0) {
-    for (int i = 0; i < kmaxpolysperedge; i++)
-      miConnectedPolys[i] = -1;
-  }
-
-  edge(vertex_ptr_t va, vertex_ptr_t vb)
-      : miNumConnectedPolys(0)
-      , _vertexA(va)
-      , _vertexB(vb) {
-    for (int i = 0; i < kmaxpolysperedge; i++)
-      miConnectedPolys[i] = -1;
-  }
+  edge();
+  edge(vertex_ptr_t va, vertex_ptr_t vb);
 
   void ConnectToPoly(int ipoly);
 
-  int GetNumConnectedPolys(void) const {
-    return miNumConnectedPolys;
-  }
-
-  int GetConnectedPoly(int ip) const {
-    OrkAssert(ip < miNumConnectedPolys);
-    return miConnectedPolys[ip];
-  }
+  int GetNumConnectedPolys(void) const;
+  int GetConnectedPoly(int ip) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -135,14 +104,8 @@ struct uvmapcoord {
   uvmapcoord operator+(const uvmapcoord& ina) const;
   uvmapcoord operator*(const float Scalar) const;
 
-  uvmapcoord() {
-  }
-
-  void Clear(void) {
-    mMapBiNormal = fvec3();
-    mMapTangent  = fvec3();
-    mMapTexCoord = fvec2();
-  }
+  uvmapcoord();
+  void Clear(void);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -168,40 +131,14 @@ struct vertex {
   uvmapcoord mUV[kmaxuvs];
   float mJointWeights[kmaxinfluences];
 
-  vertex()
-      : miNumWeights(0)
-      , miNumColors(0)
-      , miNumUvs(0) {
-    for (int i = 0; i < kmaxcolors; i++) {
-      mCol[i] = fvec4::White();
-    }
-    for (int i = 0; i < kmaxinfluences; i++) {
-      mJointNames[i]   = "";
-      mJointWeights[i] = float(0.0f);
-    }
-  }
-
-  vertex(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col)
-      : vertex() {
-    set(pos, nrm, bin, uv, col);
-  }
-
-  void set(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col) {
-    mPos                = pos;
-    mNrm                = nrm;
-    mUV[0].mMapTexCoord = uv;
-    mUV[0].mMapBiNormal = bin;
-    mCol[0]             = col;
-    miNumColors         = 1;
-    miNumUvs            = 1;
-  }
+  vertex();
+  vertex(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col);
+  void set(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col);
 
   vertex Lerp(const vertex& vtx, float flerp) const;
   void Lerp(const vertex& a, const vertex& b, float flerp);
 
-  const fvec3& Pos() const {
-    return mPos;
-  }
+  const fvec3& Pos() const;
 
   void Center(const vertex** pverts, int icnt);
 
@@ -213,23 +150,20 @@ struct vertex {
 struct vertexpool {
   static const vertexpool EmptyPool;
 
-  HashU64IntMap VertexPoolMap;
-  orkvector<vertex_ptr_t> VertexPool;
+  std::unordered_map<uint64_t, vertex_ptr_t, HashU6432> _vtxmap;
+  orkvector<vertex_ptr_t> _orderedVertices;
 
-  int MergeVertex(const vertex& vtx, int idx = -1);
   vertex_ptr_t newMergeVertex(const vertex& vtx);
 
-  const vertex& GetVertex(int ivid) const {
-    OrkAssert(orkvector<vertex>::size_type(ivid) < VertexPool.size());
-    return *VertexPool[ivid].get();
+  const vertex& GetVertex(size_t ivid) const {
+    return *_orderedVertices[ivid].get();
   }
-  vertex& GetVertex(int ivid) {
-    OrkAssert(orkvector<vertex>::size_type(ivid) < VertexPool.size());
-    return *VertexPool[ivid].get();
+  vertex& GetVertex(size_t ivid) {
+    return *_orderedVertices[ivid].get();
   }
 
   size_t GetNumVertices(void) const {
-    return VertexPool.size();
+    return _orderedVertices.size();
   }
 
   vertexpool();
@@ -256,13 +190,8 @@ class poly {
   const AnnoMap* mAnnotationSet;
 
 public:
-  static const U64 Inv = 0xffffffffffffffffL;
-  const AnnoMap* GetAnnoMap() const {
-    return mAnnotationSet;
-  }
-  void SetAnnoMap(const AnnoMap* pmap) {
-    mAnnotationSet = pmap;
-  }
+  const AnnoMap* GetAnnoMap() const;
+  void SetAnnoMap(const AnnoMap* pmap);
 
   const std::string& GetAnnotation(const std::string& annoname) const;
 
@@ -270,47 +199,16 @@ public:
   edge_ptr_t mEdges[kmaxsidesperpoly];
   int miNumSides;
 
-  int GetNumSides(void) const {
-    return miNumSides;
-  }
-
-  int GetVertexID(int i) const {
-    OrkAssert(i < miNumSides);
-    return _vertices[i]->_poolindex;
-  }
+  int GetNumSides(void) const;
+  int GetVertexID(int i) const;
 
   poly(
       vertex_ptr_t ia = nullptr, //
       vertex_ptr_t ib = nullptr,
       vertex_ptr_t ic = nullptr,
-      vertex_ptr_t id = nullptr)
-      : miNumSides(0)
-      , mAnnotationSet(0) {
-    _vertices[0] = ia;
-    _vertices[1] = ib;
-    _vertices[2] = ic;
-    _vertices[3] = id;
-    if (ia)
-      miNumSides++;
-    if (ib)
-      miNumSides++;
-    if (ic)
-      miNumSides++;
-    if (id)
-      miNumSides++;
-    for (int i = 4; i < kmaxsidesperpoly; i++) {
-      mEdges[i] = nullptr;
-    }
-  }
+      vertex_ptr_t id = nullptr);
 
-  poly(const vertex_ptr_t verts[], int numSides)
-      : miNumSides(numSides)
-      , mAnnotationSet(0) {
-    for (int i = 0; i < numSides; i++) {
-      _vertices[i] = verts[i];
-      mEdges[i]    = nullptr;
-    }
-  }
+  poly(const vertex_ptr_t verts[], int numSides);
 
   // vertex clockwise around the poly from the given one
   // int VertexCW(int vert) const;
@@ -426,8 +324,8 @@ struct submesh {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  void
-  addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 uv0, fvec2 uv1, fvec2 uv2, fvec2 uv3, fvec4 c); /// add quad helper method
+  void addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 uv0, fvec2 uv1, fvec2 uv2, fvec2 uv3, fvec4 c); /// add quad helper
+                                                                                                             /// method
 
   void addQuad(
       fvec3 p0,
