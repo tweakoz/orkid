@@ -13,39 +13,20 @@
 
 namespace ork::meshutil {
 
-PrimitiveV12N12B12T8C4::PrimitiveV12N12B12T8C4() {
+RigidPrimitive::RigidPrimitive() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void PrimitiveV12N12B12T8C4::fromSubMesh(const submesh& submesh, lev2::Context* context) {
-  // OrkAssert(false);
-  //////////////////////////////////////////////////////////////
-  // Fill In ClusterBuilder from submesh triangle soup
-  //////////////////////////////////////////////////////////////
-  meshutil::XgmClusterizerStd clusterizer;
-  meshutil::MeshConfigurationFlags meshflags;
-  const auto& vpool = submesh.RefVertexPool();
-  int numverts      = vpool.GetNumVertices();
-  int inumpolys     = submesh.GetNumPolys(3);
-  clusterizer.Begin();
-  for (int p = 0; p < inumpolys; p++) {
-    const auto& poly   = submesh.RefPoly(p);
-    const vertex& vtxa = vpool.GetVertex(poly.miVertices[0]);
-    const vertex& vtxb = vpool.GetVertex(poly.miVertices[1]);
-    const vertex& vtxc = vpool.GetVertex(poly.miVertices[2]);
-    XgmClusterTri tri{vtxa, vtxb, vtxc};
-    clusterizer.addTriangle(tri, meshflags);
-  }
-  clusterizer.End();
+void RigidPrimitive::fromClusterizer(const meshutil::XgmClusterizerStd& cluz, lev2::Context* context) {
   //////////////////////////////////////////////////////////////
   // create Indexed TriStripped Primitive Groups
   //////////////////////////////////////////////////////////////
-  size_t inumclus = clusterizer.GetNumClusters();
+  size_t inumclus = cluz.GetNumClusters();
   printf("inumclus<%zu>\n", inumclus);
   OrkAssert(inumclus <= 1);
   for (size_t icluster = 0; icluster < inumclus; icluster++) {
-    auto clusterbuilder = clusterizer.GetCluster(icluster);
+    auto clusterbuilder = cluz.GetCluster(icluster);
     clusterbuilder->buildVertexBuffer(*context, lev2::EVtxStreamFormat::V12N12B12T8C4);
     lev2::XgmCluster xgmcluster;
     buildTriStripXgmCluster(*context, xgmcluster, clusterbuilder);
@@ -70,7 +51,34 @@ void PrimitiveV12N12B12T8C4::fromSubMesh(const submesh& submesh, lev2::Context* 
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void PrimitiveV12N12B12T8C4::draw(lev2::Context* context) const {
+void RigidPrimitive::fromSubMesh(const submesh& submesh, lev2::Context* context) {
+  //////////////////////////////////////////////////////////////
+  // Fill In ClusterBuilder from submesh triangle soup
+  //////////////////////////////////////////////////////////////
+  meshutil::XgmClusterizerStd clusterizer;
+  meshutil::MeshConfigurationFlags meshflags;
+  const auto& vpool = submesh.RefVertexPool();
+  int numverts      = vpool.GetNumVertices();
+  int inumpolys     = submesh.GetNumPolys(3);
+  clusterizer.Begin();
+  for (int p = 0; p < inumpolys; p++) {
+    const auto& poly   = submesh.RefPoly(p);
+    const vertex& vtxa = vpool.GetVertex(poly.miVertices[0]);
+    const vertex& vtxb = vpool.GetVertex(poly.miVertices[1]);
+    const vertex& vtxc = vpool.GetVertex(poly.miVertices[2]);
+    XgmClusterTri tri{vtxa, vtxb, vtxc};
+    clusterizer.addTriangle(tri, meshflags);
+  }
+  clusterizer.End();
+  //////////////////////////////////////////////////////////////
+  // build primitives
+  //////////////////////////////////////////////////////////////
+  fromClusterizer(clusterizer, context);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void RigidPrimitive::draw(lev2::Context* context) const {
   auto gbi = context->GBI();
   for (auto cluster : _gpuClusters) {
     for (auto primgroup : cluster->_primgroups) {

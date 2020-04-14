@@ -104,7 +104,7 @@ qsubmesh.addQuad(frus.nearCorner(2), # right
 tsubmesh = meshutil.SubMesh()
 meshutil.triangulate(qsubmesh,tsubmesh)
 print(tsubmesh,ctx)
-prim = meshutil.PrimitiveV12N12B12T8C4(tsubmesh,ctx)
+prim = meshutil.RigidPrimitive(tsubmesh,ctx)
 ###################################
 # rtg setup
 ###################################

@@ -107,7 +107,7 @@ struct CubePrimitive {
   fvec4 _colorLeft;
   fvec4 _colorRight;
 
-  meshutil::PrimitiveV12N12B12T8C4 _primitive;
+  meshutil::RigidPrimitive _primitive;
 };
 
 } // namespace ork::lev2::primitives

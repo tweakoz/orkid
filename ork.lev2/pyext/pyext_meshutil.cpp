@@ -9,19 +9,19 @@ void pyinit_meshutil(py::module& module_lev2) {
     meshutil::submeshTriangulate(inpsubmesh, outsubmesh);
   });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<meshutil::PrimitiveV12N12B12T8C4>(meshutil, "PrimitiveV12N12B12T8C4")
+  py::class_<meshutil::RigidPrimitive>(meshutil, "RigidPrimitive")
       .def(py::init<>())
       .def(py::init([](meshutil::submesh& submesh, ctx_t context) {
-        auto prim = std::unique_ptr<meshutil::PrimitiveV12N12B12T8C4>(new meshutil::PrimitiveV12N12B12T8C4);
+        auto prim = std::unique_ptr<meshutil::RigidPrimitive>(new meshutil::RigidPrimitive);
         prim->fromSubMesh(submesh, context.get());
         return prim;
       }))
       .def(
           "fromSubMesh",
-          [](meshutil::PrimitiveV12N12B12T8C4& prim, const meshutil::submesh& submesh, Context* context) {
+          [](meshutil::RigidPrimitive& prim, const meshutil::submesh& submesh, Context* context) {
             prim.fromSubMesh(submesh, context);
           })
-      .def("draw", [](meshutil::PrimitiveV12N12B12T8C4& prim, ctx_t context) { prim.draw(context.get()); });
+      .def("draw", [](meshutil::RigidPrimitive& prim, ctx_t context) { prim.draw(context.get()); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<meshutil::submesh>(meshutil, "SubMesh")
       .def(py::init<>())

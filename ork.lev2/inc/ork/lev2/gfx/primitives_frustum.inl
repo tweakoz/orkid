@@ -119,7 +119,7 @@ struct FrustumPrimitive {
   fvec4 _colorRight;
 
   ork::Frustum _frustum;
-  meshutil::PrimitiveV12N12B12T8C4 _primitive;
+  meshutil::RigidPrimitive _primitive;
 };
 
 using frustum_ptr_t = std::shared_ptr<FrustumPrimitive>;

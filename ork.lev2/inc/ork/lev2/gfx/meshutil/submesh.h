@@ -29,6 +29,9 @@
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 typedef orkmap<std::string, svar64_t> AnnotationMap;
+struct XgmClusterizer;
+struct XgmClusterizerDiced;
+struct XgmClusterizerStd;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -482,10 +485,10 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath);
 // void SubDiv(submesh* poutsmesh) const;
 
 ///////////////////////////////////////////////////////////////////////////////
-/// PrimitiveV12N12B12T8C4 SubMesh Primitive with V12N12B12T8C4 vertex format
+/// RigidPrimitive SubMesh Primitive with V12N12B12T8C4 vertex format
 ///////////////////////////////////////////////////////////////////////////////
 
-struct PrimitiveV12N12B12T8C4 {
+struct RigidPrimitive {
 
   using vtx_t         = lev2::SVtxV12N12B12T8C4;
   using idxbuf_t      = lev2::StaticIndexBuffer<uint16_t>;
@@ -508,10 +511,11 @@ struct PrimitiveV12N12B12T8C4 {
   using primgroupcluster_ptr_t = std::shared_ptr<PrimGroupCluster>;
   using cluster_ptr_list_t     = std::vector<primgroupcluster_ptr_t>;
 
-  PrimitiveV12N12B12T8C4();
+  RigidPrimitive();
 
   void fromSubMesh(const submesh& submesh, lev2::Context* context); /// generate from submesh using internal vertexbuffer
-  void draw(lev2::Context* context) const;                          /// draw with context
+  void fromClusterizer(const XgmClusterizerStd& cluz, lev2::Context* context);
+  void draw(lev2::Context* context) const; /// draw with context
 
   cluster_ptr_list_t _gpuClusters;
 };

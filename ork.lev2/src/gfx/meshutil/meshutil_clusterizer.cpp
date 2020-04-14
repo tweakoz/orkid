@@ -7,7 +7,6 @@
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmodel.h>
-#include <ork/lev2/gfx/meshutil/submesh.h>
 #include <ork/lev2/gfx/meshutil/clusterizer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
