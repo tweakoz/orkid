@@ -359,13 +359,13 @@ bool SectorWalker::GatherSectorPolysStep(SectorPolys& polys, int first, int prev
   if (prev >= 0) {
     auto baseEdge = mSubmesh->edgeBetween(prev, cur);
 
-    at = thePoly.VertexCCW(baseEdge->GetVertexID(0));
+    at = thePoly.VertexCCW(baseEdge->edgeVID(0));
 
-    if (at == baseEdge->GetVertexID(1)) {
+    if (at == baseEdge->edgeVID(1)) {
       at  = thePoly.VertexCCW(at);
-      end = thePoly.VertexCW(baseEdge->GetVertexID(0));
+      end = thePoly.VertexCW(baseEdge->edgeVID(0));
     } else {
-      end = thePoly.VertexCW(baseEdge->GetVertexID(1));
+      end = thePoly.VertexCW(baseEdge->edgeVID(1));
     }
   } else {
     at = end = thePoly.GetVertexID(0);
@@ -431,34 +431,6 @@ bool SectorWalker::GatherSectorPolys(SectorPolys& polys, int botPolyIndex) const
     AssertFailed(mSecName.c_str(), ComputeCenter(sub, polys[FACE_TOP]), format, ##__VA_ARGS__);                                    \
     return false;                                                                                                                  \
   }
-
-///////////////////////////////////////////////////////////////////////////////
-
-static bool FindUniqueVerts(const ork::meshutil::edge& e1, const ork::meshutil::edge& e2, int& shared, int& v1, int& v2) {
-  if (e1.GetVertexID(0) == e2.GetVertexID(0)) {
-    shared = e1.GetVertexID(0);
-    v1     = e1.GetVertexID(1);
-    v2     = e2.GetVertexID(1);
-    return true;
-  } else if (e1.GetVertexID(0) == e2.GetVertexID(1)) {
-    shared = e1.GetVertexID(0);
-    v1     = e1.GetVertexID(1);
-    v2     = e2.GetVertexID(0);
-    return true;
-  } else if (e1.GetVertexID(1) == e2.GetVertexID(0)) {
-    shared = e1.GetVertexID(1);
-    v1     = e1.GetVertexID(0);
-    v2     = e2.GetVertexID(1);
-    return true;
-  } else if (e1.GetVertexID(1) == e2.GetVertexID(1)) {
-    shared = e1.GetVertexID(1);
-    v1     = e1.GetVertexID(0);
-    v2     = e2.GetVertexID(0);
-    return true;
-  }
-
-  return false;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -78,7 +78,7 @@ struct edge {
   int miNumConnectedPolys;
   int miConnectedPolys[kmaxpolysperedge];
 
-  int GetVertexID(int iv) const {
+  int edgeVID(int iv) const {
     int id = -1;
 
     switch (iv) {

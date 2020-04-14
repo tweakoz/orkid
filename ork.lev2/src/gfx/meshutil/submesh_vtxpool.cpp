@@ -79,28 +79,6 @@ const AnnoMap* annopolylut::Find(const submesh& tmesh, const poly& ply) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/*void vertex::ConnectToPoly( int ipoly )
-{
-    bool bpres = false;
-
-    for( int i=0; i<miNumConPoly; i++ )
-    {
-        int ichk = mConnectedPolys[i];
-        if( ichk == ipoly )
-        {
-            bpres = true;
-        }
-    }
-
-    if( false == bpres )
-    {
-        mConnectedPolys[miNumConPoly] = ipoly;
-        miNumConPoly++;
-    }
-}*/
-
-///////////////////////////////////////////////////////////////////////////////
-
 void vertex::Lerp(const vertex& a, const vertex& b, float flerp) {
   *this = b.Lerp(a, flerp);
 }
