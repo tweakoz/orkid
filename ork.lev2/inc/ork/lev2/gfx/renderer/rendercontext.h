@@ -40,31 +40,21 @@ struct RenderContextFrameData;
 struct RenderContextInstData {
 
   static constexpr int kMaxEngineParamFloats = 4;
-  static constexpr int kmaxdirlights         = 4;
-  static constexpr int kmaxpntlights         = 4;
 
   static const RenderContextInstData Default;
 
   RenderContextInstData(const RenderContextFrameData* RCFD = nullptr);
+
   //////////////////////////////////////
   // renderer interface
   //////////////////////////////////////
 
-  void SetRenderer(const IRenderer* rnd) {
-    mpActiveRenderer = rnd;
-  }
-  void SetRenderable(const IRenderable* rnd) {
-    _dagrenderable = rnd;
-  }
-  const IRenderer* GetRenderer(void) const {
-    return mpActiveRenderer;
-  }
-  const IRenderable* GetRenderable(void) const {
-    return _dagrenderable;
-  }
-  const XgmMaterialStateInst* GetMaterialInst() const {
-    return mMaterialInst;
-  }
+  void SetRenderer(const IRenderer* rnd);
+  void SetRenderable(const IRenderable* rnd);
+  const IRenderer* GetRenderer(void) const;
+  const IRenderable* GetRenderable(void) const;
+  const XgmMaterialStateInst* GetMaterialInst() const;
+  Context* context() const;
 
   void SetEngineParamFloat(int idx, float fv);
   float GetEngineParamFloat(int idx) const;
@@ -73,91 +63,22 @@ struct RenderContextInstData {
   // material interface
   //////////////////////////////////////
 
-  int GetMaterialIndex(void) const {
-    return miMaterialIndex;
-  }
-  int GetMaterialPassIndex(void) const {
-    return miMaterialPassIndex;
-  }
-  void SetMaterialIndex(int idx) {
-    miMaterialIndex = idx;
-  }
-  void SetMaterialPassIndex(int idx) {
-    miMaterialPassIndex = idx;
-  }
-  void SetMaterialInst(const XgmMaterialStateInst* mi) {
-    mMaterialInst = mi;
-  }
-  void SetVertexLit(bool bv) {
-    mbVertexLit = bv;
-  }
-  void ForceNoZWrite(bool bv) {
-    mbForzeNoZWrite = bv;
-  }
-  bool IsForceNoZWrite() const {
-    return mbForzeNoZWrite;
-  }
+  void SetMaterialInst(const XgmMaterialStateInst* mi);
 
-  void SetRenderGroupState(RenderGroupState rgs) {
-    mRenderGroupState = rgs;
-  }
-  RenderGroupState GetRenderGroupState() const {
-    return mRenderGroupState;
-  }
-
-  //////////////////////////////////////
-  // environment interface
-  //////////////////////////////////////
-
-  void SetTopEnvMap(Texture* ptex) {
-    mDPTopEnvMap = ptex;
-  }
-  void SetBotEnvMap(Texture* ptex) {
-    mDPBotEnvMap = ptex;
-  }
-  Texture* GetTopEnvMap() const {
-    return mDPTopEnvMap;
-  }
-  Texture* GetBotEnvMap() const {
-    return mDPBotEnvMap;
-  }
-
-  //////////////////////////////////////
-  // lighting interface
-  //////////////////////////////////////
-
-  void SetLightingGroup(const LightingGroup* lgroup) {
-    mpLightingGroup = lgroup;
-  }
-  const LightingGroup* GetLightingGroup() const {
-    return mpLightingGroup;
-  }
-  void BindLightMap(Texture* ptex) {
-    mLightMap = ptex;
-  }
-  Texture* GetLightMap() const {
-    return mLightMap;
-  }
-  bool IsLightMapped() const {
-    return (mLightMap != 0);
-  }
-  bool IsVertexLit() const {
-    return mbVertexLit;
-  }
+  int GetMaterialIndex(void) const;               // deprecated
+  int GetMaterialPassIndex(void) const;           // deprecated
+  void SetMaterialIndex(int idx);                 // deprecated
+  void SetMaterialPassIndex(int idx);             // deprecated
+  void SetRenderGroupState(RenderGroupState rgs); // deprecated
+  RenderGroupState GetRenderGroupState() const;   // deprecated
 
   int miMaterialIndex;
   int miMaterialPassIndex;
   const IRenderer* mpActiveRenderer;
   const IRenderable* _dagrenderable;
 
-  const LightingGroup* mpLightingGroup;
   const XgmMaterialStateInst* mMaterialInst;
-  Texture* mDPTopEnvMap;
-  Texture* mDPBotEnvMap;
-  Texture* mLightMap;
   bool _isSkinned;
-  bool mbForzeNoZWrite;
-  bool mbVertexLit;
   float mEngineParamFloats[kMaxEngineParamFloats];
   RenderGroupState mRenderGroupState;
   const RenderContextFrameData* _RCFD = nullptr;

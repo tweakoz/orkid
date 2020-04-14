@@ -43,14 +43,8 @@ RenderContextInstData::RenderContextInstData(const RenderContextFrameData* RCFD)
     , miMaterialPassIndex(0)
     , mpActiveRenderer(0)
     , _dagrenderable(0)
-    , mpLightingGroup(0)
-    , mDPTopEnvMap(0)
-    , mDPBotEnvMap(0)
     , mMaterialInst(0)
     , _isSkinned(false)
-    , mbForzeNoZWrite(false)
-    , mLightMap(0)
-    , mbVertexLit(false)
     , mRenderGroupState(ERGST_NONE)
     , _RCFD(RCFD) {
 
@@ -59,6 +53,11 @@ RenderContextInstData::RenderContextInstData(const RenderContextFrameData* RCFD)
   }
   for (int i = 0; i < kMaxEngineParamFloats; i++)
     mEngineParamFloats[i] = 0.0f;
+}
+
+Context* RenderContextInstData::context() const {
+  OrkAssert(_RCFD);
+  return _RCFD->GetTarget();
 }
 
 void RenderContextInstData::SetEngineParamFloat(int idx, float fv) {
@@ -71,6 +70,42 @@ float RenderContextInstData::GetEngineParamFloat(int idx) const {
   OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
 
   return mEngineParamFloats[idx];
+}
+void RenderContextInstData::SetRenderer(const IRenderer* rnd) {
+  mpActiveRenderer = rnd;
+}
+void RenderContextInstData::SetRenderable(const IRenderable* rnd) {
+  _dagrenderable = rnd;
+}
+const IRenderer* RenderContextInstData::GetRenderer(void) const {
+  return mpActiveRenderer;
+}
+const IRenderable* RenderContextInstData::GetRenderable(void) const {
+  return _dagrenderable;
+}
+const XgmMaterialStateInst* RenderContextInstData::GetMaterialInst() const {
+  return mMaterialInst;
+}
+int RenderContextInstData::GetMaterialIndex(void) const {
+  return miMaterialIndex;
+}
+int RenderContextInstData::GetMaterialPassIndex(void) const {
+  return miMaterialPassIndex;
+}
+void RenderContextInstData::SetMaterialIndex(int idx) {
+  miMaterialIndex = idx;
+}
+void RenderContextInstData::SetMaterialPassIndex(int idx) {
+  miMaterialPassIndex = idx;
+}
+void RenderContextInstData::SetMaterialInst(const XgmMaterialStateInst* mi) {
+  mMaterialInst = mi;
+}
+void RenderContextInstData::SetRenderGroupState(RenderGroupState rgs) {
+  mRenderGroupState = rgs;
+}
+RenderGroupState RenderContextInstData::GetRenderGroupState() const {
+  return mRenderGroupState;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -69,16 +69,14 @@ struct UiCamPrivate {
       auto shaderpath = file::Path("orkshader://manip");
       _material->gpuInit(ctx, shaderpath);
       _material->setInstanceMvpParams(_materialinst, "mvp", "mvpL", "mvpR");
-      _tekMono   = _material->technique("std_mono");
-      _tekStereo = _material->technique("std_stereo");
-      _doGpuInit = false;
+      _materialinst->_monoTek   = _material->technique("std_mono");
+      _materialinst->_stereoTek = _material->technique("std_stereo");
+      _doGpuInit                = false;
     }
   }
   bool _doGpuInit = true;
   freestyle_mtl_ptr_t _material;
   materialinst_ptr_t _materialinst;
-  const FxShaderTechnique* _tekMono   = nullptr;
-  const FxShaderTechnique* _tekStereo = nullptr;
 };
 using uicamprivate_t = std::shared_ptr<UiCamPrivate>;
 

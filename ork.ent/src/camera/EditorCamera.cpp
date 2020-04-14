@@ -109,10 +109,10 @@ bool EditorCamControllerInst::DoLink(Simulation* psi) {
 
     Drawable::var_t ap;
 
-    auto rendermethod = [=](RenderContextInstData& rcid, Context* targ, const CallbackRenderable* pren) {
+    auto rendermethod = [=](RenderContextInstData& RCID) {
       auto ezcam = dynamic_cast<const EzUiCam*>(pcam);
       if (ezcam)
-        ezcam->draw(targ);
+        ezcam->draw(RCID.context());
     };
     // ap.Set<const impl*>(pimpl);
     // pdrw->SetUserDataA(ap);

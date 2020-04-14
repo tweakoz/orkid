@@ -101,9 +101,8 @@ struct FrustumPrimitive {
       scenegraph::layer_ptr_t layer,
       materialinst_ptr_t material_inst) {
     auto drw = std::make_shared<CallbackDrawable>(nullptr);
-    drw->SetRenderCallback([=](lev2::RenderContextInstData& RCID, //
-                               lev2::Context* context,
-                               const CallbackRenderable* pren) { //
+    drw->SetRenderCallback([=](lev2::RenderContextInstData& RCID) { //
+      auto context = RCID.context();
       material_inst->wrappedDrawCall(RCID, [this, context]() { this->draw(context); });
     });
     return layer->createNode(named, drw);

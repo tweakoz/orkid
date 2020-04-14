@@ -73,8 +73,10 @@ struct impl {
     _initted                   = true;
   }
 
-  static void RenderCallback(RenderContextInstData& rcid, Context* targ, const CallbackRenderable* pren) {
-    const impl* pimpl = pren->GetUserData0().Get<const impl*>();
+  static void RenderCallback(RenderContextInstData& RCID) {
+    auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._dagrenderable);
+    auto context    = RCID.context();
+    auto pimpl      = renderable->GetUserData0().Get<std::shared_ptr<impl>>();
     if (pimpl->_initted == false)
       return;
 
@@ -83,10 +85,10 @@ struct impl {
     const GridControllerInst* ssci  = pent->GetTypedComponent<GridControllerInst>();
     const GridControllerData& data  = ssci->GetCD();
 
-    bool isPickState = targ->FBI()->isPickState();
+    bool isPickState = context->FBI()->isPickState();
     float fphase     = ssci->GetPhase();
 
-    auto RCFD        = targ->topRenderContextFrameData();
+    auto RCFD        = context->topRenderContextFrameData();
     const auto& CPD  = RCFD->topCPD();
     auto cammatrices = CPD.cameraMatrices();
     const auto& FRUS = cammatrices->GetFrustum();
@@ -114,7 +116,7 @@ struct impl {
 
     auto& VB = GfxEnv::GetSharedDynamicVB2();
     VtxWriter<SVtxV12N12B12T8C4> vw;
-    vw.Lock(targ, &VB, 6);
+    vw.Lock(context, &VB, 6);
 
     vw.AddVertex(v0);
     vw.AddVertex(v1);
@@ -124,21 +126,21 @@ struct impl {
     vw.AddVertex(v2);
     vw.AddVertex(v3);
 
-    vw.UnLock(targ);
+    vw.UnLock(context);
 
-    auto mtxi = targ->MTXI();
-    auto gbi  = targ->GBI();
+    auto mtxi = context->MTXI();
+    auto gbi  = context->GBI();
     mtxi->PushMMatrix(pent->GetEffectiveMatrix());
     fvec4 modcolor = fcolor4::Green();
     if (isPickState) {
-      auto pickBuf = targ->FBI()->currentPickBuffer();
+      auto pickBuf = context->FBI()->currentPickBuffer();
       uint64_t pid = pickBuf ? pickBuf->AssignPickId((ork::Object*)pent) : 0;
       modcolor.SetRGBAU64(pid);
     }
-    targ->PushModColor(modcolor);
-    targ->PushMaterial(pimpl->_material);
+    context->PushModColor(modcolor);
+    context->PushMaterial(pimpl->_material);
     gbi->DrawPrimitive(vw, EPrimitiveType::TRIANGLES, 6);
-    targ->PopModColor();
+    context->PopModColor();
     mtxi->PopMMatrix();
   }
   static void enqueueOnLayerCallback(DrawableBufItem& cdb) {
@@ -159,7 +161,7 @@ void GridArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
   auto texture                   = cd.GetTexture();
 
   ////////////////////////////////////////////////////////////////
-  impl* pimpl          = new impl;
+  auto pimpl           = std::make_shared<impl>();
   pimpl->_archetype    = this;
   pimpl->_entity       = pent;
   pimpl->_colortexture = texture;
@@ -170,7 +172,7 @@ void GridArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
   pent->addDrawableToDefaultLayer(pdrw);
 
   lev2::Drawable::var_t ap;
-  ap.Set<const impl*>(pimpl);
+  ap.Set<std::shared_ptr<impl>>(pimpl);
   pdrw->SetUserDataA(ap);
 
   pdrw->SetRenderCallback(impl::RenderCallback);

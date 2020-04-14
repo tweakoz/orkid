@@ -523,10 +523,11 @@ void ManipManager::DrawCurrentManipSet(Context* pTARG) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static void
-ManipRenderCallback(ork::lev2::RenderContextInstData& rcid, ork::lev2::Context* targ, const ork::lev2::CallbackRenderable* pren) {
-  ManipManager* pmanipman = pren->GetUserData0().Get<ManipManager*>();
-  pmanipman->DrawCurrentManipSet(targ);
+static void ManipRenderCallback(const ork::lev2::RenderContextInstData& RCID) {
+  auto context    = RCID.context();
+  auto renderable = dynamic_cast<const lev2::CallbackRenderable*>(RCID._dagrenderable);
+  auto manipmgr   = renderable->GetUserData0().Get<ManipManager*>();
+  manipmgr->DrawCurrentManipSet(context);
 }
 
 void ManipManager::Queue(ork::lev2::IRenderer* prend) {

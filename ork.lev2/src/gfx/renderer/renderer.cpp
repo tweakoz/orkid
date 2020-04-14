@@ -127,7 +127,7 @@ void IRenderer::RenderCallback(const lev2::CallbackRenderable& cbren) const {
     lev2::RenderContextInstData RCID(context->topRenderContextFrameData());
     RCID.SetRenderer(this);
     RCID._dagrenderable = &cbren;
-    cbren.GetRenderCallback()(RCID, context, &cbren);
+    cbren.GetRenderCallback()(RCID);
   }
 }
 
@@ -193,8 +193,6 @@ void DefaultRenderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::le
   lev2::RenderContextInstModelData MdlCtx;
 
   MatCtx.SetMaterialInst(&minst->RefMaterialInst());
-  MatCtx.BindLightMap(ModelRen.subMesh()->mLightMap);
-  MatCtx.SetVertexLit(ModelRen.subMesh()->mbVertexLit);
 
   MdlCtx.mMesh    = ModelRen.mesh();
   MdlCtx.mSubMesh = ModelRen.subMesh();
@@ -209,10 +207,6 @@ void DefaultRenderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::le
   ///////////////////////////////////////
 
   // printf( "Renderer::RenderModel() rable<%p>\n", & ModelRen );
-  lev2::LightingGroup lgrp;
-  lgrp.mLightManager = target->topRenderContextFrameData()->GetLightManager();
-  // lgrp.mLightMask    = ModelRen.GetLightMask();
-  MatCtx.SetLightingGroup(&lgrp);
   bool model_is_skinned = model->isSkinned();
   MatCtx._isSkinned     = model_is_skinned;
   MdlCtx.SetSkinned(model_is_skinned);

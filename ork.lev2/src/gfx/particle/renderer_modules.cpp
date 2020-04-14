@@ -384,7 +384,7 @@ bool SpriteRenderer::DoNotify(const ork::event::Event* event) {
 
 void SpriteRenderer::Render(
     const fmtx4& mtx,
-    ork::lev2::RenderContextInstData& rcid,
+    const ork::lev2::RenderContextInstData& rcid,
     const ParticlePoolRenderBuffer& buffer,
     ork::lev2::Context* targ) {
   gtarg = targ;
@@ -686,7 +686,7 @@ dataflow::outplugbase* StreakRenderer::GetOutput(int idx) {
 ///////////////////////////////////////////////////////////////////////////////
 void StreakRenderer::Render(
     const fmtx4& mtx,
-    ork::lev2::RenderContextInstData& rcid,
+    const ork::lev2::RenderContextInstData& rcid,
     const ParticlePoolRenderBuffer& buffer,
     ork::lev2::Context* targ) {
 
@@ -863,7 +863,7 @@ dataflow::outplugbase* ModelRenderer::GetOutput(int idx) {
 ///////////////////////////////////////////////////////////////////////////////
 void ModelRenderer::Render(
     const fmtx4& mtx,
-    ork::lev2::RenderContextInstData& rcid,
+    const ork::lev2::RenderContextInstData& rcid,
     const ParticlePoolRenderBuffer& buffer,
     ork::lev2::Context* targ) {
   if (0 == GetModel())

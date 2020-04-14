@@ -160,43 +160,41 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(Simulation* inst, Entity* pent) 
     Entity* pent;
     Simulation* psi;
 
-    static void doit(lev2::RenderContextInstData& rcid, lev2::Context* targ, const lev2::CallbackRenderable* pren) {
-      const yo* pyo = pren->GetDrawableDataA().Get<const yo*>();
+    static void doit(lev2::RenderContextInstData& RCID) {
+      auto context    = RCID.context();
+      auto renderable = dynamic_cast<const lev2::CallbackRenderable*>(RCID._dagrenderable);
+      auto yo_ptr     = renderable->GetDrawableDataA().Get<const yo*>();
 
-      const PerformanceAnalyzerArchetype* parch = pyo->parch;
-      const Entity* pent                        = pyo->pent;
-      const Simulation* pSI                     = pyo->psi;
+      const PerformanceAnalyzerArchetype* parch = yo_ptr->parch;
+      const Entity* pent                        = yo_ptr->pent;
+      const Simulation* pSI                     = yo_ptr->psi;
       const PerfAnalyzerControllerInst* ssci    = pent->GetTypedComponent<PerfAnalyzerControllerInst>();
       const PerfAnalyzerControllerData& cd      = ssci->GetCD();
-      ork::lev2::Context* pTARG                 = rcid.GetRenderer()->GetTarget();
-      bool isPickState                          = pTARG->FBI()->isPickState();
+      bool isPickState                          = context->FBI()->isPickState();
 
       if (cd.mbEnable and false == isPickState) {
 
         float frawdeltatime = pSI->GetUpDeltaTime();
 
-        pTARG->MTXI()->PushUIMatrix();
-        pTARG->PushModColor(fcolor4::Green());
+        context->MTXI()->PushUIMatrix();
+        context->PushModColor(fcolor4::Green());
         ork::lev2::FontMan::PushFont("d24");
-        ork::lev2::FontMan::GetRef().BeginTextBlock(pTARG);
-        int y = pTARG->mainSurfaceHeight() - 24;
-        ork::lev2::FontMan::DrawText(pTARG, 16, y -= 24, "AvgUpd<%f> UPS<%f>", ssci->favgupdate, 1.0f / ssci->favgupdate);
-        ork::lev2::FontMan::DrawText(pTARG, 16, y -= 24, "AvgDrw<%f> FPS<%f>", ssci->favgdraw, 1.0f / ssci->favgdraw);
-        ork::lev2::FontMan::DrawText(pTARG, 16, y -= 24, "RawDT<%f>", frawdeltatime);
-        ork::lev2::FontMan::GetRef().EndTextBlock(pTARG);
+        ork::lev2::FontMan::GetRef().BeginTextBlock(context);
+        int y = context->mainSurfaceHeight() - 24;
+        ork::lev2::FontMan::DrawText(context, 16, y -= 24, "AvgUpd<%f> UPS<%f>", ssci->favgupdate, 1.0f / ssci->favgupdate);
+        ork::lev2::FontMan::DrawText(context, 16, y -= 24, "AvgDrw<%f> FPS<%f>", ssci->favgdraw, 1.0f / ssci->favgdraw);
+        ork::lev2::FontMan::DrawText(context, 16, y -= 24, "RawDT<%f>", frawdeltatime);
+        ork::lev2::FontMan::GetRef().EndTextBlock(context);
         ork::lev2::FontMan::PopFont();
-        pTARG->PopModColor();
-        pTARG->MTXI()->PopUIMatrix();
+        context->PopModColor();
+        context->MTXI()->PopUIMatrix();
       }
-    }
-    static void BufferCB(ork::lev2::DrawableBufItem& cdb) {
     }
   };
 
   auto pdrw = std::make_shared<lev2::CallbackDrawable>(pent);
   pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(yo::doit);
-  pdrw->setEnqueueOnLayerCallback(yo::BufferCB);
   pdrw->SetOwner(pent->data());
   pdrw->SetSortKey(0x7fffffff);
 

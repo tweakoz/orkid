@@ -168,21 +168,19 @@ struct ModItemRenderData {
       }
     }
   }
-  static void enqueueToRendererCallback(
-      ork::lev2::RenderContextInstData& rcid,
-      ork::lev2::Context* targ,
-      const ork::lev2::CallbackRenderable* pren) {
+  static void enqueueToRendererCallback(const ork::lev2::RenderContextInstData& RCID) {
     ork::opq::assertOnQueue2(opq::mainSerialQueue());
-
+    auto context    = RCID.context();
+    auto renderable = dynamic_cast<const lev2::CallbackRenderable*>(RCID._dagrenderable);
     //////////////////////////////////////////
-    if (targ->FBI()->isPickState())
+    if (context->FBI()->isPickState())
       return;
     //////////////////////////////////////////
 
-    ModItemRenderData* pdata = pren->GetDrawableDataA().Get<ModItemRenderData*>();
+    ModItemRenderData* pdata = renderable->GetDrawableDataA().Get<ModItemRenderData*>();
     ModItemBufferData& mibd  = pdata->mMIBD;
 
-    ModItemBufferDataDB* pbufd = pren->GetUserData1().Get<ModItemBufferDataDB*>();
+    ModItemBufferDataDB* pbufd = renderable->GetUserData1().Get<ModItemBufferDataDB*>();
 
     ModItemBufferDataDB& db = (*pbufd);
     {
@@ -193,7 +191,7 @@ struct ModItemRenderData {
         return;
       //////////////////////////////////////////
       RendererModule* Renderer = pdata->mpRenderer;
-      Renderer->Render(db.mMatrix, rcid, db.mParticleBuffer, targ);
+      Renderer->Render(db.mMatrix, RCID, db.mParticleBuffer, context);
       //////////////////////////////////////////
     }
   }
@@ -322,8 +320,7 @@ void ModularSystem::DoLinkSystem(ork::ent::Simulation* psi, ork::ent::Entity* pe
     int inumrenderers = GetNumRenderers();
     for (int ir = 0; ir < inumrenderers; ir++) {
       RendererModule* renderer = GetRenderer(ir);
-
-      auto pdrw = std::make_shared<lev2::CallbackDrawable>(pent);
+      auto pdrw                = std::make_shared<lev2::CallbackDrawable>(pent);
       pdrw->SetRenderCallback(ModItemRenderData::enqueueToRendererCallback);
       pdrw->setEnqueueOnLayerCallback(ModItemRenderData::enqueueOnLayerCallback);
       pdrw->SetOwner(pent->data());

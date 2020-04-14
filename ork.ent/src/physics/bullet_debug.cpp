@@ -99,17 +99,19 @@ void PhysicsDebugger::beginRenderFrame() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void bulletDebugRender(RenderContextInstData& rcid, Context* targ, const CallbackRenderable* pren) {
-  if (targ->FBI()->isPickState())
+void bulletDebugRender(const RenderContextInstData& RCID) {
+  auto context    = RCID.context();
+  auto renderable = dynamic_cast<const lev2::CallbackRenderable*>(RCID._dagrenderable);
+  if (context->FBI()->isPickState())
     return;
   //////////////////////////////////////////
-  auto drawdata = pren->GetDrawableDataA().Get<BulletDebugDrawDBData*>();
+  auto drawdata = renderable->GetDrawableDataA().Get<BulletDebugDrawDBData*>();
   auto debugger = drawdata->_debugger;
   if (false == debugger->_enabled)
     return;
   //////////////////////////////////////////
-  if (auto as_rec = pren->GetUserData1().TryAs<BulletDebugDrawDBRec*>()) {
-    debugger->render(rcid, targ, debugger->_checkedoutreadlq);
+  if (auto as_rec = renderable->GetUserData1().TryAs<BulletDebugDrawDBRec*>()) {
+    debugger->render(RCID, debugger->_checkedoutreadlq);
   }
 }
 
@@ -133,8 +135,8 @@ void PhysicsDebugger::endRenderFrame() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PhysicsDebugger::render(RenderContextInstData& rcid, Context* ptarg, lineqptr_t lines) {
-
+void PhysicsDebugger::render(const RenderContextInstData& RCID, lineqptr_t lines) {
+  auto context = RCID.context();
   typedef SVtxV12C4T16 vtx_t;
 
   if (nullptr == lines)
@@ -143,9 +145,9 @@ void PhysicsDebugger::render(RenderContextInstData& rcid, Context* ptarg, lineqp
   int inumlines = lines->size();
 
   // printf( "draw numlines<%d>\n", inumlines );
-  auto prenderer = rcid.GetRenderer();
+  auto prenderer = RCID.GetRenderer();
 
-  auto pcamdata = ptarg->topRenderContextFrameData()->topCPD().cameraMatrices();
+  auto pcamdata = context->topRenderContextFrameData()->topCPD().cameraMatrices();
 
   fvec3 szn = 0;
 
@@ -155,7 +157,7 @@ void PhysicsDebugger::render(RenderContextInstData& rcid, Context* ptarg, lineqp
 
   if (icount) {
     VtxWriter<vtx_t> vwriter;
-    vwriter.Lock(ptarg, &vb, icount);
+    vwriter.Lock(context, &vb, icount);
     for (const auto& line : (*lines)) {
 
       U32 ucolor = line.mColor.GetABGRU32();
@@ -166,24 +168,24 @@ void PhysicsDebugger::render(RenderContextInstData& rcid, Context* ptarg, lineqp
       vwriter.AddVertex(vtx_t(vf.x, vf.y, vf.z, 0.0f, 0.0f, ucolor));
       vwriter.AddVertex(vtx_t(vt.x, vt.y, vt.z, 0.0f, 0.0f, ucolor));
     }
-    vwriter.UnLock(ptarg);
+    vwriter.UnLock(context);
 
     auto cam_z = pcamdata->_camdat.zNormal();
 
-    static GfxMaterial3DSolid material(ptarg);
+    static GfxMaterial3DSolid material(context);
     material._rasterstate.SetZWriteMask(true);
     material.SetColorMode(GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
-    ptarg->BindMaterial(&material);
-    ptarg->PushModColor(fvec4::White());
-    ptarg->FXI()->InvalidateStateBlock();
+    context->BindMaterial(&material);
+    context->PushModColor(fvec4::White());
+    context->FXI()->InvalidateStateBlock();
     fmtx4 mtx_dbg;
     mtx_dbg.SetTranslation(cam_z * -.013f);
 
-    ptarg->MTXI()->PushMMatrix(mtx_dbg);
-    ptarg->GBI()->DrawPrimitive(vwriter, ork::lev2::EPrimitiveType::LINES);
-    ptarg->MTXI()->PopMMatrix();
-    ptarg->PopModColor();
-    ptarg->BindMaterial(0);
+    context->MTXI()->PushMMatrix(mtx_dbg);
+    context->GBI()->DrawPrimitive(vwriter, ork::lev2::EPrimitiveType::LINES);
+    context->MTXI()->PopMMatrix();
+    context->PopModColor();
+    context->BindMaterial(0);
   }
 }
 

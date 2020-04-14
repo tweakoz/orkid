@@ -41,8 +41,7 @@ namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
 void bulletDebugEnqueueToLayer(ork::lev2::DrawableBufItem& cdb);
-void bulletDebugRender(ork::lev2::RenderContextInstData& rcid, ork::lev2::Context* targ,
-                               const ork::lev2::CallbackRenderable* pren);
+void bulletDebugRender(const ork::lev2::RenderContextInstData& RCID);
 
 static PoolString sBulletFamily;
 
@@ -66,17 +65,32 @@ void BulletSystemData::Describe() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BulletSystemData::BulletSystemData() : mfTimeScale(1.0f), mbDEBUG(false), mSimulationRate(120.0f) {}
+BulletSystemData::BulletSystemData()
+    : mfTimeScale(1.0f)
+    , mbDEBUG(false)
+    , mSimulationRate(120.0f) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-System* BulletSystemData::createSystem(ork::ent::Simulation* pinst) const { return OrkNew BulletSystem(*this, pinst); }
+System* BulletSystemData::createSystem(ork::ent::Simulation* pinst) const {
+  return OrkNew BulletSystem(*this, pinst);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 BulletSystem::BulletSystem(const BulletSystemData& data, ork::ent::Simulation* psi)
-    : System(&data, psi), mDynamicsWorld(0), mBtConfig(0), mBroadPhase(0), mDispatcher(0), mSolver(0), _systemData(data),
-      mMaxSubSteps(128), mNumSubStepsTaken(0), mfAvgDtAcc(0.0f), mfAvgDtCtr(0.0f) {
+    : System(&data, psi)
+    , mDynamicsWorld(0)
+    , mBtConfig(0)
+    , mBroadPhase(0)
+    , mDispatcher(0)
+    , mSolver(0)
+    , _systemData(data)
+    , mMaxSubSteps(128)
+    , mNumSubStepsTaken(0)
+    , mfAvgDtAcc(0.0f)
+    , mfAvgDtCtr(0.0f) {
   AllocationLabel("BulletSystem::BulletSystem");
   InitWorld();
 }
@@ -124,8 +138,8 @@ static void BulletSystemInternalTickCallback(btDynamicsWorld* world, btScalar ti
 
 ///////////////////////////////////////////////////////////////////////////////
 
-btRigidBody* BulletSystem::AddLocalRigidBody(ork::ent::Entity* pent, btScalar mass, const btTransform& startTransform,
-                                             btCollisionShape* shape) {
+btRigidBody*
+BulletSystem::AddLocalRigidBody(ork::ent::Entity* pent, btScalar mass, const btTransform& startTransform, btCollisionShape* shape) {
   OrkAssert(pent);
 
   // rigidbody is dynamic if and only if mass is non zero, otherwise static
@@ -207,7 +221,7 @@ bool BulletSystem::DoLink(Simulation* psi) {
   _debugDrawable->SetOwner(&_systemData);
   _debugDrawable->SetSortKey(0x3fffffff);
 
-  auto pdata = new BulletDebugDrawDBData(this);
+  auto pdata       = new BulletDebugDrawDBData(this);
   pdata->_debugger = &_debugger;
   _debugDrawable->SetUserDataA(pdata);
 
@@ -218,18 +232,17 @@ bool BulletSystem::DoLink(Simulation* psi) {
 
 void BulletSystem::enqueueDrawables(lev2::DrawableBuffer& buffer) {
 
-  if( _debugger._enabled ){
+  if (_debugger._enabled) {
     auto buflayer = buffer.MergeLayer(_dbgdrawlayername);
-    _debugDrawable->enqueueOnLayer(_dbgdrawXF,*buflayer);
+    _debugDrawable->enqueueOnLayer(_dbgdrawXF, *buflayer);
   }
   // do something with _debugDrawable
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void BulletSystem::beginRenderFrame(const Simulation* psi) {
-    _debugger.beginRenderFrame();
+  _debugger.beginRenderFrame();
 }
 void BulletSystem::endRenderFrame(const Simulation* psi) {
   _debugger.endRenderFrame();
@@ -256,7 +269,7 @@ void BulletSystem::DoUpdate(ork::ent::Simulation* inst) {
 
     float fps = 1.0f / fdtaccum;
 
-    float fdts = dt * _systemData.GetTimeScale();
+    float fdts  = dt * _systemData.GetTimeScale();
     float frate = _systemData.GetSimulationRate();
 
     float ffts = 1.0f / frate;

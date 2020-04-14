@@ -14,6 +14,7 @@
 #include <ork/rtti/downcast.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/lev2/gfx/renderer/renderable.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/event/MeshEvent.h>
@@ -46,14 +47,16 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
     const SkyBoxArchetype* parch;
     Entity* pent;
 
-    static void doit(lev2::RenderContextInstData& rcid, lev2::Context* targ, const lev2::CallbackRenderable* pren) {
-      const yo* pyo = pren->GetUserData0().Get<const yo*>();
+    static void doit(lev2::RenderContextInstData& RCID) {
+      auto renderable = dynamic_cast<const lev2::CallbackRenderable*>(RCID._dagrenderable);
+      auto context    = RCID.context();
+      auto yo_ptr     = renderable->GetUserData0().Get<const yo*>();
 
-      const SkyBoxArchetype* parch     = pyo->parch;
-      const Entity* pent               = pyo->pent;
+      const SkyBoxArchetype* parch     = yo_ptr->parch;
+      const Entity* pent               = yo_ptr->pent;
       const SkyBoxControllerInst* ssci = pent->GetTypedComponent<SkyBoxControllerInst>();
       const SkyBoxControllerData& cd   = ssci->GetCD();
-      bool isPickState                 = rcid.GetRenderer()->GetTarget()->FBI()->isPickState();
+      bool isPickState                 = RCID.GetRenderer()->GetTarget()->FBI()->isPickState();
       float fphase                     = ssci->GetPhase();
 
       if (cd.GetModel()) {
@@ -62,42 +65,17 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
         ork::lev2::RenderContextInstModelData MdlCtx;
         ork::lev2::XgmMaterialStateInst MatInst(minst);
         MatCtx.SetMaterialInst(&MatInst);
-        MatCtx.SetRenderer(rcid.GetRenderer());
+        MatCtx.SetRenderer(RCID.GetRenderer());
         MdlCtx.SetSkinned(false);
-
         ///////////////////////////////////////////////////////////
         // picking support
         ///////////////////////////////////////////////////////////
-
         fcolor4 ObjColor;
-        // toz64 ObjColor.SetRGBAU32( reinterpret_cast<U32>( (u32)((size_t)pren->GetObject() )) );
-
-        fcolor4 color = targ->FBI()->isPickState() ? ObjColor : pren->GetModColor();
-
+        fcolor4 color   = context->FBI()->isPickState() ? ObjColor : renderable->GetModColor();
+        const auto& CPD = RCID._RCFD->topCPD();
         ///////////////////////////////////////////////////////////
         // setup headlight (default lighting)
         ///////////////////////////////////////////////////////////
-        // ork::fmtx4 HeadLightMatrix;
-        // ork::lev2::LightingGroup HeadLightGroup;
-        // ork::lev2::AmbientLightData HeadLightData;
-        // ork::lev2::AmbientLight HeadLight(HeadLightMatrix, &HeadLightData);
-        // ork::lev2::LightManagerData HeadLightManagerData;
-        // ork::lev2::LightManager HeadLightManager(HeadLightManagerData);
-        // HeadLightData.SetColor(ork::fvec3(1.3f, 1.3f, 1.5f));
-        // HeadLightData.SetAmbientShade(0.75f);
-        // HeadLight.miInFrustumID = 1;
-        // HeadLightGroup.mLightMask.AddLight(&HeadLight);
-        // HeadLightGroup.mLightManager = &HeadLightManager;
-        auto RCFD       = targ->topRenderContextFrameData();
-        const auto& CPD = RCFD->topCPD();
-        // HeadLightMatrix                               = CPD.cameraMatrices()->GetIVMatrix();
-        // HeadLightManager.mGlobalMovingLights.AddLight(&HeadLight);
-        // HeadLightManager.mLightsInFrustum.push_back(&HeadLight);
-        // MatCtx.SetLightingGroup(&HeadLightGroup);
-        ///////////////////////////////////////////////////////////
-        // setup headlight (default lighting)
-        ///////////////////////////////////////////////////////////
-
         float fscale = cd.GetScale();
         fvec3 pos    = CPD.cameraMatrices()->_camdat.GetEye();
         fmtx4 mtxSPIN;
@@ -105,49 +83,31 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
         fmtx4 mtxSKY;
         mtxSKY.SetScale(fscale);
         mtxSKY.SetTranslation(pos);
-
-        mtxSKY = mtxSPIN * mtxSKY;
-
-        MatCtx.ForceNoZWrite(true);
-
-        //	printf( "DrawSkyBox pos<%f %f %f>\n", pos.GetX(), pos.GetY(), pos.GetX() );
-
+        mtxSKY         = mtxSPIN * mtxSKY;
         int inummeshes = cd.GetModel()->numMeshes();
         for (int imesh = 0; imesh < inummeshes; imesh++) {
           const lev2::XgmMesh& mesh = *cd.GetModel()->mesh(imesh);
-
-          int inumclusset = mesh.numSubMeshes();
-
+          int inumclusset           = mesh.numSubMeshes();
           for (int ics = 0; ics < inumclusset; ics++) {
             const lev2::XgmSubMesh& submesh   = *mesh.subMesh(ics);
             const lev2::GfxMaterial* material = submesh.mpMaterial;
-
-            int inumclus = submesh.miNumClusters;
-
+            int inumclus                      = submesh.miNumClusters;
             MatCtx.SetMaterialIndex(ics);
-
             for (int ic = 0; ic < inumclus; ic++) {
-
               MdlCtx.mMesh    = &mesh;
               MdlCtx.mSubMesh = &submesh;
               MdlCtx.mCluster = &submesh.cluster(ic);
-
-              // printf( "DrawSkyBox clus<%d>\n", ic );
-
-              cd.GetModel()->RenderRigid(color, mtxSKY, targ, MatCtx, MdlCtx);
+              cd.GetModel()->RenderRigid(color, mtxSKY, context, MatCtx, MdlCtx);
             }
           }
         }
       }
-    }
-    static void BufferCB(lev2::DrawableBufItem& cdb) {
     }
   };
 
   auto pdrw = std::make_shared<lev2::CallbackDrawable>(pent);
   pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(yo::doit);
-  // pdrw->SetBufferCallback(yo::BufferCB);
   pdrw->SetOwner(pent->data());
   pdrw->SetSortKey(0);
 

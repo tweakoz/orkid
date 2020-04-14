@@ -105,8 +105,6 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
     MatCtx.SetEngineParamFloat(i, ModelRen.GetEngineParamFloat(i));
 
   MatCtx.SetMaterialInst(&minst->RefMaterialInst());
-  MatCtx.BindLightMap(ModelRen.subMesh()->mLightMap);
-  MatCtx.SetVertexLit(ModelRen.subMesh()->mbVertexLit);
 
   MdlCtx.mMesh    = ModelRen.mesh();
   MdlCtx.mSubMesh = ModelRen.subMesh();
@@ -138,10 +136,6 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   ///////////////////////////////////////
 
   // printf( "Renderer::RenderModel() rable<%p>\n", & ModelRen );
-  lev2::LightingGroup lgrp;
-  lgrp.mLightManager = target->topRenderContextFrameData()->GetLightManager();
-  // lgrp.mLightMask    = ModelRen.GetLightMask();
-  MatCtx.SetLightingGroup(&lgrp);
   bool model_is_skinned = model->isSkinned();
   MatCtx._isSkinned     = model_is_skinned;
   MdlCtx.SetSkinned(model_is_skinned);

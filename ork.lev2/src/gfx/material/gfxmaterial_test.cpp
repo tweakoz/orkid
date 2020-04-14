@@ -229,7 +229,6 @@ bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
   const auto& CPD                    = RCFD->topCPD();
   bool is_picking                    = CPD.isPicking();
   bool is_stereo                     = CPD.isStereoOnePass();
-  bool is_forcenoz                   = RCID ? RCID->IsForceNoZWrite() : false;
 
   pTarg->RSI()->BindRasterState(_rasterstate);
   pTarg->FXI()->BindPass(hModFX, iPass);

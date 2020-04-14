@@ -5,21 +5,17 @@
 # Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
-
 import time, math
+from ork.deco import Deco
+from ork.log import log
 from orkengine.core import *
 from orkengine.lev2 import *
 import _shaders
-from ork.deco import Deco
-from ork.log import log
-deco = Deco()
-token = CrcStringProxy()
-
 ################################################
 # globals
 ################################################
-
-_time_base = time.time()
+deco = Deco()
+time_base = time.time()
 scene = None
 camera = None
 cameralut = None
@@ -29,23 +25,17 @@ primnode = None
 #  called on main thread when graphics context is
 #   made available
 ##############################################
-
 def onGpuInit(ctx):
     global scene
     global camera
     global cameralut
     global primnode
     ###################################
-    mtl = FreestyleMaterial()
-    mtl.gpuInit(ctx,Path("orkshader://manip"))
-    mtl_inst = MaterialInstance(mtl)
-    mtl_inst.monoTek = mtl.shader.technique("std_mono")
-    mtl.setInstanceMvpParams(mtl_inst,"mvp","","")
-    ###################################
-    frustum_pmtx = ctx.perspective(45,1,0.1,3)
-    frustum_vmtx = ctx.lookAt(vec3(0,0,-1),vec3(0,0,0),vec3(0,1,0))
     frustum = Frustum()
-    frustum.set(frustum_vmtx,frustum_pmtx)
+    frustum.set(ctx.lookAt( vec3(0,0,-1),
+                            vec3(0,0,0),
+                            vec3(0,1,0)),
+                ctx.perspective(45,1,0.1,3))
     ###################################
     prim = primitives.FrustumPrimitive()
     prim.topColor = vec4(0.5,1.0,0.5,1)
@@ -59,12 +49,17 @@ def onGpuInit(ctx):
     ###################################
     scene = scenegraph.Scene()
     layer = scene.createLayer("layer1")
-    primnode = prim.createNode("node1",layer,mtl_inst)
+    ###################################
+    material = FreestyleMaterial(ctx,Path("orkshader://manip"))
+    material_inst = material.createInstance()
+    material_inst.monoTek = material.shader.technique("std_mono")
+    material.setInstanceMvpParams(material_inst,"mvp","","")
+    primnode = prim.createNode("node1",layer,material_inst)
     ###################################
     camera = CameraData()
+    camera.perspective(0.1, 100.0, 45.0)
     cameralut = CameraDataLut()
     cameralut.addCamera("spawncam",camera)
-
 ################################################
 # update:
 # technically this runs from the orkid update thread
@@ -74,41 +69,33 @@ def onGpuInit(ctx):
 #   (eg. the scene can be updated from python, whilst
 #        concurrently c++ is rendering..)
 ################################################
-
 def onUpdate():
-    Δtime = time.time()-_time_base
+    Δtime = time.time()-time_base
     θ    = Δtime * math.pi * 2.0 * 0.1
+    ###################################
     distance = 10.0
     eye = vec3(math.sin(θ), 1.0, -math.cos(θ)) * distance
-    tgt = vec3(0, 0, 0)
-    up = vec3(0, 1, 0)
-    camera.perspective(0.1, 100.0, 45.0)
-    camera.lookAt(eye, tgt, up)
+    camera.lookAt(eye, # eye
+                  vec3(0, 0, 0), # tgt
+                  vec3(0, 1, 0)) # up
     ###################################
-    primnode.worldMatrix.compose( vec3(0,0,0),
-                                  quat(),
-                                  math.sin(Δtime*2)*3)
-    #print(primnode.worldMatrix)
+    primnode.worldMatrix.compose( vec3(0,0,0), # pos
+                                  quat(), # rot
+                                  math.sin(Δtime*2)*3) # scale
     ###################################
-    scene.updateScene(cameralut)
-    ###################################
-    time.sleep(1.0/120.0)
-
+    scene.updateScene(cameralut) # update and enqueue all scenenodes
 ################################################
 # render scene (from main thread)
 ################################################
-
 def onDraw(drawev):
     drawev.context.FBI().autoclear = True
     drawev.context.FBI().clearcolor = vec4(.15,.15,.2,1)
     drawev.context.beginFrame()
     scene.renderOnContext(drawev.context) # this must be on rendering thread
     drawev.context.endFrame()
-
 ################################################
 # event loop
 ##############################################
-
 qtapp = OrkEzQtApp.create( onGpuInit, onUpdate, onDraw )
 qtapp.setRefreshPolicy(RefreshFastest, 0)
 qtapp.exec()

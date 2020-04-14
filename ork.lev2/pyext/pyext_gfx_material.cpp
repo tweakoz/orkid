@@ -118,6 +118,16 @@ void pyinit_gfx_material(py::module& module_lev2) {
   auto freestyle_type = //
       py::class_<FreestyleMaterial, GfxMaterial, freestyle_mtl_ptr_t>(module_lev2, "FreestyleMaterial")
           .def(py::init<>())
+          .def(py::init([](ctx_t context, file::Path asset) -> freestyle_mtl_ptr_t { //
+            auto rval = std::make_shared<FreestyleMaterial>();
+            rval->gpuInit(context.get(), asset);
+            return rval;
+          }))
+          .def(
+              "createInstance",                                        //
+              [](freestyle_mtl_ptr_t material) -> materialinst_ptr_t { //
+                return std::make_shared<GfxMaterialInstance>(material);
+              })
           .def(
               "setInstanceMvpParams",
               [](freestyle_mtl_ptr_t material,

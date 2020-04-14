@@ -138,10 +138,7 @@ struct ModelRenderable : public IRenderable {
 
 struct CallbackRenderable : public IRenderable {
 
-  using cbtype_t = std::function<void(
-      lev2::RenderContextInstData& rcid, //
-      lev2::Context* targ,
-      const CallbackRenderable* pren)>;
+  using cbtype_t = std::function<void(lev2::RenderContextInstData& RCID)>;
 
   CallbackRenderable(IRenderer* renderer = NULL);
 
