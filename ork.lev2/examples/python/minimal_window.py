@@ -62,7 +62,7 @@ class MyApp:
     self.nsh.bindMvpMatrix(mvp_matrix)
     self.nsh.bindRotMatrix(rotmatrix)
     self.nsh.bindVolumeTex(self.volumetexture)
-    self.prim.draw(ctx)
+    self.prim.renderEML(ctx)
     self.nsh.end(RCFD)
     ctx.endFrame()
 ##############################################

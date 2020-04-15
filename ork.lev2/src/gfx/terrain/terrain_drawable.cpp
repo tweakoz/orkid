@@ -1065,15 +1065,16 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   ////////////////////////////////
   for (int isector = 0; isector < 8; isector++) {
     auto& sector = _sector[isector];
-    sector._lod0._primitive.draw(targ);
+    sector._lod0._primitive.renderEML(targ);
   }
   ////////////////////////////////
   // render LX
   ////////////////////////////////
   for (int isector = 0; isector < 8; isector++) {
     auto& sector = _sector[isector];
-    sector._lodX._primitive.draw(targ);
+    sector._lodX._primitive.renderEML(targ);
   }
+  _terrainMaterial->end(*RCFD);
 
   targ->PopMaterial();
 }

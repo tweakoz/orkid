@@ -46,7 +46,7 @@ void pyinit_primitives(py::module& module_lev2) {
           [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorRight = value; })
 
       .def("gpuInit", [](primitives::CubePrimitive& prim, ctx_t& context) { prim.gpuInit(context.get()); })
-      .def("draw", [](primitives::CubePrimitive& prim, ctx_t& context) { prim.draw(context.get()); });
+      .def("renderEML", [](primitives::CubePrimitive& prim, ctx_t& context) { prim.renderEML(context.get()); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<primitives::FrustumPrimitive, primitives::frustum_ptr_t>(primitives, "FrustumPrimitive")
       .def(py::init<>())
@@ -86,7 +86,7 @@ void pyinit_primitives(py::module& module_lev2) {
           [](primitives::frustum_ptr_t prim, const fvec4& value) { prim->_colorRight = value; })
 
       .def("gpuInit", [](primitives::frustum_ptr_t prim, ctx_t& context) { prim->gpuInit(context.get()); })
-      .def("draw", [](primitives::frustum_ptr_t prim, ctx_t& context) { prim->draw(context.get()); })
+      .def("renderEML", [](primitives::frustum_ptr_t prim, ctx_t& context) { prim->renderEML(context.get()); })
       .def(
           "createNode",
           [](primitives::frustum_ptr_t prim,

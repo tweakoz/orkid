@@ -21,7 +21,7 @@ void pyinit_meshutil(py::module& module_lev2) {
       .def(
           "fromSubMesh",
           [](rigidprim_t& prim, const meshutil::submesh& submesh, Context* context) { prim.fromSubMesh(submesh, context); })
-      .def("draw", [](rigidprim_t& prim, ctx_t context) { prim.draw(context.get()); });
+      .def("renderEML", [](rigidprim_t& prim, ctx_t context) { prim.renderEML(context.get()); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<meshutil::submesh>(meshutil, "SubMesh")
       .def(py::init<>())

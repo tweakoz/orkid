@@ -96,7 +96,7 @@ RCFD = RenderContextFrameData(ctx)
 mtl.bindTechnique(tek)
 mtl.begin(RCFD)
 mtl.bindParamMatrix4(par_mvp,mvp_matrix)
-prim.draw(ctx)
+prim.renderEML(ctx)
 mtl.end(RCFD)
 
 mtl.bindTechnique(tek)

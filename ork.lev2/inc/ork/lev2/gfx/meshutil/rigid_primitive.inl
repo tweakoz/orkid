@@ -4,11 +4,8 @@
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
-
 #pragma once
-
 ///////////////////////////////////////////////////////////////////////////////
-
 #include <ork/util/crc.h>
 #include <ork/util/crc64.h>
 #include <ork/math/cvector3.h>
@@ -17,7 +14,6 @@
 #include <algorithm>
 #include <ork/kernel/Array.h>
 #include <ork/kernel/varmap.inl>
-
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/lev2/gfx/gfxmaterial.h>
@@ -27,7 +23,6 @@
 #include <ork/kernel/datablock.inl>
 #include <ork/lev2/gfx/meshutil/submesh.h>
 #include <ork/lev2/gfx/meshutil/clusterizer.h>
-
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 typedef orkmap<std::string, svar64_t> AnnotationMap;
@@ -65,7 +60,7 @@ template <typename vtx_t> struct RigidPrimitive {
 
   void fromSubMesh(const submesh& submesh, lev2::Context* context); /// generate from submesh using internal vertexbuffer
   void fromClusterizer(const XgmClusterizerStd& cluz, lev2::Context* context);
-  void draw(lev2::Context* context) const; /// draw with context
+  void renderEML(lev2::Context* context) const; /// draw with context
 
   void writeToChunks(const lev2::XgmSubMesh& xsubmesh, chunkfile::OutputStream* hdrstream, chunkfile::OutputStream* geostream);
   void gpuLoadFromChunks(lev2::Context* context, chunkfile::InputStream* hdrstream, chunkfile::InputStream* geostream);
@@ -261,7 +256,7 @@ void RigidPrimitive<vtx_t>::gpuLoadFromChunks(
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
-template <typename vtx_t> void RigidPrimitive<vtx_t>::draw(lev2::Context* context) const {
+template <typename vtx_t> void RigidPrimitive<vtx_t>::renderEML(lev2::Context* context) const {
   auto gbi = context->GBI();
   for (auto cluster : _gpuClusters) {
     for (auto primgroup : cluster->_primgroups) {

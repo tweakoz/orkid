@@ -155,7 +155,7 @@ sh.bindMvpMatrix(mvp_matrix)
 sh.bindRotMatrix(rotmatrix)
 sh.bindVolumeTex(texture)
 
-prim.draw(ctx)
+prim.renderEML(ctx)
 sh.end(RCFD)
 
 sh._mtl.bindTechnique(sh._tek_lines)
