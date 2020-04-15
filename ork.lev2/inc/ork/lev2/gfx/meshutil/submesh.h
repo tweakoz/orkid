@@ -36,12 +36,14 @@ struct edge;
 struct vertex;
 struct vertexpool;
 struct poly;
+struct IglMesh;
 
 using edge_ptr_t       = std::shared_ptr<edge>;
 using edge_constptr_t  = std::shared_ptr<const edge>;
 using vertex_ptr_t     = std::shared_ptr<vertex>;
 using vertexpool_ptr_t = std::shared_ptr<vertexpool>;
 using poly_ptr_t       = std::shared_ptr<poly>;
+using iglmesh_ptr_t    = std::shared_ptr<IglMesh>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -353,6 +355,7 @@ struct submesh {
 
   /////////////////////////////////////////////////////////////////////////
 
+  iglmesh_ptr_t toIglMesh() const;
   void igl_test();
 
   /////////////////////////////////////////////////////////////////////////
