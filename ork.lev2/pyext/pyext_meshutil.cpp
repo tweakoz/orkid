@@ -53,6 +53,7 @@ void pyinit_meshutil(py::module& module_lev2) {
       .def("numPolys", [](const submesh& submesh, int numsides = 0) -> int { return submesh.GetNumPolys(numsides); })
       .def("numVertices", [](const submesh& submesh) -> int { return submesh._vtxpool.GetNumVertices(); })
       .def("writeObj", [](const submesh& submesh, const std::string& outpath) { return submeshWriteObj(submesh, outpath); })
+      .def("addQuad", [](submesh& submesh, fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3) { return submesh.addQuad(p0, p1, p2, p3); })
       .def(
           "addQuad",
           [](submesh& submesh, fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec4 c) { return submesh.addQuad(p0, p1, p2, p3, c); })
