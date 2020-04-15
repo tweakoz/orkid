@@ -271,7 +271,7 @@ void QCtxWidget::wheelEvent(QWheelEvent* qem) {
   uiev.mpBlindEventData = (void*)qem;
   static avg_filter<3> gScrollFilter;
 
-#if defined(_DARWIN) // trackpad gesture filter
+#if defined(ORK_CONFIG_DARWIN) // trackpad gesture filter
   int irawdelta = qem->delta();
   int idelta    = (2 * gScrollFilter.compute(irawdelta) / 9);
 #else

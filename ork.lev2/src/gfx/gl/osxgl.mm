@@ -508,4 +508,4 @@ float _currentDPI(){
 }}
 ///////////////////////////////////////////////////////////////////////////////
 
-#endif // #if defined( ORK_CONFIG_OPENGL ) && defined(IX)
+#endif // #if defined( ORK_CONFIG_OPENGL ) && defined(ORK_CONFIG_IX)

@@ -689,4 +689,4 @@ void ContextGL::_doEndLoad(void* ploadtok) {
 }} // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////
 
-#endif // #if defined( ORK_CONFIG_OPENGL ) && defined(IX)
+#endif // #if defined( ORK_CONFIG_OPENGL ) && defined(ORK_CONFIG_IX)

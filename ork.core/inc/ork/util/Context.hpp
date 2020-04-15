@@ -11,7 +11,7 @@
 
 #include <ork/util/Context.h>
 
-#if defined(_DARWIN)
+#if defined(ORK_CONFIG_DARWIN)
 #define USE_MACH_TLS_HACK
 #include <ork/kernel/mutex.h>
 #include <mach/mach_init.h>

@@ -16,7 +16,7 @@
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #endif
-#if defined(IX)
+#if defined(ORK_CONFIG_IX)
 #include <unistd.h>
 #include <sys/time.h>
 #include <sched.h>
@@ -128,7 +128,7 @@ float get_sync_time()
     //printf( "resolution<%g> tms_del<%zu> millis<%g>\n", resolution, tms_del, millis );
 	return float(millis*0.001);
 ////////////////////////////////
-#elif defined(IX)
+#elif defined(ORK_CONFIG_IX)
 ////////////////////////////////
     static struct timespec ts1st;
     static bool b1sttime = true;
@@ -220,7 +220,7 @@ bool PerfMarkerPop( PerfItem2& outmkr )
 }
 
 
-#if defined(__APPLE__) || defined(IX)
+#if defined(__APPLE__) || defined(ORK_CONFIG_IX)
 
 void msleep( int millisec )
 {
@@ -278,7 +278,7 @@ void usleep(int microsec)
 
 int OldSchool::GetNumCores()
 {
-#if defined(IX)
+#if defined(ORK_CONFIG_IX)
 	int numCPUs = sysconf(_SC_NPROCESSORS_ONLN);
 #else
 	static int numCPUs = -1;
@@ -297,7 +297,7 @@ int OldSchool::GetNumCores()
 
 S64 OldSchool::GetClockCycle(void)
 {
-#if defined(__APPLE__) || defined(IX)
+#if defined(__APPLE__) || defined(ORK_CONFIG_IX)
 	S64 output;
     U32 high_end, low_end;
     __asm__ __volatile__("     rdtsc" :"=a" (low_end), "=d" (high_end));
@@ -339,7 +339,7 @@ f32	OldSchool::GetLoResTime( void )
 	return float(millis*0.001);
 }
 ///////////////////////////////////////////////
-#elif defined( IX )
+#elif defined(ORK_CONFIG_IX)
 ///////////////////////////////////////////////
 f32	OldSchool::GetLoResTime( void )
 {

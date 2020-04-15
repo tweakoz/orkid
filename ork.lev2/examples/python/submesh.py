@@ -73,5 +73,6 @@ qsubmesh.addQuad(frus.nearCorner(2), # right
                  vec4(1.0,0.5,0.5,1))
 tsubmesh = meshutil.SubMesh()
 meshutil.triangulate(qsubmesh,tsubmesh)
+tsubmesh.igl_test()
 
 tsubmesh.writeObj("submesh.obj")

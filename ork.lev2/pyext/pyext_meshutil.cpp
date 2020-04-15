@@ -25,6 +25,7 @@ void pyinit_meshutil(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<meshutil::submesh>(meshutil, "SubMesh")
       .def(py::init<>())
+      .def("igl_test", [](meshutil::submesh& submesh) { return submesh.igl_test(); })
       .def("numPolys", [](const meshutil::submesh& submesh, int numsides = 0) -> int { return submesh.GetNumPolys(numsides); })
       .def("numVertices", [](const meshutil::submesh& submesh) -> int { return submesh._vtxpool.GetNumVertices(); })
       .def(

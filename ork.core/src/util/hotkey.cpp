@@ -222,7 +222,7 @@ bool OldSchool::IsKeyDepressed(int ch)
 	//if( false==rv )
 		//printf( "Isdepressed<%d> rv<%d> KEYS<%08x:%08x:%08x:%08x>\n", ch, int(rv), theKeys[0], theKeys[1], theKeys[2], theKeys[3] );
 	return rv;
-#elif defined( IX )
+#elif defined(ORK_CONFIG_IX)
 	static pthread_t kb_thread = 0;
 	if( 0 == kb_thread )
 	{
@@ -340,7 +340,7 @@ HotKey::HotKey( const char* keycode )
 		{
 			char ch = kcstr[0];
 
-			#if 0 //defined(IX)
+			#if 0 //defined(ORK_CONFIG_IX)
 			if( ch>='f' )
 			{
 				miKeyCode = 3;
@@ -642,7 +642,7 @@ bool HotKeyManager::IsDepressed( const HotKey& hkey )
 	{	int ikc = hkey.miKeyCode;
 		if( ikc>=0 )
 		{
-#if defined(IX)
+#if defined(ORK_CONFIG_IX)
 			return OldSchool::IsKeyDepressed(ikc);
 #elif defined(_XBOX)
 			return false;

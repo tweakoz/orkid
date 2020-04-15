@@ -17,7 +17,7 @@
 #include <pkg/ent/entity.h>
 #include <pkg/ent/scene.h>
 
-#if defined(IX)
+#if defined(ORK_CONFIG_IX)
 #include <X11/Xlib.h>
 #endif
 
@@ -61,7 +61,7 @@ void init(char** argp) {
 
   SetCurrentThreadName("MainThread");
 
-#if defined(IX)
+#if defined(ORK_CONFIG_IX)
 //	XInitThreads();
 #endif
 

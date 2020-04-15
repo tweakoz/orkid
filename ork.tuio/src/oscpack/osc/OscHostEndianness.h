@@ -42,7 +42,7 @@
 // you can define one of the above symbols from the command line
 // then you don't have to edit this file.
 
-#elif defined(__WIN32__) || defined(WIN32) || defined(IX)
+#elif defined(__WIN32__) || defined(WIN32) || defined(ORK_CONFIG_IX)
 
 // assume that __WIN32__ is only defined on little endian systems
 
@@ -66,4 +66,3 @@
 #endif
 
 #endif /* OSC_HOSTENDIANNESS_H */
-

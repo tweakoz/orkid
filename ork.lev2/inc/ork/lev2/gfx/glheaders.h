@@ -14,7 +14,7 @@
     #include <OpenGL/gl3.h>
     #include <OpenGL/glext.h>
 /////////////////////////////
-#elif defined( IX )
+#elif defined(ORK_CONFIG_IX)
 /////////////////////////////
   	#define GL_GLEXT_PROTOTYPES
     #include "glcorearb.h"

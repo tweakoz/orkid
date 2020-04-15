@@ -53,7 +53,7 @@ IF(${APPLE})
     link_directories(/usr/local/lib) # homebrew
 
 ELSE()
-    add_definitions(-DIX -DLINUX -DGCC)
+    add_definitions(-DORK_CONFIG_IX -DLINUX -DGCC)
     add_compile_options(-D_REENTRANT -DQT_NO_EXCEPTIONS -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE -DQT_GUI_LIB -DQT_CORE_LIB)
 ENDIF()
 

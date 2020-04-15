@@ -161,7 +161,7 @@ template <typename T> U32 Vector4<T>::GetVtxColorAsU32(void) const {
   U32 b = U32(z * T(255.0f));
   U32 a = U32(w * T(255.0f));
 
-  //#if defined(_DARWIN)||defined(IX)//GL
+  //#if defined(ORK_CONFIG_DARWIN)||defined(ORK_CONFIG_IX)//GL
   return U32((a << 24) | (b << 16) | (g << 8) | r);
   //#else // WIN32/DX
   //	return U32( (a<<24)|(r<<16)|(g<<8)|b );

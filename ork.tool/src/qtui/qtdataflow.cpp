@@ -615,7 +615,7 @@ ui::HandlerResult GraphVP::DoOnUiEvent(const ui::Event& EV) {
 
       int idelta = qem->delta();
 
-#if defined(_DARWIN)
+#if defined(ORK_CONFIG_DARWIN)
       const float kstep = bisshift ? (90.0f / 100.0f) : (97.0f / 100.0f); // trackpad
 #else
       const float kstep = 95.0f / 100.0f;

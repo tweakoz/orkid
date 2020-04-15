@@ -46,7 +46,7 @@ inline std::string format(int r, int g, int b, const char* formatstring, ...) {
   va_list args;
   va_start(args, formatstring);
   // buffer.vformat(formatstring, args);
-#if 1 // defined(IX)
+#if 1 // defined(ORK_CONFIG_IX)
   vsnprintf(&formatbuffer[0], sizeof(formatbuffer), formatstring, args);
 #else
   vsnprintf_s(&formatbuffer[0], sizeof(formatbuffer), sizeof(formatbuffer), formatstring, args);
@@ -64,7 +64,7 @@ inline std::string format(const fvec3& color, const char* formatstring, ...) {
   va_list args;
   va_start(args, formatstring);
   // buffer.vformat(formatstring, args);
-#if 1 // defined(IX)
+#if 1 // defined(ORK_CONFIG_IX)
   vsnprintf(&formatbuffer[0], sizeof(formatbuffer), formatstring, args);
 #else
   vsnprintf_s(&formatbuffer[0], sizeof(formatbuffer), sizeof(formatbuffer), formatstring, args);
@@ -87,7 +87,7 @@ inline void printf(const fvec3& color, const char* formatstring, ...) {
   va_list args;
   va_start(args, formatstring);
   // buffer.vformat(formatstring, args);
-#if 1 // defined(IX)
+#if 1 // defined(ORK_CONFIG_IX)
   vsnprintf(&formatbuffer[0], sizeof(formatbuffer), formatstring, args);
 #else
   vsnprintf_s(&formatbuffer[0], sizeof(formatbuffer), sizeof(formatbuffer), formatstring, args);

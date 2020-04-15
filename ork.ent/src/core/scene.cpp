@@ -61,7 +61,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SceneData, "Ent3dSceneData");
 #define DEBUG_PRINT(...)
 #endif
 
-#if defined(_DARWIN)
+#if defined(ORK_CONFIG_DARWIN)
 static dispatch_queue_t TheEditorQueue() {
   static dispatch_queue_t EQ = dispatch_queue_create("com.TweakoZ.OrkTool.EditorQueue", NULL);
   return EQ;
@@ -88,7 +88,7 @@ static bool gbQRUNMODE = false;
 void EnterRunMode() {
   OrkAssert(false == gbQRUNMODE);
   gbQRUNMODE = true;
-#if defined(_DARWIN) // TODO: need to replace GCD on platforms other than DARWIN
+#if defined(ORK_CONFIG_DARWIN) // TODO: need to replace GCD on platforms other than DARWIN
   dispatch_sync(
       EditOnlyQueue(),
       ^{
@@ -106,7 +106,7 @@ void LeaveRunMode() {
   gbQRUNMODE = false;
   ////////////////////////////////////////
   // printf( "EDITORQ LEAVING RUNMODE, STARTING EDITORQUEUE...\n" );
-#if defined(_DARWIN) // TODO: need to replace GCD on platforms other than DARWIN
+#if defined(ORK_CONFIG_DARWIN) // TODO: need to replace GCD on platforms other than DARWIN
   if (bRESUME)
     dispatch_resume(EditOnlyQueue());
   ////////////////////////////////////////

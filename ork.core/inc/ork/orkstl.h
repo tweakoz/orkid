@@ -37,7 +37,7 @@
 
 //////////////////////////////////////////////
 
-#if defined(IX)||defined(WII)||defined(WIN32)||defined(ORK_OSX)
+#if defined(ORK_CONFIG_IX)||defined(WII)||defined(WIN32)||defined(ORK_OSX)
 #define orkmap std::map
 #define orkmultimap std::multimap
 #define orklist std::list

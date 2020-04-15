@@ -29,7 +29,7 @@
 //#include <IL/ilut.h>
 //#include <pthread.h>
 
-#if defined(IX)
+#if defined(ORK_CONFIG_IX)
 #include <unistd.h>
 #endif
 

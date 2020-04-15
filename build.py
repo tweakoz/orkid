@@ -70,7 +70,7 @@ if _args["ez"]!=False:
 
 ork.dep.require(["bullet","openexr","oiio","fcollada","assimp",
                  "nvtt","lua","python","pybind11","glfw","ispctexc",
-                 "easyprof"])
+                 "easyprof","eigen","igl"])
 
 if ork.host.IsOsx:
    ork.dep.require(["moltenvk"])

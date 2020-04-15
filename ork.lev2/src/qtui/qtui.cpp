@@ -10,7 +10,7 @@
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/ui/viewport.h>
 
-#if defined(IX)
+#if defined(ORK_CONFIG_IX)
 #include <cxxabi.h>
 #endif
 
@@ -25,7 +25,7 @@ file::Path SaveFileRequester(const std::string& title, const std::string& ext) {
   return file::Path(fname);
 }
 
-#if defined(IX)
+#if defined(ORK_CONFIG_IX)
 std::string GccDemangle(const std::string& inname) {
   int status;
   const char* pmangle = abi::__cxa_demangle(inname.c_str(), 0, 0, &status);
@@ -36,7 +36,7 @@ std::string GccDemangle(const std::string& inname) {
 std::string TypeIdNameStrip(const char* name) {
   std::string strippedName(name);
 
-#if defined(IX)
+#if defined(ORK_CONFIG_IX)
   strippedName = GccDemangle(strippedName);
 #endif
 
@@ -54,7 +54,7 @@ std::string MethodIdNameStrip(const char* name) // mainly used for QT signals an
 
   std::string inname(name);
 
-#if defined(IX)
+#if defined(ORK_CONFIG_IX)
   inname = GccDemangle(inname);
 #endif
 

@@ -9,7 +9,7 @@
 
 #include <ork/lev2/input/inputdevice.h>
 
-#if defined(IX)
+#if defined(ORK_CONFIG_IX)
 #include "InputDeviceIX.h"
 #elif defined(ORK_OSX)
 #include "InputDeviceKeyboard.h"
@@ -191,7 +191,7 @@ InputDevice* InputManager::getInputDevice(size_t id) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void InputManager::discoverDevices() {
-#if defined(IX)
+#if defined(ORK_CONFIG_IX)
   InputDeviceIX* pref = new InputDeviceIX();
   InputManager::GetRef().addDevice(pref);
   InputManager::GetRef().mvpKeyboardInputDevice = pref;

@@ -12,7 +12,7 @@
 #include <ork/kernel/any.h>
 #include <ork/event/Event.h>
 
-#if defined(_DARWIN)
+#if defined(ORK_CONFIG_DARWIN)
 #include <dispatch/dispatch.h>
 dispatch_queue_t EditOnlyQueue();
 #endif
