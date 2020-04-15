@@ -32,6 +32,11 @@ void pyinit_meshutil(py::module& module_lev2) {
           [](const meshutil::submesh& submesh, const std::string& outpath) { return submeshWriteObj(submesh, outpath); })
       .def(
           "addQuad",
+          [](meshutil::submesh& submesh, fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec4 c) {
+            return submesh.addQuad(p0, p1, p2, p3, c);
+          })
+      .def(
+          "addQuad",
           [](meshutil::submesh& submesh,
              fvec3 p0,
              fvec3 p1,

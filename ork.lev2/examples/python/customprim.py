@@ -9,6 +9,7 @@
 import numpy, time
 from orkengine.core import *
 from orkengine.lev2 import *
+from ork.command import run
 from PIL import Image
 import _shaders
 
@@ -51,55 +52,31 @@ qsubmesh.addQuad(frus.nearCorner(3), # near
                  frus.nearCorner(2),
                  frus.nearCorner(1),
                  frus.nearCorner(0),
-                 vec2(0.0, 0.0),
-                 vec2(1.0, 0.0),
-                 vec2(1.0, 1.0),
-                 vec2(0.0, 1.0),
                  vec4(0.5,0.5,1.0,1))
 qsubmesh.addQuad(frus.farCorner(0), # far
                  frus.farCorner(1),
                  frus.farCorner(2),
                  frus.farCorner(3),
-                 vec2(0.0, 0.0),
-                 vec2(1.0, 0.0),
-                 vec2(1.0, 1.0),
-                 vec2(0.0, 1.0),
                  vec4(0.5,0.5,0.0,1))
 qsubmesh.addQuad(frus.nearCorner(1), # top
                  frus.farCorner(1),
                  frus.farCorner(0),
                  frus.nearCorner(0),
-                 vec2(0.0, 0.0),
-                 vec2(1.0, 0.0),
-                 vec2(1.0, 1.0),
-                 vec2(0.0, 1.0),
                  vec4(0.5,1.0,0.5,1))
 qsubmesh.addQuad(frus.nearCorner(3), # bottom
                  frus.farCorner(3),
                  frus.farCorner(2),
                  frus.nearCorner(2),
-                 vec2(0.0, 0.0),
-                 vec2(1.0, 0.0),
-                 vec2(1.0, 1.0),
-                 vec2(0.0, 1.0),
                  vec4(0.5,0.0,0.5,1))
 qsubmesh.addQuad(frus.nearCorner(0), # left
                  frus.farCorner(0),
                  frus.farCorner(3),
                  frus.nearCorner(3),
-                 vec2(0.0, 0.0),
-                 vec2(1.0, 0.0),
-                 vec2(1.0, 1.0),
-                 vec2(0.0, 1.0),
                  vec4(0.0,0.5,0.5,1))
 qsubmesh.addQuad(frus.nearCorner(2), # right
                  frus.farCorner(2),
                  frus.farCorner(1),
                  frus.nearCorner(1),
-                 vec2(0.0, 0.0),
-                 vec2(1.0, 0.0),
-                 vec2(1.0, 1.0),
-                 vec2(0.0, 1.0),
                  vec4(1.0,0.5,0.5,1))
 tsubmesh = meshutil.SubMesh()
 meshutil.triangulate(qsubmesh,tsubmesh)
@@ -122,7 +99,7 @@ lev2apppoll() # process opq
 ###################################
 
 pmatrix = ctx.perspective(45,WIDTH/HEIGHT,0.01,100.0)
-vmatrix = ctx.lookAt(vec3(-5,3,3),
+vmatrix = ctx.lookAt(vec3(-5,3,1),
                      vec3(0,0,0),
                      vec3(0,1,0))
 
@@ -184,3 +161,4 @@ img = Image.fromarray(as_np, 'RGBA')
 img = img.resize((WIDTH,HEIGHT), Image.ANTIALIAS)
 flipped = img.transpose(Image.FLIP_TOP_BOTTOM)
 flipped.save("customprim.png")
+run(["iv","-F","customprim.png"]) # view with openimageio viewer
