@@ -19,6 +19,7 @@ hotkeys.ork
 *.swatch*
 *.moc
 *.ma
+*.ipynb
 .idea
 cmake-build*
 mocs
