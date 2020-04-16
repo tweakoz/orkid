@@ -9,26 +9,41 @@
 #include <ork/math/plane.h>
 #include <ork/lev2/gfx/meshutil/submesh.h>
 #include <ork/lev2/gfx/meshutil/igl.h>
+#include <iostream>
+
+#include <igl/arap.h>
+#include <igl/barycenter.h>
+#include <igl/boundary_facets.h>
+#include <igl/boundary_loop.h>
+//#include <igl/copyleft/tetgen/tetrahedralize.h>
+//#include <igl/copyleft/tetgen/cdt.h>
+#include <igl/copyleft/cgal/remesh_self_intersections.h> // GNU GPL (todo move to external executable?)
 #include <igl/cotmatrix.h>
-#include <igl/massmatrix.h>
+#include <igl/doublearea.h>
+#include <igl/embree/reorient_facets_raycast.h>
+#include <igl/embree/ambient_occlusion.h>
+#include <igl/flipped_triangles.h>
+#include <igl/gaussian_curvature.h>
+#include <igl/harmonic.h>
 #include <igl/invert_diag.h>
+#include <igl/is_irregular_vertex.h>
+#include <igl/lscm.h>
+#include <igl/MappingEnergyType.h>
+#include <igl/map_vertices_to_circle.h>
+#include <igl/massmatrix.h>
+#include <igl/orientable_patches.h>
+#include <igl/PI.h>
 #include <igl/per_vertex_normals.h>
 #include <igl/per_face_normals.h>
 #include <igl/per_corner_normals.h>
-#include <igl/gaussian_curvature.h>
 #include <igl/principal_curvature.h>
-#include <igl/massmatrix.h>
-#include <igl/boundary_loop.h>
-#include <igl/harmonic.h>
-#include <igl/map_vertices_to_circle.h>
-#include <igl/lscm.h>
-#include <igl/is_irregular_vertex.h>
-#include <igl/embree/reorient_facets_raycast.h>
-#include <igl/embree/ambient_occlusion.h>
 #include <igl/randperm.h>
-#include <igl/orientable_patches.h>
+#include <igl/remove_unreferenced.h>
+#include <igl/scaf.h>
 #include <igl/slice.h>
-#include <iostream>
+#include <igl/topological_hole_fill.h>
+#include <igl/unique_simplices.h>
+#include <igl/winding_number.h>
 
 namespace ork::meshutil {
 //////////////////////////////////////////////////////////////////////////////
@@ -325,7 +340,7 @@ Eigen::MatrixXd IglMesh::parameterizeHarmonic() const {
   return harmonic_uvs;
 }
 //////////////////////////////////////////////////////////////////////////////
-Eigen::MatrixXd IglMesh::parameterizeLCSM() const {
+Eigen::MatrixXd IglMesh::parameterizeLCSM() {
   Eigen::MatrixXd lcsm_uvs;
   // Fix two points on the boundary
   Eigen::VectorXi bnd, b(2, 1);
@@ -377,6 +392,43 @@ size_t IglMesh::countIrregularVertices() const {
   return irregular_vertex_count;
 }
 //////////////////////////////////////////////////////////////////////////////
+iglmesh_ptr_t IglMesh::cleaned() const {
+  auto rval = std::make_shared<IglMesh>(_verts, _faces);
+  using namespace Eigen;
+  using namespace igl;
+  // using namespace igl::copyleft::tetgen;
+  using namespace igl::copyleft::cgal;
+
+  auto V = _verts;
+  auto F = _faces;
+  MatrixXd CV; // clean output verts
+  MatrixXi CF; // clean output faces
+  VectorXi IM;
+  MatrixXi _1;
+  VectorXi _2;
+
+  remesh_self_intersections(V, F, {false, false, false}, CV, CF, _1, _2, IM);
+  std::for_each(CF.data(), CF.data() + CF.size(), [&IM](int& a) { a = IM(a); });
+  // validate_IM(V,CV,IM);
+  std::cout << "clean: remove_unreferenced" << std::endl;
+  {
+    MatrixXi oldCF = CF;
+    unique_simplices(oldCF, CF);
+  }
+  MatrixXd oldCV = CV;
+  MatrixXi oldCF = CF;
+  VectorXi nIM;
+  remove_unreferenced(oldCV, oldCF, CV, CF, nIM);
+  std::for_each(IM.data(), IM.data() + IM.size(), [&nIM](int& a) { a = a >= 0 ? nIM(a) : a; });
+
+  rval->_verts        = CV;
+  rval->_faces        = CF;
+  rval->_numvertices  = CV.rows();
+  rval->_numfaces     = CF.rows();
+  rval->_sidesPerFace = _sidesPerFace;
+  return rval;
+}
+//////////////////////////////////////////////////////////////////////////////
 iglmesh_ptr_t IglMesh::reOriented() const {
   auto rval = std::make_shared<IglMesh>(_verts, _faces);
   std::vector<Eigen::VectorXi> C(2);
@@ -408,6 +460,73 @@ iglmesh_ptr_t IglMesh::reOriented() const {
   }
   constexpr int selector = 1; // 0==patchwise, 1==facetwise
   rval->_faces           = FF[selector];
+  return rval;
+}
+//////////////////////////////////////////////////////////////////////////////
+iglmesh_ptr_t IglMesh::parameterizedSCAF(int numiters, double scale, double bias) const {
+
+  Eigen::MatrixXd V = _verts;
+  Eigen::MatrixXi F = _faces;
+  igl::SCAFData scaf_data;
+
+  Eigen::MatrixXd bnd_uv, uv_init;
+
+  Eigen::VectorXd M;
+  igl::doublearea(V, F, M);
+  std::vector<std::vector<int>> all_bnds;
+  igl::boundary_loop(F, all_bnds);
+
+  printf("numbnds<%zu>\n", all_bnds.size());
+
+  // Heuristic primary boundary choice: longest
+  auto primary_bnd = std::max_element(
+      all_bnds.begin(), all_bnds.end(), [](const std::vector<int>& a, const std::vector<int>& b) { return a.size() < b.size(); });
+
+  OrkAssert(primary_bnd != all_bnds.end()); // see https://github.com/libigl/libigl/issues/873
+
+  Eigen::VectorXi bnd = Eigen::Map<Eigen::VectorXi>(primary_bnd->data(), primary_bnd->size());
+
+  igl::map_vertices_to_circle(V, bnd, bnd_uv);
+  bnd_uv *= sqrt(M.sum() / (2 * igl::PI));
+  if (all_bnds.size() == 1) {
+    if (bnd.rows() == V.rows()) // case: all vertex on boundary
+    {
+      uv_init.resize(V.rows(), 2);
+      for (int i = 0; i < bnd.rows(); i++)
+        uv_init.row(bnd(i)) = bnd_uv.row(i);
+    } else {
+      igl::harmonic(V, F, bnd, bnd_uv, 1, uv_init);
+      if (igl::flipped_triangles(uv_init, F).size() != 0)
+        igl::harmonic(F, bnd, bnd_uv, 1, uv_init); // fallback uniform laplacian
+    }
+  } else {
+    // if there is a hole, fill it and erase additional vertices.
+    all_bnds.erase(primary_bnd);
+    Eigen::MatrixXi F_filled;
+    igl::topological_hole_fill(F, bnd, all_bnds, F_filled);
+    igl::harmonic(F_filled, bnd, bnd_uv, 1, uv_init);
+    uv_init.conservativeResize(V.rows(), 2);
+  }
+
+  Eigen::VectorXi b;
+  Eigen::MatrixXd bc;
+  igl::scaf_precompute(V, F, uv_init, scaf_data, igl::MappingEnergyType::SYMMETRIC_DIRICHLET, b, bc, 0);
+
+  //_verts = V;
+  //_faces = F;
+
+  igl::scaf_solve(scaf_data, numiters);
+
+  auto rval                           = std::make_shared<IglMesh>(V, F);
+  double uv_scale                     = 0.2 * 0.5 * scale;
+  double uv_bias                      = 0.5 + bias;
+  Eigen::MatrixXd scaledandbiased_uvs = uv_scale * scaf_data.w_uv.topRows(V.rows());
+  size_t num_uvs                      = scaledandbiased_uvs.rows();
+  for (size_t i = 0; i < num_uvs; i++) {
+    scaledandbiased_uvs(i, 0) = scaledandbiased_uvs(i, 0) + uv_bias; // U
+    scaledandbiased_uvs(i, 1) = scaledandbiased_uvs(i, 1) + uv_bias; // V
+  }
+  rval->_uvs = scaledandbiased_uvs;
   return rval;
 }
 //////////////////////////////////////////////////////////////////////////////

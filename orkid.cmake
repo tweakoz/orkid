@@ -90,6 +90,35 @@ set( ORK_LEV2_INCD ${ORKROOT}/ork.lev2/inc )
 set( ORK_ECS_INCD ${ORKROOT}/ork.ecs/inc )
 
 ################################################################################
+# IGL (its a beast, needs a cmake update)
+################################################################################
+list(APPEND CMAKE_MODULE_PATH "${LIBIGL_INCLUDE_DIR}/../cmake")
+option(LIBIGL_USE_STATIC_LIBRARY "Use libigl as static library" ON)
+#option(LIBIGL_WITH_ANTTWEAKBAR      "Use AntTweakBar"    OFF)
+option(LIBIGL_WITH_CGAL             "Use CGAL"           ON)
+option(LIBIGL_WITH_COMISO           "Use CoMiso"         ON)
+option(LIBIGL_WITH_CORK             "Use Cork"           ON)
+option(LIBIGL_WITH_EMBREE           "Use Embree"         ON)
+#option(LIBIGL_WITH_LIM              "Use LIM"            OFF)
+#option(LIBIGL_WITH_MATLAB           "Use Matlab"         OFF)
+#option(LIBIGL_WITH_MOSEK            "Use MOSEK"          OFF)
+#option(LIBIGL_WITH_OPENGL           "Use OpenGL"         ON)
+#option(LIBIGL_WITH_OPENGL_GLFW      "Use GLFW"           ON)
+#option(LIBIGL_WITH_PNG              "Use PNG"            OFF)
+#option(LIBIGL_WITH_PYTHON           "Use Python"         OFF)
+option(LIBIGL_WITH_TETGEN           "Use Tetgen"         ON)
+option(LIBIGL_WITH_TRIANGLE         "Use Triangle"       ON)
+#option(LIBIGL_WITH_VIEWER           "Use OpenGL viewer"  ON)
+#option(LIBIGL_WITH_XML              "Use XML"            OFF)
+find_package(LIBIGL REQUIRED)
+#include($ENV{OBT_BUILDS}/igl/cmake/libigl.cmake )
+
+link_directories($ENV{OBT_BUILDS}/igl/.build)
+include_directories (AFTER $ENV{OBT_STAGE}/include/eigen3 )
+include_directories (AFTER $ENV{OBT_BUILDS}/igl/include )
+include_directories (AFTER $ENV{OBT_BUILDS}/igl/external/triangle )
+
+################################################################################
 # QT5
 ################################################################################
 

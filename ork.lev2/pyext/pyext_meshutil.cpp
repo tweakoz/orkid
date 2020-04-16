@@ -82,6 +82,11 @@ void pyinit_meshutil(py::module& module_lev2) {
             iglm->_uvs = inp;
           })
       .def(
+          "parameterizedSCAF",
+          [](iglmesh_ptr_t inpmesh, int numiters, double scale, double bias) -> iglmesh_ptr_t { //
+            return inpmesh->parameterizedSCAF(numiters, scale, bias);
+          })
+      .def(
           "toSubMesh",
           [](iglmesh_constptr_t inpmesh) -> submesh_ptr_t { //
             return inpmesh->toSubMesh();
@@ -108,7 +113,7 @@ void pyinit_meshutil(py::module& module_lev2) {
           })
       .def(
           "parameterizeLCSM",
-          [](iglmesh_constptr_t inpmesh) -> Eigen::MatrixXd { //
+          [](iglmesh_ptr_t inpmesh) -> Eigen::MatrixXd { //
             return inpmesh->parameterizeLCSM();
           })
       .def(
@@ -130,6 +135,11 @@ void pyinit_meshutil(py::module& module_lev2) {
           "reOriented",
           [](iglmesh_constptr_t inpmesh) -> iglmesh_ptr_t { //
             return inpmesh->reOriented();
+          })
+      .def(
+          "cleaned",
+          [](iglmesh_constptr_t inpmesh) -> iglmesh_ptr_t { //
+            return inpmesh->cleaned();
           })
       .def(
           "ambientOcclusion",

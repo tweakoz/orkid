@@ -1,28 +1,8 @@
 project (orklev2 CXX)
 include (GenerateExportHeader)
 
+
 enableQt5()
-find_package (Eigen3 3.3 REQUIRED NO_MODULE)
-#option(LIBIGL_USE_STATIC_LIBRARY "Use libigl as static library" ON)
-#option(LIBIGL_WITH_ANTTWEAKBAR      "Use AntTweakBar"    OFF)
-#option(LIBIGL_WITH_CGAL             "Use CGAL"           OFF)
-#option(LIBIGL_WITH_COMISO           "Use CoMiso"         OFF)
-#option(LIBIGL_WITH_CORK             "Use Cork"           OFF)
-#option(LIBIGL_WITH_EMBREE           "Use Embree"         OFF)
-#option(LIBIGL_WITH_LIM              "Use LIM"            OFF)
-#option(LIBIGL_WITH_MATLAB           "Use Matlab"         OFF)
-#option(LIBIGL_WITH_MOSEK            "Use MOSEK"          OFF)
-#option(LIBIGL_WITH_OPENGL           "Use OpenGL"         ON)
-#option(LIBIGL_WITH_OPENGL_GLFW      "Use GLFW"           ON)
-#option(LIBIGL_WITH_PNG              "Use PNG"            OFF)
-#option(LIBIGL_WITH_PYTHON           "Use Python"         OFF)
-#option(LIBIGL_WITH_TETGEN           "Use Tetgen"         OFF)
-#option(LIBIGL_WITH_TRIANGLE         "Use Triangle"       OFF)
-#option(LIBIGL_WITH_VIEWER           "Use OpenGL viewer"  ON)
-#option(LIBIGL_WITH_XML              "Use XML"            OFF)
-#find_package(LIBIGL REQUIRED)
-#list(APPEND CMAKE_MODULE_PATH "${LIBIGL_INCLUDE_DIR}/../cmake")
-#include($ENV{OBT_BUILDS}/igl/cmake/libigl.cmake )
 
 ###################################
 
@@ -87,9 +67,9 @@ IF(PROFILER)
   list(APPEND libs easy_profiler)
 ENDIF()
 
-list(APPEND libs Eigen3::Eigen embree3)
+list(APPEND libs embree3 mpfr igl )
 
-target_link_libraries(ork_lev2 ${libs})
+target_link_libraries(ork_lev2 ${libs} triangle)
 
 target_include_directories (ork_lev2 PRIVATE $ENV{OBT_STAGE}/include )
 target_include_directories (ork_lev2 PRIVATE ${INCD} )
@@ -97,7 +77,6 @@ target_include_directories (ork_lev2 PRIVATE ${COREINCD} )
 target_include_directories (ork_lev2 PRIVATE ${TUIOINCD} )
 target_include_directories (ork_lev2 PRIVATE $ENV{QTDIR}/include/QtGui/$ENV{QTVER})
 #target_include_directories (ork_lev2 PRIVATE $ENV{OBT_BUILDS}/igl/external/glad/include )
-target_include_directories (ork_lev2 PRIVATE $ENV{OBT_BUILDS}/igl/include )
 
 ###################################
 

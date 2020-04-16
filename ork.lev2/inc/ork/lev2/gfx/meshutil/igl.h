@@ -15,6 +15,7 @@ namespace ork::meshutil {
 
 
   struct IglMesh {
+    IglMesh() {}
     IglMesh(const submesh& inp_submesh, int numsides);
     IglMesh(const Eigen::MatrixXd& verts, const Eigen::MatrixXi& faces);
     Eigen::MatrixXd computeFaceNormals() const;
@@ -23,19 +24,20 @@ namespace ork::meshutil {
     Eigen::VectorXd computeGaussianCurvature() const;
     iglprinciplecurvature_ptr_t computePrincipleCurvature() const;
     Eigen::MatrixXd parameterizeHarmonic() const;
-    Eigen::MatrixXd parameterizeLCSM() const;
+    Eigen::MatrixXd parameterizeLCSM();
+    iglmesh_ptr_t parameterizedSCAF(int numiters, double scale,double bias) const;
     fvec4 computeAreaStatistics() const;
     fvec4 computeAngleStatistics() const;
     size_t countIrregularVertices() const;
     double averageEdgeLength() const;
-
+    iglmesh_ptr_t cleaned() const;
     iglmesh_ptr_t reOriented() const;
     Eigen::VectorXd ambientOcclusion(int numsamples) const;
-
-    int _numvertices;
     submesh_ptr_t toSubMesh() const;
-    int _numfaces;
-    int _sidesPerFace;
+
+    int _numvertices = 0;
+    int _numfaces = 0;
+    int _sidesPerFace = 0;
     Eigen::MatrixXd _verts;
     Eigen::MatrixXi _faces;
     Eigen::MatrixXd _normals;

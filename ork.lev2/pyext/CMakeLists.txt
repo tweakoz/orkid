@@ -5,6 +5,7 @@ include (GenerateExportHeader)
 set( CMAKE_MODULE_PATH $ENV{ORKID_WORKSPACE_DIR}:$ENV{OBT_STAGE}/share/cmake/pybind11 )
 
 find_package (Python COMPONENTS Interpreter Development)
+#find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 FIND_PACKAGE( pybind11 REQUIRED )
 INCLUDE_DIRECTORIES( ${PYTHON_INCLUDE_DIRS} ${PYBIND11_INCLUDE_DIRS} )
 
@@ -38,6 +39,9 @@ IF( APPLE )
   )
   target_include_directories (_lev2 PRIVATE /usr/local/include)
 ENDIF()
+
+# igl crap again..
+target_include_directories (_lev2 PRIVATE $ENV{OBT_STAGE}/include/eigen3 )
 
 ###################################
 

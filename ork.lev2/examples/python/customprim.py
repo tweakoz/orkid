@@ -71,17 +71,24 @@ qsubmesh.addQuad(frus.nearCorner(2), # right
                  frus.farCorner(2),
                  frus.farCorner(1),
                  frus.nearCorner(1))
+#qsubmesh.addQuad(vec3(-3,0,-3), # cut
+#                 vec3(+3,0,-3),
+#                 vec3(+3,0,+3),
+#                 vec3(-3,0,+3))
 ###################################
 # igl mesh processing
 ###################################
 iglmesh = qsubmesh.triangulate().toIglMesh(3)
-normals = iglmesh.faceNormals()
+iglmesh = iglmesh.cleaned() # clean up the mesh (changes topology)
+iglmesh = iglmesh.parameterizedSCAF(10,1,0) # autogen UV's (changes topology)
 ao = iglmesh.ambientOcclusion(500)
 curvature = iglmesh.principleCurvature()
+normals = iglmesh.faceNormals()
 iglmesh.normals = normals
 iglmesh.binormals = curvature.k1
 iglmesh.tangents = curvature.k2
 iglmesh.colors = (normals*0.5+0.5) # normals to colors
+#iglmesh.uvs = iglmesh.parameterizeHarmonic()*0.5+0.5
 
 #iglmesh.colors = ao # per vertex ambient occlusion
 #iglmesh.colors = curvature.k2 # surface curvature (k1, or k2)
@@ -95,6 +102,10 @@ iglmesh.colors = (normals*0.5+0.5) # normals to colors
 #param = iglmesh.parameterizeLCSM()
 #print(param)
 
+#print(iglmesh.faces)
+#print(cleaned.faces)
+
+#assert(False)
 ###################################
 # generate primitive
 ###################################

@@ -17,9 +17,7 @@ file(GLOB_RECURSE src_ent ${SRCD}/*.cpp)
 set( orksrcs ${src_event} ${src_luaintf} ${src_ent} )
 
 ###################################
-
 add_library (ork_ecs SHARED ${orksrcs})
-
 ###################################
 
 set( libs ork_core ork_lev2 ork_tuio )
