@@ -66,17 +66,24 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
   OutMesh.name = "submesh";
 
   orkvector<int> triangles;
+  orkvector<int> quads;
   inpsubmesh.FindNSidedPolys(triangles, 3);
+  inpsubmesh.FindNSidedPolys(quads, 4);
   for (int i = 0; i < triangles.size(); i++) {
     objpoly outpoly;
-
-    int igti = triangles[i];
-
-    // int iti = TrianglePolyIndices[igti];
+    int igti          = triangles[i];
     const poly& intri = inpsubmesh.RefPoly(igti);
-    int inumsides     = intri.GetNumSides();
-    // OrkAssert( inumsides<3 );
-    for (int iv = 0; iv < inumsides; iv++) {
+    for (int iv = 0; iv < 3; iv++) {
+      int idx = intri.GetVertexID(iv);
+      outpoly.mvtxindices.push_back(idx);
+    }
+    OutMesh.mpolys.push_back(outpoly);
+  }
+  for (int i = 0; i < quads.size(); i++) {
+    objpoly outpoly;
+    int igti          = quads[i];
+    const poly& intri = inpsubmesh.RefPoly(igti);
+    for (int iv = 0; iv < 4; iv++) {
       int idx = intri.GetVertexID(iv);
       outpoly.mvtxindices.push_back(idx);
     }
@@ -84,7 +91,6 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
   }
   ObjMeshPool.push_back(OutMesh);
   ObjMaterialPool[OutMesh.matname] = OutMaterial;
-  ///////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
   // output Material Pool
   //////////////////////////////////////////////////////////////////////////////

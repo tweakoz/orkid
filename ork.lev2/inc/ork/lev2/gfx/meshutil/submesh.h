@@ -37,13 +37,21 @@ struct vertex;
 struct vertexpool;
 struct poly;
 struct IglMesh;
+struct submesh;
 
 using edge_ptr_t       = std::shared_ptr<edge>;
-using edge_constptr_t  = std::shared_ptr<const edge>;
 using vertex_ptr_t     = std::shared_ptr<vertex>;
 using vertexpool_ptr_t = std::shared_ptr<vertexpool>;
 using poly_ptr_t       = std::shared_ptr<poly>;
 using iglmesh_ptr_t    = std::shared_ptr<IglMesh>;
+using submesh_ptr_t    = std::shared_ptr<submesh>;
+
+using edge_constptr_t       = std::shared_ptr<const edge>;
+using vertex_constptr_t     = std::shared_ptr<const vertex>;
+using vertexpool_constptr_t = std::shared_ptr<const vertexpool>;
+using poly_constptr_t       = std::shared_ptr<const poly>;
+using iglmesh_constptr_t    = std::shared_ptr<const IglMesh>;
+using submesh_constptr_t    = std::shared_ptr<const submesh>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -227,8 +235,6 @@ struct IndexTestContext {
   orkset<int> CornerIndices;
 };
 
-struct submesh;
-
 struct annopolylut {
   orkmap<U64, const AnnoMap*> mAnnoMap;
   virtual U64 HashItem(const submesh& tmesh, const poly& item) const = 0;
@@ -355,7 +361,7 @@ struct submesh {
 
   /////////////////////////////////////////////////////////////////////////
 
-  iglmesh_ptr_t toIglMesh() const;
+  iglmesh_ptr_t toIglMesh(int numsides) const;
   void igl_test();
 
   /////////////////////////////////////////////////////////////////////////

@@ -87,7 +87,7 @@ IF(PROFILER)
   list(APPEND libs easy_profiler)
 ENDIF()
 
-list(APPEND libs Eigen3::Eigen)
+list(APPEND libs Eigen3::Eigen embree3)
 
 target_link_libraries(ork_lev2 ${libs})
 

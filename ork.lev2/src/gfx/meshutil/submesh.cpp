@@ -395,20 +395,10 @@ edge_ptr_t submesh::MergeEdge(const edge& ed, int ipolyindex) {
 
 void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec4 c) {
   vertex muvtx[4];
-  fvec3 p0p1 = (p1 - p0).Normal();
-  fvec3 p0p2 = (p2 - p0).Normal();
-  fvec3 nrm  = p0p1.Cross(p0p2);
-  // todo compute tangent space from uv gradients
-  fvec3 bin = p0p1;
-  auto uv0  = fvec2(0.0f, 0.0f);
-  auto uv1  = fvec2(1.0f, 0.0f);
-  auto uv2  = fvec2(1.0f, 1.0f);
-  auto uv3  = fvec2(0.0f, 1.0f);
-  muvtx[0].set(p0, nrm, bin, uv0, c);
-  muvtx[1].set(p1, nrm, bin, uv1, c);
-  muvtx[2].set(p2, nrm, bin, uv2, c);
-  muvtx[3].set(p3, nrm, bin, uv3, c);
-
+  muvtx[0].set(p0, fvec3(), fvec3(), fvec2(), c);
+  muvtx[1].set(p1, fvec3(), fvec3(), fvec2(), c);
+  muvtx[2].set(p2, fvec3(), fvec3(), fvec2(), c);
+  muvtx[3].set(p3, fvec3(), fvec3(), fvec2(), c);
   auto v0 = newMergeVertex(muvtx[0]);
   auto v1 = newMergeVertex(muvtx[1]);
   auto v2 = newMergeVertex(muvtx[2]);

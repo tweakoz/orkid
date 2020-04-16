@@ -272,6 +272,11 @@ void pyinit_math(py::module& module_core) {
   auto frustum_type =
       py::class_<Frustum, frustum_ptr_t>(module_core, "Frustum")
           .def(py::init<>())
+          .def(py::init([](const fmtx4& VMatrix, const fmtx4& PMatrix) {
+            auto rval = std::make_shared<Frustum>();
+            rval->Set(VMatrix, PMatrix);
+            return rval;
+          }))
           .def("set", [](Frustum& frustum, const fmtx4& VMatrix, const fmtx4& PMatrix) { frustum.Set(VMatrix, PMatrix); })
           .def("set", [](Frustum& frustum, const fmtx4& IVPMatrix) { frustum.Set(IVPMatrix); })
           .def(
