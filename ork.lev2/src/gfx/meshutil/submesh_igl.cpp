@@ -53,14 +53,25 @@ IglMesh::IglMesh(const submesh& inp_submesh, int numsides)
     , _numfaces(inp_submesh.GetNumPolys(numsides))
     , _verts(_numvertices, 3)
     , _faces(_numfaces, numsides) {
-  _verts = Eigen::MatrixXd(_numvertices, 3);
-  _faces = Eigen::MatrixXi(_numfaces, _sidesPerFace);
+  _verts     = Eigen::MatrixXd(_numvertices, 3);
+  _normals   = Eigen::MatrixXd(_numvertices, 3);
+  _binormals = Eigen::MatrixXd(_numvertices, 3);
+  _tangents  = Eigen::MatrixXd(_numvertices, 3);
+  _uvs       = Eigen::MatrixXd(_numvertices, 2);
+  _colors    = Eigen::MatrixXd(_numvertices, 4);
+  _faces     = Eigen::MatrixXi(_numfaces, _sidesPerFace);
   ///////////////////////////////////////////////
   // fill in vertices
   ///////////////////////////////////////////////
   for (int v = 0; v < _numvertices; v++) {
-    auto pos = inp_submesh._vtxpool.GetVertex(v).mPos;
-    _verts.row(v) << pos.x, pos.y, pos.z;
+    const auto& inpvtx = inp_submesh._vtxpool.GetVertex(v);
+    const auto& inpuv  = inpvtx.mUV[0];
+    _verts.row(v) << inpvtx.mPos.x, inpvtx.mPos.y, inpvtx.mPos.z;
+    _normals.row(v) << inpvtx.mNrm.x, inpvtx.mNrm.y, inpvtx.mNrm.z;
+    _binormals.row(v) << inpuv.mMapBiNormal.x, inpuv.mMapBiNormal.y, inpuv.mMapBiNormal.z;
+    _tangents.row(v) << inpuv.mMapTangent.x, inpuv.mMapTangent.y, inpuv.mMapTangent.z;
+    _uvs.row(v) << inpuv.mMapTexCoord.x, inpuv.mMapTexCoord.y;
+    _colors.row(v) << inpvtx.mCol[0].x, inpvtx.mCol[0].y, inpvtx.mCol[0].z, inpvtx.mCol[0].w;
   }
   ///////////////////////////////////////////////
   // fill in faces
@@ -218,24 +229,17 @@ submesh_ptr_t IglMesh::toSubMesh() const {
   for (int f = 0; f < numFaces; f++) {
     switch (sidesPerFace) {
       case 3: {
-        auto v0 = generateVertex(f, 0);
-        auto v1 = generateVertex(f, 1);
-        auto v2 = generateVertex(f, 2);
-        auto o0 = subm->newMergeVertex(v0);
-        auto o1 = subm->newMergeVertex(v1);
-        auto o2 = subm->newMergeVertex(v2);
+        auto o0 = subm->newMergeVertex(generateVertex(f, 0));
+        auto o1 = subm->newMergeVertex(generateVertex(f, 1));
+        auto o2 = subm->newMergeVertex(generateVertex(f, 2));
         subm->MergePoly(poly(o0, o1, o2));
         break;
       }
       case 4: {
-        auto v0 = generateVertex(f, 0);
-        auto v1 = generateVertex(f, 1);
-        auto v2 = generateVertex(f, 2);
-        auto v3 = generateVertex(f, 3);
-        auto o0 = subm->newMergeVertex(v0);
-        auto o1 = subm->newMergeVertex(v1);
-        auto o2 = subm->newMergeVertex(v2);
-        auto o3 = subm->newMergeVertex(v3);
+        auto o0 = subm->newMergeVertex(generateVertex(f, 0));
+        auto o1 = subm->newMergeVertex(generateVertex(f, 1));
+        auto o2 = subm->newMergeVertex(generateVertex(f, 2));
+        auto o3 = subm->newMergeVertex(generateVertex(f, 3));
         subm->MergePoly(poly(o0, o1, o2, o3));
         break;
       }

@@ -82,8 +82,19 @@ iglmesh.normals = normals
 iglmesh.binormals = curvature.k1
 iglmesh.tangents = curvature.k2
 iglmesh.colors = (normals*0.5+0.5) # normals to colors
+
 #iglmesh.colors = ao # per vertex ambient occlusion
 #iglmesh.colors = curvature.k2 # surface curvature (k1, or k2)
+
+###################################
+# todo figure out why LCSM broken
+###################################
+#iglmesh = iglmesh.toSubMesh().toIglMesh(3)
+#print(iglmesh.vertices)
+#print(iglmesh.faces)
+#param = iglmesh.parameterizeLCSM()
+#print(param)
+
 ###################################
 # generate primitive
 ###################################
