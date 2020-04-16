@@ -71,24 +71,28 @@ qsubmesh.addQuad(frus.nearCorner(2), # right
                  frus.farCorner(2),
                  frus.farCorner(1),
                  frus.nearCorner(1))
-tsubmesh = qsubmesh.triangulate()
-tiglmesh = tsubmesh.toIglMesh(3)
-n = tiglmesh.faceNormals()
-ao = tiglmesh.ambientOcclusion(500)
-curv = tiglmesh.principleCurvature()
-tiglmesh.normals = n
-tiglmesh.binormals = curv.k1
-tiglmesh.tangents = curv.k2
-tiglmesh.colors = (n*0.5+0.5) # normals to colors
-#tiglmesh.colors = ao # per vertex ambient occlusion
-#tiglmesh.colors = curv.k2 # surface curvature (k1, or k2)
-tsubmesh = tiglmesh.toSubMesh()
+###################################
+# igl mesh processing
+###################################
+iglmesh = qsubmesh.triangulate().toIglMesh(3)
+normals = iglmesh.faceNormals()
+ao = iglmesh.ambientOcclusion(500)
+curvature = iglmesh.principleCurvature()
+iglmesh.normals = normals
+iglmesh.binormals = curvature.k1
+iglmesh.tangents = curvature.k2
+iglmesh.colors = (normals*0.5+0.5) # normals to colors
+#iglmesh.colors = ao # per vertex ambient occlusion
+#iglmesh.colors = curvature.k2 # surface curvature (k1, or k2)
+###################################
+# generate primitive
+###################################
+tsubmesh = iglmesh.toSubMesh()
 tsubmesh.writeWavefrontObj("customprim.obj")
 prim = meshutil.RigidPrimitive(tsubmesh,ctx)
 ###################################
 # rtg setup
 ###################################
-
 rtg = ctx.defaultRTG()
 ctx.resize(AAWIDTH,AAHEIGHT)
 capbuf = CaptureBuffer()
