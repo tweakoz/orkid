@@ -38,6 +38,11 @@ namespace ork::meshutil {
     int _sidesPerFace;
     Eigen::MatrixXd _verts;
     Eigen::MatrixXi _faces;
+    Eigen::MatrixXd _normals;
+    Eigen::MatrixXd _binormals;
+    Eigen::MatrixXd _tangents;
+    Eigen::MatrixXd _colors;
+    Eigen::MatrixXd _uvs;
   };
 
 } //namespace ork::meshutil {

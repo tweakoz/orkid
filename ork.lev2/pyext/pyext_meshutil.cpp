@@ -41,6 +41,51 @@ void pyinit_meshutil(py::module& module_lev2) {
           [](iglmesh_ptr_t iglm, Eigen::MatrixXi inp) { //
             iglm->_faces = inp;
           })
+      .def_property(
+          "normals",
+          [](iglmesh_ptr_t iglm) -> Eigen::MatrixXd { //
+            return iglm->_normals;
+          },
+          [](iglmesh_ptr_t iglm, Eigen::MatrixXd inp) { //
+            iglm->_normals = inp;
+          })
+      .def_property(
+          "binormals",
+          [](iglmesh_ptr_t iglm) -> Eigen::MatrixXd { //
+            return iglm->_binormals;
+          },
+          [](iglmesh_ptr_t iglm, Eigen::MatrixXd inp) { //
+            iglm->_binormals = inp;
+          })
+      .def_property(
+          "tangents",
+          [](iglmesh_ptr_t iglm) -> Eigen::MatrixXd { //
+            return iglm->_tangents;
+          },
+          [](iglmesh_ptr_t iglm, Eigen::MatrixXd inp) { //
+            iglm->_tangents = inp;
+          })
+      .def_property(
+          "colors",
+          [](iglmesh_ptr_t iglm) -> Eigen::MatrixXd { //
+            return iglm->_colors;
+          },
+          [](iglmesh_ptr_t iglm, Eigen::MatrixXd inp) { //
+            iglm->_colors = inp;
+          })
+      .def_property(
+          "uvs",
+          [](iglmesh_ptr_t iglm) -> Eigen::MatrixXd { //
+            return iglm->_uvs;
+          },
+          [](iglmesh_ptr_t iglm, Eigen::MatrixXd inp) { //
+            iglm->_uvs = inp;
+          })
+      .def(
+          "toSubMesh",
+          [](iglmesh_constptr_t inpmesh) -> submesh_ptr_t { //
+            return inpmesh->toSubMesh();
+          })
       .def(
           "averageEdgeLength",
           [](iglmesh_constptr_t inpmesh) -> double { //

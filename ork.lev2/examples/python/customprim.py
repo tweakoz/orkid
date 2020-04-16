@@ -46,41 +46,44 @@ fvmtx = ctx.lookAt(vec3(0,0,-1),vec3(0,0,0),vec3(0,1,0))
 frus = Frustum()
 frus.set(fvmtx,fpmtx)
 
-
 qsubmesh = meshutil.SubMesh()
 qsubmesh.addQuad(frus.nearCorner(3), # near
                  frus.nearCorner(2),
                  frus.nearCorner(1),
-                 frus.nearCorner(0),
-                 vec4(0.5,0.5,1.0,1))
+                 frus.nearCorner(0))
 qsubmesh.addQuad(frus.farCorner(0), # far
                  frus.farCorner(1),
                  frus.farCorner(2),
-                 frus.farCorner(3),
-                 vec4(0.5,0.5,0.0,1))
+                 frus.farCorner(3))
 qsubmesh.addQuad(frus.nearCorner(1), # top
                  frus.farCorner(1),
                  frus.farCorner(0),
-                 frus.nearCorner(0),
-                 vec4(0.5,1.0,0.5,1))
+                 frus.nearCorner(0))
 qsubmesh.addQuad(frus.nearCorner(3), # bottom
                  frus.farCorner(3),
                  frus.farCorner(2),
-                 frus.nearCorner(2),
-                 vec4(0.5,0.0,0.5,1))
+                 frus.nearCorner(2))
 qsubmesh.addQuad(frus.nearCorner(0), # left
                  frus.farCorner(0),
                  frus.farCorner(3),
-                 frus.nearCorner(3),
-                 vec4(0.0,0.5,0.5,1))
+                 frus.nearCorner(3))
 qsubmesh.addQuad(frus.nearCorner(2), # right
                  frus.farCorner(2),
                  frus.farCorner(1),
-                 frus.nearCorner(1),
-                 vec4(1.0,0.5,0.5,1))
-tsubmesh = meshutil.SubMesh()
-meshutil.triangulate(qsubmesh,tsubmesh)
-print(tsubmesh,ctx)
+                 frus.nearCorner(1))
+tsubmesh = qsubmesh.triangulate()
+tiglmesh = tsubmesh.toIglMesh(3)
+n = tiglmesh.faceNormals()
+ao = tiglmesh.ambientOcclusion(500)
+curv = tiglmesh.principleCurvature()
+tiglmesh.normals = n
+tiglmesh.binormals = curv.k1
+tiglmesh.tangents = curv.k2
+tiglmesh.colors = (n*0.5+0.5) # normals to colors
+#tiglmesh.colors = ao # per vertex ambient occlusion
+#tiglmesh.colors = curv.k2 # surface curvature (k1, or k2)
+tsubmesh = tiglmesh.toSubMesh()
+tsubmesh.writeWavefrontObj("customprim.obj")
 prim = meshutil.RigidPrimitive(tsubmesh,ctx)
 ###################################
 # rtg setup
