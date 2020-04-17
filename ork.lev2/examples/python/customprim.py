@@ -19,17 +19,14 @@ os.chdir(os.environ["ORKID_WORKSPACE_DIR"])
 ################################################################################
 # set up image dimensions, with antialiasing
 ################################################################################
-
 ANTIALIASDIM = 4
 WIDTH = 1080
 HEIGHT = 640
 AAWIDTH = WIDTH*ANTIALIASDIM
 AAHEIGHT = HEIGHT*ANTIALIASDIM
-
 ###################################
 # setup context, shaders
 ###################################
-
 lev2appinit()
 gfxenv = GfxEnv.ref
 ctx = gfxenv.loadingContext()
@@ -42,77 +39,11 @@ sh = _shaders.Shader(ctx)
 ###################################
 # get submesh
 ###################################
-if False:
-  inp_mesh = meshutil.Mesh()
-
-  #inp_mesh.readFromWavefrontObj("./ork.data/src/actors/rijid/ref/rijid.obj")
-  #inp_submesh = inp_mesh.polygroups["polySurface1"]
-
-  inp_mesh.readFromWavefrontObj(str(ork.path.builds()/"igl"/"tutorial"/"data"/"sphere.obj"))
-  inp_submesh = inp_mesh.polygroups[""]
-
-  print(inp_mesh.polygroups)
-  iglmesh = inp_submesh.toIglMesh(3)
-else:
-  inp_submesh = _submeshes.FrustumQuads()
-  iglmesh = inp_submesh.toIglMesh(4)
-###################################
-# igl mesh processing
-###################################
-iglmesh = iglmesh.triangulated()
-print("triangulated-numverts: %d"%iglmesh.vertices.shape[0])
-print("triangulated-numFaces: %d"%iglmesh.faces.shape[0])
-print("genus: %d"%iglmesh.genus)
-print("vertexManifold: %s"%iglmesh.isVertexManifold)
-print("edgeManifold: %s"%iglmesh.isEdgeManifold)
-ue = iglmesh.uniqueEdges
-print("ue.ue2e: %s"%len(ue.ue2e))
-print("ue.E: %s"%ue.E)
-print("ue.uE: %s"%ue.uE)
-print("ue.EMAP: %s"%ue.EMAP)
-print("ue.count: %s"%ue.count)
-
-me = iglmesh.manifoldExtraction
-print("me.numpatches: %d"%me.numpatches)
-print("me.numcells: %d"%me.numcells)
-print("me.per_patch_cells: %s"%me.per_patch_cells)
-print("me.P: %s"%me.P)
-
-iglmesh = iglmesh.reOriented() # clean up the mesh (changes topology)
-iglmesh = iglmesh.cleaned() # clean up the mesh (changes topology)
-print(iglmesh.vertices)
-print(iglmesh.faces)
-iglmesh = iglmesh.parameterizedSCAF(1,1,0) # autogen UV's (changes topology)
-ao = iglmesh.ambientOcclusion(500)
-curvature = iglmesh.principleCurvature()
-normals = iglmesh.faceNormals()
-iglmesh.normals = normals
-iglmesh.binormals = curvature.k1
-iglmesh.tangents = curvature.k2
-#iglmesh.colors = (normals*0.5+0.5) # normals to colors
-#iglmesh.uvs = iglmesh.parameterizeHarmonic()*0.5+0.5
-#iglmesh.uvs = iglmesh.parameterizeLCSM()*0.5+0.5
-
-iglmesh.colors = ao # per vertex ambient occlusion
-#iglmesh.colors = curvature.k2 # surface curvature (k1, or k2)
-
-###################################
-# todo figure out why LCSM broken
-###################################
-#iglmesh = iglmesh.toSubMesh().toIglMesh(3)
-#print(iglmesh.vertices)
-#print(iglmesh.faces)
-#param = iglmesh.parameterizeLCSM()
-#print(param)
-
-#print(iglmesh.faces)
-#print(cleaned.faces)
-
-#assert(False)
+inp_submesh = _submeshes.FrustumQuads()
 ###################################
 # generate primitive
 ###################################
-tsubmesh = iglmesh.toSubMesh()
+tsubmesh = inp_submesh.triangulate()
 tsubmesh.writeWavefrontObj("customprim.obj")
 prim = meshutil.RigidPrimitive(tsubmesh,ctx)
 ###################################
@@ -125,32 +56,25 @@ capbuf = CaptureBuffer()
 texture = Texture.load("lev2://textures/voltex_pn3")
 print(texture)
 lev2apppoll() # process opq
-
 ###################################
 # setup camera
 ###################################
-
 pmatrix = ctx.perspective(45,WIDTH/HEIGHT,0.01,100.0)
 vmatrix = ctx.lookAt(vec3(-5,3,1),
                      vec3(0,0,0),
                      vec3(0,1,0))
-
 rotmatrix = vmatrix.toRotMatrix3()
 mvp_matrix = vmatrix*pmatrix
-
 ###################################
-
 vtx_t = VtxV12N12B12T8C4
 vbuf = vtx_t.staticBuffer(2)
 vw = GBI.lock(vbuf,2)
 vw.add(vtx_t(vec3(-.7,.78,0.5),vec3(),vec3(),vec2(),0xffffffff))
 vw.add(vtx_t(vec3(0,0,0.5),vec3(),vec3(),vec2(),0xffffffff))
 GBI.unlock(vw)
-
 ###################################
 # render frame
 ###################################
-
 ctx.beginFrame()
 FBI.rtGroupPush(rtg)
 FBI.clear(vec4(0.6,0.6,0.7,1),1.0)
@@ -176,17 +100,14 @@ sh.end(RCFD)
 FontManager.beginTextBlock(ctx,"i32",vec4(0,0,.1,1),WIDTH,HEIGHT,100)
 FontManager.draw(ctx,0,0,"!!! YO !!!\nThis is a textured Frustum.")
 FontManager.endTextBlock(ctx)
-
 FBI.rtGroupPop()
 ctx.endFrame()
-
 ###################################
 # 1. capture framebuffer -> numpy array -> PIL image
 # 2. Downsample
 # 3. Flip image vertically
 # 4. output png
 ###################################
-
 ok = FBI.captureAsFormat(rtg,0,capbuf,"RGBA8")
 as_np = numpy.array(capbuf,dtype=numpy.uint8).reshape( AAHEIGHT, AAWIDTH, 4 )
 img = Image.fromarray(as_np, 'RGBA')
