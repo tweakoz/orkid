@@ -8,6 +8,8 @@
 #include <ork/kernel/orklut.hpp>
 #include <ork/math/plane.h>
 #include <ork/lev2/gfx/meshutil/submesh.h>
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
 
 template class ork::orklut<std::string, ork::meshutil::submesh_ptr_t>;
 
@@ -16,59 +18,170 @@ namespace ork::meshutil {
 const vertexpool vertexpool::EmptyPool;
 
 /////////////////////////////////////////////////////////////////////////
-
 submesh::submesh(const vertexpool& vpool)
     : _vtxpool(vpool)
     , _surfaceArea(0)
     , _mergeEdges(true) {
-  // _orderedPolys.reserve(32<<10);
-  // if( _mergeEdges )
-  {
-    // mEdges.reserve(32<<10);
-  }
-  for (int i = 0; i < kmaxsidesperpoly; i++) {
+  for (int i = 0; i < kmaxsidesperpoly; i++)
     _polyTypeCounter[i] = 0;
+}
+/////////////////////////////////////////////////////////////////////////
+// eigen to submesh converter for interfacing
+//  with various python/numpy packages
+/////////////////////////////////////////////////////////////////////////
+submesh_ptr_t submeshFromEigen(
+    const Eigen::MatrixXd& verts, //
+    const Eigen::MatrixXi& faces,
+    const Eigen::MatrixXd& uvs,
+    const Eigen::MatrixXd& colors,
+    const Eigen::MatrixXd& normals,
+    const Eigen::MatrixXd& binormals,
+    const Eigen::MatrixXd& tangents) {
+  auto rval           = std::make_shared<submesh>();
+  size_t numVerts     = verts.rows();
+  size_t numFaces     = faces.rows();
+  size_t sidesPerFace = faces.cols();
+  size_t numUvs       = uvs.rows();
+  size_t numColors    = colors.rows();
+  size_t numNormals   = normals.rows();
+  size_t numBinormals = binormals.rows();
+  size_t numTangents  = tangents.rows();
+  /////////////////////////////////////////////
+  OrkAssert(verts.cols() == 3);                                          // make sure we have vec3's
+  auto generateVertex = [&](int faceindex, int facevtxindex) -> vertex { //
+    vertex outv;
+    const Eigen::MatrixXi& face = faces.row(faceindex);
+    int per_vert_index          = face(facevtxindex);
+    /////////////////////////////////////////////
+    // position
+    /////////////////////////////////////////////
+    auto inp_pos = verts.row(per_vert_index);
+    outv.mPos    = fvec3(inp_pos(0), inp_pos(1), inp_pos(2));
+    /////////////////////////////////////////////
+    // normal
+    /////////////////////////////////////////////
+    auto donormal = [&](int index) {
+      OrkAssert(normals.cols() == 3);
+      auto inp  = normals.row(index);
+      outv.mNrm = fvec3(inp(0), inp(1), inp(2));
+    };
+    if (numNormals == numVerts) // per vertex
+      donormal(per_vert_index);
+    else if (numNormals == numFaces) // per face
+      donormal(faceindex);
+    else if (numNormals == 0) {
+    } // no normals
+    else
+      OrkAssert(false);
+    /////////////////////////////////////////////
+    // binormal
+    /////////////////////////////////////////////
+    auto dobinormal = [&](int index) {
+      OrkAssert(binormals.cols() == 3);
+      auto inp                 = binormals.row(index);
+      outv.mUV[0].mMapBiNormal = fvec3(inp(0), inp(1), inp(2));
+    };
+    if (numBinormals == numVerts) // per vertex
+      dobinormal(per_vert_index);
+    else if (numBinormals == numFaces) // per face
+      dobinormal(faceindex);
+    else if (numBinormals == 0) {
+    } // no binormals
+    else
+      OrkAssert(false);
+    /////////////////////////////////////////////
+    // tangent
+    /////////////////////////////////////////////
+    auto dotangent = [&](int index) {
+      OrkAssert(tangents.cols() == 3);
+      auto inp                = tangents.row(index);
+      outv.mUV[0].mMapTangent = fvec3(inp(0), inp(1), inp(2));
+    };
+    if (numTangents == numVerts) // per vertex
+      dotangent(per_vert_index);
+    else if (numTangents == numFaces) // per face
+      dotangent(faceindex);
+    else if (numTangents == 0) {
+    } // no tangents
+    else
+      OrkAssert(false);
+    /////////////////////////////////////////////
+    // texturecoord
+    /////////////////////////////////////////////
+    auto dotexcoord = [&](int index) {
+      OrkAssert(uvs.cols() == 2);
+      auto inp                 = uvs.row(index);
+      outv.mUV[0].mMapTexCoord = fvec2(inp(0), inp(1));
+    };
+    if (numUvs == numVerts) // per vertex
+      dotexcoord(per_vert_index);
+    else if (numUvs == numFaces) // per face
+      dotexcoord(faceindex);
+    else if (numUvs == 0) {
+    } // no texcoords
+    else
+      OrkAssert(false);
+    /////////////////////////////////////////////
+    // color
+    /////////////////////////////////////////////
+    auto docolor = [&](int index) {
+      auto inp = colors.row(index);
+      switch (colors.cols()) {
+        case 1: // luminance
+          outv.mCol[0] = fvec4(inp(0), inp(0), inp(0), 1);
+          break;
+        case 3: // rgb
+          outv.mCol[0] = fvec4(inp(0), inp(1), inp(2), 1);
+          break;
+        case 4: // rgba
+          outv.mCol[0] = fvec4(inp(0), inp(1), inp(2), inp(3));
+          break;
+        default:
+          OrkAssert(false);
+          break;
+      }
+    };
+    if (numColors == numVerts)
+      docolor(per_vert_index);
+    else if (numColors == numFaces)
+      docolor(faceindex);
+    else if (numColors == 1)
+      docolor(0);
+    else if (numColors == 0)
+      outv.mCol[0] = fvec4(1, 1, 1, 1);
+    else
+      OrkAssert(false);
+    return outv;
+  }; // auto generateVertex = [&](int faceindex, int facevtxindex) -> vertex { //
+  /////////////////////////////////////////////
+  for (int f = 0; f < numFaces; f++) {
+    switch (sidesPerFace) {
+      case 3: {
+        auto o0 = rval->newMergeVertex(generateVertex(f, 0));
+        auto o1 = rval->newMergeVertex(generateVertex(f, 1));
+        auto o2 = rval->newMergeVertex(generateVertex(f, 2));
+        rval->MergePoly(poly(o0, o1, o2));
+        break;
+      }
+      case 4: {
+        auto o0 = rval->newMergeVertex(generateVertex(f, 0));
+        auto o1 = rval->newMergeVertex(generateVertex(f, 1));
+        auto o2 = rval->newMergeVertex(generateVertex(f, 2));
+        auto o3 = rval->newMergeVertex(generateVertex(f, 3));
+        rval->MergePoly(poly(o0, o1, o2, o3));
+        break;
+      }
+      default:
+        OrkAssert(false);
+        break;
+    }
   }
+  return rval;
 }
-
+/////////////////////////////////////////////////////////////////////////
 submesh::~submesh() {
-  static size_t gc1 = 0;
-  static size_t gc2 = 0;
-  static size_t gc3 = 0;
-  static size_t gc4 = 0;
-  static size_t gc5 = 0;
-  static size_t gc6 = 0;
-
-  size_t ic1 = _polymap.size();
-  size_t ic2 = _edgemap.size();
-  size_t ic3 = _vtxpool._vtxmap.size();
-  size_t ic4 = _vtxpool._orderedVertices.size();
-  size_t ic5 = _edgemap.size();
-  size_t ic6 = _orderedPolys.size();
-  gc1 += ic1;
-
-  gc2 += ic2;
-  gc3 += ic3;
-  gc4 += ic4;
-  gc5 += ic5;
-  gc6 += ic6;
-  size_t is1 = sizeof(std::pair<U64, int>);
-  size_t is2 = sizeof(std::pair<int, int>);
-  size_t is3 = is1;
-  size_t is4 = sizeof(vertex);
-  size_t is5 = sizeof(edge);
-  size_t is6 = sizeof(poly);
-
-  // orkprintf( "///////////////////////////////////\n" );
-  // orkprintf( "polyhash cnt<%d:%d> tot<%d:%d>\n", ic1,ic1*is1, gc1,gc1*is1 );
-  // orkprintf( "polys cnt<%d:%d> tot<%d:%d>\n", ic6,ic6*is6, gc6,gc6*is6 );
-  // orkprintf( "edgemap cnt<%d:%d> tot<%d:%d>\n", ic2,ic2*is2, gc2,gc2*is2 );
-  // orkprintf( "edges cnt<%d:%d> tot<%d:%d>\n", ic5,ic5*is5, gc5,gc5*is5 );
-  // orkprintf( "vpoolmap cnt<%d:%d> tot<%d:%d>\n", ic3,ic3*is3, gc3,gc3*is3 );
-  // orkprintf( "vpool cnt<%d:%d> tot<%d:%d>\n", ic4,ic4*is4, gc4,gc4*is4 );
-  // orkprintf( "///////////////////////////////////\n" );
 }
-
+/////////////////////////////////////////////////////////////////////////
 svar64_t submesh::annotation(const char* annokey) const {
   static const char* defret("");
   auto it = _annotations.find(std::string(annokey));
@@ -77,12 +190,11 @@ svar64_t submesh::annotation(const char* annokey) const {
   }
   return defret;
 }
-
+/////////////////////////////////////////////////////////////////////////
 void submesh::MergeAnnos(const AnnotationMap& mrgannos, bool boverwrite) {
   for (AnnotationMap::const_iterator it = mrgannos.begin(); it != mrgannos.end(); it++) {
-    const std::string& key = it->first;
-    const auto& val        = it->second;
-
+    const std::string& key      = it->first;
+    const auto& val             = it->second;
     AnnotationMap::iterator itf = _annotations.find(key);
     if (itf == _annotations.end()) {
       _annotations[key] = val;
@@ -91,9 +203,7 @@ void submesh::MergeAnnos(const AnnotationMap& mrgannos, bool boverwrite) {
     }
   }
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void submesh::ImportPolyAnnotations(const annopolylut& apl) {
   int inumpolys = (int)_orderedPolys.size();
   for (int ip = 0; ip < inumpolys; ip++) {
@@ -104,9 +214,7 @@ void submesh::ImportPolyAnnotations(const annopolylut& apl) {
     }
   }
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void submesh::ExportPolyAnnotations(annopolylut& apl) const {
   int inumpolys = (int)_orderedPolys.size();
   for (int ip = 0; ip < inumpolys; ip++) {
@@ -116,9 +224,7 @@ void submesh::ExportPolyAnnotations(annopolylut& apl) const {
     apl.mAnnoMap[uhash] = amap;
   }
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 const AABox& submesh::aabox() const {
   if (_aaBoxDirty) {
     _aaBox.BeginGrow();
@@ -132,44 +238,32 @@ const AABox& submesh::aabox() const {
   }
   return _aaBox;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 const edge& submesh::RefEdge(U64 edgekey) const {
   auto it = _edgemap.find(edgekey);
   OrkAssert(it != _edgemap.end());
   return *it->second;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 vertex_ptr_t submesh::newMergeVertex(const vertex& vtx) {
   _aaBoxDirty = true;
   return _vtxpool.newMergeVertex(vtx);
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 poly& submesh::RefPoly(int i) {
   OrkAssert(orkvector<int>::size_type(i) < _orderedPolys.size());
   return *_orderedPolys[i];
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 const poly& submesh::RefPoly(int i) const {
   OrkAssert(orkvector<int>::size_type(i) < _orderedPolys.size());
   return *_orderedPolys[i];
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 const orkvector<poly_ptr_t>& submesh::RefPolys() const {
   return _orderedPolys;
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void submesh::FindNSidedPolys(orkvector<int>& output, int inumsides) const {
   int inump = (int)_orderedPolys.size();
   for (int i = 0; i < inump; i++) {
@@ -179,9 +273,7 @@ void submesh::FindNSidedPolys(orkvector<int>& output, int inumsides) const {
     }
   }
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 int submesh::GetNumPolys(int inumsides) const {
   int iret = 0;
   if (0 == inumsides) {
@@ -192,9 +284,7 @@ int submesh::GetNumPolys(int inumsides) const {
   }
   return iret;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void submesh::GetEdges(const poly& ply, orkvector<edge>& Edges) const {
   int icnt  = 0;
   int icntf = 0;
@@ -208,9 +298,7 @@ void submesh::GetEdges(const poly& ply, orkvector<edge>& Edges) const {
     icnt++;
   }
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void submesh::GetAdjacentPolys(int ply, orkset<int>& output) const {
   orkvector<edge> edges;
   GetEdges(RefPoly(ply), edges);
@@ -225,9 +313,7 @@ void submesh::GetAdjacentPolys(int ply, orkset<int>& output) const {
     }
   }
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 edge_constptr_t submesh::edgeBetween(int aind, int bind) const {
   const poly& a = RefPoly(aind);
   const poly& b = RefPoly(bind);
@@ -237,9 +323,7 @@ edge_constptr_t submesh::edgeBetween(int aind, int bind) const {
         return std::const_pointer_cast<const edge>(a.mEdges[eaind]);
   return nullptr;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void submesh::GetConnectedPolys(const edge& ed, orkset<int>& output) const {
   U64 keyA    = ed.GetHashKey();
   auto itfind = _edgemap.find(keyA);
@@ -252,9 +336,7 @@ void submesh::GetConnectedPolys(const edge& ed, orkset<int>& output) const {
     }
   }
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void submesh::MergeSubMesh(const submesh& inp_mesh) {
   float ftimeA     = float(OldSchool::GetRef().GetLoResTime());
   int inumpingroup = inp_mesh.GetNumPolys();
@@ -275,9 +357,7 @@ void submesh::MergeSubMesh(const submesh& inp_mesh) {
   float ftime  = (ftimeB - ftimeA);
   orkprintf("<<PROFILE>> <<submesh::MergeSubMesh %f seconds>>\n", ftime);
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void submesh::MergePoly(const poly& ply) {
   int ipolyindex = GetNumPolys();
   poly nply      = ply;
@@ -364,9 +444,7 @@ void submesh::MergePoly(const poly& ply) {
   }
   _aaBoxDirty = true;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 edge_ptr_t submesh::MergeEdge(const edge& ed, int ipolyindex) {
   U64 crcA    = ed.GetHashKey();
   auto itfind = _edgemap.find(crcA);
@@ -388,11 +466,9 @@ edge_ptr_t submesh::MergeEdge(const edge& ed, int ipolyindex) {
   _aaBoxDirty = true;
   return rval;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 // addPoly helper methods
 ///////////////////////////////////////////////////////////////////////////////
-
 void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec4 c) {
   vertex muvtx[4];
   muvtx[0].set(p0, fvec3(), fvec3(), fvec2(), c);
@@ -405,7 +481,6 @@ void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec4 c) {
   auto v3 = newMergeVertex(muvtx[3]);
   MergePoly(poly(v0, v1, v2, v3));
 }
-
 void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 uv0, fvec2 uv1, fvec2 uv2, fvec2 uv3, fvec4 c) {
   vertex muvtx[4];
   fvec3 p0p1 = (p1 - p0).Normal();
@@ -424,7 +499,6 @@ void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 uv0, fvec2 u
   auto v3 = newMergeVertex(muvtx[3]);
   MergePoly(poly(v0, v1, v2, v3));
 }
-
 void submesh::addQuad(
     fvec3 p0,
     fvec3 p1,
@@ -513,5 +587,4 @@ void SubMesh::GenIndexBuffers( void )
     }
 
 }*/
-
 } // namespace ork::meshutil

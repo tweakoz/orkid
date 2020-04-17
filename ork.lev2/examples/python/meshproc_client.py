@@ -6,7 +6,7 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 
-import numpy, time, os, zmq, time, docker, asyncio
+import numpy, time, os, zmq, time, docker, asyncio, math
 import ork.path
 import threading
 from orkengine.core import *
@@ -17,6 +17,9 @@ import _shaders
 import _submeshes
 from signal import signal, SIGINT
 from sys import exit
+import trimesh
+from trimesh import primitives as tm_prims
+from trimesh import transformations as tm_trans
 
 root_dir = ork.path.Path(os.environ["ORKID_WORKSPACE_DIR"])
 pyex_dir = root_dir/"ork.lev2"/"examples"/"python"
@@ -28,6 +31,45 @@ PORT = 12345
 docker_container = None
 server_thread = None
 
+trimesh.util.attach_to_log()
+box = tm_prims.Box(size=1)
+box.vertices,box.faces = trimesh.remesh.subdivide(box.vertices,box.faces)
+sphere = tm_prims.Sphere(radius=0.7,subdivisions=5)
+
+xaxis = [1,0,0]
+yaxis = [0,1,0]
+zaxis = [0,0,1]
+xaxis_rot = tm_trans.rotation_matrix(90, xaxis)
+yaxis_rot = tm_trans.rotation_matrix(90, yaxis)
+zaxis_rot = tm_trans.rotation_matrix(90, zaxis)
+
+cylx = tm_prims.Cylinder(distance=1,
+                                   radius=0.2,
+                                   transform=xaxis_rot)
+cyly = tm_prims.Cylinder(distance=1,
+                                   radius=0.2,
+                                   transform=yaxis_rot)
+cylz = tm_prims.Cylinder(distance=1,
+                                   radius=0.2,
+                                   transform=zaxis_rot)
+boolean = sphere.intersection(box,debug=True)
+boolean = boolean.difference(cylx,debug=True)
+boolean = boolean.difference(cyly,debug=True)
+boolean = boolean.difference(cylz,debug=True)
+
+#newv,newf = trimesh.remesh.subdivide_to_size(boolean.vertices,boolean.faces,max_edge=0.1, max_iter=1)
+#newv,newf = trimesh.remesh.subdivide(boolean.vertices,boolean.faces)
+#newv,newf = trimesh.remesh.subdivide(newv,newf)
+subdivided = trimesh.Trimesh(boolean.vertices,boolean.faces)
+#trimesh.smoothing.filter_laplacian(subdivided,lamb=0.1, iterations=1)
+
+as_submesh = meshutil.submeshFromNumPy(vertices=subdivided.vertices,
+                                       faces=subdivided.faces,
+                                       normals=subdivided.face_normals,
+                                       colors=(subdivided.face_normals*0.5)+0.5)
+
+as_submesh.writeWavefrontObj("meshproc.obj")
+exit(0)
 ################################################################################
 def pymesh_server_fn():
   global docker_container
