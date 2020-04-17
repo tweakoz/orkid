@@ -75,17 +75,18 @@ assert(msg=="connect.OK")
 ###################################
 # get submesh
 ###################################
-if False:
+if True:
   inp_mesh = meshutil.Mesh()
 
   #inp_mesh.readFromWavefrontObj("./ork.data/src/actors/rijid/ref/rijid.obj")
   #inp_submesh = inp_mesh.polygroups["polySurface1"]
 
-  inp_mesh.readFromWavefrontObj(str(ork.path.builds()/"igl"/"tutorial"/"data"/"sphere.obj"))
+  #inp_mesh.readFromWavefrontObj(str(ork.path.builds()/"igl"/"tutorial"/"data"/"sphere.obj"))
+  inp_mesh.readFromWavefrontObj(str(pyex_dir/"data"/"nub1.obj"))
   inp_submesh = inp_mesh.polygroups[""]
 
   print(inp_mesh.polygroups)
-  iglmesh = inp_submesh.toIglMesh(3)
+  iglmesh = inp_submesh.toIglMesh(4)
 else:
   inp_submesh = _submeshes.FrustumQuads()
   iglmesh = inp_submesh.toIglMesh(4)
@@ -152,8 +153,8 @@ print(iglmesh.faces)
 ###################################
 # generate primitive
 ###################################
-#tsubmesh = iglmesh.toSubMesh()
-#tsubmesh.writeWavefrontObj("meshproc.obj")
+tsubmesh = iglmesh.toSubMesh()
+tsubmesh.writeWavefrontObj("meshproc.obj")
 
 docker_container.kill(9)
 server_thread.join()

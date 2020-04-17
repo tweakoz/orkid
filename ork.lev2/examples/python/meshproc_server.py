@@ -23,9 +23,10 @@ while True:
     mesh.enable_connectivity();
 
     try:
-      new_mesh, info = pymesh.remove_duplicated_faces(mesh)
-      socket.send_pyobj({"newverts":new_mesh.vertices,
-                         "newfaces":new_mesh.faces,
+      mesh, info = pymesh.remove_duplicated_faces(mesh)
+      mesh = pymesh.subdivide(mesh, order=2, method="loop")
+      socket.send_pyobj({"newverts":mesh.vertices,
+                         "newfaces":mesh.faces,
                          "info": info})
     except:
       socket.send_pyobj({"server.error":sys.exc_info()[0],
