@@ -630,12 +630,12 @@ void ToolMesh::WriteToDaeFile(const file::Path& BasePath, const DaeWriteOpts& wr
   ///////////////////////////////////////////////////
   ///////////////////////////////////////////////////
   ///////////////////////////////////////////////////
-  int inumgrps = mPolyGroupLut.size();
+  int inumgrps = _submeshesByPolyGroup.size();
   int igidx    = 0;
   if (writeopts.meMaterialSetup == DaeWriteOpts::EMS_PRESERVEMATERIALS) {
     WriteDaeMeshPreservingMaterials(*this, daedoc, Child);
   } else {
-    for (auto it = mPolyGroupLut.begin(); it != mPolyGroupLut.end(); it++) {
+    for (auto it = _submeshesByPolyGroup.begin(); it != _submeshesByPolyGroup.end(); it++) {
 
       const auto& pgroup         = *it->second;
       const std::string& grpname = it->first;

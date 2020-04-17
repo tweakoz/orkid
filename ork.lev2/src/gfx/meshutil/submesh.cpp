@@ -9,7 +9,7 @@
 #include <ork/math/plane.h>
 #include <ork/lev2/gfx/meshutil/submesh.h>
 
-template class ork::orklut<std::string, ork::meshutil::submesh*>;
+template class ork::orklut<std::string, ork::meshutil::submesh_ptr_t>;
 
 namespace ork::meshutil {
 

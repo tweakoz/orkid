@@ -6,13 +6,16 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 
-import numpy, time
+import numpy, time, os
+import ork.path
 from orkengine.core import *
 from orkengine.lev2 import *
 from ork.command import run
 from PIL import Image
 import _shaders
+import _submeshes
 
+os.chdir(os.environ["ORKID_WORKSPACE_DIR"])
 ################################################################################
 # set up image dimensions, with antialiasing
 ################################################################################
@@ -35,62 +38,62 @@ GBI = ctx.GBI()
 print(ctx)
 ctx.makeCurrent()
 FontManager.gpuInit(ctx)
-
 sh = _shaders.Shader(ctx)
 ###################################
-# setup primitive
+# get submesh
 ###################################
+if False:
+  inp_mesh = meshutil.Mesh()
 
-fpmtx = ctx.perspective(45,1,0.1,3)
-fvmtx = ctx.lookAt(vec3(0,0,-1),vec3(0,0,0),vec3(0,1,0))
-frus = Frustum()
-frus.set(fvmtx,fpmtx)
+  #inp_mesh.readFromWavefrontObj("./ork.data/src/actors/rijid/ref/rijid.obj")
+  #inp_submesh = inp_mesh.polygroups["polySurface1"]
 
-qsubmesh = meshutil.SubMesh()
-qsubmesh.addQuad(frus.nearCorner(3), # near
-                 frus.nearCorner(2),
-                 frus.nearCorner(1),
-                 frus.nearCorner(0))
-qsubmesh.addQuad(frus.farCorner(0), # far
-                 frus.farCorner(1),
-                 frus.farCorner(2),
-                 frus.farCorner(3))
-qsubmesh.addQuad(frus.nearCorner(1), # top
-                 frus.farCorner(1),
-                 frus.farCorner(0),
-                 frus.nearCorner(0))
-qsubmesh.addQuad(frus.nearCorner(3), # bottom
-                 frus.farCorner(3),
-                 frus.farCorner(2),
-                 frus.nearCorner(2))
-qsubmesh.addQuad(frus.nearCorner(0), # left
-                 frus.farCorner(0),
-                 frus.farCorner(3),
-                 frus.nearCorner(3))
-qsubmesh.addQuad(frus.nearCorner(2), # right
-                 frus.farCorner(2),
-                 frus.farCorner(1),
-                 frus.nearCorner(1))
-#qsubmesh.addQuad(vec3(-3,0,-3), # cut
-#                 vec3(+3,0,-3),
-#                 vec3(+3,0,+3),
-#                 vec3(-3,0,+3))
+  inp_mesh.readFromWavefrontObj(str(ork.path.builds()/"igl"/"tutorial"/"data"/"sphere.obj"))
+  inp_submesh = inp_mesh.polygroups[""]
+
+  print(inp_mesh.polygroups)
+  iglmesh = inp_submesh.toIglMesh(3)
+else:
+  inp_submesh = _submeshes.FrustumQuads()
+  iglmesh = inp_submesh.toIglMesh(4)
 ###################################
 # igl mesh processing
 ###################################
-iglmesh = qsubmesh.triangulate().toIglMesh(3)
+iglmesh = iglmesh.triangulated()
+print("triangulated-numverts: %d"%iglmesh.vertices.shape[0])
+print("triangulated-numFaces: %d"%iglmesh.faces.shape[0])
+print("genus: %d"%iglmesh.genus)
+print("vertexManifold: %s"%iglmesh.isVertexManifold)
+print("edgeManifold: %s"%iglmesh.isEdgeManifold)
+ue = iglmesh.uniqueEdges
+print("ue.ue2e: %s"%len(ue.ue2e))
+print("ue.E: %s"%ue.E)
+print("ue.uE: %s"%ue.uE)
+print("ue.EMAP: %s"%ue.EMAP)
+print("ue.count: %s"%ue.count)
+
+me = iglmesh.manifoldExtraction
+print("me.numpatches: %d"%me.numpatches)
+print("me.numcells: %d"%me.numcells)
+print("me.per_patch_cells: %s"%me.per_patch_cells)
+print("me.P: %s"%me.P)
+
+iglmesh = iglmesh.reOriented() # clean up the mesh (changes topology)
 iglmesh = iglmesh.cleaned() # clean up the mesh (changes topology)
-iglmesh = iglmesh.parameterizedSCAF(10,1,0) # autogen UV's (changes topology)
+print(iglmesh.vertices)
+print(iglmesh.faces)
+iglmesh = iglmesh.parameterizedSCAF(1,1,0) # autogen UV's (changes topology)
 ao = iglmesh.ambientOcclusion(500)
 curvature = iglmesh.principleCurvature()
 normals = iglmesh.faceNormals()
 iglmesh.normals = normals
 iglmesh.binormals = curvature.k1
 iglmesh.tangents = curvature.k2
-iglmesh.colors = (normals*0.5+0.5) # normals to colors
+#iglmesh.colors = (normals*0.5+0.5) # normals to colors
 #iglmesh.uvs = iglmesh.parameterizeHarmonic()*0.5+0.5
+#iglmesh.uvs = iglmesh.parameterizeLCSM()*0.5+0.5
 
-#iglmesh.colors = ao # per vertex ambient occlusion
+iglmesh.colors = ao # per vertex ambient occlusion
 #iglmesh.colors = curvature.k2 # surface curvature (k1, or k2)
 
 ###################################

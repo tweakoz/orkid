@@ -119,15 +119,15 @@ void XgmClusterizerDiced::End() {
   }
   int inumpacc = 0;
 
-  const orklut<std::string, submesh*>& pgmap = DicedMesh.RefSubMeshLut();
+  auto& submeshes_by_polygroup = DicedMesh.RefSubMeshLut();
 
-  size_t inumgroups = pgmap.size();
+  size_t inumgroups = submeshes_by_polygroup.size();
   static int igroup = 0;
 
   float ftimeC = float(OldSchool::GetRef().GetLoResTime());
-  for (orklut<std::string, submesh*>::const_iterator it = pgmap.begin(); it != pgmap.end(); it++) {
-    const std::string& pgname = it->first;
-    const submesh& pgrp       = *it->second;
+  for (auto it : submeshes_by_polygroup) {
+    const std::string& pgname = it.first;
+    const submesh& pgrp       = *it.second;
     int inumpolys             = pgrp.GetNumPolys();
 
     inumpacc += inumpolys;

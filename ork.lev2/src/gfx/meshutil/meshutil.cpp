@@ -21,21 +21,13 @@ Mesh::Mesh()
 ///////////////////////////////////////////////////////////////////////////////
 
 Mesh::~Mesh() {
-  int icnt = int(mPolyGroupLut.size());
-  for (int i = 0; i < icnt; i++) {
-    submesh* psub = mPolyGroupLut.GetIterAtIndex(i)->second;
-
-    if (psub) {
-      delete psub;
-    }
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Mesh::Prune() {
   orkset<std::string> SubsToPrune;
-  for (orklut<std::string, submesh*>::const_iterator it = mPolyGroupLut.begin(); it != mPolyGroupLut.end(); it++) {
+  for (auto it = _submeshesByPolyGroup.begin(); it != _submeshesByPolyGroup.end(); it++) {
     const submesh& src_grp  = *it->second;
     const std::string& name = it->first;
     int inump               = src_grp.GetNumPolys();
@@ -81,10 +73,8 @@ void Mesh::Dump(const std::string& comment) const {
       fprintf(fout, "// Mesh::annokey<%s> annoval<%s>\n", key.c_str(), val.c_str());
     }
     fprintf(fout, "////////////////////////////////////////////////\n");
-    for (orklut<std::string, submesh*>::const_iterator it = mPolyGroupLut.begin(); it != mPolyGroupLut.end(); it++) {
-      const submesh& src_grp  = *it->second;
-      const std::string& name = it->first;
-      int inump               = src_grp.GetNumPolys();
+    for (auto it = _submeshesByPolyGroup.begin(); it != _submeshesByPolyGroup.end(); it++)
+    { const submesh& src_grp  = *it->second; const std::string& name = it->first; int inump               = src_grp.GetNumPolys();
       fprintf(fout, "// Mesh::polygroup<%s> numpolys<%d>\n", name.c_str(), inump);
       const submesh::AnnotationMap& subannos = src_grp.RefAnnotations();
       for (orkmap<std::string, std::string>::const_iterator itm = subannos.begin(); itm != subannos.end(); itm++) {
@@ -244,11 +234,11 @@ void submesh::SplitOnAnno(Mesh& out, const std::string& annokey, const Annotatio
 AABox Mesh::GetAABox() const {
   AABox outp;
   outp.BeginGrow();
-  int inumsub = (int)mPolyGroupLut.size();
-  for (int is = 0; is < inumsub; is++) {
-    const submesh& sub = *mPolyGroupLut.GetItemAtIndex(is).second;
-    outp.Grow(sub.aabox().Min());
-    outp.Grow(sub.aabox().Max());
+  int inumsub = (int)_submeshesByPolyGroup.size();
+  for (auto it : _submeshesByPolyGroup) {
+    auto sub = it.second;
+    outp.Grow(sub->aabox().Min());
+    outp.Grow(sub->aabox().Max());
   }
   outp.EndGrow();
   return outp;
@@ -256,8 +246,8 @@ AABox Mesh::GetAABox() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const orklut<std::string, submesh*>& Mesh::RefSubMeshLut() const {
-  return mPolyGroupLut;
+const submesh_lut_t& Mesh::RefSubMeshLut() const {
+  return _submeshesByPolyGroup;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -269,46 +259,46 @@ const orklut<std::string, submesh*>& Mesh::RefSubMeshLut() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const submesh* Mesh::FindSubMeshFromMaterialName(const std::string& materialname) const {
+submesh_constptr_t Mesh::submeshFromMaterialName(const std::string& materialname) const {
   for (const auto& item : mShadingGroupToMaterialMap) {
     if (materialname == item.second.mMaterialDaeId) {
-      const std::string& shgrpname                       = item.first;
-      orklut<std::string, submesh*>::const_iterator itpg = mPolyGroupLut.find(shgrpname);
-      if (itpg != mPolyGroupLut.end()) {
+      const std::string& shgrpname = item.first;
+      auto itpg                    = _submeshesByPolyGroup.find(shgrpname);
+      if (itpg != _submeshesByPolyGroup.end()) {
         return itpg->second;
       }
     }
   }
-  return 0;
+  return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-submesh* Mesh::FindSubMeshFromMaterialName(const std::string& materialname) {
+submesh_ptr_t Mesh::submeshFromMaterialName(const std::string& materialname) {
   for (const auto& item : mShadingGroupToMaterialMap) {
     if (materialname == item.second.mMaterialDaeId) {
-      const std::string& shgrpname                 = item.first;
-      orklut<std::string, submesh*>::iterator itpg = mPolyGroupLut.find(shgrpname);
-      if (itpg != mPolyGroupLut.end()) {
+      const std::string& shgrpname = item.first;
+      auto itpg                    = _submeshesByPolyGroup.find(shgrpname);
+      if (itpg != _submeshesByPolyGroup.end()) {
         return itpg->second;
       }
     }
   }
-  return 0;
+  return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const submesh* Mesh::FindSubMesh(const std::string& polygroupname) const {
-  orklut<std::string, submesh*>::const_iterator it = mPolyGroupLut.find(polygroupname);
-  return (it == mPolyGroupLut.end()) ? 0 : it->second;
+submesh_constptr_t Mesh::submeshFromGroupName(const std::string& polygroupname) const {
+  auto it = _submeshesByPolyGroup.find(polygroupname);
+  return (it == _submeshesByPolyGroup.end()) ? nullptr : it->second;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-submesh* Mesh::FindSubMesh(const std::string& polygroupname) {
-  orklut<std::string, submesh*>::iterator it = mPolyGroupLut.find(polygroupname);
-  return (it == mPolyGroupLut.end()) ? 0 : it->second;
+submesh_ptr_t Mesh::submeshFromGroupName(const std::string& polygroupname) {
+  auto it = _submeshesByPolyGroup.find(polygroupname);
+  return (it == _submeshesByPolyGroup.end()) ? nullptr : it->second;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -323,11 +313,9 @@ void Mesh::SetRangeTransform(const fvec4& vscale, const fvec4& vtrans) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Mesh::RemoveSubMesh(const std::string& pgroup) {
-  orklut<std::string, submesh*>::iterator it = mPolyGroupLut.find(pgroup);
-  if (it != mPolyGroupLut.end()) {
-    submesh* psub = it->second;
-    mPolyGroupLut.erase(it);
-    delete psub;
+  auto it = _submeshesByPolyGroup.find(pgroup);
+  if (it != _submeshesByPolyGroup.end()) {
+    _submeshesByPolyGroup.erase(it);
   }
 }
 

@@ -10,6 +10,7 @@ using namespace meshutil;
 using rigidprim_t = RigidPrimitive<SVtxV12N12B12T8C4>;
 void pyinit_meshutil(py::module& module_lev2) {
   auto meshutil = module_lev2.def_submodule("meshutil", "Mesh operations");
+  //////////////////////////////////////////////////////////////////////////////
   py::class_<IglMesh, iglmesh_ptr_t>(meshutil, "IglMesh") //
       .def(py::init([](const Eigen::MatrixXd& verts,      //
                        const Eigen::MatrixXi& faces) {    //
@@ -80,6 +81,41 @@ void pyinit_meshutil(py::module& module_lev2) {
           },
           [](iglmesh_ptr_t iglm, Eigen::MatrixXd inp) { //
             iglm->_uvs = inp;
+          })
+      .def_property_readonly(
+          "uniqueEdges",
+          [](iglmesh_constptr_t iglm) -> unique_edges_ptr_t { //
+            return iglm->uniqueEdges();
+          })
+      .def_property_readonly(
+          "manifoldExtraction",
+          [](iglmesh_constptr_t iglm) -> manifold_extraction_ptr_t { //
+            return iglm->extractManifolds();
+          })
+      .def_property_readonly(
+          "genus",
+          [](iglmesh_constptr_t iglm) -> int { //
+            return iglm->genus();
+          })
+      .def_property_readonly(
+          "isVertexManifold",
+          [](iglmesh_constptr_t iglm) -> bool { //
+            return iglm->isVertexManifold();
+          })
+      .def_property_readonly(
+          "isEdgeManifold",
+          [](iglmesh_constptr_t iglm) -> bool { //
+            return iglm->isEdgeManifold();
+          })
+      .def(
+          "triangulated",
+          [](iglmesh_constptr_t inpmesh) -> iglmesh_ptr_t { //
+            return inpmesh->triangulated();
+          })
+      .def(
+          "decimated",
+          [](iglmesh_constptr_t inpmesh, float amount) -> iglmesh_ptr_t { //
+            return inpmesh->decimated(amount);
           })
       .def(
           "parameterizedSCAF",
@@ -226,13 +262,38 @@ void pyinit_meshutil(py::module& module_lev2) {
              fvec2 uv2,
              fvec2 uv3,
              fvec4 c) { return submesh->addQuad(p0, p1, p2, p3, n0, n1, n2, n3, uv0, uv1, uv2, uv3, c); });
-
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<vertexpool>(meshutil, "VertexPool").def(py::init<>());
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<poly>(meshutil, "Poly").def(py::init<>());
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<edge>(meshutil, "Edge").def(py::init<>());
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<UniqueEdges, unique_edges_ptr_t>(meshutil, "UniqueEdges")
+      .def_property_readonly("count", [](unique_edges_ptr_t ue) -> int { return ue->_count; })
+      .def_property_readonly("ue2e", [](unique_edges_ptr_t ue) -> std::vector<std::vector<size_t>> { return ue->_ue2e; })
+      .def_property_readonly("E", [](unique_edges_ptr_t ue) -> Eigen::MatrixXi { return ue->E; })
+      .def_property_readonly("uE", [](unique_edges_ptr_t ue) -> Eigen::MatrixXi { return ue->uE; })
+      .def_property_readonly("EMAP", [](unique_edges_ptr_t ue) -> Eigen::MatrixXi { return ue->EMAP; });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<ManifoldExtraction, manifold_extraction_ptr_t>(meshutil, "ManifoldExtraction")
+      .def_property_readonly("numpatches", [](manifold_extraction_ptr_t me) -> int { return me->_numpatches; })
+      .def_property_readonly("numcells", [](manifold_extraction_ptr_t me) -> int { return me->_numcells; })
+      .def_property_readonly("per_patch_cells", [](manifold_extraction_ptr_t me) -> Eigen::MatrixXi { return me->per_patch_cells; })
+      .def_property_readonly("P", [](manifold_extraction_ptr_t me) -> Eigen::VectorXi { return me->P; });
+
+  //////////////////////////////////////////////////////////////////////////////
+  py::class_<Mesh, mesh_ptr_t>(meshutil, "Mesh") //
+      .def(py::init<>())
+      .def_property_readonly(
+          "polygroups",                              //
+          [](mesh_ptr_t the_mesh) -> submesh_lut_t { //
+            return the_mesh->_submeshesByPolyGroup;
+          })
+      .def("readFromWavefrontObj", [](mesh_ptr_t the_mesh, std::string pth) { //
+        the_mesh->ReadFromWavefrontObj(pth);
+      });
+  //////////////////////////////////////////////////////////////////////////////
 }
 
 } // namespace ork::lev2

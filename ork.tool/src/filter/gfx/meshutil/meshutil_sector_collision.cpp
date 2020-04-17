@@ -136,7 +136,7 @@ private:
   orkset<int> mVisitedPolys;
   std::string mSecName;
 
-  ork::meshutil::submesh* mSubmesh;
+  ork::meshutil::submesh_ptr_t mSubmesh;
 
   orkvector<int> mPolyOwners;
 
@@ -251,12 +251,12 @@ SectorWalker::SectorWalker(const ToolMesh& mesh, ent::bullet::SectorData& target
     , mSecName(secname) {
   mMesh.CopyMaterialsFromToolMesh(mesh);
   mMesh.MergeToolMeshAs(mesh, "all");
-  mSubmesh = mMesh.FindSubMesh("all");
+  mSubmesh = mMesh.submeshFromGroupName("all");
 
   //	SimpleAssert(mStartGroup, "At least one poly in the start group");
   //	SimpleAssert(mBottomGroup, "At least one poly in the bottom group");
 
-  //	SimpleAssert(!mMesh.FindSubMeshFromMaterialName("sector_end"), "No sector_end polys (obsolete)");
+  //	SimpleAssert(!mMesh.submeshFromGroupNameFromMaterialName("sector_end"), "No sector_end polys (obsolete)");
 
   /*mCapGroups.push_back(mFrontGroup);
   mCapGroups.push_back(mStartGroup);
@@ -1279,14 +1279,14 @@ bool DAEToSECCollision(const tokenlist& options) {
   ToolMesh gravityMerged;
   if (gravityMesh.numSubMeshes()) {
     gravityMerged.MergeToolMeshAs(gravityMesh, "all");
-    rval &= meshWalker.AddMidlineInfo(*gravityMerged.FindSubMesh("all"));
+    rval &= meshWalker.AddMidlineInfo(*gravityMerged.submeshFromGroupName("all"));
     ConverterAssert(rval, "SectorWalker was able to add midline info to sectors");
   }
 
   ToolMesh killMerged;
   if (killMesh.numSubMeshes()) {
     killMerged.MergeToolMeshAs(killMesh, "all");
-    rval &= meshWalker.AddKillInfo(*killMerged.FindSubMesh("all"));
+    rval &= meshWalker.AddKillInfo(*killMerged.submeshFromGroupName("all"));
     ConverterAssert(rval, "SectorWalker was able to add kill info to sectors");
   }
 
@@ -1320,7 +1320,8 @@ bool DAEToSECCollision(const tokenlist& options) {
 
     ToolMesh merged;
     merged.MergeToolMeshAs(collisionMesh, "all");
-    ToolmeshToVertexIndexArrays(*merged.FindSubMesh("all"), saveData.mTrackVerts, saveData.mTrackIndices, saveData.mTrackFlags);
+    ToolmeshToVertexIndexArrays(
+        *merged.submeshFromGroupName("all"), saveData.mTrackVerts, saveData.mTrackIndices, saveData.mTrackFlags);
 
     rval &= ent::bullet::Track::Save(outPath, saveData);
 

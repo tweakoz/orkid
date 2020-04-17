@@ -33,6 +33,18 @@ namespace ork::meshutil {
 
 struct XgmClusterizer;
 struct XgmClusterBuilder;
+struct Mesh;
+struct submesh;
+struct MaterialGroup;
+struct MaterialInfo;
+
+using mesh_ptr_t          = std::shared_ptr<Mesh>;
+using submesh_ptr_t       = std::shared_ptr<submesh>;
+using submesh_constptr_t  = std::shared_ptr<const submesh>;
+using submesh_lut_t       = std::map<std::string, submesh_ptr_t>;
+using materialgroup_ptr_t = std::shared_ptr<MaterialGroup>;
+using material_info_ptr_t = std::shared_ptr<MaterialInfo>;
+using material_info_map_t = std::map<std::string, material_info_ptr_t>;
 
 struct MaterialBindingItem {
   std::string mMaterialName;
@@ -183,8 +195,6 @@ struct MaterialGroup {
 
 struct Mesh {
 
-  using material_info_ptr_t = std::shared_ptr<MaterialInfo>;
-  using material_info_map_t = std::map<std::string, material_info_ptr_t>;
   /////////////////////////////////////////////////////////////////////////
 
   Mesh();
@@ -238,13 +248,8 @@ struct Mesh {
   /////////////////////////////////////////////////////////////////////////
   void ReadFromXGM(const file::Path& inpath);
   void ReadFromWavefrontObj(const file::Path& inpath);
-
   /////////////////////////////////////////////////////////////////////////
-
-  /////////////////////////////////////////////////////////////////////////
-
   AABox GetAABox() const;
-
   /////////////////////////////////////////////////////////////////////////
 
   void SetRangeTransform(const fvec4& VScale, const fvec4& VTrans);
@@ -254,7 +259,7 @@ struct Mesh {
   void MergeToolMeshAs(const Mesh& sr, const char* pgroupname);
   void MergeToolMeshThreadedExcluding(const Mesh& sr, int inumthreads, const std::set<std::string>& ExcludeSet);
   void MergeToolMeshThreaded(const Mesh& sr, int inumthreads);
-  void MergeSubMesh(const Mesh& src, const submesh* pgrp, const char* newname);
+  void MergeSubMesh(const Mesh& src, const submesh& pgrp, const char* newname);
   void MergeSubMesh(const submesh& pgrp, const char* newname);
   void MergeSubMesh(const submesh& pgrp);
   submesh& MergeSubMesh(const char* pname);
@@ -262,7 +267,7 @@ struct Mesh {
 
   /////////////////////////////////////////////////////////////////////////
 
-  const orklut<std::string, submesh*>& RefSubMeshLut() const;
+  const submesh_lut_t& RefSubMeshLut() const;
   const material_semanticmap_t& RefShadingGroupToMaterialMap() const {
     return mShadingGroupToMaterialMap;
   }
@@ -270,14 +275,14 @@ struct Mesh {
     return mShadingGroupToMaterialMap;
   }
 
-  int numSubMeshes() const {
-    return int(mPolyGroupLut.size());
+  size_t numSubMeshes() const {
+    return int(_submeshesByPolyGroup.size());
   }
 
-  const submesh* FindSubMeshFromMaterialName(const std::string& materialname) const;
-  submesh* FindSubMeshFromMaterialName(const std::string& materialname);
-  const submesh* FindSubMesh(const std::string& grpname) const;
-  submesh* FindSubMesh(const std::string& grpname);
+  submesh_constptr_t submeshFromMaterialName(const std::string& materialname) const;
+  submesh_ptr_t submeshFromMaterialName(const std::string& materialname);
+  submesh_constptr_t submeshFromGroupName(const std::string& grpname) const;
+  submesh_ptr_t submeshFromGroupName(const std::string& grpname);
 
   /////////////////////////////////////////////////////////////////////////
 
@@ -291,13 +296,12 @@ struct Mesh {
   fvec4 mRangeTranslate;
   fmtx4 mMatRange;
   orkmap<std::string, std::string> _annotations;
-  orklut<std::string, submesh*> mPolyGroupLut;
+  submesh_lut_t _submeshesByPolyGroup;
   material_semanticmap_t mShadingGroupToMaterialMap;
   LightContainer mLights;
   bool _mergeEdges;
   ork::lev2::MaterialMap mFxmMaterialMap;
 
-private:
   Mesh(const Mesh& oth) {
     OrkAssert(false);
   }

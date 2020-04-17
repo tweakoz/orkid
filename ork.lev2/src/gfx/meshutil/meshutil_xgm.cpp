@@ -37,12 +37,12 @@ void Mesh::WriteToRgmFile(const file::Path& outpath) const {
     HeaderStream->AddItem(ival);
   }
   ///////////////////////////////////////////////////////////
-  int inumsubs = (int)mPolyGroupLut.size();
+  int inumsubs = (int)_submeshesByPolyGroup.size();
   int inumtotv = 0;
   int inumtotp = 0;
   HeaderStream->AddItem(inumsubs);
   ///////////////////////////////////////////////////////////
-  for (orklut<std::string, submesh*>::const_iterator it = mPolyGroupLut.begin(); it != mPolyGroupLut.end(); it++) {
+  for (auto it = _submeshesByPolyGroup.begin(); it != _submeshesByPolyGroup.end(); it++) {
     const submesh& sub      = *it->second;
     const vertexpool& vpool = sub.RefVertexPool();
     const std::string& name = it->first;
@@ -184,11 +184,11 @@ void MeshToXgmModel(const Mesh& tmesh, ork::lev2::XgmModel& mdlout) {
   mdlout.AddMesh(ork::AddPooledString("Mesh1"), outmesh);
   /////////////////////////////////////////////////////////
   outmesh->ReserveSubMeshes(inumsubs);
-  const orklut<std::string, submesh*>& submeshlut = tmesh.RefSubMeshLut();
+  auto& submeshlut = tmesh.RefSubMeshLut();
 
-  for (orklut<std::string, submesh*>::const_iterator it = submeshlut.begin(); it != submeshlut.end(); it++) {
+  for (auto it = submeshlut.begin(); it != submeshlut.end(); it++) {
     const std::string& pgname = it->first;
-    const submesh* srcsub     = it->second;
+    auto srcsub               = it->second;
 
     ork::lev2::XgmSubMesh* dstsub = new ork::lev2::XgmSubMesh;
     simpleToolSubMeshToXgmSubMesh(tmesh, *srcsub, *dstsub);

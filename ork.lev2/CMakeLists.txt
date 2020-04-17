@@ -69,7 +69,7 @@ ENDIF()
 
 list(APPEND libs embree3 mpfr igl )
 
-target_link_libraries(ork_lev2 ${libs} triangle)
+target_link_libraries(ork_lev2 ${libs} triangle tetgen)
 
 target_include_directories (ork_lev2 PRIVATE $ENV{OBT_STAGE}/include )
 target_include_directories (ork_lev2 PRIVATE ${INCD} )
@@ -77,6 +77,7 @@ target_include_directories (ork_lev2 PRIVATE ${COREINCD} )
 target_include_directories (ork_lev2 PRIVATE ${TUIOINCD} )
 target_include_directories (ork_lev2 PRIVATE $ENV{QTDIR}/include/QtGui/$ENV{QTVER})
 #target_include_directories (ork_lev2 PRIVATE $ENV{OBT_BUILDS}/igl/external/glad/include )
+target_include_directories (ork_lev2 PRIVATE $ENV{OBT_BUILDS}/igl/external/tetgen )
 
 ###################################
 

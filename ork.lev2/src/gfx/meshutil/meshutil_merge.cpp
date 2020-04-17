@@ -51,21 +51,22 @@ void Mesh::MergeSubMesh(const submesh& src) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Mesh::MergeSubMesh(const Mesh& src, const submesh* pgrp, const char* newname) {
-  float ftimeA       = float(OldSchool::GetRef().GetLoResTime());
-  submesh* pnewgroup = FindSubMesh(newname);
-  if (0 == pnewgroup) {
-    pnewgroup = mPolyGroupLut.AddSorted(newname, new submesh)->second;
+void Mesh::MergeSubMesh(const Mesh& src, const submesh& pgrp, const char* newname) {
+  float ftimeA   = float(OldSchool::GetRef().GetLoResTime());
+  auto pnewgroup = submeshFromGroupName(newname);
+  if (nullptr == pnewgroup) {
+    pnewgroup                      = std::make_shared<submesh>();
+    _submeshesByPolyGroup[newname] = pnewgroup;
   }
-  int inumpingroup = pgrp->GetNumPolys();
+  int inumpingroup = pgrp.GetNumPolys();
   for (int i = 0; i < inumpingroup; i++) {
-    const poly& ply = pgrp->RefPoly(i);
+    const poly& ply = pgrp.RefPoly(i);
     int inumpv      = ply.GetNumSides();
     poly NewPoly;
     NewPoly.miNumSides = inumpv;
     for (int iv = 0; iv < inumpv; iv++) {
       int ivi               = ply.GetVertexID(iv);
-      const vertex& vtx     = pgrp->RefVertexPool().GetVertex(ivi);
+      const vertex& vtx     = pgrp.RefVertexPool().GetVertex(ivi);
       auto newvtx           = pnewgroup->newMergeVertex(vtx);
       NewPoly._vertices[iv] = newvtx;
     }
@@ -195,9 +196,9 @@ void Mesh::MergeToolMeshThreadedExcluding(const Mesh& sr, int inumthreads, const
   MergeToolMeshQueue Q;
   orkvector<MergeToolMeshQueueItem>& QV = Q.mJobSet.LockForWrite();
   {
-    for (orklut<std::string, submesh*>::const_iterator it = sr.mPolyGroupLut.begin(); it != sr.mPolyGroupLut.end(); it++) {
-      const submesh& src_grp  = *it->second;
-      const std::string& name = it->first;
+    for (auto it : sr._submeshesByPolyGroup) {
+      const submesh& src_grp  = *it.second;
+      const std::string& name = it.first;
 
       if (ExcludeSet.find(name) == ExcludeSet.end()) {
         submesh& dest_grp = MergeSubMesh(name.c_str());
@@ -250,7 +251,7 @@ void Mesh::MergeToolMeshThreaded(const Mesh& sr, int inumthreads) {
 
 void Mesh::MergeToolMeshAs(const Mesh& sr, const char* pgroupname) {
   submesh& dest_group = MergeSubMesh(pgroupname);
-  for (orklut<std::string, submesh*>::const_iterator itpg = sr.mPolyGroupLut.begin(); itpg != sr.mPolyGroupLut.end(); itpg++) {
+  for (auto itpg = sr._submeshesByPolyGroup.begin(); itpg != sr._submeshesByPolyGroup.end(); itpg++) {
     const submesh& src_group = *itpg->second;
     int inump                = src_group.GetNumPolys();
     for (int ip = 0; ip < inump; ip++) {
@@ -275,27 +276,33 @@ void Mesh::MergeToolMeshAs(const Mesh& sr, const char* pgroupname) {
 ///////////////////////////////////////////////////////////////////////////////
 
 submesh& Mesh::MergeSubMesh(const char* pname) {
-  orklut<std::string, submesh*>::iterator itpg = mPolyGroupLut.find(pname);
-  if (itpg == mPolyGroupLut.end()) {
-    itpg               = mPolyGroupLut.AddSorted(pname, new submesh);
-    itpg->second->name = pname;
+  auto itpg = _submeshesByPolyGroup.find(pname);
+  submesh_ptr_t subm;
+  if (itpg == _submeshesByPolyGroup.end()) {
+    subm                         = std::make_shared<submesh>();
+    subm->name                   = pname;
+    _submeshesByPolyGroup[pname] = subm;
+  } else {
+    subm = itpg->second;
   }
-  submesh& pret = *itpg->second;
-  return pret;
+  return *subm;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 submesh& Mesh::MergeSubMesh(const char* pname, const AnnotationMap& merge_annos) {
-  orklut<std::string, submesh*>::iterator itpg = mPolyGroupLut.find(pname);
-  if (itpg == mPolyGroupLut.end()) {
-    submesh* nsm = new submesh;
-    nsm->MergeAnnos(merge_annos, true);
-    itpg = mPolyGroupLut.AddSorted(pname, nsm);
+  auto itpg = _submeshesByPolyGroup.find(pname);
+  submesh_ptr_t subm;
+  if (itpg == _submeshesByPolyGroup.end()) {
+    subm       = std::make_shared<submesh>();
+    subm->name = pname;
+    subm->MergeAnnos(merge_annos, true);
+    _submeshesByPolyGroup[pname] = subm;
+  } else {
+    subm = itpg->second;
   }
-  submesh& pret = *itpg->second;
-  return pret;
-}
+  return *subm;
+} // namespace ork::meshutil
 
 ///////////////////////////////////////////////////////////////////////////////
 

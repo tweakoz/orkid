@@ -689,7 +689,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
                           ? ork::lev2::EVtxStreamFormat::V12N12B12T8I4W4
                           : ork::lev2::EVtxStreamFormat::V12N12B12T16;
   struct SubRec {
-    ork::meshutil::submesh* _toolsub            = nullptr;
+    ork::meshutil::submesh_ptr_t _toolsub;
     ork::meshutil::MaterialGroup* _toolmgrp     = nullptr;
     ork::meshutil::XgmClusterizer* _clusterizer = nullptr;
     ork::lev2::PBRMaterial* _pbrmaterial        = nullptr;
@@ -706,9 +706,9 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
   for (auto item : inp_model.RefSubMeshLut()) {
     // printf("BEGIN: clusterizing submesh<%d>\n", subindex);
     subindex++;
-    ork::meshutil::submesh* inp_submesh = item.second;
-    auto& mtlset                        = inp_submesh->typedAnnotation<std::set<int>>("materialset");
-    auto gltfmtl                        = inp_submesh->typedAnnotation<GltfMaterial*>("gltfmaterial");
+    auto inp_submesh = item.second;
+    auto& mtlset     = inp_submesh->typedAnnotation<std::set<int>>("materialset");
+    auto gltfmtl     = inp_submesh->typedAnnotation<GltfMaterial*>("gltfmaterial");
     assert(mtlset.size() == 1); // assimp does 1 material per submesh
 
     auto mtlout = new ork::lev2::PBRMaterial();

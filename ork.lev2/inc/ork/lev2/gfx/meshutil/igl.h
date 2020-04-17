@@ -13,31 +13,56 @@ namespace ork::meshutil {
   };
   using iglprinciplecurvature_ptr_t = std::shared_ptr<IglPrincipleCurvature>;
 
+  struct UniqueEdges {
+    Eigen::MatrixXi E, uE, EMAP;
+    std::vector<std::vector<size_t>> _ue2e;
+    size_t _count = 0;
+  };
+  using unique_edges_ptr_t = std::shared_ptr<UniqueEdges>;
+
+  struct ManifoldExtraction{
+    Eigen::VectorXi P;
+    Eigen::MatrixXi per_patch_cells;
+    size_t _numpatches = 0;
+    size_t _numcells = 0;
+  };
+  using manifold_extraction_ptr_t = std::shared_ptr<ManifoldExtraction>;
 
   struct IglMesh {
     IglMesh() {}
     IglMesh(const submesh& inp_submesh, int numsides);
     IglMesh(const Eigen::MatrixXd& verts, const Eigen::MatrixXi& faces);
-    Eigen::MatrixXd computeFaceNormals() const;
-    Eigen::MatrixXd computeVertexNormals() const;
-    Eigen::MatrixXd computeCornerNormals(float dihedral_angle) const;
-    Eigen::VectorXd computeGaussianCurvature() const;
-    iglprinciplecurvature_ptr_t computePrincipleCurvature() const;
-    Eigen::MatrixXd parameterizeHarmonic() const;
-    Eigen::MatrixXd parameterizeLCSM();
-    iglmesh_ptr_t parameterizedSCAF(int numiters, double scale,double bias) const;
+    ////////////////////////////////
+    size_t numFaces() const;
+    size_t numEdges() const;
+    size_t sidesPerFace() const;
+    size_t numVertices() const;
+    bool isVertexManifold() const;
+    bool isEdgeManifold() const;
+    size_t genus() const;
     fvec4 computeAreaStatistics() const;
     fvec4 computeAngleStatistics() const;
     size_t countIrregularVertices() const;
     double averageEdgeLength() const;
+    unique_edges_ptr_t uniqueEdges() const;
+    manifold_extraction_ptr_t extractManifolds() const;
+    ////////////////////////////////
+    Eigen::MatrixXd computeFaceNormals() const;
+    Eigen::MatrixXd computeVertexNormals() const;
+    Eigen::MatrixXd computeCornerNormals(float dihedral_angle) const;
+    Eigen::MatrixXd parameterizeHarmonic() const;
+    Eigen::MatrixXd parameterizeLCSM();
+    Eigen::VectorXd ambientOcclusion(int numsamples) const;
+    Eigen::VectorXd computeGaussianCurvature() const;
+    iglprinciplecurvature_ptr_t computePrincipleCurvature() const;
+    ////////////////////////////////
+    iglmesh_ptr_t decimated(float amount) const;
+    iglmesh_ptr_t parameterizedSCAF(int numiters, double scale,double bias) const;
     iglmesh_ptr_t cleaned() const;
     iglmesh_ptr_t reOriented() const;
-    Eigen::VectorXd ambientOcclusion(int numsamples) const;
+    iglmesh_ptr_t triangulated() const;
     submesh_ptr_t toSubMesh() const;
-
-    int _numvertices = 0;
-    int _numfaces = 0;
-    int _sidesPerFace = 0;
+    ////////////////////////////////
     Eigen::MatrixXd _verts;
     Eigen::MatrixXi _faces;
     Eigen::MatrixXd _normals;
