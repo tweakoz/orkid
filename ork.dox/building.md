@@ -18,7 +18,7 @@ To bootstrap on Osx Catalina (10.15)+
 * ```git submodule update```
 * ```git lfs update```
 * ```git lfs pull```
-* ```obt.osx.installdeps.py``` <- install system deps (requires homebrew already setup)
+* ```./ork.build/bin/obt.osx.installdeps.py``` <- install system deps (requires homebrew already setup)
 * ```./ork.build/bin/init_env.py --create .stage``` <- this creates a staging 'container' folder and launches an environment
 * ```./build.py --ez``` <- builds deps and orkid (into staging folder)
 * ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
