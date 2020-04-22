@@ -318,10 +318,10 @@ void Image::compressRGBA(CompressedImage& imgout) const {
   // parallel ISPC-RGBA compressor
   ////////////////////////////////////////
   auto opgroup = opq::createCompletionGroup(opq::concurrentQueue(),"RGBAENC");
-  auto src_base = (uint8_t*) src_as_rgba._data->data();
-  auto dst_base = (uint8_t*)imgout._data->allocateBlock(imgout._blocked_width * imgout._blocked_height);
   size_t src_stride = _width * _numcomponents;
   size_t dst_stride = _width * 4;
+  auto src_base = (uint8_t*) src_as_rgba._data->data();
+  auto dst_base = (uint8_t*)imgout._data->allocateBlock(dst_stride*_height);
   for( int y=0; y<_height; y++ ){
     opgroup->enqueue([=](){
     auto src_line = src_base+y*src_stride;
