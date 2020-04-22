@@ -24,8 +24,6 @@
 #include <igl/decimate.h>
 #include <igl/doublearea.h>
 #include <igl/edge_flaps.h>
-#include <igl/embree/reorient_facets_raycast.h>
-#include <igl/embree/ambient_occlusion.h>
 #include <igl/exterior_edges.h>
 #include <igl/flipped_triangles.h>
 #include <igl/gaussian_curvature.h>
@@ -56,6 +54,9 @@
 #include <igl/winding_number.h>
 #include <igl/copyleft/cgal/mesh_boolean.h>
 #include <igl/MeshBooleanType.h>
+
+#include <igl/embree/reorient_facets_raycast.h>
+#include <igl/embree/ambient_occlusion.h>
 
 #include <Eigen/Core>
 

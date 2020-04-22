@@ -220,14 +220,14 @@ void pyinit_meshutil(py::module& module_lev2) {
             return inpmesh->countIrregularVertices();
           })
       .def(
-          "reOriented",
-          [](iglmesh_constptr_t inpmesh) -> iglmesh_ptr_t { //
-            return inpmesh->reOriented();
-          })
-      .def(
           "cleaned",
           [](iglmesh_constptr_t inpmesh) -> iglmesh_ptr_t { //
             return inpmesh->cleaned();
+          })
+      .def(
+          "reOriented",
+          [](iglmesh_constptr_t inpmesh) -> iglmesh_ptr_t { //
+            return inpmesh->reOriented();
           })
       .def(
           "ambientOcclusion",
