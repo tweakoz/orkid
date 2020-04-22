@@ -338,7 +338,7 @@ void Image::compressRGBA(CompressedImage& imgout) const {
           }
           break;
         case 4:
-          memcpy(dst_base,src_base,src_stride);
+          memcpy(dst_line,src_line,src_stride);
           break;
         default:
           OrkAssert(false);
