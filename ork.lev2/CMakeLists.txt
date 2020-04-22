@@ -67,7 +67,10 @@ IF(PROFILER)
   list(APPEND libs easy_profiler)
 ENDIF()
 
-list(APPEND libs embree3 mpfr igl )
+list(APPEND libs embree3 mpfr gmp )
+IF(${UNIX})
+  list(APPEND igl )
+ENDIF()
 
 target_link_libraries(ork_lev2 ${libs} triangle tetgen)
 

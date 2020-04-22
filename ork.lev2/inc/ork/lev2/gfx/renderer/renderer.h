@@ -13,10 +13,10 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "renderable.h"
-#include "rendercontext.h"
-#include "renderqueue.h"
-#include "renderer_enum.h"
+#include <ork/lev2/gfx/renderer/renderable.h>
+#include <ork/lev2/gfx/renderer/rendercontext.h>
+#include <ork/lev2/gfx/renderer/renderqueue.h>
+#include <ork/lev2/gfx/renderer/renderer_enum.h>
 #include <ork/gfx/radixsort.h>
 
 ///////////////////////////////////////////////////////////////////////////////

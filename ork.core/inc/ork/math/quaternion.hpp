@@ -20,8 +20,8 @@ template <typename T> Quaternion<T>::Quaternion(T _x, T _y, T _z, T _w) {
   z = (_z);
   w = (_w);
 }
-template <typename T> Quaternion<T>::Quaternion(const Vector3<T>& axis,float angle) {
-  this->fromAxisAngle(Vector4<T>(axis,angle));
+template <typename T> Quaternion<T>::Quaternion(const Vector3<T>& axis, float angle) {
+  this->fromAxisAngle(Vector4<T>(axis, angle));
 }
 
 template <typename T> Vector3<T> Quaternion<T>::toEuler() const {
@@ -50,18 +50,11 @@ template <typename T> Vector3<T> Quaternion<T>::toEuler() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Quaternion<T> Quaternion<T>::Lerp(const Quaternion<T>& a, const Quaternion<T>& b, T alpha) {
-  bool bflip;
-
-  Quaternion q;
 
   T cos_t = a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 
   /* if B is on opposite hemisphere from A, use -B instead */
-  if (cos_t < T(0.0f)) {
-    bflip = TRUE;
-  } else {
-    bflip = FALSE;
-  }
+  bool bflip = (cos_t < T(0.0f));
 
   T beta   = T(1.0f) - alpha;
   T alpha2 = alpha;
@@ -70,6 +63,7 @@ template <typename T> Quaternion<T> Quaternion<T>::Lerp(const Quaternion<T>& a, 
     alpha2 = -alpha2;
   }
 
+  Quaternion q;
   q.x = (beta * a.x + alpha2 * b.x);
   q.y = (beta * a.y + alpha2 * b.y);
   q.z = (beta * a.z + alpha2 * b.z);
@@ -86,8 +80,8 @@ template <typename T> Quaternion<T>::Quaternion(const Matrix33<T>& matrix) {
 }
 
 template <typename T> Quaternion<T> Quaternion<T>::operator*(const Quaternion<T>& rhs) const {
-    return this->Multiply(rhs);
-  }
+  return this->Multiply(rhs);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

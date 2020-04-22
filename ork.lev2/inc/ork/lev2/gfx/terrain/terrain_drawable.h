@@ -1,5 +1,5 @@
 #pragma once
-#include "heightmap.h"
+#include <ork/lev2/gfx/terrain/heightmap.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/lev2_asset.h>
 ///////////////////////////////////////////////////////////////////////////////

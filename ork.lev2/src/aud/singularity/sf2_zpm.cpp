@@ -5,9 +5,9 @@
 
 #include <ork/file/file.h>
 #include <ork/math/audiomath.h>
-#include "sf2.h"
-#include "krzdata.h"
-#include "krzobjects.h"
+#include <ork/lev2/aud/singularity/sf2.h>
+#include <ork/lev2/aud/singularity/krzdata.h>
+#include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/kernel/string/string.h>
 
 using namespace ork::audiomath;
@@ -16,15 +16,14 @@ using namespace ork::audiomath;
 
 namespace ork::audio::singularity::sf2 {
 
-//SF2Sample<11:piano060v125> opitch<60> sta<9674166> end<10272671> isblklen<59189498>
+// SF2Sample<11:piano060v125> opitch<60> sta<9674166> end<10272671> isblklen<59189498>
 //_sample<piano060v125>
 //_sample blkstart<9674166>
 //_sample blkend<10272671>
 //_blk_start<634006142976> _blk_end<673229766656>
-//iiA<-2147483648> iiB<-2147483648> sblk<0x126aeb000>
+// iiA<-2147483648> iiB<-2147483648> sblk<0x126aeb000>
 
-void SoundFont::genZpmDB()
-{
+void SoundFont::genZpmDB() {
 #if 0
 
    _zpmDB = new VastObjectsDB;
@@ -65,7 +64,6 @@ void SoundFont::genZpmDB()
         //delcents = highestP-RKcents
         //highestP = delcents+RKcents
         //_baseCents = _kmcents+pitchadjx-1200;
-
 
 #if 0
         {
@@ -253,8 +251,8 @@ void SoundFont::genZpmDB()
    //exit(0);
 
    //////////////////////
-   #endif
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-} // namespace ork::audio::singularity::sf2 {
+} // namespace ork::audio::singularity::sf2

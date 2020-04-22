@@ -1,6 +1,6 @@
-#include "hud.h"
+#include <ork/lev2/aud/singularity/hud.h>
 #include <ork/math/cvector3.h>
-#include "dspblocks.h"
+#include <ork/lev2/aud/singularity/dspblocks.h>
 
 using namespace ork;
 #if 0

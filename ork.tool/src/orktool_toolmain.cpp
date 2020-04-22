@@ -2,6 +2,10 @@
 // Copyright 2007, Michael T. Mayers, all rights reserved.
 ////////////////////////////////////////////////////////////////////////////////
 
+#if defined(ORK_OSX)
+#include <mach-o/dyld.h>
+#endif
+
 #include <orktool/orktool_pch.h>
 #include <orktool/qtui/qtui_tool.h>
 #include <orktool/toolcore/selection.h>
@@ -19,10 +23,6 @@
 #include <QtCore/QSettings>
 
 #include <sys/resource.h>
-
-#if defined(ORK_OSX)
-#include <mach-o/dyld.h>
-#endif
 
 #include <unistd.h>
 

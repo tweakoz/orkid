@@ -11,9 +11,9 @@
 
 #include <FLAC++/decoder.h>
 
-#include "krzdata.h"
-#include "synth.h"
-#include "krzobjects.h"
+#include <ork/lev2/aud/singularity/krzdata.h>
+#include <ork/lev2/aud/singularity/synth.h>
+#include <ork/lev2/aud/singularity/krzobjects.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 

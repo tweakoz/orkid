@@ -1,5 +1,5 @@
 #pragma once
-#include "mutex.h"
+#include <ork/kernel/mutex.h>
 #include <ork/kernel/datablock.inl>
 #include <unordered_map>
 

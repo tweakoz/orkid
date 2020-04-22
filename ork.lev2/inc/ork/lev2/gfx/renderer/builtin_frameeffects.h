@@ -7,190 +7,194 @@
 
 #pragma once
 
-#include "renderer.h"
-#include "../gfxmaterial_test.h"
-#include "frametek.h"
-#include "compositor.h"
+#include <ork/lev2/gfx/renderer/renderer.h>
+#include <ork/lev2/gfx/renderer/frametek.h>
+#include <ork/lev2/gfx/renderer/compositor.h>
+#include <ork/lev2/gfx/gfxmaterial_test.h>
 
 namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class TexBuffer : public OffscreenBuffer
-{
-	public:
-
-	TexBuffer(	OffscreenBuffer *parent,
-				EBufferFormat efmt,
-				int iW, int iH );
-
+class TexBuffer : public OffscreenBuffer {
+public:
+  TexBuffer(OffscreenBuffer* parent, EBufferFormat efmt, int iW, int iH);
 };
 
 ///////////////////////////////////////////////////////////////////////////
 
-class BasicFrameTechnique : public FrameTechniqueBase
-{
+class BasicFrameTechnique : public FrameTechniqueBase {
 public:
+  BasicFrameTechnique();
 
-	BasicFrameTechnique(  );
+  virtual void Render(ork::lev2::FrameRenderer& ContextData);
 
-	virtual void Render( ork::lev2::FrameRenderer & ContextData );
-
-	bool _shouldBeginAndEndFrame;
+  bool _shouldBeginAndEndFrame;
 };
 
-class PickFrameTechnique : public FrameTechniqueBase
-{
+class PickFrameTechnique : public FrameTechniqueBase {
 public:
+  PickFrameTechnique();
 
-	PickFrameTechnique( );
-
-	virtual void Render( ork::lev2::FrameRenderer & ContextData );
+  virtual void Render(ork::lev2::FrameRenderer& ContextData);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class BuiltinFrameEffectMaterial : public GfxMaterial
-{
-	public:
+class BuiltinFrameEffectMaterial : public GfxMaterial {
+public:
+  BuiltinFrameEffectMaterial();
+  void Init(Context* pTarg);
+  void PostInit(Context* pTarg, const char* FxFile, const char* TekName);
+  void SetAuxMaps(Texture* AuxMap0, Texture* AuxMap1);
+  ~BuiltinFrameEffectMaterial() {
+  }
+  virtual void Update(void);
+  virtual bool BeginPass(Context* pTarg, int iPass = 0);
+  virtual void EndPass(Context* pTarg);
+  virtual int BeginBlock(Context* pTarg, const RenderContextInstData& MatCtx);
+  virtual void EndBlock(Context* pTarg);
+  void SetEffectAmount(float famount) {
+    mfEffectAmount = famount;
+  }
 
-	BuiltinFrameEffectMaterial();
-	void Init( Context* pTarg );
-	void PostInit( Context* pTarg , const char *FxFile, const char* TekName );
-	void SetAuxMaps( Texture *AuxMap0, Texture* AuxMap1 );
-	~BuiltinFrameEffectMaterial() {}
-	virtual void Update( void );
-	virtual bool BeginPass( Context* pTarg,int iPass=0 );
-	virtual void EndPass( Context* pTarg );
-	virtual int BeginBlock( Context* pTarg,const RenderContextInstData &MatCtx );
-	virtual void EndBlock( Context* pTarg );
-	void SetEffectAmount( float famount ) { mfEffectAmount=famount; }
+  void BindRtGroups(RtGroup* cur, RtGroup* prev) {
+    mpCurrentRtGroup  = cur;
+    mpPreviousRtGroup = prev;
+  }
 
-	void BindRtGroups( RtGroup* cur, RtGroup* prev ) { mpCurrentRtGroup=cur; mpPreviousRtGroup=prev; }
+  //////////////////////////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////////////////////////
+private:
+  RtGroup* mpCurrentRtGroup;
+  RtGroup* mpPreviousRtGroup;
 
-	private:
-
-	RtGroup*					mpCurrentRtGroup;
-	RtGroup*					mpPreviousRtGroup;
-
-	file::Path					mFxFile;
-	file::Path::NameType		mTekName;
-	FxShader*					hFX;
-	const FxShaderTechnique*	hTek;
-	const FxShaderParam*		hMVP;
-	const FxShaderParam*		hModColor;
-	const FxShaderParam*		hMrtMap0;
-	const FxShaderParam*		hMrtMap1;
-	const FxShaderParam*		hMrtMap2;
-	const FxShaderParam*		hMrtMap3;
-	const FxShaderParam*		hNoiseMap;
-	const FxShaderParam*		hAuxMap0;
-	const FxShaderParam*		hAuxMap1;
-	const FxShaderParam*		hTime;
-	const FxShaderParam*		hBlurFactor;
-	const FxShaderParam*		hEffectAmount;
-	const FxShaderParam*		hBlurFactorI;
-	const FxShaderParam*		hViewportDim;
-	Texture*					mpNoiseMap;
-	Texture*					mpAuxMap0;
-	Texture*					mpAuxMap1;
-	float						mfEffectAmount;
+  file::Path mFxFile;
+  file::Path::NameType mTekName;
+  FxShader* hFX;
+  const FxShaderTechnique* hTek;
+  const FxShaderParam* hMVP;
+  const FxShaderParam* hModColor;
+  const FxShaderParam* hMrtMap0;
+  const FxShaderParam* hMrtMap1;
+  const FxShaderParam* hMrtMap2;
+  const FxShaderParam* hMrtMap3;
+  const FxShaderParam* hNoiseMap;
+  const FxShaderParam* hAuxMap0;
+  const FxShaderParam* hAuxMap1;
+  const FxShaderParam* hTime;
+  const FxShaderParam* hBlurFactor;
+  const FxShaderParam* hEffectAmount;
+  const FxShaderParam* hBlurFactorI;
+  const FxShaderParam* hViewportDim;
+  Texture* mpNoiseMap;
+  Texture* mpAuxMap0;
+  Texture* mpAuxMap1;
+  float mfEffectAmount;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class BuiltinFrameTechniques : public FrameTechniqueBase
-{
-	static const int knumpingpongbufs = 4;
+class BuiltinFrameTechniques : public FrameTechniqueBase {
+  static const int knumpingpongbufs = 4;
 
-	bool							mbPostFxFb;
+  bool mbPostFxFb;
 
-	RtGroup*						mpHDRRtGroup[knumpingpongbufs];
+  RtGroup* mpHDRRtGroup[knumpingpongbufs];
 
-	RtGroup*						mpMrtAux0;
-	RtGroup*						mpMrtAux1;
-	RtGroup*						mpMrtFinalHD;
-	RtGroup*						mpReadRtGroup;
-	Texture*						mpRadialMap;
-    Texture*                        mpFbUvMap;
+  RtGroup* mpMrtAux0;
+  RtGroup* mpMrtAux1;
+  RtGroup* mpMrtFinalHD;
+  RtGroup* mpReadRtGroup;
+  Texture* mpRadialMap;
+  Texture* mpFbUvMap;
 
-	std::string						mEffectName;
-	TexBuffer*						mpAuxBuffer0;
-	TexBuffer*						mpAuxBuffer1;
-	BuiltinFrameEffectMaterial		mFrameEffectNZPAC; //[n3 z1] [p3 amb1] [c3]
-	BuiltinFrameEffectMaterial		mFrameEffectRadialBlur;
-	BuiltinFrameEffectMaterial		mFrameEffectBlurX;
-	BuiltinFrameEffectMaterial		mFrameEffectBlurY;
-	BuiltinFrameEffectMaterial		mFrameEffectStandard;
-	BuiltinFrameEffectMaterial		mFrameEffectComic;
-	BuiltinFrameEffectMaterial		mFrameEffectGlowJoin;
-	BuiltinFrameEffectMaterial		mFrameEffectGhostJoin;
-	BuiltinFrameEffectMaterial		mFrameEffectDofJoin;
-	BuiltinFrameEffectMaterial		mFrameEffectAfterLifeJoin;
-	BuiltinFrameEffectMaterial		mFrameEffectPainterly;
-	BuiltinFrameEffectMaterial		mFrameEffectDbgNormals;
-	BuiltinFrameEffectMaterial		mFrameEffectDbgDepth;
-	ork::lev2::GfxMaterial3DSolid	mUtilMaterial;
+  std::string mEffectName;
+  TexBuffer* mpAuxBuffer0;
+  TexBuffer* mpAuxBuffer1;
+  BuiltinFrameEffectMaterial mFrameEffectNZPAC; //[n3 z1] [p3 amb1] [c3]
+  BuiltinFrameEffectMaterial mFrameEffectRadialBlur;
+  BuiltinFrameEffectMaterial mFrameEffectBlurX;
+  BuiltinFrameEffectMaterial mFrameEffectBlurY;
+  BuiltinFrameEffectMaterial mFrameEffectStandard;
+  BuiltinFrameEffectMaterial mFrameEffectComic;
+  BuiltinFrameEffectMaterial mFrameEffectGlowJoin;
+  BuiltinFrameEffectMaterial mFrameEffectGhostJoin;
+  BuiltinFrameEffectMaterial mFrameEffectDofJoin;
+  BuiltinFrameEffectMaterial mFrameEffectAfterLifeJoin;
+  BuiltinFrameEffectMaterial mFrameEffectPainterly;
+  BuiltinFrameEffectMaterial mFrameEffectDbgNormals;
+  BuiltinFrameEffectMaterial mFrameEffectDbgDepth;
+  ork::lev2::GfxMaterial3DSolid mUtilMaterial;
 
-	ork::lev2::GfxMaterial3DSolid	mFBinMaterial;
-	BuiltinFrameEffectMaterial		mFBoutMaterial;
+  ork::lev2::GfxMaterial3DSolid mFBinMaterial;
+  BuiltinFrameEffectMaterial mFBoutMaterial;
 
-	void PreProcess( RenderContextFrameData& FrameData );
-	void PostProcess( RenderContextFrameData& FrameData );
+  void PreProcess(RenderContextFrameData& FrameData);
+  void PostProcess(RenderContextFrameData& FrameData);
 
 public:
+  void update(const CompositingPassData& CPD, int itargw, int itargh) final;
 
-	void update(const CompositingPassData& CPD, int itargw, int itargh) final;
+  CompositingPassData createPassData(const lev2::CompositingGroup* group);
 
-	CompositingPassData createPassData(const lev2::CompositingGroup* group);
+  RtGroup* GetNextWriteRtGroup() const;
+  void SetReadRtGroup(RtGroup* pgrp) {
+    mpReadRtGroup = pgrp;
+  }
+  RtGroup* GetReadRtGroup() const {
+    return mpReadRtGroup;
+  }
 
-	RtGroup* GetNextWriteRtGroup() const;
-	void SetReadRtGroup( RtGroup* pgrp ) { mpReadRtGroup=pgrp; }
-	RtGroup* GetReadRtGroup() const { return mpReadRtGroup; }
+  void SetPostFxFb(bool bena) {
+    mbPostFxFb = bena;
+  }
 
-	void SetPostFxFb( bool bena ) { mbPostFxFb=bena; }
+  int GetW() const {
+    return miWidth;
+  }
+  int GetH() const {
+    return miHeight;
+  }
 
-	int GetW() const { return miWidth; }
-	int GetH() const { return miHeight; }
+  void ResizeFinalBuffer(int iw, int ih);
+  void ResizeFxBuffer(int iw, int ih);
 
-	void ResizeFinalBuffer( int iw, int ih );
-	void ResizeFxBuffer( int iw, int ih );
+  float mfAmount;
+  float mfFeedbackAmount;
+  int miWidth;
+  int miHeight;
+  int miFinalW;
+  int miFinalH;
+  int miFxW;
+  int miFxH;
+  float mfSourceAmplitude;
+  mutable int miRtGroupIndex;
 
-	float	mfAmount;
-	float	mfFeedbackAmount;
-	int							miWidth;
-	int							miHeight;
-	int							miFinalW;
-	int							miFinalH;
-	int							miFxW;
-	int							miFxH;
-	float						mfSourceAmplitude;
-	mutable int					miRtGroupIndex;
+  RtGroup* mOutputRt;
 
-	RtGroup*					mOutputRt;
-
-	void DoInit( Context* ptgt );
-	BuiltinFrameTechniques( int iW, int iH );
-	~BuiltinFrameTechniques();
-	virtual void Render( FrameRenderer & ContextData );
-	void SetEffect( const char *EffectName, float famount=0.0f, float feedbackamt=0.0f );
-    virtual RtGroup* GetFinalRenderTarget() const { return mOutputRt; }
-    void SetFbUvMap( Texture* ptex ) { mpFbUvMap=ptex; }
+  void DoInit(Context* ptgt);
+  BuiltinFrameTechniques(int iW, int iH);
+  ~BuiltinFrameTechniques();
+  virtual void Render(FrameRenderer& ContextData);
+  void SetEffect(const char* EffectName, float famount = 0.0f, float feedbackamt = 0.0f);
+  virtual RtGroup* GetFinalRenderTarget() const {
+    return mOutputRt;
+  }
+  void SetFbUvMap(Texture* ptex) {
+    mpFbUvMap = ptex;
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////
 
-class ShadowFrameTechnique : public FrameTechniqueBase
-{
-	RtGroup* _pRtGroup;
-	TexBuffer* _pShadowBuffer;
+class ShadowFrameTechnique : public FrameTechniqueBase {
+  RtGroup* _pRtGroup;
+  TexBuffer* _pShadowBuffer;
 
 public:
-
-	ShadowFrameTechnique( Window* Parent, ui::Viewport* pvp, int iW, int iH );
-	void Render( FrameRenderer & ContextData ) final;
+  ShadowFrameTechnique(Window* Parent, ui::Viewport* pvp, int iW, int iH);
+  void Render(FrameRenderer& ContextData) final;
 };
 
 }} // namespace ork::lev2

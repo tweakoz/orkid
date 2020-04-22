@@ -90,10 +90,10 @@ public: //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef size_t FileH;
-typedef size_t FileStampH; // (Y6M4D5:H5M6S6) (15:17) Base Year 2000 6 bits for year goes to 2063
-typedef size_t LibraryH;
-typedef size_t FunctionH;
+using FileH      = size_t;
+using FileStampH = size_t; // (Y6M4D5:H5M6S6) (15:17) Base Year 2000 6 bits for year goes to 2063
+using LibraryH   = size_t;
+using FunctionH  = size_t;
 
 #if defined(__cplusplus)
 }
@@ -101,8 +101,6 @@ typedef size_t FunctionH;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-constexpr bool FALSE               = false;
-constexpr bool TRUE                = true;
 constexpr double PI                = 3.141592654;
 constexpr double PI2               = 6.283185307;
 constexpr double PI1               = PI;

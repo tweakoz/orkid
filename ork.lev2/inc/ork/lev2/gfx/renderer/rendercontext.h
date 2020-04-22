@@ -10,8 +10,8 @@
 #include <ork/util/crc.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include "renderer_enum.h"
-#include "compositor.h"
+#include <ork/lev2/gfx/renderer/renderer_enum.h>
+#include <ork/lev2/gfx/renderer/compositor.h>
 
 namespace ork::lev2 {
 
