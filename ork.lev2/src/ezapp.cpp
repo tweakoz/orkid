@@ -21,8 +21,9 @@ EzApp::EzApp(int& argc, char** argv) {
   ork::SetCurrentThreadName("main");
 #if !defined(__APPLE__)
   setenv("QT_QPA_PLATFORMTHEME", "gtk2", 1); // qt5 file dialog crashes otherwise...
-// QFont arialFont("Ubuntu Regular", 15);
-// QGuiApplication::setFont(arialFont);
+  // QFont arialFont("Ubuntu Regular", 15);
+  // QGuiApplication::setFont(arialFont);
+
 #endif
   ApplicationStack::Push(this);
   /////////////////////////////////////////////
