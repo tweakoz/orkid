@@ -33,6 +33,7 @@ bool GlTextureInterface::_loadXTXTexture(Texture* ptex, datablockptr_t datablock
   ptex->_width  = load_req._cmipchain->_width;
   ptex->_height = load_req._cmipchain->_height;
   ptex->_depth  = 1;
+  ptex->_texFormat = load_req._cmipchain->_format;
   ///////////////////////////////////////////////
   auto keys = load_req._cmipchain->_varmap.dumpkeys();
   printf("\nxtx w<%lu>\n", load_req._cmipchain->_width);
@@ -81,17 +82,36 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
   for (int imip = 0; imip < inummips; imip++) {
     auto& level = req._cmipchain->_levels[imip];
     printf("mip<%d> w<%ld> h<%ld> len<%zu>\n", imip, level._width, level._height, level._data->length());
-    # if ! defined(__APPLE__)
-    glCompressedTexImage2D( //
-        GL_TEXTURE_2D,      //
-        imip,               //
-        GL_COMPRESSED_RGBA_BPTC_UNORM,
-        level._width,
-        level._height,
-        0,
-        level._data->length(),
-        level._data->data());
-    #endif
+    switch(req.ptex->_texFormat){
+      case EBufferFormat::RGBA8:
+        glTexImage2D( //
+            GL_TEXTURE_2D,      // target
+            imip,               // miplevel
+            GL_RGBA8,           // internalformat
+            level._width,       // width
+            level._height,      // height
+            0,                  // border
+            GL_RGBA,            // format
+            GL_UNSIGNED_BYTE,   // datatype
+            level._data->data());
+           break;
+      #if ! defined(__APPLE__)
+      case EBufferFormat::RGBA_BPTC_UNORM:
+        glCompressedTexImage2D( //
+            GL_TEXTURE_2D,      //
+            imip,               //
+            GL_COMPRESSED_RGBA_BPTC_UNORM,
+            level._width,
+            level._height,
+            0,
+            level._data->length(),
+            level._data->data());
+          break;
+      #endif
+      default:
+          OrkAssert(false);
+          break;
+    }
     GL_ERRORCHECK();
   }
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
