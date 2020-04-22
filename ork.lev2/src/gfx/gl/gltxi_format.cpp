@@ -251,15 +251,17 @@ void Set2DC(
     int& ih,
     DataBlockInputStream inpstream) //, int& irdptr, const u8* dataBASE )
 {
+  printf("load_dds_compressed tex<%p:%s> fmt<%08x> tgt<%08x>\n", tex, tex->_debugName.c_str(), fmt, tgt );
   for (int imip = 0; imip < inummips; imip++) {
     int iBwidth   = (iw + 3) / 4;
     int iBheight  = (ih + 3) / 4;
     int isize     = (iBwidth * iBheight) * BPP;
     auto copy_src = inpstream.current();
     inpstream.advance(isize);
-    GL_ERRORCHECK();
+    //GL_ERRORCHECK(); // TODO figure out whats up with DXT1 on the mac.
     glCompressedTexImage2D(tgt, imip, fmt, iw, ih, 0, isize, copy_src);
-    GL_ERRORCHECK();
+    glGetError();
+//GL_ERRORCHECK();
     ////////////////////////
     iw >>= 1;
     ih >>= 1;

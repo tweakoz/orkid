@@ -54,9 +54,9 @@ void CompletionGroup::enqueue(const ork::void_lambda_t& the_op) {
     auto name_str = deco::decorate(fvec3(1,0.5,0.1),_q->_name);
     auto grpn_str = deco::decorate(fvec3(1,0.3,0.0),_name);
     auto pend_str = deco::format(fvec3(1,1,0.1), "%d",num_pending);
-    printf("opq<%s> CompletionGroup<%s> ops pending<%s>     \r", 
-           name_str.c_str(), 
-           grpn_str.c_str(), 
+    printf("opq<%s> CompletionGroup<%s> ops pending<%s>     \r",
+           name_str.c_str(),
+           grpn_str.c_str(),
            pend_str.c_str());
   };
   _q->enqueue(wrapped);
@@ -514,7 +514,16 @@ opq_ptr_t concurrentQueue() {
   int numcores   = OldSchool::GetNumCores();
   int numthreads = 1;
   switch (numcores) {
-    case 4: // 4 hyperthreaded, 2 physical
+    case 8:
+      numthreads = 4;
+      break;
+    case 6:
+      numthreads = 3;
+      break;
+    case 4:
+      numthreads = 2;
+      break;
+    case 2:
       numthreads = 1;
       break;
     default:

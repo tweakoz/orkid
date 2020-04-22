@@ -56,8 +56,14 @@ struct Image {
   Image clone() const;
   void convertToRGBA(Image& imgout) const;
   void downsample(Image& imgout) const;
+
+  void compressDefault(CompressedImage& imgout) const;
+  CompressedImageMipChain compressedMipChainDefault() const;
+
   void compressBC7(CompressedImage& imgout) const;
   CompressedImageMipChain compressedMipChainBC7() const;
+  void compressRGBA(CompressedImage& imgout) const;
+  CompressedImageMipChain compressedMipChainRGBA() const;
   uint8_t* pixel(int x, int y);
   const uint8_t* pixel(int x, int y) const;
   datablockptr_t _data  = nullptr;

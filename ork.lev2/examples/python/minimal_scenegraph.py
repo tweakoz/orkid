@@ -7,7 +7,6 @@
 ################################################################################
 import time, math
 from ork.deco import Deco
-from ork.log import log
 from orkengine.core import *
 from orkengine.lev2 import *
 import _shaders

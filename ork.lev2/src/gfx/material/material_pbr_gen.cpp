@@ -207,7 +207,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
       Image im;
       im.initWithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
       CompressedImage cim;
-      im.compressBC7(cim);
+      im.compressDefault(cim);
       compressed_levels.push_back(cim);
 
       rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtGroup>>(FormatString("alt-tex-specenv-group-mip%d", imip))   = outgroup;
@@ -334,7 +334,7 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
       Image im;
       im.initWithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
       CompressedImage cim;
-      im.compressBC7(cim);
+      im.compressDefault(cim);
       compressed_levels.push_back(cim);
 
       rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtGroup>>(FormatString("alt-tex-diffenv-group-mip%d", imip))   = outgroup;

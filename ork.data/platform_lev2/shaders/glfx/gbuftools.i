@@ -67,28 +67,28 @@ libblock lib_gbuf_decode {
     decoded._wpos   = wpres.xyz;
     decoded._zeye   = wpres.w;
     uvec4 gbuf = textureLod(MapGBuffer, decoded._uv,0);
-    uint ur = (gbuf.x)&0xff;
-    uint ug = (gbuf.x>>8)&0xff;
-    uint ub = (gbuf.y)&0xff;
-    float nx = -1.0+float(gbuf.z&0x3ff)/511.5;
-    float ny = -1.0+float(gbuf.w&0x3ff)/511.5;
+    uint ur = (gbuf.x)&0xffu;
+    uint ug = (gbuf.x>>8)&0xffu;
+    uint ub = (gbuf.y)&0xffu;
+    float nx = -1.0+float(gbuf.z&0x3ffu)/511.5;
+    float ny = -1.0+float(gbuf.w&0x3ffu)/511.5;
     float nz = sqrt(abs(1-nx*nx-ny*ny));
-    bool snz = bool((gbuf.z>>14)&1);
+    bool snz = bool((gbuf.z>>14)&1u);
     if(snz)
       nz = -nz;
     vec3 nn      = vec3(nx,ny,nz);
     ///////////////////////////////
-    uint umtl = uint(gbuf.z>>10)&0x0f;
-         umtl |= uint(gbuf.w>>6)&0xf0;
+    uint umtl = uint(gbuf.z>>10)&0x0fu;
+         umtl |= uint(gbuf.w>>6)&0xf0u;
 
 
     decoded._wnrm   = normalize(nn);
     decoded._albedo = vec3(float(ur),float(ug),float(ub))*1.0/255.0;
     decoded._fogZ = o._fogZ;
     decoded._rawDepth = o._rawDepth;
-    decoded._emissive = bool((gbuf.w>>14)&1);
+    decoded._emissive = bool((gbuf.w>>14)&1u);
     decoded._metallic = float(umtl)/255.0;;
-    decoded._roughness = float((gbuf.y>>8)&0xff)/255.0;
+    decoded._roughness = float((gbuf.y>>8)&0xffu)/255.0;
     decoded._mask = bool(gbuf.w>>15);
     return decoded;
   }
@@ -102,20 +102,20 @@ libblock lib_gbuf_encode {
   /////////////////////////////////////////////////////////
   uvec4 packGbuffer(vec3 basecolor,vec3 normal,float ruf, float mtl, bool emissive){
     uvec3 ucolor = uvec3(basecolor*255.0);
-    uint r = ucolor.r&0xff;
-    uint g = ucolor.g&0xff;
-    uint b = ucolor.b&0xff;
-    uint unx = uint((normal.x+1.0)*511.5)&0x3ff;
-    uint uny = uint((normal.y+1.0)*511.5)&0x3ff;
-    uint uruf = uint(ruf*255.0)&0xff;
-    uint umtl = uint(mtl*255.0)&0xff;
+    uint r = ucolor.r&0xffu;
+    uint g = ucolor.g&0xffu;
+    uint b = ucolor.b&0xffu;
+    uint unx = uint((normal.x+1.0)*511.5)&0x3ffu;
+    uint uny = uint((normal.y+1.0)*511.5)&0x3ffu;
+    uint uruf = uint(ruf*255.0)&0xffu;
+    uint umtl = uint(mtl*255.0)&0xffu;
     uint uemissive = uint(emissive)<<14;
     uint snz = uint(normal.z<0.0)<<14;
     uint mask = 0x8000;
     uint rout = r|(g<<8);
     uint gout = b|(uruf<<8);
-    uint bout = unx|((umtl&0xf)<<10)|snz;
-    uint aout = uny|((umtl&0xf0)<<6)|uemissive|mask;
+    uint bout = unx|((umtl&0xfu)<<10)|snz;
+    uint aout = uny|((umtl&0xf0u)<<6)|uemissive|mask;
     return uvec4(rout,gout,bout,aout);
   }
   uvec4 packGbuffer_unlit(vec3 basecolor){

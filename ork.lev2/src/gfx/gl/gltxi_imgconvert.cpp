@@ -55,7 +55,7 @@ bool GlTextureInterface::_loadImageTexture(Texture* ptex, datablockptr_t src_dat
       Image img;
       img.initFromInMemoryFile("png", src_datablock->data(), src_datablock->length());
       img._debugName = ptex->_debugName;
-      auto cmipchain = img.compressedMipChainBC7();
+      auto cmipchain = img.compressedMipChainDefault();
       xtx_datablock  = std::make_shared<DataBlock>();
       cmipchain.writeXTX(xtx_datablock);
       DataBlockCache::setDataBlock(hashkey, xtx_datablock);

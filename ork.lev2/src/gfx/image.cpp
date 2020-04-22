@@ -202,6 +202,23 @@ void Image::convertToRGBA(Image& imgout) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+  void Image::compressDefault(CompressedImage& imgout) const{
+    #if defined(__APPLE__)
+    compressRGBA(imgout);
+    #else
+    compressBC7(imgout);
+    #endif
+}
+CompressedImageMipChain Image::compressedMipChainDefault() const {
+  #if defined(__APPLE__)
+  return compressedMipChainRGBA();
+  #else
+  return compressedMipChainBC7();
+  #endif
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Image::compressBC7(CompressedImage& imgout) const {
   deco::printf(_image_deco, "///////////////////////////////////\n");
   deco::printf(_image_deco, "// Image::compressBC7(%s)\n", _debugName.c_str());
@@ -275,6 +292,90 @@ CompressedImageMipChain Image::compressedMipChainBC7() const {
   return rval;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+void Image::compressRGBA(CompressedImage& imgout) const {
+  deco::printf(_image_deco, "///////////////////////////////////\n");
+  deco::printf(_image_deco, "// Image::compressRGBA(%s)\n", _debugName.c_str());
+  deco::printf(_image_deco, "// imgout._width<%zu>\n", _width);
+  deco::printf(_image_deco, "// imgout._height<%zu>\n", _height);
+  imgout._format = EBufferFormat::RGBA8;
+  OrkAssert((_numcomponents == 3) or (_numcomponents == 4));
+  imgout._width          = _width;
+  imgout._height         = _height;
+  imgout._blocked_width  = (_width + 3) & 0xfffffffc;
+  imgout._blocked_height = (_height + 3) & 0xfffffffc;
+  imgout._numcomponents  = 4;
+  //////////////////////////////////////////////////////////////////
+  imgout._data = std::make_shared<DataBlock>();
+
+  Image src_as_rgba;
+  convertToRGBA(src_as_rgba);
+
+  ork::Timer timer;
+  timer.Start();
+  ////////////////////////////////////////
+  // parallel ISPC-RGBA compressor
+  ////////////////////////////////////////
+  auto opgroup = opq::createCompletionGroup(opq::concurrentQueue(),"RGBAENC");
+  auto src_base = (uint8_t*) src_as_rgba._data->data();
+  auto dst_base = (uint8_t*)imgout._data->allocateBlock(imgout._blocked_width * imgout._blocked_height);
+  size_t src_stride = _width * _numcomponents;
+  size_t dst_stride = _width * 4;
+  for( int y=0; y<_height; y++ ){
+    opgroup->enqueue([=](){
+    auto src_line = src_base+y*src_stride;
+    auto dst_line = dst_base+y*dst_stride;
+      switch(_numcomponents){
+        case 3:
+          for( int x=0; x<_width; x++){
+            const uint8_t* src_pix_base = src_line+(x*3);
+            uint8_t* dst_pix_base = dst_line+(x*3);
+            dst_pix_base[0]=src_pix_base[0];
+            dst_pix_base[1]=src_pix_base[1];
+            dst_pix_base[2]=src_pix_base[2];
+            dst_pix_base[3]=0xff;
+          }
+          break;
+        case 4:
+          memcpy(dst_base,src_base,src_stride);
+          break;
+        default:
+          OrkAssert(false);
+          break;
+      }
+    });
+  }
+  opgroup->join();
+  ////////////////////////////////////////
+
+  float time = timer.SecsSinceStart();
+  float MPPS = float(_width * _height) * 1e-6 / time;
+  deco::printf(_image_deco, "// compression time<%g> MPPS<%g>\n", time, MPPS);
+  deco::printf(_image_deco, "///////////////////////////////////\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+CompressedImageMipChain Image::compressedMipChainRGBA() const {
+  CompressedImageMipChain rval;
+  rval._width         = _width;
+  rval._height        = _height;
+  rval._format        = EBufferFormat::RGBA8;
+  rval._numcomponents = 4;
+  Image imga          = this->clone();
+  Image imgb;
+  int mipindex = 0;
+  while ((imga._width >= 4) and (imga._height >= 4)) {
+    CompressedImage cimg;
+    imga.compressRGBA(cimg);
+    rval._levels.push_back(cimg);
+    imgb = imga;
+    imgb.downsample(imga);
+    mipindex++;
+  }
+  return rval;
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 void CompressedImageMipChain::initWithPrecompressedMipLevels(miplevels_t levels) {
