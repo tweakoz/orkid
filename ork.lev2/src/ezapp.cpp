@@ -9,7 +9,8 @@ using namespace std::string_literals;
 namespace ork::lev2 {
 void ClassInit();
 void GfxInit(const std::string& gfxlayer);
-
+constexpr uint64_t KAPPSTATEFLAG_UPDRUNNING = 1 << 0;
+constexpr uint64_t KAPPSTATEFLAG_JOINED     = 1 << 1;
 ////////////////////////////////////////////////////////////////////////////////
 struct QtAppInit {
   QtAppInit() {
@@ -167,11 +168,14 @@ struct EzViewport : public ui::Viewport {
   }
   EzMainWin* _mainwin;
 };
+bool OrkEzQtApp::checkAppState(uint64_t singlebitmask) {
+  uint64_t chk = _appstate.load() & singlebitmask;
+  return chk == singlebitmask;
+}
 
 OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
     : QApplication(argc, argv)
     , _updateThread("updatethread")
-    , _updatekill(false)
     , _mainWindow(0) {
   _update_data = std::make_shared<UpdateData>();
   _appstate    = 0;
@@ -225,7 +229,7 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
   _conq  = ork::opq::concurrentQueue();
   _mainq = ork::opq::mainSerialQueue();
   _updateThread.start([&](anyp data) {
-    _appstate.fetch_xor(1);
+    _appstate.fetch_xor(KAPPSTATEFLAG_UPDRUNNING);
     _update_timer.Start();
     _update_prevtime        = _update_timer.SecsSinceStart();
     _update_timeaccumulator = 0.0;
@@ -233,15 +237,13 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
     opq::TrackCurrent opqtest(_updq);
     double stats_timeaccum = 0;
     double state_numiters  = 0.0;
-    while (false == _updatekill) {
-
+    while (not checkAppState(KAPPSTATEFLAG_JOINED)) {
       double this_time = _update_timer.SecsSinceStart();
       double raw_delta = this_time - _update_prevtime;
       _update_prevtime = this_time;
       _update_timeaccumulator += raw_delta;
       double step = 1.0 / 120.0;
       while (_update_timeaccumulator > step) {
-
         bool do_update = bool(_mainWindow->_onUpdate);
         do_update |= bool(_mainWindow->_onUpdateWithScene);
         do_update &= bool(not _mainWindow->_dogpuinit);
@@ -249,11 +251,16 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
         if (do_update) {
           _update_data->_dt = step;
           _update_data->_abstime += step;
-          if (_mainWindow->_onUpdate)
-            _mainWindow->_onUpdate(_update_data);
-          else if (_mainWindow->_onUpdateWithScene)
-            _mainWindow->_onUpdateWithScene(_update_data, _mainWindow->_execscene);
-
+          /////////////////////////////
+          /////////////////////////////
+          if (not checkAppState(KAPPSTATEFLAG_JOINED)) {
+            if (_mainWindow->_onUpdate)
+              _mainWindow->_onUpdate(_update_data);
+            else if (_mainWindow->_onUpdateWithScene)
+              _mainWindow->_onUpdateWithScene(_update_data, _mainWindow->_execscene);
+          }
+          /////////////////////////////
+          /////////////////////////////
           state_numiters += 1.0;
         }
 
@@ -265,12 +272,11 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
           state_numiters  = 0.0;
         }
       }
-
       opq::updateSerialQueue()->Process();
       usleep(1000);
       sched_yield();
-    }
-    _appstate.fetch_xor(1);
+    } // while (not checkAppState(KAPPSTATEFLAG_UPDSIGKILL)) {
+    _appstate.fetch_xor(KAPPSTATEFLAG_UPDRUNNING);
   });
 }
 
@@ -283,11 +289,12 @@ OrkEzQtApp::~OrkEzQtApp() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void OrkEzQtApp::joinUpdate() {
-  bool has_joined_already = (2 == (_appstate.fetch_or(2) & 2));
+  uint64_t prevappsate    = _appstate.fetch_or(KAPPSTATEFLAG_JOINED);
+  bool has_joined_already =    //
+      (KAPPSTATEFLAG_JOINED == //
+       (prevappsate & KAPPSTATEFLAG_JOINED));
   if (not has_joined_already) {
-    opq::mainSerialQueue()->enqueue([this]() { _updatekill = true; });
-    /////////////////////////////////////////////
-    while (false == _updatekill) {
+    while (checkAppState(KAPPSTATEFLAG_UPDRUNNING)) {
       opq::TrackCurrent opqtest(_mainq);
       _mainq->Process();
     }

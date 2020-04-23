@@ -117,7 +117,7 @@ public:
   void setSceneRunLoop(scenegraph::scene_ptr_t scene);
 
   void joinUpdate();
-
+  bool checkAppState(uint64_t singlebitmask);
 public slots:
   void OnTimer();
 
@@ -131,7 +131,6 @@ public:
   double _update_prevtime        = 0;
   double _update_timeaccumulator = 0;
   ork::Thread _updateThread;
-  bool _updatekill;
   ork::opq::opq_ptr_t _mainq;
   ork::opq::opq_ptr_t _updq;
   ork::opq::opq_ptr_t _conq;

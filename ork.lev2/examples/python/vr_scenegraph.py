@@ -1,25 +1,28 @@
 #!/usr/bin/env python3
 ################################################################################
-# lev2 sample which renders to a window, using the scenegraph
+# lev2 sample which renders a scenegraph to an OpenVR connected HMD
 # Copyright 1996-2020, Michael T. Mayers.
 # Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
-import time, math
-from ork.deco import Deco
+import math, _shaders
 from orkengine.core import *
 from orkengine.lev2 import *
-import _shaders
-################################################
-# globals
-################################################
-deco = Deco()
-################################################
-# gpu data init:
-#  called on main thread when graphics context is
-#   made available
-##############################################
-def onGpuInitWithScene(ctx,scene):
+################################################################################
+class PyOrkApp(object):
+  ################################################
+  def __init__(self):
+    super().__init__()
+    self.sceneparams = VarMap()
+    self.sceneparams.preset = "PBRVR"
+    self.qtapp = OrkEzQtApp.create(self)
+    self.qtapp.setRefreshPolicy(RefreshFastest, 0)
+  ################################################
+  # gpu data init:
+  #  called on main thread when graphics context is
+  #   made available
+  ##############################################
+  def onGpuInit(self,ctx):
     ###################################
     frustum = Frustum()
     frustum.set(ctx.lookAt( vec3(0,0,-1),
@@ -37,7 +40,7 @@ def onGpuInitWithScene(ctx,scene):
     prim.frustum = frustum
     prim.gpuInit(ctx)
     ###################################
-    layer = scene.createLayer("layer1")
+    layer = self.scene.createLayer("layer1")
     volumetexture = Texture.load("lev2://textures/voltex_pn3")
     ###################################
     material = FreestyleMaterial(ctx,Path("orkshader://noise"))
@@ -57,41 +60,39 @@ def onGpuInitWithScene(ctx,scene):
     cameralut = CameraDataLut()
     cameralut.addCamera("spawncam",camera)
     ###################################
-    scene.user.primnode1 = primnode
-    scene.user.camera1 = camera
-    scene.user.cameralut1 = cameralut
-    scene.user.v4parref = v4parref
+    self.primnode1 = primnode
+    self.camera1 = camera
+    self.cameralut1 = cameralut
+    self.v4parref = v4parref
     ###################################
     ctx.FBI().autoclear = True
     ctx.FBI().clearcolor = vec4(.15,.15,.2,1)
-################################################
-# update:
-# technically this runs from the orkid update thread
-#  but since createWithScene() was called,
-#  the main thread will surrender the GIL completely
-#  until qtapp.exec() returns.
-#  This is useful for doing background computation.
-#   (eg. the scene is updated from python, whilst
-#        concurrently c++ is rendering..)
-################################################
-def onUpdateWithScene(updinfo,scene):
-    θ    = updinfo.absolutetime * math.pi * 2.0
-    scene.user.v4parref.z = θ*0.1
+  ################################################
+  # update:
+  # technically this runs from the orkid update thread
+  #  but since createWithScene() was called,
+  #  the main thread will surrender the GIL completely
+  #  until qtapp.exec() returns.
+  #  This is useful for doing background computation.
+  #   (eg. the scene is updated from python, whilst
+  #        concurrently c++ is rendering..)
+  ################################################
+  def onUpdate(self,updinfo):
+    θ = updinfo.absolutetime * math.pi * 2.0
+    self.v4parref.z = θ*0.01 # animate noise
     ###################################
-    cam = scene.user.camera1
-    camlut = scene.user.cameralut1
-    primnode = scene.user.primnode1
+    cam = self.camera1
+    camlut = self.cameralut1
+    primnode = self.primnode1
     ###################################
     primnode.worldMatrix.compose( vec3(0,0.25,-2.5), # pos
                                   quat(vec3(0,1,0),θ*0.01), # rot
                                   0.75) # scale
     ###################################
-    scene.updateScene(camlut) # update and enqueue all scenenodes
+    self.scene.updateScene(camlut) # update and enqueue all scenenodes
+  ################################################
+  # there is no onDraw() method here
+  #  so c++ will implement a (potentially faster) default
 ################################################
-# event loop
-##############################################
-sceneparams = VarMap()
-sceneparams.preset = "PBRVR"
-qtapp = OrkEzQtApp.createWithScene( sceneparams, onGpuInitWithScene, onUpdateWithScene )
-qtapp.setRefreshPolicy(RefreshFastest, 0)
-qtapp.exec()
+app = PyOrkApp()
+app.qtapp.exec()

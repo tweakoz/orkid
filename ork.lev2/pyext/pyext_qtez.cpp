@@ -27,64 +27,65 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
   type_codec->registerStdCodec<updatedata_ptr_t>(updata_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<OrkEzQtApp, qtezapp_ptr_t>(module_lev2, "OrkEzQtApp") //
-                                                                   ///////////////////////////////////////////////////////
-      .def_static(
-          "createWithScene",
-          [type_codec](py::object params, py::function gpuinitfn, py::function updfn) { //
-            auto decoded_params = type_codec->decode(params).Get<varmap::varmap_ptr_t>();
-            auto rval           = OrkEzQtApp::createWithScene(decoded_params);
-
-            rval->_vars.makeValueForKey<py::function>("gpuinitfn") = gpuinitfn;
-            rval->_vars.makeValueForKey<py::function>("updatefn")  = updfn;
-            drwev_t d_ev                                           = drwev_t(new ui::DrawEvent(nullptr));
-            rval->_vars.makeValueForKey<drwev_t>("drawev")         = d_ev;
-
-            rval->onGpuInitWithScene([=](Context* ctx, scenegraph::scene_ptr_t scene) { //
-              ctx->makeCurrentContext();
-              auto pyfn = rval->_vars.typedValueForKey<py::function>("gpuinitfn");
-              pyfn.value()(ctx_t(ctx), scene);
-              // The main thread is now owned by C++
-              //  therefore the main thread has to let go of the GIL
-              rval->_vars.makeValueForKey<py::gil_scoped_release>("perma-release-GIL");
-              // it will be released post-exec()
-            });
-            rval->onUpdateWithScene([=](updatedata_ptr_t updata, scenegraph::scene_ptr_t scene) { //
-              py::gil_scoped_acquire acquire;
-              auto pyfn = rval->_vars.typedValueForKey<py::function>("updatefn");
-              pyfn.value()(updata, scene);
-            });
-            return rval;
-          })
-      ///////////////////////////////////////////////////////
       .def_static(
           "create",
-          [](py::function gpuinitfn, py::function updfn, py::function drawfn) { //
+          [type_codec](py::object appinstance) { //
             auto rval = OrkEzQtApp::create();
-
-            rval->_vars.makeValueForKey<py::function>("gpuinitfn") = gpuinitfn;
-            rval->_vars.makeValueForKey<py::function>("drawfn")    = drawfn;
-            rval->_vars.makeValueForKey<py::function>("updatefn")  = updfn;
-            drwev_t d_ev                                           = drwev_t(new ui::DrawEvent(nullptr));
-            rval->_vars.makeValueForKey<drwev_t>("drawev")         = d_ev;
-
-            rval->onGpuInit([=](Context* ctx) { //
-              ctx->makeCurrentContext();
-              auto pyfn = rval->_vars.typedValueForKey<py::function>("gpuinitfn");
-              pyfn.value()(ctx_t(ctx));
-            });
-            rval->onUpdate([=](updatedata_ptr_t updata) { //
-              py::gil_scoped_acquire acquire;
-              auto pyfn = rval->_vars.typedValueForKey<py::function>("updatefn");
-              pyfn.value()();
-            });
-
-            rval->onDraw([=](const ui::DrawEvent& drwev) { //
-              auto pyfn                = rval->_vars.typedValueForKey<py::function>("drawfn");
-              auto mydrev              = rval->_vars.typedValueForKey<drwev_t>("drawev");
-              mydrev.value()->mpTarget = drwev.GetTarget();
-              pyfn.value()(drwev_t(mydrev.value()));
-            });
-
+            ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "onGpuInit")) {
+              auto gpuinitfn //
+                  = py::cast<py::function>(appinstance.attr("onGpuInit"));
+              rval->_vars.makeValueForKey<py::function>("gpuinitfn") = gpuinitfn;
+              rval->onGpuInit([=](Context* ctx) { //
+                ctx->makeCurrentContext();
+                py::gil_scoped_acquire acquire;
+                auto pyfn = rval->_vars.typedValueForKey<py::function>("gpuinitfn");
+                pyfn.value()(ctx_t(ctx));
+              });
+            }
+            ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "onDraw")) {
+              auto drawfn //
+                  = py::cast<py::function>(appinstance.attr("onDraw"));
+              rval->_vars.makeValueForKey<py::function>("drawfn") = drawfn;
+              rval->onDraw([=](const ui::DrawEvent& drwev) { //
+                ork::opq::mainSerialQueue()->Process();
+                py::gil_scoped_acquire acquire;
+                auto pyfn                = rval->_vars.typedValueForKey<py::function>("drawfn");
+                auto mydrev              = rval->_vars.typedValueForKey<drwev_t>("drawev");
+                mydrev.value()->mpTarget = drwev.GetTarget();
+                pyfn.value()(drwev_t(mydrev.value()));
+              });
+            } else if (py::hasattr(appinstance, "sceneparams")) {
+              auto sceneparams //
+                  = py::cast<varmap::varmap_ptr_t>(appinstance.attr("sceneparams"));
+              auto scene = std::make_shared<scenegraph::Scene>(sceneparams);
+              varmap::val_t scenevar;
+              scenevar.Set<scenegraph::scene_ptr_t>(scene);
+              auto pyscene = type_codec->encode(scenevar);
+              py::setattr(appinstance, "scene", pyscene);
+              rval->onDraw([=](const ui::DrawEvent& drwev) { //
+                ork::opq::mainSerialQueue()->Process();
+                auto context = drwev.GetTarget();
+                context->beginFrame();
+                scene->renderOnContext(context);
+                context->endFrame();
+              });
+            }
+            ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "onUpdate")) {
+              auto updfn //
+                  = py::cast<py::function>(appinstance.attr("onUpdate"));
+              rval->_vars.makeValueForKey<py::function>("updatefn") = updfn;
+              drwev_t d_ev                                          = drwev_t(new ui::DrawEvent(nullptr));
+              rval->_vars.makeValueForKey<drwev_t>("drawev")        = d_ev;
+              rval->onUpdate([=](updatedata_ptr_t updata) { //
+                py::gil_scoped_acquire acquire;
+                auto pyfn = rval->_vars.typedValueForKey<py::function>("updatefn");
+                pyfn.value()(updata);
+              });
+            }
+            ////////////////////////////////////////////////////////////////////
             return rval;
           })
       ///////////////////////////////////////////////////////
@@ -96,15 +97,16 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       .def(
           "exec",
           [](qtezapp_ptr_t app) -> int { //
-            int rval = app->runloop();
+            auto wrapped = [&]() -> int {
+              py::gil_scoped_release release_gil;
+              // The main thread is now owned by C++
+              //  therefore the main thread has to let go of the GIL
+              // it will be reacquired post-runloop()
+              return app->runloop();
+            };
+            int rval = wrapped();
+            // GIL reacquired
             app->joinUpdate();
-            /////////////////////////////////////////
-            // un-perma-release-GIL
-            //  (if it was previously perma-release-GIL'ed)
-            /////////////////////////////////////////
-            app->_vars.clearKey("perma-release-GIL");
-            // may call ~py::gil_scoped_release()
-            /////////////////////////////////////////
             return rval;
           });
 }

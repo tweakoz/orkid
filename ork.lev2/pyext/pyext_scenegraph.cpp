@@ -43,6 +43,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
   auto scenegraph_type = //
       py::class_<Scene, scene_ptr_t>(sgmodule, "Scene")
           .def(py::init<>())
+          .def(py::init<varmap::varmap_ptr_t>())
           .def_property_readonly(
               "user",                                      //
               [](scene_ptr_t SG) -> varmap::varmap_ptr_t { //
