@@ -14,7 +14,6 @@ import _shaders
 # globals
 ################################################
 deco = Deco()
-time_base = time.time()
 ################################################
 # gpu data init:
 #  called on main thread when graphics context is
@@ -45,7 +44,7 @@ def onGpuInitWithScene(ctx,scene):
     material_inst.monoTek = material.shader.technique("std_mono")
     material.setInstanceMvpParams(material_inst,"mvp","","")
     scene.primnode1 = prim.createNode("node1",layer,material_inst)
-    print(scene.primnode1.primitive)
+    print(scene.primnode1._primitive)
     ###################################
     scene.camera1 = CameraData()
     scene.camera1.perspective(0.1, 100.0, 45.0)
@@ -53,7 +52,7 @@ def onGpuInitWithScene(ctx,scene):
     scene.cameralut1.addCamera("spawncam",scene.camera1)
     ctx.FBI().autoclear = True
     ctx.FBI().clearcolor = vec4(.15,.15,.2,1)
-    print("YOYOYO")
+    print(deco.orange("YOYOYO"))
 ################################################
 # update:
 # technically this runs from the orkid update thread
@@ -65,8 +64,7 @@ def onGpuInitWithScene(ctx,scene):
 #        concurrently c++ is rendering..)
 ################################################
 def onUpdateWithScene(updinfo,scene):
-    Δtime = time.time()-time_base
-    θ    = Δtime * math.pi * 2.0 * 0.1
+    θ    = updinfo.absolutetime * math.pi * 2.0 * 0.1
     ###################################
     distance = 10.0
     eye = vec3(math.sin(θ), 1.0, -math.cos(θ)) * distance
@@ -76,7 +74,7 @@ def onUpdateWithScene(updinfo,scene):
     ###################################
     scene.primnode1.worldMatrix.compose( vec3(0,0,0), # pos
                                          quat(), # rot
-                                         math.sin(Δtime*2)*3) # scale
+                                         math.sin(updinfo.absolutetime*2)*3) # scale
     ###################################
     scene.updateScene(scene.cameralut1) # update and enqueue all scenenodes
 ################################################

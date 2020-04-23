@@ -170,6 +170,9 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
     , _updatekill(false)
     , _mainWindow(0) {
 
+  _update_data = std::make_shared<UpdateData>();
+  _appstate    = 0;
+
   _ezapp = EzApp::create(argc, argv);
 
   QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath());
@@ -219,12 +222,12 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
   _conq  = ork::opq::concurrentQueue();
   _mainq = ork::opq::mainSerialQueue();
   _updateThread.start([&](anyp data) {
+    _appstate.fetch_xor(1);
     _update_timer.Start();
     _update_prevtime        = _update_timer.SecsSinceStart();
     _update_timeaccumulator = 0.0;
     ork::SetCurrentThreadName("update");
     opq::TrackCurrent opqtest(_updq);
-    UpdateData updata;
     double stats_timeaccum = 0;
     double state_numiters  = 0.0;
     while (false == _updatekill) {
@@ -241,12 +244,12 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
         do_update &= bool(not _mainWindow->_dogpuinit);
 
         if (do_update) {
-          updata._dt = step;
-          updata._abstime += step;
+          _update_data->_dt = step;
+          _update_data->_abstime += step;
           if (_mainWindow->_onUpdate)
-            _mainWindow->_onUpdate(updata);
+            _mainWindow->_onUpdate(_update_data);
           else if (_mainWindow->_onUpdateWithScene)
-            _mainWindow->_onUpdateWithScene(updata, _mainWindow->_execscene);
+            _mainWindow->_onUpdateWithScene(_update_data, _mainWindow->_execscene);
 
           state_numiters += 1.0;
         }
@@ -264,21 +267,31 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
       usleep(1000);
       sched_yield();
     }
+    _appstate.fetch_xor(1);
   });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 OrkEzQtApp::~OrkEzQtApp() {
-  opq::mainSerialQueue()->enqueue([this]() { _updatekill = true; });
-  /////////////////////////////////////////////
-  while (false == _updatekill) {
-    opq::TrackCurrent opqtest(_mainq);
-    _mainq->Process();
+  joinUpdate();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void OrkEzQtApp::joinUpdate() {
+  bool has_joined_already = (2 == (_appstate.fetch_or(2) & 2));
+  if (not has_joined_already) {
+    opq::mainSerialQueue()->enqueue([this]() { _updatekill = true; });
+    /////////////////////////////////////////////
+    while (false == _updatekill) {
+      opq::TrackCurrent opqtest(_mainq);
+      _mainq->Process();
+    }
+    _updq->drain();
+    _updateThread.join();
+    DrawableBuffer::ClearAndSyncWriters();
   }
-  _updq->drain();
-  _updateThread.join();
-  DrawableBuffer::ClearAndSyncWriters();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

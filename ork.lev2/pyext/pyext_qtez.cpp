@@ -11,7 +11,21 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
   auto base_init_qtapp = []() {
 
   };
-
+  /////////////////////////////////////////////////////////////////////////////////
+  auto updata_type =                                                      //
+      py::class_<UpdateData, updatedata_ptr_t>(module_lev2, "UpdateData") //
+          .def_property_readonly(
+              "absolutetime",                         //
+              [](updatedata_ptr_t updata) -> double { //
+                return updata->_abstime;
+              })
+          .def_property_readonly(
+              "deltatime",                            //
+              [](updatedata_ptr_t updata) -> double { //
+                return updata->_dt;
+              });
+  type_codec->registerStdCodec<updatedata_ptr_t>(updata_type);
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<OrkEzQtApp, qtezapp_ptr_t>(module_lev2, "OrkEzQtApp") //
       .def_static(
           "createWithScene",
@@ -29,10 +43,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               pyfn.value()(ctx_t(ctx), scene);
               // The main thread is now owned by C++
               //  therefore the main thread has to let go of the GIL
-              rval->_vars.makeValueForKey<py::gil_scoped_release>("permaletgoGIL");
+              rval->_vars.makeValueForKey<py::gil_scoped_release>("perma-release-GIL");
               // it will be released post-exec()
             });
-            rval->onUpdateWithScene([=](UpdateData updata, scenegraph::scene_ptr_t scene) { //
+            rval->onUpdateWithScene([=](updatedata_ptr_t updata, scenegraph::scene_ptr_t scene) { //
               py::gil_scoped_acquire acquire;
               auto pyfn = rval->_vars.typedValueForKey<py::function>("updatefn");
               pyfn.value()(updata, scene);
@@ -55,7 +69,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               auto pyfn = rval->_vars.typedValueForKey<py::function>("gpuinitfn");
               pyfn.value()(ctx_t(ctx));
             });
-            rval->onUpdate([=](UpdateData updata) { //
+            rval->onUpdate([=](updatedata_ptr_t updata) { //
               py::gil_scoped_acquire acquire;
               auto pyfn = rval->_vars.typedValueForKey<py::function>("updatefn");
               pyfn.value()();
@@ -79,11 +93,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           "exec",
           [](qtezapp_ptr_t app) -> int { //
             int rval = app->runloop();
+            app->joinUpdate();
             /////////////////////////////////////////
-            // unpermarelease the GIL
-            //  (if it was previously permareleased)
+            // un-perma-release-GIL
+            //  (if it was previously perma-release-GIL'ed)
             /////////////////////////////////////////
-            app->_vars.makeValueForKey<void*>(nullptr);
+            app->_vars.clearKey("perma-release-GIL");
             // may call ~py::gil_scoped_release()
             /////////////////////////////////////////
             return rval;

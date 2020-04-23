@@ -46,6 +46,7 @@ struct UpdateData {
   double _dt      = 0.0;
   double _abstime = 0.0;
 };
+using updatedata_ptr_t = std::shared_ptr<UpdateData>;
 
 class EzMainWin : public QMainWindow {
 
@@ -57,10 +58,10 @@ public:
   typedef std::function<void(int w, int h)> onresizecb_t;
 
   typedef std::function<void(Context* ctx)> ongpuinit_t;
-  typedef std::function<void(UpdateData upd)> onupdate_t;
+  typedef std::function<void(updatedata_ptr_t upd)> onupdate_t;
 
   typedef std::function<void(Context* ctx, scenegraph::scene_ptr_t)> ongpuinitwitchscene_t;
-  typedef std::function<void(UpdateData upd, scenegraph::scene_ptr_t)> onupdatewithscene_t;
+  typedef std::function<void(updatedata_ptr_t upd, scenegraph::scene_ptr_t)> onupdatewithscene_t;
 
   typedef std::function<ui::HandlerResult(const ui::Event& ev)> onuieventcb_t;
 
@@ -114,11 +115,12 @@ public:
   int runloop();
   void setSceneRunLoop(scenegraph::scene_ptr_t scene);
 
+  void joinUpdate();
+
 public slots:
   void OnTimer();
 
   ///////////////////////////////////
-public:
 public:
   QTimer mIdleTimer;
   EzMainWin* _mainWindow;
@@ -133,6 +135,8 @@ public:
   ork::opq::opq_ptr_t _updq;
   ork::opq::opq_ptr_t _conq;
   varmap::VarMap _vars;
+  std::atomic<uint64_t> _appstate;
+  updatedata_ptr_t _update_data;
 };
 
 } // namespace ork::lev2

@@ -46,6 +46,18 @@ struct VarMap {
     return _themap[key].Make<T>(std::forward(args)...);
   }
   ///////////////////////////////////////////////////////////////////////////
+  inline void removeItemForKey(const key_t& key) {
+    auto it = _themap.find(key);
+    OrkAssert(it != _themap.end());
+    _themap.erase(it);
+  }
+  ///////////////////////////////////////////////////////////////////////////
+  inline void clearKey(const key_t& key) {
+    auto it = _themap.find(key);
+    if (it != _themap.end())
+      _themap.erase(it);
+  }
+  ///////////////////////////////////////////////////////////////////////////
   inline void setValueForKey(const key_t& key, const val_t& val) {
     _themap[key] = val;
   }
