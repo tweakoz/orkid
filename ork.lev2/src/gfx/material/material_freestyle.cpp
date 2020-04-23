@@ -311,6 +311,9 @@ bool FreestyleMaterial::materialInstanceBeginPass(materialinst_ptr_t minst, cons
       const auto& P = *as_fplane3.value().get();
       fvec4 as_vec4(P.n, P.d);
       this->bindParamVec4(param, as_vec4);
+    } else if (auto as_texture = val.TryAs<Texture*>()) {
+      auto texture = as_texture.value();
+      this->bindParamCTex(param, texture);
     } else {
       OrkAssert(false);
     }

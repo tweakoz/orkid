@@ -200,16 +200,24 @@ void pyinit_gfx(py::module& module_lev2) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<tex_t>(module_lev2, "Texture")
-      .def(
-          "__repr__",
-          [](const tex_t& tex) -> std::string {
-            fxstring<256> fxs;
-            fxs.format(
-                "Texture(%p:\"%s\") w<%d> h<%d> d<%d>", tex.get(), tex->_debugName.c_str(), tex->_width, tex->_height, tex->_depth);
-            return fxs.c_str();
-          })
-      .def_static("load", [](std::string path) -> tex_t { return Texture::LoadUnManaged(path); });
+  auto texture_type = //
+      py::class_<tex_t>(module_lev2, "Texture")
+          .def(
+              "__repr__",
+              [](const tex_t& tex) -> std::string {
+                fxstring<256> fxs;
+                fxs.format(
+                    "Texture(%p:\"%s\") w<%d> h<%d> d<%d>",
+                    tex.get(),
+                    tex->_debugName.c_str(),
+                    tex->_width,
+                    tex->_height,
+                    tex->_depth);
+                return fxs.c_str();
+              })
+          .def_static("load", [](std::string path) -> tex_t { return Texture::LoadUnManaged(path); });
+  using rawtexptr_t = Texture*;
+  type_codec->registerRawPtrCodec<tex_t, rawtexptr_t>(texture_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<RenderContextFrameData>(module_lev2, "RenderContextFrameData").def(py::init([](ctx_t& ctx) { //
     auto rcfd = std::unique_ptr<RenderContextFrameData>(new RenderContextFrameData(ctx.get()));

@@ -38,16 +38,19 @@ def onGpuInitWithScene(ctx,scene):
     prim.gpuInit(ctx)
     ###################################
     layer = scene.createLayer("layer1")
+    volumetexture = Texture.load("lev2://textures/voltex_pn3")
     ###################################
-    material = FreestyleMaterial(ctx,Path("orkshader://manip"))
+    material = FreestyleMaterial(ctx,Path("orkshader://noise"))
     material_inst = material.createInstance()
     material_inst.monoTek = material.shader.technique("std_mono")
     material_inst.stereoTek = material.shader.technique("std_stereo")
+    param_volumetex = material.shader.param("VolumeMap")
+    param_v4parref = material.shader.param("testvec4")
     material.setInstanceMvpParams(material_inst,"mvp","mvpL","mvpR")
-
+    v4parref = vec4()
+    material_inst.param[param_v4parref] = v4parref
+    material_inst.param[param_volumetex] = volumetexture
     primnode = prim.createNode("node1",layer,material_inst)
-
-    print(primnode.user._primitive)
     ###################################
     camera = CameraData()
     camera.perspective(0.1, 100.0, 45.0)
@@ -57,6 +60,7 @@ def onGpuInitWithScene(ctx,scene):
     scene.user.primnode1 = primnode
     scene.user.camera1 = camera
     scene.user.cameralut1 = cameralut
+    scene.user.v4parref = v4parref
     ###################################
     ctx.FBI().autoclear = True
     ctx.FBI().clearcolor = vec4(.15,.15,.2,1)
@@ -73,16 +77,11 @@ def onGpuInitWithScene(ctx,scene):
 ################################################
 def onUpdateWithScene(updinfo,scene):
     θ    = updinfo.absolutetime * math.pi * 2.0
+    scene.user.v4parref.x = θ*0.1
     ###################################
     cam = scene.user.camera1
     camlut = scene.user.cameralut1
     primnode = scene.user.primnode1
-    ###################################
-    #distance = 10.0
-    #eye = vec3(math.sin(θ), 1.0, -math.cos(θ)) * distance
-    #cam.lookAt(eye, # eye
-    #           vec3(0, 0, 0), # tgt
-    #           vec3(0, 1, 0)) # up
     ###################################
     primnode.worldMatrix.compose( vec3(0,0.25,-2.5), # pos
                                   quat(vec3(0,1,0),θ*0.05), # rot

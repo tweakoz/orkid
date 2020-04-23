@@ -6,6 +6,8 @@ shadertext = """
 fxconfig fxcfg_default {
     glsl_version = "410";
     import "orkshader://mathtools.i"
+	import "orkshader://gbuftools.i"
+	import "orkshader://misctools.i"
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ublock_vtx {
@@ -32,6 +34,11 @@ vertex_interface iface_vdefault : ublock_vtx {
     vec2 frg_uv0;
   }
 }
+vertex_interface iface_vstereo : iface_vdefault {
+  outputs {
+    layout(secondary_view_offset=1) int gl_Layer;
+  }
+}
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fdefault : ublock_frg {
   inputs {
@@ -40,6 +47,21 @@ fragment_interface iface_fdefault : ublock_frg {
     vec2 frg_uv0;
   }
   outputs { layout(location = 0) vec4 out_clr; }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_pbr_deferred : ublock_frg {
+    inputs {
+        vec4 frg_clr;
+	    vec2 frg_uv;
+	}
+	outputs {
+		layout(location = 0) uvec4 out_gbuf;
+	}
+}
+fragment_shader ps_deferred_emissive_fragclr
+  : iface_pbr_deferred
+  : lib_gbuf_encode {
+	out_gbuf = packGbuffer_unlit(frg_clr.xyz);
 }
 ///////////////////////////////////////////////////////////////
 state_block sb_default : default { CullTest = PASS_FRONT; }
@@ -55,10 +77,25 @@ vertex_shader vs_lines : iface_vdefault {
 vertex_shader vs_frustum : iface_vdefault : lib_math {
   gl_Position = MatMVP * position;
   frg_pos = MatNormal*position.xyz;
-
   float light = 3*saturateF(dot(MatNormal*normal,vec3(0,0,1)));
   frg_clr     = vec4(vtxcolor.xyz*light,1);
   frg_uv0     = uv0;
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_frustum_stereo
+  : iface_vstereo
+  : lib_math
+  : extension(GL_NV_stereo_view_rendering)
+  : extension(GL_NV_viewport_array2) {
+  gl_Position = MatMVPL*position;
+  gl_SecondaryPositionNV = MatMVPR*position;
+  frg_pos = MatNormal*position.xyz;
+  float light = 3*saturateF(dot(MatNormal*normal,vec3(0,0,1)));
+  frg_clr     = vec4(vtxcolor.xyz*light,1);
+  frg_uv0     = uv0;
+  gl_Layer = 0;
+  gl_ViewportMask[0] = 1;
+  gl_SecondaryViewportMaskNV[0] = 2;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_texvtxcolor_noalpha : iface_fdefault {
@@ -66,21 +103,20 @@ fragment_shader ps_texvtxcolor_noalpha : iface_fdefault {
   out_clr   = vec4(texc.xyz * frg_clr.xyz, 1.0);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_frustum : iface_fdefault : lib_math {
+fragment_shader ps_frustum : iface_fdefault : lib_math : lib_mmnoise {
   // octave noise with volume texture
-  int numoctaves = 8;
-  float val = 0;
-  float freq = 1.0;
-  float amp = 0.25;
-  float timesh = time;
-  for( int i=0; i<numoctaves; i++ ){
-    vec3 uvw = frg_pos*freq;
-    uvw += vec3(timesh*0.1/freq);
-    val += texture(VolumeMap,uvw).x*amp;
-    freq *= 0.7;
-    amp *= 0.8;
-    timesh *= 0.5;
-  }
+  float val = octavenoise(VolumeMap,frg_pos,8);
+  val = pow(saturateF(val),2);
+  vec3 color = vec3(val,val,val)*frg_clr.xyz;
+  out_clr = vec4(color,1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_frustum_pbr
+  : iface_pbr_deferred
+  : lib_math
+  : lib_mmnoise {
+  // octave noise with volume texture
+  float val = octavenoise(VolumeMap,frg_pos,8);
   val = pow(saturateF(val),2);
   vec3 color = vec3(val,val,val)*frg_clr.xyz;
   out_clr = vec4(color,1);
@@ -95,6 +131,15 @@ technique tek_frustum {
   pass p0 {
     vertex_shader   = vs_frustum;
     fragment_shader = ps_frustum;
+    state_block     = sb_additive;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique tek_frustum_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_frustum_stereo;
+    fragment_shader = ps_frustum_pbr;
     state_block     = sb_additive;
   }
 }

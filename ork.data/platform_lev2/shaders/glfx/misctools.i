@@ -1,6 +1,24 @@
 
 libblock lib_mmnoise {
 
+  float octavenoise(sampler3D krntex,vec3 pos,int numoct){
+    int numoctaves = 8;
+    float val = 0;
+    float freq = 1.0;
+    float amp = 0.25;
+    float timesh = time;
+    for( int i=0; i<numoctaves; i++ ){
+      vec3 uvw = pos*freq;
+      uvw += vec3(timesh*0.1/freq);
+      val += texture(krntex,uvw).x*amp;
+      freq *= 0.7;
+      amp *= 0.8;
+      timesh *= 0.5;
+    }
+    return val;
+  }
+
+
   //	<https://www.shadertoy.com/view/4dS3Wd>
   //	By Morgan McGuire @morgan3d, http://graphicscodex.com
   //
