@@ -64,7 +64,6 @@ def onGpuInitWithScene(ctx,scene):
     ###################################
     ctx.FBI().autoclear = True
     ctx.FBI().clearcolor = vec4(.15,.15,.2,1)
-    print(deco.orange("YOYOYO"))
 ################################################
 # update:
 # technically this runs from the orkid update thread
@@ -77,15 +76,15 @@ def onGpuInitWithScene(ctx,scene):
 ################################################
 def onUpdateWithScene(updinfo,scene):
     θ    = updinfo.absolutetime * math.pi * 2.0
-    scene.user.v4parref.x = θ*0.1
+    scene.user.v4parref.z = θ*0.1
     ###################################
     cam = scene.user.camera1
     camlut = scene.user.cameralut1
     primnode = scene.user.primnode1
     ###################################
     primnode.worldMatrix.compose( vec3(0,0.25,-2.5), # pos
-                                  quat(vec3(0,1,0),θ*0.05), # rot
-                                  0.5) # scale
+                                  quat(vec3(0,1,0),θ*0.01), # rot
+                                  0.75) # scale
     ###################################
     scene.updateScene(camlut) # update and enqueue all scenenodes
 ################################################
