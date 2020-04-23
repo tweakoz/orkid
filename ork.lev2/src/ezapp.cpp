@@ -86,11 +86,13 @@ qtezapp_ptr_t OrkEzQtApp::create(int argc, char** argv) {
   return std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp);
 }
 ///////////////////////////////////////////////////////////////////////////////
-qtezapp_ptr_t OrkEzQtApp::createWithScene() {
+qtezapp_ptr_t OrkEzQtApp::createWithScene(varmap::varmap_ptr_t sceneparams) {
   static auto& qti = qtinit();
   QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
-  auto rval                  = std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp);
-  rval->_mainWindow->_onDraw = [=](const ui::DrawEvent& drwev) { //
+
+  auto rval                           = std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp);
+  rval->_mainWindow->_execsceneparams = sceneparams;
+  rval->_mainWindow->_onDraw          = [=](const ui::DrawEvent& drwev) { //
     auto context = drwev.GetTarget();
     context->beginFrame();
     rval->_mainWindow->_execscene->renderOnContext(context);
@@ -126,7 +128,7 @@ struct EzViewport : public ui::Viewport {
       if (_mainwin->_onGpuInit)
         _mainwin->_onGpuInit(drwev.GetTarget());
       else if (_mainwin->_onGpuInitWithScene) {
-        _mainwin->_execscene = std::make_shared<scenegraph::Scene>();
+        _mainwin->_execscene = std::make_shared<scenegraph::Scene>(_mainwin->_execsceneparams);
         _mainwin->_onGpuInitWithScene(drwev.GetTarget(), _mainwin->_execscene);
       }
 
@@ -169,7 +171,6 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
     , _updateThread("updatethread")
     , _updatekill(false)
     , _mainWindow(0) {
-
   _update_data = std::make_shared<UpdateData>();
   _appstate    = 0;
 
@@ -342,6 +343,7 @@ void OrkEzQtApp::setRefreshPolicy(RefreshPolicyItem policy) {
 
 EzMainWin::EzMainWin()
     : _ctxw(nullptr) {
+  _execsceneparams = std::make_shared<varmap::VarMap>();
 }
 EzMainWin::~EzMainWin() {
 }

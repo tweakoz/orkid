@@ -213,6 +213,7 @@ public:
   void presetDefault();
   void presetPicking();
   void presetPBR();
+  void presetPBRVR();
 
   const orklut<PoolString, ork::Object*>& GetGroups() const {
     return _groups;

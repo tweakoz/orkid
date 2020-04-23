@@ -96,4 +96,7 @@ struct VarMap {
   std::map<key_t, val_t> _themap;
 };
 
+using varmap_ptr_t      = std::shared_ptr<VarMap>;
+using varmap_constptr_t = std::shared_ptr<const VarMap>;
+
 } // namespace ork::varmap

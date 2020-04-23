@@ -17,6 +17,7 @@
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 
 namespace ork::lev2::scenegraph {
@@ -38,7 +39,7 @@ struct Node {
   std::string _name;
   drawable_ptr_t _drawable;
   DrawQueueXfData _transform;
-  varmap::VarMap _userdata;
+  varmap::varmap_ptr_t _userdata;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -60,7 +61,10 @@ struct Layer {
 struct Scene {
 
   Scene();
+  Scene(varmap::varmap_ptr_t _initialdata);
   ~Scene();
+
+  void initWithParams(varmap::varmap_ptr_t _initialdata);
 
   layer_ptr_t createLayer(std::string named);
   void enqueueToRenderer(cameradatalut_ptr_t cameras);
@@ -72,11 +76,11 @@ struct Scene {
   compositorimpl_ptr_t _compositorImpl;
   compositordata_ptr_t _compositorData;
   NodeCompositingTechnique* _compostorTechnique = nullptr;
-  ScreenOutputCompositingNode* _outputNode      = nullptr;
+  OutputCompositingNode* _outputNode            = nullptr;
   lev2::CompositingPassData _topCPD;
 
   std::map<std::string, layer_ptr_t> _layers;
-  varmap::VarMap _userdata;
+  varmap::varmap_ptr_t _userdata;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

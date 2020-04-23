@@ -19,18 +19,10 @@ void pyinit_scenegraph(py::module& module_lev2) {
               [](node_ptr_t node, fmtx4_ptr_t mtx) { //
                 node->_transform._worldMatrix = mtx;
               })
-          .def(
-              "__setattr__",                                                          //
-              [type_codec](node_ptr_t node, const std::string& key, py::object val) { //
-                auto varmap_val = type_codec->decode(val);
-                node->_userdata.setValueForKey(key, varmap_val);
-              })
-          .def(
-              "__getattr__",                                                        //
-              [type_codec](node_ptr_t node, const std::string& key) -> py::object { //
-                auto varmap_val = node->_userdata.valueForKey(key);
-                auto python_val = type_codec->encode(varmap_val);
-                return python_val;
+          .def_property_readonly(
+              "user",                                       //
+              [](node_ptr_t node) -> varmap::varmap_ptr_t { //
+                return node->_userdata;
               });
   type_codec->registerStdCodec<node_ptr_t>(node_type);
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
@@ -51,18 +43,10 @@ void pyinit_scenegraph(py::module& module_lev2) {
   auto scenegraph_type = //
       py::class_<Scene, scene_ptr_t>(sgmodule, "Scene")
           .def(py::init<>())
-          .def(
-              "__setattr__",                                                         //
-              [type_codec](scene_ptr_t SG, const std::string& key, py::object val) { //
-                auto varmap_val = type_codec->decode(val);
-                SG->_userdata.setValueForKey(key, varmap_val);
-              })
-          .def(
-              "__getattr__",                                                       //
-              [type_codec](scene_ptr_t SG, const std::string& key) -> py::object { //
-                auto varmap_val = SG->_userdata.valueForKey(key);
-                auto python_val = type_codec->encode(varmap_val);
-                return python_val;
+          .def_property_readonly(
+              "user",                                      //
+              [](scene_ptr_t SG) -> varmap::varmap_ptr_t { //
+                return SG->_userdata;
               })
           .def(
               "createLayer",

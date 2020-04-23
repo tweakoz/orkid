@@ -9,6 +9,7 @@ namespace ork::lev2::scenegraph {
 Node::Node(std::string named, drawable_ptr_t drawable)
     : _name(named)
     , _drawable(drawable) {
+  _userdata = std::make_shared<varmap::VarMap>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -44,25 +45,58 @@ void Layer::removeNode(node_ptr_t node) {
 ///////////////////////////////////////////////////////////////////////////////
 
 Scene::Scene() {
+  _userdata = std::make_shared<varmap::VarMap>();
 
-  // todo - allow user parameterization
+  auto params //
+      = std::make_shared<varmap::VarMap>();
+  params->makeValueForKey<std::string>("preset") = "PBR";
+  this->initWithParams(params);
+}
+///////////////////////////////////////////////////////////////////////////////
 
-  _lightData      = std::make_shared<LightManagerData>();
-  _lightManager   = std::make_shared<LightManager>(*_lightData.get());
-  _compositorData = std::make_shared<CompositingData>();
-  _compositorData->presetPBR();
-  _compositorData->mbEnable = true;
-  _compostorTechnique       = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
-  _outputNode               = _compostorTechnique->tryOutputNodeAs<ScreenOutputCompositingNode>();
-  // outpnode->setSuperSample(4);
-  _compositorImpl = std::make_shared<CompositingImpl>(*_compositorData.get());
-  _compositorImpl->bindLighting(_lightManager.get());
-  _topCPD.addStandardLayers();
+Scene::Scene(varmap::varmap_ptr_t params) {
+  _userdata = std::make_shared<varmap::VarMap>();
+  initWithParams(params);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 Scene::~Scene() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Scene::initWithParams(varmap::varmap_ptr_t params) {
+  _lightData      = std::make_shared<LightManagerData>();
+  _lightManager   = std::make_shared<LightManager>(*_lightData.get());
+  _compositorData = std::make_shared<CompositingData>();
+
+  std::string preset = "PBR";
+  // std::string output = "SCREEN";
+
+  if (auto try_preset = params->typedValueForKey<std::string>("preset"))
+    preset = try_preset.value();
+  // if (auto try_output = params->typedValueForKey<std::string>("output"))
+  // output = try_output.value();
+
+  if (preset == "PBR")
+    _compositorData->presetPBR();
+  else if (preset == "PBRVR")
+    _compositorData->presetPBRVR();
+  else
+    throw std::runtime_error("unknown compositor preset type");
+
+  _compositorData->mbEnable = true;
+  _compostorTechnique       = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+
+  _outputNode = _compostorTechnique->tryOutputNodeAs<OutputCompositingNode>();
+  //_outputNode = _compostorTechnique->tryOutputNodeAs<VrCompositingNode>();
+  // throw std::runtime_error("unknown compositor outputnode type");
+
+  // outpnode->setSuperSample(4);
+  _compositorImpl = std::make_shared<CompositingImpl>(*_compositorData.get());
+  _compositorImpl->bindLighting(_lightManager.get());
+  _topCPD.addStandardLayers();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

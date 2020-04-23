@@ -96,7 +96,7 @@ void pyinit_primitives(py::module& module_lev2) {
                  materialinst_ptr_t mtl_inst) -> scenegraph::node_ptr_t { //
                 auto node                                                 //
                     = prim->createNode(named, layer, mtl_inst);
-                node->_userdata.makeValueForKey<primitives::frustum_ptr_t>("_primitive") = prim; // hold on to reference
+                node->_userdata->makeValueForKey<primitives::frustum_ptr_t>("_primitive") = prim; // hold on to reference
                 return node;
               });
   type_codec->registerStdCodec<primitives::frustum_ptr_t>(frusprim_type);

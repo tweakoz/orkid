@@ -27,10 +27,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
   type_codec->registerStdCodec<updatedata_ptr_t>(updata_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<OrkEzQtApp, qtezapp_ptr_t>(module_lev2, "OrkEzQtApp") //
+                                                                   ///////////////////////////////////////////////////////
       .def_static(
           "createWithScene",
-          [](py::function gpuinitfn, py::function updfn) { //
-            auto rval = OrkEzQtApp::createWithScene();
+          [type_codec](py::object params, py::function gpuinitfn, py::function updfn) { //
+            auto decoded_params = type_codec->decode(params).Get<varmap::varmap_ptr_t>();
+            auto rval           = OrkEzQtApp::createWithScene(decoded_params);
 
             rval->_vars.makeValueForKey<py::function>("gpuinitfn") = gpuinitfn;
             rval->_vars.makeValueForKey<py::function>("updatefn")  = updfn;
@@ -53,6 +55,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             });
             return rval;
           })
+      ///////////////////////////////////////////////////////
       .def_static(
           "create",
           [](py::function gpuinitfn, py::function updfn, py::function drawfn) { //
@@ -84,6 +87,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
 
             return rval;
           })
+      ///////////////////////////////////////////////////////
       .def(
           "setRefreshPolicy",
           [](qtezapp_ptr_t app, ERefreshPolicy policy, int fps) { //

@@ -88,12 +88,30 @@ PYBIND11_MODULE(_core, module_core) {
       });
 
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<ork::Object>(module_core, "ork_Object") //
-      .def("clazz", [](ork::Object* o) -> std::string {
+  py::class_<Object>(module_core, "Object") //
+      .def("clazz", [](Object* o) -> std::string {
         auto clazz = rtti::downcast<object::ObjectClass*>(o->GetClass());
         auto name  = clazz->Name();
         return name.c_str();
       });
+  /////////////////////////////////////////////////////////////////////////////////
+  auto varmaptype_t =                                                         //
+      py::class_<varmap::VarMap, varmap::varmap_ptr_t>(module_core, "VarMap") //
+          .def(py::init<>())
+          .def(
+              "__setattr__",                                                                    //
+              [type_codec](varmap::varmap_ptr_t vmap, const std::string& key, py::object val) { //
+                auto varmap_val = type_codec->decode(val);
+                vmap->setValueForKey(key, varmap_val);
+              })
+          .def(
+              "__getattr__",                                                                  //
+              [type_codec](varmap::varmap_ptr_t vmap, const std::string& key) -> py::object { //
+                auto varmap_val = vmap->valueForKey(key);
+                auto python_val = type_codec->encode(varmap_val);
+                return python_val;
+              });
+  type_codec->registerStdCodec<varmap::varmap_ptr_t>(varmaptype_t);
   /////////////////////////////////////////////////////////////////////////////////
   pyinit_math(module_core);
   /////////////////////////////////////////////////////////////////////////////////

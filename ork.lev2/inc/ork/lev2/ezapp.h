@@ -79,6 +79,7 @@ public:
   ongpuinitwitchscene_t _onGpuInitWithScene = nullptr;
   onupdatewithscene_t _onUpdateWithScene    = nullptr;
   scenegraph::scene_ptr_t _execscene;
+  varmap::varmap_ptr_t _execsceneparams;
   ork::Timer _render_timer;
   double _render_prevtime        = 0;
   double _render_stats_timeaccum = 0;
@@ -98,7 +99,7 @@ public:
   ///////////////////////////////////
   static qtezapp_ptr_t create();
   static qtezapp_ptr_t create(int argc, char** argv);
-  static qtezapp_ptr_t createWithScene();
+  static qtezapp_ptr_t createWithScene(varmap::varmap_ptr_t sceneparams);
 
   filedevctxptr_t newFileDevContext(std::string uribase);
 

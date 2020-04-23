@@ -91,6 +91,8 @@ def onUpdateWithScene(updinfo,scene):
 ################################################
 # event loop
 ##############################################
-qtapp = OrkEzQtApp.createWithScene( VarMap(), onGpuInitWithScene, onUpdateWithScene )
+sceneparams = VarMap()
+sceneparams.preset = "PBRVR"
+qtapp = OrkEzQtApp.createWithScene( sceneparams, onGpuInitWithScene, onUpdateWithScene )
 qtapp.setRefreshPolicy(RefreshFastest, 0)
 qtapp.exec()

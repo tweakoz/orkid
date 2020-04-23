@@ -34,6 +34,9 @@ public:
   virtual void composite(CompositorDrawData& drawdata) {
   }
 };
+using outputcompositingnode_ptr_t      = std::shared_ptr<OutputCompositingNode>;
+using outputcompositingnode_constptr_t = std::shared_ptr<const OutputCompositingNode>;
+
 ///////////////////////////////////////////////////////////////////////////////
 class RenderCompositingNode : public ork::Object {
   DeclareAbstractX(RenderCompositingNode, ork::Object);
