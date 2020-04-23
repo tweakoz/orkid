@@ -15,20 +15,12 @@ import _shaders
 ################################################
 deco = Deco()
 time_base = time.time()
-scene = None
-camera = None
-cameralut = None
-primnode = None
 ################################################
 # gpu data init:
 #  called on main thread when graphics context is
 #   made available
 ##############################################
-def onGpuInit(ctx):
-    global scene
-    global camera
-    global cameralut
-    global primnode
+def onGpuInitWithScene(ctx,scene):
     ###################################
     frustum = Frustum()
     frustum.set(ctx.lookAt( vec3(0,0,-1),
@@ -46,55 +38,50 @@ def onGpuInit(ctx):
     prim.frustum = frustum
     prim.gpuInit(ctx)
     ###################################
-    scene = scenegraph.Scene()
     layer = scene.createLayer("layer1")
     ###################################
     material = FreestyleMaterial(ctx,Path("orkshader://manip"))
     material_inst = material.createInstance()
     material_inst.monoTek = material.shader.technique("std_mono")
     material.setInstanceMvpParams(material_inst,"mvp","","")
-    primnode = prim.createNode("node1",layer,material_inst)
+    scene.primnode1 = prim.createNode("node1",layer,material_inst)
+    print(scene.primnode1.primitive)
     ###################################
-    camera = CameraData()
-    camera.perspective(0.1, 100.0, 45.0)
-    cameralut = CameraDataLut()
-    cameralut.addCamera("spawncam",camera)
+    scene.camera1 = CameraData()
+    scene.camera1.perspective(0.1, 100.0, 45.0)
+    scene.cameralut1 = CameraDataLut()
+    scene.cameralut1.addCamera("spawncam",scene.camera1)
+    ctx.FBI().autoclear = True
+    ctx.FBI().clearcolor = vec4(.15,.15,.2,1)
+    print("YOYOYO")
 ################################################
 # update:
 # technically this runs from the orkid update thread
-#  but since the python GIL is in place,
-#  it will be serialized with the main thread python code.
-#  This is still useful for doing background computation.
-#   (eg. the scene can be updated from python, whilst
+#  but since createWithScene() was called,
+#  the main thread will surrender the GIL completely
+#  until qtapp.exec() returns.
+#  This is useful for doing background computation.
+#   (eg. the scene is updated from python, whilst
 #        concurrently c++ is rendering..)
 ################################################
-def onUpdate():
+def onUpdateWithScene(updinfo,scene):
     Δtime = time.time()-time_base
     θ    = Δtime * math.pi * 2.0 * 0.1
     ###################################
     distance = 10.0
     eye = vec3(math.sin(θ), 1.0, -math.cos(θ)) * distance
-    camera.lookAt(eye, # eye
-                  vec3(0, 0, 0), # tgt
-                  vec3(0, 1, 0)) # up
+    scene.camera1.lookAt(eye, # eye
+                         vec3(0, 0, 0), # tgt
+                         vec3(0, 1, 0)) # up
     ###################################
-    primnode.worldMatrix.compose( vec3(0,0,0), # pos
-                                  quat(), # rot
-                                  math.sin(Δtime*2)*3) # scale
+    scene.primnode1.worldMatrix.compose( vec3(0,0,0), # pos
+                                         quat(), # rot
+                                         math.sin(Δtime*2)*3) # scale
     ###################################
-    scene.updateScene(cameralut) # update and enqueue all scenenodes
-################################################
-# render scene (from main thread)
-################################################
-def onDraw(drawev):
-    drawev.context.FBI().autoclear = True
-    drawev.context.FBI().clearcolor = vec4(.15,.15,.2,1)
-    drawev.context.beginFrame()
-    scene.renderOnContext(drawev.context) # this must be on rendering thread
-    drawev.context.endFrame()
+    scene.updateScene(scene.cameralut1) # update and enqueue all scenenodes
 ################################################
 # event loop
 ##############################################
-qtapp = OrkEzQtApp.create( onGpuInit, onUpdate, onDraw )
+qtapp = OrkEzQtApp.createWithScene( onGpuInitWithScene, onUpdateWithScene )
 qtapp.setRefreshPolicy(RefreshFastest, 0)
 qtapp.exec()

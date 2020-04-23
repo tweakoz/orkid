@@ -301,25 +301,31 @@ void pyinit_gfx(py::module& module_lev2) {
     return ctx_t(event->GetTarget());
   });
   /////////////////////////////////////////////////////////////////////////////////
+  py::class_<UpdateData>(module_lev2, "UpdateData");
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<Drawable, drawable_ptr_t>(module_lev2, "Drawable");
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<CameraData, cameradata_ptr_t>(module_lev2, "CameraData")
-      .def(py::init<>())
-      .def(
-          "perspective",                                                    //
-          [](cameradata_ptr_t camera, float near, float ffar, float fovy) { //
-            camera->Persp(near, ffar, fovy);
-          })
-      .def(
-          "lookAt",                                                        //
-          [](cameradata_ptr_t camera, fvec3& eye, fvec3& tgt, fvec3& up) { //
-            camera->Lookat(eye, tgt, up);
-          });
+  auto camdattype = //
+      py::class_<CameraData, cameradata_ptr_t>(module_lev2, "CameraData")
+          .def(py::init<>())
+          .def(
+              "perspective",                                                    //
+              [](cameradata_ptr_t camera, float near, float ffar, float fovy) { //
+                camera->Persp(near, ffar, fovy);
+              })
+          .def(
+              "lookAt",                                                        //
+              [](cameradata_ptr_t camera, fvec3& eye, fvec3& tgt, fvec3& up) { //
+                camera->Lookat(eye, tgt, up);
+              });
+  type_codec->registerStdCodec<cameradata_ptr_t>(camdattype);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<CameraDataLut, cameradatalut_ptr_t>(module_lev2, "CameraDataLut")
-      .def(py::init<>())
-      .def("addCamera", [](cameradatalut_ptr_t lut, std::string key, cameradata_ptr_t camera) {
-        lut->AddSorted(AddPooledString(key.c_str()), camera.get());
-      });
+  auto camdatluttype = //
+      py::class_<CameraDataLut, cameradatalut_ptr_t>(module_lev2, "CameraDataLut")
+          .def(py::init<>())
+          .def("addCamera", [](cameradatalut_ptr_t lut, std::string key, cameradata_ptr_t camera) {
+            lut->AddSorted(AddPooledString(key.c_str()), camera.get());
+          });
+  type_codec->registerStdCodec<cameradatalut_ptr_t>(camdatluttype);
 }
 } // namespace ork::lev2

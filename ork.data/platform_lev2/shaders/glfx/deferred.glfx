@@ -151,7 +151,7 @@ libblock lib_deferred
     int lbas     = int(frg_uvb.x);
     int numl     = int(frg_uvb.y);
     vec3 l       = vec3(0, 0, 0);
-    if( gbd._mask ){
+    if( gbd._mask==1 ){
       LightCtx plc = lcalc1(wpd,gbd);
       for (int i = 0; i < numl; i++) {
         int lidx                     = lbas + i;
@@ -173,7 +173,7 @@ libblock lib_deferred
   /////////////////////////////////////////////////////////
   vec3 pntlighting_textured_simple(WPosData wpd,GBufData gbd) {
     vec3 l       = vec3(0, 0, 0);
-    if( gbd._mask ){
+    if( gbd._mask==1 ){
       LightCtx plc = lcalc1(wpd,gbd);
       int lbeg = int(frg_uvb.x);
       int lend = lbeg+int(frg_uvb.y);
@@ -192,7 +192,7 @@ libblock lib_deferred
   /////////////////////////////////////////////////////////
   vec3 pntlighting_untextured_simple(WPosData wpd,GBufData gbd) {
     vec3 l       = vec3(0, 0, 0);
-    if( gbd._mask ){
+    if( gbd._mask==1 ){
       LightCtx plc = lcalc1(wpd,gbd);
       int lbeg = int(frg_uvb.x);
       int lend = lbeg+int(frg_uvb.y);
@@ -236,7 +236,7 @@ libblock lib_deferred
   /////////////////////////////////////////////////////////
   vec3 spotlighting_textured_simple(WPosData wpd,GBufData gbd) {
     vec3 l       = vec3(0, 0, 0);
-    if( gbd._mask ){
+    if( gbd._mask==1 ){
       LightCtx plc = lcalc1(wpd,gbd);
       int lbeg = int(frg_uvb.x);
       int lend = lbeg+int(frg_uvb.y);
@@ -254,7 +254,7 @@ libblock lib_deferred
   /////////////////////////////////////////////////////////
   vec3 spotlighting_textured_shadowed(WPosData wpd,GBufData gbd) {
     vec3 l       = vec3(0, 0, 0);
-    if( gbd._mask ){
+    if( gbd._mask==1 ){
       LightCtx plc = lcalc1(wpd,gbd);
       int lbeg = int(frg_uvb.x);
       int lend = lbeg+int(frg_uvb.y);
@@ -285,7 +285,7 @@ libblock lib_deferred
   /////////////////////////////////////////////////////////
   vec4 spotdecaling_textured_simple(WPosData wpd,GBufData gbd) {
     vec4 l       = vec4(0, 0, 0,0);
-    if( gbd._mask ){
+    if( gbd._mask==1 ){
       int lbeg = int(frg_uvb.x);
       int lend = lbeg+int(frg_uvb.y);
       for (int lidx = lbeg; lidx<lend; lidx++) {
@@ -307,7 +307,7 @@ libblock lib_deferred
   /////////////////////////////////////////////////////////
   vec3 spotlighting_untextured_simple(WPosData wpd,GBufData gbd) {
     vec3 l       = vec3(0, 0, 0);
-    if( gbd._mask ){
+    if( gbd._mask==1 ){
       LightCtx plc = lcalc1(wpd,gbd);
       int lbeg = int(frg_uvb.x);
       int lend = lbeg+int(frg_uvb.y);
@@ -333,12 +333,12 @@ libblock lib_deferred
     vec3 skybox_n = vec3(VIEW_N.x,-VIEW_N.y,VIEW_N.z);
     vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,EnvironmentMipBias)*SkyboxLevel;
 
-    if( gbd._mask ){
+    if( gbd._mask==1 ){
       vec3 metalbase = vec3(0.04);
       vec3 albedo = gbd._albedo;
       vec3 rawn = gbd._wnrm;
       /////////////////////////
-      if( gbd._emissive )
+      if( gbd._emissive==1 )
         return albedo;
       /////////////////////////
       // pixel was written to in the gbuffer

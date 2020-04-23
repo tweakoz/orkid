@@ -28,6 +28,7 @@ py::object PyCodecImpl::encode(const ork::varmap::val_t& val) const {
     auto& codec = it->second;
     codec._encoder(val, rval);
   } else {
+    throw std::runtime_error("pycodec-encode: unregistered type");
     OrkAssert(false);
   }
   return rval;
@@ -44,6 +45,7 @@ ork::varmap::val_t PyCodecImpl::decode(const py::object& val) const {
       return rval;
     }
   }
+  throw std::runtime_error("pycodec-decode: unregistered type");
   OrkAssert(false); // unknown type!
   return rval;
 }

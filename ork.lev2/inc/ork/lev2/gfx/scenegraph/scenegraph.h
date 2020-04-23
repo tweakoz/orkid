@@ -38,7 +38,7 @@ struct Node {
   std::string _name;
   drawable_ptr_t _drawable;
   DrawQueueXfData _transform;
-  varmap::val_t _userdata;
+  varmap::VarMap _userdata;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -76,6 +76,7 @@ struct Scene {
   lev2::CompositingPassData _topCPD;
 
   std::map<std::string, layer_ptr_t> _layers;
+  varmap::VarMap _userdata;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -10,13 +10,48 @@ namespace ork::lev2 {
 void ClassInit();
 void GfxInit(const std::string& gfxlayer);
 
+////////////////////////////////////////////////////////////////////////////////
+struct QtAppInit {
+  QtAppInit() {
+    _argc   = 1;
+    _arg    = "whatupyo";
+    _argv   = (char*)_arg.c_str();
+    _argvp  = &_argv;
+    _fsinit = std::make_shared<StdFileSystemInitalizer>(_argc, _argvp);
+  }
+  QtAppInit(int argc, char** argv) {
+    _argc   = argc;
+    _arg    = "";
+    _argv   = nullptr;
+    _argvp  = argv;
+    _fsinit = std::make_shared<StdFileSystemInitalizer>(_argc, _argvp);
+  }
+  ~QtAppInit() {
+  }
+  int _argc = 0;
+  std::string _arg;
+  char* _argv   = nullptr;
+  char** _argvp = nullptr;
+  std::shared_ptr<StdFileSystemInitalizer> _fsinit;
+};
+////////////////////////////////////////////////////////////////////////////////
+static QtAppInit& qtinit() {
+  static QtAppInit qti;
+  return qti;
+};
+////////////////////////////////////////////////////////////////////////////////
+static QtAppInit& qtinit(int& argc, char** argv) {
+  static QtAppInit qti(argc, argv);
+  return qti;
+};
+////////////////////////////////////////////////////////////////////////////////
 std::shared_ptr<EzApp> EzApp::create(int& argc, char** argv) {
-  static ork::lev2::StdFileSystemInitalizer filesysteminit(argc, argv);
   return std::shared_ptr<EzApp>(new EzApp(argc, argv));
 }
-
+////////////////////////////////////////////////////////////////////////////////
 void EzApp::Describe() {
 }
+////////////////////////////////////////////////////////////////////////////////
 EzApp::EzApp(int& argc, char** argv) {
   ork::SetCurrentThreadName("main");
 #if !defined(__APPLE__)
@@ -40,10 +75,30 @@ EzApp::~EzApp() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::shared_ptr<OrkEzQtApp> OrkEzQtApp::create(int& argc, char** argv) {
+qtezapp_ptr_t OrkEzQtApp::create() {
+  static auto& qti = qtinit();
   QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
-  return std::shared_ptr<OrkEzQtApp>(new OrkEzQtApp(argc, argv));
+  return std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp);
 }
+qtezapp_ptr_t OrkEzQtApp::create(int argc, char** argv) {
+  static auto& qti = qtinit(argc, argv);
+  QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+  return std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp);
+}
+///////////////////////////////////////////////////////////////////////////////
+qtezapp_ptr_t OrkEzQtApp::createWithScene() {
+  static auto& qti = qtinit();
+  QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+  auto rval                  = std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp);
+  rval->_mainWindow->_onDraw = [=](const ui::DrawEvent& drwev) { //
+    auto context = drwev.GetTarget();
+    context->beginFrame();
+    rval->_mainWindow->_execscene->renderOnContext(context);
+    context->endFrame();
+  };
+  return rval;
+}
+///////////////////////////////////////////////////////////////////////////////
 
 struct EzViewport : public ui::Viewport {
 
@@ -59,11 +114,22 @@ struct EzViewport : public ui::Viewport {
   }
   void DoDraw(ui::DrawEvent& drwev) final {
 
-    if (_mainwin->_onGpuInit and _mainwin->_dogpuinit) {
+    bool do_gpu_init = bool(_mainwin->_onGpuInit);
+    do_gpu_init |= bool(_mainwin->_onGpuInitWithScene);
+    do_gpu_init &= _mainwin->_dogpuinit;
+
+    if (do_gpu_init) {
       drwev.GetTarget()->makeCurrentContext();
       FontMan::gpuInit(drwev.GetTarget());
       drwev.GetTarget()->makeCurrentContext();
-      _mainwin->_onGpuInit(drwev.GetTarget());
+
+      if (_mainwin->_onGpuInit)
+        _mainwin->_onGpuInit(drwev.GetTarget());
+      else if (_mainwin->_onGpuInitWithScene) {
+        _mainwin->_execscene = std::make_shared<scenegraph::Scene>();
+        _mainwin->_onGpuInitWithScene(drwev.GetTarget(), _mainwin->_execscene);
+      }
+
       while (ork::opq::mainSerialQueue()->Process()) {
       }
       _mainwin->_dogpuinit = false;
@@ -170,10 +236,18 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
       double step = 1.0 / 120.0;
       while (_update_timeaccumulator > step) {
 
-        if (_mainWindow->_onUpdate and not _mainWindow->_dogpuinit) {
+        bool do_update = bool(_mainWindow->_onUpdate);
+        do_update |= bool(_mainWindow->_onUpdateWithScene);
+        do_update &= bool(not _mainWindow->_dogpuinit);
+
+        if (do_update) {
           updata._dt = step;
           updata._abstime += step;
-          _mainWindow->_onUpdate(updata);
+          if (_mainWindow->_onUpdate)
+            _mainWindow->_onUpdate(updata);
+          else if (_mainWindow->_onUpdateWithScene)
+            _mainWindow->_onUpdateWithScene(updata, _mainWindow->_execscene);
+
           state_numiters += 1.0;
         }
 
@@ -229,6 +303,12 @@ void OrkEzQtApp::onUiEvent(EzMainWin::onuieventcb_t cb) {
 }
 void OrkEzQtApp::onUpdate(EzMainWin::onupdate_t cb) {
   _mainWindow->_onUpdate = cb;
+}
+void OrkEzQtApp::onGpuInitWithScene(EzMainWin::ongpuinitwitchscene_t cb) {
+  _mainWindow->_onGpuInitWithScene = cb;
+}
+void OrkEzQtApp::onUpdateWithScene(EzMainWin::onupdatewithscene_t cb) {
+  _mainWindow->_onUpdateWithScene = cb;
 }
 
 filedevctxptr_t OrkEzQtApp::newFileDevContext(std::string uribase) {
