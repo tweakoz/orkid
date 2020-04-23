@@ -43,7 +43,7 @@ bool GlTextureInterface::LoadTexture(const AssetPath& infname, Texture* ptex) {
   DdsFilename.SetExtension("dds");
   PngFilename.SetExtension("png");
   XtxFilename.SetExtension("xtx");
-  ptex->_debugName   = infname.toStdString();
+  ptex->_debugName = infname.toStdString();
   AssetPath final_fname;
   if (FileEnv::GetRef().DoesFileExist(PngFilename))
     final_fname = PngFilename;
@@ -52,8 +52,8 @@ bool GlTextureInterface::LoadTexture(const AssetPath& infname, Texture* ptex) {
   if (FileEnv::GetRef().DoesFileExist(XtxFilename))
     final_fname = XtxFilename;
 
-  printf("infname<%s>\n", infname.c_str());
-  printf("final_fname<%s>\n", final_fname.c_str());
+  // printf("infname<%s>\n", infname.c_str());
+  // printf("final_fname<%s>\n", final_fname.c_str());
 
   if (auto dblock = datablockFromFileAtPath(final_fname))
     return LoadTexture(ptex, dblock);

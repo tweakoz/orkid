@@ -42,7 +42,8 @@ def onGpuInitWithScene(ctx,scene):
     material = FreestyleMaterial(ctx,Path("orkshader://manip"))
     material_inst = material.createInstance()
     material_inst.monoTek = material.shader.technique("std_mono")
-    material.setInstanceMvpParams(material_inst,"mvp","","")
+    material_inst.stereoTek = material.shader.technique("std_stereo")
+    material.setInstanceMvpParams(material_inst,"mvp","mvpL","mvpR")
 
     primnode = prim.createNode("node1",layer,material_inst)
 
@@ -71,21 +72,21 @@ def onGpuInitWithScene(ctx,scene):
 #        concurrently c++ is rendering..)
 ################################################
 def onUpdateWithScene(updinfo,scene):
-    θ    = updinfo.absolutetime * math.pi * 2.0 * 0.1
+    θ    = updinfo.absolutetime * math.pi * 2.0
     ###################################
     cam = scene.user.camera1
     camlut = scene.user.cameralut1
     primnode = scene.user.primnode1
     ###################################
-    distance = 10.0
-    eye = vec3(math.sin(θ), 1.0, -math.cos(θ)) * distance
-    cam.lookAt(eye, # eye
-               vec3(0, 0, 0), # tgt
-               vec3(0, 1, 0)) # up
+    #distance = 10.0
+    #eye = vec3(math.sin(θ), 1.0, -math.cos(θ)) * distance
+    #cam.lookAt(eye, # eye
+    #           vec3(0, 0, 0), # tgt
+    #           vec3(0, 1, 0)) # up
     ###################################
-    primnode.worldMatrix.compose( vec3(0,0,0), # pos
-                                  quat(), # rot
-                                  math.sin(updinfo.absolutetime*2)*3) # scale
+    primnode.worldMatrix.compose( vec3(0,0.25,-2.5), # pos
+                                  quat(vec3(0,1,0),θ*0.05), # rot
+                                  0.5) # scale
     ###################################
     scene.updateScene(camlut) # update and enqueue all scenenodes
 ################################################

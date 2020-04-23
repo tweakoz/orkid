@@ -93,6 +93,7 @@ qtezapp_ptr_t OrkEzQtApp::createWithScene(varmap::varmap_ptr_t sceneparams) {
   auto rval                           = std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp);
   rval->_mainWindow->_execsceneparams = sceneparams;
   rval->_mainWindow->_onDraw          = [=](const ui::DrawEvent& drwev) { //
+    ork::opq::mainSerialQueue()->Process();
     auto context = drwev.GetTarget();
     context->beginFrame();
     rval->_mainWindow->_execscene->renderOnContext(context);
@@ -131,7 +132,8 @@ struct EzViewport : public ui::Viewport {
         _mainwin->_execscene = std::make_shared<scenegraph::Scene>(_mainwin->_execsceneparams);
         _mainwin->_onGpuInitWithScene(drwev.GetTarget(), _mainwin->_execscene);
       }
-
+      while (asset::AssetManager<TextureAsset>::AutoLoad()) {
+      }
       while (ork::opq::mainSerialQueue()->Process()) {
       }
       _mainwin->_dogpuinit = false;

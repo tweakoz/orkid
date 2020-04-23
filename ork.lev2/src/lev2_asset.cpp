@@ -104,7 +104,7 @@ public:
     if (tex_asset->_varmap.hasKey("postproc")) {
       printf("texasset<%p:%s> has postproc\n", tex_asset, filename.c_str());
     } else {
-      printf("texasset<%p:%s> does NOT have postproc\n", tex_asset, filename.c_str());
+      // printf("texasset<%p:%s> does NOT have postproc\n", tex_asset, filename.c_str());
     }
 
     // OrkAssert(false == tex_asset->GetTexture()->_varmap.hasKey("preproc"));

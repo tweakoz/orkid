@@ -62,7 +62,7 @@ Texture* PBRMaterial::brdfIntegrationMap(Context* targ) {
       // printf("Begin Compute brdfIntegrationMap\n");
       dblock        = std::make_shared<DataBlock>();
       float* texels = dblock->allocateItems<float>(DIM * DIM * 4);
-      auto group    = opq::createCompletionGroup(opq::concurrentQueue(),"BRDFMAPGEN");
+      auto group    = opq::createCompletionGroup(opq::concurrentQueue(), "BRDFMAPGEN");
       for (int y = 0; y < DIM; y++) {
         float fy  = float(y) / float(DIM - 1);
         int ybase = y * DIM;
@@ -143,18 +143,17 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
   auto filtex                                                       = std::make_shared<FilteredEnvMap>();
   rawenvmap->_varmap.makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
   ///////////////////////////////////////////////
-  printf("filterenv-spec tex<%p> hash<0x%zx>\n", rawenvmap, rawenvmap->_contentHash );
+  printf("filterenv-spec tex<%p> hash<0x%zx>\n", rawenvmap, rawenvmap->_contentHash);
   boost::Crc64 basehasher;
   basehasher.accumulateString("filterenv-spec-v0");
   basehasher.accumulateItem<uint64_t>(rawenvmap->_contentHash);
   basehasher.finish();
-  uint64_t cmipchain_hashkey  = basehasher.result();
-  auto cmipchain_datablock = DataBlockCache::findDataBlock(cmipchain_hashkey);
+  uint64_t cmipchain_hashkey = basehasher.result();
+  auto cmipchain_datablock   = DataBlockCache::findDataBlock(cmipchain_hashkey);
   ///////////////////////////////////////////////
-  if( cmipchain_datablock ){
-    printf("filterenv-spec tex<%p> loading precomputed!\n", rawenvmap );
-  }
-  else {
+  if (cmipchain_datablock) {
+    printf("filterenv-spec tex<%p> loading precomputed!\n", rawenvmap);
+  } else {
     RenderContextFrameData RCFD(targ);
     int w = rawenvmap->_width;
     int h = rawenvmap->_height;
@@ -268,18 +267,17 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
   auto filtex                                                       = std::make_shared<FilteredEnvMap>();
   rawenvmap->_varmap.makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
   ///////////////////////////////////////////////
-  printf("filterenv-diff tex<%p> hash<0x%zx>\n", rawenvmap, rawenvmap->_contentHash );
+  printf("filterenv-diff tex<%p> hash<0x%zx>\n", rawenvmap, rawenvmap->_contentHash);
   boost::Crc64 basehasher;
   basehasher.accumulateString("filterenv-diff-v0");
   basehasher.accumulateItem<uint64_t>(rawenvmap->_contentHash);
   basehasher.finish();
-  uint64_t cmipchain_hashkey  = basehasher.result();
-  auto cmipchain_datablock = DataBlockCache::findDataBlock(cmipchain_hashkey);
+  uint64_t cmipchain_hashkey = basehasher.result();
+  auto cmipchain_datablock   = DataBlockCache::findDataBlock(cmipchain_hashkey);
   ///////////////////////////////////////////////
-  if( cmipchain_datablock ){
-    printf("filterenv-diff tex<%p> loading precomputed!\n", rawenvmap );
-  }
-  else {
+  if (cmipchain_datablock) {
+    printf("filterenv-diff tex<%p> loading precomputed!\n", rawenvmap);
+  } else {
     RenderContextFrameData RCFD(targ);
     int w = rawenvmap->_width;
     int h = rawenvmap->_height;
