@@ -37,12 +37,18 @@ list( APPEND orksrcs ${INCD}/ork/lev2/ezapp.h )
 ###################################
 
 gen_ispc_object_list( ${SRCD}/aud/*.ispc
-                      ork_lev2.dir/src/aud/singularity
-                      ispc_audio_obc_list )
+                      ork_lev2.dir/src/aud
+                      ispc_audio_object_list )
+
+gen_ispc_object_list( ${SRCD}/gfx/*.ispc
+                      ork_lev2.dir/src/gfx
+                      ispc_gfx_object_list )
 
 ###################################
 
-add_library (ork_lev2 SHARED ${orksrcs} ${ispc_audio_obc_list} )
+add_library (ork_lev2 SHARED ${orksrcs}
+                             ${ispc_audio_object_list}
+                             ${ispc_gfx_object_list} )
 
 ###################################
 
