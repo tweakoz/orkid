@@ -889,6 +889,9 @@ void VastObjectsDB::loadJson(const std::string& fname, int ibaseid) {
       objid = nid;
     }
     objmap->_programs[objid] = prg;
+
+    // TODO - remap duplicates (by name)
+    objmap->_programsByName[prg->_name] = prg;
   }
   for (auto it : _tempkeymaps) {
     int objid               = it.first;
@@ -933,6 +936,17 @@ const programData* VastObjectsDB::findProgram(int progID) const {
     return _programs.begin()->second;
   }
   assert(it != _programs.end());
+  pd = it->second;
+  return pd;
+}
+
+const programData* VastObjectsDB::findProgramByName(const std::string named) const {
+  programData* pd = nullptr;
+  auto it         = _programsByName.find(named);
+  if (it == _programsByName.end()) {
+    return _programsByName.begin()->second;
+  }
+  assert(it != _programsByName.end());
   pd = it->second;
   return pd;
 }

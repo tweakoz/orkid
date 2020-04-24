@@ -70,6 +70,10 @@ const programData* KrzSynthData::getProgram(int progID) const {
   auto ObjDB = baseObjects();
   return ObjDB->findProgram(progID);
 }
+const programData* KrzSynthData::getProgramByName(const std::string& named) const {
+  auto ObjDB = baseObjects();
+  return ObjDB->findProgramByName(named);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

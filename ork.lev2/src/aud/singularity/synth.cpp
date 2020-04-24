@@ -224,7 +224,7 @@ programInst* synth::keyOn(int note, const programData* pdata) {
   auto it = _freeProgInst.begin();
   assert(it != _freeProgInst.end());
   auto pi = *it;
-  // printf( "syn allocProgInst<%p>\n", pi );
+  printf("syn allocProgInst<%p>\n", pi);
   pi->_progdata = pdata;
   _freeProgInst.erase(it);
   pi->keyOn(note, pdata);
@@ -294,7 +294,7 @@ void synth::compute(int inumframes, const void* inputBuffer) {
 
   this->tick(tick);
 
-  // printf( "synth::Compute inumframes<%d> tick<%f>\n", inumframes, tick);
+  // printf("synth::Compute inumframes<%d> tick<%f>\n", inumframes, tick);
 
   // for( auto pi : _activeProgInst )
   //	pi->compute();

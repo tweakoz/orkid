@@ -50,20 +50,15 @@ class PyOrkApp(object):
     param_volumetex = material.shader.param("VolumeMap")
     param_v4parref = material.shader.param("testvec4")
     material.setInstanceMvpParams(material_inst,"mvp","mvpL","mvpR")
-    v4parref = vec4()
-    material_inst.param[param_v4parref] = v4parref
+    self.v4parref = vec4()
+    material_inst.param[param_v4parref] = self.v4parref
     material_inst.param[param_volumetex] = volumetexture
-    primnode = prim.createNode("node1",layer,material_inst)
+    self.primnode = prim.createNode("node1",layer,material_inst)
     ###################################
-    camera = CameraData()
-    camera.perspective(0.1, 100.0, 45.0)
-    cameralut = CameraDataLut()
-    cameralut.addCamera("spawncam",camera)
-    ###################################
-    self.primnode1 = primnode
-    self.camera1 = camera
-    self.cameralut1 = cameralut
-    self.v4parref = v4parref
+    self.camera = CameraData()
+    self.camera.perspective(0.1, 100.0, 45.0)
+    self.cameralut = CameraDataLut()
+    self.cameralut.addCamera("spawncam",self.camera)
     ###################################
     ctx.FBI().autoclear = True
     ctx.FBI().clearcolor = vec4(.15,.15,.2,1)
@@ -81,15 +76,13 @@ class PyOrkApp(object):
     θ = updinfo.absolutetime * math.pi * 2.0
     self.v4parref.z = θ*0.01 # animate noise
     ###################################
-    cam = self.camera1
-    camlut = self.cameralut1
-    primnode = self.primnode1
+    self.primnode\
+        .worldMatrix\
+        .compose( vec3(0,0.25,-2.5), # pos
+                  quat(vec3(0,1,0),θ*0.01), # rot
+                  0.75) # scale
     ###################################
-    primnode.worldMatrix.compose( vec3(0,0.25,-2.5), # pos
-                                  quat(vec3(0,1,0),θ*0.01), # rot
-                                  0.75) # scale
-    ###################################
-    self.scene.updateScene(camlut) # update and enqueue all scenenodes
+    self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
   ################################################
   # there is no onDraw() method here
   #  so c++ will implement a (potentially faster) default

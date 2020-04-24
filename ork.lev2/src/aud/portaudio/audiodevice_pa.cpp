@@ -48,7 +48,8 @@ s16* getK2V3InternalSoundBlock() {
     std::string filename = kbasepath + "/kurzweil/k2v3internalsamplerom.bin";
     printf("Loading Soundblock<%s>\n", filename.c_str());
     FILE* fin = fopen(filename.c_str(), "rb");
-    gdata     = (s16*)malloc(8 << 20);
+    OrkAssert(fin != nullptr);
+    gdata = (s16*)malloc(8 << 20);
     fread(gdata, 8 << 20, 1, fin);
     fclose(fin);
   }
@@ -154,12 +155,12 @@ void startupAudio() {
   loadPrograms();
 
   auto err = Pa_Initialize();
-  assert(err == paNoError);
+  OrkAssert(err == paNoError);
 
   /* Open an audio I/O stream. */
   err = Pa_OpenDefaultStream(
       &pa_stream,
-      1,         // no input channels
+      0,         // no input channels
       2,         // stereo output
       paFloat32, // 32 bit floating point output
       the_synth->_sampleRate,
@@ -172,12 +173,12 @@ void startupAudio() {
                              possibly changing, buffer size.*/
       patestCallback, // this is your callback function
       nullptr);       // This is a pointer that will be passed to
-                //         your callback
+                      //         your callback
 
-  assert(err == paNoError);
+  OrkAssert(err == paNoError);
 
   err = Pa_StartStream(pa_stream);
-  assert(err == paNoError);
+  OrkAssert(err == paNoError);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
