@@ -172,7 +172,19 @@ macro(enableQt5)
 
   include_directories(${Qt5Gui_PRIVATE_INCLUDE_DIRS})
 
-
 endmacro()
+
+##############################
+# ISPC compile option
+##############################
+
+function(declare_ispc_source_object src obj dep)
+  add_custom_command(OUTPUT ${obj}
+                     MAIN_DEPENDENCY ${src}
+                     COMMENT "ISPC-Compile ${src}"
+                     COMMAND ispc -O3 --target=avx ${src} -g -o ${obj} --colored-output
+                     DEPENDS ${dep})
+endfunction()
+
 
 ##############################
