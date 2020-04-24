@@ -36,26 +36,13 @@ list( APPEND orksrcs ${INCD}/ork/lev2/ezapp.h )
 # ISPC files
 ###################################
 
-file(GLOB_RECURSE src_aud_ispc ${SRCD}/aud/*.ispc)
-# todo method for generating ISPC_OUTPUT_DIR should be generalized
-#  dont want to copy and paste this blob everywhere...
-set( ISPC_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/ork_lev2.dir/src/aud/singularity)
-foreach(ispc_src_item ${src_aud_ispc})
-  file(RELATIVE_PATH ispc_src_item_rel ${CMAKE_CURRENT_SOURCE_DIR}/src ${ispc_src_item} )
-  get_filename_component(ispc_name_we ${ispc_src_item_rel} NAME_WE)
-  get_filename_component(ispc_dir ${ispc_src_item_rel} DIRECTORY)
-  set(ispc_obc_item ${ISPC_OUTPUT_DIR}/${ispc_name_we}.o)
-  message(${ispc_src_item})
-  message(${ispc_name_we})
-  message(${ispc_dir})
-  message(${ispc_obc_item})
-  declare_ispc_source_object(${ispc_src_item} ${ispc_obc_item} ${ispc_src_item} )
-  list(APPEND ispc_obc_list ${ispc_obc_item} )
-endforeach(ispc_src_item)
+gen_ispc_object_list( ${SRCD}/aud/*.ispc
+                      ork_lev2.dir/src/aud/singularity
+                      ispc_audio_obc_list )
 
 ###################################
 
-add_library (ork_lev2 SHARED ${orksrcs} ${ispc_obc_list} )
+add_library (ork_lev2 SHARED ${orksrcs} ${ispc_audio_obc_list} )
 
 ###################################
 

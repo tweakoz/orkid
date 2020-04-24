@@ -177,7 +177,6 @@ endmacro()
 ##############################
 # ISPC compile option
 ##############################
-
 function(declare_ispc_source_object src obj dep)
   add_custom_command(OUTPUT ${obj}
                      MAIN_DEPENDENCY ${src}
@@ -185,6 +184,33 @@ function(declare_ispc_source_object src obj dep)
                      COMMAND ispc -O3 --target=avx ${src} -g -o ${obj} --colored-output
                      DEPENDS ${dep})
 endfunction()
-
+##############################
+# ISPC convenience method
+#  I really dislike cmake as a language...
+##############################
+function(gen_ispc_object_list
+         ISPC_GLOB_SPEC
+         ISPC_SUBDIR
+         ISPC_OUTPUT_OBJECT_LIST )
+  set(ISPC_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/${ISPC_SUBDIR})
+  #message(${ISPC_GLOB_SPEC})
+  #message(${ISPC_SUBDIR})
+  #message(${ISPC_OUTPUT_DIR})
+  file(GLOB_RECURSE SRC_ISPC ${ISPC_GLOB_SPEC} )
+  foreach(SRC_ITEM ${SRC_ISPC})
+    file(RELATIVE_PATH SRC_ITEM_RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/src ${SRC_ITEM} )
+    get_filename_component(ispc_name_we ${SRC_ITEM_RELATIVE} NAME_WE)
+    get_filename_component(ispc_dir ${SRC_ITEM_RELATIVE} DIRECTORY)
+    set(OBJ_ITEM ${ISPC_OUTPUT_DIR}/${ispc_name_we}.o)
+    #message(${SRC_ITEM})
+    #message(${ispc_name_we})
+    #message(${ispc_dir})
+    #message(${OBJ_ITEM})
+    declare_ispc_source_object(${SRC_ITEM} ${OBJ_ITEM} ${SRC_ITEM} )
+    list(APPEND _INTERNAL_ISPC_OUTPUT_OBJECT_LIST ${OBJ_ITEM} )
+  endforeach(SRC_ITEM)
+  #message(${_INTERNAL_ISPC_OUTPUT_OBJECT_LIST})
+  set(${ISPC_OUTPUT_OBJECT_LIST} ${_INTERNAL_ISPC_OUTPUT_OBJECT_LIST} PARENT_SCOPE)
+endfunction()
 
 ##############################

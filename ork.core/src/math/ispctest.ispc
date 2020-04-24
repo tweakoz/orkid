@@ -19,7 +19,7 @@ static inline int mandel(float c_re, float c_im, int count) {
 //  the signature should be the same,
 //   with the c/c++ version omitting uniform
 //////////////////////////////////////////////////////////////////////////
-export void ork_lev2_audio_mandelbrot_ispc(
+export void ork_math_mandelbrot_ispc(
   uniform float x0, uniform float y0,
   uniform float x1, uniform float y1,
   uniform int width, uniform int height,

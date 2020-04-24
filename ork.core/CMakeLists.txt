@@ -32,7 +32,13 @@ add_compile_options(-mavx)
 
 ###################################
 
-add_library (ork_core SHARED ${orksrcs} )
+gen_ispc_object_list( ${SRCD}/math/*.ispc
+                      ork_core.dir/src/math/
+                      ispc_math_object_list )
+
+###################################
+
+add_library (ork_core SHARED ${orksrcs} ${ispc_math_object_list} )
 
 ###################################
 
