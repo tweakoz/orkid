@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 ################################################################################
 import sys, os
-from orkengine import core,lev2,lev2qt
 from PySide2 import QtWidgets
 from PySide2.QtWidgets import QStyleFactory
 ################################################################################
 def onButton():
+  from orkengine import core,lev2,lev2qt
   print(dir(lev2qt))
   ic = lev2qt.Icecream("chocko")
   print(dir(ic))

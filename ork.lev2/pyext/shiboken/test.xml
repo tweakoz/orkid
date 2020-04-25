@@ -4,5 +4,7 @@
   <primitive-type name="std::string"/>
   <primitive-type name="char"/>
   <primitive-type name="QString"/>
+  <namespace-type name="ork">
+  </namespace-type>
   <object-type name="Icecream"/>
 </typesystem>

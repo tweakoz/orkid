@@ -20,7 +20,8 @@ set( INCD2 $ENV{ORKID_WORKSPACE_DIR}/ork.lev2/inc )
 file(GLOB sources ${SRCD}/*.cpp)
 
 add_library( _lev2qt SHARED ${sources} )
-target_include_directories (_lev2qt PRIVATE ${SHIBOKENBINDINGSPATH} )
+target_include_directories( _lev2qt PRIVATE ${SHIBOKEN_HEADER_PATH} )
+target_include_directories (_lev2qt PRIVATE ${SHIBOKEN_BINDINGS_PATH} )
 target_include_directories (_lev2qt PRIVATE ${PYSIDE_HEADER_PATH} )
 
 target_include_directories (_lev2qt PRIVATE ${INCD} ${INCD2} )

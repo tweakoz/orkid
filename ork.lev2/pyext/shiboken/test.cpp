@@ -1,6 +1,7 @@
 #include "test.h"
+#include <ork/pch.h>
 ////////////////////////////////////////////////////////////////////////////////
-Icecream::Icecream(std::string& flavor)
+Icecream::Icecream(const char* flavor)
     : _theflavor(flavor) {
 
   int on_stack = 0;
@@ -10,8 +11,15 @@ Icecream::Icecream(std::string& flavor)
   printf("addr-_theflavor <%p>\n", &_theflavor);
   printf("addr-on_stack <%p>\n", &on_stack);
   printf("addr-on_heap <%p>\n", on_heap);
-  printf("Whats your flavor <%s>\n", flavor.c_str());
+  printf("Whats your flavor <%s>\n", flavor);
   printf("Whats your flavor <%s>\n", _theflavor.c_str());
+  // OrkAssert(typeid(flavor) == typeid(_theflavor));
+  _theflavor = flavor;
+  printf("Whats your flavor <%s>\n", _theflavor.c_str());
+
+  std::string newflavor = "wtf";
+  printf("Whats your newflavor <%s>\n", newflavor.c_str());
+  // OrkAssert(false);
 }
 ////////////////////////////////////////////////////////////////////////////////
 const std::string& Icecream::getFlavor() const {

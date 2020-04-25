@@ -50,13 +50,13 @@ public:
   static OrkEzQtAppBase* _staticapp;
 };
 ////////////////////////////////////////////////////////////////////////////////
-class EzApp : public ork::Application {
+class EzApp final : public ork::Application {
   RttiDeclareAbstract(EzApp, ork::Application);
 
 public:
   static ezapp_ptr_t get(int& argc, char** argv);
   static ezapp_ptr_t get();
-  ~EzApp() final;
+  ~EzApp();
 
 private:
   EzApp(int& argc, char** argv);
@@ -110,13 +110,13 @@ public:
   double _render_state_numiters  = 0.0;
 };
 
-class OrkEzQtApp : public OrkEzQtAppBase {
+class OrkEzQtApp final : public OrkEzQtAppBase {
   Q_OBJECT
 
 public:
   ///////////////////////////////////
   OrkEzQtApp(int& argc, char** argv);
-  ~OrkEzQtApp() final;
+  ~OrkEzQtApp();
   ///////////////////////////////////
   static qtezapp_ptr_t create();
   static qtezapp_ptr_t create(int argc, char** argv);

@@ -19,10 +19,10 @@ using freestyle_mtl_ptr_t = std::shared_ptr<FreestyleMaterial>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct FreestyleMaterial : public GfxMaterial {
+struct FreestyleMaterial final : public GfxMaterial {
 
   FreestyleMaterial();
-  ~FreestyleMaterial() final;
+  ~FreestyleMaterial();
 
   void dump() const;
 

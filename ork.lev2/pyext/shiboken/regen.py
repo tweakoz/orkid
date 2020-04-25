@@ -12,6 +12,10 @@ os.chdir(this_dir)
 
 # todo - autodetect and run only when changes occured
 
+env = {
+  "CLANG_INSTALL_DIR": "/usr/include/clang/10"
+}
+
 command.run([
   "shiboken2",
   #"--silent",
@@ -29,4 +33,7 @@ command.run([
   "--language-level=c++17",
   "test.h",
   "test.xml"
-])
+], env)
+
+
+#(shiboken) clang_parseTranslationUnit2(0x0, cmd[12]=-nostdinc -isystem/usr/bin/../lib/gcc/x86_64-linux-gnu/9/../../../../include/c++/9 -isystem/usr/bin/../lib/gcc/x86_64-linux-gnu/9/../../../../include/x86_64-linux-gnu/c++/9 -isystem/usr/bin/../lib/gcc/x86_64-linux-gnu/9/../../../../include/c++/9/backward -isystem/usr/local/include -isystem/usr/lib/llvm-10/lib/clang/10.0.0/include -isystem/usr/include/x86_64-linux-gnu -isystem/usr/include -fPIC -Wno-constant-logical-operand -std=c++14 /tmp/nothing_oFglAg.hpp)

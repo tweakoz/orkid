@@ -13,26 +13,48 @@ namespace ork { namespace lev2 {
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-class GfxMaterial3DSolid : public GfxMaterial {
+class GfxMaterial3DSolid final : public GfxMaterial {
   RttiDeclareConcrete(GfxMaterial3DSolid, GfxMaterial);
 
 public:
   static void ClassInit();
   GfxMaterial3DSolid(Context* pTARG = 0);
   GfxMaterial3DSolid(
-      Context* pTARG, const char* puserfx, const char* pusertek, bool allowcompilefailure = false, bool unmanaged = false);
-  ~GfxMaterial3DSolid() final{};
+      Context* pTARG,
+      const char* puserfx,
+      const char* pusertek,
+      bool allowcompilefailure = false,
+      bool unmanaged           = false);
+  ~GfxMaterial3DSolid(){};
 
-  void SetVolumeTexture(Texture* ptex) { mVolumeTexture = ptex; }
-  void SetTexture(Texture* ptex) { mCurrentTexture = ptex; }
-  void SetTexture2(Texture* ptex) { mCurrentTexture2 = ptex; }
-  void SetTexture3(Texture* ptex) { mCurrentTexture3 = ptex; }
-  void SetTexture4(Texture* ptex) { mCurrentTexture4 = ptex; }
+  void SetVolumeTexture(Texture* ptex) {
+    mVolumeTexture = ptex;
+  }
+  void SetTexture(Texture* ptex) {
+    mCurrentTexture = ptex;
+  }
+  void SetTexture2(Texture* ptex) {
+    mCurrentTexture2 = ptex;
+  }
+  void SetTexture3(Texture* ptex) {
+    mCurrentTexture3 = ptex;
+  }
+  void SetTexture4(Texture* ptex) {
+    mCurrentTexture4 = ptex;
+  }
 
-  void SetUser0(const fvec4& vuser) { mUser0 = vuser; }
-  void SetUser1(const fvec4& vuser) { mUser1 = vuser; }
-  void SetUser2(const fvec4& vuser) { mUser2 = vuser; }
-  void SetUser3(const fvec4& vuser) { mUser3 = vuser; }
+  void SetUser0(const fvec4& vuser) {
+    mUser0 = vuser;
+  }
+  void SetUser1(const fvec4& vuser) {
+    mUser1 = vuser;
+  }
+  void SetUser2(const fvec4& vuser) {
+    mUser2 = vuser;
+  }
+  void SetUser3(const fvec4& vuser) {
+    mUser3 = vuser;
+  }
 
   void SetUserFx(const char* puserfx, const char* pusertek) {
     mUserFxName  = puserfx;
@@ -57,19 +79,39 @@ public:
 
   ////////////////////////////////////////////
 
-  EColorMode GetColorMode() const { return meColorMode; }
-  void SetColorMode(EColorMode emode) { meColorMode = emode; }
-  void SetColor(const fvec4& color) { Color = color; }
-  const fvec4& GetColor() const { return Color; }
-  void SetNoiseAmp(const fvec4& color) { mNoiseAmp = color; }
-  void SetNoiseFreq(const fvec4& color) { mNoiseFreq = color; }
-  void SetNoiseShift(const fvec4& color) { mNoiseShift = color; }
+  EColorMode GetColorMode() const {
+    return meColorMode;
+  }
+  void SetColorMode(EColorMode emode) {
+    meColorMode = emode;
+  }
+  void SetColor(const fvec4& color) {
+    Color = color;
+  }
+  const fvec4& GetColor() const {
+    return Color;
+  }
+  void SetNoiseAmp(const fvec4& color) {
+    mNoiseAmp = color;
+  }
+  void SetNoiseFreq(const fvec4& color) {
+    mNoiseFreq = color;
+  }
+  void SetNoiseShift(const fvec4& color) {
+    mNoiseShift = color;
+  }
 
   ////////////////////////////////////////////
 
-  void SetWRotMatrix(const fmtx3& wrot) { mRotMatrix = wrot; }
-  void SetAuxMatrix(const fmtx4& mtx) { mMatAux = mtx; }
-  void SetAux2Matrix(const fmtx4& mtx) { mMatAux2 = mtx; }
+  void SetWRotMatrix(const fmtx3& wrot) {
+    mRotMatrix = wrot;
+  }
+  void SetAuxMatrix(const fmtx4& mtx) {
+    mMatAux = mtx;
+  }
+  void SetAux2Matrix(const fmtx4& mtx) {
+    mMatAux2 = mtx;
+  }
 
   bool BeginPass(Context* pTARG, int iPass = 0) final;
   void EndPass(Context* pTARG) final;
@@ -80,7 +122,8 @@ public:
   bool _enablePick = false;
 
 protected:
-  void Update(void) final {}
+  void Update(void) final {
+  }
   void SetMaterialProperty(const char* prop, const char* val) final;
 
   EColorMode meColorMode;
@@ -92,9 +135,9 @@ protected:
   fvec4 mUser1;
   fvec4 mUser2;
   fvec4 mUser3;
-  FxShader* hModFX = nullptr;
-  Texture* mVolumeTexture = nullptr;
-  Texture* mCurrentTexture = nullptr;
+  FxShader* hModFX          = nullptr;
+  Texture* mVolumeTexture   = nullptr;
+  Texture* mCurrentTexture  = nullptr;
   Texture* mCurrentTexture2 = nullptr;
   Texture* mCurrentTexture3 = nullptr;
   Texture* mCurrentTexture4 = nullptr;
@@ -106,43 +149,43 @@ protected:
   bool mUnManaged;
   bool mAllowCompileFailure;
 
-  const FxShaderTechnique* hTekUser = nullptr;
-  const FxShaderTechnique* hTekUserStereo = nullptr;
-  const FxShaderTechnique* hTekTexColor = nullptr;
+  const FxShaderTechnique* hTekUser           = nullptr;
+  const FxShaderTechnique* hTekUserStereo     = nullptr;
+  const FxShaderTechnique* hTekTexColor       = nullptr;
   const FxShaderTechnique* hTekTexColorStereo = nullptr;
-  const FxShaderTechnique* hTekTexModColor = nullptr;
+  const FxShaderTechnique* hTekTexModColor    = nullptr;
   const FxShaderTechnique* hTekTexTexModColor = nullptr;
   const FxShaderTechnique* hTekTexVertexColor = nullptr;
-  const FxShaderTechnique* hTekVertexColor = nullptr;
+  const FxShaderTechnique* hTekVertexColor    = nullptr;
   const FxShaderTechnique* hTekVertexModColor = nullptr;
-  const FxShaderTechnique* hTekModColor = nullptr;
-  const FxShaderTechnique* hTekPick = nullptr;
+  const FxShaderTechnique* hTekModColor       = nullptr;
+  const FxShaderTechnique* hTekPick           = nullptr;
 
-  const FxShaderParam* hMatM = nullptr;
-  const FxShaderParam* hMatV = nullptr;
-  const FxShaderParam* hMatP = nullptr;
-  const FxShaderParam* hMatMV = nullptr;
-  const FxShaderParam* hMatMVP = nullptr;
-  const FxShaderParam* hMatMVPL = nullptr;
-  const FxShaderParam* hMatMVPR = nullptr;
-  const FxShaderParam* hMatMVPC = nullptr;
-  const FxShaderParam* hMatAux = nullptr;
-  const FxShaderParam* hMatAux2 = nullptr;
-  const FxShaderParam* hMatRot = nullptr;
-  const FxShaderParam* hVolumeMap = nullptr;
-  const FxShaderParam* hColorMap = nullptr;
-  const FxShaderParam* hColorMap2 = nullptr;
-  const FxShaderParam* hColorMap3 = nullptr;
-  const FxShaderParam* hColorMap4 = nullptr;
-  const FxShaderParam* hParamUser0 = nullptr;
-  const FxShaderParam* hParamUser1 = nullptr;
-  const FxShaderParam* hParamUser2 = nullptr;
-  const FxShaderParam* hParamUser3 = nullptr;
-  const FxShaderParam* hParamModColor = nullptr;
-  const FxShaderParam* hParamTime = nullptr;
+  const FxShaderParam* hMatM            = nullptr;
+  const FxShaderParam* hMatV            = nullptr;
+  const FxShaderParam* hMatP            = nullptr;
+  const FxShaderParam* hMatMV           = nullptr;
+  const FxShaderParam* hMatMVP          = nullptr;
+  const FxShaderParam* hMatMVPL         = nullptr;
+  const FxShaderParam* hMatMVPR         = nullptr;
+  const FxShaderParam* hMatMVPC         = nullptr;
+  const FxShaderParam* hMatAux          = nullptr;
+  const FxShaderParam* hMatAux2         = nullptr;
+  const FxShaderParam* hMatRot          = nullptr;
+  const FxShaderParam* hVolumeMap       = nullptr;
+  const FxShaderParam* hColorMap        = nullptr;
+  const FxShaderParam* hColorMap2       = nullptr;
+  const FxShaderParam* hColorMap3       = nullptr;
+  const FxShaderParam* hColorMap4       = nullptr;
+  const FxShaderParam* hParamUser0      = nullptr;
+  const FxShaderParam* hParamUser1      = nullptr;
+  const FxShaderParam* hParamUser2      = nullptr;
+  const FxShaderParam* hParamUser3      = nullptr;
+  const FxShaderParam* hParamModColor   = nullptr;
+  const FxShaderParam* hParamTime       = nullptr;
   const FxShaderParam* hParamNoiseShift = nullptr;
-  const FxShaderParam* hParamNoiseFreq = nullptr;
-  const FxShaderParam* hParamNoiseAmp = nullptr;
+  const FxShaderParam* hParamNoiseFreq  = nullptr;
+  const FxShaderParam* hParamNoiseAmp   = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -40,13 +40,13 @@ struct FilteredEnvMap {
 typedef std::shared_ptr<FilteredEnvMap> filtenvmapptr_t;
 ///////////////////////////////////////////////////////////////////////////////
 
-class PBRMaterial : public GfxMaterial {
+class PBRMaterial final : public GfxMaterial {
 
   DeclareConcreteX(PBRMaterial, GfxMaterial);
 
 public:
   PBRMaterial();
-  ~PBRMaterial() final;
+  ~PBRMaterial();
 
   void setTextureBaseName(std::string basename) {
     _textureBaseName = basename;

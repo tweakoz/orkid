@@ -130,10 +130,10 @@ private:
 #if defined(ENABLE_OPENVR)
 ////////////////////////////////////////////////////////////////////////////////
 
-struct OpenVrDevice : public Device {
+struct OpenVrDevice final : public Device {
 
   OpenVrDevice();
-  ~OpenVrDevice() final;
+  ~OpenVrDevice();
 
   void _processControllerEvents();
   void _updatePoses();

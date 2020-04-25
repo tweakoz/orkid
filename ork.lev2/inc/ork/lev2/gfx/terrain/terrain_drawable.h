@@ -10,14 +10,14 @@ typedef std::shared_ptr<HeightMap> hfptr_t;
 struct TerrainDrawableInst;
 typedef std::shared_ptr<TerrainDrawableInst> hfdrawableinstptr_t;
 
-class TerrainDrawableData : public ork::Object {
+class TerrainDrawableData final : public ork::Object {
 
   DeclareConcreteX(TerrainDrawableData, ork::Object);
 
 public:
   hfdrawableinstptr_t createInstance() const;
   TerrainDrawableData();
-  ~TerrainDrawableData() final;
+  ~TerrainDrawableData();
 
   float _testxxx = 0.0f;
   fvec3 _fogcolor;

@@ -1,11 +1,12 @@
 #pragma once
 #include <string>
 #include <ork/orkconfig.h>
-#include <QtCore/QString>
+//#include <ork/math/cvector2.h>
+//#include <QtCore/QString>
 
-class ORK_API Icecream {
+class Icecream {
 public:
-  Icecream(std::string& flavor);
+  Icecream(const char* flavor);
   const std::string& getFlavor() const;
 
 private:

@@ -126,11 +126,14 @@ cmd += ["-DPYSIDE_LIBRARY_PATH=%s"%qt5forpython.pyside_library_dir()]
 cmd += ["-DPYSIDE_LIBRARY_FILE=%s"%qt5forpython.pyside_library()]
 cmd += ["-DPYSIDE_QTGUI_LIB=%s"%qt5forpython.pyside_qtlibrary("QtGui")]
 
+cmd += ["-DCMAKE_CXX_COMPILER=clang++"]
+cmd += ["-DCMAKE_CC_COMPILER=clang"]
+
 ###################################################
 # inject generated shiboken binding path into cmake
 ###################################################
 
-cmd += ["-DSHIBOKENBINDINGSPATH=%s"%(build_dest/"shiboken-bindings")]
+cmd += ["-DSHIBOKEN_BINDINGS_PATH=%s"%(build_dest/"shiboken-bindings")]
 
 ###################################################
 if _args["trace"]==True:

@@ -4,6 +4,8 @@ include (GenerateExportHeader)
 
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
 set( INCD ${CMAKE_CURRENT_SOURCE_DIR}/inc )
+find_package (Python COMPONENTS Interpreter Development)
+FIND_PACKAGE( pybind11 REQUIRED )
 
 ###################################
 
@@ -57,6 +59,7 @@ ELSEIF(${UNIX})
 ENDIF()
 
 target_include_directories (ork_core PRIVATE ${INCD} )
+target_include_directories( ork_core PRIVATE ${PYTHON_INCLUDE_DIRS} ${PYBIND11_INCLUDE_DIRS} )
 
 install(TARGETS ork_core LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )
 

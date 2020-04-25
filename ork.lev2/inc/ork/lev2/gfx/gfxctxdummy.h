@@ -159,14 +159,16 @@ class DuGeometryBufferInterface : public GeometryBufferInterface {
 
   //
 
-  virtual void DrawPrimitive(const VertexBufferBase& VBuf, EPrimitiveType eType = EPrimitiveType::NONE, int ivbase = 0, int ivcount = 0);
+  virtual void
+  DrawPrimitive(const VertexBufferBase& VBuf, EPrimitiveType eType = EPrimitiveType::NONE, int ivbase = 0, int ivcount = 0);
   virtual void DrawIndexedPrimitive(
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
       EPrimitiveType eType = EPrimitiveType::NONE,
       int ivbase           = 0,
       int ivcount          = 0);
-  virtual void DrawPrimitiveEML(const VertexBufferBase& VBuf, EPrimitiveType eType = EPrimitiveType::NONE, int ivbase = 0, int ivcount = 0);
+  virtual void
+  DrawPrimitiveEML(const VertexBufferBase& VBuf, EPrimitiveType eType = EPrimitiveType::NONE, int ivbase = 0, int ivcount = 0);
   virtual void DrawIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
@@ -240,7 +242,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-class ContextDummy : public Context {
+class ContextDummy final : public Context {
   RttiDeclareConcrete(ContextDummy, Context);
 
   friend class GfxEnv;
@@ -249,7 +251,7 @@ class ContextDummy : public Context {
 
 public:
   ContextDummy();
-  ~ContextDummy() final;
+  ~ContextDummy();
 
   ///////////////////////////////////////////////////////////////////////
   // VtxBuf Interface
