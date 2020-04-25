@@ -22,16 +22,40 @@
 #include <ork/lev2/qtui/qtui.hpp>
 
 namespace ork::lev2 {
-
 class EzApp;
-
-using ezapp_ptr_t = std::shared_ptr<EzApp>;
-
+class OrkEzQtApp;
+using ezapp_ptr_t   = std::shared_ptr<EzApp>;
+using qtezapp_ptr_t = std::shared_ptr<OrkEzQtApp>;
+////////////////////////////////////////////////////////////////////////////////
+struct QtAppInit {
+  QtAppInit();
+  QtAppInit(int argc, char** argv);
+  ~QtAppInit();
+  int _argc = 0;
+  std::string _arg;
+  char* _argv   = nullptr;
+  char** _argvp = nullptr;
+  std::shared_ptr<StdFileSystemInitalizer> _fsinit;
+};
+////////////////////////////////////////////////////////////////////////////////
+extern QtAppInit& qtinit();
+extern QtAppInit& qtinit(int& argc, char** argv);
+////////////////////////////////////////////////////////////////////////////////
+class OrkEzQtAppBase : public QApplication {
+  Q_OBJECT
+public:
+  OrkEzQtAppBase(int& argc, char** argv);
+  ezapp_ptr_t _ezapp;
+  static OrkEzQtAppBase* get();
+  static OrkEzQtAppBase* _staticapp;
+};
+////////////////////////////////////////////////////////////////////////////////
 class EzApp : public ork::Application {
   RttiDeclareAbstract(EzApp, ork::Application);
 
 public:
-  static ezapp_ptr_t create(int& argc, char** argv);
+  static ezapp_ptr_t get(int& argc, char** argv);
+  static ezapp_ptr_t get();
   ~EzApp() final;
 
 private:
@@ -41,7 +65,7 @@ private:
   ork::opq::opq_ptr_t _mainq;
   ork::opq::opq_ptr_t _conq;
 };
-
+////////////////////////////////////////////////////////////////////////////////
 struct UpdateData {
   double _dt      = 0.0;
   double _abstime = 0.0;
@@ -86,10 +110,7 @@ public:
   double _render_state_numiters  = 0.0;
 };
 
-class OrkEzQtApp;
-using qtezapp_ptr_t = std::shared_ptr<OrkEzQtApp>;
-
-class OrkEzQtApp : public QApplication {
+class OrkEzQtApp : public OrkEzQtAppBase {
   Q_OBJECT
 
 public:
@@ -125,7 +146,6 @@ public slots:
 public:
   QTimer mIdleTimer;
   EzMainWin* _mainWindow;
-  std::shared_ptr<EzApp> _ezapp;
   std::map<std::string, filedevctxptr_t> _fdevctxmap;
   ork::Timer _update_timer;
   double _update_prevtime        = 0;

@@ -5,7 +5,7 @@
 
 class ORK_API Icecream {
 public:
-  Icecream(const char* flavor);
+  Icecream(std::string& flavor);
   const std::string& getFlavor() const;
 
 private:

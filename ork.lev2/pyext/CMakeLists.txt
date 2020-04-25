@@ -17,26 +17,15 @@ set( INCD $ENV{ORKID_WORKSPACE_DIR}/ork.core/inc )
 set( INCD2 $ENV{ORKID_WORKSPACE_DIR}/ork.lev2/inc )
 
 ###################################
-file(GLOB_RECURSE src_pyext ${SRCD}/*.cpp)
+file(GLOB sources ${SRCD}/*.cpp)
 
-add_library( _lev2 SHARED ${src_pyext} )
-target_include_directories (_lev2 PRIVATE ${SHIBOKENBINDINGSPATH} )
-target_include_directories (_lev2 PRIVATE ${PYSIDE_HEADER_PATH} )
+add_library( _lev2 SHARED ${sources} )
 
 target_include_directories (_lev2 PRIVATE ${INCD} ${INCD2} )
 target_include_directories( _lev2 PRIVATE ${PYTHON_INCLUDE_DIRS} ${PYBIND11_INCLUDE_DIRS} )
 target_link_libraries(_lev2 LINK_PUBLIC ork_core ork_lev2 )
-target_link_libraries(_lev2 LINK_PRIVATE ${SHIBOKEN_LIBRARY_FILE} )
-add_library(ABC SHARED IMPORTED)
-set_target_properties(ABC PROPERTIES
-            IMPORTED_LOCATION ${PYSIDE_QTGUI_LIB}
-            IMPORTED_IMPLIB ${PYSIDE_QTGUI_LIB}
-            IMPORTED_NO_SONAME 0
-            )
 
-target_link_libraries(_lev2 PUBLIC ABC )
 target_link_libraries(_lev2 PUBLIC ${PYTHON_LIBRARY_PATH} )
-target_link_libraries(_lev2 PUBLIC ${PYSIDE_LIBRARY_FILE} )
 target_link_options(_lev2 PUBLIC -Wl,-rpath )
 target_link_options(_lev2 PUBLIC -Wl,--no-undefined )
 
@@ -62,3 +51,4 @@ target_include_directories (_lev2 PRIVATE $ENV{OBT_STAGE}/include/eigen3 )
 
 configure_file( pyfiles/__lev2_init__.py ${INSTALL_DEST}/__init__.py )
 #configure_file( pyfiles/setup.py ${INSTALL_DEST}/setup.py)
+add_subdirectory (shiboken)

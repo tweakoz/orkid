@@ -12,42 +12,43 @@ void GfxInit(const std::string& gfxlayer);
 constexpr uint64_t KAPPSTATEFLAG_UPDRUNNING = 1 << 0;
 constexpr uint64_t KAPPSTATEFLAG_JOINED     = 1 << 1;
 ////////////////////////////////////////////////////////////////////////////////
-struct QtAppInit {
-  QtAppInit() {
-    _argc   = 1;
-    _arg    = "whatupyo";
-    _argv   = (char*)_arg.c_str();
-    _argvp  = &_argv;
-    _fsinit = std::make_shared<StdFileSystemInitalizer>(_argc, _argvp);
-  }
-  QtAppInit(int argc, char** argv) {
-    _argc   = argc;
-    _arg    = "";
-    _argv   = nullptr;
-    _argvp  = argv;
-    _fsinit = std::make_shared<StdFileSystemInitalizer>(_argc, _argvp);
-  }
-  ~QtAppInit() {
-  }
-  int _argc = 0;
-  std::string _arg;
-  char* _argv   = nullptr;
-  char** _argvp = nullptr;
-  std::shared_ptr<StdFileSystemInitalizer> _fsinit;
-};
+QtAppInit::QtAppInit() {
+  _argc   = 1;
+  _arg    = "whatupyo";
+  _argv   = (char*)_arg.c_str();
+  _argvp  = &_argv;
+  _fsinit = std::make_shared<StdFileSystemInitalizer>(_argc, _argvp);
+}
+QtAppInit::QtAppInit(int argc, char** argv) {
+  _argc   = argc;
+  _arg    = "";
+  _argv   = nullptr;
+  _argvp  = argv;
+  _fsinit = std::make_shared<StdFileSystemInitalizer>(_argc, _argvp);
+}
+QtAppInit::~QtAppInit() {
+}
 ////////////////////////////////////////////////////////////////////////////////
-static QtAppInit& qtinit() {
+QtAppInit& qtinit() {
   static QtAppInit qti;
   return qti;
 };
 ////////////////////////////////////////////////////////////////////////////////
-static QtAppInit& qtinit(int& argc, char** argv) {
+QtAppInit& qtinit(int& argc, char** argv) {
   static QtAppInit qti(argc, argv);
   return qti;
 };
 ////////////////////////////////////////////////////////////////////////////////
-std::shared_ptr<EzApp> EzApp::create(int& argc, char** argv) {
-  return std::shared_ptr<EzApp>(new EzApp(argc, argv));
+ezapp_ptr_t EzApp::get(int& argc, char** argv) {
+  static auto& qai = qtinit(argc, argv);
+  static auto app  = std::shared_ptr<EzApp>(new EzApp(qai._argc, qai._argvp));
+  return app;
+}
+////////////////////////////////////////////////////////////////////////////////
+ezapp_ptr_t EzApp::get() {
+  static auto& qai = qtinit();
+  static auto app  = std::shared_ptr<EzApp>(new EzApp(qai._argc, qai._argvp));
+  return app;
 }
 ////////////////////////////////////////////////////////////////////////////////
 void EzApp::Describe() {
@@ -74,6 +75,7 @@ EzApp::~EzApp() {
   ApplicationStack::Pop();
 }
 
+///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 qtezapp_ptr_t OrkEzQtApp::create() {
@@ -172,15 +174,22 @@ bool OrkEzQtApp::checkAppState(uint64_t singlebitmask) {
   uint64_t chk = _appstate.load() & singlebitmask;
   return chk == singlebitmask;
 }
+OrkEzQtAppBase* OrkEzQtAppBase::_staticapp = nullptr;
+OrkEzQtAppBase* OrkEzQtAppBase::get() {
+  return _staticapp;
+}
+OrkEzQtAppBase::OrkEzQtAppBase(int& argc, char** argv)
+    : QApplication(argc, argv) {
+  _staticapp = this;
+  _ezapp     = EzApp::get(argc, argv);
+}
 
 OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
-    : QApplication(argc, argv)
+    : OrkEzQtAppBase(argc, argv)
     , _updateThread("updatethread")
     , _mainWindow(0) {
   _update_data = std::make_shared<UpdateData>();
   _appstate    = 0;
-
-  _ezapp = EzApp::create(argc, argv);
 
   QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath());
   setOrganizationDomain("tweakoz.com");

@@ -1,6 +1,6 @@
 #include "test.h"
 ////////////////////////////////////////////////////////////////////////////////
-Icecream::Icecream(const char* flavor)
+Icecream::Icecream(std::string& flavor)
     : _theflavor(flavor) {
 
   int on_stack = 0;
@@ -10,7 +10,7 @@ Icecream::Icecream(const char* flavor)
   printf("addr-_theflavor <%p>\n", &_theflavor);
   printf("addr-on_stack <%p>\n", &on_stack);
   printf("addr-on_heap <%p>\n", on_heap);
-  printf("Whats your flavor <%s>\n", flavor);
+  printf("Whats your flavor <%s>\n", flavor.c_str());
   printf("Whats your flavor <%s>\n", _theflavor.c_str());
 }
 ////////////////////////////////////////////////////////////////////////////////

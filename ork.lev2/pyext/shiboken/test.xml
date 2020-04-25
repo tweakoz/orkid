@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<typesystem package="Universe">
+<typesystem package="_lev2qt">
   <primitive-type name="bool"/>
   <primitive-type name="std::string"/>
   <primitive-type name="char"/>
