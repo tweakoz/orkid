@@ -1,7 +1,16 @@
 #include "test.h"
 #include <ork/pch.h>
+#include <QtCore/QCoreApplication>
 ////////////////////////////////////////////////////////////////////////////////
-Icecream::Icecream(const char* flavor)
+// undefine qApp, which was previously defined as QCoreApplication::instance()
+#undef qApp
+QCoreApplication* qApp = QCoreApplication::instance();
+////////////////////////////////////////////////////////////////////////////////
+mytype::mytype(const char* inp)
+    : _val(inp) {
+}
+////////////////////////////////////////////////////////////////////////////////
+Icecream::Icecream(const mytype& flavor)
     : _theflavor(flavor) {
 
   int on_stack = 0;
@@ -11,18 +20,18 @@ Icecream::Icecream(const char* flavor)
   printf("addr-_theflavor <%p>\n", &_theflavor);
   printf("addr-on_stack <%p>\n", &on_stack);
   printf("addr-on_heap <%p>\n", on_heap);
-  printf("Whats your flavor <%s>\n", flavor);
-  printf("Whats your flavor <%s>\n", _theflavor.c_str());
+  printf("Whats your flavor <%s>\n", flavor._val.c_str());
+  printf("Whats your flavor <%s>\n", _theflavor._val.c_str());
   // OrkAssert(typeid(flavor) == typeid(_theflavor));
   _theflavor = flavor;
-  printf("Whats your flavor <%s>\n", _theflavor.c_str());
+  printf("Whats your flavor <%s>\n", _theflavor._val.c_str());
 
-  std::string newflavor = "wtf";
-  printf("Whats your newflavor <%s>\n", newflavor.c_str());
+  mytype newflavor = {"wtf"};
+  printf("Whats your newflavor <%s>\n", newflavor._val.c_str());
   // OrkAssert(false);
 }
 ////////////////////////////////////////////////////////////////////////////////
-const std::string& Icecream::getFlavor() const {
+const mytype& Icecream::getFlavor() const {
   return _theflavor;
 }
 ////////////////////////////////////////////////////////////////////////////////

@@ -3,6 +3,7 @@ SET( PACKAGE_VERSION "0.1.1" )
 include (GenerateExportHeader)
 
 set( CMAKE_MODULE_PATH $ENV{ORKID_WORKSPACE_DIR}:$ENV{OBT_STAGE}/share/cmake/pybind11 )
+enableQt5()
 
 find_package (Python COMPONENTS Interpreter Development)
 #find_package (Eigen3 3.3 REQUIRED NO_MODULE)
@@ -18,12 +19,14 @@ set( INCD2 $ENV{ORKID_WORKSPACE_DIR}/ork.lev2/inc )
 
 ###################################
 file(GLOB sources ${SRCD}/*.cpp)
-
-add_library( _lev2qt SHARED ${sources} )
+file(GLOB binding_sources ${SHIBOKEN_BINDINGS_PATH}/lev2-qtui/_lev2qt/*.cpp)
+message(${SHIBOKEN_BINDINGS_PATH})
+#message(${binding_sources})
+add_library( _lev2qt SHARED ${sources} ${binding_sources} )
 target_include_directories( _lev2qt PRIVATE ${SHIBOKEN_HEADER_PATH} )
 target_include_directories (_lev2qt PRIVATE ${SHIBOKEN_BINDINGS_PATH} )
 target_include_directories (_lev2qt PRIVATE ${PYSIDE_HEADER_PATH} )
-
+add_definitions(-include ${SRCD}/binding_header.h)
 target_include_directories (_lev2qt PRIVATE ${INCD} ${INCD2} )
 target_include_directories( _lev2qt PRIVATE ${PYTHON_INCLUDE_DIRS} )
 target_link_libraries(_lev2qt LINK_PUBLIC ork_core ork_lev2 )
@@ -38,6 +41,7 @@ set_target_properties(ABC PROPERTIES
 target_link_libraries(_lev2qt PUBLIC ABC )
 target_link_libraries(_lev2qt PUBLIC ${PYTHON_LIBRARY_PATH} )
 target_link_libraries(_lev2qt PUBLIC ${PYSIDE_LIBRARY_FILE} )
+target_link_libraries(_lev2qt PUBLIC Qt5::Widgets Qt5::Core Qt5::Gui )
 message(${PYSIDE_QTGUI_LIB})
 #target_link_libraries(_lev2qt PUBLIC ${PYSIDE_QTGUI_LIB} )
 

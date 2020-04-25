@@ -16,10 +16,13 @@ env = {
   "CLANG_INSTALL_DIR": "/usr/include/clang/10"
 }
 
+output_dir = path.stage()/"orkid"/"shiboken-bindings"/"lev2-qtui"
+os.system("rm -rf %s"%output_dir)
+
 command.run([
   "shiboken2",
   #"--silent",
-  "--output-directory=%s"%(path.stage()/"orkid"/"shiboken-bindings"/"lev2-qtui"),
+  "--output-directory=%s"%output_dir,
   "-I%s"%this_dir,
   "-I%s"%(qt_dir/"include"),
   "-I%s"%(orkid_dir/"ork.core"/"inc"),

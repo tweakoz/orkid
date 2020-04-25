@@ -7,4 +7,5 @@
   <namespace-type name="ork">
   </namespace-type>
   <object-type name="Icecream"/>
+  <object-type name="mytype"/>
 </typesystem>

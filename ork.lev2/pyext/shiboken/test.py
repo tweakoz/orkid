@@ -7,11 +7,13 @@ from PySide2.QtWidgets import QStyleFactory
 def onButton():
   from orkengine import core,lev2,lev2qt
   print(dir(lev2qt))
-  ic = lev2qt.Icecream("chocko")
-  print(dir(ic))
-  print(ic)
-  print(ic.getFlavor)
-  print(ic.getFlavor())
+  print(dir(lev2qt.Icecream))
+  a = lev2qt.mytype("yo")
+  ic = lev2qt.Icecream(a)
+  #print(dir(ic))
+  #print(ic)
+  #print(ic.getFlavor)
+  #print(ic.getFlavor())
 ################################################################################
 print(QStyleFactory.keys())
 sys.argv.extend(["--platformtheme", "qt5ct"])
