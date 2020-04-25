@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<typesystem package="Universe">
+  <primitive-type name="bool"/>
+  <primitive-type name="std::string"/>
+  <primitive-type name="char"/>
+  <primitive-type name="QString"/>
+  <object-type name="Icecream"/>
+</typesystem>

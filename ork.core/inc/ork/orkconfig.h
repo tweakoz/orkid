@@ -25,3 +25,5 @@
 #define ORK_PUSH_SYMVIZ_PUBLIC _Pragma("GCC visibility push(default)")
 #define ORK_PUSH_SYMVIZ_PRIVATE _Pragma("GCC visibility push(hidden)")
 #define ORK_POP_SYMVIZ _Pragma("GCC visibility pop")
+
+#define ORK_API __attribute__ ((visibility("default")))

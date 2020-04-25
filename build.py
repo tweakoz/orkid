@@ -5,7 +5,7 @@ import os, argparse
 import ork.host
 import ork.dep
 from ork.path import Path
-from ork.command import Command
+from ork.command import Command, run
 
 parser = argparse.ArgumentParser(description='orkid build')
 parser.add_argument('--clean', action="store_true", help='force clean build' )
@@ -19,6 +19,9 @@ parser.add_argument('--ez',action="store_true", help=" ez build (use workarounds
 
 _args = vars(parser.parse_args())
 
+this_dir = Path(os.path.dirname(os.path.realpath(__file__)))
+stage_dir = Path(os.path.abspath(str(ork.path.stage())))
+
 build_dest = ork.path.stage()/"orkid"
 debug = _args["debug"]!=False
 profiler = _args["profiler"]!=False
@@ -30,7 +33,6 @@ build_dest.mkdir(parents=True,exist_ok=True)
 build_dest.chdir()
 
 prj_root = Path(os.environ["ORKID_WORKSPACE_DIR"])
-stage_dir = Path(os.path.abspath(str(ork.path.stage())))
 ork_root = prj_root
 ok = True
 
@@ -68,14 +70,24 @@ if _args["ez"]!=False:
 # ensure deps present
 ######################################################################
 
+python = ork.dep.require("python")
+pybind11 = ork.dep.require("pybind11")
+qt5forpython = ork.dep.require("qt5forpython")
+
 ork.dep.require(["bullet","openexr","oiio","fcollada","assimp",
-                 "nvtt","lua","python","pybind11","glfw","ispctexc",
+                 "nvtt","lua","glfw","ispctexc",
                  "easyprof","eigen","igl"])
 
 if ork.host.IsOsx:
    ork.dep.require(["moltenvk"])
 if ork.host.IsLinux:
    ork.dep.require(["vulkan","openvr"])
+
+######################################################################
+# regen shiboken bindings
+######################################################################
+
+run([this_dir/"ork.lev2"/"pyext"/"shiboken"/"regen.py"])
 
 ######################################################################
 # prep for build
@@ -99,6 +111,28 @@ if profiler:
 else:
   cmd += ["-DPROFILER=OFF"]
 
+###################################################
+# inject relevant state from deppers into cmake
+###################################################
+
+cmd += ["-DPYTHON_HEADER_PATH=%s"%python.include_dir()]
+cmd += ["-DPYTHON_LIBRARY_PATH=%s"%python.library_file()]
+
+cmd += ["-DSHIBOKEN_HEADER_PATH=%s"%qt5forpython.include_dir()]
+cmd += ["-DSHIBOKEN_LIBRARY_FILE=%s"%qt5forpython.library_file()]
+
+cmd += ["-DPYSIDE_HEADER_PATH=%s"%qt5forpython.pyside_include_dir()]
+cmd += ["-DPYSIDE_LIBRARY_PATH=%s"%qt5forpython.pyside_library_dir()]
+cmd += ["-DPYSIDE_LIBRARY_FILE=%s"%qt5forpython.pyside_library()]
+cmd += ["-DPYSIDE_QTGUI_LIB=%s"%qt5forpython.pyside_library_file("QtGui")]
+
+###################################################
+# inject generated shiboken binding path into cmake
+###################################################
+
+cmd += ["-DSHIBOKENBINDINGSPATH=%s"%(build_dest/"shiboken-bindings")]
+
+###################################################
 if _args["trace"]==True:
   cmd += ["--trace"]
 

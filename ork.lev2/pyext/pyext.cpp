@@ -4,6 +4,8 @@
 
 namespace ork::lev2 {
 
+PyObject* get_universe(); // from shiboken bindings
+
 void pyinit_gfx(py::module& module_lev2);
 void pyinit_primitives(py::module& module_lev2);
 void pyinit_scenegraph(py::module& module_lev2);
@@ -52,7 +54,6 @@ void lev2apppoll() {
 ////////////////////////////////////////////////////////////////////////////////
 
 PYBIND11_MODULE(_lev2, module_lev2) {
-
   // module_lev2.attr("__name__") = "lev2";
 
   //////////////////////////////////////////////////////////////////////////////
@@ -67,6 +68,7 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   pyinit_meshutil(module_lev2);
   pyinit_gfx_qtez(module_lev2);
   //////////////////////////////////////////////////////////////////////////////
-
+  auto universe = py::reinterpret_borrow<py::object>(get_universe());
+  setattr(module_lev2, "universe", universe);
   //////////////////////////////////////////////////////////////////////////////
 };

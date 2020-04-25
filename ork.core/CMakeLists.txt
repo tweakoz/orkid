@@ -42,8 +42,6 @@ add_library (ork_core SHARED ${orksrcs} ${ispc_math_object_list} )
 
 ###################################
 
-target_include_directories (ork_core PRIVATE $ENV{OBT_STAGE}/include/python3.8d )
-
 target_link_libraries(ork_core LINK_PRIVATE python3.8d)
 
 IF(${APPLE})

@@ -1,7 +1,6 @@
 project (orklev2 CXX)
 include (GenerateExportHeader)
 
-
 enableQt5()
 
 ###################################
@@ -85,7 +84,9 @@ IF(${UNIX})
   list(APPEND igl )
 ENDIF()
 
-target_link_libraries(ork_lev2 ${libs} triangle tetgen)
+target_link_libraries(ork_lev2 PUBLIC ${libs} triangle tetgen )
+target_link_libraries(ork_lev2 PUBLIC boost_filesystem X11 )
+target_link_options(ork_lev2 PUBLIC -Wl,--no-undefined )
 
 target_include_directories (ork_lev2 PRIVATE $ENV{OBT_STAGE}/include )
 target_include_directories (ork_lev2 PRIVATE ${INCD} )

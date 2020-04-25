@@ -84,7 +84,6 @@ link_directories($ENV{OBT_STAGE}/orkid/ork.lev2 )
 link_directories($ENV{OBT_STAGE}/orkid/ork.ent )
 link_directories($ENV{OBT_STAGE}/orkid/ork.tool )
 
-
 set( ORK_CORE_INCD ${ORKROOT}/ork.core/inc )
 set( ORK_LEV2_INCD ${ORKROOT}/ork.lev2/inc )
 set( ORK_ECS_INCD ${ORKROOT}/ork.ecs/inc )
@@ -117,6 +116,13 @@ link_directories($ENV{OBT_BUILDS}/igl/.build)
 include_directories (AFTER $ENV{OBT_STAGE}/include/eigen3 )
 include_directories (AFTER $ENV{OBT_BUILDS}/igl/include )
 include_directories (AFTER $ENV{OBT_BUILDS}/igl/external/triangle )
+
+################################################################################
+# pull in extra header paths from obt dep modules
+################################################################################
+
+include_directories (AFTER ${SHIBOKENHEADERPATH} )
+include_directories (AFTER ${PYTHONHEADERPATH} )
 
 ################################################################################
 # QT5

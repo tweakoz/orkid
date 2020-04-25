@@ -6,8 +6,7 @@ set( CMAKE_MODULE_PATH $ENV{ORKID_WORKSPACE_DIR}:$ENV{OBT_STAGE}/share/cmake/pyb
 
 find_package (Python COMPONENTS Interpreter Development)
 #find_package (Eigen3 3.3 REQUIRED NO_MODULE)
-FIND_PACKAGE( pybind11 REQUIRED )
-INCLUDE_DIRECTORIES( ${PYTHON_INCLUDE_DIRS} ${PYBIND11_INCLUDE_DIRS} )
+find_package( pybind11 REQUIRED )
 
 ###################################
 
@@ -20,30 +19,46 @@ set( INCD2 $ENV{ORKID_WORKSPACE_DIR}/ork.lev2/inc )
 ###################################
 file(GLOB_RECURSE src_pyext ${SRCD}/*.cpp)
 
-ADD_LIBRARY( _lev2 SHARED ${src_pyext} )
+add_library( _lev2 SHARED ${src_pyext} )
+target_include_directories (_lev2 PRIVATE ${SHIBOKENBINDINGSPATH} )
+target_include_directories (_lev2 PRIVATE ${PYSIDE_HEADER_PATH} )
 
 target_include_directories (_lev2 PRIVATE ${INCD} ${INCD2} )
-target_link_libraries(_lev2 LINK_PUBLIC ork_core ork_lev2)
+target_include_directories( _lev2 PRIVATE ${PYTHON_INCLUDE_DIRS} ${PYBIND11_INCLUDE_DIRS} )
+target_link_libraries(_lev2 LINK_PUBLIC ork_core ork_lev2 )
+target_link_libraries(_lev2 LINK_PRIVATE ${SHIBOKEN_LIBRARY_FILE} )
+add_library(ABC SHARED IMPORTED)
+set_target_properties(ABC PROPERTIES
+            IMPORTED_LOCATION ${PYSIDE_QTGUI_LIB}
+            IMPORTED_IMPLIB ${PYSIDE_QTGUI_LIB}
+            IMPORTED_NO_SONAME 0
+            )
 
-SET_TARGET_PROPERTIES( _lev2
+target_link_libraries(_lev2 PUBLIC ABC )
+target_link_libraries(_lev2 PUBLIC ${PYTHON_LIBRARY_PATH} )
+target_link_libraries(_lev2 PUBLIC ${PYSIDE_LIBRARY_FILE} )
+target_link_options(_lev2 PUBLIC -Wl,-rpath )
+target_link_options(_lev2 PUBLIC -Wl,--no-undefined )
+
+set_target_properties( _lev2
   PROPERTIES
     PREFIX ""
     LIBRARY_OUTPUT_DIRECTORY ${INSTALL_DEST}
 )
 
-IF( APPLE )
-  SET_TARGET_PROPERTIES( _lev2
+if( APPLE )
+  set_target_properties( _lev2
     PROPERTIES
       LINK_FLAGS "-undefined dynamic_lookup"
       SUFFIX     ".so"
   )
   target_include_directories (_lev2 PRIVATE /usr/local/include)
-ENDIF()
+endif()
 
 # igl crap again..
 target_include_directories (_lev2 PRIVATE $ENV{OBT_STAGE}/include/eigen3 )
 
 ###################################
 
-CONFIGURE_FILE( pyfiles/__lev2_init__.py ${INSTALL_DEST}/__init__.py )
-#CONFIGURE_FILE( pyfiles/setup.py ${INSTALL_DEST}/setup.py)
+configure_file( pyfiles/__lev2_init__.py ${INSTALL_DEST}/__init__.py )
+#configure_file( pyfiles/setup.py ${INSTALL_DEST}/setup.py)

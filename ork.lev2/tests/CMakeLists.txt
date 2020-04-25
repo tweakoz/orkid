@@ -22,5 +22,6 @@ target_include_directories (ork.lev2.test.exe PRIVATE ${ORKROOT}/ork.core/inc )
 target_include_directories (ork.lev2.test.exe PRIVATE ${ORKROOT}/ork.lev2/inc )
 target_include_directories (ork.lev2.test.exe PRIVATE ${SRCD} )
 target_include_directories (ork.lev2.test.exe PRIVATE $ENV{QTDIR}/include)
+#target_link_options(ork.lev2.test.exe PUBLIC -Wl,-rpath-link=${PYSIDE_LIBRARY_PATH} )
 
 install(TARGETS ork.lev2.test.exe DESTINATION $ENV{OBT_STAGE}/bin )
