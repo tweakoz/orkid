@@ -29,7 +29,6 @@ target_link_libraries(_lev2 LINK_PUBLIC ork_core ork_lev2 )
 
 target_link_libraries(_lev2 PUBLIC ${PYTHON_LIBRARY_PATH} )
 target_link_options(_lev2 PUBLIC -Wl,-rpath )
-target_link_options(_lev2 PUBLIC -Wl,--no-undefined )
 
 set_target_properties( _lev2
   PROPERTIES
@@ -44,6 +43,8 @@ if( APPLE )
       SUFFIX     ".so"
   )
   target_include_directories (_lev2 PRIVATE /usr/local/include)
+else()
+  target_link_options(_lev2 PUBLIC -Wl,--no-undefined )
 endif()
 
 # igl crap again..
@@ -53,4 +54,4 @@ target_include_directories (_lev2 PRIVATE $ENV{OBT_STAGE}/include/eigen3 )
 
 configure_file( pyfiles/__lev2_init__.py ${INSTALL_DEST}/__init__.py )
 #configure_file( pyfiles/setup.py ${INSTALL_DEST}/setup.py)
-add_subdirectory (shiboken)
+#add_subdirectory (shiboken)

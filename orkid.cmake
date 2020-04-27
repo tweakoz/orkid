@@ -51,10 +51,10 @@ IF(${APPLE})
     ENDIF("${isSystemDir}" STREQUAL "-1")
     add_definitions(-DOSX -DORK_OSX)
     link_directories(/usr/local/lib) # homebrew
-
 ELSE()
     add_definitions(-DORK_CONFIG_IX -DLINUX -DGCC)
     add_compile_options(-D_REENTRANT -DQT_NO_EXCEPTIONS -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE -DQT_GUI_LIB -DQT_CORE_LIB)
+    link_directories($ENV{OBT_STAGE}/qt5/lib )
 ENDIF()
 
 add_compile_definitions(QTVER=$ENV{QTVER})
@@ -75,7 +75,6 @@ link_directories(${destlib})
 include_directories(AFTER $ENV{OBT_STAGE}/include)
 include_directories(AFTER $ENV{OBT_STAGE}/include/tuio/oscpack)
 link_directories($ENV{OBT_STAGE}/lib/)
-link_directories($ENV{OBT_STAGE}/qt5/lib )
 
 link_directories($ENV{OBT_STAGE}/orkid/ork.tuio )
 link_directories($ENV{OBT_STAGE}/orkid/ork.utpp )

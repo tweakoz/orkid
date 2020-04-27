@@ -20,7 +20,7 @@ set( INCD2 $ENV{ORKID_WORKSPACE_DIR}/ork.lev2/inc )
 ###################################
 file(GLOB sources ${SRCD}/*.cpp)
 file(GLOB binding_sources ${SHIBOKEN_BINDINGS_PATH}/lev2-qtui/_lev2qt/*.cpp)
-message(${SHIBOKEN_BINDINGS_PATH})
+#message(${SHIBOKEN_BINDINGS_PATH})
 #message(${binding_sources})
 add_library( _lev2qt SHARED ${sources} ${binding_sources} )
 target_include_directories( _lev2qt PRIVATE ${SHIBOKEN_HEADER_PATH} )
@@ -46,7 +46,6 @@ message(${PYSIDE_QTGUI_LIB})
 #target_link_libraries(_lev2qt PUBLIC ${PYSIDE_QTGUI_LIB} )
 
 target_link_options(_lev2qt PUBLIC -Wl,-rpath )
-target_link_options(_lev2qt PUBLIC -Wl,--no-undefined )
 
 set_target_properties( _lev2qt
   PROPERTIES
@@ -61,6 +60,8 @@ if( APPLE )
       SUFFIX     ".so"
   )
   target_include_directories (_lev2qt PRIVATE /usr/local/include)
+else()
+  target_link_options(_lev2qt PUBLIC -Wl,--no-undefined )
 endif()
 
 # igl crap again..

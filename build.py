@@ -115,15 +115,15 @@ else:
 # inject relevant state from deppers into cmake
 ###################################################
 
-cmd += ["-DPYTHON_HEADER_PATH=%s"%python.include_dir()]
-cmd += ["-DPYTHON_LIBRARY_PATH=%s"%python.library_file()]
+cmd += ["-DPYTHON_HEADER_PATH=%s"%python.include_dir]
+cmd += ["-DPYTHON_LIBRARY_PATH=%s"%python.library_file]
 
-cmd += ["-DSHIBOKEN_HEADER_PATH=%s"%qt5forpython.include_dir()]
-cmd += ["-DSHIBOKEN_LIBRARY_FILE=%s"%qt5forpython.library_file()]
+cmd += ["-DSHIBOKEN_HEADER_PATH=%s"%qt5forpython.include_dir]
+cmd += ["-DSHIBOKEN_LIBRARY_FILE=%s"%qt5forpython.library_file]
 
-cmd += ["-DPYSIDE_HEADER_PATH=%s"%qt5forpython.pyside_include_dir()]
-cmd += ["-DPYSIDE_LIBRARY_PATH=%s"%qt5forpython.pyside_library_dir()]
-cmd += ["-DPYSIDE_LIBRARY_FILE=%s"%qt5forpython.pyside_library()]
+cmd += ["-DPYSIDE_HEADER_PATH=%s"%qt5forpython.pyside_include_dir]
+cmd += ["-DPYSIDE_LIBRARY_PATH=%s"%qt5forpython.pyside_library_dir]
+cmd += ["-DPYSIDE_LIBRARY_FILE=%s"%qt5forpython.pyside_library]
 cmd += ["-DPYSIDE_QTGUI_LIB=%s"%qt5forpython.pyside_qtlibrary("QtGui")]
 
 cmd += ["-DCMAKE_CXX_COMPILER=clang++"]

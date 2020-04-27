@@ -85,8 +85,7 @@ IF(${UNIX})
 ENDIF()
 
 target_link_libraries(ork_lev2 PUBLIC ${libs} triangle tetgen )
-target_link_libraries(ork_lev2 PUBLIC boost_filesystem X11 )
-target_link_options(ork_lev2 PUBLIC -Wl,--no-undefined )
+target_link_libraries(ork_lev2 PUBLIC boost_filesystem )
 
 target_include_directories (ork_lev2 PRIVATE $ENV{OBT_STAGE}/include )
 target_include_directories (ork_lev2 PRIVATE ${INCD} )
@@ -96,6 +95,11 @@ target_include_directories (ork_lev2 PRIVATE $ENV{QTDIR}/include/QtGui/$ENV{QTVE
 #target_include_directories (ork_lev2 PRIVATE $ENV{OBT_BUILDS}/igl/external/glad/include )
 target_include_directories (ork_lev2 PRIVATE $ENV{OBT_BUILDS}/igl/external/tetgen )
 
+IF(${APPLE})
+ELSE()
+  target_link_options(ork_lev2 PUBLIC -Wl,--no-undefined )
+  target_link_libraries(ork_lev2 PUBLIC X11 )
+ENDIF()
 ###################################
 
 install(TARGETS ork_lev2 LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )

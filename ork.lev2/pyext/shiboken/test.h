@@ -9,12 +9,16 @@ extern QCoreApplication* qApp;
 class mytype {
 public:
   mytype(const char* inp);
+  virtual ~mytype() {
+  }
   std::string _val;
 };
 
 class Icecream {
 public:
   Icecream(const mytype& flavor);
+  virtual ~Icecream() {
+  }
   const mytype& getFlavor() const;
 
 private:

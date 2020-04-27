@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
-#env["QT_QPA_PLATFORMTHEME"]="qt5ct"
 import sys, os
-from PySide2 import QtWidgets
-from PySide2.QtWidgets import QStyleFactory
+from orkengine import core,lev2
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout
+from PyQt5.QtWidgets import QStyleFactory
+################################################################################
+def onButton():
+  a = core.vec3(0,1,0)
+  print(a)
+################################################################################
 print(QStyleFactory.keys())
-sys.argv.extend(["--platformtheme", "qt5ct"])
-app = QtWidgets.QApplication(sys.argv)
-hello = QtWidgets.QPushButton("Hello world!")
-hello.resize(256, 64)
-hello.show()
-sys.exit(app.exec_())
+app = QApplication([])
+window = QWidget()
+layout = QVBoxLayout()
+button = QPushButton('PushMe')
+button.clicked.connect(onButton)
+layout.addWidget(button)
+window.setLayout(layout)
+window.show()
+app.exec_()
