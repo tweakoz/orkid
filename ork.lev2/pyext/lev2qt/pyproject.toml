@@ -1,0 +1,18 @@
+# Specify sip v5 as the build system for the package.
+[build-system]
+requires = ["sip >=5, <6"]
+build-backend = "sipbuild.api"
+
+# Specify the PEP 566 metadata for the project.
+[tool.sip.metadata]
+name = "lev2qt"
+
+# Configure the building of the fib bindings.
+[tool.sip.bindings.lev2qt]
+headers = ["test.h"]
+include-dirs = [".","../../../ork.core/inc","../../../ork.lev2/inc"]
+libraries = ["lev2qt"]
+#library-dirs = ["/path/to/libraries"]
+
+[tool.sip.project]
+sip-include-dirs = ["/home/michael/.staging-plausix/lib/python3.8/site-packages/PyQt5/bindings"]

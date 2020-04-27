@@ -72,7 +72,8 @@ if _args["ez"]!=False:
 
 python = ork.dep.require("python")
 pybind11 = ork.dep.require("pybind11")
-qt5forpython = ork.dep.require("qt5forpython")
+#qt5forpython = ork.dep.require("qt5forpython")
+pyqt5 = ork.dep.require("pyqt5")
 
 ork.dep.require(["bullet","openexr","oiio","fcollada","assimp",
                  "nvtt","lua","glfw","ispctexc",
@@ -87,7 +88,7 @@ if ork.host.IsLinux:
 # regen shiboken bindings
 ######################################################################
 
-run([this_dir/"ork.lev2"/"pyext"/"shiboken"/"regen.py"])
+run([this_dir/"ork.lev2"/"pyext"/"lev2qt"/"regen.py"])
 
 ######################################################################
 # prep for build
@@ -118,13 +119,13 @@ else:
 cmd += ["-DPYTHON_HEADER_PATH=%s"%python.include_dir]
 cmd += ["-DPYTHON_LIBRARY_PATH=%s"%python.library_file]
 
-cmd += ["-DSHIBOKEN_HEADER_PATH=%s"%qt5forpython.include_dir]
-cmd += ["-DSHIBOKEN_LIBRARY_FILE=%s"%qt5forpython.library_file]
+#cmd += ["-DSHIBOKEN_HEADER_PATH=%s"%qt5forpython.include_dir]
+#cmd += ["-DSHIBOKEN_LIBRARY_FILE=%s"%qt5forpython.library_file]
 
-cmd += ["-DPYSIDE_HEADER_PATH=%s"%qt5forpython.pyside_include_dir]
-cmd += ["-DPYSIDE_LIBRARY_PATH=%s"%qt5forpython.pyside_library_dir]
-cmd += ["-DPYSIDE_LIBRARY_FILE=%s"%qt5forpython.pyside_library]
-cmd += ["-DPYSIDE_QTGUI_LIB=%s"%qt5forpython.pyside_qtlibrary("QtGui")]
+#cmd += ["-DPYSIDE_HEADER_PATH=%s"%qt5forpython.pyside_include_dir]
+#cmd += ["-DPYSIDE_LIBRARY_PATH=%s"%qt5forpython.pyside_library_dir]
+#cmd += ["-DPYSIDE_LIBRARY_FILE=%s"%qt5forpython.pyside_library]
+#cmd += ["-DPYSIDE_QTGUI_LIB=%s"%qt5forpython.pyside_qtlibrary("QtGui")]
 
 cmd += ["-DCMAKE_CXX_COMPILER=clang++"]
 cmd += ["-DCMAKE_CC_COMPILER=clang"]
@@ -133,7 +134,8 @@ cmd += ["-DCMAKE_CC_COMPILER=clang"]
 # inject generated shiboken binding path into cmake
 ###################################################
 
-cmd += ["-DSHIBOKEN_BINDINGS_PATH=%s"%(build_dest/"shiboken-bindings")]
+#cmd += ["-DSHIBOKEN_BINDINGS_PATH=%s"%(build_dest/"shiboken-bindings")]
+cmd += ["-DPYQT5_BINDINGS_DIR=%s"%(build_dest/"sip-bindings")]
 
 ###################################################
 if _args["trace"]==True:

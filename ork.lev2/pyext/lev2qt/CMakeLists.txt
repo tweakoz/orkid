@@ -19,30 +19,30 @@ set( INCD2 $ENV{ORKID_WORKSPACE_DIR}/ork.lev2/inc )
 
 ###################################
 file(GLOB sources ${SRCD}/*.cpp)
-file(GLOB binding_sources ${SHIBOKEN_BINDINGS_PATH}/lev2-qtui/_lev2qt/*.cpp)
+file(GLOB binding_sources ${PYQT5_BINDINGS_DIR}/lev2-qtui/*.cpp)
 #message(${SHIBOKEN_BINDINGS_PATH})
 #message(${binding_sources})
 add_library( _lev2qt SHARED ${sources} ${binding_sources} )
-target_include_directories( _lev2qt PRIVATE ${SHIBOKEN_HEADER_PATH} )
-target_include_directories (_lev2qt PRIVATE ${SHIBOKEN_BINDINGS_PATH} )
-target_include_directories (_lev2qt PRIVATE ${PYSIDE_HEADER_PATH} )
+#target_include_directories( _lev2qt PRIVATE ${SHIBOKEN_HEADER_PATH} )
+#target_include_directories (_lev2qt PRIVATE ${SHIBOKEN_BINDINGS_PATH} )
+#target_include_directories (_lev2qt PRIVATE ${PYSIDE_HEADER_PATH} )
 add_definitions(-include ${SRCD}/binding_header.h)
 target_include_directories (_lev2qt PRIVATE ${INCD} ${INCD2} )
 target_include_directories( _lev2qt PRIVATE ${PYTHON_INCLUDE_DIRS} )
 target_link_libraries(_lev2qt LINK_PUBLIC ork_core ork_lev2 )
-target_link_libraries(_lev2qt LINK_PRIVATE ${SHIBOKEN_LIBRARY_FILE} )
-add_library(ABC SHARED IMPORTED)
-set_target_properties(ABC PROPERTIES
-            IMPORTED_LOCATION ${PYSIDE_QTGUI_LIB}
-            IMPORTED_IMPLIB ${PYSIDE_QTGUI_LIB}
-            IMPORTED_NO_SONAME 0
-            )
+#target_link_libraries(_lev2qt LINK_PRIVATE ${SHIBOKEN_LIBRARY_FILE} )
+#add_library(ABC SHARED IMPORTED)
+#set_target_properties(ABC PROPERTIES
+#            IMPORTED_LOCATION ${PYSIDE_QTGUI_LIB}
+#            IMPORTED_IMPLIB ${PYSIDE_QTGUI_LIB}
+#            IMPORTED_NO_SONAME 0
+#            )
 
-target_link_libraries(_lev2qt PUBLIC ABC )
-target_link_libraries(_lev2qt PUBLIC ${PYTHON_LIBRARY_PATH} )
-target_link_libraries(_lev2qt PUBLIC ${PYSIDE_LIBRARY_FILE} )
+#target_link_libraries(_lev2qt PUBLIC ABC )
+#target_link_libraries(_lev2qt PUBLIC ${PYTHON_LIBRARY_PATH} )
+#target_link_libraries(_lev2qt PUBLIC ${PYSIDE_LIBRARY_FILE} )
 target_link_libraries(_lev2qt PUBLIC Qt5::Widgets Qt5::Core Qt5::Gui )
-message(${PYSIDE_QTGUI_LIB})
+#message(${PYSIDE_QTGUI_LIB})
 #target_link_libraries(_lev2qt PUBLIC ${PYSIDE_QTGUI_LIB} )
 
 target_link_options(_lev2qt PUBLIC -Wl,-rpath )

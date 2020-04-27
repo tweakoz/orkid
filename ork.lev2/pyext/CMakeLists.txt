@@ -54,4 +54,4 @@ target_include_directories (_lev2 PRIVATE $ENV{OBT_STAGE}/include/eigen3 )
 
 configure_file( pyfiles/__lev2_init__.py ${INSTALL_DEST}/__init__.py )
 #configure_file( pyfiles/setup.py ${INSTALL_DEST}/setup.py)
-#add_subdirectory (shiboken)
+add_subdirectory (lev2qt)

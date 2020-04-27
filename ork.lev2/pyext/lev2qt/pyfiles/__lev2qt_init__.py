@@ -9,9 +9,9 @@ from ctypes import *
 #  a guess:
 #   a stock python3 invocation needs it in LD_LIBRARY_PATH
 ##################################
-qt5py = dep.instance("qt5forpython")
-lib1 = cdll.LoadLibrary(qt5py.library_file())
-lib2 = cdll.LoadLibrary(qt5py.library_file2())
-lib3 = cdll.LoadLibrary(qt5py.pyside_library_file())
+#qt5py = dep.instance("qt5forpython")
+#lib1 = cdll.LoadLibrary(qt5py.library_file())
+#lib2 = cdll.LoadLibrary(qt5py.library_file2())
+#lib3 = cdll.LoadLibrary(qt5py.pyside_library_file())
 ##################################
 from ._lev2qt import *

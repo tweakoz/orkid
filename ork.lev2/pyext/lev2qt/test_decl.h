@@ -1,14 +1,6 @@
-#pragma once
-#include <string>
-#include <ork/orkconfig.h>
-#include <QtCore/QCoreApplication>
-#undef qApp
-extern QCoreApplication* qApp;
-//#include <ork/math/cvector2.h>
-
 class mytype {
 public:
-  mytype(const char* inp);
+  mytype(const std::string& str);
   virtual ~mytype() {
   }
   std::string _val;
