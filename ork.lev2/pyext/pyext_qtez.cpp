@@ -46,19 +46,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               });
             }
             ////////////////////////////////////////////////////////////////////
-            if (py::hasattr(appinstance, "onDraw")) {
-              auto drawfn //
-                  = py::cast<py::function>(appinstance.attr("onDraw"));
-              rval->_vars.makeValueForKey<py::function>("drawfn") = drawfn;
-              rval->onDraw([=](const ui::DrawEvent& drwev) { //
-                ork::opq::mainSerialQueue()->Process();
-                py::gil_scoped_acquire acquire;
-                auto pyfn                = rval->_vars.typedValueForKey<py::function>("drawfn");
-                auto mydrev              = rval->_vars.typedValueForKey<drwev_t>("drawev");
-                mydrev.value()->mpTarget = drwev.GetTarget();
-                pyfn.value()(drwev_t(mydrev.value()));
-              });
-            } else if (py::hasattr(appinstance, "sceneparams")) {
+            if (py::hasattr(appinstance, "sceneparams")) {
               auto sceneparams //
                   = py::cast<varmap::varmap_ptr_t>(appinstance.attr("sceneparams"));
               auto scene = std::make_shared<scenegraph::Scene>(sceneparams);
@@ -69,9 +57,20 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               rval->onDraw([=](const ui::DrawEvent& drwev) { //
                 ork::opq::mainSerialQueue()->Process();
                 auto context = drwev.GetTarget();
-                context->beginFrame();
                 scene->renderOnContext(context);
-                context->endFrame();
+              });
+            }
+            else if (py::hasattr(appinstance, "onDraw")) {
+              auto drawfn //
+                  = py::cast<py::function>(appinstance.attr("onDraw"));
+              rval->_vars.makeValueForKey<py::function>("drawfn") = drawfn;
+              rval->onDraw([=](const ui::DrawEvent& drwev) { //
+                ork::opq::mainSerialQueue()->Process();
+                py::gil_scoped_acquire acquire;
+                auto pyfn                = rval->_vars.typedValueForKey<py::function>("drawfn");
+                auto mydrev              = rval->_vars.typedValueForKey<drwev_t>("drawev");
+                mydrev.value()->mpTarget = drwev.GetTarget();
+                pyfn.value()(drwev_t(mydrev.value()));
               });
             }
             ////////////////////////////////////////////////////////////////////

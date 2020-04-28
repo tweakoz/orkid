@@ -70,7 +70,9 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
-  qtapp->onDraw([&](const ui::DrawEvent& drwev) { sg_scene->renderOnContext(drwev.GetTarget()); });
+  qtapp->onDraw([&](const ui::DrawEvent& drwev) { //
+    sg_scene->renderOnContext(drwev.GetTarget());
+  });
   //////////////////////////////////////////////////////////
   qtapp->onResize([&](int w, int h) {
     //

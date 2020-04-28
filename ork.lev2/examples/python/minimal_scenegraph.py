@@ -82,11 +82,11 @@ class PyOrkApp(object):
     ###################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
   ################################################
-  def onDraw(self,drawevent):
-    ctx = drawevent.context
-    ctx.beginFrame()
-    self.scene.renderOnContext(ctx)
-    ctx.endFrame()
+  #def onDraw(self,drawevent):
+    #ctx = drawevent.context
+    #ctx.beginFrame()
+    #self.scene.renderOnContext(ctx)
+    #ctx.endFrame()
 ################################################
 app = PyOrkApp()
 app.qtapp.exec()
