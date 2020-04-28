@@ -330,7 +330,7 @@ void Image::compressRGBA(CompressedImage& imgout) const {
         case 3:
           for( int x=0; x<_width; x++){
             const uint8_t* src_pix_base = src_line+(x*3);
-            uint8_t* dst_pix_base = dst_line+(x*3);
+            uint8_t* dst_pix_base = dst_line+(x*4);
             dst_pix_base[0]=src_pix_base[0];
             dst_pix_base[1]=src_pix_base[1];
             dst_pix_base[2]=src_pix_base[2];
@@ -338,7 +338,15 @@ void Image::compressRGBA(CompressedImage& imgout) const {
           }
           break;
         case 4:
-          memcpy(dst_line,src_line,src_stride);
+        for( int x=0; x<_width; x++){
+          const uint8_t* src_pix_base = src_line+(x*4);
+          uint8_t* dst_pix_base = dst_line+(x*4);
+          dst_pix_base[0]=src_pix_base[3];
+          dst_pix_base[1]=src_pix_base[2];
+          dst_pix_base[2]=src_pix_base[1];
+          dst_pix_base[3]=src_pix_base[0];
+        }
+          //memcpy(dst_line,src_line,src_stride);
           break;
         default:
           OrkAssert(false);

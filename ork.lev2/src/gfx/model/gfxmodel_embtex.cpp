@@ -93,6 +93,7 @@ void EmbeddedTexture::fetchDDSdata() {
   basehasher.accumulateString(options);
   basehasher.accumulateString(_format);
   basehasher.accumulateString(_name);
+  basehasher.accumulateString("version-0");
   basehasher.accumulate(_srcdata, _srcdatalen);
   basehasher.finish();
   uint64_t hashkey  = basehasher.result();
