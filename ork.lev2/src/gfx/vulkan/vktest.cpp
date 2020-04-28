@@ -76,7 +76,7 @@ void init() {
     std::vector<VkExtensionProperties> phy_extensions(phy_numextensions);
     vkEnumerateDeviceExtensionProperties(phy, nullptr, &phy_numextensions, phy_extensions.data());
     for (auto ext : phy_extensions) {
-      // deco::printf(fvec3::Yellow(),"         extension: <%s>\n", ext.extensionName);
+        deco::printf(fvec3::Yellow(),"         extension: <%s>\n", ext.extensionName);
     }
   } // for(auto& phy : phydevs){
 

@@ -9,42 +9,22 @@ struct FrustumPrimitive {
   //////////////////////////////////////////////////////////////////////////////
   inline void gpuInit(Context* context) {
     meshutil::submesh frustum_submesh;
-    frustum_submesh.addQuad(
-        _frustum.mNearCorners[3],
-        _frustum.mNearCorners[2],
-        _frustum.mNearCorners[1],
-        _frustum.mNearCorners[0], //
-        _colorFront);
-    frustum_submesh.addQuad(
-        _frustum.mFarCorners[0],
-        _frustum.mFarCorners[1],
-        _frustum.mFarCorners[2],
-        _frustum.mFarCorners[3], //
-        _colorBack);
-    frustum_submesh.addQuad(
-        _frustum.mNearCorners[1],
-        _frustum.mFarCorners[1],
-        _frustum.mFarCorners[0],
-        _frustum.mNearCorners[0], //
-        _colorTop);
-    frustum_submesh.addQuad(
-        _frustum.mNearCorners[3],
-        _frustum.mFarCorners[3],
-        _frustum.mFarCorners[2],
-        _frustum.mNearCorners[2], //
-        _colorBottom);
-    frustum_submesh.addQuad(
-        _frustum.mNearCorners[0],
-        _frustum.mFarCorners[0],
-        _frustum.mFarCorners[3],
-        _frustum.mNearCorners[3], //
-        _colorLeft);
-    frustum_submesh.addQuad(
-        _frustum.mNearCorners[2],
-        _frustum.mFarCorners[2],
-        _frustum.mFarCorners[1],
-        _frustum.mNearCorners[1], //
-        _colorRight);
+    const auto& NC = _frustum.mNearCorners;
+    const auto& FC = _frustum.mFarCorners;
+    auto addq = [&](fvec3 vtxa, fvec3 vtxb, fvec3 vtxc, fvec3 vtxd, fvec4 col){
+      auto normal = (vtxb-vtxa).Cross(vtxc-vtxa).Normal();
+      frustum_submesh.addQuad(
+          vtxa,vtxb,vtxc,vtxd,
+          normal,normal,normal,normal,
+          fvec2(0,0),fvec2(0,1),fvec2(1,1),fvec2(1,0),
+          col);
+    };
+    addq(NC[3],NC[2],NC[1],NC[0],_colorFront);
+    addq(FC[0],FC[1],FC[2],FC[3],_colorBack);
+    addq(NC[1],FC[1],FC[0],NC[0],_colorTop);
+    addq(NC[3],FC[3],FC[2],NC[2],_colorBottom);
+    addq(NC[0],FC[0],FC[3],NC[3],_colorLeft);
+    addq(NC[2],FC[2],FC[1],NC[1],_colorRight);
     _primitive.fromSubMesh(frustum_submesh, context);
   }
   //////////////////////////////////////////////////////////////////////////////

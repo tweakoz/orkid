@@ -78,19 +78,6 @@ bool GlTextureInterface::_loadDDSTexture(const AssetPath& infname, Texture* ptex
   eFileErr = TextureFile.Read(pdata, ifilelen);
   ////////////////////////////////////////////////////////////////////
 
-  /*if (0) {
-    printf("  tex<%s> ptex<%p>\n", infname.c_str(), ptex);
-    printf("  tex<%s> width<%d>\n", infname.c_str(), iwidth);
-    printf("  tex<%s> height<%d>\n", infname.c_str(), iheight);
-    printf("  tex<%s> depth<%d>\n", infname.c_str(), idepth);
-    printf("  tex<%s> nummips<%d>\n", infname.c_str(), NumMips);
-    printf("  tex<%s> flgs<%x>\n", infname.c_str(), int(ddsh->dwFlags));
-    printf("  tex<%s> 4cc<%x>\n", infname.c_str(), int(ddsh->ddspf.dwFourCC));
-    printf("  tex<%s> bitcnt<%d>\n", infname.c_str(), int(ddsh->ddspf.dwRGBBitCount));
-    printf("  tex<%s> rmask<0x%x>\n", infname.c_str(), int(ddsh->ddspf.dwRBitMask));
-    printf("  tex<%s> gmask<0x%x>\n", infname.c_str(), int(ddsh->ddspf.dwGBitMask));
-    printf("  tex<%s> bmask<0x%x>\n", infname.c_str(), int(ddsh->ddspf.dwBBitMask));
-  }*/
   auto inpdata   = std::make_shared<DataBlock>(pdata, ifilelen);
   inpdata->_name = infname.toStdString();
   return _loadDDSTexture(ptex, inpdata);
@@ -120,6 +107,21 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
     TARGET = GL_TEXTURE_3D;
   }
   pTEXOBJ->mTarget = TARGET;
+
+  if (1) {
+    auto dbgname = ptex->_debugName;
+    printf("  tex<%s> ptex<%p>\n", dbgname.c_str(), ptex);
+    printf("  tex<%s> width<%d>\n", dbgname.c_str(), iwidth);
+    printf("  tex<%s> height<%d>\n", dbgname.c_str(), iheight);
+    printf("  tex<%s> depth<%d>\n", dbgname.c_str(), idepth);
+    printf("  tex<%s> nummips<%d>\n", dbgname.c_str(), NumMips);
+    printf("  tex<%s> flgs<%x>\n", dbgname.c_str(), int(ddsh->dwFlags));
+    printf("  tex<%s> 4cc<%x>\n", dbgname.c_str(), int(ddsh->ddspf.dwFourCC));
+    printf("  tex<%s> bitcnt<%d>\n", dbgname.c_str(), int(ddsh->ddspf.dwRGBBitCount));
+    printf("  tex<%s> rmask<0x%x>\n", dbgname.c_str(), int(ddsh->ddspf.dwRBitMask));
+    printf("  tex<%s> gmask<0x%x>\n", dbgname.c_str(), int(ddsh->ddspf.dwGBitMask));
+    printf("  tex<%s> bmask<0x%x>\n", dbgname.c_str(), int(ddsh->ddspf.dwBBitMask));
+  }
 
   //////////////////
 

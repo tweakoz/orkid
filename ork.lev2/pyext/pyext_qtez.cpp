@@ -31,6 +31,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           "create",
           [type_codec](py::object appinstance) { //
             auto rval = OrkEzQtApp::create();
+            drwev_t d_ev                                          = drwev_t(new ui::DrawEvent(nullptr));
+            rval->_vars.makeValueForKey<drwev_t>("drawev")        = d_ev;
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onGpuInit")) {
               auto gpuinitfn //
@@ -77,8 +79,6 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               auto updfn //
                   = py::cast<py::function>(appinstance.attr("onUpdate"));
               rval->_vars.makeValueForKey<py::function>("updatefn") = updfn;
-              drwev_t d_ev                                          = drwev_t(new ui::DrawEvent(nullptr));
-              rval->_vars.makeValueForKey<drwev_t>("drawev")        = d_ev;
               rval->onUpdate([=](updatedata_ptr_t updata) { //
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars.typedValueForKey<py::function>("updatefn");

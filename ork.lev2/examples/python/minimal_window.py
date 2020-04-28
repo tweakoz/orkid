@@ -19,7 +19,7 @@ class MyApp(object):
     self.qtapp.setRefreshPolicy(RefreshFixedFPS, 60)
     self._time_base = time.time()
   ###########################
-  def gpuInit(self,ctx):
+  def onGpuInit(self,ctx):
     FBI = ctx.FBI()
     GBI = ctx.GBI()
     self.nsh = _shaders.Shader(ctx)
@@ -41,32 +41,32 @@ class MyApp(object):
   ###########################
   def onDraw(self,drawevent):
     ctx = drawevent.context
-    #WIDTH = ctx.mainSurfaceWidth()
-    #HEIGHT = ctx.mainSurfaceHeight()
+    WIDTH = ctx.mainSurfaceWidth()
+    HEIGHT = ctx.mainSurfaceHeight()
   ###########################
-    #Δtime = time.time()-self._time_base
-    #θ = Δtime*0.1
-    #x = math.sin(θ)*5
-    #z = -math.cos(θ)*5
+    Δtime = time.time()-self._time_base
+    θ = Δtime*0.1
+    x = math.sin(θ)*5
+    z = -math.cos(θ)*5
   ###########################
-    #pmatrix = ctx.perspective(70,WIDTH/HEIGHT,0.01,100.0)
-    #vmatrix = ctx.lookAt(vec3(x,0.8,z),
-    #                     vec3(0,0,0),
-    #                     vec3(0,1,0))
-    #rotmatrix = vmatrix.toRotMatrix3()
-    #mvp_matrix = vmatrix*pmatrix
+    pmatrix = ctx.perspective(70,WIDTH/HEIGHT,0.01,100.0)
+    vmatrix = ctx.lookAt(vec3(x,0.8,z),
+                         vec3(0,0,0),
+                         vec3(0,1,0))
+    rotmatrix = vmatrix.toRotMatrix3()
+    mvp_matrix = vmatrix*pmatrix
   ###########################
-    #ctx.FBI().autoclear = True
-    #ctx.FBI().clearcolor = vec4(.15,.15,.2,1)
-    #RCFD = RenderContextFrameData(ctx)
-    #ctx.beginFrame()
-    #self.nsh.beginNoise(RCFD,Δtime)
-    #self.nsh.bindMvpMatrix(mvp_matrix)
-    #self.nsh.bindRotMatrix(rotmatrix)
-    #self.nsh.bindVolumeTex(self.volumetexture)
-    #self.prim.renderEML(ctx)
-    #self.nsh.end(RCFD)
-    #ctx.endFrame()
+    ctx.FBI().autoclear = True
+    ctx.FBI().clearcolor = vec4(.15,.15,.2,1)
+    RCFD = RenderContextFrameData(ctx)
+    ctx.beginFrame()
+    self.nsh.beginNoise(RCFD,Δtime)
+    self.nsh.bindMvpMatrix(mvp_matrix)
+    self.nsh.bindRotMatrix(rotmatrix)
+    self.nsh.bindVolumeTex(self.volumetexture)
+    self.prim.renderEML(ctx)
+    self.nsh.end(RCFD)
+    ctx.endFrame()
 ##############################################
 myapp = MyApp()
 myapp.qtapp.exec()
