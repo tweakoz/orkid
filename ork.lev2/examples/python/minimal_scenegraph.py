@@ -84,9 +84,7 @@ class PyOrkApp(object):
   ################################################
   #def onDraw(self,drawevent):
     #ctx = drawevent.context
-    #ctx.beginFrame()
     #self.scene.renderOnContext(ctx)
-    #ctx.endFrame()
-################################################
+  ############################################
 app = PyOrkApp()
 app.qtapp.exec()
