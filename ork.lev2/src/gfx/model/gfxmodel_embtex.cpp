@@ -56,7 +56,11 @@ datablockptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
     Image img;
     img.initFromInMemoryFile(_format, _srcdata, _srcdatalen);
     img._debugName    = FormatString("emtex_%s", _name.c_str());
+    #if defined(__APPLE__)
+    auto cimgchain    = img.compressedMipChainRGBA();
+    #else
     auto cimgchain    = img.compressedMipChainBC7();
+    #endif
     cimgchain._varmap = _varmap;
     compressed_path   = ork::file::generateContentTempPath(hash, "xtx");
     cimgchain.writeXTX(compressed_path);
