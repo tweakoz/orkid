@@ -153,9 +153,6 @@ void DeferredContext::gpuInit(Context* target) {
     _rtgDecal               = new RtGroup(target, 8, 8, 1);
     _rtgDecal->_needsDepth  = false;
     _rtgGbuffer->SetMrt(0, _rtbGbuffer);
-    //_rtgGbuffer->SetMrt(0, _rtbAlbAo);
-    //_rtgGbuffer->SetMrt(1, _rtbNormalDist);
-    //_rtgGbuffer->SetMrt(2, _rtbRufMtl);
     _rtgDecal->SetMrt(0, _rtbGbuffer);
     _gbuffRT = new RtGroupRenderTarget(_rtgGbuffer);
     _decalRT = new RtGroupRenderTarget(_rtgDecal);
@@ -394,8 +391,6 @@ void DeferredContext::renderBaseLighting(CompositorDrawData& drawdata, const Vie
   bindRasterState(targ, ECULLTEST_PASS_BACK, EDEPTHTEST_OFF, EBLENDING_OFF);
   //////////////////////////////////////////////////////
   _lightingmtl.bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
-  //_lightingmtl.bindParamCTex(_parMapGBufAlbAo, _rtgGbuffer->GetMrt(0)->texture());
-  //_lightingmtl.bindParamCTex(_parMapGBufNrmL, _rtgGbuffer->GetMrt(1)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
   _lightingmtl.commit();
   DWI->quad2DEMLTiled(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0), 2);
@@ -431,9 +426,6 @@ void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const Vie
   bindRasterState(targ, ECULLTEST_OFF, EDEPTHTEST_OFF, EBLENDING_ADDITIVE);
   //////////////////////////////////////////////////////
   _lightingmtl.bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
-  //_lightingmtl.bindParamCTex(_parMapGBufAlbAo, _rtgGbuffer->GetMrt(0)->texture());
-  //_lightingmtl.bindParamCTex(_parMapGBufNrmL, _rtgGbuffer->GetMrt(1)->texture());
-  //_lightingmtl.bindParamCTex(_parMapGBufRufMtlAlpha, _rtgGbuffer->GetMrt(2)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
   _lightingmtl.bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
   _lightingmtl.bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap);
@@ -486,9 +478,6 @@ void DeferredContext::beginSpotLighting(CompositorDrawData& drawdata, const View
   bindRasterState(targ, ECULLTEST_OFF, EDEPTHTEST_OFF, EBLENDING_ADDITIVE);
   //////////////////////////////////////////////////////
   _lightingmtl.bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
-  //_lightingmtl.bindParamCTex(_parMapGBufAlbAo, _rtgGbuffer->GetMrt(0)->texture());
-  //_lightingmtl.bindParamCTex(_parMapGBufNrmL, _rtgGbuffer->GetMrt(1)->texture());
-  //_lightingmtl.bindParamCTex(_parMapGBufRufMtlAlpha, _rtgGbuffer->GetMrt(2)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
   _lightingmtl.bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
   _lightingmtl.bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap);
@@ -538,9 +527,6 @@ void DeferredContext::beginShadowedSpotLighting(CompositorDrawData& drawdata, co
   bindRasterState(targ, ECULLTEST_OFF, EDEPTHTEST_OFF, EBLENDING_ADDITIVE);
   //////////////////////////////////////////////////////
   _lightingmtl.bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
-  //_lightingmtl.bindParamCTex(_parMapGBufAlbAo, _rtgGbuffer->GetMrt(0)->texture());
-  //_lightingmtl.bindParamCTex(_parMapGBufNrmL, _rtgGbuffer->GetMrt(1)->texture());
-  //_lightingmtl.bindParamCTex(_parMapGBufRufMtlAlpha, _rtgGbuffer->GetMrt(2)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
   _lightingmtl.bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
   _lightingmtl.bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap);
@@ -592,7 +578,6 @@ void DeferredContext::beginSpotDecaling(CompositorDrawData& drawdata, const View
   bindRasterState(targ, ECULLTEST_OFF, EDEPTHTEST_OFF, EBLENDING_OFF);
   ///////////////////////////
   _lightingmtl.bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
-  //_lightingmtl.bindParamCTex(_parMapGBufRufMtlAlpha, _rtgGbuffer->GetMrt(2)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
   if (cookietexture)
     _lightingmtl.bindParamCTex(_parLightCookieTexture, cookietexture);

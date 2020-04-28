@@ -192,13 +192,13 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       RtBuffer* rtbuffer = Base->GetMrt(it);
       auto bufferimpl    = rtbuffer->_impl.Get<GlRtBufferImpl*>();
 
+      auto tex        = rtbuffer->texture();
       if (bufferimpl->_init or rtbuffer->mSizeDirty) {
         // printf("RtGroup<%p> RtBuffer<%p> initcolor2\n", Base, rtbuffer);
         // D3DFORMAT efmt = D3DFMT_A8R8G8B8;
         GLuint glinternalformat = 0;
         GLuint glformat         = GL_RGBA;
         GLenum gltype           = 0;
-
         switch (rtbuffer->format()) {
           case EBufferFormat::R32F:
             glformat         = GL_RED;
@@ -209,6 +209,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
             glformat         = GL_RED_INTEGER;
             glinternalformat = GL_R32UI;
             gltype           = GL_UNSIGNED_INT;
+            tex->_formatSupportsFiltering = false;
             break;
           case EBufferFormat::RG16F:
             glformat         = GL_RG;
@@ -232,6 +233,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
             glformat         = GL_RGBA_INTEGER;
             glinternalformat = GL_RGBA16UI;
             gltype           = GL_UNSIGNED_SHORT;
+            tex->_formatSupportsFiltering = false;
             break;
           case EBufferFormat::RGBA32F:
             glinternalformat = GL_RGBA32F;
@@ -245,6 +247,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
             glformat         = GL_RGB_INTEGER;
             glinternalformat = GL_RGB32UI;
             gltype           = GL_UNSIGNED_INT;
+            tex->_formatSupportsFiltering = false;
             break;
           default:
             OrkAssert(false);
@@ -256,13 +259,15 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
         // initialize texture
         //////////////////////////////////////////
 
-        auto tex        = rtbuffer->texture();
         auto orkteximpl = (GLTextureObject*)tex->GetTexIH();
         GLuint texobj   = bufferimpl->_texture;
 
-        tex->mTexSampleMode.mTexFiltModeMin = ETEXFILT_LINEAR;
-        tex->mTexSampleMode.mTexFiltModeMag = ETEXFILT_LINEAR;
-        tex->mTexSampleMode.mTexFiltModeMip = ETEXFILT_LINEAR;
+        if(tex->_formatSupportsFiltering){
+          tex->mTexSampleMode.PresetTrilinearWrap();
+        }
+        else {
+          tex->mTexSampleMode.PresetPointAndClamp();
+        }
 
         mTargetGL.debugPushGroup("init-rt-tex");
 

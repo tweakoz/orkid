@@ -132,8 +132,10 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras) {
 
 void Scene::renderOnContext(Context* context) {
   auto DB = DrawableBuffer::acquireReadDB(7);
-  if (nullptr == DB)
+  if (nullptr == DB){
+    printf("Dont have a DB!\n");
     return;
+  }
 
   _renderer.setContext(context);
 

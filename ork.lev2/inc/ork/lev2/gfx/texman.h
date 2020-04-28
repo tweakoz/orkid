@@ -231,6 +231,7 @@ struct Texture {
   bool _isDepthTexture = false;
   varmap::VarMap _varmap;
   const TextureAsset* _asset;
+  bool _formatSupportsFiltering = true;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

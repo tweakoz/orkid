@@ -26,7 +26,7 @@
 #pragma comment( lib, "cg.lib" )
 #pragma comment( lib, "cggl.lib" )
 #endif
-//#pragma comment(lib, "glew32.lib")  
+//#pragma comment(lib, "glew32.lib")
 #pragma comment(lib,"opengl32.lib")
 ///////////////////////////////////////////////////////////////////////////////
 extern bool sbExit;
@@ -200,7 +200,7 @@ void ContextGL::InitializeContext( Window *pWin, CTXBASE* pctxbase )
 	}
 
 	///////////////////////////////////////////////////////////
-	
+
 	static bool gbinitglew = true;
 
 	if( gbinitglew )
@@ -209,8 +209,8 @@ void ContextGL::InitializeContext( Window *pWin, CTXBASE* pctxbase )
 		wglMakeCurrent(RenderingDC,tempContext);
 		GLenum giOK = glewInit();
 		OrkAssert( giOK == GLEW_OK );
-		wglDeleteContext(tempContext);		
-		gbinitglew = false;	
+		wglDeleteContext(tempContext);
+		gbinitglew = false;
 	}
 
 	//int attribs[] = { };
