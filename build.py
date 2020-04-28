@@ -51,15 +51,37 @@ if _args["ez"]!=False:
     ################
 
     def docmd(cmdlist):
-        global ok
-        if ok:
-            ok = Command(cmdlist).exec()==0
+      global ok
+      if ok:
+        ok = Command(cmdlist).exec()==0
 
-    docmd(init_env+ch_ork_root+["--command","obt.dep.build.py pkgconfig"])
-    docmd(init_env+ch_ork_root+["--command","obt.dep.build.py python"])
-    Command(init_env+ch_ork_root+["--command","./build.py --debug"]).exec()
-    docmd(init_env+ch_tuio+["--command","make install"])
-    docmd(init_env+ch_ork_root+["--command","./build.py --debug"])
+    ##########################################
+    # boostrap pkgconfig/python
+    ##########################################
+    docmd(init_env+ch_ork_root+["--command","obt.dep.build.py python"]) # bootstrap python
+
+    ##########################################
+    # start ork build
+    ##########################################
+
+    if ok:
+      ok = Command(init_env+ch_ork_root+["--command","./build.py --debug"]).exec()==0 # start ork build
+
+    ##########################################
+    # ork.build probably failed here because of the tuio issue
+    #  need to move tuio to a dependency module
+    ##########################################
+
+    if False==ok:
+      docmd(init_env+ch_tuio+["--command","make install"]) # hackinstall tuio
+
+    ##########################################
+    # continue ork build
+    ##########################################
+
+    docmd(init_env+ch_ork_root+["--command","./build.py --debug"]) # continue...
+
+    ##########################################
 
     if ok:
         sys.exit(0)
