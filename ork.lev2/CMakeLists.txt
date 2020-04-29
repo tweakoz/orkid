@@ -85,7 +85,7 @@ IF(${UNIX})
 ENDIF()
 
 target_link_libraries(ork_lev2 PUBLIC ${libs} triangle tetgen )
-target_link_libraries(ork_lev2 PUBLIC boost_filesystem )
+target_link_libraries(ork_lev2 PUBLIC boost_filesystem assimp )
 
 target_include_directories (ork_lev2 PRIVATE $ENV{OBT_STAGE}/include )
 target_include_directories (ork_lev2 PRIVATE ${INCD} )

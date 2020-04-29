@@ -8,12 +8,9 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <orktool/filter/gfx/collada/collada.h>
 #include <orktool/manip/manip.h>
-//#include <gfx/gfxanim.h>
 #include <ork/file/path.h>
 #include <ork/file/tinyxml/tinyxml.h>
-//#include <ork/entity/ReferenceArchetype.h>
 #include <ork/lev2/lev2_asset.h>
 #include <orktool/toolcore/builtinchoices.h>
 
@@ -159,7 +156,7 @@ QMenu* ChoiceList::CreateMenu(const ChoiceListFilters* Filter) const {
 
 ///////////////////////////////////////////////////////////////////////////
 
-#if defined(USE_FCOLLADA)
+#if 0 //defined(USE_FCOLLADA)
 void ColladaChoiceCache(
     const file::Path& sdir,
     ChoiceList* ChcList,
@@ -200,7 +197,7 @@ void ModelChoices::EnumerateChoices(bool bforcenocache) {
 void AnimChoices::EnumerateChoices(bool bforcenocache) {
   clear();
 #if defined(USE_FCOLLADA)
-  ColladaChoiceCache("data://", this, "xga", ork::tool::meshutil::CColladaAsset::ECOLLADA_ANIM);
+  //ColladaChoiceCache("data://", this, "xga", ork::tool::meshutil::CColladaAsset::ECOLLADA_ANIM);
 #endif
 }
 

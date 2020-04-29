@@ -16,7 +16,6 @@
 #include <ork/file/fileenv.h>
 
 // Filters
-#include <orktool/filter/gfx/meshutil/meshutil_tool.h>
 
 #include <ork/kernel/string/string.h>
 #include <ork/lev2/gfx/gfxctxdummy.h>
@@ -27,9 +26,7 @@
 
 namespace ork::tool {
 namespace meshutil {
-void PartitionMesh_FixedGrid3d_Driver(const tokenlist& options);
 void TerrainTest(const tokenlist& toklist);
-void RegisterColladaFilters();
 } // namespace meshutil
 
 bool WavToMkr(const tokenlist& toklist);
@@ -78,42 +75,6 @@ void QtzComposerToPngFilter::Describe() {
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-bool Tga2DdsFilterDriver(const tokenlist& toklist);
-
-class TGADDSFilter : public AssetFilterBase {
-  RttiDeclareConcrete(TGADDSFilter, AssetFilterBase);
-
-public: //
-  TGADDSFilter() {
-  }
-  bool ConvertAsset(const tokenlist& toklist) final {
-    return Tga2DdsFilterDriver(toklist);
-  }
-};
-void TGADDSFilter::Describe() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-class fg3dFilter : public AssetFilterBase {
-  RttiDeclareConcrete(fg3dFilter, AssetFilterBase);
-
-public: //
-  fg3dFilter() {
-  }
-  bool ConvertAsset(const tokenlist& toklist) final {
-    meshutil::PartitionMesh_FixedGrid3d_Driver(toklist);
-    return true;
-  }
-};
-void fg3dFilter::Describe() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 
 class WAVMKRFilter : public AssetFilterBase {
   RttiDeclareConcrete(WAVMKRFilter, AssetFilterBase);
@@ -142,20 +103,9 @@ static void RegisterFilters() {
     AssetFilter::RegisterFilter("sf2:gab", SF2GABFilter::DesignNameStatic().c_str());
 #endif
 ///////////////////////////////////////////////////
-#if defined(USE_FCOLLADA)
-    ork::tool::meshutil::RegisterColladaFilters();
-#endif
     ///////////////////////////////////////////////////
     ork::tool::RegisterArchFilters();
     ///////////////////////////////////////////////////
-    AssetFilter::RegisterFilter("xgm:obj", meshutil::XGM_OBJ_Filter::DesignNameStatic().c_str());
-    AssetFilter::RegisterFilter("obj:obj", meshutil::OBJ_OBJ_Filter::DesignNameStatic().c_str());
-    AssetFilter::RegisterFilter("obj:xgm", meshutil::OBJ_XGM_Filter::DesignNameStatic().c_str());
-    AssetFilter::RegisterFilter("ass:xgm", meshutil::ASS_XGM_Filter::DesignNameStatic().c_str());
-    AssetFilter::RegisterFilter("ass:xga", meshutil::ASS_XGA_Filter::DesignNameStatic().c_str());
-    AssetFilter::RegisterFilter("tga:dds", TGADDSFilter::DesignNameStatic().c_str());
-    AssetFilter::RegisterFilter("png:dds", TGADDSFilter::DesignNameStatic().c_str());
-    AssetFilter::RegisterFilter("fg3d", fg3dFilter::DesignNameStatic().c_str());
 /////////////////////////
 #if defined(ORK_OSXX_DISABLED)
     AssetFilter::RegisterFilter("qtz:png", QtzComposerToPngFilter::DesignNameStatic().c_str());
@@ -479,9 +429,7 @@ void FilterOptMap::DumpOptions() const {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::AssetFilterBase, "AssetFilterBase");
-INSTANTIATE_TRANSPARENT_RTTI(ork::tool::fg3dFilter, "fg3dFilter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::WAVMKRFilter, "WAVMKRFilter");
-INSTANTIATE_TRANSPARENT_RTTI(ork::tool::TGADDSFilter, "TGADDSFilter");
 
 #if defined(ORK_OSXX_DISABLED)
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::VolTexAssembleFilter, "VolTexAssembleFilter");

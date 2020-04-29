@@ -5,14 +5,14 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <orktool/orktool_pch.h>
+#include <ork/pch.h>
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/gfxanim.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/kernel/string/string.h>
 #include <ork/kernel/prop.h>
 
-#include <orktool/filter/gfx/collada/collada.h>
 #include <ork/lev2/gfx/gfxctxdummy.h>
 #include <ork/file/chunkfile.h>
 
@@ -21,8 +21,8 @@
 namespace ork::tool::meshutil {
 
 ///////////////////////////////////////////////////////////////////////////////
-
-bool DAEXGAFilter::ConvertAsset(const tokenlist& toklist) {
+#if 0
+bool DAEXGAFilter_ConvertAsset(const tokenlist& toklist) {
   ork::tool::FilterOptMap options;
   options.SetDefault("-in", "yo");
   options.SetDefault("--out", "yo");
@@ -137,7 +137,7 @@ bool DAEXGAFilter::ConvertAsset(const tokenlist& toklist) {
   }
   return brval;
 }
-
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::tool::meshutil
 ///////////////////////////////////////////////////////////////////////////////

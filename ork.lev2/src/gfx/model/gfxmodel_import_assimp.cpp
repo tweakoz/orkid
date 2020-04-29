@@ -5,15 +5,13 @@
 
 #include "assimp_util.inl"
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::tool::meshutil::ASS_XGM_Filter, "ASS_XGM_Filter");
-
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork::tool::meshutil {
+namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef std::set<std::string> bonemarkset_t;
 
-void ToolMesh::readFromAssimp(const file::Path& BasePath, DaeReadOpts& readopts) {
+void Mesh::readFromAssimp(const file::Path& BasePath) {
 
   ork::file::Path GlbPath = BasePath;
   auto base_dir           = BasePath.toBFS().parent_path();
@@ -658,16 +656,6 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ASS_XGM_Filter::ASS_XGM_Filter() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void ASS_XGM_Filter::Describe() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 template <typename ClusterizerType>
 void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2::XgmModel& out_model) {
 
@@ -822,7 +810,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
+/*
 bool ASS_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
   ork::tool::FilterOptMap options;
   options.SetDefault("--dice", "false");
@@ -887,5 +875,5 @@ bool ASS_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
   deco::printf(fvec3::Yellow(), "sklext max<%g %g %g>\n", smax.x, smax.y, smax.z);
 
   return rv;
-}
+}*/
 } // namespace ork::tool::meshutil

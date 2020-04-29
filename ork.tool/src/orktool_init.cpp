@@ -24,7 +24,7 @@
 namespace ork {
 
 namespace ent {
-class LightMapperArchetype;
+//class LightMapperArchetype;
 class EntArchDeRef;
 class EntArchReRef;
 class EntArchSplit;
@@ -51,7 +51,7 @@ class GraphExportDelegate;
 
 void LinkMe() {
   ork::rtti::Link<ork::tool::ged::GedFactoryPlug>();
-  ork::rtti::Link<ork::ent::LightMapperArchetype>();
+  //ork::rtti::Link<ork::ent::LightMapperArchetype>();
 
   ork::rtti::Link<ork::tool::ged::GraphImportDelegate>();
   ork::rtti::Link<ork::tool::ged::GraphExportDelegate>();

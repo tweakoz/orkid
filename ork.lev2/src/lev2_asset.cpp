@@ -46,6 +46,8 @@ public:
   XgmModelLoader()
       : FileAssetLoader(XgmModelAsset::GetClassStatic()) {
     AddLocation("data://", ".xgm");
+    AddLocation("data://", ".gltf");
+    AddLocation("data://", ".glb");
   }
 
   bool LoadFileAsset(asset::Asset* pAsset, ConstString filename) {

@@ -13,7 +13,6 @@
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>
-#include <orktool/filter/gfx/meshutil/meshutil_tool.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/scene.h>
 
@@ -28,8 +27,6 @@
 
 using namespace ork;
 using namespace ork::ent;
-using namespace ork::tool::meshutil;
-using namespace ork::tool;
 
 ////////////////////////////////////////////////////////////////
 

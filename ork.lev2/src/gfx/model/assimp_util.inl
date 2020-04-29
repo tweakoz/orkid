@@ -3,28 +3,25 @@
 // Copyright 1996-2020, Michael T. Mayers
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <orktool/orktool_pch.h>
+#include <ork/pch.h>
 #include <ork/file/cfs.inl>
 #include <ork/application/application.h>
 #include <ork/math/plane.h>
-#include <orktool/filter/filter.h>
 #include <ork/kernel/spawner.h>
 #include <ork/kernel/string/deco.inl>
-
+///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/meshutil/meshutil.h>
+#include <ork/lev2/gfx/meshutil/clusterizer.h>
+#include <ork/lev2/gfx/material_pbr.inl>
 ///////////////////////////////////////////////////////////////////////////////
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <assimp/pbrmaterial.h>
 #include <assimp/material.h>
+///////////////////////////////////////////////////////////////////////////////
 
-#include <orktool/filter/gfx/collada/collada.h>
-#include <orktool/filter/gfx/meshutil/meshutil_tool.h>
-#include <ork/lev2/gfx/meshutil/clusterizer.h>
-
-#include <ork/lev2/gfx/material_pbr.inl>
-
-namespace ork::tool::meshutil {
+namespace ork::meshutil {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -307,4 +304,4 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} // namespace ork::tool::meshutil
+} // namespace ork::meshutil

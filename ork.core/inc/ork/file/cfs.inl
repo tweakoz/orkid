@@ -1,6 +1,7 @@
 #pragma once
 #include <boost/filesystem.hpp>
 #include "../kernel/environment.h"
+#include "../kernel/string/string.h"
 
 namespace ork::file {
 //////////////////////////////////////////////////////////////////////////////
