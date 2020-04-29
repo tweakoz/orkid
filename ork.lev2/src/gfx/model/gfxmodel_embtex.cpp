@@ -55,12 +55,8 @@ datablockptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
   if (1) { // ISPC compressor (WIP)
     Image img;
     img.initFromInMemoryFile(_format, _srcdata, _srcdatalen);
-    img._debugName = FormatString("emtex_%s", _name.c_str());
-#if 1 // defined(__APPLE__)
-    auto cimgchain = img.compressedMipChainRGBA();
-#else
-    auto cimgchain = img.compressedMipChainBC7();
-#endif
+    img._debugName    = FormatString("emtex_%s", _name.c_str());
+    auto cimgchain    = img.compressedMipChainDefault();
     cimgchain._varmap = _varmap;
     compressed_path   = ork::file::generateContentTempPath(hash, "xtx");
     cimgchain.writeXTX(compressed_path);

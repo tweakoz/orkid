@@ -309,9 +309,6 @@ void Image::compressRGBA(CompressedImage& imgout) const {
   //////////////////////////////////////////////////////////////////
   imgout._data = std::make_shared<DataBlock>();
 
-  Image src_as_rgba;
-  convertToRGBA(src_as_rgba);
-
   ork::Timer timer;
   timer.Start();
   ////////////////////////////////////////
@@ -320,7 +317,7 @@ void Image::compressRGBA(CompressedImage& imgout) const {
   auto opgroup      = opq::createCompletionGroup(opq::concurrentQueue(), "RGBAENC");
   size_t src_stride = _width * _numcomponents;
   size_t dst_stride = _width * 4;
-  auto src_base     = (uint8_t*)src_as_rgba._data->data();
+  auto src_base     = (uint8_t*)this->_data->data();
   auto dst_base     = (uint8_t*)imgout._data->allocateBlock(dst_stride * _height);
   for (int y = 0; y < _height; y++) {
     opgroup->enqueue([=]() {
@@ -338,15 +335,7 @@ void Image::compressRGBA(CompressedImage& imgout) const {
           }
           break;
         case 4:
-          for (int x = 0; x < _width; x++) {
-            const uint8_t* src_pix_base = src_line + (x * 4);
-            uint8_t* dst_pix_base       = dst_line + (x * 4);
-            dst_pix_base[0]             = src_pix_base[3];
-            dst_pix_base[1]             = src_pix_base[2];
-            dst_pix_base[2]             = src_pix_base[1];
-            dst_pix_base[3]             = src_pix_base[0];
-          }
-          // memcpy(dst_line,src_line,src_stride);
+          memcpy(dst_line, src_line, src_stride);
           break;
         default:
           OrkAssert(false);
