@@ -122,7 +122,7 @@ public:
   static qtezapp_ptr_t create(int argc, char** argv);
   static qtezapp_ptr_t createWithScene(varmap::varmap_ptr_t sceneparams);
 
-  filedevctxptr_t newFileDevContext(std::string uribase);
+  filedevctxptr_t newFileDevContext(std::string uriproto, const file::Path& basepath);
 
   void onDraw(EzMainWin::drawcb_t cb);
   void onResize(EzMainWin::onresizecb_t cb);

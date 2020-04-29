@@ -40,31 +40,41 @@ namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
 void OldSchool::SetGlobalFloatVariable(const std::string& variable, f32 value) {
-  GetRef().mmGlobalFloatVariables[variable] = value;
+  GetRef()._variables.makeValueForKey<float>(variable) = value;
 }
 
 f32 OldSchool::GetGlobalFloatVariable(const std::string& variable) {
-  return OldStlSchoolFindValFromKey(GetRef().mmGlobalFloatVariables, variable, (f32)0.0f);
+  return GetRef()._variables.typedValueForKey<float>(variable).value();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void OldSchool::SetGlobalStringVariable(const std::string& variable, std::string value) {
-  GetRef().mmGlobalStringVariables[variable] = value;
+  GetRef()._variables.makeValueForKey<std::string>(variable) = value;
 }
 
 std::string OldSchool::GetGlobalStringVariable(const std::string& variable) {
-  return OldStlSchoolFindValFromKey(GetRef().mmGlobalStringVariables, variable, (std::string) "NoVariable");
+  return GetRef()._variables.typedValueForKey<std::string>(variable).value();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void OldSchool::SetGlobalIntVariable(const std::string& variable, int value) {
-  GetRef().mmGlobalIntVariables[variable] = value;
+  GetRef()._variables.makeValueForKey<int>(variable) = value;
 }
 
 int OldSchool::GetGlobalIntVariable(const std::string& variable) {
-  return OldStlSchoolFindValFromKey(GetRef().mmGlobalIntVariables, variable, 0);
+  return GetRef()._variables.typedValueForKey<int>(variable).value();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void OldSchool::SetGlobalPathVariable(const std::string& variable, file::Path value) {
+  GetRef()._variables.makeValueForKey<file::Path>(variable) = value;
+}
+
+file::Path OldSchool::GetGlobalPathVariable(const std::string& variable) {
+  return GetRef()._variables.typedValueForKey<file::Path>(variable).value();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

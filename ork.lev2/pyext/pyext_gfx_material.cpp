@@ -94,7 +94,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
               "__getattr__",                                                                    //
               [type_codec](materialinst_ptr_t instance, const std::string& key) -> py::object { //
                 // OrkAssert(instance->_vars.hasKey(key));
-                varmap::val_t varval;
+                GfxMaterialInstance::varval_t varval;
                 // auto varmap_val = instance->_vars.valueForKey(key);
                 if (key == "param") {
                   auto proxy           = std::make_shared<matinst_param_proxy>();

@@ -19,11 +19,7 @@ static void _coreappinit() {
   ApplicationStack::Push(&the_app);
 
   static auto WorkingDirContext = std::make_shared<FileDevContext>();
-  auto base_dir                 = file::GetStartupDirectory();
-  if (getenv("ORKID_WORKSPACE_DIR") != nullptr)
-    base_dir = getenv("ORKID_WORKSPACE_DIR");
-  OldSchool::SetGlobalStringVariable("data://", base_dir.c_str());
-  printf("ORKID_WORKSPACE_DIR<%s>\n", base_dir.c_str());
+  OldSchool::SetGlobalPathVariable("data://", file::Path::orkroot_dir());
 
   rtti::Class::InitializeClasses();
 }

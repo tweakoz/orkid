@@ -131,8 +131,8 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// GfxMaterialInstance : instance of a material
-//  with different settings
+// GfxMaterialInstance : instance of a material "class"
+//  with independent parameter values
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GfxMaterialInstance : public std::enable_shared_from_this<GfxMaterialInstance> {
@@ -144,11 +144,12 @@ struct GfxMaterialInstance : public std::enable_shared_from_this<GfxMaterialInst
 
   void wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall);
 
+  using varval_t = varmap::VarMap::value_type;
   material_ptr_t _material;
   fxtechnique_constptr_t _monoTek   = nullptr;
   fxtechnique_constptr_t _pickTek   = nullptr;
   fxtechnique_constptr_t _stereoTek = nullptr;
-  std::unordered_map<fxparam_constptr_t, varmap::val_t> _params;
+  std::unordered_map<fxparam_constptr_t, varval_t> _params;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

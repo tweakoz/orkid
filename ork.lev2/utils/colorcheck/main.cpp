@@ -85,8 +85,7 @@ int main(int argc, char** argv) {
   // so we can load our private shader
   //////////////////////////////////////////////////////////
   auto this_dir  = file::Path::orkroot_dir() / "ork.lev2" / "utils" / "colorcheck";
-  auto ccheckctx = qtapp->newFileDevContext("colorcheck://");
-  ccheckctx->setFilesystemBaseAbs(this_dir);
+  auto ccheckctx = qtapp->newFileDevContext("colorcheck://", this_dir);
   ccheckctx->SetPrependFilesystemBase(true);
   printf("ccheckpath<%s>\n", this_dir.c_str());
   //////////////////////////////////////////////////////////

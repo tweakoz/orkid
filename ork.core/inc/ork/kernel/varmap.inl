@@ -5,10 +5,10 @@
 
 namespace ork::varmap {
 
-typedef svar64_t val_t;
 typedef std::string key_t;
 
-struct VarMap {
+template <typename val_t> struct TVarMap {
+  using value_type = val_t;
   ///////////////////////////////////////////////////////////////////////////
   static const val_t& nill() {
     static const val_t noval = nullptr;
@@ -29,7 +29,7 @@ struct VarMap {
   template <typename T> inline attempt_cast_const<T> typedValueForKey(const key_t& key) const {
     auto it = _themap.find(key);
     if (it != _themap.end()) {
-      return it->second.TryAs<T>();
+      return it->second.template TryAs<T>();
     }
     return attempt_cast_const<T>(nullptr);
   }
@@ -37,13 +37,13 @@ struct VarMap {
   template <typename T> inline attempt_cast<T> typedValueForKey(const key_t& key) {
     auto it = _themap.find(key);
     if (it != _themap.end()) {
-      return it->second.TryAs<T>();
+      return it->second.template TryAs<T>();
     }
     return attempt_cast<T>(nullptr);
   }
   ///////////////////////////////////////////////////////////////////////////
   template <typename T, typename... A> inline T& makeValueForKey(const key_t& key, A&&... args) {
-    return _themap[key].Make<T>(std::forward(args)...);
+    return _themap[key].template Make<T>(std::forward(args)...);
   }
   ///////////////////////////////////////////////////////////////////////////
   inline void removeItemForKey(const key_t& key) {
@@ -96,6 +96,7 @@ struct VarMap {
   std::map<key_t, val_t> _themap;
 };
 
+using VarMap            = TVarMap<svar64_t>;
 using varmap_ptr_t      = std::shared_ptr<VarMap>;
 using varmap_constptr_t = std::shared_ptr<const VarMap>;
 

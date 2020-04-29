@@ -34,43 +34,6 @@ datablockptr_t datablockFromFileAtPath(const file::Path& path) {
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-namespace file {
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-file::Path::NameType GetStartupDirectory() {
-  return GetCurDir() + file::Path::NameType("/");
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-EFileErrCode SetCurDir(const file::Path::NameType& inspec) {
-  return EFEC_FILE_UNSUPPORTED; // FileEnv::GetRef().mpDefaultDevice->SetCurrentDirectory(inspec);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-file::Path::NameType GetCurDir() // the curdir of the process, not the FileDevice
-{
-  file::Path::NameType outspec;
-  char cwdbuf[4096];
-  const char* cwdr = getcwd(cwdbuf, sizeof(cwdbuf));
-  OrkAssert(cwdr != 0);
-  // printf( "cwdbuf<%s>\n", cwdbuf );
-  outspec = cwdr;
-  // printf( "aa\n");
-  file::Path mypath(outspec.c_str());
-  // printf( "ab\n");
-  // std::transform( outspec.begin(), outspec.end(), outspec.begin(), dos2unixpathsep() );
-  mypath = mypath.c_str();
-  return outspec;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-} // namespace file
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 
 FileEnv::FileEnv()
     : NoRttiSingleton<FileEnv>()
@@ -83,10 +46,10 @@ FileEnv::FileEnv()
 
 FileDev* FileEnv::GetDeviceForUrl(const file::Path& fileName) const {
   auto& env    = FileEnv::GetRef();
-  auto urlbase = env.UrlNameToBase(fileName.GetUrlBase().c_str()).c_str();
+  auto urlbase = env.uriProtoToBase(fileName.GetUrlBase().c_str()).c_str();
 
-  auto it = env.RefUrlRegistry().find(urlbase);
-  if (it != env.RefUrlRegistry().end())
+  auto it = env.uriRegistry().find(urlbase);
+  if (it != env.uriRegistry().end())
     if (it->second->GetFileDevice())
       return it->second->GetFileDevice();
 
@@ -119,13 +82,12 @@ const file::Path::NameType& FileEnv::GetFilesystemBase(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const_filedevctxptr_t FileEnv::UrlBaseToContext(const file::Path::SmallNameType& UrlName) {
+const_filedevctxptr_t FileEnv::contextForUriProto(const std::string& UriProto) {
   static filedevctxptr_t default_ctx = std::make_shared<FileDevContext>();
 
-  file::Path::SmallNameType strip_name;
-  strip_name.replace(UrlName.c_str(), "://", "");
+  std::string strip_name = ork::string::replaced(UriProto, "://", "");
 
-  auto& the_map = GetRef()._fileDevContextMap;
+  auto& the_map = GetRef()._filedevcontext_map;
   auto it       = the_map.find(strip_name);
   if (it != the_map.end()) {
     return it->second;
@@ -135,13 +97,13 @@ const_filedevctxptr_t FileEnv::UrlBaseToContext(const file::Path::SmallNameType&
 
 ///////////////////////////////////////////////////////////////////////////////
 
-file::Path::SmallNameType FileEnv::UrlNameToBase(const file::Path::NameType& UrlName) {
-  file::Path::SmallNameType urlbase              = "";
-  file::Path::NameType::size_type find_url_colon = UrlName.cue_to_char(':', 0);
-  if (UrlName.npos != find_url_colon) {
-    if (int(UrlName.size()) > (find_url_colon + 2)) {
-      if ((UrlName[find_url_colon + 1] == '/') || (UrlName[find_url_colon + 2] == '/')) {
-        urlbase = UrlName.substr(0, find_url_colon).c_str();
+file::Path FileEnv::uriProtoToBase(const std::string& uriproto) {
+  file::Path urlbase  = "";
+  auto find_url_colon = uriproto.find_first_of(':', 0);
+  if (uriproto.npos != find_url_colon) {
+    if (int(uriproto.size()) > (find_url_colon + 2)) {
+      if ((uriproto[find_url_colon + 1] == '/') || (uriproto[find_url_colon + 2] == '/')) {
+        urlbase = uriproto.substr(0, find_url_colon).c_str();
       }
     }
   }
@@ -151,26 +113,24 @@ file::Path::SmallNameType FileEnv::UrlNameToBase(const file::Path::NameType& Url
 
 ///////////////////////////////////////////////////////////////////////////////
 
-file::Path::NameType FileEnv::UrlNameToPath(const file::Path::NameType& UrlName) {
-  file::Path::NameType path                      = "";
-  file::Path::NameType::size_type find_url_colon = UrlName.cue_to_char(':', 0);
-  if (UrlName.npos != find_url_colon) {
-    if (int(UrlName.size()) > (find_url_colon + 3)) {
-      if ((UrlName[find_url_colon + 1] == '/') || (UrlName[find_url_colon + 2] == '/')) {
-        file::Path::NameType urlbase = UrlName.substr(0, find_url_colon);
-
-        file::Path::SmallNameType urlp = urlbase.c_str();
-
-        if (OldStlSchoolIsInMap(GetRef()._fileDevContextMap, urlp)) {
-          file::Path::NameType::size_type ipathbase = find_url_colon + 3;
-          path                                      = UrlName.substr(ipathbase, UrlName.size() - ipathbase).c_str();
+file::Path FileEnv::uriProtoToPath(const std::string& uriproto) {
+  file::Path path     = "";
+  auto find_url_colon = uriproto.find_first_of(':', 0);
+  if (uriproto.npos != find_url_colon) {
+    if (int(uriproto.size()) > (find_url_colon + 3)) {
+      if ((uriproto[find_url_colon + 1] == '/') || (uriproto[find_url_colon + 2] == '/')) {
+        auto urlbase = uriproto.substr(0, find_url_colon);
+        auto urlp    = urlbase.c_str();
+        if (OldStlSchoolIsInMap(GetRef()._filedevcontext_map, urlp)) {
+          auto ipathbase = find_url_colon + 3;
+          path           = uriproto.substr(ipathbase, uriproto.size() - ipathbase).c_str();
         }
       }
     }
   }
 
   if (path.length() == 0) {
-    path = UrlName;
+    path = uriproto;
   }
 
   return path;
@@ -178,43 +138,14 @@ file::Path::NameType FileEnv::UrlNameToPath(const file::Path::NameType& UrlName)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::file::Path FileEnv::GetPathFromUrlExt(
-    const file::Path::NameType& UrlName,
-    const file::Path::NameType& subfolder,
-    const file::Path::SmallNameType& ext) {
-  file::Path::NameType Base = UrlNameToBase(UrlName).c_str();
-  file::Path::NameType Tail = UrlNameToPath(UrlName);
-
-  if (Tail == (Base + "://"))
-    Tail = "";
-
-  auto ctx  = UrlBaseToContext(Base.c_str());
-  auto base = ctx->GetFilesystemBaseAbs();
-
-  // printf( "  FileEnv::GetPathFromUrlExt UrlName<%s> subfolder<%s> base<%s>\n", UrlName.c_str(), subfolder.c_str(), base.c_str()
-  // );
-
-  file::Path::NameType path;
-
-  if (ctx->GetPrependFilesystemBase()) {
-    path = file::Path::NameType(base.c_str()) + subfolder.c_str() + Tail + ext.c_str();
-    // printf( "  FileEnv::GetPathFromUrlExt path<%s>\n", path.c_str() );
-  } else {
-
-    path = (subfolder + Tail + ext.c_str());
-  }
-
-  return ork::file::Path(path.c_str());
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void FileEnv::registerUrlBase(const file::Path::SmallNameType& UrlName, filedevctxptr_t FileContext) {
-  file::Path::SmallNameType urlbase = UrlNameToBase(UrlName.c_str());
-  filedevctxmap_t& Map              = GetRef()._fileDevContextMap;
-  Map[urlbase]                      = FileContext;
-  // FileDevContext& nc = const_cast<FileDevContext&>(FileContext);
-  // nc.CreateToc(UrlName);
+filedevctxptr_t FileEnv::createContextForUriBase(
+    const std::string& uriproto, //
+    const file::Path& base_location) {
+  auto context = std::make_shared<FileDevContext>();
+  context->setFilesystemBaseAbs(base_location);
+  GetRef()._filedevcontext_map[uriproto] = context;
+  context->SetPrependFilesystemBase(true);
+  return context;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -224,10 +155,6 @@ bool FileEnv::PathIsUrlForm(const file::Path& PathName) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-bool FileEnv::IsUrlBaseRegistered(const file::Path::SmallNameType& urlBase) {
-  return OldStlSchoolIsInMap(GetRef()._fileDevContextMap, urlBase);
-}
 
 file::Path::NameType FileEnv::StripUrlFromPath(const file::Path::NameType& urlName) {
   file::Path::NameType urlStr                    = urlName.c_str();
@@ -397,8 +324,8 @@ orkvector<file::Path::NameType> FileEnv::filespec_separate_terms(const file::Pat
 
 file::Path::NameType FileEnv::FilespecToContainingDirectory(const file::Path::NameType& path) {
   file::Path::NameType rval("");
-  bool isurl                        = FileEnv::PathIsUrlForm(ork::file::Path(path.c_str()));
-  file::Path::SmallNameType urlbase = FileEnv::UrlNameToBase(path.c_str());
+  bool isurl   = FileEnv::PathIsUrlForm(ork::file::Path(path.c_str()));
+  auto urlbase = FileEnv::uriProtoToBase(path.c_str());
   // This nonsense is so we can work with URLs too...
   file::Path::NameType UrlStrippedPath = path;
   if (isurl) {
@@ -457,35 +384,6 @@ FileEnv::TruncateAtFirstCharFromSet(const file::Path::NameType& stringToTruncate
   } else {
     return stringToTruncate.substr(0, ilchar);
   }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-void FileEnv::BeginLinFile(const file::Path& lfn, ELINFILEMODE emode) {
-  if (emode == ELFM_WRITE) {
-    std::string lfile1     = std::string(lfn.c_str());
-    GetRef().mpLinFile     = new File(lfile1.c_str(), ork::EFM_WRITE);
-    GetRef().meLinFileMode = emode;
-  } else if (emode == ELFM_READ) {
-    std::string lfile3 = std::string("data/") + std::string(lfn.c_str());
-    if (ork::FileEnv::DoesFileExist(lfile3.c_str())) {
-      // OutputDebugString( "OpeningLinFile!!!\n" );
-      GetRef().mpLinFile     = new File(lfile3.c_str(), ork::EFM_READ);
-      GetRef().meLinFileMode = emode;
-    }
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void FileEnv::EndLinFile() {
-  if (GetRef().mpLinFile)
-    delete GetRef().mpLinFile;
-
-  GetRef().mpLinFile = 0;
-
-  GetRef().meLinFileMode = ork::ELFM_NONE;
 }
 
 //////////////////////////////////////////////////////////

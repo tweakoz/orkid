@@ -30,9 +30,9 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       .def_static(
           "create",
           [type_codec](py::object appinstance) { //
-            auto rval = OrkEzQtApp::create();
-            drwev_t d_ev                                          = drwev_t(new ui::DrawEvent(nullptr));
-            rval->_vars.makeValueForKey<drwev_t>("drawev")        = d_ev;
+            auto rval                                      = OrkEzQtApp::create();
+            drwev_t d_ev                                   = drwev_t(new ui::DrawEvent(nullptr));
+            rval->_vars.makeValueForKey<drwev_t>("drawev") = d_ev;
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onGpuInit")) {
               auto gpuinitfn //
@@ -58,12 +58,11 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 mydrev.value()->mpTarget = drwev.GetTarget();
                 pyfn.value()(drwev_t(mydrev.value()));
               });
-            }
-            else if (py::hasattr(appinstance, "sceneparams")) {
+            } else if (py::hasattr(appinstance, "sceneparams")) {
               auto sceneparams //
                   = py::cast<varmap::varmap_ptr_t>(appinstance.attr("sceneparams"));
               auto scene = std::make_shared<scenegraph::Scene>(sceneparams);
-              varmap::val_t scenevar;
+              varmap::VarMap::value_type scenevar;
               scenevar.Set<scenegraph::scene_ptr_t>(scene);
               auto pyscene = type_codec->encode(scenevar);
               py::setattr(appinstance, "scene", pyscene);

@@ -205,7 +205,7 @@ struct FxShader {
 
   FxShader();
 
-  static void RegisterLoaders(const file::Path::NameType& base, const file::Path::NameType& ext);
+  static void RegisterLoaders(const file::Path& base, const std::string& ext);
 
   void SetInternalHandle(void* ph) {
     mInternalHandle = ph;

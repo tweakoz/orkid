@@ -10,8 +10,6 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/shadman.h>
 
-extern ork::ETocMode getocmod;
-
 namespace ork { namespace lev2 {
 
 extern bool gearlyhack;
@@ -112,14 +110,12 @@ void FxShaderStorageBufferMapping::unmap() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FxShader::RegisterLoaders(const file::Path::NameType& base, const file::Path::NameType& ext) {
+void FxShader::RegisterLoaders(const file::Path& base, const std::string& ext) {
   static auto gShaderFileContext1 = std::make_shared<FileDevContext>();
-  auto MorkCtx                    = FileEnv::UrlBaseToContext("lev2");
-  auto shaderpath                 = MorkCtx->GetFilesystemBaseAbs() + "/" + base;
-  gShaderFileContext1->SetFilesystemBaseAbs(shaderpath);
-  gShaderFileContext1->SetFilesystemBaseEnable(true);
-  gShaderFileContext1->SetPrependFilesystemBase(true);
-  FileEnv::registerUrlBase("orkshader://", gShaderFileContext1);
+  auto lev2ctx                    = FileEnv::contextForUriProto("lev2://");
+  auto shaderpath                 = lev2ctx->getFilesystemBaseAbs() / base;
+  auto shaderfilectx              = FileEnv::createContextForUriBase("orkshader://", shaderpath);
+  shaderfilectx->SetFilesystemBaseEnable(true);
   printf("FxShader::RegisterLoaders ext<%s> base<%s> shaderpath<%s>\n", ext.c_str(), base.c_str(), shaderpath.c_str());
   gearlyhack = false;
 }

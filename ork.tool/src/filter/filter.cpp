@@ -102,7 +102,7 @@ static void RegisterFilters() {
     AssetFilter::RegisterFilter("sf2:xab", SF2XABFilter::DesignNameStatic().c_str());
     AssetFilter::RegisterFilter("sf2:gab", SF2GABFilter::DesignNameStatic().c_str());
 #endif
-///////////////////////////////////////////////////
+    ///////////////////////////////////////////////////
     ///////////////////////////////////////////////////
     ork::tool::RegisterArchFilters();
     ///////////////////////////////////////////////////
@@ -211,13 +211,10 @@ int Main_Filter(tokenlist toklist) {
   //////////////////////////////////////////
   // Register fxshader:// data urlbase
 
-  static auto FxShaderFileContext   = std::make_shared<FileDevContext>();
-  file::Path::NameType fxshaderbase = ork::file::GetStartupDirectory() + "data/src/shaders/dummy";
-  file::Path fxshaderpath(fxshaderbase.c_str());
-  FxShaderFileContext->SetFilesystemBaseAbs(fxshaderpath.c_str());
-  FxShaderFileContext->SetPrependFilesystemBase(true);
-
-  FileEnv::registerUrlBase("fxshader://", FxShaderFileContext);
+  auto fdctx = FileEnv::createContextForUriBase( //
+      "fxshader://",
+      file::Path::orkroot_dir() / "data" / "src" / "shaders" / "dummy");
+  fdctx->SetPrependFilesystemBase(true);
 
   //////////////////////////////
   // need a gfx context for some filters

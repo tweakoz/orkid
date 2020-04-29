@@ -105,9 +105,9 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
   // check Munged Paths first (Munged path is a path run thru 1 or more path converters)
   //////////////////////////////////////////
 
-  file::Path::SmallNameType url = pathobjnoq.GetUrlBase();
+  auto url = pathobjnoq.GetUrlBase();
 
-  auto filedevctx = ork::FileEnv::UrlBaseToContext(url);
+  auto filedevctx = ork::FileEnv::contextForUriProto(url.c_str());
 
   // printf("filedevctx<%p>\n", filedevctx.get());
 

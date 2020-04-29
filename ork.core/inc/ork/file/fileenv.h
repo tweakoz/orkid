@@ -34,18 +34,6 @@ struct FileEnvDir {
 
 std::shared_ptr<DataBlock> datablockFromFileAtPath(const file::Path& path);
 
-///////////////////////////////////////////////////////////////////////////////
-namespace file {
-///////////////////////////////////////////////////////////////////////////////
-
-file::Path::NameType GetStartupDirectory();
-EFileErrCode SetCurDir(const file::Path::NameType& inspec);
-file::Path::NameType GetCurDir();
-
-///////////////////////////////////////////////////////////////////////////////
-} // namespace file
-///////////////////////////////////////////////////////////////////////////////
-
 enum ELINFILEMODE {
   ELFM_NONE = 0,
   ELFM_READ,
@@ -63,9 +51,7 @@ class FileEnv : public NoRttiSingleton<FileEnv> {
   FileDev* mpDefaultDevice;
 
 public:
-  typedef orkmap<ork::file::Path::SmallNameType, filedevctxptr_t> filedevctxmap_t;
-
-  filedevctxmap_t _fileDevContextMap;
+  typedef orkmap<std::string, filedevctxptr_t> filedevctxmap_t;
 
   FileEnv();
 
@@ -75,8 +61,8 @@ public:
   file::Path::NameType ReadDir(FileEnvDir*);
   void RewindDir(FileEnvDir*);
 
-  const filedevctxmap_t& RefUrlRegistry() const {
-    return _fileDevContextMap;
+  const filedevctxmap_t& uriRegistry() const {
+    return _filedevcontext_map;
   }
 
   FileDev* GetDefaultDevice() const {
@@ -150,7 +136,10 @@ public:
 
   //////////////////////////////////////////
 
-  static const_filedevctxptr_t UrlBaseToContext(const file::Path::SmallNameType& UrlName);
+  static const_filedevctxptr_t contextForUriProto(const std::string& UriProto);
+  static filedevctxptr_t createContextForUriBase( //
+      const std::string& uriproto,        // uri protocol "lev2://", "data://", etc..
+      const file::Path& base_location);   // base folder on disk
 
   //////////////////////////////////////////
 
@@ -162,18 +151,6 @@ public:
   /// @param PathName The path to check for a URL
   /// @return Whether or not PathName has a URL
   static bool PathIsUrlForm(const file::Path& PathName);
-
-  /// Is this URL actually registeted?
-  ///
-  /// @urlBase A URL base string (for example "lev2://" or "data://")
-  /// @return Whether or the not the URL base is registered
-  static bool IsUrlBaseRegistered(const file::Path::SmallNameType& urlBase);
-
-  static void registerUrlBase(const file::Path::SmallNameType& UrlBase, filedevctxptr_t PathBase);
-  static ork::file::Path GetPathFromUrlExt(
-      const file::Path::NameType& UrlName,
-      const file::Path::NameType& subfolder = "",
-      const file::Path::SmallNameType& ext  = "");
 
   static bool IsCharAlpha(char c) {
     return (((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')));
@@ -194,21 +171,8 @@ public:
     return ((c == '\\') || (c == ':') || IsCharAlpha(c) || IsCharNumeric(c) || IsCharPunc(c));
   }
 
-  static file::Path::SmallNameType UrlNameToBase(const file::Path::NameType& UrlName);
-  static file::Path::NameType UrlNameToPath(const file::Path::NameType& UrlName);
-
-  static void BeginLinFile(const file::Path& lfn, ELINFILEMODE emode);
-  static void EndLinFile();
-
-  static ELINFILEMODE GetLinFileMode() {
-    return GetRef().meLinFileMode;
-  }
-  static const file::Path& GetLinFileName() {
-    return GetRef().mLinFileName;
-  }
-  static File* GetLinFile() {
-    return GetRef().mpLinFile;
-  }
+  static file::Path uriProtoToBase(const std::string& uriproto);
+  static file::Path uriProtoToPath(const std::string& uriproto);
 
 private:
   /// Strips any URL from a path. The URL does not have to be regsitered.
@@ -216,9 +180,7 @@ private:
   /// @param urlName The path to strip a URL from
   /// @return The path without the URL
   static file::Path::NameType StripUrlFromPath(const file::Path::NameType& urlName);
-  file::Path mLinFileName;
-  ELINFILEMODE meLinFileMode;
-  File* mpLinFile;
+  filedevctxmap_t _filedevcontext_map;
 };
 
 typedef void (*FileAsyncDoneCallback)(void);

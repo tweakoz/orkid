@@ -76,15 +76,7 @@ EFileErrCode FileDevStd::DoOpenFile(File& rFile) {
     if (false == bexists) {
       return ork::EFEC_FILE_DOES_NOT_EXIST;
     }
-
     // reading and it exists
-
-    if (FileEnv::GetLinFileMode() == ELFM_READ) {
-      int ilen        = GetLengthFromToc(fname);
-      rFile.miFileLen = ilen;
-      rFile.mHandle   = 0;
-      return ork::EFEC_FILE_OK;
-    }
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -129,15 +121,6 @@ ork::EFileErrCode FileDevStd::DoRead(File& rFile, void* pTo, size_t icount, size
     printf("rFile.GetPhysicalPos()<%d> iphyspos<%d>\n", int(rFile.GetPhysicalPos()), iphyspos);
   }
   OrkAssert(rFile.GetPhysicalPos() == iphyspos);
-  /////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////
-  // orkprintf( "DoRead<%d> tell<%d> phys<%d>\n", icount, iphyspos, rFile.GetPhysicalPos() );
-  /////////////////////////////////////////////////////////
-
-  if (kPerformBuffering && rFile.IsBufferingEnabled()) {
-    OrkAssert(iphyspos % kSEEKALIGN == 0);
-    OrkAssert(icount % kBUFFERALIGN == 0);
-  }
   /////////////////////////////////////////////////////////
   iactualread = 0;
   /////////////////////////////////////////////////////////
@@ -226,39 +209,7 @@ EFileErrCode FileDevStd::DoGetLength(File& rFile, size_t& riLen) {
 
   const ork::file::Path& fname  = rFile.GetFileName();
   file::Path::SmallNameType url = fname.GetUrlBase();
-  auto ctx                      = ork::FileEnv::UrlBaseToContext(url);
-  bool bTRYTOC                  = false;
-  bool bEXISTSINTOC             = false;
-  int iTOCSIZE                  = -1;
-  if (ctx->GetTocMode() == ork::ETM_USE_TOC) {
-    bTRYTOC = true;
-
-    const orkmap<file::Path::NameType, int>& toc = ctx->GetTOC();
-
-    file::Path testf = fname;
-    testf.SetUrlBase("");
-    file::Path::NameType testn(testf.c_str());
-
-    size_t ilen = testn.length();
-    for (size_t i = 0; i < ilen; i++) {
-      char ch = testn.c_str()[i];
-
-      if (ch == '\\')
-        ch = '/';
-      else if (ch >= 'A' && ch <= 'Z')
-        ch = (ch - 'A') + 'a';
-
-      testn.SetChar(i, ch);
-    }
-    orkmap<file::Path::NameType, int>::const_iterator it = toc.find(testn.c_str());
-
-    if (it != toc.end()) {
-      iTOCSIZE     = it->second;
-      bEXISTSINTOC = true;
-    } else {
-    }
-  }
-
+  auto ctx                      = ork::FileEnv::contextForUriProto(url.c_str());
   ///////////////////////////////
 
   FILE* pFILE = reinterpret_cast<FILE*>(rFile.mHandle);
@@ -296,8 +247,8 @@ EFileErrCode FileDevStd::SetCurrentDirectory(const file::Path::NameType& directo
 ///////////////////////////////////////////////////////////////////////////////
 
 bool FileDevStd::DoesFileExist(const file::Path& filespec) {
-  file::Path::SmallNameType url = filespec.GetUrlBase();
-  auto ctx                      = ork::FileEnv::UrlBaseToContext(url);
+  auto url = filespec.GetUrlBase();
+  auto ctx = ork::FileEnv::contextForUriProto(url.c_str());
 
   file::Path pathspec(filespec.c_str());
   file::Path abspath = pathspec.ToAbsolute();

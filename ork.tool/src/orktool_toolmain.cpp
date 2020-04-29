@@ -81,7 +81,7 @@ static void ToolStartupDataFolder() {
   }*/
   settings.endGroup();
 
-  // FileEnv::registerUrlBase("data://", WorkingDirContext);
+  // FileEnv::createContextForUriBase("data://", WorkingDirContext);
   //////////////////////////////////////////
 }
 

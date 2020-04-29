@@ -9,14 +9,15 @@ ORK_PUSH_SYMVIZ_PUBLIC
 
 namespace ork::python {
 
-using decoderfn_t = std::function<void(const pybind11::object& inpval, ork::varmap::val_t& outval)>;
-using encoderfn_t = std::function<void(const ork::varmap::val_t& inpval, pybind11::object& outval)>;
+using varval_t    = ork::varmap::VarMap::value_type;
+using decoderfn_t = std::function<void(const pybind11::object& inpval, varval_t& outval)>;
+using encoderfn_t = std::function<void(const varval_t& inpval, pybind11::object& outval)>;
 
 struct TypeCodec {
   //////////////////////////////////
   static std::shared_ptr<TypeCodec> instance();
-  pybind11::object encode(const ork::varmap::val_t& val) const;
-  ork::varmap::val_t decode(const pybind11::object& val) const;
+  pybind11::object encode(const varval_t& val) const;
+  varval_t decode(const pybind11::object& val) const;
   void registerCodec(
       const pybind11::object& pytype, //
       const ork::TypeId& orktypeid,
@@ -29,10 +30,10 @@ struct TypeCodec {
     this->registerCodec(
         pytype, //
         TypeId::of<ORKTYPE>(),
-        [](const ork::varmap::val_t& inpval, pybind11::object& outval) { // encoder
+        [](const varval_t& inpval, pybind11::object& outval) { // encoder
           outval = pybind11::cast(inpval.Get<ORKTYPE>());
         },
-        [](const pybind11::object& inpval, ork::varmap::val_t& outval) { // decoder
+        [](const pybind11::object& inpval, varval_t& outval) { // decoder
           auto ork_val = inpval.cast<ORKTYPE>();
           outval.Set<ORKTYPE>(ork_val);
         });
@@ -44,11 +45,11 @@ struct TypeCodec {
     this->registerCodec(
         pytype, //
         TypeId::of<ORKTYPE>(),
-        [](const ork::varmap::val_t& inpval, pybind11::object& outval) { // encoder
+        [](const varval_t& inpval, pybind11::object& outval) { // encoder
           auto rawval = inpval.Get<ORKTYPE>();
           outval      = pybind11::cast(PYREPR(rawval));
         },
-        [](const pybind11::object& inpval, ork::varmap::val_t& outval) { // decoder
+        [](const pybind11::object& inpval, varval_t& outval) { // decoder
           auto intermediate_val = inpval.cast<PYREPR>();
           auto ptr_val          = intermediate_val.get();
           outval.Set<ORKTYPE>(ptr_val);

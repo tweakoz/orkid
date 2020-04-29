@@ -18,14 +18,6 @@ class File;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum ETocMode {
-  ETM_NO_TOC = 0,
-  ETM_CREATE_TOC,
-  ETM_USE_TOC,
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 class FileDevContext {
 public:
   typedef bool (*path_converter_type)(file::Path& pth);
@@ -40,20 +32,13 @@ public:
     return mPathConverters;
   }
 
-  void SetFilesystemBaseAbs(file::Path::NameType base);
-  void SetFilesystemBaseRel(file::Path::NameType base);
-
   void setFilesystemBaseAbs(file::Path base);
-  void setFilesystemBaseRel(file::Path base);
+  const file::Path& getFilesystemBaseAbs() const {
+    return _absolute_basepath;
+  }
 
   void SetFilesystemBaseEnable(bool bv) {
     mbPrependFilesystemBase = bv;
-  }
-  const file::Path::NameType& GetFilesystemBaseAbs() const {
-    return msFilesystemBaseAbs;
-  }
-  const file::Path::NameType& GetFilesystemBaseRel() const {
-    return msFilesystemBaseRel;
   }
   bool GetPrependFilesystemBase() const {
     return mbPrependFilesystemBase;
@@ -68,29 +53,11 @@ public:
     mpFileDevice = pFileDevice;
   }
 
-  void CreateToc(const file::Path::SmallNameType& UrlName);
-  void SetTocMode(ETocMode etm) {
-    meTocMode = etm;
-  }
-  ETocMode GetTocMode() const {
-    return meTocMode;
-  }
-
-  const orkmap<file::Path::NameType, int>& GetTOC() const {
-    return mTOC;
-  }
-  orkmap<file::Path::NameType, int>& GetTOC() {
-    return mTOC;
-  }
-
 private:
-  file::Path::NameType msFilesystemBaseAbs;
-  file::Path::NameType msFilesystemBaseRel;
+  file::Path _absolute_basepath;
   bool mbPrependFilesystemBase;
   FileDev* mpFileDevice;
   orkvector<path_converter_type> mPathConverters;
-  orkmap<file::Path::NameType, int> mTOC;
-  ETocMode meTocMode;
 };
 
 typedef std::shared_ptr<FileDevContext> filedevctxptr_t;

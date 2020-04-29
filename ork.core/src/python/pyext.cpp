@@ -15,12 +15,12 @@ struct PyCodecItem {
   decoderfn_t _decoder;
 };
 struct PyCodecImpl {
-  ork::varmap::val_t decode(const py::object& val) const;
-  py::object encode(const ork::varmap::val_t& val) const;
+  varval_t decode(const py::object& val) const;
+  py::object encode(const varval_t& val) const;
   std::unordered_map<ork::TypeId::hashtype_t, PyCodecItem> _codecs_by_orktype;
 };
 ////////////////////////////////////////////////////////////////////////////////
-py::object PyCodecImpl::encode(const ork::varmap::val_t& val) const {
+py::object PyCodecImpl::encode(const varval_t& val) const {
   py::object rval;
   auto orktypeid = val.getOrkTypeId();
   auto it        = _codecs_by_orktype.find(orktypeid._hashed);
@@ -34,8 +34,8 @@ py::object PyCodecImpl::encode(const ork::varmap::val_t& val) const {
   return rval;
 }
 ////////////////////////////////////////////////////////////////////////////////
-ork::varmap::val_t PyCodecImpl::decode(const py::object& val) const {
-  ork::varmap::val_t rval;
+varval_t PyCodecImpl::decode(const py::object& val) const {
+  varval_t rval;
   auto type = val.get_type();
   bool done = false;
   for (auto& codec_item : _codecs_by_orktype) {
@@ -64,30 +64,30 @@ TypeCodec::TypeCodec() {
   registerCodec(
       int_type, //
       TypeId::of<int>(),
-      [](const ork::varmap::val_t& inpval, pybind11::object& outval) { // encoder
+      [](const varval_t& inpval, pybind11::object& outval) { // encoder
         outval = py::int_(inpval.Get<int>());
       },
-      [](const py::object& inpval, ork::varmap::val_t& outval) { // decoder
+      [](const py::object& inpval, varval_t& outval) { // decoder
         outval.Set<int>(inpval.cast<int>());
       });
   ///////////////////////////////
   registerCodec(
       float_type, //
       TypeId::of<float>(),
-      [](const ork::varmap::val_t& inpval, pybind11::object& outval) { // encoder
+      [](const varval_t& inpval, pybind11::object& outval) { // encoder
         outval = py::float_(inpval.Get<float>());
       },
-      [](const py::object& inpval, ork::varmap::val_t& outval) { // decoder
+      [](const py::object& inpval, varval_t& outval) { // decoder
         outval.Set<float>(inpval.cast<float>());
       });
   ///////////////////////////////
   registerCodec(
       str_type, //
       TypeId::of<std::string>(),
-      [](const ork::varmap::val_t& inpval, pybind11::object& outval) { // encoder
+      [](const varval_t& inpval, pybind11::object& outval) { // encoder
         outval = py::str(inpval.Get<std::string>());
       },
-      [](const py::object& inpval, ork::varmap::val_t& outval) { // decoder
+      [](const py::object& inpval, varval_t& outval) { // decoder
         outval.Set<std::string>(inpval.cast<std::string>());
       });
 }
@@ -104,11 +104,11 @@ void TypeCodec::registerCodec(
   item._decoder = dfn;
 }
 //////////////////////////////////
-py::object TypeCodec::encode(const ork::varmap::val_t& val) const {
+py::object TypeCodec::encode(const varval_t& val) const {
   return _impl.Get<PyCodecImpl>().encode(val);
 }
 //////////////////////////////////
-ork::varmap::val_t TypeCodec::decode(const py::object& val) const {
+varval_t TypeCodec::decode(const py::object& val) const {
   return _impl.Get<PyCodecImpl>().decode(val);
 }
 //////////////////////////////////

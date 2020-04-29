@@ -264,7 +264,7 @@ bool FreestyleMaterial::materialInstanceBeginPass(materialinst_ptr_t minst, cons
 
   for (auto item : minst->_params) {
     fxparam_constptr_t param = item.first;
-    const varmap::val_t& val = item.second;
+    const auto& val          = item.second;
     if (auto as_mtx4 = val.TryAs<fmtx4_ptr_t>()) {
       this->bindParamMatrix(param, *as_mtx4.value().get());
     } else if (auto as_crcstr = val.TryAs<crcstring_ptr_t>()) {

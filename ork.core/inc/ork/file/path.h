@@ -121,6 +121,7 @@ public:
   void operator+=(const Path& oth);
   bool operator<(const Path& oth) const;
   Path operator+(const Path& oth) const;
+  Path operator/(const Path& rhs) const;
   size_t length() const;
   bool empty() const;
 
@@ -177,10 +178,6 @@ public:
 
   //////////////////////////////////////////////
 
-  Path& operator/(const Path& rhs);
-
-  //////////////////////////////////////////////
-
   SmallNameType GetDrive() const;
   SmallNameType GetExtension() const;
   SmallNameType GetUrlBase() const;
@@ -224,6 +221,8 @@ private:
 
   //////////////////////////////////////
 };
+
+using path_ptr_t = std::shared_ptr<Path>;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace file

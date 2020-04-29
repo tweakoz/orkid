@@ -157,7 +157,7 @@ void OpenGlContextInit()
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	///////////////////////////////////////////////////////////
 	GfxEnv::setContextClass(ContextGL::GetClassStatic());
-	//const ork::FileDevContext& datactx = ork::FileEnv::UrlBaseToContext( "data" );//, DataDirContext );
+	//const ork::FileDevContext& datactx = ork::FileEnv::contextForUriProto( "data" );//, DataDirContext );
 
 	//static dispatch_once_t ginit_once;
 	//auto once_blk = ^ void (void)

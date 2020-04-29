@@ -461,7 +461,9 @@ Path Path::ToAbsoluteFolder(EPathType etype) const {
   Path rval;
 
   if (HasUrlBase()) {
-    auto path = FileEnv::GetPathFromUrlExt(GetUrlBase().c_str());
+    auto urlbase  = GetUrlBase();
+    auto basepath = ork::FileEnv::uriProtoToBase(urlbase.c_str());
+    auto path     = basepath / (*this);
     // printf( " Path::ToAbsoluteFolder urlbase<%s> pstr<%s>\n", GetUrlBase().c_str(), path.c_str() );
     size_t ilen = strlen(path.c_str());
 
@@ -469,7 +471,7 @@ Path Path::ToAbsoluteFolder(EPathType etype) const {
 
     rval.mPathString.format(b_ends_with_slash ? "%s" : "%s/", path.c_str());
   } else if (HasDrive()) {
-    rval.mPathString.format("%s", FileEnv::GetPathFromUrlExt(GetDrive().c_str()).c_str());
+    // rval.mPathString.format("%s", FileEnv::GetPathFromUrlExt(GetDrive().c_str()).c_str());
   } else if (IsAbsolute()) {
     switch (etype) {
       case EPATHTYPE_NATIVE:
@@ -507,22 +509,6 @@ Path Path::ToAbsoluteFolder(EPathType etype) const {
 
   rval.mPathString += GetFolder(etype); // GetFolder already does tonative pathsep
   switch (etype) {
-    case EPATHTYPE_DOS: {
-      size_t irl = rval.mPathString.length();
-      if (0 == irl) {
-        Path tmp;
-        tmp.mPathString.format("%s%s", GetStartupDirectory().c_str(), rval.c_str());
-        rval = tmp;
-      }
-      size_t ilen       = rval.mPathString.length();
-      const char* begin = rval.mPathString.c_str();
-      unix2dospathsep xform;
-      for (size_t i = 0; i < ilen; i++) {
-        rval.mPathString.SetChar(i, xform(begin[i]));
-      }
-      rval.ComputeMarkers('\\');
-      break;
-    }
     default: {
       rval.ComputeMarkers('/');
       break;
@@ -1230,12 +1216,13 @@ boost::filesystem::path Path::toBFS() const {
 void Path::fromBFS(const boost::filesystem::path& p) {
   Set(p.c_str());
 }
-Path& Path::operator/(const Path& rhs) {
+Path Path::operator/(const Path& rhs) const {
   auto a = this->toBFS();
   auto b = rhs.toBFS();
   auto c = a / b;
-  this->Set(c.c_str());
-  return *this;
+  Path rval;
+  rval.Set(c.c_str());
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
