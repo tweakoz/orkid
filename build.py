@@ -99,7 +99,7 @@ pyqt5 = ork.dep.require("pyqt5")
 
 ork.dep.require(["bullet","openexr","oiio","fcollada","assimp",
                  "nvtt","lua","glfw","ispctexc",
-                 "easyprof","eigen","igl"])
+                 "easyprof","eigen","embree","igl"])
 
 if ork.host.IsOsx:
    ork.dep.require(["moltenvk"])
