@@ -66,7 +66,7 @@ cmd = ["sip-install","--verbose","--tracing",
 #       "-I" + str(dep.instance("pyqt5").pysite_dir/"bindings")]
 #cmd += sip_flags.split(" ")
 #cmd += ["test.sip"]
-command.run(cmd)
+#command.run(cmd)
 
 
 #cmd = ["sip5","-c", target_dir,

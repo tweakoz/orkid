@@ -202,19 +202,19 @@ void Image::convertToRGBA(Image& imgout) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  void Image::compressDefault(CompressedImage& imgout) const{
-    #if defined(__APPLE__)
-    compressRGBA(imgout);
-    #else
-    compressBC7(imgout);
-    #endif
+void Image::compressDefault(CompressedImage& imgout) const {
+#if defined(__APPLE__)
+  compressRGBA(imgout);
+#else
+  compressBC7(imgout);
+#endif
 }
 CompressedImageMipChain Image::compressedMipChainDefault() const {
-  #if defined(__APPLE__)
+#if defined(__APPLE__)
   return compressedMipChainRGBA();
-  #else
+#else
   return compressedMipChainBC7();
-  #endif
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -242,13 +242,13 @@ void Image::compressBC7(CompressedImage& imgout) const {
   ////////////////////////////////////////
   // parallel ISPC-BC7 compressor
   ////////////////////////////////////////
-  auto opgroup = opq::createCompletionGroup(opq::concurrentQueue(),"BC7ENC");
-  auto src_base = (uint8_t*) src_as_rgba._data->data();
-  auto dst_base = (uint8_t*)imgout._data->allocateBlock(imgout._blocked_width * imgout._blocked_height);
+  auto opgroup      = opq::createCompletionGroup(opq::concurrentQueue(), "BC7ENC");
+  auto src_base     = (uint8_t*)src_as_rgba._data->data();
+  auto dst_base     = (uint8_t*)imgout._data->allocateBlock(imgout._blocked_width * imgout._blocked_height);
   size_t src_stride = _width * 4;
   size_t dst_stride = _width;
-  for( int y=0; y<_height; y+=4 ){
-    opgroup->enqueue([=](){
+  for (int y = 0; y < _height; y += 4) {
+    opgroup->enqueue([=]() {
       bc7_enc_settings settings;
       GetProfile_alpha_basic(&settings);
       rgba_surface surface;
@@ -258,8 +258,8 @@ void Image::compressBC7(CompressedImage& imgout) const {
       surface.ptr    = src_base;
       CompressBlocksBC7(&surface, dst_base, &settings);
     });
-    src_base += src_stride*4;
-    dst_base += dst_stride*4;
+    src_base += src_stride * 4;
+    dst_base += dst_stride * 4;
   }
   opgroup->join();
   ////////////////////////////////////////
@@ -317,36 +317,36 @@ void Image::compressRGBA(CompressedImage& imgout) const {
   ////////////////////////////////////////
   // parallel ISPC-RGBA compressor
   ////////////////////////////////////////
-  auto opgroup = opq::createCompletionGroup(opq::concurrentQueue(),"RGBAENC");
+  auto opgroup      = opq::createCompletionGroup(opq::concurrentQueue(), "RGBAENC");
   size_t src_stride = _width * _numcomponents;
   size_t dst_stride = _width * 4;
-  auto src_base = (uint8_t*) src_as_rgba._data->data();
-  auto dst_base = (uint8_t*)imgout._data->allocateBlock(dst_stride*_height);
-  for( int y=0; y<_height; y++ ){
-    opgroup->enqueue([=](){
-    auto src_line = src_base+y*src_stride;
-    auto dst_line = dst_base+y*dst_stride;
-      switch(_numcomponents){
+  auto src_base     = (uint8_t*)src_as_rgba._data->data();
+  auto dst_base     = (uint8_t*)imgout._data->allocateBlock(dst_stride * _height);
+  for (int y = 0; y < _height; y++) {
+    opgroup->enqueue([=]() {
+      auto src_line = src_base + y * src_stride;
+      auto dst_line = dst_base + y * dst_stride;
+      switch (_numcomponents) {
         case 3:
-          for( int x=0; x<_width; x++){
-            const uint8_t* src_pix_base = src_line+(x*3);
-            uint8_t* dst_pix_base = dst_line+(x*4);
-            dst_pix_base[0]=src_pix_base[0];
-            dst_pix_base[1]=src_pix_base[1];
-            dst_pix_base[2]=src_pix_base[2];
-            dst_pix_base[3]=0xff;
+          for (int x = 0; x < _width; x++) {
+            const uint8_t* src_pix_base = src_line + (x * 3);
+            uint8_t* dst_pix_base       = dst_line + (x * 4);
+            dst_pix_base[0]             = src_pix_base[0];
+            dst_pix_base[1]             = src_pix_base[1];
+            dst_pix_base[2]             = src_pix_base[2];
+            dst_pix_base[3]             = 0xff;
           }
           break;
         case 4:
-        for( int x=0; x<_width; x++){
-          const uint8_t* src_pix_base = src_line+(x*4);
-          uint8_t* dst_pix_base = dst_line+(x*4);
-          dst_pix_base[0]=src_pix_base[3];
-          dst_pix_base[1]=src_pix_base[2];
-          dst_pix_base[2]=src_pix_base[1];
-          dst_pix_base[3]=src_pix_base[0];
-        }
-          //memcpy(dst_line,src_line,src_stride);
+          for (int x = 0; x < _width; x++) {
+            const uint8_t* src_pix_base = src_line + (x * 4);
+            uint8_t* dst_pix_base       = dst_line + (x * 4);
+            dst_pix_base[0]             = src_pix_base[3];
+            dst_pix_base[1]             = src_pix_base[2];
+            dst_pix_base[2]             = src_pix_base[1];
+            dst_pix_base[3]             = src_pix_base[0];
+          }
+          // memcpy(dst_line,src_line,src_stride);
           break;
         default:
           OrkAssert(false);
