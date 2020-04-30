@@ -11,52 +11,31 @@
 #include <ork/lev2/gfx/meshutil/igl.h>
 #include <iostream>
 
-#include <igl/arap.h>
-#include <igl/barycenter.h>
-#include <igl/boundary_facets.h>
-#include <igl/boundary_loop.h>
-#include <igl/circulation.h>
 #include <igl/collapse_edge.h>
-#include <igl/copyleft/tetgen/tetrahedralize.h>
-#include <igl/copyleft/tetgen/cdt.h>
-#include <igl/copyleft/cgal/remesh_self_intersections.h> // GNU GPL (todo move to external executable?)
-#include <igl/cotmatrix.h>
-#include <igl/decimate.h>
 #include <igl/doublearea.h>
 #include <igl/edge_flaps.h>
-#include <igl/exterior_edges.h>
-#include <igl/flipped_triangles.h>
-#include <igl/gaussian_curvature.h>
-#include <igl/harmonic.h>
-#include <igl/invert_diag.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/is_irregular_vertex.h>
 #include <igl/is_vertex_manifold.h>
-#include <igl/lscm.h>
-#include <igl/MappingEnergyType.h>
-#include <igl/map_vertices_to_circle.h>
-#include <igl/massmatrix.h>
-#include <igl/orientable_patches.h>
 #include <igl/PI.h>
 #include <igl/per_vertex_normals.h>
 #include <igl/per_face_normals.h>
 #include <igl/per_corner_normals.h>
 #include <igl/polygon_mesh_to_triangle_mesh.h>
-#include <igl/principal_curvature.h>
-#include <igl/randperm.h>
-#include <igl/remove_unreferenced.h>
-#include <igl/scaf.h>
 #include <igl/shortest_edge_and_midpoint.h>
-#include <igl/slice.h>
-#include <igl/topological_hole_fill.h>
 #include <igl/unique_edge_map.h>
-#include <igl/unique_simplices.h>
-#include <igl/winding_number.h>
-#include <igl/copyleft/cgal/mesh_boolean.h>
-#include <igl/MeshBooleanType.h>
+#include <igl/avg_edge_length.h>
 
-#include <igl/embree/reorient_facets_raycast.h>
-#include <igl/embree/ambient_occlusion.h>
+//#include <igl/arap.h>
+//#include <igl/boundary_facets.h>
+//#include <igl/circulation.h>
+//#include <igl/decimate.h>
+//#include <igl/exterior_edges.h>
+//#include <igl/orientable_patches.h>
+//#include <igl/randperm.h>
+//#include <igl/slice.h>
+//#include <igl/copyleft/cgal/mesh_boolean.h>
+//#include <igl/MeshBooleanType.h>
 
 #include <Eigen/Core>
 
@@ -137,28 +116,6 @@ unique_edges_ptr_t IglMesh::uniqueEdges() const {
   auto rval = std::make_shared<UniqueEdges>();
   igl::unique_edge_map(_faces, rval->E, rval->uE, rval->EMAP, rval->_ue2e);
   rval->_count = rval->uE.rows();
-  return rval;
-}
-//////////////////////////////////////////////////////////////////////////////
-manifold_extraction_ptr_t IglMesh::extractManifolds() const {
-  auto ue   = uniqueEdges();
-  auto rval = std::make_shared<ManifoldExtraction>();
-  // Compute patches (F,EMAP,uE2E) --> (P)
-  rval->_numpatches = igl::extract_manifold_patches(
-      _faces, //
-      ue->EMAP,
-      ue->_ue2e,
-      rval->P);
-  // Compute cells (V,F,P,E,uE,EMAP) -> (per_patch_cells)
-  rval->_numcells = igl::copyleft::cgal::extract_cells(
-      _verts, //
-      _faces,
-      rval->P,
-      ue->E,
-      ue->uE,
-      ue->_ue2e,
-      ue->EMAP,
-      rval->per_patch_cells);
   return rval;
 }
 //////////////////////////////////////////////////////////////////////////////
@@ -462,280 +419,7 @@ Eigen::MatrixXd IglMesh::computeCornerNormals(float dihedral_angle) const {
   igl::per_corner_normals(_verts, _faces, dihedral_angle, rval);
   return rval;
 }
-iglprinciplecurvature_ptr_t IglMesh::computePrincipleCurvature() const {
-  auto rval = std::make_shared<IglPrincipleCurvature>();
-  // Alternative discrete mean curvature
-  Eigen::MatrixXd HN;
-  Eigen::SparseMatrix<double> L, M, Minv;
-  igl::cotmatrix(_verts, _faces, L);
-  igl::massmatrix(_verts, _faces, igl::MASSMATRIX_TYPE_VORONOI, M);
-  igl::invert_diag(M, Minv);
-  // Laplace-Beltrami of position
-  HN = -Minv * (L * _verts);
-  // Extract magnitude as mean curvature
-  rval->H = HN.rowwise().norm();
 
-  // Compute curvature directions via quadric fitting
-  igl::principal_curvature(_verts, _faces, rval->PD1, rval->PD2, rval->PV1, rval->PV2);
-  // mean curvature
-  rval->H = 0.5 * (rval->PV1 + rval->PV2);
-  return rval;
-}
-
-Eigen::VectorXd IglMesh::computeGaussianCurvature() const {
-  Eigen::VectorXd rval;
-  igl::gaussian_curvature(_verts, _faces, rval);
-  // Compute mass matrix
-  Eigen::SparseMatrix<double> M, Minv;
-  igl::massmatrix(_verts, _faces, igl::MASSMATRIX_TYPE_DEFAULT, M);
-  igl::invert_diag(M, Minv);
-  // Divide by area to get integral average
-  rval = (Minv * rval).eval();
-  return rval;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-Eigen::VectorXd IglMesh::ambientOcclusion(int numsamples) const {
-  Eigen::VectorXd AO;
-  Eigen::MatrixXd N;
-  igl::per_vertex_normals(_verts, _faces, N);
-  igl::embree::ambient_occlusion(_verts, _faces, _verts, N, numsamples, AO);
-  AO = 1.0 - AO.array();
-  return AO;
-}
-//////////////////////////////////////////////////////////////////////////////
-
-Eigen::MatrixXd IglMesh::parameterizeHarmonic() const {
-  Eigen::MatrixXd harmonic_uvs;
-  // Find the open boundary
-  Eigen::VectorXi bnd;
-  igl::boundary_loop(_faces, bnd);
-
-  // Map the boundary to a circle, preserving edge proportions
-  Eigen::MatrixXd bnd_uv;
-  igl::map_vertices_to_circle(_verts, bnd, bnd_uv);
-
-  // Harmonic parametrization for the internal vertices
-  igl::harmonic(_verts, _faces, bnd, bnd_uv, 1, harmonic_uvs);
-  return harmonic_uvs;
-}
-//////////////////////////////////////////////////////////////////////////////
-Eigen::MatrixXd IglMesh::parameterizeLCSM() {
-
-  Eigen::MatrixXd lcsm_uvs;
-  // Fix two points on the boundary
-  Eigen::VectorXi bnd, b(2, 1);
-  igl::boundary_loop(_faces, bnd);
-  b(0) = bnd(0);
-  b(1) = bnd(bnd.size() / 2);
-  Eigen::MatrixXd bc(2, 2);
-  bc << 0, 0, 1, 0;
-
-  // LSCM parametrization
-  igl::lscm(_verts, _faces, b, bc, lcsm_uvs);
-  return lcsm_uvs;
-}
-//////////////////////////////////////////////////////////////////////////////
-iglmesh_ptr_t IglMesh::cleaned() const {
-  auto rval = std::make_shared<IglMesh>(_verts, _faces);
-  using namespace Eigen;
-  using namespace igl;
-  using namespace igl::copyleft::tetgen;
-  using namespace igl::copyleft::cgal;
-
-  ////////////////////////////////////////////////////////////////////////
-  auto V = _verts;
-  auto F = _faces;
-  MatrixXd CV; // clean output verts
-  MatrixXi CF; // clean output faces
-  VectorXi IM;
-  MatrixXi _1;
-  VectorXi _2;
-  ////////////////////////////////////////////////////////////////////////
-  // check manifold status
-  ////////////////////////////////////////////////////////////////////////
-  // OrkAssert(isVertexManifold() and isEdgeManifold());
-  ////////////////////////////////////////////////////////////////////////
-  // remesh_self_intersections
-  ////////////////////////////////////////////////////////////////////////
-  remesh_self_intersections(V, F, {false, false, false}, CV, CF, _1, _2, IM);
-  std::for_each(CF.data(), CF.data() + CF.size(), [&IM](int& a) { a = IM(a); });
-  // validate_IM(V,CV,IM);
-  std::cout << "clean: remove_unreferenced" << std::endl;
-  {
-    MatrixXi oldCF = CF;
-    unique_simplices(oldCF, CF);
-  }
-  MatrixXd oldCV = CV;
-  MatrixXi oldCF = CF;
-  VectorXi nIM;
-  remove_unreferenced(oldCV, oldCF, CV, CF, nIM);
-  std::for_each(IM.data(), IM.data() + IM.size(), [&nIM](int& a) { a = a >= 0 ? nIM(a) : a; });
-  ////////////////////////////////////////////////////////////////////////
-  // tetrahedralize
-  ////////////////////////////////////////////////////////////////////////
-  MatrixXd TV;
-  MatrixXi TT;
-  {
-    MatrixXi _1;
-    // c  convex hull
-    // Y  no boundary steiners
-    // p  polygon input
-    // T1e-16  sometimes helps tetgen
-    // cout << "clean: tetrahedralize" << endl;
-    // writeOBJ("CVCF.obj", CV, CF);
-    CDTParam params;
-    params.flags            = "CYT1e-16";
-    params.use_bounding_box = true;
-    if (cdt(CV, CF, params, TV, TT, _1) != 0) {
-      OrkAssert(false);
-    }
-    // writeMESH("TVTT.mesh",TV,TT,MatrixXi());
-  }
-  ////////////////////////////////////////////////////////////////////////
-  {
-    MatrixXd BC;
-    barycenter(TV, TT, BC);
-    VectorXd W;
-    // cout << "clean: winding_number" << endl;
-    winding_number(V, F, BC, W);
-    W                   = W.array().abs();
-    const double thresh = 0.5;
-    const int count     = (W.array() > thresh).cast<int>().sum();
-    MatrixXi CT(count, TT.cols());
-    int c = 0;
-    for (int t = 0; t < TT.rows(); t++) {
-      if (W(t) > thresh) {
-        CT.row(c++) = TT.row(t);
-      }
-    }
-    //////
-    assert(c == count);
-    boundary_facets(CT, CF);
-    // writeMESH("CVCTCF.mesh",TV,CT,CF);
-    // cout << "clean: remove_unreferenced" << endl;
-    // Force all original vertices to be referenced
-    MatrixXi FF = F;
-    std::for_each(FF.data(), FF.data() + FF.size(), [&IM](int& a) { a = IM(a); });
-    int ncf = CF.rows();
-    MatrixXi ref(ncf + FF.rows(), 3);
-    ref << CF, FF;
-    VectorXi nIM;
-    remove_unreferenced(TV, ref, CV, CF, nIM);
-    // Only keep boundary faces
-    CF.conservativeResize(ncf, 3);
-    // cout << "clean: IM.minCoeff(): " << IM.minCoeff() << endl;
-    // reindex nIM through IM
-    std::for_each(IM.data(), IM.data() + IM.size(), [&nIM](int& a) { a = a >= 0 ? nIM(a) : a; });
-  }
-  ////////////////////////////////////////////////////////////////////////
-  // output
-  ////////////////////////////////////////////////////////////////////////
-  rval->_verts = CV;
-  rval->_faces = CF;
-  return rval;
-}
-//////////////////////////////////////////////////////////////////////////////
-iglmesh_ptr_t IglMesh::reOriented() const {
-  auto rval = std::make_shared<IglMesh>(_verts, _faces);
-  std::vector<Eigen::VectorXi> C(2);
-  std::vector<Eigen::MatrixXi> FF(2);
-  // Compute patches
-  for (int pass = 0; pass < 2; pass++) {
-    Eigen::VectorXi I;
-    igl::embree::reorient_facets_raycast(
-        rval->_verts,
-        rval->_faces, //
-        rval->_faces.rows() * 100,
-        10,
-        pass == 1,
-        false,
-        false,
-        I,
-        C[pass]);
-    // apply reorientation
-    FF[pass].conservativeResize(
-        rval->_faces.rows(), //
-        rval->_faces.cols());
-    for (int i = 0; i < I.rows(); i++) {
-      if (I(i)) {
-        FF[pass].row(i) = (rval->_faces.row(i).reverse()).eval();
-      } else {
-        FF[pass].row(i) = rval->_faces.row(i);
-      }
-    }
-  }
-  constexpr int selector = 0; // 0==patchwise, 1==facetwise
-  rval->_faces           = FF[selector];
-  return rval;
-}
-//////////////////////////////////////////////////////////////////////////////
-iglmesh_ptr_t IglMesh::parameterizedSCAF(int numiters, double scale, double bias) const {
-
-  Eigen::MatrixXd V = _verts;
-  Eigen::MatrixXi F = _faces;
-  igl::SCAFData scaf_data;
-
-  Eigen::MatrixXd bnd_uv, uv_init;
-
-  Eigen::VectorXd M;
-  igl::doublearea(V, F, M);
-  std::vector<std::vector<int>> all_bnds;
-  igl::boundary_loop(F, all_bnds);
-
-  printf("numbnds<%zu>\n", all_bnds.size());
-
-  // Heuristic primary boundary choice: longest
-  auto primary_bnd = std::max_element(
-      all_bnds.begin(), all_bnds.end(), [](const std::vector<int>& a, const std::vector<int>& b) { return a.size() < b.size(); });
-
-  OrkAssert(primary_bnd != all_bnds.end()); // see https://github.com/libigl/libigl/issues/873
-
-  Eigen::VectorXi bnd = Eigen::Map<Eigen::VectorXi>(primary_bnd->data(), primary_bnd->size());
-
-  igl::map_vertices_to_circle(V, bnd, bnd_uv);
-  bnd_uv *= sqrt(M.sum() / (2 * igl::PI));
-  if (all_bnds.size() == 1) {
-    if (bnd.rows() == V.rows()) // case: all vertex on boundary
-    {
-      uv_init.resize(V.rows(), 2);
-      for (int i = 0; i < bnd.rows(); i++)
-        uv_init.row(bnd(i)) = bnd_uv.row(i);
-    } else {
-      igl::harmonic(V, F, bnd, bnd_uv, 1, uv_init);
-      if (igl::flipped_triangles(uv_init, F).size() != 0)
-        igl::harmonic(F, bnd, bnd_uv, 1, uv_init); // fallback uniform laplacian
-    }
-  } else {
-    // if there is a hole, fill it and erase additional vertices.
-    all_bnds.erase(primary_bnd);
-    Eigen::MatrixXi F_filled;
-    igl::topological_hole_fill(F, bnd, all_bnds, F_filled);
-    igl::harmonic(F_filled, bnd, bnd_uv, 1, uv_init);
-    uv_init.conservativeResize(V.rows(), 2);
-  }
-
-  Eigen::VectorXi b;
-  Eigen::MatrixXd bc;
-  igl::scaf_precompute(V, F, uv_init, scaf_data, igl::MappingEnergyType::SYMMETRIC_DIRICHLET, b, bc, 0);
-
-  //_verts = V;
-  //_faces = F;
-
-  igl::scaf_solve(scaf_data, numiters);
-
-  auto rval                           = std::make_shared<IglMesh>(V, F);
-  double uv_scale                     = 0.2 * 0.5 * scale;
-  double uv_bias                      = 0.5 + bias;
-  Eigen::MatrixXd scaledandbiased_uvs = uv_scale * scaf_data.w_uv.topRows(V.rows());
-  size_t num_uvs                      = scaledandbiased_uvs.rows();
-  for (size_t i = 0; i < num_uvs; i++) {
-    scaledandbiased_uvs(i, 0) = scaledandbiased_uvs(i, 0) + uv_bias; // U
-    scaledandbiased_uvs(i, 1) = scaledandbiased_uvs(i, 1) + uv_bias; // V
-  }
-  rval->_uvs = scaledandbiased_uvs;
-  return rval;
-}
 //////////////////////////////////////////////////////////////////////////////
 void submesh::igl_test() {
   auto trimesh = submesh();
