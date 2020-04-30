@@ -19,10 +19,6 @@
 #include <ork/pch.h>
 #include <ork/rtti/downcast.h>
 
-#if !defined(USE_XGM_FILES)
-#include <miniork_tool/filter/gfx/collada/collada.h>
-#endif
-
 const bool kfidle_hack = false; // perhaps a bad export from maya...
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -34,25 +30,45 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(USE_XGM_FILES)
+bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
+  bool rval        = false;
+  auto ActualPath  = Filename.ToAbsolute();
+  mdl->msModelName = AddPooledString(Filename.c_str());
+  if (auto datablock = datablockFromFileAtPath(ActualPath))
+    rval = _loaderSelect(mdl, datablock);
+  return rval;
+}
 
 ////////////////////////////////////////////////////////////
 
-bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
-  Context* pTARG               = GfxEnv::GetRef().loadingContext();
-  bool rval                    = true;
-  int XGMVERSIONCODE           = 0;
-  static const int kVERSIONTAG = 0x01234567;
-  /////////////////////////////////////////////////////////////
-  AssetPath fnameext(Filename);
-  fnameext.SetExtension("xgm");
-  auto ActualPath = fnameext.ToAbsolute();
-  printf("XgmModel: %s\n", ActualPath.c_str());
+bool XgmModel::_loaderSelect(XgmModel* mdl, datablockptr_t datablock) {
+  DataBlockInputStream datablockstream(datablock);
+  Char4 check_magic(datablockstream.getItem<uint32_t>());
+  if (check_magic == Char4("chkf")) // its a chunkfile
+    return _loadXGM(mdl, datablock);
+  if (check_magic == Char4("glTF")) // its a glb (binary)
+    return _loadAssimp(mdl, datablock);
+  OrkAssert(false);
+  return false;
+}
 
+////////////////////////////////////////////////////////////
+
+bool XgmModel::_loadAssimp(XgmModel* mdl, datablockptr_t datablock) {
+  OrkAssert(false);
+  return false;
+}
+////////////////////////////////////////////////////////////
+
+bool XgmModel::_loadXGM(XgmModel* mdl, datablockptr_t datablock) {
+  constexpr int kVERSIONTAG = 0x01234567;
+  bool rval                 = false;
+  /////////////////////////////////////////////////////////////
+  Context* context = GfxEnv::GetRef().loadingContext();
   /////////////////////////////////////////////////////////////
   OrkHeapCheck();
   chunkfile::DefaultLoadAllocator allocator;
-  chunkfile::Reader chunkreader(fnameext, "xgm", allocator);
+  chunkfile::Reader chunkreader(datablock, allocator);
   OrkHeapCheck();
   /////////////////////////////////////////////////////////////
   if (chunkreader.IsOk()) {
@@ -61,7 +77,6 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
     chunkfile::InputStream* EmbTexStream    = chunkreader.GetStream("embtexmap");
 
     /////////////////////////////////////////////////////////
-    mdl->msModelName = AddPooledString(Filename.c_str());
     /////////////////////////////////////////////////////////
     mdl->mbSkinned = false;
     /////////////////////////////////////////////////////////
@@ -73,6 +88,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
     // test for version tag
     /////////////////////////////////////////////////////////
     if (inumjoints == kVERSIONTAG) {
+      int XGMVERSIONCODE = 0;
       HeaderStream->GetItem(XGMVERSIONCODE);
       HeaderStream->GetItem(inumjoints);
     }
@@ -164,7 +180,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
     ///////////////////////////////////
     chunkfile::XgmMaterialReaderContext materialread_ctx(chunkreader);
     materialread_ctx._inputStream                                      = HeaderStream;
-    materialread_ctx._varmap.makeValueForKey<Context*>("gfxtarget")    = pTARG;
+    materialread_ctx._varmap.makeValueForKey<Context*>("gfxtarget")    = context;
     materialread_ctx._varmap.makeValueForKey<embtexmap_t>("embtexmap") = embtexmap;
     ///////////////////////////////////
     for (int imat = 0; imat < inummats; imat++) {
@@ -297,7 +313,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
           int ivblen             = ivbnum * ivbsize;
 
           // printf("ReadVB NumVerts<%d> VtxSize<%d>\n", ivbnum, pvb->GetVtxSize());
-          void* poutverts = pTARG->GBI()->LockVB(*cluster->_vertexBuffer.get(), 0, ivbnum); // ivblen );
+          void* poutverts = context->GBI()->LockVB(*cluster->_vertexBuffer.get(), 0, ivbnum); // ivblen );
           {
             memcpy(poutverts, pverts, ivblen);
             cluster->_vertexBuffer->SetNumVertices(ivbnum);
@@ -313,7 +329,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
               }
             }
           }
-          pTARG->GBI()->UnLockVB(*cluster->_vertexBuffer.get());
+          context->GBI()->UnLockVB(*cluster->_vertexBuffer.get());
           // lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
           ////////////////////////////////////////////////////////////////////////
           for (int32_t ipg = 0; ipg < numprimgroups; ipg++) {
@@ -334,19 +350,19 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
 
             auto pidxbuf = new StaticIndexBuffer<U16>(newprimgroup->miNumIndices);
 
-            void* poutidx = (void*)pTARG->GBI()->LockIB(*pidxbuf);
+            void* poutidx = (void*)context->GBI()->LockIB(*pidxbuf);
             {
               // TODO: Make 16-bit indices a policy
               if (newprimgroup->miNumIndices > 0xFFFF)
                 orkerrorlog(
                     "WARNING: <%s> Wii cannot have num indices larger than 65535: MeshName=%s, MatName=%s\n",
-                    Filename.c_str(),
+                    mdl->msModelName.c_str(),
                     MeshName,
                     matname);
 
               memcpy(poutidx, pidx, newprimgroup->miNumIndices * sizeof(U16));
             }
-            pTARG->GBI()->UnLockIB(*pidxbuf);
+            context->GBI()->UnLockIB(*pidxbuf);
 
             newprimgroup->mpIndices = pidxbuf;
           }
@@ -382,6 +398,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
         }
       }
     }
+    rval = true;
   } // if( chunkreader.IsOk() )
   else {
     OrkAssert(false);
@@ -391,18 +408,6 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
   OrkHeapCheck();
   return rval;
 }
-
-#else
-XgmModel* XgmModel::Load(const std::string& Filename) {
-  if (ork::tool::CColladaModel* colladaModel = ork::tool::CColladaModel::Load(Filename)) {
-    colladaModel->mXgmModel.mpColladaModel = colladaModel;
-    colladaModel->mXgmModel.msModelName    = Filename;
-    return &colladaModel->mXgmModel;
-  }
-
-  return NULL;
-}
-#endif
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////

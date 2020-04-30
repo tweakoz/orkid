@@ -314,7 +314,7 @@ Reader::Reader(const file::Path& inpath, const char* ptype, ILoadAllocator& allo
     void* dest  = dblock->allocateBlock(length);
     inputfile.Read(dest, length);
     inputfile.Close();
-    readFromDataBlock(dblock);
+    mbOk = readFromDataBlock(dblock);
     OrkAssert(_chunkfiletype == std::string(ptype));
   }
 }
@@ -324,18 +324,18 @@ Reader::Reader(datablockptr_t datablock, ILoadAllocator& allocator)
     , mistrtablen(0)
     , mbOk(false)
     , _allocator(allocator) {
-
-  readFromDataBlock(datablock);
+  mbOk = readFromDataBlock(datablock);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Reader::readFromDataBlock(datablockptr_t datablock) {
+bool Reader::readFromDataBlock(datablockptr_t datablock) {
   DataBlockInputStream dblockstream(datablock);
 
   const Char4 good_chunk_magic("chkf");
   OrkHeapCheck();
   ///////////////////////////
   Char4 check_chunk_magic(dblockstream.getItem<uint32_t>());
-  OrkAssert(check_chunk_magic == good_chunk_magic);
+  if (check_chunk_magic != good_chunk_magic)
+    return false;
   ///////////////////////////
   mistrtablen = dblockstream.getItem<int>();
   char* pst   = new char[mistrtablen];
@@ -379,7 +379,7 @@ void Reader::readFromDataBlock(datablockptr_t datablock) {
     }
   }
   ///////////////////////////
-  mbOk = true;
+  return true;
 }
 ////////////////////////////////////////////////////////////////////////////////////
 InputStream* Reader::GetStream(const char* streamname) {

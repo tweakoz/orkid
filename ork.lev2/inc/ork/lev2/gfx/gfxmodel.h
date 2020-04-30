@@ -24,7 +24,6 @@
 #include <ork/kernel/varmap.inl>
 #include <ork/lev2/gfx/texman.h>
 
-#define USE_XGM_FILES
 #define USE_XGA_FILES
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -290,6 +289,9 @@ struct XgmModel {
   /////////////////////////////////////
 
   static bool LoadUnManaged(XgmModel* mdl, const AssetPath& fname);
+  static bool _loaderSelect(XgmModel* mdl, datablockptr_t dblock);
+  static bool _loadXGM(XgmModel* mdl, datablockptr_t dblock);
+  static bool _loadAssimp(XgmModel* mdl, datablockptr_t dblock);
 
   /////////////////////////////////////
 

@@ -142,7 +142,7 @@ struct Reader {
   Reader(datablockptr_t datablock, ILoadAllocator& allocator);
   ~Reader();
 
-  void readFromDataBlock(datablockptr_t datablock);
+  bool readFromDataBlock(datablockptr_t datablock);
 
   InputStream* GetStream(const char* streamname);
   const char* GetString(int index) const;

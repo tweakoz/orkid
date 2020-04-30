@@ -92,6 +92,9 @@ struct DataBlockInputStream {
   void advance(size_t l) {
     _cursor += l;
   }
+  void resetCursor() {
+    _cursor = 0;
+  }
   datablockptr_t _datablock;
   size_t _cursor = 0;
 };
