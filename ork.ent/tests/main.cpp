@@ -5,134 +5,58 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#if 1
+#include <ork/test/harness.h>
+#include <ork/application/application.h>
+#include <utpp/UnitTest++.h>
 #include <ork/pch.h>
 #include <ork/kernel/opq.h>
-#include <ork/application/application.h>
+#include <ork/lev2/init.h>
+#include <ork/lev2/gfx/gfxenv.h>
+#include <ork/file/file.h>
 #include <ork/object/Object.h>
 #include <ork/rtti/downcast.h>
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/init.h>
-#include <pkg/ent/entity.h>
-#include <pkg/ent/scene.h>
-#include <utpp/UnitTest++.h>
-#include <ork/file/file.h>
+#include <ork/application/application.h>
 
 using namespace ork;
-using namespace ork::ent;
-
-extern void WaitForOpqExit();
-
 namespace ork::lev2 {
 void ClassInit();
 void GfxInit(const std::string& gfxlayer);
 } // namespace ork::lev2
-
 namespace ork::ent {
 void Init();
 }
 
-class TestApplication : public ork::Application {
-  RttiDeclareConcrete(TestApplication, ork::Application);
+///////////////////////////////////////////////////////////
+
+struct TestApplication final : public Application {
+
+  lev2::stdfilesysinit_p _filesysinit;
+  TestApplication(int argc, char** argv) {
+    ApplicationStack::Push(this);
+    _filesysinit = std::make_shared<lev2::StdFileSystemInitalizer>(argc, argv);
+
+    lev2::ClassInit();
+    ent::Init();
+    rtti::Class::InitializeClasses();
+    lev2::GfxInit("");
+  }
+
+  ~TestApplication() {
+    ApplicationStack::Pop();
+  }
 };
 
-void TestApplication::Describe() {
+///////////////////////////////////////////////////////////
+
+int main(int argc, char** argv, char** envp) {
+  return test::harness(
+      argc, //
+      argv,
+      envp,
+      "ork.lev2-unittests",
+      [=](svar16_t& scoped_var) { //
+        // instantiate a TestApplication on the harness's stack
+        scoped_var.makeShared<TestApplication>(argc, argv);
+      });
 }
-
-INSTANTIATE_TRANSPARENT_RTTI(TestApplication, "TestApplication");
-
-int main(int argc, char** argv) {
-  ork::SetCurrentThreadName("main");
-
-  TestApplication the_app;
-  ApplicationStack::Push(&the_app);
-
-  static ork::lev2::StdFileSystemInitalizer filesysteminit(argc, argv);
-
-  ork::lev2::ClassInit();
-  ork::ent::Init();
-  ork::rtti::Class::InitializeClasses();
-  ork::lev2::GfxInit("");
-
-  /////////////////////////////////////////////
-  ork::Thread testthr("testthread");
-  int iret      = 0;
-  bool testdone = false;
-  testthr.start([&](anyp data) {
-    /////////////////////////////////////////////
-    // default Run All Tests
-    /////////////////////////////////////////////
-    if (argc != 2) {
-      printf("ork.core unit test : usage :\n");
-      printf("<exename> list : list test names\n");
-      printf("<exename> testname : run 1 test named\n");
-      printf("<exename> all : run all tests\n");
-    }
-    /////////////////////////////////////////////
-    // run a single test (higher signal/noise for debugging)
-    /////////////////////////////////////////////
-    else if (argc == 2) {
-      bool blist_tests     = (0 == strcmp(argv[1], "list"));
-      bool all_tests       = (0 == strcmp(argv[1], "all"));
-      const char* testname = argv[1];
-
-      if (all_tests)
-        return UnitTest::RunAllTests();
-
-      if (blist_tests) {
-        printf("//////////////////////////////////\n");
-        printf("Listing Tests\n");
-        printf("//////////////////////////////////\n");
-      }
-
-      auto test_list = UnitTest::Test::GetTestList();
-      auto ptest     = test_list.GetHead();
-      int itest      = 0;
-
-      while (ptest) {
-        auto& Details = ptest->m_details;
-
-        if (blist_tests) {
-          printf("Test<%d:%s>\n", itest, Details.testName);
-        } else if (0 == strcmp(testname, Details.testName)) {
-          printf("Running Test<%s>\n", Details.testName);
-          UnitTest::TestResults testResults;
-          ptest->Run(testResults);
-        }
-        ptest = ptest->next;
-        itest++;
-      }
-    }
-    printf("//////////////////////////////////\n");
-    printf("Tests finished!\n");
-    printf("//////////////////////////////////\n");
-    testdone = true;
-    return 0;
-  });
-  /////////////////////////////////////////////
-  ork::Thread updthr("updatethread");
-  bool upddone = false;
-  auto updq    = opq::updateSerialQueue();
-  auto mainq   = opq::mainSerialQueue();
-  updthr.start([&](anyp data) {
-    opq::TrackCurrent opqtest(updq);
-    while (false == testdone)
-      opq::updateSerialQueue()->Process();
-    upddone = true;
-  });
-  /////////////////////////////////////////////
-  while (false == testdone) {
-    opq::TrackCurrent opqtest(mainq);
-    mainq->Process();
-  }
-  /////////////////////////////////////////////
-
-  mainq->drain();
-  updq->drain();
-
-  ApplicationStack::Pop();
-
-  return iret;
-}
-#endif

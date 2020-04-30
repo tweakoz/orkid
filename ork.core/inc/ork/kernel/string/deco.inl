@@ -37,6 +37,9 @@ inline std::string decorate(fvec3 color, std::string inp) {
   int b = int(color.z * 255.0);
   return asciic_rgb256(r, g, b) + inp + asciic_reset();
 }
+inline std::string decorate(int r, int g, int b, std::string inp) {
+  return asciic_rgb256(r, g, b) + inp + asciic_reset();
+}
 
 inline std::string format(int r, int g, int b, const char* formatstring, ...) {
   std::string rval;

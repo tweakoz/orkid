@@ -10,4 +10,6 @@ struct StdFileSystemInitalizer {
   ~StdFileSystemInitalizer();
 };
 
+using stdfilesysinit_p = std::shared_ptr<StdFileSystemInitalizer>;
+
 } // namespace ork::lev2
