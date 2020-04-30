@@ -383,7 +383,9 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
       }
     }
   } // if( chunkreader.IsOk() )
-
+  else {
+    OrkAssert(false);
+  }
   // rval->mSkeleton.dump();
   // mdl->dump();
   OrkHeapCheck();

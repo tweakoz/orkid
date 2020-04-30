@@ -193,10 +193,6 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
   auto base_dir  = file::Path::orkroot_dir();
   auto lev2_base = base_dir / "ork.data" / "platform_lev2";
   auto srcd_base = base_dir / "ork.data";
-  OldSchool::SetGlobalPathVariable("data://", base_dir);
-  OldSchool::SetGlobalPathVariable("lev2://", lev2_base);
-  OldSchool::SetGlobalPathVariable("miniorkdata://", srcd_base);
-  OldSchool::SetGlobalPathVariable("srcdata://", srcd_base);
 
   //////////////////////////////////////////
   // Register urlbases
@@ -206,6 +202,7 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
   auto SrcPlatformLevel2FileContext   = FileEnv::createContextForUriBase("src://", srcd_base);
   auto LocPlatformMorkDataFileContext = FileEnv::createContextForUriBase("miniorkdata://", srcd_base);
   auto DataDirContext                 = FileEnv::createContextForUriBase("data://", data_dir);
+  auto SrcDataDirContext              = FileEnv::createContextForUriBase("srcdata://", srcd_base);
 }
 StdFileSystemInitalizer::~StdFileSystemInitalizer() {
 }

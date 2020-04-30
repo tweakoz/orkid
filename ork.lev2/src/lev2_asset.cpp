@@ -46,18 +46,31 @@ public:
   XgmModelLoader()
       : FileAssetLoader(XgmModelAsset::GetClassStatic()) {
     AddLocation("data://", ".xgm");
+    AddLocation("srcdata://", ".obj");
+    AddLocation("srcdata://", ".dae");
     AddLocation("srcdata://", ".gltf");
     AddLocation("srcdata://", ".glb");
   }
 
   bool LoadFileAsset(asset::Asset* pAsset, ConstString filename) {
+    AssetPath assetpath(filename);
+    auto absolutepath     = assetpath.ToAbsolute();
     XgmModelAsset* pmodel = rtti::safe_downcast<XgmModelAsset*>(pAsset);
-
-    bool bOK = XgmModel::LoadUnManaged(pmodel->GetModel(), filename.c_str());
-    asset::AssetManager<lev2::TextureAsset>::AutoLoad();
-    OrkAssert(bOK);
-
-    return true;
+    printf("LoadModelAsset<%s>\n", absolutepath.c_str());
+    bool OK = false;
+    if (absolutepath.GetExtension() == "xgm") {
+      OK = XgmModel::LoadUnManaged(pmodel->GetModel(), filename.c_str());
+      asset::AssetManager<lev2::TextureAsset>::AutoLoad();
+    } else if (
+        absolutepath.GetExtension() == "dae" or //
+        absolutepath.GetExtension() == "obj" or //
+        absolutepath.GetExtension() == "glb" or //
+        absolutepath.GetExtension() == "gltf") {
+      // route to caching assimp->xgm processor
+      OrkAssert(OK);
+    }
+    OrkAssert(OK);
+    return OK;
   }
 
   void DestroyAsset(asset::Asset* pAsset) {
