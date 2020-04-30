@@ -51,7 +51,6 @@ class VrApp(object):
       self.modelinsts += [modelinst(model,layer)]
     ###################################
     self.camera = CameraData()
-    self.camera.perspective(0.1, 100.0, 45.0)
     self.cameralut = CameraDataLut()
     self.cameralut.addCamera("spawncam",self.camera)
   ################################################
