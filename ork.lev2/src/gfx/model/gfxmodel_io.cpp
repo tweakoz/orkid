@@ -415,6 +415,17 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablockptr_t datablock) {
 
 bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
   printf("Writing Xgm<%p> to path<%s>\n", mdl, Filename.c_str());
+  auto datablock = writeXgmToDatablock(mdl);
+  if (datablock) {
+    ork::File outputfile(Filename, ork::EFM_WRITE);
+    outputfile.Write(datablock->data(), datablock->length());
+    return true;
+  }
+  return false;
+}
+
+datablockptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
+  datablockptr_t out_datablock = std::make_shared<DataBlock>();
 
   lev2::ContextDummy DummyTarget;
 
@@ -431,7 +442,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
   int32_t iVERSION    = 1;
   HeaderStream->AddItem(iVERSIONTAG);
   HeaderStream->AddItem(iVERSION);
-  printf("WriteXgm<%s> VERSION<%d>\n", Filename.c_str(), iVERSION);
+  // printf("WriteXgm<%s> VERSION<%d>\n", Filename.c_str(), iVERSION);
 
   ///////////////////////////////////
   // write out joints
@@ -444,7 +455,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
   HeaderStream->AddItem(inumjoints);
 
   int32_t istring;
-  printf("WriteXgm<%s> numjoints<%d>\n", Filename.c_str(), inumjoints);
+  // printf("WriteXgm<%s> numjoints<%d>\n", Filename.c_str(), inumjoints);
 
   for (int32_t ib = 0; ib < inumjoints; ib++) {
     const PoolString& JointName = skel.GetJointName(ib);
@@ -481,7 +492,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
   HeaderStream->AddItem(inumbones);
 
-  printf("WriteXgm<%s> numbones<%d>\n", Filename.c_str(), inumbones);
+  // printf("WriteXgm<%s> numbones<%d>\n", Filename.c_str(), inumbones);
   for (int32_t ib = 0; ib < inumbones; ib++) {
     const lev2::XgmBone& Bone = skel.bone(ib);
 
@@ -497,8 +508,8 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
   int32_t inummeshes = mdl->numMeshes();
   int32_t inummats   = mdl->GetNumMaterials();
 
-  printf("WriteXgm<%s> nummeshes<%d>\n", Filename.c_str(), inummeshes);
-  printf("WriteXgm<%s> nummtls<%d>\n", Filename.c_str(), inummats);
+  // printf("WriteXgm<%s> nummeshes<%d>\n", Filename.c_str(), inummeshes);
+  // printf("WriteXgm<%s> nummtls<%d>\n", Filename.c_str(), inummats);
 
   const fvec3& bc    = mdl->boundingCenter();
   float br           = mdl->GetBoundingRadius();
@@ -565,11 +576,11 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
     const PoolString& classname = pclass->Name();
     const char* pclassname      = classname.c_str();
 
-    printf("WriteXgm<%s> material<%d> class<%s> name<%s>\n", Filename.c_str(), imat, pclassname, pmat->GetName().c_str());
+    // printf("WriteXgm<%s> material<%d> class<%s> name<%s>\n", Filename.c_str(), imat, pclassname, pmat->GetName().c_str());
     istring = chunkwriter.stringIndex(classname.c_str());
     HeaderStream->AddItem(istring);
 
-    printf("Material Name<%s> Class<%s>\n", pmat->GetName().c_str(), classname.c_str());
+    // printf("Material Name<%s> Class<%s>\n", pmat->GetName().c_str(), classname.c_str());
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     // new style material writer
@@ -603,7 +614,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
     HeaderStream->AddItem(istring);
     HeaderStream->AddItem(inumsubmeshes);
 
-    printf("WriteXgm<%s> mesh<%d:%s> numsubmeshes<%d>\n", Filename.c_str(), imesh, Mesh.meshName().c_str(), inumsubmeshes);
+    // printf("WriteXgm<%s> mesh<%d:%s> numsubmeshes<%d>\n", Filename.c_str(), imesh, Mesh.meshName().c_str(), inumsubmeshes);
     for (int32_t ics = 0; ics < inumsubmeshes; ics++) {
       const lev2::XgmSubMesh& xgm_sub_mesh = *Mesh.subMesh(ics);
       const lev2::GfxMaterial* pmat        = xgm_sub_mesh.GetMaterial();
@@ -617,7 +628,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
         auto VB      = cluster->_vertexBuffer;
 
         if (!VB)
-          return false;
+          return nullptr;
 
         if (VB->GetNumVertices() > 0) {
           inumenabledclus++;
@@ -629,7 +640,7 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
       HeaderStream->AddItem(ics);
       HeaderStream->AddItem(inumenabledclus);
 
-      printf("WriteXgm<%s>  submesh<%d> numenaclus<%d>\n", Filename.c_str(), ics, inumenabledclus);
+      // printf("WriteXgm<%s>  submesh<%d> numenaclus<%d>\n", Filename.c_str(), ics, inumenabledclus);
       ////////////////////////////////////////////////////////////
       istring = chunkwriter.stringIndex(pmat ? pmat->GetName().c_str() : "None");
       HeaderStream->AddItem(istring);
@@ -723,12 +734,8 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
       }
     }
   }
-
-  ////////////////////////////////////////////////////////////////////////////////////
-  chunkwriter.WriteToFile(Filename);
-  ////////////////////////////////////////////////////////////////////////////////////
-
-  return true;
+  chunkwriter.writeToDataBlock(out_datablock);
+  return out_datablock;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////

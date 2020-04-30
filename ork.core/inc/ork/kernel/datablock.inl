@@ -21,7 +21,6 @@ struct DataBlock {
     return _storage.size();
   }
   uint64_t hash() const;
-
   std::vector<uint8_t> _storage;
   std::string _name = "noname";
 };
