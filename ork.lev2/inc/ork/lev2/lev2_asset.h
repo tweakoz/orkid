@@ -47,22 +47,27 @@ typedef TextureAsset* textureassetptr_t; // prep for shared_ptr
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmModelAsset : public ork::asset::Asset {
+struct XgmModelAsset : public ork::asset::Asset {
   RttiDeclareConcrete(XgmModelAsset, ork::asset::Asset);
+
+public:
   static const char* GetAssetTypeNameStatic(void) {
     return "xgmodel";
   }
-  XgmModel mData;
 
-public: //
+  XgmModelAsset() {
+    _model = std::make_shared<XgmModel>();
+  }
   ~XgmModelAsset() override;
 
   XgmModel* GetModel() {
-    return &mData;
+    return _model.get();
   }
   const XgmModel* GetModel() const {
-    return &mData;
+    return _model.get();
   }
+
+  model_ptr_t _model;
 };
 
 typedef XgmModelAsset* xgmmodelassetptr_t; // prep for shared_ptr

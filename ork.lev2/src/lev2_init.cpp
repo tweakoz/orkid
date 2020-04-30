@@ -178,7 +178,7 @@ void GfxInit(const std::string& gfxlayer) {
 }
 
 StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
-  // printf("CPA\n");
+  printf("CPA\n");
   // OldSchool::SetGlobalStringVariable("temp://", CreateFormattedString("ork.data/temp/"));
 
   // printf("CPB\n");

@@ -311,9 +311,20 @@ void pyinit_gfx(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<Drawable, drawable_ptr_t>(module_lev2, "Drawable");
   /////////////////////////////////////////////////////////////////////////////////
-  // py::class_<drwev_t>(module_lev2, "DrawEvent").def_property_readonly("context", [](drwev_t& event) -> ctx_t { //
-  // return ctx_t(event->GetTarget());
-  //});
+  py::class_<XgmModel, model_ptr_t>(module_lev2, "Model") //
+      .def(py::init([](const std::string& model_path) -> model_ptr_t {
+        auto modl_asset = asset::AssetManager<XgmModelAsset>::Load(model_path.c_str());
+        return modl_asset->_model;
+      }))
+      .def(
+          "createNode",         //
+          [](model_ptr_t model, //
+             std::string named,
+             scenegraph::layer_ptr_t layer) -> scenegraph::node_ptr_t { //
+            auto drw        = std::make_shared<ModelDrawable>(nullptr);
+            drw->_modelinst = std::make_shared<XgmModelInst>(model.get());
+            return layer->createNode(named, drw);
+          });
   /////////////////////////////////////////////////////////////////////////////////
   auto camdattype = //
       py::class_<CameraData, cameradata_ptr_t>(module_lev2, "CameraData")
