@@ -14,9 +14,10 @@ class modelinst(object):
     super().__init__()
     self.model = model
     self.sgnode = model.createNode("node1",layer)
-    self.pos = vec3(random.uniform(-5,5),
-                    random.uniform(-5,5),
-                    random.uniform(-2.5,-25))
+    Z = random.uniform(-2.5,-125)
+    self.pos = vec3(random.uniform(-1,1)*Z,
+                    random.uniform(-1,1)*Z,
+                    Z)
     self.rot = quat(vec3(0,1,0),0)
     incraxis = vec3(random.uniform(-1,1),
                     random.uniform(-1,1),
@@ -46,7 +47,7 @@ class VrApp(object):
     layer = self.scene.createLayer("layer1")
     model = Model("srcdata://tests/pbr1/pbr1")
     ###################################
-    for i in range(100):
+    for i in range(200):
       self.modelinsts += [modelinst(model,layer)]
     ###################################
     self.camera = CameraData()
