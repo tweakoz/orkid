@@ -1,5 +1,6 @@
 #include <QWindow>
 #include <ork/application/application.h>
+#include <ork/kernel/environment.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/timer.h>
 #include <ork/lev2/ezapp.h>
@@ -31,7 +32,8 @@ struct Instance {
   float _timeout     = 0.0f;
 };
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv, char** argp) {
+  genviron.init_from_envp(argp);
   auto qtapp              = OrkEzQtApp::create(argc, argv);
   auto qtwin              = qtapp->_mainWindow;
   auto gfxwin             = qtwin->_gfxwin;

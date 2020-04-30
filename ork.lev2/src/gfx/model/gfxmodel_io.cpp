@@ -18,6 +18,9 @@
 #include <ork/lev2/lev2_asset.h>
 #include <ork/pch.h>
 #include <ork/rtti/downcast.h>
+#include <boost/filesystem.hpp>
+
+namespace bfs = boost::filesystem;
 
 namespace ork::meshutil {
   datablockptr_t assimpToXgm(datablockptr_t inp_datablock);
@@ -42,8 +45,22 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
   bool rval        = false;
   auto ActualPath  = Filename.ToAbsolute();
   mdl->msModelName = AddPooledString(Filename.c_str());
-  if (auto datablock = datablockFromFileAtPath(ActualPath))
+  if (auto datablock = datablockFromFileAtPath(ActualPath)){
+    ///////////////////////////////////
+    // annotate the datablock with some info
+    //  that might be useful in loading the file
+    ///////////////////////////////////
+    auto actual_as_bfs = ActualPath.toBFS();
+    auto base_dir           = actual_as_bfs.parent_path();
+    OrkAssert(bfs::exists(actual_as_bfs));
+    OrkAssert(bfs::is_regular_file(actual_as_bfs));
+    OrkAssert(bfs::exists(base_dir));
+    OrkAssert(bfs::is_directory(base_dir));
+    datablock->_vars.makeValueForKey<std::string>("file-extension")=ActualPath.GetExtension().c_str();
+    datablock->_vars.makeValueForKey<bfs::path>("base-directory")=base_dir;
+    ///////////////////////////////////
     rval = _loaderSelect(mdl, datablock);
+  }
   return rval;
 }
 

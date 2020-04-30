@@ -4,7 +4,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "assimp_util.inl"
-
+namespace bfs = boost::filesystem;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
@@ -14,24 +14,27 @@ void Mesh::readFromAssimp(const file::Path& BasePath) {
 
   ork::file::Path GlbPath = BasePath;
   auto base_dir           = BasePath.toBFS().parent_path();
-  OrkAssert(boost::filesystem::exists(GlbPath.toBFS()));
-  OrkAssert(boost::filesystem::is_regular_file(GlbPath.toBFS()));
-  _varmap.makeValueForKey<boost::filesystem::path>("base_dir")=base_dir;
-  OrkAssert(boost::filesystem::exists(base_dir));
-  OrkAssert(boost::filesystem::is_directory(base_dir));
+  OrkAssert(bfs::exists(GlbPath.toBFS()));
+  OrkAssert(bfs::is_regular_file(GlbPath.toBFS()));
+  OrkAssert(bfs::exists(base_dir));
+  OrkAssert(bfs::is_directory(base_dir));
   auto dblock = datablockFromFileAtPath(GlbPath);
-  readFromAssimp(dblock);
+  dblock->_vars.makeValueForKey<std::string>("file-extension")=GlbPath.GetExtension().c_str();
+  dblock->_vars.makeValueForKey<bfs::path>("base-directory")=base_dir;
   printf("BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
+  readFromAssimp(dblock);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Mesh::readFromAssimp(datablockptr_t datablock){
-  auto& embtexmap = _varmap.makeValueForKey<lev2::embtexmap_t>("embtexmap");
+  auto& extension = datablock->_vars.typedValueForKey<std::string>("file-extension").value();
+  printf("BEGIN: importing scene from datablock length<%zu> extension<%s>\n", datablock->length(), extension.c_str() );
   auto scene = aiImportFileFromMemory((const char*)datablock->data(),
                                       datablock->length(),
                                       assimpImportFlags(),
-                                      "");
+                                      extension.c_str());
   printf("END: importing scene<%p>\n", scene);
   if (scene) {
+    auto& embtexmap = _varmap.makeValueForKey<lev2::embtexmap_t>("embtexmap");
     aiVector3D scene_min, scene_max, scene_center;
     aiMatrix4x4 identity;
     aiIdentityMatrix4(&identity);
@@ -106,7 +109,7 @@ void Mesh::readFromAssimp(datablockptr_t datablock){
         }
       } else {
         // find by path
-        auto base_dir = _varmap.typedValueForKey<boost::filesystem::path>("base_dir").value();
+        auto base_dir = datablock->_vars.typedValueForKey<bfs::path>("base-directory").value();
         printf("base_dir<%s> texname<%s>\n", base_dir.c_str(), texname.c_str());
         auto tex_path = base_dir / texname;
         auto tex_ext  = std::string(tex_path.extension().c_str());

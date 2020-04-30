@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstdint>
 #include <ork/util/crc64.h>
+#include <ork/kernel/varmap.inl>
 namespace ork {
 
 struct DataBlock {
@@ -22,6 +23,7 @@ struct DataBlock {
   }
   uint64_t hash() const;
   std::vector<uint8_t> _storage;
+  varmap::VarMap _vars;
   std::string _name = "noname";
 };
 
