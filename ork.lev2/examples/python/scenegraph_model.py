@@ -5,11 +5,35 @@
 # Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
-import math, _shaders
+import math, random
 from orkengine.core import *
 from orkengine.lev2 import *
 ################################################################################
-class PyOrkApp(object):
+class modelinst(object):
+  def __init__(self,model,layer):
+    super().__init__()
+    self.model = model
+    self.sgnode = model.createNode("node1",layer)
+    Z = random.uniform(-2.5,-125)
+    self.pos = vec3(random.uniform(-1,1)*Z,
+                    random.uniform(-1,1)*Z,
+                    Z)
+    self.rot = quat(vec3(0,1,0),0)
+    incraxis = vec3(random.uniform(-1,1),
+                    random.uniform(-1,1),
+                    random.uniform(-1,1)).normal()
+    incrmagn = random.uniform(-0.01,0.01)
+    self.rotincr = quat(incraxis,incrmagn)
+    self.scale = random.uniform(0.5,0.7)
+  def update(self,deltatime):
+    self.rot = self.rot*self.rotincr
+    self.sgnode\
+        .worldMatrix\
+        .compose( self.pos, # pos
+                  self.rot, # rot
+                  self.scale) # scale
+################################################################################
+class SceneGraphApp(object):
   ################################################
   def __init__(self):
     super().__init__()
@@ -17,39 +41,33 @@ class PyOrkApp(object):
     self.sceneparams.preset = "PBR"
     self.qtapp = OrkEzQtApp.create(self)
     self.qtapp.setRefreshPolicy(RefreshFastest, 0)
-    self.scene = scenegraph.Scene(self.sceneparams)
+    self.modelinsts=[]
   ##############################################
   def onGpuInit(self,ctx):
-    ###################################
     layer = self.scene.createLayer("layer1")
+    model = Model("data://tests/pbr1/pbr1")
+    #model = Model("data://tests/pbr_calib.gltf")
+    #model = Model("src://environ/objects/misc/headwalker.obj")
+    #model = Model("src://environ/objects/misc/ref/torus.dae")
     ###################################
-    model = Model("srcdata://tests/pbr1/pbr1")
-    self.sgnode = model.createNode("node1",layer)
+    for i in range(400):
+      self.modelinsts += [modelinst(model,layer)]
     ###################################
     self.camera = CameraData()
-    self.camera.perspective(0.1, 100.0, 45.0)
     self.cameralut = CameraDataLut()
     self.cameralut.addCamera("spawncam",self.camera)
     ###################################
-    ctx.FBI().autoclear = True
-    ctx.FBI().clearcolor = vec4(.15,.15,.2,1)
-  ################################################
-  def onUpdate(self,updinfo):
-    θ    = updinfo.absolutetime * math.pi * 2.0 * 0.1
-    ###################################
-    distance = 10.0
-    eye = vec3(math.sin(θ), 1.0, -math.cos(θ)) * distance
-    self.camera.lookAt(eye, # eye
+    self.camera.perspective(0.1, 150.0, 45.0)
+    self.camera.lookAt(vec3(0,0,5), # eye
                        vec3(0, 0, 0), # tgt
                        vec3(0, 1, 0)) # up
+  ################################################
+  def onUpdate(self,updinfo):
     ###################################
-    self.sgnode.\
-         worldMatrix.\
-         compose( vec3(0,0,0), # pos
-                  quat(), # rot
-                  math.sin(updinfo.absolutetime*2)*3) # scale
+    for minst in self.modelinsts:
+      minst.update(updinfo.deltatime)
     ###################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
-  ############################################
-app = PyOrkApp()
+################################################
+app = SceneGraphApp()
 app.qtapp.exec()

@@ -22,7 +22,6 @@
 #include <ork/kernel/datacache.h>
 
 namespace bfs = boost::filesystem;
-
 namespace ork::meshutil {
 datablockptr_t assimpToXgm(datablockptr_t inp_datablock);
 }
@@ -73,6 +72,11 @@ bool XgmModel::_loaderSelect(XgmModel* mdl, datablockptr_t datablock) {
   if (check_magic == Char4("chkf")) // its a chunkfile
     return _loadXGM(mdl, datablock);
   if (check_magic == Char4("glTF")) // its a glb (binary)
+    return _loadAssimp(mdl, datablock);
+  auto extension = datablock->_vars.typedValueForKey<std::string>("file-extension").value();
+  if (extension == "gltf" or //
+      extension == "dae" or  //
+      extension == "obj")
     return _loadAssimp(mdl, datablock);
   OrkAssert(false);
   return false;

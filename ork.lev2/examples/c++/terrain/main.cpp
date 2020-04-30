@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
 
     //////////////////////////////////////////////////////////
     _terrainData._rock1 = fvec3(1, 1, 1);
-    _terrainData._writeHmapPath("data://terrain/testhmap2_2048.png");
+    _terrainData._writeHmapPath("src://terrain/testhmap2_2048.png");
     _terrainInst               = _terrainData.createInstance();
     _terrainInst->_worldHeight = 5000.0f;
     _terrainInst->_worldSizeXZ = 8192.0f;

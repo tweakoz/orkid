@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
 
   auto terrainData    = std::make_shared<TerrainDrawableData>();
   terrainData->_rock1 = fvec3(1, 1, 1);
-  terrainData->_writeHmapPath("data://terrain/testhmap2_2048.png");
+  terrainData->_writeHmapPath("src://terrain/testhmap2_2048.png");
   auto terrainInst          = terrainData->createInstance();
   terrainInst->_worldHeight = 5000.0f;
   terrainInst->_worldSizeXZ = 8192.0f;

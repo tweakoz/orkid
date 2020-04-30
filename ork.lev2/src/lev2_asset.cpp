@@ -45,10 +45,15 @@ public:
   XgmModelLoader()
       : FileAssetLoader(XgmModelAsset::GetClassStatic()) {
     AddLocation("data://", ".xgm");
-    AddLocation("srcdata://", ".glb");
-    AddLocation("srcdata://", ".gltf");
-    AddLocation("srcdata://", ".dae");
-    AddLocation("srcdata://", ".obj");
+    AddLocation("data://", ".glb");
+    AddLocation("data://", ".gltf");
+    AddLocation("data://", ".dae");
+    AddLocation("data://", ".obj");
+    AddLocation("src://", ".xgm");
+    AddLocation("src://", ".glb");
+    AddLocation("src://", ".gltf");
+    AddLocation("src://", ".dae");
+    AddLocation("src://", ".obj");
   }
 
   bool LoadFileAsset(asset::asset_ptr_t asset, ConstString filename) override {

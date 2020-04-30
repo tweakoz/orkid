@@ -201,7 +201,7 @@ void BuiltinFrameTechniques::DoInit(Context* pTARG) {
   mFBinMaterial.SetUserFx("orkshader://solid", "distortedfeedback");
   mFBinMaterial.Init(pTARG);
 
-  mpRadialMap = ork::asset::AssetManager<ork::lev2::TextureAsset>::Load("data://effect_textures/radialgrad")->GetTexture();
+  mpRadialMap = ork::asset::AssetManager<ork::lev2::TextureAsset>::Load("src://effect_textures/radialgrad")->GetTexture();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -314,7 +314,7 @@ void BuiltinFrameEffectMaterial::PostInit(Context* pTarg, const char* FxFile, co
     hViewportDim  = pTarg->FXI()->parameter(hFX, "viewportdim");
     hEffectAmount = pTarg->FXI()->parameter(hFX, "EffectAmount");
 
-    mpNoiseMap = ork::asset::AssetManager<ork::lev2::TextureAsset>::Load("data://effect_textures/colornoise")->GetTexture();
+    mpNoiseMap = ork::asset::AssetManager<ork::lev2::TextureAsset>::Load("src://effect_textures/colornoise")->GetTexture();
   }
 }
 

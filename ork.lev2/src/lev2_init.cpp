@@ -188,11 +188,10 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
   // todo - hold somewhere not static
   static auto WorkingDirContext = std::make_shared<FileDevContext>();
 
-  auto data_dir = file::Path::orkroot_dir() / "ork.data" / "pc";
-
   auto base_dir  = file::Path::orkroot_dir();
-  auto lev2_base = base_dir / "ork.data" / "platform_lev2";
-  auto srcd_base = base_dir / "ork.data";
+  auto data_dir  = base_dir / "ork.data";
+  auto lev2_base = data_dir / "platform_lev2";
+  auto srcd_base = data_dir / "src";
 
   //////////////////////////////////////////
   // Register urlbases
@@ -202,7 +201,6 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
   auto SrcPlatformLevel2FileContext   = FileEnv::createContextForUriBase("src://", srcd_base);
   auto LocPlatformMorkDataFileContext = FileEnv::createContextForUriBase("miniorkdata://", srcd_base);
   auto DataDirContext                 = FileEnv::createContextForUriBase("data://", data_dir);
-  auto SrcDataDirContext              = FileEnv::createContextForUriBase("srcdata://", srcd_base);
 }
 StdFileSystemInitalizer::~StdFileSystemInitalizer() {
 }
