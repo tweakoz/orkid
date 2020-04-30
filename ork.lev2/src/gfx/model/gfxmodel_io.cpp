@@ -19,6 +19,10 @@
 #include <ork/pch.h>
 #include <ork/rtti/downcast.h>
 
+namespace ork::meshutil {
+  datablockptr_t assimpToXgm(datablockptr_t inp_datablock);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
@@ -58,9 +62,9 @@ bool XgmModel::_loaderSelect(XgmModel* mdl, datablockptr_t datablock) {
 
 ////////////////////////////////////////////////////////////
 
-bool XgmModel::_loadAssimp(XgmModel* mdl, datablockptr_t datablock) {
-  OrkAssert(false);
-  return false;
+bool XgmModel::_loadAssimp(XgmModel* mdl, datablockptr_t inp_datablock) {
+  auto xgm_datablock = meshutil::assimpToXgm(inp_datablock);
+  return _loadXGM(mdl,xgm_datablock);
 }
 ////////////////////////////////////////////////////////////
 

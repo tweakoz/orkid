@@ -249,6 +249,7 @@ struct Mesh {
   void ReadFromXGM(const file::Path& inpath);
   void ReadFromWavefrontObj(const file::Path& inpath);
   void readFromAssimp(const file::Path& inpath);
+  void readFromAssimp(datablockptr_t datablock);
   /////////////////////////////////////////////////////////////////////////
   AABox GetAABox() const;
   /////////////////////////////////////////////////////////////////////////

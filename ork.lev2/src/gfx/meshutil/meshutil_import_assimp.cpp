@@ -8,26 +8,28 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
-
 typedef std::set<std::string> bonemarkset_t;
-
+///////////////////////////////////////////////////////////////////////////////
 void Mesh::readFromAssimp(const file::Path& BasePath) {
 
   ork::file::Path GlbPath = BasePath;
   auto base_dir           = BasePath.toBFS().parent_path();
-
   OrkAssert(boost::filesystem::exists(GlbPath.toBFS()));
   OrkAssert(boost::filesystem::is_regular_file(GlbPath.toBFS()));
-
-  printf("base_dir<%s>\n", base_dir.c_str());
+  _varmap.makeValueForKey<boost::filesystem::path>("base_dir")=base_dir;
   OrkAssert(boost::filesystem::exists(base_dir));
   OrkAssert(boost::filesystem::is_directory(base_dir));
-
-  auto& embtexmap = _varmap.makeValueForKey<lev2::embtexmap_t>("embtexmap");
-
+  auto dblock = datablockFromFileAtPath(GlbPath);
+  readFromAssimp(dblock);
   printf("BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
-
-  auto scene = aiImportFile(GlbPath.c_str(), assimpImportFlags());
+}
+///////////////////////////////////////////////////////////////////////////////
+void Mesh::readFromAssimp(datablockptr_t datablock){
+  auto& embtexmap = _varmap.makeValueForKey<lev2::embtexmap_t>("embtexmap");
+  auto scene = aiImportFileFromMemory((const char*)datablock->data(),
+                                      datablock->length(),
+                                      assimpImportFlags(),
+                                      "");
   printf("END: importing scene<%p>\n", scene);
   if (scene) {
     aiVector3D scene_min, scene_max, scene_center;
@@ -104,6 +106,7 @@ void Mesh::readFromAssimp(const file::Path& BasePath) {
         }
       } else {
         // find by path
+        auto base_dir = _varmap.typedValueForKey<boost::filesystem::path>("base_dir").value();
         printf("base_dir<%s> texname<%s>\n", base_dir.c_str(), texname.c_str());
         auto tex_path = base_dir / texname;
         auto tex_ext  = std::string(tex_path.extension().c_str());
@@ -490,8 +493,7 @@ void Mesh::readFromAssimp(const file::Path& BasePath) {
                   if (fwtest >= 0.001f) // ensure within tolerable error limit
                   {
                     printf(
-                        "WARNING weight pruning tolerance: <%s> vertex<%d> fwtest<%f> icount<%d> prunedWeightMapSize<%zu>\n",
-                        GlbPath.c_str(),
+                        "WARNING weight pruning tolerance: vertex<%d> fwtest<%f> icount<%d> prunedWeightMapSize<%zu>\n",
                         index,
                         fwtest,
                         icount,
@@ -810,46 +812,10 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
-bool ASS_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
-  ork::tool::FilterOptMap options;
-  options.SetDefault("--dice", "false");
-  options.SetDefault("--dicedim", "128.0f");
-  options.SetDefault("--in", "yo");
-  options.SetDefault("--out", "yo");
-  options.SetOptions(toklist);
-  const std::string inf  = options.GetOption("--in")->GetValue();
-  const std::string outf = options.GetOption("--out")->GetValue();
+datablockptr_t assimpToXgm(datablockptr_t inp_datablock) {
 
-  bool bDICE = options.GetOption("--dice")->GetValue() == "true";
-  bool brval = false;
-
-  OldSchool::SetGlobalStringVariable("StripJoinPolicy", "true");
-
-  ///////////////////////////////////////////////////
-
-  ColladaExportPolicy policy;
-  policy.mDDSInputOnly          = true; // TODO
-  policy.mUnits                 = UNITS_METER;
-  policy.mSkinPolicy.mWeighting = ColladaSkinPolicy::EPOLICY_MATRIXPALETTESKIN_W4;
-  policy.miNumBonesPerCluster   = 32;
-  policy.mColladaInpName        = inf;
-  policy.mColladaOutName        = outf;
-  policy.mDicingPolicy.SetPolicy(bDICE ? ColladaDicingPolicy::ECTP_DICE : ColladaDicingPolicy::ECTP_DONT_DICE);
-  policy.mTriangulation.SetPolicy(ColladaTriangulationPolicy::ECTP_TRIANGULATE);
-
-  ////////////////////////////////////////////////////////////////
-  // PC vertex formats supported
-  policy.mAvailableVertexFormats.add(lev2::EVtxStreamFormat::V12N12T8I4W4);    // PC basic skinned
-  policy.mAvailableVertexFormats.add(lev2::EVtxStreamFormat::V12N12B12T8I4W4); // PC 1 tanspace skinned
-  policy.mAvailableVertexFormats.add(lev2::EVtxStreamFormat::V12N12B12T8C4);   // PC 1 tanspace unskinned
-  policy.mAvailableVertexFormats.add(lev2::EVtxStreamFormat::V12N12B12T16);    // PC 1 tanspace, 2UV unskinned
-  policy.mAvailableVertexFormats.add(lev2::EVtxStreamFormat::V12N12T16C4);     // PC 2UV 1 color unskinned
-  ////////////////////////////////////////////////////////////////
-
-  ToolMesh tmesh;
-  DaeReadOpts opts;
-  tmesh.readFromAssimp(inf, opts);
+  Mesh tmesh;
+  tmesh.readFromAssimp(inp_datablock);
 
   ork::lev2::XgmModel xgmmdlout;
   bool is_skinned = false;
@@ -858,11 +824,8 @@ bool ASS_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
     if (is_skinned)
       configureXgmSkeleton(tmesh, xgmmdlout);
   }
-  policy.mbisSkinned = is_skinned;
   printf("clusterizing..\n");
   clusterizeToolMeshToXgmMesh<ork::meshutil::XgmClusterizerStd>(tmesh, xgmmdlout);
-  printf("saving XGM file <%s>..\n", outf.c_str());
-  bool rv = ork::lev2::SaveXGM(outf, &xgmmdlout);
 
   auto vmin = tmesh._vertexExtents.Min();
   auto vmax = tmesh._vertexExtents.Max();
@@ -874,6 +837,6 @@ bool ASS_XGM_Filter::ConvertAsset(const tokenlist& toklist) {
   deco::printf(fvec3::Yellow(), "sklext min<%g %g %g>\n", smin.x, smin.y, smin.z);
   deco::printf(fvec3::Yellow(), "sklext max<%g %g %g>\n", smax.x, smax.y, smax.z);
 
-  return rv;
-}*/
-} // namespace ork::tool::meshutil
+  return writeXgmToDatablock(&xgmmdlout);
+}
+} // namespace ork::meshutil

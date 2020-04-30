@@ -31,7 +31,6 @@ template class ork::asset::AssetManager<ork::lev2::AudioBank>;
 ///////////////////////////////////////////////////////////////////////////////
 
 using namespace ork::asset;
-
 namespace ork::lev2 {
 
 XgmModelAsset::~XgmModelAsset() {
