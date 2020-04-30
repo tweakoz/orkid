@@ -98,7 +98,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class ScriptSystem : public ork::ent::System {
+class ScriptSystem final : public ork::ent::System {
 
 public:
   static constexpr systemkey_t SystemType = "ScriptSystem";
@@ -115,13 +115,13 @@ public:
   ScriptObject* FlyweightScriptObject(const ork::file::Path& key);
 
 private:
-  ~ScriptSystem() final;
+  ~ScriptSystem();
 
-  bool DoLink(Simulation* psi) final;
-  void DoUnLink(Simulation* psi) final;
-  void DoUpdate(Simulation* inst) final;
-  void DoStart(Simulation* psi) final;
-  void DoStop(Simulation* inst) final;
+  bool DoLink(Simulation* psi) override;
+  void DoUnLink(Simulation* psi) override;
+  void DoUpdate(Simulation* inst) override;
+  void DoStart(Simulation* psi) override;
+  void DoStop(Simulation* inst) override;
 
   anyp mLuaManager;
   std::string mScriptText;

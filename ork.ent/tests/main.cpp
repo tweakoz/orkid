@@ -54,7 +54,7 @@ int main(int argc, char** argv, char** envp) {
       argc, //
       argv,
       envp,
-      "ork.lev2-unittests",
+      "ork.ent-unittests",
       [=](svar16_t& scoped_var) { //
         // instantiate a TestApplication on the harness's stack
         scoped_var.makeShared<TestApplication>(argc, argv);

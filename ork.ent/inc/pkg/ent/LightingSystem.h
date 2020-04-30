@@ -91,7 +91,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class LightingComponentInst : public ork::ent::ComponentInst {
+class LightingComponentInst final : public ork::ent::ComponentInst {
   RttiDeclareAbstract(LightingComponentInst, ork::ent::ComponentInst);
 
 public:
@@ -102,9 +102,9 @@ public:
   }
 
 private:
-  ~LightingComponentInst() final;
-  void DoUpdate(ork::ent::Simulation* inst) final;
-  bool DoLink(ork::ent::Simulation* psi) final;
+  ~LightingComponentInst() override;
+  void DoUpdate(ork::ent::Simulation* inst) override;
+  bool DoLink(ork::ent::Simulation* psi) override;
 
   ork::lev2::Light* _light;
   const LightingComponentData& _lcdata;

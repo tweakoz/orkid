@@ -46,10 +46,11 @@ FileEnv::FileEnv()
 
 FileDev* FileEnv::GetDeviceForUrl(const file::Path& fileName) const {
   auto& env    = FileEnv::GetRef();
-  auto urlbase = env.uriProtoToBase(fileName.GetUrlBase().c_str()).c_str();
-
-  auto it = env.uriRegistry().find(urlbase);
-  if (it != env.uriRegistry().end())
+  auto urlbase = env.uriProtoToBase(fileName.GetUrlBase().c_str());
+  auto it      = env.uriRegistry().find(urlbase.c_str());
+  bool found   = (it != env.uriRegistry().end());
+  // printf("GetDeviceForUrl filename<%s> urlbase<%s> found<%d>\n", fileName.c_str(), urlbase.c_str(), int(found));
+  if (found)
     if (it->second->GetFileDevice())
       return it->second->GetFileDevice();
 
@@ -82,13 +83,10 @@ const file::Path::NameType& FileEnv::GetFilesystemBase(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const_filedevctxptr_t FileEnv::contextForUriProto(const std::string& UriProto) {
+const_filedevctxptr_t FileEnv::contextForUriProto(const std::string& uriproto) {
   static filedevctxptr_t default_ctx = std::make_shared<FileDevContext>();
-
-  std::string strip_name = ork::string::replaced(UriProto, "://", "");
-
-  auto& the_map = GetRef()._filedevcontext_map;
-  auto it       = the_map.find(strip_name);
+  auto& the_map                      = GetRef()._filedevcontext_map;
+  auto it                            = the_map.find(uriproto);
   if (it != the_map.end()) {
     return it->second;
   }
@@ -103,7 +101,7 @@ file::Path FileEnv::uriProtoToBase(const std::string& uriproto) {
   if (uriproto.npos != find_url_colon) {
     if (int(uriproto.size()) > (find_url_colon + 2)) {
       if ((uriproto[find_url_colon + 1] == '/') || (uriproto[find_url_colon + 2] == '/')) {
-        urlbase = uriproto.substr(0, find_url_colon).c_str();
+        urlbase = uriproto.substr(0, find_url_colon + 3).c_str();
       }
     }
   }
@@ -141,10 +139,17 @@ file::Path FileEnv::uriProtoToPath(const std::string& uriproto) {
 filedevctxptr_t FileEnv::createContextForUriBase(
     const std::string& uriproto, //
     const file::Path& base_location) {
+
+  /*printf(
+      "createContextForUriBase proto<%s> baseloc<%s>\n", //
+      uriproto.c_str(),
+      base_location.c_str());*/
+
   auto context = std::make_shared<FileDevContext>();
   context->setFilesystemBaseAbs(base_location);
   GetRef()._filedevcontext_map[uriproto] = context;
   context->SetPrependFilesystemBase(true);
+
   return context;
 }
 

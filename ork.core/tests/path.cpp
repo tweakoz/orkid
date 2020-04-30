@@ -8,109 +8,135 @@
 using namespace ork;
 using namespace ork::file;
 
-TEST(PathCanComposeAndDecomposeUrlPaths)
-{
-	DecomposedPath decomp;
-    Path p1("testaa://archetypes/yo.txt");
-    p1.DeCompose(decomp);
-    Path p2;
-    p2.Compose(decomp);
-    CHECK(p1==p2);
+TEST(PathCanComposeAndDecomposeUrlPaths) {
+  DecomposedPath decomp;
+  Path p1("testaa://archetypes/yo.txt");
+  p1.DeCompose(decomp);
+  Path p2;
+  p2.Compose(decomp);
+  CHECK(p1 == p2);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TEST(PathCorrectlyReturnsTheNamePartOfAPath)
-{
-    Path testPath("/hello/world/test.txt");
-    Path testPath2("/hello/world/");
-    CHECK_EQUAL("test", testPath.GetName().c_str());
-    CHECK_EQUAL("", testPath2.GetName().c_str());
+TEST(PathOperatorAssignmentEquals) {
+  Path p1("/archetypes/yo.txt");
+  Path p2 = p1;
+  CHECK(p1 == p2);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TEST(PathCorrectlyReturnsTheExtensionPartOfAPath)
-{
-	Path testPath("/hello/world/test.txt");
-	Path testPath2("/hello/world/");
-	Path testPath3("/hello/world/test");
-
-	CHECK_EQUAL("txt", testPath.GetExtension().c_str());
-	CHECK_EQUAL("", testPath2.GetExtension().c_str());
-	CHECK_EQUAL("", testPath3.GetExtension().c_str());
+TEST(PathOperatorNotEqualTo) {
+  Path p1("/archetypes/yo.aaa");
+  Path p2("/archetypes/yo.bbb");
+  CHECK(p1 != p2);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TEST(PathCanStoreQueryStrings)
-{
-    Path testPath("testaa://hello/world/test.txt?yo=dude");
-    CHECK_EQUAL( true, testPath.HasQueryString() );
-    CHECK_EQUAL( "yo=dude", testPath.GetQueryString().c_str() );
+TEST(PathOperatorEqualTo) {
+  Path p1("/archetypes/yo.aaa");
+  Path p2("/archetypes/yo.aaa");
+  CHECK(p1 == p2);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TEST(PathCanNotStoreQueryStrings)
-{
-    Path testPath("testaa://hello/world/test.txt");
-    CHECK_EQUAL( false, testPath.HasQueryString() );
-    CHECK_EQUAL( "", testPath.GetQueryString().c_str() );
+TEST(PathCopyConstruct) {
+  Path p1("/archetypes/yo.aaa");
+  Path p2(p1);
+  CHECK(p1 == p2);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TEST(PathSplit)
-{
-    Path testPath("testaa://hello/world/test.txt");
-    Path::NameType l, r;
-    testPath.Split(l,r,'.');
-    CHECK_EQUAL( l.c_str(), "testaa://hello/world/test");
-    CHECK_EQUAL( r.c_str(), "txt");
-    Path::NameType l2, r2;
-    Path p2(l);
-    p2.Split(l2,r2,'/');
-    CHECK_EQUAL( l2.c_str(), "testaa://hello/world");
-    CHECK_EQUAL( r2.c_str(), "test");
+TEST(PathCorrectlyReturnsTheNamePartOfAPath) {
+  Path testPath("/hello/world/test.txt");
+  Path testPath2("/hello/world/");
+  CHECK_EQUAL("test", testPath.GetName().c_str());
+  CHECK_EQUAL("", testPath2.GetName().c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TEST(PathJoin){
-	Path a("/what/up");
-	auto b = a/"yo";
-	printf( "b<%s>\n", b.c_str());
-	CHECK_EQUAL( b.c_str(), "/what/up/yo");
+TEST(PathCorrectlyReturnsTheExtensionPartOfAPath) {
+  Path testPath("/hello/world/test.txt");
+  Path testPath2("/hello/world/");
+  Path testPath3("/hello/world/test");
+
+  CHECK_EQUAL("txt", testPath.GetExtension().c_str());
+  CHECK_EQUAL("", testPath2.GetExtension().c_str());
+  CHECK_EQUAL("", testPath3.GetExtension().c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TEST(PathToBfs){
-	Path a("/what/up/yo");
-	auto b = a.toBFS();
-	printf( "b<%s>\n", b.c_str());
+TEST(PathCanStoreQueryStrings) {
+  Path testPath("testaa://hello/world/test.txt?yo=dude");
+  CHECK_EQUAL(true, testPath.HasQueryString());
+  CHECK_EQUAL("yo=dude", testPath.GetQueryString().c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TEST(PathFromBfs){
-	boost::filesystem::path a("/what/up/yo");
-	auto b = Path(a);
-	printf( "b<%s>\n", b.c_str());
+TEST(PathCanNotStoreQueryStrings) {
+  Path testPath("testaa://hello/world/test.txt");
+  CHECK_EQUAL(false, testPath.HasQueryString());
+  CHECK_EQUAL("", testPath.GetQueryString().c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TEST(PathExists){
-	auto a = Path::lib_dir();
-	bool exists = boost::filesystem::exists(a.toBFS());
-	printf( "a<%s> exists<%d>\n", a.c_str(), int(exists));
+TEST(PathSplit) {
+  Path testPath("testaa://hello/world/test.txt");
+  Path::NameType l, r;
+  testPath.Split(l, r, '.');
+  CHECK_EQUAL(l.c_str(), "testaa://hello/world/test");
+  CHECK_EQUAL(r.c_str(), "txt");
+  Path::NameType l2, r2;
+  Path p2(l);
+  p2.Split(l2, r2, '/');
+  CHECK_EQUAL(l2.c_str(), "testaa://hello/world");
+  CHECK_EQUAL(r2.c_str(), "test");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-//TEST(PathHostNameTest)
+TEST(PathJoin) {
+  Path a("/what/up");
+  auto b = a / "yo";
+  printf("b<%s>\n", b.c_str());
+  CHECK_EQUAL(b.c_str(), "/what/up/yo");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(PathToBfs) {
+  Path a("/what/up/yo");
+  auto b = a.toBFS();
+  printf("b<%s>\n", b.c_str());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(PathFromBfs) {
+  boost::filesystem::path a("/what/up/yo");
+  auto b = Path(a);
+  printf("b<%s>\n", b.c_str());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(PathExists) {
+  auto a      = Path::lib_dir();
+  bool exists = boost::filesystem::exists(a.toBFS());
+  printf("a<%s> exists<%d>\n", a.c_str(), int(exists));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+// TEST(PathHostNameTest)
 //{
 //    Path p1("http://localhost:5901/yo.txt");
 //    DecomposedPath decomp;

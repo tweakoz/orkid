@@ -254,7 +254,7 @@ bool FileDevStd::DoesFileExist(const file::Path& filespec) {
   file::Path abspath = pathspec.ToAbsolute();
   const char* pFn    = abspath.c_str();
 
-  // printf( "DoesFileExist<%s> url<%s> Abs<%s>\n", filespec.c_str(), url.c_str(), abspath.c_str() );
+  // printf("FileDevStd<%p> DoesFileExist<%s> url<%s> Abs<%s>\n", this, filespec.c_str(), url.c_str(), abspath.c_str());
 
   FILE* fin = fopen(abspath.c_str(), "rb");
   bool bv   = (fin == 0) ? false : true;

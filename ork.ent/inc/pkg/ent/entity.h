@@ -197,12 +197,12 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class EntData : public SceneDagObject {
+class EntData final : public SceneDagObject {
   RttiDeclareConcrete(EntData, SceneDagObject);
 
 public:
   EntData();
-  ~EntData() final;
+  ~EntData();
 
   bool PostDeserialize(reflect::IDeserializer&) final;
 

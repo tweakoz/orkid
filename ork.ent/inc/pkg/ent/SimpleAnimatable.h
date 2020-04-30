@@ -31,7 +31,7 @@ namespace ork { namespace ent {
 //   - masking and blending
 //   - looping, reversing, and variable speed playback
 //   - Animation sequence events
-class SimpleAnimatableData : public ork::ent::ComponentData {
+class SimpleAnimatableData final : public ork::ent::ComponentData {
   RttiDeclareConcrete(SimpleAnimatableData, ork::ent::ComponentData)
 
       public : typedef ork::orklut<ork::PoolString, ork::lev2::XgmAnimAsset*> AnimationMap;
@@ -68,7 +68,7 @@ class SimpleAnimatableData : public ork::ent::ComponentData {
   bool HasAnimation(ork::PoolString name) const;
 
 private:
-  ~SimpleAnimatableData() final;
+  ~SimpleAnimatableData();
   ork::ent::ComponentInst* createComponent(ork::ent::Entity* pent) const final;
 
   AnimationMap mAnimationMap;

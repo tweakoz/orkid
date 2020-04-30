@@ -12,21 +12,27 @@
 
 namespace ork::lev2 {
 
-struct PtxCompositingNode : public PostCompositingNode {
+struct PtxCompositingNode final : public PostCompositingNode {
   DeclareConcreteX(PtxCompositingNode, PostCompositingNode);
 
 public:
   PtxCompositingNode();
-  ~PtxCompositingNode() final;
+  ~PtxCompositingNode();
 
   void DoInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
-  proctex::ProcTex& getTemplate() const { return _template; }
-  int bufferDim() const { return _bufferDim; }
+  proctex::ProcTex& getTemplate() const {
+    return _template;
+  }
+  int bufferDim() const {
+    return _bufferDim;
+  }
 
   void SetTextureAccessor(ork::rtti::ICastable* const& tex);
   void GetTextureAccessor(ork::rtti::ICastable*& tex) const;
-  ork::Object* _accessTemplate() { return &_template; }
+  ork::Object* _accessTemplate() {
+    return &_template;
+  }
 
   lev2::RtBuffer* GetOutput() const final;
 

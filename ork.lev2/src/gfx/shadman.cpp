@@ -116,7 +116,12 @@ void FxShader::RegisterLoaders(const file::Path& base, const std::string& ext) {
   auto shaderpath                 = lev2ctx->getFilesystemBaseAbs() / base;
   auto shaderfilectx              = FileEnv::createContextForUriBase("orkshader://", shaderpath);
   shaderfilectx->SetFilesystemBaseEnable(true);
-  printf("FxShader::RegisterLoaders ext<%s> base<%s> shaderpath<%s>\n", ext.c_str(), base.c_str(), shaderpath.c_str());
+  printf(
+      "FxShader::RegisterLoaders ext<%s> l2<%s> base<%s> shaderpath<%s>\n", //
+      ext.c_str(),
+      lev2ctx->getFilesystemBaseAbs().c_str(),
+      base.c_str(),
+      shaderpath.c_str());
   gearlyhack = false;
 }
 

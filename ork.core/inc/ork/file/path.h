@@ -188,9 +188,7 @@ public:
 
   Path StripBasePath(const NameType& base) const;
 
-  const char* c_str() const {
-    return mPathString.c_str();
-  }
+  const char* c_str() const;
   std::string toStdString() const;
 
   boost::filesystem::path toBFS() const;
@@ -216,8 +214,8 @@ public:
 private:
   //////////////////////////////////////
 
-  NameType mPathString;
-  PathMarkers mMarkers;
+  NameType _pathstring;
+  PathMarkers _markers;
 
   //////////////////////////////////////
 };

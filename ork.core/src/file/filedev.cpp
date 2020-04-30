@@ -17,32 +17,30 @@
 #include <stdio.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace ork {
-
 ///////////////////////////////////////////////////////////////////////////////
-
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 FileDevContext::FileDevContext()
     : _absolute_basepath("")
     , mbPrependFilesystemBase(false)
     , mpFileDevice(NULL) {
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
 FileDevContext::FileDevContext(const FileDevContext& oth)
     : _absolute_basepath(oth._absolute_basepath)
     , mbPrependFilesystemBase(oth.mbPrependFilesystemBase)
     , mpFileDevice(oth.mpFileDevice)
     , mPathConverters(oth.mPathConverters) {
 }
-
-void FileDevContext::setFilesystemBaseAbs(file::Path base) {
-  auto final_path = base.IsAbsolute() //
-                        ? base
-                        : file::Path::orkroot_dir() / base;
-  _absolute_basepath = final_path;
+void FileDevContext::setFilesystemBaseAbs(const file::Path& base) {
+  _absolute_basepath = base;
+  // printf("_absolute_basepath<%s>\n", base.c_str());
+  // printf("_absolute_basepath<%s>\n", _absolute_basepath.c_str());
 }
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
 EFileErrCode FileDev::Read(File& rFile, void* pTo, size_t iSize) {
   // There should be no assert here since Reading a non-open file is an error condition.
   if (!rFile.IsOpen()) {

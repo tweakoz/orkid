@@ -32,7 +32,7 @@ public:
     return mPathConverters;
   }
 
-  void setFilesystemBaseAbs(file::Path base);
+  void setFilesystemBaseAbs(const file::Path& base);
   const file::Path& getFilesystemBaseAbs() const {
     return _absolute_basepath;
   }

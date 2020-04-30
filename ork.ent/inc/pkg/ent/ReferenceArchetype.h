@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
+#pragma once
 
 #include <ork/rtti/RTTI.h>
 
@@ -16,45 +16,50 @@
 
 namespace ork { namespace ent {
 
-class ArchetypeAsset : public asset::Asset
-{
-	RttiDeclareConcrete( ArchetypeAsset, asset::Asset );
+class ArchetypeAsset final : public asset::Asset {
+  RttiDeclareConcrete(ArchetypeAsset, asset::Asset);
+
 public:
+  ArchetypeAsset();
+  ~ArchetypeAsset();
 
-	ArchetypeAsset();
-	~ArchetypeAsset() final;
-
-	Archetype* GetArchetype() const { return mArchetype; }
-	void SetArchetype(Archetype* archetype) { mArchetype = archetype; }
+  Archetype* GetArchetype() const {
+    return mArchetype;
+  }
+  void SetArchetype(Archetype* archetype) {
+    mArchetype = archetype;
+  }
 
 protected:
-	Archetype* mArchetype;
+  Archetype* mArchetype;
 };
 
 ///////////////////////////////////////////////////////////
 
-class ReferenceArchetype : public Archetype
-{
-	RttiDeclareConcrete( ReferenceArchetype, Archetype );
+class ReferenceArchetype final : public Archetype {
+  RttiDeclareConcrete(ReferenceArchetype, Archetype);
 
 public:
+  ReferenceArchetype();
 
-	ReferenceArchetype();
-
-	ArchetypeAsset* GetAsset() const { return mArchetypeAsset; }
-	void SetAsset(ArchetypeAsset* passet) { mArchetypeAsset = passet; }
+  ArchetypeAsset* GetAsset() const {
+    return mArchetypeAsset;
+  }
+  void SetAsset(ArchetypeAsset* passet) {
+    mArchetypeAsset = passet;
+  }
 
 private:
-	void DoCompose(ork::ent::ArchComposer& composer) final;
-	void DoComposeEntity( Entity *pent ) const final ;
-	void DoLinkEntity(Simulation* inst, Entity *pent) const final;
-	void DoStartEntity(Simulation* psi, const fmtx4 &world, Entity *pent ) const final;
-	void DoStopEntity(Simulation* psi, Entity *pent) const final;
+  void DoCompose(ork::ent::ArchComposer& composer) override;
+  void DoComposeEntity(Entity* pent) const override;
+  void DoLinkEntity(Simulation* inst, Entity* pent) const override;
+  void DoStartEntity(Simulation* psi, const fmtx4& world, Entity* pent) const override;
+  void DoStopEntity(Simulation* psi, Entity* pent) const override;
 
-	void DoComposePooledEntities(Simulation *inst);
-	void DoLinkPooledEntities(Simulation *inst);
+  void DoComposePooledEntities(Simulation* inst);
+  void DoLinkPooledEntities(Simulation* inst);
 
-	ArchetypeAsset* mArchetypeAsset;
+  ArchetypeAsset* mArchetypeAsset;
 };
 
-} }
+}} // namespace ork::ent

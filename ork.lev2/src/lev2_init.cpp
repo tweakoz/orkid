@@ -206,46 +206,6 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
   auto SrcPlatformLevel2FileContext   = FileEnv::createContextForUriBase("src://", srcd_base);
   auto LocPlatformMorkDataFileContext = FileEnv::createContextForUriBase("miniorkdata://", srcd_base);
   auto DataDirContext                 = FileEnv::createContextForUriBase("data://", data_dir);
-  auto MiniorkDirContext              = FileEnv::createContextForUriBase("lev2://", lev2_base);
-
-  //////////////////////////////////////////
-  // printf("CPM\n");
-
-  for (int iarg = 1; iarg < argc; iarg++) {
-    const char* parg = argv[iarg];
-
-    if (strcmp(parg, "--datafolder") == 0) {
-      file::Path pth(argv[iarg + 1]);
-
-      file::Path dirname = pth.ToAbsolute().c_str();
-
-      FileEnvDir* TheDir = FileEnv::GetRef().OpenDir(dirname.c_str());
-
-      if (TheDir) {
-        OldSchool::SetGlobalStringVariable("data://", dirname.c_str());
-        FileEnv::GetRef().CloseDir(TheDir);
-        DataDirContext->setFilesystemBaseAbs(dirname);
-      } else {
-        OrkNonFatalAssertI(false, "specified Data Folder Does Not Exist!!\n");
-      }
-      iarg++;
-    } else if (strcmp(parg, "--lev2folder") == 0) {
-      file::Path pth(argv[iarg + 1]);
-
-      file::Path dirname = pth.ToAbsolute();
-
-      FileEnvDir* TheDir = FileEnv::GetRef().OpenDir(dirname.c_str());
-
-      if (TheDir) {
-        OldSchool::SetGlobalStringVariable("lev2://", dirname.c_str());
-        FileEnv::GetRef().CloseDir(TheDir);
-        MiniorkDirContext->setFilesystemBaseAbs(dirname);
-      } else {
-        OrkNonFatalAssertI(false, "specified MiniorkFolder Does Not Exist!!\n");
-      }
-      iarg++;
-    }
-  }
 }
 StdFileSystemInitalizer::~StdFileSystemInitalizer() {
 }
