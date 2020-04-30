@@ -87,7 +87,7 @@ void check_debug_log()
 
 void ContextGL::GLinit()
 {
-	orkprintf( "INITOPENGL\n" );
+	//orkprintf( "INITOPENGL\n" );
 
 	CGLPixelFormatAttribute attribs[] =
 	{
@@ -115,14 +115,14 @@ void ContextGL::GLinit()
 
 	CGLChoosePixelFormat (attribs, &gpixfmt, &numPixelFormats);
 
-	printf( "numPixelFormats<%d>\n", int(numPixelFormats) );
+	//printf( "numPixelFormats<%d>\n", int(numPixelFormats) );
 
 	if( gpixfmt == nullptr ) {
 		attribs[last_attribute - 2] = (CGLPixelFormatAttribute)NULL;
 		CGLChoosePixelFormat (attribs, &gpixfmt, &numPixelFormats);
 	}
 
-	printf( "gpixfmt<%p>\n", (void*) gpixfmt );
+	//printf( "gpixfmt<%p>\n", (void*) gpixfmt );
 
 	CGLError err = CGLCreateContext ( gpixfmt, NULL, & gOGLdefaultctx );
 
@@ -139,9 +139,8 @@ void ContextGL::GLinit()
 	gNSPixelFormat = [[NSOpenGLPixelFormat alloc] initWithCGLPixelFormatObj:gpixfmt];
 
 	GlOsxPlatformObject::gShareMaster = [[NSOpenGLContext alloc] initWithFormat:gNSPixelFormat shareContext:nil];
-	printf( "gShareMaster<%p>\n", (void*) gNSGLdefaultctx );
-
-	printf( "gNSPixelFormat<%p>\n", (void*) gNSPixelFormat );
+	//printf( "gShareMaster<%p>\n", (void*) gNSGLdefaultctx );
+	//printf( "gNSPixelFormat<%p>\n", (void*) gNSPixelFormat );
 }
 
 //	NSOpenGLPixelFormat* nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithCGLPixelFormatObj:gpixfmt];
@@ -218,7 +217,7 @@ void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
 	Class osxviewparentclass = class_getSuperclass(osxviewclass);
 	const char* osxviewClassName = object_getClassName(osxview);
 	const char* osxviewParentClassName = class_getName(osxviewparentclass);
-	orkprintf( "osxview<%p> class<%s> parclass<%s> is_nsopenglview<%d>\n", osxview, osxviewClassName, osxviewParentClassName, int(is_nsopenglview) );
+	//orkprintf( "osxview<%p> class<%s> parclass<%s> is_nsopenglview<%d>\n", osxview, osxviewClassName, osxviewParentClassName, int(is_nsopenglview) );
 	plato->mOsxView = osxview;
 	plato->mTarget = this;
 
@@ -233,7 +232,7 @@ void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
 	NSOpenGLPixelFormat* nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithCGLPixelFormatObj:gpixfmt];
 	plato->mNSOpenGLContext = [[NSOpenGLContext alloc] initWithFormat:nsPixelFormat shareContext:GlOsxPlatformObject::gShareMaster];
 
-	printf( "mNSOpenGLContext<%p>\n", (void*) plato->mNSOpenGLContext );
+	//printf( "mNSOpenGLContext<%p>\n", (void*) plato->mNSOpenGLContext );
 
 	if( is_nsopenglview ) // externally created NSOpenGlView
 	{
@@ -424,7 +423,7 @@ plato->mBindOp = [=](){
     if (this->mTargetDrawableSizeDirty) {
       int w = mainSurfaceWidth();
       int h = mainSurfaceHeight();
-      printf("resizing defaultRTG<%p>\n", _defaultRTG);
+      //printf("resizing defaultRTG<%p>\n", _defaultRTG);
       _defaultRTG->Resize(w, h);
       mTargetDrawableSizeDirty = false;
     }

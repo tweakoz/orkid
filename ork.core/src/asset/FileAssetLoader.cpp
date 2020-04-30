@@ -65,7 +65,7 @@ void FileAssetLoader::AddLocation(file_pathbase_t b, file_ext_t e) {
   fset.mPathBase = b;
   mLocations.push_back(fset);
 
-  if (1)
+  if (0)
     printf(
         "FileAssetLoader<%p> added set ext<%s> loc<%s> base<%s>\n",
         this,

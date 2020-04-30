@@ -74,7 +74,7 @@ void PBRMaterial::describeX(class_t* c) {
     auto texbasename = ctx._reader.GetString(istring);
     auto mtl         = new PBRMaterial;
     mtl->SetName(AddPooledString(materialname));
-    printf("materialName<%s>\n", materialname);
+    //printf("materialName<%s>\n", materialname);
     ctx._inputStream->GetItem(istring);
     auto begintextures = ctx._reader.GetString(istring);
     assert(0 == strcmp(begintextures, "begintextures"));
@@ -87,7 +87,7 @@ void PBRMaterial::describeX(class_t* c) {
       else {
         ctx._inputStream->GetItem(istring);
         auto texname = ctx._reader.GetString(istring);
-        printf("find tex channel<%s> channel<%s> .. ", token, texname);
+        //printf("find tex channel<%s> channel<%s> .. ", token, texname);
         auto itt = embtexmap.find(texname);
         assert(itt != embtexmap.end());
         auto embtex    = itt->second;
@@ -95,7 +95,7 @@ void PBRMaterial::describeX(class_t* c) {
         auto datablock = std::make_shared<DataBlock>(embtex->_srcdata, embtex->_srcdatalen);
         bool ok        = txi->LoadTexture(tex, datablock);
         assert(ok);
-        printf(" embtex<%p> datablock<%p> len<%zu>\n", embtex, datablock.get(), datablock->length());
+        //printf(" embtex<%p> datablock<%p> len<%zu>\n", embtex, datablock.get(), datablock->length());
         if (0 == strcmp(token, "colormap")) {
           mtl->_texColor = tex;
         }
@@ -189,17 +189,17 @@ void PBRMaterial::Init(Context* targ) /*final*/ {
 
   if (_texColor == nullptr) {
     _texColor = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/white")->GetTexture();
-    printf("substituted white for non-existant color texture\n");
+    //printf("substituted white for non-existant color texture\n");
     OrkAssert(_texColor != nullptr);
   }
   if (_texNormal == nullptr) {
     _texNormal = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/default_normal")->GetTexture();
-    printf("substituted blue for non-existant normal texture\n");
+    //printf("substituted blue for non-existant normal texture\n");
     OrkAssert(_texNormal != nullptr);
   }
   if (_texMtlRuf == nullptr) {
     _texMtlRuf = asset::AssetManager<lev2::TextureAsset>::Load("data://effect_textures/white")->GetTexture();
-    printf("substituted white for non-existant mtlrufao texture\n");
+    //printf("substituted white for non-existant mtlrufao texture\n");
     OrkAssert(_texMtlRuf != nullptr);
   }
 }
