@@ -19,6 +19,7 @@
 #include <ork/pch.h>
 #include <ork/rtti/downcast.h>
 #include <boost/filesystem.hpp>
+#include <ork/kernel/datacache.h>
 
 namespace bfs = boost::filesystem;
 
@@ -80,7 +81,17 @@ bool XgmModel::_loaderSelect(XgmModel* mdl, datablockptr_t datablock) {
 ////////////////////////////////////////////////////////////
 
 bool XgmModel::_loadAssimp(XgmModel* mdl, datablockptr_t inp_datablock) {
-  auto xgm_datablock = meshutil::assimpToXgm(inp_datablock);
+  boost::Crc64 basehasher;
+  basehasher.accumulateString("assimp2xgm");
+  basehasher.accumulateString("version-0");
+  inp_datablock->accumlateHash(basehasher);
+  basehasher.finish();
+  uint64_t hashkey  = basehasher.result();
+  auto xgm_datablock = DataBlockCache::findDataBlock(hashkey);
+  if( not xgm_datablock ){
+    xgm_datablock = meshutil::assimpToXgm(inp_datablock);
+    DataBlockCache::setDataBlock(hashkey, xgm_datablock);
+  }
   return _loadXGM(mdl,xgm_datablock);
 }
 ////////////////////////////////////////////////////////////

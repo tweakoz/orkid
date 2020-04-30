@@ -116,7 +116,8 @@ void FxShader::RegisterLoaders(const file::Path& base, const std::string& ext) {
   auto shaderpath                 = lev2ctx->getFilesystemBaseAbs() / base;
   auto shaderfilectx              = FileEnv::createContextForUriBase("orkshader://", shaderpath);
   shaderfilectx->SetFilesystemBaseEnable(true);
-  if(1)
+  //OrkAssert(false);
+  if(0)
   printf(
       "FxShader::RegisterLoaders ext<%s> l2<%s> base<%s> shaderpath<%s>\n", //
       ext.c_str(),

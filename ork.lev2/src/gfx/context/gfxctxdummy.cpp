@@ -82,7 +82,7 @@ ContextDummy::ContextDummy()
 
   if (true == binit) {
     binit = false;
-    FxShader::RegisterLoaders("shaders/dummy/", "fxml");
+    //FxShader::RegisterLoaders("shaders/dummy/", "fxml");
   }
 }
 

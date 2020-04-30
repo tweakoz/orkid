@@ -22,6 +22,7 @@ struct DataBlock {
     return _storage.size();
   }
   uint64_t hash() const;
+  void accumlateHash(boost::Crc64& hasher) const;
   std::vector<uint8_t> _storage;
   varmap::VarMap _vars;
   std::string _name = "noname";
@@ -72,6 +73,11 @@ inline uint64_t DataBlock::hash() const {
   hasher.accumulate(_storage.data(), _storage.size()); // data content
   hasher.finish();
   return hasher.result();
+}
+///////////////////////////////////////////////////////////////////////////////
+inline void DataBlock::accumlateHash(boost::Crc64& hasher) const {
+  hasher.accumulateString(_name);                      // identifier
+  hasher.accumulate(_storage.data(), _storage.size()); // data content
 }
 ///////////////////////////////////////////////////////////////////////////////
 
