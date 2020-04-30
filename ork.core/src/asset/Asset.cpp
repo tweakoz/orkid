@@ -48,15 +48,15 @@ PoolString Asset::GetType() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Asset::Load() const {
-  AssetSetEntry* entry = GetAssetSetEntry(this);
-
-  return entry->Load(GetClass()->GetAssetSet().GetTopLevel());
+  auto entry     = GetAssetSetEntry(this);
+  auto asset_set = GetClass()->assetSet();
+  return entry->Load(asset_set->GetTopLevel());
 }
 
 bool Asset::LoadUnManaged() const {
   AssetSetEntry* entry = GetAssetSetEntry(this);
-
-  return entry->Load(GetClass()->GetAssetSet().GetTopLevel());
+  auto asset_set       = GetClass()->assetSet();
+  return entry->Load(asset_set->GetTopLevel());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

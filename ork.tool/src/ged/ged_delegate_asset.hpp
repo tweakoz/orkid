@@ -109,21 +109,21 @@ template <typename IODriver> void GedAssetNode<IODriver>::OnCreateObject() {
           mIoDriver.SetValue(poldasset);
         }
       } else {
-        asset::Asset* passet = 0;
+        asset::asset_ptr_t asset;
         // dont worry, if pname doesnt start with "data://", DynAssetManager
         // will prepend it
-        passet = passetclass->DeclareAsset(pname.c_str());
-        if (passet) {
-          mIoDriver.SetValue(passet);
+        asset = passetclass->DeclareAsset(pname.c_str());
+        if (asset) {
+          mIoDriver.SetValue(asset.get());
         }
         lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
         {
-          if (passet) {
-            passet->Load();
+          if (asset) {
+            asset->Load();
           }
         }
         lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
-        OrkAssert(passet);
+        OrkAssert(asset);
         // mModel.SigNewObject(passet);
       }
       // SetLabel();

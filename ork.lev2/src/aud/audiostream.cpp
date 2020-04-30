@@ -16,7 +16,7 @@
 #include <ork/asset/FileAssetNamer.h>
 #include <ork/application/application.h>
 
-INSTANTIATE_TRANSPARENT_RTTI( ork::lev2::AudioStream, "lev2::audiostream" );
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::AudioStream, "lev2::audiostream");
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -24,81 +24,66 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AudioStreamLoader : public ork::asset::FileAssetLoader
-{
+class AudioStreamLoader final : public ork::asset::FileAssetLoader {
 public:
+  AudioStreamLoader();
 
-	AudioStreamLoader();
-
-	/*virtual*/ bool LoadFileAsset(asset::Asset *pAsset, ConstString filename);
-	/*virtual*/ void DestroyAsset(asset::Asset *pAsset)
-	{
-		AudioStream* pstream = rtti::autocast(pAsset);
-		AudioDevice::GetDevice()->DestroyStream( pstream );
-
-		//delete compasset->GetComponent();
-		//compasset->SetComponent(NULL);
-	}
+  bool LoadFileAsset(asset::asset_ptr_t asset, ConstString filename) override;
+  void DestroyAsset(asset::asset_ptr_t asset) override {
+    auto stream = std::dynamic_pointer_cast<AudioStream>(asset);
+    AudioDevice::GetDevice()->DestroyStream(stream.get());
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 AudioStreamLoader::AudioStreamLoader()
-	:  FileAssetLoader( AudioStream::GetClassStatic() )
-{
+    : FileAssetLoader(AudioStream::GetClassStatic()) {
 #if defined(_XBOX)
-	AddLocation("data://",".xwma");
+  AddLocation("data://", ".xwma");
 #else
-	AddLocation("data://",".wav");
+  AddLocation("data://", ".wav");
 #endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool AudioStreamLoader::LoadFileAsset(asset::Asset *pAsset, ConstString filename)
-{
-	AudioStream* pstream = rtti::autocast(pAsset);
-
-	bool bOK = AudioDevice::GetDevice()->LoadStream( pstream,filename );
-	OrkAssert( bOK );
-		
-	return true;
+bool AudioStreamLoader::LoadFileAsset(asset::asset_ptr_t asset, ConstString filename) {
+  auto stream = std::dynamic_pointer_cast<AudioStream>(asset);
+  bool bOK    = AudioDevice::GetDevice()->LoadStream(stream.get(), filename);
+  OrkAssert(bOK);
+  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AudioStream::Describe()
-{
-	auto loader = new AudioStreamLoader;
-	GetClassStatic()->AddLoader(loader);
-	GetClassStatic()->SetAssetNamer("data://audio/streams");
-	GetClassStatic()->AddTypeAlias(ork::AddPooledLiteral("lev2::audiostream"));
-
+void AudioStream::Describe() {
+  auto loader = new AudioStreamLoader;
+  GetClassStatic()->AddLoader(loader);
+  GetClassStatic()->SetAssetNamer("data://audio/streams");
+  GetClassStatic()->AddTypeAlias(ork::AddPooledLiteral("lev2::audiostream"));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool AudioDevice::LoadStream( AudioStream* pstream, ConstString filename )
-{
-	return DoLoadStream( pstream, filename );
+bool AudioDevice::LoadStream(AudioStream* pstream, ConstString filename) {
+  return DoLoadStream(pstream, filename);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-AudioStreamPlayback* AudioDevice::PlayStream( AudioStream* pstream )
-{
-	return DoPlayStream( pstream );
+AudioStreamPlayback* AudioDevice::PlayStream(AudioStream* pstream) {
+  return DoPlayStream(pstream);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AudioDevice::StopStream( AudioStreamPlayback* pb )
-{
-	return DoStopStream( pb );
+void AudioDevice::StopStream(AudioStreamPlayback* pb) {
+  return DoStopStream(pb);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-}}
+}} // namespace ork::lev2

@@ -16,7 +16,6 @@ class MutableString;
 
 namespace ork { namespace asset {
 
-class Asset;
 class AssetClass;
 
 typedef fxstring<8> file_ext_t;
@@ -35,11 +34,11 @@ struct FileAssetLoader : public AssetLoader {
   }
   bool FindAsset(const PieceString&, MutableString result, int first_extension = 0);
   bool CheckAsset(const PieceString&) override;
-  bool LoadAsset(Asset* asset) override;
+  bool LoadAsset(asset_ptr_t asset) override;
   void AddLocation(file_pathbase_t b, file_ext_t e);
 
 protected:
-  virtual bool LoadFileAsset(Asset* asset, ConstString filename) = 0;
+  virtual bool LoadFileAsset(asset_ptr_t asset, ConstString filename) = 0;
   std::set<file::Path> EnumerateExisting() override;
 
   const AssetClass* mAssetClass;

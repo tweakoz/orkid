@@ -297,14 +297,14 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
         }
         vw.UnLock(ctx);
 
-        static const char* assetname         = "lev2://textures/dfnodebg2";
-        static lev2::TextureAsset* ptexasset = asset::AssetManager<lev2::TextureAsset>::Load(assetname);
+        static const char* assetname = "lev2://textures/dfnodebg2";
+        static auto texasset         = asset::AssetManager<lev2::TextureAsset>::Load(assetname);
 
         if (1) {
           _nodematerial.bindTechnique(is_pick ? tek_vtx : tek_tex);
           _nodematerial.begin(RCFD);
           _nodematerial.bindParamMatrix(par_mvp, mGrid.GetOrthoMatrix());
-          _nodematerial.bindParamCTex(par_tex, ptexasset->GetTexture());
+          _nodematerial.bindParamCTex(par_tex, texasset->GetTexture());
           _nodematerial._rasterstate.SetBlending(lev2::EBLENDING_OFF);
           gbi->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES, 6);
           _nodematerial.end(RCFD);

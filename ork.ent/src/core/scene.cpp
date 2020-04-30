@@ -494,16 +494,16 @@ void SceneData::defaultSetup(opq::opq_ptr_t editopq) {
       ////////////////////////////////////////////
       // load model asset
       ////////////////////////////////////////////
-      lev2::XgmModelAsset* asset = nullptr;
-      opq::Op([&asset]() {
-        asset = asset::AssetManager<lev2::XgmModelAsset>::Load("data://environ/objects/misc/headwalker");
+      std::shared_ptr<lev2::XgmModelAsset> model_asset;
+      opq::Op([&model_asset]() {
+        model_asset = asset::AssetManager<lev2::XgmModelAsset>::Load("data://environ/objects/misc/headwalker");
       }).QueueSync(opq::mainSerialQueue());
       ////////////////////////////////////////////
       // perform edit
       ////////////////////////////////////////////
       arch->Compose(*composer);
       auto mcd = arch->GetTypedComponent<ModelComponentData>();
-      mcd->SetModel(asset);
+      mcd->SetModel(model_asset.get());
       ////////////////////////////////////////////
     }
     //////////////////////////////////////////

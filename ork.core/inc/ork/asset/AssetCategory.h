@@ -20,16 +20,18 @@ class AssetClass;
 
 class AssetCategory : public object::ObjectCategory {
 public:
-  using vars_t     = VarMap;
-  using vars_gen_t = std::function<const vars_t&(Object*)>;
+  using asset_ptr_t      = std::shared_ptr<Asset>;
+  using asset_constptr_t = std::shared_ptr<const Asset>;
+  using vars_t           = VarMap;
+  using vars_gen_t       = std::function<const vars_t&(Object*)>;
   static const VarMap novars();
   AssetCategory(const rtti::RTTIData& data);
 
   void AddTypeAlias(PoolString, AssetClass*);
 
-  Asset* FindAsset(PieceString type, PieceString name) const;
-  Asset* LoadUnManagedAsset(PieceString type, PieceString name) const;
-  Asset* DeclareAsset(PieceString type, PieceString name, const VarMap& vmap = novars()) const;
+  asset_ptr_t FindAsset(PieceString type, PieceString name) const;
+  asset_ptr_t LoadUnManagedAsset(PieceString type, PieceString name) const;
+  asset_ptr_t DeclareAsset(PieceString type, PieceString name, const VarMap& vmap = novars()) const;
   AssetClass* FindAssetClass(PieceString name) const;
 
 private:

@@ -115,7 +115,7 @@ void CompositingData::presetPBR() {
   auto envl_asset = asset::AssetManager<TextureAsset>::Create("data://environ/envmaps/tozenv_nebula", assetVars);
   OrkAssert(envl_asset->GetTexture() != nullptr);
   OrkAssert(envl_asset->_varmap.hasKey("postproc"));
-  r1->_writeEnvTexture(envl_asset);
+  r1->_writeEnvTexture(envl_asset.get());
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;
@@ -138,7 +138,7 @@ void CompositingData::presetPBRVR() {
   auto envl_asset = asset::AssetManager<TextureAsset>::Create("data://environ/envmaps/tozenv_nebula", assetVars);
   OrkAssert(envl_asset->GetTexture() != nullptr);
   OrkAssert(envl_asset->_varmap.hasKey("postproc"));
-  r1->_writeEnvTexture(envl_asset);
+  r1->_writeEnvTexture(envl_asset.get());
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;

@@ -1169,20 +1169,18 @@ ReferenceArchetype* SceneEditorBase::NewReferenceArchetype(const std::string& ar
   std::string str2       = CreateFormattedString("data://archetypes/%s", archassetname.c_str());
   std::string ExtRefName = CreateFormattedString("/arch/ref/%s", archassetname.c_str());
 
-  ork::Object* pobj = asset::AssetManager<ArchetypeAsset>::Create(str2.c_str());
+  auto arch_asset = asset::AssetManager<ArchetypeAsset>::Create(str2.c_str());
   asset::AssetManager<ArchetypeAsset>::AutoLoad();
 
-  ArchetypeAsset* passet = rtti::autocast(pobj);
-
-  orkprintf("asset<%p> pth<%s>\n", passet, str2.c_str());
+  orkprintf("asset<%p> pth<%s>\n", arch_asset.get(), str2.c_str());
   orkprintf("archname<%s>\n", ExtRefName.c_str());
 
-  OrkAssert(passet);
+  OrkAssert(arch_asset);
 
-  if (passet) {
+  if (arch_asset) {
     ReferenceArchetype* rarch = new ReferenceArchetype;
     rarch->SetName(ExtRefName.c_str());
-    rarch->SetAsset(passet);
+    rarch->SetAsset(arch_asset.get());
     mpScene->AutoLoadAssets();
     SlotNewObject(rarch);
   }

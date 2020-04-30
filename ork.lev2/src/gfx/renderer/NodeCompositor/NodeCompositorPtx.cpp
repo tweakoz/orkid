@@ -178,17 +178,16 @@ void PtxCompositingNode::describeX(class_t* c) {
     return rval;
   };
   nodins_loader->mCheckFn = [=](const PieceString& name) { return ork::IsSubStringPresent("nodins://", name.c_str()); };
-  nodins_loader->mLoadFn  = [=](asset::Asset* asset) {
-    auto asset_name            = asset->GetName().c_str();
-    lev2::TextureAsset* as_tex = rtti::autocast(asset);
+  nodins_loader->mLoadFn  = [=](asset::asset_ptr_t asset) {
+    auto as_tex     = std::dynamic_pointer_cast<lev2::TextureAsset>(asset);
+    auto asset_name = asset->GetName().c_str();
     ginstexset.atomicOp([&](instex_set_t& dset) {
       for (auto item : dset) {
         std::string pstr("nodins://");
         pstr += item->mDynTexPath.c_str();
-
         printf("LOADDYNPTEX pstr<%s> anam<%s>\n", pstr.c_str(), asset_name);
         if (pstr == asset_name) {
-          item->mSendTexture = rtti::autocast(asset);
+          item->mSendTexture = as_tex.get();
         }
       }
     });

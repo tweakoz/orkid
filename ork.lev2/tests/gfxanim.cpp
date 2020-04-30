@@ -52,7 +52,7 @@ TEST(gfxanim1) {
     // auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/rigtest_exp");
     auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/hfs_rigtest_mesh");
     // auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/char_mesh");
-    printf("modl_asset<%p>\n", modl_asset);
+    printf("modl_asset<%p>\n", modl_asset.get());
     CHECK(modl_asset != nullptr);
 
     auto model = modl_asset->GetModel();

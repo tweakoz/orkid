@@ -781,7 +781,7 @@ void ShaderQuad::compute(ProcTex& ptex) {
   // printf( "RENDERING ShaderQuad<%p>\n", this );
 
   if (nullptr == mShader) {
-    mShader = new lev2::GfxMaterial3DSolid(pTARG, mShaderPath.c_str(), "shaderquad", true, true);
+    mShader = new lev2::GfxMaterial3DSolid(pTARG, mShaderPath.c_str(), "shaderquad", true);
     printf("ShaderQuad<%p> loading shader<%s>\n", this, mShaderPath.c_str());
   }
 
@@ -1146,7 +1146,8 @@ void Gradient::compute(ProcTex& ptex) {
       mPTX.GetTarget()->PushModColor(fvec3::White());
       mPTX.GetTarget()->PushMaterial(mMtl);
       mPTX.GetTarget()->MTXI()->PushPMatrix(mtxortho);
-      mPTX.GetTarget()->GBI()->DrawPrimitive(mVertexBuffer, ork::lev2::EPrimitiveType::TRIANGLES, 0, mVertexBuffer.GetNumVertices());
+      mPTX.GetTarget()->GBI()->DrawPrimitive(
+          mVertexBuffer, ork::lev2::EPrimitiveType::TRIANGLES, 0, mVertexBuffer.GetNumVertices());
       mPTX.GetTarget()->MTXI()->PopPMatrix();
       mPTX.GetTarget()->PopMaterial();
       mPTX.GetTarget()->PopModColor();

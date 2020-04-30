@@ -209,7 +209,7 @@ bool FileAssetLoader::CheckAsset(const PieceString& name) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FileAssetLoader::LoadAsset(Asset* asset) {
+bool FileAssetLoader::LoadAsset(asset_ptr_t asset) {
   float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
   ArrayString<256> asset_name;
 

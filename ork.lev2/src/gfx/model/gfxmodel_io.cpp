@@ -24,7 +24,7 @@
 namespace bfs = boost::filesystem;
 
 namespace ork::meshutil {
-  datablockptr_t assimpToXgm(datablockptr_t inp_datablock);
+datablockptr_t assimpToXgm(datablockptr_t inp_datablock);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -46,19 +46,19 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
   bool rval        = false;
   auto ActualPath  = Filename.ToAbsolute();
   mdl->msModelName = AddPooledString(Filename.c_str());
-  if (auto datablock = datablockFromFileAtPath(ActualPath)){
+  if (auto datablock = datablockFromFileAtPath(ActualPath)) {
     ///////////////////////////////////
     // annotate the datablock with some info
     //  that might be useful in loading the file
     ///////////////////////////////////
     auto actual_as_bfs = ActualPath.toBFS();
-    auto base_dir           = actual_as_bfs.parent_path();
+    auto base_dir      = actual_as_bfs.parent_path();
     OrkAssert(bfs::exists(actual_as_bfs));
     OrkAssert(bfs::is_regular_file(actual_as_bfs));
     OrkAssert(bfs::exists(base_dir));
     OrkAssert(bfs::is_directory(base_dir));
-    datablock->_vars.makeValueForKey<std::string>("file-extension")=ActualPath.GetExtension().c_str();
-    datablock->_vars.makeValueForKey<bfs::path>("base-directory")=base_dir;
+    datablock->_vars.makeValueForKey<std::string>("file-extension") = ActualPath.GetExtension().c_str();
+    datablock->_vars.makeValueForKey<bfs::path>("base-directory")   = base_dir;
     ///////////////////////////////////
     rval = _loaderSelect(mdl, datablock);
   }
@@ -86,13 +86,13 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablockptr_t inp_datablock) {
   basehasher.accumulateString("version-0");
   inp_datablock->accumlateHash(basehasher);
   basehasher.finish();
-  uint64_t hashkey  = basehasher.result();
+  uint64_t hashkey   = basehasher.result();
   auto xgm_datablock = DataBlockCache::findDataBlock(hashkey);
-  if( not xgm_datablock ){
+  if (not xgm_datablock) {
     xgm_datablock = meshutil::assimpToXgm(inp_datablock);
     DataBlockCache::setDataBlock(hashkey, xgm_datablock);
   }
-  return _loadXGM(mdl,xgm_datablock);
+  return _loadXGM(mdl, xgm_datablock);
 }
 ////////////////////////////////////////////////////////////
 
@@ -297,8 +297,8 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablockptr_t datablock) {
         //////////////////////////////
         else if (submesh->mLightMapPath.length()) {
           if (FileEnv::DoesFileExist(submesh->mLightMapPath)) {
-            ork::lev2::TextureAsset* plmtexa = asset::AssetManager<TextureAsset>::Create(submesh->mLightMapPath.c_str());
-            submesh->mLightMap               = (plmtexa == 0) ? 0 : plmtexa->GetTexture();
+            auto texasset      = asset::AssetManager<TextureAsset>::Create(submesh->mLightMapPath.c_str());
+            submesh->mLightMap = (texasset == 0) ? 0 : texasset->GetTexture();
           }
         }
         //////////////////////////////

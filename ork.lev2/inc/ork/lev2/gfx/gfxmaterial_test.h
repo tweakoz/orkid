@@ -20,11 +20,10 @@ public:
   static void ClassInit();
   GfxMaterial3DSolid(Context* pTARG = 0);
   GfxMaterial3DSolid(
-      Context* pTARG,
+      Context* pTARG, //
       const char* puserfx,
       const char* pusertek,
-      bool allowcompilefailure = false,
-      bool unmanaged           = false);
+      bool allowcompilefailure = false);
   ~GfxMaterial3DSolid(){};
 
   void SetVolumeTexture(Texture* ptex) {

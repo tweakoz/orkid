@@ -392,9 +392,9 @@ void ProcTexOutputDynTex::Describe() {
     return rval;
   };
   ptex_loader->mCheckFn = [=](const PieceString& name) { return ork::IsSubStringPresent("ptex://", name.c_str()); };
-  ptex_loader->mLoadFn  = [=](asset::Asset* asset) {
-    auto asset_name            = asset->GetName().c_str();
-    lev2::TextureAsset* as_tex = rtti::autocast(asset);
+  ptex_loader->mLoadFn  = [=](asset::asset_ptr_t asset) {
+    auto asset_name = asset->GetName().c_str();
+    auto as_tex     = std::dynamic_pointer_cast<lev2::TextureAsset>(asset);
     gdyntexset.atomicOp([&](dyntex_set_t& dset) {
       for (auto item : dset) {
         std::string pstr("ptex://");
@@ -402,7 +402,7 @@ void ProcTexOutputDynTex::Describe() {
 
         printf("LOADDYNPTEX pstr<%s> anam<%s>\n", pstr.c_str(), asset_name);
         if (pstr == asset_name) {
-          item->mAsset = rtti::autocast(asset);
+          item->mAsset = as_tex.get();
         }
       }
     });

@@ -314,6 +314,9 @@ struct XgmModel {
   varmap::VarMap _varmap;
 };
 
+using model_ptr_t = std::shared_ptr<XgmModel>;
+using model_constptr_t = std::shared_ptr<const XgmModel>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct XgmModelInst {

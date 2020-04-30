@@ -3,9 +3,7 @@
 // Copyright 1996-2020, Michael T. Mayers
 ///////////////////////////////////////////////////////////////////////////////
 #pragma once
-#if !defined(WII)
-//#define ORKCONFIG_ASSET_UNLOAD
-#endif
+
 #include <ork/asset/AssetClass.h>
 #include <ork/object/Object.h>
 #include <ork/kernel/varmap.inl>
@@ -15,9 +13,8 @@
 
 namespace ork { namespace asset {
 
-class Asset : public Object
-{
-    RttiDeclareAbstractWithCategory( Asset, Object, AssetClass );
+class Asset : public Object {
+  RttiDeclareAbstractWithCategory(Asset, Object, AssetClass);
 
 public:
   Asset();
@@ -32,4 +29,7 @@ public:
   PoolString mName;
 };
 
-} }
+using asset_ptr_t      = std::shared_ptr<Asset>;
+using asset_constptr_t = std::shared_ptr<const Asset>;
+
+}} // namespace ork::asset

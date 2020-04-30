@@ -10,37 +10,35 @@
 
 namespace ork { namespace asset {
 
-//class Asset;
 class AssetClass;
 class AssetEntry;
 class AssetLoader;
 class AssetSetLevel;
 class AssetSetEntry;
 
-class AssetSet
-{
+class AssetSet {
 public:
-	static void Describe();
+  static void Describe();
 
-	AssetSet();
+  AssetSet();
 
-	void Register(PoolString name, Asset *asset = NULL, AssetLoader *loader = NULL);
-	Asset *FindAsset(PoolString name);
-	AssetSetEntry *FindAssetEntry(PoolString name);
-	AssetLoader *FindLoader(PoolString name);
+  void Register(PoolString name, asset_ptr_t asset, AssetLoader* loader = NULL);
+  asset_ptr_t FindAsset(PoolString name);
+  AssetSetEntry* FindAssetEntry(PoolString name);
+  AssetLoader* FindLoader(PoolString name);
 
-	bool Load(int depth = -1);
+  bool Load(int depth = -1);
 #if defined(ORKCONFIG_ASSET_UNLOAD)
-	bool UnLoad(int depth = -1);
+  bool UnLoad(int depth = -1);
 #endif
 
-	AssetSetLevel *GetTopLevel() const;
+  AssetSetLevel* GetTopLevel() const;
 
-	void PushLevel(AssetClass *);
-	void PopLevel();
+  void PushLevel(AssetClass*);
+  void PopLevel();
 
 private:
-	AssetSetLevel *mTopLevel;
+  AssetSetLevel* mTopLevel;
 };
 
-} }
+}} // namespace ork::asset

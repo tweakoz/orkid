@@ -19,7 +19,11 @@
 namespace ork { namespace asset {
 ///////////////////////////////////////////////////////////////////////////////
 
-DynamicAssetLoader::DynamicAssetLoader() : mCheckFn(nullptr), mLoadFn(nullptr), mEnumFn(nullptr) {}
+DynamicAssetLoader::DynamicAssetLoader()
+    : mCheckFn(nullptr)
+    , mLoadFn(nullptr)
+    , mEnumFn(nullptr) {
+}
 
 std::set<file::Path> DynamicAssetLoader::EnumerateExisting() {
   std::set<file::Path> rval;
@@ -54,13 +58,18 @@ result, int first_extension)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool DynamicAssetLoader::CheckAsset(const PieceString& name) { return (mCheckFn != nullptr) ? mCheckFn(name) : false; }
+bool DynamicAssetLoader::CheckAsset(const PieceString& name) {
+  return (mCheckFn != nullptr) ? mCheckFn(name) : false;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool DynamicAssetLoader::LoadAsset(Asset* asset) { return (mLoadFn != nullptr) ? mLoadFn(asset) : false; }
+bool DynamicAssetLoader::LoadAsset(asset_ptr_t asset) {
+  return (mLoadFn != nullptr) ? mLoadFn(asset) : false;
+}
 
-void DynamicAssetLoader::DestroyAsset(Asset* asset) {}
+void DynamicAssetLoader::DestroyAsset(asset_ptr_t asset) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::asset

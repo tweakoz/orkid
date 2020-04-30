@@ -26,7 +26,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::asset::AssetClass, "AssetClass")
 namespace ork { namespace asset {
 ///////////////////////////////////////////////////////////////////////////////
 
-const VarMap AssetClass::novars(){
+const VarMap AssetClass::novars() {
   return VarMap();
 }
 
@@ -38,6 +38,7 @@ void AssetClass::Describe() {
 AssetClass::AssetClass(const rtti::RTTIData& data)
     : object::ObjectClass(data)
     , mAssetNamer(NULL) {
+  _assetset = std::make_shared<AssetSet>();
 }
 
 std::set<file::Path> AssetClass::EnumerateExisting() const {
@@ -89,18 +90,19 @@ AssetLoader* AssetClass::FindLoader(PieceString name) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Asset* AssetClass::CreateUnmanagedAsset(PieceString name, const VarMap& vmap) {
+AssetClass::asset_ptr_t AssetClass::CreateUnmanagedAsset(PieceString name, const VarMap& vmap) {
   Renamer fix_name(GetAssetNamer(), name);
 
-  Asset* asset = NULL;
+  AssetClass::asset_ptr_t asset;
 
   if (false == Class::HasFactory()) {
-    VirtualAsset* vasset = new VirtualAsset();
+    auto vasset = std::make_shared<VirtualAsset>();
     vasset->SetType(Name());
 
     asset = vasset;
   } else {
-    asset = rtti::safe_downcast<Asset*>(CreateObject());
+    auto raw_asset_ptr = (Asset*)CreateObject();
+    asset              = AssetClass::asset_ptr_t(raw_asset_ptr);
   }
 
   asset->SetName(ork::AddPooledString(name));
@@ -111,43 +113,43 @@ Asset* AssetClass::CreateUnmanagedAsset(PieceString name, const VarMap& vmap) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Asset* AssetClass::FindAsset(PieceString name, const VarMap& vmap) {
+AssetClass::asset_ptr_t AssetClass::FindAsset(PieceString name, const VarMap& vmap) {
   Renamer fix_name(GetAssetNamer(), name);
 
   PoolString name_string = FindPooledString(name);
 
-  return mAssetSet.FindAsset(name_string);
+  return _assetset->FindAsset(name_string);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Asset* AssetClass::DeclareAsset(PieceString name, const VarMap& vmap) {
+AssetClass::asset_ptr_t AssetClass::DeclareAsset(PieceString name, const VarMap& vmap) {
   // Editor support that allows nulling out a previously set asset name.
   if (name.empty()) {
     return nullptr;
   }
 
-  if (Asset* asset = FindAsset(name, vmap)) {
-    mAssetSet.Register(asset->GetName());
+  if (auto asset = FindAsset(name, vmap)) {
+    _assetset->Register(asset->GetName(), asset);
     return asset;
   }
 
-  Asset* new_asset = CreateUnmanagedAsset(name, vmap);
-  auto loader      = FindLoader(name);
-  mAssetSet.Register(new_asset->GetName(), new_asset, loader);
+  auto new_asset = CreateUnmanagedAsset(name, vmap);
+  auto loader    = FindLoader(name);
+  _assetset->Register(new_asset->GetName(), new_asset, loader);
 
   return new_asset;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Asset* AssetClass::LoadUnManagedAsset(PieceString name, const VarMap& vmap) {
+AssetClass::asset_ptr_t AssetClass::LoadUnManagedAsset(PieceString name, const VarMap& vmap) {
   // Editor support that allows nulling out a previously set asset name.
   if (name.empty()) {
     return nullptr;
   }
 
-  Asset* new_asset = CreateUnmanagedAsset(name, vmap);
+  auto new_asset = CreateUnmanagedAsset(name, vmap);
 
   auto loader = FindLoader(name);
 
@@ -157,14 +159,14 @@ Asset* AssetClass::LoadUnManagedAsset(PieceString name, const VarMap& vmap) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AssetSet& AssetClass::GetAssetSet() {
-  return mAssetSet;
+AssetClass::assetset_ptr_t AssetClass::assetSet() {
+  return _assetset;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool AssetClass::AutoLoad(int depth) {
-  return GetAssetSet().Load(depth);
+  return _assetset->Load(depth);
 }
 
 void AssetClass::SetAssetNamer(const std::string& namer) {

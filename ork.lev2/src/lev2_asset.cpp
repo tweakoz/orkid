@@ -40,7 +40,7 @@ XgmModelAsset::~XgmModelAsset() {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmModelLoader : public ork::asset::FileAssetLoader {
+class XgmModelLoader final : public ork::asset::FileAssetLoader {
 public:
   XgmModelLoader()
       : FileAssetLoader(XgmModelAsset::GetClassStatic()) {
@@ -51,10 +51,10 @@ public:
     AddLocation("srcdata://", ".obj");
   }
 
-  bool LoadFileAsset(asset::Asset* pAsset, ConstString filename) {
+  bool LoadFileAsset(asset::asset_ptr_t asset, ConstString filename) override {
     AssetPath assetpath(filename);
-    auto absolutepath     = assetpath.ToAbsolute();
-    XgmModelAsset* pmodel = rtti::safe_downcast<XgmModelAsset*>(pAsset);
+    auto absolutepath = assetpath.ToAbsolute();
+    auto modelasset   = std::dynamic_pointer_cast<XgmModelAsset>(asset);
     printf("LoadModelAsset<%s>\n", absolutepath.c_str());
     bool OK = false;
     if (absolutepath.GetExtension() == "xgm" or //
@@ -62,7 +62,7 @@ public:
         absolutepath.GetExtension() == "obj" or //
         absolutepath.GetExtension() == "glb" or //
         absolutepath.GetExtension() == "gltf") {
-      OK = XgmModel::LoadUnManaged(pmodel->GetModel(), filename.c_str());
+      OK = XgmModel::LoadUnManaged(modelasset->GetModel(), filename.c_str());
       asset::AssetManager<lev2::TextureAsset>::AutoLoad();
       // route to caching assimp->xgm processor
       OrkAssert(OK);
@@ -71,8 +71,8 @@ public:
     return OK;
   }
 
-  void DestroyAsset(asset::Asset* pAsset) {
-    XgmModelAsset* modelasset = rtti::safe_downcast<XgmModelAsset*>(pAsset);
+  void DestroyAsset(asset::asset_ptr_t asset) override {
+    auto modelasset = std::dynamic_pointer_cast<XgmModelAsset>(asset);
     //	delete modelasset;
   }
 };
@@ -110,29 +110,29 @@ public:
     AddLocation("lev2://", ".dds");
   }
 
-  bool LoadFileAsset(asset::Asset* pAsset, ConstString filename) {
+  bool LoadFileAsset(asset::asset_ptr_t asset, ConstString filename) {
     ork::file::Path pth(filename.c_str());
-    TextureAsset* tex_asset          = rtti::safe_downcast<TextureAsset*>(pAsset);
-    tex_asset->GetTexture()->_varmap = tex_asset->_varmap;
-    if (tex_asset->_varmap.hasKey("postproc")) {
-      printf("texasset<%p:%s> has postproc\n", tex_asset, filename.c_str());
+    auto texture_asset                   = std::dynamic_pointer_cast<TextureAsset>(asset);
+    texture_asset->GetTexture()->_varmap = texture_asset->_varmap;
+    if (texture_asset->_varmap.hasKey("postproc")) {
+      printf("texasset<%p:%s> has postproc\n", texture_asset.get(), filename.c_str());
     } else {
-      // printf("texasset<%p:%s> does NOT have postproc\n", tex_asset, filename.c_str());
+      // printf("texasset<%p:%s> does NOT have postproc\n", texture_asset, filename.c_str());
     }
 
-    // OrkAssert(false == tex_asset->GetTexture()->_varmap.hasKey("preproc"));
+    // OrkAssert(false == texture_asset->GetTexture()->_varmap.hasKey("preproc"));
 
     while (0 == GfxEnv::GetRef().loadingContext()) {
       ork::msleep(100);
     }
-    auto p   = file::Path(pAsset->GetName());
-    bool bOK = GfxEnv::GetRef().loadingContext()->TXI()->LoadTexture(p, tex_asset->GetTexture());
+    auto p   = file::Path(asset->GetName());
+    bool bOK = GfxEnv::GetRef().loadingContext()->TXI()->LoadTexture(p, texture_asset->GetTexture());
     OrkAssert(bOK);
     return true;
   }
 
-  void DestroyAsset(asset::Asset* pAsset) {
-    TextureAsset* ptex = rtti::safe_downcast<TextureAsset*>(pAsset);
+  void DestroyAsset(asset::asset_ptr_t asset) {
+    auto texture_asset = std::dynamic_pointer_cast<TextureAsset>(asset);
   }
 };
 
@@ -161,24 +161,24 @@ void TextureAsset::SetTexture(Texture* pt) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmAnimLoader : public ork::asset::FileAssetLoader {
+class XgmAnimLoader final : public ork::asset::FileAssetLoader {
 public:
   XgmAnimLoader()
       : FileAssetLoader(XgmAnimAsset::GetClassStatic()) {
     AddLocation("data://", ".xga");
   }
 
-  bool LoadFileAsset(asset::Asset* pAsset, ConstString filename) {
-    XgmAnimAsset* panim = rtti::safe_downcast<XgmAnimAsset*>(pAsset);
-    bool bOK            = XgmAnim::LoadUnManaged(panim->GetAnim(), filename.c_str());
+  bool LoadFileAsset(asset::asset_ptr_t asset, ConstString filename) override {
+    auto animasset = std::dynamic_pointer_cast<XgmAnimAsset>(asset);
+    bool bOK       = XgmAnim::LoadUnManaged(animasset->GetAnim(), filename.c_str());
     OrkAssert(bOK);
     return true;
   }
 
-  void DestroyAsset(asset::Asset* pAsset) {
+  void DestroyAsset(asset::asset_ptr_t asset) override {
 #if defined(ORKCONFIG_ASSET_UNLOAD)
-    XgmAnimAsset* compasset = rtti::safe_downcast<XgmAnimAsset*>(pAsset);
-    bool bOK                = XgmAnim::UnLoadUnManaged(compasset->GetAnim());
+    auto animasset = std::dynamic_pointer_cast<XgmAnimAsset>(asset);
+    bool bOK       = XgmAnim::UnLoadUnManaged(animasset->GetAnim());
     OrkAssert(bOK);
 #endif
   }
@@ -201,9 +201,9 @@ class FxShaderLoader : public ork::asset::FileAssetLoader {
 public:
   FxShaderLoader();
 
-  bool LoadFileAsset(asset::Asset* pAsset, ConstString filename) final;
-  void DestroyAsset(asset::Asset* pAsset) final {
-    FxShaderAsset* compasset = rtti::safe_downcast<FxShaderAsset*>(pAsset);
+  bool LoadFileAsset(asset::asset_ptr_t asset, ConstString filename) final;
+  void DestroyAsset(asset::asset_ptr_t asset) final {
+    auto shader_asset = std::dynamic_pointer_cast<FxShaderAsset>(asset);
   }
 };
 
@@ -228,10 +228,10 @@ FxShaderLoader::FxShaderLoader()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FxShaderLoader::LoadFileAsset(asset::Asset* pAsset, ConstString filename) {
+bool FxShaderLoader::LoadFileAsset(asset::asset_ptr_t asset, ConstString filename) {
   ork::file::Path pth(filename.c_str());
   // printf("Loading Effect url<%s> abs<%s>\n", filename.c_str(), pth.ToAbsolute().c_str());
-  auto pshader = rtti::safe_downcast<FxShaderAsset*>(pAsset);
+  auto pshader = std::dynamic_pointer_cast<FxShaderAsset>(asset);
   bool bOK     = GfxEnv::GetRef().loadingContext()->FXI()->LoadFxShader(filename.c_str(), pshader->GetFxShader());
   OrkAssert(bOK);
   if (bOK)

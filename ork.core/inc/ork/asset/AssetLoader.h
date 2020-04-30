@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <ork/asset/Asset.h>
 #include <ork/file/path.h>
 #include <set>
 
@@ -14,17 +15,13 @@ class PieceString;
 
 namespace ork { namespace asset {
 
-class Asset;
-
-class AssetLoader 
-{
+class AssetLoader {
 public:
-	virtual bool CheckAsset(const PieceString &) = 0;
-	virtual bool LoadAsset(Asset *asset) = 0;
-	virtual void DestroyAsset(Asset *asset) = 0;
+  virtual bool CheckAsset(const PieceString&)  = 0;
+  virtual bool LoadAsset(asset_ptr_t asset)    = 0;
+  virtual void DestroyAsset(asset_ptr_t asset) = 0;
 
-	virtual std::set<file::Path> EnumerateExisting() = 0;
+  virtual std::set<file::Path> EnumerateExisting() = 0;
 };
 
-} }
-
+}} // namespace ork::asset

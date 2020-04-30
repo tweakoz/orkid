@@ -44,16 +44,10 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(Context* pTARG)
   }
 }
 
-GfxMaterial3DSolid::GfxMaterial3DSolid(
-    Context* pTARG,
-    const char* puserfx,
-    const char* pusertek,
-    bool allowcompilefailure,
-    bool unmanaged)
+GfxMaterial3DSolid::GfxMaterial3DSolid(Context* pTARG, const char* puserfx, const char* pusertek, bool allowcompilefailure)
     : meColorMode(EMODE_USER)
     , mUserFxName(puserfx)
     , mUserTekName(pusertek)
-    , mUnManaged(unmanaged)
     , mAllowCompileFailure(allowcompilefailure) {
 
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
@@ -68,14 +62,9 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(
   if (pTARG) {
     Init(pTARG);
   } else {
-    FxShaderAsset* passet = nullptr;
-
-    if (mUnManaged)
-      passet = asset::AssetManager<FxShaderAsset>::LoadUnManaged(mUserFxName.c_str());
-    else
-      passet = asset::AssetManager<FxShaderAsset>::Load(mUserFxName.c_str());
-
-    hModFX = passet ? passet->GetFxShader() : 0;
+    std::shared_ptr<FxShaderAsset> fxshaderasset;
+    fxshaderasset = asset::AssetManager<FxShaderAsset>::Load(mUserFxName.c_str());
+    hModFX        = fxshaderasset ? fxshaderasset->GetFxShader() : 0;
 
     if (hModFX)
       hModFX->SetAllowCompileFailure(mAllowCompileFailure);
@@ -89,14 +78,10 @@ void GfxMaterial3DSolid::Init(ork::lev2::Context* pTarg) {
   auto fxi = pTarg->FXI();
 
   if (mUserFxName.length()) {
-    FxShaderAsset* passet = nullptr;
+    std::shared_ptr<FxShaderAsset> fxshaderasset;
+    fxshaderasset = asset::AssetManager<FxShaderAsset>::Load(mUserFxName.c_str());
 
-    if (mUnManaged)
-      passet = asset::AssetManager<FxShaderAsset>::LoadUnManaged(mUserFxName.c_str());
-    else
-      passet = asset::AssetManager<FxShaderAsset>::Load(mUserFxName.c_str());
-
-    hModFX = passet ? passet->GetFxShader() : 0;
+    hModFX = fxshaderasset ? fxshaderasset->GetFxShader() : 0;
 
     if (hModFX)
       hModFX->SetAllowCompileFailure(mAllowCompileFailure);

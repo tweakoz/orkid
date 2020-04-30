@@ -26,201 +26,185 @@ namespace ork { namespace ent {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class ArchetypeAssetLoader : public asset::FileAssetLoader
-{
+class ArchetypeAssetLoader final : public asset::FileAssetLoader {
 public:
-	ArchetypeAssetLoader();
+  ArchetypeAssetLoader();
+
 private:
-	/*virtual*/ bool LoadFileAsset(asset::Asset*, ConstString);
-	/*virtual*/ void DestroyAsset(asset::Asset *asset)
-	{
-		ArchetypeAsset *archasset = (ArchetypeAsset *)asset;
-	//	delete archasset;
-	}
+  /*virtual*/ bool LoadFileAsset(asset::asset_ptr_t, ConstString) override;
+  /*virtual*/ void DestroyAsset(asset::asset_ptr_t asset) override {
+    // ArchetypeAsset* archasset = (ArchetypeAsset*)asset;
+    //	delete archasset;
+  }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
 ArchetypeAssetLoader::ArchetypeAssetLoader()
-	:  FileAssetLoader( ArchetypeAsset::GetClassStatic() )
-{
-	AddLocation("data://archetypes",".mox");
+    : FileAssetLoader(ArchetypeAsset::GetClassStatic()) {
+  AddLocation("data://archetypes", ".mox");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 std::stack<asset::Asset*> gaastack;
 
-bool ArchetypeAssetLoader::LoadFileAsset(asset::Asset* pAsset, ConstString asset_name)
-{
-	int isize = gaastack.size();
-	if( isize )
-	{
-		if( gaastack.top()==pAsset )
-			return true;
-	}
-	gaastack.push(pAsset);
+bool ArchetypeAssetLoader::LoadFileAsset(asset::asset_ptr_t asset, ConstString asset_name) {
+  auto archasset = std::dynamic_pointer_cast<ArchetypeAsset>(asset);
+  int isize      = gaastack.size();
+  if (isize) {
+    if (gaastack.top() == archasset.get())
+      return true;
+  }
+  gaastack.push(archasset.get());
 
-	float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
-	ArchetypeAsset* archasset = rtti::autocast(pAsset);
-
-	stream::FileInputStream istream(asset_name.c_str());
-	reflect::serialize::XMLDeserializer iser(istream);
-	rtti::ICastable* pcastable = 0;
+  float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
+  stream::FileInputStream istream(asset_name.c_str());
+  reflect::serialize::XMLDeserializer iser(istream);
+  rtti::ICastable* pcastable = 0;
 
 #if defined(_XBOX) && defined(PROFILE)
-	PIXBeginNamedEvent(0, "ArchetypeAssetLoader::LoadFileAsset(%s).Deserialize", pAsset->GetName());
+  PIXBeginNamedEvent(0, "ArchetypeAssetLoader::LoadFileAsset(%s).Deserialize", archasset->GetName());
 #endif
-	bool bOK = iser.Deserialize( pcastable );
+  bool bOK = iser.Deserialize(pcastable);
 #if defined(_XBOX) && defined(PROFILE)
-	PIXEndNamedEvent();
+  PIXEndNamedEvent();
 #endif
-	if( bOK )
-	{
-		Archetype* parch = rtti::autocast(pcastable);
-		if( parch )
-		{
-			archasset->SetArchetype(parch);
-			parch->SetName( AddPooledLiteral("ReferencedArchetype") );
-		}
-		else
-		{
-			archasset->SetArchetype(0);
-		}
-	}
+  if (bOK) {
+    Archetype* parch = rtti::autocast(pcastable);
+    if (parch) {
+      archasset->SetArchetype(parch);
+      parch->SetName(AddPooledLiteral("ReferencedArchetype"));
+    } else {
+      archasset->SetArchetype(0);
+    }
+  }
 
-	//ork::Object* pobj = rtti::autocast(DeserializeObject(asset_name.c_str()));
-	//archasset->SetArchetype(rtti::autocast(pobj));
+  // ork::Object* pobj = rtti::autocast(DeserializeObject(asset_name.c_str()));
+  // archasset->SetArchetype(rtti::autocast(pobj));
 
-	float ftime2 = ork::OldSchool::GetRef().GetLoResRelTime();
+  float ftime2 = ork::OldSchool::GetRef().GetLoResRelTime();
 
-	static float ftotaltime = 0.0f;
-	static int iltotaltime = 0;
+  static float ftotaltime = 0.0f;
+  static int iltotaltime  = 0;
 
-	ftotaltime += (ftime2-ftime1);
+  ftotaltime += (ftime2 - ftime1);
 
-	int itotaltime = int(ftotaltime);
+  int itotaltime = int(ftotaltime);
 
-	//if( itotaltime > iltotaltime )
-	{
-		std::string outstr = ork::CreateFormattedString(
-		"FILEAsset AccumTime<%f>\n", ftotaltime );
-		////OutputDebugString( outstr.c_str() );
-		iltotaltime = itotaltime;
-	}
-	gaastack.pop();
+  // if( itotaltime > iltotaltime )
+  {
+    std::string outstr = ork::CreateFormattedString("FILEAsset AccumTime<%f>\n", ftotaltime);
+    ////OutputDebugString( outstr.c_str() );
+    iltotaltime = itotaltime;
+  }
+  gaastack.pop();
 
-	return archasset->GetArchetype() ? true : false;
+  return archasset->GetArchetype() ? true : false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ArchetypeAsset::Describe()
-{
-	auto loader = new ArchetypeAssetLoader;
+void ArchetypeAsset::Describe() {
+  auto loader = new ArchetypeAssetLoader;
 
-	GetClassStatic()->AddLoader(loader);
-	GetClassStatic()->SetAssetNamer("archetypes/");
+  GetClassStatic()->AddLoader(loader);
+  GetClassStatic()->SetAssetNamer("archetypes/");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ArchetypeAsset::ArchetypeAsset() : mArchetype(NULL) {}
+ArchetypeAsset::ArchetypeAsset()
+    : mArchetype(NULL) {
+}
 
-ArchetypeAsset::~ArchetypeAsset()
-{
-	if(mArchetype)
-	{
-		delete mArchetype;
-		mArchetype = NULL;
-	}
+ArchetypeAsset::~ArchetypeAsset() {
+  if (mArchetype) {
+    delete mArchetype;
+    mArchetype = NULL;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ReferenceArchetype::Describe()
-{
-	reflect::RegisterProperty("ArchetypeAsset", &ReferenceArchetype::mArchetypeAsset);
+void ReferenceArchetype::Describe() {
+  reflect::RegisterProperty("ArchetypeAsset", &ReferenceArchetype::mArchetypeAsset);
 
-	reflect::annotatePropertyForEditor<ReferenceArchetype>("ArchetypeAsset", "editor.class", "ged.factory.assetlist");
-	reflect::annotatePropertyForEditor<ReferenceArchetype>("ArchetypeAsset", "editor.assettype", "refarch");
-	reflect::annotatePropertyForEditor<ReferenceArchetype>("ArchetypeAsset", "editor.assetclass", "ArchetypeAsset");
-	//reflect::annotateClassForEditor<ReferenceArchetype>( "editor.instantiable", false );
-	//reflect::annotatePropertyForEditor<ReferenceArchetype>( "Components", "editor.visible", "false" );
+  reflect::annotatePropertyForEditor<ReferenceArchetype>("ArchetypeAsset", "editor.class", "ged.factory.assetlist");
+  reflect::annotatePropertyForEditor<ReferenceArchetype>("ArchetypeAsset", "editor.assettype", "refarch");
+  reflect::annotatePropertyForEditor<ReferenceArchetype>("ArchetypeAsset", "editor.assetclass", "ArchetypeAsset");
+  // reflect::annotateClassForEditor<ReferenceArchetype>( "editor.instantiable", false );
+  // reflect::annotatePropertyForEditor<ReferenceArchetype>( "Components", "editor.visible", "false" );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ReferenceArchetype::ReferenceArchetype() : mArchetypeAsset(NULL) {}
-
-////////////////////////////////////////////////////////////////////////////////
-
-void ReferenceArchetype::DoCompose(ork::ent::ArchComposer& composer)
-{
-	if(mArchetypeAsset)
-		if(mArchetypeAsset->GetArchetype())
-			mArchetypeAsset->GetArchetype()->Compose(composer.mSceneComposer);
+ReferenceArchetype::ReferenceArchetype()
+    : mArchetypeAsset(NULL) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ReferenceArchetype::DoComposeEntity( Entity *pent ) const
-{
-	/////////////////////////////////////////////////
-	if( mArchetypeAsset )
-	{
-		//const ent::ComponentDataTable::LutType& clut = GetComponentDataTable().GetComponents();
-		//for( ent::ComponentDataTable::LutType::const_iterator it = clut.begin(); it!= clut.end(); it++ )
-		//{	ent::ComponentData* pcompdata = it->second;
-		//	if( pcompdata )
-		//	{	ent::ComponentInst* pinst = pcompdata->createComponent(pent);
-		//		if( pinst )
-		//		{	pent->GetComponents().AddComponent(pinst);
-		//		}
-		//	}
-		//}
-		if(const Archetype* parch = mArchetypeAsset->GetArchetype())
-		{	parch->ComposeEntity(pent);
-			//const ent::ComponentDataTable::LutType& clut = parch->GetComponentDataTable().GetComponents();
-			//for( ent::ComponentDataTable::LutType::const_iterator it = clut.begin(); it!= clut.end(); it++ )
-			//{	ent::ComponentData* pcompdata = it->second;
-			//	if(pcompdata)
-			//	{	ent::ComponentInst* pinst = pcompdata->createComponent(pent);
-			//		if( pinst )
-			//		{	pent->GetComponents().AddComponent(pinst);
-			//		}
-			//	}
-			//}
-		}
-	}
-	/////////////////////////////////////////////////
+void ReferenceArchetype::DoCompose(ork::ent::ArchComposer& composer) {
+  if (mArchetypeAsset)
+    if (mArchetypeAsset->GetArchetype())
+      mArchetypeAsset->GetArchetype()->Compose(composer.mSceneComposer);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ReferenceArchetype::DoLinkEntity(Simulation* inst, Entity *pent) const
-{
-	if(mArchetypeAsset)
-		if(mArchetypeAsset->GetArchetype())
-			mArchetypeAsset->GetArchetype()->LinkEntity(inst, pent);
+void ReferenceArchetype::DoComposeEntity(Entity* pent) const {
+  /////////////////////////////////////////////////
+  if (mArchetypeAsset) {
+    // const ent::ComponentDataTable::LutType& clut = GetComponentDataTable().GetComponents();
+    // for( ent::ComponentDataTable::LutType::const_iterator it = clut.begin(); it!= clut.end(); it++ )
+    //{	ent::ComponentData* pcompdata = it->second;
+    //	if( pcompdata )
+    //	{	ent::ComponentInst* pinst = pcompdata->createComponent(pent);
+    //		if( pinst )
+    //		{	pent->GetComponents().AddComponent(pinst);
+    //		}
+    //	}
+    //}
+    if (const Archetype* parch = mArchetypeAsset->GetArchetype()) {
+      parch->ComposeEntity(pent);
+      // const ent::ComponentDataTable::LutType& clut = parch->GetComponentDataTable().GetComponents();
+      // for( ent::ComponentDataTable::LutType::const_iterator it = clut.begin(); it!= clut.end(); it++ )
+      //{	ent::ComponentData* pcompdata = it->second;
+      //	if(pcompdata)
+      //	{	ent::ComponentInst* pinst = pcompdata->createComponent(pent);
+      //		if( pinst )
+      //		{	pent->GetComponents().AddComponent(pinst);
+      //		}
+      //	}
+      //}
+    }
+  }
+  /////////////////////////////////////////////////
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ReferenceArchetype::DoStartEntity(Simulation* inst, const fmtx4 &world, Entity *pent) const
-{
-	if(mArchetypeAsset)
-		if(mArchetypeAsset->GetArchetype())
-			mArchetypeAsset->GetArchetype()->StartEntity(inst, world, pent);
+void ReferenceArchetype::DoLinkEntity(Simulation* inst, Entity* pent) const {
+  if (mArchetypeAsset)
+    if (mArchetypeAsset->GetArchetype())
+      mArchetypeAsset->GetArchetype()->LinkEntity(inst, pent);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ReferenceArchetype::DoStopEntity(Simulation* psi, Entity *pent) const
-{
-	if(mArchetypeAsset)
-		if(mArchetypeAsset->GetArchetype())
-			mArchetypeAsset->GetArchetype()->StopEntity(psi, pent);
+void ReferenceArchetype::DoStartEntity(Simulation* inst, const fmtx4& world, Entity* pent) const {
+  if (mArchetypeAsset)
+    if (mArchetypeAsset->GetArchetype())
+      mArchetypeAsset->GetArchetype()->StartEntity(inst, world, pent);
 }
 
-} } // ork::ent
+////////////////////////////////////////////////////////////////////////////////
+
+void ReferenceArchetype::DoStopEntity(Simulation* psi, Entity* pent) const {
+  if (mArchetypeAsset)
+    if (mArchetypeAsset->GetArchetype())
+      mArchetypeAsset->GetArchetype()->StopEntity(psi, pent);
+}
+
+}} // namespace ork::ent

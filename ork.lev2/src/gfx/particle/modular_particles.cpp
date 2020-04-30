@@ -79,9 +79,9 @@ namespace ork { namespace lev2 { namespace particle {
 psys_ptclbuf ParticleModule::gNoCon;
 
 static lev2::Texture* GetPtclModuleIcon(ork::dataflow::dgmodule* pmod) {
-  static const char* assetname         = "lev2://textures/dfnodesel";
-  static lev2::TextureAsset* ptexasset = asset::AssetManager<TextureAsset>::Load(assetname);
-  return ptexasset->GetTexture();
+  static const char* assetname = "lev2://textures/dfnodesel";
+  static auto texasset         = asset::AssetManager<TextureAsset>::Load(assetname);
+  return texasset->GetTexture();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

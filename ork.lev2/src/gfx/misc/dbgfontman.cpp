@@ -403,8 +403,8 @@ void Font::LoadFromDisk(Context* pTARG, const FontDesc& fdesc) {
   mpMaterial = new GfxMaterialUIText;
   mpMaterial->Init(pTARG);
   AssetPath apath(msFileName.c_str());
-  TextureAsset* ptexa = asset::AssetManager<ork::lev2::TextureAsset>::Load(apath.c_str());
-  auto ptex           = ptexa->GetTexture();
+  auto tex_asset = asset::AssetManager<ork::lev2::TextureAsset>::Load(apath.c_str());
+  auto ptex      = tex_asset->GetTexture();
   mpMaterial->SetTexture(ETEXDEST_DIFFUSE, ptex);
   ptex->TexSamplingMode().PresetPointAndClamp();
   pTARG->TXI()->ApplySamplingMode(ptex);

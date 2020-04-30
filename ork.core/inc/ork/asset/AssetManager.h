@@ -18,12 +18,16 @@ namespace ork { namespace asset {
 class FileAssetLoader;
 
 template <typename AssetType> class AssetManager {
+
+  using typed_asset_ptr_t      = std::shared_ptr<AssetType>;
+  using typed_asset_constptr_t = std::shared_ptr<const AssetType>;
+
 public:
   static VarMap novars();
-  static AssetType* Create(const PieceString& asset_name, const VarMap& vmap = novars());
-  static AssetType* Find(const PieceString& asset_name);
-  static AssetType* Load(const PieceString& asset_name);
-  static AssetType* LoadUnManaged(const PieceString& asset_name);
+  static typed_asset_ptr_t Create(const PieceString& asset_name, const VarMap& vmap = novars());
+  static typed_asset_ptr_t Find(const PieceString& asset_name);
+  static typed_asset_ptr_t Load(const PieceString& asset_name);
+  static typed_asset_ptr_t LoadUnManaged(const PieceString& asset_name);
   static bool AutoLoad(int depth = -1);
 #if defined(ORKCONFIG_ASSET_UNLOAD)
   static bool AutoUnLoad(int depth = -1);

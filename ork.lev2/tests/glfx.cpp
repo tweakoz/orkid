@@ -16,7 +16,7 @@ TEST(glfx1) {
     CHECK(fxi != nullptr);
 
     auto asset = ork::asset::AssetManager<ork::lev2::FxShaderAsset>::Load("orkshader://deferrednvms");
-    printf("asset<%p>\n", asset);
+    printf("asset<%p>\n", asset.get());
     CHECK(asset != nullptr);
 
     auto shader = asset->GetFxShader();

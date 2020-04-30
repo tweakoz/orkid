@@ -7,36 +7,45 @@
 #include <ork/pch.h>
 
 #include <ork/asset/AssetLoader.h>
+#include <ork/asset/AssetSet.h>
 #include <ork/util/RingLink.hpp>
 
 namespace ork { namespace asset {
 
 template <typename AssetType> ork::recursive_mutex AssetManager<AssetType>::gLock("AssetManagerMutex");
 
-template <typename AssetType> VarMap AssetManager<AssetType>::novars(){
+template <typename AssetType> VarMap AssetManager<AssetType>::novars() {
   return VarMap();
 };
 
 template <typename AssetType> bool AssetManager<AssetType>::gbAUTOLOAD = true;
 
-template <typename AssetType> inline AssetType* AssetManager<AssetType>::Create(const PieceString& asset_name, const VarMap& vmap) {
+template <typename AssetType>
+inline typename AssetManager<AssetType>::typed_asset_ptr_t //
+AssetManager<AssetType>::Create(const PieceString& asset_name, const VarMap& vmap) {
   gLock.Lock();
-  AssetType* prval = rtti::safe_downcast<AssetType*>(AssetType::GetClassStatic()->DeclareAsset(asset_name, vmap));
+  auto asset       = AssetType::GetClassStatic()->DeclareAsset(asset_name, vmap);
+  auto typed_asset = std::dynamic_pointer_cast<AssetType>(asset);
   gLock.UnLock();
-  return prval;
+  return typed_asset;
 }
 
-template <typename AssetType> inline AssetType* AssetManager<AssetType>::Find(const PieceString& asset_name) {
+template <typename AssetType>
+inline typename AssetManager<AssetType>::typed_asset_ptr_t //
+AssetManager<AssetType>::Find(const PieceString& asset_name) {
   gLock.Lock();
-  AssetType* prval = rtti::safe_downcast<AssetType*>(AssetType::GetClassStatic()->FindAsset(asset_name));
+  auto asset       = AssetType::GetClassStatic()->FindAsset(asset_name);
+  auto typed_asset = std::dynamic_pointer_cast<AssetType>(asset);
   gLock.UnLock();
-  return prval;
+  return typed_asset;
 }
 
-template <typename AssetType> inline AssetType* AssetManager<AssetType>::Load(const PieceString& asset_name) {
+template <typename AssetType>
+inline typename AssetManager<AssetType>::typed_asset_ptr_t //
+AssetManager<AssetType>::Load(const PieceString& asset_name) {
   gLock.Lock();
 
-  AssetType* asset = Create(asset_name);
+  typed_asset_ptr_t asset = Create(asset_name);
 
   if (asset) {
     if (false == asset->IsLoaded()) {
@@ -48,17 +57,21 @@ template <typename AssetType> inline AssetType* AssetManager<AssetType>::Load(co
   gLock.UnLock();
   return NULL;
 }
-template <typename AssetType> inline AssetType* AssetManager<AssetType>::LoadUnManaged(const PieceString& asset_name) {
+template <typename AssetType>
+inline typename AssetManager<AssetType>::typed_asset_ptr_t //
+AssetManager<AssetType>::LoadUnManaged(const PieceString& asset_name) {
   gLock.Lock();
-  AssetType* prval = rtti::safe_downcast<AssetType*>(AssetType::GetClassStatic()->LoadUnManagedAsset(asset_name));
+  auto asset       = AssetType::GetClassStatic()->LoadUnManagedAsset(asset_name);
+  auto typed_asset = std::dynamic_pointer_cast<AssetType>(asset);
   gLock.UnLock();
-  return prval;
+  return typed_asset;
 }
 
 template <typename AssetType> inline bool AssetManager<AssetType>::AutoLoad(int depth) {
   if (gbAUTOLOAD) {
     gLock.Lock();
-    bool brval = AssetType::GetClassStatic()->GetAssetSet().Load(depth);
+    auto asset_set = AssetType::GetClassStatic()->assetSet();
+    bool brval     = asset_set->Load(depth);
     gLock.UnLock();
     return brval;
   } else {
@@ -68,7 +81,8 @@ template <typename AssetType> inline bool AssetManager<AssetType>::AutoLoad(int 
 
 #if defined(ORKCONFIG_ASSET_UNLOAD)
 template <typename AssetType> inline bool AssetManager<AssetType>::AutoUnLoad(int depth) {
-  return AssetType::GetClassStatic()->GetAssetSet().UnLoad(depth);
+  auto asset_set = AssetType::GetClassStatic()->assetSet();
+  return asset_set->UnLoad(depth);
 }
 #endif
 

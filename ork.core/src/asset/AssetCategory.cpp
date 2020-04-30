@@ -16,7 +16,7 @@
 namespace ork { namespace asset {
 ///////////////////////////////////////////////////////////////////////////////
 
-const VarMap AssetCategory::novars(){
+const VarMap AssetCategory::novars() {
   return VarMap();
 }
 
@@ -74,9 +74,11 @@ bool AssetCategory::DeserializeReference(reflect::IDeserializer& deserializer, r
       const auto& anno = deserializer._currentProperty->annotation(ConstString("asset.deserialize.vargen"));
       if (auto as_gen = anno.TryAs<vars_gen_t>()) {
         const auto& assetvars = as_gen.value()(deserializer._currentObject);
-        value                 = DeclareAsset(asset_type, asset_name, assetvars);
+        auto declared         = DeclareAsset(asset_type, asset_name, assetvars);
+        value                 = declared.get();
       } else {
-        value = DeclareAsset(asset_type, asset_name);
+        auto declared = DeclareAsset(asset_type, asset_name);
+        value         = declared.get();
       }
     }
   }
@@ -106,26 +108,23 @@ AssetClass* AssetCategory::FindAssetClass(PieceString type) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Asset* AssetCategory::FindAsset(PieceString type, PieceString name) const {
+AssetCategory::asset_ptr_t AssetCategory::FindAsset(PieceString type, PieceString name) const {
   orkprintf("AssetCategory::FindAsset type<%s> name<%s>\n", ork::AddPooledString(type).c_str(), ork::AddPooledString(name).c_str());
   AssetClass* clazz = FindAssetClass(type);
-
   if (clazz) {
     return clazz->FindAsset(name);
   }
-
   return NULL;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Asset* AssetCategory::DeclareAsset(PieceString type, PieceString name, const VarMap& vmap) const {
+AssetCategory::asset_ptr_t AssetCategory::DeclareAsset(PieceString type, PieceString name, const VarMap& vmap) const {
   AssetClass* clazz = FindAssetClass(type);
-
   if (clazz) {
     return clazz->DeclareAsset(name, vmap);
   } else {
-    VirtualAsset* result = new VirtualAsset();
+    auto result = std::make_shared<VirtualAsset>();
     result->SetType(ork::AddPooledString(type));
     result->SetName(ork::AddPooledString(name));
     return result;
@@ -133,13 +132,13 @@ Asset* AssetCategory::DeclareAsset(PieceString type, PieceString name, const Var
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-Asset* AssetCategory::LoadUnManagedAsset(PieceString type, PieceString name) const {
+AssetCategory::asset_ptr_t AssetCategory::LoadUnManagedAsset(PieceString type, PieceString name) const {
   AssetClass* clazz = FindAssetClass(type);
 
   if (clazz) {
     return clazz->LoadUnManagedAsset(name);
   } else {
-    VirtualAsset* result = new VirtualAsset();
+    auto result = std::make_shared<VirtualAsset>();
     result->SetType(ork::AddPooledString(type));
     result->SetName(ork::AddPooledString(name));
     return result;
