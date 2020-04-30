@@ -19,15 +19,19 @@
 #include <ork/pch.h>
 #include <ork/rtti/downcast.h>
 
-const bool kfidle_hack = false; // perhaps a bad export from maya...
-
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace ork { namespace lev2 {
-
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
+bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
+  printf("Writing Xgm<%p> to path<%s>\n", mdl, Filename.c_str());
+  auto datablock = writeXgmToDatablock(mdl);
+  if (datablock) {
+    ork::File outputfile(Filename, ork::EFM_WRITE);
+    outputfile.Write(datablock->data(), datablock->length());
+    return true;
+  }
+  return false;
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
@@ -108,10 +112,6 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablockptr_t datablock) {
         const char* pjntname = chunkreader.GetString(ijointname);
 
         fxstring<256> jnamp(pjntname);
-        if (kfidle_hack) {
-          jnamp.replace_in_place("f_idle_", "");
-          printf("FIXUPJOINTNAME<%s:%s>\n", pjntname, jnamp.c_str());
-        }
         mdl->mSkeleton.AddJoint(iskelindex, iparentindex, AddPooledString(jnamp.c_str()));
         ptstring.set(chunkreader.GetString(inodematrix));
         mdl->mSkeleton.RefNodeMatrix(iskelindex) = PropType<fmtx4>::FromString(ptstring);
@@ -378,10 +378,6 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablockptr_t datablock) {
 
             const char* jointname = chunkreader.GetString(ibindingname);
             fxstring<256> jnamp(jointname);
-            if (kfidle_hack) {
-              jnamp.replace_in_place("f_idle_", "");
-              printf("FIXUPJOINTNAME<%s:%s>\n", jointname, jnamp.c_str());
-            }
             PoolString JointNameIndex                      = FindPooledString(jnamp.c_str());
             orklut<PoolString, int>::const_iterator itfind = mdl->mSkeleton.mmJointNameMap.find(JointNameIndex);
 
@@ -412,17 +408,6 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablockptr_t datablock) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
-  printf("Writing Xgm<%p> to path<%s>\n", mdl, Filename.c_str());
-  auto datablock = writeXgmToDatablock(mdl);
-  if (datablock) {
-    ork::File outputfile(Filename, ork::EFM_WRITE);
-    outputfile.Write(datablock->data(), datablock->length());
-    return true;
-  }
-  return false;
-}
 
 datablockptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
   datablockptr_t out_datablock = std::make_shared<DataBlock>();
