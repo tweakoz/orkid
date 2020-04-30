@@ -136,7 +136,7 @@ libblock lib_pbr_frg : lib_gbuf_encode {
 		float mtl = rufmtlamb.x * MetallicFactor;
 		float ruf = rufmtlamb.y * RoughnessFactor;
 		vec3 color = (ModColor*frg_clr*texture(ColorMap,UV)).xyz;
-		out_gbuf = packGbuffer(color,normal,ruf,mtl,emissive);
+		out_gbuf = packGbuffer(color,normal,ruf,mtl,false);
 	}
 }
 ///////////////////////////////////////////////////////////////

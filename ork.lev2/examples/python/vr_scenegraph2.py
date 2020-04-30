@@ -45,7 +45,7 @@ class VrApp(object):
   ##############################################
   def onGpuInit(self,ctx):
     layer = self.scene.createLayer("layer1")
-    model = Model("srcdata://tests/pbr1/pbr1")
+    model = Model("data://tests/pbr1/pbr1")
     ###################################
     for i in range(200):
       self.modelinsts += [modelinst(model,layer)]

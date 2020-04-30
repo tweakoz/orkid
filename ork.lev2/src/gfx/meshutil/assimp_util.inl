@@ -26,7 +26,10 @@ namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
 inline uint32_t assimpImportFlags() {
-  uint32_t flags = aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_LimitBoneWeights | aiProcess_CalcTangentSpace |
+  uint32_t flags = aiProcessPreset_TargetRealtime_MaxQuality | //
+                   aiProcess_LimitBoneWeights |                //
+                   // aiProcess_GenNormals |                      //
+                   aiProcess_CalcTangentSpace |        //
                    aiProcess_RemoveRedundantMaterials; // aiProcess_MakeLeftHanded
   return flags;
 }

@@ -18,20 +18,17 @@ void Mesh::readFromAssimp(const file::Path& BasePath) {
   OrkAssert(bfs::is_regular_file(GlbPath.toBFS()));
   OrkAssert(bfs::exists(base_dir));
   OrkAssert(bfs::is_directory(base_dir));
-  auto dblock = datablockFromFileAtPath(GlbPath);
-  dblock->_vars.makeValueForKey<std::string>("file-extension")=GlbPath.GetExtension().c_str();
-  dblock->_vars.makeValueForKey<bfs::path>("base-directory")=base_dir;
+  auto dblock                                                  = datablockFromFileAtPath(GlbPath);
+  dblock->_vars.makeValueForKey<std::string>("file-extension") = GlbPath.GetExtension().c_str();
+  dblock->_vars.makeValueForKey<bfs::path>("base-directory")   = base_dir;
   printf("BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
   readFromAssimp(dblock);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Mesh::readFromAssimp(datablockptr_t datablock){
+void Mesh::readFromAssimp(datablockptr_t datablock) {
   auto& extension = datablock->_vars.typedValueForKey<std::string>("file-extension").value();
-  printf("BEGIN: importing scene from datablock length<%zu> extension<%s>\n", datablock->length(), extension.c_str() );
-  auto scene = aiImportFileFromMemory((const char*)datablock->data(),
-                                      datablock->length(),
-                                      assimpImportFlags(),
-                                      extension.c_str());
+  printf("BEGIN: importing scene from datablock length<%zu> extension<%s>\n", datablock->length(), extension.c_str());
+  auto scene = aiImportFileFromMemory((const char*)datablock->data(), datablock->length(), assimpImportFlags(), extension.c_str());
   printf("END: importing scene<%p>\n", scene);
   if (scene) {
     auto& embtexmap = _varmap.makeValueForKey<lev2::embtexmap_t>("embtexmap");
@@ -396,6 +393,9 @@ void Mesh::readFromAssimp(datablockptr_t datablock){
         bool has_colors     = mesh->mColors[0] != nullptr;
         bool has_uvs        = mesh->mTextureCoords[0] != nullptr;
         bool has_bones      = mesh->mNumBones != 0;
+        OrkAssert(has_normals);
+        // OrkAssert(has_tangents);
+        // OrkAssert(has_bitangents);
         /////////////////////////////////////////////
         const char* name = mesh->mName.data;
         /////////////////////////////////////////////
