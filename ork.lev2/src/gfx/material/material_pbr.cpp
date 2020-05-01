@@ -183,7 +183,7 @@ void PBRMaterial::Init(Context* targ) /*final*/ {
   _parRoughnessFactor  = fxi->parameter(_shader, "RoughnessFactor");
   _parModColor         = fxi->parameter(_shader, "ModColor");
   _parBoneMatrices     = fxi->parameter(_shader, "BoneMatrices");
-  _parInstanceMatrices = fxi->parameter(_shader, "InstanceMatrices");
+  _paramInstanceMatrixMap = fxi->parameter(_shader, "InstanceMatrices");
 
   assert(_paramMapNormal != nullptr);
   assert(_parBoneMatrices != nullptr);
@@ -312,7 +312,7 @@ void PBRMaterial::EndPass(Context* targ) {
 
 void PBRMaterial::BindMaterialInstItem(MaterialInstItem* pitem) const {
   ///////////////////////////////////
-  MaterialInstItemMatrixBlock* mtxblockitem = rtti::autocast(pitem);
+  auto mtxblockitem = dynamic_cast<MaterialInstItemMatrixBlock*>(pitem);
 
   if (mtxblockitem) {
     // if (hBoneMatrices->GetPlatformHandle()) {
@@ -331,7 +331,7 @@ void PBRMaterial::BindMaterialInstItem(MaterialInstItem* pitem) const {
 void PBRMaterial::UnBindMaterialInstItem(MaterialInstItem* pitem) const {
   ///////////////////////////////////
 
-  MaterialInstItemMatrixBlock* mtxblockitem = rtti::autocast(pitem);
+  auto mtxblockitem = dynamic_cast<MaterialInstItemMatrixBlock*>(pitem);
 
   if (mtxblockitem) {
     // if (hBoneMatrices->GetPlatformHandle()) {

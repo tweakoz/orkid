@@ -207,7 +207,6 @@ XgmMaterialStateInst::XgmMaterialStateInst(const XgmModelInst& minst)
 ///////////////////////////////////////////////////////////////////////////////
 
 class MaterialInstItem_UvXf : public MaterialInstItemMatrix {
-  RttiDeclareAbstract(MaterialInstItem_UvXf, MaterialInstItemMatrix);
 
   const XgmAnimInst& mAnimInst;
   const XgmMatrixAnimChannel* mChannel;
@@ -238,9 +237,6 @@ public:
     SetMatrix(mtx);
   }
 };
-
-void MaterialInstItem_UvXf::Describe() {
-}
 
 /// ////////////////////////////////////////////////////////////////////////////
 /// bind the animinst to the materialpose
@@ -667,6 +663,5 @@ bool XgmAnim::LoadUnManaged(XgmAnim* anm, const AssetPath& fname) { ////////////
 
 } // namespace ork::lev2
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::MaterialInstItem_UvXf, "MaterialInstItem_UvXf");
 template void ork::chunkfile::OutputStream::AddItem<ork::lev2::DecompMtx44>(const ork::lev2::DecompMtx44& item);
 template class ork::orklut<ork::PoolString, ork::lev2::DecompMtx44>;

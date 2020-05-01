@@ -953,12 +953,12 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
         break;
       }
       case EPrimitiveType::TRIANGLES:
-        //printf( "drawindexedtris inum<%d> imin<%d> imax<%d>\n", iNum/3, imin, imax );
+        // printf( "drawindexedtris inum<%d> imin<%d> imax<%d>\n", iNum/3, imin, imax );
         glprimtype = GL_TRIANGLES;
         miTrianglesRendered += (iNum / 3);
         break;
       case EPrimitiveType::TRIANGLESTRIP:
-        //printf( "drawindexedtristrip inum<%d>\n", iNum-2 );
+        // printf( "drawindexedtristrip inum<%d>\n", iNum-2 );
         glprimtype = GL_TRIANGLE_STRIP;
         miTrianglesRendered += (iNum - 2);
         break;
@@ -979,6 +979,15 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
   }
   GL_ERRORCHECK();
   // glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void GlGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
+    const VertexBufferBase& VBuf,
+    const IndexBufferBase& IdxBuf,
+    EPrimitiveType eType,
+    size_t instance_count) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

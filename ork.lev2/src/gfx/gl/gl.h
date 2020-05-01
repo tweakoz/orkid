@@ -66,7 +66,6 @@ class ContextGL;
 class GlslFxInterface;
 struct GLTextureObject;
 
-
 struct GlFboObject {
   static const int kmaxrt = RtGroup::kmaxmrts;
   GLuint mFBOMaster;
@@ -88,7 +87,7 @@ int GetGlError(void);
 class GlTextureInterface;
 
 struct GlDrawingInterface : public DrawingInterface {
-    GlDrawingInterface(ContextGL&ctx);
+  GlDrawingInterface(ContextGL& ctx);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -97,8 +96,10 @@ class GlImiInterface : public ImmInterface {
   virtual void DrawLine(const fvec4& From, const fvec4& To);
   virtual void DrawPoint(F32 fx, F32 fy, F32 fz);
   virtual void DrawPrim(const fvec4* Points, int inumpoints, EPrimitiveType eType);
-  virtual void _doBeginFrame() {}
-  virtual void _doEndFrame() {}
+  virtual void _doBeginFrame() {
+  }
+  virtual void _doEndFrame() {
+  }
 
 public:
   GlImiInterface(ContextGL& target);
@@ -131,7 +132,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class GlGeometryBufferInterface : public GeometryBufferInterface {
+class GlGeometryBufferInterface final : public GeometryBufferInterface {
 
 public:
   GlGeometryBufferInterface(ContextGL& target);
@@ -140,23 +141,23 @@ private:
   ///////////////////////////////////////////////////////////////////////
   // VtxBuf Interface
 
-  void* LockVB(VertexBufferBase& VBuf, int ivbase, int icount) final;
-  void UnLockVB(VertexBufferBase& VBuf) final;
+  void* LockVB(VertexBufferBase& VBuf, int ivbase, int icount) override;
+  void UnLockVB(VertexBufferBase& VBuf) override;
 
-  const void* LockVB(const VertexBufferBase& VBuf, int ivbase = 0, int icount = 0) final;
-  void UnLockVB(const VertexBufferBase& VBuf) final;
+  const void* LockVB(const VertexBufferBase& VBuf, int ivbase = 0, int icount = 0) override;
+  void UnLockVB(const VertexBufferBase& VBuf) override;
 
-  void ReleaseVB(VertexBufferBase& VBuf) final;
+  void ReleaseVB(VertexBufferBase& VBuf) override;
 
   //
 
-  void* LockIB(IndexBufferBase& VBuf, int ivbase, int icount) final;
-  void UnLockIB(IndexBufferBase& VBuf) final;
+  void* LockIB(IndexBufferBase& VBuf, int ivbase, int icount) override;
+  void UnLockIB(IndexBufferBase& VBuf) override;
 
-  const void* LockIB(const IndexBufferBase& VBuf, int ibase = 0, int icount = 0) final;
-  void UnLockIB(const IndexBufferBase& VBuf) final;
+  const void* LockIB(const IndexBufferBase& VBuf, int ibase = 0, int icount = 0) override;
+  void UnLockIB(const IndexBufferBase& VBuf) override;
 
-  void ReleaseIB(IndexBufferBase& VBuf) final;
+  void ReleaseIB(IndexBufferBase& VBuf) override;
 
   //
 
@@ -164,44 +165,60 @@ private:
   bool BindVertexStreamSource(const VertexBufferBase& VBuf);
   void BindVertexDeclaration(EVtxStreamFormat efmt);
 
-  void DrawPrimitive(const VertexBufferBase& VBuf, EPrimitiveType eType = EPrimitiveType::NONE, int ivbase = 0, int ivcount = 0) final;
-  void DrawIndexedPrimitive(const VertexBufferBase& VBuf,
-                            const IndexBufferBase& IdxBuf,
-                            EPrimitiveType eType = EPrimitiveType::NONE,
-                            int ivbase           = 0,
-                            int ivcount          = 0) final;
-  void DrawPrimitiveEML(const VertexBufferBase& VBuf, EPrimitiveType eType = EPrimitiveType::NONE, int ivbase = 0, int ivcount = 0) final;
-  void DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf,
-                               const IndexBufferBase& IdxBuf,
-                               EPrimitiveType eType = EPrimitiveType::NONE,
-                               int ivbase           = 0,
-                               int ivcount          = 0) final;
+  void DrawPrimitive(
+      const VertexBufferBase& VBuf, //
+      EPrimitiveType eType,
+      int ivbase,
+      int ivcount) override;
+
+  void DrawIndexedPrimitive(
+      const VertexBufferBase& VBuf, //
+      const IndexBufferBase& IdxBuf,
+      EPrimitiveType eType,
+      int ivbase,
+      int ivcount) override;
+
+  void DrawPrimitiveEML(
+      const VertexBufferBase& VBuf, //
+      EPrimitiveType eType,
+      int ivbase,
+      int ivcount) override;
+
+  void DrawIndexedPrimitiveEML(
+      const VertexBufferBase& VBuf,
+      const IndexBufferBase& IdxBuf,
+      EPrimitiveType eType,
+      int ivbase,
+      int ivcount) override;
+
+  void DrawInstancedIndexedPrimitiveEML(
+      const VertexBufferBase& VBuf,
+      const IndexBufferBase& IdxBuf,
+      EPrimitiveType eType,
+      size_t instance_count) override;
 
   //////////////////////////////////////////////
   // nvidia mesh shaders
   //////////////////////////////////////////////
 
-  #if defined(ENABLE_NVMESH_SHADERS)
-  void DrawMeshTasksNV(uint32_t first, uint32_t count) final;
+#if defined(ENABLE_NVMESH_SHADERS)
+  void DrawMeshTasksNV(uint32_t first, uint32_t count) override;
 
-  void DrawMeshTasksIndirectNV(int32_t* indirect) final;
+  void DrawMeshTasksIndirectNV(int32_t* indirect) override;
 
-  void MultiDrawMeshTasksIndirectNV(int32_t* indirect,
-                                    uint32_t drawcount,
-                                    uint32_t stride) final;
+  void MultiDrawMeshTasksIndirectNV(int32_t* indirect, uint32_t drawcount, uint32_t stride) override;
 
-  void MultiDrawMeshTasksIndirectCountNV( int32_t* indirect,
-                                          int32_t* drawcount,
-                                          uint32_t maxdrawcount,
-                                          uint32_t stride) final;
-  #endif
+  void MultiDrawMeshTasksIndirectCountNV(int32_t* indirect, int32_t* drawcount, uint32_t maxdrawcount, uint32_t stride) override;
+#endif
   //////////////////////////////////////////////
 
   ContextGL& mTargetGL;
 
   uint32_t mLastComponentMask;
 
-  void _doBeginFrame() final { mLastComponentMask = 0; }
+  void _doBeginFrame() final {
+    mLastComponentMask = 0;
+  }
   // virtual void _doEndFrame() {}
 };
 
@@ -223,12 +240,14 @@ public:
   void _doEndFrame(void) final;
   bool capture(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer) final;
   void Capture(const RtGroup& inpbuf, int irt, const file::Path& pth) final;
-  bool CaptureToTexture(const CaptureBuffer& capbuf, Texture& tex) final { return false; }
+  bool CaptureToTexture(const CaptureBuffer& capbuf, Texture& tex) final {
+    return false;
+  }
   bool captureAsFormat(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer, EBufferFormat destfmt) final;
   void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) final;
 
-  void rtGroupClear(RtGroup*rtg) final;
-  void rtGroupMipGen(RtGroup*rtg) final;
+  void rtGroupClear(RtGroup* rtg) final;
+  void rtGroupMipGen(RtGroup* rtg) final;
 
   //////////////////////////////////////////////
 
@@ -280,7 +299,6 @@ struct GLTextureObject {
   GLuint mDbo;
   GLenum mTarget;
   int _maxmip = 0;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -299,9 +317,9 @@ struct PboSet {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GlTexLoadReq {
-  Texture* ptex = nullptr;
+  Texture* ptex                     = nullptr;
   const dds::DDS_HEADER* _ddsheader = nullptr;
-  GLTextureObject* pTEXOBJ = nullptr;
+  GLTextureObject* pTEXOBJ          = nullptr;
   std::string _texname;
   DataBlockInputStream _inpstream;
   std::shared_ptr<CompressedImageMipChain> _cmipchain;
@@ -313,23 +331,19 @@ constexpr uint16_t kRGB_DXT1  = 0x83F0;
 constexpr uint16_t kRGBA_DXT1 = 0x83F1;
 constexpr uint16_t kRGBA_DXT3 = 0x83F2;
 constexpr uint16_t kRGBA_DXT5 = 0x83F3;
-constexpr GLuint PBOOBJBASE = 0x12340000;
+constexpr GLuint PBOOBJBASE   = 0x12340000;
 
 class GlTextureInterface : public TextureInterface {
 public:
-
   void TexManInit(void) override;
 
-
   GLuint _getPBO(size_t isize);
-  void _returnPBO(size_t isize,GLuint pbo);
+  void _returnPBO(size_t isize, GLuint pbo);
 
   GlTextureInterface(ContextGL& tgt);
 
 private:
-
   bool _loadImageTexture(Texture* ptex, datablockptr_t inpdata);
-
 
   bool _loadXTXTexture(Texture* ptex, datablockptr_t inpdata);
   void _loadXTXTextureMainThreadPart(GlTexLoadReq req);
@@ -338,7 +352,6 @@ private:
   bool _loadDDSTexture(const AssetPath& fname, Texture* ptex);
   bool _loadDDSTexture(Texture* ptex, datablockptr_t inpdata);
   bool _loadVDSTexture(const AssetPath& fname, Texture* ptex);
-
 
   bool LoadTexture(Texture* ptex, datablockptr_t inpdata) final;
   bool DestroyTexture(Texture* ptex) final;
@@ -352,7 +365,6 @@ private:
 
   std::map<size_t, PboSet*> mPBOSets;
   ContextGL& mTargetGL;
-
 };
 
 struct texcfg {
@@ -408,7 +420,6 @@ void Set3DC(
     int& id,
     DataBlockInputStream inpstream);
 
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -429,24 +440,44 @@ public:
   ///////////////////////////////////////////////////////////////////////
 
   void _doResizeMainSurface(int iw, int ih) final;
-  void _doBeginFrame(void) final {}
-  void _doEndFrame(void) final {}
+  void _doBeginFrame(void) final {
+  }
+  void _doEndFrame(void) final {
+  }
 
 public:
   //////////////////////////////////////////////
   // Interfaces
 
-  FxInterface* FXI() final { return &mFxI; }
-  ImmInterface* IMI() final { return &mImI; }
-  RasterStateInterface* RSI() final { return &mRsI; }
-  MatrixStackInterface* MTXI() final { return &mMtxI; }
-  GeometryBufferInterface* GBI() final { return &mGbI; }
-  FrameBufferInterface* FBI() final { return &mFbI; }
-  TextureInterface* TXI() final { return &mTxI; }
+  FxInterface* FXI() final {
+    return &mFxI;
+  }
+  ImmInterface* IMI() final {
+    return &mImI;
+  }
+  RasterStateInterface* RSI() final {
+    return &mRsI;
+  }
+  MatrixStackInterface* MTXI() final {
+    return &mMtxI;
+  }
+  GeometryBufferInterface* GBI() final {
+    return &mGbI;
+  }
+  FrameBufferInterface* FBI() final {
+    return &mFbI;
+  }
+  TextureInterface* TXI() final {
+    return &mTxI;
+  }
 #if defined(ENABLE_COMPUTE_SHADERS)
-  ComputeInterface* CI() final { return &mCI; };
+  ComputeInterface* CI() final {
+    return &mCI;
+  };
 #endif
-  DrawingInterface* DWI() final { return &mDWI; }
+  DrawingInterface* DWI() final {
+    return &mDWI;
+  }
 
   ///////////////////////////////////////////////////////////////////////
 
@@ -468,10 +499,12 @@ public:
   void AttachGLContext(CTXBASE* pCTFL);
   void SwapGLContext(CTXBASE* pCTFL);
 
-  GlFrameBufferInterface& GLFBI() { return mFbI; }
+  GlFrameBufferInterface& GLFBI() {
+    return mFbI;
+  }
 
   void initializeWindowContext(Window* pWin, CTXBASE* pctxbase) final; // make a window
-  void initializeOffscreenContext(OffscreenBuffer* pBuf) final; // make a pbuffer
+  void initializeOffscreenContext(OffscreenBuffer* pBuf) final;        // make a pbuffer
   void initializeLoaderContext() final;
 
   void debugPushGroup(const std::string str) final;

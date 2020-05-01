@@ -23,7 +23,9 @@ InstancedModelDrawable::~InstancedModelDrawable() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::resize(size_t count) {
+  OrkAssert(count <= k_max_instances);
   _instancedata->resize(count);
+  _count = count;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::enqueueToRenderQueue(
@@ -34,7 +36,6 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   auto RCFD                            = context->topRenderContextFrameData();
   const auto& topCPD                   = RCFD->topCPD();
   const auto& monofrustum              = topCPD.monoCamFrustum();
-  auto GBI                             = context->GBI();
   lev2::CallbackRenderable& renderable = renderer->enqueueCallback();
   ////////////////////////////////////////////////////////////////////
   if (not _model)
@@ -52,6 +53,8 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   renderable.SetUserData1(item.mUserData1);
   ////////////////////////////////////////////////////////////////////
   renderable.SetRenderCallback([this](lev2::RenderContextInstData& RCID) { //
+    auto context   = RCID.context();
+    auto GBI       = context->GBI();
     int inummeshes = _model->numMeshes();
     for (int imesh = 0; imesh < inummeshes; imesh++) {
       auto mesh       = _model->mesh(imesh);
@@ -71,13 +74,14 @@ void InstancedModelDrawable::enqueueToRenderQueue(
           auto vtxbuf     = cluster->_vertexBuffer;
           size_t numprims = cluster->numPrimGroups();
           for (size_t ipg = 0; ipg < numprims; ipg++) {
-            auto primgroup   = cluster->primgroup(ipg);
-            auto indexbuffer = primgroup->mpIndices;
-            auto primtype    = primgroup->mePrimType;
-            int numindices   = primgroup->miNumIndices;
+            auto primgroup = cluster->primgroup(ipg);
+            auto idxbuf    = primgroup->mpIndices;
+            auto primtype  = primgroup->mePrimType;
+            int numindices = primgroup->miNumIndices;
             // OrkAssert(false);
             // todo : implement DrawInstancedPrimitiveEML()
             // GBI->DrawInstancedPrimitiveEML();
+            GBI->DrawInstancedIndexedPrimitiveEML(*vtxbuf, *idxbuf, primtype, _count);
           }
         }
       }

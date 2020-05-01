@@ -82,7 +82,7 @@ ContextDummy::ContextDummy()
 
   if (true == binit) {
     binit = false;
-    //FxShader::RegisterLoaders("shaders/dummy/", "fxml");
+    // FxShader::RegisterLoaders("shaders/dummy/", "fxml");
   }
 }
 
@@ -189,6 +189,13 @@ void DuGeometryBufferInterface::DrawIndexedPrimitiveEML(
     int ivcount) {
 }
 void DuGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, EPrimitiveType eType, int ivbase, int ivcount) {
+}
+
+void DuGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
+    const VertexBufferBase& VBuf,
+    const IndexBufferBase& IdxBuf,
+    EPrimitiveType eType,
+    size_t instance_count) {
 }
 
 bool DuTextureInterface::LoadTexture(const AssetPath& fname, Texture* ptex) {

@@ -289,12 +289,16 @@ struct ModelDrawable : public Drawable {
 
 struct InstancedModelDrawable final : public Drawable {
 
+  static constexpr size_t k_texture_dimension = 1024;
+  static constexpr size_t k_max_instances     = k_texture_dimension * k_texture_dimension / 4;
+
   InstancedModelDrawable(DrawableOwner* owner = NULL);
   ~InstancedModelDrawable();
   void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const override;
   void resize(size_t count);
   model_ptr_t _model;
   instanceddrawdata_ptr_t _instancedata;
+  size_t _count;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

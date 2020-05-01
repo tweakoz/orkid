@@ -29,21 +29,37 @@ public:
 
   virtual void ReleaseVB(VertexBufferBase& VBuf) = 0; // e release memory
 
-  virtual void DrawPrimitive(const VertexBufferBase& VBuf, EPrimitiveType eType = EPrimitiveType::NONE, int ivbase = 0, int ivcount = 0) = 0;
+  virtual void DrawPrimitive(
+      const VertexBufferBase& VBuf, //
+      EPrimitiveType eType = EPrimitiveType::NONE,
+      int ivbase           = 0,
+      int ivcount          = 0) = 0;
+
   virtual void DrawIndexedPrimitive(
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
       EPrimitiveType eType = EPrimitiveType::NONE,
       int ivbase           = 0,
       int ivcount          = 0) = 0;
-  virtual void
-  DrawPrimitiveEML(const VertexBufferBase& VBuf, EPrimitiveType eType = EPrimitiveType::NONE, int ivbase = 0, int ivcount = 0) = 0;
+
+  virtual void DrawPrimitiveEML(
+      const VertexBufferBase& VBuf, //
+      EPrimitiveType eType = EPrimitiveType::NONE,
+      int ivbase           = 0,
+      int ivcount          = 0) = 0;
+
   virtual void DrawIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
       EPrimitiveType eType = EPrimitiveType::NONE,
       int ivbase           = 0,
       int ivcount          = 0) = 0;
+
+  virtual void DrawInstancedIndexedPrimitiveEML(
+      const VertexBufferBase& VBuf,
+      const IndexBufferBase& IdxBuf,
+      EPrimitiveType eType,
+      size_t instance_count) = 0;
 
   virtual void* LockIB(IndexBufferBase& VBuf, int ibase = 0, int icount = 0) = 0;
   virtual void UnLockIB(IndexBufferBase& VBuf)                               = 0;

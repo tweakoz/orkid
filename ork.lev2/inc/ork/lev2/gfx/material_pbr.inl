@@ -97,23 +97,17 @@ public:
   const FxShaderParam* _parRoughnessFactor = nullptr;
   const FxShaderParam* _parModColor        = nullptr;
   const FxShaderParam* _parBoneMatrices    = nullptr;
-///////////////////////////////////////////
-// instancing (via SSBO)
-// max > 1M instances per draw
-///////////////////////////////////////////
-#if defined(ENABLE_SHADER_STORAGE)
-  const FxShaderStorageBlock* _parInstanceMatrices = nullptr;
-#endif
   ///////////////////////////////////////////
-  // instancing (via UBO)
-  // max == 1024 instances per draw
-  ///////////////////////////////////////////
-  const FxShaderParamBlock* _parInstanceMatrices = nullptr;
+  // instancing (via texture)
+  const FxShaderParam* _paramInstanceMatrixMap = nullptr; // 1k*1k texture containing instance matrices
   ///////////////////////////////////////////
   Texture* _texColor  = nullptr;
   Texture* _texNormal = nullptr;
   Texture* _texMtlRuf = nullptr;
   std::string _textureBaseName;
+
+  FxShaderTechniquePermutations _tekperms;
+
   const FxShaderTechnique* _tekRigidGBUFFER              = nullptr;
   const FxShaderTechnique* _tekRigidGBUFFER_SKINNED_N    = nullptr;
   const FxShaderTechnique* _tekRigidGBUFFER_N            = nullptr;

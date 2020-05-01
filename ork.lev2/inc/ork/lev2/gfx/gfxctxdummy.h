@@ -134,47 +134,62 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class DuGeometryBufferInterface : public GeometryBufferInterface {
+class DuGeometryBufferInterface final : public GeometryBufferInterface {
 
   ///////////////////////////////////////////////////////////////////////
   // VtxBuf Interface
 
-  virtual void* LockVB(VertexBufferBase& VBuf, int ivbase, int icount);
-  virtual void UnLockVB(VertexBufferBase& VBuf);
+  void* LockVB(VertexBufferBase& VBuf, int ivbase, int icount) override;
+  void UnLockVB(VertexBufferBase& VBuf) override;
 
-  virtual const void* LockVB(const VertexBufferBase& VBuf, int ivbase = 0, int icount = 0);
-  virtual void UnLockVB(const VertexBufferBase& VBuf);
+  const void* LockVB(const VertexBufferBase& VBuf, int ivbase = 0, int icount = 0) override;
+  void UnLockVB(const VertexBufferBase& VBuf) override;
 
-  virtual void ReleaseVB(VertexBufferBase& VBuf);
-
-  //
-
-  virtual void* LockIB(IndexBufferBase& VBuf, int ivbase, int icount);
-  virtual void UnLockIB(IndexBufferBase& VBuf);
-
-  virtual const void* LockIB(const IndexBufferBase& VBuf, int ibase = 0, int icount = 0);
-  virtual void UnLockIB(const IndexBufferBase& VBuf);
-
-  virtual void ReleaseIB(IndexBufferBase& VBuf);
+  void ReleaseVB(VertexBufferBase& VBuf) override;
 
   //
 
-  virtual void
-  DrawPrimitive(const VertexBufferBase& VBuf, EPrimitiveType eType = EPrimitiveType::NONE, int ivbase = 0, int ivcount = 0);
-  virtual void DrawIndexedPrimitive(
+  void* LockIB(IndexBufferBase& VBuf, int ivbase, int icount) override;
+  void UnLockIB(IndexBufferBase& VBuf) override;
+
+  const void* LockIB(const IndexBufferBase& VBuf, int ibase = 0, int icount = 0) override;
+  void UnLockIB(const IndexBufferBase& VBuf) override;
+
+  void ReleaseIB(IndexBufferBase& VBuf) override;
+
+  //
+
+  void DrawPrimitive(
+      const VertexBufferBase& VBuf, //
+      EPrimitiveType eType,
+      int ivbase,
+      int ivcount) override;
+
+  void DrawIndexedPrimitive(
+      const VertexBufferBase& VBuf, //
+      const IndexBufferBase& IdxBuf,
+      EPrimitiveType eType,
+      int ivbase,
+      int ivcount) override;
+
+  void DrawPrimitiveEML(
+      const VertexBufferBase& VBuf, //
+      EPrimitiveType eType,
+      int ivbase,
+      int ivcount) override;
+
+  void DrawIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
-      EPrimitiveType eType = EPrimitiveType::NONE,
-      int ivbase           = 0,
-      int ivcount          = 0);
-  virtual void
-  DrawPrimitiveEML(const VertexBufferBase& VBuf, EPrimitiveType eType = EPrimitiveType::NONE, int ivbase = 0, int ivcount = 0);
-  virtual void DrawIndexedPrimitiveEML(
+      EPrimitiveType eType,
+      int ivbase,
+      int ivcount) override;
+
+  void DrawInstancedIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
-      EPrimitiveType eType = EPrimitiveType::NONE,
-      int ivbase           = 0,
-      int ivcount          = 0);
+      EPrimitiveType eType,
+      size_t instance_count) override;
 
   //////////////////////////////////////////////
 

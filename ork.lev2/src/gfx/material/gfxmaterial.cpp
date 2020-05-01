@@ -38,10 +38,6 @@ template <> void PropType<lev2::ETextureDest>::GetValueSet(const std::string*& V
 /////////////////////////////////////////////////////////////////////////
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxMaterial, "GfxMaterial")
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::MaterialInstApplicator, "MaterialInstApplicator")
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::MaterialInstItem, "MaterialInstItem")
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::MaterialInstItemMatrix, "MaterialInstItemMatrix")
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::MaterialInstItemMatrixBlock, "MaterialInstItemMatrixBlock")
 
 namespace ork {
 
@@ -56,15 +52,6 @@ XgmMaterialReaderContext::XgmMaterialReaderContext(Reader& r)
 
 } // namespace chunkfile
 namespace lev2 {
-
-void MaterialInstApplicator::Describe() {
-}
-void MaterialInstItem::Describe() {
-}
-void MaterialInstItemMatrix::Describe() {
-}
-void MaterialInstItemMatrixBlock::Describe() {
-}
 
 void GfxMaterial::Describe() {
 }

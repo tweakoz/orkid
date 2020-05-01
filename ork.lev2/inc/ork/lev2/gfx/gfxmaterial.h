@@ -47,27 +47,19 @@ struct TextureContext {
   float mfRepeatV;
 };
 
-class MaterialInstApplicator : public ork::Object {
-  RttiDeclareAbstract(MaterialInstApplicator, ork::Object);
-
-public:
+struct MaterialInstApplicator {
   virtual void ApplyToTarget(Context* pTARG) = 0;
 };
 
-class MaterialInstItem : public ork::Object {
-  RttiDeclareAbstract(MaterialInstItem, ork::Object);
-
-public:
+struct MaterialInstItem {
   PoolString mObjectName;
   PoolString mChannelName;
   const GfxMaterial* mMaterial;
   MaterialInstApplicator* mApplicator;
-
   MaterialInstItem()
       : mMaterial(0)
       , mApplicator(0) {
   }
-
   virtual void Set() = 0;
   void SetApplicator(MaterialInstApplicator* papplicator) {
     mApplicator = papplicator;
@@ -76,15 +68,10 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class MaterialInstItemMatrix : public MaterialInstItem {
-  RttiDeclareAbstract(MaterialInstItemMatrix, MaterialInstItem);
-
+struct MaterialInstItemMatrix : public MaterialInstItem {
   fmtx4 mMatrix;
-
-public:
   MaterialInstItemMatrix() {
   }
-
   void SetMatrix(const fmtx4& pmat) {
     mMatrix = pmat;
   }
@@ -99,13 +86,9 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class MaterialInstItemMatrixBlock : public MaterialInstItem {
-  RttiDeclareAbstract(MaterialInstItemMatrixBlock, MaterialInstItem);
-
+struct MaterialInstItemMatrixBlock : public MaterialInstItem {
   size_t miNumMatrices;
   const fmtx4* mpMatrices;
-
-public:
   MaterialInstItemMatrixBlock()
       : miNumMatrices(0)
       , mpMatrices(0) {
@@ -124,8 +107,6 @@ public:
   const fmtx4* GetMatrices() const {
     return mpMatrices;
   }
-
-private:
   void Set() final {
   }
 };
