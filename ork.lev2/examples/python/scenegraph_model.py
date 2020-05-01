@@ -48,11 +48,11 @@ class SceneGraphApp(object):
     models = []
     models += [Model("data://tests/pbr1/pbr1")]
     models += [Model("data://tests/pbr_calib.gltf")]
-    models += [Model("src://environ/objects/misc/headwalker.obj")]
+    #models += [Model("src://environ/objects/misc/headwalker.obj")]
     models += [Model("src://environ/objects/misc/ref/torus.glb")]
     ###################################
-    for i in range(200):
-      model = models[i%4]
+    for i in range(1000):
+      model = models[i%len(models)]
       self.modelinsts += [modelinst(model,layer)]
     ###################################
     self.camera = CameraData()
