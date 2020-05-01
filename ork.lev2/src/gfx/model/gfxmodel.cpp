@@ -31,8 +31,6 @@ XgmModel::XgmModel()
 XgmModel::~XgmModel() {
   for (orklut<PoolString, XgmMesh*>::iterator it = mMeshes.begin(); it != mMeshes.end(); it++)
     delete it->second;
-  for (orkvector<GfxMaterial*>::iterator it = mvMaterials.begin(); it != mvMaterials.end(); it++)
-    delete (*it);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -234,7 +232,7 @@ XgmMesh::~XgmMesh() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmModel::AddMaterial(GfxMaterial* Mat) {
+void XgmModel::AddMaterial(material_ptr_t Mat) {
   if (false == OldStlSchoolIsItemInVector(mvMaterials, Mat)) {
     mvMaterials.push_back(Mat);
   }
@@ -260,7 +258,7 @@ void XgmModel::RenderRigid(
   int inumclusset              = XgmMesh.numSubMeshes();
   int imat                     = RCID.GetMaterialIndex();
   OrkAssert(imat < inumclusset);
-  GfxMaterial* __restrict pmat = XgmClusSet.GetMaterial();
+  material_ptr_t pmat = XgmClusSet.GetMaterial();
 
   pTARG->debugPushGroup(FormatString(
       "XgmModel::RenderRigid stereo1pass<%d> inummesh<%d> inumclusset<%d> imat<%d>",
@@ -313,9 +311,9 @@ void XgmModel::RenderRigid(
         /////////////////////////////////////////////////////
         case ork::lev2::ERGST_NONE: {
           pTARG->debugPushGroup("XgmModel::RenderRigid::ERGST_NONE");
-          pTARG->BindMaterial(pmat);
+          pTARG->BindMaterial(pmat.get());
           int inumpasses = pmat->BeginBlock(pTARG, RCID);
-          { RenderClus::RenderStd(pTARG, pmat, cluster, inumpasses); }
+          { RenderClus::RenderStd(pTARG, pmat.get(), cluster, inumpasses); }
           pmat->EndBlock(pTARG);
           gbGROUPENABLED = false;
           pTARG->debugPopGroup();
@@ -323,7 +321,7 @@ void XgmModel::RenderRigid(
         }
         /////////////////////////////////////////////////////
         case ork::lev2::ERGST_FIRST: {
-          pTARG->BindMaterial(pmat);
+          pTARG->BindMaterial(pmat.get());
           giNUMPASSES = pmat->BeginBlock(pTARG, RCID);
           if (giNUMPASSES == 1) {
             gbGROUPENABLED = true;
@@ -334,7 +332,7 @@ void XgmModel::RenderRigid(
           } else {
             gbGROUPENABLED = false;
             {
-              RenderClus::RenderStd(pTARG, pmat, cluster, giNUMPASSES); // inumpasses );
+              RenderClus::RenderStd(pTARG, pmat.get(), cluster, giNUMPASSES); // inumpasses );
             }
             pmat->EndBlock(pTARG);
           }
@@ -349,9 +347,9 @@ void XgmModel::RenderRigid(
               RenderClus::RenderPrim(pTARG, cluster);
             }
           } else {
-            pTARG->BindMaterial(pmat);
+            pTARG->BindMaterial(pmat.get());
             int inumpasses = pmat->BeginBlock(pTARG, RCID);
-            { RenderClus::RenderStd(pTARG, pmat, cluster, inumpasses); }
+            { RenderClus::RenderStd(pTARG, pmat.get(), cluster, inumpasses); }
             pmat->EndBlock(pTARG);
           }
           break;
@@ -368,9 +366,9 @@ void XgmModel::RenderRigid(
             }
             pmat->EndBlock(pTARG);
           } else {
-            pTARG->BindMaterial(pmat);
+            pTARG->BindMaterial(pmat.get());
             int inumpasses = pmat->BeginBlock(pTARG, RCID);
-            { RenderClus::RenderStd(pTARG, pmat, cluster, inumpasses); }
+            { RenderClus::RenderStd(pTARG, pmat.get(), cluster, inumpasses); }
             pmat->EndBlock(pTARG);
           }
           break;
@@ -443,7 +441,7 @@ void XgmModel::RenderSkinned(
       mtl->gpuUpdate(pTARG);
 
       if (0 != mtl) {
-        pTARG->BindMaterial(mtl);
+        pTARG->BindMaterial(mtl.get());
         int inumpasses = mtl->BeginBlock(pTARG, RCID);
 
         for (int ip = 0; ip < inumpasses; ip++) {

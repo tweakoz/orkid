@@ -264,8 +264,8 @@ void XgmMaterialStateInst::BindAnimInst(const XgmAnimInst& AnimInst) {
 
       if (mchan) {
         for (int imat = 0; imat < nummaterials; imat++) {
-          const GfxMaterial* __restrict material = mModel->GetMaterial(imat);
-          const PoolString& matname              = material->GetName();
+          auto material             = mModel->GetMaterial(imat);
+          const PoolString& matname = material->GetName();
 
           if (matname == objectname) {
             /*

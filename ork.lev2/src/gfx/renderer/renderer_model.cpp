@@ -133,8 +133,8 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
       int inumclusset = mesh.numSubMeshes();
 
       for (int ics = 0; ics < inumclusset; ics++) {
-        const lev2::XgmSubMesh& submesh   = *mesh.subMesh(ics);
-        const lev2::GfxMaterial* material = submesh._material;
+        const lev2::XgmSubMesh& submesh = *mesh.subMesh(ics);
+        auto material                   = submesh._material;
 
         int inumclus = submesh._clusters.size();
 
@@ -191,7 +191,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
             renderable.SetRotate(mRotate);
             renderable.SetOffset(mOffset);
 
-            size_t umat = size_t(material);
+            size_t umat = size_t(material.get());
             u32 imtla   = (umat & 0xff);
             u32 imtlb   = ((umat >> 8) & 0xff);
             u32 imtlc   = ((umat >> 16) & 0xff);
@@ -251,8 +251,8 @@ bool ModelRenderable::CanGroup(const IRenderable* oth) const {
   auto pren = dynamic_cast<const ModelRenderable*>(oth);
   if (pren) {
     const lev2::XgmSubMesh* submesh = pren->subMesh();
-    const GfxMaterial* mtl          = submesh->GetMaterial();
-    const GfxMaterial* mtl2         = subMesh()->GetMaterial();
+    auto mtl                        = submesh->GetMaterial();
+    auto mtl2                       = subMesh()->GetMaterial();
     return (mtl == mtl2);
   }
   return false;

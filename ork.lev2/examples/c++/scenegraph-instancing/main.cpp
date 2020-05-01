@@ -49,7 +49,9 @@ int main(int argc, char** argv) {
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
   //////////////////////////////////////////////////////////
-  qtapp->onGpuInit([&](Context* ctx) {});
+  qtapp->onGpuInit([&](Context* ctx) {
+
+  });
   //////////////////////////////////////////////////////////
   // update handler (called on update thread)
   //  it will never be called before onGpuInit() is complete...

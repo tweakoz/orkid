@@ -243,8 +243,6 @@ struct Mesh {
 
   /////////////////////////////////////////////////////////////////////////
   void WriteToWavefrontObj(const file::Path& outpath) const;
-  void WriteToRgmFile(const file::Path& outpath) const;
-  void WriteToXgmFile(const file::Path& outpath) const;
   /////////////////////////////////////////////////////////////////////////
   void ReadFromXGM(const file::Path& inpath);
   void ReadFromWavefrontObj(const file::Path& inpath);

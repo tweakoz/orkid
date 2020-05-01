@@ -22,6 +22,8 @@ using namespace std::literals;
 ///////////////////////////////////////////////////////////////////////////////
 
 class PBRMaterial;
+using pbrmaterial_ptr_t      = std::shared_ptr<PBRMaterial>;
+using pbrmaterial_constptr_t = std::shared_ptr<const PBRMaterial>;
 
 struct PbrMatrixBlockApplicator : public MaterialInstApplicator {
   MaterialInstItemMatrixBlock* _matrixblock = nullptr;

@@ -148,7 +148,7 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
     for (auto it : ovmap) {
       std::string mtlvaluename = it.second.c_str();
       if (0 == strcmp(it.first.c_str(), "all")) {
-        auto overridemtl = new lev2::PBRMaterial();
+        auto overridemtl = std::make_shared<lev2::PBRMaterial>();
         overridemtl->setTextureBaseName(mtlvaluename);
         _modelinst->_overrideMaterial = overridemtl;
       }

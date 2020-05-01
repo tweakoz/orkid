@@ -938,8 +938,8 @@ void ModelRenderer::Render(
       int inumclusset = mesh.numSubMeshes();
 
       for (int ics = 0; ics < inumclusset; ics++) {
-        const lev2::XgmSubMesh& submesh   = *mesh.subMesh(ics);
-        const lev2::GfxMaterial* material = submesh._material;
+        const lev2::XgmSubMesh& submesh = *mesh.subMesh(ics);
+        auto material                   = submesh._material;
 
         int inumclus = submesh._clusters.size();
 

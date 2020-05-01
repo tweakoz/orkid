@@ -237,7 +237,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablockptr_t datablock) {
 
       auto anno = pmatclass->annotation("xgm.reader");
       if (auto as_reader = anno.TryAs<chunkfile::materialreader_t>()) {
-        lev2::GfxMaterial* pmat = as_reader.value()(materialread_ctx);
+        auto pmat = as_reader.value()(materialread_ctx);
         pmat->SetName(AddPooledString(pmatname));
         mdl->AddMaterial(pmat);
       }
@@ -289,7 +289,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablockptr_t datablock) {
         //////////////////////////////
 
         for (int imat = 0; imat < mdl->miNumMaterials; imat++) {
-          GfxMaterial* pmat = mdl->GetMaterial(imat);
+          auto pmat = mdl->GetMaterial(imat);
           if (strcmp(pmat->GetName().c_str(), matname) == 0) {
             xgm_sub_mesh._material = pmat;
           }
@@ -566,9 +566,9 @@ datablockptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
   ///////////////////////////////////////////////////////////////////////////////////////////
 
   for (int32_t imat = 0; imat < inummats; imat++) {
-    const lev2::GfxMaterial* pmat = mdl->GetMaterial(imat);
-    auto matclass                 = pmat->GetClass();
-    auto& writeranno              = matclass->annotation("xgm.writer");
+    auto pmat        = mdl->GetMaterial(imat);
+    auto matclass    = pmat->GetClass();
+    auto& writeranno = matclass->annotation("xgm.writer");
 
     HeaderStream->AddItem(imat);
     istring = chunkwriter.stringIndex(pmat->GetName().c_str());
@@ -619,7 +619,7 @@ datablockptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     // printf("WriteXgm<%s> mesh<%d:%s> numsubmeshes<%d>\n", Filename.c_str(), imesh, Mesh.meshName().c_str(), inumsubmeshes);
     for (int32_t ics = 0; ics < inumsubmeshes; ics++) {
       const lev2::XgmSubMesh& xgm_sub_mesh = *Mesh.subMesh(ics);
-      const lev2::GfxMaterial* pmat        = xgm_sub_mesh.GetMaterial();
+      auto pmat                            = xgm_sub_mesh.GetMaterial();
 
       int32_t inumclus = xgm_sub_mesh.GetNumClusters();
 

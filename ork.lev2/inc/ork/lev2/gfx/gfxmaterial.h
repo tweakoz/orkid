@@ -21,8 +21,10 @@ namespace lev2 {
 
 struct GfxMaterialInstance;
 
-using material_ptr_t     = std::shared_ptr<GfxMaterial>;
-using materialinst_ptr_t = std::shared_ptr<GfxMaterialInstance>;
+using material_ptr_t          = std::shared_ptr<GfxMaterial>;
+using material_constptr_t     = std::shared_ptr<const GfxMaterial>;
+using materialinst_ptr_t      = std::shared_ptr<GfxMaterialInstance>;
+using materialinst_constptr_t = std::shared_ptr<const GfxMaterialInstance>;
 
 class Texture;
 
@@ -247,20 +249,20 @@ class InputStream;
 
 struct XgmMaterialWriterContext {
   XgmMaterialWriterContext(Writer& w);
-  OutputStream* _outputStream             = nullptr;
-  const ork::lev2::GfxMaterial* _material = nullptr;
+  OutputStream* _outputStream = nullptr;
+  lev2::material_constptr_t _material;
   Writer& _writer;
-  ork::varmap::VarMap _varmap;
+  varmap::VarMap _varmap;
 };
 struct XgmMaterialReaderContext {
   XgmMaterialReaderContext(Reader& r);
-  InputStream* _inputStream         = nullptr;
-  ork::lev2::GfxMaterial* _material = nullptr;
+  InputStream* _inputStream = nullptr;
+  lev2::material_ptr_t _material;
   Reader& _reader;
-  ork::varmap::VarMap _varmap;
+  varmap::VarMap _varmap;
 };
 
-typedef std::function<ork::lev2::GfxMaterial*(XgmMaterialReaderContext& ctx)> materialreader_t;
+typedef std::function<lev2::material_ptr_t(XgmMaterialReaderContext& ctx)> materialreader_t;
 typedef std::function<void(XgmMaterialWriterContext& ctx)> materialwriter_t;
 
 } // namespace chunkfile

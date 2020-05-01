@@ -685,7 +685,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
     ork::meshutil::submesh_ptr_t _toolsub;
     ork::meshutil::MaterialGroup* _toolmgrp     = nullptr;
     ork::meshutil::XgmClusterizer* _clusterizer = nullptr;
-    ork::lev2::PBRMaterial* _pbrmaterial        = nullptr;
+    ork::lev2::pbrmaterial_ptr_t _pbrmaterial;
   };
 
   typedef std::vector<SubRec> xgmsubvect_t;
@@ -704,7 +704,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
     auto gltfmtl     = inp_submesh->typedAnnotation<GltfMaterial*>("gltfmaterial");
     assert(mtlset.size() == 1); // assimp does 1 material per submesh
 
-    auto mtlout = new ork::lev2::PBRMaterial();
+    auto mtlout = std::make_shared<ork::lev2::PBRMaterial>();
     mtlout->setTextureBaseName(FormatString("material%d", subindex));
     mtlout->SetName(AddPooledString(gltfmtl->_name.c_str()));
     mtlout->_colorMapName    = gltfmtl->_colormap;

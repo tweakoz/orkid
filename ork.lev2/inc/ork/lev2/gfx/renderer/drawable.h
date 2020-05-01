@@ -296,9 +296,11 @@ struct InstancedModelDrawable final : public Drawable {
   ~InstancedModelDrawable();
   void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const override;
   void resize(size_t count);
+  void bindModel(model_ptr_t model);
   model_ptr_t _model;
   instanceddrawdata_ptr_t _instancedata;
   size_t _count;
+  svar16_t _impl;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

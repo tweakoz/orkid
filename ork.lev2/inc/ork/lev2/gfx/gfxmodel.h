@@ -140,9 +140,8 @@ using xgmcluster_ptr_list_t = std::vector<xgmcluster_ptr_t>;
 struct XgmSubMesh final // Run Time Cluster Set
 {
 
-  GfxMaterial* _material;
+  material_ptr_t _material;
   xgmcluster_ptr_list_t _clusters;
-  materialinst_ptr_t _materialinst;
 
   XgmSubMesh()
       : _material(nullptr) {
@@ -156,7 +155,7 @@ struct XgmSubMesh final // Run Time Cluster Set
   xgmcluster_ptr_t cluster(int idx) const {
     return _clusters[idx];
   }
-  GfxMaterial* GetMaterial(void) const {
+  material_ptr_t GetMaterial(void) const {
     return _material;
   }
 
@@ -296,13 +295,13 @@ struct XgmModel final {
   void* GetUserData() {
     return mpUserData;
   }
-  const GfxMaterial* GetMaterial(int idx) const {
+  material_constptr_t GetMaterial(int idx) const {
     return mvMaterials[idx];
   }
-  GfxMaterial* GetMaterial(int idx) {
+  material_ptr_t GetMaterial(int idx) {
     return mvMaterials[idx];
   }
-  void AddMaterial(GfxMaterial* hM);
+  void AddMaterial(material_ptr_t hM);
 
   const fvec3& boundingCenter() const {
     return mBoundingCenter;
@@ -382,7 +381,7 @@ struct XgmModel final {
   }
 
   orklut<PoolString, XgmMesh*> mMeshes;
-  orkvector<GfxMaterial*> mvMaterials;
+  orkvector<material_ptr_t> mvMaterials;
   int miBonesPerCluster;
   XgmSkeleton mSkeleton;
   void* mpUserData;
@@ -456,7 +455,7 @@ struct XgmModelInst final {
   XgmLocalPose mLocalPose;
   mutable XgmWorldPose _worldPose;
   XgmMaterialStateInst mMaterialStateInst;
-  GfxMaterial* _overrideMaterial = nullptr;
+  material_ptr_t _overrideMaterial;
   int miNumChannels;
   bool mbSkinned;
   bool mBlenderZup;
