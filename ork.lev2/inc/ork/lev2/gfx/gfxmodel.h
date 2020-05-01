@@ -92,8 +92,7 @@ using xgmprimgroup_ptr_t = std::shared_ptr<XgmPrimGroup>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct XgmCluster // Run Time Cluster
-{
+struct XgmCluster { // Run Time Cluster
   XgmCluster();
   virtual ~XgmCluster();
   void Dump(void);

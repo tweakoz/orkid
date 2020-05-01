@@ -25,12 +25,23 @@ int main(int argc, char** argv) {
   auto sg_layer = sg_scene->createLayer("default");
 
   //////////////////////////////////////////////////////////
-  // create terrain drawable
+  // create instanced model drawable
   //////////////////////////////////////////////////////////
   auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://tests/pbr1/pbr1");
-  auto drw        = std::make_shared<ModelDrawable>(nullptr);
-  drw->_modelinst = std::make_shared<XgmModelInst>(modl_asset->_model.get());
+  auto drw        = std::make_shared<InstancedModelDrawable>(nullptr);
+  drw->_model     = modl_asset->_model;
   auto sg_node    = sg_layer->createNode("model-node", drw);
+  //////////////////////////////////////////////////////////
+  drw->setNumInstances(1000);
+  for (int i = 0; i < 1000; i++) {
+    int ix   = (rand() & 0xff) - 0x80;
+    int iy   = (rand() & 0xff) - 0x80;
+    int iz   = (rand() & 0xff) - 0x80;
+    float fx = float(ix) / 10.0f;
+    float fy = float(iy) / 10.0f;
+    float fz = float(iz) / 10.0f;
+    drw->_instance_worldmatrices[i].compose(fvec3(fx, fy, fz), fquat(), 1.0f);
+  }
   //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time

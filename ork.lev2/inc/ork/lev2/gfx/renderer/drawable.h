@@ -285,13 +285,18 @@ struct ModelDrawable : public Drawable {
   float mEngineParamFloats[kMaxEngineParamFloats];
 };
 
-struct InstancedModelDrawable : public Drawable {
+///////////////////////////////////////////////////////////////////////////////
+
+struct InstancedModelDrawable final : public Drawable {
 
   InstancedModelDrawable(DrawableOwner* owner = NULL);
   ~InstancedModelDrawable();
-  void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const final;
+  void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const override;
+  void setNumInstances(size_t count);
   model_ptr_t _model;
-  std::vector<fmtx4> _worldmatrices;
+  std::vector<fmtx4> _instance_worldmatrices;
+  std::vector<uint64_t> _instance_pickids;
+  std::vector<svar16_t> _instance_miscdata;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
