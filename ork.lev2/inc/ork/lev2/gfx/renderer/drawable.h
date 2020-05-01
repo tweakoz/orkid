@@ -285,6 +285,15 @@ struct ModelDrawable : public Drawable {
   float mEngineParamFloats[kMaxEngineParamFloats];
 };
 
+struct InstancedModelDrawable : public Drawable {
+
+  InstancedModelDrawable(DrawableOwner* owner = NULL);
+  ~InstancedModelDrawable();
+  void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const final;
+  model_ptr_t _model;
+  std::vector<fmtx4> _worldmatrices;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class ICallbackDrawableDataDestroyer {

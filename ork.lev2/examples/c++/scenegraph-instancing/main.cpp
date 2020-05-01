@@ -27,17 +27,10 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////
   // create terrain drawable
   //////////////////////////////////////////////////////////
-
-  auto terrainData    = std::make_shared<TerrainDrawableData>();
-  terrainData->_rock1 = fvec3(1, 1, 1);
-  terrainData->_writeHmapPath("src://terrain/testhmap2_2048.png");
-  auto terrainInst          = terrainData->createInstance();
-  terrainInst->_worldHeight = 5000.0f;
-  terrainInst->_worldSizeXZ = 8192.0f;
-  auto terrainDrawable      = terrainInst->createCallbackDrawable();
-
-  auto sg_node = sg_layer->createNode("terrain-node", terrainDrawable);
-
+  auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://tests/pbr1/pbr1");
+  auto drw        = std::make_shared<ModelDrawable>(nullptr);
+  drw->_modelinst = std::make_shared<XgmModelInst>(modl_asset->_model.get());
+  auto sg_node    = sg_layer->createNode("model-node", drw);
   //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
