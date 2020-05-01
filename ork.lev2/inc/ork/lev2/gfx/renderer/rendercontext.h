@@ -33,6 +33,17 @@ class DrawableBuffer;
 struct RenderContextFrameData;
 
 ///////////////////////////////////////////////////////////////////////////////
+
+struct InstancedDrawableData {
+  void resize(size_t count);
+  std::vector<fmtx4> _worldmatrices;
+  std::vector<uint64_t> _pickids;
+  std::vector<svar16_t> _miscdata;
+};
+
+using instanceddrawdata_ptr_t = std::shared_ptr<InstancedDrawableData>;
+
+///////////////////////////////////////////////////////////////////////////////
 // Rendering Context Data that can change per draw instance
 //  ie, per renderable (or even finer grained than that)
 ///////////////////////////////////////////////////////////////////////////////

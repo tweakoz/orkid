@@ -170,19 +170,20 @@ void PBRMaterial::Init(Context* targ) /*final*/ {
 
   _tekRigidGBUFFER_SKINNED_N = fxi->technique(_shader, "skinned_gbuffer_n");
 
-  _paramMVP           = fxi->parameter(_shader, "mvp");
-  _paramMVPL          = fxi->parameter(_shader, "mvp_l");
-  _paramMVPR          = fxi->parameter(_shader, "mvp_r");
-  _paramMV            = fxi->parameter(_shader, "mv");
-  _paramMROT          = fxi->parameter(_shader, "mrot");
-  _paramMapColor      = fxi->parameter(_shader, "ColorMap");
-  _paramMapNormal     = fxi->parameter(_shader, "NormalMap");
-  _paramMapMtlRuf     = fxi->parameter(_shader, "MtlRufMap");
-  _parInvViewSize     = fxi->parameter(_shader, "InvViewportSize");
-  _parMetallicFactor  = fxi->parameter(_shader, "MetallicFactor");
-  _parRoughnessFactor = fxi->parameter(_shader, "RoughnessFactor");
-  _parModColor        = fxi->parameter(_shader, "ModColor");
-  _parBoneMatrices    = fxi->parameter(_shader, "BoneMatrices");
+  _paramMVP            = fxi->parameter(_shader, "mvp");
+  _paramMVPL           = fxi->parameter(_shader, "mvp_l");
+  _paramMVPR           = fxi->parameter(_shader, "mvp_r");
+  _paramMV             = fxi->parameter(_shader, "mv");
+  _paramMROT           = fxi->parameter(_shader, "mrot");
+  _paramMapColor       = fxi->parameter(_shader, "ColorMap");
+  _paramMapNormal      = fxi->parameter(_shader, "NormalMap");
+  _paramMapMtlRuf      = fxi->parameter(_shader, "MtlRufMap");
+  _parInvViewSize      = fxi->parameter(_shader, "InvViewportSize");
+  _parMetallicFactor   = fxi->parameter(_shader, "MetallicFactor");
+  _parRoughnessFactor  = fxi->parameter(_shader, "RoughnessFactor");
+  _parModColor         = fxi->parameter(_shader, "ModColor");
+  _parBoneMatrices     = fxi->parameter(_shader, "BoneMatrices");
+  _parInstanceMatrices = fxi->parameter(_shader, "InstanceMatrices");
 
   assert(_paramMapNormal != nullptr);
   assert(_parBoneMatrices != nullptr);
@@ -410,6 +411,23 @@ void PBRMaterial::begin(const RenderContextFrameData& RCFD) {
 ////////////////////////////////////////////
 
 void PBRMaterial::end(const RenderContextFrameData& RCFD) {
+}
+
+////////////////////////////////////////////
+
+int PBRMaterial::materialInstanceBeginBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
+  OrkAssert(false);
+  return 0;
+}
+bool PBRMaterial::materialInstanceBeginPass(materialinst_ptr_t minst, const RenderContextInstData& RCID, int ipass) {
+  OrkAssert(false);
+  return false;
+}
+void PBRMaterial::materialInstanceEndPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
+  OrkAssert(false);
+}
+void PBRMaterial::materialInstanceEndBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
+  OrkAssert(false);
 }
 
 } // namespace ork::lev2

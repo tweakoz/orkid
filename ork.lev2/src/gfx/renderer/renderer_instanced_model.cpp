@@ -16,15 +16,14 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 InstancedModelDrawable::InstancedModelDrawable(DrawableOwner* pent)
     : Drawable() {
+  _instancedata = std::make_shared<InstancedDrawableData>();
 }
 /////////////////////////////////////////////////////////////////////
 InstancedModelDrawable::~InstancedModelDrawable() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void InstancedModelDrawable::setNumInstances(size_t count) {
-  _instance_worldmatrices.resize(count);
-  _instance_miscdata.resize(count);
-  _instance_pickids.resize(count);
+void InstancedModelDrawable::resize(size_t count) {
+  _instancedata->resize(count);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::enqueueToRenderQueue(

@@ -295,6 +295,9 @@ bool FreestyleMaterial::materialInstanceBeginPass(materialinst_ptr_t minst, cons
           OrkAssert(false);
           break;
       }
+
+    } else if (auto as_instancedata_ = val.TryAs<instanceddrawdata_ptr_t>()) {
+      OrkAssert(false);
     } else if (auto as_fvec4_ = val.TryAs<fvec4_ptr_t>()) {
       this->bindParamVec4(param, *as_fvec4_.value().get());
     } else if (auto as_fvec3 = val.TryAs<fvec3_ptr_t>()) {

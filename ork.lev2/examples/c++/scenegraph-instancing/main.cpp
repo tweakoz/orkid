@@ -32,15 +32,18 @@ int main(int argc, char** argv) {
   drw->_model     = modl_asset->_model;
   auto sg_node    = sg_layer->createNode("model-node", drw);
   //////////////////////////////////////////////////////////
-  drw->setNumInstances(1000);
-  for (int i = 0; i < 1000; i++) {
+  constexpr size_t NUMINSTANCES = 4096;
+  //////////////////////////////////////////////////////////
+  drw->resize(NUMINSTANCES);
+  auto instdata = drw->_instancedata;
+  for (int i = 0; i < NUMINSTANCES; i++) {
     int ix   = (rand() & 0xff) - 0x80;
     int iy   = (rand() & 0xff) - 0x80;
     int iz   = (rand() & 0xff) - 0x80;
     float fx = float(ix) / 10.0f;
     float fy = float(iy) / 10.0f;
     float fz = float(iz) / 10.0f;
-    drw->_instance_worldmatrices[i].compose(fvec3(fx, fy, fz), fquat(), 1.0f);
+    instdata->_worldmatrices[i].compose(fvec3(fx, fy, fz), fquat(), 1.0f);
   }
   //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread
@@ -57,6 +60,19 @@ int main(int argc, char** argv) {
   qtapp->onUpdate([&](updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;
+    ///////////////////////////////////////
+    int instance_index = rand() % NUMINSTANCES;
+    int ix             = (rand() & 0xff) - 0x80;
+    int iy             = (rand() & 0xff) - 0x80;
+    int iz             = (rand() & 0xff) - 0x80;
+    float fx           = float(ix) / 10.0f;
+    float fy           = float(iy) / 10.0f;
+    float fz           = float(iz) / 10.0f;
+    instdata->_worldmatrices[instance_index]. //
+        compose(
+            fvec3(fx, fy, fz), //
+            fquat(),
+            1.0f);
     ///////////////////////////////////////
     // compute camera data
     ///////////////////////////////////////

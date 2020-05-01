@@ -30,12 +30,12 @@ struct FreestyleMaterial final : public GfxMaterial {
   // legacy interface
   ////////////////////////////////////////////
 
-  bool BeginPass(Context* targ, int iPass = 0) final;
-  void EndPass(Context* targ) final;
-  int BeginBlock(Context* targ, const RenderContextInstData& RCID) final;
-  void EndBlock(Context* targ) final;
-  void Init(Context* targ) final;
-  void Update() final;
+  bool BeginPass(Context* targ, int iPass = 0) override;
+  void EndPass(Context* targ) override;
+  int BeginBlock(Context* targ, const RenderContextInstData& RCID) override;
+  void EndBlock(Context* targ) override;
+  void Init(Context* targ) override;
+  void Update() override;
 
   ////////////////////////////////////////////
   // new interface (WIP)
@@ -48,10 +48,10 @@ struct FreestyleMaterial final : public GfxMaterial {
   void gpuInit(Context* targ, const AssetPath& assetname);
   void gpuInitFromShaderText(Context* targ, const std::string& shadername, const std::string& shadertext);
 
-  int materialInstanceBeginBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) final;
-  bool materialInstanceBeginPass(materialinst_ptr_t minst, const RenderContextInstData& RCID, int ipass) final;
-  void materialInstanceEndPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) final;
-  void materialInstanceEndBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) final;
+  int materialInstanceBeginBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) override;
+  bool materialInstanceBeginPass(materialinst_ptr_t minst, const RenderContextInstData& RCID, int ipass) override;
+  void materialInstanceEndPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) override;
+  void materialInstanceEndBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) override;
 
   const FxShaderTechnique* technique(std::string named);
   const FxShaderParam* param(std::string named);

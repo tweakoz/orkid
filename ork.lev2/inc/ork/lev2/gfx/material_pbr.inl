@@ -71,8 +71,12 @@ public:
   void EndBlock(Context* targ) final;
   void Init(Context* targ) final;
   void Update() final;
-  void BindMaterialInstItem(MaterialInstItem* pitem) const final;
-  void UnBindMaterialInstItem(MaterialInstItem* pitem) const final;
+  void BindMaterialInstItem(MaterialInstItem* pitem) const override;
+  void UnBindMaterialInstItem(MaterialInstItem* pitem) const override;
+  int materialInstanceBeginBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) override;
+  bool materialInstanceBeginPass(materialinst_ptr_t minst, const RenderContextInstData& RCID, int ipass) override;
+  void materialInstanceEndPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) override;
+  void materialInstanceEndBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) override;
 
   ////////////////////////////////////////////
   void setupCamera(const RenderContextFrameData& RCFD);
@@ -93,7 +97,19 @@ public:
   const FxShaderParam* _parRoughnessFactor = nullptr;
   const FxShaderParam* _parModColor        = nullptr;
   const FxShaderParam* _parBoneMatrices    = nullptr;
-
+///////////////////////////////////////////
+// instancing (via SSBO)
+// max > 1M instances per draw
+///////////////////////////////////////////
+#if defined(ENABLE_SHADER_STORAGE)
+  const FxShaderStorageBlock* _parInstanceMatrices = nullptr;
+#endif
+  ///////////////////////////////////////////
+  // instancing (via UBO)
+  // max == 1024 instances per draw
+  ///////////////////////////////////////////
+  const FxShaderParamBlock* _parInstanceMatrices = nullptr;
+  ///////////////////////////////////////////
   Texture* _texColor  = nullptr;
   Texture* _texNormal = nullptr;
   Texture* _texMtlRuf = nullptr;
