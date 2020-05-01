@@ -930,24 +930,6 @@ void ModelRenderer::Render(
     // setup headlight (default lighting)
     ///////////////////////////////////////////////////////////
     ork::fmtx4 HeadLightMatrix;
-    /*ork::lev2::LightingGroup HeadLightGroup;
-    ork::lev2::AmbientLightData HeadLightData;
-    ork::lev2::AmbientLight HeadLight(HeadLightMatrix, &HeadLightData);
-    ork::lev2::LightManagerData HeadLightManagerData;
-    ork::lev2::LightManager HeadLightManager(HeadLightManagerData);
-    HeadLightData.SetColor(ork::fvec3(1.3f, 1.3f, 1.5f));
-    HeadLightData.SetAmbientShade(0.75f);
-    HeadLight.miInFrustumID = 1;
-    HeadLightGroup.mLightMask.AddLight(&HeadLight);
-    HeadLightGroup.mLightManager = &HeadLightManager;
-    HeadLightMatrix              = cdata->GetIVMatrix();
-    HeadLightManager.mGlobalMovingLights.AddLight(&HeadLight);
-    // HeadLightManager.mLightsInFrustum.push_back(& HeadLight);
-    MatCtx.SetLightingGroup(&HeadLightGroup);*/
-    // FrameData.SetLightManager( & HeadLightManager );
-    // targ->SetRenderContextInstData( & rcid );
-    ///////////////////////////////////////////////////////////
-    // setup headlight (default lighting)
     ///////////////////////////////////////////////////////////
     int inummeshes = GetModel()->numMeshes();
     for (int imesh = 0; imesh < inummeshes; imesh++) {
@@ -957,7 +939,7 @@ void ModelRenderer::Render(
 
       for (int ics = 0; ics < inumclusset; ics++) {
         const lev2::XgmSubMesh& submesh   = *mesh.subMesh(ics);
-        const lev2::GfxMaterial* material = submesh.mpMaterial;
+        const lev2::GfxMaterial* material = submesh._material;
 
         int inumclus = submesh._clusters.size();
 
@@ -969,7 +951,7 @@ void ModelRenderer::Render(
           MdlCtx.mSubMesh = &submesh;
           MdlCtx._cluster = submesh.cluster(ic);
 
-          GetModel()->RenderMultipleRigid(ork::fcolor4::White(), gmatrixblock, icnt, targ, MatCtx, MdlCtx);
+          // GetModel()->RenderMultipleRigid(ork::fcolor4::White(), gmatrixblock, icnt, targ, MatCtx, MdlCtx);
         }
       }
     }

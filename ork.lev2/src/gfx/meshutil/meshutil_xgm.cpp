@@ -140,7 +140,7 @@ void simpleToolSubMeshToXgmSubMesh(const Mesh& mesh, const submesh& smesh, ork::
     pmtlSOL->SetColor(outcolor);
     pmtl = pmtlSOL;
   }
-  meshout.mpMaterial  = pmtl;
+  meshout._material   = pmtl;
   std::string mtlname = smesh.name.c_str();
   pmtl->SetName(ork::AddPooledString(mtlname.c_str()));
   ////////////////////////////////////////////////////////
@@ -192,7 +192,7 @@ void MeshToXgmModel(const Mesh& tmesh, ork::lev2::XgmModel& mdlout) {
 
     ork::lev2::XgmSubMesh* dstsub = new ork::lev2::XgmSubMesh;
     simpleToolSubMeshToXgmSubMesh(tmesh, *srcsub, *dstsub);
-    mdlout.AddMaterial(dstsub->mpMaterial);
+    mdlout.AddMaterial(dstsub->_material);
     outmesh->AddSubMesh(dstsub);
   }
   /////////////////////////////////////////////////////////

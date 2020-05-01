@@ -48,22 +48,22 @@ class XgmCluster;
 class XgmSubMesh;
 struct RenderContextInstModelData;
 
-struct EmbeddedTexture {
-    int _w = 0;
-    int _h = 0;
-    size_t _srcdatalen = 0;
-    const void* _srcdata = nullptr;
-    std::string _format;
-    std::string _name;
-    bool _compressionPending = true;
-    ETextureUsage _usage = ETEXUSAGE_DATA;
-    datablockptr_t _ddsdestdatablock;
-    datablockptr_t compressTexture(uint64_t hash) const;
-    void fetchDDSdata();
-    varmap::VarMap _varmap;
+struct EmbeddedTexture final {
+  int _w               = 0;
+  int _h               = 0;
+  size_t _srcdatalen   = 0;
+  const void* _srcdata = nullptr;
+  std::string _format;
+  std::string _name;
+  bool _compressionPending = true;
+  ETextureUsage _usage     = ETEXUSAGE_DATA;
+  datablockptr_t _ddsdestdatablock;
+  datablockptr_t compressTexture(uint64_t hash) const;
+  void fetchDDSdata();
+  varmap::VarMap _varmap;
 };
 
-typedef std::map<std::string,EmbeddedTexture*> embtexmap_t;
+typedef std::map<std::string, EmbeddedTexture*> embtexmap_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -71,7 +71,7 @@ typedef std::map<std::string,EmbeddedTexture*> embtexmap_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmPrimGroup {
+class XgmPrimGroup final {
 public:
   int miNumIndices;
 
@@ -83,27 +83,41 @@ public:
 
   virtual ~XgmPrimGroup();
 
-  int GetNumIndices(void) const { return miNumIndices; }
-  const IndexBufferBase* GetIndexBuffer(void) const { return mpIndices; }
-  EPrimitiveType GetPrimType(void) const { return mePrimType; }
+  int GetNumIndices(void) const {
+    return miNumIndices;
+  }
+  const IndexBufferBase* GetIndexBuffer(void) const {
+    return mpIndices;
+  }
+  EPrimitiveType GetPrimType(void) const {
+    return mePrimType;
+  }
 };
 
 using xgmprimgroup_ptr_t = std::shared_ptr<XgmPrimGroup>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct XgmCluster { // Run Time Cluster
+struct XgmCluster final { // Run Time Cluster
   XgmCluster();
   virtual ~XgmCluster();
   void Dump(void);
 
-  inline size_t numPrimGroups(void) const { return _primgroups.size(); }
+  inline size_t numPrimGroups(void) const {
+    return _primgroups.size();
+  }
   inline xgmprimgroup_ptr_t primgroup(int idx) const {
     return _primgroups[idx];
   }
-  vtxbufferbase_ptr_t GetVertexBuffer(void) const { return _vertexBuffer; }
-  const PoolString& GetJointBinding(int idx) const { return mJoints[idx]; }
-  size_t GetNumJointBindings(void) const { return mJoints.size(); }
+  vtxbufferbase_ptr_t GetVertexBuffer(void) const {
+    return _vertexBuffer;
+  }
+  const PoolString& GetJointBinding(int idx) const {
+    return mJoints[idx];
+  }
+  size_t GetNumJointBindings(void) const {
+    return mJoints.size();
+  }
 
   void dump() const;
 
@@ -118,41 +132,42 @@ struct XgmCluster { // Run Time Cluster
   Sphere mBoundingSphere;
 };
 
-using xgmcluster_ptr_t = std::shared_ptr<XgmCluster>;
+using xgmcluster_ptr_t      = std::shared_ptr<XgmCluster>;
 using xgmcluster_ptr_list_t = std::vector<xgmcluster_ptr_t>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct XgmSubMesh // Run Time Cluster Set
+struct XgmSubMesh final // Run Time Cluster Set
 {
 
-  GfxMaterial* mpMaterial;
+  GfxMaterial* _material;
   xgmcluster_ptr_list_t _clusters;
-  file::Path mLightMapPath;
-  Texture* mLightMap;
-  bool mbVertexLit;
+  materialinst_ptr_t _materialinst;
 
   XgmSubMesh()
-      : mpMaterial(0)
-      , mLightMapPath("")
-      , mLightMap(0)
-      , mbVertexLit(false) {}
-  virtual ~XgmSubMesh();
+      : _material(nullptr) {
+  }
 
-  int GetNumClusters(void) const { return _clusters.size(); }
+  ~XgmSubMesh();
+
+  int GetNumClusters(void) const {
+    return _clusters.size();
+  }
   xgmcluster_ptr_t cluster(int idx) const {
     return _clusters[idx];
   }
-  GfxMaterial* GetMaterial(void) const { return mpMaterial; }
+  GfxMaterial* GetMaterial(void) const {
+    return _material;
+  }
 
   void dump() const;
-};
+}; // namespace ork::lev2
 
 using xgmsubmesh_ptr_t = std::shared_ptr<XgmSubMesh>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct XgmMesh {
+struct XgmMesh final {
 
   /////////////////////////////////////
   XgmMesh();
@@ -163,21 +178,49 @@ struct XgmMesh {
     mvBoundingBoxMin = Min;
     mvBoundingBoxMax = Max;
   }
-  void SetFlags(U32 flags) { muFlags |= flags; }
-  void SetMeshIndex(int i) { miMeshIndex = i; }
-  void SetMeshName(const PoolString& name) { mMeshName = name; }
-  int numSubMeshes(void) const { return int(mSubMeshes.size()); }
-  int meshIndex() const { return miMeshIndex; }
-  U32 GetFlags(void) const { return muFlags; }
-  bool CheckFlags(U32 flags) const { return ((flags & muFlags) == flags); }
-  const XgmSubMesh* subMesh(int idx) const { return mSubMeshes[idx]; }
-  XgmSubMesh* subMesh(int idx) { return mSubMeshes[idx]; }
-  const PoolString& meshName() const { return mMeshName; }
-  const fvec4& RefBoundingBoxMin(void) const { return mvBoundingBoxMin; }
-  const fvec4& RefBoundingBoxMax(void) const { return mvBoundingBoxMax; }
+  void SetFlags(U32 flags) {
+    muFlags |= flags;
+  }
+  void SetMeshIndex(int i) {
+    miMeshIndex = i;
+  }
+  void SetMeshName(const PoolString& name) {
+    mMeshName = name;
+  }
+  int numSubMeshes(void) const {
+    return int(mSubMeshes.size());
+  }
+  int meshIndex() const {
+    return miMeshIndex;
+  }
+  U32 GetFlags(void) const {
+    return muFlags;
+  }
+  bool CheckFlags(U32 flags) const {
+    return ((flags & muFlags) == flags);
+  }
+  const XgmSubMesh* subMesh(int idx) const {
+    return mSubMeshes[idx];
+  }
+  XgmSubMesh* subMesh(int idx) {
+    return mSubMeshes[idx];
+  }
+  const PoolString& meshName() const {
+    return mMeshName;
+  }
+  const fvec4& RefBoundingBoxMin(void) const {
+    return mvBoundingBoxMin;
+  }
+  const fvec4& RefBoundingBoxMax(void) const {
+    return mvBoundingBoxMax;
+  }
   /////////////////////////////////////
-  void ReserveSubMeshes(int icount) { mSubMeshes.reserve(icount); }
-  void AddSubMesh(XgmSubMesh* psubmesh) { mSubMeshes.push_back(psubmesh); }
+  void ReserveSubMeshes(int icount) {
+    mSubMeshes.reserve(icount);
+  }
+  void AddSubMesh(XgmSubMesh* psubmesh) {
+    mSubMeshes.push_back(psubmesh);
+  }
   void dump() const;
   /////////////////////////////////////
 
@@ -194,12 +237,16 @@ struct XgmMesh {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct XgmModel {
+struct XgmModel final {
 
   /////////////////////////////////////
 
-  void ReserveMeshes(int icount) { mMeshes.reserve(icount); }
-  void AddMesh(const PoolString& name, XgmMesh* pmesh) { mMeshes.AddSorted(name, pmesh); }
+  void ReserveMeshes(int icount) {
+    mMeshes.reserve(icount);
+  }
+  void AddMesh(const PoolString& name, XgmMesh* pmesh) {
+    mMeshes.AddSorted(name, pmesh);
+  }
 
   /////////////////////////////////////
 
@@ -208,82 +255,116 @@ struct XgmModel {
 
   /////////////////////////////////////
 
-  bool isSkinned() const { return mbSkinned; }
-  void SetSkinned(bool bv) { mbSkinned = bv; }
+  bool isSkinned() const {
+    return mbSkinned;
+  }
+  void SetSkinned(bool bv) {
+    mbSkinned = bv;
+  }
 
   /////////////////////////////////////
 
-  int numMeshes() const { return int(mMeshes.size()); }
-  int GetNumMaterials() const { return miNumMaterials; }
+  int numMeshes() const {
+    return int(mMeshes.size());
+  }
+  int GetNumMaterials() const {
+    return miNumMaterials;
+  }
 
-  const XgmSkeleton& skeleton() const { return mSkeleton; }
-  XgmSkeleton& skeleton() { return mSkeleton; }
+  const XgmSkeleton& skeleton() const {
+    return mSkeleton;
+  }
+  XgmSkeleton& skeleton() {
+    return mSkeleton;
+  }
 
-  const XgmMesh* mesh(int idx) const { return mMeshes.GetItemAtIndex(idx).second; }
-  XgmMesh* mesh(int idx) { return mMeshes.GetItemAtIndex(idx).second; }
+  const XgmMesh* mesh(int idx) const {
+    return mMeshes.GetItemAtIndex(idx).second;
+  }
+  XgmMesh* mesh(int idx) {
+    return mMeshes.GetItemAtIndex(idx).second;
+  }
 
-  const XgmMesh* mesh(const PoolString& name) const { return mMeshes.find(name)->second; }
-  XgmMesh* mesh(const PoolString& name) { return mMeshes.find(name)->second; }
+  const XgmMesh* mesh(const PoolString& name) const {
+    return mMeshes.find(name)->second;
+  }
+  XgmMesh* mesh(const PoolString& name) {
+    return mMeshes.find(name)->second;
+  }
   int meshIndex(const PoolString& name) const;
 
-  void* GetUserData() { return mpUserData; }
-  const GfxMaterial* GetMaterial(int idx) const { return mvMaterials[idx]; }
-  GfxMaterial* GetMaterial(int idx) { return mvMaterials[idx]; }
+  void* GetUserData() {
+    return mpUserData;
+  }
+  const GfxMaterial* GetMaterial(int idx) const {
+    return mvMaterials[idx];
+  }
+  GfxMaterial* GetMaterial(int idx) {
+    return mvMaterials[idx];
+  }
   void AddMaterial(GfxMaterial* hM);
 
-  const fvec3& boundingCenter() const { return mBoundingCenter; }
-  float GetBoundingRadius() const { return mBoundingRadius; }
-  const fvec3& GetBoundingAA_XYZ() const { return mAABoundXYZ; }
-  const fvec3& boundingAA_WHD() const { return mAABoundWHD; }
+  const fvec3& boundingCenter() const {
+    return mBoundingCenter;
+  }
+  float GetBoundingRadius() const {
+    return mBoundingRadius;
+  }
+  const fvec3& GetBoundingAA_XYZ() const {
+    return mAABoundXYZ;
+  }
+  const fvec3& boundingAA_WHD() const {
+    return mAABoundWHD;
+  }
 
-  int GetBonesPerCluster() const { return miBonesPerCluster; }
+  int GetBonesPerCluster() const {
+    return miBonesPerCluster;
+  }
 
   /////////////////////////////////////
 
-  void SetBoundingCenter(const fvec3& v) { mBoundingCenter = v; }
-  void SetBoundingRadius(float v) { mBoundingRadius = v; }
-  void SetBoundingAA_XYZ(const fvec3& v) { mAABoundXYZ = v; }
-  void SetBoundingAA_WHD(const fvec3& v) { mAABoundWHD = v; }
+  void SetBoundingCenter(const fvec3& v) {
+    mBoundingCenter = v;
+  }
+  void SetBoundingRadius(float v) {
+    mBoundingRadius = v;
+  }
+  void SetBoundingAA_XYZ(const fvec3& v) {
+    mAABoundXYZ = v;
+  }
+  void SetBoundingAA_WHD(const fvec3& v) {
+    mAABoundWHD = v;
+  }
 
-  void SetBonesPerCluster(int i) { miBonesPerCluster = i; }
+  void SetBonesPerCluster(int i) {
+    miBonesPerCluster = i;
+  }
 
   /////////////////////////////////////
 
-  void BeginRigidBlock(const fcolor4& ModColor,
-                       const fmtx4& WorldMat,
-                       ork::lev2::Context* pTARG,
-                       const RenderContextInstData& MatCtx,
-                       const RenderContextInstModelData& MdlCtx) const;
+  void BeginRigidBlock(
+      const fcolor4& ModColor,
+      const fmtx4& WorldMat,
+      ork::lev2::Context* pTARG,
+      const RenderContextInstData& MatCtx,
+      const RenderContextInstModelData& MdlCtx) const;
   void EndRigidBlock() const;
   void RenderRigidBlockItem() const;
 
-  void RenderRigid(const fcolor4& ModColor,
-                   const fmtx4& WorldMat,
-                   ork::lev2::Context* pTARG,
-                   const RenderContextInstData& MatCtx,
-                   const RenderContextInstModelData& MdlCtx) const;
+  void RenderRigid(
+      const fcolor4& ModColor,
+      const fmtx4& WorldMat,
+      ork::lev2::Context* pTARG,
+      const RenderContextInstData& MatCtx,
+      const RenderContextInstModelData& MdlCtx) const;
 
-  void RenderMultipleRigid(const fcolor4& ModColor,
-                           const fmtx4* WorldMats,
-                           int icount,
-                           ork::lev2::Context* pTARG,
-                           const RenderContextInstData& MatCtx,
-                           const RenderContextInstModelData& MdlCtx) const;
-
-  void RenderSkinned(const XgmModelInst* minst,
-                     const fcolor4& ModColor,
-                     const fmtx4& WorldMat,
-                     ork::lev2::Context* pTARG,
-                     const RenderContextInstData& MatCtx,
-                     const RenderContextInstModelData& MdlCtx) const;
-
-  void RenderMultipleSkinned(const XgmModelInst* minst,
-                             const fcolor4& ModColor,
-                             const fmtx4* WorldMats,
-                             int icount,
-                             ork::lev2::Context* pTARG,
-                             const RenderContextInstData& MatCtx,
-                             const RenderContextInstModelData& MdlCtx) const;
+  void RenderSkinned(
+      const XgmModelInst* minst,
+      const fcolor4& ModColor,
+      const fmtx4& WorldMat,
+      ork::lev2::Context* pTARG,
+      const RenderContextInstData& MatCtx,
+      const RenderContextInstModelData& MdlCtx) const;
 
   /////////////////////////////////////
 
@@ -296,7 +377,9 @@ struct XgmModel {
 
   void dump() const;
 
-  PoolString GetModelName() const { return msModelName; }
+  PoolString GetModelName() const {
+    return msModelName;
+  }
 
   orklut<PoolString, XgmMesh*> mMeshes;
   orkvector<GfxMaterial*> mvMaterials;
@@ -313,25 +396,34 @@ struct XgmModel {
   varmap::VarMap _varmap;
 };
 
-using model_ptr_t = std::shared_ptr<XgmModel>;
+using model_ptr_t      = std::shared_ptr<XgmModel>;
 using model_constptr_t = std::shared_ptr<const XgmModel>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct XgmModelInst {
+struct XgmModelInst final {
 
   XgmModelInst(const XgmModel* Model);
   ~XgmModelInst();
 
-
-  const XgmModel* xgmModel(void) const { return mXgmModel; }
+  const XgmModel* xgmModel(void) const {
+    return mXgmModel;
+  }
   int GetNumChannels(void) const;
 
-  XgmLocalPose& RefLocalPose() { return mLocalPose; }
-  const XgmLocalPose& RefLocalPose() const { return mLocalPose; }
+  XgmLocalPose& RefLocalPose() {
+    return mLocalPose;
+  }
+  const XgmLocalPose& RefLocalPose() const {
+    return mLocalPose;
+  }
 
-  XgmMaterialStateInst& RefMaterialInst() { return mMaterialStateInst; }
-  const XgmMaterialStateInst& RefMaterialInst() const { return mMaterialStateInst; }
+  XgmMaterialStateInst& RefMaterialInst() {
+    return mMaterialStateInst;
+  }
+  const XgmMaterialStateInst& RefMaterialInst() const {
+    return mMaterialStateInst;
+  }
 
   void EnableMesh(const PoolString& ps);
   void DisableMesh(const PoolString& ps);
@@ -345,10 +437,18 @@ struct XgmModelInst {
   bool isMeshEnabled(int index);
   bool isMeshEnabled(const PoolString& ps);
   bool IsAnyMeshEnabled();
-  bool isSkinned() const { return mbSkinned; }
-  void EnableSkinning() { mbSkinned = true; }
-  bool IsBlenderZup() const { return mBlenderZup; }
-  void SetBlenderZup(bool bv) { mBlenderZup = bv; }
+  bool isSkinned() const {
+    return mbSkinned;
+  }
+  void EnableSkinning() {
+    mbSkinned = true;
+  }
+  bool IsBlenderZup() const {
+    return mBlenderZup;
+  }
+  void SetBlenderZup(bool bv) {
+    mBlenderZup = bv;
+  }
 
   static const int knummaskbytes = 32;
   U8 mMaskBits[knummaskbytes];
@@ -363,12 +463,12 @@ struct XgmModelInst {
   bool _drawSkeleton;
 };
 
-using xgmmodelinst_ptr_t = std::shared_ptr<XgmModelInst>;
+using xgmmodelinst_ptr_t      = std::shared_ptr<XgmModelInst>;
 using xgmmodelinst_constptr_t = std::shared_ptr<const XgmModelInst>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct RenderContextInstModelData {
+struct RenderContextInstModelData final {
   xgmmodelinst_constptr_t _modelinst;
   const XgmMesh* mMesh;
   const XgmSubMesh* mSubMesh;
@@ -381,11 +481,19 @@ struct RenderContextInstModelData {
   // model interface
   //////////////////////////////////////
 
-  bool isSkinned(void) const { return mbisSkinned; }
-  void SetSkinned(bool bv) { mbisSkinned = bv; }
+  bool isSkinned(void) const {
+    return mbisSkinned;
+  }
+  void SetSkinned(bool bv) {
+    mbisSkinned = bv;
+  }
 
-  void SetModelInst(xgmmodelinst_constptr_t pinst) { _modelinst = pinst; }
-  xgmmodelinst_constptr_t GetModelInst(void) const { return _modelinst; }
+  void SetModelInst(xgmmodelinst_constptr_t pinst) {
+    _modelinst = pinst;
+  }
+  xgmmodelinst_constptr_t GetModelInst(void) const {
+    return _modelinst;
+  }
 
   //////////////////////////////////////
 

@@ -282,35 +282,16 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablockptr_t datablock) {
 
         int numclusters = 0;
         HeaderStream->GetItem(numclusters);
-        int ilightmapname;
-        int ivtxlitflg;
 
         HeaderStream->GetItem(imatname);
-        HeaderStream->GetItem(ilightmapname);
-        HeaderStream->GetItem(ivtxlitflg);
+        const char* matname = chunkreader.GetString(imatname);
 
-        const char* matname    = chunkreader.GetString(imatname);
-        submesh->mLightMapPath = file::Path(chunkreader.GetString(ilightmapname));
-
-        //////////////////////////////
-        // vertex lit or lightmapped ?
-        //////////////////////////////
-        if (ivtxlitflg) {
-          submesh->mbVertexLit = true;
-        }
-        //////////////////////////////
-        else if (submesh->mLightMapPath.length()) {
-          if (FileEnv::DoesFileExist(submesh->mLightMapPath)) {
-            auto texasset      = asset::AssetManager<TextureAsset>::Create(submesh->mLightMapPath.c_str());
-            submesh->mLightMap = (texasset == 0) ? 0 : texasset->GetTexture();
-          }
-        }
         //////////////////////////////
 
         for (int imat = 0; imat < mdl->miNumMaterials; imat++) {
           GfxMaterial* pmat = mdl->GetMaterial(imat);
           if (strcmp(pmat->GetName().c_str(), matname) == 0) {
-            xgm_sub_mesh.mpMaterial = pmat;
+            xgm_sub_mesh._material = pmat;
           }
         }
 
@@ -665,15 +646,6 @@ datablockptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
       ////////////////////////////////////////////////////////////
       istring = chunkwriter.stringIndex(pmat ? pmat->GetName().c_str() : "None");
       HeaderStream->AddItem(istring);
-      ////////////////////////////////////////////////////////////
-      const file::Path& LightMapPath = xgm_sub_mesh.mLightMapPath;
-      istring                        = chunkwriter.stringIndex(LightMapPath.c_str());
-      HeaderStream->AddItem(istring);
-      ////////////////////////////////////////////////////////////
-      int32_t ivtxlitflg = 0;
-      if (xgm_sub_mesh.mbVertexLit)
-        ivtxlitflg = 1;
-      HeaderStream->AddItem(ivtxlitflg);
       ////////////////////////////////////////////////////////////
       for (int32_t ic = 0; ic < inumclus; ic++) {
         auto cluster              = xgm_sub_mesh.cluster(ic);

@@ -249,17 +249,16 @@ void XgmModel::RenderRigid(
     ork::lev2::Context* pTARG,
     const RenderContextInstData& RCID,
     const RenderContextInstModelData& mdlctx) const {
-  auto R                         = RCID.GetRenderer();
-  auto RCFD                      = pTARG->topRenderContextFrameData();
-  const auto& CPD                = RCFD->topCPD();
-  bool stereo1pass               = CPD.isStereoOnePass();
-  const XgmMesh& XgmMesh         = *mdlctx.mMesh;
-  auto cluster                   = mdlctx._cluster;
-  const XgmSubMesh& XgmClusSet   = *mdlctx.mSubMesh;
-  const Texture* LightMapTexture = XgmClusSet.mLightMap;
-  int inummesh                   = numMeshes();
-  int inumclusset                = XgmMesh.numSubMeshes();
-  int imat                       = RCID.GetMaterialIndex();
+  auto R                       = RCID.GetRenderer();
+  auto RCFD                    = pTARG->topRenderContextFrameData();
+  const auto& CPD              = RCFD->topCPD();
+  bool stereo1pass             = CPD.isStereoOnePass();
+  const XgmMesh& XgmMesh       = *mdlctx.mMesh;
+  auto cluster                 = mdlctx._cluster;
+  const XgmSubMesh& XgmClusSet = *mdlctx.mSubMesh;
+  int inummesh                 = numMeshes();
+  int inumclusset              = XgmMesh.numSubMeshes();
+  int imat                     = RCID.GetMaterialIndex();
   OrkAssert(imat < inumclusset);
   GfxMaterial* __restrict pmat = XgmClusSet.GetMaterial();
 
@@ -382,72 +381,6 @@ void XgmModel::RenderRigid(
   }
   pTARG->PopModColor();
   pTARG->debugPopGroup();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void XgmModel::RenderMultipleRigid(
-    const fcolor4& ModColor,
-    const fmtx4* WorldMatrices,
-    int icount,
-    ork::lev2::Context* pTARG,
-    const RenderContextInstData& RCID,
-    const RenderContextInstModelData& mdlctx) const {
-  auto R           = RCID.GetRenderer();
-  auto RCFD        = pTARG->topRenderContextFrameData();
-  const auto& CPD  = RCFD->topCPD();
-  bool stereo1pass = CPD.isStereoOnePass();
-
-  pTARG->MTXI()->SetMMatrix(pTARG->MTXI()->RefMMatrix());
-  pTARG->PushModColor(ModColor);
-  {
-    const XgmMesh& XgmMesh       = *mdlctx.mMesh;
-    auto cluster                 = mdlctx._cluster;
-    const XgmSubMesh& XgmClusSet = *mdlctx.mSubMesh;
-    const auto modelinst         = mdlctx.GetModelInst();
-
-    int inummesh    = numMeshes();
-    int inumclusset = XgmMesh.numSubMeshes();
-    int imat        = RCID.GetMaterialIndex();
-    OrkAssert(imat < inumclusset);
-    GfxMaterial* pmaterial = XgmClusSet.GetMaterial();
-
-    if (modelinst) {
-      if (nullptr == modelinst->_overrideMaterial)
-        pmaterial = modelinst->_overrideMaterial;
-    }
-
-    if (nullptr != pmaterial) {
-      pTARG->BindMaterial(pmaterial);
-      int inumpasses = pmaterial->BeginBlock(pTARG, RCID);
-
-      for (int ipass = 0; ipass < inumpasses; ipass++) {
-        OrkAssert(ipass < inumpasses);
-        bool bDRAW = pmaterial->BeginPass(pTARG, ipass);
-
-        if (bDRAW) {
-          for (int imtx = 0; imtx < icount; imtx++) {
-
-            const fmtx4& mtxW = WorldMatrices[imtx];
-            pTARG->MTXI()->SetMMatrix(mtxW);
-            pmaterial->UpdateMVPMatrix(pTARG);
-
-            auto vtxbuffer = cluster->GetVertexBuffer();
-            int inumprim   = cluster->numPrimGroups();
-            for (int iprim = 0; iprim < inumprim; iprim++) {
-              auto primgroup = cluster->primgroup(iprim);
-              auto idxbuffer = primgroup->GetIndexBuffer();
-              pTARG->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
-            }
-          }
-        }
-        pmaterial->EndPass(pTARG);
-      }
-      pmaterial->EndBlock(pTARG);
-    }
-  }
-  pTARG->PopModColor();
-  // pTARG->MTXI()->PopMMatrix();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -699,110 +632,6 @@ void XgmModel::RenderSkinned(
     pTARG->PopModColor();
     pTARG->debugPopGroup();
   }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void XgmModel::RenderMultipleSkinned(
-    const XgmModelInst* minst,
-    const fcolor4& ModColor,
-    const fmtx4* WorldMats,
-    int icount,
-    ork::lev2::Context* pTARG,
-    const RenderContextInstData& RCID,
-    const RenderContextInstModelData& mdlctx) const {
-  auto R           = RCID.GetRenderer();
-  auto RCFD        = pTARG->topRenderContextFrameData();
-  const auto& CPD  = RCFD->topCPD();
-  bool stereo1pass = CPD.isStereoOnePass();
-
-  const XgmSkeleton& Skeleton   = skeleton();
-  const XgmLocalPose& LocalPose = minst->RefLocalPose();
-
-  ////////////////////
-  // Draw Skinned Mesh
-
-  pTARG->PushModColor(ModColor);
-  {
-    int inummesh = numMeshes();
-    int imat     = RCID.GetMaterialIndex();
-
-    const XgmMesh& XgmMesh       = *mdlctx.mMesh;
-    const XgmSubMesh& XgmClusSet = *XgmMesh.subMesh(imat);
-
-    int inumclusset = XgmMesh.numSubMeshes();
-    OrkAssert(imat < inumclusset);
-    bool bmatpushed   = false;
-    GfxMaterial* pmat = XgmClusSet.GetMaterial();
-
-    if (minst->_overrideMaterial != 0)
-      pmat = minst->_overrideMaterial;
-
-    if (0 != pmat) {
-      pTARG->BindMaterial(pmat);
-      int inumpasses = pmat->BeginBlock(pTARG, RCID);
-      int ipass      = RCID.GetMaterialPassIndex();
-      OrkAssert(ipass < inumpasses);
-      bool bDRAW = pmat->BeginPass(pTARG, ipass);
-
-      if (bDRAW) {
-        int inumclus = XgmClusSet.GetNumClusters();
-
-        MaterialInstItemMatrixBlock mtxblockitem;
-        pmat->BindMaterialInstItem(&mtxblockitem);
-        {
-          for (int iclus = 0; iclus < inumclus; iclus++) {
-            auto cluster = XgmClusSet._clusters[iclus];
-
-            //////////////////////////////////////////////////////
-            // upload bones to bone registers (probably vertex shader constant registers (Lev2), possibly matrix palette registers
-            // (PSP, GameCube)
-
-            size_t inumjoints = cluster->mJoints.size();
-
-            static const int kMaxBonesPerCluster = miBonesPerCluster;
-            static fmtx4* MatrixBlock            = new fmtx4[kMaxBonesPerCluster];
-
-            for (size_t ijointreg = 0; ijointreg < inumjoints; ijointreg++) {
-              const PoolString JointName = cluster->mJoints[ijointreg];
-              int JointSkelIndex         = cluster->mJointSkelIndices[ijointreg];
-              const fmtx4& MatIBind      = Skeleton.RefInverseBindMatrix(JointSkelIndex);
-              const fmtx4& MatAnimJCat   = LocalPose.RefLocalMatrix(JointSkelIndex);
-              fmtx4 MatCat               = MatIBind.Concat43(MatAnimJCat);
-              MatrixBlock[ijointreg]     = MatCat;
-            }
-
-            mtxblockitem.SetNumMatrices(inumjoints);
-            mtxblockitem.SetMatrixBlock(MatrixBlock);
-
-            for (int ic = 0; ic < icount; ic++) {
-              const fmtx4& WorldMat = WorldMats[ic];
-              pTARG->MTXI()->PushMMatrix(WorldMat);
-              {
-                mtxblockitem.mApplicator->ApplyToTarget(pTARG);
-                //////////////////////////////////////////////////////
-                auto vtxbuffer = cluster->GetVertexBuffer();
-                if (vtxbuffer) {
-                  int inumprim = cluster->numPrimGroups();
-                  for (int iprim = 0; iprim < inumprim; iprim++) {
-                    auto primgroup = cluster->primgroup(iprim);
-                    auto idxbuffer = primgroup->GetIndexBuffer();
-                    pTARG->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
-                  }
-                }
-                //////////////////////////////////////////////////////
-              }
-              pTARG->MTXI()->PopMMatrix();
-            }
-          }
-        }
-        pmat->UnBindMaterialInstItem(&mtxblockitem);
-      }
-      pmat->EndPass(pTARG);
-      pmat->EndBlock(pTARG);
-    }
-  }
-  pTARG->PopModColor();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

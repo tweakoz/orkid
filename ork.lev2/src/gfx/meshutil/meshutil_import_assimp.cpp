@@ -780,8 +780,8 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
       auto pbr_material = subrec._pbrmaterial;
       auto clusterizer  = subrec._clusterizer;
 
-      auto xgm_submesh        = new ork::lev2::XgmSubMesh;
-      xgm_submesh->mpMaterial = pbr_material;
+      auto xgm_submesh       = new ork::lev2::XgmSubMesh;
+      xgm_submesh->_material = pbr_material;
       out_mesh->AddSubMesh(xgm_submesh);
       subindex++;
 

@@ -60,34 +60,28 @@ void InstancedModelDrawable::enqueueToRenderQueue(
       auto mesh       = _model->mesh(imesh);
       int inumclusset = mesh->numSubMeshes();
       for (int ics = 0; ics < inumclusset; ics++) {
-        auto submesh  = mesh->subMesh(ics);
-        auto material = submesh->mpMaterial;
-        ///////////////////////////////////////
-        // todo : material setup
-        //  select instancing and possibly
-        //   picking variant
-        // set instancing parameter SSBO
-        ///////////////////////////////////////
-        int inumclus = submesh->_clusters.size();
-        for (int ic = 0; ic < inumclus; ic++) {
-          auto cluster    = submesh->cluster(ic);
-          auto vtxbuf     = cluster->_vertexBuffer;
-          size_t numprims = cluster->numPrimGroups();
-          for (size_t ipg = 0; ipg < numprims; ipg++) {
-            auto primgroup = cluster->primgroup(ipg);
-            auto idxbuf    = primgroup->mpIndices;
-            auto primtype  = primgroup->mePrimType;
-            int numindices = primgroup->miNumIndices;
-            // OrkAssert(false);
-            // todo : implement DrawInstancedPrimitiveEML()
-            // GBI->DrawInstancedPrimitiveEML();
-            GBI->DrawInstancedIndexedPrimitiveEML(*vtxbuf, *idxbuf, primtype, _count);
+        auto submesh = mesh->subMesh(ics);
+        auto mtlinst = submesh->_materialinst;
+        OrkAssert(mtlinst);
+        mtlinst->wrappedDrawCall(RCID, [&]() {
+          int inumclus = submesh->_clusters.size();
+          for (int ic = 0; ic < inumclus; ic++) {
+            auto cluster    = submesh->cluster(ic);
+            auto vtxbuf     = cluster->_vertexBuffer;
+            size_t numprims = cluster->numPrimGroups();
+            for (size_t ipg = 0; ipg < numprims; ipg++) {
+              auto primgroup = cluster->primgroup(ipg);
+              auto idxbuf    = primgroup->mpIndices;
+              auto primtype  = primgroup->mePrimType;
+              int numindices = primgroup->miNumIndices;
+              GBI->DrawInstancedIndexedPrimitiveEML(*vtxbuf, *idxbuf, primtype, _count);
+            }
           }
-        }
+        });
       }
     }
   });
   ////////////////////////////////////////////////////////////////////
-}
+} // namespace ork::lev2
 /////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
