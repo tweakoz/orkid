@@ -69,7 +69,7 @@ struct UiCamPrivate {
     if (_doGpuInit) {
       auto shaderpath = file::Path("orkshader://manip");
       _material->gpuInit(ctx, shaderpath);
-      _materialinst->setInstanceMvpParams("mvp", "mvpL", "mvpR");
+      //_materialinst->setInstanceMvpParams("mvp", "mvpL", "mvpR");
       _materialinst->_monoTek   = _material->technique("std_mono");
       _materialinst->_stereoTek = _material->technique("std_stereo");
       _doGpuInit                = false;

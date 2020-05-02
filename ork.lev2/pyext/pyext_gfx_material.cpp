@@ -130,15 +130,6 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 return std::make_shared<GfxMaterialInstance>();        // material
               })
           .def(
-              "setInstanceMvpParams",
-              [](freestyle_mtl_ptr_t material,
-                 materialinst_ptr_t instance,
-                 std::string monomvp,
-                 std::string leftmvp,
-                 std::string rightmvp) { //
-                instance->setInstanceMvpParams(monomvp, leftmvp, rightmvp);
-              })
-          .def(
               "gpuInit",
               [](freestyle_mtl_ptr_t m, ctx_t& c, file::Path& path) {
                 m->gpuInit(c.get(), path);
@@ -152,6 +143,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
               })
           .def_property_readonly(
               "shader", [](const freestyle_mtl_ptr_t m) -> pyfxshader_ptr_t { return pyfxshader_ptr_t(m->_shader); })
+          .def("param", [](freestyle_mtl_ptr_t m, std::string name) -> pyfxparam_ptr_t { return pyfxparam_ptr_t(m->param(name)); })
           .def("bindParamFloat", [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, float value) { m->bindParamFloat(p.get(), value); })
           .def(
               "bindParamVec2",

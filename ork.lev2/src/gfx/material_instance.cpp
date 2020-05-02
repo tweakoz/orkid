@@ -25,11 +25,11 @@ void GfxMaterialInstance::wrappedDrawCall(const RenderContextInstData& RCID, voi
   endBlock(RCID);
 }
 ////////////////////////////////////////////
-void GfxMaterialInstance::setInstanceMvpParams(
+/*void GfxMaterialInstance::setInstanceMvpParams(
     std::string monocam, //
     std::string stereocamL,
     std::string stereocamR) {
-  /*if (auto mvp_mono = this->param(monocam)) {
+  if (auto mvp_mono = this->param(monocam)) {
     crcstring_ptr_t tok_mono = std::make_shared<CrcString>("RCFD_Camera_MVP_Mono");
     materialinst->_params[mvp_mono].Set<crcstring_ptr_t>(tok_mono);
     printf("tok_mono<0x%zx:%zu>\n", tok_mono->hashed(), tok_mono->hashed());
@@ -43,8 +43,8 @@ void GfxMaterialInstance::setInstanceMvpParams(
     crcstring_ptr_t tok_stereoR = std::make_shared<CrcString>("RCFD_Camera_MVP_Right");
     materialinst->_params[mvp_right].Set<crcstring_ptr_t>(tok_stereoR);
     printf("tok_stereoR<0x%zx:%zu>\n", tok_stereoR->hashed(), tok_stereoR->hashed());
-  }*/
-}
+  }
+}*/
 ///////////////////////////////////////////////////////////////////////////////
 int GfxMaterialInstance::beginBlock(const RenderContextInstData& RCID) {
   auto context    = RCID._RCFD->GetTarget();
@@ -93,10 +93,10 @@ bool GfxMaterialInstance::beginPass(const RenderContextInstData& RCID, int ipass
       switch (crcstr.hashed()) {
         case "RCFD_Camera_MVP_Mono"_crcu: {
           if (monocams) {
-            // this->bindParamMatrix(param, monocams->MVPMONO(worldmatrix));
+            // FXI->BindParamMatrix(param, monocams->MVPMONO(worldmatrix));
           } else {
             auto MVP = worldmatrix * MTXI->RefVPMatrix();
-            // this->bindParamMatrix(param, MVP);
+            // FXI->BindParamMatrix(param, MVP);
           }
           break;
         }

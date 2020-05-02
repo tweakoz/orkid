@@ -35,7 +35,7 @@ struct GfxMaterialInstance : public std::enable_shared_from_this<GfxMaterialInst
   void endBlock(const RenderContextInstData& RCID);
 
   void wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall);
-  void setInstanceMvpParams(std::string monocam, std::string stereocamL, std::string stereocamR);
+  // void setInstanceMvpParams(std::string monocam, std::string stereocamL, std::string stereocamR);
 
   using varval_t = varmap::VarMap::value_type;
   // material_ptr_t _material;

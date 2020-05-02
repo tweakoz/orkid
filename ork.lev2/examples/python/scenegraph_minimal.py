@@ -8,6 +8,7 @@
 import math, _shaders
 from orkengine.core import *
 from orkengine.lev2 import *
+tokens = CrcStringProxy()
 ################################################################################
 class PyOrkApp(object):
   ################################################
@@ -45,7 +46,7 @@ class PyOrkApp(object):
     material = FreestyleMaterial(ctx,Path("orkshader://manip"))
     material_inst = material.createInstance()
     material_inst.monoTek = material.shader.technique("std_mono")
-    material.setInstanceMvpParams(material_inst,"mvp","","")
+    material_inst.param[material.param("mvp")] = tokens.RCFD_Camera_MVP_Mono
     self.primnode = prim.createNode("node1",layer,material_inst)
     ###################################
     self.camera = CameraData()
