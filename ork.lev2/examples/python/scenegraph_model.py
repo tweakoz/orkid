@@ -1,13 +1,23 @@
 #!/usr/bin/env python3
 ################################################################################
-# lev2 sample which renders a scenegraph to a window
+# lev2 sample which renders a scenegraph
 # Copyright 1996-2020, Michael T. Mayers.
 # Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
-import math, random
+import math, random, argparse
 from orkengine.core import *
 from orkengine.lev2 import *
+################################################################################
+parser = argparse.ArgumentParser(description='scenegraph example')
+parser.add_argument('--numinstances', metavar="numinstances", help='number of mesh instances' )
+parser.add_argument('--vrmode', action="store_true", help='run in vr' )
+################################################################################
+args = vars(parser.parse_args())
+vrmode = (args["vrmode"]==True)
+numinstances = int(args["numinstances"])
+if numinstances==0:
+  numinstances = 1
 ################################################################################
 class modelinst(object):
   def __init__(self,model,layer):
@@ -38,7 +48,7 @@ class SceneGraphApp(object):
   def __init__(self):
     super().__init__()
     self.sceneparams = VarMap()
-    self.sceneparams.preset = "PBR"
+    self.sceneparams.preset = "PBRVR" if vrmode else "PBR"
     self.qtapp = OrkEzQtApp.create(self)
     self.qtapp.setRefreshPolicy(RefreshFastest, 0)
     self.modelinsts=[]
@@ -51,7 +61,7 @@ class SceneGraphApp(object):
     #models += [Model("src://environ/objects/misc/headwalker.obj")]
     models += [Model("src://environ/objects/misc/ref/torus.glb")]
     ###################################
-    for i in range(1000):
+    for i in range(numinstances):
       model = models[i%len(models)]
       self.modelinsts += [modelinst(model,layer)]
     ###################################
