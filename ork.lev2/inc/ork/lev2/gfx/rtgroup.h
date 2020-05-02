@@ -22,9 +22,7 @@ class RtBuffer;
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
 
-class RtBuffer //: public OffscreenBuffer
-{
-public:
+struct RtBuffer final {
   enum EMipGen { EMG_NONE, EMG_AUTOCOMPUTE, EMG_USER };
 
   RtBuffer(ERtgSlot etype, EBufferFormat efmt, int iW, int iH);
@@ -50,8 +48,8 @@ public:
   std::string _debugName;
 };
 
-class RtGroup {
-public:
+struct RtGroup final {
+
   /////////////////////////////////////////
   RtGroup(Context* partarg, int iW, int iH, int iSamples = 1);
 
