@@ -252,8 +252,7 @@ const uint32_t* DeferredContext::captureDepthClusters(const CompositorDrawData& 
     FBI->SetAutoClear(true);
     FBI->PushRtGroup(_rtgDepthCluster);
     targ->beginFrame();
-    _lightingmtl.bindTechnique(_tekDownsampleDepthCluster);
-    _lightingmtl.begin(RCFD);
+    _lightingmtl.begin(_tekDownsampleDepthCluster, RCFD);
     _lightingmtl.bindParamInt(_parTileDim, KTILEDIMXY);
     _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
     _lightingmtl.bindParamVec2(_parNearFar, fvec2(KNEAR, KFAR));
@@ -384,8 +383,11 @@ void DeferredContext::renderBaseLighting(CompositorDrawData& drawdata, const Vie
   // base lighting
   //////////////////////////////////////////////////////////////////
   targ->debugPushGroup("Deferred::BaseLighting");
-  _lightingmtl.bindTechnique(VD._isStereo ? _tekBaseLightingStereo : _tekBaseLighting);
-  _lightingmtl.begin(RCFD);
+  _lightingmtl.begin(
+      VD._isStereo //
+          ? _tekBaseLightingStereo
+          : _tekBaseLighting,
+      RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
   bindRasterState(targ, ECULLTEST_PASS_BACK, EDEPTHTEST_OFF, EBLENDING_OFF);
@@ -419,8 +421,7 @@ void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const Vie
   } else {
     tek = cookietexture ? _tekPointLightingTextured : _tekPointLightingUntextured;
   }
-  _lightingmtl.bindTechnique(tek);
-  _lightingmtl.begin(RCFD);
+  _lightingmtl.begin(tek, RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
   bindRasterState(targ, ECULLTEST_OFF, EDEPTHTEST_OFF, EBLENDING_ADDITIVE);
@@ -471,8 +472,7 @@ void DeferredContext::beginSpotLighting(CompositorDrawData& drawdata, const View
   } else {
     tek = cookietexture ? _tekSpotLightingTextured : _tekSpotLightingUntextured;
   }
-  _lightingmtl.bindTechnique(tek);
-  _lightingmtl.begin(RCFD);
+  _lightingmtl.begin(tek, RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
   bindRasterState(targ, ECULLTEST_OFF, EDEPTHTEST_OFF, EBLENDING_ADDITIVE);
@@ -520,8 +520,7 @@ void DeferredContext::beginShadowedSpotLighting(CompositorDrawData& drawdata, co
   const FxShaderTechnique* tek = nullptr;
   OrkAssert(cookietexture != nullptr);
   tek = VD._isStereo ? _tekSpotLightingTexturedShadowedStereo : _tekSpotLightingTexturedShadowed;
-  _lightingmtl.bindTechnique(tek);
-  _lightingmtl.begin(RCFD);
+  _lightingmtl.begin(tek, RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
   bindRasterState(targ, ECULLTEST_OFF, EDEPTHTEST_OFF, EBLENDING_ADDITIVE);
@@ -571,8 +570,7 @@ void DeferredContext::beginSpotDecaling(CompositorDrawData& drawdata, const View
   } else {
     tek = cookietexture ? _tekSpotDecalingTextured : _tekSpotDecalingTextured;
   }
-  _lightingmtl.bindTechnique(tek);
-  _lightingmtl.begin(RCFD);
+  _lightingmtl.begin(tek, RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
   bindRasterState(targ, ECULLTEST_OFF, EDEPTHTEST_OFF, EBLENDING_OFF);

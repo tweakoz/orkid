@@ -300,8 +300,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
         static auto texasset         = asset::AssetManager<lev2::TextureAsset>::Load(assetname);
 
         if (1) {
-          _nodematerial.bindTechnique(is_pick ? tek_vtx : tek_tex);
-          _nodematerial.begin(RCFD);
+          _nodematerial.begin(is_pick ? tek_vtx : tek_tex, RCFD);
           _nodematerial.bindParamMatrix(par_mvp, mGrid.GetOrthoMatrix());
           _nodematerial.bindParamCTex(par_tex, texasset->GetTexture());
           _nodematerial._rasterstate.SetBlending(lev2::EBLENDING_OFF);
@@ -388,8 +387,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
           }
 
           if (1) {
-            _nodematerial.bindTechnique(is_pick ? tek_vtx : tek_tex);
-            _nodematerial.begin(RCFD);
+            _nodematerial.begin(is_pick ? tek_vtx : tek_tex, RCFD);
             _nodematerial.bindParamMatrix(par_mvp, mGrid.GetOrthoMatrix());
             _nodematerial.bindParamCTex(par_tex, picon);
 

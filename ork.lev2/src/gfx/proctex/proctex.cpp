@@ -385,8 +385,7 @@ void ImgModule::UpdateThumb(ProcTex& ptex) {
   thumbmtl._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
   thumbmtl._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
   // thumbmtl.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(wrbuf.miW)));
-  thumbmtl.bindTechnique(tek);
-  thumbmtl.begin(*RCFD);
+  thumbmtl.begin(tek, *RCFD);
   thumbmtl.bindParamCTex(partex, ptexture);
   thumbmtl.bindParamMatrix(parmvp, fmtx4::Identity());
   ////////////////////////////////////////////////////////////////

@@ -68,10 +68,12 @@ struct FxShaderPass {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FxShaderTechnique {
+
   std::string mTechniqueName;
   const void* mInternalHandle;
   orkvector<FxShaderPass*> mPasses;
   bool mbValidated;
+  fxshader_ptr_t _shader = nullptr;
 
   FxShaderTechnique(void* ih = 0);
 

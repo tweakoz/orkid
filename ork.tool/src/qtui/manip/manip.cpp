@@ -382,8 +382,7 @@ void ManipManager::materialBegin(Context* targ) {
   bool is_pick    = FBI->isPickState();
   bool is_stereo  = CPD.isStereoOnePass();
 
-  _material->bindTechnique(_tek_modcolor);
-  _material->begin(*RCFD);
+  _material->begin(_tek_modcolor, *RCFD);
   _material->bindParamVec4(_par_modcolor, targ->RefModColor());
 
   const auto& world = MTXI->RefMMatrix();

@@ -43,8 +43,8 @@ struct RTGIMPL {
       _blit2screenmtl.gpuInit(ctx, "orkshader://compositor");
       _fxtechnique1x1 = _blit2screenmtl.technique("OutputNodeRtGroupDual");
       _fxpMVP         = _blit2screenmtl.param("MatMVP");
-      _fxpColorMapA    = _blit2screenmtl.param("MapA");
-      _fxpColorMapB    = _blit2screenmtl.param("MapB");
+      _fxpColorMapA   = _blit2screenmtl.param("MapA");
+      _fxpColorMapB   = _blit2screenmtl.param("MapB");
       _needsinit      = false;
     }
   }
@@ -132,8 +132,7 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         drawdata.context()->debugPushGroup("RtGroupOutputCompositingNode::output");
         auto this_buf = context->FBI()->GetThisBuffer();
         auto& mtl     = impl->_blit2screenmtl;
-        mtl.bindTechnique(impl->_fxtechnique1x1);
-        mtl.begin(framedata);
+        mtl.begin(impl->_fxtechnique1x1, framedata);
         mtl._rasterstate.SetBlending(EBLENDING_OFF);
         mtl.bindParamCTex(impl->_fxpColorMapA, texA);
         mtl.bindParamCTex(impl->_fxpColorMapB, texB);

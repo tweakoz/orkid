@@ -240,9 +240,7 @@ int PBRMaterial::BeginBlock(Context* targ, const RenderContextInstData& RCID) {
     }
   }
 
-  fxi->BindTechnique(_shader, tek);
-
-  int numpasses = fxi->BeginBlock(_shader, RCID);
+  int numpasses = fxi->BeginBlock(tek, RCID);
   assert(numpasses == 1);
   return numpasses;
 }
@@ -251,7 +249,7 @@ int PBRMaterial::BeginBlock(Context* targ, const RenderContextInstData& RCID) {
 
 void PBRMaterial::EndBlock(Context* targ) {
   auto fxi = targ->FXI();
-  fxi->EndBlock(_shader);
+  fxi->EndBlock();
 }
 
 ////////////////////////////////////////////
@@ -271,7 +269,7 @@ bool PBRMaterial::BeginPass(Context* targ, int iPass) {
   const auto& CPD                    = RCFD->topCPD();
   bool is_picking                    = CPD.isPicking();
   const auto& world                  = mtxi->RefMMatrix();
-  fxi->BindPass(_shader, 0);
+  fxi->BindPass(0);
 
   fvec4 modcolor = _baseColor;
   if (is_picking) {
@@ -315,7 +313,7 @@ bool PBRMaterial::BeginPass(Context* targ, int iPass) {
 ////////////////////////////////////////////
 
 void PBRMaterial::EndPass(Context* targ) {
-  targ->FXI()->EndPass(_shader);
+  targ->FXI()->EndPass();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

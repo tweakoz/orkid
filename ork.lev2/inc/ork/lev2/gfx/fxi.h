@@ -18,12 +18,13 @@ class FxInterface {
 public:
   void BeginFrame();
 
-  virtual int BeginBlock(FxShader* hfx, const RenderContextInstData& data) = 0;
-  virtual bool BindPass(FxShader* hfx, int ipass)                          = 0;
-  virtual bool BindTechnique(FxShader* hfx, const FxShaderTechnique* htek) = 0;
-  virtual void EndPass(FxShader* hfx)                                      = 0;
-  virtual void EndBlock(FxShader* hfx)                                     = 0;
-  virtual void CommitParams(void)                                          = 0;
+  virtual int BeginBlock(
+      const FxShaderTechnique* tek, //
+      const RenderContextInstData& data) = 0;
+  virtual bool BindPass(int ipass)       = 0;
+  virtual void EndPass()                 = 0;
+  virtual void EndBlock()                = 0;
+  virtual void CommitParams(void)        = 0;
 
   virtual const FxShaderTechnique* technique(FxShader* hfx, const std::string& name)       = 0;
   virtual const FxShaderParam* parameter(FxShader* hfx, const std::string& name)           = 0;
@@ -81,7 +82,8 @@ public:
   }
 
 protected:
-  FxShader* mpActiveFxShader;
+  FxShader* _activeShader;
+  const FxShaderTechnique* _activeTechnique;
 
 private:
   virtual void _doBeginFrame() = 0;

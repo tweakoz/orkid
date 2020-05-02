@@ -1035,8 +1035,7 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   auto tek_viz  = stereo1pass ? _tekDefGbuf1Stereo : _tekDefGbuf1;
   auto tek_pick = _tekPick;
 
-  _terrainMaterial->bindTechnique(bpick ? tek_pick : tek_viz);
-  _terrainMaterial->begin(*RCFD);
+  _terrainMaterial->begin(bpick ? tek_pick : tek_viz, *RCFD);
   _terrainMaterial->bindParamMatrix(_parMatVPL, MVPL);
   _terrainMaterial->bindParamMatrix(_parMatVPC, MVPC);
   _terrainMaterial->bindParamMatrix(_parMatVPR, MVPR);

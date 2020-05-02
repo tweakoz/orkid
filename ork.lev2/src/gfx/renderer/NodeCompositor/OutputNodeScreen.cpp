@@ -141,25 +141,24 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         auto& mtl     = impl->_blit2screenmtl;
         switch (this->supersample()) {
           case 0:
-            mtl.bindTechnique(impl->_fxtechnique1x1);
+            mtl.begin(impl->_fxtechnique1x1, framedata);
             break;
           case 1:
-            mtl.bindTechnique(impl->_fxtechnique2x2);
+            mtl.begin(impl->_fxtechnique2x2, framedata);
             break;
           case 2:
-            mtl.bindTechnique(impl->_fxtechnique3x3);
+            mtl.begin(impl->_fxtechnique3x3, framedata);
             break;
           case 3:
-            mtl.bindTechnique(impl->_fxtechnique4x4);
+            mtl.begin(impl->_fxtechnique4x4, framedata);
             break;
           case 4:
-            mtl.bindTechnique(impl->_fxtechnique5x5);
+            mtl.begin(impl->_fxtechnique5x5, framedata);
             break;
           case 5:
-            mtl.bindTechnique(impl->_fxtechnique6x6);
+            mtl.begin(impl->_fxtechnique6x6, framedata);
             break;
         }
-        mtl.begin(framedata);
         mtl._rasterstate.SetBlending(EBLENDING_OFF);
         mtl.bindParamCTex(impl->_fxpColorMap, tex);
         mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());

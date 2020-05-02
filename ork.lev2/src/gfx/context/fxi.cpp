@@ -21,7 +21,7 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 FxInterface::FxInterface()
-    : mpActiveFxShader(0) {
+    : _activeShader(0) {
 }
 
 void FxInterface::BindParamTex(FxShader* hfx, const FxShaderParam* hpar, const lev2::TextureAsset* texasset) {

@@ -42,8 +42,7 @@ int main(int argc, char** argv) {
     fbi->SetClearColor(fvec4(r, g, b, 1));
     context->beginFrame();
     RenderContextFrameData RCFD(context);
-    material.bindTechnique(fxtechnique);
-    material.begin(RCFD);
+    material.begin(fxtechnique, RCFD);
     material.bindParamMatrix(fxparameterMVP, fmtx4::Identity());
     material.bindParamVec4(fxparameterMODC, fvec4::Red());
     gfxwin->Render2dQuadEML(fvec4(-0.5, -0.5, 1, 1), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));

@@ -152,7 +152,6 @@ void pyinit_gfx_material(py::module& module_lev2) {
               })
           .def_property_readonly(
               "shader", [](const freestyle_mtl_ptr_t m) -> pyfxshader_ptr_t { return pyfxshader_ptr_t(m->_shader); })
-          .def("bindTechnique", [](freestyle_mtl_ptr_t m, const pyfxtechnique_ptr_t& tek) { m->bindTechnique(tek.get()); })
           .def("bindParamFloat", [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, float value) { m->bindParamFloat(p.get(), value); })
           .def(
               "bindParamVec2",
@@ -172,7 +171,9 @@ void pyinit_gfx_material(py::module& module_lev2) {
           .def(
               "bindParamTexture",
               [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const tex_t& value) { m->bindParamCTex(p.get(), value.get()); })
-          .def("begin", [](freestyle_mtl_ptr_t m, RenderContextFrameData& rcfd) { m->begin(rcfd); })
+          .def(
+              "begin",
+              [](freestyle_mtl_ptr_t m, pyfxtechnique_ptr_t tek, RenderContextFrameData& rcfd) { m->begin(tek.get(), rcfd); })
           .def("end", [](freestyle_mtl_ptr_t m, RenderContextFrameData& rcfd) { m->end(rcfd); })
           .def("__repr__", [](const freestyle_mtl_ptr_t m) -> std::string {
             fxstring<256> fxs;

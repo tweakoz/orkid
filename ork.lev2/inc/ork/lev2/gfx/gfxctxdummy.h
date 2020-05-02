@@ -26,18 +26,15 @@ public:
   void _doBeginFrame() final {
   }
 
-  int BeginBlock(FxShader* hfx, const RenderContextInstData& data) final {
+  int BeginBlock(const FxShaderTechnique* tek, const RenderContextInstData& data) final {
     return 0;
   }
-  bool BindPass(FxShader* hfx, int ipass) final {
+  bool BindPass(int ipass) final {
     return false;
   }
-  bool BindTechnique(FxShader* hfx, const FxShaderTechnique* htek) final {
-    return false;
+  void EndPass() final {
   }
-  void EndPass(FxShader* hfx) final {
-  }
-  void EndBlock(FxShader* hfx) final {
+  void EndBlock() final {
   }
   void CommitParams(void) final {
   }

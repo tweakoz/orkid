@@ -59,21 +59,21 @@ void FreestyleMaterial::Update() { // final
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool FreestyleMaterial::BeginPass(Context* targ, int iPass) { // final
-  return targ->FXI()->BindPass(_shader, iPass);
+  return targ->FXI()->BindPass(iPass);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::EndPass(Context* targ) { // final
-  targ->FXI()->EndPass(_shader);
+  targ->FXI()->EndPass();
 }
 ///////////////////////////////////////////////////////////////////////////////
 int FreestyleMaterial::BeginBlock(Context* targ, const RenderContextInstData& RCID) { // final
   auto fxi    = targ->FXI();
-  int npasses = fxi->BeginBlock(_shader, RCID);
+  int npasses = fxi->BeginBlock(_selectedTEK, RCID);
   return npasses;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::EndBlock(Context* targ) { // final
-  targ->FXI()->EndBlock(_shader);
+  targ->FXI()->EndBlock();
 }
 ///////////////////////////////////////////////////////////////////////////////
 // new style interface
@@ -126,9 +126,7 @@ void FreestyleMaterial::commit() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindTechnique(const FxShaderTechnique* tek) {
-  OrkAssert(tek);
-  auto fxi = _initialTarget->FXI();
-  fxi->BindTechnique(_shader, tek);
+  _selectedTEK = tek;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamInt(const FxShaderParam* par, int value) {
@@ -185,19 +183,15 @@ void FreestyleMaterial::bindParamMatrixArray(const FxShaderParam* par, const fmt
   fxi->BindParamMatrixArray(_shader, par, m, len);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FreestyleMaterial::begin(const RenderContextFrameData& RCFD) {
+void FreestyleMaterial::begin(const FxShaderTechnique* tek, const RenderContextFrameData& RCFD) {
   auto targ = RCFD.GetTarget();
   auto fxi  = targ->FXI();
   auto rsi  = targ->RSI();
   RenderContextInstData RCID(&RCFD);
-  int npasses = this->BeginBlock(targ, RCID);
+  _selectedTEK = tek;
+  int npasses  = this->BeginBlock(targ, RCID);
   rsi->BindRasterState(_rasterstate);
-  fxi->BindPass(_shader, 0);
-}
-///////////////////////////////////////////////////////////////////////////////
-void FreestyleMaterial::begin(const FxShaderTechnique* tek, const RenderContextFrameData& RCFD) {
-  bindTechnique(tek);
-  begin(RCFD);
+  fxi->BindPass(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::begin(

@@ -72,8 +72,7 @@ int main(int argc, char** argv) {
     ///////////////////////////////////////
     fbi->SetClearColor(fvec4(0, 0, 0, 1));
     context->beginFrame();
-    material.bindTechnique(fxtechnique);
-    material.begin(RCFD);
+    material.begin(fxtechnique, RCFD);
     material.bindParamMatrix(fxparameterMVP, view * projection);
     primitive.renderEML(context);
     material.end(RCFD);

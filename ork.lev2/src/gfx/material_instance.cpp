@@ -51,15 +51,25 @@ int GfxMaterialInstance::beginBlock(const RenderContextInstData& RCID) {
   const auto& CPD = RCID._RCFD->topCPD();
   bool is_picking = CPD.isPicking();
   bool is_stereo  = CPD.isStereoOnePass();
+  auto FXI        = context->FXI();
   // auto tek     = minst->valueForKey("technique").Get<fxtechnique_constptr_t>();
-  // this->bindTechnique(is_stereo ? minst->_stereoTek : minst->_monoTek);
-  // return this->BeginBlock(context, RCID);
+  auto tek = is_stereo ? _stereoTek : _monoTek;
+  if (is_picking) {
+    if (_pickTek)
+      return FXI->BeginBlock(_pickTek, RCID);
+  } else {
+    if (is_stereo and _stereoTek)
+      return FXI->BeginBlock(_stereoTek, RCID);
+    else if (_monoTek)
+      return FXI->BeginBlock(_monoTek, RCID);
+  }
   return 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool GfxMaterialInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
   auto context    = RCID._RCFD->GetTarget();
   auto MTXI       = context->MTXI();
+  auto FXI        = context->FXI();
   const auto& CPD = RCID._RCFD->topCPD();
   bool is_picking = CPD.isPicking();
   bool is_stereo  = CPD.isStereoOnePass();

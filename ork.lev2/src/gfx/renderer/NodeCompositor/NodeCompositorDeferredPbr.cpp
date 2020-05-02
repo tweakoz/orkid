@@ -164,11 +164,14 @@ struct PbrNodeImpl {
     // base lighting (environent IBL lighting)
     //////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::BaseLighting");
-    _context._lightingmtl.bindTechnique(is_stereo ? _context._tekEnvironmentLightingStereo : _context._tekEnvironmentLighting);
     _context._lightingmtl._rasterstate.SetBlending(EBLENDING_OFF);
     _context._lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
     _context._lightingmtl._rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
-    _context._lightingmtl.begin(RCFD);
+    _context._lightingmtl.begin(
+        is_stereo //
+            ? _context._tekEnvironmentLightingStereo
+            : _context._tekEnvironmentLighting,
+        RCFD);
     //////////////////////////////////////////////////////
     _context._lightingmtl.bindParamMatrixArray(_context._parMatIVPArray, VD._ivp, 2);
     _context._lightingmtl.bindParamMatrixArray(_context._parMatVArray, VD._v, 2);

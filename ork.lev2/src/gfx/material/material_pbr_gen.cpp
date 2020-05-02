@@ -178,8 +178,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
       printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
 
       fbi->PushRtGroup(outgroup.get());
-      mtl->bindTechnique(tekFilterSpecMap);
-      mtl->begin(RCFD);
+      mtl->begin(tekFilterSpecMap, RCFD);
       ///////////////////////////////////////////////
       mtl->bindParamMatrix(param_mvp, fmtx4::Identity());
       mtl->bindParamCTex(param_pfm, rawenvmap);
@@ -304,8 +303,7 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
       // printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
 
       fbi->PushRtGroup(outgroup.get());
-      mtl->bindTechnique(tekFilterDiffMap);
-      mtl->begin(RCFD);
+      mtl->begin(tekFilterDiffMap, RCFD);
       ///////////////////////////////////////////////
       mtl->bindParamMatrix(param_mvp, fmtx4::Identity());
       mtl->bindParamCTex(param_pfm, rawenvmap);

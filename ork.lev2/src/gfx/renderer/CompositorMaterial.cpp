@@ -41,9 +41,11 @@ CompositingMaterial::CompositingMaterial()
     , mBiasB(0.0f, 0.0f, 0.0f, 0.0f)
     , mLevelA(1.0f, 1.0f, 1.0f, 1.0f)
     , mLevelB(1.0f, 1.0f, 1.0f, 1.0f)
-    , mLevelC(1.0f, 1.0f, 1.0f, 1.0f) {}
+    , mLevelC(1.0f, 1.0f, 1.0f, 1.0f) {
+}
 /////////////////////////////////////////////////
-CompositingMaterial::~CompositingMaterial() {}
+CompositingMaterial::~CompositingMaterial() {
+}
 /////////////////////////////////////////////////
 void CompositingMaterial::Init(lev2::Context* pTarg) {
   if (0 == hModFX) {
@@ -106,7 +108,7 @@ bool CompositingMaterial::BeginPass(lev2::Context* pTarg, int iPass) {
   // printf("CompositorMtl draw\n");
 
   pTarg->RSI()->BindRasterState(_rasterstate);
-  pTarg->FXI()->BindPass(hModFX, iPass);
+  pTarg->FXI()->BindPass(iPass);
   pTarg->FXI()->BindParamMatrix(hModFX, hMatMVP, pTarg->MTXI()->RefMVPMatrix());
 
   pTarg->FXI()->BindParamVect4(hModFX, hLevelA, mLevelA);
@@ -131,15 +133,18 @@ bool CompositingMaterial::BeginPass(lev2::Context* pTarg, int iPass) {
   return true;
 }
 /////////////////////////////////////////////////
-void CompositingMaterial::EndPass(lev2::Context* pTarg) { pTarg->FXI()->EndPass(hModFX); }
+void CompositingMaterial::EndPass(lev2::Context* pTarg) {
+  pTarg->FXI()->EndPass();
+}
 /////////////////////////////////////////////////
 int CompositingMaterial::BeginBlock(lev2::Context* pTarg, const lev2::RenderContextInstData& MatCtx) {
-  pTarg->FXI()->BindTechnique(hModFX, hTekCurrent);
-  int inumpasses = pTarg->FXI()->BeginBlock(hModFX, MatCtx);
+  int inumpasses = pTarg->FXI()->BeginBlock(hTekCurrent, MatCtx);
   return inumpasses;
 }
 /////////////////////////////////////////////////
-void CompositingMaterial::EndBlock(lev2::Context* pTarg) { pTarg->FXI()->EndBlock(hModFX); }
+void CompositingMaterial::EndBlock(lev2::Context* pTarg) {
+  pTarg->FXI()->EndBlock();
+}
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

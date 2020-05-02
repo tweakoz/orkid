@@ -104,21 +104,20 @@ int GfxMaterialUI::BeginBlock(Context* pTarg, const RenderContextInstData& MatCt
       OrkAssert(false);
   }
 
-  pTarg->FXI()->BindTechnique(hModFX, htek);
-  int inumpasses = pTarg->FXI()->BeginBlock(hModFX, MatCtx);
+  int inumpasses = pTarg->FXI()->BeginBlock(htek, MatCtx);
   return inumpasses;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void GfxMaterialUI::EndBlock(Context* pTarg) {
-  pTarg->FXI()->EndBlock(hModFX);
+  pTarg->FXI()->EndBlock();
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void GfxMaterialUI::EndPass(Context* pTarg) {
-  pTarg->FXI()->EndPass(hModFX);
+  pTarg->FXI()->EndPass();
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -132,7 +131,7 @@ bool GfxMaterialUI::BeginPass(Context* pTarg, int iPass) {
 
   ///////////////////////////////
 
-  pTarg->FXI()->BindPass(hModFX, iPass);
+  pTarg->FXI()->BindPass(iPass);
   pTarg->FXI()->BindParamMatrix(hModFX, hTransform, MatMVP);
   pTarg->FXI()->BindParamVect4(hModFX, hModColor, pTarg->RefModColor());
   pTarg->FXI()->CommitParams();
@@ -177,27 +176,26 @@ void GfxMaterialUIText::Init(ork::lev2::Context* pTarg) {
 /////////////////////////////////////////////////////////////////////////
 
 int GfxMaterialUIText::BeginBlock(Context* pTarg, const RenderContextInstData& MatCtx) {
-  pTarg->FXI()->BindTechnique(hModFX, hTek);
-  int inumpasses = pTarg->FXI()->BeginBlock(hModFX, MatCtx);
+  int inumpasses = pTarg->FXI()->BeginBlock(hTek, MatCtx);
   return inumpasses;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void GfxMaterialUIText::EndBlock(Context* pTarg) {
-  pTarg->FXI()->EndBlock(hModFX);
+  pTarg->FXI()->EndBlock();
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void GfxMaterialUIText::EndPass(Context* pTarg) {
-  pTarg->FXI()->EndPass(hModFX);
+  pTarg->FXI()->EndPass();
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 bool GfxMaterialUIText::BeginPass(Context* pTarg, int iPass) {
-  pTarg->FXI()->BindPass(hModFX, iPass);
+  pTarg->FXI()->BindPass(iPass);
 
   ///////////////////////////////
   SRasterState& RasterState = _rasterstate; // pTarg->RSI()->RefUIRasterState();
@@ -272,21 +270,20 @@ void GfxMaterialUITextured::Init(ork::lev2::Context* pTarg, const std::string& T
 /////////////////////////////////////////////////////////////////////////
 
 int GfxMaterialUITextured::BeginBlock(Context* pTarg, const RenderContextInstData& MatCtx) {
-  pTarg->FXI()->BindTechnique(hModFX, hTek);
-  int inumpasses = pTarg->FXI()->BeginBlock(hModFX, MatCtx);
+  int inumpasses = pTarg->FXI()->BeginBlock(hTek, MatCtx);
   return inumpasses;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void GfxMaterialUITextured::EndBlock(Context* pTarg) {
-  pTarg->FXI()->EndBlock(hModFX);
+  pTarg->FXI()->EndBlock();
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void GfxMaterialUITextured::EndPass(Context* pTarg) {
-  pTarg->FXI()->EndPass(hModFX);
+  pTarg->FXI()->EndPass();
 }
 
 ////////////////////////////////////////////////////////////2/////////////
@@ -298,7 +295,7 @@ bool GfxMaterialUITextured::BeginPass(Context* pTarg, int iPass) {
 
   const fmtx4& MatMVP = pTarg->MTXI()->RefMVPMatrix();
 
-  pTarg->FXI()->BindPass(hModFX, iPass);
+  pTarg->FXI()->BindPass(iPass);
   pTarg->FXI()->BindParamMatrix(hModFX, hTransform, MatMVP);
   pTarg->FXI()->BindParamCTex(hModFX, hColorMap, GetTexture(ETEXDEST_DIFFUSE).mpTexture);
   pTarg->FXI()->BindParamVect4(hModFX, hModColor, pTarg->RefModColor());

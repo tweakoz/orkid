@@ -90,9 +90,10 @@ FxShader* Interface::shaderFromShaderText(const std::string& name, const std::st
 
 void Interface::BindContainerToAbstract(Container* pcont, FxShader* fxh) {
   for (const auto& ittek : pcont->_techniqueMap) {
-    Technique* ptek            = ittek.second;
-    FxShaderTechnique* ork_tek = new FxShaderTechnique((void*)ptek);
-    ork_tek->mTechniqueName    = ittek.first;
+    Technique* ptek         = ittek.second;
+    auto ork_tek            = new FxShaderTechnique((void*)ptek);
+    ork_tek->_shader        = fxh;
+    ork_tek->mTechniqueName = ittek.first;
     // pabstek->mPasses = ittek->first;
     ork_tek->mbValidated = true;
     fxh->addTechnique(ork_tek);
@@ -118,21 +119,78 @@ void Interface::BindContainerToAbstract(Container* pcont, FxShader* fxh) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int Interface::BeginBlock(FxShader* hfx, const RenderContextInstData& data) {
-  mTarget.SetRenderContextInstData(&data);
+const FxShaderTechnique* Interface::technique(FxShader* hfx, const std::string& name) {
+  // orkprintf( "Get cgtek<%s> hfx<%x>\n", name.c_str(), hfx );
+  OrkAssert(hfx != 0);
   Container* container = static_cast<Container*>(hfx->GetInternalHandle());
-  mpActiveEffect       = container;
-  OrkAssert(mpActiveEffect);
-  mpActiveFxShader = hfx;
-  if (nullptr == container->mActiveTechnique)
-    return 0;
-  return container->mActiveTechnique->mPasses.size();
+  OrkAssert(container != 0);
+  /////////////////////////////////////////////////////////////
+
+  const auto& tekmap            = hfx->techniques();
+  const auto& it                = tekmap.find(name);
+  const FxShaderTechnique* htek = (it != tekmap.end()) ? it->second : 0;
+
+  return htek;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::EndBlock(FxShader* hfx) {
-  mpActiveFxShader = 0;
+int Interface::BeginBlock(const FxShaderTechnique* tek, const RenderContextInstData& data) {
+
+  if (nullptr == tek)
+    return 0;
+  auto tek_cont = static_cast<const Technique*>(tek->GetPlatformHandle());
+  OrkAssert(tek_cont != nullptr);
+  _activeTechnique = tek;
+  _activeShader    = tek->_shader;
+  auto container   = static_cast<Container*>(_activeShader->GetInternalHandle());
+  OrkAssert(container);
+  mpActiveEffect              = container;
+  container->mActiveTechnique = tek_cont;
+  container->_activePass      = 0;
+
+  mTarget.SetRenderContextInstData(&data);
+
+  return tek_cont->mPasses.size();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Interface::EndBlock() {
+  _activeShader    = nullptr;
+  _activeTechnique = nullptr;
+  glUseProgram(0);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool Interface::BindPass(int ipass) {
+  if (mpActiveEffect->mShaderCompileFailed)
+    return false;
+
+  assert(mpActiveEffect->mActiveTechnique != nullptr);
+
+  mpActiveEffect->_activePass = mpActiveEffect->mActiveTechnique->mPasses[ipass];
+  GL_ERRORCHECK();
+  if (0 == mpActiveEffect->_activePass->_programObjectId) {
+    bool complinkok = compileAndLink(mpActiveEffect);
+    auto fx         = const_cast<FxShader*>(mpActiveEffect->mFxShader);
+    fx->SetFailedCompile(false == complinkok);
+  }
+  auto pass = mpActiveEffect->_activePass;
+  auto tek  = pass->_technique;
+  // printf("binding pass<%p:%s> tek<%s>\n", pass, pass->_name.c_str(), tek->_name.c_str());
+
+  GL_ERRORCHECK();
+  glUseProgram(mpActiveEffect->_activePass->_programObjectId);
+  GL_ERRORCHECK();
+
+  return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Interface::EndPass() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -156,76 +214,6 @@ void Interface::CommitParams(void) {
     // ); mpLastFxMaterial = mTarget.currentMaterial(); mLastPass =
     // mpActiveEffect->_activePass;
   }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-const FxShaderTechnique* Interface::technique(FxShader* hfx, const std::string& name) {
-  // orkprintf( "Get cgtek<%s> hfx<%x>\n", name.c_str(), hfx );
-  OrkAssert(hfx != 0);
-  Container* container = static_cast<Container*>(hfx->GetInternalHandle());
-  OrkAssert(container != 0);
-  /////////////////////////////////////////////////////////////
-
-  const auto& tekmap            = hfx->techniques();
-  const auto& it                = tekmap.find(name);
-  const FxShaderTechnique* htek = (it != tekmap.end()) ? it->second : 0;
-
-  return htek;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool Interface::BindTechnique(FxShader* hfx, const FxShaderTechnique* htek) {
-  if (nullptr == hfx)
-    return false;
-  if (nullptr == htek)
-    return false;
-
-  Container* container        = static_cast<Container*>(hfx->GetInternalHandle());
-  const Technique* ptekcont   = static_cast<const Technique*>(htek->GetPlatformHandle());
-  container->mActiveTechnique = ptekcont;
-  container->_activePass      = 0;
-  OrkAssert(ptekcont != nullptr);
-
-  // printf("binding tek<%p:%s>\n", ptekcont, ptekcont->_name.c_str());
-  return (ptekcont->mPasses.size() > 0);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool Interface::BindPass(FxShader* hfx, int ipass) {
-  Container* container = static_cast<Container*>(hfx->GetInternalHandle());
-  if (container->mShaderCompileFailed)
-    return false;
-
-  assert(container->mActiveTechnique != nullptr);
-
-  container->_activePass = container->mActiveTechnique->mPasses[ipass];
-  GL_ERRORCHECK();
-  if (0 == container->_activePass->_programObjectId) {
-    bool complinkok = compileAndLink(container);
-    hfx->SetFailedCompile(false == complinkok);
-  }
-  auto pass = container->_activePass;
-  auto tek  = pass->_technique;
-  // printf("binding pass<%p:%s> tek<%s>\n", pass, pass->_name.c_str(), tek->_name.c_str());
-
-  GL_ERRORCHECK();
-  glUseProgram(container->_activePass->_programObjectId);
-  GL_ERRORCHECK();
-
-  return true;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void Interface::EndPass(FxShader* hfx) {
-  auto container = static_cast<Container*>(hfx->GetInternalHandle());
-  GL_ERRORCHECK();
-  glUseProgram(0);
-  GL_ERRORCHECK();
-  // cgResetPassState( container->_activePass );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

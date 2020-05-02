@@ -160,45 +160,44 @@ int GfxMaterial3DSolid::BeginBlock(Context* pTarg, const RenderContextInstData& 
   bool is_stereo                     = CPD.isStereoOnePass();
 
   if (is_picking and _enablePick and hTekPick) {
-    pTarg->FXI()->BindTechnique(hModFX, hTekPick);
+    return pTarg->FXI()->BeginBlock(hTekPick, RCID);
   } else
     switch (meColorMode) {
       case EMODE_VERTEX_COLOR:
-        pTarg->FXI()->BindTechnique(hModFX, hTekVertexColor);
+        return pTarg->FXI()->BeginBlock(hTekVertexColor, RCID);
         break;
       case EMODE_VERTEXMOD_COLOR:
-        pTarg->FXI()->BindTechnique(hModFX, hTekVertexModColor);
+        return pTarg->FXI()->BeginBlock(hTekVertexModColor, RCID);
         break;
       case EMODE_MOD_COLOR:
-        pTarg->FXI()->BindTechnique(hModFX, hTekModColor);
+        return pTarg->FXI()->BeginBlock(hTekModColor, RCID);
         break;
       case EMODE_INTERNAL_COLOR:
-        pTarg->FXI()->BindTechnique(hModFX, hTekModColor);
+        return pTarg->FXI()->BeginBlock(hTekModColor, RCID);
         break;
       case EMODE_TEX_COLOR:
-        pTarg->FXI()->BindTechnique(hModFX, is_stereo ? hTekTexColorStereo : hTekTexColor);
+        return pTarg->FXI()->BeginBlock(is_stereo ? hTekTexColorStereo : hTekTexColor, RCID);
         break;
       case EMODE_TEXMOD_COLOR:
-        pTarg->FXI()->BindTechnique(hModFX, hTekTexModColor);
+        return pTarg->FXI()->BeginBlock(hTekTexModColor, RCID);
         break;
       case EMODE_TEXTEXMOD_COLOR:
-        pTarg->FXI()->BindTechnique(hModFX, hTekTexTexModColor);
+        return pTarg->FXI()->BeginBlock(hTekTexTexModColor, RCID);
         break;
       case EMODE_TEXVERTEX_COLOR:
-        pTarg->FXI()->BindTechnique(hModFX, hTekTexVertexColor);
+        return pTarg->FXI()->BeginBlock(hTekTexVertexColor, RCID);
         break;
       case EMODE_USER:
-        pTarg->FXI()->BindTechnique(hModFX, is_stereo ? hTekUserStereo : hTekUser);
+        return pTarg->FXI()->BeginBlock(is_stereo ? hTekUserStereo : hTekUser, RCID);
         break;
     }
-  int inumpasses = pTarg->FXI()->BeginBlock(hModFX, RCID);
-  return inumpasses;
+  return 0;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void GfxMaterial3DSolid::EndBlock(Context* pTarg) {
-  pTarg->FXI()->EndBlock(hModFX);
+  pTarg->FXI()->EndBlock();
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -216,7 +215,7 @@ bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
   bool is_stereo                     = CPD.isStereoOnePass();
 
   pTarg->RSI()->BindRasterState(_rasterstate);
-  pTarg->FXI()->BindPass(hModFX, iPass);
+  pTarg->FXI()->BindPass(iPass);
 
   if (hModFX->GetFailedCompile()) {
     assert(false);
@@ -328,7 +327,7 @@ bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
 
 void GfxMaterial3DSolid::EndPass(Context* pTarg) {
   if (false == gbskip)
-    pTarg->FXI()->EndPass(hModFX);
+    pTarg->FXI()->EndPass();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////

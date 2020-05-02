@@ -41,7 +41,6 @@ struct FreestyleMaterial final : public GfxMaterial {
   // new interface (WIP)
   ////////////////////////////////////////////
 
-  void begin(const RenderContextFrameData& RCFD);
   void begin(const FxShaderTechnique* tek, const RenderContextFrameData& RCFD);
   void begin(const FxShaderTechnique* tekMono, const FxShaderTechnique* tekStereo, const RenderContextFrameData& RCFD);
   void end(const RenderContextFrameData& RCFD);
@@ -73,7 +72,8 @@ struct FreestyleMaterial final : public GfxMaterial {
 
   ////////////////////////////////////////////
 
-  FxShader* _shader = nullptr;
+  FxShader* _shader                     = nullptr;
+  const FxShaderTechnique* _selectedTEK = nullptr;
 
   std::set<const FxShaderTechnique*> _techniques;
   std::set<const FxShaderParam*> _params;
