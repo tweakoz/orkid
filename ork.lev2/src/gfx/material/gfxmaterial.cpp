@@ -109,35 +109,6 @@ const TextureContext& GfxMaterial::GetTexture(ETextureDest edest) const {
 TextureContext& GfxMaterial::GetTexture(ETextureDest edest) {
   return mTextureMap[edest];
 }
-
-/////////////////////////////////////////////////////////////////////////
-GfxMaterialInstance::GfxMaterialInstance(material_ptr_t mtl)
-    : _material(mtl) {
-}
-/////////////////////////////////////////////////////////////////////////
-int GfxMaterialInstance::beginBlock(const RenderContextInstData& RCID) {
-  return _material->materialInstanceBeginBlock(shared_from_this(), RCID);
-}
-bool GfxMaterialInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
-  return _material->materialInstanceBeginPass(shared_from_this(), RCID, ipass);
-}
-void GfxMaterialInstance::endPass(const RenderContextInstData& RCID) {
-  _material->materialInstanceEndPass(shared_from_this(), RCID);
-}
-void GfxMaterialInstance::endBlock(const RenderContextInstData& RCID) {
-  _material->materialInstanceEndBlock(shared_from_this(), RCID);
-}
-/////////////////////////////////////////////////////////////////////////
-void GfxMaterialInstance::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall) {
-  int inumpasses = beginBlock(RCID);
-  for (int ipass = 0; ipass < inumpasses; ipass++) {
-    if (beginPass(RCID, ipass)) {
-      drawcall();
-      endPass(RCID);
-    }
-  }
-  endBlock(RCID);
-}
 /////////////////////////////////////////////////////////////////////////
 } // namespace lev2
 } // namespace ork

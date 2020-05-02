@@ -76,10 +76,6 @@ public:
   void Update() final;
   void BindMaterialInstItem(MaterialInstItem* pitem) const override;
   void UnBindMaterialInstItem(MaterialInstItem* pitem) const override;
-  int materialInstanceBeginBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) override;
-  bool materialInstanceBeginPass(materialinst_ptr_t minst, const RenderContextInstData& RCID, int ipass) override;
-  void materialInstanceEndPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) override;
-  void materialInstanceEndBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) override;
 
   ////////////////////////////////////////////
   void setupCamera(const RenderContextFrameData& RCFD);

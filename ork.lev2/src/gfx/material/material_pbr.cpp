@@ -425,19 +425,4 @@ void PBRMaterial::end(const RenderContextFrameData& RCFD) {
 
 ////////////////////////////////////////////
 
-int PBRMaterial::materialInstanceBeginBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
-  OrkAssert(false);
-  return 0;
-}
-bool PBRMaterial::materialInstanceBeginPass(materialinst_ptr_t minst, const RenderContextInstData& RCID, int ipass) {
-  OrkAssert(false);
-  return false;
-}
-void PBRMaterial::materialInstanceEndPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
-  OrkAssert(false);
-}
-void PBRMaterial::materialInstanceEndBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
-  OrkAssert(false);
-}
-
 } // namespace ork::lev2

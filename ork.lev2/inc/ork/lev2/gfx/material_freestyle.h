@@ -48,11 +48,6 @@ struct FreestyleMaterial final : public GfxMaterial {
   void gpuInit(Context* targ, const AssetPath& assetname);
   void gpuInitFromShaderText(Context* targ, const std::string& shadername, const std::string& shadertext);
 
-  int materialInstanceBeginBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) override;
-  bool materialInstanceBeginPass(materialinst_ptr_t minst, const RenderContextInstData& RCID, int ipass) override;
-  void materialInstanceEndPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) override;
-  void materialInstanceEndBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) override;
-
   const FxShaderTechnique* technique(std::string named);
   const FxShaderParam* param(std::string named);
   const FxShaderParamBlock* paramBlock(std::string named);
@@ -64,7 +59,6 @@ struct FreestyleMaterial final : public GfxMaterial {
 #endif
   ////////////////////////////////////////////
 
-  void setInstanceMvpParams(materialinst_ptr_t minst, std::string monocam, std::string stereocamL, std::string stereocamR);
   void commit();
   void bindTechnique(const FxShaderTechnique* tek);
   void bindParamInt(const FxShaderParam* par, int value);

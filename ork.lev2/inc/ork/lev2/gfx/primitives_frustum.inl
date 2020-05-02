@@ -2,6 +2,7 @@
 #include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 #include <ork/math/frustum.h>
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
+#include <ork/lev2/gfx/material_instance.h>
 
 namespace ork::lev2::primitives {
 //////////////////////////////////////////////////////////////////////////////
@@ -11,20 +12,17 @@ struct FrustumPrimitive {
     meshutil::submesh frustum_submesh;
     const auto& NC = _frustum.mNearCorners;
     const auto& FC = _frustum.mFarCorners;
-    auto addq = [&](fvec3 vtxa, fvec3 vtxb, fvec3 vtxc, fvec3 vtxd, fvec4 col){
-      auto normal = (vtxb-vtxa).Cross(vtxc-vtxa).Normal();
+    auto addq      = [&](fvec3 vtxa, fvec3 vtxb, fvec3 vtxc, fvec3 vtxd, fvec4 col) {
+      auto normal = (vtxb - vtxa).Cross(vtxc - vtxa).Normal();
       frustum_submesh.addQuad(
-          vtxa,vtxb,vtxc,vtxd,
-          normal,normal,normal,normal,
-          fvec2(0,0),fvec2(0,1),fvec2(1,1),fvec2(1,0),
-          col);
+          vtxa, vtxb, vtxc, vtxd, normal, normal, normal, normal, fvec2(0, 0), fvec2(0, 1), fvec2(1, 1), fvec2(1, 0), col);
     };
-    addq(NC[3],NC[2],NC[1],NC[0],_colorFront);
-    addq(FC[0],FC[1],FC[2],FC[3],_colorBack);
-    addq(NC[1],FC[1],FC[0],NC[0],_colorTop);
-    addq(NC[3],FC[3],FC[2],NC[2],_colorBottom);
-    addq(NC[0],FC[0],FC[3],NC[3],_colorLeft);
-    addq(NC[2],FC[2],FC[1],NC[1],_colorRight);
+    addq(NC[3], NC[2], NC[1], NC[0], _colorFront);
+    addq(FC[0], FC[1], FC[2], FC[3], _colorBack);
+    addq(NC[1], FC[1], FC[0], NC[0], _colorTop);
+    addq(NC[3], FC[3], FC[2], NC[2], _colorBottom);
+    addq(NC[0], FC[0], FC[3], NC[3], _colorLeft);
+    addq(NC[2], FC[2], FC[1], NC[1], _colorRight);
     _primitive.fromSubMesh(frustum_submesh, context);
   }
   //////////////////////////////////////////////////////////////////////////////

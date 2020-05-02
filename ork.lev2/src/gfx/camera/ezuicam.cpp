@@ -26,6 +26,7 @@
 #include <ork/lev2/qtui/qtui.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/lev2/gfx/material_instance.h>
 
 #include <QtGui/QCursor>
 
@@ -62,13 +63,13 @@ void EzUiCam::Describe() {
 struct UiCamPrivate {
   UiCamPrivate() {
     _material     = std::make_shared<FreestyleMaterial>();
-    _materialinst = std::make_shared<GfxMaterialInstance>(_material);
+    _materialinst = std::make_shared<GfxMaterialInstance>(); // _material
   }
   void gpuUpdate(Context* ctx) {
     if (_doGpuInit) {
       auto shaderpath = file::Path("orkshader://manip");
       _material->gpuInit(ctx, shaderpath);
-      _material->setInstanceMvpParams(_materialinst, "mvp", "mvpL", "mvpR");
+      _materialinst->setInstanceMvpParams("mvp", "mvpL", "mvpR");
       _materialinst->_monoTek   = _material->technique("std_mono");
       _materialinst->_stereoTek = _material->technique("std_stereo");
       _doGpuInit                = false;

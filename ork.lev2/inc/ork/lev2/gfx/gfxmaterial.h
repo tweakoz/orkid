@@ -21,10 +21,8 @@ namespace lev2 {
 
 struct GfxMaterialInstance;
 
-using material_ptr_t          = std::shared_ptr<GfxMaterial>;
-using material_constptr_t     = std::shared_ptr<const GfxMaterial>;
-using materialinst_ptr_t      = std::shared_ptr<GfxMaterialInstance>;
-using materialinst_constptr_t = std::shared_ptr<const GfxMaterialInstance>;
+using material_ptr_t      = std::shared_ptr<GfxMaterial>;
+using material_constptr_t = std::shared_ptr<const GfxMaterial>;
 
 class Texture;
 
@@ -114,28 +112,6 @@ struct MaterialInstItemMatrixBlock : public MaterialInstItem {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// GfxMaterialInstance : instance of a material "class"
-//  with independent parameter values
-///////////////////////////////////////////////////////////////////////////////
-
-struct GfxMaterialInstance : public std::enable_shared_from_this<GfxMaterialInstance> {
-  GfxMaterialInstance(material_ptr_t mtl);
-  int beginBlock(const RenderContextInstData& RCID);
-  bool beginPass(const RenderContextInstData& RCID, int ipass);
-  void endPass(const RenderContextInstData& RCID);
-  void endBlock(const RenderContextInstData& RCID);
-
-  void wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall);
-
-  using varval_t = varmap::VarMap::value_type;
-  material_ptr_t _material;
-  fxtechnique_constptr_t _monoTek   = nullptr;
-  fxtechnique_constptr_t _pickTek   = nullptr;
-  fxtechnique_constptr_t _stereoTek = nullptr;
-  std::unordered_map<fxparam_constptr_t, varval_t> _params;
-};
-
-///////////////////////////////////////////////////////////////////////////////
 
 struct GfxMaterial : public ork::Object {
   RttiDeclareAbstract(GfxMaterial, ork::Object);
@@ -182,17 +158,6 @@ public:
   void SetFogRange(F32 frange) {
     mfFogRange = float(frange);
   };
-
-  virtual int materialInstanceBeginBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
-    return 0;
-  }
-  virtual bool materialInstanceBeginPass(materialinst_ptr_t minst, const RenderContextInstData& RCID, int ipass) {
-    return false;
-  }
-  virtual void materialInstanceEndPass(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
-  }
-  virtual void materialInstanceEndBlock(materialinst_ptr_t minst, const RenderContextInstData& RCID) {
-  }
 
   virtual void UpdateMVPMatrix(Context* pTARG) {
   }

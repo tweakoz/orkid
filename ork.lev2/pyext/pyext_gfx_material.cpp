@@ -1,5 +1,6 @@
 #include "pyext.h"
 #include <ork/kernel/string/deco.inl>
+#include <ork/lev2/gfx/material_instance.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -70,7 +71,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto materialinst_type =                                                                 //
       py::class_<GfxMaterialInstance, materialinst_ptr_t>(module_lev2, "MaterialInstance") //
-          .def(py::init<material_ptr_t>())
+          .def(py::init<>())                                                               // material_ptr_t
           .def(
               "__setattr__",                                                                      //
               [type_codec](materialinst_ptr_t instance, const std::string& key, py::object val) { //
@@ -126,7 +127,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
           .def(
               "createInstance",                                        //
               [](freestyle_mtl_ptr_t material) -> materialinst_ptr_t { //
-                return std::make_shared<GfxMaterialInstance>(material);
+                return std::make_shared<GfxMaterialInstance>();        // material
               })
           .def(
               "setInstanceMvpParams",
@@ -135,7 +136,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
                  std::string monomvp,
                  std::string leftmvp,
                  std::string rightmvp) { //
-                material->setInstanceMvpParams(instance, monomvp, leftmvp, rightmvp);
+                instance->setInstanceMvpParams(monomvp, leftmvp, rightmvp);
               })
           .def(
               "gpuInit",

@@ -11,6 +11,7 @@
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/gfxmodel.h>
+#include <ork/lev2/gfx/material_instance.h>
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
@@ -48,7 +49,8 @@ void InstancedModelDrawable::bindModel(model_ptr_t model) {
       IMDIMPL_SUBMESH submesh_impl;
       auto xgmsub              = mesh->subMesh(ics);
       submesh_impl._xgmsubmesh = xgmsub;
-      submesh_impl._mtlinst    = std::make_shared<GfxMaterialInstance>(xgmsub->_material);
+      // xgmsub->_material;
+      submesh_impl._mtlinst = std::make_shared<GfxMaterialInstance>();
       impl->_submeshes.push_back(submesh_impl);
     }
   }
