@@ -32,9 +32,6 @@ public:
   Texture* texture() const {
     return _texture;
   }
-  // GfxMaterial* GetMaterial() const {
-  // return mMaterial;
-  //}
   EBufferFormat format() const {
     return mFormat;
   }
@@ -42,13 +39,9 @@ public:
   void SetSizeDirty(bool sd) {
     mSizeDirty = sd;
   }
-  // void SetMaterial(GfxMaterial* pmtl) {
-  // mMaterial = pmtl;
-  //}
 
   int miW, miH;
   Texture* _texture;
-  // GfxMaterial* mMaterial;
   ERtgSlot mType;
   EBufferFormat mFormat;
   svarp_t _impl;
