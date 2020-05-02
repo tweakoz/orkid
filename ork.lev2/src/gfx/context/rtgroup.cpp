@@ -20,7 +20,6 @@ RtBuffer::RtBuffer(ERtgSlot slot, EBufferFormat efmt, int iW, int iH)
     , miH(iH)
     , mType(slot)
     , mFormat(efmt)
-    , mMaterial(nullptr)
     , _mipgen(EMG_NONE) {
   _texture = new Texture;
 }

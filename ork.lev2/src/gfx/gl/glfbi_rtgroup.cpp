@@ -118,10 +118,6 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
 
         mTargetGL.TXI()->ApplySamplingMode(ptex);
         //////////////////////////////////////////
-        ork::lev2::GfxMaterialUITextured* pmtl = new ork::lev2::GfxMaterialUITextured(&mTarget);
-        pmtl->SetTexture(ETEXDEST_DIFFUSE, ptex);
-        pB->SetMaterial(pmtl);
-        //////////////////////////////////////////
         pB->_impl.Set<GlRtBufferImpl*>(bufferimpl);
       }
     }
@@ -192,7 +188,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       RtBuffer* rtbuffer = Base->GetMrt(it);
       auto bufferimpl    = rtbuffer->_impl.Get<GlRtBufferImpl*>();
 
-      auto tex        = rtbuffer->texture();
+      auto tex = rtbuffer->texture();
       if (bufferimpl->_init or rtbuffer->mSizeDirty) {
         // printf("RtGroup<%p> RtBuffer<%p> initcolor2\n", Base, rtbuffer);
         // D3DFORMAT efmt = D3DFMT_A8R8G8B8;
@@ -206,9 +202,9 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
             gltype           = GL_FLOAT;
             break;
           case EBufferFormat::R32UI:
-            glformat         = GL_RED_INTEGER;
-            glinternalformat = GL_R32UI;
-            gltype           = GL_UNSIGNED_INT;
+            glformat                      = GL_RED_INTEGER;
+            glinternalformat              = GL_R32UI;
+            gltype                        = GL_UNSIGNED_INT;
             tex->_formatSupportsFiltering = false;
             break;
           case EBufferFormat::RG16F:
@@ -230,9 +226,9 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
             gltype           = GL_HALF_FLOAT;
             break;
           case EBufferFormat::RGBA16UI:
-            glformat         = GL_RGBA_INTEGER;
-            glinternalformat = GL_RGBA16UI;
-            gltype           = GL_UNSIGNED_SHORT;
+            glformat                      = GL_RGBA_INTEGER;
+            glinternalformat              = GL_RGBA16UI;
+            gltype                        = GL_UNSIGNED_SHORT;
             tex->_formatSupportsFiltering = false;
             break;
           case EBufferFormat::RGBA32F:
@@ -244,9 +240,9 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
             gltype           = GL_UNSIGNED_INT_10_10_10_2;
             break;
           case EBufferFormat::RGB32UI:
-            glformat         = GL_RGB_INTEGER;
-            glinternalformat = GL_RGB32UI;
-            gltype           = GL_UNSIGNED_INT;
+            glformat                      = GL_RGB_INTEGER;
+            glinternalformat              = GL_RGB32UI;
+            gltype                        = GL_UNSIGNED_INT;
             tex->_formatSupportsFiltering = false;
             break;
           default:
@@ -262,10 +258,9 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
         auto orkteximpl = (GLTextureObject*)tex->GetTexIH();
         GLuint texobj   = bufferimpl->_texture;
 
-        if(tex->_formatSupportsFiltering){
+        if (tex->_formatSupportsFiltering) {
           tex->mTexSampleMode.PresetTrilinearWrap();
-        }
-        else {
+        } else {
           tex->mTexSampleMode.PresetPointAndClamp();
         }
 

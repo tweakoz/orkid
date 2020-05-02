@@ -688,12 +688,13 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
         pfc._gfxContext = pTARG;
         _pickbuffer->Draw(pfc);
         if (_pickbuffer->_rtgroup) {
-          auto mrt = _pickbuffer->_rtgroup->GetMrt(0);
-          auto mtl = mrt->GetMaterial();
-          ptex     = mrt->texture();
+          auto mrt           = _pickbuffer->_rtgroup->GetMrt(0);
+          static auto texmtl = std::make_shared<lev2::GfxMaterialUITextured>(pTARG);
+          ptex               = mrt->texture();
+          texmtl->SetTexture(lev2::ETEXDEST_DIFFUSE, ptex);
           ptex->TexSamplingMode().PresetPointAndClamp();
           pTARG->TXI()->ApplySamplingMode(ptex);
-          nextmtl = mtl;
+          nextmtl = texmtl.get();
         }
         UiMat.SetTexture(lev2::ETEXDEST_DIFFUSE, ptex);
       } else

@@ -115,7 +115,13 @@ void Surface::DoDraw(DrawEvent& drwev) {
   rsi->BindRasterState(defstate);
   fxi->InvalidateStateBlock();
 
-  auto material = (mRtGroup) ? mRtGroup->GetMrt(0)->GetMaterial() : defmtl;
+  auto material = defmtl;
+  if (mRtGroup) {
+    static auto texmtl = std::make_shared<lev2::GfxMaterialUITextured>(tgt);
+    auto ptex          = mRtGroup->GetMrt(0)->texture();
+    texmtl->SetTexture(lev2::ETEXDEST_DIFFUSE, ptex);
+    material = texmtl.get();
+  }
 
   bool has_foc = HasMouseFocus();
   tgt->PushModColor(has_foc ? fcolor4::Green() : fcolor4::Blue());
