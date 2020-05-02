@@ -107,8 +107,6 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
 
   //////////////////////////////////////////////////////////////////////
 
-  auto worldpose = GetUserDataA().Get<xgmworldpose_ptr_t>();
-
   ork::fvec3 matw_trans;
   ork::fquat matw_rot;
   float matw_scale;
