@@ -311,7 +311,7 @@ void XgmModel::RenderRigid(
         /////////////////////////////////////////////////////
         case ork::lev2::ERGST_NONE: {
           pTARG->debugPushGroup("XgmModel::RenderRigid::ERGST_NONE");
-          pTARG->BindMaterial(pmat.get());
+          // pTARG->BindMaterial(pmat.get());
           int inumpasses = pmat->BeginBlock(pTARG, RCID);
           { RenderClus::RenderStd(pTARG, pmat.get(), cluster, inumpasses); }
           pmat->EndBlock(pTARG);
@@ -321,7 +321,7 @@ void XgmModel::RenderRigid(
         }
         /////////////////////////////////////////////////////
         case ork::lev2::ERGST_FIRST: {
-          pTARG->BindMaterial(pmat.get());
+          // pTARG->BindMaterial(pmat.get());
           giNUMPASSES = pmat->BeginBlock(pTARG, RCID);
           if (giNUMPASSES == 1) {
             gbGROUPENABLED = true;
@@ -347,7 +347,7 @@ void XgmModel::RenderRigid(
               RenderClus::RenderPrim(pTARG, cluster);
             }
           } else {
-            pTARG->BindMaterial(pmat.get());
+            // pTARG->BindMaterial(pmat.get());
             int inumpasses = pmat->BeginBlock(pTARG, RCID);
             { RenderClus::RenderStd(pTARG, pmat.get(), cluster, inumpasses); }
             pmat->EndBlock(pTARG);
@@ -366,7 +366,7 @@ void XgmModel::RenderRigid(
             }
             pmat->EndBlock(pTARG);
           } else {
-            pTARG->BindMaterial(pmat.get());
+            // pTARG->BindMaterial(pmat.get());
             int inumpasses = pmat->BeginBlock(pTARG, RCID);
             { RenderClus::RenderStd(pTARG, pmat.get(), cluster, inumpasses); }
             pmat->EndBlock(pTARG);
@@ -441,7 +441,7 @@ void XgmModel::RenderSkinned(
       mtl->gpuUpdate(pTARG);
 
       if (0 != mtl) {
-        pTARG->BindMaterial(mtl.get());
+        // pTARG->BindMaterial(mtl.get());
         int inumpasses = mtl->BeginBlock(pTARG, RCID);
 
         for (int ip = 0; ip < inumpasses; ip++) {
@@ -519,7 +519,7 @@ void XgmModel::RenderSkinned(
 
     //////////////
 
-    pTARG->PushMaterial(material);
+    // pTARG->PushMaterial(material);
     {
       typedef SVtxV12N12B12T8C4 vertex_t;
       auto& vtxbuf = GfxEnv::GetSharedDynamicVB2();
@@ -614,7 +614,7 @@ void XgmModel::RenderSkinned(
         }
         vw.UnLock(pTARG);
         pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
-        pTARG->GBI()->DrawPrimitive(vw, EPrimitiveType::LINES, numlines);
+        pTARG->GBI()->DrawPrimitive(material, vw, EPrimitiveType::LINES, numlines);
         pTARG->MTXI()->PopMMatrix();
       }
       for (int ib = 0; ib < inumbones; ib++) {
@@ -622,11 +622,11 @@ void XgmModel::RenderSkinned(
         fmtx4 bone_head     = WorldMat * LocalPose.RefLocalMatrix(bone._parentIndex);
         fmtx4 bone_tail     = WorldMat * LocalPose.RefLocalMatrix(bone._childIndex);
         pTARG->MTXI()->PushMMatrix(bone_head);
-        GfxPrimitives::GetRef().RenderAxis(pTARG);
+        // GfxPrimitives::GetRef().RenderAxis(pTARG);
         pTARG->MTXI()->PopMMatrix();
       }
     }
-    pTARG->PopMaterial();
+    // pTARG->PopMaterial();
     pTARG->PopModColor();
     pTARG->debugPopGroup();
   }

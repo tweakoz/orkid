@@ -124,7 +124,7 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
     , _updateThread(nullptr) {
   mRenderLock = 0;
 
-_overlayCamMatrices = std::make_shared<ork::lev2::CameraMatrices>();
+  _overlayCamMatrices = std::make_shared<ork::lev2::CameraMatrices>();
 
   ///////////////////////////////////////////////////////////
 
@@ -366,7 +366,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   lev2::FrameRenderer framerenderer(RCFD, [&]() { renderMisc(RCFD); });
   lev2::CompositorDrawData drawdata(framerenderer);
   const DrawableBuffer* DB = nullptr;
-  bool assembled_ok = false;
+  bool assembled_ok        = false;
   {
     EASY_BLOCK("acquireDB");
     DB = DrawableBuffer::acquireReadDB(7); // mDbLock.Aquire(7);
@@ -375,7 +375,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   // composite assembly:
   //   render (or assemble) content into pre-compositing buffers
   //////////////////////////////////////////////////
-  if( DB ){
+  if (DB) {
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
     drawdata._properties["primarycamindex"_crcu].Set<int>(miCameraIndex);
     drawdata._properties["cullcamindex"_crcu].Set<int>(miCullCameraIndex);
@@ -405,10 +405,10 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     mpTarget->debugPopGroup();
   }
   //////////////////////////////////////////////////
-    if (mEditor.mpScene){
-      drawdata._properties["simrunning"_crcu].Set<bool>(running);
-      DrawManip(drawdata, mpTarget);
-    }
+  if (mEditor.mpScene) {
+    drawdata._properties["simrunning"_crcu].Set<bool>(running);
+    DrawManip(drawdata, mpTarget);
+  }
   //////////////////////////////////////////////////
   // todo - lock sim
   //////////////////////////////////////////////////
@@ -513,15 +513,15 @@ void SceneEditorVP::renderMisc(lev2::RenderContextFrameData& RCFD) {
   ///////////////////////////////////////////////////////////////////////////
   // RENDER!
   ///////////////////////////////////////////////////////////////////////////
-  FBI->GetThisBuffer()->SetDirty(false);
-  gfxtarg->BindMaterial(lev2::GfxEnv::GetDefault3DMaterial());
-  static lev2::SRasterState defstate;
-  gfxtarg->RSI()->BindRasterState(defstate, true);
+  // FBI->GetThisBuffer()->SetDirty(false);
+  // gfxtarg->BindMaterial(lev2::GfxEnv::GetDefault3DMaterial());
+  // static lev2::SRasterState defstate;
+  // gfxtarg->RSI()->BindRasterState(defstate, true);
   /////////////////////////////////////////
-  gfxtarg->debugPushGroup("toolvp::DrawGrid");
-  if (false == FBI->isPickState())
-    DrawGrid(RCFD);
-  gfxtarg->debugPopGroup();
+  // gfxtarg->debugPushGroup("toolvp::DrawGrid");
+  // if (false == FBI->isPickState())
+  // DrawGrid(RCFD);
+  // gfxtarg->debugPopGroup();
   ///////////////////////////////////////////////////////////////////////////
 }
 
@@ -633,9 +633,7 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
       }
       vw.UnLock(pTARG);
       MTXI->PushUIMatrix();
-      pTARG->BindMaterial(&UiMat);
-      GBI->DrawPrimitive(vw, lev2::EPrimitiveType::LINES, 2);
-      pTARG->BindMaterial(0);
+      GBI->DrawPrimitive(&UiMat, vw, lev2::EPrimitiveType::LINES, 2);
       MTXI->PopUIMatrix();
       gfspinner += (PI2 / 60.0f);
     }
@@ -667,9 +665,7 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
       }
       vw.UnLock(pTARG);
       MTXI->PushUIMatrix();
-      pTARG->BindMaterial(&UiMat);
-      GBI->DrawPrimitive(vw, lev2::EPrimitiveType::LINES, 2);
-      pTARG->BindMaterial(0);
+      GBI->DrawPrimitive(&UiMat, vw, lev2::EPrimitiveType::LINES, 2);
       MTXI->PopUIMatrix();
     }
     pTARG->PopModColor();
@@ -686,6 +682,7 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
       // Test PickBuffer
       //////////////////////////////////////////
 
+      GfxMaterial* nextmtl = nullptr;
       if (_pickbuffer) {
         lev2::PixelFetchContext pfc;
         pfc._gfxContext = pTARG;
@@ -696,14 +693,11 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
           ptex     = mrt->texture();
           ptex->TexSamplingMode().PresetPointAndClamp();
           pTARG->TXI()->ApplySamplingMode(ptex);
-          if (mtl) {
-            pTARG->BindMaterial(mtl);
-          }
+          nextmtl = mtl;
         }
         UiMat.SetTexture(lev2::ETEXDEST_DIFFUSE, ptex);
-      } else {
-        pTARG->BindMaterial(&UiMat);
-      }
+      } else
+        nextmtl = &UiMat;
 
       //////////////////////////////////////////
 
@@ -747,11 +741,10 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
         }
         vw.UnLock(pTARG);
         MTXI->PushUIMatrix();
-        GBI->DrawPrimitive(vw, lev2::EPrimitiveType::TRIANGLES, 6);
+        GBI->DrawPrimitive(nextmtl, vw, lev2::EPrimitiveType::TRIANGLES, 6);
         MTXI->PopUIMatrix();
       }
       pTARG->PopModColor();
-      pTARG->BindMaterial(0);
 
       if (emode == ent::ESCENEMODE_RUN) {
         ork::lev2::DrawHudEvent drawHudEvent(pTARG, 1);
@@ -759,7 +752,6 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
           mEditor.GetActiveSimulation()->GetApplication()->Notify(&drawHudEvent);
       }
     }
-    pTARG->BindMaterial(0);
     /////////////////////////////////////////////////
     /////////////////////////////////////////////////
     /////////////////////////////////////////////////
@@ -783,7 +775,7 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
   MTXI->PopMMatrix(); // back to ortho
 
   mpTarget->debugPopGroup();
-}
+} // namespace ent
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -829,7 +821,7 @@ void SceneEditorVP::DrawManip(lev2::CompositorDrawData& CDD, ork::lev2::Context*
   myCPD.defaultSetup(CDD);
 
   /////////////////////////////////////////
-  const DrawableBuffer* DB   = DrawableBuffer::acquireReadDB(7); 
+  const DrawableBuffer* DB = DrawableBuffer::acquireReadDB(7);
   if (DB) {
     auto spncam = (CameraData*)DB->cameraData("spawncam"_pool);
     if (spncam) {
@@ -869,7 +861,7 @@ void SceneEditorVP::DrawManip(lev2::CompositorDrawData& CDD, ork::lev2::Context*
         fvec3 RightVector;
         _overlayCamMatrices->GetPixelLengthVectors(Pos, VP, UpVector, RightVector);
         float rscale = RightVector.Mag(); // float(100.0f);
-        //printf( "OUTERmanip rscale<%f>\n", rscale );
+        // printf( "OUTERmanip rscale<%f>\n", rscale );
 
         static float fRSCALE = 1.0f;
 
@@ -915,7 +907,6 @@ void SceneEditorVP::DrawBorder(lev2::RenderContextFrameData& RCFD) {
   auto MTXI       = TGT->MTXI();
   ork::fmtx4 mtxP = MTXI->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);
   GfxMaterialUI matui(TGT);
-  TGT->BindMaterial(&matui);
   TGT->PushModColor(bhasfocus ? ork::fcolor4::Red() : ork::fcolor4::Black());
   MTXI->PushPMatrix(mtxP);
   MTXI->PushVMatrix(ork::fmtx4::Identity());
@@ -953,13 +944,12 @@ void SceneEditorVP::DrawBorder(lev2::RenderContextFrameData& RCFD) {
 
     vwriter.UnLock(TGT);
 
-    TGT->GBI()->DrawPrimitive(vwriter, ork::lev2::EPrimitiveType::LINES);
+    TGT->GBI()->DrawPrimitive(&matui, vwriter, ork::lev2::EPrimitiveType::LINES);
   }
   MTXI->PopPMatrix(); // back to ortho
   MTXI->PopVMatrix(); // back to ortho
   MTXI->PopMMatrix(); // back to ortho
   TGT->PopModColor();
-  TGT->BindMaterial(0);
 
   mpTarget->debugPopGroup();
 }

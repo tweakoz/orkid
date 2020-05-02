@@ -53,7 +53,6 @@ void Viewport::BeginFrame(lev2::Context* pTARG) {
     ork::lev2::ViewportRect SciRect(miX, miY, miW, miH);
     pTARG->FBI()->pushScissor(SciRect);
     pTARG->MTXI()->PushPMatrix(pTARG->MTXI()->GetOrthoMatrix());
-    pTARG->BindMaterial(lev2::GfxEnv::GetRef().GetDefaultUIMaterial());
   }
   pTARG->debugPopGroup();
 }
@@ -63,10 +62,8 @@ void Viewport::BeginFrame(lev2::Context* pTARG) {
 void Viewport::EndFrame(lev2::Context* pTARG) {
   pTARG->debugPushGroup("Viewport::EndFrame");
   if (mbDrawOK) {
-    // orkprintf( "END Viewport::BeginFrame::mbDrawOK\n" );
     pTARG->MTXI()->PopPMatrix();
     pTARG->FBI()->popScissor();
-    pTARG->BindMaterial(0);
   }
   pTARG->endFrame();
   //////////////////////////////////////////////////////////

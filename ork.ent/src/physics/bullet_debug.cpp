@@ -175,17 +175,15 @@ void PhysicsDebugger::render(const RenderContextInstData& RCID, lineqptr_t lines
     static GfxMaterial3DSolid material(context);
     material._rasterstate.SetZWriteMask(true);
     material.SetColorMode(GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
-    context->BindMaterial(&material);
     context->PushModColor(fvec4::White());
     context->FXI()->InvalidateStateBlock();
     fmtx4 mtx_dbg;
     mtx_dbg.SetTranslation(cam_z * -.013f);
 
     context->MTXI()->PushMMatrix(mtx_dbg);
-    context->GBI()->DrawPrimitive(vwriter, ork::lev2::EPrimitiveType::LINES);
+    context->GBI()->DrawPrimitive(&material, vwriter, ork::lev2::EPrimitiveType::LINES);
     context->MTXI()->PopMMatrix();
     context->PopModColor();
-    context->BindMaterial(0);
   }
 }
 

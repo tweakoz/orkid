@@ -179,12 +179,12 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(Simulation* inst, Entity* pent) 
         context->MTXI()->PushUIMatrix();
         context->PushModColor(fcolor4::Green());
         ork::lev2::FontMan::PushFont("d24");
-        ork::lev2::FontMan::GetRef().BeginTextBlock(context);
+        ork::lev2::FontMan::GetRef().beginTextBlock(context);
         int y = context->mainSurfaceHeight() - 24;
         ork::lev2::FontMan::DrawText(context, 16, y -= 24, "AvgUpd<%f> UPS<%f>", ssci->favgupdate, 1.0f / ssci->favgupdate);
         ork::lev2::FontMan::DrawText(context, 16, y -= 24, "AvgDrw<%f> FPS<%f>", ssci->favgdraw, 1.0f / ssci->favgdraw);
         ork::lev2::FontMan::DrawText(context, 16, y -= 24, "RawDT<%f>", frawdeltatime);
-        ork::lev2::FontMan::GetRef().EndTextBlock(context);
+        ork::lev2::FontMan::GetRef().endTextBlock(context);
         ork::lev2::FontMan::PopFont();
         context->PopModColor();
         context->MTXI()->PopUIMatrix();

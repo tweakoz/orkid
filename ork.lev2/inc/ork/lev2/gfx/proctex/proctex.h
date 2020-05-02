@@ -25,16 +25,22 @@
 #define DeclareImg32OutPlug(name)                                                                                                  \
   Img32 OutDataName(name);                                                                                                         \
   ImgOutPlug OutPlugName(name);                                                                                                    \
-  ork::Object* OutAccessor##name() { return &OutPlugName(name); }
+  ork::Object* OutAccessor##name() {                                                                                               \
+    return &OutPlugName(name);                                                                                                     \
+  }
 
 #define DeclareImg64OutPlug(name)                                                                                                  \
   Img64 OutDataName(name);                                                                                                         \
   ImgOutPlug OutPlugName(name);                                                                                                    \
-  ork::Object* OutAccessor##name() { return &OutPlugName(name); }
+  ork::Object* OutAccessor##name() {                                                                                               \
+    return &OutPlugName(name);                                                                                                     \
+  }
 
 #define DeclareImgInpPlug(name)                                                                                                    \
   ImgInPlug InpPlugName(name);                                                                                                     \
-  ork::Object* InpAccessor##name() { return &InpPlugName(name); }
+  ork::Object* InpAccessor##name() {                                                                                               \
+    return &InpPlugName(name);                                                                                                     \
+  }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -70,8 +76,12 @@ public:
   void PtexBegin(lev2::Context* ptgt, bool push_full_vp, bool clear_all);
   void PtexEnd(bool pop_vp);
 
-  bool IsBuf32() const { return format() == lev2::EBufferFormat::RGBA8; }
-  bool IsBuf64() const { return format() == lev2::EBufferFormat::RGBA16F; }
+  bool IsBuf32() const {
+    return format() == lev2::EBufferFormat::RGBA8;
+  }
+  bool IsBuf64() const {
+    return format() == lev2::EBufferFormat::RGBA16F;
+  }
 
   lev2::RtGroup* GetRtGroup(lev2::Context* pt);
 
@@ -82,12 +92,16 @@ public:
 class Buffer32 : public Buffer {
 public:
   Buffer32();
-  ork::lev2::EBufferFormat format() const override { return lev2::EBufferFormat::RGBA8; }
+  ork::lev2::EBufferFormat format() const override {
+    return lev2::EBufferFormat::RGBA8;
+  }
 };
 class Buffer64 : public Buffer {
 public:
   Buffer64();
-  ork::lev2::EBufferFormat format() const override { return lev2::EBufferFormat::RGBA16F; }
+  ork::lev2::EBufferFormat format() const override {
+    return lev2::EBufferFormat::RGBA16F;
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -98,7 +112,8 @@ struct ProcTexContext;
 struct ImgBase {
   mutable int miBufferIndex;
   ImgBase()
-      : miBufferIndex(-1) {}
+      : miBufferIndex(-1) {
+  }
   virtual ork::lev2::Texture* GetTexture(ProcTex& ptex) const = 0;
   virtual Buffer& GetBuffer(ProcTex& ptex) const              = 0;
   virtual int PixelSize() const                               = 0;
@@ -106,12 +121,16 @@ struct ImgBase {
 struct Img32 : public ImgBase {
   ork::lev2::Texture* GetTexture(ProcTex& ptex) const override;
   Buffer& GetBuffer(ProcTex& ptex) const override;
-  virtual int PixelSize() const override { return 32; }
+  virtual int PixelSize() const override {
+    return 32;
+  }
 };
 struct Img64 : public ImgBase {
   ork::lev2::Texture* GetTexture(ProcTex& ptex) const override;
   Buffer& GetBuffer(ProcTex& ptex) const override;
-  virtual int PixelSize() const override { return 64; }
+  virtual int PixelSize() const override {
+    return 64;
+  }
 };
 
 typedef ork::dataflow::outplug<ImgBase> ImgOutPlug;
@@ -142,8 +161,10 @@ class Module : public ork::dataflow::dgmodule {
   RttiDeclareAbstract(Module, ork::dataflow::dgmodule);
 
   ////////////////////////////////////////////////////////////
-  void Compute(dataflow::workunit* wu) override {}
-  void CombineWork(const dataflow::cluster* c) override {}
+  void Compute(dataflow::workunit* wu) override {
+  }
+  void CombineWork(const dataflow::cluster* c) override {
+  }
 
 protected:
   Module();
@@ -151,27 +172,31 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void RenderQuad(ork::lev2::Context* pTARG,
-                float fx1,
-                float fy1,
-                float fx2,
-                float fy2,
-                float fu1 = 0.0f,
-                float fv1 = 0.0f,
-                float fu2 = 1.0f,
-                float fv2 = 1.0f);
+void RenderQuad(
+    lev2::GfxMaterial* mtl,
+    lev2::Context* pTARG,
+    float fx1,
+    float fy1,
+    float fx2,
+    float fy2,
+    float fu1 = 0.0f,
+    float fv1 = 0.0f,
+    float fu2 = 1.0f,
+    float fv2 = 1.0f);
 
 class ImgModule : public Module {
   RttiDeclareAbstract(ImgModule, Module);
 
   virtual void compute(ProcTex& ptex) = 0;
 
-  bool IsDirty(void) const { return true; } // virtual
+  bool IsDirty(void) const {
+    return true;
+  } // virtual
 
   bool mExport;
 
 protected:
-  void UnitTexQuad(ork::lev2::Context* pTARG);
+  void UnitTexQuad(lev2::GfxMaterial* mtl, lev2::Context* pTARG);
 
   static Img32 gNoCon;
 
@@ -181,7 +206,8 @@ protected:
 
   ////////////////////////////////////////////////////////////
   void Compute(dataflow::workunit* wu) final;
-  void CombineWork(const dataflow::cluster* clus) final {}
+  void CombineWork(const dataflow::cluster* clus) final {
+  }
   ////////////////////////////////////////////////////////////
 
   void MarkClean();
@@ -189,7 +215,9 @@ protected:
 public:
   ProcTex* _ptex = nullptr;
   Buffer& GetWriteBuffer(ProcTex& ptex);
-  Buffer& GetThumbBuffer() { return mThumbBuffer; }
+  Buffer& GetThumbBuffer() {
+    return mThumbBuffer;
+  }
   void UpdateThumb(ProcTex& ptex);
 };
 
@@ -203,7 +231,9 @@ protected:
 
   Img64Module();
 
-  dataflow::outplugbase* GetOutput(int idx) final { return &mPlugOutImgOut; }
+  dataflow::outplugbase* GetOutput(int idx) final {
+    return &mPlugOutImgOut;
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -216,7 +246,9 @@ protected:
 
   Img32Module();
 
-  dataflow::outplugbase* GetOutput(int idx) final { return &mPlugOutImgOut; }
+  dataflow::outplugbase* GetOutput(int idx) final {
+    return &mPlugOutImgOut;
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -228,10 +260,15 @@ private:
   ork::dataflow::inplugbase* GetInput(int idx) final;
   dataflow::outplugbase* GetOutput(int idx) final;
   void Compute(dataflow::workunit* wu) final;
-  void CombineWork(const dataflow::cluster* clus) final {}
+  void CombineWork(const dataflow::cluster* clus) final {
+  }
 
-  ork::Object* CurveAccessor() { return &mMultiCurve; }
-  ork::Object* PlgAccessorOutput() { return &mOutput; }
+  ork::Object* CurveAccessor() {
+    return &mMultiCurve;
+  }
+  ork::Object* PlgAccessorOutput() {
+    return &mOutput;
+  }
 
   float mOutValue;
   float mInValue;
@@ -256,7 +293,9 @@ private:
 
   DeclareFloatXfPlug(TimeScale);
 
-  dataflow::inplugbase* GetInput(int idx) final { return &mPlugInpTimeScale; }
+  dataflow::inplugbase* GetInput(int idx) final {
+    return &mPlugInpTimeScale;
+  }
 
   //////////////////////////////////////////////////
   // outputs
@@ -271,7 +310,8 @@ private:
   //////////////////////////////////////////////////
 
   void Compute(dataflow::workunit* wu) final;
-  void CombineWork(const dataflow::cluster* clus) final {}
+  void CombineWork(const dataflow::cluster* clus) final {
+  }
 
 public:
   Global();
@@ -330,10 +370,16 @@ public:
     return mpctx->GetBuffer64(edest);
   }
 
-  bool GetTexQuality() const { return mbTexQuality; }
+  bool GetTexQuality() const {
+    return mbTexQuality;
+  }
 
-  ProcTexContext* GetPTC() { return mpctx; }
-  lev2::Context* GetTarget() { return (mpctx != nullptr) ? mpctx->mTarget : nullptr; }
+  ProcTexContext* GetPTC() {
+    return mpctx;
+  }
+  lev2::Context* GetTarget() {
+    return (mpctx != nullptr) ? mpctx->mTarget : nullptr;
+  }
 
   ork::lev2::Texture* ResultTexture();
 
@@ -397,7 +443,9 @@ class RotSolid : public Img32Module {
 
   DeclareFloatXfPlug(PhaseOffset);
 
-  ork::dataflow::inplugbase* GetInput(int idx) final { return &mPlugInpPhaseOffset; }
+  ork::dataflow::inplugbase* GetInput(int idx) final {
+    return &mPlugInpPhaseOffset;
+  }
 
   /////////////////////////////////////////
 
@@ -409,8 +457,12 @@ class RotSolid : public Img32Module {
 
   bool mbAA;
 
-  ork::Object* RadiusAccessor() { return &mRadiusFunc; }
-  ork::Object* IntensAccessor() { return &mIntensFunc; }
+  ork::Object* RadiusAccessor() {
+    return &mRadiusFunc;
+  }
+  ork::Object* IntensAccessor() {
+    return &mIntensFunc;
+  }
 
   ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16> mVertexBuffer;
 
@@ -530,23 +582,38 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 struct CellVert {
   fvec3 pos;
-  void Lerp(const CellVert& va, const CellVert& vb, float flerp) { pos.Lerp(va.pos, vb.pos, flerp); }
-  const fvec3& Pos() const { return pos; }
+  void Lerp(const CellVert& va, const CellVert& vb, float flerp) {
+    pos.Lerp(va.pos, vb.pos, flerp);
+  }
+  const fvec3& Pos() const {
+    return pos;
+  }
   CellVert(const fvec3& tp)
-      : pos(tp) {}
+      : pos(tp) {
+  }
   CellVert()
-      : pos() {}
+      : pos() {
+  }
 };
 class CellPoly {
   orkvector<CellVert> mverts;
 
 public:
   typedef CellVert VertexType;
-  void AddVertex(const CellVert& v) { mverts.push_back(v); }
-  int GetNumVertices() const { return mverts.size(); }
-  const CellVert& GetVertex(int idx) const { return mverts[idx]; }
-  CellPoly() {}
-  void SetDefault() { mverts.clear(); }
+  void AddVertex(const CellVert& v) {
+    mverts.push_back(v);
+  }
+  int GetNumVertices() const {
+    return mverts.size();
+  }
+  const CellVert& GetVertex(int idx) const {
+    return mverts[idx];
+  }
+  CellPoly() {
+  }
+  void SetDefault() {
+    mverts.clear();
+  }
 };
 class Cells : public Img32Module {
   RttiDeclareConcrete(Cells, Img32Module);
@@ -576,7 +643,9 @@ class Cells : public Img32Module {
   ork::dataflow::inplugbase* GetInput(int idx) final;
   void compute(ProcTex& ptex) final;
 
-  int site_index(int ix, int iy) { return (iy * miDimU) + ix; }
+  int site_index(int ix, int iy) {
+    return (iy * miDimU) + ix;
+  }
   void ComputeVB(lev2::Context* tgt);
 
 public:
@@ -768,12 +837,18 @@ class Texture : public Img32Module {
   RttiDeclareConcrete(Texture, Img32Module);
 
   ork::lev2::TextureAsset* mpTexture;
-  void SetTextureAccessor(ork::rtti::ICastable* const& tex) { mpTexture = tex ? ork::rtti::autocast(tex) : 0; }
-  void GetTextureAccessor(ork::rtti::ICastable*& tex) const { tex = mpTexture; }
+  void SetTextureAccessor(ork::rtti::ICastable* const& tex) {
+    mpTexture = tex ? ork::rtti::autocast(tex) : 0;
+  }
+  void GetTextureAccessor(ork::rtti::ICastable*& tex) const {
+    tex = mpTexture;
+  }
 
   void compute(ProcTex& ptex) final;
 
-  ork::lev2::Texture* GetTexture() { return (0 == mpTexture) ? 0 : mpTexture->GetTexture(); }
+  ork::lev2::Texture* GetTexture() {
+    return (0 == mpTexture) ? 0 : mpTexture->GetTexture();
+  }
 
 public:
   Texture();
@@ -783,12 +858,18 @@ public:
 class ShaderQuad : public Img32Module {
   RttiDeclareConcrete(ShaderQuad, Img32Module);
 
-  void SetTextureAccessor(ork::rtti::ICastable* const& tex) { mpTexture = tex ? ork::rtti::autocast(tex) : 0; }
-  void GetTextureAccessor(ork::rtti::ICastable*& tex) const { tex = mpTexture; }
+  void SetTextureAccessor(ork::rtti::ICastable* const& tex) {
+    mpTexture = tex ? ork::rtti::autocast(tex) : 0;
+  }
+  void GetTextureAccessor(ork::rtti::ICastable*& tex) const {
+    tex = mpTexture;
+  }
 
   void compute(ProcTex& ptex) final;
 
-  ork::lev2::Texture* GetTexture() { return (0 == mpTexture) ? 0 : mpTexture->GetTexture(); }
+  ork::lev2::Texture* GetTexture() {
+    return (0 == mpTexture) ? 0 : mpTexture->GetTexture();
+  }
 
   dataflow::inplugbase* GetInput(int idx) final;
 
@@ -812,14 +893,24 @@ class Group : public Img32Module {
 
   void compute(ProcTex& ptex) final;
 
-  void SetTextureAccessor(ork::rtti::ICastable* const& tex) { mpProcTex = tex ? ork::rtti::autocast(tex) : 0; }
-  void GetTextureAccessor(ork::rtti::ICastable*& tex) const { tex = mpProcTex; }
-  ork::dataflow::graph_inst* GetChildGraph() const final { return mpProcTex; }
+  void SetTextureAccessor(ork::rtti::ICastable* const& tex) {
+    mpProcTex = tex ? ork::rtti::autocast(tex) : 0;
+  }
+  void GetTextureAccessor(ork::rtti::ICastable*& tex) const {
+    tex = mpProcTex;
+  }
+  ork::dataflow::graph_inst* GetChildGraph() const final {
+    return mpProcTex;
+  }
 
 public:
   Group();
-  ProcTex* GetProcTex() const { return mpProcTex; }
-  void SetProcTex(ProcTex* ptex) { mpProcTex = ptex; }
+  ProcTex* GetProcTex() const {
+    return mpProcTex;
+  }
+  void SetProcTex(ProcTex* ptex) {
+    mpProcTex = ptex;
+  }
 };
 ///////////////////////////////////////////////////////////////////////////////
 enum EGradientRepeatMode {
@@ -842,7 +933,9 @@ class Gradient : public Img32Module {
   EGradientType meGradientType;
   lev2::GfxMaterial3DSolid* mMtl;
 
-  ork::Object* GradientAccessor() { return &mGradient; }
+  ork::Object* GradientAccessor() {
+    return &mGradient;
+  }
 
   void compute(ProcTex& ptex) final;
 

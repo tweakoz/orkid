@@ -226,7 +226,6 @@ void OffscreenBuffer::RenderMatOrthoQuad(
   fbi->pushViewport(vprectNew);
   fbi->pushScissor(vprectNew);
   { // Draw Full Screen Quad with specified material
-    ctx->PushMaterial(pmat);
     ctx->FXI()->InvalidateStateBlock();
     ctx->PushModColor(clr);
     {
@@ -245,10 +244,15 @@ void OffscreenBuffer::RenderMatOrthoQuad(
       vw.AddVertex(SVtxV12C4T16(fx1, fy1, 0.0f, fu1, fv1, uv2[4], uv2[5], uc));
       vw.UnLock(context());
 
-      ctx->GBI()->DrawPrimitive(vw, EPrimitiveType::TRIANGLES);
+      int inumpasses = pmat->BeginBlock(ctx);
+      for (int ipass = 0; ipass < inumpasses; ipass++) {
+        bool bDRAW = pmat->BeginPass(ctx, ipass);
+        ctx->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES);
+        pmat->EndPass(ctx);
+      }
+      pmat->EndBlock(ctx);
     }
     ctx->PopModColor();
-    ctx->PopMaterial();
   }
   fbi->popScissor();
   fbi->popViewport();
@@ -296,7 +300,6 @@ void OffscreenBuffer::RenderMatOrthoQuads(const OrthoQuads& oquads) {
   context()->FBI()->pushViewport(vprectNew);
   context()->FBI()->pushScissor(vprectNew);
   { // Draw Full Screen Quad with specified material
-    context()->BindMaterial(pmtl);
     context()->FXI()->InvalidateStateBlock();
     context()->PushModColor(ork::fcolor4::White());
     {
@@ -359,7 +362,13 @@ void OffscreenBuffer::RenderMatOrthoQuads(const OrthoQuads& oquads) {
       }
       vw.UnLock(context());
 
-      context()->GBI()->DrawPrimitive(vw, ork::lev2::EPrimitiveType::TRIANGLES);
+      int inumpasses = pmtl->BeginBlock(context());
+      for (int ipass = 0; ipass < inumpasses; ipass++) {
+        bool bDRAW = pmtl->BeginPass(context(), ipass);
+        context()->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES);
+        pmtl->EndPass(context());
+      }
+      pmtl->EndBlock(context());
     }
     context()->PopModColor();
   }
@@ -373,5 +382,4 @@ void OffscreenBuffer::RenderMatOrthoQuads(const OrthoQuads& oquads) {
 /////////////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////////
-
 }} // namespace ork::lev2

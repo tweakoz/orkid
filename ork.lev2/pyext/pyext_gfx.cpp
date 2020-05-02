@@ -273,12 +273,12 @@ void pyinit_gfx(py::module& module_lev2) {
             ctx->MTXI()->PushUIMatrix(uiw, uih);
             ctx->PushModColor(color);
             FontMan::PushFont(fontid);
-            FontMan::BeginTextBlock(ctx.get(), maxchars);
+            FontMan::beginTextBlock(ctx.get(), maxchars);
           })
       .def_static(
           "endTextBlock",
           [](ctx_t& ctx) {
-            FontMan::EndTextBlock(ctx.get());
+            FontMan::endTextBlock(ctx.get());
             FontMan::PopFont();
             ctx->PopModColor();
             ctx->MTXI()->PopMMatrix();

@@ -335,9 +335,8 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
         }
       }
       vw.UnLock(pTARG);
-      pTARG->BindMaterial(&uimat);
 
-      pTARG->GBI()->DrawPrimitive(vw, EPrimitiveType::TRIANGLES);
+      pTARG->GBI()->DrawPrimitive(&uimat, vw, EPrimitiveType::TRIANGLES);
       icount = 0;
       // ivbase += inumquads*6;
       ///////////////////////////////////////////////////////////
@@ -364,9 +363,8 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
             }
           }
           vw.UnLock(pTARG);
-          pTARG->BindMaterial(&uimat);
           if (icount)
-            pTARG->GBI()->DrawPrimitive(vw, EPrimitiveType::LINES);
+            pTARG->GBI()->DrawPrimitive(&uimat, vw, EPrimitiveType::LINES);
         }
       }
     }
@@ -377,7 +375,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
       // pTARG->PushModColor(fcolor4(0.0f,0.0f,0.2f));
       pTARG->PushModColor(fcolor4::Black());
       lev2::FontMan::PushFont(mpFONT);
-      lev2::FontMan::BeginTextBlock(pTARG);
+      lev2::FontMan::beginTextBlock(pTARG);
       {
         int inumt = (int)mTexts.size();
         for (int it = 0; it < inumt; it++) {
@@ -387,14 +385,13 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
           }
         }
       }
-      lev2::FontMan::EndTextBlock(pTARG);
+      lev2::FontMan::endTextBlock(pTARG);
       lev2::FontMan::PopFont();
       pTARG->PopModColor();
     }
     ////////////////////////
     pTARG->MTXI()->PopMMatrix();
     pTARG->MTXI()->PopUIMatrix();
-    pTARG->BindMaterial(0);
     mpCurrentGedVp = 0;
   }
 };
@@ -641,9 +638,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
       }
       vw.UnLock(pTARG);
 
-      pTARG->BindMaterial(&uimat);
-
-      pTARG->GBI()->DrawPrimitive(vw, EPrimitiveType::TRIANGLES);
+      pTARG->GBI()->DrawPrimitive(&uimat, vw, EPrimitiveType::TRIANGLES);
       icount = 0;
       // ivbase += inumquads*6;
       ///////////////////////////////////////////////////////////
@@ -670,9 +665,8 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
             }
           }
           vw.UnLock(pTARG);
-          pTARG->BindMaterial(&uimat);
           if (icount)
-            pTARG->GBI()->DrawPrimitive(vw, EPrimitiveType::LINES);
+            pTARG->GBI()->DrawPrimitive(&uimat, vw, EPrimitiveType::LINES);
         }
       }
     }
@@ -681,7 +675,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     if (false == mbPickMode) { ////////////////////////
       uimat.SetUIColorMode(EUICOLOR_MOD);
       lev2::FontMan::PushFont(mpFONT);
-      lev2::FontMan::BeginTextBlock(pTARG);
+      lev2::FontMan::beginTextBlock(pTARG);
       pTARG->PushModColor(fcolor4(0.8f, 0.9f, 1.0f));
       {
         int inumt = (int)mTexts.size();
@@ -692,14 +686,13 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
           }
         }
       }
-      lev2::FontMan::EndTextBlock(pTARG);
+      lev2::FontMan::endTextBlock(pTARG);
       lev2::FontMan::PopFont();
       pTARG->PopModColor();
     }
     ////////////////////////
     pTARG->MTXI()->PopMMatrix();
     pTARG->MTXI()->PopUIMatrix();
-    pTARG->BindMaterial(0);
     mpCurrentGedVp = 0;
   }
 };

@@ -125,7 +125,7 @@ void EzUiCam::draw(Context* context) const {
 
     context->PushModColor(fcolor4::Black());
     ork::lev2::FontMan::PushFont("i14");
-    FontMan::BeginTextBlock(context);
+    FontMan::beginTextBlock(context);
     FontMan::DrawText(context, 41, 9, "Center %f %f %f", mvCenter.GetX(), mvCenter.GetY(), mvCenter.GetZ());
     FontMan::DrawText(context, 41, 21, "CamLoc   %f %f %f", CamLoc.GetX(), CamLoc.GetY(), CamLoc.GetZ());
     FontMan::DrawText(context, 41, 33, "zf %f", (_camcamdata.GetFar()));
@@ -135,11 +135,11 @@ void EzUiCam::draw(Context* context) const {
     FontMan::DrawText(context, 41, 81, "RotMode %s", (meRotMode == EROT_SCREENZ) ? "ScreenZ" : "ScreenXY");
     FontMan::DrawText(context, 41, 93, "Aper %f", aper);
     FontMan::DrawText(context, 41, 105, "Name %s", GetName().c_str());
-    FontMan::EndTextBlock(context);
+    FontMan::endTextBlock(context);
     context->PopModColor();
 
     context->PushModColor(fcolor4::Yellow());
-    FontMan::BeginTextBlock(context);
+    FontMan::beginTextBlock(context);
     FontMan::DrawText(context, 41, 9, "Center %f %f %f", mvCenter.GetX(), mvCenter.GetY(), mvCenter.GetZ());
     FontMan::DrawText(context, 41, 21, "CamLoc   %f %f %f", CamLoc.GetX(), CamLoc.GetY(), CamLoc.GetZ());
     FontMan::DrawText(context, 41, 33, "zf %f", (_camcamdata.GetFar()));
@@ -149,7 +149,7 @@ void EzUiCam::draw(Context* context) const {
     FontMan::DrawText(context, 41, 81, "RotMode %s", (meRotMode == EROT_SCREENZ) ? "ScreenZ" : "ScreenXY");
     FontMan::DrawText(context, 41, 93, "Aper %f", aper);
     FontMan::DrawText(context, 41, 105, "Name %s", GetName().c_str());
-    FontMan::EndTextBlock(context);
+    FontMan::endTextBlock(context);
     ork::lev2::FontMan::PopFont();
     context->PopModColor();
   }

@@ -61,6 +61,7 @@ void SplitPanel::DoDraw(ui::DrawEvent& drwev) {
 
   auto ren_quad = [&](int x, int y, int x2, int y2) {
     primi.RenderQuadAtZ(
+        defmtl,
         tgt,
         x,
         x2, // x0, x1
@@ -80,14 +81,13 @@ void SplitPanel::DoDraw(ui::DrawEvent& drwev) {
     vw.AddVertex(lev2::SVtxV12C4T16(x, y, 0.0f, 0.0f, 0.0f, 0xffffffff));
     vw.AddVertex(lev2::SVtxV12C4T16(x2, y2, 0.0f, 0.0f, 0.0f, 0xffffffff));
     vw.UnLock(tgt);
-    tgt->GBI()->DrawPrimitive(vw, lev2::EPrimitiveType::LINES);
+    tgt->GBI()->DrawPrimitive(defmtl, vw, lev2::EPrimitiveType::LINES);
   };
 
   // lev2::GfxMaterialUI UiMat(tgt);
   lev2::SRasterState defstate;
   tgt->RSI()->BindRasterState(defstate);
   tgt->FXI()->InvalidateStateBlock();
-  tgt->PushMaterial(defmtl);
 
   bool has_foc = HasMouseFocus();
   tgt->PushModColor(has_foc ? fcolor4::White() : fcolor4::Red());
@@ -130,7 +130,6 @@ void SplitPanel::DoDraw(ui::DrawEvent& drwev) {
   }
   mtxi->PopUIMatrix();
   tgt->PopModColor();
-  tgt->PopMaterial();
 
   if (mChild1)
     mChild1->Draw(drwev);

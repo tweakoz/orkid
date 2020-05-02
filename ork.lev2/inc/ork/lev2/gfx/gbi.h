@@ -29,18 +29,30 @@ public:
 
   virtual void ReleaseVB(VertexBufferBase& VBuf) = 0; // e release memory
 
-  virtual void DrawPrimitive(
+  ///////////////////////////////////////////////////////
+
+  void DrawPrimitive(
+      GfxMaterial* mtl,
+      const VtxWriterBase& VW, //
+      EPrimitiveType eType,
+      int icount = 0);
+
+  void DrawPrimitive(
+      GfxMaterial* mtl,
       const VertexBufferBase& VBuf, //
       EPrimitiveType eType = EPrimitiveType::NONE,
       int ivbase           = 0,
-      int ivcount          = 0) = 0;
+      int ivcount          = 0);
 
-  virtual void DrawIndexedPrimitive(
+  void DrawIndexedPrimitive(
+      GfxMaterial* mtl,
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
       EPrimitiveType eType = EPrimitiveType::NONE,
       int ivbase           = 0,
-      int ivcount          = 0) = 0;
+      int ivcount          = 0);
+
+  ///////////////////////////////////////////////////////
 
   virtual void DrawPrimitiveEML(
       const VertexBufferBase& VBuf, //
@@ -69,7 +81,6 @@ public:
 
   virtual void ReleaseIB(IndexBufferBase& VBuf) = 0;
 
-  void DrawPrimitive(const VtxWriterBase& VW, EPrimitiveType eType, int icount = 0);
   void DrawPrimitiveEML(const VtxWriterBase& VW, EPrimitiveType eType, int icount = 0);
   void render2dQuadEML(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2);
 

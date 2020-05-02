@@ -79,11 +79,6 @@ void Context::beginFrame(void) {
   GBI()->BeginFrame();
   FXI()->BeginFrame();
 
-  //	IMI()->BeginFrame();
-
-  if (GfxEnv::GetRef().GetDefaultUIMaterial())
-    BindMaterial(GfxEnv::GetRef().GetDefaultUIMaterial());
-
   PushModColor(fcolor4::White());
   MTXI()->PushMMatrix(fmtx4::Identity());
   MTXI()->PushVMatrix(fmtx4::Identity());
@@ -99,14 +94,12 @@ void Context::beginFrame(void) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::endFrame(void) {
-  //	IMI()->EndFrame();
   GBI()->EndFrame();
   MTXI()->PopMMatrix();
   MTXI()->PopVMatrix();
   MTXI()->PopPMatrix();
   FBI()->EndFrame();
 
-  BindMaterial(0);
   PopModColor();
   mbPostInitializeContext = false;
   _doEndFrame();
@@ -129,7 +122,6 @@ Context::Context()
     , mbDeviceAvailable(true)
     , miDrawLock(0)
     , mPlatformHandle(nullptr)
-    , mpCurMaterial(nullptr)
     , meTargetType(ETGTTYPE_NONE) {
 
   static CompositingData _gdata;
@@ -138,9 +130,6 @@ Context::Context()
   RCFD->_cimpl     = &_gimpl;
   _defaultrcfd     = RCFD;
   pushRenderContextFrameData(_defaultrcfd);
-
-  // PerformanceTracker::GetRef().AddItem( mFramePerfItem );
-  // ork::lev2::GfxEnv::GetRef().SetLoaderTarget( this ) ;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -159,21 +148,6 @@ bool Context::SetDisplayMode(unsigned int index) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-void Context::BindMaterial(GfxMaterial* pmtl) {
-  if (nullptr == pmtl)
-    pmtl = currentMaterial();
-  mpCurMaterial = pmtl;
-  // OrkAssert( pMat );
-}
-void Context::PushMaterial(GfxMaterial* pmtl) {
-  mMaterialStack.push(mpCurMaterial);
-  mpCurMaterial = pmtl;
-}
-void Context::PopMaterial() {
-  mpCurMaterial = mMaterialStack.top();
-  mMaterialStack.pop();
-}
 
 void* Context::BeginLoad() {
   return _doBeginLoad();

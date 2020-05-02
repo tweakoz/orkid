@@ -8,7 +8,6 @@
 #include <ork/pch.h>
 #include <ork/orkmath.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/gfx/gfxmaterial.h>
 #include "gl.h"
 #include <stdlib.h>
 #include <ork/lev2/ui/ui.h>
@@ -767,73 +766,6 @@ bool GlGeometryBufferInterface::BindStreamSources(const VertexBufferBase& VBuf, 
   //////////////////////////////////////////////
   hBuf->mbSetupSource = true;
   return rval;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void GlGeometryBufferInterface::DrawPrimitive(const VertexBufferBase& VBuf, EPrimitiveType eTyp, int ivbase, int ivcount) {
-  int imax = VBuf.GetMax();
-
-  GL_ERRORCHECK();
-  if (imax) {
-    int inumpasses = mTargetGL.currentMaterial()->BeginBlock(&mTargetGL);
-
-    for (int ipass = 0; ipass < inumpasses; ipass++) {
-      bool bDRAW = mTargetGL.currentMaterial()->BeginPass(&mTargetGL, ipass);
-
-      if (bDRAW) {
-        static bool lbwire = false;
-
-        if (EPrimitiveType::NONE == eTyp) {
-          eTyp = VBuf.GetPrimType();
-        }
-
-        DrawPrimitiveEML(VBuf, eTyp, ivbase, ivcount);
-
-        mTargetGL.currentMaterial()->EndPass(&mTargetGL);
-      }
-    }
-
-    mTargetGL.currentMaterial()->EndBlock(&mTargetGL);
-  }
-
-  GL_ERRORCHECK();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void GlGeometryBufferInterface::DrawIndexedPrimitive(
-    const VertexBufferBase& VBuf,
-    const IndexBufferBase& IdxBuf,
-    EPrimitiveType eType,
-    int ivbase,
-    int ivcount) {
-  int imax = VBuf.GetMax();
-
-  GL_ERRORCHECK();
-  if (imax) {
-    int inumpasses = mTargetGL.currentMaterial()->BeginBlock(&mTargetGL);
-
-    for (int ipass = 0; ipass < inumpasses; ipass++) {
-      bool bDRAW = mTargetGL.currentMaterial()->BeginPass(&mTargetGL, ipass);
-
-      if (bDRAW) {
-        static bool lbwire = false;
-
-        if (EPrimitiveType::NONE == eType) {
-          eType = VBuf.GetPrimType();
-        }
-
-        DrawIndexedPrimitiveEML(VBuf, IdxBuf, eType, ivbase, ivcount);
-
-        mTargetGL.currentMaterial()->EndPass(&mTargetGL);
-      }
-    }
-
-    mTargetGL.currentMaterial()->EndBlock(&mTargetGL);
-  }
-
-  GL_ERRORCHECK();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

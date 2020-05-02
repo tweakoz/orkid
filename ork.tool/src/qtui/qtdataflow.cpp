@@ -172,8 +172,7 @@ void GraphVP::draw_connections(Context* pTARG) {
       mGridMaterial._rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
       mGridMaterial._rasterstate.SetAlphaTest(EALPHATEST_OFF, 0.0f);
       mGridMaterial._rasterstate.SetBlending(lev2::EBLENDING_OFF);
-      pTARG->BindMaterial(&mGridMaterial);
-      pTARG->GBI()->DrawPrimitive(vw, EPrimitiveType::TRIANGLES, ivcount);
+      pTARG->GBI()->DrawPrimitive(&mGridMaterial, vw, EPrimitiveType::TRIANGLES, ivcount);
     }
   }
 }
@@ -326,8 +325,6 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
       // draw modules
       ///////////////////////////////////////////////////////
 
-      ctx->PushMaterial(&mGridMaterial);
-
       int inummod = (int)modules.size();
 
       int imod = 0;
@@ -424,14 +421,13 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
         }
         imod++;
       }
-      ctx->PopMaterial();
     }
 
     ////////////////////////////////////////////////////////////////
 
     mtxi->PushUIMatrix(miW, miH);
     if (false == is_pick) {
-      lev2::FontMan::BeginTextBlock(ctx);
+      lev2::FontMan::beginTextBlock(ctx);
       ctx->PushModColor(fcolor4::Yellow());
       {
         lev2::FontMan::DrawText(ctx, 8, 8, "GroupDepth<%d>", mDflowEditor.StackDepth());
@@ -474,7 +470,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
           }
         }
       }
-      lev2::FontMan::EndTextBlock(ctx);
+      lev2::FontMan::endTextBlock(ctx);
       ctx->PopModColor();
     }
     mtxi->PopUIMatrix();

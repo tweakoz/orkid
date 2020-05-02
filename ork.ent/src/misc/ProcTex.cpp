@@ -216,7 +216,6 @@ void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
     templ.compute(ssci->mContext);
     cd.DidRefresh();
     mtl->SetTexture(templ.ResultTexture());
-    context->PushMaterial(mtl);
 
     context->MTXI()->PushMMatrix(ent->GetEffectiveMatrix());
 
@@ -256,10 +255,9 @@ void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
 
     const fmtx4& mtx = renderable->GetMatrix();
 
-    context->GBI()->DrawPrimitive(vw, lev2::EPrimitiveType::TRIANGLES, 6);
+    context->GBI()->DrawPrimitive(mtl, vw, lev2::EPrimitiveType::TRIANGLES, 6);
 
     context->MTXI()->PopMMatrix();
-    context->PopMaterial();
   };
 
   ProcTexControllerInst* ssci     = pent->GetTypedComponent<ProcTexControllerInst>();
@@ -343,11 +341,11 @@ void ProcTexOutputSkybox::OnLinkEntity(Simulation* psi, Entity* pent) {
       cd.DidRefresh();
       lev2::Texture* ptx = templ.ResultTexture();
       mtl->SetTexture(ptx);
-      context->PushMaterial(mtl);
+      // context->PushMaterial(mtl);
       context->MTXI()->PushMMatrix(mtxSKY);
-      lev2::GfxPrimitives::GetRef().RenderSkySphere(context);
+      // lev2::GfxPrimitives::GetRef().RenderSkySphere(context);
       context->MTXI()->PopMMatrix();
-      context->PopMaterial();
+      // context->PopMaterial();
     }
   };
 

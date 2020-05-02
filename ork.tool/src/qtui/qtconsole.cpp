@@ -266,10 +266,9 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev) {
     ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>& vbuf = lev2::GfxEnv::GetSharedDynamicVB();
 
     float faspect = pTARG->mainSurfaceAspectRatio();
-    pTARG->BindMaterial(&mBaseMaterial);
     mBaseMaterial.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
 
-    auto drawquad = [pTARG, &vbuf](u32 ucolor1, u32 ucolor2, float x0, float y0, float x1, float y1) {
+    auto drawquad = [pTARG, &vbuf, this](u32 ucolor1, u32 ucolor2, float x0, float y0, float x1, float y1) {
       fvec2 uv0(0.0f, 0.0f);
       fvec2 uv1(1.0f, 0.0f);
       fvec2 uv2(1.0f, 1.0f);
@@ -293,7 +292,7 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev) {
       }
       vw.UnLock(pTARG);
 
-      pTARG->GBI()->DrawPrimitive(vw, ork::lev2::EPrimitiveType::TRIANGLES, 6);
+      pTARG->GBI()->DrawPrimitive(&mBaseMaterial, vw, ork::lev2::EPrimitiveType::TRIANGLES, 6);
     };
 
     drawquad(0xff200020, 0xff400030, 0, 0, IW, IH);
@@ -368,7 +367,7 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev) {
     static int ibase = 0;
     pTARG->PushModColor(ork::fcolor4::Green());
     ork::lev2::FontMan::PushFont("i16");
-    ork::lev2::FontMan::BeginTextBlock(pTARG, inumchars + inumactuallines);
+    ork::lev2::FontMan::beginTextBlock(pTARG, inumchars + inumactuallines);
     {
       for (int ili = 0; ili < inumactuallines; ili++) {
         const std::string& line = display_lines[ili];
@@ -376,7 +375,7 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev) {
         fy -= 14.0f;
       }
     }
-    ork::lev2::FontMan::EndTextBlock(pTARG);
+    ork::lev2::FontMan::endTextBlock(pTARG);
     pTARG->PopModColor();
     ibase++;
     /////////////////////////

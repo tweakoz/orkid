@@ -331,9 +331,7 @@ void RotSolid::compute(ProcTex& ptex) {
   struct AA16RenderRot : public AA16Render {
     virtual void DoRender(float left, float right, float top, float bot, Buffer& buf) {
       auto targ = mPTX.GetTarget();
-      targ->PushMaterial(&stdmat);
-      targ->GBI()->DrawPrimitive(mVB, ork::lev2::EPrimitiveType::TRIANGLES, 0, mVB.GetNumVertices());
-      targ->PopMaterial();
+      targ->GBI()->DrawPrimitive(&stdmat, mVB, ork::lev2::EPrimitiveType::TRIANGLES, 0, mVB.GetNumVertices());
     }
 
     lev2::GfxMaterial3DSolid stdmat;
@@ -430,9 +428,8 @@ void ImgOp2::compute(ProcTex& ptex) {
     gridmat.SetTexture(texa);
     gridmat.SetTexture2(texb);
     gridmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(buffer.miW)));
-    pTARG->BindMaterial(&gridmat);
     ////////////////////////////////////////////////////////////////
-    UnitTexQuad(pTARG);
+    UnitTexQuad(&gridmat, pTARG);
     buffer.PtexEnd(true);
   }
   MarkClean();
@@ -551,9 +548,7 @@ void ImgOp3::compute(ProcTex& ptex) {
 
     ////////////////////////////////////////////////////////////////
     buffer.PtexBegin(pTARG, true, true);
-    pTARG->PushMaterial(cur_mtl);
-    UnitTexQuad(pTARG);
-    pTARG->PopMaterial();
+    UnitTexQuad(cur_mtl, pTARG);
     buffer.PtexEnd(true);
     ////////////////////////////////////////////////////////////////
     MarkClean();
@@ -643,9 +638,7 @@ void Transform::compute(ProcTex& ptex) {
     mMaterial->SetAuxMatrix((mtxTO1 * (mtxR * mtxS) * mtxTO2) * mtxT);
     mMaterial->SetUser0(fvec4(sina, cosa, 0.0f, float(buffer.miW)));
     ////////////////////////////////////////////////////////////////
-    pTARG->PushMaterial(mMaterial);
-    UnitTexQuad(pTARG);
-    pTARG->PopMaterial();
+    UnitTexQuad(mMaterial, pTARG);
     buffer.PtexEnd(true);
   }
   MarkClean();
@@ -680,7 +673,6 @@ void Texture::compute(ProcTex& ptex) {
   gridmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
   gridmat.SetTexture(GetTexture());
   gridmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(buffer.miW)));
-  pTARG->BindMaterial(&gridmat);
   ////////////////////////////////////////////////////////////////
   float ftexw = GetTexture() ? GetTexture()->_width : 1.0f;
   pTARG->PushModColor(ork::fvec4(ftexw, ftexw, ftexw, ftexw));
@@ -692,19 +684,17 @@ void Texture::compute(ProcTex& ptex) {
   // pTARG->PushModColor( fvec3::White() );
   {
     if (_flipy) {
-      RenderQuad(pTARG, -1, -1, 1, 1);
+      RenderQuad(&gridmat, pTARG, -1, -1, 1, 1);
 
     } else {
-      RenderQuad(pTARG, -1, 1, 1, -1);
+      RenderQuad(&gridmat, pTARG, -1, 1, 1, -1);
     }
   }
-  // pTARG->PopModColor();
   pTARG->MTXI()->PopPMatrix();
   pTARG->MTXI()->PopVMatrix();
   pTARG->MTXI()->PopMMatrix();
   pTARG->PopModColor();
-  // UnitTexQuad( pTARG );
-  // pTARG->PopModColor();
+  UnitTexQuad(&gridmat, pTARG);
   MarkClean();
   buffer.PtexEnd(true);
   pTARG->debugPopGroup();
@@ -825,11 +815,7 @@ void ShaderQuad::compute(ProcTex& ptex) {
     ////////////////////////////////////////////////////////////////
     buffer.PtexBegin(pTARG, true, false);
     pTARG->PushModColor(fvec3::White());
-    {
-      pTARG->PushMaterial(mShader);
-      UnitTexQuad(pTARG);
-      pTARG->PopMaterial();
-    }
+    { UnitTexQuad(mShader, pTARG); }
     pTARG->PopModColor();
     buffer.PtexEnd(true);
     ////////////////////////////////////////////////////////////////
@@ -886,14 +872,13 @@ void SolidColor::compute(ProcTex& ptex) {
     mMaterial->SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(buffer.miW)));
   }
 
-  pTARG->BindMaterial(mMaterial);
   ////////////////////////////////////////////////////////////////
   pTARG->PushModColor(ork::fvec4(mfr, mfg, mfb, mfa));
   ////////////////////////////////////////////////////////////////
   pTARG->MTXI()->PushPMatrix(fmtx4::Identity());
   pTARG->MTXI()->PushVMatrix(fmtx4::Identity());
   pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
-  { RenderQuad(pTARG, -1, -1, 1, 1); }
+  { RenderQuad(mMaterial, pTARG, -1, -1, 1, 1); }
   pTARG->MTXI()->PopPMatrix();
   pTARG->MTXI()->PopVMatrix();
   pTARG->MTXI()->PopMMatrix();
@@ -1144,12 +1129,10 @@ void Gradient::compute(ProcTex& ptex) {
     void DoRender(float left, float right, float top, float bot, Buffer& buf) override {
       fmtx4 mtxortho = mPTX.GetTarget()->MTXI()->Ortho(left, right, top, bot, 0.0f, 1.0f);
       mPTX.GetTarget()->PushModColor(fvec3::White());
-      mPTX.GetTarget()->PushMaterial(mMtl);
       mPTX.GetTarget()->MTXI()->PushPMatrix(mtxortho);
       mPTX.GetTarget()->GBI()->DrawPrimitive(
-          mVertexBuffer, ork::lev2::EPrimitiveType::TRIANGLES, 0, mVertexBuffer.GetNumVertices());
+          mMtl, mVertexBuffer, ork::lev2::EPrimitiveType::TRIANGLES, 0, mVertexBuffer.GetNumVertices());
       mPTX.GetTarget()->MTXI()->PopPMatrix();
-      mPTX.GetTarget()->PopMaterial();
       mPTX.GetTarget()->PopModColor();
     }
     lev2::GfxMaterial3DSolid* mMtl;
@@ -1211,7 +1194,6 @@ void Group::compute(ProcTex& ptex) {
     gridmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     gridmat.SetTexture(ptexture);
     gridmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(computebuffer.miW)));
-    pTARG->BindMaterial(&gridmat);
     ////////////////////////////////////////////////////////////////
     float ftexw = ptexture ? ptexture->_width : 1.0f;
     pTARG->PushModColor(ork::fvec4(ftexw, ftexw, ftexw, ftexw));
@@ -1220,7 +1202,7 @@ void Group::compute(ProcTex& ptex) {
     pTARG->MTXI()->PushPMatrix(mtxortho);
     pTARG->MTXI()->PushVMatrix(fmtx4::Identity());
     pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
-    { RenderQuad(pTARG, -1, -1, 1, 1); }
+    { RenderQuad(&gridmat, pTARG, -1, -1, 1, 1); }
     pTARG->MTXI()->PopPMatrix();
     pTARG->MTXI()->PopVMatrix();
     pTARG->MTXI()->PopMMatrix();

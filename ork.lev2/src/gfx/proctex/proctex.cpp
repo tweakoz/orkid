@@ -266,12 +266,13 @@ void ImgModule::Compute(dataflow::workunit* wu) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ImgModule::UnitTexQuad(
+    GfxMaterial* material,       //
     ork::lev2::Context* pTARG) { // fmtx4 mtxortho = pTARG->MTXI()->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
   pTARG->MTXI()->PushPMatrix(fmtx4::Identity());
   pTARG->MTXI()->PushVMatrix(fmtx4::Identity());
   pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
   pTARG->PushModColor(fvec3::White());
-  { RenderQuad(pTARG, -1.0f, -1.0f, 1.0f, 1.0f); }
+  { RenderQuad(material, pTARG, -1.0f, -1.0f, 1.0f, 1.0f); }
   pTARG->PopModColor();
   pTARG->MTXI()->PopPMatrix();
   pTARG->MTXI()->PopVMatrix();
@@ -283,7 +284,17 @@ void ImgModule::MarkClean() {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void RenderQuad(ork::lev2::Context* pTARG, float fX1, float fY1, float fX2, float fY2, float fu1, float fv1, float fu2, float fv2) {
+void RenderQuad(
+    GfxMaterial* material, //
+    ork::lev2::Context* pTARG,
+    float fX1,
+    float fY1,
+    float fX2,
+    float fY2,
+    float fu1,
+    float fv1,
+    float fu2,
+    float fv2) {
   U32 uColor = 0xffffffff;
 
   float maxuv = 1.0f;
@@ -305,7 +316,7 @@ void RenderQuad(ork::lev2::Context* pTARG, float fX1, float fY1, float fX2, floa
 
   vw.UnLock(pTARG);
 
-  pTARG->GBI()->DrawPrimitive(vw, EPrimitiveType::TRIANGLES, ivcount);
+  pTARG->GBI()->DrawPrimitive(material, vw, EPrimitiveType::TRIANGLES, ivcount);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void RenderQuadEML(
@@ -789,9 +800,7 @@ void AA16Render::RenderAA() {
       mtxi->PushMMatrix(fmtx4::Identity());
       mtxi->PushVMatrix(fmtx4::Identity());
       mtxi->PushPMatrix(mtxortho);
-      target->PushMaterial(&downsamplemat);
-      RenderQuad(target, q.fx0, q.fy1, q.fx1, q.fy0, 0.0f, 0.0f, 1.0f, 1.0f);
-      target->PopMaterial();
+      RenderQuad(&downsamplemat, target, q.fx0, q.fy1, q.fx1, q.fy0, 0.0f, 0.0f, 1.0f, 1.0f);
       mtxi->PopPMatrix();
       mtxi->PopVMatrix();
       mtxi->PopMMatrix();

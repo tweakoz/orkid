@@ -181,15 +181,6 @@ public:
   void beginFrame(void);
   void endFrame(void);
 
-  //////////////////////////////////////////////
-
-  GfxMaterial* currentMaterial(void) {
-    return mpCurMaterial;
-  }
-  void BindMaterial(GfxMaterial* pmtl);
-  void PushMaterial(GfxMaterial* pmtl);
-  void PopMaterial();
-
   ///////////////////////////////////////////////////////////////////////
 
   virtual U32 fcolor4ToU32(const fcolor4& clr) {
@@ -299,8 +290,6 @@ public:
   int miTargetFrame;
   PerformanceItem mFramePerfItem;
   const RenderContextInstData* mRenderContextInstData;
-  GfxMaterial* mpCurMaterial;
-  std::stack<GfxMaterial*> mMaterialStack;
   bool mbDeviceAvailable;
   int miDrawLock;
   bool hiDPI() const;

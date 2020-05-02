@@ -79,29 +79,6 @@ class ChainCompositingNode : public PostCompositingNode {
   DeclareAbstractX(ChainCompositingNode, PostCompositingNode);
 };
 ///////////////////////////////////////////////////////////////////////////////
-class SeriesCompositingNode : public PostCompositingNode {
-  DeclareConcreteX(SeriesCompositingNode, PostCompositingNode);
-
-public:
-  SeriesCompositingNode();
-  ~SeriesCompositingNode();
-
-private:
-  void DoInit(lev2::Context* pTARG, int w, int h) final; // virtual
-  void DoRender(CompositorDrawData& drawdata) final;     // virtual
-
-  void GetNode(ork::rtti::ICastable*& val) const;
-  void SetNode(ork::rtti::ICastable* const& val);
-
-  lev2::RtBuffer* GetOutput() const final;
-
-  CompositingMaterial mCompositingMaterial;
-  PostCompositingNode* mNode = nullptr;
-  lev2::RtBuffer* mOutput    = nullptr;
-  lev2::RtGroup* _rtg        = nullptr;
-  lev2::BuiltinFrameTechniques* mFTEK;
-};
-///////////////////////////////////////////////////////////////////////////////
 class Op2CompositingNode : public PostCompositingNode {
   DeclareConcreteX(Op2CompositingNode, PostCompositingNode);
 

@@ -18,7 +18,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorFx3.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
@@ -127,8 +126,7 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
 
   int primarycamindex = ddprops["primarycamindex"_crcu].Get<int>();
   int cullcamindex    = ddprops["cullcamindex"_crcu].Get<int>();
-  auto DB    = ddprops["DB"_crcu].Get<const DrawableBuffer*>();
-
+  auto DB             = ddprops["DB"_crcu].Get<const DrawableBuffer*>();
 
   /////////////////////////////////////////////////////////////////////////////
   // default camera selection
@@ -168,20 +166,6 @@ void CompositingImpl::composite(lev2::CompositorDrawData& drawdata) {
     _compcontext._compositingTechnique = pCSI->technique();
     _compcontext.composite(drawdata);
   }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-const CompositingGroup* CompositingImpl::compositingGroup(const PoolString& grpname) const {
-  const CompositingGroup* rval = 0;
-  if (auto sceneitem = compositingItem(0, miActiveSceneItem)) {
-    auto itA = _compositingData.GetGroups().find(grpname);
-    if (itA != _compositingData.GetGroups().end()) {
-      ork::Object* pA = itA->second;
-      rval            = rtti::autocast(pA);
-    }
-  }
-  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -14,7 +14,6 @@
 
 namespace ork::lev2 {
 
-class CompositingGroup;
 class CompositingSceneItem;
 struct CompositorDrawData;
 struct CompositingContext;
@@ -149,7 +148,6 @@ struct CompositingPassData {
   ////////////////////////////////////////////////////
 
   IRenderTarget* _irendertarget        = nullptr;
-  const CompositingGroup* mpGroup      = nullptr;
   lev2::FrameTechniqueBase* mpFrameTek = nullptr;
   bool mbDrawSource                    = true;
   const PoolString* mpCameraName       = nullptr;
@@ -277,8 +275,6 @@ public:
   CompositingContext& compositingContext();
 
   const CompositingSceneItem* compositingItem(int isceneidx, int itemidx) const;
-
-  const CompositingGroup* compositingGroup(const PoolString& grpname) const;
 
   void update(float dt);
 

@@ -38,8 +38,8 @@ link_directories($ENV{OBT_STAGE}/orkid/ork.tuio )
 link_directories($ENV{OBT_STAGE}/orkid/ork.utpp )
 link_directories($ENV{OBT_STAGE}/orkid/ork.core )
 link_directories($ENV{OBT_STAGE}/orkid/ork.lev2 )
-link_directories($ENV{OBT_STAGE}/orkid/ork.ent )
-link_directories($ENV{OBT_STAGE}/orkid/ork.tool )
+#link_directories($ENV{OBT_STAGE}/orkid/ork.ent )
+#link_directories($ENV{OBT_STAGE}/orkid/ork.tool )
 
 
 ##############################

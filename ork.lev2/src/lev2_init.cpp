@@ -25,7 +25,6 @@
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorFx3.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorPtx.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
@@ -143,15 +142,10 @@ void ClassInit() {
 
   RegisterClassX(CompositingScene);
   RegisterClassX(CompositingData);
-  RegisterClassX(CompositingGroupEffect);
-  RegisterClassX(CompositingGroup);
   RegisterClassX(CompositingSceneItem);
 
   RegisterClassX(PostCompositingNode);
-  RegisterClassX(Fx3CompositingTechnique);
-  RegisterClassX(Fx3CompositingNode);
   RegisterClassX(ScaleBiasCompositingNode);
-  RegisterClassX(SeriesCompositingNode);
   RegisterClassX(PtxCompositingNode);
   RegisterClassX(Op2CompositingNode);
   RegisterClassX(NodeCompositingTechnique);

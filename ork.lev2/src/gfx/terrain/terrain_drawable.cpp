@@ -1035,7 +1035,6 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   auto tek_viz  = stereo1pass ? _tekDefGbuf1Stereo : _tekDefGbuf1;
   auto tek_pick = _tekPick;
 
-  targ->PushMaterial(_terrainMaterial);
   _terrainMaterial->bindTechnique(bpick ? tek_pick : tek_viz);
   _terrainMaterial->begin(*RCFD);
   _terrainMaterial->bindParamMatrix(_parMatVPL, MVPL);
@@ -1075,8 +1074,6 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
     sector._lodX._primitive.renderEML(targ);
   }
   _terrainMaterial->end(*RCFD);
-
-  targ->PopMaterial();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -161,8 +161,8 @@ struct FontMan { //: public NoRttiSingleton<FontMan> {
     return GetRef().mpCurrentFont;
   }
 
-  static void BeginTextBlock(Context* pTARG, int imaxcharcount = 0);
-  static void EndTextBlock(Context* pTARG);
+  static void beginTextBlock(Context* pTARG, int imaxcharcount = 0);
+  static void endTextBlock(Context* pTARG);
 
   /////////////////////////////////////////////
 protected:

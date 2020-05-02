@@ -112,9 +112,8 @@ template <typename VPTYPE> void UIToolHandler<VPTYPE>::DrawToolIcon(lev2::Contex
       if (bhilite) {
         UiMat.SetTexture(lev2::ETEXDEST_DIFFUSE, 0);
         UiMat._rasterstate.SetBlending(lev2::EBLENDING_OFF);
-        pTARG->BindMaterial(&UiMat);
         pTARG->PushModColor(fcolor4::Green());
-        pTARG->GBI()->DrawPrimitive(vb, lev2::EPrimitiveType::TRIANGLES, ibase, 6);
+        pTARG->GBI()->DrawPrimitive(&UiMat, vb, lev2::EPrimitiveType::TRIANGLES, ibase, 6);
         pTARG->PopModColor();
       }
       ////////////////////////////////
@@ -123,16 +122,14 @@ template <typename VPTYPE> void UIToolHandler<VPTYPE>::DrawToolIcon(lev2::Contex
       UiMatTex._rasterstate.SetBlending(lev2::EBLENDING_OFF);
       UiMatTex._rasterstate.SetAlphaTest(lev2::EALPHATEST_OFF, 0.0f);
       UiMatTex._rasterstate.SetDepthTest(lev2::EDEPTHTEST_ALWAYS);
-      pTARG->BindMaterial(&UiMatTex);
       pTARG->PushModColor(fcolor4::White());
-      pTARG->GBI()->DrawPrimitive(vb, lev2::EPrimitiveType::TRIANGLES, bhilite ? ibase + 6 : ibase, 6);
+      pTARG->GBI()->DrawPrimitive(&UiMat, vb, lev2::EPrimitiveType::TRIANGLES, bhilite ? ibase + 6 : ibase, 6);
       pTARG->PopModColor();
     }
     pTARG->MTXI()->PopUIMatrix();
     ////////////////////////////////
   }
   DrawSubToolIcon(pTARG, ix + 36, iy, bhilite);
-  pTARG->BindMaterial(0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -146,11 +143,6 @@ template <typename VPTYPE> void UIToolHandler<VPTYPE>::DrawSubToolIcon(lev2::Con
     static lev2::GfxMaterialUITextured UiMatTex(pTARG);
 
     UiMatTex.SetTexture(lev2::ETEXDEST_DIFFUSE, decorator);
-
-    pTARG->BindMaterial(&UiMatTex);
-    // pTARG->IMI()->DrawTexturedBox(ix, iy, ix + 32, iy + 32);
-    // pTARG->IMI()->QueFlush(false);
-    pTARG->BindMaterial(0);
   }
 }
 

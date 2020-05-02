@@ -279,7 +279,7 @@ int Outliner2View::kitemh() const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Outliner2View::DoInit(lev2::Context* pt) {
-  auto par     = pt->FBI()->GetThisBuffer();
+  auto par    = pt->FBI()->GetThisBuffer();
   _pickbuffer = new lev2::PickBuffer(this, pt, miW, miH);
 
   mFont          = lev2::FontMan::GetFont("i13");
@@ -356,7 +356,6 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev) {
 
     const int kheaderH = miScrollY;
 
-    tgt->PushMaterial(defmtl);
     mtxi->PushUIMatrix(miW, miH);
     {
 
@@ -386,6 +385,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev) {
           tgt->PushModColor(is_sel ? c3 : (alt ? c1 : c2));
 
         primi.RenderQuadAtZV16T16C16(
+            defmtl,
             tgt,
             0,
             miW, // x0, x1
@@ -406,13 +406,10 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev) {
       //////////////////////////////////////
 
       if (false == is_pick) {
-        lev2::GfxMaterialUI uimat(tgt);
-        uimat.SetUIColorMode(ork::lev2::EUICOLOR_MOD);
 
         lev2::FontMan::PushFont(mFont);
-        tgt->PushMaterial(&uimat);
         tgt->PushModColor(mDark ? fcolor4(0.7f, 0.7f, 0.8f) : fcolor4::Black());
-        lev2::FontMan::BeginTextBlock(tgt);
+        lev2::FontMan::beginTextBlock(tgt);
         iy = kheaderH + 5;
         for (const auto& item : items) {
           const std::string& name = item.mName;
@@ -423,14 +420,12 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev) {
           iy += kitemh();
           alt = !alt;
         }
-        lev2::FontMan::EndTextBlock(tgt);
+        lev2::FontMan::endTextBlock(tgt);
         lev2::FontMan::PopFont();
-        tgt->PopMaterial();
         tgt->PopModColor();
       }
     }
     mtxi->PopUIMatrix();
-    tgt->PopMaterial();
   }
   fbi->popViewport();
   fbi->popScissor();

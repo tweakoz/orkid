@@ -592,10 +592,9 @@ void SpriteRenderer::Render(
 
         bound_mtl->_rasterstate.SetBlending(meBlendMode);
         targ->MTXI()->PushMMatrix(MatScale * mtx);
-        targ->GBI()->DrawPrimitive(vw, ork::lev2::EPrimitiveType::POINTS, ivertexlockcount);
+        targ->GBI()->DrawPrimitive(bound_mtl, vw, ork::lev2::EPrimitiveType::POINTS, ivertexlockcount);
         mpVB = 0;
         targ->MTXI()->PopMMatrix();
-        targ->BindMaterial(0);
       }
     }
 
@@ -769,7 +768,6 @@ void StreakRenderer::Render(
     ////////////////////////////////////////////////////////////////////////////
     // setup particle material
     //////////////////////////////////////////
-    targ->BindMaterial(mpMaterial);
     mpMaterial->SetUser0(mAlphaMux);
     mpMaterial->SetColorMode(ork::lev2::GfxMaterial3DSolid::EMODE_USER);
     mpMaterial->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_GREATER, 0.0f);
@@ -783,10 +781,9 @@ void StreakRenderer::Render(
     // Draw Particles
     //////////////////////////////////////////
     targ->MTXI()->PushMMatrix(mtx_scale * mtx);
-    targ->GBI()->DrawPrimitive(vw, ork::lev2::EPrimitiveType::POINTS, icnt);
+    targ->GBI()->DrawPrimitive(mpMaterial, vw, ork::lev2::EPrimitiveType::POINTS, icnt);
     targ->MTXI()->PopMMatrix();
     //////////////////////////////////////////
-    targ->BindMaterial(0);
   } // if( icnt )
 }
 
@@ -1009,8 +1006,6 @@ lev2::GfxMaterial* TextureMaterial::Bind(lev2::Context* pT) {
   mpMaterial->_rasterstate.SetZWriteMask(false);
   mpMaterial->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
   mpMaterial->_rasterstate.SetPointSize(32.0f);
-  pT->BindMaterial(mpMaterial);
-
   return mpMaterial;
 }
 
@@ -1061,7 +1056,6 @@ lev2::GfxMaterial* VolTexMaterial::Bind(lev2::Context* pT) {
   mpMaterial->_rasterstate.SetZWriteMask(false);
   mpMaterial->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
   mpMaterial->_rasterstate.SetPointSize(32.0f);
-  pT->BindMaterial(mpMaterial);
 
   return mpMaterial;
 }

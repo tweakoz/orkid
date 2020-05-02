@@ -71,7 +71,7 @@ void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
   // CPD.cameraMatrices()->_aspectRatio = fW / fH;
   ///////////////////////////////////////////////////////////////////////////
   auto DB = DrawableBuffer::acquireReadDB(7); // mDbLock.Aquire(7);
-  if(DB){
+  if (DB) {
     lev2::UiViewportRenderTarget rt(_scenevp);
     rendervar_t passdata;
     passdata.Set<compositingpassdatastack_t*>(&_scenevp->_compositingGroupStack);
@@ -100,7 +100,7 @@ void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
     ///////////////////////////////////////////////////////////////////////////
     FBI->PushRtGroup(_rtgroup); // Enable Mrt
     FBI->EnterPickState(this);
-    _context->BindMaterial(GfxEnv::GetDefault3DMaterial());
+    //_context->BindMaterial(GfxEnv::GetDefault3DMaterial());
     _context->PushModColor(fcolor4::Yellow());
 
     bool assembled_ok = _gimpl.assemble(drawdata);
@@ -208,8 +208,8 @@ void OuterPickOp(defpickopctx_ptr_t pickctx) {
         target->makeCurrentContext();
 
         viewport->GetPixel(pickctx->miX, pickctx->miY, pixel_ctx); // HERE<<<<<<
-        const auto& colr0    = pickctx->_pixelctx.mPickColors[0];
-        const auto& colr1    = pickctx->_pixelctx.mPickColors[1];
+        const auto& colr0   = pickctx->_pixelctx.mPickColors[0];
+        const auto& colr1   = pickctx->_pixelctx.mPickColors[1];
         pickctx->mpCastable = pixel_ctx.GetObject(viewport->pickbuffer(), 0);
         printf("GOTCLR0<%g %g %g %g>\n", colr0.x, colr0.y, colr0.z, colr0.w);
         printf("GOTCLR1<%g %g %g %g>\n", colr1.x, colr1.y, colr1.z, colr1.w);

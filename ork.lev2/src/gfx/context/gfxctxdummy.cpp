@@ -170,17 +170,6 @@ bool ContextDummy::SetDisplayMode(DisplayMode* mode) {
   return false;
 }
 
-void DuGeometryBufferInterface::DrawIndexedPrimitive(
-    const VertexBufferBase& VBuf,
-    const IndexBufferBase& IdxBuf,
-    EPrimitiveType eType,
-    int ivbase,
-    int ivcount) {
-}
-
-void DuGeometryBufferInterface::DrawPrimitive(const VertexBufferBase& VBuf, EPrimitiveType eType, int ivbase, int ivcount) {
-}
-
 void DuGeometryBufferInterface::DrawIndexedPrimitiveEML(
     const VertexBufferBase& VBuf,
     const IndexBufferBase& IdxBuf,

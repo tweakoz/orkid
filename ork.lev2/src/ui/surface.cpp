@@ -115,10 +115,7 @@ void Surface::DoDraw(DrawEvent& drwev) {
   rsi->BindRasterState(defstate);
   fxi->InvalidateStateBlock();
 
-  if (mRtGroup)
-    tgt->PushMaterial(mRtGroup->GetMrt(0)->GetMaterial());
-  else
-    tgt->PushMaterial(defmtl);
+  auto material = (mRtGroup) ? mRtGroup->GetMrt(0)->GetMaterial() : defmtl;
 
   bool has_foc = HasMouseFocus();
   tgt->PushModColor(has_foc ? fcolor4::Green() : fcolor4::Blue());
@@ -131,6 +128,7 @@ void Surface::DoDraw(DrawEvent& drwev) {
     // printf( "Surface<%s>::Draw wx<%d> wy<%d> w<%d> h<%d>\n", msName.c_str(), ix_root, iy_root, miW, miH );
 
     primi.RenderQuadAtZ(
+        material,
         tgt,
         ix_root,
         ix_root + miW, // x0, x1
@@ -145,7 +143,6 @@ void Surface::DoDraw(DrawEvent& drwev) {
   }
   mtxi->PopUIMatrix();
   tgt->PopModColor();
-  tgt->PopMaterial();
 }
 
 /////////////////////////////////////////////////////////////////////////

@@ -76,21 +76,19 @@ void FontMan::_beginTextBlock(Context* pTARG, int imaxcharcount) {
 void FontMan::_endTextBlock(Context* pTARG) {
   OrkAssert(pTARG->IMI()->RefTextVB().IsLocked());
   mTextWriter.UnLock(pTARG);
-  pTARG->BindMaterial(mpCurrentFont->GetMaterial());
   bool bdraw = mTextWriter.miWriteCounter != 0;
   if (bdraw) {
-    pTARG->GBI()->DrawPrimitive(mTextWriter, ork::lev2::EPrimitiveType::TRIANGLES);
+    pTARG->GBI()->DrawPrimitive(mpCurrentFont->GetMaterial(), mTextWriter, ork::lev2::EPrimitiveType::TRIANGLES);
   }
-  pTARG->BindMaterial(0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FontMan::BeginTextBlock(Context* pTARG, int imaxcharcount) {
+void FontMan::beginTextBlock(Context* pTARG, int imaxcharcount) {
   instance()->_beginTextBlock(pTARG, imaxcharcount);
 }
 
-void FontMan::EndTextBlock(Context* pTARG) {
+void FontMan::endTextBlock(Context* pTARG) {
   instance()->_endTextBlock(pTARG);
 }
 

@@ -12,6 +12,7 @@
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/object/AutoConnector.h>
+#include <ork/lev2/gfx/gfxmaterial.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -54,21 +55,81 @@ void GeometryBufferInterface::FlushVB(VertexBufferBase& VBuf) {
   if (VBuf.IsLocked()) {
     UnLockVB(VBuf);
   }
-  if (VBuf.GetNumVertices()) {
-    DrawPrimitive(VBuf);
-  }
+  // if (VBuf.GetNumVertices()) {
+  // DrawPrimitive(VBuf);
+  //}
   LockVB(VBuf);
   VBuf.Reset();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GeometryBufferInterface::DrawPrimitive(const VtxWriterBase& VW, EPrimitiveType eType, int icount) {
+void GeometryBufferInterface::DrawPrimitive(
+    GfxMaterial* mtl, //
+    const VtxWriterBase& VW,
+    EPrimitiveType eType,
+    int icount) {
   if (0 == icount) {
     icount = VW.miWriteCounter;
   }
   // printf( "GBI::DrawPrim(VW) ibase<%d> icount<%d>\n", VW.miWriteBase, icount );
-  DrawPrimitive(*VW.mpVB, eType, VW.miWriteBase, icount);
+  DrawPrimitive(mtl, *VW.mpVB, eType, VW.miWriteBase, icount);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void GeometryBufferInterface::DrawPrimitive(
+    GfxMaterial* mtl,
+    const VertexBufferBase& VBuf,
+    EPrimitiveType eTyp,
+    int ivbase,
+    int ivcount) {
+  int imax = VBuf.GetMax();
+  if (imax) {
+    int inumpasses = mtl->BeginBlock(&_context);
+    for (int ipass = 0; ipass < inumpasses; ipass++) {
+      bool bDRAW = mtl->BeginPass(&_context, ipass);
+      if (bDRAW) {
+        if (EPrimitiveType::NONE == eTyp) {
+          eTyp = VBuf.GetPrimType();
+        }
+
+        DrawPrimitiveEML(VBuf, eTyp, ivbase, ivcount);
+
+        mtl->EndPass(&_context);
+      }
+    }
+
+    mtl->EndBlock(&_context);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void GeometryBufferInterface::DrawIndexedPrimitive(
+    GfxMaterial* mtl,
+    const VertexBufferBase& VBuf,
+    const IndexBufferBase& IdxBuf,
+    EPrimitiveType eType,
+    int ivbase,
+    int ivcount) {
+  int imax = VBuf.GetMax();
+
+  if (imax) {
+    int inumpasses = mtl->BeginBlock(&_context);
+
+    for (int ipass = 0; ipass < inumpasses; ipass++) {
+      if (mtl->BeginPass(&_context, ipass)) {
+        if (EPrimitiveType::NONE == eType)
+          eType = VBuf.GetPrimType();
+        DrawIndexedPrimitiveEML(VBuf, IdxBuf, eType, ivbase, ivcount);
+
+        mtl->EndPass(&_context);
+      }
+    }
+
+    mtl->EndBlock(&_context);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

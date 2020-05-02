@@ -159,19 +159,6 @@ class DuGeometryBufferInterface final : public GeometryBufferInterface {
 
   //
 
-  void DrawPrimitive(
-      const VertexBufferBase& VBuf, //
-      EPrimitiveType eType,
-      int ivbase,
-      int ivcount) override;
-
-  void DrawIndexedPrimitive(
-      const VertexBufferBase& VBuf, //
-      const IndexBufferBase& IdxBuf,
-      EPrimitiveType eType,
-      int ivbase,
-      int ivcount) override;
-
   void DrawPrimitiveEML(
       const VertexBufferBase& VBuf, //
       EPrimitiveType eType,

@@ -40,15 +40,6 @@ public:
   static void RenderBox(Context* pTarg, bool drawoutline = false);
   static void RenderAxisLineCone(Context* pTarg);
   static void RenderAxisBox(Context* pTarg);
-  static void RenderDome(Context* pTarg) {
-    pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_Dome);
-  }
-  static void RenderWireFrameBox(Context* pTarg) {
-    pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_WireFrameBox);
-  }
-  static void RenderWireFrameDome(Context* pTarg) {
-    pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_WireFrameDome);
-  }
 
   static CVtxBuffer<SVtxV12N12B12T8C4>& GetAxisVB(void) {
     return GetRef().mVtxBuf_Axis;
@@ -103,9 +94,30 @@ public:
   static void RenderOrthoQuad(Context* pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV);
   static void RenderQuadAtX(Context* pTarg, f32 fY1, f32 fY2, f32 fZ1, f32 fZ2, f32 fX, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV);
   static void RenderQuadAtY(Context* pTarg, f32 fX1, f32 fX2, f32 fZ1, f32 fZ2, f32 fY, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV);
-  static void RenderQuadAtZ(Context* pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 fZ, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV);
-  static void
-  RenderQuadAtZV16T16C16(Context* pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 fZ, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV);
+  static void RenderQuadAtZ(
+      GfxMaterial* mtl,
+      Context* pTarg,
+      f32 fX1,
+      f32 fX2,
+      f32 fY1,
+      f32 fY2,
+      f32 fZ,
+      f32 iminU,
+      f32 imaxU,
+      f32 iminV,
+      f32 imaxV);
+  static void RenderQuadAtZV16T16C16(
+      GfxMaterial* mtl,
+      Context* pTarg,
+      f32 fX1,
+      f32 fX2,
+      f32 fY1,
+      f32 fY2,
+      f32 fZ,
+      f32 iminU,
+      f32 imaxU,
+      f32 iminV,
+      f32 imaxV);
 
   static void RenderQuad(Context* pTarg, fvec4& V0, fvec4& V1, fvec4& V2, fvec4& V3);
 
