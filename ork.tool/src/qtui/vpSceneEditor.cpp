@@ -608,7 +608,6 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
     // little spinner so i know which window is active
     pTARG->PushModColor(fcolor4::White());
 
-    pTARG->FXI()->InvalidateStateBlock();
     {
       static float gfspinner = 0.0f;
       float fx               = sinf(gfspinner);

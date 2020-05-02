@@ -110,10 +110,8 @@ void Surface::DoDraw(DrawEvent& drwev) {
     }
   }
   ///////////////////////////////////////
-  // lev2::GfxMaterialUI UiMat(tgt);
   lev2::SRasterState defstate;
   rsi->BindRasterState(defstate);
-  fxi->InvalidateStateBlock();
 
   auto material = defmtl;
   if (mRtGroup) {

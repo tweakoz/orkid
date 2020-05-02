@@ -226,7 +226,6 @@ void OffscreenBuffer::RenderMatOrthoQuad(
   fbi->pushViewport(vprectNew);
   fbi->pushScissor(vprectNew);
   { // Draw Full Screen Quad with specified material
-    ctx->FXI()->InvalidateStateBlock();
     ctx->PushModColor(clr);
     {
       DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
@@ -300,7 +299,6 @@ void OffscreenBuffer::RenderMatOrthoQuads(const OrthoQuads& oquads) {
   context()->FBI()->pushViewport(vprectNew);
   context()->FBI()->pushScissor(vprectNew);
   { // Draw Full Screen Quad with specified material
-    context()->FXI()->InvalidateStateBlock();
     context()->PushModColor(ork::fcolor4::White());
     {
       ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();

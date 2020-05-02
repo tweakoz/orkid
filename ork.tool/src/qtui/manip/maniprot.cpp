@@ -127,8 +127,6 @@ void ManipRot::Draw(Context* pTARG) const {
   pTARG->MTXI()->PushMMatrix(Mat);
   pTARG->PushModColor(ModColor * ColorScale);
   {
-    pTARG->FXI()->InvalidateStateBlock();
-
     CVtxBuffer<SVtxV12C4T16>& vb = ork::lev2::GfxPrimitives::GetCircleStripVB();
     mManager.materialBegin(pTARG);
     pTARG->GBI()->DrawPrimitiveEML(vb);

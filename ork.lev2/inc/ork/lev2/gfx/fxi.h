@@ -58,24 +58,9 @@ public:
 
   void BindParamTex(FxShader* hfx, const FxShaderParam* hpar, const lev2::TextureAsset* tex);
 
-  void BeginMaterialGroup(GfxMaterial* pmtl);
-  void EndMaterialGroup();
-  GfxMaterial* GetGroupCurMaterial() const {
-    return mpGroupCurMaterial;
-  }
-  GfxMaterial* GetGroupMaterial() const {
-    return mpGroupMaterial;
-  }
-
   virtual bool LoadFxShader(const AssetPath& pth, FxShader* ptex) = 0;
   virtual FxShader* shaderFromShaderText(const std::string& name, const std::string& shadertext) {
     return nullptr;
-  }
-
-  void InvalidateStateBlock(void);
-
-  GfxMaterial* GetLastFxMaterial(void) const {
-    return mpLastFxMaterial;
   }
 
   static void Reset();
@@ -97,9 +82,6 @@ public:
 
 protected:
   FxShader* mpActiveFxShader;
-  GfxMaterial* mpLastFxMaterial;
-  GfxMaterial* mpGroupMaterial;
-  GfxMaterial* mpGroupCurMaterial;
 
 private:
   virtual void _doBeginFrame() = 0;

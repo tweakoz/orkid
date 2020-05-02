@@ -324,7 +324,6 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev) {
     fbi->Clear(fvec4::Blue(), 1.0f);
 
     rsi->BindRasterState(defstate);
-    fxi->InvalidateStateBlock();
 
     const std::vector<Outliner2Item>& items = mOutlinerModel.Items();
 

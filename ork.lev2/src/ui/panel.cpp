@@ -47,7 +47,6 @@ void Panel::DoDraw(ui::DrawEvent& drwev) {
 
   lev2::SRasterState defstate;
   tgt->RSI()->BindRasterState(defstate);
-  tgt->FXI()->InvalidateStateBlock();
 
   bool has_foc = HasMouseFocus();
 

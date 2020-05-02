@@ -123,7 +123,6 @@ void ManipSingleTrans::DrawAxis(Context* pTARG) const {
   auto fbi = pTARG->FBI();
   auto fxi = pTARG->FXI();
   auto gbi = pTARG->GBI();
-  fxi->InvalidateStateBlock();
   mManager.materialBegin(pTARG);
   if (fbi->isPickState()) {
     gbi->DrawPrimitiveEML(ork::lev2::GfxPrimitives::GetAxisBoxVB());
@@ -297,10 +296,7 @@ void ManipDualTrans::Draw(Context* pTARG) const {
   GetQuad(1.0f, v0, v1, v2, v3);
 
   pTARG->MTXI()->PushMMatrix(MatCur);
-  {
-    pTARG->FXI()->InvalidateStateBlock();
-    ork::lev2::GfxPrimitives::RenderQuad(pTARG, v0, v1, v2, v3);
-  }
+  ork::lev2::GfxPrimitives::RenderQuad(pTARG, v0, v1, v2, v3);
   pTARG->MTXI()->PopMMatrix();
 }
 

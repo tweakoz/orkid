@@ -21,60 +21,28 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 FxInterface::FxInterface()
-	: mpActiveFxShader( 0 )
-	, mpLastFxMaterial( 0 )
-	, mpGroupCurMaterial(0)
-	, mpGroupMaterial(0)
-{
-
+    : mpActiveFxShader(0) {
 }
 
-void FxInterface::BindParamTex(FxShader* hfx, const FxShaderParam* hpar, const lev2::TextureAsset* texasset)
-{
+void FxInterface::BindParamTex(FxShader* hfx, const FxShaderParam* hpar, const lev2::TextureAsset* texasset) {
   auto texture = (texasset != nullptr) ? texasset->GetTexture() : nullptr;
-  if(texture)
-    BindParamCTex(hfx,hpar,texture);
+  if (texture)
+    BindParamCTex(hfx, hpar, texture);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FxInterface::InvalidateStateBlock( void )
-{
-	mpLastFxMaterial = 0;
-	mpGroupCurMaterial = 0;
-	mpGroupMaterial = 0;
+void FxInterface::BeginFrame() {
+  _doBeginFrame();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FxInterface::BeginMaterialGroup( GfxMaterial* pmtl )
-{
-	mpGroupMaterial=pmtl;
+void FxInterface::Reset() {
+  Context* pTARG = GfxEnv::GetRef().loadingContext();
+  pTARG->FXI()->DoOnReset();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FxInterface::EndMaterialGroup()
-{
-
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void FxInterface::BeginFrame()
-{
-	InvalidateStateBlock();
-	_doBeginFrame();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void FxInterface::Reset()
-{
-	Context* pTARG = GfxEnv::GetRef().loadingContext();
-	pTARG->FXI()->DoOnReset();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-} }
+}} // namespace ork::lev2

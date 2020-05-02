@@ -402,8 +402,6 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
             // draw the dataflow node
             //////////////////////
 
-            fxi->InvalidateStateBlock();
-
             gbi->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES);
             _nodematerial.end(RCFD);
           }

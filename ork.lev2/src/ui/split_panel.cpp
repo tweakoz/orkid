@@ -84,10 +84,8 @@ void SplitPanel::DoDraw(ui::DrawEvent& drwev) {
     tgt->GBI()->DrawPrimitive(defmtl, vw, lev2::EPrimitiveType::LINES);
   };
 
-  // lev2::GfxMaterialUI UiMat(tgt);
   lev2::SRasterState defstate;
   tgt->RSI()->BindRasterState(defstate);
-  tgt->FXI()->InvalidateStateBlock();
 
   bool has_foc = HasMouseFocus();
   tgt->PushModColor(has_foc ? fcolor4::White() : fcolor4::Red());
