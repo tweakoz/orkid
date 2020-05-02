@@ -509,7 +509,7 @@ void XgmModel::RenderSkinned(
     pTARG->debugPushGroup("DrawSkeleton");
     pTARG->PushModColor(fvec4::White());
 
-    auto material = GfxEnv::GetDefault3DMaterial();
+    auto material = default3DMaterial();
 
     //////////////
     // bone x-ray
@@ -519,7 +519,6 @@ void XgmModel::RenderSkinned(
 
     //////////////
 
-    // pTARG->PushMaterial(material);
     {
       typedef SVtxV12N12B12T8C4 vertex_t;
       auto& vtxbuf = GfxEnv::GetSharedDynamicVB2();
@@ -614,7 +613,7 @@ void XgmModel::RenderSkinned(
         }
         vw.UnLock(pTARG);
         pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
-        pTARG->GBI()->DrawPrimitive(material, vw, EPrimitiveType::LINES, numlines);
+        pTARG->GBI()->DrawPrimitive(material.get(), vw, EPrimitiveType::LINES, numlines);
         pTARG->MTXI()->PopMMatrix();
       }
       for (int ib = 0; ib < inumbones; ib++) {
@@ -626,7 +625,6 @@ void XgmModel::RenderSkinned(
         pTARG->MTXI()->PopMMatrix();
       }
     }
-    // pTARG->PopMaterial();
     pTARG->PopModColor();
     pTARG->debugPopGroup();
   }

@@ -27,7 +27,7 @@
 #include <ork/object/AutoConnector.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace lev2 {
+namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 extern bool _HIDPI();
@@ -353,16 +353,6 @@ public:
 
   //////////////////////////////////////////////
 
-  struct OrthoQuads {
-    SRect mViewportRect;
-    SRect mOrthoRect;
-    GfxMaterial* mpMaterial;
-    const OrthoQuad* mpQUADS;
-    int miNumQuads;
-  };
-
-  //////////////////////////////////////////////
-
   RtGroup* GetParentMrt(void) const {
     return mParentRtGroup;
   }
@@ -392,9 +382,6 @@ public:
   }
   Texture* GetTexture() const {
     return mpTexture;
-  }
-  GfxMaterial* GetMaterial() const {
-    return mpMaterial;
   }
   Context* context(void) const;
 
@@ -441,9 +428,6 @@ public:
   void SetTexture(Texture* ptex) {
     mpTexture = ptex;
   }
-  void SetMaterial(GfxMaterial* pmtl) {
-    mpMaterial = pmtl;
-  }
 
   //////////////////////////////////////////////
 
@@ -461,8 +445,6 @@ public:
   void Render2dQuadEML(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2);
   void Render2dQuadsEML(size_t count, const fvec4* QuadRects, const fvec4* UvRects, const fvec4* UvRect2s);
 
-  void RenderMatOrthoQuads(const OrthoQuads& oquads);
-
   //////////////////////////////////////////////
 
   void SetRootWidget(ui::Widget* pwidg) {
@@ -478,7 +460,6 @@ public:
 protected:
   ui::Widget* mRootWidget;
   Context* mpContext;
-  GfxMaterial* mpMaterial;
   Texture* mpTexture;
   int miWidth;
   int miHeight;
@@ -571,13 +552,6 @@ public:
 #endif
   //////////////////////////////////////////////////////////////////////////////
 
-  static GfxMaterial* GetDefaultUIMaterial(void) {
-    return GetRef().mpUIMaterial;
-  }
-  static PBRMaterial* GetDefault3DMaterial(void) {
-    return GetRef().mp3DMaterial;
-  }
-
   static void setContextClass(const rtti::Class* pclass) {
     gpTargetClass = pclass;
   }
@@ -601,12 +575,12 @@ public:
   static DynamicVertexBuffer<SVtxV12N12B12T8C4>& GetSharedDynamicVB2();
   static DynamicVertexBuffer<SVtxV16T16C16>& GetSharedDynamicV16T16C16();
 
+  static bool initialized();
+
   //////////////////////////////////////////////////////////////////////////////
 protected:
   //////////////////////////////////////////////////////////////////////////////
 
-  GfxMaterial* mpUIMaterial;
-  PBRMaterial* mp3DMaterial;
   Window* mpMainWindow;
   Context* gLoaderTarget;
 
@@ -620,6 +594,7 @@ protected:
   orkmap<std::string, std::string> mRuntimeEnvironment;
   orkstack<ContextCreationParams> mCreationParams;
   recursive_mutex mGfxEnvMutex;
+  bool _initialized = false;
 
   static const rtti::Class* gpTargetClass;
 };
@@ -659,7 +634,6 @@ private:
 /// ////////////////////////////////////////////////////////////////////////////
 ///
 /// ////////////////////////////////////////////////////////////////////////////
-
-}} // namespace ork::lev2
+} // namespace ork::lev2
 
 #define gGfxEnv ork::lev2::GfxEnv::GetRef()

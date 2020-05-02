@@ -31,7 +31,17 @@ ImplementReflectionX(ork::lev2::PBRMaterial, "PBRMaterial");
 
 namespace ork::lev2 {
 
+material_ptr_t default3DMaterial() {
+  static auto mtl = std::make_shared<PBRMaterial>(GfxEnv::GetRef().loadingContext());
+  return mtl;
+}
+
 //////////////////////////////////////////////////////
+
+PBRMaterial::PBRMaterial(Context* targ)
+    : PBRMaterial() {
+  Init(targ);
+}
 
 PBRMaterial::PBRMaterial()
     : _baseColor(1, 1, 1) {

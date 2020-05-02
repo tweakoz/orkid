@@ -138,6 +138,8 @@ protected:
   const FxShaderParam* hColorMap;
 };
 
+material_ptr_t defaultUIMaterial();
+
 ///////////////////////////////////////////////////////////////////////////////
 
 }} // namespace ork::lev2

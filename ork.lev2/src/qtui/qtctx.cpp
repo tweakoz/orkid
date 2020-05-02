@@ -588,7 +588,7 @@ void CTQT::Resize(int X, int Y, int W, int H) {
 
 void CTQT::SlotRepaint() {
   auto lamb = [&]() {
-    if (nullptr == GfxEnv::GetRef().GetDefaultUIMaterial())
+    if (not GfxEnv::initialized())
       return;
 
     auto pos = ork::lev2::logicalMousePos();

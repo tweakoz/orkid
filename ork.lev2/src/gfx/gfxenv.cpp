@@ -163,8 +163,6 @@ DynamicVertexBuffer<SVtxV16T16C16>& GfxEnv::GetSharedDynamicV16T16C16() {
 GfxEnv::GfxEnv()
     : NoRttiSingleton<GfxEnv>()
     , mpMainWindow(nullptr)
-    , mpUIMaterial(nullptr)
-    , mp3DMaterial(nullptr)
     , mGfxEnvMutex("GfxEnvGlobalMutex")
     , gLoaderTarget(nullptr)
     , mVtxBufSharedVect(256 << 10, 0, EPrimitiveType::TRIANGLES)    // SVtxV12C4T16==32bytes
@@ -188,6 +186,10 @@ void GfxEnv::RegisterWinContext(Window* pWin) {
   // gfxenvlateinit();
 }
 
+bool GfxEnv::initialized() {
+  return GetRef()._initialized;
+}
+
 void GfxEnv::SetLoaderTarget(Context* target) {
   gLoaderTarget = target;
 
@@ -199,23 +201,13 @@ void GfxEnv::SetLoaderTarget(Context* target) {
     // ctx->beginFrame();
 #endif
     ctx->debugPushGroup("GfxEnv.Lateinit");
-    if (nullptr != mpUIMaterial) {
-      delete GetRef().mpUIMaterial;
-      delete GetRef().mp3DMaterial;
-    }
 
-    auto matpbr = new PBRMaterial;
-
-    mpUIMaterial = new GfxMaterialUI();
-    mp3DMaterial = matpbr;
-
-    mpUIMaterial->Init(ctx);
-    mp3DMaterial->Init(ctx);
     ork::lev2::GfxPrimitives::Init(ctx);
     ctx->debugPopGroup();
 #if !defined(__APPLE__)
     // ctx->endFrame();
 #endif
+    _initialized = true;
   };
   opq::mainSerialQueue()->enqueue(gfxenvlateinit);
 }

@@ -73,7 +73,7 @@ void Surface::DoDraw(DrawEvent& drwev) {
   auto fxi    = tgt->FXI();
   auto rsi    = tgt->RSI();
   auto& primi = lev2::GfxPrimitives::GetRef();
-  auto defmtl = lev2::GfxEnv::GetDefaultUIMaterial();
+  auto defmtl = lev2::defaultUIMaterial();
 
   if (nullptr == mRtGroup) {
     mRtGroup  = new lev2::RtGroup(tgt, miW, miH, 1);
@@ -118,7 +118,7 @@ void Surface::DoDraw(DrawEvent& drwev) {
     static auto texmtl = std::make_shared<lev2::GfxMaterialUITextured>(tgt);
     auto ptex          = mRtGroup->GetMrt(0)->texture();
     texmtl->SetTexture(lev2::ETEXDEST_DIFFUSE, ptex);
-    material = texmtl.get();
+    material = texmtl;
   }
 
   bool has_foc = HasMouseFocus();
@@ -132,7 +132,7 @@ void Surface::DoDraw(DrawEvent& drwev) {
     // printf( "Surface<%s>::Draw wx<%d> wy<%d> w<%d> h<%d>\n", msName.c_str(), ix_root, iy_root, miW, miH );
 
     primi.RenderQuadAtZ(
-        material,
+        material.get(),
         tgt,
         ix_root,
         ix_root + miW, // x0, x1

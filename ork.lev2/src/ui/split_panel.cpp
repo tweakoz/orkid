@@ -57,11 +57,11 @@ void SplitPanel::DoDraw(ui::DrawEvent& drwev) {
   auto fbi     = tgt->FBI();
   auto mtxi    = tgt->MTXI();
   auto& primi  = lev2::GfxPrimitives::GetRef();
-  auto defmtl  = lev2::GfxEnv::GetDefaultUIMaterial();
+  auto defmtl  = lev2::defaultUIMaterial();
 
   auto ren_quad = [&](int x, int y, int x2, int y2) {
     primi.RenderQuadAtZ(
-        defmtl,
+        defmtl.get(),
         tgt,
         x,
         x2, // x0, x1
@@ -81,7 +81,7 @@ void SplitPanel::DoDraw(ui::DrawEvent& drwev) {
     vw.AddVertex(lev2::SVtxV12C4T16(x, y, 0.0f, 0.0f, 0.0f, 0xffffffff));
     vw.AddVertex(lev2::SVtxV12C4T16(x2, y2, 0.0f, 0.0f, 0.0f, 0xffffffff));
     vw.UnLock(tgt);
-    tgt->GBI()->DrawPrimitive(defmtl, vw, lev2::EPrimitiveType::LINES);
+    tgt->GBI()->DrawPrimitive(defmtl.get(), vw, lev2::EPrimitiveType::LINES);
   };
 
   lev2::SRasterState defstate;

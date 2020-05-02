@@ -300,7 +300,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev) {
   auto fxi                             = tgt->FXI();
   auto rsi                             = tgt->RSI();
   auto& primi                          = lev2::GfxPrimitives::GetRef();
-  auto defmtl                          = lev2::GfxEnv::GetDefaultUIMaterial();
+  auto defmtl                          = lev2::defaultUIMaterial();
   lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
   SceneEditorBase& ed                  = mOutlinerModel.Editor();
   auto scene_data                      = ed.GetSceneData();
@@ -384,7 +384,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev) {
           tgt->PushModColor(is_sel ? c3 : (alt ? c1 : c2));
 
         primi.RenderQuadAtZV16T16C16(
-            defmtl,
+            defmtl.get(),
             tgt,
             0,
             miW, // x0, x1

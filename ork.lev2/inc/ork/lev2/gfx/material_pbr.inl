@@ -47,6 +47,7 @@ class PBRMaterial final : public GfxMaterial {
   DeclareConcreteX(PBRMaterial, GfxMaterial);
 
 public:
+  PBRMaterial(Context* targ);
   PBRMaterial();
   ~PBRMaterial();
 
@@ -129,5 +130,7 @@ public:
 
   bool _stereoVtex = false;
 };
+
+material_ptr_t default3DMaterial();
 
 } // namespace ork::lev2

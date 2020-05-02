@@ -46,7 +46,6 @@ OffscreenBuffer::OffscreenBuffer(
     , mParentRtGroup(nullptr)
     , mpTexture(nullptr)
     , mRootWidget(nullptr)
-    , mpMaterial(nullptr)
     , mbSizeIsDirty(true) {
 }
 
@@ -271,113 +270,6 @@ OrthoQuad::OrthoQuad()
     , mfv0b(0.0f)
     , mfv1b(0.0f) {
 }
-
-void OffscreenBuffer::RenderMatOrthoQuads(const OrthoQuads& oquads) {
-  int inumquads           = oquads.miNumQuads;
-  const SRect& vprect     = oquads.mViewportRect;
-  const SRect& OrthoRect  = oquads.mOrthoRect;
-  GfxMaterial* pmtl       = oquads.mpMaterial;
-  const OrthoQuad* pquads = oquads.mpQUADS;
-
-  if (0 == inumquads)
-    return;
-
-  static SRasterState DefaultRasterState;
-
-  ViewportRect vprectNew(vprect.miX, vprect.miY, vprect.miX2 - vprect.miX, vprect.miY2 - vprect.miY);
-
-  // align source pixels to target pixels if sizes match
-  float fvx0 = float(OrthoRect.miX);
-  float fvy0 = float(OrthoRect.miY);
-  float fvx1 = float(OrthoRect.miX2);
-  float fvy1 = float(OrthoRect.miY2);
-
-  context()->MTXI()->PushPMatrix(context()->MTXI()->Ortho(fvx0, fvx1, fvy0, fvy1, 0.0f, 1.0f));
-  context()->MTXI()->PushVMatrix(fmtx4::Identity());
-  context()->MTXI()->PushMMatrix(fmtx4::Identity());
-  context()->RSI()->BindRasterState(DefaultRasterState, true);
-  context()->FBI()->pushViewport(vprectNew);
-  context()->FBI()->pushScissor(vprectNew);
-  { // Draw Full Screen Quad with specified material
-    context()->PushModColor(ork::fcolor4::White());
-    {
-      ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
-
-      ork::lev2::VtxWriter<ork::lev2::SVtxV12C4T16> vw;
-      vw.Lock(context(), &vb, 6 * inumquads);
-      {
-        for (int iq = 0; iq < inumquads; iq++) {
-          const OrthoQuad& Q    = pquads[iq];
-          const SRect& QuadRect = Q.mQrect;
-          const fcolor4& C      = Q.mColor;
-          U32 uc                = C.GetBGRAU32();
-
-          bool brot = Q.mfrot != 0.0f;
-
-          if (brot) {
-            float fcx = float(QuadRect.miX + QuadRect.miX2) * 0.5f;
-            float fcy = float(QuadRect.miY + QuadRect.miY2) * 0.5f;
-            float fw  = float(QuadRect.miX2) - fcx;
-            float fh  = float(QuadRect.miY2) - fcy;
-
-            float fsr  = sinf(Q.mfrot);
-            float fcr  = cosf(Q.mfrot);
-            float fsr2 = sinf(Q.mfrot + PI * 0.5f);
-            float fcr2 = cosf(Q.mfrot + PI * 0.5f);
-
-            float fx0 = fcx + fcr * fw;
-            float fy0 = fcy + fsr * fh;
-            float fx1 = fcx + fcr2 * fw;
-            float fy1 = fcy + fsr2 * fh;
-            float fx2 = fcx - fcr * fw;
-            float fy2 = fcy - fsr * fh;
-            float fx3 = fcx - fcr2 * fw;
-            float fy3 = fcy - fsr2 * fh;
-
-            vw.AddVertex(ork::lev2::SVtxV12C4T16(fx0, fy0, 0.0f, Q.mfu0a, Q.mfv0a, Q.mfu0b, Q.mfv0b, uc));
-            vw.AddVertex(ork::lev2::SVtxV12C4T16(fx1, fy1, 0.0f, Q.mfu1a, Q.mfv0a, Q.mfu1b, Q.mfv0b, uc));
-            vw.AddVertex(ork::lev2::SVtxV12C4T16(fx2, fy2, 0.0f, Q.mfu1a, Q.mfv1a, Q.mfu1b, Q.mfv1b, uc));
-
-            vw.AddVertex(ork::lev2::SVtxV12C4T16(fx0, fy0, 0.0f, Q.mfu0a, Q.mfv0a, Q.mfu0b, Q.mfv0b, uc));
-            vw.AddVertex(ork::lev2::SVtxV12C4T16(fx2, fy2, 0.0f, Q.mfu1a, Q.mfv1a, Q.mfu1b, Q.mfv1b, uc));
-            vw.AddVertex(ork::lev2::SVtxV12C4T16(fx3, fy3, 0.0f, Q.mfu0a, Q.mfv1a, Q.mfu0b, Q.mfv1b, uc));
-
-          } else {
-            float fx0 = float(QuadRect.miX);
-            float fy0 = float(QuadRect.miY);
-            float fx1 = float(QuadRect.miX2);
-            float fy1 = float(QuadRect.miY2);
-
-            vw.AddVertex(ork::lev2::SVtxV12C4T16(fx0, fy0, 0.0f, Q.mfu0a, Q.mfv0a, Q.mfu0b, Q.mfv0b, uc));
-            vw.AddVertex(ork::lev2::SVtxV12C4T16(fx1, fy1, 0.0f, Q.mfu1a, Q.mfv1a, Q.mfu1b, Q.mfv1b, uc));
-            vw.AddVertex(ork::lev2::SVtxV12C4T16(fx1, fy0, 0.0f, Q.mfu1a, Q.mfv0a, Q.mfu1b, Q.mfv0b, uc));
-
-            vw.AddVertex(ork::lev2::SVtxV12C4T16(fx0, fy0, 0.0f, Q.mfu0a, Q.mfv0a, Q.mfu0b, Q.mfv0b, uc));
-            vw.AddVertex(ork::lev2::SVtxV12C4T16(fx0, fy1, 0.0f, Q.mfu0a, Q.mfv1a, Q.mfu0b, Q.mfv1b, uc));
-            vw.AddVertex(ork::lev2::SVtxV12C4T16(fx1, fy1, 0.0f, Q.mfu1a, Q.mfv1a, Q.mfu1b, Q.mfv1b, uc));
-          }
-        }
-      }
-      vw.UnLock(context());
-
-      int inumpasses = pmtl->BeginBlock(context());
-      for (int ipass = 0; ipass < inumpasses; ipass++) {
-        bool bDRAW = pmtl->BeginPass(context(), ipass);
-        context()->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES);
-        pmtl->EndPass(context());
-      }
-      pmtl->EndBlock(context());
-    }
-    context()->PopModColor();
-  }
-  context()->FBI()->popScissor();
-  context()->FBI()->popViewport();
-  context()->MTXI()->PopPMatrix();
-  context()->MTXI()->PopVMatrix();
-  context()->MTXI()->PopMMatrix();
-}
-
-/////////////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

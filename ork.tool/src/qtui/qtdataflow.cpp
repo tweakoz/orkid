@@ -198,7 +198,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
   auto rsi      = ctx->RSI();
   auto gbi      = ctx->GBI();
   auto& primi   = lev2::GfxPrimitives::GetRef();
-  auto defmtl   = lev2::GfxEnv::GetDefaultUIMaterial();
+  auto defmtl   = lev2::defaultUIMaterial();
   auto& VB      = lev2::GfxEnv::GetSharedDynamicV16T16C16();
   bool has_foc  = HasMouseFocus();
   bool is_pick  = fbi->isPickState();

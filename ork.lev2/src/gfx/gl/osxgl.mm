@@ -370,10 +370,6 @@ void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
 	///////////////////////////////////////////
 	// create material
 
-	GfxMaterialUITextured* pmtl = new GfxMaterialUITextured(this);
-	pBuf->SetMaterial(pmtl);
-	pmtl->SetTexture( ETEXDEST_DIFFUSE, texture );
-	pBuf->SetTexture(texture);
 
 //	[plato->mNSOpenGLContext makeCurrentContext];
 
