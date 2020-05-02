@@ -60,6 +60,9 @@ public:
   }
   ~XgmModelAsset() override;
 
+  void clearModel() {
+    _model = std::make_shared<XgmModel>();
+  }
   XgmModel* GetModel() {
     return _model.get();
   }

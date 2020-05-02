@@ -67,6 +67,7 @@ public:
         absolutepath.GetExtension() == "obj" or //
         absolutepath.GetExtension() == "glb" or //
         absolutepath.GetExtension() == "gltf") {
+      modelasset->clearModel();
       OK = XgmModel::LoadUnManaged(modelasset->GetModel(), filename.c_str());
       asset::AssetManager<lev2::TextureAsset>::AutoLoad();
       // route to caching assimp->xgm processor
