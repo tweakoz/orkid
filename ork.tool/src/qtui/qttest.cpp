@@ -26,11 +26,6 @@ bool ENABLE_PROFILER = false;
 #include <QtGui/QFontDatabase>
 #include <QtCore/QDebug>
 
-// This include is relative to src/miniork which is temporarily added an a include search path.
-// We'll need to come up with a long-term solution eventually.
-//#include <test/platform_lev1/test_application.h>
-//#include <application/ds/ds_application.h>
-
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/qtui/qtui.hpp>
 #include <pkg/ent/scene.h>
@@ -40,8 +35,6 @@ bool ENABLE_PROFILER = false;
 #include <ork/kernel/thread.h>
 
 #include <ork/profiling.inl>
-
-//#define USE_PYTHON
 
 #if defined(USE_PYTHON)
 #include <Python.h>

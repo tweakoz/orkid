@@ -1,6 +1,8 @@
 
 #include <ork/application/application.h>
+#include <ork/kernel/csystem.h>
 
+using namespace ork;
 namespace ork::tool {
 void init(char** argp);
 int toolmain(int& argc, char** argv);
@@ -19,6 +21,9 @@ int main(int argc, char** argv, char** argp) {
   TestApplication the_app;
   ApplicationStack::Push(&the_app);
 
-  ork::tool::init(argp);
-  return ork::tool::toolmain(argc, argv);
+  tool::init(argp);
+
+  OldSchool::SetGlobalStringVariable("ProjectApplicationClassName", "OrkTool");
+
+  return tool::toolmain(argc, argv);
 }

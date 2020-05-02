@@ -123,7 +123,7 @@ template <typename VPTYPE> void UIToolHandler<VPTYPE>::DrawToolIcon(lev2::Contex
       UiMatTex._rasterstate.SetAlphaTest(lev2::EALPHATEST_OFF, 0.0f);
       UiMatTex._rasterstate.SetDepthTest(lev2::EDEPTHTEST_ALWAYS);
       pTARG->PushModColor(fcolor4::White());
-      pTARG->GBI()->DrawPrimitive(&UiMat, vb, lev2::EPrimitiveType::TRIANGLES, bhilite ? ibase + 6 : ibase, 6);
+      pTARG->GBI()->DrawPrimitive(&UiMatTex, vb, lev2::EPrimitiveType::TRIANGLES, bhilite ? ibase + 6 : ibase, 6);
       pTARG->PopModColor();
     }
     pTARG->MTXI()->PopUIMatrix();
