@@ -11,6 +11,7 @@
 #include <ork/asset/FileAssetNamer.h>
 #include <ork/application/application.h>
 #include <ork/kernel/orklut.hpp>
+#include <ork/kernel/opq.h>
 #include <ork/asset/AssetManager.hpp>
 #include <ork/lev2/aud/audiodevice.h>
 #include <ork/lev2/aud/audiobank.h>
@@ -257,9 +258,39 @@ void FxShaderAsset::Describe() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 
-// template class asset::AssetManager<FxShaderAsset>;
+void autoloadAssets(bool wait) {
+  auto autoload_op = []() {
+    bool loaded;
+    do {
+      loaded = false;
+      loaded = asset::AssetManager<lev2::XgmAnimAsset>::AutoLoad() || loaded;
+      loaded = asset::AssetManager<lev2::AudioStream>::AutoLoad() || loaded;
+      loaded = asset::AssetManager<lev2::AudioBank>::AutoLoad() || loaded;
+      loaded = asset::AssetManager<lev2::FxShaderAsset>::AutoLoad() || loaded;
+      loaded = asset::AssetManager<lev2::XgmModelAsset>::AutoLoad() || loaded;
+      loaded = asset::AssetManager<lev2::TextureAsset>::AutoLoad() || loaded;
+    } while (loaded);
+  };
+  if (opq::TrackCurrent::is(opq::mainSerialQueue()))
+    autoload_op(); // already on main thread, just do it..
+  else {
+    if (wait) {
+      // not on main thread, but waiting,
+      //  fire and synchronize
+      auto task = opq::createCompletionGroup(
+          opq::mainSerialQueue(), //
+          "AssetLoad");
+      task->enqueue(autoload_op);
+      task->join();
+    } else {
+      // not waiting and not on main thread,
+      //  just fire and forget..
+      opq::mainSerialQueue()->enqueue(autoload_op);
+    }
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::lev2

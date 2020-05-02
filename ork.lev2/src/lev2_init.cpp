@@ -7,6 +7,7 @@
 
 #include <ork/pch.h>
 #include <ork/kernel/timer.h>
+#include <ork/kernel/opq.h>
 #include <ork/dataflow/dataflow.h>
 #include <ork/lev2/init.h>
 #include <ork/lev2/gfx/gfxenv.h>
@@ -169,6 +170,10 @@ void GfxInit(const std::string& gfxlayer) {
 #endif
   }
   DrawableBuffer::gbInsideClearAndSync = false;
+  opq::backgroundSerialQueue();
+  opq::concurrentQueue();
+  opq::mainSerialQueue();
+  opq::updateSerialQueue();
 }
 
 StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {

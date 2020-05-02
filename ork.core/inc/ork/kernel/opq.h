@@ -120,7 +120,7 @@ struct ConcurrencyGroup {
 };
 
 using concurrency_group_ptr_t = std::shared_ptr<ConcurrencyGroup>;
-//using concurrency_group_ptr_t = ConcurrencyGroup*;
+// using concurrency_group_ptr_t = ConcurrencyGroup*;
 
 //////////////////////////////////////////////////////////////////////
 // CompletionGroup
@@ -144,7 +144,7 @@ private:
     return std::unique_ptr<CompletionGroup>(new CompletionGroup(std::forward<Args>(args)...));
   }
 
-  CompletionGroup(opq_ptr_t q,std::string name ="");
+  CompletionGroup(opq_ptr_t q, std::string name = "");
   CompletionGroup(const CompletionGroup& oth) = delete;
   CompletionGroup& operator=(const CompletionGroup&) = delete;
 
@@ -177,7 +177,7 @@ struct OpqThread : public ork::Thread {
 };
 //////////////////////////////////////////////////////////////////////
 
-struct OperationsQueue : public std::enable_shared_from_this<OperationsQueue>{
+struct OperationsQueue : public std::enable_shared_from_this<OperationsQueue> {
   OperationsQueue(int inumthreads, const char* name = "DefOpQ");
   ~OperationsQueue();
 
@@ -247,6 +247,7 @@ void assertNotOnQueue(opq_ptr_t the_opQ);
 
 opq_ptr_t updateSerialQueue();
 opq_ptr_t mainSerialQueue();
+opq_ptr_t backgroundSerialQueue();
 opq_ptr_t concurrentQueue();
 
 ///////////////////////////////////////////////////////////////////////////////

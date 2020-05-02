@@ -51,13 +51,10 @@ void CompletionGroup::enqueue(const ork::void_lambda_t& the_op) {
 
     // todo hook up to editor UI somehow..
 
-    auto name_str = deco::decorate(fvec3(1,0.5,0.1),_q->_name);
-    auto grpn_str = deco::decorate(fvec3(1,0.3,0.0),_name);
-    auto pend_str = deco::format(fvec3(1,1,0.1), "%d",num_pending);
-    printf("opq<%s> CompletionGroup<%s> ops pending<%s>     \r",
-           name_str.c_str(),
-           grpn_str.c_str(),
-           pend_str.c_str());
+    auto name_str = deco::decorate(fvec3(1, 0.5, 0.1), _q->_name);
+    auto grpn_str = deco::decorate(fvec3(1, 0.3, 0.0), _name);
+    auto pend_str = deco::format(fvec3(1, 1, 0.1), "%d", num_pending);
+    printf("opq<%s> CompletionGroup<%s> ops pending<%s>     \r", name_str.c_str(), grpn_str.c_str(), pend_str.c_str());
   };
   _q->enqueue(wrapped);
 }
@@ -67,7 +64,7 @@ void CompletionGroup::join() {
     ::usleep(1000);
   }
 }
-CompletionGroup::CompletionGroup(opq_ptr_t q,std::string name)
+CompletionGroup::CompletionGroup(opq_ptr_t q, std::string name)
     : _q(q)
     , _name(name) {
   _numpending.store(0);
@@ -508,6 +505,11 @@ opq_ptr_t updateSerialQueue() {
 opq_ptr_t mainSerialQueue() {
   static opq_ptr_t gmainthrq = std::make_shared<OperationsQueue>(0, "mainSerialQueue");
   return gmainthrq;
+}
+///////////////////////////////////////////////////////////////////////
+opq_ptr_t backgroundSerialQueue() {
+  static opq_ptr_t gbackgroundq = std::make_shared<OperationsQueue>(1, "backgroundSerialQueue");
+  return gbackgroundq;
 }
 ///////////////////////////////////////////////////////////////////////
 opq_ptr_t concurrentQueue() {
