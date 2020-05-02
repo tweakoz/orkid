@@ -28,17 +28,14 @@ using materialinst_constptr_t = std::shared_ptr<const GfxMaterialInstance>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GfxMaterialInstance : public std::enable_shared_from_this<GfxMaterialInstance> {
-  // GfxMaterialInstance(material_ptr_t mtl);
   int beginBlock(const RenderContextInstData& RCID);
   bool beginPass(const RenderContextInstData& RCID, int ipass);
   void endPass(const RenderContextInstData& RCID);
   void endBlock(const RenderContextInstData& RCID);
 
   void wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall);
-  // void setInstanceMvpParams(std::string monocam, std::string stereocamL, std::string stereocamR);
 
-  using varval_t = varmap::VarMap::value_type;
-  // material_ptr_t _material;
+  using varval_t                    = varmap::VarMap::value_type;
   fxtechnique_constptr_t _monoTek   = nullptr;
   fxtechnique_constptr_t _pickTek   = nullptr;
   fxtechnique_constptr_t _stereoTek = nullptr;
