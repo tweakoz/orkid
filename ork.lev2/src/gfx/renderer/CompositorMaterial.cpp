@@ -109,24 +109,24 @@ bool CompositingMaterial::BeginPass(lev2::Context* pTarg, int iPass) {
 
   pTarg->RSI()->BindRasterState(_rasterstate);
   pTarg->FXI()->BindPass(iPass);
-  pTarg->FXI()->BindParamMatrix(hModFX, hMatMVP, pTarg->MTXI()->RefMVPMatrix());
+  pTarg->FXI()->BindParamMatrix(hMatMVP, pTarg->MTXI()->RefMVPMatrix());
 
-  pTarg->FXI()->BindParamVect4(hModFX, hLevelA, mLevelA);
-  pTarg->FXI()->BindParamVect4(hModFX, hLevelB, mLevelB);
-  pTarg->FXI()->BindParamVect4(hModFX, hLevelC, mLevelC);
+  pTarg->FXI()->BindParamVect4(hLevelA, mLevelA);
+  pTarg->FXI()->BindParamVect4(hLevelB, mLevelB);
+  pTarg->FXI()->BindParamVect4(hLevelC, mLevelC);
 
-  pTarg->FXI()->BindParamVect4(hModFX, hBiasA, mBiasA);
-  pTarg->FXI()->BindParamVect4(hModFX, hBiasB, mBiasB);
-  pTarg->FXI()->BindParamVect4(hModFX, hBiasC, mBiasC);
+  pTarg->FXI()->BindParamVect4(hBiasA, mBiasA);
+  pTarg->FXI()->BindParamVect4(hBiasB, mBiasB);
+  pTarg->FXI()->BindParamVect4(hBiasC, mBiasC);
 
   if (mCurrentTextureA && hMapA) {
-    pTarg->FXI()->BindParamCTex(hModFX, hMapA, mCurrentTextureA);
+    pTarg->FXI()->BindParamCTex(hMapA, mCurrentTextureA);
   }
   if (mCurrentTextureB && hMapB) {
-    pTarg->FXI()->BindParamCTex(hModFX, hMapB, mCurrentTextureB);
+    pTarg->FXI()->BindParamCTex(hMapB, mCurrentTextureB);
   }
   if (mCurrentTextureC && hMapC) {
-    pTarg->FXI()->BindParamCTex(hModFX, hMapC, mCurrentTextureC);
+    pTarg->FXI()->BindParamCTex(hMapC, mCurrentTextureC);
   }
 
   pTarg->FXI()->CommitParams();

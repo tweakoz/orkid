@@ -276,34 +276,34 @@ bool PBRMaterial::BeginPass(Context* targ, int iPass) {
     modcolor = targ->RefModColor();
     // printf("modcolor<%g %g %g %g>\n", modcolor.x, modcolor.y, modcolor.z, modcolor.w);
   } else {
-    fxi->BindParamCTex(_shader, _paramMapColor, _texColor);
-    fxi->BindParamCTex(_shader, _paramMapNormal, _texNormal);
-    fxi->BindParamCTex(_shader, _paramMapMtlRuf, _texMtlRuf);
-    fxi->BindParamFloat(_shader, _parMetallicFactor, _metallicFactor);
-    fxi->BindParamFloat(_shader, _parRoughnessFactor, _roughnessFactor);
+    fxi->BindParamCTex( _paramMapColor, _texColor);
+    fxi->BindParamCTex( _paramMapNormal, _texNormal);
+    fxi->BindParamCTex( _paramMapMtlRuf, _texMtlRuf);
+    fxi->BindParamFloat( _parMetallicFactor, _metallicFactor);
+    fxi->BindParamFloat( _parRoughnessFactor, _roughnessFactor);
     auto brdfintegtex = PBRMaterial::brdfIntegrationMap(targ);
     const auto& drect = CPD.GetDstRect();
     const auto& mrect = CPD.GetMrtRect();
     float w           = mrect._w;
     float h           = mrect._h;
-    fxi->BindParamVect2(_shader, _parInvViewSize, fvec2(1.0 / w, 1.0f / h));
+    fxi->BindParamVect2( _parInvViewSize, fvec2(1.0 / w, 1.0f / h));
   }
 
-  fxi->BindParamVect4(_shader, _parModColor, modcolor);
-  fxi->BindParamMatrix(_shader, _paramMV, mvmtx);
+  fxi->BindParamVect4( _parModColor, modcolor);
+  fxi->BindParamMatrix( _paramMV, mvmtx);
 
   if (CPD.isStereoOnePass() and CPD._stereoCameraMatrices) {
     auto stereomtx = CPD._stereoCameraMatrices;
     auto MVPL      = stereomtx->MVPL(world);
     auto MVPR      = stereomtx->MVPR(world);
-    fxi->BindParamMatrix(_shader, _paramMVPL, MVPL);
-    fxi->BindParamMatrix(_shader, _paramMVPR, MVPR);
-    fxi->BindParamMatrix(_shader, _paramMROT, (world).rotMatrix33());
+    fxi->BindParamMatrix( _paramMVPL, MVPL);
+    fxi->BindParamMatrix( _paramMVPR, MVPR);
+    fxi->BindParamMatrix( _paramMROT, (world).rotMatrix33());
   } else {
     auto mcams = CPD._cameraMatrices;
     auto MVP   = world * mcams->_vmatrix * mcams->_pmatrix;
-    fxi->BindParamMatrix(_shader, _paramMVP, MVP);
-    fxi->BindParamMatrix(_shader, _paramMROT, (world).rotMatrix33());
+    fxi->BindParamMatrix( _paramMVP, MVP);
+    fxi->BindParamMatrix( _paramMROT, (world).rotMatrix33());
   }
   rsi->BindRasterState(_rasterstate);
   fxi->CommitParams();
@@ -374,7 +374,7 @@ void PbrMatrixBlockApplicator::ApplyToTarget(Context* targ) // virtual
       const auto& b = Matrices[i];
       b.dump(FormatString("pbr-bone<%d>", i));
     }
-  fxi->BindParamMatrixArray(shader, _pbrmaterial->_parBoneMatrices, Matrices, (int)inumbones);
+  fxi->BindParamMatrixArray( _pbrmaterial->_parBoneMatrices, Matrices, (int)inumbones);
   fxi->CommitParams();
 }
 
@@ -399,15 +399,15 @@ void PBRMaterial::setupCamera(const RenderContextFrameData& RCFD) {
     auto MVPL      = stereomtx->MVPL(world);
     auto MVPR      = stereomtx->MVPR(world);
     // todo fix for stereo..
-    FXI->BindParamMatrix(_shader, _paramMVPL, MVPL);
-    FXI->BindParamMatrix(_shader, _paramMVPR, MVPR);
+    FXI->BindParamMatrix( _paramMVPL, MVPL);
+    FXI->BindParamMatrix( _paramMVPR, MVPR);
   } else if (CPD._cameraMatrices) {
     auto mcams = CPD._cameraMatrices;
     auto MVP   = world * mcams->_vmatrix * mcams->_pmatrix;
-    FXI->BindParamMatrix(_shader, _paramMVP, MVP);
+    FXI->BindParamMatrix( _paramMVP, MVP);
   } else {
     auto MVP = MTXI->RefMVPMatrix();
-    FXI->BindParamMatrix(_shader, _paramMVP, MVP);
+    FXI->BindParamMatrix( _paramMVP, MVP);
   }
 }
 

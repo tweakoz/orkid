@@ -24,10 +24,10 @@ FxInterface::FxInterface()
     : _activeShader(0) {
 }
 
-void FxInterface::BindParamTex(FxShader* hfx, const FxShaderParam* hpar, const lev2::TextureAsset* texasset) {
+void FxInterface::BindParamTex(const FxShaderParam* hpar, const lev2::TextureAsset* texasset) {
   auto texture = (texasset != nullptr) ? texasset->GetTexture() : nullptr;
   if (texture)
-    BindParamCTex(hfx, hpar, texture);
+    BindParamCTex(hpar, texture);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

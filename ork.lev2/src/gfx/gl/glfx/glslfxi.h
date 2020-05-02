@@ -551,22 +551,22 @@ public:
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) override;
 #endif
 
-  void BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bval) override;
-  void BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int ival) override;
-  void BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const fvec2& Vec) override;
-  void BindParamVect3(FxShader* hfx, const FxShaderParam* hpar, const fvec3& Vec) override;
-  void BindParamVect4(FxShader* hfx, const FxShaderParam* hpar, const fvec4& Vec) override;
-  void BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, const fvec4* Vec, const int icount) override;
-  void BindParamFloatArray(FxShader* hfx, const FxShaderParam* hpar, const float* pfA, const int icnt) override;
-  void BindParamFloat(FxShader* hfx, const FxShaderParam* hpar, float fA) override;
-  void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx4& Mat) override;
-  void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx3& Mat) override;
-  void BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) override;
-  void BindParamU32(FxShader* hfx, const FxShaderParam* hpar, uint32_t uval) override;
-  void BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Texture* pTex) override;
+  void BindParamBool(const FxShaderParam* hpar, const bool bval) override;
+  void BindParamInt(const FxShaderParam* hpar, const int ival) override;
+  void BindParamVect2(const FxShaderParam* hpar, const fvec2& Vec) override;
+  void BindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) override;
+  void BindParamVect4(const FxShaderParam* hpar, const fvec4& Vec) override;
+  void BindParamVect4Array(const FxShaderParam* hpar, const fvec4* Vec, const int icount) override;
+  void BindParamFloatArray(const FxShaderParam* hpar, const float* pfA, const int icnt) override;
+  void BindParamFloat(const FxShaderParam* hpar, float fA) override;
+  void BindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat) override;
+  void BindParamMatrix(const FxShaderParam* hpar, const fmtx3& Mat) override;
+  void BindParamMatrixArray(const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) override;
+  void BindParamU32(const FxShaderParam* hpar, uint32_t uval) override;
+  void BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) override;
 
 #if !defined(__APPLE__)
-  void BindParamU64(FxShader* hfx, const FxShaderParam* hpar, uint64_t uval) override;
+  void BindParamU64(const FxShaderParam* hpar, uint64_t uval) override;
 #endif
 
   bool LoadFxShader(const AssetPath& pth, FxShader* ptex) override;
@@ -593,7 +593,7 @@ public:
 private:
   typedef std::function<void(int iloc, GLenum checktype)> stdparambinder_t;
 
-  void _stdbindparam(FxShader* hfx, const FxShaderParam* hpar, const stdparambinder_t& binder);
+  void _stdbindparam(const FxShaderParam* hpar, const stdparambinder_t& binder);
 
   Container* mpActiveEffect;
   const Pass* mLastPass;

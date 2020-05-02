@@ -59,31 +59,31 @@ public:
   }
 #endif
 
-  void BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bval) final {
+  void BindParamBool(const FxShaderParam* hpar, const bool bval) final {
   }
-  void BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int ival) final {
+  void BindParamInt(const FxShaderParam* hpar, const int ival) final {
   }
-  void BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const fvec2& Vec) final {
+  void BindParamVect2(const FxShaderParam* hpar, const fvec2& Vec) final {
   }
-  void BindParamVect3(FxShader* hfx, const FxShaderParam* hpar, const fvec3& Vec) final {
+  void BindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) final {
   }
-  void BindParamVect4(FxShader* hfx, const FxShaderParam* hpar, const fvec4& Vec) final {
+  void BindParamVect4(const FxShaderParam* hpar, const fvec4& Vec) final {
   }
-  void BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, const fvec4* Vec, const int icount) final {
+  void BindParamVect4Array(const FxShaderParam* hpar, const fvec4* Vec, const int icount) final {
   }
-  void BindParamFloatArray(FxShader* hfx, const FxShaderParam* hpar, const float* pfA, const int icnt) final {
+  void BindParamFloatArray(const FxShaderParam* hpar, const float* pfA, const int icnt) final {
   }
-  void BindParamFloat(FxShader* hfx, const FxShaderParam* hpar, float fA) final {
+  void BindParamFloat(const FxShaderParam* hpar, float fA) final {
   }
-  void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx4& Mat) final {
+  void BindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat) final {
   }
-  void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx3& Mat) final {
+  void BindParamMatrix(const FxShaderParam* hpar, const fmtx3& Mat) final {
   }
-  void BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) final {
+  void BindParamMatrixArray(const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) final {
   }
-  void BindParamU32(FxShader* hfx, const FxShaderParam* hpar, U32 uval) final {
+  void BindParamU32(const FxShaderParam* hpar, U32 uval) final {
   }
-  void BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Texture* pTex) final {
+  void BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) final {
   }
 
   bool LoadFxShader(const AssetPath& pth, FxShader* ptex) final;

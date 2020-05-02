@@ -132,8 +132,8 @@ bool GfxMaterialUI::BeginPass(Context* pTarg, int iPass) {
   ///////////////////////////////
 
   pTarg->FXI()->BindPass(iPass);
-  pTarg->FXI()->BindParamMatrix(hModFX, hTransform, MatMVP);
-  pTarg->FXI()->BindParamVect4(hModFX, hModColor, pTarg->RefModColor());
+  pTarg->FXI()->BindParamMatrix(hTransform, MatMVP);
+  pTarg->FXI()->BindParamVect4(hModColor, pTarg->RefModColor());
   pTarg->FXI()->CommitParams();
 
   return true;
@@ -207,12 +207,12 @@ bool GfxMaterialUIText::BeginPass(Context* pTarg, int iPass) {
 
   const fmtx4& MatMVP = pTarg->MTXI()->RefMVPMatrix();
 
-  pTarg->FXI()->BindParamMatrix(hModFX, hTransform, MatMVP);
+  pTarg->FXI()->BindParamMatrix(hTransform, MatMVP);
 
   ///////////////////////////////
 
-  pTarg->FXI()->BindParamCTex(hModFX, hColorMap, GetTexture(ETEXDEST_DIFFUSE).mpTexture);
-  pTarg->FXI()->BindParamVect4(hModFX, hModColor, pTarg->RefModColor());
+  pTarg->FXI()->BindParamCTex(hColorMap, GetTexture(ETEXDEST_DIFFUSE).mpTexture);
+  pTarg->FXI()->BindParamVect4(hModColor, pTarg->RefModColor());
   pTarg->FXI()->CommitParams();
 
   return true;
@@ -296,9 +296,9 @@ bool GfxMaterialUITextured::BeginPass(Context* pTarg, int iPass) {
   const fmtx4& MatMVP = pTarg->MTXI()->RefMVPMatrix();
 
   pTarg->FXI()->BindPass(iPass);
-  pTarg->FXI()->BindParamMatrix(hModFX, hTransform, MatMVP);
-  pTarg->FXI()->BindParamCTex(hModFX, hColorMap, GetTexture(ETEXDEST_DIFFUSE).mpTexture);
-  pTarg->FXI()->BindParamVect4(hModFX, hModColor, pTarg->RefModColor());
+  pTarg->FXI()->BindParamMatrix(hTransform, MatMVP);
+  pTarg->FXI()->BindParamCTex(hColorMap, GetTexture(ETEXDEST_DIFFUSE).mpTexture);
+  pTarg->FXI()->BindParamVect4(hModColor, pTarg->RefModColor());
   pTarg->FXI()->CommitParams();
   return true;
 }

@@ -116,14 +116,14 @@ void FxShader::RegisterLoaders(const file::Path& base, const std::string& ext) {
   auto shaderpath                 = lev2ctx->getFilesystemBaseAbs() / base;
   auto shaderfilectx              = FileEnv::createContextForUriBase("orkshader://", shaderpath);
   shaderfilectx->SetFilesystemBaseEnable(true);
-  //OrkAssert(false);
-  if(0)
-  printf(
-      "FxShader::RegisterLoaders ext<%s> l2<%s> base<%s> shaderpath<%s>\n", //
-      ext.c_str(),
-      lev2ctx->getFilesystemBaseAbs().c_str(),
-      base.c_str(),
-      shaderpath.c_str());
+  // OrkAssert(false);
+  if (0)
+    printf(
+        "FxShader::RegisterLoaders ext<%s> l2<%s> base<%s> shaderpath<%s>\n", //
+        ext.c_str(),
+        lev2ctx->getFilesystemBaseAbs().c_str(),
+        base.c_str(),
+        shaderpath.c_str());
   gearlyhack = false;
 }
 
@@ -137,7 +137,7 @@ void FxShader::OnReset() {
     const FxShaderParam* param = it->second;
     const std::string& type    = param->mParameterType;
     if (param->mParameterType == "sampler" || param->mParameterType == "texture") {
-      pTARG->FXI()->BindParamCTex(this, param, 0);
+      pTARG->FXI()->BindParamCTex(param, 0);
     }
   }
   //_techniques.clear();

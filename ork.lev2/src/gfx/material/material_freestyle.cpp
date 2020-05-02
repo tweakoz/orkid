@@ -132,55 +132,55 @@ void FreestyleMaterial::bindTechnique(const FxShaderTechnique* tek) {
 void FreestyleMaterial::bindParamInt(const FxShaderParam* par, int value) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamInt(_shader, par, value);
+  fxi->BindParamInt(par, value);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamFloat(const FxShaderParam* par, float value) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamFloat(_shader, par, value);
+  fxi->BindParamFloat(par, value);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamCTex(const FxShaderParam* par, const Texture* tex) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamCTex(_shader, par, tex);
+  fxi->BindParamCTex(par, tex);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamVec2(const FxShaderParam* par, const fvec2& v) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamVect2(_shader, par, v);
+  fxi->BindParamVect2(par, v);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamVec3(const FxShaderParam* par, const fvec3& v) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamVect3(_shader, par, v);
+  fxi->BindParamVect3(par, v);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamVec4(const FxShaderParam* par, const fvec4& v) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamVect4(_shader, par, v);
+  fxi->BindParamVect4(par, v);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamMatrix(const FxShaderParam* par, const fmtx4& m) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamMatrix(_shader, par, m);
+  fxi->BindParamMatrix(par, m);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamMatrix(const FxShaderParam* par, const fmtx3& m) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamMatrix(_shader, par, m);
+  fxi->BindParamMatrix(par, m);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamMatrixArray(const FxShaderParam* par, const fmtx4* m, size_t len) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamMatrixArray(_shader, par, m, len);
+  fxi->BindParamMatrixArray(par, m, len);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::begin(const FxShaderTechnique* tek, const RenderContextFrameData& RCFD) {

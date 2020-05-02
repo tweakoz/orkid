@@ -391,8 +391,8 @@ void ManipManager::materialBegin(Context* targ) {
     auto MVPL      = stereomtx->MVPL(world);
     auto MVPR      = stereomtx->MVPR(world);
     // todo fix for stereo..
-    // FXI->BindParamMatrix(_shader, _paramMVPL, MVPL);
-    // FXI->BindParamMatrix(_shader, _paramMVPR, MVPR);
+    // FXI->BindParamMatrix( _paramMVPL, MVPL);
+    // FXI->BindParamMatrix( _paramMVPR, MVPR);
   } else if (CPD._cameraMatrices) {
     auto mcams = CPD._cameraMatrices;
     auto MVP   = world * mcams->_vmatrix * mcams->_pmatrix;
