@@ -57,11 +57,11 @@ ork::ent::System* CompositingSystemData::createSystem(ork::ent::Simulation* pins
 CompositingSystem::CompositingSystem(const CompositingSystemData& data, Simulation* psim)
     : ork::ent::System(&data, psim)
     , _compositingSystemData(data)
-    , _impl(data._compositingData) {
+    , _impl(data._compositingData.createImpl()) {
 }
 
 bool CompositingSystem::enabled() const {
-  return _impl.IsEnabled();
+  return _impl->IsEnabled();
 }
 
 CompositingSystem::~CompositingSystem() {
@@ -72,7 +72,7 @@ void CompositingSystem::DoUpdate(Simulation* psim) {
 
 bool CompositingSystem::DoLink(Simulation* psi) {
   if (auto lsys = psi->findSystem<LightingSystem>()) {
-    _impl.bindLighting(&lsys->GetLightManager());
+    _impl->bindLighting(&lsys->GetLightManager());
   }
   return true;
 }

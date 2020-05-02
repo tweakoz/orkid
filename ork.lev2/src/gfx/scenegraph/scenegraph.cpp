@@ -94,7 +94,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   // throw std::runtime_error("unknown compositor outputnode type");
 
   // outpnode->setSuperSample(4);
-  _compositorImpl = std::make_shared<CompositingImpl>(*_compositorData.get());
+  _compositorImpl = _compositorData->createImpl();
   _compositorImpl->bindLighting(_lightManager.get());
   _topCPD.addStandardLayers();
 }
@@ -132,7 +132,7 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras) {
 
 void Scene::renderOnContext(Context* context) {
   auto DB = DrawableBuffer::acquireReadDB(7);
-  if (nullptr == DB){
+  if (nullptr == DB) {
     printf("Dont have a DB!\n");
     return;
   }
@@ -140,7 +140,7 @@ void Scene::renderOnContext(Context* context) {
   _renderer.setContext(context);
 
   RenderContextFrameData RCFD(context); // renderer per/frame data
-  RCFD._cimpl = _compositorImpl.get();
+  RCFD._cimpl = _compositorImpl;
   RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
   context->pushRenderContextFrameData(&RCFD);
   auto fbi  = context->FBI();  // FrameBufferInterface
@@ -171,6 +171,7 @@ void Scene::renderOnContext(Context* context) {
   drawdata._properties["irenderer"_crcu].Set<lev2::IRenderer*>(&_renderer);
   drawdata._properties["simrunning"_crcu].Set<bool>(true);
   drawdata._properties["DB"_crcu].Set<const DrawableBuffer*>(DB);
+  drawdata._cimpl = _compositorImpl;
   _compositorImpl->assemble(drawdata);
   _compositorImpl->composite(drawdata);
   _compositorImpl->popCPD();

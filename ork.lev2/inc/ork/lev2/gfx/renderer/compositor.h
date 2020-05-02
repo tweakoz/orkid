@@ -25,6 +25,9 @@ class LightManager;
 class GfxMaterial3DSolid;
 class IRenderTarget;
 
+using compositordata_ptr_t = std::shared_ptr<CompositingData>;
+using compositorimpl_ptr_t = std::shared_ptr<CompositingImpl>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class CompositingScene : public ork::Object {
@@ -193,7 +196,7 @@ struct CompositorDrawData {
   RenderContextFrameData& RCFD();
   const RenderContextFrameData& RCFD() const;
   ViewData computeViewData() const;
-  CompositingImpl* _cimpl = nullptr;
+  compositorimpl_ptr_t _cimpl;
   std::map<uint64_t, svar16_t> _properties;
   lev2::FrameRenderer& mFrameRenderer;
 };
@@ -250,10 +253,8 @@ public:
   mutable bool mToggle;
   bool mbEnable;
 
-  CompositingImpl* createImpl() const;
+  compositorimpl_ptr_t createImpl() const;
 };
-
-using compositordata_ptr_t = std::shared_ptr<CompositingData>;
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -303,8 +304,6 @@ private:
   CompositingContext _compcontext;
   compositingpassdatastack_t _stack;
 };
-
-using compositorimpl_ptr_t = std::shared_ptr<CompositingImpl>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

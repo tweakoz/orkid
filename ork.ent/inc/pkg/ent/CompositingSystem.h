@@ -18,6 +18,7 @@ namespace ork { namespace ent {
 
 class CompositingSystemData : public ork::ent::SystemData {
   RttiDeclareConcrete(CompositingSystemData, ork::ent::SystemData);
+
 public:
   lev2::CompositingData _compositingData;
   CompositingSystemData();
@@ -26,23 +27,27 @@ public:
 
 private:
   ork::ent::System* createSystem(ork::ent::Simulation* pinst) const final;
-  ork::Object* _accessor() { return & _compositingData; }
+  ork::Object* _accessor() {
+    return &_compositingData;
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////
 
 class CompositingSystem : public ork::ent::System {
 public:
-
   static constexpr systemkey_t SystemType = "CompositingSystem";
-  systemkey_t systemTypeDynamic() final { return SystemType; }
-
+  systemkey_t systemTypeDynamic() final {
+    return SystemType;
+  }
 
   CompositingSystem(const CompositingSystemData& data, ork::ent::Simulation* pinst);
   ~CompositingSystem();
 
-  const CompositingSystemData& compositingSystemData() const { return _compositingSystemData; }
-  lev2::CompositingImpl _impl;
+  const CompositingSystemData& compositingSystemData() const {
+    return _compositingSystemData;
+  }
+  lev2::compositorimpl_ptr_t _impl;
   bool DoLink(Simulation* psi) final;
 
   bool enabled() const;

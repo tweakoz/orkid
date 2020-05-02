@@ -30,8 +30,8 @@
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-CompositingImpl* CompositingData::createImpl() const {
-  return new CompositingImpl(*this);
+compositorimpl_ptr_t CompositingData::createImpl() const {
+  return std::make_shared<CompositingImpl>(*this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -103,7 +103,6 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
   lev2::Context* target              = RCFD.GetTarget();
 
-  drawdata._cimpl   = this;
   float aspectratio = target->mainSurfaceAspectRatio();
 
   // todo - compute CameraMatrices per rendertarget/pass !

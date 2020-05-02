@@ -387,13 +387,19 @@ void SceneData::AutoLoadAssets() const {
   do {
     loaded = false;
     loaded = asset::AssetManager<ArchetypeAsset>::AutoLoad() || loaded;
-    loaded = asset::AssetManager<lev2::XgmAnimAsset>::AutoLoad() || loaded;
-    loaded = asset::AssetManager<lev2::AudioStream>::AutoLoad() || loaded;
-    loaded = asset::AssetManager<lev2::AudioBank>::AutoLoad() || loaded;
-    loaded = asset::AssetManager<lev2::FxShaderAsset>::AutoLoad() || loaded;
-    loaded = asset::AssetManager<lev2::XgmModelAsset>::AutoLoad() || loaded;
-    loaded = asset::AssetManager<lev2::TextureAsset>::AutoLoad() || loaded;
   } while (loaded);
+  opq::mainSerialQueue()->enqueue([]() {
+    bool loaded;
+    do {
+      loaded = false;
+      loaded = asset::AssetManager<lev2::XgmAnimAsset>::AutoLoad() || loaded;
+      loaded = asset::AssetManager<lev2::AudioStream>::AutoLoad() || loaded;
+      loaded = asset::AssetManager<lev2::AudioBank>::AutoLoad() || loaded;
+      loaded = asset::AssetManager<lev2::FxShaderAsset>::AutoLoad() || loaded;
+      loaded = asset::AssetManager<lev2::XgmModelAsset>::AutoLoad() || loaded;
+      loaded = asset::AssetManager<lev2::TextureAsset>::AutoLoad() || loaded;
+    } while (loaded);
+  });
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneData::EnterEditState() {
@@ -496,7 +502,7 @@ void SceneData::defaultSetup(opq::opq_ptr_t editopq) {
       ////////////////////////////////////////////
       std::shared_ptr<lev2::XgmModelAsset> model_asset;
       opq::Op([&model_asset]() {
-        model_asset = asset::AssetManager<lev2::XgmModelAsset>::Load("data://environ/objects/misc/headwalker");
+        model_asset = asset::AssetManager<lev2::XgmModelAsset>::Load("src://environ/objects/misc/torus");
       }).QueueSync(opq::mainSerialQueue());
       ////////////////////////////////////////////
       // perform edit

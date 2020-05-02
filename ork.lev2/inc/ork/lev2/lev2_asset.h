@@ -56,21 +56,22 @@ public:
   }
 
   XgmModelAsset() {
-    _model = std::make_shared<XgmModel>();
+    _model.atomicWrite(std::make_shared<XgmModel>());
   }
   ~XgmModelAsset() override;
 
   void clearModel() {
-    _model = std::make_shared<XgmModel>();
-  }
-  XgmModel* GetModel() {
-    return _model.get();
-  }
-  const XgmModel* GetModel() const {
-    return _model.get();
+    _model.atomicWrite(std::make_shared<XgmModel>());
   }
 
-  model_ptr_t _model;
+  XgmModel* GetModel() { // todo unsafe
+    return _model.atomicCopy().get();
+  }
+  const XgmModel* GetModel() const { // todo unsafe
+    return _model.atomicCopy().get();
+  }
+
+  LockedResource<model_ptr_t> _model;
 };
 
 typedef XgmModelAsset* xgmmodelassetptr_t; // prep for shared_ptr

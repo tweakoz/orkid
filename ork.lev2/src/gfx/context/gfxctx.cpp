@@ -125,10 +125,10 @@ Context::Context()
     , meTargetType(ETGTTYPE_NONE) {
 
   static CompositingData _gdata;
-  static CompositingImpl _gimpl(_gdata);
-  static auto RCFD = new RenderContextFrameData(this);
-  RCFD->_cimpl     = &_gimpl;
-  _defaultrcfd     = RCFD;
+  static auto _gimpl = _gdata.createImpl();
+  static auto RCFD   = new RenderContextFrameData(this);
+  RCFD->_cimpl       = _gimpl;
+  _defaultrcfd       = RCFD;
   pushRenderContextFrameData(_defaultrcfd);
 }
 

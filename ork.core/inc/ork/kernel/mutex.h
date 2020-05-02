@@ -104,30 +104,21 @@ template <typename T> class LockedResource {
   typedef std::function<void(const T&)> const_atomicop_t;
 
   mutable ork::recursive_mutex _mutex;
-  T* _resource = nullptr;
+  std::shared_ptr<T> _resource;
 
 public:
   LockedResource(const char* pname = "ResourceMutex")
       : _mutex(pname) {
-    _resource = new T();
+    _resource = std::make_shared<T>();
   }
   LockedResource(const LockedResource& oth)
       : _mutex(oth._mutex.GetName().c_str()) {
-    _resource = new T();
+    _resource = std::make_shared<T>();
   }
   ~LockedResource() {
     _mutex.Lock();
-    if (_resource)
-      delete _resource;
     _resource = nullptr;
     _mutex.UnLock();
-  }
-
-  const T GetByValueLocked(int lid = -1) const {
-    _mutex.Lock(lid);
-    T result_by_value = (*_resource);
-    _mutex.UnLock();
-    return result_by_value;
   }
 
   const T& LockForRead(int lid = -1) const {
@@ -144,11 +135,6 @@ public:
   int GetLockCount() const {
     return _mutex.GetLockCount();
   }
-  T AtomicCopy() const {
-    T rval = LockForRead();
-    UnLock();
-    return rval;
-  }
   void atomicOp(const mutable_atomicop_t& op) {
     LockForWrite();
     op(*_resource);
@@ -158,6 +144,16 @@ public:
     LockForRead();
     op(*_resource);
     UnLock();
+  }
+  void atomicWrite(const T& rhs) {
+    LockForWrite();
+    (*_resource) = rhs;
+    UnLock();
+  }
+  T atomicCopy() const {
+    T rval = LockForRead();
+    UnLock();
+    return rval;
   }
 };
 

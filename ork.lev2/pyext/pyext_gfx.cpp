@@ -314,7 +314,7 @@ void pyinit_gfx(py::module& module_lev2) {
   py::class_<XgmModel, model_ptr_t>(module_lev2, "Model") //
       .def(py::init([](const std::string& model_path) -> model_ptr_t {
         auto modl_asset = asset::AssetManager<XgmModelAsset>::Load(model_path.c_str());
-        return modl_asset->_model;
+        return modl_asset->_model.atomicCopy();
       }))
       .def(
           "createNode",         //

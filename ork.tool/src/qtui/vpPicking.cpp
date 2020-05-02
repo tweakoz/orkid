@@ -46,9 +46,9 @@ void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
     _gdata->presetPicking();
   }
   ///////////////////////////////////////////////////////////////////////////
-  static CompositingImpl _gimpl(*_gdata);
+  static auto _gimpl = _gdata->createImpl();
   ork::lev2::RenderContextFrameData RCFD(target); //
-  RCFD._cimpl = &_gimpl;
+  RCFD._cimpl = _gimpl;
   ///////////////////////////////////////////////////////////////////////////
 
   mPickIds.clear();
@@ -82,13 +82,13 @@ void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
     CPD.SetDstRect(tgt_rect);
     CPD._ispicking     = true;
     CPD._irendertarget = &rt;
-    _gimpl.pushCPD(CPD);
+    _gimpl->pushCPD(CPD);
     ///////////////////////////////////////////////////////////////////////////
     auto simmode = sim->GetSimulationMode();
     bool running = (simmode == ent::ESCENEMODE_RUN);
     lev2::FrameRenderer framerenderer(RCFD, [&]() {});
     lev2::CompositorDrawData drawdata(framerenderer);
-    drawdata._cimpl = &_gimpl;
+    drawdata._cimpl = _gimpl;
     drawdata._properties["primarycamindex"_crcu].Set<int>(_scenevp->miCameraIndex);
     drawdata._properties["cullcamindex"_crcu].Set<int>(_scenevp->miCullCameraIndex);
     drawdata._properties["irenderer"_crcu].Set<lev2::IRenderer*>(irenderer);
@@ -103,12 +103,13 @@ void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
     //_context->BindMaterial(GfxEnv::GetDefault3DMaterial());
     _context->PushModColor(fcolor4::Yellow());
 
-    bool assembled_ok = _gimpl.assemble(drawdata);
+    drawdata._cimpl   = _gimpl;
+    bool assembled_ok = _gimpl->assemble(drawdata);
 
     DrawableBuffer::releaseReadDB(DB); // mDbLock.Aquire(7);
 
     if (assembled_ok)
-      _gimpl.composite(drawdata);
+      _gimpl->composite(drawdata);
 
     _scenevp->DrawManip(drawdata, target);
 
@@ -117,7 +118,7 @@ void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
     FBI->LeavePickState();
   } // if(DB)
   ///////////////////////////////////////////////////////////////////////////
-  _gimpl.popCPD();
+  _gimpl->popCPD();
   ///////////////////////////////////////////////////////////////////////////
   // SetDirty(false);
   pTEXTARG->popRenderContextFrameData();
@@ -178,9 +179,8 @@ void OuterPickOp(defpickopctx_ptr_t pickctx) {
     ////////////
     static auto d_buf = new ork::lev2::DrawableBuffer(4);
     static CompositingData _gdata;
-    static CompositingImpl _gimpl(_gdata);
-
-    auto lamb = [&]() {
+    static auto _gimpl = _gdata.createImpl();
+    auto lamb          = [&]() {
       ork::opq::assertOnQueue2(opq::updateSerialQueue());
       d_buf->miBufferIndex = 0;
       //////////////////////////////////////////////////////////////////////////
@@ -193,7 +193,7 @@ void OuterPickOp(defpickopctx_ptr_t pickctx) {
       auto op_pick = [=]() {
         auto target = pickctx->_gfxContext;
         ork::lev2::RenderContextFrameData RCFD(target);
-        RCFD._cimpl = &_gimpl;
+        RCFD._cimpl = _gimpl;
         rendervar_t db_var;
         db_var.Set<const DrawableBuffer*>(d_buf);
         RCFD.setUserProperty("DB"_crc, db_var);

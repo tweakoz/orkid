@@ -57,8 +57,8 @@ int main(int argc, char** argv, char** argp) {
   auto nodetek            = compositordata.tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
   auto outpnode           = nodetek->tryOutputNodeAs<ScreenOutputCompositingNode>();
   // outpnode->setSuperSample(4);
-  CompositingImpl compositorimpl(compositordata);
-  compositorimpl.bindLighting(lightmgr.get());
+  auto compositorimpl = compositordata.createImpl();
+  compositorimpl->bindLighting(lightmgr.get());
   lev2::CompositingPassData TOPCPD;
   TOPCPD.addStandardLayers();
   CameraDataLut cameras;
@@ -151,7 +151,7 @@ int main(int argc, char** argv, char** argp) {
       return;
     auto context = drwev.GetTarget();
     RenderContextFrameData RCFD(context); // renderer per/frame data
-    RCFD._cimpl = &compositorimpl;
+    RCFD._cimpl = compositorimpl;
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
     context->pushRenderContextFrameData(&RCFD);
     auto fbi  = context->FBI();  // FrameBufferInterface
@@ -167,7 +167,7 @@ int main(int argc, char** argv, char** argp) {
     auto tgtrect          = ViewportRect(0, 0, TARGW, TARGH);
     TOPCPD._irendertarget = &rt;
     TOPCPD.SetDstRect(tgtrect);
-    compositorimpl.pushCPD(TOPCPD);
+    compositorimpl->pushCPD(TOPCPD);
     ///////////////////////////////////////
     // Draw!
     ///////////////////////////////////////
@@ -182,9 +182,10 @@ int main(int argc, char** argv, char** argp) {
     drawdata._properties["irenderer"_crcu].Set<lev2::IRenderer*>(&renderer);
     drawdata._properties["simrunning"_crcu].Set<bool>(true);
     drawdata._properties["DB"_crcu].Set<const DrawableBuffer*>(DB);
-    compositorimpl.assemble(drawdata);
-    compositorimpl.composite(drawdata);
-    compositorimpl.popCPD();
+    drawdata._cimpl = compositorimpl;
+    compositorimpl->assemble(drawdata);
+    compositorimpl->composite(drawdata);
+    compositorimpl->popCPD();
     context->popRenderContextFrameData();
     context->endFrame();
     DrawableBuffer::releaseReadDB(DB);
@@ -192,7 +193,7 @@ int main(int argc, char** argv, char** argp) {
   //////////////////////////////////////////////////////////
   qtapp->onResize([&](int w, int h) {
     //
-    compositorimpl.compositingContext().Resize(w, h);
+    compositorimpl->compositingContext().Resize(w, h);
   });
   //////////////////////////////////////////////////////////
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, -1});

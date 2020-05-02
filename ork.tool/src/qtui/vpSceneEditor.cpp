@@ -299,9 +299,9 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   auto sim     = simulation();
   auto FBI     = mpTarget->FBI();
   static CompositingData _gdata;
-  static CompositingImpl _gimpl(_gdata);
-  RCFD._cimpl = &_gimpl;
-  _gimpl.pushCPD(TOPCPD);
+  static auto _gimpl = _gdata.createImpl();
+  RCFD._cimpl        = _gimpl;
+  _gimpl->pushCPD(TOPCPD);
   GL_ERRORCHECK();
   if (nullptr == compsys or nullptr == sim) {
     //////////////////////////////////////////////////////////////////////
@@ -324,11 +324,11 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     } // release consumed DB
     mpTarget->endFrame();
     mpTarget->popRenderContextFrameData();
-    _gimpl.popCPD();
+    _gimpl->popCPD();
     GL_ERRORCHECK();
     return;
   }
-  RCFD._cimpl = &compsys->_impl;
+  RCFD._cimpl = compsys->_impl;
   RCFD._cimpl->pushCPD(TOPCPD);
   auto simmode = sim->GetSimulationMode();
   bool running = (simmode == ent::ESCENEMODE_RUN);
@@ -384,7 +384,8 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     drawdata._properties["DB"_crcu].Set<const DrawableBuffer*>(DB);
     GL_ERRORCHECK();
     mpTarget->debugPushGroup("toolvp::assemble");
-    assembled_ok = compsys->_impl.assemble(drawdata);
+    drawdata._cimpl = compsys->_impl;
+    assembled_ok    = compsys->_impl->assemble(drawdata);
     DrawableBuffer::releaseReadDB(DB); // mDbLock.Aquire(7);
     //////////////////////////////////////////////////
     GL_ERRORCHECK();
@@ -401,7 +402,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   if (assembled_ok) {
     mpTarget->debugPushGroup("toolvp::composite");
     EASY_BLOCK("composite");
-    compsys->_impl.composite(drawdata);
+    compsys->_impl->composite(drawdata);
     mpTarget->debugPopGroup();
   }
   //////////////////////////////////////////////////
@@ -414,7 +415,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   //////////////////////////////////////////////////
   GL_ERRORCHECK();
   RCFD._cimpl->popCPD();
-  RCFD._cimpl = &_gimpl;
+  RCFD._cimpl = _gimpl;
   //////////////////////////////////////////////////
   // after composite:
   //  render hud and other 2d non-content layers
@@ -455,7 +456,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       miPickDirtyCount--;
     }
   }
-  _gimpl.popCPD();
+  _gimpl->popCPD();
   mpTarget->popRenderContextFrameData();
   GL_ERRORCHECK();
 }

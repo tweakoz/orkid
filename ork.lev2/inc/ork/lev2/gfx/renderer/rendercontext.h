@@ -144,7 +144,7 @@ struct RenderContextFrameData {
 
   //////////////////////////////////////
 
-  CompositingImpl* _cimpl = nullptr;
+  compositorimpl_ptr_t _cimpl;
   LightManager* _lightmgr = nullptr;
   usermap_t _userProperties;
   Context* const mpTarget = nullptr;
