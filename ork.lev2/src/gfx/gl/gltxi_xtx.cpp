@@ -30,23 +30,22 @@ bool GlTextureInterface::_loadXTXTexture(Texture* ptex, datablockptr_t datablock
   GLTextureObject* pTEXOBJ = new GLTextureObject;
   ptex->_internalHandle    = (void*)pTEXOBJ;
   ////////////////////////////////////////////////////////////////////
-  ptex->_width  = load_req._cmipchain->_width;
-  ptex->_height = load_req._cmipchain->_height;
-  ptex->_depth  = 1;
+  ptex->_width     = load_req._cmipchain->_width;
+  ptex->_height    = load_req._cmipchain->_height;
+  ptex->_depth     = 1;
   ptex->_texFormat = load_req._cmipchain->_format;
   ///////////////////////////////////////////////
-  auto keys = load_req._cmipchain->_varmap.dumpkeys();
-  printf("\nxtx w<%lu>\n", load_req._cmipchain->_width);
-  printf("xtx h<%lu>\n", load_req._cmipchain->_height);
-  printf("xtx d<%lu>\n", load_req._cmipchain->_depth);
-  printf("xtx fmt<%zx>\n", (uint64_t)load_req._cmipchain->_format);
-  for (auto k : keys) {
-    printf("xtx mipchain varmap-key<%s>\n", k.c_str());
-  }
-  for (auto k : ptex->_varmap.dumpkeys()) {
-    printf("xtx ptex varmap-key<%s>\n", k.c_str());
-  }
-
+  // auto keys = load_req._cmipchain->_varmap.dumpkeys();
+  // printf("\nxtx w<%lu>\n", load_req._cmipchain->_width);
+  // printf("xtx h<%lu>\n", load_req._cmipchain->_height);
+  // printf("xtx d<%lu>\n", load_req._cmipchain->_depth);
+  // printf("xtx fmt<%zx>\n", (uint64_t)load_req._cmipchain->_format);
+  // for (auto k : keys) {
+  // printf("xtx mipchain varmap-key<%s>\n", k.c_str());
+  //}
+  // for (auto k : ptex->_varmap.dumpkeys()) {
+  // printf("xtx ptex varmap-key<%s>\n", k.c_str());
+  //}
   void_lambda_t lamb = [=]() {
     /////////////////////////////////////////////
     // texture preprocssing, if any..
@@ -78,24 +77,24 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
   int inummips = req._cmipchain->_levels.size();
   OrkAssert(inummips > 0);
   GL_ERRORCHECK();
-  printf("inummips<%d>\n", inummips);
+  // printf("inummips<%d>\n", inummips);
   for (int imip = 0; imip < inummips; imip++) {
     auto& level = req._cmipchain->_levels[imip];
-    printf("mip<%d> w<%ld> h<%ld> len<%zu>\n", imip, level._width, level._height, level._data->length());
-    switch(req.ptex->_texFormat){
+    // printf("mip<%d> w<%ld> h<%ld> len<%zu>\n", imip, level._width, level._height, level._data->length());
+    switch (req.ptex->_texFormat) {
       case EBufferFormat::RGBA8:
-        glTexImage2D( //
-            GL_TEXTURE_2D,      // target
-            imip,               // miplevel
-            GL_RGBA8,           // internalformat
-            level._width,       // width
-            level._height,      // height
-            0,                  // border
-            GL_RGBA,            // format
-            GL_UNSIGNED_BYTE,   // datatype
+        glTexImage2D(         //
+            GL_TEXTURE_2D,    // target
+            imip,             // miplevel
+            GL_RGBA8,         // internalformat
+            level._width,     // width
+            level._height,    // height
+            0,                // border
+            GL_RGBA,          // format
+            GL_UNSIGNED_BYTE, // datatype
             level._data->data());
-           break;
-      #if ! defined(__APPLE__)
+        break;
+#if !defined(__APPLE__)
       case EBufferFormat::RGBA_BPTC_UNORM:
         glCompressedTexImage2D( //
             GL_TEXTURE_2D,      //
@@ -106,11 +105,11 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
             0,
             level._data->length(),
             level._data->data());
-          break;
-      #endif
+        break;
+#endif
       default:
-          OrkAssert(false);
-          break;
+        OrkAssert(false);
+        break;
     }
     GL_ERRORCHECK();
   }

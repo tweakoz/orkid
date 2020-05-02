@@ -577,21 +577,6 @@ void ContextGL::initializeOffscreenContext(OffscreenBuffer* pBuf) {
   auto texture = _defaultRTG->GetMrt(0)->texture();
   FBI()->SetBufferTexture(texture);
 
-  ///////////////////////////////////////////
-  // create material
-
-  GfxMaterialUITextured* pmtl = new GfxMaterialUITextured(this);
-  pBuf->SetMaterial(pmtl);
-  pmtl->SetTexture(ETEXDEST_DIFFUSE, texture);
-  pBuf->SetTexture(texture);
-
-  //	makeCurrentContext();
-
-  //////////////////////////////////////////////
-
-  // mFbI.InitializeContext( pBuf );
-  //////////////////////////////////////////////
-
   pBuf->SetContext(this);
 }
 

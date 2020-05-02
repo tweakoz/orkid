@@ -11,8 +11,8 @@ namespace ork::lev2::orkidvr {
 ////////////////////////////////////////////////////////////////////////////////
 
 Device::Device()
-    : _width(1024)
-    , _height(1024)
+    : _width(128)
+    , _height(128)
     , _active(false)
     , _supportsStereo(false)
     , _hmdinputgroup(*lev2::InputManager::inputGroup("hmd"))
@@ -90,22 +90,22 @@ void Device::_updatePosesCommon() {
         fvec2 nz_xz = nzaccum.GetXZ().Normal();
         fvec3 nz    = fvec3(nz_xz.x, 0.0f, nz_xz.y).Normal();
         fvec3 nx    = ny.Cross(nz);
-        printf("nx<%g %g %g>\n", nx.x, nx.y, nx.z);
-        printf("ny<%g %g %g>\n", ny.x, ny.y, ny.z);
-        printf("nz<%g %g %g>\n", nz.x, nz.y, nz.z);
-        printf("avgpos<%g %g %g>\n", avgpos.x, avgpos.y, avgpos.z);
+        // printf("nx<%g %g %g>\n", nx.x, nx.y, nx.z);
+        // printf("ny<%g %g %g>\n", ny.x, ny.y, ny.z);
+        // printf("nz<%g %g %g>\n", nz.x, nz.y, nz.z);
+        // printf("avgpos<%g %g %g>\n", avgpos.x, avgpos.y, avgpos.z);
         fmtx4 avgrotmtx;
         avgrotmtx.fromNormalVectors(nx, ny, nz);
         fmtx4 avgtramtx;
         avgtramtx.SetTranslation(avgpos);
         fmtx4 refmtx = avgtramtx * avgrotmtx;
         _baseMatrix.SetTranslation(hmd.inverse().GetTranslation());
-        deco::prints(hmd.dump4x3cn(), true);
-        deco::prints(hmd.inverse().dump4x3cn(), true);
+        // deco::prints(hmd.dump4x3cn(), true);
+        // deco::prints(hmd.inverse().dump4x3cn(), true);
         deco::printf(fvec3::Yellow(), "vrstate: calibrated\n");
-        deco::prints(avgrotmtx.dump4x3cn(), true);
-        deco::prints(refmtx.dump4x3cn(), true);
-        deco::prints(_baseMatrix.dump4x3cn(), true);
+        // deco::prints(avgrotmtx.dump4x3cn(), true);
+        // deco::prints(refmtx.dump4x3cn(), true);
+        // deco::prints(_baseMatrix.dump4x3cn(), true);
         _calibstate = 2;
       } else {
         _calibposvect.push_back(hmdpos);

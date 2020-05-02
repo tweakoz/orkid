@@ -8,6 +8,7 @@
 import math, _shaders
 from orkengine.core import *
 from orkengine.lev2 import *
+tokens = CrcStringProxy()
 ################################################################################
 class PyOrkApp(object):
   ################################################
@@ -49,8 +50,10 @@ class PyOrkApp(object):
     material_inst.stereoTek = material.shader.technique("std_stereo")
     param_volumetex = material.shader.param("VolumeMap")
     param_v4parref = material.shader.param("testvec4")
-    material.setInstanceMvpParams(material_inst,"mvp","mvpL","mvpR")
     self.v4parref = vec4()
+    material_inst.param[material.param("mvp")] = tokens.RCFD_Camera_MVP_Mono
+    material_inst.param[material.param("mvpL")] = tokens.RCFD_Camera_MVP_Left
+    material_inst.param[material.param("mvpR")] = tokens.RCFD_Camera_MVP_Right
     material_inst.param[param_v4parref] = self.v4parref
     material_inst.param[param_volumetex] = volumetexture
     self.primnode = prim.createNode("node1",layer,material_inst)

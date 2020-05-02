@@ -41,13 +41,13 @@ struct VRIMPL {
   void gpuInit(lev2::Context* pTARG) {
     if (_doinit) {
       pTARG->debugPushGroup("VRIMPL::gpuInit");
-      _width  = orkidvr::device()._width * 2;
-      _height = orkidvr::device()._height;
+      int width  = orkidvr::device()._width * 2;
+      int height = orkidvr::device()._height;
       _blit2screenmtl.SetUserFx("orkshader://solid", "texcolor");
       _blit2screenmtl.Init(pTARG);
 
-      _rtg            = new RtGroup(pTARG, _width, _height, 1);
-      auto buf        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA8, _width, _height);
+      _rtg            = new RtGroup(pTARG, width, height, 1);
+      auto buf        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA8, width, height);
       buf->_debugName = "WtfVrRt";
       _rtg->SetMrt(0, buf);
 
@@ -137,9 +137,11 @@ struct VRIMPL {
     ///////////////////////////////////
 
     auto& VRDEV = orkidvr::device();
+    int width   = VRDEV._width * 2;
+    int height  = VRDEV._height;
 
-    drawdata._properties["OutputWidth"_crcu].Set<int>(_width);
-    drawdata._properties["OutputHeight"_crcu].Set<int>(_height);
+    drawdata._properties["OutputWidth"_crcu].Set<int>(width);
+    drawdata._properties["OutputHeight"_crcu].Set<int>(height);
     bool doing_stereo = (use_vr and VRDEV._supportsStereo);
     drawdata._properties["StereoEnable"_crcu].Set<bool>(doing_stereo);
     if (simrunning)
@@ -173,8 +175,6 @@ struct VRIMPL {
   CompositingPassData _CPD;
   fmtx4 _viewOffsetMatrix;
   RtGroup* _rtg                      = nullptr;
-  int _width                         = 0;
-  int _height                        = 0;
   bool _doinit                       = true;
   CameraMatrices* _tmpcameramatrices = nullptr;
   ork::lev2::GfxMaterial3DSolid _blit2screenmtl;
