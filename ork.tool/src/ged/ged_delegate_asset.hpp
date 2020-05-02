@@ -99,30 +99,33 @@ template <typename IODriver> void GedAssetNode<IODriver>::OnCreateObject() {
         asset::Asset* poldasset = rtti::autocast(poldobject);
 
         if (poldasset) {
-          lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
-          {
+          lev2::GfxEnv::atomicOp([]() {
             // poldasset- Load(true);
             // = DynAssetManager::GetRef().LoadManaged( anno.c_str(),
             // passet->GetAssetName().c_str(), true );
-          }
-          lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
+          });
           mIoDriver.SetValue(poldasset);
         }
       } else {
         asset::asset_ptr_t asset;
         // dont worry, if pname doesnt start with "data://", DynAssetManager
         // will prepend it
+        auto orkprop = GetOrkProp();
+        auto anno    = orkprop->annotation(ConstString("asset.deserialize.vargen"));
+        if (auto as_gen = anno.template TryAs<asset::AssetCategory::vars_gen_t>()) {
+          OrkAssert(false);
+          // const auto& assetvars = as_gen.value()(deserializer._currentObject);
+          // auto declared         = DeclareAsset(asset_type, asset_name, assetvars);
+          // value                 = declared.get();
+        }
         asset = passetclass->DeclareAsset(pname.c_str());
         if (asset) {
           mIoDriver.SetValue(asset.get());
         }
-        lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
-        {
-          if (asset) {
+        lev2::GfxEnv::atomicOp([]() {
+          if (asset)
             asset->Load();
-          }
-        }
-        lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
+        });
         OrkAssert(asset);
         // mModel.SigNewObject(passet);
       }

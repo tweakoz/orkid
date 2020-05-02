@@ -552,6 +552,8 @@ public:
 #endif
   //////////////////////////////////////////////////////////////////////////////
 
+  static void atomicOp(recursive_mutex::atomicop_t op);
+
   static void setContextClass(const rtti::Class* pclass) {
     gpTargetClass = pclass;
   }

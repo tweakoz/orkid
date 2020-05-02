@@ -181,6 +181,12 @@ GfxEnv::GfxEnv()
 
 /////////////////////////////////////////////////////////////////////////
 
+void GfxEnv::atomicOp(recursive_mutex::atomicop_t op) {
+  GetRef().mGfxEnvMutex.atomicOp(op);
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 void GfxEnv::RegisterWinContext(Window* pWin) {
   // orkprintf("GfxEnv::RegisterWinContext\n");
   // gfxenvlateinit();

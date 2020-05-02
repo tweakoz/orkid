@@ -266,7 +266,7 @@ DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
   // texture postprocessor for generating equirectangular environment
   //  PBR irradiance diffuse and specular maps
   ///////////////////////////////////////////////////////////////
-
+  printf("WTFWTFTJFKSHDFKJSHDFKSDF\n");
   _texAssetVarMap.makeValueForKey<Texture::proc_t>("postproc") =
       [this](Texture* tex, Context* targ, datablockptr_t datablock) -> datablockptr_t {
     printf(

@@ -34,22 +34,14 @@ Viewport::Viewport(const std::string& name, int x, int y, int w, int h, fcolor3 
 
 void Viewport::BeginFrame(lev2::Context* pTARG) {
   ork::lev2::FontMan::GetRef();
-  //////////////////////////////////////////////////////////
-  // GfxEnv::GetRef().GetGlobalLock().Lock(); // InterThreadLock
-  //////////////////////////////////////////////////////////
   pTARG->debugPushGroup("Viewport::BeginFrame");
-
   pTARG->beginFrame();
-
   mbDrawOK = pTARG->IsDeviceAvailable();
-
   if (mbDrawOK) {
     // orkprintf( "BEG Viewport::BeginFrame::mbDrawOK\n" );
     auto MatOrtho = fmtx4::Identity();
     MatOrtho.Ortho(0.0f, (F32)GetW(), 0.0f, (F32)GetH(), 0.0f, 1.0f);
-
     pTARG->MTXI()->SetOrthoMatrix(MatOrtho);
-
     ork::lev2::ViewportRect SciRect(miX, miY, miW, miH);
     pTARG->FBI()->pushScissor(SciRect);
     pTARG->MTXI()->PushPMatrix(pTARG->MTXI()->GetOrthoMatrix());
@@ -66,10 +58,6 @@ void Viewport::EndFrame(lev2::Context* pTARG) {
     pTARG->FBI()->popScissor();
   }
   pTARG->endFrame();
-  //////////////////////////////////////////////////////////
-  // GfxEnv::GetRef().GetGlobalLock().UnLock(); // InterThreadLock
-  //////////////////////////////////////////////////////////
-
   mbDrawOK = false;
   pTARG->debugPopGroup();
 }

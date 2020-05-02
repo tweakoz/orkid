@@ -324,11 +324,9 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablockptr_t datablock) {
           ////////////////////////////////////////////////////////////////////////
           // printf( "XGMLOAD vbfmt<%s> efmt<%d>\n", vbfmt, int(efmt) );
           ////////////////////////////////////////////////////////////////////////
-          // lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
           cluster->_vertexBuffer = VertexBufferBase::CreateVertexBuffer(efmt, ivbnum, true);
           void* pverts           = (void*)(ModelDataStream->GetDataAt(ivboffset));
           int ivblen             = ivbnum * ivbsize;
-
           // printf("ReadVB NumVerts<%d> VtxSize<%d>\n", ivbnum, pvb->GetVtxSize());
           void* poutverts = context->GBI()->LockVB(*cluster->_vertexBuffer.get(), 0, ivbnum); // ivblen );
           {
@@ -347,7 +345,6 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablockptr_t datablock) {
             }
           }
           context->GBI()->UnLockVB(*cluster->_vertexBuffer.get());
-          // lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
           ////////////////////////////////////////////////////////////////////////
           for (int32_t ipg = 0; ipg < numprimgroups; ipg++) {
             auto newprimgroup = std::make_shared<XgmPrimGroup>();

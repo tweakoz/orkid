@@ -20,6 +20,7 @@
 namespace ork {
 class recursive_mutex {
 public:
+  typedef std::function<void()> atomicop_t;
   recursive_mutex(const char* name)
       : mTheMutex()
       , mName(name)
@@ -42,6 +43,11 @@ public:
       miLockCount++;
     }
     return bv;
+  }
+  void atomicOp(atomicop_t op) {
+    Lock();
+    op();
+    UnLock();
   }
   int GetLockCount() const {
     return miLockCount;
