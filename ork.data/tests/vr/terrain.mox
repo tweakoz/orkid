@@ -72,42 +72,42 @@
                                         <property name='AnimationMap'>
                                             <item key='attack1'>
                                                 <reference category='AssetClass'>
-                                                    "xganim" "data:///actors/diver/diver_attack1"
+                                                    "xganim" "data://src/actors/diver/diver_attack1"
                                                 </reference>
                                             </item>
                                             <item key='attack2'>
                                                 <reference category='AssetClass'>
-                                                    "xganim" "data:///actors/diver/diver_attack2"
+                                                    "xganim" "data://src/actors/diver/diver_attack2"
                                                 </reference>
                                             </item>
                                             <item key='attack3'>
                                                 <reference category='AssetClass'>
-                                                    "xganim" "data:///actors/diver/diver_attack3"
+                                                    "xganim" "data://src/actors/diver/diver_attack3"
                                                 </reference>
                                             </item>
                                             <item key='idle'>
                                                 <reference category='AssetClass'>
-                                                    "xganim" "data:///actors/diver/diver_idle"
+                                                    "xganim" "data://src/actors/diver/diver_idle"
                                                 </reference>
                                             </item>
                                             <item key='jump'>
                                                 <reference category='AssetClass'>
-                                                    "xganim" "data:///actors/diver/diver_jump"
+                                                    "xganim" "data://src/actors/diver/diver_jump"
                                                 </reference>
                                             </item>
                                             <item key='run'>
                                                 <reference category='AssetClass'>
-                                                    "xganim" "data:///actors/diver/diver_run"
+                                                    "xganim" "data://src/actors/diver/diver_run"
                                                 </reference>
                                             </item>
                                             <item key='start'>
                                                 <reference category='AssetClass'>
-                                                    "xganim" "data:///actors/diver/diver_idle"
+                                                    "xganim" "data://src/actors/diver/diver_idle"
                                                 </reference>
                                             </item>
                                             <item key='walk'>
                                                 <reference category='AssetClass'>
-                                                    "xganim" "data:///actors/diver/diver_walk"
+                                                    "xganim" "data://src/actors/diver/diver_walk"
                                                 </reference>
                                             </item>
                                         </property>
@@ -458,7 +458,7 @@
                                                                 <property name='Color'>0 -50000 -80000</property>
                                                                 <property name='Cookie'>
                                                                     <reference category='AssetClass'>
-                                                                        "lev2tex" "data://particle_textures/skull1"
+                                                                        "lev2tex" "data://src/particle_textures/skull1"
                                                                     </reference>
                                                                 </property>
                                                                 <property name='Decal'>false</property>
@@ -559,7 +559,7 @@
                                         <property name='MaterialOverrides'></property>
                                         <property name='Model'>
                                             <reference category='AssetClass'>
-                                                "xgmodel" "data://actors/diver/ref/diver2017"
+                                                "xgmodel" "data://src/actors/diver/ref/diver2017"
                                             </reference>
                                         </property>
                                         <property name='Offset'>0 0 0</property>
@@ -815,7 +815,7 @@
                                         <property name='MaterialOverrides'></property>
                                         <property name='Model'>
                                             <reference category='AssetClass'>
-                                                "xgmodel" "data://environ/objects/misc/sph1"
+                                                "xgmodel" "data://src/environ/objects/misc/sph1"
                                             </reference>
                                         </property>
                                         <property name='Offset'>0 0 0</property>
@@ -1143,7 +1143,7 @@
                                                                                         <property name='EnvironmentMipScale'>0</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
-                                                                                                "lev2tex" "data://environ/envmaps/tozenv_nebula"
+                                                                                                "lev2tex" "data://src/environ/envmaps/tozenv_nebula"
                                                                                             </reference>
                                                                                         </property>
                                                                                         <property name='SkyboxLevel'>1.33588</property>
