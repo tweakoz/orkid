@@ -445,7 +445,7 @@ void SceneData::cleanup() {
   its          = _systemDatas.find(vsdname);
   if (its == _systemDatas.end()) {
     auto vsd              = new VrSystemData;
-    _systemDatas[lsdname] = vsd;
+    _systemDatas[vsdname] = vsd;
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
