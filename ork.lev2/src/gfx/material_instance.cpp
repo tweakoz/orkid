@@ -10,9 +10,37 @@
 
 namespace ork::lev2 {
 /////////////////////////////////////////////////////////////////////////
-// GfxMaterialInstance::GfxMaterialInstance(material_ptr_t mtl)
-//  : _material(mtl) {
-//}
+FxShaderTechniquePermutations::FxShaderTechniquePermutations() {
+  _mono   = std::make_shared<FxShaderTechniquePermA>();
+  _stereo = std::make_shared<FxShaderTechniquePermA>();
+  _pick   = std::make_shared<FxShaderTechniquePermA>();
+}
+/////////////////////////////////////////////////////////////////////////
+fxtechnique_constptr_t FxShaderTechniquePermutations::select(PermBase base, bool skinned, bool instanced) {
+  fxshadertechperma_ptr_t base_permutation;
+  switch (base) {
+    case MONO:
+      base_permutation = _mono;
+      break;
+    case STEREO:
+      base_permutation = _stereo;
+      break;
+    case PICK:
+      base_permutation = _pick;
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  if (skinned)
+    return instanced //
+               ? base_permutation->_skinned_instanced
+               : base_permutation->_skinned;
+  else               // rigid
+    return instanced //
+               ? base_permutation->_rigid_instanced
+               : base_permutation->_rigid;
+}
 /////////////////////////////////////////////////////////////////////////
 void GfxMaterialInstance::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall) {
   int inumpasses = beginBlock(RCID);
@@ -24,27 +52,6 @@ void GfxMaterialInstance::wrappedDrawCall(const RenderContextInstData& RCID, voi
   }
   endBlock(RCID);
 }
-////////////////////////////////////////////
-/*void GfxMaterialInstance::setInstanceMvpParams(
-    std::string monocam, //
-    std::string stereocamL,
-    std::string stereocamR) {
-  if (auto mvp_mono = this->param(monocam)) {
-    crcstring_ptr_t tok_mono = std::make_shared<CrcString>("RCFD_Camera_MVP_Mono");
-    materialinst->_params[mvp_mono].Set<crcstring_ptr_t>(tok_mono);
-    printf("tok_mono<0x%zx:%zu>\n", tok_mono->hashed(), tok_mono->hashed());
-  }
-  if (auto mvp_left = this->param(stereocamL)) {
-    crcstring_ptr_t tok_stereoL = std::make_shared<CrcString>("RCFD_Camera_MVP_Left");
-    materialinst->_params[mvp_left].Set<crcstring_ptr_t>(tok_stereoL);
-    printf("tok_stereoL<0x%zx:%zu>\n", tok_stereoL->hashed(), tok_stereoL->hashed());
-  }
-  if (auto mvp_right = this->param(stereocamR)) {
-    crcstring_ptr_t tok_stereoR = std::make_shared<CrcString>("RCFD_Camera_MVP_Right");
-    materialinst->_params[mvp_right].Set<crcstring_ptr_t>(tok_stereoR);
-    printf("tok_stereoR<0x%zx:%zu>\n", tok_stereoR->hashed(), tok_stereoR->hashed());
-  }
-}*/
 ///////////////////////////////////////////////////////////////////////////////
 int GfxMaterialInstance::beginBlock(const RenderContextInstData& RCID) {
   auto context    = RCID._RCFD->GetTarget();
@@ -53,17 +60,18 @@ int GfxMaterialInstance::beginBlock(const RenderContextInstData& RCID) {
   bool is_stereo  = CPD.isStereoOnePass();
   auto FXI        = context->FXI();
   // auto tek     = minst->valueForKey("technique").Get<fxtechnique_constptr_t>();
-  auto tek = is_stereo ? _stereoTek : _monoTek;
-  if (is_picking) {
-    if (_pickTek)
-      return FXI->BeginBlock(_pickTek, RCID);
-  } else {
-    if (is_stereo and _stereoTek)
-      return FXI->BeginBlock(_stereoTek, RCID);
-    else if (_monoTek)
-      return FXI->BeginBlock(_monoTek, RCID);
+
+  FxShaderTechniquePermutations::PermBase baseperm;
+  if (is_picking)
+    baseperm = FxShaderTechniquePermutations::PermBase::PICK;
+  else {
+    if (is_stereo)
+      baseperm = FxShaderTechniquePermutations::PermBase::STEREO;
+    else
+      baseperm = FxShaderTechniquePermutations::PermBase::MONO;
   }
-  return 0;
+  auto tek = _teks.select(baseperm, false, false);
+  return FXI->BeginBlock(tek, RCID);
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool GfxMaterialInstance::beginPass(const RenderContextInstData& RCID, int ipass) {

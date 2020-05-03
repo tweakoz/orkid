@@ -82,21 +82,6 @@ struct FxShaderTechnique {
   }
 };
 
-struct FxShaderTechniquePermA {
-  const FxShaderTechnique* _rigid             = nullptr;
-  const FxShaderTechnique* _skinned           = nullptr;
-  const FxShaderTechnique* _rigid_instanced   = nullptr;
-  const FxShaderTechnique* _skinned_instanced = nullptr;
-};
-
-struct FxShaderTechniquePermutations {
-  enum PermBase { MONO = 0, STEREO, PICK };
-  inline const FxShaderTechnique* select(PermBase base, bool skinned, bool instanced) {
-    return nullptr;
-  }
-  FxShaderTechniquePermA _mono, _stereo, _pick;
-};
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FxShaderParamInBlockInfo {

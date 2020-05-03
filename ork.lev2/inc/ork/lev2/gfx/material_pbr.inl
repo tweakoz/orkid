@@ -105,8 +105,6 @@ public:
   Texture* _texMtlRuf = nullptr;
   std::string _textureBaseName;
 
-  FxShaderTechniquePermutations _tekperms;
-
   const FxShaderTechnique* _tekRigidGBUFFER              = nullptr;
   const FxShaderTechnique* _tekRigidGBUFFER_SKINNED_N    = nullptr;
   const FxShaderTechnique* _tekRigidGBUFFER_N            = nullptr;

@@ -23,6 +23,23 @@ using materialinst_ptr_t      = std::shared_ptr<GfxMaterialInstance>;
 using materialinst_constptr_t = std::shared_ptr<const GfxMaterialInstance>;
 
 ///////////////////////////////////////////////////////////////////////////////
+
+struct FxShaderTechniquePermA {
+  fxtechnique_constptr_t _rigid;
+  fxtechnique_constptr_t _skinned;
+  fxtechnique_constptr_t _rigid_instanced;
+  fxtechnique_constptr_t _skinned_instanced;
+};
+using fxshadertechperma_ptr_t = std::shared_ptr<FxShaderTechniquePermA>;
+
+struct FxShaderTechniquePermutations {
+  enum PermBase { MONO = 0, STEREO, PICK };
+  FxShaderTechniquePermutations();
+  fxtechnique_constptr_t select(PermBase base, bool skinned, bool instanced);
+  fxshadertechperma_ptr_t _mono, _stereo, _pick;
+};
+
+///////////////////////////////////////////////////////////////////////////////
 // GfxMaterialInstance : instance of a material "class"
 //  with independent parameter values
 ///////////////////////////////////////////////////////////////////////////////
@@ -35,10 +52,8 @@ struct GfxMaterialInstance : public std::enable_shared_from_this<GfxMaterialInst
 
   void wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall);
 
-  using varval_t                    = varmap::VarMap::value_type;
-  fxtechnique_constptr_t _monoTek   = nullptr;
-  fxtechnique_constptr_t _pickTek   = nullptr;
-  fxtechnique_constptr_t _stereoTek = nullptr;
+  using varval_t = varmap::VarMap::value_type;
+  FxShaderTechniquePermutations _teks;
   std::unordered_map<fxparam_constptr_t, varval_t> _params;
 };
 
