@@ -122,7 +122,7 @@ template <typename IODriver> void GedAssetNode<IODriver>::OnCreateObject() {
         if (asset) {
           mIoDriver.SetValue(asset.get());
         }
-        lev2::GfxEnv::atomicOp([]() {
+        lev2::GfxEnv::atomicOp([=]() {
           if (asset)
             asset->Load();
         });
