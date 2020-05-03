@@ -9,6 +9,7 @@
 #include <ork/kernel/opq.h>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/prop.hpp>
+#include <ork/util/crc.h>
 #include <ork/file/path.h>
 #include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/dbgfontman.h>
@@ -276,34 +277,34 @@ bool PBRMaterial::BeginPass(Context* targ, int iPass) {
     modcolor = targ->RefModColor();
     // printf("modcolor<%g %g %g %g>\n", modcolor.x, modcolor.y, modcolor.z, modcolor.w);
   } else {
-    fxi->BindParamCTex( _paramMapColor, _texColor);
-    fxi->BindParamCTex( _paramMapNormal, _texNormal);
-    fxi->BindParamCTex( _paramMapMtlRuf, _texMtlRuf);
-    fxi->BindParamFloat( _parMetallicFactor, _metallicFactor);
-    fxi->BindParamFloat( _parRoughnessFactor, _roughnessFactor);
+    fxi->BindParamCTex(_paramMapColor, _texColor);
+    fxi->BindParamCTex(_paramMapNormal, _texNormal);
+    fxi->BindParamCTex(_paramMapMtlRuf, _texMtlRuf);
+    fxi->BindParamFloat(_parMetallicFactor, _metallicFactor);
+    fxi->BindParamFloat(_parRoughnessFactor, _roughnessFactor);
     auto brdfintegtex = PBRMaterial::brdfIntegrationMap(targ);
     const auto& drect = CPD.GetDstRect();
     const auto& mrect = CPD.GetMrtRect();
     float w           = mrect._w;
     float h           = mrect._h;
-    fxi->BindParamVect2( _parInvViewSize, fvec2(1.0 / w, 1.0f / h));
+    fxi->BindParamVect2(_parInvViewSize, fvec2(1.0 / w, 1.0f / h));
   }
 
-  fxi->BindParamVect4( _parModColor, modcolor);
-  fxi->BindParamMatrix( _paramMV, mvmtx);
+  fxi->BindParamVect4(_parModColor, modcolor);
+  fxi->BindParamMatrix(_paramMV, mvmtx);
 
   if (CPD.isStereoOnePass() and CPD._stereoCameraMatrices) {
     auto stereomtx = CPD._stereoCameraMatrices;
     auto MVPL      = stereomtx->MVPL(world);
     auto MVPR      = stereomtx->MVPR(world);
-    fxi->BindParamMatrix( _paramMVPL, MVPL);
-    fxi->BindParamMatrix( _paramMVPR, MVPR);
-    fxi->BindParamMatrix( _paramMROT, (world).rotMatrix33());
+    fxi->BindParamMatrix(_paramMVPL, MVPL);
+    fxi->BindParamMatrix(_paramMVPR, MVPR);
+    fxi->BindParamMatrix(_paramMROT, (world).rotMatrix33());
   } else {
     auto mcams = CPD._cameraMatrices;
     auto MVP   = world * mcams->_vmatrix * mcams->_pmatrix;
-    fxi->BindParamMatrix( _paramMVP, MVP);
-    fxi->BindParamMatrix( _paramMROT, (world).rotMatrix33());
+    fxi->BindParamMatrix(_paramMVP, MVP);
+    fxi->BindParamMatrix(_paramMROT, (world).rotMatrix33());
   }
   rsi->BindRasterState(_rasterstate);
   fxi->CommitParams();
@@ -374,7 +375,7 @@ void PbrMatrixBlockApplicator::ApplyToTarget(Context* targ) // virtual
       const auto& b = Matrices[i];
       b.dump(FormatString("pbr-bone<%d>", i));
     }
-  fxi->BindParamMatrixArray( _pbrmaterial->_parBoneMatrices, Matrices, (int)inumbones);
+  fxi->BindParamMatrixArray(_pbrmaterial->_parBoneMatrices, Matrices, (int)inumbones);
   fxi->CommitParams();
 }
 
@@ -399,15 +400,15 @@ void PBRMaterial::setupCamera(const RenderContextFrameData& RCFD) {
     auto MVPL      = stereomtx->MVPL(world);
     auto MVPR      = stereomtx->MVPR(world);
     // todo fix for stereo..
-    FXI->BindParamMatrix( _paramMVPL, MVPL);
-    FXI->BindParamMatrix( _paramMVPR, MVPR);
+    FXI->BindParamMatrix(_paramMVPL, MVPL);
+    FXI->BindParamMatrix(_paramMVPR, MVPR);
   } else if (CPD._cameraMatrices) {
     auto mcams = CPD._cameraMatrices;
     auto MVP   = world * mcams->_vmatrix * mcams->_pmatrix;
-    FXI->BindParamMatrix( _paramMVP, MVP);
+    FXI->BindParamMatrix(_paramMVP, MVP);
   } else {
     auto MVP = MTXI->RefMVPMatrix();
-    FXI->BindParamMatrix( _paramMVP, MVP);
+    FXI->BindParamMatrix(_paramMVP, MVP);
   }
 }
 
@@ -419,6 +420,33 @@ void PBRMaterial::begin(const RenderContextFrameData& RCFD) {
 ////////////////////////////////////////////
 
 void PBRMaterial::end(const RenderContextFrameData& RCFD) {
+}
+
+////////////////////////////////////////////
+
+materialinst_constptr_t PBRMaterial::createFxInstance() const {
+
+  auto perms               = std::make_shared<FxShaderTechniquePermutations>();
+  auto inst                = std::make_shared<GfxMaterialInstance>();
+  perms->_mono->_rigid     = _tekRigidGBUFFER_N;
+  perms->_stereo->_rigid   = _tekRigidGBUFFER_N_STEREO;
+  perms->_stereo->_skinned = _tekRigidGBUFFER_SKINNED_N;
+  perms->_pick->_rigid     = _tekRigidPICKING;
+
+  inst->_teks               = perms;
+  inst->_params[_paramMVP]  = "RCFD_Camera_MVP_Mono"_crcsh;
+  inst->_params[_paramMROT] = "RCFD_Model_Rot"_crcsh;
+  inst->_params[_paramMVPL] = "RCFD_Camera_MVP_Left"_crcsh;
+  inst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
+  inst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
+
+  inst->_params[_paramMapColor]  = _texColor;
+  inst->_params[_paramMapNormal] = _texNormal;
+  inst->_params[_paramMapMtlRuf] = _texMtlRuf;
+
+  inst->_params[_parMetallicFactor]  = _metallicFactor;
+  inst->_params[_parRoughnessFactor] = _roughnessFactor;
+  inst->_params[_parModColor]        = fvec4(1, 1, 1, 1);
 }
 
 ////////////////////////////////////////////

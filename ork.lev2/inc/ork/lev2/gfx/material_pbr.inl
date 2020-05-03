@@ -8,6 +8,7 @@
 #pragma once
 
 #include <ork/lev2/gfx/gfxmaterial.h>
+#include <ork/lev2/gfx/material_instance.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/lev2_asset.h>
@@ -78,39 +79,41 @@ public:
   void UnBindMaterialInstItem(MaterialInstItem* pitem) const override;
 
   ////////////////////////////////////////////
+  materialinst_constptr_t createFxInstance() const;
+  ////////////////////////////////////////////
   void setupCamera(const RenderContextFrameData& RCFD);
   ////////////////////////////////////////////
 
-  FxShader* _shader                        = nullptr;
-  Context* _initialTarget                  = nullptr;
-  const FxShaderParam* _paramMVP           = nullptr;
-  const FxShaderParam* _paramMVPL          = nullptr;
-  const FxShaderParam* _paramMVPR          = nullptr;
-  const FxShaderParam* _paramMV            = nullptr;
-  const FxShaderParam* _paramMROT          = nullptr;
-  const FxShaderParam* _paramMapColor      = nullptr;
-  const FxShaderParam* _paramMapNormal     = nullptr;
-  const FxShaderParam* _paramMapMtlRuf     = nullptr;
-  const FxShaderParam* _parInvViewSize     = nullptr;
-  const FxShaderParam* _parMetallicFactor  = nullptr;
-  const FxShaderParam* _parRoughnessFactor = nullptr;
-  const FxShaderParam* _parModColor        = nullptr;
-  const FxShaderParam* _parBoneMatrices    = nullptr;
+  FxShader* _shader                      = nullptr;
+  Context* _initialTarget                = nullptr;
+  fxparam_constptr_t _paramMVP           = nullptr;
+  fxparam_constptr_t _paramMVPL          = nullptr;
+  fxparam_constptr_t _paramMVPR          = nullptr;
+  fxparam_constptr_t _paramMV            = nullptr;
+  fxparam_constptr_t _paramMROT          = nullptr;
+  fxparam_constptr_t _paramMapColor      = nullptr;
+  fxparam_constptr_t _paramMapNormal     = nullptr;
+  fxparam_constptr_t _paramMapMtlRuf     = nullptr;
+  fxparam_constptr_t _parInvViewSize     = nullptr;
+  fxparam_constptr_t _parMetallicFactor  = nullptr;
+  fxparam_constptr_t _parRoughnessFactor = nullptr;
+  fxparam_constptr_t _parModColor        = nullptr;
+  fxparam_constptr_t _parBoneMatrices    = nullptr;
   ///////////////////////////////////////////
   // instancing (via texture)
-  const FxShaderParam* _paramInstanceMatrixMap = nullptr; // 1k*1k texture containing instance matrices
+  fxparam_constptr_t _paramInstanceMatrixMap = nullptr; // 1k*1k texture containing instance matrices
   ///////////////////////////////////////////
   Texture* _texColor  = nullptr;
   Texture* _texNormal = nullptr;
   Texture* _texMtlRuf = nullptr;
   std::string _textureBaseName;
 
-  const FxShaderTechnique* _tekRigidGBUFFER              = nullptr;
-  const FxShaderTechnique* _tekRigidGBUFFER_SKINNED_N    = nullptr;
-  const FxShaderTechnique* _tekRigidGBUFFER_N            = nullptr;
-  const FxShaderTechnique* _tekRigidGBUFFER_N_STEREO     = nullptr;
-  const FxShaderTechnique* _tekRigidGBUFFER_N_TEX_STEREO = nullptr;
-  const FxShaderTechnique* _tekRigidPICKING              = nullptr;
+  fxtechnique_constptr_t _tekRigidGBUFFER              = nullptr;
+  fxtechnique_constptr_t _tekRigidGBUFFER_SKINNED_N    = nullptr;
+  fxtechnique_constptr_t _tekRigidGBUFFER_N            = nullptr;
+  fxtechnique_constptr_t _tekRigidGBUFFER_N_STEREO     = nullptr;
+  fxtechnique_constptr_t _tekRigidGBUFFER_N_TEX_STEREO = nullptr;
+  fxtechnique_constptr_t _tekRigidPICKING              = nullptr;
 
   std::string _colorMapName;
   std::string _normalMapName;

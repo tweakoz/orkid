@@ -42,6 +42,10 @@ fxtechnique_constptr_t FxShaderTechniquePermutations::select(PermBase base, bool
                : base_permutation->_rigid;
 }
 /////////////////////////////////////////////////////////////////////////
+GfxMaterialInstance::GfxMaterialInstance() {
+  _teks = std::make_shared<FxShaderTechniquePermutations>();
+}
+/////////////////////////////////////////////////////////////////////////
 void GfxMaterialInstance::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall) {
   int inumpasses = beginBlock(RCID);
   for (int ipass = 0; ipass < inumpasses; ipass++) {
@@ -65,12 +69,11 @@ int GfxMaterialInstance::beginBlock(const RenderContextInstData& RCID) {
   if (is_picking)
     baseperm = FxShaderTechniquePermutations::PermBase::PICK;
   else {
-    if (is_stereo)
-      baseperm = FxShaderTechniquePermutations::PermBase::STEREO;
-    else
-      baseperm = FxShaderTechniquePermutations::PermBase::MONO;
+    baseperm = is_stereo //
+                   ? FxShaderTechniquePermutations::PermBase::STEREO
+                   : baseperm = FxShaderTechniquePermutations::PermBase::MONO;
   }
-  auto tek = _teks.select(baseperm, false, false);
+  auto tek = _teks->select(baseperm, false, false);
   return FXI->BeginBlock(tek, RCID);
 }
 ///////////////////////////////////////////////////////////////////////////////

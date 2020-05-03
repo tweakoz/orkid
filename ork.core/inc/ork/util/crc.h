@@ -135,7 +135,9 @@ constexpr uint64_t operator"" _crcu(const char* s, size_t len) {
   return crc32_recurse(KENDHASH, s);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+inline crcstring_ptr_t operator"" _crcsh(const char* s, size_t len) {
+  return std::make_shared<CrcString>(crc32_recurse(KENDHASH, s));
+}
 
 static_assert("Hello"_crcu == CrcString("Hello").hashed(), "CRC values don't match");
 

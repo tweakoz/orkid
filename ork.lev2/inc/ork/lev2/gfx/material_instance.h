@@ -18,9 +18,13 @@
 
 namespace ork::lev2 {
 
+struct FxShaderTechniquePermA;
+struct FxShaderTechniquePermutations;
 struct GfxMaterialInstance;
 using materialinst_ptr_t      = std::shared_ptr<GfxMaterialInstance>;
 using materialinst_constptr_t = std::shared_ptr<const GfxMaterialInstance>;
+using fxshadertechperma_ptr_t = std::shared_ptr<FxShaderTechniquePermA>;
+using fxshadertechperms_ptr_t = std::shared_ptr<FxShaderTechniquePermutations>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -30,7 +34,6 @@ struct FxShaderTechniquePermA {
   fxtechnique_constptr_t _rigid_instanced;
   fxtechnique_constptr_t _skinned_instanced;
 };
-using fxshadertechperma_ptr_t = std::shared_ptr<FxShaderTechniquePermA>;
 
 struct FxShaderTechniquePermutations {
   enum PermBase { MONO = 0, STEREO, PICK };
@@ -45,6 +48,9 @@ struct FxShaderTechniquePermutations {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GfxMaterialInstance : public std::enable_shared_from_this<GfxMaterialInstance> {
+
+  GfxMaterialInstance();
+
   int beginBlock(const RenderContextInstData& RCID);
   bool beginPass(const RenderContextInstData& RCID, int ipass);
   void endPass(const RenderContextInstData& RCID);
@@ -53,7 +59,7 @@ struct GfxMaterialInstance : public std::enable_shared_from_this<GfxMaterialInst
   void wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall);
 
   using varval_t = varmap::VarMap::value_type;
-  FxShaderTechniquePermutations _teks;
+  fxshadertechperms_ptr_t _teks;
   std::unordered_map<fxparam_constptr_t, varval_t> _params;
 };
 
