@@ -111,14 +111,14 @@ template <typename IODriver> void GedAssetNode<IODriver>::OnCreateObject() {
         // dont worry, if pname doesnt start with "data://", DynAssetManager
         // will prepend it
         auto orkprop = GetOrkProp();
+        auto orkobj  = GetOrkObj();
         auto anno    = orkprop->annotation(ConstString("asset.deserialize.vargen"));
         if (auto as_gen = anno.template TryAs<asset::AssetCategory::vars_gen_t>()) {
-          OrkAssert(false);
-          // const auto& assetvars = as_gen.value()(deserializer._currentObject);
-          // auto declared         = DeclareAsset(asset_type, asset_name, assetvars);
-          // value                 = declared.get();
-        }
-        asset = passetclass->DeclareAsset(pname.c_str());
+          const auto& assetvars = as_gen.value()(orkobj);
+          asset                 = passetclass->DeclareAsset(pname.c_str(), assetvars);
+        } else
+          asset = passetclass->DeclareAsset(pname.c_str());
+
         if (asset) {
           mIoDriver.SetValue(asset.get());
         }
