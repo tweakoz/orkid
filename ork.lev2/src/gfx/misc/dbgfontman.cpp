@@ -78,7 +78,8 @@ void FontMan::_endTextBlock(Context* pTARG) {
   mTextWriter.UnLock(pTARG);
   bool bdraw = mTextWriter.miWriteCounter != 0;
   if (bdraw) {
-    pTARG->GBI()->DrawPrimitive(mpCurrentFont->GetMaterial(), mTextWriter, ork::lev2::EPrimitiveType::TRIANGLES);
+    auto material = mpCurrentFont->GetMaterial();
+    pTARG->GBI()->DrawPrimitive(material, mTextWriter, ork::lev2::EPrimitiveType::TRIANGLES);
   }
 }
 
@@ -330,6 +331,22 @@ void FontMan::DrawText(Context* pTARG, int iX, int iY, const char* pFmt, ...) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void FontMan::DrawCenteredText(Context* pTARG, int iY, const char* pFmt, ...) {
+  fixedstring_t fxs;
+  va_list argp;
+  va_start(argp, pFmt);
+  vsnprintf(fxs.mutable_c_str(), KFIXEDSTRINGLEN, pFmt, argp);
+  va_end(argp);
+  auto font        = GetCurrentFont();
+  const auto& desc = font->mFontDesc;
+  int string_width = desc.stringWidth(fxs.length());
+  int TARGW        = pTARG->mainSurfaceWidth();
+  int center_x     = (TARGW >> 1) - (string_width >> 1);
+  instance()->_drawText(pTARG, center_x, iY, fxs);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 Font::Font(const std::string& fontname, const std::string& filename)
     : msFileName(filename)
     , msFontName(fontname) {
@@ -401,8 +418,10 @@ void Font::LoadFromDisk(Context* pTARG, const FontDesc& fdesc) {
   mpMaterial = new GfxMaterialUIText;
   mpMaterial->Init(pTARG);
   AssetPath apath(msFileName.c_str());
-  auto tex_asset = asset::AssetManager<ork::lev2::TextureAsset>::Load(apath.c_str());
-  auto ptex      = tex_asset->GetTexture();
+  auto txi                                             = pTARG->TXI();
+  auto ptex                                            = new Texture;
+  ptex->_varmap.makeValueForKey<bool>("loadimmediate") = true;
+  txi->LoadTexture(apath, ptex);
   mpMaterial->SetTexture(ETEXDEST_DIFFUSE, ptex);
   ptex->TexSamplingMode().PresetPointAndClamp();
   pTARG->TXI()->ApplySamplingMode(ptex);

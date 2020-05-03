@@ -65,7 +65,20 @@ template <typename VPTYPE> void UIToolHandler<VPTYPE>::LoadToolIcon() {
 template <typename VPTYPE> void UIToolHandler<VPTYPE>::DrawToolIcon(lev2::Context* pTARG, int ix, int iy, bool bhilite) {
   if (mpBaseIcon) {
     lev2::DynamicVertexBuffer<lev2::SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
-    lev2::GfxMaterialUITextured UiMatTex(pTARG);
+
+    lev2::GfxMaterialUITextured* texmaterial = nullptr;
+    if (auto try_mtl = mpBaseIcon->_varmap.typedValueForKey<lev2::GfxMaterialUITextured*>("iconmtl")) {
+      texmaterial = try_mtl.value();
+    } else {
+      texmaterial = //
+          new lev2::GfxMaterialUITextured(pTARG);
+      texmaterial->_rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
+      texmaterial->SetTexture(lev2::ETEXDEST_DIFFUSE, mpBaseIcon);
+      texmaterial->_rasterstate.SetBlending(lev2::EBLENDING_OFF);
+      texmaterial->_rasterstate.SetAlphaTest(lev2::EALPHATEST_OFF, 0.0f);
+      texmaterial->_rasterstate.SetDepthTest(lev2::EDEPTHTEST_ALWAYS);
+      mpBaseIcon->_varmap.makeValueForKey<lev2::GfxMaterialUITextured*>("iconmtl") = texmaterial;
+    }
     lev2::GfxMaterialUI UiMat(pTARG);
     int icount = bhilite ? 12 : 6;
     int ibase  = vb.GetNumVertices();
@@ -117,13 +130,8 @@ template <typename VPTYPE> void UIToolHandler<VPTYPE>::DrawToolIcon(lev2::Contex
         pTARG->PopModColor();
       }
       ////////////////////////////////
-      UiMatTex._rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
-      UiMatTex.SetTexture(lev2::ETEXDEST_DIFFUSE, mpBaseIcon);
-      UiMatTex._rasterstate.SetBlending(lev2::EBLENDING_OFF);
-      UiMatTex._rasterstate.SetAlphaTest(lev2::EALPHATEST_OFF, 0.0f);
-      UiMatTex._rasterstate.SetDepthTest(lev2::EDEPTHTEST_ALWAYS);
       pTARG->PushModColor(fcolor4::White());
-      pTARG->GBI()->DrawPrimitive(&UiMatTex, vb, lev2::EPrimitiveType::TRIANGLES, bhilite ? ibase + 6 : ibase, 6);
+      pTARG->GBI()->DrawPrimitive(texmaterial, vb, lev2::EPrimitiveType::TRIANGLES, bhilite ? ibase + 6 : ibase, 6);
       pTARG->PopModColor();
     }
     pTARG->MTXI()->PopUIMatrix();

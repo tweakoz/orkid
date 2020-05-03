@@ -2,6 +2,8 @@
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/dbgfontman.h>
+#include <QtWidgets/QStyle>
+#include <QtWidgets/QDesktopWidget>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::EzApp, "Lev2EzApp");
 using namespace std::string_literals;
@@ -107,7 +109,7 @@ qtezapp_ptr_t OrkEzQtApp::createWithScene(varmap::varmap_ptr_t sceneparams) {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct EzViewport : public ui::Viewport {
-
+  /////////////////////////////////////////////////
   EzViewport(EzMainWin* mainwin)
       : ui::Viewport("yo", 1, 1, 1, 1, fvec3(0, 0, 0), 1.0f)
       , _mainwin(mainwin) {
@@ -115,9 +117,11 @@ struct EzViewport : public ui::Viewport {
     _mainwin->_render_timer.Start();
     _mainwin->_render_prevtime = _mainwin->_render_timer.SecsSinceStart();
   }
+  /////////////////////////////////////////////////
   void DoInit(ork::lev2::Context* pTARG) final {
     pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
   }
+  /////////////////////////////////////////////////
   void DoDraw(ui::DrawEvent& drwev) final {
 
     bool do_gpu_init = bool(_mainwin->_onGpuInit);
@@ -158,10 +162,12 @@ struct EzViewport : public ui::Viewport {
       _mainwin->_render_state_numiters += 1.0;
     }
   }
+  /////////////////////////////////////////////////
   void DoSurfaceResize() final {
     if (_mainwin->_onResize)
       _mainwin->_onResize(GetW(), GetH());
   }
+  /////////////////////////////////////////////////
   ui::HandlerResult DoOnUiEvent(const ui::Event& ev) final {
     if (_mainwin->_onUiEvent)
       return _mainwin->_onUiEvent(ev);
@@ -170,6 +176,8 @@ struct EzViewport : public ui::Viewport {
   }
   EzMainWin* _mainwin;
 };
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 bool OrkEzQtApp::checkAppState(uint64_t singlebitmask) {
   uint64_t chk = _appstate.load() & singlebitmask;
   return chk == singlebitmask;
@@ -178,12 +186,13 @@ OrkEzQtAppBase* OrkEzQtAppBase::_staticapp = nullptr;
 OrkEzQtAppBase* OrkEzQtAppBase::get() {
   return _staticapp;
 }
+///////////////////////////////////////////////////////////////////////////////
 OrkEzQtAppBase::OrkEzQtAppBase(int& argc, char** argv)
     : QApplication(argc, argv) {
   _staticapp = this;
   _ezapp     = EzApp::get(argc, argv);
 }
-
+///////////////////////////////////////////////////////////////////////////////
 OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
     : OrkEzQtAppBase(argc, argv)
     , _updateThread("updatethread")
@@ -205,6 +214,13 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
   //////////////////////////////////////////////
 
   _mainWindow = new EzMainWin();
+
+  _mainWindow->setGeometry(QStyle::alignedRect(
+      Qt::LeftToRight, //
+      Qt::AlignCenter,
+      QSize(1280, 720),
+      qApp->desktop()->availableGeometry()));
+
   _mainWindow->show();
   _mainWindow->raise(); // for MacOS
 
@@ -232,6 +248,11 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
   _mainWindow->setCentralWidget(_mainWindow->_ctxw);
   //////////////////////////////////////////////
   _mainWindow->_ctqt->pushRefreshPolicy(RefreshPolicyItem{EREFRESH_WHENDIRTY});
+  /////////////////////////////////////////////
+  auto handler = [this](opq::progressdata_ptr_t data) { //
+    _mainWindow->_ctqt->progressHandler(data);
+  };
+  opq::setProgressHandler(handler);
 
   /////////////////////////////////////////////
   _updq  = ork::opq::updateSerialQueue();

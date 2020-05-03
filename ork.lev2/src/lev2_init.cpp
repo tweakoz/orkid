@@ -170,10 +170,7 @@ void GfxInit(const std::string& gfxlayer) {
 #endif
   }
   DrawableBuffer::gbInsideClearAndSync = false;
-  opq::backgroundSerialQueue();
-  opq::concurrentQueue();
-  opq::mainSerialQueue();
-  opq::updateSerialQueue();
+  opq::init();
 }
 
 StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {

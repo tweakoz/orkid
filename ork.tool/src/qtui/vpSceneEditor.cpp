@@ -9,6 +9,7 @@
 #include <ork/kernel/opq.h>
 #include <ork/kernel/thread.h>
 #include <ork/kernel/timer.h>
+#include <ork/kernel/string/deco.inl>
 #include <orktool/qtui/qtui_tool.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -244,10 +245,30 @@ SceneEditorView::SceneEditorView(SceneEditorVP* vp)
 
 void SceneEditorVP::DoInit(ork::lev2::Context* pTARG) {
   _pickbuffer = new ScenePickBuffer(this, pTARG);
-
-  pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
-
   // orkprintf("PickBuffer<%p>\n", _pickbuffer);
+  pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
+  //////////////////////////////////////////////////////////
+  // setup progress handler
+  //////////////////////////////////////////////////////////
+  auto handler = [this](opq::progressdata_ptr_t data) { //
+    this->drawProgressFrame(data);
+  };
+  opq::setProgressHandler(handler);
+  //////////////////////////////////////////////////////////
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+void SceneEditorVP::drawProgressFrame(opq::progressdata_ptr_t data) {
+  // auto name_str = deco::decorate(fvec3(1, 0.5, 0.1), data->_queue_name);
+  // auto grpn_str = deco::decorate(fvec3(1, 0.3, 0.0), data->_task_name);
+  // auto pend_str = deco::format(fvec3(1, 1, 0.1), "%d", data->_num_pending);
+  // printf(
+  //  "WTF opq<%s> CompletionGroup<%s> ops pending<%s>     \r", //
+  // name_str.c_str(),
+  // grpn_str.c_str(),
+  // pend_str.c_str());
+  _ctxbase->progressHandler(data);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -269,7 +290,6 @@ bool SceneEditorVP::isCompositorEnabled() {
 ///////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
-
   EASY_BLOCK("SceneEditorVP::DoDraw");
 
   if (nullptr == _ctxbase) {
@@ -529,7 +549,6 @@ void SceneEditorVP::renderMisc(lev2::RenderContextFrameData& RCFD) {
 ///////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::UpdateRefreshPolicy() {
-
   auto sim = simulation();
 
   if (nullptr == sim) {

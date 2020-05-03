@@ -233,8 +233,6 @@ GfxMaterialUITextured::GfxMaterialUITextured(Context* pTarg, const std::string& 
   _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
   _rasterstate.SetCullTest(ECULLTEST_OFF);
 
-  mTechniqueName = Technique;
-
   if (pTarg) {
     Init(pTarg);
   }
@@ -251,20 +249,24 @@ void GfxMaterialUITextured::EffectInit(void) {
 /////////////////////////////////////////////////////////////////////////
 
 void GfxMaterialUITextured::Init(ork::lev2::Context* pTarg) {
-  hModFX = asset::AssetManager<FxShaderAsset>::Load("orkshader://ui")->GetFxShader();
-  // printf( "HMODFX<%p> pTarg<%p>\n", hModFX, pTarg );
-  hTek = pTarg->FXI()->technique(hModFX, mTechniqueName);
+  if (hTek == nullptr) {
+    hModFX = asset::AssetManager<FxShaderAsset>::Load("orkshader://ui")->GetFxShader();
+    hTek   = pTarg->FXI()->technique(hModFX, mTechniqueName);
+    printf("HMODFX<%p> pTarg<%p> hTek<%p>\n", hModFX, pTarg, hTek);
 
-  hTransform = pTarg->FXI()->parameter(hModFX, "mvp");
-  hModColor  = pTarg->FXI()->parameter(hModFX, "ModColor");
-  hColorMap  = pTarg->FXI()->parameter(hModFX, "ColorMap");
+    hTransform = pTarg->FXI()->parameter(hModFX, "mvp");
+    hModColor  = pTarg->FXI()->parameter(hModFX, "ModColor");
+    hColorMap  = pTarg->FXI()->parameter(hModFX, "ColorMap");
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void GfxMaterialUITextured::Init(ork::lev2::Context* pTarg, const std::string& Technique) {
-  mTechniqueName = Technique;
-  Init(pTarg);
+  if (hTek == nullptr) {
+    mTechniqueName = Technique;
+    Init(pTarg);
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////

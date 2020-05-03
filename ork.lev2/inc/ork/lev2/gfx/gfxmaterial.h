@@ -60,6 +60,8 @@ struct MaterialInstItem {
       : mMaterial(0)
       , mApplicator(0) {
   }
+  virtual ~MaterialInstItem() {
+  }
   virtual void Set() = 0;
   void SetApplicator(MaterialInstApplicator* papplicator) {
     mApplicator = papplicator;

@@ -13,6 +13,7 @@
 
 #include <ork/kernel/core/singleton.h>
 #include <ork/kernel/timer.h>
+#include <ork/kernel/opq.h>
 
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/ui/ui.h>
@@ -24,7 +25,7 @@
 #include <ork/lev2/ui/event.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace lev2 {
+namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 /// ////////////////////////////////////////////////////////////////////////////
@@ -101,6 +102,8 @@ public:
     return v;
   }
 
+  void progressHandler(opq::progressdata_ptr_t data);
+
 protected:
   std::stack<RefreshPolicyItem> _policyStack;
 
@@ -111,10 +114,11 @@ protected:
   CTFLXID mxidThis;
   CTFLXID mxidTopLevel;
   bool mbInitialize;
+  svar16_t _pimpl_progress;
 
   RefreshPolicyItem _curpolicy;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::lev2
+} // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

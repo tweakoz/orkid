@@ -16,6 +16,31 @@
 template class ork::util::ContextTLS<ork::opq::TrackCurrent>;
 ///////////////////////////////////////////////////////////////////////
 namespace ork::opq {
+////////////////////////////////////////////////////////////////////////
+static opq_ptr_t _coordinatorSerialQueue() {
+  static opq_ptr_t _gq = std::make_shared<OperationsQueue>(1, "coordinatorSerialQueue");
+  return _gq;
+}
+//////////////////////////////////////////////////////////////////////
+static progress_handler_t g_handler = [](progressdata_ptr_t data) {
+  auto name_str = deco::decorate(fvec3(1, 0.5, 0.1), data->_queue_name);
+  auto grpn_str = deco::decorate(fvec3(1, 0.3, 0.0), data->_task_name);
+  auto pend_str = deco::format(fvec3(1, 1, 0.1), "%d", data->_num_pending);
+  printf(
+      "opq<%s> CompletionGroup<%s> ops pending<%s>     \r", //
+      name_str.c_str(),
+      grpn_str.c_str(),
+      pend_str.c_str());
+  ::usleep(10);
+};
+///////////////////////////////////////////////////////////////////////
+void setProgressHandler(progress_handler_t new_handler) {
+  mainSerialQueue()->enqueue([new_handler]() { //
+    g_handler = new_handler;
+  });
+}
+///////////////////////////////////////////////////////////////////////
+
 void dispersed_sleep(int idx, int iquantausec) {
   static const int ktabsize       = 16;
   static const int ktab[ktabsize] = {
@@ -47,28 +72,61 @@ void CompletionGroup::enqueue(const ork::void_lambda_t& the_op) {
   this->_numpending.fetch_add(1);
   auto wrapped = [=]() mutable {
     the_op();
-    int num_pending = this->_numpending.fetch_add(-1);
-
-    // todo hook up to editor UI somehow..
-
-    auto name_str = deco::decorate(fvec3(1, 0.5, 0.1), _q->_name);
-    auto grpn_str = deco::decorate(fvec3(1, 0.3, 0.0), _name);
-    auto pend_str = deco::format(fvec3(1, 1, 0.1), "%d", num_pending);
-    printf("opq<%s> CompletionGroup<%s> ops pending<%s>     \r", name_str.c_str(), grpn_str.c_str(), pend_str.c_str());
+    /////////////////////////////////////
+    // update UI with progress ?
+    /////////////////////////////////////
+    if (_reportToUI) {
+      auto data          = std::make_shared<ProgressData>();
+      data->_queue_name  = _q->_name;
+      data->_task_name   = _name;
+      data->_num_pending = this->_numpending.fetch_add(-1);
+      _progressq.atomicOp([data](progressdata_queue_t& pq) { pq.push(data); });
+      /////////////////////////////////////
+    };
   };
   _q->enqueue(wrapped);
 }
+////////////////////////////////////////////////////////////////////////////////
 void CompletionGroup::join() {
   // todo implement with something better than sleep
   while (_numpending.load()) {
-    ::usleep(1000);
+    auto ot = TrackCurrent::context();
+    ///////////////////////////////////////
+    auto main_thread_handler_op = [&]() {
+      progressdata_ptr_t last_item;
+      _progressq.atomicOp([&last_item](progressdata_queue_t& pq) {
+        while (not pq.empty()) {
+          last_item = pq.front();
+          pq.pop();
+        }
+      });
+      if (last_item)
+        g_handler(last_item);
+    };
+    ///////////////////////////////////////
+    // calling from main thread?
+    ///////////////////////////////////////
+    if (ot->_queue == mainSerialQueue().get()) {
+      // if so run the progress handler here...
+      main_thread_handler_op();
+    }
+    ///////////////////////////////////////
+    // nope, not calling from main thread.
+    ///////////////////////////////////////
+    else {
+      // run main_thread_handler_op on main thread synchronously somehow
+      OrkAssert(false);
+    }
+    ///////////////////////////////////////
   }
 }
+////////////////////////////////////////////////////////////////////////////////
 CompletionGroup::CompletionGroup(opq_ptr_t q, std::string name)
     : _q(q)
     , _name(name) {
   _numpending.store(0);
 }
+////////////////////////////////////////////////////////////////////////////////
 CompletionGroup::~CompletionGroup() {
   join();
 }
@@ -244,7 +302,7 @@ bool OperationsQueue::Process() {
       numattempts++;
 
       auto grp = cgv[index];
-      grp->_ops.atomicOp([grp, &pexecgrp](ConcurrencyGroup::queue_t& q) {
+      grp->_ops.atomicOp([grp, &pexecgrp](ConcurrencyGroup::internal_oper_queue_t& q) {
         if (q.size()) {
           pexecgrp = grp;
         }
@@ -267,7 +325,7 @@ bool OperationsQueue::Process() {
     int run_index = 0;
     while (keep_going) {
       bool got_one = false;
-      pexecgrp->_ops.atomicOp([&the_op, &pexecgrp, &got_one](ConcurrencyGroup::queue_t& q) {
+      pexecgrp->_ops.atomicOp([&the_op, &pexecgrp, &got_one](ConcurrencyGroup::internal_oper_queue_t& q) {
         int numinfl            = pexecgrp->_opsinflight.fetch_add(1);
         bool maxinflight_check = (numinfl < pexecgrp->_limit_maxops_inflight);
         maxinflight_check |= (pexecgrp->_limit_maxops_inflight == 0);
@@ -425,7 +483,7 @@ void ConcurrencyGroup::enqueue(const Op& the_op) {
 
   while (false == was_enqueued) {
 
-    _ops.atomicOp([&the_op, &was_enqueued, this](ConcurrencyGroup::queue_t& q) {
+    _ops.atomicOp([&the_op, &was_enqueued, this](ConcurrencyGroup::internal_oper_queue_t& q) {
       bool fits = (_limit_maxops_enqueued == 0) or (q.size() < _limit_maxops_enqueued);
       if (fits) {
         int index = this->_serialopindex.fetch_add(1);
@@ -447,7 +505,7 @@ void ConcurrencyGroup::drain() {
 
   while (false == was_drained) {
 
-    _ops.atomicOp([this, &was_drained](ConcurrencyGroup::queue_t& q) {
+    _ops.atomicOp([this, &was_drained](ConcurrencyGroup::internal_oper_queue_t& q) {
       was_drained = q.empty();
       was_drained &= (_opsinflight.load() == 0);
     });
@@ -461,7 +519,7 @@ void ConcurrencyGroup::drain() {
 ///////////////////////////////////////////////////////////////////////////
 bool ConcurrencyGroup::try_pop(Op& out_op) {
   bool got_one = false;
-  _ops.atomicOp([&out_op, &got_one](ConcurrencyGroup::queue_t& q) {
+  _ops.atomicOp([&out_op, &got_one](ConcurrencyGroup::internal_oper_queue_t& q) {
     got_one = (q.empty() == false);
     out_op  = q.front();
     q.pop();
@@ -505,11 +563,6 @@ opq_ptr_t updateSerialQueue() {
 opq_ptr_t mainSerialQueue() {
   static opq_ptr_t gmainthrq = std::make_shared<OperationsQueue>(0, "mainSerialQueue");
   return gmainthrq;
-}
-///////////////////////////////////////////////////////////////////////
-opq_ptr_t backgroundSerialQueue() {
-  static opq_ptr_t gbackgroundq = std::make_shared<OperationsQueue>(1, "backgroundSerialQueue");
-  return gbackgroundq;
 }
 ///////////////////////////////////////////////////////////////////////
 opq_ptr_t concurrentQueue() {
@@ -563,7 +616,13 @@ bool TrackCurrent::is(opq_ptr_t rhs) {
   auto ot = TrackCurrent::context();
   return rhs.get() == ot->_queue;
 }
-
+///////////////////////////////////////////////////////////////////////
+void init() {
+  _coordinatorSerialQueue();
+  concurrentQueue();
+  mainSerialQueue();
+  updateSerialQueue();
+}
 ///////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::opq

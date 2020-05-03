@@ -65,7 +65,7 @@ state_block sb_additive : sb_default {
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_uitext : iface_vdefault {
   gl_Position = mvp * position;
-  frg_clr     = vtxcolor;
+  //frg_clr     = vtxcolor;
   frg_uv      = uv0;
 }
 ///////////////////////////////////////////////////////////////

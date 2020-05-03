@@ -124,6 +124,7 @@ struct FontMan { //: public NoRttiSingleton<FontMan> {
   static void gpuInit(Context* pTARG);
 
   static void DrawText(Context* pTARG, int iX, int iY, const char* pFmt, ...);
+  static void DrawCenteredText(Context* pTARG, int iY, const char* pFmt, ...);
 
   static Font* GetCurrentFont(void) {
     return GetRef().mpCurrentFont;

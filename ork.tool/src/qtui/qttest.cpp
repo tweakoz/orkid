@@ -25,6 +25,7 @@ bool ENABLE_PROFILER = false;
 #include <QtWidgets/QStyleFactory>
 #include <QtGui/QFontDatabase>
 #include <QtCore/QDebug>
+#include <QDesktopWidget>
 
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/qtui/qtui.hpp>
@@ -218,7 +219,12 @@ int BootQtThreadImpl(void* arg_opaq) {
   ork::lev2::InputManager::poll();
 
   ent::gEditorMainWindow = new ent::EditorMainWindow(0, AppClassName, *gpQtApplication);
-  ent::gEditorMainWindow->showMaximized();
+  ent::gEditorMainWindow->setGeometry(QStyle::alignedRect(
+      Qt::LeftToRight, //
+      Qt::AlignCenter,
+      QSize(1280, 720),
+      qApp->desktop()->availableGeometry()));
+  // ent::gEditorMainWindow->showMaximized();
   ent::gEditorMainWindow->raise(); // for MacOS
 
 /////////////////////////////////////////////////////////////////////

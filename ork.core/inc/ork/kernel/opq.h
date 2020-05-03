@@ -25,7 +25,20 @@ void SetCurrentThreadName(const char* threadName);
 namespace ork::opq {
 ///////////////////////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+// Opq Ui Progress Indicator
+//////////////////////////////////////////////////////////////////////
+
+struct ProgressData {
+  std::string _queue_name;
+  std::string _task_name;
+  int _num_pending = 0;
+};
+using progressdata_ptr_t   = std::shared_ptr<ProgressData>;
+using progressdata_queue_t = std::queue<progressdata_ptr_t>;
+using progress_handler_t   = std::function<void(progressdata_ptr_t)>;
+void setProgressHandler(progress_handler_t);
+
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef any128 op_wrap_t;
@@ -104,11 +117,11 @@ struct ConcurrencyGroup {
 
   ////////////////////////////////
 
-  typedef std::queue<Op> queue_t;
+  using internal_oper_queue_t = std::queue<Op>;
 
   ////////////////////////////////
 
-  ork::LockedResource<queue_t> _ops;
+  ork::LockedResource<internal_oper_queue_t> _ops;
   std::atomic<int> _opsinflight;
   std::atomic<int> _serialopindex;
   std::string _name;
@@ -138,6 +151,9 @@ struct CompletionGroup {
   void enqueue(const ork::void_lambda_t& the_op);
   void join();
   ~CompletionGroup();
+  inline void dontReportToUI() {
+    _reportToUI = false;
+  };
 
 private:
   template <class... Args> inline friend std::unique_ptr<CompletionGroup> createCompletionGroup(Args&&... args) {
@@ -151,6 +167,8 @@ private:
   opq_ptr_t _q;
   std::string _name;
   std::atomic<int> _numpending;
+  bool _reportToUI = true;
+  ork::LockedResource<progressdata_queue_t> _progressq;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -175,6 +193,7 @@ struct OpqThread : public ork::Thread {
   ~OpqThread();
   void run() final;
 };
+
 //////////////////////////////////////////////////////////////////////
 
 struct OperationsQueue : public std::enable_shared_from_this<OperationsQueue> {
@@ -245,9 +264,9 @@ void assertNotOnQueue(opq_ptr_t the_opQ);
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+void init();
 opq_ptr_t updateSerialQueue();
 opq_ptr_t mainSerialQueue();
-opq_ptr_t backgroundSerialQueue();
 opq_ptr_t concurrentQueue();
 
 ///////////////////////////////////////////////////////////////////////////////
