@@ -12,9 +12,9 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='3'>
-                                                <property name='Center'>-0.69186 4.49794 1.14841</property>
-                                                <property name='Loc'>7.99906</property>
-                                                <property name='QuatC'>0.210147 -0.368016 0.154455 0.893036</property>
+                                                <property name='Center'>-0.000491768 2.46927 1.08505</property>
+                                                <property name='Loc'>12.8191</property>
+                                                <property name='QuatC'>0.243773 -0.51815 0.197847 0.796191</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -105,7 +105,7 @@
                         <property name='Name'>"Light1"</property>
                         <property name='DagNode'>
                             <object type='Ent3dDagNode' id='12'>
-                                <property name='TransformNode'>1 -0 0 0 0 -0.0582179 0.998304 0 -0 -0.998304 -0.0582179 0 0 17.187 0.319471 1</property>
+                                <property name='TransformNode'>1 0 0 0 0 -0.0582179 0.998304 0 0 -0.998304 -0.0582179 0 0 17.187 0.319471 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
@@ -121,10 +121,10 @@
                                                     <property name='LightData'>
                                                         <reference category='ObjectClass'>
                                                             <object type='SpotLightData' id='15'>
-                                                                <property name='Color'>100 100 100</property>
+                                                                <property name='Color'>300 300 300</property>
                                                                 <property name='Cookie'>
                                                                     <reference category='AssetClass'>
-                                                                        "lev2tex" "data://effect_textures/NoiseKern"
+                                                                        "lev2tex" "data://src/effect_textures/NoiseKern"
                                                                     </reference>
                                                                 </property>
                                                                 <property name='Decal'>false</property>
@@ -239,7 +239,7 @@
                                                     <property name='MaterialOverrides'></property>
                                                     <property name='Model'>
                                                         <reference category='AssetClass'>
-                                                            "xgmodel" "data://test/pbr1/pbr1"
+                                                            "xgmodel" "data://tests/pbr1/pbr1"
                                                         </reference>
                                                     </property>
                                                     <property name='Offset'>0 0 0</property>
@@ -377,7 +377,7 @@
                                                                                 <reference category='ObjectClass'>
                                                                                     <object type='ScreenOutputCompositingNode' id='43'>
                                                                                         <property name='Layer'>"All"</property>
-                                                                                        <property name='SuperSample'>4</property>
+                                                                                        <property name='SuperSample'>1</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>
@@ -395,7 +395,7 @@
                                                                                         <property name='EnvironmentMipScale'>6.48855</property>
                                                                                         <property name='EnvironmentTexture'>
                                                                                             <reference category='AssetClass'>
-                                                                                                "lev2tex" "data://environ/envmaps/tozenv_nebula"
+                                                                                                "lev2tex" "data://src/envmaps/tozenv_nebula"
                                                                                             </reference>
                                                                                         </property>
                                                                                         <property name='SkyboxLevel'>0.610687</property>
@@ -438,6 +438,16 @@
             <item key='ScriptSystemData'>
                 <reference category='SystemDataClass'>
                     <object type='ScriptSystemData' id='47'>
+                    </object>
+                </reference>
+            </item>
+            <item key='VrSystemData'>
+                <reference category='SystemDataClass'>
+                    <object type='VrSystemData' id='48'>
+                        <property name='TrackingObjectEntity'>"vrtrackedobject"</property>
+                        <property name='UseCameraView'>false</property>
+                        <property name='VisualOffset'>0 0 0</property>
+                        <property name='VrCameraEntity'>"vrcamera"</property>
                     </object>
                 </reference>
             </item>
