@@ -83,14 +83,14 @@ const file::Path::NameType& FileEnv::GetFilesystemBase(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const_filedevctxptr_t FileEnv::contextForUriProto(const std::string& uriproto) {
-  static filedevctxptr_t default_ctx = std::make_shared<FileDevContext>();
-  auto& the_map                      = GetRef()._filedevcontext_map;
-  auto it                            = the_map.find(uriproto);
+filedevctx_constptr_t FileEnv::contextForUriProto(const std::string& uriproto) {
+  static filedevctx_ptr_t default_ctx = std::make_shared<FileDevContext>();
+  auto& the_map                       = GetRef()._filedevcontext_map;
+  auto it                             = the_map.find(uriproto);
   if (it != the_map.end()) {
     return it->second;
   }
-  return default_ctx;
+  return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -136,16 +136,17 @@ file::Path FileEnv::uriProtoToPath(const std::string& uriproto) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-filedevctxptr_t FileEnv::createContextForUriBase(
+filedevctx_ptr_t FileEnv::createContextForUriBase(
     const std::string& uriproto, //
     const file::Path& base_location) {
 
-  /*printf(
+  printf(
       "createContextForUriBase proto<%s> baseloc<%s>\n", //
       uriproto.c_str(),
-      base_location.c_str());*/
+      base_location.c_str());
 
-  auto context = std::make_shared<FileDevContext>();
+  auto context      = std::make_shared<FileDevContext>();
+  context->_protoid = uriproto;
   context->setFilesystemBaseAbs(base_location);
   GetRef()._filedevcontext_map[uriproto] = context;
   context->SetPrependFilesystemBase(true);

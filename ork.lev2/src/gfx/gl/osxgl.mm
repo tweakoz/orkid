@@ -150,24 +150,15 @@ void ContextGL::GLinit()
 
 std::string GetGlErrorString( void );
 
-void OpenGlContextInit()
-{
+void OpenGlContextInit() {
 	///////////////////////////////////////////////////////////
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	///////////////////////////////////////////////////////////
 	GfxEnv::setContextClass(ContextGL::GetClassStatic());
-	//const ork::FileDevContext& datactx = ork::FileEnv::contextForUriProto( "data" );//, DataDirContext );
-
-	//static dispatch_once_t ginit_once;
-	//auto once_blk = ^ void (void)
-	{
-		ContextGL::GLinit();
-		auto target = new ContextGL;
-		target->initializeLoaderContext();
-		//auto poutbuf = new OffscreenBuffer(0,0,0,1280,720);
-		GfxEnv::GetRef().SetLoaderTarget(target);
-	}
-//	dispatch_once(&ginit_once, once_blk );
+  ContextGL::GLinit();
+  auto target = new ContextGL;
+  target->initializeLoaderContext();
+  GfxEnv::GetRef().SetLoaderTarget(target);
 }
 
 /////////////////////////////////////////////////////////////////////////

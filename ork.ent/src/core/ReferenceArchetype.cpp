@@ -42,7 +42,7 @@ private:
 
 ArchetypeAssetLoader::ArchetypeAssetLoader()
     : FileAssetLoader(ArchetypeAsset::GetClassStatic()) {
-  AddLocation("data://archetypes", ".mox");
+  // AddLocation("data://archetypes", ".mox");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

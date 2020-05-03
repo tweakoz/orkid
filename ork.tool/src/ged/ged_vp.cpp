@@ -254,8 +254,8 @@ ui::HandlerResult GedVP::DoOnUiEvent(const ui::Event& EV) {
 
       bool is_in_set = IsObjInSet(pobj);
       const auto clr = ctx.mPickColors[0];
-      printf("GetPixel color<%g %g %g %g>\n", clr.x, clr.y, clr.z, clr.w);
-      orkprintf("Object<%p> is_in_set<%d> ilocx<%d> ilocy<%d> fx<%f> fy<%f>\n", pobj, int(is_in_set), ilocx, ilocy, fx, fy);
+      // printf("GetPixel color<%g %g %g %g>\n", clr.x, clr.y, clr.z, clr.w);
+      // orkprintf("Object<%p> is_in_set<%d> ilocx<%d> ilocy<%d> fx<%f> fy<%f>\n", pobj, int(is_in_set), ilocx, ilocy, fx, fy);
 
       /////////////////////////////////////
       // test object against known set

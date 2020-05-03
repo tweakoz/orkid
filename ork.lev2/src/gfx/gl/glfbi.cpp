@@ -553,7 +553,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
 
   bool bInBounds = (rAt.x >= 0.0f and rAt.x < 1.0f and rAt.y >= 0.0f and rAt.y < 1.0f);
 
-  printf("GetPixel rtg<%p> numbuf<%d>\n", ctx.mRtGroup, ctx.mRtGroup->mNumMrts );
+  // printf("GetPixel rtg<%p> numbuf<%d>\n", ctx.mRtGroup, ctx.mRtGroup->mNumMrts );
 
   if (bInBounds) {
     if (ctx.mRtGroup) {
@@ -607,7 +607,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
               fvec4 rv                  = fvec4(rgba[0], rgba[1], rgba[2], rgba[3]);
               ctx.mPickColors[MrtIndex] = rv;
 
-              printf("getpix MrtIndex<%d> rx<%d> ry<%d> <%g %g %g %g>\n", MrtIndex, sx, sy, rv.x, rv.y, rv.z, rv.w);
+              // printf("getpix MrtIndex<%d> rx<%d> ry<%d> <%g %g %g %g>\n", MrtIndex, sx, sy, rv.x, rv.y, rv.z, rv.w);
             }
           }
           GL_ERRORCHECK();

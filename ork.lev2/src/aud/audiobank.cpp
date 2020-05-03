@@ -45,7 +45,8 @@ public:
 
 AudioBankLoader::AudioBankLoader()
     : FileAssetLoader(AudioBank::GetClassStatic()) {
-  AddLocation("data://", ".xab");
+  auto datactx = FileEnv::contextForUriProto("data://");
+  AddLocation(datactx, ".xab");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

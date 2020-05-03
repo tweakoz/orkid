@@ -39,11 +39,8 @@ public:
 
 AudioStreamLoader::AudioStreamLoader()
     : FileAssetLoader(AudioStream::GetClassStatic()) {
-#if defined(_XBOX)
-  AddLocation("data://", ".xwma");
-#else
-  AddLocation("data://", ".wav");
-#endif
+  auto datactx = FileEnv::contextForUriProto("data://");
+  AddLocation(datactx, ".wav");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -24,10 +24,11 @@
 namespace ork {
 
 namespace ent {
-//class LightMapperArchetype;
+// class LightMapperArchetype;
 class EntArchDeRef;
 class EntArchReRef;
 class EntArchSplit;
+void ClassInit();
 } // namespace ent
 
 namespace tweakout {
@@ -37,7 +38,7 @@ void Init();
 namespace lev2 {
 void ClassInit();
 void GfxInit(const std::string& gfxlayer);
-}
+} // namespace lev2
 
 namespace tool {
 
@@ -51,7 +52,7 @@ class GraphExportDelegate;
 
 void LinkMe() {
   ork::rtti::Link<ork::tool::ged::GedFactoryPlug>();
-  //ork::rtti::Link<ork::ent::LightMapperArchetype>();
+  // ork::rtti::Link<ork::ent::LightMapperArchetype>();
 
   ork::rtti::Link<ork::tool::ged::GraphImportDelegate>();
   ork::rtti::Link<ork::tool::ged::GraphExportDelegate>();
@@ -59,30 +60,29 @@ void LinkMe() {
   ork::rtti::Link<ork::ent::EntArchDeRef>();
   ork::rtti::Link<ork::ent::EntArchReRef>();
   ork::rtti::Link<ork::ent::EntArchSplit>();
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tokenlist Init(int argc, char** argv) {
-  //printf("ork::tool::Init()\n");
+tokenlist Init(int& argc, char** argv, char** argp) {
+  // printf("ork::tool::Init()\n");
   LinkMe();
 
-  static ork::lev2::StdFileSystemInitalizer filesysteminit(argc,argv);
+  static ork::lev2::StdFileSystemInitalizer filesysteminit(argc, argv);
 
   ork::lev2::ClassInit();
+  ork::ent::ClassInit();
   ork::rtti::Class::InitializeClasses();
   ork::lev2::GfxInit("");
-
   //	xmlInitParser(); // must init libxml in main thread
 
-  //printf("CPX\n");
+  // printf("CPX\n");
   tokenlist toklist;
   for (int iarg = 1; iarg < argc; iarg++) {
     const char* parg = argv[iarg];
-    if (strcmp(parg, "-datafolder") == 0) {}
-    else if (strcmp(parg, "-lev2folder") == 0) {}
-    else {
+    if (strcmp(parg, "-datafolder") == 0) {
+    } else if (strcmp(parg, "-lev2folder") == 0) {
+    } else {
       toklist.push_back(parg);
     }
   }

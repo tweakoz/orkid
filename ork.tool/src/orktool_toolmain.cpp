@@ -39,10 +39,6 @@ namespace ork {
 
 void LoadLocalization(const char langcode[2]);
 
-namespace lev2 {
-void Init(const std::string& gfxlayer);
-}
-
 namespace tool {
 
 static std::string gexecdir = "";
@@ -85,7 +81,7 @@ static void ToolStartupDataFolder() {
   //////////////////////////////////////////
 }
 
-int toolmain(int& argc, char** argv) {
+int toolmain(int& argc, char** argv, char** argp) {
   struct rlimit oldlimit, newlimit;
 
   int el = getrlimit(RLIMIT_STACK, &oldlimit);
@@ -142,7 +138,7 @@ int toolmain(int& argc, char** argv) {
     //////////////////////////////////////////
     // Register lev2:// urlbase
 
-    tokenlist toklist = ork::tool::Init(argc, argv);
+    tokenlist toklist = ork::tool::Init(argc, argv, argp);
 
     //////////////////////////////////////////
 

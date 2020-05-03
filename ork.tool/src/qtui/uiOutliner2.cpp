@@ -606,7 +606,7 @@ ui::HandlerResult Outliner2View::DoOnUiEvent(const ui::Event& EV) {
 
       bool is_in_set = true; // IsObjInSet(pobj);
 
-      orkprintf("Object<%p> is_in_set<%d> ilocx<%d> ilocy<%d> fx<%f> fy<%f>\n", pobj, int(is_in_set), ilocx, ilocy, fx, fy);
+      // orkprintf("Object<%p> is_in_set<%d> ilocx<%d> ilocy<%d> fx<%f> fy<%f>\n", pobj, int(is_in_set), ilocx, ilocy, fx, fy);
       mNeedsSurfaceRepaint = true;
 
       if (pobj) {
@@ -624,7 +624,7 @@ ui::HandlerResult Outliner2View::DoOnUiEvent(const ui::Event& EV) {
       miScrollY += idelta;
 
       int scrollb = -(mContentH - miH);
-      printf("miScrollY<%d> mContentH<%d> scrollb<%d>\n", miScrollY, mContentH, scrollb);
+      // printf("miScrollY<%d> mContentH<%d> scrollb<%d>\n", miScrollY, mContentH, scrollb);
       if (miScrollY < scrollb)
         miScrollY = scrollb;
       if (miScrollY > 0)

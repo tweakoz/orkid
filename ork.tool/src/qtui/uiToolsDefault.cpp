@@ -64,13 +64,13 @@ void TestVPDefaultHandler::HandlePickOperation(defpickopctx_ptr_t ppickctx) {
     SceneEditorVPToolHandler* handler = pickctx->mHandler;
 
     ork::rtti::ICastable* pcast = pickctx->mpCastable;
-    orkprintf("obj<%p>\n", pcast);
+    // orkprintf("obj<%p>\n", pcast);
     ork::ent::SceneEditorBase& editor = handler->GetEditor();
     ork::rtti::ICastable* pillegal    = (ork::rtti::ICastable*)0xffffffffffffffff;
     if (pcast && pcast != pillegal) {
       ork::Object* pobj           = rtti::autocast(pcast);
       object::ObjectClass* pclass = rtti::safe_downcast<object::ObjectClass*>(pobj->GetClass());
-      orkprintf("Object<%p> Class<%s>\n", pobj, pclass->Name().c_str());
+      // orkprintf("Object<%p> Class<%s>\n", pobj, pclass->Name().c_str());
       auto anno = pclass->Description().classAnnotation("editor.3dpickable");
       // if( anno == "true" )
       {

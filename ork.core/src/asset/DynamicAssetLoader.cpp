@@ -32,30 +32,6 @@ std::set<file::Path> DynamicAssetLoader::EnumerateExisting() {
   return rval;
 }
 
-/*void DynamicAssetLoader::AddLocation( file_pathbase_t b, file_ext_t e)
-{
-        file::Path p(b.c_str());
-
-        FileSet fset;
-        fset.mExt = e;
-        fset.mLoc = p.HasUrlBase() ? p.GetUrlBase() : "";
-        fset.mPathBase = b;
-        mLocations.push_back(fset);
-
-        printf( "FileAssetLoader added set ext<%s> loc<%s> base<%s>\n",
-                        fset.mExt.c_str(),
-                        fset.mLoc.c_str(),
-                        fset.mPathBase.c_str() );
-}*/
-
-///////////////////////////////////////////////////////////////////////////////
-/*
-bool DynamicAssetLoader::FindAsset(const PieceString &name, MutableString
-result, int first_extension)
-{
-        return false;
-}*/
-
 ///////////////////////////////////////////////////////////////////////////////
 
 bool DynamicAssetLoader::CheckAsset(const PieceString& name) {

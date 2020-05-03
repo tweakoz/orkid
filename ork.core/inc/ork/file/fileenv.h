@@ -51,7 +51,7 @@ class FileEnv : public NoRttiSingleton<FileEnv> {
   FileDev* mpDefaultDevice;
 
 public:
-  typedef orkmap<std::string, filedevctxptr_t> filedevctxmap_t;
+  typedef orkmap<std::string, filedevctx_ptr_t> filedevctxmap_t;
 
   FileEnv();
 
@@ -136,8 +136,8 @@ public:
 
   //////////////////////////////////////////
 
-  static const_filedevctxptr_t contextForUriProto(const std::string& UriProto);
-  static filedevctxptr_t createContextForUriBase( //
+  static filedevctx_constptr_t contextForUriProto(const std::string& UriProto);
+  static filedevctx_ptr_t createContextForUriBase( //
       const std::string& uriproto,        // uri protocol "lev2://", "data://", etc..
       const file::Path& base_location);   // base folder on disk
 

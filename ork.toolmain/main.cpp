@@ -4,8 +4,7 @@
 
 using namespace ork;
 namespace ork::tool {
-void init(char** argp);
-int toolmain(int& argc, char** argv);
+int toolmain(int& argc, char** argv, char** argp);
 } // namespace ork::tool
 int main(int argc, char** argv, char** argp) {
 
@@ -21,9 +20,7 @@ int main(int argc, char** argv, char** argp) {
   TestApplication the_app;
   ApplicationStack::Push(&the_app);
 
-  tool::init(argp);
-
   OldSchool::SetGlobalStringVariable("ProjectApplicationClassName", "OrkTool");
 
-  return tool::toolmain(argc, argv);
+  return tool::toolmain(argc, argv, argp);
 }

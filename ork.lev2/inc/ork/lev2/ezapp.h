@@ -122,7 +122,7 @@ public:
   static qtezapp_ptr_t create(int argc, char** argv);
   static qtezapp_ptr_t createWithScene(varmap::varmap_ptr_t sceneparams);
 
-  filedevctxptr_t newFileDevContext(std::string uriproto, const file::Path& basepath);
+  filedevctx_ptr_t newFileDevContext(std::string uriproto, const file::Path& basepath);
 
   void onDraw(EzMainWin::drawcb_t cb);
   void onResize(EzMainWin::onresizecb_t cb);
@@ -146,7 +146,7 @@ public slots:
 public:
   QTimer mIdleTimer;
   EzMainWin* _mainWindow;
-  std::map<std::string, filedevctxptr_t> _fdevctxmap;
+  std::map<std::string, filedevctx_ptr_t> _fdevctxmap;
   ork::Timer _update_timer;
   double _update_prevtime        = 0;
   double _update_timeaccumulator = 0;

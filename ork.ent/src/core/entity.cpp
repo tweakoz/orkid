@@ -467,7 +467,7 @@ void Archetype::DeCompose() {
 
 void FnBallArchetypeTouch();
 
-void Init() {
+void ClassInit() {
   Archetype::GetClassStatic();
   ModelArchetype::GetClassStatic();
   SkyBoxArchetype::GetClassStatic();
@@ -510,7 +510,7 @@ void Init() {
   EditorCamControllerInst::GetClassStatic();
 
   RegisterClassX(DagNode);
-  VrSystemData::GetClassStatic();
+  RegisterClassX(VrSystemData);
 
 #if defined(ORK_OSXX)
   AudioAnalysisSystemData::GetClassStatic();

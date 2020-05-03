@@ -8,6 +8,7 @@
 #include <ork/orkstl.h>                      // for orkvector
 #include <ork/kernel/string/MutableString.h> // for orkvector
 #include <ork/kernel/fixedstring.h>
+#include <ork/file/filedevcontext.h>
 
 namespace ork {
 class PieceString;
@@ -19,13 +20,10 @@ namespace ork { namespace asset {
 class AssetClass;
 
 typedef fxstring<8> file_ext_t;
-typedef fxstring<32> file_loc_t;
-typedef file::Path file_pathbase_t;
 
 struct FileSet {
   file_ext_t mExt;
-  file_loc_t mLoc;
-  file_pathbase_t mPathBase;
+  filedevctx_constptr_t mPathBase;
 };
 
 struct FileAssetLoader : public AssetLoader {
@@ -35,7 +33,7 @@ struct FileAssetLoader : public AssetLoader {
   bool FindAsset(const PieceString&, MutableString result, int first_extension = 0);
   bool CheckAsset(const PieceString&) override;
   bool LoadAsset(asset_ptr_t asset) override;
-  void AddLocation(file_pathbase_t b, file_ext_t e);
+  void AddLocation(filedevctx_constptr_t b, file_ext_t e);
 
 protected:
   virtual bool LoadFileAsset(asset_ptr_t asset, ConstString filename) = 0;

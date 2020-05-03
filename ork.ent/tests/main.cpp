@@ -24,7 +24,7 @@ void ClassInit();
 void GfxInit(const std::string& gfxlayer);
 } // namespace ork::lev2
 namespace ork::ent {
-void Init();
+void ClassInit();
 }
 
 ///////////////////////////////////////////////////////////
@@ -37,7 +37,7 @@ struct TestApplication final : public Application {
     _filesysinit = std::make_shared<lev2::StdFileSystemInitalizer>(argc, argv);
 
     lev2::ClassInit();
-    ent::Init();
+    ent::ClassInit();
     rtti::Class::InitializeClasses();
     lev2::GfxInit("");
   }

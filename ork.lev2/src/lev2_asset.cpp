@@ -45,16 +45,19 @@ class XgmModelLoader final : public ork::asset::FileAssetLoader {
 public:
   XgmModelLoader()
       : FileAssetLoader(XgmModelAsset::GetClassStatic()) {
-    AddLocation("data://", ".xgm");
-    AddLocation("data://", ".glb");
-    AddLocation("data://", ".gltf");
-    AddLocation("data://", ".dae");
-    AddLocation("data://", ".obj");
-    AddLocation("src://", ".xgm");
-    AddLocation("src://", ".glb");
-    AddLocation("src://", ".gltf");
-    AddLocation("src://", ".dae");
-    AddLocation("src://", ".obj");
+
+    auto datactx = FileEnv::contextForUriProto("data://");
+    auto srcctx  = FileEnv::contextForUriProto("src://");
+    AddLocation(datactx, ".xgm");
+    AddLocation(datactx, ".glb");
+    AddLocation(datactx, ".gltf");
+    AddLocation(datactx, ".dae");
+    AddLocation(datactx, ".obj");
+    AddLocation(srcctx, ".xgm");
+    AddLocation(srcctx, ".glb");
+    AddLocation(srcctx, ".gltf");
+    AddLocation(srcctx, ".dae");
+    AddLocation(srcctx, ".obj");
   }
 
   bool LoadFileAsset(asset::asset_ptr_t asset, ConstString filename) override {
@@ -108,13 +111,13 @@ class StaticTexFileLoader : public ork::asset::FileAssetLoader {
 public:
   StaticTexFileLoader()
       : FileAssetLoader(TextureAsset::GetClassStatic()) {
-    AddLocation("data://", ".vds");
-    AddLocation("data://", ".qtz");
-    AddLocation("data://", ".dds");
-    AddLocation("data://", ".png");
-    // AddLocation( "lev2://", ".tga" );
-    // AddLocation( "lev2://", ".png" );
-    AddLocation("lev2://", ".dds");
+    auto datactx = FileEnv::contextForUriProto("data://");
+    auto lev2ctx = FileEnv::contextForUriProto("lev2://");
+    AddLocation(datactx, ".vds");
+    AddLocation(datactx, ".qtz");
+    AddLocation(datactx, ".dds");
+    AddLocation(datactx, ".png");
+    AddLocation(lev2ctx, ".dds");
   }
 
   bool LoadFileAsset(asset::asset_ptr_t asset, ConstString filename) {
@@ -172,7 +175,8 @@ class XgmAnimLoader final : public ork::asset::FileAssetLoader {
 public:
   XgmAnimLoader()
       : FileAssetLoader(XgmAnimAsset::GetClassStatic()) {
-    AddLocation("data://", ".xga");
+    auto datactx = FileEnv::contextForUriProto("data://");
+    AddLocation(datactx, ".xga");
   }
 
   bool LoadFileAsset(asset::asset_ptr_t asset, ConstString filename) override {
@@ -228,9 +232,11 @@ FxShaderLoader::FxShaderLoader()
   /////////////////////
   // hmm, this wants to be target dependant, hence dynamically switchable
   /////////////////////
+  FxShader::RegisterLoaders("shaders/glfx/", "glfx");
+  auto shadctx = FileEnv::contextForUriProto("orkshader://");
 
-  AddLocation("orkshader://", ".glfx"); // for glsl targets
-  AddLocation("orkshader://", ".fxml"); // for the dummy target
+  AddLocation(shadctx, ".glfx"); // for glsl targets
+  AddLocation(shadctx, ".fxml"); // for the dummy target
 }
 
 ///////////////////////////////////////////////////////////////////////////////

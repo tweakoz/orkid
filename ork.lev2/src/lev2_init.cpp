@@ -200,6 +200,12 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
   auto SrcPlatformLevel2FileContext   = FileEnv::createContextForUriBase("src://", srcd_base);
   auto LocPlatformMorkDataFileContext = FileEnv::createContextForUriBase("miniorkdata://", srcd_base);
   auto DataDirContext                 = FileEnv::createContextForUriBase("data://", data_dir);
+
+  //////////////
+  // we dont want to see lev2:// in choice manager
+  //////////////
+  LocPlatformLevel2FileContext->_vars.makeValueForKey<void*>("disablechoices");
+  //////////////
 }
 StdFileSystemInitalizer::~StdFileSystemInitalizer() {
 }

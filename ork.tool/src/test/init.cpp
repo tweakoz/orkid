@@ -34,10 +34,10 @@ namespace ork { namespace tool {
 int main(int& argc, char** argv);
 }} // namespace ork::tool
 namespace ork { namespace lev2 {
-void Init();
+void ClassInit();
 }} // namespace ork::lev2
 namespace ork { namespace ent {
-void Init();
+void ClassInit();
 void Init2();
 }} // namespace ork::ent
 
@@ -62,7 +62,8 @@ void init(char** argp) {
 //	XInitThreads();
 #endif
 
-  ork::ent::Init();
+  ork::lev2::ClassInit();
+  ork::ent::ClassInit();
   ork::rtti::Class::InitializeClasses();
 
   ork::lev2::ContextCreationParams CreationParams;

@@ -27,14 +27,17 @@ std::set<file::Path> FileAssetLoader::EnumerateExisting() {
   // GetLoaders
   for (auto& item : mLocations) {
     auto wild = file_ext_t("*") + item.mExt;
-    auto dir  = item.mPathBase;
-
-    // orkprintf("FileAssetLoader<%p> searching<%s> for pattern<%s>\n", this, dir.c_str(), wild.c_str());
+    auto ctx  = item.mPathBase;
+    auto dir  = ctx->getFilesystemBaseAbs();
+    auto pid  = ctx->_protoid;
+    if (ctx->_vars.hasKey("disablechoices"))
+      continue;
+    // printf("FileAssetLoader<%p> searching<%s> for pattern<%s>\n", this, dir.c_str(), wild.c_str());
 
     auto files    = FileEnv::filespec_search(wild.c_str(), dir);
     int inumfiles = (int)files.size();
 
-    // orkprintf("FileAssetLoader<%p> searching<%s> for<%s> inumfiles<%d>\n", this, dir.c_str(), wild.c_str(), inumfiles);
+    printf("FileAssetLoader<%p> searching<%s> for<%s> inumfiles<%d>\n", this, dir.c_str(), wild.c_str(), inumfiles);
 
     file::Path::NameType searchdir(dir.ToAbsolute().c_str());
     searchdir.replace_in_place("\\", "/");
@@ -45,7 +48,7 @@ std::set<file::Path> FileAssetLoader::EnumerateExisting() {
       file::Path::NameType ObjPtrStrA;
       ObjPtrStrA.replace(ObjPtrStr.c_str(), searchdir.c_str(), "");
       // OldStlSchoolFindAndReplace( ObjPtrStrA, searchdir, file::Path::NameType("") );
-      file::Path::NameType ObjPtrStr2 = file::Path::NameType(dir.c_str()) + ObjPtrStrA;
+      file::Path::NameType ObjPtrStr2 = file::Path::NameType(pid.c_str()) + ObjPtrStrA;
       file::Path OutPath(ObjPtrStr2.c_str());
       // orkprintf( "FOUND ASSET<%s>\n", the_file.c_str() );
 
@@ -56,22 +59,20 @@ std::set<file::Path> FileAssetLoader::EnumerateExisting() {
   return rval;
 }
 
-void FileAssetLoader::AddLocation(file_pathbase_t b, file_ext_t e) {
-  file::Path p(b.c_str());
-
+void FileAssetLoader::AddLocation(filedevctx_constptr_t b, file_ext_t e) {
+  OrkAssert(b);
   FileSet fset;
   fset.mExt      = e;
-  fset.mLoc      = p.HasUrlBase() ? p.GetUrlBase() : "";
   fset.mPathBase = b;
   mLocations.push_back(fset);
-
-  if (0)
+  if (0) {
+    auto loc = b->getFilesystemBaseAbs().c_str();
     printf(
-        "FileAssetLoader<%p> added set ext<%s> loc<%s> base<%s>\n",
+        "FileAssetLoader<%p> added set ext<%s> base<%s>\n", //
         this,
         fset.mExt.c_str(),
-        fset.mLoc.c_str(),
-        fset.mPathBase.c_str());
+        loc);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

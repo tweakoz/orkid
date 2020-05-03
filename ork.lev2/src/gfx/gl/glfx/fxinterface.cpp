@@ -16,11 +16,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 void ContextGL::FxInit() {
-  static bool binit = true;
-  if (true == binit) {
-    binit = false;
-    FxShader::RegisterLoaders("shaders/glfx/", "glfx");
-  }
 }
 } // namespace ork::lev2
 

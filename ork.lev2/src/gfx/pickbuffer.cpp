@@ -36,7 +36,7 @@ uint64_t PickBuffer::AssignPickId(const ork::Object* pobj) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 ork::Object* PickBuffer::GetObjectFromPickId(uint64_t pid) {
-  printf("pickid <0x%zx>\n", pid);
+  // printf("pickid <0x%zx>\n", pid);
   auto it           = mPickIds.find(pid);
   ork::Object* pobj = (it == mPickIds.end()) ? nullptr : it->second;
   return pobj;

@@ -343,7 +343,7 @@ void OrkEzQtApp::onUpdateWithScene(EzMainWin::onupdatewithscene_t cb) {
   _mainWindow->_onUpdateWithScene = cb;
 }
 
-filedevctxptr_t OrkEzQtApp::newFileDevContext(std::string uriproto, const file::Path& basepath) {
+filedevctx_ptr_t OrkEzQtApp::newFileDevContext(std::string uriproto, const file::Path& basepath) {
   return FileEnv::createContextForUriBase(uriproto, basepath);
 }
 
