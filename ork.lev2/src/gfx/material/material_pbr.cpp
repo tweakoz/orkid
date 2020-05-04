@@ -424,10 +424,10 @@ void PBRMaterial::end(const RenderContextFrameData& RCFD) {
 
 ////////////////////////////////////////////
 
-materialinst_ptr_t PBRMaterial::createFxInstance() const {
+fxinstance_ptr_t PBRMaterial::createFxStateInstance(FxStateInstanceConfig& cfg) const {
 
   auto perms               = std::make_shared<FxShaderTechniquePermutations>();
-  auto inst                = std::make_shared<GfxMaterialInstance>();
+  auto inst                = std::make_shared<FxStateInstance>(cfg);
   perms->_mono->_rigid     = _tekRigidGBUFFER_N;
   perms->_stereo->_rigid   = _tekRigidGBUFFER_N_STEREO;
   perms->_stereo->_skinned = _tekRigidGBUFFER_SKINNED_N;

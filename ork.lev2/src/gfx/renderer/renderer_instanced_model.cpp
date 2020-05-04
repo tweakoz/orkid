@@ -31,7 +31,7 @@ void InstancedModelDrawable::resize(size_t count) {
 ///////////////////////////////////////////////////////////////////////////////
 struct IMDIMPL_SUBMESH {
   const XgmSubMesh* _xgmsubmesh = nullptr;
-  materialinst_ptr_t _mtlinst;
+  fxinstance_ptr_t _mtlinst;
 };
 struct IMDIMPL_MODEL {
   std::vector<IMDIMPL_SUBMESH> _submeshes;
@@ -50,7 +50,9 @@ void InstancedModelDrawable::bindModel(model_ptr_t model) {
     int inumclusset = mesh->numSubMeshes();
     for (int ics = 0; ics < inumclusset; ics++) {
       auto xgmsub = mesh->subMesh(ics);
-      auto fxinst = xgmsub->_material->createFxInstance();
+      FxStateInstanceConfig cfg;
+      cfg._instanced_primitive = true;
+      auto fxinst              = xgmsub->_material->createFxStateInstance(cfg);
       if (fxinst) {
         IMDIMPL_SUBMESH submesh_impl;
         submesh_impl._xgmsubmesh = xgmsub;
@@ -87,6 +89,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   renderable.SetDrawableDataB(GetUserDataB());
   renderable.SetUserData0(item.mUserData0);
   renderable.SetUserData1(item.mUserData1);
+  renderable._instanced = true;
   ////////////////////////////////////////////////////////////////////
   renderable.SetRenderCallback([this](lev2::RenderContextInstData& RCID) { //
     auto context = RCID.context();
@@ -96,8 +99,9 @@ void InstancedModelDrawable::enqueueToRenderQueue(
       auto xgmsub  = sub._xgmsubmesh;
       auto mtlinst = sub._mtlinst;
       OrkAssert(mtlinst);
-      RCID._isInstanced = true;
       mtlinst->wrappedDrawCall(RCID, [&]() {
+        auto idata = _instancedata;
+        // todo set instancing texture
         OrkAssert(false);
         int inumclus = xgmsub->_clusters.size();
         for (int ic = 0; ic < inumclus; ic++) {
@@ -114,9 +118,8 @@ void InstancedModelDrawable::enqueueToRenderQueue(
           }
         }
       }); // mtlinst->wrappedDrawCall(RCID, [&]() {
-      RCID._isInstanced = false;
-    } // for (auto& sub : impl._submeshes) {
-  }); // renderable.SetRenderCallback
+    }     // for (auto& sub : impl._submeshes) {
+  });     // renderable.SetRenderCallback
   ////////////////////////////////////////////////////////////////////
 } // InstancedModelDrawable::enqueueToRenderQueue(
 /////////////////////////////////////////////////////////////////////

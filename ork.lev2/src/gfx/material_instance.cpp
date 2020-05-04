@@ -42,11 +42,12 @@ fxtechnique_constptr_t FxShaderTechniquePermutations::select(PermBase base, bool
                : base_permutation->_rigid;
 }
 /////////////////////////////////////////////////////////////////////////
-GfxMaterialInstance::GfxMaterialInstance() {
+FxStateInstance::FxStateInstance(FxStateInstanceConfig& config)
+    : _config(config) {
   _teks = std::make_shared<FxShaderTechniquePermutations>();
 }
 /////////////////////////////////////////////////////////////////////////
-void GfxMaterialInstance::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall) {
+void FxStateInstance::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall) {
   int inumpasses = beginBlock(RCID);
   for (int ipass = 0; ipass < inumpasses; ipass++) {
     if (beginPass(RCID, ipass)) {
@@ -57,7 +58,7 @@ void GfxMaterialInstance::wrappedDrawCall(const RenderContextInstData& RCID, voi
   endBlock(RCID);
 }
 ///////////////////////////////////////////////////////////////////////////////
-int GfxMaterialInstance::beginBlock(const RenderContextInstData& RCID) {
+int FxStateInstance::beginBlock(const RenderContextInstData& RCID) {
   auto context    = RCID._RCFD->GetTarget();
   const auto& CPD = RCID._RCFD->topCPD();
   bool is_picking = CPD.isPicking();
@@ -77,7 +78,7 @@ int GfxMaterialInstance::beginBlock(const RenderContextInstData& RCID) {
   return FXI->BeginBlock(tek, RCID);
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool GfxMaterialInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
+bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
   auto context    = RCID._RCFD->GetTarget();
   auto MTXI       = context->MTXI();
   auto FXI        = context->FXI();
@@ -158,12 +159,12 @@ bool GfxMaterialInstance::beginPass(const RenderContextInstData& RCID, int ipass
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GfxMaterialInstance::endPass(const RenderContextInstData& RCID) {
+void FxStateInstance::endPass(const RenderContextInstData& RCID) {
   auto context = RCID._RCFD->GetTarget();
   context->FXI()->EndPass();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GfxMaterialInstance::endBlock(const RenderContextInstData& RCID) {
+void FxStateInstance::endBlock(const RenderContextInstData& RCID) {
   auto context = RCID._RCFD->GetTarget();
   context->FXI()->EndBlock();
 }

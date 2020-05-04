@@ -20,8 +20,6 @@
 namespace ork {
 namespace lev2 {
 
-struct GfxMaterialInstance;
-
 using material_ptr_t      = std::shared_ptr<GfxMaterial>;
 using material_constptr_t = std::shared_ptr<const GfxMaterial>;
 
@@ -184,7 +182,7 @@ public:
   void PopDebug();
   bool IsDebug();
 
-  virtual materialinst_ptr_t createFxInstance() const;
+  virtual fxinstance_ptr_t createFxStateInstance(FxStateInstanceConfig& cfg) const;
 
   //////////////////////////////////////////////////////////////////////////////
 

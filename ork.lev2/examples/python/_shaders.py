@@ -169,8 +169,7 @@ class Shader(object):
     self._par_time = self._mtl.shader.param("time")
     self._par_tex3d = self._mtl.shader.param("VolumeMap")
   def beginNoise(self,RCFD,time):
-    self._mtl.bindTechnique(self._tek_frustum)
-    self._mtl.begin(RCFD)
+    self._mtl.begin(self._tek_frustum,RCFD)
     self._mtl.bindParamFloat(self._par_time,time)
   def beginLines(self,RCFD):
     self._mtl.bindTechnique(self._tek_lines)

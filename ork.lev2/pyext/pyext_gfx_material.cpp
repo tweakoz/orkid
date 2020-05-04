@@ -21,16 +21,16 @@ void pyinit_gfx_material(py::module& module_lev2) {
   // materialinst params proxy
   /////////////////////////////////////////////////////////////////////////////////
   struct matinst_param_proxy {
-    materialinst_ptr_t _materialinst;
+    fxinstance_ptr_t _materialinst;
   };
   using matinst_param_proxy_ptr_t = std::shared_ptr<matinst_param_proxy>;
-  auto materialinst_params_type   =                                                                     //
-      py::class_<matinst_param_proxy, matinst_param_proxy_ptr_t>(module_lev2, "MaterialInstanceParams") //
+  auto materialinst_params_type   =                                                               //
+      py::class_<matinst_param_proxy, matinst_param_proxy_ptr_t>(module_lev2, "FxInstanceParams") //
           .def(
               "__repr__",
               [](matinst_param_proxy_ptr_t proxy) -> std::string {
                 std::string output;
-                output += FormatString("MaterialInstanceParams<%p>{\n", proxy.get());
+                output += FormatString("FxInstanceParams<%p>{\n", proxy.get());
                 for (auto item : proxy->_materialinst->_params) {
                   const auto& k = item.first;
                   const auto& v = item.second;
@@ -69,12 +69,11 @@ void pyinit_gfx_material(py::module& module_lev2) {
 
   type_codec->registerStdCodec<matinst_param_proxy_ptr_t>(materialinst_params_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto materialinst_type =                                                                 //
-      py::class_<GfxMaterialInstance, materialinst_ptr_t>(module_lev2, "MaterialInstance") //
-          .def(py::init<>())                                                               // material_ptr_t
+  auto materialinst_type =                                                     //
+      py::class_<FxStateInstance, fxinstance_ptr_t>(module_lev2, "FxInstance") //
           .def(
-              "__setattr__",                                                                      //
-              [type_codec](materialinst_ptr_t instance, const std::string& key, py::object val) { //
+              "__setattr__",                                                                    //
+              [type_codec](fxinstance_ptr_t instance, const std::string& key, py::object val) { //
                 auto varmap_val = type_codec->decode(val);
                 if (key == "monoTek")
                   instance->_teks->_mono->_rigid = varmap_val.Get<fxtechnique_constptr_t>();
@@ -92,10 +91,10 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 }
               })
           .def(
-              "__getattr__",                                                                    //
-              [type_codec](materialinst_ptr_t instance, const std::string& key) -> py::object { //
+              "__getattr__",                                                                  //
+              [type_codec](fxinstance_ptr_t instance, const std::string& key) -> py::object { //
                 // OrkAssert(instance->_vars.hasKey(key));
-                GfxMaterialInstance::varval_t varval;
+                FxStateInstance::varval_t varval;
                 // auto varmap_val = instance->_vars.valueForKey(key);
                 if (key == "param") {
                   auto proxy           = std::make_shared<matinst_param_proxy>();
@@ -114,7 +113,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 }
                 return py::none(); // ;
               });
-  type_codec->registerStdCodec<materialinst_ptr_t>(materialinst_type);
+  type_codec->registerStdCodec<fxinstance_ptr_t>(materialinst_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto freestyle_type = //
       py::class_<FreestyleMaterial, GfxMaterial, freestyle_mtl_ptr_t>(module_lev2, "FreestyleMaterial")
@@ -125,9 +124,10 @@ void pyinit_gfx_material(py::module& module_lev2) {
             return rval;
           }))
           .def(
-              "createInstance",                                        //
-              [](freestyle_mtl_ptr_t material) -> materialinst_ptr_t { //
-                return std::make_shared<GfxMaterialInstance>();        // material
+              "createFxInstance",                                    //
+              [](freestyle_mtl_ptr_t material) -> fxinstance_ptr_t { //
+                FxStateInstanceConfig cfg;
+                return std::make_shared<FxStateInstance>(cfg); // material
               })
           .def(
               "gpuInit",

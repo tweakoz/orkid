@@ -83,17 +83,16 @@ struct RenderContextInstData {
   void SetRenderGroupState(RenderGroupState rgs); // deprecated
   RenderGroupState GetRenderGroupState() const;   // deprecated
 
-  int miMaterialIndex;
-  int miMaterialPassIndex;
-  const IRenderer* mpActiveRenderer;
-  const IRenderable* _dagrenderable;
+  bool _isSkinned                           = false;
+  int miMaterialIndex                       = 0;
+  int miMaterialPassIndex                   = 0;
+  const IRenderer* mpActiveRenderer         = nullptr;
+  const IRenderable* _dagrenderable         = nullptr;
+  const RenderContextFrameData* _RCFD       = nullptr;
+  const XgmMaterialStateInst* mMaterialInst = nullptr;
+  RenderGroupState mRenderGroupState        = ERGST_NONE;
 
-  const XgmMaterialStateInst* mMaterialInst;
-  bool _isSkinned;
-  bool _isInstanced;
   float mEngineParamFloats[kMaxEngineParamFloats];
-  RenderGroupState mRenderGroupState;
-  const RenderContextFrameData* _RCFD = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

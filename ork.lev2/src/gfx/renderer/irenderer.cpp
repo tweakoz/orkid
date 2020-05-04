@@ -19,7 +19,6 @@
 
 template class ork::fixedvector<U32, ork::lev2::RenderQueue::krqmaxsize>;
 template class ork::fixedvector<const ork::lev2::RenderQueue::Node*, ork::lev2::RenderQueue::krqmaxsize>;
-
 template class ork::fixedvector<ork::lev2::ModelRenderable, ork::lev2::IRenderer::kmaxrables>;
 template class ork::fixedvector<ork::lev2::CallbackRenderable, ork::lev2::IRenderer::kmaxrables>;
 
@@ -121,105 +120,14 @@ void IRenderer::ResetQueue(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void IRenderer::RenderCallback(const lev2::CallbackRenderable& cbren) const {
+void IRenderer::RenderCallback(const CallbackRenderable& cbren) const {
   if (cbren.GetRenderCallback()) {
     auto context = GetTarget();
-    lev2::RenderContextInstData RCID(context->topRenderContextFrameData());
+    RenderContextInstData RCID(context->topRenderContextFrameData());
     RCID.SetRenderer(this);
     RCID._dagrenderable = &cbren;
     cbren.GetRenderCallback()(RCID);
   }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-DefaultRenderer::DefaultRenderer(lev2::Context* ptarg)
-    : lev2::IRenderer(ptarg) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void DefaultRenderer::RenderModelGroup(const modelgroup_t& mdlgroup) const {
-  for (auto r : mdlgroup)
-    RenderModel(*r);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void DefaultRenderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::RenderGroupState rgs) const {
-
-  lev2::Context* target = GetTarget();
-
-  auto minst = ModelRen.GetModelInst();
-  auto model = minst->xgmModel();
-
-  target->debugPushGroup(FormatString("DefaultRenderer::RenderModel model<%p> minst<%p>", model, minst.get()));
-
-  /////////////////////////////////////////////////////////////
-
-  float fscale = ModelRen.GetScale();
-
-  const ork::fvec3& offset = ModelRen.GetOffset();
-  const ork::fvec3& rotate = ModelRen.GetRotate();
-
-  fmtx4 smat;
-  fmtx4 tmat;
-  fmtx4 rmat;
-
-  smat.SetScale(fscale);
-  tmat.SetTranslation(offset);
-  rmat.SetRotateY(rotate.GetY() + rotate.GetZ());
-
-  fmtx4 wmat = ModelRen.GetMatrix();
-
-  /////////////////////////////////////////////////////////////
-  // compute world matrix
-  /////////////////////////////////////////////////////////////
-
-  fmtx4 nmat = tmat * rmat * smat * wmat;
-
-  if (minst->IsBlenderZup()) // zup to yup conversion matrix
-  {
-    fmtx4 rmatx, rmaty;
-    rmatx.RotateX(3.14159f * -0.5f);
-    rmaty.RotateX(3.14159f);
-    nmat = (rmatx * rmaty) * nmat;
-  }
-
-  /////////////////////////////////////////////////////////////
-
-  ork::lev2::RenderContextInstData MatCtx;
-
-  lev2::RenderContextInstModelData MdlCtx;
-
-  MatCtx.SetMaterialInst(&minst->RefMaterialInst());
-
-  MdlCtx.mMesh    = ModelRen.mesh();
-  MdlCtx.mSubMesh = ModelRen.subMesh();
-  MdlCtx._cluster = ModelRen.GetCluster();
-
-  MatCtx.SetMaterialIndex(0);
-  MatCtx.SetRenderer(this);
-  MatCtx._dagrenderable = &ModelRen;
-
-  // target->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->isSkinned()), as_ent));
-
-  ///////////////////////////////////////
-
-  // printf( "Renderer::RenderModel() rable<%p>\n", & ModelRen );
-  bool model_is_skinned = model->isSkinned();
-  MatCtx._isSkinned     = model_is_skinned;
-  MdlCtx.SetSkinned(model_is_skinned);
-  MdlCtx.SetModelInst(minst);
-
-  auto ObjColor = fvec4::White();
-  if (model_is_skinned) {
-    model->RenderSkinned(minst.get(), ObjColor, nmat, GetTarget(), MatCtx, MdlCtx);
-  } else {
-    model->RenderRigid(ObjColor, nmat, GetTarget(), MatCtx, MdlCtx);
-  }
-
-  target->debugPopGroup();
 }
 
 }} // namespace ork::lev2

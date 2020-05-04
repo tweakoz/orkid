@@ -110,7 +110,7 @@ TextureContext& GfxMaterial::GetTexture(ETextureDest edest) {
   return mTextureMap[edest];
 }
 
-materialinst_ptr_t GfxMaterial::createFxInstance() const {
+fxinstance_ptr_t GfxMaterial::createFxStateInstance(FxStateInstanceConfig& cfg) const {
   return nullptr;
 }
 

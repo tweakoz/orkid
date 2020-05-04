@@ -33,7 +33,7 @@ struct FrustumPrimitive {
   inline scenegraph::node_ptr_t createNode(
       std::string named, //
       scenegraph::layer_ptr_t layer,
-      materialinst_ptr_t material_inst) {
+      fxinstance_ptr_t material_inst) {
     auto drw = std::make_shared<CallbackDrawable>(nullptr);
     drw->SetRenderCallback([=](lev2::RenderContextInstData& RCID) { //
       auto context = RCID.context();

@@ -44,10 +44,10 @@ class PyOrkApp(object):
     layer = self.scene.createLayer("layer1")
     ###################################
     material = FreestyleMaterial(ctx,Path("orkshader://manip"))
-    material_inst = material.createInstance()
-    material_inst.monoTek = material.shader.technique("std_mono")
-    material_inst.param[material.param("mvp")] = tokens.RCFD_Camera_MVP_Mono
-    self.primnode = prim.createNode("node1",layer,material_inst)
+    fxinst = material.createFxInstance()
+    fxinst.monoTek = material.shader.technique("std_mono")
+    fxinst.param[material.param("mvp")] = tokens.RCFD_Camera_MVP_Mono
+    self.primnode = prim.createNode("node1",layer,fxinst)
     ###################################
     self.camera = CameraData()
     self.camera.perspective(0.1, 100.0, 45.0)
@@ -82,10 +82,6 @@ class PyOrkApp(object):
                   math.sin(updinfo.absolutetime*2)*3) # scale
     ###################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
-  ################################################
-  #def onDraw(self,drawevent):
-    #ctx = drawevent.context
-    #self.scene.renderOnContext(ctx)
   ############################################
 app = PyOrkApp()
 app.qtapp.exec()

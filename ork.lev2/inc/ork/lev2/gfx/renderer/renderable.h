@@ -76,11 +76,13 @@ struct IRenderable {
   virtual uint32_t ComposeSortKey(const IRenderer* renderer) const;
   //////////////////////////////////////////////////////////////////////////////
 
+  const ork::Object* _object = nullptr;
+  bool _instanced            = false;
+
   fmtx4 _worldMatrix;
   fcolor4 _modColor;
   var_t _drawDataA;
   var_t _drawDataB;
-  const ork::Object* _object;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

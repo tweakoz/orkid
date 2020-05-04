@@ -62,8 +62,9 @@ void EzUiCam::Describe() {
 
 struct UiCamPrivate {
   UiCamPrivate() {
-    _material     = std::make_shared<FreestyleMaterial>();
-    _materialinst = std::make_shared<GfxMaterialInstance>(); // _material
+    _material = std::make_shared<FreestyleMaterial>();
+    FxStateInstanceConfig config;
+    _materialinst = std::make_shared<FxStateInstance>(config); // _material
   }
   void gpuUpdate(Context* ctx) {
     if (_doGpuInit) {
@@ -77,7 +78,7 @@ struct UiCamPrivate {
   }
   bool _doGpuInit = true;
   freestyle_mtl_ptr_t _material;
-  materialinst_ptr_t _materialinst;
+  fxinstance_ptr_t _materialinst;
 };
 using uicamprivate_t = std::shared_ptr<UiCamPrivate>;
 
