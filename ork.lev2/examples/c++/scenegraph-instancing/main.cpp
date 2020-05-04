@@ -27,14 +27,15 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////
   // create instanced model drawable
   //////////////////////////////////////////////////////////
-  auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://tests/pbr1/pbr1");
-  auto drw        = std::make_shared<InstancedModelDrawable>(nullptr);
+  auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://src/environ/objects/misc/ref/torus");
+  // auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://tests/pbr_calib");
+  auto drw = std::make_shared<InstancedModelDrawable>(nullptr);
   asset::AssetManager<XgmModelAsset>::AutoLoad();
   OrkAssert(modl_asset->_model.atomicCopy());
   drw->bindModel(modl_asset->_model.atomicCopy());
   auto sg_node = sg_layer->createNode("model-node", drw);
   //////////////////////////////////////////////////////////
-  constexpr size_t NUMINSTANCES = 4096;
+  constexpr size_t NUMINSTANCES = 32768;
   //////////////////////////////////////////////////////////
   drw->resize(NUMINSTANCES);
   auto instdata = drw->_instancedata;
@@ -45,7 +46,7 @@ int main(int argc, char** argv) {
     float fx = float(ix) / 10.0f;
     float fy = float(iy) / 10.0f;
     float fz = float(iz) / 10.0f;
-    instdata->_worldmatrices[i].compose(fvec3(fx, fy, fz), fquat(), 1.0f);
+    instdata->_worldmatrices[i].compose(fvec3(fx, fy, fz), fquat(), 0.03f);
   }
   //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread
@@ -65,23 +66,37 @@ int main(int argc, char** argv) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;
     ///////////////////////////////////////
-    int instance_index = rand() % NUMINSTANCES;
-    int ix             = (rand() & 0xff) - 0x80;
-    int iy             = (rand() & 0xff) - 0x80;
-    int iz             = (rand() & 0xff) - 0x80;
-    float fx           = float(ix) / 10.0f;
-    float fy           = float(iy) / 10.0f;
-    float fz           = float(iz) / 10.0f;
-    instdata->_worldmatrices[instance_index]. //
-        compose(
-            fvec3(fx, fy, fz), //
-            fquat(),
-            1.0f);
+    for (int i = 0; i < 400; i++) {
+      int instance_index = rand() % NUMINSTANCES;
+      int ix             = (rand() & 0xff) - 0x80;
+      int iy             = (rand() & 0xff) - 0x80;
+      int iz             = (rand() & 0xff) - 0x80;
+      int irx            = (rand() & 0xff) - 0x80;
+      int iry            = (rand() & 0xff) - 0x80;
+      int irz            = (rand() & 0xff) - 0x80;
+      int irangle        = (rand() & 0xff) - 0x80;
+
+      float fx = float(ix) / 10.0f;
+      float fy = float(iy) / 10.0f;
+      float fz = float(iz) / 10.0f;
+
+      float rx     = float(irx) / 128.0f;
+      float ry     = float(iry) / 128.0f;
+      float rz     = float(irz) / 128.0f;
+      float rangle = float(irz) / 128.0f;
+      fvec3 axis   = fvec3(rx, ry, rz).Normal();
+      fquat rot    = fquat(axis, rangle);
+      instdata->_worldmatrices[instance_index]. //
+          compose(
+              fvec3(fx, fy, fz), //
+              rot,
+              0.03f);
+    }
     ///////////////////////////////////////
     // compute camera data
     ///////////////////////////////////////
-    float phase    = abstime * PI2 * 0.1f;
-    float distance = 10.0f;
+    float phase    = abstime * PI2 * 0.003f;
+    float distance = 1.0f;
     auto eye       = fvec3(sinf(phase), 1.0f, -cosf(phase)) * distance;
     fvec3 tgt(0, 0, 0);
     fvec3 up(0, 1, 0);

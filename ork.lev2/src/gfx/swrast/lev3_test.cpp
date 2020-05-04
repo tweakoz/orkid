@@ -25,6 +25,8 @@
 
 extern GLuint gLastBoundNonZeroTex;
 
+using namespace ork::lev2;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class MyViewport : public ork::ui::Viewport {
@@ -40,10 +42,10 @@ public:
     return ork::ui::HandlerResult(this);
   }
 
-  void Init(ork::lev2::Context* pTARG) // virtual
+  void Init(Context* pTARG) // virtual
   {
     mtl.gpuInit(pTARG);
-    tex          = ork::lev2::Texture::CreateBlank(512, 512, ork::lev2::EBufferFormat::RGBA8);
+    tex          = Texture::createBlank(512, 512, EBufferFormat::RGBA8);
     auto pu32    = (uint32_t*)tex->_data;
     uint32_t idx = 0;
     for (int iw = 0; iw < 512; iw++)
@@ -62,10 +64,10 @@ public:
     {
       // mpTarget->TXI()->VRamUpload(tex);
       ork::fvec4 clr1(1.0f, 1.0f, 1.0f, 1.0f);
-      mtl.SetTexture(tex);
-      // mtl.SetColorMode( ork::lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
-      mtl.SetColorMode(ork::lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
-      mtl._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      mtl.SetTexture(tex.get());
+      // mtl.SetColorMode( GfxMaterial3DSolid::EMODE_MOD_COLOR );
+      mtl.SetColorMode(GfxMaterial3DSolid::EMODE_TEX_COLOR);
+      mtl._rasterstate.SetBlending(EBLENDING_OFF);
       mpTarget->FBI()->GetThisBuffer()->RenderMatOrthoQuad(
           tgtrect.asSRect(), tgtrect.asSRect(), &mtl, 0.0f, 0.0f, 1.0f, 1.0f, 0, clr1);
 
@@ -100,8 +102,8 @@ public:
     mpTarget->endFrame(); // the_renderer );*/
   }
 
-  ork::lev2::GfxMaterial3DSolid mtl;
-  ork::lev2::Texture* tex;
+  GfxMaterial3DSolid mtl;
+  texture_ptr_t tex;
   GLuint gltex;
 };
 
@@ -127,10 +129,10 @@ DemoApp::DemoApp(int iw, int ih)
 
   ////////////////////
 
-  MyViewport* gpvp              = new MyViewport("yo");
-  ork::lev2::CQtWindow* pgfxwin = new ork::lev2::CQtWindow(gpvp);
+  MyViewport* gpvp   = new MyViewport("yo");
+  CQtWindow* pgfxwin = new CQtWindow(gpvp);
 
-  ork::lev2::CTQT* pctqt = new ork::lev2::CTQT(pgfxwin, nullptr);
+  CTQT* pctqt = new CTQT(pgfxwin, nullptr);
 
   // gfxdock->setWidget( pctqt->GetQWidget() );
   // gfxdock->setMinimumSize( 100, 100 );
@@ -142,8 +144,8 @@ DemoApp::DemoApp(int iw, int ih)
 
   // viewnum++;
 
-  ork::lev2::GfxEnv::GetRef().SetLoaderTarget(pgfxwin->context());
-  ork::lev2::GfxEnv::GetRef().RegisterWinContext(pgfxwin);
+  GfxEnv::GetRef().SetLoaderTarget(pgfxwin->context());
+  GfxEnv::GetRef().RegisterWinContext(pgfxwin);
 
   gpvp->Init(pgfxwin->context());
 

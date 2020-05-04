@@ -84,6 +84,23 @@ libblock lib_pbr_vtx {
 		frg_camz = wnormal.xyz;
 		frg_camdist = -cpos.z;
 	}
+	void vs_instanced(vec4 pos, vec3 nrm, vec3 bin,mat4 instance_matrix) {
+		mat3 instance_rot = mat3(instance_matrix);
+		vec4 cpos  = mv * (instance_matrix*pos);
+    vec3 wnormal = normalize(instance_rot*normal);
+    vec3 wbitangent = normalize(instance_rot*binormal); // technically binormal is a bitangent
+		vec3 wtangent = cross(wbitangent,wnormal);
+		//frg_clr = vtxcolor;
+		frg_clr = vec4(1,1,1,1); //TODO - split vs_rigid_gbuffer into vertexcolor vs identity
+		frg_uv0 = uv0*vec2(1,-1);
+		frg_tbn = mat3(
+        wtangent,
+        wbitangent,
+				wnormal
+    );
+		frg_camz = wnormal.xyz;
+		frg_camdist = -cpos.z;
+	}
 }
 ///////////////////////////////////////////////////////////////
 // vs-non-instanced-rigid
@@ -113,14 +130,14 @@ vertex_shader vs_rigid_gbuffer_stereo
 vertex_shader vs_rigid_gbuffer_instanced
 	: iface_vgbuffer
   : lib_pbr_vtx {
-		vs_common(position,normal,binormal);
-		int col = (gl_InstanceID&0x3ff)>>2;
-		int row = (gl_InstanceID>>2)&0x3ff;
+		int row = (gl_InstanceID&0xff)<<2;
+		int col = (gl_InstanceID>>8);
 		mat4 instancemtx = mat4(
 			texelFetch(InstanceMatrices, ivec2(row+0,col), 0),
 		  texelFetch(InstanceMatrices, ivec2(row+1,col), 0),
 		  texelFetch(InstanceMatrices, ivec2(row+2,col), 0),
 		  texelFetch(InstanceMatrices, ivec2(row+3,col), 0));
+		vs_instanced(position,normal,binormal,instancemtx);
 		gl_Position = mvp*(instancemtx*position);
 }
 ///////////////////////////////////////////////////////////////
@@ -129,9 +146,19 @@ vertex_shader vs_rigid_gbuffer_instanced_stereo
   : extension(GL_NV_viewport_array2)
 	: iface_vgbuffer_stereo
 	: lib_pbr_vtx {
-	  vs_common(position,normal,binormal);
-	  gl_Position = mvp_l*position;
-	  gl_SecondaryPositionNV = mvp_r*position;
+		////////////////////////////////
+		mat4 instancemtx = mat4(
+			texelFetch(InstanceMatrices, ivec2(row+0,col), 0),
+		  texelFetch(InstanceMatrices, ivec2(row+1,col), 0),
+		  texelFetch(InstanceMatrices, ivec2(row+2,col), 0),
+		  texelFetch(InstanceMatrices, ivec2(row+3,col), 0));
+		////////////////////////////////
+		vec4 instanced_pos = (instancemtx*position);
+		vs_instanced(position,normal,binormal,instancemtx);
+		////////////////////////////////
+	  gl_Position = mvp_l*instanced_pos;
+	  gl_SecondaryPositionNV = mvp_r*instanced_pos;
+		////////////////////////////////
 	  gl_Layer = 0;
 	  gl_ViewportMask[0] = 1;
 	  gl_SecondaryViewportMaskNV[0] = 2;

@@ -37,6 +37,7 @@ void InstancedDrawableData::resize(size_t count) {
   _worldmatrices.resize(count);
   _miscdata.resize(count);
   _pickids.resize(count);
+  _count = count;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

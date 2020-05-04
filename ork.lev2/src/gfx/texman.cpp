@@ -52,24 +52,24 @@ Texture* Texture::LoadUnManaged(const AssetPath& fname) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Texture* Texture::CreateBlank(int iw, int ih, EBufferFormat efmt) {
-  Texture* pTex = new Texture;
+texture_ptr_t Texture::createBlank(int iw, int ih, EBufferFormat efmt) {
+  auto texture = std::make_shared<Texture>();
 
-  pTex->_width  = iw;
-  pTex->_height = ih;
+  texture->_width  = iw;
+  texture->_height = ih;
 
   switch (efmt) {
     case EBufferFormat::RGBA8:
     case EBufferFormat::R32F:
-      pTex->_data = calloc(iw * ih * 4, 1);
+      texture->_data = calloc(iw * ih * 4, 1);
       break;
     case EBufferFormat::RGBA32F:
-      pTex->_data = calloc(iw * ih * 16, 1);
+      texture->_data = calloc(iw * ih * 16, 1);
       break;
     default:
       assert(false);
   }
-  return pTex;
+  return texture;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -497,6 +497,8 @@ fxinstance_ptr_t PBRMaterial::createFxStateInstance(FxStateInstanceConfig& cfg) 
   fxinst->_params[_parRoughnessFactor] = _roughnessFactor;
   fxinst->_params[_parModColor]        = fvec4(1, 1, 1, 1);
 
+  fxinst->_instancematrices = _paramInstanceMatrixMap;
+
   return fxinst;
 }
 

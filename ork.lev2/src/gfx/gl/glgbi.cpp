@@ -920,13 +920,46 @@ void GlGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
     const IndexBufferBase& IdxBuf,
     EPrimitiveType eType,
     size_t instance_count) {
+  GL_ERRORCHECK();
+  ////////////////////////////////////////////////////////////////////
+  BindStreamSources(VBuf, IdxBuf);
+  int iNum          = IdxBuf.GetNumIndices();
+  auto plat_handle  = static_cast<const GLIdxBufHandle*>(IdxBuf.GetHandle());
+  int imin          = plat_handle->mMinIndex;
+  int imax          = plat_handle->mMaxIndex;
+  GLenum glprimtype = 0;
+  if (iNum) {
+    GL_ERRORCHECK();
+    switch (eType) {
+      case EPrimitiveType::LINES: { // orkprintf( "drawarrays: %d lines\n", iNum );
+        glprimtype = GL_LINES;
+        break;
+      }
+      case EPrimitiveType::TRIANGLES:
+        // printf( "drawindexedtris inum<%d> imin<%d> imax<%d>\n", iNum/3, imin, imax );
+        glprimtype = GL_TRIANGLES;
+        miTrianglesRendered += (iNum / 3) * instance_count;
+        break;
+      case EPrimitiveType::TRIANGLESTRIP:
+        // printf( "drawindexedtristrip inum<%d>\n", iNum-2 );
+        glprimtype = GL_TRIANGLE_STRIP;
+        miTrianglesRendered += (iNum - 2) * instance_count;
+        break;
+      case EPrimitiveType::POINTS:
+        glprimtype = GL_POINTS;
+        break;
+      default:
+        OrkAssert(false);
+        break;
+    }
+    if (glprimtype != 0) {
+      glDrawElementsInstanced(glprimtype, iNum, GL_UNSIGNED_SHORT, nullptr, instance_count);
+    }
+    GL_ERRORCHECK();
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-// u32	mIBO;
-// const U16* mBuffer;
-// int mNumIndices;
 
 void* GlGeometryBufferInterface::LockIB(IndexBufferBase& IdxBuf, int ibase, int icount) {
   void* rval = nullptr;
@@ -1036,5 +1069,4 @@ void GlGeometryBufferInterface::MultiDrawMeshTasksIndirectCountNV(
 
 #endif
 ///////////////////////////////////////////////////////////////////////////////
-
 }} // namespace ork::lev2

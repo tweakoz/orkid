@@ -52,6 +52,7 @@ struct FxStateInstance : public std::enable_shared_from_this<FxStateInstance> {
   fxtechnique_constptr_t _technique = nullptr;
   FxStateInstanceConfig _config;
   std::unordered_map<fxparam_constptr_t, varval_t> _params;
+  fxparam_constptr_t _instancematrices = nullptr;
 };
 
 } // namespace ork::lev2

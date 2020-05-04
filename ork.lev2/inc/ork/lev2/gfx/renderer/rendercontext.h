@@ -39,6 +39,7 @@ struct InstancedDrawableData {
   std::vector<fmtx4> _worldmatrices;
   std::vector<uint64_t> _pickids;
   std::vector<svar16_t> _miscdata;
+  size_t _count = 0;
 };
 
 using instanceddrawdata_ptr_t = std::shared_ptr<InstancedDrawableData>;

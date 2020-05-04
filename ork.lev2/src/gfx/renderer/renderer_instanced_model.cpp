@@ -63,6 +63,10 @@ void InstancedModelDrawable::bindModel(model_ptr_t model) {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
+void InstancedModelDrawable::gpuInit(Context* ctx) const {
+  _instanceTex = Texture::createBlank(1024, 1024, EBufferFormat::RGBA32F);
+}
+///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::enqueueToRenderQueue(
     const DrawableBufItem& item, //
     lev2::IRenderer* renderer) const {
@@ -82,6 +86,9 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   bool isSkinned   = _model->isSkinned();
   bool isPickState = context->FBI()->isPickState();
   OrkAssert(false == isSkinned); // not yet..
+  if (not _instanceTex) {
+    gpuInit(context); // todo figure out better do-only-once method...
+  }
   ////////////////////////////////////////////////////////////////////
   renderable.SetObject(GetOwner());
   renderable.SetSortKey(0x00000001);
@@ -94,14 +101,34 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   renderable.SetRenderCallback([this](lev2::RenderContextInstData& RCID) { //
     auto context = RCID.context();
     auto GBI     = context->GBI();
+    auto TXI     = context->TXI();
+    auto FXI     = context->FXI();
     auto impl    = _impl.getShared<IMDIMPL_MODEL>();
+    ////////////////////////////////////////////////////////
+    // upload instance matrices to GPU
+    ////////////////////////////////////////////////////////
+    TextureInitData texdata;
+    texdata._w           = k_texture_dimension;
+    texdata._h           = k_texture_dimension;
+    texdata._format      = EBufferFormat::RGBA32F;
+    texdata._autogenmips = false;
+    texdata._data        = (const void*)_instancedata->_worldmatrices.data();
+    OrkAssert(_count <= k_max_instances);
+    TXI->initTextureFromData(_instanceTex.get(), texdata);
+    ////////////////////////////////////////////////////////
+    // instanced render
+    ////////////////////////////////////////////////////////
     for (auto& sub : impl->_submeshes) {
-      auto xgmsub  = sub._xgmsubmesh;
-      auto mtlinst = sub._mtlinst;
-      OrkAssert(mtlinst);
-      mtlinst->wrappedDrawCall(RCID, [&]() {
+      auto xgmsub = sub._xgmsubmesh;
+      auto fxinst = sub._mtlinst;
+      OrkAssert(fxinst);
+      fxinst->wrappedDrawCall(RCID, [&]() {
         auto idata = _instancedata;
-        // todo set instancing texture
+        ////////////////////////////////////
+        // bind instancetex to sampler
+        ////////////////////////////////////
+        FXI->BindParamCTex(fxinst->_instancematrices, _instanceTex.get());
+        ////////////////////////////////////
         int inumclus = xgmsub->_clusters.size();
         for (int ic = 0; ic < inumclus; ic++) {
           auto cluster    = xgmsub->cluster(ic);

@@ -21,7 +21,9 @@ namespace ork { namespace lev2 {
 void invoke_nvcompress(std::string inpath, std::string outpath, std::string other_args);
 
 class Context;
+class Texture;
 class TextureAsset;
+using texture_ptr_t = std::shared_ptr<Texture>;
 
 enum ETextureUsage {
   ETEXUSAGE_COLOR = 0,
@@ -191,7 +193,7 @@ struct Texture {
   //////////////////////////////////////////////////////
 
   static Texture* LoadUnManaged(const AssetPath& fname);
-  static Texture* CreateBlank(int iw, int ih, EBufferFormat efmt);
+  static texture_ptr_t createBlank(int iw, int ih, EBufferFormat efmt);
 
   //////////////////////////////////////////////////////////
 
@@ -220,7 +222,7 @@ struct Texture {
   int _height                   = 0;
   int _depth                    = 0;
   uint64_t _flags               = 0;
-  uint64_t _contentHash = 0;
+  uint64_t _contentHash         = 0;
   MipChain* _chain              = nullptr;
   mutable bool _dirty           = true;
   const void* _data             = nullptr;
