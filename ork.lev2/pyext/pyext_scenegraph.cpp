@@ -23,6 +23,19 @@ void pyinit_scenegraph(py::module& module_lev2) {
               "user",                                       //
               [](node_ptr_t node) -> varmap::varmap_ptr_t { //
                 return node->_userdata;
+              })
+          .def(
+              "setInstanceMatrix",                                    //
+              [](node_ptr_t node, int instance, fmtx4_ptr_t matrix) { //
+                auto drw     = node->_drawable;
+                auto instdrw = std::dynamic_pointer_cast<InstancedModelDrawable>(drw);
+                if (instdrw) {
+                  auto instdata                      = instdrw->_instancedata;
+                  instdata->_worldmatrices[instance] = *matrix.get();
+                } else {
+                  OrkAssert(false);
+                }
+                return node->_userdata;
               });
   type_codec->registerStdCodec<node_ptr_t>(node_type);
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });

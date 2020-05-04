@@ -138,7 +138,8 @@ vertex_shader vs_rigid_gbuffer_instanced
 		  texelFetch(InstanceMatrices, ivec2(row+2,col), 0),
 		  texelFetch(InstanceMatrices, ivec2(row+3,col), 0));
 		vs_instanced(position,normal,binormal,instancemtx);
-		gl_Position = mvp*(instancemtx*position);
+		vec4 instanced_pos = (instancemtx*position);
+		gl_Position = mvp*instanced_pos;
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_instanced_stereo
@@ -147,6 +148,8 @@ vertex_shader vs_rigid_gbuffer_instanced_stereo
 	: iface_vgbuffer_stereo
 	: lib_pbr_vtx {
 		////////////////////////////////
+		int row = (gl_InstanceID&0xff)<<2;
+		int col = (gl_InstanceID>>8);
 		mat4 instancemtx = mat4(
 			texelFetch(InstanceMatrices, ivec2(row+0,col), 0),
 		  texelFetch(InstanceMatrices, ivec2(row+1,col), 0),

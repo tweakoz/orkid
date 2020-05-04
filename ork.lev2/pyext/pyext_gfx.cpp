@@ -314,6 +314,7 @@ void pyinit_gfx(py::module& module_lev2) {
   py::class_<XgmModel, model_ptr_t>(module_lev2, "Model") //
       .def(py::init([](const std::string& model_path) -> model_ptr_t {
         auto modl_asset = asset::AssetManager<XgmModelAsset>::Load(model_path.c_str());
+        asset::AssetManager<XgmModelAsset>::AutoLoad();
         return modl_asset->_model.atomicCopy();
       }))
       .def(
@@ -332,8 +333,14 @@ void pyinit_gfx(py::module& module_lev2) {
              std::string named,
              scenegraph::layer_ptr_t layer) -> scenegraph::node_ptr_t { //
             auto drw = std::make_shared<InstancedModelDrawable>(nullptr);
+            drw->bindModel(model);
+            auto node = layer->createNode(named, drw);
             drw->resize(numinstances);
-            return layer->createNode(named, drw);
+            auto instdata = drw->_instancedata;
+            for (int i = 0; i < numinstances; i++) {
+              instdata->_worldmatrices[i].compose(fvec3(0, 0, 0), fquat(), 0.0f);
+            }
+            return node;
           });
   /////////////////////////////////////////////////////////////////////////////////
   auto camdattype = //

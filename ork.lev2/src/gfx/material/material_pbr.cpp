@@ -437,6 +437,7 @@ fxinstance_ptr_t PBRMaterial::createFxStateInstance(FxStateInstanceConfig& cfg) 
     //////////////////////////////////////////
     case FxStateBasePermutation::PICK:
       if (cfg._instanced_primitive) {
+        fxinst->_technique = _tekRigidGBUFFER_N_INSTANCED;
       }
       ////////////////
       else { // non-instanced
@@ -470,6 +471,10 @@ fxinstance_ptr_t PBRMaterial::createFxStateInstance(FxStateInstanceConfig& cfg) 
     //////////////////////////////////////////
     case FxStateBasePermutation::STEREO:
       if (cfg._instanced_primitive) {
+        if (cfg._skinned)
+          fxinst->_technique = nullptr;
+        else // rigid
+          fxinst->_technique = _tekRigidGBUFFER_N_INSTANCED_STEREO;
       }
       ////////////////
       else { // non-instanced

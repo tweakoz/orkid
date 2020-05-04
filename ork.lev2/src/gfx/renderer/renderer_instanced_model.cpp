@@ -31,7 +31,7 @@ void InstancedModelDrawable::resize(size_t count) {
 ///////////////////////////////////////////////////////////////////////////////
 struct IMDIMPL_SUBMESH {
   const XgmSubMesh* _xgmsubmesh = nullptr;
-  fxinstance_ptr_t _mtlinst;
+  fxinstance_ptr_t _mtlinst[3];
 };
 struct IMDIMPL_MODEL {
   std::vector<IMDIMPL_SUBMESH> _submeshes;
@@ -50,15 +50,22 @@ void InstancedModelDrawable::bindModel(model_ptr_t model) {
     int inumclusset = mesh->numSubMeshes();
     for (int ics = 0; ics < inumclusset; ics++) {
       auto xgmsub = mesh->subMesh(ics);
-      FxStateInstanceConfig cfg;
-      cfg._instanced_primitive = true;
-      auto fxinst              = xgmsub->_material->createFxStateInstance(cfg);
-      if (fxinst) {
-        IMDIMPL_SUBMESH submesh_impl;
-        submesh_impl._xgmsubmesh = xgmsub;
-        submesh_impl._mtlinst    = fxinst;
-        impl->_submeshes.push_back(submesh_impl);
-      }
+      FxStateInstanceConfig cfg_mono, cfg_stereo, cfg_pick;
+      cfg_mono._instanced_primitive   = true;
+      cfg_stereo._instanced_primitive = true;
+      cfg_pick._instanced_primitive   = true;
+      cfg_mono._base_perm             = FxStateBasePermutation::MONO;
+      cfg_stereo._base_perm           = FxStateBasePermutation::STEREO;
+      cfg_pick._base_perm             = FxStateBasePermutation::PICK;
+      IMDIMPL_SUBMESH submesh_impl;
+      auto fxinst_mono         = xgmsub->_material->createFxStateInstance(cfg_mono);
+      auto fxinst_stereo       = xgmsub->_material->createFxStateInstance(cfg_stereo);
+      auto fxinst_pick         = xgmsub->_material->createFxStateInstance(cfg_pick);
+      submesh_impl._xgmsubmesh = xgmsub;
+      submesh_impl._mtlinst[0] = fxinst_mono;
+      submesh_impl._mtlinst[1] = fxinst_stereo;
+      submesh_impl._mtlinst[2] = fxinst_pick;
+      impl->_submeshes.push_back(submesh_impl);
     }
   }
 }
@@ -83,8 +90,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   const auto& monofrustum              = topCPD.monoCamFrustum();
   lev2::CallbackRenderable& renderable = renderer->enqueueCallback();
   ////////////////////////////////////////////////////////////////////
-  bool isSkinned   = _model->isSkinned();
-  bool isPickState = context->FBI()->isPickState();
+  bool isSkinned = _model->isSkinned();
   OrkAssert(false == isSkinned); // not yet..
   if (not _instanceTex) {
     gpuInit(context); // todo figure out better do-only-once method...
@@ -99,11 +105,14 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   renderable._instanced = true;
   ////////////////////////////////////////////////////////////////////
   renderable.SetRenderCallback([this](lev2::RenderContextInstData& RCID) { //
-    auto context = RCID.context();
-    auto GBI     = context->GBI();
-    auto TXI     = context->TXI();
-    auto FXI     = context->FXI();
-    auto impl    = _impl.getShared<IMDIMPL_MODEL>();
+    auto context     = RCID.context();
+    auto GBI         = context->GBI();
+    auto TXI         = context->TXI();
+    auto FXI         = context->FXI();
+    auto impl        = _impl.getShared<IMDIMPL_MODEL>();
+    bool isPick      = context->FBI()->isPickState();
+    bool isStereo    = RCID._RCFD->isStereo();
+    int fxinst_index = isStereo ? 1 : (isPick ? 2 : 0);
     ////////////////////////////////////////////////////////
     // upload instance matrices to GPU
     ////////////////////////////////////////////////////////
@@ -120,7 +129,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     ////////////////////////////////////////////////////////
     for (auto& sub : impl->_submeshes) {
       auto xgmsub = sub._xgmsubmesh;
-      auto fxinst = sub._mtlinst;
+      auto fxinst = sub._mtlinst[fxinst_index];
       OrkAssert(fxinst);
       fxinst->wrappedDrawCall(RCID, [&]() {
         auto idata = _instancedata;

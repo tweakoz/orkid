@@ -23,26 +23,31 @@ else:
 class instance_set(object):
   def __init__(self,model,num_instances,layer):
     super().__init__()
+    self.num_instances = num_instances
     self.model = model
     self.sgnode = model.createInstancedNode(num_instances,"node1",layer)
+
+  def updateInstance(self,deltatime,instance_id):
     Z = random.uniform(-2.5,-125)
-    self.pos = vec3(random.uniform(-1,1)*Z,
-                    random.uniform(-1,1)*Z,
-                    Z)
-    self.rot = quat(vec3(0,1,0),0)
+    pos = vec3(random.uniform(-2.5,2.5)*Z,
+               random.uniform(-2.5,2.5)*Z,
+               Z)
     incraxis = vec3(random.uniform(-1,1),
                     random.uniform(-1,1),
                     random.uniform(-1,1)).normal()
-    incrmagn = random.uniform(-0.01,0.01)
-    self.rotincr = quat(incraxis,incrmagn)
-    self.scale = random.uniform(0.5,0.7)
+    incrmagn = random.uniform(-1,1)
+    rot = quat(incraxis,incrmagn)
+    scale = random.uniform(0.1,0.2)
+
+    mtx = mtx4()
+    mtx.compose( pos, rot, scale )
+    self.sgnode.setInstanceMatrix(instance_id,mtx)
+
   def update(self,deltatime):
-    self.rot = self.rot*self.rotincr
-    self.sgnode\
-        .worldMatrix\
-        .compose( self.pos, # pos
-                  self.rot, # rot
-                  self.scale) # scale
+    for i in range(100):
+      instance_id = random.randint(0,numinstances-1)
+      self.updateInstance(deltatime,instance_id)
+
 ################################################################################
 class SceneGraphApp(object):
   ################################################
@@ -57,8 +62,8 @@ class SceneGraphApp(object):
   def onGpuInit(self,ctx):
     layer = self.scene.createLayer("layer1")
     models = []
-    models += [Model("data://tests/pbr1/pbr1")]
-    models += [Model("data://tests/pbr_calib.gltf")]
+    #models += [Model("data://tests/pbr1/pbr1")]
+    #models += [Model("data://tests/pbr_calib.gltf")]
     #models += [Model("src://environ/objects/misc/headwalker.obj")]
     models += [Model("src://environ/objects/misc/ref/torus.glb")]
     ###################################
@@ -76,8 +81,8 @@ class SceneGraphApp(object):
   ################################################
   def onUpdate(self,updinfo):
     ###################################
-    #for minst in self.instancesets:
-     # minst.update(updinfo.deltatime)
+    for minst in self.instancesets:
+      minst.update(updinfo.deltatime)
     ###################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
 ################################################
