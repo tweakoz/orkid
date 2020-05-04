@@ -430,6 +430,20 @@ fxinstance_ptr_t PBRMaterial::createFxStateInstance(FxStateInstanceConfig& cfg) 
 
   switch (cfg._base_perm) {
     //////////////////////////////////////////
+    case FxStateBasePermutation::PICK:
+      if (cfg._instanced_primitive) {
+      }
+      ////////////////
+      else { // non-instanced
+        if (cfg._skinned)
+          fxinst->_technique = nullptr;
+        else // rigid
+          fxinst->_technique = _tekRigidPICKING;
+        ////////////////
+      }
+      fxinst->_params[_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
+      break;
+    //////////////////////////////////////////
     case FxStateBasePermutation::MONO:
       if (cfg._instanced_primitive) {
       }
@@ -441,6 +455,7 @@ fxinstance_ptr_t PBRMaterial::createFxStateInstance(FxStateInstanceConfig& cfg) 
           fxinst->_technique = _tekRigidGBUFFER_N;
         ////////////////
       }
+      fxinst->_params[_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
       break;
     //////////////////////////////////////////
     case FxStateBasePermutation::STEREO:
@@ -454,30 +469,15 @@ fxinstance_ptr_t PBRMaterial::createFxStateInstance(FxStateInstanceConfig& cfg) 
           fxinst->_technique = _tekRigidGBUFFER_N_STEREO;
         ////////////////
       }
-      break;
-    //////////////////////////////////////////
-    case FxStateBasePermutation::PICK:
-      if (cfg._instanced_primitive) {
-      }
-      ////////////////
-      else { // non-instanced
-        if (cfg._skinned)
-          fxinst->_technique = nullptr;
-        else // rigid
-          fxinst->_technique = _tekRigidPICKING;
-        ////////////////
-      }
+      fxinst->_params[_paramMVPL] = "RCFD_Camera_MVP_Left"_crcsh;
+      fxinst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
       break;
       //////////////////////////////////////////
   }
 
   OrkAssert(fxinst->_technique != nullptr);
 
-  fxinst->_params[_paramMVP]  = "RCFD_Camera_MVP_Mono"_crcsh;
   fxinst->_params[_paramMROT] = "RCFD_Model_Rot"_crcsh;
-  fxinst->_params[_paramMVPL] = "RCFD_Camera_MVP_Left"_crcsh;
-  fxinst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
-  fxinst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
 
   fxinst->_params[_paramMapColor]  = _texColor;
   fxinst->_params[_paramMapNormal] = _texNormal;
