@@ -24,7 +24,7 @@ class modelinst(object):
     super().__init__()
     self.model = model
     self.sgnode = model.createNode("node1",layer)
-    Z = random.uniform(-2.5,-125)
+    Z = random.uniform(-5.0,-50)
     self.pos = vec3(random.uniform(-1,1)*Z,
                     random.uniform(-1,1)*Z,
                     Z)

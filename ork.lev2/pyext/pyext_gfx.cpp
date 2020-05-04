@@ -324,6 +324,16 @@ void pyinit_gfx(py::module& module_lev2) {
             auto drw        = std::make_shared<ModelDrawable>(nullptr);
             drw->_modelinst = std::make_shared<XgmModelInst>(model.get());
             return layer->createNode(named, drw);
+          })
+      .def(
+          "createInstancedNode", //
+          [](model_ptr_t model,  //
+             int numinstances,
+             std::string named,
+             scenegraph::layer_ptr_t layer) -> scenegraph::node_ptr_t { //
+            auto drw = std::make_shared<InstancedModelDrawable>(nullptr);
+            drw->resize(numinstances);
+            return layer->createNode(named, drw);
           });
   /////////////////////////////////////////////////////////////////////////////////
   auto camdattype = //

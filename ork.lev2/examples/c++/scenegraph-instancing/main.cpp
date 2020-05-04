@@ -29,8 +29,10 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////
   auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://tests/pbr1/pbr1");
   auto drw        = std::make_shared<InstancedModelDrawable>(nullptr);
-  drw->_model     = modl_asset->_model.atomicCopy();
-  auto sg_node    = sg_layer->createNode("model-node", drw);
+  asset::AssetManager<XgmModelAsset>::AutoLoad();
+  OrkAssert(modl_asset->_model.atomicCopy());
+  drw->bindModel(modl_asset->_model.atomicCopy());
+  auto sg_node = sg_layer->createNode("model-node", drw);
   //////////////////////////////////////////////////////////
   constexpr size_t NUMINSTANCES = 4096;
   //////////////////////////////////////////////////////////

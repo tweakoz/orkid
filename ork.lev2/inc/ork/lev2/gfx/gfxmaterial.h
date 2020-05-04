@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/gfxrasterstate.h>
+#include <ork/lev2/gfx/material_instance.h>
 #include <ork/kernel/varmap.inl>
 
 namespace ork {
@@ -182,6 +183,8 @@ public:
   void PushDebug(bool bdbg);
   void PopDebug();
   bool IsDebug();
+
+  virtual materialinst_ptr_t createFxInstance() const;
 
   //////////////////////////////////////////////////////////////////////////////
 

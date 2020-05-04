@@ -424,7 +424,7 @@ void PBRMaterial::end(const RenderContextFrameData& RCFD) {
 
 ////////////////////////////////////////////
 
-materialinst_constptr_t PBRMaterial::createFxInstance() const {
+materialinst_ptr_t PBRMaterial::createFxInstance() const {
 
   auto perms               = std::make_shared<FxShaderTechniquePermutations>();
   auto inst                = std::make_shared<GfxMaterialInstance>();
@@ -447,6 +447,8 @@ materialinst_constptr_t PBRMaterial::createFxInstance() const {
   inst->_params[_parMetallicFactor]  = _metallicFactor;
   inst->_params[_parRoughnessFactor] = _roughnessFactor;
   inst->_params[_parModColor]        = fvec4(1, 1, 1, 1);
+
+  return inst;
 }
 
 ////////////////////////////////////////////

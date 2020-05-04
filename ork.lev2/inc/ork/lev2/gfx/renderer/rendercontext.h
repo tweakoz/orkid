@@ -90,6 +90,7 @@ struct RenderContextInstData {
 
   const XgmMaterialStateInst* mMaterialInst;
   bool _isSkinned;
+  bool _isInstanced;
   float mEngineParamFloats[kMaxEngineParamFloats];
   RenderGroupState mRenderGroupState;
   const RenderContextFrameData* _RCFD = nullptr;

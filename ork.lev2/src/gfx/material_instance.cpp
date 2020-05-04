@@ -49,6 +49,7 @@ GfxMaterialInstance::GfxMaterialInstance() {
 void GfxMaterialInstance::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall) {
   int inumpasses = beginBlock(RCID);
   for (int ipass = 0; ipass < inumpasses; ipass++) {
+    OrkAssert(false);
     if (beginPass(RCID, ipass)) {
       drawcall();
       endPass(RCID);

@@ -36,22 +36,27 @@ struct IMDIMPL_SUBMESH {
 struct IMDIMPL_MODEL {
   std::vector<IMDIMPL_SUBMESH> _submeshes;
 };
+using imdimpl_model_ptr_t = std::shared_ptr<IMDIMPL_MODEL>;
+
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::bindModel(model_ptr_t model) {
   _model = model;
   // generate material instance data
-  auto impl      = _impl.makeShared<IMDIMPL_MODEL>();
+  auto impl = std::make_shared<IMDIMPL_MODEL>();
+  _impl.Set<imdimpl_model_ptr_t>(impl);
   int inummeshes = _model->numMeshes();
   for (int imesh = 0; imesh < inummeshes; imesh++) {
     auto mesh       = _model->mesh(imesh);
     int inumclusset = mesh->numSubMeshes();
     for (int ics = 0; ics < inumclusset; ics++) {
-      IMDIMPL_SUBMESH submesh_impl;
-      auto xgmsub              = mesh->subMesh(ics);
-      submesh_impl._xgmsubmesh = xgmsub;
-      // xgmsub->_material;
-      submesh_impl._mtlinst = std::make_shared<GfxMaterialInstance>();
-      impl->_submeshes.push_back(submesh_impl);
+      auto xgmsub = mesh->subMesh(ics);
+      auto fxinst = xgmsub->_material->createFxInstance();
+      if (fxinst) {
+        IMDIMPL_SUBMESH submesh_impl;
+        submesh_impl._xgmsubmesh = xgmsub;
+        submesh_impl._mtlinst    = fxinst;
+        impl->_submeshes.push_back(submesh_impl);
+      }
     }
   }
 }
@@ -60,14 +65,17 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     const DrawableBufItem& item, //
     lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
+  ////////////////////////////////////////////////////////////////////
+  if (not _model)
+    return;
+  if (not _impl.IsA<imdimpl_model_ptr_t>())
+    return;
+  ////////////////////////////////////////////////////////////////////
   auto context                         = renderer->GetTarget();
   auto RCFD                            = context->topRenderContextFrameData();
   const auto& topCPD                   = RCFD->topCPD();
   const auto& monofrustum              = topCPD.monoCamFrustum();
   lev2::CallbackRenderable& renderable = renderer->enqueueCallback();
-  ////////////////////////////////////////////////////////////////////
-  if (not _model)
-    return;
   ////////////////////////////////////////////////////////////////////
   bool isSkinned   = _model->isSkinned();
   bool isPickState = context->FBI()->isPickState();
@@ -88,7 +96,9 @@ void InstancedModelDrawable::enqueueToRenderQueue(
       auto xgmsub  = sub._xgmsubmesh;
       auto mtlinst = sub._mtlinst;
       OrkAssert(mtlinst);
+      RCID._isInstanced = true;
       mtlinst->wrappedDrawCall(RCID, [&]() {
+        OrkAssert(false);
         int inumclus = xgmsub->_clusters.size();
         for (int ic = 0; ic < inumclus; ic++) {
           auto cluster    = xgmsub->cluster(ic);
@@ -99,12 +109,14 @@ void InstancedModelDrawable::enqueueToRenderQueue(
             auto idxbuf    = primgroup->mpIndices;
             auto primtype  = primgroup->mePrimType;
             int numindices = primgroup->miNumIndices;
+            OrkAssert(false);
             GBI->DrawInstancedIndexedPrimitiveEML(*vtxbuf, *idxbuf, primtype, _count);
           }
         }
       }); // mtlinst->wrappedDrawCall(RCID, [&]() {
-    }     // for (auto& sub : impl._submeshes) {
-  });     // renderable.SetRenderCallback
+      RCID._isInstanced = false;
+    } // for (auto& sub : impl._submeshes) {
+  }); // renderable.SetRenderCallback
   ////////////////////////////////////////////////////////////////////
 } // InstancedModelDrawable::enqueueToRenderQueue(
 /////////////////////////////////////////////////////////////////////

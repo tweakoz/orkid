@@ -289,8 +289,7 @@ public:
   // construct and return a reference to a shared_ptr<T>
   //////////////////////////////////////////////////////////////
   template <typename T, typename... A> std::shared_ptr<T>& makeShared(A&&... args) {
-    typedef std::shared_ptr<T> sharedptr_t;
-
+    using sharedptr_t = std::shared_ptr<T>;
     static_assert(sizeof(sharedptr_t) <= ksize, "static_variant size violation");
     Destroy();
     auto pval = (sharedptr_t*)&mbuffer[0];

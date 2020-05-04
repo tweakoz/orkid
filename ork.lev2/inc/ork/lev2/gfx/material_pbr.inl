@@ -79,7 +79,7 @@ public:
   void UnBindMaterialInstItem(MaterialInstItem* pitem) const override;
 
   ////////////////////////////////////////////
-  materialinst_constptr_t createFxInstance() const;
+  materialinst_ptr_t createFxInstance() const override;
   ////////////////////////////////////////////
   void setupCamera(const RenderContextFrameData& RCFD);
   ////////////////////////////////////////////

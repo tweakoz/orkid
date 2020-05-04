@@ -109,6 +109,11 @@ const TextureContext& GfxMaterial::GetTexture(ETextureDest edest) const {
 TextureContext& GfxMaterial::GetTexture(ETextureDest edest) {
   return mTextureMap[edest];
 }
+
+materialinst_ptr_t GfxMaterial::createFxInstance() const {
+  return nullptr;
+}
+
 /////////////////////////////////////////////////////////////////////////
 } // namespace lev2
 } // namespace ork
