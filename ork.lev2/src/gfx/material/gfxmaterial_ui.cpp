@@ -55,13 +55,13 @@ GfxMaterialUI::GfxMaterialUI(Context* pTarg)
   OrkAssertI(hModFX != 0, "did you copy the shaders folder!\n");
 
   if (pTarg) {
-    Init(pTarg);
+    gpuInit(pTarg);
   }
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialUI::Init(ork::lev2::Context* pTarg) {
+void GfxMaterialUI::gpuInit(ork::lev2::Context* pTarg) {
   // printf( "hModFX<%p>\n", hModFX );
 
   hTekMod = pTarg->FXI()->technique(hModFX, "uidev_modcolor");
@@ -157,13 +157,13 @@ GfxMaterialUIText::GfxMaterialUIText(Context* pTarg)
   hModFX = asset::AssetManager<FxShaderAsset>::Load("orkshader://ui")->GetFxShader();
 
   if (pTarg) {
-    Init(pTarg);
+    gpuInit(pTarg);
   }
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialUIText::Init(ork::lev2::Context* pTarg) {
+void GfxMaterialUIText::gpuInit(ork::lev2::Context* pTarg) {
   hTek = pTarg->FXI()->technique(hModFX, "uitext");
 
   hTransform = pTarg->FXI()->parameter(hModFX, "mvp");
@@ -234,7 +234,7 @@ GfxMaterialUITextured::GfxMaterialUITextured(Context* pTarg, const std::string& 
   _rasterstate.SetCullTest(ECULLTEST_OFF);
 
   if (pTarg) {
-    Init(pTarg);
+    gpuInit(pTarg);
   }
 }
 
@@ -248,7 +248,7 @@ void GfxMaterialUITextured::EffectInit(void) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialUITextured::Init(ork::lev2::Context* pTarg) {
+void GfxMaterialUITextured::gpuInit(ork::lev2::Context* pTarg) {
   if (hTek == nullptr) {
     hModFX = asset::AssetManager<FxShaderAsset>::Load("orkshader://ui")->GetFxShader();
     hTek   = pTarg->FXI()->technique(hModFX, mTechniqueName);
@@ -262,10 +262,10 @@ void GfxMaterialUITextured::Init(ork::lev2::Context* pTarg) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialUITextured::Init(ork::lev2::Context* pTarg, const std::string& Technique) {
+void GfxMaterialUITextured::gpuInit(ork::lev2::Context* pTarg, const std::string& Technique) {
   if (hTek == nullptr) {
     mTechniqueName = Technique;
-    Init(pTarg);
+    gpuInit(pTarg);
   }
 }
 

@@ -158,7 +158,7 @@ static void getPythonOutput() {
 ///////////////////////////////////////////////////////////////////////////////
 void ork::tool::vp_cons::BindCTQT(ork::lev2::CTQT* pctqt) {
   mCTQT = pctqt;
-  mBaseMaterial.Init(mCTQT->GetTarget());
+  mBaseMaterial.gpuInit(mCTQT->GetTarget());
   Register();
 
   lev2::RefreshPolicyItem item;

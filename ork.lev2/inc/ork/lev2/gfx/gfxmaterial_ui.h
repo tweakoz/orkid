@@ -21,15 +21,15 @@ public:
   GfxMaterialUI(Context* pTarg = 0);
   ~GfxMaterialUI();
 
-  void Update(void) final {
+  void Update(void) override {
   }
 
-  void Init(Context* pTarg) final;
+  void gpuInit(Context* context) override;
 
-  bool BeginPass(Context* pTARG, int iPass = 0) final;
-  void EndPass(Context* pTARG) final;
-  int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx) final;
-  void EndBlock(Context* pTARG) final;
+  bool BeginPass(Context* pTARG, int iPass = 0) override;
+  void EndPass(Context* pTARG) override;
+  int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx) override;
+  void EndBlock(Context* pTARG) override;
 
   void SetUIColorMode(EUIColorMode emod) {
     meUIColorMode = emod;
@@ -69,7 +69,7 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class GfxMaterialUIText : public GfxMaterial {
+class GfxMaterialUIText final : public GfxMaterial {
   //////////////////////////////////////////////////////////////////////////////
 
 public:
@@ -78,14 +78,14 @@ public:
 
   GfxMaterialUIText(Context* pTarg = 0);
 
-  void Update(void) final {
+  void Update(void) override {
   }
-  void Init(Context* pTarg) final;
+  void gpuInit(Context* context) override;
 
-  bool BeginPass(Context* pTARG, int iPass = 0) final;
-  void EndPass(Context* pTARG) final;
-  int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx) final;
-  void EndBlock(Context* pTARG) final;
+  bool BeginPass(Context* pTARG, int iPass = 0) override;
+  void EndPass(Context* pTARG) override;
+  int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx) override;
+  void EndBlock(Context* pTARG) override;
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -108,18 +108,18 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class GfxMaterialUITextured : public GfxMaterial {
+class GfxMaterialUITextured final : public GfxMaterial {
 public:
   static void ClassInit();
   GfxMaterialUITextured(Context* pTarg = 0, const std::string& Technique = "uitextured");
-  void Init(Context* pTarg) final;
-  void Init(Context* pTarg, const std::string& Technique);
-  void Update(void) final {
+  void gpuInit(Context* context) override;
+  void gpuInit(Context* context, const std::string& Technique);
+  void Update(void) override {
   }
-  bool BeginPass(Context* pTARG, int iPass = 0) final;
-  void EndPass(Context* pTARG) final;
-  int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx) final;
-  void EndBlock(Context* pTARG) final;
+  bool BeginPass(Context* pTARG, int iPass = 0) override;
+  void EndPass(Context* pTARG) override;
+  int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx) override;
+  void EndBlock(Context* pTARG) override;
 
   void EffectInit(void);
 

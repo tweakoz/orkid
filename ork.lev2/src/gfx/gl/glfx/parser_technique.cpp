@@ -26,14 +26,39 @@ void TechniqueNode::parse(const ScannerView& view) {
   for (int i = ist; i <= ien;) {
     const Token* vt_tok = view.token(i);
     // printf( "  ParseFxTechnique Tok<%s>\n", vt_tok.text.c_str() );
-    if (vt_tok->text == "fxconfig") {
+    ////////////////////////////////////////////////////
+    // short form vertex/fragment shader pass
+    ////////////////////////////////////////////////////
+    if (vt_tok->text == "vf_pass") {
+      OrkAssert(view.token(i + 1)->text == "=");
+      OrkAssert(view.token(i + 2)->text == "{");
+      OrkAssert(view.token(i + 4)->text == ",");
+      OrkAssert(view.token(i + 6)->text == ",");
+      OrkAssert(view.token(i + 8)->text == "}");
+      auto passnode             = new PassNode(_container, this);
+      size_t numpasses          = _passNodes.size();
+      auto passname             = FormatString("p%zu", numpasses);
+      passnode->_name           = passname;
+      _passNodes[passname]      = passnode;
+      passnode->_vertexshader   = view.token(i + 3)->text;
+      passnode->_fragmentshader = view.token(i + 5)->text;
+      passnode->_stateblock     = view.token(i + 7)->text;
+      printf("vtxs<%s>\n", passnode->_vertexshader.c_str());
+      printf("frgs<%s>\n", passnode->_fragmentshader.c_str());
+      printf("sblk<%s>\n", passnode->_stateblock.c_str());
+      i += 9;
+    }
+    ////////////////////////////////////////////////////
+    else if (vt_tok->text == "fxconfig") {
       _fxconfig = view.token(i + 2)->text;
       i += 4;
-    } else if (vt_tok->text == "pass") {
+    }
+    ////////////////////////////////////////////////////
+    else if (vt_tok->text == "pass") {
       // printf( "parsing pass at i<%d>\n", i );
       // i is in view space, we need the globspace index to
       //  start the pass parse
-      auto passnode         = new PassNode(_container,this);
+      auto passnode         = new PassNode(_container, this);
       int globspac_passtoki = view.globalTokenIndex(i);
       ScannerView subview(view._scanner, view._filter);
       subview.scanBlock(globspac_passtoki);
@@ -154,9 +179,10 @@ void PassNode::generate(shaderbuilder::BackEnd& backend) const {
   /////////////////////////////////////////////////////////////
   if (_fragmentshader != "") {
     auto pshader = c->fragmentShader(_fragmentshader);
-    if( pshader == nullptr ){
-      deco::printf(fvec3::Red(),"fragment shader not found!\n");
-      deco::printf(fvec3::Red(),"  fragshad<%s> pass<%s> tek<%s>\n", _fragmentshader.c_str(), _name.c_str(), _techniqueNode->_name.c_str());
+    if (pshader == nullptr) {
+      deco::printf(fvec3::Red(), "fragment shader not found!\n");
+      deco::printf(
+          fvec3::Red(), "  fragshad<%s> pass<%s> tek<%s>\n", _fragmentshader.c_str(), _name.c_str(), _techniqueNode->_name.c_str());
       OrkAssert(false);
     }
     if (auto as_vtg = ppass->_primpipe.TryAs<PrimPipelineVTG>())

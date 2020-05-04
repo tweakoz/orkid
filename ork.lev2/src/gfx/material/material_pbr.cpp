@@ -41,7 +41,7 @@ material_ptr_t default3DMaterial() {
 
 PBRMaterial::PBRMaterial(Context* targ)
     : PBRMaterial() {
-  Init(targ);
+  gpuInit(targ);
 }
 
 PBRMaterial::PBRMaterial()
@@ -166,20 +166,25 @@ void PBRMaterial::describeX(class_t* c) {
 
 ////////////////////////////////////////////
 
-void PBRMaterial::Init(Context* targ) /*final*/ {
+void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   assert(_initialTarget == nullptr);
   _initialTarget = targ;
   auto fxi       = targ->FXI();
   auto shass     = ork::asset::AssetManager<FxShaderAsset>::Load("orkshader://pbr");
   _shader        = shass->GetFxShader();
 
+  _tekRigidPICKING = fxi->technique(_shader, "picking_rigid");
+
   _tekRigidGBUFFER              = fxi->technique(_shader, "rigid_gbuffer");
   _tekRigidGBUFFER_N            = fxi->technique(_shader, "rigid_gbuffer_n");
   _tekRigidGBUFFER_N_STEREO     = fxi->technique(_shader, "rigid_gbuffer_n_stereo");
   _tekRigidGBUFFER_N_TEX_STEREO = fxi->technique(_shader, "rigid_gbuffer_n_tex_stereo");
-  _tekRigidPICKING              = fxi->technique(_shader, "picking_rigid");
+  _tekRigidGBUFFER_N_SKINNED    = fxi->technique(_shader, "skinned_gbuffer_n");
 
-  _tekRigidGBUFFER_SKINNED_N = fxi->technique(_shader, "skinned_gbuffer_n");
+  _tekRigidGBUFFER_N_INSTANCED        = fxi->technique(_shader, "rigid_gbuffer_n_instanced");
+  _tekRigidGBUFFER_N_INSTANCED_STEREO = fxi->technique(_shader, "rigid_gbuffer_n_instanced_stereo");
+
+  _tekSkinnedGBUFFER_N = fxi->technique(_shader, "skinned_gbuffer_n");
 
   _paramMVP               = fxi->parameter(_shader, "mvp");
   _paramMVPL              = fxi->parameter(_shader, "mvp_l");
@@ -236,7 +241,7 @@ int PBRMaterial::BeginBlock(Context* targ, const RenderContextInstData& RCID) {
     else
       tek = _tekRigidGBUFFER_N_STEREO;
   } else {
-    tek = is_skinned ? _tekRigidGBUFFER_SKINNED_N : _tekRigidGBUFFER_N;
+    tek = is_skinned ? _tekRigidGBUFFER_N_SKINNED : _tekRigidGBUFFER_N;
     if (is_skinned) {
     }
   }
@@ -446,11 +451,16 @@ fxinstance_ptr_t PBRMaterial::createFxStateInstance(FxStateInstanceConfig& cfg) 
     //////////////////////////////////////////
     case FxStateBasePermutation::MONO:
       if (cfg._instanced_primitive) {
+        if (cfg._skinned)
+          fxinst->_technique = nullptr;
+        else { // rigid
+          fxinst->_technique = _tekRigidGBUFFER_N_INSTANCED;
+        }
       }
       ////////////////
       else { // non-instanced
         if (cfg._skinned)
-          fxinst->_technique = _tekRigidGBUFFER_SKINNED_N;
+          fxinst->_technique = _tekRigidGBUFFER_N_SKINNED;
         else // rigid
           fxinst->_technique = _tekRigidGBUFFER_N;
         ////////////////

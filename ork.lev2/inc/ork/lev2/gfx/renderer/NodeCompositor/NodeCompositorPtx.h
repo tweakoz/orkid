@@ -19,7 +19,7 @@ public:
   PtxCompositingNode();
   ~PtxCompositingNode();
 
-  void DoInit(lev2::Context* pTARG, int w, int h) final;
+  void doGpuInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
   proctex::ProcTex& getTemplate() const {
     return _template;

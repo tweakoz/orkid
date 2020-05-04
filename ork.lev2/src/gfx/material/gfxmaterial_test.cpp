@@ -40,7 +40,7 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(Context* pTARG)
   }
 
   if (pTARG) {
-    Init(pTARG);
+    gpuInit(pTARG);
   }
 }
 
@@ -60,7 +60,7 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(Context* pTARG, const char* puserfx, cons
   miNumPasses = 1;
 
   if (pTARG) {
-    Init(pTARG);
+    gpuInit(pTARG);
   } else {
     std::shared_ptr<FxShaderAsset> fxshaderasset;
     fxshaderasset = asset::AssetManager<FxShaderAsset>::Load(mUserFxName.c_str());
@@ -73,7 +73,7 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(Context* pTARG, const char* puserfx, cons
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxMaterial3DSolid::Init(ork::lev2::Context* pTarg) {
+void GfxMaterial3DSolid::gpuInit(ork::lev2::Context* pTarg) {
 
   auto fxi = pTarg->FXI();
 

@@ -18,7 +18,7 @@ TEST(pbr1) {
 
     auto mtl = new ork::lev2::PBRMaterial();
     mtl->setTextureBaseName("yo");
-    mtl->Init(targ);
+    mtl->gpuInit(targ);
     printf("mtl<%p>\n", mtl);
     CHECK(mtl != nullptr);
   });

@@ -44,7 +44,7 @@ class RenderCompositingNode : public ork::Object {
 public:
   RenderCompositingNode();
   ~RenderCompositingNode();
-  void Init(lev2::Context* pTARG, int w, int h);
+  void gpuInit(lev2::Context* pTARG, int w, int h);
   void Render(CompositorDrawData& drawdata);
   virtual lev2::RtBuffer* GetOutput() const {
     return nullptr;
@@ -54,8 +54,8 @@ public:
   }
 
 private:
-  virtual void DoInit(lev2::Context* pTARG, int w, int h) = 0;
-  virtual void DoRender(CompositorDrawData& drawdata)     = 0;
+  virtual void doGpuInit(lev2::Context* pTARG, int w, int h) = 0;
+  virtual void DoRender(CompositorDrawData& drawdata)        = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class PostCompositingNode : public ork::Object {
@@ -64,15 +64,15 @@ class PostCompositingNode : public ork::Object {
 public:
   PostCompositingNode();
   ~PostCompositingNode();
-  void Init(lev2::Context* pTARG, int w, int h);
+  void gpuInit(lev2::Context* pTARG, int w, int h);
   void Render(CompositorDrawData& drawdata);
   virtual lev2::RtBuffer* GetOutput() const {
     return nullptr;
   }
 
 private:
-  virtual void DoInit(lev2::Context* pTARG, int w, int h) = 0;
-  virtual void DoRender(CompositorDrawData& drawdata)     = 0;
+  virtual void doGpuInit(lev2::Context* pTARG, int w, int h) = 0;
+  virtual void DoRender(CompositorDrawData& drawdata)        = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class ChainCompositingNode : public PostCompositingNode {
@@ -87,8 +87,8 @@ public:
   ~Op2CompositingNode();
 
 private:
-  void DoInit(lev2::Context* pTARG, int w, int h) override; // virtual
-  void DoRender(CompositorDrawData& drawdata) override;     // virtual
+  void doGpuInit(lev2::Context* pTARG, int w, int h) override; // virtual
+  void DoRender(CompositorDrawData& drawdata) override;        // virtual
   void GetNodeA(ork::rtti::ICastable*& val) const;
   void SetNodeA(ork::rtti::ICastable* const& val);
   void GetNodeB(ork::rtti::ICastable*& val) const;
@@ -109,7 +109,7 @@ private:
   fvec4 mBiasB;
 };
 ///////////////////////////////////////////////////////////////////////////////
-class NodeCompositingTechnique : public CompositingTechnique {
+class NodeCompositingTechnique final : public CompositingTechnique {
   DeclareConcreteX(NodeCompositingTechnique, CompositingTechnique);
 
 public:
@@ -139,7 +139,7 @@ public:
   void _readOutputNode(ork::rtti::ICastable*& val) const;
   void _writeOutputNode(ork::rtti::ICastable* const& val);
 
-  void Init(lev2::Context* pTARG, int w, int h) override;
+  void gpuInit(lev2::Context* context, int w, int h) override;
   bool assemble(CompositorDrawData& drawdata) override;
   void composite(CompositorDrawData& drawdata) override;
   //
@@ -155,6 +155,6 @@ public:
   RenderCompositingNode* _renderNode;
   PostCompositingNode* _postfxNode;
   OutputCompositingNode* _outputNode;
-  CompositingMaterial mCompositingMaterial;
+  // CompositingMaterial mCompositingMaterial;
 };
 } // namespace ork::lev2

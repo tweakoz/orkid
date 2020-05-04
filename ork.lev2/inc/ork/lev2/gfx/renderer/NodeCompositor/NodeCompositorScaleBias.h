@@ -20,12 +20,12 @@ public:
   ~ScaleBiasCompositingNode();
 
 private:
-  void DoInit(lev2::Context* pTARG, int w, int h) final;                          // virtual
-  void DoRender(CompositorDrawData& drawdata) final; // virtual
+  void doGpuInit(lev2::Context* pTARG, int w, int h) final; // virtual
+  void DoRender(CompositorDrawData& drawdata) final;        // virtual
 
   lev2::RtBuffer* GetOutput() const final;
   svar256_t _impl;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2 {
+} // namespace ork::lev2

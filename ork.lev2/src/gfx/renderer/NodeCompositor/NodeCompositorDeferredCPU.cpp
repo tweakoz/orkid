@@ -298,7 +298,7 @@ DeferredCompositingNode::~DeferredCompositingNode() {
   _impl = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNode::DoInit(lev2::Context* pTARG, int iW, int iH) {
+void DeferredCompositingNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
   _impl.Get<std::shared_ptr<CpuNodeImpl>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////

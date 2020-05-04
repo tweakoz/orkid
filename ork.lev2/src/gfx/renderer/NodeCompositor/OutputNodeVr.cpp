@@ -44,7 +44,7 @@ struct VRIMPL {
       int width  = orkidvr::device()._width * 2;
       int height = orkidvr::device()._height;
       _blit2screenmtl.SetUserFx("orkshader://solid", "texcolor");
-      _blit2screenmtl.Init(pTARG);
+      _blit2screenmtl.gpuInit(pTARG);
 
       _rtg            = new RtGroup(pTARG, width, height, 1);
       auto buf        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA8, width, height);

@@ -86,7 +86,7 @@ void CompositingSceneItem::_writeTech(ork::rtti::ICastable* const& val) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void PickingCompositorTechnique::Init(lev2::Context* pTARG, int w, int h) {
+void PickingCompositorTechnique::gpuInit(lev2::Context* pTARG, int w, int h) {
 }
 bool PickingCompositorTechnique::assemble(CompositorDrawData& drawdata) {
   OrkAssert(false);

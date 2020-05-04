@@ -285,7 +285,7 @@ DeferredCompositingNodeNvMs::DeferredCompositingNodeNvMs() {
 DeferredCompositingNodeNvMs::~DeferredCompositingNodeNvMs() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNodeNvMs::DoInit(lev2::Context* pTARG, int iW, int iH) {
+void DeferredCompositingNodeNvMs::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
   _impl.Get<std::shared_ptr<NVMSIMPL>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////

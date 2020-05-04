@@ -61,16 +61,16 @@ class CompositingTechnique : public ork::Object {
   RttiDeclareAbstract(CompositingTechnique, ork::Object);
 
 public:
-  virtual void Init(lev2::Context* pTARG, int w, int h) = 0;
-  virtual bool assemble(CompositorDrawData& drawdata)   = 0;
-  virtual void composite(CompositorDrawData& drawdata)  = 0;
+  virtual void gpuInit(lev2::Context* pTARG, int w, int h) = 0;
+  virtual bool assemble(CompositorDrawData& drawdata)      = 0;
+  virtual void composite(CompositorDrawData& drawdata)     = 0;
 };
 
-class PickingCompositorTechnique : public CompositingTechnique {
+class PickingCompositorTechnique final : public CompositingTechnique {
 public:
-  void Init(lev2::Context* pTARG, int w, int h) final;
-  bool assemble(CompositorDrawData& drawdata) final;
-  void composite(CompositorDrawData& drawdata) final;
+  void gpuInit(lev2::Context* pTARG, int w, int h) override;
+  bool assemble(CompositorDrawData& drawdata) override;
+  void composite(CompositorDrawData& drawdata) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

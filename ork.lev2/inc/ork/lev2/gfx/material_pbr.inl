@@ -73,7 +73,7 @@ public:
   void EndPass(Context* targ) final;
   int BeginBlock(Context* targ, const RenderContextInstData& RCID) final;
   void EndBlock(Context* targ) final;
-  void Init(Context* targ) final;
+  void gpuInit(Context* targ) final;
   void Update() final;
   void BindMaterialInstItem(MaterialInstItem* pitem) const override;
   void UnBindMaterialInstItem(MaterialInstItem* pitem) const override;
@@ -109,11 +109,17 @@ public:
   std::string _textureBaseName;
 
   fxtechnique_constptr_t _tekRigidGBUFFER              = nullptr;
-  fxtechnique_constptr_t _tekRigidGBUFFER_SKINNED_N    = nullptr;
   fxtechnique_constptr_t _tekRigidGBUFFER_N            = nullptr;
+  fxtechnique_constptr_t _tekRigidGBUFFER_N_SKINNED    = nullptr;
   fxtechnique_constptr_t _tekRigidGBUFFER_N_STEREO     = nullptr;
   fxtechnique_constptr_t _tekRigidGBUFFER_N_TEX_STEREO = nullptr;
-  fxtechnique_constptr_t _tekRigidPICKING              = nullptr;
+
+  fxtechnique_constptr_t _tekRigidGBUFFER_N_INSTANCED        = nullptr;
+  fxtechnique_constptr_t _tekRigidGBUFFER_N_INSTANCED_STEREO = nullptr;
+
+  fxtechnique_constptr_t _tekSkinnedGBUFFER_N = nullptr;
+
+  fxtechnique_constptr_t _tekRigidPICKING = nullptr;
 
   std::string _colorMapName;
   std::string _normalMapName;

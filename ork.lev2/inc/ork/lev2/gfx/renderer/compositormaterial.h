@@ -16,27 +16,46 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-class CompositingMaterial : public lev2::GfxMaterial {
+class CompositingMaterial final : public lev2::GfxMaterial {
 public:
   CompositingMaterial();
   ~CompositingMaterial();
   /////////////////////////////////////////////////
-  virtual void Update(void) {}
-  virtual void Init(lev2::Context* pTarg);
-  virtual bool BeginPass(lev2::Context* pTARG, int iPass = 0);
-  virtual void EndPass(lev2::Context* pTARG);
-  virtual int BeginBlock(lev2::Context* pTARG, const lev2::RenderContextInstData& MatCtx);
-  virtual void EndBlock(lev2::Context* pTARG);
+  void Update(void) {
+  }
+  void gpuInit(lev2::Context* context) final;
+  bool BeginPass(lev2::Context* pTARG, int iPass = 0) final;
+  void EndPass(lev2::Context* pTARG) final;
+  int BeginBlock(lev2::Context* pTARG, const lev2::RenderContextInstData& MatCtx) final;
+  void EndBlock(lev2::Context* pTARG) final;
   /////////////////////////////////////////////////
-  void SetTextureA(lev2::Texture* ptex) { mCurrentTextureA = ptex; }
-  void SetTextureB(lev2::Texture* ptex) { mCurrentTextureB = ptex; }
-  void SetTextureC(lev2::Texture* ptex) { mCurrentTextureC = ptex; }
-  void SetLevelA(const fvec4& la) { mLevelA = la; }
-  void SetLevelB(const fvec4& lb) { mLevelB = lb; }
-  void SetLevelC(const fvec4& lc) { mLevelC = lc; }
-  void SetBiasA(const fvec4& ba) { mBiasA = ba; }
-  void SetBiasB(const fvec4& bb) { mBiasB = bb; }
-  void SetBiasC(const fvec4& bc) { mBiasC = bc; }
+  void SetTextureA(lev2::Texture* ptex) {
+    mCurrentTextureA = ptex;
+  }
+  void SetTextureB(lev2::Texture* ptex) {
+    mCurrentTextureB = ptex;
+  }
+  void SetTextureC(lev2::Texture* ptex) {
+    mCurrentTextureC = ptex;
+  }
+  void SetLevelA(const fvec4& la) {
+    mLevelA = la;
+  }
+  void SetLevelB(const fvec4& lb) {
+    mLevelB = lb;
+  }
+  void SetLevelC(const fvec4& lc) {
+    mLevelC = lc;
+  }
+  void SetBiasA(const fvec4& ba) {
+    mBiasA = ba;
+  }
+  void SetBiasB(const fvec4& bb) {
+    mBiasB = bb;
+  }
+  void SetBiasC(const fvec4& bc) {
+    mBiasC = bc;
+  }
   void SetTechnique(const std::string& tek);
   /////////////////////////////////////////////////
   lev2::Texture* mCurrentTextureA;
@@ -74,4 +93,4 @@ public:
   lev2::FxShader* hModFX;
 };
 
-} //namespace ork::lev2 {
+} // namespace ork::lev2

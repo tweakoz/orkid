@@ -74,7 +74,7 @@ void GfxPrimitives::Init(Context* pTarg) {
   } else
     return;
 
-  GetRef().mMaterial.Init(pTarg);
+  GetRef().mMaterial.gpuInit(pTarg);
   GetRef().mMaterial.SetColorMode(ork::lev2::GfxMaterial3DSolid::EMODE_VERTEXMOD_COLOR);
 
   // orkprintf( "Inititializing Primitives\n" );

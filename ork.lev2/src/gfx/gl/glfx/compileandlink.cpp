@@ -244,13 +244,20 @@ bool Interface::compilePipelineVTG(Container* container) {
       glGetActiveAttrib(prgo, i, sizeof(nambuf), &namlen, &atrsiz, &atrtyp, nambuf);
       OrkAssert(namlen < sizeof(nambuf));
       GL_ERRORCHECK();
-      const auto& it = vtx_iface->_inputAttributes.find(nambuf);
-      OrkAssert(it != vtx_iface->_inputAttributes.end());
-      Attribute* pattr = it->second;
-      // printf( "qattr<%d> loc<%d> name<%s>\n", i, pattr->mLocation, nambuf
-      // );
-      pattr->meType = atrtyp;
-      // pattr->mLocation = i;
+      auto it = vtx_iface->_inputAttributes.find(nambuf);
+      if (it != vtx_iface->_inputAttributes.end()) {
+        Attribute* pattr = it->second;
+        // printf( "qattr<%d> loc<%d> name<%s>\n", i, pattr->mLocation, nambuf
+        // );
+        pattr->meType = atrtyp;
+        // pattr->mLocation = i;
+      } else {
+        // check for builtin attr
+        bool ok = nambuf[0] == 'g';
+        ok &= nambuf[1] == 'l';
+        ok &= nambuf[2] == '_';
+        OrkAssert(ok);
+      }
     }
 
     //////////////////////////

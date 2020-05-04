@@ -18,6 +18,7 @@ uniform_set ub_vtx {
 	mat3 mrot;
 	vec4 modcolor;
 	vec2 InvViewportSize; // inverse target size
+	sampler2D InstanceMatrices;
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_frg {
@@ -85,6 +86,8 @@ libblock lib_pbr_vtx {
 	}
 }
 ///////////////////////////////////////////////////////////////
+// vs-non-instanced-rigid
+///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer
 	: iface_vgbuffer
   : lib_pbr_vtx {
@@ -94,15 +97,47 @@ vertex_shader vs_rigid_gbuffer
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_stereo
 	: extension(GL_NV_stereo_view_rendering)
-    : extension(GL_NV_viewport_array2)
-	: iface_vgbuffer_stereo  : lib_pbr_vtx {
+  : extension(GL_NV_viewport_array2)
+	: iface_vgbuffer_stereo
+	: lib_pbr_vtx {
 	  vs_common(position,normal,binormal);
 	  gl_Position = mvp_l*position;
 	  gl_SecondaryPositionNV = mvp_r*position;
-  	  gl_Layer = 0;
+	  gl_Layer = 0;
 	  gl_ViewportMask[0] = 1;
-  	  gl_SecondaryViewportMaskNV[0] = 2;
+	  gl_SecondaryViewportMaskNV[0] = 2;
 }
+///////////////////////////////////////////////////////////////
+// vs-instanced-rigid
+///////////////////////////////////////////////////////////////
+vertex_shader vs_rigid_gbuffer_instanced
+	: iface_vgbuffer
+  : lib_pbr_vtx {
+		vs_common(position,normal,binormal);
+		int col = (gl_InstanceID&0x3ff)>>2;
+		int row = (gl_InstanceID>>2)&0x3ff;
+		mat4 instancemtx = mat4(
+			texelFetch(InstanceMatrices, ivec2(row+0,col), 0),
+		  texelFetch(InstanceMatrices, ivec2(row+1,col), 0),
+		  texelFetch(InstanceMatrices, ivec2(row+2,col), 0),
+		  texelFetch(InstanceMatrices, ivec2(row+3,col), 0));
+		gl_Position = mvp*(instancemtx*position);
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_rigid_gbuffer_instanced_stereo
+	: extension(GL_NV_stereo_view_rendering)
+  : extension(GL_NV_viewport_array2)
+	: iface_vgbuffer_stereo
+	: lib_pbr_vtx {
+	  vs_common(position,normal,binormal);
+	  gl_Position = mvp_l*position;
+	  gl_SecondaryPositionNV = mvp_r*position;
+	  gl_Layer = 0;
+	  gl_ViewportMask[0] = 1;
+	  gl_SecondaryViewportMaskNV[0] = 2;
+}
+///////////////////////////////////////////////////////////////
+// vs-non-instanced-skinned
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_skinned_gbuffer
 	: iface_vgbuffer_skinned
@@ -114,6 +149,8 @@ vertex_shader vs_skinned_gbuffer
 	vs_common(skn_pos,skn_nrm,skn_bit);
 	gl_Position = mvp*skn_pos;
 }
+///////////////////////////////////////////////////////////////
+// fragment shaders
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fgbuffer
 	: ub_frg {
@@ -182,43 +219,33 @@ fragment_shader ps_gbuffer_n_tex_stereo // normalmap (stereo texture - vsplit)
 ///////////////////////////////////////////////////////////////
 technique rigid_gbuffer {
 	fxconfig=fxcfg_default;
-	pass p0 {
-    vertex_shader=vs_rigid_gbuffer;
-		fragment_shader=ps_gbuffer;
-		state_block=sb_default;
-	}
+	vf_pass={vs_rigid_gbuffer,ps_gbuffer,sb_default}
 }
+///////////////////////////////////////////////////////////////
 technique rigid_gbuffer_n {
 	fxconfig=fxcfg_default;
-	pass p0 {
-    vertex_shader=vs_rigid_gbuffer;
-		fragment_shader=ps_gbuffer_n;
-		state_block=sb_default;
-	}
-}
-technique skinned_gbuffer_n {
-	fxconfig=fxcfg_default;
-	pass p0 {
-    vertex_shader=vs_skinned_gbuffer;
-		fragment_shader=ps_gbuffer_n;
-		state_block=sb_default;
-	}
+	vf_pass={vs_rigid_gbuffer,ps_gbuffer_n,sb_default}
 }
 technique rigid_gbuffer_n_stereo {
 	fxconfig=fxcfg_default;
-	pass p0 {
-    vertex_shader=vs_rigid_gbuffer_stereo;
-		fragment_shader=ps_gbuffer_n_stereo;
-		state_block=sb_default;
-	}
+	vf_pass={vs_rigid_gbuffer_stereo,ps_gbuffer_n_stereo,sb_default}
 }
 technique rigid_gbuffer_n_tex_stereo {
 	fxconfig=fxcfg_default;
-	pass p0 {
-    vertex_shader=vs_rigid_gbuffer_stereo;
-		fragment_shader=ps_gbuffer_n_tex_stereo;
-		state_block=sb_default;
-	}
+	vf_pass={vs_rigid_gbuffer_stereo,ps_gbuffer_n_tex_stereo,sb_default}
 }
-
+///////////////////////////////////////////////////////////////
+technique skinned_gbuffer_n {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_skinned_gbuffer,ps_gbuffer_n,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique rigid_gbuffer_n_instanced {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_rigid_gbuffer_instanced,ps_gbuffer_n,sb_default}
+}
+technique rigid_gbuffer_n_instanced_stereo {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_rigid_gbuffer_instanced_stereo,ps_gbuffer_n_stereo,sb_default}
+}
 ///////////////////////////////////////////////////////////////

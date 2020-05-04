@@ -65,7 +65,7 @@ struct impl {
     auto material       = new PBRMaterial();
     material->_texColor = _colortexture;
     //_material->_enablePick         = true;
-    material->Init(ctx);
+    material->gpuInit(ctx);
     material->_metallicFactor  = 0.0f;
     material->_roughnessFactor = 1.0f;
     material->_baseColor       = fvec3(1, 1, 1);

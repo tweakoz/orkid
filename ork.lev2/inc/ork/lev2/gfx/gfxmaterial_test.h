@@ -116,7 +116,7 @@ public:
   void EndPass(Context* pTARG) final;
   int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx) final;
   void EndBlock(Context* pTARG) final;
-  void Init(Context* pTarg) final;
+  void gpuInit(Context* context) final;
 
   bool _enablePick = false;
 

@@ -42,7 +42,7 @@ struct IMPL {
   void init(lev2::Context* pTARG) {
     pTARG->debugPushGroup("Forward::rendeinitr");
     if (nullptr == _rtg) {
-      _material.Init(pTARG);
+      _material.gpuInit(pTARG);
       _rtg             = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
       auto buf1        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA32F, 8, 8);
       auto buf2        = new RtBuffer(lev2::ERTGSLOT1, lev2::EBufferFormat::RGBA32F, 8, 8);
@@ -131,7 +131,7 @@ ForwardCompositingNode::ForwardCompositingNode() {
 ForwardCompositingNode::~ForwardCompositingNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ForwardCompositingNode::DoInit(lev2::Context* pTARG, int iW, int iH) {
+void ForwardCompositingNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
   _impl.Get<std::shared_ptr<forwardnode::IMPL>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////

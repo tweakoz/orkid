@@ -176,7 +176,7 @@ struct DeferredContext {
   RtGroup* _rtgDepthCluster = nullptr;
   RtGroup* _rtgLaccum       = nullptr;
 
-  RtBuffer* _rtbGbuffer = nullptr;
+  RtBuffer* _rtbGbuffer      = nullptr;
   RtBuffer* _rtbDepthCluster = nullptr;
   RtBuffer* _rtbLightAccum   = nullptr;
 
@@ -199,7 +199,7 @@ public:
   fvec4 _fogColor;
 
 private:
-  void DoInit(lev2::Context* pTARG, int w, int h) final;
+  void doGpuInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
 
   lev2::RtBuffer* GetOutput() const final;
@@ -246,7 +246,7 @@ public:
     return _depthFogPower;
   }
 
-  void DoInit(lev2::Context* pTARG, int w, int h) final;
+  void doGpuInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
   void _readEnvTexture(ork::rtti::ICastable*& tex) const;
   void _writeEnvTexture(ork::rtti::ICastable* const& tex);
@@ -289,7 +289,7 @@ public:
   fvec4 _fogColor;
 
 private:
-  void DoInit(lev2::Context* pTARG, int w, int h) final;
+  void doGpuInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
 
   lev2::RtBuffer* GetOutput() const final;

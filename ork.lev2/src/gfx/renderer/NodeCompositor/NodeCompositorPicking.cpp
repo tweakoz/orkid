@@ -42,7 +42,7 @@ struct IMPL {
   void init(lev2::Context* pTARG) {
     pTARG->debugPushGroup("Picking::rendeinitr");
     if (nullptr == _rtg) {
-      _material.Init(pTARG);
+      _material.gpuInit(pTARG);
       _rtg             = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
       auto buf1        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA32F, 8, 8);
       auto buf2        = new RtBuffer(lev2::ERTGSLOT1, lev2::EBufferFormat::RGBA32F, 8, 8);
@@ -132,7 +132,7 @@ PickingCompositingNode::PickingCompositingNode() {
 PickingCompositingNode::~PickingCompositingNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void PickingCompositingNode::DoInit(lev2::Context* pTARG, int iW, int iH) {
+void PickingCompositingNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
   _impl.Get<std::shared_ptr<forwardnode::IMPL>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////

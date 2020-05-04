@@ -34,7 +34,7 @@ struct FreestyleMaterial final : public GfxMaterial {
   void EndPass(Context* targ) override;
   int BeginBlock(Context* targ, const RenderContextInstData& RCID) override;
   void EndBlock(Context* targ) override;
-  void Init(Context* targ) override;
+  void gpuInit(Context* targ) override;
   void Update() override;
 
   ////////////////////////////////////////////

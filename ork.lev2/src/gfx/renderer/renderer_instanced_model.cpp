@@ -102,7 +102,6 @@ void InstancedModelDrawable::enqueueToRenderQueue(
       mtlinst->wrappedDrawCall(RCID, [&]() {
         auto idata = _instancedata;
         // todo set instancing texture
-        OrkAssert(false);
         int inumclus = xgmsub->_clusters.size();
         for (int ic = 0; ic < inumclus; ic++) {
           auto cluster    = xgmsub->cluster(ic);
@@ -113,7 +112,6 @@ void InstancedModelDrawable::enqueueToRenderQueue(
             auto idxbuf    = primgroup->mpIndices;
             auto primtype  = primgroup->mePrimType;
             int numindices = primgroup->miNumIndices;
-            OrkAssert(false);
             GBI->DrawInstancedIndexedPrimitiveEML(*vtxbuf, *idxbuf, primtype, _count);
           }
         }

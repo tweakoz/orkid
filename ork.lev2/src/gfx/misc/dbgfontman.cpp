@@ -416,7 +416,7 @@ void Font::QueChar(Context* pTARG, VtxWriter<SVtxV12C4T16>& vw, int ix, int iy, 
 
 void Font::LoadFromDisk(Context* pTARG, const FontDesc& fdesc) {
   mpMaterial = new GfxMaterialUIText;
-  mpMaterial->Init(pTARG);
+  mpMaterial->gpuInit(pTARG);
   AssetPath apath(msFileName.c_str());
   auto txi                                             = pTARG->TXI();
   auto ptex                                            = new Texture;

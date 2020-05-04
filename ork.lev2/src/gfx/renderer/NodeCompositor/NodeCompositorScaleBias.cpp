@@ -45,7 +45,7 @@ struct IMPL {
       auto buf        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA8, w, h);
       buf->_debugName = FormatString("ScaleBiasCompositingNode::output");
       _rtg->SetMrt(0, buf);
-      _material.Init(pTARG);
+      _material.gpuInit(pTARG);
     }
   }
   ///////////////////////////////////////
@@ -81,7 +81,7 @@ ScaleBiasCompositingNode::ScaleBiasCompositingNode() {
 ScaleBiasCompositingNode::~ScaleBiasCompositingNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ScaleBiasCompositingNode::DoInit(lev2::Context* pTARG, int iW, int iH) // virtual
+void ScaleBiasCompositingNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) // virtual
 {
   _impl.Get<std::shared_ptr<scaleandbias::IMPL>>()->init(pTARG);
 }

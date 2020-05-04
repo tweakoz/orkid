@@ -304,7 +304,7 @@ DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
 DeferredCompositingNodePbr::~DeferredCompositingNodePbr() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNodePbr::DoInit(lev2::Context* pTARG, int iW, int iH) {
+void DeferredCompositingNodePbr::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
   _impl.Get<std::shared_ptr<PbrNodeImpl>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -43,11 +43,11 @@ void CompositingContext::Init(lev2::Context* pTARG) {
     miWidth  = pTARG->mainSurfaceWidth();
     miHeight = pTARG->mainSurfaceHeight();
     if (_compositingTechnique) {
-      _compositingTechnique->Init(pTARG, miWidth, miHeight);
+      _compositingTechnique->gpuInit(pTARG, miWidth, miHeight);
     }
   }
   _utilMaterial = new GfxMaterial3DSolid;
-  _utilMaterial->Init(pTARG);
+  _utilMaterial->gpuInit(pTARG);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -63,7 +63,7 @@ bool CompositingContext::assemble(CompositorDrawData& drawdata) {
   bool rval = false;
   Init(drawdata.context()); // fixme lazy init
   if (_compositingTechnique) {
-    _compositingTechnique->Init(drawdata.context(), miWidth, miHeight);
+    _compositingTechnique->gpuInit(drawdata.context(), miWidth, miHeight);
     rval = _compositingTechnique->assemble(drawdata);
   }
   return rval;

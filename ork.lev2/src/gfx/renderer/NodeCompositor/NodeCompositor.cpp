@@ -92,16 +92,15 @@ void NodeCompositingTechnique::_writeOutputNode(ork::rtti::ICastable* const& val
   _outputNode               = ((ptr == nullptr) ? nullptr : rtti::safe_downcast<OutputCompositingNode*>(ptr));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::Init(lev2::Context* pTARG, int w, int h) {
+void NodeCompositingTechnique::gpuInit(lev2::Context* pTARG, int w, int h) {
   pTARG->debugPushGroup("NodeCompositingTechnique::init");
   if (_renderNode)
-    _renderNode->Init(pTARG, w, h);
+    _renderNode->gpuInit(pTARG, w, h);
   if (_postfxNode)
-    _postfxNode->Init(pTARG, w, h);
+    _postfxNode->gpuInit(pTARG, w, h);
   if (_outputNode)
     _outputNode->gpuInit(pTARG, w, h);
 
-  mCompositingMaterial.Init(pTARG);
   pTARG->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -159,8 +158,8 @@ RenderCompositingNode::RenderCompositingNode() {
 }
 RenderCompositingNode::~RenderCompositingNode() {
 }
-void RenderCompositingNode::Init(lev2::Context* pTARG, int w, int h) {
-  DoInit(pTARG, w, h);
+void RenderCompositingNode::gpuInit(lev2::Context* pTARG, int w, int h) {
+  doGpuInit(pTARG, w, h);
 }
 void RenderCompositingNode::Render(CompositorDrawData& drawdata) {
   drawdata.context()->debugPushGroup("RenderCompositingNode::Render");
@@ -174,8 +173,8 @@ PostCompositingNode::PostCompositingNode() {
 }
 PostCompositingNode::~PostCompositingNode() {
 }
-void PostCompositingNode::Init(lev2::Context* pTARG, int w, int h) {
-  DoInit(pTARG, w, h);
+void PostCompositingNode::gpuInit(lev2::Context* pTARG, int w, int h) {
+  doGpuInit(pTARG, w, h);
 }
 void PostCompositingNode::Render(CompositorDrawData& drawdata) {
   drawdata.context()->debugPushGroup("PostCompositingNode::Render");

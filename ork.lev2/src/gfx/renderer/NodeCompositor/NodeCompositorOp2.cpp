@@ -90,15 +90,15 @@ Op2CompositingNode::~Op2CompositingNode() {
     delete mOutput;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Op2CompositingNode::DoInit(lev2::Context* pTARG, int iW, int iH) // virtual
+void Op2CompositingNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) // virtual
 {
   if (mSubA)
-    mSubA->Init(pTARG, iW, iH);
+    mSubA->gpuInit(pTARG, iW, iH);
   if (mSubB)
-    mSubB->Init(pTARG, iW, iH);
+    mSubB->gpuInit(pTARG, iW, iH);
 
   if (nullptr == mOutput) {
-    mCompositingMaterial.Init(pTARG);
+    mCompositingMaterial.gpuInit(pTARG);
 
     _rtg                = new lev2::RtGroup(pTARG, iW, iH);
     mOutput             = new lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA16F, iW, iH);

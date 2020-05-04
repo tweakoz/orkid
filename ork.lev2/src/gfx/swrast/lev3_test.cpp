@@ -42,7 +42,7 @@ public:
 
   void Init(ork::lev2::Context* pTARG) // virtual
   {
-    mtl.Init(pTARG);
+    mtl.gpuInit(pTARG);
     tex          = ork::lev2::Texture::CreateBlank(512, 512, ork::lev2::EBufferFormat::RGBA8);
     auto pu32    = (uint32_t*)tex->_data;
     uint32_t idx = 0;

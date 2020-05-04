@@ -130,10 +130,10 @@ public:
 
   virtual void Update(void) = 0;
 
-  virtual void Init(Context* pTarg) = 0;
-  virtual void gpuUpdate(Context* targ) {
+  virtual void gpuInit(Context* context) = 0;
+  virtual void gpuUpdate(Context* context) {
     if (_doinit) {
-      Init(targ);
+      gpuInit(context);
       _doinit = false;
     }
   }

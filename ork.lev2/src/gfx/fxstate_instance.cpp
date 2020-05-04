@@ -56,8 +56,15 @@ bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
   for (auto item : _params) {
     fxparam_constptr_t param = item.first;
     const auto& val          = item.second;
+    ////////////////////////////////////////////////////////////
+    // try to order these by commonalitiy
+    //  or find a quicker dispatch method
+    ////////////////////////////////////////////////////////////
     if (auto as_mtx4 = val.TryAs<fmtx4_ptr_t>()) {
       FXI->BindParamMatrix(param, *as_mtx4.value().get());
+    } else if (auto as_texture = val.TryAs<Texture*>()) {
+      auto texture = as_texture.value();
+      FXI->BindParamCTex(param, texture);
     } else if (auto as_crcstr = val.TryAs<crcstring_ptr_t>()) {
       const auto& crcstr = *as_crcstr.value().get();
       switch (crcstr.hashed()) {
@@ -82,13 +89,19 @@ bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
           }
           break;
         }
+        case "RCFD_Model_Rot"_crcu: {
+          auto rotmtx = worldmatrix.rotMatrix33();
+          FXI->BindParamMatrix(param, rotmtx);
+          break;
+        }
         default:
           OrkAssert(false);
           break;
       }
-
-    } else if (auto as_instancedata_ = val.TryAs<instanceddrawdata_ptr_t>()) {
-      OrkAssert(false);
+    } else if (auto as_float_ = val.TryAs<float>()) {
+      FXI->BindParamFloat(param, as_float_.value());
+    } else if (auto as_fvec4_ = val.TryAs<fvec4>()) {
+      FXI->BindParamVect4(param, as_fvec4_.value());
     } else if (auto as_fvec4_ = val.TryAs<fvec4_ptr_t>()) {
       FXI->BindParamVect4(param, *as_fvec4_.value().get());
     } else if (auto as_fvec3 = val.TryAs<fvec3_ptr_t>()) {
@@ -97,6 +110,8 @@ bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
       FXI->BindParamVect2(param, *as_fvec2.value().get());
     } else if (auto as_fmtx3 = val.TryAs<fmtx3_ptr_t>()) {
       FXI->BindParamMatrix(param, *as_fmtx3.value().get());
+    } else if (auto as_instancedata_ = val.TryAs<instanceddrawdata_ptr_t>()) {
+      OrkAssert(false);
     } else if (auto as_fquat = val.TryAs<fquat_ptr_t>()) {
       const auto& Q = *as_fquat.value().get();
       fvec4 as_vec4(Q.x, Q.y, Q.z, Q.w);
@@ -105,9 +120,6 @@ bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
       const auto& P = *as_fplane3.value().get();
       fvec4 as_vec4(P.n, P.d);
       FXI->BindParamVect4(param, as_vec4);
-    } else if (auto as_texture = val.TryAs<Texture*>()) {
-      auto texture = as_texture.value();
-      FXI->BindParamCTex(param, texture);
     } else {
       OrkAssert(false);
     }

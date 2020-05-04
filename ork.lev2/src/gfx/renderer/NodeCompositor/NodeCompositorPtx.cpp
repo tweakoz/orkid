@@ -31,7 +31,7 @@ struct PtxImpl {
     if (_needsinit) {
       _needsinit = false;
       _blit2screenmtl.SetUserFx("orkshader://solid", "texcolor");
-      _blit2screenmtl.Init(pTARG);
+      _blit2screenmtl.gpuInit(pTARG);
 
       _output                   = new lev2::RtGroup(pTARG, iW, iH);
       _outputbuffer             = new lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA16F, iW, iH);
@@ -218,7 +218,7 @@ void PtxCompositingNode::GetTextureAccessor(ork::rtti::ICastable*& tex) const {
   tex = mReturnTexture;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void PtxCompositingNode::DoInit(lev2::Context* pTARG, int iW, int iH) // virtual
+void PtxCompositingNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) // virtual
 {
   _impl.getShared<PtxImpl>()->gpuInit(pTARG, iW, iH);
 }
