@@ -64,21 +64,23 @@ struct UiCamPrivate {
   UiCamPrivate() {
     _material = std::make_shared<FreestyleMaterial>();
     FxStateInstanceConfig config;
-    _materialinst = std::make_shared<FxStateInstance>(config); // _material
+    _materialinst_mono   = std::make_shared<FxStateInstance>(config); // _material
+    _materialinst_stereo = std::make_shared<FxStateInstance>(config); // _material
   }
   void gpuUpdate(Context* ctx) {
     if (_doGpuInit) {
       auto shaderpath = file::Path("orkshader://manip");
       _material->gpuInit(ctx, shaderpath);
       //_materialinst->setInstanceMvpParams("mvp", "mvpL", "mvpR");
-      _materialinst->_teks->_mono->_rigid   = _material->technique("std_mono");
-      _materialinst->_teks->_stereo->_rigid = _material->technique("std_stereo");
-      _doGpuInit                            = false;
+      _materialinst_mono->_technique   = _material->technique("std_mono");
+      _materialinst_stereo->_technique = _material->technique("std_stereo");
+      _doGpuInit                       = false;
     }
   }
   bool _doGpuInit = true;
   freestyle_mtl_ptr_t _material;
-  fxinstance_ptr_t _materialinst;
+  fxinstance_ptr_t _materialinst_mono;
+  fxinstance_ptr_t _materialinst_stereo;
 };
 using uicamprivate_t = std::shared_ptr<UiCamPrivate>;
 
@@ -168,7 +170,10 @@ void EzUiCam::draw(Context* context) const {
   worldmtx.Scale(fvec4(Scale, Scale, Scale));
   ///////////////////////////////////////////////////////////////
   context->debugPushGroup("EzUiCam::draw");
-  priv->_materialinst->wrappedDrawCall(RCID, [context]() {
+  auto mtlinst = RCFD->isStereo() //
+                     ? priv->_materialinst_stereo
+                     : priv->_materialinst_mono;
+  mtlinst->wrappedDrawCall(RCID, [context]() {
     auto& tricircle = GfxPrimitives::GetRef().mVtxBuf_TriCircle;
     auto& axis      = GfxPrimitives::GetRef().mVtxBuf_Axis;
     context->GBI()->DrawPrimitiveEML(tricircle);

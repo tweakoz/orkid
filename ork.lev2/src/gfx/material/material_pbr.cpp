@@ -426,29 +426,68 @@ void PBRMaterial::end(const RenderContextFrameData& RCFD) {
 
 fxinstance_ptr_t PBRMaterial::createFxStateInstance(FxStateInstanceConfig& cfg) const {
 
-  auto perms               = std::make_shared<FxShaderTechniquePermutations>();
-  auto inst                = std::make_shared<FxStateInstance>(cfg);
-  perms->_mono->_rigid     = _tekRigidGBUFFER_N;
-  perms->_stereo->_rigid   = _tekRigidGBUFFER_N_STEREO;
-  perms->_stereo->_skinned = _tekRigidGBUFFER_SKINNED_N;
-  perms->_pick->_rigid     = _tekRigidPICKING;
+  auto fxinst = std::make_shared<FxStateInstance>(cfg);
 
-  inst->_teks               = perms;
-  inst->_params[_paramMVP]  = "RCFD_Camera_MVP_Mono"_crcsh;
-  inst->_params[_paramMROT] = "RCFD_Model_Rot"_crcsh;
-  inst->_params[_paramMVPL] = "RCFD_Camera_MVP_Left"_crcsh;
-  inst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
-  inst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
+  switch (cfg._base_perm) {
+    //////////////////////////////////////////
+    case FxStateBasePermutation::MONO:
+      if (cfg._instanced_primitive) {
+      }
+      ////////////////
+      else { // non-instanced
+        if (cfg._skinned)
+          fxinst->_technique = _tekRigidGBUFFER_SKINNED_N;
+        else // rigid
+          fxinst->_technique = _tekRigidGBUFFER_N;
+        ////////////////
+      }
+      break;
+    //////////////////////////////////////////
+    case FxStateBasePermutation::STEREO:
+      if (cfg._instanced_primitive) {
+      }
+      ////////////////
+      else { // non-instanced
+        if (cfg._skinned)
+          fxinst->_technique = nullptr;
+        else // rigid
+          fxinst->_technique = _tekRigidGBUFFER_N_STEREO;
+        ////////////////
+      }
+      break;
+    //////////////////////////////////////////
+    case FxStateBasePermutation::PICK:
+      if (cfg._instanced_primitive) {
+      }
+      ////////////////
+      else { // non-instanced
+        if (cfg._skinned)
+          fxinst->_technique = nullptr;
+        else // rigid
+          fxinst->_technique = _tekRigidPICKING;
+        ////////////////
+      }
+      break;
+      //////////////////////////////////////////
+  }
 
-  inst->_params[_paramMapColor]  = _texColor;
-  inst->_params[_paramMapNormal] = _texNormal;
-  inst->_params[_paramMapMtlRuf] = _texMtlRuf;
+  OrkAssert(fxinst->_technique != nullptr);
 
-  inst->_params[_parMetallicFactor]  = _metallicFactor;
-  inst->_params[_parRoughnessFactor] = _roughnessFactor;
-  inst->_params[_parModColor]        = fvec4(1, 1, 1, 1);
+  fxinst->_params[_paramMVP]  = "RCFD_Camera_MVP_Mono"_crcsh;
+  fxinst->_params[_paramMROT] = "RCFD_Model_Rot"_crcsh;
+  fxinst->_params[_paramMVPL] = "RCFD_Camera_MVP_Left"_crcsh;
+  fxinst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
+  fxinst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
 
-  return inst;
+  fxinst->_params[_paramMapColor]  = _texColor;
+  fxinst->_params[_paramMapNormal] = _texNormal;
+  fxinst->_params[_paramMapMtlRuf] = _texMtlRuf;
+
+  fxinst->_params[_parMetallicFactor]  = _metallicFactor;
+  fxinst->_params[_parRoughnessFactor] = _roughnessFactor;
+  fxinst->_params[_parModColor]        = fvec4(1, 1, 1, 1);
+
+  return fxinst;
 }
 
 ////////////////////////////////////////////

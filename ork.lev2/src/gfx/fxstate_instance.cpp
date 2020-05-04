@@ -10,41 +10,8 @@
 
 namespace ork::lev2 {
 /////////////////////////////////////////////////////////////////////////
-FxShaderTechniquePermutations::FxShaderTechniquePermutations() {
-  _mono   = std::make_shared<FxShaderTechniquePermA>();
-  _stereo = std::make_shared<FxShaderTechniquePermA>();
-  _pick   = std::make_shared<FxShaderTechniquePermA>();
-}
-/////////////////////////////////////////////////////////////////////////
-fxtechnique_constptr_t FxShaderTechniquePermutations::select(PermBase base, bool skinned, bool instanced) {
-  fxshadertechperma_ptr_t base_permutation;
-  switch (base) {
-    case MONO:
-      base_permutation = _mono;
-      break;
-    case STEREO:
-      base_permutation = _stereo;
-      break;
-    case PICK:
-      base_permutation = _pick;
-      break;
-    default:
-      OrkAssert(false);
-      break;
-  }
-  if (skinned)
-    return instanced //
-               ? base_permutation->_skinned_instanced
-               : base_permutation->_skinned;
-  else               // rigid
-    return instanced //
-               ? base_permutation->_rigid_instanced
-               : base_permutation->_rigid;
-}
-/////////////////////////////////////////////////////////////////////////
 FxStateInstance::FxStateInstance(FxStateInstanceConfig& config)
     : _config(config) {
-  _teks = std::make_shared<FxShaderTechniquePermutations>();
 }
 /////////////////////////////////////////////////////////////////////////
 void FxStateInstance::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall) {
@@ -64,18 +31,7 @@ int FxStateInstance::beginBlock(const RenderContextInstData& RCID) {
   bool is_picking = CPD.isPicking();
   bool is_stereo  = CPD.isStereoOnePass();
   auto FXI        = context->FXI();
-  // auto tek     = minst->valueForKey("technique").Get<fxtechnique_constptr_t>();
-
-  FxShaderTechniquePermutations::PermBase baseperm;
-  if (is_picking)
-    baseperm = FxShaderTechniquePermutations::PermBase::PICK;
-  else {
-    baseperm = is_stereo //
-                   ? FxShaderTechniquePermutations::PermBase::STEREO
-                   : baseperm = FxShaderTechniquePermutations::PermBase::MONO;
-  }
-  auto tek = _teks->select(baseperm, false, false);
-  return FXI->BeginBlock(tek, RCID);
+  return FXI->BeginBlock(_technique, RCID);
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {

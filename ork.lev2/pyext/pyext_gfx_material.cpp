@@ -75,12 +75,8 @@ void pyinit_gfx_material(py::module& module_lev2) {
               "__setattr__",                                                                    //
               [type_codec](fxinstance_ptr_t instance, const std::string& key, py::object val) { //
                 auto varmap_val = type_codec->decode(val);
-                if (key == "monoTek")
-                  instance->_teks->_mono->_rigid = varmap_val.Get<fxtechnique_constptr_t>();
-                else if (key == "pickTek")
-                  instance->_teks->_pick->_rigid = varmap_val.Get<fxtechnique_constptr_t>();
-                else if (key == "stereoTek")
-                  instance->_teks->_stereo->_rigid = varmap_val.Get<fxtechnique_constptr_t>();
+                if (key == "technique")
+                  instance->_technique = varmap_val.Get<fxtechnique_constptr_t>();
                 else {
                   OrkAssert(false);
                   // instance->_vars.setValueForKey(key, varmap_val);
@@ -101,14 +97,8 @@ void pyinit_gfx_material(py::module& module_lev2) {
                   proxy->_materialinst = instance;
                   varval.Set<matinst_param_proxy_ptr_t>(proxy);
                   return type_codec->encode(varval);
-                } else if (key == "monoTek") {
-                  varval.Set<fxtechnique_constptr_t>(instance->_teks->_mono->_rigid);
-                  return type_codec->encode(varval);
-                } else if (key == "pickTek") {
-                  varval.Set<fxtechnique_constptr_t>(instance->_teks->_pick->_rigid);
-                  return type_codec->encode(varval);
-                } else if (key == "stereoTek") {
-                  varval.Set<fxtechnique_constptr_t>(instance->_teks->_stereo->_rigid);
+                } else if (key == "technique") {
+                  varval.Set<fxtechnique_constptr_t>(instance->_technique);
                   return type_codec->encode(varval);
                 }
                 return py::none(); // ;

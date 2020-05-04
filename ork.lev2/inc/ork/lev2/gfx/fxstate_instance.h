@@ -18,29 +18,13 @@
 
 namespace ork::lev2 {
 
-struct FxShaderTechniquePermA;
-struct FxShaderTechniquePermutations;
 struct FxStateInstance;
-using fxinstance_ptr_t        = std::shared_ptr<FxStateInstance>;
-using fxinstance_constptr_t   = std::shared_ptr<const FxStateInstance>;
-using fxshadertechperma_ptr_t = std::shared_ptr<FxShaderTechniquePermA>;
-using fxshadertechperms_ptr_t = std::shared_ptr<FxShaderTechniquePermutations>;
+using fxinstance_ptr_t      = std::shared_ptr<FxStateInstance>;
+using fxinstance_constptr_t = std::shared_ptr<const FxStateInstance>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct FxShaderTechniquePermA {
-  fxtechnique_constptr_t _rigid;
-  fxtechnique_constptr_t _skinned;
-  fxtechnique_constptr_t _rigid_instanced;
-  fxtechnique_constptr_t _skinned_instanced;
-};
-
-struct FxShaderTechniquePermutations {
-  enum PermBase { MONO = 0, STEREO, PICK };
-  FxShaderTechniquePermutations();
-  fxtechnique_constptr_t select(PermBase base, bool skinned, bool instanced);
-  fxshadertechperma_ptr_t _mono, _stereo, _pick;
-};
+enum FxStateBasePermutation { MONO = 0, STEREO, PICK };
 
 ///////////////////////////////////////////////////////////////////////////////
 // FxStateInstance : instance of a material "class"
@@ -48,7 +32,9 @@ struct FxShaderTechniquePermutations {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FxStateInstanceConfig {
-  bool _instanced_primitive = false;
+  FxStateBasePermutation _base_perm = MONO;
+  bool _instanced_primitive         = false;
+  bool _skinned                     = false;
 };
 
 struct FxStateInstance : public std::enable_shared_from_this<FxStateInstance> {
@@ -62,8 +48,8 @@ struct FxStateInstance : public std::enable_shared_from_this<FxStateInstance> {
 
   void wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall);
 
-  using varval_t = varmap::VarMap::value_type;
-  fxshadertechperms_ptr_t _teks;
+  using varval_t                    = varmap::VarMap::value_type;
+  fxtechnique_constptr_t _technique = nullptr;
   FxStateInstanceConfig _config;
   std::unordered_map<fxparam_constptr_t, varval_t> _params;
 };
