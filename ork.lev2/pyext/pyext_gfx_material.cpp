@@ -1,6 +1,6 @@
 #include "pyext.h"
 #include <ork/kernel/string/deco.inl>
-#include <ork/lev2/gfx/material_instance.h>
+#include <ork/lev2/gfx/fxstate_instance.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 

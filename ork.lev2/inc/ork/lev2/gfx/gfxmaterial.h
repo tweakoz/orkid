@@ -14,7 +14,7 @@
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/gfxrasterstate.h>
-#include <ork/lev2/gfx/material_instance.h>
+#include <ork/lev2/gfx/fxstate_instance.h>
 #include <ork/kernel/varmap.inl>
 
 namespace ork {
