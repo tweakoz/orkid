@@ -29,14 +29,10 @@ ImplementReflectionX(ork::lev2::RenderCompositingNode, "RenderCompositingNode");
 ImplementReflectionX(ork::lev2::PostCompositingNode, "PostCompositingNode");
 ImplementReflectionX(ork::lev2::OutputCompositingNode, "OutputCompositingNode");
 ImplementReflectionX(ork::lev2::NodeCompositingTechnique, "NodeCompositingTechnique");
-ImplementReflectionX(ork::lev2::ChainCompositingNode, "ChainCompositingNode");
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
-///////////////////////////////////////////////////////////////////////////////
-void ChainCompositingNode::describeX(class_t* c) {
-}
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::describeX(class_t* c) {
   c->accessorProperty("RenderNode", &NodeCompositingTechnique::_readRenderNode, &NodeCompositingTechnique::_writeRenderNode)

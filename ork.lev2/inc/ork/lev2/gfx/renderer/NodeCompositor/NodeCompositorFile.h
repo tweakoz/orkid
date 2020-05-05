@@ -11,38 +11,40 @@
 
 namespace ork::lev2 {
 
-  ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
-  enum EOutputTimeStep {
-    EOutputTimeStep_RealTime = 0,
-    EOutputTimeStep_15fps,
-    EOutputTimeStep_24fps,
-    EOutputTimeStep_30fps,
-    EOutputTimeStep_48fps,
-    EOutputTimeStep_60fps,
-    EOutputTimeStep_72fps,
-    EOutputTimeStep_96fps,
-    EOutputTimeStep_120fps,
-    EOutputTimeStep_240fps,
-  };
+enum EOutputTimeStep {
+  EOutputTimeStep_RealTime = 0,
+  EOutputTimeStep_15fps,
+  EOutputTimeStep_24fps,
+  EOutputTimeStep_30fps,
+  EOutputTimeStep_48fps,
+  EOutputTimeStep_60fps,
+  EOutputTimeStep_72fps,
+  EOutputTimeStep_96fps,
+  EOutputTimeStep_120fps,
+  EOutputTimeStep_240fps,
+};
 
-  enum EOutputRes {
-    EOutputRes_640x480 = 0,
-    EOutputRes_960x640,
-    EOutputRes_1024x1024,
-    EOutputRes_1280x720,
-    EOutputRes_1600x1200,
-    EOutputRes_1920x1080,
-  };
+enum EOutputRes {
+  EOutputRes_640x480 = 0,
+  EOutputRes_960x640,
+  EOutputRes_1024x1024,
+  EOutputRes_1280x720,
+  EOutputRes_1600x1200,
+  EOutputRes_1920x1080,
+};
 
-  enum EOutputResMult {
-    EOutputResMult_Quarter = 0,
-    EOutputResMult_Half,
-    EOutputResMult_Full,
-    EOutputResMult_Double,
-    EOutputResMult_Quadruple,
-  };
+enum EOutputResMult {
+  EOutputResMult_Quarter = 0,
+  EOutputResMult_Half,
+  EOutputResMult_Full,
+  EOutputResMult_Double,
+  EOutputResMult_Quadruple,
+};
 
+///////////////////////////////////////////////////////////////////////////////
+/// FileOutputCompositingNode : OutputCompositingNode rendering to an image file
 ///////////////////////////////////////////////////////////////////////////////
 
 class FileOutputCompositingNode : public OutputCompositingNode {
@@ -54,8 +56,12 @@ public:
 
   PoolString _layername;
 
-  bool IsOutputFramesEnabled() const { return mbOutputFrames; }
-  EOutputTimeStep OutputFrameRate() const { return mOutputFrameRate; }
+  bool IsOutputFramesEnabled() const {
+    return mbOutputFrames;
+  }
+  EOutputTimeStep OutputFrameRate() const {
+    return mOutputFrameRate;
+  }
   EOutputTimeStep currentFrameRateEnum() const;
   float currentFrameRate() const;
 
@@ -71,8 +77,7 @@ private:
   EOutputRes mOutputBaseResolution;
   EOutputResMult mOutputResMult;
   EOutputTimeStep mOutputFrameRate;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2 {
+} // namespace ork::lev2

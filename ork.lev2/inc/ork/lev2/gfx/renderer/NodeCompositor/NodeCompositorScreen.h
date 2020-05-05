@@ -10,6 +10,10 @@
 #include "NodeCompositor.h"
 
 namespace ork::lev2 {
+
+///////////////////////////////////////////////////////////////////////////////
+/// ScreenOutputCompositingNode : OutputCompositingNode responsible for output
+///   direct to the screen. implies mono rendering..
 ///////////////////////////////////////////////////////////////////////////////
 
 class ScreenOutputCompositingNode : public OutputCompositingNode {

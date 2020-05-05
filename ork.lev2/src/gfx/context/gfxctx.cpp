@@ -119,7 +119,6 @@ Context::Context()
     , miH(0)
     , miTargetFrame(0)
     , mRenderContextInstData(nullptr)
-    , mbDeviceAvailable(true)
     , miDrawLock(0)
     , mPlatformHandle(nullptr)
     , meTargetType(ETGTTYPE_NONE) {

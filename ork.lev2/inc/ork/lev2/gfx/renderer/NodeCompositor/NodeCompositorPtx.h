@@ -10,6 +10,11 @@
 #include "NodeCompositor.h"
 #include <ork/lev2/gfx/proctex/proctex.h>
 
+///////////////////////////////////////////////////////////////////////////////
+/// PtxCompositingNode : PostCompositingNode utilizing the procedural texturing
+///  dataflow graph for post processing.
+///////////////////////////////////////////////////////////////////////////////
+
 namespace ork::lev2 {
 
 struct PtxCompositingNode final : public PostCompositingNode {

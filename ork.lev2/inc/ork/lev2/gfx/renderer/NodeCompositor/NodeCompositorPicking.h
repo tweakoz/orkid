@@ -10,6 +10,10 @@
 #include "NodeCompositor.h"
 
 namespace ork::lev2 {
+
+///////////////////////////////////////////////////////////////////////////////
+/// PickingCompositingNode : RenderCompositingNode for picking
+///   shall select all pick variants of shaders throught the frame
 ///////////////////////////////////////////////////////////////////////////////
 
 class PickingCompositingNode : public RenderCompositingNode {

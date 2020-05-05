@@ -108,6 +108,30 @@ struct DisplayMode {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+/// Context: rendering context device abstraction
+///   abstracts OpenGL, Vulkan, Metal, etc..
+///  all user code should utilize the Context abstraction instead of
+///  calling directly into the low level rendering api. This aids in
+///   keeping code cross platform
+///  The amount of abstraction is pretty low. If some abstraction becomes a
+///   bottleneck, then the api will be augmented to expose the lowlevel api feature
+///   that enhances performance.
+///
+///  A context is a composite of multiple domain specific subinterfaces:
+///   FXI : Effects Interface. Responsible for management of shaders,
+///          and shader related resources such as UBO's, SSBO's, etc..
+///   TXI : Texturing interface. Responsible for management of textures
+///   FBI : FrameBuffer Interface. FBO's, MRT's, DepthBuffers, scissoring,
+///          viewports, clearing, etc....
+///   MTXI : Matrix Interface. Matrix utilities, lookat, perspective, etc..)
+///   RSI : RasterState Interface
+///         (responsible for management of rasterstate, blending, writemasks, etc.)
+///   GBI : GeometryBuffer Interface. Management of vertex and index buffers,
+///           also currently responsible for drawing primitives
+///           Primitives will be moved to a new interface (DWI)
+///   CI : Compute Interface. all things ComputeShader related
+///   IMI : ImmediateMode interface. convenience methods for oldschool type gfx
+///////////////////////////////////////////////////////////////////////////////
 
 class Context : public ork::rtti::ICastable {
   RttiDeclareAbstract(Context, ork::rtti::ICastable);
@@ -120,14 +144,9 @@ public:
   virtual ~Context();
 
   //////////////////////////////////////////////
-  // Interfaces
+  /// Interfaces
 
-  virtual FxInterface* FXI() {
-    return 0;
-  } // Fx Shader Interface (optional)
-  virtual ImmInterface* IMI() {
-    return 0;
-  }                                           // Immediate Mode Interface (optional)
+  virtual FxInterface* FXI()             = 0; // Fx Shader Interface
   virtual RasterStateInterface* RSI()    = 0; // Raster State Interface
   virtual MatrixStackInterface* MTXI()   = 0; // Matrix / Matrix Stack Interface
   virtual GeometryBufferInterface* GBI() = 0; // Geometry Buffer Interface
@@ -138,14 +157,26 @@ public:
 #if defined(ENABLE_COMPUTE_SHADERS)
   virtual ComputeInterface* CI() = 0; // ComputeShader Interface
 #endif
+  virtual ImmInterface* IMI() {
+    return 0;
+  } // Immediate Mode Interface (optional)
 
+  ///////////////////////////////////////////////////////////////////////
+  /// push command group onto debugstack (for renderdoc,apitrace,nsight,etc..)
   virtual void debugPushGroup(const std::string str) {
   }
+  ///////////////////////////////////////////////////////////////////////
+  /// pop command group from debugstack (for renderdoc,apitrace,nsight,etc..)
   virtual void debugPopGroup() {
   }
+  ///////////////////////////////////////////////////////////////////////
+  /// insert marker into commandstream (for renderdoc,apitrace,nsight,etc..)
   virtual void debugMarker(const std::string str) {
   }
 
+  ///////////////////////////////////////////////////////////////////////
+  /// make rendercontext current on current thread
+  ///  probably a GLism, might need to be reworked for vulkan,metal.
   virtual void makeCurrentContext() {
   }
 
@@ -250,13 +281,6 @@ public:
 
   //////////////////////////////////////////////
 
-  bool IsDeviceAvailable() const {
-    return mbDeviceAvailable;
-  }
-  void SetDeviceAvailable(bool bv) {
-    mbDeviceAvailable = bv;
-  }
-
   static const orkvector<DisplayMode*>& GetDisplayModes() {
     return mDisplayModes;
   }
@@ -290,7 +314,6 @@ public:
   int miTargetFrame;
   PerformanceItem mFramePerfItem;
   const RenderContextInstData* mRenderContextInstData;
-  bool mbDeviceAvailable;
   int miDrawLock;
   bool hiDPI() const;
   float currentDPI() const;

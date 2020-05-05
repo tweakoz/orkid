@@ -10,6 +10,10 @@
 #include "NodeCompositor.h"
 
 namespace ork::lev2 {
+
+///////////////////////////////////////////////////////////////////////////////
+/// VrCompositingNode : OutputCompositingNode responsible for output to a VR device
+///   implies stereo rendering..
 ///////////////////////////////////////////////////////////////////////////////
 
 class VrCompositingNode : public OutputCompositingNode {
@@ -26,8 +30,7 @@ private:
   void composite(CompositorDrawData& drawdata) final;
 
   svar256_t _impl;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2 {
+} // namespace ork::lev2

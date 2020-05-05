@@ -19,6 +19,10 @@
 namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
+/// OutputCompositingNode : compositor node responsible for output to a sink
+///   sinks include things like RtGroups, the screen, Vr-HMD, etc..
+///////////////////////////////////////////////////////////////////////////////
+
 class OutputCompositingNode : public ork::Object {
   DeclareAbstractX(OutputCompositingNode, ork::Object);
 
@@ -38,6 +42,10 @@ using outputcompositingnode_ptr_t      = std::shared_ptr<OutputCompositingNode>;
 using outputcompositingnode_constptr_t = std::shared_ptr<const OutputCompositingNode>;
 
 ///////////////////////////////////////////////////////////////////////////////
+/// RenderCompositingNode : compositor node responsible for generation of
+///   a frame utilizing some rendering technique such as forward, deferred, etc..
+///////////////////////////////////////////////////////////////////////////////
+
 class RenderCompositingNode : public ork::Object {
   DeclareAbstractX(RenderCompositingNode, ork::Object);
 
@@ -57,7 +65,11 @@ private:
   virtual void doGpuInit(lev2::Context* pTARG, int w, int h) = 0;
   virtual void DoRender(CompositorDrawData& drawdata)        = 0;
 };
+
 ///////////////////////////////////////////////////////////////////////////////
+/// PostCompositingNode : compositor node responsible for postprocessing effects.
+///////////////////////////////////////////////////////////////////////////////
+
 class PostCompositingNode : public ork::Object {
   DeclareAbstractX(PostCompositingNode, ork::Object);
 
@@ -74,11 +86,12 @@ private:
   virtual void doGpuInit(lev2::Context* pTARG, int w, int h) = 0;
   virtual void DoRender(CompositorDrawData& drawdata)        = 0;
 };
+
 ///////////////////////////////////////////////////////////////////////////////
-class ChainCompositingNode : public PostCompositingNode {
-  DeclareAbstractX(ChainCompositingNode, PostCompositingNode);
-};
+/// Op2CompositingNode : binary (2 in, 1 out) with a choice of operation
+///  has scale and bias on each of the input terms (a and b)
 ///////////////////////////////////////////////////////////////////////////////
+
 class Op2CompositingNode : public PostCompositingNode {
   DeclareConcreteX(Op2CompositingNode, PostCompositingNode);
 
@@ -108,7 +121,15 @@ private:
   fvec4 mBiasA;
   fvec4 mBiasB;
 };
+
 ///////////////////////////////////////////////////////////////////////////////
+/// NodeCompositingTechnique : CompositingTechnique specifically utilizing
+//    a three node setup. Each node has a specific purpose in the output of a frame.
+///   1. RenderCompositingNode: render a frame
+///   2. PostCompositingNode: postprocessing (blur,bloom,etc..)
+///   3. OutputCompositingNode: output to a sink (screen,VR, etc..)
+///////////////////////////////////////////////////////////////////////////////
+
 class NodeCompositingTechnique final : public CompositingTechnique {
   DeclareConcreteX(NodeCompositingTechnique, CompositingTechnique);
 
@@ -155,6 +176,5 @@ public:
   RenderCompositingNode* _renderNode;
   PostCompositingNode* _postfxNode;
   OutputCompositingNode* _outputNode;
-  // CompositingMaterial mCompositingMaterial;
 };
 } // namespace ork::lev2
