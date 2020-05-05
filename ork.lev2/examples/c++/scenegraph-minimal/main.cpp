@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
   terrainInst->_worldSizeXZ = 8192.0f;
   auto terrainDrawable      = terrainInst->createCallbackDrawable();
 
-  auto sg_node = sg_layer->createNode("terrain-node", terrainDrawable);
+  auto sg_node = sg_layer->createDrawableNode("terrain-node", terrainDrawable);
 
   //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread

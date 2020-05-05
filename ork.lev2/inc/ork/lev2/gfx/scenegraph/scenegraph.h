@@ -24,36 +24,65 @@ namespace ork::lev2::scenegraph {
 
 struct Layer;
 struct Node;
+struct DrawableNode;
+struct LightNode;
 struct Scene;
-using layer_ptr_t = std::shared_ptr<Layer>;
-using node_ptr_t  = std::shared_ptr<Node>;
-using scene_ptr_t = std::shared_ptr<Scene>;
+using layer_ptr_t        = std::shared_ptr<Layer>;
+using node_ptr_t         = std::shared_ptr<Node>;
+using scene_ptr_t        = std::shared_ptr<Scene>;
+using drawablenode_ptr_t = std::shared_ptr<DrawableNode>;
+using lightnode_ptr_t    = std::shared_ptr<LightNode>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Node {
 
-  Node(std::string named, drawable_ptr_t drawable);
-  ~Node();
+  Node(std::string named);
+  virtual ~Node();
 
   std::string _name;
-  drawable_ptr_t _drawable;
   DrawQueueXfData _transform;
   varmap::varmap_ptr_t _userdata;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct DrawableNode final : public Node {
+
+  DrawableNode(std::string named, drawable_ptr_t drawable);
+  ~DrawableNode();
+
+  drawable_ptr_t _drawable;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct LightNode final : public Node {
+
+  LightNode(std::string named, light_ptr_t light);
+  ~LightNode();
+
+  light_ptr_t _light;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct Layer {
-  Layer(std::string name);
+  Layer(Scene* scene, std::string name);
   ~Layer();
 
-  node_ptr_t createNode(std::string named, drawable_ptr_t drawable);
-  void removeNode(node_ptr_t node);
+  drawablenode_ptr_t createDrawableNode(std::string named, drawable_ptr_t drawable);
+  void removeDrawableNode(drawablenode_ptr_t node);
+
+  lightnode_ptr_t createLightNode(std::string named, light_ptr_t drawable);
+  void removeLightNode(lightnode_ptr_t node);
 
   std::string _name;
-  std::map<std::string, node_ptr_t> _nodemap;
-  std::vector<node_ptr_t> _nodevect;
+  Scene* _scene = nullptr;
+  std::map<std::string, drawablenode_ptr_t> _drawablenode_map;
+  std::vector<drawablenode_ptr_t> _drawablenodes;
+  std::map<std::string, lightnode_ptr_t> _lightnode_map;
+  std::vector<lightnode_ptr_t> _lightnodes;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -72,7 +101,7 @@ struct Scene {
 
   DefaultRenderer _renderer;
   lightmanager_ptr_t _lightManager;
-  lightmanagerdata_ptr_t _lightData;
+  lightmanagerdata_ptr_t _lightManagerData;
   compositorimpl_ptr_t _compositorImpl;
   compositordata_ptr_t _compositorData;
   NodeCompositingTechnique* _compostorTechnique = nullptr;

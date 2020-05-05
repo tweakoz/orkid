@@ -55,7 +55,7 @@ enum ELightType {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class LightData : public ork::Object {
+struct LightData : public ork::Object {
   DeclareAbstractX(LightData, ork::Object);
 
 public:
@@ -93,7 +93,6 @@ public:
     return _shadowMapSize;
   }
 
-private:
   fvec3 mColor;
   bool mbShadowCaster;
   int _shadowsamples;
@@ -106,6 +105,8 @@ private:
   void _readCookie(ork::rtti::ICastable*& cookietex) const;
   void _writeCookie(ork::rtti::ICastable* const& cookietex);
 };
+using lightdata_ptr_t      = std::shared_ptr<LightData>;
+using lightdata_constptr_t = std::shared_ptr<const LightData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -159,6 +160,9 @@ struct Light {
   bool _dynamic;
 };
 
+using light_ptr_t      = std::shared_ptr<Light>;
+using light_constptr_t = std::shared_ptr<const Light>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct PointLightData : public LightData {
@@ -179,7 +183,10 @@ public:
       : _radius(1.0f)
       , _falloff(1.0f) {
   }
-}; // namespace lev2
+};
+
+using pointlightdata_ptr_t      = std::shared_ptr<PointLightData>;
+using pointlightdata_constptr_t = std::shared_ptr<const PointLightData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -204,6 +211,9 @@ struct PointLight : public Light {
 
   const PointLightData* _pldata;
 };
+
+using pointlight_ptr_t      = std::shared_ptr<PointLight>;
+using pointlight_constptr_t = std::shared_ptr<const PointLight>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -315,6 +325,9 @@ public:
   SpotLightData();
 };
 
+using spotlightdata_ptr_t      = std::shared_ptr<SpotLightData>;
+using spotlightdata_constptr_t = std::shared_ptr<const SpotLightData>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class SpotLight : public Light {
@@ -351,6 +364,9 @@ public:
   int _shadowmapDim;
   const SpotLightData* _SLD;
 };
+
+using spotlight_ptr_t      = std::shared_ptr<SpotLight>;
+using spotlight_constptr_t = std::shared_ptr<const SpotLight>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

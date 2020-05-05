@@ -6,9 +6,8 @@ using namespace ork;
 namespace ork::lev2::scenegraph {
 ///////////////////////////////////////////////////////////////////////////////
 
-Node::Node(std::string named, drawable_ptr_t drawable)
-    : _name(named)
-    , _drawable(drawable) {
+Node::Node(std::string named)
+    : _name(named) {
   _userdata = std::make_shared<varmap::VarMap>();
 }
 
@@ -19,8 +18,33 @@ Node::~Node() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Layer::Layer(std::string named)
-    : _name(named) {
+DrawableNode::DrawableNode(std::string named, drawable_ptr_t drawable)
+    : Node(named)
+    , _drawable(drawable) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+DrawableNode::~DrawableNode() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+LightNode::LightNode(std::string named, light_ptr_t light)
+    : Node(named)
+    , _light(light) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+LightNode::~LightNode() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+Layer::Layer(Scene* scene, std::string named)
+    : _scene(scene)
+    , _name(named) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -30,16 +54,34 @@ Layer::~Layer() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-node_ptr_t Layer::createNode(std::string named, drawable_ptr_t drawable) {
-  node_ptr_t rval = std::make_shared<Node>(named, drawable);
-  _nodemap[named] = rval;
-  _nodevect.push_back(rval);
+drawablenode_ptr_t Layer::createDrawableNode(std::string named, drawable_ptr_t drawable) {
+  drawablenode_ptr_t rval  = std::make_shared<DrawableNode>(named, drawable);
+  _drawablenode_map[named] = rval;
+  _drawablenodes.push_back(rval);
   return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Layer::removeNode(node_ptr_t node) {
+void Layer::removeDrawableNode(drawablenode_ptr_t node) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+lightnode_ptr_t Layer::createLightNode(std::string named, light_ptr_t light) {
+  lightnode_ptr_t rval  = std::make_shared<LightNode>(named, light);
+  _lightnode_map[named] = rval;
+  _lightnodes.push_back(rval);
+
+  auto lmgr = _scene->_lightManager;
+  lmgr->mGlobalMovingLights.AddLight(light.get());
+
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Layer::removeLightNode(lightnode_ptr_t node) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -67,9 +109,9 @@ Scene::~Scene() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::initWithParams(varmap::varmap_ptr_t params) {
-  _lightData      = std::make_shared<LightManagerData>();
-  _lightManager   = std::make_shared<LightManager>(*_lightData.get());
-  _compositorData = std::make_shared<CompositingData>();
+  _lightManagerData = std::make_shared<LightManagerData>();
+  _lightManager     = std::make_shared<LightManager>(*_lightManagerData.get());
+  _compositorData   = std::make_shared<CompositingData>();
 
   std::string preset = "PBR";
   // std::string output = "SCREEN";
@@ -105,7 +147,7 @@ layer_ptr_t Scene::createLayer(std::string named) {
 
   auto it = _layers.find(named);
   OrkAssert(it == _layers.end());
-  auto l         = std::make_shared<Layer>(named);
+  auto l         = std::make_shared<Layer>(this, named);
   _layers[named] = l;
   return l;
 }
@@ -119,7 +161,7 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras) {
   for (auto layer_item : _layers) {
     auto scenegraph_layer = layer_item.second;
     auto drawable_layer   = DB->MergeLayer("Default"_pool);
-    for (auto n : scenegraph_layer->_nodevect) {
+    for (auto n : scenegraph_layer->_drawablenodes) {
       if (n->_drawable) {
         n->_drawable->enqueueOnLayer(n->_transform, *drawable_layer);
       }

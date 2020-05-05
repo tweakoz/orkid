@@ -23,10 +23,14 @@ void pyinit_scenegraph(py::module& module_lev2) {
               "user",                                       //
               [](node_ptr_t node) -> varmap::varmap_ptr_t { //
                 return node->_userdata;
-              })
+              });
+  type_codec->registerStdCodec<node_ptr_t>(node_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto drawablenode_type =                                                         //
+      py::class_<DrawableNode, Node, drawablenode_ptr_t>(sgmodule, "DrawableNode") //
           .def(
-              "setInstanceMatrix",                                    //
-              [](node_ptr_t node, int instance, fmtx4_ptr_t matrix) { //
+              "setInstanceMatrix",                                            //
+              [](drawablenode_ptr_t node, int instance, fmtx4_ptr_t matrix) { //
                 auto drw     = node->_drawable;
                 auto instdrw = std::dynamic_pointer_cast<InstancedModelDrawable>(drw);
                 if (instdrw) {
@@ -37,17 +41,29 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 }
                 return node->_userdata;
               });
-  type_codec->registerStdCodec<node_ptr_t>(node_type);
+  type_codec->registerStdCodec<drawablenode_ptr_t>(drawablenode_type);
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
+  /////////////////////////////////////////////////////////////////////////////////
+  auto lightnode_type = //
+      py::class_<LightNode, Node, lightnode_ptr_t>(sgmodule, "LightNode")
+          .def(
+              "setMatrix",
+              [](lightnode_ptr_t lnode, //
+                 fmtx4_ptr_t mtx) {     //
+                auto mtx_copy          = *mtx.get();
+                auto light             = lnode->_light;
+                light->_xformgenerator = [=]() -> fmtx4 { return mtx_copy; };
+              });
+  type_codec->registerStdCodec<lightnode_ptr_t>(lightnode_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto layer_type = //
       py::class_<Layer, layer_ptr_t>(sgmodule, "Layer")
           .def(
-              "createNode",
+              "createDrawableNode",
               [](layer_ptr_t layer, //
                  std::string named,
                  drawable_ptr_t drawable) -> node_ptr_t { //
-                return layer->createNode(named, drawable);
+                return layer->createDrawableNode(named, drawable);
               });
   type_codec->registerStdCodec<layer_ptr_t>(layer_type);
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });

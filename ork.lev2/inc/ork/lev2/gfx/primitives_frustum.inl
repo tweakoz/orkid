@@ -39,7 +39,7 @@ struct FrustumPrimitive {
       auto context = RCID.context();
       material_inst->wrappedDrawCall(RCID, [this, context]() { this->renderEML(context); });
     });
-    return layer->createNode(named, drw);
+    return layer->createDrawableNode(named, drw);
   }
   //////////////////////////////////////////////////////////////////////////////
   fvec4 _colorTop;

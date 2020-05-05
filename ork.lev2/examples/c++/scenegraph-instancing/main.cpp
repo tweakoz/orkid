@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
   asset::AssetManager<XgmModelAsset>::AutoLoad();
   OrkAssert(modl_asset->_model.atomicCopy());
   drw->bindModel(modl_asset->_model.atomicCopy());
-  auto sg_node = sg_layer->createNode("model-node", drw);
+  auto sg_node = sg_layer->createDrawableNode("model-node", drw);
   //////////////////////////////////////////////////////////
   constexpr size_t NUMINSTANCES = 65536;
   //////////////////////////////////////////////////////////

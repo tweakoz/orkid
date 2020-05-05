@@ -311,6 +311,42 @@ void pyinit_gfx(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<Drawable, drawable_ptr_t>(module_lev2, "Drawable");
   /////////////////////////////////////////////////////////////////////////////////
+  py::class_<LightData, lightdata_ptr_t>(module_lev2, "LightData")
+      .def_property(
+          "color",                                       //
+          [](lightdata_ptr_t lightdata) -> fvec3_ptr_t { //
+            auto color = std::make_shared<fvec3>(lightdata->mColor);
+            return color;
+          },
+          [](lightdata_ptr_t lightdata, fvec3_ptr_t color) { //
+            lightdata->mColor = *color.get();
+          });
+  py::class_<PointLightData, LightData, pointlightdata_ptr_t>(module_lev2, "PointLightData")
+      .def(py::init<>())
+      .def(
+          "createNode",                      //
+          [](pointlightdata_ptr_t lightdata, //
+             std::string named,
+             scenegraph::layer_ptr_t layer) -> scenegraph::lightnode_ptr_t { //
+            auto xfgen = []() -> fmtx4 { return fmtx4(); };
+            auto light = std::make_shared<PointLight>(xfgen, lightdata.get());
+            return layer->createLightNode(named, light);
+          });
+  py::class_<SpotLightData, LightData, spotlightdata_ptr_t>(module_lev2, "SpotLightData");
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<Light, light_ptr_t>(module_lev2, "Light")
+      .def_property(
+          "matrix",                              //
+          [](light_ptr_t light) -> fmtx4_ptr_t { //
+            auto copy = std::make_shared<fmtx4>(light->worldMatrix());
+            return copy;
+          },
+          [](light_ptr_t light, fmtx4_ptr_t mtx) { //
+            light->worldMatrix() = *mtx.get();
+          });
+  py::class_<PointLight, Light, pointlight_ptr_t>(module_lev2, "PointLight");
+  py::class_<SpotLight, Light, spotlight_ptr_t>(module_lev2, "SpotLight");
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<XgmModel, model_ptr_t>(module_lev2, "Model") //
       .def(py::init([](const std::string& model_path) -> model_ptr_t {
         auto modl_asset = asset::AssetManager<XgmModelAsset>::Load(model_path.c_str());
@@ -324,17 +360,17 @@ void pyinit_gfx(py::module& module_lev2) {
              scenegraph::layer_ptr_t layer) -> scenegraph::node_ptr_t { //
             auto drw        = std::make_shared<ModelDrawable>(nullptr);
             drw->_modelinst = std::make_shared<XgmModelInst>(model.get());
-            return layer->createNode(named, drw);
+            return layer->createDrawableNode(named, drw);
           })
       .def(
           "createInstancedNode", //
           [](model_ptr_t model,  //
              int numinstances,
              std::string named,
-             scenegraph::layer_ptr_t layer) -> scenegraph::node_ptr_t { //
+             scenegraph::layer_ptr_t layer) -> scenegraph::drawablenode_ptr_t { //
             auto drw = std::make_shared<InstancedModelDrawable>(nullptr);
             drw->bindModel(model);
-            auto node = layer->createNode(named, drw);
+            auto node = layer->createDrawableNode(named, drw);
             drw->resize(numinstances);
             auto instdata = drw->_instancedata;
             for (int i = 0; i < numinstances; i++) {
