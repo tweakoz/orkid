@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////
   // create instanced model drawable
   //////////////////////////////////////////////////////////
-  auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://src/environ/objects/misc/ref/torus");
+  auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://src/environ/objects/misc/ref/uvsph");
   // auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://tests/pbr_calib");
   auto drw = std::make_shared<InstancedModelDrawable>(nullptr);
   asset::AssetManager<XgmModelAsset>::AutoLoad();
@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
   drw->bindModel(modl_asset->_model.atomicCopy());
   auto sg_node = sg_layer->createNode("model-node", drw);
   //////////////////////////////////////////////////////////
-  constexpr size_t NUMINSTANCES = 32768;
+  constexpr size_t NUMINSTANCES = 65536;
   //////////////////////////////////////////////////////////
   drw->resize(NUMINSTANCES);
   auto instdata = drw->_instancedata;
@@ -75,6 +75,7 @@ int main(int argc, char** argv) {
       int iry            = (rand() & 0xff) - 0x80;
       int irz            = (rand() & 0xff) - 0x80;
       int irangle        = (rand() & 0xff) - 0x80;
+      int iscale         = (rand() & 0xff);
 
       float fx = float(ix) / 10.0f;
       float fy = float(iy) / 10.0f;
@@ -84,13 +85,14 @@ int main(int argc, char** argv) {
       float ry     = float(iry) / 128.0f;
       float rz     = float(irz) / 128.0f;
       float rangle = float(irz) / 128.0f;
+      float scale  = float(iscale) / 2048.0f;
       fvec3 axis   = fvec3(rx, ry, rz).Normal();
       fquat rot    = fquat(axis, rangle);
       instdata->_worldmatrices[instance_index]. //
           compose(
               fvec3(fx, fy, fz), //
               rot,
-              0.03f);
+              scale);
     }
     ///////////////////////////////////////
     // compute camera data
