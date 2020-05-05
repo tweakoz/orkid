@@ -227,7 +227,7 @@ public:
     return false;
   }
   bool LoadTexture(const AssetPath& fname, Texture* ptex) final;
-  bool LoadTexture(Texture* ptex, datablockptr_t inpdata) final {
+  bool LoadTexture(Texture* ptex, datablock_ptr_t inpdata) final {
     return false;
   }
   void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final {

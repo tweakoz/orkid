@@ -40,10 +40,16 @@ struct Crc64 {
 
   uint64_t _crc0 = uint64_t(0xffffffffffffffff);
 
-  inline void init() { _crc0 = uint64_t(0xffffffffffffffff); }
-  inline void finish() { _crc0 ^= uint64_t(0xffffffffffffffff); }
+  inline void init() {
+    _crc0 = uint64_t(0xffffffffffffffff);
+  }
+  inline void finish() {
+    _crc0 ^= uint64_t(0xffffffffffffffff);
+  }
 
-  uint64_t result() const { return _crc0; }
+  uint64_t result() const {
+    return _crc0;
+  }
 
   inline void accumulate(void const* data, size_t len) {
     uint64_t temp_crc = _crc0;
@@ -55,32 +61,43 @@ struct Crc64 {
     _crc0 = temp_crc;
   }
 
-  template <typename T> void accumulateItem(const T& item){
+  template <typename T> void accumulateItem(const T& item) {
     accumulate(&item, sizeof(T));
   }
 
-  void accumulateString(const std::string& item){
+  void accumulateString(const std::string& item) {
     accumulate(item.c_str(), item.length());
   }
-
 };
 
+using crc64hasher_ptr_t = std::shared_ptr<Crc64>;
+
 // Initialize a CRC accumulator
-inline void crc64_init(Crc64& crc) { crc.init(); }
+inline void crc64_init(Crc64& crc) {
+  crc.init();
+}
 
 // Finish a CRC calculation
-inline void crc64_fin(Crc64& crc) { crc.finish(); }
+inline void crc64_fin(Crc64& crc) {
+  crc.finish();
+}
 
 // Accumulate some (more) bytes into a CRC
 inline void crc64_compute(Crc64& crc, void const* data, size_t len) {
-  crc.accumulate(data,len);
+  crc.accumulate(data, len);
 }
 
-inline bool operator==(Crc64 const& c1, Crc64 const& c2) { return c1._crc0 == c2._crc0; }
+inline bool operator==(Crc64 const& c1, Crc64 const& c2) {
+  return c1._crc0 == c2._crc0;
+}
 
-inline bool operator!=(Crc64 const& c1, Crc64 const& c2) { return c1._crc0 != c2._crc0; }
+inline bool operator!=(Crc64 const& c1, Crc64 const& c2) {
+  return c1._crc0 != c2._crc0;
+}
 
-inline bool operator<(Crc64 const& c1, Crc64 const& c2) { return c1._crc0 < c2._crc0; }
+inline bool operator<(Crc64 const& c1, Crc64 const& c2) {
+  return c1._crc0 < c2._crc0;
+}
 
 Crc64 crc64(const void* block, size_t len);
 

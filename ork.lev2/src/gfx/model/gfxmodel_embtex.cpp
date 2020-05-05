@@ -12,7 +12,7 @@
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/pch.h>
 
-#include <ork/file/cfs.inl>
+#include <ork/file/cas.inl>
 #include <ork/kernel/spawner.h>
 #include <ork/lev2/gfx/image.h>
 
@@ -45,8 +45,8 @@ static std::string compressionOptsForUsage(ETextureUsage usage) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-datablockptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
-  datablockptr_t dblock = std::make_shared<DataBlock>();
+datablock_ptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
+  datablock_ptr_t dblock = std::make_shared<DataBlock>();
   auto srcpath          = ork::file::generateContentTempPath(hash, _format);
   FILE* fout            = fopen(srcpath.c_str(), "wb");
   fwrite(_srcdata, _srcdatalen, 1, fout);
@@ -85,14 +85,14 @@ void EmbeddedTexture::fetchDDSdata() {
 
   auto options = compressionOptsForUsage(_usage);
 
-  boost::Crc64 basehasher;
-  basehasher.accumulateString(options);
-  basehasher.accumulateString(_format);
-  basehasher.accumulateString(_name);
-  basehasher.accumulateString("version-0");
-  basehasher.accumulate(_srcdata, _srcdatalen);
-  basehasher.finish();
-  uint64_t hashkey  = basehasher.result();
+  auto basehasher = DataBlock::createHasher();
+  basehasher->accumulateString(options);
+  basehasher->accumulateString(_format);
+  basehasher->accumulateString(_name);
+  basehasher->accumulateString("version-0");
+  basehasher->accumulate(_srcdata, _srcdatalen);
+  basehasher->finish();
+  uint64_t hashkey  = basehasher->result();
   _ddsdestdatablock = DataBlockCache::findDataBlock(hashkey);
 
   if (_ddsdestdatablock) {

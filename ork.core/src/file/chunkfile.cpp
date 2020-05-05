@@ -23,7 +23,7 @@ void OutputStream::AddData(const void* ptr, size_t length) {
   Write((unsigned char*)ptr, length);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::AddDataBlock(datablockptr_t dblock) {
+void OutputStream::AddDataBlock(datablock_ptr_t dblock) {
   AddData(dblock->data(), dblock->length());
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -319,7 +319,7 @@ Reader::Reader(const file::Path& inpath, const char* ptype, ILoadAllocator& allo
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-Reader::Reader(datablockptr_t datablock, ILoadAllocator& allocator)
+Reader::Reader(datablock_ptr_t datablock, ILoadAllocator& allocator)
     : mpstrtab(0)
     , mistrtablen(0)
     , mbOk(false)
@@ -327,7 +327,7 @@ Reader::Reader(datablockptr_t datablock, ILoadAllocator& allocator)
   mbOk = readFromDataBlock(datablock);
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool Reader::readFromDataBlock(datablockptr_t datablock) {
+bool Reader::readFromDataBlock(datablock_ptr_t datablock) {
   DataBlockInputStream dblockstream(datablock);
 
   const Char4 good_chunk_magic("chkf");
@@ -418,7 +418,7 @@ int Writer::stringIndex(const char* pstr) {
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-void Writer::writeToDataBlock(datablockptr_t& out_datablock) {
+void Writer::writeToDataBlock(datablock_ptr_t& out_datablock) {
   ////////////////////////
   Char4 chunk_magic("chkf");
   out_datablock->addItem<Char4>(chunk_magic);

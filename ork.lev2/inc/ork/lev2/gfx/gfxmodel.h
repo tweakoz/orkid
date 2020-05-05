@@ -8,7 +8,7 @@
 #pragma once
 #include <ork/kernel/varmap.inl>
 #include <ork/file/chunkfile.h>
-#include <ork/kernel/datablock.inl>
+#include <ork/kernel/datablock.h>
 #include <ork/file/file.h>
 #include <ork/file/path.h>
 #include <ork/kernel/string/ConstString.h>
@@ -57,8 +57,8 @@ struct EmbeddedTexture final {
   std::string _name;
   bool _compressionPending = true;
   ETextureUsage _usage     = ETEXUSAGE_DATA;
-  datablockptr_t _ddsdestdatablock;
-  datablockptr_t compressTexture(uint64_t hash) const;
+  datablock_ptr_t _ddsdestdatablock;
+  datablock_ptr_t compressTexture(uint64_t hash) const;
   void fetchDDSdata();
   varmap::VarMap _varmap;
 };
@@ -368,9 +368,9 @@ struct XgmModel final {
   /////////////////////////////////////
 
   static bool LoadUnManaged(XgmModel* mdl, const AssetPath& fname);
-  static bool _loaderSelect(XgmModel* mdl, datablockptr_t dblock);
-  static bool _loadXGM(XgmModel* mdl, datablockptr_t dblock);
-  static bool _loadAssimp(XgmModel* mdl, datablockptr_t dblock);
+  static bool _loaderSelect(XgmModel* mdl, datablock_ptr_t dblock);
+  static bool _loadXGM(XgmModel* mdl, datablock_ptr_t dblock);
+  static bool _loadAssimp(XgmModel* mdl, datablock_ptr_t dblock);
 
   /////////////////////////////////////
 
@@ -502,7 +502,7 @@ struct RenderContextInstModelData final {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl);
-datablockptr_t writeXgmToDatablock(const lev2::XgmModel* mdl);
+datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl);
 
 ///////////////////////////////////////////////////////////////////////////////
 

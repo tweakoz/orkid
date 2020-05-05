@@ -25,7 +25,7 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/meshutil/submesh.h>
 #include <unordered_map>
-#include <ork/kernel/datablock.inl>
+#include <ork/kernel/datablock.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -247,7 +247,7 @@ struct Mesh {
   void ReadFromXGM(const file::Path& inpath);
   void ReadFromWavefrontObj(const file::Path& inpath);
   void readFromAssimp(const file::Path& inpath);
-  void readFromAssimp(datablockptr_t datablock);
+  void readFromAssimp(datablock_ptr_t datablock);
   /////////////////////////////////////////////////////////////////////////
   AABox GetAABox() const;
   /////////////////////////////////////////////////////////////////////////

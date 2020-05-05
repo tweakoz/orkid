@@ -4,7 +4,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
-#include <ork/file/cfs.inl>
+#include <ork/file/cas.inl>
 #include <ork/application/application.h>
 #include <ork/math/plane.h>
 #include <ork/kernel/spawner.h>

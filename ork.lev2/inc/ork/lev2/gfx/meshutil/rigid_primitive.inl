@@ -20,7 +20,7 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/targetinterfaces.h>
 #include <unordered_map>
-#include <ork/kernel/datablock.inl>
+#include <ork/kernel/datablock.h>
 #include <ork/lev2/gfx/meshutil/submesh.h>
 #include <ork/lev2/gfx/meshutil/clusterizer.h>
 namespace ork::meshutil {

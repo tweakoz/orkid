@@ -19,7 +19,7 @@
 #include <ork/kernel/fixedlut.hpp>
 #include <ork/kernel/string/PoolString.h>
 #include <ork/kernel/varmap.inl>
-#include <ork/kernel/datablock.inl>
+#include <ork/kernel/datablock.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -61,7 +61,7 @@ public:
   void AddItem(const fquat& data);
   void addVarMap(const varmap::VarMap& vmap, Writer& writer);
   void AddData(const void* ptr, size_t length);
-  void AddDataBlock(datablockptr_t dblock);
+  void AddDataBlock(datablock_ptr_t dblock);
   /////////////////////////////////////////////
 
   size_t GetSize() const {
@@ -87,7 +87,7 @@ struct Writer {
   OutputStream* AddStream(std::string stream_name);
   int stringIndex(const char* pstr);
   void WriteToFile(const file::Path& outpath);
-  void writeToDataBlock(datablockptr_t& out_datablock);
+  void writeToDataBlock(datablock_ptr_t& out_datablock);
 
   ////////////////////////////////////////////////////////////////////////////////////
 
@@ -139,10 +139,10 @@ struct DefaultLoadAllocator : public ILoadAllocator { //////////////////////////
 struct Reader {
 
   Reader(const file::Path& inpath, const char* ptype, ILoadAllocator& allocator);
-  Reader(datablockptr_t datablock, ILoadAllocator& allocator);
+  Reader(datablock_ptr_t datablock, ILoadAllocator& allocator);
   ~Reader();
 
-  bool readFromDataBlock(datablockptr_t datablock);
+  bool readFromDataBlock(datablock_ptr_t datablock);
 
   InputStream* GetStream(const char* streamname);
   const char* GetString(int index) const;

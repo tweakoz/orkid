@@ -25,7 +25,7 @@ void Mesh::readFromAssimp(const file::Path& BasePath) {
   readFromAssimp(dblock);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Mesh::readFromAssimp(datablockptr_t datablock) {
+void Mesh::readFromAssimp(datablock_ptr_t datablock) {
   auto& extension = datablock->_vars.typedValueForKey<std::string>("file-extension").value();
   printf("BEGIN: importing scene from datablock length<%zu> extension<%s>\n", datablock->length(), extension.c_str());
   auto scene = aiImportFileFromMemory((const char*)datablock->data(), datablock->length(), assimpImportFlags(), extension.c_str());
@@ -815,7 +815,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-datablockptr_t assimpToXgm(datablockptr_t inp_datablock) {
+datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock) {
 
   Mesh tmesh;
   tmesh.readFromAssimp(inp_datablock);

@@ -206,7 +206,7 @@ bool IsXBGR8(const DDS_PIXELFORMAT& pf) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Image::Image(datablockptr_t dblock) {
+Image::Image(datablock_ptr_t dblock) {
 
   _format = EFMT_END;
 

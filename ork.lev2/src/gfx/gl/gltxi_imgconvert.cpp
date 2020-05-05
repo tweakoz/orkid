@@ -21,7 +21,7 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlTextureInterface::_loadImageTexture(Texture* ptex, datablockptr_t src_datablock) {
+bool GlTextureInterface::_loadImageTexture(Texture* ptex, datablock_ptr_t src_datablock) {
   DataBlockInputStream checkstream(src_datablock);
   uint8_t magic[4];
   magic[0]                     = checkstream.getItem<uint8_t>();
@@ -29,7 +29,7 @@ bool GlTextureInterface::_loadImageTexture(Texture* ptex, datablockptr_t src_dat
   magic[2]                     = checkstream.getItem<uint8_t>();
   magic[3]                     = checkstream.getItem<uint8_t>();
   bool rval                    = false;
-  datablockptr_t xtx_datablock = nullptr;
+  datablock_ptr_t xtx_datablock = nullptr;
 
   printf("magic0<%c>\n", magic[0]);
   printf("magic1<%c>\n", magic[1]);
@@ -40,18 +40,17 @@ bool GlTextureInterface::_loadImageTexture(Texture* ptex, datablockptr_t src_dat
       magic[2] == 'N' and //
       magic[3] == 'G') {
 
-    boost::Crc64 basehasher;
-    basehasher.accumulateString("GlTextureInterface::_loadImageTexture");
-    basehasher.accumulateString("png2xtx");
-    basehasher.accumulateItem(src_datablock->hash());
-    basehasher.finish();
-    uint64_t hashkey = basehasher.result();
+    auto basehasher = DataBlock::createHasher();
+    basehasher->accumulateString("GlTextureInterface::_loadImageTexture");
+    basehasher->accumulateString("png2xtx");
+    basehasher->accumulateItem(src_datablock->hash());
+    basehasher->finish();
+    uint64_t hashkey = basehasher->result();
     xtx_datablock    = DataBlockCache::findDataBlock(hashkey);
 
     if (xtx_datablock) {
-      printf( "GlTextureInterface::_loadImageTexture tex<%p> precompressed!\n", ptex);
-    }
-    else {
+      printf("GlTextureInterface::_loadImageTexture tex<%p> precompressed!\n", ptex);
+    } else {
       Image img;
       img.initFromInMemoryFile("png", src_datablock->data(), src_datablock->length());
       img._debugName = ptex->_debugName;

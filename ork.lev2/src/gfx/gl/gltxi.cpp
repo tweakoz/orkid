@@ -63,7 +63,7 @@ bool GlTextureInterface::LoadTexture(const AssetPath& infname, Texture* ptex) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlTextureInterface::LoadTexture(Texture* ptex, datablockptr_t datablock) {
+bool GlTextureInterface::LoadTexture(Texture* ptex, datablock_ptr_t datablock) {
   DataBlockInputStream checkstream(datablock);
   uint32_t magic = checkstream.getItem<uint32_t>();
   bool ok        = false;

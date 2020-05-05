@@ -1,7 +1,7 @@
 #pragma once
 
 #include <ork/lev2/gfx/gfxenv_enum.h>
-#include <ork/kernel/datablock.inl>
+#include <ork/kernel/datablock.h>
 #include <ork/kernel/varmap.inl>
 #include <ork/file/chunkfile.h>
 
@@ -14,7 +14,7 @@ struct Image;
 struct CompressedImage {
 
   EBufferFormat _format  = EBufferFormat::NONE;
-  datablockptr_t _data   = nullptr;
+  datablock_ptr_t _data   = nullptr;
   size_t _width          = 0;
   size_t _height         = 0;
   size_t _blocked_width  = 0;
@@ -32,9 +32,9 @@ struct CompressedImageMipChain {
   void initWithPrecompressedMipLevels(miplevels_t levels);
 
   void writeXTX(const file::Path& outpath);
-  void writeXTX(datablockptr_t& out_datablock);
+  void writeXTX(datablock_ptr_t& out_datablock);
   void readXTX(const file::Path& inppath);
-  void readXTX(datablockptr_t datablock);
+  void readXTX(datablock_ptr_t datablock);
 
   EBufferFormat _format = EBufferFormat::NONE;
   size_t _width         = 0;
@@ -66,7 +66,7 @@ struct Image {
   CompressedImageMipChain compressedMipChainRGBA() const;
   uint8_t* pixel(int x, int y);
   const uint8_t* pixel(int x, int y) const;
-  datablockptr_t _data  = nullptr;
+  datablock_ptr_t _data  = nullptr;
   size_t _width         = 0;
   size_t _height        = 0;
   size_t _depth         = 1;

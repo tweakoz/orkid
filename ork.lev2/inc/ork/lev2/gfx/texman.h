@@ -13,7 +13,7 @@
 #include <ork/math/cvector4.h>
 #include <ork/file/path.h>
 #include <ork/kernel/kernel.h>
-#include <ork/kernel/datablock.inl>
+#include <ork/kernel/datablock.h>
 #include <ork/kernel/varmap.inl>
 
 namespace ork { namespace lev2 {
@@ -147,7 +147,7 @@ struct MipChain {
 //////////////////////////////////////////////////////////////////////////
 
 struct Texture {
-  typedef std::function<datablockptr_t(Texture*, Context*, datablockptr_t)> proc_t;
+  typedef std::function<datablock_ptr_t(Texture*, Context*, datablock_constptr_t)> proc_t;
 
   //////////////////////////////////////////////////////
 

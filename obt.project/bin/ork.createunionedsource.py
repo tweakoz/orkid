@@ -11,7 +11,7 @@ from pathlib import Path
 
 base = Path(os.environ["ORKID_WORKSPACE_DIR"])
 stage = Path(os.environ["OBT_STAGE"])
-mrgsrc = stage/"unioned_src"
+mrgsrc = stage/"orkid"/"unioned_src"
 
 o_inc_ork = base/"ork.core"/"inc"/"ork"
 o_inc_lev2 = base/"ork.lev2"/"inc"/"ork"/"lev2"

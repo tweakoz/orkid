@@ -266,37 +266,33 @@ DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
   // texture postprocessor for generating equirectangular environment
   //  PBR irradiance diffuse and specular maps
   ///////////////////////////////////////////////////////////////
-  printf("WTFWTFTJFKSHDFKJSHDFKSDF\n");
   _texAssetVarMap.makeValueForKey<Texture::proc_t>("postproc") =
-      [this](Texture* tex, Context* targ, datablockptr_t datablock) -> datablockptr_t {
+      [this](Texture* tex, Context* targ, datablock_constptr_t inp_datablock) -> datablock_ptr_t {
     printf(
         "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>...\n",
         tex,
         tex->_debugName.c_str(),
-        datablock->length());
+        inp_datablock->length());
     // targ->beginFrame();
-    boost::Crc64 hasher;
-    hasher.accumulateString("irradiancemap-v0");
-    hasher.accumulateItem<uint64_t>(datablock->hash()); // data content
-    hasher.finish();
-    uint64_t cachekey = hasher.result();
+    auto hasher = DataBlock::createHasher();
+    hasher->accumulateString("irradiancemap-v0");
+    hasher->accumulateItem<uint64_t>(inp_datablock->hash()); // data content
+    hasher->finish();
+    uint64_t cachekey = hasher->result();
     auto irrmapdblock = DataBlockCache::findDataBlock(cachekey);
     if (irrmapdblock) {
-      // found in cache
-      datablock = irrmapdblock;
+      // found in cache, nothing to do..
     } else {
-      DataBlockInputStream istream(datablock);
       // not found in cache, generate
       irrmapdblock = std::make_shared<DataBlock>();
       ///////////////////////////
       _filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ);
       _filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ);
       //////////////////////////////////////////////////////////////
-      // DataBlockCache::setDataBlock(cachekey, irrmapdblock);
-      datablock = irrmapdblock;
+      DataBlockCache::setDataBlock(cachekey, irrmapdblock);
     }
     // targ->endFrame();
-    return datablock;
+    return irrmapdblock;
   };
 }
 

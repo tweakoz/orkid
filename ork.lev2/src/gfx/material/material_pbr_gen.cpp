@@ -47,12 +47,12 @@ Texture* PBRMaterial::brdfIntegrationMap(Context* targ) {
     // dblock cache
     ///////////////////////////////
 
-    boost::Crc64 brdfhasher;
-    brdfhasher.accumulateString(_map->_debugName); // identifier
-    brdfhasher.accumulateItem<float>(1.0);         // version code
-    brdfhasher.accumulateItem<float>(DIM);         // dimension
-    brdfhasher.finish();
-    uint64_t brdfhash = brdfhasher.result();
+    auto brdfhasher = DataBlock::createHasher();
+    brdfhasher->accumulateString(_map->_debugName); // identifier
+    brdfhasher->accumulateItem<float>(1.0);         // version code
+    brdfhasher->accumulateItem<float>(DIM);         // dimension
+    brdfhasher->finish();
+    uint64_t brdfhash = brdfhasher->result();
     // printf("brdfIntegrationMap hashkey<%zx>\n", brdfhash);
     auto dblock = DataBlockCache::findDataBlock(brdfhash);
     if (dblock) {

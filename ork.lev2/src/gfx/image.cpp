@@ -387,7 +387,7 @@ void CompressedImageMipChain::initWithPrecompressedMipLevels(miplevels_t levels)
 
 constexpr size_t KXTXVERSION = "xtx-ver0"_crcu;
 
-void CompressedImageMipChain::writeXTX(datablockptr_t& out_datablock) {
+void CompressedImageMipChain::writeXTX(datablock_ptr_t& out_datablock) {
   //////////////////////////////////////////
   chunkfile::Writer chunkwriter("xtx");
   auto hdrstream = chunkwriter.AddStream("header");
@@ -465,7 +465,7 @@ void CompressedImageMipChain::readXTX(const file::Path& inppath) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompressedImageMipChain::readXTX(datablockptr_t datablock) {
+void CompressedImageMipChain::readXTX(datablock_ptr_t datablock) {
   //////////////////////////////////////////
   chunkfile::DefaultLoadAllocator allocator;
   chunkfile::Reader chunkreader(datablock, allocator);

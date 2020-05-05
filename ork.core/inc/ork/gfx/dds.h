@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/kernel/datablock.inl>
+#include <ork/kernel/datablock.h>
 
 namespace ork::dds {
 
@@ -147,7 +147,7 @@ bool IsRGBA8(const DDS_PIXELFORMAT& pf);
 bool IsXBGR8(const DDS_PIXELFORMAT& pf);
 
 struct Image {
-  Image(datablockptr_t dblock);
+  Image(datablock_ptr_t dblock);
   ~Image();
 
   DDS_HEADER mHeader;

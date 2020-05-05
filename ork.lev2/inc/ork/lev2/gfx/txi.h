@@ -26,7 +26,7 @@ public:
 
   virtual bool DestroyTexture(Texture* ptex)                           = 0;
   virtual bool LoadTexture(const AssetPath& fname, Texture* ptex)      = 0;
-  virtual bool LoadTexture(Texture* ptex, datablockptr_t inpdata)      = 0;
+  virtual bool LoadTexture(Texture* ptex, datablock_ptr_t inpdata)      = 0;
   virtual void SaveTexture(const ork::AssetPath& fname, Texture* ptex) = 0;
   virtual void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) {
   }

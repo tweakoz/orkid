@@ -13,13 +13,13 @@
 
 #include <ork/file/filestd.h>
 #include <unistd.h>
-#include <ork/kernel/datablock.inl>
+#include <ork/kernel/datablock.h>
 
 namespace ork {
 
-datablockptr_t datablockFromFileAtPath(const file::Path& path) {
+datablock_ptr_t datablockFromFileAtPath(const file::Path& path) {
 
-  datablockptr_t rval = nullptr;
+  datablock_ptr_t rval = nullptr;
   if (FileEnv::GetRef().DoesFileExist(path)) {
     ork::File inputfile(path, ork::EFM_READ);
     size_t length = 0;

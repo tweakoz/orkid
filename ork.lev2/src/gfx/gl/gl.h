@@ -32,7 +32,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/file/chunkfile.inl>
-#include <ork/kernel/datablock.inl>
+#include <ork/kernel/datablock.h>
 #include <ork/lev2/gfx/image.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -330,17 +330,17 @@ public:
   GlTextureInterface(ContextGL& tgt);
 
 private:
-  bool _loadImageTexture(Texture* ptex, datablockptr_t inpdata);
+  bool _loadImageTexture(Texture* ptex, datablock_ptr_t inpdata);
 
-  bool _loadXTXTexture(Texture* ptex, datablockptr_t inpdata);
+  bool _loadXTXTexture(Texture* ptex, datablock_ptr_t inpdata);
   void _loadXTXTextureMainThreadPart(GlTexLoadReq req);
 
   void _loadDDSTextureMainThreadPart(GlTexLoadReq req);
   bool _loadDDSTexture(const AssetPath& fname, Texture* ptex);
-  bool _loadDDSTexture(Texture* ptex, datablockptr_t inpdata);
+  bool _loadDDSTexture(Texture* ptex, datablock_ptr_t inpdata);
   bool _loadVDSTexture(const AssetPath& fname, Texture* ptex);
 
-  bool LoadTexture(Texture* ptex, datablockptr_t inpdata) final;
+  bool LoadTexture(Texture* ptex, datablock_ptr_t inpdata) final;
   bool DestroyTexture(Texture* ptex) final;
   bool LoadTexture(const AssetPath& fname, Texture* ptex) final;
   void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final;

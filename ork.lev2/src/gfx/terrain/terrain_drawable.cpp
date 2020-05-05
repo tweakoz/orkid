@@ -101,12 +101,12 @@ struct TerrainRenderImpl {
   void render(const RenderContextInstData& RCID);
 
   void recomputeGeometry(chunkfile::OutputStream* hdrstream, chunkfile::OutputStream* geostream);
-  void gpuLoadGeometry(Context* context, datablockptr_t dblock);
+  void gpuLoadGeometry(Context* context, datablock_ptr_t dblock);
   void gpuInitGeometry(Context* context);
   void gpuInitTextures(Context* context);
 
-  datablockptr_t recomputeTextures(Context* context);
-  void reloadCachedTextures(Context* context, datablockptr_t dblock);
+  datablock_ptr_t recomputeTextures(Context* context);
+  void reloadCachedTextures(Context* context, datablock_ptr_t dblock);
 
   TerrainDrawableInst* _hfinstance;
   hfptr_t _heightfield;
@@ -166,12 +166,12 @@ TerrainRenderImpl::~TerrainRenderImpl() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-datablockptr_t TerrainRenderImpl::recomputeTextures(Context* context) {
+datablock_ptr_t TerrainRenderImpl::recomputeTextures(Context* context) {
 
   ork::Timer timer;
   timer.Start();
 
-  datablockptr_t dblock = std::make_shared<DataBlock>();
+  datablock_ptr_t dblock = std::make_shared<DataBlock>();
 
   int MIPW = _heightfield->GetGridSizeX();
   int MIPH = _heightfield->GetGridSizeZ();
@@ -364,7 +364,7 @@ datablockptr_t TerrainRenderImpl::recomputeTextures(Context* context) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void TerrainRenderImpl::reloadCachedTextures(Context* context, datablockptr_t dblock) {
+void TerrainRenderImpl::reloadCachedTextures(Context* context, datablock_ptr_t dblock) {
   chunkfile::InputStream istr(dblock->data(), dblock->length());
   int MIPW, MIPH;
   istr.GetItem<int>(MIPW);
@@ -819,7 +819,7 @@ void SectorLodInfo::gpuLoadGeometry(
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void TerrainRenderImpl::gpuLoadGeometry(Context* context, datablockptr_t dblock) {
+void TerrainRenderImpl::gpuLoadGeometry(Context* context, datablock_ptr_t dblock) {
   printf("TerrainRenderImpl::gpuLoadGeometry dblock len<0x%zx>\n", dblock->length());
   //////////////////////////////////////////
   chunkfile::DefaultLoadAllocator allocator;
@@ -842,13 +842,13 @@ void TerrainRenderImpl::gpuLoadGeometry(Context* context, datablockptr_t dblock)
 ///////////////////////////////////////////////////////////////////////////////
 
 void TerrainRenderImpl::gpuInitGeometry(Context* context) {
-  boost::Crc64 geometry_hasher;
-  geometry_hasher.accumulateItem<uint64_t>(_heightfield->_hash);
-  geometry_hasher.accumulateItem<float>(_hfinstance->_worldSizeXZ);
-  geometry_hasher.accumulateItem<float>(_hfinstance->_worldHeight);
-  geometry_hasher.accumulateString("geometry-v0");
-  geometry_hasher.finish();
-  uint64_t hashkey = geometry_hasher.result();
+  auto geometry_hasher = DataBlock::createHasher();
+  geometry_hasher->accumulateItem<uint64_t>(_heightfield->_hash);
+  geometry_hasher->accumulateItem<float>(_hfinstance->_worldSizeXZ);
+  geometry_hasher->accumulateItem<float>(_hfinstance->_worldHeight);
+  geometry_hasher->accumulateString("geometry-v0");
+  geometry_hasher->finish();
+  uint64_t hashkey = geometry_hasher->result();
 
   auto dblock = DataBlockCache::findDataBlock(hashkey);
 
@@ -874,13 +874,13 @@ void TerrainRenderImpl::gpuInitTextures(Context* context) {
   const int iglZ           = _heightfield->GetGridSizeZ();
   const int terrain_ngrids = iglX * iglZ;
 
-  boost::Crc64 texture_hasher;
-  texture_hasher.accumulateItem<uint64_t>(_heightfield->_hash);
-  texture_hasher.accumulateItem<float>(_hfinstance->_worldSizeXZ);
-  texture_hasher.accumulateItem<float>(_hfinstance->_worldHeight);
-  texture_hasher.accumulateString("texture-v0");
-  texture_hasher.finish();
-  uint64_t texture_hashkey = texture_hasher.result();
+  auto texture_hasher = DataBlock::createHasher();
+  texture_hasher->accumulateItem<uint64_t>(_heightfield->_hash);
+  texture_hasher->accumulateItem<float>(_hfinstance->_worldSizeXZ);
+  texture_hasher->accumulateItem<float>(_hfinstance->_worldHeight);
+  texture_hasher->accumulateString("texture-v0");
+  texture_hasher->finish();
+  uint64_t texture_hashkey = texture_hasher->result();
 
   auto dblock = DataBlockCache::findDataBlock(texture_hashkey);
 

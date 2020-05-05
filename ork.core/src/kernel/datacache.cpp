@@ -24,12 +24,12 @@ std::string DataBlockCache::_generateCachePath(uint64_t key) {
   return cache_path.toStdString();
 }
 //////////////////////////////////////////////////////////////////////////////
-datablockptr_t DataBlockCache::findDataBlock(uint64_t key) {
+datablock_ptr_t DataBlockCache::findDataBlock(uint64_t key) {
   if (not _enabled) {
     return nullptr;
   }
   auto& inst          = instance();
-  datablockptr_t rval = nullptr;
+  datablock_ptr_t rval = nullptr;
   auto cache_path     = _generateCachePath(key);
   inst._blockmap.atomicOp([&rval, key, cache_path](datablockmap_t& m) {
     auto it = m.find(key);
@@ -56,7 +56,7 @@ datablockptr_t DataBlockCache::findDataBlock(uint64_t key) {
   return rval;
 }
 //////////////////////////////////////////////////////////////////////////////
-void DataBlockCache::setDataBlock(uint64_t key, datablockptr_t item, bool cacheable) {
+void DataBlockCache::setDataBlock(uint64_t key, datablock_ptr_t item, bool cacheable) {
   auto& inst      = instance();
   auto cache_path = _generateCachePath(key);
   inst._blockmap.atomicOp([item, key, cache_path, cacheable](datablockmap_t& m) {

@@ -24,7 +24,7 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/targetinterfaces.h>
 #include <unordered_map>
-#include <ork/kernel/datablock.inl>
+#include <ork/kernel/datablock.h>
 
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////

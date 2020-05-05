@@ -20,7 +20,7 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlTextureInterface::_loadXTXTexture(Texture* ptex, datablockptr_t datablock) {
+bool GlTextureInterface::_loadXTXTexture(Texture* ptex, datablock_ptr_t datablock) {
   GlTexLoadReq load_req;
   load_req.ptex                  = ptex;
   load_req._inpstream._datablock = datablock;

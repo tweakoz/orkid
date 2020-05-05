@@ -23,7 +23,7 @@
 
 namespace bfs = boost::filesystem;
 namespace ork::meshutil {
-datablockptr_t assimpToXgm(datablockptr_t inp_datablock);
+datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -66,7 +66,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
 
 ////////////////////////////////////////////////////////////
 
-bool XgmModel::_loaderSelect(XgmModel* mdl, datablockptr_t datablock) {
+bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
   DataBlockInputStream datablockstream(datablock);
   Char4 check_magic(datablockstream.getItem<uint32_t>());
   if (check_magic == Char4("chkf")) // its a chunkfile
@@ -84,13 +84,13 @@ bool XgmModel::_loaderSelect(XgmModel* mdl, datablockptr_t datablock) {
 
 ////////////////////////////////////////////////////////////
 
-bool XgmModel::_loadAssimp(XgmModel* mdl, datablockptr_t inp_datablock) {
-  boost::Crc64 basehasher;
-  basehasher.accumulateString("assimp2xgm");
-  basehasher.accumulateString("version-0");
+bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
+  auto basehasher = DataBlock::createHasher();
+  basehasher->accumulateString("assimp2xgm");
+  basehasher->accumulateString("version-0");
   inp_datablock->accumlateHash(basehasher);
-  basehasher.finish();
-  uint64_t hashkey   = basehasher.result();
+  basehasher->finish();
+  uint64_t hashkey   = basehasher->result();
   auto xgm_datablock = DataBlockCache::findDataBlock(hashkey);
   if (not xgm_datablock) {
     xgm_datablock = meshutil::assimpToXgm(inp_datablock);
@@ -100,7 +100,7 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablockptr_t inp_datablock) {
 }
 ////////////////////////////////////////////////////////////
 
-bool XgmModel::_loadXGM(XgmModel* mdl, datablockptr_t datablock) {
+bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
   constexpr int kVERSIONTAG = 0x01234567;
   bool rval                 = false;
   /////////////////////////////////////////////////////////////
@@ -424,8 +424,8 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablockptr_t datablock) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-datablockptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
-  datablockptr_t out_datablock = std::make_shared<DataBlock>();
+datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
+  datablock_ptr_t out_datablock = std::make_shared<DataBlock>();
 
   lev2::ContextDummy DummyTarget;
 

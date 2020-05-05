@@ -23,7 +23,7 @@
 
 #include <ork/file/path.h>
 #include <ork/file/chunkfile.inl>
-#include <ork/kernel/datablock.inl>
+#include <ork/kernel/datablock.h>
 #include <ork/kernel/mutex.h>
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/gfx/gfxrasterstate.h>

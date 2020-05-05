@@ -23,7 +23,7 @@
 
 #include <ork/event/Event.h>
 #include <ork/kernel/mutex.h>
-#include <ork/kernel/datablock.inl>
+#include <ork/kernel/datablock.h>
 #include <ork/object/AutoConnector.h>
 
 ///////////////////////////////////////////////////////////////////////////////
