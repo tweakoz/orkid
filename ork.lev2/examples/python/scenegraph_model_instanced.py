@@ -30,7 +30,7 @@ class AnimationState(object):
     self.dstsca = 1.0
     self.incrot = quat()
   def update(self,deltatime):
-    self.lerpindex += deltatime*0.25
+    self.lerpindex += deltatime*0.33
     if self.lerpindex > 1:
         self.lerpindex = 1
     pos = vec3()
@@ -66,7 +66,7 @@ class instance_set(object):
                     random.uniform(-1,1)).normal()
     incrmagn = random.uniform(-0.05,0.05)
     ########################################
-    Z = random.uniform(-5,-125)
+    Z = random.uniform(-2.5,-15)
     animstate.dstpos = vec3(random.uniform(-2.5,2.5)*Z,
                random.uniform(-2.5,2.5)*Z,
                Z)
@@ -75,7 +75,7 @@ class instance_set(object):
     animstate.lerpindex = 0.0
   ########################################################
   def update(self,deltatime):
-    for i in range(3):
+    for i in range(5):
       instance_id = random.randint(0,numinstances-1)
       self.animateInstance(deltatime,instance_id)
     keys2del = list()
