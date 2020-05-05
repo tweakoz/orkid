@@ -23,7 +23,7 @@ else:
 class AnimationState(object):
   def __init__(self):
     super().__init__()
-    self.curpos = vec3()
+    self.curpos = vec3(0,0,-15)
     self.dstpos = vec3()
     self.currot = quat()
     self.cursca = 0.0
@@ -66,12 +66,12 @@ class instance_set(object):
                     random.uniform(-1,1)).normal()
     incrmagn = random.uniform(-0.05,0.05)
     ########################################
-    Z = random.uniform(-2.5,-15)
+    Z = random.uniform(-2.5,-50)
     animstate.dstpos = vec3(random.uniform(-2.5,2.5)*Z,
                random.uniform(-2.5,2.5)*Z,
                Z)
     animstate.incrot = quat(incraxis,incrmagn)
-    animstate.dstsca = random.uniform(0.1,0.2)
+    animstate.dstsca = random.uniform(0.1,0.65)
     animstate.lerpindex = 0.0
   ########################################################
   def update(self,deltatime):
@@ -105,7 +105,7 @@ class SceneGraphApp(object):
     #models += [Model("data://tests/pbr1/pbr1")]
     #models += [Model("data://tests/pbr_calib.gltf")]
     #models += [Model("src://environ/objects/misc/headwalker.obj")]
-    models += [Model("src://environ/objects/misc/ref/torus.glb")]
+    models += [Model("src://environ/objects/misc/ref/uvsph.glb")]
     ###################################
     for model in models:
       self.instancesets += [instance_set(model,numinstances,layer)]
