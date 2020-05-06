@@ -48,10 +48,10 @@ class instance_set_class(_simsetup.InstanceSet):
     self.clkernel.prg.cl_concatenate_mtx4(self.clkernel.queue, globalsize, localsize, current, delta, self.res_g)
     cl.enqueue_copy(self.clkernel.queue, self.instancematrices, self.res_g)
 ################################################################################
-class OpenClSimApp(_simsetup.SimApp):
+class PickingApp(_simsetup.SimApp):
   ################################################
   def __init__(self):
     super().__init__(vrmode,instance_set_class)
 ################################################
-app = OpenClSimApp()
+app = PickingApp()
 app.qtapp.exec()
