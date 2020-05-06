@@ -25,7 +25,7 @@ else:
   numinstances = int(args["numinstances"])
 ################################################################################
 #@vectorize(['float32(float32, float32)'], target='cuda')
-@jit(nopython=True)
+@jit(nopython=True,parallel=True)
 def matrix_update(curmatrices, deltas):
   for i in range(0,numinstances):
     a = curmatrices[i]
