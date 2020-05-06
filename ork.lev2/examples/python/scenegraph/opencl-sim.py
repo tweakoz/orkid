@@ -35,7 +35,7 @@ queue = cl.CommandQueue(ctx)
 mf = cl.mem_flags
 prg = cl.Program(ctx,
 """
-__kernel void sum(
+__kernel void cl_concatenate_mtx4(
     __global const float* instancematrices,
     __global const float* deltas,
     __global float* result) {
@@ -116,7 +116,7 @@ class instance_set(object):
     delta = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.deltas)
     globalsize = (numinstances,1,1)
     localsize = None
-    prg.sum(queue, globalsize, localsize, current, delta, self.res_g)
+    prg.cl_concatenate_mtx4(queue, globalsize, localsize, current, delta, self.res_g)
     cl.enqueue_copy(queue, self.instancematrices, self.res_g)
 ################################################################################
 class SceneGraphApp(object):
