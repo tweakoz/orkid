@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+import math, random
+import numpy as np
+from scipy import linalg as la
+from numba import vectorize
 from orkengine.core import *
 
 PI = 3.14159
@@ -57,3 +61,32 @@ print("C: %s"%(C))
 print("R2RST: %s"%(mtx4.deltaMatrix(R,R*S*T)))
 
 print( "%08x"%vec4(1,0,0,1).rgbaU32 )
+
+############################################################
+# NumPy integration test
+############################################################
+
+as_numpi = np.zeros((8,4,4)) # 8 4x4 matrices
+print("/////////////////////////")
+print("numpi shape: %s"%str(as_numpi.shape))
+a = mtx4()
+a.compose(vec3(0,1,0),quat(),2)
+as_numpi[0] = a
+print("/////////////////////////")
+print("a: %s"%a)
+print("numpi[0]: %s"%as_numpi[0])
+print("linalg determinant of a: %s"%la.det(a))
+print("linalg determinant of numpi[0]: %s"%la.det(as_numpi[0]))
+eiga, eigv = la.eig(a)
+print("linalg eiga<%s>"%eiga)
+print("linalg eigv<%s>"%eigv)
+print("/////////////////////////")
+print(as_numpi[0])
+print("/////////////////////////")
+print(as_numpi[1])
+print("/////////////////////////")
+print(as_numpi[7])
+print("/////////////////////////")
+print(as_numpi[7]*as_numpi[4])
+
+############################################################

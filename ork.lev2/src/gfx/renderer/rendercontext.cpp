@@ -38,6 +38,9 @@ void InstancedDrawableData::resize(size_t count) {
   _miscdata.resize(count);
   _pickids.resize(count);
   _count = count;
+  for (size_t i = 0; i < count; i++) {
+    _pickids[i] = 0;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

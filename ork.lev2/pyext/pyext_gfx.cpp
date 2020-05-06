@@ -219,6 +219,24 @@ void pyinit_gfx(py::module& module_lev2) {
   using rawtexptr_t = Texture*;
   type_codec->registerRawPtrCodec<tex_t, rawtexptr_t>(texture_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto instancedata_type = //
+      py::class_<InstancedDrawableData, instanceddrawdata_ptr_t>(
+          module_lev2, //
+          "InstancedDrawableData",
+          pybind11::buffer_protocol())
+          .def_buffer([](InstancedDrawableData& idata) -> pybind11::buffer_info {
+            auto data = idata._worldmatrices.data(); // Pointer to buffer
+            int count = idata._worldmatrices.size();
+            return pybind11::buffer_info(
+                data,          // Pointer to buffer
+                sizeof(float), // Size of one scalar
+                pybind11::format_descriptor<float>::format(),
+                3,                                                       // Number of dimensions
+                {count, 4, 4},                                           // Buffer dimensions
+                {sizeof(float) * 16, sizeof(float) * 4, sizeof(float)}); // Strides (in bytes) for each index
+          });
+  type_codec->registerStdCodec<instanceddrawdata_ptr_t>(instancedata_type);
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<RenderContextFrameData>(module_lev2, "RenderContextFrameData").def(py::init([](ctx_t& ctx) { //
     auto rcfd = std::unique_ptr<RenderContextFrameData>(new RenderContextFrameData(ctx.get()));
     return rcfd;
@@ -374,7 +392,7 @@ void pyinit_gfx(py::module& module_lev2) {
             drw->resize(numinstances);
             auto instdata = drw->_instancedata;
             for (int i = 0; i < numinstances; i++) {
-              instdata->_worldmatrices[i].compose(fvec3(0, 0, 0), fquat(), 0.0f);
+              // instdata->_worldmatrices[i].compose(fvec3(0, 0, 0), fquat(), 0.0f);
             }
             return node;
           });

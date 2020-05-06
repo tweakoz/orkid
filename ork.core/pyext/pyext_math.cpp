@@ -5,7 +5,19 @@ void pyinit_math(py::module& module_core) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto fvec2_type = //
-      py::class_<fvec2, fvec2_ptr_t>(module_core, "vec2")
+      py::class_<fvec2, fvec2_ptr_t>(module_core, "vec2", pybind11::buffer_protocol())
+          //////////////////////////////////////////////////////////////////////////
+          .def_buffer([](fvec2& vec) -> pybind11::buffer_info {
+            auto data = vec.GetArray(); // Pointer to buffer
+            return pybind11::buffer_info(
+                data,          // Pointer to buffer
+                sizeof(float), // Size of one scalar
+                pybind11::format_descriptor<float>::format(),
+                1,                // Number of dimensions
+                {2},              // Buffer dimensions
+                {sizeof(float)}); // Strides (in bytes) for each index
+          })
+          //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
           .def(py::init<float, float>())
           .def_property("x", &fvec2::GetX, &fvec2::SetX)
@@ -36,7 +48,19 @@ void pyinit_math(py::module& module_core) {
   type_codec->registerStdCodec<fvec2_ptr_t>(fvec2_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto fvec3_type = //
-      py::class_<fvec3, fvec3_ptr_t>(module_core, "vec3")
+      py::class_<fvec3, fvec3_ptr_t>(module_core, "vec3", pybind11::buffer_protocol())
+          //////////////////////////////////////////////////////////////////////////
+          .def_buffer([](fvec3& vec) -> pybind11::buffer_info {
+            auto data = vec.GetArray(); // Pointer to buffer
+            return pybind11::buffer_info(
+                data,          // Pointer to buffer
+                sizeof(float), // Size of one scalar
+                pybind11::format_descriptor<float>::format(),
+                1,                // Number of dimensions
+                {3},              // Buffer dimensions
+                {sizeof(float)}); // Strides (in bytes) for each index
+          })
+          //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
           .def(py::init<float, float, float>())
           .def_property("x", &fvec3::GetX, &fvec3::SetX)
@@ -78,7 +102,19 @@ void pyinit_math(py::module& module_core) {
   type_codec->registerStdCodec<fvec3_ptr_t>(fvec3_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto fvec4_type = //
-      py::class_<fvec4, fvec4_ptr_t>(module_core, "vec4")
+      py::class_<fvec4, fvec4_ptr_t>(module_core, "vec4", pybind11::buffer_protocol())
+          //////////////////////////////////////////////////////////////////////////
+          .def_buffer([](fvec4& vec) -> pybind11::buffer_info {
+            auto data = vec.GetArray(); // Pointer to buffer
+            return pybind11::buffer_info(
+                data,          // Pointer to buffer
+                sizeof(float), // Size of one scalar
+                pybind11::format_descriptor<float>::format(),
+                1,                // Number of dimensions
+                {4},              // Buffer dimensions
+                {sizeof(float)}); // Strides (in bytes) for each index
+          })
+          //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
           .def(py::init<float, float, float, float>())
           .def(py::init<fvec3>())
@@ -126,7 +162,19 @@ void pyinit_math(py::module& module_core) {
   type_codec->registerStdCodec<fvec4_ptr_t>(fvec4_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto fquat_type = //
-      py::class_<fquat, fquat_ptr_t>(module_core, "quat")
+      py::class_<fquat, fquat_ptr_t>(module_core, "quat", pybind11::buffer_protocol())
+          //////////////////////////////////////////////////////////////////////////
+          .def_buffer([](fquat& quat) -> pybind11::buffer_info {
+            auto data = &quat.x; // Pointer to buffer
+            return pybind11::buffer_info(
+                data,          // Pointer to buffer
+                sizeof(float), // Size of one scalar
+                pybind11::format_descriptor<float>::format(),
+                1,                // Number of dimensions
+                {4},              // Buffer dimensions
+                {sizeof(float)}); // Strides (in bytes) for each index
+          })
+          //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
           .def(py::init<float, float, float, float>())
           .def(py::init<fvec3, float>())
@@ -154,7 +202,19 @@ void pyinit_math(py::module& module_core) {
   type_codec->registerStdCodec<fquat_ptr_t>(fquat_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto mtx3_type = //
-      py::class_<fmtx3, fmtx3_ptr_t>(module_core, "mtx3")
+      py::class_<fmtx3, fmtx3_ptr_t>(module_core, "mtx3", pybind11::buffer_protocol())
+          //////////////////////////////////////////////////////////////////////////
+          .def_buffer([](fmtx3& mtx) -> pybind11::buffer_info {
+            auto data = mtx.GetArray(); // Pointer to buffer
+            return pybind11::buffer_info(
+                data,          // Pointer to buffer
+                sizeof(float), // Size of one scalar
+                pybind11::format_descriptor<float>::format(),
+                2,                                   // Number of dimensions
+                {3, 3},                              // Buffer dimensions
+                {sizeof(float) * 3, sizeof(float)}); // Strides (in bytes) for each index
+          })
+          //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
           .def(py::init<const fmtx3&>())
           .def(py::init<const fquat&>())
@@ -172,7 +232,19 @@ void pyinit_math(py::module& module_core) {
   type_codec->registerStdCodec<fmtx3_ptr_t>(mtx3_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto mtx4_type = //
-      py::class_<fmtx4, fmtx4_ptr_t>(module_core, "mtx4")
+      py::class_<fmtx4, fmtx4_ptr_t>(module_core, "mtx4", pybind11::buffer_protocol())
+          //////////////////////////////////////////////////////////////////////////
+          .def_buffer([](fmtx4& mtx) -> pybind11::buffer_info {
+            auto data = mtx.GetArray(); // Pointer to buffer
+            return pybind11::buffer_info(
+                data,          // Pointer to buffer
+                sizeof(float), // Size of one scalar
+                pybind11::format_descriptor<float>::format(),
+                2,                                   // Number of dimensions
+                {4, 4},                              // Buffer dimensions
+                {sizeof(float) * 4, sizeof(float)}); // Strides (in bytes) for each index
+          })
+          //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
           .def(py::init<const fmtx4&>())
           .def(py::init<const fquat&>())
@@ -297,7 +369,19 @@ void pyinit_math(py::module& module_core) {
   type_codec->registerStdCodec<frustum_ptr_t>(frustum_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto fplane3_type =
-      py::class_<fplane3, fplane3_ptr_t>(module_core, "plane")
+      py::class_<fplane3, fplane3_ptr_t>(module_core, "plane", pybind11::buffer_protocol())
+          //////////////////////////////////////////////////////////////////////////
+          .def_buffer([](fplane3& plane) -> pybind11::buffer_info {
+            auto data = &plane.n.x; // Pointer to buffer
+            return pybind11::buffer_info(
+                data,          // Pointer to buffer
+                sizeof(float), // Size of one scalar
+                pybind11::format_descriptor<float>::format(),
+                1,                // Number of dimensions
+                {4},              // Buffer dimensions
+                {sizeof(float)}); // Strides (in bytes) for each index
+          })
+          //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
           .def(py::init<const fvec4&>())
           .def(py::init<const fvec3&, float>())

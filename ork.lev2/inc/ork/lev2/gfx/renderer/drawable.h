@@ -33,6 +33,7 @@ class Simulation;
 class DrawableBuffer;
 class Drawable;
 class ModelDrawable;
+struct InstancedModelDrawable;
 class CallbackDrawable;
 class XgmModel;
 class XgmModelAsset;
@@ -40,10 +41,11 @@ class XgmModelInst;
 class IRenderer;
 class LightManager;
 
-using cameradatalut_ptr_t     = std::shared_ptr<CameraDataLut>;
-using drawable_ptr_t          = std::shared_ptr<Drawable>;
-using model_drawable_ptr_t    = std::shared_ptr<ModelDrawable>;
-using callback_drawable_ptr_t = std::shared_ptr<CallbackDrawable>;
+using cameradatalut_ptr_t           = std::shared_ptr<CameraDataLut>;
+using drawable_ptr_t                = std::shared_ptr<Drawable>;
+using model_drawable_ptr_t          = std::shared_ptr<ModelDrawable>;
+using instanced_modeldrawable_ptr_t = std::shared_ptr<InstancedModelDrawable>;
+using callback_drawable_ptr_t       = std::shared_ptr<CallbackDrawable>;
 
 ///////////////////////////////////////////////////////////////////////////
 // todo find a better name

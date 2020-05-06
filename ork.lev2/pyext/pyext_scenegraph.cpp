@@ -26,8 +26,24 @@ void pyinit_scenegraph(py::module& module_lev2) {
               });
   type_codec->registerStdCodec<node_ptr_t>(node_type);
   /////////////////////////////////////////////////////////////////////////////////
+  // auto ibufproxy_type =
+  //  py::class_<InstanceBufferProxy, ibufproxy_ptr_t>(sgmodule, "InstanceBufferProxy",))
+  /////////////////////////////////////////////////////////////////////////////////
   auto drawablenode_type =                                                         //
       py::class_<DrawableNode, Node, drawablenode_ptr_t>(sgmodule, "DrawableNode") //
+          .def_property_readonly(
+              "instanceData",
+              [](drawablenode_ptr_t drwnode) -> instanceddrawdata_ptr_t {
+                auto drw     = drwnode->_drawable;
+                auto instdrw = std::dynamic_pointer_cast<InstancedModelDrawable>(drw);
+                instanceddrawdata_ptr_t rval;
+                if (instdrw) {
+                  rval = instdrw->_instancedata;
+                } else {
+                  OrkAssert(false);
+                }
+                return rval;
+              })
           .def(
               "setInstanceMatrix",                                            //
               [](drawablenode_ptr_t node, int instance, fmtx4_ptr_t matrix) { //
