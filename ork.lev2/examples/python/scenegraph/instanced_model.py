@@ -16,7 +16,7 @@ parser.add_argument('--vrmode', action="store_true", help='run in vr' )
 args = vars(parser.parse_args())
 vrmode = (args["vrmode"]==True)
 if args["numinstances"]==None:
-  numinstances = 1
+  numinstances = 10000
 else:
   numinstances = int(args["numinstances"])
 ################################################################################
