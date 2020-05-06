@@ -14,233 +14,232 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-class InfiniteLine2D
-{
-    typedef Vector2<T> vec2_type;
+template <typename T> class InfiniteLine2D {
+  typedef Vector2<T> vec2_type;
+
 protected:
-    vec2_type   mNormal;    // A, B
-    T           mfC;        // C
-    // Ax+By+c==0
+  vec2_type mNormal; // A, B
+  T mfC;             // C
+                     // Ax+By+c==0
 public:
-    InfiniteLine2D( ) : mNormal(T(0.0f),T(1.0f)), mfC(T(0.0f)) {}
+  InfiniteLine2D()
+      : mNormal(T(0.0f), T(1.0f))
+      , mfC(T(0.0f)) {
+  }
 
-    inline  void CalcFromNormalAndOrigin( const vec2_type& Normal, const vec2_type& PosVec )
-    {
-        // mFC = C
-        mNormal = Normal;
-        mfC = T(0.0f);
-        mfC = pointDistance( PosVec ) * T(-1.0f);
+  inline void CalcFromNormalAndOrigin(const vec2_type& Normal, const vec2_type& PosVec) {
+    // mFC = C
+    mNormal = Normal;
+    mfC     = T(0.0f);
+    mfC     = pointDistance(PosVec) * T(-1.0f);
+  }
+  inline void CalcFromTwoPoints(const vec2_type& Pnt0, const vec2_type& Pnt1) {
+    T dX = (Pnt1.GetX() - Pnt0.GetX());
+    if (dX == T(0.0f)) {
+      if (Pnt1.GetY() < Pnt0.GetY())
+        mNormal.Set(1.0f, 0.0f);
+      else if (Pnt1.GetY() > Pnt0.GetY())
+        mNormal.Set(-1.0f, 0.0f);
+      else {
+        OrkAssert(false); // pnt1 must != pnt0
+      }
+    } else { // b = y-mx
+      // a = m*b
+      // c = -ax-by
+      T dY = (Pnt1.GetY() - Pnt0.GetY());
+      T m  = dY / dX;
+      T b  = (Pnt0.GetY() - m * Pnt0.GetX());
+      T a  = m * b;
+      mNormal.Set(a, b);
+      mNormal.Normalize();
+      T c = -a * Pnt0.GetX() - b * Pnt0.GetY();
+      mfC = c;
+    }
+  }
+  inline void CalcFromTwoPoints(float x0, float y0, float x1, float y1) {
+    T dX = (x1 - x0);
+    if (dX == T(0.0f)) {
+      if (y1 < y0)
+        mNormal.Set(1.0f, 0.0f);
+      else if (y1 > y0)
+        mNormal.Set(-1.0f, 0.0f);
+      else {
+        OrkAssert(false); // pnt1 must != pnt0
+      }
+    } else { // b = y-mx
+      // a = m*b
+      // c = -ax-by
 
-    }
-    inline  void CalcFromTwoPoints( const vec2_type& Pnt0, const vec2_type& Pnt1 )
-    {
-        T dX = (Pnt1.GetX()-Pnt0.GetX());
-        if( dX==T(0.0f) )
-        {
-            if( Pnt1.GetY()<Pnt0.GetY() )           mNormal.Set( 1.0f, 0.0f );
-            else if( Pnt1.GetY()>Pnt0.GetY() )      mNormal.Set( -1.0f, 0.0f );
-            else {
-                                                    OrkAssert(false); // pnt1 must != pnt0
-            }
-        }
-        else
-        {   // b = y-mx
-            // a = m*b
-            // c = -ax-by
-            T dY = (Pnt1.GetY()-Pnt0.GetY());
-            T m = dY/dX;
-            T b = (Pnt0.GetY()-m*Pnt0.GetX());
-            T a = m*b;
-            mNormal.Set( a, b );
-            mNormal.Normalize();
-            T c = -a * Pnt0.GetX() -b * Pnt0.GetY();
-            mfC = c;
-        }
-    }
-    inline  void CalcFromTwoPoints( float x0, float y0, float x1, float y1 )
-    {
-        T dX = (x1-x0);
-        if( dX==T(0.0f) )
-        {
-            if( y1<y0 )             mNormal.Set( 1.0f, 0.0f );
-            else if( y1>y0 )        mNormal.Set( -1.0f, 0.0f );
-            else {
-                                    OrkAssert(false); // pnt1 must != pnt0
-            }
-        }
-        else
-        {   // b = y-mx
-            // a = m*b
-            // c = -ax-by
+      // m = -A/B
+      // 1/m = B/-A
+      // B = -A/m
+      // b = -C/B
+      // 1/b = B/-C
+      // B = -C/b
 
-            // m = -A/B
-            // 1/m = B/-A
-            // B = -A/m
-            // b = -C/B
-            // 1/b = B/-C
-            // B = -C/b
+      // B = -A/m
+      // B = -C/b
+      // -A/m = -C/b
+      // m/-A = b/-C
+      // m = -Ab/-C
+      // m = Ab/C
+      // Ab/C = -A/B
+      // Ab = -AC/B
+      // b = -C/B
+      // bB = -C
+      // C = -bB
+      // C = bA/m
+      // Ax-Ay/m+bA/m = 0
+      // Ax=Ay/m-bA/m
+      // Axm=Ay-Ab
+      // Axm+Ab-Ay=0
+      // Axm+Ab-Ay+1=1
 
-            // B = -A/m
-            // B = -C/b
-            // -A/m = -C/b
-            // m/-A = b/-C
-            // m = -Ab/-C
-            // m = Ab/C
-            // Ab/C = -A/B
-            // Ab = -AC/B
-            // b = -C/B
-            // bB = -C
-            // C = -bB
-            // C = bA/m
-            // Ax-Ay/m+bA/m = 0
-            // Ax=Ay/m-bA/m
-            // Axm=Ay-Ab
-            // Axm+Ab-Ay=0
-            // Axm+Ab-Ay+1=1
-
-            T dY = (y1-y0);
-            T m = dY/dX;
-            T b = (y0-m*x0);
-            T a = m*b;
-            mNormal.Set( a, b );
-            mNormal.Normalize();
-            T c = -a * x0 -b * y0;
-            T fZ = a*x0+b*y0+c;
-            mfC = -c;
-        }
+      T dY = (y1 - y0);
+      T m  = dY / dX;
+      T b  = (y0 - m * x0);
+      T a  = m * b;
+      mNormal.Set(a, b);
+      mNormal.Normalize();
+      T c  = -a * x0 - b * y0;
+      T fZ = a * x0 + b * y0 + c;
+      mfC  = -c;
     }
-    float pointDistance( const vec2_type& point ) const
-    {
-        return mNormal.Dot(point) + mfC;
-    }
-     float pointDistance( float fx, float fy ) const
-    {
-        return (mNormal.GetX()*fx)+(mNormal.GetY()*fy) + mfC;
-    }
-    bool IsPointInFront( const vec2_type& point ) const
-    {
-        T distance = pointDistance(point);
-        return (distance >= T(0.0f));
-    }
-    bool IsPointBehind( const vec2_type& point ) const
-    {
-        return (!IsPointInFront(point));
-    }
-    bool IsPointInFront( float fx, float fy ) const
-    {
-        T distance = pointDistance(fx,fy);
-        return (distance >= T(0.0f));
-    }
-    bool IsPointBehind( float fx, float fy ) const
-    {
-        return (!IsPointInFront(fx,fy));
-    }
+  }
+  float pointDistance(const vec2_type& point) const {
+    return mNormal.Dot(point) + mfC;
+  }
+  float pointDistance(float fx, float fy) const {
+    return (mNormal.GetX() * fx) + (mNormal.GetY() * fy) + mfC;
+  }
+  bool IsPointInFront(const vec2_type& point) const {
+    T distance = pointDistance(point);
+    return (distance >= T(0.0f));
+  }
+  bool IsPointBehind(const vec2_type& point) const {
+    return (!IsPointInFront(point));
+  }
+  bool IsPointInFront(float fx, float fy) const {
+    T distance = pointDistance(fx, fy);
+    return (distance >= T(0.0f));
+  }
+  bool IsPointBehind(float fx, float fy) const {
+    return (!IsPointInFront(fx, fy));
+  }
 };
 
-template <typename T>
-struct TLineSegment3
-{
-	typedef Vector3<T> vec3_type;
+template <typename T> struct TLineSegment3 {
+  typedef Vector3<T> vec3_type;
 
-	vec3_type	mStart;
-	vec3_type	mEnd;
+  vec3_type mStart;
+  vec3_type mEnd;
 
-	TLineSegment3( const vec3_type& s, const vec3_type& e ) : mStart(s), mEnd(e) {}
+  TLineSegment3(const vec3_type& s, const vec3_type& e)
+      : mStart(s)
+      , mEnd(e) {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-class TLineSegment2
-{
-	typedef Vector2<T> vec2_type;
+template <typename T> class TLineSegment2 {
+  typedef Vector2<T> vec2_type;
+
 protected:
-	vec2_type	mStart;
-	vec2_type	mEnd;
+  vec2_type mStart;
+  vec2_type mEnd;
 
-
-	TLineSegment2( const vec2_type& s, const vec2_type& e ) : mStart(s), mEnd(e) {}
-	TLineSegment2() {};
-
+  TLineSegment2(const vec2_type& s, const vec2_type& e)
+      : mStart(s)
+      , mEnd(e) {
+  }
+  TLineSegment2(){};
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-class TLineSegment2Helper
-{
-	typedef Vector2<T> vec2_type;
+template <typename T> class TLineSegment2Helper {
+  typedef Vector2<T> vec2_type;
 
-	vec2_type	mStart;
-	vec2_type	mEnd;
-	vec2_type	mOrigin;
-	T			mMag;
+  vec2_type mStart;
+  vec2_type mEnd;
+  vec2_type mOrigin;
+  T mMag;
+
 public:
-	float pointDistanceSquared( const vec2_type  &pt ) const;
-	float pointDistancePercent( const vec2_type  &pt ) const;
-	T GetMag() const { return(mMag);}
-	TLineSegment2Helper( const vec2_type& s, const vec2_type& e );
-	TLineSegment2Helper();
-	void SetStartEnd( const vec2_type& s, const vec2_type& e );
-	T GetStartX() const { return(mStart.GetX());}
-
+  float pointDistanceSquared(const vec2_type& pt) const;
+  float pointDistancePercent(const vec2_type& pt) const;
+  T GetMag() const {
+    return (mMag);
+  }
+  TLineSegment2Helper(const vec2_type& s, const vec2_type& e);
+  TLineSegment2Helper();
+  void SetStartEnd(const vec2_type& s, const vec2_type& e);
+  T GetStartX() const {
+    return (mStart.GetX());
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-struct Ray3
-{
-    typedef Vector3<T> vec3_type;
+template <typename T> struct Ray3 {
+  typedef Vector3<T> vec3_type;
 
-    vec3_type   mOrigin;
-    vec3_type   mDirection;
-    vec3_type   mInverseDirection;
-    bool        mbSignX;
-    bool        mbSignY;
-    bool        mbSignZ;
-    T           mdot_dd;
-    T           mdot_do;
-    T           mdot_oo;
-    int         mID;
+  vec3_type mOrigin;
+  vec3_type mDirection;
+  vec3_type mInverseDirection;
+  bool mbSignX;
+  bool mbSignY;
+  bool mbSignZ;
+  T mdot_dd;
+  T mdot_do;
+  T mdot_oo;
+  int mID;
 
-    Ray3() : mID(-1) {}
-    Ray3( const vec3_type& o, const vec3_type& d )
-        : mOrigin(o)
-        , mDirection(d)
-        , mInverseDirection(1.0f/d.GetX(), 1.0f/d.GetY(), 1.0f/d.GetZ())
-        , mID(-1)
-    {
-        mdot_dd = mDirection.Dot(mDirection);
-        mdot_do = mDirection.Dot(mOrigin);
-        mdot_oo = mOrigin.Dot(mOrigin);
-        mbSignX = (mInverseDirection.GetX()>=0.0f);
-        mbSignY = (mInverseDirection.GetY()>=0.0f);
-        mbSignZ = (mInverseDirection.GetZ()>=0.0f);
+  Ray3()
+      : mID(-1) {
+  }
+  Ray3(const vec3_type& o, const vec3_type& d)
+      : mOrigin(o)
+      , mDirection(d)
+      , mInverseDirection(1.0f / d.GetX(), 1.0f / d.GetY(), 1.0f / d.GetZ())
+      , mID(-1) {
+    mdot_dd = mDirection.Dot(mDirection);
+    mdot_do = mDirection.Dot(mOrigin);
+    mdot_oo = mOrigin.Dot(mOrigin);
+    mbSignX = (mInverseDirection.GetX() >= 0.0f);
+    mbSignY = (mInverseDirection.GetY() >= 0.0f);
+    mbSignZ = (mInverseDirection.GetZ() >= 0.0f);
+  }
+  void SetID(int id) {
+    mID = id;
+  }
+  int GetID() const {
+    return mID;
+  }
 
-    }
-    void SetID( int id ) { mID = id; }
-    int GetID() const { return mID; }
-
-    void Lerp( const Ray3& a, const Ray3& b, float fi )
-    {
-        vec3_type o, d;
-        o.Lerp( a.mOrigin, b.mOrigin, fi );
-        d.Lerp( a.mDirection, b.mDirection, fi );
-        d.Normalize();
-        *this = Ray3( o, d );
-    }
-    void BiLerp( const Ray3& x0y0, const Ray3&  x1y0, const Ray3& x0y1, const Ray3&  x1y1, float fx, float fy )
-    {
-        Ray3 t; t.Lerp( x0y0, x1y0, fx );
-        Ray3 b; b.Lerp( x0y1, x1y1, fx );
-        Lerp( t, b, fy );
-    }
+  void Lerp(const Ray3& a, const Ray3& b, float fi) {
+    vec3_type o, d;
+    o.Lerp(a.mOrigin, b.mOrigin, fi);
+    d.Lerp(a.mDirection, b.mDirection, fi);
+    d.Normalize();
+    *this = Ray3(o, d);
+  }
+  void BiLerp(const Ray3& x0y0, const Ray3& x1y0, const Ray3& x0y1, const Ray3& x1y1, float fx, float fy) {
+    Ray3 t;
+    t.Lerp(x0y0, x1y0, fx);
+    Ray3 b;
+    b.Lerp(x0y1, x1y1, fx);
+    Lerp(t, b, fy);
+  }
 };
 
-typedef Ray3<float> fray3;
-typedef Ray3<double> dray3;
+using fray3            = Ray3<float>;
+using dray3            = Ray3<double>;
+using fray3_ptr_t      = std::shared_ptr<fray3>;
+using fray3_constptr_t = std::shared_ptr<const fray3>;
+using dray3_ptr_t      = std::shared_ptr<dray3>;
+using dray3_constptr_t = std::shared_ptr<const dray3>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // temporary till all code done being refactored
@@ -249,16 +248,23 @@ typedef TLineSegment2<float> LineSegment2;
 typedef TLineSegment3<float> LineSegment3;
 typedef TLineSegment2Helper<float> LineSegment2Helper;
 
-struct Ray3HitTest
-{
-    int miSphTests;
-    int miSphTestsPassed;
-    int miTriTests;
-    int miTriTestsPassed;
-    Ray3HitTest() : miSphTests(0), miTriTests(0), miSphTestsPassed(0), miTriTestsPassed(0) {}
-    void OnHit( const any32& userdata, const fray3& r ){ DoOnHit(userdata,r);    }
-    virtual void DoOnHit( const any32& userdata, const fray3& r ){}
+struct Ray3HitTest {
+  int miSphTests;
+  int miSphTestsPassed;
+  int miTriTests;
+  int miTriTestsPassed;
+  Ray3HitTest()
+      : miSphTests(0)
+      , miTriTests(0)
+      , miSphTestsPassed(0)
+      , miTriTestsPassed(0) {
+  }
+  void OnHit(const any32& userdata, const fray3& r) {
+    DoOnHit(userdata, r);
+  }
+  virtual void DoOnHit(const any32& userdata, const fray3& r) {
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-}
+} // namespace ork

@@ -11,8 +11,10 @@
 
 #include <unordered_set>
 #include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/math/line.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/lev2/gfx/gfxmodel.h>
+#include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
@@ -85,6 +87,17 @@ struct Layer {
   std::vector<lightnode_ptr_t> _lightnodes;
 };
 
+///////////////////////////////////////////////////////////////////////////
+struct PickBuffer : public ork::lev2::PickBuffer {
+  PickBuffer(ork::lev2::Context* ctx, Scene& scene);
+  void Draw(lev2::PixelFetchContext& ctx) final;
+  uint64_t pickWithRay(fray3_constptr_t ray);
+  Scene& _scene;
+  CompositingData* _compdata = nullptr;
+  compositorimpl_ptr_t _compimpl;
+};
+using pickbuffer_ptr_t = std::shared_ptr<PickBuffer>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Scene {
@@ -98,18 +111,22 @@ struct Scene {
   layer_ptr_t createLayer(std::string named);
   void enqueueToRenderer(cameradatalut_ptr_t cameras);
   void renderOnContext(Context* ctx);
-
+  void gpuInit(Context* ctx);
+  uint64_t pickWithRay(fray3_constptr_t ray);
   DefaultRenderer _renderer;
   lightmanager_ptr_t _lightManager;
   lightmanagerdata_ptr_t _lightManagerData;
   compositorimpl_ptr_t _compositorImpl;
   compositordata_ptr_t _compositorData;
+  pickbuffer_ptr_t _pickbuffer;
   NodeCompositingTechnique* _compostorTechnique = nullptr;
   OutputCompositingNode* _outputNode            = nullptr;
   lev2::CompositingPassData _topCPD;
 
   std::map<std::string, layer_ptr_t> _layers;
   varmap::varmap_ptr_t _userdata;
+  bool _dogpuinit        = true;
+  Context* _boundContext = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

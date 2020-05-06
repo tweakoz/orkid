@@ -71,12 +71,8 @@ struct UpdateData {
   double _abstime = 0.0;
 };
 using updatedata_ptr_t = std::shared_ptr<UpdateData>;
-
+////////////////////////////////////////////////////////////////////////////////
 class EzMainWin : public QMainWindow {
-
-  // void resizeEvent(QResizeEvent* ev) final;
-  // void paintEvent(QPaintEvent* ev) final;
-
 public:
   typedef std::function<void(ui::drawevent_constptr_t)> drawcb_t;
   typedef std::function<void(int w, int h)> onresizecb_t;
@@ -109,7 +105,16 @@ public:
   double _render_stats_timeaccum = 0;
   double _render_state_numiters  = 0.0;
 };
-
+///////////////////////////////////////////////////////////////////////////////
+struct EzViewport : public ui::Viewport {
+  EzViewport(EzMainWin* mainwin);
+  void DoInit(ork::lev2::Context* pTARG) final;
+  void DoDraw(ui::drawevent_ptr_t drwev) final;
+  void DoSurfaceResize() final;
+  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t ev) final;
+  EzMainWin* _mainwin;
+};
+////////////////////////////////////////////////////////////////////////////////
 class OrkEzQtApp final : public OrkEzQtAppBase {
   Q_OBJECT
 

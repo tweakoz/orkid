@@ -104,8 +104,15 @@ void pyinit_scenegraph(py::module& module_lev2) {
               [](scene_ptr_t SG, cameradatalut_ptr_t cameralut) { //
                 SG->enqueueToRenderer(cameralut);
               })
-          .def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { //
-            SG->renderOnContext(context.get());
+          .def(
+              "renderOnContext",
+              [](scene_ptr_t SG, ctx_t context) { //
+                SG->renderOnContext(context.get());
+              })
+          .def("pickWithRay", [](scene_ptr_t SG, fray3_ptr_t ray) -> uint64_t { //
+            OrkAssert(SG != nullptr);
+            OrkAssert(ray != nullptr);
+            return SG->pickWithRay(ray);
           });
   type_codec->registerStdCodec<scene_ptr_t>(scenegraph_type);
 }

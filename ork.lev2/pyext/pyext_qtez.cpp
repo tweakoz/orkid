@@ -139,6 +139,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             }
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onUiEvent")) {
+
+              bool using_scene = py::hasattr(appinstance, "sceneparams");
               auto uievfn //
                   = py::cast<py::function>(appinstance.attr("onUiEvent"));
               rval->_vars.makeValueForKey<py::function>("uievfn") = uievfn;

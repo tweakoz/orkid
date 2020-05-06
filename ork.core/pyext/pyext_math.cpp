@@ -414,6 +414,31 @@ void pyinit_math(py::module& module_core) {
             return fxs.c_str();
           });
   type_codec->registerStdCodec<fplane3_ptr_t>(fplane3_type);
+
+  /////////////////////////////////////////////////////////////////////////////////
+  auto fray3_type = //
+      py::class_<fray3, fray3_ptr_t>(module_core, "ray3", pybind11::buffer_protocol())
+          //////////////////////////////////////////////////////////////////////////
+          .def(py::init<const fvec3&, const fvec3&>())
+          .def_property_readonly("origin", [](fray3_ptr_t ray) -> fvec3 { return ray->mOrigin; })
+          .def_property_readonly("direction", [](fray3_ptr_t ray) -> fvec3 { return ray->mDirection; })
+          .def(
+              "__str__",
+              [](fray3_ptr_t r) -> std::string {
+                fxstring<64> fxs;
+                auto o = r->mOrigin;
+                auto d = r->mDirection;
+                fxs.format("ray3 o(%g,%g,%g) d(%g,%g,%g)", o.x, o.y, o.z, d.x, d.y, d.z);
+                return fxs.c_str();
+              })
+          .def("__repr__", [](fray3_ptr_t r) -> std::string {
+            fxstring<64> fxs;
+            auto o = r->mOrigin;
+            auto d = r->mDirection;
+            fxs.format("ray3 o(%g,%g,%g) d(%g,%g,%g)", o.x, o.y, o.z, d.x, d.y, d.z);
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<fray3_ptr_t>(fray3_type);
 }
 
 } // namespace ork

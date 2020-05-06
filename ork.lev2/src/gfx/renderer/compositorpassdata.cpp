@@ -51,7 +51,7 @@ void CompositingPassData::defaultSetup(CompositorDrawData& drawdata) {
   if (auto try_scm = drawdata._properties["StereoMatrices"_crcu].TryAs<const StereoCameraMatrices*>()) {
     this->_stereoCameraMatrices = try_scm.value();
   } else {
-    bool simrunning = drawdata._properties["simrunning"_crcu].Get<bool>();
+    // bool simrunning = drawdata._properties["simrunning"_crcu].Get<bool>();
     if (auto try_def = drawdata._properties["defcammtx"_crcu].TryAs<const CameraMatrices*>()) {
       this->_cameraMatrices = try_def.value();
     }

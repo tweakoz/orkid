@@ -108,6 +108,21 @@ Scene::~Scene() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void Scene::gpuInit(Context* ctx) {
+  _pickbuffer   = std::make_shared<PickBuffer>(ctx, *this);
+  _dogpuinit    = false;
+  _boundContext = ctx;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+uint64_t Scene::pickWithRay(fray3_constptr_t ray) {
+  OrkAssert(_pickbuffer);
+  return _pickbuffer->pickWithRay(ray);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Scene::initWithParams(varmap::varmap_ptr_t params) {
   _lightManagerData = std::make_shared<LightManagerData>();
   _lightManager     = std::make_shared<LightManager>(*_lightManagerData.get());
@@ -173,6 +188,11 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::renderOnContext(Context* context) {
+
+  if (_dogpuinit) {
+    gpuInit(context);
+  }
+
   auto DB = DrawableBuffer::acquireReadDB(7);
   if (nullptr == DB) {
     printf("Dont have a DB!\n");

@@ -108,74 +108,70 @@ qtezapp_ptr_t OrkEzQtApp::createWithScene(varmap::varmap_ptr_t sceneparams) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-struct EzViewport : public ui::Viewport {
-  /////////////////////////////////////////////////
-  EzViewport(EzMainWin* mainwin)
-      : ui::Viewport("yo", 1, 1, 1, 1, fvec3(0, 0, 0), 1.0f)
-      , _mainwin(mainwin) {
-    lev2::DrawableBuffer::ClearAndSyncWriters();
-    _mainwin->_render_timer.Start();
-    _mainwin->_render_prevtime = _mainwin->_render_timer.SecsSinceStart();
-  }
-  /////////////////////////////////////////////////
-  void DoInit(ork::lev2::Context* pTARG) final {
-    pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
-  }
-  /////////////////////////////////////////////////
-  void DoDraw(ui::drawevent_ptr_t drwev) final {
+EzViewport::EzViewport(EzMainWin* mainwin)
+    : ui::Viewport("yo", 1, 1, 1, 1, fvec3(0, 0, 0), 1.0f)
+    , _mainwin(mainwin) {
+  lev2::DrawableBuffer::ClearAndSyncWriters();
+  _mainwin->_render_timer.Start();
+  _mainwin->_render_prevtime = _mainwin->_render_timer.SecsSinceStart();
+}
+/////////////////////////////////////////////////
+void EzViewport::DoInit(ork::lev2::Context* pTARG) {
+  pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
+}
+/////////////////////////////////////////////////
+void EzViewport::DoDraw(ui::drawevent_ptr_t drwev) {
 
-    bool do_gpu_init = bool(_mainwin->_onGpuInit);
-    do_gpu_init |= bool(_mainwin->_onGpuInitWithScene);
-    do_gpu_init &= _mainwin->_dogpuinit;
+  bool do_gpu_init = bool(_mainwin->_onGpuInit);
+  do_gpu_init |= bool(_mainwin->_onGpuInitWithScene);
+  do_gpu_init &= _mainwin->_dogpuinit;
 
-    if (do_gpu_init) {
-      drwev->GetTarget()->makeCurrentContext();
-      FontMan::gpuInit(drwev->GetTarget());
-      drwev->GetTarget()->makeCurrentContext();
+  if (do_gpu_init) {
+    drwev->GetTarget()->makeCurrentContext();
+    FontMan::gpuInit(drwev->GetTarget());
+    drwev->GetTarget()->makeCurrentContext();
 
-      if (_mainwin->_onGpuInit)
-        _mainwin->_onGpuInit(drwev->GetTarget());
-      else if (_mainwin->_onGpuInitWithScene) {
-        _mainwin->_execscene = std::make_shared<scenegraph::Scene>(_mainwin->_execsceneparams);
-        _mainwin->_onGpuInitWithScene(drwev->GetTarget(), _mainwin->_execscene);
-      }
-      while (asset::AssetManager<TextureAsset>::AutoLoad()) {
-      }
-      while (ork::opq::mainSerialQueue()->Process()) {
-      }
-      _mainwin->_dogpuinit = false;
+    if (_mainwin->_onGpuInit)
+      _mainwin->_onGpuInit(drwev->GetTarget());
+    else if (_mainwin->_onGpuInitWithScene) {
+      _mainwin->_execscene = std::make_shared<scenegraph::Scene>(_mainwin->_execsceneparams);
+      _mainwin->_onGpuInitWithScene(drwev->GetTarget(), _mainwin->_execscene);
     }
-    if (_mainwin->_onDraw) {
-      drwev->GetTarget()->makeCurrentContext();
-      _mainwin->_onDraw(drwev);
+    while (asset::AssetManager<TextureAsset>::AutoLoad()) {
     }
-    double this_time           = _mainwin->_render_timer.SecsSinceStart();
-    double raw_delta           = this_time - _mainwin->_render_prevtime;
-    _mainwin->_render_prevtime = this_time;
-    _mainwin->_render_stats_timeaccum += raw_delta;
-    if (_mainwin->_render_stats_timeaccum >= 5.0) {
-      double FPS = _mainwin->_render_state_numiters / _mainwin->_render_stats_timeaccum;
-      printf("FPS<%g>\n", FPS);
-      _mainwin->_render_stats_timeaccum = 0.0;
-      _mainwin->_render_state_numiters  = 0.0;
-    } else {
-      _mainwin->_render_state_numiters += 1.0;
+    while (ork::opq::mainSerialQueue()->Process()) {
     }
+    _mainwin->_dogpuinit = false;
   }
-  /////////////////////////////////////////////////
-  void DoSurfaceResize() final {
-    if (_mainwin->_onResize)
-      _mainwin->_onResize(GetW(), GetH());
+  if (_mainwin->_onDraw) {
+    drwev->GetTarget()->makeCurrentContext();
+    _mainwin->_onDraw(drwev);
   }
-  /////////////////////////////////////////////////
-  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t ev) final {
-    if (_mainwin->_onUiEvent)
-      return _mainwin->_onUiEvent(ev);
-    else
-      return ui::HandlerResult();
+  double this_time           = _mainwin->_render_timer.SecsSinceStart();
+  double raw_delta           = this_time - _mainwin->_render_prevtime;
+  _mainwin->_render_prevtime = this_time;
+  _mainwin->_render_stats_timeaccum += raw_delta;
+  if (_mainwin->_render_stats_timeaccum >= 5.0) {
+    double FPS = _mainwin->_render_state_numiters / _mainwin->_render_stats_timeaccum;
+    printf("FPS<%g>\n", FPS);
+    _mainwin->_render_stats_timeaccum = 0.0;
+    _mainwin->_render_state_numiters  = 0.0;
+  } else {
+    _mainwin->_render_state_numiters += 1.0;
   }
-  EzMainWin* _mainwin;
-};
+}
+/////////////////////////////////////////////////
+void EzViewport::DoSurfaceResize() {
+  if (_mainwin->_onResize)
+    _mainwin->_onResize(GetW(), GetH());
+}
+/////////////////////////////////////////////////
+ui::HandlerResult EzViewport::DoOnUiEvent(ui::event_constptr_t ev) {
+  if (_mainwin->_onUiEvent)
+    return _mainwin->_onUiEvent(ev);
+  else
+    return ui::HandlerResult();
+}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 bool OrkEzQtApp::checkAppState(uint64_t singlebitmask) {
