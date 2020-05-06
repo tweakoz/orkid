@@ -6,21 +6,26 @@
 import os, string, pathlib
 
 from pathlib import Path
-from ork import template, command
+from ork import template, command, path
 
-base = Path(os.environ["ORKID_WORKSPACE_DIR"])
-stage = Path(os.environ["OBT_STAGE"])
-doxyoutput = stage/"orkid"/"doxygen"
-src_doxyfile = base/"ork.dox"/"Doxyfile"
-dst_doxyfile = stage/"orkid"/"Doxyfile"
+doxy_output_dir = path.stage()/"orkid"/"doxygen"
+src_doxyfile = path.project_root()/"ork.dox"/"Doxyfile"
+dst_doxyfile = path.stage()/"orkid"/"Doxyfile"
 
 command.run(["ork.createunionedsource.py"]) # first we definitely need unioned src (for ease...)
 
-icon_path = base/"ork.data"/"dox"/"doxylogo.png"
+###########################################################
+# fix up icon path
+###########################################################
+
+src_icon_path = path.project_root()/"ork.data"/"dox"/"doxylogo.png"
+
 template.template_file(src_doxyfile,
-                       {"ICONPATH":icon_path},
+                       {"ICONPATH":src_icon_path},
                        dst_doxyfile)
 
-os.chdir(stage/"orkid")
-command.run(["rm","-rf",doxyoutput])
+###########################################################
+
+os.chdir(path.stage()/"orkid")
+command.run(["rm","-rf",doxy_output_dir])
 command.run(["doxygen",dst_doxyfile])
