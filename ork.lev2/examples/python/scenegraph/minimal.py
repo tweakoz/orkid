@@ -1,11 +1,21 @@
 #!/usr/bin/env python3
 ################################################################################
-# lev2 sample which renders a scenegraph to an OpenVR connected HMD
+# lev2 sample which renders a scenegraph to a window
 # Copyright 1996-2020, Michael T. Mayers.
 # Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
-import math, _shaders
+import math, sys, os
+#########################################
+# Our intention is not to 'install' anything just for running the examples
+#  so we will just hack the sys,path
+#########################################
+from pathlib import Path
+this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+pyex_dir = (this_dir/"..").resolve()
+sys.path.append(str(pyex_dir))
+from common.shaders import Shader
+#########################################
 from orkengine.core import *
 from orkengine.lev2 import *
 tokens = CrcStringProxy()
@@ -15,16 +25,16 @@ class PyOrkApp(object):
   def __init__(self):
     super().__init__()
     self.sceneparams = VarMap()
-    self.sceneparams.preset = "PBRVR"
+    self.sceneparams.preset = "PBR"
     self.qtapp = OrkEzQtApp.create(self)
     self.qtapp.setRefreshPolicy(RefreshFastest, 0)
+    self.scene = scenegraph.Scene(self.sceneparams)
   ################################################
   # gpu data init:
   #  called on main thread when graphics context is
   #   made available
   ##############################################
   def onGpuInit(self,ctx):
-    ###################################
     frustum = Frustum()
     frustum.set(ctx.lookAt( vec3(0,0,-1),
                             vec3(0,0,0),
@@ -42,21 +52,12 @@ class PyOrkApp(object):
     prim.gpuInit(ctx)
     ###################################
     layer = self.scene.createLayer("layer1")
-    volumetexture = Texture.load("lev2://textures/voltex_pn3")
     ###################################
-    material = FreestyleMaterial(ctx,Path("orkshader://noise"))
-    material_inst = material.createInstance()
-    material_inst.monoTek = material.shader.technique("std_mono")
-    material_inst.stereoTek = material.shader.technique("std_stereo")
-    param_volumetex = material.shader.param("VolumeMap")
-    param_v4parref = material.shader.param("testvec4")
-    self.v4parref = vec4()
-    material_inst.param[material.param("mvp")] = tokens.RCFD_Camera_MVP_Mono
-    material_inst.param[material.param("mvpL")] = tokens.RCFD_Camera_MVP_Left
-    material_inst.param[material.param("mvpR")] = tokens.RCFD_Camera_MVP_Right
-    material_inst.param[param_v4parref] = self.v4parref
-    material_inst.param[param_volumetex] = volumetexture
-    self.primnode = prim.createNode("node1",layer,material_inst)
+    material = FreestyleMaterial(ctx,Path("orkshader://manip"))
+    fxinst = material.createFxInstance()
+    fxinst.technique = material.shader.technique("std_mono")
+    fxinst.param[material.param("mvp")] = tokens.RCFD_Camera_MVP_Mono
+    self.primnode = prim.createNode("node1",layer,fxinst)
     ###################################
     self.camera = CameraData()
     self.camera.perspective(0.1, 100.0, 45.0)
@@ -76,19 +77,21 @@ class PyOrkApp(object):
   #        concurrently c++ is rendering..)
   ################################################
   def onUpdate(self,updinfo):
-    θ = updinfo.absolutetime * math.pi * 2.0
-    self.v4parref.z = θ*0.01 # animate noise
+    θ    = updinfo.absolutetime * math.pi * 2.0 * 0.1
     ###################################
-    self.primnode\
-        .worldMatrix\
-        .compose( vec3(0,0.25,-2.5), # pos
-                  quat(vec3(0,1,0),θ*0.01), # rot
-                  0.75) # scale
+    distance = 10.0
+    eye = vec3(math.sin(θ), 1.0, -math.cos(θ)) * distance
+    self.camera.lookAt(eye, # eye
+                       vec3(0, 0, 0), # tgt
+                       vec3(0, 1, 0)) # up
+    ###################################
+    self.primnode.\
+         worldMatrix.\
+         compose( vec3(0,0,0), # pos
+                  quat(), # rot
+                  math.sin(updinfo.absolutetime*2)*3) # scale
     ###################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
-  ################################################
-  # there is no onDraw() method here
-  #  so c++ will implement a (potentially faster) default
-################################################
+  ############################################
 app = PyOrkApp()
 app.qtapp.exec()

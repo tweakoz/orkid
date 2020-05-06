@@ -93,17 +93,18 @@ ctx.debugMarker("yo")
 
 RCFD = RenderContextFrameData(ctx)
 
-mtl.bindTechnique(tek)
-mtl.begin(RCFD)
-mtl.bindParamMatrix4(par_mvp,mvp_matrix)
-prim.renderEML(ctx)
-mtl.end(RCFD)
+# Todo - rework using fxinst
+#mtl.bindTechnique(tek)
+#mtl.begin(RCFD)
+#mtl.bindParamMatrix4(par_mvp,mvp_matrix)
+#prim.renderEML(ctx)
+#mtl.end(RCFD)
 
-mtl.bindTechnique(tek)
-mtl.begin(RCFD)
-mtl.bindParamMatrix4(par_mvp,mtx4())
-GBI.drawLines(vw)
-mtl.end(RCFD)
+#mtl.bindTechnique(tek)
+#mtl.begin(RCFD)
+#mtl.bindParamMatrix4(par_mvp,mtx4())
+#GBI.drawLines(vw)
+#mtl.end(RCFD)
 
 FontManager.beginTextBlock(ctx,"i48",vec4(.8,.8,1,1),WIDTH,HEIGHT,100)
 FontManager.draw(ctx,0,0,"!!! YO !!!\nThis is a Frustum.")

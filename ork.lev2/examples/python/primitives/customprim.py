@@ -6,15 +6,23 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 
-import numpy, time, os
+import numpy, time, os, sys
 import ork.path
 from orkengine.core import *
 from orkengine.lev2 import *
 from ork.command import run
 from PIL import Image
-import _shaders
-import _submeshes
-
+#########################################
+# Our intention is not to 'install' anything just for running the examples
+#  so we will just hack the sys,path
+#########################################
+from pathlib import Path
+this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+pyex_dir = (this_dir/"..").resolve()
+sys.path.append(str(pyex_dir))
+from common.shaders import Shader
+from common.submeshes import FrustumQuads
+#########################################
 os.chdir(os.environ["ORKID_WORKSPACE_DIR"])
 ################################################################################
 # set up image dimensions, with antialiasing
@@ -35,11 +43,11 @@ GBI = ctx.GBI()
 print(ctx)
 ctx.makeCurrent()
 FontManager.gpuInit(ctx)
-sh = _shaders.Shader(ctx)
+sh = Shader(ctx)
 ###################################
 # get submesh
 ###################################
-inp_submesh = _submeshes.FrustumQuads()
+inp_submesh = FrustumQuads()
 ###################################
 # generate primitive
 ###################################
@@ -82,20 +90,21 @@ ctx.debugMarker("yo")
 
 RCFD = RenderContextFrameData(ctx)
 
-sh._mtl.bindTechnique(sh._tek_frustum)
-sh.beginNoise(RCFD,0.0)
-sh.bindMvpMatrix(mvp_matrix)
-sh.bindRotMatrix(rotmatrix)
-sh.bindVolumeTex(texture)
+# TODO : rework using fxinst
+#sh._mtl.bindTechnique(sh._tek_frustum)
+#sh.beginNoise(RCFD,0.0)
+#sh.bindMvpMatrix(mvp_matrix)
+#sh.bindRotMatrix(rotmatrix)
+#sh.bindVolumeTex(texture)
 
-prim.renderEML(ctx)
-sh.end(RCFD)
+#prim.renderEML(ctx)
+#sh.end(RCFD)
 
-sh._mtl.bindTechnique(sh._tek_lines)
-sh.beginLines(RCFD)
-sh._mtl.bindParamMatrix4(sh._par_mvp,mtx4())
-GBI.drawLines(vw)
-sh.end(RCFD)
+#sh._mtl.bindTechnique(sh._tek_lines)
+#sh.beginLines(RCFD)
+#sh._mtl.bindParamMatrix4(sh._par_mvp,mtx4())
+#GBI.drawLines(vw)
+#sh.end(RCFD)
 
 FontManager.beginTextBlock(ctx,"i32",vec4(0,0,.1,1),WIDTH,HEIGHT,100)
 FontManager.draw(ctx,0,0,"!!! YO !!!\nThis is a textured Frustum.")

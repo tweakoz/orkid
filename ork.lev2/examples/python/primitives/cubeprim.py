@@ -7,9 +7,10 @@
 ################################################################################
 
 import numpy, time
+from PIL import Image
 from orkengine.core import *
 from orkengine.lev2 import *
-from PIL import Image
+tokens = CrcStringProxy()
 
 WIDTH = 2560
 HEIGHT = 1440
@@ -21,17 +22,15 @@ FBI = ctx.FBI()
 GBI = ctx.GBI()
 print(ctx)
 ctx.makeCurrent()
-mtl = FreestyleMaterial()
-mtl.gpuInit(ctx,Path("orkshader://solid"))
-print(mtl)
-print(mtl.shader)
-print(mtl.shader.params)
-print(mtl.shader.techniques)
-tek = mtl.shader.technique("texvtxcolor_noalpha")
-print(tek)
+material = FreestyleMaterial()
+material.gpuInit(ctx,Path("orkshader://solid"))
+print(material)
+print(material.shader)
+print(material.shader.params)
+print(material.shader.techniques)
 
-par_mvp = mtl.shader.param("MatMVP")
-par_tex = mtl.shader.param("ColorMap")
+par_mvp = material.shader.param("MatMVP")
+par_tex = material.shader.param("ColorMap")
 
 ###################################
 # load texture
@@ -39,6 +38,16 @@ par_tex = mtl.shader.param("ColorMap")
 
 texture = Texture.load("data://effect_textures/noise01")
 lev2apppoll() # process opq
+
+###################################
+# create fx instance
+###################################
+
+fxinst = material.createFxInstance()
+fxinst.technique = material.shader.technique("texvtxcolor_noalpha")
+fxinst.param[par_mvp] = tokens.RCFD_Camera_MVP_Mono
+#fxinst.param[param_v4parref] = self.v4parref
+fxinst.param[par_tex] = texture
 
 ###################################
 
@@ -79,16 +88,17 @@ FBI.rtGroupPush(rtg)
 FBI.clear(vec4(0.6,0.6,0.7,1),1.0)
 ctx.debugMarker("yo")
 
-mtl.bindTechnique(tek)
-RCFD = RenderContextFrameData(ctx)
+# todo - rework using fxinst
+#material.bindTechnique(tek)
+#RCFD = RenderContextFrameData(ctx)
 
-mtl.begin(RCFD)
-mtl.bindParamMatrix4(par_mvp,mvp_matrix)
-mtl.bindParamTexture(par_tex,texture)
-cubeprim.renderEML(ctx)
-mtl.end(RCFD)
-FBI.rtGroupPop()
-ctx.endFrame()
+#material.begin(RCFD)
+#material.bindParamMatrix4(par_mvp,mvp_matrix)
+#material.bindParamTexture(par_tex,texture)
+#cubeprim.renderEML(ctx)
+#material.end(RCFD)
+#FBI.rtGroupPop()
+#ctx.endFrame()
 
 ok = FBI.captureAsFormat(rtg,0,capbuf,"RGBA8")
 assert(ok)

@@ -5,9 +5,11 @@
 # Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
-import math, random
+import math, random, os, sys
+################################################################################
 from orkengine.core import *
 from orkengine.lev2 import *
+tokens = CrcStringProxy()
 ################################################################################
 class modelinst(object):
   def __init__(self,model,layer):
