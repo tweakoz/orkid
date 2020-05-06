@@ -17,6 +17,55 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
         return ctx_t(event->GetTarget());
       });
   /////////////////////////////////////////////////////////////////////////////////
+  auto uievent_type = //
+      py::class_<ui::Event, ui::event_ptr_t>(module_lev2, "UiEvent")
+          .def_property_readonly(
+              "x",                            //
+              [](ui::event_ptr_t ev) -> int { //
+                return ev->miX;
+              })
+          .def_property_readonly(
+              "y",                            //
+              [](ui::event_ptr_t ev) -> int { //
+                return ev->miX;
+              })
+          .def_property_readonly(
+              "code",                         //
+              [](ui::event_ptr_t ev) -> int { //
+                return ev->miEventCode;
+              })
+          .def_property_readonly(
+              "shift",                        //
+              [](ui::event_ptr_t ev) -> int { //
+                return int(ev->mbSHIFT);
+              })
+          .def_property_readonly(
+              "alt",                          //
+              [](ui::event_ptr_t ev) -> int { //
+                return int(ev->mbALT);
+              })
+          .def_property_readonly(
+              "ctrl",                         //
+              [](ui::event_ptr_t ev) -> int { //
+                return int(ev->mbCTRL);
+              })
+          .def_property_readonly(
+              "left",                         //
+              [](ui::event_ptr_t ev) -> int { //
+                return int(ev->mbLeftButton);
+              })
+          .def_property_readonly(
+              "middle",                       //
+              [](ui::event_ptr_t ev) -> int { //
+                return int(ev->mbMiddleButton);
+              })
+          .def_property_readonly(
+              "right",                        //
+              [](ui::event_ptr_t ev) -> int { //
+                return int(ev->mbRightButton);
+              });
+  type_codec->registerStdCodec<ui::event_ptr_t>(uievent_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto updata_type =                                                      //
       py::class_<UpdateData, updatedata_ptr_t>(module_lev2, "UpdateData") //
           .def_property_readonly(

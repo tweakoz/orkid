@@ -52,6 +52,10 @@ class PickingApp(_simsetup.SimApp):
   ################################################
   def __init__(self):
     super().__init__(vrmode,instance_set_class)
+  def onUiEvent(self,event):
+    print("x<%d> y<%d> code<%d>"%(event.x,event.y,event.code))
+    print("shift<%d> alt<%d> ctrl<%d>"%(event.shift,event.alt,event.ctrl))
+    print("left<%d> middle<%d> right<%d>"%(event.left,event.middle,event.right))
 ################################################
 app = PickingApp()
 app.qtapp.exec()
