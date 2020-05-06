@@ -45,7 +45,7 @@ class PyOrkApp(object):
     ###################################
     material = FreestyleMaterial(ctx,Path("orkshader://manip"))
     fxinst = material.createFxInstance()
-    fxinst.monoTek = material.shader.technique("std_mono")
+    fxinst.technique = material.shader.technique("std_mono")
     fxinst.param[material.param("mvp")] = tokens.RCFD_Camera_MVP_Mono
     self.primnode = prim.createNode("node1",layer,fxinst)
     ###################################
