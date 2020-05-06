@@ -167,10 +167,10 @@ void ork::tool::vp_cons::BindCTQT(ork::lev2::CTQT* pctqt) {
   mCTQT->pushRefreshPolicy(item);
 }
 ///////////////////////////////////////////////////////////////////////////////
-ui::HandlerResult vp_cons::DoOnUiEvent(const ui::Event& EV) {
-  bool bisshift = EV.mbSHIFT;
+ui::HandlerResult vp_cons::DoOnUiEvent(ui::event_constptr_t EV) {
+  bool bisshift = EV->mbSHIFT;
 
-  const auto& filtev = EV.mFilteredEvent;
+  const auto& filtev = EV->mFilteredEvent;
 
   auto advancehist = [this]() {
     auto it      = mHistList.begin();
@@ -181,7 +181,7 @@ ui::HandlerResult vp_cons::DoOnUiEvent(const ui::Event& EV) {
     mInputLine = newl->mBuffer;
   };
 
-  switch (EV.miEventCode) {
+  switch (EV->miEventCode) {
     case ui::UIEV_KEY: {
       int mikeyc = filtev.miKeyCode;
       // printf( "%c\n", (char) mikeyc );
@@ -238,7 +238,7 @@ ui::HandlerResult vp_cons::DoOnUiEvent(const ui::Event& EV) {
   return ui::HandlerResult(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void vp_cons::DoDraw(ui::DrawEvent& drwev) {
+void vp_cons::DoDraw(ui::drawevent_ptr_t drwev) {
   typedef lev2::SVtxV12C4T16 basevtx_t;
 
   if ((nullptr == mCTQT) || (nullptr == mCTQT->GetTarget()))

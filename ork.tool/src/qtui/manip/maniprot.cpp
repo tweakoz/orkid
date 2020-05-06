@@ -151,11 +151,11 @@ float SnapReal(float Input, float SnapVal) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool ManipRot::UIEventHandler(const ui::Event& EV) {
-  int ex = EV.miX;
-  int ey = EV.miY;
+bool ManipRot::UIEventHandler(ui::event_constptr_t EV) {
+  int ex = EV->miX;
+  int ey = EV->miY;
 
-  fvec2 posubp = EV.GetUnitCoordBP();
+  fvec2 posubp = EV->GetUnitCoordBP();
 
   UiCamera* pcam = mManager.getActiveCamera();
 
@@ -164,7 +164,7 @@ bool ManipRot::UIEventHandler(const ui::Event& EV) {
   bool isshift = false; // OldSchool::IsKeyDepressed(VK_SHIFT );
   bool isctrl  = false; // OldSchool::IsKeyDepressed(VK_CONTROL );
 
-  switch (EV.miEventCode) {
+  switch (EV->miEventCode) {
     case ui::UIEV_PUSH: {
       mManager.mManipHandler.Init(posubp, pcam->_curMatrices.GetIVPMatrix(), pcam->QuatC);
       mBaseTransform = mManager.mCurTransform;

@@ -51,8 +51,8 @@ void SplitPanel::SetChild2(Widget* pch) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void SplitPanel::DoDraw(ui::DrawEvent& drwev) {
-  auto tgt     = drwev.GetTarget();
+void SplitPanel::DoDraw(ui::drawevent_ptr_t drwev) {
+  auto tgt     = drwev->GetTarget();
   bool is_hdpi = tgt->hiDPI();
   auto fbi     = tgt->FBI();
   auto mtxi    = tgt->MTXI();
@@ -162,8 +162,8 @@ void SplitPanel::DoLayout() {
 
 /////////////////////////////////////////////////////////////////////////
 
-HandlerResult SplitPanel::DoRouteUiEvent(const Event& Ev) {
-  // printf( "Panel::DoRouteUiEvent xy<%d %d> mPanelUiState<%d>\n", Ev.miX, Ev.miY, mPanelUiState );
+HandlerResult SplitPanel::DoRouteUiEvent(event_constptr_t Ev) {
+  // printf( "Panel::DoRouteUiEvent xy<%d %d> mPanelUiState<%d>\n", Ev->miX, Ev->miY, mPanelUiState );
 
   if (mChild1 && mChild1->IsEventInside(Ev) && mPanelUiState == 0) {
     // printf( "Child1\n");
@@ -222,18 +222,18 @@ void SplitPanel::Snap() {
     SetX(pw + kpanelw - GetW());
 }
 
-HandlerResult SplitPanel::DoOnUiEvent(const Event& Ev) {
+HandlerResult SplitPanel::DoOnUiEvent(event_constptr_t Ev) {
   HandlerResult ret(this);
 
-  int evx = Ev.miX;
-  int evy = Ev.miY;
+  int evx = Ev->miX;
+  int evy = Ev->miY;
   // printf( "Panel<%p>::OnUiEvent isshift<%d>\n", this, int(isshift) );
   //////////////////////////////
   int ilocx = 0;
   int ilocy = 0;
   RootToLocal(evx, evy, ilocx, ilocy);
   //////////////////////////////
-  const auto& filtev = Ev.mFilteredEvent;
+  const auto& filtev = Ev->mFilteredEvent;
   switch (filtev.miEventCode) {
     case ui::UIEV_PUSH: // idle
     {

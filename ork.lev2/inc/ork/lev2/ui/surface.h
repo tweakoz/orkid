@@ -32,7 +32,7 @@ public:
 
   void GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx);
 
-  void RePaintSurface(DrawEvent& drwev);
+  void RePaintSurface(ui::drawevent_ptr_t drwev);
 
   void MarkSurfaceDirty() {
     mNeedsSurfaceRepaint = true;
@@ -56,8 +56,8 @@ protected:
   bool mNeedsSurfaceRepaint;
   lev2::PickBuffer* _pickbuffer;
 
-  void DoDraw(DrawEvent& drwev) override;
-  virtual void DoRePaintSurface(DrawEvent& drwev) {
+  void DoDraw(ui::drawevent_ptr_t drwev) override;
+  virtual void DoRePaintSurface(ui::drawevent_ptr_t drwev) {
   }
 };
 

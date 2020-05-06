@@ -20,7 +20,7 @@ namespace ork { namespace tool { namespace ged {
 class SliderBase {
 public:
   virtual void resize(int ix, int iy, int iw, int ih) = 0;
-  virtual void OnUiEvent(const ork::ui::Event& ev)    = 0;
+  virtual void OnUiEvent(ork::ui::event_constptr_t ev)    = 0;
 
   void SetLogMode(bool bv) {
     mlogmode = bv;
@@ -68,7 +68,7 @@ public:
 
   Slider(T& ParentW, datatype min, datatype max, datatype def);
 
-  void OnUiEvent(const ork::ui::Event& ev) final;
+  void OnUiEvent(ork::ui::event_constptr_t ev) final;
 
   void resize(int ix, int iy, int iw, int ih) final;
   void SetVal(datatype val);
@@ -98,8 +98,8 @@ public:
   typedef bool datatype;
   Setter mSetter;
   GedBoolNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj);
-  void OnMouseDoubleClicked(const ork::ui::Event& ev) final;
-  void OnMouseReleased(const ork::ui::Event& ev) final;
+  void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final;
+  void OnMouseReleased(ork::ui::event_constptr_t ev) final;
 
   void DoDraw(lev2::Context* pTARG) final;
 };
@@ -109,7 +109,7 @@ template <typename IODriver> struct GedFloatNode : public GedItemNode {
   bool mLogMode;
   GedFloatNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj);
 
-  void OnUiEvent(const ork::ui::Event& ev) final;
+  void OnUiEvent(ork::ui::event_constptr_t ev) final;
   void DoDraw(lev2::Context* pTARG) final;
 
   void onActivate() final;
@@ -132,7 +132,7 @@ template <typename IODriver> struct GedIntNode : public GedItemNode {
   bool mLogMode;
   GedIntNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj);
 
-  void OnUiEvent(const ork::ui::Event& ev) final;
+  void OnUiEvent(ork::ui::event_constptr_t ev) final;
 
   void DoDraw(lev2::Context* pTARG) final;
   typedef int datatype;
@@ -149,7 +149,7 @@ template <typename IODriver, typename T> class GedSimpleNode : public GedItemNod
 public:
   GedSimpleNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj);
 
-  void OnUiEvent(const ork::ui::Event& ev) final;
+  void OnUiEvent(ork::ui::event_constptr_t ev) final;
 
   /*virtual*/ void DoDraw(lev2::Context* pTARG);
   IODriver& RefIODriver() {
@@ -166,7 +166,7 @@ public:
   GedObjNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj);
   void OnCreateObject();
 
-  void OnMouseDoubleClicked(const ork::ui::Event& ev) final;
+  void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final;
 
   void DoDraw(lev2::Context* pTARG); // virtual
 private:
@@ -215,17 +215,17 @@ private:
   bool mbIsMultiMap;
   bool mbImpExp;
 
-  void OnMouseDoubleClicked(const ork::ui::Event& ev) final;
+  void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final;
 
   void CheckVis();
   void DoDraw(lev2::Context* pTARG) final;
 
-  void AddItem(const ork::ui::Event& ev);
-  void RemoveItem(const ork::ui::Event& ev);
-  void MoveItem(const ork::ui::Event& ev);
-  void DuplicateItem(const ork::ui::Event& ev);
-  void ImportItem(const ork::ui::Event& ev);
-  void ExportItem(const ork::ui::Event& ev);
+  void AddItem(ork::ui::event_constptr_t ev);
+  void RemoveItem(ork::ui::event_constptr_t ev);
+  void MoveItem(ork::ui::event_constptr_t ev);
+  void DuplicateItem(ork::ui::event_constptr_t ev);
+  void ImportItem(ork::ui::event_constptr_t ev);
+  void ExportItem(ork::ui::event_constptr_t ev);
 
   bool DoDrawDefault() const final {
     return false;
@@ -315,7 +315,7 @@ public:
 private:
   IODriver mIoDriver;
 
-  void OnMouseDoubleClicked(const ork::ui::Event& ev) final;
+  void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final;
 
   virtual bool DoDrawDefault() const {
     return false;
@@ -337,7 +337,7 @@ public:
 private:
   IODriver mIoDriver;
 
-  void OnMouseDoubleClicked(const ork::ui::Event& ev) final;
+  void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final;
 
   virtual bool DoDrawDefault() const {
     return false;
@@ -403,7 +403,7 @@ protected:
 };
 class OpsNode : public GedItemNode {
   void DoDraw(lev2::Context* pTARG) override;
-  void OnMouseClicked(const ork::ui::Event& ev) final;
+  void OnMouseClicked(ork::ui::event_constptr_t ev) final;
   orkvector<std::pair<std::string, any64>> mOps;
 
   virtual bool DoDrawDefault() const final {

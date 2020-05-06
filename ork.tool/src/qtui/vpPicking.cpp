@@ -128,7 +128,7 @@ void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
   ///////////////////////////////////////////////////////////////////////////
 }
 
-DeferredPickOperationContext::DeferredPickOperationContext()
+DeferredPickOperationContext::DeferredPickOperationContext(ui::event_constptr_t srcev)
     : miX(0)
     , miY(0)
     , is_left(false)
@@ -142,6 +142,15 @@ DeferredPickOperationContext::DeferredPickOperationContext()
     , mViewport(nullptr)
 
 {
+  mEV = std::make_shared<ui::Event>(*srcev.get());
+
+  miX      = srcev->miX;
+  miY      = srcev->miY;
+  is_shift = srcev->mbSHIFT;
+  is_ctrl  = srcev->mbCTRL;
+  is_left  = srcev->mbLeftButton;
+  is_right = srcev->mbRightButton;
+
   mState = 0;
 }
 

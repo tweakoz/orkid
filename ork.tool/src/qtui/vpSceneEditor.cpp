@@ -289,7 +289,7 @@ bool SceneEditorVP::isCompositorEnabled() {
 // Draw INTO the onscreen target
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
+void SceneEditorVP::DoDraw(ui::drawevent_ptr_t drwev) {
   EASY_BLOCK("SceneEditorVP::DoDraw");
 
   if (nullptr == _ctxbase) {

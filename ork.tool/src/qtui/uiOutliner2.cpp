@@ -291,8 +291,8 @@ void Outliner2View::DoInit(lev2::Context* pt) {
   mCtxBase = pt->GetCtxBase();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev) {
-  auto tgt = drwev.GetTarget();
+void Outliner2View::DoRePaintSurface(ui::drawevent_ptr_t drwev) {
+  auto tgt = drwev->GetTarget();
   tgt->makeCurrentContext();
   tgt->debugPushGroup(FormatString("Outliner2View::repaint"));
   auto mtxi                            = tgt->MTXI();
@@ -470,16 +470,16 @@ void Outliner2View::SetNameOfSelectedItem() {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-ui::HandlerResult Outliner2View::DoOnUiEvent(const ui::Event& EV) {
+ui::HandlerResult Outliner2View::DoOnUiEvent(ui::event_constptr_t EV) {
   ui::HandlerResult ret(this);
 
   auto& ed           = mOutlinerModel.Editor();
   auto& sm           = ed.selectionManager();
-  const auto& filtev = EV.mFilteredEvent;
+  const auto& filtev = EV->mFilteredEvent;
 
   // ork::tool::ged::ObjModel::FlushAllQueues();
-  int ix = EV.miX;
-  int iy = EV.miY;
+  int ix = EV->miX;
+  int iy = EV->miY;
   int ilocx, ilocy;
   RootToLocal(ix, iy, ilocx, ilocy);
 
@@ -488,9 +488,9 @@ ui::HandlerResult Outliner2View::DoOnUiEvent(const ui::Event& EV) {
   ctx.mUsage[0] = lev2::PixelFetchContext::EPU_PTR64;
   // ctx.mUsage[1] = lev2::PixelFetchContext::EPU_FLOAT;
 
-  QInputEvent* qip = (QInputEvent*)EV.mpBlindEventData;
+  QInputEvent* qip = (QInputEvent*)EV->mpBlindEventData;
 
-  bool bisshift = EV.mbSHIFT;
+  bool bisshift = EV->mbSHIFT;
 
   switch (filtev.miEventCode) {
     case ui::UIEV_KEY: {
@@ -597,7 +597,7 @@ ui::HandlerResult Outliner2View::DoOnUiEvent(const ui::Event& EV) {
     }
     case ui::UIEV_PUSH:
     case ui::UIEV_RELEASE: {
-      int idelta = EV.miMWY;
+      int idelta = EV->miMWY;
 
       GetPixel(ilocx, ilocy, ctx);
       float fx                   = float(ilocx) / float(GetW());
@@ -620,7 +620,7 @@ ui::HandlerResult Outliner2View::DoOnUiEvent(const ui::Event& EV) {
       break;
     }
     case ui::UIEV_MOUSEWHEEL: {
-      int idelta = EV.miMWY;
+      int idelta = EV->miMWY;
       miScrollY += idelta;
 
       int scrollb = -(mContentH - miH);

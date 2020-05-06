@@ -97,9 +97,9 @@ qtezapp_ptr_t OrkEzQtApp::createWithScene(varmap::varmap_ptr_t sceneparams) {
 
   auto rval                           = std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp);
   rval->_mainWindow->_execsceneparams = sceneparams;
-  rval->_mainWindow->_onDraw          = [=](const ui::DrawEvent& drwev) { //
+  rval->_mainWindow->_onDraw          = [=](ui::drawevent_constptr_t drwev) { //
     ork::opq::mainSerialQueue()->Process();
-    auto context = drwev.GetTarget();
+    auto context = drwev->GetTarget();
     context->beginFrame();
     rval->_mainWindow->_execscene->renderOnContext(context);
     context->endFrame();
@@ -122,22 +122,22 @@ struct EzViewport : public ui::Viewport {
     pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
   }
   /////////////////////////////////////////////////
-  void DoDraw(ui::DrawEvent& drwev) final {
+  void DoDraw(ui::drawevent_ptr_t drwev) final {
 
     bool do_gpu_init = bool(_mainwin->_onGpuInit);
     do_gpu_init |= bool(_mainwin->_onGpuInitWithScene);
     do_gpu_init &= _mainwin->_dogpuinit;
 
     if (do_gpu_init) {
-      drwev.GetTarget()->makeCurrentContext();
-      FontMan::gpuInit(drwev.GetTarget());
-      drwev.GetTarget()->makeCurrentContext();
+      drwev->GetTarget()->makeCurrentContext();
+      FontMan::gpuInit(drwev->GetTarget());
+      drwev->GetTarget()->makeCurrentContext();
 
       if (_mainwin->_onGpuInit)
-        _mainwin->_onGpuInit(drwev.GetTarget());
+        _mainwin->_onGpuInit(drwev->GetTarget());
       else if (_mainwin->_onGpuInitWithScene) {
         _mainwin->_execscene = std::make_shared<scenegraph::Scene>(_mainwin->_execsceneparams);
-        _mainwin->_onGpuInitWithScene(drwev.GetTarget(), _mainwin->_execscene);
+        _mainwin->_onGpuInitWithScene(drwev->GetTarget(), _mainwin->_execscene);
       }
       while (asset::AssetManager<TextureAsset>::AutoLoad()) {
       }
@@ -146,7 +146,7 @@ struct EzViewport : public ui::Viewport {
       _mainwin->_dogpuinit = false;
     }
     if (_mainwin->_onDraw) {
-      drwev.GetTarget()->makeCurrentContext();
+      drwev->GetTarget()->makeCurrentContext();
       _mainwin->_onDraw(drwev);
     }
     double this_time           = _mainwin->_render_timer.SecsSinceStart();
@@ -168,7 +168,7 @@ struct EzViewport : public ui::Viewport {
       _mainwin->_onResize(GetW(), GetH());
   }
   /////////////////////////////////////////////////
-  ui::HandlerResult DoOnUiEvent(const ui::Event& ev) final {
+  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t ev) final {
     if (_mainwin->_onUiEvent)
       return _mainwin->_onUiEvent(ev);
     else

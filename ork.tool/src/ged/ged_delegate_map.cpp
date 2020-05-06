@@ -775,7 +775,7 @@ bool GedMapNode::IsKeyPresent(const KeyDecoName& pkey) const {
   return bret;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedMapNode::AddItem(const ork::ui::Event& ev) {
+void GedMapNode::AddItem(ork::ui::event_constptr_t ev) {
   const int klabh = get_charh();
   const int kdim  = klabh - 2;
 
@@ -832,7 +832,7 @@ PropTypeString KeyDecoName::DecoratedName() const {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedMapNode::RemoveItem(const ork::ui::Event& ev) {
+void GedMapNode::RemoveItem(ork::ui::event_constptr_t ev) {
   const int klabh = get_charh();
   const int kdim  = klabh - 2;
 
@@ -853,7 +853,7 @@ void GedMapNode::RemoveItem(const ork::ui::Event& ev) {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedMapNode::DuplicateItem(const ork::ui::Event& ev) {
+void GedMapNode::DuplicateItem(ork::ui::event_constptr_t ev) {
   const int klabh = get_charh();
   const int kdim  = klabh - 2;
 
@@ -888,7 +888,7 @@ void GedMapNode::DuplicateItem(const ork::ui::Event& ev) {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedMapNode::MoveItem(const ork::ui::Event& ev) {
+void GedMapNode::MoveItem(ork::ui::event_constptr_t ev) {
   const int klabh = get_charh();
   const int kdim  = klabh - 2;
 
@@ -920,7 +920,7 @@ void GedMapNode::MoveItem(const ork::ui::Event& ev) {
     }
   }
 }
-void GedMapNode::ImportItem(const ork::ui::Event& ev) {
+void GedMapNode::ImportItem(ork::ui::event_constptr_t ev) {
   const int klabh   = get_charh();
   const int kdim    = klabh - 2;
   int ibasex        = (kdim + 4) * 3 + 3;
@@ -938,7 +938,7 @@ void GedMapNode::ImportItem(const ork::ui::Event& ev) {
     mModel.Attach(mModel.CurrentObject());
   }
 }
-void GedMapNode::ExportItem(const ork::ui::Event& ev) {
+void GedMapNode::ExportItem(ork::ui::event_constptr_t ev) {
   const int klabh   = get_charh();
   const int kdim    = klabh - 2;
   int ibasex        = (kdim + 4) * 3 + 3;
@@ -955,14 +955,14 @@ void GedMapNode::ExportItem(const ork::ui::Event& ev) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 static const int koff = 1;
-void GedMapNode::OnMouseDoubleClicked(const ork::ui::Event& ev) {
+void GedMapNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
   const int klabh = get_charh();
   const int kdim  = klabh - 2;
   // Qt::MouseButtons Buttons = pEV->buttons();
   // Qt::KeyboardModifiers modifiers = pEV->modifiers();
 
-  int ix = ev.miX;
-  int iy = ev.miY;
+  int ix = ev->miX;
+  int iy = ev->miY;
 
   printf("GedMapNode<%p> ilx<%d> ily<%d>\n", this, ix, iy);
 
@@ -1312,7 +1312,7 @@ void GedMapIoDriver::GetValue(fvec3& flt) const {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void GedMapFactoryNode::OnMouseDoubleClicked(const ork::ui::Event& ev) {
+void GedMapFactoryNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
   orkset<object::ObjectClass*> Factories;
   EnumerateFactories(GetOrkObj(), GetOrkProp(), Factories);
   QMenu* qmenu = CreateFactoryMenu(Factories);

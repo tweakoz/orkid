@@ -20,12 +20,12 @@ struct SplitPanel : public Group
 
 private:
 
-	HandlerResult DoOnUiEvent( const Event &Ev ) override;
-	void DoDraw(ui::DrawEvent& drwev) override;
+	HandlerResult DoOnUiEvent( event_constptr_t Ev ) override;
+	void DoDraw(ui::drawevent_ptr_t drwev) override;
 	void DoLayout( void ) override;
 	void DoOnEnter() override;
 	void DoOnExit() override;
-	HandlerResult DoRouteUiEvent( const Event& Ev ) override;
+	HandlerResult DoRouteUiEvent( event_constptr_t Ev ) override;
 
 	Widget* mChild1;
 	Widget* mChild2;

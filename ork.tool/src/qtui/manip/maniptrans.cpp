@@ -69,12 +69,12 @@ ManipTYZ::ManipTYZ(ManipManager& mgr)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-bool ManipTrans::UIEventHandler(const ui::Event& EV) {
-  ork::fvec2 cm = EV.GetUnitCoordBP();
+bool ManipTrans::UIEventHandler(ui::event_constptr_t EV) {
+  ork::fvec2 cm = EV->GetUnitCoordBP();
 
   // printf( "ManipTrans<%p>::UIEventHandler() evcod<%d>\n", this, int(pEV->miEventCode) );
   bool brval = false;
-  switch (EV.miEventCode) {
+  switch (EV->miEventCode) {
     case ui::UIEV_PUSH: {
       HandleMouseDown(cm);
       brval = true;

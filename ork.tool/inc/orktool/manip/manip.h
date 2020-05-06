@@ -61,7 +61,7 @@ public:
   Manip(ManipManager& mgr);
 
   virtual void Draw(Context* pTARG) const          = 0;
-  virtual bool UIEventHandler(const ui::Event& EV) = 0;
+  virtual bool UIEventHandler(ui::event_constptr_t EV) = 0;
 
   fvec3 IntersectWithPlanes(const ork::fvec2& posubp);
   void SelectBestPlane(const ork::fvec2& posubp);
@@ -83,7 +83,7 @@ class ManipTrans : public Manip {
 public:
   ManipTrans(ManipManager& mgr);
 
-  bool UIEventHandler(const ui::Event& EV) final;
+  bool UIEventHandler(ui::event_constptr_t EV) final;
 
 protected:
   virtual void HandleMouseDown(const ork::fvec2& pos);
@@ -203,7 +203,7 @@ public: //
   ManipRot(ManipManager& mgr, const fvec4& LocRotMat);
 
   void Draw(Context* pTARG) const final;
-  bool UIEventHandler(const ui::Event& EV) final;
+  bool UIEventHandler(ui::event_constptr_t EV) final;
 
   virtual F32 CalcAngle(fvec4& inv_isect, fvec4& inv_lisect) const = 0;
 
@@ -366,7 +366,7 @@ public:
   void EnableManip(Manip* pOBJ);
   void DisableManip(void);
 
-  bool UIEventHandler(const ui::Event& EV);
+  bool UIEventHandler(ui::event_constptr_t EV);
 
   UiCamera* getActiveCamera(void) const {
     return mpActiveCamera;

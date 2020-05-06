@@ -109,7 +109,7 @@ public:
   void UpdateRefreshPolicy();
 
   //////////////////////
-  ui::HandlerResult DoOnUiEvent(const ui::Event& EV) override;
+  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
   //////////////////////
   void renderMisc(ork::lev2::RenderContextFrameData& RCFD);
   //////////////////////
@@ -160,7 +160,7 @@ public:
   bool IsSceneDisplayEnabled() const { return mbSceneDisplayEnable; }
 
 protected:
-  void DoDraw(ui::DrawEvent& drwev) final; // virtual
+  void DoDraw(ui::drawevent_ptr_t drwev) final; // virtual
 
   ork::atomic<int> mRenderLock;
 

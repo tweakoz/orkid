@@ -32,7 +32,7 @@ public:
 	void Attach( VPTYPE* );
 	void Detach( VPTYPE* );
 
-	ui::HandlerResult DoOnUiEvent( const ui::Event& EV) override;
+	ui::HandlerResult DoOnUiEvent( ui::event_constptr_t EV) override;
 	void LoadToolIcon();
 	virtual void DrawToolIcon(lev2::Context* pTARG, int ix, int iy, bool bhilite);
 	virtual void DrawSubToolIcon( lev2::Context* pTARG, int ix, int iy, bool bhilite );
@@ -46,7 +46,7 @@ public:
 	void SetState(int state);
 	virtual void OnEnter(int state) {}
 	virtual void OnExit(int state) {}
-	void DoDraw(ui::DrawEvent& drwev) final {}
+	void DoDraw(ui::drawevent_ptr_t drwev) final {}
 
 	void SetToolName(const std::string& nam ) { mToolName=nam; }
 	const std::string& GetToolName() const { return mToolName; }

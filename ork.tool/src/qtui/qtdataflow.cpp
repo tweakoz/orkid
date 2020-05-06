@@ -190,8 +190,8 @@ void GraphVP::DoInit(lev2::Context* pt) {
   auto par    = fbi->GetThisBuffer();
   _pickbuffer = new ork::lev2::PickBuffer(this, pt, 0, 0);
 }
-void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
-  auto ctx      = drwev.GetTarget();
+void GraphVP::DoRePaintSurface(ui::drawevent_ptr_t drwev) {
+  auto ctx      = drwev->GetTarget();
   auto mtxi     = ctx->MTXI();
   auto fbi      = ctx->FBI();
   auto fxi      = ctx->FXI();
@@ -515,11 +515,11 @@ void GraphVP::ReCenter() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ui::HandlerResult GraphVP::DoOnUiEvent(const ui::Event& EV) {
-  const auto& filtev = EV.mFilteredEvent;
+ui::HandlerResult GraphVP::DoOnUiEvent(ui::event_constptr_t EV) {
+  const auto& filtev = EV->mFilteredEvent;
 
-  int ix = EV.miX;
-  int iy = EV.miY;
+  int ix = EV->miX;
+  int iy = EV->miY;
   int ilocx, ilocy;
   RootToLocal(ix, iy, ilocx, ilocy);
   float fx = float(ilocx) / float(GetW());
@@ -530,11 +530,11 @@ ui::HandlerResult GraphVP::DoOnUiEvent(const ui::Event& EV) {
   ctx.mUsage[0] = lev2::PixelFetchContext::EPU_PTR64;
   ctx.mUsage[1] = lev2::PixelFetchContext::EPU_FLOAT;
 
-  QInputEvent* qip = (QInputEvent*)EV.mpBlindEventData;
+  QInputEvent* qip = (QInputEvent*)EV->mpBlindEventData;
 
-  bool bisshift = EV.mbSHIFT;
-  bool bisalt   = EV.mbALT;
-  bool bisctrl  = EV.mbCTRL;
+  bool bisshift = EV->mbSHIFT;
+  bool bisalt   = EV->mbALT;
+  bool bisctrl  = EV->mbCTRL;
 
   static dataflow::dgmodule* gpmodule = 0;
 

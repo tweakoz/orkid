@@ -48,13 +48,13 @@ public:
   void SetParent(GedItemNode* ppar) {
     mParent = ppar;
   }
-  void OnMouseDoubleClicked(const ork::ui::Event& ev) final {
+  void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final {
     if (mParent && mCurveObject) {
       orklut<float, float>& data        = mCurveObject->GetVertices();
       orklut<float, float>::iterator it = data.begin() + miPoint;
-      if (ev.IsButton0DownF()) {
+      if (ev->IsButton0DownF()) {
         bool bok = false;
-      } else if (ev.IsButton2DownF()) {
+      } else if (ev->IsButton2DownF()) {
         if (it->first != 0.0f && it->first != 1.0f) {
           mCurveObject->MergeSegment(miPoint);
           mParent->SigInvalidateProperty();
@@ -62,8 +62,8 @@ public:
       }
     }
   }
-  void OnUiEvent(const ork::ui::Event& ev) final {
-    const auto& filtev = ev.mFilteredEvent;
+  void OnUiEvent(ork::ui::event_constptr_t ev) final {
+    const auto& filtev = ev->mFilteredEvent;
 
     switch (filtev.miEventCode) {
       case ui::UIEV_DRAG: {
@@ -72,8 +72,8 @@ public:
           const int knumpoints       = (int)data.size();
           const int ksegs            = knumpoints - 1;
           if (miPoint >= 0 && miPoint < knumpoints) {
-            int mouseposX = ev.miX - mParent->GetX();
-            int mouseposY = ev.miY - mParent->GetY();
+            int mouseposX = ev->miX - mParent->GetX();
+            int mouseposY = ev->miY - mParent->GetY();
             float fx      = float(mouseposX) / float(mParent->width());
             float fy      = 1.0f - float(mouseposY) / float(kh);
             if (miPoint == 0)
@@ -126,12 +126,12 @@ class GedCurveEditSeg : public GedObject {
   int miSeg;
 
 public:
-  void OnMouseDoubleClicked(const ork::ui::Event& ev) final {
+  void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final {
     if (mParent && mCurveObject) {
-      if (ev.IsButton0DownF()) {
+      if (ev->IsButton0DownF()) {
         mCurveObject->SplitSegment(miSeg);
         mParent->SigInvalidateProperty();
-      } else if (ev.IsButton2DownF()) {
+      } else if (ev->IsButton2DownF()) {
         QMenu* pMenu         = new QMenu(0);
         QAction* pchildmenu0 = pMenu->addAction("Seg:Lin");
         QAction* pchildmenu1 = pMenu->addAction("Seg:Box");

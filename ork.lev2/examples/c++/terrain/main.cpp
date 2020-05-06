@@ -104,11 +104,11 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
-  qtapp->onDraw([&](const ui::DrawEvent& drwev) {
+  qtapp->onDraw([&](ui::drawevent_constptr_t drwev) {
     auto DB = DrawableBuffer::acquireReadDB(7);
     if (nullptr == DB)
       return;
-    auto context = drwev.GetTarget();
+    auto context = drwev->GetTarget();
     RenderContextFrameData RCFD(context); // renderer per/frame data
     RCFD._cimpl = compositorimpl;
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));

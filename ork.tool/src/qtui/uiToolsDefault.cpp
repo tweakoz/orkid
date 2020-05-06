@@ -95,19 +95,19 @@ void TestVPDefaultHandler::HandlePickOperation(defpickopctx_ptr_t ppickctx) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
+ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(ui::event_constptr_t EV) {
   // printf( "TestVPDefaultHandler::DoOnUiEvent\n");
   ui::HandlerResult ret(this);
 
-  bool isshift = EV.mbSHIFT;
-  bool isctrl  = EV.mbCTRL;
+  bool isshift = EV->mbSHIFT;
+  bool isctrl  = EV->mbCTRL;
 
-  bool isleft  = EV.mbLeftButton;
-  bool isright = EV.mbRightButton;
-  bool ismid   = EV.mbMiddleButton;
+  bool isleft  = EV->mbLeftButton;
+  bool isright = EV->mbRightButton;
+  bool ismid   = EV->mbMiddleButton;
 
-  int ix = EV.miX;
-  int iy = EV.miY;
+  int ix = EV->miX;
+  int iy = EV->miY;
 
   float fx = float(ix) / float(GetViewport()->GetW());
   float fy = float(iy) / float(GetViewport()->GetH());
@@ -115,7 +115,7 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
   bool AreAnyMoveKeysDown = OldSchool::IsKeyDepressed('W') | OldSchool::IsKeyDepressed('A') | OldSchool::IsKeyDepressed('S') |
                             OldSchool::IsKeyDepressed('D');
 
-  switch (EV.miEventCode) {
+  switch (EV->miEventCode) {
     case ui::UIEV_SHOW: {
       if (GetViewport()->GetTarget()) {
         Context* pTARG         = GetViewport()->GetTarget();
@@ -128,7 +128,7 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
       break;
     }
     case ui::UIEV_KEY: {
-      switch (EV.miKeyCode) {
+      switch (EV->miKeyCode) {
         case 0x01000007: // delete
         {
           orkset<ork::Object*> selection = mEditor.selectionManager().getActiveSelection();
@@ -181,7 +181,7 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
       if (AreAnyMoveKeysDown)
         break;
       if (GetViewport()->getActiveCamera()) {
-        auto pickctx         = std::make_shared<DeferredPickOperationContext>();
+        auto pickctx         = std::make_shared<DeferredPickOperationContext>(EV);
         pickctx->miX         = ix;
         pickctx->miY         = iy;
         pickctx->is_shift    = isshift;
@@ -191,8 +191,8 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
         pickctx->is_right    = isright;
         pickctx->mHandler    = this;
         pickctx->mViewport   = GetViewport();
-        pickctx->_gfxContext = EV._context;
-        OrkAssert(EV._context);
+        pickctx->_gfxContext = EV->_context;
+        OrkAssert(EV->_context);
 
         auto process_pick = [=](defpickopctx_ptr_t pickctx) {
           ork::opq::assertOnQueue2(opq::updateSerialQueue());
@@ -219,7 +219,7 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
       ret.mHoldFocus = true;
 
       if (isleft && false == isright) {
-        auto pickctx         = std::make_shared<DeferredPickOperationContext>();
+        auto pickctx         = std::make_shared<DeferredPickOperationContext>(EV);
         pickctx->miX         = ix;
         pickctx->miY         = iy;
         pickctx->is_shift    = isshift;
@@ -229,8 +229,8 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
         pickctx->is_right    = isright;
         pickctx->mHandler    = this;
         pickctx->mViewport   = GetViewport();
-        pickctx->_gfxContext = EV._context;
-        OrkAssert(EV._context);
+        pickctx->_gfxContext = EV->_context;
+        OrkAssert(EV->_context);
         HandlePickOperation(pickctx);
       }
       break;

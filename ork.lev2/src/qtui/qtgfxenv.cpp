@@ -42,7 +42,7 @@ void CQtWindow::Draw(void) {
   int ih = GetContextH();
   mRootWidget->SetRect(0, 0, iw, ih);
 
-  ui::DrawEvent drwev(context());
+  auto drwev = std::make_shared<ui::DrawEvent>(context());
   mRootWidget->Draw(drwev);
 }
 
@@ -52,8 +52,8 @@ void CQtWindow::GotFocus(void) {
   if (mRootWidget) {
     mRootWidget->GotKeyboardFocus();
 
-    ui::Event uievent;
-    uievent.mEventCode = ork::ui::UIEV_GOT_KEYFOCUS;
+    auto uievent        = std::make_shared<ui::Event>();
+    uievent->mEventCode = ork::ui::UIEV_GOT_KEYFOCUS;
     mRootWidget->HandleUiEvent(uievent);
   }
   mbHasFocus = true;
@@ -65,8 +65,8 @@ void CQtWindow::LostFocus(void) {
   if (mRootWidget) {
     mRootWidget->LostKeyboardFocus();
 
-    ui::Event uievent;
-    uievent.mEventCode = ork::ui::UIEV_LOST_KEYFOCUS;
+    auto uievent        = std::make_shared<ui::Event>();
+    uievent->mEventCode = ork::ui::UIEV_LOST_KEYFOCUS;
     mRootWidget->HandleUiEvent(uievent);
   }
   mbHasFocus = false;

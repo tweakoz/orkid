@@ -62,12 +62,12 @@ void Surface::OnResize(void) {
   SetDirty();
 }
 
-void Surface::RePaintSurface(ui::DrawEvent& ev) {
-  DoRePaintSurface(ev);
+void Surface::RePaintSurface(ui::drawevent_ptr_t drwev) {
+  DoRePaintSurface(drwev);
 }
 
-void Surface::DoDraw(DrawEvent& drwev) {
-  auto tgt    = drwev.GetTarget();
+void Surface::DoDraw(ui::drawevent_ptr_t drwev) {
+  auto tgt    = drwev->GetTarget();
   auto mtxi   = tgt->MTXI();
   auto fbi    = tgt->FBI();
   auto fxi    = tgt->FXI();

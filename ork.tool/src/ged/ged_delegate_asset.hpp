@@ -16,7 +16,7 @@ namespace ork { namespace tool { namespace ged {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename IODriver> void GedAssetNode<IODriver>::OnMouseDoubleClicked(const ork::ui::Event& ev) {
+template <typename IODriver> void GedAssetNode<IODriver>::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
   ObjModel& model = mModel;
   OnCreateObject();
   model.Attach(model.CurrentObject());

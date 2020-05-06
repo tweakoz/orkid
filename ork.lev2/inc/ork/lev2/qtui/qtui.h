@@ -96,8 +96,8 @@ public:
 
   void MouseEventCommon(QMouseEvent* event);
 
-  const ui::Event& UIEvent() const;
-  ui::Event& UIEvent();
+  ui::event_constptr_t uievent() const;
+  ui::event_ptr_t uievent();
   Context* Target() const;
   Window* GetWindow() const;
   bool AlwaysRun() const;

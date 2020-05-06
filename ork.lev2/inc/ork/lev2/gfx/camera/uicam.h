@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/kernel/core/singleton.h>
-#include <ork/lev2/ui/ui.h>
+#include <ork/lev2/ui/event.h>
 #include <ork/util/hotkey.h>
 
 namespace ork { namespace lev2 {
@@ -150,8 +150,8 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
-  virtual bool UIEventHandler(const ui::Event& EV) = 0;
-  virtual void draw(Context* pT) const             = 0;
+  virtual bool UIEventHandler(ui::event_constptr_t EV) = 0;
+  virtual void draw(Context* pT) const                 = 0;
 
   virtual void SetFromWorldSpaceMatrix(const fmtx4&) = 0;
 
@@ -214,8 +214,8 @@ public: //
 
   fvec3 _pushNZ, _pushNX, _pushNY;
   svar32_t _private;
-  
-  bool UIEventHandler(const ui::Event& EV) final;
+
+  bool UIEventHandler(ui::event_constptr_t EV) final;
   void draw(Context* pT) const final;
 
   void SetFromWorldSpaceMatrix(const fmtx4& matrix) final;

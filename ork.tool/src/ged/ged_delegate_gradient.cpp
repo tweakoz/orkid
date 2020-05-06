@@ -53,8 +53,8 @@ public:
     mParent = ppar;
   }
 
-  void OnUiEvent(const ork::ui::Event& ev) final {
-    const auto& filtev = ev.mFilteredEvent;
+  void OnUiEvent(ork::ui::event_constptr_t ev) final {
+    const auto& filtev = ev->mFilteredEvent;
 
     switch (filtev.miEventCode) {
       case ui::UIEV_DRAG: {
@@ -64,7 +64,7 @@ public:
           const int ksegs                 = knumpoints - 1;
 
           if (miPoint > 0 && miPoint < (knumpoints - 1)) {
-            int mousepos = ev.miX - mParent->GetX();
+            int mousepos = ev->miX - mParent->GetX();
             float fx     = float(mousepos) / float(mParent->width());
 
             orklut<float, ork::fvec4>::iterator it  = data.begin() + miPoint;
@@ -145,8 +145,8 @@ class GedGradientEditSeg : public GedObject {
   int miSeg;
 
 public:
-  void OnUiEvent(const ork::ui::Event& ev) final {
-    const auto& filtev = ev.mFilteredEvent;
+  void OnUiEvent(ork::ui::event_constptr_t ev) final {
+    const auto& filtev = ev->mFilteredEvent;
 
     switch (filtev.miEventCode) {
       case ui::UIEV_DOUBLECLICK: {

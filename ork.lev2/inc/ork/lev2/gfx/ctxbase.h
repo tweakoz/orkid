@@ -53,28 +53,26 @@ class CTXBASE : public ork::AutoConnector {
   DeclarePublicAutoSlot(Repaint);
 
 public:
-  CTFLXID GetThisXID(void) const {
-    return mxidThis;
-  }
-  CTFLXID GetTopXID(void) const {
-    return mxidTopLevel;
-  }
-  void SetThisXID(CTFLXID xid) {
-    mxidThis = xid;
-  }
-  void SetTopXID(CTFLXID xid) {
-    mxidTopLevel = xid;
-  }
-
   CTXBASE(Window* pwin);
   virtual ~CTXBASE();
 
-  virtual void SlotRepaint(void) {
-  }
+  void progressHandler(opq::progressdata_ptr_t data);
+
+  CTFLXID GetThisXID(void) const;
+  CTFLXID GetTopXID(void) const;
+  void SetThisXID(CTFLXID xid);
+  void SetTopXID(CTFLXID xid);
 
   void pushRefreshPolicy(RefreshPolicyItem policy);
   void popRefreshPolicy();
 
+  Context* GetTarget() const;
+  Window* GetWindow() const;
+  void setContext(Context* ctx);
+  void SetWindow(Window* pw);
+
+  virtual void SlotRepaint(void) {
+  }
   virtual void _setRefreshPolicy(RefreshPolicyItem policy) {
     _curpolicy = policy;
   }
@@ -83,26 +81,9 @@ public:
   }
   virtual void Hide() {
   }
-
-  Context* GetTarget() const {
-    return mpTarget;
-  }
-  Window* GetWindow() const {
-    return mpWindow;
-  }
-  void setContext(Context* ctx) {
-    mpTarget          = ctx;
-    mUIEvent._context = ctx;
-  }
-  void SetWindow(Window* pw) {
-    mpWindow = pw;
-  }
-
   virtual fvec2 MapCoordToGlobal(const fvec2& v) const {
     return v;
   }
-
-  void progressHandler(opq::progressdata_ptr_t data);
 
 protected:
   std::stack<RefreshPolicyItem> _policyStack;
@@ -110,7 +91,7 @@ protected:
   Context* mpTarget;
   Window* mpWindow;
 
-  ui::Event mUIEvent;
+  ui::event_ptr_t _uievent;
   CTFLXID mxidThis;
   CTFLXID mxidTopLevel;
   bool mbInitialize;

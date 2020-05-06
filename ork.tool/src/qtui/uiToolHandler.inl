@@ -24,11 +24,11 @@ template <typename VPTYPE> void UIToolHandler<VPTYPE>::Detach(VPTYPE* pvp) {
   DoDetach(pvp);
 }
 
-template <typename VPTYPE> ui::HandlerResult UIToolHandler<VPTYPE>::DoOnUiEvent(const ui::Event& EV) {
+template <typename VPTYPE> ui::HandlerResult UIToolHandler<VPTYPE>::DoOnUiEvent(ui::event_constptr_t EV) {
   ui::HandlerResult ret;
-  switch (EV.miEventCode) {
+  switch (EV->miEventCode) {
     case ui::UIEV_KEY: {
-      switch (EV.miKeyCode) {
+      switch (EV->miKeyCode) {
         case 13:
           if (mState < int(mpSubIconNameVector.size() - 1))
             SetState(mState + 1);

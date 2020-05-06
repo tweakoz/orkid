@@ -102,13 +102,14 @@ QString GedInputDialog::getResult() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-QString GedInputDialog::getText(const ork::ui::Event& ev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih) {
+QString
+GedInputDialog::getText(ork::ui::event_constptr_t ev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih) {
 
   int isx = ork::lev2::logicalMousePos().x();
   int isy = ork::lev2::logicalMousePos().y();
 
-  int ixb = (isx - ev.miRawX);
-  int iyb = (isy - ev.miRawY);
+  int ixb = (isx - ev->miRawX);
+  int iyb = (isy - ev->miRawY);
 
   int ixa = ixb + pnode->GetX() + ix;
   int iya = iyb + pnode->GetY() + iy;

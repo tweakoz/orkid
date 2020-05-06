@@ -73,8 +73,8 @@ struct GraphVP : public ui::Surface {
 private:
   static const int kvppickdimw = 512;
 
-  ui::HandlerResult DoOnUiEvent(const ui::Event& EV) override;
-  void DoRePaintSurface(ui::DrawEvent& drwev) override;
+  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
+  void DoRePaintSurface(ui::drawevent_ptr_t drwev) override;
   void DoInit(lev2::Context* pt) override;
 
   DataFlowEditor& GetDataFlowEditor() {

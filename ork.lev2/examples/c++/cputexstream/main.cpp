@@ -65,8 +65,8 @@ int main(int argc, char** argv) {
   });
   //////////////////////////////////////////////////////////
   int framecounter = 0;
-  qtapp->onDraw([&](const ui::DrawEvent& drwev) {
-    auto context        = drwev.GetTarget();
+  qtapp->onDraw([&](ui::drawevent_constptr_t drwev) {
+    auto context        = drwev->GetTarget();
     auto fbi            = context->FBI(); // FrameBufferInterface
     auto fxi            = context->FXI(); // FX Interface
     auto txi            = context->TXI(); // Texture Interface
@@ -113,8 +113,8 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////
   qtapp->onResize([&](int w, int h) { printf("GOTRESIZE<%d %d>\n", w, h); });
   //////////////////////////////////////////////////////////
-  qtapp->onUiEvent([&](const ui::Event& ev) -> ui::HandlerResult {
-    switch (ev.mEventCode) {
+  qtapp->onUiEvent([&](ui::event_constptr_t ev) -> ui::HandlerResult {
+    switch (ev->mEventCode) {
       case ui::UIEV_DOUBLECLICK:
         OrkAssert(false);
         break;

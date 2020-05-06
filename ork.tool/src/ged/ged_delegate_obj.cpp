@@ -194,7 +194,7 @@ template <typename Setter> void GedObjNode<Setter>::DoDraw(lev2::Context* pTARG)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename Setter> void GedObjNode<Setter>::OnMouseDoubleClicked(const ork::ui::Event& ev) {
+template <typename Setter> void GedObjNode<Setter>::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
   if (mbInteractive) {
     OnCreateObject();
   }

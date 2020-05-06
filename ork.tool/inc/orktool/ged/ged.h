@@ -385,18 +385,18 @@ public:
     miDecoIndex = idx;
   }
 
-  virtual void OnMouseDragged(const ork::ui::Event& ev) {
+  virtual void OnMouseDragged(ork::ui::event_constptr_t ev) {
   }
-  virtual void OnMouseMoved(const ork::ui::Event& ev) {
+  virtual void OnMouseMoved(ork::ui::event_constptr_t ev) {
   }
-  virtual void OnMouseClicked(const ork::ui::Event& ev) {
+  virtual void OnMouseClicked(ork::ui::event_constptr_t ev) {
   }
-  virtual void OnMouseDoubleClicked(const ork::ui::Event& ev) {
+  virtual void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
   }
-  virtual void OnMouseReleased(const ork::ui::Event& ev) {
+  virtual void OnMouseReleased(ork::ui::event_constptr_t ev) {
   }
 
-  virtual void OnUiEvent(const ork::ui::Event& ev);
+  virtual void OnUiEvent(ork::ui::event_constptr_t ev);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -581,7 +581,7 @@ public:
 class GedGroupNode : public GedItemNode {
   virtual void DoDraw(lev2::Context* pTARG);
   bool mbCollapsed;
-  void OnMouseDoubleClicked(const ork::ui::Event& ev) final;
+  void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final;
   ork::file::Path::NameType mPersistID;
 
 public:
@@ -699,9 +699,9 @@ public:
   void onInvalidate();
 
 private:
-  void DoRePaintSurface(ui::DrawEvent& drwev) override;
+  void DoRePaintSurface(ui::drawevent_ptr_t drwev) override;
   void DoSurfaceResize() override;
-  ui::HandlerResult DoOnUiEvent(const ui::Event& EV) override;
+  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
   void DoInit(lev2::Context* pt) override;
 
   ObjModel& mModel;
@@ -731,7 +731,7 @@ class GedInputDialog : public QDialog {
 public:
   GedInputDialog();
 
-  static QString getText(const ork::ui::Event& ev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih);
+  static QString getText(ork::ui::event_constptr_t ev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih);
   bool wasChanged() const {
     return mbChanged;
   }

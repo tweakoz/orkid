@@ -47,7 +47,7 @@ void Group::RemoveChild( Widget* pch )
 
 /////////////////////////////////////////////////////////////////////////
 
-void Group::DrawChildren(ui::DrawEvent& drwev)
+void Group::DrawChildren(ui::drawevent_ptr_t drwev)
 {
 	for( auto& it : mChildren )
 	{
@@ -81,7 +81,7 @@ void Group::DoLayout()
 
 /////////////////////////////////////////////////////////////////////////
 
-HandlerResult Group::DoRouteUiEvent( const Event& Ev )
+HandlerResult Group::DoRouteUiEvent( event_constptr_t Ev )
 {
 	HandlerResult res;
 	for( auto& child : mChildren )

@@ -128,23 +128,23 @@ template <typename T> void Slider<T>::SetVal(datatype val) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void Slider<T>::OnUiEvent(const ork::ui::Event& ev) // final
+void Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
 {
-  const auto& filtev = ev.mFilteredEvent;
+  const auto& filtev = ev->mFilteredEvent;
 
   switch (filtev.miEventCode) {
     case ui::UIEV_PUSH: {
       break;
     }
     case ui::UIEV_DRAG: {
-      mbUpdateOnDrag = ev.mbCTRL;
+      mbUpdateOnDrag = ev->mbCTRL;
 
-      bool bleft  = ev.IsButton0DownF();
-      bool bright = ev.IsButton2DownF();
+      bool bleft  = ev->IsButton0DownF();
+      bool bright = ev->IsButton2DownF();
 
       if (bleft || bright) {
-        printf("evx<%f> mfx<%f>\n", (float)ev.miX, mfx);
-        int mousepos = ev.miX;
+        printf("evx<%f> mfx<%f>\n", (float)ev->miX, mfx);
+        int mousepos = ev->miX;
 
         float fx    = float(mousepos - mfx) / mfw;
         float fval  = mlogmode ? LogToVal(fx) : LinToVal(fx);
@@ -256,9 +256,9 @@ template <typename Setter> void GedBoolNode<Setter>::DoDraw(lev2::Context* pTARG
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename Setter> void GedBoolNode<Setter>::OnMouseReleased(const ork::ui::Event& ev) {
-  int evx = ev.miX;
-  int evy = ev.miY;
+template <typename Setter> void GedBoolNode<Setter>::OnMouseReleased(ork::ui::event_constptr_t ev) {
+  int evx = ev->miX;
+  int evy = ev->miY;
 
   const int SIZE = CHECKBOX_SIZE(miH);
   const int X    = CHECKBOX_X(miX, miW, SIZE);
@@ -274,7 +274,7 @@ template <typename Setter> void GedBoolNode<Setter>::OnMouseReleased(const ork::
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename Setter> void GedBoolNode<Setter>::OnMouseDoubleClicked(const ork::ui::Event& ev) {
+template <typename Setter> void GedBoolNode<Setter>::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
   bool value = false;
   mSetter.GetValue(value);
   mSetter.SetValue(!value);
@@ -432,14 +432,14 @@ template <typename IODriver> void GedIntNode<IODriver>::DoDraw(lev2::Context* pT
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename IODriver> void GedIntNode<IODriver>::OnUiEvent(const ork::ui::Event& ev) {
+template <typename IODriver> void GedIntNode<IODriver>::OnUiEvent(ork::ui::event_constptr_t ev) {
   _slider->OnUiEvent(ev);
   mModel.SigRepaint();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename IODriver> void GedFloatNode<IODriver>::OnUiEvent(const ork::ui::Event& ev) {
+template <typename IODriver> void GedFloatNode<IODriver>::OnUiEvent(ork::ui::event_constptr_t ev) {
   _slider->OnUiEvent(ev);
   mModel.SigRepaint();
 }
@@ -453,8 +453,8 @@ GedSimpleNode<IODriver, T>::GedSimpleNode(ObjModel& mdl, const char* name, const
     , mIoDriver(mdl, prop, obj) {
 }
 ///////////////////////////////////////////////////////////////////////////////
-template <typename IODriver, typename T> void GedSimpleNode<IODriver, T>::OnUiEvent(const ork::ui::Event& ev) {
-  const auto& filtev = ev.mFilteredEvent;
+template <typename IODriver, typename T> void GedSimpleNode<IODriver, T>::OnUiEvent(ork::ui::event_constptr_t ev) {
+  const auto& filtev = ev->mFilteredEvent;
 
   switch (filtev.miEventCode) {
     case ui::UIEV_DOUBLECLICK: {

@@ -38,8 +38,8 @@ void Panel::SetChild(Widget* pch) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void Panel::DoDraw(ui::DrawEvent& drwev) {
-  auto tgt    = drwev.GetTarget();
+void Panel::DoDraw(ui::drawevent_ptr_t drwev) {
+  auto tgt    = drwev->GetTarget();
   auto fbi    = tgt->FBI();
   auto mtxi   = tgt->MTXI();
   auto& primi = lev2::GfxPrimitives::GetRef();
@@ -136,7 +136,7 @@ void Panel::DoLayout() {
 
 /////////////////////////////////////////////////////////////////////////
 
-HandlerResult Panel::DoRouteUiEvent(const Event& Ev) {
+HandlerResult Panel::DoRouteUiEvent(event_constptr_t Ev) {
   // printf( "Panel::DoRouteUiEvent mPanelUiState<%d>\n", mPanelUiState );
 
   if (mChild && mChild->IsEventInside(Ev) && mPanelUiState == 0) {
@@ -189,18 +189,18 @@ void Panel::Snap() {
     SetX(pw + kpanelw - GetW());
 }
 
-HandlerResult Panel::DoOnUiEvent(const Event& Ev) {
+HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
   HandlerResult ret(this);
 
-  int evx = Ev.miX;
-  int evy = Ev.miY;
+  int evx = Ev->miX;
+  int evy = Ev->miY;
   // printf( "Panel<%p>::OnUiEvent isshift<%d>\n", this, int(isshift) );
   //////////////////////////////
   int ilocx = 0;
   int ilocy = 0;
   RootToLocal(evx, evy, ilocx, ilocy);
   //////////////////////////////
-  const auto& filtev = Ev.mFilteredEvent;
+  const auto& filtev = Ev->mFilteredEvent;
   switch (filtev.miEventCode) {
     case ui::UIEV_PUSH: // idle
       idownx         = evx;

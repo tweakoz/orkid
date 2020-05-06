@@ -44,23 +44,23 @@ ManipHandler::ManipHandler(SceneEditorBase& editor)
 
 ///////////////////////////////////////////////////////////////////////////
 
-ui::HandlerResult ManipHandler::DoOnUiEvent(const ui::Event& EV) {
+ui::HandlerResult ManipHandler::DoOnUiEvent(ui::event_constptr_t EV) {
 
   ui::HandlerResult ret;
 
-  bool isshift = EV.mbSHIFT;
-  bool isctrl  = EV.mbCTRL;
-  bool isleft  = EV.mbLeftButton;
-  bool isright = EV.mbRightButton;
+  bool isshift = EV->mbSHIFT;
+  bool isctrl  = EV->mbCTRL;
+  bool isleft  = EV->mbLeftButton;
+  bool isright = EV->mbRightButton;
 
-  int ix   = EV.miX;
-  int iy   = EV.miY;
-  float fx = EV.mfUnitX;
-  float fy = EV.mfUnitY;
+  int ix   = EV->miX;
+  int iy   = EV->miY;
+  float fx = EV->mfUnitX;
+  float fy = EV->mfUnitY;
 
   mEditor.ManipManager().SetGridSnap(isshift);
 
-  switch (EV.miEventCode) {
+  switch (EV->miEventCode) {
     case ui::UIEV_RELEASE: {
       if (false == GetViewport()->HasKeyboardFocus())
         break;
@@ -76,17 +76,10 @@ ui::HandlerResult ManipHandler::DoOnUiEvent(const ui::Event& EV) {
         opq::Op([&]() { this->mEditor.ClearSelection(); }).QueueSync(_updq);
       }
 
-      auto pickctx = std::make_shared<DeferredPickOperationContext>();
-      pickctx->miX                          = ix;
-      pickctx->miY                          = iy;
-      pickctx->is_shift                     = isshift;
-      pickctx->is_ctrl                      = isctrl;
-      pickctx->is_left                      = isleft;
-      // pickctx->is_mid = ismid;
-      pickctx->is_right    = isright;
+      auto pickctx         = std::make_shared<DeferredPickOperationContext>(EV);
       pickctx->mHandler    = this;
       pickctx->mViewport   = GetViewport();
-      pickctx->_gfxContext = EV._context;
+      pickctx->_gfxContext = EV->_context;
 
       static auto on_pick = [=](DeferredPickOperationContext* pctx) {
         /*ork::rtti::ICastable *pobj = ctx.GetObject(GetViewport()->GetPickBuffer(),0);
@@ -147,18 +140,11 @@ ui::HandlerResult ManipHandler::DoOnUiEvent(const ui::Event& EV) {
 
       ///////////////////////////////////////////////////////////
 
-      auto pickctx = std::make_shared<DeferredPickOperationContext>();
-      pickctx->mEV                          = EV;
-      pickctx->miX                          = ix;
-      pickctx->miY                          = iy;
-      pickctx->is_shift                     = isshift;
-      pickctx->is_ctrl                      = isctrl;
-      pickctx->is_left                      = isleft;
-      pickctx->is_right                     = isright;
-      pickctx->mHandler                     = this;
-      pickctx->mViewport                    = GetViewport();
-      pickctx->_gfxContext                  = EV._context;
-      pickctx->mOnPick                      = the_block;
+      auto pickctx         = std::make_shared<DeferredPickOperationContext>(EV);
+      pickctx->mHandler    = this;
+      pickctx->mViewport   = GetViewport();
+      pickctx->_gfxContext = EV->_context;
+      pickctx->mOnPick     = the_block;
       OuterPickOp(pickctx);
       ///////////////////////////////////////////////////////////
 
@@ -201,16 +187,10 @@ ui::HandlerResult ManipHandler::DoOnUiEvent(const ui::Event& EV) {
 
       ///////////////////////////////////////////////////////////
 
-      auto pickctx = std::make_shared<DeferredPickOperationContext>();
-      pickctx->miX                          = ix;
-      pickctx->miY                          = iy;
-      pickctx->is_shift                     = isshift;
-      pickctx->is_ctrl                      = isctrl;
-      pickctx->is_left                      = isleft;
-      pickctx->is_right                     = isright;
-      pickctx->mHandler                     = this;
-      pickctx->mViewport                    = GetViewport();
-      pickctx->mOnPick                      = process_pick;
+      auto pickctx       = std::make_shared<DeferredPickOperationContext>(EV);
+      pickctx->mHandler  = this;
+      pickctx->mViewport = GetViewport();
+      pickctx->mOnPick   = process_pick;
       // OuterPickOp(pickctx);
       ///////////////////////////////////////////////////////////
 

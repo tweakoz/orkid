@@ -323,10 +323,6 @@ void pyinit_gfx(py::module& module_lev2) {
       .def_property_readonly("advanceHeight", [](const font_t& font) -> int { return font->mFontDesc.miAdvanceHeight; });
   */
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<drwev_t>(module_lev2, "DrawEvent").def_property_readonly("context", [](drwev_t& event) -> ctx_t { //
-    return ctx_t(event->GetTarget());
-  });
-  /////////////////////////////////////////////////////////////////////////////////
   py::class_<Drawable, drawable_ptr_t>(module_lev2, "Drawable");
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<LightData, lightdata_ptr_t>(module_lev2, "LightData")

@@ -19,42 +19,11 @@
 
 bool sbExit = false;
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CTXBASE, "Lev2CTXBASE");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::Context, "Context")
 
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork { namespace lev2 {
-
-void CTXBASE::Describe() {
-  RegisterAutoSlot(ork::lev2::CTXBASE, Repaint);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-CTXBASE::CTXBASE(Window* pwin)
-    : mbInitialize(true)
-    , mpWindow(pwin)
-    , mpTarget(0)
-    , mUIEvent()
-    , ConstructAutoSlot(Repaint)
-
-{
-  SetupSignalsAndSlots();
-  mpWindow->mpCTXBASE = this;
-}
-CTXBASE::~CTXBASE() {
-  if (mpWindow)
-    delete mpWindow;
-}
-void CTXBASE::pushRefreshPolicy(RefreshPolicyItem policy) {
-  _policyStack.push(_curpolicy);
-  _setRefreshPolicy(policy);
-}
-void CTXBASE::popRefreshPolicy() {
-  auto prev = _policyStack.top();
-  _setRefreshPolicy(prev);
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 

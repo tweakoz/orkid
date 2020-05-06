@@ -269,8 +269,8 @@ void EzUiCam::DollyEnd() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool EzUiCam::UIEventHandler(const ui::Event& EV) {
-  const ui::EventCooked& filtev = EV.mFilteredEvent;
+bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
+  const ui::EventCooked& filtev = EV->mFilteredEvent;
 
   int esx    = filtev.miX;
   int esy    = filtev.miY;
@@ -294,7 +294,7 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
   static int ipushy = 0;
   static f32 flerp  = 0.0f;
 
-  _vpdim = EV._vpdim;
+  _vpdim = EV->_vpdim;
 
   switch (filtev.miEventCode) {
     case UIEV_PUSH: {
@@ -528,7 +528,7 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
         zmoveamt *= 5.0f;
       if (isalt) {
         fvec4 Center = mvCenter;
-        fvec4 Delta  = _pushNZ * zmoveamt * EV.miMWY;
+        fvec4 Delta  = _pushNZ * zmoveamt * EV->miMWY;
         mvCenter += Delta;
       } else {
         fvec3 Pos = mvCenter;
@@ -539,7 +539,7 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
         constexpr float kmin = 0.1f;
         constexpr float kmax = 20000.0f;
         mfLoc                = std::clamp(mfLoc, kmin, kmax);
-        float DeltaInMeters  = float(-EV.miMWY) * CameraFactor * zmoveamt;
+        float DeltaInMeters  = float(-EV->miMWY) * CameraFactor * zmoveamt;
         mfLoc += DeltaInMeters;
         mfLoc = std::clamp(mfLoc, kmin, kmax);
       }

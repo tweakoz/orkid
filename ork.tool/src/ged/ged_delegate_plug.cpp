@@ -355,15 +355,15 @@ public:
     ////////////////////////////////////////////////////
     CheckVis();
   }
-  void OnUiEvent(const ork::ui::Event& ev) final {
-    switch (ev.miEventCode) {
+  void OnUiEvent(ork::ui::event_constptr_t ev) final {
+    switch (ev->miEventCode) {
       case ui::UIEV_DOUBLECLICK: {
         const int klabh = get_charh();
         const int kdim  = klabh - 2;
 
-        int ix      = ev.miX;
-        int iy      = ev.miY;
-        bool isCTRL = ev.mbCTRL;
+        int ix      = ev->miX;
+        int iy      = ev->miY;
+        bool isCTRL = ev->mbCTRL;
         ////////////////////////////////
         // check collapsor
         ////////////////////////////////
@@ -499,7 +499,7 @@ public:
         break;
     }
   }
-  void OnMouseDoubleClicked(const ork::ui::Event& ev) {
+  void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
   }
   void CheckVis() {
     int inumitems = GetNumItems();

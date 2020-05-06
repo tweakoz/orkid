@@ -65,9 +65,10 @@ QCtxWidget::~QCtxWidget() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void QCtxWidget::SendOrkUiEvent() {
-  if (UIEvent().mpGfxWin) {
-    UIEvent()._vpdim = fvec2(miWidth, miHeight);
-    UIEvent().mpGfxWin->GetRootWidget()->HandleUiEvent(UIEvent());
+  auto uiev = uievent();
+  if (uiev->mpGfxWin) {
+    uiev->_vpdim = fvec2(miWidth, miHeight);
+    uiev->mpGfxWin->GetRootWidget()->HandleUiEvent(uiev);
   }
 }
 
@@ -80,7 +81,7 @@ bool QCtxWidget::event(QEvent* event) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void QCtxWidget::showEvent(QShowEvent* event) {
-  UIEvent().mpBlindEventData = (void*)event;
+  uievent()->mpBlindEventData = (void*)event;
   QWidget::showEvent(event);
   parentWidget()->show();
 }
@@ -91,7 +92,7 @@ void QCtxWidget::resizeEvent(QResizeEvent* event) {
   if (nullptr == event)
     return;
 
-  UIEvent().mpBlindEventData = (void*)event;
+  uievent()->mpBlindEventData = (void*)event;
   QWidget::resizeEvent(event);
   QSize size = event->size();
   int X      = 0;
@@ -113,7 +114,7 @@ void QCtxWidget::paintEvent(QPaintEvent* event) {
 
   gistackctr++;
   if ((1 == gistackctr) && (gictr > 0)) {
-    UIEvent().mpBlindEventData = (void*)event;
+    uievent()->mpBlindEventData = (void*)event;
     if (IsEnabled()) {
       if (mpCtxBase)
         mpCtxBase->SlotRepaint();
@@ -126,9 +127,9 @@ void QCtxWidget::paintEvent(QPaintEvent* event) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void QCtxWidget::MouseEventCommon(QMouseEvent* event) {
-  auto& uiev = UIEvent();
+  auto uiev = uievent();
 
-  uiev.mpBlindEventData = (void*)event;
+  uiev->mpBlindEventData = (void*)event;
 
   InputManager::poll();
 
@@ -143,27 +144,27 @@ void QCtxWidget::MouseEventCommon(QMouseEvent* event) {
     iy /= 2;
   }
 
-  uiev.mbALT          = (modifiers & Qt::AltModifier);
-  uiev.mbCTRL         = (modifiers & Qt::ControlModifier);
-  uiev.mbSHIFT        = (modifiers & Qt::ShiftModifier);
-  uiev.mbMETA         = (modifiers & Qt::MetaModifier);
-  uiev.mbLeftButton   = (Buttons & Qt::LeftButton);
-  uiev.mbMiddleButton = (Buttons & Qt::MidButton);
-  uiev.mbRightButton  = (Buttons & Qt::RightButton);
+  uiev->mbALT          = (modifiers & Qt::AltModifier);
+  uiev->mbCTRL         = (modifiers & Qt::ControlModifier);
+  uiev->mbSHIFT        = (modifiers & Qt::ShiftModifier);
+  uiev->mbMETA         = (modifiers & Qt::MetaModifier);
+  uiev->mbLeftButton   = (Buttons & Qt::LeftButton);
+  uiev->mbMiddleButton = (Buttons & Qt::MidButton);
+  uiev->mbRightButton  = (Buttons & Qt::RightButton);
 
-  uiev.miLastX = uiev.miX;
-  uiev.miLastY = uiev.miY;
+  uiev->miLastX = uiev->miX;
+  uiev->miLastY = uiev->miY;
 
-  uiev.miX = ix;
-  uiev.miY = iy;
+  uiev->miX = ix;
+  uiev->miY = iy;
 
   float unitX = float(event->x()) / float(miWidth);
   float unitY = float(event->y()) / float(miHeight);
 
-  uiev.mfLastUnitX = uiev.mfUnitX;
-  uiev.mfLastUnitY = uiev.mfUnitY;
-  uiev.mfUnitX     = unitX;
-  uiev.mfUnitY     = unitY;
+  uiev->mfLastUnitX = uiev->mfUnitX;
+  uiev->mfLastUnitY = uiev->mfUnitY;
+  uiev->mfUnitX     = unitX;
+  uiev->mfUnitY     = unitY;
 
   //   printf( "UNITX<%f> UNITY<%f>\n", unitX, unitY );
   //    printf( "ix<%d %d>\n", ix, iy );
@@ -173,8 +174,8 @@ void QCtxWidget::MouseEventCommon(QMouseEvent* event) {
 
 static fvec2 gpos;
 void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
-  auto& uiev  = UIEvent();
-  auto gfxwin = uiev.mpGfxWin;
+  auto uiev   = uievent();
+  auto gfxwin = uiev->mpGfxWin;
   auto vp     = gfxwin ? gfxwin->GetRootWidget() : nullptr;
 
   gpos.x = event->x();
@@ -187,12 +188,12 @@ void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
 
   Qt::MouseButtons Buttons = event->buttons();
 
-  uiev.miEventCode = (Buttons == Qt::NoButton) ? ork::ui::UIEV_MOVE : ork::ui::UIEV_DRAG;
+  uiev->miEventCode = (Buttons == Qt::NoButton) ? ork::ui::UIEV_MOVE : ork::ui::UIEV_DRAG;
 
   if (vp) {
-    uiev._vpdim = fvec2(vp->GetW(), vp->GetH());
+    uiev->_vpdim = fvec2(vp->GetW(), vp->GetH());
     if (_HIDPI()) {
-      uiev._vpdim *= 0.5;
+      uiev->_vpdim *= 0.5;
     }
     // gpos.x /= 2.0f;
     vp->HandleUiEvent(uiev);
@@ -205,14 +206,14 @@ void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
 
 void QCtxWidget::mousePressEvent(QMouseEvent* event) {
   MouseEventCommon(event);
-  auto& uiev       = UIEvent();
-  auto gfxwin      = uiev.mpGfxWin;
-  auto vp          = gfxwin ? gfxwin->GetRootWidget() : nullptr;
-  uiev.miEventCode = ork::ui::UIEV_PUSH;
+  auto uiev         = uievent();
+  auto gfxwin       = uiev->mpGfxWin;
+  auto vp           = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  uiev->miEventCode = ork::ui::UIEV_PUSH;
   if (vp) {
-    uiev._vpdim = fvec2(vp->GetW(), vp->GetH());
+    uiev->_vpdim = fvec2(vp->GetW(), vp->GetH());
     if (_HIDPI()) {
-      uiev._vpdim *= 0.5;
+      uiev->_vpdim *= 0.5;
     }
     vp->HandleUiEvent(uiev);
   }
@@ -224,15 +225,15 @@ void QCtxWidget::mousePressEvent(QMouseEvent* event) {
 
 void QCtxWidget::mouseDoubleClickEvent(QMouseEvent* event) {
   MouseEventCommon(event);
-  auto& uiev       = UIEvent();
-  auto gfxwin      = uiev.mpGfxWin;
-  auto vp          = gfxwin ? gfxwin->GetRootWidget() : nullptr;
-  uiev.miEventCode = ork::ui::UIEV_DOUBLECLICK;
+  auto uiev         = uievent();
+  auto gfxwin       = uiev->mpGfxWin;
+  auto vp           = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  uiev->miEventCode = ork::ui::UIEV_DOUBLECLICK;
 
   if (vp) {
-    uiev._vpdim = fvec2(vp->GetW(), vp->GetH());
+    uiev->_vpdim = fvec2(vp->GetW(), vp->GetH());
     if (_HIDPI()) {
-      uiev._vpdim *= 0.5;
+      uiev->_vpdim *= 0.5;
     }
     vp->HandleUiEvent(uiev);
   }
@@ -244,15 +245,15 @@ void QCtxWidget::mouseDoubleClickEvent(QMouseEvent* event) {
 
 void QCtxWidget::mouseReleaseEvent(QMouseEvent* event) {
   MouseEventCommon(event);
-  auto& uiev       = UIEvent();
-  auto gfxwin      = uiev.mpGfxWin;
-  auto vp          = gfxwin ? gfxwin->GetRootWidget() : nullptr;
-  uiev.miEventCode = ork::ui::UIEV_RELEASE;
+  auto uiev         = uievent();
+  auto gfxwin       = uiev->mpGfxWin;
+  auto vp           = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  uiev->miEventCode = ork::ui::UIEV_RELEASE;
 
   if (vp) {
-    uiev._vpdim = fvec2(vp->GetW(), vp->GetH());
+    uiev->_vpdim = fvec2(vp->GetW(), vp->GetH());
     if (_HIDPI()) {
-      uiev._vpdim *= 0.5;
+      uiev->_vpdim *= 0.5;
     }
     vp->HandleUiEvent(uiev);
   }
@@ -264,11 +265,11 @@ void QCtxWidget::mouseReleaseEvent(QMouseEvent* event) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void QCtxWidget::wheelEvent(QWheelEvent* qem) {
-  auto& uiev  = UIEvent();
-  auto gfxwin = uiev.mpGfxWin;
+  auto uiev   = uievent();
+  auto gfxwin = uiev->mpGfxWin;
   auto vp     = gfxwin ? gfxwin->GetRootWidget() : nullptr;
 
-  uiev.mpBlindEventData = (void*)qem;
+  uiev->mpBlindEventData = (void*)qem;
   static avg_filter<3> gScrollFilter;
 
 #if defined(ORK_CONFIG_DARWIN) // trackpad gesture filter
@@ -280,19 +281,19 @@ void QCtxWidget::wheelEvent(QWheelEvent* qem) {
 
   Qt::KeyboardModifiers modifiers = qem->modifiers();
 
-  uiev.mbALT   = (modifiers & Qt::AltModifier);
-  uiev.mbCTRL  = (modifiers & Qt::ControlModifier);
-  uiev.mbSHIFT = (modifiers & Qt::ShiftModifier);
-  uiev.mbMETA  = (modifiers & Qt::MetaModifier);
+  uiev->mbALT   = (modifiers & Qt::AltModifier);
+  uiev->mbCTRL  = (modifiers & Qt::ControlModifier);
+  uiev->mbSHIFT = (modifiers & Qt::ShiftModifier);
+  uiev->mbMETA  = (modifiers & Qt::MetaModifier);
 
-  uiev.miEventCode = ork::ui::UIEV_MOUSEWHEEL;
+  uiev->miEventCode = ork::ui::UIEV_MOUSEWHEEL;
 
-  uiev.miMWY = idelta;
+  uiev->miMWY = idelta;
 
   if (vp && idelta != 0) {
-    uiev._vpdim = fvec2(vp->GetW(), vp->GetH());
+    uiev->_vpdim = fvec2(vp->GetW(), vp->GetH());
     if (_HIDPI()) {
-      uiev._vpdim *= 0.5;
+      uiev->_vpdim *= 0.5;
     }
     vp->HandleUiEvent(uiev);
   }
@@ -307,39 +308,39 @@ void QCtxWidget::keyPressEvent(QKeyEvent* event) {
   if (event->isAutoRepeat())
     return;
 
-  auto& uiev  = UIEvent();
-  auto gfxwin = uiev.mpGfxWin;
+  auto uiev   = uievent();
+  auto gfxwin = uiev->mpGfxWin;
   auto vp     = gfxwin ? gfxwin->GetRootWidget() : nullptr;
 
-  uiev.mpBlindEventData = (void*)event;
-  uiev.miEventCode      = ork::ui::UIEV_KEY;
+  uiev->mpBlindEventData = (void*)event;
+  uiev->miEventCode      = ork::ui::UIEV_KEY;
 
   int ikeyUNI = event->key();
 
-  uiev.miKeyCode                  = ikeyUNI;
+  uiev->miKeyCode                 = ikeyUNI;
   Qt::KeyboardModifiers modifiers = event->modifiers();
 
-  uiev.mbALT   = (modifiers & Qt::AltModifier);
-  uiev.mbCTRL  = (modifiers & Qt::ControlModifier);
-  uiev.mbSHIFT = (modifiers & Qt::ShiftModifier);
-  uiev.mbMETA  = (modifiers & Qt::MetaModifier);
+  uiev->mbALT   = (modifiers & Qt::AltModifier);
+  uiev->mbCTRL  = (modifiers & Qt::ControlModifier);
+  uiev->mbSHIFT = (modifiers & Qt::ShiftModifier);
+  uiev->mbMETA  = (modifiers & Qt::MetaModifier);
 
   if ((ikeyUNI >= Qt::Key_A) && (ikeyUNI <= Qt::Key_Z)) {
-    uiev.miKeyCode = (ikeyUNI - Qt::Key_A) + int('a');
+    uiev->miKeyCode = (ikeyUNI - Qt::Key_A) + int('a');
 
     msgrouter::content_t c;
-    c.Set<int>(uiev.miKeyCode);
+    c.Set<int>(uiev->miKeyCode);
     msgrouter::channel("qtkeyboard.down")->post(c);
   }
   if (ikeyUNI == 0x01000004) // enter != (Qt::Key_Enter)
   {
-    uiev.miKeyCode = 13;
+    uiev->miKeyCode = 13;
   }
 
   if (vp) {
-    uiev._vpdim = fvec2(vp->GetW(), vp->GetH());
+    uiev->_vpdim = fvec2(vp->GetW(), vp->GetH());
     if (_HIDPI()) {
-      uiev._vpdim *= 0.5;
+      uiev->_vpdim *= 0.5;
     }
     vp->HandleUiEvent(uiev);
   }
@@ -354,33 +355,33 @@ void QCtxWidget::keyReleaseEvent(QKeyEvent* event) {
   if (event->isAutoRepeat())
     return;
 
-  auto& uiev  = UIEvent();
-  auto gfxwin = uiev.mpGfxWin;
+  auto uiev   = uievent();
+  auto gfxwin = uiev->mpGfxWin;
   auto vp     = gfxwin ? gfxwin->GetRootWidget() : nullptr;
 
-  uiev.mpBlindEventData = (void*)event;
-  uiev.miEventCode      = ork::ui::UIEV_KEYUP;
+  uiev->mpBlindEventData = (void*)event;
+  uiev->miEventCode      = ork::ui::UIEV_KEYUP;
 
   int ikeyUNI = event->key();
 
-  uiev.miKeyCode = ikeyUNI;
+  uiev->miKeyCode = ikeyUNI;
 
   if ((ikeyUNI >= Qt::Key_A) && (ikeyUNI <= Qt::Key_Z)) {
 
-    uiev.miKeyCode = (ikeyUNI - Qt::Key_A) + int('a');
+    uiev->miKeyCode = (ikeyUNI - Qt::Key_A) + int('a');
     msgrouter::content_t c;
-    c.Set<int>(uiev.miKeyCode);
+    c.Set<int>(uiev->miKeyCode);
     msgrouter::channel("qtkeyboard.up")->post(c);
   }
   if (ikeyUNI == 0x01000004) // enter != (Qt::Key_Enter)
   {
-    uiev.miKeyCode = 13;
+    uiev->miKeyCode = 13;
   }
 
   if (vp) {
-    uiev._vpdim = fvec2(vp->GetW(), vp->GetH());
+    uiev->_vpdim = fvec2(vp->GetW(), vp->GetH());
     if (_HIDPI()) {
-      uiev._vpdim *= 0.5;
+      uiev->_vpdim *= 0.5;
     }
     vp->HandleUiEvent(uiev);
   }
@@ -391,14 +392,14 @@ void QCtxWidget::keyReleaseEvent(QKeyEvent* event) {
 
 ///////////////////////////////////////////////////////////////////////////////
 void QCtxWidget::focusInEvent(QFocusEvent* event) {
-  auto& uiev            = UIEvent();
-  auto gfxwin           = uiev.mpGfxWin;
-  auto vp               = gfxwin ? gfxwin->GetRootWidget() : nullptr;
-  uiev.miEventCode      = ork::ui::UIEV_GOT_KEYFOCUS;
-  uiev.mpBlindEventData = (void*)event;
+  auto uiev              = uievent();
+  auto gfxwin            = uiev->mpGfxWin;
+  auto vp                = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  uiev->miEventCode      = ork::ui::UIEV_GOT_KEYFOCUS;
+  uiev->mpBlindEventData = (void*)event;
   if (Target()) {
     if (vp)
-      vp->HandleUiEvent(UIEvent());
+      vp->HandleUiEvent(uiev);
   }
   // orkprintf( "CTQT %08x got keyboard focus\n", this );
   QWidget::focusInEvent(event);
@@ -410,13 +411,13 @@ void QCtxWidget::focusInEvent(QFocusEvent* event) {
 }
 
 void QCtxWidget::focusOutEvent(QFocusEvent* event) {
-  auto& uiev            = UIEvent();
-  auto gfxwin           = uiev.mpGfxWin;
-  auto vp               = gfxwin ? gfxwin->GetRootWidget() : nullptr;
-  uiev.miEventCode      = ork::ui::UIEV_LOST_KEYFOCUS;
-  uiev.mpBlindEventData = (void*)event;
+  auto uiev              = uievent();
+  auto gfxwin            = uiev->mpGfxWin;
+  auto vp                = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  uiev->miEventCode      = ork::ui::UIEV_LOST_KEYFOCUS;
+  uiev->mpBlindEventData = (void*)event;
   if (vp) {
-    vp->HandleUiEvent(UIEvent());
+    vp->HandleUiEvent(uiev);
   }
   // orkprintf( "CTQT %08x lost keyboard focus\n", this );
   QWidget::focusOutEvent(event);
@@ -427,11 +428,11 @@ void QCtxWidget::focusOutEvent(QFocusEvent* event) {
     mpCtxBase->SlotRepaint();
 }
 
-ui::Event& QCtxWidget::UIEvent() {
-  return mpCtxBase->mUIEvent;
+ui::event_ptr_t QCtxWidget::uievent() {
+  return mpCtxBase->_uievent;
 }
-const ui::Event& QCtxWidget::UIEvent() const {
-  return mpCtxBase->mUIEvent;
+ui::event_constptr_t QCtxWidget::uievent() const {
+  return mpCtxBase->_uievent;
 }
 
 Context* QCtxWidget::Target() const {
@@ -577,9 +578,9 @@ void CTQT::Resize(int X, int Y, int W, int H) {
   // printf( "CTQT::Resize() mpTarget<%p>\n", mpTarget );
   if (mpTarget) {
     mpTarget->resizeMainSurface(W, H);
-    mUIEvent.mpGfxWin = (Window*)mpTarget->FBI()->GetThisBuffer();
-    if (mUIEvent.mpGfxWin)
-      mUIEvent.mpGfxWin->Resize(X, Y, W, H);
+    _uievent->mpGfxWin = (Window*)mpTarget->FBI()->GetThisBuffer();
+    if (_uievent->mpGfxWin)
+      _uievent->mpGfxWin->Resize(X, Y, W, H);
   }
   lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
 }
@@ -609,12 +610,11 @@ void CTQT::SlotRepaint() {
       // printf( "CTQT::SlotRepaint() mpTarget<%p>\n", mpTarget );
       if (this->mpTarget) {
         mpTarget->makeCurrentContext();
-        auto& uiev  = this->mUIEvent;
-        auto gfxwin = uiev.mpGfxWin;
+        auto gfxwin = _uievent->mpGfxWin;
         auto vp     = gfxwin ? gfxwin->GetRootWidget() : nullptr;
 
         // this->UIEvent->mpGfxWin = (Window*) this->mpTarget->FBI()->GetThisBuffer();
-        ui::DrawEvent drwev(this->mpTarget);
+        auto drwev = std::make_shared<ui::DrawEvent>(this->mpTarget);
 
         if (vp)
           vp->Draw(drwev);

@@ -40,10 +40,10 @@ public:
 
 struct DeferredPickOperationContext;
 using defpickopctx_ptr_t = std::shared_ptr<DeferredPickOperationContext>;
-using on_pick_lambda_t = std::function<void(defpickopctx_ptr_t)>;
+using on_pick_lambda_t   = std::function<void(defpickopctx_ptr_t)>;
 
 struct DeferredPickOperationContext {
-  DeferredPickOperationContext();
+  DeferredPickOperationContext(ui::event_constptr_t srcev);
 
   int miX;
   int miY;
@@ -52,7 +52,7 @@ struct DeferredPickOperationContext {
   bool is_right;
   bool is_ctrl;
   bool is_shift;
-  ui::Event mEV;
+  ui::event_ptr_t mEV;
 
   ork::rtti::ICastable* mpCastable;
   SceneEditorVPToolHandler* mHandler;
@@ -67,7 +67,7 @@ struct TestVPDefaultHandler : public SceneEditorVPToolHandler {
   TestVPDefaultHandler(SceneEditorBase& editor);
 
 private:
-  ui::HandlerResult DoOnUiEvent(const ui::Event& EV) override;
+  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
   void DoAttach(SceneEditorVP*) override;
   void DoDetach(SceneEditorVP*) override;
   void HandlePickOperation(defpickopctx_ptr_t ppickop);
@@ -76,7 +76,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ManipHandler : public SceneEditorVPToolHandler {
-  ui::HandlerResult DoOnUiEvent(const ui::Event& EV) override;
+  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
 
 protected:
   ManipHandler(SceneEditorBase& editor);

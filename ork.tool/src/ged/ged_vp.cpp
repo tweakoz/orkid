@@ -73,14 +73,14 @@ void GedVP::DoSurfaceResize() {
   // TODO: _pickbuffer->Resize()
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedVP::DoRePaintSurface(ui::DrawEvent& drwev) {
+void GedVP::DoRePaintSurface(ui::drawevent_ptr_t drwev) {
   // printf("GedVP<%p>::Draw x<%d> y<%d> w<%d> h<%d>\n", this, miX, miY, miW, miH);
 
   // ork::tool::ged::ObjModel::FlushAllQueues();
 
   // orkprintf( "GedVP::DoDraw()\n" );
 
-  auto tgt = drwev.GetTarget();
+  auto tgt = drwev->GetTarget();
   tgt->debugPushGroup(FormatString("GedVP::repaint"));
   auto mtxi = tgt->MTXI();
   auto fbi  = tgt->FBI();
@@ -121,13 +121,13 @@ void GedVP::onInvalidate() {
   MarkSurfaceDirty();
 }
 
-ui::HandlerResult GedVP::DoOnUiEvent(const ui::Event& EV) {
+ui::HandlerResult GedVP::DoOnUiEvent(ui::event_constptr_t EV) {
   ui::HandlerResult ret(this);
 
-  const auto& filtev = EV.mFilteredEvent;
+  const auto& filtev = EV->mFilteredEvent;
 
-  int ix = EV.miX;
-  int iy = EV.miY;
+  int ix = EV->miX;
+  int iy = EV->miY;
   int ilocx, ilocy;
   RootToLocal(ix, iy, ilocx, ilocy);
 
@@ -142,16 +142,16 @@ ui::HandlerResult GedVP::DoOnUiEvent(const ui::Event& EV) {
   bool filt_middlebutton = filtev.mBut1;
   bool filt_rightbutton  = filtev.mBut2;
 
-  auto qip = (QInputEvent*)EV.mpBlindEventData;
+  auto qip = (QInputEvent*)EV->mpBlindEventData;
 
-  bool bisshift = EV.mbSHIFT;
+  bool bisshift = EV->mbSHIFT;
 
-  auto locEV = EV;
+  auto locEV = std::make_shared<ui::Event>(*EV.get());
 
-  locEV.miX    = ilocx;
-  locEV.miY    = ilocy - miScrollY;
-  locEV.miRawX = locEV.miX;
-  locEV.miRawY = locEV.miY;
+  locEV->miX    = ilocx;
+  locEV->miY    = ilocy - miScrollY;
+  locEV->miRawX = locEV->miX;
+  locEV->miRawY = locEV->miY;
 
   if (mpActiveNode)
     mpActiveNode->OnUiEvent(locEV);
@@ -170,7 +170,7 @@ ui::HandlerResult GedVP::DoOnUiEvent(const ui::Event& EV) {
 
       // if( pobj )
       {
-        int idelta = EV.miMWY;
+        int idelta = EV->miMWY;
 
         if (idelta > 0) {
           miScrollY += iscrollamt;
@@ -231,8 +231,8 @@ ui::HandlerResult GedVP::DoOnUiEvent(const ui::Event& EV) {
     case ui::UIEV_DRAG: {
       if (mpActiveNode) {
         if (GedItemNode* as_inode = ork::rtti::autocast(mpActiveNode)) {
-          locEV.miX -= as_inode->GetX();
-          locEV.miY -= as_inode->GetY();
+          locEV->miX -= as_inode->GetX();
+          locEV->miY -= as_inode->GetY();
         }
         mpActiveNode->OnUiEvent(locEV);
         mNeedsSurfaceRepaint = true;
@@ -265,8 +265,8 @@ ui::HandlerResult GedVP::DoOnUiEvent(const ui::Event& EV) {
 
       if (GedObject* pnode = ork::rtti::autocast(pobj)) {
         if (GedItemNode* as_inode = ork::rtti::autocast(pobj)) {
-          locEV.miX -= as_inode->GetX();
-          locEV.miY -= as_inode->GetY();
+          locEV->miX -= as_inode->GetX();
+          locEV->miY -= as_inode->GetY();
         }
 
         switch (filtev.miEventCode) {

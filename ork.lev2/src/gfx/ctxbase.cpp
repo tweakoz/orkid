@@ -9,6 +9,8 @@
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/dbgfontman.h>
+#include <ork/object/AutoConnector.h>
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CTXBASE, "Lev2CTXBASE");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
@@ -30,6 +32,37 @@ struct CtxBaseProgressPimpl { //
   std::shared_ptr<GfxMaterialUITextured> _material;
 };
 using progresspimpl_ptr_t = std::shared_ptr<CtxBaseProgressPimpl>;
+///////////////////////////////////////////////////////////////////////////////
+void CTXBASE::Describe() {
+  RegisterAutoSlot(ork::lev2::CTXBASE, Repaint);
+}
+///////////////////////////////////////////////////////////////////////////////
+CTXBASE::CTXBASE(Window* pwin)
+    : mbInitialize(true)
+    , mpWindow(pwin)
+    , mpTarget(0)
+    , ConstructAutoSlot(Repaint) {
+
+  SetupSignalsAndSlots();
+  mpWindow->mpCTXBASE = this;
+
+  _uievent = std::make_shared<ui::Event>();
+}
+///////////////////////////////////////////////////////////////////////////////
+CTXBASE::~CTXBASE() {
+  if (mpWindow)
+    delete mpWindow;
+}
+///////////////////////////////////////////////////////////////////////////////
+void CTXBASE::pushRefreshPolicy(RefreshPolicyItem policy) {
+  _policyStack.push(_curpolicy);
+  _setRefreshPolicy(policy);
+}
+///////////////////////////////////////////////////////////////////////////////
+void CTXBASE::popRefreshPolicy() {
+  auto prev = _policyStack.top();
+  _setRefreshPolicy(prev);
+}
 ///////////////////////////////////////////////////////////////////////////////
 void CTXBASE::progressHandler(opq::progressdata_ptr_t data) {
 
@@ -130,5 +163,32 @@ void CTXBASE::progressHandler(opq::progressdata_ptr_t data) {
     }
   }
 }
+///////////////////////////////////////////////////////////////////////////////
+CTFLXID CTXBASE::GetThisXID(void) const {
+  return mxidThis;
+}
+CTFLXID CTXBASE::GetTopXID(void) const {
+  return mxidTopLevel;
+}
+void CTXBASE::SetThisXID(CTFLXID xid) {
+  mxidThis = xid;
+}
+void CTXBASE::SetTopXID(CTFLXID xid) {
+  mxidTopLevel = xid;
+}
+Context* CTXBASE::GetTarget() const {
+  return mpTarget;
+}
+Window* CTXBASE::GetWindow() const {
+  return mpWindow;
+}
+void CTXBASE::setContext(Context* ctx) {
+  mpTarget           = ctx;
+  _uievent->_context = ctx;
+}
+void CTXBASE::SetWindow(Window* pw) {
+  mpWindow = pw;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

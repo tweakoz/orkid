@@ -78,7 +78,7 @@ class EzMainWin : public QMainWindow {
   // void paintEvent(QPaintEvent* ev) final;
 
 public:
-  typedef std::function<void(const ui::DrawEvent&)> drawcb_t;
+  typedef std::function<void(ui::drawevent_constptr_t)> drawcb_t;
   typedef std::function<void(int w, int h)> onresizecb_t;
 
   typedef std::function<void(Context* ctx)> ongpuinit_t;
@@ -87,7 +87,7 @@ public:
   typedef std::function<void(Context* ctx, scenegraph::scene_ptr_t)> ongpuinitwitchscene_t;
   typedef std::function<void(updatedata_ptr_t upd, scenegraph::scene_ptr_t)> onupdatewithscene_t;
 
-  typedef std::function<ui::HandlerResult(const ui::Event& ev)> onuieventcb_t;
+  typedef std::function<ui::HandlerResult(ui::event_constptr_t ev)> onuieventcb_t;
 
   EzMainWin();
   ~EzMainWin();

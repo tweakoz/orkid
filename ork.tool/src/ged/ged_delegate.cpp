@@ -373,13 +373,13 @@ void OpsNode::DoDraw(lev2::Context* pTARG) // virtual
   }
 }
 
-void OpsNode::OnMouseClicked(const ork::ui::Event& ev) {
+void OpsNode::OnMouseClicked(ork::ui::event_constptr_t ev) {
   int inumops        = int(mOps.size());
   const int ops_size = ((miW - inumops * 3) / inumops);
 
   // Qt::MouseButton button = pEV->button();
-  int ix = ev.miX - this->miX;
-  int iy = ev.miY - this->miY;
+  int ix = ev->miX - this->miX;
+  int iy = ev->miY - this->miY;
 
   // int ix = miX+ops_ioff+(i*ops_size+2);
 
@@ -589,18 +589,18 @@ GedGroupNode::GedGroupNode(
   CheckVis();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedGroupNode::OnMouseDoubleClicked(const ork::ui::Event& ev) {
+void GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
   int inumitems = GetNumItems();
 
-  bool isCTRL = ev.mbCTRL;
+  bool isCTRL = ev->mbCTRL;
 
   const int kdim = get_charh();
 
   printf("GedGroupNode<%p>::mouseDoubleClickEvent inumitems<%d>\n", this, inumitems);
 
   if (inumitems) {
-    int ix = ev.miX;
-    int iy = (ev.miY);
+    int ix = ev->miX;
+    int iy = (ev->miY);
 
     //////////////////////////////
     // spawn/stack
@@ -790,8 +790,8 @@ void ObjectImportDelegate::Describe() {
 void ObjectExportDelegate::Describe() {
 }
 
-void GedObject::OnUiEvent(const ork::ui::Event& ev) {
-  switch (ev.miEventCode) {
+void GedObject::OnUiEvent(ork::ui::event_constptr_t ev) {
+  switch (ev->miEventCode) {
     case ui::UIEV_DRAG:
       OnMouseDragged(ev);
       break;

@@ -77,7 +77,8 @@ void PickBuffer::Draw(lev2::PixelFetchContext& ctx) {
   printf("Begin Pickbuffer::Draw()\n");
   fbi->PushRtGroup(_rtgroup);
   fbi->EnterPickState(this);
-  ork::ui::DrawEvent drwev(tgt);
+
+  auto drwev = std::make_shared<ork::ui::DrawEvent>(tgt);
   _surface->RePaintSurface(drwev);
   fbi->LeavePickState();
   fbi->PopRtGroup();

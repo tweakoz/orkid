@@ -3,6 +3,8 @@
 #include <ork/lev2/ui/coord.h>
 #include <ork/lev2/ui/touch.h>
 #include <ork/lev2/ui/ui.h>
+#include <ork/kernel/fixedstring.h>
+#include <ork/lev2/gfx/gfxenv.h>
 
 namespace ork { namespace ui {
 
@@ -143,6 +145,9 @@ struct Event final // RawEvent
   }
 };
 
+using event_ptr_t      = std::shared_ptr<Event>;
+using event_constptr_t = std::shared_ptr<const Event>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DrawEvent {
@@ -155,5 +160,8 @@ struct DrawEvent {
 
   lev2::Context* mpTarget;
 };
+
+using drawevent_ptr_t      = std::shared_ptr<DrawEvent>;
+using drawevent_constptr_t = std::shared_ptr<const DrawEvent>;
 
 }} // namespace ork::ui

@@ -12,6 +12,11 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
 
   };
   /////////////////////////////////////////////////////////////////////////////////
+  py::class_<ui::DrawEvent, ui::drawevent_ptr_t>(module_lev2, "DrawEvent")       //
+      .def_property_readonly("context", [](ui::drawevent_ptr_t event) -> ctx_t { //
+        return ctx_t(event->GetTarget());
+      });
+  /////////////////////////////////////////////////////////////////////////////////
   auto updata_type =                                                      //
       py::class_<UpdateData, updatedata_ptr_t>(module_lev2, "UpdateData") //
           .def_property_readonly(
@@ -30,9 +35,9 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       .def_static(
           "create",
           [type_codec](py::object appinstance) { //
-            auto rval                                      = OrkEzQtApp::create();
-            drwev_t d_ev                                   = drwev_t(new ui::DrawEvent(nullptr));
-            rval->_vars.makeValueForKey<drwev_t>("drawev") = d_ev;
+            auto rval                                                  = OrkEzQtApp::create();
+            auto d_ev                                                  = std::make_shared<ui::DrawEvent>(nullptr);
+            rval->_vars.makeValueForKey<ui::drawevent_ptr_t>("drawev") = d_ev;
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onGpuInit")) {
               auto gpuinitfn //
@@ -50,13 +55,13 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               auto drawfn //
                   = py::cast<py::function>(appinstance.attr("onDraw"));
               rval->_vars.makeValueForKey<py::function>("drawfn") = drawfn;
-              rval->onDraw([=](const ui::DrawEvent& drwev) { //
+              rval->onDraw([=](ui::drawevent_constptr_t drwev) { //
                 ork::opq::mainSerialQueue()->Process();
                 py::gil_scoped_acquire acquire;
                 auto pyfn                = rval->_vars.typedValueForKey<py::function>("drawfn");
-                auto mydrev              = rval->_vars.typedValueForKey<drwev_t>("drawev");
-                mydrev.value()->mpTarget = drwev.GetTarget();
-                pyfn.value()(drwev_t(mydrev.value()));
+                auto mydrev              = rval->_vars.typedValueForKey<ui::drawevent_ptr_t>("drawev");
+                mydrev.value()->mpTarget = drwev->GetTarget();
+                pyfn.value()(ui::drawevent_constptr_t(mydrev.value()));
               });
             } else if (py::hasattr(appinstance, "sceneparams")) {
               auto sceneparams //
@@ -66,9 +71,9 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               scenevar.Set<scenegraph::scene_ptr_t>(scene);
               auto pyscene = type_codec->encode(scenevar);
               py::setattr(appinstance, "scene", pyscene);
-              rval->onDraw([=](const ui::DrawEvent& drwev) { //
+              rval->onDraw([=](ui::drawevent_constptr_t drwev) { //
                 ork::opq::mainSerialQueue()->Process();
-                auto context = drwev.GetTarget();
+                auto context = drwev->GetTarget();
                 scene->renderOnContext(context);
               });
             }
@@ -81,6 +86,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars.typedValueForKey<py::function>("updatefn");
                 pyfn.value()(updata);
+              });
+            }
+            ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "onUiEvent")) {
+              auto uievfn //
+                  = py::cast<py::function>(appinstance.attr("onUiEvent"));
+              rval->_vars.makeValueForKey<py::function>("uievfn") = uievfn;
+              rval->onUiEvent([=](ui::event_constptr_t ev) -> ui::HandlerResult { //
+                py::gil_scoped_acquire acquire;
+                auto pyfn = rval->_vars.typedValueForKey<py::function>("uievfn");
+                pyfn.value()(ev);
+                return ui::HandlerResult();
               });
             }
             ////////////////////////////////////////////////////////////////////

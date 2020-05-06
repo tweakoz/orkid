@@ -44,7 +44,6 @@ Widget::Widget(const std::string& name, int x, int y, int w, int h)
     , miY2(y + h)
     , mbInit(true)
     , mbKeyboardFocus(false)
-    , mpDrawEvent(0)
     , mParent(nullptr)
     , mDirty(true)
     , mSizeDirty(true)
@@ -61,15 +60,16 @@ void Widget::Init(lev2::Context* pT) {
   DoInit(pT);
 }
 
-HandlerResult Widget::HandleUiEvent(const Event& Ev) {
+HandlerResult Widget::HandleUiEvent(event_constptr_t Ev) {
   HandlerResult ret;
 
   if (gFastPath) {
-    // printf( "Widget::HandleUiEvent::FASTPATH ev<%d,%d> widget<%p:%s>\n", Ev.miX, Ev.miY, gFastPath, gFastPath->msName.c_str() );
+    // printf( "Widget::HandleUiEvent::FASTPATH ev<%d,%d> widget<%p:%s>\n", Ev->miX, Ev->miY, gFastPath, gFastPath->msName.c_str()
+    // );
     ret = gFastPath->RouteUiEvent(Ev);
   } else {
     bool binside = IsEventInside(Ev);
-    // printf( "Widget::HandleUiEvent::SLOWPATH ev<%d,%d> widget<%p:%s> dim<%d %d %d %d> inside<%d>\n", Ev.miX, Ev.miY, this,
+    // printf( "Widget::HandleUiEvent::SLOWPATH ev<%d,%d> widget<%p:%s> dim<%d %d %d %d> inside<%d>\n", Ev->miX, Ev->miY, this,
     // msName.c_str(), miX, miY, miW, miH, int(binside) );
 
     if (binside) {
@@ -83,24 +83,24 @@ bool Widget::HasMouseFocus() const {
   return (this == gMouseFocus);
 }
 
-HandlerResult Widget::OnUiEvent(const Event& Ev) {
-  Ev.mFilteredEvent.Reset();
+HandlerResult Widget::OnUiEvent(event_constptr_t Ev) {
+  Ev->mFilteredEvent.Reset();
 
   if (mEventFilterStack.size()) {
     auto top = mEventFilterStack.top();
     top->Filter(Ev);
   }
-  if (Ev.mFilteredEvent.miEventCode == 0)
+  if (Ev->mFilteredEvent.miEventCode == 0)
     return HandlerResult();
   return DoOnUiEvent(Ev);
 }
-HandlerResult Widget::RouteUiEvent(const Event& Ev) {
+HandlerResult Widget::RouteUiEvent(event_constptr_t Ev) {
   auto ret = DoRouteUiEvent(Ev);
   UpdateMouseFocus(ret, Ev);
   return ret;
 }
 
-HandlerResult Widget::DoRouteUiEvent(const Event& Ev) {
+HandlerResult Widget::DoRouteUiEvent(event_constptr_t Ev) {
   auto ret = OnUiEvent(Ev);
   // printf( "Widget::RouteUiEvent<%p:%s>\n", this, msName.c_str() );
   return ret;
@@ -148,49 +148,49 @@ IWidgetEventFilter::IWidgetEventFilter(Widget& w)
   mMoveTimer.Start();
 }
 
-void IWidgetEventFilter::Filter(const Event& Ev) {
-  auto& fev       = Ev.mFilteredEvent;
-  fev.miEventCode = Ev.miEventCode;
-  fev.mBut0       = Ev.mbLeftButton;
-  fev.mBut1       = Ev.mbMiddleButton;
-  fev.mBut2       = Ev.mbRightButton;
+void IWidgetEventFilter::Filter(event_constptr_t Ev) {
+  auto& fev       = Ev->mFilteredEvent;
+  fev.miEventCode = Ev->miEventCode;
+  fev.mBut0       = Ev->mbLeftButton;
+  fev.mBut1       = Ev->mbMiddleButton;
+  fev.mBut2       = Ev->mbRightButton;
 
-  fev.miX        = Ev.miX;
-  fev.miY        = Ev.miY;
-  fev.mLastX     = Ev.miLastX;
-  fev.mLastY     = Ev.miLastY;
-  fev.mUnitX     = Ev.mfUnitX;
-  fev.mUnitY     = Ev.mfUnitX;
-  fev.mLastUnitX = Ev.mfLastUnitX;
-  fev.mLastUnitY = Ev.mfLastUnitY;
+  fev.miX        = Ev->miX;
+  fev.miY        = Ev->miY;
+  fev.mLastX     = Ev->miLastX;
+  fev.mLastY     = Ev->miLastY;
+  fev.mUnitX     = Ev->mfUnitX;
+  fev.mUnitY     = Ev->mfUnitX;
+  fev.mLastUnitX = Ev->mfLastUnitX;
+  fev.mLastUnitY = Ev->mfLastUnitY;
 
-  fev.miKeyCode = Ev.miKeyCode;
-  fev.mCTRL     = Ev.mbCTRL;
-  fev.mALT      = Ev.mbALT;
-  fev.mSHIFT    = Ev.mbSHIFT;
-  fev.mMETA     = Ev.mbMETA;
+  fev.miKeyCode = Ev->miKeyCode;
+  fev.mCTRL     = Ev->mbCTRL;
+  fev.mALT      = Ev->mbALT;
+  fev.mSHIFT    = Ev->mbSHIFT;
+  fev.mMETA     = Ev->mbMETA;
 
   DoFilter(Ev);
 }
-void WidgetEventFilter1::DoFilter(const Event& Ev) {
-  auto& fev = Ev.mFilteredEvent;
+void WidgetEventFilter1::DoFilter(event_constptr_t Ev) {
+  auto& fev = Ev->mFilteredEvent;
 
   fev.mAction = "none";
 
-  switch (Ev.miEventCode) {
+  switch (Ev->miEventCode) {
     case ui::UIEV_KEY: {
       float kt = mKeyTimer.SecsSinceStart();
       float dt = mDoubleTimer.SecsSinceStart();
       float mt = mMoveTimer.SecsSinceStart();
 
-      bool bdouble = (kt < 0.8f) && (dt > 1.0f) && (mt > 0.5f) && (mLastKeyCode == Ev.miKeyCode);
+      bool bdouble = (kt < 0.8f) && (dt > 1.0f) && (mt > 0.5f) && (mLastKeyCode == Ev->miKeyCode);
 
-      // printf( "keydown<%d> lk<%d> kt<%f> dt<%f> mt<%f>\n", mLastKeyCode, Ev.miKeyCode, kt, dt, mt );
+      // printf( "keydown<%d> lk<%d> kt<%f> dt<%f> mt<%f>\n", mLastKeyCode, Ev->miKeyCode, kt, dt, mt );
 
       auto evc = bdouble ? ui::UIEV_DOUBLECLICK : ui::UIEV_PUSH;
 
       mKeyTimer.Start();
-      switch (Ev.miKeyCode) {
+      switch (Ev->miKeyCode) {
         case 'z': // synthetic left button
           fev.miEventCode = evc;
           if (fev.miEventCode == ui::UIEV_DOUBLECLICK) {
@@ -239,15 +239,15 @@ void WidgetEventFilter1::DoFilter(const Event& Ev) {
         default:
           break;
       }
-      mLastKeyCode = Ev.miKeyCode;
+      mLastKeyCode = Ev->miKeyCode;
       if (bdouble) {
         mDoubleTimer.Start();
       }
       break;
     }
     case ui::UIEV_KEYUP:
-      // printf( "keyup<%d>\n", Ev.miKeyCode );
-      switch (Ev.miKeyCode) {
+      // printf( "keyup<%d>\n", Ev->miKeyCode );
+      switch (Ev->miKeyCode) {
         case 49:
         case 122: // z
           fev.miEventCode = ui::UIEV_RELEASE;
@@ -293,27 +293,27 @@ void WidgetEventFilter1::DoFilter(const Event& Ev) {
       mMoveTimer.Start();
       break;
     case ui::UIEV_PUSH:
-      fev.mBut0   = Ev.mbLeftButton;
-      fev.mBut1   = Ev.mbMiddleButton;
-      fev.mBut2   = Ev.mbRightButton;
-      mBut0Down   = Ev.mbLeftButton;
-      mBut1Down   = Ev.mbMiddleButton;
-      mBut2Down   = Ev.mbRightButton;
-      mLeftDown   = Ev.mbLeftButton;
-      mMiddleDown = Ev.mbMiddleButton;
-      mRightDown  = Ev.mbRightButton;
+      fev.mBut0   = Ev->mbLeftButton;
+      fev.mBut1   = Ev->mbMiddleButton;
+      fev.mBut2   = Ev->mbRightButton;
+      mBut0Down   = Ev->mbLeftButton;
+      mBut1Down   = Ev->mbMiddleButton;
+      mBut2Down   = Ev->mbRightButton;
+      mLeftDown   = Ev->mbLeftButton;
+      mMiddleDown = Ev->mbMiddleButton;
+      mRightDown  = Ev->mbRightButton;
       mMoveTimer.Start();
       break;
     case ui::UIEV_RELEASE:
-      fev.mBut0   = Ev.mbLeftButton;
-      fev.mBut1   = Ev.mbMiddleButton;
-      fev.mBut2   = Ev.mbRightButton;
-      mBut0Down   = Ev.mbLeftButton;
-      mBut1Down   = Ev.mbMiddleButton;
-      mBut2Down   = Ev.mbRightButton;
-      mLeftDown   = Ev.mbLeftButton;
-      mMiddleDown = Ev.mbMiddleButton;
-      mRightDown  = Ev.mbRightButton;
+      fev.mBut0   = Ev->mbLeftButton;
+      fev.mBut1   = Ev->mbMiddleButton;
+      fev.mBut2   = Ev->mbRightButton;
+      mBut0Down   = Ev->mbLeftButton;
+      mBut1Down   = Ev->mbMiddleButton;
+      mBut2Down   = Ev->mbRightButton;
+      mLeftDown   = Ev->mbLeftButton;
+      mMiddleDown = Ev->mbMiddleButton;
+      mRightDown  = Ev->mbRightButton;
       break;
     case ui::UIEV_DRAG:
       break;
@@ -322,11 +322,11 @@ void WidgetEventFilter1::DoFilter(const Event& Ev) {
   }
 }
 
-void Widget::UpdateMouseFocus(const HandlerResult& r, const Event& Ev) {
+void Widget::UpdateMouseFocus(const HandlerResult& r, event_constptr_t Ev) {
   Widget* ponenter = nullptr;
   Widget* ponexit  = nullptr;
 
-  const auto& filtev = Ev.mFilteredEvent;
+  const auto& filtev = Ev->mFilteredEvent;
 
   if (r.mHandler != gMouseFocus) {
   }
@@ -364,13 +364,13 @@ void Widget::UpdateMouseFocus(const HandlerResult& r, const Event& Ev) {
     ponenter->DoOnEnter();
 }
 
-HandlerResult Widget::DoOnUiEvent(const Event& Ev) {
+HandlerResult Widget::DoOnUiEvent(event_constptr_t Ev) {
   return HandlerResult();
 }
 
-bool Widget::IsEventInside(const Event& Ev) const {
-  int rx = Ev.miX;
-  int ry = Ev.miY;
+bool Widget::IsEventInside(event_constptr_t Ev) const {
+  int rx = Ev->miX;
+  int ry = Ev->miY;
   int ix = 0;
   int iy = 0;
   RootToLocal(rx, ry, ix, iy);
@@ -420,9 +420,9 @@ void Widget::SetDirty() {
 
 /////////////////////////////////////////////////////////////////////////
 
-void Widget::Draw(ui::DrawEvent& drwev) {
-  mpDrawEvent = &drwev;
-  mpTarget    = drwev.GetTarget();
+void Widget::Draw(ui::drawevent_ptr_t drwev) {
+  _drawEvent = drwev;
+  mpTarget   = drwev->GetTarget();
 
   if (mbInit) {
     ork::lev2::FontMan::GetRef();
@@ -441,8 +441,8 @@ void Widget::Draw(ui::DrawEvent& drwev) {
   }
 
   DoDraw(drwev);
-  mpTarget    = 0;
-  mpDrawEvent = 0;
+  mpTarget   = 0;
+  _drawEvent = nullptr;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -473,7 +473,7 @@ void Widget::ExtDraw(lev2::Context* pTARG) {
     mbInit = false;
   }
   mpTarget = pTARG;
-  ui::DrawEvent ev(pTARG);
+  auto ev  = std::make_shared<ui::DrawEvent>(pTARG);
   DoDraw(ev);
   mpTarget = 0;
 }

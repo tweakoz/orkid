@@ -36,14 +36,16 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool gtoggle_hud = true;
+bool gtoggle_hud        = true;
 bool gtoggle_pickbuffer = false;
 
 using namespace ork::lev2;
 
 namespace ork { namespace ent {
 
-SceneEditorVPToolHandler::SceneEditorVPToolHandler(SceneEditorBase& editor) : mEditor(editor) {}
+SceneEditorVPToolHandler::SceneEditorVPToolHandler(SceneEditorBase& editor)
+    : mEditor(editor) {
+}
 
 void OuterPickOp(defpickopctx_ptr_t pickctx);
 
@@ -74,7 +76,7 @@ void SceneEditorVP::RegisterToolHandler(const std::string& toolname, SceneEditor
 
 ///////////////////////////////////////////////////////////////////////////
 
-ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
+ui::HandlerResult SceneEditorVP::DoOnUiEvent(ui::event_constptr_t EV) {
   ui::HandlerResult ret;
   // OrkAssert( 0 != mpCurrentHandler );
 
@@ -84,13 +86,13 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
 
   ////////////////////////////////////////////////////////////////
 
-  bool isshift = EV.mbSHIFT;
-  bool isalt = EV.mbALT;
-  bool isctrl = EV.mbCTRL;
-  bool ismeta = EV.mbMETA;
+  bool isshift = EV->mbSHIFT;
+  bool isalt   = EV->mbALT;
+  bool isctrl  = EV->mbCTRL;
+  bool ismeta  = EV->mbMETA;
   bool ismulti = false;
 
-  switch (EV.miEventCode) {
+  switch (EV->miEventCode) {
     case ui::UIEV_GOT_KEYFOCUS: {
       break;
     }
@@ -111,17 +113,17 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
     }
   }
 
-  if (0 == EV.miEventCode)
+  if (0 == EV->miEventCode)
     return ret;
 
   ////////////////////////////////////////////////////////////////
 
-  switch (EV.miEventCode) {
+  switch (EV->miEventCode) {
     case ui::UIEV_KEYUP: {
       break;
     }
     case ui::UIEV_KEY: {
-      int icode = EV.miKeyCode;
+      int icode = EV->miKeyCode;
 
       switch (icode) {
         case 't': {
@@ -227,7 +229,7 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
         }
         case ' ': {
           auto compsys = compositingSystem();
-          if( compsys ){
+          if (compsys) {
             const auto& CDATA = compsys->compositingSystemData()._compositingData;
             CDATA.Toggle();
           }
@@ -236,7 +238,7 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
         case 'f': // focus on selected entity
         {
           auto& selmgr = mEditor.selectionManager();
-          auto selset = selmgr.getActiveSelection();
+          auto selset  = selmgr.getActiveSelection();
 
           if (selset.size() == 1) {
             EntData* as_ent = rtti::autocast(*selset.begin());
@@ -265,8 +267,8 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
     }
     case ui::UIEV_PUSH: {
       printf("scenevp::uiev_push\n");
-      int ix = EV.miX;
-      int iy = EV.miY;
+      int ix = EV->miX;
+      int iy = EV->miY;
 
       int ity = 4;
       int itx = 4;
