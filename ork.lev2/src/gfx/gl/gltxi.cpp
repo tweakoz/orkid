@@ -132,6 +132,7 @@ GLuint PboSet::alloc() {
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     GL_ERRORCHECK();
     _pbos_perm.insert(rval);
+    // printf("AllocPBO objid<%d> size<%zu>\n", int(rval), _size);
   } else {
     rval = *it;
     _pbos.erase(it);
@@ -318,7 +319,6 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   ///////////////////////////////////
 
   size_t length = tid.computeSize();
-  // printf( "UPDATE IMAGE UNC imip<%d> iw<%d> ih<%d> isiz<%d> pbo<%d> mem<%p>\n", imip, iw, ih, isiz2, PBOOBJ, pgfxmem );
   GLuint PBOOBJ = this->_getPBO(length);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
   GL_ERRORCHECK();
@@ -326,6 +326,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
   map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
   void* pgfxmem = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, length, map_flags);
+  // printf("UPDATE IMAGE UNC iw<%d> ih<%d> length<%zu> pbo<%d> mem<%p>\n", tid._w, tid._h, length, PBOOBJ, pgfxmem);
   memcpy(pgfxmem, tid._data, length);
   glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
   GL_ERRORCHECK();

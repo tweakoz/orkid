@@ -32,84 +32,85 @@ namespace ork::lev2 {
 
 /////////////////////////////////////////////////////////////////////////
 
-Texture* PBRMaterial::brdfIntegrationMap(Context* targ) {
+static texture_ptr_t _getbrdfintmap(Context* targ) {
+  texture_ptr_t _map;
+
   targ->makeCurrentContext();
-
-  static Texture* _map = nullptr;
-
-  if (nullptr == _map) {
-
-    _map              = new lev2::Texture;
-    _map->_debugName  = "brdfIntegrationMap";
-    constexpr int DIM = 1024;
-
-    ///////////////////////////////
-    // dblock cache
-    ///////////////////////////////
-
-    auto brdfhasher = DataBlock::createHasher();
-    brdfhasher->accumulateString(_map->_debugName); // identifier
-    brdfhasher->accumulateItem<float>(1.0);         // version code
-    brdfhasher->accumulateItem<float>(DIM);         // dimension
-    brdfhasher->finish();
-    uint64_t brdfhash = brdfhasher->result();
-    // printf("brdfIntegrationMap hashkey<%zx>\n", brdfhash);
-    auto dblock = DataBlockCache::findDataBlock(brdfhash);
-    if (dblock) {
-      // loaded from cache
-      // printf("brdfIntegrationMap loaded from cache\n");
-    } else { // recompute and cache
-      // printf("Begin Compute brdfIntegrationMap\n");
-      dblock        = std::make_shared<DataBlock>();
-      float* texels = dblock->allocateItems<float>(DIM * DIM * 4);
-      auto group    = opq::createCompletionGroup(opq::concurrentQueue(), "BRDFMAPGEN");
-      for (int y = 0; y < DIM; y++) {
-        float fy  = float(y) / float(DIM - 1);
-        int ybase = y * DIM;
-        group->enqueue([=]() {
-          for (int x = 0; x < DIM; x++) {
-            float fx               = float(x) / float(DIM - 1);
-            dvec3 output           = brdf::integrateGGX<1024>(fx, fy);
-            int texidxbase         = (ybase + x) * 4;
-            texels[texidxbase + 0] = float(output.x);
-            texels[texidxbase + 1] = float(output.y);
-            texels[texidxbase + 2] = float(output.z);
-            texels[texidxbase + 3] = 1.0f;
-          }
-        });
-      }
-      group->join();
-      // printf("End Compute brdfIntegrationMap\n");
-      fflush(stdout);
-      DataBlockCache::setDataBlock(brdfhash, dblock);
+  _map              = std::make_shared<lev2::Texture>();
+  _map->_debugName  = "brdfIntegrationMap";
+  constexpr int DIM = 1024;
+  ///////////////////////////////
+  // dblock cache
+  ///////////////////////////////
+  auto brdfhasher = DataBlock::createHasher();
+  brdfhasher->accumulateString(_map->_debugName); // identifier
+  brdfhasher->accumulateItem<float>(1.0);         // version code
+  brdfhasher->accumulateItem<float>(DIM);         // dimension
+  brdfhasher->finish();
+  uint64_t brdfhash = brdfhasher->result();
+  // printf("brdfIntegrationMap hashkey<%zx>\n", brdfhash);
+  auto dblock = DataBlockCache::findDataBlock(brdfhash);
+  if (dblock) {
+    // loaded from cache
+    // printf("brdfIntegrationMap loaded from cache\n");
+  } else { // recompute and cache
+    // printf("Begin Compute brdfIntegrationMap\n");
+    dblock        = std::make_shared<DataBlock>();
+    float* texels = dblock->allocateItems<float>(DIM * DIM * 4);
+    auto group    = opq::createCompletionGroup(opq::concurrentQueue(), "BRDFMAPGEN");
+    for (int y = 0; y < DIM; y++) {
+      float fy  = float(y) / float(DIM - 1);
+      int ybase = y * DIM;
+      group->enqueue([=]() {
+        for (int x = 0; x < DIM; x++) {
+          float fx               = float(x) / float(DIM - 1);
+          dvec3 output           = brdf::integrateGGX<1024>(fx, fy);
+          int texidxbase         = (ybase + x) * 4;
+          texels[texidxbase + 0] = float(output.x);
+          texels[texidxbase + 1] = float(output.y);
+          texels[texidxbase + 2] = float(output.z);
+          texels[texidxbase + 3] = 1.0f;
+        }
+      });
     }
-
-    ///////////////////////////////
-    // verify (debug)
-    ///////////////////////////////
-
-    if (1) {
-      auto outpath = file::Path::temp_dir() / "brdftest.exr";
-      auto out     = ImageOutput::create(outpath.c_str());
-      assert(out != nullptr);
-      ImageSpec spec(DIM, DIM, 4, TypeDesc::FLOAT);
-      out->open(outpath.c_str(), spec);
-      out->write_image(TypeDesc::FLOAT, dblock->data());
-      out->close();
-    }
-
-    ///////////////////////////////
-
-    TextureInitData tid;
-    tid._w           = DIM;
-    tid._h           = DIM;
-    tid._format      = EBufferFormat::RGBA32F;
-    tid._autogenmips = true;
-    tid._data        = dblock->data();
-
-    targ->TXI()->initTextureFromData(_map, tid);
+    group->join();
+    // printf("End Compute brdfIntegrationMap\n");
+    fflush(stdout);
+    DataBlockCache::setDataBlock(brdfhash, dblock);
   }
+
+  ///////////////////////////////
+  // verify (debug)
+  ///////////////////////////////
+
+  if (1) {
+    auto outpath = file::Path::temp_dir() / "brdftest.exr";
+    auto out     = ImageOutput::create(outpath.c_str());
+    assert(out != nullptr);
+    ImageSpec spec(DIM, DIM, 4, TypeDesc::FLOAT);
+    out->open(outpath.c_str(), spec);
+    out->write_image(TypeDesc::FLOAT, dblock->data());
+    out->close();
+  }
+
+  ///////////////////////////////
+
+  TextureInitData tid;
+  tid._w           = DIM;
+  tid._h           = DIM;
+  tid._format      = EBufferFormat::RGBA32F;
+  tid._autogenmips = true;
+  tid._data        = dblock->data();
+
+  targ->TXI()->initTextureFromData(_map.get(), tid);
   return _map;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+Texture* PBRMaterial::brdfIntegrationMap(Context* targ) {
+  static texture_ptr_t _map = _getbrdfintmap(targ);
+  return _map.get();
 }
 
 /////////////////////////////////////////////////////////////////////////

@@ -34,6 +34,7 @@ class DrawableBuffer;
 class Drawable;
 class ModelDrawable;
 struct InstancedModelDrawable;
+struct InstancedDrawableData;
 class CallbackDrawable;
 class XgmModel;
 class XgmModelAsset;
@@ -46,6 +47,7 @@ using drawable_ptr_t                = std::shared_ptr<Drawable>;
 using model_drawable_ptr_t          = std::shared_ptr<ModelDrawable>;
 using instanced_modeldrawable_ptr_t = std::shared_ptr<InstancedModelDrawable>;
 using callback_drawable_ptr_t       = std::shared_ptr<CallbackDrawable>;
+using instanceddrawdata_ptr_t       = std::shared_ptr<InstancedDrawableData>;
 
 ///////////////////////////////////////////////////////////////////////////
 // todo find a better name
@@ -305,6 +307,16 @@ struct InstancedModelDrawable final : public Drawable {
   size_t _count;
   svar16_t _impl;
   mutable texture_ptr_t _instanceTex;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct InstancedDrawableData {
+  void resize(size_t count);
+  std::vector<fmtx4> _worldmatrices;
+  std::vector<uint64_t> _pickids;
+  std::vector<svar16_t> _miscdata;
+  size_t _count = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

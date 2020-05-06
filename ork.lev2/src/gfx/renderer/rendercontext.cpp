@@ -32,16 +32,4 @@ template class ork::orklut<ork::CrcString, ork::lev2::rendervar_t>;
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-
-void InstancedDrawableData::resize(size_t count) {
-  _worldmatrices.resize(count);
-  _miscdata.resize(count);
-  _pickids.resize(count);
-  _count = count;
-  for (size_t i = 0; i < count; i++) {
-    _pickids[i] = 0;
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

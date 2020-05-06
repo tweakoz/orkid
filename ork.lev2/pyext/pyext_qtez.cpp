@@ -104,7 +104,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             };
             int rval = wrapped();
             // GIL reacquired
-            app->joinUpdate();
+            {
+              py::gil_scoped_release release_gil;
+              app->joinUpdate();
+            }
             return rval;
           });
 }

@@ -25,6 +25,21 @@
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::DrawableOwner, "DrawableOwner");
 namespace ork::lev2 {
+///////////////////////////////////////////////////////////////////////////////
+
+void InstancedDrawableData::resize(size_t count) {
+
+  size_t max_inst = InstancedModelDrawable::k_max_instances;
+
+  _worldmatrices.resize(max_inst);
+  _miscdata.resize(max_inst);
+  _pickids.resize(max_inst);
+  _count = count;
+  for (size_t i = 0; i < max_inst; i++) {
+    _pickids[i] = 0;
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
 
 DrawQueueXfData::DrawQueueXfData() {
   _worldMatrix = std::make_shared<fmtx4>();

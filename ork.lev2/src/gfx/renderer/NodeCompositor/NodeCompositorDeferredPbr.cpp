@@ -280,8 +280,9 @@ DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
     hasher->finish();
     uint64_t cachekey = hasher->result();
     auto irrmapdblock = DataBlockCache::findDataBlock(cachekey);
-    if (irrmapdblock) {
+    if (false) { // irrmapdblock) {
       // found in cache, nothing to do..
+      OrkAssert(false);
     } else {
       // not found in cache, generate
       irrmapdblock = std::make_shared<DataBlock>();
