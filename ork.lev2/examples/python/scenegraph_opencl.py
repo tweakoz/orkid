@@ -25,8 +25,8 @@ if args["numinstances"]==None:
 else:
   numinstances = int(args["numinstances"])
 ################################################################################
-if "PYOPENCL_CTX" not in os.environ:
-  os.environ["PYOPENCL_CTX"]='0:0' # select open cl device
+#if "PYOPENCL_CTX" not in os.environ:
+  #os.environ["PYOPENCL_CTX"]='0' # select open cl device
 ################################################################################
 # Create OpenCL context and compile CL kernel
 ################################################################################
