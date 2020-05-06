@@ -392,7 +392,7 @@ void pyinit_gfx(py::module& module_lev2) {
             drw->resize(numinstances);
             auto instdata = drw->_instancedata;
             for (int i = 0; i < numinstances; i++) {
-              // instdata->_worldmatrices[i].compose(fvec3(0, 0, 0), fquat(), 0.0f);
+              instdata->_worldmatrices[i].compose(fvec3(0, 0, 0), fquat(), 0.0f);
             }
             return node;
           });
