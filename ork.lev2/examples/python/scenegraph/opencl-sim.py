@@ -6,13 +6,18 @@
 # Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
-import math, random, argparse, os
+import math, random, argparse, os, sys
 import numpy as np
 from scipy import linalg as la
 import pyopencl as cl
 from orkengine.core import *
 from orkengine.lev2 import *
 from ork import host
+################################################################################
+from pathlib import Path
+this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(str(this_dir))
+import _simsetup
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph example')
 parser.add_argument('--numinstances', metavar="numinstances", help='number of mesh instances' )
@@ -70,43 +75,10 @@ __kernel void cl_concatenate_mtx4(
 }
 """
 ).build()
-################################################################################
-class instance_set(object):
-  ########################################################
-  def __init__(self,model,num_instances,layer):
-    super().__init__()
-    self.model = model
-    self.sgnode = model.createInstancedNode(num_instances,"node1",layer)
-    self.instancematrices = np.array(self.sgnode.instanceData, copy = False)
-    self.deltas = np.zeros((num_instances,4,4),dtype=np.float32) # array of 4x4 matrices
-    for i in range(numinstances):
-      #####################################
-      # rotation increment
-      #####################################
-      incraxis = vec3(random.uniform(-1,1),
-                      random.uniform(-1,1),
-                      random.uniform(-1,1)).normal()
-      incrmagn = random.uniform(-0.05,0.05)
-      rot = quat(incraxis,incrmagn)
-      as_mtx4 = mtx4()
-      trans = vec3(random.uniform(-1,1),
-                   random.uniform(-1,1),
-                   random.uniform(-1,1))*0.01
-      as_mtx4.compose(trans,rot,1.0)
-      self.deltas[i]=as_mtx4 # copy into numpy block
-      #####################################
-      # initial matrix
-      #####################################
-      Z = random.uniform(-2.5,-50)
-      pos = vec3(random.uniform(-2.5,2.5)*Z,
-                 random.uniform(-2.5,2.5)*Z,
-                 Z)
-      sca = random.uniform(0.1,0.65)
-      as_mtx4.compose(pos,quat(),sca)
-      self.instancematrices[i]=as_mtx4
-    #####################################
+class instance_set_class(_simsetup.InstanceSet):
+  def __init__(self,model,layer):
+    super().__init__(model,numinstances,layer)
     # opencl setup
-    #####################################
     self.res_g = cl.Buffer(ctx, mf.WRITE_ONLY, self.instancematrices.nbytes)
   ########################################################
   # update matrices with OpenCL
@@ -119,38 +91,10 @@ class instance_set(object):
     prg.cl_concatenate_mtx4(queue, globalsize, localsize, current, delta, self.res_g)
     cl.enqueue_copy(queue, self.instancematrices, self.res_g)
 ################################################################################
-class SceneGraphApp(object):
+class OpenClSimApp(_simsetup.SimApp):
   ################################################
   def __init__(self):
-    super().__init__()
-    self.sceneparams = VarMap()
-    self.sceneparams.preset = "PBRVR" if vrmode else "PBR"
-    self.qtapp = OrkEzQtApp.create(self)
-    self.qtapp.setRefreshPolicy(RefreshFastest, 0)
-    self.instancesets=[]
-  ##############################################
-  def onGpuInit(self,ctx):
-    layer = self.scene.createLayer("layer1")
-    models = [Model("src://environ/objects/misc/ref/uvsph.glb")]
-    ###################################
-    for model in models:
-      self.instancesets += [instance_set(model,numinstances,layer)]
-    ###################################
-    self.camera = CameraData()
-    self.cameralut = CameraDataLut()
-    self.cameralut.addCamera("spawncam",self.camera)
-    ###################################
-    self.camera.perspective(0.1, 150.0, 45.0)
-    self.camera.lookAt(vec3(0,0,5), # eye
-                       vec3(0, 0, 0), # tgt
-                       vec3(0, 1, 0)) # up
-  ################################################
-  def onUpdate(self,updinfo):
-    ###################################
-    for minst in self.instancesets:
-      minst.update(updinfo.deltatime)
-    ###################################
-    self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
+    super().__init__(vrmode,instance_set_class)
 ################################################
-app = SceneGraphApp()
+app = OpenClSimApp()
 app.qtapp.exec()
