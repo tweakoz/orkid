@@ -6,10 +6,13 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 
-import time, math
+import time, math, os, sys
 from orkengine.core import *
 from orkengine.lev2 import *
-import _shaders
+from pathlib import Path
+this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(str(this_dir))
+from common.shaders import Shader
 
 class MyApp(object):
   ###########################
@@ -22,7 +25,7 @@ class MyApp(object):
   def onGpuInit(self,ctx):
     FBI = ctx.FBI()
     GBI = ctx.GBI()
-    self.nsh = _shaders.Shader(ctx)
+    self.nsh = Shader(ctx)
     self.volumetexture = Texture.load("lev2://textures/voltex_pn3")
     ###################################
     fpmtx = ctx.perspective(45,1,0.1,3)
