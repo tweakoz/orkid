@@ -72,7 +72,7 @@ void InstancedModelDrawable::bindModel(model_ptr_t model) {
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::gpuInit(Context* ctx) const {
   _instanceMatrixTex = Texture::createBlank(1024, 1024, EBufferFormat::RGBA32F);
-  _instanceIdTex     = Texture::createBlank(1024, 1024, EBufferFormat::RGBA16UI);
+  _instanceIdTex     = Texture::createBlank(1024, 256, EBufferFormat::RGBA16UI);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::enqueueToRenderQueue(
@@ -129,11 +129,12 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     TXI->initTextureFromData(_instanceMatrixTex.get(), texdata);
     ////////////////////////////////////////////////////////
     texdata._w           = k_texture_dimension;
-    texdata._h           = k_texture_dimension / 2;
+    texdata._h           = k_texture_dimension / 4;
     texdata._format      = EBufferFormat::RGBA16UI;
     texdata._autogenmips = false;
     texdata._data        = (const void*)_instancedata->_pickids.data();
     TXI->initTextureFromData(_instanceIdTex.get(), texdata);
+    _instanceIdTex->TexSamplingMode().PresetPointAndClamp();
     ////////////////////////////////////////////////////////
     // instanced render
     ////////////////////////////////////////////////////////

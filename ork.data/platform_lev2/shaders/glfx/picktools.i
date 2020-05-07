@@ -79,7 +79,7 @@ fragment_interface iface_fpick_instanced : ub_pick {
   outputs {
     layout(location = 0) vec4 out_clr;
     layout(location = 1) vec4 out_nrmd;
-    layout(location = 2) uvec4 out_iid;
+    //layout(location = 2) uvec4 out_iid;
   }
 }
 ///////////////////////////////////////////////////////////////

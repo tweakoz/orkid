@@ -240,6 +240,7 @@ int CaptureBuffer::GetStride() const {
       istride = 4;
       break;
     case EBufferFormat::RGBA16F:
+    case EBufferFormat::RGBA16UI:
       istride = 8;
       break;
     case EBufferFormat::RGBA32F:
@@ -292,6 +293,7 @@ void CaptureBuffer::setFormatAndSize(EBufferFormat fmt, int w, int h) {
       _buffersize = 4 * w * h;
       break;
     case EBufferFormat::RGBA16F:
+    case EBufferFormat::RGBA16UI:
     case EBufferFormat::RG32F:
       _buffersize = 8 * w * h;
       break;
