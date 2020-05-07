@@ -115,7 +115,6 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     bool isPick      = FBI->isPickState();
     bool isStereo    = RCID._RCFD->isStereo();
     int fxinst_index = isStereo ? 1 : (isPick ? 2 : 0);
-    // OrkAssert(false == isPick);
     ////////////////////////////////////////////////////////
     // upload instance matrices to GPU
     ////////////////////////////////////////////////////////

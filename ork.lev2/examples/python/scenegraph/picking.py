@@ -57,7 +57,7 @@ class PickingApp(_simsetup.SimApp):
     assert(self.scene)
     ray = ray3(vec3(0,0,0),vec3(0,0,-1))
     picked = self.scene.pickWithRay(ray)
-    print(picked)
+    print("%s"%hex(picked))
   ################################################
 app = PickingApp()
 app.qtapp.exec()

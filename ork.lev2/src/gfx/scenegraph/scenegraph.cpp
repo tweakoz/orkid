@@ -225,7 +225,7 @@ void Scene::renderOnContext(Context* context) {
   fbi->SetClearColor(fvec4(0, 0, 0, 1));
   fbi->setViewport(tgtrect);
   fbi->setScissor(tgtrect);
-  if (0) {
+  if (1) {
     context->beginFrame();
     FrameRenderer framerenderer(RCFD, [&]() {});
     CompositorDrawData drawdata(framerenderer);
