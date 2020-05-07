@@ -11,6 +11,7 @@ PickBuffer::PickBuffer(ork::lev2::Context* ctx, Scene& scene)
     , _scene(scene) {
 
   _rtgroup->Resize(3, 3);
+  _pick_mvp_matrix = std::make_shared<fmtx4>();
 }
 ///////////////////////////////////////////////////////////////////////////
 uint64_t PickBuffer::pickWithRay(fray3_constptr_t ray) {
@@ -55,8 +56,12 @@ void PickBuffer::Draw(lev2::PixelFetchContext& pfc) {
   ///////////////////////////////////////////////////////////////////////////
   auto DB = DrawableBuffer::acquireReadDB(0x1234);
   if (DB) {
+
+    _pick_mvp_matrix->SetToIdentity();
+
     lev2::UiViewportRenderTarget rt(nullptr);
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+    RCFD.setUserProperty("pickbufferMvpMatrix"_crc, _pick_mvp_matrix);
     lev2::CompositingPassData CPD;
     CPD.AddLayer("All"_pool);
     CPD.SetDstRect(tgt_rect);

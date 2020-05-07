@@ -448,7 +448,7 @@ fxinstance_ptr_t PBRMaterial::createFxStateInstance(FxStateInstanceConfig& cfg) 
           fxinst->_technique = _tekRigidPICKING;
         ////////////////
       }
-      fxinst->_params[_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
+      fxinst->_params[_paramMVP] = "RCFD_Camera_Pick"_crcsh;
       break;
     //////////////////////////////////////////
     case FxStateBasePermutation::MONO:

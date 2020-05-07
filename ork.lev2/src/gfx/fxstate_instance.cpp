@@ -36,12 +36,13 @@ int FxStateInstance::beginBlock(const RenderContextInstData& RCID) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
-  auto context    = RCID._RCFD->GetTarget();
-  auto MTXI       = context->MTXI();
-  auto FXI        = context->FXI();
-  const auto& CPD = RCID._RCFD->topCPD();
-  bool is_picking = CPD.isPicking();
-  bool is_stereo  = CPD.isStereoOnePass();
+  auto context          = RCID._RCFD->GetTarget();
+  auto MTXI             = context->MTXI();
+  auto FXI              = context->FXI();
+  const auto& CPD       = RCID._RCFD->topCPD();
+  const auto& RCFDPROPS = RCID._RCFD->userProperties();
+  bool is_picking       = CPD.isPicking();
+  bool is_stereo        = CPD.isStereoOnePass();
 
   bool rval = FXI->BindPass(ipass);
   if (not rval)
@@ -69,6 +70,15 @@ bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
     } else if (auto as_crcstr = val.TryAs<crcstring_ptr_t>()) {
       const auto& crcstr = *as_crcstr.value().get();
       switch (crcstr.hashed()) {
+
+        case "RCFD_Camera_Pick"_crcu: {
+          auto it = RCFDPROPS.find("pickbufferMvpMatrix"_crc);
+          OrkAssert(it != RCFDPROPS.end());
+          auto as_mtx4p    = it->second.Get<fmtx4_ptr_t>();
+          const fmtx4& MVP = *(as_mtx4p.get());
+          FXI->BindParamMatrix(param, MVP);
+          break;
+        }
         case "RCFD_Camera_MVP_Mono"_crcu: {
           if (monocams) {
             FXI->BindParamMatrix(param, monocams->MVPMONO(worldmatrix));

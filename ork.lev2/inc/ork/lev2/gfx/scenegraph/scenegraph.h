@@ -95,6 +95,7 @@ struct PickBuffer : public ork::lev2::PickBuffer {
   Scene& _scene;
   CompositingData* _compdata = nullptr;
   compositorimpl_ptr_t _compimpl;
+  fmtx4_ptr_t _pick_mvp_matrix;
 };
 using pickbuffer_ptr_t = std::shared_ptr<PickBuffer>;
 
