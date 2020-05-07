@@ -90,7 +90,7 @@ struct Layer {
 ///////////////////////////////////////////////////////////////////////////
 struct PickBuffer : public ork::lev2::PickBuffer {
   PickBuffer(ork::lev2::Context* ctx, Scene& scene);
-  void Draw(lev2::PixelFetchContext& ctx) final;
+  void mydraw(lev2::PixelFetchContext& ctx, fray3_constptr_t ray);
   uint64_t pickWithRay(fray3_constptr_t ray);
   Scene& _scene;
   CompositingData* _compdata = nullptr;

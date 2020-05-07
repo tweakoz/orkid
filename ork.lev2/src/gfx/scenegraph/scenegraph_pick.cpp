@@ -22,12 +22,12 @@ uint64_t PickBuffer::pickWithRay(fray3_constptr_t ray) {
   pfc.miMrtMask   = 3;
   pfc.mUsage[0]   = lev2::PixelFetchContext::EPU_PTR64;
   pfc.mUsage[1]   = lev2::PixelFetchContext::EPU_FLOAT;
-  Draw(pfc);
+  mydraw(pfc, ray);
   auto p = pfc.GetPointer(0);
   return uint64_t(p);
 }
 ///////////////////////////////////////////////////////////////////////////
-void PickBuffer::Draw(lev2::PixelFetchContext& pfc) {
+void PickBuffer::mydraw(lev2::PixelFetchContext& pfc, fray3_constptr_t ray) {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
   auto target = pfc._gfxContext;
   target->makeCurrentContext();
@@ -57,7 +57,13 @@ void PickBuffer::Draw(lev2::PixelFetchContext& pfc) {
   auto DB = DrawableBuffer::acquireReadDB(0x1234);
   if (DB) {
 
-    _pick_mvp_matrix->SetToIdentity();
+    fmtx4 P = _context->MTXI()->Persp(45, 1, 0.01, 10000);
+    fmtx4 V = _context->MTXI()->LookAt(
+        ray->mOrigin, //
+        ray->mOrigin + ray->mDirection,
+        fvec3(0, 1, 0));
+
+    (*_pick_mvp_matrix.get()) = V * P;
 
     lev2::UiViewportRenderTarget rt(nullptr);
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
