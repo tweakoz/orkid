@@ -119,7 +119,8 @@ public:
 
   fxtechnique_constptr_t _tekSkinnedGBUFFER_N = nullptr;
 
-  fxtechnique_constptr_t _tekRigidPICKING = nullptr;
+  fxtechnique_constptr_t _tekRigidPICKING           = nullptr;
+  fxtechnique_constptr_t _tekRigidPICKING_INSTANCED = nullptr;
 
   std::string _colorMapName;
   std::string _normalMapName;

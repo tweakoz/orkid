@@ -61,6 +61,11 @@ if _args["ez"]!=False:
     docmd(init_env+ch_ork_root+["--command","obt.dep.build.py python"]) # bootstrap python
 
     ##########################################
+    # boostrap pkgconfig/qt
+    ##########################################
+    docmd(init_env+ch_ork_root+["--command","obt.dep.build.py qt5"]) # bootstrap qt
+
+    ##########################################
     # start ork build
     ##########################################
 

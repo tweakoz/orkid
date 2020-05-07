@@ -90,6 +90,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   const auto& monofrustum              = topCPD.monoCamFrustum();
   lev2::CallbackRenderable& renderable = renderer->enqueueCallback();
   ////////////////////////////////////////////////////////////////////
+  bool isPick    = context->FBI()->isPickState();
   bool isSkinned = _model->isSkinned();
   OrkAssert(false == isSkinned); // not yet..
   if (not _instanceTex) {
@@ -109,10 +110,12 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     auto GBI         = context->GBI();
     auto TXI         = context->TXI();
     auto FXI         = context->FXI();
+    auto FBI         = context->FBI();
     auto impl        = _impl.getShared<IMDIMPL_MODEL>();
-    bool isPick      = context->FBI()->isPickState();
+    bool isPick      = FBI->isPickState();
     bool isStereo    = RCID._RCFD->isStereo();
     int fxinst_index = isStereo ? 1 : (isPick ? 2 : 0);
+    // OrkAssert(false == isPick);
     ////////////////////////////////////////////////////////
     // upload instance matrices to GPU
     ////////////////////////////////////////////////////////

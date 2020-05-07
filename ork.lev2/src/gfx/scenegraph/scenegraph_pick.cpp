@@ -18,8 +18,9 @@ uint64_t PickBuffer::pickWithRay(fray3_constptr_t ray) {
   lev2::PixelFetchContext pfc;
   pfc._gfxContext = _context;
   pfc.mRtGroup    = _rtgroup;
-  pfc.miMrtMask   = (1 << 0); //| (1 << 1); // ObjectID and ObjectUVD
+  pfc.miMrtMask   = 3;
   pfc.mUsage[0]   = lev2::PixelFetchContext::EPU_PTR64;
+  pfc.mUsage[1]   = lev2::PixelFetchContext::EPU_FLOAT;
   Draw(pfc);
   auto p = pfc.GetPointer(0);
   return uint64_t(p);
@@ -38,6 +39,7 @@ void PickBuffer::Draw(lev2::PixelFetchContext& pfc) {
   ///////////////////////////////////////////////////////////////////////////
   ork::lev2::RenderContextFrameData RCFD(target); //
   RCFD._cimpl = _compimpl;
+  pfc.mUserData.Set<ork::lev2::RenderContextFrameData*>(&RCFD);
   ///////////////////////////////////////////////////////////////////////////
 
   // mPickIds.clear();
@@ -54,10 +56,6 @@ void PickBuffer::Draw(lev2::PixelFetchContext& pfc) {
   auto DB = DrawableBuffer::acquireReadDB(0x1234);
   if (DB) {
     lev2::UiViewportRenderTarget rt(nullptr);
-    // lev2::UiViewportRenderTarget rt(_scenevp);
-    // rendervar_t passdata;
-    // passdata.Set<compositingpassdatastack_t*>(&_scenevp->_compositingGroupStack);
-    // RCFD.setUserProperty("nodes"_crc, passdata);
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
     lev2::CompositingPassData CPD;
     CPD.AddLayer("All"_pool);

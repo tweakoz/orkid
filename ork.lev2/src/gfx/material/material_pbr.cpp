@@ -173,7 +173,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   auto shass     = ork::asset::AssetManager<FxShaderAsset>::Load("orkshader://pbr");
   _shader        = shass->GetFxShader();
 
-  _tekRigidPICKING = fxi->technique(_shader, "picking_rigid");
+  _tekRigidPICKING           = fxi->technique(_shader, "picking_rigid");
+  _tekRigidPICKING_INSTANCED = fxi->technique(_shader, "picking_rigid_instanced");
 
   _tekRigidGBUFFER              = fxi->technique(_shader, "rigid_gbuffer");
   _tekRigidGBUFFER_N            = fxi->technique(_shader, "rigid_gbuffer_n");
@@ -437,7 +438,7 @@ fxinstance_ptr_t PBRMaterial::createFxStateInstance(FxStateInstanceConfig& cfg) 
     //////////////////////////////////////////
     case FxStateBasePermutation::PICK:
       if (cfg._instanced_primitive) {
-        fxinst->_technique = _tekRigidGBUFFER_N_INSTANCED;
+        fxinst->_technique = _tekRigidPICKING_INSTANCED;
       }
       ////////////////
       else { // non-instanced

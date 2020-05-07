@@ -225,21 +225,22 @@ void Scene::renderOnContext(Context* context) {
   fbi->SetClearColor(fvec4(0, 0, 0, 1));
   fbi->setViewport(tgtrect);
   fbi->setScissor(tgtrect);
-  context->beginFrame();
-  FrameRenderer framerenderer(RCFD, [&]() {});
-  CompositorDrawData drawdata(framerenderer);
-  drawdata._properties["primarycamindex"_crcu].Set<int>(0);
-  drawdata._properties["cullcamindex"_crcu].Set<int>(0);
-  drawdata._properties["irenderer"_crcu].Set<lev2::IRenderer*>(&_renderer);
-  drawdata._properties["simrunning"_crcu].Set<bool>(true);
-  drawdata._properties["DB"_crcu].Set<const DrawableBuffer*>(DB);
-  drawdata._cimpl = _compositorImpl;
-  _compositorImpl->assemble(drawdata);
-  _compositorImpl->composite(drawdata);
-  _compositorImpl->popCPD();
-  context->popRenderContextFrameData();
-  context->endFrame();
-
+  if (0) {
+    context->beginFrame();
+    FrameRenderer framerenderer(RCFD, [&]() {});
+    CompositorDrawData drawdata(framerenderer);
+    drawdata._properties["primarycamindex"_crcu].Set<int>(0);
+    drawdata._properties["cullcamindex"_crcu].Set<int>(0);
+    drawdata._properties["irenderer"_crcu].Set<lev2::IRenderer*>(&_renderer);
+    drawdata._properties["simrunning"_crcu].Set<bool>(true);
+    drawdata._properties["DB"_crcu].Set<const DrawableBuffer*>(DB);
+    drawdata._cimpl = _compositorImpl;
+    _compositorImpl->assemble(drawdata);
+    _compositorImpl->composite(drawdata);
+    _compositorImpl->popCPD();
+    context->popRenderContextFrameData();
+    context->endFrame();
+  }
   DrawableBuffer::releaseReadDB(DB);
 }
 
