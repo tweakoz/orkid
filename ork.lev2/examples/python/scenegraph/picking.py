@@ -57,10 +57,10 @@ class PickingApp(_simsetup.SimApp):
     #print("shift<%d> alt<%d> ctrl<%d>"%(event.shift,event.alt,event.ctrl))
     #print("left<%d> middle<%d> right<%d>"%(event.left,event.middle,event.right))
 
-    if event.code==3:
+    if True:#event.code==3:
       picked = self.scene.pickWithScreenCoord(self.camera,vec2(event.x,event.y))
       if picked!=0xffffffffffffffff:
-        print("%s"%(hex(picked)))
+        #print("%s"%(hex(picked)))
         assert(picked<=numinstances);
         color = vec4(random.uniform(0,1),
                      random.uniform(0,1),

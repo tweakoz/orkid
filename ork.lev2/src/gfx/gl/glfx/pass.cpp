@@ -171,7 +171,7 @@ void Pass::postProc(const Container* container) {
       GLchar nambuf[256];
       glGetActiveUniform(_programObjectId, i, sizeof(nambuf), &namlen, &unisiz, &unityp, nambuf);
       OrkAssert(namlen < sizeof(nambuf));
-      printf("find uni<%s>\n", nambuf);
+      // printf("find uni<%s>\n", nambuf);
       GL_ERRORCHECK();
 
       str_name = nambuf;
