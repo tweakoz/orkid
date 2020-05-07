@@ -346,6 +346,12 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       type           = GL_HALF_FLOAT;
       break;
     }
+    case EBufferFormat::RGBA16UI: {
+      internalformat = GL_RGBA16UI;
+      format         = GL_RGBA_INTEGER;
+      type           = GL_UNSIGNED_SHORT;
+      break;
+    }
     case EBufferFormat::RGBA32F: {
       internalformat = GL_RGBA32F;
       format         = GL_RGBA;

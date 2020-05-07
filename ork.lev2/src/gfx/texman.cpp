@@ -63,6 +63,9 @@ texture_ptr_t Texture::createBlank(int iw, int ih, EBufferFormat efmt) {
     case EBufferFormat::R32F:
       texture->_data = calloc(iw * ih * 4, 1);
       break;
+    case EBufferFormat::RGBA16UI:
+      texture->_data = calloc(iw * ih * 8, 1);
+      break;
     case EBufferFormat::RGBA32F:
       texture->_data = calloc(iw * ih * 16, 1);
       break;

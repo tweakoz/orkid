@@ -71,7 +71,8 @@ void InstancedModelDrawable::bindModel(model_ptr_t model) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::gpuInit(Context* ctx) const {
-  _instanceTex = Texture::createBlank(1024, 1024, EBufferFormat::RGBA32F);
+  _instanceMatrixTex = Texture::createBlank(1024, 1024, EBufferFormat::RGBA32F);
+  _instanceIdTex     = Texture::createBlank(1024, 1024, EBufferFormat::RGBA16UI);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::enqueueToRenderQueue(
@@ -93,7 +94,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   bool isPick    = context->FBI()->isPickState();
   bool isSkinned = _model->isSkinned();
   OrkAssert(false == isSkinned); // not yet..
-  if (not _instanceTex) {
+  if (not _instanceMatrixTex) {
     gpuInit(context); // todo figure out better do-only-once method...
   }
   ////////////////////////////////////////////////////////////////////
@@ -125,7 +126,14 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     texdata._autogenmips = false;
     texdata._data        = (const void*)_instancedata->_worldmatrices.data();
     OrkAssert(_count <= k_max_instances);
-    TXI->initTextureFromData(_instanceTex.get(), texdata);
+    TXI->initTextureFromData(_instanceMatrixTex.get(), texdata);
+    ////////////////////////////////////////////////////////
+    texdata._w           = k_texture_dimension;
+    texdata._h           = k_texture_dimension / 2;
+    texdata._format      = EBufferFormat::RGBA16UI;
+    texdata._autogenmips = false;
+    texdata._data        = (const void*)_instancedata->_pickids.data();
+    TXI->initTextureFromData(_instanceIdTex.get(), texdata);
     ////////////////////////////////////////////////////////
     // instanced render
     ////////////////////////////////////////////////////////
@@ -138,7 +146,8 @@ void InstancedModelDrawable::enqueueToRenderQueue(
         ////////////////////////////////////
         // bind instancetex to sampler
         ////////////////////////////////////
-        FXI->BindParamCTex(fxinst->_instancematrices, _instanceTex.get());
+        FXI->BindParamCTex(fxinst->_parInstanceMatrixMap, _instanceMatrixTex.get());
+        FXI->BindParamCTex(fxinst->_parInstanceIdMap, _instanceIdTex.get());
         ////////////////////////////////////
         int inumclus = xgmsub->_clusters.size();
         for (int ic = 0; ic < inumclus; ic++) {

@@ -306,7 +306,8 @@ struct InstancedModelDrawable final : public Drawable {
   instanceddrawdata_ptr_t _instancedata;
   size_t _count;
   svar16_t _impl;
-  mutable texture_ptr_t _instanceTex;
+  mutable texture_ptr_t _instanceMatrixTex;
+  mutable texture_ptr_t _instanceIdTex;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

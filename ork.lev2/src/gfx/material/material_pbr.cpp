@@ -167,7 +167,9 @@ void PBRMaterial::describeX(class_t* c) {
 ////////////////////////////////////////////
 
 void PBRMaterial::gpuInit(Context* targ) /*final*/ {
-  assert(_initialTarget == nullptr);
+  if (_initialTarget)
+    return;
+
   _initialTarget = targ;
   auto fxi       = targ->FXI();
   auto shass     = ork::asset::AssetManager<FxShaderAsset>::Load("orkshader://pbr");
@@ -201,6 +203,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parModColor            = fxi->parameter(_shader, "ModColor");
   _parBoneMatrices        = fxi->parameter(_shader, "BoneMatrices");
   _paramInstanceMatrixMap = fxi->parameter(_shader, "InstanceMatrices");
+  _paramInstanceIdMap     = fxi->parameter(_shader, "InstanceIds");
 
   assert(_paramMapNormal != nullptr);
   assert(_parBoneMatrices != nullptr);
@@ -503,7 +506,8 @@ fxinstance_ptr_t PBRMaterial::createFxStateInstance(FxStateInstanceConfig& cfg) 
   fxinst->_params[_parRoughnessFactor] = _roughnessFactor;
   fxinst->_params[_parModColor]        = fvec4(1, 1, 1, 1);
 
-  fxinst->_instancematrices = _paramInstanceMatrixMap;
+  fxinst->_parInstanceMatrixMap = _paramInstanceMatrixMap;
+  fxinst->_parInstanceIdMap     = _paramInstanceIdMap;
 
   return fxinst;
 }
