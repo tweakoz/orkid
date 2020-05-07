@@ -79,6 +79,7 @@ ContainerNode::ContainerNode(const AssetPath& pth, const Scanner& s)
 
   _validOutputDecorators.insert("perprimitiveNV");
   _validOutputDecorators.insert("taskNV");
+  _validOutputDecorators.insert("flat");
 
   std::string kws = "for while do struct const if else "
                     "return not and or true false "

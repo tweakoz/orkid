@@ -605,9 +605,9 @@ struct FunctionNode : public AstNode {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct PassNode : public NamedBlockNode {
-  PassNode(ContainerNode* cnode,TechniqueNode*tek)
+  PassNode(ContainerNode* cnode, TechniqueNode* tek)
       : NamedBlockNode(cnode)
-      , _techniqueNode(tek){
+      , _techniqueNode(tek) {
   }
 
   void generate(shaderbuilder::BackEnd& backend) const final;
@@ -663,7 +663,7 @@ struct InterfaceIoNode : public AstNode {
   StructNode* _inlineStruct = nullptr;
   std::string _semantic;
   InterfaceLayoutNode* _layout = nullptr;
-  std::set<std::string> _decorators;
+  std::set<std::string> _qualifiers;
   int _arraySize = 0;
 };
 

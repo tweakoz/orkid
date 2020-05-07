@@ -90,7 +90,7 @@ void IoContainerNode::pregen(shaderbuilder::BackEnd& backend) {
 void InterfaceNode::parseIos(const ScannerView& view, IoContainerNode* ioc) {
   size_t ist = view._start + 1;
   size_t ien = view._end - 1;
-  std::set<std::string> decos;
+  std::set<std::string> qualifiers;
 
   for (size_t i = ist; i <= ien;) {
     const Token* prv_tok = (i > 0) ? view.token(i - 1) : nullptr;
@@ -128,7 +128,7 @@ void InterfaceNode::parseIos(const ScannerView& view, IoContainerNode* ioc) {
     //////////////////////////////////
 
     if (_container->isIoAttrDecorator(dt_tok->text)) {
-      decos.insert(dt_tok->text);
+      qualifiers.insert(dt_tok->text);
       i++; // advance decorator
       continue;
     }
@@ -142,8 +142,8 @@ void InterfaceNode::parseIos(const ScannerView& view, IoContainerNode* ioc) {
     auto io          = new InterfaceIoNode(_container);
     ioc->_nodes.push_back(io);
     io->_typeName   = dt_tok->text;
-    io->_decorators = decos;
-    decos.clear();
+    io->_qualifiers = qualifiers;
+    qualifiers.clear();
     if (ioc->_pendinglayout) {
       io->_layout         = ioc->_pendinglayout;
       ioc->_pendinglayout = nullptr;
@@ -231,8 +231,6 @@ void InterfaceNode::parse(const ScannerView& view) {
   size_t ist = view._start + 1;
   size_t ien = view._end - 1;
 
-  std::set<std::string> output_decorators;
-
   for (size_t i = ist; i <= ien;) {
     const Token* prv_tok = (i > 0) ? view.token(i - 1) : nullptr;
     const Token* vt_tok  = view.token(i);
@@ -319,6 +317,8 @@ void IoContainerNode::emit(shaderbuilder::BackEnd& backend) const {
       codegen.output("in ");
     if (_direction == "out")
       codegen.output("out ");
+    for (auto item : node->_qualifiers)
+      codegen.output(item + " ");
     codegen.output(node->_typeName + " ");
     codegen.output(node->_name + " ");
     if (node->_inlineStruct) {
@@ -428,6 +428,11 @@ void InterfaceNode::_generate(shaderbuilder::BackEnd& backend) const {
     psi->_inputAttributes[input->_name] = pattr;
     pattr->mLocation                    = int(psi->_inputAttributes.size());
     pattr->mArraySize                   = input->_arraySize;
+    pattr->_typequalifier               = input->_qualifiers;
+
+    // for (auto deco : input->_decorators)
+    // pattr->mDecorators += deco + " ";
+
     if (input->_layout) {
       for (auto item : input->_layout->_tokens) {
         const auto& tok = item->text;
@@ -444,15 +449,15 @@ void InterfaceNode::_generate(shaderbuilder::BackEnd& backend) const {
     pattr->mDirection                     = "out";
     pattr->mLocation                      = iloc;
     psi->_outputAttributes[output->_name] = pattr;
-    pattr->_decorators                    = output->_decorators;
+    pattr->_typequalifier                 = output->_qualifiers;
 
     int arysiz = output->_arraySize;
     arysiz     = (arysiz == 0) ? psi->_gsprimoutsize : arysiz;
 
     pattr->mArraySize = arysiz;
 
-    for (auto deco : output->_decorators)
-      pattr->mDecorators += deco + " ";
+    // for (auto deco : output->_decorators)
+    // pattr->mDecorators += deco + " ";
 
     if (output->_inlineStruct) {
       backend._codegen.flush();

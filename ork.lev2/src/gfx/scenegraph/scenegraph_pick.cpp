@@ -39,7 +39,7 @@ uint64_t PickBuffer::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord
 }
 ///////////////////////////////////////////////////////////////////////////
 uint64_t PickBuffer::pickWithRay(fray3_constptr_t ray) {
-  _camdat.Persp(0.01, 1000, 1);
+  _camdat.Persp(0.01, 1000, 0.1);
 
   auto perp = ray->mDirection.Cross(fvec3(0, 1, 0));
   perp      = ray->mDirection.Cross(perp);

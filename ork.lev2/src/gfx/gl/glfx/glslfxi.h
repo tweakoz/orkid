@@ -97,7 +97,6 @@ struct Attribute {
   std::string mDirection;
   std::string mLayout;
   std::string mInlineStruct;
-  std::string mDecorators;
   GLenum meType;
   GLint mLocation;
   std::string mSemantic;
@@ -105,7 +104,7 @@ struct Attribute {
   int mArraySize;
   bool _typeIsInlineStruct = false;
   std::vector<std::string> _inlineStructToks;
-  std::set<std::string> _decorators;
+  std::set<std::string> _typequalifier;
   Attribute(const std::string& nam, const std::string& sem = "")
       : mName(nam)
       , mSemantic(sem)
@@ -248,8 +247,11 @@ struct Shader {
   void addUniformBlock(UniformBlock*);
   void setInputInterface(StreamInterface* iface);
 
+  void dumpFinalText() const;
+
   std::string mName;
   std::string mShaderText;
+  std::string _finalText;
   StreamInterface* _inputInterface = nullptr;
   Container* mpContainer           = nullptr;
   GLuint mShaderObjectId           = 0;

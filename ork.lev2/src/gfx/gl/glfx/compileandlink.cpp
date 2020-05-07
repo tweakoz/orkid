@@ -16,6 +16,13 @@ constexpr bool _DEBUG_SHADER_COMPILE = false;
 namespace ork::lev2::glslfx {
 ///////////////////////////////////////////////////////////////////////////////
 
+void Shader::dumpFinalText() const {
+  const char* c_str = _finalText.c_str();
+  printf("//////////////////////////////////\n");
+  printf("%s\n", c_str);
+  printf("//////////////////////////////////\n");
+}
+
 bool Shader::Compile() {
   GL_NF_ERRORCHECK();
   mShaderObjectId = glCreateShader(mShaderType);
@@ -33,6 +40,8 @@ bool Shader::Compile() {
   shadertext += "void main() { ";
   shadertext += mName;
   shadertext += "(); }\n";
+
+  _finalText        = shadertext;
   const char* c_str = shadertext.c_str();
 
   if (_DEBUG_SHADER_COMPILE) {
@@ -50,9 +59,7 @@ bool Shader::Compile() {
   if (GL_FALSE == compiledOk) {
     char infoLog[1 << 16];
     glGetShaderInfoLog(mShaderObjectId, sizeof(infoLog), NULL, infoLog);
-    printf("//////////////////////////////////\n");
-    printf("%s\n", c_str);
-    printf("//////////////////////////////////\n");
+    dumpFinalText();
     printf("Effect<%s>\n", mpContainer->mEffectName.c_str());
     printf("ShaderType<0x%x>\n", mShaderType);
     printf("Shader<%s> InfoLog<%s>\n", mName.c_str(), infoLog);
@@ -214,6 +221,10 @@ bool Interface::compilePipelineVTG(Container* container) {
     GLint linkstat = 0;
     glGetProgramiv(prgo, GL_LINK_STATUS, &linkstat);
     if (linkstat != GL_TRUE) {
+      if (pvtxshader)
+        pvtxshader->dumpFinalText();
+      if (pfrgshader)
+        pfrgshader->dumpFinalText();
       char infoLog[1 << 16];
       glGetProgramInfoLog(prgo, sizeof(infoLog), NULL, infoLog);
       printf("\n\n//////////////////////////////////\n");
