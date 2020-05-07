@@ -29,7 +29,7 @@ fragment_interface iface_fpick : ub_pick {
     vec4 frg_clr;
   }
   outputs {
-    layout(location = 0) vec4 out_clr;
+    layout(location = 0) uvec4 out_clr;
     layout(location = 1) vec4 out_nrmd;
   }
 }
@@ -44,7 +44,7 @@ vertex_shader vs_rigid_picking
 ///////////////////////////////////////////////////////////////
 fragment_shader fs_picking
 	: iface_fpick {
-		out_clr = vec4(1,1,0,1);//ModColor;
+		out_clr = uvec4(1,1,0,1);//ModColor;
     out_nrmd = vec4(0,1,0,0);
 }
 ///////////////////////////////////////////////////////////////
@@ -77,7 +77,7 @@ fragment_interface iface_fpick_instanced : ub_pick {
     vec4 frg_iid;
   }
   outputs {
-    layout(location = 0) vec4 out_clr;
+    layout(location = 0) uvec4 out_clr;
     layout(location = 1) vec4 out_nrmd;
     //layout(location = 2) uvec4 out_iid;
   }
@@ -103,13 +103,14 @@ vertex_shader vs_rigid_picking_instanced
     //////////////////////////////
     gl_Position = mvp*instanced_pos;
     frg_clr = ModColor;
-    frg_iid = vec4(iid.x,iid.y,iid.z,iid.w);
+    frg_iid = vec4(iid);
 }
+//0x0001 0000 0000 0001
 ///////////////////////////////////////////////////////////////
 fragment_shader fs_picking_instanced
 	: iface_fpick_instanced {
-		out_clr = frg_iid; //uvec4(100,2000,3000,9000);//ModColor;
-    out_nrmd = vec4(0,1,0,0);
+		out_clr = uvec4(frg_iid); //uvec4(100,2000,3000,9000);//ModColor;
+    out_nrmd = vec4(frg_iid);
 }
 ///////////////////////////////////////////////////////////////
 technique picking_rigid_instanced {

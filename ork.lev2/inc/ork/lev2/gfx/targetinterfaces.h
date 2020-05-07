@@ -138,7 +138,7 @@ struct PixelFetchContext {
   Context* _gfxContext = nullptr;
   RtGroup* mRtGroup;
   int miMrtMask;
-  fcolor4 mPickColors[kmaxitems];
+  svar256_t _pickvalues[kmaxitems];
   EPixelUsage mUsage[kmaxitems];
   anyp mUserData;
 };

@@ -308,6 +308,7 @@ struct InstancedModelDrawable final : public Drawable {
   svar16_t _impl;
   mutable texture_ptr_t _instanceMatrixTex;
   mutable texture_ptr_t _instanceIdTex;
+  mutable texture_ptr_t _instanceColorTex;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -315,6 +316,7 @@ struct InstancedModelDrawable final : public Drawable {
 struct InstancedDrawableData {
   void resize(size_t count);
   std::vector<fmtx4> _worldmatrices;
+  std::vector<fvec4> _modcolors;
   std::vector<uint64_t> _pickids;
   std::vector<svar16_t> _miscdata;
   size_t _count = 0;

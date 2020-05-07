@@ -219,14 +219,19 @@ void pyinit_gfx(py::module& module_lev2) {
   using rawtexptr_t = Texture*;
   type_codec->registerRawPtrCodec<tex_t, rawtexptr_t>(texture_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto instancedata_type = //
-      py::class_<InstancedDrawableData, instanceddrawdata_ptr_t>(
+  struct InstanceMatricesProxy {
+    instanceddrawdata_ptr_t _instancedata;
+  };
+  using matrixinstdata_ptr_t = std::shared_ptr<InstanceMatricesProxy>;
+  auto matrixinstdata_type   = //
+      py::class_<InstanceMatricesProxy, matrixinstdata_ptr_t>(
           module_lev2, //
-          "InstancedDrawableData",
+          "InstancedMatrices",
           pybind11::buffer_protocol())
-          .def_buffer([](InstancedDrawableData& idata) -> pybind11::buffer_info {
-            auto data = idata._worldmatrices.data(); // Pointer to buffer
-            int count = idata._worldmatrices.size();
+          .def_buffer([](InstanceMatricesProxy& proxy) -> pybind11::buffer_info {
+            auto idata = proxy._instancedata;
+            auto data  = idata->_worldmatrices.data(); // Pointer to buffer
+            int count  = idata->_worldmatrices.size();
             return pybind11::buffer_info(
                 data,          // Pointer to buffer
                 sizeof(float), // Size of one scalar
@@ -234,6 +239,47 @@ void pyinit_gfx(py::module& module_lev2) {
                 3,                                                       // Number of dimensions
                 {count, 4, 4},                                           // Buffer dimensions
                 {sizeof(float) * 16, sizeof(float) * 4, sizeof(float)}); // Strides (in bytes) for each index
+          });
+  type_codec->registerStdCodec<matrixinstdata_ptr_t>(matrixinstdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  struct InstanceColorsProxy {
+    instanceddrawdata_ptr_t _instancedata;
+  };
+  using colorsinstdata_ptr_t = std::shared_ptr<InstanceColorsProxy>;
+  auto colorsinstdata_type   = //
+      py::class_<InstanceColorsProxy, colorsinstdata_ptr_t>(
+          module_lev2, //
+          "InstanceColors",
+          pybind11::buffer_protocol())
+          .def_buffer([](InstanceColorsProxy& proxy) -> pybind11::buffer_info {
+            auto idata = proxy._instancedata;
+            auto data  = idata->_modcolors.data(); // Pointer to buffer
+            int count  = idata->_modcolors.size();
+            return pybind11::buffer_info(
+                data,          // Pointer to buffer
+                sizeof(float), // Size of one scalar
+                pybind11::format_descriptor<float>::format(),
+                2,                                   // Number of dimensions
+                {count, 4},                          // Buffer dimensions
+                {sizeof(float) * 4, sizeof(float)}); // Strides (in bytes) for each index
+          });
+  type_codec->registerStdCodec<colorsinstdata_ptr_t>(colorsinstdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto instancedata_type = //
+      py::class_<InstancedDrawableData, instanceddrawdata_ptr_t>(
+          module_lev2, //
+          "InstancedDrawableData")
+          .def_property_readonly(
+              "matrices",
+              [](instanceddrawdata_ptr_t idata) -> matrixinstdata_ptr_t {
+                auto proxy           = std::make_shared<InstanceMatricesProxy>();
+                proxy->_instancedata = idata;
+                return proxy;
+              })
+          .def_property_readonly("colors", [](instanceddrawdata_ptr_t idata) -> colorsinstdata_ptr_t {
+            auto proxy           = std::make_shared<InstanceColorsProxy>();
+            proxy->_instancedata = idata;
+            return proxy;
           });
   type_codec->registerStdCodec<instanceddrawdata_ptr_t>(instancedata_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -263,7 +309,14 @@ void pyinit_gfx(py::module& module_lev2) {
           [](const PixelFetchContext& pfc, int index) -> fvec4 {
             OrkAssert(index >= 0);
             OrkAssert(index < PixelFetchContext::kmaxitems);
-            return pfc.mPickColors[index];
+            return pfc._pickvalues[index].Get<fvec4>();
+          })
+      .def(
+          "pointer",
+          [](const PixelFetchContext& pfc, int index) -> fvec4 {
+            OrkAssert(index >= 0);
+            OrkAssert(index < PixelFetchContext::kmaxitems);
+            return pfc._pickvalues[index].Get<uint64_t>();
           })
       .def("__repr__", [](const PixelFetchContext& pfc) -> std::string {
         fxstring<256> fxs;
@@ -405,6 +458,14 @@ void pyinit_gfx(py::module& module_lev2) {
               "lookAt",                                                        //
               [](cameradata_ptr_t camera, fvec3& eye, fvec3& tgt, fvec3& up) { //
                 camera->Lookat(eye, tgt, up);
+              })
+          .def(
+              "projectDepthRay",                                              //
+              [](cameradata_ptr_t camera, fvec2_ptr_t pos2d) -> fray3_ptr_t { //
+                auto cammat = camera->computeMatrices(1280.0 / 720.0);
+                auto rval   = std::make_shared<fray3>();
+                cammat.projectDepthRay(*pos2d.get(), *rval.get());
+                return rval;
               });
   type_codec->registerStdCodec<cameradata_ptr_t>(camdattype);
   /////////////////////////////////////////////////////////////////////////////////

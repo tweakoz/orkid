@@ -34,9 +34,11 @@ void InstancedDrawableData::resize(size_t count) {
   _worldmatrices.resize(max_inst);
   _miscdata.resize(max_inst);
   _pickids.resize(max_inst);
+  _modcolors.resize(max_inst);
   _count = count;
   for (size_t i = 0; i < max_inst; i++) {
-    _pickids[i] = i;
+    _pickids[i]   = i;
+    _modcolors[i] = fvec4(1, 1, 1, 1);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

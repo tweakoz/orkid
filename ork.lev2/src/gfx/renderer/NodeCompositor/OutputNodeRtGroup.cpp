@@ -46,6 +46,14 @@ struct RTGIMPL {
       _fxpColorMapA   = _blit2screenmtl.param("MapA");
       _fxpColorMapB   = _blit2screenmtl.param("MapB");
       _needsinit      = false;
+      int w           = ctx->mainSurfaceWidth();
+      int h           = ctx->mainSurfaceHeight();
+      if (ctx->hiDPI()) {
+        w /= 2;
+        h /= 2;
+      }
+      _width  = w;
+      _height = h;
     }
   }
   ///////////////////////////////////////
@@ -56,14 +64,6 @@ struct RTGIMPL {
     auto CIMPL                   = drawdata._cimpl;
     auto DB                      = RCFD.GetDB();
     Context* targ                = drawdata.context();
-    int w                        = targ->mainSurfaceWidth();
-    int h                        = targ->mainSurfaceHeight();
-    if (targ->hiDPI()) {
-      w /= 2;
-      h /= 2;
-    }
-    _width  = w;
-    _height = h;
     //////////////////////////////////////////////////////
     drawdata._properties["OutputWidth"_crcu].Set<int>(_width);
     drawdata._properties["OutputHeight"_crcu].Set<int>(_height);
@@ -96,6 +96,11 @@ RtGroupOutputCompositingNode::RtGroupOutputCompositingNode() {
   _impl = std::make_shared<RTGIMPL>(this);
 }
 RtGroupOutputCompositingNode::~RtGroupOutputCompositingNode() {
+}
+void RtGroupOutputCompositingNode::resize(int w, int h) {
+  auto impl     = _impl.Get<std::shared_ptr<RTGIMPL>>();
+  impl->_width  = w;
+  impl->_height = h;
 }
 void RtGroupOutputCompositingNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
   _impl.Get<std::shared_ptr<RTGIMPL>>()->gpuInit(pTARG);

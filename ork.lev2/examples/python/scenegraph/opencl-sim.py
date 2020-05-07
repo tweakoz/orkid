@@ -47,6 +47,12 @@ class instance_set_class(_simsetup.InstanceSet):
     localsize = None
     self.clkernel.prg.cl_concatenate_mtx4(self.clkernel.queue, globalsize, localsize, current, delta, self.res_g)
     cl.enqueue_copy(self.clkernel.queue, self.instancematrices, self.res_g)
+    index = random.randint(0,numinstances)
+    color = vec4(random.uniform(0,1),
+                 random.uniform(0,1),
+                 random.uniform(0,1),
+                 1)
+    self.instancecolors[index] = color
 ################################################################################
 class OpenClSimApp(_simsetup.SimApp):
   ################################################

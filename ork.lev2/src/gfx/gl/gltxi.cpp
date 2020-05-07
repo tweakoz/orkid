@@ -305,14 +305,20 @@ void GlTextureInterface::generateMipMaps(Texture* ptex) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
-  if (nullptr == ptex->_internalHandle) {
-    auto texobj           = new GLTextureObject;
-    ptex->_internalHandle = (void*)texobj;
-    glGenTextures(1, &texobj->mObject);
-  }
-  auto pTEXOBJ = (GLTextureObject*)ptex->_internalHandle;
 
-  glBindTexture(GL_TEXTURE_2D, pTEXOBJ->mObject);
+  GLTextureObject* pTEXOBJ = nullptr;
+  if (nullptr == ptex->_internalHandle) {
+    pTEXOBJ               = new GLTextureObject;
+    ptex->_internalHandle = (void*)pTEXOBJ;
+    glGenTextures(1, &pTEXOBJ->mObject);
+    glBindTexture(GL_TEXTURE_2D, pTEXOBJ->mObject);
+    if (ptex->_debugName.length()) {
+      mTargetGL.debugLabel(GL_TEXTURE, pTEXOBJ->mObject, ptex->_debugName);
+    }
+  } else {
+    pTEXOBJ = (GLTextureObject*)ptex->_internalHandle;
+    glBindTexture(GL_TEXTURE_2D, pTEXOBJ->mObject);
+  }
 
   bool size_or_fmt_dirty = (ptex->_width != tid._w) or (ptex->_height != tid._h) or (ptex->_texFormat != tid._format);
 

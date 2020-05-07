@@ -107,6 +107,7 @@ void CompositingData::presetPBR() {
   _activeItem  = "item1"_pool;
   _scenes.AddSorted("scene1"_pool, s1);
 }
+
 //////////////////////////////////////////////////////////////////////////////
 
 void CompositingData::presetPBRVR() {
@@ -129,6 +130,28 @@ void CompositingData::presetPBRVR() {
   _activeScene = "scene1"_pool;
   _activeItem  = "item1"_pool;
   _scenes.AddSorted("scene1"_pool, s1);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+const CompositingScene* CompositingData::findScene(const PoolString& named) const {
+  const CompositingScene* rval = nullptr;
+  auto it                      = _scenes.find(named);
+  if (it != _scenes.end()) {
+    rval = dynamic_cast<const CompositingScene*>(it->second);
+  }
+  return rval;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+const CompositingSceneItem* CompositingScene::findItem(const PoolString& named) const {
+  const CompositingSceneItem* rval = nullptr;
+  auto it                          = _items.find(named);
+  if (it != _items.end()) {
+    rval = dynamic_cast<const CompositingSceneItem*>(it->second);
+  }
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

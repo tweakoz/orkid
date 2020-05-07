@@ -204,6 +204,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parBoneMatrices        = fxi->parameter(_shader, "BoneMatrices");
   _paramInstanceMatrixMap = fxi->parameter(_shader, "InstanceMatrices");
   _paramInstanceIdMap     = fxi->parameter(_shader, "InstanceIds");
+  _paramInstanceColorMap  = fxi->parameter(_shader, "InstanceColors");
 
   assert(_paramMapNormal != nullptr);
   assert(_parBoneMatrices != nullptr);
@@ -508,6 +509,7 @@ fxinstance_ptr_t PBRMaterial::createFxStateInstance(FxStateInstanceConfig& cfg) 
 
   fxinst->_parInstanceMatrixMap = _paramInstanceMatrixMap;
   fxinst->_parInstanceIdMap     = _paramInstanceIdMap;
+  fxinst->_parInstanceColorMap  = _paramInstanceColorMap;
 
   return fxinst;
 }

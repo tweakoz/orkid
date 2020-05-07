@@ -217,8 +217,8 @@ void OuterPickOp(defpickopctx_ptr_t pickctx) {
         target->makeCurrentContext();
 
         viewport->GetPixel(pickctx->miX, pickctx->miY, pixel_ctx); // HERE<<<<<<
-        const auto& colr0   = pickctx->_pixelctx.mPickColors[0];
-        const auto& colr1   = pickctx->_pixelctx.mPickColors[1];
+        const auto& colr0   = pickctx->_pixelctx._pickvalues[0];
+        const auto& colr1   = pickctx->_pixelctx._pickvalues[1];
         pickctx->mpCastable = pixel_ctx.GetObject(viewport->pickbuffer(), 0);
         // printf("GOTCLR0<%g %g %g %g>\n", colr0.x, colr0.y, colr0.z, colr0.w);
         // printf("GOTCLR1<%g %g %g %g>\n", colr1.x, colr1.y, colr1.z, colr1.w);

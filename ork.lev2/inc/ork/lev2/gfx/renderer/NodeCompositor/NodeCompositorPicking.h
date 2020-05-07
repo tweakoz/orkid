@@ -16,7 +16,7 @@ namespace ork::lev2 {
 ///   shall select all pick variants of shaders throught the frame
 ///////////////////////////////////////////////////////////////////////////////
 
-class PickingCompositingNode : public RenderCompositingNode {
+struct PickingCompositingNode : public RenderCompositingNode {
   DeclareConcreteX(PickingCompositingNode, RenderCompositingNode);
 
 public:
@@ -26,7 +26,8 @@ public:
   PoolString _layername;
   fvec4 _clearColor;
 
-private:
+  void resize(int w, int h);
+
   void doGpuInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
 

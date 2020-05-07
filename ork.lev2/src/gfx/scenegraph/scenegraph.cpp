@@ -123,6 +123,12 @@ uint64_t Scene::pickWithRay(fray3_constptr_t ray) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+uint64_t Scene::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord) {
+  OrkAssert(_pickbuffer);
+  return _pickbuffer->pickWithScreenCoord(cam, screencoord);
+}
+///////////////////////////////////////////////////////////////////////////////
+
 void Scene::initWithParams(varmap::varmap_ptr_t params) {
   _lightManagerData = std::make_shared<LightManagerData>();
   _lightManager     = std::make_shared<LightManager>(*_lightManagerData.get());
@@ -239,6 +245,17 @@ void Scene::renderOnContext(Context* context) {
     _compositorImpl->composite(drawdata);
     _compositorImpl->popCPD();
     context->popRenderContextFrameData();
+
+    ////////////////////////////////////////////////////////////////////////////
+    // debug picking here, so it shows up in renderdoc (within frame boundaries)
+    ////////////////////////////////////////////////////////////////////////////
+    if (0) {
+      auto r   = std::make_shared<fray3>(fvec3(0, 0, 5), fvec3(0, 0, -1));
+      auto val = pickWithRay(r);
+      printf("%zx\n", val);
+    }
+    ////////////////////////////////////////////////////////////////////////////
+
     context->endFrame();
   }
   DrawableBuffer::releaseReadDB(DB);

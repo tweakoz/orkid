@@ -88,14 +88,18 @@ struct Layer {
 };
 
 ///////////////////////////////////////////////////////////////////////////
-struct PickBuffer : public ork::lev2::PickBuffer {
+struct PickBuffer {
   PickBuffer(ork::lev2::Context* ctx, Scene& scene);
-  void mydraw(lev2::PixelFetchContext& ctx, fray3_constptr_t ray);
+  void mydraw(fray3_constptr_t ray);
   uint64_t pickWithRay(fray3_constptr_t ray);
+  uint64_t pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord);
   Scene& _scene;
+  lev2::PixelFetchContext _pixelfetchctx;
+  lev2::Context* _context    = nullptr;
   CompositingData* _compdata = nullptr;
   compositorimpl_ptr_t _compimpl;
   fmtx4_ptr_t _pick_mvp_matrix;
+  CameraData _camdat;
 };
 using pickbuffer_ptr_t = std::shared_ptr<PickBuffer>;
 
@@ -114,6 +118,7 @@ struct Scene {
   void renderOnContext(Context* ctx);
   void gpuInit(Context* ctx);
   uint64_t pickWithRay(fray3_constptr_t ray);
+  uint64_t pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord);
   DefaultRenderer _renderer;
   lightmanager_ptr_t _lightManager;
   lightmanagerdata_ptr_t _lightManagerData;

@@ -11,7 +11,9 @@ class InstanceSet(object):
     super().__init__()
     self.model = model
     self.sgnode = model.createInstancedNode(num_instances,"node1",layer)
-    self.instancematrices = np.array(self.sgnode.instanceData, copy = False)
+    idata = self.sgnode.instanceData
+    self.instancematrices = np.array(idata.matrices, copy = False)
+    self.instancecolors = np.array(idata.colors, copy = False)
     self.deltas = np.zeros((num_instances,4,4),dtype=np.float32) # array of 4x4 matrices
     for i in range(num_instances):
       #####################################
@@ -47,15 +49,13 @@ class SimApp(object):
     self.sceneparams.preset = "PBRVR" if vrmode else "PBR"
     self.qtapp = OrkEzQtApp.create(self)
     self.qtapp.setRefreshPolicy(RefreshFastest, 0)
-    self.instancesets=[]
+    self.instanceset=None
     self.instance_set_class = instance_set_class
   ##############################################
   def onGpuInit(self,ctx):
     layer = self.scene.createLayer("layer1")
-    models = [Model("src://environ/objects/misc/ref/uvsph.glb")]
-    ###################################
-    for model in models:
-      self.instancesets += [self.instance_set_class(model,layer)]
+    model = Model("src://environ/objects/misc/ref/uvsph.glb")
+    self.instanceset = self.instance_set_class(model,layer)
     ###################################
     self.camera = CameraData()
     self.cameralut = CameraDataLut()
@@ -68,8 +68,7 @@ class SimApp(object):
   ################################################
   def onUpdate(self,updinfo):
     ###################################
-    for minst in self.instancesets:
-      minst.update(updinfo.deltatime)
+    self.instanceset.update(updinfo.deltatime)
     ###################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
 ################################################

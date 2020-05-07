@@ -27,7 +27,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           .def_property_readonly(
               "y",                            //
               [](ui::event_ptr_t ev) -> int { //
-                return ev->miX;
+                return ev->miY;
               })
           .def_property_readonly(
               "code",                         //

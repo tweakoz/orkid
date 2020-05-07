@@ -133,8 +133,8 @@ void Interface::BindParamMatrixArray(const FxShaderParam* hpar, const fmtx4* Mat
 ///////////////////////////////////////////////////////////////////////////////
 
 void Interface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
-  Container* container         = static_cast<Container*>(_activeShader->GetInternalHandle());
-  Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
+  auto container               = static_cast<Container*>(_activeShader->GetInternalHandle());
+  auto puni                    = static_cast<Uniform*>(hpar->GetPlatformHandle());
   const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
   // printf("Bind1 Tex<%p> puni<%p> par<%s> pinst<%p>\n", pTex, puni, hpar->_name.c_str(), pinst);
   if (pinst) {

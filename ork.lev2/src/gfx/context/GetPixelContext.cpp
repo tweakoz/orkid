@@ -33,7 +33,7 @@ PixelFetchContext::PixelFetchContext()
     , miMrtMask(0)
     , mUserData(nullptr) {
   for (int i = 0; i < kmaxitems; i++) {
-    mPickColors[i] = fcolor4(0.0f, 0.0f, 0.0f, 0.0f);
+    _pickvalues[i] = fcolor4(0.0f, 0.0f, 0.0f, 0.0f);
     mUsage[i]      = EPU_FLOAT;
   }
 }
@@ -56,10 +56,10 @@ ork::rtti::ICastable* PixelFetchContext::GetObject(PickBuffer* pb, int ichan) co
 /////////////////////////////////////////////////////////////////////////
 
 void* PixelFetchContext::GetPointer(int ichan) const {
-  const fvec4& TestColor = mPickColors[ichan];
-  uint64_t uobj          = TestColor.GetRGBAU64();
-  if (0 != uobj) {
-    void* pObj = reinterpret_cast<void*>(uobj);
+  const auto& pickv = _pickvalues[ichan];
+  if (auto as_u64 = pickv.TryAs<uint64_t>()) {
+    uint64_t uobj = as_u64.value();
+    void* pObj    = reinterpret_cast<void*>(uobj);
     return pObj;
   }
   return nullptr;

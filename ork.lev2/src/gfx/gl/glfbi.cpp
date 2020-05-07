@@ -587,9 +587,11 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
           for (int MrtIndex = 0; MrtIndex < 4; MrtIndex++) {
             int MrtTest = 1 << MrtIndex;
 
-            ctx.mPickColors[MrtIndex] = fcolor4(0.0f, 0.0f, 0.0f, 0.0f);
+            ctx._pickvalues[MrtIndex] = fcolor4(0.0f, 0.0f, 0.0f, 0.0f);
 
             if (MrtTest & MrtMask) {
+
+              auto rtbuffer = ctx.mRtGroup->GetMrt(MrtIndex);
 
               OrkAssert(MrtIndex < ctx.mRtGroup->GetNumTargets());
 
@@ -601,11 +603,36 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
               GL_ERRORCHECK();
 
               float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-
-              glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*)rgba);
+              switch (ctx.mUsage[MrtIndex]) {
+                case PixelFetchContext::EPU_PTR64: {
+                  uint64_t value = 0xffffffffffffffff;
+                  OrkAssert(rtbuffer->mFormat == EBufferFormat::RGBA16UI);
+                  glReadPixels(sx, sy, 1, 1, GL_RGBA_INTEGER, GL_UNSIGNED_SHORT, (void*)&value);
+                  /////////////////////////////////////////////////////////////////
+                  // swizzle so hex appears as xxxxyyyyzzzzwwww
+                  /////////////////////////////////////////////////////////////////
+                  // uint64_t a, b, c, d;
+                  // a             = (value >> 48) & 0xffff;
+                  // b             = (value >> 32) & 0xffff;
+                  // c             = (value >> 16) & 0xffff;
+                  // d             = (value >> 0) & 0xffff;
+                  // uint64_t rval = (d << 48) | (c << 32) | (b << 16) | a;
+                  /////////////////////////////////////////////////////////////////
+                  ctx._pickvalues[MrtIndex].Set<uint64_t>(value);
+                  /////////////////////////////////////////////////////////////////
+                  break;
+                }
+                case PixelFetchContext::EPU_FLOAT: {
+                  fvec4 rv;
+                  glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*)rv.GetArray());
+                  ctx._pickvalues[MrtIndex].Set<fvec4>(rv);
+                  break;
+                }
+                default:
+                  OrkAssert(false);
+                  break;
+              }
               GL_ERRORCHECK();
-              fvec4 rv                  = fvec4(rgba[0], rgba[1], rgba[2], rgba[3]);
-              ctx.mPickColors[MrtIndex] = rv;
 
               // printf("getpix MrtIndex<%d> rx<%d> ry<%d> <%g %g %g %g>\n", MrtIndex, sx, sy, rv.x, rv.y, rv.z, rv.w);
             }
@@ -621,7 +648,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
     } else {
     }
   } else if (bInBounds) {
-    ctx.mPickColors[0] = Color;
+    ctx._pickvalues[0] = Color;
   }
   mTarget.debugPopGroup();
 }

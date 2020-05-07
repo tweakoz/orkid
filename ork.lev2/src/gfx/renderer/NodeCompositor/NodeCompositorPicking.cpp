@@ -28,30 +28,33 @@ void PickingCompositingNode::describeX(class_t* c) {
 ///////////////////////////////////////////////////////////////////////////
 constexpr int NUMSAMPLES = 1;
 ///////////////////////////////////////////////////////////////////////////////
-namespace forwardnode {
+namespace picking {
 struct IMPL {
   ///////////////////////////////////////
   IMPL()
       : _camname(AddPooledString("Camera")) {
     _layername = "All"_pool;
+    _width     = 8;
+    _height    = 8;
   }
   ///////////////////////////////////////
   ~IMPL() {
   }
   ///////////////////////////////////////
-  void init(lev2::Context* pTARG) {
+  void gpuInit(lev2::Context* pTARG) {
     pTARG->debugPushGroup("Picking::rendeinitr");
     if (nullptr == _rtg) {
       _material.gpuInit(pTARG);
-      _rtg             = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
-      auto buf1        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA32F, 8, 8);
-      auto buf2        = new RtBuffer(lev2::ERTGSLOT1, lev2::EBufferFormat::RGBA32F, 8, 8);
+      _rtg             = new RtGroup(pTARG, _width, _height, NUMSAMPLES);
+      auto buf1        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA16UI, _width, _height);
+      auto buf2        = new RtBuffer(lev2::ERTGSLOT1, lev2::EBufferFormat::RGBA32F, _width, _height);
       buf1->_debugName = "PickingRt0";
       buf2->_debugName = "PickingRt1";
       _rtg->SetMrt(0, buf1);
       _rtg->SetMrt(1, buf2);
     }
     pTARG->debugPopGroup();
+    _initted = true;
   }
   ///////////////////////////////////////
   void _render(PickingCompositingNode* node, CompositorDrawData& drawdata) {
@@ -68,10 +71,8 @@ struct IMPL {
     //////////////////////////////////////////////////////
     // Resize RenderTargets
     //////////////////////////////////////////////////////
-    int newwidth  = ddprops["OutputWidth"_crcu].Get<int>();
-    int newheight = ddprops["OutputHeight"_crcu].Get<int>();
-    if (_rtg->GetW() != newwidth or _rtg->GetH() != newheight) {
-      _rtg->Resize(newwidth, newheight);
+    if (_rtg->GetW() != _width or _rtg->GetH() != _height) {
+      _rtg->Resize(_width, _height);
     }
     //////////////////////////////////////////////////////
     auto irenderer = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
@@ -121,32 +122,44 @@ struct IMPL {
   CompositingMaterial _material;
   RtGroup* _rtg = nullptr;
   fmtx4 _viewOffsetMatrix;
+  int _width, _height;
+  bool _initted = false;
 };
-} // namespace forwardnode
+} // namespace picking
 
 ///////////////////////////////////////////////////////////////////////////////
 PickingCompositingNode::PickingCompositingNode() {
-  _impl = std::make_shared<forwardnode::IMPL>();
+  _impl = std::make_shared<picking::IMPL>();
 }
 ///////////////////////////////////////////////////////////////////////////////
 PickingCompositingNode::~PickingCompositingNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void PickingCompositingNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
-  _impl.Get<std::shared_ptr<forwardnode::IMPL>>()->init(pTARG);
+void PickingCompositingNode::resize(int w, int h) {
+  auto impl     = _impl.Get<std::shared_ptr<picking::IMPL>>();
+  impl->_width  = w;
+  impl->_height = h;
+}
+///////////////////////////////////////////////////////////////////////////////
+void PickingCompositingNode::doGpuInit(lev2::Context* context, int iW, int iH) {
+  auto impl = _impl.Get<std::shared_ptr<picking::IMPL>>();
+  if (not impl->_initted) {
+    resize(iW, iH);
+    impl->gpuInit(context);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PickingCompositingNode::DoRender(CompositorDrawData& drawdata) {
-  auto impl = _impl.Get<std::shared_ptr<forwardnode::IMPL>>();
+  auto impl = _impl.Get<std::shared_ptr<picking::IMPL>>();
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 RtBuffer* PickingCompositingNode::GetOutput() const {
-  return _impl.Get<std::shared_ptr<forwardnode::IMPL>>()->_rtg->GetMrt(0);
+  return _impl.Get<std::shared_ptr<picking::IMPL>>()->_rtg->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 RtGroup* PickingCompositingNode::GetOutputGroup() const {
-  return _impl.Get<std::shared_ptr<forwardnode::IMPL>>()->_rtg;
+  return _impl.Get<std::shared_ptr<picking::IMPL>>()->_rtg;
 }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

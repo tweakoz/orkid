@@ -171,7 +171,7 @@ void Pass::postProc(const Container* container) {
       GLchar nambuf[256];
       glGetActiveUniform(_programObjectId, i, sizeof(nambuf), &namlen, &unisiz, &unityp, nambuf);
       OrkAssert(namlen < sizeof(nambuf));
-      // printf("find uni<%s>\n", nambuf);
+      printf("find uni<%s>\n", nambuf);
       GL_ERRORCHECK();
 
       str_name = nambuf;
@@ -215,6 +215,7 @@ void Pass::postProc(const Container* container) {
     } else {
       it = flatunimap.find(str_name);
       assert(it != flatunimap.end());
+      printf("uni<%s> not found!\n", str_name.c_str());
       // prob a UBO uni
     }
   }

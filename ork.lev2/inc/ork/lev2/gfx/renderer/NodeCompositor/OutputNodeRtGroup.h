@@ -21,6 +21,8 @@ public:
 
   PoolString _layername;
 
+  void resize(int w, int h);
+
 private:
   void gpuInit(lev2::Context* pTARG, int w, int h) final;
   void beginAssemble(CompositorDrawData& drawdata) final;

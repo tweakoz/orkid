@@ -253,7 +253,7 @@ ui::HandlerResult GedVP::DoOnUiEvent(ui::event_constptr_t EV) {
       ork::rtti::ICastable* pobj = ctx.GetObject(_pickbuffer, 0);
 
       bool is_in_set = IsObjInSet(pobj);
-      const auto clr = ctx.mPickColors[0];
+      const auto clr = ctx._pickvalues[0];
       // printf("GetPixel color<%g %g %g %g>\n", clr.x, clr.y, clr.z, clr.w);
       // orkprintf("Object<%p> is_in_set<%d> ilocx<%d> ilocy<%d> fx<%f> fy<%f>\n", pobj, int(is_in_set), ilocx, ilocy, fx, fy);
 

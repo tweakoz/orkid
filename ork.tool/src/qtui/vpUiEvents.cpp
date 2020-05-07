@@ -312,7 +312,7 @@ void SceneEditorVPToolHandler::setSpawnLoc(const lev2::PixelFetchContext& ctx, f
 
     auto& camdat = cam->_curMatrices;
 
-    fvec4 normal_d = ctx.mPickColors[1];
+    auto normal_d = ctx._pickvalues[1].Get<fvec4>();
 
     orkprintf("normal_d <%f,%f,%f,%f>\n", normal_d.x, normal_d.y, normal_d.z, normal_d.w);
 

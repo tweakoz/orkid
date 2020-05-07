@@ -42,6 +42,7 @@ public:
   orklut<PoolString, ork::Object*>& items() {
     return _items;
   }
+  const CompositingSceneItem* findItem(const PoolString& named) const;
 
 private:
   orklut<PoolString, ork::Object*> _items;
@@ -228,6 +229,8 @@ public:
   orklut<PoolString, ork::Object*>& scenes() {
     return _scenes;
   }
+
+  const CompositingScene* findScene(const PoolString& named) const;
 
   PoolString& GetActiveScene() const {
     return _activeScene;

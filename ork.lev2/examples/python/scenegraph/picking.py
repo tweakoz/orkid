@@ -56,10 +56,18 @@ class PickingApp(_simsetup.SimApp):
     #print("x<%d> y<%d> code<%d>"%(event.x,event.y,event.code))
     #print("shift<%d> alt<%d> ctrl<%d>"%(event.shift,event.alt,event.ctrl))
     #print("left<%d> middle<%d> right<%d>"%(event.left,event.middle,event.right))
-    #assert(self.scene)
-    ray = ray3(vec3(0,0,0),vec3(0,0,-1))
-    picked = self.scene.pickWithRay(ray)
-    print("%s"%hex(picked))
+
+    if True: #event.code==3:
+      picked = self.scene.pickWithScreenCoord(self.camera,vec2(event.x,event.y))
+      #print("%s"%(hex(picked)))
+      assert(picked<=numinstances);
+      color = vec4(random.uniform(0,1),
+                   random.uniform(0,1),
+                   random.uniform(0,1),
+                   1)
+      iset = self.instanceset
+      iset.instancecolors[picked] = color
+    pass
   ################################################
 app = PickingApp()
 app.qtapp.exec()

@@ -56,6 +56,19 @@ void pyinit_scenegraph(py::module& module_lev2) {
                   OrkAssert(false);
                 }
                 return node->_userdata;
+              })
+          .def(
+              "setInstanceColor",                                            //
+              [](drawablenode_ptr_t node, int instance, fvec4_ptr_t color) { //
+                auto drw     = node->_drawable;
+                auto instdrw = std::dynamic_pointer_cast<InstancedModelDrawable>(drw);
+                if (instdrw) {
+                  auto instdata                  = instdrw->_instancedata;
+                  instdata->_modcolors[instance] = *color.get();
+                } else {
+                  OrkAssert(false);
+                }
+                return node->_userdata;
               });
   type_codec->registerStdCodec<drawablenode_ptr_t>(drawablenode_type);
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
@@ -109,10 +122,17 @@ void pyinit_scenegraph(py::module& module_lev2) {
               [](scene_ptr_t SG, ctx_t context) { //
                 SG->renderOnContext(context.get());
               })
-          .def("pickWithRay", [](scene_ptr_t SG, fray3_ptr_t ray) -> uint64_t { //
+          .def(
+              "pickWithRay",
+              [](scene_ptr_t SG, fray3_ptr_t ray) -> uint64_t { //
+                OrkAssert(SG != nullptr);
+                OrkAssert(ray != nullptr);
+                return SG->pickWithRay(ray);
+              })
+          .def("pickWithScreenCoord", [](scene_ptr_t SG, cameradata_ptr_t cam, fvec2_ptr_t scoord) -> uint64_t { //
             OrkAssert(SG != nullptr);
-            OrkAssert(ray != nullptr);
-            return SG->pickWithRay(ray);
+            OrkAssert(scoord != nullptr);
+            return SG->pickWithScreenCoord(cam, *scoord.get());
           });
   type_codec->registerStdCodec<scene_ptr_t>(scenegraph_type);
 }
