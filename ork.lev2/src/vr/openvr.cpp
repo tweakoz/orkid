@@ -300,8 +300,8 @@ void OpenVrDevice::_processControllerEvents() {
 
       auto lmatrix_dump = lmatrix.dump4x3cn();
       auto rmatrix_dump = rmatrix.dump4x3cn();
-      //      printf("lmatrix<%s>\n", lmatrix_dump.c_str());
-      //    printf("rmatrix<%s>\n", rmatrix_dump.c_str());
+      // printf("lmatrix<%s>\n", lmatrix_dump.c_str());
+      // printf("rmatrix<%s>\n", rmatrix_dump.c_str());
       handgroup->setChannel("left.matrix").as<fmtx4>(lmatrix);
       handgroup->setChannel("right.matrix").as<fmtx4>(rmatrix);
 

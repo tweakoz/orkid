@@ -9,12 +9,14 @@ class InstanceSet(object):
   ########################################################
   def __init__(self,model,num_instances,layer):
     super().__init__()
+    self.numinstances = num_instances
     self.model = model
     self.sgnode = model.createInstancedNode(num_instances,"node1",layer)
     idata = self.sgnode.instanceData
     self.instancematrices = np.array(idata.matrices, copy = False)
     self.instancecolors = np.array(idata.colors, copy = False)
-    self.deltas = np.zeros((num_instances,4,4),dtype=np.float32) # array of 4x4 matrices
+    self.delta_rots = np.zeros((num_instances,4,4),dtype=np.float32) # array of 4x4 matrices
+    self.delta_tras = np.zeros((num_instances,4,4),dtype=np.float32) # array of 4x4 matrices
     for i in range(num_instances):
       #####################################
       # rotation increment
@@ -27,9 +29,13 @@ class InstanceSet(object):
       as_mtx4 = mtx4()
       trans = vec3(random.uniform(-1,1),
                    random.uniform(-1,1),
-                   random.uniform(-1,1))*0.01
+                   random.uniform(-1,1))*0.001
       as_mtx4.compose(trans,rot,1.0)
-      self.deltas[i]=as_mtx4 # copy into numpy block
+      invtramtx = mtx4.transMatrix(trans*-1)
+      tramtx = mtx4.transMatrix(trans)
+      rotmtx = mtx4.rotMatrix(rot)
+      self.delta_rots[i]=rotmtx # copy into numpy block
+      self.delta_tras[i]=tramtx # copy into numpy block
       #####################################
       # initial matrix
       #####################################
@@ -40,6 +46,16 @@ class InstanceSet(object):
       sca = random.uniform(0.1,0.65)
       as_mtx4.compose(pos,quat(),sca)
       self.instancematrices[i]=as_mtx4
+  ################################################
+  def clupdate(self):
+    current = cl.Buffer(self.clkernel.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.instancematrices)
+    deltarot = cl.Buffer(self.clkernel.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.delta_rots)
+    deltatra = cl.Buffer(self.clkernel.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.delta_tras)
+    globalsize = (self.numinstances,1,1)
+    localsize = None
+    self.clkernel.prg.cl_concatenate_mtx4(self.clkernel.queue, globalsize, localsize, current, deltarot, self.res_r)
+    self.clkernel.prg.cl_concatenate_mtx4(self.clkernel.queue, globalsize, localsize, deltatra, self.res_r, self.res_t)
+    cl.enqueue_copy(self.clkernel.queue, self.instancematrices, self.res_t)
 ################################################################################
 class SimApp(object):
   ################################################

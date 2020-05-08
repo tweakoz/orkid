@@ -35,17 +35,13 @@ class instance_set_class(_simsetup.InstanceSet):
     super().__init__(model,numinstances,layer)
     self.clkernel = _simsetup.ClKernel()
     # opencl setup
-    self.res_g = cl.Buffer(self.clkernel.ctx, mf.WRITE_ONLY, self.instancematrices.nbytes)
+    self.res_r = cl.Buffer(self.clkernel.ctx, mf.WRITE_ONLY, self.instancematrices.nbytes)
+    self.res_t = cl.Buffer(self.clkernel.ctx, mf.WRITE_ONLY, self.instancematrices.nbytes)
   ########################################################
   # update matrices with OpenCL
   ########################################################
   def update(self,deltatime):
-    current = cl.Buffer(self.clkernel.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.instancematrices)
-    delta = cl.Buffer(self.clkernel.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.deltas)
-    globalsize = (numinstances,1,1)
-    localsize = None
-    self.clkernel.prg.cl_concatenate_mtx4(self.clkernel.queue, globalsize, localsize, current, delta, self.res_g)
-    cl.enqueue_copy(self.clkernel.queue, self.instancematrices, self.res_g)
+    self.clupdate()
 ################################################################################
 class Blasphemoids(_simsetup.SimApp):
   ################################################
@@ -77,15 +73,15 @@ class Blasphemoids(_simsetup.SimApp):
                               self.laser_a,
                               self.laser_b,
                               stereo_material_inst)
+    self.inputmgr = InputManager.instance()
+    self.hands = self.inputmgr.inputGroup("hands")
   ################################################
   def onUpdate(self,updinfo):
     super().onUpdate(updinfo)
-    inputmgr = InputManager.instance()
-    hands = inputmgr.inputGroup("hands")
-    left = hands.channel("left.matrix")
-    right = hands.channel("right.matrix")
+    left = self.hands.channel("left.matrix")
+    right = self.hands.channel("right.matrix")
     iset = self.instanceset
-    hand = right
+    hand = left
     if hand!=None:
       pos = vec3()
       rot = quat()
@@ -93,7 +89,7 @@ class Blasphemoids(_simsetup.SimApp):
       hand.decompose(pos,rot,sca)
       #####################################
       self.laser_a.set(pos)
-      self.laser_b.set(pos+hand.yNormal())
+      self.laser_b.set(pos+hand.yNormal()*1000)
       #####################################
       # put model on hand
       #####################################
@@ -105,7 +101,7 @@ class Blasphemoids(_simsetup.SimApp):
       #####################################
       # check for trigger, and fire!
       #####################################
-      button = hands.channel("right.trigger")
+      button = self.hands.channel("left.trigger")
       if button and \
          self.pickray==None and \
          self.lastbutton==False:
@@ -137,9 +133,11 @@ class Blasphemoids(_simsetup.SimApp):
          as_mtx4 = mtx4()
          trans = vec3(random.uniform(-1,1),
                       random.uniform(-1,1),
-                      random.uniform(-1,1))*0.1
-         as_mtx4.compose(trans,rot,1.0)
-         iset.deltas[picked]=as_mtx4 # copy into numpy block
+                      random.uniform(-1,1))*0.03
+         tramtx = mtx4.transMatrix(trans)
+         rotmtx = mtx4.rotMatrix(rot)
+         iset.delta_rots[picked]=rotmtx # copy into numpy block
+         iset.delta_tras[picked]=tramtx # copy into numpy block
   ################################################
 app = Blasphemoids()
 app.qtapp.exec()

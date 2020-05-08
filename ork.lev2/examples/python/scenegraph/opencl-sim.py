@@ -36,17 +36,13 @@ class instance_set_class(_simsetup.InstanceSet):
     super().__init__(model,numinstances,layer)
     self.clkernel = _simsetup.ClKernel()
     # opencl setup
-    self.res_g = cl.Buffer(self.clkernel.ctx, mf.WRITE_ONLY, self.instancematrices.nbytes)
+    self.res_r = cl.Buffer(self.clkernel.ctx, mf.WRITE_ONLY, self.instancematrices.nbytes)
+    self.res_t = cl.Buffer(self.clkernel.ctx, mf.WRITE_ONLY, self.instancematrices.nbytes)
   ########################################################
   # update matrices with OpenCL
   ########################################################
   def update(self,deltatime):
-    current = cl.Buffer(self.clkernel.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.instancematrices)
-    delta = cl.Buffer(self.clkernel.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.deltas)
-    globalsize = (numinstances,1,1)
-    localsize = None
-    self.clkernel.prg.cl_concatenate_mtx4(self.clkernel.queue, globalsize, localsize, current, delta, self.res_g)
-    cl.enqueue_copy(self.clkernel.queue, self.instancematrices, self.res_g)
+    self.clupdate()
     index = random.randint(0,numinstances)
     color = vec4(random.uniform(0,1),
                  random.uniform(0,1),
