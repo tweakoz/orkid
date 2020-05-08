@@ -14,9 +14,10 @@ mf = cl.mem_flags
 from orkengine.core import *
 from orkengine.lev2 import *
 from ork import host
+tokens = CrcStringProxy()
 ################################################################################
-from pathlib import Path
-this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+from pathlib import Path as plpath
+this_dir = plpath(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(str(this_dir))
 import _simsetup
 ################################################################################
@@ -56,6 +57,26 @@ class Blasphemoids(_simsetup.SimApp):
     super().onGpuInit(ctx)
     model = Model("data://tests/pbr1/pbr1.glb")
     self.handnode = model.createNode("handnode",self.layer)
+    ####################################3
+    # laser line
+    ####################################3
+    volumetexture = Texture.load("lev2://textures/voltex_pn3")
+    material = FreestyleMaterial(ctx,Path("orkshader://noise"))
+    param_volumetex = material.shader.param("VolumeMap")
+    param_v4parref = material.shader.param("testvec4")
+    self.v4parref = vec4()
+    stereo_material_inst = material.createFxInstance()
+    stereo_material_inst.technique = material.shader.technique("std_stereo")
+    stereo_material_inst.param[material.param("mvpL")] = tokens.RCFD_Camera_MVP_Left
+    stereo_material_inst.param[material.param("mvpR")] = tokens.RCFD_Camera_MVP_Right
+    stereo_material_inst.param[param_v4parref] = self.v4parref
+    stereo_material_inst.param[param_volumetex] = volumetexture
+    self.laser_a = vec3(0,0,0)
+    self.laser_b = vec3(0,0,-100)
+    self.layer.createLineNode("laserline",
+                              self.laser_a,
+                              self.laser_b,
+                              stereo_material_inst)
   ################################################
   def onUpdate(self,updinfo):
     super().onUpdate(updinfo)
@@ -70,6 +91,9 @@ class Blasphemoids(_simsetup.SimApp):
       rot = quat()
       sca = float(0)
       hand.decompose(pos,rot,sca)
+      #####################################
+      self.laser_a.set(pos)
+      self.laser_b.set(pos+hand.yNormal())
       #####################################
       # put model on hand
       #####################################
@@ -105,6 +129,17 @@ class Blasphemoids(_simsetup.SimApp):
                       1)
          iset = self.instanceset
          iset.instancecolors[picked] = color
+         incraxis = vec3(random.uniform(-1,1),
+                         random.uniform(-1,1),
+                         random.uniform(-1,1)).normal()
+         incrmagn = random.uniform(-0.25,0.25)
+         rot = quat(incraxis,incrmagn)
+         as_mtx4 = mtx4()
+         trans = vec3(random.uniform(-1,1),
+                      random.uniform(-1,1),
+                      random.uniform(-1,1))*0.1
+         as_mtx4.compose(trans,rot,1.0)
+         iset.deltas[picked]=as_mtx4 # copy into numpy block
   ################################################
 app = Blasphemoids()
 app.qtapp.exec()

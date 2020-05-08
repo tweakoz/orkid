@@ -93,6 +93,32 @@ void pyinit_scenegraph(py::module& module_lev2) {
                  std::string named,
                  drawable_ptr_t drawable) -> node_ptr_t { //
                 return layer->createDrawableNode(named, drawable);
+              })
+          .def(
+              "createLineNode",
+              [](layer_ptr_t layer, //
+                 std::string named, //
+                 fvec3_ptr_t a,
+                 fvec3_ptr_t b,
+                 fxinstance_ptr_t fxinst) -> node_ptr_t { //
+                auto drawable = std::make_shared<CallbackDrawable>(nullptr);
+                drawable->SetRenderCallback([a, b, fxinst](lev2::RenderContextInstData& RCID) { //
+                  auto context = RCID.context();
+                  fxinst->wrappedDrawCall(RCID, [a, b, context]() {
+                    auto& VB = GfxEnv::GetSharedDynamicVB2();
+                    VtxWriter<SVtxV12N12B12T8C4> vw;
+                    auto v0 = SVtxV12N12B12T8C4(*a.get(), fvec3(), fvec3(), fvec2(), 0xffffffff);
+                    auto v1 = SVtxV12N12B12T8C4(*b.get(), fvec3(), fvec3(), fvec2(), 0xffffffff);
+                    vw.Lock(context, &VB, 6);
+                    vw.AddVertex(v0);
+                    vw.AddVertex(v1);
+                    vw.UnLock(context);
+                    auto GBI = context->GBI();
+                    GBI->DrawPrimitiveEML(vw, lev2::EPrimitiveType::LINES);
+                  });
+                });
+                auto node = layer->createDrawableNode(named, drawable);
+                return node;
               });
   type_codec->registerStdCodec<layer_ptr_t>(layer_type);
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });

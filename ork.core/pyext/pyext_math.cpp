@@ -88,6 +88,7 @@ void pyinit_math(py::module& module_core) {
           .def(py::self - py::self)
           .def(py::self * py::self)
           .def(py::self * float())
+          .def("set", [](fvec3_ptr_t me, fvec3_ptr_t other) { (*me.get()) = (*other.get()); })
           .def(
               "__str__",
               [](const fvec3& v) -> std::string {
