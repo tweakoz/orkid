@@ -135,4 +135,4 @@ archetype / entity / component / scene system. Lets you load a pregenerated 'sce
 
 * Visual Topology :
 
-![vizorg](OrkidEngineLayout.svg)
+![vizorg](OrkidEngineLayout.png)
