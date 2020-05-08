@@ -79,22 +79,23 @@
 
 
   - Mesh Processing
-     + construct and edit meshes live in-engine, finalize for rendering
+     + construct and edit meshes live in-engine, finalize and cache for rendering
 
 
   - Includes python bindings
 
   - Notable dependencies
     + Ork.Core
-    + OpenGL (osx/iX)
-    + QT5. (osx/iX)
-    + PortAudio (osx/iX)
+    + OpenGL
+    + PortAudio
     + OpenVR
     + Vulkan/MoltenVK
     + IGL (geometry/mesh processing library)
     + OpenImageIO (image io library)
     + Python3/PyBind11
     + Assimp
+    + QT5
+    + PyQT5/Pyside2
 
 ##### python3 module: orkengine.lev2
 
@@ -103,17 +104,18 @@
 ## ork.ent
 archetype / entity / component / scene system. Lets you load a pregenerated 'scene' document and run it as a simulation. Contains a collection of commonly useful components, including:
 
-  - Fixed Function and Node based frame compositor
-  - Rigid/Skinned 3D model components / archetypes
+  - Lev2 Compositor system
+  - Lev2 Rigid/Skinned 3D model components / archetypes
   - Animation controllers component with animation blending support
-  - Particle controller component and archetype
+  - Lev2 Particle controller component and archetype
   - Bullet physics object component
   - Bullet "world" system
-  - Audio effect playback component with dataflow based modulation support
-  - Audio stream playback component
-  - Audio manager system
+  - Lev2 Audio effect playback component with dataflow based modulation support
+  - Lev2 Audio stream playback component
+  - Lev2 Audio manager system
   - Notable dependencies:
-      + Ork.Core,Ork.Lev2
+      + Ork.Core
+      + Ork.Lev2
       + BulletPhysics
 
 ##### python3 module: orkengine.ecs (planned)
