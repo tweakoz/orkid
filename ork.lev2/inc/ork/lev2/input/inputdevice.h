@@ -15,6 +15,19 @@
 
 namespace ork { namespace lev2 {
 
+struct InputGroup;
+struct InputManager;
+struct InputDevice;
+
+using inputgroup_ptr_t      = std::shared_ptr<InputGroup>;
+using inputgroup_constptr_t = std::shared_ptr<const InputGroup>;
+
+using inputdevice_ptr_t      = std::shared_ptr<InputDevice>;
+using inputdevice_constptr_t = std::shared_ptr<const InputDevice>;
+
+using inputmanager_ptr_t       = std::shared_ptr<InputManager>;
+using inputmanager_const_ptr_t = std::shared_ptr<const InputManager>;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 enum ERawTriggerNames {
@@ -207,16 +220,24 @@ static const int KMAX_TRIGGERS = 1024;
 
 struct RawInputKey {
   uint32_t mKey;
-  RawInputKey(uint32_t v = ETRIG_RAW_BEGIN) { mKey = v; }
-  bool operator<(const RawInputKey& oth) const { return oth.mKey < mKey; }
+  RawInputKey(uint32_t v = ETRIG_RAW_BEGIN) {
+    mKey = v;
+  }
+  bool operator<(const RawInputKey& oth) const {
+    return oth.mKey < mKey;
+  }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
 struct MappedInputKey {
   uint32_t mKey;
-  MappedInputKey(uint32_t v = ETRIG_BEGIN) { mKey = v; }
-  bool operator<(const MappedInputKey& oth) const { return oth.mKey < mKey; }
+  MappedInputKey(uint32_t v = ETRIG_BEGIN) {
+    mKey = v;
+  }
+  bool operator<(const MappedInputKey& oth) const {
+    return oth.mKey < mKey;
+  }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -234,7 +255,9 @@ class InputState {
   static InputMap gInputMap;
 
 public:
-  static InputMap& RefGlobalInputMap() { return gInputMap; }
+  static InputMap& RefGlobalInputMap() {
+    return gInputMap;
+  }
 
   bool IsDown(MappedInputKey ch, const InputMap& InputMap = gInputMap) const;
   bool IsUpEdge(MappedInputKey ch, const InputMap& InputMap = gInputMap) const;
@@ -299,15 +322,23 @@ public:
 
   // Function: Input_Poll
   // Updates the device's connection status and InputState, if connected.
-  virtual void poll() { mConnectionStatus = CONN_STATUS_UNKNOWN; }
+  virtual void poll() {
+    mConnectionStatus = CONN_STATUS_UNKNOWN;
+  }
   virtual void RumbleClear();
   virtual void RumbleTrigger(int amount);
 
-  void setRumbleEnabled(bool enable) { mRumbleEnabled = enable; }
+  void setRumbleEnabled(bool enable) {
+    mRumbleEnabled = enable;
+  }
   // Each device can have it's own on and off and there there is a global setting
-  void SetMasterRumbleEnabled(bool enable) { mMasterRumbleEnabled = enable; }
+  void SetMasterRumbleEnabled(bool enable) {
+    mMasterRumbleEnabled = enable;
+  }
 
-  CONN_STATUS GetConnectionStatus() const { return mConnectionStatus; }
+  CONN_STATUS GetConnectionStatus() const {
+    return mConnectionStatus;
+  }
 
   void Activate();
   void Deactivate();
@@ -316,10 +347,18 @@ public:
   bool IsConnected() const;
   bool IsActive() const;
 
-  const InputState& RefInputState() const { return mInputState; }
-  InputState& RefInputState() { return mInputState; }
-  int GetId() const { return mId; }
-  void SetId(int id) { mId = id; }
+  const InputState& RefInputState() const {
+    return mInputState;
+  }
+  InputState& RefInputState() {
+    return mInputState;
+  }
+  int GetId() const {
+    return mId;
+  }
+  void SetId(int id) {
+    mId = id;
+  }
 
 protected:
   void Connect();
@@ -335,7 +374,8 @@ protected:
   InputDevice()
       : mConnectionStatus(CONN_STATUS_UNKNOWN)
       , mRumbleEnabled(true)
-      , mMasterRumbleEnabled(true) {}
+      , mMasterRumbleEnabled(true) {
+  }
 
   void SetInputMap(EMappedTriggerNames inch, ERawTriggerNames outch);
 
@@ -346,7 +386,9 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 
 struct InputChannel {
-  InputChannel() { _value.Set<float>(0.0f); }
+  InputChannel() {
+    _value.Set<float>(0.0f);
+  }
   svar64_t _value;
 };
 
@@ -417,37 +459,31 @@ struct InputGroup {
     return rval;
   }
 };
-
 ////////////////////////////////////////////////////////////////////////////////
 
-struct InputManager : public NoRttiSingleton<InputManager> {
-  typedef std::unordered_map<std::string, InputGroup*> inputgrp_map_t;
+struct InputManager {
+  using inputgrp_map_t = std::unordered_map<std::string, inputgroup_ptr_t>;
+  using devvect_t      = std::vector<inputdevice_ptr_t>;
 
-  static void poll();
-  static void clearAll();
-  static void setRumble(bool);
+  static inputmanager_ptr_t instance();
 
+  void addDevice(inputdevice_ptr_t pref);
+  inputdevice_ptr_t getInputDevice(size_t id);
+  size_t getNumberInputDevices();
+
+  void poll();
+  void clearAll();
+  void setRumble(bool);
+  inputdevice_constptr_t getKeyboardDevice();
+  inputgroup_ptr_t inputGroup(const std::string& name);
+
+protected:
   InputManager();
+  void discoverDevices();
 
-  static void discoverDevices();
-
-  static InputDevice* getInputDevice(size_t id);
-  static const InputDevice* getKeyboardDevice() { return GetRef().mvpKeyboardInputDevice; }
-
-  static void addDevice(InputDevice* pref) {
-    pref->SetId((int)GetRef().mvpInputDevices.size());
-    GetRef().mvpInputDevices.push_back(pref);
-  }
-
-  static size_t getNumberInputDevices() { return GetRef().mvpInputDevices.size(); }
-
-  static InputGroup* inputGroup(const std::string& name);
-
-private:
-  InputDevice* mvpDipSwitchDevice;
-  InputDevice* mvpKeyboardInputDevice;
-  std::vector<InputDevice*> mvpInputDevices;
+  inputdevice_ptr_t mvpDipSwitchDevice;
+  inputdevice_ptr_t mvpKeyboardInputDevice;
+  LockedResource<devvect_t> _devices;
   LockedResource<inputgrp_map_t> _inputGroups;
 };
-
 }} // namespace ork::lev2

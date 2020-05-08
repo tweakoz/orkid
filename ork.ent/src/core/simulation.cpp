@@ -1137,7 +1137,7 @@ void Simulation::Update() {
 
   switch (this->GetSimulationMode()) {
     case ork::ent::ESCENEMODE_PAUSE: {
-      ork::lev2::InputManager::poll();
+      ork::lev2::InputManager::instance()->poll();
       if (mApplication)
         mApplication->PreUpdate();
       if (mApplication)
@@ -1180,8 +1180,7 @@ void Simulation::Update() {
 
       while (mDeltaTimeAccum >= step) {
         mDeltaTimeAccum -= step;
-
-        ork::lev2::InputManager::poll();
+        ork::lev2::InputManager::instance()->poll();
 
         SetDeltaTime(step);
 

@@ -216,7 +216,7 @@ int BootQtThreadImpl(void* arg_opaq) {
   std::string AppClassName = OldSchool::GetGlobalStringVariable("ProjectApplicationClassName");
 
   ork::lev2::AudioDevice* paudio = ork::lev2::AudioDevice::GetDevice();
-  ork::lev2::InputManager::poll();
+  ork::lev2::InputManager::instance()->poll();
 
   ent::gEditorMainWindow = new ent::EditorMainWindow(0, AppClassName, *gpQtApplication);
   ent::gEditorMainWindow->setGeometry(QStyle::alignedRect(

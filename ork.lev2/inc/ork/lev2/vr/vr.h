@@ -112,7 +112,7 @@ struct Device {
   VrProjFrustumPar _frustumRight;
 
   fmtx4 _outputViewOffsetMatrix;
-  lev2::InputGroup& _hmdinputgroup;
+  lev2::inputgroup_ptr_t _hmdinputgroup;
   uint32_t _width, _height;
   svar512_t _private;
   int _calibstate;

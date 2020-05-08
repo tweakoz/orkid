@@ -17,6 +17,24 @@
 #endif
 
 namespace ork::lev2 {
+
+void InputManager::addDevice(inputdevice_ptr_t pref) {
+  _devices.atomicOp([pref](devvect_t& devs) {
+    pref->SetId((int)devs.size());
+    devs.push_back(pref);
+  });
+}
+
+inputdevice_constptr_t InputManager::getKeyboardDevice() {
+  return mvpKeyboardInputDevice;
+}
+
+size_t InputManager::getNumberInputDevices() {
+  size_t rval = 0;
+  _devices.atomicOp([&rval](devvect_t& devs) { rval = devs.size(); });
+  return rval;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 RawInputKey InputMap::MapInput(const MappedInputKey& inkey) const {
@@ -26,7 +44,9 @@ RawInputKey InputMap::MapInput(const MappedInputKey& inkey) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void InputMap::Set(ork::lev2::MappedInputKey inch, ork::lev2::RawInputKey outch) { mInputMap[inch] = outch; }
+void InputMap::Set(ork::lev2::MappedInputKey inch, ork::lev2::RawInputKey outch) {
+  mInputMap[inch] = outch;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -37,11 +57,11 @@ InputMap InputState::gInputMap;
 InputState::InputState() {
   for (int ival = 0; ival < KMAX_TRIGGERS; ival++) {
     _prevPressureValues[ival] = 0;
-    _pressureValues[ival] = 0;
-    _pressureThresh[ival] = 16;
-    _triggerDown[ival] = false;
-    _triggerUp[ival] = false;
-    _triggerState[ival] = false;
+    _pressureValues[ival]     = 0;
+    _pressureThresh[ival]     = 16;
+    _triggerDown[ival]        = false;
+    _triggerUp[ival]          = false;
+    _triggerState[ival]       = false;
   }
 }
 
@@ -57,7 +77,7 @@ bool InputState::IsDown(MappedInputKey mapped, const InputMap& InputMap) const {
 
 bool InputState::IsUpEdge(MappedInputKey mapped, const InputMap& InputMap) const {
   RawInputKey raw = InputMap.MapInput(mapped);
-  int index = int(mapped.mKey);
+  int index       = int(mapped.mKey);
   return _triggerUp[index];
 }
 
@@ -65,7 +85,7 @@ bool InputState::IsUpEdge(MappedInputKey mapped, const InputMap& InputMap) const
 
 bool InputState::IsDownEdge(MappedInputKey mapped, const InputMap& InputMap) const {
   RawInputKey raw = InputMap.MapInput(mapped);
-  int index = int(mapped.mKey);
+  int index       = int(mapped.mKey);
   OrkAssert(index < KMAX_TRIGGERS);
   return _triggerDown[index];
 }
@@ -73,12 +93,12 @@ bool InputState::IsDownEdge(MappedInputKey mapped, const InputMap& InputMap) con
 ///////////////////////////////////////////////////////////////////////////////
 
 F32 InputState::GetPressure(MappedInputKey mapped, const InputMap& InputMap) const {
-  RawInputKey raw = InputMap.MapInput(mapped);
+  RawInputKey raw  = InputMap.MapInput(mapped);
   const F32 frecip = 1.0f / 127.0f;
-  int index = int(raw.mKey);
+  int index        = int(raw.mKey);
   OrkAssert(index < KMAX_TRIGGERS);
   float uval = _pressureValues[index];
-  F32 fval = frecip * (F32)uval;
+  F32 fval   = frecip * (F32)uval;
   return F32(fval);
 }
 
@@ -88,10 +108,10 @@ void InputState::SetPressure(RawInputKey ch, float uVal) {
 
   int index = int(ch.mKey);
   OrkAssert(index < KMAX_TRIGGERS);
-  float Thresh = _pressureThresh[index];
-  bool newstate = (uVal > Thresh);
+  float Thresh           = _pressureThresh[index];
+  bool newstate          = (uVal > Thresh);
   _pressureValues[index] = uVal;
-  _triggerState[index] = newstate;
+  _triggerState[index]   = newstate;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -108,7 +128,8 @@ void InputState::SetPressureRaw(int ch, float uVal) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void InputState::BeginCycle() {}
+void InputState::BeginCycle() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -137,16 +158,16 @@ void InputState::EndCycle() {
     if ((false == oldstate) && (true == newstate)) // key on
     {
       _triggerDown[index] = true;
-      _triggerUp[index] = false;
+      _triggerUp[index]   = false;
       // orkprintf( "KEYON<%d> %x\n", index,(void *) this );
     } else if ((true == oldstate) && (false == newstate)) // key off
     {
       _triggerDown[index] = false;
-      _triggerUp[index] = true;
+      _triggerUp[index]   = true;
       // orkprintf( "KEYOFF<%d> %x\n", index,(void *) this );
     } else {
       _triggerDown[index] = false;
-      _triggerUp[index] = false;
+      _triggerUp[index]   = false;
     }
 
     _prevPressureValues[index] = _pressureValues[index];
@@ -155,63 +176,86 @@ void InputState::EndCycle() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-InputManager::InputManager() : NoRttiSingleton<InputManager>() { discoverDevices(); }
+InputManager::InputManager() {
+  discoverDevices();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void InputManager::poll(void) {
-  for( InputDevice* pdevice : GetRef().mvpInputDevices )
-    pdevice->poll();
+void InputManager::poll() {
+  _devices.atomicOp([](devvect_t& devs) {
+    for (auto device : devs)
+      device->poll();
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void InputManager::clearAll() {
-  for( InputDevice* pdevice : GetRef().mvpInputDevices )
-    pdevice->RefInputState().Clear(-1);
+  _devices.atomicOp([](devvect_t& devs) {
+    for (auto device : devs)
+      device->RefInputState().Clear(-1);
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void InputManager::setRumble(bool mode) {
-  for( InputDevice* pdevice : GetRef().mvpInputDevices )
-    pdevice->SetMasterRumbleEnabled(mode);
+  _devices.atomicOp([mode](devvect_t& devs) {
+    for (auto device : devs)
+      device->SetMasterRumbleEnabled(mode);
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-InputDevice* InputManager::getInputDevice(size_t id) {
-  auto& devvect = GetRef().mvpInputDevices;
-  size_t numdevs = devvect.size();
-  return (0 == numdevs)
-        ? nullptr
-        : devvect[id % numdevs];
+inputdevice_ptr_t InputManager::getInputDevice(size_t id) {
+  inputdevice_ptr_t rval;
+  _devices.atomicOp([&rval, id](devvect_t& devs) {
+    size_t numdevs = devs.size();
+    if (id < numdevs) {
+      rval = devs[id];
+    }
+  });
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void InputManager::discoverDevices() {
 #if defined(ORK_CONFIG_IX)
-  InputDeviceIX* pref = new InputDeviceIX();
-  InputManager::GetRef().addDevice(pref);
-  InputManager::GetRef().mvpKeyboardInputDevice = pref;
+  auto pref = std::make_shared<InputDeviceIX>();
+  addDevice(pref);
+  mvpKeyboardInputDevice = pref;
 #endif
 }
 
-InputGroup* InputManager::inputGroup(const std::string& name){
-  auto& mgr = GetRef();
-  InputGroup* rval = nullptr;
-  mgr._inputGroups.atomicOp([&](inputgrp_map_t& igmap){
+///////////////////////////////////////////////////////////////////////////////
+
+inputgroup_ptr_t InputManager::inputGroup(const std::string& name) {
+  inputgroup_ptr_t rval = nullptr;
+  _inputGroups.atomicOp([&](inputgrp_map_t& igmap) {
     auto it = igmap.find(name);
-    if( it==igmap.end() ){
-      rval = new InputGroup;
-      igmap[name]=rval;
-    }
-    else {
+    if (it == igmap.end()) {
+      rval        = std::make_shared<InputGroup>();
+      igmap[name] = rval;
+    } else {
       rval = it->second;
     }
   });
   return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+inputmanager_ptr_t InputManager::instance() {
+  struct concrete_manager : public InputManager {
+    concrete_manager()
+        : InputManager() {
+    }
+  };
+  static inputmanager_ptr_t _ginst = std::make_shared<concrete_manager>();
+  return _ginst;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -233,7 +277,9 @@ void InputDevice::Deactivate() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool InputDevice::IsDisconnected() const { return !IsConnected(); }
+bool InputDevice::IsDisconnected() const {
+  return !IsConnected();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -244,7 +290,9 @@ bool InputDevice::IsConnected() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool InputDevice::IsActive() const { return mConnectionStatus == CONN_STATUS_ACTIVE; }
+bool InputDevice::IsActive() const {
+  return mConnectionStatus == CONN_STATUS_ACTIVE;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -272,12 +320,13 @@ void InputDevice::SetInputMap(EMappedTriggerNames inch, ERawTriggerNames outch) 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void InputDevice::RumbleClear() {}
+void InputDevice::RumbleClear() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void InputDevice::RumbleTrigger(int amounmt) {}
-
+void InputDevice::RumbleTrigger(int amounmt) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

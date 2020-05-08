@@ -53,9 +53,9 @@ class SimApp(object):
     self.instance_set_class = instance_set_class
   ##############################################
   def onGpuInit(self,ctx):
-    layer = self.scene.createLayer("layer1")
+    self.layer = self.scene.createLayer("layer1")
     model = Model("src://environ/objects/misc/ref/uvsph.glb")
-    self.instanceset = self.instance_set_class(model,layer)
+    self.instanceset = self.instance_set_class(model,self.layer)
     ###################################
     self.camera = CameraData()
     self.cameralut = CameraDataLut()
@@ -69,7 +69,6 @@ class SimApp(object):
   def onUpdate(self,updinfo):
     ###################################
     self.instanceset.update(updinfo.deltatime)
-    ###################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
 ################################################
 class ClKernel(object):

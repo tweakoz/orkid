@@ -22,14 +22,28 @@ struct PyCodecImpl {
 ////////////////////////////////////////////////////////////////////////////////
 py::object PyCodecImpl::encode(const varval_t& val) const {
   py::object rval;
+  if (not val.IsSet()) {
+    return py::none();
+  }
   auto orktypeid = val.getOrkTypeId();
   auto it        = _codecs_by_orktype.find(orktypeid._hashed);
   if (it != _codecs_by_orktype.end()) {
     auto& codec = it->second;
     codec._encoder(val, rval);
   } else {
-    throw std::runtime_error("pycodec-encode: unregistered type");
-    OrkAssert(false);
+    // try primitives
+    if (auto as_bool = val.TryAs<bool>()) {
+      return py::bool_(as_bool.value());
+    } else if (auto as_float = val.TryAs<float>()) {
+      return py::float_(as_float.value());
+    } else if (auto as_int = val.TryAs<int>()) {
+      return py::int_(as_int.value());
+    } else if (auto as_str = val.TryAs<std::string>()) {
+      return py::str(as_str.value());
+    } else {
+      OrkAssert(false);
+      throw std::runtime_error("pycodec-encode: unregistered type");
+    }
   }
   return rval;
 }

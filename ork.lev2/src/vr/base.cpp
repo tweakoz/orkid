@@ -15,16 +15,18 @@ Device::Device()
     , _height(128)
     , _active(false)
     , _supportsStereo(false)
-    , _hmdinputgroup(*lev2::InputManager::inputGroup("hmd"))
     , _calibstate(0)
     , _calibstateFrame(0)
     , _usermtxgen(nullptr) {
+
+  auto imgr      = lev2::InputManager::instance();
+  _hmdinputgroup = imgr->inputGroup("hmd");
 
   _leftcamera   = new CameraMatrices;
   _centercamera = new CameraMatrices;
   _rightcamera  = new CameraMatrices;
 
-  auto handgroup = lev2::InputManager::inputGroup("hands");
+  auto handgroup = imgr->inputGroup("hands");
   handgroup->setChannel("left.button1").as<bool>(false);
   handgroup->setChannel("left.button2").as<bool>(false);
   handgroup->setChannel("left.trigger").as<bool>(false);
@@ -157,9 +159,9 @@ void Device::_updatePosesCommon() {
 
   msgrouter::channel("eggytest")->post(c);
 
-  _hmdinputgroup.setChannel("leye.matrix").as<fmtx4>(lmv);
-  _hmdinputgroup.setChannel("ceye.matrix").as<fmtx4>(cmv);
-  _hmdinputgroup.setChannel("reye.matrix").as<fmtx4>(rmv);
+  _hmdinputgroup->setChannel("leye.matrix").as<fmtx4>(lmv);
+  _hmdinputgroup->setChannel("ceye.matrix").as<fmtx4>(cmv);
+  _hmdinputgroup->setChannel("reye.matrix").as<fmtx4>(rmv);
 
   _leftcamera->setCustomView(lmv);
   _leftcamera->setCustomProjection(_posemap["projl"]);

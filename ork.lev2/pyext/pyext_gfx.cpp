@@ -1,4 +1,5 @@
 #include "pyext.h"
+#include <ork/lev2/input/inputdevice.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -476,5 +477,35 @@ void pyinit_gfx(py::module& module_lev2) {
             lut->AddSorted(AddPooledString(key.c_str()), camera.get());
           });
   type_codec->registerStdCodec<cameradatalut_ptr_t>(camdatluttype);
-}
+  /////////////////////////////////////////////////////////////////////////////////
+  auto inpgrp_typ = //
+      py::class_<InputGroup, inputgroup_ptr_t>(module_lev2, "InputGroup")
+          .def_property_readonly(
+              "numchannels",
+              [](inputgroup_ptr_t grp) -> int { //
+                int rval = 0;
+                grp->_channels.atomicOp([&rval](InputGroup::channelmap_t& chmap) { //
+                  rval = chmap.size();
+                });
+                return rval;
+              })
+          .def("channel", [type_codec](inputgroup_ptr_t grp, std::string named) -> py::object { //
+            svar64_t value;
+            grp->_channels.atomicOp([&value, named, type_codec](InputGroup::channelmap_t& chmap) { //
+              auto it = chmap.find(named);
+              if (it != chmap.end()) {
+                value = it->second._value;
+              }
+            });
+            auto encoded = type_codec->encode(value);
+            return encoded;
+          });
+  type_codec->registerStdCodec<inputgroup_ptr_t>(inpgrp_typ);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto inpmgr_typ = //
+      py::class_<InputManager, inputmanager_ptr_t>(module_lev2, "InputManager")
+          .def_static("instance", []() -> inputmanager_ptr_t { return InputManager::instance(); })
+          .def("inputGroup", [](inputmanager_ptr_t mgr, std::string named) { return mgr->inputGroup(named); });
+  type_codec->registerStdCodec<inputmanager_ptr_t>(inpmgr_typ);
+} // namespace ork::lev2
 } // namespace ork::lev2

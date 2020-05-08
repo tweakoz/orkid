@@ -100,6 +100,16 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               });
             }
             ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "sceneparams")) {
+              auto sceneparams //
+                  = py::cast<varmap::varmap_ptr_t>(appinstance.attr("sceneparams"));
+              auto scene = std::make_shared<scenegraph::Scene>(sceneparams);
+              varmap::VarMap::value_type scenevar;
+              scenevar.Set<scenegraph::scene_ptr_t>(scene);
+              auto pyscene = type_codec->encode(scenevar);
+              py::setattr(appinstance, "scene", pyscene);
+            }
+            ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onDraw")) {
               auto drawfn //
                   = py::cast<py::function>(appinstance.attr("onDraw"));
@@ -112,14 +122,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 mydrev.value()->mpTarget = drwev->GetTarget();
                 pyfn.value()(ui::drawevent_constptr_t(mydrev.value()));
               });
-            } else if (py::hasattr(appinstance, "sceneparams")) {
-              auto sceneparams //
-                  = py::cast<varmap::varmap_ptr_t>(appinstance.attr("sceneparams"));
-              auto scene = std::make_shared<scenegraph::Scene>(sceneparams);
-              varmap::VarMap::value_type scenevar;
-              scenevar.Set<scenegraph::scene_ptr_t>(scene);
-              auto pyscene = type_codec->encode(scenevar);
-              py::setattr(appinstance, "scene", pyscene);
+            } else {
+              auto scene = py::cast<scenegraph::scene_ptr_t>(appinstance.attr("scene"));
               rval->onDraw([=](ui::drawevent_constptr_t drwev) { //
                 ork::opq::mainSerialQueue()->Process();
                 auto context = drwev->GetTarget();
@@ -139,7 +143,6 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             }
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onUiEvent")) {
-
               bool using_scene = py::hasattr(appinstance, "sceneparams");
               auto uievfn //
                   = py::cast<py::function>(appinstance.attr("onUiEvent"));
@@ -178,6 +181,6 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             }
             return rval;
           });
-}
+} // namespace ork::lev2
 
 } // namespace ork::lev2

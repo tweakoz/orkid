@@ -46,6 +46,7 @@ void pyinit_math(py::module& module_core) {
             return fxs.c_str();
           });
   type_codec->registerStdCodec<fvec2_ptr_t>(fvec2_type);
+  type_codec->registerStdCodec<fvec2>(fvec2_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto fvec3_type = //
       py::class_<fvec3, fvec3_ptr_t>(module_core, "vec3", pybind11::buffer_protocol())
@@ -100,6 +101,7 @@ void pyinit_math(py::module& module_core) {
             return fxs.c_str();
           });
   type_codec->registerStdCodec<fvec3_ptr_t>(fvec3_type);
+  type_codec->registerStdCodec<fvec3>(fvec3_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto fvec4_type = //
       py::class_<fvec4, fvec4_ptr_t>(module_core, "vec4", pybind11::buffer_protocol())
@@ -160,6 +162,7 @@ void pyinit_math(py::module& module_core) {
             return fxs.c_str();
           });
   type_codec->registerStdCodec<fvec4_ptr_t>(fvec4_type);
+  type_codec->registerStdCodec<fvec4>(fvec4_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto fquat_type = //
       py::class_<fquat, fquat_ptr_t>(module_core, "quat", pybind11::buffer_protocol())
@@ -200,6 +203,7 @@ void pyinit_math(py::module& module_core) {
             return fxs.c_str();
           });
   type_codec->registerStdCodec<fquat_ptr_t>(fquat_type);
+  type_codec->registerStdCodec<fquat>(fquat_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto mtx3_type = //
       py::class_<fmtx3, fmtx3_ptr_t>(module_core, "mtx3", pybind11::buffer_protocol())
@@ -230,6 +234,7 @@ void pyinit_math(py::module& module_core) {
             return str.c_str();
           });
   type_codec->registerStdCodec<fmtx3_ptr_t>(mtx3_type);
+  type_codec->registerStdCodec<fmtx3>(mtx3_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto mtx4_type = //
       py::class_<fmtx4, fmtx4_ptr_t>(module_core, "mtx4", pybind11::buffer_protocol())
@@ -339,7 +344,7 @@ void pyinit_math(py::module& module_core) {
             return str.c_str();
           });
   type_codec->registerStdCodec<fmtx4_ptr_t>(mtx4_type);
-
+  type_codec->registerStdCodec<fmtx4>(mtx4_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto frustum_type =
       py::class_<Frustum, frustum_ptr_t>(module_core, "Frustum")

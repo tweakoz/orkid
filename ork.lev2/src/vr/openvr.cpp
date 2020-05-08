@@ -189,7 +189,6 @@ void OpenVrDevice::_vrthread_loop() {
 
   while (true) {
     _processControllerEvents();
-    //_updatePoses();
     ::usleep(100);
   }
 } // namespace ork::lev2::orkidvr
@@ -268,21 +267,21 @@ void OpenVrDevice::_processControllerEvents() {
     }
     if (_rightControllerDeviceIndex >= 0 and _leftControllerDeviceIndex >= 0) {
 
-      using inpmgr    = lev2::InputManager;
-      auto& handgroup = *inpmgr::inputGroup("hands");
+      using inpmgr   = lev2::InputManager;
+      auto handgroup = inpmgr::instance()->inputGroup("hands");
 
       auto& LCONTROLLER = _controllers[_leftControllerDeviceIndex];
       auto& RCONTROLLER = _controllers[_rightControllerDeviceIndex];
 
-      handgroup.setChannel("left.button1").as<bool>(LCONTROLLER._button1Down);
-      handgroup.setChannel("left.button2").as<bool>(LCONTROLLER._button2Down);
-      handgroup.setChannel("left.trigger").as<bool>(LCONTROLLER._triggerDown);
-      handgroup.setChannel("left.thumb").as<bool>(LCONTROLLER._buttonThumbDown);
+      handgroup->setChannel("left.button1").as<bool>(LCONTROLLER._button1Down);
+      handgroup->setChannel("left.button2").as<bool>(LCONTROLLER._button2Down);
+      handgroup->setChannel("left.trigger").as<bool>(LCONTROLLER._triggerDown);
+      handgroup->setChannel("left.thumb").as<bool>(LCONTROLLER._buttonThumbDown);
 
-      handgroup.setChannel("right.button1").as<bool>(RCONTROLLER._button1Down);
-      handgroup.setChannel("right.button2").as<bool>(RCONTROLLER._button2Down);
-      handgroup.setChannel("right.trigger").as<bool>(RCONTROLLER._triggerDown);
-      handgroup.setChannel("right.thumb").as<bool>(RCONTROLLER._buttonThumbDown);
+      handgroup->setChannel("right.button1").as<bool>(RCONTROLLER._button1Down);
+      handgroup->setChannel("right.button2").as<bool>(RCONTROLLER._button2Down);
+      handgroup->setChannel("right.trigger").as<bool>(RCONTROLLER._triggerDown);
+      handgroup->setChannel("right.thumb").as<bool>(RCONTROLLER._buttonThumbDown);
 
       //////////////////////////////////////
       // hand positions
@@ -293,10 +292,18 @@ void OpenVrDevice::_processControllerEvents() {
       ry.SetRotateY(PI * 0.5);
       rz.SetRotateZ(PI * 0.5);
       ivomatrix.inverseOf(_outputViewOffsetMatrix);
-      fmtx4 lworld = (LCONTROLLER._matrix * ivomatrix);
-      fmtx4 rworld = (RCONTROLLER._matrix * ivomatrix);
-      handgroup.setChannel("left.matrix").as<fmtx4>(rx * ry * rz * lworld);
-      handgroup.setChannel("right.matrix").as<fmtx4>(rx * ry * rz * rworld);
+      fmtx4 lworld = (LCONTROLLER._matrix * ivomatrix) * _baseMatrix.inverse();
+      fmtx4 rworld = (RCONTROLLER._matrix * ivomatrix) * _baseMatrix.inverse();
+
+      auto lmatrix = rx * ry * rz * lworld;
+      auto rmatrix = rx * ry * rz * rworld;
+
+      auto lmatrix_dump = lmatrix.dump4x3cn();
+      auto rmatrix_dump = rmatrix.dump4x3cn();
+      //      printf("lmatrix<%s>\n", lmatrix_dump.c_str());
+      //    printf("rmatrix<%s>\n", rmatrix_dump.c_str());
+      handgroup->setChannel("left.matrix").as<fmtx4>(lmatrix);
+      handgroup->setChannel("right.matrix").as<fmtx4>(rmatrix);
 
     } // if( _rightControllerDeviceIndex>=0 and _leftControllerDeviceIndex>=0 ){
   }   // while (_active and _hmd->PollNextEvent(&event, sizeof(event))) {
@@ -310,8 +317,8 @@ void OpenVrDevice::_processControllerEvents() {
 
     if (_rightControllerDeviceIndex >= 0 and _leftControllerDeviceIndex >= 0) {
 
-      using inpmgr    = lev2::InputManager;
-      auto& handgroup = *inpmgr::inputGroup("hands");
+      using inpmgr   = lev2::InputManager;
+      auto handgroup = inpmgr::instance()->inputGroup("hands");
 
       auto& LCONTROLLER = _controllers[_leftControllerDeviceIndex];
       auto& RCONTROLLER = _controllers[_rightControllerDeviceIndex];
@@ -464,7 +471,7 @@ void OpenVrDevice::_updatePoses() {
       fmtx4 hmdmatrix;
       hmdmatrix.inverseOf(_poseMatrices[_ovr::k_unTrackedDeviceIndex_Hmd]);
       _posemap["hmd"] = hmdmatrix;
-      _hmdinputgroup.setChannel("hmdmatrix").as<fmtx4>(hmdmatrix);
+      _hmdinputgroup->setChannel("hmdmatrix").as<fmtx4>(hmdmatrix);
 
       ork::svar256_t notifvar;
       auto& hmdnotiffram      = notifvar.Make<VrTrackingHmdPoseNotificationFrame>();

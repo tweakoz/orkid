@@ -45,30 +45,66 @@ class instance_set_class(_simsetup.InstanceSet):
     localsize = None
     self.clkernel.prg.cl_concatenate_mtx4(self.clkernel.queue, globalsize, localsize, current, delta, self.res_g)
     cl.enqueue_copy(self.clkernel.queue, self.instancematrices, self.res_g)
-      #print(right)
-    ############################################
-    #assert(False)
 ################################################################################
-class PickingApp(_simsetup.SimApp):
+class Blasphemoids(_simsetup.SimApp):
   ################################################
   def __init__(self):
-    super().__init__(False,instance_set_class)
-  def onUiEvent(self,event):
-    #print("x<%d> y<%d> code<%d>"%(event.x,event.y,event.code))
-    #print("shift<%d> alt<%d> ctrl<%d>"%(event.shift,event.alt,event.ctrl))
-    #print("left<%d> middle<%d> right<%d>"%(event.left,event.middle,event.right))
-    if event.code==3:
-      picked = self.scene.pickWithScreenCoord(self.camera,vec2(event.x,event.y))
-      if picked!=0xffffffffffffffff:
-        #print("%s"%(hex(picked)))
-        assert(picked<=numinstances);
-        color = vec4(random.uniform(0,1),
-                     random.uniform(0,1),
-                     random.uniform(0,1),
-                     1)
-        iset = self.instanceset
-        iset.instancecolors[picked] = color
-    pass
+    super().__init__(True,instance_set_class)
+    self.pickray = None
   ################################################
-app = PickingApp()
+  def onGpuInit(self,ctx):
+    super().onGpuInit(ctx)
+    model = Model("data://tests/pbr1/pbr1.glb")
+    self.handnode = model.createNode("handnode",self.layer)
+  ################################################
+  def onUpdate(self,updinfo):
+    super().onUpdate(updinfo)
+    inputmgr = InputManager.instance()
+    hands = inputmgr.inputGroup("hands")
+    left = hands.channel("left.matrix")
+    right = hands.channel("right.matrix")
+    iset = self.instanceset
+    hand = right
+    if hand!=None:
+      pos = vec3()
+      rot = quat()
+      sca = float(0)
+      hand.decompose(pos,rot,sca)
+      #####################################
+      # put model on hand
+      #####################################
+      self.handnode\
+          .worldMatrix\
+          .compose( pos, # pos
+                    rot, # rot
+                    0.05) # scale
+      #####################################
+      # check for trigger, and fire!
+      #####################################
+      button = hands.channel("right.trigger")
+      if button and \
+         self.pickray==None and \
+         self.lastbutton==False:
+        ray = ray3(pos,hand.yNormal())
+        self.pickray = ray
+      # todo - add event gating...
+      self.lastbutton = button
+  ################################################
+  def onDraw(self,drwev):
+    self.scene.renderOnContext(drwev.context)
+    if self.pickray:
+      # picking must occur on mainthread, atm...
+      picked = self.scene.pickWithRay(self.pickray)
+      self.pickray = None
+      if picked!=0xffffffffffffffff:
+         print("%s"%(hex(picked)))
+         assert(picked<=numinstances);
+         color = vec4(random.uniform(0,1),
+                      random.uniform(0,1),
+                      random.uniform(0,1),
+                      1)
+         iset = self.instanceset
+         iset.instancecolors[picked] = color
+  ################################################
+app = Blasphemoids()
 app.qtapp.exec()

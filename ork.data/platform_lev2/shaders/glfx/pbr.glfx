@@ -98,6 +98,8 @@ libblock lib_pbr_vtx {
 		frg_camz = wnormal.xyz;
 		frg_camdist = -cpos.z;
 	}
+}
+libblock lib_pbr_vtx_instanced {
 	void vs_instanced(vec4 pos, vec3 nrm, vec3 bin,mat4 instance_matrix) {
 		mat3 instance_rot = mat3(instance_matrix);
 		vec4 cpos  = mv * (instance_matrix*pos);
@@ -148,7 +150,7 @@ vertex_shader vs_rigid_gbuffer_stereo
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_instanced
 	: iface_vgbuffer_instanced
-  : lib_pbr_vtx {
+  : lib_pbr_vtx_instanced {
 		int matrix_u = (gl_InstanceID&0xff)<<2;
 		int matrix_v = (gl_InstanceID>>8);
 		mat4 instancemtx = mat4(
@@ -167,7 +169,7 @@ vertex_shader vs_rigid_gbuffer_instanced_stereo
 	: extension(GL_NV_stereo_view_rendering)
   : extension(GL_NV_viewport_array2)
 	: iface_vgbuffer_stereo_instanced
-	: lib_pbr_vtx {
+	: lib_pbr_vtx_instanced {
 		////////////////////////////////
 		int matrix_u = (gl_InstanceID&0xff)<<2;
 		int matrix_v = (gl_InstanceID>>8);
