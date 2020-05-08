@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 ################################################################################
-# lev2 sample which renders an instanced model, optionally in VR mode
-#  the models are animated via a OpenCL kernel
+# lev2 scenegraph sample which allows the individual donning the VR HMD to
+#  blast away some blasphemoids
 # Copyright 1996-2020, Michael T. Mayers.
 # Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 # see http://www.boost.org/LICENSE_1_0.txt
@@ -26,15 +26,18 @@ parser.add_argument('--numinstances', metavar="numinstances", help='number of me
 ################################################################################
 args = vars(parser.parse_args())
 if args["numinstances"]==None:
-  numinstances = 10000
+  numinstances = 5000
 else:
   numinstances = int(args["numinstances"])
 ################################################################################
 class instance_set_class(_simsetup.InstanceSet):
   def __init__(self,model,layer):
     super().__init__(model,numinstances,layer)
-    self.clkernel = _simsetup.ClKernel()
+    ####################################
     # opencl setup
+    # create rot and trans temporary cl buffers
+    ####################################
+    self.clkernel = _simsetup.ClKernel()
     self.res_r = cl.Buffer(self.clkernel.ctx, mf.WRITE_ONLY, self.instancematrices.nbytes)
     self.res_t = cl.Buffer(self.clkernel.ctx, mf.WRITE_ONLY, self.instancematrices.nbytes)
   ########################################################
@@ -54,11 +57,9 @@ class Blasphemoids(_simsetup.SimApp):
   ################################################
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
-    model = Model("data://tests/pbr1/pbr1.glb")
-    self.handnode = model.createNode("handnode",self.layer)
-    ####################################3
+    ####################################
     # laser line
-    ####################################3
+    ####################################
     volumetexture = Texture.load("lev2://textures/voltex_pn3")
     material = FreestyleMaterial(ctx,Path("orkshader://noise"))
     param_volumetex = material.shader.param("VolumeMap")
@@ -78,6 +79,14 @@ class Blasphemoids(_simsetup.SimApp):
                               self.laser_a,
                               self.laser_b,
                               stereo_material_inst)
+    ##############################################
+    # create hand model node
+    ##############################################
+    model = Model("data://tests/pbr1/pbr1.glb")
+    self.handnode = model.createNode("handnode",self.layer)
+    ##############################################
+    # input setup
+    ##############################################
     self.inputmgr = InputManager.instance()
     self.hands = self.inputmgr.inputGroup("hands")
   ################################################
@@ -87,7 +96,7 @@ class Blasphemoids(_simsetup.SimApp):
     left = self.hands.channel("left.matrix")
     right = self.hands.channel("right.matrix")
     iset = self.instanceset
-    hand = left
+    hand = left # todo fix controller assignment
     if hand!=None:
       pos = vec3()
       rot = quat()
@@ -97,7 +106,7 @@ class Blasphemoids(_simsetup.SimApp):
       self.laser_a.set(pos)
       self.laser_b.set(pos+hand.yNormal()*1000)
       #####################################
-      # put model on hand
+      # place model on hand
       #####################################
       self.handnode\
           .worldMatrix\
@@ -117,14 +126,27 @@ class Blasphemoids(_simsetup.SimApp):
       self.lastbutton = button
   ################################################
   def onDraw(self,drwev):
+    ##########################
+    # animate laser pointer
+    ##########################
     self.stereo_material_inst.param[self.timeparam] = self.abstime*10
+    ##########################
+    # render scenegraph
+    ##########################
     self.scene.renderOnContext(drwev.context)
+    ##########################
+    # handle picking
+    ##########################
     if self.pickray:
       # picking must occur on mainthread, atm...
       picked = self.scene.pickWithRay(self.pickray)
       self.pickray = None
       if picked!=0xffffffffffffffff:
-         print("%s"%(hex(picked)))
+         ##########################
+         # we picked a blasphemoid
+         #  alter it's course,
+         #   and color...
+         ##########################
          assert(picked<=numinstances);
          color = vec4(random.uniform(0,1),
                       random.uniform(0,1),
