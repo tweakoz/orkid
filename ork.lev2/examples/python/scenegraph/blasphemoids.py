@@ -48,6 +48,9 @@ class Blasphemoids(_simsetup.SimApp):
   def __init__(self):
     super().__init__(True,instance_set_class)
     self.pickray = None
+    self.stereo_material_inst = None
+    self.timeparam = None
+    self.abstime = 0.0
   ################################################
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
@@ -67,6 +70,8 @@ class Blasphemoids(_simsetup.SimApp):
     stereo_material_inst.param[material.param("mvpR")] = tokens.RCFD_Camera_MVP_Right
     stereo_material_inst.param[param_v4parref] = self.v4parref
     stereo_material_inst.param[param_volumetex] = volumetexture
+    self.stereo_material_inst = stereo_material_inst
+    self.timeparam = material.param("time")
     self.laser_a = vec3(0,0,0)
     self.laser_b = vec3(0,0,-100)
     self.layer.createLineNode("laserline",
@@ -78,6 +83,7 @@ class Blasphemoids(_simsetup.SimApp):
   ################################################
   def onUpdate(self,updinfo):
     super().onUpdate(updinfo)
+    self.abstime = updinfo.absolutetime
     left = self.hands.channel("left.matrix")
     right = self.hands.channel("right.matrix")
     iset = self.instanceset
@@ -111,6 +117,7 @@ class Blasphemoids(_simsetup.SimApp):
       self.lastbutton = button
   ################################################
   def onDraw(self,drwev):
+    self.stereo_material_inst.param[self.timeparam] = self.abstime*10
     self.scene.renderOnContext(drwev.context)
     if self.pickray:
       # picking must occur on mainthread, atm...

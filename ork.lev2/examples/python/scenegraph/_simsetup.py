@@ -31,7 +31,6 @@ class InstanceSet(object):
                    random.uniform(-1,1),
                    random.uniform(-1,1))*0.001
       as_mtx4.compose(trans,rot,1.0)
-      invtramtx = mtx4.transMatrix(trans*-1)
       tramtx = mtx4.transMatrix(trans)
       rotmtx = mtx4.rotMatrix(rot)
       self.delta_rots[i]=rotmtx # copy into numpy block
