@@ -78,6 +78,17 @@ Other (video) examples of content:
 
 [Singularity-ModulatorHUD](https://www.youtube.com/watch?v=1PEXp9-6eRA)
 
-Doxygen
+More Information
 ========
-http://tweakoz.com:8099/doxygen_html/index.html
+
+[EngineLayout](ork.dox/engine_layout.md)
+
+[How to build](ork.dox/building.md)
+
+[How to run](ork.dox/running.md)
+
+[Blender pipeline notes](ork.dox/blender.md)
+
+[GLSLFX shader format docs](ork.dox/glslfx.md)
+
+[Doxygen - code documentation](http://tweakoz.com:8099/doxygen_html/index.html)
