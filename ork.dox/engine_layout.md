@@ -54,6 +54,7 @@
       - Screen, RtGroup and OpenVR Output Nodes
       - 2OP and PTEX Post Nodes
       - Forward Rendering Node
+      - PickBuffer Rendering Node
       - Clustered/Deferred PBR Rendering node
         + Metallic, Roughness workflow
         + PointLights, SpotLights (w/textured cookies)
