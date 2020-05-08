@@ -13,8 +13,9 @@
   - Asset managers with on the fly (and cached) conversion
   - Includes python bindings
   - Notable dependencies:
-   + Boost
-   + Python3/PyBind11
+    + Boost
+    + Python3/PyBind11
+
 
 ###### python3 module: orkengine.core
 ---
