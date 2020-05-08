@@ -25,7 +25,7 @@ parser.add_argument('--numinstances', metavar="numinstances", help='number of me
 ################################################################################
 args = vars(parser.parse_args())
 if args["numinstances"]==None:
-  numinstances = 10000
+  numinstances = 50000
 else:
   numinstances = int(args["numinstances"])
 ################################################################################
@@ -34,18 +34,13 @@ class instance_set_class(_simsetup.InstanceSet):
     super().__init__(model,numinstances,layer)
     self.clkernel = _simsetup.ClKernel()
     # opencl setup
-    self.res_g = cl.Buffer(self.clkernel.ctx, mf.WRITE_ONLY, self.instancematrices.nbytes)
+    self.res_r = cl.Buffer(self.clkernel.ctx, mf.WRITE_ONLY, self.instancematrices.nbytes)
+    self.res_t = cl.Buffer(self.clkernel.ctx, mf.WRITE_ONLY, self.instancematrices.nbytes)
   ########################################################
   # update matrices with OpenCL
   ########################################################
   def update(self,deltatime):
-    current = cl.Buffer(self.clkernel.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.instancematrices)
-    delta = cl.Buffer(self.clkernel.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.deltas)
-    globalsize = (numinstances,1,1)
-    localsize = None
-    self.clkernel.prg.cl_concatenate_mtx4(self.clkernel.queue, globalsize, localsize, current, delta, self.res_g)
-    cl.enqueue_copy(self.clkernel.queue, self.instancematrices, self.res_g)
-      #print(right)
+    self.clupdate()
     ############################################
     #assert(False)
 ################################################################################
@@ -57,7 +52,7 @@ class PickingApp(_simsetup.SimApp):
     #print("x<%d> y<%d> code<%d>"%(event.x,event.y,event.code))
     #print("shift<%d> alt<%d> ctrl<%d>"%(event.shift,event.alt,event.ctrl))
     #print("left<%d> middle<%d> right<%d>"%(event.left,event.middle,event.right))
-    if event.code==3:
+    if True: #event.code==3:
       picked = self.scene.pickWithScreenCoord(self.camera,vec2(event.x,event.y))
       if picked!=0xffffffffffffffff:
         #print("%s"%(hex(picked)))

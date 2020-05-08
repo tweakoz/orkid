@@ -313,12 +313,12 @@ void IoContainerNode::emit(shaderbuilder::BackEnd& backend) const {
     codegen.beginLine();
     if (node->_layout)
       node->_layout->emit(backend);
+    for (auto item : node->_qualifiers)
+      codegen.output(item + " ");
     if (_direction == "in")
       codegen.output("in ");
     if (_direction == "out")
       codegen.output("out ");
-    for (auto item : node->_qualifiers)
-      codegen.output(item + " ");
     codegen.output(node->_typeName + " ");
     codegen.output(node->_name + " ");
     if (node->_inlineStruct) {

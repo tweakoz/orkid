@@ -22,7 +22,7 @@ void removeVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t r
 }
 ////////////////////////////////////////////////////////////////////////////////
 NoVrDevice::NoVrDevice() {
-  auto handgroup = lev2::InputManager::inputGroup("hands");
+  auto handgroup = lev2::InputManager::instance()->inputGroup("hands");
   _qtmousesubsc  = msgrouter::channel("qtmousepos")->subscribe([this](msgrouter::content_t c) { _qtmousepos = c.Get<fvec2>(); });
 
   _active       = true;
@@ -87,7 +87,7 @@ void NoVrDevice::_updatePoses(RenderContextFrameData& RCFD) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 void NoVrDevice::_processControllerEvents() {
-  auto handgroup = lev2::InputManager::inputGroup("hands");
+  auto handgroup = lev2::InputManager::instance()->inputGroup("hands");
   bool curthumbL = handgroup->tryAs<bool>("left.thumb").value();
   bool curthumbR = handgroup->tryAs<bool>("right.thumb").value();
   ///////////////////////////////////////////////////////////
