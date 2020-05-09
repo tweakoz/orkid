@@ -1,4 +1,4 @@
-import random
+import random, os
 import numpy as np
 from orkengine.core import *
 from orkengine.lev2 import *
@@ -90,8 +90,8 @@ class ClKernel(object):
   def __init__(self):
     super().__init__()
     ################################################################################
-    #if "PYOPENCL_CTX" not in os.environ:
-    #os.environ["PYOPENCL_CTX"]='0' # select open cl device
+    if "PYOPENCL_CTX" not in os.environ:
+      os.environ["PYOPENCL_CTX"]='0' # select open cl device
     ################################################################################
     # Create OpenCL context and compile CL kernel
     ################################################################################

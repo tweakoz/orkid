@@ -7,32 +7,38 @@
   - File IO
   - Performance minded containers
   - Math (LA/trig/audio/etc)
-  - Operations Queue (higher level concurrency)
+  - Operations Queue (higher level concurrency, inspired by Apple's GCD)
   - Threading / low-level concurrency
   - DataBlocks / DataCache - cache output of processed data.
   - Asset managers with on the fly (and cached) conversion
   - Includes python bindings
-  - Notable dependencies:
-    + Boost
-    + Python3/PyBind11
+    + easy to use type-codec for shuttling engine data to/from python
+  - Notable dependencies (License):
+    + Boost (Boost, permissive)
+    + Python3 (PSF, permissive)
+    + PyBind11 (Custom, permissive)
 
 
 ###### python3 module: orkengine.core
 ---
 ## ork.lev2
-  - Platform a/v/input drivers.
-   - Graphics
-    + OpenGL
-   - Audio
-    + PortAudio
-   - Input
-    + KB/mouse
-    + OpenVR HMD/Controller tracking
+  - Platform AV/Input drivers.
+    + Graphics Device
+      - OpenGL
+      - Vulkan (In progress)
+    + Audio Device
+      - PortAudio
+    + Input Device
+      - KB/mouse
+      - OpenVR HMD/Controller tracking
+      - MIDI/OSC
+      - TUIO
 
 
-  - Lower level graphics renderables
+  - Lower level graphics 
     + DrawBuffers - MultiBuffered threaded renderer
-    + Frustum culler
+      - easy to use tecnique for shuttling render data across the thread boundary
+      - render and update are fully asynchronous with respect to one another
     + RenderQueue (with coarse depth and state sorting)
     + Rigid/Skinned models with variable partitioning support
       - Loads GLTF2/GLB
@@ -52,11 +58,13 @@
     + Included Node Based Technique
       - Render, Post and Output Nodes
       - Screen, RtGroup and OpenVR Output Nodes
-      - 2OP and PTEX Post Nodes
+      - Binary (2in,1out) Operator Post Node
+      - PTEX dataflow graph Post Node
       - Forward Rendering Node
       - PickBuffer Rendering Node
       - Clustered/Deferred PBR Rendering node
         + Metallic, Roughness workflow
+        + IBL base lighting
         + PointLights, SpotLights (w/textured cookies)
         + Cpu Light Processor
         + NvidiaMeshShader Light Processor (WIP)
@@ -80,22 +88,32 @@
 
   - Mesh Processing
      + construct and edit meshes live in-engine, finalize and cache for rendering
+     + python bindings allow interoperability with numpy style 3D mesh frameworks
 
 
   - Includes python bindings
 
-  - Notable dependencies
-    + Ork.Core
-    + OpenGL
-    + PortAudio
-    + OpenVR
-    + Vulkan/MoltenVK
-    + IGL (geometry/mesh processing library)
-    + OpenImageIO (image io library)
-    + Python3/PyBind11
-    + Assimp
-    + QT5
-    + PyQT5/Pyside2
+  - Notable dependencies (License):
+    + Ork.Core (Boost, permissive)
+    + OpenGL (Permissive)
+    + PortAudio (Custom, permissive)
+    + PortMIDI (Apache2.0, permissive)
+    + TUIO (LGPL, permissive)
+    + OpenVR (BSD3, Permissive)
+    + Vulkan 
+    + MoltenVK (Apache2.0, Permissive)
+    + IGL - geometry/mesh processing library (MPL2, permissive)
+      - CGAL (GPL, or LGPL3 - permissive if using LGPL3)
+    + ISPC (BSD, permissive)
+    + ISPCTextureCompressor (MIT, permissive)
+    + Nvida Texture Tools (MIT, permissive)
+    + OpenImageIO (BSD3, Permissive)
+    + Python3 (PSF, permissive)
+    + PyBind11 (Custom, permissive)
+    + Assimp (BSD3, Permissive) 
+    + QT5 (LGPL3)
+    + PyQT5 (GPL, or commercial - your choice)
+    + Pyside2 (LGPL3)
 
 ##### python3 module: orkengine.lev2
 
@@ -113,11 +131,14 @@ archetype / entity / component / scene system. Lets you load a pregenerated 'sce
   - Lev2 Audio effect playback component with dataflow based modulation support
   - Lev2 Audio stream playback component
   - Lev2 Audio manager system
-  - Notable dependencies:
-      + Ork.Core
-      + Ork.Lev2
-      + BulletPhysics
-
+  - LUA Scripting Components and System
+      + easy to use type-codec for shuttling engine data to/from lua
+  - Notable dependencies (License):
+      + Ork.Core (Boost, permissive)
+      + Ork.Lev2 (Boost, permissive)
+      + BulletPhysics (zlib, permissive)
+      + Lua or LuaJIT
+      
 ##### python3 module: orkengine.ecs (planned)
 
 ---
@@ -126,11 +147,11 @@ archetype / entity / component / scene system. Lets you load a pregenerated 'sce
   - Scene / Archetype / Component / Object editor.
   - Asset conversion filters.
   - Notable dependencies:
-      + Ork.Core
-      + Ork.Lev2
-      + Ork.Ent
-      + Qt5
-      + Python3
+      + Ork.Core (Boost, permissive)
+      + Ork.Lev2 (Boost, permissive)
+      + Ork.Ent (Boost, permissive)
+      + Qt5 (LGPL3)
+      + Python3 (PSF, permissive)
 
 ##### python3 module: orkengine.tool (planned)
 
