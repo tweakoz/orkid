@@ -11,6 +11,20 @@ namespace ork::audio::singularity {
 
 extern file::Path kbasepath;
 
+const s16* getK2V3InternalSoundBlock() {
+  static s16* gdata = nullptr;
+  if (nullptr == gdata) {
+    auto filename = kbasepath / "kurzweil" / "k2v3internalsamplerom.bin";
+    printf("Loading Soundblock<%s>\n", filename.c_str());
+    FILE* fin = fopen(filename.ToAbsolute().c_str(), "rb");
+    OrkAssert(fin != nullptr);
+    gdata = (s16*)malloc(8 << 20);
+    fread(gdata, 8 << 20, 1, fin);
+    fclose(fin);
+  }
+  return gdata;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 struct KrzAlgCfg {
   int _wp;
@@ -181,8 +195,6 @@ keymap* VastObjectsDB::parseKeymap(int kmid, const Value& jsonobj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-s16* getK2V3InternalSoundBlock();
-
 sample* VastObjectsDB::parseSample(const Value& jsonobj, const multisample* parent) {
   auto sout           = new sample;
   sout->_sampleBlock  = getK2V3InternalSoundBlock();
@@ -346,7 +358,9 @@ void VastObjectsDB::parseFBlock(const Value& fseg, DspParamData& fblk) {
       fblk.useFrequencyEvaluator();
     else if (scheme == "POS")
       fblk.useKrzPosEvaluator();
-    else if (scheme == "EVNODD")
+    else if (scheme == "EVN")
+      fblk.useKrzEvnOddEvaluator();
+    else if (scheme == "ODD")
       fblk.useKrzEvnOddEvaluator();
     else
       fblk.useDefaultEvaluator();

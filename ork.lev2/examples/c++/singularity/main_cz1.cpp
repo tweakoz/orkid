@@ -25,8 +25,10 @@ int main(int argc, char** argv) {
   auto basepath = file::Path::share_dir() / "singularity" / "casioCZ";
   startupAudio();
   auto czdata = std::make_shared<CzData>(the_synth);
-  czdata->loadBank(basepath / "cz1_1.bnk", "c1");
-  auto prg1 = czdata->getProgram(0);
+  czdata->loadBank(basepath / "cz1_1.bnk", "bank1");
+  czdata->loadBank(basepath / "cz1_2.bnk", "bank2");
+  czdata->loadBank(basepath / "cz1_3.bnk", "bank3");
+  czdata->loadBank(basepath / "cz1_4.bnk", "bank4");
   the_synth->resetFenables();
   //////////////////////////////////////////////////////////////////////////////
   auto add_event = [&](const programData* prog, //
@@ -44,9 +46,12 @@ int main(int argc, char** argv) {
     });
   };
   //////////////////////////////////////////////////////////////////////////////
-  add_event(prg1, 1.0, 30.0, 48);
+  for (int i = 0; i < 128; i++) {
+    auto prg = czdata->getProgram(i);
+    add_event(prg, float(i) * 0.25, 1.0, 36);
+  }
   //////////////////////////////////////////////////////////////////////////////
-  usleep(60 << 20); // just wait, let the "music" play..
+  usleep(35 << 20); // just wait, let the "music" play..
   //////////////////////////////////////////////////////////////////////////////
   tearDownAudio();
   return 0;

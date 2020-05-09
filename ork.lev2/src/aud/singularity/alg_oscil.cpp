@@ -544,7 +544,6 @@ CZX::CZX(const DspBlockData& dbd)
 }
 void CZX::compute(DspBuffer& dspbuf) // final
 {
-  OrkAssert(false);
   float centoff  = _param[0].eval();
   _fval[0]       = centoff;
   int inumframes = dspbuf._numframes;

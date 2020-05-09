@@ -172,6 +172,7 @@ void parse_czprogramdata(CzData* outd, programData* prgout, std::vector<u8> byte
     for (int i = 0; i < 16; i++) {
       name += char(bytes[128 + i]);
     }
+    // remove leading and trailing spaces from patch name
     name = std::regex_replace(name, std::regex("^ +| +$|( ) +"), "$1");
   }
   // czdata->dump();
@@ -195,10 +196,8 @@ void parse_czprogramdata(CzData* outd, programData* prgout, std::vector<u8> byte
   AE->_segments.push_back({0, 0}); // rel3
   ld->_kmpBlock._keymap = outd->_zpmKM;
 
-  // auto f0 = ld->appendDspBlock();
   auto osc = ld->appendDspBlock();
   auto amp = ld->appendDspBlock();
-  //  SAMPLEPB::initBlock(f0);
   CZX::initBlock(osc, czdata);
   AMP::initBlock(amp);
   ld->_envCtrlData._useNatEnv = false;

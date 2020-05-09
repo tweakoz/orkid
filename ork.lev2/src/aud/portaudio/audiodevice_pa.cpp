@@ -29,34 +29,6 @@ using namespace ork::audio::singularity;
 
 template class ork::orklut<ork::Char8, float>;
 
-// static const int kdefaultprogID = 189; // Northern Winds
-static const int kdefaultprogID = 190; // Doomsday
-// static const int kdefaultprogID = 21;
-static int programID       = 0;
-static int octave          = 4;
-const programData* curProg = nullptr;
-
-std::map<int, programInst*> playingNotesMap;
-std::vector<SynthData*> _gBankSet;
-int _gBankIndex = 0;
-
-namespace ork::audio::singularity {
-extern std::string kbasepath;
-s16* getK2V3InternalSoundBlock() {
-  static s16* gdata = nullptr;
-  if (nullptr == gdata) {
-    std::string filename = kbasepath + "/kurzweil/k2v3internalsamplerom.bin";
-    printf("Loading Soundblock<%s>\n", filename.c_str());
-    FILE* fin = fopen(filename.c_str(), "rb");
-    OrkAssert(fin != nullptr);
-    gdata = (s16*)malloc(8 << 20);
-    fread(gdata, 8 << 20, 1, fin);
-    fclose(fin);
-  }
-  return gdata;
-}
-} // namespace ork::audio::singularity
-
 namespace ork::lev2 {
 
 PaStream* pa_stream = nullptr;
@@ -89,60 +61,6 @@ static int patestCallback(
   return 0;
 }
 
-Sf2TestSynthData* loadsf2(const std::string& name, const std::string& tag) {
-  auto sbank = new Sf2TestSynthData(name, the_synth, tag);
-  return sbank;
-};
-
-void loadPrograms() {
-  auto krzbase = new KrzSynthData(the_synth);
-  // auto krztest = new KrzTestData(the_synth);
-  // auto krzkmtest = new KrzKmTestData(the_synth);
-  // auto cztest = new CzData(the_synth);
-  // auto fm4test = new Tx81zData(the_synth);
-  // auto sf2test = loadsf2("PhattInstruments.sf2","prot_2k0");
-
-  _gBankSet.push_back(krzbase);
-  //_gBankSet.push_back(krztest);
-  //_gBankSet.push_back(krzkmtest);
-  //_gBankSet.push_back(cztest);
-  //_gBankSet.push_back(fm4test);
-  //_gBankSet.push_back(sf2test);
-
-  int bankid = 0;
-  auto bank  = _gBankSet[bankid];
-  curProg    = bank->getProgram(kdefaultprogID);
-
-  if (curProg)
-    the_synth->resetFenables();
-
-  assert(curProg != nullptr);
-
-  auto note_on = [](int note) {
-    the_synth->addEvent(0.0f, [=]() {
-      auto it = playingNotesMap.find(note);
-      if (it == playingNotesMap.end()) {
-        auto pi = the_synth->keyOn(note, curProg);
-        assert(pi);
-        playingNotesMap[note] = pi;
-      }
-    });
-  };
-  auto note_off = [](int note) {
-    the_synth->addEvent(0.0f, [=]() {
-      auto it = playingNotesMap.find(note);
-      if (it != playingNotesMap.end()) {
-        auto pi = it->second;
-        assert(pi);
-        the_synth->keyOff(pi);
-        playingNotesMap.erase(it);
-      }
-    });
-  };
-
-  // note_on(48);
-}
-
 void startupAudio() {
   assert(the_synth == nullptr);
 
@@ -152,7 +70,7 @@ void startupAudio() {
   the_synth->_masterGain = 10.0f;
 
   printf("SingularitySynth<%p> SR<%g>\n", the_synth, SR);
-  //loadPrograms();
+  // loadPrograms();
 
   auto err = Pa_Initialize();
   OrkAssert(err == paNoError);

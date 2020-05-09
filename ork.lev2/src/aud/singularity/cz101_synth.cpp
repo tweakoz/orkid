@@ -67,9 +67,7 @@ struct czpriv {
     int inumframes = dspbuf._numframes;
     float* U       = dspbuf.channel(0);
     float f1       = midi_note_to_frequency(float(_note));
-    OrkAssert(false);
-
-    float mi = 0.5f + sinf(_ph) * 0.5f;
+    float mi       = 0.5f + sinf(_ph) * 0.5f;
     if (_data._lineSel < 2) {
       for (int i = 0; i < inumframes; i++) {
         float s0 = _osc[0].compute(f1, mi);

@@ -49,17 +49,17 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   // add_event(winds, 0.0, 50.0, 48);
   // add_event(sweep, 0.0, 30.0, 36);
-  add_event(sweep, 1.0, 30.0, 48);
+  // add_event(sweep, 1.0, 30.0, 48);
   // add_event(sweep, 2.0, 30.0, 60);
-  add_event(doomsday, 1.0, 20.0, 36);
+  // add_event(doomsday, 1.0, 20.0, 36);
   // add_event(piano, 10.0, 10.0, 36);
   // add_event(piano, 10.2, 10.0, 48);
-  add_event(doomsday, 20.0, 20.0, 48);
-  add_event(doomsday, 30.0, 20.0, 60);
-  add_event(ceetuar, 10.0, 5.0, 36);
-  add_event(ceetuar, 11.0, 5.0, 43);
-  add_event(ceetuar, 12.0, 5.0, 36);
-  add_event(ceetuar, 13.0, 5.0, 24);
+  // add_event(doomsday, 20.0, 20.0, 48);
+  // add_event(doomsday, 30.0, 20.0, 60);
+  add_event(ceetuar, 1.0, 5.0, 36);
+  add_event(ceetuar, 2.0, 5.0, 43);
+  add_event(ceetuar, 3.0, 5.0, 36);
+  add_event(ceetuar, 4.0, 5.0, 48);
   for (int i = 0; i < 60; i++) {
     float t = float(i) * 1.0;
     // add_event(drums, t, 1.0, 48);

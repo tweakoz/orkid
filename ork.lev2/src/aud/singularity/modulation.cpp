@@ -17,8 +17,9 @@ FPARAM::FPARAM()
 }
 
 void FPARAM::reset() {
-  _C1 = []() { return 0.0f; };
-  _C2 = []() { return 0.0f; };
+  _evaluator = [](FPARAM& cec) { return 0.0f; };
+  _C1        = []() { return 0.0f; };
+  _C2        = []() { return 0.0f; };
 }
 
 void FPARAM::keyOn(int ikey, int ivel) {
