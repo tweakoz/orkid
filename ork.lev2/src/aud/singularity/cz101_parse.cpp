@@ -7,6 +7,7 @@
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/lev2/aud/singularity/cz101.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
+#include <ork/lev2/aud/singularity/alg_amp.h>
 
 using namespace ork;
 
@@ -194,14 +195,12 @@ void parse_czprogramdata(CzData* outd, programData* prgout, std::vector<u8> byte
   AE->_segments.push_back({0, 0}); // rel3
   ld->_kmpBlock._keymap = outd->_zpmKM;
 
-  auto f0 = ld->appendDspBlock();
-  auto f1 = ld->appendDspBlock();
-  auto f4 = ld->appendDspBlock();
-
-  SAMPLEPB::initBlock(f0);
-  CZX::initBlock(f1, czdata);
-  f4->_dspBlock               = "AMP";
-  f4->_paramd[0]._paramScheme = "AMP";
+  // auto f0 = ld->appendDspBlock();
+  auto osc = ld->appendDspBlock();
+  auto amp = ld->appendDspBlock();
+  //  SAMPLEPB::initBlock(f0);
+  CZX::initBlock(osc, czdata);
+  AMP::initBlock(amp);
   ld->_envCtrlData._useNatEnv = false;
   ld->_algData._algID         = 1;
   ld->_algData._name          = "ALG1";

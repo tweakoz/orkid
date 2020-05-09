@@ -4,6 +4,7 @@
 #include <ork/lev2/aud/singularity/tx81z.h>
 #include <ork/lev2/aud/singularity/cz101.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
+#include <ork/lev2/aud/singularity/modulation.h>
 
 namespace ork::audio::singularity {
 
@@ -462,8 +463,8 @@ void PWM::doKeyOn(const DspKeyOnInfo& koi) // final
 ///////////////////////////////////////////////////////////////////////////////
 
 void SAMPLEPB::initBlock(dspblkdata_ptr_t blockdata) {
-  blockdata->_dspBlock               = "SAMPLEPB";
-  blockdata->_paramd[0]._paramScheme = "PCH";
+  blockdata->_dspBlock = "SAMPLEPB";
+  blockdata->_paramd[0].usePitchEvaluator();
 }
 
 SAMPLEPB::SAMPLEPB(const DspBlockData& dbd)
@@ -543,6 +544,7 @@ CZX::CZX(const DspBlockData& dbd)
 }
 void CZX::compute(DspBuffer& dspbuf) // final
 {
+  OrkAssert(false);
   float centoff  = _param[0].eval();
   _fval[0]       = centoff;
   int inumframes = dspbuf._numframes;
@@ -561,8 +563,8 @@ void CZX::doKeyOff() // final
   _cz->keyOff();
 }
 void CZX::initBlock(dspblkdata_ptr_t blockdata, czprogdata_ptr_t czdata) {
-  blockdata->_dspBlock               = "CZX";
-  blockdata->_paramd[0]._paramScheme = "PCH";
+  blockdata->_dspBlock = "CZX";
+  blockdata->_paramd[0].usePitchEvaluator();
   blockdata->_extdata["PDX"].Set<czprogdata_ptr_t>(czdata);
 }
 

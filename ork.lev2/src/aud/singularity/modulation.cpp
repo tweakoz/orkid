@@ -52,10 +52,10 @@ float FPARAM::eval(bool dump) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GenDefault(DspParamData& fblk) {
-  fblk._mods._evaluator = [=](FPARAM& cec) -> float {
-    float kt = fblk._keyTrack * cec._keyOff;
-    float vt = -fblk._velTrack * cec._unitVel;
+void DspParamData::useDefaultEvaluator() {
+  _evaluator = [this](FPARAM& cec) -> float {
+    float kt = _keyTrack * cec._keyOff;
+    float vt = -_velTrack * cec._unitVel;
     float rv = cec._coarse + cec._C1() + cec._C2() + kt + vt;
     // printf("kt<%f> vt<%f> rv<%f>\n", kt, vt, rv );
     return rv;
@@ -64,10 +64,10 @@ void GenDefault(DspParamData& fblk) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GenPCH(DspParamData& fblk) {
-  fblk._mods._evaluator = [=](FPARAM& cec) -> float {
-    float kt       = fblk._keyTrack * cec._keyOff;
-    float vt       = fblk._velTrack * cec._unitVel;
+void DspParamData::usePitchEvaluator() {
+  _evaluator = [this](FPARAM& cec) -> float {
+    float kt       = _keyTrack * cec._keyOff;
+    float vt       = _velTrack * cec._unitVel;
     float totcents = (cec._coarse * 100) + cec._fine + cec._C1() + cec._C2() + kt + vt;
     // float ratio = cents_to_linear_freq_ratio(totcents);
     // printf( "rat<%f>\n", ratio);
@@ -85,10 +85,10 @@ void GenPCH(DspParamData& fblk) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GenFRQ(DspParamData& fblk) {
-  fblk._mods._evaluator = [=](FPARAM& cec) -> float {
-    float ktcents  = fblk._keyTrack * cec._keyOff;
-    cec._vval      = fblk._velTrack * cec._unitVel;
+void DspParamData::useFrequencyEvaluator() {
+  _evaluator = [this](FPARAM& cec) -> float {
+    float ktcents  = _keyTrack * cec._keyOff;
+    cec._vval      = _velTrack * cec._unitVel;
     float vtcents  = cec._vval;
     float totcents = cec._C1() + cec._C2() + ktcents + vtcents;
     float ratio    = cents_to_linear_freq_ratio(totcents);
@@ -100,10 +100,10 @@ void GenFRQ(DspParamData& fblk) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GenPOS(DspParamData& fblk) {
-  fblk._mods._evaluator = [=](FPARAM& cec) -> float {
-    cec._kval  = fblk._keyTrack * cec._keyOff;
-    cec._vval  = fblk._velTrack * cec._unitVel;
+void DspParamData::useKrzPosEvaluator() {
+  _evaluator = [this](FPARAM& cec) -> float {
+    cec._kval  = _keyTrack * cec._keyOff;
+    cec._vval  = _velTrack * cec._unitVel;
     cec._s1val = cec._C1();
     cec._s2val = cec._C2();
     float x    = (cec._coarse) + cec._s1val + cec._s2val + cec._kval + cec._vval;
@@ -113,14 +113,13 @@ void GenPOS(DspParamData& fblk) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GenAMP(DspParamData& fblk) {
-  fblk._mods._evaluator = [=](FPARAM& cec) -> float {
-    cec._kval  = fblk._keyTrack * cec._keyOff;
-    cec._vval  = lerp(-fblk._velTrack, 0.0f, cec._unitVel);
+void DspParamData::useAmplitudeEvaluator() {
+  _evaluator = [this](FPARAM& cec) -> float {
+    cec._kval  = _keyTrack * cec._keyOff;
+    cec._vval  = lerp(-_velTrack, 0.0f, cec._unitVel);
     cec._s1val = cec._C1();
     cec._s2val = cec._C2();
     float x    = (cec._coarse) + cec._s1val + cec._s2val + cec._kval + cec._vval;
-
     // printf( "vt<%f> kt<%f> x<%f>\n", vt, kt, x );
     return x;
   };
@@ -128,10 +127,10 @@ void GenAMP(DspParamData& fblk) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GenEVNODD(DspParamData& fblk) {
-  fblk._mods._evaluator = [=](FPARAM& cec) -> float {
-    float kt = fblk._keyTrack * cec._keyOff;
-    float vt = lerp(-fblk._velTrack, 0.0f, cec._unitVel);
+void DspParamData::useKrzEvnOddEvaluator() {
+  _evaluator = [this](FPARAM& cec) -> float {
+    float kt = _keyTrack * cec._keyOff;
+    float vt = lerp(-_velTrack, 0.0f, cec._unitVel);
     float x  = (cec._coarse) + cec._C1() + cec._C2() + kt + vt;
     // printf( "vt<%f> kt<%f> x<%f>\n", vt, kt, x );
     return clip_float(x, -10, 10);
@@ -139,7 +138,8 @@ void GenEVNODD(DspParamData& fblk) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void DspBlockData::initEvaluators() {
+/*void DspBlockData::initEvaluators() {
+  OrkAssert(false);
   for (int i = 0; i < kmaxparmperblock; i++) {
     auto& DPD = _paramd[i];
     if (DPD._paramScheme == "PCH")
@@ -153,7 +153,7 @@ void DspBlockData::initEvaluators() {
     else
       GenDefault(DPD);
   }
-}
+}*/
 
 ///////////////////////////////////////////////////////////////////////////////
 

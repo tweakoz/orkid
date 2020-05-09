@@ -149,8 +149,7 @@ void layer::compute(outputBuffer& obuf) {
   }
   ///////////////////////////////////////////////
 
-  auto PCHBLK = _layerData->_dspBlocks[0];
-  if (PCHBLK) {
+  if (auto PCHBLK = _layerData->_dspBlocks[0]) {
     const int kNOTEC4 = 60;
     const auto& PCH   = PCHBLK->_paramd[0];
     const auto& KMP   = _layerData->_kmpBlock;
@@ -182,9 +181,8 @@ void layer::compute(outputBuffer& obuf) {
     }
     _curCentsOSC = kmcents + pchfinalcents + _curPitchOffsetInCents;
 
-  } else {
+  } else
     _curCentsOSC = _curnote * 100;
-  }
 
   _curCentsOSC = clip_float(_curCentsOSC, -0, 12700);
 
@@ -192,7 +190,6 @@ void layer::compute(outputBuffer& obuf) {
   ////////////////////////////////////////
 
   // printf( "doBlockStereo<%d>\n", int(doBlockStereo) );
-
   ////////////////////////////////////////
 
   if (true) {

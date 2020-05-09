@@ -217,10 +217,16 @@ struct KmpBlockData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DspParamData {
-  void initEvaluators();
-  //
 
-  std::string _paramScheme;
+  DspParamData();
+
+  void useDefaultEvaluator();
+  void usePitchEvaluator();
+  void useFrequencyEvaluator();
+  void useAmplitudeEvaluator();
+  void useKrzPosEvaluator();
+  void useKrzEvnOddEvaluator();
+
   std::string _name;
   std::string _units;
   float _coarse         = 0.0f;
@@ -230,6 +236,7 @@ struct DspParamData {
   float _velTrack       = 0.0f;
   int _keystartNote     = 60;
   bool _keystartBipolar = true; // false==unipolar
+  evalit_t _evaluator;
   BlockModulationData _mods;
 };
 
@@ -237,7 +244,6 @@ struct DspParamData {
 
 struct DspBlockData {
   ork::svar16_t getExtData(const std::string& name) const;
-  void initEvaluators();
   //
 
   std::string _dspBlock;

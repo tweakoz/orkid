@@ -290,26 +290,26 @@ void KrzTestData::genTestPrograms() {
   ALGD._algID = 1;
 
   if (0) {
-    auto F1                     = l1->_dspBlocks[1];
-    F1->_dspBlock               = "2PARAM SHAPER";
-    F1->_blockIndex             = 0;
-    F1->_paramd[0]._coarse      = -60.0;
-    F1->_paramd[0]._paramScheme = "EVN";
-    F1->_paramd[0]._units       = "dB";
+    auto F1                = l1->_dspBlocks[1];
+    F1->_dspBlock          = "2PARAM SHAPER";
+    F1->_blockIndex        = 0;
+    F1->_paramd[0]._coarse = -60.0;
+    F1->_paramd[0].useKrzEvnOddEvaluator();
+    F1->_paramd[0]._units = "dB";
   } else if (0) {
-    auto F2                     = l1->_dspBlocks[2];
-    F2->_blockIndex             = 0;
-    F2->_dspBlock               = "SHAPER";
-    F2->_paramd[0]._coarse      = 0.1;
-    F2->_paramd[0]._paramScheme = "AMT";
-    F2->_paramd[0]._units       = "x";
+    auto F2                = l1->_dspBlocks[2];
+    F2->_blockIndex        = 0;
+    F2->_dspBlock          = "SHAPER";
+    F2->_paramd[0]._coarse = 0.1;
+    // F2->_paramd[0]._paramScheme = "AMT"; need new evaluator
+    F2->_paramd[0]._units = "x";
   }
   if (0) {
-    auto F3                     = l1->_dspBlocks[3];
-    F3->_blockIndex             = 1;
-    F3->_paramd[0]._coarse      = -96.0;
-    F3->_paramd[0]._paramScheme = "ODD";
-    F3->_paramd[0]._units       = "dB";
+    auto F3                = l1->_dspBlocks[3];
+    F3->_blockIndex        = 1;
+    F3->_paramd[0]._coarse = -96.0;
+    // F3->_paramd[0]._paramScheme = "ODD"; need new evaluator
+    F3->_paramd[0]._units = "dB";
   }
 }
 

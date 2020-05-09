@@ -38,6 +38,7 @@ struct RateLevelEnvData;
 struct natenvseg;
 struct VastObjectsDB;
 struct DspBlockData;
+struct FPARAM;
 ///////////////////////////////////////////////////////////////////////////////
 struct SynthData;
 struct KrzSynthData;
@@ -75,6 +76,11 @@ static const double sqrt2 = sqrt(2.0);
 inline float getSampleRate() {
   return 48000.0f;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+typedef std::function<float()> controller_t;
+typedef std::function<float(float)> mapper_t;
+typedef std::function<float(FPARAM& cec)> evalit_t;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct outputBuffer {

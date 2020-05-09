@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <ork/lev2/aud/singularity/filters.h>
 #include <ork/lev2/aud/singularity/alg_amp.h>
+#include <ork/lev2/aud/singularity/modulation.h>
 
 namespace ork::audio::singularity {
 
@@ -21,6 +22,11 @@ panLR panBlend(float inp) {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
+
+void AMP::initBlock(dspblkdata_ptr_t blockdata) {
+  blockdata->_dspBlock = "AMP";
+  blockdata->_paramd[0].useAmplitudeEvaluator();
+}
 
 const float kmaxclip = 16.0f;  // 18dB
 const float kminclip = -16.0f; // 18dB

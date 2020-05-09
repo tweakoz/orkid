@@ -133,6 +133,10 @@ static KrzAlgCfg getAlgConfig(int algID) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
+DspParamData::DspParamData() {
+  useDefaultEvaluator();
+}
+
 ork::svar16_t DspBlockData::getExtData(const std::string& name) const {
   auto it = _extdata.find(name);
   return (it == _extdata.end()) ? ork::svar16_t() : it->second;
@@ -333,9 +337,19 @@ void VastObjectsDB::parseFBlock(const Value& fseg, DspParamData& fblk) {
   //////////////////////////////////
 
   if (fseg.HasMember("PARAM_SCHEME")) {
-    fblk._paramScheme = fseg["PARAM_SCHEME"].GetString();
-
-    printf("fblock pscheme<%s>\n", fblk._paramScheme.c_str());
+    auto scheme = fseg["PARAM_SCHEME"].GetString();
+    if (scheme == "PCH")
+      fblk.usePitchEvaluator();
+    else if (scheme == "AMP")
+      fblk.useAmplitudeEvaluator();
+    else if (scheme == "FRQ")
+      fblk.useFrequencyEvaluator();
+    else if (scheme == "POS")
+      fblk.useKrzPosEvaluator();
+    else if (scheme == "EVNODD")
+      fblk.useKrzEvnOddEvaluator();
+    else
+      fblk.useDefaultEvaluator();
   }
 
   if (fseg.HasMember("KeyTrack"))
@@ -471,8 +485,6 @@ dspblkdata_ptr_t VastObjectsDB::parseDspBlock(const Value& dseg, lyrdata_ptr_t l
     }
   }
   // parseFBlock(dseg,rval);
-  if (rval)
-    rval->initEvaluators();
   return rval;
 }
 
@@ -486,12 +498,11 @@ dspblkdata_ptr_t VastObjectsDB::parsePchBlock(const Value& pseg, lyrdata_ptr_t l
 
   const auto& KMP = layd->_kmpBlock;
   if (KMP._pbMode == "Noise") {
-    dblk->_dspBlock               = "NOISE";
-    dblk->_paramd[0]._paramScheme = "PCH";
+    dblk->_dspBlock = "NOISE";
+    dblk->_paramd[0].usePitchEvaluator();
   } else {
     SAMPLEPB::initBlock(dblk);
   }
-  dblk->initEvaluators();
   return dblk;
 }
 
