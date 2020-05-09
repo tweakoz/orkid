@@ -12,7 +12,7 @@
   - DataBlocks / DataCache - cache output of processed data.
   - Asset managers with on the fly (and cached) conversion
   - Includes python bindings
-    + easy to use typecodec for shuttling engine data to/from python
+    + easy to use type-codec for shuttling engine data to/from python
   - Notable dependencies (License):
     + Boost (Boost, permissive)
     + Python3 (PSF, permissive)
@@ -132,7 +132,7 @@ archetype / entity / component / scene system. Lets you load a pregenerated 'sce
   - Lev2 Audio stream playback component
   - Lev2 Audio manager system
   - LUA Scripting Components and System
-      + easy to use typecodec for shuttling engine data to/from lua
+      + easy to use type-codec for shuttling engine data to/from lua
   - Notable dependencies (License):
       + Ork.Core (Boost, permissive)
       + Ork.Lev2 (Boost, permissive)
