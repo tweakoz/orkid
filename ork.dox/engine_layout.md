@@ -7,7 +7,7 @@
   - File IO
   - Performance minded containers
   - Math (LA/trig/audio/etc)
-  - Operations Queue (higher level concurrency)
+  - Operations Queue (higher level concurrency, inspired by Apple's GCD)
   - Threading / low-level concurrency
   - DataBlocks / DataCache - cache output of processed data.
   - Asset managers with on the fly (and cached) conversion
