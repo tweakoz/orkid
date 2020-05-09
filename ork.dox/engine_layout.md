@@ -38,7 +38,6 @@
     + DrawBuffers - MultiBuffered threaded renderer
       - easy to use tecnique for shuttling render data across the thread boundary
       - render and update are fully asynchronous with respect to one another
-    + Frustum culler
     + RenderQueue (with coarse depth and state sorting)
     + Rigid/Skinned models with variable partitioning support
       - Loads GLTF2/GLB
