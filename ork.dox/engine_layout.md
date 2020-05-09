@@ -22,15 +22,15 @@
 ---
 ## ork.lev2
   - Platform a/v/input drivers.
-   - Graphics
-     + OpenGL
-   - Audio
+   + Graphics
+     - OpenGL
+   + Audio
      + PortAudio
-   - Input
-     + KB/mouse
-     + OpenVR HMD/Controller tracking
-     + MIDI/OSC
-     + TUIO
+   + Input
+     - KB/mouse
+     - OpenVR HMD/Controller tracking
+     - MIDI/OSC
+     - TUIO
 
 
   - Lower level graphics renderables
