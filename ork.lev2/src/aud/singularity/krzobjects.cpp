@@ -133,9 +133,9 @@ static KrzAlgCfg getAlgConfig(int algID) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::svarp_t DspBlockData::getExtData(const std::string& name) const {
+ork::svar16_t DspBlockData::getExtData(const std::string& name) const {
   auto it = _extdata.find(name);
-  return (it == _extdata.end()) ? ork::svarp_t() : it->second;
+  return (it == _extdata.end()) ? ork::svar16_t() : it->second;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

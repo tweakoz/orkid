@@ -46,6 +46,7 @@ struct Tx81zData;
 struct CzData;
 struct KrzTestData;
 struct KrzKmTestData;
+struct CzProgData;
 ///////////////////////////////////////////////////////////////////////////////
 using dspblkdata_ptr_t       = std::shared_ptr<DspBlockData>;
 using lyrdata_ptr_t          = std::shared_ptr<layerData>;
@@ -59,6 +60,7 @@ using tx81zsyndata_ptr_t     = std::shared_ptr<Tx81zData>;
 using czsyndata_ptr_t        = std::shared_ptr<CzData>;
 using krztestsyndata_ptr_t   = std::shared_ptr<KrzTestData>;
 using krzkmtestsyndata_ptr_t = std::shared_ptr<KrzKmTestData>;
+using czprogdata_ptr_t       = std::shared_ptr<CzProgData>;
 ///////////////////////////////////////////////////////////////////////////////
 static const int kmaxenvperlayer       = 8;
 static const int kmaxdspblocksperlayer = 8;

@@ -40,7 +40,7 @@ void parse_czprogramdata(CzData* outd, programData* prgout, std::vector<u8> byte
       printf("\n");
     }
 
-  auto czdata      = new CzProgData;
+  auto czdata      = std::make_shared<CzProgData>();
   u8 PFLAG         = bytes[0x00]; // octave/linesel
   czdata->_octave  = (PFLAG & 0x0c) >> 2;
   czdata->_lineSel = (PFLAG & 0x03);
@@ -199,9 +199,7 @@ void parse_czprogramdata(CzData* outd, programData* prgout, std::vector<u8> byte
   auto f4 = ld->appendDspBlock();
 
   SAMPLEPB::initBlock(f0);
-  f1->_dspBlock               = "CZX";
-  f1->_paramd[0]._paramScheme = "PCH";
-  f1->_extdata["PDX"].Set<CzProgData*>(czdata);
+  CZX::initBlock(f1, czdata);
   f4->_dspBlock               = "AMP";
   f4->_paramd[0]._paramScheme = "AMP";
   ld->_envCtrlData._useNatEnv = false;

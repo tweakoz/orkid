@@ -532,6 +532,8 @@ void FM4::doKeyOff() // final
 {
   _fm4->keyOff();
 }
+void FM4::initBlock(dspblkdata_ptr_t blockdata) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -557,6 +559,11 @@ void CZX::doKeyOn(const DspKeyOnInfo& koi) // final
 void CZX::doKeyOff() // final
 {
   _cz->keyOff();
+}
+void CZX::initBlock(dspblkdata_ptr_t blockdata, czprogdata_ptr_t czdata) {
+  blockdata->_dspBlock               = "CZX";
+  blockdata->_paramd[0]._paramScheme = "PCH";
+  blockdata->_extdata["PDX"].Set<czprogdata_ptr_t>(czdata);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

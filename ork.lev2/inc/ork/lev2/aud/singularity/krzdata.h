@@ -236,7 +236,7 @@ struct DspParamData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DspBlockData {
-  ork::svarp_t getExtData(const std::string& name) const;
+  ork::svar16_t getExtData(const std::string& name) const;
   void initEvaluators();
   //
 
@@ -245,7 +245,7 @@ struct DspBlockData {
   int _numParams  = 0;
   float _inputPad = 1.0f;
   int _blockIndex = -1;
-  std::map<std::string, ork::svarp_t> _extdata;
+  std::map<std::string, ork::svar16_t> _extdata;
   DspParamData _paramd[kmaxparmperblock];
 };
 

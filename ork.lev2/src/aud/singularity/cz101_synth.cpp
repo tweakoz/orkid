@@ -15,11 +15,13 @@
 using namespace ork;
 
 namespace ork::audio::singularity {
-
+///////////////////////////////////////////////////////////////////////////////
 struct czpriv {
+  /////////////////////////////
   czpriv()
       : _newnote(false) {
   }
+  /////////////////////////////
   void keyOn(layer* l, const CzProgData& prgdat) {
     _data     = prgdat;
     _curlayer = l;
@@ -58,13 +60,14 @@ struct czpriv {
     }
     _ph = 0.0f;
   }
+  /////////////////////////////
   void keyOff() {
   }
+  /////////////////////////////
   void compute(DspBuffer& dspbuf) {
     int inumframes = dspbuf._numframes;
     float* U       = dspbuf.channel(0);
-
-    float f1 = midi_note_to_frequency(float(_note));
+    float f1       = midi_note_to_frequency(float(_note));
 
     float mi = 0.5f + sinf(_ph) * 0.5f;
     if (_data._lineSel < 2) {
@@ -104,6 +107,7 @@ struct czpriv {
 
     _ph += 0.01f;
   }
+  /////////////////////////////
   CzOsc _osc[2];
   float _ph;
   float _basefreq;
@@ -112,17 +116,19 @@ struct czpriv {
   CzProgData _data;
   bool _newnote;
 };
-
+///////////////////////////////////////////////////////////////////////////////
 czsyn::czsyn() {
   _pimpl.Set<czpriv*>(new czpriv);
 }
+///////////////////////////////////////////////////////////////////////////////
 void czsyn::compute(DspBuffer& dspbuf) {
   _pimpl.Get<czpriv*>()->compute(dspbuf);
 }
+///////////////////////////////////////////////////////////////////////////////
 void czsyn::keyOn(const DspKeyOnInfo& koi) {
   auto dspb  = koi._prv;
   auto& dbd  = dspb->_dbd;
-  auto progd = dbd.getExtData("PDX").Get<CzProgData*>();
+  auto progd = dbd.getExtData("PDX").Get<czprogdata_ptr_t>();
   auto l     = koi._layer;
 
   _data = *progd;
@@ -132,8 +138,9 @@ void czsyn::keyOn(const DspKeyOnInfo& koi) {
 
   _pimpl.Get<czpriv*>()->keyOn(l, *progd);
 }
+///////////////////////////////////////////////////////////////////////////////
 void czsyn::keyOff() {
   _pimpl.Get<czpriv*>()->keyOff();
 }
-
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity
