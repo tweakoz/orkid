@@ -88,10 +88,12 @@
 
   - Includes python bindings
 
-  - Notable dependencies
+  - Notable dependencies (License):
     + Ork.Core (Boost, permissive)
     + OpenGL (Permissive)
     + PortAudio (Custom, permissive)
+    + PortMIDI (Apache2.0, permissive)
+    + TUIO (LGPL, permissive)
     + OpenVR (BSD3, Permissive)
     + Vulkan 
     + MoltenVK (Apache2.0, Permissive)
@@ -124,7 +126,7 @@ archetype / entity / component / scene system. Lets you load a pregenerated 'sce
   - Lev2 Audio effect playback component with dataflow based modulation support
   - Lev2 Audio stream playback component
   - Lev2 Audio manager system
-  - Notable dependencies:
+  - Notable dependencies (License):
       + Ork.Core (Boost, permissive)
       + Ork.Lev2 (Boost, permissive)
       + BulletPhysics (zlib, permissive)
