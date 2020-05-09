@@ -62,6 +62,7 @@
       - PickBuffer Rendering Node
       - Clustered/Deferred PBR Rendering node
         + Metallic, Roughness workflow
+        + IBL base lighting
         + PointLights, SpotLights (w/textured cookies)
         + Cpu Light Processor
         + NvidiaMeshShader Light Processor (WIP)
