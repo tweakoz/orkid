@@ -2,23 +2,18 @@
 ################################################################################
 from ork import path
 from ork.pathtools import ensureDirectoryExists
-from ork.wget import wget
+from ork.wget import batch_wget
 from yarl import URL
 ################################################################################
 dest_path = path.stage()/"share"/"singularity"
 ################################################################################
 ensureDirectoryExists(dest_path)
 ################################################################################
-def do_fileset(fset):
-  for k in fset.keys():
-    v = fset[k]
-    wget(urls=[k],output_name=v[0],md5val=v[1])
-################################################################################
 # tx81Z data
 ################################################################################
 ensureDirectoryExists(dest_path/"tx81z")
 base_81zurl = str("http://www.sysexdb.com/binaryview.aspx?IDSysexMessage=")
-do_fileset({
+batch_wget({
  base_81zurl+"1758": (dest_path/"tx81z"/"factorypatchA.syx","a14c5af8fb22c4c4ff2fb3123dd2aa6b"),
  base_81zurl+"1759": (dest_path/"tx81z"/"factorypatchB.syx","05827dd45f6010ee5ae62790b453dcb2"),
  base_81zurl+"1760": (dest_path/"tx81z"/"factorypatchC.syx","58543b3f0fa726e0ff746b59932b152a"),
@@ -27,7 +22,7 @@ do_fileset({
 ################################################################################
 base_casioCZ = URL("http://cd.textfiles.com/10000soundssongs/SYNTHDAT/CASIO")
 ensureDirectoryExists(dest_path/"casioCZ")
-do_fileset({
+batch_wget({
  base_casioCZ/"CZ1_1.BNK": (dest_path/"casioCZ"/"cz1_1.syx","00ec49470a8fd608dc4c99ade63da9e1"),
  base_casioCZ/"CZ1_2.BNK": (dest_path/"casioCZ"/"cz1_2.syx","63efea6b5a72a6ddec9a169f55af7176"),
  base_casioCZ/"CZ1_3.BNK": (dest_path/"casioCZ"/"cz1_3.syx","28b4b9e3299723290d3e2dd0b573e760"),
@@ -36,7 +31,7 @@ do_fileset({
 ################################################################################
 base_soundfont = URL("ftp://ftp.lysator.liu.se/pub/awe32/soundfonts")
 ensureDirectoryExists(dest_path/"soundfont")
-do_fileset({
+batch_wget({
  base_soundfont/"Fender2.sf2": (dest_path/"soundfont"/"fender2.sf2","4b59fa284e460c16ce1077ce6ade8f0e"),
  base_soundfont/"Psr-27.sf2": (dest_path/"soundfont"/"psr27.sf2","c29c727802841d73fac517d67eb00a8e"),
  base_soundfont/"aahhs.sf2": (dest_path/"soundfont"/"aahhs.sf2","d8a52312c5d331c0ee929f6dd362a7e7"),
@@ -46,7 +41,7 @@ do_fileset({
 ################################################################################
 base_kurzweil = URL("https://media.sweetwater.com/k2000/ftp-files/files")
 ensureDirectoryExists(dest_path/"kurzweil")
-do_fileset({
+batch_wget({
  base_kurzweil/"bigbells.krz": (dest_path/"kurzweil"/"bigbells.krz","31a1c64fe54d5a163e6af13ec80376e3"),
  base_kurzweil/"akaifunk.krz": (dest_path/"kurzweil"/"akaifunk.krz","1a2e0c78ec392e19bde0bb8ea942829d"),
  base_kurzweil/"drpad.krz": (dest_path/"kurzweil"/"drpad.krz","b92d808aecd754ca031447ba8e08fe16"),
