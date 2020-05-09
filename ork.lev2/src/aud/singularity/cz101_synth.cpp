@@ -23,6 +23,7 @@ struct czpriv {
   }
   /////////////////////////////
   void keyOn(layer* l, const CzProgData& prgdat) {
+    printf("cz keyon prog<%s>\n", prgdat._name.c_str());
     _data     = prgdat;
     _curlayer = l;
     _newnote  = true;

@@ -302,7 +302,7 @@ void RateLevelEnvInst::compute(int inumfr) // final
     if (done && _ampenv) {
       _layer->release();
       _data = nullptr;
-      printf("ENV RELEASING LAYER<%p>\n", _layer);
+      // printf("ENV RELEASING LAYER<%p>\n", _layer);
     }
     return rval;
   };
@@ -323,7 +323,7 @@ void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI) {
   const auto& EC  = ld->_envCtrlData;
   const auto& DKT = EC._decKeyTrack;
   const auto& RKT = EC._relKeyTrack;
-  printf("ikey<%d> DKT<%f>\n", ikey, DKT);
+  // printf("ikey<%d> DKT<%f>\n", ikey, DKT);
 
   float fkl = -1.0f + float(ikey) / 63.5f;
 

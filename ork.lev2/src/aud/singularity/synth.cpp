@@ -53,7 +53,7 @@ void programInst::keyOn(int note, const programData* pd) {
     if (vel < ld->_loVel || vel > ld->_hiVel)
       continue;
 
-    printf("KEYON L%d\n", ilayer);
+    // printf("KEYON L%d\n", ilayer);
 
     auto l      = _syn.allocLayer();
     l->_ldindex = ilayer - 1;
@@ -207,7 +207,7 @@ void synth::deactivateVoices() {
 
     int inumv = _activeVoices.size();
 
-    printf("syn freeLayer<%p> curnumvoices<%d>\n", l, inumv);
+    // printf("syn freeLayer<%p> curnumvoices<%d>\n", l, inumv);
 
     it = _freeVoices.find(l);
     assert(it == _freeVoices.end());
@@ -224,7 +224,7 @@ programInst* synth::keyOn(int note, const programData* pdata) {
   auto it = _freeProgInst.begin();
   assert(it != _freeProgInst.end());
   auto pi = *it;
-  printf("syn allocProgInst<%p>\n", pi);
+  // printf("syn allocProgInst<%p>\n", pi);
   pi->_progdata = pdata;
   _freeProgInst.erase(it);
   pi->keyOn(note, pdata);
