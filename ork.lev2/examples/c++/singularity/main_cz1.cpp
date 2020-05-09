@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
   auto basepath = file::Path::share_dir() / "singularity" / "casioCZ";
   startupAudio();
   auto czdata = std::make_shared<CzData>(the_synth);
-  czdata->loadBank(basepath / "cz1_1.syx", "c1");
+  czdata->loadBank(basepath / "cz1_1.bnk", "c1");
   auto prg1 = czdata->getProgram(0);
   the_synth->resetFenables();
   //////////////////////////////////////////////////////////////////////////////

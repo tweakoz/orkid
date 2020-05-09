@@ -21,12 +21,20 @@ batch_wget({
 })
 ################################################################################
 base_casioCZ = URL("http://cd.textfiles.com/10000soundssongs/SYNTHDAT/CASIO")
+base_casioManuals = URL("http://www.synthmanuals.com/manuals/casio")
 ensureDirectoryExists(dest_path/"casioCZ")
 batch_wget({
- base_casioCZ/"CZ1_1.BNK": (dest_path/"casioCZ"/"cz1_1.syx","00ec49470a8fd608dc4c99ade63da9e1"),
- base_casioCZ/"CZ1_2.BNK": (dest_path/"casioCZ"/"cz1_2.syx","63efea6b5a72a6ddec9a169f55af7176"),
- base_casioCZ/"CZ1_3.BNK": (dest_path/"casioCZ"/"cz1_3.syx","28b4b9e3299723290d3e2dd0b573e760"),
- base_casioCZ/"CZ1_4.BNK": (dest_path/"casioCZ"/"cz1_4.syx","08a090716825288b26ee163fd2be85a2"),
+ base_casioCZ/"CZ1_1.BNK": (dest_path/"casioCZ"/"cz1_1.bnk","00ec49470a8fd608dc4c99ade63da9e1"),
+ base_casioCZ/"CZ1_2.BNK": (dest_path/"casioCZ"/"cz1_2.bnk","63efea6b5a72a6ddec9a169f55af7176"),
+ base_casioCZ/"CZ1_3.BNK": (dest_path/"casioCZ"/"cz1_3.bnk","28b4b9e3299723290d3e2dd0b573e760"),
+ base_casioCZ/"CZ1_4.BNK": (dest_path/"casioCZ"/"cz1_4.bnk","08a090716825288b26ee163fd2be85a2"),
+ base_casioManuals/"cz-1"/"owners_manual"/"casio_cz-1_owners_manual.pdf":
+ (dest_path/"casioCZ"/"cz1manual.pdf","8e3767ac690af435dd1d9371fe494d1d"),
+ base_casioManuals/"cz-5000"/"owners_manual"/"cz5000ownersmanual.pdf":
+ (dest_path/"casioCZ"/"cz500manual.pdf","f07cb2db66b6c91a0677602293a55f14"),
+ "http://thesnowfields.com/manuals/An%20Insider's%20Guide%20to%20Casio%20CZ%20Synthesizers.pdf":
+(dest_path/"casioCZ"/"insidersguide.pdf","3df8a020eeb5dc019a3dfd58244fe2ec")
+
 })
 ################################################################################
 base_soundfont = URL("ftp://ftp.lysator.liu.se/pub/awe32/soundfonts")

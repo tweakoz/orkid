@@ -461,6 +461,11 @@ void PWM::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void SAMPLEPB::initBlock(dspblkdata_ptr_t blockdata) {
+  blockdata->_dspBlock               = "SAMPLEPB";
+  blockdata->_paramd[0]._paramScheme = "PCH";
+}
+
 SAMPLEPB::SAMPLEPB(const DspBlockData& dbd)
     : DspBlock(dbd) {
 }

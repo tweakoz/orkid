@@ -125,8 +125,6 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     ld->_ctrlBlocks[0] = CB0;
 
     ld->_kmpBlock._keymap = outd->_zpmKM;
-    // ld->_fBlock[0]._dspBlock = "SAMPLEPB";
-    // ld->_fBlock[0]._paramScheme = "PCH";
 
     auto block0       = ld->appendDspBlock();
     auto block1       = ld->appendDspBlock();

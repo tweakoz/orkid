@@ -66,6 +66,7 @@ struct CzProgData {
   int _vibratoRate  = 0;
   int _vibratoDepth = 0;
   CzOscData _oscData[2];
+  std::string _name;
 };
 
 struct DspKeyOnInfo;

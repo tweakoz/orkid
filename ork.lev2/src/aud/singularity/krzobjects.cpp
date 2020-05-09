@@ -3,6 +3,7 @@
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/kernel/string/string.h>
+#include <ork/lev2/aud/singularity/alg_oscil.h>
 
 using namespace rapidjson;
 
@@ -488,8 +489,7 @@ dspblkdata_ptr_t VastObjectsDB::parsePchBlock(const Value& pseg, lyrdata_ptr_t l
     dblk->_dspBlock               = "NOISE";
     dblk->_paramd[0]._paramScheme = "PCH";
   } else {
-    dblk->_dspBlock               = "SAMPLEPB";
-    dblk->_paramd[0]._paramScheme = "PCH";
+    SAMPLEPB::initBlock(dblk);
   }
   dblk->initEvaluators();
   return dblk;
