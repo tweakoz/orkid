@@ -34,7 +34,7 @@
       - TUIO
 
 
-  - Lower level graphics renderables
+  - Lower level graphics 
     + DrawBuffers - MultiBuffered threaded renderer
     + Frustum culler
     + RenderQueue (with coarse depth and state sorting)
