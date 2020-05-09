@@ -12,9 +12,10 @@
   - DataBlocks / DataCache - cache output of processed data.
   - Asset managers with on the fly (and cached) conversion
   - Includes python bindings
-  - Notable dependencies:
-    + Boost
-    + Python3/PyBind11
+  - Notable dependencies (License):
+    + Boost (Boost, permissive)
+    + Python3 (PSF, permissive)
+    + PyBind11 (Custom, permissive)
 
 
 ###### python3 module: orkengine.core
@@ -88,20 +89,24 @@
   - Includes python bindings
 
   - Notable dependencies
-    + Ork.Core
-    + OpenGL
-    + PortAudio
-    + OpenVR
-    + Vulkan/MoltenVK
-    + IGL (geometry/mesh processing library) <- this has a GPL dependency on CGAL - easily removable if need be.
-    + ISPC
-    + ISPCTextureCompressor
-    + Nvida Texture Tools 
-    + OpenImageIO (image io library)
-    + Python3/PyBind11
-    + Assimp
-    + QT5
-    + PyQT5/Pyside2
+    + Ork.Core (Boost, permissive)
+    + OpenGL (Permissive)
+    + PortAudio (Custom, permissive)
+    + OpenVR (BSD3, Permissive)
+    + Vulkan 
+    + MoltenVK (Apache2.0, Permissive)
+    + IGL - geometry/mesh processing library (MPL2, permissive)
+      - CGAL (GPL, or LGPL3 - permissive if using LGPL3)
+    + ISPC (BSD, permissive)
+    + ISPCTextureCompressor (MIT, permissive)
+    + Nvida Texture Tools (MIT, permissive)
+    + OpenImageIO (BSD3, Permissive)
+    + Python3 (PSF, permissive)
+    + PyBind11 (Custom, permissive)
+    + Assimp (BSD3, Permissive) 
+    + QT5 (LGPL3)
+    + PyQT5 (GPL, or commercial - your choice)
+    + Pyside2 (LGPL3)
 
 ##### python3 module: orkengine.lev2
 
@@ -120,9 +125,9 @@ archetype / entity / component / scene system. Lets you load a pregenerated 'sce
   - Lev2 Audio stream playback component
   - Lev2 Audio manager system
   - Notable dependencies:
-      + Ork.Core
-      + Ork.Lev2
-      + BulletPhysics
+      + Ork.Core (Boost, permissive)
+      + Ork.Lev2 (Boost, permissive)
+      + BulletPhysics (zlib, permissive)
 
 ##### python3 module: orkengine.ecs (planned)
 
@@ -132,11 +137,11 @@ archetype / entity / component / scene system. Lets you load a pregenerated 'sce
   - Scene / Archetype / Component / Object editor.
   - Asset conversion filters.
   - Notable dependencies:
-      + Ork.Core
-      + Ork.Lev2
-      + Ork.Ent
-      + Qt5
-      + Python3
+      + Ork.Core (Boost, permissive)
+      + Ork.Lev2 (Boost, permissive)
+      + Ork.Ent (Boost, permissive)
+      + Qt5 (LGPL3)
+      + Python3 (PSF, permissive)
 
 ##### python3 module: orkengine.tool (planned)
 
