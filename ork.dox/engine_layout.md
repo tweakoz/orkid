@@ -56,7 +56,8 @@
     + Included Node Based Technique
       - Render, Post and Output Nodes
       - Screen, RtGroup and OpenVR Output Nodes
-      - 2OP and PTEX Post Nodes
+      - Binary (2in,1out) Operator Post Node
+      - PTEX dataflow graph Post Node
       - Forward Rendering Node
       - PickBuffer Rendering Node
       - Clustered/Deferred PBR Rendering node
