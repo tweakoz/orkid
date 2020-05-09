@@ -130,11 +130,13 @@ archetype / entity / component / scene system. Lets you load a pregenerated 'sce
   - Lev2 Audio effect playback component with dataflow based modulation support
   - Lev2 Audio stream playback component
   - Lev2 Audio manager system
+  - LUA Scripting Components and System
   - Notable dependencies (License):
       + Ork.Core (Boost, permissive)
       + Ork.Lev2 (Boost, permissive)
       + BulletPhysics (zlib, permissive)
-
+      + Lua or LuaJIT
+      
 ##### python3 module: orkengine.ecs (planned)
 
 ---
