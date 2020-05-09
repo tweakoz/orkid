@@ -13,8 +13,7 @@
 
 using namespace ork::audio::singularity::sf2;
 namespace ork::audio::singularity {
-
-std::string kbasepath = "/opt/singularity/data";
+auto kbasepath = file::Path::share_dir() / "singularity";
 
 float SynthData::seqTime(float dur) {
   float rval = _seqCursor;
@@ -31,14 +30,22 @@ layerData::layerData() {
     _dspBlocks[i] = nullptr;
 }
 
+dspblkdata_ptr_t layerData::appendDspBlock() {
+  OrkAssert(_numdspblocks < kmaxdspblocksperlayer);
+  auto block                  = std::make_shared<DspBlockData>();
+  _dspBlocks[_numdspblocks++] = block;
+  return block;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
-Sf2TestSynthData::Sf2TestSynthData(const std::string& filename, synth* syn, const std::string& bankname)
+Sf2TestSynthData::Sf2TestSynthData(const file::Path& filename, synth* syn, const std::string& bankname)
     : SynthData(syn) {
   _staticBankName = bankname;
 
-  std::string sfbasedir = kbasepath + "/soundfonts/";
-  _sfont                = new SoundFont(sfbasedir + filename, bankname);
+  auto sfpath  = kbasepath / "soundfonts" / filename;
+  auto abspath = sfpath.ToAbsolute();
+  _sfont       = new SoundFont(abspath.c_str(), bankname);
 }
 Sf2TestSynthData::~Sf2TestSynthData() {
   delete _sfont;
@@ -51,7 +58,7 @@ const programData* Sf2TestSynthData::getProgram(int progID) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static const std::string krzbasedir = kbasepath + "/kurzweil/krz/";
+static const auto krzbasedir = kbasepath / "kurzweil" / "krz";
 
 VastObjectsDB* KrzSynthData::baseObjects() {
   static VastObjectsDB* objdb = nullptr;

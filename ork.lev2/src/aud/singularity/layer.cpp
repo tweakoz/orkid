@@ -434,7 +434,7 @@ controller_t layer::getSRC2(const BlockModulationData& mods) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void layer::keyOn(int note, int vel, const layerData* ld) {
+void layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
   std::lock_guard<std::mutex> lock(_mutex);
 
   reset();

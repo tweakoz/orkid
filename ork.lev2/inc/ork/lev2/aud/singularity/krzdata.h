@@ -281,10 +281,13 @@ struct layerData {
   EnvCtrlData _envCtrlData;
 
   KmpBlockData _kmpBlock;
-  DspBlockData* _pchBlock;
-  DspBlockData* _dspBlocks[kmaxdspblocksperlayer];
+  dspblkdata_ptr_t _pchBlock;
+  dspblkdata_ptr_t _dspBlocks[kmaxdspblocksperlayer];
+
+  dspblkdata_ptr_t appendDspBlock();
 
   const keymap* _keymap   = nullptr;
+  int _numdspblocks       = 0;
   int _loKey              = 0;
   int _hiKey              = 127;
   int _loVel              = 0;
@@ -302,13 +305,13 @@ struct layerData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct programData {
-  layerData* newLayer();
-  layerData* getLayer(int i) const {
+  lyrdata_ptr_t newLayer();
+  lyrdata_ptr_t getLayer(int i) const {
     return _layerDatas[i];
   }
   std::string _name;
   std::string _role;
-  std::vector<layerData*> _layerDatas;
+  std::vector<lyrdata_ptr_t> _layerDatas;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -344,7 +347,7 @@ struct KrzSynthData : public SynthData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Sf2TestSynthData : public SynthData {
-  Sf2TestSynthData(const std::string& syxpath, synth* syn, const std::string& bankname = "sf2");
+  Sf2TestSynthData(const file::Path& syxpath, synth* syn, const std::string& bankname = "sf2");
   ~Sf2TestSynthData();
   sf2::SoundFont* _sfont;
   const programData* getProgram(int progID) const final;
@@ -358,7 +361,7 @@ struct Sf2TestSynthData : public SynthData {
 struct Tx81zData : public SynthData {
   Tx81zData(synth* syn);
   ~Tx81zData();
-  void loadBank(const std::string& syxpath);
+  void loadBank(const file::Path& syxpath);
 
   const programData* getProgram(int progID) const final;
   const programData* getProgramByName(const std::string& named) const final {
@@ -374,7 +377,7 @@ struct Tx81zData : public SynthData {
 struct CzData : public SynthData {
   CzData(synth* syn);
   ~CzData();
-  void loadBank(const std::string& syxpath, const std::string& bnkname = "czb");
+  void loadBank(const file::Path& syxpath, const std::string& bnkname = "czb");
 
   const programData* getProgram(int progID) const final;
   const programData* getProgramByName(const std::string& named) const final {

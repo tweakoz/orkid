@@ -21,7 +21,7 @@ struct VastObjectsDB {
   AsrData* parseAsr(const rapidjson::Value& JO, const std::string& name);
   LfoData* parseLfo(const rapidjson::Value& JO, const std::string& name);
   FunData* parseFun(const rapidjson::Value& JO, const std::string& name);
-  layerData* parseLayer(const rapidjson::Value& JO, programData* pd);
+  lyrdata_ptr_t parseLayer(const rapidjson::Value& JO, programData* pd);
   void parseEnvControl(const rapidjson::Value& JO, EnvCtrlData& ed);
   programData* parseProgram(const rapidjson::Value& JO);
   multisample* parseMultiSample(const rapidjson::Value& JO);
@@ -30,8 +30,8 @@ struct VastObjectsDB {
   void parseAlg(const rapidjson::Value& JO, AlgData& algd);
   void parseKmpBlock(const Value& JO, KmpBlockData& kmblk);
   void parseFBlock(const Value& JO, DspParamData& fb);
-  DspBlockData* parseDspBlock(const Value& JO, layerData* layd, bool force = false);
-  DspBlockData* parsePchBlock(const Value& JO, layerData* layd);
+  dspblkdata_ptr_t parseDspBlock(const Value& JO, lyrdata_ptr_t layd, bool force = false);
+  dspblkdata_ptr_t parsePchBlock(const Value& JO, lyrdata_ptr_t layd);
 
   std::map<int, programData*> _programs;
   std::map<std::string, programData*> _programsByName;

@@ -5,16 +5,17 @@ enableQt5()
 project (ork.example.lev2.aud.singularity CXX)
 
 include_directories(AFTER ${CMAKE_INSTALL_PREFIX}/include)
+include_directories(AFTER ${ORKROOT}/ork.core/inc )
+include_directories(AFTER ${ORKROOT}/ork.lev2/inc )
+include_directories(AFTER ${SRCD} )
+include_directories(AFTER $ENV{QTDIR}/include)
 
-file(GLOB srcs ./*.cpp)
-add_executable (ork.example.lev2.aud.singularity.exe ${srcs} )
+add_executable (ork.example.lev2.aud.singularity.krzrom.exe main_krzrom.cpp )
+target_link_libraries(ork.example.lev2.aud.singularity.krzrom.exe LINK_PRIVATE ork_core ork_lev2 )
+set_target_properties(ork.example.lev2.aud.singularity.krzrom.exe PROPERTIES LINKER_LANGUAGE CXX)
+install(TARGETS ork.example.lev2.aud.singularity.krzrom.exe DESTINATION $ENV{OBT_STAGE}/bin )
 
-target_link_libraries(ork.example.lev2.aud.singularity.exe LINK_PRIVATE ork_core ork_lev2 )
-
-set_target_properties(ork.example.lev2.aud.singularity.exe PROPERTIES LINKER_LANGUAGE CXX)
-target_include_directories (ork.example.lev2.aud.singularity.exe PRIVATE ${ORKROOT}/ork.core/inc )
-target_include_directories (ork.example.lev2.aud.singularity.exe PRIVATE ${ORKROOT}/ork.lev2/inc )
-target_include_directories (ork.example.lev2.aud.singularity.exe PRIVATE ${SRCD} )
-target_include_directories (ork.example.lev2.aud.singularity.exe PRIVATE $ENV{QTDIR}/include)
-
-install(TARGETS ork.example.lev2.aud.singularity.exe DESTINATION $ENV{OBT_STAGE}/bin )
+add_executable (ork.example.lev2.aud.singularity.cz1.exe main_cz1.cpp )
+target_link_libraries(ork.example.lev2.aud.singularity.cz1.exe LINK_PRIVATE ork_core ork_lev2 )
+set_target_properties(ork.example.lev2.aud.singularity.cz1.exe PROPERTIES LINKER_LANGUAGE CXX)
+install(TARGETS ork.example.lev2.aud.singularity.cz1.exe DESTINATION $ENV{OBT_STAGE}/bin )

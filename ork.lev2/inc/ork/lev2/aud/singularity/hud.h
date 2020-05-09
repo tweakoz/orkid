@@ -57,7 +57,7 @@ struct ItemDrawReq
     synth* s;
     int ldi;
     int ienv;
-    const layerData* ld;
+    lyrdata_constptr_t ld;
     const layer* l;
     ork::svar256_t _data;
     Rect rect;

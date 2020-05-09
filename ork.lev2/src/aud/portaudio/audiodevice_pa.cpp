@@ -152,7 +152,7 @@ void startupAudio() {
   the_synth->_masterGain = 10.0f;
 
   printf("SingularitySynth<%p> SR<%g>\n", the_synth, SR);
-  loadPrograms();
+  //loadPrograms();
 
   auto err = Pa_Initialize();
   OrkAssert(err == paNoError);

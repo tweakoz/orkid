@@ -15,7 +15,7 @@ struct KeyOnInfo
     int _key = 0;
     int _vel = 0;
     layer* _layer = nullptr;
-    const layerData* _layerData = nullptr;
+    lyrdata_constptr_t _layerData = nullptr;
     ork::svarp_t _extdata;
 };
 

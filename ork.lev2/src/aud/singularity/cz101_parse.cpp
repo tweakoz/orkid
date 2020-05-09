@@ -10,9 +10,9 @@
 using namespace ork;
 
 namespace ork::audio::singularity {
-
-void parse_cz101(CzData* outd, const std::string& path, const std::string& bnkname) {
-  ork::File syxfile(path.c_str(), ork::EFM_READ);
+///////////////////////////////////////////////////////////////////////////////
+void parse_cz101(CzData* outd, const file::Path& path, const std::string& bnkname) {
+  ork::File syxfile(path, ork::EFM_READ);
   u8* data    = nullptr;
   size_t size = 0;
   syxfile.Load((void**)(&data), size);
@@ -48,9 +48,9 @@ void parse_cz101(CzData* outd, const std::string& path, const std::string& bnkna
     std::vector<u8> dbytes;
     for (int i = 0; i < 128; i++) {
       int bidx = prgbase + (i * 2) + (256 + 8) * iv;
-      U8 ln    = data[bidx + 0];
-      U8 hn    = data[bidx + 1];
-      U8 byte  = (hn << 4) | ln;
+      u8 ln    = data[bidx + 0];
+      u8 hn    = data[bidx + 1];
+      u8 byte  = (hn << 4) | ln;
       dbytes.push_back(byte);
     }
     if (0)
@@ -59,7 +59,7 @@ void parse_cz101(CzData* outd, const std::string& path, const std::string& bnkna
         printf("%03d: ", bidx);
 
         for (int c = 0; c < 8; c++) {
-          U8 byte = dbytes[bidx + c];
+          u8 byte = dbytes[bidx + c];
           printf("%02x ", byte);
         }
 
@@ -220,22 +220,23 @@ void parse_cz101(CzData* outd, const std::string& path, const std::string& bnkna
     AE->_segments.push_back({0, 0}); // rel3
     ld->_kmpBlock._keymap = outd->_zpmKM;
 
-    /*auto& F0 = ld->_dspBlocks[0];
-    auto& F1 = ld->_dspBlocks[1];
-    auto& F4 = ld->_dspBlocks[4];
-    F0._dspBlock = "SAMPLEPB";
-    //ld->_fBlock[0]._paramScheme = "PCH";
-    F1._dspBlock = "CZX";
-    //ld->_fBlock[1]._paramScheme = "PCH";
-    F1._extdata["PDX"].Set<CzProgData*>(czdata);
-    F4._dspBlock = "AMP";
-    //ld->_fBlock[4]._paramScheme = "AMP";
+    auto f0 = ld->appendDspBlock();
+    auto f1 = ld->appendDspBlock();
+    auto f4 = ld->appendDspBlock();
+
+    f0->_dspBlock               = "SAMPLEPB";
+    f0->_paramd[0]._paramScheme = "PCH";
+    f1->_dspBlock               = "CZX";
+    f1->_paramd[0]._paramScheme = "PCH";
+    f1->_extdata["PDX"].Set<CzProgData*>(czdata);
+    f4->_dspBlock = "AMP";
+    f4->_paramd[0]._paramScheme = "AMP";
     ld->_envCtrlData._useNatEnv = false;
-    ld->_algData._algID = 1;
-    ld->_algData._name = "ALG1";*/
+    ld->_algData._algID         = 1;
+    ld->_algData._name          = "ALG1";
   }
 }
-
+///////////////////////////////////////////////////////////////////////////////
 void CzProgData::dump() const {
   printf("CZPROG\n");
   printf("  _octave<%d>\n", _octave);
@@ -277,7 +278,7 @@ void CzProgData::dump() const {
     dumpenv(OSC._dcaEnv);
   }
 }
-
+///////////////////////////////////////////////////////////////////////////////
 CzData::CzData(synth* syn)
     : SynthData(syn)
     , _lastprg(0) {
@@ -287,15 +288,18 @@ CzData::CzData(synth* syn)
   _zpmKM->_kmID       = 1;
   _zpmDB->_keymaps[1] = _zpmKM;
 }
-
+///////////////////////////////////////////////////////////////////////////////
 CzData::~CzData() {
 }
-void CzData::loadBank(const std::string& syxpath, const std::string& bnkname) {
-  parse_cz101(this, syxpath, bnkname);
+///////////////////////////////////////////////////////////////////////////////
+void CzData::loadBank(const file::Path& syxpath, const std::string& bnkname) {
+  parse_cz101(this, syxpath.c_str(), bnkname);
 }
+///////////////////////////////////////////////////////////////////////////////
 const programData* CzData::getProgram(int progID) const // final
 {
   auto ObjDB = this->_zpmDB;
   return ObjDB->findProgram(progID);
 }
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

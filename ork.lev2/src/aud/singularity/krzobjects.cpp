@@ -8,7 +8,7 @@ using namespace rapidjson;
 
 namespace ork::audio::singularity {
 
-extern std::string kbasepath; // = "/usr/local/share/singularity";
+extern file::Path kbasepath;
 
 ///////////////////////////////////////////////////////////////////////////////
 struct KrzAlgCfg {
@@ -419,14 +419,14 @@ void VastObjectsDB::parseFBlock(const Value& fseg, DspParamData& fblk) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DspBlockData* VastObjectsDB::parseDspBlock(const Value& dseg, layerData* layd, bool force) {
-  DspBlockData* rval = nullptr;
+dspblkdata_ptr_t VastObjectsDB::parseDspBlock(const Value& dseg, lyrdata_ptr_t layd, bool force) {
+  dspblkdata_ptr_t rval;
   if (dseg.HasMember("BLOCK_ALG ")) {
-    rval            = new DspBlockData;
+    rval            = std::make_shared<DspBlockData>();
     rval->_dspBlock = dseg["BLOCK_ALG "].GetString();
     printf("rval._dspBlock<%s>\n", rval->_dspBlock.c_str());
   } else if (force) {
-    rval = new DspBlockData;
+    rval = std::make_shared<DspBlockData>();
   }
   if (rval && dseg.HasMember("Pad")) {
     rval->_inputPad = decibel_to_linear_amp_ratio(dseg["Pad"].GetFloat());
@@ -477,7 +477,7 @@ DspBlockData* VastObjectsDB::parseDspBlock(const Value& dseg, layerData* layd, b
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DspBlockData* VastObjectsDB::parsePchBlock(const Value& pseg, layerData* layd) {
+dspblkdata_ptr_t VastObjectsDB::parsePchBlock(const Value& pseg, lyrdata_ptr_t layd) {
   auto dblk = parseDspBlock(pseg, layd, true);
 
   if (nullptr == dblk)
@@ -506,7 +506,7 @@ void VastObjectsDB::parseKmpBlock(const Value& kmseg, KmpBlockData& kmblk) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-layerData* VastObjectsDB::parseLayer(const Value& jsonobj, programData* pd) {
+lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, programData* pd) {
   const auto& name = pd->_name;
   printf("Got Prgram<%s> layer..\n", name.c_str());
   const auto& calvinSeg = jsonobj["CALVIN"];
@@ -676,8 +676,8 @@ layerData* VastObjectsDB::parseLayer(const Value& jsonobj, programData* pd) {
         return "???";
     }
   };
-  auto do_block = [&](int blkbase, int paramcount) -> DspBlockData* {
-    DspBlockData* dspblock = nullptr;
+  auto do_block = [&](int blkbase, int paramcount) -> dspblkdata_ptr_t {
+    dspblkdata_ptr_t dspblock;
 
     auto blockn1 = blkname(blkbase + 0);
     auto blockn2 = blkname(blkbase + 1);
@@ -758,7 +758,7 @@ layerData* VastObjectsDB::parseLayer(const Value& jsonobj, programData* pd) {
     for (int i = 0; i < 5; i++) {
       auto blk = rval->_dspBlocks[i];
       if (blk)
-        printf("dspblk<%d:%p:%s>\n", i, blk, blk->_dspBlock.c_str());
+        printf("dspblk<%d:%p:%s>\n", i, blk.get(), blk->_dspBlock.c_str());
     }
     // assert(false);
   }
@@ -826,7 +826,7 @@ programData* VastObjectsDB::parseProgram(const Value& jsonobj) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VastObjectsDB::loadJson(const std::string& fname, int ibaseid) {
-  auto realfname = kbasepath + std::string("/kurzweil/") + fname + ".json";
+  auto realfname = kbasepath / "kurzweil" / (fname + ".json");
   printf("fname<%s>\n", realfname.c_str());
   FILE* fin = fopen(realfname.c_str(), "rt");
   assert(fin != nullptr);

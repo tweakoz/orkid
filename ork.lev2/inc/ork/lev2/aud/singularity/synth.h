@@ -46,8 +46,8 @@ struct synth
 
 	void compute(int inumframes,const void* inputbuffer);
 
-	programInst* keyOn(int note, const programData* pd);
-	void keyOff(programInst* p);
+    programInst* keyOn(int note, const programData* pd);
+    void keyOff(programInst* p);
 
 	layer* allocLayer();
 	void freeLayer(layer* l);

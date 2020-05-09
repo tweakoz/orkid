@@ -147,7 +147,7 @@ void sampleOsc::keyOn(const DspKeyOnInfo& koi) {
 
   pbratio *= 0.5f;
 
-  const layerData* ld = _lyr->_layerData;
+  lyrdata_constptr_t ld = _lyr->_layerData;
 
   if (nullptr == _sample) {
     printf("sampleOsc no sample!\n");
