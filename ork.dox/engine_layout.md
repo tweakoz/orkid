@@ -21,16 +21,17 @@
 ###### python3 module: orkengine.core
 ---
 ## ork.lev2
-  - Platform a/v/input drivers.
-   + Graphics
-     - OpenGL
-   + Audio
-     + PortAudio
-   + Input
-     - KB/mouse
-     - OpenVR HMD/Controller tracking
-     - MIDI/OSC
-     - TUIO
+  - Platform AV/Input drivers.
+    + Graphics Device
+      - OpenGL
+      - Vulkan (In progress)
+    + Audio Device
+      - PortAudio
+    + Input Device
+      - KB/mouse
+      - OpenVR HMD/Controller tracking
+      - MIDI/OSC
+      - TUIO
 
 
   - Lower level graphics renderables
