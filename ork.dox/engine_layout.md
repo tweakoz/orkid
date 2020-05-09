@@ -36,6 +36,7 @@
 
   - Lower level graphics 
     + DrawBuffers - MultiBuffered threaded renderer
+      - easy to use tecnique for shuttling render data across the thread boundary
     + Frustum culler
     + RenderQueue (with coarse depth and state sorting)
     + Rigid/Skinned models with variable partitioning support
