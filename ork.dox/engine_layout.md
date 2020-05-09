@@ -93,7 +93,10 @@
     + PortAudio
     + OpenVR
     + Vulkan/MoltenVK
-    + IGL (geometry/mesh processing library)
+    + IGL (geometry/mesh processing library) <- this has a GPL dependency on CGAL - easily removable if need be.
+    + ISPC
+    + ISPCTextureCompressor
+    + Nvida Texture Tools 
     + OpenImageIO (image io library)
     + Python3/PyBind11
     + Assimp
