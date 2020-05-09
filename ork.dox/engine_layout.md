@@ -22,12 +22,14 @@
 ## ork.lev2
   - Platform a/v/input drivers.
    - Graphics
-    + OpenGL
+     + OpenGL
    - Audio
-    + PortAudio
+     + PortAudio
    - Input
-    + KB/mouse
-    + OpenVR HMD/Controller tracking
+     + KB/mouse
+     + OpenVR HMD/Controller tracking
+     + MIDI/OSC
+     + TUIO
 
 
   - Lower level graphics renderables
@@ -80,6 +82,7 @@
 
   - Mesh Processing
      + construct and edit meshes live in-engine, finalize and cache for rendering
+     + python bindings allow interoperability with numpy style 3D mesh frameworks
 
 
   - Includes python bindings
