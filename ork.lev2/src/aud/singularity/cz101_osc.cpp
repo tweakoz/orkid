@@ -36,8 +36,6 @@ float CzOsc::compute(float frq, float mi) {
 
   static const Wavetable* sincw = builtinWaveTable("isincw8pi");
   int wtsize                    = sincw->_wavedata.size();
-  // const float* sblkA = _waveformA->_wavedata.data();
-  // const float* sblkB = _waveformB->_wavedata.data();
 
   float pi  = float(wtsize) * frq / 48000.0f;
   float dpi = 0.0f; // float(wtsize)*(mi)/48000.0f;
@@ -55,14 +53,6 @@ float CzOsc::compute(float frq, float mi) {
 
   float fwph = float(iiA) / float(wtsize);
   fwph += (fract) / float(wtsize);
-
-  // float fwave = sincw->sampleLerp(fwph);
-  // float sampA0 = float(sblkA[iiA] );
-  // float sampA1 = float(sblkA[iiB] );
-  // float sampB0 = float(sblkB[iiA] );
-  // float sampB1 = float(sblkB[iiB] );
-  // float a = (sampA1*fract+sampA0*invfr);
-  // float b = (sampB1*fract+sampB0*invfr);
 
   float base_angle     = float(iiA) / float(wtsize);
   float inv_base_angle = 1.0f - base_angle;

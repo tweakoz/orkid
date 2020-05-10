@@ -10,6 +10,7 @@ struct DspKeyOnInfo;
 struct CzEnvelope {
   int _endStep   = 0;
   int _sustPoint = -1;
+  bool _decreasing[8];
   int _rate[8];
   int _level[8];
 };
@@ -20,6 +21,8 @@ struct CzOscData {
   int _dcoWindow    = 0;
   int _dcaKeyFollow = 0;
   int _dcwKeyFollow = 0;
+  int _dcaVelFollow = 0;
+  int _dcwVelFollow = 0;
   CzEnvelope _dcoEnv;
   CzEnvelope _dcaEnv;
   CzEnvelope _dcwEnv;

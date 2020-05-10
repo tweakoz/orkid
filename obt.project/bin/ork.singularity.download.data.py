@@ -24,6 +24,8 @@ base_casioCZ = URL("http://cd.textfiles.com/10000soundssongs/SYNTHDAT/CASIO")
 base_casioManuals = URL("http://www.synthmanuals.com/manuals/casio")
 ensureDirectoryExists(dest_path/"casioCZ")
 batch_wget({
+ base_casioCZ/"FACTRYA.BNK": (dest_path/"casioCZ"/"factoryA.bnk","25e5a50fcaea8ce351a59d67d91c6284"),
+ base_casioCZ/"FACTRYB.BNK": (dest_path/"casioCZ"/"factoryB.bnk","cb7d91d5fed5b283c0eb12a1b59d83d9"),
  base_casioCZ/"CZ1_1.BNK": (dest_path/"casioCZ"/"cz1_1.bnk","00ec49470a8fd608dc4c99ade63da9e1"),
  base_casioCZ/"CZ1_2.BNK": (dest_path/"casioCZ"/"cz1_2.bnk","63efea6b5a72a6ddec9a169f55af7176"),
  base_casioCZ/"CZ1_3.BNK": (dest_path/"casioCZ"/"cz1_3.bnk","28b4b9e3299723290d3e2dd0b573e760"),

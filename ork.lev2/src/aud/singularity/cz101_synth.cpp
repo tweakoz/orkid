@@ -68,34 +68,44 @@ struct czpriv {
     int inumframes = dspbuf._numframes;
     float* U       = dspbuf.channel(0);
     float f1       = midi_note_to_frequency(float(_note));
-    float mi       = 0.5f + sinf(_ph) * 0.5f;
+    // todo: dco(pitch) env mod
+    // todo: mi from dcw env
+    float modindex = 0.5f + sinf(_ph) * 0.5f;
+    //////////////////////////////////////////
+    // single osc mode
+    //////////////////////////////////////////
     if (_data._lineSel < 2) {
       for (int i = 0; i < inumframes; i++) {
-        float s0 = _osc[0].compute(f1, mi);
+        float s0 = _osc[0].compute(f1, modindex);
         U[i]     = s0;
       }
-    } else {
+    }
+    //////////////////////////////////////////
+    // dual osc mode
+    //////////////////////////////////////////
+    else {
       float f2 = midi_note_to_frequency(float(_note) + float(_data._detuneCents * 0.01f));
       switch (_data._lineMod) {
-        case 0:
+        case 0: // no cross mod
           for (int i = 0; i < inumframes; i++) {
-            float s0 = _osc[0].compute(f1, mi);
-            float s1 = _osc[1].compute(f2, mi);
+            float s0 = _osc[0].compute(f1, modindex);
+            float s1 = _osc[1].compute(f2, modindex);
             U[i]     = s0 + s1;
           }
           break;
-        case 4:
+        case 4: // ring mod
           for (int i = 0; i < inumframes; i++) {
-            float s0 = _osc[0].compute(f1, mi);
-            float s1 = _osc[1].compute(f2, mi);
+            float s0 = _osc[0].compute(f1, modindex);
+            float s1 = _osc[1].compute(f2, modindex);
             U[i]     = s0 * s1;
           }
           break;
-        case 3:
+        case 3: // noise mod
           for (int i = 0; i < inumframes; i++) {
-            float r  = (rand() & 0xffff) / 65536.0f;
-            float s0 = _osc[0].compute(f1, mi);
-            float s1 = _osc[1].compute(f2, mi);
+            float r = (rand() & 0xffff) / 65536.0f;
+            // lerp with noise ?
+            float s0 = _osc[0].compute(f1, modindex);
+            float s1 = _osc[1].compute(f2, modindex);
             U[i]     = lerp(r, s0, s1);
           }
           { break; }

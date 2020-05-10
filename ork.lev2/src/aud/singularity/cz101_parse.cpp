@@ -28,29 +28,39 @@ void parse_czprogramdata(CzData* outd, programData* prgout, std::vector<u8> byte
     dca2 level (0..15)
   */
 
-  if (0)
-    for (int r = 0; r < 16; r++) {
-      int bidx = (r * 8);
-      printf("%03d: ", bidx);
+  if (1) {
+    int numlines = bytes.size() / 16;
+    for (int r = 0; r < numlines; r++) {
+      int bidx = (r * 16);
+      printf("0x%02x: ", bidx);
 
-      for (int c = 0; c < 8; c++) {
+      for (int c = 0; c < 16; c++) {
         u8 byte = bytes[bidx + c];
         printf("%02x ", byte);
       }
 
-      printf("\n");
+      printf(" |");
+      for (int c = 0; c < 16; c++) {
+        char byte = (char)bytes[bidx + c];
+        if (false == isprint(byte))
+          byte = '.';
+        printf("%c", byte);
+      }
+      printf("|\n");
     }
+  }
 
   auto czdata      = std::make_shared<CzProgData>();
   u8 PFLAG         = bytes[0x00]; // octave/linesel
   czdata->_octave  = (PFLAG & 0x0c) >> 2;
   czdata->_lineSel = (PFLAG & 0x03);
-
-  u8 PDS               = bytes[0x01]; // detune sign
-  u8 PDETL             = bytes[0x02]; // detune fine
-  u8 PDETH             = bytes[0x03]; // detune oct/note
-  int detval           = (PDETH * 100) + ((PDETL * 100) / 63);
+  u8 PDS           = bytes[0x01];       // detune sign
+  u8 PDETL         = bytes[0x02];       // detune fine
+  u8 PDETH         = bytes[0x03];       // detune oct/note
+  int detval       = (PDETH * 100)      // accumulate coarse
+               + ((PDETL * 100) / 250); // accumulate fine
   czdata->_detuneCents = PDS ? (-detval) : detval;
+  printf("PDETL<%d>\n", PDETL);
 
   u8 PVK = bytes[0x04]; // vibrato wave
   switch (PVK) {
@@ -77,93 +87,108 @@ void parse_czprogramdata(CzData* outd, programData* prgout, std::vector<u8> byte
   u8 PVDD               = bytes[0x0b]; // vibrato depth (skip 2)
   czdata->_vibratoDepth = PVDD;
 
-  int byteindex = 0x0e; // OSC START
+  auto decodewave = [](int c0, int c1) -> int {
+    switch (c0) {
+      case 0:
+      case 1:
+      case 2:
+        return c0;
+        break;
+      case 4:
+        return 3;
+        break;
+      case 5:
+        return 4;
+        break;
+      case 6:
+        switch (c1) {
+          case 1:
+            return 5;
+            break;
+          case 2:
+            return 6;
+            break;
+          case 3:
+            return 7;
+            break;
+        }
+        break;
+      default:
+        assert(false);
+    }
+    return -1;
+  };
+  auto decodekeyfollow = [](u8 b1, u8 b2) -> int { //
+    return int(b1 & 0xf);
+    //(int(b1) << 8 | int(b2));
+  };
 
+  int byteindex = 0x0e; // OSC START
+  // (48+9) == 57 bytes per osc * 2 == 114 bytes
+  // 114+0xe == 128
+  // 0xe .. 0x46 osc 1
+  // 0x25 == vel (oscbase+)
+  // 0x47 .. 0x7f osc 2
   for (int o = 0; o < 2; o++) {
     auto& OSC = czdata->_oscData[o];
-
-    u8 MFW0      = bytes[byteindex++]; // dc01 wave / modulat
-    u8 MFW1      = bytes[byteindex++]; // dc01 wave / modulat
-    auto genwave = [](int c0, int c1) -> int {
-      switch (c0) {
-        case 0:
-        case 1:
-        case 2:
-          return c0;
-          break;
-        case 4:
-          return 3;
-          break;
-        case 5:
-          return 4;
-          break;
-        case 6:
-          switch (c1) {
-            case 1:
-              return 5;
-              break;
-            case 2:
-              return 6;
-              break;
-            case 3:
-              return 7;
-              break;
-          }
-          break;
-        default:
-          assert(false);
-      }
-      return -1;
-    };
-
-    OSC._dcoWaveA = genwave((MFW0 >> 5) & 0x7, (MFW1 >> 6) & 0x3);
-    OSC._dcoWaveB = genwave((MFW0 >> 2) & 0x7, (MFW1 >> 6) & 0x3);
-    if (o == 0) // ignore linemod from line1
-    {
-      czdata->_lineMod = (MFW1 >> 3) & 0x7;
+    ///////////////////////////////////////////////////////////
+    u8 MFW0 = bytes[byteindex++]; // dc01 wave / modulation
+    u8 MFW1 = bytes[byteindex++]; // dc01 wave / modulation
+    u8 MAMD = bytes[byteindex++]; // DCA key follow
+    u8 MAMV = bytes[byteindex++];
+    u8 MWMD = bytes[byteindex++]; // DCW key follow
+    u8 MWMV = bytes[byteindex++];
+    ///////////////////////////////////////////////////////////
+    u8 PMAL = bytes[byteindex++];                      // DCA1 end
+    for (int i = 0; i < 8; i++) {                      // DCA env (16 bytes)
+      u8 r                       = bytes[byteindex++]; // byte = (119*r/99)
+      u8 l                       = bytes[byteindex++]; // byte = (127*l/99)
+      u8 r7                      = r & 0x7f;
+      u8 l7                      = l & 0x7f;
+      OSC._dcaEnv._decreasing[i] = (r & 0x80);
+      OSC._dcaEnv._rate[i]       = (r7 * 99) / 127;
+      OSC._dcaEnv._level[i]      = (l7 * 99) / 127;
     }
-    u8 MAMD              = bytes[byteindex += 2]; // DCA1 key follow (skip1)
-    OSC._dcaKeyFollow    = MAMD;
-    u8 MWMD              = bytes[byteindex += 2]; // DCW1 key follow (skip1)
-    OSC._dcwKeyFollow    = MWMD;
-    u8 PMAL              = bytes[byteindex++]; // DCA1 end
-    OSC._dcaEnv._endStep = PMAL;
-    // 0x15..0x24
-    for (int i = 0; i < 8; i++) {
-      u8 r                  = bytes[byteindex++]; // byte = (119*r/99)
-      u8 l                  = bytes[byteindex++]; // byte = (127*l/99)
-      u8 r7                 = r & 0x7f;
-      u8 l7                 = l & 0x7f;
-      OSC._dcaEnv._rate[i]  = (r7 * 99) / 119;
-      OSC._dcaEnv._level[i] = (l7 * 99) / 127;
-    }
-    // 16 bytes - DCA1 8x rate, level
-    u8 PMWL              = bytes[byteindex++]; // DCW1 end
-    OSC._dcwEnv._endStep = PMWL;
-    // 0x26..0x35
-    for (int i = 0; i < 8; i++) {
-      u8 r  = bytes[byteindex++]; // byte = (119*r/99)+8
-      u8 l  = bytes[byteindex++]; // byte = (127*l/99)
-      u8 r7 = r & 0x7f;
-      u8 l7 = l & 0x7f;
-      if (r & 0x80)
+    ///////////////////////////////////////////////////////////
+    u8 PMWL = bytes[byteindex++];                      // DCW1 end
+    for (int i = 0; i < 8; i++) {                      // DCW env (16 bytes)
+      u8 r                       = bytes[byteindex++]; // byte = (119*r/99)+8
+      u8 l                       = bytes[byteindex++]; // byte = (127*l/99)
+      u8 r7                      = r & 0x7f;
+      u8 l7                      = l & 0x7f;
+      OSC._dcwEnv._decreasing[i] = (r & 0x80);
+      if (l & 0x80)
         OSC._dcwEnv._sustPoint = i;
       OSC._dcwEnv._rate[i]  = (((r7 - 8) * 99) / 119);
       OSC._dcwEnv._level[i] = (l7 * 99) / 127;
     }
-    // 16 bytes - DCW1 8x rate, level
-    u8 PMPL              = bytes[byteindex++]; // DCO1 end
-    OSC._dcoEnv._endStep = PMPL;
-    // 0x37..0x46
-    for (int i = 0; i < 8; i++) {
-      u8 r                  = bytes[byteindex++]; // byte = (127*r/99)
-      u8 l                  = bytes[byteindex++]; // byte = (127*l/99)
-      u8 r7                 = r & 0x7f;
-      u8 l7                 = l & 0x7f;
-      OSC._dcoEnv._rate[i]  = (r7 * 99) / 127;
-      OSC._dcoEnv._level[i] = (l7 * 99) / 127;
+    ///////////////////////////////////////////////////////////
+    u8 PMPL = bytes[byteindex++]; // DCO1 end
+    for (int i = 0; i < 8; i++) { // DCO (pitch) env (16 bytes)
+      u8 r  = bytes[byteindex++]; // byte = (127*r/99)
+      u8 l  = bytes[byteindex++]; // byte = (127*l/99)
+      u8 r7 = r & 0x7f;
+      u8 l7 = l & 0x7f;
+
+      OSC._dcoEnv._decreasing[i] = (r & 0x80);
+      OSC._dcoEnv._rate[i]       = (r7 * 99) / 127;
+      OSC._dcoEnv._level[i]      = (l7 * 99) / 127;
     }
-    // 16 bytes - DCO1 8x rate, level
+    ///////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////
+    printf("MFW0<x%2x> MFW1<x%2x>\n", MFW0, MFW1);
+    OSC._dcoWaveA = decodewave((MFW0 >> 5) & 0x7, (MFW1 >> 6) & 0x3);
+    OSC._dcoWaveB = decodewave((MFW0 >> 2) & 0x7, (MFW1 >> 6) & 0x3);
+    if (o == 0) // ignore linemod from line1
+      czdata->_lineMod = (MFW1 >> 3) & 0x7;
+
+    OSC._dcaKeyFollow    = decodekeyfollow(MAMD, MAMV);
+    OSC._dcwKeyFollow    = decodekeyfollow(MWMD, MWMV);
+    OSC._dcaVelFollow    = PMAL >> 4;
+    OSC._dcwVelFollow    = PMWL >> 4;
+    OSC._dcaEnv._endStep = PMAL & 7;
+    OSC._dcwEnv._endStep = PMWL & 7;
+    OSC._dcoEnv._endStep = PMPL & 7;
   }
   assert(byteindex == 128);
 
@@ -218,16 +243,28 @@ void parse_cz101(CzData* outd, const file::Path& path, const std::string& bnknam
 
   auto zpmDB       = outd->_zpmDB;
   int programcount = 0;
+  int programincrm = (256 + 8);
   int prgbase      = 0;
   int bytesperprog = 128;
   bool sysexdecode = true;
 
   switch (size) {
-    case 296:
+    case 264: // CZ101 sysex
+      // sysex format
+      assert(data[0] == 0xf0 and data[1] == 0x44); // sysx header
+      assert(data[263] == 0xf7);                   // sysx footer
+
+      programcount = 1;
+      prgbase      = 7;
+      bytesperprog = 128;
+      break;
+    case 296: // CZ1 sysex
       // sysex format
       assert(data[0] == 0xf0 and data[1] == 0x44);
+      assert(data[295] == 0xf7); // sysx footer
       programcount = 1;
-      prgbase      = 8;
+      prgbase      = 7;
+      bytesperprog = 144;
       break;
     case 4224: // 16
       // sysex format
@@ -237,7 +274,7 @@ void parse_cz101(CzData* outd, const file::Path& path, const std::string& bnknam
       break;
     case 4608: // CZ-1
       // blk(RAWDATA) format
-      programcount = 32;
+      programcount = 1;
       prgbase      = 0;
       bytesperprog = 144;
       sysexdecode  = false;
@@ -260,8 +297,9 @@ void parse_cz101(CzData* outd, const file::Path& path, const std::string& bnknam
     ///////////////////////////
     std::vector<u8> bytes;
     if (sysexdecode) {
+      int syxbase = prgbase + programincrm * iv;
       for (int i = 0; i < bytesperprog; i++) {
-        int bidx = prgbase + (i * 2) + (256 + 8) * iv;
+        int bidx = syxbase + (i * 2);
         u8 ln    = data[bidx + 0];
         u8 hn    = data[bidx + 1];
         u8 byte  = (hn << 4) | ln;
@@ -279,10 +317,41 @@ void parse_cz101(CzData* outd, const file::Path& path, const std::string& bnknam
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CzProgData::dump() const {
+
+  std::string lineselmode;
+  std::string oscmodulation;
+  switch (_lineSel) {
+    case 0:
+      lineselmode = "1";
+      break;
+    case 1:
+      lineselmode = "2";
+      break;
+    case 2:
+      lineselmode = "1+1'";
+      break;
+    case 3:
+      lineselmode = "1+2";
+      break;
+    default:
+      OrkAssert(false);
+  }
+  switch (_lineMod) {
+    case 0:
+      oscmodulation = "none";
+      break;
+    case 4:
+      oscmodulation = "ring";
+      break;
+    case 3:
+      oscmodulation = "noise";
+      break;
+  }
+
   printf("CZPROG<%s>\n", _name.c_str());
   printf("  _octave<%d>\n", _octave);
-  printf("  _lineSel<%d>\n", _lineSel);
-  printf("  _lineMod<%d>\n", _lineMod);
+  printf("  _lineSel<%s>\n", lineselmode.c_str());
+  printf("  _lineMod<%s>\n", oscmodulation.c_str());
   printf("  _detuneCents<%d>\n", _detuneCents);
   printf("  _vibratoWave<%d>\n", _vibratoWave);
   printf("  _vibratoRate<%d>\n", _vibratoRate);
@@ -296,8 +365,6 @@ void CzProgData::dump() const {
     printf("  osc<%d>\n", o);
     printf("    _dcoWaveA<%d>\n", OSC._dcoWaveA);
     printf("    _dcoWaveB<%d>\n", OSC._dcoWaveB);
-    printf("    _dcaKeyFollow<%d>\n", OSC._dcaKeyFollow);
-    printf("    _dcwKeyFollow<%d>\n", OSC._dcwKeyFollow);
     auto dumpenv = [](const CzEnvelope& env) {
       printf("        _endStep<%d>\n", env._endStep);
       if (env._sustPoint >= 0)
@@ -315,8 +382,12 @@ void CzProgData::dump() const {
     dumpenv(OSC._dcoEnv);
     printf("    _dcwEnv\n");
     dumpenv(OSC._dcwEnv);
+    printf("    _dcwKeyFollow<%d>\n", OSC._dcwKeyFollow);
+    printf("    _dcwVelFollow<%d>\n", OSC._dcwVelFollow);
     printf("    _dcaEnv\n");
     dumpenv(OSC._dcaEnv);
+    printf("    _dcaKeyFollow<%d>\n", OSC._dcaKeyFollow);
+    printf("    _dcaVelFollow<%d>\n", OSC._dcaVelFollow);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
