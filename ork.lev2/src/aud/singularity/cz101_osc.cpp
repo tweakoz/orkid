@@ -106,14 +106,6 @@ float CzOsc::compute(float frq, float mi) {
 
   //////////
 
-  // distort_squ *= powf(base_angle-0.5f,0.5);
-
-  // float distort_squ = lerp( - base_angle,
-  //                          0.5f - base_angle,
-  //                          smoothstep(0.2,0.8,powf(base_angle,1)) )* 0.75f;
-
-  //////////
-
   // printf("fa<%f>\n",fa);
   _prevOutput = -sinf(angle * pi2) * window;
   _pbIndex    = _pbIndexNext;

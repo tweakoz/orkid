@@ -1,0 +1,21 @@
+cmake_minimum_required (VERSION 3.13.4)
+set( CMAKE_MODULE_PATH $ENV{ORKID_WORKSPACE_DIR} )
+include(orkid)
+enableQt5()
+project (ork.lev2.test.aud.singularity CXX)
+
+include_directories(AFTER ${CMAKE_INSTALL_PREFIX}/include)
+include_directories(AFTER ${ORKROOT}/ork.core/inc )
+include_directories(AFTER ${ORKROOT}/ork.lev2/inc )
+include_directories(AFTER ${SRCD} )
+include_directories(AFTER $ENV{QTDIR}/include)
+
+add_executable (ork.lev2.test.aud.singularity.krzrom.exe main_krzrom.cpp )
+target_link_libraries(ork.lev2.test.aud.singularity.krzrom.exe LINK_PRIVATE ork_core ork_lev2 )
+set_target_properties(ork.lev2.test.aud.singularity.krzrom.exe PROPERTIES LINKER_LANGUAGE CXX)
+install(TARGETS ork.lev2.test.aud.singularity.krzrom.exe DESTINATION $ENV{OBT_STAGE}/bin )
+
+add_executable (ork.lev2.test.aud.singularity.cz1.exe main_cz1.cpp )
+target_link_libraries(ork.lev2.test.aud.singularity.cz1.exe LINK_PRIVATE ork_core ork_lev2 )
+set_target_properties(ork.lev2.test.aud.singularity.cz1.exe PROPERTIES LINKER_LANGUAGE CXX)
+install(TARGETS ork.lev2.test.aud.singularity.cz1.exe DESTINATION $ENV{OBT_STAGE}/bin )
