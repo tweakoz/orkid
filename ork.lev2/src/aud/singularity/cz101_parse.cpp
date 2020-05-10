@@ -8,10 +8,70 @@
 #include <ork/lev2/aud/singularity/cz101.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/aud/singularity/alg_amp.h>
+#include <ork/math/multicurve.h>
 
 using namespace ork;
 
 namespace ork::audio::singularity {
+///////////////////////////////////////////////////////////////////////////////
+auto genwacurve = []() -> MultiCurve1D {
+  MultiCurve1D curve;
+  auto& s = curve.mSegmentTypes;
+
+  curve.SetPoint(0, 0.0, 105.0);
+  curve.SetPoint(1, 1.0, 0.004);
+
+  s.resize(12);
+  for (int i = 0; i < 12; i++)
+    s[i] = EMCST_LINEAR;
+
+  auto& v = curve.mVertices;
+  v.AddSorted(0.05, 0.0);
+  v.AddSorted(0.1, 35.0);
+  v.AddSorted(0.2, 13.0);
+  v.AddSorted(0.3, 4.33);
+  v.AddSorted(0.4, 1.63);
+  v.AddSorted(0.5, 0.54);
+  v.AddSorted(0.6, 0.19);
+  v.AddSorted(0.7, 0.066);
+  v.AddSorted(0.8, 0.025);
+  v.AddSorted(0.9, 0.008);
+  return curve;
+};
+auto genpcurve = []() -> MultiCurve1D {
+  MultiCurve1D curve;
+  auto& s = curve.mSegmentTypes;
+  curve.SetPoint(0, 0.0, 235.0);
+  curve.SetPoint(1, 1.0, 0.004);
+
+  s.resize(12);
+  for (int i = 0; i < 12; i++)
+    s[i] = EMCST_LINEAR;
+
+  auto& v = curve.mVertices;
+  v.AddSorted(0.05, 134.0);
+  v.AddSorted(0.1, 70.0);
+  v.AddSorted(0.2, 26.0);
+  v.AddSorted(0.3, 8.5);
+  v.AddSorted(0.4, 2.68);
+  v.AddSorted(0.5, 0.92);
+  v.AddSorted(0.6, 0.29);
+  v.AddSorted(0.7, 0.097);
+  v.AddSorted(0.8, 0.032);
+  v.AddSorted(0.9, 0.010);
+
+  return curve;
+};
+///////////////////////////////////////////////////////////////////////////////
+float decode_wa_envrate(int value) {
+  static auto curve = genwacurve();
+  return curve.Sample(float(value) * 0.01f);
+}
+float decode_p_envrate(int value) {
+  static auto curve = genpcurve();
+  return curve.Sample(float(value) * 0.01f);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 void parse_czprogramdata(CzData* outd, programData* prgout, std::vector<u8> bytes) {
 
@@ -146,7 +206,7 @@ void parse_czprogramdata(CzData* outd, programData* prgout, std::vector<u8> byte
       u8 r7                      = r & 0x7f;
       u8 l7                      = l & 0x7f;
       OSC._dcaEnv._decreasing[i] = (r & 0x80);
-      OSC._dcaEnv._rate[i]       = (r7 * 99) / 127;
+      OSC._dcaEnv._time[i]       = decode_wa_envrate((r7 * 99) / 127);
       OSC._dcaEnv._level[i]      = (l7 * 99) / 127;
     }
     ///////////////////////////////////////////////////////////
@@ -159,7 +219,7 @@ void parse_czprogramdata(CzData* outd, programData* prgout, std::vector<u8> byte
       OSC._dcwEnv._decreasing[i] = (r & 0x80);
       if (l & 0x80)
         OSC._dcwEnv._sustPoint = i;
-      OSC._dcwEnv._rate[i]  = (((r7 - 8) * 99) / 119);
+      OSC._dcwEnv._time[i]  = decode_wa_envrate(((r7 - 8) * 99) / 119);
       OSC._dcwEnv._level[i] = (l7 * 99) / 127;
     }
     ///////////////////////////////////////////////////////////
@@ -171,7 +231,7 @@ void parse_czprogramdata(CzData* outd, programData* prgout, std::vector<u8> byte
       u8 l7 = l & 0x7f;
 
       OSC._dcoEnv._decreasing[i] = (r & 0x80);
-      OSC._dcoEnv._rate[i]       = (r7 * 99) / 127;
+      OSC._dcoEnv._time[i]       = decode_p_envrate((r7 * 99) / 127);
       OSC._dcoEnv._level[i]      = (l7 * 99) / 127;
     }
     ///////////////////////////////////////////////////////////
@@ -182,8 +242,11 @@ void parse_czprogramdata(CzData* outd, programData* prgout, std::vector<u8> byte
     if (o == 0) // ignore linemod from line1
       czdata->_lineMod = (MFW1 >> 3) & 0x7;
 
-    OSC._dcaKeyFollow    = decodekeyfollow(MAMD, MAMV);
-    OSC._dcwKeyFollow    = decodekeyfollow(MWMD, MWMV);
+    OSC._dcaKeyFollow = MAMD & 0xf;
+    OSC._dcwKeyFollow = MWMD & 0xf;
+    OSC._dcaDepth     = 15 - (MAMD >> 4);
+    OSC._dcwDepth     = 15;
+
     OSC._dcaVelFollow    = PMAL >> 4;
     OSC._dcwVelFollow    = PMWL >> 4;
     OSC._dcaEnv._endStep = PMAL & 7;
@@ -371,11 +434,11 @@ void CzProgData::dump() const {
         printf("        _sustPoint<%d>\n", env._sustPoint);
       printf("        r: ");
       for (int i = 0; i < 8; i++)
-        printf("%02d ", env._rate[i]);
+        printf("%0.3fs ", env._time[i]);
       printf("\n");
       printf("        l: ");
       for (int i = 0; i < 8; i++)
-        printf("%02d ", env._level[i]);
+        printf("%02d     ", env._level[i]);
       printf("\n");
     };
     printf("    _dcoEnv\n");
@@ -384,10 +447,12 @@ void CzProgData::dump() const {
     dumpenv(OSC._dcwEnv);
     printf("    _dcwKeyFollow<%d>\n", OSC._dcwKeyFollow);
     printf("    _dcwVelFollow<%d>\n", OSC._dcwVelFollow);
+    printf("    _dcwDepth<%d>\n", OSC._dcwDepth);
     printf("    _dcaEnv\n");
     dumpenv(OSC._dcaEnv);
     printf("    _dcaKeyFollow<%d>\n", OSC._dcaKeyFollow);
     printf("    _dcaVelFollow<%d>\n", OSC._dcaVelFollow);
+    printf("    _dcaDepth<%d>\n", OSC._dcaDepth);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

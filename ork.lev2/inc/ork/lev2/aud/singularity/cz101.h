@@ -11,7 +11,7 @@ struct CzEnvelope {
   int _endStep   = 0;
   int _sustPoint = -1;
   bool _decreasing[8];
-  int _rate[8];
+  float _time[8];
   int _level[8];
 };
 struct CzOscData {
@@ -23,6 +23,8 @@ struct CzOscData {
   int _dcwKeyFollow = 0;
   int _dcaVelFollow = 0;
   int _dcwVelFollow = 0;
+  int _dcaDepth     = 0;
+  int _dcwDepth     = 0;
   CzEnvelope _dcoEnv;
   CzEnvelope _dcaEnv;
   CzEnvelope _dcwEnv;
