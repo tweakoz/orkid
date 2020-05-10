@@ -7,6 +7,22 @@ using namespace ork;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
 
+void Rect::PushOrtho() const {
+  // glMatrixMode(GL_PROJECTION);
+  // glPushMatrix();
+  // glLoadIdentity();
+  // glOrtho(0, VPW, VPH, 0, 0, 1);
+  // glMatrixMode(GL_MODELVIEW);
+  // glPushMatrix();
+  // glLoadIdentity();
+}
+void Rect::PopOrtho() const {
+  // glMatrixMode(GL_MODELVIEW);
+  // glPopMatrix();
+  // glMatrixMode(GL_PROJECTION);
+  // glPopMatrix();
+}
+
 void drawtext(const std::string& str, float x, float y, float scale, float r, float g, float b) {
   /*glMatrixMode(GL_PROJECTION);
   glPushMatrix();
@@ -28,23 +44,6 @@ void drawtext(const std::string& str, float x, float y, float scale, float r, fl
   glMatrixMode(GL_MODELVIEW);
   glPopMatrix();*/
 }
-
-/*
-void PushOrtho(float VPW, float VPH) {
-  glMatrixMode(GL_PROJECTION);
-  glPushMatrix();
-  glLoadIdentity();
-  glOrtho(0, VPW, VPH, 0, 0, 1);
-  glMatrixMode(GL_MODELVIEW);
-  glPushMatrix();
-  glLoadIdentity();
-}
-void PopOrtho() {
-  glMatrixMode(GL_MODELVIEW);
-  glPopMatrix();
-  glMatrixMode(GL_PROJECTION);
-  glPopMatrix();
-}*/
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -228,37 +227,39 @@ void synth::onDrawHudPage2(lev2::Context* context, float width, float height) {
 void DrawBorder(int X1, int Y1, int X2, int Y2, int color) {
   switch (color) {
     case 0:
-      glColor4f(0.6, 0.3, 0.6, 1);
+      // glColor4f(0.6, 0.3, 0.6, 1);
       break;
     case 1:
-      glColor4f(0.0, 0.0, 0.0, 1);
+      // glColor4f(0.0, 0.0, 0.0, 1);
       break;
     case 2:
-      glColor4f(0.9, 0.0, 0.0, 1);
+      // glColor4f(0.9, 0.0, 0.0, 1);
       break;
   }
 
-  glBegin(GL_LINES);
+  // glBegin(GL_LINES);
 
-  glVertex3f(X1, Y1, 0.0f);
-  glVertex3f(X2, Y1, 0.0f);
+  // glVertex3f(X1, Y1, 0.0f);
+  // glVertex3f(X2, Y1, 0.0f);
 
-  glVertex3f(X2, Y1, 0.0f);
-  glVertex3f(X2, Y2, 0.0f);
+  // glVertex3f(X2, Y1, 0.0f);
+  // glVertex3f(X2, Y2, 0.0f);
 
-  glVertex3f(X2, Y2, 0.0f);
-  glVertex3f(X1, Y2, 0.0f);
+  // glVertex3f(X2, Y2, 0.0f);
+  // glVertex3f(X1, Y2, 0.0f);
 
-  glVertex3f(X1, Y2, 0.0f);
-  glVertex3f(X1, Y1, 0.0f);
+  // glVertex3f(X1, Y2, 0.0f);
+  // glVertex3f(X1, Y1, 0.0f);
 
-  glEnd();
+  // glEnd();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
-  /*
+
+  auto MTXI = context->MTXI();
+
   const hudkframe& HKF = _curhud_kframe;
   const hudaframe& HAF = _curhud_aframe;
 
@@ -276,7 +277,7 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
   float INSX = 100;
   float INSW = DSPx - (INSX + 16);
 
-  drawtext(formatString("ostrack<%g>", _ostrack), 100, 250, fontscale, 1, 1, 0);
+  drawtext(FormatString("ostrack<%g>", _ostrack), 100, 250, fontscale, 1, 1, 0);
 
   _ostrackPH += _ostrack;
 
@@ -307,7 +308,7 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
   float ANA_X2 = ANA_X1 + ANA_W;
   float ANA_Y2 = ANA_Y1 + ANA_H;
 
-  PushOrtho(width, height);
+  MTXI->PushUIMatrix(width, height);
 
   const size_t fftSize = inumframes; // Needs to be power of 2!
 
@@ -317,15 +318,15 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
   std::vector<float> output(fftSize);
 
   // OSC centerline
-  glBegin(GL_LINES);
-  glVertex3f(OSC_X1, OSC_H, 0);
-  glVertex3f(OSC_X2, OSC_H, 0);
-  glEnd();
+  // glBegin(GL_LINES);
+  // glVertex3f(OSC_X1, OSC_H, 0);
+  // glVertex3f(OSC_X2, OSC_H, 0);
+  // glEnd();
 
   /////////////////////////////////////////////
 
-  glColor4f(.3, 1, .3, 1);
-  glBegin(GL_LINE_STRIP);
+  // glColor4f(.3, 1, .3, 1);
+  // glBegin(GL_LINE_STRIP);
 
   int i     = 0;
   auto mapI = [&](int i) -> int {
@@ -343,7 +344,7 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
 
   float x1 = OSC_X1;
   float y1 = OSC_Y1 + OSC_HH + ldata[mapI(i)] * OSC_HH;
-  glVertex3f(x1, y1, 0);
+  // glVertex3f(x1, y1, 0);
 
   const int koscfr = inumframes / 4;
 
@@ -364,10 +365,10 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
 
     float x2 = x + OSC_X1;
     float y2 = y + OSC_HH;
-    if (i < koscfr)
-      glVertex3f(x2, y2, 0);
+    // if (i < koscfr)
+    // glVertex3f(x2, y2, 0);
   }
-  glEnd();
+  // glEnd();
 
   //////////////////////////////
   // do the FFT
@@ -396,25 +397,25 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
   };
 
   //////////////////////////////
-  glColor4f(.3, .1, .3, 1);
-  glBegin(GL_LINES);
+  // glColor4f(.3, .1, .3, 1);
+  // glBegin(GL_LINES);
   for (int i = 36; i >= -96; i -= 12) {
     float db0 = i;
-    glVertex3f(ANA_X1, mapFFTY(db0), .0f);
-    glVertex3f(ANA_X2, mapFFTY(db0), .0f);
+    // glVertex3f(ANA_X1, mapFFTY(db0), .0f);
+    // glVertex3f(ANA_X2, mapFFTY(db0), .0f);
   }
-  glEnd();
+  // glEnd();
 
   //////////////////////////////
 
-  glColor4f(.3, .7, 1, 1);
-  glBegin(GL_LINE_STRIP);
+  // glColor4f(.3, .7, 1, 1);
+  // glBegin(GL_LINE_STRIP);
   float dB = mapDB(re[0], im[0]);
   float x  = ANA_W * float(0) / float(inumframes);
   float y  = mapFFTY(dB);
   float xx = x + ANA_X1;
   float yy = y;
-  glVertex3f(xx, yy, 0);
+  // glVertex3f(xx, yy, 0);
   for (int i = 0; i < inumframes / 2; i++) {
     float dB = mapDB(re[i], im[i]);
     _fftbuffer[i] += dB * 0.03 + 0.0001f;
@@ -430,38 +431,38 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
     float x  = ANA_W * (midinote - 36.0f) / 108.0;
     float y  = mapFFTY(dB - 12);
     float xx = x + ANA_X1;
-    glVertex3f(xx, y, 0);
+    // glVertex3f(xx, y, 0);
   }
   // freqbins[index] = complex_t(0,0);
-  glEnd();
+  // glEnd();
   //////////////////////////////
-  glColor4f(.3, .1, .3, 1);
-  glBegin(GL_LINES);
+  // glColor4f(.3, .1, .3, 1);
+  // glBegin(GL_LINES);
   for (int n = 0; n < 108; n += 12) {
     float db0 = i;
     float x   = ANA_X1 + ANA_W * float(n) / 108.0;
-    glVertex3f(x, ANA_Y1, 0);
-    glVertex3f(x, ANA_Y2, 0);
+    // glVertex3f(x, ANA_Y1, 0);
+    // glVertex3f(x, ANA_Y2, 0);
   }
-  glEnd();
+  // glEnd();
 
   //////////////////////////////
 
   DrawBorder(OSC_X1, OSC_Y1, OSC_X2, OSC_Y2);
   DrawBorder(ANA_X1, ANA_Y1, ANA_X2, ANA_Y2);
 
-  PopOrtho();
+  MTXI->PopUIMatrix();
 
   for (int i = 36; i >= -96; i -= 12) {
     float db0 = i;
     float y   = mapFFTY(db0);
 
-    drawtext(formatString("%g dB", db0), 40, y + 10, fontscale, .6, 0, .8);
+    drawtext(FormatString("%g dB", db0), 40, y + 10, fontscale, .6, 0, .8);
   }
   for (int n = 0; n < 108; n += 12) {
     float x = ANA_X1 - 20 + ANA_W * float(n) / 108.0;
     float f = midi_note_to_frequency(n + 36);
-    drawtext(formatString("  midi\n   %d\n(%d hz)", n + 36, int(f)), x, ANA_Y2 + 30, fontscale, .6, 0, .8);
+    drawtext(FormatString("  midi\n   %d\n(%d hz)", n + 36, int(f)), x, ANA_Y2 + 30, fontscale, .6, 0, .8);
   }
 
   //////////////////////////////
@@ -478,12 +479,12 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
   float dsphp = 165;
   float yinc  = dsph + 3;
 
-  glColor4f(.7, .7, .3, 1);
+  // glColor4f(.7, .7, .3, 1);
 
   yb      = 90;
   int ytb = 95;
 
-  auto alghdr = formatString("DSP Algorithm: %s", algd._name.c_str());
+  auto alghdr = FormatString("DSP Algorithm: %s", algd._name.c_str());
   drawtext(alghdr, xb + 80, yb - 10, fontscale, 1, 1, 1);
 
   //////////////////////
@@ -492,14 +493,14 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
     assert(dbd);
     // float v14DB = dbd->_v14Gain;
     float padDB = linear_amp_ratio_to_decibel(dbd->_inputPad);
-    auto text   = formatString("[%s] PAD<%g dB>", hdr.c_str(), padDB);
+    auto text   = FormatString("[%s] PAD<%g dB>", hdr.c_str(), padDB);
     drawtext(text, xt, yt, fontscale, 1, .2, .2);
 
     int h = 20;
 
     // if( dbd->_name == "F3" or dbd->_name == "F4" )
     {
-      // text = formatString("V15<0x%02x>",dbd._var15);
+      // text = FormatString("V15<0x%02x>",dbd._var15);
       // drawtext( text, xt, yt+=20, fontscale, 0.8,0.8,1 );
 
 #if 0
@@ -520,7 +521,7 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
               break;
         }
 
-        text = formatString("[%s] Pan<%d> Mode<%s>",hdr.c_str(), dbd->_pan, panmode.c_str() );
+        text = FormatString("[%s] Pan<%d> Mode<%s>",hdr.c_str(), dbd->_pan, panmode.c_str() );
         drawtext( text, xt, yt+20, fontscale, 1,1,0.2 );
 #endif
       h += 20;
@@ -542,7 +543,7 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
   std::vector<blockrect> _blockrects;
 
   for (int i = 0; i < kmaxdspblocksperlayer; i++) {
-    const DspBlockData* dbd = layd->_dspBlocks[i];
+    auto dbd = layd->_dspBlocks[i];
 
     if (nullptr == dbd)
       continue;
@@ -556,7 +557,7 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
       continue;
 
     // auto schm = dbd->_paramScheme;
-    auto text = formatString("BLOCK: %s ", name.c_str());
+    auto text = FormatString("BLOCK: %s ", name.c_str());
     drawtext(text, xt, yt, fontscale, 1, 1, 1);
     yt += 20;
     // yt += PanPadOut( dbd, xt, yt );
@@ -573,7 +574,7 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
 
       int padDB = round(linear_amp_ratio_to_decibel(dbd->_inputPad));
 
-      text = formatString("INP<%d> OUT<%d> PAD<%d dB>", blk->numInputs(), blk->numOutputs(), padDB);
+      text = FormatString("INP<%d> OUT<%d> PAD<%d dB>", blk->numInputs(), blk->numOutputs(), padDB);
       drawtext(text, xt, yt, fontscale, 1, 1, 1);
       yt += 20;
 
@@ -605,31 +606,31 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
         std::string text;
 
         if (fabs(tot) > 1)
-          text = formatString("P%c<%0.1f> _UV<%0.2f> vv<%0.2f>", paramC, tot, vo, vv);
+          text = FormatString("P%c<%0.1f> _UV<%0.2f> vv<%0.2f>", paramC, tot, vo, vv);
         else
-          text = formatString("P%c<%g> _UV<%0.2f> vv<%0.2f>", paramC, tot, vo, vv);
+          text = FormatString("P%c<%g> _UV<%0.2f> vv<%0.2f>", paramC, tot, vo, vv);
 
         drawtext(text, xt, yt, fontscale, r, g, b);
         yt += 20;
 
-        drawtext(formatString("   coarse<%g> fine<%g>", coa, fin), xt, yt, fontscale, r, g, b);
+        drawtext(FormatString("   coarse<%g> fine<%g>", coa, fin), xt, yt, fontscale, r, g, b);
         yt += 20;
 
-        text = (fabs(s1) > 1) ? formatString("   src1<%s> dep<%g> val<%0.1f>", SRC1.c_str(), SRC1D, s1)
-                              : formatString("   src1<%s> dep<%g> val<%0.2g>", SRC1.c_str(), SRC1D, s1);
+        text = (fabs(s1) > 1) ? FormatString("   src1<%s> dep<%g> val<%0.1f>", SRC1.c_str(), SRC1D, s1)
+                              : FormatString("   src1<%s> dep<%g> val<%0.2g>", SRC1.c_str(), SRC1D, s1);
         drawtext(text, xt, yt, fontscale, r, g, b);
         yt += 20;
 
-        text = formatString("   src2DC<%s> min<%g> max<%g> ", SRC2DC.c_str(), SRC2minD, SRC2maxD);
+        text = FormatString("   src2DC<%s> min<%g> max<%g> ", SRC2DC.c_str(), SRC2minD, SRC2maxD);
         drawtext(text, xt, yt, fontscale, r, g, b);
         yt += 20;
 
-        text = (fabs(s2) > 1) ? formatString("   src2<%s> val<%0.1f>", SRC2.c_str(), s2)
-                              : formatString("   src2<%s> val<%g>", SRC2.c_str(), s2);
+        text = (fabs(s2) > 1) ? FormatString("   src2<%s> val<%0.1f>", SRC2.c_str(), s2)
+                              : FormatString("   src2<%s> val<%g>", SRC2.c_str(), s2);
         drawtext(text, xt, yt, fontscale, r, g, b);
         yt += 20;
 
-        text = formatString("   _ks<%d> _ko<%g> _kt<%g> _kv<%g>", ks, ko, kt, kv);
+        text = FormatString("   _ks<%d> _ko<%g> _kt<%g> _kv<%g>", ks, ko, kt, kv);
         drawtext(text, xt, yt, fontscale, r, g, b);
         yt += 20;
       };
@@ -669,7 +670,7 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
   }
 
   yb = 90;
-  PushOrtho(width, height);
+  MTXI->PushUIMatrix(width, height);
 
   /////////////////////////////////
   // draw dspblock borders
@@ -689,7 +690,7 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
     yb = brect.y2;
   }
 
-  PopOrtho();
+  MTXI->PopUIMatrix();
 
   //////////////////////
 
@@ -704,6 +705,5 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
 
     drawtext(HKF._miscText, panx, yb + 160, fontscale, 1, 1, 1);
   }
-  */
 }
 } // namespace ork::audio::singularity

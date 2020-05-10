@@ -31,21 +31,8 @@ struct Rect {
   int VPW;
   int VPH;
 
-  inline void PushOrtho() const {
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-    glOrtho(0, VPW, VPH, 0, 0, 1);
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
-  }
-  inline void PopOrtho() const {
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-  }
+  void PushOrtho() const;
+  void PopOrtho() const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -79,8 +66,6 @@ void DrawAsr(const ItemDrawReq& EDR);
 void DrawLfo(const ItemDrawReq& EDR);
 void DrawFun(const ItemDrawReq& EDR);
 void DrawOp4(const Op4DrawReq& OPR);
-void PushOrtho(float VPW, float VPH);
-void PopOrtho();
 float FUNH(float vpw, float vph);
 float FUNW(float vpw, float vph);
 float FUNX(float vpw, float vph);
