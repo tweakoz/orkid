@@ -26,6 +26,16 @@ void drawtext(
     float g,
     float b);
 
+struct HudLine {
+
+  fvec2 _from;
+  fvec2 _to;
+  fvec3 _color;
+};
+using hudlines_t = std::vector<HudLine>;
+
+void drawHudLines(lev2::Context* context, const hudlines_t& lines);
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Rect {

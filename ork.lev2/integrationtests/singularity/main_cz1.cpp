@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
     int TARGH           = context->mainSurfaceHeight();
     const SRect tgtrect = SRect(0, 0, TARGW, TARGH);
 
-    fbi->SetClearColor(fvec4(0.3, 0.0, 0.1, 1));
+    fbi->SetClearColor(fvec4(0.2, 0.0, 0.1, 1));
     ////////////////////////////////////////////////////
     // draw the synth HUD
     ////////////////////////////////////////////////////
@@ -113,10 +113,11 @@ int main(int argc, char** argv) {
     for (int i = 0; i < 64; i++) { // 2 32 patch banks
       auto prg = czdata->getProgram(i);
       printf("i<%d> prg<%p>\n", i, prg);
-      enqueue_audio_event(prg, float(i) * 0.5, 1.0, 36);
+      enqueue_audio_event(prg, float(i) * 0.5, 1.0, 44 - 12);
     }
   }
   //////////////////////////////////////////////////////////////////////////////
+  qtapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
   qtapp->exec();
   tearDownAudio();
   return 0;

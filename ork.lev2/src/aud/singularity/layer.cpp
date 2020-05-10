@@ -296,7 +296,7 @@ void layer::compute(outputBuffer& obuf) {
     // oscope
     /////////////////
 
-    if (false and this == _syn._hudLayer) {
+    if (this == _syn._hudLayer) {
       _HAF._oscopebuffer.resize(inumframes);
 
       if (doBlockStereo) {

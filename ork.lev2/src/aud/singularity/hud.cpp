@@ -236,43 +236,25 @@ void synth::onDrawHudPage2(lev2::Context* context, float width, float height) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawBorder(lev2::Context* context, int X1, int Y1, int X2, int Y2, int color) {
+void drawHudLines(lev2::Context* context, const hudlines_t& lines) {
   auto mtl = hud_material(context);
-  auto tek = mtl->technique("mmodcolor");
+  auto tek = mtl->technique("vtxcolor");
   lev2::RenderContextFrameData RCFD(context);
   auto& VB  = lev2::GfxEnv::GetSharedDynamicV16T16C16();
   auto mtxi = context->MTXI();
   auto gbi  = context->GBI();
 
-  fvec4 v4color(1, 1, 1, 1);
-
-  switch (color) {
-    case 0:
-      v4color = fvec4(0.6, 0.3, 0.6, 1);
-      break;
-    case 1:
-      v4color = fvec4(0.0, 0.0, 0.0, 1);
-      break;
-    case 2:
-      v4color = fvec4(0.9, 0.0, 0.0, 1);
-      break;
-  }
-
-  auto par_mvp      = mtl->param("MatMVP");
-  auto par_modcolor = mtl->param("modcolor");
+  auto par_mvp = mtl->param("MatMVP");
 
   lev2::VtxWriter<lev2::SVtxV16T16C16> vw;
-  auto addvert = [&vw](float x, float y) { vw.AddVertex(lev2::SVtxV16T16C16(fvec3(x, y, 0), fvec4(), fvec4())); };
-
-  vw.Lock(context, &VB, 8);
-  addvert(X1, Y1);
-  addvert(X2, Y1);
-  addvert(X2, Y1);
-  addvert(X2, Y2);
-  addvert(X2, Y2);
-  addvert(X1, Y2);
-  addvert(X1, Y2);
-  addvert(X1, Y1);
+  vw.Lock(context, &VB, lines.size() * 2);
+  for (auto& l : lines) {
+    const auto& p1 = l._from;
+    const auto& p2 = l._to;
+    const auto& c  = l._color;
+    vw.AddVertex(lev2::SVtxV16T16C16(fvec3(p1), fvec4(), c));
+    vw.AddVertex(lev2::SVtxV16T16C16(fvec3(p2), fvec4(), c));
+  }
   vw.UnLock(context);
 
   int w = context->mainSurfaceWidth();
@@ -280,11 +262,36 @@ void DrawBorder(lev2::Context* context, int X1, int Y1, int X2, int Y2, int colo
   mtxi->PushUIMatrix(w, h);
   mtl->begin(tek, RCFD);
   mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-  mtl->bindParamVec4(par_modcolor, v4color);
   mtl->_rasterstate.SetBlending(lev2::EBLENDING_OFF);
   gbi->DrawPrimitiveEML(vw, lev2::EPrimitiveType::LINES);
   mtl->end(RCFD);
   mtxi->PopUIMatrix();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void DrawBorder(lev2::Context* context, int X1, int Y1, int X2, int Y2, int color) {
+  hudlines_t lines;
+  fvec3 vcolor(1, 1, 1);
+  switch (color) {
+    case 0:
+      vcolor = fvec3(0.6, 0.3, 0.6);
+      break;
+    case 1:
+      vcolor = fvec3(0.0, 0.0, 0.0);
+      break;
+    case 2:
+      vcolor = fvec3(0.9, 0.0, 0.0);
+      break;
+  }
+  auto addline = [&lines, &vcolor](float xa, float ya, float xb, float yb) { //
+    lines.push_back(HudLine{fvec2{xa, ya}, fvec2{xb, yb}, vcolor});
+  };
+  addline(X1, Y1, X2, Y1);
+  addline(X2, Y1, X2, Y2);
+  addline(X2, Y2, X1, Y2);
+  addline(X1, Y2, X1, Y1);
+  drawHudLines(context, lines);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -350,16 +357,16 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
   std::vector<float> im(audiofft::AudioFFT::ComplexSize(fftSize));
   std::vector<float> output(fftSize);
 
-  // OSC centerline
-  // glBegin(GL_LINES);
-  // glVertex3f(OSC_X1, OSC_H, 0);
-  // glVertex3f(OSC_X2, OSC_H, 0);
-  // glEnd();
-
+  /////////////////////////////////////////////
+  // oscilloscope centerline
   /////////////////////////////////////////////
 
-  // glColor4f(.3, 1, .3, 1);
-  // glBegin(GL_LINE_STRIP);
+  hudlines_t lines;
+  lines.push_back(HudLine{fvec2(OSC_X1, OSC_H), fvec2(OSC_X2, OSC_H), fvec3(1, 1, 1)});
+
+  /////////////////////////////////////////////
+  // oscilloscope trace
+  /////////////////////////////////////////////
 
   int i     = 0;
   auto mapI = [&](int i) -> int {
@@ -377,7 +384,7 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
 
   float x1 = OSC_X1;
   float y1 = OSC_Y1 + OSC_HH + ldata[mapI(i)] * OSC_HH;
-  // glVertex3f(x1, y1, 0);
+  float x2, y2;
 
   const int koscfr = inumframes / 4;
 
@@ -396,12 +403,15 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
     float x = OSC_W * float(i) / float(koscfr);
     float y = OSC_HH - s * OSC_HH;
 
-    float x2 = x + OSC_X1;
-    float y2 = y + OSC_HH;
-    // if (i < koscfr)
-    // glVertex3f(x2, y2, 0);
+    x2 = x + OSC_X1;
+    y2 = y + OSC_HH;
+
+    if (i < koscfr)
+      lines.push_back(HudLine{fvec2(x1, y1), fvec2(x2, y2), fvec3(.3, 1, .3)});
+
+    x1 = x2;
+    y1 = y2;
   }
-  // glEnd();
 
   //////////////////////////////
   // do the FFT
@@ -430,25 +440,37 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
   };
 
   //////////////////////////////
-  // glColor4f(.3, .1, .3, 1);
-  // glBegin(GL_LINES);
-  for (int i = 36; i >= -96; i -= 12) {
-    float db0 = i;
-    // glVertex3f(ANA_X1, mapFFTY(db0), .0f);
-    // glVertex3f(ANA_X2, mapFFTY(db0), .0f);
-  }
-  // glEnd();
-
+  // draw grid
   //////////////////////////////
 
-  // glColor4f(.3, .7, 1, 1);
-  // glBegin(GL_LINE_STRIP);
+  for (int i = 36; i >= -96; i -= 12) {
+    float db0 = i;
+    lines.push_back(HudLine{
+        fvec2(ANA_X1, mapFFTY(db0)), //
+        fvec2(ANA_X2, mapFFTY(db0)),
+        fvec3(.2, .1, .3)}); // horizontal grid
+  }
+
+  for (int n = 0; n < 108; n += 12) {
+    float db0 = i;
+    float x   = ANA_X1 + ANA_W * float(n) / 108.0;
+    lines.push_back(HudLine{
+        fvec2(x, ANA_Y1), //
+        fvec2(x, ANA_Y2),
+        fvec3(.2, .1, .3)}); // vertical grid
+  }
+
+  //////////////////////////////
+  // spectral plot
+  //////////////////////////////
+
   float dB = mapDB(re[0], im[0]);
   float x  = ANA_W * float(0) / float(inumframes);
   float y  = mapFFTY(dB);
   float xx = x + ANA_X1;
   float yy = y;
-  // glVertex3f(xx, yy, 0);
+  x1       = xx;
+  y1       = yy;
   for (int i = 0; i < inumframes / 2; i++) {
     float dB = mapDB(re[i], im[i]);
     _fftbuffer[i] += dB * 0.03 + 0.0001f;
@@ -464,25 +486,20 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
     float x  = ANA_W * (midinote - 36.0f) / 108.0;
     float y  = mapFFTY(dB - 12);
     float xx = x + ANA_X1;
-    // glVertex3f(xx, y, 0);
+    lines.push_back(HudLine{
+        fvec2(x1, y1), //
+        fvec2(xx, y),
+        fvec3(.3, .7, 1)}); // spectral plot
+
+    x1 = xx;
+    y1 = y;
   }
   // freqbins[index] = complex_t(0,0);
-  // glEnd();
-  //////////////////////////////
-  // glColor4f(.3, .1, .3, 1);
-  // glBegin(GL_LINES);
-  for (int n = 0; n < 108; n += 12) {
-    float db0 = i;
-    float x   = ANA_X1 + ANA_W * float(n) / 108.0;
-    // glVertex3f(x, ANA_Y1, 0);
-    // glVertex3f(x, ANA_Y2, 0);
-  }
-  // glEnd();
 
   //////////////////////////////
 
   DrawBorder(context, OSC_X1, OSC_Y1, OSC_X2, OSC_Y2);
-  DrawBorder(context, ANA_X1, ANA_Y1, ANA_X2, ANA_Y2);
+  // DrawBorder(context, ANA_X1, ANA_Y1, ANA_X2, ANA_Y2);
 
   MTXI->PopUIMatrix();
 
@@ -747,5 +764,7 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
 
     drawtext(context, HKF._miscText, panx, yb + 160, fontscale, 1, 1, 1);
   }
+
+  drawHudLines(context, lines);
 }
 } // namespace ork::audio::singularity

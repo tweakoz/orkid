@@ -4,6 +4,7 @@ namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DrawFun(lev2::Context* context, const ItemDrawReq& EDR) {
+  hudlines_t lines;
   const auto& R = EDR.rect;
   float X2      = R.X1 + R.W;
   float Y2      = R.Y1 + R.H;
@@ -75,18 +76,12 @@ void DrawFun(lev2::Context* context, const ItemDrawReq& EDR) {
 
   DrawBorder(context, R.X1, R.Y1, X2, Y2);
 
-  // glColor4f(.5, .2, .5, 1);
-  // glBegin(GL_LINES);
-  // glVertex3f(x1, fyc, 0);
-  // glVertex3f(x2, fyc, 0);
-  // glEnd();
+  lines.push_back(HudLine{fvec2(x1, fyc), fvec2(x2, fyc), fvec3(.5, .2, .5)});
 
   ///////////////////////
   // from hud samples
   ///////////////////////
 
-  // glColor4f(0.7, 0.5, 0.7, 1);
-  // glBegin(GL_LINES);
   float fpy = fyc;
   if (HUDSAMPS.size()) {
     const auto& HS0 = HUDSAMPS[0];
@@ -97,20 +92,20 @@ void DrawFun(lev2::Context* context, const ItemDrawReq& EDR) {
     for (int i = 0; i < HUDSAMPS.size(); i++) {
       const auto& hs = HUDSAMPS[i];
       if (fpx >= R.X1 and fpx <= X2) {
-        // glVertex3f(fpx, fpy, 0);
+        auto p1 = fvec2(fpx, fpy);
         float t = hs._time - ftimebase;
         fpx     = fxb + t * (fw / ktime);
 
         float fval = hs._value;
         fpy        = fyc - fval * 100.0f;
-
-        // glVertex3f(fpx, fpy, 0);
+        auto p2    = fvec2(fpx, fpy);
+        lines.push_back(HudLine{p1, p2, fvec3(0.7, 0.5, 0.7)});
       }
     }
   }
-  //  glEnd();
 
   R.PopOrtho(context);
+  drawHudLines(context, lines);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

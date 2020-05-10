@@ -111,7 +111,6 @@ synth::synth(float sr)
     , _dt(1.0f / _sampleRate)
     , _soloLayer(-1)
     , _timeaccum(0.0f)
-    //, _objectDB( new VastObjectsDB )
     , _hudpage(0)
     , _ostrack(10) {
   for (int i = 0; i < 256; i++)
@@ -119,8 +118,6 @@ synth::synth(float sr)
 
   for (int i = 0; i < 256; i++)
     _freeProgInst.insert(new programInst(*this));
-
-  //_SD = new SynthData(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -135,8 +132,6 @@ synth::~synth() {
     delete p;
   for (auto p : _activeProgInst)
     delete p;
-
-  // delete _objectDB;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

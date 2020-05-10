@@ -5,6 +5,7 @@ namespace ork::audio::singularity {
 
 void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
   const auto& R = EDR.rect;
+  hudlines_t lines;
 
   float X2 = R.X1 + R.W;
   float Y2 = R.Y1 + R.H;
@@ -140,52 +141,41 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
   // draw grid, origin
   ///////////////////////
 
-  // glColor4f(.5, .2, .5, 1);
-  // glBegin(GL_LINES);
   if (bipolar) {
     float fy = fyb - (fh * 0.5f) * 0.5f;
     float x1 = fxb;
     float x2 = x1 + fw;
-
-    // glVertex3f(x1, fy, 0);
-    // glVertex3f(x2, fy, 0);
+    lines.push_back(HudLine{fvec2(x1, fy), fvec2(x2, fy), fvec3(.5, .2, .5)});
   }
-  // glEnd();
 
   ///////////////////////
   // from hud samples
   ///////////////////////
 
-  // glColor4f(1, 1, 1, 1);
-  // glBegin(GL_LINES);
   for (int i = 0; i < HUDSAMPS.size(); i++) {
     const auto& hs = HUDSAMPS[i];
     if (fpx >= R.X1 and fpx <= X2) {
-      // glVertex3f(fpx, fpy, 0);
-      fpx = fxb + hs._time * (fw / ktime);
-
+      auto p1    = fvec2(fpx, fpy);
+      fpx        = fxb + hs._time * (fw / ktime);
       float fval = hs._value;
       if (bipolar)
         fval = 0.5f + (fval * 0.5f);
-      fpy = fyb - (fh * 0.5f) * fval;
-
-      // glVertex3f(fpx, fpy, 0);
+      fpy     = fyb - (fh * 0.5f) * fval;
+      auto p2 = fvec2(fpx, fpy);
+      lines.push_back(HudLine{p1, p2, fvec3(1, 1, 1)});
     }
   }
-  //  glEnd();
 
   ///////////////////////
   // natural env dB slopehull
   ///////////////////////
 
   if (useNENV) {
-    // glColor4f(1, 0, 0, 1);
     fpx = fxb;
     fpy = fyb;
-    // glBegin(GL_LINES);
     for (int i = 0; i < HUDSAMPS.size(); i++) {
       const auto& hs = HUDSAMPS[i];
-      // glVertex3f(fpx, fpy, 0);
+      auto p1        = fvec2(fpx, fpy);
 
       float val = hs._value;
       val       = 96.0 + linear_amp_ratio_to_decibel(val);
@@ -193,15 +183,15 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
         val = 0.0f;
       val = val / 96.0f;
 
-      fpx = fxb + hs._time * (fw / ktime);
-      fpy = fyb - fh * val;
-      // glVertex3f(fpx, fpy, 0);
+      fpx     = fxb + hs._time * (fw / ktime);
+      fpy     = fyb - fh * val;
+      auto p2 = fvec2(fpx, fpy);
+      lines.push_back(HudLine{p1, p2, fvec3(1, 0, 0)});
     }
-    // glEnd();
   }
   R.PopOrtho(context);
-
   /////////////////////////////////////////////////
+  drawHudLines(context, lines);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
