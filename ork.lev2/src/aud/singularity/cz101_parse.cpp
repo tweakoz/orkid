@@ -312,7 +312,7 @@ void parse_cz101(CzData* outd, const file::Path& path, const std::string& bnknam
   bool sysexdecode = true;
 
   switch (size) {
-    case 264: // CZ101 sysex
+    case 264: // CZ-101 single patch sysex dump
       // sysex format
       assert(data[0] == 0xf0 and data[1] == 0x44); // sysx header
       assert(data[263] == 0xf7);                   // sysx footer
@@ -321,7 +321,7 @@ void parse_cz101(CzData* outd, const file::Path& path, const std::string& bnknam
       prgbase      = 7;
       bytesperprog = 128;
       break;
-    case 296: // CZ1 sysex
+    case 296: // CZ-1 single patch sysex dump
       // sysex format
       assert(data[0] == 0xf0 and data[1] == 0x44);
       assert(data[295] == 0xf7); // sysx footer
@@ -329,15 +329,13 @@ void parse_cz101(CzData* outd, const file::Path& path, const std::string& bnknam
       prgbase      = 7;
       bytesperprog = 144;
       break;
-    case 4224: // 16
-      // sysex format
+    case 4224: // CZ-101 16 patch sysex dump
       assert(data[0] == 0xf0 and data[1] == 0x44);
       programcount = 16;
       prgbase      = 7;
       break;
-    case 4608: // CZ-1
-      // blk(RAWDATA) format
-      programcount = 1;
+    case 4608: // CZ-1 32 patch binary blob format
+      programcount = 32;
       prgbase      = 0;
       bytesperprog = 144;
       sysexdecode  = false;

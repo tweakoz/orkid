@@ -21,14 +21,11 @@ void tearDownAudio();
 extern synth* the_synth;
 } // namespace ork::lev2
 
+bool TEST = false;
+
 int main(int argc, char** argv) {
   auto basepath = file::Path::share_dir() / "singularity" / "casioCZ";
   startupAudio();
-  auto czdata = std::make_shared<CzData>(the_synth);
-  czdata->loadBank(basepath / "edit.syx", "bank1");
-  // czdata->loadBank(basepath / "factoryB.bnk", "bank2");
-  // czdata->loadBank(basepath / "cz1_3.bnk", "bank3");
-  // czdata->loadBank(basepath / "cz1_4.bnk", "bank4");
   the_synth->resetFenables();
   //////////////////////////////////////////////////////////////////////////////
   auto add_event = [&](const programData* prog, //
@@ -46,18 +43,24 @@ int main(int argc, char** argv) {
     });
   };
   //////////////////////////////////////////////////////////////////////////////
-  if (0)
-    for (int i = 0; i < 128; i++) {
-      auto prg = czdata->getProgram(i);
-      add_event(prg, float(i) * 0.25, 1.0, 36);
-    }
-  if (1)
+  auto czdata = std::make_shared<CzData>(the_synth);
+  if (TEST) {
+    czdata->loadBank(basepath / "edit.syx", "bank1");
     for (int i = 0; i < 2; i++) {
-      auto prg = czdata->getProgram(i);
+      auto prg = czdata->getProgram(0);
       add_event(prg, float(0) * 2, 4.0, 36 + i * 12);
     }
-  //////////////////////////////////////////////////////////////////////////////
-  usleep(35 << 20); // just wait, let the "music" play..
+    usleep(35 << 20); // just wait, let the "music" play..
+  } else {
+    czdata->loadBank(basepath / "factoryA.bnk", "bank1");
+    czdata->loadBank(basepath / "factoryB.bnk", "bank2");
+    for (int i = 0; i < 64; i++) { // 2 32 patch banks
+      auto prg = czdata->getProgram(i);
+      printf("i<%d> prg<%p>\n", i, prg);
+      add_event(prg, float(i) * 0.5, 1.0, 36);
+    }
+    usleep(35 << 20); // just wait, let the "music" play..
+  }
   //////////////////////////////////////////////////////////////////////////////
   tearDownAudio();
   return 0;

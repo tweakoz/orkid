@@ -104,7 +104,7 @@ class Blasphemoids(_simsetup.SimApp):
       hand.decompose(pos,rot,sca)
       #####################################
       self.laser_a.set(pos)
-      self.laser_b.set(pos+hand.yNormal()*1000)
+      self.laser_b.set(pos+hand.yNormal()*10000)
       #####################################
       # place model on hand
       #####################################

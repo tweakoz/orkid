@@ -7,11 +7,11 @@
 #include <string>
 #include <queue>
 #include <functional>
+#include <memory>
 #include <stdint.h>
 #include <assert.h>
 #include <unistd.h>
 #include <math.h>
-#include <memory.h>
 
 #include <ork/orktypes.h>
 #include <ork/math/audiomath.h>
