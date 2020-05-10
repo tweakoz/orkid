@@ -1,48 +1,60 @@
 #include <ork/lev2/aud/singularity/hud.h>
 #include <ork/math/cvector3.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
+#include <ork/lev2/gfx/dbgfontman.h>
+#include <ork/lev2/gfx/dbgfontman.h>
+#include <ork/lev2/gfx/material_freestyle.h>
 
 using namespace ork;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
 
+static lev2::freestyle_mtl_ptr_t create_hud_material(lev2::Context* context) {
+  auto mtl = std::make_shared<lev2::FreestyleMaterial>();
+  mtl->gpuInit(context, "orkshader://solid");
+  return mtl;
+}
+
+static lev2::freestyle_mtl_ptr_t hud_material(lev2::Context* context) {
+  static auto mtl = create_hud_material(context);
+  return mtl;
+}
+
 void Rect::PushOrtho(lev2::Context* context) const {
-  // glMatrixMode(GL_PROJECTION);
-  // glPushMatrix();
-  // glLoadIdentity();
-  // glOrtho(0, VPW, VPH, 0, 0, 1);
-  // glMatrixMode(GL_MODELVIEW);
-  // glPushMatrix();
-  // glLoadIdentity();
+  int w = context->mainSurfaceWidth();
+  int h = context->mainSurfaceHeight();
+  context->MTXI()->PushUIMatrix(w, h);
 }
 void Rect::PopOrtho(lev2::Context* context) const {
-  // glMatrixMode(GL_MODELVIEW);
-  // glPopMatrix();
-  // glMatrixMode(GL_PROJECTION);
-  // glPopMatrix();
+  context->MTXI()->PopUIMatrix();
 }
 
-void drawtext(const std::string& str, float x, float y, float scale, float r, float g, float b) {
-  /*glMatrixMode(GL_PROJECTION);
-  glPushMatrix();
-  glLoadIdentity();
-  glOrtho(0, width, height, 0, 0, 1);
+void drawtext(
+    lev2::Context* context, //
+    const std::string& str,
+    float x,
+    float y,
+    float scale,
+    float r,
+    float g,
+    float b) {
 
-  glMatrixMode(GL_MODELVIEW);
-  glPushMatrix();
-  glLoadIdentity();
-  glTranslatef(x, y, 0);
-  glScalef(scale, -scale, 1);
+  int w = context->mainSurfaceWidth();
+  int h = context->mainSurfaceHeight();
+  context->MTXI()->PushUIMatrix(w, h);
 
-  glColor4f(r, g, b, 1);
-  dtx_string(str.c_str());
+  auto fontman = lev2::FontMan::instance();
 
-  glMatrixMode(GL_PROJECTION);
-  glPopMatrix();
+  fontman->SetCurrentFont("i16");
+  context->PushModColor(fcolor4(r, g, b, 1));
 
-  glMatrixMode(GL_MODELVIEW);
-  glPopMatrix();*/
+  fontman->beginTextBlock(context, str.length());
+  fontman->DrawText(context, x, y, "%s", str.c_str());
+  fontman->endTextBlock(context);
+  context->PopModColor();
+
+  context->MTXI()->PopUIMatrix();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -225,33 +237,54 @@ void synth::onDrawHudPage2(lev2::Context* context, float width, float height) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DrawBorder(lev2::Context* context, int X1, int Y1, int X2, int Y2, int color) {
+  auto mtl = hud_material(context);
+  auto tek = mtl->technique("mmodcolor");
+  lev2::RenderContextFrameData RCFD(context);
+  auto& VB  = lev2::GfxEnv::GetSharedDynamicV16T16C16();
+  auto mtxi = context->MTXI();
+  auto gbi  = context->GBI();
+
+  fvec4 v4color(1, 1, 1, 1);
+
   switch (color) {
     case 0:
-      // glColor4f(0.6, 0.3, 0.6, 1);
+      v4color = fvec4(0.6, 0.3, 0.6, 1);
       break;
     case 1:
-      // glColor4f(0.0, 0.0, 0.0, 1);
+      v4color = fvec4(0.0, 0.0, 0.0, 1);
       break;
     case 2:
-      // glColor4f(0.9, 0.0, 0.0, 1);
+      v4color = fvec4(0.9, 0.0, 0.0, 1);
       break;
   }
 
-  // glBegin(GL_LINES);
+  auto par_mvp      = mtl->param("MatMVP");
+  auto par_modcolor = mtl->param("modcolor");
 
-  // glVertex3f(X1, Y1, 0.0f);
-  // glVertex3f(X2, Y1, 0.0f);
+  lev2::VtxWriter<lev2::SVtxV16T16C16> vw;
+  auto addvert = [&vw](float x, float y) { vw.AddVertex(lev2::SVtxV16T16C16(fvec3(x, y, 0), fvec4(), fvec4())); };
 
-  // glVertex3f(X2, Y1, 0.0f);
-  // glVertex3f(X2, Y2, 0.0f);
+  vw.Lock(context, &VB, 8);
+  addvert(X1, Y1);
+  addvert(X2, Y1);
+  addvert(X2, Y1);
+  addvert(X2, Y2);
+  addvert(X2, Y2);
+  addvert(X1, Y2);
+  addvert(X1, Y2);
+  addvert(X1, Y1);
+  vw.UnLock(context);
 
-  // glVertex3f(X2, Y2, 0.0f);
-  // glVertex3f(X1, Y2, 0.0f);
-
-  // glVertex3f(X1, Y2, 0.0f);
-  // glVertex3f(X1, Y1, 0.0f);
-
-  // glEnd();
+  int w = context->mainSurfaceWidth();
+  int h = context->mainSurfaceHeight();
+  mtxi->PushUIMatrix(w, h);
+  mtl->begin(tek, RCFD);
+  mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
+  mtl->bindParamVec4(par_modcolor, v4color);
+  mtl->_rasterstate.SetBlending(lev2::EBLENDING_OFF);
+  gbi->DrawPrimitiveEML(vw, lev2::EPrimitiveType::LINES);
+  mtl->end(RCFD);
+  mtxi->PopUIMatrix();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -277,7 +310,7 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
   float INSX = 100;
   float INSW = DSPx - (INSX + 16);
 
-  drawtext(FormatString("ostrack<%g>", _ostrack), 100, 250, fontscale, 1, 1, 0);
+  drawtext(context, FormatString("ostrack<%g>", _ostrack), 100, 250, fontscale, 1, 1, 0);
 
   _ostrackPH += _ostrack;
 
@@ -457,12 +490,12 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
     float db0 = i;
     float y   = mapFFTY(db0);
 
-    drawtext(FormatString("%g dB", db0), 40, y + 10, fontscale, .6, 0, .8);
+    drawtext(context, FormatString("%g dB", db0), 40, y + 10, fontscale, .6, 0, .8);
   }
   for (int n = 0; n < 108; n += 12) {
     float x = ANA_X1 - 20 + ANA_W * float(n) / 108.0;
     float f = midi_note_to_frequency(n + 36);
-    drawtext(FormatString("  midi\n   %d\n(%d hz)", n + 36, int(f)), x, ANA_Y2 + 30, fontscale, .6, 0, .8);
+    drawtext(context, FormatString("  midi\n   %d\n(%d hz)", n + 36, int(f)), x, ANA_Y2 + 30, fontscale, .6, 0, .8);
   }
 
   //////////////////////////////
@@ -485,16 +518,16 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
   int ytb = 95;
 
   auto alghdr = FormatString("DSP Algorithm: %s", algd._name.c_str());
-  drawtext(alghdr, xb + 80, yb - 10, fontscale, 1, 1, 1);
+  drawtext(context, alghdr, xb + 80, yb - 10, fontscale, 1, 1, 1);
 
   //////////////////////
 
-  auto PanPadOut = [](const std::string& hdr, const DspBlockData* dbd, int xt, int yt) -> int {
+  auto PanPadOut = [context](const std::string& hdr, const DspBlockData* dbd, int xt, int yt) -> int {
     assert(dbd);
     // float v14DB = dbd->_v14Gain;
     float padDB = linear_amp_ratio_to_decibel(dbd->_inputPad);
     auto text   = FormatString("[%s] PAD<%g dB>", hdr.c_str(), padDB);
-    drawtext(text, xt, yt, fontscale, 1, .2, .2);
+    drawtext(context, text, xt, yt, fontscale, 1, .2, .2);
 
     int h = 20;
 
@@ -558,7 +591,7 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
 
     // auto schm = dbd->_paramScheme;
     auto text = FormatString("BLOCK: %s ", name.c_str());
-    drawtext(text, xt, yt, fontscale, 1, 1, 1);
+    drawtext(context, text, xt, yt, fontscale, 1, 1, 1);
     yt += 20;
     // yt += PanPadOut( dbd, xt, yt );
 
@@ -575,10 +608,19 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
       int padDB = round(linear_amp_ratio_to_decibel(dbd->_inputPad));
 
       text = FormatString("INP<%d> OUT<%d> PAD<%d dB>", blk->numInputs(), blk->numOutputs(), padDB);
-      drawtext(text, xt, yt, fontscale, 1, 1, 1);
+      drawtext(context, text, xt, yt, fontscale, 1, 1, 1);
       yt += 20;
 
-      auto drawfhud = [&blk, &xt, &yt, &controlBlockID, &layd](int idx, float r, float g, float b) {
+      auto drawfhud = [&blk, //
+                       &xt,
+                       &yt,
+                       &controlBlockID,
+                       &layd,
+                       context]( //
+                          int idx,
+                          float r,
+                          float g,
+                          float b) {
         const DspBlockData* dbd = &blk->_dbd;
         const DspParamData& dpd = dbd->_paramd[idx];
 
@@ -610,28 +652,28 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
         else
           text = FormatString("P%c<%g> _UV<%0.2f> vv<%0.2f>", paramC, tot, vo, vv);
 
-        drawtext(text, xt, yt, fontscale, r, g, b);
+        drawtext(context, text, xt, yt, fontscale, r, g, b);
         yt += 20;
 
-        drawtext(FormatString("   coarse<%g> fine<%g>", coa, fin), xt, yt, fontscale, r, g, b);
+        drawtext(context, FormatString("   coarse<%g> fine<%g>", coa, fin), xt, yt, fontscale, r, g, b);
         yt += 20;
 
         text = (fabs(s1) > 1) ? FormatString("   src1<%s> dep<%g> val<%0.1f>", SRC1.c_str(), SRC1D, s1)
                               : FormatString("   src1<%s> dep<%g> val<%0.2g>", SRC1.c_str(), SRC1D, s1);
-        drawtext(text, xt, yt, fontscale, r, g, b);
+        drawtext(context, text, xt, yt, fontscale, r, g, b);
         yt += 20;
 
         text = FormatString("   src2DC<%s> min<%g> max<%g> ", SRC2DC.c_str(), SRC2minD, SRC2maxD);
-        drawtext(text, xt, yt, fontscale, r, g, b);
+        drawtext(context, text, xt, yt, fontscale, r, g, b);
         yt += 20;
 
         text = (fabs(s2) > 1) ? FormatString("   src2<%s> val<%0.1f>", SRC2.c_str(), s2)
                               : FormatString("   src2<%s> val<%g>", SRC2.c_str(), s2);
-        drawtext(text, xt, yt, fontscale, r, g, b);
+        drawtext(context, text, xt, yt, fontscale, r, g, b);
         yt += 20;
 
         text = FormatString("   _ks<%d> _ko<%g> _kt<%g> _kv<%g>", ks, ko, kt, kv);
-        drawtext(text, xt, yt, fontscale, r, g, b);
+        drawtext(context, text, xt, yt, fontscale, r, g, b);
         yt += 20;
       };
 
@@ -703,7 +745,7 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
 
   if (HKF._miscText.length()) {
 
-    drawtext(HKF._miscText, panx, yb + 160, fontscale, 1, 1, 1);
+    drawtext(context, HKF._miscText, panx, yb + 160, fontscale, 1, 1, 1);
   }
 }
 } // namespace ork::audio::singularity

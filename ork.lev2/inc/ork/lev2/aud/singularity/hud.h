@@ -16,7 +16,15 @@ namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef ork::svar1024_t svar_t;
-void drawtext(const std::string& str, float x, float y, float scale, float r, float g, float b);
+void drawtext(
+    lev2::Context* ctx, //
+    const std::string& str,
+    float x,
+    float y,
+    float scale,
+    float r,
+    float g,
+    float b);
 
 ///////////////////////////////////////////////////////////////////////////////
 

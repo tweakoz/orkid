@@ -47,10 +47,11 @@ void DrawOp4(lev2::Context* context, const Op4DrawReq& OPR) {
   hs._value = op4f._envout;
   HUDSAMPS.push_back(hs);
 
-  drawtext(FormatString("Op%d - olev<%d> wave<%d>", OPR.iop, op4f._olev, op4f._wav), R.X1, env_by, fontscale, 1, 0, .5);
+  drawtext(context, FormatString("Op%d - olev<%d> wave<%d>", OPR.iop, op4f._olev, op4f._wav), R.X1, env_by, fontscale, 1, 0, .5);
 
-  drawtext(FormatString("mi<%0.2f> r<%0.2f> f<%0.2f>", op4f._mi, op4f._r, op4f._f), R.X1 + 15, by0, fontscale, 1, 1, 0);
+  drawtext(context, FormatString("mi<%0.2f> r<%0.2f> f<%0.2f>", op4f._mi, op4f._r, op4f._f), R.X1 + 15, by0, fontscale, 1, 1, 0);
   drawtext(
+      context,
       FormatString(
           "AR<%d> D1R<%d> D1L<%d> D2R<%d> RR<%d> EGS<%d> EV<%d:%0.2f>",
           op4f._ar,
