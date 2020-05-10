@@ -3,7 +3,7 @@
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawFun(const ItemDrawReq& EDR) {
+void DrawFun(lev2::Context* context, const ItemDrawReq& EDR) {
   const auto& R = EDR.rect;
   float X2      = R.X1 + R.W;
   float Y2      = R.Y1 + R.H;
@@ -62,8 +62,8 @@ void DrawFun(const ItemDrawReq& EDR) {
   drawtext(FUND->_b, sx0, by1, fontscale, 1, 1, 1);
   drawtext(FUND->_op, sx0, by2, fontscale, 1, 1, 1);
 
-  R.PushOrtho();
-  DrawBorder(R.X1, R.Y1, X2, Y2);
+  R.PushOrtho(context);
+  DrawBorder(context, R.X1, R.Y1, X2, Y2);
 
   ///////////////////////
   // draw border, grid, origin
@@ -73,7 +73,7 @@ void DrawFun(const ItemDrawReq& EDR) {
   float x1  = fxb;
   float x2  = x1 + fw;
 
-  DrawBorder(R.X1, R.Y1, X2, Y2);
+  DrawBorder(context, R.X1, R.Y1, X2, Y2);
 
   // glColor4f(.5, .2, .5, 1);
   // glBegin(GL_LINES);
@@ -110,7 +110,7 @@ void DrawFun(const ItemDrawReq& EDR) {
   }
   //  glEnd();
 
-  R.PopOrtho();
+  R.PopOrtho(context);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

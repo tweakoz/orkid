@@ -3,7 +3,7 @@
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawEnv(const ItemDrawReq& EDR) {
+void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
   const auto& R = EDR.rect;
 
   float X2 = R.X1 + R.W;
@@ -122,13 +122,13 @@ void DrawEnv(const ItemDrawReq& EDR) {
   float fpx = fxb;
   float fpy = fyb;
 
-  R.PushOrtho();
+  R.PushOrtho(context);
 
   ///////////////////////
   // draw border
   ///////////////////////
 
-  DrawBorder(R.X1, R.Y1, X2, Y2);
+  DrawBorder(context, R.X1, R.Y1, X2, Y2);
 
   const float ktime = 20.0f;
 
@@ -140,28 +140,28 @@ void DrawEnv(const ItemDrawReq& EDR) {
   // draw grid, origin
   ///////////////////////
 
-  glColor4f(.5, .2, .5, 1);
-  glBegin(GL_LINES);
+  // glColor4f(.5, .2, .5, 1);
+  // glBegin(GL_LINES);
   if (bipolar) {
     float fy = fyb - (fh * 0.5f) * 0.5f;
     float x1 = fxb;
     float x2 = x1 + fw;
 
-    glVertex3f(x1, fy, 0);
-    glVertex3f(x2, fy, 0);
+    // glVertex3f(x1, fy, 0);
+    // glVertex3f(x2, fy, 0);
   }
-  glEnd();
+  // glEnd();
 
   ///////////////////////
   // from hud samples
   ///////////////////////
 
-  glColor4f(1, 1, 1, 1);
-  glBegin(GL_LINES);
+  // glColor4f(1, 1, 1, 1);
+  // glBegin(GL_LINES);
   for (int i = 0; i < HUDSAMPS.size(); i++) {
     const auto& hs = HUDSAMPS[i];
     if (fpx >= R.X1 and fpx <= X2) {
-      glVertex3f(fpx, fpy, 0);
+      // glVertex3f(fpx, fpy, 0);
       fpx = fxb + hs._time * (fw / ktime);
 
       float fval = hs._value;
@@ -169,23 +169,23 @@ void DrawEnv(const ItemDrawReq& EDR) {
         fval = 0.5f + (fval * 0.5f);
       fpy = fyb - (fh * 0.5f) * fval;
 
-      glVertex3f(fpx, fpy, 0);
+      // glVertex3f(fpx, fpy, 0);
     }
   }
-  glEnd();
+  //  glEnd();
 
   ///////////////////////
   // natural env dB slopehull
   ///////////////////////
 
   if (useNENV) {
-    glColor4f(1, 0, 0, 1);
+    // glColor4f(1, 0, 0, 1);
     fpx = fxb;
     fpy = fyb;
-    glBegin(GL_LINES);
+    // glBegin(GL_LINES);
     for (int i = 0; i < HUDSAMPS.size(); i++) {
       const auto& hs = HUDSAMPS[i];
-      glVertex3f(fpx, fpy, 0);
+      // glVertex3f(fpx, fpy, 0);
 
       float val = hs._value;
       val       = 96.0 + linear_amp_ratio_to_decibel(val);
@@ -195,11 +195,11 @@ void DrawEnv(const ItemDrawReq& EDR) {
 
       fpx = fxb + hs._time * (fw / ktime);
       fpy = fyb - fh * val;
-      glVertex3f(fpx, fpy, 0);
+      // glVertex3f(fpx, fpy, 0);
     }
-    glEnd();
+    // glEnd();
   }
-  R.PopOrtho();
+  R.PopOrtho(context);
 
   /////////////////////////////////////////////////
 }

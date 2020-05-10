@@ -7,7 +7,7 @@ using namespace ork;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
 
-void Rect::PushOrtho() const {
+void Rect::PushOrtho(lev2::Context* context) const {
   // glMatrixMode(GL_PROJECTION);
   // glPushMatrix();
   // glLoadIdentity();
@@ -16,7 +16,7 @@ void Rect::PushOrtho() const {
   // glPushMatrix();
   // glLoadIdentity();
 }
-void Rect::PopOrtho() const {
+void Rect::PopOrtho(lev2::Context* context) const {
   // glMatrixMode(GL_MODELVIEW);
   // glPopMatrix();
   // glMatrixMode(GL_PROJECTION);
@@ -189,7 +189,7 @@ void synth::onDrawHudPage2(lev2::Context* context, float width, float height) {
         R.Y1      = envh * E._index;
         EDR._data = E;
         EDR.ienv  = E._index;
-        DrawEnv(EDR);
+        DrawEnv(context, EDR);
       } else if (auto as_asr = item.TryAs<asrframe>()) {
         auto A    = as_asr.value();
         R.X1      = envX;
@@ -198,7 +198,7 @@ void synth::onDrawHudPage2(lev2::Context* context, float width, float height) {
         R.Y1      = envh * (3 + A._index);
         EDR._data = A;
         EDR.ienv  = A._index;
-        DrawAsr(EDR);
+        DrawAsr(context, EDR);
       } else if (auto as_lfo = item.TryAs<lfoframe>()) {
         auto L    = as_lfo.value();
         R.X1      = funX;
@@ -207,7 +207,7 @@ void synth::onDrawHudPage2(lev2::Context* context, float width, float height) {
         R.Y1      = fh * L._index;
         EDR._data = L;
         EDR.ienv  = L._index;
-        DrawLfo(EDR);
+        DrawLfo(context, EDR);
       } else if (auto as_fun = item.TryAs<funframe>()) {
         auto F    = as_fun.value();
         R.X1      = funX;
@@ -216,7 +216,7 @@ void synth::onDrawHudPage2(lev2::Context* context, float width, float height) {
         R.Y1      = fh * (F._index + 2);
         EDR._data = F;
         EDR.ienv  = F._index;
-        DrawFun(EDR);
+        DrawFun(context, EDR);
       }
     }
   }
@@ -224,7 +224,7 @@ void synth::onDrawHudPage2(lev2::Context* context, float width, float height) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawBorder(int X1, int Y1, int X2, int Y2, int color) {
+void DrawBorder(lev2::Context* context, int X1, int Y1, int X2, int Y2, int color) {
   switch (color) {
     case 0:
       // glColor4f(0.6, 0.3, 0.6, 1);
@@ -448,8 +448,8 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
 
   //////////////////////////////
 
-  DrawBorder(OSC_X1, OSC_Y1, OSC_X2, OSC_Y2);
-  DrawBorder(ANA_X1, ANA_Y1, ANA_X2, ANA_Y2);
+  DrawBorder(context, OSC_X1, OSC_Y1, OSC_X2, OSC_Y2);
+  DrawBorder(context, ANA_X1, ANA_Y1, ANA_X2, ANA_Y2);
 
   MTXI->PopUIMatrix();
 
@@ -685,7 +685,7 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
     if (blk)
       color = brect.enabled ? 0 : 1;
 
-    DrawBorder(xb, brect.y1, xb + dspw, brect.y2, color);
+    DrawBorder(context, xb, brect.y1, xb + dspw, brect.y2, color);
 
     yb = brect.y2;
   }

@@ -4,7 +4,7 @@
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawAsr(const ItemDrawReq& EDR) {
+void DrawAsr(lev2::Context* context, const ItemDrawReq& EDR) {
   const auto& R = EDR.rect;
   float X2      = R.X1 + R.W;
   float Y2      = R.Y1 + R.H;
@@ -90,13 +90,13 @@ void DrawAsr(const ItemDrawReq& EDR) {
   float fpx = fxb;
   float fpy = fyb;
 
-  R.PushOrtho();
+  R.PushOrtho(context);
 
   ///////////////////////
   // draw border
   ///////////////////////
 
-  DrawBorder(R.X1, R.Y1, X2, Y2);
+  DrawBorder(context, R.X1, R.Y1, X2, Y2);
 
   const float ktime = 20.0f;
 
@@ -107,23 +107,23 @@ void DrawAsr(const ItemDrawReq& EDR) {
   // from hud samples
   ///////////////////////
 
-  glColor4f(1, 1, 1, 1);
-  glBegin(GL_LINES);
+  // glColor4f(1, 1, 1, 1);
+  // glBegin(GL_LINES);
   for (int i = 0; i < HUDSAMPS.size(); i++) {
     const auto& hs = HUDSAMPS[i];
     if (fpx >= R.X1 and fpx <= X2) {
-      glVertex3f(fpx, fpy, 0);
+      // glVertex3f(fpx, fpy, 0);
       fpx = fxb + hs._time * (fw / ktime);
 
       float fval = hs._value;
       fpy        = fyb - (fh * 0.5f) * fval;
 
-      glVertex3f(fpx, fpy, 0);
+      // glVertex3f(fpx, fpy, 0);
     }
   }
-  glEnd();
+  // glEnd();
 
-  R.PopOrtho();
+  R.PopOrtho(context);
 
   /////////////////////////////////////////////////
 }

@@ -3,7 +3,7 @@
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawLfo(const ItemDrawReq& EDR) {
+void DrawLfo(lev2::Context* context, const ItemDrawReq& EDR) {
   const auto& R = EDR.rect;
   float X2      = R.X1 + R.W;
   float Y2      = R.Y1 + R.H;
@@ -76,7 +76,7 @@ void DrawLfo(const ItemDrawReq& EDR) {
 
   ///////////////////////
 
-  R.PushOrtho();
+  R.PushOrtho(context);
 
   ///////////////////////
   // draw border, grid, origin
@@ -86,20 +86,20 @@ void DrawLfo(const ItemDrawReq& EDR) {
   float x1  = fxb;
   float x2  = x1 + fw;
 
-  DrawBorder(R.X1, R.Y1, X2, Y2);
+  DrawBorder(context, R.X1, R.Y1, X2, Y2);
 
-  glColor4f(.5, .2, .5, 1);
-  glBegin(GL_LINES);
-  glVertex3f(x1, fyc, 0);
-  glVertex3f(x2, fyc, 0);
-  glEnd();
+  // glColor4f(.5, .2, .5, 1);
+  // glBegin(GL_LINES);
+  // glVertex3f(x1, fyc, 0);
+  // glVertex3f(x2, fyc, 0);
+  // glEnd();
 
   ///////////////////////
   // from hud samples
   ///////////////////////
 
-  glColor4f(0.5, 0.7, 0.7, 1);
-  glBegin(GL_LINES);
+  // glColor4f(0.5, 0.7, 0.7, 1);
+  // glBegin(GL_LINES);
   float fpy = fyc;
   if (HUDSAMPS.size()) {
     const auto& HS0 = HUDSAMPS[0];
@@ -110,20 +110,20 @@ void DrawLfo(const ItemDrawReq& EDR) {
     for (int i = 0; i < HUDSAMPS.size(); i++) {
       const auto& hs = HUDSAMPS[i];
       if (fpx >= R.X1 and fpx <= X2) {
-        glVertex3f(fpx, fpy, 0);
+        // glVertex3f(fpx, fpy, 0);
         float t = hs._time - ftimebase;
         fpx     = fxb + t * (fw / ktime);
 
         float fval = hs._value;
         fpy        = fyc - fval * 100.0f;
 
-        glVertex3f(fpx, fpy, 0);
+        // glVertex3f(fpx, fpy, 0);
       }
     }
   }
-  glEnd();
+  // glEnd();
 
-  R.PopOrtho();
+  R.PopOrtho(context);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

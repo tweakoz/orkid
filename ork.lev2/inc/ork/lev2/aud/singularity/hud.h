@@ -6,9 +6,6 @@
 #include <assert.h>
 #include <unistd.h>
 #include <math.h>
-#include <GLFW/glfw3.h>
-
-//#include "drawtext.h"
 
 #include "krzdata.h"
 #include "synth.h"
@@ -31,8 +28,8 @@ struct Rect {
   int VPW;
   int VPH;
 
-  void PushOrtho() const;
-  void PopOrtho() const;
+  void PushOrtho(lev2::Context* context) const;
+  void PopOrtho(lev2::Context* context) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -61,11 +58,11 @@ struct Op4DrawReq {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawEnv(const ItemDrawReq& EDR);
-void DrawAsr(const ItemDrawReq& EDR);
-void DrawLfo(const ItemDrawReq& EDR);
-void DrawFun(const ItemDrawReq& EDR);
-void DrawOp4(const Op4DrawReq& OPR);
+void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR);
+void DrawAsr(lev2::Context* context, const ItemDrawReq& EDR);
+void DrawLfo(lev2::Context* context, const ItemDrawReq& EDR);
+void DrawFun(lev2::Context* context, const ItemDrawReq& EDR);
+void DrawOp4(lev2::Context* context, const Op4DrawReq& OPR);
 float FUNH(float vpw, float vph);
 float FUNW(float vpw, float vph);
 float FUNX(float vpw, float vph);
@@ -74,7 +71,7 @@ float ENVH(float vpw, float vph);
 float ENVX(float vpw, float vph);
 float DSPW(float vpw, float vph);
 float DSPX(float vpw, float vph);
-void DrawBorder(int X1, int Y1, int X2, int Y2, int color = 0);
+void DrawBorder(lev2::Context* context, int X1, int Y1, int X2, int Y2, int color = 0);
 
 ///////////////////////////////////////////////////////////////////////////////
 
