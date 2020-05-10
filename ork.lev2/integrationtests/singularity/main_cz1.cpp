@@ -55,29 +55,27 @@ int main(int argc, char** argv) {
     auto context        = drwev->GetTarget();
     auto fbi            = context->FBI(); // FrameBufferInterface
     auto fxi            = context->FXI(); // FX Interface
-    float r             = float(rand() % 256) / 255.0f;
-    float g             = float(rand() % 256) / 255.0f;
-    float b             = float(rand() % 256) / 255.0f;
     int TARGW           = context->mainSurfaceWidth();
     int TARGH           = context->mainSurfaceHeight();
     const SRect tgtrect = SRect(0, 0, TARGW, TARGH);
 
-    fbi->SetClearColor(fvec4(r, g, b, 1));
+    fbi->SetClearColor(fvec4(0.3, 0.0, 0.1, 1));
+    ////////////////////////////////////////////////////
+    // draw the synth HUD
+    ////////////////////////////////////////////////////
     context->beginFrame();
-    RenderContextFrameData RCFD(context);
-    material.begin(fxtechnique, RCFD);
-    material.bindParamMatrix(fxparameterMVP, fmtx4::Identity());
-    material.bindParamVec4(fxparameterMODC, fvec4::Red());
-    gfxwin->Render2dQuadEML(fvec4(-0.5, -0.5, 1, 1), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
-    material.end(RCFD);
+    the_synth->onDrawHud(context, TARGW, TARGH);
     context->endFrame();
+    ////////////////////////////////////////////////////
   });
   //////////////////////////////////////////////////////////
-  qtapp->onResize([&](int w, int h) { printf("GOTRESIZE<%d %d>\n", w, h); });
+  qtapp->onResize([&](int w, int h) { //
+    printf("GOTRESIZE<%d %d>\n", w, h);
+  });
   //////////////////////////////////////////////////////////
   qtapp->onUiEvent([&](ui::event_constptr_t ev) -> ui::HandlerResult {
     switch (ev->mEventCode) {
-      case ui::UIEV_DOUBLECLICK:
+      case ui::UIEV_PUSH:
         OrkAssert(false);
         break;
       default:
@@ -87,10 +85,10 @@ int main(int argc, char** argv) {
     return rval;
   });
   //////////////////////////////////////////////////////////////////////////////
-  auto add_event = [&](const programData* prog, //
-                       float time,
-                       float duration,
-                       int midinote) {
+  auto enqueue_audio_event = [&](const programData* prog, //
+                                 float time,
+                                 float duration,
+                                 int midinote) {
     the_synth->addEvent(time, [=]() {
       // NOTE ON
       auto noteinstance = the_synth->keyOn(midinote, prog);
@@ -107,7 +105,7 @@ int main(int argc, char** argv) {
     czdata->loadBank(basepath / "edit.syx", "bank1");
     for (int i = 0; i < 2; i++) {
       auto prg = czdata->getProgram(0);
-      add_event(prg, float(0) * 2, 4.0, 36 + i * 12);
+      enqueue_audio_event(prg, float(0) * 2, 4.0, 36 + i * 12);
     }
   } else {
     czdata->loadBank(basepath / "factoryA.bnk", "bank1");
@@ -115,7 +113,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < 64; i++) { // 2 32 patch banks
       auto prg = czdata->getProgram(i);
       printf("i<%d> prg<%p>\n", i, prg);
-      add_event(prg, float(i) * 0.5, 1.0, 36);
+      enqueue_audio_event(prg, float(i) * 0.5, 1.0, 36);
     }
   }
   //////////////////////////////////////////////////////////////////////////////

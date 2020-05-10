@@ -486,29 +486,6 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 static int width = 0;
 static int height = 0;
 
-void drawtext( const std::string& str, float x, float y, float scale, float r, float g, float b )
-{
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-    glOrtho(0,width,height,0,0,1);
-
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
-    glTranslatef(x,y, 0);
-    glScalef(scale,-scale,1);
-
-    glColor4f(r,g,b,1);
-    dtx_string(str.c_str());
-
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
-}
-
 void runUI()
 {
     GLFWwindow* window;

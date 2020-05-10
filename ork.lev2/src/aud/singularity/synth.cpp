@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <math.h>
 #include <GLFW/glfw3.h>
-//#include "drawtext.h"
 
 #include <ork/lev2/aud/singularity/krzdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
@@ -22,12 +21,6 @@ programInst::programInst(synth& syn)
 
 programInst::~programInst() {
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-// void programInst::compute()
-//{
-//}
 
 ///////////////////////////////////////////////////////////////////////////////
 
