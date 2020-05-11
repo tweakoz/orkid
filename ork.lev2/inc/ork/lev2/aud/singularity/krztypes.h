@@ -27,7 +27,7 @@ typedef std::function<void()> void_lamda_t;
 ///////////////////////////////////////////////////////////////////////////////
 struct programData;
 struct layerData;
-struct keymap;
+struct KeyMap;
 struct kmregion;
 struct sample;
 struct multisample;
@@ -49,6 +49,8 @@ struct KrzTestData;
 struct KrzKmTestData;
 struct CzProgData;
 ///////////////////////////////////////////////////////////////////////////////
+using keymap_ptr_t           = std::shared_ptr<KeyMap>;
+using keymap_constptr_t      = std::shared_ptr<const KeyMap>;
 using dspblkdata_ptr_t       = std::shared_ptr<DspBlockData>;
 using lyrdata_ptr_t          = std::shared_ptr<layerData>;
 using lyrdata_constptr_t     = std::shared_ptr<const layerData>;

@@ -161,7 +161,7 @@ struct kmregion {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct keymap {
+struct KeyMap {
   std::string _name;
   std::vector<kmregion*> _regions;
   int _kmID;
@@ -206,7 +206,7 @@ struct BlockModulationData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct KmpBlockData {
-  const keymap* _keymap;
+  const KeyMap* _keymap;
   int _transpose   = 0;
   float _keyTrack  = 100.0f;
   float _velTrack  = 0.0f;
@@ -292,7 +292,7 @@ struct layerData {
 
   dspblkdata_ptr_t appendDspBlock();
 
-  const keymap* _keymap   = nullptr;
+  const KeyMap* _keymap   = nullptr;
   int _numdspblocks       = 0;
   int _loKey              = 0;
   int _hiKey              = 127;
@@ -374,7 +374,7 @@ struct Tx81zData : public SynthData {
     return nullptr;
   }
   VastObjectsDB* _zpmDB;
-  keymap* _zpmKM;
+  KeyMap* _zpmKM;
   int _lastprg;
 };
 
@@ -390,7 +390,7 @@ struct CzData : public SynthData {
     return nullptr;
   }
   VastObjectsDB* _zpmDB;
-  keymap* _zpmKM;
+  KeyMap* _zpmKM;
   int _lastprg;
 };
 

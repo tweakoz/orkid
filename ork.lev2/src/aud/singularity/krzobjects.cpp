@@ -158,8 +158,8 @@ ork::svar16_t DspBlockData::getExtData(const std::string& name) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-keymap* VastObjectsDB::parseKeymap(int kmid, const Value& jsonobj) {
-  auto kmapout = new keymap;
+KeyMap* VastObjectsDB::parseKeymap(int kmid, const Value& jsonobj) {
+  auto kmapout = new KeyMap;
 
   kmapout->_kmID = kmid;
   kmapout->_name = jsonobj["Keymap"].GetString();
@@ -920,7 +920,7 @@ void VastObjectsDB::loadJson(const std::string& fname, int ibaseid) {
   }
   for (auto it : _tempkeymaps) {
     int objid               = it.first;
-    keymap* km              = it.second;
+    KeyMap* km              = it.second;
     objmap->_keymaps[objid] = km;
     for (auto kr : km->_regions) {
       int msid  = kr->_multsampID;
@@ -978,8 +978,8 @@ const programData* VastObjectsDB::findProgramByName(const std::string named) con
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const keymap* VastObjectsDB::findKeymap(int kmID) const {
-  keymap* kd = nullptr;
+const KeyMap* VastObjectsDB::findKeymap(int kmID) const {
+  KeyMap* kd = nullptr;
   auto it    = _keymaps.find(kmID);
   if (it != _keymaps.end())
     kd = it->second;

@@ -458,7 +458,7 @@ CzData::CzData(synth* syn)
     : SynthData(syn)
     , _lastprg(0) {
   _zpmDB              = new VastObjectsDB;
-  _zpmKM              = new keymap;
+  _zpmKM              = new KeyMap;
   _zpmKM->_name       = "CZX";
   _zpmKM->_kmID       = 1;
   _zpmDB->_keymaps[1] = _zpmKM;

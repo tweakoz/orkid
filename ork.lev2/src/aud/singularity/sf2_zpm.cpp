@@ -114,7 +114,7 @@ void SoundFont::genZpmDB() {
    //////////////////////
 
    //std::map<int,multisample*> zpm_multisamples;
-   //std::map<int,keymap*> zpm_keymaps;
+   //std::map<int,KeyMap*> zpm_keymaps;
 
    for( int i=0; i<numinst; i++ )
    {
@@ -126,7 +126,7 @@ void SoundFont::genZpmDB() {
       zpm_ms->_name = inst->mName;
       zpm_ms->_objid = i;
 
-      auto zpm_km = new keymap;
+      auto zpm_km = new KeyMap;
       zpm_km->_name = inst->mName;
       zpm_km->_kmID = i;
       _zpmDB->_keymaps[i] = zpm_km;

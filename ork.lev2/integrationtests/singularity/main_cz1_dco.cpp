@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   auto program = std::make_shared<programData>();
   auto czdata  = std::make_shared<CzProgData>();
-  auto zpmKM   = std::make_shared<keymap>();
+  auto keymap  = std::make_shared<KeyMap>();
   auto CB0     = std::make_shared<controlBlockData>();
   auto AE      = std::make_shared<RateLevelEnvData>();
   //////////////////////////////////////
@@ -22,17 +22,17 @@ int main(int argc, char** argv) {
   program->_role = "czx";
   program->_name = "test";
   czdata->_name  = "test";
-  zpmKM->_name   = "CZX";
-  zpmKM->_kmID   = 1;
-  //_zpmDB->_keymaps[1] = zpmKM;
+  keymap->_name  = "CZX";
+  keymap->_kmID  = 1;
+  //_zpmDB->_keymaps[1] = keymap;
   //////////////////////////////////////
   // create layer
   //////////////////////////////////////
   auto layerdat                     = program->newLayer();
   layerdat->_algData._algID         = 1;
   layerdat->_algData._name          = "ALG1";
-  layerdat->_keymap                 = zpmKM.get();
-  layerdat->_kmpBlock._keymap       = zpmKM.get();
+  layerdat->_keymap                 = keymap.get();
+  layerdat->_kmpBlock._keymap       = keymap.get();
   layerdat->_ctrlBlocks[0]          = CB0.get();
   layerdat->_envCtrlData._useNatEnv = false;
   //////////////////////////////////////

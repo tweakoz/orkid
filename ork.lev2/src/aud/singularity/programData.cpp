@@ -24,7 +24,7 @@ bool RateLevelEnvData::isBiPolar() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-kmregion* keymap::getRegion(int note, int vel) const {
+kmregion* KeyMap::getRegion(int note, int vel) const {
   int k2vel = vel / 18; // map 0..127 -> 0..7
 
   for (auto r : _regions) {
