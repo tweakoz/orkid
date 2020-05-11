@@ -18,16 +18,12 @@ extern synth* the_synth;
 ///////////////////////////////////////////////////////////////////////////////
 
 Alg::Alg(const AlgData& algd)
-    : _algConfig(algd._config)
-    , _blockBuf(nullptr) {
+    : _algConfig(algd._config) {
   for (int i = 0; i < kmaxdspblocksperlayer; i++)
     _block[i] = nullptr;
-
-  _blockBuf = new DspBuffer;
 }
 
 Alg::~Alg() {
-  delete _blockBuf;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -71,26 +67,26 @@ void Alg::keyOn(DspKeyOnInfo& koi) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Alg::intoDspBuf(const outputBuffer& obuf, DspBuffer& dspbuf) {
+void Alg::intoDspBuf(const outputBuffer& obuf) {
   int inumframes = obuf._numframes;
-  _blockBuf->resize(inumframes);
+  _layer->_dspbuffer->resize(inumframes);
   float* lefbuf = obuf._leftBuffer;
   float* rhtbuf = obuf._rightBuffer;
-  float* uprbuf = _blockBuf->channel(0);
-  float* lwrbuf = _blockBuf->channel(1);
+  float* uprbuf = _layer->_dspbuffer->channel(0);
+  float* lwrbuf = _layer->_dspbuffer->channel(1);
   memcpy(uprbuf, lefbuf, inumframes * 4);
   memcpy(lwrbuf, lefbuf, inumframes * 4);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Alg::intoOutBuf(outputBuffer& obuf, const DspBuffer& dspbuf, int inumo) {
+void Alg::intoOutBuf(outputBuffer& obuf, int inumo) {
   int inumframes = obuf._numframes;
-  _blockBuf->resize(inumframes);
+  _layer->_dspbuffer->resize(inumframes);
   float* lefbuf = obuf._leftBuffer;
   float* rhtbuf = obuf._rightBuffer;
-  float* uprbuf = _blockBuf->channel(0);
-  float* lwrbuf = _blockBuf->channel(1);
+  float* uprbuf = _layer->_dspbuffer->channel(0);
+  float* lwrbuf = _layer->_dspbuffer->channel(1);
   memcpy(lefbuf, uprbuf, inumframes * 4);
   memcpy(rhtbuf, lwrbuf, inumframes * 4);
 }
@@ -98,7 +94,8 @@ void Alg::intoOutBuf(outputBuffer& obuf, const DspBuffer& dspbuf, int inumo) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Alg::compute(synth& syn, outputBuffer& obuf) {
-  intoDspBuf(obuf, *_blockBuf);
+  intoDspBuf(obuf);
+  auto dspbuf = _layer->_dspbuffer;
 
   bool touched = false;
 
@@ -109,14 +106,14 @@ void Alg::compute(synth& syn, outputBuffer& obuf) {
     if (b) {
       bool ena = syn._fblockEnable[i];
       if (ena) {
-        b->compute(*_blockBuf);
+        b->compute(*dspbuf.get());
         inumoutputs = b->numOutputs();
         touched     = true;
       }
     }
   }
 
-  intoOutBuf(obuf, *_blockBuf, inumoutputs);
+  intoOutBuf(obuf, inumoutputs);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

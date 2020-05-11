@@ -6,6 +6,7 @@ from ork.wget import batch_wget
 from yarl import URL
 ################################################################################
 dest_path = path.stage()/"share"/"singularity"
+base_manuals = URL("http://www.synthmanuals.com/manuals")
 ################################################################################
 ensureDirectoryExists(dest_path)
 ################################################################################
@@ -21,7 +22,7 @@ batch_wget({
 })
 ################################################################################
 base_casioCZ = URL("http://cd.textfiles.com/10000soundssongs/SYNTHDAT/CASIO")
-base_casioManuals = URL("http://www.synthmanuals.com/manuals/casio")
+base_casioManuals = base_manuals/"casio"
 ensureDirectoryExists(dest_path/"casioCZ")
 batch_wget({
  base_casioCZ/"FACTRYA.BNK": (dest_path/"casioCZ"/"factoryA.bnk","25e5a50fcaea8ce351a59d67d91c6284"),
@@ -49,18 +50,23 @@ batch_wget({
  base_soundfont/"Cadenza.syx": (dest_path/"soundfont"/"cadenza.syx","d41d8cd98f00b204e9800998ecf8427e"),
 })
 ################################################################################
+base_k2000man = base_manuals/"kurzweil"/"k2000"
 base_kurzweil = URL("https://media.sweetwater.com/k2000/ftp-files/files")
+dest_kurzweil = dest_path/"kurzweil"
 ensureDirectoryExists(dest_path/"kurzweil")
+
 batch_wget({
- base_kurzweil/"bigbells.krz": (dest_path/"kurzweil"/"bigbells.krz","31a1c64fe54d5a163e6af13ec80376e3"),
- base_kurzweil/"akaifunk.krz": (dest_path/"kurzweil"/"akaifunk.krz","1a2e0c78ec392e19bde0bb8ea942829d"),
- base_kurzweil/"drpad.krz": (dest_path/"kurzweil"/"drpad.krz","b92d808aecd754ca031447ba8e08fe16"),
- base_kurzweil/"alesisdr.krz": (dest_path/"kurzweil"/"alesisdr.krz","72fdb9e33845d82a14712ff6557d4ac3"),
- base_kurzweil/"emusp12.krz": (dest_path/"kurzweil"/"emusp12.krz","4fec33aeb21fac6e0c1eba4404954c30"),
- base_kurzweil/"m1drums.krz": (dest_path/"kurzweil"/"m1drums.krz","f41adb23cbe5a5d08675b09cd32d4c2a"),
- base_kurzweil/"m1univrs.krz": (dest_path/"kurzweil"/"m1univrs.krz","d4e721bc511d56395f4bc10849209b99"),
- base_kurzweil/"cp70.krz": (dest_path/"kurzweil"/"cp70.krz","ddd309fa9a11aef6b640372ea87df1ba"),
- base_kurzweil/"epsstrng.krz": (dest_path/"kurzweil"/"epsstrng.krz","145d5fb10e347f4ba92f5291a8850c69"),
- base_kurzweil/"monksvox.kr1.krz": (dest_path/"kurzweil"/"monksvox.kr1.krz","9fd7144603a2aa3eb98c60a29dcb4790"),
- base_kurzweil/"monksvox.kr2.krz": (dest_path/"kurzweil"/"monksvox.kr2.krz","e9a0befc2b63dfd6edf5cd5eea889010"),
+ base_kurzweil/"bigbells.krz": (dest_kurzweil/"bigbells.krz","31a1c64fe54d5a163e6af13ec80376e3"),
+ base_kurzweil/"akaifunk.krz": (dest_kurzweil/"akaifunk.krz","1a2e0c78ec392e19bde0bb8ea942829d"),
+ base_kurzweil/"drpad.krz": (dest_kurzweil/"drpad.krz","b92d808aecd754ca031447ba8e08fe16"),
+ base_kurzweil/"alesisdr.krz": (dest_kurzweil/"alesisdr.krz","72fdb9e33845d82a14712ff6557d4ac3"),
+ base_kurzweil/"emusp12.krz": (dest_kurzweil/"emusp12.krz","4fec33aeb21fac6e0c1eba4404954c30"),
+ base_kurzweil/"m1drums.krz": (dest_kurzweil/"m1drums.krz","f41adb23cbe5a5d08675b09cd32d4c2a"),
+ base_kurzweil/"m1univrs.krz": (dest_kurzweil/"m1univrs.krz","d4e721bc511d56395f4bc10849209b99"),
+ base_kurzweil/"cp70.krz": (dest_kurzweil/"cp70.krz","ddd309fa9a11aef6b640372ea87df1ba"),
+ base_kurzweil/"epsstrng.krz": (dest_kurzweil/"epsstrng.krz","145d5fb10e347f4ba92f5291a8850c69"),
+ base_kurzweil/"monksvox.kr1.krz": (dest_kurzweil/"monksvox.kr1.krz","9fd7144603a2aa3eb98c60a29dcb4790"),
+ base_kurzweil/"monksvox.kr2.krz": (dest_kurzweil/"monksvox.kr2.krz","e9a0befc2b63dfd6edf5cd5eea889010"),
+ base_k2000man/"k2vx_reference_guide"/"k2vx.pdf": (dest_kurzweil/"k2vx.pdf","bd129f4b014c7a596420fe2ce9efb73c"),
+ base_k2000man/"series_musicians_guide"/"k2000_series_musicians_guide.pdf": (dest_kurzweil/"k2000_series_musicians_guide.pdf","5814572ea8f5e8492e128dac08feea66"),
 })

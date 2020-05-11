@@ -51,20 +51,22 @@ struct hudaframe {
   op4frame _op4frame[4];
 };
 struct hudkframe {
-  int _note                   = 0;
-  int _vel                    = 0;
-  int _layerIndex             = -1;
+  int _note                     = 0;
+  int _vel                      = 0;
+  int _layerIndex               = -1;
   lyrdata_constptr_t _layerdata = nullptr;
-  const kmregion* _kmregion   = nullptr;
-  Alg* _alg                   = nullptr;
-  bool _useFm4                = false;
+  const kmregion* _kmregion     = nullptr;
+  Alg* _alg                     = nullptr;
+  bool _useFm4                  = false;
 
   std::string _miscText;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+constexpr int KPARALLELBLOCKMAX = 4; // max number of parallel blocks per layer
 
 struct layer {
+
   layer(synth& syn);
   ~layer();
 
@@ -116,6 +118,7 @@ struct layer {
   Alg* _alg;
 
   outputBuffer _layerObuf;
+  dspbuf_ptr_t _dspbuffer;
 
   hudkframe _HKF;
   hudaframe _HAF;

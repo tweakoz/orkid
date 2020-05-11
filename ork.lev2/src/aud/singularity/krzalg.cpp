@@ -17,12 +17,12 @@ const std::map<int, AlgConfig>& KrzAlgMap() {
   static std::map<int, AlgConfig> algmap;
   if (ginit) {
     ginit = false;
-    // KRZ1
+    // KRZ1 (PCH->DSP3->AMP->MONO)
     algmap[1]._ioMasks[0]._inputMask = 0;
-    // KRZ2
+    // KRZ2 (PCH->DSP2->DSP1->PANNER->AMP->STEREO)
     algmap[2]._ioMasks[3]._outputMask = kmaskBOTH;
     algmap[2]._ioMasks[4]             = IoMask(kmaskBOTH, kmaskBOTH);
-    // KRZ3
+    // KRZ3 (PCH->DSP2->DSP1->PANNER->AMP->STEREO)
     algmap[3]._ioMasks[3] = IoMask(kmaskBOTH, kmaskBOTH);
     // KRZ4
     algmap[4]._ioMasks[0]._inputMask = 0;

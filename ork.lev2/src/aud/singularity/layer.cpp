@@ -25,6 +25,7 @@ layer::layer(synth& syn)
     , _keepalive(0)
     , _AENV(nullptr) {
   // printf( "Layer Init<%p>\n", this );
+  _dspbuffer = std::make_shared<DspBuffer>();
 }
 
 layer::~layer() {

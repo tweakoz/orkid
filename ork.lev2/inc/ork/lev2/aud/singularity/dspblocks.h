@@ -16,54 +16,55 @@ struct DspBlock;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct DspBuffer
-{
-    DspBuffer();
-    void resize(int inumframes);
+struct DspBuffer {
+  DspBuffer();
+  void resize(int inumframes);
 
-    float* channel(int ich);
+  float* channel(int ich);
 
-    int _maxframes;
-    int _numframes;
+  int _maxframes;
+  int _numframes;
+
 private:
-    static const int kmaxchans = 4;
-    float* _channels[kmaxchans];
-
+  static const int kmaxchans = 4;
+  float* _channels[kmaxchans];
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct DspBlock
-{
-    DspBlock(const DspBlockData& dbd);
-    virtual ~DspBlock() {}
+struct DspBlock {
+  DspBlock(const DspBlockData& dbd);
+  virtual ~DspBlock() {
+  }
 
-    void keyOn(const DspKeyOnInfo& koi);
-    void keyOff(layer*l);
+  void keyOn(const DspKeyOnInfo& koi);
+  void keyOff(layer* l);
 
-    virtual void compute(DspBuffer& dspbuf) = 0;
+  virtual void compute(DspBuffer& dspbuf) = 0;
 
-    virtual void doKeyOn(const DspKeyOnInfo& koi) {}
-    virtual void doKeyOff() {}
+  virtual void doKeyOn(const DspKeyOnInfo& koi) {
+  }
+  virtual void doKeyOff() {
+  }
 
-    float* getInpBuf1(DspBuffer& dspbuf);
-    float* getOutBuf1(DspBuffer& dspbuf);
+  float* getInpBuf1(DspBuffer& dspbuf);
+  float* getOutBuf1(DspBuffer& dspbuf);
 
-    FPARAM initFPARAM(const DspParamData& dpd);
+  FPARAM initFPARAM(const DspParamData& dpd);
 
-    void output1(DspBuffer& dspbuf,int index,float val);
+  void output1(DspBuffer& dspbuf, int index, float val);
 
-    const DspBlockData _dbd;
-    int _baseIndex = -1;
-    int _numParams;
-    int numOutputs() const;
-    int numInputs() const;
-    layer* _layer = nullptr;
+  const DspBlockData _dbd;
+  int _baseIndex = -1;
+  int _numParams;
+  int numOutputs() const;
+  int numInputs() const;
+  layer* _layer = nullptr;
 
-    float _fval[kmaxparmperblock];
-    FPARAM _param[kmaxparmperblock];
+  float _fval[kmaxparmperblock];
+  FPARAM _param[kmaxparmperblock];
 
-    IoMask _iomask;
+  IoMask _iomask;
 };
 
-} //namespace ork::audio::singularity {
+} // namespace ork::audio::singularity

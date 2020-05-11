@@ -23,15 +23,14 @@ struct Alg final {
   void compute(synth& syn, outputBuffer& obuf);
 
   virtual void doKeyOn(DspKeyOnInfo& koi);
-  void intoDspBuf(const outputBuffer& obuf, DspBuffer& dspbuf);
-  void intoOutBuf(outputBuffer& obuf, const DspBuffer& dspbuf, int inumo);
+  void intoDspBuf(const outputBuffer& obuf);
+  void intoOutBuf(outputBuffer& obuf, int inumo);
   dspblk_ptr_t lastBlock() const;
 
   dspblk_ptr_t _block[kmaxdspblocksperlayer];
   AlgConfig _algConfig;
 
   layer* _layer;
-  DspBuffer* _blockBuf;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

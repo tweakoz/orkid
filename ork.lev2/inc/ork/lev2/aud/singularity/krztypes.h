@@ -40,6 +40,7 @@ struct VastObjectsDB;
 struct DspBlockData;
 struct DspBlock;
 struct FPARAM;
+struct DspBuffer;
 ///////////////////////////////////////////////////////////////////////////////
 struct SynthData;
 struct KrzSynthData;
@@ -53,6 +54,7 @@ struct CzProgData;
 using keymap_ptr_t           = std::shared_ptr<KeyMap>;
 using keymap_constptr_t      = std::shared_ptr<const KeyMap>;
 using dspblk_ptr_t           = std::shared_ptr<DspBlock>;
+using dspbuf_ptr_t           = std::shared_ptr<DspBuffer>;
 using dspblkdata_ptr_t       = std::shared_ptr<DspBlockData>;
 using lyrdata_ptr_t          = std::shared_ptr<LayerData>;
 using lyrdata_constptr_t     = std::shared_ptr<const LayerData>;
