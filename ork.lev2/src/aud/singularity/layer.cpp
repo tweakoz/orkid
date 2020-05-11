@@ -193,9 +193,11 @@ void layer::compute(outputBuffer& obuf) {
   ////////////////////////////////////////
 
   if (true) {
-    bool bypassDSP      = _syn._bypassDSP;
-    DspBlock* lastblock = _alg->lastBlock();
-    bool doBlockStereo  = bypassDSP ? false : lastblock ? (lastblock->numOutputs() == 2) : false;
+    bool bypassDSP     = _syn._bypassDSP;
+    auto lastblock     = _alg->lastBlock();
+    bool doBlockStereo = bypassDSP //
+                             ? false
+                             : lastblock ? (lastblock->numOutputs() == 2) : false;
 
     float synsr = _syn._sampleRate;
 

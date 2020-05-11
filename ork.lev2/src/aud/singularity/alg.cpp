@@ -11,7 +11,7 @@
 
 namespace ork::audio::singularity {
 
-DspBlock* createDspBlock(const DspBlockData& dbd);
+dspblk_ptr_t createDspBlock(const DspBlockData& dbd);
 
 extern synth* the_synth;
 
@@ -27,16 +27,12 @@ Alg::Alg(const AlgData& algd)
 }
 
 Alg::~Alg() {
-  for (int i = 0; i < kmaxdspblocksperlayer; i++)
-    if (_block[i])
-      delete _block[i];
-
   delete _blockBuf;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DspBlock* Alg::lastBlock() const {
+dspblk_ptr_t Alg::lastBlock() const {
   return nullptr; //
   /*    DspBlock* r = nullptr;
       for( int i=0; i<kmaxdspblocksperlayer; i++ )
@@ -132,7 +128,7 @@ void Alg::doKeyOn(DspKeyOnInfo& koi) {
   koi._prv = nullptr;
   _layer   = l;
 
-  auto procblock = [&koi](DspBlock* thisblock, layer* l) {
+  auto procblock = [&koi](dspblk_ptr_t thisblock, layer* l) {
     if (thisblock) {
       koi._prv = thisblock;
       thisblock->keyOn(koi);
@@ -178,145 +174,145 @@ struct NONE : public DspBlock {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DspBlock* createDspBlock(const DspBlockData& dbd) {
-  DspBlock* rval = nullptr;
+dspblk_ptr_t createDspBlock(const DspBlockData& dbd) {
+  dspblk_ptr_t rval;
 
   if (dbd._dspBlock == "NONE")
-    rval = new NONE(dbd);
+    rval = std::make_shared<NONE>(dbd);
 
   ////////////////////////
   // amp/mix
   ////////////////////////
 
   if (dbd._dspBlock == "XFADE")
-    rval = new XFADE(dbd);
+    rval = std::make_shared<XFADE>(dbd);
   if (dbd._dspBlock == "x GAIN")
-    rval = new XGAIN(dbd);
+    rval = std::make_shared<XGAIN>(dbd);
   if (dbd._dspBlock == "GAIN")
-    rval = new GAIN(dbd);
+    rval = std::make_shared<GAIN>(dbd);
   if (dbd._dspBlock == "AMP")
-    rval = new AMP(dbd);
+    rval = std::make_shared<AMP>(dbd);
   if (dbd._dspBlock == "+ AMP")
-    rval = new PLUSAMP(dbd);
+    rval = std::make_shared<PLUSAMP>(dbd);
   if (dbd._dspBlock == "x AMP")
-    rval = new XAMP(dbd);
+    rval = std::make_shared<XAMP>(dbd);
   if (dbd._dspBlock == "PANNER")
-    rval = new PANNER(dbd);
+    rval = std::make_shared<PANNER>(dbd);
   if (dbd._dspBlock == "AMP U   AMP L")
-    rval = new AMPU_AMPL(dbd);
+    rval = std::make_shared<AMPU_AMPL>(dbd);
   if (dbd._dspBlock == "! AMP")
-    rval = new BANGAMP(dbd);
+    rval = std::make_shared<BANGAMP>(dbd);
 
   ////////////////////////
   // osc/gen
   ////////////////////////
 
   if (dbd._dspBlock == "SAMPLEPB")
-    rval = new SAMPLEPB(dbd);
+    rval = std::make_shared<SAMPLEPB>(dbd);
   if (dbd._dspBlock == "SINE")
-    rval = new SINE(dbd);
+    rval = std::make_shared<SINE>(dbd);
   if (dbd._dspBlock == "LF SIN")
-    rval = new SINE(dbd);
+    rval = std::make_shared<SINE>(dbd);
   if (dbd._dspBlock == "SAW")
-    rval = new SAW(dbd);
+    rval = std::make_shared<SAW>(dbd);
   if (dbd._dspBlock == "SQUARE")
-    rval = new SQUARE(dbd);
+    rval = std::make_shared<SQUARE>(dbd);
   if (dbd._dspBlock == "SINE+")
-    rval = new SINEPLUS(dbd);
+    rval = std::make_shared<SINEPLUS>(dbd);
   if (dbd._dspBlock == "SAW+")
-    rval = new SAWPLUS(dbd);
+    rval = std::make_shared<SAWPLUS>(dbd);
   if (dbd._dspBlock == "SW+SHP")
-    rval = new SWPLUSSHP(dbd);
+    rval = std::make_shared<SWPLUSSHP>(dbd);
   if (dbd._dspBlock == "+ SHAPEMOD OSC")
-    rval = new PLUSSHAPEMODOSC(dbd);
+    rval = std::make_shared<PLUSSHAPEMODOSC>(dbd);
   if (dbd._dspBlock == "SHAPE MOD OSC")
-    rval = new SHAPEMODOSC(dbd);
+    rval = std::make_shared<SHAPEMODOSC>(dbd);
 
   if (dbd._dspBlock == "SYNC M")
-    rval = new SYNCM(dbd);
+    rval = std::make_shared<SYNCM>(dbd);
   if (dbd._dspBlock == "SYNC S")
-    rval = new SYNCS(dbd);
+    rval = std::make_shared<SYNCS>(dbd);
   if (dbd._dspBlock == "PWM")
-    rval = new PWM(dbd);
+    rval = std::make_shared<PWM>(dbd);
 
   if (dbd._dspBlock == "FM4")
-    rval = new FM4(dbd);
+    rval = std::make_shared<FM4>(dbd);
   if (dbd._dspBlock == "CZX")
-    rval = new CZX(dbd);
+    rval = std::make_shared<CZX>(dbd);
 
   if (dbd._dspBlock == "NOISE")
-    rval = new NOISE(dbd);
+    rval = std::make_shared<NOISE>(dbd);
 
   ////////////////////////
   // EQ
   ////////////////////////
 
   if (dbd._dspBlock == "PARA BASS")
-    rval = new PARABASS(dbd);
+    rval = std::make_shared<PARABASS>(dbd);
   if (dbd._dspBlock == "PARA MID")
-    rval = new PARAMID(dbd);
+    rval = std::make_shared<PARAMID>(dbd);
   if (dbd._dspBlock == "PARA TREBLE")
-    rval = new PARATREBLE(dbd);
+    rval = std::make_shared<PARATREBLE>(dbd);
   if (dbd._dspBlock == "PARAMETRIC EQ")
-    rval = new PARAMETRIC_EQ(dbd);
+    rval = std::make_shared<PARAMETRIC_EQ>(dbd);
 
   ////////////////////////
   // filter
   ////////////////////////
 
   if (dbd._dspBlock == "2POLE ALLPASS")
-    rval = new TWOPOLE_ALLPASS(dbd);
+    rval = std::make_shared<TWOPOLE_ALLPASS>(dbd);
   if (dbd._dspBlock == "2POLE LOWPASS")
-    rval = new TWOPOLE_LOWPASS(dbd);
+    rval = std::make_shared<TWOPOLE_LOWPASS>(dbd);
 
   if (dbd._dspBlock == "STEEP RESONANT BASS")
-    rval = new STEEP_RESONANT_BASS(dbd);
+    rval = std::make_shared<STEEP_RESONANT_BASS>(dbd);
   if (dbd._dspBlock == "4POLE LOPASS W/SEP")
-    rval = new FOURPOLE_LOPASS_W_SEP(dbd);
+    rval = std::make_shared<FOURPOLE_LOPASS_W_SEP>(dbd);
   if (dbd._dspBlock == "4POLE HIPASS W/SEP")
-    rval = new FOURPOLE_HIPASS_W_SEP(dbd);
+    rval = std::make_shared<FOURPOLE_HIPASS_W_SEP>(dbd);
   if (dbd._dspBlock == "NOTCH FILTER")
-    rval = new NOTCH_FILT(dbd);
+    rval = std::make_shared<NOTCH_FILT>(dbd);
   if (dbd._dspBlock == "NOTCH2")
-    rval = new NOTCH2(dbd);
+    rval = std::make_shared<NOTCH2>(dbd);
   if (dbd._dspBlock == "DOUBLE NOTCH W/SEP")
-    rval = new DOUBLE_NOTCH_W_SEP(dbd);
+    rval = std::make_shared<DOUBLE_NOTCH_W_SEP>(dbd);
   if (dbd._dspBlock == "BANDPASS FILT")
-    rval = new BANDPASS_FILT(dbd);
+    rval = std::make_shared<BANDPASS_FILT>(dbd);
   if (dbd._dspBlock == "BAND2")
-    rval = new BAND2(dbd);
+    rval = std::make_shared<BAND2>(dbd);
 
   if (dbd._dspBlock == "LOPAS2")
-    rval = new LOPAS2(dbd);
+    rval = std::make_shared<LOPAS2>(dbd);
   if (dbd._dspBlock == "LP2RES")
-    rval = new LP2RES(dbd);
+    rval = std::make_shared<LP2RES>(dbd);
   if (dbd._dspBlock == "LOPASS")
-    rval = new LOPASS(dbd);
+    rval = std::make_shared<LOPASS>(dbd);
   if (dbd._dspBlock == "LPCLIP")
-    rval = new LPCLIP(dbd);
+    rval = std::make_shared<LPCLIP>(dbd);
   if (dbd._dspBlock == "LPGATE")
-    rval = new LPGATE(dbd);
+    rval = std::make_shared<LPGATE>(dbd);
 
   if (dbd._dspBlock == "HIPASS")
-    rval = new HIPASS(dbd);
+    rval = std::make_shared<HIPASS>(dbd);
   if (dbd._dspBlock == "ALPASS")
-    rval = new ALPASS(dbd);
+    rval = std::make_shared<ALPASS>(dbd);
 
   if (dbd._dspBlock == "HIFREQ STIMULATOR")
-    rval = new HIFREQ_STIMULATOR(dbd);
+    rval = std::make_shared<HIFREQ_STIMULATOR>(dbd);
 
   ////////////////////////
   // nonlin
   ////////////////////////
 
   if (dbd._dspBlock == "SHAPER")
-    rval = new SHAPER(dbd);
+    rval = std::make_shared<SHAPER>(dbd);
   if (dbd._dspBlock == "2PARAM SHAPER")
-    rval = new TWOPARAM_SHAPER(dbd);
+    rval = std::make_shared<TWOPARAM_SHAPER>(dbd);
   if (dbd._dspBlock == "WRAP")
-    rval = new WRAP(dbd);
+    rval = std::make_shared<WRAP>(dbd);
   if (dbd._dspBlock == "DIST")
-    rval = new DIST(dbd);
+    rval = std::make_shared<DIST>(dbd);
 
   return rval;
 }

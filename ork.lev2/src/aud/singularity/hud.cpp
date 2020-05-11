@@ -596,10 +596,10 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
   int iblockID = 0;
 
   struct blockrect {
-    int y1             = 0;
-    int y2             = 0;
-    DspBlock* dspblock = nullptr;
-    bool enabled       = false;
+    int y1 = 0;
+    int y2 = 0;
+    dspblk_ptr_t dspblock;
+    bool enabled = false;
   };
 
   std::vector<blockrect> _blockrects;
