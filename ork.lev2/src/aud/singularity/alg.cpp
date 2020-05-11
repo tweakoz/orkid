@@ -54,7 +54,7 @@ void Alg::keyOn(DspKeyOnInfo& koi) {
   auto l = koi._layer;
   assert(l != nullptr);
 
-  const auto ld = l->_layerData;
+  const auto ld = l->_LayerData;
 
   for (int i = 0; i < kmaxdspblocksperlayer; i++) {
     const auto data = ld->_dspBlocks[i];

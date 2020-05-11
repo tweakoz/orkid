@@ -117,7 +117,7 @@ void AsrInst::compute(int inumfr) // final
 
 void AsrInst::keyOn(const KeyOnInfo& KOI) // final
 {
-  auto ld = KOI._layerData;
+  auto ld = KOI._LayerData;
 
   const auto& EC = ld->_envCtrlData;
   _atkAdjust     = EC._atkAdjust;
@@ -317,7 +317,7 @@ void RateLevelEnvInst::compute(int inumfr) // final
 void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI) {
   _layer = KOI._layer;
 
-  auto ld  = KOI._layerData;
+  auto ld  = KOI._LayerData;
   int ikey = KOI._key;
 
   const auto& EC  = ld->_envCtrlData;

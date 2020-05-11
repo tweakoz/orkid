@@ -279,8 +279,8 @@ struct controlBlockData {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct layerData {
-  layerData();
+struct LayerData {
+  LayerData();
 
   AlgData _algData;
 
@@ -313,11 +313,11 @@ struct layerData {
 struct programData {
   lyrdata_ptr_t newLayer();
   lyrdata_ptr_t getLayer(int i) const {
-    return _layerDatas[i];
+    return _LayerDatas[i];
   }
   std::string _name;
   std::string _role;
-  std::vector<lyrdata_ptr_t> _layerDatas;
+  std::vector<lyrdata_ptr_t> _LayerDatas;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

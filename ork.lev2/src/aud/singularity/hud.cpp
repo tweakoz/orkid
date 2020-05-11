@@ -201,12 +201,12 @@ void synth::onDrawHudPage1(Context* context, float width, float height) {
 void synth::onDrawHudPage2(Context* context, float width, float height) {
   auto hudl = _hudLayer;
 
-  if (false == (hudl && hudl->_layerData))
+  if (false == (hudl && hudl->_LayerData))
     return;
 
   std::lock_guard<std::mutex> lock(hudl->_mutex);
 
-  auto layd = _hudLayer->_layerData;
+  auto layd = _hudLayer->_LayerData;
 
   const hudaframe& HAF = _curhud_aframe;
 

@@ -147,7 +147,7 @@ void sampleOsc::keyOn(const DspKeyOnInfo& koi) {
 
   pbratio *= 0.5f;
 
-  lyrdata_constptr_t ld = _lyr->_layerData;
+  lyrdata_constptr_t ld = _lyr->_LayerData;
 
   if (nullptr == _sample) {
     printf("sampleOsc no sample!\n");
@@ -254,7 +254,7 @@ void sampleOsc::keyOff() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void sampleOsc::findRegion(const DspKeyOnInfo& koi) {
-  auto ld         = _lyr->_layerData;
+  auto ld         = _lyr->_LayerData;
   const auto& KMP = ld->_kmpBlock;
 
   auto PCHBLK = ld->_dspBlocks[0];

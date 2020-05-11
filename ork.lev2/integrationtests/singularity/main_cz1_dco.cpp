@@ -28,13 +28,13 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   // create layer
   //////////////////////////////////////
-  auto layerdat                     = program->newLayer();
-  layerdat->_algData._algID         = 1;
-  layerdat->_algData._name          = "ALG1";
-  layerdat->_keymap                 = keymap.get();
-  layerdat->_kmpBlock._keymap       = keymap.get();
-  layerdat->_ctrlBlocks[0]          = CB0.get();
-  layerdat->_envCtrlData._useNatEnv = false;
+  auto layerdata                     = program->newLayer();
+  layerdata->_algData._algID         = 1;
+  layerdata->_algData._name          = "ALG1";
+  layerdata->_keymap                 = keymap.get();
+  layerdata->_kmpBlock._keymap       = keymap.get();
+  layerdata->_ctrlBlocks[0]          = CB0.get();
+  layerdata->_envCtrlData._useNatEnv = false;
   //////////////////////////////////////
   // set envelope
   //////////////////////////////////////
@@ -51,8 +51,8 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   // setup dsp graph
   //////////////////////////////////////
-  auto osc = layerdat->appendDspBlock();
-  auto amp = layerdat->appendDspBlock();
+  auto osc = layerdata->appendDspBlock();
+  auto amp = layerdata->appendDspBlock();
   CZX::initBlock(osc, czdata);
   AMP::initBlock(amp);
   //////////////////////////////////////

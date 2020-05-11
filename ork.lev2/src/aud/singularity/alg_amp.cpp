@@ -44,7 +44,7 @@ void AMP::compute(DspBuffer& dspbuf) // final
   float* ubuf    = dspbuf.channel(0);
 
   float* aenv    = _layer->_AENV;
-  const auto& LD = _layer->_layerData;
+  const auto& LD = _layer->_LayerData;
 
   auto l_lrmix = panBlend(_lpan);
 
@@ -92,7 +92,7 @@ void AMP::compute(DspBuffer& dspbuf) // final
 void AMP::doKeyOn(const DspKeyOnInfo& koi) // final
 {
   _filt       = 0.0f;
-  auto LD     = koi._layer->_layerData;
+  auto LD     = koi._layer->_LayerData;
   float fpanu = float(LD->_channelPans[0]) / 7.0f;
   float fpanl = float(LD->_channelPans[1]) / 7.0f;
   _upan       = fpanu;
@@ -114,7 +114,7 @@ void PLUSAMP::compute(DspBuffer& dspbuf) // final
   float* lbuf    = dspbuf.channel(1);
 
   float* aenv = _layer->_AENV;
-  auto LD     = _layer->_layerData;
+  auto LD     = _layer->_LayerData;
 
   float LinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
 
@@ -154,7 +154,7 @@ void XAMP::compute(DspBuffer& dspbuf) // final
   float* lbuf    = dspbuf.channel(1);
 
   float* aenv = _layer->_AENV;
-  auto LD     = _layer->_layerData;
+  auto LD     = _layer->_LayerData;
   float LinG  = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
 
   if (1)
@@ -291,7 +291,7 @@ void AMPU_AMPL::compute(DspBuffer& dspbuf) // final
 
   float* aenv = _layer->_AENV;
 
-  const auto& layd = _layer->_layerData;
+  const auto& layd = _layer->_LayerData;
   float LowerLinG  = decibel_to_linear_amp_ratio(layd->_channelGains[0]);
   float UpperLinG  = decibel_to_linear_amp_ratio(layd->_channelGains[1]);
 
@@ -318,7 +318,7 @@ void AMPU_AMPL::doKeyOn(const DspKeyOnInfo& koi) // final
 {
   _filtU      = 0.0f;
   _filtL      = 0.0f;
-  auto LD     = koi._layer->_layerData;
+  auto LD     = koi._layer->_LayerData;
   float fpanu = float(LD->_channelPans[0]) / 7.0f;
   float fpanl = float(LD->_channelPans[1]) / 7.0f;
   _upan       = fpanu;
@@ -402,7 +402,7 @@ void BANGAMP::compute(DspBuffer& dspbuf) // final
   float* lbuf    = dspbuf.channel(1);
 
   float* aenv = _layer->_AENV;
-  auto LD     = _layer->_layerData;
+  auto LD     = _layer->_LayerData;
   float LinG  = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
 
   // printf( "frq<%f> _phaseInc<%lld>\n", frq, _phaseInc );

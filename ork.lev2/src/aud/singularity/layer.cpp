@@ -12,7 +12,7 @@ namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
 layer::layer(synth& syn)
-    : _layerData(nullptr)
+    : _LayerData(nullptr)
     , _syn(syn)
     , _layerGain(0.25)
     , _curPitchOffsetInCents(0.0f)
@@ -61,7 +61,7 @@ void layer::compute(outputBuffer& obuf) {
 
   ///////////////////////
 
-  if (nullptr == _layerData) {
+  if (nullptr == _LayerData) {
     printf("gotnull ld layer<%p>\n", this);
     return;
   }
@@ -149,10 +149,10 @@ void layer::compute(outputBuffer& obuf) {
   }
   ///////////////////////////////////////////////
 
-  if (auto PCHBLK = _layerData->_dspBlocks[0]) {
+  if (auto PCHBLK = _LayerData->_dspBlocks[0]) {
     const int kNOTEC4 = 60;
     const auto& PCH   = PCHBLK->_paramd[0];
-    const auto& KMP   = _layerData->_kmpBlock;
+    const auto& KMP   = _LayerData->_kmpBlock;
 
     int timbreshift = KMP._timbreShift;                // 0
     int kmtrans     = KMP._transpose /*+timbreshift*/; // -20
@@ -444,7 +444,7 @@ void layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
   KOI._key       = note;
   KOI._vel       = vel;
   KOI._layer     = this;
-  KOI._layerData = ld;
+  KOI._LayerData = ld;
 
   _HKF._miscText   = "";
   _HKF._note       = note;
@@ -456,7 +456,7 @@ void layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
   _useNatEnv     = ENVC._useNatEnv;
   _ignoreRelease = ld->_ignRels;
   _curnote       = note;
-  _layerData     = ld;
+  _LayerData     = ld;
   _layerGain     = 1.0f; // ld->_outputGain;
   _masterGain    = _syn._masterGain;
 
@@ -484,14 +484,14 @@ void layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
   }
   ///////////////////////////////////////
 
-  _alg = _layerData->_algData.createAlgInst();
+  _alg = _LayerData->_algData.createAlgInst();
   // assert(_alg);
   if (_alg) {
     DspKeyOnInfo koi;
     koi._key       = note;
     koi._vel       = vel;
     koi._layer     = this;
-    koi._layerData = ld;
+    koi._LayerData = ld;
     _alg->keyOn(koi);
   }
 
@@ -530,7 +530,7 @@ void layer::keyOff() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void layer::reset() {
-  _layerData = nullptr;
+  _LayerData = nullptr;
   _useNatEnv = false;
   _curnote   = 0;
   _keepalive = 0;

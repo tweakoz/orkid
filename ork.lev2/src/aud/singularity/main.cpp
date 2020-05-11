@@ -375,7 +375,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
           if( ! down ) break;
 
           int nl = curProg
-                  ? curProg->_layerDatas.size()
+                  ? curProg->_LayerDatas.size()
                   : 0;
 
           the_synth->_soloLayer++;
@@ -552,12 +552,12 @@ void runUI()
 
         ///////////////////////////////
 
-        int inumlayers = curProg->_layerDatas.size();
+        int inumlayers = curProg->_LayerDatas.size();
         if( inumlayers > 3 )
             drawtext( "(Drum Program)\n", 80,150, .65, 0,1,0 );
         else for( int i=0; i<inumlayers; i++ )
         {
-          auto ld = curProg->_layerDatas[i];
+          auto ld = curProg->_LayerDatas[i];
           auto km = ld->_keymap;
           if( km )
           {

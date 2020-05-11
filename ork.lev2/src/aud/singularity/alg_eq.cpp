@@ -177,7 +177,7 @@ void PARAMETRIC_EQ::compute(DspBuffer& dspbuf) // final
   float gain = _param[2].eval();
   float pad  = _dbd._inputPad;
 
-  auto ld = _layer->_layerData;
+  auto ld = _layer->_LayerData;
 
   _fval[0] = fc;
   _fval[1] = wid;

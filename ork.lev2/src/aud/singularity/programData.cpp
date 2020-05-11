@@ -7,8 +7,8 @@ namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
 lyrdata_ptr_t programData::newLayer() {
-  auto l = std::make_shared<layerData>();
-  _layerDatas.push_back(l);
+  auto l = std::make_shared<LayerData>();
+  _LayerDatas.push_back(l);
   return l;
 }
 

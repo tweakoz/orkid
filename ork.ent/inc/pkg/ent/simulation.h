@@ -213,7 +213,7 @@ protected:
 
 	orkmap<PoolString, Archetype*>			mDynamicArchetypes;
 
-	orkmap<PoolString,lev2::LayerData*>		_layerDataMap;
+	orkmap<PoolString,lev2::LayerData*>		_layerdataMap;
 	orkmap<PoolString,Entity*>				mEntities;
 	EntitySet								mActiveEntities;
 	float									mGameTime;			// current game clock time (stops on pause)

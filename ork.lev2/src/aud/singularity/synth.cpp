@@ -27,7 +27,7 @@ programInst::~programInst() {
 void programInst::keyOn(int note, const programData* pd) {
   int ilayer = 0;
 
-  for (const auto& ld : pd->_layerDatas) {
+  for (const auto& ld : pd->_LayerDatas) {
     ilayer++;
 
     if (note < ld->_loKey || note > ld->_hiKey)

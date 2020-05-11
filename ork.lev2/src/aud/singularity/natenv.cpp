@@ -28,7 +28,7 @@ NatEnv::NatEnv()
 ///////////////////////////////////////////////////////////////////////////////
 
 void NatEnv::keyOn(const KeyOnInfo& KOI, const sample* s) {
-  auto ld = KOI._layerData;
+  auto ld = KOI._LayerData;
   assert(ld != nullptr);
   _layer = KOI._layer;
   _layer->retain();

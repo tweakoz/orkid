@@ -23,14 +23,14 @@ float SynthData::seqTime(float dur) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-layerData::layerData() {
+LayerData::LayerData() {
   _pchBlock = nullptr;
 
   for (int i = 0; i < kmaxdspblocksperlayer; i++)
     _dspBlocks[i] = nullptr;
 }
 
-dspblkdata_ptr_t layerData::appendDspBlock() {
+dspblkdata_ptr_t LayerData::appendDspBlock() {
   OrkAssert(_numdspblocks < kmaxdspblocksperlayer);
   auto block                  = std::make_shared<DspBlockData>();
   _dspBlocks[_numdspblocks++] = block;

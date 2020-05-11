@@ -121,7 +121,7 @@ struct layer {
   hudaframe _HAF;
   int _HAF_nenvseg;
 
-  lyrdata_constptr_t _layerData;
+  lyrdata_constptr_t _LayerData;
 
 private:
   int _keepalive;

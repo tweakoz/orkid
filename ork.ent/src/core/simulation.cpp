@@ -1068,22 +1068,22 @@ void Simulation::UpdateActiveComponents(ork::PoolString family) {
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::AddLayerData(const PoolString& name, lev2::LayerData* player) {
-  auto it = _layerDataMap.find(name);
-  OrkAssert(it == _layerDataMap.end());
-  _layerDataMap[name] = player;
+  auto it = _layerdataMap.find(name);
+  OrkAssert(it == _layerdataMap.end());
+  _layerdataMap[name] = player;
   player->_layerName  = name;
 }
 lev2::LayerData* Simulation::GetLayerData(const PoolString& name) {
   lev2::LayerData* rval = 0;
-  auto it               = _layerDataMap.find(name);
-  if (it != _layerDataMap.end())
+  auto it               = _layerdataMap.find(name);
+  if (it != _layerdataMap.end())
     rval = it->second;
   return rval;
 }
 const lev2::LayerData* Simulation::GetLayerData(const PoolString& name) const {
   const lev2::LayerData* rval = 0;
-  auto it                     = _layerDataMap.find(name);
-  if (it != _layerDataMap.end())
+  auto it                     = _layerdataMap.find(name);
+  if (it != _layerdataMap.end())
     rval = it->second;
   return rval;
 }
