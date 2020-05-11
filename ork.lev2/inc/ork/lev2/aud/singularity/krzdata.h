@@ -273,7 +273,7 @@ struct EnvCtrlData {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct controlBlockData {
+struct ControlBlockData {
   const ControllerData* _cdata[kmaxctrlperblock] = {0, 0, 0, 0};
 };
 
@@ -305,7 +305,7 @@ struct LayerData {
   bool _atk1Hold          = false; // ThrAtt
   bool _atk3Hold          = false; // TilDec
 
-  controlBlockData* _ctrlBlocks[kmaxctrlblocks] = {0, 0, 0, 0, 0, 0, 0, 0};
+  ControlBlockData* _ctrlBlocks[kmaxctrlblocks] = {0, 0, 0, 0, 0, 0, 0, 0};
 };
 
 ///////////////////////////////////////////////////////////////////////////////

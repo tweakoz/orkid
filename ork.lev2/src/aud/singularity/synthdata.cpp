@@ -237,8 +237,8 @@ void KrzTestData::genTestPrograms() {
   auto& EC      = l1->_envCtrlData;
   EC._useNatEnv = false;
 
-  auto CB0           = new controlBlockData;
-  auto CB1           = new controlBlockData;
+  auto CB0           = new ControlBlockData;
+  auto CB1           = new ControlBlockData;
   l1->_ctrlBlocks[0] = CB0;
   l1->_ctrlBlocks[1] = CB1;
 

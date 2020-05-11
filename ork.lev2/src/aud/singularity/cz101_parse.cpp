@@ -267,7 +267,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   auto ld     = prgout->newLayer();
   ld->_keymap = outd->_zpmKM;
 
-  auto CB0           = new controlBlockData;
+  auto CB0           = new ControlBlockData;
   ld->_ctrlBlocks[0] = CB0;
 
   auto AE        = new RateLevelEnvData;

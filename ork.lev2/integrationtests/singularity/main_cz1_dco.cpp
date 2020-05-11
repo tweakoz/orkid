@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
   auto program = std::make_shared<ProgramData>();
   auto czdata  = std::make_shared<CzProgData>();
   auto keymap  = std::make_shared<KeyMap>();
-  auto CB0     = std::make_shared<controlBlockData>();
+  auto CB0     = std::make_shared<ControlBlockData>();
   auto AE      = std::make_shared<RateLevelEnvData>();
   //////////////////////////////////////
   // set names

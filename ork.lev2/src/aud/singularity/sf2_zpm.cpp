@@ -224,7 +224,7 @@ void SoundFont::genZpmDB() {
         prg->_role = _bankName;
         auto ld = prg->newLayer();
         ld->_keymap = km;
-        auto CB0 = new controlBlockData;
+        auto CB0 = new ControlBlockData;
         ld->_ctrlBlocks[0] = CB0;
         auto AE = new RateLevelEnvData;
 

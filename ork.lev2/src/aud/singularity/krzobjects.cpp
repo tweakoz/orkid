@@ -609,9 +609,9 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
     return rout;
   };
   //////////////////////////////////////////////////////
-  auto CB0             = new controlBlockData; // ENV
-  auto CB1             = new controlBlockData; // ASRLFO
-  auto CB2             = new controlBlockData; // FUN
+  auto CB0             = new ControlBlockData; // ENV
+  auto CB1             = new ControlBlockData; // ASRLFO
+  auto CB2             = new ControlBlockData; // FUN
   rval->_ctrlBlocks[0] = CB0;
   rval->_ctrlBlocks[1] = CB1;
   rval->_ctrlBlocks[2] = CB2;

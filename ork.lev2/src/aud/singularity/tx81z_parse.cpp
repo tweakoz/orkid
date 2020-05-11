@@ -121,7 +121,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
     auto ld            = prg->newLayer();
     ld->_keymap        = outd->_zpmKM;
-    auto CB0           = new controlBlockData;
+    auto CB0           = new ControlBlockData;
     ld->_ctrlBlocks[0] = CB0;
 
     ld->_kmpBlock._keymap = outd->_zpmKM;

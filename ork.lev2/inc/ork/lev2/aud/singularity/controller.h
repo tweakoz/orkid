@@ -27,7 +27,7 @@ struct ControllerInst
 struct ControlBlockInst
 {
     void compute(int inumfr);
-    void keyOn(const KeyOnInfo& KOI,const controlBlockData* CBD);
+    void keyOn(const KeyOnInfo& KOI,const ControlBlockData* CBD);
     void keyOff();
 
     ControllerInst* _cinst[kmaxctrlperblock] = {0,0,0,0};
