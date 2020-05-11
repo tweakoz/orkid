@@ -32,8 +32,8 @@ struct IWidgetEventFilter {
   Timer mMoveTimer;
 };
 
-struct WidgetEventFilter1 : public IWidgetEventFilter {
-  WidgetEventFilter1(Widget& w)
+struct Apple3ButtonMouseEmulationFilter : public IWidgetEventFilter {
+  Apple3ButtonMouseEmulationFilter(Widget& w)
       : IWidgetEventFilter(w) {
   }
   void DoFilter(event_constptr_t Ev);
@@ -54,6 +54,8 @@ public:
   ~Widget();
 
   void Init(lev2::Context* pTARG);
+
+  void installApple3ButtonMouseEmulator();
 
   const std::string& GetName(void) const {
     return msName;

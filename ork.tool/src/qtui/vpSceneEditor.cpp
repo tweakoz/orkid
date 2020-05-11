@@ -125,6 +125,10 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
     , _updateThread(nullptr) {
   mRenderLock = 0;
 
+#if defined(__APPLE__) // install 3 button emulator
+  installApple3ButtonMouseEmulator();
+#endif
+
   _overlayCamMatrices = std::make_shared<ork::lev2::CameraMatrices>();
 
   ///////////////////////////////////////////////////////////

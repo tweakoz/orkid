@@ -6,32 +6,45 @@
 #include <ork/lev2/gfx/material_freestyle.h>
 
 using namespace ork;
+using namespace ork::lev2;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
-
-static lev2::freestyle_mtl_ptr_t create_hud_material(lev2::Context* context) {
-  auto mtl = std::make_shared<lev2::FreestyleMaterial>();
+///////////////////////////////////////////////////////////////////////////////
+using vtx_t        = SVtxV16T16C16;
+using vtxbuf_t     = DynamicVertexBuffer<vtx_t>;
+using vtxbuf_ptr_t = std::shared_ptr<vtxbuf_t>;
+static vtxbuf_ptr_t create_vertexbuffer(Context* context) {
+  auto vb = std::make_shared<vtxbuf_t>(16 << 20, 0, EPrimitiveType::NONE); // ~800 MB
+  vb->SetRingLock(true);
+  return vb;
+}
+static vtxbuf_ptr_t get_vertexbuffer(Context* context) {
+  static auto vb = create_vertexbuffer(context);
+  return vb;
+}
+///////////////////////////////////////////////////////////////////////////////
+static freestyle_mtl_ptr_t create_hud_material(Context* context) {
+  auto mtl = std::make_shared<FreestyleMaterial>();
   mtl->gpuInit(context, "orkshader://solid");
   return mtl;
 }
-
-static lev2::freestyle_mtl_ptr_t hud_material(lev2::Context* context) {
+static freestyle_mtl_ptr_t hud_material(Context* context) {
   static auto mtl = create_hud_material(context);
   return mtl;
 }
-
-void Rect::PushOrtho(lev2::Context* context) const {
+///////////////////////////////////////////////////////////////////////////////
+void Rect::PushOrtho(Context* context) const {
   int w = context->mainSurfaceWidth();
   int h = context->mainSurfaceHeight();
   context->MTXI()->PushUIMatrix(w, h);
 }
-void Rect::PopOrtho(lev2::Context* context) const {
+void Rect::PopOrtho(Context* context) const {
   context->MTXI()->PopUIMatrix();
 }
 
 void drawtext(
-    lev2::Context* context, //
+    Context* context, //
     const std::string& str,
     float x,
     float y,
@@ -44,7 +57,7 @@ void drawtext(
   int h = context->mainSurfaceHeight();
   context->MTXI()->PushUIMatrix(w, h);
 
-  auto fontman = lev2::FontMan::instance();
+  auto fontman = FontMan::instance();
 
   fontman->SetCurrentFont("i16");
   context->PushModColor(fcolor4(r, g, b, 1));
@@ -55,6 +68,44 @@ void drawtext(
   context->PopModColor();
 
   context->MTXI()->PopUIMatrix();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void drawHudLines(Context* context, const hudlines_t& lines) {
+
+  if (lines.size() == 0)
+    return;
+
+  auto mtl = hud_material(context);
+  auto tek = mtl->technique("vtxcolor");
+  RenderContextFrameData RCFD(context);
+  auto vbuf = get_vertexbuffer(context);
+  auto mtxi = context->MTXI();
+  auto gbi  = context->GBI();
+
+  auto par_mvp = mtl->param("MatMVP");
+
+  VtxWriter<SVtxV16T16C16> vw;
+  vw.Lock(context, vbuf.get(), lines.size() * 2);
+  for (auto& l : lines) {
+    const auto& p1 = l._from;
+    const auto& p2 = l._to;
+    const auto& c  = l._color;
+    vw.AddVertex(SVtxV16T16C16(fvec3(p1), fvec4(), c));
+    vw.AddVertex(SVtxV16T16C16(fvec3(p2), fvec4(), c));
+  }
+  vw.UnLock(context);
+
+  int w = context->mainSurfaceWidth();
+  int h = context->mainSurfaceHeight();
+  mtxi->PushUIMatrix(w, h);
+  mtl->begin(tek, RCFD);
+  mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
+  mtl->_rasterstate.SetBlending(EBLENDING_OFF);
+  gbi->DrawPrimitiveEML(vw, EPrimitiveType::LINES);
+  mtl->end(RCFD);
+  mtxi->PopUIMatrix();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -88,7 +139,7 @@ float DSPX(float vpw, float vph) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void synth::onDrawHud(lev2::Context* context, float width, float height) {
+void synth::onDrawHud(Context* context, float width, float height) {
 
   if (_clearhuddata) {
     _hudsample_map.clear();
@@ -142,12 +193,12 @@ void synth::onDrawHud(lev2::Context* context, float width, float height) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void synth::onDrawHudPage1(lev2::Context* context, float width, float height) {
+void synth::onDrawHudPage1(Context* context, float width, float height) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void synth::onDrawHudPage2(lev2::Context* context, float width, float height) {
+void synth::onDrawHudPage2(Context* context, float width, float height) {
   auto hudl = _hudLayer;
 
   if (false == (hudl && hudl->_layerData))
@@ -236,41 +287,7 @@ void synth::onDrawHudPage2(lev2::Context* context, float width, float height) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void drawHudLines(lev2::Context* context, const hudlines_t& lines) {
-  auto mtl = hud_material(context);
-  auto tek = mtl->technique("vtxcolor");
-  lev2::RenderContextFrameData RCFD(context);
-  auto& VB  = lev2::GfxEnv::GetSharedDynamicV16T16C16();
-  auto mtxi = context->MTXI();
-  auto gbi  = context->GBI();
-
-  auto par_mvp = mtl->param("MatMVP");
-
-  lev2::VtxWriter<lev2::SVtxV16T16C16> vw;
-  vw.Lock(context, &VB, lines.size() * 2);
-  for (auto& l : lines) {
-    const auto& p1 = l._from;
-    const auto& p2 = l._to;
-    const auto& c  = l._color;
-    vw.AddVertex(lev2::SVtxV16T16C16(fvec3(p1), fvec4(), c));
-    vw.AddVertex(lev2::SVtxV16T16C16(fvec3(p2), fvec4(), c));
-  }
-  vw.UnLock(context);
-
-  int w = context->mainSurfaceWidth();
-  int h = context->mainSurfaceHeight();
-  mtxi->PushUIMatrix(w, h);
-  mtl->begin(tek, RCFD);
-  mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-  mtl->_rasterstate.SetBlending(lev2::EBLENDING_OFF);
-  gbi->DrawPrimitiveEML(vw, lev2::EPrimitiveType::LINES);
-  mtl->end(RCFD);
-  mtxi->PopUIMatrix();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void DrawBorder(lev2::Context* context, int X1, int Y1, int X2, int Y2, int color) {
+void DrawBorder(Context* context, int X1, int Y1, int X2, int Y2, int color) {
   hudlines_t lines;
   fvec3 vcolor(1, 1, 1);
   switch (color) {
@@ -296,7 +313,7 @@ void DrawBorder(lev2::Context* context, int X1, int Y1, int X2, int Y2, int colo
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
+void synth::onDrawHudPage3(Context* context, float width, float height) {
 
   auto MTXI = context->MTXI();
 
@@ -330,23 +347,23 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
 
   const float* ldata = _oscopebuffer;
 
-  float OSC_X1 = 100;
-  float OSC_Y1 = 250;
-  float OSC_W  = INSW;
-  float OSC_H  = 500;
-  float OSC_HH = OSC_H * 0.5;
-  float OSC_CY = OSC_Y1 + OSC_HH;
-  float OSC_X2 = OSC_X1 + OSC_W;
-  float OSC_Y2 = OSC_Y1 + OSC_H;
+  const float OSC_X1 = 100;
+  const float OSC_Y1 = 250;
+  const float OSC_W  = INSW;
+  const float OSC_H  = 500;
+  const float OSC_HH = OSC_H * 0.5;
+  const float OSC_CY = OSC_Y1 + OSC_HH;
+  const float OSC_X2 = OSC_X1 + OSC_W;
+  const float OSC_Y2 = OSC_Y1 + OSC_H;
 
-  float ANA_X1 = 100;
-  float ANA_Y1 = 800;
-  float ANA_W  = INSW;
-  float ANA_H  = 600;
-  float ANA_HH = ANA_H * 0.5;
-  float ANA_CY = ANA_Y1 + ANA_HH;
-  float ANA_X2 = ANA_X1 + ANA_W;
-  float ANA_Y2 = ANA_Y1 + ANA_H;
+  const float ANA_X1 = 100;
+  const float ANA_Y1 = 800;
+  const float ANA_W  = INSW;
+  const float ANA_H  = 600;
+  const float ANA_HH = ANA_H * 0.5;
+  const float ANA_CY = ANA_Y1 + ANA_HH;
+  const float ANA_X2 = ANA_X1 + ANA_W;
+  const float ANA_Y2 = ANA_Y1 + ANA_H;
 
   MTXI->PushUIMatrix(width, height);
 
@@ -425,15 +442,14 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
   // map bin -> Y
   //////////////////////////////
 
-  auto mapDB = [&](float re, float im) -> float {
+  auto mapDecibels = [&](float re, float im) -> float {
     float mag = re * re + im * im;
     float dB  = 10.0f * log_base(10.0f, mag) - 6.0f;
     return dB;
   };
   auto mapFFTY = [&](float dbin) -> float {
     float dbY = (dbin + 96.0f) / 132.0f;
-
-    float y = ANA_Y2 - dbY * ANA_H;
+    float y   = ANA_Y2 - dbY * ANA_H;
     if (y > ANA_Y2)
       y = ANA_Y2;
     return y;
@@ -443,17 +459,17 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
   // draw grid
   //////////////////////////////
 
-  for (int i = 36; i >= -96; i -= 12) {
-    float db0 = i;
+  for (int dB = 36; dB >= -96; dB -= 12) {
     lines.push_back(HudLine{
-        fvec2(ANA_X1, mapFFTY(db0)), //
-        fvec2(ANA_X2, mapFFTY(db0)),
-        fvec3(.2, .1, .3)}); // horizontal grid
+        fvec2(ANA_X1, mapFFTY(dB)), //
+        fvec2(ANA_X2, mapFFTY(dB)),
+        fvec3(.2, .1, .3)}); // dB grid
   }
 
-  for (int n = 0; n < 108; n += 12) {
-    float db0 = i;
-    float x   = ANA_X1 + ANA_W * float(n) / 108.0;
+  constexpr int KMAXNOTE     = 12 * 11;
+  constexpr float KFIMAXNOTE = 1.0f / float(KMAXNOTE);
+  for (int note = 0; note <= KMAXNOTE; note += 12) {
+    float x = ANA_X1 + ANA_W * float(note) * KFIMAXNOTE;
     lines.push_back(HudLine{
         fvec2(x, ANA_Y1), //
         fvec2(x, ANA_Y2),
@@ -464,35 +480,31 @@ void synth::onDrawHudPage3(lev2::Context* context, float width, float height) {
   // spectral plot
   //////////////////////////////
 
-  float dB = mapDB(re[0], im[0]);
-  float x  = ANA_W * float(0) / float(inumframes);
-  float y  = mapFFTY(dB);
-  float xx = x + ANA_X1;
-  float yy = y;
-  x1       = xx;
-  y1       = yy;
+  float dB = mapDecibels(re[0], im[0]);
+  x1       = ANA_X1; // + 500 + ANA_W * float(0) / float(inumframes);
+  y1       = mapFFTY(dB);
   for (int i = 0; i < inumframes / 2; i++) {
-    float dB = mapDB(re[i], im[i]);
+
+    float dB = mapDecibels(re[i], im[i]);
     _fftbuffer[i] += dB * 0.03 + 0.0001f;
     _fftbuffer[i] *= 0.97f;
     dB = _fftbuffer[i];
 
     // printf( "dB<%f>\n", dB);
-    float fi = float(i) / float(inumframes / 2);
+    float fi = float(i) / float(inumframes);
 
     float frq      = fi * getSampleRate();
     float midinote = frequency_to_midi_note(frq);
-
-    float x  = ANA_W * (midinote - 36.0f) / 108.0;
-    float y  = mapFFTY(dB - 12);
-    float xx = x + ANA_X1;
+    // printf("i<%d> frq<%g> midinote<%g>\n", i, frq, midinote);
+    float x2 = ANA_X1 + ANA_W * midinote * KFIMAXNOTE;
+    float y2 = mapFFTY(dB - 12);
     lines.push_back(HudLine{
         fvec2(x1, y1), //
-        fvec2(xx, y),
+        fvec2(x2, y2),
         fvec3(.3, .7, 1)}); // spectral plot
 
-    x1 = xx;
-    y1 = y;
+    x1 = x2;
+    y1 = y2;
   }
   // freqbins[index] = complex_t(0,0);
 

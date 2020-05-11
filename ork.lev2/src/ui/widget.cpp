@@ -48,12 +48,15 @@ Widget::Widget(const std::string& name, int x, int y, int w, int h)
     , mDirty(true)
     , mSizeDirty(true)
     , mPosDirty(true) {
-  auto f1 = new WidgetEventFilter1(*this);
-  mEventFilterStack.push(f1);
 }
 Widget::~Widget() {
   if (gFastPath == this)
     gFastPath = nullptr;
+}
+
+void Widget::installApple3ButtonMouseEmulator() {
+  auto f1 = new Apple3ButtonMouseEmulationFilter(*this);
+  mEventFilterStack.push(f1);
 }
 
 void Widget::Init(lev2::Context* pT) {
@@ -69,8 +72,18 @@ HandlerResult Widget::HandleUiEvent(event_constptr_t Ev) {
     ret = gFastPath->RouteUiEvent(Ev);
   } else {
     bool binside = IsEventInside(Ev);
-    // printf( "Widget::HandleUiEvent::SLOWPATH ev<%d,%d> widget<%p:%s> dim<%d %d %d %d> inside<%d>\n", Ev->miX, Ev->miY, this,
-    // msName.c_str(), miX, miY, miW, miH, int(binside) );
+    if (0)
+      printf(
+          "Widget::HandleUiEvent::SLOWPATH ev<%d,%d> widget<%p:%s> dim<%d %d %d %d> inside<%d>\n",
+          Ev->miX,
+          Ev->miY,
+          this,
+          msName.c_str(),
+          miX,
+          miY,
+          miW,
+          miH,
+          int(binside));
 
     if (binside) {
       ret = RouteUiEvent(Ev);
@@ -89,9 +102,9 @@ HandlerResult Widget::OnUiEvent(event_constptr_t Ev) {
   if (mEventFilterStack.size()) {
     auto top = mEventFilterStack.top();
     top->Filter(Ev);
+    if (Ev->mFilteredEvent.miEventCode == 0)
+      return HandlerResult();
   }
-  if (Ev->mFilteredEvent.miEventCode == 0)
-    return HandlerResult();
   return DoOnUiEvent(Ev);
 }
 HandlerResult Widget::RouteUiEvent(event_constptr_t Ev) {
@@ -172,7 +185,7 @@ void IWidgetEventFilter::Filter(event_constptr_t Ev) {
 
   DoFilter(Ev);
 }
-void WidgetEventFilter1::DoFilter(event_constptr_t Ev) {
+void Apple3ButtonMouseEmulationFilter::DoFilter(event_constptr_t Ev) {
   auto& fev = Ev->mFilteredEvent;
 
   fev.mAction = "none";
@@ -185,7 +198,7 @@ void WidgetEventFilter1::DoFilter(event_constptr_t Ev) {
 
       bool bdouble = (kt < 0.8f) && (dt > 1.0f) && (mt > 0.5f) && (mLastKeyCode == Ev->miKeyCode);
 
-      // printf( "keydown<%d> lk<%d> kt<%f> dt<%f> mt<%f>\n", mLastKeyCode, Ev->miKeyCode, kt, dt, mt );
+      // printf("keydown<%d> lk<%d> kt<%f> dt<%f> mt<%f>\n", mLastKeyCode, Ev->miKeyCode, kt, dt, mt);
 
       auto evc = bdouble ? ui::UIEV_DOUBLECLICK : ui::UIEV_PUSH;
 
@@ -539,7 +552,7 @@ void Widget::ReLayout() {
 /////////////////////////////////////////////////////////////////////////
 
 void Widget::OnResize(void) {
-  printf("Widget<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), miX, miY, miW, miH);
+  // printf("Widget<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), miX, miY, miW, miH);
 }
 
 /////////////////////////////////////////////////////////////////////////

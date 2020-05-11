@@ -305,6 +305,7 @@ void QCtxWidget::wheelEvent(QWheelEvent* qem) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void QCtxWidget::keyPressEvent(QKeyEvent* event) {
+
   if (event->isAutoRepeat())
     return;
 
