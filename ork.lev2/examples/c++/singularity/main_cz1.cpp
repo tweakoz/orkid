@@ -26,7 +26,6 @@ bool TEST = false;
 int main(int argc, char** argv) {
   auto basepath = file::Path::share_dir() / "singularity" / "casioCZ";
   startupAudio();
-  the_synth->resetFenables();
   //////////////////////////////////////////////////////////////////////////////
   auto add_event = [&](const programData* prog, //
                        float time,

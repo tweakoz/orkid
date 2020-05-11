@@ -10,7 +10,6 @@ int main(int argc, char** argv) {
   auto piano    = bank->getProgramByName("Grand_Piano");
   auto winds    = bank->getProgramByName("Northern_Winds");
   auto sweep    = bank->getProgramByName("Hi_Res_Sweeper");
-  the_synth->resetFenables();
   //////////////////////////////////////////////////////////////////////////////
   enqueue_audio_event(winds, 0.0, 50.0, 48);
   enqueue_audio_event(sweep, 0.0, 30.0, 36);
@@ -30,7 +29,6 @@ int main(int argc, char** argv) {
     enqueue_audio_event(drums, t, 1.0, 48);
   }
   //////////////////////////////////////////////////////////////////////////////
-  // qtapp->setRefreshPolicy({EREFRESH_FIXEDFPS, 60});
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, 0});
   qtapp->exec();
   tearDownAudio();

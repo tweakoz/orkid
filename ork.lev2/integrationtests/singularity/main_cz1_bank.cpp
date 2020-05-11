@@ -4,7 +4,6 @@ int main(int argc, char** argv) {
   auto qtapp    = createEZapp(argc, argv);
   auto basepath = file::Path::share_dir() / "singularity" / "casioCZ";
   startupAudio();
-  the_synth->resetFenables();
   //////////////////////////////////////////////////////////////////////////////
   auto czdata = std::make_shared<CzData>(the_synth);
   bool TEST   = true;
@@ -23,7 +22,6 @@ int main(int argc, char** argv) {
     }
   }
   //////////////////////////////////////////////////////////////////////////////
-  // qtapp->setRefreshPolicy({EREFRESH_FIXEDFPS, 60});
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, 0});
   qtapp->exec();
   tearDownAudio();

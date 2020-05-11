@@ -30,7 +30,6 @@ int main(int argc, char** argv) {
   auto piano    = bank->getProgramByName("Grand_Piano");
   auto winds    = bank->getProgramByName("Northern_Winds");
   auto sweep    = bank->getProgramByName("Hi_Res_Sweeper");
-  the_synth->resetFenables();
   //////////////////////////////////////////////////////////////////////////////
   auto add_event = [&](const programData* prog, //
                        float time,

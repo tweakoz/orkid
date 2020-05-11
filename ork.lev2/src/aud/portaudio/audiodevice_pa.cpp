@@ -97,6 +97,8 @@ void startupAudio() {
 
   err = Pa_StartStream(pa_stream);
   OrkAssert(err == paNoError);
+
+  the_synth->resetFenables();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
