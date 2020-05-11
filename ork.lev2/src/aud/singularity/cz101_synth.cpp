@@ -16,140 +16,51 @@ using namespace ork;
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
-struct czpriv {
-  /////////////////////////////
-  czpriv()
-      : _newnote(false) {
-  }
-  /////////////////////////////
-  void keyOn(layer* l, const CzProgData& prgdat) {
-    printf("cz keyon prog<%s>\n", prgdat._name.c_str());
-    _data     = prgdat;
-    _curlayer = l;
-    _newnote  = true;
-    _note     = l->_curnote;
-    DspKeyOnInfo koi;
-    /////////////////////////////
-    // testprg
-    /////////////////////////////
-    if (0) {
-      _data._lineSel              = 0;
-      _data._lineMod              = 0;
-      _data._oscData[0]._dcoWaveA = 5;
-      _data._oscData[0]._dcoWaveB = 5;
-    }
-    /////////////////////////////
 
-    switch (_data._lineSel) {
-      case 0: // 1
-        _osc[0].keyOn(koi, _data._oscData[0]);
-        break;
-      case 1: // 2
-        _osc[0].keyOn(koi, _data._oscData[1]);
-        break;
-      case 2: // 1+1'
-        _osc[0].keyOn(koi, _data._oscData[0]);
-        _osc[1].keyOn(koi, _data._oscData[0]);
-        break;
-      case 3: // 1+2'
-        _osc[0].keyOn(koi, _data._oscData[0]);
-        _osc[1].keyOn(koi, _data._oscData[1]);
-        break;
-      default:
-        assert(false);
-    }
-    _ph = 0.0f;
-  }
-  /////////////////////////////
-  void keyOff() {
-  }
-  /////////////////////////////
-  void compute(DspBuffer& dspbuf) {
-    int inumframes = dspbuf._numframes;
-    float* U       = dspbuf.channel(0);
-    float f1       = midi_note_to_frequency(float(_note));
-    // todo: dco(pitch) env mod
-    // todo: mi from dcw env
-    float modindex = 0.5f + sinf(_ph) * 0.5f;
-    //////////////////////////////////////////
-    // single osc mode
-    //////////////////////////////////////////
-    if (_data._lineSel < 2) {
-      for (int i = 0; i < inumframes; i++) {
-        float s0 = _osc[0].compute(f1, modindex);
-        U[i]     = s0;
-      }
-    }
-    //////////////////////////////////////////
-    // dual osc mode
-    //////////////////////////////////////////
-    else {
-      float f2 = midi_note_to_frequency(float(_note) + float(_data._detuneCents * 0.01f));
-      switch (_data._lineMod) {
-        case 0: // no cross mod
-          for (int i = 0; i < inumframes; i++) {
-            float s0 = _osc[0].compute(f1, modindex);
-            float s1 = _osc[1].compute(f2, modindex);
-            U[i]     = s0 + s1;
-          }
-          break;
-        case 4: // ring mod
-          for (int i = 0; i < inumframes; i++) {
-            float s0 = _osc[0].compute(f1, modindex);
-            float s1 = _osc[1].compute(f2, modindex);
-            U[i]     = s0 * s1;
-          }
-          break;
-        case 3: // noise mod
-          for (int i = 0; i < inumframes; i++) {
-            float r = (rand() & 0xffff) / 65536.0f;
-            // lerp with noise ?
-            float s0 = _osc[0].compute(f1, modindex);
-            float s1 = _osc[1].compute(f2, modindex);
-            U[i]     = lerp(r, s0, s1);
-          }
-          { break; }
-        default:
-          assert(false);
-      }
-    }
-
-    _ph += 0.01f;
-  }
-  /////////////////////////////
-  CzOsc _osc[2];
-  float _ph;
-  float _basefreq;
-  int _note;
-  layer* _curlayer;
-  CzProgData _data;
-  bool _newnote;
-};
-///////////////////////////////////////////////////////////////////////////////
-czsyn::czsyn() {
-  _pimpl.Set<czpriv*>(new czpriv);
+CZX::CZX(const DspBlockData& dbd)
+    : DspBlock(dbd) {
 }
-///////////////////////////////////////////////////////////////////////////////
-void czsyn::compute(DspBuffer& dspbuf) {
-  _pimpl.Get<czpriv*>()->compute(dspbuf);
+void CZX::compute(DspBuffer& dspbuf) // final
+{
+  float centoff  = _param[0].eval();
+  _fval[0]       = centoff;
+  int inumframes = dspbuf._numframes;
+  float* U       = dspbuf.channel(0);
+  //_layer->_curPitchOffsetInCents = centoff;
+  // todo: dco(pitch) env mod
+  // todo: mi from dcw env
+  static float _ph = 0.0;
+  float modindex   = 0.5f + sinf(_ph) * 0.5f;
+  _ph += 0.01f;
+  //////////////////////////////////////////
+  float lyrcents = _layer->_curCentsOSC;
+  float cin      = (lyrcents + centoff) * 0.01;
+  float frq      = midi_note_to_frequency(cin);
+  //////////////////////////////////////////
+  for (int i = 0; i < inumframes; i++) {
+    U[i] = _czosc.compute(frq, modindex);
+  }
 }
-///////////////////////////////////////////////////////////////////////////////
-void czsyn::keyOn(const DspKeyOnInfo& koi) {
-  auto dspb  = koi._prv;
-  auto& dbd  = dspb->_dbd;
-  auto progd = dbd.getExtData("PDX").Get<czprogdata_ptr_t>();
-  auto l     = koi._layer;
 
-  _data = *progd;
-
+void CZX::doKeyOn(const DspKeyOnInfo& koi) // final
+{
+  auto dspb         = koi._prv;
+  auto& dbd         = dspb->_dbd;
+  auto oscdata      = dbd.getExtData("CZX").Get<czxdata_constptr_t>();
+  auto l            = koi._layer;
   l->_HKF._miscText = FormatString("CZ\n");
   l->_HKF._useFm4   = false;
+  _czosc.keyOn(koi, oscdata);
+}
+void CZX::doKeyOff() // final
+{
+  _czosc.keyOff();
+}
+void CZX::initBlock(dspblkdata_ptr_t blockdata, czxdata_constptr_t czdata) {
+  blockdata->_dspBlock = "CZX";
+  blockdata->_paramd[0].usePitchEvaluator();
+  blockdata->_extdata["CZX"].Set<czxdata_constptr_t>(czdata);
+}
 
-  _pimpl.Get<czpriv*>()->keyOn(l, *progd);
-}
-///////////////////////////////////////////////////////////////////////////////
-void czsyn::keyOff() {
-  _pimpl.Get<czpriv*>()->keyOff();
-}
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

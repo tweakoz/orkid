@@ -102,17 +102,6 @@ struct FM4 : public DspBlock {
   static void initBlock(dspblkdata_ptr_t blockdata);
 };
 
-struct czsyn;
-
-struct CZX : public DspBlock {
-  CZX(const DspBlockData& dbd);
-  void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
-  void doKeyOff() final;
-  czsyn* _cz;
-  static void initBlock(dspblkdata_ptr_t blockdata, czprogdata_ptr_t czdata);
-};
-
 struct NOISE : public DspBlock {
   NOISE(const DspBlockData& dbd);
   void compute(DspBuffer& dspbuf) final;

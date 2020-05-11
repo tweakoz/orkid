@@ -110,17 +110,34 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     }
   }
 
-  auto czdata      = std::make_shared<CzProgData>();
-  u8 PFLAG         = bytes[0x00]; // octave/linesel
-  czdata->_octave  = (PFLAG & 0x0c) >> 2;
-  czdata->_lineSel = (PFLAG & 0x03);
-  u8 PDS           = bytes[0x01];       // detune sign
-  u8 PDETL         = bytes[0x02];       // detune fine
-  u8 PDETH         = bytes[0x03];       // detune oct/note
-  int detval       = (PDETH * 100)      // accumulate coarse
+  auto czdata     = std::make_shared<CzProgData>();
+  u8 PFLAG        = bytes[0x00]; // octave/linesel
+  czdata->_octave = (PFLAG & 0x0c) >> 2;
+  int lineSel     = (PFLAG & 0x03);
+  u8 PDS          = bytes[0x01];        // detune sign
+  u8 PDETL        = bytes[0x02];        // detune fine
+  u8 PDETH        = bytes[0x03];        // detune oct/note
+  int detval      = (PDETH * 100)       // accumulate coarse
                + ((PDETL * 100) / 250); // accumulate fine
   czdata->_detuneCents = PDS ? (-detval) : detval;
   printf("PDETL<%d>\n", PDETL);
+
+  switch (lineSel) {
+    case 0: // 1
+      printf("linesel<1>\n");
+      break;
+    case 1: // 2
+      printf("linesel<2>\n");
+      break;
+    case 2: // 1+1'
+      printf("linesel<1+1'>\n");
+      break;
+    case 3: // 1+2'
+      printf("linesel<1+2'>\n");
+      break;
+    default:
+      assert(false);
+  }
 
   u8 PVK = bytes[0x04]; // vibrato wave
   switch (PVK) {
@@ -189,8 +206,12 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   // 0xe .. 0x46 osc 1
   // 0x25 == vel (oscbase+)
   // 0x47 .. 0x7f osc 2
+
+  czxdata_ptr_t oscdata[2] = {std::make_shared<CzOscData>(), std::make_shared<CzOscData>()};
+  czdata->_oscData[0]      = oscdata[0];
+  czdata->_oscData[1]      = oscdata[1];
   for (int o = 0; o < 2; o++) {
-    auto& OSC = czdata->_oscData[o];
+    auto OSC = oscdata[o];
     ///////////////////////////////////////////////////////////
     u8 MFW0 = bytes[byteindex++]; // dc01 wave / modulation
     u8 MFW1 = bytes[byteindex++]; // dc01 wave / modulation
@@ -199,28 +220,28 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     u8 MWMD = bytes[byteindex++]; // DCW key follow
     u8 MWMV = bytes[byteindex++];
     ///////////////////////////////////////////////////////////
-    u8 PMAL = bytes[byteindex++];                      // DCA1 end
-    for (int i = 0; i < 8; i++) {                      // DCA env (16 bytes)
-      u8 r                       = bytes[byteindex++]; // byte = (119*r/99)
-      u8 l                       = bytes[byteindex++]; // byte = (127*l/99)
-      u8 r7                      = r & 0x7f;
-      u8 l7                      = l & 0x7f;
-      OSC._dcaEnv._decreasing[i] = (r & 0x80);
-      OSC._dcaEnv._time[i]       = decode_wa_envrate((r7 * 99) / 127);
-      OSC._dcaEnv._level[i]      = (l7 * 99) / 127;
+    u8 PMAL = bytes[byteindex++];                       // DCA1 end
+    for (int i = 0; i < 8; i++) {                       // DCA env (16 bytes)
+      u8 r                        = bytes[byteindex++]; // byte = (119*r/99)
+      u8 l                        = bytes[byteindex++]; // byte = (127*l/99)
+      u8 r7                       = r & 0x7f;
+      u8 l7                       = l & 0x7f;
+      OSC->_dcaEnv._decreasing[i] = (r & 0x80);
+      OSC->_dcaEnv._time[i]       = decode_wa_envrate((r7 * 99) / 127);
+      OSC->_dcaEnv._level[i]      = (l7 * 99) / 127;
     }
     ///////////////////////////////////////////////////////////
-    u8 PMWL = bytes[byteindex++];                      // DCW1 end
-    for (int i = 0; i < 8; i++) {                      // DCW env (16 bytes)
-      u8 r                       = bytes[byteindex++]; // byte = (119*r/99)+8
-      u8 l                       = bytes[byteindex++]; // byte = (127*l/99)
-      u8 r7                      = r & 0x7f;
-      u8 l7                      = l & 0x7f;
-      OSC._dcwEnv._decreasing[i] = (r & 0x80);
+    u8 PMWL = bytes[byteindex++];                       // DCW1 end
+    for (int i = 0; i < 8; i++) {                       // DCW env (16 bytes)
+      u8 r                        = bytes[byteindex++]; // byte = (119*r/99)+8
+      u8 l                        = bytes[byteindex++]; // byte = (127*l/99)
+      u8 r7                       = r & 0x7f;
+      u8 l7                       = l & 0x7f;
+      OSC->_dcwEnv._decreasing[i] = (r & 0x80);
       if (l & 0x80)
-        OSC._dcwEnv._sustPoint = i;
-      OSC._dcwEnv._time[i]  = decode_wa_envrate(((r7 - 8) * 99) / 119);
-      OSC._dcwEnv._level[i] = (l7 * 99) / 127;
+        OSC->_dcwEnv._sustPoint = i;
+      OSC->_dcwEnv._time[i]  = decode_wa_envrate(((r7 - 8) * 99) / 119);
+      OSC->_dcwEnv._level[i] = (l7 * 99) / 127;
     }
     ///////////////////////////////////////////////////////////
     u8 PMPL = bytes[byteindex++]; // DCO1 end
@@ -230,30 +251,36 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
       u8 r7 = r & 0x7f;
       u8 l7 = l & 0x7f;
 
-      OSC._dcoEnv._decreasing[i] = (r & 0x80);
-      OSC._dcoEnv._time[i]       = decode_p_envrate((r7 * 99) / 127);
-      OSC._dcoEnv._level[i]      = (l7 * 99) / 127;
+      OSC->_dcoEnv._decreasing[i] = (r & 0x80);
+      OSC->_dcoEnv._time[i]       = decode_p_envrate((r7 * 99) / 127);
+      OSC->_dcoEnv._level[i]      = (l7 * 99) / 127;
     }
     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
     printf("MFW0<x%2x> MFW1<x%2x>\n", MFW0, MFW1);
-    OSC._dcoWaveA = decodewave((MFW0 >> 5) & 0x7, (MFW1 >> 6) & 0x3);
-    OSC._dcoWaveB = decodewave((MFW0 >> 2) & 0x7, (MFW1 >> 6) & 0x3);
-    if (o == 0) // ignore linemod from line1
-      czdata->_lineMod = (MFW1 >> 3) & 0x7;
+    OSC->_dcoWaveA = decodewave((MFW0 >> 5) & 0x7, (MFW1 >> 6) & 0x3);
+    OSC->_dcoWaveB = decodewave((MFW0 >> 2) & 0x7, (MFW1 >> 6) & 0x3);
 
-    OSC._dcaKeyFollow = MAMD & 0xf;
-    OSC._dcwKeyFollow = MWMD & 0xf;
-    OSC._dcaDepth     = 15 - (MAMD >> 4);
-    OSC._dcwDepth     = 15;
+    if (o == 0) { // ignore linemod from line1{
+                  // czdata->_lineMod = (MFW1 >> 3) & 0x7;
+    }
 
-    OSC._dcaVelFollow    = PMAL >> 4;
-    OSC._dcwVelFollow    = PMWL >> 4;
-    OSC._dcaEnv._endStep = PMAL & 7;
-    OSC._dcwEnv._endStep = PMWL & 7;
-    OSC._dcoEnv._endStep = PMPL & 7;
+    OSC->_dcaKeyFollow = MAMD & 0xf;
+    OSC->_dcwKeyFollow = MWMD & 0xf;
+    OSC->_dcaDepth     = 15 - (MAMD >> 4);
+    OSC->_dcwDepth     = 15;
+
+    OSC->_dcaVelFollow    = PMAL >> 4;
+    OSC->_dcwVelFollow    = PMWL >> 4;
+    OSC->_dcaEnv._endStep = PMAL & 7;
+    OSC->_dcwEnv._endStep = PMWL & 7;
+    OSC->_dcoEnv._endStep = PMPL & 7;
   }
   assert(byteindex == 128);
+
+  ////////////////////////////////////
+  // todo create 2 instances of CzOsc
+  //
 
   std::string name;
   if (is_cz1) {
@@ -264,37 +291,39 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     name = std::regex_replace(name, std::regex("^ +| +$|( ) +"), "$1");
   }
   // czdata->dump();
-  auto ld     = prgout->newLayer();
-  ld->_keymap = outd->_zpmKM;
 
-  auto CB0           = new ControlBlockData;
-  ld->_ctrlBlocks[0] = CB0;
-
-  auto AE        = new RateLevelEnvData;
-  CB0->_cdata[0] = AE;
-
-  AE->_name   = "AMPENV";
-  AE->_ampenv = true;
-  AE->_segments.push_back({0, 1}); // atk1
-  AE->_segments.push_back({0, 0}); // atk2
-  AE->_segments.push_back({0, 0}); // atk3
-  AE->_segments.push_back({0, 0}); // dec
-  AE->_segments.push_back({2, 0}); // rel1
-  AE->_segments.push_back({0, 0}); // rel2
-  AE->_segments.push_back({0, 0}); // rel3
-  ld->_kmpBlock._keymap = outd->_zpmKM;
-
-  auto osc = ld->appendDspBlock();
-  auto amp = ld->appendDspBlock();
-  CZX::initBlock(osc, czdata);
-  AMP::initBlock(amp);
-  ld->_envCtrlData._useNatEnv = false;
-  ld->_algData._algID         = 1;
-  ld->_algData._name          = "ALG1";
-  czdata->_name               = name;
+  auto make_layer = [&](czxdata_constptr_t oscdata) -> lyrdata_ptr_t {
+    auto layerdata            = prgout->newLayer();
+    layerdata->_keymap        = outd->_zpmKM;
+    auto CB0                  = new ControlBlockData;
+    layerdata->_ctrlBlocks[0] = CB0;
+    auto AE                   = new RateLevelEnvData;
+    CB0->_cdata[0]            = AE;
+    AE->_name                 = "AMPENV";
+    AE->_ampenv               = true;
+    AE->_segments.push_back({0, 1}); // atk1
+    AE->_segments.push_back({0, 0}); // atk2
+    AE->_segments.push_back({0, 0}); // atk3
+    AE->_segments.push_back({0, 0}); // dec
+    AE->_segments.push_back({2, 0}); // rel1
+    AE->_segments.push_back({0, 0}); // rel2
+    AE->_segments.push_back({0, 0}); // rel3
+    layerdata->_kmpBlock._keymap = outd->_zpmKM;
+    auto osc                     = layerdata->appendDspBlock();
+    auto amp                     = layerdata->appendDspBlock();
+    CZX::initBlock(osc, oscdata);
+    AMP::initBlock(amp);
+    layerdata->_envCtrlData._useNatEnv = false;
+    layerdata->_algData._algID         = 1;
+    layerdata->_algData._name          = "ALG1";
+    return layerdata;
+  };
+  make_layer(czdata->_oscData[0]);
+  make_layer(czdata->_oscData[1]);
+  czdata->_name = name;
 
   czdata->dump();
-}
+} // namespace ork::audio::singularity
 ///////////////////////////////////////////////////////////////////////////////
 void parse_cz101(CzData* outd, const file::Path& path, const std::string& bnkname) {
   ork::File syxfile(path, ork::EFM_READ);
@@ -418,14 +447,14 @@ void CzProgData::dump() const {
   printf("  _vibratoRate<%d>\n", _vibratoRate);
   printf("  _vibratoDepth<%d>\n", _vibratoDepth);
   for (int o = 0; o < 2; o++) {
-    const auto& OSC = _oscData[o];
-    assert(OSC._dcoWaveA >= 0);
-    assert(OSC._dcoWaveB >= 0);
-    assert(OSC._dcoWaveA < 8);
-    assert(OSC._dcoWaveB < 8);
+    const auto OSC = _oscData[o];
+    assert(OSC->_dcoWaveA >= 0);
+    assert(OSC->_dcoWaveB >= 0);
+    assert(OSC->_dcoWaveA < 8);
+    assert(OSC->_dcoWaveB < 8);
     printf("  osc<%d>\n", o);
-    printf("    _dcoWaveA<%d>\n", OSC._dcoWaveA);
-    printf("    _dcoWaveB<%d>\n", OSC._dcoWaveB);
+    printf("    _dcoWaveA<%d>\n", OSC->_dcoWaveA);
+    printf("    _dcoWaveB<%d>\n", OSC->_dcoWaveB);
     auto dumpenv = [](const CzEnvelope& env) {
       printf("        _endStep<%d>\n", env._endStep);
       if (env._sustPoint >= 0)
@@ -440,17 +469,17 @@ void CzProgData::dump() const {
       printf("\n");
     };
     printf("    _dcoEnv\n");
-    dumpenv(OSC._dcoEnv);
+    dumpenv(OSC->_dcoEnv);
     printf("    _dcwEnv\n");
-    dumpenv(OSC._dcwEnv);
-    printf("    _dcwKeyFollow<%d>\n", OSC._dcwKeyFollow);
-    printf("    _dcwVelFollow<%d>\n", OSC._dcwVelFollow);
-    printf("    _dcwDepth<%d>\n", OSC._dcwDepth);
+    dumpenv(OSC->_dcwEnv);
+    printf("    _dcwKeyFollow<%d>\n", OSC->_dcwKeyFollow);
+    printf("    _dcwVelFollow<%d>\n", OSC->_dcwVelFollow);
+    printf("    _dcwDepth<%d>\n", OSC->_dcwDepth);
     printf("    _dcaEnv\n");
-    dumpenv(OSC._dcaEnv);
-    printf("    _dcaKeyFollow<%d>\n", OSC._dcaKeyFollow);
-    printf("    _dcaVelFollow<%d>\n", OSC._dcaVelFollow);
-    printf("    _dcaDepth<%d>\n", OSC._dcaDepth);
+    dumpenv(OSC->_dcaEnv);
+    printf("    _dcaKeyFollow<%d>\n", OSC->_dcaKeyFollow);
+    printf("    _dcaVelFollow<%d>\n", OSC->_dcaVelFollow);
+    printf("    _dcaDepth<%d>\n", OSC->_dcaDepth);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

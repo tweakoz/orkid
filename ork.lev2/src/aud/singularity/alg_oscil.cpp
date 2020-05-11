@@ -538,37 +538,6 @@ void FM4::initBlock(dspblkdata_ptr_t blockdata) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CZX::CZX(const DspBlockData& dbd)
-    : DspBlock(dbd) {
-  _cz = new czsyn;
-}
-void CZX::compute(DspBuffer& dspbuf) // final
-{
-  float centoff  = _param[0].eval();
-  _fval[0]       = centoff;
-  int inumframes = dspbuf._numframes;
-  float* lbuf    = dspbuf.channel(1);
-  float* ubuf    = dspbuf.channel(0);
-  //_layer->_curPitchOffsetInCents = centoff;
-  _cz->compute(dspbuf);
-}
-
-void CZX::doKeyOn(const DspKeyOnInfo& koi) // final
-{
-  _cz->keyOn(koi);
-}
-void CZX::doKeyOff() // final
-{
-  _cz->keyOff();
-}
-void CZX::initBlock(dspblkdata_ptr_t blockdata, czprogdata_ptr_t czdata) {
-  blockdata->_dspBlock = "CZX";
-  blockdata->_paramd[0].usePitchEvaluator();
-  blockdata->_extdata["PDX"].Set<czprogdata_ptr_t>(czdata);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 NOISE::NOISE(const DspBlockData& dbd)
     : DspBlock(dbd) {
 }

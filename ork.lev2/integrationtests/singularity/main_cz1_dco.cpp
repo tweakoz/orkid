@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
   // allocate components
   //////////////////////////////////////////////////////////////////////////////
   auto program = std::make_shared<ProgramData>();
-  auto czdata  = std::make_shared<CzProgData>();
+  auto czdata  = std::make_shared<CzOscData>();
   auto keymap  = std::make_shared<KeyMap>();
   auto CB0     = std::make_shared<ControlBlockData>();
   auto AE      = std::make_shared<RateLevelEnvData>();
@@ -21,7 +21,6 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   program->_role = "czx";
   program->_name = "test";
-  czdata->_name  = "test";
   keymap->_name  = "CZX";
   keymap->_kmID  = 1;
   //_zpmDB->_keymaps[1] = keymap;

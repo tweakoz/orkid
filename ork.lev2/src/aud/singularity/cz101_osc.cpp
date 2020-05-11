@@ -20,13 +20,13 @@ CzOsc::CzOsc() {
 CzOsc::~CzOsc() {
 }
 
-void CzOsc::keyOn(const DspKeyOnInfo& koi, const CzOscData& opd) {
-  _data        = opd;
+void CzOsc::keyOn(const DspKeyOnInfo& koi, czxdata_constptr_t oscdata) {
+  _data        = oscdata;
   _pbIndex     = 0;
   _pbIndexNext = 0;
   _prevOutput  = 0.0f;
   _pbIncrBase  = 0;
-  setWave(opd._dcoWaveA, opd._dcoWaveB);
+  setWave(oscdata->_dcoWaveA, oscdata->_dcoWaveB);
 }
 void CzOsc::keyOff() {
 }
@@ -70,7 +70,7 @@ float CzOsc::compute(float frq, float mi) {
   float angle  = base_angle; //
   float window = 1.0f;
 
-  switch (_data._dcoWaveA) {
+  switch (_data->_dcoWaveA) {
     case 0: // saw
       window = sincw->sampleLerp(angle);
       angle += distort_saw * mi;
