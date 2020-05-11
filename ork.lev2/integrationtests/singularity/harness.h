@@ -26,7 +26,7 @@ extern synth* the_synth;
 
 qtezapp_ptr_t createEZapp(int& argc, char** argv);
 
-inline void enqueue_audio_event(const programData* prog, //
+inline void enqueue_audio_event(const ProgramData* prog, //
                                  float time,
                                  float duration,
                                  int midinote) {

@@ -51,7 +51,7 @@ Sf2TestSynthData::~Sf2TestSynthData() {
   delete _sfont;
 }
 
-const programData* Sf2TestSynthData::getProgram(int progID) const {
+const ProgramData* Sf2TestSynthData::getProgram(int progID) const {
   auto ObjDB = _sfont->_zpmDB;
   return ObjDB->findProgram(progID);
 }
@@ -73,11 +73,11 @@ VastObjectsDB* KrzSynthData::baseObjects() {
 KrzSynthData::KrzSynthData(synth* syn)
     : SynthData(syn) {
 }
-const programData* KrzSynthData::getProgram(int progID) const {
+const ProgramData* KrzSynthData::getProgram(int progID) const {
   auto ObjDB = baseObjects();
   return ObjDB->findProgram(progID);
 }
-const programData* KrzSynthData::getProgramByName(const std::string& named) const {
+const ProgramData* KrzSynthData::getProgramByName(const std::string& named) const {
   auto ObjDB = baseObjects();
   return ObjDB->findProgramByName(named);
 }
@@ -87,12 +87,12 @@ const programData* KrzSynthData::getProgramByName(const std::string& named) cons
 KrzKmTestData::KrzKmTestData(synth* syn)
     : SynthData(syn) {
 }
-const programData* KrzKmTestData::getProgram(int kmID) const {
-  programData* rval = nullptr;
+const ProgramData* KrzKmTestData::getProgram(int kmID) const {
+  ProgramData* rval = nullptr;
   auto it           = _testKmPrograms.find(kmID);
   if (it == _testKmPrograms.end()) {
     auto ObjDB  = KrzSynthData::baseObjects();
-    rval        = new programData;
+    rval        = new ProgramData;
     rval->_role = "KmTest";
     auto km     = ObjDB->findKeymap(kmID);
     if (km) {
@@ -113,7 +113,7 @@ KrzTestData::KrzTestData(synth* syn)
   genTestPrograms();
 }
 
-const programData* KrzTestData::getProgram(int progid) const {
+const ProgramData* KrzTestData::getProgram(int progid) const {
   int inumtests = _testPrograms.size();
   int testid    = progid % inumtests;
   printf("test<%d>\n", testid);
@@ -223,7 +223,7 @@ SynthData::SynthData(synth* syn)
 ///////////////////////////////////////////////////////////////////////////////
 
 void KrzTestData::genTestPrograms() {
-  auto t1   = new programData;
+  auto t1   = new ProgramData;
   t1->_role = "PrgTest";
   _testPrograms.push_back(t1);
   t1->_name = "YO";

@@ -11,8 +11,8 @@ namespace ork::audio::singularity {
 struct VastObjectsDB {
   void loadJson(const std::string& fname, int bank);
 
-  const programData* findProgram(int idx) const;
-  const programData* findProgramByName(const std::string named) const;
+  const ProgramData* findProgram(int idx) const;
+  const ProgramData* findProgramByName(const std::string named) const;
   const KeyMap* findKeymap(int kmID) const;
 
   //
@@ -21,9 +21,9 @@ struct VastObjectsDB {
   AsrData* parseAsr(const rapidjson::Value& JO, const std::string& name);
   LfoData* parseLfo(const rapidjson::Value& JO, const std::string& name);
   FunData* parseFun(const rapidjson::Value& JO, const std::string& name);
-  lyrdata_ptr_t parseLayer(const rapidjson::Value& JO, programData* pd);
+  lyrdata_ptr_t parseLayer(const rapidjson::Value& JO, ProgramData* pd);
   void parseEnvControl(const rapidjson::Value& JO, EnvCtrlData& ed);
-  programData* parseProgram(const rapidjson::Value& JO);
+  ProgramData* parseProgram(const rapidjson::Value& JO);
   multisample* parseMultiSample(const rapidjson::Value& JO);
   sample* parseSample(const rapidjson::Value& JO, const multisample* parent);
 
@@ -33,12 +33,12 @@ struct VastObjectsDB {
   dspblkdata_ptr_t parseDspBlock(const Value& JO, lyrdata_ptr_t layd, bool force = false);
   dspblkdata_ptr_t parsePchBlock(const Value& JO, lyrdata_ptr_t layd);
 
-  std::map<int, programData*> _programs;
-  std::map<std::string, programData*> _programsByName;
+  std::map<int, ProgramData*> _programs;
+  std::map<std::string, ProgramData*> _programsByName;
   std::map<int, KeyMap*> _keymaps;
   std::map<int, multisample*> _multisamples;
 
-  std::map<int, programData*> _tempprograms;
+  std::map<int, ProgramData*> _tempprograms;
   std::map<int, KeyMap*> _tempkeymaps;
   std::map<int, multisample*> _tempmultisamples;
 };

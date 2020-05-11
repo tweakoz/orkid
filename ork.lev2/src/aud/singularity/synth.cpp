@@ -24,7 +24,7 @@ programInst::~programInst() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void programInst::keyOn(int note, const programData* pd) {
+void programInst::keyOn(int note, const ProgramData* pd) {
   int ilayer = 0;
 
   for (const auto& ld : pd->_LayerDatas) {
@@ -207,7 +207,7 @@ void synth::deactivateVoices() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-programInst* synth::keyOn(int note, const programData* pdata) {
+programInst* synth::keyOn(int note, const ProgramData* pdata) {
   assert(pdata);
   auto it = _freeProgInst.begin();
   assert(it != _freeProgInst.end());

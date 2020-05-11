@@ -310,7 +310,7 @@ struct LayerData {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct programData {
+struct ProgramData {
   lyrdata_ptr_t newLayer();
   lyrdata_ptr_t getLayer(int i) const {
     return _LayerDatas[i];
@@ -330,8 +330,8 @@ struct SynthData {
   }
 
   float seqTime(float dur);
-  virtual const programData* getProgram(int progID) const                     = 0;
-  virtual const programData* getProgramByName(const std::string& named) const = 0;
+  virtual const ProgramData* getProgram(int progID) const                     = 0;
+  virtual const ProgramData* getProgramByName(const std::string& named) const = 0;
 
   programInst* _prog;
   float _synsr;
@@ -346,8 +346,8 @@ struct KrzSynthData : public SynthData {
   static VastObjectsDB* baseObjects();
 
   KrzSynthData(synth* syn);
-  const programData* getProgram(int progID) const final;
-  const programData* getProgramByName(const std::string& named) const final;
+  const ProgramData* getProgram(int progID) const final;
+  const ProgramData* getProgramByName(const std::string& named) const final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -356,8 +356,8 @@ struct Sf2TestSynthData : public SynthData {
   Sf2TestSynthData(const file::Path& syxpath, synth* syn, const std::string& bankname = "sf2");
   ~Sf2TestSynthData();
   sf2::SoundFont* _sfont;
-  const programData* getProgram(int progID) const final;
-  const programData* getProgramByName(const std::string& named) const final {
+  const ProgramData* getProgram(int progID) const final;
+  const ProgramData* getProgramByName(const std::string& named) const final {
     return nullptr;
   }
 };
@@ -369,8 +369,8 @@ struct Tx81zData : public SynthData {
   ~Tx81zData();
   void loadBank(const file::Path& syxpath);
 
-  const programData* getProgram(int progID) const final;
-  const programData* getProgramByName(const std::string& named) const final {
+  const ProgramData* getProgram(int progID) const final;
+  const ProgramData* getProgramByName(const std::string& named) const final {
     return nullptr;
   }
   VastObjectsDB* _zpmDB;
@@ -385,8 +385,8 @@ struct CzData : public SynthData {
   ~CzData();
   void loadBank(const file::Path& syxpath, const std::string& bnkname = "czb");
 
-  const programData* getProgram(int progID) const final;
-  const programData* getProgramByName(const std::string& named) const final {
+  const ProgramData* getProgram(int progID) const final;
+  const ProgramData* getProgramByName(const std::string& named) const final {
     return nullptr;
   }
   VastObjectsDB* _zpmDB;
@@ -399,22 +399,22 @@ struct CzData : public SynthData {
 struct KrzTestData : public SynthData {
   KrzTestData(synth* syn);
   void genTestPrograms();
-  const programData* getProgram(int progID) const final;
-  const programData* getProgramByName(const std::string& named) const final {
+  const ProgramData* getProgram(int progID) const final;
+  const ProgramData* getProgramByName(const std::string& named) const final {
     return nullptr;
   }
-  std::vector<programData*> _testPrograms;
+  std::vector<ProgramData*> _testPrograms;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct KrzKmTestData : public SynthData {
   KrzKmTestData(synth* syn);
-  const programData* getProgram(int progID) const final;
-  const programData* getProgramByName(const std::string& named) const final {
+  const ProgramData* getProgram(int progID) const final;
+  const ProgramData* getProgramByName(const std::string& named) const final {
     return nullptr;
   }
-  std::map<int, programData*> _testKmPrograms;
+  std::map<int, ProgramData*> _testKmPrograms;
 };
 
 } // namespace ork::audio::singularity

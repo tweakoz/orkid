@@ -16,12 +16,12 @@ struct programInst {
   programInst(synth& syn);
   ~programInst();
 
-  void keyOn(int note, const programData* pd);
+  void keyOn(int note, const ProgramData* pd);
   void keyOff();
 
   // void compute();
 
-  const programData* _progdata;
+  const ProgramData* _progdata;
   synth& _syn;
 
   std::vector<layer*> _layers;
@@ -44,7 +44,7 @@ struct synth {
 
   void compute(int inumframes, const void* inputbuffer);
 
-  programInst* keyOn(int note, const programData* pd);
+  programInst* keyOn(int note, const ProgramData* pd);
   void keyOff(programInst* p);
 
   layer* allocLayer();

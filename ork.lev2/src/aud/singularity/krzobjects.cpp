@@ -531,7 +531,7 @@ void VastObjectsDB::parseKmpBlock(const Value& kmseg, KmpBlockData& kmblk) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, programData* pd) {
+lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
   const auto& name = pd->_name;
   printf("Got Prgram<%s> layer..\n", name.c_str());
   const auto& calvinSeg = jsonobj["CALVIN"];
@@ -830,8 +830,8 @@ void VastObjectsDB::parseEnvControl(const rapidjson::Value& seg, EnvCtrlData& ed
 
 ///////////////////////////////////////////////////////////////////////////////
 
-programData* VastObjectsDB::parseProgram(const Value& jsonobj) {
-  auto pdata       = new programData;
+ProgramData* VastObjectsDB::parseProgram(const Value& jsonobj) {
+  auto pdata       = new ProgramData;
   pdata->_role     = "Program";
   const auto& name = jsonobj["Program"].GetString();
   // printf( "Got Prgram name<%s>\n", name );
@@ -905,7 +905,7 @@ void VastObjectsDB::loadJson(const std::string& fname, int ibaseid) {
 
   for (auto it : _tempprograms) {
     int objid        = it.first;
-    programData* prg = it.second;
+    ProgramData* prg = it.second;
     auto it2         = objmap->_programs.find(objid);
     if (it2 != objmap->_programs.end()) {
       int nid = (objmap->_programs.rbegin()->first + 1);
@@ -954,8 +954,8 @@ void VastObjectsDB::loadJson(const std::string& fname, int ibaseid) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const programData* VastObjectsDB::findProgram(int progID) const {
-  programData* pd = nullptr;
+const ProgramData* VastObjectsDB::findProgram(int progID) const {
+  ProgramData* pd = nullptr;
   auto it         = _programs.find(progID);
   if (it == _programs.end()) {
     return _programs.begin()->second;
@@ -965,8 +965,8 @@ const programData* VastObjectsDB::findProgram(int progID) const {
   return pd;
 }
 
-const programData* VastObjectsDB::findProgramByName(const std::string named) const {
-  programData* pd = nullptr;
+const ProgramData* VastObjectsDB::findProgramByName(const std::string named) const {
+  ProgramData* pd = nullptr;
   auto it         = _programsByName.find(named);
   if (it == _programsByName.end()) {
     return _programsByName.begin()->second;

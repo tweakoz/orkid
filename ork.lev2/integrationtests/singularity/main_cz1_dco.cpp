@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   // allocate components
   //////////////////////////////////////////////////////////////////////////////
-  auto program = std::make_shared<programData>();
+  auto program = std::make_shared<ProgramData>();
   auto czdata  = std::make_shared<CzProgData>();
   auto keymap  = std::make_shared<KeyMap>();
   auto CB0     = std::make_shared<controlBlockData>();

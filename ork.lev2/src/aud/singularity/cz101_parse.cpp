@@ -73,7 +73,7 @@ float decode_p_envrate(int value) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void parse_czprogramdata(CzData* outd, programData* prgout, std::vector<u8> bytes) {
+void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> bytes) {
 
   bool is_cz1 = bytes.size() == 144;
 
@@ -348,7 +348,7 @@ void parse_cz101(CzData* outd, const file::Path& path, const std::string& bnknam
   for (int iv = 0; iv < programcount; iv++) {
     printf("////////////////////////////\n");
     int newprogramid               = outd->_lastprg++;
-    auto prgout                    = new programData;
+    auto prgout                    = new ProgramData;
     zpmDB->_programs[newprogramid] = prgout;
     prgout->_role                  = "czx";
     prgout->_name                  = FormatString("%s(%02d)", bnkname.c_str(), iv);
@@ -471,7 +471,7 @@ void CzData::loadBank(const file::Path& syxpath, const std::string& bnkname) {
   parse_cz101(this, syxpath.c_str(), bnkname);
 }
 ///////////////////////////////////////////////////////////////////////////////
-const programData* CzData::getProgram(int progID) const // final
+const ProgramData* CzData::getProgram(int progID) const // final
 {
   auto ObjDB = this->_zpmDB;
   return ObjDB->findProgram(progID);

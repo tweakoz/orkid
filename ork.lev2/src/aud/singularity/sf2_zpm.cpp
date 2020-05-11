@@ -218,7 +218,7 @@ void SoundFont::genZpmDB() {
    {
         auto id = it.first;
         auto km = it.second;
-        auto prg = new programData;
+        auto prg = new ProgramData;
         _zpmDB->_programs[id] = prg;
         prg->_name = km->_name;
         prg->_role = _bankName;

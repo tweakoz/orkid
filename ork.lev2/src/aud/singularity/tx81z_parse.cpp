@@ -104,7 +104,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
   }
 
   for (int iv = 0; iv < programcount; iv++) {
-    auto prg                           = new programData;
+    auto prg                           = new ProgramData;
     zpmDB->_programs[outd->_lastprg++] = prg;
     prg->_role                         = "fm4";
 
@@ -339,7 +339,7 @@ Tx81zData::~Tx81zData() {
 void Tx81zData::loadBank(const file::Path& syxpath) {
   parse_tx81z(this, syxpath);
 }
-const programData* Tx81zData::getProgram(int progID) const // final
+const ProgramData* Tx81zData::getProgram(int progID) const // final
 {
   auto ObjDB = this->_zpmDB;
   return ObjDB->findProgram(progID);

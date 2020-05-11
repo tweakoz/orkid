@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
   auto basepath = file::Path::share_dir() / "singularity" / "casioCZ";
   startupAudio();
   //////////////////////////////////////////////////////////////////////////////
-  auto add_event = [&](const programData* prog, //
+  auto add_event = [&](const ProgramData* prog, //
                        float time,
                        float duration,
                        int midinote) {
