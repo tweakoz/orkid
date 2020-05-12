@@ -162,7 +162,7 @@ void DrawSpectra(
     // printf( "dB<%f>\n", dB);
     float fi = float(i) / float(inumframes);
 
-    float frq      = fi * getSampleRate();
+    float frq      = fi * getSampleRate() * 2;
     float midinote = frequency_to_midi_note(frq);
     // printf("i<%d> frq<%g> midinote<%g>\n", i, frq, midinote);
     float x2 = 32 + ANA_X1 + ANA_W * midinote * KFIMAXNOTE;
