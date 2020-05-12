@@ -64,9 +64,9 @@ BlockMemPort::BlockMemPort(
      size_t w,
      size_t d)
     : _width(w)
-    , _widthpot(numbits(w-1))
+    , _widthpot(bitsToHold(w-1))
     , _depth(d)
-    , _addrwidth(numbits(d-1))
+    , _addrwidth(bitsToHold(d-1))
     , address(m->add_input(name+"_address",_addrwidth))
     , datain(m->add_input(name+"_datain",_width))
     , dataout(m->add_regout(name+"_dataout",_width))

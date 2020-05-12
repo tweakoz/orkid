@@ -368,7 +368,7 @@ void fm4syn::keyOn(const DspKeyOnInfo& koi) {
   _opAmp[3]  = 0.0f;
   auto dspb  = koi._prv;
   auto& dbd  = dspb->_dbd;
-  auto progd = dbd.getExtData("FM4").Get<Fm4ProgData*>();
+  auto progd = dbd->getExtData("FM4").Get<Fm4ProgData*>();
   auto l     = koi._layer;
 
   // int curpitch = l->_curnote;

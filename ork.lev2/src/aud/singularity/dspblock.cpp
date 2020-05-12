@@ -34,10 +34,18 @@ float* DspBuffer::channel(int ich) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DspBlock::DspBlock(const DspBlockData& dbd)
+dspblkdata_ptr_t DspStageData::appendBlock() {
+  OrkAssert(_numblocks < kmaxdspblocksperstage);
+  auto blk                  = std::make_shared<DspBlockData>();
+  _blockdatas[_numblocks++] = blk;
+  return blk;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+DspBlock::DspBlock(dspblkdata_constptr_t dbd)
     : _dbd(dbd)
-    , _baseIndex(dbd._blockIndex)
-    , _numParams(dbd._numParams) {
+    , _numParams(dbd->_numParams) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -64,7 +72,7 @@ void DspBlock::keyOn(const DspKeyOnInfo& koi) {
   _layer = koi._layer;
 
   for (int i = 0; i < _numParams; i++) {
-    _param[i] = initFPARAM(_dbd._paramd[i]);
+    _param[i] = initFPARAM(_dbd->_paramd[i]);
     _param[i].keyOn(koi._key, koi._vel);
   }
 
@@ -73,67 +81,27 @@ void DspBlock::keyOn(const DspKeyOnInfo& koi) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float* DspBlock::getInpBuf1(DspBuffer& obuf) {
-  uint32_t imask = _iomask._inputMask;
-  if (imask & 1)
-    return obuf.channel(0);
-  if (imask & 2)
-    return obuf.channel(1);
-  if (imask & 4)
-    return obuf.channel(2);
-  if (imask & 8)
-    return obuf.channel(3);
-  return nullptr;
+const float* DspBlock::getInpBuf(DspBuffer& obuf, int index) {
+  int inpidx = _iomask._inputs[index];
+  return obuf.channel(inpidx);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float* DspBlock::getOutBuf1(DspBuffer& obuf) {
-  uint32_t mask = _iomask._outputMask;
-  if (mask & 1)
-    return obuf.channel(0);
-  if (mask & 2)
-    return obuf.channel(1);
-  if (mask & 4)
-    return obuf.channel(2);
-  if (mask & 8)
-    return obuf.channel(3);
-  return nullptr;
+float* DspBlock::getOutBuf(DspBuffer& obuf, int index) {
+  int outidx = _iomask._outputs[index];
+  return obuf.channel(outidx);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DspBlock::output1(DspBuffer& obuf, int index, float val) {
-  float* A       = obuf.channel(0);
-  float* B       = obuf.channel(1);
-  float* C       = obuf.channel(2);
-  float* D       = obuf.channel(3);
-  uint32_t omask = _iomask._outputMask;
-
-  if (omask & 1)
-    A[index] = val;
-  if (omask & 2)
-    B[index] = val;
-  if (omask & 4)
-    C[index] = val;
-  if (omask & 8)
-    D[index] = val;
-}
+// void DspBlock::output(DspBuffer& obuf, int chanidx, int sampleindex, float val) {
+// int outidx     = _iomask._outputs[chanidx];
+// float* A       = obuf.channel(outidx);
+// A[sampleindex] = val;
+//}
 
 ///////////////////////////////////////////////////////////////////////////////
-
-int NumberOfSetBits(uint32_t i) {
-  i = i - ((i >> 1) & 0x55555555);
-  i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
-  return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
-}
-
-int IoMask::numInputs() const {
-  return NumberOfSetBits(_inputMask);
-}
-int IoMask::numOutputs() const {
-  return NumberOfSetBits(_outputMask);
-}
 
 int DspBlock::numOutputs() const {
   return _iomask.numOutputs();

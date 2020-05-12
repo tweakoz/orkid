@@ -7,41 +7,49 @@ namespace ork::audio::singularity {
 // amp blocks
 ///////////////////////////////////////////////////////////////////////////////
 
+struct AMP_MONOIO : public DspBlock {
+  static void initBlock(dspblkdata_ptr_t blockdata);
+  AMP_MONOIO(dspblkdata_constptr_t dbd);
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const DspKeyOnInfo& koi) final;
+  float _filt;
+};
+
 struct AMP : public DspBlock {
   static void initBlock(dspblkdata_ptr_t blockdata);
-  AMP(const DspBlockData& dbd);
+  AMP(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
   float _filt;
   float _upan, _lpan;
 };
 struct PLUSAMP : public DspBlock {
-  PLUSAMP(const DspBlockData& dbd);
+  PLUSAMP(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
   float _filt;
 };
 struct XAMP : public DspBlock {
-  XAMP(const DspBlockData& dbd);
+  XAMP(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
   float _filt;
 };
 struct GAIN : public DspBlock {
-  GAIN(const DspBlockData& dbd);
+  GAIN(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   float _filt;
 };
 
 struct BANGAMP : public DspBlock {
-  BANGAMP(const DspBlockData& dbd);
+  BANGAMP(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
   float _smooth;
 };
 
 struct AMPU_AMPL : public DspBlock {
-  AMPU_AMPL(const DspBlockData& dbd);
+  AMPU_AMPL(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
   float _filtU, _filtL;
@@ -49,27 +57,27 @@ struct AMPU_AMPL : public DspBlock {
 };
 
 struct BAL_AMP : public DspBlock {
-  BAL_AMP(const DspBlockData& dbd);
+  BAL_AMP(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
   float _filt;
 };
 
 struct XGAIN : public DspBlock {
-  XGAIN(const DspBlockData& dbd);
+  XGAIN(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
   float _filt;
 };
 
 struct XFADE : public DspBlock {
-  XFADE(const DspBlockData& dbd);
+  XFADE(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
   float _pumix, _plmix; // for smoothing
 };
 struct PANNER : public DspBlock {
-  PANNER(const DspBlockData& dbd);
+  PANNER(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
   float _plmix, _prmix; // for smoothing

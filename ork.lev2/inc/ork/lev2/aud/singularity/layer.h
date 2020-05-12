@@ -51,13 +51,13 @@ struct hudaframe {
   op4frame _op4frame[4];
 };
 struct hudkframe {
-  int _note                     = 0;
-  int _vel                      = 0;
-  int _layerIndex               = -1;
-  lyrdata_constptr_t _layerdata = nullptr;
-  const kmregion* _kmregion     = nullptr;
-  Alg* _alg                     = nullptr;
-  bool _useFm4                  = false;
+  lyrdata_constptr_t _layerdata;
+  alg_ptr_t _alg;
+  const kmregion* _kmregion = nullptr;
+  int _note                 = 0;
+  int _vel                  = 0;
+  int _layerIndex           = -1;
+  bool _useFm4              = false;
 
   std::string _miscText;
 };
@@ -111,11 +111,12 @@ struct layer {
   float* _AENV;
   float _USERAMPENV[1024];
   float _layerTime;
+  dspblk_ptr_t _pchBlock;
 
   ControlBlockInst* _ctrlBlock[kmaxctrlblocks] = {0, 0, 0, 0, 0, 0, 0, 0};
 
   std::map<std::string, ControllerInst*> _controlMap;
-  Alg* _alg;
+  alg_ptr_t _alg;
 
   outputBuffer _layerObuf;
   dspbuf_ptr_t _dspbuffer;

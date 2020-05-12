@@ -393,23 +393,23 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
         }
         case '`':
           if( ! down ) break;
-          the_synth->_fblockEnable[0] = ! the_synth->_fblockEnable[0];
+          the_synth->_stageEnable[0] = ! the_synth->_stageEnable[0];
           break;
         case '1':
           if( ! down ) break;
-          the_synth->_fblockEnable[1] = ! the_synth->_fblockEnable[1];
+          the_synth->_stageEnable[1] = ! the_synth->_stageEnable[1];
           break;
         case '2':
           if( ! down ) break;
-          the_synth->_fblockEnable[2] = ! the_synth->_fblockEnable[2];
+          the_synth->_stageEnable[2] = ! the_synth->_stageEnable[2];
           break;
         case '3':
           if( ! down ) break;
-          the_synth->_fblockEnable[3] = ! the_synth->_fblockEnable[3];
+          the_synth->_stageEnable[3] = ! the_synth->_stageEnable[3];
           break;
         case '4':
           if( ! down ) break;
-          the_synth->_fblockEnable[4] = ! the_synth->_fblockEnable[4];
+          the_synth->_stageEnable[4] = ! the_synth->_stageEnable[4];
           break;
         case '5':
           if( ! down ) break;

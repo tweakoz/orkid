@@ -6,18 +6,18 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PARABASS::PARABASS(const DspBlockData& dbd)
+PARABASS::PARABASS(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void PARABASS::compute(DspBuffer& dspbuf) // final
 {
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
+  float* ubuf    = getOutBuf(dspbuf,0);
 
   float fc   = _param[0].eval();
   float gain = _param[1].eval();
-  float pad  = _dbd._inputPad;
+  float pad  = _dbd->_inputPad;
 
   if (fc > 16000.0f)
     fc = 16000.0f;
@@ -48,15 +48,15 @@ void PARABASS::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-STEEP_RESONANT_BASS::STEEP_RESONANT_BASS(const DspBlockData& dbd)
+STEEP_RESONANT_BASS::STEEP_RESONANT_BASS(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void STEEP_RESONANT_BASS::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
+  float* ubuf    = getOutBuf(dspbuf,0);
 
   float fc   = _param[0].eval() * 1.0f;
   float res  = _param[1].eval();
@@ -90,18 +90,18 @@ void STEEP_RESONANT_BASS::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PARATREBLE::PARATREBLE(const DspBlockData& dbd)
+PARATREBLE::PARATREBLE(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void PARATREBLE::compute(DspBuffer& dspbuf) // final
 {
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
+  float* ubuf    = getOutBuf(dspbuf,0);
 
   float fc   = clip_float(_param[0].eval(), 10.0f, 16000.0f);
   float gain = _param[1].eval();
-  float pad  = _dbd._inputPad;
+  float pad  = _dbd->_inputPad;
 
   // if( gain > 42 )
   //    gain = 42;
@@ -129,18 +129,18 @@ void PARATREBLE::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PARAMID::PARAMID(const DspBlockData& dbd)
+PARAMID::PARAMID(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void PARAMID::compute(DspBuffer& dspbuf) // final
 {
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
+  float* ubuf    = getOutBuf(dspbuf,0);
 
   float fc   = _param[0].eval();
   float gain = _param[1].eval();
-  float pad  = _dbd._inputPad;
+  float pad  = _dbd->_inputPad;
   _fval[0]   = fc;
   _fval[1]   = gain;
 
@@ -163,19 +163,19 @@ void PARAMID::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PARAMETRIC_EQ::PARAMETRIC_EQ(const DspBlockData& dbd)
+PARAMETRIC_EQ::PARAMETRIC_EQ(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void PARAMETRIC_EQ::compute(DspBuffer& dspbuf) // final
 {
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
+  float* ubuf    = getOutBuf(dspbuf,0);
 
   float fc   = _param[0].eval();
   float wid  = clip_float(_param[1].eval(), 0.2, 8);
   float gain = _param[2].eval();
-  float pad  = _dbd._inputPad;
+  float pad  = _dbd->_inputPad;
 
   auto ld = _layer->_LayerData;
 

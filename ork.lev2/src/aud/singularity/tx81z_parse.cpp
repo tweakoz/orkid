@@ -6,6 +6,7 @@
 #include <ork/lev2/aud/singularity/krzdata.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/lev2/aud/singularity/tx81z.h>
+#include <ork/lev2/aud/singularity/dspblocks.h>
 
 using namespace ork;
 namespace ork::audio::singularity {
@@ -126,10 +127,12 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
     ld->_kmpBlock._keymap = outd->_zpmKM;
 
-    auto block0       = ld->appendDspBlock();
-    auto block1       = ld->appendDspBlock();
-    auto block2       = ld->appendDspBlock();
-    auto block3       = ld->appendDspBlock();
+    auto stage0 = ld->appendStage();
+
+    auto block0       = stage0->appendBlock();
+    auto block1       = stage0->appendBlock();
+    auto block2       = stage0->appendBlock();
+    auto block3       = stage0->appendBlock();
     block0->_dspBlock = "FM4";
     // block0->_paramScheme = "FM4";
     block0->_extdata["FM4"].Set<Fm4ProgData*>(fm4pd);
@@ -145,8 +148,8 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     // ld->_fBlock[7]._dspBlock = "AMP";
     // ld->_fBlock[7]._paramScheme = "AMP";
     ld->_envCtrlData._useNatEnv = false;
-    ld->_algData._algID         = 1;
-    ld->_algData._name          = "ALG1";
+    ld->_algdata->_krzAlgIndex  = 1;
+    ld->_algdata->_name         = "ALG1";
 
     // for (int i = 0; i < 8; i++)
     // ld->_fBlock[i].initEvaluators();

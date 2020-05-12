@@ -359,7 +359,7 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
   const float ANA_X1 = 100;
   const float ANA_Y1 = 800;
   const float ANA_W  = INSW;
-  const float ANA_H  = 600;
+  const float ANA_H  = 500;
   const float ANA_HH = ANA_H * 0.5;
   const float ANA_CY = ANA_Y1 + ANA_HH;
   const float ANA_X2 = ANA_X1 + ANA_W;
@@ -531,8 +531,8 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
   // draw DSP blocks
   //////////////////////////////
 
-  auto& algd = layd->_algData;
-  auto alg   = HKF._alg;
+  auto algd = layd->_algdata;
+  auto alg  = HKF._alg;
 
   float xb    = DSPx;
   float yb    = 90;
@@ -546,7 +546,7 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
   yb      = 90;
   int ytb = 95;
 
-  auto alghdr = FormatString("DSP Algorithm: %s", algd._name.c_str());
+  auto alghdr = FormatString("DSP Algorithm: %s", algd->_name.c_str());
   drawtext(context, alghdr, xb + 80, yb - 10, fontscale, 1, 1, 1);
 
   //////////////////////
@@ -602,6 +602,7 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
     bool enabled = false;
   };
 
+  /* refactor for stages
   std::vector<blockrect> _blockrects;
 
   for (int i = 0; i < kmaxdspblocksperlayer; i++) {
@@ -630,9 +631,7 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
 
     if (blk) {
       int controlBlockID = i;
-      bool block_ena     = _fblockEnable[controlBlockID];
-
-      int fidx = blk->_baseIndex;
+      bool block_ena     = _stageEnable[controlBlockID];
 
       int padDB = round(linear_amp_ratio_to_decibel(dbd->_inputPad));
 
@@ -738,7 +737,7 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
 
     yb += blockh;
     ytb += blockh;
-  }
+  }*/
 
   yb = 90;
   MTXI->PushUIMatrix(width, height);
@@ -747,7 +746,7 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
   // draw dspblock borders
   /////////////////////////////////
 
-  for (auto brect : _blockrects) {
+  /*for (auto brect : _blockrects) {
     auto blk = brect.dspblock;
 
     const DspBlockData* dbd = &blk->_dbd;
@@ -759,7 +758,7 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
     DrawBorder(context, xb, brect.y1, xb + dspw, brect.y2, color);
 
     yb = brect.y2;
-  }
+  }*/
 
   MTXI->PopUIMatrix();
 

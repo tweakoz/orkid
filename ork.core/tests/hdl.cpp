@@ -107,8 +107,8 @@ struct MUL final : public Module {
 struct TOP : public Module {
     constexpr static size_t ROMW = 8;
     constexpr static size_t ROMD = 32;
-    constexpr static size_t KROMPOTW = numbits<ROMW>()-1;
-    constexpr static size_t KROMPOTD = numbits<ROMD>()-1;
+    constexpr static size_t KROMPOTW = bitsToHold<ROMW>()-1;
+    constexpr static size_t KROMPOTD = bitsToHold<ROMD>()-1;
     TOP(Module* tb,args_t args={})
         : Module("Top",tb,args)
         , initref(outregbool,lineout)

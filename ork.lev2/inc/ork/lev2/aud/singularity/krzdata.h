@@ -8,39 +8,6 @@
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
-// IoMask:
-//   specifies inputs and output configuration of a zpm module
-////////////////////////////////////////////////////////////////////////////////
-
-struct IoMask {
-  IoMask(int i = 1, int o = 1)
-      : _inputMask(i)
-      , _outputMask(o) {
-  }
-  int numInputs() const;
-  int numOutputs() const;
-  int _inputMask;
-  int _outputMask;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct AlgConfig {
-  IoMask _ioMasks[kmaxdspblocksperlayer];
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct Alg;
-struct AlgData {
-  int _algID = -1;
-  std::string _name;
-  AlgConfig _config;
-
-  Alg* createAlgInst() const;
-};
-
-///////////////////////////////////////////////////////////////////////////////
 
 struct EnvPoint {
   float _rate;
@@ -192,19 +159,6 @@ struct FunData : public ControllerData {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct BlockModulationData {
-  std::string _src1          = "OFF";
-  std::string _src2          = "OFF";
-  std::string _src2DepthCtrl = "OFF";
-
-  float _src1Depth    = 0.0f;
-  float _src2MinDepth = 0.0f;
-  float _src2MaxDepth = 0.0f;
-  evalit_t _evaluator = [](FPARAM& cec) -> float { return cec._coarse; };
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct KmpBlockData {
   const KeyMap* _keymap;
   int _transpose   = 0;
@@ -212,47 +166,6 @@ struct KmpBlockData {
   float _velTrack  = 0.0f;
   int _timbreShift = 0;
   std::string _pbMode;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct DspParamData {
-
-  DspParamData();
-
-  void useDefaultEvaluator();
-  void usePitchEvaluator();
-  void useFrequencyEvaluator();
-  void useAmplitudeEvaluator();
-  void useKrzPosEvaluator();
-  void useKrzEvnOddEvaluator();
-
-  std::string _name;
-  std::string _units;
-  float _coarse         = 0.0f;
-  float _fine           = 0.0f;
-  float _fineHZ         = 0.0f;
-  float _keyTrack       = 0.0f;
-  float _velTrack       = 0.0f;
-  int _keystartNote     = 60;
-  bool _keystartBipolar = true; // false==unipolar
-  evalit_t _evaluator;
-  BlockModulationData _mods;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct DspBlockData {
-  ork::svar16_t getExtData(const std::string& name) const;
-  //
-
-  std::string _dspBlock;
-
-  int _numParams  = 0;
-  float _inputPad = 1.0f;
-  int _blockIndex = -1;
-  std::map<std::string, ork::svar16_t> _extdata;
-  DspParamData _paramd[kmaxparmperblock];
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -282,15 +195,14 @@ struct ControlBlockData {
 struct LayerData {
   LayerData();
 
-  AlgData _algData;
+  algdata_ptr_t _algdata;
 
   EnvCtrlData _envCtrlData;
 
   KmpBlockData _kmpBlock;
   dspblkdata_ptr_t _pchBlock;
-  dspblkdata_ptr_t _dspBlocks[kmaxdspblocksperlayer];
 
-  dspblkdata_ptr_t appendDspBlock();
+  dspstagedata_ptr_t appendStage();
 
   const KeyMap* _keymap   = nullptr;
   int _numdspblocks       = 0;

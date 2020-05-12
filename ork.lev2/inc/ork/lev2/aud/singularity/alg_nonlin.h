@@ -10,29 +10,29 @@ namespace ork::audio::singularity {
 
 struct SHAPER : public DspBlock
 {
-    SHAPER( const DspBlockData& dbd );
+    SHAPER(dspblkdata_constptr_t dbd);
     void compute(DspBuffer& dspbuf) final;
 };
 struct SHAPE2 : public DspBlock
 {
-    SHAPE2( const DspBlockData& dbd );
+    SHAPE2(dspblkdata_constptr_t dbd);
     void compute(DspBuffer& dspbuf) final;
 };
 struct TWOPARAM_SHAPER : public DspBlock
 {
-    TWOPARAM_SHAPER( const DspBlockData& dbd );
+    TWOPARAM_SHAPER(dspblkdata_constptr_t dbd);
     void compute(DspBuffer& dspbuf) final;
     float ph1, ph2;
     void doKeyOn(const DspKeyOnInfo& koi) final;
 };
 struct WRAP : public DspBlock
 {
-    WRAP( const DspBlockData& dbd );
+    WRAP(dspblkdata_constptr_t dbd);
     void compute(DspBuffer& dspbuf) final;
 };
 struct DIST : public DspBlock
 {
-    DIST( const DspBlockData& dbd );
+    DIST(dspblkdata_constptr_t dbd);
     void compute(DspBuffer& dspbuf) final;
 };
 

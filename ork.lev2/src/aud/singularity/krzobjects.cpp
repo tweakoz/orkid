@@ -564,7 +564,7 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
   rval->_atk1Hold = miscSeg["atkHold"].GetBool();
   rval->_atk3Hold = miscSeg["susHold"].GetBool();
 
-  parseAlg(jsonobj, rval->_algData);
+  parseAlg(jsonobj, *(rval->_algdata));
 
   //////////////////////////////////////////////////////
 
@@ -678,12 +678,12 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
   }
   //////////////////////////////////////////////////////
 
-  if (rval->_algData._algID == 0)
+  if (rval->_algdata->_krzAlgIndex == 0)
     return rval;
 
-  assert(rval->_algData._algID >= 1);
-  assert(rval->_algData._algID <= 31);
-  const KrzAlgCfg ACFG = getAlgConfig(rval->_algData._algID);
+  assert(rval->_algdata->_krzAlgIndex >= 1);
+  assert(rval->_algdata->_krzAlgIndex <= 31);
+  const KrzAlgCfg ACFG = getAlgConfig(rval->_algdata->_krzAlgIndex);
 
   auto blkname = [](int bid) -> const char* {
     switch (bid) {
@@ -708,7 +708,7 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
     auto blockn2 = blkname(blkbase + 1);
     auto blockn3 = blkname(blkbase + 2);
 
-    printf("algd<%d> blkbase<%d> paramcount<%d> blockn1<%s>\n", rval->_algData._algID, blkbase, paramcount, blockn1);
+    printf("algd<%d> blkbase<%d> paramcount<%d> blockn1<%s>\n", rval->_algdata->_krzAlgIndex, blkbase, paramcount, blockn1);
 
     if (0 == blkbase) {
       dspblock             = parsePchBlock(pitchSeg, rval);
@@ -762,6 +762,8 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
   printf("ACFG._wa<%d>\n", ACFG._wa);
 
   int outindex = 0;
+  OrkAssert(false);
+  /* replace with dspstage method
   if (ACFG._wp)
     rval->_dspBlocks[outindex++] = do_block(blockindex, ACFG._wp);
   blockindex += ACFG._wp;
@@ -789,6 +791,7 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
   }
 
   rval->_pchBlock = rval->_dspBlocks[0];
+  */
 
   //////////////////////////////////////////////////////
 
@@ -798,21 +801,14 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const std::map<int, AlgConfig>& KrzAlgMap();
+void configureKrzAlgorithm(AlgData& algdout);
 
 void VastObjectsDB::parseAlg(const rapidjson::Value& JO, AlgData& algd) {
   const auto& calvin = JO["CALVIN"];
-  algd._algID        = calvin["ALG"].GetInt();
-  algd._name         = ork::FormatString("ALG%d", algd._algID);
-
-  const auto& amap = KrzAlgMap();
-
-  if (algd._algID != 0) {
-    auto it = amap.find(algd._algID);
-    if (it != amap.end()) {
-      algd._config = it->second;
-    }
-  }
+  algd._krzAlgIndex  = calvin["ALG"].GetInt();
+  algd._name         = ork::FormatString("ALG%d", algd._krzAlgIndex);
+  if (algd._krzAlgIndex != 0)
+    configureKrzAlgorithm(algd);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

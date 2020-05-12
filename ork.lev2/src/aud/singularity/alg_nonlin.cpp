@@ -10,52 +10,55 @@ float wrap(float inp, float adj);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SHAPER::SHAPER(const DspBlockData& dbd)
+SHAPER::SHAPER(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void SHAPER::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
 
   float amt = _param[0].eval(); //,0.01f,100.0f);
   _fval[0]  = amt;
 
-  float* inpbuf = getInpBuf1(dspbuf);
-
   // float la = decibel_to_linear_amp_ratio(amt);
-  if (1)
+  if (1) {
+    auto inputchan  = getInpBuf(dspbuf, 0);
+    auto outputchan = getOutBuf(dspbuf, 0);
     for (int i = 0; i < inumframes; i++) {
-      float s1 = shaper(inpbuf[i] * pad, amt);
-      output1(dspbuf, i, s1);
+      float s1      = shaper(inputchan[i] * pad, amt);
+      outputchan[i] = s1;
     }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SHAPE2::SHAPE2(const DspBlockData& dbd)
+SHAPE2::SHAPE2(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void SHAPE2::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
   float amt      = _param[0].eval();
   _fval[0]       = amt;
-  if (1)
+  if (1) {
+    auto inputchan  = getInpBuf(dspbuf, 0);
+    auto outputchan = getOutBuf(dspbuf, 0);
     for (int i = 0; i < inumframes; i++) {
-      float s1 = shaper(ubuf[i] * pad, amt);
-      float s2 = shaper(s1, amt * 0.75);
-      ubuf[i]  = s2;
+      float s1      = shaper(inputchan[i] * pad, amt);
+      float s2      = shaper(s1, amt * 0.75);
+      outputchan[i] = s2;
     }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TWOPARAM_SHAPER::TWOPARAM_SHAPER(const DspBlockData& dbd)
+TWOPARAM_SHAPER::TWOPARAM_SHAPER(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
@@ -72,9 +75,8 @@ void TWOPARAM_SHAPER::doKeyOn(const DspKeyOnInfo& koi) {
 
 void TWOPARAM_SHAPER::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
   float evn      = _param[0].eval();
   float odd      = _param[1].eval();
 
@@ -84,10 +86,12 @@ void TWOPARAM_SHAPER::compute(DspBuffer& dspbuf) // final
 
   _fval[0] = evn;
   _fval[1] = odd;
-  // printf( "_dbd._inputPad<%f>\n", _dbd._inputPad );
-  if (1)
+  // printf( "_dbd->_inputPad<%f>\n", _dbd->_inputPad );
+  if (1) {
+    auto inputchan  = getInpBuf(dspbuf, 0);
+    auto outputchan = getOutBuf(dspbuf, 0);
     for (int i = 0; i < inumframes; i++) {
-      float u   = ubuf[i] * pad;
+      float u   = inputchan[i] * pad;
       float usq = u * u;
       float le  = usq * decibel_to_linear_amp_ratio(evn);
       float lo  = u * decibel_to_linear_amp_ratio(odd);
@@ -103,49 +107,54 @@ void TWOPARAM_SHAPER::compute(DspBuffer& dspbuf) // final
 
       float r = (e + o) * 0.5f;
       // r = wrap(r,-30);
-      ubuf[i] = r;
+      outputchan[i] = r;
     }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-WRAP::WRAP(const DspBlockData& dbd)
+WRAP::WRAP(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void WRAP::compute(DspBuffer& dspbuf) // final
 {
   int inumframes = dspbuf._numframes;
-  float* inpbuf  = getInpBuf1(dspbuf);
   float rpoint   = _param[0].eval(); //,-100,100.0f);
   _fval[0]       = rpoint;
-  if (1)
+  if (1) {
+    auto inputchan  = getInpBuf(dspbuf, 0);
+    auto outputchan = getOutBuf(dspbuf, 0);
     for (int i = 0; i < inumframes; i++) {
-      output1(dspbuf, i, wrap(inpbuf[i], rpoint));
+      outputchan[i] = wrap(inputchan[i], rpoint);
     }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DIST::DIST(const DspBlockData& dbd)
+DIST::DIST(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void DIST::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* inpbuf  = getInpBuf1(dspbuf);
   float adj      = _param[0].eval();
   _fval[0]       = adj;
   float ratio    = decibel_to_linear_amp_ratio(adj + 30.0) * pad;
 
-  if (1)
+  if (1) {
+    auto inputchan  = getInpBuf(dspbuf, 0);
+    auto outputchan = getOutBuf(dspbuf, 0);
     for (int i = 0; i < inumframes; i++) {
-      float v = inpbuf[i] * ratio;
-      v       = softsat(v, 1);
-      output1(dspbuf, i, v);
+      float v       = inputchan[i] * ratio;
+      v             = softsat(v, 1);
+      outputchan[i] = v;
     }
+  }
 }
 
 } // namespace ork::audio::singularity

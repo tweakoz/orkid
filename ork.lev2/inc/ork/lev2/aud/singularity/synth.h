@@ -77,7 +77,7 @@ struct synth {
   std::multimap<float, void_lamda_t> _eventmap;
 
   int _soloLayer        = -1;
-  bool _fblockEnable[5] = {true, true, true, true, true};
+  bool _stageEnable[5] = {true, true, true, true, true};
   int _lnoteframe;
   float _lnotetime;
   float _testtonepi;

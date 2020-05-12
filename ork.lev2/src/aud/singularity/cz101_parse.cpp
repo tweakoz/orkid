@@ -309,13 +309,15 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     AE->_segments.push_back({0, 0}); // rel2
     AE->_segments.push_back({0, 0}); // rel3
     layerdata->_kmpBlock._keymap = outd->_zpmKM;
-    auto osc                     = layerdata->appendDspBlock();
-    auto amp                     = layerdata->appendDspBlock();
+    auto stage1                  = layerdata->appendStage();
+    auto stage2                  = layerdata->appendStage();
+    auto osc                     = stage1->appendBlock();
+    auto amp                     = stage2->appendBlock();
     CZX::initBlock(osc, oscdata);
     AMP::initBlock(amp);
     layerdata->_envCtrlData._useNatEnv = false;
-    layerdata->_algData._algID         = 1;
-    layerdata->_algData._name          = "ALG1";
+    layerdata->_algdata->_krzAlgIndex  = 1;
+    layerdata->_algdata->_name         = "ALG1";
     return layerdata;
   };
   make_layer(czdata->_oscData[0]);

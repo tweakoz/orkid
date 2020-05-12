@@ -8,6 +8,8 @@ namespace ork::audio::singularity {
 
 float shaper(float inp, float adj);
 float wrap(float inp, float adj);
+const float kmaxclip = 16.0f;  // 18dB
+const float kminclip = -16.0f; // 18dB
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -21,6 +23,49 @@ panLR panBlend(float inp) {
   rval.rmix = (inp > 0) ? lerp(0.5, 1, inp) : lerp(0.5, 0, -inp);
   return rval;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+void AMP_MONOIO::initBlock(dspblkdata_ptr_t blockdata) {
+  blockdata->_dspBlock = "AMP_MONOIO";
+  blockdata->_paramd[0].useAmplitudeEvaluator();
+}
+
+AMP_MONOIO::AMP_MONOIO(dspblkdata_constptr_t dbd)
+    : DspBlock(dbd) {
+}
+
+void AMP_MONOIO::compute(DspBuffer& dspbuf) // final
+{
+  float gain = _param[0].eval(); //,0.01f,100.0f);
+
+  int inumframes = dspbuf._numframes;
+
+  float* aenv    = _layer->_AENV;
+  const auto& LD = _layer->_LayerData;
+
+  // printf( "amp numinp<%d>\n", numInputs() );
+  auto inputchan   = getInpBuf(dspbuf, 0);
+  auto outputchan  = getOutBuf(dspbuf, 0);
+  float SingleLinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
+
+  for (int i = 0; i < inumframes; i++) {
+    _filt      = 0.995 * _filt + 0.005 * gain;
+    float linG = decibel_to_linear_amp_ratio(_filt);
+    linG *= SingleLinG;
+    float inp     = inputchan[i];
+    float ae      = aenv[i];
+    outputchan[i] = clip_float(inp * linG * _dbd->_inputPad * ae, kminclip, kmaxclip);
+  }
+  _fval[0] = _filt;
+}
+
+void AMP_MONOIO::doKeyOn(const DspKeyOnInfo& koi) // final
+{
+  _filt   = 0.0f;
+  auto LD = koi._layer->_LayerData;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void AMP::initBlock(dspblkdata_ptr_t blockdata) {
@@ -28,42 +73,40 @@ void AMP::initBlock(dspblkdata_ptr_t blockdata) {
   blockdata->_paramd[0].useAmplitudeEvaluator();
 }
 
-const float kmaxclip = 16.0f;  // 18dB
-const float kminclip = -16.0f; // 18dB
-
-AMP::AMP(const DspBlockData& dbd)
+AMP::AMP(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void AMP::compute(DspBuffer& dspbuf) // final
 {
-  float gain = _param[0].eval(); //,0.01f,100.0f);
-
+  float gain     = _param[0].eval(); //,0.01f,100.0f);
   int inumframes = dspbuf._numframes;
-  float* lbuf    = dspbuf.channel(1);
-  float* ubuf    = dspbuf.channel(0);
-
   float* aenv    = _layer->_AENV;
   const auto& LD = _layer->_LayerData;
-
-  auto l_lrmix = panBlend(_lpan);
+  auto l_lrmix   = panBlend(_lpan);
 
   // printf( "amp numinp<%d>\n", numInputs() );
   if (numInputs() == 1) {
-    float* inpbuf    = getInpBuf1(dspbuf);
+    auto ibuf        = getInpBuf(dspbuf, 0);
+    auto lbuf        = getOutBuf(dspbuf, 1);
+    auto ubuf        = getOutBuf(dspbuf, 0);
     float SingleLinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
 
     for (int i = 0; i < inumframes; i++) {
       _filt      = 0.995 * _filt + 0.005 * gain;
       float linG = decibel_to_linear_amp_ratio(_filt);
       linG *= SingleLinG;
-      float inp  = inpbuf[i];
+      float inp  = ibuf[i];
       float ae   = aenv[i];
-      float mono = clip_float(inp * linG * _dbd._inputPad * ae, kminclip, kmaxclip);
+      float mono = clip_float(inp * linG * _dbd->_inputPad * ae, kminclip, kmaxclip);
       ubuf[i]    = mono * l_lrmix.lmix;
       lbuf[i]    = mono * l_lrmix.rmix;
     }
   } else if (numInputs() == 2) {
+    auto ilbuf      = getInpBuf(dspbuf, 1);
+    auto iubuf      = getInpBuf(dspbuf, 0);
+    auto lbuf       = getOutBuf(dspbuf, 1);
+    auto ubuf       = getOutBuf(dspbuf, 0);
     auto u_lrmix    = panBlend(_upan);
     float UpperLinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
     float LowerLinG = decibel_to_linear_amp_ratio(LD->_channelGains[1]);
@@ -73,10 +116,10 @@ void AMP::compute(DspBuffer& dspbuf) // final
       _filt      = 0.995 * _filt + 0.005 * gain;
       float linG = decibel_to_linear_amp_ratio(_filt);
       float ae   = aenv[i];
-      float totG = linG * ae * _dbd._inputPad;
+      float totG = linG * ae * _dbd->_inputPad;
 
-      float inpU = ubuf[i] * totG;
-      float inpL = lbuf[i] * totG;
+      float inpU = iubuf[i] * totG;
+      float inpL = ilbuf[i] * totG;
       inpU *= UpperLinG;
       inpL *= LowerLinG;
 
@@ -101,7 +144,7 @@ void AMP::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PLUSAMP::PLUSAMP(const DspBlockData& dbd)
+PLUSAMP::PLUSAMP(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
@@ -110,8 +153,8 @@ void PLUSAMP::compute(DspBuffer& dspbuf) // final
   float gain = _param[0].eval(); //,0.01f,100.0f);
 
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
-  float* lbuf    = dspbuf.channel(1);
+  float* ubuf    = getOutBuf(dspbuf, 0);
+  float* lbuf    = getOutBuf(dspbuf, 1);
 
   float* aenv = _layer->_AENV;
   auto LD     = _layer->_LayerData;
@@ -123,8 +166,8 @@ void PLUSAMP::compute(DspBuffer& dspbuf) // final
     for (int i = 0; i < inumframes; i++) {
       _filt      = 0.999 * _filt + 0.001 * gain;
       float linG = decibel_to_linear_amp_ratio(_filt);
-      float inU  = ubuf[i] * _dbd._inputPad * LinG;
-      float inL  = lbuf[i] * _dbd._inputPad * LinG;
+      float inU  = ubuf[i] * _dbd->_inputPad * LinG;
+      float inL  = lbuf[i] * _dbd->_inputPad * LinG;
       float ae   = aenv[i];
       float res  = (inU + inL) * 0.5 * linG * ae * 2.0;
       res        = clip_float(res, -2, 2);
@@ -141,7 +184,7 @@ void PLUSAMP::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-XAMP::XAMP(const DspBlockData& dbd)
+XAMP::XAMP(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
@@ -150,8 +193,8 @@ void XAMP::compute(DspBuffer& dspbuf) // final
   float gain = _param[0].eval(); //,0.01f,100.0f);
 
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
-  float* lbuf    = dspbuf.channel(1);
+  float* ubuf    = getOutBuf(dspbuf, 0);
+  float* lbuf    = getOutBuf(dspbuf, 1);
 
   float* aenv = _layer->_AENV;
   auto LD     = _layer->_LayerData;
@@ -161,8 +204,8 @@ void XAMP::compute(DspBuffer& dspbuf) // final
     for (int i = 0; i < inumframes; i++) {
       _filt      = 0.999 * _filt + 0.001 * gain;
       float linG = decibel_to_linear_amp_ratio(_filt);
-      float inU  = ubuf[i] * _dbd._inputPad;
-      float inL  = lbuf[i] * _dbd._inputPad;
+      float inU  = ubuf[i] * _dbd->_inputPad;
+      float inL  = lbuf[i] * _dbd->_inputPad;
       float ae   = aenv[i];
       float res  = (inU * inL) * linG * ae * LinG;
       lbuf[i]    = res;
@@ -178,7 +221,7 @@ void XAMP::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GAIN::GAIN(const DspBlockData& dbd)
+GAIN::GAIN(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
@@ -187,22 +230,22 @@ void GAIN::compute(DspBuffer& dspbuf) // final
   float gain = _param[0].eval(); //,0.01f,100.0f);
   _fval[0]   = gain;
 
-  float linG = decibel_to_linear_amp_ratio(gain);
-
-  int inumframes = dspbuf._numframes;
-  float* inpbuf  = getInpBuf1(dspbuf);
-
-  if (1)
+  if (1) {
+    float linG      = decibel_to_linear_amp_ratio(gain);
+    int inumframes  = dspbuf._numframes;
+    auto inpbuf     = getInpBuf(dspbuf, 0);
+    auto outputchan = getOutBuf(dspbuf, 0);
     for (int i = 0; i < inumframes; i++) {
-      float inp  = inpbuf[i] * _dbd._inputPad;
-      float outp = softsat(inp * linG, 1);
-      output1(dspbuf, i, outp);
+      float inp     = inpbuf[i] * _dbd->_inputPad;
+      float outp    = softsat(inp * linG, 1);
+      outputchan[i] = outp;
     }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-XFADE::XFADE(const DspBlockData& dbd)
+XFADE::XFADE(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
@@ -216,21 +259,23 @@ void XFADE::compute(DspBuffer& dspbuf) // final
   float umix = (mix > 0) ? lerp(0.5, 1, mix) : lerp(0.5, 0, -mix);
 
   int inumframes = dspbuf._numframes;
-  float* lbuf    = dspbuf.channel(1);
-  float* ubuf    = dspbuf.channel(0);
+  float* lbuf    = getOutBuf(dspbuf, 1);
+  float* ubuf    = getOutBuf(dspbuf, 0);
 
   // printf( "frq<%f> _phaseInc<%lld>\n", frq, _phaseInc );
-  if (1)
+  if (1) {
+    auto outputchan = getOutBuf(dspbuf, 0);
     for (int i = 0; i < inumframes; i++) {
-      float inputU = ubuf[i] * _dbd._inputPad;
-      float inputL = lbuf[i] * _dbd._inputPad;
+      float inputU = ubuf[i] * _dbd->_inputPad;
+      float inputL = lbuf[i] * _dbd->_inputPad;
       _plmix       = _plmix * 0.995f + lmix * 0.005f;
       _pumix       = _pumix * 0.995f + umix * 0.005f;
 
-      float mixed = (inputU * _pumix) + (inputL * _plmix);
-      output1(dspbuf, i, mixed);
+      float mixed   = (inputU * _pumix) + (inputL * _plmix);
+      outputchan[i] = mixed;
       // ubuf[i] = inputU+inputL;//(inputU*_pumix)+(inputL*_plmix);
     }
+  }
 }
 
 void XFADE::doKeyOn(const DspKeyOnInfo& koi) // final
@@ -241,7 +286,7 @@ void XFADE::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-XGAIN::XGAIN(const DspBlockData& dbd)
+XGAIN::XGAIN(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
@@ -250,21 +295,23 @@ void XGAIN::compute(DspBuffer& dspbuf) // final
   float gain = _param[0].eval(); //,0.01f,100.0f);
 
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
-  float* lbuf    = dspbuf.channel(1);
+  float* ubuf    = getOutBuf(dspbuf, 0);
+  float* lbuf    = getOutBuf(dspbuf, 1);
 
-  if (1)
+  if (1) {
+    auto outputchan = getOutBuf(dspbuf, 0);
     for (int i = 0; i < inumframes; i++) {
       _filt      = 0.999 * _filt + 0.001 * gain;
       float linG = decibel_to_linear_amp_ratio(_filt);
-      float inU  = ubuf[i] * _dbd._inputPad;
-      float inL  = lbuf[i] * _dbd._inputPad;
+      float inU  = ubuf[i] * _dbd->_inputPad;
+      float inL  = lbuf[i] * _dbd->_inputPad;
       float res  = (inU * inL) * linG;
       res        = clip_float(res, -1, 1);
 
-      output1(dspbuf, i, res);
+      outputchan[i] = res;
     }
-  _fval[0] = _filt;
+    _fval[0] = _filt;
+  }
 }
 void XGAIN::doKeyOn(const DspKeyOnInfo& koi) // final
 {
@@ -273,7 +320,7 @@ void XGAIN::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AMPU_AMPL::AMPU_AMPL(const DspBlockData& dbd)
+AMPU_AMPL::AMPU_AMPL(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
@@ -283,8 +330,8 @@ void AMPU_AMPL::compute(DspBuffer& dspbuf) // final
   float gainL = _param[1].eval();
 
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
-  float* lbuf    = dspbuf.channel(1);
+  float* ubuf    = getOutBuf(dspbuf, 0);
+  float* lbuf    = getOutBuf(dspbuf, 1);
 
   auto u_lrmix = panBlend(_upan);
   auto l_lrmix = panBlend(_lpan);
@@ -301,8 +348,8 @@ void AMPU_AMPL::compute(DspBuffer& dspbuf) // final
       _filtL      = 0.999 * _filtL + 0.001 * gainL;
       float linGU = decibel_to_linear_amp_ratio(_filtU);
       float linGL = decibel_to_linear_amp_ratio(_filtL);
-      float inU   = ubuf[i] * _dbd._inputPad;
-      float inL   = lbuf[i] * _dbd._inputPad;
+      float inU   = ubuf[i] * _dbd->_inputPad;
+      float inL   = lbuf[i] * _dbd->_inputPad;
       float ae    = aenv[i];
       float resU  = inU * linGU * ae * UpperLinG;
       float resL  = inL * linGL * ae * LowerLinG;
@@ -327,7 +374,7 @@ void AMPU_AMPL::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BAL_AMP::BAL_AMP(const DspBlockData& dbd)
+BAL_AMP::BAL_AMP(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
@@ -339,8 +386,8 @@ void BAL_AMP::compute(DspBuffer& dspbuf) // final
   float linG = decibel_to_linear_amp_ratio(gain);
 
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
-  float* lbuf    = dspbuf.channel(1);
+  float* ubuf    = getOutBuf(dspbuf, 0);
+  float* lbuf    = getOutBuf(dspbuf, 1);
 
   if (1)
     for (int i = 0; i < inumframes; i++) {
@@ -353,14 +400,14 @@ void BAL_AMP::doKeyOn(const DspKeyOnInfo& koi) // final
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-PANNER::PANNER(const DspBlockData& dbd)
+PANNER::PANNER(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 void PANNER::compute(DspBuffer& dspbuf) // final
 {
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
-  float* lbuf    = dspbuf.channel(1);
+  float* ubuf    = getOutBuf(dspbuf, 0);
+  float* lbuf    = getOutBuf(dspbuf, 1);
   float pos      = _param[0].eval();
   float pan      = pos * 0.01f;
   float lmix     = (pan > 0) ? lerp(0.5, 0, pan) : lerp(0.5, 1, -pan);
@@ -371,7 +418,7 @@ void PANNER::compute(DspBuffer& dspbuf) // final
   // printf( "pan<%f> lmix<%f> rmix<%f>\n", pan, lmix, rmix );
   if (1)
     for (int i = 0; i < inumframes; i++) {
-      float input = ubuf[i] * _dbd._inputPad;
+      float input = ubuf[i] * _dbd->_inputPad;
       _plmix      = _plmix * 0.995f + lmix * 0.005f;
       _prmix      = _prmix * 0.995f + rmix * 0.005f;
 
@@ -389,7 +436,7 @@ void PANNER::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BANGAMP::BANGAMP(const DspBlockData& dbd)
+BANGAMP::BANGAMP(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
@@ -398,8 +445,8 @@ void BANGAMP::compute(DspBuffer& dspbuf) // final
   float gain = _param[0].eval(); //,0.01f,100.0f);
 
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
-  float* lbuf    = dspbuf.channel(1);
+  float* ubuf    = getOutBuf(dspbuf, 0);
+  float* lbuf    = getOutBuf(dspbuf, 1);
 
   float* aenv = _layer->_AENV;
   auto LD     = _layer->_LayerData;
@@ -410,8 +457,8 @@ void BANGAMP::compute(DspBuffer& dspbuf) // final
     for (int i = 0; i < inumframes; i++) {
       _smooth    = 0.999 * _smooth + 0.001 * gain;
       float linG = decibel_to_linear_amp_ratio(_smooth);
-      float inU  = ubuf[i] * _dbd._inputPad;
-      float inL  = lbuf[i] * _dbd._inputPad;
+      float inU  = ubuf[i] * _dbd->_inputPad;
+      float inL  = lbuf[i] * _dbd->_inputPad;
       float ae   = aenv[i];
       float res  = (inU + inL);
       res        = shaper(res, .25) * linG * ae * LinG;

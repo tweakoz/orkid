@@ -5,6 +5,7 @@
 #include <math.h>
 
 #include <ork/lev2/aud/singularity/krzdata.h>
+#include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/synth.h>
 
 namespace ork::audio::singularity {

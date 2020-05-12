@@ -322,7 +322,7 @@ void synth::compute(int inumframes, const void* inputBuffer) {
 
 void synth::resetFenables() {
   for (int i = 0; i < 5; i++)
-    _fblockEnable[i] = true;
+    _stageEnable[i] = true;
 }
 
 } // namespace ork::audio::singularity

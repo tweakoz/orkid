@@ -148,9 +148,12 @@ void layer::compute(outputBuffer& obuf) {
       }
     }
   }
+
+  ///////////////////////////////////////////////
+  // pitch block ?
   ///////////////////////////////////////////////
 
-  if (auto PCHBLK = _LayerData->_dspBlocks[0]) {
+  if (auto PCHBLK = _LayerData->_pchBlock) {
     const int kNOTEC4 = 60;
     const auto& PCH   = PCHBLK->_paramd[0];
     const auto& KMP   = _LayerData->_kmpBlock;
@@ -174,16 +177,21 @@ void layer::compute(outputBuffer& obuf) {
     int kmcents = kmfinalcents; //+region->_tuning;
     // printf( "_curCentsOSC<%d>\n", int(_curCentsOSC) );
 
-    auto dsp0 = _alg->_block[0];
+    //_pchBlock = _LayerData->_pchBlock->create();
 
-    if (dsp0) {
-      float centoff          = dsp0->_param[0].eval();
+    if (_pchBlock) {
+      float centoff          = _pchBlock->_param[0].eval();
       _curPitchOffsetInCents = int(centoff); // kmcents+pchfinalcents;
     }
     _curCentsOSC = kmcents + pchfinalcents + _curPitchOffsetInCents;
 
-  } else
+  } else {
+    // no pitch block
+    //  use default
     _curCentsOSC = _curnote * 100;
+  }
+
+  ///////////////////////////////////////////////
 
   _curCentsOSC = clip_float(_curCentsOSC, -0, 12700);
 
@@ -487,7 +495,7 @@ void layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
   }
   ///////////////////////////////////////
 
-  _alg = _LayerData->_algData.createAlgInst();
+  _alg = _LayerData->_algdata->createAlgInst();
   // assert(_alg);
   if (_alg) {
     DspKeyOnInfo koi;

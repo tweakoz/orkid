@@ -6,15 +6,15 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BANDPASS_FILT::BANDPASS_FILT(const DspBlockData& dbd)
+BANDPASS_FILT::BANDPASS_FILT(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void BANDPASS_FILT::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
+  float* ubuf    = getOutBuf(dspbuf, 0);
 
   float fc  = _param[0].eval();
   float wid = _param[1].eval();
@@ -45,15 +45,15 @@ void BANDPASS_FILT::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BAND2::BAND2(const DspBlockData& dbd)
+BAND2::BAND2(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void BAND2::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
+  float* ubuf    = getOutBuf(dspbuf, 0);
 
   float fc = _param[0].eval();
 
@@ -77,15 +77,15 @@ void BAND2::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-NOTCH_FILT::NOTCH_FILT(const DspBlockData& dbd)
+NOTCH_FILT::NOTCH_FILT(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void NOTCH_FILT::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
+  float* ubuf    = getOutBuf(dspbuf, 0);
 
   float fc  = _param[0].eval();
   float wid = _param[1].eval();
@@ -110,15 +110,15 @@ void NOTCH_FILT::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-NOTCH2::NOTCH2(const DspBlockData& dbd)
+NOTCH2::NOTCH2(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void NOTCH2::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
+  float* ubuf    = getOutBuf(dspbuf, 0);
 
   float fc = _param[0].eval();
   _fval[0] = fc;
@@ -141,15 +141,15 @@ void NOTCH2::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DOUBLE_NOTCH_W_SEP::DOUBLE_NOTCH_W_SEP(const DspBlockData& dbd)
+DOUBLE_NOTCH_W_SEP::DOUBLE_NOTCH_W_SEP(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void DOUBLE_NOTCH_W_SEP::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
+  float* ubuf    = getOutBuf(dspbuf, 0);
 
   float fc    = _param[0].eval();
   float res   = _param[1].eval();
@@ -180,15 +180,15 @@ void DOUBLE_NOTCH_W_SEP::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TWOPOLE_ALLPASS::TWOPOLE_ALLPASS(const DspBlockData& dbd)
+TWOPOLE_ALLPASS::TWOPOLE_ALLPASS(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void TWOPOLE_ALLPASS::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
+  float* ubuf    = getOutBuf(dspbuf, 0);
 
   float fc  = _param[0].eval();
   float wid = _param[1].eval();
@@ -215,15 +215,15 @@ void TWOPOLE_ALLPASS::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TWOPOLE_LOWPASS::TWOPOLE_LOWPASS(const DspBlockData& dbd)
+TWOPOLE_LOWPASS::TWOPOLE_LOWPASS(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void TWOPOLE_LOWPASS::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* inpbuf  = getInpBuf1(dspbuf);
+  auto inpbuf    = getInpBuf(dspbuf, 0);
 
   float fc  = _param[0].eval();
   float res = _param[1].eval() * 0.25;
@@ -231,15 +231,17 @@ void TWOPOLE_LOWPASS::compute(DspBuffer& dspbuf) // final
   _fval[1]  = res;
 
   // printf( "fc<%f>\n", fc );
-  if (1)
+  if (1) {
+    auto outputchan = getOutBuf(dspbuf, 0);
     for (int i = 0; i < inumframes; i++) {
       _smoothFC = (_smoothFC * 0.99f) + fc * .01f;
       _filter.SetWithRes(EM_LPF, fc, res);
       _filter.Tick(inpbuf[i] * pad);
       float output = _filter.output;
       // output = inpbuf[i]*pad;
-      output1(dspbuf, i, output);
+      outputchan[i] = output;
     }
+  }
 
   // printf( "ff<%f> res<%f>\n", ff, res );
 }
@@ -254,25 +256,27 @@ void TWOPOLE_LOWPASS::doKeyOn(const DspKeyOnInfo& koi) // final
 // LOPAS2 = TWOPOLE_LOWPASS (fixed -6dB res)
 ///////////////////////////////////////////////////////////////////////////////
 
-LOPAS2::LOPAS2(const DspBlockData& dbd)
+LOPAS2::LOPAS2(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void LOPAS2::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* inpbuf  = getInpBuf1(dspbuf);
+  auto inpbuf    = getInpBuf(dspbuf, 0);
   float fc       = _param[0].eval();
   _fval[0]       = fc;
   // float res = decibel_to_linear_amp_ratio(-6);
   _filter.SetWithRes(EM_LPF, fc, -6);
-  if (1)
+  if (1) {
+    auto outputchan = getOutBuf(dspbuf, 0);
     for (int i = 0; i < inumframes; i++) {
       _filter.Tick(inpbuf[i] * pad);
-      float output = _filter.output;
-      output1(dspbuf, i, output);
+      float output  = _filter.output;
+      outputchan[i] = output;
     }
+  }
 }
 
 void LOPAS2::doKeyOn(const DspKeyOnInfo& koi) // final
@@ -284,26 +288,28 @@ void LOPAS2::doKeyOn(const DspKeyOnInfo& koi) // final
 // LOPAS2 = TWOPOLE_LOWPASS (fixed -6dB res)
 ///////////////////////////////////////////////////////////////////////////////
 
-LP2RES::LP2RES(const DspBlockData& dbd)
+LP2RES::LP2RES(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void LP2RES::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* inpbuf  = getInpBuf1(dspbuf);
+  auto inpbuf    = getInpBuf(dspbuf, 0);
   float fc       = _param[0].eval();
   _fval[0]       = fc;
   // float res = decibel_to_linear_amp_ratio(12);
-  if (1)
+  if (1) {
+    auto outputchan = getOutBuf(dspbuf, 0);
     for (int i = 0; i < inumframes; i++) {
       //_smoothFC = (_smoothFC*0.99f) + fc*.01f;
       _filter.SetWithRes(EM_LPF, fc, 3.0f);
       _filter.Tick(inpbuf[i] * pad);
-      float output = _filter.output;
-      output1(dspbuf, i, output);
+      float output  = _filter.output;
+      outputchan[i] = output;
     }
+  }
 }
 
 void LP2RES::doKeyOn(const DspKeyOnInfo& koi) // final
@@ -313,15 +319,15 @@ void LP2RES::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FOURPOLE_LOPASS_W_SEP::FOURPOLE_LOPASS_W_SEP(const DspBlockData& dbd)
+FOURPOLE_LOPASS_W_SEP::FOURPOLE_LOPASS_W_SEP(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void FOURPOLE_LOPASS_W_SEP::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
+  float* ubuf    = getOutBuf(dspbuf, 0);
 
   float fc  = _param[0].eval();
   float res = _param[1].eval();
@@ -355,15 +361,15 @@ void FOURPOLE_LOPASS_W_SEP::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FOURPOLE_HIPASS_W_SEP::FOURPOLE_HIPASS_W_SEP(const DspBlockData& dbd)
+FOURPOLE_HIPASS_W_SEP::FOURPOLE_HIPASS_W_SEP(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void FOURPOLE_HIPASS_W_SEP::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
+  float* ubuf    = getOutBuf(dspbuf, 0);
 
   float fc  = _param[0].eval();
   float res = _param[1].eval();
@@ -402,28 +408,29 @@ void FOURPOLE_HIPASS_W_SEP::doKeyOn(const DspKeyOnInfo& koi) // final
 // LOPASS : 1 pole! lowpass
 ///////////////////////////////////////////////////////////////////////////////
 
-LOPASS::LOPASS(const DspBlockData& dbd)
+LOPASS::LOPASS(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void LOPASS::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
   float fc       = _param[0].eval();
   if (fc > 16000.0f)
     fc = 16000.0f;
   _fval[0] = fc;
   _lpf.set(fc);
 
-  float* inpbuf = getInpBuf1(dspbuf);
+  auto inpbuf = getInpBuf(dspbuf, 0);
 
-  if (1)
+  if (1) {
+    auto outputchan = getOutBuf(dspbuf, 0);
     for (int i = 0; i < inumframes; i++) {
-      float inp = inpbuf[i] * pad;
-      output1(dspbuf, i, _lpf.compute(inp));
+      float inp     = inpbuf[i] * pad;
+      outputchan[i] = _lpf.compute(inp);
     }
+  }
 }
 
 void LOPASS::doKeyOn(const DspKeyOnInfo& koi) // final
@@ -435,23 +442,25 @@ void LOPASS::doKeyOn(const DspKeyOnInfo& koi) // final
 // LPCLIP : 1 pole! lowpass
 ///////////////////////////////////////////////////////////////////////////////
 
-LPCLIP::LPCLIP(const DspBlockData& dbd)
+LPCLIP::LPCLIP(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void LPCLIP::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
   float fc       = _param[0].eval();
   _fval[0]       = fc;
   _lpf.set(fc);
-  if (1)
+  if (1) {
+    auto inputchan  = getInpBuf(dspbuf, 0);
+    auto outputchan = getOutBuf(dspbuf, 0);
     for (int i = 0; i < inumframes; i++) {
-      float inp = ubuf[i] * pad * 4.0;
-      ubuf[i]   = softsat(_lpf.compute(inp), 1.0f);
+      float inp     = inputchan[i] * pad * 4.0;
+      outputchan[i] = softsat(_lpf.compute(inp), 1.0f);
     }
+  }
 }
 
 void LPCLIP::doKeyOn(const DspKeyOnInfo& koi) // final
@@ -461,24 +470,25 @@ void LPCLIP::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-HIPASS::HIPASS(const DspBlockData& dbd)
+HIPASS::HIPASS(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void HIPASS::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
   float fc       = _param[0].eval();
   _hpf.set(fc);
 
-  float* inpbuf = getInpBuf1(dspbuf);
-
-  if (1)
+  if (1) {
+    auto inputchan  = getInpBuf(dspbuf, 0);
+    auto outputchan = getOutBuf(dspbuf, 0);
     for (int i = 0; i < inumframes; i++) {
-      float inp = inpbuf[i] * pad;
-      output1(dspbuf, i, _hpf.compute(inp));
+      float inp     = inputchan[i] * pad;
+      outputchan[i] = _hpf.compute(inp);
     }
+  }
   _fval[0] = fc;
 }
 
@@ -491,15 +501,15 @@ void HIPASS::doKeyOn(const DspKeyOnInfo& koi) // final
 // LOPASS : 1 pole! lowpass
 ///////////////////////////////////////////////////////////////////////////////
 
-LPGATE::LPGATE(const DspBlockData& dbd)
+LPGATE::LPGATE(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void LPGATE::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
+  float* ubuf    = getOutBuf(dspbuf, 0);
   float fc       = _param[0].eval();
   _fval[0]       = fc;
   _filter.SetWithQ(EM_LPF, fc, 0.5);
@@ -517,15 +527,15 @@ void LPGATE::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-HIFREQ_STIMULATOR::HIFREQ_STIMULATOR(const DspBlockData& dbd)
+HIFREQ_STIMULATOR::HIFREQ_STIMULATOR(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void HIFREQ_STIMULATOR::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
-  float* ubuf    = dspbuf.channel(0);
+  float* ubuf    = getOutBuf(dspbuf, 0);
   float fc       = _param[0].eval();
   float drv      = _param[1].eval();
   float amp      = _param[2].eval();
@@ -562,25 +572,26 @@ void HIFREQ_STIMULATOR::doKeyOn(const DspKeyOnInfo& koi) // final
 // 2pole allpass (for phasers, etc..)
 ///////////////////////////////////////////////////////////////////////////////
 
-ALPASS::ALPASS(const DspBlockData& dbd)
+ALPASS::ALPASS(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 
 void ALPASS::compute(DspBuffer& dspbuf) // final
 {
-  float pad      = _dbd._inputPad;
+  float pad      = _dbd->_inputPad;
   int inumframes = dspbuf._numframes;
 
   float fc = _param[0].eval();
   _filter.Set(fc);
   _fval[0] = fc;
 
-  float* inpbuf = getInpBuf1(dspbuf);
-
-  if (1)
+  if (1) {
+    auto inputchan  = getInpBuf(dspbuf, 0);
+    auto outputchan = getOutBuf(dspbuf, 0);
     for (int i = 0; i < inumframes; i++) {
-      output1(dspbuf, i, _filter.Tick(inpbuf[i] * pad));
+      outputchan[i] = _filter.Tick(inputchan[i] * pad);
     }
+  }
 }
 
 void ALPASS::doKeyOn(const DspKeyOnInfo& koi) // final

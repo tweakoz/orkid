@@ -9,7 +9,7 @@ namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SAMPLEPB : public DspBlock {
-  SAMPLEPB(const DspBlockData& dbd);
+  SAMPLEPB(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
 
   void doKeyOn(const DspKeyOnInfo& koi) final;
@@ -23,69 +23,69 @@ struct SAMPLEPB : public DspBlock {
 };
 
 struct SWPLUSSHP : public DspBlock {
-  SWPLUSSHP(const DspBlockData& dbd);
+  SWPLUSSHP(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   PolyBLEP _pblep;
   void doKeyOn(const DspKeyOnInfo& koi) final;
 };
 struct SAWPLUS : public DspBlock {
-  SAWPLUS(const DspBlockData& dbd);
+  SAWPLUS(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   PolyBLEP _pblep;
   void doKeyOn(const DspKeyOnInfo& koi) final;
 };
 struct SINE : public DspBlock {
-  SINE(const DspBlockData& dbd);
+  SINE(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   PolyBLEP _pblep;
   void doKeyOn(const DspKeyOnInfo& koi) final;
 };
 struct SAW : public DspBlock {
-  SAW(const DspBlockData& dbd);
+  SAW(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   PolyBLEP _pblep;
   void doKeyOn(const DspKeyOnInfo& koi) final;
 };
 struct SQUARE : public DspBlock {
-  SQUARE(const DspBlockData& dbd);
+  SQUARE(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   PolyBLEP _pblep;
   void doKeyOn(const DspKeyOnInfo& koi) final;
 };
 struct SINEPLUS : public DspBlock {
-  SINEPLUS(const DspBlockData& dbd);
+  SINEPLUS(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   PolyBLEP _pblep;
   void doKeyOn(const DspKeyOnInfo& koi) final;
 };
 struct SHAPEMODOSC : public DspBlock {
-  SHAPEMODOSC(const DspBlockData& dbd);
+  SHAPEMODOSC(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   PolyBLEP _pblep;
   void doKeyOn(const DspKeyOnInfo& koi) final;
 };
 struct PLUSSHAPEMODOSC : public DspBlock {
-  PLUSSHAPEMODOSC(const DspBlockData& dbd);
+  PLUSSHAPEMODOSC(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   PolyBLEP _pblep;
   void doKeyOn(const DspKeyOnInfo& koi) final;
 };
 struct SYNCM : public DspBlock {
-  SYNCM(const DspBlockData& dbd);
+  SYNCM(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   float _phase;
   float _phaseInc;
   void doKeyOn(const DspKeyOnInfo& koi) final;
 };
 struct SYNCS : public DspBlock {
-  SYNCS(const DspBlockData& dbd);
+  SYNCS(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   PolyBLEP _pblep;
   float _prvmaster;
   void doKeyOn(const DspKeyOnInfo& koi) final;
 };
 struct PWM : public DspBlock {
-  PWM(const DspBlockData& dbd);
+  PWM(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   PolyBLEP _pblep;
   void doKeyOn(const DspKeyOnInfo& koi) final;
@@ -94,7 +94,7 @@ struct PWM : public DspBlock {
 struct fm4syn;
 
 struct FM4 : public DspBlock {
-  FM4(const DspBlockData& dbd);
+  FM4(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
   void doKeyOff() final;
@@ -103,7 +103,7 @@ struct FM4 : public DspBlock {
 };
 
 struct NOISE : public DspBlock {
-  NOISE(const DspBlockData& dbd);
+  NOISE(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
   void doKeyOff() final;

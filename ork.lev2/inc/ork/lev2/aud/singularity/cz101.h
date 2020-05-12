@@ -92,7 +92,7 @@ struct DspBuffer;
 };*/
 
 struct CZX : public DspBlock {
-  CZX(const DspBlockData& dbd);
+  CZX(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
   void doKeyOff() final;

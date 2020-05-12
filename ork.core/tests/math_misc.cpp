@@ -87,34 +87,34 @@ TEST(clz_static)
     printf( "clz_static<0x%zx:%zu>\n", 0xffffffffffffffffL, clz<0xffffffffffffffff>());
 }
 
-TEST(numbits_dynamic)
+TEST(bitsToHold_dynamic)
 {
-    printf( "numbits_dynamic<0x%zx:%zu>\n", 1L, numbits(1));
-    printf( "numbits_dynamic<0x%zx:%zu>\n", 3L, numbits(3));
-    printf( "numbits_dynamic<0x%zx:%zu>\n", 5L, numbits(5));
-    printf( "numbits_dynamic<0x%zx:%zu>\n", 16L, numbits(16));
-    printf( "numbits_dynamic<0x%zx:%zu>\n", 17L, numbits(17));
-    printf( "numbits_dynamic<0x%zx:%zu>\n", 255L, numbits(255));
-    printf( "numbits_dynamic<0x%zx:%zu>\n", 256L, numbits(256));
-    printf( "numbits_dynamic<0x%zx:%zu>\n", 257L, numbits(257));
-    printf( "numbits_dynamic<0x%zx:%zu>\n", 0xfffffffffffffL, numbits(0xfffffffffffff));
-    printf( "numbits_dynamic<0x%zx:%zu>\n", 0xffffffffffffffL, numbits(0xffffffffffffff));
-    printf( "numbits_dynamic<0x%zx:%zu>\n", 0xfffffffffffffffL, numbits(0xfffffffffffffff));
-    printf( "numbits_dynamic<0x%zx:%zu>\n", 0xffffffffffffffffL, numbits(0xffffffffffffffff));
+    printf( "bitsToHold_dynamic<0x%zx:%zu>\n", 1L, bitsToHold(1));
+    printf( "bitsToHold_dynamic<0x%zx:%zu>\n", 3L, bitsToHold(3));
+    printf( "bitsToHold_dynamic<0x%zx:%zu>\n", 5L, bitsToHold(5));
+    printf( "bitsToHold_dynamic<0x%zx:%zu>\n", 16L, bitsToHold(16));
+    printf( "bitsToHold_dynamic<0x%zx:%zu>\n", 17L, bitsToHold(17));
+    printf( "bitsToHold_dynamic<0x%zx:%zu>\n", 255L, bitsToHold(255));
+    printf( "bitsToHold_dynamic<0x%zx:%zu>\n", 256L, bitsToHold(256));
+    printf( "bitsToHold_dynamic<0x%zx:%zu>\n", 257L, bitsToHold(257));
+    printf( "bitsToHold_dynamic<0x%zx:%zu>\n", 0xfffffffffffffL, bitsToHold(0xfffffffffffff));
+    printf( "bitsToHold_dynamic<0x%zx:%zu>\n", 0xffffffffffffffL, bitsToHold(0xffffffffffffff));
+    printf( "bitsToHold_dynamic<0x%zx:%zu>\n", 0xfffffffffffffffL, bitsToHold(0xfffffffffffffff));
+    printf( "bitsToHold_dynamic<0x%zx:%zu>\n", 0xffffffffffffffffL, bitsToHold(0xffffffffffffffff));
 }
 
-TEST(numbits_static)
+TEST(bitsToHold_static)
 {
-    printf( "numbits_static<0x%zx:%zu>\n", 1L, numbits<1>());
-    printf( "numbits_static<0x%zx:%zu>\n", 3L, numbits<3>());
-    printf( "numbits_static<0x%zx:%zu>\n", 5L, numbits<5>());
-    printf( "numbits_static<0x%zx:%zu>\n", 16L, numbits<16>());
-    printf( "numbits_static<0x%zx:%zu>\n", 17L, numbits<17>());
-    printf( "numbits_static<0x%zx:%zu>\n", 255L, numbits<255>());
-    printf( "numbits_static<0x%zx:%zu>\n", 256L, numbits<256>());
-    printf( "numbits_static<0x%zx:%zu>\n", 257L, numbits<257>());
-    printf( "numbits_static<0x%zx:%zu>\n", 0xfffffffffffffL, numbits<0xfffffffffffff>());
-    printf( "numbits_static<0x%zx:%zu>\n", 0xffffffffffffffL, numbits<0xffffffffffffff>());
-    printf( "numbits_static<0x%zx:%zu>\n", 0xfffffffffffffffL, numbits<0xfffffffffffffff>());
-    printf( "numbits_static<0x%zx:%zu>\n", 0xffffffffffffffffL, numbits<0xffffffffffffffff>());
+    printf( "bitsToHold_static<0x%zx:%zu>\n", 1L, bitsToHold<1>());
+    printf( "bitsToHold_static<0x%zx:%zu>\n", 3L, bitsToHold<3>());
+    printf( "bitsToHold_static<0x%zx:%zu>\n", 5L, bitsToHold<5>());
+    printf( "bitsToHold_static<0x%zx:%zu>\n", 16L, bitsToHold<16>());
+    printf( "bitsToHold_static<0x%zx:%zu>\n", 17L, bitsToHold<17>());
+    printf( "bitsToHold_static<0x%zx:%zu>\n", 255L, bitsToHold<255>());
+    printf( "bitsToHold_static<0x%zx:%zu>\n", 256L, bitsToHold<256>());
+    printf( "bitsToHold_static<0x%zx:%zu>\n", 257L, bitsToHold<257>());
+    printf( "bitsToHold_static<0x%zx:%zu>\n", 0xfffffffffffffL, bitsToHold<0xfffffffffffff>());
+    printf( "bitsToHold_static<0x%zx:%zu>\n", 0xffffffffffffffL, bitsToHold<0xffffffffffffff>());
+    printf( "bitsToHold_static<0x%zx:%zu>\n", 0xfffffffffffffffL, bitsToHold<0xfffffffffffffff>());
+    printf( "bitsToHold_static<0x%zx:%zu>\n", 0xffffffffffffffffL, bitsToHold<0xffffffffffffffff>());
 }

@@ -6,6 +6,7 @@
 
 #include <ork/lev2/aud/singularity/krzdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
+#include <ork/lev2/aud/singularity/dspblocks.h>
 
 namespace ork::audio::singularity {
 
@@ -257,7 +258,7 @@ void sampleOsc::findRegion(const DspKeyOnInfo& koi) {
   auto ld         = _lyr->_LayerData;
   const auto& KMP = ld->_kmpBlock;
 
-  auto PCHBLK = ld->_dspBlocks[0];
+  auto PCHBLK = ld->_pchBlock;
   assert(PCHBLK);
   const auto& PCH = PCHBLK->_paramd[0];
 

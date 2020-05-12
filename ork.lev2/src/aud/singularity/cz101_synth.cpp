@@ -17,7 +17,7 @@ using namespace ork;
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
-CZX::CZX(const DspBlockData& dbd)
+CZX::CZX(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
 void CZX::compute(DspBuffer& dspbuf) // final
@@ -45,8 +45,8 @@ void CZX::compute(DspBuffer& dspbuf) // final
 void CZX::doKeyOn(const DspKeyOnInfo& koi) // final
 {
   auto dspb         = koi._prv;
-  auto& dbd         = dspb->_dbd;
-  auto oscdata      = dbd.getExtData("CZX").Get<czxdata_constptr_t>();
+  auto dbd          = dspb->_dbd;
+  auto oscdata      = dbd->getExtData("CZX").Get<czxdata_constptr_t>();
   auto l            = koi._layer;
   l->_HKF._miscText = FormatString("CZ\n");
   l->_HKF._useFm4   = false;

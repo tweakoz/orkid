@@ -47,14 +47,14 @@ inline int powerOfTwoIndex(size_t inp) {
 ///////////////////////////////////////////////////////////////////////////////
 
 inline bool isPowerOfTwo(int ival) {
-  int inumbits = 0;
-  int ibitidx  = 30;
+  int ibitsToHold = 0;
+  int ibitidx     = 30;
 
   while (ival != 0) {
     int ibitmask = 1 << ibitidx;
 
     if (ival & ibitmask) {
-      inumbits++;
+      ibitsToHold++;
     }
 
     ival &= (~ibitmask);
@@ -62,7 +62,7 @@ inline bool isPowerOfTwo(int ival) {
     ibitidx--;
   }
 
-  return (inumbits == 1);
+  return (ibitsToHold == 1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -189,11 +189,19 @@ template <size_t S> constexpr size_t clz() {
   return n - x;
 }
 
-inline size_t numbits(size_t inp) {
+inline size_t bitsToHold(size_t inp) {
   return 64 - clz(inp);
 }
-template <size_t S> constexpr size_t numbits() {
+template <size_t S> constexpr size_t bitsToHold() {
   return 64 - clz<S>();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+inline int numberOfSetBits(uint32_t i) {
+  i = i - ((i >> 1) & 0x55555555);
+  i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
+  return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

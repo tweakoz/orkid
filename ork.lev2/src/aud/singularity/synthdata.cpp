@@ -7,6 +7,7 @@
 #include <ork/lev2/aud/singularity/krzdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
+#include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/kernel/string/string.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -25,16 +26,16 @@ float SynthData::seqTime(float dur) {
 
 LayerData::LayerData() {
   _pchBlock = nullptr;
-
-  for (int i = 0; i < kmaxdspblocksperlayer; i++)
-    _dspBlocks[i] = nullptr;
+  _algdata  = std::make_shared<AlgData>();
 }
 
-dspblkdata_ptr_t LayerData::appendDspBlock() {
-  OrkAssert(_numdspblocks < kmaxdspblocksperlayer);
-  auto block                  = std::make_shared<DspBlockData>();
-  _dspBlocks[_numdspblocks++] = block;
-  return block;
+///////////////////////////////////////////////////////////////////////////////
+
+dspstagedata_ptr_t LayerData::appendStage() {
+  OrkAssert(_algdata->_numstages < kmaxdspstagesperlayer);
+  auto stage                                = std::make_shared<DspStageData>();
+  _algdata->_stages[_algdata->_numstages++] = stage;
+  return stage;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -284,10 +285,10 @@ void KrzTestData::genTestPrograms() {
   lfo1->_controller = "ON";
   lfo1->_maxRate    = 0.1;
 
-  auto& ALGD = l1->_algData;
+  /*auto& ALGD = l1->_algData;
 
-  ALGD._name  = "ALG1";
-  ALGD._algID = 1;
+  ALGD._name        = "ALG1";
+  ALGD._krzAlgIndex = 1;
 
   if (0) {
     auto F1                = l1->_dspBlocks[1];
@@ -310,7 +311,7 @@ void KrzTestData::genTestPrograms() {
     F3->_paramd[0]._coarse = -96.0;
     // F3->_paramd[0]._paramScheme = "ODD"; need new evaluator
     F3->_paramd[0]._units = "dB";
-  }
+  }*/
 }
 
 } // namespace ork::audio::singularity

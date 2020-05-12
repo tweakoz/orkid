@@ -28,8 +28,8 @@ int main(int argc, char** argv) {
   // create layer
   //////////////////////////////////////
   auto layerdata                     = program->newLayer();
-  layerdata->_algData._algID         = 1;
-  layerdata->_algData._name          = "ALG1";
+  layerdata->_algdata->_krzAlgIndex  = 1;
+  layerdata->_algdata->_name         = "CZTEST";
   layerdata->_keymap                 = keymap.get();
   layerdata->_kmpBlock._keymap       = keymap.get();
   layerdata->_ctrlBlocks[0]          = CB0.get();
@@ -50,8 +50,14 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   // setup dsp graph
   //////////////////////////////////////
-  auto osc = layerdata->appendDspBlock();
-  auto amp = layerdata->appendDspBlock();
+  auto stage0 = layerdata->appendStage();
+  auto stage1 = layerdata->appendStage();
+  stage0->_iomask._inputs.push_back(0);  // 1 input
+  stage0->_iomask._outputs.push_back(0); // 1 output
+  stage1->_iomask._inputs.push_back(0);  // 1 input
+  stage1->_iomask._outputs.push_back(0); // 1 output
+  auto osc = stage0->appendBlock();
+  auto amp = stage1->appendBlock();
   CZX::initBlock(osc, czdata);
   AMP::initBlock(amp);
   //////////////////////////////////////
