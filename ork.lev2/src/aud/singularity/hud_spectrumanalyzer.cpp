@@ -28,6 +28,9 @@ void DrawSpectra(
     fvec2 wh) { //
   hudlines_t lines;
 
+  auto gridcolor = fvec3(.1, .3, .4);
+  auto plotcolor = fvec3(.2, .4, 5);
+
   int inumframes = koscopelength;
 
   const float ANA_X1 = xy.x;
@@ -87,8 +90,6 @@ void DrawSpectra(
   //////////////////////////////
   // draw grid
   //////////////////////////////
-
-  auto gridcolor = fvec3(.1, .3, .4);
 
   for (int dB = 36; dB >= -96; dB -= 12) {
     lines.push_back(HudLine{
@@ -170,7 +171,7 @@ void DrawSpectra(
     lines.push_back(HudLine{
         fvec2(x1, y1), //
         fvec2(x2, y2),
-        fvec3(.3, .7, 1)}); // spectral plot
+        plotcolor}); // spectral plot
 
     x1 = x2;
     y1 = y2;
