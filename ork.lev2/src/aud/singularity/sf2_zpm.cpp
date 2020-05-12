@@ -233,7 +233,7 @@ void SoundFont::genZpmDB() {
         ld->_algData->_krzAlgIndex = 1;
         ld->_algData->_name = "ALG1";
         ld->_kmpBlock._keymap = km;
-        ld->_fBlock[0]._dspBlock = "SAMPLEPB";
+        ld->_fBlock[0]._dspBlock = "SAMPLER";
         ld->_fBlock[0]._paramScheme = "PCH";
         ld->_fBlock[4]._dspBlock = "AMP";
         ld->_fBlock[4]._paramScheme = "AMP";

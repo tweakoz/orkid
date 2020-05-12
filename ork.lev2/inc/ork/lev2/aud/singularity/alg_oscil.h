@@ -8,8 +8,8 @@ namespace ork::audio::singularity {
 // oscils
 ///////////////////////////////////////////////////////////////////////////////
 
-struct SAMPLEPB : public DspBlock {
-  SAMPLEPB(dspblkdata_constptr_t dbd);
+struct SAMPLER : public DspBlock {
+  SAMPLER(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
 
   void doKeyOn(const DspKeyOnInfo& koi) final;

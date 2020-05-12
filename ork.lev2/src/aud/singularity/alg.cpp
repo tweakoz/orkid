@@ -232,8 +232,8 @@ dspblk_ptr_t createDspBlock(dspblkdata_constptr_t dbd) {
   // osc/gen
   ////////////////////////
 
-  if (dbd->_dspBlock == "SAMPLEPB")
-    rval = std::make_shared<SAMPLEPB>(dbd);
+  if (dbd->_dspBlock == "SAMPLER")
+    rval = std::make_shared<SAMPLER>(dbd);
   if (dbd->_dspBlock == "SINE")
     rval = std::make_shared<SINE>(dbd);
   if (dbd->_dspBlock == "LF SIN")

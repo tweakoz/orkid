@@ -467,15 +467,15 @@ void PWM::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SAMPLEPB::initBlock(dspblkdata_ptr_t blockdata) {
-  blockdata->_dspBlock = "SAMPLEPB";
+void SAMPLER::initBlock(dspblkdata_ptr_t blockdata) {
+  blockdata->_dspBlock = "SAMPLER";
   blockdata->_paramd[0].usePitchEvaluator();
 }
 
-SAMPLEPB::SAMPLEPB(dspblkdata_constptr_t dbd)
+SAMPLER::SAMPLER(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
-void SAMPLEPB::compute(DspBuffer& dspbuf) // final
+void SAMPLER::compute(DspBuffer& dspbuf) // final
 {
   float centoff = _param[0].eval();
   _fval[0]      = centoff;
@@ -501,11 +501,11 @@ void SAMPLEPB::compute(DspBuffer& dspbuf) // final
   }
 }
 
-void SAMPLEPB::doKeyOn(const DspKeyOnInfo& koi) // final
+void SAMPLER::doKeyOn(const DspKeyOnInfo& koi) // final
 {
   _spOsc.keyOn(koi);
 }
-void SAMPLEPB::doKeyOff() // final
+void SAMPLER::doKeyOff() // final
 {
   _spOsc.keyOff();
 }

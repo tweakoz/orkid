@@ -515,7 +515,7 @@ dspblkdata_ptr_t VastObjectsDB::parsePchBlock(const Value& pseg, lyrdata_ptr_t l
     dblk->_dspBlock = "NOISE";
     dblk->_paramd[0].usePitchEvaluator();
   } else {
-    SAMPLEPB::initBlock(dblk);
+    SAMPLER::initBlock(dblk);
   }
   return dblk;
 }
