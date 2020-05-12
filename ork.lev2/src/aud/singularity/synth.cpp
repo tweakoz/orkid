@@ -135,9 +135,7 @@ synth::~synth() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void synth::addEvent(float time, void_lamda_t ev)
-
-{
+void synth::addEvent(float time, void_lambda_t ev) {
   _eventmap.insert(std::make_pair(time, ev));
 }
 

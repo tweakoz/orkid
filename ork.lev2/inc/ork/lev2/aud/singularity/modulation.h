@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ork/lev2/aud/singularity/krztypes.h>
+
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////

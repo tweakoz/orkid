@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   // play a test note
   //////////////////////////////////////
-  enqueue_audio_event(program.get(), 1.5f, 60.0, 48);
+  enqueue_audio_event(program.get(), 1.5f, 240.0, 48);
   //////////////////////////////////////////////////////////////////////////////
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, 0});
   qtapp->exec();

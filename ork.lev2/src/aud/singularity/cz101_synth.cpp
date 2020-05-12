@@ -15,11 +15,15 @@
 using namespace ork;
 
 namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 CZX::CZX(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void CZX::compute(DspBuffer& dspbuf) // final
 {
   float centoff  = _param[0].eval();
@@ -42,6 +46,8 @@ void CZX::compute(DspBuffer& dspbuf) // final
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 void CZX::doKeyOn(const DspKeyOnInfo& koi) // final
 {
   auto dspb         = koi._prv;
@@ -52,10 +58,15 @@ void CZX::doKeyOn(const DspKeyOnInfo& koi) // final
   l->_HKF._useFm4   = false;
   _czosc.keyOn(koi, oscdata);
 }
+///////////////////////////////////////////////////////////////////////////////
+
 void CZX::doKeyOff() // final
 {
   _czosc.keyOff();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void CZX::initBlock(dspblkdata_ptr_t blockdata, czxdata_constptr_t czdata) {
   blockdata->_dspBlock = "CZX";
   blockdata->_paramd[0].usePitchEvaluator();

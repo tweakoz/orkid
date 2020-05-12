@@ -19,11 +19,6 @@
 namespace ork::audio::singularity {
 
 using namespace ork::audiomath;
-
-///////////////////////////////////////////////////////////////////////////////
-// typedef int16_t s16;
-// typedef uint32_t u32;
-typedef std::function<void()> void_lamda_t;
 ///////////////////////////////////////////////////////////////////////////////
 struct ProgramData;
 struct LayerData;
@@ -38,8 +33,11 @@ struct RateLevelEnvData;
 struct natenvseg;
 struct VastObjectsDB;
 struct FPARAM;
+struct Wavetable;
+struct KeyOnInfo;
 ///////////////////////////////////////////////////////////////////////////////
 struct BlockModulationData;
+struct DspKeyOnInfo;
 struct DspParamData;
 struct DspBlockData;
 struct DspStageData;
@@ -98,13 +96,11 @@ static const double sqrt2 = sqrt(2.0);
 inline float getSampleRate() {
   return 48000.0f;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 typedef std::function<float()> controller_t;
 typedef std::function<float(float)> mapper_t;
 typedef std::function<float(FPARAM& cec)> evalit_t;
 ///////////////////////////////////////////////////////////////////////////////
-
 struct outputBuffer {
   outputBuffer();
   void resize(int inumframes);
@@ -114,5 +110,5 @@ struct outputBuffer {
   int _maxframes;
   int _numframes;
 };
-
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

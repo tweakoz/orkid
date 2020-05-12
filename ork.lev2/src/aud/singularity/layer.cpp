@@ -309,6 +309,7 @@ void layer::compute(outputBuffer& obuf) {
 
     if (this == _syn._hudLayer) {
       _HAF._oscopebuffer.resize(inumframes);
+      _HAF._trackoffset += _syn._ostrack;
 
       if (doBlockStereo) {
         for (int i = 0; i < inumframes; i++) {
@@ -320,9 +321,7 @@ void layer::compute(outputBuffer& obuf) {
 
       } else {
         for (int i = 0; i < inumframes; i++) {
-          float l = _layerObuf._leftBuffer[i];
-          float r = _layerObuf._rightBuffer[i];
-          // tailb[i] = l;//doBlockStereo ? l+r : l;
+          float l               = _layerObuf._leftBuffer[i];
           _HAF._oscopebuffer[i] = l;
         }
       }

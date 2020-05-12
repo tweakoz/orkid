@@ -1,9 +1,6 @@
-#include <ork/lev2/aud/singularity/hud.h>
 #include <ork/math/cvector3.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
-#include <ork/lev2/gfx/dbgfontman.h>
-#include <ork/lev2/gfx/dbgfontman.h>
-#include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/lev2/aud/singularity/hud.h>
 
 using namespace ork;
 using namespace ork::lev2;
@@ -11,15 +8,12 @@ using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
-using vtx_t        = SVtxV16T16C16;
-using vtxbuf_t     = DynamicVertexBuffer<vtx_t>;
-using vtxbuf_ptr_t = std::shared_ptr<vtxbuf_t>;
 static vtxbuf_ptr_t create_vertexbuffer(Context* context) {
   auto vb = std::make_shared<vtxbuf_t>(16 << 20, 0, EPrimitiveType::NONE); // ~800 MB
   vb->SetRingLock(true);
   return vb;
 }
-static vtxbuf_ptr_t get_vertexbuffer(Context* context) {
+vtxbuf_ptr_t get_vertexbuffer(Context* context) {
   static auto vb = create_vertexbuffer(context);
   return vb;
 }
@@ -29,7 +23,7 @@ static freestyle_mtl_ptr_t create_hud_material(Context* context) {
   mtl->gpuInit(context, "orkshader://solid");
   return mtl;
 }
-static freestyle_mtl_ptr_t hud_material(Context* context) {
+freestyle_mtl_ptr_t hud_material(Context* context) {
   static auto mtl = create_hud_material(context);
   return mtl;
 }
@@ -154,9 +148,6 @@ void synth::onDrawHud(Context* context, float width, float height) {
 
       for (int i = 0; i < koscopelength; i++) {
         _oscopebuffer[i] = 0.0f;
-      }
-      for (int i = 0; i < koscopelength / 2; i++) {
-        _fftbuffer[i] = 0.0f;
       }
 
     }
@@ -315,6 +306,7 @@ void DrawBorder(Context* context, int X1, int Y1, int X2, int Y2, int color) {
 
 void synth::onDrawHudPage3(Context* context, float width, float height) {
 
+  hudlines_t lines;
   auto MTXI = context->MTXI();
 
   const hudkframe& HKF = _curhud_kframe;
@@ -327,205 +319,53 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
   if (nullptr == HKF._alg)
     return;
 
+  if (nullptr == _hudLayer)
+    return;
+
   auto layd = HKF._layerdata;
 
   float DSPx = DSPX(width, height);
   float FUNw = FUNW(width, height);
   float INSX = 100;
-  float INSW = DSPx - (INSX + 16);
-
-  drawtext(context, FormatString("ostrack<%g>", _ostrack), 100, 250, fontscale, 1, 1, 0);
-
-  _ostrackPH += _ostrack;
+  float INSW = 400;
 
   int inumframes = koscopelength;
 
-  if (_ostrack > 0 and _ostrackPH > inumframes)
-    _ostrackPH = 0;
-  if (_ostrack < 0 and _ostrackPH < -inumframes)
-    _ostrackPH = 0;
-
-  const float* ldata = _oscopebuffer;
-
-  const float OSC_X1 = 100;
-  const float OSC_Y1 = 250;
-  const float OSC_W  = INSW;
-  const float OSC_H  = 500;
-  const float OSC_HH = OSC_H * 0.5;
-  const float OSC_CY = OSC_Y1 + OSC_HH;
-  const float OSC_X2 = OSC_X1 + OSC_W;
-  const float OSC_Y2 = OSC_Y1 + OSC_H;
-
-  const float ANA_X1 = 100;
-  const float ANA_Y1 = 800;
-  const float ANA_W  = INSW;
-  const float ANA_H  = 500;
-  const float ANA_HH = ANA_H * 0.5;
-  const float ANA_CY = ANA_Y1 + ANA_HH;
-  const float ANA_X2 = ANA_X1 + ANA_W;
-  const float ANA_Y2 = ANA_Y1 + ANA_H;
+  // const float* ldata = _oscopebuffer;
 
   MTXI->PushUIMatrix(width, height);
 
-  const size_t fftSize = inumframes; // Needs to be power of 2!
+  DrawOscope(
+      context, //
+      HAF,
+      _oscopebuffer,
+      fvec2(32, 32),
+      fvec2(512, 400));
 
-  std::vector<float> input(fftSize, 0.0f);
-  std::vector<float> re(audiofft::AudioFFT::ComplexSize(fftSize));
-  std::vector<float> im(audiofft::AudioFFT::ComplexSize(fftSize));
-  std::vector<float> output(fftSize);
-
-  /////////////////////////////////////////////
-  // oscilloscope centerline
-  /////////////////////////////////////////////
-
-  hudlines_t lines;
-  lines.push_back(HudLine{fvec2(OSC_X1, OSC_H), fvec2(OSC_X2, OSC_H), fvec3(1, 1, 1)});
-
-  /////////////////////////////////////////////
-  // oscilloscope trace
-  /////////////////////////////////////////////
-
-  int i     = 0;
-  auto mapI = [&](int i) -> int {
-    int j = i + _ostrackPH;
-
-    if (j < 0)
-      j += inumframes;
-    else if (j >= inumframes)
-      j -= inumframes;
-
-    assert(j >= 0);
-    assert(j < inumframes);
-    return j;
-  };
-
-  float x1 = OSC_X1;
-  float y1 = OSC_Y1 + OSC_HH + ldata[mapI(i)] * OSC_HH;
-  float x2, y2;
-
-  const int koscfr = inumframes / 4;
-
-  for (i = 0; i < inumframes; i++) {
-    int j = mapI(i);
-
-    float s = ldata[j];
-
-    float win_num = pi2 * float(i);
-    float win_den = inumframes - 1;
-    float win     = 0.5f * (1 - cosf(win_num / win_den));
-    // printf( "win<%d> : %f\n", i, win );
-    float s2 = ldata[i];
-    input[i] = s2 * win;
-
-    float x = OSC_W * float(i) / float(koscfr);
-    float y = OSC_HH - s * OSC_HH;
-
-    x2 = x + OSC_X1;
-    y2 = y + OSC_HH;
-
-    if (i < koscfr)
-      lines.push_back(HudLine{fvec2(x1, y1), fvec2(x2, y2), fvec3(.3, 1, .3)});
-
-    x1 = x2;
-    y1 = y2;
-  }
-
-  //////////////////////////////
-  // do the FFT
-  //////////////////////////////
-
-  audiofft::AudioFFT fft;
-  fft.init(fftSize);
-  fft.fft(input.data(), re.data(), im.data());
-
-  //////////////////////////////
-  // map bin -> Y
-  //////////////////////////////
-
-  auto mapDecibels = [&](float re, float im) -> float {
-    float mag = re * re + im * im;
-    float dB  = 10.0f * log_base(10.0f, mag) - 6.0f;
-    return dB;
-  };
-  auto mapFFTY = [&](float dbin) -> float {
-    float dbY = (dbin + 96.0f) / 132.0f;
-    float y   = ANA_Y2 - dbY * ANA_H;
-    if (y > ANA_Y2)
-      y = ANA_Y2;
-    return y;
-  };
-
-  //////////////////////////////
-  // draw grid
-  //////////////////////////////
-
-  for (int dB = 36; dB >= -96; dB -= 12) {
-    lines.push_back(HudLine{
-        fvec2(ANA_X1, mapFFTY(dB)), //
-        fvec2(ANA_X2, mapFFTY(dB)),
-        fvec3(.2, .1, .3)}); // dB grid
-  }
-
-  constexpr int KMAXNOTE     = 12 * 11;
-  constexpr float KFIMAXNOTE = 1.0f / float(KMAXNOTE);
-  for (int note = 0; note <= KMAXNOTE; note += 12) {
-    float x = ANA_X1 + ANA_W * float(note) * KFIMAXNOTE;
-    lines.push_back(HudLine{
-        fvec2(x, ANA_Y1), //
-        fvec2(x, ANA_Y2),
-        fvec3(.2, .1, .3)}); // vertical grid
-  }
-
-  //////////////////////////////
-  // spectral plot
-  //////////////////////////////
-
-  float dB = mapDecibels(re[0], im[0]);
-  x1       = ANA_X1; // + 500 + ANA_W * float(0) / float(inumframes);
-  y1       = mapFFTY(dB);
-  for (int i = 0; i < inumframes / 2; i++) {
-
-    float dB = mapDecibels(re[i], im[i]);
-    _fftbuffer[i] += dB * 0.03 + 0.0001f;
-    _fftbuffer[i] *= 0.97f;
-    dB = _fftbuffer[i];
-
-    // printf( "dB<%f>\n", dB);
-    float fi = float(i) / float(inumframes);
-
-    float frq      = fi * getSampleRate();
-    float midinote = frequency_to_midi_note(frq);
-    // printf("i<%d> frq<%g> midinote<%g>\n", i, frq, midinote);
-    float x2 = ANA_X1 + ANA_W * midinote * KFIMAXNOTE;
-    float y2 = mapFFTY(dB - 12);
-    lines.push_back(HudLine{
-        fvec2(x1, y1), //
-        fvec2(x2, y2),
-        fvec3(.3, .7, 1)}); // spectral plot
-
-    x1 = x2;
-    y1 = y2;
-  }
-  // freqbins[index] = complex_t(0,0);
+  drawtext(
+      context, //
+      FormatString("ostrack<%d>", _ostrack),
+      32,
+      32,
+      fontscale,
+      1,
+      1,
+      0);
 
   //////////////////////////////
 
-  DrawBorder(context, OSC_X1, OSC_Y1, OSC_X2, OSC_Y2);
+  DrawSpectra(
+      context, //
+      HAF,
+      _oscopebuffer,
+      fvec2(32, 464),
+      fvec2(800, 480));
+
+  //////////////////////////////
+
   // DrawBorder(context, ANA_X1, ANA_Y1, ANA_X2, ANA_Y2);
 
   MTXI->PopUIMatrix();
-
-  for (int i = 36; i >= -96; i -= 12) {
-    float db0 = i;
-    float y   = mapFFTY(db0);
-
-    drawtext(context, FormatString("%g dB", db0), 40, y + 10, fontscale, .6, 0, .8);
-  }
-  for (int n = 0; n < 108; n += 12) {
-    float x = ANA_X1 - 20 + ANA_W * float(n) / 108.0;
-    float f = midi_note_to_frequency(n + 36);
-    drawtext(context, FormatString("  midi\n   %d\n(%d hz)", n + 36, int(f)), x, ANA_Y2 + 30, fontscale, .6, 0, .8);
-  }
 
   //////////////////////////////
   // draw DSP blocks

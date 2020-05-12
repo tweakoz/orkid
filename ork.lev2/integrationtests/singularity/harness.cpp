@@ -31,7 +31,7 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
     int TARGH           = context->mainSurfaceHeight();
     const SRect tgtrect = SRect(0, 0, TARGW, TARGH);
 
-    fbi->SetClearColor(fvec4(0.2, 0.0, 0.1, 1));
+    fbi->SetClearColor(fvec4(0.0, 0.0, 0.1, 1));
     ////////////////////////////////////////////////////
     // draw the synth HUD
     ////////////////////////////////////////////////////
@@ -53,20 +53,20 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
             the_synth->_hudpage = (the_synth->_hudpage + 1) % 2;
             break;
           case '-':
-            the_synth->_ostrack -= 1.f;
-            printf("oscope track<%g>\n", the_synth->_ostrack);
+            the_synth->_ostrack--;
+            printf("oscope track<%d>\n", the_synth->_ostrack);
             break;
           case '=':
-            the_synth->_ostrack += 1.f;
-            printf("oscope track<%g>\n", the_synth->_ostrack);
+            the_synth->_ostrack++;
+            printf("oscope track<%d>\n", the_synth->_ostrack);
             break;
           case '[':
-            the_synth->_ostrack -= 10.f;
-            printf("oscope track<%g>\n", the_synth->_ostrack);
+            the_synth->_ostrack -= 10;
+            printf("oscope track<%d>\n", the_synth->_ostrack);
             break;
           case ']':
-            the_synth->_ostrack += 10.f;
-            printf("oscope track<%g>\n", the_synth->_ostrack);
+            the_synth->_ostrack += 10;
+            printf("oscope track<%d>\n", the_synth->_ostrack);
             break;
           default:
             break;

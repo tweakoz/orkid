@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ork/orktypes.h>
 #include <ork/math/audiomath.h>
 #include "krztypes.h"
 #include "krzdata.h"
@@ -58,7 +59,7 @@ struct synth {
 
   void resetFenables();
 
-  void addEvent(float time, void_lamda_t ev);
+  void addEvent(float time, void_lambda_t ev);
   void tick(float dt);
   float _timeaccum;
 
@@ -74,9 +75,9 @@ struct synth {
   std::set<programInst*> _activeProgInst;
   std::map<std::string, hudsamples_t> _hudsample_map;
 
-  std::multimap<float, void_lamda_t> _eventmap;
+  std::multimap<float, void_lambda_t> _eventmap;
 
-  int _soloLayer        = -1;
+  int _soloLayer       = -1;
   bool _stageEnable[5] = {true, true, true, true, true};
   int _lnoteframe;
   float _lnotetime;
@@ -86,8 +87,7 @@ struct synth {
   float _testtoneampps;
   int _hudpage;
   int _genmode      = 0;
-  float _ostrack    = 0.0f;
-  float _ostrackPH  = 0.0f;
+  int _ostrack      = 0;
   bool _bypassDSP   = false;
   bool _doModWheel  = false;
   bool _doPressure  = false;
@@ -102,7 +102,6 @@ struct synth {
   hudkframe _curhud_kframe;
   hudaframe _curhud_aframe;
 
-  float _fftbuffer[koscopelength / 2];
   float _oscopebuffer[koscopelength];
 };
 

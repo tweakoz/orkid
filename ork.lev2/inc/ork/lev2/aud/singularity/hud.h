@@ -10,8 +10,18 @@
 #include "krzdata.h"
 #include "synth.h"
 #include "fft.h"
+#include <ork/lev2/gfx/dbgfontman.h>
+#include <ork/lev2/gfx/material_freestyle.h>
 
 namespace ork::audio::singularity {
+
+///////////////////////////////////////////////////////////////////////////////
+
+using vtx_t        = lev2::SVtxV16T16C16;
+using vtxbuf_t     = lev2::DynamicVertexBuffer<vtx_t>;
+using vtxbuf_ptr_t = std::shared_ptr<vtxbuf_t>;
+vtxbuf_ptr_t get_vertexbuffer(lev2::Context* context);
+lev2::freestyle_mtl_ptr_t hud_material(lev2::Context* context);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -75,6 +85,20 @@ struct Op4DrawReq {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void DrawOscope(
+    lev2::Context* context, //
+    const hudaframe& HAF,
+    const float* samples,
+    fvec2 xy,
+    fvec2 wh);
+
+void DrawSpectra(
+    lev2::Context* context, //
+    const hudaframe& HAF,
+    const float* samples,
+    fvec2 xy,
+    fvec2 wh);
 
 void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR);
 void DrawAsr(lev2::Context* context, const ItemDrawReq& EDR);

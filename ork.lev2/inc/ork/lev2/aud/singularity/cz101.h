@@ -4,9 +4,7 @@
 #include "dspblocks.h"
 
 namespace ork::audio::singularity {
-
-struct Wavetable;
-struct DspKeyOnInfo;
+///////////////////////////////////////////////////////////////////////////////
 
 struct CzEnvelope {
   int _endStep   = 0;
@@ -15,6 +13,9 @@ struct CzEnvelope {
   float _time[8];
   int _level[8];
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct CzOscData {
   int _dcoWaveA     = 0;
   int _dcoWaveB     = 0;
@@ -31,8 +32,12 @@ struct CzOscData {
   CzEnvelope _dcwEnv;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
 using czxdata_ptr_t      = std::shared_ptr<CzOscData>;
 using czxdata_constptr_t = std::shared_ptr<const CzOscData>;
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct CzOsc {
   CzOsc();
@@ -50,7 +55,7 @@ struct CzOsc {
   float _baseFrequency;
   float _modIndex;
 
-  int64_t _pbIndex;
+  int64_t _phase;
   int64_t _pbIndexNext;
   int64_t _pbIncrBase;
 
@@ -64,6 +69,9 @@ struct CzOsc {
   const Wavetable* _waveformB;
   czxdata_constptr_t _data;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct CzProgData {
   void dump() const;
 
@@ -79,17 +87,7 @@ struct CzProgData {
   std::string _name;
 };
 
-struct DspKeyOnInfo;
-struct DspBuffer;
-/*struct czsyn {
-  czsyn();
-  void compute(DspBuffer& dspbuf);
-  void keyOn(const DspKeyOnInfo& koi);
-  void keyOff();
-
-  CzProgData _data;
-  ork::svarp_t _pimpl;
-};*/
+///////////////////////////////////////////////////////////////////////////////
 
 struct CZX : public DspBlock {
   CZX(dspblkdata_constptr_t dbd);
@@ -100,4 +98,5 @@ struct CZX : public DspBlock {
   static void initBlock(dspblkdata_ptr_t blockdata, czxdata_constptr_t czdata);
 };
 
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity
