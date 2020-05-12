@@ -7,8 +7,98 @@
 #include <ork/lev2/aud/singularity/krzdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
+#include <ork/lev2/aud/singularity/sampler.h>
 
 namespace ork::audio::singularity {
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SAMPLER::initBlock(dspblkdata_ptr_t blockdata) {
+  blockdata->_dspBlock = "SAMPLER";
+  blockdata->_paramd[0].usePitchEvaluator();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+SAMPLER::SAMPLER(dspblkdata_constptr_t dbd)
+    : DspBlock(dbd) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/* sampler/keymap specific pitch setup
+if (auto PCHBLK = _LayerData->_pchBlock) {
+  const int kNOTEC4 = 60;
+  const auto& PCH   = PCHBLK->_paramd[0];
+  const auto& KMP   = _LayerData->_kmpBlock;
+
+  int timbreshift = KMP._timbreShift;                // 0
+  int kmtrans     = KMP._transpose; //+timbreshift; // -20
+  int kmkeytrack  = KMP._keyTrack;                   // 100
+
+  int kmpivot      = (kNOTEC4 + kmtrans);            // 48-20 = 28
+  int kmdeltakey   = (_curnote + kmtrans - kmpivot); // 48-28 = 28
+  int kmdeltacents = kmdeltakey * kmkeytrack;        // 8*0 = 0
+  int kmfinalcents = (kmpivot * 100) + kmdeltacents; // 4800
+
+  int pchtrans      = PCH._coarse;                      //-timbreshift; // 8
+  int pchkeytrack   = PCH._keyTrack;                    // 0
+  int pchpivot      = (kNOTEC4 + pchtrans);             // 48-0 = 48
+  int pchdeltakey   = (_curnote + pchtrans - pchpivot); // 48-48=0 //possible minus kmorigin?
+  int pchdeltacents = pchdeltakey * pchkeytrack;        // 0*0=0
+  int pchfinalcents = (pchtrans * 100) + pchdeltacents; // 0*100+0=0
+
+  int kmcents = kmfinalcents; //+region->_tuning;
+  // printf( "_layerBasePitch<%d>\n", int(_layerBasePitch) );
+
+  //_pchBlock = _LayerData->_pchBlock->create();
+
+  if (_pchBlock) {
+    float centoff          = _pchBlock->_param[0].eval();
+    _curPitchOffsetInCents = int(centoff); // kmcents+pchfinalcents;
+  }
+  _layerBasePitch = kmcents + pchfinalcents + _curPitchOffsetInCents;
+
+} else {
+*/
+void SAMPLER::compute(DspBuffer& dspbuf) // final
+{
+  float centoff = _param[0].eval();
+  _fval[0]      = centoff;
+
+  int inumframes = dspbuf._numframes;
+  float* lbuf    = getOutBuf(dspbuf, 1);
+  float* ubuf    = getOutBuf(dspbuf, 0);
+  // float lyrcents = _layer->_layerBasePitch;
+  // float cin = (lyrcents+centoff)*0.01;
+  // float frq = midi_note_to_frequency(cin);
+  // float SR = _layer->_syn._sampleRate;
+  // float pad = _dbd->_inputPad;
+
+  //_filtp = 0.5*_filtp + 0.5*centoff;
+  //_layer->_curPitchOffsetInCents = centoff;
+  // printf( "centoff<%f>\n", centoff );
+  _spOsc.compute(inumframes);
+
+  for (int i = 0; i < inumframes; i++) {
+    float outp = _spOsc._OUTPUT[i];
+    lbuf[i]    = outp;
+    ubuf[i]    = outp;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SAMPLER::doKeyOn(const DspKeyOnInfo& koi) // final
+{
+  _spOsc.keyOn(koi);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SAMPLER::doKeyOff() // final
+{
+  _spOsc.keyOff();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

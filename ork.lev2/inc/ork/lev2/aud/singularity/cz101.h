@@ -65,8 +65,6 @@ struct CzOsc {
 
   float _prevOutput;
 
-  const Wavetable* _waveformA;
-  const Wavetable* _waveformB;
   czxdata_constptr_t _data;
 };
 

@@ -339,8 +339,8 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
       context, //
       HAF,
       _oscopebuffer,
-      fvec2(32, 32),
-      fvec2(512, 400));
+      fvec2(64, 32),
+      fvec2(960, 400));
 
   drawtext(
       context, //
@@ -359,7 +359,7 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
       HAF,
       _oscopebuffer,
       fvec2(32, 464),
-      fvec2(800, 480));
+      fvec2(960, 480));
 
   //////////////////////////////
 

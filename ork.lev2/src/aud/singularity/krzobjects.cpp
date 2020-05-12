@@ -4,6 +4,7 @@
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/kernel/string/string.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
+#include <ork/lev2/aud/singularity/sampler.h>
 
 using namespace rapidjson;
 
@@ -17,7 +18,10 @@ const s16* getK2V3InternalSoundBlock() {
     auto filename = kbasepath / "kurzweil" / "k2v3internalsamplerom.bin";
     printf("Loading Soundblock<%s>\n", filename.c_str());
     FILE* fin = fopen(filename.ToAbsolute().c_str(), "rb");
-    OrkAssert(fin != nullptr);
+    if (fin == nullptr) {
+      printf("You will need the K2000 ROM sampledata at <%s> to use this method!\n", filename.c_str());
+      OrkAssert(false);
+    }
     gdata = (s16*)malloc(8 << 20);
     fread(gdata, 8 << 20, 1, fin);
     fclose(fin);

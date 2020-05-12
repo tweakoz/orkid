@@ -25,7 +25,7 @@ void SINE::compute(DspBuffer& dspbuf) // final
 
   int inumframes = dspbuf._numframes;
   //    float* ubuf = dspbuf.channel(0);
-  float lyrcents = _layer->_curCentsOSC;
+  float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
   // printf("lc<%f> coff<%f> cin<%f> frq<%f>\n", lyrcents, centoff, cin, frq );
@@ -58,7 +58,7 @@ void SAW::compute(DspBuffer& dspbuf) // final
 
   int inumframes = dspbuf._numframes;
   // float* ubuf = dspbuf.channel(0);
-  float lyrcents = _layer->_curCentsOSC;
+  float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
   float SR       = _layer->_syn._sampleRate;
@@ -90,7 +90,7 @@ void SQUARE::compute(DspBuffer& dspbuf) // final
 
   int inumframes = dspbuf._numframes;
   // float* ubuf = dspbuf.channel(0);
-  float lyrcents = _layer->_curCentsOSC;
+  float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
   float SR       = _layer->_syn._sampleRate;
@@ -122,7 +122,7 @@ void SINEPLUS::compute(DspBuffer& dspbuf) // final
 
   int inumframes = dspbuf._numframes;
   float* ubuf    = getOutBuf(dspbuf, 0);
-  float lyrcents = _layer->_curCentsOSC;
+  float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
   float SR       = _layer->_syn._sampleRate;
@@ -155,7 +155,7 @@ void SAWPLUS::compute(DspBuffer& dspbuf) // final
   _fval[0]      = centoff;
 
   int inumframes = dspbuf._numframes;
-  float lyrcents = _layer->_curCentsOSC;
+  float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
   float SR       = _layer->_syn._sampleRate;
@@ -196,7 +196,7 @@ void SWPLUSSHP::compute(DspBuffer& dspbuf) // final
 
   int inumframes = dspbuf._numframes;
   float* ubuf    = getOutBuf(dspbuf, 0);
-  float lyrcents = _layer->_curCentsOSC;
+  float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
   float SR       = _layer->_syn._sampleRate;
@@ -235,7 +235,7 @@ void SHAPEMODOSC::compute(DspBuffer& dspbuf) // final
   int inumframes = dspbuf._numframes;
   float* ubuf    = getOutBuf(dspbuf, 0);
   float* lbuf    = getOutBuf(dspbuf, 1);
-  float lyrcents = _layer->_curCentsOSC;
+  float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
   float SR       = _layer->_syn._sampleRate;
@@ -299,7 +299,7 @@ void PLUSSHAPEMODOSC::compute(DspBuffer& dspbuf) // final
   int inumframes = dspbuf._numframes;
   float* ubuf    = getOutBuf(dspbuf, 0);
   float* lbuf    = getOutBuf(dspbuf, 1);
-  float lyrcents = _layer->_curCentsOSC;
+  float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
   float SR       = _layer->_syn._sampleRate;
@@ -373,7 +373,7 @@ void SYNCM::compute(DspBuffer& dspbuf) // final
 
   int inumframes = dspbuf._numframes;
   float* ubuf    = getOutBuf(dspbuf, 0);
-  float lyrcents = _layer->_curCentsOSC;
+  float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
 
@@ -410,7 +410,7 @@ void SYNCS::compute(DspBuffer& dspbuf) // final
 
   int inumframes = dspbuf._numframes;
   float* ubuf    = getOutBuf(dspbuf, 0);
-  float lyrcents = _layer->_curCentsOSC;
+  float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
   float SR       = _layer->_syn._sampleRate;
@@ -463,51 +463,6 @@ void PWM::compute(DspBuffer& dspbuf) // final
 }
 void PWM::doKeyOn(const DspKeyOnInfo& koi) // final
 {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void SAMPLER::initBlock(dspblkdata_ptr_t blockdata) {
-  blockdata->_dspBlock = "SAMPLER";
-  blockdata->_paramd[0].usePitchEvaluator();
-}
-
-SAMPLER::SAMPLER(dspblkdata_constptr_t dbd)
-    : DspBlock(dbd) {
-}
-void SAMPLER::compute(DspBuffer& dspbuf) // final
-{
-  float centoff = _param[0].eval();
-  _fval[0]      = centoff;
-
-  int inumframes = dspbuf._numframes;
-  float* lbuf    = getOutBuf(dspbuf, 1);
-  float* ubuf    = getOutBuf(dspbuf, 0);
-  // float lyrcents = _layer->_curCentsOSC;
-  // float cin = (lyrcents+centoff)*0.01;
-  // float frq = midi_note_to_frequency(cin);
-  // float SR = _layer->_syn._sampleRate;
-  // float pad = _dbd->_inputPad;
-
-  //_filtp = 0.5*_filtp + 0.5*centoff;
-  //_layer->_curPitchOffsetInCents = centoff;
-  // printf( "centoff<%f>\n", centoff );
-  _spOsc.compute(inumframes);
-
-  for (int i = 0; i < inumframes; i++) {
-    float outp = _spOsc._OUTPUT[i];
-    lbuf[i]    = outp;
-    ubuf[i]    = outp;
-  }
-}
-
-void SAMPLER::doKeyOn(const DspKeyOnInfo& koi) // final
-{
-  _spOsc.keyOn(koi);
-}
-void SAMPLER::doKeyOff() // final
-{
-  _spOsc.keyOff();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -223,109 +223,6 @@ void initWavetablesTX81Z() {
   }
 }
 
-void initWavetablesCZ101() {
-  /////////////////////
-  // wave 1 - saw
-  /////////////////////
-  {
-    auto wave = new Wavetable(ksize);
-    for (int i = 0; i < ksize; i++) {
-      float fph          = float(i) / ksize;
-      wave->_wavedata[i] = 1.0f - fph * 2.0f;
-    }
-    _wavemap["cz1.1"] = wave;
-  }
-  /////////////////////
-  // wave 2 - squ
-  /////////////////////
-  {
-    auto wave = new Wavetable(ksize);
-    for (int i = 0; i < ksize; i++) {
-      float fph          = float(i) / ksize;
-      wave->_wavedata[i] = (fph < 0.5f) ? 1.0f : -1.0f;
-    }
-    _wavemap["cz1.squ"] = wave;
-  }
-  /////////////////////
-  // wave 3 - pulse
-  // wave 4 - pulsine
-  /////////////////////
-  {
-    auto wavea = new Wavetable(ksize);
-    auto waveb = new Wavetable(ksize);
-    for (int i = 0; i < ksized8; i++) {
-      float fph           = float(i) / float(ksized8);
-      wavea->_wavedata[i] = -1.0f + fph * 2.0f;
-      waveb->_wavedata[i] = -1.0f + fph * 2.0f;
-    }
-    for (int i = ksized8; i < ksized4; i++) {
-      int j               = i - ksized8;
-      float fph           = float(j) / float(ksized8);
-      wavea->_wavedata[i] = 1.0f - fph * 2.0f;
-      waveb->_wavedata[i] = 1.0f - fph * 2.0f;
-    }
-    for (int i = ksized4; i < ksize; i++) {
-      float fph           = float(i - ksized4) / float(ksized4);
-      wavea->_wavedata[i] = -1.0f;
-      waveb->_wavedata[i] = -1.0f + sinf(fph) * 2.0f;
-    }
-    _wavemap["cz1.3"] = wavea;
-    _wavemap["cz1.4"] = waveb;
-  }
-  /////////////////////
-  // 5
-  /////////////////////
-  {
-    auto wave = new Wavetable(ksize);
-    for (int i = 0; i < ksized2; i++) {
-      float fph          = float(i) / float(ksized2);
-      wave->_wavedata[i] = -1.0f + sinf(fph * pi * 0.5) * 2.0f;
-    }
-    for (int i = ksized2; i < ksize; i++) {
-      wave->_wavedata[i] = -1.0f;
-    }
-    _wavemap["cz1.5"] = wave;
-  }
-  /////////////////////
-  // 6
-  /////////////////////
-  {
-    auto wave = new Wavetable(ksize);
-    for (int i = 0; i < ksize; i++) {
-      float fph          = 0.5f * float(i) / ksize;
-      wave->_wavedata[i] = 1.0f - fph * 2.0f;
-      float fph2         = fph * 9.0f;
-      wave->_wavedata[i] *= cosf(fph2 * pi2);
-    }
-    _wavemap["cz1.6"] = wave;
-  }
-  /////////////////////
-  // 7
-  /////////////////////
-  {
-    auto wave = new Wavetable(ksize);
-    for (int i = 0; i < ksize; i++) {
-      float fph          = float(i) / ksize;
-      wave->_wavedata[i] = 1.0f - fph * 2.0f;
-      float fph2         = fph * 9.0f;
-      wave->_wavedata[i] *= cosf(fph2 * pi2);
-    }
-    _wavemap["cz1.7"] = wave;
-  }
-  /////////////////////
-  // 8
-  /////////////////////
-  {
-    auto wave = new Wavetable(ksize);
-    for (int i = 0; i < ksize; i++) {
-      float fph          = float(i) / ksize;
-      wave->_wavedata[i] = 1.0f - fph * 2.0f;
-      float fph2         = fph * 9.0f;
-      wave->_wavedata[i] *= cosf(fph2 * pi2);
-    }
-    _wavemap["cz1.8"] = wave;
-  }
-}
 ///////////////////////////////////////////////////////////////////////////////
 
 void initWavetables() {
@@ -373,7 +270,6 @@ void initWavetables() {
   }
 
   initWavetablesTX81Z();
-  initWavetablesCZ101();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

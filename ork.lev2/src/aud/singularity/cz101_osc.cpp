@@ -38,36 +38,34 @@ void CzOsc::keyOff() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float CzOsc::compute(float frq, float mi) {
+float CzOsc::compute(float frq, float modindex) {
+
   constexpr double kscale    = double(1 << 24);
   constexpr double kinvscale = 1.0 / kscale;
-  double phaseinc            = kscale * frq / 48000.0f;
-  double angle               = double(_phase & 0xffffff) * kinvscale; //
-  float output               = -sinf(angle * PI2);
+
+  int64_t pos = _phase & 0xffffff;
+  int64_t x1  = int64_t(modindex * 0xffffff);
+
+  float m1 = .5 / modindex;
+  float m2 = .5 / (1.0 - modindex);
+  float b2 = 1.0 - m2;
+
+  double dpos = double(pos) * kinvscale;
+
+  double warped = (pos < x1) //
+                      ? (m1 * dpos)
+                      : (m2 * dpos + b2);
+
+  double phaseinc = kscale * frq / 48000.0f;
   _phase += int64_t(phaseinc);
-  return output;
-}
+  return cosf(warped * PI2);
+} // namespace ork::audio::singularity
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void CzOsc::setWave(int iwA, int iwB) {
   assert(iwA >= 0 and iwA < 8);
   assert(iwB >= 0 and iwB < 8);
-  static const Wavetable* czwave[8];
-  static bool ginit = true;
-  if (ginit) {
-    ginit     = false;
-    czwave[0] = builtinWaveTable("cz1.1");
-    czwave[1] = builtinWaveTable("cz1.2");
-    czwave[2] = builtinWaveTable("cz1.3");
-    czwave[3] = builtinWaveTable("cz1.4");
-    czwave[4] = builtinWaveTable("cz1.5");
-    czwave[5] = builtinWaveTable("cz1.6");
-    czwave[6] = builtinWaveTable("cz1.7");
-    czwave[7] = builtinWaveTable("cz1.8");
-  }
-  _waveformA = czwave[iwA % 8];
-  _waveformB = czwave[iwB % 8];
 }
 
 } // namespace ork::audio::singularity

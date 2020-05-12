@@ -1,5 +1,6 @@
 #pragma once
 #include <ork/lev2/aud/singularity/krzdata.h>
+#include <ork/lev2/aud/singularity/dspblocks.h>
 
 namespace ork::audio::singularity {
 
@@ -106,6 +107,20 @@ struct sampleOsc {
   layer* _lyr;
   bool _released;
   const kmregion* _kmregion;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct SAMPLER final : public DspBlock {
+  SAMPLER(dspblkdata_constptr_t dbd);
+  void compute(DspBuffer& dspbuf);
+
+  void doKeyOn(const DspKeyOnInfo& koi);
+  void doKeyOff();
+  sampleOsc _spOsc;
+  float _filtp;
+
+  static void initBlock(dspblkdata_ptr_t blockdata);
 };
 
 } // namespace ork::audio::singularity

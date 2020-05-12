@@ -8,6 +8,7 @@
 #include <ork/lev2/aud/singularity/alg_amp.h>
 #include <ork/lev2/aud/singularity/cz101.h>
 #include <ork/lev2/aud/singularity/konoff.h>
+#include <ork/lev2/aud/singularity/sampler.h>
 
 namespace ork::audio::singularity {
 

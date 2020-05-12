@@ -6,20 +6,51 @@ using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
-
-float* initfftbuffer() {
-  float* buffer = new float[koscopelength / 2];
-  for (int i = 0; i < koscopelength / 2; i++) {
+static const int inumframes           = koscopelength;
+static constexpr size_t fftoversample = 16;
+static constexpr size_t DOWNSHIFT     = bitsToHold<fftoversample>() - 1;
+static const size_t fftSize           = inumframes * fftoversample; // Needs to be power of 2!
+static constexpr int KMAXNOTE         = 141;
+static auto lab1color                 = fvec3(0.5, 0.5, 0.7);
+static auto lab2color                 = fvec3(0.5, 0.5, 0.9);
+static auto gridcolor                 = fvec3(.1, .2, .4);
+static auto plotcolor                 = fvec3(.2, .4, 5);
+///////////////////////////////////////////////////////////////////////////////
+struct FFT_Context {
+  FFT_Context()
+      : input(fftSize, 0)
+      , re(audiofft::AudioFFT::ComplexSize(fftSize))
+      , im(audiofft::AudioFFT::ComplexSize(fftSize)) {
+  }
+  void compute() {
+    fft.init(fftSize);
+    fft.fft(input.data(), re.data(), im.data());
+  }
+  ///////////////////////////////////////////////////////////////////////////////
+  audiofft::AudioFFT fft;
+  std::vector<float> input;
+  std::vector<float> re;
+  std::vector<float> im;
+};
+///////////////////////////////////////////////////////////////////////////////
+static FFT_Context& _fftcontext() {
+  static FFT_Context _ctx;
+  return _ctx;
+}
+///////////////////////////////////////////////////////////////////////////////
+static float* initfftsmoothingbuffer() {
+  float* buffer = new float[fftSize];
+  for (int i = 0; i < fftSize; i++) {
     buffer[i] = 0.0f;
   }
   return buffer;
 }
-
-float* fftbuffer() {
-  static float* buffer = initfftbuffer();
+///////////////////////////////////////////////////////////////////////////////
+static float* fftsmoothingbuffer() {
+  static float* buffer = initfftsmoothingbuffer();
   return buffer;
 }
-
+///////////////////////////////////////////////////////////////////////////////
 void DrawSpectra(
     lev2::Context* context, //
     const hudaframe& HAF,
@@ -27,11 +58,6 @@ void DrawSpectra(
     fvec2 xy,
     fvec2 wh) { //
   hudlines_t lines;
-
-  auto gridcolor = fvec3(.1, .3, .4);
-  auto plotcolor = fvec3(.2, .4, 5);
-
-  int inumframes = koscopelength;
 
   const float ANA_X1 = xy.x;
   const float ANA_Y1 = xy.y;
@@ -46,32 +72,21 @@ void DrawSpectra(
   // fill in FFT buffer using window func
   //////////////////////////////
 
-  const size_t fftSize = inumframes; // Needs to be power of 2!
+  auto& fftcontext = _fftcontext();
 
-  std::vector<float> input(fftSize, 0.0f);
-  std::vector<float> re(audiofft::AudioFFT::ComplexSize(fftSize));
-  std::vector<float> im(audiofft::AudioFFT::ComplexSize(fftSize));
-  std::vector<float> output(fftSize);
-
-  for (int i = 0; i < inumframes; i++) {
-    float s       = samples[i];
-    float win_num = pi2 * float(i);
-    float win_den = inumframes - 1;
-    float win     = 0.5f * (1 - cosf(win_num / win_den));
-    float s2      = samples[i];
-    input[i]      = s2 * win;
+  for (int i = 0; i < fftSize; i++) {
+    float s             = samples[i >> DOWNSHIFT];
+    float win_num       = pi2 * float(i);
+    float win_den       = fftSize - 1;
+    float win           = 0.5f * (1 - cosf(win_num / win_den));
+    float s2            = samples[i >> DOWNSHIFT];
+    fftcontext.input[i] = s2 * win;
   }
 
-  //////////////////////////////
-  // do the FFT
-  //////////////////////////////
-
-  audiofft::AudioFFT fft;
-  fft.init(fftSize);
-  fft.fft(input.data(), re.data(), im.data());
+  fftcontext.compute(); // do the FFT
 
   //////////////////////////////
-  // map bin -> Y
+  // map fft-bin -> Y
   //////////////////////////////
 
   auto mapDecibels = [&](float re, float im) -> float {
@@ -86,26 +101,37 @@ void DrawSpectra(
       y = ANA_Y2;
     return y;
   };
+  auto mapFFTX = [&](float frq) -> float {
+    float midinote    = frequency_to_midi_note(frq);
+    const float kfinv = 1.0f / 24000.0f;
+    float normf       = (frq)*kfinv;
+    float x           = powf(normf, 0.3);
+    return ANA_X1 - 16 + ANA_W * x;
+  };
 
   //////////////////////////////
   // draw grid
   //////////////////////////////
 
   for (int dB = 36; dB >= -96; dB -= 12) {
+    float f1 = midi_note_to_frequency(0);
+    float f2 = midi_note_to_frequency(KMAXNOTE);
     lines.push_back(HudLine{
-        fvec2(ANA_X1 + 32, mapFFTY(dB)), //
-        fvec2(ANA_X2 + 32, mapFFTY(dB)),
+        fvec2(mapFFTX(f1), mapFFTY(dB)), //
+        fvec2(mapFFTX(f2), mapFFTY(dB)),
         gridcolor}); // dB grid
   }
 
-  constexpr int KMAXNOTE     = 12 * 11;
-  constexpr float KFIMAXNOTE = 1.0f / float(KMAXNOTE);
-  for (int note = 0; note <= KMAXNOTE; note += 12) {
-    float x = 32 + ANA_X1 + ANA_W * float(note) * KFIMAXNOTE;
+  for (int note = 0; note <= KMAXNOTE + 11; note += 12) {
+    if (note > KMAXNOTE)
+      note = KMAXNOTE;
+
+    float f = midi_note_to_frequency(note);
+    float x = mapFFTX(f);
     lines.push_back(HudLine{
         fvec2(x, ANA_Y1), //
         fvec2(x, ANA_Y2),
-        gridcolor}); // vertical grid
+        lab2color * 0.5}); // vertical grid
   }
 
   ////////////////////////////////////////
@@ -130,51 +156,90 @@ void DrawSpectra(
   // draw frequency labels
   ////////////////////////////////////////
 
-  for (int note = 0; note < KMAXNOTE; note += 12) {
-    float x = ANA_X1 + ANA_W * float(note) * KFIMAXNOTE;
+  drawtext(
+      context, //
+      "midinote",
+      ANA_X1 - 32,
+      ANA_Y2 + 16,
+      fontscale,
+      lab1color.x,
+      lab1color.y,
+      lab1color.z);
+  drawtext(
+      context, //
+      "frequency",
+      ANA_X1 - 32,
+      ANA_Y2 + 30,
+      fontscale,
+      lab2color.x,
+      lab2color.y,
+      lab2color.z);
+
+  for (int note = 0; note <= KMAXNOTE + 11; note += 12) {
+    if (note > KMAXNOTE)
+      note = KMAXNOTE;
     float f = midi_note_to_frequency(note);
+    float x = mapFFTX(f);
     drawtext(
         context, //
-        FormatString("  midi\n   %d\n(%d hz)", note, int(f)),
-        x,
+        FormatString("%d", note),
+        x - 8,
+        ANA_Y2 + 16,
+        fontscale,
+        lab1color.x,
+        lab1color.y,
+        lab1color.z);
+    drawtext(
+        context, //
+        FormatString("%d", int(f)),
+        x - 8,
         ANA_Y2 + 30,
         fontscale,
-        gridcolor.x,
-        gridcolor.y,
-        gridcolor.z);
+        lab2color.x,
+        lab2color.y,
+        lab2color.z);
   }
 
   //////////////////////////////
   // spectral plot
   //////////////////////////////
 
-  float dB = mapDecibels(re[0], im[0]);
-  float x1 = ANA_X1; // + 500 + ANA_W * float(0) / float(inumframes);
+  float dB = mapDecibels(fftcontext.re[0], fftcontext.im[0]);
+  float x1 = mapFFTX(8);
   float y1 = mapFFTY(dB);
 
-  auto fftbuf = fftbuffer();
-  for (int i = 0; i < inumframes / 2; i++) {
+  auto fftsmoothbuf = fftsmoothingbuffer();
+  bool done         = false;
+  int i             = 0;
+  while (not done) {
 
-    float dB = mapDecibels(re[i], im[i]);
-    fftbuf[i] += dB * 0.03 + 0.0001f;
-    fftbuf[i] *= 0.97f;
-    dB = fftbuf[i];
+    ///////////////////////////////////////////////
+    // average fft samples to smooth out spectral plot
+    ///////////////////////////////////////////////
+    float dB = mapDecibels(fftcontext.re[i], fftcontext.im[i]); // instantaneous sample
+    fftsmoothbuf[i] += dB * 0.03 + 0.0001f;                     // accumulate
+    fftsmoothbuf[i] *= 0.99f;                                   // dampen
+    dB = fftsmoothbuf[i] * 0.23;                                // scale to unity (todo: find coef)
+    ///////////////////////////////////////////////
 
     // printf( "dB<%f>\n", dB);
-    float fi = float(i) / float(inumframes);
+    float fi = float(i) / float(fftSize);
 
-    float frq      = fi * getSampleRate() * 2;
-    float midinote = frequency_to_midi_note(frq);
-    // printf("i<%d> frq<%g> midinote<%g>\n", i, frq, midinote);
-    float x2 = 32 + ANA_X1 + ANA_W * midinote * KFIMAXNOTE;
-    float y2 = mapFFTY(dB - 12);
-    lines.push_back(HudLine{
-        fvec2(x1, y1), //
-        fvec2(x2, y2),
-        plotcolor}); // spectral plot
+    float frq = fi * getSampleRate() * float(fftoversample);
+    float x2  = mapFFTX(frq);
+    float y2  = mapFFTY(dB - 12);
+
+    if (frq >= 8.0f)
+      lines.push_back(HudLine{
+          fvec2(x1, y1), //
+          fvec2(x2, y2),
+          plotcolor}); // spectral plot
 
     x1 = x2;
     y1 = y2;
+    i++;
+
+    done = frq >= 24000.0f; // were done at 1/2 nyquist
   }
   // freqbins[index] = complex_t(0,0);
 

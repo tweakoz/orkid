@@ -31,13 +31,11 @@ template class ork::orklut<ork::Char8, float>;
 
 namespace ork::lev2 {
 
-PaStream* pa_stream = nullptr;
-
 ///////////////////////////////////////////////////////////////////////////////
-
+PaStream* pa_stream      = nullptr;
+synth* the_synth         = nullptr;
+const bool ENABLE_OUTPUT = false; // allow disabling for long debug sessions
 ///////////////////////////////////////////////////////////////////////////////
-
-synth* the_synth = nullptr;
 
 static int patestCallback(
     const void* inputBuffer,
@@ -54,9 +52,16 @@ static int patestCallback(
   the_synth->compute(framesPerBuffer, inputBuffer);
   const auto& obuf = the_synth->_obuf;
 
-  for (i = 0; i < framesPerBuffer; i++) {
-    *out++ = obuf._leftBuffer[i];
-    *out++ = obuf._rightBuffer[i];
+  if (ENABLE_OUTPUT) {
+    for (i = 0; i < framesPerBuffer; i++) {
+      *out++ = obuf._leftBuffer[i];
+      *out++ = obuf._rightBuffer[i];
+    }
+  } else {
+    for (i = 0; i < framesPerBuffer; i++) {
+      *out++ = 0.0f;
+      *out++ = 0.0f;
+    }
   }
   return 0;
 }

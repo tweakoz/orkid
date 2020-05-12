@@ -34,12 +34,13 @@ void CZX::compute(DspBuffer& dspbuf) // final
   // todo: dco(pitch) env mod
   // todo: mi from dcw env
   static float _ph = 0.0;
-  float modindex   = 0.5f + sinf(_ph) * 0.5f;
+  float modindex   = 0.5f + sinf(_ph * 0.1) * 0.5f;
   _ph += 0.01f;
   //////////////////////////////////////////
-  float lyrcents = _layer->_curCentsOSC;
+  float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
+  // printf("note<%g> frq<%g>\n", cin, frq);
   //////////////////////////////////////////
   for (int i = 0; i < inumframes; i++) {
     U[i] = _czosc.compute(frq, modindex);

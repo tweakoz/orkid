@@ -4,7 +4,6 @@
 #include "filters.h"
 #include "para.h"
 #include "PolyBLEP.h"
-#include "sampleOsc.h"
 #include "layer.h"
 #include <ork/kernel/svariant.h>
 #include "alg.h"

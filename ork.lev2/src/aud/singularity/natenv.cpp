@@ -6,6 +6,7 @@
 
 #include <ork/lev2/aud/singularity/krzdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
+#include <ork/lev2/aud/singularity/sampler.h>
 
 namespace ork::audio::singularity {
 

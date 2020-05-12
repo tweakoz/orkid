@@ -70,7 +70,12 @@ void DspParamData::usePitchEvaluator() {
   _evaluator = [this](FPARAM& cec) -> float {
     float kt       = _keyTrack * cec._keyOff;
     float vt       = _velTrack * cec._unitVel;
-    float totcents = (cec._coarse * 100) + cec._fine + cec._C1() + cec._C2() + kt + vt;
+    float totcents = (cec._coarse * 100) //
+                     + cec._fine         //
+                     + cec._C1()         //
+                     + cec._C2()         //
+                     + kt                //
+                     + vt;
     // float ratio = cents_to_linear_freq_ratio(totcents);
     // printf( "rat<%f>\n", ratio);
     /*
@@ -138,24 +143,6 @@ void DspParamData::useKrzEvnOddEvaluator() {
     return clip_float(x, -10, 10);
   };
 }
-///////////////////////////////////////////////////////////////////////////////
-
-/*void DspBlockData::initEvaluators() {
-  OrkAssert(false);
-  for (int i = 0; i < kmaxparmperblock; i++) {
-    auto& DPD = _paramd[i];
-    if (DPD._paramScheme == "PCH")
-      GenPCH(DPD);
-    else if (DPD._paramScheme == "FRQ")
-      GenFRQ(DPD);
-    else if (DPD._paramScheme == "POS")
-      GenPOS(DPD);
-    else if (DPD._paramScheme == "AMP")
-      GenAMP(DPD);
-    else
-      GenDefault(DPD);
-  }
-}*/
 
 ///////////////////////////////////////////////////////////////////////////////
 

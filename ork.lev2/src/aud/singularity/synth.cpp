@@ -112,7 +112,8 @@ synth::synth(float sr)
     , _soloLayer(-1)
     , _timeaccum(0.0f)
     , _hudpage(0)
-    , _ostrack(10) {
+    , _ostrack(111) { // 111 synchnozies with midi note 48
+
   for (int i = 0; i < 256; i++)
     _freeVoices.insert(new layer(*this));
 

@@ -150,50 +150,6 @@ void layer::compute(outputBuffer& obuf) {
   }
 
   ///////////////////////////////////////////////
-  // pitch block ?
-  ///////////////////////////////////////////////
-
-  if (auto PCHBLK = _LayerData->_pchBlock) {
-    const int kNOTEC4 = 60;
-    const auto& PCH   = PCHBLK->_paramd[0];
-    const auto& KMP   = _LayerData->_kmpBlock;
-
-    int timbreshift = KMP._timbreShift;                // 0
-    int kmtrans     = KMP._transpose /*+timbreshift*/; // -20
-    int kmkeytrack  = KMP._keyTrack;                   // 100
-
-    int kmpivot      = (kNOTEC4 + kmtrans);            // 48-20 = 28
-    int kmdeltakey   = (_curnote + kmtrans - kmpivot); // 48-28 = 28
-    int kmdeltacents = kmdeltakey * kmkeytrack;        // 8*0 = 0
-    int kmfinalcents = (kmpivot * 100) + kmdeltacents; // 4800
-
-    int pchtrans      = PCH._coarse;                      //-timbreshift; // 8
-    int pchkeytrack   = PCH._keyTrack;                    // 0
-    int pchpivot      = (kNOTEC4 + pchtrans);             // 48-0 = 48
-    int pchdeltakey   = (_curnote + pchtrans - pchpivot); // 48-48=0 //possible minus kmorigin?
-    int pchdeltacents = pchdeltakey * pchkeytrack;        // 0*0=0
-    int pchfinalcents = (pchtrans * 100) + pchdeltacents; // 0*100+0=0
-
-    int kmcents = kmfinalcents; //+region->_tuning;
-    // printf( "_curCentsOSC<%d>\n", int(_curCentsOSC) );
-
-    //_pchBlock = _LayerData->_pchBlock->create();
-
-    if (_pchBlock) {
-      float centoff          = _pchBlock->_param[0].eval();
-      _curPitchOffsetInCents = int(centoff); // kmcents+pchfinalcents;
-    }
-    _curCentsOSC = kmcents + pchfinalcents + _curPitchOffsetInCents;
-
-  } else {
-    // no pitch block
-    //  use default
-    _curCentsOSC = _curnote * 100;
-  }
-
-  ///////////////////////////////////////////////
-
-  _curCentsOSC = clip_float(_curCentsOSC, -0, 12700);
 
   // printf( "pchc1<%f> pchc2<%f> poic<%f> currat<%f>\n", _pchc1, _pchc2, _curPitchOffsetInCents, currat );
   ////////////////////////////////////////
@@ -255,7 +211,7 @@ void layer::compute(outputBuffer& obuf) {
       }
 
     } else if (do_sine) {
-      float F        = midi_note_to_frequency(float(_curCentsOSC) * 0.01);
+      float F        = midi_note_to_frequency(float(_layerBasePitch) * 0.01);
       float phaseinc = pi2 * F / synsr;
 
       for (int i = 0; i < inumframes; i++) {
@@ -462,6 +418,8 @@ void layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
   _HKF._layerdata  = ld;
   _HKF._layerIndex = _ldindex;
   _HKF._useFm4     = false;
+
+  _layerBasePitch = clip_float(note * 100, -0, 12700);
 
   _useNatEnv     = ENVC._useNatEnv;
   _ignoreRelease = ld->_ignRels;
