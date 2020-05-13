@@ -147,26 +147,27 @@ class Blasphemoids(_simsetup.SimApp):
          #  alter it's course,
          #   and color...
          ##########################
-         assert(picked<=numinstances);
-         color = vec4(random.uniform(0,1),
-                      random.uniform(0,1),
-                      random.uniform(0,1),
-                      1)
-         iset = self.instanceset
-         iset.instancecolors[picked] = color
-         incraxis = vec3(random.uniform(-1,1),
-                         random.uniform(-1,1),
-                         random.uniform(-1,1)).normal()
-         incrmagn = random.uniform(-0.25,0.25)
-         rot = quat(incraxis,incrmagn)
-         as_mtx4 = mtx4()
-         trans = vec3(random.uniform(-1,1),
-                      random.uniform(-1,1),
-                      random.uniform(-1,1))*0.03
-         tramtx = mtx4.transMatrix(trans)
-         rotmtx = mtx4.rotMatrix(rot)
-         iset.delta_rots[picked]=rotmtx # copy into numpy block
-         iset.delta_tras[picked]=tramtx # copy into numpy block
+         if picked<numinstances:
+             color = vec4(
+               random.uniform(0,1),
+               random.uniform(0,1),
+               random.uniform(0,1),
+               1)
+             iset = self.instanceset
+             iset.instancecolors[picked] = color
+             incraxis = vec3(random.uniform(-1,1),
+                             random.uniform(-1,1),
+                             random.uniform(-1,1)).normal()
+             incrmagn = random.uniform(-0.25,0.25)
+             rot = quat(incraxis,incrmagn)
+             as_mtx4 = mtx4()
+             trans = vec3(random.uniform(-1,1),
+                          random.uniform(-1,1),
+                          random.uniform(-1,1))*0.03
+             tramtx = mtx4.transMatrix(trans)
+             rotmtx = mtx4.rotMatrix(rot)
+             iset.delta_rots[picked]=rotmtx # copy into numpy block
+             iset.delta_tras[picked]=tramtx # copy into numpy block
   ################################################
 app = Blasphemoids()
 app.qtapp.exec()
