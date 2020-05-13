@@ -24,6 +24,22 @@ CZX::CZX(dspblkdata_constptr_t dbd)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+float staircase(float x) {
+  return x - sin(x);
+}
+float step(float u) {
+  return 0.5 - 0.5 * cosf(PI * u);
+}
+float stair(float x, float b, float c) {
+  const float width = b + c;
+  const float base  = floor(x / width); // base of this step
+  const float o     = fmod(x, width);   // offset, between 0 and width
+
+  return base + (o < b ? 0 : step((o - b) / c));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void CZX::compute(DspBuffer& dspbuf) // final
 {
   float centoff  = _param[0].eval();
@@ -34,16 +50,53 @@ void CZX::compute(DspBuffer& dspbuf) // final
   // todo: dco(pitch) env mod
   // todo: mi from dcw env
   static float _ph = 0.0;
-  float modindex   = 0.5f + sinf(_ph * 0.1) * 0.5f;
-  _ph += 0.01f;
+  float modindex   = 0.45f + sinf(_ph) * 0.45f;
+  _ph += 0.003f;
   //////////////////////////////////////////
   float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
   // printf("note<%g> frq<%g>\n", cin, frq);
   //////////////////////////////////////////
+  constexpr double kscale    = double(1 << 24);
+  constexpr double kinvscale = 1.0 / kscale;
+  //////////////////////////////////////////
+
   for (int i = 0; i < inumframes; i++) {
-    U[i] = _czosc.compute(frq, modindex);
+    int64_t pos = _phase & 0xffffff;
+    double dpos = double(pos) * kinvscale;
+    int64_t x1  = int64_t(modindex * 0xffffff);
+    ////////////////////////////////////////////
+    float m1      = .5 / modindex;
+    float m2      = .5 / (1.0 - modindex);
+    float b2      = 1.0 - m2;
+    double warped = (pos < x1) //
+                        ? (m1 * dpos)
+                        : (m2 * dpos + b2);
+    float saw      = cosf(warped * PI2);
+    float sawpulse = sinf(warped * PI2);
+    float dblsine  = sinf(warped * PI2 * 2.0);
+    ////////////////////////////////////////////
+    float xx        = 1.0 - modindex;
+    float m3        = 1.0 / xx;
+    double warped2  = std::clamp(dpos * m3, -1.0, 1.0);
+    float sinpulse  = sinf(warped2 * PI2);
+    float cospulse  = cosf(warped2 * PI2);
+    float dcospulse = cosf(warped2 * PI2 * 4.0);
+    ////////////////////////////////////////////
+    float yy     = floor(dpos * 2.0) * 0.50;
+    float yya    = yy + std::clamp((dpos - yy) * 4, 0.0, 0.5);
+    float yyb    = lerp(dpos, yya, modindex);
+    float square = cosf(yyb * PI2);
+    ////////////////////////////////////////////
+    float reso1 = sinf(dpos * PI2 * (1.0 + 5.0 * modindex)) * (1.0 - dpos);
+    float reso2 = sinf(dpos * PI2 * (1.0 + 3.0 * modindex)) * (1.0 - cosf(dpos * PI2)) * 0.5;
+    float reso3 = sinf(dpos * PI2 * (1.0 + 4.0 * modindex)) * std::clamp(2.0 - 2.0 * dpos, 0.0, 1.0);
+    ////////////////////////////////////////////
+    double phaseinc = kscale * frq / 48000.0f;
+    _phase += int64_t(phaseinc);
+    ////////////////////////////////////////////
+    U[i] = reso3;
   }
 }
 
@@ -57,13 +110,12 @@ void CZX::doKeyOn(const DspKeyOnInfo& koi) // final
   auto l            = koi._layer;
   l->_HKF._miscText = FormatString("CZ\n");
   l->_HKF._useFm4   = false;
-  _czosc.keyOn(koi, oscdata);
+  _phase            = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
 
 void CZX::doKeyOff() // final
 {
-  _czosc.keyOff();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

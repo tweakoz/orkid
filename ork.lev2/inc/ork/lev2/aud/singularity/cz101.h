@@ -39,37 +39,6 @@ using czxdata_constptr_t = std::shared_ptr<const CzOscData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct CzOsc {
-  CzOsc();
-  ~CzOsc();
-
-  void keyOn(const DspKeyOnInfo& koi, czxdata_constptr_t opd);
-  void keyOff();
-  float compute(float frq, float modindex);
-
-  void setWave(int iwA, int iwB);
-
-  static constexpr float kinv64k = 1.0f / 65536.0f;
-  static constexpr float kinv32k = 1.0f / 32768.0f;
-
-  float _baseFrequency;
-  float _modIndex;
-
-  int64_t _phase;
-  int64_t _pbIndexNext;
-  int64_t _pbIncrBase;
-
-  int64_t _mIndex;
-  int64_t _mIndexNext;
-  int64_t _mIncrBase;
-
-  float _prevOutput;
-
-  czxdata_constptr_t _data;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct CzProgData {
   void dump() const;
 
@@ -92,7 +61,22 @@ struct CZX : public DspBlock {
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
   void doKeyOff() final;
-  CzOsc _czosc;
+
+  static constexpr float kinv64k = 1.0f / 65536.0f;
+  static constexpr float kinv32k = 1.0f / 32768.0f;
+
+  float _baseFrequency;
+  float _modIndex;
+
+  int64_t _phase;
+  int64_t _pbIndexNext;
+  int64_t _pbIncrBase;
+
+  int64_t _mIndex;
+  int64_t _mIndexNext;
+  int64_t _mIncrBase;
+
+  float _prevOutput;
   static void initBlock(dspblkdata_ptr_t blockdata, czxdata_constptr_t czdata);
 };
 

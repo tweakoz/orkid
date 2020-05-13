@@ -84,7 +84,7 @@ void DrawOscope(
   //
 
   float x1 = OSC_X1;
-  float y1 = OSC_CY + samples[mapI(0)] * OSC_HH;
+  float y1 = OSC_CY + samples[mapI(0)] * -OSC_HH;
   float x2, y2;
 
   const int koscfr = inumframes / 4;
@@ -92,7 +92,7 @@ void DrawOscope(
   for (int i = 0; i < inumframes; i++) {
     int j   = mapI(i);
     float x = OSC_W * float(i) / float(koscfr);
-    float y = samples[j] * OSC_HH;
+    float y = samples[j] * -OSC_HH;
     x2      = OSC_X1 + x;
     y2      = OSC_CY + y;
     if (i < koscfr)
