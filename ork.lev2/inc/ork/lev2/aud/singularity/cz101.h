@@ -69,6 +69,7 @@ struct CZX : public DspBlock {
   float _modIndex;
 
   int64_t _phase;
+  int64_t _resophase;
   int64_t _pbIndexNext;
   int64_t _pbIncrBase;
 

@@ -27,15 +27,8 @@ CZX::CZX(dspblkdata_constptr_t dbd)
 float staircase(float x) {
   return x - sin(x);
 }
-float step(float u) {
-  return 0.5 - 0.5 * cosf(PI * u);
-}
-float stair(float x, float b, float c) {
-  const float width = b + c;
-  const float base  = floor(x / width); // base of this step
-  const float o     = fmod(x, width);   // offset, between 0 and width
-
-  return base + (o < b ? 0 : step((o - b) / c));
+float step(float u, float steps) {
+  return floor(u * steps) / (steps - 1.0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,56 +42,131 @@ void CZX::compute(DspBuffer& dspbuf) // final
   //_layer->_curPitchOffsetInCents = centoff;
   // todo: dco(pitch) env mod
   // todo: mi from dcw env
-  static float _ph = 0.0;
-  float modindex   = 0.45f + sinf(_ph) * 0.45f;
-  _ph += 0.003f;
+  static double _ph = 0.0;
+  double modindex   = 0.5f - cosf(_ph * 3.0) * 0.5f;
   //////////////////////////////////////////
-  float lyrcents = _layer->_layerBasePitch;
-  float cin      = (lyrcents + centoff) * 0.01;
-  float frq      = midi_note_to_frequency(cin);
+  double sawmodindex = 0.5 - modindex * 0.5;
+  double sinpulindex = modindex * 0.75;
+  //////////////////////////////////////////
+  double lyrcents = _layer->_layerBasePitch;
+  double cin      = (lyrcents + centoff) * 0.01;
+  double frq      = midi_note_to_frequency(cin);
   // printf("note<%g> frq<%g>\n", cin, frq);
   //////////////////////////////////////////
   constexpr double kscale    = double(1 << 24);
   constexpr double kinvscale = 1.0 / kscale;
   //////////////////////////////////////////
+  double saw, dblsine, square, sawpulse, tozpulse, reso1, reso2, reso3;
+  double sawphase, squarephase, sawpulsephase, tozpulsephase;
 
   for (int i = 0; i < inumframes; i++) {
-    int64_t pos = _phase & 0xffffff;
-    double dpos = double(pos) * kinvscale;
-    int64_t x1  = int64_t(modindex * 0xffffff);
+    int64_t pos        = _phase & 0xffffff;
+    int64_t dpos       = (_phase << 1) & 0xffffff;
+    bool waveswitch    = (_phase >> 24) & 1;
+    bool pasthalf      = (_phase >> 23) & 1;
+    double linphase    = double(pos) * kinvscale;
+    double invlinphase = 1.0 - linphase;
+    double linphasex2  = double(dpos) * kinvscale;
+    int64_t phaseinc   = int64_t(kscale * frq / 48000.0);
     ////////////////////////////////////////////
-    float m1      = .5 / modindex;
-    float m2      = .5 / (1.0 - modindex);
-    float b2      = 1.0 - m2;
-    double warped = (pos < x1) //
-                        ? (m1 * dpos)
-                        : (m2 * dpos + b2);
-    float saw      = cosf(warped * PI2);
-    float sawpulse = sinf(warped * PI2);
-    float dblsine  = sinf(warped * PI2 * 2.0);
+    // tri
     ////////////////////////////////////////////
-    float xx        = 1.0 - modindex;
-    float m3        = 1.0 / xx;
-    double warped2  = std::clamp(dpos * m3, -1.0, 1.0);
-    float sinpulse  = sinf(warped2 * PI2);
-    float cospulse  = cosf(warped2 * PI2);
-    float dcospulse = cosf(warped2 * PI2 * 4.0);
+    double uni_htri = std::min(invlinphase, linphase); // 0 .. 0.5
+    double uni_tri  = uni_htri * 2.0;                  // 0 .. 1
+    double uni_itri = uni_htri * 2.0;                  // 1 .. 0
+    double tri      = (uni_htri - 0.25) * 4.0;         // -1 .. 1
     ////////////////////////////////////////////
-    float yy     = floor(dpos * 2.0) * 0.50;
-    float yya    = yy + std::clamp((dpos - yy) * 4, 0.0, 0.5);
-    float yyb    = lerp(dpos, yya, modindex);
-    float square = cosf(yyb * PI2);
+    // saw
     ////////////////////////////////////////////
-    float reso1 = sinf(dpos * PI2 * (1.0 + 5.0 * modindex)) * (1.0 - dpos);
-    float reso2 = sinf(dpos * PI2 * (1.0 + 3.0 * modindex)) * (1.0 - cosf(dpos * PI2)) * 0.5;
-    float reso3 = sinf(dpos * PI2 * (1.0 + 4.0 * modindex)) * std::clamp(2.0 - 2.0 * dpos, 0.0, 1.0);
+    {
+      int64_t saw_x1  = int64_t(sawmodindex * 0xffffff);
+      double m1       = .5 / sawmodindex;
+      double m2       = .5 / (1.0 - sawmodindex);
+      double b2       = 1.0 - m2;
+      double sawphase = (pos < saw_x1)        //
+                            ? (m1 * linphase) //
+                            : (m2 * linphase + b2);
+      saw     = cosf(sawphase * PI2);
+      dblsine = sinf(sawphase * PI2 * 2.0);
+    }
     ////////////////////////////////////////////
-    double phaseinc = kscale * frq / 48000.0f;
-    _phase += int64_t(phaseinc);
+    // square
     ////////////////////////////////////////////
-    U[i] = reso3;
+    {
+      double yy   = step(linphase, 2) * 0.5;
+      double yya  = 1.0 + modindex * 64.0;
+      double yyb  = std::clamp(linphase * yya, 0.0, 0.5);
+      double yyc  = std::clamp((linphase - 0.5) * yya, 0.0, 0.5);
+      squarephase = yyb + yyc;
+      square      = cosf(squarephase * PI2); // + std::clamp(linphase * 4.0, 0.0, 0.5);
+    }
+    ////////////////////////////////////////////
+    // sawpulse
+    ////////////////////////////////////////////
+    {
+      double mmi  = modindex * 0.5; // std::clamp(modindex, 0.0, 0.5);
+      double immi = 0.5 - mmi;      // std::clamp(modindex, 0.0, 0.5);
+
+      double sawpos   = std::clamp((linphase - 0.5) / (1.0f - 0.5), 0.0, 1.0);
+      double sawidx   = 0.5 + sawmodindex;
+      double m1       = .5 / sawidx;
+      double m2       = .5 / (1.0 - sawidx);
+      double b2       = 1.0 - m2;
+      double sawphase = (sawpos < sawidx)   //
+                            ? (m1 * sawpos) //
+                            : (m2 * sawpos + b2);
+
+      sawpulsephase = (linphase < immi) //
+                          ? 0           //
+                          : sawphase;
+
+      sawpulsephase = lerp(linphase, sawpulsephase, 1.0 - modindex);
+
+      sawpulse = cosf(sawpulsephase * PI2);
+    }
+    ////////////////////////////////////////////
+    // tozpulse, yo
+    ////////////////////////////////////////////
+    tozpulsephase = pasthalf ? squarephase : std::clamp(sawphase, 0.0, 0.5);
+    tozpulse      = cosf(tozpulsephase * PI2);
+    ////////////////////////////////////////////
+    double xx        = 1.0 - modindex;
+    double m3        = 1.0 / xx;
+    double warped2   = std::clamp(linphase * m3, -1.0, 1.0);
+    double sinpulse  = sinf(warped2 * PI2);
+    double cospulse  = cosf(warped2 * PI2);
+    double dcospulse = cosf(warped2 * PI2 * 4.0);
+    ////////////////////////////////////////////
+    {
+      int64_t pos         = (_resophase)&0xffffff;
+      double _linphase    = double(pos) * kinvscale;
+      double _invlinphase = 1.0 - _linphase;
+      double reso_bip     = cosf(_linphase * PI2);
+      double reso_uni     = 0.5 + reso_bip * 0.5;
+      reso1               = 1.0 - ((1.0 - reso_uni) * invlinphase * 2.0);
+      reso2               = 1.0 - (reso_uni * uni_itri * 2.0);
+      double reso3index   = std::clamp(invlinphase * 2, 0.0, 1.0);
+      reso3               = 1.0 - ((1.0 - reso_uni) * reso3index * 2.0);
+      /////////////////
+      // free running resoosc (but hard synced to base osc)
+      /////////////////
+      double frqscale = (1.0f + modindex * 15.0f);
+      double resoinc  = kscale * frq * frqscale / 48000.0;
+      _resophase += int64_t(resoinc);
+      bool a = (_phase >> 24) & 1;
+      bool b = ((_phase + phaseinc) >> 24) & 1;
+      if (a != b) // hardsync it
+        _resophase = 0;
+    }
+    ////////////////////////////////////////////
+    _phase += phaseinc;
+    ////////////////////////////////////////////
+    U[i] = waveswitch ? sawpulse : saw;
+    U[i] = waveswitch ? reso3 : saw;
+    ;
   }
-}
+  _ph += 0.003f;
+} // namespace ork::audio::singularity
 
 ///////////////////////////////////////////////////////////////////////////////
 
