@@ -83,19 +83,51 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
             break;
           case '-':
             the_synth->_ostrack--;
+            if (the_synth->_ostrack < 0)
+              the_synth->_ostrack = 0;
             printf("oscope track<%d>\n", the_synth->_ostrack);
             break;
           case '=':
             the_synth->_ostrack++;
+            if (the_synth->_ostrack > (4095 << 16))
+              the_synth->_ostrack = (4095 << 16);
             printf("oscope track<%d>\n", the_synth->_ostrack);
             break;
           case '[':
-            the_synth->_ostrack -= 10;
+            the_synth->_ostrack -= 1000;
+            if (the_synth->_ostrack < 0)
+              the_synth->_ostrack = 0;
             printf("oscope track<%d>\n", the_synth->_ostrack);
             break;
           case ']':
-            the_synth->_ostrack += 10;
+            the_synth->_ostrack += 1000;
+            if (the_synth->_ostrack > (4095 << 16))
+              the_synth->_ostrack = (4095 << 16);
             printf("oscope track<%d>\n", the_synth->_ostrack);
+            break;
+          case ';':
+            the_synth->_oswidth--;
+            if (the_synth->_oswidth < 0)
+              the_synth->_oswidth = 0;
+            printf("oscope width<%d>\n", the_synth->_oswidth);
+            break;
+          case '\'':
+            the_synth->_oswidth++;
+            if (the_synth->_oswidth > 4095)
+              the_synth->_oswidth = 4095;
+            printf("oscope width<%d>\n", the_synth->_oswidth);
+            break;
+          case ',':
+            the_synth->_oswidth -= 100;
+            if (the_synth->_oswidth < 0)
+              the_synth->_oswidth = 0;
+            printf("oscope width<%d>\n", the_synth->_oswidth);
+            break;
+          case '.':
+            the_synth->_oswidth += 100;
+            if (the_synth->_oswidth > 4095)
+              the_synth->_oswidth = 4095;
+            printf("oscope width<%d>\n", the_synth->_oswidth);
             break;
           default:
             break;

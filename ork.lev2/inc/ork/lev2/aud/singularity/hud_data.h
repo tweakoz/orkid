@@ -45,7 +45,7 @@ struct hudaframe {
   std::vector<ork::svar256_t> _items;
 
   op4frame _op4frame[4];
-  int _trackoffset = 0;
+  size_t _trackoffset = 0;
 };
 struct hudkframe {
   lyrdata_constptr_t _layerdata;
@@ -58,4 +58,4 @@ struct hudkframe {
 
   std::string _miscText;
 };
-} // namespace
+} // namespace ork::audio::singularity

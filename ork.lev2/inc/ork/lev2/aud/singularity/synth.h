@@ -88,6 +88,7 @@ struct synth {
   int _hudpage;
   int _genmode      = 0;
   int _ostrack      = 0;
+  int _oswidth      = 0;
   bool _bypassDSP   = false;
   bool _doModWheel  = false;
   bool _doPressure  = false;

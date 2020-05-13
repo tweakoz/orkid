@@ -355,16 +355,6 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
       fvec2(64, 32) * hud_contentscale(),
       fvec2(960, 400) * hud_contentscale());
 
-  drawtext(
-      context, //
-      FormatString("ostrack<%d>", _ostrack),
-      32 * hud_contentscale(),
-      32 * hud_contentscale(),
-      fontscale,
-      1,
-      1,
-      0);
-
   //////////////////////////////
 
   DrawSpectra(
