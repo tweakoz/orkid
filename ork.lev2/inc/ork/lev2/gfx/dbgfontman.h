@@ -80,6 +80,9 @@ public:
     return mpMaterial;
   }
   void QueChar(Context* pTarg, VtxWriter<SVtxV12C4T16>& vw, int ix, int iy, int iu, int iv, U32 ucolor);
+  const FontDesc& description() const {
+    return mFontDesc;
+  }
 
   std::string msFileName;
   std::string msFontName;
@@ -126,7 +129,7 @@ struct FontMan { //: public NoRttiSingleton<FontMan> {
   static void DrawText(Context* pTARG, int iX, int iY, const char* pFmt, ...);
   static void DrawCenteredText(Context* pTARG, int iY, const char* pFmt, ...);
 
-  static Font* GetCurrentFont(void) {
+  static Font* currentFont(void) {
     return GetRef().mpCurrentFont;
   }
 

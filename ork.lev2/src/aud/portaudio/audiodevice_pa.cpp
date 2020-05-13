@@ -34,7 +34,7 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 PaStream* pa_stream      = nullptr;
 synth* the_synth         = nullptr;
-const bool ENABLE_OUTPUT = false; // allow disabling for long debug sessions
+const bool ENABLE_OUTPUT = true; // allow disabling for long debug sessions
 ///////////////////////////////////////////////////////////////////////////////
 
 static int patestCallback(

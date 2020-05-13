@@ -88,6 +88,10 @@ void QCtxWidget::showEvent(QShowEvent* event) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#if defined(__APPLE__)
+extern bool _macosUseHIDPI;
+#endif
+
 void QCtxWidget::resizeEvent(QResizeEvent* event) {
   if (nullptr == event)
     return;
@@ -99,6 +103,12 @@ void QCtxWidget::resizeEvent(QResizeEvent* event) {
   int Y      = 0;
   int W      = size.rwidth();
   int H      = size.rheight();
+#if defined(__APPLE__)
+  if (_macosUseHIDPI) {
+    W *= 2;
+    H *= 2;
+  }
+#endif
   printf("W<%d> H<%d>\n", W, H);
   miWidth  = W;
   miHeight = H;

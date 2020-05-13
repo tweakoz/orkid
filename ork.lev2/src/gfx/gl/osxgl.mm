@@ -33,6 +33,8 @@ extern "C"
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+bool _macosUseHIDPI = false;
+
 ork::MpMcBoundedQueue<void*> ContextGL::_loadTokens;
 
 struct GlOsxPlatformObject
@@ -212,7 +214,7 @@ void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
 	plato->mOsxView = osxview;
 	plato->mTarget = this;
 
-    [osxview  setWantsBestResolutionOpenGLSurface:NO];
+  [osxview  setWantsBestResolutionOpenGLSurface:_macosUseHIDPI?YES:NO];
 
 	///////////////////////
 
@@ -482,7 +484,7 @@ void ContextGL::_doEndLoad(void*ploadtok)
 void recomputeHIDPI(Context* ctx){
 }
 bool _HIDPI() {
-  return false;
+  return _macosUseHIDPI;
 }
 bool _MIXEDDPI() {
   return false;

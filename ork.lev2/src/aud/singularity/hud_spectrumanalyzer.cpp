@@ -145,7 +145,7 @@ void DrawSpectra(
         context, //
         FormatString("%g dB", db0),
         ANA_X1 - 22,
-        y - 4,
+        y - hud_lineheight() / 2,
         fontscale,
         gridcolor.x,
         gridcolor.y,
@@ -156,20 +156,25 @@ void DrawSpectra(
   // draw frequency labels
   ////////////////////////////////////////
 
+  int ycursor = ANA_Y2 + hud_lineheight();
+
   drawtext(
       context, //
       "midinote",
       ANA_X1 - 32,
-      ANA_Y2 + 16,
+      ycursor,
       fontscale,
       lab1color.x,
       lab1color.y,
       lab1color.z);
+
+  ycursor += hud_lineheight();
+
   drawtext(
       context, //
       "frequency",
       ANA_X1 - 32,
-      ANA_Y2 + 30,
+      ycursor,
       fontscale,
       lab2color.x,
       lab2color.y,
@@ -180,20 +185,25 @@ void DrawSpectra(
       note = KMAXNOTE;
     float f = midi_note_to_frequency(note);
     float x = mapFFTX(f);
+    ycursor = ANA_Y2 + hud_lineheight();
+
     drawtext(
         context, //
         FormatString("%d", note),
         x - 8,
-        ANA_Y2 + 16,
+        ycursor,
         fontscale,
         lab1color.x,
         lab1color.y,
         lab1color.z);
+
+    ycursor += hud_lineheight();
+
     drawtext(
         context, //
         FormatString("%d", int(f)),
         x - 8,
-        ANA_Y2 + 30,
+        ycursor,
         fontscale,
         lab2color.x,
         lab2color.y,

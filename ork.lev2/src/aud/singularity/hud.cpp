@@ -7,6 +7,12 @@ using namespace ork::lev2;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
+float hud_contentscale() {
+  return _HIDPI() ? 2.0 : 1.0;
+}
+int hud_lineheight() {
+  return FontMan::currentFont()->description().miCharHeight;
+}
 ///////////////////////////////////////////////////////////////////////////////
 static vtxbuf_ptr_t create_vertexbuffer(Context* context) {
   auto vb = std::make_shared<vtxbuf_t>(16 << 20, 0, EPrimitiveType::NONE); // ~800 MB
@@ -33,10 +39,13 @@ void Rect::PushOrtho(Context* context) const {
   int h = context->mainSurfaceHeight();
   context->MTXI()->PushUIMatrix(w, h);
 }
+///////////////////////////////////////////////////////////////////////////////
 void Rect::PopOrtho(Context* context) const {
   context->MTXI()->PopUIMatrix();
 }
+///////////////////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////////////////
 void drawtext(
     Context* context, //
     const std::string& str,
@@ -53,7 +62,11 @@ void drawtext(
 
   auto fontman = FontMan::instance();
 
-  fontman->SetCurrentFont("i16");
+  if (ork::lev2::_HIDPI()) {
+    fontman->SetCurrentFont("i32");
+  } else {
+    fontman->SetCurrentFont("i16");
+  }
   context->PushModColor(fcolor4(r, g, b, 1));
 
   fontman->beginTextBlock(context, str.length());
@@ -339,14 +352,14 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
       context, //
       HAF,
       _oscopebuffer,
-      fvec2(64, 32),
-      fvec2(960, 400));
+      fvec2(64, 32) * hud_contentscale(),
+      fvec2(960, 400) * hud_contentscale());
 
   drawtext(
       context, //
       FormatString("ostrack<%d>", _ostrack),
-      32,
-      32,
+      32 * hud_contentscale(),
+      32 * hud_contentscale(),
       fontscale,
       1,
       1,
@@ -358,8 +371,8 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
       context, //
       HAF,
       _oscopebuffer,
-      fvec2(32, 464),
-      fvec2(960, 480));
+      fvec2(32, 464) * hud_contentscale(),
+      fvec2(960, 480) * hud_contentscale());
 
   //////////////////////////////
 

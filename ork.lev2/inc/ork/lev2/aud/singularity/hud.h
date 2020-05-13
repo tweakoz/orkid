@@ -15,6 +15,9 @@
 
 namespace ork::audio::singularity {
 
+float hud_contentscale();
+int hud_lineheight();
+
 ///////////////////////////////////////////////////////////////////////////////
 
 using vtx_t        = lev2::SVtxV16T16C16;

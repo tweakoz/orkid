@@ -167,14 +167,14 @@ void GedItemNode::Draw(lev2::Context* pTARG) {
 ///////////////////////////////////////////////////////////////////////////////
 int GedItemNode::propnameWidth() const {
   int istrw                   = (int)strlen(_propname.c_str());
-  const lev2::FontDesc& fdesc = lev2::FontMan::GetRef().GetCurrentFont()->GetFontDesc();
+  const lev2::FontDesc& fdesc = lev2::FontMan::GetRef().currentFont()->GetFontDesc();
   int ilabw                   = fdesc.stringWidth(istrw);
   return ilabw;
 }
 ///////////////////////////////////////////////////////////////////////////////
 int GedItemNode::contentWidth() const {
   size_t istrw                = _content.length();
-  const lev2::FontDesc& fdesc = lev2::FontMan::GetRef().GetCurrentFont()->GetFontDesc();
+  const lev2::FontDesc& fdesc = lev2::FontMan::GetRef().currentFont()->GetFontDesc();
   int ilabw                   = fdesc.stringWidth(istrw);
   return ilabw;
 }

@@ -337,7 +337,7 @@ void FontMan::DrawCenteredText(Context* pTARG, int iY, const char* pFmt, ...) {
   va_start(argp, pFmt);
   vsnprintf(fxs.mutable_c_str(), KFIXEDSTRINGLEN, pFmt, argp);
   va_end(argp);
-  auto font        = GetCurrentFont();
+  auto font        = currentFont();
   const auto& desc = font->mFontDesc;
   int string_width = desc.stringWidth(fxs.length());
   int TARGW        = pTARG->mainSurfaceWidth();
@@ -414,6 +414,10 @@ void Font::QueChar(Context* pTARG, VtxWriter<SVtxV12C4T16>& vw, int ix, int iy, 
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#if defined(__APPLE__)
+extern bool _macosUseHIDPI;
+#endif
+
 void Font::LoadFromDisk(Context* pTARG, const FontDesc& fdesc) {
   mpMaterial = new GfxMaterialUIText;
   mpMaterial->gpuInit(pTARG);
@@ -426,6 +430,18 @@ void Font::LoadFromDisk(Context* pTARG, const FontDesc& fdesc) {
   ptex->TexSamplingMode().PresetPointAndClamp();
   pTARG->TXI()->ApplySamplingMode(ptex);
   mFontDesc = fdesc;
+
+#if defined(__APPLE__)
+  /*if (_macosUseHIDPI) {
+    mFontDesc.miCharWidth *= 2;
+    mFontDesc.miCharHeight *= 2;
+    mFontDesc.miCharOffsetX *= 2;
+    mFontDesc.miCharOffsetY *= 2;
+    mFontDesc.miYShift *= 2;
+    mFontDesc.miAdvanceWidth *= 2;
+    mFontDesc.miAdvanceHeight *= 2;
+  }*/
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////

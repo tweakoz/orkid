@@ -1,6 +1,35 @@
 #include "harness.h"
+#include <boost/program_options.hpp>
+#include <iostream>
+namespace po = boost::program_options;
+
+#if defined(__APPLE__)
+namespace ork::lev2 {
+extern bool _macosUseHIDPI;
+}
+#endif
 
 qtezapp_ptr_t createEZapp(int& argc, char** argv) {
+
+  po::options_description desc("Allowed options");
+  desc.add_options()                   //
+      ("help", "produce help message") //
+      ("hidpi", "hidpi mode");
+
+  po::variables_map vars;
+  po::store(po::parse_command_line(argc, argv, desc), vars);
+  po::notify(vars);
+
+  if (vars.count("help")) {
+    std::cout << desc << "\n";
+    exit(0);
+  }
+  if (vars.count("hidpi")) {
+#if defined(__APPLE__)
+    ork::lev2::_macosUseHIDPI = true;
+#endif
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   // boot up debug HUD
   //////////////////////////////////////////////////////////////////////////////

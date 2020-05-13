@@ -12,7 +12,7 @@ include_directories(AFTER $ENV{QTDIR}/include)
 
 function(setupEXE target sources)
   add_executable (${target} harness.cpp ${sources} )
-  target_link_libraries(${target} LINK_PRIVATE ork_core ork_lev2 )
+  target_link_libraries(${target} LINK_PRIVATE ork_core ork_lev2 boost_program_options )
   set_target_properties(${target} PROPERTIES LINKER_LANGUAGE CXX)
   install(TARGETS ${target} DESTINATION $ENV{OBT_STAGE}/bin )
 endfunction()
