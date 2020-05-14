@@ -71,6 +71,9 @@ struct synth {
   float _sampleRate;
   float _dt;
 
+  std::set<layer*> _allVoices;
+  std::set<programInst*> _allProgInsts;
+
   std::set<layer*> _freeVoices;
   std::set<layer*> _activeVoices;
   std::queue<layer*> _deactiveateVoiceQ;
@@ -110,6 +113,7 @@ struct synth {
   hudaframe _curhud_aframe;
 
   float _oscopebuffer[koscopelength];
+  bool _oscopesyncbuffer[koscopelength];
 };
 
 } // namespace ork::audio::singularity

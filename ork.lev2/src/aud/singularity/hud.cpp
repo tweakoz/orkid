@@ -175,12 +175,14 @@ void synth::onDrawHud(Context* context, float width, float height) {
 
       int tailbegin = koscopelength - inumfin;
 
-      memcpy(_oscopebuffer, _oscopebuffer + inumfin, tailbegin * 4);
+      memcpy(_oscopebuffer, _oscopebuffer + inumfin, tailbegin * sizeof(float));
+      memcpy(_oscopesyncbuffer, _oscopesyncbuffer + inumfin, tailbegin * sizeof(bool));
 
-      float* tailb = _oscopebuffer + tailbegin;
+      float* tailb_float = _oscopebuffer + tailbegin;
+      bool* tailb_bool   = _oscopesyncbuffer + tailbegin;
       for (int i = 0; i < inumfin; i++) {
-        float inp = AFIN._oscopebuffer[i];
-        tailb[i]  = inp;
+        tailb_float[i] = AFIN._oscopebuffer[i];
+        tailb_bool[i]  = AFIN._oscopesync[i];
       }
       _curhud_aframe._items.clear();
       _curhud_aframe = AFIN;

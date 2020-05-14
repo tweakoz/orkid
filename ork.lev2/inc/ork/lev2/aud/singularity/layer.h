@@ -16,6 +16,8 @@ struct layer {
   layer();
   ~layer();
 
+  void resize(int numframes);
+
   void compute(outputBuffer& obuf);
   void keyOn(int note, int vel, lyrdata_constptr_t ld);
   void keyOff();
@@ -69,8 +71,10 @@ struct layer {
   hudkframe _HKF;
   hudaframe _HAF;
   int _HAF_nenvseg;
-
+  size_t _num_sent_to_scope = 0;
   lyrdata_constptr_t _LayerData;
+  oschardsynctrack_ptr_t _oschsynctracks[kmaxdspblocksperstage];
+  scopesynctrack_ptr_t _scopesynctracks[kmaxdspblocksperstage];
 
 private:
   int _keepalive;

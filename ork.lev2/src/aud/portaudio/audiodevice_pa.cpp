@@ -67,7 +67,6 @@ static int patestCallback(
 }
 
 void startupAudio() {
-  assert(synth::instance() == nullptr);
 
   float SR = getSampleRate();
 

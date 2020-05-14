@@ -1,4 +1,5 @@
 #include <ork/lev2/aud/singularity/hud.h>
+#include <ork/lev2/aud/singularity/dspblocks.h>
 
 using namespace ork;
 using namespace ork::lev2;
@@ -13,6 +14,14 @@ void DrawOscope(
     const float* samples,
     fvec2 xy,
     fvec2 wh) { //
+
+  auto hudl = synth::instance()->_hudLayer;
+
+  if (false == (hudl && hudl->_LayerData))
+    return;
+
+  ///////////////////////////////////////////////
+
   hudlines_t lines;
 
   int inumframes = synth::instance()->_oswidth;
@@ -68,12 +77,15 @@ void DrawOscope(
   // oscilloscope trace
   /////////////////////////////////////////////
 
-  int trakoff = HAF._trackoffset >> 16;
-  auto mapI   = [&](int i) -> int {
-    int j = (i + trakoff) % inumframes;
+  int64_t trakoff = HAF._baseserial << 16;
+  //_HAF._trackoffset += ;
+
+  auto mapI = [&](int i) -> int {
+    int j = (i + (trakoff >> 16)) % koscopelength;
+    trakoff += synth::instance()->_ostrack;
 
     assert(j >= 0);
-    assert(j < inumframes);
+    assert(j < koscopelength);
     return j;
   };
 

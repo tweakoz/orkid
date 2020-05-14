@@ -103,15 +103,22 @@ struct DspBlockData {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct OscHardSyncTrack {
+struct OscillatorSyncTrack {
   inline void resize(int size) {
-    _values.resize(size);
+    _triggers.resize(size);
     for (int i = 0; i < size; i++)
-      _values[i] = false;
+      _triggers[i] = false;
   }
-  std::vector<bool> _values;
+  std::vector<bool> _triggers;
 };
-using oschardsynctrack_ptr_t = std::shared_ptr<OscHardSyncTrack>;
+struct ScopeSyncTrack {
+  inline void resize(int size) {
+    _triggers.resize(size);
+    for (int i = 0; i < size; i++)
+      _triggers[i] = false;
+  }
+  std::vector<bool> _triggers;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -138,12 +145,20 @@ struct DspBlock {
 
   FPARAM initFPARAM(const DspParamData& dpd);
 
+  virtual bool isHsyncSource() const {
+    return false;
+  }
+  virtual bool isScopeSyncSource() const {
+    return false;
+  }
+
   dspblkdata_constptr_t _dbd;
   int _numParams;
   int numOutputs() const;
   int numInputs() const;
-  layer* _layer     = nullptr;
-  size_t _numFrames = 0;
+  layer* _layer      = nullptr;
+  size_t _numFrames  = 0;
+  int _verticalIndex = -1;
 
   varmap::VarMap _vars;
 
@@ -199,6 +214,7 @@ struct Alg final {
   dspblk_ptr_t lastBlock() const;
 
   dspstage_ptr_t _stages[kmaxdspstagesperlayer];
+
   const AlgData& _algdata;
 
   layer* _layer;

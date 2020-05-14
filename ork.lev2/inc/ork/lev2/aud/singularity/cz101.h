@@ -56,7 +56,7 @@ struct CzProgData {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct CZX : public DspBlock {
+struct CZX final : public DspBlock {
   CZX(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
@@ -64,6 +64,13 @@ struct CZX : public DspBlock {
 
   static constexpr float kinv64k = 1.0f / 65536.0f;
   static constexpr float kinv32k = 1.0f / 32768.0f;
+
+  bool isHsyncSource() const override {
+    return true;
+  }
+  bool isScopeSyncSource() const override {
+    return true;
+  }
 
   float _baseFrequency;
   float _modIndex;
@@ -79,6 +86,7 @@ struct CZX : public DspBlock {
 
   float _prevOutput;
   oschardsynctrack_ptr_t _hsynctrack;
+  scopesynctrack_ptr_t _scopetrack;
 
   static void initBlock(dspblkdata_ptr_t blockdata, czxdata_constptr_t czdata);
 };

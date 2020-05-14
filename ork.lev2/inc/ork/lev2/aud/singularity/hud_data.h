@@ -38,14 +38,16 @@ struct op4frame {
 };
 struct hudaframe {
   hudaframe()
-      : _oscopebuffer(256) {
+      : _oscopebuffer(koscopelength) {
   }
   std::vector<float> _oscopebuffer;
+  std::vector<bool> _oscopesync;
 
   std::vector<ork::svar256_t> _items;
 
   op4frame _op4frame[4];
   size_t _trackoffset = 0;
+  size_t _baseserial  = 0;
 };
 struct hudkframe {
   lyrdata_constptr_t _layerdata;

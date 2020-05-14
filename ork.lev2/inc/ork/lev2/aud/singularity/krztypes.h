@@ -46,6 +46,8 @@ struct DspBlock;
 struct DspBuffer;
 struct Alg;
 struct DspStage;
+struct OscillatorSyncTrack;
+struct ScopeSyncTrack;
 ///////////////////////////////////////////////////////////////////////////////
 struct SynthData;
 struct KrzSynthData;
@@ -81,6 +83,8 @@ using czsyndata_ptr_t         = std::shared_ptr<CzData>;
 using krztestsyndata_ptr_t    = std::shared_ptr<KrzTestData>;
 using krzkmtestsyndata_ptr_t  = std::shared_ptr<KrzKmTestData>;
 using czprogdata_ptr_t        = std::shared_ptr<CzProgData>;
+using oschardsynctrack_ptr_t  = std::shared_ptr<OscillatorSyncTrack>;
+using scopesynctrack_ptr_t    = std::shared_ptr<ScopeSyncTrack>;
 ///////////////////////////////////////////////////////////////////////////////
 static const int kmaxenvperlayer       = 8;
 static const int kmaxdspblocksperstage = 4;

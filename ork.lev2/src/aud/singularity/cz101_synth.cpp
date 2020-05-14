@@ -20,7 +20,6 @@ namespace ork::audio::singularity {
 
 CZX::CZX(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
-  _hsynctrack = _vars.makeSharedForKey<OscHardSyncTrack>("HSYNC");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -57,7 +56,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
   constexpr double kscale    = double(1 << 24);
   constexpr double kinvscale = 1.0 / kscale;
   //////////////////////////////////////////
-  double saw, dblsine, square, sawpulse, tozpulse, reso1, reso2, reso3;
+  double saw, dblsine, square, sawpulse, tozpulse, reso1, reso2, reso3, coswave;
   double sawphase, squarephase, sawpulsephase, tozpulsephase;
 
   for (int i = 0; i < inumframes; i++) {
@@ -69,6 +68,22 @@ void CZX::compute(DspBuffer& dspbuf) // final
     double invlinphase = 1.0 - linphase;
     double linphasex2  = double(dpos) * kinvscale;
     int64_t phaseinc   = int64_t(kscale * frq / 48000.0);
+    int64_t nextphase  = _phase + phaseinc;
+    ////////////////////////////////////////////
+    // hard sync track
+    ////////////////////////////////////////////
+    bool a                    = (_phase >> 24) & 1;
+    bool b                    = (nextphase >> 24) & 1;
+    bool hsync_trigger        = (a != b);
+    _hsynctrack->_triggers[i] = hsync_trigger;
+    ////////////////////////////////////////////
+    // oscope track
+    ////////////////////////////////////////////
+    _scopetrack->_triggers[i] = (hsync_trigger and not waveswitch);
+    ////////////////////////////////////////////
+    // cos
+    ////////////////////////////////////////////
+    coswave = cosf(linphase * PI2);
     ////////////////////////////////////////////
     // tri
     ////////////////////////////////////////////
@@ -154,17 +169,15 @@ void CZX::compute(DspBuffer& dspbuf) // final
       double frqscale = (1.0f + modindex * 15.0f);
       double resoinc  = kscale * frq * frqscale / 48000.0;
       _resophase += int64_t(resoinc);
-      bool a = (_phase >> 24) & 1;
-      bool b = ((_phase + phaseinc) >> 24) & 1;
-      if (a != b) // hardsync it
+      if (hsync_trigger) // hardsync it
         _resophase = 0;
     }
     ////////////////////////////////////////////
-    _phase += phaseinc;
+    _phase = nextphase;
     ////////////////////////////////////////////
     U[i] = waveswitch ? sawpulse : saw;
     U[i] = waveswitch ? reso3 : saw;
-    // U[i] = reso3;
+    U[i] = coswave;
     ;
   }
   _ph += 0.003f;
@@ -180,7 +193,11 @@ void CZX::doKeyOn(const DspKeyOnInfo& koi) // final
   auto l            = koi._layer;
   l->_HKF._miscText = FormatString("CZ\n");
   l->_HKF._useFm4   = false;
-  _phase            = 0;
+
+  _hsynctrack = l->_oschsynctracks[_verticalIndex];
+  _scopetrack = l->_scopesynctracks[_verticalIndex];
+
+  _phase = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
 

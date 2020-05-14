@@ -60,6 +60,7 @@ void Alg::keyOn(DspKeyOnInfo& koi) {
         if (blockdata) {
           auto block             = createDspBlock(blockdata);
           stage->_blocks[iblock] = block;
+          block->_verticalIndex  = iblock;
         }
       }
     } else

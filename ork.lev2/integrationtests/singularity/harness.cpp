@@ -74,6 +74,7 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
     printf("GOTRESIZE<%d %d>\n", w, h);
   });
   //////////////////////////////////////////////////////////
+  const int64_t trackMAX = (4095 << 16);
   qtapp->onUiEvent([=](ui::event_constptr_t ev) -> ui::HandlerResult {
     bool isshift = ev->mbALT;
     switch (ev->miEventCode) {
@@ -85,26 +86,26 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
             break;
           case '-':
             synth::instance()->_ostrack--;
-            if (synth::instance()->_ostrack < 0)
-              synth::instance()->_ostrack = 0;
+            if (synth::instance()->_ostrack < -trackMAX)
+              synth::instance()->_ostrack = -trackMAX;
             printf("oscope track<%d>\n", synth::instance()->_ostrack);
             break;
           case '=':
             synth::instance()->_ostrack++;
-            if (synth::instance()->_ostrack > (4095 << 16))
-              synth::instance()->_ostrack = (4095 << 16);
+            if (synth::instance()->_ostrack > trackMAX)
+              synth::instance()->_ostrack = trackMAX;
             printf("oscope track<%d>\n", synth::instance()->_ostrack);
             break;
           case '[':
             synth::instance()->_ostrack -= isshift ? 10000 : 1000;
-            if (synth::instance()->_ostrack < 0)
-              synth::instance()->_ostrack = 0;
+            if (synth::instance()->_ostrack < -trackMAX)
+              synth::instance()->_ostrack = -trackMAX;
             printf("oscope track<%d>\n", synth::instance()->_ostrack);
             break;
           case ']':
             synth::instance()->_ostrack += isshift ? 10000 : 1000;
-            if (synth::instance()->_ostrack > (4095 << 16))
-              synth::instance()->_ostrack = (4095 << 16);
+            if (synth::instance()->_ostrack > trackMAX)
+              synth::instance()->_ostrack = trackMAX;
             printf("oscope track<%d>\n", synth::instance()->_ostrack);
             break;
           case ';':

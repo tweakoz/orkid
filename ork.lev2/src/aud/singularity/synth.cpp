@@ -24,14 +24,20 @@ synth::synth()
     , _soloLayer(-1)
     , _timeaccum(0.0f)
     , _hudpage(0)
-    , _oswidth(367 * 8)     //
-    , _ostrack(111 << 16) { // 111 synchnozies with midi note 48
+    , _oswidth(367 * 8) //
+    , _ostrack(0) {     // 111 synchnozies with midi note 48
 
-  for (int i = 0; i < 256; i++)
-    _freeVoices.insert(new layer());
+  for (int i = 0; i < 256; i++) {
+    auto l = new layer();
+    _allVoices.insert(l);
+    _freeVoices.insert(l);
+  }
 
-  for (int i = 0; i < 256; i++)
-    _freeProgInst.insert(new programInst());
+  for (int i = 0; i < 256; i++) {
+    auto pi = new programInst();
+    _freeProgInst.insert(pi);
+    _allProgInsts.insert(pi);
+  }
 }
 
 void synth::setSampleRate(float sr) {
@@ -42,15 +48,10 @@ void synth::setSampleRate(float sr) {
 ///////////////////////////////////////////////////////////////////////////////
 
 synth::~synth() {
-  for (auto v : _freeVoices)
+  for (auto v : _allVoices)
     delete v;
-  for (auto v : _activeVoices)
-    delete v;
-
-  for (auto p : _freeProgInst)
-    delete p;
-  for (auto p : _activeProgInst)
-    delete p;
+  for (auto pi : _allProgInsts)
+    delete pi;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -94,6 +95,8 @@ layer* synth::allocLayer() {
 void synth::freeLayer(layer* l) {
   _deactiveateVoiceQ.push(l);
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void synth::deactivateVoices() {
   bool done = (_deactiveateVoiceQ.size() == 0);
@@ -162,11 +165,16 @@ void synth::keyOff(programInst* pinst) {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 void synth::resize(int numframes) {
   if (_numFrames != numframes) {
     _ibuf.resize(numframes);
     _obuf.resize(numframes);
     _numFrames = numframes;
+    for (auto lay : _allVoices) {
+      lay->resize(_numFrames);
+    }
   }
 }
 
@@ -243,6 +251,8 @@ void synth::compute(int inumframes, const void* inputBuffer) {
     rb[i] = clip_float(rb[i] * 0.1f, -1, 1);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void synth::resetFenables() {
   for (int i = 0; i < 5; i++)

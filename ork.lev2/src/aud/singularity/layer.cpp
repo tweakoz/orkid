@@ -25,14 +25,26 @@ layer::layer()
     , _AENV(nullptr) {
   // printf( "Layer Init<%p>\n", this );
   _dspbuffer = std::make_shared<DspBuffer>();
+
+  for (int i = 0; i < kmaxdspblocksperstage; i++) {
+    _oschsynctracks[i]  = std::make_shared<OscillatorSyncTrack>();
+    _scopesynctracks[i] = std::make_shared<ScopeSyncTrack>();
+  }
 }
 
 layer::~layer() {
   for (int i = 0; i < kmaxctrlblocks; i++)
     if (_ctrlBlock[i])
       delete _ctrlBlock[i];
-  // if( _alg )
-  //    delete _alg;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void layer::resize(int numframes) {
+  for (int i = 0; i < kmaxdspblocksperstage; i++) {
+    _oschsynctracks[i]->resize(numframes);
+    _scopesynctracks[i]->resize(numframes);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -147,7 +159,6 @@ void layer::compute(outputBuffer& obuf) {
       }
     }
   }
-
   ///////////////////////////////////////////////
 
   // printf( "pchc1<%f> pchc2<%f> poic<%f> currat<%f>\n", _pchc1, _pchc2, _curPitchOffsetInCents, currat );
@@ -264,22 +275,53 @@ void layer::compute(outputBuffer& obuf) {
 
     if (this == synth::instance()->_hudLayer) {
       _HAF._oscopebuffer.resize(inumframes);
-      _HAF._trackoffset += synth::instance()->_ostrack;
-
+      _HAF._oscopesync.resize(inumframes);
+      ///////////////////////////////////////////////
+      // find oscope sync source
+      ///////////////////////////////////////////////
+      scopesynctrack_ptr_t syncsource = nullptr;
+      int istage                      = 0;
+      _alg->forEachStage([&](dspstage_ptr_t stage) {
+        bool ena = synth::instance()->_stageEnable[istage];
+        if (ena) {
+          int iblock = 0;
+          stage->forEachBlock([&](dspblk_ptr_t block) {
+            if (block->isScopeSyncSource()) {
+              syncsource = _scopesynctracks[iblock];
+            }
+            iblock++;
+          }); // forEachBlock
+          istage++;
+        } // if(ena)
+      });
+      ///////////////////////////////////////////////
+      if (syncsource) {
+        for (int i = 0; i < inumframes; i++)
+          _HAF._oscopesync[i] = syncsource->_triggers[i];
+      } else {
+        for (int i = 0; i < inumframes; i++)
+          _HAF._oscopesync[i] = false;
+      }
+      ///////////////////////////////////////////////
       if (doBlockStereo) {
         for (int i = 0; i < inumframes; i++) {
-          float l = _layerObuf._leftBuffer[i];
-          float r = _layerObuf._rightBuffer[i];
-          // tailb[i] = l;//doBlockStereo ? l+r : l;
+          int inpi              = i;
+          float l               = _layerObuf._leftBuffer[inpi];
+          float r               = _layerObuf._rightBuffer[inpi];
           _HAF._oscopebuffer[i] = (l + r) * 0.5f;
         }
 
       } else {
         for (int i = 0; i < inumframes; i++) {
-          float l               = _layerObuf._leftBuffer[i];
+          int inpi              = i;
+          float l               = _layerObuf._leftBuffer[inpi];
           _HAF._oscopebuffer[i] = l;
         }
       }
+      ///////////////////////////////////////////////
+      _HAF._baseserial = _num_sent_to_scope;
+      _num_sent_to_scope += inumframes;
+      ///////////////////////////////////////////////
       synth::instance()->_hudbuf.push(_HAF);
     }
   }
