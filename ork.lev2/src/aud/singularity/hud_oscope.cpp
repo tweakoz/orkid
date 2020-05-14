@@ -118,49 +118,109 @@ void DrawOscope(
   const int koscfr = window_width;
 
   //////////////////////////////////////////////
-  // find zero crossing
+  // find set of all level trigger crossings
+  //   matching the selected direction
   //////////////////////////////////////////////
 
-  bool do_slope_test = triggerslope != 0.0;
-
-  int64_t zero_crossing = 0;
-  float ly              = samples[0];
-  for (int i = 0; i < window_width; i++) {
-    float y     = samples[i];
-    float slope = abs(y - ly) * 1000.0f; // / float(window_width);
-
-    if (syn->_ostrigdir) {
-      if (ly > triggerlevel and y <= triggerlevel) {
-        if (do_slope_test) {
-          if (abs(slope - triggerslope) < 0.1) {
-            zero_crossing = i;
-            break;
-          }
-        } else {
-          zero_crossing = i;
-          break;
+  std::set<int> crossings;
+  {
+    float ly = samples[0];
+    for (int i = 0; i < koscopelength; i++) {
+      float y = samples[i];
+      if (syn->_ostrigdir) {
+        if (ly > triggerlevel and y <= triggerlevel)
+          crossings.insert(i);
+      } else {
+        if (ly < triggerlevel and y >= triggerlevel) {
+          crossings.insert(i);
         }
       }
-    } else {
-      if (ly < triggerlevel and y >= triggerlevel) {
-        if (do_slope_test) {
-          if (abs(slope - triggerslope) < 0.1) {
-            zero_crossing = i;
-            break;
-          }
-        } else {
-          zero_crossing = i;
-          break;
-        }
-      }
+      ly = y;
     }
-    ly = y;
+  }
+
+  //////////////////////////////////////////////
+  // compute crossing to crossing widths
+  //////////////////////////////////////////////
+  struct TriggerItem {
+    int _crossing, _delta;
+  };
+
+  std::map<int, int> crosdeltascount;
+  std::map<float, TriggerItem> weightedcrossings;
+
+  static int lastdelta = 0;
+  int maxcrossingcount = 0;
+  int crossing         = 0;
+
+  //////////////////////////////////////////////////
+  // get counts
+  //////////////////////////////////////////////////
+
+  for (std::set<int>::iterator it = crossings.begin(); it != crossings.end(); it++) {
+    auto itnext = it;
+    itnext++;
+    if (itnext != crossings.end()) {
+      int i     = *it;
+      int inext = *itnext;
+      int delta = inext - i;
+      int count = crosdeltascount[delta]++;
+    }
+  }
+
+  //////////////////////////////////////////////////
+  // weighting heuristic
+  //  in order to stabilize trigger utilizing
+  //   global crossing data
+  //////////////////////////////////////////////////
+
+  for (std::set<int>::iterator it = crossings.begin(); it != crossings.end(); it++) {
+    auto itnext = it;
+    itnext++;
+    if (itnext != crossings.end()) {
+      int i     = *it;
+      int inext = *itnext;
+      int delta = inext - i;
+      int count = crosdeltascount[delta];
+      /////////////////////////////////////////////////////////
+      // start weight out with number of repeats
+      /////////////////////////////////////////////////////////
+      float weight = count;
+      /////////////////////////////////////////////////////////
+      // mildly prefer earlier candidates
+      //  they represent older data, but there is more history
+      //  to work with, and the write head is out of the way.
+      /////////////////////////////////////////////////////////
+      weight *= 1.0 - (0.5 * float(i) / float(koscopelength));
+      if (lastdelta != 0) {
+        int dist2last = abs(lastdelta - delta);
+        /////////////////////////////////////////////////////////
+        // prefer candidates most closely matching the last delta
+        /////////////////////////////////////////////////////////
+        if (dist2last == 0)
+          weight *= 2.101f;
+        else
+          weight *= 1.0f / float(dist2last);
+      }
+      weightedcrossings[weight] = TriggerItem{i, delta};
+    }
+  }
+
+  //////////////////////////////////////////////
+  // get crossing with largest weight
+  //////////////////////////////////////////////
+  auto itcrossing = weightedcrossings.rbegin();
+  if (itcrossing != weightedcrossings.rend()) {
+    float weight      = itcrossing->first;
+    TriggerItem& item = itcrossing->second;
+    crossing          = item._crossing;
+    lastdelta         = item._delta;
   }
 
   //////////////////////////////////////////////
 
   for (int i = 0; i < window_width; i++) {
-    int j   = (i + zero_crossing) & koscopelengthmask;
+    int j   = (i + crossing) & koscopelengthmask;
     float x = OSC_W * float(i) / float(window_width);
     float y = samples[j] * -OSC_HH;
     x2      = OSC_X1 + x;
