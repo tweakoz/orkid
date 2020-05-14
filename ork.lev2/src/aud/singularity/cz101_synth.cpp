@@ -43,7 +43,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
   // todo: dco(pitch) env mod
   // todo: mi from dcw env
   static double _ph = 0.0;
-  double modindex   = 0.5f - cosf(_ph * 3.0) * 0.5f;
+  double modindex   = 0.5f - cosf(_ph * 0.3) * 0.5f;
   //////////////////////////////////////////
   double sawmodindex = 0.5 - modindex * 0.5;
   double sinpulindex = modindex * 0.75;
@@ -154,15 +154,19 @@ void CZX::compute(DspBuffer& dspbuf) // final
     double dcospulse = cosf(warped2 * PI2 * 4.0);
     ////////////////////////////////////////////
     {
+      double reso3index = std::clamp(invlinphase * 2, 0.0, 1.0);
+      float res1mask    = lerp(1.0, invlinphase, modindex);
+      float res2mask    = lerp(1.0, uni_itri, modindex);
+      float res3mask    = lerp(1.0, reso3index, modindex);
+
       int64_t pos         = (_resophase)&0xffffff;
       double _linphase    = double(pos) * kinvscale;
       double _invlinphase = 1.0 - _linphase;
       double reso_bip     = cosf(_linphase * PI2);
       double reso_uni     = 0.5 + reso_bip * 0.5;
-      reso1               = 1.0 - ((1.0 - reso_uni) * invlinphase * 2.0);
-      reso2               = 1.0 - (reso_uni * uni_itri * 2.0);
-      double reso3index   = std::clamp(invlinphase * 2, 0.0, 1.0);
-      reso3               = 1.0 - ((1.0 - reso_uni) * reso3index * 2.0);
+      reso1               = 1.0 - ((1.0 - reso_uni) * res1mask * 2.0);
+      reso2               = 1.0 - (reso_uni * res2mask * 2.0);
+      reso3               = 1.0 - ((1.0 - reso_uni) * res3mask * 2.0);
       /////////////////
       // free running resoosc (but hard synced to base osc)
       /////////////////
@@ -177,7 +181,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
     ////////////////////////////////////////////
     // U[i] = waveswitch ? sawpulse : saw;
     U[i] = waveswitch ? reso2 : saw;
-    U[i] = reso2;
+    U[i] = reso3;
     ;
   }
   _ph += 0.003f;
