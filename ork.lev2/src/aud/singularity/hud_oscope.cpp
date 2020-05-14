@@ -3,10 +3,6 @@
 using namespace ork;
 using namespace ork::lev2;
 
-namespace ork::lev2 {
-extern ork::audio::singularity::synth* the_synth;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
@@ -19,7 +15,7 @@ void DrawOscope(
     fvec2 wh) { //
   hudlines_t lines;
 
-  int inumframes = the_synth->_oswidth;
+  int inumframes = synth::instance()->_oswidth;
 
   const float OSC_X1 = xy.x;
   const float OSC_Y1 = xy.y;
@@ -34,7 +30,7 @@ void DrawOscope(
 
   int ycursor = OSC_Y1;
 
-  double width = double(the_synth->_oswidth) / double(48.0);
+  double width = double(synth::instance()->_oswidth) / double(48.0);
 
   drawtext(
       context, //
@@ -48,7 +44,7 @@ void DrawOscope(
 
   ycursor += hud_lineheight();
 
-  double track = double(the_synth->_ostrack) / double(65536.0);
+  double track = double(synth::instance()->_ostrack) / double(65536.0);
   drawtext(
       context, //
       FormatString("track: %0.4f", track),

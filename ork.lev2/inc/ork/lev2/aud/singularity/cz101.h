@@ -78,6 +78,8 @@ struct CZX : public DspBlock {
   int64_t _mIncrBase;
 
   float _prevOutput;
+  oschardsynctrack_ptr_t _hsynctrack;
+
   static void initBlock(dspblkdata_ptr_t blockdata, czxdata_constptr_t czdata);
 };
 

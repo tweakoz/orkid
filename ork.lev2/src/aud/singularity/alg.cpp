@@ -14,8 +14,6 @@ namespace ork::audio::singularity {
 
 dspblk_ptr_t createDspBlock(dspblkdata_constptr_t dbd);
 
-extern synth* the_synth;
-
 ///////////////////////////////////////////////////////////////////////////////
 
 Alg::Alg(const AlgData& algd)
@@ -33,11 +31,11 @@ dspblk_ptr_t Alg::lastBlock() const {
       for( int i=0; i<kmaxdspblocksperlayer; i++ )
           if( _block[i] )
           {
-              bool ena = the_synth->_stageEnable[i];
+              bool ena = synth::instance()->_stageEnable[i];
               if( ena )
                   r = _block[i];
           }
-      return r;*/ // fix _the_synth
+      return r;*/ // fix _synth::instance
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -83,7 +81,7 @@ void Alg::keyOn(DspKeyOnInfo& koi) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Alg::intoDspBuf(const outputBuffer& obuf) {
-  int inumframes = obuf._numframes;
+  int inumframes = synth::instance()->_numFrames;
   _layer->_dspbuffer->resize(inumframes);
   float* lefbuf = obuf._leftBuffer;
   float* rhtbuf = obuf._rightBuffer;
@@ -96,7 +94,7 @@ void Alg::intoDspBuf(const outputBuffer& obuf) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Alg::intoOutBuf(outputBuffer& obuf, int inumo) {
-  int inumframes = obuf._numframes;
+  int inumframes = synth::instance()->_numFrames;
   _layer->_dspbuffer->resize(inumframes);
   float* lefbuf = obuf._leftBuffer;
   float* rhtbuf = obuf._rightBuffer;
@@ -130,14 +128,15 @@ void DspStage::forEachBlock(blockfn_t fn) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Alg::compute(synth& syn, outputBuffer& obuf) {
+void Alg::compute(outputBuffer& obuf) {
   intoDspBuf(obuf);
   auto dspbuf     = _layer->_dspbuffer;
   bool touched    = false;
   int inumoutputs = 1;
   int istage      = 0;
+  auto syn        = synth::instance();
   forEachStage([&](dspstage_ptr_t stage) {
-    bool ena = syn._stageEnable[istage];
+    bool ena = syn->_stageEnable[istage];
     if (ena)
       stage->forEachBlock([&](dspblk_ptr_t block) {
         block->compute(*dspbuf.get());
@@ -339,6 +338,10 @@ dspblk_ptr_t createDspBlock(dspblkdata_constptr_t dbd) {
     rval = std::make_shared<WRAP>(dbd);
   if (dbd->_dspBlock == "DIST")
     rval = std::make_shared<DIST>(dbd);
+
+  if (rval) {
+    rval->resize(synth::instance()->_numFrames);
+  }
 
   return rval;
 }

@@ -42,7 +42,7 @@ struct fm4vcpriv {
     /////////////////////////////////////////////////
     _alg[0] = [this](DspBuffer& dspbuf) {
       //   (3)->2->1->0
-      int inumframes = dspbuf._numframes;
+      int inumframes = synth::instance()->_numFrames;
       float* U       = dspbuf.channel(0);
 
       for (int i = 0; i < inumframes; i++) {
@@ -69,7 +69,7 @@ struct fm4vcpriv {
     _alg[1] = [this](DspBuffer& dspbuf) {
       //  (3)\
             //   2->1->0
-      int inumframes = dspbuf._numframes;
+      int inumframes = synth::instance()->_numFrames;
       float* U       = dspbuf.channel(0);
 
       for (int i = 0; i < inumframes; i++) {
@@ -97,7 +97,7 @@ struct fm4vcpriv {
       //   2
       //   1  (3)
       //     0
-      int inumframes = dspbuf._numframes;
+      int inumframes = synth::instance()->_numFrames;
       float* U       = dspbuf.channel(0);
 
       for (int i = 0; i < inumframes; i++) {
@@ -125,7 +125,7 @@ struct fm4vcpriv {
       //    (3)
       //   1 2
       //    0
-      int inumframes = dspbuf._numframes;
+      int inumframes = synth::instance()->_numFrames;
       float* U       = dspbuf.channel(0);
 
       for (int i = 0; i < inumframes; i++) {
@@ -152,7 +152,7 @@ struct fm4vcpriv {
     _alg[4] = [this](DspBuffer& dspbuf) {
       // 1 (3)
       // 0  2
-      int inumframes = dspbuf._numframes;
+      int inumframes = synth::instance()->_numFrames;
       float* U       = dspbuf.channel(0);
 
       for (int i = 0; i < inumframes; i++) {
@@ -181,7 +181,7 @@ struct fm4vcpriv {
       //   (3)
       //   / \
             // 0  1  2
-      int inumframes = dspbuf._numframes;
+      int inumframes = synth::instance()->_numFrames;
       float* U       = dspbuf.channel(0);
 
       for (int i = 0; i < inumframes; i++) {
@@ -208,7 +208,7 @@ struct fm4vcpriv {
     _alg[6] = [this](DspBuffer& dspbuf) {
       //      (3)
       // 0  1  2
-      int inumframes = dspbuf._numframes;
+      int inumframes = synth::instance()->_numFrames;
       float* U       = dspbuf.channel(0);
 
       for (int i = 0; i < inumframes; i++) {
@@ -234,7 +234,7 @@ struct fm4vcpriv {
     /////////////////////////////////////////////////
     _alg[7] = [this](DspBuffer& dspbuf) {
       //   0  1  2 (3)
-      int inumframes = dspbuf._numframes;
+      int inumframes = synth::instance()->_numFrames;
       float* U       = dspbuf.channel(0);
 
       for (int i = 0; i < inumframes; i++) {

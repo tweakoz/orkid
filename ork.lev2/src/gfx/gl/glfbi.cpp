@@ -26,6 +26,7 @@ OIIO_NAMESPACE_USING
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork { namespace lev2 {
+extern int G_MSAASAMPLES;
 
 GlFrameBufferInterface::GlFrameBufferInterface(ContextGL& target)
     : FrameBufferInterface(target)
@@ -92,6 +93,11 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
     GL_ERRORCHECK();
     _setAsRenderTarget();
     GL_ERRORCHECK();
+
+    if (G_MSAASAMPLES > 1)
+      glEnable(GL_MULTISAMPLE);
+    else
+      glDisable(GL_MULTISAMPLE);
 
     glDepthRange(0.0, 1.0f);
     ViewportRect extents = mTarget.mainSurfaceRectAtOrigin();

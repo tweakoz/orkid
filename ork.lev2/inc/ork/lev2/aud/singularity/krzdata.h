@@ -19,7 +19,7 @@ struct EnvPoint {
 struct ControllerInst;
 
 struct ControllerData {
-  virtual ControllerInst* instantiate(synth& syn) const = 0;
+  virtual ControllerInst* instantiate() const = 0;
   virtual ~ControllerData() {
   }
 
@@ -38,7 +38,7 @@ enum struct RlEnvType {
 
 struct RateLevelEnvData : public ControllerData {
   RateLevelEnvData();
-  ControllerInst* instantiate(synth& syn) const final;
+  ControllerInst* instantiate() const final;
   bool isBiPolar() const;
 
   std::vector<EnvPoint> _segments;
@@ -57,7 +57,7 @@ struct natenvseg {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct AsrData : public ControllerData {
-  ControllerInst* instantiate(synth& syn) const final;
+  ControllerInst* instantiate() const final;
 
   std::string _trigger;
   std::string _mode;
@@ -140,7 +140,7 @@ struct KeyMap {
 
 struct LfoData : public ControllerData {
   LfoData();
-  ControllerInst* instantiate(synth& syn) const final;
+  ControllerInst* instantiate() const final;
 
   float _initialPhase;
   float _minRate;
@@ -152,7 +152,7 @@ struct LfoData : public ControllerData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FunData : public ControllerData {
-  ControllerInst* instantiate(synth& syn) const final;
+  ControllerInst* instantiate() const final;
 
   std::string _a, _b, _op;
 };
@@ -237,7 +237,7 @@ struct ProgramData {
 struct programInst;
 
 struct SynthData {
-  SynthData(synth* syn);
+  SynthData();
   virtual ~SynthData() {
   }
 
@@ -247,7 +247,6 @@ struct SynthData {
 
   programInst* _prog;
   float _synsr;
-  synth* _syn;
   float _seqCursor;
   std::string _staticBankName;
 };
@@ -257,7 +256,7 @@ struct SynthData {
 struct KrzSynthData : public SynthData {
   static VastObjectsDB* baseObjects();
 
-  KrzSynthData(synth* syn);
+  KrzSynthData();
   const ProgramData* getProgram(int progID) const final;
   const ProgramData* getProgramByName(const std::string& named) const final;
 };
@@ -265,7 +264,7 @@ struct KrzSynthData : public SynthData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Sf2TestSynthData : public SynthData {
-  Sf2TestSynthData(const file::Path& syxpath, synth* syn, const std::string& bankname = "sf2");
+  Sf2TestSynthData(const file::Path& syxpath, const std::string& bankname = "sf2");
   ~Sf2TestSynthData();
   sf2::SoundFont* _sfont;
   const ProgramData* getProgram(int progID) const final;
@@ -277,7 +276,7 @@ struct Sf2TestSynthData : public SynthData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Tx81zData : public SynthData {
-  Tx81zData(synth* syn);
+  Tx81zData();
   ~Tx81zData();
   void loadBank(const file::Path& syxpath);
 
@@ -293,7 +292,7 @@ struct Tx81zData : public SynthData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct CzData : public SynthData {
-  CzData(synth* syn);
+  CzData();
   ~CzData();
   void loadBank(const file::Path& syxpath, const std::string& bnkname = "czb");
 
@@ -309,7 +308,7 @@ struct CzData : public SynthData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct KrzTestData : public SynthData {
-  KrzTestData(synth* syn);
+  KrzTestData();
   void genTestPrograms();
   const ProgramData* getProgram(int progID) const final;
   const ProgramData* getProgramByName(const std::string& named) const final {
@@ -321,7 +320,7 @@ struct KrzTestData : public SynthData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct KrzKmTestData : public SynthData {
-  KrzKmTestData(synth* syn);
+  KrzKmTestData();
   const ProgramData* getProgram(int progID) const final;
   const ProgramData* getProgramByName(const std::string& named) const final {
     return nullptr;

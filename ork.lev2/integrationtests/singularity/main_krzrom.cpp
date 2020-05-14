@@ -3,7 +3,7 @@
 int main(int argc, char** argv) {
   auto qtapp = createEZapp(argc, argv);
   startupAudio();
-  auto bank     = std::make_shared<KrzSynthData>(the_synth);
+  auto bank     = std::make_shared<KrzSynthData>();
   auto drums    = bank->getProgramByName("Castle_Drums");
   auto doomsday = bank->getProgramByName("Doomsday");
   auto ceetuar  = bank->getProgramByName("Cee_Tuar");

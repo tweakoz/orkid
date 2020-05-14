@@ -39,7 +39,7 @@ void AMP_MONOIO::compute(DspBuffer& dspbuf) // final
 {
   float gain = _param[0].eval(); //,0.01f,100.0f);
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
 
   float* aenv    = _layer->_AENV;
   const auto& LD = _layer->_LayerData;
@@ -80,7 +80,7 @@ AMP::AMP(dspblkdata_constptr_t dbd)
 void AMP::compute(DspBuffer& dspbuf) // final
 {
   float gain     = _param[0].eval(); //,0.01f,100.0f);
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* aenv    = _layer->_AENV;
   const auto& LD = _layer->_LayerData;
   auto l_lrmix   = panBlend(_lpan);
@@ -152,7 +152,7 @@ void PLUSAMP::compute(DspBuffer& dspbuf) // final
 {
   float gain = _param[0].eval(); //,0.01f,100.0f);
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
   float* lbuf    = getOutBuf(dspbuf, 1);
 
@@ -192,7 +192,7 @@ void XAMP::compute(DspBuffer& dspbuf) // final
 {
   float gain = _param[0].eval(); //,0.01f,100.0f);
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
   float* lbuf    = getOutBuf(dspbuf, 1);
 
@@ -258,7 +258,7 @@ void XFADE::compute(DspBuffer& dspbuf) // final
   float lmix = (mix > 0) ? lerp(0.5, 0, mix) : lerp(0.5, 1, -mix);
   float umix = (mix > 0) ? lerp(0.5, 1, mix) : lerp(0.5, 0, -mix);
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* lbuf    = getOutBuf(dspbuf, 1);
   float* ubuf    = getOutBuf(dspbuf, 0);
 
@@ -294,7 +294,7 @@ void XGAIN::compute(DspBuffer& dspbuf) // final
 {
   float gain = _param[0].eval(); //,0.01f,100.0f);
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
   float* lbuf    = getOutBuf(dspbuf, 1);
 
@@ -329,7 +329,7 @@ void AMPU_AMPL::compute(DspBuffer& dspbuf) // final
   float gainU = _param[0].eval();
   float gainL = _param[1].eval();
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
   float* lbuf    = getOutBuf(dspbuf, 1);
 
@@ -385,7 +385,7 @@ void BAL_AMP::compute(DspBuffer& dspbuf) // final
 
   float linG = decibel_to_linear_amp_ratio(gain);
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
   float* lbuf    = getOutBuf(dspbuf, 1);
 
@@ -405,7 +405,7 @@ PANNER::PANNER(dspblkdata_constptr_t dbd)
 }
 void PANNER::compute(DspBuffer& dspbuf) // final
 {
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
   float* lbuf    = getOutBuf(dspbuf, 1);
   float pos      = _param[0].eval();
@@ -444,7 +444,7 @@ void BANGAMP::compute(DspBuffer& dspbuf) // final
 {
   float gain = _param[0].eval(); //,0.01f,100.0f);
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
   float* lbuf    = getOutBuf(dspbuf, 1);
 

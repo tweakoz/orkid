@@ -20,6 +20,7 @@ namespace ork::audio::singularity {
 
 CZX::CZX(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
+  _hsynctrack = _vars.makeSharedForKey<OscHardSyncTrack>("HSYNC");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -37,7 +38,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
 {
   float centoff  = _param[0].eval();
   _fval[0]       = centoff;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* U       = dspbuf.channel(0);
   //_layer->_curPitchOffsetInCents = centoff;
   // todo: dco(pitch) env mod
@@ -163,6 +164,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
     ////////////////////////////////////////////
     U[i] = waveswitch ? sawpulse : saw;
     U[i] = waveswitch ? reso3 : saw;
+    // U[i] = reso3;
     ;
   }
   _ph += 0.003f;

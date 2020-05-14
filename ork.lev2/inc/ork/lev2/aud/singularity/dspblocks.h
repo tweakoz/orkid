@@ -103,10 +103,25 @@ struct DspBlockData {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct OscHardSyncTrack {
+  inline void resize(int size) {
+    _values.resize(size);
+    for (int i = 0; i < size; i++)
+      _values[i] = false;
+  }
+  std::vector<bool> _values;
+};
+using oschardsynctrack_ptr_t = std::shared_ptr<OscHardSyncTrack>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct DspBlock {
   DspBlock(dspblkdata_constptr_t dbd);
   virtual ~DspBlock() {
   }
+
+  void resize(int inumframes);
+  size_t numFrames() const;
 
   void keyOn(const DspKeyOnInfo& koi);
   void keyOff(layer* l);
@@ -127,11 +142,13 @@ struct DspBlock {
   int _numParams;
   int numOutputs() const;
   int numInputs() const;
-  layer* _layer = nullptr;
+  layer* _layer     = nullptr;
+  size_t _numFrames = 0;
+
+  varmap::VarMap _vars;
 
   float _fval[kmaxparmperblock];
   FPARAM _param[kmaxparmperblock];
-
   IoMask _iomask;
 };
 
@@ -174,7 +191,7 @@ struct Alg final {
 
   void forEachStage(stagefn_t fn);
 
-  void compute(synth& syn, outputBuffer& obuf);
+  void compute(outputBuffer& obuf);
 
   virtual void doKeyOn(DspKeyOnInfo& koi);
   void intoDspBuf(const outputBuffer& obuf);

@@ -17,7 +17,7 @@ SHAPER::SHAPER(dspblkdata_constptr_t dbd)
 void SHAPER::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
 
   float amt = _param[0].eval(); //,0.01f,100.0f);
   _fval[0]  = amt;
@@ -42,7 +42,7 @@ SHAPE2::SHAPE2(dspblkdata_constptr_t dbd)
 void SHAPE2::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float amt      = _param[0].eval();
   _fval[0]       = amt;
   if (1) {
@@ -76,7 +76,7 @@ void TWOPARAM_SHAPER::doKeyOn(const DspKeyOnInfo& koi) {
 void TWOPARAM_SHAPER::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float evn      = _param[0].eval();
   float odd      = _param[1].eval();
 
@@ -120,7 +120,7 @@ WRAP::WRAP(dspblkdata_constptr_t dbd)
 
 void WRAP::compute(DspBuffer& dspbuf) // final
 {
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float rpoint   = _param[0].eval(); //,-100,100.0f);
   _fval[0]       = rpoint;
   if (1) {
@@ -141,7 +141,7 @@ DIST::DIST(dspblkdata_constptr_t dbd)
 void DIST::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float adj      = _param[0].eval();
   _fval[0]       = adj;
   float ratio    = decibel_to_linear_amp_ratio(adj + 30.0) * pad;

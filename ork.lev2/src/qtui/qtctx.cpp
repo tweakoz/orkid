@@ -316,15 +316,14 @@ void QCtxWidget::wheelEvent(QWheelEvent* qem) {
 
 void QCtxWidget::keyPressEvent(QKeyEvent* event) {
 
-  if (event->isAutoRepeat())
-    return;
-
   auto uiev   = uievent();
   auto gfxwin = uiev->mpGfxWin;
   auto vp     = gfxwin ? gfxwin->GetRootWidget() : nullptr;
 
   uiev->mpBlindEventData = (void*)event;
-  uiev->miEventCode      = ork::ui::UIEV_KEY;
+  uiev->miEventCode      = event->isAutoRepeat() //
+                          ? ork::ui::UIEV_KEY_REPEAT
+                          : ork::ui::UIEV_KEY;
 
   int ikeyUNI = event->key();
 

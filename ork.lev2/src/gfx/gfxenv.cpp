@@ -25,8 +25,10 @@
 #include <ork/reflect/enum_serializer.inl>
 
 #include <ork/reflect/RegisterProperty.h>
-//#include <orktool/qtui/gfxbuffer.h>
 
+namespace ork::lev2 {
+int G_MSAASAMPLES = 64;
+}
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::IManipInterface, "IManipInterface");
 
 ///////////////////////////////////////////////////////////////////////////////

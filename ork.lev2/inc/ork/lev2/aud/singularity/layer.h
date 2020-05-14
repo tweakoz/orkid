@@ -13,7 +13,7 @@ constexpr int KPARALLELBLOCKMAX = 4; // max number of parallel blocks per layer
 
 struct layer {
 
-  layer(synth& syn);
+  layer();
   ~layer();
 
   void compute(outputBuffer& obuf);
@@ -36,7 +36,6 @@ struct layer {
 
   std::mutex _mutex;
 
-  synth& _syn;
   int _curnote;
   int _curvel;
   int _ldindex;

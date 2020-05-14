@@ -17,13 +17,12 @@ using namespace ork::audio::singularity;
 namespace ork::lev2 {
 void startupAudio();
 void tearDownAudio();
-extern synth* the_synth;
 } // namespace ork::lev2
 
 int main(int argc, char** argv) {
   // auto qtapp = OrkEzQtApp::create(argc, argv);
   startupAudio();
-  auto bank     = std::make_shared<KrzSynthData>(the_synth);
+  auto bank     = std::make_shared<KrzSynthData>();
   auto drums    = bank->getProgramByName("Castle_Drums");
   auto doomsday = bank->getProgramByName("Doomsday");
   auto ceetuar  = bank->getProgramByName("Cee_Tuar");
@@ -35,13 +34,13 @@ int main(int argc, char** argv) {
                        float time,
                        float duration,
                        int midinote) {
-    the_synth->addEvent(time, [=]() {
+    synth::instance()->addEvent(time, [=]() {
       // NOTE ON
-      auto noteinstance = the_synth->keyOn(midinote, prog);
+      auto noteinstance = synth::instance()->keyOn(midinote, prog);
       assert(noteinstance);
       // NOTE OFF
-      the_synth->addEvent(time + duration, [=]() { //
-        the_synth->keyOff(noteinstance);
+      synth::instance()->addEvent(time + duration, [=]() { //
+        synth::instance()->keyOff(noteinstance);
       });
     });
   };

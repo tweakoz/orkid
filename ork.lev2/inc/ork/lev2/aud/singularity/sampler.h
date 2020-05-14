@@ -103,7 +103,6 @@ struct sampleOsc {
 
   NatEnv _natAmpEnv;
 
-  // synth& _syn;
   layer* _lyr;
   bool _released;
   const kmregion* _kmregion;

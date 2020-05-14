@@ -13,7 +13,7 @@ BANDPASS_FILT::BANDPASS_FILT(dspblkdata_constptr_t dbd)
 void BANDPASS_FILT::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
 
   float fc  = _param[0].eval();
@@ -52,7 +52,7 @@ BAND2::BAND2(dspblkdata_constptr_t dbd)
 void BAND2::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
 
   float fc = _param[0].eval();
@@ -84,7 +84,7 @@ NOTCH_FILT::NOTCH_FILT(dspblkdata_constptr_t dbd)
 void NOTCH_FILT::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
 
   float fc  = _param[0].eval();
@@ -117,7 +117,7 @@ NOTCH2::NOTCH2(dspblkdata_constptr_t dbd)
 void NOTCH2::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
 
   float fc = _param[0].eval();
@@ -148,7 +148,7 @@ DOUBLE_NOTCH_W_SEP::DOUBLE_NOTCH_W_SEP(dspblkdata_constptr_t dbd)
 void DOUBLE_NOTCH_W_SEP::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
 
   float fc    = _param[0].eval();
@@ -187,7 +187,7 @@ TWOPOLE_ALLPASS::TWOPOLE_ALLPASS(dspblkdata_constptr_t dbd)
 void TWOPOLE_ALLPASS::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
 
   float fc  = _param[0].eval();
@@ -222,7 +222,7 @@ TWOPOLE_LOWPASS::TWOPOLE_LOWPASS(dspblkdata_constptr_t dbd)
 void TWOPOLE_LOWPASS::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   auto inpbuf    = getInpBuf(dspbuf, 0);
 
   float fc  = _param[0].eval();
@@ -263,7 +263,7 @@ LOPAS2::LOPAS2(dspblkdata_constptr_t dbd)
 void LOPAS2::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   auto inpbuf    = getInpBuf(dspbuf, 0);
   float fc       = _param[0].eval();
   _fval[0]       = fc;
@@ -295,7 +295,7 @@ LP2RES::LP2RES(dspblkdata_constptr_t dbd)
 void LP2RES::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   auto inpbuf    = getInpBuf(dspbuf, 0);
   float fc       = _param[0].eval();
   _fval[0]       = fc;
@@ -326,7 +326,7 @@ FOURPOLE_LOPASS_W_SEP::FOURPOLE_LOPASS_W_SEP(dspblkdata_constptr_t dbd)
 void FOURPOLE_LOPASS_W_SEP::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
 
   float fc  = _param[0].eval();
@@ -368,7 +368,7 @@ FOURPOLE_HIPASS_W_SEP::FOURPOLE_HIPASS_W_SEP(dspblkdata_constptr_t dbd)
 void FOURPOLE_HIPASS_W_SEP::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
 
   float fc  = _param[0].eval();
@@ -415,7 +415,7 @@ LOPASS::LOPASS(dspblkdata_constptr_t dbd)
 void LOPASS::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float fc       = _param[0].eval();
   if (fc > 16000.0f)
     fc = 16000.0f;
@@ -449,7 +449,7 @@ LPCLIP::LPCLIP(dspblkdata_constptr_t dbd)
 void LPCLIP::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float fc       = _param[0].eval();
   _fval[0]       = fc;
   _lpf.set(fc);
@@ -477,7 +477,7 @@ HIPASS::HIPASS(dspblkdata_constptr_t dbd)
 void HIPASS::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float fc       = _param[0].eval();
   _hpf.set(fc);
 
@@ -508,7 +508,7 @@ LPGATE::LPGATE(dspblkdata_constptr_t dbd)
 void LPGATE::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
   float fc       = _param[0].eval();
   _fval[0]       = fc;
@@ -534,7 +534,7 @@ HIFREQ_STIMULATOR::HIFREQ_STIMULATOR(dspblkdata_constptr_t dbd)
 void HIFREQ_STIMULATOR::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
   float fc       = _param[0].eval();
   float drv      = _param[1].eval();
@@ -579,7 +579,7 @@ ALPASS::ALPASS(dspblkdata_constptr_t dbd)
 void ALPASS::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
 
   float fc = _param[0].eval();
   _filter.Set(fc);

@@ -20,23 +20,22 @@ using namespace ork::audio::singularity;
 namespace ork::lev2 {
 void startupAudio();
 void tearDownAudio();
-extern synth* the_synth;
 } // namespace ork::lev2
-
 
 qtezapp_ptr_t createEZapp(int& argc, char** argv);
 
-inline void enqueue_audio_event(const ProgramData* prog, //
-                                 float time,
-                                 float duration,
-                                 int midinote) {
-    the_synth->addEvent(time, [=]() {
-      // NOTE ON
-      auto noteinstance = the_synth->keyOn(midinote, prog);
-      assert(noteinstance);
-      // NOTE OFF
-      the_synth->addEvent(time + duration, [=]() { //
-        the_synth->keyOff(noteinstance);
-      });
+inline void enqueue_audio_event(
+    const ProgramData* prog, //
+    float time,
+    float duration,
+    int midinote) {
+  synth::instance()->addEvent(time, [=]() {
+    // NOTE ON
+    auto noteinstance = synth::instance()->keyOn(midinote, prog);
+    assert(noteinstance);
+    // NOTE OFF
+    synth::instance()->addEvent(time + duration, [=]() { //
+      synth::instance()->keyOff(noteinstance);
     });
+  });
 }

@@ -16,15 +16,15 @@ LfoData::LfoData()
     , _shape("Sine") {
 }
 
-ControllerInst* LfoData::instantiate(synth& syn) const {
-  auto r = new LfoInst(syn, this);
+ControllerInst* LfoData::instantiate() const {
+  auto r = new LfoInst(this);
   return r;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-LfoInst::LfoInst(synth& syn, const LfoData* data)
-    : ControllerInst(syn)
+LfoInst::LfoInst(const LfoData* data)
+    : ControllerInst()
     , _data(data)
     , _phaseInc(0.0f)
     , _phase(0.0f)
@@ -144,7 +144,7 @@ void LfoInst::compute(int inumfr) // final
   if (nullptr == _data) {
     _curval = 0.0f;
   } else {
-    float dt = float(inumfr) / _syn._sampleRate;
+    float dt = float(inumfr) / synth::instance()->_sampleRate;
 
     _currate = lerp(_data->_minRate, _data->_maxRate, _rateLerp);
 

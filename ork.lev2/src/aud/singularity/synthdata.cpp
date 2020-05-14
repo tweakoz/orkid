@@ -40,8 +40,8 @@ dspstagedata_ptr_t LayerData::appendStage() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Sf2TestSynthData::Sf2TestSynthData(const file::Path& filename, synth* syn, const std::string& bankname)
-    : SynthData(syn) {
+Sf2TestSynthData::Sf2TestSynthData(const file::Path& filename, const std::string& bankname)
+    : SynthData() {
   _staticBankName = bankname;
 
   auto sfpath  = kbasepath / "soundfonts" / filename;
@@ -71,8 +71,8 @@ VastObjectsDB* KrzSynthData::baseObjects() {
   return objdb;
 }
 
-KrzSynthData::KrzSynthData(synth* syn)
-    : SynthData(syn) {
+KrzSynthData::KrzSynthData()
+    : SynthData() {
 }
 const ProgramData* KrzSynthData::getProgram(int progID) const {
   auto ObjDB = baseObjects();
@@ -85,8 +85,8 @@ const ProgramData* KrzSynthData::getProgramByName(const std::string& named) cons
 
 ///////////////////////////////////////////////////////////////////////////////
 
-KrzKmTestData::KrzKmTestData(synth* syn)
-    : SynthData(syn) {
+KrzKmTestData::KrzKmTestData()
+    : SynthData() {
 }
 const ProgramData* KrzKmTestData::getProgram(int kmID) const {
   ProgramData* rval = nullptr;
@@ -109,8 +109,8 @@ const ProgramData* KrzKmTestData::getProgram(int kmID) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-KrzTestData::KrzTestData(synth* syn)
-    : SynthData(syn) {
+KrzTestData::KrzTestData()
+    : SynthData() {
   genTestPrograms();
 }
 
@@ -124,10 +124,11 @@ const ProgramData* KrzTestData::getProgram(int progid) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SynthData::SynthData(synth* syn)
-    : _syn(syn)
-    , _seqCursor(0.0f) {
-  _synsr = syn->_sampleRate;
+SynthData::SynthData()
+    : _seqCursor(0.0f) {
+
+  auto syn = synth::instance();
+  _synsr   = syn->_sampleRate;
 
   // auto ObjDB = syn->_objectDB;
   // ObjDB->loadJson("krzfiles/krzdump.json");
@@ -156,11 +157,11 @@ SynthData::SynthData(synth* syn)
 				{
 					//l0->_km_timbreshift = (tst%9)*4;
 					//l0->_km_transposeTS = (tst/9);
-					auto pi = _syn->keyOn(12+n,prg);
+					auto pi = syn->keyOn(12+n,prg);
 
 					addEvent( t1+1.5 ,[=]()
 					{
-						_syn->keyOff(pi);
+						syn->keyOff(pi);
 					} );
 				});
 			}
@@ -181,11 +182,11 @@ SynthData::SynthData(synth* syn)
 
 			addEvent( t1 ,[=]()
 			{
-				auto pi = _syn->keyOn(24+n,prg);
+				auto pi = syn->keyOn(24+n,prg);
 
 				addEvent( t1+2 ,[=]()
 				{
-					_syn->keyOff(pi);
+					syn->keyOff(pi);
 				} );
 			});
 		}
@@ -205,11 +206,11 @@ SynthData::SynthData(synth* syn)
 			addEvent( t1 ,[=]()
 			{
 				auto prg = getProgram(i);
-				auto pi = _syn->keyOn(48+n,prg);
+				auto pi = syn->keyOn(48+n,prg);
 
 				addEvent( t1+0.5 ,[=]()
 				{
-					_syn->keyOff(pi);
+					syn->keyOff(pi);
 				} );
 			});
 		}
@@ -218,7 +219,7 @@ SynthData::SynthData(synth* syn)
 
   ///////////////////////////////////////
 
-  //_lpf.setup(330.0f,_synsr);
+  //_lpf.setup(330.0f,syn->);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

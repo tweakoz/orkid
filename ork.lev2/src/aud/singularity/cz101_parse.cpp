@@ -485,8 +485,8 @@ void CzProgData::dump() const {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-CzData::CzData(synth* syn)
-    : SynthData(syn)
+CzData::CzData()
+    : SynthData()
     , _lastprg(0) {
   _zpmDB              = new VastObjectsDB;
   _zpmKM              = new KeyMap;

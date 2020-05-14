@@ -33,8 +33,8 @@ namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 PaStream* pa_stream      = nullptr;
-synth* the_synth         = nullptr;
 const bool ENABLE_OUTPUT = true; // allow disabling for long debug sessions
+const int NUMFRAMES      = 0;
 ///////////////////////////////////////////////////////////////////////////////
 
 static int patestCallback(
@@ -49,8 +49,8 @@ static int patestCallback(
   unsigned int i;
   (void)inputBuffer; /* Prevent unused variable warning. */
 
-  the_synth->compute(framesPerBuffer, inputBuffer);
-  const auto& obuf = the_synth->_obuf;
+  synth::instance()->compute(framesPerBuffer, inputBuffer);
+  const auto& obuf = synth::instance()->_obuf;
 
   if (ENABLE_OUTPUT) {
     for (i = 0; i < framesPerBuffer; i++) {
@@ -67,14 +67,15 @@ static int patestCallback(
 }
 
 void startupAudio() {
-  assert(the_synth == nullptr);
+  assert(synth::instance() == nullptr);
 
   float SR = getSampleRate();
 
-  the_synth              = new synth(SR);
-  the_synth->_masterGain = 1.0f;
+  synth::instance()->setSampleRate(SR);
+  synth::instance()->_masterGain = 1.0f;
+  synth::instance()->_numFrames  = NUMFRAMES;
 
-  printf("SingularitySynth<%p> SR<%g>\n", the_synth, SR);
+  printf("SingularitySynth<%p> SR<%g>\n", synth::instance().get(), SR);
   // loadPrograms();
 
   auto err = Pa_Initialize();
@@ -86,14 +87,14 @@ void startupAudio() {
       0,         // no input channels
       2,         // stereo output
       paFloat32, // 32 bit floating point output
-      the_synth->_sampleRate,
-      256,            /* frames per buffer, i.e. the number
-                             of sample frames that PortAudio will
-                             request from the callback. Many apps
-                             may want to use
-                             paFramesPerBufferUnspecified, which
-                             tells PortAudio to pick the best,
-                             possibly changing, buffer size.*/
+      SR,
+      NUMFRAMES,      /* frames per buffer, i.e. the number
+                       of sample frames that PortAudio will
+                       request from the callback. Many apps
+                       may want to use
+                       paFramesPerBufferUnspecified, which
+                       tells PortAudio to pick the best,
+                       possibly changing, buffer size.*/
       patestCallback, // this is your callback function
       nullptr);       // This is a pointer that will be passed to
                       //         your callback
@@ -103,7 +104,7 @@ void startupAudio() {
   err = Pa_StartStream(pa_stream);
   OrkAssert(err == paNoError);
 
-  the_synth->resetFenables();
+  synth::instance()->resetFenables();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

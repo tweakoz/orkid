@@ -18,7 +18,6 @@ using namespace ork::audio::singularity;
 namespace ork::lev2 {
 void startupAudio();
 void tearDownAudio();
-extern synth* the_synth;
 } // namespace ork::lev2
 
 bool TEST = false;
@@ -31,18 +30,18 @@ int main(int argc, char** argv) {
                        float time,
                        float duration,
                        int midinote) {
-    the_synth->addEvent(time, [=]() {
+    synth::instance()->addEvent(time, [=]() {
       // NOTE ON
-      auto noteinstance = the_synth->keyOn(midinote, prog);
+      auto noteinstance = synth::instance()->keyOn(midinote, prog);
       assert(noteinstance);
       // NOTE OFF
-      the_synth->addEvent(time + duration, [=]() { //
-        the_synth->keyOff(noteinstance);
+      synth::instance()->addEvent(time + duration, [=]() { //
+        synth::instance()->keyOff(noteinstance);
       });
     });
   };
   //////////////////////////////////////////////////////////////////////////////
-  auto czdata = std::make_shared<CzData>(the_synth);
+  auto czdata = std::make_shared<CzData>();
   if (TEST) {
     czdata->loadBank(basepath / "edit.syx", "bank1");
     for (int i = 0; i < 2; i++) {

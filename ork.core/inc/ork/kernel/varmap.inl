@@ -46,6 +46,10 @@ template <typename val_t> struct TVarMap {
     return _themap[key].template Make<T>(std::forward(args)...);
   }
   ///////////////////////////////////////////////////////////////////////////
+  template <typename T, typename... A> inline std::shared_ptr<T> makeSharedForKey(const key_t& key, A&&... args) {
+    return _themap[key].template makeShared<T>(std::forward(args)...);
+  }
+  ///////////////////////////////////////////////////////////////////////////
   inline void removeItemForKey(const key_t& key) {
     auto it = _themap.find(key);
     OrkAssert(it != _themap.end());

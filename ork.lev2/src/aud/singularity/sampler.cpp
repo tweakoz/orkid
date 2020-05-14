@@ -65,7 +65,7 @@ void SAMPLER::compute(DspBuffer& dspbuf) // final
   float centoff = _param[0].eval();
   _fval[0]      = centoff;
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* lbuf    = getOutBuf(dspbuf, 1);
   float* ubuf    = getOutBuf(dspbuf, 0);
   // float lyrcents = _layer->_layerBasePitch;
@@ -230,8 +230,6 @@ void sampleOsc::keyOn(const DspKeyOnInfo& koi) {
   _lyr = koi._layer;
   assert(_lyr);
 
-  auto& syn = _lyr->_syn;
-
   findRegion(koi);
 
   float pbratio = this->_curSampSRratio;
@@ -257,7 +255,7 @@ void sampleOsc::keyOn(const DspKeyOnInfo& koi) {
   _pbindexNext = _blk_start;
 
   _pbincrem = 0;
-  _dt       = syn._dt;
+  _dt       = synth::instance()->_dt;
 
   _loopMode = _sample->_loopMode;
 

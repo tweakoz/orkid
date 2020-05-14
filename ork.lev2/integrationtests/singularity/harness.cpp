@@ -65,7 +65,7 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
     // draw the synth HUD
     ////////////////////////////////////////////////////
     context->beginFrame();
-    the_synth->onDrawHud(context, TARGW, TARGH);
+    synth::instance()->onDrawHud(context, TARGW, TARGH);
     context->endFrame();
     ////////////////////////////////////////////////////
   });
@@ -75,59 +75,61 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
   });
   //////////////////////////////////////////////////////////
   qtapp->onUiEvent([=](ui::event_constptr_t ev) -> ui::HandlerResult {
+    bool isshift = ev->mbALT;
     switch (ev->miEventCode) {
       case ui::UIEV_KEY:
+      case ui::UIEV_KEY_REPEAT:
         switch (ev->miKeyCode) {
           case 'p':
-            the_synth->_hudpage = (the_synth->_hudpage + 1) % 2;
+            synth::instance()->_hudpage = (synth::instance()->_hudpage + 1) % 2;
             break;
           case '-':
-            the_synth->_ostrack--;
-            if (the_synth->_ostrack < 0)
-              the_synth->_ostrack = 0;
-            printf("oscope track<%d>\n", the_synth->_ostrack);
+            synth::instance()->_ostrack--;
+            if (synth::instance()->_ostrack < 0)
+              synth::instance()->_ostrack = 0;
+            printf("oscope track<%d>\n", synth::instance()->_ostrack);
             break;
           case '=':
-            the_synth->_ostrack++;
-            if (the_synth->_ostrack > (4095 << 16))
-              the_synth->_ostrack = (4095 << 16);
-            printf("oscope track<%d>\n", the_synth->_ostrack);
+            synth::instance()->_ostrack++;
+            if (synth::instance()->_ostrack > (4095 << 16))
+              synth::instance()->_ostrack = (4095 << 16);
+            printf("oscope track<%d>\n", synth::instance()->_ostrack);
             break;
           case '[':
-            the_synth->_ostrack -= 1000;
-            if (the_synth->_ostrack < 0)
-              the_synth->_ostrack = 0;
-            printf("oscope track<%d>\n", the_synth->_ostrack);
+            synth::instance()->_ostrack -= isshift ? 10000 : 1000;
+            if (synth::instance()->_ostrack < 0)
+              synth::instance()->_ostrack = 0;
+            printf("oscope track<%d>\n", synth::instance()->_ostrack);
             break;
           case ']':
-            the_synth->_ostrack += 1000;
-            if (the_synth->_ostrack > (4095 << 16))
-              the_synth->_ostrack = (4095 << 16);
-            printf("oscope track<%d>\n", the_synth->_ostrack);
+            synth::instance()->_ostrack += isshift ? 10000 : 1000;
+            if (synth::instance()->_ostrack > (4095 << 16))
+              synth::instance()->_ostrack = (4095 << 16);
+            printf("oscope track<%d>\n", synth::instance()->_ostrack);
             break;
           case ';':
-            the_synth->_oswidth--;
-            if (the_synth->_oswidth < 0)
-              the_synth->_oswidth = 0;
-            printf("oscope width<%d>\n", the_synth->_oswidth);
+            synth::instance()->_oswidth--;
+            if (synth::instance()->_oswidth < 0)
+              synth::instance()->_oswidth = 0;
+            printf("oscope width<%d>\n", synth::instance()->_oswidth);
             break;
           case '\'':
-            the_synth->_oswidth++;
-            if (the_synth->_oswidth > 4095)
-              the_synth->_oswidth = 4095;
-            printf("oscope width<%d>\n", the_synth->_oswidth);
+            synth::instance()->_oswidth++;
+            if (synth::instance()->_oswidth > 4095)
+              synth::instance()->_oswidth = 4095;
+            printf("oscope width<%d>\n", synth::instance()->_oswidth);
             break;
           case ',':
-            the_synth->_oswidth -= 100;
-            if (the_synth->_oswidth < 0)
-              the_synth->_oswidth = 0;
-            printf("oscope width<%d>\n", the_synth->_oswidth);
+            synth::instance()->_oswidth -= 100;
+            if (synth::instance()->_oswidth < 0)
+              synth::instance()->_oswidth = 0;
+            printf("oscope width<%d>\n", synth::instance()->_oswidth);
             break;
           case '.':
-            the_synth->_oswidth += 100;
-            if (the_synth->_oswidth > 4095)
-              the_synth->_oswidth = 4095;
-            printf("oscope width<%d>\n", the_synth->_oswidth);
+            synth::instance()->_oswidth += 100;
+            if (synth::instance()->_oswidth > 4095)
+              synth::instance()->_oswidth = 4095;
+            printf("oscope width<%d>\n", synth::instance()->_oswidth);
             break;
           default:
             break;

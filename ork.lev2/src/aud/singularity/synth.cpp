@@ -11,104 +11,16 @@
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
-
-programInst::programInst(synth& syn)
-    : _syn(syn)
-    , _progdata(nullptr) {
+synth_ptr_t synth::instance() {
+  static auto the_syn = std::make_shared<synth>();
+  return the_syn;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-programInst::~programInst() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void programInst::keyOn(int note, const ProgramData* pd) {
-  int ilayer = 0;
-
-  for (const auto& ld : pd->_LayerDatas) {
-    ilayer++;
-
-    if (note < ld->_loKey || note > ld->_hiKey)
-      continue;
-
-    if (_syn._soloLayer >= 0) {
-      if (_syn._soloLayer != (ilayer - 1))
-        continue;
-    }
-
-    int vel = 96;
-
-    // printf( "lovel<%d>\n", ld->_loVel );
-    // printf( "hivel<%d>\n", ld->_hiVel );
-
-    if (vel < ld->_loVel || vel > ld->_hiVel)
-      continue;
-
-    // printf("KEYON L%d\n", ilayer);
-
-    auto l      = _syn.allocLayer();
-    l->_ldindex = ilayer - 1;
-
-    assert(l != nullptr);
-
-    assert(ld != nullptr);
-
-    l->keyOn(note, vel, ld);
-    _layers.push_back(l);
-  }
-  int inuml = _layers.size();
-  int solol = _syn._soloLayer;
-
-  if (solol >= 0 and solol < inuml) {
-    _syn._hudLayer = _layers[solol];
-  } else if (inuml > 0) {
-    _syn._hudLayer = _layers[0];
-  } else
-    _syn._hudLayer = nullptr;
-
-  if (_syn._hudLayer)
-    _syn._hudbuf.push(_syn._hudLayer->_HKF);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void programInst::keyOff() {
-  for (auto l : _layers)
-    l->keyOff();
-  _layers.clear();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-outputBuffer::outputBuffer()
-    : _leftBuffer(nullptr)
-    , _rightBuffer(nullptr)
-    , _maxframes(0)
-    , _numframes(0) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void outputBuffer::resize(int inumframes) {
-  if (inumframes > _maxframes) {
-    if (_leftBuffer)
-      delete[] _leftBuffer;
-    if (_rightBuffer)
-      delete[] _rightBuffer;
-    _leftBuffer  = new float[inumframes];
-    _rightBuffer = new float[inumframes];
-    _maxframes   = inumframes;
-  }
-  _numframes = inumframes;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-synth::synth(float sr)
-    : _sampleRate(sr)
-    , _dt(1.0f / _sampleRate)
+synth::synth()
+    : _sampleRate(0.0f)
+    , _dt(0.0f)
     , _soloLayer(-1)
     , _timeaccum(0.0f)
     , _hudpage(0)
@@ -116,10 +28,15 @@ synth::synth(float sr)
     , _ostrack(111 << 16) { // 111 synchnozies with midi note 48
 
   for (int i = 0; i < 256; i++)
-    _freeVoices.insert(new layer(*this));
+    _freeVoices.insert(new layer());
 
   for (int i = 0; i < 256; i++)
-    _freeProgInst.insert(new programInst(*this));
+    _freeProgInst.insert(new programInst());
+}
+
+void synth::setSampleRate(float sr) {
+  _sampleRate = sr;
+  _dt         = 1.0f / sr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -245,11 +162,18 @@ void synth::keyOff(programInst* pinst) {
   }
 }
 
+void synth::resize(int numframes) {
+  if (_numFrames != numframes) {
+    _ibuf.resize(numframes);
+    _obuf.resize(numframes);
+    _numFrames = numframes;
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void synth::compute(int inumframes, const void* inputBuffer) {
-  _ibuf.resize(inumframes);
-  _obuf.resize(inumframes);
+  resize(inumframes);
 
   /////////////////////////////
   // clear output buffer
@@ -325,4 +249,98 @@ void synth::resetFenables() {
     _stageEnable[i] = true;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+programInst::programInst()
+    : _progdata(nullptr) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+programInst::~programInst() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void programInst::keyOn(int note, const ProgramData* pd) {
+  int ilayer = 0;
+
+  auto syn = synth::instance();
+
+  for (const auto& ld : pd->_LayerDatas) {
+    ilayer++;
+
+    if (note < ld->_loKey || note > ld->_hiKey)
+      continue;
+
+    if (syn->_soloLayer >= 0) {
+      if (syn->_soloLayer != (ilayer - 1))
+        continue;
+    }
+
+    int vel = 96;
+
+    // printf( "lovel<%d>\n", ld->_loVel );
+    // printf( "hivel<%d>\n", ld->_hiVel );
+
+    if (vel < ld->_loVel || vel > ld->_hiVel)
+      continue;
+
+    // printf("KEYON L%d\n", ilayer);
+
+    auto l      = syn->allocLayer();
+    l->_ldindex = ilayer - 1;
+
+    assert(l != nullptr);
+
+    assert(ld != nullptr);
+
+    l->keyOn(note, vel, ld);
+    _layers.push_back(l);
+  }
+  int inuml = _layers.size();
+  int solol = syn->_soloLayer;
+
+  if (solol >= 0 and solol < inuml) {
+    syn->_hudLayer = _layers[solol];
+  } else if (inuml > 0) {
+    syn->_hudLayer = _layers[0];
+  } else
+    syn->_hudLayer = nullptr;
+
+  if (syn->_hudLayer)
+    syn->_hudbuf.push(syn->_hudLayer->_HKF);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void programInst::keyOff() {
+  for (auto l : _layers)
+    l->keyOff();
+  _layers.clear();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+outputBuffer::outputBuffer()
+    : _leftBuffer(nullptr)
+    , _rightBuffer(nullptr)
+    , _maxframes(0)
+    , _numframes(0) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void outputBuffer::resize(int inumframes) {
+  if (inumframes > _maxframes) {
+    if (_leftBuffer)
+      delete[] _leftBuffer;
+    if (_rightBuffer)
+      delete[] _rightBuffer;
+    _leftBuffer  = new float[inumframes];
+    _rightBuffer = new float[inumframes];
+    _maxframes   = inumframes;
+  }
+  _numframes = inumframes;
+}
 } // namespace ork::audio::singularity

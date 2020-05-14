@@ -14,7 +14,7 @@ namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct programInst {
-  programInst(synth& syn);
+  programInst();
   ~programInst();
 
   void keyOn(int note, const ProgramData* pd);
@@ -23,7 +23,6 @@ struct programInst {
   // void compute();
 
   const ProgramData* _progdata;
-  synth& _syn;
 
   std::vector<layer*> _layers;
 };
@@ -36,13 +35,17 @@ struct hudsample {
   float _time;
   float _value;
 };
+using synth_ptr_t = std::shared_ptr<synth>;
 
 struct synth {
-  synth(float sr);
+  synth();
   ~synth();
+
+  static synth_ptr_t instance();
 
   typedef std::vector<hudsample> hudsamples_t;
 
+  void setSampleRate(float sr);
   void compute(int inumframes, const void* inputbuffer);
 
   programInst* keyOn(int note, const ProgramData* pd);
@@ -77,6 +80,8 @@ struct synth {
 
   std::multimap<float, void_lambda_t> _eventmap;
 
+  void resize(int numframes);
+
   int _soloLayer       = -1;
   bool _stageEnable[5] = {true, true, true, true, true};
   int _lnoteframe;
@@ -97,6 +102,7 @@ struct synth {
 
   layer* _hudLayer   = nullptr;
   bool _clearhuddata = true;
+  int _numFrames     = 0;
 
   ork::MpMcBoundedQueue<ork::svar1024_t> _hudbuf;
 

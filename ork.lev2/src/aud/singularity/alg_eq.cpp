@@ -12,7 +12,7 @@ PARABASS::PARABASS(dspblkdata_constptr_t dbd)
 
 void PARABASS::compute(DspBuffer& dspbuf) // final
 {
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf,0);
 
   float fc   = _param[0].eval();
@@ -55,7 +55,7 @@ STEEP_RESONANT_BASS::STEEP_RESONANT_BASS(dspblkdata_constptr_t dbd)
 void STEEP_RESONANT_BASS::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf,0);
 
   float fc   = _param[0].eval() * 1.0f;
@@ -96,7 +96,7 @@ PARATREBLE::PARATREBLE(dspblkdata_constptr_t dbd)
 
 void PARATREBLE::compute(DspBuffer& dspbuf) // final
 {
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf,0);
 
   float fc   = clip_float(_param[0].eval(), 10.0f, 16000.0f);
@@ -135,7 +135,7 @@ PARAMID::PARAMID(dspblkdata_constptr_t dbd)
 
 void PARAMID::compute(DspBuffer& dspbuf) // final
 {
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf,0);
 
   float fc   = _param[0].eval();
@@ -169,7 +169,7 @@ PARAMETRIC_EQ::PARAMETRIC_EQ(dspblkdata_constptr_t dbd)
 
 void PARAMETRIC_EQ::compute(DspBuffer& dspbuf) // final
 {
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf,0);
 
   float fc   = _param[0].eval();

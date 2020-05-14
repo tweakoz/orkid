@@ -23,13 +23,13 @@ void SINE::compute(DspBuffer& dspbuf) // final
   float centoff = _param[0].eval(); //,0.01f,100.0f);
   _fval[0]      = centoff;
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   //    float* ubuf = dspbuf.channel(0);
   float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
   // printf("lc<%f> coff<%f> cin<%f> frq<%f>\n", lyrcents, centoff, cin, frq );
-  float SR = _layer->_syn._sampleRate;
+  float SR = synth::instance()->_sampleRate;
   _pblep.setFrequency(frq);
 
   // printf( "frq<%f> _phaseInc<%lld>\n", frq, _phaseInc );
@@ -56,12 +56,12 @@ void SAW::compute(DspBuffer& dspbuf) // final
   float centoff = _param[0].eval(); //,0.01f,100.0f);
   _fval[0]      = centoff;
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   // float* ubuf = dspbuf.channel(0);
   float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
-  float SR       = _layer->_syn._sampleRate;
+  float SR       = synth::instance()->_sampleRate;
   _pblep.setFrequency(frq);
 
   // printf( "frq<%f> _phaseInc<%lld>\n", frq, _phaseInc );
@@ -88,12 +88,12 @@ void SQUARE::compute(DspBuffer& dspbuf) // final
   float centoff = _param[0].eval(); //,0.01f,100.0f);
   _fval[0]      = centoff;
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   // float* ubuf = dspbuf.channel(0);
   float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
-  float SR       = _layer->_syn._sampleRate;
+  float SR       = synth::instance()->_sampleRate;
   _pblep.setFrequency(frq);
 
   // printf( "frq<%f> _phaseInc<%lld>\n", frq, _phaseInc );
@@ -120,12 +120,12 @@ void SINEPLUS::compute(DspBuffer& dspbuf) // final
   float centoff = _param[0].eval(); //,0.01f,100.0f);
   _fval[0]      = centoff;
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
   float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
-  float SR       = _layer->_syn._sampleRate;
+  float SR       = synth::instance()->_sampleRate;
   _pblep.setFrequency(frq);
   float pad = _dbd->_inputPad;
 
@@ -154,11 +154,11 @@ void SAWPLUS::compute(DspBuffer& dspbuf) // final
   float centoff = _param[0].eval(); //,0.01f,100.0f);
   _fval[0]      = centoff;
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
-  float SR       = _layer->_syn._sampleRate;
+  float SR       = synth::instance()->_sampleRate;
   _pblep.setFrequency(frq);
   float pad = _dbd->_inputPad;
 
@@ -194,12 +194,12 @@ void SWPLUSSHP::compute(DspBuffer& dspbuf) // final
   float centoff = _param[0].eval(); //,0.01f,100.0f);
   _fval[0]      = centoff;
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
   float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
-  float SR       = _layer->_syn._sampleRate;
+  float SR       = synth::instance()->_sampleRate;
   _pblep.setFrequency(frq);
   float pad = _dbd->_inputPad;
 
@@ -232,13 +232,13 @@ void SHAPEMODOSC::compute(DspBuffer& dspbuf) // final
   float centoff = _param[0].eval(); //,0.01f,100.0f);
   float depth   = _param[1].eval(); //,0.01f,100.0f);
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
   float* lbuf    = getOutBuf(dspbuf, 1);
   float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
-  float SR       = _layer->_syn._sampleRate;
+  float SR       = synth::instance()->_sampleRate;
   _pblep.setFrequency(frq);
   float pad = _dbd->_inputPad;
 
@@ -296,13 +296,13 @@ void PLUSSHAPEMODOSC::compute(DspBuffer& dspbuf) // final
   float centoff = _param[0].eval(); //,0.01f,100.0f);
   float depth   = _param[1].eval(); //,0.01f,100.0f);
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
   float* lbuf    = getOutBuf(dspbuf, 1);
   float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
-  float SR       = _layer->_syn._sampleRate;
+  float SR       = synth::instance()->_sampleRate;
   _pblep.setFrequency(frq);
   float pad = _dbd->_inputPad;
 
@@ -371,13 +371,13 @@ void SYNCM::compute(DspBuffer& dspbuf) // final
   float centoff = _param[0].eval(); //,0.01f,100.0f);
   _fval[0]      = centoff;
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
   float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
 
-  float SR  = _layer->_syn._sampleRate;
+  float SR  = synth::instance()->_sampleRate;
   _phaseInc = frq / SR;
 
   // printf( "_dbd->_inputPad<%f>\n", _dbd->_inputPad );
@@ -408,12 +408,12 @@ void SYNCS::compute(DspBuffer& dspbuf) // final
   float centoff = _param[0].eval(); //,0.01f,100.0f);
   _fval[0]      = centoff;
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
   float lyrcents = _layer->_layerBasePitch;
   float cin      = (lyrcents + centoff) * 0.01;
   float frq      = midi_note_to_frequency(cin);
-  float SR       = _layer->_syn._sampleRate;
+  float SR       = synth::instance()->_sampleRate;
   _pblep.setFrequency(frq);
   float pad = _dbd->_inputPad;
 
@@ -451,7 +451,7 @@ void PWM::compute(DspBuffer& dspbuf) // final
   float offset = _param[0].eval(); //,0.01f,100.0f);
   _fval[0]     = offset;
 
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* ubuf    = getOutBuf(dspbuf, 0);
   float pad      = _dbd->_inputPad;
 
@@ -477,7 +477,7 @@ void FM4::compute(DspBuffer& dspbuf) // final
     _fval[i]        = _param[i].eval();
     _fm4->_opAmp[i] = _fval[i];
   }
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* lbuf    = getOutBuf(dspbuf, 1);
   float* ubuf    = getOutBuf(dspbuf, 0);
   //_layer->_curPitchOffsetInCents = centoff;
@@ -505,7 +505,7 @@ void NOISE::compute(DspBuffer& dspbuf) // final
 {
   float centoff  = _param[0].eval();
   _fval[0]       = centoff;
-  int inumframes = dspbuf._numframes;
+  int inumframes = _numFrames;
   float* lbuf    = getOutBuf(dspbuf, 1);
   float* ubuf    = getOutBuf(dspbuf, 0);
   // _layer->_curPitchOffsetInCents = centoff;

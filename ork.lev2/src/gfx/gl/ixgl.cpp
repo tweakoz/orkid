@@ -10,6 +10,10 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include "gl.h"
 
+namespace ork::lev2 {
+extern int G_MSAASAMPLES;
+}
+
 #if defined(ORK_CONFIG_OPENGL) && defined(LINUX)
 
 #include <ork/lev2/qtui/qtui.h>
@@ -101,10 +105,10 @@ static int g_glx_win_attrlist[] = {
     //    GLX_ALPHA_SIZE, 8,
     //    GLX_DEPTH_SIZE, 24,
     //    GLX_STENCIL_SIZE, 8,
-    GLX_SAMPLE_BUFFERS,
-    1, // <-- MSAA
-    GLX_SAMPLES,
-    16, // <-- MSAA
+    GLX_SAMPLE_BUFFERS_ARB,
+    int(G_MSAASAMPLES > 1), // <-- MSAA
+    GLX_SAMPLES_ARB,
+    G_MSAASAMPLES, // <-- MSAA
     GLX_DOUBLEBUFFER,
     True,
     None};
@@ -128,10 +132,10 @@ static int g_glx_off_attrlist[] = {
     //    GLX_ALPHA_SIZE, 8,
     //    GLX_DEPTH_SIZE, 24,
     //    GLX_STENCIL_SIZE, 8,
-    GLX_SAMPLE_BUFFERS,
-    1, // <-- MSAA
-    GLX_SAMPLES,
-    16, // <-- MSAA
+    GLX_SAMPLE_BUFFERS_ARB,
+    int(G_MSAASAMPLES > 1), // <-- MSAA
+    GLX_SAMPLES_ARB,
+    G_MSAASAMPLES, // <-- MSAA
     GLX_DOUBLEBUFFER,
     True,
     None};
@@ -187,6 +191,7 @@ void check_debug_log() {
 }
 
 void ContextGL::GLinit() {
+
   int iinit = atomic_init++;
 
   if (0 != iinit) {
@@ -206,13 +211,40 @@ void ContextGL::GLinit() {
   // printf( "NUMCONFIGS<%d>\n", inumconfigs );
   assert(inumconfigs > 0);
 
-  gl_this_fb_config = GlIxPlatformObject::gFbConfigs[0];
+  //////////////////////////////////////////////////////////////////////////////
+  // find main framebuffer config matching multisample requirements
+  //////////////////////////////////////////////////////////////////////////////
+
+  gl_this_fb_config = nullptr; // GlIxPlatformObject::gFbConfigs[0];
+  for (int i = 0; i < inumconfigs; i++) {
+    auto config     = GlIxPlatformObject::gFbConfigs[i];
+    XVisualInfo* vi = glXGetVisualFromFBConfig(x_dpy, config);
+    if (vi) {
+      int samp_buf, samples;
+      glXGetFBConfigAttrib(x_dpy, config, GLX_SAMPLE_BUFFERS, &samp_buf);
+      glXGetFBConfigAttrib(x_dpy, config, GLX_SAMPLES, &samples);
+      if (nullptr == gl_this_fb_config) {
+        gl_this_fb_config = config;
+        printf(
+            "  Using fbconfig %d, visual ID 0x%2x: SAMPLE_BUFFERS = %d,"
+            " SAMPLES = %d\n",
+            i,
+            int(vi->visualid),
+            samp_buf,
+            samples);
+      }
+    }
+    XFree(vi);
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
 
   GlIxPlatformObject::gVisInfo = glXGetVisualFromFBConfig(x_dpy, gl_this_fb_config);
   XVisualInfo* vi              = GlIxPlatformObject::gVisInfo;
-  // printf( "vi<%p>\n", (void*) vi );
+  // printf("vi<%p>\n", (void*)vi);
+  // printf("numfbconfig<%d>\n", inumconfigs);
+  // OrkAssert(false);
 
-  // printf( "numfbconfig<%d>\n", inumconfigs );
   assert(GlIxPlatformObject::gFbConfigs != 0);
 
   GlIxPlatformObject::gDisplay = x_dpy;
@@ -317,7 +349,7 @@ void ContextGL::GLinit() {
 
     _loadTokens.push((void*)loadctx);
   }
-}
+} // namespace lev2
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -624,7 +656,6 @@ void ContextGL::makeCurrentContext(void) {
   if (plato) {
     bool bOK = glXMakeCurrent(plato->mDisplay, plato->mXWindowId, plato->mGlxContext);
     plato->_bindop();
-    //	OrkAssert(bOK);
   }
 }
 

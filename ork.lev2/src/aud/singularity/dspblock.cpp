@@ -45,7 +45,19 @@ dspblkdata_ptr_t DspStageData::appendBlock() {
 
 DspBlock::DspBlock(dspblkdata_constptr_t dbd)
     : _dbd(dbd)
-    , _numParams(dbd->_numParams) {
+    , _numParams(dbd->_numParams)
+    , _numFrames(0) {
+}
+
+size_t DspBlock::numFrames() const {
+  return _numFrames;
+}
+
+void DspBlock::resize(int inumframes) {
+  _numFrames = inumframes;
+  if (auto try_hsync = _vars.typedValueForKey<oschardsynctrack_ptr_t>("HSYNC")) {
+    try_hsync.value()->resize(inumframes);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

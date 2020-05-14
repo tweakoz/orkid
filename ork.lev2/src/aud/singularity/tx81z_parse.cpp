@@ -327,8 +327,8 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
   }
 }
 
-Tx81zData::Tx81zData(synth* syn)
-    : SynthData(syn)
+Tx81zData::Tx81zData()
+    : SynthData()
     , _lastprg(0) {
   _zpmDB              = new VastObjectsDB;
   _zpmKM              = new KeyMap;

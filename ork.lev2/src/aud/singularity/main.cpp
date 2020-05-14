@@ -29,7 +29,7 @@ bool loadprog(int pid)
     //////////////////////////////
     if( 1 )
     {
-      auto sd_KRZbase = new KrzSynthData(the_synth);
+      auto sd_KRZbase = new KrzSynthData(synth::instance);
       /*KrzSynthData::baseObjects()->loadJson("analeads",200);
       KrzSynthData::baseObjects()->loadJson("anapads",300);
       KrzSynthData::baseObjects()->loadJson("anacomps",300);
@@ -44,8 +44,8 @@ bool loadprog(int pid)
     }
     if( 0 )
     {
-      auto sd_KRZtest = new KrzTestData(the_synth);
-      auto sd_KRZkmtest = new KrzKmTestData(the_synth);
+      auto sd_KRZtest = new KrzTestData(synth::instance);
+      auto sd_KRZkmtest = new KrzKmTestData(synth::instance);
       _gBankSet.push_back(sd_KRZtest);
       _gBankSet.push_back(sd_KRZkmtest);
     }
@@ -56,7 +56,7 @@ bool loadprog(int pid)
 
     if( 0 )
     {
-      auto sd_CZtest = new CzData(the_synth);
+      auto sd_CZtest = new CzData(synth::instance);
       //sd_CZtest->loadBank(kbasepath+"/cz101/patch_0.syx");
       //sd_CZtest->loadBank(kbasepath+"/cz101/AndreasStling.syx","humm");
       sd_CZtest->loadBank(kbasepath+"/cz101/cz5000/allnetcz/CASIO1.SYX","c1");
@@ -78,7 +78,7 @@ bool loadprog(int pid)
 
     if( 0 )
     {
-      auto sd_FM4test = new Tx81zData(the_synth);
+      auto sd_FM4test = new Tx81zData(synth::instance);
 
       sd_FM4test->loadBank(kbasepath+"/tx81z/presets_1.syx");
       sd_FM4test->loadBank(kbasepath+"/tx81z/presets_2.syx");
@@ -97,7 +97,7 @@ bool loadprog(int pid)
 
     auto loadsf2 = [](const std::string& name, const std::string& tag)
     {
-      auto sbank = new Sf2TestSynthData(name, the_synth, tag );
+      auto sbank = new Sf2TestSynthData(name, synth::instance, tag );
       _gBankSet.push_back(sbank);
     };
 
@@ -159,10 +159,10 @@ bool loadprog(int pid)
 
 
     /*
-    auto sd_phatt = new Sf2TestSynthData("PhattInstruments.sf2",the_synth, "phatt");
-    auto sd_prot2 = new Sf2TestSynthData("Proteus2 Instruments.sf2",the_synth, "proteus2");
-    auto sd_prot3 = new Sf2TestSynthData("Proteus3 Instruments.sf2",the_synth, "proteus3");
-    auto sd_vkeys = new Sf2TestSynthData("Vintage Instruments.sf2",the_synth, "vintkeys");
+    auto sd_phatt = new Sf2TestSynthData("PhattInstruments.sf2",synth::instance, "phatt");
+    auto sd_prot2 = new Sf2TestSynthData("Proteus2 Instruments.sf2",synth::instance, "proteus2");
+    auto sd_prot3 = new Sf2TestSynthData("Proteus3 Instruments.sf2",synth::instance, "proteus3");
+    auto sd_vkeys = new Sf2TestSynthData("Vintage Instruments.sf2",synth::instance, "vintkeys");
     */
 
 
@@ -173,7 +173,7 @@ bool loadprog(int pid)
     _gBankSet.push_back(sd_phatt);
     */
   }
-  //static auto sd_SF2test = new Sf2TestSynthData("Proteus3 Instruments.sf2",the_synth);
+  //static auto sd_SF2test = new Sf2TestSynthData("Proteus3 Instruments.sf2",synth::instance);
    //"grandpiano.sf2"
    //"Indperc.sf2"
    //"Vintage Instruments.sf2"
@@ -190,7 +190,7 @@ bool loadprog(int pid)
   curProg = bank->getProgram(pid);
 
   if( curProg )
-    the_synth->resetFenables();
+    synth::instance()->resetFenables();
 
   return bool(curProg);
 };
@@ -203,7 +203,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     bool shift = (mods&1);
     //  return;
 
-   // auto sd = the_synth->_SD;
+   // auto sd = synth::instance()->_SD;
 
 
     //printf( "key<%d>\n", key );
@@ -275,12 +275,12 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
             if( is_down )
             {
-                the_synth->addEvent( 0.0f ,[=]()
+                synth::instance()->addEvent( 0.0f ,[=]()
                 {
                     auto it = playingNotesMap.find(note);
                     if( it == playingNotesMap.end() )
                     {
-                      auto pi = the_synth->keyOn(note,curProg);
+                      auto pi = synth::instance()->keyOn(note,curProg);
                       assert(pi);
                       playingNotesMap[note] = pi;
                     }
@@ -288,14 +288,14 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
             }
             else // must be up
             {
-                the_synth->addEvent( 0.0f ,[=]()
+                synth::instance()->addEvent( 0.0f ,[=]()
                 {
                     auto it = playingNotesMap.find(note);
                     if(it!=playingNotesMap.end())
                     {
                       auto pi = it->second;
                       assert(pi);
-                      the_synth->keyOff(pi);
+                      synth::instance()->keyOff(pi);
                       playingNotesMap.erase(it);
                     }
                 } );
@@ -378,89 +378,89 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
                   ? curProg->_LayerDatas.size()
                   : 0;
 
-          the_synth->_soloLayer++;
+          synth::instance()->_soloLayer++;
 
-          if( the_synth->_soloLayer >= nl )
-              the_synth->_soloLayer = -1;
+          if( synth::instance()->_soloLayer >= nl )
+              synth::instance()->_soloLayer = -1;
 
 
-          the_synth->resetFenables();
+          synth::instance()->resetFenables();
 
-          printf( "inclayer: %d nl<%d>\n", the_synth->_soloLayer, nl);
+          printf( "inclayer: %d nl<%d>\n", synth::instance()->_soloLayer, nl);
 
           break;
 
         }
         case '`':
           if( ! down ) break;
-          the_synth->_stageEnable[0] = ! the_synth->_stageEnable[0];
+          synth::instance()->_stageEnable[0] = ! synth::instance()->_stageEnable[0];
           break;
         case '1':
           if( ! down ) break;
-          the_synth->_stageEnable[1] = ! the_synth->_stageEnable[1];
+          synth::instance()->_stageEnable[1] = ! synth::instance()->_stageEnable[1];
           break;
         case '2':
           if( ! down ) break;
-          the_synth->_stageEnable[2] = ! the_synth->_stageEnable[2];
+          synth::instance()->_stageEnable[2] = ! synth::instance()->_stageEnable[2];
           break;
         case '3':
           if( ! down ) break;
-          the_synth->_stageEnable[3] = ! the_synth->_stageEnable[3];
+          synth::instance()->_stageEnable[3] = ! synth::instance()->_stageEnable[3];
           break;
         case '4':
           if( ! down ) break;
-          the_synth->_stageEnable[4] = ! the_synth->_stageEnable[4];
+          synth::instance()->_stageEnable[4] = ! synth::instance()->_stageEnable[4];
           break;
         case '5':
           if( ! down ) break;
-          the_synth->_masterGain *= 0.707f;
+          synth::instance()->_masterGain *= 0.707f;
           break;
         case '6':
           if( ! down ) break;
-          the_synth->_masterGain *= 1.0f/0.707f;
+          synth::instance()->_masterGain *= 1.0f/0.707f;
           break;
         case '9':
           if( ! down ) break;
-          the_synth->_bypassDSP = ! the_synth->_bypassDSP;
+          synth::instance()->_bypassDSP = ! synth::instance()->_bypassDSP;
           break;
         case ' ':
           if( down or up )
-            the_synth->_doModWheel = down; //! the_synth->_doModWheel;
+            synth::instance()->_doModWheel = down; //! synth::instance()->_doModWheel;
           break;
         case 257: // spc
           if( down or up )
-            the_synth->_doPressure = down; //! the_synth->_doPressure;
+            synth::instance()->_doPressure = down; //! synth::instance()->_doPressure;
           break;
         case 340: // enter
           if( down  )
-            the_synth->_doInput = ! the_synth->_doInput; //! the_synth->_doModWheel;
+            synth::instance()->_doInput = ! synth::instance()->_doInput; //! synth::instance()->_doModWheel;
           break;
         case 'Q':
           if( ! down ) break;
-          the_synth->_hudpage = 0;
+          synth::instance()->_hudpage = 0;
           break;
         case 'W':
           if( ! down ) break;
-          the_synth->_hudpage = 1;
+          synth::instance()->_hudpage = 1;
           break;
         case 'E':
           if( ! down ) break;
-          the_synth->_hudpage = 2;
+          synth::instance()->_hudpage = 2;
           break;
         case 'I':
           //if( ! down ) break;
-          the_synth->_ostrack -= 1.f;
+          synth::instance()->_ostrack -= 1.f;
           break;
         case 'O':
           //if( ! down ) break;
-          the_synth->_ostrack += 1.f;
+          synth::instance()->_ostrack += 1.f;
           break;
         case 259: // delete
           if( ! down ) break;
-          the_synth->_genmode = (the_synth->_genmode+1)%4;
+          synth::instance()->_genmode = (synth::instance()->_genmode+1)%4;
           break;
 /*        case 'P':
-        {  auto l = the_synth->_hudLayer;
+        {  auto l = synth::instance()->_hudLayer;
            bool inc = key=='P';
            if( up ) break;
            if( l && l->_kmregion )
@@ -510,7 +510,7 @@ void runUI()
 
     glfwSetKeyCallback(window, key_callback);
 
-    //auto sd = the_synth->_SD;
+    //auto sd = synth::instance()->_SD;
 
     ///////////////////////////////////////////////////////
 
@@ -532,9 +532,9 @@ void runUI()
 
         ///////////////////////////////
 
-        bool modwh = the_synth->_doModWheel;
-        bool press = the_synth->_doPressure;
-        float mgain = the_synth->_masterGain;
+        bool modwh = synth::instance()->_doModWheel;
+        bool press = synth::instance()->_doPressure;
+        float mgain = synth::instance()->_masterGain;
         float mgainDB = linear_amp_ratio_to_decibel(mgain);
 
         auto hudstr = formatString("Octave<%d> Mod<%d> Press<%d> MGain<%ddB>\n", octave, int(modwh), int(press), int(mgainDB) );
@@ -562,7 +562,7 @@ void runUI()
           if( km )
           {
               hudstr = formatString(" L%d keymap<%d:%s>\n", i+1, km->_kmID, km->_name.c_str() );
-              bool sololayer = the_synth->_soloLayer==i;
+              bool sololayer = synth::instance()->_soloLayer==i;
               float r = sololayer ? 1 : 0;
 
               drawtext( hudstr, 80,150+(i*29), .65, r,1,0 );
@@ -578,7 +578,7 @@ void runUI()
 
         glLoadIdentity();
         glColor4f(1,1,0,1);
-        the_synth->onDrawHud(width,height);
+        synth::instance()->onDrawHud(width,height);
 
         ///////////////////////////////
 

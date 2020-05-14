@@ -13,13 +13,12 @@ namespace ork::audio::singularity {
 
 void ControlBlockInst::keyOn(const KeyOnInfo& KOI, const ControlBlockData* CBD) {
   assert(CBD);
-  auto l    = KOI._layer;
-  auto& syn = l->_syn;
+  auto l = KOI._layer;
 
   for (int i = 0; i < kmaxctrlperblock; i++) {
     auto data = CBD->_cdata[i];
     if (data) {
-      _cinst[i]                   = data->instantiate(syn);
+      _cinst[i]                   = data->instantiate();
       l->_controlMap[data->_name] = _cinst[i];
       _cinst[i]->keyOn(KOI);
     }
@@ -40,9 +39,8 @@ void ControlBlockInst::compute(int inumfr) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ControllerInst::ControllerInst(synth& syn)
-    : _syn(syn)
-    , _curval(0.0f) {
+ControllerInst::ControllerInst()
+    : _curval(0.0f) {
 }
 
 } // namespace ork::audio::singularity
