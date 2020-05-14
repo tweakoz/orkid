@@ -96,7 +96,7 @@ class Blasphemoids(_simsetup.SimApp):
     left = self.hands.channel("left.matrix")
     right = self.hands.channel("right.matrix")
     iset = self.instanceset
-    hand = left # todo fix controller assignment
+    hand = right # todo fix controller assignment
     if hand!=None:
       pos = vec3()
       rot = quat()
@@ -116,7 +116,7 @@ class Blasphemoids(_simsetup.SimApp):
       #####################################
       # check for trigger, and fire!
       #####################################
-      button = self.hands.channel("left.trigger")
+      button = self.hands.channel("right.trigger")
       if button and \
          self.pickray==None and \
          self.lastbutton==False:

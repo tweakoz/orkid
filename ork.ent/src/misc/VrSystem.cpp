@@ -135,12 +135,12 @@ bool VrSystem::DoLink(Simulation* psim) {
     _trackingnotif            = std::make_shared<VrTrackingNotificationReceiver>();
     _trackingnotif->_callback = [this](const svar256_t& msg) {
       if (auto as_ctrlr = msg.TryAs<VrTrackingControllerNotificationFrame>()) {
-        auto& ctrlr = as_ctrlr.value();
-        if (ctrlr._left._buttonThumbGatedDown) {
+        auto ctrlr = as_ctrlr.value();
+        if (ctrlr._left->_buttonThumbGatedDown) {
           fquat q;
           q.fromAxisAngle(fvec4(0, 1, 0, -PI / 12.0));
           _headingMatrix = _headingMatrix * q.ToMatrix();
-        } else if (ctrlr._right._buttonThumbGatedDown) {
+        } else if (ctrlr._right->_buttonThumbGatedDown) {
           fquat q;
           q.fromAxisAngle(fvec4(0, 1, 0, PI / 12.0));
           _headingMatrix = _headingMatrix * q.ToMatrix();
@@ -149,14 +149,14 @@ bool VrSystem::DoLink(Simulation* psim) {
         fmtx4 xlate;
         float xlaterate = 12.0 / 80.0;
 
-        if (LCONTROLLER._button1Down) {
+        if (LCONTROLLER->_button1Down) {
           xlate.SetTranslation(0, xlaterate, 0);
           auto trans = (xlate * _rotMatrix).GetTranslation();
           printf("trans<%g %g %g>\n", trans.x, trans.y, trans.z);
           xlate.SetTranslation(trans);
           _offsetmatrix = _offsetmatrix * xlate;
         }
-        if (LCONTROLLER._button2Down) {
+        if (LCONTROLLER->_button2Down) {
           xlate.SetTranslation(0, -xlaterate, 0);
           auto trans = (xlate * _rotMatrix).GetTranslation();
           printf("trans<%g %g %g>\n", trans.x, trans.y, trans.z);
@@ -166,13 +166,13 @@ bool VrSystem::DoLink(Simulation* psim) {
         ///////////////////////////////////////////////////////////
         // fwd back
         ///////////////////////////////////////////////////////////
-        if (RCONTROLLER._button1Down) {
+        if (RCONTROLLER->_button1Down) {
           xlate.SetTranslation(0, 0, xlaterate);
           auto trans = (xlate * _rotMatrix).GetTranslation();
           xlate.SetTranslation(trans);
           _offsetmatrix = _offsetmatrix * xlate;
         }
-        if (RCONTROLLER._button2Down) {
+        if (RCONTROLLER->_button2Down) {
           xlate.SetTranslation(0, 0, -xlaterate);
           auto trans = (xlate * _rotMatrix).GetTranslation();
           xlate.SetTranslation(trans);

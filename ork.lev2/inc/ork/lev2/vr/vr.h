@@ -24,7 +24,8 @@ namespace ork::lev2::orkidvr {
 ////////////////////////////////////////////////////////////////////////////////
 
 struct ControllerState {
-  fmtx4 _matrix;
+  fmtx4 _tracking_matrix;
+  fmtx4 _world_matrix;
   bool _button1Down         = false;
   bool _button2Down         = false;
   bool _buttonThumbDown     = false;
@@ -45,6 +46,8 @@ struct ControllerState {
   bool _buttonThumbGatedUp   = false;
   bool _triggerGatedUp       = false;
 };
+
+using controllerstate_ptr_t = std::shared_ptr<ControllerState>;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -71,8 +74,9 @@ struct VrTrackingHmdPoseNotificationFrame {
   fmtx4 _hmdMatrix;
 };
 struct VrTrackingControllerNotificationFrame {
-  ControllerState _left;
-  ControllerState _right;
+  VrTrackingControllerNotificationFrame();
+  controllerstate_ptr_t _left;
+  controllerstate_ptr_t _right;
 };
 
 struct VrTrackingNotificationReceiver {
@@ -98,7 +102,7 @@ struct Device {
   CameraMatrices* _leftcamera   = nullptr;
   CameraMatrices* _centercamera = nullptr;
   CameraMatrices* _rightcamera  = nullptr;
-  std::map<int, ControllerState> _controllers;
+  std::map<int, controllerstate_ptr_t> _controllers;
   bool _active;
   bool _supportsStereo;
   fmtx4 _hmdMatrix;
@@ -121,6 +125,9 @@ struct Device {
   std::vector<fvec3> _calibnxvect;
   std::vector<fvec3> _calibnyvect;
   std::vector<fvec3> _calibnzvect;
+
+protected:
+  controllerstate_ptr_t controller(int id);
 
 private:
   Device(const Device& rhs) = delete;

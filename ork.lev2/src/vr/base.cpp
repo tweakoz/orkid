@@ -48,6 +48,20 @@ Device::~Device() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+controllerstate_ptr_t Device::controller(int id) {
+  controllerstate_ptr_t rval;
+  auto it = _controllers.find(id);
+  if (it != _controllers.end()) {
+    rval = it->second;
+  } else {
+    rval             = std::make_shared<ControllerState>();
+    _controllers[id] = rval;
+  }
+  return rval;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 void Device::_updatePosesCommon() {
   EASY_BLOCK("vr-upc");
   fmtx4 hmd  = _posemap["hmd"];

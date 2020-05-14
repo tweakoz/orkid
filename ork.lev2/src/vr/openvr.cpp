@@ -93,8 +93,8 @@ fmtx4 VrProjFrustumPar::composeProjection() const {
 OpenVrDevice::OpenVrDevice()
     : _vrmutex("vrmutex") {
 
-  _leftControllerDeviceIndex  = 1;
-  _rightControllerDeviceIndex = 2;
+  _leftControllerDeviceIndex  = -1;
+  _rightControllerDeviceIndex = -1;
 
   ///////////////////////////////////////////////////////////
   // override with controller.json
@@ -124,11 +124,11 @@ OpenVrDevice::OpenVrDevice()
     free((void*)jsondata);
     assert(document.IsObject());
     assert(document.HasMember("ControllerIds"));
-    const auto& root            = document["ControllerIds"];
-    _leftControllerDeviceIndex  = root["left"].GetInt();
-    _rightControllerDeviceIndex = root["right"].GetInt();
-    printf("LeftId<%d>\n", _leftControllerDeviceIndex);
-    printf("RightId<%d>\n", _rightControllerDeviceIndex);
+    const auto& root = document["ControllerIds"];
+    //_leftControllerDeviceIndex  = root["left"].GetInt();
+    //_rightControllerDeviceIndex = root["right"].GetInt();
+    // printf("LeftId<%d>\n", _leftControllerDeviceIndex);
+    // printf("RightId<%d>\n", _rightControllerDeviceIndex);
   }
 
   ///////////////////////////////////////////////////////////
@@ -211,40 +211,40 @@ void OpenVrDevice::_processControllerEvents() {
         break;
       case _ovr::VREvent_ButtonPress: {
         printf("dev<%d> button<%d> pressed\n", int(event.trackedDeviceIndex), button);
-        auto& c = _controllers[event.trackedDeviceIndex];
+        auto c = controller(event.trackedDeviceIndex);
         _controllerindexset.insert(event.trackedDeviceIndex);
         switch (button) {
           case 1:
-            c._button1Down = true;
+            c->_button1Down = true;
             break;
           case 2:
-            c._button2Down = true;
+            c->_button2Down = true;
             break;
           case 32:
-            c._buttonThumbDown = true;
+            c->_buttonThumbDown = true;
             break;
           case 33:
-            c._triggerDown = true;
+            c->_triggerDown = true;
             break;
         }
         break;
       }
       case _ovr::VREvent_ButtonUnpress: {
         printf("button<%d> released\n", button);
-        auto& c = _controllers[event.trackedDeviceIndex];
+        auto c = controller(event.trackedDeviceIndex);
         _controllerindexset.insert(event.trackedDeviceIndex);
         switch (button) {
           case 1:
-            c._button1Down = false;
+            c->_button1Down = false;
             break;
           case 2:
-            c._button2Down = false;
+            c->_button2Down = false;
             break;
           case 32:
-            c._buttonThumbDown = false;
+            c->_buttonThumbDown = false;
             break;
           case 33:
-            c._triggerDown = false;
+            c->_triggerDown = false;
             break;
         }
         break;
@@ -265,49 +265,51 @@ void OpenVrDevice::_processControllerEvents() {
         // printf("unknown event<%d>\n", int(event.eventType));
         break;
     }
-    if (_rightControllerDeviceIndex >= 0 and _leftControllerDeviceIndex >= 0) {
+    ////////////////////////////////////////////////////////////////////////////
 
-      using inpmgr   = lev2::InputManager;
-      auto handgroup = inpmgr::instance()->inputGroup("hands");
+  } // while (_active and _hmd->PollNextEvent(&event, sizeof(event))) {
+  //////////////////////////////////////////////
+  if (_active) {
+    ////////////////////////////////////////////////////////////////////////////
+    fmtx4 rx, ry, rz, ivomatrix;
+    rx.SetRotateX(-PI * 0.5);
+    ry.SetRotateY(PI * 0.5);
+    rz.SetRotateZ(PI * 0.5);
+    ivomatrix.inverseOf(_outputViewOffsetMatrix);
+    auto rotmtx         = (rx * ry * rz);
+    auto tracking2world = [&](const fmtx4& input) -> fmtx4 { //
+      return rotmtx * (input * ivomatrix) * _baseMatrix.inverse();
+    };
+    ////////////////////////////////////////////////////////////////////////////
+    // left/right controller assignment heuristic
+    ////////////////////////////////////////////////////////////////////////////
+    for (auto& controller_item : _controllers) {
+      auto controller           = controller_item.second;
+      controller->_world_matrix = tracking2world(controller->_tracking_matrix);
+    }
+    ////////////////////////////////////////////////////////////////////////////
+    // send input to input manager
+    ////////////////////////////////////////////////////////////////////////////
+    using inpmgr   = lev2::InputManager;
+    auto handgroup = inpmgr::instance()->inputGroup("hands");
+    if (_leftControllerDeviceIndex >= 0) {
+      auto LCONTROLLER = controller(_leftControllerDeviceIndex);
+      handgroup->setChannel("left.button1").as<bool>(LCONTROLLER->_button1Down);
+      handgroup->setChannel("left.button2").as<bool>(LCONTROLLER->_button2Down);
+      handgroup->setChannel("left.trigger").as<bool>(LCONTROLLER->_triggerDown);
+      handgroup->setChannel("left.thumb").as<bool>(LCONTROLLER->_buttonThumbDown);
+      handgroup->setChannel("left.matrix").as<fmtx4>(LCONTROLLER->_world_matrix);
+    }
 
-      auto& LCONTROLLER = _controllers[_leftControllerDeviceIndex];
-      auto& RCONTROLLER = _controllers[_rightControllerDeviceIndex];
-
-      handgroup->setChannel("left.button1").as<bool>(LCONTROLLER._button1Down);
-      handgroup->setChannel("left.button2").as<bool>(LCONTROLLER._button2Down);
-      handgroup->setChannel("left.trigger").as<bool>(LCONTROLLER._triggerDown);
-      handgroup->setChannel("left.thumb").as<bool>(LCONTROLLER._buttonThumbDown);
-
-      handgroup->setChannel("right.button1").as<bool>(RCONTROLLER._button1Down);
-      handgroup->setChannel("right.button2").as<bool>(RCONTROLLER._button2Down);
-      handgroup->setChannel("right.trigger").as<bool>(RCONTROLLER._triggerDown);
-      handgroup->setChannel("right.thumb").as<bool>(RCONTROLLER._buttonThumbDown);
-
-      //////////////////////////////////////
-      // hand positions
-      //////////////////////////////////////
-
-      fmtx4 rx, ry, rz, ivomatrix;
-      rx.SetRotateX(-PI * 0.5);
-      ry.SetRotateY(PI * 0.5);
-      rz.SetRotateZ(PI * 0.5);
-      ivomatrix.inverseOf(_outputViewOffsetMatrix);
-      fmtx4 lworld = (LCONTROLLER._matrix * ivomatrix) * _baseMatrix.inverse();
-      fmtx4 rworld = (RCONTROLLER._matrix * ivomatrix) * _baseMatrix.inverse();
-
-      auto lmatrix = rx * ry * rz * lworld;
-      auto rmatrix = rx * ry * rz * rworld;
-
-      auto lmatrix_dump = lmatrix.dump4x3cn();
-      auto rmatrix_dump = rmatrix.dump4x3cn();
-      // printf("lmatrix<%s>\n", lmatrix_dump.c_str());
-      // printf("rmatrix<%s>\n", rmatrix_dump.c_str());
-      handgroup->setChannel("left.matrix").as<fmtx4>(lmatrix);
-      handgroup->setChannel("right.matrix").as<fmtx4>(rmatrix);
-
-    } // if( _rightControllerDeviceIndex>=0 and _leftControllerDeviceIndex>=0 ){
-  }   // while (_active and _hmd->PollNextEvent(&event, sizeof(event))) {
-
+    if (_rightControllerDeviceIndex >= 0) {
+      auto RCONTROLLER = controller(_rightControllerDeviceIndex);
+      handgroup->setChannel("right.button1").as<bool>(RCONTROLLER->_button1Down);
+      handgroup->setChannel("right.button2").as<bool>(RCONTROLLER->_button2Down);
+      handgroup->setChannel("right.trigger").as<bool>(RCONTROLLER->_triggerDown);
+      handgroup->setChannel("right.thumb").as<bool>(RCONTROLLER->_buttonThumbDown);
+      handgroup->setChannel("right.matrix").as<fmtx4>(RCONTROLLER->_world_matrix);
+    }
+  }
   //////////////////////////////////////////////
   if (_active) {
     _ovr::VRActionSetHandle_t actset_demo = _ovr::k_ulInvalidActionSetHandle;
@@ -315,30 +317,36 @@ void OpenVrDevice::_processControllerEvents() {
     actionSet.ulActionSet                 = actset_demo;
     // _ovr::VRInput()->UpdateActionState( &actionSet, sizeof(actionSet), 1 );
 
-    if (_rightControllerDeviceIndex >= 0 and _leftControllerDeviceIndex >= 0) {
+    using inpmgr   = lev2::InputManager;
+    auto handgroup = inpmgr::instance()->inputGroup("hands");
 
-      using inpmgr   = lev2::InputManager;
-      auto handgroup = inpmgr::instance()->inputGroup("hands");
+    ork::svar256_t notifvar;
+    auto ctrlnotiffram = notifvar.Make<VrTrackingControllerNotificationFrame>();
 
-      auto& LCONTROLLER = _controllers[_leftControllerDeviceIndex];
-      auto& RCONTROLLER = _controllers[_rightControllerDeviceIndex];
-
-      LCONTROLLER.updateGated();
-      RCONTROLLER.updateGated();
-
-      gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset) {
-        ork::svar256_t notifvar;
-        auto& ctrlnotiffram  = notifvar.Make<VrTrackingControllerNotificationFrame>();
-        ctrlnotiffram._left  = LCONTROLLER;
-        ctrlnotiffram._right = RCONTROLLER;
-        for (auto recvr : notifset) {
-          recvr->_callback(notifvar);
-        }
-      });
+    if (_leftControllerDeviceIndex >= 0) {
+      auto LCONTROLLER = controller(_leftControllerDeviceIndex);
+      LCONTROLLER->updateGated();
+      *(ctrlnotiffram._left) = *LCONTROLLER;
     }
-  }
 
-  //////////////////////////////////////////////
+    if (_rightControllerDeviceIndex >= 0) {
+      auto RCONTROLLER = controller(_rightControllerDeviceIndex);
+      RCONTROLLER->updateGated();
+      *(ctrlnotiffram._right) = *RCONTROLLER;
+    }
+
+    gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset) {
+      for (auto recvr : notifset) {
+        recvr->_callback(notifvar);
+      }
+    });
+  }
+}
+
+//////////////////////////////////////////////
+VrTrackingControllerNotificationFrame::VrTrackingControllerNotificationFrame() {
+  _left  = std::make_shared<ControllerState>();
+  _right = std::make_shared<ControllerState>();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -421,12 +429,14 @@ void OpenVrDevice::_updatePoses() {
             dev_index, _ovr::ETrackedDeviceProperty::Prop_ControllerRoleHint_Int32, &tpe);
 
         switch (role) {
-          case _ovr::ETrackedControllerRole::TrackedControllerRole_LeftHand:
+          case _ovr::ETrackedControllerRole::TrackedControllerRole_LeftHand: {
             _leftControllerDeviceIndex = dev_index;
             break;
-          case _ovr::ETrackedControllerRole::TrackedControllerRole_RightHand:
+          }
+          case _ovr::ETrackedControllerRole::TrackedControllerRole_RightHand: {
             _rightControllerDeviceIndex = dev_index;
             break;
+          }
         }
 
         ///////////////////////////////////////////////////////
@@ -441,8 +451,8 @@ void OpenVrDevice::_updatePoses() {
         // if (vrimpl->_devclass[dev_index]==0){
         switch (_hmd->GetTrackedDeviceClass(dev_index)) {
           case _ovr::TrackedDeviceClass_Controller:
-            _devclass[dev_index]            = 'C';
-            _controllers[dev_index]._matrix = orkmtx;
+            _devclass[dev_index]                    = 'C';
+            controller(dev_index)->_tracking_matrix = orkmtx;
             break;
           case _ovr::TrackedDeviceClass_HMD:
             _devclass[dev_index] = 'H';

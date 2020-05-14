@@ -57,7 +57,7 @@ struct VRIMPL {
     }
   }
   ///////////////////////////////////////
-  typedef const std::map<int, orkidvr::ControllerState>& controllermap_t;
+  using controllermap_t = const std::map<int, orkidvr::controllerstate_ptr_t>&;
   void renderPoses(Context* targ, CameraMatrices* camdat, controllermap_t controllers) {
     fmtx4 rx;
     fmtx4 ry;
@@ -68,14 +68,12 @@ struct VRIMPL {
 
     for (auto item : controllers) {
 
-      auto c = item.second;
-      fmtx4 ivomatrix;
-      ivomatrix.inverseOf(_viewOffsetMatrix);
+      auto controller = item.second;
 
       fmtx4 scalemtx;
-      scalemtx.SetScale(c._button1Down ? 0.05 : 0.025);
+      scalemtx.SetScale(controller->_button1Down ? 0.05 : 0.025);
 
-      fmtx4 controller_worldspace = (c._matrix * ivomatrix);
+      fmtx4 controller_worldspace = controller->_world_matrix;
 
       fmtx4 mmtx = (scalemtx * rx * ry * rz * controller_worldspace);
 
@@ -84,7 +82,7 @@ struct VRIMPL {
       targ->MTXI()->PushPMatrix(camdat->GetPMatrix());
       targ->PushModColor(fvec4::White());
       {
-        if (c._button2Down)
+        if (controller->_button2Down)
           ork::lev2::GfxPrimitives::GetRef().RenderBox(targ);
         else
           ork::lev2::GfxPrimitives::GetRef().RenderAxis(targ);
