@@ -89,12 +89,12 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
             break;
           case '-': {
             int64_t amt         = isalt ? 100 : (isctrl ? 1 : 10);
-            the_synth->_oswidth = std::clamp(the_synth->_oswidth - amt, 0L, 4095L);
+            the_synth->_oswidth = std::clamp(the_synth->_oswidth - amt, int64_t(0), int64_t(4095));
             break;
           }
           case '=': {
             int64_t amt         = isalt ? 100 : (isctrl ? 1 : 10);
-            the_synth->_oswidth = std::clamp(the_synth->_oswidth + amt, 0L, 4095L);
+            the_synth->_oswidth = std::clamp(the_synth->_oswidth + amt, int64_t(0), int64_t(4095));
             break;
           }
           case '[': {

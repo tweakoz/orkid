@@ -789,10 +789,6 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, E
     GL_ERRORCHECK();
     switch (eType) {
       case EPrimitiveType::LINES: { // orkprintf( "drawarrays: <ivbase %d> <inum %d> lines\n", ivbase, inum );
-        glEnable(GL_LINE_SMOOTH);
-        glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glDrawArrays(GL_LINES, ivbase, inum);
         break;
       }
