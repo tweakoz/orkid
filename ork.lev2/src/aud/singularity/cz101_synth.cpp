@@ -177,7 +177,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
     ////////////////////////////////////////////
     U[i] = waveswitch ? sawpulse : saw;
     U[i] = waveswitch ? reso3 : saw;
-    U[i] = coswave;
+    // U[i] = coswave;
     ;
   }
   _ph += 0.003f;

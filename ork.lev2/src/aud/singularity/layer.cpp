@@ -323,6 +323,7 @@ void layer::compute(outputBuffer& obuf) {
       }
       ///////////////////////////////////////////////
       _HAF._baseserial = _num_sent_to_scope;
+      //_HAF._owcount += the_synth->_ostrack;
       _num_sent_to_scope += inumframes;
       ///////////////////////////////////////////////
       the_synth->_hudbuf.push(_HAF);

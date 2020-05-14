@@ -7,7 +7,7 @@
 
 namespace ork::audio::singularity {
 static const int koscopelength   = 1 << 12;
-static const int koscopelengthm1 = koscopelength - 1;
+static const int koscopelengthmask = koscopelength - 1;
 
 struct lfoframe {
   int _index           = 0;
@@ -49,6 +49,7 @@ struct hudaframe {
   op4frame _op4frame[4];
   size_t _trackoffset = 0;
   size_t _baseserial  = 0;
+  size_t _owcount     = 0;
 };
 struct hudkframe {
   lyrdata_constptr_t _layerdata;

@@ -14,9 +14,10 @@ void DrawOscope(
     const float* samples,
     fvec2 xy,
     fvec2 wh) { //
+  auto syn = synth::instance();
 
-  auto hudl   = synth::instance()->_hudLayer;
-  double time = synth::instance()->_timeaccum;
+  auto hudl   = syn->_hudLayer;
+  double time = syn->_timeaccum;
 
   if (false == (hudl && hudl->_LayerData))
     return;
@@ -25,7 +26,7 @@ void DrawOscope(
 
   hudlines_t lines;
 
-  int inumframes = synth::instance()->_oswidth;
+  int inumframes = syn->_oswidth;
 
   const float OSC_X1 = xy.x;
   const float OSC_Y1 = xy.y;
@@ -40,11 +41,14 @@ void DrawOscope(
 
   int ycursor = OSC_Y1;
 
-  double width = double(synth::instance()->_oswidth) / double(48.0);
+  int window_width = syn->_oswidth;
+
+  double width = double(window_width) / double(48000.0);
+  double frq   = 1.0 / width;
 
   drawtext(
       context, //
-      FormatString("width: %g msec", width),
+      FormatString("width: %g msec", width * 1000.0),
       OSC_X1,
       ycursor,
       fontscale,
@@ -54,10 +58,22 @@ void DrawOscope(
 
   ycursor += hud_lineheight();
 
-  double track = double(synth::instance()->_ostrack) / double(65536.0);
   drawtext(
       context, //
-      FormatString("track: %0.4f", track),
+      FormatString("width-frq: %g hz", frq),
+      OSC_X1,
+      ycursor,
+      fontscale,
+      1,
+      1,
+      0);
+
+  ycursor += hud_lineheight();
+
+  float triggerlevel = syn->_ostriglev;
+  drawtext(
+      context, //
+      FormatString("triglev: %0.4f", triggerlevel),
       OSC_X1,
       ycursor,
       fontscale,
@@ -78,38 +94,33 @@ void DrawOscope(
   // oscilloscope trace
   /////////////////////////////////////////////
 
-  double dtrack              = HAF._baseserial; // / 48000.0f;
-  static uint64_t trackaccum = 0;
-
-  uint64_t trakoff = (uint64_t(dtrack) << 16) + trackaccum;
-
-  //
-  trackaccum += ((1 << 16) + synth::instance()->_ostrack);
-
-  //_HAF._trackoffset += ;
-
-  auto syn     = synth::instance();
-  auto ostrack = syn->_ostrack;
-  auto mapI    = [&](int i) -> int {
-    int j = (i + HAF._baseserial) & koscopelengthm1;
-    // trakoff += ostrack;
-
-    assert(j >= 0);
-    assert(j < koscopelength);
-    return j;
-  };
-
-  //
-
   float x1 = OSC_X1;
-  float y1 = OSC_CY + samples[mapI(0)] * -OSC_HH;
+  float y1 = OSC_CY + samples[0] * -OSC_HH;
   float x2, y2;
 
-  const int koscfr = inumframes / 4;
+  const int koscfr = window_width;
 
-  for (int i = 0; i < inumframes; i++) {
-    int j   = mapI(i);
-    float x = OSC_W * float(i) / float(koscfr);
+  //////////////////////////////////////////////
+  // find zero crossing
+  //////////////////////////////////////////////
+
+  int64_t zero_crossing = 0;
+  float ly              = samples[0];
+  for (int i = 0; i < window_width; i++) {
+    float y = samples[i];
+    if (ly < triggerlevel and y >= triggerlevel) {
+      zero_crossing = i;
+      // printf("zero_crossing<%ld>\n", zero_crossing);
+      break;
+    }
+    ly = y;
+  }
+
+  //////////////////////////////////////////////
+
+  for (int i = 0; i < window_width; i++) {
+    int j   = (i + zero_crossing) & koscopelengthmask;
+    float x = OSC_W * float(i) / float(window_width);
     float y = samples[j] * -OSC_HH;
     x2      = OSC_X1 + x;
     y2      = OSC_CY + y;
