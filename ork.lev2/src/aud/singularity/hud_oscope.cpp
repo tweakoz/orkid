@@ -45,7 +45,6 @@ void DrawOscope(
 
   double width       = double(window_width) / double(48000.0);
   double frq         = 1.0 / width;
-  float triggerslope = syn->_ostrigslope;
   float triggerlevel = syn->_ostriglev;
 
   drawtext(
@@ -71,16 +70,6 @@ void DrawOscope(
   drawtext(
       context, //
       FormatString("[] triglev: %0.4f", triggerlevel),
-      OSC_X1,
-      ycursor,
-      fontscale,
-      1,
-      1,
-      0);
-  ycursor += hud_lineheight();
-  drawtext(
-      context, //
-      FormatString(";' trigslope: %0.4f", triggerslope),
       OSC_X1,
       ycursor,
       fontscale,

@@ -25,7 +25,6 @@ synth::synth()
     , _timeaccum(0.0f)
     , _hudpage(0)
     , _oswidth(1500)      //
-    , _ostrigslope(0.0f)  //
     , _ostriglev(0.99f) { //
 
   for (int i = 0; i < 256; i++) {

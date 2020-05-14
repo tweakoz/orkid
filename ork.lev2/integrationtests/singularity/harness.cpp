@@ -111,16 +111,6 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
             the_synth->_ostrigdir = !the_synth->_ostrigdir;
             break;
           }
-          case ';': {
-            float amt               = isalt ? 0.1 : (isctrl ? 0.001 : 0.01);
-            the_synth->_ostrigslope = std::clamp(the_synth->_ostrigslope - amt, -1.0f, 1.0f);
-            break;
-          }
-          case '\'': {
-            float amt               = isalt ? 0.1 : (isctrl ? 0.001 : 0.01);
-            the_synth->_ostrigslope = std::clamp(the_synth->_ostrigslope + amt, -1.0f, 1.0f);
-            break;
-          }
           default:
             break;
         }
