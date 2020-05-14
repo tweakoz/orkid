@@ -94,14 +94,16 @@ struct synth {
   float _testtoneamp;
   float _testtoneampps;
   int _hudpage;
-  int _genmode      = 0;
-  float _ostriglev  = 0;
-  int64_t _oswidth  = 0;
-  bool _bypassDSP   = false;
-  bool _doModWheel  = false;
-  bool _doPressure  = false;
-  bool _doInput     = false;
-  float _masterGain = 1.0f / 2.0f;
+  int _genmode       = 0;
+  float _ostriglev   = 0;
+  float _ostrigslope = 0;
+  bool _ostrigdir    = false;
+  int64_t _oswidth   = 0;
+  bool _bypassDSP    = false;
+  bool _doModWheel   = false;
+  bool _doPressure   = false;
+  bool _doInput      = false;
+  float _masterGain  = 1.0f / 2.0f;
 
   layer* _hudLayer   = nullptr;
   bool _clearhuddata = true;

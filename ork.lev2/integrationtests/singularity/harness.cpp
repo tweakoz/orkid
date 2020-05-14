@@ -88,23 +88,37 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
             the_synth->_hudpage = (the_synth->_hudpage + 1) % 2;
             break;
           case '-': {
-            float amt             = isalt ? 0.1 : (isctrl ? 0.001 : 0.01);
-            the_synth->_ostriglev = std::clamp(the_synth->_ostriglev - amt, -1.0f, 1.0f);
-            break;
-          }
-          case '=': {
-            float amt             = isalt ? 0.1 : (isctrl ? 0.001 : 0.01);
-            the_synth->_ostriglev = std::clamp(the_synth->_ostriglev + amt, -1.0f, 1.0f);
-            break;
-          }
-          case '[': {
             int64_t amt         = isalt ? 100 : (isctrl ? 1 : 10);
             the_synth->_oswidth = std::clamp(the_synth->_oswidth - amt, 0L, 4095L);
             break;
           }
-          case ']': {
+          case '=': {
             int64_t amt         = isalt ? 100 : (isctrl ? 1 : 10);
             the_synth->_oswidth = std::clamp(the_synth->_oswidth + amt, 0L, 4095L);
+            break;
+          }
+          case '[': {
+            float amt             = isalt ? 0.1 : (isctrl ? 0.001 : 0.01);
+            the_synth->_ostriglev = std::clamp(the_synth->_ostriglev - amt, -1.0f, 1.0f);
+            break;
+          }
+          case ']': {
+            float amt             = isalt ? 0.1 : (isctrl ? 0.001 : 0.01);
+            the_synth->_ostriglev = std::clamp(the_synth->_ostriglev + amt, -1.0f, 1.0f);
+            break;
+          }
+          case '\\': {
+            the_synth->_ostrigdir = !the_synth->_ostrigdir;
+            break;
+          }
+          case ';': {
+            float amt               = isalt ? 0.1 : (isctrl ? 0.001 : 0.01);
+            the_synth->_ostrigslope = std::clamp(the_synth->_ostrigslope - amt, -1.0f, 1.0f);
+            break;
+          }
+          case '\'': {
+            float amt               = isalt ? 0.1 : (isctrl ? 0.001 : 0.01);
+            the_synth->_ostrigslope = std::clamp(the_synth->_ostrigslope + amt, -1.0f, 1.0f);
             break;
           }
           default:

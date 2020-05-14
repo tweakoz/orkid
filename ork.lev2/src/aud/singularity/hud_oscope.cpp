@@ -43,37 +43,54 @@ void DrawOscope(
 
   int window_width = syn->_oswidth;
 
-  double width = double(window_width) / double(48000.0);
-  double frq   = 1.0 / width;
-
-  drawtext(
-      context, //
-      FormatString("width: %g msec", width * 1000.0),
-      OSC_X1,
-      ycursor,
-      fontscale,
-      1,
-      1,
-      0);
-
-  ycursor += hud_lineheight();
-
-  drawtext(
-      context, //
-      FormatString("width-frq: %g hz", frq),
-      OSC_X1,
-      ycursor,
-      fontscale,
-      1,
-      1,
-      0);
-
-  ycursor += hud_lineheight();
-
+  double width       = double(window_width) / double(48000.0);
+  double frq         = 1.0 / width;
+  float triggerslope = syn->_ostrigslope;
   float triggerlevel = syn->_ostriglev;
+
   drawtext(
       context, //
-      FormatString("triglev: %0.4f", triggerlevel),
+      FormatString("-= width: %g msec", width * 1000.0),
+      OSC_X1,
+      ycursor,
+      fontscale,
+      1,
+      1,
+      0);
+  ycursor += hud_lineheight();
+  drawtext(
+      context, //
+      FormatString("   width-frq: %g hz", frq),
+      OSC_X1,
+      ycursor,
+      fontscale,
+      1,
+      1,
+      0);
+  ycursor += hud_lineheight();
+  drawtext(
+      context, //
+      FormatString("[] triglev: %0.4f", triggerlevel),
+      OSC_X1,
+      ycursor,
+      fontscale,
+      1,
+      1,
+      0);
+  ycursor += hud_lineheight();
+  drawtext(
+      context, //
+      FormatString(";' trigslope: %0.4f", triggerslope),
+      OSC_X1,
+      ycursor,
+      fontscale,
+      1,
+      1,
+      0);
+  ycursor += hud_lineheight();
+  drawtext(
+      context, //
+      FormatString("\\  trigdir: %s", syn->_ostrigdir ? "up" : "down"),
       OSC_X1,
       ycursor,
       fontscale,
@@ -104,14 +121,38 @@ void DrawOscope(
   // find zero crossing
   //////////////////////////////////////////////
 
+  bool do_slope_test = triggerslope != 0.0;
+
   int64_t zero_crossing = 0;
   float ly              = samples[0];
   for (int i = 0; i < window_width; i++) {
-    float y = samples[i];
-    if (ly < triggerlevel and y >= triggerlevel) {
-      zero_crossing = i;
-      // printf("zero_crossing<%ld>\n", zero_crossing);
-      break;
+    float y     = samples[i];
+    float slope = abs(y - ly) * 1000.0f; // / float(window_width);
+
+    if (syn->_ostrigdir) {
+      if (ly > triggerlevel and y <= triggerlevel) {
+        if (do_slope_test) {
+          if (abs(slope - triggerslope) < 0.1) {
+            zero_crossing = i;
+            break;
+          }
+        } else {
+          zero_crossing = i;
+          break;
+        }
+      }
+    } else {
+      if (ly < triggerlevel and y >= triggerlevel) {
+        if (do_slope_test) {
+          if (abs(slope - triggerslope) < 0.1) {
+            zero_crossing = i;
+            break;
+          }
+        } else {
+          zero_crossing = i;
+          break;
+        }
+      }
     }
     ly = y;
   }
