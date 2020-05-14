@@ -42,8 +42,9 @@ void CZX::compute(DspBuffer& dspbuf) // final
   //_layer->_curPitchOffsetInCents = centoff;
   // todo: dco(pitch) env mod
   // todo: mi from dcw env
-  static double _ph = 0.0;
-  double modindex   = 0.5f - cosf(_ph * 0.3) * 0.5f;
+  static double _ph  = 0.0;
+  double modindex    = 0.5f - cosf(_ph * 3) * 0.5f;
+  double invmodindex = 1.0 - modindex;
   //////////////////////////////////////////
   double sawmodindex = 0.5 - modindex * 0.5;
   double sinpulindex = modindex * 0.75;
@@ -120,8 +121,9 @@ void CZX::compute(DspBuffer& dspbuf) // final
     // sawpulse
     ////////////////////////////////////////////
     {
-      double mmi  = modindex * 0.5; // std::clamp(modindex, 0.0, 0.5);
-      double immi = 0.5 - mmi;      // std::clamp(modindex, 0.0, 0.5);
+
+      double mmi  = (invmodindex)*0.5; // std::clamp(modindex, 0.0, 0.5);
+      double immi = 0.5 - mmi;         // std::clamp(modindex, 0.0, 0.5);
 
       double sawpos   = std::clamp((linphase - 0.5) / (1.0f - 0.5), 0.0, 1.0);
       double sawidx   = 0.5 + sawmodindex;
@@ -136,7 +138,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
                           ? 0           //
                           : sawphase;
 
-      sawpulsephase = lerp(linphase, sawpulsephase, 1.0 - modindex);
+      sawpulsephase = lerp(linphase, sawpulsephase, invmodindex);
 
       sawpulse = cosf(sawpulsephase * PI2);
     }
@@ -180,8 +182,8 @@ void CZX::compute(DspBuffer& dspbuf) // final
     _phase = nextphase;
     ////////////////////////////////////////////
     // U[i] = waveswitch ? sawpulse : saw;
-    U[i] = waveswitch ? reso2 : saw;
-    U[i] = reso3;
+    U[i] = waveswitch ? sawpulse : saw;
+    U[i] = sawpulse;
     ;
   }
   _ph += 0.003f;
