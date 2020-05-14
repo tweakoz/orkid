@@ -168,14 +168,14 @@ void synth::keyOff(programInst* pinst) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void synth::resize(int numframes) {
-  if (_numFrames != numframes) {
+  if (numframes > _numFrames) {
     _ibuf.resize(numframes);
     _obuf.resize(numframes);
-    _numFrames = numframes;
     for (auto lay : _allVoices) {
-      lay->resize(_numFrames);
+      lay->resize(numframes);
     }
   }
+  _numFrames = numframes;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

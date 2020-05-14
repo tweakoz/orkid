@@ -9,6 +9,8 @@
 
 namespace ork::audio::singularity {
 
+static synth_ptr_t the_synth = synth::instance();
+
 ///////////////////////////////////////////////////////////////////////////////
 
 layer::layer()
@@ -60,7 +62,7 @@ void layer::retain() {
 void layer::release() {
   if ((--_keepalive) == 0) {
     // printf( "LAYER<%p> DONE\n", this );
-    synth::instance()->freeLayer(this);
+    the_synth->freeLayer(this);
   }
   assert(_keepalive >= 0);
   // printf( "layer<%p> release cnt<%d>\n", this, _keepalive );
@@ -86,7 +88,7 @@ void layer::compute(outputBuffer& obuf) {
   float* outl    = obuf._leftBuffer;
   float* outr    = obuf._rightBuffer;
 
-  float dt = float(inumframes) / synth::instance()->_sampleRate;
+  float dt = float(inumframes) / the_synth->_sampleRate;
 
   //////////////////////////////////////
   // update controllers
@@ -168,13 +170,13 @@ void layer::compute(outputBuffer& obuf) {
   ////////////////////////////////////////
 
   if (true) {
-    bool bypassDSP     = synth::instance()->_bypassDSP;
+    bool bypassDSP     = the_synth->_bypassDSP;
     auto lastblock     = _alg->lastBlock();
     bool doBlockStereo = bypassDSP //
                              ? false
                              : lastblock ? (lastblock->numOutputs() == 2) : false;
 
-    float synsr = synth::instance()->_sampleRate;
+    float synsr = the_synth->_sampleRate;
 
     outputBuffer laybuf;
 
@@ -190,7 +192,7 @@ void layer::compute(outputBuffer& obuf) {
     bool do_sine  = false;
     bool do_input = false;
 
-    switch (synth::instance()->_genmode) {
+    switch (the_synth->_genmode) {
       case 1: // force sine
         do_sine  = true;
         do_noise = false;
@@ -213,7 +215,7 @@ void layer::compute(outputBuffer& obuf) {
         lyroutr[i] = 0.0f;
       }
     } else if (do_input) {
-      auto ibuf = synth::instance()->_ibuf._leftBuffer;
+      auto ibuf = the_synth->_ibuf._leftBuffer;
       for (int i = 0; i < inumframes; i++) {
         float o    = ibuf[i] * 8.0f;
         lyroutl[i] = o;
@@ -273,16 +275,17 @@ void layer::compute(outputBuffer& obuf) {
     // oscope
     /////////////////
 
-    if (this == synth::instance()->_hudLayer) {
+    if (this == the_synth->_hudLayer) {
       _HAF._oscopebuffer.resize(inumframes);
       _HAF._oscopesync.resize(inumframes);
       ///////////////////////////////////////////////
       // find oscope sync source
       ///////////////////////////////////////////////
+
       scopesynctrack_ptr_t syncsource = nullptr;
       int istage                      = 0;
       _alg->forEachStage([&](dspstage_ptr_t stage) {
-        bool ena = synth::instance()->_stageEnable[istage];
+        bool ena = the_synth->_stageEnable[istage];
         if (ena) {
           int iblock = 0;
           stage->forEachBlock([&](dspblk_ptr_t block) {
@@ -322,7 +325,7 @@ void layer::compute(outputBuffer& obuf) {
       _HAF._baseserial = _num_sent_to_scope;
       _num_sent_to_scope += inumframes;
       ///////////////////////////////////////////////
-      synth::instance()->_hudbuf.push(_HAF);
+      the_synth->_hudbuf.push(_HAF);
     }
   }
 
@@ -332,7 +335,7 @@ void layer::compute(outputBuffer& obuf) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool layer::isHudLayer() const {
-  return (this == synth::instance()->_hudLayer);
+  return (this == the_synth->_hudLayer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -352,14 +355,14 @@ controller_t layer::getController(const std::string& srcn) const {
   else if (srcn == "MPress") {
     auto state = new float(0);
     return [this, state]() {
-      float v  = synth::instance()->_doPressure;
+      float v  = the_synth->_doPressure;
       (*state) = (*state) * 0.99 + v * 0.01;
       return (*state);
     };
   } else if (srcn == "MWheel") {
     auto state = new float(0);
     return [this, state]() {
-      float v  = synth::instance()->_doModWheel;
+      float v  = the_synth->_doModWheel;
       (*state) = (*state) * 0.99 + v * 0.01;
       return (*state);
     };
@@ -467,7 +470,7 @@ void layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
   _curnote       = note;
   _LayerData     = ld;
   _layerGain     = 1.0f; // ld->_outputGain;
-  _masterGain    = synth::instance()->_masterGain;
+  _masterGain    = the_synth->_masterGain;
 
   _curvel = vel;
 

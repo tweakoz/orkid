@@ -346,8 +346,6 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
 
   int inumframes = koscopelength;
 
-  // const float* ldata = _oscopebuffer;
-
   MTXI->PushUIMatrix(width, height);
 
   DrawOscope(

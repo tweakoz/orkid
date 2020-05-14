@@ -6,7 +6,8 @@
 #include "konoff.h"
 
 namespace ork::audio::singularity {
-static const int koscopelength = 4096;
+static const int koscopelength   = 1 << 12;
+static const int koscopelengthm1 = koscopelength - 1;
 
 struct lfoframe {
   int _index           = 0;

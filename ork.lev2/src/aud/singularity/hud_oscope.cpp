@@ -15,7 +15,8 @@ void DrawOscope(
     fvec2 xy,
     fvec2 wh) { //
 
-  auto hudl = synth::instance()->_hudLayer;
+  auto hudl   = synth::instance()->_hudLayer;
+  double time = synth::instance()->_timeaccum;
 
   if (false == (hudl && hudl->_LayerData))
     return;
@@ -77,12 +78,21 @@ void DrawOscope(
   // oscilloscope trace
   /////////////////////////////////////////////
 
-  int64_t trakoff = HAF._baseserial << 16;
+  double dtrack              = HAF._baseserial; // / 48000.0f;
+  static uint64_t trackaccum = 0;
+
+  uint64_t trakoff = (uint64_t(dtrack) << 16) + trackaccum;
+
+  //
+  trackaccum += ((1 << 16) + synth::instance()->_ostrack);
+
   //_HAF._trackoffset += ;
 
-  auto mapI = [&](int i) -> int {
-    int j = (i + (trakoff >> 16)) % koscopelength;
-    trakoff += synth::instance()->_ostrack;
+  auto syn     = synth::instance();
+  auto ostrack = syn->_ostrack;
+  auto mapI    = [&](int i) -> int {
+    int j = (i + HAF._baseserial) & koscopelengthm1;
+    // trakoff += ostrack;
 
     assert(j >= 0);
     assert(j < koscopelength);

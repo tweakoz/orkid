@@ -12,6 +12,8 @@
 
 namespace ork::audio::singularity {
 
+static synth_ptr_t the_synth = synth::instance();
+
 dspblk_ptr_t createDspBlock(dspblkdata_constptr_t dbd);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -31,7 +33,7 @@ dspblk_ptr_t Alg::lastBlock() const {
       for( int i=0; i<kmaxdspblocksperlayer; i++ )
           if( _block[i] )
           {
-              bool ena = synth::instance()->_stageEnable[i];
+              bool ena = the_synth->_stageEnable[i];
               if( ena )
                   r = _block[i];
           }
@@ -82,7 +84,7 @@ void Alg::keyOn(DspKeyOnInfo& koi) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Alg::intoDspBuf(const outputBuffer& obuf) {
-  int inumframes = synth::instance()->_numFrames;
+  int inumframes = the_synth->_numFrames;
   _layer->_dspbuffer->resize(inumframes);
   float* lefbuf = obuf._leftBuffer;
   float* rhtbuf = obuf._rightBuffer;
@@ -95,7 +97,7 @@ void Alg::intoDspBuf(const outputBuffer& obuf) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Alg::intoOutBuf(outputBuffer& obuf, int inumo) {
-  int inumframes = synth::instance()->_numFrames;
+  int inumframes = the_synth->_numFrames;
   _layer->_dspbuffer->resize(inumframes);
   float* lefbuf = obuf._leftBuffer;
   float* rhtbuf = obuf._rightBuffer;
@@ -135,7 +137,7 @@ void Alg::compute(outputBuffer& obuf) {
   bool touched    = false;
   int inumoutputs = 1;
   int istage      = 0;
-  auto syn        = synth::instance();
+  auto syn        = the_synth;
   forEachStage([&](dspstage_ptr_t stage) {
     bool ena = syn->_stageEnable[istage];
     if (ena)

@@ -34,8 +34,10 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 PaStream* pa_stream      = nullptr;
 const bool ENABLE_OUTPUT = true; // allow disabling for long debug sessions
-const int NUMFRAMES      = 0;
+const int NUMFRAMES      = 256;
 ///////////////////////////////////////////////////////////////////////////////
+
+static synth_ptr_t the_synth = synth::instance();
 
 static int patestCallback(
     const void* inputBuffer,
@@ -49,8 +51,8 @@ static int patestCallback(
   unsigned int i;
   (void)inputBuffer; /* Prevent unused variable warning. */
 
-  synth::instance()->compute(framesPerBuffer, inputBuffer);
-  const auto& obuf = synth::instance()->_obuf;
+  the_synth->compute(framesPerBuffer, inputBuffer);
+  const auto& obuf = the_synth->_obuf;
 
   if (ENABLE_OUTPUT) {
     for (i = 0; i < framesPerBuffer; i++) {
@@ -70,11 +72,10 @@ void startupAudio() {
 
   float SR = getSampleRate();
 
-  synth::instance()->setSampleRate(SR);
-  synth::instance()->_masterGain = 1.0f;
-  synth::instance()->_numFrames  = NUMFRAMES;
+  the_synth->setSampleRate(SR);
+  the_synth->_masterGain = 1.0f;
 
-  printf("SingularitySynth<%p> SR<%g>\n", synth::instance().get(), SR);
+  printf("SingularitySynth<%p> SR<%g>\n", the_synth.get(), SR);
   // loadPrograms();
 
   auto err = Pa_Initialize();
@@ -103,7 +104,7 @@ void startupAudio() {
   err = Pa_StartStream(pa_stream);
   OrkAssert(err == paNoError);
 
-  synth::instance()->resetFenables();
+  the_synth->resetFenables();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
