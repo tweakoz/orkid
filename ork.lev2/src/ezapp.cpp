@@ -2,6 +2,7 @@
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/dbgfontman.h>
+#include <ork/lev2/vr/vr.h>
 #include <QtWidgets/QStyle>
 #include <QtWidgets/QDesktopWidget>
 
@@ -20,6 +21,8 @@ QtAppInit::QtAppInit() {
   _argv   = (char*)_arg.c_str();
   _argvp  = &_argv;
   _fsinit = std::make_shared<StdFileSystemInitalizer>(_argc, _argvp);
+  // auto& VRDEV = orkidvr::device();
+  // usleep(1 << 20);
 }
 QtAppInit::QtAppInit(int argc, char** argv) {
   _argc   = argc;

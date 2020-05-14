@@ -283,10 +283,35 @@ void OpenVrDevice::_processControllerEvents() {
     ////////////////////////////////////////////////////////////////////////////
     // left/right controller assignment heuristic
     ////////////////////////////////////////////////////////////////////////////
+
     for (auto& controller_item : _controllers) {
+      int id                    = controller_item.first;
       auto controller           = controller_item.second;
       controller->_world_matrix = tracking2world(controller->_tracking_matrix);
+
+      bool is_base = controller->_world_matrix == tracking2world(fmtx4());
+      if (false == is_base) {
+        if (controller->_association_state < 0) {
+          fvec4 cpos = controller->_tracking_matrix.GetTranslation();
+          fvec4 rpos = cpos.Transform(_hmd_trackingMatrix.inverse());
+          float xpos = rpos.x;
+          controller->_xwpos += xpos * 0.001;
+          controller->_xwpos *= 0.9999;
+
+          if (abs(controller->_xwpos) > 2.5) {
+            controller->_association_state = 1;
+            if (controller->_xwpos > 2.5) {
+              _rightControllerDeviceIndex = id;
+            } else if (controller->_xwpos < -2.5) {
+              _leftControllerDeviceIndex = id;
+            }
+          }
+          printf("updating controller<%d> xpos<%g>\n", id, controller->_xwpos);
+          // printf("mtxstr<%s>\n", mtxstr.c_str());
+        }
+      }
     }
+
     ////////////////////////////////////////////////////////////////////////////
     // send input to input manager
     ////////////////////////////////////////////////////////////////////////////
@@ -431,10 +456,12 @@ void OpenVrDevice::_updatePoses() {
         switch (role) {
           case _ovr::ETrackedControllerRole::TrackedControllerRole_LeftHand: {
             _leftControllerDeviceIndex = dev_index;
+            OrkAssert(false);
             break;
           }
           case _ovr::ETrackedControllerRole::TrackedControllerRole_RightHand: {
             _rightControllerDeviceIndex = dev_index;
+            OrkAssert(false);
             break;
           }
         }
@@ -456,6 +483,7 @@ void OpenVrDevice::_updatePoses() {
             break;
           case _ovr::TrackedDeviceClass_HMD:
             _devclass[dev_index] = 'H';
+            _hmd_trackingMatrix  = orkmtx;
             break;
           case _ovr::TrackedDeviceClass_Invalid:
             _devclass[dev_index] = 'I';

@@ -24,6 +24,7 @@ namespace ork::lev2::orkidvr {
 ////////////////////////////////////////////////////////////////////////////////
 
 struct ControllerState {
+  fmtx4 _abs_matrix;
   fmtx4 _tracking_matrix;
   fmtx4 _world_matrix;
   bool _button1Down         = false;
@@ -45,6 +46,10 @@ struct ControllerState {
   bool _button2GatedUp       = false;
   bool _buttonThumbGatedUp   = false;
   bool _triggerGatedUp       = false;
+
+  float _xwpos = 0.0f;
+
+  int _association_state = -1;
 };
 
 using controllerstate_ptr_t = std::shared_ptr<ControllerState>;
@@ -105,6 +110,7 @@ struct Device {
   std::map<int, controllerstate_ptr_t> _controllers;
   bool _active;
   bool _supportsStereo;
+  fmtx4 _hmd_trackingMatrix;
   fmtx4 _hmdMatrix;
   fmtx4 _rotMatrix;
   fmtx4 _baseMatrix;
