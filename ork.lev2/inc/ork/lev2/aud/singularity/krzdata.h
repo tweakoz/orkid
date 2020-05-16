@@ -204,6 +204,18 @@ struct LayerData {
 
   dspstagedata_ptr_t appendStage();
 
+  template <typename T>                                           //
+  inline std::shared_ptr<T> appendController(std::string named) { //
+    auto controlblock                    = std::make_shared<ControlBlockData>();
+    auto controller                      = std::make_shared<T>();
+    controller->_name                    = named;
+    controlblock->_cdata[0]              = controller.get();
+    _ctrlBlocks[_controlblockset.size()] = controlblock.get();
+    _controlblockset.insert(controlblock);
+    _controllerset.insert(controller);
+    return controller;
+  }
+
   const KeyMap* _keymap   = nullptr;
   int _numdspblocks       = 0;
   int _loKey              = 0;
@@ -216,6 +228,9 @@ struct LayerData {
   bool _ignRels           = false;
   bool _atk1Hold          = false; // ThrAtt
   bool _atk3Hold          = false; // TilDec
+
+  std::set<controlblockdata_ptr_t> _controlblockset;
+  std::set<controllerdata_ptr_t> _controllerset;
 
   ControlBlockData* _ctrlBlocks[kmaxctrlblocks] = {0, 0, 0, 0, 0, 0, 0, 0};
 };

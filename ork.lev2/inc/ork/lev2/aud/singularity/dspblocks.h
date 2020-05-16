@@ -64,7 +64,7 @@ struct DspParamData {
   float _velTrack       = 0.0f;
   int _keystartNote     = 60;
   bool _keystartBipolar = true; // false==unipolar
-  evalit_t _evaluator;
+  // evalit_t _evaluator;
   BlockModulationData _mods;
 };
 
@@ -93,6 +93,8 @@ struct DspBlockData {
   //
 
   std::string _dspBlock;
+
+  DspParamData& addParam();
 
   int _numParams  = 0;
   float _inputPad = 1.0f;

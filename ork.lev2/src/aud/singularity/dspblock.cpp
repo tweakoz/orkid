@@ -7,6 +7,13 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+DspParamData& DspBlockData::addParam() {
+  OrkAssert(_numParams < kmaxparmperblock - 1);
+  return _paramd[_numParams++];
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 DspBuffer::DspBuffer()
     : _maxframes(0)
     , _numframes(0) {
@@ -47,6 +54,8 @@ DspBlock::DspBlock(dspblkdata_constptr_t dbd)
     : _dbd(dbd)
     , _numParams(dbd->_numParams)
     , _numFrames(0) {
+
+  printf("NUMP<%d>\n", _numParams);
 }
 
 size_t DspBlock::numFrames() const {
@@ -82,6 +91,7 @@ FPARAM DspBlock::initFPARAM(const DspParamData& dpd) {
 
 void DspBlock::keyOn(const DspKeyOnInfo& koi) {
   _layer = koi._layer;
+  printf("keyOn NUMP<%d>\n", _numParams);
 
   for (int i = 0; i < _numParams; i++) {
     _param[i] = initFPARAM(_dbd->_paramd[i]);

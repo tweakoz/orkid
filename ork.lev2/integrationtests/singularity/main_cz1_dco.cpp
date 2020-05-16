@@ -11,11 +11,13 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   // allocate components
   //////////////////////////////////////////////////////////////////////////////
-  auto program = std::make_shared<ProgramData>();
-  auto czdata  = std::make_shared<CzOscData>();
-  auto keymap  = std::make_shared<KeyMap>();
-  auto CB0     = std::make_shared<ControlBlockData>();
-  auto AE      = std::make_shared<RateLevelEnvData>();
+  auto program   = std::make_shared<ProgramData>();
+  auto layerdata = program->newLayer();
+  auto czdata    = std::make_shared<CzOscData>();
+  auto keymap    = std::make_shared<KeyMap>();
+  auto AE        = layerdata->appendController<RateLevelEnvData>("MYENV");
+  auto LFO1      = layerdata->appendController<LfoData>("MYLFO1");
+  auto LFO2      = layerdata->appendController<LfoData>("MYLFO2");
   //////////////////////////////////////
   // set names
   //////////////////////////////////////
@@ -27,26 +29,31 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   // create layer
   //////////////////////////////////////
-  auto layerdata                     = program->newLayer();
   layerdata->_algdata->_krzAlgIndex  = 1;
   layerdata->_algdata->_name         = "CZTEST";
   layerdata->_keymap                 = keymap.get();
   layerdata->_kmpBlock._keymap       = keymap.get();
-  layerdata->_ctrlBlocks[0]          = CB0.get();
   layerdata->_envCtrlData._useNatEnv = false;
   //////////////////////////////////////
   // set envelope
   //////////////////////////////////////
-  CB0->_cdata[0] = AE.get();
-  AE->_name      = "AMPENV";
-  AE->_ampenv    = true;
-  AE->_segments.push_back({.5, .7}); // atk1
+  AE->_ampenv = true;
+  AE->_segments.push_back({.3, .7}); // atk1
   AE->_segments.push_back({1, 1});   // atk2
-  AE->_segments.push_back({0, 0});   // atk3
-  AE->_segments.push_back({0, 0});   // dec
+  AE->_segments.push_back({1, .3});  // atk3
+  AE->_segments.push_back({1, .5});  // dec
   AE->_segments.push_back({2, 0});   // rel1
   AE->_segments.push_back({0, 0});   // rel2
   AE->_segments.push_back({0, 0});   // rel3
+  //////////////////////////////////////
+  // set LFO
+  //////////////////////////////////////
+  LFO1->_minRate = 0.25;
+  LFO1->_maxRate = 0.25;
+  LFO1->_shape   = "Sine";
+  LFO2->_minRate = 3.3;
+  LFO2->_maxRate = 3.3;
+  LFO2->_shape   = "Sine";
   //////////////////////////////////////
   // setup dsp graph
   //////////////////////////////////////
@@ -60,6 +67,13 @@ int main(int argc, char** argv) {
   auto amp = stage1->appendBlock();
   CZX::initBlock(osc, czdata);
   AMP::initBlock(amp);
+  auto& modulation_index_param      = osc->_paramd[1]._mods;
+  modulation_index_param._src1      = "MYENV";
+  modulation_index_param._src1Depth = 1.0;
+  modulation_index_param._src2      = "MYLFO1";
+  // modulation_index_param._src2DepthCtrl = "MYLFO2";
+  modulation_index_param._src2MinDepth = 0.5;
+  modulation_index_param._src2MaxDepth = 0.1;
   //////////////////////////////////////
   // play a test note
   //////////////////////////////////////

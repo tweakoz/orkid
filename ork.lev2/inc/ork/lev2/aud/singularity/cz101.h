@@ -77,13 +77,12 @@ struct CZX final : public DspBlock {
 
   int64_t _phase;
   int64_t _resophase;
-  int64_t _pbIndexNext;
-  int64_t _pbIncrBase;
-
-  int64_t _mIndex;
-  int64_t _mIndexNext;
-  int64_t _mIncrBase;
-
+  int64_t _resostate    = 0;
+  int64_t _resosyncstep = 0;
+  int64_t _resonewphase = 0;
+  double _resobip       = 0.0;
+  double _syncsum       = 0.0;
+  double _blepaccum     = 0.0;
   float _prevOutput;
   oschardsynctrack_ptr_t _hsynctrack;
   scopesynctrack_ptr_t _scopetrack;
