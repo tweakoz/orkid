@@ -302,7 +302,7 @@ struct fm4vcpriv {
   // op<1> ol<88> tl<11> mi<9.689997>
   // op<0> ol<73> tl<26> mi<2.641754>
   //////////////////////////////////////////////////////////////
-  void keyOn(layer* l) {
+  void keyOn(Layer* l) {
     _curlayer = l;
     _newnote  = true;
     for (int i = 0; i < 4; i++) {
@@ -346,7 +346,7 @@ struct fm4vcpriv {
   float _olev[4];
   bool _newnote = false;
   int _note;
-  layer* _curlayer;
+  Layer* _curlayer;
 };
 
 fm4syn::fm4syn() {

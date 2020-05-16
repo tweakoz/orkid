@@ -13,7 +13,7 @@ static synth_ptr_t the_synth = synth::instance();
 
 ///////////////////////////////////////////////////////////////////////////////
 
-layer::layer()
+Layer::Layer()
     : _LayerData(nullptr)
     , _layerGain(0.25)
     , _curPitchOffsetInCents(0.0f)
@@ -23,8 +23,7 @@ layer::layer()
     , _useNatEnv(false)
     , _alg(nullptr)
     , _doNoise(false)
-    , _keepalive(0)
-    , _AENV(nullptr) {
+    , _keepalive(0) {
   // printf( "Layer Init<%p>\n", this );
   _dspbuffer = std::make_shared<DspBuffer>();
 
@@ -34,7 +33,7 @@ layer::layer()
   }
 }
 
-layer::~layer() {
+Layer::~Layer() {
   for (int i = 0; i < kmaxctrlblocks; i++)
     if (_ctrlBlock[i])
       delete _ctrlBlock[i];
@@ -42,7 +41,7 @@ layer::~layer() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void layer::resize(int numframes) {
+void Layer::resize(int numframes) {
   for (int i = 0; i < kmaxdspblocksperstage; i++) {
     _oschsynctracks[i]->resize(numframes);
     _scopesynctracks[i]->resize(numframes);
@@ -51,7 +50,7 @@ void layer::resize(int numframes) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void layer::retain() {
+void Layer::retain() {
   ++_keepalive;
 
   // printf( "layer<%p> retain cnt<%d>\n", this, _keepalive );
@@ -59,7 +58,7 @@ void layer::retain() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void layer::release() {
+void Layer::release() {
   if ((--_keepalive) == 0) {
     // printf( "LAYER<%p> DONE\n", this );
     the_synth->freeLayer(this);
@@ -70,7 +69,7 @@ void layer::release() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void layer::compute(outputBuffer& obuf) {
+void Layer::compute(outputBuffer& obuf) {
   _HAF._items.clear();
 
   ///////////////////////
@@ -319,13 +318,24 @@ void layer::compute(outputBuffer& obuf) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool layer::isHudLayer() const {
+bool Layer::isHudLayer() const {
   return (this == the_synth->_hudLayer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-controller_t layer::getController(const std::string& srcn) const {
+controller_t Layer::getController(controllerdata_constptr_t cdat) const {
+  auto it = _controld2iMap.find(cdat);
+  if (it != _controld2iMap.end()) {
+    auto cinst = it->second;
+    return [cinst]() { return cinst->_curval; };
+  }
+  return [this]() { return 0.0f; };
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+controller_t Layer::getController(const std::string& srcn) const {
   auto it = _controlMap.find(srcn);
   if (it != _controlMap.end()) {
     auto cinst = it->second;
@@ -395,7 +405,7 @@ controller_t layer::getController(const std::string& srcn) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-controller_t layer::getSRC1(const BlockModulationData& mods) {
+controller_t Layer::getSRC1(const BlockModulationData& mods) {
   auto src1       = this->getController(mods._src1);
   float src1depth = mods._src1Depth;
 
@@ -408,7 +418,7 @@ controller_t layer::getSRC1(const BlockModulationData& mods) {
   return it;
 }
 
-controller_t layer::getSRC2(const BlockModulationData& mods) {
+controller_t Layer::getSRC2(const BlockModulationData& mods) {
   auto src2      = this->getController(mods._src2);
   auto depthcon  = this->getController(mods._src2DepthCtrl);
   float mindepth = mods._src2MinDepth;
@@ -426,7 +436,7 @@ controller_t layer::getSRC2(const BlockModulationData& mods) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
+void Layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
   std::lock_guard<std::mutex> lock(_mutex);
 
   reset();
@@ -466,10 +476,6 @@ void layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
   this->retain();
 
   /////////////////////////////////////////////
-
-  this->_AENV = this->_USERAMPENV;
-
-  /////////////////////////////////////////////
   // controllers
   /////////////////////////////////////////////
 
@@ -502,7 +508,7 @@ void layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void layer::keyOff() {
+void Layer::keyOff() {
   _lyrPhase = 1;
   this->release();
 
@@ -526,7 +532,7 @@ void layer::keyOff() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void layer::reset() {
+void Layer::reset() {
   _LayerData = nullptr;
   _useNatEnv = false;
   _curnote   = 0;

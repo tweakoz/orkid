@@ -317,12 +317,12 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     AMP::initBlock(amp);
     /////////////////////////////////////////////////
     auto& modulation_index_param      = osc->_paramd[1]._mods;
-    modulation_index_param._src1      = "DCWENV";
+    modulation_index_param._src1      = DCWENV;
     modulation_index_param._src1Depth = 1.0;
     /////////////////////////////////////////////////
     auto& amp_param = amp->addParam();
     amp_param.useDefaultEvaluator();
-    amp_param._mods._src1      = "DCAENV";
+    amp_param._mods._src1      = DCAENV;
     amp_param._mods._src1Depth = 1.0;
     /////////////////////////////////////////////////
     return layerdata;

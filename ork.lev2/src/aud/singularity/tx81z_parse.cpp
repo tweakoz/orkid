@@ -282,11 +282,10 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
       ////////////////////////////
 
-      auto AE        = new RateLevelEnvData;
-      CB0->_cdata[j] = AE;
-      AE->_name      = ork::FormatString("OP%d.Amp", j);
-      AE->_ampenv    = true; //(j==0);
-      AE->_envType   = RlEnvType::ERLTYPE_DEFAULT;
+      auto AE      = CB0->addController<RateLevelEnvData>();
+      AE->_name    = ork::FormatString("OP%d.Amp", j);
+      AE->_ampenv  = true; //(j==0);
+      AE->_envType = RlEnvType::ERLTYPE_DEFAULT;
 
       int atktime  = 31 - opd._atkRate;
       int dectime  = 31 - opd._dec1Rate;

@@ -11,10 +11,10 @@ namespace ork::audio::singularity {
 constexpr int KPARALLELBLOCKMAX = 4; // max number of parallel blocks per layer
 ///////////////////////////////////////////////////////////////////////////////
 
-struct layer {
+struct Layer {
 
-  layer();
-  ~layer();
+  Layer();
+  ~Layer();
 
   void resize(int numframes);
 
@@ -23,6 +23,7 @@ struct layer {
   void keyOff();
   void reset();
   controller_t getController(const std::string& n) const;
+  controller_t getController(controllerdata_constptr_t cdat) const;
 
   controller_t getSRC1(const BlockModulationData& mods);
   controller_t getSRC2(const BlockModulationData& mods);
@@ -55,14 +56,13 @@ struct layer {
   float _sinrepPH = 0.0f;
   bool _doNoise;
   float _masterGain = 0.0f;
-  float* _AENV;
-  float _USERAMPENV[1024];
   float _layerTime;
   dspblk_ptr_t _pchBlock;
 
   ControlBlockInst* _ctrlBlock[kmaxctrlblocks] = {0, 0, 0, 0, 0, 0, 0, 0};
 
   std::map<std::string, ControllerInst*> _controlMap;
+  std::map<controllerdata_constptr_t, ControllerInst*> _controld2iMap;
   alg_ptr_t _alg;
 
   outputBuffer _layerObuf;

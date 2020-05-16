@@ -32,9 +32,9 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct BlockModulationData {
-  std::string _src1          = "OFF";
-  std::string _src2          = "OFF";
-  std::string _src2DepthCtrl = "OFF";
+  controllerdata_ptr_t _src1;
+  controllerdata_ptr_t _src2;
+  controllerdata_ptr_t _src2DepthCtrl;
 
   float _src1Depth    = 0.0f;
   float _src2MinDepth = 0.0f;
@@ -134,7 +134,7 @@ struct DspBlock {
   size_t numFrames() const;
 
   void keyOn(const DspKeyOnInfo& koi);
-  void keyOff(layer* l);
+  void keyOff(Layer* l);
 
   virtual void compute(DspBuffer& dspbuf) = 0;
 
@@ -159,7 +159,7 @@ struct DspBlock {
   int _numParams;
   int numOutputs() const;
   int numInputs() const;
-  layer* _layer      = nullptr;
+  Layer* _layer      = nullptr;
   size_t _numFrames  = 0;
   int _verticalIndex = -1;
 
@@ -225,7 +225,7 @@ struct Alg final {
 
   const AlgData& _algdata;
 
-  layer* _layer;
+  Layer* _layer;
 };
 
 } // namespace ork::audio::singularity

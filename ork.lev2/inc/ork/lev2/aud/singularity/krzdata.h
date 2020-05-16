@@ -19,7 +19,7 @@ struct EnvPoint {
 struct ControllerInst;
 
 struct ControllerData {
-  virtual ControllerInst* instantiate() const = 0;
+  virtual ControllerInst* instantiate(Layer* layer) const = 0;
   virtual ~ControllerData() {
   }
 
@@ -38,7 +38,7 @@ enum struct RlEnvType {
 
 struct RateLevelEnvData : public ControllerData {
   RateLevelEnvData();
-  ControllerInst* instantiate() const final;
+  ControllerInst* instantiate(Layer* layer) const final;
   bool isBiPolar() const;
 
   std::vector<EnvPoint> _segments;
@@ -57,7 +57,7 @@ struct natenvseg {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct AsrData : public ControllerData {
-  ControllerInst* instantiate() const final;
+  ControllerInst* instantiate(Layer* layer) const final;
 
   std::string _trigger;
   std::string _mode;
@@ -140,7 +140,7 @@ struct KeyMap {
 
 struct LfoData : public ControllerData {
   LfoData();
-  ControllerInst* instantiate() const final;
+  ControllerInst* instantiate(Layer* layer) const final;
 
   float _initialPhase;
   float _minRate;
@@ -152,7 +152,7 @@ struct LfoData : public ControllerData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FunData : public ControllerData {
-  ControllerInst* instantiate() const final;
+  ControllerInst* instantiate(Layer* layer) const final;
 
   std::string _a, _b, _op;
 };
@@ -187,7 +187,14 @@ struct EnvCtrlData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ControlBlockData {
-  const ControllerData* _cdata[kmaxctrlperblock] = {0, 0, 0, 0};
+  template <typename T> std::shared_ptr<T> addController() {
+    OrkAssert((_numcontrollers + 1) <= kmaxctrlperblock);
+    auto c                    = std::make_shared<T>();
+    _cdata[_numcontrollers++] = c;
+    return c;
+  }
+  controllerdata_constptr_t _cdata[kmaxctrlperblock];
+  size_t _numcontrollers = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -209,7 +216,7 @@ struct LayerData {
     auto controlblock                    = std::make_shared<ControlBlockData>();
     auto controller                      = std::make_shared<T>();
     controller->_name                    = named;
-    controlblock->_cdata[0]              = controller.get();
+    controlblock->_cdata[0]              = controller;
     _ctrlBlocks[_controlblockset.size()] = controlblock.get();
     _controlblockset.insert(controlblock);
     _controllerset.insert(controller);

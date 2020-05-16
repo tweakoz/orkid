@@ -9,15 +9,15 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ControllerInst* FunData::instantiate() const // final
+ControllerInst* FunData::instantiate(Layer* l) const // final
 {
-  return new FunInst(this);
+  return new FunInst(this, l);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FunInst::FunInst(const FunData* data)
-    : ControllerInst()
+FunInst::FunInst(const FunData* data, Layer* l)
+    : ControllerInst(l)
     , _data(data) {
   _a  = []() -> float { return 0.0f; };
   _b  = []() -> float { return 0.0f; };

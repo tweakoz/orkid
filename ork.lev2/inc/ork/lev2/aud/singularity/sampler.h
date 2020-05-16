@@ -15,7 +15,7 @@ struct NatEnv {
   void initSeg(int iseg);
 
   std::vector<natenvseg> _natenvseg;
-  layer* _layer;
+  Layer* _layer;
   int _curseg;
   int _prvseg;
   int _numseg;
@@ -103,7 +103,7 @@ struct sampleOsc {
 
   NatEnv _natAmpEnv;
 
-  layer* _lyr;
+  Layer* _lyr;
   bool _released;
   const kmregion* _kmregion;
 };

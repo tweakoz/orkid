@@ -70,7 +70,7 @@ struct ItemDrawReq {
   int ldi;
   int ienv;
   lyrdata_constptr_t ld;
-  const layer* l;
+  const Layer* l;
   ork::svar256_t _data;
   Rect rect;
 

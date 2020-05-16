@@ -41,7 +41,6 @@ void AMP_MONOIO::compute(DspBuffer& dspbuf) // final
 
   int inumframes = _numFrames;
 
-  float* aenv    = _layer->_AENV;
   const auto& LD = _layer->_LayerData;
 
   // printf( "amp numinp<%d>\n", numInputs() );
@@ -54,7 +53,7 @@ void AMP_MONOIO::compute(DspBuffer& dspbuf) // final
     float linG = decibel_to_linear_amp_ratio(_filt);
     linG *= SingleLinG;
     float inp     = inputchan[i];
-    float ae      = aenv[i];
+    float ae      = _param[1].eval();
     outputchan[i] = clip_float(inp * linG * _dbd->_inputPad * ae, kminclip, kmaxclip);
   }
   _fval[0] = _filt;
@@ -155,8 +154,7 @@ void PLUSAMP::compute(DspBuffer& dspbuf) // final
   float* ubuf    = getOutBuf(dspbuf, 0);
   float* lbuf    = getOutBuf(dspbuf, 1);
 
-  float* aenv = _layer->_AENV;
-  auto LD     = _layer->_LayerData;
+  auto LD = _layer->_LayerData;
 
   float LinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
 
@@ -167,11 +165,12 @@ void PLUSAMP::compute(DspBuffer& dspbuf) // final
       float linG = decibel_to_linear_amp_ratio(_filt);
       float inU  = ubuf[i] * _dbd->_inputPad * LinG;
       float inL  = lbuf[i] * _dbd->_inputPad * LinG;
-      float ae   = aenv[i];
-      float res  = (inU + inL) * 0.5 * linG * ae * 2.0;
-      res        = clip_float(res, -2, 2);
-      ubuf[i]    = res;
-      lbuf[i]    = res;
+      float ae   = _param[1].eval();
+      // float ae   = aenv[i];
+      float res = (inU + inL) * 0.5 * linG * ae * 2.0;
+      res       = clip_float(res, -2, 2);
+      ubuf[i]   = res;
+      lbuf[i]   = res;
     }
   _fval[0] = _filt;
 }
@@ -195,9 +194,8 @@ void XAMP::compute(DspBuffer& dspbuf) // final
   float* ubuf    = getOutBuf(dspbuf, 0);
   float* lbuf    = getOutBuf(dspbuf, 1);
 
-  float* aenv = _layer->_AENV;
-  auto LD     = _layer->_LayerData;
-  float LinG  = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
+  auto LD    = _layer->_LayerData;
+  float LinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
 
   if (1)
     for (int i = 0; i < inumframes; i++) {
@@ -205,10 +203,11 @@ void XAMP::compute(DspBuffer& dspbuf) // final
       float linG = decibel_to_linear_amp_ratio(_filt);
       float inU  = ubuf[i] * _dbd->_inputPad;
       float inL  = lbuf[i] * _dbd->_inputPad;
-      float ae   = aenv[i];
-      float res  = (inU * inL) * linG * ae * LinG;
-      lbuf[i]    = res;
-      ubuf[i]    = res;
+      // float ae   = aenv[i];
+      float ae  = _param[1].eval();
+      float res = (inU * inL) * linG * ae * LinG;
+      lbuf[i]   = res;
+      ubuf[i]   = res;
     }
   _fval[0] = _filt;
 }
@@ -335,8 +334,6 @@ void AMPU_AMPL::compute(DspBuffer& dspbuf) // final
   auto u_lrmix = panBlend(_upan);
   auto l_lrmix = panBlend(_lpan);
 
-  float* aenv = _layer->_AENV;
-
   const auto& layd = _layer->_LayerData;
   float LowerLinG  = decibel_to_linear_amp_ratio(layd->_channelGains[0]);
   float UpperLinG  = decibel_to_linear_amp_ratio(layd->_channelGains[1]);
@@ -349,7 +346,7 @@ void AMPU_AMPL::compute(DspBuffer& dspbuf) // final
       float linGL = decibel_to_linear_amp_ratio(_filtL);
       float inU   = ubuf[i] * _dbd->_inputPad;
       float inL   = lbuf[i] * _dbd->_inputPad;
-      float ae    = aenv[i];
+      float ae    = _param[1].eval();
       float resU  = inU * linGU * ae * UpperLinG;
       float resL  = inL * linGL * ae * LowerLinG;
 
@@ -447,9 +444,8 @@ void BANGAMP::compute(DspBuffer& dspbuf) // final
   float* ubuf    = getOutBuf(dspbuf, 0);
   float* lbuf    = getOutBuf(dspbuf, 1);
 
-  float* aenv = _layer->_AENV;
-  auto LD     = _layer->_LayerData;
-  float LinG  = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
+  auto LD    = _layer->_LayerData;
+  float LinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
 
   // printf( "frq<%f> _phaseInc<%lld>\n", frq, _phaseInc );
   if (1)
@@ -458,7 +454,7 @@ void BANGAMP::compute(DspBuffer& dspbuf) // final
       float linG = decibel_to_linear_amp_ratio(_smooth);
       float inU  = ubuf[i] * _dbd->_inputPad;
       float inL  = lbuf[i] * _dbd->_inputPad;
-      float ae   = aenv[i];
+      float ae   = _param[1].eval();
       float res  = (inU + inL);
       res        = shaper(res, .25) * linG * ae * LinG;
       lbuf[i]    = res;

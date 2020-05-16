@@ -12,13 +12,13 @@ namespace ork::audio::singularity {
 // 7-seg rate/level envelopes
 ///////////////////////////////////////////////////////////////////////////////
 
-ControllerInst* AsrData::instantiate() const // final
+ControllerInst* AsrData::instantiate(Layer* l) const // final
 {
-  return new AsrInst(this);
+  return new AsrInst(this, l);
 }
 
-AsrInst::AsrInst(const AsrData* data)
-    : ControllerInst()
+AsrInst::AsrInst(const AsrData* data, Layer* l)
+    : ControllerInst(l)
     , _data(data)
     , _curslope_persamp(0.0f)
     , _curseg(-1)
@@ -166,13 +166,13 @@ RateLevelEnvData::RateLevelEnvData()
     , _envType(RlEnvType::ERLTYPE_DEFAULT) {
 }
 
-ControllerInst* RateLevelEnvData::instantiate() const // final
+ControllerInst* RateLevelEnvData::instantiate(Layer* l) const // final
 {
-  return new RateLevelEnvInst(this);
+  return new RateLevelEnvInst(this, l);
 }
 
-RateLevelEnvInst::RateLevelEnvInst(const RateLevelEnvData* data)
-    : ControllerInst()
+RateLevelEnvInst::RateLevelEnvInst(const RateLevelEnvData* data, Layer* l)
+    : ControllerInst(l)
     , _data(data)
     , _curslope_persamp(0.0f)
     , _curseg(-1)

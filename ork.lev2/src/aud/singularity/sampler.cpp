@@ -324,7 +324,10 @@ void sampleOsc::keyOn(const DspKeyOnInfo& koi) {
   printf("_enableNatEnv<%d>\n", int(_enableNatEnv));
 
   if (_enableNatEnv) {
-    _lyr->_AENV = _NATENV;
+    OrkAssert(false);
+    // probably should explicity create a NatEnv controller
+    //  and bind it to AMP
+    //_lyr->_AENV = _NATENV;
     _natAmpEnv.keyOn(koi, _kmregion->_sample);
   }
 }

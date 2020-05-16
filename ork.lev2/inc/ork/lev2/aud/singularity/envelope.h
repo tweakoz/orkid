@@ -28,7 +28,7 @@ struct asrframe {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct AsrInst : public ControllerInst {
-  AsrInst(const AsrData* data);
+  AsrInst(const AsrData* data, Layer* l);
   void compute(int inumfr) final;
   void keyOn(const KeyOnInfo& KOI) final;
   void keyOff() final;
@@ -50,7 +50,7 @@ struct AsrInst : public ControllerInst {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct RateLevelEnvInst : public ControllerInst {
-  RateLevelEnvInst(const RateLevelEnvData* data);
+  RateLevelEnvInst(const RateLevelEnvData* data, Layer* l);
   void compute(int inumfr) final;
   void keyOn(const KeyOnInfo& KOI) final;
   void keyOff() final;
@@ -58,7 +58,7 @@ struct RateLevelEnvInst : public ControllerInst {
   void initSeg(int iseg);
   bool done() const;
   const RateLevelEnvData* _data;
-  layer* _layer;
+  Layer* _layer;
   int _curseg;
   float _atkAdjust;
   float _decAdjust;

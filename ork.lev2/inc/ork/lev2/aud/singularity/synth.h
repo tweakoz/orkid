@@ -24,7 +24,7 @@ struct programInst {
 
   const ProgramData* _progdata;
 
-  std::vector<layer*> _layers;
+  std::vector<Layer*> _layers;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -51,8 +51,8 @@ struct synth {
   programInst* keyOn(int note, const ProgramData* pd);
   void keyOff(programInst* p);
 
-  layer* allocLayer();
-  void freeLayer(layer* l);
+  Layer* allocLayer();
+  void freeLayer(Layer* l);
   void deactivateVoices();
 
   void onDrawHud(lev2::Context* ctx, float w, float h);
@@ -71,12 +71,12 @@ struct synth {
   float _sampleRate;
   float _dt;
 
-  std::set<layer*> _allVoices;
+  std::set<Layer*> _allVoices;
   std::set<programInst*> _allProgInsts;
 
-  std::set<layer*> _freeVoices;
-  std::set<layer*> _activeVoices;
-  std::queue<layer*> _deactiveateVoiceQ;
+  std::set<Layer*> _freeVoices;
+  std::set<Layer*> _activeVoices;
+  std::queue<Layer*> _deactiveateVoiceQ;
   std::set<programInst*> _freeProgInst;
   std::set<programInst*> _activeProgInst;
   std::map<std::string, hudsamples_t> _hudsample_map;
@@ -104,7 +104,7 @@ struct synth {
   bool _doInput     = false;
   float _masterGain = 1.0f / 2.0f;
 
-  layer* _hudLayer   = nullptr;
+  Layer* _hudLayer   = nullptr;
   bool _clearhuddata = true;
   int _numFrames     = 0;
 

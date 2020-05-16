@@ -28,7 +28,7 @@ synth::synth()
     , _ostriglev(0.99f) { //
 
   for (int i = 0; i < 256; i++) {
-    auto l = new layer();
+    auto l = new Layer();
     _allVoices.insert(l);
     _freeVoices.insert(l);
   }
@@ -78,7 +78,7 @@ void synth::tick(float dt) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-layer* synth::allocLayer() {
+Layer* synth::allocLayer() {
   auto it = _freeVoices.begin();
   assert(it != _freeVoices.end());
   auto l = *it;
@@ -92,7 +92,7 @@ layer* synth::allocLayer() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void synth::freeLayer(layer* l) {
+void synth::freeLayer(Layer* l) {
   _deactiveateVoiceQ.push(l);
 }
 

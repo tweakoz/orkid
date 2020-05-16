@@ -68,17 +68,17 @@ int main(int argc, char** argv) {
   CZX::initBlock(osc, czdata);
   AMP::initBlock(amp);
   auto& modulation_index_param      = osc->_paramd[1]._mods;
-  modulation_index_param._src1      = "DCWENV";
+  modulation_index_param._src1      = DCWENV;
   modulation_index_param._src1Depth = 1.0;
-  modulation_index_param._src2      = "MYLFO1";
-  // modulation_index_param._src2DepthCtrl = "MYLFO2";
+  modulation_index_param._src2      = LFO1;
+  // modulation_index_param._src2DepthCtrl = LFO2;
   modulation_index_param._src2MinDepth = 0.5;
   modulation_index_param._src2MaxDepth = 0.1;
   //////////////////////////////////////
   auto& amp_param   = amp->addParam();
   amp_param._coarse = 0.0f;
   amp_param.useDefaultEvaluator();
-  amp_param._mods._src1      = "DCAENV";
+  amp_param._mods._src1      = DCAENV;
   amp_param._mods._src1Depth = 1.0;
   //////////////////////////////////////
   // play a test note

@@ -11,7 +11,7 @@ struct FunData;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ControllerInst {
-  ControllerInst();
+  ControllerInst(Layer* layer);
   virtual ~ControllerInst() {
   }
 
@@ -23,6 +23,7 @@ struct ControllerInst {
   }
 
   float _curval;
+  Layer* _layer = nullptr;
 };
 
 struct ControlBlockInst {
@@ -36,7 +37,7 @@ struct ControlBlockInst {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct LfoInst : public ControllerInst {
-  LfoInst(const LfoData* data);
+  LfoInst(const LfoData* data, Layer* layer);
 
   void reset();
   void keyOn(const KeyOnInfo& KOI) final;
@@ -56,7 +57,7 @@ struct LfoInst : public ControllerInst {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FunInst : public ControllerInst {
-  FunInst(const FunData* data);
+  FunInst(const FunData* data, Layer* layer);
   void compute(int inumfr) final;
   void keyOn(const KeyOnInfo& KOI) final;
   void keyOff() final;

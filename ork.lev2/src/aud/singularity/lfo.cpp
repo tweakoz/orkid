@@ -16,15 +16,15 @@ LfoData::LfoData()
     , _shape("Sine") {
 }
 
-ControllerInst* LfoData::instantiate() const {
-  auto r = new LfoInst(this);
+ControllerInst* LfoData::instantiate(Layer* l) const {
+  auto r = new LfoInst(this, l);
   return r;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-LfoInst::LfoInst(const LfoData* data)
-    : ControllerInst()
+LfoInst::LfoInst(const LfoData* data, Layer* l)
+    : ControllerInst(l)
     , _data(data)
     , _phaseInc(0.0f)
     , _phase(0.0f)

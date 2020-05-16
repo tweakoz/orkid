@@ -18,9 +18,9 @@ struct VastObjectsDB {
   //
 
   KeyMap* parseKeymap(int kmid, const rapidjson::Value& JO);
-  AsrData* parseAsr(const rapidjson::Value& JO, const std::string& name);
-  LfoData* parseLfo(const rapidjson::Value& JO, const std::string& name);
-  FunData* parseFun(const rapidjson::Value& JO, const std::string& name);
+  controllerdata_ptr_t parseAsr(const rapidjson::Value& JO, const std::string& name);
+  controllerdata_ptr_t parseLfo(const rapidjson::Value& JO, const std::string& name);
+  controllerdata_ptr_t parseFun(const rapidjson::Value& JO, const std::string& name);
   lyrdata_ptr_t parseLayer(const rapidjson::Value& JO, ProgramData* pd);
   void parseEnvControl(const rapidjson::Value& JO, EnvCtrlData& ed);
   ProgramData* parseProgram(const rapidjson::Value& JO);

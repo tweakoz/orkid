@@ -281,8 +281,8 @@ multisample* VastObjectsDB::parseMultiSample(const Value& jsonobj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AsrData* VastObjectsDB::parseAsr(const rapidjson::Value& jo, const std::string& name) {
-  auto aout      = new AsrData;
+controllerdata_ptr_t VastObjectsDB::parseAsr(const rapidjson::Value& jo, const std::string& name) {
+  auto aout      = std::make_shared<AsrData>();
   aout->_trigger = jo["trigger"].GetString();
   aout->_mode    = jo["mode"].GetString();
   aout->_delay   = jo["delay"].GetFloat();
@@ -295,8 +295,8 @@ AsrData* VastObjectsDB::parseAsr(const rapidjson::Value& jo, const std::string& 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-LfoData* VastObjectsDB::parseLfo(const rapidjson::Value& jo, const std::string& name) {
-  auto lout           = new LfoData;
+controllerdata_ptr_t VastObjectsDB::parseLfo(const rapidjson::Value& jo, const std::string& name) {
+  auto lout           = std::make_shared<LfoData>();
   lout->_initialPhase = jo["phase"].GetFloat();
   lout->_shape        = jo["shape"].GetString();
   lout->_controller   = jo["rateCtl"].GetString();
@@ -309,8 +309,8 @@ LfoData* VastObjectsDB::parseLfo(const rapidjson::Value& jo, const std::string& 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FunData* VastObjectsDB::parseFun(const rapidjson::Value& jo, const std::string& name) {
-  auto out   = new FunData;
+controllerdata_ptr_t VastObjectsDB::parseFun(const rapidjson::Value& jo, const std::string& name) {
+  auto out   = std::make_shared<FunData>();
   out->_a    = jo["a"].GetString();
   out->_b    = jo["b"].GetString();
   out->_op   = jo["op"].GetString();
@@ -420,18 +420,21 @@ void VastObjectsDB::parseFBlock(const Value& fseg, DspParamData& fblk) {
   if (fseg.HasMember("FineHZ") and fseg["FineHZ"].IsNumber())
     fblk._fineHZ = fseg["FineHZ"].GetFloat();
   if (fseg.HasMember("Src1")) {
-    auto& s1         = fseg["Src1"];
-    fblk._mods._src1 = s1["Source"].GetString();
+    auto& s1 = fseg["Src1"];
+    OrkAssert(false); // hook up direct controller data shared_ptr
+    // fblk._mods._src1 = s1["Source"].GetString();
     if (s1.HasMember("Depth")) {
       auto& d               = s1["Depth"];
       fblk._mods._src1Depth = d["Value"].GetFloat();
     }
   }
   if (fseg.HasMember("Src2")) {
-    auto& s          = fseg["Src2"];
-    fblk._mods._src2 = s["Source"].GetString();
+    auto& s = fseg["Src2"];
+    OrkAssert(false); // hook up direct controller data shared_ptr
+    // fblk._mods._src2 = s["Source"].GetString();
     if (s.HasMember("DepthControl"))
-      fblk._mods._src2DepthCtrl = s["DepthControl"].GetString();
+      OrkAssert(false); // hook up direct controller data shared_ptr
+    // fblk._mods._src2DepthCtrl = s["DepthControl"].GetString();
     if (s.HasMember("MinDepth"))
       fblk._mods._src2MinDepth = s["MinDepth"]["Value"].GetFloat();
     if (s.HasMember("MaxDepth"))
@@ -575,8 +578,8 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
   const auto& envcSeg = jsonobj["ENVCTRL"];
   parseEnvControl(envcSeg, rval->_envCtrlData);
 
-  auto parseEnv = [&](const Value& envobj, const std::string& name) -> RateLevelEnvData* {
-    auto rout                 = new RateLevelEnvData;
+  auto parseEnv = [&](const Value& envobj, const std::string& name) -> controllerdata_ptr_t {
+    auto rout                 = std::make_shared<RateLevelEnvData>();
     RateLevelEnvData& destenv = *rout;
     rout->_name               = name;
     if (name == "AMPENV") {
@@ -641,44 +644,44 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
   if (jsonobj.HasMember("ASR1")) {
     const auto& seg = jsonobj["ASR1"];
     if (seg.IsObject())
-      CB1->_cdata[0] = (const AsrData*)parseAsr(seg, "ASR1");
+      CB1->_cdata[0] = parseAsr(seg, "ASR1");
   }
   if (jsonobj.HasMember("ASR2")) {
     const auto& seg = jsonobj["ASR2"];
     if (seg.IsObject())
-      CB1->_cdata[1] = (const AsrData*)parseAsr(seg, "ASR2");
+      CB1->_cdata[1] = parseAsr(seg, "ASR2");
   }
   //////////////////////////////////////////////////////
   if (jsonobj.HasMember("LFO1")) {
     const auto& lfo1seg = jsonobj["LFO1"];
     if (lfo1seg.IsObject())
-      CB1->_cdata[2] = (const LfoData*)parseLfo(lfo1seg, "LFO1");
+      CB1->_cdata[2] = parseLfo(lfo1seg, "LFO1");
   }
   if (jsonobj.HasMember("LFO2")) {
     const auto& lfo2seg = jsonobj["LFO2"];
     if (lfo2seg.IsObject())
-      CB1->_cdata[3] = (const LfoData*)parseLfo(lfo2seg, "LFO2");
+      CB1->_cdata[3] = parseLfo(lfo2seg, "LFO2");
   }
   //////////////////////////////////////////////////////
   if (jsonobj.HasMember("FUN1")) {
     const auto& seg = jsonobj["FUN1"];
     if (seg.IsObject())
-      CB2->_cdata[0] = (const FunData*)parseFun(seg, "FUN1");
+      CB2->_cdata[0] = parseFun(seg, "FUN1");
   }
   if (jsonobj.HasMember("FUN2")) {
     const auto& seg = jsonobj["FUN2"];
     if (seg.IsObject())
-      CB2->_cdata[1] = (const FunData*)parseFun(seg, "FUN2");
+      CB2->_cdata[1] = parseFun(seg, "FUN2");
   }
   if (jsonobj.HasMember("FUN3")) {
     const auto& seg = jsonobj["FUN3"];
     if (seg.IsObject())
-      CB2->_cdata[2] = (const FunData*)parseFun(seg, "FUN3");
+      CB2->_cdata[2] = parseFun(seg, "FUN3");
   }
   if (jsonobj.HasMember("FUN4")) {
     const auto& seg = jsonobj["FUN4"];
     if (seg.IsObject())
-      CB2->_cdata[3] = (const FunData*)parseFun(seg, "FUN4");
+      CB2->_cdata[3] = parseFun(seg, "FUN4");
   }
   //////////////////////////////////////////////////////
 

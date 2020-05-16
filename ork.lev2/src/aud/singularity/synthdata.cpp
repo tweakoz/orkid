@@ -250,10 +250,9 @@ void KrzTestData::genTestPrograms() {
   l1->_ctrlBlocks[0] = CB0;
   l1->_ctrlBlocks[1] = CB1;
 
-  auto ampenv    = new RateLevelEnvData();
-  ampenv->_name  = "AMPENV";
-  CB0->_cdata[0] = ampenv;
-  auto& aesegs   = ampenv->_segments;
+  auto ampenv   = CB0->addController<RateLevelEnvData>();
+  ampenv->_name = "AMPENV";
+  auto& aesegs  = ampenv->_segments;
   aesegs.push_back(EnvPoint{0, 1});
   aesegs.push_back(EnvPoint{0, 0});
   aesegs.push_back(EnvPoint{0, 0});
@@ -262,10 +261,9 @@ void KrzTestData::genTestPrograms() {
   aesegs.push_back(EnvPoint{0, 0});
   aesegs.push_back(EnvPoint{1, 0});
 
-  auto env2      = new RateLevelEnvData();
-  env2->_name    = "ENV2";
-  CB0->_cdata[1] = env2;
-  auto& e2segs   = env2->_segments;
+  auto env2    = CB0->addController<RateLevelEnvData>();
+  env2->_name  = "ENV2";
+  auto& e2segs = env2->_segments;
   e2segs.push_back(EnvPoint{2, 1});
   e2segs.push_back(EnvPoint{0, 1});
   e2segs.push_back(EnvPoint{0, 1});
@@ -274,10 +272,9 @@ void KrzTestData::genTestPrograms() {
   e2segs.push_back(EnvPoint{0, 0});
   e2segs.push_back(EnvPoint{1, 0});
 
-  auto env3      = new RateLevelEnvData();
-  env3->_name    = "ENV3";
-  CB0->_cdata[2] = env3;
-  auto& e3segs   = env3->_segments;
+  auto env3    = CB0->addController<RateLevelEnvData>();
+  env3->_name  = "ENV3";
+  auto& e3segs = env3->_segments;
   e3segs.push_back(EnvPoint{8, 1});
   e3segs.push_back(EnvPoint{0, 1});
   e3segs.push_back(EnvPoint{0, 1});
@@ -286,8 +283,7 @@ void KrzTestData::genTestPrograms() {
   e3segs.push_back(EnvPoint{0, 0});
   e3segs.push_back(EnvPoint{1, 0});
 
-  auto lfo1         = new LfoData;
-  CB1->_cdata[2]    = (const LfoData*)lfo1;
+  auto lfo1         = CB1->addController<LfoData>();
   lfo1->_name       = "LFO1";
   lfo1->_controller = "ON";
   lfo1->_maxRate    = 0.1;
