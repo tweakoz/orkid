@@ -12,26 +12,29 @@ const int kmaskUPPER = 1;
 const int kmaskLOWER = 2;
 const int kmaskBOTH  = 3;
 
-void configureKrzAlgorithm(AlgData& algdout) {
+algdata_ptr_t configureKrzAlgorithm(int algid) {
 
-  switch (algdout._krzAlgIndex) {
+  auto algdout          = std::make_shared<AlgData>();
+  algdout->_krzAlgIndex = algid;
+  algdout->_name        = ork::FormatString("KrzALG%d", algid);
+  switch (algdout->_krzAlgIndex) {
     case 1: { // KRZ1 (PCH->DSP->AMP->MONO)
-      auto stage_dsp = std::make_shared<DspStageData>();
-      stage_dsp->_iomask._inputs.push_back(0);  // 1 input
-      stage_dsp->_iomask._outputs.push_back(0); // 1 output
-      algdout._stages[0] = stage_dsp;
+      auto stage_dsp = algdout->appendStage();
+      auto stage_amp = algdout->appendStage();
+      stage_dsp->_iomask->_inputs.push_back(0);  // 1 input
+      stage_dsp->_iomask->_outputs.push_back(0); // 1 output
+      stage_amp->_iomask->_inputs.push_back(0);  // 1 input
+      stage_amp->_iomask->_outputs.push_back(0); // 1 output
       break;
     }
     case 2: { // KRZ2 (PCH->DSP1->DSP2->PANNER->AMP->STEREO)
-      auto stage_dsp    = std::make_shared<DspStageData>();
-      auto stage_panner = std::make_shared<DspStageData>();
-      stage_dsp->_iomask._inputs.push_back(0);    // 1 input
-      stage_dsp->_iomask._outputs.push_back(0);   // 1 output
-      stage_panner->_iomask._inputs.push_back(0); // 1 input
-      stage_panner->_iomask._outputs.push_back(0);
-      stage_panner->_iomask._outputs.push_back(1); // 2 outputs
-      algdout._stages[0] = stage_dsp;
-      algdout._stages[1] = stage_panner;
+      auto stage_dsp    = algdout->appendStage();
+      auto stage_panner = algdout->appendStage();
+      stage_dsp->_iomask->_inputs.push_back(0);    // 1 input
+      stage_dsp->_iomask->_outputs.push_back(0);   // 1 output
+      stage_panner->_iomask->_inputs.push_back(0); // 1 input
+      stage_panner->_iomask->_outputs.push_back(0);
+      stage_panner->_iomask->_outputs.push_back(1); // 2 outputs
       break;
     }
     default:
@@ -82,6 +85,7 @@ void configureKrzAlgorithm(AlgData& algdout) {
       algmap[26]._ioMasks[4]._outputMask = kmaskBOTH;
       algmap[26]._ioMasks[4]._inputMask  = kmaskBOTH;*/
   }
+  return algdout;
 }
 
 } // namespace ork::audio::singularity

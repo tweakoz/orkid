@@ -59,6 +59,9 @@ struct CzProgData {
 struct CZX final : public DspBlock {
   CZX(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
+
+  using oscmethod_t = std::function<void(CZX& inst, DspBuffer& dspbuf)>;
+
   void doKeyOn(const DspKeyOnInfo& koi) final;
   void doKeyOff() final;
 
@@ -74,16 +77,11 @@ struct CZX final : public DspBlock {
 
   float _baseFrequency;
   float _modIndex;
-
+  float _waveoutputs[8];
+  int _waveIDA = 0;
+  int _waveIDB = 0;
   int64_t _phase;
   int64_t _resophase;
-  int64_t _resostate    = 0;
-  int64_t _resosyncstep = 0;
-  int64_t _resonewphase = 0;
-  double _resobip       = 0.0;
-  double _syncsum       = 0.0;
-  double _blepaccum     = 0.0;
-  float _prevOutput;
   oschardsynctrack_ptr_t _hsynctrack;
   scopesynctrack_ptr_t _scopetrack;
 

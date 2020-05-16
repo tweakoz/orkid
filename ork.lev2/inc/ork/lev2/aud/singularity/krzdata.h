@@ -203,7 +203,7 @@ struct LayerData {
   dspblkdata_ptr_t _pchBlock;
 
   dspstagedata_ptr_t appendStage();
-
+  dspstagedata_ptr_t stage(int index);
   template <typename T>                                           //
   inline std::shared_ptr<T> appendController(std::string named) { //
     auto controlblock                    = std::make_shared<ControlBlockData>();

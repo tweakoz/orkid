@@ -456,12 +456,10 @@ void OpenVrDevice::_updatePoses() {
         switch (role) {
           case _ovr::ETrackedControllerRole::TrackedControllerRole_LeftHand: {
             _leftControllerDeviceIndex = dev_index;
-            OrkAssert(false);
             break;
           }
           case _ovr::ETrackedControllerRole::TrackedControllerRole_RightHand: {
             _rightControllerDeviceIndex = dev_index;
-            OrkAssert(false);
             break;
           }
         }

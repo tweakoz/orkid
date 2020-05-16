@@ -15,9 +15,10 @@ int main(int argc, char** argv) {
   auto layerdata = program->newLayer();
   auto czdata    = std::make_shared<CzOscData>();
   auto keymap    = std::make_shared<KeyMap>();
-  auto AE        = layerdata->appendController<RateLevelEnvData>("MYENV");
-  auto LFO1      = layerdata->appendController<LfoData>("MYLFO1");
+  auto DCAENV    = layerdata->appendController<RateLevelEnvData>("DCAENV");
+  auto DCWENV    = layerdata->appendController<RateLevelEnvData>("DCWENV");
   auto LFO2      = layerdata->appendController<LfoData>("MYLFO2");
+  auto LFO1      = layerdata->appendController<LfoData>("MYLFO1");
   //////////////////////////////////////
   // set names
   //////////////////////////////////////
@@ -29,22 +30,27 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   // create layer
   //////////////////////////////////////
-  layerdata->_algdata->_krzAlgIndex  = 1;
-  layerdata->_algdata->_name         = "CZTEST";
+  layerdata->_algdata                = configureKrzAlgorithm(1);
   layerdata->_keymap                 = keymap.get();
   layerdata->_kmpBlock._keymap       = keymap.get();
   layerdata->_envCtrlData._useNatEnv = false;
   //////////////////////////////////////
   // set envelope
   //////////////////////////////////////
-  AE->_ampenv = true;
-  AE->_segments.push_back({.3, .7}); // atk1
-  AE->_segments.push_back({1, 1});   // atk2
-  AE->_segments.push_back({1, .3});  // atk3
-  AE->_segments.push_back({1, .5});  // dec
-  AE->_segments.push_back({2, 0});   // rel1
-  AE->_segments.push_back({0, 0});   // rel2
-  AE->_segments.push_back({0, 0});   // rel3
+  DCAENV->_ampenv = true;
+  DCAENV->_segments.push_back({.2, .7});  // atk1
+  DCAENV->_segments.push_back({1, 1});    // atk2
+  DCAENV->_segments.push_back({120, .3}); // atk3
+  DCAENV->_segments.push_back({120, 0});  // atk3
+                                          //
+  DCWENV->_ampenv = false;
+  DCWENV->_segments.push_back({0.1, .7}); // atk1
+  DCWENV->_segments.push_back({1, 1});    // atk2
+  DCWENV->_segments.push_back({2, .5});   // atk3
+  DCWENV->_segments.push_back({2, 1});    // dec
+  DCWENV->_segments.push_back({2, 1});    // rel1
+  DCWENV->_segments.push_back({40, 1});   // rel2
+  DCWENV->_segments.push_back({40, 0});   // rel3
   //////////////////////////////////////
   // set LFO
   //////////////////////////////////////
@@ -57,23 +63,23 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   // setup dsp graph
   //////////////////////////////////////
-  auto stage0 = layerdata->appendStage();
-  auto stage1 = layerdata->appendStage();
-  stage0->_iomask._inputs.push_back(0);  // 1 input
-  stage0->_iomask._outputs.push_back(0); // 1 output
-  stage1->_iomask._inputs.push_back(0);  // 1 input
-  stage1->_iomask._outputs.push_back(0); // 1 output
-  auto osc = stage0->appendBlock();
-  auto amp = stage1->appendBlock();
+  auto osc = layerdata->stage(0)->appendBlock();
+  auto amp = layerdata->stage(1)->appendBlock();
   CZX::initBlock(osc, czdata);
   AMP::initBlock(amp);
   auto& modulation_index_param      = osc->_paramd[1]._mods;
-  modulation_index_param._src1      = "MYENV";
+  modulation_index_param._src1      = "DCWENV";
   modulation_index_param._src1Depth = 1.0;
   modulation_index_param._src2      = "MYLFO1";
   // modulation_index_param._src2DepthCtrl = "MYLFO2";
   modulation_index_param._src2MinDepth = 0.5;
   modulation_index_param._src2MaxDepth = 0.1;
+  //////////////////////////////////////
+  auto& amp_param   = amp->addParam();
+  amp_param._coarse = 0.0f;
+  amp_param.useDefaultEvaluator();
+  amp_param._mods._src1      = "DCAENV";
+  amp_param._mods._src1Depth = 1.0;
   //////////////////////////////////////
   // play a test note
   //////////////////////////////////////

@@ -7,9 +7,27 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+alg_ptr_t AlgData::createAlgInst() const {
+  auto alg = std::make_shared<Alg>(*this);
+  return alg;
+}
+
+dspstagedata_ptr_t AlgData::appendStage() {
+  OrkAssert((_numstages + 1) <= kmaxdspstagesperlayer);
+  auto stage            = std::make_shared<DspStageData>();
+  _stages[_numstages++] = stage;
+  return stage;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 DspParamData& DspBlockData::addParam() {
   OrkAssert(_numParams < kmaxparmperblock - 1);
   return _paramd[_numParams++];
+}
+
+DspParamData& DspBlockData::getParam(int index) {
+  return _paramd[index];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -40,6 +58,10 @@ float* DspBuffer::channel(int ich) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+DspStageData::DspStageData() {
+  _iomask = std::make_shared<IoMask>();
+}
 
 dspblkdata_ptr_t DspStageData::appendBlock() {
   OrkAssert(_numblocks < kmaxdspblocksperstage);
@@ -104,21 +126,21 @@ void DspBlock::keyOn(const DspKeyOnInfo& koi) {
 ///////////////////////////////////////////////////////////////////////////////
 
 const float* DspBlock::getInpBuf(DspBuffer& obuf, int index) {
-  int inpidx = _iomask._inputs[index];
+  int inpidx = _iomask->_inputs[index];
   return obuf.channel(inpidx);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 float* DspBlock::getOutBuf(DspBuffer& obuf, int index) {
-  int outidx = _iomask._outputs[index];
+  int outidx = _iomask->_outputs[index];
   return obuf.channel(outidx);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 // void DspBlock::output(DspBuffer& obuf, int chanidx, int sampleindex, float val) {
-// int outidx     = _iomask._outputs[chanidx];
+// int outidx     = _iomask->_outputs[chanidx];
 // float* A       = obuf.channel(outidx);
 // A[sampleindex] = val;
 //}
@@ -126,13 +148,13 @@ float* DspBlock::getOutBuf(DspBuffer& obuf, int index) {
 ///////////////////////////////////////////////////////////////////////////////
 
 int DspBlock::numOutputs() const {
-  return _iomask.numOutputs();
+  return _iomask->numOutputs();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 int DspBlock::numInputs() const {
-  return _iomask.numInputs();
+  return _iomask->numInputs();
 }
 
 } // namespace ork::audio::singularity

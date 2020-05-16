@@ -35,6 +35,7 @@ struct VastObjectsDB;
 struct FPARAM;
 struct Wavetable;
 struct KeyOnInfo;
+struct IoMask;
 ///////////////////////////////////////////////////////////////////////////////
 struct BlockModulationData;
 struct DspKeyOnInfo;
@@ -60,6 +61,8 @@ struct KrzTestData;
 struct KrzKmTestData;
 struct CzProgData;
 ///////////////////////////////////////////////////////////////////////////////
+using iomask_ptr_t            = std::shared_ptr<IoMask>;
+using iomask_constptr_t       = std::shared_ptr<const IoMask>;
 using algdata_ptr_t           = std::shared_ptr<AlgData>;
 using algdata_constptr_t      = std::shared_ptr<const AlgData>;
 using alg_ptr_t               = std::shared_ptr<Alg>;

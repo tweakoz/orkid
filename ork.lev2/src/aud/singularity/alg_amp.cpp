@@ -70,7 +70,8 @@ void AMP_MONOIO::doKeyOn(const DspKeyOnInfo& koi) // final
 
 void AMP::initBlock(dspblkdata_ptr_t blockdata) {
   blockdata->_dspBlock = "AMP";
-  blockdata->_paramd[0].useAmplitudeEvaluator();
+  auto& param          = blockdata->addParam();
+  param.useAmplitudeEvaluator();
 }
 
 AMP::AMP(dspblkdata_constptr_t dbd)
@@ -81,11 +82,9 @@ void AMP::compute(DspBuffer& dspbuf) // final
 {
   float gain     = _param[0].eval(); //,0.01f,100.0f);
   int inumframes = _numFrames;
-  float* aenv    = _layer->_AENV;
   const auto& LD = _layer->_LayerData;
   auto l_lrmix   = panBlend(_lpan);
 
-  // printf( "amp numinp<%d>\n", numInputs() );
   if (numInputs() == 1) {
     auto ibuf        = getInpBuf(dspbuf, 0);
     auto lbuf        = getOutBuf(dspbuf, 1);
@@ -97,7 +96,7 @@ void AMP::compute(DspBuffer& dspbuf) // final
       float linG = decibel_to_linear_amp_ratio(_filt);
       linG *= SingleLinG;
       float inp  = ibuf[i];
-      float ae   = aenv[i];
+      float ae   = _param[1].eval();
       float mono = clip_float(inp * linG * _dbd->_inputPad * ae, kminclip, kmaxclip);
       ubuf[i]    = mono * l_lrmix.lmix;
       lbuf[i]    = mono * l_lrmix.rmix;
@@ -115,7 +114,7 @@ void AMP::compute(DspBuffer& dspbuf) // final
       // printf("AMPSTER\n");
       _filt      = 0.995 * _filt + 0.005 * gain;
       float linG = decibel_to_linear_amp_ratio(_filt);
-      float ae   = aenv[i];
+      float ae   = _param[1].eval();
       float totG = linG * ae * _dbd->_inputPad;
 
       float inpU = iubuf[i] * totG;

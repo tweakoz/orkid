@@ -63,6 +63,7 @@ void Alg::keyOn(DspKeyOnInfo& koi) {
           auto block             = createDspBlock(blockdata);
           stage->_blocks[iblock] = block;
           block->_verticalIndex  = iblock;
+          block->_iomask         = stagedata->_iomask;
         }
       }
     } else
@@ -179,13 +180,6 @@ void Alg::keyOff() {
       block->doKeyOff();
     });
   });
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-alg_ptr_t AlgData::createAlgInst() const {
-  auto alg = std::make_shared<Alg>(*this);
-  return alg;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

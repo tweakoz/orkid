@@ -568,7 +568,7 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
   rval->_atk1Hold = miscSeg["atkHold"].GetBool();
   rval->_atk3Hold = miscSeg["susHold"].GetBool();
 
-  parseAlg(jsonobj, *(rval->_algdata));
+  rval->_algdata = parseAlg(jsonobj);
 
   //////////////////////////////////////////////////////
 
@@ -805,14 +805,10 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void configureKrzAlgorithm(AlgData& algdout);
-
-void VastObjectsDB::parseAlg(const rapidjson::Value& JO, AlgData& algd) {
+algdata_ptr_t VastObjectsDB::parseAlg(const rapidjson::Value& JO) {
   const auto& calvin = JO["CALVIN"];
-  algd._krzAlgIndex  = calvin["ALG"].GetInt();
-  algd._name         = ork::FormatString("ALG%d", algd._krzAlgIndex);
-  if (algd._krzAlgIndex != 0)
-    configureKrzAlgorithm(algd);
+  int krzAlgIndex    = calvin["ALG"].GetInt();
+  return configureKrzAlgorithm(krzAlgIndex);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

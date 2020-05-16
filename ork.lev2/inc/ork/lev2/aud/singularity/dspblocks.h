@@ -95,6 +95,7 @@ struct DspBlockData {
   std::string _dspBlock;
 
   DspParamData& addParam();
+  DspParamData& getParam(int index);
 
   int _numParams  = 0;
   float _inputPad = 1.0f;
@@ -166,7 +167,7 @@ struct DspBlock {
 
   float _fval[kmaxparmperblock];
   FPARAM _param[kmaxparmperblock];
-  IoMask _iomask;
+  iomask_constptr_t _iomask;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -174,9 +175,10 @@ struct DspBlock {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DspStageData {
+  DspStageData();
   dspblkdata_ptr_t appendBlock();
   dspblkdata_constptr_t _blockdatas[kmaxdspblocksperstage];
-  IoMask _iomask;
+  iomask_ptr_t _iomask;
   int _numblocks = 0;
 };
 struct DspStage {
@@ -188,12 +190,16 @@ struct DspStage {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct AlgData {
+  dspstagedata_ptr_t appendStage();
+  alg_ptr_t createAlgInst() const;
+
   int _krzAlgIndex = -1;
   int _numstages   = 0;
   std::string _name;
-  dspstagedata_constptr_t _stages[kmaxdspstagesperlayer];
-  alg_ptr_t createAlgInst() const;
+  dspstagedata_ptr_t _stages[kmaxdspstagesperlayer];
 };
+
+algdata_ptr_t configureKrzAlgorithm(int algid);
 
 ///////////////////////////////////////////////////////////////////////////////
 

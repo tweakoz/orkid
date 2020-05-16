@@ -99,22 +99,6 @@ void layer::compute(outputBuffer& obuf) {
       _ctrlBlock[i]->compute(inumframes);
   }
 
-  ///////////////////////////////////
-  // extract AMPENV
-  ///////////////////////////////////
-  // TODO - get rid og hard coded location in CB0
-
-  auto CB0 = this->_ctrlBlock[0];
-  if (CB0) {
-    if (auto as_env = dynamic_cast<RateLevelEnvInst*>(CB0->_cinst[0])) // ampenv ?
-    {
-      for (int i = 0; i < inumframes; i++) {
-        float e0       = as_env->_USERAMPENV[i];
-        _USERAMPENV[i] = e0;
-      }
-    }
-  }
-
   ///////////////////////////////////////////////
   // HUD AFRAME
   ///////////////////////////////////////////////

@@ -293,35 +293,58 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   // czdata->dump();
 
   auto make_layer = [&](czxdata_constptr_t oscdata) -> lyrdata_ptr_t {
-    auto layerdata            = prgout->newLayer();
-    layerdata->_keymap        = outd->_zpmKM;
-    auto CB0                  = new ControlBlockData;
-    layerdata->_ctrlBlocks[0] = CB0;
-    auto AE                   = new RateLevelEnvData;
-    CB0->_cdata[0]            = AE;
-    AE->_name                 = "AMPENV";
-    AE->_ampenv               = true;
-    AE->_segments.push_back({0, 1}); // atk1
-    AE->_segments.push_back({0, 0}); // atk2
-    AE->_segments.push_back({0, 0}); // atk3
-    AE->_segments.push_back({0, 0}); // dec
-    AE->_segments.push_back({2, 0}); // rel1
-    AE->_segments.push_back({0, 0}); // rel2
-    AE->_segments.push_back({0, 0}); // rel3
-    layerdata->_kmpBlock._keymap = outd->_zpmKM;
-    auto stage1                  = layerdata->appendStage();
-    auto stage2                  = layerdata->appendStage();
-    auto osc                     = stage1->appendBlock();
-    auto amp                     = stage2->appendBlock();
+    auto layerdata                     = prgout->newLayer();
+    layerdata->_algdata                = configureKrzAlgorithm(1);
+    layerdata->_keymap                 = outd->_zpmKM;
+    layerdata->_kmpBlock._keymap       = outd->_zpmKM;
+    layerdata->_envCtrlData._useNatEnv = false;
+    /////////////////////////////////////////////////
+    auto DCWENV           = layerdata->appendController<RateLevelEnvData>("DCWENV");
+    DCWENV->_ampenv       = false;
+    const auto& srcdcwenv = oscdata->_dcwEnv;
+    for (int i = 0; i < 8; i++)
+      DCWENV->_segments.push_back({srcdcwenv._time[i], srcdcwenv._level[i] / 100.0f});
+    /////////////////////////////////////////////////
+    auto DCAENV           = layerdata->appendController<RateLevelEnvData>("DCAENV");
+    DCAENV->_ampenv       = true;
+    const auto& srcdcaenv = oscdata->_dcaEnv;
+    for (int i = 0; i < 8; i++)
+      DCAENV->_segments.push_back({srcdcaenv._time[i], srcdcaenv._level[i] / 100.0f});
+    /////////////////////////////////////////////////
+    auto osc = layerdata->stage(0)->appendBlock();
+    auto amp = layerdata->stage(1)->appendBlock();
     CZX::initBlock(osc, oscdata);
     AMP::initBlock(amp);
-    layerdata->_envCtrlData._useNatEnv = false;
-    layerdata->_algdata->_krzAlgIndex  = 1;
-    layerdata->_algdata->_name         = "ALG1";
+    /////////////////////////////////////////////////
+    auto& modulation_index_param      = osc->_paramd[1]._mods;
+    modulation_index_param._src1      = "DCWENV";
+    modulation_index_param._src1Depth = 1.0;
+    /////////////////////////////////////////////////
+    auto& amp_param = amp->addParam();
+    amp_param.useDefaultEvaluator();
+    amp_param._mods._src1      = "DCAENV";
+    amp_param._mods._src1Depth = 1.0;
+    /////////////////////////////////////////////////
     return layerdata;
   };
-  make_layer(czdata->_oscData[0]);
-  make_layer(czdata->_oscData[1]);
+  switch (lineSel) {
+    case 0: // 1
+      make_layer(czdata->_oscData[0]);
+      break;
+    case 1: // 2
+      make_layer(czdata->_oscData[1]);
+      break;
+    case 2: // 1+1'
+      make_layer(czdata->_oscData[0]);
+      make_layer(czdata->_oscData[0]);
+      break;
+    case 3: // 1+2'
+      make_layer(czdata->_oscData[0]);
+      make_layer(czdata->_oscData[1]);
+      break;
+    default:
+      assert(false);
+  }
   czdata->_name = name;
 
   czdata->dump();

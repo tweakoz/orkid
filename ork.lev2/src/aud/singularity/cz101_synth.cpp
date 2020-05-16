@@ -112,7 +112,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
     double uni_itri = uni_htri * 2.0;                  // 1 .. 0
     double tri      = (uni_htri - 0.25) * 4.0;         // -1 .. 1
     ////////////////////////////////////////////
-    // saw
+    // saw (wave==0)
     ////////////////////////////////////////////
     {
       int64_t saw_x1  = int64_t(sawmodindex * 0xffffff);
@@ -124,18 +124,30 @@ void CZX::compute(DspBuffer& dspbuf) // final
                             : (m2 * linphase + b2);
       saw     = cosf(sawphase * PI2);
       dblsine = sinf(sawphase * PI2 * 2.0);
+
+      _waveoutputs[0] = saw;
+      _waveoutputs[3] = dblsine;
     }
     ////////////////////////////////////////////
     // square
     ////////////////////////////////////////////
     {
-      double yy   = step(linphase, 2) * 0.5;
-      double yya  = 1.0 + _modIndex * 64.0;
-      double yyb  = std::clamp(linphase * yya, 0.0, 0.5);
-      double yyc  = std::clamp((linphase - 0.5) * yya, 0.0, 0.5);
-      squarephase = yyb + yyc;
-      square      = cosf(squarephase * PI2); // + std::clamp(linphase * 4.0, 0.0, 0.5);
+      double yy       = step(linphase, 2) * 0.5;
+      double yya      = 1.0 + _modIndex * 64.0;
+      double yyb      = std::clamp(linphase * yya, 0.0, 0.5);
+      double yyc      = std::clamp((linphase - 0.5) * yya, 0.0, 0.5);
+      squarephase     = yyb + yyc;
+      square          = cosf(squarephase * PI2); // + std::clamp(linphase * 4.0, 0.0, 0.5);
+      _waveoutputs[1] = square;
     }
+    ////////////////////////////////////////////
+    double xx        = 1.0 - _modIndex;
+    double m3        = 1.0 / xx;
+    double warped2   = std::clamp(linphase * m3, -1.0, 1.0);
+    double sinpulse  = sinf(warped2 * PI2);
+    double cospulse  = cosf(warped2 * PI2);
+    double dcospulse = cosf(warped2 * PI2 * 4.0);
+    _waveoutputs[2]  = sinpulse;
     ////////////////////////////////////////////
     // sawpulse
     ////////////////////////////////////////////
@@ -159,20 +171,14 @@ void CZX::compute(DspBuffer& dspbuf) // final
 
       sawpulsephase = lerp(linphase, sawpulsephase, _modIndex);
 
-      sawpulse = cosf(sawpulsephase * PI2);
+      sawpulse        = cosf(sawpulsephase * PI2);
+      _waveoutputs[4] = sawpulse;
     }
     ////////////////////////////////////////////
     // tozpulse, yo
     ////////////////////////////////////////////
     tozpulsephase = pasthalf ? squarephase : std::clamp(sawphase, 0.0, 0.5);
     tozpulse      = cosf(tozpulsephase * PI2);
-    ////////////////////////////////////////////
-    double xx        = 1.0 - _modIndex;
-    double m3        = 1.0 / xx;
-    double warped2   = std::clamp(linphase * m3, -1.0, 1.0);
-    double sinpulse  = sinf(warped2 * PI2);
-    double cospulse  = cosf(warped2 * PI2);
-    double dcospulse = cosf(warped2 * PI2 * 4.0);
     ////////////////////////////////////////////
     {
       /////////////////
@@ -199,14 +205,17 @@ void CZX::compute(DspBuffer& dspbuf) // final
       /////////////////
       if (hsync_trigger)
         _resophase = 0;
+      /////////////////
+      _waveoutputs[5] = reso1;
+      _waveoutputs[6] = reso2;
+      _waveoutputs[7] = reso3;
     }
     ////////////////////////////////////////////
     _phase = nextphase;
     ////////////////////////////////////////////
-    // U[i] = waveswitch ? sawpulse : saw;
-    U[i] = waveswitch ? saw : reso1;
-    U[i] = reso3;
-    ;
+    float waveA = _waveoutputs[_waveIDA];
+    float waveB = _waveoutputs[_waveIDB];
+    U[i]        = waveswitch ? waveB : waveA;
   }
 } // namespace ork::audio::singularity
 
@@ -220,9 +229,10 @@ void CZX::doKeyOn(const DspKeyOnInfo& koi) // final
   auto l            = koi._layer;
   l->_HKF._miscText = FormatString("CZ\n");
   l->_HKF._useFm4   = false;
-
-  _hsynctrack = l->_oschsynctracks[_verticalIndex];
-  _scopetrack = l->_scopesynctracks[_verticalIndex];
+  _waveIDA          = oscdata->_dcoWaveA;
+  _waveIDB          = oscdata->_dcoWaveB;
+  _hsynctrack       = l->_oschsynctracks[_verticalIndex];
+  _scopetrack       = l->_scopesynctracks[_verticalIndex];
 
   _phase = 0;
 }

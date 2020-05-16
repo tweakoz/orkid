@@ -38,6 +38,12 @@ dspstagedata_ptr_t LayerData::appendStage() {
   return stage;
 }
 
+dspstagedata_ptr_t LayerData::stage(int index) {
+  OrkAssert(index < _algdata->_numstages);
+  OrkAssert(index >= 0);
+  auto stage = _algdata->_stages[index];
+  return stage;
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 Sf2TestSynthData::Sf2TestSynthData(const file::Path& filename, const std::string& bankname)
