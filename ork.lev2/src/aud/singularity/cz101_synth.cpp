@@ -61,6 +61,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
   _fval[0]       = centoff;
   double cin     = (lyrcents + centoff) * 0.01;
   double frq     = midi_note_to_frequency(cin);
+  double per     = 48000.0 / frq;
 
   /////////////////////////
   // printf("modindex<%g>\n", modindex);
@@ -177,71 +178,34 @@ void CZX::compute(DspBuffer& dspbuf) // final
       /////////////////
       float window = smoothstep(0.9, 1.0, linphase);
       /////////////////
-      double reso3index = std::clamp(invlinphase * 2, 0.0, 1.0);
-      float res1mask    = lerp(1.0, invlinphase, _modIndex);
-      float res2mask    = lerp(1.0, uni_itri, _modIndex);
-      float res3mask    = lerp(1.0, reso3index, _modIndex);
+      double res3mask = std::clamp(invlinphase * 2, 0.0, 1.0);
+      float res1mask  = lerp(1.0, 0.0, linphase);
+      float res2mask  = uni_itri;
+      // float res3mask    = lerp(1.0, reso3index, _modIndex);
       /////////////////
       // free running resoosc (but hard synced to base osc)
       /////////////////
       double frqscale  = (1.0f + _modIndex * 15.0f);
+      double resoinc   = kscale * frq * frqscale / 48000.0;
       int64_t pos      = (_resophase)&0xffffff;
       double _linphase = double(pos) * kinvscale;
-      _resobip         = cosf(_linphase * PI2);
-      /////////////////
-      switch (_resostate) {
-        case 0: // free running
-          if (hsync_trigger) {
-            _resonewphase = 0;
-            _resostate    = 1;
-            _resosyncstep = 0;
-            _blepaccum    = 0.0;
-          } else {
-          }
-          break;
-        case 1: { // hardsyncing
-          double lerpa = cosf((_resophase & 0xffffff) * kinvscale * PI2);
-          double lerpb = cosf((_resonewphase & 0xffffff) * kinvscale * PI2);
-          double dlerp = double(_resosyncstep) / 8.0;
-          double SINC  = sinc((dlerp - 0.5) * PI2 * 2.0);
-          _blepaccum += SINC;
-          // -0.0170983
-          // 0.20486
-          double blepindex = _blepaccum; // * 0.245 * 4.505350779853694 / 2.1;
-          blepindex        = blepindex / 1.99;
-          _resobip         = lerp(lerpa, lerpb, blepindex);
-          if (0)
-            printf(
-                "_resosyncstep<%d> dlerp<%g> lerpa<%g> lerpb<%g> _resobip<%g>\n", //
-                _resosyncstep,
-                dlerp,
-                lerpa,
-                lerpb,
-                _resobip);
-          /////////////////////////////////////
-          if (_resosyncstep++ >= 8) {
-            _resostate = 0;
-            _resophase = _resonewphase;
-          }
-          break;
-        }
-      }
-      double resoinc = kscale * frq * frqscale / 48000.0;
+      double resowave  = cosf(_linphase * PI2);
       _resophase += int64_t(resoinc);
-      _resonewphase += int64_t(resoinc);
       /////////////////
-      double reso_uni = 0.5 + _resobip * 0.5;
+      double reso_uni = 0.5 + resowave * 0.5;
       reso1           = 1.0 - ((1.0 - reso_uni) * res1mask * 2.0);
       reso2           = 1.0 - (reso_uni * res2mask * 2.0);
       reso3           = 1.0 - ((1.0 - reso_uni) * res3mask * 2.0);
       /////////////////
+      if (hsync_trigger)
+        _resophase = 0;
     }
     ////////////////////////////////////////////
     _phase = nextphase;
     ////////////////////////////////////////////
     // U[i] = waveswitch ? sawpulse : saw;
     U[i] = waveswitch ? saw : reso1;
-    // U[i] = reso3;
+    U[i] = reso3;
     ;
   }
 } // namespace ork::audio::singularity
