@@ -16,6 +16,11 @@ using namespace ork;
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
+CzProgData::CzProgData() {
+  _oscData[0] = std::make_shared<CzOscData>();
+  _oscData[1] = std::make_shared<CzOscData>();
+}
+///////////////////////////////////////////////////////////////////////////////
 auto genwacurve = []() -> MultiCurve1D {
   MultiCurve1D curve;
   auto& s = curve.mSegmentTypes;
@@ -234,11 +239,8 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   // 0x25 == vel (oscbase+)
   // 0x47 .. 0x7f osc 2
 
-  czxdata_ptr_t oscdata[2] = {std::make_shared<CzOscData>(), std::make_shared<CzOscData>()};
-  czdata->_oscData[0]      = oscdata[0];
-  czdata->_oscData[1]      = oscdata[1];
   for (int o = 0; o < 2; o++) {
-    auto OSC         = oscdata[o];
+    auto OSC         = czdata->_oscData[o];
     OSC->_dspchannel = o;
     ///////////////////////////////////////////////////////////
     u8 MFW0 = bytes[byteindex++]; // dc01 wave / modulation
@@ -323,7 +325,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   prgout->_name = name;
   // czdata->dump();
 
-  auto make_dco = [&](lyrdata_ptr_t layerdata, czxdata_constptr_t oscdata, int dcoindex) {
+  auto make_dco = [&](lyrdata_ptr_t layerdata, czxdata_ptr_t oscdata, int dcoindex) {
     /////////////////////////////////////////////////
     auto DCOENV           = layerdata->appendController<RateLevelEnvData>("DCOENV");
     DCOENV->_ampenv       = false;
@@ -383,30 +385,15 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     amp_param._mods._src1Depth = float(oscdata->_dcaDepth) / 15.0f;
     /////////////////////////////////////////////////
     if (dcoindex == 1) { // add detune
-      ///////////////////////////////////////////////////////////////////////////////
-      // The Casio CZ noise waveform is a standard PD Osc Pitch modulated by a pseudo-random signal.
-      // The modulator alternates between only two values at random every 8 samples (@ 44.1k), so that's a signal that flips
-      // randomly between two states at a rate of about 5500 Hz. [White Noise]->[Sample&Hold]->[Comparator]-->[PD Osc] The
-      // comparator should output either 0.0 or 2.2 Volts. The Sample and hold should be clocked at about 5.5 KHz
-      ///////////////////////////////////////////////////////////////////////////////
       auto CZPITCH            = layerdata->appendController<CustomControllerData>("CZPITCH");
       pitch_mod._src2         = CZPITCH;
       pitch_mod._src2MinDepth = 1.0;
       pitch_mod._src2MaxDepth = 1.0;
-      if (czdata->_lineMod == 3) // noisemod
-      {
-        CZPITCH->_onkeyon = [czdata](
-                                CustomControllerInst* cci, //
-                                const KeyOnInfo& KOI) {    //
-          cci->_curval = czdata->_detuneCents + (rand() % 3600);
-        };
-      } else {
-        CZPITCH->_onkeyon = [czdata](
-                                CustomControllerInst* cci, //
-                                const KeyOnInfo& KOI) {    //
-          cci->_curval = czdata->_detuneCents;
-        };
-      }
+      CZPITCH->_onkeyon       = [czdata](
+                              CustomControllerInst* cci, //
+                              const KeyOnInfo& KOI) {    //
+        cci->_curval = czdata->_detuneCents;
+      };
     }
   };
   /////////////////////////////////////////////////
@@ -446,6 +433,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     }
     case 3: // noise
       OrkAssert(lineSel == 2 or lineSel == 3);
+      czdata->_oscData[1]->_noisemod = true;
       break;
   }
   czdata->_name = name;

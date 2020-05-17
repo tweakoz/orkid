@@ -32,6 +32,7 @@ struct CzOscData {
   CzEnvelope _dcaEnv;
   CzEnvelope _dcwEnv;
   int _dspchannel = 0;
+  bool _noisemod  = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -42,6 +43,8 @@ using czxdata_constptr_t = std::shared_ptr<const CzOscData>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct CzProgData {
+
+  CzProgData();
   void dump() const;
 
   int _octave       = 0;
@@ -52,7 +55,7 @@ struct CzProgData {
   int _vibratoDelay = 0;
   int _vibratoRate  = 0;
   int _vibratoDepth = 0;
-  czxdata_constptr_t _oscData[2];
+  czxdata_ptr_t _oscData[2];
   std::string _name;
 };
 
@@ -71,9 +74,6 @@ struct CZX final : public DspBlock {
   void doKeyOn(const DspKeyOnInfo& koi) final;
   void doKeyOff() final;
 
-  static constexpr float kinv64k = 1.0f / 65536.0f;
-  static constexpr float kinv32k = 1.0f / 32768.0f;
-
   bool isHsyncSource() const override {
     return true;
   }
@@ -81,14 +81,16 @@ struct CZX final : public DspBlock {
     return true;
   }
 
-  float _baseFrequency;
-  float _modIndex;
+  int _waveIDA    = 0;
+  int _waveIDB    = 0;
+  int _dspchannel = 0;
   float _waveoutputs[8];
-  int _waveIDA = 0;
-  int _waveIDB = 0;
+  float _modIndex;
   int64_t _phase;
   int64_t _resophase;
-  int _dspchannel = 0;
+  bool _noisemod           = false;
+  int64_t _noisevalue      = 0;
+  int64_t _noisemodcounter = 0;
   oschardsynctrack_ptr_t _hsynctrack;
   scopesynctrack_ptr_t _scopetrack;
 

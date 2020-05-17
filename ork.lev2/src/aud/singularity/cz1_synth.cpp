@@ -104,7 +104,23 @@ void CZX::compute(DspBuffer& dspbuf) // final
     double sawmodindex    = 0.5 - _modIndex * 0.5;
     double invsawmodindex = 1.0 - sawmodindex;
     double sinpulindex    = _modIndex * 0.75;
-
+    ///////////////////////////////////////////////////////////////////////////////
+    // The Casio CZ noise waveform is a standard PD Osc Pitch modulated by a pseudo-random signal.
+    // The modulator alternates between only two values at random every 8 samples (@ 44.1k), so that's a signal that flips
+    // randomly between two states at a rate of about 5500 Hz. [White Noise]->[Sample&Hold]->[Comparator]-->[PD Osc] The
+    // comparator should output either 0.0 or 2.2 Volts. The Sample and hold should be clocked at about 5.5 KHz
+    ///////////////////////////////////////////////////////////////////////////////
+    float moddedfrq = frq;
+    if (_noisemod) {
+      _noisemodcounter -= (1 << 24);
+      if (_noisemodcounter <= 0) {
+        _noisemodcounter += int64_t(kscale * 48000.0 / 5500.0);
+        _noisevalue = (rand() & 0xffff);
+        // printf("frq<%g> _noisevalue<%g>\n", frq, _noisevalue);
+      }
+      double dnoise = double(_noisevalue) / 65536.0;
+      moddedfrq     = frq * (8.0 + (dnoise - 0.5) * 8.0);
+    }
     //////////////////////////////////////////////
     int64_t pos        = _phase & 0xffffff;
     int64_t dpos       = (_phase << 1) & 0xffffff;
@@ -113,8 +129,9 @@ void CZX::compute(DspBuffer& dspbuf) // final
     double linphase    = double(pos) * kinvscale;
     double invlinphase = 1.0 - linphase;
     double linphasex2  = double(dpos) * kinvscale;
-    int64_t phaseinc   = int64_t(kscale * frq / 48000.0);
-    int64_t nextphase  = _phase + phaseinc;
+    ////////////////////////////////////////////
+    int64_t phaseinc  = int64_t(kscale * moddedfrq / 48000.0);
+    int64_t nextphase = _phase + phaseinc;
     ////////////////////////////////////////////
     // hard sync track
     ////////////////////////////////////////////
@@ -242,6 +259,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
     float waveA   = _waveoutputs[_waveIDA];
     float waveB   = _waveoutputs[_waveIDB];
     outsamples[i] = waveswitch ? waveB : waveA;
+    // outsamples[i] += 0.5f * double(_noisevalue) / 65536.0f;
   }
 } // namespace ork::audio::singularity
 
@@ -261,8 +279,9 @@ void CZX::doKeyOn(const DspKeyOnInfo& koi) // final
   _waveIDB          = oscdata->_dcoWaveB;
   _hsynctrack       = l->_oschsynctracks[_verticalIndex];
   _scopetrack       = l->_scopesynctracks[_verticalIndex];
-
-  _phase = 0;
+  _noisemod         = oscdata->_noisemod;
+  _phase            = 0;
+  _noisevalue       = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
 
