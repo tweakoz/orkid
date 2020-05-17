@@ -46,7 +46,7 @@ const ProgramData* Sf2TestSynthData::getProgram(int progID) const {
 void SoundFont::genZpmDB() {
 #if 0
 
-   _zpmDB = new VastObjectsDB;
+   _zpmDB = new SynthObjectsDB;
 
    //////////////////////
    // sf2 samples -> zpm samples

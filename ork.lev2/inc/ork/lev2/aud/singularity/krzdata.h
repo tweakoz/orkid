@@ -10,7 +10,7 @@ namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct KrzSynthData : public SynthData {
-  static VastObjectsDB* baseObjects();
+  static SynthObjectsDB* baseObjects();
 
   KrzSynthData();
   const ProgramData* getProgram(int progID) const final;

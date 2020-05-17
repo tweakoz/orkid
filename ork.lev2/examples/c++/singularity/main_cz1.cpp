@@ -38,19 +38,19 @@ int main(int argc, char** argv) {
     });
   };
   //////////////////////////////////////////////////////////////////////////////
-  auto czdata = std::make_shared<CzData>();
   if (TEST) {
-    czdata->loadBank(basepath / "edit.syx", "bank1");
+    auto czdata = CzData::load(basepath / "edit.syx", "bank1");
     for (int i = 0; i < 2; i++) {
       auto prg = czdata->getProgram(0);
       add_event(prg, float(0) * 2, 4.0, 36 + i * 12);
     }
     usleep(35 << 20); // just wait, let the "music" play..
   } else {
-    czdata->loadBank(basepath / "factoryA.bnk", "bank1");
-    czdata->loadBank(basepath / "factoryB.bnk", "bank2");
+    auto czdata1 = CzData::load(basepath / "factoryA.bnk", "bank1");
+    auto czdata2 = CzData::load(basepath / "factoryB.bnk", "bank2");
     for (int i = 0; i < 64; i++) { // 2 32 patch banks
-      auto prg = czdata->getProgram(i);
+      auto bnk = (i >> 5) ? czdata2 : czdata1;
+      auto prg = bnk->getProgram(i % 32);
       printf("i<%d> prg<%p>\n", i, prg);
       add_event(prg, float(i) * 0.5, 1.0, 36);
     }

@@ -74,7 +74,7 @@ struct Tx81zData : public SynthData {
   const ProgramData* getProgramByName(const std::string& named) const final {
     return nullptr;
   }
-  VastObjectsDB* _zpmDB;
+  SynthObjectsDB* _zpmDB;
   int _lastprg;
 };
 

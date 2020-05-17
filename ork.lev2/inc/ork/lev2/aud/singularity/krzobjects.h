@@ -29,7 +29,7 @@ struct EnvCtrlData {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct VastObjectsDB {
+struct SynthObjectsDB {
   void loadJson(const std::string& fname, int bank);
 
   const ProgramData* findProgram(int idx) const;

@@ -11,7 +11,7 @@
 #include "synthdata.h"
 
 namespace ork::audio::singularity {
-struct VastObjectsDB;
+struct SynthObjectsDB;
 }
 
 namespace ork::audio::singularity::sf2 {
@@ -503,7 +503,7 @@ struct SoundFont {
 
   // std::vector<S16>					mSampleData;
 
-  VastObjectsDB* _zpmDB;
+  SynthObjectsDB* _zpmDB;
 
   ////////////////////////////////////////////////////
 

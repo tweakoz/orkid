@@ -6,14 +6,14 @@ int main(int argc, char** argv) {
   auto basepath = basePath() / "casioCZ";
   startupAudio();
   //////////////////////////////////////////////////////////////////////////////
-  auto czdata = std::make_shared<CzData>();
+  auto czdata1 = CzData::load(basepath / "factoryA.bnk", "bank1");
+  auto czdata2 = CzData::load(basepath / "factoryB.bnk", "bank2");
   // czdata->loadBank(basepath / "edit.syx", "bank1");
-  czdata->loadBank(basepath / "factoryA.bnk", "bank1");
-  czdata->loadBank(basepath / "factoryB.bnk", "bank2");
   for (int i = 1; i < 64; i++) { // 2 32 patch banks
-    auto prg = czdata->getProgram(i);
+    auto bnk = (i >> 5) ? czdata2 : czdata1;
+    auto prg = bnk->getProgram(i % 32);
     for (int n = 0; n < 12; n++) {
-      enqueue_audio_event(prg, float(i * 12 + n) * 0.5, 1.0, 36 + (n % 12));
+      enqueue_audio_event(prg, 3 + float(i * 12 + n) * 0.5, 1.0, 36 + (n % 12));
     }
   }
   //////////////////////////////////////////////////////////////////////////////

@@ -100,13 +100,14 @@ struct CZX final : public DspBlock {
 struct CzData : public SynthData {
   CzData();
   ~CzData();
-  void loadBank(const file::Path& syxpath, const std::string& bnkname = "czb");
+  static std::shared_ptr<CzData> load(const file::Path& syxpath, const std::string& bnkname = "czb");
+  void appendBank(const file::Path& syxpath, const std::string& bnkname = "czb");
 
   const ProgramData* getProgram(int progID) const final;
   const ProgramData* getProgramByName(const std::string& named) const final {
     return nullptr;
   }
-  VastObjectsDB* _zpmDB;
+  SynthObjectsDB* _zpmDB;
   int _lastprg;
 };
 

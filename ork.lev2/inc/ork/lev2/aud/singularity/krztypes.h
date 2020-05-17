@@ -32,7 +32,7 @@ struct Layer;
 struct outputBuffer;
 struct RateLevelEnvData;
 struct natenvseg;
-struct VastObjectsDB;
+struct SynthObjectsDB;
 struct FPARAM;
 struct Wavetable;
 struct KeyOnInfo;

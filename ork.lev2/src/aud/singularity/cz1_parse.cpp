@@ -383,15 +383,30 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     amp_param._mods._src1Depth = float(oscdata->_dcaDepth) / 15.0f;
     /////////////////////////////////////////////////
     if (dcoindex == 1) { // add detune
+      ///////////////////////////////////////////////////////////////////////////////
+      // The Casio CZ noise waveform is a standard PD Osc Pitch modulated by a pseudo-random signal.
+      // The modulator alternates between only two values at random every 8 samples (@ 44.1k), so that's a signal that flips
+      // randomly between two states at a rate of about 5500 Hz. [White Noise]->[Sample&Hold]->[Comparator]-->[PD Osc] The
+      // comparator should output either 0.0 or 2.2 Volts. The Sample and hold should be clocked at about 5.5 KHz
+      ///////////////////////////////////////////////////////////////////////////////
       auto CZPITCH            = layerdata->appendController<CustomControllerData>("CZPITCH");
       pitch_mod._src2         = CZPITCH;
       pitch_mod._src2MinDepth = 1.0;
       pitch_mod._src2MaxDepth = 1.0;
-      CZPITCH->_onkeyon       = [czdata](
-                              CustomControllerInst* cci, //
-                              const KeyOnInfo& KOI) {    //
-        // cci->_curval = czdata->_detuneCents;
-      };
+      if (czdata->_lineMod == 3) // noisemod
+      {
+        CZPITCH->_onkeyon = [czdata](
+                                CustomControllerInst* cci, //
+                                const KeyOnInfo& KOI) {    //
+          cci->_curval = czdata->_detuneCents + (rand() % 3600);
+        };
+      } else {
+        CZPITCH->_onkeyon = [czdata](
+                                CustomControllerInst* cci, //
+                                const KeyOnInfo& KOI) {    //
+          cci->_curval = czdata->_detuneCents;
+        };
+      }
     }
   };
   /////////////////////////////////////////////////
@@ -438,7 +453,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   czdata->dump();
 } // namespace ork::audio::singularity
 ///////////////////////////////////////////////////////////////////////////////
-void parse_cz101(CzData* outd, const file::Path& path, const std::string& bnkname) {
+void parse_czx(CzData* outd, const file::Path& path, const std::string& bnkname) {
   ork::File syxfile(path, ork::EFM_READ);
   u8* data    = nullptr;
   size_t size = 0;
@@ -599,18 +614,19 @@ void CzProgData::dump() const {
 CzData::CzData()
     : SynthData()
     , _lastprg(0) {
-  _zpmDB = new VastObjectsDB;
-  //_zpmKM              = new KeyMap;
-  //_zpmKM->_name       = "CZX";
-  //_zpmKM->_kmID       = 1;
-  //_zpmDB->_keymaps[1] = _zpmKM;
+  _zpmDB = new SynthObjectsDB;
 }
 ///////////////////////////////////////////////////////////////////////////////
 CzData::~CzData() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void CzData::loadBank(const file::Path& syxpath, const std::string& bnkname) {
-  parse_cz101(this, syxpath.c_str(), bnkname);
+void CzData::appendBank(const file::Path& syxpath, const std::string& bnkname) {
+  parse_czx(this, syxpath.c_str(), bnkname);
+}
+std::shared_ptr<CzData> CzData::load(const file::Path& syxpath, const std::string& bnkname) {
+  auto czdata = std::make_shared<CzData>();
+  czdata->appendBank(syxpath, bnkname);
+  return czdata;
 }
 ///////////////////////////////////////////////////////////////////////////////
 const ProgramData* CzData::getProgram(int progID) const // final
@@ -618,12 +634,5 @@ const ProgramData* CzData::getProgram(int progID) const // final
   auto ObjDB = this->_zpmDB;
   return ObjDB->findProgram(progID);
 }
-///////////////////////////////////////////////////////////////////////////////
-// The Casio CZ noise waveform is a standard PD Osc Pitch modulated by a pseudo-random signal.
-// The modulator alternates between only two values at random every 8 samples (@ 44.1k), so that's a signal that flips randomly
-// between two states at a rate of about 5500 Hz. [White Noise]->[Sample&Hold]->[Comparator]-->[PD Osc] The comparator should output
-// either 0.0 or 2.2 Volts.
-// The Sample and hold should be clocked at about 5.5 KHz
-
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

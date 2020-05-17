@@ -16,10 +16,10 @@ namespace ork::audio::singularity {
 
 static const auto krzbasedir = basePath() / "kurzweil" / "krz";
 
-VastObjectsDB* KrzSynthData::baseObjects() {
-  static VastObjectsDB* objdb = nullptr;
+SynthObjectsDB* KrzSynthData::baseObjects() {
+  static SynthObjectsDB* objdb = nullptr;
   if (nullptr == objdb) {
-    objdb = new VastObjectsDB;
+    objdb = new SynthObjectsDB;
     objdb->loadJson("k2v3base", 0);
   }
 
