@@ -291,6 +291,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     // remove leading and trailing spaces from patch name
     name = std::regex_replace(name, std::regex("^ +| +$|( ) +"), "$1");
   }
+  prgout->_name = name;
   // czdata->dump();
 
   auto make_layer = [&](czxdata_constptr_t oscdata) -> lyrdata_ptr_t {

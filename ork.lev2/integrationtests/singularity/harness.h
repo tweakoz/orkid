@@ -31,6 +31,7 @@ inline void enqueue_audio_event(
     int midinote) {
   synth::instance()->addEvent(time, [=]() {
     // NOTE ON
+    printf("time<%g> note<%d> program<%s>\n", time, midinote, prog->_name.c_str());
     auto noteinstance = synth::instance()->keyOn(midinote, prog);
     assert(noteinstance);
     // NOTE OFF
