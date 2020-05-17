@@ -1,7 +1,6 @@
 #pragma once
 
 #include <mutex>
-#include "alg.h"
 #include "envelope.h"
 #include "konoff.h"
 #include "hud_data.h"

@@ -6,7 +6,6 @@
 #include "PolyBLEP.h"
 #include "layer.h"
 #include <ork/kernel/varmap.inl>
-#include "alg.h"
 
 namespace ork::audio::singularity {
 
@@ -193,8 +192,7 @@ struct AlgData {
   dspstagedata_ptr_t appendStage();
   alg_ptr_t createAlgInst() const;
 
-  int _krzAlgIndex = -1;
-  int _numstages   = 0;
+  int _numstages = 0;
   std::string _name;
   dspstagedata_ptr_t _stages[kmaxdspstagesperlayer];
 };

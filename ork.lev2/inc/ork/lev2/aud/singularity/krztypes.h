@@ -103,7 +103,7 @@ using kmpblockdata_ptr_t          = std::shared_ptr<KmpBlockData>;
 static const int kmaxenvperlayer       = 8;
 static const int kmaxdspblocksperstage = 4;
 static const int kmaxdspstagesperlayer = 8;
-static const int kmaxctrlperblock      = 4;
+static const int kmaxctrlperblock      = 16;
 static const int kmaxparmperblock      = 16;
 ///////////////////////////////////////////////////////////////////////////////
 static const double pi    = 3.141592654;

@@ -1,12 +1,11 @@
 #pragma once
 
 #include <mutex>
-#include "alg.h"
 #include "envelope.h"
 #include "konoff.h"
 
 namespace ork::audio::singularity {
-static const int koscopelength   = 1 << 12;
+static const int koscopelength     = 1 << 12;
 static const int koscopelengthmask = koscopelength - 1;
 
 struct lfoframe {

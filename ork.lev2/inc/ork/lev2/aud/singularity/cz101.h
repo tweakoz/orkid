@@ -31,6 +31,7 @@ struct CzOscData {
   CzEnvelope _dcoEnv;
   CzEnvelope _dcaEnv;
   CzEnvelope _dcwEnv;
+  int _dspchannel = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -54,6 +55,10 @@ struct CzProgData {
   czxdata_constptr_t _oscData[2];
   std::string _name;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+algdata_ptr_t configureCz1Algorithm();
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -83,6 +88,7 @@ struct CZX final : public DspBlock {
   int _waveIDB = 0;
   int64_t _phase;
   int64_t _resophase;
+  int _dspchannel = 0;
   oschardsynctrack_ptr_t _hsynctrack;
   scopesynctrack_ptr_t _scopetrack;
 

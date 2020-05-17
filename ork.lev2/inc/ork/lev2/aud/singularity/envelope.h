@@ -1,6 +1,5 @@
 #pragma once
 
-#include "alg.h"
 #include "controller.h"
 
 namespace ork::audio::singularity {

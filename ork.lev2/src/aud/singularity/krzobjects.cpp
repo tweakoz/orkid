@@ -564,7 +564,8 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
   rval->_atk1Hold = miscSeg["atkHold"].GetBool();
   rval->_atk3Hold = miscSeg["susHold"].GetBool();
 
-  rval->_algdata = parseAlg(jsonobj);
+  auto krzalgdat = parseAlg(jsonobj);
+  rval->_algdata = krzalgdat._algdata;
 
   //////////////////////////////////////////////////////
 
@@ -673,12 +674,12 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
   }
   //////////////////////////////////////////////////////
 
-  if (rval->_algdata->_krzAlgIndex == 0)
+  if (krzalgdat._algindex == 0)
     return rval;
 
-  assert(rval->_algdata->_krzAlgIndex >= 1);
-  assert(rval->_algdata->_krzAlgIndex <= 31);
-  const KrzAlgCfg ACFG = getAlgConfig(rval->_algdata->_krzAlgIndex);
+  assert(krzalgdat._algindex >= 1);
+  assert(krzalgdat._algindex <= 31);
+  const KrzAlgCfg ACFG = getAlgConfig(krzalgdat._algindex);
 
   auto blkname = [](int bid) -> const char* {
     switch (bid) {
@@ -703,7 +704,7 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
     auto blockn2 = blkname(blkbase + 1);
     auto blockn3 = blkname(blkbase + 2);
 
-    printf("algd<%d> blkbase<%d> paramcount<%d> blockn1<%s>\n", rval->_algdata->_krzAlgIndex, blkbase, paramcount, blockn1);
+    printf("algd<%d> blkbase<%d> paramcount<%d> blockn1<%s>\n", krzalgdat._algindex, blkbase, paramcount, blockn1);
 
     if (0 == blkbase) {
       dspblock             = parsePchBlock(pitchSeg, rval);
@@ -796,10 +797,13 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-algdata_ptr_t VastObjectsDB::parseAlg(const rapidjson::Value& JO) {
+KrzAlgData VastObjectsDB::parseAlg(const rapidjson::Value& JO) {
   const auto& calvin = JO["CALVIN"];
   int krzAlgIndex    = calvin["ALG"].GetInt();
-  return configureKrzAlgorithm(krzAlgIndex);
+
+  auto algd       = configureKrzAlgorithm(krzAlgIndex);
+  KrzAlgData rval = {krzAlgIndex, algd};
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

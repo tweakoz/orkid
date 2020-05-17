@@ -24,6 +24,32 @@ inline double sinc(double i) { // ph --1 .. +1
 
 ///////////////////////////////////////////////////////////////////////////////
 
+algdata_ptr_t configureCz1Algorithm() {
+  auto algdout   = std::make_shared<AlgData>();
+  algdout->_name = ork::FormatString("Cz1Alg");
+  //////////////////////////////////////////
+  auto stage_dco = algdout->appendStage();
+  stage_dco->_iomask->_outputs.push_back(0);
+  stage_dco->_iomask->_outputs.push_back(1); // 2 outputs
+  //////////////////////////////////////////
+  // ring, noise mod or mix stage
+  //////////////////////////////////////////
+  auto stage_mod = algdout->appendStage();
+  stage_mod->_iomask->_inputs.push_back(0);
+  stage_mod->_iomask->_inputs.push_back(1);  // 2 inputs
+  stage_mod->_iomask->_outputs.push_back(0); // 1 outputs
+  //////////////////////////////////////////
+  // final gain stage
+  //////////////////////////////////////////
+  auto stage_amp = algdout->appendStage();
+  stage_amp->_iomask->_inputs.push_back(0);  // 1 input
+  stage_amp->_iomask->_outputs.push_back(0); // 1 output
+  //////////////////////////////////////////
+  return algdout;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 CZX::CZX(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
@@ -41,8 +67,8 @@ float step(float u, float steps) {
 
 void CZX::compute(DspBuffer& dspbuf) // final
 {
-  int inumframes = _numFrames;
-  float* U       = dspbuf.channel(0);
+  int inumframes    = _numFrames;
+  float* outsamples = dspbuf.channel(_dspchannel);
   //////////////////////////////////////////
   constexpr double kscale    = double(1 << 24);
   constexpr double kinvscale = 1.0 / kscale;
@@ -213,9 +239,9 @@ void CZX::compute(DspBuffer& dspbuf) // final
     ////////////////////////////////////////////
     _phase = nextphase;
     ////////////////////////////////////////////
-    float waveA = _waveoutputs[_waveIDA];
-    float waveB = _waveoutputs[_waveIDB];
-    U[i]        = waveswitch ? waveB : waveA;
+    float waveA   = _waveoutputs[_waveIDA];
+    float waveB   = _waveoutputs[_waveIDB];
+    outsamples[i] = waveswitch ? waveB : waveA;
   }
 } // namespace ork::audio::singularity
 
@@ -223,9 +249,11 @@ void CZX::compute(DspBuffer& dspbuf) // final
 
 void CZX::doKeyOn(const DspKeyOnInfo& koi) // final
 {
-  auto dspb         = koi._prv;
-  auto dbd          = dspb->_dbd;
-  auto oscdata      = dbd->getExtData("CZX").Get<czxdata_constptr_t>();
+  auto dspb    = koi._prv;
+  auto dbd     = dspb->_dbd;
+  auto oscdata = dbd->getExtData("CZX").Get<czxdata_constptr_t>();
+
+  _dspchannel       = oscdata->_dspchannel;
   auto l            = koi._layer;
   l->_HKF._miscText = FormatString("CZ\n");
   l->_HKF._useFm4   = false;

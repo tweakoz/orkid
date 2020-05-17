@@ -14,10 +14,9 @@ const int kmaskBOTH  = 3;
 
 algdata_ptr_t configureKrzAlgorithm(int algid) {
 
-  auto algdout          = std::make_shared<AlgData>();
-  algdout->_krzAlgIndex = algid;
-  algdout->_name        = ork::FormatString("KrzALG%d", algid);
-  switch (algdout->_krzAlgIndex) {
+  auto algdout   = std::make_shared<AlgData>();
+  algdout->_name = ork::FormatString("KrzALG%d", algid);
+  switch (algid) {
     case 1: { // KRZ1 (PCH->DSP->AMP->MONO)
       auto stage_dsp = algdout->appendStage();
       auto stage_amp = algdout->appendStage();

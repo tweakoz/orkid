@@ -124,10 +124,9 @@ void KrzTestData::genTestPrograms() {
   lfo1->_controller = "ON";
   lfo1->_maxRate    = 0.1;
 
-  /*auto& ALGD = l1->_algData;
+  /*
 
-  ALGD._name        = "ALG1";
-  ALGD._krzAlgIndex = 1;
+  l1->_algData = configureKrzAlgorithm(1);
 
   if (0) {
     auto F1                = l1->_dspBlocks[1];

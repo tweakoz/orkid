@@ -1,6 +1,5 @@
 #pragma once
 
-#include "alg.h"
 #include "konoff.h"
 
 namespace ork::audio::singularity {

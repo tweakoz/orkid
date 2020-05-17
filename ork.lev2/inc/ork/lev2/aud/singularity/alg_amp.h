@@ -24,12 +24,14 @@ struct AMP : public DspBlock {
   float _upan, _lpan;
 };
 struct PLUSAMP : public DspBlock {
+  static void initBlock(dspblkdata_ptr_t blockdata);
   PLUSAMP(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
   float _filt;
 };
 struct XAMP : public DspBlock {
+  static void initBlock(dspblkdata_ptr_t blockdata);
   XAMP(dspblkdata_constptr_t dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;

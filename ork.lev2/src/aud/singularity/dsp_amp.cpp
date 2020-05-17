@@ -142,6 +142,12 @@ void AMP::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void PLUSAMP::initBlock(dspblkdata_ptr_t blockdata) {
+  blockdata->_dspBlock = "+ AMP";
+  auto& param          = blockdata->addParam();
+  param.useAmplitudeEvaluator();
+}
+
 PLUSAMP::PLUSAMP(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {
 }
@@ -181,6 +187,12 @@ void PLUSAMP::doKeyOn(const DspKeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void XAMP::initBlock(dspblkdata_ptr_t blockdata) {
+  blockdata->_dspBlock = "x AMP";
+  auto& param          = blockdata->addParam();
+  param.useAmplitudeEvaluator();
+}
 
 XAMP::XAMP(dspblkdata_constptr_t dbd)
     : DspBlock(dbd) {

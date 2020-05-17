@@ -8,6 +8,7 @@
 #include <ork/lev2/aud/singularity/cz101.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/aud/singularity/alg_amp.h>
+#include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/math/multicurve.h>
 
@@ -212,7 +213,8 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   czdata->_oscData[0]      = oscdata[0];
   czdata->_oscData[1]      = oscdata[1];
   for (int o = 0; o < 2; o++) {
-    auto OSC = oscdata[o];
+    auto OSC         = oscdata[o];
+    OSC->_dspchannel = o;
     ///////////////////////////////////////////////////////////
     u8 MFW0 = bytes[byteindex++]; // dc01 wave / modulation
     u8 MFW1 = bytes[byteindex++]; // dc01 wave / modulation
@@ -262,8 +264,8 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     OSC->_dcoWaveA = decodewave((MFW0 >> 5) & 0x7, (MFW1 >> 6) & 0x3);
     OSC->_dcoWaveB = decodewave((MFW0 >> 2) & 0x7, (MFW1 >> 6) & 0x3);
 
-    if (o == 0) { // ignore linemod from line1{
-                  // czdata->_lineMod = (MFW1 >> 3) & 0x7;
+    if (o == 1) { // ignore linemod from line1{
+      czdata->_lineMod = (MFW1 >> 3) & 0x7;
     }
 
     OSC->_dcaKeyFollow = MAMD & 0xf;
@@ -294,9 +296,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   prgout->_name = name;
   // czdata->dump();
 
-  auto make_layer = [&](czxdata_constptr_t oscdata, int layerindex) -> lyrdata_ptr_t {
-    auto layerdata      = prgout->newLayer();
-    layerdata->_algdata = configureKrzAlgorithm(1);
+  auto make_dco = [&](lyrdata_ptr_t layerdata, czxdata_constptr_t oscdata, int dcoindex) {
     /////////////////////////////////////////////////
     auto DCWENV           = layerdata->appendController<RateLevelEnvData>("DCWENV");
     DCWENV->_ampenv       = false;
@@ -311,7 +311,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
       DCAENV->_segments.push_back({srcdcaenv._time[i], srcdcaenv._level[i] / 100.0f});
     /////////////////////////////////////////////////
     auto osc = layerdata->stage(0)->appendBlock();
-    auto amp = layerdata->stage(1)->appendBlock();
+    auto amp = layerdata->stage(2)->appendBlock();
     CZX::initBlock(osc, oscdata);
     AMP::initBlock(amp);
     /////////////////////////////////////////////////
@@ -324,7 +324,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     amp_param._mods._src1      = DCAENV;
     amp_param._mods._src1Depth = 1.0;
     /////////////////////////////////////////////////
-    if (layerindex == 1) { // add detune
+    if (dcoindex == 1) { // add detune
       auto CZPITCH         = layerdata->appendController<CustomControllerData>("CZPITCH");
       auto& pitch_mod      = osc->_paramd[0]._mods;
       pitch_mod._src1      = CZPITCH;
@@ -335,26 +335,45 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
         cci->_curval = czdata->_detuneCents;
       };
     }
-    /////////////////////////////////////////////////
-    return layerdata;
   };
+  /////////////////////////////////////////////////
+  auto layerdata      = prgout->newLayer();
+  layerdata->_algdata = configureCz1Algorithm();
   switch (lineSel) {
     case 0: // 1
-      make_layer(czdata->_oscData[0], 0);
+      make_dco(layerdata, czdata->_oscData[0], 0);
       break;
     case 1: // 2
-      make_layer(czdata->_oscData[1], 0);
+      make_dco(layerdata, czdata->_oscData[1], 0);
       break;
     case 2: // 1+1'
-      make_layer(czdata->_oscData[0], 0);
-      make_layer(czdata->_oscData[0], 1);
+      // TODO : ring, noisemod
+      make_dco(layerdata, czdata->_oscData[0], 0);
+      make_dco(layerdata, czdata->_oscData[0], 1);
       break;
     case 3: // 1+2'
-      make_layer(czdata->_oscData[0], 0);
-      make_layer(czdata->_oscData[1], 1);
+      // TODO : ring, noisemod
+      make_dco(layerdata, czdata->_oscData[0], 0);
+      make_dco(layerdata, czdata->_oscData[1], 1);
       break;
     default:
       assert(false);
+  }
+  switch (czdata->_lineMod) {
+    case 0: { // none
+      auto mix = layerdata->stage(1)->appendBlock();
+      SUM2::initBlock(mix);
+      break;
+    }
+    case 4: { // ring
+      OrkAssert(lineSel == 2 or lineSel == 3);
+      auto ring = layerdata->stage(1)->appendBlock();
+      MUL2::initBlock(ring);
+      break;
+    }
+    case 3: // noise
+      OrkAssert(lineSel == 2 or lineSel == 3);
+      break;
   }
   czdata->_name = name;
 
