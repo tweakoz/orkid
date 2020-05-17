@@ -18,10 +18,10 @@ struct LayerData {
   dspstagedata_ptr_t stage(int index);
   template <typename T>                                           //
   inline std::shared_ptr<T> appendController(std::string named) { //
-    auto controller   = _ctrlBlock->addController<T>();
-    controller->_name = named;
-    _controllerset.insert(controller);
-    return controller;
+    std::shared_ptr<T> controllerdata = _ctrlBlock->addController<T>();
+    controllerdata->_name             = named;
+    _controllerset.insert(controllerdata);
+    return controllerdata;
   }
 
   int _numdspblocks       = 0;
@@ -41,7 +41,6 @@ struct LayerData {
   kmpblockdata_ptr_t _kmpBlock;
   dspblkdata_ptr_t _pchBlock;
   keymap_constptr_t _keymap;
-  std::set<controlblockdata_ptr_t> _controlblockset;
   std::set<controllerdata_ptr_t> _controllerset;
   controlblockdata_ptr_t _ctrlBlock;
 };

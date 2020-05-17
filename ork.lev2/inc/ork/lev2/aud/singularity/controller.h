@@ -112,4 +112,26 @@ struct FunInst : public ControllerInst {
   controller_t _op;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+struct CustomControllerInst;
+
+using customcontroller_computemethod_t = std::function<void(CustomControllerInst* cci, int)>;
+using customcontroller_keyonmethod_t   = std::function<void(CustomControllerInst* cci, const KeyOnInfo& KOI)>;
+using customcontroller_keyoffmethod_t  = std::function<void(CustomControllerInst* cci)>;
+
+struct CustomControllerData final : public ControllerData {
+  CustomControllerData();
+  ControllerInst* instantiate(Layer* layer) const override;
+  customcontroller_computemethod_t _oncompute;
+  customcontroller_keyonmethod_t _onkeyon;
+  customcontroller_keyoffmethod_t _onkeyoff;
+};
+struct CustomControllerInst final : public ControllerInst {
+  CustomControllerInst(const CustomControllerData* data, Layer* layer);
+  void compute(int inumfr) override;
+  void keyOn(const KeyOnInfo& KOI) override;
+  void keyOff() override;
+  const CustomControllerData* _data = nullptr;
+};
+
 } // namespace ork::audio::singularity

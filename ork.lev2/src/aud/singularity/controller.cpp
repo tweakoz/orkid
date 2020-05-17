@@ -45,4 +45,34 @@ ControllerInst::ControllerInst(Layer* l)
     , _curval(0.0f) {
 }
 
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+CustomControllerData::CustomControllerData() {
+  _oncompute = [](CustomControllerInst* cci, int inumfr) {};
+  _onkeyon   = [](CustomControllerInst* cci, const KeyOnInfo& KOI) { cci->_curval = 0.0f; };
+  _onkeyoff  = [](CustomControllerInst* cci) {};
+}
+///////////////////////////////////////////////////////////////////////////////
+ControllerInst* CustomControllerData::instantiate(Layer* layer) const {
+  //
+  return new CustomControllerInst(this, layer);
+}
+///////////////////////////////////////////////////////////////////////////////
+CustomControllerInst::CustomControllerInst(const CustomControllerData* data, Layer* layer)
+    : ControllerInst(layer)
+    , _data(data) {
+}
+///////////////////////////////////////////////////////////////////////////////
+void CustomControllerInst::compute(int inumfr) {
+  _data->_oncompute(this, inumfr);
+}
+///////////////////////////////////////////////////////////////////////////////
+void CustomControllerInst::keyOn(const KeyOnInfo& KOI) {
+  _data->_onkeyon(this, KOI);
+}
+///////////////////////////////////////////////////////////////////////////////
+void CustomControllerInst::keyOff() {
+  _data->_onkeyoff(this);
+}
 } // namespace ork::audio::singularity

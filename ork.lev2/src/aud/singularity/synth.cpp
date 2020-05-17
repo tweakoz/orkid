@@ -24,8 +24,8 @@ synth::synth()
     , _soloLayer(-1)
     , _timeaccum(0.0f)
     , _hudpage(0)
-    , _oswidth(1500)      //
-    , _ostriglev(0.99f) { //
+    , _oswidth(1500)     //
+    , _ostriglev(0.0f) { //
 
   for (int i = 0; i < 256; i++) {
     auto l = new Layer();

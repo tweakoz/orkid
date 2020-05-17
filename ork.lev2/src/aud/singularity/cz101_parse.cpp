@@ -294,7 +294,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   prgout->_name = name;
   // czdata->dump();
 
-  auto make_layer = [&](czxdata_constptr_t oscdata) -> lyrdata_ptr_t {
+  auto make_layer = [&](czxdata_constptr_t oscdata, int layerindex) -> lyrdata_ptr_t {
     auto layerdata      = prgout->newLayer();
     layerdata->_algdata = configureKrzAlgorithm(1);
     /////////////////////////////////////////////////
@@ -324,22 +324,34 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     amp_param._mods._src1      = DCAENV;
     amp_param._mods._src1Depth = 1.0;
     /////////////////////////////////////////////////
+    if (layerindex == 1) { // add detune
+      auto CZPITCH         = layerdata->appendController<CustomControllerData>("CZPITCH");
+      auto& pitch_mod      = osc->_paramd[0]._mods;
+      pitch_mod._src1      = CZPITCH;
+      pitch_mod._src1Depth = 1.0;
+      CZPITCH->_onkeyon    = [czdata](
+                              CustomControllerInst* cci, //
+                              const KeyOnInfo& KOI) {    //
+        cci->_curval = czdata->_detuneCents;
+      };
+    }
+    /////////////////////////////////////////////////
     return layerdata;
   };
   switch (lineSel) {
     case 0: // 1
-      make_layer(czdata->_oscData[0]);
+      make_layer(czdata->_oscData[0], 0);
       break;
     case 1: // 2
-      make_layer(czdata->_oscData[1]);
+      make_layer(czdata->_oscData[1], 0);
       break;
     case 2: // 1+1'
-      make_layer(czdata->_oscData[0]);
-      make_layer(czdata->_oscData[0]);
+      make_layer(czdata->_oscData[0], 0);
+      make_layer(czdata->_oscData[0], 1);
       break;
     case 3: // 1+2'
-      make_layer(czdata->_oscData[0]);
-      make_layer(czdata->_oscData[1]);
+      make_layer(czdata->_oscData[0], 0);
+      make_layer(czdata->_oscData[1], 1);
       break;
     default:
       assert(false);
