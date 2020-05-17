@@ -7,7 +7,7 @@
 #include <ork/lev2/aud/singularity/alg_filters.h>
 #include <ork/lev2/aud/singularity/alg_amp.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
-#include <ork/lev2/aud/singularity/cz101.h>
+#include <ork/lev2/aud/singularity/cz1.h>
 #include <ork/lev2/aud/singularity/sampler.h>
 
 namespace ork::audio::singularity {

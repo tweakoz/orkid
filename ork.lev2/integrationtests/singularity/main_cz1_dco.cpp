@@ -1,5 +1,5 @@
 #include "harness.h"
-#include <ork/lev2/aud/singularity/cz101.h>
+#include <ork/lev2/aud/singularity/cz1.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/aud/singularity/alg_amp.h>
 

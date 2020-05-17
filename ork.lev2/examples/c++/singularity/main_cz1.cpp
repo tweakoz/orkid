@@ -5,7 +5,7 @@
 #include <ork/file/path.h>
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/aud/singularity/synth.h>
-#include <ork/lev2/aud/singularity/cz101.h>
+#include <ork/lev2/aud/singularity/cz1.h>
 
 using namespace std::string_literals;
 using namespace ork;

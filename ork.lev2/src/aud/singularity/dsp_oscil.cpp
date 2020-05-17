@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <ork/lev2/aud/singularity/filters.h>
 #include <ork/lev2/aud/singularity/tx81z.h>
-#include <ork/lev2/aud/singularity/cz101.h>
+#include <ork/lev2/aud/singularity/cz1.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/aud/singularity/modulation.h>
 

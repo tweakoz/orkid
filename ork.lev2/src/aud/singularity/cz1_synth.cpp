@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
-#include <ork/lev2/aud/singularity/cz101.h>
+#include <ork/lev2/aud/singularity/cz1.h>
 #include <ork/lev2/aud/singularity/fmosc.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
