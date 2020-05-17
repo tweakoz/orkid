@@ -90,7 +90,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
   double per     = 48000.0 / frq;
 
   /////////////////////////
-  // printf("modindex<%g>\n", modindex);
+  // printf("centoff<%g>\n", centoff);
   /////////////////////////
 
   for (int i = 0; i < inumframes; i++) {
@@ -149,7 +149,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
                             ? (m1 * linphase) //
                             : (m2 * linphase + b2);
       saw     = cosf(sawphase * PI2);
-      dblsine = sinf(sawphase * PI2 * 2.0);
+      dblsine = cosf(sawphase * PI2 * 2.0);
 
       _waveoutputs[0] = saw;
       _waveoutputs[3] = dblsine;
@@ -173,7 +173,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
     double sinpulse  = sinf(warped2 * PI2);
     double cospulse  = cosf(warped2 * PI2);
     double dcospulse = cosf(warped2 * PI2 * 4.0);
-    _waveoutputs[2]  = sinpulse;
+    _waveoutputs[2]  = cospulse;
     ////////////////////////////////////////////
     // sawpulse
     ////////////////////////////////////////////

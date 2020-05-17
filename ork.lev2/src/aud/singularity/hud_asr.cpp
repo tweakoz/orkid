@@ -20,8 +20,7 @@ void DrawAsr(lev2::Context* context, const ItemDrawReq& EDR) {
   auto ld  = EDR.ld;
   auto lyr = EDR.l;
 
-  const auto& ENVCT = ld->_envCtrlData;
-  bool collsamp     = EDR.shouldCollectSample();
+  bool collsamp = EDR.shouldCollectSample();
 
   std::string sampname = FormatString("asr%d", EDR.ienv + 1);
 

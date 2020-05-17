@@ -73,7 +73,32 @@ float decode_p_envrate(int value) {
   static auto curve = genpcurve();
   return curve.Sample(float(value) * 0.01f);
 }
+///////////////////////////////////////////////////////////////////////////////
+float decode_p_envlevel(int value) {
+  float cents = 0.0;
+  ////////////////////
+  // convert weird byte value to linear value
+  ////////////////////
+  int linv = value;
+  if (linv > 68) {
+    linv -= 4;
+  }
+  ////////////////////
+  // convert linear value to cents
+  ////////////////////
 
+  int linv64  = std::clamp(linv, 0, 64);
+  int linv76  = std::clamp(linv - 64, 0, 12);
+  int linv88  = std::clamp(linv - 76, 0, 12);
+  int linv100 = std::clamp(linv - 88, 0, 12);
+
+  cents = 100.0 * float(linv64) / 8.0;
+  cents += 100.0 * float(linv76);
+  cents += 200.0 * float(linv88);
+  cents += 400.0 * float(linv100);
+
+  return cents;
+} // namespace ork::audio::singularity
 ///////////////////////////////////////////////////////////////////////////////
 void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> bytes) {
 
@@ -116,11 +141,11 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   u8 PFLAG        = bytes[0x00]; // octave/linesel
   czdata->_octave = (PFLAG & 0x0c) >> 2;
   int lineSel     = (PFLAG & 0x03);
-  u8 PDS          = bytes[0x01];        // detune sign
-  u8 PDETL        = bytes[0x02];        // detune fine
-  u8 PDETH        = bytes[0x03];        // detune oct/note
-  int detval      = (PDETH * 100)       // accumulate coarse
-               + ((PDETL * 100) / 250); // accumulate fine
+  u8 PDS          = bytes[0x01];       // detune sign
+  u8 PDETL        = bytes[0x02];       // detune fine
+  u8 PDETH        = bytes[0x03];       // detune oct/note
+  int detval      = (PDETH * 100)      // accumulate coarse
+               + ((PDETL * 100) / 60); // accumulate fine
   czdata->_detuneCents = PDS ? (-detval) : detval;
   printf("PDETL<%d>\n", PDETL);
 
@@ -253,10 +278,12 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
       u8 l  = bytes[byteindex++]; // byte = (127*l/99)
       u8 r7 = r & 0x7f;
       u8 l7 = l & 0x7f;
+      if (l & 0x80)
+        OSC->_dcoEnv._sustPoint = i;
 
       OSC->_dcoEnv._decreasing[i] = (r & 0x80);
-      OSC->_dcoEnv._time[i]       = decode_p_envrate((r7 * 99) / 127);
-      OSC->_dcoEnv._level[i]      = (l7 * 99) / 127;
+      OSC->_dcoEnv._time[i]       = decode_p_envrate(1 + (r7 * 99) / 127);
+      OSC->_dcoEnv._level[i]      = decode_p_envlevel(l7);
     }
     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
@@ -264,7 +291,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     OSC->_dcoWaveA = decodewave((MFW0 >> 5) & 0x7, (MFW1 >> 6) & 0x3);
     OSC->_dcoWaveB = decodewave((MFW0 >> 2) & 0x7, (MFW1 >> 6) & 0x3);
 
-    if (o == 1) { // ignore linemod from line1{
+    if (o == 0) { // ignore linemod from line1{
       czdata->_lineMod = (MFW1 >> 3) & 0x7;
     }
 
@@ -298,41 +325,72 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
 
   auto make_dco = [&](lyrdata_ptr_t layerdata, czxdata_constptr_t oscdata, int dcoindex) {
     /////////////////////////////////////////////////
+    auto DCOENV           = layerdata->appendController<RateLevelEnvData>("DCOENV");
+    DCOENV->_ampenv       = false;
+    const auto& srcdcoenv = oscdata->_dcoEnv;
+    for (int i = 0; i < 8; i++) {
+      bool end   = i >= srcdcoenv._endStep;
+      auto point = end ? //
+                       EnvPoint{0, 0}
+                       : EnvPoint{//
+                                  srcdcoenv._time[i],
+                                  srcdcoenv._level[i]};
+      DCOENV->_segments.push_back(point);
+    }
+    /////////////////////////////////////////////////
     auto DCWENV           = layerdata->appendController<RateLevelEnvData>("DCWENV");
     DCWENV->_ampenv       = false;
     const auto& srcdcwenv = oscdata->_dcwEnv;
-    for (int i = 0; i < 8; i++)
-      DCWENV->_segments.push_back({srcdcwenv._time[i], srcdcwenv._level[i] / 100.0f});
+    for (int i = 0; i < 8; i++) {
+      bool end   = false; // i >= srcdcwenv._endStep;
+      auto point = end ?  //
+                       EnvPoint{0, 0}
+                       : EnvPoint{//
+                                  srcdcwenv._time[i],
+                                  srcdcwenv._level[i] / 100.0f};
+      DCWENV->_segments.push_back(point);
+    }
     /////////////////////////////////////////////////
     auto DCAENV           = layerdata->appendController<RateLevelEnvData>("DCAENV");
     DCAENV->_ampenv       = true;
     const auto& srcdcaenv = oscdata->_dcaEnv;
-    for (int i = 0; i < 8; i++)
-      DCAENV->_segments.push_back({srcdcaenv._time[i], srcdcaenv._level[i] / 100.0f});
+    for (int i = 0; i < 8; i++) {
+      bool end   = false; // i >= srcdcaenv._endStep;
+      auto point = end ?  //
+                       EnvPoint{0, 0}
+                       : EnvPoint{//
+                                  srcdcaenv._time[i],
+                                  srcdcaenv._level[i] / 100.0f};
+      DCAENV->_segments.push_back(point);
+    }
     /////////////////////////////////////////////////
     auto osc = layerdata->stage(0)->appendBlock();
     auto amp = layerdata->stage(2)->appendBlock();
     CZX::initBlock(osc, oscdata);
     AMP::initBlock(amp);
     /////////////////////////////////////////////////
-    auto& modulation_index_param      = osc->_paramd[1]._mods;
-    modulation_index_param._src1      = DCWENV;
-    modulation_index_param._src1Depth = 1.0;
+    auto& pitch_mod      = osc->_paramd[0]._mods;
+    pitch_mod._src1      = DCOENV;
+    pitch_mod._src1Depth = 1.0f;
+    /////////////////////////////////////////////////
+    auto& modulation_index      = osc->_paramd[1]._mods;
+    modulation_index._src1      = DCWENV;
+    modulation_index._src1Depth = float(oscdata->_dcwDepth) / 15.0f;
     /////////////////////////////////////////////////
     auto& amp_param = amp->addParam();
     amp_param.useDefaultEvaluator();
     amp_param._mods._src1      = DCAENV;
-    amp_param._mods._src1Depth = 1.0;
+    amp_param._mods._src1Depth = float(oscdata->_dcaDepth) / 15.0f;
     /////////////////////////////////////////////////
     if (dcoindex == 1) { // add detune
-      auto CZPITCH         = layerdata->appendController<CustomControllerData>("CZPITCH");
-      auto& pitch_mod      = osc->_paramd[0]._mods;
-      pitch_mod._src1      = CZPITCH;
-      pitch_mod._src1Depth = 1.0;
-      CZPITCH->_onkeyon    = [czdata](
+      auto CZPITCH            = layerdata->appendController<CustomControllerData>("CZPITCH");
+      pitch_mod._src2         = CZPITCH;
+      pitch_mod._src2MinDepth = 1.0;
+      pitch_mod._src2MaxDepth = 1.0;
+      CZPITCH->_onkeyon       = [czdata](
                               CustomControllerInst* cci, //
                               const KeyOnInfo& KOI) {    //
-        cci->_curval = czdata->_detuneCents;
+        // cci->_curval = czdata->_detuneCents;
       };
     }
   };
@@ -520,7 +578,7 @@ void CzProgData::dump() const {
       printf("\n");
       printf("        l: ");
       for (int i = 0; i < 8; i++)
-        printf("%02d     ", env._level[i]);
+        printf("%g     ", env._level[i]);
       printf("\n");
     };
     printf("    _dcoEnv\n");
@@ -560,5 +618,12 @@ const ProgramData* CzData::getProgram(int progID) const // final
   auto ObjDB = this->_zpmDB;
   return ObjDB->findProgram(progID);
 }
+///////////////////////////////////////////////////////////////////////////////
+// The Casio CZ noise waveform is a standard PD Osc Pitch modulated by a pseudo-random signal.
+// The modulator alternates between only two values at random every 8 samples (@ 44.1k), so that's a signal that flips randomly
+// between two states at a rate of about 5500 Hz. [White Noise]->[Sample&Hold]->[Comparator]-->[PD Osc] The comparator should output
+// either 0.0 or 2.2 Volts.
+// The Sample and hold should be clocked at about 5.5 KHz
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

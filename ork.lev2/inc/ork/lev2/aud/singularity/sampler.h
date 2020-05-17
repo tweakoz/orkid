@@ -1,6 +1,7 @@
 #pragma once
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
+#include <ork/lev2/aud/singularity/envelope.h>
 
 namespace ork::audio::singularity {
 
@@ -117,9 +118,7 @@ struct NatEnv {
   float _SR;
   bool _ignoreRelease;
   int _state;
-  float _atkAdjust;
-  float _decAdjust;
-  float _relAdjust;
+  envadjust_method_t _envadjust;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

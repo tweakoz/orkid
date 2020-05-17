@@ -24,6 +24,11 @@ NatEnv::NatEnv()
     , _framesrem(0)
     , _state(0)
     , _layer(nullptr) {
+  _envadjust = [](const EnvPoint& inp, //
+                  int iseg,
+                  const KeyOnInfo& KOI) -> EnvPoint { //
+    return inp;
+  };
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -34,8 +39,6 @@ void NatEnv::keyOn(const KeyOnInfo& KOI, const sample* s) {
   _layer = KOI._layer;
   _layer->retain();
 
-  int ikey = KOI._key;
-
   _natenvseg.clear();
   for (const auto& item : s->_natenv)
     _natenvseg.push_back(item);
@@ -45,26 +48,6 @@ void NatEnv::keyOn(const KeyOnInfo& KOI, const sample* s) {
   _curamp        = 1.0f;
   _state         = 1;
   _ignoreRelease = ld->_ignRels;
-
-  auto EC         = ld->_envCtrlData;
-  auto DKT        = EC->_decKeyTrack;
-  const auto& RKT = EC->_relKeyTrack;
-
-  _decAdjust = EC->_decAdjust;
-  _relAdjust = EC->_relAdjust;
-
-  if (ikey > 60) {
-    float flerp = float(ikey - 60) / float(127 - 60);
-    printf("flerp<%f>\n", flerp);
-    _decAdjust = lerp(_decAdjust, DKT, flerp);
-    _relAdjust = lerp(_relAdjust, RKT, flerp);
-  } else if (ikey < 60) {
-    float flerp = float(59 - ikey) / 59.0f;
-    _decAdjust  = lerp(_decAdjust, 1.0 / DKT, flerp);
-    _relAdjust  = lerp(_relAdjust, 1.0 / RKT, flerp);
-  }
-
-  printf("NATENV::keyOn ikey<%d> RA<%f> DA<%f> DKT<%f> RKT<%f>\n", ikey, _relAdjust, _decAdjust, DKT, RKT);
 
   initSeg(0);
 }
@@ -95,7 +78,27 @@ void NatEnv::initSeg(int iseg) {
   const auto& seg = getCurSeg();
 
   _slopePerSecond = seg._slope;
+  _slopePerSample = slopeDBPerSample(_slopePerSecond, 192000.0);
 
+  /* TODO : envadjust processing
+  auto EC         = ld->_envCtrlData;
+  auto DKT        = EC->_decKeyTrack;
+  const auto& RKT = EC->_relKeyTrack;
+
+  _decAdjust = EC->_decAdjust;
+  _relAdjust = EC->_relAdjust;
+
+  if (ikey > 60) {
+    float flerp = float(ikey - 60) / float(127 - 60);
+    printf("flerp<%f>\n", flerp);
+    _decAdjust = lerp(_decAdjust, DKT, flerp);
+    _relAdjust = lerp(_relAdjust, RKT, flerp);
+  } else if (ikey < 60) {
+    float flerp = float(59 - ikey) / 59.0f;
+    _decAdjust  = lerp(_decAdjust, 1.0 / DKT, flerp);
+    _relAdjust  = lerp(_relAdjust, 1.0 / RKT, flerp);
+  }
+  /*
   switch (_state) {
     case 2:
       _slopePerSecond *= _relAdjust;
@@ -103,22 +106,20 @@ void NatEnv::initSeg(int iseg) {
     default:
       _slopePerSecond *= _decAdjust;
       break;
-  }
+  }*/
 
-  _slopePerSample = slopeDBPerSample(_slopePerSecond, 192000.0);
-  _segtime        = seg._time;
-  _framesrem      = seg._time; /// 16.0f;// * _SR / 48000.0f;
+  _segtime   = seg._time;
+  _framesrem = seg._time; /// 16.0f;// * _SR / 48000.0f;
+
   printf(
       "SEG<%d/%d> CURAMP<%f> SLOPEPERSEC<%f> "
-      "_slopePerSample<%f>  SEGT<%f> RA<%f> DA<%f>\n",
+      "_slopePerSample<%f>  SEGT<%f>\n",
       _curseg + 1,
       _numseg,
       _curamp,
       _slopePerSecond,
       _slopePerSample,
-      seg._time,
-      _relAdjust,
-      _decAdjust);
+      seg._time);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

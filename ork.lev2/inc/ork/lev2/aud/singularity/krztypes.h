@@ -37,7 +37,6 @@ struct FPARAM;
 struct Wavetable;
 struct KeyOnInfo;
 struct IoMask;
-struct EnvCtrlData;
 ///////////////////////////////////////////////////////////////////////////////
 struct BlockModulationData;
 struct DspKeyOnInfo;
@@ -97,7 +96,6 @@ using controllerdata_ptr_t        = std::shared_ptr<ControllerData>;
 using controllerdata_constptr_t   = std::shared_ptr<const ControllerData>;
 using controlblockdata_ptr_t      = std::shared_ptr<ControlBlockData>;
 using controlblockdata_constptr_t = std::shared_ptr<const ControlBlockData>;
-using envctrldata_ptr_t           = std::shared_ptr<EnvCtrlData>;
 using kmpblockdata_ptr_t          = std::shared_ptr<KmpBlockData>;
 ///////////////////////////////////////////////////////////////////////////////
 static const int kmaxenvperlayer       = 8;

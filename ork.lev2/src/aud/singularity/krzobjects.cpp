@@ -279,7 +279,11 @@ multisample* VastObjectsDB::parseMultiSample(const Value& jsonobj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VastObjectsDB::parseAsr(const rapidjson::Value& jo, controlblockdata_ptr_t cblock, const std::string& name) {
+void VastObjectsDB::parseAsr(
+    const rapidjson::Value& jo, //
+    controlblockdata_ptr_t cblock,
+    const EnvCtrlData& ENVCTRL,
+    const std::string& name) {
   auto aout      = cblock->addController<AsrData>();
   aout->_trigger = jo["trigger"].GetString();
   aout->_mode    = jo["mode"].GetString();
@@ -287,7 +291,39 @@ void VastObjectsDB::parseAsr(const rapidjson::Value& jo, controlblockdata_ptr_t 
   aout->_attack  = jo["attack"].GetFloat();
   aout->_release = jo["release"].GetFloat();
   aout->_name    = name;
-}
+
+  aout->_envadjust = [=](const EnvPoint& inp, //
+                         int iseg,
+                         const KeyOnInfo& KOI) -> EnvPoint { //
+    EnvPoint outp = inp;
+    int ikey      = KOI._key;
+
+    const auto& RKT = ENVCTRL._relKeyTrack;
+    float atkAdjust = ENVCTRL._atkAdjust;
+    float relAdjust = ENVCTRL._relAdjust;
+
+    if (ikey > 60) {
+      float flerp = float(ikey - 60) / float(127 - 60);
+      relAdjust   = lerp(relAdjust, RKT, flerp);
+    } else if (ikey < 60) {
+      float flerp = float(59 - ikey) / 59.0f;
+      relAdjust   = lerp(relAdjust, 1.0 / RKT, flerp);
+    }
+
+    switch (iseg) {
+      case 0: // delay
+      case 1: // atk
+        outp._time *= 1.0 / atkAdjust;
+        break;
+      case 2: // hold
+        break;
+      case 3: // release
+        outp._time *= 1.0 / relAdjust;
+        break;
+    }
+    return outp;
+  };
+} // namespace ork::audio::singularity
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -569,10 +605,15 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
 
   //////////////////////////////////////////////////////
 
+  EnvCtrlData ENVCTRL;
   const auto& envcSeg = jsonobj["ENVCTRL"];
-  parseEnvControl(envcSeg, *rval->_envCtrlData);
+  parseEnvControl(envcSeg, ENVCTRL);
 
-  auto parseEnv = [&](const Value& envobj, controlblockdata_ptr_t cblock, const std::string& name) -> controllerdata_ptr_t {
+  rval->_usenatenv = ENVCTRL._useNatEnv;
+
+  auto parseEnv = [&](const Value& envobj, //
+                      controlblockdata_ptr_t cblock,
+                      const std::string& name) -> controllerdata_ptr_t {
     auto rout                 = cblock->addController<RateLevelEnvData>();
     RateLevelEnvData& destenv = *rout;
     rout->_name               = name;
@@ -588,9 +629,9 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
     assert(jsonrates.IsArray());
     int inumrates = jsonrates.Size();
     assert(inumrates == 7);
-    std::vector<float> rates;
+    std::vector<float> times;
     for (SizeType i = 0; i < inumrates; i++) // Uses SizeType instead of size_t
-      rates.push_back(jsonrates[i].GetFloat());
+      times.push_back(jsonrates[i].GetFloat());
     //////////////////////////////////////////
     const auto& jsonlevels = envobj["levels"];
     assert(jsonlevels.IsArray());
@@ -600,12 +641,51 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
     for (SizeType i = 0; i < inumlevels; i++) // Uses SizeType instead of size_t
       levels.push_back(jsonlevels[i].GetFloat());
     //////////////////////////////////////////
-    for (int i = 0; i < 7; i++) {
-      EnvPoint ep;
-      ep._rate  = rates[i];
-      ep._level = levels[i];
-      destenv._segments.push_back(ep);
-    }
+    for (int i = 0; i < 7; i++)
+      destenv._segments.push_back(EnvPoint{times[i], levels[i]});
+    //////////////////////////////////////////
+    // Kurzweil Rate/Lev Env Adjust
+    //////////////////////////////////////////
+    destenv._envadjust = [=](const EnvPoint& inp, //
+                             int iseg,
+                             const KeyOnInfo& KOI) -> EnvPoint { //
+      EnvPoint outp = inp;
+      int ikey      = KOI._key;
+
+      const auto& DKT = ENVCTRL._decKeyTrack;
+      const auto& RKT = ENVCTRL._relKeyTrack;
+
+      float atkAdjust = ENVCTRL._atkAdjust;
+      float decAdjust = ENVCTRL._decAdjust;
+      float relAdjust = ENVCTRL._relAdjust;
+
+      if (ikey > 60) {
+        float flerp = float(ikey - 60) / float(127 - 60);
+        decAdjust   = lerp(decAdjust, DKT, flerp);
+        relAdjust   = lerp(relAdjust, RKT, flerp);
+      } else if (ikey < 60) {
+        float flerp = float(59 - ikey) / 59.0f;
+        decAdjust   = lerp(decAdjust, 1.0 / DKT, flerp);
+        relAdjust   = lerp(relAdjust, 1.0 / RKT, flerp);
+      }
+
+      switch (iseg) {
+        case 0:
+        case 1:
+        case 2: // atk
+          outp._time *= 1.0 / atkAdjust;
+          break;
+        case 3: // decay
+          outp._time *= 1.0 / decAdjust;
+          break;
+        case 4:
+        case 5:
+        case 6: // rel
+          outp._time *= 1.0 / relAdjust;
+          break;
+      }
+      return outp;
+    };
     //////////////////////////////////////////
     return rout;
   };
@@ -633,12 +713,12 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
   if (jsonobj.HasMember("ASR1")) {
     const auto& seg = jsonobj["ASR1"];
     if (seg.IsObject())
-      parseAsr(seg, CB, "ASR1");
+      parseAsr(seg, CB, ENVCTRL, "ASR1");
   }
   if (jsonobj.HasMember("ASR2")) {
     const auto& seg = jsonobj["ASR2"];
     if (seg.IsObject())
-      parseAsr(seg, CB, "ASR2");
+      parseAsr(seg, CB, ENVCTRL, "ASR2");
   }
   //////////////////////////////////////////////////////
   if (jsonobj.HasMember("LFO1")) {

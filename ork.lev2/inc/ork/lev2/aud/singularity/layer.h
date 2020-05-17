@@ -34,9 +34,10 @@ struct LayerData {
   bool _ignRels           = false;
   bool _atk1Hold          = false; // ThrAtt
   bool _atk3Hold          = false; // TilDec
+  bool _usenatenv         = false; // todo: move to krz
 
   algdata_ptr_t _algdata;
-  envctrldata_ptr_t _envCtrlData;
+
   kmpblockdata_ptr_t _kmpBlock;
   dspblkdata_ptr_t _pchBlock;
   keymap_constptr_t _keymap;

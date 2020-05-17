@@ -17,10 +17,10 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
   const auto& ENVFRAME         = EDR._data.Get<envframe>();
   const RateLevelEnvData* ENVD = ENVFRAME._data;
 
-  auto ENVCT    = EDR.ld->_envCtrlData;
+  // auto ENVCT    = EDR.ld->_envCtrlData;
   bool collsamp = EDR.shouldCollectSample();
 
-  bool useNENV = ENVCT->_useNatEnv && (EDR.ienv == 0);
+  bool useNENV = false; // ENVCT->_useNatEnv && (EDR.ienv == 0);
 
   std::string sampname = "???";
 
@@ -103,7 +103,7 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
     }
     drawtext(context, "lev\ntim", R.X1 + 15, env_by + 40, .45, 1, 1, 0);
     for (int i = 0; i < 7; i++) {
-      auto hudstr   = FormatString("%0.2f\n%0.2f", AE[i]._level, AE[i]._rate);
+      auto hudstr   = FormatString("%0.2f\n%0.2f", AE[i]._level, AE[i]._time);
       bool iscurseg = (i == icurseg);
       float r       = 1;
       float g       = iscurseg ? 0 : 1;

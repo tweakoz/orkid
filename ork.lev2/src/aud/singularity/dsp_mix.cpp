@@ -49,6 +49,7 @@ void MUL2::compute(DspBuffer& dspbuf) { // final
   const float* inpbufb = getInpBuf(dspbuf, 1);
   float* outbufa       = getOutBuf(dspbuf, 0);
   float* outbufb       = getOutBuf(dspbuf, 1);
+  // printf("running ringmod\n");
   for (int i = 0; i < inumframes; i++) {
     float inA  = inpbufa[i] * _dbd->_inputPad;
     float inB  = inpbufb[i] * _dbd->_inputPad;

@@ -15,11 +15,10 @@ static synth_ptr_t the_synth = synth::instance();
 ///////////////////////////////////////////////////////////////////////////////
 
 LayerData::LayerData() {
-  _pchBlock    = nullptr;
-  _algdata     = std::make_shared<AlgData>();
-  _ctrlBlock   = std::make_shared<ControlBlockData>();
-  _envCtrlData = std::make_shared<EnvCtrlData>();  // todo move to samplerdata
-  _kmpBlock    = std::make_shared<KmpBlockData>(); // todo move to samplerdata
+  _pchBlock  = nullptr;
+  _algdata   = std::make_shared<AlgData>();
+  _ctrlBlock = std::make_shared<ControlBlockData>();
+  _kmpBlock  = std::make_shared<KmpBlockData>(); // todo move to samplerdata
 }
 
 ///////////////////////////////////////////////////////////////////////////////

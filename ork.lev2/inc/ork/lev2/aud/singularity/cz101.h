@@ -12,7 +12,7 @@ struct CzEnvelope {
   int _sustPoint = -1;
   bool _decreasing[8];
   float _time[8];
-  int _level[8];
+  float _level[8];
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -340,7 +340,7 @@ void sampleOsc::keyOn(const DspKeyOnInfo& koi) {
   _loopCounter = 0;
   _released    = false;
 
-  _enableNatEnv = ld->_envCtrlData->_useNatEnv;
+  _enableNatEnv = ld->_usenatenv;
 
   printf("_enableNatEnv<%d>\n", int(_enableNatEnv));
 

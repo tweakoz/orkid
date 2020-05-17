@@ -12,154 +12,6 @@ namespace ork::audio::singularity {
 // 7-seg rate/level envelopes
 ///////////////////////////////////////////////////////////////////////////////
 
-ControllerInst* AsrData::instantiate(Layer* l) const // final
-{
-  return new AsrInst(this, l);
-}
-
-AsrInst::AsrInst(const AsrData* data, Layer* l)
-    : ControllerInst(l)
-    , _data(data)
-    , _curslope_persamp(0.0f)
-    , _curseg(-1)
-    , _released(false)
-    , _mode(0) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void AsrInst::initSeg(int iseg) {
-  if (!_data)
-    return;
-
-  _curseg = iseg;
-  assert(_curseg >= 0);
-  assert(_curseg <= 3);
-  const auto& edata = *_data;
-  float segtime     = 0.0f;
-  float dstlevl     = 0.0f;
-
-  switch (iseg) {
-    case 0: // delay
-      segtime = edata._delay;
-      dstlevl = 0;
-      break;
-    case 1: // atk
-      segtime = edata._attack;
-      segtime /= _atkAdjust;
-      dstlevl = 1;
-      break;
-    case 2: // hold
-      _curval           = 1;
-      _curslope_persamp = 0.0f;
-      return;
-      break;
-    case 3: // release
-      segtime = edata._release;
-      segtime /= _relAdjust;
-      dstlevl = 0;
-      break;
-  }
-
-  if (segtime == 0.0f) {
-    _curval           = dstlevl;
-    _curslope_persamp = 0.0f;
-  } else {
-    float deltlev     = (dstlevl - _curval);
-    float slope       = (deltlev / segtime);
-    _curslope_persamp = slope / getSampleRate();
-  }
-  _framesrem = segtime * getSampleRate(); // / 48000.0f;
-
-  // printf( "AsrInst<%p> _data<%p> initSeg<%d> segtime<%f> dstlevl<%f> _curval<%f>\n", this, _data, iseg, segtime, dstlevl, _curval
-  // );
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void AsrInst::compute(int inumfr) // final
-{
-  auto L = [this]() {
-    if (nullptr == _data)
-      _curval = 0.5f;
-
-    const auto& edata = *_data;
-    _framesrem--;
-    if (_framesrem <= 0) {
-      switch (_mode) {
-        case 0: // normal
-          if (_curseg < 3)
-            initSeg(_curseg + 1);
-          break;
-        case 1: // hold
-          if (_curseg == 0)
-            initSeg(1);
-          break;
-        case 2: // repeat
-          if (_curseg < 3)
-            initSeg(_curseg + 1);
-          else
-            initSeg(0);
-          break;
-      }
-    }
-
-    _curval += _curslope_persamp;
-    _curval = clip_float(_curval, 0.0f, 1.0f);
-    // printf( "compute ASR<%s> seg<%d> fr<%d> _mode<%d> _curval<%f>\n", _data->_name.c_str(), _curseg, _framesrem, _mode, _curval
-    // );
-  };
-  for (int i = 0; i < inumfr; i++)
-    L();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void AsrInst::keyOn(const KeyOnInfo& KOI) // final
-{
-  auto ld = KOI._LayerData;
-
-  auto EC        = ld->_envCtrlData;
-  _atkAdjust     = EC->_atkAdjust;
-  _relAdjust     = EC->_relAdjust;
-  _ignoreRelease = ld->_ignRels;
-  assert(_data);
-  _curval   = 0.0f;
-  _released = false;
-  if (_data->_mode == "Normal")
-    _mode = 0;
-  if (_data->_mode == "Hold")
-    _mode = 1;
-  if (_data->_mode == "Repeat")
-    _mode = 2;
-
-  initSeg(0);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void AsrInst::keyOff() // final
-{
-  _released  = true;
-  bool dorel = true;
-
-  if (false == _ignoreRelease)
-    dorel = false;
-  if (_data and _data->_trigger != "ON")
-    dorel = false;
-
-  if (dorel)
-    initSeg(3);
-}
-
-bool AsrInst::isValid() const {
-  return _data and _data->_name.length();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// 7-seg rate/level envelopes
-///////////////////////////////////////////////////////////////////////////////
-
 bool RateLevelEnvData::isBiPolar() const {
   bool rval = false;
   for (auto& item : _segments)
@@ -168,16 +20,28 @@ bool RateLevelEnvData::isBiPolar() const {
   return rval;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 RateLevelEnvData::RateLevelEnvData()
     : _ampenv(false)
     , _bipolar(false)
     , _envType(RlEnvType::ERLTYPE_DEFAULT) {
+
+  _envadjust = [](const EnvPoint& inp, //
+                  int iseg,
+                  const KeyOnInfo& KOI) -> EnvPoint { //
+    return inp;
+  };
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 ControllerInst* RateLevelEnvData::instantiate(Layer* l) const // final
 {
   return new RateLevelEnvInst(this, l);
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 RateLevelEnvInst::RateLevelEnvInst(const RateLevelEnvData* data, Layer* l)
     : ControllerInst(l)
@@ -202,23 +66,8 @@ void RateLevelEnvInst::initSeg(int iseg) {
   assert(_curseg < 7);
   const auto& edata = *_data;
   auto curseg       = edata._segments[_curseg];
-  float segtime     = curseg._rate;
-
-  switch (iseg) {
-    case 0:
-    case 1:
-    case 2: // atk
-      segtime /= _atkAdjust;
-      break;
-    case 3: // decay
-      segtime /= _decAdjust;
-      break;
-    case 4:
-    case 5:
-    case 6: // rel
-      segtime /= _relAdjust;
-      break;
-  }
+  curseg            = edata._envadjust(curseg, iseg, _konoffinfo);
+  float segtime     = curseg._time;
 
   if (segtime == 0.0f) {
     switch (_envType) {
@@ -323,31 +172,12 @@ void RateLevelEnvInst::compute(int inumfr) // final
 ///////////////////////////////////////////////////////////////////////////////
 
 void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI) {
-  _layer = KOI._layer;
+  _layer      = KOI._layer;
+  _konoffinfo = KOI;
 
   auto ld  = KOI._LayerData;
   int ikey = KOI._key;
 
-  auto EC         = ld->_envCtrlData;
-  const auto& DKT = EC->_decKeyTrack;
-  const auto& RKT = EC->_relKeyTrack;
-  // printf("ikey<%d> DKT<%f>\n", ikey, DKT);
-
-  float fkl = -1.0f + float(ikey) / 63.5f;
-
-  _atkAdjust = EC->_atkAdjust;
-  _decAdjust = EC->_decAdjust;
-  _relAdjust = EC->_relAdjust;
-
-  if (ikey > 60) {
-    float flerp = float(ikey - 60) / float(127 - 60);
-    _decAdjust  = lerp(_decAdjust, DKT, flerp);
-    _relAdjust  = lerp(_relAdjust, RKT, flerp);
-  } else if (ikey < 60) {
-    float flerp = float(59 - ikey) / 59.0f;
-    _decAdjust  = lerp(_decAdjust, 1.0 / DKT, flerp);
-    _relAdjust  = lerp(_relAdjust, 1.0 / RKT, flerp);
-  }
   // printf( "flerp<%f> _decAdjust<%f>\n", flerp,_decAdjust);
 
   // printf( "_relAdjust<%f>\n", _relAdjust );

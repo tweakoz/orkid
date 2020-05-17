@@ -6,24 +6,8 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct EnvCtrlData {
-  bool _useNatEnv  = false; // kurzeril per-sample envelope
-  float _atkAdjust = 1.0f;
-  float _decAdjust = 1.0f;
-  float _relAdjust = 1.0f;
-
-  float _atkKeyTrack = 1.0f;
-  float _atkVelTrack = 1.0f;
-  float _decKeyTrack = 1.0f;
-  float _decVelTrack = 1.0f;
-  float _relKeyTrack = 1.0f;
-  float _relVelTrack = 1.0f;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct EnvPoint {
-  float _rate;
+  float _time;
   float _level;
 };
 
@@ -35,6 +19,7 @@ enum struct RlEnvType {
   ERLTYPE_KRZMODENV,
 };
 
+using envadjust_method_t = std::function<EnvPoint(const EnvPoint& inp, int iseg, const KeyOnInfo& KOI)>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct RateLevelEnvData : public ControllerData {
@@ -46,11 +31,13 @@ struct RateLevelEnvData : public ControllerData {
   bool _ampenv;
   bool _bipolar;
   RlEnvType _envType;
+  envadjust_method_t _envadjust;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct AsrData : public ControllerData {
+  AsrData();
   ControllerInst* instantiate(Layer* layer) const final;
 
   std::string _trigger;
@@ -58,6 +45,7 @@ struct AsrData : public ControllerData {
   float _delay;
   float _attack;
   float _release;
+  envadjust_method_t _envadjust;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -89,13 +77,12 @@ struct AsrInst : public ControllerInst {
   const AsrData* _data;
   int _curseg;
   int _mode;
-  float _atkAdjust;
-  float _relAdjust;
   float _dstval;
   int _framesrem;
   bool _released;
   bool _ignoreRelease;
   float _curslope_persamp;
+  KeyOnInfo _konoffinfo;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -111,9 +98,6 @@ struct RateLevelEnvInst : public ControllerInst {
   const RateLevelEnvData* _data;
   Layer* _layer;
   int _curseg;
-  float _atkAdjust;
-  float _decAdjust;
-  float _relAdjust;
   float _filtval;
   float _dstval;
   int _framesrem;
@@ -123,6 +107,7 @@ struct RateLevelEnvInst : public ControllerInst {
   bool _ampenv;
   bool _bipolar;
   RlEnvType _envType;
+  KeyOnInfo _konoffinfo;
 
   float _USERAMPENV[1024];
 };

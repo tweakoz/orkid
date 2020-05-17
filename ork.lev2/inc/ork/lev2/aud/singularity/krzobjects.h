@@ -13,6 +13,22 @@ struct KrzAlgData {
 };
 ///////////////////////////////////////////////////////////////////////////////
 
+struct EnvCtrlData {
+  bool _useNatEnv  = false; // kurzeril per-sample envelope
+  float _atkAdjust = 1.0f;
+  float _decAdjust = 1.0f;
+  float _relAdjust = 1.0f;
+
+  float _atkKeyTrack = 1.0f;
+  float _atkVelTrack = 1.0f;
+  float _decKeyTrack = 1.0f;
+  float _decVelTrack = 1.0f;
+  float _relKeyTrack = 1.0f;
+  float _relVelTrack = 1.0f;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct VastObjectsDB {
   void loadJson(const std::string& fname, int bank);
 
@@ -23,7 +39,7 @@ struct VastObjectsDB {
   //
 
   keymap_ptr_t parseKeymap(int kmid, const rapidjson::Value& JO);
-  void parseAsr(const rapidjson::Value& JO, controlblockdata_ptr_t cblock, const std::string& name);
+  void parseAsr(const rapidjson::Value& JO, controlblockdata_ptr_t cblock, const EnvCtrlData& ENVCTRL, const std::string& name);
   void parseLfo(const rapidjson::Value& JO, controlblockdata_ptr_t cblock, const std::string& name);
   void parseFun(const rapidjson::Value& JO, controlblockdata_ptr_t cblock, const std::string& name);
   lyrdata_ptr_t parseLayer(const rapidjson::Value& JO, ProgramData* pd);
