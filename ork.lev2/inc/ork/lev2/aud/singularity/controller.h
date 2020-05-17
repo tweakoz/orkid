@@ -10,6 +10,29 @@ struct FunData;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct ControlBlockData {
+  template <typename T> std::shared_ptr<T> addController() {
+    OrkAssert((_numcontrollers + 1) <= kmaxctrlperblock);
+    auto c                    = std::make_shared<T>();
+    _cdata[_numcontrollers++] = c;
+    return c;
+  }
+  controllerdata_constptr_t _cdata[kmaxctrlperblock];
+  size_t _numcontrollers = 0;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ControllerData {
+  virtual ControllerInst* instantiate(Layer* layer) const = 0;
+  virtual ~ControllerData() {
+  }
+
+  std::string _name;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct ControllerInst {
   ControllerInst(Layer* layer);
   virtual ~ControllerInst() {
@@ -28,10 +51,23 @@ struct ControllerInst {
 
 struct ControlBlockInst {
   void compute(int inumfr);
-  void keyOn(const KeyOnInfo& KOI, const ControlBlockData* CBD);
+  void keyOn(const KeyOnInfo& KOI, controlblockdata_constptr_t CBD);
   void keyOff();
 
   ControllerInst* _cinst[kmaxctrlperblock] = {0, 0, 0, 0};
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct LfoData : public ControllerData {
+  LfoData();
+  ControllerInst* instantiate(Layer* layer) const final;
+
+  float _initialPhase;
+  float _minRate;
+  float _maxRate;
+  std::string _controller;
+  std::string _shape;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -52,6 +88,14 @@ struct LfoInst : public ControllerInst {
   float _rateLerp;
   float _bias;
   mapper_t _mapper;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct FunData : public ControllerData {
+  ControllerInst* instantiate(Layer* layer) const final;
+
+  std::string _a, _b, _op;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

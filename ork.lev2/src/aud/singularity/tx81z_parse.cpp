@@ -118,15 +118,8 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
     prg->_name = namebuf;
 
-    auto fm4pd = new Fm4ProgData;
-
-    auto ld            = prg->newLayer();
-    ld->_keymap        = outd->_zpmKM;
-    auto CB0           = new ControlBlockData;
-    ld->_ctrlBlocks[0] = CB0;
-
-    ld->_kmpBlock._keymap = outd->_zpmKM;
-
+    auto fm4pd  = new Fm4ProgData;
+    auto ld     = prg->newLayer();
     auto stage0 = ld->appendStage();
 
     auto block0       = stage0->appendBlock();
@@ -147,9 +140,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
     // ld->_fBlock[7]._dspBlock = "AMP";
     // ld->_fBlock[7]._paramScheme = "AMP";
-    ld->_envCtrlData._useNatEnv = false;
-    ld->_algdata->_krzAlgIndex  = 1;
-    ld->_algdata->_name         = "ALG1";
+    ld->_algdata = configureKrzAlgorithm(1);
 
     // for (int i = 0; i < 8; i++)
     // ld->_fBlock[i].initEvaluators();
@@ -282,8 +273,8 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
       ////////////////////////////
 
-      auto AE      = CB0->addController<RateLevelEnvData>();
-      AE->_name    = ork::FormatString("OP%d.Amp", j);
+      auto envname = ork::FormatString("OP%d.Amp", j);
+      auto AE      = ld->appendController<RateLevelEnvData>(envname);
       AE->_ampenv  = true; //(j==0);
       AE->_envType = RlEnvType::ERLTYPE_DEFAULT;
 
@@ -329,11 +320,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 Tx81zData::Tx81zData()
     : SynthData()
     , _lastprg(0) {
-  _zpmDB              = new VastObjectsDB;
-  _zpmKM              = new KeyMap;
-  _zpmKM->_name       = "FM4";
-  _zpmKM->_kmID       = 1;
-  _zpmDB->_keymaps[1] = _zpmKM;
+  _zpmDB = new VastObjectsDB;
 }
 
 Tx81zData::~Tx81zData() {

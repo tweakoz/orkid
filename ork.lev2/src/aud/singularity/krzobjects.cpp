@@ -162,8 +162,8 @@ ork::svar16_t DspBlockData::getExtData(const std::string& name) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-KeyMap* VastObjectsDB::parseKeymap(int kmid, const Value& jsonobj) {
-  auto kmapout = new KeyMap;
+keymap_ptr_t VastObjectsDB::parseKeymap(int kmid, const Value& jsonobj) {
+  auto kmapout = std::make_shared<KeyMap>();
 
   kmapout->_kmID = kmid;
   kmapout->_name = jsonobj["Keymap"].GetString();
@@ -281,41 +281,36 @@ multisample* VastObjectsDB::parseMultiSample(const Value& jsonobj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-controllerdata_ptr_t VastObjectsDB::parseAsr(const rapidjson::Value& jo, const std::string& name) {
-  auto aout      = std::make_shared<AsrData>();
+void VastObjectsDB::parseAsr(const rapidjson::Value& jo, controlblockdata_ptr_t cblock, const std::string& name) {
+  auto aout      = cblock->addController<AsrData>();
   aout->_trigger = jo["trigger"].GetString();
   aout->_mode    = jo["mode"].GetString();
   aout->_delay   = jo["delay"].GetFloat();
   aout->_attack  = jo["attack"].GetFloat();
   aout->_release = jo["release"].GetFloat();
   aout->_name    = name;
-
-  return aout;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-controllerdata_ptr_t VastObjectsDB::parseLfo(const rapidjson::Value& jo, const std::string& name) {
-  auto lout           = std::make_shared<LfoData>();
+void VastObjectsDB::parseLfo(const rapidjson::Value& jo, controlblockdata_ptr_t cblock, const std::string& name) {
+  auto lout           = cblock->addController<LfoData>();
   lout->_initialPhase = jo["phase"].GetFloat();
   lout->_shape        = jo["shape"].GetString();
   lout->_controller   = jo["rateCtl"].GetString();
   lout->_minRate      = jo["minRate(hz)"].GetFloat();
   lout->_maxRate      = jo["maxRate(hz)"].GetFloat();
   lout->_name         = name;
-
-  return lout;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-controllerdata_ptr_t VastObjectsDB::parseFun(const rapidjson::Value& jo, const std::string& name) {
-  auto out   = std::make_shared<FunData>();
+void VastObjectsDB::parseFun(const rapidjson::Value& jo, controlblockdata_ptr_t cblock, const std::string& name) {
+  auto out   = cblock->addController<FunData>();
   out->_a    = jo["a"].GetString();
   out->_b    = jo["b"].GetString();
   out->_op   = jo["op"].GetString();
   out->_name = name;
-  return out;
 }
 
 int NoteFromString(const std::string& snote) {
@@ -517,8 +512,8 @@ dspblkdata_ptr_t VastObjectsDB::parsePchBlock(const Value& pseg, lyrdata_ptr_t l
   if (nullptr == dblk)
     return dblk;
 
-  const auto& KMP = layd->_kmpBlock;
-  if (KMP._pbMode == "Noise") {
+  auto KMP = layd->_kmpBlock;
+  if (KMP->_pbMode == "Noise") {
     dblk->_dspBlock = "NOISE";
     dblk->_paramd[0].usePitchEvaluator();
   } else {
@@ -558,7 +553,7 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
   auto km       = it->second;
   rval->_keymap = km;
 
-  parseKmpBlock(keymapSeg, rval->_kmpBlock);
+  parseKmpBlock(keymapSeg, *rval->_kmpBlock);
 
   rval->_loKey = jsonobj["loKey"].GetInt();
   rval->_hiKey = jsonobj["hiKey"].GetInt();
@@ -576,10 +571,10 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
   //////////////////////////////////////////////////////
 
   const auto& envcSeg = jsonobj["ENVCTRL"];
-  parseEnvControl(envcSeg, rval->_envCtrlData);
+  parseEnvControl(envcSeg, *rval->_envCtrlData);
 
-  auto parseEnv = [&](const Value& envobj, const std::string& name) -> controllerdata_ptr_t {
-    auto rout                 = std::make_shared<RateLevelEnvData>();
+  auto parseEnv = [&](const Value& envobj, controlblockdata_ptr_t cblock, const std::string& name) -> controllerdata_ptr_t {
+    auto rout                 = cblock->addController<RateLevelEnvData>();
     RateLevelEnvData& destenv = *rout;
     rout->_name               = name;
     if (name == "AMPENV") {
@@ -616,72 +611,67 @@ lyrdata_ptr_t VastObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
     return rout;
   };
   //////////////////////////////////////////////////////
-  auto CB0             = new ControlBlockData; // ENV
-  auto CB1             = new ControlBlockData; // ASRLFO
-  auto CB2             = new ControlBlockData; // FUN
-  rval->_ctrlBlocks[0] = CB0;
-  rval->_ctrlBlocks[1] = CB1;
-  rval->_ctrlBlocks[2] = CB2;
+  auto CB = rval->_ctrlBlock;
   //////////////////////////////////////////////////////
   // kurzweil only has 3 envs per layer!
   //////////////////////////////////////////////////////
   if (jsonobj.HasMember("AMPENV")) {
     const auto& seg = jsonobj["AMPENV"];
     if (seg.IsObject())
-      CB0->_cdata[0] = parseEnv(seg, "AMPENV");
+      parseEnv(seg, CB, "AMPENV");
   }
   if (jsonobj.HasMember("ENV2")) {
     const auto& seg = jsonobj["ENV2"];
     if (seg.IsObject())
-      CB0->_cdata[1] = parseEnv(seg, "ENV2");
+      parseEnv(seg, CB, "ENV2");
   }
   if (jsonobj.HasMember("ENV3")) {
     const auto& seg = jsonobj["ENV3"];
     if (seg.IsObject())
-      CB0->_cdata[2] = parseEnv(seg, "ENV3");
+      parseEnv(seg, CB, "ENV3");
   }
   //////////////////////////////////////////////////////
   if (jsonobj.HasMember("ASR1")) {
     const auto& seg = jsonobj["ASR1"];
     if (seg.IsObject())
-      CB1->_cdata[0] = parseAsr(seg, "ASR1");
+      parseAsr(seg, CB, "ASR1");
   }
   if (jsonobj.HasMember("ASR2")) {
     const auto& seg = jsonobj["ASR2"];
     if (seg.IsObject())
-      CB1->_cdata[1] = parseAsr(seg, "ASR2");
+      parseAsr(seg, CB, "ASR2");
   }
   //////////////////////////////////////////////////////
   if (jsonobj.HasMember("LFO1")) {
     const auto& lfo1seg = jsonobj["LFO1"];
     if (lfo1seg.IsObject())
-      CB1->_cdata[2] = parseLfo(lfo1seg, "LFO1");
+      parseLfo(lfo1seg, CB, "LFO1");
   }
   if (jsonobj.HasMember("LFO2")) {
     const auto& lfo2seg = jsonobj["LFO2"];
     if (lfo2seg.IsObject())
-      CB1->_cdata[3] = parseLfo(lfo2seg, "LFO2");
+      parseLfo(lfo2seg, CB, "LFO2");
   }
   //////////////////////////////////////////////////////
   if (jsonobj.HasMember("FUN1")) {
     const auto& seg = jsonobj["FUN1"];
     if (seg.IsObject())
-      CB2->_cdata[0] = parseFun(seg, "FUN1");
+      parseFun(seg, CB, "FUN1");
   }
   if (jsonobj.HasMember("FUN2")) {
     const auto& seg = jsonobj["FUN2"];
     if (seg.IsObject())
-      CB2->_cdata[1] = parseFun(seg, "FUN2");
+      parseFun(seg, CB, "FUN2");
   }
   if (jsonobj.HasMember("FUN3")) {
     const auto& seg = jsonobj["FUN3"];
     if (seg.IsObject())
-      CB2->_cdata[2] = parseFun(seg, "FUN3");
+      parseFun(seg, CB, "FUN3");
   }
   if (jsonobj.HasMember("FUN4")) {
     const auto& seg = jsonobj["FUN4"];
     if (seg.IsObject())
-      CB2->_cdata[3] = parseFun(seg, "FUN4");
+      parseFun(seg, CB, "FUN4");
   }
   //////////////////////////////////////////////////////
 
@@ -919,7 +909,7 @@ void VastObjectsDB::loadJson(const std::string& fname, int ibaseid) {
   }
   for (auto it : _tempkeymaps) {
     int objid               = it.first;
-    KeyMap* km              = it.second;
+    auto km                 = it.second;
     objmap->_keymaps[objid] = km;
     for (auto kr : km->_regions) {
       int msid  = kr->_multsampID;
@@ -977,9 +967,9 @@ const ProgramData* VastObjectsDB::findProgramByName(const std::string named) con
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const KeyMap* VastObjectsDB::findKeymap(int kmID) const {
-  KeyMap* kd = nullptr;
-  auto it    = _keymaps.find(kmID);
+keymap_constptr_t VastObjectsDB::findKeymap(int kmID) const {
+  keymap_constptr_t kd = nullptr;
+  auto it              = _keymaps.find(kmID);
   if (it != _keymaps.end())
     kd = it->second;
   return kd;

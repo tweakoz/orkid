@@ -11,6 +11,43 @@ namespace ork::audio::singularity {
 constexpr int KPARALLELBLOCKMAX = 4; // max number of parallel blocks per layer
 ///////////////////////////////////////////////////////////////////////////////
 
+struct LayerData {
+  LayerData();
+
+  dspstagedata_ptr_t appendStage();
+  dspstagedata_ptr_t stage(int index);
+  template <typename T>                                           //
+  inline std::shared_ptr<T> appendController(std::string named) { //
+    auto controller   = _ctrlBlock->addController<T>();
+    controller->_name = named;
+    _controllerset.insert(controller);
+    return controller;
+  }
+
+  int _numdspblocks       = 0;
+  int _loKey              = 0;
+  int _hiKey              = 127;
+  int _loVel              = 0;
+  int _hiVel              = 127;
+  float _channelGains[4]  = {0, 0, 0, 0};
+  int _channelPans[4]     = {0, 0, 0, 0};
+  int _channelPanModes[4] = {0, 0, 0, 0};
+  bool _ignRels           = false;
+  bool _atk1Hold          = false; // ThrAtt
+  bool _atk3Hold          = false; // TilDec
+
+  algdata_ptr_t _algdata;
+  envctrldata_ptr_t _envCtrlData;
+  kmpblockdata_ptr_t _kmpBlock;
+  dspblkdata_ptr_t _pchBlock;
+  keymap_constptr_t _keymap;
+  std::set<controlblockdata_ptr_t> _controlblockset;
+  std::set<controllerdata_ptr_t> _controllerset;
+  controlblockdata_ptr_t _ctrlBlock;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct Layer {
 
   Layer();
@@ -46,7 +83,6 @@ struct Layer {
   float _curPitchOffsetInCents;
   float _centsPerKey;
   int _lyrPhase;
-  bool _useNatEnv;
   bool _ignoreRelease;
 
   int _layerBasePitch; // in cents
@@ -59,7 +95,7 @@ struct Layer {
   float _layerTime;
   dspblk_ptr_t _pchBlock;
 
-  ControlBlockInst* _ctrlBlock[kmaxctrlblocks] = {0, 0, 0, 0, 0, 0, 0, 0};
+  ControlBlockInst* _ctrlBlock = nullptr;
 
   std::map<std::string, ControllerInst*> _controlMap;
   std::map<controllerdata_constptr_t, ControllerInst*> _controld2iMap;

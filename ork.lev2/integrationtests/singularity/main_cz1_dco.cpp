@@ -14,7 +14,6 @@ int main(int argc, char** argv) {
   auto program   = std::make_shared<ProgramData>();
   auto layerdata = program->newLayer();
   auto czdata    = std::make_shared<CzOscData>();
-  auto keymap    = std::make_shared<KeyMap>();
   auto DCAENV    = layerdata->appendController<RateLevelEnvData>("DCAENV");
   auto DCWENV    = layerdata->appendController<RateLevelEnvData>("DCWENV");
   auto LFO2      = layerdata->appendController<LfoData>("MYLFO2");
@@ -24,16 +23,11 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   program->_role = "czx";
   program->_name = "test";
-  keymap->_name  = "CZX";
-  keymap->_kmID  = 1;
   //_zpmDB->_keymaps[1] = keymap;
   //////////////////////////////////////
   // create layer
   //////////////////////////////////////
-  layerdata->_algdata                = configureKrzAlgorithm(1);
-  layerdata->_keymap                 = keymap.get();
-  layerdata->_kmpBlock._keymap       = keymap.get();
-  layerdata->_envCtrlData._useNatEnv = false;
+  layerdata->_algdata = configureKrzAlgorithm(1);
   //////////////////////////////////////
   // set envelope
   //////////////////////////////////////

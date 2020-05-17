@@ -46,12 +46,12 @@ void NatEnv::keyOn(const KeyOnInfo& KOI, const sample* s) {
   _state         = 1;
   _ignoreRelease = ld->_ignRels;
 
-  const auto& EC  = ld->_envCtrlData;
-  const auto& DKT = EC._decKeyTrack;
-  const auto& RKT = EC._relKeyTrack;
+  auto EC         = ld->_envCtrlData;
+  auto DKT        = EC->_decKeyTrack;
+  const auto& RKT = EC->_relKeyTrack;
 
-  _decAdjust = EC._decAdjust;
-  _relAdjust = EC._relAdjust;
+  _decAdjust = EC->_decAdjust;
+  _relAdjust = EC->_relAdjust;
 
   if (ikey > 60) {
     float flerp = float(ikey - 60) / float(127 - 60);

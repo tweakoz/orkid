@@ -119,9 +119,9 @@ void AsrInst::keyOn(const KeyOnInfo& KOI) // final
 {
   auto ld = KOI._LayerData;
 
-  const auto& EC = ld->_envCtrlData;
-  _atkAdjust     = EC._atkAdjust;
-  _relAdjust     = EC._relAdjust;
+  auto EC        = ld->_envCtrlData;
+  _atkAdjust     = EC->_atkAdjust;
+  _relAdjust     = EC->_relAdjust;
   _ignoreRelease = ld->_ignRels;
   assert(_data);
   _curval   = 0.0f;
@@ -159,6 +159,14 @@ bool AsrInst::isValid() const {
 ///////////////////////////////////////////////////////////////////////////////
 // 7-seg rate/level envelopes
 ///////////////////////////////////////////////////////////////////////////////
+
+bool RateLevelEnvData::isBiPolar() const {
+  bool rval = false;
+  for (auto& item : _segments)
+    if (item._level < 0.0f)
+      rval = true;
+  return rval;
+}
 
 RateLevelEnvData::RateLevelEnvData()
     : _ampenv(false)
@@ -320,16 +328,16 @@ void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI) {
   auto ld  = KOI._LayerData;
   int ikey = KOI._key;
 
-  const auto& EC  = ld->_envCtrlData;
-  const auto& DKT = EC._decKeyTrack;
-  const auto& RKT = EC._relKeyTrack;
+  auto EC         = ld->_envCtrlData;
+  const auto& DKT = EC->_decKeyTrack;
+  const auto& RKT = EC->_relKeyTrack;
   // printf("ikey<%d> DKT<%f>\n", ikey, DKT);
 
   float fkl = -1.0f + float(ikey) / 63.5f;
 
-  _atkAdjust = EC._atkAdjust;
-  _decAdjust = EC._decAdjust;
-  _relAdjust = EC._relAdjust;
+  _atkAdjust = EC->_atkAdjust;
+  _decAdjust = EC->_decAdjust;
+  _relAdjust = EC->_relAdjust;
 
   if (ikey > 60) {
     float flerp = float(ikey - 60) / float(127 - 60);

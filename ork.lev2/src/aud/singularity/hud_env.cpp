@@ -1,6 +1,8 @@
 #include <ork/lev2/aud/singularity/hud.h>
-
+#include <ork/lev2/aud/singularity/envelope.h>
+#include <ork/lev2/aud/singularity/sampler.h>
 namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
@@ -15,10 +17,10 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
   const auto& ENVFRAME         = EDR._data.Get<envframe>();
   const RateLevelEnvData* ENVD = ENVFRAME._data;
 
-  const auto& ENVCT = EDR.ld->_envCtrlData;
-  bool collsamp     = EDR.shouldCollectSample();
+  auto ENVCT    = EDR.ld->_envCtrlData;
+  bool collsamp = EDR.shouldCollectSample();
 
-  bool useNENV = ENVCT._useNatEnv && (EDR.ienv == 0);
+  bool useNENV = ENVCT->_useNatEnv && (EDR.ienv == 0);
 
   std::string sampname = "???";
 
@@ -52,10 +54,10 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
   float env_bx  = R.X1 + 70.0;
   int spcperseg = 70;
   if (useNENV) {
-    const auto sample = KFIN._kmregion->_sample;
-    const auto& NES   = sample->_natenv;
-    int nseg          = NES.size();
-    int icurseg       = ENVFRAME._curseg;
+    auto sample     = KFIN._kmregion->_sample;
+    const auto& NES = sample->_natenv;
+    int nseg        = NES.size();
+    int icurseg     = ENVFRAME._curseg;
 
     drawtext(context, "NATENV", env_bx, env_by, fontscale, 1, 0, 0);
 

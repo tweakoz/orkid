@@ -5,9 +5,61 @@
 
 namespace ork::audio::singularity {
 
-struct KeyOnInfo;
-struct AsrData;
-struct RateLevelEnvData;
+///////////////////////////////////////////////////////////////////////////////
+
+struct EnvCtrlData {
+  bool _useNatEnv  = false; // kurzeril per-sample envelope
+  float _atkAdjust = 1.0f;
+  float _decAdjust = 1.0f;
+  float _relAdjust = 1.0f;
+
+  float _atkKeyTrack = 1.0f;
+  float _atkVelTrack = 1.0f;
+  float _decKeyTrack = 1.0f;
+  float _decVelTrack = 1.0f;
+  float _relKeyTrack = 1.0f;
+  float _relVelTrack = 1.0f;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct EnvPoint {
+  float _rate;
+  float _level;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+enum struct RlEnvType {
+  ERLTYPE_DEFAULT = 0,
+  ERLTYPE_KRZAMPENV,
+  ERLTYPE_KRZMODENV,
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct RateLevelEnvData : public ControllerData {
+  RateLevelEnvData();
+  ControllerInst* instantiate(Layer* layer) const final;
+  bool isBiPolar() const;
+
+  std::vector<EnvPoint> _segments;
+  bool _ampenv;
+  bool _bipolar;
+  RlEnvType _envType;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct AsrData : public ControllerData {
+  ControllerInst* instantiate(Layer* layer) const final;
+
+  std::string _trigger;
+  std::string _mode;
+  float _delay;
+  float _attack;
+  float _release;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 

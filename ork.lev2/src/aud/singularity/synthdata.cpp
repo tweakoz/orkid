@@ -8,6 +8,7 @@
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
+#include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/kernel/string/string.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -22,28 +23,6 @@ float SynthData::seqTime(float dur) {
   return rval;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-LayerData::LayerData() {
-  _pchBlock = nullptr;
-  _algdata  = std::make_shared<AlgData>();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-dspstagedata_ptr_t LayerData::appendStage() {
-  OrkAssert(_algdata->_numstages < kmaxdspstagesperlayer);
-  auto stage                                = std::make_shared<DspStageData>();
-  _algdata->_stages[_algdata->_numstages++] = stage;
-  return stage;
-}
-
-dspstagedata_ptr_t LayerData::stage(int index) {
-  OrkAssert(index < _algdata->_numstages);
-  OrkAssert(index >= 0);
-  auto stage = _algdata->_stages[index];
-  return stage;
-}
 ///////////////////////////////////////////////////////////////////////////////
 
 Sf2TestSynthData::Sf2TestSynthData(const file::Path& filename, const std::string& bankname)
@@ -105,8 +84,7 @@ const ProgramData* KrzKmTestData::getProgram(int kmID) const {
     if (km) {
       auto lyr     = rval->newLayer();
       lyr->_keymap = km;
-      // lyr->_useNatEnv = false;
-      rval->_name = ork::FormatString("%s", km->_name.c_str());
+      rval->_name  = ork::FormatString("%s", km->_name.c_str());
     } else
       rval->_name = ork::FormatString("\?\?\?\?");
   }
@@ -242,17 +220,8 @@ void KrzTestData::genTestPrograms() {
 
   l1->_keymap = KrzSynthData::baseObjects()->findKeymap(keymap_sine);
 
-  auto& EC      = l1->_envCtrlData;
-  EC._useNatEnv = false;
-
-  auto CB0           = new ControlBlockData;
-  auto CB1           = new ControlBlockData;
-  l1->_ctrlBlocks[0] = CB0;
-  l1->_ctrlBlocks[1] = CB1;
-
-  auto ampenv   = CB0->addController<RateLevelEnvData>();
-  ampenv->_name = "AMPENV";
-  auto& aesegs  = ampenv->_segments;
+  auto ampenv  = l1->appendController<RateLevelEnvData>("AMPENV");
+  auto& aesegs = ampenv->_segments;
   aesegs.push_back(EnvPoint{0, 1});
   aesegs.push_back(EnvPoint{0, 0});
   aesegs.push_back(EnvPoint{0, 0});
@@ -261,8 +230,7 @@ void KrzTestData::genTestPrograms() {
   aesegs.push_back(EnvPoint{0, 0});
   aesegs.push_back(EnvPoint{1, 0});
 
-  auto env2    = CB0->addController<RateLevelEnvData>();
-  env2->_name  = "ENV2";
+  auto env2    = l1->appendController<RateLevelEnvData>("ENV2");
   auto& e2segs = env2->_segments;
   e2segs.push_back(EnvPoint{2, 1});
   e2segs.push_back(EnvPoint{0, 1});
@@ -272,8 +240,7 @@ void KrzTestData::genTestPrograms() {
   e2segs.push_back(EnvPoint{0, 0});
   e2segs.push_back(EnvPoint{1, 0});
 
-  auto env3    = CB0->addController<RateLevelEnvData>();
-  env3->_name  = "ENV3";
+  auto env3    = l1->appendController<RateLevelEnvData>("ENV3");
   auto& e3segs = env3->_segments;
   e3segs.push_back(EnvPoint{8, 1});
   e3segs.push_back(EnvPoint{0, 1});
@@ -283,8 +250,7 @@ void KrzTestData::genTestPrograms() {
   e3segs.push_back(EnvPoint{0, 0});
   e3segs.push_back(EnvPoint{1, 0});
 
-  auto lfo1         = CB1->addController<LfoData>();
-  lfo1->_name       = "LFO1";
+  auto lfo1         = l1->appendController<LfoData>("LFO1");
   lfo1->_controller = "ON";
   lfo1->_maxRate    = 0.1;
 

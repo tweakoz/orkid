@@ -13,14 +13,14 @@ struct VastObjectsDB {
 
   const ProgramData* findProgram(int idx) const;
   const ProgramData* findProgramByName(const std::string named) const;
-  const KeyMap* findKeymap(int kmID) const;
+  keymap_constptr_t findKeymap(int kmID) const;
 
   //
 
-  KeyMap* parseKeymap(int kmid, const rapidjson::Value& JO);
-  controllerdata_ptr_t parseAsr(const rapidjson::Value& JO, const std::string& name);
-  controllerdata_ptr_t parseLfo(const rapidjson::Value& JO, const std::string& name);
-  controllerdata_ptr_t parseFun(const rapidjson::Value& JO, const std::string& name);
+  keymap_ptr_t parseKeymap(int kmid, const rapidjson::Value& JO);
+  void parseAsr(const rapidjson::Value& JO, controlblockdata_ptr_t cblock, const std::string& name);
+  void parseLfo(const rapidjson::Value& JO, controlblockdata_ptr_t cblock, const std::string& name);
+  void parseFun(const rapidjson::Value& JO, controlblockdata_ptr_t cblock, const std::string& name);
   lyrdata_ptr_t parseLayer(const rapidjson::Value& JO, ProgramData* pd);
   void parseEnvControl(const rapidjson::Value& JO, EnvCtrlData& ed);
   ProgramData* parseProgram(const rapidjson::Value& JO);
@@ -35,11 +35,11 @@ struct VastObjectsDB {
 
   std::map<int, ProgramData*> _programs;
   std::map<std::string, ProgramData*> _programsByName;
-  std::map<int, KeyMap*> _keymaps;
+  std::map<int, keymap_ptr_t> _keymaps;
   std::map<int, multisample*> _multisamples;
 
   std::map<int, ProgramData*> _tempprograms;
-  std::map<int, KeyMap*> _tempkeymaps;
+  std::map<int, keymap_ptr_t> _tempkeymaps;
   std::map<int, multisample*> _tempmultisamples;
 };
 

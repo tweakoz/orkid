@@ -8,6 +8,7 @@
 #include <ork/lev2/aud/singularity/cz101.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/aud/singularity/alg_amp.h>
+#include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/math/multicurve.h>
 
 using namespace ork;
@@ -293,11 +294,8 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   // czdata->dump();
 
   auto make_layer = [&](czxdata_constptr_t oscdata) -> lyrdata_ptr_t {
-    auto layerdata                     = prgout->newLayer();
-    layerdata->_algdata                = configureKrzAlgorithm(1);
-    layerdata->_keymap                 = outd->_zpmKM;
-    layerdata->_kmpBlock._keymap       = outd->_zpmKM;
-    layerdata->_envCtrlData._useNatEnv = false;
+    auto layerdata      = prgout->newLayer();
+    layerdata->_algdata = configureKrzAlgorithm(1);
     /////////////////////////////////////////////////
     auto DCWENV           = layerdata->appendController<RateLevelEnvData>("DCWENV");
     DCWENV->_ampenv       = false;
@@ -511,11 +509,11 @@ void CzProgData::dump() const {
 CzData::CzData()
     : SynthData()
     , _lastprg(0) {
-  _zpmDB              = new VastObjectsDB;
-  _zpmKM              = new KeyMap;
-  _zpmKM->_name       = "CZX";
-  _zpmKM->_kmID       = 1;
-  _zpmDB->_keymaps[1] = _zpmKM;
+  _zpmDB = new VastObjectsDB;
+  //_zpmKM              = new KeyMap;
+  //_zpmKM->_name       = "CZX";
+  //_zpmKM->_kmID       = 1;
+  //_zpmDB->_keymaps[1] = _zpmKM;
 }
 ///////////////////////////////////////////////////////////////////////////////
 CzData::~CzData() {

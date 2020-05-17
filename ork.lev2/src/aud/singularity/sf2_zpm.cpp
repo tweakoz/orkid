@@ -229,7 +229,6 @@ void SoundFont::genZpmDB() {
         auto AE = new RateLevelEnvData;
 
         CB0->_cdata[0] = AE;
-        ld->_envCtrlData._useNatEnv = false;
         ld->_algData->_krzAlgIndex = 1;
         ld->_algData->_name = "ALG1";
         ld->_kmpBlock._keymap = km;

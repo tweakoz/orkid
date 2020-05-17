@@ -5,11 +5,40 @@
 
 #include <ork/lev2/aud/singularity/krzdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
+#include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 
 namespace ork::audio::singularity {
 
 static synth_ptr_t the_synth = synth::instance();
+
+///////////////////////////////////////////////////////////////////////////////
+
+LayerData::LayerData() {
+  _pchBlock    = nullptr;
+  _algdata     = std::make_shared<AlgData>();
+  _ctrlBlock   = std::make_shared<ControlBlockData>();
+  _envCtrlData = std::make_shared<EnvCtrlData>();  // todo move to samplerdata
+  _kmpBlock    = std::make_shared<KmpBlockData>(); // todo move to samplerdata
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+dspstagedata_ptr_t LayerData::appendStage() {
+  OrkAssert(_algdata->_numstages < kmaxdspstagesperlayer);
+  auto stage                                = std::make_shared<DspStageData>();
+  _algdata->_stages[_algdata->_numstages++] = stage;
+  return stage;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+dspstagedata_ptr_t LayerData::stage(int index) {
+  OrkAssert(index < _algdata->_numstages);
+  OrkAssert(index >= 0);
+  auto stage = _algdata->_stages[index];
+  return stage;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -20,7 +49,6 @@ Layer::Layer()
     , _centsPerKey(100.0f)
     , _lyrPhase(-1)
     , _curnote(0)
-    , _useNatEnv(false)
     , _alg(nullptr)
     , _doNoise(false)
     , _keepalive(0) {
@@ -34,9 +62,8 @@ Layer::Layer()
 }
 
 Layer::~Layer() {
-  for (int i = 0; i < kmaxctrlblocks; i++)
-    if (_ctrlBlock[i])
-      delete _ctrlBlock[i];
+  if (_ctrlBlock)
+    delete _ctrlBlock;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -93,10 +120,8 @@ void Layer::compute(outputBuffer& obuf) {
   // update controllers
   //////////////////////////////////////
 
-  for (int i = 0; i < kmaxctrlblocks; i++) {
-    if (_ctrlBlock[i])
-      _ctrlBlock[i]->compute(inumframes);
-  }
+  if (_ctrlBlock)
+    _ctrlBlock->compute(inumframes);
 
   ///////////////////////////////////////////////
   // HUD AFRAME
@@ -105,42 +130,40 @@ void Layer::compute(outputBuffer& obuf) {
   int asrcount = 0;
   int lfocount = 0;
   int funcount = 0;
-  for (int icb = 0; icb < kmaxctrlblocks; icb++) {
-    auto cb = _ctrlBlock[icb];
-    if (cb) {
-      for (int ic = 0; ic < kmaxctrlperblock; ic++) {
-        auto cinst = cb->_cinst[ic];
-        if (auto env = dynamic_cast<RateLevelEnvInst*>(cinst)) {
-          envframe envf;
-          envf._index  = envcount++;
-          envf._value  = env->_curval;
-          envf._data   = env->_data;
+  auto cb      = _ctrlBlock;
+  if (cb) {
+    for (int ic = 0; ic < kmaxctrlperblock; ic++) {
+      auto cinst = cb->_cinst[ic];
+      if (auto env = dynamic_cast<RateLevelEnvInst*>(cinst)) {
+        envframe envf;
+        envf._index  = envcount++;
+        envf._value  = env->_curval;
+        envf._data   = env->_data;
+        envf._curseg = env->_curseg;
+        if (env->_data && env->_data->_ampenv)
           envf._curseg = env->_curseg;
-          if (env->_data && env->_data->_ampenv)
-            envf._curseg = _useNatEnv ? _HAF_nenvseg : env->_curseg;
-          _HAF._items.push_back(envf);
-        } else if (auto asr = dynamic_cast<AsrInst*>(cinst)) {
-          asrframe asrf;
-          asrf._index  = asrcount++;
-          asrf._value  = asr->_curval;
-          asrf._curseg = asr->_curseg;
-          asrf._data   = asr->_data;
-          _HAF._items.push_back(asrf);
-          // printf( "add asr item\n");
-        } else if (auto lfo = dynamic_cast<LfoInst*>(cinst)) {
-          lfoframe lfof;
-          lfof._index   = lfocount++;
-          lfof._value   = lfo->_curval;
-          lfof._currate = lfo->_currate;
-          lfof._data    = lfo->_data;
-          _HAF._items.push_back(lfof);
-        } else if (auto fun = dynamic_cast<FunInst*>(cinst)) {
-          funframe funfr;
-          funfr._index = funcount++;
-          funfr._data  = fun->_data;
-          funfr._value = fun->_curval;
-          _HAF._items.push_back(funfr);
-        }
+        _HAF._items.push_back(envf);
+      } else if (auto asr = dynamic_cast<AsrInst*>(cinst)) {
+        asrframe asrf;
+        asrf._index  = asrcount++;
+        asrf._value  = asr->_curval;
+        asrf._curseg = asr->_curseg;
+        asrf._data   = asr->_data;
+        _HAF._items.push_back(asrf);
+        // printf( "add asr item\n");
+      } else if (auto lfo = dynamic_cast<LfoInst*>(cinst)) {
+        lfoframe lfof;
+        lfof._index   = lfocount++;
+        lfof._value   = lfo->_curval;
+        lfof._currate = lfo->_currate;
+        lfof._data    = lfo->_data;
+        _HAF._items.push_back(lfof);
+      } else if (auto fun = dynamic_cast<FunInst*>(cinst)) {
+        funframe funfr;
+        funfr._index = funcount++;
+        funfr._data  = fun->_data;
+        funfr._value = fun->_curval;
+        _HAF._items.push_back(funfr);
       }
     }
   }
@@ -314,7 +337,7 @@ void Layer::compute(outputBuffer& obuf) {
   }
 
   _layerTime += dt;
-}
+} // namespace ork::audio::singularity
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -442,8 +465,6 @@ void Layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
   reset();
 
   assert(ld != nullptr);
-  const auto& KMP  = ld->_kmpBlock;
-  const auto& ENVC = ld->_envCtrlData;
 
   KeyOnInfo KOI;
   KOI._key       = note;
@@ -460,7 +481,6 @@ void Layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
 
   _layerBasePitch = clip_float(note * 100, -0, 12700);
 
-  _useNatEnv     = ENVC._useNatEnv;
   _ignoreRelease = ld->_ignRels;
   _curnote       = note;
   _LayerData     = ld;
@@ -479,12 +499,11 @@ void Layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
   // controllers
   /////////////////////////////////////////////
 
-  for (int i = 0; i < kmaxctrlblocks; i++) {
-    if (ld->_ctrlBlocks[i]) {
-      _ctrlBlock[i] = new ControlBlockInst;
-      _ctrlBlock[i]->keyOn(KOI, ld->_ctrlBlocks[i]);
-    }
+  if (ld->_ctrlBlock) {
+    _ctrlBlock = new ControlBlockInst;
+    _ctrlBlock->keyOn(KOI, ld->_ctrlBlock);
   }
+
   ///////////////////////////////////////
 
   _alg = _LayerData->_algdata->createAlgInst();
@@ -514,10 +533,8 @@ void Layer::keyOff() {
 
   ///////////////////////////////////////
 
-  for (int i = 0; i < kmaxctrlblocks; i++) {
-    if (_ctrlBlock[i])
-      _ctrlBlock[i]->keyOff();
-  }
+  if (_ctrlBlock)
+    _ctrlBlock->keyOff();
 
   ///////////////////////////////////////
 
@@ -528,13 +545,12 @@ void Layer::keyOff() {
 
   if (_alg)
     _alg->keyOff();
-}
+} // namespace ork::audio::singularity
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Layer::reset() {
   _LayerData = nullptr;
-  _useNatEnv = false;
   _curnote   = 0;
   _keepalive = 0;
 
@@ -542,14 +558,12 @@ void Layer::reset() {
   //   _fp[i].reset();
 
   // todo pool controllers
-  for (int i = 0; i < kmaxctrlblocks; i++) {
-    if (_ctrlBlock[i])
-      delete _ctrlBlock[i];
-    _ctrlBlock[i] = 0;
-  }
+  if (_ctrlBlock)
+    delete _ctrlBlock;
+  _ctrlBlock = nullptr;
+
   _controlMap.clear();
-  // delete _alg;
-  //_alg = nullptr;
-}
+
+} // namespace ork::audio::singularity
 
 } // namespace ork::audio::singularity

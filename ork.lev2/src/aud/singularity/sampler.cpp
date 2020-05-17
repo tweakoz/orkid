@@ -13,6 +13,27 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+kmregion* KeyMap::getRegion(int note, int vel) const {
+  int k2vel = vel / 18; // map 0..127 -> 0..7
+
+  for (auto r : _regions) {
+    // printf( "testing region<%p> for note<%d>\n", r, note );
+    // printf( "lokey<%d>\n", r->_lokey );
+    // printf( "hikey<%d>\n", r->_hikey );
+    // printf( "lovel<%d>\n", r->_lovel );
+    // printf( "hivel<%d>\n", r->_hivel );
+    if (note >= r->_lokey && note <= r->_hikey) {
+      if (k2vel >= r->_lovel && k2vel <= r->_hivel) {
+        return r;
+      }
+    }
+  }
+
+  return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void SAMPLER::initBlock(dspblkdata_ptr_t blockdata) {
   blockdata->_dspBlock = "SAMPLER";
   blockdata->_paramd[0].usePitchEvaluator();
@@ -31,9 +52,9 @@ if (auto PCHBLK = _LayerData->_pchBlock) {
   const auto& PCH   = PCHBLK->_paramd[0];
   const auto& KMP   = _LayerData->_kmpBlock;
 
-  int timbreshift = KMP._timbreShift;                // 0
-  int kmtrans     = KMP._transpose; //+timbreshift; // -20
-  int kmkeytrack  = KMP._keyTrack;                   // 100
+  int timbreshift = KMP->_timbreShift;                // 0
+  int kmtrans     = KMP->_transpose; //+timbreshift; // -20
+  int kmkeytrack  = KMP->_keyTrack;                   // 100
 
   int kmpivot      = (kNOTEC4 + kmtrans);            // 48-20 = 28
   int kmdeltakey   = (_curnote + kmtrans - kmpivot); // 48-28 = 28
@@ -319,7 +340,7 @@ void sampleOsc::keyOn(const DspKeyOnInfo& koi) {
   _loopCounter = 0;
   _released    = false;
 
-  _enableNatEnv = _lyr->_useNatEnv;
+  _enableNatEnv = ld->_envCtrlData->_useNatEnv;
 
   printf("_enableNatEnv<%d>\n", int(_enableNatEnv));
 
@@ -346,8 +367,8 @@ void sampleOsc::keyOff() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void sampleOsc::findRegion(const DspKeyOnInfo& koi) {
-  auto ld         = _lyr->_LayerData;
-  const auto& KMP = ld->_kmpBlock;
+  auto ld  = _lyr->_LayerData;
+  auto KMP = ld->_kmpBlock;
 
   auto PCHBLK = ld->_pchBlock;
   assert(PCHBLK);
@@ -369,10 +390,10 @@ void sampleOsc::findRegion(const DspKeyOnInfo& koi) {
 
   const int kNOTEC4 = 60;
 
-  int timbreshift = KMP._timbreShift;                // 0
-  int kmtrans     = KMP._transpose /*+timbreshift*/; // -20
-  int kmkeytrack  = KMP._keyTrack;                   // 100
-  int pchkeytrack = PCH._keyTrack;                   // 0
+  int timbreshift = KMP->_timbreShift;                // 0
+  int kmtrans     = KMP->_transpose /*+timbreshift*/; // -20
+  int kmkeytrack  = KMP->_keyTrack;                   // 100
+  int pchkeytrack = PCH._keyTrack;                    // 0
   // expect 48-20+8 = 28+8 = 36*100 = 3600 total cents
 
   int kmpivot      = (kNOTEC4 + kmtrans);            // 48-20 = 28

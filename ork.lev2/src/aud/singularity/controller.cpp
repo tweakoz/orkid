@@ -11,7 +11,7 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ControlBlockInst::keyOn(const KeyOnInfo& KOI, const ControlBlockData* CBD) {
+void ControlBlockInst::keyOn(const KeyOnInfo& KOI, controlblockdata_constptr_t CBD) {
   assert(CBD);
   auto l = KOI._layer;
 

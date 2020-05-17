@@ -216,9 +216,6 @@ void synth::onDrawHudPage2(Context* context, float width, float height) {
 
   const hudaframe& HAF = _curhud_aframe;
 
-  const auto& ENVCT = layd->_envCtrlData;
-  bool useNENV      = ENVCT._useNatEnv;
-
   float fh   = FUNH(width, height);
   float envh = ENVH(width, height);
   float funW = FUNW(width, height);

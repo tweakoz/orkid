@@ -6,6 +6,96 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+enum struct eLoopMode {
+  NOTSET = -1,
+  NONE   = 0,
+  FWD,
+  BIDIR,
+  FROMKM,
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct natenvseg {
+  float _slope;
+  float _time;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct sample {
+  sample();
+
+  std::string _name;
+  const s16* _sampleBlock;
+
+  int _blk_start;
+  int _blk_alt;
+
+  int _blk_loopstart;
+  int _blk_loopend;
+
+  int _blk_end;
+
+  int _loopPoint;
+  int _subid;
+  float _sampleRate;
+  float _linGain;
+  int _rootKey;
+  int _highestPitch;
+
+  eLoopMode _loopMode = eLoopMode::NONE;
+  std::vector<natenvseg> _natenv;
+
+  int _pitchAdjust = 0;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct multisample {
+  std::string _name;
+  int _objid;
+  std::map<int, sample*> _samples;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct kmregion {
+  int _lokey = 0, _hikey = 0;
+  int _lovel = 0, _hivel = 127;
+  int _tuning                 = 0;
+  eLoopMode _loopModeOverride = eLoopMode::NOTSET;
+  float _volAdj               = 0.0f;
+  float _linGain              = 1.0f;
+  int _multsampID = -1, _sampID = -1;
+  std::string _sampleName;
+  const multisample* _multiSample = nullptr;
+  const sample* _sample           = nullptr;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct KeyMap {
+  std::string _name;
+  std::vector<kmregion*> _regions;
+  int _kmID;
+
+  kmregion* getRegion(int note, int vel) const;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct KmpBlockData {
+  keymap_constptr_t _keymap;
+  int _transpose   = 0;
+  float _keyTrack  = 100.0f;
+  float _velTrack  = 0.0f;
+  int _timbreShift = 0;
+  std::string _pbMode;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct NatEnv {
   NatEnv();
   void keyOn(const KeyOnInfo& KOI, const sample* s);
