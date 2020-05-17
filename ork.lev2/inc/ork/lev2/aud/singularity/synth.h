@@ -3,7 +3,7 @@
 #include <ork/orktypes.h>
 #include <ork/math/audiomath.h>
 #include "krztypes.h"
-#include "krzdata.h"
+#include "synthdata.h"
 #include "layer.h"
 #include <ork/kernel/concurrent_queue.h>
 #include <ork/kernel/svariant.h>

@@ -5,7 +5,7 @@
 #include "para.h"
 #include "PolyBLEP.h"
 #include "layer.h"
-#include <ork/kernel/svariant.h>
+#include <ork/kernel/varmap.inl>
 #include "alg.h"
 
 namespace ork::audio::singularity {

@@ -5,10 +5,7 @@
 #include <ork/file/path.h>
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/aud/singularity/synth.h>
-#include <ork/lev2/aud/singularity/krzdata.h>
-#include <ork/lev2/aud/singularity/synth.h>
-#include <ork/lev2/aud/singularity/krzobjects.h>
-#include <portaudio.h>
+#include <ork/lev2/aud/singularity/cz101.h>
 
 using namespace std::string_literals;
 using namespace ork;
@@ -23,7 +20,7 @@ void tearDownAudio();
 bool TEST = false;
 
 int main(int argc, char** argv) {
-  auto basepath = file::Path::share_dir() / "singularity" / "casioCZ";
+  auto basepath = basePath() / "casioCZ";
   startupAudio();
   //////////////////////////////////////////////////////////////////////////////
   auto add_event = [&](const ProgramData* prog, //

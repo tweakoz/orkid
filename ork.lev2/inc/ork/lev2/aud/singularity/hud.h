@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <math.h>
 
-#include "krzdata.h"
+#include "synthdata.h"
 #include "synth.h"
 #include "fft.h"
 #include <ork/lev2/gfx/dbgfontman.h>

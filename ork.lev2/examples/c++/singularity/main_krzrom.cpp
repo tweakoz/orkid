@@ -4,9 +4,8 @@
 #include <ork/kernel/timer.h>
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/aud/singularity/synth.h>
-#include <ork/lev2/aud/singularity/krzdata.h>
-#include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
+#include <ork/lev2/aud/singularity/krzdata.h>
 #include <portaudio.h>
 
 using namespace std::string_literals;

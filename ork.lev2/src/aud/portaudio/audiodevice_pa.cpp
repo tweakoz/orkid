@@ -21,7 +21,7 @@
 #include <math.h>
 #include <sstream>
 #include <FLAC++/decoder.h>
-#include <ork/lev2/aud/singularity/krzdata.h>
+#include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
 

@@ -1,5 +1,5 @@
 
-#include <ork/lev2/aud/singularity/krzdata.h>
+#include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/kernel/string/string.h>
@@ -10,12 +10,10 @@ using namespace rapidjson;
 
 namespace ork::audio::singularity {
 
-extern file::Path kbasepath;
-
 const s16* getK2V3InternalSoundBlock() {
   static s16* gdata = nullptr;
   if (nullptr == gdata) {
-    auto filename = kbasepath / "kurzweil" / "k2v3internalsamplerom.bin";
+    auto filename = basePath() / "kurzweil" / "k2v3internalsamplerom.bin";
     printf("Loading Soundblock<%s>\n", filename.c_str());
     FILE* fin = fopen(filename.ToAbsolute().c_str(), "rb");
     if (fin == nullptr) {
@@ -840,7 +838,7 @@ ProgramData* VastObjectsDB::parseProgram(const Value& jsonobj) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VastObjectsDB::loadJson(const std::string& fname, int ibaseid) {
-  auto realfname = kbasepath / "kurzweil" / (fname + ".json");
+  auto realfname = basePath() / "kurzweil" / (fname + ".json");
   printf("fname<%s>\n", realfname.c_str());
   FILE* fin = fopen(realfname.c_str(), "rt");
   assert(fin != nullptr);

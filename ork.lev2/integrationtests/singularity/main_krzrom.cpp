@@ -1,4 +1,5 @@
 #include "harness.h"
+#include <ork/lev2/aud/singularity/krzdata.h>
 
 int main(int argc, char** argv) {
   auto qtapp = createEZapp(argc, argv);

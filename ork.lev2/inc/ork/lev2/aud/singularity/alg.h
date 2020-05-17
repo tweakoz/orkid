@@ -1,6 +1,6 @@
 #pragma once
 
-#include "krzdata.h"
+#include "synthdata.h"
 
 namespace ork::audio::singularity {
 

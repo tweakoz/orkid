@@ -1,6 +1,6 @@
 #include <rapidjson/reader.h>
 #include <rapidjson/document.h>
-#include "krzdata.h"
+#include "synthdata.h"
 
 using namespace rapidjson;
 

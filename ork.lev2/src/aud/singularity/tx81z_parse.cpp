@@ -3,7 +3,7 @@
 #include <ork/math/audiomath.h>
 #include <ork/file/file.h>
 #include <stdint.h>
-#include <ork/lev2/aud/singularity/krzdata.h>
+#include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/lev2/aud/singularity/tx81z.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>

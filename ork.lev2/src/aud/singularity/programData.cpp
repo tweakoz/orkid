@@ -1,5 +1,5 @@
 
-#include <ork/lev2/aud/singularity/krzdata.h>
+#include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/sampler.h>
 

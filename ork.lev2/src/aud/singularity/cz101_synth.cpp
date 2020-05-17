@@ -4,7 +4,7 @@
 #include <ork/file/file.h>
 #include <ork/kernel/string/string.h>
 #include <stdint.h>
-#include <ork/lev2/aud/singularity/krzdata.h>
+#include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/lev2/aud/singularity/cz101.h>
 #include <ork/lev2/aud/singularity/fmosc.h>

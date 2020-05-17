@@ -1,8 +1,9 @@
 #include "harness.h"
+#include <ork/lev2/aud/singularity/cz101.h>
 
 int main(int argc, char** argv) {
   auto qtapp    = createEZapp(argc, argv);
-  auto basepath = file::Path::share_dir() / "singularity" / "casioCZ";
+  auto basepath = basePath() / "casioCZ";
   startupAudio();
   //////////////////////////////////////////////////////////////////////////////
   auto czdata = std::make_shared<CzData>();

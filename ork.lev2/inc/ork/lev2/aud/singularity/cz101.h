@@ -2,6 +2,7 @@
 #include <ork/kernel/svariant.h>
 #include "krztypes.h"
 #include "dspblocks.h"
+#include "synthdata.h"
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
@@ -86,6 +87,21 @@ struct CZX final : public DspBlock {
   scopesynctrack_ptr_t _scopetrack;
 
   static void initBlock(dspblkdata_ptr_t blockdata, czxdata_constptr_t czdata);
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct CzData : public SynthData {
+  CzData();
+  ~CzData();
+  void loadBank(const file::Path& syxpath, const std::string& bnkname = "czb");
+
+  const ProgramData* getProgram(int progID) const final;
+  const ProgramData* getProgramByName(const std::string& named) const final {
+    return nullptr;
+  }
+  VastObjectsDB* _zpmDB;
+  int _lastprg;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

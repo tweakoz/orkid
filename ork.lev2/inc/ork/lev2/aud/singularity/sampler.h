@@ -1,5 +1,5 @@
 #pragma once
-#include <ork/lev2/aud/singularity/krzdata.h>
+#include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 
 namespace ork::audio::singularity {

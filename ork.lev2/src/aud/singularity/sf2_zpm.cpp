@@ -6,7 +6,6 @@
 #include <ork/file/file.h>
 #include <ork/math/audiomath.h>
 #include <ork/lev2/aud/singularity/sf2.h>
-#include <ork/lev2/aud/singularity/krzdata.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/kernel/string/string.h>
 
@@ -15,6 +14,27 @@ using namespace ork::audiomath;
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace ork::audio::singularity::sf2 {
+
+///////////////////////////////////////////////////////////////////////////////
+
+Sf2TestSynthData::Sf2TestSynthData(const file::Path& filename, const std::string& bankname)
+    : SynthData() {
+  _staticBankName = bankname;
+
+  auto sfpath  = basePath() / "soundfonts" / filename;
+  auto abspath = sfpath.ToAbsolute();
+  _sfont       = new SoundFont(abspath.c_str(), bankname);
+}
+Sf2TestSynthData::~Sf2TestSynthData() {
+  delete _sfont;
+}
+
+const ProgramData* Sf2TestSynthData::getProgram(int progID) const {
+  auto ObjDB = _sfont->_zpmDB;
+  return ObjDB->findProgram(progID);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 // SF2Sample<11:piano060v125> opitch<60> sta<9674166> end<10272671> isblklen<59189498>
 //_sample<piano060v125>
