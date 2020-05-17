@@ -116,10 +116,10 @@ void CZX::compute(DspBuffer& dspbuf) // final
       if (_noisemodcounter <= 0) {
         _noisemodcounter += int64_t(kscale * 48000.0 / 5500.0);
         _noisevalue = (rand() & 0xffff);
-        // printf("frq<%g> _noisevalue<%g>\n", frq, _noisevalue);
       }
       double dnoise = double(_noisevalue) / 65536.0;
       moddedfrq     = frq * (8.0 + (dnoise - 0.5) * 8.0);
+      // printf("moddedfrq<%g> dnoise<%g>\n", moddedfrq, dnoise);
     }
     //////////////////////////////////////////////
     int64_t pos        = _phase & 0xffffff;
@@ -258,7 +258,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
     ////////////////////////////////////////////
     float waveA   = _waveoutputs[_waveIDA];
     float waveB   = _waveoutputs[_waveIDB];
-    outsamples[i] = waveswitch ? waveB : waveA;
+    outsamples[i] = std::clamp(waveswitch ? waveB : waveA, -1.0f, 1.0f);
     // outsamples[i] += 0.5f * double(_noisevalue) / 65536.0f;
   }
 } // namespace ork::audio::singularity

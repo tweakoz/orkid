@@ -52,7 +52,7 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
 
   float env_by  = R.Y1 + 20;
   float env_bx  = R.X1 + 70.0;
-  int spcperseg = 70;
+  int spcperseg = 90;
   if (useNENV) {
     auto sample     = KFIN._kmregion->_sample;
     const auto& NES = sample->_natenv;
@@ -103,7 +103,7 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
     }
     drawtext(context, "lev\ntim", R.X1 + 15, env_by + 40, .45, 1, 1, 0);
     for (int i = 0; i < 7; i++) {
-      auto hudstr   = FormatString("%0.2f\n%0.2f", AE[i]._level, AE[i]._time);
+      auto hudstr   = FormatString("%0.2f\n%0.3f", AE[i]._level, AE[i]._time);
       bool iscurseg = (i == icurseg);
       float r       = 1;
       float g       = iscurseg ? 0 : 1;

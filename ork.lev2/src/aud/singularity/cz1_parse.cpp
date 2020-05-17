@@ -331,8 +331,8 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     DCOENV->_ampenv       = false;
     const auto& srcdcoenv = oscdata->_dcoEnv;
     for (int i = 0; i < 8; i++) {
-      bool end   = i >= srcdcoenv._endStep;
-      auto point = end ? //
+      bool end   = false; // i >= srcdcoenv._endStep;
+      auto point = end ?  //
                        EnvPoint{0, 0}
                        : EnvPoint{//
                                   srcdcoenv._time[i],
@@ -434,6 +434,8 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     case 3: // noise
       OrkAssert(lineSel == 2 or lineSel == 3);
       czdata->_oscData[1]->_noisemod = true;
+      auto mix                       = layerdata->stage(1)->appendBlock();
+      SUM2::initBlock(mix);
       break;
   }
   czdata->_name = name;

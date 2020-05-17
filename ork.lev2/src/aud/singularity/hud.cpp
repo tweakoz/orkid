@@ -132,7 +132,7 @@ float ENVW(float vpw, float vph) {
   return FUNW(vpw, vph) * 1.5;
 }
 float ENVH(float vpw, float vph) {
-  return (vph / 5);
+  return (vph / 8);
 }
 float ENVX(float vpw, float vph) {
   return FUNX(vpw, vph) - ENVW(vpw, vph) - 16;
