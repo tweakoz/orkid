@@ -9,7 +9,7 @@ namespace ork::audio::singularity {
 
 struct CzEnvelope {
   int _endStep   = 0;
-  int _sustPoint = -1;
+  int _sustPoint = 0;
   bool _decreasing[8];
   float _time[8];
   float _level[8];

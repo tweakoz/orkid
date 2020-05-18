@@ -102,7 +102,7 @@ void RateLevelEnvInst::initSeg(int iseg) {
   }
   _framesrem = segtime * getSampleRate(); // / 48000.0f;
                                           // assert(false);
-  printf("env<%s> iseg<%d> segt<%f> curv<%f> dest<%f>\n", _data->_name.c_str(), iseg, segtime, _curval, _dstval);
+  // printf("env<%s> iseg<%d> segt<%f> curv<%f> dest<%f>\n", _data->_name.c_str(), iseg, segtime, _curval, _dstval);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -119,6 +119,9 @@ void RateLevelEnvInst::compute(int inumfr) // final
     bool done         = false;
     _framesrem--;
     if (_framesrem <= 0) {
+      //////////////////////////
+      // next segment
+      //////////////////////////
       if (_released) {
         if (_curseg <= 5) {
           initSeg(_curseg + 1);
@@ -127,18 +130,20 @@ void RateLevelEnvInst::compute(int inumfr) // final
           _curval = _dstval;
           //_data = nullptr;
         }
-      } else // go up to decay
-      {
-        if (_curseg == 3) {
-          float declev = segs[3]._level;
-          if (_curval < declev) {
-            _curslope_persamp = 0.0f;
-            _curval           = declev;
-          }
-        } else if (_curseg <= 2)
+      } else { // go up to decay
+        if (_curseg == edata._sustainPoint) {
+          float declev = segs[edata._sustainPoint]._level;
+          // if (_curval < declev) {
+          _curslope_persamp = 0.0f;
+          _curval           = declev;
+          //}
+        } else if (_curseg < edata._sustainPoint)
           initSeg(_curseg + 1);
       }
     }
+    //////////////////////////
+    // compute next value
+    //////////////////////////
     if (!done) {
       _curval += _curslope_persamp;
       if (_curslope_persamp > 0.0f && _curval > _dstval)
@@ -146,16 +151,13 @@ void RateLevelEnvInst::compute(int inumfr) // final
       else if (_curslope_persamp < 0.0f && _curval < _dstval)
         _curval = _dstval;
     }
+    //////////////////////////
 
-    _filtval = _filtval * 0.995f + _curval * 0.005f;
-
-    float sign = _filtval < 0.0f ? -1.0f : 1.0f;
-
-    float rval = sign * clip_float(powf(_filtval, 2.0f), -1.0f, 1.0f);
-
+    _filtval      = _filtval * 0.995f + _curval * 0.005f;
+    float sign    = _filtval < 0.0f ? -1.0f : 1.0f;
+    float rval    = sign * clip_float(powf(_filtval, 2.0f), -1.0f, 1.0f);
     float dbatten = linear_amp_ratio_to_decibel(rval);
-
-    done = (_curseg == 6) && (dbatten < -96.0f);
+    done          = (_curseg == 6) && (dbatten < -96.0f);
     if (done && _ampenv) {
       _layer->release();
       _data = nullptr;

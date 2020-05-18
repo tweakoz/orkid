@@ -266,8 +266,10 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
       u8 r7                       = r & 0x7f;
       u8 l7                       = l & 0x7f;
       OSC->_dcaEnv._decreasing[i] = (r & 0x80);
-      OSC->_dcaEnv._time[i]       = decode_wa_envrate((r7 * 99) / 119);
-      OSC->_dcaEnv._level[i]      = (l7 * 99) / 127;
+      if (l & 0x80)
+        OSC->_dcaEnv._sustPoint = i;
+      OSC->_dcaEnv._time[i]  = decode_wa_envrate((r7 * 99) / 119);
+      OSC->_dcaEnv._level[i] = (l7 * 99) / 127;
     }
     ///////////////////////////////////////////////////////////
     u8 PMWL = bytes[byteindex++];                       // DCW1 end
@@ -339,6 +341,9 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     auto DCOENV           = layerdata->appendController<RateLevelEnvData>("DCOENV");
     DCOENV->_ampenv       = false;
     const auto& srcdcoenv = oscdata->_dcoEnv;
+    DCOENV->_sustainPoint = (srcdcoenv._sustPoint == 0) //
+                                ? 7
+                                : srcdcoenv._sustPoint - 1;
     for (int i = 0; i < 8; i++) {
       bool end   = false; // i >= srcdcoenv._endStep;
       auto point = end ?  //
@@ -352,6 +357,9 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     auto DCWENV           = layerdata->appendController<RateLevelEnvData>("DCWENV");
     DCWENV->_ampenv       = false;
     const auto& srcdcwenv = oscdata->_dcwEnv;
+    DCWENV->_sustainPoint = (srcdcwenv._sustPoint == 0) //
+                                ? 7
+                                : srcdcwenv._sustPoint - 1;
     for (int i = 0; i < 8; i++) {
       bool end   = false; // i >= srcdcwenv._endStep;
       auto point = end ?  //
@@ -365,6 +373,9 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     auto DCAENV           = layerdata->appendController<RateLevelEnvData>("DCAENV");
     DCAENV->_ampenv       = true;
     const auto& srcdcaenv = oscdata->_dcaEnv;
+    DCAENV->_sustainPoint = (srcdcaenv._sustPoint == 0) //
+                                ? 7
+                                : srcdcaenv._sustPoint - 1;
     for (int i = 0; i < 8; i++) {
       bool end   = false; // i >= srcdcaenv._endStep;
       auto point = end ?  //

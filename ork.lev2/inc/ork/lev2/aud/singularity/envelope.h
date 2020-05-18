@@ -32,6 +32,7 @@ struct RateLevelEnvData : public ControllerData {
   bool _bipolar;
   RlEnvType _envType;
   envadjust_method_t _envadjust;
+  int _sustainPoint = 3;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

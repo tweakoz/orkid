@@ -144,6 +144,15 @@ float DSPX(float vpw, float vph) {
   return ENVX(vpw, vph) - (FUNW(vpw, vph) + 16);
 }
 
+float SCOPEX() {
+  return 32 * hud_contentscale();
+}
+float SCOPEW() {
+  return 960 * hud_contentscale();
+}
+float SCOPEH() {
+  return 400 * hud_contentscale();
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 void synth::onDrawHud(Context* context, float width, float height) {
@@ -246,43 +255,49 @@ void synth::onDrawHudPage2(Context* context, float width, float height) {
 
     int numitems = HAF._items.size();
     // printf( "HAF numitems<%d>\n", numitems);
+    float hudyaccum = 0.0;
+
     for (auto& item : HAF._items) {
       if (auto as_env = item.TryAs<envframe>()) {
         auto E    = as_env.value();
         R.X1      = envX;
         R.W       = envW;
         R.H       = envh;
-        R.Y1      = envh * E._index;
+        R.Y1      = hudyaccum;
         EDR._data = E;
         EDR.ienv  = E._index;
         DrawEnv(context, EDR);
+        hudyaccum += envh + 16;
       } else if (auto as_asr = item.TryAs<asrframe>()) {
         auto A    = as_asr.value();
         R.X1      = envX;
         R.W       = envW;
         R.H       = envh;
-        R.Y1      = envh * (3 + A._index);
+        R.Y1      = hudyaccum;
         EDR._data = A;
         EDR.ienv  = A._index;
         DrawAsr(context, EDR);
+        hudyaccum += envh + 16;
       } else if (auto as_lfo = item.TryAs<lfoframe>()) {
         auto L    = as_lfo.value();
         R.X1      = funX;
         R.W       = funW;
         R.H       = fh;
-        R.Y1      = fh * L._index;
+        R.Y1      = hudyaccum;
         EDR._data = L;
         EDR.ienv  = L._index;
         DrawLfo(context, EDR);
+        hudyaccum += fh + 16;
       } else if (auto as_fun = item.TryAs<funframe>()) {
         auto F    = as_fun.value();
         R.X1      = funX;
         R.W       = funW;
         R.H       = fh;
-        R.Y1      = fh * (F._index + 2);
+        R.Y1      = hudyaccum;
         EDR._data = F;
         EDR.ienv  = F._index;
         DrawFun(context, EDR);
+        hudyaccum += fh + 16;
       }
     }
   }
@@ -349,8 +364,8 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
       context, //
       HAF,
       _oscopebuffer,
-      fvec2(64, 32) * hud_contentscale(),
-      fvec2(960, 400) * hud_contentscale());
+      fvec2(SCOPEX(), SCOPEX()),
+      fvec2(SCOPEW(), SCOPEH()));
 
   //////////////////////////////
 
@@ -358,8 +373,8 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
       context, //
       HAF,
       _oscopebuffer,
-      fvec2(32, 464) * hud_contentscale(),
-      fvec2(960, 480) * hud_contentscale());
+      fvec2(SCOPEX(), SCOPEH() + 2.0 * SCOPEX()),
+      fvec2(SCOPEW(), SCOPEH()));
 
   //////////////////////////////
 

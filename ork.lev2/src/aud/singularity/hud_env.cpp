@@ -50,9 +50,9 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
   // draw envelope values
   /////////////////////////////////////////////////
 
-  float env_by  = R.Y1 + 20;
+  float env_by  = R.Y1;
   float env_bx  = R.X1 + 70.0;
-  int spcperseg = 90;
+  int spcperseg = 120;
   float minval  = 0.0f;
   float maxval  = 1.00f;
   float range   = 1.0f;
@@ -149,7 +149,7 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
 
   DrawBorder(context, R.X1, R.Y1, X2, Y2);
 
-  const float ktime = 20.0f;
+  const float ktime = 4.0f;
 
   float fh = useNENV ? 200 : 400;
 
