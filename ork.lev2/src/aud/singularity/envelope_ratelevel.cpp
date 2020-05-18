@@ -102,7 +102,7 @@ void RateLevelEnvInst::initSeg(int iseg) {
   }
   _framesrem = segtime * getSampleRate(); // / 48000.0f;
                                           // assert(false);
-  // printf( "env<%s> iseg<%d> segt<%f> curv<%f> dest<%f>\n", _data->_name.c_str(), iseg, segtime, _curval, _dstval );
+  printf("env<%s> iseg<%d> segt<%f> curv<%f> dest<%f>\n", _data->_name.c_str(), iseg, segtime, _curval, _dstval);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

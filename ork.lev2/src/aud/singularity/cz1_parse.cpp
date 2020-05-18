@@ -92,15 +92,24 @@ float decode_p_envlevel(int value) {
   // convert linear value to cents
   ////////////////////
 
-  int linv64  = std::clamp(linv, 0, 64);
-  int linv76  = std::clamp(linv - 64, 0, 12);
-  int linv88  = std::clamp(linv - 76, 0, 12);
-  int linv100 = std::clamp(linv - 88, 0, 12);
+  // 40 == 5 semis
+  // 48 == 6 semis
+  // 56 == 7 semis
+  // 64 == 8 semis
+
+  // 65 == 10
+  // 66 == 12
+  // 72 == 24 semis
+  // 78 == 36 semis
+  // 84 == 48 semis
+  // 90 == 60 semis
+  // 96 == 72 semis
+  // 99 == 84 semis
+  int linv64 = std::clamp(linv, 0, 64);
+  int linv66 = std::clamp(linv - 64, 0, 36);
 
   cents = 100.0 * float(linv64) / 8.0;
-  cents += 100.0 * float(linv76);
-  cents += 200.0 * float(linv88);
-  cents += 400.0 * float(linv100);
+  cents += 200.0 * float(linv66);
 
   return cents;
 } // namespace ork::audio::singularity
@@ -257,7 +266,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
       u8 r7                       = r & 0x7f;
       u8 l7                       = l & 0x7f;
       OSC->_dcaEnv._decreasing[i] = (r & 0x80);
-      OSC->_dcaEnv._time[i]       = decode_wa_envrate((r7 * 99) / 127);
+      OSC->_dcaEnv._time[i]       = decode_wa_envrate((r7 * 99) / 119);
       OSC->_dcaEnv._level[i]      = (l7 * 99) / 127;
     }
     ///////////////////////////////////////////////////////////

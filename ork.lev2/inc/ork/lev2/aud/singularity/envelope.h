@@ -108,7 +108,6 @@ struct RateLevelEnvInst : public ControllerInst {
   bool _bipolar;
   RlEnvType _envType;
   KeyOnInfo _konoffinfo;
-
   float _USERAMPENV[1024];
 };
 

@@ -53,6 +53,9 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
   float env_by  = R.Y1 + 20;
   float env_bx  = R.X1 + 70.0;
   int spcperseg = 90;
+  float minval  = 0.0f;
+  float maxval  = 1.00f;
+  float range   = 1.0f;
   if (useNENV) {
     auto sample     = KFIN._kmregion->_sample;
     const auto& NES = sample->_natenv;
@@ -82,7 +85,20 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
     }
   } else if (ENVD) {
 
+    minval = 0.0f;
+    maxval = 0.00f;
+
     auto& AE = ENVD->_segments;
+    for (int i = 0; i < 7; i++) {
+      auto seg = AE[i];
+      auto lev = seg._level;
+      if (lev > maxval)
+        maxval = lev;
+      if (lev < minval)
+        minval = lev;
+    }
+    range = maxval - minval;
+
     drawtext(context, ENVD->_name, R.X1, env_by, fontscale, 1, 0, .5);
     int icurseg = ENVFRAME._curseg;
     for (int i = 0; i < 7; i++) {
@@ -159,11 +175,9 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
     if (fpx >= R.X1 and fpx <= X2) {
       auto p1    = fvec2(fpx, fpy);
       fpx        = fxb + hs._time * (fw / ktime);
-      float fval = hs._value;
-      if (bipolar)
-        fval = 0.5f + (fval * 0.5f);
-      fpy     = fyb - (fh * 0.5f) * fval;
-      auto p2 = fvec2(fpx, fpy);
+      float fval = (hs._value - minval) / range;
+      fpy        = fyb - fval * fh * 0.5;
+      auto p2    = fvec2(fpx, fpy);
       lines.push_back(HudLine{p1, p2, fvec3(1, 1, 1)});
     }
   }
