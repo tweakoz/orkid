@@ -251,6 +251,20 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   for (int o = 0; o < 2; o++) {
     auto OSC         = czdata->_oscData[o];
     OSC->_dspchannel = o;
+    switch (czdata->_octave) {
+      case 0:
+        OSC->_octaveScale = 1.0;
+        break;
+      case 1:
+        OSC->_octaveScale = 2.0;
+        break;
+      case 2:
+        OSC->_octaveScale = 0.5;
+        break;
+      default:
+        OrkAssert(false);
+    }
+
     ///////////////////////////////////////////////////////////
     u8 MFW0 = bytes[byteindex++]; // dc01 wave / modulation
     u8 MFW1 = bytes[byteindex++]; // dc01 wave / modulation
@@ -369,6 +383,18 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
                                   srcdcwenv._level[i] / 100.0f};
       DCWENV->_segments.push_back(point);
     }
+    DCWENV->_envadjust = [=](const EnvPoint& inp, //
+                             int iseg,
+                             const KeyOnInfo& KOI) -> EnvPoint { //
+      EnvPoint outp = inp;
+      int ikeydelta = KOI._key;
+      float base    = 1.0 - (oscdata->_dcwKeyFollow * 0.005);
+      float power   = pow(base, ikeydelta);
+      // printf("DCW kf<%d> ikeydelta<%d> base<%0.3f> power<%0.3f>\n", oscdata->_dcwKeyFollow, ikeydelta, base, power);
+      outp._level *= power;
+      return outp;
+    };
+
     /////////////////////////////////////////////////
     auto DCAENV           = layerdata->appendController<RateLevelEnvData>("DCAENV");
     DCAENV->_ampenv       = true;
@@ -385,6 +411,17 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
                                   srcdcaenv._level[i] / 100.0f};
       DCAENV->_segments.push_back(point);
     }
+    DCAENV->_envadjust = [=](const EnvPoint& inp, //
+                             int iseg,
+                             const KeyOnInfo& KOI) -> EnvPoint { //
+      EnvPoint outp = inp;
+      int ikeydelta = KOI._key;
+      float base    = 1.0 - (oscdata->_dcaKeyFollow * 0.005);
+      float power   = pow(base, ikeydelta);
+      // printf("DCA kf<%d> ikeydelta<%d> base<%0.3f> power<%0.3f>\n", oscdata->_dcaKeyFollow, ikeydelta, base, power);
+      outp._time *= power;
+      return outp;
+    };
     /////////////////////////////////////////////////
     auto osc = layerdata->stage(0)->appendBlock();
     auto amp = layerdata->stage(2)->appendBlock();

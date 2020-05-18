@@ -31,8 +31,9 @@ struct CzOscData {
   CzEnvelope _dcoEnv;
   CzEnvelope _dcaEnv;
   CzEnvelope _dcwEnv;
-  int _dspchannel = 0;
-  bool _noisemod  = false;
+  int _dspchannel     = 0;
+  bool _noisemod      = false;
+  double _octaveScale = 1.0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -93,6 +94,7 @@ struct CZX final : public DspBlock {
   int64_t _noisemodcounter = 0;
   oschardsynctrack_ptr_t _hsynctrack;
   scopesynctrack_ptr_t _scopetrack;
+  czxdata_constptr_t _oscdata;
 
   static void initBlock(dspblkdata_ptr_t blockdata, czxdata_constptr_t czdata);
 };

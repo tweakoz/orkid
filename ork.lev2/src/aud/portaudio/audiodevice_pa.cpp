@@ -34,7 +34,7 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 PaStream* pa_stream      = nullptr;
 const bool ENABLE_OUTPUT = true; // allow disabling for long debug sessions
-const int NUMFRAMES      = 16;
+const int NUMFRAMES      = 512;
 ///////////////////////////////////////////////////////////////////////////////
 
 static synth_ptr_t the_synth = synth::instance();

@@ -86,7 +86,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
   float modindex = std::clamp(_param[1].eval(), 0.0f, 1.0f);
   _fval[0]       = centoff;
   double cin     = (lyrcents + centoff) * 0.01;
-  double frq     = midi_note_to_frequency(cin);
+  double frq     = midi_note_to_frequency(cin) * _oscdata->_octaveScale;
   double per     = 48000.0 / frq;
 
   /////////////////////////
@@ -267,19 +267,19 @@ void CZX::compute(DspBuffer& dspbuf) // final
 
 void CZX::doKeyOn(const DspKeyOnInfo& koi) // final
 {
-  auto dspb    = koi._prv;
-  auto dbd     = dspb->_dbd;
-  auto oscdata = dbd->getExtData("CZX").Get<czxdata_constptr_t>();
+  auto dspb = koi._prv;
+  auto dbd  = dspb->_dbd;
+  _oscdata  = dbd->getExtData("CZX").Get<czxdata_constptr_t>();
 
-  _dspchannel       = oscdata->_dspchannel;
+  _dspchannel       = _oscdata->_dspchannel;
   auto l            = koi._layer;
   l->_HKF._miscText = FormatString("CZ\n");
   l->_HKF._useFm4   = false;
-  _waveIDA          = oscdata->_dcoWaveA;
-  _waveIDB          = oscdata->_dcoWaveB;
+  _waveIDA          = _oscdata->_dcoWaveA;
+  _waveIDB          = _oscdata->_dcoWaveB;
   _hsynctrack       = l->_oschsynctracks[_verticalIndex];
   _scopetrack       = l->_scopesynctracks[_verticalIndex];
-  _noisemod         = oscdata->_noisemod;
+  _noisemod         = _oscdata->_noisemod;
   _phase            = 0;
   _noisevalue       = 0;
 }
