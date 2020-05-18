@@ -155,13 +155,12 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   u8 PFLAG        = bytes[0x00]; // octave/linesel
   czdata->_octave = (PFLAG & 0x0c) >> 2;
   int lineSel     = (PFLAG & 0x03);
-  u8 PDS          = bytes[0x01];       // detune sign
-  u8 PDETL        = bytes[0x02];       // detune fine
-  u8 PDETH        = bytes[0x03];       // detune oct/note
-  int detval      = (PDETH * 100)      // accumulate coarse
-               + ((PDETL * 100) / 60); // accumulate fine
-  czdata->_detuneCents = PDS ? (-detval) : detval;
-  printf("PDETL<%d>\n", PDETL);
+  u8 PDS          = bytes[0x01];        // detune sign
+  u8 PDETL        = bytes[0x02];        // detune fine
+  u8 PDETH        = bytes[0x03];        // detune oct/note
+  int detval      = (PDETH * 100)       // accumulate coarse
+               + ((PDETL * 100) / 240); // accumulate fine
+  czdata->_detuneCents = (PDS & 1) ? (detval) : +detval;
 
   switch (lineSel) {
     case 0: // 1
@@ -235,10 +234,6 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
         assert(false);
     }
     return -1;
-  };
-  auto decodekeyfollow = [](u8 b1, u8 b2) -> int { //
-    return int(b1 & 0xf);
-    //(int(b1) << 8 | int(b2));
   };
 
   int byteindex = 0x0e; // OSC START
@@ -325,7 +320,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     OSC->_dcaKeyFollow = MAMD & 0xf;
     OSC->_dcwKeyFollow = MWMD & 0xf;
     OSC->_dcaDepth     = 15 - (MAMD >> 4);
-    OSC->_dcwDepth     = 15;
+    OSC->_dcwDepth     = 15 - (MWMD >> 4);
 
     OSC->_dcaVelFollow    = PMAL >> 4;
     OSC->_dcwVelFollow    = PMWL >> 4;
@@ -450,6 +445,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
                               CustomControllerInst* cci, //
                               const KeyOnInfo& KOI) {    //
         cci->_curval = czdata->_detuneCents;
+        printf("DETUNE<%g>\n", cci->_curval);
       };
     }
   };
