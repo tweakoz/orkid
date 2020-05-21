@@ -57,7 +57,7 @@ class PyOrkApp(object):
     stereo_material_inst.param[param_v4parref] = self.v4parref
     stereo_material_inst.param[param_volumetex] = volumetexture
 
-    self.primnode = prim.createNode("node1",layer,stereo_material_inst)
+    #self.primnode = prim.createNode("node1",layer,stereo_material_inst)
     ###################################
     self.camera = CameraData()
     self.camera.perspective(0.1, 100.0, 45.0)
@@ -80,11 +80,11 @@ class PyOrkApp(object):
     θ = updinfo.absolutetime * math.pi * 2.0
     self.v4parref.z = θ*0.01 # animate noise
     ###################################
-    self.primnode\
-        .worldMatrix\
-        .compose( vec3(0,0.25,-2.5), # pos
-                  quat(vec3(0,1,0),θ*0.01), # rot
-                  0.75) # scale
+    #self.primnode\
+    #    .worldMatrix\
+    #    .compose( vec3(0,0.25,-2.5), # pos
+    #              quat(vec3(0,1,0),θ*0.01), # rot
+    #              0.75) # scale
     ###################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
   ################################################

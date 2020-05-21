@@ -7,11 +7,9 @@
 #include <ork/kernel/thread.h>
 #include <ork/kernel/mutex.h>
 
-#if !defined(__APPLE__)
 #define ENABLE_OPENVR
 #include <openvr/openvr.h>
 namespace _ovr = ::vr;
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 

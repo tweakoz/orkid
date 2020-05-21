@@ -17,13 +17,13 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 
 
 file(GLOB srcs ./*.cpp)
-add_executable (ork.eglenum.exe ${srcs} )
+add_executable (ork.luxhmdenum.exe ${srcs} )
 
-target_link_libraries(ork.eglenum.exe LINK_PRIVATE EGL GL)
-target_link_libraries(ork.eglenum.exe LINK_PRIVATE drm)
+target_link_libraries(ork.luxhmdenum.exe LINK_PRIVATE EGL GL)
+target_link_libraries(ork.luxhmdenum.exe LINK_PRIVATE drm)
 
-set_target_properties(ork.eglenum.exe PROPERTIES LINKER_LANGUAGE CXX)
-target_include_directories (ork.eglenum.exe PRIVATE ${ORKROOT}/ork.core/inc )
-target_include_directories (ork.eglenum.exe PRIVATE ${ORKROOT}/ork.lev2/inc )
+set_target_properties(ork.luxhmdenum.exe PROPERTIES LINKER_LANGUAGE CXX)
+target_include_directories (ork.luxhmdenum.exe PRIVATE ${ORKROOT}/ork.core/inc )
+target_include_directories (ork.luxhmdenum.exe PRIVATE ${ORKROOT}/ork.lev2/inc )
 
-install(TARGETS ork.eglenum.exe DESTINATION $ENV{OBT_STAGE}/bin )
+install(TARGETS ork.luxhmdenum.exe DESTINATION $ENV{OBT_STAGE}/bin )

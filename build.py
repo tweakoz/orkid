@@ -115,7 +115,8 @@ if ork.host.IsLinux:
 # regen shiboken bindings
 ######################################################################
 
-run([this_dir/"ork.lev2"/"pyext"/"lev2qt"/"regen.py"])
+if ork.host.IsLinux:
+  run([this_dir/"ork.lev2"/"pyext"/"lev2qt"/"regen.py"])
 
 ######################################################################
 # prep for build

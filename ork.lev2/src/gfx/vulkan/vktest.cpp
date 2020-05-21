@@ -5,6 +5,7 @@
 namespace ork::lev2::vk {
 
 void init() {
+  return;
   VkApplicationInfo vkappdata  = {};
   vkappdata.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   vkappdata.pNext              = NULL;
@@ -44,19 +45,19 @@ void init() {
     auto wkgcount    = devprops.limits.maxComputeWorkGroupCount;
     deco::printf(
         fvec3::Yellow(), "vk::init gpu<%d:%s> is_discrete<%d>\n", devprops.deviceID, devprops.deviceName, int(is_discrete));
-    //deco::printf(fvec3::Yellow(), "         apiver<%u>\n", devprops.apiVersion);
-    //deco::printf(fvec3::Yellow(), "         maxdim3d<%u>\n", devprops.limits.maxImageDimension3D);
-    //deco::printf(fvec3::Yellow(), "         maxubrange<%u>\n", devprops.limits.maxUniformBufferRange);
-    //deco::printf(fvec3::Yellow(), "         maxfbwidth<%u>\n", devprops.limits.maxFramebufferWidth);
-    //deco::printf(fvec3::Yellow(), "         maxfblayers<%u>\n", devprops.limits.maxFramebufferLayers);
-    //deco::printf(fvec3::Yellow(), "         maxcolorattachments<%u>\n", devprops.limits.maxColorAttachments);
-    //deco::printf(fvec3::Yellow(), "         maxcomputeshmsize<%u>\n", devprops.limits.maxComputeSharedMemorySize);
-    //deco::printf(fvec3::Yellow(), "         maxcomputewkgsize<%u>\n", devprops.limits.maxComputeWorkGroupSize);
-    //deco::printf(fvec3::Yellow(), "         maxcomputewkgcount<%u,%u,%u>\n", wkgcount[0], wkgcount[1], wkgcount[2]);
-    //deco::printf(fvec3::Yellow(), "         feat.fragmentStoresAndAtomics<%u>\n", int(devfeats.fragmentStoresAndAtomics));
-    //deco::printf(fvec3::Yellow(), "         feat.shaderFloat64<%u>\n", int(devfeats.shaderFloat64));
-    //deco::printf(fvec3::Yellow(), "         feat.sparseBinding<%u>\n", int(devfeats.sparseBinding));
-    //deco::printf(fvec3::Yellow(), "         feat.multiDrawIndirect<%u>\n", int(devfeats.multiDrawIndirect));
+    // deco::printf(fvec3::Yellow(), "         apiver<%u>\n", devprops.apiVersion);
+    // deco::printf(fvec3::Yellow(), "         maxdim3d<%u>\n", devprops.limits.maxImageDimension3D);
+    // deco::printf(fvec3::Yellow(), "         maxubrange<%u>\n", devprops.limits.maxUniformBufferRange);
+    // deco::printf(fvec3::Yellow(), "         maxfbwidth<%u>\n", devprops.limits.maxFramebufferWidth);
+    // deco::printf(fvec3::Yellow(), "         maxfblayers<%u>\n", devprops.limits.maxFramebufferLayers);
+    // deco::printf(fvec3::Yellow(), "         maxcolorattachments<%u>\n", devprops.limits.maxColorAttachments);
+    // deco::printf(fvec3::Yellow(), "         maxcomputeshmsize<%u>\n", devprops.limits.maxComputeSharedMemorySize);
+    // deco::printf(fvec3::Yellow(), "         maxcomputewkgsize<%u>\n", devprops.limits.maxComputeWorkGroupSize);
+    // deco::printf(fvec3::Yellow(), "         maxcomputewkgcount<%u,%u,%u>\n", wkgcount[0], wkgcount[1], wkgcount[2]);
+    // deco::printf(fvec3::Yellow(), "         feat.fragmentStoresAndAtomics<%u>\n", int(devfeats.fragmentStoresAndAtomics));
+    // deco::printf(fvec3::Yellow(), "         feat.shaderFloat64<%u>\n", int(devfeats.shaderFloat64));
+    // deco::printf(fvec3::Yellow(), "         feat.sparseBinding<%u>\n", int(devfeats.sparseBinding));
+    // deco::printf(fvec3::Yellow(), "         feat.multiDrawIndirect<%u>\n", int(devfeats.multiDrawIndirect));
 
     VkPhysicalDeviceMemoryProperties memoryprops;
     vkGetPhysicalDeviceMemoryProperties(phy, &memoryprops);
@@ -64,7 +65,7 @@ void init() {
     std::vector<VkMemoryHeap> heapsvect(heaps, heaps + memoryprops.memoryHeapCount);
     for (const auto& heap : heapsvect) {
       if (heap.flags & VkMemoryHeapFlagBits::VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) {
-        //deco::printf(fvec3::Yellow(), "         heap.size<%zu>\n", heap.size);
+        // deco::printf(fvec3::Yellow(), "         heap.size<%zu>\n", heap.size);
       }
     }
     uint32_t numqfamilies = 0;
@@ -76,7 +77,7 @@ void init() {
     std::vector<VkExtensionProperties> phy_extensions(phy_numextensions);
     vkEnumerateDeviceExtensionProperties(phy, nullptr, &phy_numextensions, phy_extensions.data());
     for (auto ext : phy_extensions) {
-        //deco::printf(fvec3::Yellow(),"         extension: <%s>\n", ext.extensionName);
+      // deco::printf(fvec3::Yellow(),"         extension: <%s>\n", ext.extensionName);
     }
   } // for(auto& phy : phydevs){
 
