@@ -2,7 +2,6 @@
 @implementation GameViewController
 {
     MTKView *_view;
-
     Renderer *_renderer;
 }
 
@@ -27,5 +26,6 @@
 
     _view.delegate = _renderer;
 }
+
 
 @end
