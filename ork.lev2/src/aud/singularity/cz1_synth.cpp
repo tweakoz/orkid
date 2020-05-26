@@ -73,11 +73,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
   constexpr double kscale    = double(1 << 24);
   constexpr double kinvscale = 1.0 / kscale;
   //////////////////////////////////////////
-  double saw, dblsine, square, sawpulse, tozpulse, reso1, reso2, reso3, coswave;
-  double sawphase, squarephase, sawpulsephase, tozpulsephase, test;
-
   double lyrcents = _layer->_layerBasePitch;
-
   /////////////////////////
   // read modulation data
   // TODO - krate computation
@@ -94,11 +90,9 @@ void CZX::compute(DspBuffer& dspbuf) // final
   /////////////////////////
 
   for (int i = 0; i < inumframes; i++) {
-
     //////////////////////////////////////////////
     // interpolate modindex
     //////////////////////////////////////////////
-
     _modIndex             = _modIndex * 0.9993f + modindex * .0007f;
     double invmodindex    = 1.0 - _modIndex;
     double sawmodindex    = 0.5 - _modIndex * 0.5;
@@ -156,17 +150,6 @@ void CZX::compute(DspBuffer& dspbuf) // final
     ////////////////////////////////////////////
     _scopetrack->_triggers[i] = (hsync_trigger and not waveswitch);
     ////////////////////////////////////////////
-    // cos
-    ////////////////////////////////////////////
-    coswave = cosf(linphase * PI2);
-    ////////////////////////////////////////////
-    // tri
-    ////////////////////////////////////////////
-    double uni_htri = std::min(neglinphase, linphase); // 0 .. 0.5
-    double uni_tri  = uni_htri * 2.0;                  // 0 .. 1
-    double uni_itri = uni_htri * 2.0;                  // 1 .. 0
-    double tri      = (uni_htri - 0.25) * 4.0;         // -1 .. 1
-    ////////////////////////////////////////////
     // saw (wave==0)
     ////////////////////////////////////////////
     {
@@ -177,49 +160,50 @@ void CZX::compute(DspBuffer& dspbuf) // final
       double sawphase = (pos < saw_x1)        //
                             ? (m1 * linphase) //
                             : (m2 * linphase + b2);
-      saw     = cosf(sawphase * PI2);
-      dblsine = cosf(sawphase * PI2 * 2.0);
-
+      double saw      = cosf(sawphase * PI2);
       _waveoutputs[0] = saw;
     }
     ////////////////////////////////////////////
     // square
     ////////////////////////////////////////////
     {
-      double yy       = step(linphase, 2) * 0.5;
-      double yya      = 1.0 + _modIndex * 64.0;
-      double yyb      = std::clamp(linphase * yya, 0.0, 0.5);
-      double yyc      = std::clamp((linphase - 0.5) * yya, 0.0, 0.5);
-      squarephase     = yyb + yyc;
-      square          = cosf(squarephase * PI2); // + std::clamp(linphase * 4.0, 0.0, 0.5);
-      _waveoutputs[1] = square;
+      double yy          = step(linphase, 2) * 0.5;
+      double yya         = 1.0 + _modIndex * 64.0;
+      double yyb         = std::clamp(linphase * yya, 0.0, 0.5);
+      double yyc         = std::clamp((linphase - 0.5) * yya, 0.0, 0.5);
+      double squarephase = yyb + yyc;
+      double square      = cosf(squarephase * PI2); // + std::clamp(linphase * 4.0, 0.0, 0.5);
+      _waveoutputs[1]    = square;
     }
     ////////////////////////////////////////////
-    // pulse
+    // pulse, pulse2 (doublepulse), sine-pulse
     ////////////////////////////////////////////
-    double xx       = 1.0 - std::clamp(_modIndex * 0.95, 0.0, 0.95);
-    double m3       = 1.0 / xx;
-    double warped2  = std::clamp(linphase * m3, -1.0, 1.0);
-    double cospulse = cosf(warped2 * PI2);
-    _waveoutputs[2] = cospulse; // pulse
-    ////////////////////////////////////////////
-    // pulse2 (doublepulse)
-    ////////////////////////////////////////////
-    double double_warped   = std::clamp(double_linphase * m3, -1.0, 1.0);
-    double double_cospulse = cosf(double_warped * PI2);
-    _waveoutputs[7]        = double_cospulse;
-    ////////////////////////////////////////////
-    // sine-pulse
-    ////////////////////////////////////////////
-    _waveoutputs[4] = cosf(linphase * PI2) * lerp(1.0, cospulse * 0.5, _modIndex);
+    {
+      double xx = 1.0 - std::clamp(_modIndex * 0.95, 0.0, 0.95);
+      double m3 = 1.0 / xx;
+      ////////////////////////////////////////////
+      // pulse
+      ////////////////////////////////////////////
+      double warped2  = std::clamp(linphase * m3, -1.0, 1.0);
+      double cospulse = cosf(warped2 * PI2);
+      _waveoutputs[2] = cospulse; // pulse
+      ////////////////////////////////////////////
+      // pulse2
+      ////////////////////////////////////////////
+      double double_warped   = std::clamp(double_linphase * m3, -1.0, 1.0);
+      double double_cospulse = cosf(double_warped * PI2);
+      _waveoutputs[7]        = double_cospulse;
+      ////////////////////////////////////////////
+      // sine-pulse
+      ////////////////////////////////////////////
+      _waveoutputs[4] = cosf(linphase * PI2) * lerp(1.0, cospulse * 0.5, _modIndex);
+    }
     ////////////////////////////////////////////
     // sawpulse
     ////////////////////////////////////////////
     {
-
-      double mmi  = (sawmodindex)*0.5; // std::clamp(modindex, 0.0, 0.5);
-      double immi = 0.5 - mmi;         // std::clamp(modindex, 0.0, 0.5);
-
+      double mmi      = (sawmodindex)*0.5;
+      double immi     = 0.5 - mmi;
       double sawpos   = std::clamp((linphase - 0.5) / (1.0f - 0.5), 0.0, 1.0);
       double sawidx   = 0.5 + sawmodindex;
       double m1       = .5 / sawidx;
@@ -228,44 +212,22 @@ void CZX::compute(DspBuffer& dspbuf) // final
       double sawphase = (sawpos < sawidx)   //
                             ? (m1 * sawpos) //
                             : (m2 * sawpos + b2);
-
-      sawpulsephase = pow(linphase, 1.0 + _modIndex * 7.0);
-
-      sawpulse        = cosf(sawpulsephase * PI2);
-      _waveoutputs[5] = sawpulse;
+      double sawpulsephase = pow(linphase, 1.0 + _modIndex * 7.0);
+      double sawpulse      = cosf(sawpulsephase * PI2);
+      _waveoutputs[5]      = sawpulse;
     }
     ////////////////////////////////////////////
-    // tozpulse, yo
-    ////////////////////////////////////////////
-    tozpulsephase = pasthalf ? squarephase : std::clamp(sawphase, 0.0, 0.5);
-    tozpulse      = cosf(tozpulsephase * PI2);
+    // resowaves (window excluded)
     ////////////////////////////////////////////
     {
-      /////////////////
-      // float window = smoothstep(0.9, 1.0, linphase);
-      /////////////////
-      // double res3mask = std::clamp(neglinphase * 2, 0.0, 1.0);
-      // float res1mask  = lerp(1.0, 0.0, linphase);
-      // float res2mask  = uni_itri;
-      // float res3mask    = lerp(1.0, reso3index, _modIndex);
-      /////////////////
-      // free running resoosc (but hard synced to base osc)
-      /////////////////
       double frqscale  = (1.0f + _modIndex * 15.0f);
       double resoinc   = kscale * frq * frqscale / 48000.0;
       int64_t pos      = (_resophase)&0xffffff;
       double _linphase = double(pos) * kinvscale;
       double resowave  = cosf(_linphase * PI2);
       _resophase += int64_t(resoinc);
-      /////////////////
-      // double reso_uni = 0.5 + resowave * 0.5;
-      // reso1           = 1.0 - ((1.0 - reso_uni) * res1mask * 2.0);
-      // reso2           = 1.0 - (reso_uni * res2mask * 2.0);
-      // reso3           = 1.0 - ((1.0 - reso_uni) * res3mask * 2.0);
-      /////////////////
-      if (hsync_trigger)
+      if (hsync_trigger) // hardsync resowave to master
         _resophase = 0;
-      /////////////////
       _waveoutputs[6] = resowave;
     }
     ////////////////////////////////////////////
@@ -302,11 +264,10 @@ void CZX::compute(DspBuffer& dspbuf) // final
     ////////////////////////////////////////////
     _phase = nextphase;
     ////////////////////////////////////////////
-    float waveA   = _waveoutputs[_waveIDA];
-    float waveB   = _waveoutputs[_waveIDB];
-    float waveout = std::clamp(waveswitch ? waveB : waveA, -1.0f, 1.0f);
-    waveout       = (1.0f - waveout) * window;
-    outsamples[i] = (1.0f - waveout);
+    float waveraw     = _waveoutputs[waveswitch ? _waveIDB : _waveIDA];
+    float waveclamped = std::clamp(waveraw, -1.0f, 1.0f);
+    float waveout     = (1.0f - waveclamped) * window;
+    outsamples[i]     = (1.0f - waveout);
     // outsamples[i] = double_linphase;
   }
 } // namespace ork::audio::singularity

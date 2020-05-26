@@ -68,9 +68,9 @@ int main(int argc, char** argv) {
   modulation_index_param._src2MinDepth = 0.5;
   modulation_index_param._src2MaxDepth = 0.1;
   //////////////////////////////////////
-  czoscdata->_dcoBaseWaveA = 7;
+  czoscdata->_dcoBaseWaveA = 6;
   czoscdata->_dcoBaseWaveB = 7;
-  czoscdata->_dcoWindow    = 0;
+  czoscdata->_dcoWindow    = 2;
   //////////////////////////////////////
   auto& amp_param   = amp->addParam();
   amp_param._coarse = 0.0f;
