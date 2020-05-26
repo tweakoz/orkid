@@ -238,7 +238,7 @@ ui::HandlerResult vp_cons::DoOnUiEvent(ui::event_constptr_t EV) {
   return ui::HandlerResult(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void vp_cons::DoDraw(ui::drawevent_ptr_t drwev) {
+void vp_cons::DoDraw(ui::drawevent_constptr_t drwev) {
   typedef lev2::SVtxV12C4T16 basevtx_t;
 
   if ((nullptr == mCTQT) || (nullptr == mCTQT->GetTarget()))

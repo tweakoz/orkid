@@ -51,20 +51,24 @@ static float* fftsmoothingbuffer() {
   return buffer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void DrawSpectra(
-    lev2::Context* context, //
-    const hudaframe& HAF,
-    const float* samples,
-    fvec2 xy,
-    fvec2 wh) { //
+SpectraView::SpectraView() //
+    : ui::Surface("Spectra", 0, 0, 128, 128, fvec3(), 1.0) {
+}
+///////////////////////////////////////////////////////////////////////////////
+void SpectraView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
+  auto context         = drwev->GetTarget();
+  auto syn             = synth::instance();
+  auto vp              = syn->_hudvp;
+  const float* samples = syn->_oscopebuffer;
+
   hudlines_t lines;
 
-  const float ANA_X1 = xy.x;
-  const float ANA_Y1 = xy.y;
-  const float ANA_W  = wh.x;
-  const float ANA_H  = wh.y;
-  const float ANA_X2 = (xy + wh).x;
-  const float ANA_Y2 = (xy + wh).y;
+  const float ANA_X1 = 0;
+  const float ANA_Y1 = 0;
+  const float ANA_W  = miW;
+  const float ANA_H  = miH;
+  const float ANA_X2 = miW;
+  const float ANA_Y2 = miH;
   const float ANA_HH = ANA_H * 0.5;
   const float ANA_CY = ANA_Y1 + ANA_HH;
 
@@ -256,6 +260,14 @@ void DrawSpectra(
   ////////////////////////////////////////
 
   drawHudLines(context, lines);
+}
+///////////////////////////////////////////////////////////////////////////////
+void SpectraView::DoInit(lev2::Context* pt) {
+}
+///////////////////////////////////////////////////////////////////////////////
+ui::HandlerResult SpectraView::DoOnUiEvent(ui::event_constptr_t EV) {
+  ui::HandlerResult ret(this);
+  return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

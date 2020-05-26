@@ -123,7 +123,7 @@ void EzViewport::DoInit(ork::lev2::Context* pTARG) {
   pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
 }
 /////////////////////////////////////////////////
-void EzViewport::DoDraw(ui::drawevent_ptr_t drwev) {
+void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
 
   bool do_gpu_init = bool(_mainwin->_onGpuInit);
   do_gpu_init |= bool(_mainwin->_onGpuInitWithScene);

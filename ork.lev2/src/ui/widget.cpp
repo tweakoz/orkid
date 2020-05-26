@@ -433,7 +433,7 @@ void Widget::SetDirty() {
 
 /////////////////////////////////////////////////////////////////////////
 
-void Widget::Draw(ui::drawevent_ptr_t drwev) {
+void Widget::Draw(ui::drawevent_constptr_t drwev) {
   _drawEvent = drwev;
   mpTarget   = drwev->GetTarget();
 

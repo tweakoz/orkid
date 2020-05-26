@@ -699,7 +699,7 @@ public:
   void onInvalidate();
 
 private:
-  void DoRePaintSurface(ui::drawevent_ptr_t drwev) override;
+  void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
   void DoSurfaceResize() override;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
   void DoInit(lev2::Context* pt) override;

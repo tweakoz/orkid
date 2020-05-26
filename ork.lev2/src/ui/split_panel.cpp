@@ -51,7 +51,7 @@ void SplitPanel::SetChild2(Widget* pch) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void SplitPanel::DoDraw(ui::drawevent_ptr_t drwev) {
+void SplitPanel::DoDraw(ui::drawevent_constptr_t drwev) {
   auto tgt     = drwev->GetTarget();
   bool is_hdpi = tgt->hiDPI();
   auto fbi     = tgt->FBI();

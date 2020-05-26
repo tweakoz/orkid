@@ -4,24 +4,10 @@
 @end
 
 @implementation AppDelegate
-- (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
-    // Insert code here to initialize your application
-}
-- (void)applicationWillTerminate:(NSNotification *)aNotification {
-    // Insert code here to tear down your application
-}
-- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender {
-    return YES;
-}
-@end
 
-////////////////////////////////////////////////////////////////////////////////
-int main(int argc, const char * argv[])
-{
-  ///////////////////////////////////////
-  // get HMD device and create a metal session with it
-  ///////////////////////////////////////
+@synthesize _window;
 
+- (id) init {
   auto NSHMDDevice = NSClassFromString(@"NSHMDDevice");
   auto NSHMDMetalSession = NSClassFromString(@"NSHMDMetalSession");
   auto NSSLSHMD = NSClassFromString(@"NSSLSHMD");
@@ -53,14 +39,50 @@ int main(int argc, const char * argv[])
   //printf("baseobj<%p:%s>\n", baseobj,objc_typename(baseobj).c_str());
   //assert(false);
 
+  NSRect frame = NSMakeRect(0, 0, 200, 200);
+  self._window  = [[[NSWindow alloc] initWithContentRect:frame
+                styleMask:NSBorderlessWindowMask
+                backing:NSBackingStoreBuffered
+                defer:NO] autorelease];
+  [self._window setBackgroundColor:[NSColor blueColor]];
+  [self._window makeKeyAndOrderFront:NSApp];
+
+  //_renderer = [[Renderer alloc] initWithMetalKitView: view];
+  return self;
+}
+
+- (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
+
+    // Insert code here to initialize your application
+}
+- (void)applicationWillTerminate:(NSNotification *)aNotification {
+    // Insert code here to tear down your application
+}
+- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender {
+    return YES;
+}
+@end
+
+////////////////////////////////////////////////////////////////////////////////
+int main(int argc, const char * argv[])
+{
+  ///////////////////////////////////////
+  // get HMD device and create a metal session with it
+  ///////////////////////////////////////
+
+
   ///////////////////////////////////////
   CGError cgret;
   //CGGetDisplaysWithRect
 
-    @autoreleasepool {
-        // Setup code that might create autoreleased objects goes here.
-    }
-    return NSApplicationMain(argc, argv);
+  auto pool = [[NSAutoreleasePool alloc] init];
+  auto application = [NSApplication sharedApplication];
 
+  auto appd = [[AppDelegate alloc] init];
+  auto appDelegate = [appd autorelease];
 
+  [application setDelegate:appDelegate];
+  [application run];
+  [pool drain];
+  return EXIT_SUCCESS;
 }

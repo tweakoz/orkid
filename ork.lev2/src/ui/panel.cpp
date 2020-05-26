@@ -38,7 +38,7 @@ void Panel::SetChild(Widget* pch) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void Panel::DoDraw(ui::drawevent_ptr_t drwev) {
+void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
   auto tgt    = drwev->GetTarget();
   auto fbi    = tgt->FBI();
   auto mtxi   = tgt->MTXI();

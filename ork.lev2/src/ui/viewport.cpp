@@ -51,12 +51,9 @@ void Viewport::BeginFrame(lev2::Context* pTARG) {
 
 void Viewport::EndFrame(lev2::Context* pTARG) {
   pTARG->debugPushGroup("Viewport::EndFrame");
-  if (mbDrawOK) {
-    pTARG->MTXI()->PopPMatrix();
-    pTARG->FBI()->popScissor();
-  }
+  pTARG->MTXI()->PopPMatrix();
+  pTARG->FBI()->popScissor();
   pTARG->endFrame();
-  mbDrawOK = false;
   pTARG->debugPopGroup();
 }
 

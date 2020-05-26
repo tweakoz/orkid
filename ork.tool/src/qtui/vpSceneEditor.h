@@ -160,7 +160,7 @@ public:
   bool IsSceneDisplayEnabled() const { return mbSceneDisplayEnable; }
 
 protected:
-  void DoDraw(ui::drawevent_ptr_t drwev) final; // virtual
+  void DoDraw(ui::drawevent_constptr_t drwev) final; // virtual
 
   ork::atomic<int> mRenderLock;
 

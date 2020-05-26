@@ -36,8 +36,8 @@ struct op4frame {
   int _wav      = 0;
   int _olev     = 0;
 };
-struct hudaframe {
-  hudaframe()
+struct HudFrameAudio {
+  HudFrameAudio()
       : _oscopebuffer(koscopelength) {
   }
   std::vector<float> _oscopebuffer;
@@ -50,7 +50,7 @@ struct hudaframe {
   size_t _baseserial  = 0;
   size_t _owcount     = 0;
 };
-struct hudkframe {
+struct HudFrameControl {
   lyrdata_constptr_t _layerdata;
   alg_ptr_t _alg;
   const kmregion* _kmregion = nullptr;

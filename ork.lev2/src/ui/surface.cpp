@@ -62,11 +62,11 @@ void Surface::OnResize(void) {
   SetDirty();
 }
 
-void Surface::RePaintSurface(ui::drawevent_ptr_t drwev) {
+void Surface::RePaintSurface(ui::drawevent_constptr_t drwev) {
   DoRePaintSurface(drwev);
 }
 
-void Surface::DoDraw(ui::drawevent_ptr_t drwev) {
+void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   auto tgt    = drwev->GetTarget();
   auto mtxi   = tgt->MTXI();
   auto fbi    = tgt->FBI();

@@ -54,7 +54,7 @@ public:
       }
     tex->_dirty = true;
   }
-  void DoRePaintSurface(ork::ui::drawevent_ptr_t ev) override {
+  void DoRePaintSurface(ork::ui::drawevent_constptr_t ev) override {
     mpTarget->FBI()->SetAutoClear(true);
     auto tgtrect = mpTarget->mainSurfaceRectAtOrigin();
 

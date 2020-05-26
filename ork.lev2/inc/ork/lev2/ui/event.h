@@ -161,7 +161,6 @@ struct DrawEvent {
   lev2::Context* mpTarget;
 };
 
-using drawevent_ptr_t      = std::shared_ptr<DrawEvent>;
 using drawevent_constptr_t = std::shared_ptr<const DrawEvent>;
 
 }} // namespace ork::ui

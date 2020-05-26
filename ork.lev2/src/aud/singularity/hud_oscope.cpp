@@ -1,5 +1,6 @@
 #include <ork/lev2/aud/singularity/hud.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
+#include <ork/lev2/gfx/pickbuffer.h>
 
 using namespace ork;
 using namespace ork::lev2;
@@ -7,17 +8,17 @@ using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
-
-void DrawOscope(
-    lev2::Context* context, //
-    const hudaframe& HAF,
-    const float* samples,
-    fvec2 xy,
-    fvec2 wh) { //
-  auto syn = synth::instance();
-
-  auto hudl   = syn->_hudLayer;
-  double time = syn->_timeaccum;
+OscopeView::OscopeView() //
+    : ui::Surface("Scope", 0, 0, 128, 128, fvec3(), 1.0) {
+} // namespace ork::audio::singularity
+///////////////////////////////////////////////////////////////////////////////
+void OscopeView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
+  auto context         = drwev->GetTarget();
+  auto syn             = synth::instance();
+  auto vp              = syn->_hudvp;
+  auto hudl            = syn->_hudLayer;
+  double time          = syn->_timeaccum;
+  const float* samples = syn->_oscopebuffer;
 
   if (false == (hudl && hudl->_LayerData))
     return;
@@ -28,12 +29,12 @@ void DrawOscope(
 
   int inumframes = syn->_oswidth;
 
-  const float OSC_X1 = xy.x;
-  const float OSC_Y1 = xy.y;
-  const float OSC_W  = wh.x;
-  const float OSC_H  = wh.y;
-  const float OSC_X2 = (xy + wh).x;
-  const float OSC_Y2 = (xy + wh).y;
+  const float OSC_X1 = 0;
+  const float OSC_Y1 = 0;
+  const float OSC_W  = miW;
+  const float OSC_H  = miH;
+  const float OSC_X2 = miW;
+  const float OSC_Y2 = miH;
   const float OSC_HH = OSC_H * 0.5;
   const float OSC_CY = OSC_Y1 + OSC_HH;
 
@@ -225,7 +226,16 @@ void DrawOscope(
 
   drawHudLines(context, lines);
 }
-
+///////////////////////////////////////////////////////////////////////////////
+void OscopeView::DoInit(lev2::Context* pt) {
+  _pickbuffer = new lev2::PickBuffer(this, pt, miW, miH);
+  _ctxbase    = pt->GetCtxBase();
+}
+///////////////////////////////////////////////////////////////////////////////
+ui::HandlerResult OscopeView::DoOnUiEvent(ui::event_constptr_t EV) {
+  ui::HandlerResult ret(this);
+  return ret;
+}
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity
 ///////////////////////////////////////////////////////////////////////////////

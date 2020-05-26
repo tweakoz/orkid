@@ -55,10 +55,10 @@ struct synth {
   void freeLayer(Layer* l);
   void deactivateVoices();
 
-  void onDrawHud(lev2::Context* ctx, float w, float h);
-  void onDrawHudPage1(lev2::Context* ctx, float w, float h);
-  void onDrawHudPage2(lev2::Context* ctx, float w, float h);
-  void onDrawHudPage3(lev2::Context* ctx, float w, float h);
+  // void onDrawHud(lev2::Context* ctx, float w, float h);
+  // void onDrawHudPage1(lev2::Context* ctx, float w, float h);
+  // void onDrawHudPage2(lev2::Context* ctx, float w, float h);
+  // void onDrawHudPage3(lev2::Context* ctx, float w, float h);
 
   void resetFenables();
 
@@ -110,8 +110,9 @@ struct synth {
 
   ork::MpMcBoundedQueue<ork::svar1024_t> _hudbuf;
 
-  hudkframe _curhud_kframe;
-  hudaframe _curhud_aframe;
+  HudFrameControl _curhud_kframe;
+  HudFrameAudio _curhud_aframe;
+  hudvp_ptr_t _hudvp;
 
   float _oscopebuffer[koscopelength];
   bool _oscopesyncbuffer[koscopelength];

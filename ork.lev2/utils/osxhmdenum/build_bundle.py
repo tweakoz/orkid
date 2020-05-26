@@ -16,9 +16,10 @@ osx.macho_dump(binpath)
 bundle_dest = path.stage()/"apps"/"ork.osxhmdenum.app"
 bundle_contents = bundle_dest/"Contents"
 bundle_macos = bundle_contents/"MacOs"
+bundle_bin = bundle_macos/"ork.osxhmdenum"
 pathtools.mkdir(bundle_macos,clean=True,parents=True)
 ##################################################################
-pathtools.copyfile(binpath,bundle_macos/"ork.osxhmdenum")
+pathtools.copyfile(binpath,bundle_bin)
 pathtools.copyfile(infpath,bundle_contents/"Info.plist")
 ##################################################################
 def dylib_copy(dylib_name):
@@ -31,15 +32,18 @@ def dylib_fixid(dylib_name):
     dst = bundle_macos/dylib_name
     command.run([ "install_name_tool",
                   "-id","@executable_path/"+dylib_name,
-                  dst ])
+                  dst ],do_log=True)
 ##################################################################
 def dylib_paths(dylib_name):
   dst = bundle_macos/dylib_name
   osx.macho_replace_loadpaths(dst, "@executable_path/../lib/", "@executable_path/")
   osx.macho_replace_loadpaths(dst, "@rpath/", "@executable_path/")
+  osx.macho_replace_loadpaths(dst, path.libs(), "@executable_path")
 ##################################################################
 libs_to_package = [
     "libassimp.5.dylib",
+    "libBulletCollision.2.89.dylib",
+    "libBulletDynamics.2.89.dylib",
     "libglfw.3.dylib",
     "libHalf-2_4.24.dylib",
     "libIex-2_4.24.dylib",
@@ -49,6 +53,7 @@ libs_to_package = [
     "libImath-2_4.24.dylib",
     "libIrrXML.dylib",
     "libispc_texcomp.so",
+    "libLinearMath.2.89.dylib",
     "libOpenImageIO.2.1.dylib",
     "libOpenImageIO_Util.2.1.dylib",
     "libork_core.dylib",
@@ -56,9 +61,7 @@ libs_to_package = [
     "libork_ecs.dylib",
     "libork_tuio.dylib",
     "libork_utpp.dylib",
-    "libBulletCollision.2.89.dylib",
-    "libBulletDynamics.2.89.dylib",
-    "libLinearMath.2.89.dylib",
+    "libpython3.8d.dylib",
 ]
 ##################################################################
 out_dylibs = []
@@ -71,8 +74,10 @@ for item in libs_to_package:
 ##################################################################
 for item in out_dylibs:
   osx.macho_replace_loadpaths(item, "@executable_path/../lib/", "@executable_path/")
+for item in out_dylibs:
   osx.macho_replace_loadpaths(item, "@rpath/", "@executable_path/")
 ##################################################################
-osx.macho_replace_loadpaths(binpath, "@executable_path/../lib/", "@executable_path/")
-osx.macho_replace_loadpaths(binpath, "@rpath/", "@executable_path/")
-command.run(["install_name_tool","-delete_rpath",path.libs(),binpath])
+osx.macho_replace_loadpaths(bundle_bin, "@executable_path/../lib/", "@executable_path/")
+osx.macho_replace_loadpaths(bundle_bin, "@rpath/", "@executable_path/")
+osx.macho_replace_loadpaths(bundle_bin, path.libs(), "@executable_path")
+#command.run(["install_name_tool","-delete_rpath",path.libs(),binpath])

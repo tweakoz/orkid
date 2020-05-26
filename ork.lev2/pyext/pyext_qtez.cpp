@@ -12,8 +12,9 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
 
   };
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<ui::DrawEvent, ui::drawevent_ptr_t>(module_lev2, "DrawEvent")       //
-      .def_property_readonly("context", [](ui::drawevent_ptr_t event) -> ctx_t { //
+  using drawevent_ptr_t = std::shared_ptr<ui::DrawEvent>;
+  py::class_<ui::DrawEvent, drawevent_ptr_t>(module_lev2, "DrawEvent")       //
+      .def_property_readonly("context", [](drawevent_ptr_t event) -> ctx_t { //
         return ctx_t(event->GetTarget());
       });
   /////////////////////////////////////////////////////////////////////////////////
@@ -84,9 +85,9 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       .def_static(
           "create",
           [type_codec](py::object appinstance) { //
-            auto rval                                                  = OrkEzQtApp::create();
-            auto d_ev                                                  = std::make_shared<ui::DrawEvent>(nullptr);
-            rval->_vars.makeValueForKey<ui::drawevent_ptr_t>("drawev") = d_ev;
+            auto rval                                              = OrkEzQtApp::create();
+            auto d_ev                                              = std::make_shared<ui::DrawEvent>(nullptr);
+            rval->_vars.makeValueForKey<drawevent_ptr_t>("drawev") = d_ev;
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onGpuInit")) {
               auto gpuinitfn //
@@ -117,10 +118,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               rval->onDraw([=](ui::drawevent_constptr_t drwev) { //
                 ork::opq::mainSerialQueue()->Process();
                 py::gil_scoped_acquire acquire;
-                auto pyfn                = rval->_vars.typedValueForKey<py::function>("drawfn");
-                auto mydrev              = rval->_vars.typedValueForKey<ui::drawevent_ptr_t>("drawev");
-                mydrev.value()->mpTarget = drwev->GetTarget();
-                pyfn.value()(ui::drawevent_constptr_t(mydrev.value()));
+                auto pyfn       = rval->_vars.typedValueForKey<py::function>("drawfn");
+                auto mydrev     = rval->_vars.typedValueForKey<drawevent_ptr_t>("drawev");
+                *mydrev.value() = *drwev;
+                pyfn.value()(mydrev);
               });
             } else {
               auto scene = py::cast<scenegraph::scene_ptr_t>(appinstance.attr("scene"));

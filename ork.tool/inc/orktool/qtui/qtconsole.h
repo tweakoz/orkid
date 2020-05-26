@@ -66,7 +66,7 @@ public:
 private:
 
 	ui::HandlerResult DoOnUiEvent( ui::event_constptr_t EV ) final;
-	void DoDraw(ui::drawevent_ptr_t drwev); // virtual
+	void DoDraw(ui::drawevent_constptr_t drwev); // virtual
 	lev2::CTQT*							mCTQT;
 	ork::lev2::GfxMaterial3DSolid		mBaseMaterial;
 

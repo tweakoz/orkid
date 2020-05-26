@@ -32,9 +32,6 @@ public:
   Viewport(const std::string& name, int x, int y, int w, int h, fcolor3 color, F32 depth);
   virtual ~Viewport() {
   }
-
-protected:
-  bool mbDrawOK;
 };
 
 }} // namespace ork::ui

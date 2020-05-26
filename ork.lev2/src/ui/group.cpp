@@ -47,7 +47,7 @@ void Group::RemoveChild( Widget* pch )
 
 /////////////////////////////////////////////////////////////////////////
 
-void Group::DrawChildren(ui::drawevent_ptr_t drwev)
+void Group::DrawChildren(ui::drawevent_constptr_t drwev)
 {
 	for( auto& it : mChildren )
 	{

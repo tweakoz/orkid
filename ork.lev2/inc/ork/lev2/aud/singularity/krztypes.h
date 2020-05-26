@@ -62,6 +62,9 @@ struct CzData;
 struct KrzTestData;
 struct KrzKmTestData;
 struct CzProgData;
+struct HudFrameAudio;
+struct HudFrameControl;
+struct HudViewport;
 ///////////////////////////////////////////////////////////////////////////////
 using iomask_ptr_t                = std::shared_ptr<IoMask>;
 using iomask_constptr_t           = std::shared_ptr<const IoMask>;
@@ -97,6 +100,9 @@ using controllerdata_constptr_t   = std::shared_ptr<const ControllerData>;
 using controlblockdata_ptr_t      = std::shared_ptr<ControlBlockData>;
 using controlblockdata_constptr_t = std::shared_ptr<const ControlBlockData>;
 using kmpblockdata_ptr_t          = std::shared_ptr<KmpBlockData>;
+using hudframeaud_ptr_t           = std::shared_ptr<HudFrameAudio>;
+using hudframectrl_ptr_t          = std::shared_ptr<HudFrameControl>;
+using hudvp_ptr_t                 = std::shared_ptr<HudViewport>;
 ///////////////////////////////////////////////////////////////////////////////
 static const int kmaxenvperlayer       = 8;
 static const int kmaxdspblocksperstage = 4;

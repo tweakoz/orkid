@@ -103,8 +103,8 @@ struct Layer {
   outputBuffer _layerObuf;
   dspbuf_ptr_t _dspbuffer;
 
-  hudkframe _HKF;
-  hudaframe _HAF;
+  HudFrameControl _HKF;
+  HudFrameAudio _HAF;
   int _HAF_nenvseg;
   size_t _num_sent_to_scope = 0;
   lyrdata_constptr_t _LayerData;

@@ -73,7 +73,7 @@ void GedVP::DoSurfaceResize() {
   // TODO: _pickbuffer->Resize()
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedVP::DoRePaintSurface(ui::drawevent_ptr_t drwev) {
+void GedVP::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   // printf("GedVP<%p>::Draw x<%d> y<%d> w<%d> h<%d>\n", this, miX, miY, miW, miH);
 
   // ork::tool::ged::ObjModel::FlushAllQueues();

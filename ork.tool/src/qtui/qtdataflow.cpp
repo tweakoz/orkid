@@ -190,7 +190,7 @@ void GraphVP::DoInit(lev2::Context* pt) {
   auto par    = fbi->GetThisBuffer();
   _pickbuffer = new ork::lev2::PickBuffer(this, pt, 0, 0);
 }
-void GraphVP::DoRePaintSurface(ui::drawevent_ptr_t drwev) {
+void GraphVP::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   auto ctx      = drwev->GetTarget();
   auto mtxi     = ctx->MTXI();
   auto fbi      = ctx->FBI();

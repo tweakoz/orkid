@@ -30,6 +30,10 @@ target_link_libraries(${EXE} PRIVATE "-framework ModelIO")
 target_link_libraries(${EXE} PRIVATE "-framework Metal")
 target_link_libraries(${EXE} PRIVATE "-framework MetalKit")
 
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -ObjC++")
+
+
+
 add_custom_command( OUTPUT ${APP} POST_BUILD
                     COMMAND ${TESTSRCD}/build_bundle.py )
 

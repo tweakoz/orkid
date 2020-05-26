@@ -7,6 +7,7 @@
 
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
+#include <ork/lev2/aud/singularity/hud.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
 
 namespace ork::audio::singularity {
@@ -38,6 +39,8 @@ synth::synth()
     _freeProgInst.insert(pi);
     _allProgInsts.insert(pi);
   }
+
+  _hudvp = std::make_shared<HudViewport>();
 }
 
 void synth::setSampleRate(float sr) {

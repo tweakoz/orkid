@@ -118,7 +118,7 @@ public:
   }
 
   void ExtDraw(lev2::Context* pTARG);
-  virtual void Draw(ui::drawevent_ptr_t drwev);
+  virtual void Draw(ui::drawevent_constptr_t drwev);
 
   virtual void Enter(void) { /*mWidgetFlags.SetState( EUI_WIDGET_HOVER );*/
   }
@@ -174,7 +174,7 @@ protected:
   int miLX, miLY, miLW, miLH, miLX2, miLY2;
   std::string msName;
   lev2::Context* mpTarget;
-  drawevent_ptr_t _drawEvent;
+  drawevent_constptr_t _drawEvent;
   bool mDirty;
   bool mSizeDirty;
   bool mPosDirty;
@@ -190,7 +190,7 @@ private:
   }
   virtual void DoOnExit() {
   }
-  virtual void DoDraw(ui::drawevent_ptr_t drwev) = 0;
+  virtual void DoDraw(ui::drawevent_constptr_t drwev) = 0;
   virtual HandlerResult DoOnUiEvent(event_constptr_t Ev);
   void ReLayout();
   virtual void DoLayout() {
@@ -209,7 +209,7 @@ public:
   void AddChild(Widget* pch);
   void RemoveChild(Widget* pch);
 
-  void DrawChildren(ui::drawevent_ptr_t drwev);
+  void DrawChildren(ui::drawevent_constptr_t drwev);
 
 protected:
   std::vector<Widget*> mChildren;

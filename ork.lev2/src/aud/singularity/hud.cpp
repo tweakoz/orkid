@@ -44,6 +44,58 @@ void Rect::PopOrtho(Context* context) const {
   context->MTXI()->PopUIMatrix();
 }
 ///////////////////////////////////////////////////////////////////////////////
+HudViewport::HudViewport() //
+    : ui::Viewport("HUD", 0, 0, 512, 512, fvec3::Red(), 1.0) {
+  _view_oscope  = std::make_shared<OscopeView>();
+  _view_spectra = std::make_shared<SpectraView>();
+}
+///////////////////////////////////////////////////////////////////////////////
+void HudViewport::DoDraw(ui::drawevent_constptr_t drwev) {
+  auto syn = synth::instance();
+  if (syn->_clearhuddata) {
+    syn->_hudsample_map.clear();
+    syn->_clearhuddata = false;
+  }
+
+  svar_t hdata;
+
+  while (syn->_hudbuf.try_pop(hdata)) {
+    if (hdata.IsA<HudFrameControl>()) {
+      syn->_curhud_kframe = hdata.Get<HudFrameControl>();
+
+      for (int i = 0; i < koscopelength; i++) {
+        syn->_oscopebuffer[i] = 0.0f;
+      }
+
+    }
+
+    else if (auto try_aframe = hdata.TryAs<HudFrameAudio>()) {
+      //////////////////////////////
+      // OSCOPE INPUT
+      //////////////////////////////
+
+      auto& AFIN  = try_aframe.value();
+      int inumfin = AFIN._oscopebuffer.size();
+
+      int tailbegin = koscopelength - inumfin;
+
+      memcpy(syn->_oscopebuffer, syn->_oscopebuffer + inumfin, tailbegin * sizeof(float));
+      memcpy(syn->_oscopesyncbuffer, syn->_oscopesyncbuffer + inumfin, tailbegin * sizeof(bool));
+
+      float* tailb_float = syn->_oscopebuffer + tailbegin;
+      bool* tailb_bool   = syn->_oscopesyncbuffer + tailbegin;
+      for (int i = 0; i < inumfin; i++) {
+        tailb_float[i] = AFIN._oscopebuffer[i];
+        tailb_bool[i]  = AFIN._oscopesync[i];
+      }
+      syn->_curhud_aframe._items.clear();
+      syn->_curhud_aframe = AFIN;
+      AFIN._items.clear();
+    }
+  }
+
+  ui::Viewport::DoDraw(drwev);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 void drawtext(
@@ -154,56 +206,32 @@ float SCOPEH() {
   return 400 * hud_contentscale();
 }
 ///////////////////////////////////////////////////////////////////////////////
-
+void DrawBorder(Context* context, int X1, int Y1, int X2, int Y2, int color) {
+  hudlines_t lines;
+  fvec3 vcolor(1, 1, 1);
+  switch (color) {
+    case 0:
+      vcolor = fvec3(0.6, 0.3, 0.6);
+      break;
+    case 1:
+      vcolor = fvec3(0.0, 0.0, 0.0);
+      break;
+    case 2:
+      vcolor = fvec3(0.9, 0.0, 0.0);
+      break;
+  }
+  auto addline = [&lines, &vcolor](float xa, float ya, float xb, float yb) { //
+    lines.push_back(HudLine{fvec2{xa, ya}, fvec2{xb, yb}, vcolor});
+  };
+  addline(X1, Y1, X2, Y1);
+  addline(X2, Y1, X2, Y2);
+  addline(X2, Y2, X1, Y2);
+  addline(X1, Y2, X1, Y1);
+  drawHudLines(context, lines);
+}
+///////////////////////////////////////////////////////////////////////////////
+/*
 void synth::onDrawHud(Context* context, float width, float height) {
-
-  if (_clearhuddata) {
-    _hudsample_map.clear();
-    _clearhuddata = false;
-  }
-
-  svar_t hdata;
-
-  while (_hudbuf.try_pop(hdata)) {
-    if (hdata.IsA<hudkframe>()) {
-      _curhud_kframe = hdata.Get<hudkframe>();
-
-      for (int i = 0; i < koscopelength; i++) {
-        _oscopebuffer[i] = 0.0f;
-      }
-
-    }
-
-    else if (auto try_aframe = hdata.TryAs<hudaframe>()) {
-      //////////////////////////////
-      // OSCOPE INPUT
-      //////////////////////////////
-
-      auto& AFIN  = try_aframe.value();
-      int inumfin = AFIN._oscopebuffer.size();
-
-      int tailbegin = koscopelength - inumfin;
-
-      memcpy(_oscopebuffer, _oscopebuffer + inumfin, tailbegin * sizeof(float));
-      memcpy(_oscopesyncbuffer, _oscopesyncbuffer + inumfin, tailbegin * sizeof(bool));
-
-      float* tailb_float = _oscopebuffer + tailbegin;
-      bool* tailb_bool   = _oscopesyncbuffer + tailbegin;
-      for (int i = 0; i < inumfin; i++) {
-        tailb_float[i] = AFIN._oscopebuffer[i];
-        tailb_bool[i]  = AFIN._oscopesync[i];
-      }
-      _curhud_aframe._items.clear();
-      _curhud_aframe = AFIN;
-      AFIN._items.clear();
-    }
-  }
-
-  if (_hudpage == 0) {
-    this->onDrawHudPage2(context, width, height);
-    this->onDrawHudPage3(context, width, height);
-  } else if (_hudpage == 1)
-    this->onDrawHudPage1(context, width, height);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -223,7 +251,7 @@ void synth::onDrawHudPage2(Context* context, float width, float height) {
 
   auto layd = _hudLayer->_LayerData;
 
-  const hudaframe& HAF = _curhud_aframe;
+  const HudFrameAudio& HAF = _curhud_aframe;
 
   float fh   = FUNH(width, height);
   float envh = ENVH(width, height);
@@ -303,31 +331,6 @@ void synth::onDrawHudPage2(Context* context, float width, float height) {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-void DrawBorder(Context* context, int X1, int Y1, int X2, int Y2, int color) {
-  hudlines_t lines;
-  fvec3 vcolor(1, 1, 1);
-  switch (color) {
-    case 0:
-      vcolor = fvec3(0.6, 0.3, 0.6);
-      break;
-    case 1:
-      vcolor = fvec3(0.0, 0.0, 0.0);
-      break;
-    case 2:
-      vcolor = fvec3(0.9, 0.0, 0.0);
-      break;
-  }
-  auto addline = [&lines, &vcolor](float xa, float ya, float xb, float yb) { //
-    lines.push_back(HudLine{fvec2{xa, ya}, fvec2{xb, yb}, vcolor});
-  };
-  addline(X1, Y1, X2, Y1);
-  addline(X2, Y1, X2, Y2);
-  addline(X2, Y2, X1, Y2);
-  addline(X1, Y2, X1, Y1);
-  drawHudLines(context, lines);
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -336,8 +339,8 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
   hudlines_t lines;
   auto MTXI = context->MTXI();
 
-  const hudkframe& HKF = _curhud_kframe;
-  const hudaframe& HAF = _curhud_aframe;
+  const HudFrameControl& HKF = _curhud_kframe;
+  const HudFrameAudio& HAF   = _curhud_aframe;
 
   if (nullptr == HKF._layerdata)
     return;
@@ -457,7 +460,7 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
     bool enabled = false;
   };
 
-  /* refactor for stages
+  // refactor for stages
   std::vector<blockrect> _blockrects;
 
   for (int i = 0; i < kmaxdspblocksperlayer; i++) {
@@ -592,7 +595,7 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
 
     yb += blockh;
     ytb += blockh;
-  }*/
+  }
 
   yb = 90;
   MTXI->PushUIMatrix(width, height);
@@ -601,7 +604,7 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
   // draw dspblock borders
   /////////////////////////////////
 
-  /*for (auto brect : _blockrects) {
+  for (auto brect : _blockrects) {
     auto blk = brect.dspblock;
 
     const DspBlockData* dbd = &blk->_dbd;
@@ -613,7 +616,7 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
     DrawBorder(context, xb, brect.y1, xb + dspw, brect.y2, color);
 
     yb = brect.y2;
-  }*/
+  }
 
   MTXI->PopUIMatrix();
 
@@ -632,5 +635,5 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
   }
 
   drawHudLines(context, lines);
-}
+}*/
 } // namespace ork::audio::singularity

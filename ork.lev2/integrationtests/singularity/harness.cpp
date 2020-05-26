@@ -1,6 +1,8 @@
 #include "harness.h"
 #include <boost/program_options.hpp>
 #include <iostream>
+#include <ork/lev2/aud/singularity/hud.h>
+
 namespace po = boost::program_options;
 
 #if defined(__APPLE__)
@@ -66,9 +68,7 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
     ////////////////////////////////////////////////////
     // draw the synth HUD
     ////////////////////////////////////////////////////
-    context->beginFrame();
-    the_synth->onDrawHud(context, TARGW, TARGH);
-    context->endFrame();
+    the_synth->_hudvp->Draw(drwev);
     ////////////////////////////////////////////////////
   });
   //////////////////////////////////////////////////////////

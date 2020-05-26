@@ -291,7 +291,7 @@ void Outliner2View::DoInit(lev2::Context* pt) {
   mCtxBase = pt->GetCtxBase();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Outliner2View::DoRePaintSurface(ui::drawevent_ptr_t drwev) {
+void Outliner2View::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   auto tgt = drwev->GetTarget();
   tgt->makeCurrentContext();
   tgt->debugPushGroup(FormatString("Outliner2View::repaint"));
