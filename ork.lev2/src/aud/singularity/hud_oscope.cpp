@@ -23,6 +23,8 @@ void OscopeView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   if (false == (hudl && hudl->_LayerData))
     return;
 
+  OrkAssert(false);
+
   ///////////////////////////////////////////////
 
   hudlines_t lines;

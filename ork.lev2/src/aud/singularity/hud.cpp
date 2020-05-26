@@ -48,17 +48,21 @@ HudViewport::HudViewport() //
     : ui::Viewport("HUD", 0, 0, 512, 512, fvec3::Red(), 1.0) {
   _view_oscope  = std::make_shared<OscopeView>();
   _view_spectra = std::make_shared<SpectraView>();
+
+  AddChild(_view_oscope.get());
+  AddChild(_view_spectra.get());
 }
 ///////////////////////////////////////////////////////////////////////////////
 void HudViewport::DoDraw(ui::drawevent_constptr_t drwev) {
+  ///////////////////////////////////////////
+  // pull hud frame data
+  ///////////////////////////////////////////
   auto syn = synth::instance();
   if (syn->_clearhuddata) {
     syn->_hudsample_map.clear();
     syn->_clearhuddata = false;
   }
-
   svar_t hdata;
-
   while (syn->_hudbuf.try_pop(hdata)) {
     if (hdata.IsA<HudFrameControl>()) {
       syn->_curhud_kframe = hdata.Get<HudFrameControl>();
@@ -91,10 +95,19 @@ void HudViewport::DoDraw(ui::drawevent_constptr_t drwev) {
       syn->_curhud_aframe._items.clear();
       syn->_curhud_aframe = AFIN;
       AFIN._items.clear();
+
+      _view_oscope->SetDirty();
+      _view_spectra->SetDirty();
     }
   }
+  ///////////////////////////////////////////
+  // render
+  ///////////////////////////////////////////
 
-  ui::Viewport::DoDraw(drwev);
+  mpTarget->beginFrame();
+  DrawChildren(drwev);
+  mpTarget->endFrame();
+  ///////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////
