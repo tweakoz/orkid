@@ -56,7 +56,7 @@ HudViewport::HudViewport() //
   _spectra->SetRect(0, 256, 256, 256);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void HudViewport::DoDraw(ui::drawevent_constptr_t drwev) {
+void HudViewport::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
   ///////////////////////////////////////////
   // pull hud frame data
   ///////////////////////////////////////////
@@ -103,6 +103,10 @@ void HudViewport::DoDraw(ui::drawevent_constptr_t drwev) {
       //_spectra->SetDirty();
     }
   }
+}
+///////////////////////////////////////////////////////////////////////////////
+void HudViewport::DoDraw(ui::drawevent_constptr_t drwev) {
+
   drawChildren(drwev);
   ///////////////////////////////////////////
 }

@@ -197,7 +197,7 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
     : OrkEzQtAppBase(argc, argv)
     , _updateThread("updatethread")
     , _mainWindow(0) {
-  _update_data = std::make_shared<UpdateData>();
+  _update_data = std::make_shared<ui::UpdateData>();
   _appstate    = 0;
 
   QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath());

@@ -85,11 +85,14 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
     deco::printf(fvec3::Yellow(), "  fxparameterMODC<%p>\n", fxparameterMODC);
   });
   //////////////////////////////////////////////////////////
-  qtapp->onUpdate([=](updatedata_ptr_t updata) {
+  qtapp->onUpdate([=](ui::updatedata_ptr_t updata) {
     ///////////////////////////////////////
     auto DB = DrawableBuffer::acquireForWrite(0);
     DB->Reset();
     DB->copyCameras(*cameras);
+
+    the_synth->_hudvp->onUpdateThreadTick(updata);
+
     // auto layer = DB->MergeLayer("Default"_pool);
     DrawableBuffer::releaseFromWrite(DB);
     usleep(1000);

@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
   // update handler (called on update thread)
   //  it will never be called before onGpuInit() is complete...
   //////////////////////////////////////////////////////////
-  qtapp->onUpdate([&](updatedata_ptr_t updata) {
+  qtapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;
     ///////////////////////////////////////

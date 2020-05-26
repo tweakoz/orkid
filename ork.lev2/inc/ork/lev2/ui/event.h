@@ -8,6 +8,14 @@
 
 namespace ork { namespace ui {
 
+////////////////////////////////////////////////////////////////////////////////
+struct UpdateData {
+  double _dt      = 0.0;
+  double _abstime = 0.0;
+};
+using updatedata_ptr_t = std::shared_ptr<UpdateData>;
+////////////////////////////////////////////////////////////////////////////////
+
 struct HandlerResult {
   HandlerResult(Widget* ph = nullptr);
 

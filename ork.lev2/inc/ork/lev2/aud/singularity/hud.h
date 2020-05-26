@@ -16,6 +16,7 @@
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/panel.h>
 #include <ork/lev2/ui/event.h>
+#include <ork/lev2/ezapp.h> // todo move updatedata_ptr_t out..
 
 namespace ork::audio::singularity {
 
@@ -97,6 +98,7 @@ ui::panel_ptr_t create_spectrumanalyzer();
 struct HudViewport final : public ui::Viewport {
   HudViewport();
   void DoDraw(ui::drawevent_constptr_t drwev) override;
+  void onUpdateThreadTick(ui::updatedata_ptr_t updata);
   ui::panel_ptr_t _oscope;
   ui::panel_ptr_t _spectra;
 };

@@ -20,6 +20,7 @@
 #include <QtWidgets/QApplication>
 #include <ork/lev2/qtui/qtui.h>
 #include <ork/lev2/qtui/qtui.hpp>
+#include <ork/lev2/ui/event.h>
 
 namespace ork::lev2 {
 class EzApp;
@@ -66,22 +67,16 @@ private:
   ork::opq::opq_ptr_t _conq;
 };
 ////////////////////////////////////////////////////////////////////////////////
-struct UpdateData {
-  double _dt      = 0.0;
-  double _abstime = 0.0;
-};
-using updatedata_ptr_t = std::shared_ptr<UpdateData>;
-////////////////////////////////////////////////////////////////////////////////
 class EzMainWin : public QMainWindow {
 public:
   typedef std::function<void(ui::drawevent_constptr_t)> drawcb_t;
   typedef std::function<void(int w, int h)> onresizecb_t;
 
   typedef std::function<void(Context* ctx)> ongpuinit_t;
-  typedef std::function<void(updatedata_ptr_t upd)> onupdate_t;
+  typedef std::function<void(ui::updatedata_ptr_t upd)> onupdate_t;
 
   typedef std::function<void(Context* ctx, scenegraph::scene_ptr_t)> ongpuinitwitchscene_t;
-  typedef std::function<void(updatedata_ptr_t upd, scenegraph::scene_ptr_t)> onupdatewithscene_t;
+  typedef std::function<void(ui::updatedata_ptr_t upd, scenegraph::scene_ptr_t)> onupdatewithscene_t;
 
   typedef std::function<ui::HandlerResult(ui::event_constptr_t ev)> onuieventcb_t;
 
@@ -161,7 +156,7 @@ public:
   ork::opq::opq_ptr_t _conq;
   varmap::VarMap _vars;
   std::atomic<uint64_t> _appstate;
-  updatedata_ptr_t _update_data;
+  ui::updatedata_ptr_t _update_data;
 };
 
 } // namespace ork::lev2

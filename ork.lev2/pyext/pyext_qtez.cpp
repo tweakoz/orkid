@@ -67,19 +67,19 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               });
   type_codec->registerStdCodec<ui::event_ptr_t>(uievent_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto updata_type =                                                      //
-      py::class_<UpdateData, updatedata_ptr_t>(module_lev2, "UpdateData") //
+  auto updata_type =                                                              //
+      py::class_<ui::UpdateData, ui::updatedata_ptr_t>(module_lev2, "UpdateData") //
           .def_property_readonly(
-              "absolutetime",                         //
-              [](updatedata_ptr_t updata) -> double { //
+              "absolutetime",                             //
+              [](ui::updatedata_ptr_t updata) -> double { //
                 return updata->_abstime;
               })
           .def_property_readonly(
-              "deltatime",                            //
-              [](updatedata_ptr_t updata) -> double { //
+              "deltatime",                                //
+              [](ui::updatedata_ptr_t updata) -> double { //
                 return updata->_dt;
               });
-  type_codec->registerStdCodec<updatedata_ptr_t>(updata_type);
+  type_codec->registerStdCodec<ui::updatedata_ptr_t>(updata_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<OrkEzQtApp, qtezapp_ptr_t>(module_lev2, "OrkEzQtApp") //
       .def_static(
@@ -136,7 +136,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               auto updfn //
                   = py::cast<py::function>(appinstance.attr("onUpdate"));
               rval->_vars.makeValueForKey<py::function>("updatefn") = updfn;
-              rval->onUpdate([=](updatedata_ptr_t updata) { //
+              rval->onUpdate([=](ui::updatedata_ptr_t updata) { //
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars.typedValueForKey<py::function>("updatefn");
                 pyfn.value()(updata);
