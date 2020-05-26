@@ -18,8 +18,8 @@ struct CzEnvelope {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct CzOscData {
-  int _dcoWaveA     = 0;
-  int _dcoWaveB     = 0;
+  int _dcoBaseWaveA = 0;
+  int _dcoBaseWaveB = 0;
   bool _enaWaveB    = false;
   int _dcoWindow    = 0;
   int _dcaKeyFollow = 0;

@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   auto program   = std::make_shared<ProgramData>();
   auto layerdata = program->newLayer();
-  auto czdata    = std::make_shared<CzOscData>();
+  auto czoscdata = std::make_shared<CzOscData>();
   auto DCAENV    = layerdata->appendController<RateLevelEnvData>("DCAENV");
   auto DCWENV    = layerdata->appendController<RateLevelEnvData>("DCWENV");
   auto LFO2      = layerdata->appendController<LfoData>("MYLFO2");
@@ -58,15 +58,19 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   auto osc = layerdata->stage(0)->appendBlock();
   auto amp = layerdata->stage(1)->appendBlock();
-  CZX::initBlock(osc, czdata);
+  CZX::initBlock(osc, czoscdata);
   AMP::initBlock(amp);
   auto& modulation_index_param      = osc->_paramd[1]._mods;
   modulation_index_param._src1      = DCWENV;
   modulation_index_param._src1Depth = 1.0;
-  modulation_index_param._src2      = LFO1;
+  // modulation_index_param._src2      = LFO1;
   // modulation_index_param._src2DepthCtrl = LFO2;
   modulation_index_param._src2MinDepth = 0.5;
   modulation_index_param._src2MaxDepth = 0.1;
+  //////////////////////////////////////
+  czoscdata->_dcoBaseWaveA = 7;
+  czoscdata->_dcoBaseWaveB = 7;
+  czoscdata->_dcoWindow    = 0;
   //////////////////////////////////////
   auto& amp_param   = amp->addParam();
   amp_param._coarse = 0.0f;

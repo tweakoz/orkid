@@ -30,7 +30,7 @@ auto genwacurve = []() -> MultiCurve1D {
 
   s.resize(12);
   for (int i = 0; i < 12; i++)
-    s[i] = EMCST_LINEAR;
+    s[i] = EMCST_LOG;
 
   auto& v = curve.mVertices;
   v.AddSorted(0.05, 0.0);
@@ -53,7 +53,7 @@ auto genpcurve = []() -> MultiCurve1D {
 
   s.resize(12);
   for (int i = 0; i < 12; i++)
-    s[i] = EMCST_LINEAR;
+    s[i] = EMCST_LOG;
 
   auto& v = curve.mVertices;
   v.AddSorted(0.05, 134.0);
@@ -204,38 +204,6 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   u8 PVDD               = bytes[0x0b]; // vibrato depth (skip 2)
   czdata->_vibratoDepth = PVDD;
 
-  auto decodewave = [](int c0, int c1) -> int {
-    switch (c0) {
-      case 0:
-      case 1:
-      case 2:
-        return c0;
-        break;
-      case 4:
-        return 3;
-        break;
-      case 5:
-        return 4;
-        break;
-      case 6:
-        switch (c1) {
-          case 1:
-            return 5;
-            break;
-          case 2:
-            return 6;
-            break;
-          case 3:
-            return 7;
-            break;
-        }
-        break;
-      default:
-        assert(false);
-    }
-    return -1;
-  };
-
   int byteindex = 0x0e; // OSC START
   // (48+9) == 57 bytes per osc * 2 == 114 bytes
   // 114+0xe == 128
@@ -309,12 +277,17 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     }
     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
+    uint16_t MFW = (uint16_t(MFW0) << 8) | uint16_t(MFW1);
     printf("MFW0<x%2x> MFW1<x%2x>\n", MFW0, MFW1);
-    OSC->_dcoWaveA = decodewave((MFW0 >> 5) & 0x7, (MFW1 >> 6) & 0x3);
-    OSC->_dcoWaveB = decodewave((MFW0 >> 2) & 0x7, (MFW1 >> 6) & 0x3);
+    OSC->_dcoBaseWaveA = int(MFW0 >> 5) & 0x7;
+    OSC->_dcoBaseWaveB = int(MFW0 >> 2) & 0x7;
+    OSC->_dcoWindow    = int(MFW0 << 2);
+    OSC->_dcoWindow |= (int(MFW1 >> 6) & 0x3);
 
     if (o == 0) { // ignore linemod from line1{
       czdata->_lineMod = (MFW1 >> 3) & 0x7;
+      int modoutput    = (MFW1 >> 2) & 1;
+      OrkAssert(modoutput == 0);
     }
 
     OSC->_dcaKeyFollow = MAMD & 0xf;
@@ -473,23 +446,42 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
       assert(false);
   }
   switch (czdata->_lineMod) {
-    case 0: { // none
+    case 0:   // none
+    case 1: { // none
       auto mix = layerdata->stage(1)->appendBlock();
       SUM2::initBlock(mix);
       break;
     }
-    case 4: { // ring
+    case 4:   // ring 1
+    case 5: { // ring 1
       OrkAssert(lineSel == 2 or lineSel == 3);
       auto ring = layerdata->stage(1)->appendBlock();
       MUL2::initBlock(ring);
       break;
     }
-    case 3: // noise
+    case 2: // ring 2
+      OrkAssert(lineSel == 2 or lineSel == 3);
+      OrkAssert(false);
+      break;
+    case 6: // ring 3
+      OrkAssert(lineSel == 2 or lineSel == 3);
+      OrkAssert(false);
+      break;
+    case 3: { // noise 1
       OrkAssert(lineSel == 2 or lineSel == 3);
       czdata->_oscData[1]->_noisemod = true;
       auto mix                       = layerdata->stage(1)->appendBlock();
       SUM2::initBlock(mix);
       break;
+    }
+    case 7: { // noise 2
+      OrkAssert(false);
+      OrkAssert(lineSel == 2 or lineSel == 3);
+      czdata->_oscData[1]->_noisemod = true;
+      auto mix                       = layerdata->stage(1)->appendBlock();
+      SUM2::initBlock(mix);
+      break;
+    }
   }
   czdata->_name = name;
 
@@ -619,13 +611,13 @@ void CzProgData::dump() const {
   printf("  _vibratoDepth<%d>\n", _vibratoDepth);
   for (int o = 0; o < 2; o++) {
     const auto OSC = _oscData[o];
-    assert(OSC->_dcoWaveA >= 0);
-    assert(OSC->_dcoWaveB >= 0);
-    assert(OSC->_dcoWaveA < 8);
-    assert(OSC->_dcoWaveB < 8);
+    assert(OSC->_dcoBaseWaveA >= 0);
+    assert(OSC->_dcoBaseWaveB >= 0);
+    assert(OSC->_dcoBaseWaveA < 8);
+    assert(OSC->_dcoBaseWaveB < 8);
     printf("  osc<%d>\n", o);
-    printf("    _dcoWaveA<%d>\n", OSC->_dcoWaveA);
-    printf("    _dcoWaveB<%d>\n", OSC->_dcoWaveB);
+    printf("    _dcoBaseWaveA<%d>\n", OSC->_dcoBaseWaveA);
+    printf("    _dcoBaseWaveB<%d>\n", OSC->_dcoBaseWaveB);
     auto dumpenv = [](const CzEnvelope& env) {
       printf("        _endStep<%d>\n", env._endStep);
       if (env._sustPoint >= 0)

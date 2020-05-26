@@ -53,7 +53,7 @@ void MUL2::compute(DspBuffer& dspbuf) { // final
   for (int i = 0; i < inumframes; i++) {
     float inA  = inpbufa[i] * _dbd->_inputPad;
     float inB  = inpbufb[i] * _dbd->_inputPad;
-    float res  = (inA * inB);
+    float res  = inA + (inA * inB);
     res        = clip_float(res, -2, 2);
     outbufa[i] = res;
     outbufb[i] = res;
