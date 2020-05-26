@@ -9,6 +9,7 @@
 #include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/aud/singularity/alg_amp.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
+#include <ork/lev2/aud/singularity/dsp_ringmod.h>
 #include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/math/multicurve.h>
 
@@ -285,9 +286,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     OSC->_dcoWindow |= (int(MFW1 >> 6) & 0x3);
 
     if (o == 0) { // ignore linemod from line1{
-      czdata->_lineMod = (MFW1 >> 3) & 0x7;
-      int modoutput    = (MFW1 >> 2) & 1;
-      OrkAssert(modoutput == 0);
+      czdata->_lineMod = (MFW1 >> 2) & 0xf;
     }
 
     OSC->_dcaKeyFollow = MAMD & 0xf;
@@ -445,25 +444,16 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     default:
       assert(false);
   }
-  switch (czdata->_lineMod) {
+  int modulation_mode   = czdata->_lineMod >> 1;
+  bool modulation_nomix = (czdata->_lineMod & 1);
+  switch (modulation_mode) {
     case 0:   // none
     case 1: { // none
       auto mix = layerdata->stage(1)->appendBlock();
       SUM2::initBlock(mix);
       break;
     }
-    case 4:   // ring 1
-    case 5: { // ring 1
-      OrkAssert(lineSel == 2 or lineSel == 3);
-      auto ring = layerdata->stage(1)->appendBlock();
-      MUL2::initBlock(ring);
-      break;
-    }
     case 2: // ring 2
-      OrkAssert(lineSel == 2 or lineSel == 3);
-      OrkAssert(false);
-      break;
-    case 6: // ring 3
       OrkAssert(lineSel == 2 or lineSel == 3);
       OrkAssert(false);
       break;
@@ -474,6 +464,20 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
       SUM2::initBlock(mix);
       break;
     }
+    case 4:   // ring 1
+    case 5: { // ring 1
+      OrkAssert(lineSel == 2 or lineSel == 3);
+      auto ring = layerdata->stage(1)->appendBlock();
+      if (modulation_nomix)
+        RingMod::initBlock(ring);
+      else
+        RingModSumA::initBlock(ring);
+      break;
+    }
+    case 6: // ring 3
+      OrkAssert(lineSel == 2 or lineSel == 3);
+      OrkAssert(false);
+      break;
     case 7: { // noise 2
       OrkAssert(false);
       OrkAssert(lineSel == 2 or lineSel == 3);
@@ -589,15 +593,26 @@ void CzProgData::dump() const {
     default:
       OrkAssert(false);
   }
-  switch (_lineMod) {
+  switch (_lineMod >> 1) {
     case 0:
+    case 1:
       oscmodulation = "none";
       break;
-    case 4:
-      oscmodulation = "ring";
+    case 2:
+      oscmodulation = "ringmod2";
       break;
     case 3:
-      oscmodulation = "noise";
+      oscmodulation = "noisemod1";
+      break;
+    case 4:
+    case 5:
+      oscmodulation = "ringmod1";
+      break;
+    case 6:
+      oscmodulation = "ringmod3";
+      break;
+    case 7:
+      oscmodulation = "noisemod2";
       break;
   }
 

@@ -7,6 +7,7 @@
 #include <ork/lev2/aud/singularity/alg_filters.h>
 #include <ork/lev2/aud/singularity/alg_amp.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
+#include <ork/lev2/aud/singularity/dsp_ringmod.h>
 #include <ork/lev2/aud/singularity/cz1.h>
 #include <ork/lev2/aud/singularity/sampler.h>
 
@@ -203,8 +204,10 @@ dspblk_ptr_t createDspBlock(dspblkdata_constptr_t dbd) {
 
   if (dbd->_dspBlock == "SUM2")
     rval = std::make_shared<SUM2>(dbd);
-  if (dbd->_dspBlock == "MUL2")
-    rval = std::make_shared<MUL2>(dbd);
+  if (dbd->_dspBlock == "RingMod")
+    rval = std::make_shared<RingMod>(dbd);
+  if (dbd->_dspBlock == "RingModSumA")
+    rval = std::make_shared<RingModSumA>(dbd);
 
   ////////////////////////
   // osc/gen
