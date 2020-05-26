@@ -40,24 +40,24 @@ void OuterPickOp(defpickopctx_ptr_t pickctx);
 
 ///////////////////////////////////////////////////////////////////////////
 
-TestVPDefaultHandler::TestVPDefaultHandler(SceneEditorBase& editor)
+DefaultUiHandler::DefaultUiHandler(SceneEditorBase& editor)
     : SceneEditorVPToolHandler(editor) {
   SetBaseIconName("lev2://editor/DefaultToolIcon");
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-void TestVPDefaultHandler::DoAttach(SceneEditorVP* pvp) {
+void DefaultUiHandler::DoAttach(SceneEditorVP* pvp) {
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-void TestVPDefaultHandler::DoDetach(SceneEditorVP* pvp) {
+void DefaultUiHandler::DoDetach(SceneEditorVP* pvp) {
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-void TestVPDefaultHandler::HandlePickOperation(defpickopctx_ptr_t ppickctx) {
+void DefaultUiHandler::HandlePickOperation(defpickopctx_ptr_t ppickctx) {
   auto process_pick = [=](defpickopctx_ptr_t pickctx) {
     ork::opq::assertOnQueue2(opq::updateSerialQueue());
 
@@ -95,8 +95,8 @@ void TestVPDefaultHandler::HandlePickOperation(defpickopctx_ptr_t ppickctx) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(ui::event_constptr_t EV) {
-  // printf( "TestVPDefaultHandler::DoOnUiEvent\n");
+ui::HandlerResult DefaultUiHandler::DoOnUiEvent(ui::event_constptr_t EV) {
+  // printf( "DefaultUiHandler::DoOnUiEvent\n");
   ui::HandlerResult ret(this);
 
   bool isshift = EV->mbSHIFT;

@@ -6,6 +6,22 @@ using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
+struct SpectraSurf final : public ui::Surface {
+  SpectraSurf();
+  void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
+  void DoInit(lev2::Context* pt) override;
+  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
+  ork::lev2::CTXBASE* _ctxbase = nullptr;
+};
+///////////////////////////////////////////////////////////////////////////////
+ui::panel_ptr_t create_spectrumanalyzer() {
+  auto panel   = std::make_shared<ui::Panel>("spectra", 0, 256, 256, 256);
+  auto spectra = std::make_shared<SpectraSurf>();
+  panel->setChild(spectra);
+  panel->snap();
+  return panel;
+}
+///////////////////////////////////////////////////////////////////////////////
 static const int inumframes           = koscopelength;
 static constexpr size_t fftoversample = 16;
 static constexpr size_t DOWNSHIFT     = bitsToHold<fftoversample>() - 1;
@@ -51,11 +67,11 @@ static float* fftsmoothingbuffer() {
   return buffer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-SpectraView::SpectraView() //
+SpectraSurf::SpectraSurf() //
     : ui::Surface("Spectra", 0, 0, 128, 128, fvec3(), 1.0) {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SpectraView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
+void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   auto context         = drwev->GetTarget();
   auto syn             = synth::instance();
   auto vp              = syn->_hudvp;
@@ -262,10 +278,10 @@ void SpectraView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   drawHudLines(context, lines);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SpectraView::DoInit(lev2::Context* pt) {
+void SpectraSurf::DoInit(lev2::Context* pt) {
 }
 ///////////////////////////////////////////////////////////////////////////////
-ui::HandlerResult SpectraView::DoOnUiEvent(ui::event_constptr_t EV) {
+ui::HandlerResult SpectraSurf::DoOnUiEvent(ui::event_constptr_t EV) {
   ui::HandlerResult ret(this);
   return ret;
 }

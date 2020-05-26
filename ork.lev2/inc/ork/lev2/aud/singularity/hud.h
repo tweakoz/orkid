@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/ui/surface.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/ui/panel.h>
 #include <ork/lev2/ui/event.h>
 
 namespace ork::audio::singularity {
@@ -90,43 +91,17 @@ struct Op4DrawReq {
   Rect rect;
 };
 
-struct OscopeView final : public ui::Surface {
-  OscopeView();
-  void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
-  void DoInit(lev2::Context* pt) override;
-  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
-  ork::lev2::CTXBASE* _ctxbase = nullptr;
-};
-struct SpectraView final : public ui::Surface {
-  SpectraView();
-  void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
-  void DoInit(lev2::Context* pt) override;
-  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
-  ork::lev2::CTXBASE* _ctxbase = nullptr;
-};
-using oscopeview_ptr_t  = std::shared_ptr<OscopeView>;
-using spectraview_ptr_t = std::shared_ptr<SpectraView>;
+ui::panel_ptr_t create_oscilloscope();
+ui::panel_ptr_t create_spectrumanalyzer();
 
 struct HudViewport final : public ui::Viewport {
   HudViewport();
   void DoDraw(ui::drawevent_constptr_t drwev) override;
-  oscopeview_ptr_t _view_oscope;
-  spectraview_ptr_t _view_spectra;
+  ui::panel_ptr_t _oscope;
+  ui::panel_ptr_t _spectra;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-void DrawOscope(
-    lev2::Context* context, //
-    const HudFrameAudio& HAF,
-    const float* samples);
-
-void DrawSpectra(
-    lev2::Context* context, //
-    const HudFrameAudio& HAF,
-    const float* samples,
-    fvec2 xy,
-    fvec2 wh);
 
 void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR);
 void DrawAsr(lev2::Context* context, const ItemDrawReq& EDR);

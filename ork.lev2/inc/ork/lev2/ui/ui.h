@@ -30,14 +30,24 @@ namespace ui {
 struct Widget;
 struct Group;
 struct Surface;
+struct Panel;
+struct SplitPanel;
 struct Viewport;
 struct Coordinate;
 struct Event;
 struct DrawEvent;
 struct MultiTouchPoint;
 
+using widget_ptr_t     = std::shared_ptr<Widget>;
+using group_ptr_t      = std::shared_ptr<Group>;
+using surface_ptr_t    = std::shared_ptr<Surface>;
+using splitpanel_ptr_t = std::shared_ptr<SplitPanel>;
+using panel_ptr_t      = std::shared_ptr<Panel>;
+using viewport_ptr_t   = std::shared_ptr<Viewport>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
-} } // ork/ui
+} // namespace ui
+} // namespace ork
 
 ///////////////////////////////////////////////////////////////////////////////

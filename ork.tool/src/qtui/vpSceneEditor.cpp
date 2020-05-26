@@ -214,7 +214,7 @@ void SceneEditorVP::Init() {
   // INIT BUILT IN TOOL HANDLERS
 
   ork::msleep(500);
-  RegisterToolHandler("0Default", new TestVPDefaultHandler(mEditor));
+  RegisterToolHandler("0Default", new DefaultUiHandler(mEditor));
   RegisterToolHandler("1ManipTrans", new ManipTransHandler(mEditor));
   RegisterToolHandler("2ManipRot", new ManipRotHandler(mEditor));
 
@@ -451,7 +451,7 @@ void SceneEditorVP::DoDraw(ui::drawevent_constptr_t drwev) {
 
     DrawHUD(RCFD);
     mpTarget->debugPushGroup("toolvp::DRAWEND::Children");
-    DrawChildren(drwev);
+    drawChildren(drwev);
     mpTarget->debugPopGroup();
     if (false == FBI->isPickState())
       DrawBorder(RCFD);

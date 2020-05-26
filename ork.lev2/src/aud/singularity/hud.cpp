@@ -46,11 +46,14 @@ void Rect::PopOrtho(Context* context) const {
 ///////////////////////////////////////////////////////////////////////////////
 HudViewport::HudViewport() //
     : ui::Viewport("HUD", 0, 0, 512, 512, fvec3::Red(), 1.0) {
-  _view_oscope  = std::make_shared<OscopeView>();
-  _view_spectra = std::make_shared<SpectraView>();
+  _oscope  = create_oscilloscope();
+  _spectra = create_spectrumanalyzer();
 
-  AddChild(_view_oscope.get());
-  AddChild(_view_spectra.get());
+  addChild(_oscope);
+  addChild(_spectra);
+
+  _oscope->SetRect(0, 0, 256, 256);
+  _spectra->SetRect(0, 256, 256, 256);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void HudViewport::DoDraw(ui::drawevent_constptr_t drwev) {
@@ -96,8 +99,8 @@ void HudViewport::DoDraw(ui::drawevent_constptr_t drwev) {
       syn->_curhud_aframe = AFIN;
       AFIN._items.clear();
 
-      _view_oscope->SetDirty();
-      _view_spectra->SetDirty();
+      //_oscope->SetDirty();
+      //_spectra->SetDirty();
     }
   }
   ///////////////////////////////////////////
@@ -105,11 +108,10 @@ void HudViewport::DoDraw(ui::drawevent_constptr_t drwev) {
   ///////////////////////////////////////////
 
   mpTarget->beginFrame();
-  DrawChildren(drwev);
+  drawChildren(drwev);
   mpTarget->endFrame();
   ///////////////////////////////////////////
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 void drawtext(
     Context* context, //

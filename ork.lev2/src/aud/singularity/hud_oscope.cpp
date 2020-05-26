@@ -7,12 +7,27 @@ using namespace ork::lev2;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
+struct ScopeSurf final : public ui::Surface {
+  ScopeSurf();
+  void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
+  void DoInit(lev2::Context* pt) override;
+  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
+  ork::lev2::CTXBASE* _ctxbase = nullptr;
+};
 ///////////////////////////////////////////////////////////////////////////////
-OscopeView::OscopeView() //
+ui::panel_ptr_t create_oscilloscope() {
+  auto panel = std::make_shared<ui::Panel>("scope", 0, 0, 256, 256);
+  auto scope = std::make_shared<ScopeSurf>();
+  panel->setChild(scope);
+  panel->snap();
+  return panel;
+}
+///////////////////////////////////////////////////////////////////////////////
+ScopeSurf::ScopeSurf() //
     : ui::Surface("Scope", 0, 0, 128, 128, fvec3(), 1.0) {
 } // namespace ork::audio::singularity
 ///////////////////////////////////////////////////////////////////////////////
-void OscopeView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
+void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   auto context         = drwev->GetTarget();
   auto syn             = synth::instance();
   auto vp              = syn->_hudvp;
@@ -22,8 +37,6 @@ void OscopeView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   if (false == (hudl && hudl->_LayerData))
     return;
-
-  OrkAssert(false);
 
   ///////////////////////////////////////////////
 
@@ -229,12 +242,12 @@ void OscopeView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   drawHudLines(context, lines);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OscopeView::DoInit(lev2::Context* pt) {
+void ScopeSurf::DoInit(lev2::Context* pt) {
   _pickbuffer = new lev2::PickBuffer(this, pt, miW, miH);
   _ctxbase    = pt->GetCtxBase();
 }
 ///////////////////////////////////////////////////////////////////////////////
-ui::HandlerResult OscopeView::DoOnUiEvent(ui::event_constptr_t EV) {
+ui::HandlerResult ScopeSurf::DoOnUiEvent(ui::event_constptr_t EV) {
   ui::HandlerResult ret(this);
   return ret;
 }

@@ -63,8 +63,8 @@ struct DeferredPickOperationContext {
   lev2::Context* _gfxContext = nullptr;
 };
 
-struct TestVPDefaultHandler : public SceneEditorVPToolHandler {
-  TestVPDefaultHandler(SceneEditorBase& editor);
+struct DefaultUiHandler : public SceneEditorVPToolHandler {
+  DefaultUiHandler(SceneEditorBase& editor);
 
 private:
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;

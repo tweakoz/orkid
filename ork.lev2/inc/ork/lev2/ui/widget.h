@@ -206,13 +206,14 @@ struct Group : public Widget {
 public:
   Group(const std::string& name, int x, int y, int w, int h);
 
-  void AddChild(Widget* pch);
-  void RemoveChild(Widget* pch);
+  void addChild(widget_ptr_t w);
+  void removeChild(widget_ptr_t w);
+  void removeChild(Widget* w);
 
-  void DrawChildren(ui::drawevent_constptr_t drwev);
+  void drawChildren(ui::drawevent_constptr_t drwev);
 
 protected:
-  std::vector<Widget*> mChildren;
+  std::vector<widget_ptr_t> _children;
   HandlerResult DoRouteUiEvent(event_constptr_t Ev) override;
 
 private:

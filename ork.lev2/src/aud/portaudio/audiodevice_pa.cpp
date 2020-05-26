@@ -33,7 +33,7 @@ namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 PaStream* pa_stream      = nullptr;
-const bool ENABLE_OUTPUT = true; // allow disabling for long debug sessions
+const bool ENABLE_OUTPUT = false; // allow disabling for long debug sessions
 const int NUMFRAMES      = 512;
 ///////////////////////////////////////////////////////////////////////////////
 

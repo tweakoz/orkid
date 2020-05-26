@@ -16,24 +16,25 @@ static const int kpanelw = 12;
 
 Panel::Panel(const std::string& name, int x, int y, int w, int h)
     : Group(name, x, y, w, h)
-    , mChild(nullptr)
+    , _child(nullptr)
     , mDockedAtTop(false) {
 }
 
 Panel::~Panel() {
-  if (mChild) {
-    mChild->SetParent(nullptr);
-    mChild = nullptr;
+  if (_child) {
+    _child->SetParent(nullptr);
+    _child = nullptr;
   }
-  if (mParent)
-    mParent->RemoveChild(this);
+  if (mParent) {
+    mParent->removeChild(this);
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void Panel::SetChild(Widget* pch) {
-  mChild = pch;
-  AddChild(pch);
+void Panel::setChild(widget_ptr_t w) {
+  _child = w;
+  addChild(w);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -112,8 +113,8 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
   }
   mtxi->PopUIMatrix();
 
-  if (mChild)
-    mChild->Draw(drwev);
+  if (_child)
+    _child->Draw(drwev);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -129,8 +130,8 @@ void Panel::DoLayout() {
   int ch = miH - (kpanelw * 2);
 
   // printf( "Panel<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), miX, miY, miW, miH );
-  if (mChild) {
-    mChild->SetRect(kpanelw, kpanelw, cw, ch);
+  if (_child) {
+    _child->SetRect(kpanelw, kpanelw, cw, ch);
   }
 }
 
@@ -139,8 +140,8 @@ void Panel::DoLayout() {
 HandlerResult Panel::DoRouteUiEvent(event_constptr_t Ev) {
   // printf( "Panel::DoRouteUiEvent mPanelUiState<%d>\n", mPanelUiState );
 
-  if (mChild && mChild->IsEventInside(Ev) && mPanelUiState == 0) {
-    HandlerResult res = mChild->RouteUiEvent(Ev);
+  if (_child && _child->IsEventInside(Ev) && mPanelUiState == 0) {
+    HandlerResult res = _child->RouteUiEvent(Ev);
     if (res.mHandler != nullptr)
       return res;
   }
@@ -156,7 +157,7 @@ static int iprevpy = 0;
 static int iprevpw = 0;
 static int iprevph = 0;
 
-void Panel::Snap() {
+void Panel::snap() {
   if (nullptr == mParent)
     return;
 
@@ -233,9 +234,8 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
       ret.mHoldFocus = false;
 
       if (mPanelUiState) // moving or sizing w
-      {
-        Snap();
-      }
+        snap();
+
       mPanelUiState = 0;
 
       break;

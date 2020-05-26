@@ -11,6 +11,7 @@
 #include <orktool/ged/ged.h>
 #include <orktool/qtui/qtmainwin.h>
 #include <orktool/qtui/qtdataflow.h>
+#include <ork/lev2/ui/ui.h>
 
 ///////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -134,6 +135,8 @@ public: //
 
   EditorMainWindow(QWidget* parent, const std::string& applicationClassName, QApplication& App);
   ~EditorMainWindow();
+
+  std::set<ui::widget_ptr_t> _widgets;
 
   bool _fullscreen;
 };

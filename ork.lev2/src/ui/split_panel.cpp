@@ -17,8 +17,8 @@ static const int ksplith = 7;
 
 SplitPanel::SplitPanel(const std::string& name, int x, int y, int w, int h)
     : Group(name, x, y, w, h)
-    , mChild1(nullptr)
-    , mChild2(nullptr)
+    , _child1(nullptr)
+    , _child2(nullptr)
     , mSplitVal(0.5f)
     , mDockedAtTop(false)
     , mEnableCloseButton(false)
@@ -26,27 +26,27 @@ SplitPanel::SplitPanel(const std::string& name, int x, int y, int w, int h)
 }
 
 SplitPanel::~SplitPanel() {
-  if (mChild1) {
-    mChild1->SetParent(nullptr);
-    mChild1 = nullptr;
+  if (_child1) {
+    _child1->SetParent(nullptr);
+    _child1 = nullptr;
   }
-  if (mChild2) {
-    mChild2->SetParent(nullptr);
-    mChild2 = nullptr;
+  if (_child2) {
+    _child2->SetParent(nullptr);
+    _child2 = nullptr;
   }
   if (mParent)
-    mParent->RemoveChild(this);
+    mParent->removeChild(this);
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void SplitPanel::SetChild1(Widget* pch) {
-  mChild1 = pch;
-  AddChild(pch);
+void SplitPanel::setChild1(widget_ptr_t w) {
+  _child1 = w;
+  addChild(w);
 }
-void SplitPanel::SetChild2(Widget* pch) {
-  mChild2 = pch;
-  AddChild(pch);
+void SplitPanel::setChild2(widget_ptr_t w) {
+  _child2 = w;
+  addChild(w);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -129,11 +129,11 @@ void SplitPanel::DoDraw(ui::drawevent_constptr_t drwev) {
   mtxi->PopUIMatrix();
   tgt->PopModColor();
 
-  if (mChild1)
-    mChild1->Draw(drwev);
+  if (_child1)
+    _child1->Draw(drwev);
 
-  if (mChild2)
-    mChild2->Draw(drwev);
+  if (_child2)
+    _child2->Draw(drwev);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -152,11 +152,11 @@ void SplitPanel::DoLayout() {
   int p2h = miH - kpanelw - p2y;
 
   // printf( "Panel<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), miX, miY, miW, miH );
-  if (mChild1) {
-    mChild1->SetRect(kpanelw, p1y, cw, p1h);
+  if (_child1) {
+    _child1->SetRect(kpanelw, p1y, cw, p1h);
   }
-  if (mChild2) {
-    mChild2->SetRect(kpanelw, p2y, cw, p2h);
+  if (_child2) {
+    _child2->SetRect(kpanelw, p2y, cw, p2h);
   }
 }
 
@@ -165,14 +165,14 @@ void SplitPanel::DoLayout() {
 HandlerResult SplitPanel::DoRouteUiEvent(event_constptr_t Ev) {
   // printf( "Panel::DoRouteUiEvent xy<%d %d> mPanelUiState<%d>\n", Ev->miX, Ev->miY, mPanelUiState );
 
-  if (mChild1 && mChild1->IsEventInside(Ev) && mPanelUiState == 0) {
+  if (_child1 && _child1->IsEventInside(Ev) && mPanelUiState == 0) {
     // printf( "Child1\n");
-    HandlerResult res = mChild1->RouteUiEvent(Ev);
+    HandlerResult res = _child1->RouteUiEvent(Ev);
     if (res.mHandler != nullptr)
       return res;
-  } else if (mChild2 && mChild2->IsEventInside(Ev) && mPanelUiState == 0) {
+  } else if (_child2 && _child2->IsEventInside(Ev) && mPanelUiState == 0) {
     // printf( "Child2\n");
-    HandlerResult res = mChild2->RouteUiEvent(Ev);
+    HandlerResult res = _child2->RouteUiEvent(Ev);
     if (res.mHandler != nullptr)
       return res;
   }
@@ -189,7 +189,7 @@ static int iprevpy = 0;
 static int iprevpw = 0;
 static int iprevph = 0;
 
-void SplitPanel::Snap() {
+void SplitPanel::snap() {
   if (nullptr == mParent)
     return;
 
@@ -281,9 +281,8 @@ HandlerResult SplitPanel::DoOnUiEvent(event_constptr_t Ev) {
       ret.mHoldFocus = false;
 
       if (mPanelUiState) // moving or sizing w
-      {
-        Snap();
-      }
+        snap();
+
       mPanelUiState = 0;
 
       break;
