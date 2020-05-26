@@ -63,7 +63,7 @@ int main(int argc, char** argv, char** argp) {
   TOPCPD.addStandardLayers();
   CameraDataLut cameras;
   CameraData camdata;
-  cameras.AddSorted("spawncam"_pool, &camdata);
+  cameras.AddSorted("spawncam", &camdata);
   //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
@@ -102,10 +102,10 @@ int main(int argc, char** argv, char** argp) {
     camdata.Lookat(eye, tgt, up);
     camdata.Persp(0.1, 100.0, 45.0);
     ///////////////////////////////////////
-    auto DB = DrawableBuffer::LockWriteBuffer(0);
+    auto DB = DrawableBuffer::acquireForWrite(0);
     DB->Reset();
     DB->copyCameras(cameras);
-    auto layer = DB->MergeLayer("Default"_pool);
+    auto layer = DB->MergeLayer("Default");
     ////////////////////////////////////////
     // animate and enqueue all instances
     ////////////////////////////////////////
@@ -140,13 +140,13 @@ int main(int argc, char** argv, char** argp) {
       drawable->enqueueOnLayer(inst._xform, *layer);
     }
     ////////////////////////////////////////
-    DrawableBuffer::UnLockWriteBuffer(DB);
+    DrawableBuffer::releaseFromWrite(DB);
   });
   //////////////////////////////////////////////////////////
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
   qtapp->onDraw([&](ui::drawevent_constptr_t drwev) {
-    auto DB = DrawableBuffer::acquireReadDB(7);
+    auto DB = DrawableBuffer::acquireForRead(7);
     if (nullptr == DB)
       return;
     auto context = drwev->GetTarget();
@@ -161,10 +161,8 @@ int main(int argc, char** argv, char** argp) {
     ///////////////////////////////////////
     // compositor setup
     ///////////////////////////////////////
-    float TARGW = context->mainSurfaceWidth();
-    float TARGH = context->mainSurfaceHeight();
     lev2::UiViewportRenderTarget rt(nullptr);
-    auto tgtrect          = ViewportRect(0, 0, TARGW, TARGH);
+    auto tgtrect          = context->mainSurfaceRectAtOrigin();
     TOPCPD._irendertarget = &rt;
     TOPCPD.SetDstRect(tgtrect);
     compositorimpl->pushCPD(TOPCPD);
@@ -188,7 +186,7 @@ int main(int argc, char** argv, char** argp) {
     compositorimpl->popCPD();
     context->popRenderContextFrameData();
     context->endFrame();
-    DrawableBuffer::releaseReadDB(DB);
+    DrawableBuffer::releaseFromRead(DB);
   });
   //////////////////////////////////////////////////////////
   qtapp->onResize([&](int w, int h) {

@@ -336,7 +336,7 @@ void SceneEditorVP::DoDraw(ui::drawevent_constptr_t drwev) {
     mpTarget->beginFrame();
     GL_ERRORCHECK();
     // we must still consume DrawableBuffers (since the compositor cannot)
-    const DrawableBuffer* DB = DrawableBuffer::acquireReadDB(7);
+    const DrawableBuffer* DB = DrawableBuffer::acquireForRead(7);
     FBI->SetAutoClear(true);
     FBI->setViewport(ViewportRect(0, 0, TARGW, TARGH));
     FBI->setScissor(ViewportRect(0, 0, TARGW, TARGH));
@@ -344,7 +344,7 @@ void SceneEditorVP::DoDraw(ui::drawevent_constptr_t drwev) {
     DrawHUD(RCFD);
     DrawBorder(RCFD);
     if (DB) {
-      DrawableBuffer::releaseReadDB(DB);
+      DrawableBuffer::releaseFromRead(DB);
     } // release consumed DB
     mpTarget->endFrame();
     mpTarget->popRenderContextFrameData();
@@ -393,7 +393,7 @@ void SceneEditorVP::DoDraw(ui::drawevent_constptr_t drwev) {
   bool assembled_ok        = false;
   {
     EASY_BLOCK("acquireDB");
-    DB = DrawableBuffer::acquireReadDB(7); // mDbLock.Aquire(7);
+    DB = DrawableBuffer::acquireForRead(7); // mDbLock.Aquire(7);
   }
   //////////////////////////////////////////////////
   // composite assembly:
@@ -410,7 +410,7 @@ void SceneEditorVP::DoDraw(ui::drawevent_constptr_t drwev) {
     mpTarget->debugPushGroup("toolvp::assemble");
     drawdata._cimpl = compsys->_impl;
     assembled_ok    = compsys->_impl->assemble(drawdata);
-    DrawableBuffer::releaseReadDB(DB); // mDbLock.Aquire(7);
+    DrawableBuffer::releaseFromRead(DB); // mDbLock.Aquire(7);
     //////////////////////////////////////////////////
     GL_ERRORCHECK();
     mpTarget->debugMarker(FormatString("toolvp::assembled_ok<%d>", int(assembled_ok)));
@@ -845,14 +845,14 @@ void SceneEditorVP::DrawManip(lev2::CompositorDrawData& CDD, ork::lev2::Context*
   myCPD.defaultSetup(CDD);
 
   /////////////////////////////////////////
-  const DrawableBuffer* DB = DrawableBuffer::acquireReadDB(7);
+  const DrawableBuffer* DB = DrawableBuffer::acquireForRead(7);
   if (DB) {
     auto spncam = (CameraData*)DB->cameraData("spawncam"_pool);
     if (spncam) {
       (*_overlayCamMatrices.get()) = spncam->computeMatrices(float(miW) / float(miH));
     }
     CDD._properties["defcammtx"_crcu].Set<const CameraMatrices*>(_overlayCamMatrices.get());
-    DrawableBuffer::releaseReadDB(DB); // mDbLock.Aquire(7);
+    DrawableBuffer::releaseFromRead(DB); // mDbLock.Aquire(7);
   }
   /////////////////////////////////////////
 

@@ -32,7 +32,7 @@ namespace picking {
 struct IMPL {
   ///////////////////////////////////////
   IMPL()
-      : _camname(AddPooledString("Camera")) {
+      : _camname("Camera") {
     _layername = "All"_pool;
     _width     = 8;
     _height    = 8;
@@ -87,7 +87,7 @@ struct IMPL {
       auto DB             = RCFD.GetDB();
       auto CPD            = CIMPL->topCPD();
       CPD._clearColor     = node->_clearColor;
-      CPD.mpLayerName     = &_layername;
+      CPD._layerName      = _layername;
       CPD._irendertarget  = &rt;
       CPD._ispicking      = true;
       CPD._cameraMatrices = ddprops["defcammtx"_crcu].Get<const CameraMatrices*>();
@@ -97,7 +97,7 @@ struct IMPL {
         ///////////////////////////////////////////////////////////////////////////
         // DrawableBuffer -> RenderQueue enqueue
         ///////////////////////////////////////////////////////////////////////////
-        for (const PoolString& layer_name : CPD.getLayerNames()) {
+        for (const auto& layer_name : CPD.getLayerNames()) {
           targ->debugMarker(FormatString("Picking::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
           DB->enqueueLayerToRenderQueue(layer_name, irenderer);
         }
@@ -118,7 +118,7 @@ struct IMPL {
     targ->debugPopGroup();
   }
   ///////////////////////////////////////
-  PoolString _camname, _layername;
+  std::string _camname, _layername;
   CompositingMaterial _material;
   RtGroup* _rtg = nullptr;
   fmtx4 _viewOffsetMatrix;

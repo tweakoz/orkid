@@ -27,8 +27,8 @@
 
 namespace ork::lev2 {
 
-typedef fixedlut<PoolString, const CameraData*, 16> CameraDataLut;
-typedef fixedlut<PoolString, CameraMatrices, 16> CameraMatricesLut;
+typedef fixedlut<std::string, const CameraData*, 16> CameraDataLut;
+typedef fixedlut<std::string, CameraMatrices, 16> CameraMatricesLut;
 class Simulation;
 class DrawableBuffer;
 class Drawable;
@@ -55,15 +55,15 @@ using instanceddrawdata_ptr_t       = std::shared_ptr<InstancedDrawableData>;
 
 struct DrawableOwner : public ork::Object {
   typedef orkvector<drawable_ptr_t> DrawableVector;
-  typedef orklut<PoolString, DrawableVector*> LayerMap;
+  typedef orklut<std::string, DrawableVector*> LayerMap;
 
   DrawableOwner();
   ~DrawableOwner();
 
-  void _addDrawable(const PoolString& layername, drawable_ptr_t pdrw);
+  void _addDrawable(const std::string& layername, drawable_ptr_t pdrw);
 
-  DrawableVector* GetDrawables(const PoolString& layer);
-  const DrawableVector* GetDrawables(const PoolString& layer) const;
+  DrawableVector* GetDrawables(const std::string& layer);
+  const DrawableVector* GetDrawables(const std::string& layer) const;
 
   const LayerMap& GetLayers() const {
     return mLayerMap;
@@ -117,7 +117,7 @@ private:
 
 struct LayerData { /// deprecated (this struct does not do much...)
   LayerData();
-  PoolString _layerName;
+  std::string _layerName;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -155,7 +155,7 @@ typedef std::function<void(lev2::RenderContextFrameData& RCFD)> prerendercallbac
 class DrawableBuffer {
 public:
   static const int kmaxlayers = 8;
-  typedef ork::fixedlut<PoolString, DrawableBufLayer*, kmaxlayers> LayerLut;
+  typedef ork::fixedlut<std::string, DrawableBufLayer*, kmaxlayers> LayerLut;
   typedef ork::fixedlut<int, prerendercallback_t, 32> CallbackLut_t;
 
   CameraDataLut _cameraDataLUT;
@@ -164,7 +164,7 @@ public:
   LayerLut mLayerLut;
   int miBufferIndex;
   int miReadCount;
-  orkset<PoolString> mLayers;
+  orkset<std::string> mLayers;
   CallbackLut_t _preRenderCallbacks;
 
   static ork::MpMcBoundedQueue<RenderSyncToken> mOfflineRenderSynchro;
@@ -181,11 +181,11 @@ public:
 
   static const int kmaxbuffers = 6;
 
-  static const DrawableBuffer* acquireReadDB(int lid);
-  static void releaseReadDB(const DrawableBuffer* db);
+  static const DrawableBuffer* acquireForRead(int lid);
+  static void releaseFromRead(const DrawableBuffer* db);
 
-  static DrawableBuffer* LockWriteBuffer(int lid);
-  static void UnLockWriteBuffer(DrawableBuffer* db);
+  static DrawableBuffer* acquireForWrite(int lid);
+  static void releaseFromWrite(DrawableBuffer* db);
 
   static RenderSyncToken acquireRenderToken();
 
@@ -198,11 +198,11 @@ public:
   static void ClearAndSyncWriters();
 
   const CameraData* cameraData(int icam) const;
-  const CameraData* cameraData(const PoolString& named) const;
+  const CameraData* cameraData(const std::string& named) const;
 
-  DrawableBufLayer* MergeLayer(const PoolString& layername);
+  DrawableBufLayer* MergeLayer(const std::string& layername);
 
-  void enqueueLayerToRenderQueue(const PoolString& LayerName, lev2::IRenderer* renderer) const;
+  void enqueueLayerToRenderQueue(const std::string& LayerName, lev2::IRenderer* renderer) const;
 
 }; // ~1MiB
 

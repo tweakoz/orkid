@@ -101,7 +101,8 @@ bool SequenceCamControllerInst::DoLink(Simulation* psi) {
 
 bool SequenceCamControllerInst::DoStart(Simulation* psi, const fmtx4& world) {
   if (GetEntity() and _cameraData) {
-    psi->setCameraData(GetEntity()->name(), _cameraData);
+    std::string camname = GetEntity()->name().c_str();
+    psi->setCameraData(camname, _cameraData);
 
     for (orklut<PoolString, ork::Object*>::const_iterator it = GetCD().GetItemDatas().begin(); it != GetCD().GetItemDatas().end();
          it++) {

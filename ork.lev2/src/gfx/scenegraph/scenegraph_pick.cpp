@@ -89,7 +89,7 @@ void PickBuffer::mydraw(fray3_constptr_t ray) {
   // irenderer->setContext(_context);
   RCFD.SetLightManager(nullptr);
   ///////////////////////////////////////////////////////////////////////////
-  auto DB = DrawableBuffer::acquireReadDB(0x1234);
+  auto DB = DrawableBuffer::acquireForRead(0x1234);
   if (DB) {
 
     /////////////////////////////////////////////////////////////
@@ -110,7 +110,7 @@ void PickBuffer::mydraw(fray3_constptr_t ray) {
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
     RCFD.setUserProperty("pickbufferMvpMatrix"_crc, _pick_mvp_matrix);
     lev2::CompositingPassData CPD;
-    CPD.AddLayer("All"_pool);
+    CPD.AddLayer("All");
     CPD.SetDstRect(tgt_rect);
     CPD._ispicking     = true;
     CPD._irendertarget = &rt;
@@ -130,7 +130,7 @@ void PickBuffer::mydraw(fray3_constptr_t ray) {
     _compimpl->pushCPD(CPD);
     FBI->EnterPickState(nullptr);
     _compimpl->assemble(drawdata);
-    DrawableBuffer::releaseReadDB(DB);
+    DrawableBuffer::releaseFromRead(DB);
     FBI->LeavePickState();
     _compimpl->popCPD();
     ///////////////////////////////////////////??

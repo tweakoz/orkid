@@ -23,7 +23,7 @@ public:
   ScreenOutputCompositingNode();
   ~ScreenOutputCompositingNode();
 
-  PoolString _layername;
+  std::string _layername;
   int supersample() const {
     return _supersample;
   }

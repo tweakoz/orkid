@@ -19,7 +19,7 @@ public:
   RtGroupOutputCompositingNode();
   ~RtGroupOutputCompositingNode();
 
-  PoolString _layername;
+  std::string _layername;
 
   void resize(int w, int h);
 
@@ -30,8 +30,7 @@ private:
   void composite(CompositorDrawData& drawdata) final;
 
   svar256_t _impl;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2 {
+} // namespace ork::lev2

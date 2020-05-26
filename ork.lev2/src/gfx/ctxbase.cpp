@@ -103,8 +103,8 @@ void CTXBASE::progressHandler(opq::progressdata_ptr_t data) {
       /////////////////////////////////
       // throw away any drawable buffers
       /////////////////////////////////
-      if (auto DB = DrawableBuffer::acquireReadDB(7))
-        DrawableBuffer::releaseReadDB(DB);
+      if (auto DB = DrawableBuffer::acquireForRead(7))
+        DrawableBuffer::releaseFromRead(DB);
       /////////////////////////////////
       mpTarget->beginFrame();
       FBI->setViewport(tgtrect);

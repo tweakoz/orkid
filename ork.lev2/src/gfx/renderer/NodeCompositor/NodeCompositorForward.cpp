@@ -86,7 +86,7 @@ struct IMPL {
       auto DB             = RCFD.GetDB();
       auto CPD            = CIMPL->topCPD();
       CPD._clearColor     = node->_clearColor;
-      CPD.mpLayerName     = &_layername;
+      CPD._layerName      = _layername;
       CPD._irendertarget  = &rt;
       CPD._cameraMatrices = ddprops["defcammtx"_crcu].Get<const CameraMatrices*>();
       CPD.SetDstRect(tgt_rect);
@@ -95,7 +95,7 @@ struct IMPL {
         ///////////////////////////////////////////////////////////////////////////
         // DrawableBuffer -> RenderQueue enqueue
         ///////////////////////////////////////////////////////////////////////////
-        for (const PoolString& layer_name : CPD.getLayerNames()) {
+        for (const auto& layer_name : CPD.getLayerNames()) {
           targ->debugMarker(FormatString("Forward::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
           DB->enqueueLayerToRenderQueue(layer_name, irenderer);
         }

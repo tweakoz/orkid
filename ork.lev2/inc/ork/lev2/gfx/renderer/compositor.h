@@ -120,7 +120,7 @@ struct CompositingPassData {
     return _cameraMatrices;
   }
   static CompositingPassData FromRCFD(const RenderContextFrameData& RCFD);
-  std::vector<PoolString> getLayerNames() const;
+  std::vector<std::string> getLayerNames() const;
   void updateCompositingSize(int w, int h);
   bool isPicking() const;
   const ViewportRect& GetDstRect() const {
@@ -136,8 +136,8 @@ struct CompositingPassData {
     mMrtRect = rect;
   }
   void ClearLayers();
-  void AddLayer(const PoolString& layername);
-  bool HasLayer(const PoolString& layername) const;
+  void AddLayer(const std::string& layername);
+  bool HasLayer(const std::string& layername) const;
   void addStandardLayers();
 
   bool isValid() const {
@@ -154,8 +154,8 @@ struct CompositingPassData {
   IRenderTarget* _irendertarget        = nullptr;
   lev2::FrameTechniqueBase* mpFrameTek = nullptr;
   bool mbDrawSource                    = true;
-  const PoolString* mpCameraName       = nullptr;
-  const PoolString* mpLayerName        = nullptr;
+  std::string _cameraName;
+  std::string _layerName;
   ork::fvec4 _clearColor;
   bool _stereo1pass                                 = false;
   const CameraMatrices* _cameraMatrices             = nullptr;
@@ -164,7 +164,7 @@ struct CompositingPassData {
   ViewportRect mDstRect;
   ViewportRect mMrtRect;
   uint32_t _passID = 0;
-  orkset<PoolString> mLayers;
+  orkset<std::string> mLayers;
   bool _ispicking = false;
 };
 
@@ -213,6 +213,7 @@ public:
   ///////////////////////////////////////////////////////
 
   void presetDefault();
+  void presetForward();
   void presetPicking();
   void presetPBR();
   void presetPBRVR();

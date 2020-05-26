@@ -95,7 +95,9 @@ bool EditorCamControllerInst::DoLink(Simulation* psi) {
   auto entity          = GetEntity();
   if (entity) {
     const auto& cammats = pcam->cameraMatrices();
-    psi->setCameraData(entity->name(), &cammats);
+    std::string camname = entity->name().c_str();
+
+    psi->setCameraData(camname, &cammats);
     fmtx4 matrix, imatrix;
     matrix.LookAt(cammats.GetEye(), cammats.GetTarget(), cammats.GetUp());
     imatrix.inverseOf(matrix);

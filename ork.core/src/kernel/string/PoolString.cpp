@@ -19,8 +19,12 @@
 
 namespace ork {
 
+PoolString::PoolString()
+    : _stringptr(nullptr) {
+}
+
 PoolString::PoolString(const char* string)
-    : mpString(string) {
+    : _stringptr(string) {
 }
 
 PoolString::operator PieceString() const {
@@ -55,26 +59,26 @@ bool PoolString::operator!=(const PoolString& other) const {
 }
 
 PoolString::operator bool() const {
-  return mpString != NULL;
+  return _stringptr != NULL;
 }
 
 ///////////////////////////////////////////////////////////
 
 bool PoolString::empty() const {
-  return NULL == mpString || mpString[0] == '\0';
+  return NULL == _stringptr || _stringptr[0] == '\0';
 }
 
 ///////////////////////////////////////////////////////////
 
 int PoolString::compare(const PoolString& rhs) const {
-  if (mpString == rhs.mpString)
+  if (_stringptr == rhs._stringptr)
     return 0;
-  else if (mpString == NULL)
+  else if (_stringptr == NULL)
     return -1;
-  else if (rhs.mpString == NULL)
+  else if (rhs._stringptr == NULL)
     return 1;
   else
-    return strcmp(mpString, rhs.mpString);
+    return strcmp(_stringptr, rhs._stringptr);
 }
 
 ///////////////////////////////////////////////////////////

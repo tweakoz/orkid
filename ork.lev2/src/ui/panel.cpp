@@ -25,9 +25,6 @@ Panel::~Panel() {
     _child->SetParent(nullptr);
     _child = nullptr;
   }
-  if (mParent) {
-    mParent->removeChild(this);
-  }
 }
 
 /////////////////////////////////////////////////////////////////////////

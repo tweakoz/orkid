@@ -474,7 +474,7 @@ void pyinit_gfx(py::module& module_lev2) {
       py::class_<CameraDataLut, cameradatalut_ptr_t>(module_lev2, "CameraDataLut")
           .def(py::init<>())
           .def("addCamera", [](cameradatalut_ptr_t lut, std::string key, cameradata_ptr_t camera) {
-            lut->AddSorted(AddPooledString(key.c_str()), camera.get());
+            lut->AddSorted(key, camera.get());
           });
   type_codec->registerStdCodec<cameradatalut_ptr_t>(camdatluttype);
   /////////////////////////////////////////////////////////////////////////////////

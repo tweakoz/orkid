@@ -176,19 +176,19 @@ layer_ptr_t Scene::createLayer(std::string named) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras) {
-  auto DB = DrawableBuffer::LockWriteBuffer(0);
+  auto DB = DrawableBuffer::acquireForWrite(0);
   DB->Reset();
   DB->copyCameras(*cameras.get());
   for (auto layer_item : _layers) {
     auto scenegraph_layer = layer_item.second;
-    auto drawable_layer   = DB->MergeLayer("Default"_pool);
+    auto drawable_layer   = DB->MergeLayer("Default");
     for (auto n : scenegraph_layer->_drawablenodes) {
       if (n->_drawable) {
         n->_drawable->enqueueOnLayer(n->_transform, *drawable_layer);
       }
     }
   }
-  DrawableBuffer::UnLockWriteBuffer(DB);
+  DrawableBuffer::releaseFromWrite(DB);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -199,7 +199,7 @@ void Scene::renderOnContext(Context* context) {
     gpuInit(context);
   }
 
-  auto DB = DrawableBuffer::acquireReadDB(7);
+  auto DB = DrawableBuffer::acquireForRead(7);
   if (nullptr == DB) {
     printf("Dont have a DB!\n");
     return;
@@ -258,7 +258,7 @@ void Scene::renderOnContext(Context* context) {
 
     context->endFrame();
   }
-  DrawableBuffer::releaseReadDB(DB);
+  DrawableBuffer::releaseFromRead(DB);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

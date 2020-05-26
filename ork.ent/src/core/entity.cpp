@@ -295,18 +295,18 @@ ComponentTable& Entity::GetComponents() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Entity::addDrawableToDefaultLayer(lev2::drawable_ptr_t pdrw) {
-  auto layername = AddPooledString("Default");
+  std::string layername = "Default";
   if (auto ED = data()) {
     ConstString layer = ED->GetUserProperty("DrawLayer");
     if (strlen(layer.c_str()) != 0) {
-      layername = AddPooledString(layer.c_str());
+      layername = layer.c_str();
     }
   }
   printf("layername<%s>\n", layername.c_str());
   _addDrawable(layername, pdrw);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Entity::addDrawableToLayer(lev2::drawable_ptr_t pdrw, const PoolString& layername) {
+void Entity::addDrawableToLayer(lev2::drawable_ptr_t pdrw, const std::string& layername) {
   _addDrawable(layername, pdrw);
 }
 ///////////////////////////////////////////////////////////////////////////////

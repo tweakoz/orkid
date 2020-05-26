@@ -70,7 +70,7 @@ void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
   ///////////////////////////////////////////////////////////////////////////
   // CPD.cameraMatrices()->_aspectRatio = fW / fH;
   ///////////////////////////////////////////////////////////////////////////
-  auto DB = DrawableBuffer::acquireReadDB(7); // mDbLock.Aquire(7);
+  auto DB = DrawableBuffer::acquireForRead(7); // mDbLock.Aquire(7);
   if (DB) {
     lev2::UiViewportRenderTarget rt(_scenevp);
     rendervar_t passdata;
@@ -78,7 +78,7 @@ void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
     RCFD.setUserProperty("nodes"_crc, passdata);
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
     lev2::CompositingPassData CPD;
-    CPD.AddLayer("All"_pool);
+    CPD.AddLayer("All");
     CPD.SetDstRect(tgt_rect);
     CPD._ispicking     = true;
     CPD._irendertarget = &rt;
@@ -106,7 +106,7 @@ void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
     drawdata._cimpl   = _gimpl;
     bool assembled_ok = _gimpl->assemble(drawdata);
 
-    DrawableBuffer::releaseReadDB(DB); // mDbLock.Aquire(7);
+    DrawableBuffer::releaseFromRead(DB); // mDbLock.Aquire(7);
 
     if (assembled_ok)
       _gimpl->composite(drawdata);

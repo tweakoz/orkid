@@ -2,6 +2,15 @@
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <ork/lev2/aud/singularity/hud.h>
+///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorPicking.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
+///////////////////////////////////////////////////////////////////////////////
 
 namespace po = boost::program_options;
 
@@ -37,12 +46,32 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   // boot up debug HUD
   //////////////////////////////////////////////////////////////////////////////
-  auto qtapp    = OrkEzQtApp::create(argc, argv);
-  auto qtwin    = qtapp->_mainWindow;
-  auto gfxwin   = qtwin->_gfxwin;
-  auto material = std::make_shared<FreestyleMaterial>();
+  auto qtapp  = OrkEzQtApp::create(argc, argv);
+  auto qtwin  = qtapp->_mainWindow;
+  auto gfxwin = qtwin->_gfxwin;
+  //////////////////////////////////////////////////////////
+  // create references to various items scoped by qtapp
+  //////////////////////////////////////////////////////////
+  auto renderer = qtapp->_vars.makeSharedForKey<DefaultRenderer>("renderer");
+  auto lmd      = qtapp->_vars.makeSharedForKey<LightManagerData>("lmgrdata");
+  auto lightmgr = qtapp->_vars.makeSharedForKey<LightManager>("lmgr", *lmd);
+  auto compdata = qtapp->_vars.makeSharedForKey<CompositingData>("compdata");
+  auto material = qtapp->_vars.makeSharedForKey<FreestyleMaterial>("material");
+  auto CPD      = qtapp->_vars.makeSharedForKey<CompositingPassData>("CPD");
+  auto cameras  = qtapp->_vars.makeSharedForKey<CameraDataLut>("cameras");
+  auto camdata  = qtapp->_vars.makeSharedForKey<CameraData>("camdata");
+  //////////////////////////////////////////////////////////
+  compdata->presetForward();
+  compdata->mbEnable  = true;
+  auto nodetek        = compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+  auto outpnode       = nodetek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
+  auto compositorimpl = compdata->createImpl();
+  compositorimpl->bindLighting(lightmgr.get());
+  CPD->addStandardLayers();
+  cameras->AddSorted("spawncam", camdata.get());
   //////////////////////////////////////////////////////////
   qtapp->onGpuInit([=](Context* ctx) {
+    renderer->setContext(ctx);
     const FxShaderTechnique* fxtechnique = nullptr;
     const FxShaderParam* fxparameterMVP  = nullptr;
     const FxShaderParam* fxparameterMODC = nullptr;
@@ -56,20 +85,46 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
     deco::printf(fvec3::Yellow(), "  fxparameterMODC<%p>\n", fxparameterMODC);
   });
   //////////////////////////////////////////////////////////
+  qtapp->onUpdate([=](updatedata_ptr_t updata) {
+    ///////////////////////////////////////
+    auto DB = DrawableBuffer::acquireForWrite(0);
+    DB->Reset();
+    DB->copyCameras(*cameras);
+    // auto layer = DB->MergeLayer("Default"_pool);
+    DrawableBuffer::releaseFromWrite(DB);
+    usleep(1000);
+  });
+  //////////////////////////////////////////////////////////
   qtapp->onDraw([=](ui::drawevent_constptr_t drwev) {
-    auto context        = drwev->GetTarget();
-    auto fbi            = context->FBI(); // FrameBufferInterface
-    auto fxi            = context->FXI(); // FX Interface
-    int TARGW           = context->mainSurfaceWidth();
-    int TARGH           = context->mainSurfaceHeight();
-    const SRect tgtrect = SRect(0, 0, TARGW, TARGH);
-
+    ////////////////////////////////////////////////
+    auto DB = DrawableBuffer::acquireForRead(7);
+    if (nullptr == DB)
+      return;
+    ////////////////////////////////////////////////
+    auto context = drwev->GetTarget();
+    auto fbi     = context->FBI();  // FrameBufferInterface
+    auto fxi     = context->FXI();  // FX Interface
+    auto mtxi    = context->MTXI(); // FX Interface
     fbi->SetClearColor(fvec4(0.0, 0.0, 0.1, 1));
     ////////////////////////////////////////////////////
     // draw the synth HUD
     ////////////////////////////////////////////////////
+    RenderContextFrameData RCFD(context); // renderer per/frame data
+    RCFD._cimpl = compositorimpl;
+    RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+    context->pushRenderContextFrameData(&RCFD);
+    lev2::UiViewportRenderTarget rt(nullptr);
+    auto tgtrect        = context->mainSurfaceRectAtOrigin();
+    CPD->_irendertarget = &rt;
+    CPD->SetDstRect(tgtrect);
+    compositorimpl->pushCPD(*CPD);
+    context->beginFrame();
+    mtxi->PushUIMatrix();
     the_synth->_hudvp->Draw(drwev);
+    mtxi->PopUIMatrix();
+    context->endFrame();
     ////////////////////////////////////////////////////
+    DrawableBuffer::releaseFromRead(DB);
   });
   //////////////////////////////////////////////////////////
   qtapp->onResize([=](int w, int h) { //

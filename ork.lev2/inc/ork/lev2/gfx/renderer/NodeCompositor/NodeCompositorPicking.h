@@ -23,7 +23,7 @@ public:
   PickingCompositingNode();
   ~PickingCompositingNode();
 
-  PoolString _layername;
+  std::string _layername;
   fvec4 _clearColor;
 
   void resize(int w, int h);

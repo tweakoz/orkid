@@ -76,7 +76,7 @@ DrawableOwner::DrawableOwner() {
 DrawableOwner::~DrawableOwner() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void DrawableOwner::_addDrawable(const PoolString& layername, drawable_ptr_t pdrw) {
+void DrawableOwner::_addDrawable(const std::string& layername, drawable_ptr_t pdrw) {
   DrawableVector* pldrawables = GetDrawables(layername);
   if (nullptr == pldrawables) {
     pldrawables = new DrawableVector;
@@ -85,7 +85,7 @@ void DrawableOwner::_addDrawable(const PoolString& layername, drawable_ptr_t pdr
   pldrawables->push_back(pdrw);
 }
 ///////////////////////////////////////////////////////////////////////////////
-DrawableOwner::DrawableVector* DrawableOwner::GetDrawables(const PoolString& layer) {
+DrawableOwner::DrawableVector* DrawableOwner::GetDrawables(const std::string& layer) {
   DrawableVector* pldrawables = 0;
 
   LayerMap::const_iterator itL = mLayerMap.find(layer);
@@ -95,7 +95,7 @@ DrawableOwner::DrawableVector* DrawableOwner::GetDrawables(const PoolString& lay
   return pldrawables;
 }
 ///////////////////////////////////////////////////////////////////////////////
-const DrawableOwner::DrawableVector* DrawableOwner::GetDrawables(const PoolString& layer) const {
+const DrawableOwner::DrawableVector* DrawableOwner::GetDrawables(const std::string& layer) const {
   const DrawableVector* pldrawables = 0;
 
   LayerMap::const_iterator itL = mLayerMap.find(layer);

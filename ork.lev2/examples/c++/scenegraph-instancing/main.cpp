@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////
   auto cameralut = std::make_shared<CameraDataLut>();
   auto camera    = std::make_shared<CameraData>();
-  cameralut->AddSorted("spawncam"_pool, camera.get());
+  cameralut->AddSorted("spawncam", camera.get());
   qtapp->onUpdate([&](updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;

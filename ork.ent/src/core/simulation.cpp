@@ -126,7 +126,7 @@ Simulation::Simulation(const SceneData* sdata, Application* application)
   OrkAssertI(mApplication, "Simulation must be constructed with a non-NULL Application!");
 
   auto default_layer = new lev2::LayerData;
-  AddLayerData(AddPooledLiteral("Default"), default_layer);
+  AddLayerData("Default", default_layer);
 
   ////////////////////////////
   // create one token
@@ -251,7 +251,7 @@ float Simulation::ComputeDeltaTime() {
   return fdelta;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Simulation::setCameraData(const PoolString& name, const lev2::CameraData* camdat) {
+void Simulation::setCameraData(const std::string& name, const lev2::CameraData* camdat) {
   CameraDataLut::iterator it = _cameraDataLUT.find(name);
 
   if (it == _cameraDataLUT.end()) {
@@ -273,7 +273,7 @@ void Simulation::setCameraData(const PoolString& name, const lev2::CameraData* c
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-const lev2::CameraData* Simulation::cameraData(const PoolString& name) const {
+const lev2::CameraData* Simulation::cameraData(const std::string& name) const {
   CameraDataLut::const_iterator it = _cameraDataLUT.find(name);
   return (it == _cameraDataLUT.end()) ? 0 : it->second;
 }
@@ -547,11 +547,11 @@ void Simulation::ComposeEntities() {
 
       ork::ent::Entity* pent = new ork::ent::Entity(pentdata, this);
 
-      PoolString actualLayerName = AddPooledLiteral("Default");
+      std::string actualLayerName = "Default";
 
       ConstString layer_name = pentdata->GetUserProperty("DrawLayer");
       if (strlen(layer_name.c_str()) != 0) {
-        actualLayerName = AddPooledString(layer_name.c_str());
+        actualLayerName = layer_name.c_str();
       }
 
       auto layer_data = GetLayerData(actualLayerName);
@@ -917,7 +917,7 @@ Entity* Simulation::SpawnDynamicEntity(const ent::EntData* spawn_rec) {
 ///////////////////////////////////////////////////////////////////////////
 
 void Simulation::updateThreadTick() {
-  auto dbuf = ork::lev2::DrawableBuffer::LockWriteBuffer(7);
+  auto dbuf = ork::lev2::DrawableBuffer::acquireForWrite(7);
   if (dbuf) {
     float frame_rate           = desiredFrameRate();
     bool externally_fixed_rate = (frame_rate != 0.0f);
@@ -932,7 +932,7 @@ void Simulation::updateThreadTick() {
       this->Update();
       this->enqueueDrawablesToBuffer(*dbuf);
     }
-    ork::lev2::DrawableBuffer::UnLockWriteBuffer(dbuf);
+    ork::lev2::DrawableBuffer::releaseFromWrite(dbuf);
   }
 }
 
@@ -973,7 +973,7 @@ void Simulation::enqueueDrawablesToBuffer(ork::lev2::DrawableBuffer& buffer) con
     (*xfdata._worldMatrix) = src_matrix;
 
     for (auto L : entlayers) {
-      const PoolString& layer_name = L.first;
+      const std::string& layer_name = L.first;
 
       // printf("sim::enqueue layer_name<%s>\n", layer_name.c_str());
 
@@ -1067,20 +1067,20 @@ void Simulation::UpdateActiveComponents(ork::PoolString family) {
   UpdateEntityComponents(GetActiveComponents(family));
 }
 ///////////////////////////////////////////////////////////////////////////
-void Simulation::AddLayerData(const PoolString& name, lev2::LayerData* player) {
+void Simulation::AddLayerData(const std::string& name, lev2::LayerData* player) {
   auto it = _layerdataMap.find(name);
   OrkAssert(it == _layerdataMap.end());
   _layerdataMap[name] = player;
   player->_layerName  = name;
 }
-lev2::LayerData* Simulation::GetLayerData(const PoolString& name) {
+lev2::LayerData* Simulation::GetLayerData(const std::string& name) {
   lev2::LayerData* rval = 0;
   auto it               = _layerdataMap.find(name);
   if (it != _layerdataMap.end())
     rval = it->second;
   return rval;
 }
-const lev2::LayerData* Simulation::GetLayerData(const PoolString& name) const {
+const lev2::LayerData* Simulation::GetLayerData(const std::string& name) const {
   const lev2::LayerData* rval = 0;
   auto it                     = _layerdataMap.find(name);
   if (it != _layerdataMap.end())

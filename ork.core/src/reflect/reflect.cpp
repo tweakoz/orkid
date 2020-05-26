@@ -87,6 +87,7 @@ typedef rtti::ICastable* ICastablePointer;
   MACRO(CLASS<int>);                                                                                                               \
   MACRO(CLASS<float>);                                                                                                             \
   MACRO(CLASS<double>);                                                                                                            \
+  MACRO(CLASS<std::string>);                                                                                                       \
   MACRO(CLASS<PoolString>);                                                                                                        \
   MACRO(CLASS<file::Path>);                                                                                                        \
   MACRO(CLASS<TransformNode>);                                                                                                     \
@@ -147,7 +148,7 @@ template class orklut<ConstString, object::AutoSlot Object::*>;
 //(ork::Object::*)(int const&))", referenced from: ork::reflect::AccessorObjectPropertyType<int>&
 // ork::reflect::RegisterProperty<TestObject, int>(char const*, void (TestObject::*)(int&) const, void (TestObject::*)(int const&),
 // ork::reflect::Description&)in main.o "ork::reflect::DirectObjectPropertyType<int>::DirectObjectPropertyType(int ork::Object::*)",
-//referenced from: ork::reflect::DirectObjectPropertyType<int>& ork::reflect::RegisterProperty<TestSubObject, int>(char const*, int
+// referenced from: ork::reflect::DirectObjectPropertyType<int>& ork::reflect::RegisterProperty<TestSubObject, int>(char const*, int
 // TestSubObject::*, ork::reflect::Description&)in main.o
 
 // template class AccessorObjectPropertyType<int>;
@@ -167,6 +168,7 @@ template class IObjectPropertyType<ork::rtti::ICastable*>;
 template class IObjectPropertyType<ork::Object*>;
 template class IObjectPropertyType<ork::file::Path>;
 template class IObjectPropertyType<PoolString>;
+template class IObjectPropertyType<std::string>;
 template class IObjectPropertyType<bool>;
 template class DirectObjectPropertyType<bool>;
 template class DirectObjectPropertyType<ork::Object*>;
@@ -178,6 +180,8 @@ template class DirectObjectMapPropertyType<orkmap<int, int>>;
 template class DirectObjectMapPropertyType<orklut<int, int>>;
 template class DirectObjectMapPropertyType<orkmap<PoolString, PoolString>>;
 template class DirectObjectMapPropertyType<orklut<PoolString, PoolString>>;
+template class DirectObjectMapPropertyType<orkmap<std::string, std::string>>;
+template class DirectObjectMapPropertyType<orklut<std::string, std::string>>;
 template class AccessorObjectMapPropertyObject<int>;
 template class AccessorObjectMapPropertyType<int, char>;
 template class AccessorObjectMapPropertyType<int, ICastablePointer>;

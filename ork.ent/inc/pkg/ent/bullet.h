@@ -215,7 +215,7 @@ private:
   btCollisionDispatcher* mDispatcher;
   btSequentialImpulseConstraintSolver* mSolver;
   const BulletSystemData& _systemData;
-  PoolString _dbgdrawlayername;
+  std::string _dbgdrawlayername;
   lev2::DrawQueueXfData _dbgdrawXF;
   PhysicsDebugger _debugger;
   int mMaxSubSteps;

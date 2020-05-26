@@ -43,11 +43,11 @@ template <typename val_t> struct TVarMap {
   }
   ///////////////////////////////////////////////////////////////////////////
   template <typename T, typename... A> inline T& makeValueForKey(const key_t& key, A&&... args) {
-    return _themap[key].template Make<T>(std::forward(args)...);
+    return _themap[key].template Make<T>(std::forward<A>(args)...);
   }
   ///////////////////////////////////////////////////////////////////////////
   template <typename T, typename... A> inline std::shared_ptr<T> makeSharedForKey(const key_t& key, A&&... args) {
-    return _themap[key].template makeShared<T>(std::forward(args)...);
+    return _themap[key].template makeShared<T>(std::forward<A>(args)...);
   }
   ///////////////////////////////////////////////////////////////////////////
   inline void removeItemForKey(const key_t& key) {

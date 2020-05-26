@@ -66,6 +66,26 @@ void CompositingData::presetDefault() {
 
 //////////////////////////////////////////////////////////////////////////////
 
+void CompositingData::presetForward() {
+
+  auto t1 = new NodeCompositingTechnique;
+  auto o1 = new RtGroupOutputCompositingNode;
+  auto r1 = new ForwardCompositingNode;
+  t1->_writeOutputNode(o1);
+  t1->_writeRenderNode(r1);
+  // t1->_writePostFxNode(p1);
+
+  auto s1 = new CompositingScene;
+  auto i1 = new CompositingSceneItem;
+  i1->_writeTech(t1);
+  s1->items().AddSorted("item1"_pool, i1);
+  _activeScene = "scene1"_pool;
+  _activeItem  = "item1"_pool;
+  _scenes.AddSorted("scene1"_pool, s1);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
 void CompositingData::presetPicking() {
 
   auto t1 = new NodeCompositingTechnique;

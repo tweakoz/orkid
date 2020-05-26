@@ -28,7 +28,7 @@ public:
   const PoolString& vrTrackedObject() const {
     return _vrTrackedObject;
   }
-  const PoolString& vrCamera() const {
+  const std::string& vrCamera() const {
     return _vrCamera;
   }
   const fvec3& visualOffset() const {
@@ -41,7 +41,7 @@ public:
 private:
   ork::ent::System* createSystem(ork::ent::Simulation* pinst) const final;
   PoolString _vrTrackedObject;
-  PoolString _vrCamera;
+  std::string _vrCamera;
   fvec3 _visualoffset;
   bool _useCamView;
 };

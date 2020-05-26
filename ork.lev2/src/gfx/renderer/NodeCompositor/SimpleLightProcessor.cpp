@@ -315,7 +315,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
       FBI->clearDepth(1.0f);
       auto DB = RCFD.GetDB();
       if (DB) {
-        for (const PoolString& layer_name : DEPTHRENDERCPD.getLayerNames()) {
+        for (const auto& layer_name : DEPTHRENDERCPD.getLayerNames()) {
           context->debugMarker(FormatString("enqshadowlayer<%s>", layer_name.c_str()));
           DB->enqueueLayerToRenderQueue(layer_name, irenderer);
         }

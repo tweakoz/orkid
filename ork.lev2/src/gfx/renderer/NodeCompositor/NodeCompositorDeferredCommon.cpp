@@ -191,7 +191,7 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
   ///////////////////////////////////////////////////////////////////////////
   const auto TOPCPD  = CIMPL->topCPD();
   auto CPD           = TOPCPD;
-  CPD.mpLayerName    = &_layername;
+  CPD._layerName     = _layername;
   CPD._irendertarget = _gbuffRT;
   CPD.SetDstRect(tgt_rect);
   CPD.SetMrtRect(mrt_rect);
@@ -202,7 +202,7 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
     ///////////////////////////////////////////////////////////////////////////
     // DrawableBuffer -> RenderQueue enqueue
     ///////////////////////////////////////////////////////////////////////////
-    for (const PoolString& layer_name : CPD.getLayerNames()) {
+    for (const auto& layer_name : CPD.getLayerNames()) {
       targ->debugMarker(FormatString("Deferred::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
       DB->enqueueLayerToRenderQueue(layer_name, irenderer);
     }
@@ -238,7 +238,7 @@ const uint32_t* DeferredContext::captureDepthClusters(const CompositorDrawData& 
   const auto TOPCPD = CIMPL->topCPD();
   auto CPD          = TOPCPD;
   CPD._clearColor   = _clearColor;
-  CPD.mpLayerName   = &_layername;
+  CPD._layerName    = _layername;
   CPD.SetDstRect(tgt_rect);
   CPD._passID = "defcluster"_crcu;
   CPD.SetDstRect(vprect);

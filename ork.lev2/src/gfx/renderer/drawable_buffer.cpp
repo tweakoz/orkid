@@ -68,7 +68,7 @@ void DrawableBuffer::invokePreRenderCallbacks(lev2::RenderContextFrameData& RCFD
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName, lev2::IRenderer* renderer) const {
+void DrawableBuffer::enqueueLayerToRenderQueue(const std::string& LayerName, lev2::IRenderer* renderer) const {
   lev2::Context* target                         = renderer->GetTarget();
   const ork::lev2::RenderContextFrameData* RCFD = target->topRenderContextFrameData();
   const auto& topCPD                            = RCFD->topCPD();
@@ -83,7 +83,7 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName, lev2
   target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue numlayers<%zu>", mLayerLut.size()));
 
   for (const auto& layer_item : mLayerLut) {
-    const PoolString& TestLayerName      = layer_item.first;
+    const std::string& TestLayerName     = layer_item.first;
     const lev2::DrawableBufLayer* player = layer_item.second;
 
     bool Match = (LayerName == TestLayerName);
@@ -131,7 +131,7 @@ void DrawableBufLayer::Reset(const DrawableBuffer& dB) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DrawableBufLayer* DrawableBuffer::MergeLayer(const PoolString& layername) {
+DrawableBufLayer* DrawableBuffer::MergeLayer(const std::string& layername) {
   // ork::opq::assertOnQueue2(opq::updateSerialQueue());
   DrawableBufLayer* player     = 0;
   LayerLut::const_iterator itL = mLayerLut.find(layername);
@@ -184,7 +184,7 @@ DrawableBuffer::~DrawableBuffer() {
 void DrawableBuffer::copyCameras(const CameraDataLut& cameras) {
   _cameraDataLUT.clear();
   for (auto itCAM = cameras.begin(); itCAM != cameras.end(); itCAM++) {
-    const PoolString& CameraName        = itCAM->first;
+    const std::string& CameraName       = itCAM->first;
     const lev2::CameraData* pcameradata = itCAM->second;
     if (pcameradata) {
       _cameraDataLUT.AddSorted(CameraName, pcameradata);
@@ -210,7 +210,7 @@ const CameraData* DrawableBuffer::cameraData(int icam) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CameraData* DrawableBuffer::cameraData(const PoolString& named) const {
+const CameraData* DrawableBuffer::cameraData(const std::string& named) const {
   int inumscenecameras = _cameraDataLUT.size();
   auto itCAM           = _cameraDataLUT.find(named);
   if (itCAM != _cameraDataLUT.end()) {
@@ -223,20 +223,20 @@ const CameraData* DrawableBuffer::cameraData(const PoolString& named) const {
 /////////////////////////////////////////////////////////////////////
 static concurrent_triple_buffer<DrawableBuffer> gBuffers;
 /////////////////////////////////////////////////////////////////////
-const DrawableBuffer* DrawableBuffer::acquireReadDB(int lid) {
+const DrawableBuffer* DrawableBuffer::acquireForRead(int lid) {
   return gBuffers.begin_pull();
 }
 /////////////////////
-void DrawableBuffer::releaseReadDB(const DrawableBuffer* db) {
+void DrawableBuffer::releaseFromRead(const DrawableBuffer* db) {
   gBuffers.end_pull(db);
 }
 /////////////////////////////////////////////////////////////////////
-DrawableBuffer* DrawableBuffer::LockWriteBuffer(int lid) {
+DrawableBuffer* DrawableBuffer::acquireForWrite(int lid) {
   // ork::opq::assertOnQueue2(opq::updateSerialQueue());
   DrawableBuffer* wbuf = gBuffers.begin_push();
   return wbuf;
 }
-void DrawableBuffer::UnLockWriteBuffer(DrawableBuffer* db) {
+void DrawableBuffer::releaseFromWrite(DrawableBuffer* db) {
   // ork::opq::assertOnQueue2(opq::updateSerialQueue());
   gBuffers.end_push(db);
 }

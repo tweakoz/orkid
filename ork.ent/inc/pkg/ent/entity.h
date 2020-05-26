@@ -267,7 +267,7 @@ public:
     return _entdata;
   }
   void addDrawableToDefaultLayer(lev2::drawable_ptr_t pdrw);
-  void addDrawableToLayer(lev2::drawable_ptr_t pdrw, const PoolString& layername);
+  void addDrawableToLayer(lev2::drawable_ptr_t pdrw, const std::string& layername);
 
   ////////////////////////////////////////////////////////////////
 

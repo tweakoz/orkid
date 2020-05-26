@@ -212,7 +212,7 @@ void BulletSystem::InitWorld() {
 
 bool BulletSystem::DoLink(Simulation* psi) {
 
-  _dbgdrawlayername = AddPooledLiteral("Default");
+  _dbgdrawlayername = "Default";
 
   _debugDrawable = new ork::lev2::CallbackDrawable(nullptr);
   _debugDrawable->SetSortKey(0x7fffffff);

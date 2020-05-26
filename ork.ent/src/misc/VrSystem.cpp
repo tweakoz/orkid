@@ -43,7 +43,7 @@ void VrSystemData::describeX(class_t* c) {
 
 VrSystemData::VrSystemData()
     : _vrTrackedObject(AddPooledString("vrtrackedobject"))
-    , _vrCamera(AddPooledString("vrcamera"))
+    , _vrCamera("vrcamera")
     , _useCamView(false) {
 }
 
@@ -107,7 +107,7 @@ bool VrSystem::DoLink(Simulation* psim) {
   auto& vrdev       = lev2::orkidvr::device();
   vrdev._calibstate = 0;
   _trackedObject    = psim->FindEntity(AddPooledString(_vrSystemData.vrTrackedObject()));
-  _vrCamDat         = psim->cameraData(AddPooledString(_vrSystemData.vrCamera()));
+  _vrCamDat         = psim->cameraData(_vrSystemData.vrCamera());
   bool good2go      = (_vrCamDat != nullptr);
   _vrstate          = int(good2go);
   if (good2go) {

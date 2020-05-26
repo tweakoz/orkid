@@ -34,11 +34,11 @@ CompositingPassData CompositingPassData::FromRCFD(const RenderContextFrameData& 
 ///////////////////////////////////////////////////////////////////////////////
 
 void CompositingPassData::defaultSetup(CompositorDrawData& drawdata) {
-  this->AddLayer("All"_pool);
+  this->AddLayer("All");
   this->mbDrawSource = true;
   this->mpFrameTek   = nullptr;
-  this->mpCameraName = nullptr;
-  this->mpLayerName  = nullptr;
+  this->_cameraName  = "";
+  this->_layerName   = "";
   this->_clearColor  = fvec4(0, 0, 0, 0);
   int w              = drawdata._properties["OutputWidth"_crcu].Get<int>();
   int h              = drawdata._properties["OutputHeight"_crcu].Get<int>();
@@ -89,23 +89,21 @@ const fvec3& CompositingPassData::monoCamZnormal() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::vector<PoolString> CompositingPassData::getLayerNames() const {
-  std::vector<PoolString> LayerNames;
-  if (mpLayerName) {
-    const char* layername = mpLayerName->c_str();
-    if (layername) {
-      char temp_buf[256];
-      strncpy(&temp_buf[0], layername, sizeof(temp_buf));
-      char* tok = strtok(&temp_buf[0], ",");
-      while (tok != 0) {
-        LayerNames.push_back(AddPooledString(tok));
-        tok = strtok(0, ",");
-      }
+std::vector<std::string> CompositingPassData::getLayerNames() const {
+  std::vector<std::string> out_layernames;
+  if (_layerName.length()) {
+    const char* layer_cstr = _layerName.c_str();
+    char temp_buf[256];
+    strncpy(&temp_buf[0], layer_cstr, sizeof(temp_buf));
+    char* tok = strtok(&temp_buf[0], ",");
+    while (tok != 0) {
+      out_layernames.push_back(tok);
+      tok = strtok(0, ",");
     }
   } else {
-    LayerNames.push_back(AddPooledLiteral("All"));
+    out_layernames.push_back("All");
   }
-  return LayerNames;
+  return out_layernames;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -120,10 +118,10 @@ bool CompositingPassData::isPicking() const {
 void CompositingPassData::ClearLayers() {
   mLayers.clear();
 }
-void CompositingPassData::AddLayer(const PoolString& layername) {
+void CompositingPassData::AddLayer(const std::string& layername) {
   mLayers.insert(layername);
 }
-bool CompositingPassData::HasLayer(const PoolString& layername) const {
+bool CompositingPassData::HasLayer(const std::string& layername) const {
   return (mLayers.find(layername) != mLayers.end());
 }
 
@@ -143,24 +141,24 @@ bool CompositingPassData::HasLayer(const PoolString& layername) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void CompositingPassData::addStandardLayers() {
-  AddLayer("Default"_pool);
-  AddLayer("A"_pool);
-  AddLayer("B"_pool);
-  AddLayer("C"_pool);
-  AddLayer("D"_pool);
-  AddLayer("E"_pool);
-  AddLayer("F"_pool);
-  AddLayer("G"_pool);
-  AddLayer("H"_pool);
-  AddLayer("I"_pool);
-  AddLayer("J"_pool);
-  AddLayer("K"_pool);
-  AddLayer("L"_pool);
-  AddLayer("M"_pool);
-  AddLayer("N"_pool);
-  AddLayer("O"_pool);
-  AddLayer("P"_pool);
-  AddLayer("Q"_pool);
+  AddLayer("Default");
+  AddLayer("A");
+  AddLayer("B");
+  AddLayer("C");
+  AddLayer("D");
+  AddLayer("E");
+  AddLayer("F");
+  AddLayer("G");
+  AddLayer("H");
+  AddLayer("I");
+  AddLayer("J");
+  AddLayer("K");
+  AddLayer("L");
+  AddLayer("M");
+  AddLayer("N");
+  AddLayer("O");
+  AddLayer("P");
+  AddLayer("Q");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

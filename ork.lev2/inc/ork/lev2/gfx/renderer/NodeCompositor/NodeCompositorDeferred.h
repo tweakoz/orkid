@@ -180,7 +180,7 @@ struct DeferredContext {
   RtBuffer* _rtbDepthCluster = nullptr;
   RtBuffer* _rtbLightAccum   = nullptr;
 
-  PoolString _layername;
+  std::string _layername;
   float _specularLevel    = 1.0f;
   float _diffuseLevel     = 1.0f;
   float _depthFogPower    = 1.0f;
