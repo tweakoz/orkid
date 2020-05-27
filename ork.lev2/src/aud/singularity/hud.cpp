@@ -112,7 +112,8 @@ void HudViewport::DoDraw(ui::drawevent_constptr_t drwev) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void drawtext(
-    Context* context, //
+    ui::Surface* surface, //
+    Context* context,     //
     const std::string& str,
     float x,
     float y,
@@ -121,8 +122,8 @@ void drawtext(
     float g,
     float b) {
 
-  int w = context->mainSurfaceWidth();
-  int h = context->mainSurfaceHeight();
+  int w = surface->width();
+  int h = surface->height();
   context->MTXI()->PushUIMatrix(w, h);
 
   auto fontman = FontMan::instance();

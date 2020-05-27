@@ -25,7 +25,7 @@ HudPanel create_oscilloscope() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 ScopeSurf::ScopeSurf() //
-    : ui::Surface("Scope", 0, 0, 128, 128, fvec3(), 1.0) {
+    : ui::Surface("Scope", 0, 0, 128, 128, fvec3(0.2, 0.1, 0.2), 1.0) {
 } // namespace ork::audio::singularity
 ///////////////////////////////////////////////////////////////////////////////
 void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
@@ -68,7 +68,8 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   double frq         = 1.0 / width;
   float triggerlevel = syn->_ostriglev;
 
-  /*drawtext(
+  drawtext(
+      this,
       context, //
       FormatString("-= width: %g msec", width * 1000.0),
       OSC_X1,
@@ -79,6 +80,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       0);
   ycursor += hud_lineheight();
   drawtext(
+      this,
       context, //
       FormatString("   width-frq: %g hz", frq),
       OSC_X1,
@@ -89,6 +91,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       0);
   ycursor += hud_lineheight();
   drawtext(
+      this,
       context, //
       FormatString("[] triglev: %0.4f", triggerlevel),
       OSC_X1,
@@ -99,6 +102,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       0);
   ycursor += hud_lineheight();
   drawtext(
+      this,
       context, //
       FormatString("\\  trigdir: %s", syn->_ostrigdir ? "up" : "down"),
       OSC_X1,
@@ -107,7 +111,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       1,
       1,
       0);
-*/
+
   /////////////////////////////////////////////
   // oscilloscope centerline
   /////////////////////////////////////////////

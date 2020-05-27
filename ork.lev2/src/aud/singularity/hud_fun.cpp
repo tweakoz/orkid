@@ -54,14 +54,14 @@ void DrawFun(lev2::Context* context, const ItemDrawReq& EDR) {
   hs._value = FUNFRAME._value;
   HUDSAMPS.push_back(hs);
 
-  drawtext(context, FUND->_name, R.X1, env_by, fontscale, 1, 0, .5);
+  // drawtext(context, FUND->_name, R.X1, env_by, fontscale, 1, 0, .5);
 
-  drawtext(context, "a", R.X1 + 15, by0, fontscale, 1, 1, 0);
-  drawtext(context, "b", R.X1 + 15, by1, fontscale, 1, 1, 0);
-  drawtext(context, "op", R.X1 + 15, by2, fontscale, 1, 1, 0);
-  drawtext(context, FUND->_a, sx0, by0, fontscale, 1, 1, 1);
-  drawtext(context, FUND->_b, sx0, by1, fontscale, 1, 1, 1);
-  drawtext(context, FUND->_op, sx0, by2, fontscale, 1, 1, 1);
+  // drawtext(context, "a", R.X1 + 15, by0, fontscale, 1, 1, 0);
+  // drawtext(context, "b", R.X1 + 15, by1, fontscale, 1, 1, 0);
+  // drawtext(context, "op", R.X1 + 15, by2, fontscale, 1, 1, 0);
+  // drawtext(context, FUND->_a, sx0, by0, fontscale, 1, 1, 1);
+  // drawtext(context, FUND->_b, sx0, by1, fontscale, 1, 1, 1);
+  // drawtext(context, FUND->_op, sx0, by2, fontscale, 1, 1, 1);
 
   R.PushOrtho(context);
   DrawBorder(context, R.X1, R.Y1, X2, Y2);

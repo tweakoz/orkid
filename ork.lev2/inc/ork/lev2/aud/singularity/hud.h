@@ -35,7 +35,8 @@ lev2::freestyle_mtl_ptr_t hud_material(lev2::Context* context);
 
 typedef ork::svar1024_t svar_t;
 void drawtext(
-    lev2::Context* ctx, //
+    ui::Surface* surface, //
+    lev2::Context* ctx,   //
     const std::string& str,
     float x,
     float y,

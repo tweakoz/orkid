@@ -80,12 +80,12 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   hudlines_t lines;
 
-  const float ANA_X1 = 0;
-  const float ANA_Y1 = 0;
-  const float ANA_W  = miW;
-  const float ANA_H  = miH;
+  const float ANA_X1 = 32;
+  const float ANA_Y1 = 32;
+  const float ANA_W  = miW - 64;
+  const float ANA_H  = miH - 64;
   const float ANA_X2 = miW;
-  const float ANA_Y2 = miH;
+  const float ANA_Y2 = ANA_H;
   const float ANA_HH = ANA_H * 0.5;
   const float ANA_CY = ANA_Y1 + ANA_HH;
 
@@ -150,8 +150,8 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     float f = midi_note_to_frequency(note);
     float x = mapFFTX(f);
     lines.push_back(HudLine{
-        fvec2(x, ANA_Y1), //
-        fvec2(x, ANA_Y2),
+        fvec2(x, mapFFTY(36)), //
+        fvec2(x, mapFFTY(-96)),
         lab2color * 0.5}); // vertical grid
   }
 
@@ -163,6 +163,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     float db0 = i;
     float y   = mapFFTY(db0);
     drawtext(
+        this,
         context, //
         FormatString("%g dB", db0),
         ANA_X1 - 22,
@@ -180,6 +181,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   int ycursor = ANA_Y2 + hud_lineheight();
 
   drawtext(
+      this,
       context, //
       "midinote",
       ANA_X1 - 32,
@@ -192,6 +194,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   ycursor += hud_lineheight();
 
   drawtext(
+      this,
       context, //
       "frequency",
       ANA_X1 - 32,
@@ -209,6 +212,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     ycursor = ANA_Y2 + hud_lineheight();
 
     drawtext(
+        this,
         context, //
         FormatString("%d", note),
         x - 8,
@@ -221,6 +225,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     ycursor += hud_lineheight();
 
     drawtext(
+        this,
         context, //
         FormatString("%d", int(f)),
         x - 8,

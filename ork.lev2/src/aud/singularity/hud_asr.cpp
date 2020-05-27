@@ -47,7 +47,7 @@ void DrawAsr(lev2::Context* context, const ItemDrawReq& EDR) {
   {
     auto& mode = ASRD->_mode;
     auto& trig = ASRD->_trigger;
-    drawtext(context, ASRD->_name, R.X1, env_by, fontscale, 1, 0, .5);
+    // drawtext(context, ASRD->_name, R.X1, env_by, fontscale, 1, 0, .5);
     int icurseg   = ASRFRAME._curseg;
     float deltime = ASRD->_delay;
     float atktime = ASRD->_attack;
@@ -64,20 +64,20 @@ void DrawAsr(lev2::Context* context, const ItemDrawReq& EDR) {
     float gD = (icurseg == 0) ? 0.5 : 1;
     float gA = (icurseg == 1) ? 0.5 : 1;
     float gR = (icurseg == 3) ? 0.5 : 1;
-    drawtext(context, "del", sx0, by0, .45, r, gD, 0);
-    drawtext(context, "atk", sx1, by0, .45, r, gA, 0);
-    drawtext(context, "rel", sx2, by0, .45, r, gR, 0);
+    // drawtext(context, "del", sx0, by0, .45, r, gD, 0);
+    // drawtext(context, "atk", sx1, by0, .45, r, gA, 0);
+    // drawtext(context, "rel", sx2, by0, .45, r, gR, 0);
 
-    drawtext(context, "time", R.X1 + 15, by1, .45, 1, 1, 0);
-    drawtext(context, "mode", R.X1 + 15, by2, .45, 1, 1, 0);
-    drawtext(context, "trig", R.X1 + 15, by3, .45, 1, 1, 0);
+    // drawtext(context, "time", R.X1 + 15, by1, .45, 1, 1, 0);
+    // drawtext(context, "mode", R.X1 + 15, by2, .45, 1, 1, 0);
+    // drawtext(context, "trig", R.X1 + 15, by3, .45, 1, 1, 0);
 
-    drawtext(context, FormatString("%0.2f", deltime), sx0, by1, fontscale, r, gD, 1);
-    drawtext(context, FormatString("%0.2f", atktime), sx1, by1, fontscale, r, gA, 1);
-    drawtext(context, FormatString("%0.2f", reltime), sx2, by1, fontscale, r, gR, 1);
+    // drawtext(context, FormatString("%0.2f", deltime), sx0, by1, fontscale, r, gD, 1);
+    // drawtext(context, FormatString("%0.2f", atktime), sx1, by1, fontscale, r, gA, 1);
+    // drawtext(context, FormatString("%0.2f", reltime), sx2, by1, fontscale, r, gR, 1);
 
-    drawtext(context, mode.c_str(), sx0, by2, fontscale, 1, 1, 1);
-    drawtext(context, trig.c_str(), sx0, by3, fontscale, 1, 1, 1);
+    // drawtext(context, mode.c_str(), sx0, by2, fontscale, 1, 1, 1);
+    // drawtext(context, trig.c_str(), sx0, by3, fontscale, 1, 1, 1);
   }
   /////////////////////////////////////////////////
   // draw envelope segments

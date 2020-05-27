@@ -64,16 +64,16 @@ void DrawLfo(lev2::Context* context, const ItemDrawReq& EDR) {
 
   ///////////////////////
 
-  drawtext(context, LFOD->_name, R.X1, env_by, fontscale, 1, 0, .5);
+  // drawtext(context, LFOD->_name, R.X1, env_by, fontscale, 1, 0, .5);
 
-  drawtext(context, "shape", R.X1 + 15, by0, fontscale, 1, 1, 0);
-  drawtext(context, "rate", R.X1 + 15, by1, fontscale, 1, 1, 0);
-  drawtext(context, "phase", R.X1 + 15, by2, fontscale, 1, 1, 0);
-  drawtext(context, "ctrl", R.X1 + 15, by3, fontscale, 1, 1, 0);
-  drawtext(context, LFOD->_shape, sx0, by0, fontscale, 1, 1, 1);
-  drawtext(context, FormatString("%0.2f", LFOFRAME._currate), sx0, by1, fontscale, 1, 1, 1);
-  drawtext(context, FormatString("%d", int(LFOD->_initialPhase * 90.0f)), sx0, by2, fontscale, 1, 1, 1);
-  drawtext(context, ctrl, sx0, by3, fontscale, 1, 1, 1);
+  // drawtext(context, "shape", R.X1 + 15, by0, fontscale, 1, 1, 0);
+  // drawtext(context, "rate", R.X1 + 15, by1, fontscale, 1, 1, 0);
+  // drawtext(context, "phase", R.X1 + 15, by2, fontscale, 1, 1, 0);
+  // drawtext(context, "ctrl", R.X1 + 15, by3, fontscale, 1, 1, 0);
+  // drawtext(context, LFOD->_shape, sx0, by0, fontscale, 1, 1, 1);
+  // drawtext(context, FormatString("%0.2f", LFOFRAME._currate), sx0, by1, fontscale, 1, 1, 1);
+  // drawtext(context, FormatString("%d", int(LFOD->_initialPhase * 90.0f)), sx0, by2, fontscale, 1, 1, 1);
+  // drawtext(context, ctrl, sx0, by3, fontscale, 1, 1, 1);
 
   ///////////////////////
 

@@ -62,7 +62,7 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
     int nseg        = NES.size();
     int icurseg     = ENVFRAME._curseg;
 
-    drawtext(context, "NATENV", env_bx, env_by, fontscale, 1, 0, 0);
+    // drawtext(context, "NATENV", env_bx, env_by, fontscale, 1, 0, 0);
 
     for (int i = 0; i < nseg; i++) {
       bool iscurseg = (i == icurseg);
@@ -70,9 +70,9 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
       float g       = iscurseg ? 0.5 : 1;
 
       auto hudstr = FormatString("seg%d", i);
-      drawtext(context, hudstr, env_bx + spcperseg * i, env_by + 20, fontscale, r, g, 0);
+      // drawtext(context, hudstr, env_bx + spcperseg * i, env_by + 20, fontscale, r, g, 0);
     }
-    drawtext(context, "dB/s\ntim", R.X1 + 15, env_by + 40, .45, 1, 1, 0);
+    // drawtext(context, "dB/s\ntim", R.X1 + 15, env_by + 40, .45, 1, 1, 0);
     for (int i = 0; i < nseg; i++) {
       const auto& seg = NES[i];
 
@@ -81,7 +81,7 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
       float r       = 1;
       float g       = iscurseg ? 0 : 1;
       float b       = iscurseg ? 0 : 1;
-      drawtext(context, hudstr, env_bx + spcperseg * i, env_by + 40, fontscale, r, g, 1);
+      // drawtext(context, hudstr, env_bx + spcperseg * i, env_by + 40, fontscale, r, g, 1);
     }
   } else if (ENVD) {
 
@@ -99,7 +99,7 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
     }
     range = maxval - minval;
 
-    drawtext(context, ENVD->_name, R.X1, env_by, fontscale, 1, 0, .5);
+    // drawtext(context, ENVD->_name, R.X1, env_by, fontscale, 1, 0, .5);
     int icurseg = ENVFRAME._curseg;
     for (int i = 0; i < 7; i++) {
       std::string segname;
@@ -115,16 +115,16 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
       float r       = 1;
       float g       = iscurseg ? 0.5 : 1;
 
-      drawtext(context, hudstr, env_bx + spcperseg * i, env_by + 20, fontscale, r, g, 0);
+      // drawtext(context, hudstr, env_bx + spcperseg * i, env_by + 20, fontscale, r, g, 0);
     }
-    drawtext(context, "lev\ntim", R.X1 + 15, env_by + 40, .45, 1, 1, 0);
+    // drawtext(context, "lev\ntim", R.X1 + 15, env_by + 40, .45, 1, 1, 0);
     for (int i = 0; i < 7; i++) {
       auto hudstr   = FormatString("%0.2f\n%0.3f", AE[i]._level, AE[i]._time);
       bool iscurseg = (i == icurseg);
       float r       = 1;
       float g       = iscurseg ? 0 : 1;
       float b       = iscurseg ? 0 : 1;
-      drawtext(context, hudstr, env_bx + spcperseg * i, env_by + 40, fontscale, r, g, 1);
+      // drawtext(context, hudstr, env_bx + spcperseg * i, env_by + 40, fontscale, r, g, 1);
     }
   }
 
