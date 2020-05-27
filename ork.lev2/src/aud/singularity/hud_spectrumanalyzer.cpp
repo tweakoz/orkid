@@ -14,12 +14,13 @@ struct SpectraSurf final : public ui::Surface {
   ork::lev2::CTXBASE* _ctxbase = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
-ui::panel_ptr_t create_spectrumanalyzer() {
-  auto panel   = std::make_shared<ui::Panel>("spectra", 0, 256, 256, 256);
-  auto spectra = std::make_shared<SpectraSurf>();
-  panel->setChild(spectra);
-  panel->snap();
-  return panel;
+HudPanel create_spectrumanalyzer() {
+  HudPanel rval;
+  rval._panel   = std::make_shared<ui::Panel>("spectra", 0, 256, 256, 256);
+  rval._surface = std::make_shared<SpectraSurf>();
+  rval._panel->setChild(rval._surface);
+  rval._panel->snap();
+  return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
 static const int inumframes           = koscopelength;

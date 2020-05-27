@@ -15,12 +15,13 @@ struct ScopeSurf final : public ui::Surface {
   ork::lev2::CTXBASE* _ctxbase = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
-ui::panel_ptr_t create_oscilloscope() {
-  auto panel = std::make_shared<ui::Panel>("scope", 0, 0, 256, 256);
-  auto scope = std::make_shared<ScopeSurf>();
-  panel->setChild(scope);
-  panel->snap();
-  return panel;
+HudPanel create_oscilloscope() {
+  HudPanel rval;
+  rval._panel   = std::make_shared<ui::Panel>("scope", 0, 0, 256, 256);
+  rval._surface = std::make_shared<ScopeSurf>();
+  rval._panel->setChild(rval._surface);
+  rval._panel->snap();
+  return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
 ScopeSurf::ScopeSurf() //

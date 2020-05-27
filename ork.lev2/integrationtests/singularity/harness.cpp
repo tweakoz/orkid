@@ -174,6 +174,7 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
         }
         break;
       default:
+        return the_synth->_hudvp->HandleUiEvent(ev);
         break;
     }
     ui::HandlerResult rval;

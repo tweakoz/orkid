@@ -48,15 +48,11 @@ Widget::Widget(const std::string& name, int x, int y, int w, int h)
     , mDirty(true)
     , mSizeDirty(true)
     , mPosDirty(true) {
+  pushEventFilter<ui::NopEventFilter>();
 }
 Widget::~Widget() {
   if (gFastPath == this)
     gFastPath = nullptr;
-}
-
-void Widget::installApple3ButtonMouseEmulator() {
-  auto f1 = new Apple3ButtonMouseEmulationFilter(*this);
-  mEventFilterStack.push(f1);
 }
 
 void Widget::Init(lev2::Context* pT) {
@@ -99,8 +95,8 @@ bool Widget::HasMouseFocus() const {
 HandlerResult Widget::OnUiEvent(event_constptr_t Ev) {
   Ev->mFilteredEvent.Reset();
 
-  if (mEventFilterStack.size()) {
-    auto top = mEventFilterStack.top();
+  if (_eventfilterstack.size()) {
+    auto top = _eventfilterstack.top();
     top->Filter(Ev);
     if (Ev->mFilteredEvent.miEventCode == 0)
       return HandlerResult();
@@ -185,6 +181,9 @@ void IWidgetEventFilter::Filter(event_constptr_t Ev) {
 
   DoFilter(Ev);
 }
+void NopEventFilter::DoFilter(event_constptr_t Ev) {
+}
+
 void Apple3ButtonMouseEmulationFilter::DoFilter(event_constptr_t Ev) {
   auto& fev = Ev->mFilteredEvent;
 

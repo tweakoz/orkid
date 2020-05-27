@@ -135,7 +135,7 @@ void Panel::DoLayout() {
 /////////////////////////////////////////////////////////////////////////
 
 HandlerResult Panel::DoRouteUiEvent(event_constptr_t Ev) {
-  // printf( "Panel::DoRouteUiEvent mPanelUiState<%d>\n", mPanelUiState );
+  printf("Panel::DoRouteUiEvent mPanelUiState<%d>\n", mPanelUiState);
 
   if (_child && _child->IsEventInside(Ev) && mPanelUiState == 0) {
     HandlerResult res = _child->RouteUiEvent(Ev);
@@ -192,7 +192,7 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
 
   int evx = Ev->miX;
   int evy = Ev->miY;
-  // printf( "Panel<%p>::OnUiEvent isshift<%d>\n", this, int(isshift) );
+  // printf("Panel<%p>::OnUiEvent isshift<%d>\n", this, int(isshift));
   //////////////////////////////
   int ilocx = 0;
   int ilocy = 0;

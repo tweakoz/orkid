@@ -92,15 +92,23 @@ struct Op4DrawReq {
   Rect rect;
 };
 
-ui::panel_ptr_t create_oscilloscope();
-ui::panel_ptr_t create_spectrumanalyzer();
+///////////////////////////////////////////////////////////////////////////////
+struct HudPanel {
+  ui::panel_ptr_t _panel;
+  ui::surface_ptr_t _surface;
+};
+
+HudPanel create_oscilloscope();
+HudPanel create_spectrumanalyzer();
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct HudViewport final : public ui::Viewport {
   HudViewport();
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   void onUpdateThreadTick(ui::updatedata_ptr_t updata);
-  ui::panel_ptr_t _oscope;
-  ui::panel_ptr_t _spectra;
+  HudPanel _oscope;
+  HudPanel _spectra;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

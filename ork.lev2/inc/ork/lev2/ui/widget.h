@@ -31,9 +31,15 @@ struct IWidgetEventFilter {
   Timer mDoubleTimer;
   Timer mMoveTimer;
 };
-
+using eventfilter_ptr_t = std::shared_ptr<IWidgetEventFilter>;
 struct Apple3ButtonMouseEmulationFilter : public IWidgetEventFilter {
   Apple3ButtonMouseEmulationFilter(Widget& w)
+      : IWidgetEventFilter(w) {
+  }
+  void DoFilter(event_constptr_t Ev);
+};
+struct NopEventFilter : public IWidgetEventFilter {
+  NopEventFilter(Widget& w)
       : IWidgetEventFilter(w) {
   }
   void DoFilter(event_constptr_t Ev);
@@ -55,7 +61,14 @@ public:
 
   void Init(lev2::Context* pTARG);
 
-  void installApple3ButtonMouseEmulator();
+  template <typename T> std::shared_ptr<T> pushEventFilter() {
+    auto filter = std::make_shared<T>(*this);
+    _eventfilterstack.push(filter);
+    return filter;
+  }
+  void popEventFilter() {
+    _eventfilterstack.pop();
+  }
 
   const std::string& GetName(void) const {
     return msName;
@@ -179,7 +192,7 @@ protected:
   bool mSizeDirty;
   bool mPosDirty;
   Group* mParent;
-  std::stack<IWidgetEventFilter*> mEventFilterStack;
+  std::stack<eventfilter_ptr_t> _eventfilterstack;
 
   static void UpdateMouseFocus(const HandlerResult& e, event_constptr_t Ev);
 

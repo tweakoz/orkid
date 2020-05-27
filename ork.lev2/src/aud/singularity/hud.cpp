@@ -49,11 +49,11 @@ HudViewport::HudViewport() //
   _oscope  = create_oscilloscope();
   _spectra = create_spectrumanalyzer();
 
-  addChild(_oscope);
-  addChild(_spectra);
+  addChild(_oscope._panel);
+  addChild(_spectra._panel);
 
-  _oscope->SetRect(0, 0, 256, 256);
-  _spectra->SetRect(0, 256, 256, 256);
+  _oscope._panel->SetRect(0, 0, 256, 256);
+  _spectra._panel->SetRect(0, 256, 256, 256);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void HudViewport::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
@@ -99,8 +99,8 @@ void HudViewport::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
       syn->_curhud_aframe = AFIN;
       AFIN._items.clear();
 
-      //_oscope->SetDirty();
-      //_spectra->SetDirty();
+      _oscope._surface->SetDirty();
+      _spectra._surface->SetDirty();
     }
   }
 }
