@@ -80,40 +80,36 @@ void AsrInst::initSeg(int iseg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AsrInst::compute(int inumfr) // final
+void AsrInst::compute() // final
 {
-  auto L = [this]() {
-    if (nullptr == _data)
-      _curval = 0.5f;
+  if (nullptr == _data)
+    _curval = 0.5f;
 
-    const auto& edata = *_data;
-    _framesrem--;
-    if (_framesrem <= 0) {
-      switch (_mode) {
-        case 0: // normal
-          if (_curseg < 3)
-            initSeg(_curseg + 1);
-          break;
-        case 1: // hold
-          if (_curseg == 0)
-            initSeg(1);
-          break;
-        case 2: // repeat
-          if (_curseg < 3)
-            initSeg(_curseg + 1);
-          else
-            initSeg(0);
-          break;
-      }
+  const auto& edata = *_data;
+  _framesrem--;
+  if (_framesrem <= 0) {
+    switch (_mode) {
+      case 0: // normal
+        if (_curseg < 3)
+          initSeg(_curseg + 1);
+        break;
+      case 1: // hold
+        if (_curseg == 0)
+          initSeg(1);
+        break;
+      case 2: // repeat
+        if (_curseg < 3)
+          initSeg(_curseg + 1);
+        else
+          initSeg(0);
+        break;
     }
+  }
 
-    _curval += _curslope_persamp;
-    _curval = clip_float(_curval, 0.0f, 1.0f);
-    // printf( "compute ASR<%s> seg<%d> fr<%d> _mode<%d> _curval<%f>\n", _data->_name.c_str(), _curseg, _framesrem, _mode, _curval
-    // );
-  };
-  for (int i = 0; i < inumfr; i++)
-    L();
+  _curval += _curslope_persamp;
+  _curval = clip_float(_curval, 0.0f, 1.0f);
+  // printf( "compute ASR<%s> seg<%d> fr<%d> _mode<%d> _curval<%f>\n", _data->_name.c_str(), _curseg, _framesrem, _mode, _curval
+  // );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

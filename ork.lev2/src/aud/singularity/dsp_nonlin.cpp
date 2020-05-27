@@ -17,15 +17,15 @@ SHAPER::SHAPER(dspblkdata_constptr_t dbd)
 void SHAPER::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
+  int inumframes = _layer->_dspwritecount;
 
   float amt = _param[0].eval(); //,0.01f,100.0f);
   _fval[0]  = amt;
 
   // float la = decibel_to_linear_amp_ratio(amt);
   if (1) {
-    auto inputchan  = getInpBuf(dspbuf, 0);
-    auto outputchan = getOutBuf(dspbuf, 0);
+    auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
       float s1      = shaper(inputchan[i] * pad, amt);
       outputchan[i] = s1;
@@ -42,12 +42,12 @@ SHAPE2::SHAPE2(dspblkdata_constptr_t dbd)
 void SHAPE2::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
+  int inumframes = _layer->_dspwritecount;
   float amt      = _param[0].eval();
   _fval[0]       = amt;
   if (1) {
-    auto inputchan  = getInpBuf(dspbuf, 0);
-    auto outputchan = getOutBuf(dspbuf, 0);
+    auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
       float s1      = shaper(inputchan[i] * pad, amt);
       float s2      = shaper(s1, amt * 0.75);
@@ -76,7 +76,7 @@ void TWOPARAM_SHAPER::doKeyOn(const DspKeyOnInfo& koi) {
 void TWOPARAM_SHAPER::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
+  int inumframes = _layer->_dspwritecount;
   float evn      = _param[0].eval();
   float odd      = _param[1].eval();
 
@@ -88,8 +88,8 @@ void TWOPARAM_SHAPER::compute(DspBuffer& dspbuf) // final
   _fval[1] = odd;
   // printf( "_dbd->_inputPad<%f>\n", _dbd->_inputPad );
   if (1) {
-    auto inputchan  = getInpBuf(dspbuf, 0);
-    auto outputchan = getOutBuf(dspbuf, 0);
+    auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
       float u   = inputchan[i] * pad;
       float usq = u * u;
@@ -120,12 +120,12 @@ WRAP::WRAP(dspblkdata_constptr_t dbd)
 
 void WRAP::compute(DspBuffer& dspbuf) // final
 {
-  int inumframes = _numFrames;
+  int inumframes = _layer->_dspwritecount;
   float rpoint   = _param[0].eval(); //,-100,100.0f);
   _fval[0]       = rpoint;
   if (1) {
-    auto inputchan  = getInpBuf(dspbuf, 0);
-    auto outputchan = getOutBuf(dspbuf, 0);
+    auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
       outputchan[i] = wrap(inputchan[i], rpoint);
     }
@@ -141,14 +141,14 @@ DIST::DIST(dspblkdata_constptr_t dbd)
 void DIST::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
+  int inumframes = _layer->_dspwritecount;
   float adj      = _param[0].eval();
   _fval[0]       = adj;
   float ratio    = decibel_to_linear_amp_ratio(adj + 30.0) * pad;
 
   if (1) {
-    auto inputchan  = getInpBuf(dspbuf, 0);
-    auto outputchan = getOutBuf(dspbuf, 0);
+    auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
       float v       = inputchan[i] * ratio;
       v             = softsat(v, 1);

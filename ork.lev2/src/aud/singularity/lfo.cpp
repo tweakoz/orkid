@@ -139,12 +139,13 @@ void LfoInst::keyOff() // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void LfoInst::compute(int inumfr) // final
+void LfoInst::compute() // final
 {
   if (nullptr == _data) {
     _curval = 0.0f;
   } else {
-    float dt = float(inumfr) / synth::instance()->_sampleRate;
+    float SR = getSampleRate();
+    float dt = float(_layer->_dspwritecount) / SR;
 
     _currate = lerp(_data->_minRate, _data->_maxRate, _rateLerp);
 

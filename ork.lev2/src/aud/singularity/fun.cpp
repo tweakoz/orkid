@@ -26,7 +26,7 @@ FunInst::FunInst(const FunData* data, Layer* l)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FunInst::compute(int inumfr) // final
+void FunInst::compute() // final
 {
   _curval = _op();
 }

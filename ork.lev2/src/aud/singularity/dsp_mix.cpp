@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2020, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/lev2/aud/singularity/synth.h>
 #include <assert.h>
 #include <ork/lev2/aud/singularity/filters.h>
@@ -18,11 +25,11 @@ SUM2::SUM2(dspblkdata_constptr_t dbd)
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SUM2::compute(DspBuffer& dspbuf) { // final
-  int inumframes       = _numFrames;
-  const float* inpbufa = getInpBuf(dspbuf, 0);
-  const float* inpbufb = getInpBuf(dspbuf, 1);
-  float* outbufa       = getOutBuf(dspbuf, 0);
-  float* outbufb       = getOutBuf(dspbuf, 1);
+  int inumframes       = _layer->_dspwritecount;
+  const float* inpbufa = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+  const float* inpbufb = getInpBuf(dspbuf, 1) + _layer->_dspwritebase;
+  float* outbufa       = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float* outbufb       = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
   for (int i = 0; i < inumframes; i++) {
     float inA  = inpbufa[i] * _dbd->_inputPad;
     float inB  = inpbufb[i] * _dbd->_inputPad;

@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2020, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include "modulation.h"
@@ -24,8 +31,7 @@ struct DspBuffer {
   int _numframes;
 
 private:
-  static const int kmaxchans = 4;
-  float* _channels[kmaxchans];
+  std::vector<float> _channels[kmaxdspblocksperstage];
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -129,9 +135,6 @@ struct DspBlock {
   virtual ~DspBlock() {
   }
 
-  void resize(int inumframes);
-  size_t numFrames() const;
-
   void keyOn(const DspKeyOnInfo& koi);
   void keyOff(Layer* l);
 
@@ -159,7 +162,6 @@ struct DspBlock {
   int numOutputs() const;
   int numInputs() const;
   Layer* _layer      = nullptr;
-  size_t _numFrames  = 0;
   int _verticalIndex = -1;
 
   varmap::VarMap _vars;
@@ -215,8 +217,6 @@ struct Alg final {
   void compute(outputBuffer& obuf);
 
   virtual void doKeyOn(DspKeyOnInfo& koi);
-  void intoDspBuf(const outputBuffer& obuf);
-  void intoOutBuf(outputBuffer& obuf, int inumo);
   dspblk_ptr_t lastBlock() const;
 
   dspstage_ptr_t _stages[kmaxdspstagesperlayer];

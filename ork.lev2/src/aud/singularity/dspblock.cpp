@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2020, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/lev2/aud/singularity/synth.h>
 #include <assert.h>
 #include <ork/lev2/aud/singularity/filters.h>
@@ -43,18 +50,14 @@ DspParamData& DspBlockData::getParam(int index) {
 DspBuffer::DspBuffer()
     : _maxframes(0)
     , _numframes(0) {
-  for (int i = 0; i < kmaxchans; i++)
-    _channels[i] = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void DspBuffer::resize(int inumframes) {
   if (inumframes > _maxframes) {
-    for (int i = 0; i < kmaxchans; i++) {
-      if (_channels[i])
-        delete[] _channels[i];
-      _channels[i] = new float[inumframes];
+    for (int i = 0; i < kmaxdspblocksperstage; i++) {
+      _channels[i].resize(inumframes);
     }
     _maxframes = inumframes;
   }
@@ -62,7 +65,8 @@ void DspBuffer::resize(int inumframes) {
 }
 
 float* DspBuffer::channel(int ich) {
-  return _channels[ich % kmaxchans];
+  ich = ich % kmaxdspblocksperstage;
+  return _channels[ich].data();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -82,19 +86,7 @@ dspblkdata_ptr_t DspStageData::appendBlock() {
 
 DspBlock::DspBlock(dspblkdata_constptr_t dbd)
     : _dbd(dbd)
-    , _numParams(dbd->_numParams)
-    , _numFrames(0) {
-}
-
-size_t DspBlock::numFrames() const {
-  return _numFrames;
-}
-
-void DspBlock::resize(int inumframes) {
-  _numFrames = inumframes;
-  if (auto try_hsync = _vars.typedValueForKey<oschardsynctrack_ptr_t>("HSYNC")) {
-    try_hsync.value()->resize(inumframes);
-  }
+    , _numParams(dbd->_numParams) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -319,10 +311,6 @@ dspblk_ptr_t createDspBlock(dspblkdata_constptr_t dbd) {
     rval = std::make_shared<WRAP>(dbd);
   if (dbd->_dspBlock == "DIST")
     rval = std::make_shared<DIST>(dbd);
-
-  if (rval) {
-    rval->resize(synth::instance()->_numFrames);
-  }
 
   return rval;
 }

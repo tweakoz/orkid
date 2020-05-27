@@ -1,4 +1,10 @@
-//#include <audiofile.h>
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2020, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <string>
 #include <assert.h>
 #include <unistd.h>
@@ -45,6 +51,8 @@ synth::synth()
   }
 
   _hudvp = std::make_shared<HudViewport>();
+
+  resize(frames_per_dsppass);
 }
 
 void synth::setSampleRate(float sr) {
@@ -196,67 +204,74 @@ void synth::compute(int inumframes, const void* inputBuffer) {
 
   auto input = (const float*)inputBuffer;
 
-  auto ilb = _ibuf._leftBuffer;
-  auto lb  = _obuf._leftBuffer;
-  auto rb  = _obuf._rightBuffer;
+  auto input_left   = _ibuf._leftBuffer;
+  auto master_left  = _obuf._leftBuffer;
+  auto master_right = _obuf._rightBuffer;
+
+  /////////////////////////////
+  // route to synth input
+  /////////////////////////////
 
   if (input)
     for (int i = 0; i < inumframes; i++) {
-      ilb[i] = input[i];
+      input_left[i] = input[i];
     }
 
+  /////////////////////////////
+  // clear synth output mix buffer
+  /////////////////////////////
+
   for (int i = 0; i < inumframes; i++) {
-    lb[i] = 0.0f;
-    rb[i] = 0.0f;
+    master_left[i]  = 0.0f;
+    master_right[i] = 0.0f;
   }
 
   /////////////////////////////
-  // compute prgs/layers
+  // synth update tick
   /////////////////////////////
 
   float tick = float(inumframes) * _dt;
-
   _lnoteframe++;
   _lnotetime += tick;
-
   this->tick(tick);
 
-  // printf("synth::Compute inumframes<%d> tick<%f>\n", inumframes, tick);
-
-  // for( auto pi : _activeProgInst )
-  //	pi->compute();
+  /////////////////////////////
+  // compute/accumulate layer instances
+  /////////////////////////////
 
   int inumv = 0;
   for (auto l : _activeVoices) {
-    l->compute(_obuf);
+    l->compute(_obuf, inumframes);
     inumv++;
   }
 
-  if (0) //_testtone )
-  {
+  /////////////////////////////
+  // test tone ?
+  /////////////////////////////
+
+  if (0) {
     for (int i = 0; i < inumframes; i++) {
-      float samp = sinf(_testtoneph) * _testtoneamp * .6;
-      samp += sinf(_testtoneph * 2) * _testtoneamp * .3;
-      samp += sinf(_testtoneph * 4) * _testtoneamp * .1;
-      lb[i] += samp;
-      rb[i] += samp;
-
-      _testtoneph += _testtonepi;
-
-      _testtoneamp *= _testtoneampps;
+      double phase = 60.0 * pi2 * double(_testtoneph) / getSampleRate();
+      float samp   = sinf(phase) * .6;
+      // printf("i<%d> samp<%g>\n", i, samp);
+      master_left[i]  = samp;
+      master_right[i] = samp;
+      _testtoneph++;
     }
   }
 
-  deactivateVoices();
-
   /////////////////////////////
-  // mixdown
+  // final clamping
   /////////////////////////////
 
   for (int i = 0; i < inumframes; i++) {
-    lb[i] = clip_float(lb[i] * 0.1f, -1, 1);
-    rb[i] = clip_float(rb[i] * 0.1f, -1, 1);
+    master_left[i]  = clip_float(master_left[i], -1, 1);
+    master_right[i] = clip_float(master_right[i], -1, 1);
   }
+
+  /////////////////////////////
+
+  deactivateVoices();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2020, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <stdio.h>
 #include <ork/orktypes.h>
 #include <ork/math/audiomath.h>
@@ -67,8 +74,24 @@ float step(float u, float steps) {
 
 void CZX::compute(DspBuffer& dspbuf) // final
 {
-  int inumframes    = _numFrames;
-  float* outsamples = dspbuf.channel(_dspchannel);
+  float SR  = getSampleRate();
+  float ISR = getInverseSampleRate();
+
+  ////////////////////////////////////////////////
+  // test tone ?
+  ////////////////////////////////////////////////
+  if (0) {
+    int inumframes             = _layer->_dspwritecount;
+    float* outsamples          = dspbuf.channel(_dspchannel) + _layer->_dspwritebase;
+    static int64_t _testtoneph = 0;
+    for (int i = 0; i < inumframes; i++) {
+      double phase  = 60.0 * pi2 * double(_testtoneph) * ISR;
+      float samp    = sinf(phase) * .6;
+      outsamples[i] = samp;
+      _testtoneph++;
+    }
+    return;
+  }
   //////////////////////////////////////////
   constexpr double kscale    = double(1 << 24);
   constexpr double kinvscale = 1.0 / kscale;
@@ -83,12 +106,13 @@ void CZX::compute(DspBuffer& dspbuf) // final
   _fval[0]       = centoff;
   double cin     = (lyrcents + centoff) * 0.01;
   double frq     = midi_note_to_frequency(cin) * _oscdata->_octaveScale;
-  double per     = 48000.0 / frq;
+  double per     = SR / frq;
 
   /////////////////////////
   // printf("centoff<%g>\n", centoff);
   /////////////////////////
-
+  int inumframes    = _layer->_dspwritecount;
+  float* outsamples = dspbuf.channel(_dspchannel) + _layer->_dspwritebase;
   for (int i = 0; i < inumframes; i++) {
     //////////////////////////////////////////////
     // interpolate modindex
@@ -108,7 +132,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
     if (_noisemod) {
       _noisemodcounter -= (1 << 24);
       if (_noisemodcounter <= 0) {
-        _noisemodcounter += int64_t(kscale * 48000.0 / 5500.0);
+        _noisemodcounter += int64_t(kscale * SR / 5500.0);
         _noisevalue = (rand() & 0xffff);
       }
       double dnoise = double(_noisevalue) / 65536.0;
@@ -132,7 +156,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
     double double_linphase           = double(dpos) * kinvdoublescale;
     double double_neglinphase        = 1.0 - double_linphase;
     ////////////////////////////////////////////
-    int64_t phaseinc  = int64_t(kscale * moddedfrq / 48000.0);
+    int64_t phaseinc  = int64_t(kscale * moddedfrq / SR);
     int64_t nextphase = _phase + phaseinc;
     ////////////////////////////////////////////
     // output nullwave
@@ -221,7 +245,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
     ////////////////////////////////////////////
     {
       double frqscale  = (1.0f + _modIndex * 15.0f);
-      double resoinc   = kscale * frq * frqscale / 48000.0;
+      double resoinc   = kscale * frq * frqscale * ISR;
       int64_t pos      = (_resophase)&0xffffff;
       double _linphase = double(pos) * kinvscale;
       double resowave  = cosf(_linphase * PI2);
@@ -268,8 +292,10 @@ void CZX::compute(DspBuffer& dspbuf) // final
     float waveclamped = std::clamp(waveraw, -1.0f, 1.0f);
     float waveout     = (1.0f - waveclamped) * window;
     outsamples[i]     = (1.0f - waveout);
+    // printf("i<%d> v<%g>\n", i, linphase);
     // outsamples[i] = double_linphase;
   }
+  ////////////////////////////////////////////////
 } // namespace ork::audio::singularity
 
 ///////////////////////////////////////////////////////////////////////////////

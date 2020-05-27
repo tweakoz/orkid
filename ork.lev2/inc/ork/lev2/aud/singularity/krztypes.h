@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2020, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -105,8 +112,8 @@ using hudframectrl_ptr_t          = std::shared_ptr<HudFrameControl>;
 using hudvp_ptr_t                 = std::shared_ptr<HudViewport>;
 ///////////////////////////////////////////////////////////////////////////////
 static const int kmaxenvperlayer       = 8;
-static const int kmaxdspblocksperstage = 4;
-static const int kmaxdspstagesperlayer = 8;
+static const int kmaxdspblocksperstage = 4; // vertical dimension of layer's dsp grid
+static const int kmaxdspstagesperlayer = 8; // horizontal dimension of layer's dsp grid
 static const int kmaxctrlperblock      = 16;
 static const int kmaxparmperblock      = 16;
 ///////////////////////////////////////////////////////////////////////////////
@@ -114,8 +121,14 @@ static const double pi    = 3.141592654;
 static const double pi2   = 3.141592654 * 2.0;
 static const double pid2  = 3.141592654 * 0.5;
 static const double sqrt2 = sqrt(2.0);
+///////////////////////////////////////////////////////////////////////////////
+static const int frames_per_dsppass     = 256;
+static const int frames_per_controlpass = 64;
 inline float getSampleRate() {
   return 48000.0f;
+}
+inline float getInverseSampleRate() {
+  return 1.0f / 48000.0f;
 }
 ///////////////////////////////////////////////////////////////////////////////
 typedef std::function<float()> controller_t;

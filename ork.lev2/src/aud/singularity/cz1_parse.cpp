@@ -326,13 +326,14 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
                                 ? 7
                                 : srcdcoenv._sustPoint - 1;
     for (int i = 0; i < 8; i++) {
-      bool end   = false; // i >= srcdcoenv._endStep;
-      auto point = end ?  //
+      bool end   = i > srcdcoenv._endStep;
+      auto point = end ? //
                        EnvPoint{0, 0}
                        : EnvPoint{//
                                   srcdcoenv._time[i],
                                   srcdcoenv._level[i]};
       DCOENV->_segments.push_back(point);
+      DCOENV->_endPoint = srcdcoenv._endStep;
     }
     /////////////////////////////////////////////////
     auto DCWENV           = layerdata->appendController<RateLevelEnvData>("DCWENV");
@@ -342,13 +343,14 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
                                 ? 7
                                 : srcdcwenv._sustPoint - 1;
     for (int i = 0; i < 8; i++) {
-      bool end   = false; // i >= srcdcwenv._endStep;
-      auto point = end ?  //
+      bool end   = i > srcdcwenv._endStep;
+      auto point = end ? //
                        EnvPoint{0, 0}
                        : EnvPoint{//
                                   srcdcwenv._time[i],
                                   srcdcwenv._level[i] / 100.0f};
       DCWENV->_segments.push_back(point);
+      DCWENV->_endPoint = srcdcwenv._endStep;
     }
     DCWENV->_envadjust = [=](const EnvPoint& inp, //
                              int iseg,
@@ -370,13 +372,14 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
                                 ? 7
                                 : srcdcaenv._sustPoint - 1;
     for (int i = 0; i < 8; i++) {
-      bool end   = false; // i >= srcdcaenv._endStep;
-      auto point = end ?  //
+      bool end   = i > srcdcaenv._endStep;
+      auto point = end ? //
                        EnvPoint{0, 0}
                        : EnvPoint{//
                                   srcdcaenv._time[i],
                                   srcdcaenv._level[i] / 100.0f};
       DCAENV->_segments.push_back(point);
+      DCAENV->_endPoint = srcdcaenv._endStep;
     }
     DCAENV->_envadjust = [=](const EnvPoint& inp, //
                              int iseg,

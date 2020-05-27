@@ -33,6 +33,7 @@ struct RateLevelEnvData : public ControllerData {
   RlEnvType _envType;
   envadjust_method_t _envadjust;
   int _sustainPoint = 3;
+  int _endPoint     = 6;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -69,7 +70,7 @@ struct asrframe {
 
 struct AsrInst : public ControllerInst {
   AsrInst(const AsrData* data, Layer* l);
-  void compute(int inumfr) final;
+  void compute() final;
   void keyOn(const KeyOnInfo& KOI) final;
   void keyOff() final;
   ////////////////////////////
@@ -90,7 +91,7 @@ struct AsrInst : public ControllerInst {
 
 struct RateLevelEnvInst : public ControllerInst {
   RateLevelEnvInst(const RateLevelEnvData* data, Layer* l);
-  void compute(int inumfr) final;
+  void compute() final;
   void keyOn(const KeyOnInfo& KOI) final;
   void keyOff() final;
   ////////////////////////////
@@ -109,7 +110,6 @@ struct RateLevelEnvInst : public ControllerInst {
   bool _bipolar;
   RlEnvType _envType;
   KeyOnInfo _konoffinfo;
-  float _USERAMPENV[1024];
 };
 
 } // namespace ork::audio::singularity

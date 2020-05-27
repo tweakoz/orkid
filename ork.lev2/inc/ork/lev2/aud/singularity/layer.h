@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2020, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include <mutex>
@@ -7,14 +14,13 @@
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
-constexpr int KPARALLELBLOCKMAX = 4; // max number of parallel blocks per layer
-///////////////////////////////////////////////////////////////////////////////
-
 struct LayerData {
   LayerData();
 
   dspstagedata_ptr_t appendStage();
   dspstagedata_ptr_t stage(int index);
+
+  ///////////////////////////////////////////////////
   template <typename T>                                           //
   inline std::shared_ptr<T> appendController(std::string named) { //
     std::shared_ptr<T> controllerdata = _ctrlBlock->addController<T>();
@@ -22,6 +28,7 @@ struct LayerData {
     _controllerset.insert(controllerdata);
     return controllerdata;
   }
+  ///////////////////////////////////////////////////
 
   int _numdspblocks       = 0;
   int _loKey              = 0;
@@ -53,8 +60,7 @@ struct Layer {
   ~Layer();
 
   void resize(int numframes);
-
-  void compute(outputBuffer& obuf);
+  void compute(outputBuffer& obuf, int numframes);
   void keyOn(int note, int vel, lyrdata_constptr_t ld);
   void keyOff();
   void reset();
@@ -75,6 +81,9 @@ struct Layer {
 
   std::mutex _mutex;
 
+  int _dspwritebase;
+  int _dspwritecount;
+
   int _curnote;
   int _curvel;
   int _ldindex;
@@ -83,6 +92,7 @@ struct Layer {
   float _centsPerKey;
   int _lyrPhase;
   bool _ignoreRelease;
+  int64_t _testtoneph = 0;
 
   int _layerBasePitch; // in cents
 
@@ -90,7 +100,6 @@ struct Layer {
   float _pchc2;
   float _sinrepPH = 0.0f;
   bool _doNoise;
-  float _masterGain = 0.0f;
   float _layerTime;
   dspblk_ptr_t _pchBlock;
 

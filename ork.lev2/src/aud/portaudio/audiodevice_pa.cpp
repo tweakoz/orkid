@@ -33,8 +33,8 @@ namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 PaStream* pa_stream      = nullptr;
-const bool ENABLE_OUTPUT = false; // allow disabling for long debug sessions
-const int NUMFRAMES      = 512;
+const bool ENABLE_OUTPUT = true; // allow disabling for long debug sessions
+const int NUMFRAMES      = frames_per_dsppass;
 ///////////////////////////////////////////////////////////////////////////////
 
 static synth_ptr_t the_synth = synth::instance();
@@ -52,17 +52,27 @@ static int patestCallback(
   (void)inputBuffer; /* Prevent unused variable warning. */
 
   the_synth->compute(framesPerBuffer, inputBuffer);
-  const auto& obuf = the_synth->_obuf;
 
-  if (ENABLE_OUTPUT) {
+  if (false) { // test tone ?
+    static int64_t _testtoneph = 0;
+    for (int i = 0; i < framesPerBuffer; i++) {
+      double phase = 60.0 * pi2 * double(_testtoneph) / getSampleRate();
+      float samp   = sinf(phase) * .6;
+      *out++       = samp; // interleaved
+      *out++       = samp; // interleaved
+      _testtoneph++;
+    }
+  } else if (ENABLE_OUTPUT) {
+    const auto& obuf = the_synth->_obuf;
+    float gain       = the_synth->_masterGain;
     for (i = 0; i < framesPerBuffer; i++) {
-      *out++ = obuf._leftBuffer[i];
-      *out++ = obuf._rightBuffer[i];
+      *out++ = obuf._leftBuffer[i] * gain;  // interleaved
+      *out++ = obuf._rightBuffer[i] * gain; // interleaved
     }
   } else {
     for (i = 0; i < framesPerBuffer; i++) {
-      *out++ = 0.0f;
-      *out++ = 0.0f;
+      *out++ = 0.0f; // interleaved
+      *out++ = 0.0f; // interleaved
     }
   }
   return 0;
@@ -73,7 +83,7 @@ void startupAudio() {
   float SR = getSampleRate();
 
   the_synth->setSampleRate(SR);
-  the_synth->_masterGain = 1.0f;
+  the_synth->_masterGain = 0.5f;
 
   printf("SingularitySynth<%p> SR<%g>\n", the_synth.get(), SR);
   // loadPrograms();

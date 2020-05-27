@@ -31,10 +31,10 @@ void ControlBlockInst::keyOff() {
       _cinst[i]->keyOff();
   }
 }
-void ControlBlockInst::compute(int inumfr) {
+void ControlBlockInst::compute() {
   for (int i = 0; i < kmaxctrlperblock; i++) {
     if (_cinst[i])
-      _cinst[i]->compute(inumfr);
+      _cinst[i]->compute();
   }
 }
 
@@ -49,7 +49,7 @@ ControllerInst::ControllerInst(Layer* l)
 ///////////////////////////////////////////////////////////////////////////////
 
 CustomControllerData::CustomControllerData() {
-  _oncompute = [](CustomControllerInst* cci, int inumfr) {};
+  _oncompute = [](CustomControllerInst* cci) {};
   _onkeyon   = [](CustomControllerInst* cci, const KeyOnInfo& KOI) { cci->_curval = 0.0f; };
   _onkeyoff  = [](CustomControllerInst* cci) {};
 }
@@ -64,8 +64,8 @@ CustomControllerInst::CustomControllerInst(const CustomControllerData* data, Lay
     , _data(data) {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void CustomControllerInst::compute(int inumfr) {
-  _data->_oncompute(this, inumfr);
+void CustomControllerInst::compute() {
+  _data->_oncompute(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CustomControllerInst::keyOn(const KeyOnInfo& KOI) {

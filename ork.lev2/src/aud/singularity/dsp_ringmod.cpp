@@ -17,11 +17,11 @@ RingMod::RingMod(dspblkdata_constptr_t dbd)
 }
 ///////////////////////////////////////////////////////////////////////////////
 void RingMod::compute(DspBuffer& dspbuf) { // final
-  int inumframes       = _numFrames;
-  const float* inpbufa = getInpBuf(dspbuf, 0);
-  const float* inpbufb = getInpBuf(dspbuf, 1);
-  float* outbufa       = getOutBuf(dspbuf, 0);
-  float* outbufb       = getOutBuf(dspbuf, 1);
+  int inumframes       = _layer->_dspwritecount;
+  const float* inpbufa = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+  const float* inpbufb = getInpBuf(dspbuf, 1) + _layer->_dspwritebase;
+  float* outbufa       = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float* outbufb       = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
   // printf("running ringmod\n");
   for (int i = 0; i < inumframes; i++) {
     float inA  = inpbufa[i] * _dbd->_inputPad;
@@ -44,11 +44,11 @@ RingModSumA::RingModSumA(dspblkdata_constptr_t dbd)
 }
 ///////////////////////////////////////////////////////////////////////////////
 void RingModSumA::compute(DspBuffer& dspbuf) { // final
-  int inumframes       = _numFrames;
-  const float* inpbufa = getInpBuf(dspbuf, 0);
-  const float* inpbufb = getInpBuf(dspbuf, 1);
-  float* outbufa       = getOutBuf(dspbuf, 0);
-  float* outbufb       = getOutBuf(dspbuf, 1);
+  int inumframes       = _layer->_dspwritecount;
+  const float* inpbufa = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+  const float* inpbufb = getInpBuf(dspbuf, 1) + _layer->_dspwritebase;
+  float* outbufa       = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float* outbufb       = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
   // printf("running ringmod\n");
   for (int i = 0; i < inumframes; i++) {
     float inA  = inpbufa[i] * _dbd->_inputPad;

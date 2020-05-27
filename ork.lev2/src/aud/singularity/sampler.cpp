@@ -86,9 +86,9 @@ void SAMPLER::compute(DspBuffer& dspbuf) // final
   float centoff = _param[0].eval();
   _fval[0]      = centoff;
 
-  int inumframes = _numFrames;
-  float* lbuf    = getOutBuf(dspbuf, 1);
-  float* ubuf    = getOutBuf(dspbuf, 0);
+  int inumframes = _layer->_dspwritecount;
+  float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
   // float lyrcents = _layer->_layerBasePitch;
   // float cin = (lyrcents+centoff)*0.01;
   // float frq = midi_note_to_frequency(cin);

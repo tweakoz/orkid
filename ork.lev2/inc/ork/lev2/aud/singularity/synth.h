@@ -20,8 +20,6 @@ struct programInst {
   void keyOn(int note, const ProgramData* pd);
   void keyOff();
 
-  // void compute();
-
   const ProgramData* _progdata;
 
   std::vector<Layer*> _layers;
@@ -46,6 +44,10 @@ struct synth {
   typedef std::vector<hudsample> hudsamples_t;
 
   void setSampleRate(float sr);
+  inline float sampleRate() const {
+    return _sampleRate;
+  }
+
   void compute(int inumframes, const void* inputbuffer);
 
   programInst* keyOn(int note, const ProgramData* pd);
@@ -54,11 +56,6 @@ struct synth {
   Layer* allocLayer();
   void freeLayer(Layer* l);
   void deactivateVoices();
-
-  // void onDrawHud(lev2::Context* ctx, float w, float h);
-  // void onDrawHudPage1(lev2::Context* ctx, float w, float h);
-  // void onDrawHudPage2(lev2::Context* ctx, float w, float h);
-  // void onDrawHudPage3(lev2::Context* ctx, float w, float h);
 
   void resetFenables();
 
@@ -102,7 +99,7 @@ struct synth {
   bool _doModWheel  = false;
   bool _doPressure  = false;
   bool _doInput     = false;
-  float _masterGain = 1.0f / 2.0f;
+  float _masterGain = 1.0;
 
   Layer* _hudLayer   = nullptr;
   bool _clearhuddata = true;

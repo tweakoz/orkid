@@ -39,13 +39,13 @@ void AMP_MONOIO::compute(DspBuffer& dspbuf) // final
 {
   float gain = _param[0].eval(); //,0.01f,100.0f);
 
-  int inumframes = _numFrames;
+  int inumframes = _layer->_dspwritecount;
 
   const auto& LD = _layer->_LayerData;
 
   // printf( "amp numinp<%d>\n", numInputs() );
-  auto inputchan   = getInpBuf(dspbuf, 0);
-  auto outputchan  = getOutBuf(dspbuf, 0);
+  auto inputchan   = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+  auto outputchan  = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
   float SingleLinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
 
   for (int i = 0; i < inumframes; i++) {
@@ -80,14 +80,15 @@ AMP::AMP(dspblkdata_constptr_t dbd)
 void AMP::compute(DspBuffer& dspbuf) // final
 {
   float gain     = _param[0].eval(); //,0.01f,100.0f);
-  int inumframes = _numFrames;
+  int inumframes = _layer->_dspwritecount;
+  int ibase      = _layer->_dspwritebase;
   const auto& LD = _layer->_LayerData;
   auto l_lrmix   = panBlend(_lpan);
 
   if (numInputs() == 1) {
-    auto ibuf        = getInpBuf(dspbuf, 0);
-    auto lbuf        = getOutBuf(dspbuf, 1);
-    auto ubuf        = getOutBuf(dspbuf, 0);
+    auto ibuf        = getInpBuf(dspbuf, 0) + ibase;
+    auto lbuf        = getOutBuf(dspbuf, 1) + ibase;
+    auto ubuf        = getOutBuf(dspbuf, 0) + ibase;
     float SingleLinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
 
     for (int i = 0; i < inumframes; i++) {
@@ -95,16 +96,16 @@ void AMP::compute(DspBuffer& dspbuf) // final
       float linG = decibel_to_linear_amp_ratio(_filt);
       linG *= SingleLinG;
       float inp  = ibuf[i];
-      float ae   = _param[1].eval();
+      float ae   = 1.0f; //_param[1].eval();
       float mono = clip_float(inp * linG * _dbd->_inputPad * ae, kminclip, kmaxclip);
       ubuf[i]    = mono * l_lrmix.lmix;
       lbuf[i]    = mono * l_lrmix.rmix;
     }
   } else if (numInputs() == 2) {
-    auto ilbuf      = getInpBuf(dspbuf, 1);
-    auto iubuf      = getInpBuf(dspbuf, 0);
-    auto lbuf       = getOutBuf(dspbuf, 1);
-    auto ubuf       = getOutBuf(dspbuf, 0);
+    auto ilbuf      = getInpBuf(dspbuf, 1 + ibase);
+    auto iubuf      = getInpBuf(dspbuf, 0) + ibase;
+    auto lbuf       = getOutBuf(dspbuf, 1) + ibase;
+    auto ubuf       = getOutBuf(dspbuf, 0) + ibase;
     auto u_lrmix    = panBlend(_upan);
     float UpperLinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
     float LowerLinG = decibel_to_linear_amp_ratio(LD->_channelGains[1]);
@@ -121,8 +122,6 @@ void AMP::compute(DspBuffer& dspbuf) // final
       inpU *= UpperLinG;
       inpL *= LowerLinG;
 
-      // ubuf[i] = clip_float(inpU*u_lrmix.lmix+inpL*l_lrmix.lmix,kminclip,kmaxclip);
-      // lbuf[i] = clip_float(inpU*u_lrmix.rmix+inpL*l_lrmix.rmix,kminclip,kmaxclip);
       ubuf[i] = inpU;
       lbuf[i] = inpL;
     }
@@ -156,9 +155,9 @@ void PLUSAMP::compute(DspBuffer& dspbuf) // final
 {
   float gain = _param[0].eval(); //,0.01f,100.0f);
 
-  int inumframes = _numFrames;
-  float* ubuf    = getOutBuf(dspbuf, 0);
-  float* lbuf    = getOutBuf(dspbuf, 1);
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
 
   auto LD = _layer->_LayerData;
 
@@ -202,9 +201,9 @@ void XAMP::compute(DspBuffer& dspbuf) // final
 {
   float gain = _param[0].eval(); //,0.01f,100.0f);
 
-  int inumframes = _numFrames;
-  float* ubuf    = getOutBuf(dspbuf, 0);
-  float* lbuf    = getOutBuf(dspbuf, 1);
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
 
   auto LD    = _layer->_LayerData;
   float LinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
@@ -242,9 +241,9 @@ void GAIN::compute(DspBuffer& dspbuf) // final
 
   if (1) {
     float linG      = decibel_to_linear_amp_ratio(gain);
-    int inumframes  = dspbuf._numframes;
-    auto inpbuf     = getInpBuf(dspbuf, 0);
-    auto outputchan = getOutBuf(dspbuf, 0);
+    int inumframes  = _layer->_dspwritecount;
+    auto inpbuf     = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
       float inp     = inpbuf[i] * _dbd->_inputPad;
       float outp    = softsat(inp * linG, 1);
@@ -268,13 +267,13 @@ void XFADE::compute(DspBuffer& dspbuf) // final
   float lmix = (mix > 0) ? lerp(0.5, 0, mix) : lerp(0.5, 1, -mix);
   float umix = (mix > 0) ? lerp(0.5, 1, mix) : lerp(0.5, 0, -mix);
 
-  int inumframes = _numFrames;
-  float* lbuf    = getOutBuf(dspbuf, 1);
-  float* ubuf    = getOutBuf(dspbuf, 0);
+  int inumframes = _layer->_dspwritecount;
+  float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
 
   // printf( "frq<%f> _phaseInc<%lld>\n", frq, _phaseInc );
   if (1) {
-    auto outputchan = getOutBuf(dspbuf, 0);
+    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
       float inputU = ubuf[i] * _dbd->_inputPad;
       float inputL = lbuf[i] * _dbd->_inputPad;
@@ -304,12 +303,12 @@ void XGAIN::compute(DspBuffer& dspbuf) // final
 {
   float gain = _param[0].eval(); //,0.01f,100.0f);
 
-  int inumframes = _numFrames;
-  float* ubuf    = getOutBuf(dspbuf, 0);
-  float* lbuf    = getOutBuf(dspbuf, 1);
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
 
   if (1) {
-    auto outputchan = getOutBuf(dspbuf, 0);
+    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
       _filt      = 0.999 * _filt + 0.001 * gain;
       float linG = decibel_to_linear_amp_ratio(_filt);
@@ -339,9 +338,9 @@ void AMPU_AMPL::compute(DspBuffer& dspbuf) // final
   float gainU = _param[0].eval();
   float gainL = _param[1].eval();
 
-  int inumframes = _numFrames;
-  float* ubuf    = getOutBuf(dspbuf, 0);
-  float* lbuf    = getOutBuf(dspbuf, 1);
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
 
   auto u_lrmix = panBlend(_upan);
   auto l_lrmix = panBlend(_lpan);
@@ -393,9 +392,9 @@ void BAL_AMP::compute(DspBuffer& dspbuf) // final
 
   float linG = decibel_to_linear_amp_ratio(gain);
 
-  int inumframes = _numFrames;
-  float* ubuf    = getOutBuf(dspbuf, 0);
-  float* lbuf    = getOutBuf(dspbuf, 1);
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
 
   if (1)
     for (int i = 0; i < inumframes; i++) {
@@ -413,9 +412,9 @@ PANNER::PANNER(dspblkdata_constptr_t dbd)
 }
 void PANNER::compute(DspBuffer& dspbuf) // final
 {
-  int inumframes = _numFrames;
-  float* ubuf    = getOutBuf(dspbuf, 0);
-  float* lbuf    = getOutBuf(dspbuf, 1);
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
   float pos      = _param[0].eval();
   float pan      = pos * 0.01f;
   float lmix     = (pan > 0) ? lerp(0.5, 0, pan) : lerp(0.5, 1, -pan);
@@ -452,9 +451,9 @@ void BANGAMP::compute(DspBuffer& dspbuf) // final
 {
   float gain = _param[0].eval(); //,0.01f,100.0f);
 
-  int inumframes = _numFrames;
-  float* ubuf    = getOutBuf(dspbuf, 0);
-  float* lbuf    = getOutBuf(dspbuf, 1);
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
 
   auto LD    = _layer->_LayerData;
   float LinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);

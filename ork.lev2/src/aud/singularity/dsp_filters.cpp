@@ -13,8 +13,8 @@ BANDPASS_FILT::BANDPASS_FILT(dspblkdata_constptr_t dbd)
 void BANDPASS_FILT::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
-  float* ubuf    = getOutBuf(dspbuf, 0);
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
 
   float fc  = _param[0].eval();
   float wid = _param[1].eval();
@@ -52,8 +52,8 @@ BAND2::BAND2(dspblkdata_constptr_t dbd)
 void BAND2::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
-  float* ubuf    = getOutBuf(dspbuf, 0);
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
 
   float fc = _param[0].eval();
 
@@ -84,8 +84,8 @@ NOTCH_FILT::NOTCH_FILT(dspblkdata_constptr_t dbd)
 void NOTCH_FILT::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
-  float* ubuf    = getOutBuf(dspbuf, 0);
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
 
   float fc  = _param[0].eval();
   float wid = _param[1].eval();
@@ -117,8 +117,8 @@ NOTCH2::NOTCH2(dspblkdata_constptr_t dbd)
 void NOTCH2::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
-  float* ubuf    = getOutBuf(dspbuf, 0);
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
 
   float fc = _param[0].eval();
   _fval[0] = fc;
@@ -148,8 +148,8 @@ DOUBLE_NOTCH_W_SEP::DOUBLE_NOTCH_W_SEP(dspblkdata_constptr_t dbd)
 void DOUBLE_NOTCH_W_SEP::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
-  float* ubuf    = getOutBuf(dspbuf, 0);
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
 
   float fc    = _param[0].eval();
   float res   = _param[1].eval();
@@ -187,8 +187,8 @@ TWOPOLE_ALLPASS::TWOPOLE_ALLPASS(dspblkdata_constptr_t dbd)
 void TWOPOLE_ALLPASS::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
-  float* ubuf    = getOutBuf(dspbuf, 0);
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
 
   float fc  = _param[0].eval();
   float wid = _param[1].eval();
@@ -222,8 +222,8 @@ TWOPOLE_LOWPASS::TWOPOLE_LOWPASS(dspblkdata_constptr_t dbd)
 void TWOPOLE_LOWPASS::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
-  auto inpbuf    = getInpBuf(dspbuf, 0);
+  int inumframes = _layer->_dspwritecount;
+  auto inpbuf    = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
 
   float fc  = _param[0].eval();
   float res = _param[1].eval() * 0.25;
@@ -232,7 +232,7 @@ void TWOPOLE_LOWPASS::compute(DspBuffer& dspbuf) // final
 
   // printf( "fc<%f>\n", fc );
   if (1) {
-    auto outputchan = getOutBuf(dspbuf, 0);
+    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
       _smoothFC = (_smoothFC * 0.99f) + fc * .01f;
       _filter.SetWithRes(EM_LPF, fc, res);
@@ -263,14 +263,14 @@ LOPAS2::LOPAS2(dspblkdata_constptr_t dbd)
 void LOPAS2::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
-  auto inpbuf    = getInpBuf(dspbuf, 0);
+  int inumframes = _layer->_dspwritecount;
+  auto inpbuf    = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
   float fc       = _param[0].eval();
   _fval[0]       = fc;
   // float res = decibel_to_linear_amp_ratio(-6);
   _filter.SetWithRes(EM_LPF, fc, -6);
   if (1) {
-    auto outputchan = getOutBuf(dspbuf, 0);
+    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
       _filter.Tick(inpbuf[i] * pad);
       float output  = _filter.output;
@@ -295,13 +295,13 @@ LP2RES::LP2RES(dspblkdata_constptr_t dbd)
 void LP2RES::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
-  auto inpbuf    = getInpBuf(dspbuf, 0);
+  int inumframes = _layer->_dspwritecount;
+  auto inpbuf    = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
   float fc       = _param[0].eval();
   _fval[0]       = fc;
   // float res = decibel_to_linear_amp_ratio(12);
   if (1) {
-    auto outputchan = getOutBuf(dspbuf, 0);
+    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
       //_smoothFC = (_smoothFC*0.99f) + fc*.01f;
       _filter.SetWithRes(EM_LPF, fc, 3.0f);
@@ -326,8 +326,8 @@ FOURPOLE_LOPASS_W_SEP::FOURPOLE_LOPASS_W_SEP(dspblkdata_constptr_t dbd)
 void FOURPOLE_LOPASS_W_SEP::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
-  float* ubuf    = getOutBuf(dspbuf, 0);
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
 
   float fc  = _param[0].eval();
   float res = _param[1].eval();
@@ -368,8 +368,8 @@ FOURPOLE_HIPASS_W_SEP::FOURPOLE_HIPASS_W_SEP(dspblkdata_constptr_t dbd)
 void FOURPOLE_HIPASS_W_SEP::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
-  float* ubuf    = getOutBuf(dspbuf, 0);
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
 
   float fc  = _param[0].eval();
   float res = _param[1].eval();
@@ -415,17 +415,17 @@ LOPASS::LOPASS(dspblkdata_constptr_t dbd)
 void LOPASS::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
+  int inumframes = _layer->_dspwritecount;
   float fc       = _param[0].eval();
   if (fc > 16000.0f)
     fc = 16000.0f;
   _fval[0] = fc;
   _lpf.set(fc);
 
-  auto inpbuf = getInpBuf(dspbuf, 0);
+  auto inpbuf = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
 
   if (1) {
-    auto outputchan = getOutBuf(dspbuf, 0);
+    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
       float inp     = inpbuf[i] * pad;
       outputchan[i] = _lpf.compute(inp);
@@ -449,13 +449,13 @@ LPCLIP::LPCLIP(dspblkdata_constptr_t dbd)
 void LPCLIP::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
+  int inumframes = _layer->_dspwritecount;
   float fc       = _param[0].eval();
   _fval[0]       = fc;
   _lpf.set(fc);
   if (1) {
-    auto inputchan  = getInpBuf(dspbuf, 0);
-    auto outputchan = getOutBuf(dspbuf, 0);
+    auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
       float inp     = inputchan[i] * pad * 4.0;
       outputchan[i] = softsat(_lpf.compute(inp), 1.0f);
@@ -477,13 +477,13 @@ HIPASS::HIPASS(dspblkdata_constptr_t dbd)
 void HIPASS::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
+  int inumframes = _layer->_dspwritecount;
   float fc       = _param[0].eval();
   _hpf.set(fc);
 
   if (1) {
-    auto inputchan  = getInpBuf(dspbuf, 0);
-    auto outputchan = getOutBuf(dspbuf, 0);
+    auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
       float inp     = inputchan[i] * pad;
       outputchan[i] = _hpf.compute(inp);
@@ -508,8 +508,8 @@ LPGATE::LPGATE(dspblkdata_constptr_t dbd)
 void LPGATE::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
-  float* ubuf    = getOutBuf(dspbuf, 0);
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
   float fc       = _param[0].eval();
   _fval[0]       = fc;
   _filter.SetWithQ(EM_LPF, fc, 0.5);
@@ -534,8 +534,8 @@ HIFREQ_STIMULATOR::HIFREQ_STIMULATOR(dspblkdata_constptr_t dbd)
 void HIFREQ_STIMULATOR::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
-  float* ubuf    = getOutBuf(dspbuf, 0);
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
   float fc       = _param[0].eval();
   float drv      = _param[1].eval();
   float amp      = _param[2].eval();
@@ -579,15 +579,15 @@ ALPASS::ALPASS(dspblkdata_constptr_t dbd)
 void ALPASS::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
-  int inumframes = _numFrames;
+  int inumframes = _layer->_dspwritecount;
 
   float fc = _param[0].eval();
   _filter.Set(fc);
   _fval[0] = fc;
 
   if (1) {
-    auto inputchan  = getInpBuf(dspbuf, 0);
-    auto outputchan = getOutBuf(dspbuf, 0);
+    auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
       outputchan[i] = _filter.Tick(inputchan[i] * pad);
     }

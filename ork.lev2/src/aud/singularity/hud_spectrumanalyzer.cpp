@@ -261,7 +261,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     float dB = mapDecibels(fftcontext.re[i], fftcontext.im[i]); // instantaneous sample
     fftsmoothbuf[i] += dB * 0.03 + 0.0001f;                     // accumulate
     fftsmoothbuf[i] *= 0.99f;                                   // dampen
-    dB = fftsmoothbuf[i] * 0.23;                                // scale to unity (todo: find coef)
+    // dB = fftsmoothbuf[i] * 0.23;                                // scale to unity (todo: find coef)
     ///////////////////////////////////////////////
 
     float fi = float(i) / float(fftSize);

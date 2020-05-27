@@ -78,32 +78,6 @@ void Alg::keyOn(DspKeyOnInfo& koi) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Alg::intoDspBuf(const outputBuffer& obuf) {
-  int inumframes = the_synth->_numFrames;
-  _layer->_dspbuffer->resize(inumframes);
-  float* lefbuf = obuf._leftBuffer;
-  float* rhtbuf = obuf._rightBuffer;
-  float* uprbuf = _layer->_dspbuffer->channel(0);
-  float* lwrbuf = _layer->_dspbuffer->channel(1);
-  memcpy(uprbuf, lefbuf, inumframes * 4);
-  memcpy(lwrbuf, lefbuf, inumframes * 4);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void Alg::intoOutBuf(outputBuffer& obuf, int inumo) {
-  int inumframes = the_synth->_numFrames;
-  _layer->_dspbuffer->resize(inumframes);
-  float* lefbuf = obuf._leftBuffer;
-  float* rhtbuf = obuf._rightBuffer;
-  float* uprbuf = _layer->_dspbuffer->channel(0);
-  float* lwrbuf = _layer->_dspbuffer->channel(1);
-  memcpy(lefbuf, uprbuf, inumframes * 4);
-  memcpy(rhtbuf, lwrbuf, inumframes * 4);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void Alg::forEachStage(stagefn_t fn) {
   for (int istage = 0; istage < kmaxdspstagesperlayer; istage++) {
     auto stage = _stages[istage];
@@ -127,8 +101,20 @@ void DspStage::forEachBlock(blockfn_t fn) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Alg::compute(outputBuffer& obuf) {
-  intoDspBuf(obuf);
-  auto dspbuf     = _layer->_dspbuffer;
+  ////////////////////////////////////////////////
+  int inumframes = _layer->_dspwritecount;
+  int ibase      = _layer->_dspwritebase;
+  ////////////////////////////////////////////////
+  // clear dsp buffers
+  ////////////////////////////////////////////////
+  for (int ich = 0; ich < kmaxdspblocksperstage; ich++) {
+    float* dst = _layer->_dspbuffer->channel(ich) + ibase;
+    memset(dst, inumframes * sizeof(float), 0);
+  }
+  ////////////////////////////////////////////////
+  // compute dsp stages
+  ////////////////////////////////////////////////
+  auto& dspbuf    = *_layer->_dspbuffer;
   bool touched    = false;
   int inumoutputs = 1;
   int istage      = 0;
@@ -137,14 +123,36 @@ void Alg::compute(outputBuffer& obuf) {
     bool ena = syn->_stageEnable[istage];
     if (ena)
       stage->forEachBlock([&](dspblk_ptr_t block) {
-        block->compute(*dspbuf.get());
+        block->compute(dspbuf);
         inumoutputs = block->numOutputs();
         touched     = true;
       });
     istage++;
   });
+  ////////////////////////////////////////////////
+  // route dsp buffers into outputBuffer
+  ////////////////////////////////////////////////
   // get num outputs for STAGE, not block..
-  intoOutBuf(obuf, inumoutputs);
+  const float* srcL = dspbuf.channel(0) + ibase;
+  const float* srcR = dspbuf.channel(1) + ibase;
+  float* dstL       = obuf._leftBuffer + ibase;
+  float* dstR       = obuf._rightBuffer + ibase;
+  memcpy(dstL, srcL, inumframes * sizeof(float));
+  memcpy(dstR, srcR, inumframes * sizeof(float));
+  ////////////////////////////////////////////////
+  // test tone ?
+  ////////////////////////////////////////////////
+  if (0) {
+    static int64_t _testtoneph = 0;
+    for (int i = 0; i < inumframes; i++) {
+      double phase = 60.0 * pi2 * double(_testtoneph) / getSampleRate();
+      float samp   = sinf(phase) * .6;
+      dstL[i]      = samp;
+      dstR[i]      = samp;
+      _testtoneph++;
+    }
+  }
+  ////////////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////

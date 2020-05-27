@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2020, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <string>
 #include <assert.h>
 #include <unistd.h>
@@ -95,8 +102,11 @@ void Layer::release() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Layer::compute(outputBuffer& obuf) {
+void Layer::compute(outputBuffer& obuf, int numframes) {
   _HAF._items.clear();
+
+  _dspbuffer->resize(numframes);
+  _layerObuf.resize(numframes);
 
   ///////////////////////
 
@@ -109,63 +119,11 @@ void Layer::compute(outputBuffer& obuf) {
     return;
 
   // printf( "layer<%p> compute\n", this );
-  int inumframes = obuf._numframes;
-  float* outl    = obuf._leftBuffer;
-  float* outr    = obuf._rightBuffer;
+  float* master_outl = obuf._leftBuffer;
+  float* master_outr = obuf._rightBuffer;
 
-  float dt = float(inumframes) / the_synth->_sampleRate;
+  float dt = float(numframes) / the_synth->_sampleRate;
 
-  //////////////////////////////////////
-  // update controllers
-  //////////////////////////////////////
-
-  if (_ctrlBlock)
-    _ctrlBlock->compute(inumframes);
-
-  ///////////////////////////////////////////////
-  // HUD AFRAME
-  ///////////////////////////////////////////////
-  int envcount = 0;
-  int asrcount = 0;
-  int lfocount = 0;
-  int funcount = 0;
-  auto cb      = _ctrlBlock;
-  if (cb) {
-    for (int ic = 0; ic < kmaxctrlperblock; ic++) {
-      auto cinst = cb->_cinst[ic];
-      if (auto env = dynamic_cast<RateLevelEnvInst*>(cinst)) {
-        envframe envf;
-        envf._index  = envcount++;
-        envf._value  = env->_curval;
-        envf._data   = env->_data;
-        envf._curseg = env->_curseg;
-        if (env->_data && env->_data->_ampenv)
-          envf._curseg = env->_curseg;
-        _HAF._items.push_back(envf);
-      } else if (auto asr = dynamic_cast<AsrInst*>(cinst)) {
-        asrframe asrf;
-        asrf._index  = asrcount++;
-        asrf._value  = asr->_curval;
-        asrf._curseg = asr->_curseg;
-        asrf._data   = asr->_data;
-        _HAF._items.push_back(asrf);
-        // printf( "add asr item\n");
-      } else if (auto lfo = dynamic_cast<LfoInst*>(cinst)) {
-        lfoframe lfof;
-        lfof._index   = lfocount++;
-        lfof._value   = lfo->_curval;
-        lfof._currate = lfo->_currate;
-        lfof._data    = lfo->_data;
-        _HAF._items.push_back(lfof);
-      } else if (auto fun = dynamic_cast<FunInst*>(cinst)) {
-        funframe funfr;
-        funfr._index = funcount++;
-        funfr._data  = fun->_data;
-        funfr._value = fun->_curval;
-        _HAF._items.push_back(funfr);
-      }
-    }
-  }
   ///////////////////////////////////////////////
 
   // printf( "pchc1<%f> pchc2<%f> poic<%f> currat<%f>\n", _pchc1, _pchc2, _curPitchOffsetInCents, currat );
@@ -183,96 +141,118 @@ void Layer::compute(outputBuffer& obuf) {
 
     float synsr = the_synth->_sampleRate;
 
-    outputBuffer laybuf;
-
-    _layerObuf.resize(inumframes);
     float* lyroutl = _layerObuf._leftBuffer;
     float* lyroutr = _layerObuf._rightBuffer;
 
-    ///////////////////////////////////
-    // sample osc
-    ///////////////////////////////////
-
-    bool do_noise = _doNoise;
-    bool do_sine  = false;
-    bool do_input = false;
-
-    switch (the_synth->_genmode) {
-      case 1: // force sine
-        do_sine  = true;
-        do_noise = false;
-        break;
-      case 2: // force noise
-        do_sine  = false;
-        do_noise = true;
-        break;
-      case 3: // input
-        do_sine  = false;
-        do_noise = false;
-        do_input = true;
-        break;
+    for (int i = 0; i < numframes; i++) {
+      lyroutl[i] = 0.0f;
+      lyroutr[i] = 0.0f;
     }
 
-    if (do_noise) {
-      for (int i = 0; i < inumframes; i++) {
-        float o    = ((rand() & 0xffff) / 32768.0f) - 1.0f;
-        lyroutl[i] = o;
-        lyroutr[i] = 0.0f;
-      }
-    } else if (do_input) {
-      auto ibuf = the_synth->_ibuf._leftBuffer;
-      for (int i = 0; i < inumframes; i++) {
-        float o    = ibuf[i] * 8.0f;
-        lyroutl[i] = o;
-        lyroutr[i] = 0.0f;
-      }
-
-    } else if (do_sine) {
-      float F        = midi_note_to_frequency(float(_layerBasePitch) * 0.01);
-      float phaseinc = pi2 * F / synsr;
-
-      for (int i = 0; i < inumframes; i++) {
-        float o = sinf(_sinrepPH) * 0.5;
-        _sinrepPH += phaseinc;
-        lyroutl[i] = o;
-        lyroutr[i] = 0.0f;
-      }
-
-    } else // clear
-      for (int i = 0; i < inumframes; i++) {
-        lyroutl[i] = 0.0f;
-        lyroutr[i] = 0.0f;
-      }
-
     ///////////////////////////////////
-    // DSP F1-F3
+    // DspAlgorithm
     ///////////////////////////////////
 
-    if (false == bypassDSP)
-      _alg->compute(_layerObuf);
+    if (false == bypassDSP) {
+      int ifrpending = numframes;
+      _dspwritecount = frames_per_controlpass;
+      _dspwritebase  = 0;
+      while (ifrpending > 0) {
+        // printf("_dspwritecount<%d> _dspwritebase<%d>\n", _dspwritecount, _dspwritebase);
+        ////////////////////////////////
+        // update controllers
+        ////////////////////////////////
+        if (_ctrlBlock)
+          _ctrlBlock->compute();
+        ////////////////////////////////
+        // update dsp modules
+        ////////////////////////////////
+        _alg->compute(_layerObuf);
+        ////////////////////////////////
+        // update indices
+        ////////////////////////////////
+        _dspwritebase += frames_per_controlpass;
+        ifrpending -= frames_per_controlpass;
+        ////////////////////////////////
+      }
+    }
 
     ///////////////////////////////////
     // amp / out
     ///////////////////////////////////
 
-    if (doBlockStereo) {
-      for (int i = 0; i < inumframes; i++) {
-        float tgain = _layerGain * _masterGain;
-        outl[i] += lyroutl[i] * tgain;
-        outr[i] += lyroutr[i] * tgain;
+    if (bypassDSP) {
+      for (int i = 0; i < numframes; i++) {
+        float inp = lyroutl[i];
+        master_outl[i] += inp * _layerGain;
+        master_outr[i] += inp * _layerGain;
       }
-    } else if (bypassDSP) {
-      for (int i = 0; i < inumframes; i++) {
-        float tgain = _layerGain * _masterGain;
-        float inp   = lyroutl[i];
-        outl[i] += inp * tgain * 0.5f;
-        outr[i] += inp * tgain * 0.5f;
+    } else if (doBlockStereo) { // standard accumulation output (stereo)
+      for (int i = 0; i < numframes; i++) {
+        master_outl[i] += lyroutl[i] * _layerGain;
+        master_outr[i] += lyroutr[i] * _layerGain;
       }
-    } else {
-      for (int i = 0; i < inumframes; i++) {
-        float tgain = _layerGain * _masterGain;
-        outl[i] += lyroutl[i] * tgain;
-        outr[i] += lyroutl[i] * tgain;
+    } else { // standard accumulation output (mono)
+      for (int i = 0; i < numframes; i++) {
+        float output = lyroutl[i] * _layerGain;
+        master_outl[i] += output;
+        master_outr[i] += output;
+      }
+    }
+    ///////////////////////////////////////////////
+    // test tone ?
+    ///////////////////////////////////////////////
+    if (0) {
+      for (int i = 0; i < numframes; i++) {
+        double phase   = 60.0 * pi2 * double(_testtoneph) / getSampleRate();
+        float samp     = sinf(phase) * .6;
+        master_outl[i] = samp * _layerGain;
+        master_outr[i] = samp * _layerGain;
+        _testtoneph++;
+      }
+    }
+    ///////////////////////////////////////////////
+    // HUD AFRAME
+    ///////////////////////////////////////////////
+    int envcount = 0;
+    int asrcount = 0;
+    int lfocount = 0;
+    int funcount = 0;
+    auto cb      = _ctrlBlock;
+    if (cb) {
+      for (int ic = 0; ic < kmaxctrlperblock; ic++) {
+        auto cinst = cb->_cinst[ic];
+        if (auto env = dynamic_cast<RateLevelEnvInst*>(cinst)) {
+          envframe envf;
+          envf._index  = envcount++;
+          envf._value  = env->_curval;
+          envf._data   = env->_data;
+          envf._curseg = env->_curseg;
+          if (env->_data && env->_data->_ampenv)
+            envf._curseg = env->_curseg;
+          _HAF._items.push_back(envf);
+        } else if (auto asr = dynamic_cast<AsrInst*>(cinst)) {
+          asrframe asrf;
+          asrf._index  = asrcount++;
+          asrf._value  = asr->_curval;
+          asrf._curseg = asr->_curseg;
+          asrf._data   = asr->_data;
+          _HAF._items.push_back(asrf);
+          // printf( "add asr item\n");
+        } else if (auto lfo = dynamic_cast<LfoInst*>(cinst)) {
+          lfoframe lfof;
+          lfof._index   = lfocount++;
+          lfof._value   = lfo->_curval;
+          lfof._currate = lfo->_currate;
+          lfof._data    = lfo->_data;
+          _HAF._items.push_back(lfof);
+        } else if (auto fun = dynamic_cast<FunInst*>(cinst)) {
+          funframe funfr;
+          funfr._index = funcount++;
+          funfr._data  = fun->_data;
+          funfr._value = fun->_curval;
+          _HAF._items.push_back(funfr);
+        }
       }
     }
 
@@ -281,8 +261,8 @@ void Layer::compute(outputBuffer& obuf) {
     /////////////////
 
     if (this == the_synth->_hudLayer) {
-      _HAF._oscopebuffer.resize(inumframes);
-      _HAF._oscopesync.resize(inumframes);
+      _HAF._oscopebuffer.resize(numframes);
+      _HAF._oscopesync.resize(numframes);
       ///////////////////////////////////////////////
       // find oscope sync source
       ///////////////////////////////////////////////
@@ -304,15 +284,15 @@ void Layer::compute(outputBuffer& obuf) {
       });
       ///////////////////////////////////////////////
       if (syncsource) {
-        for (int i = 0; i < inumframes; i++)
+        for (int i = 0; i < numframes; i++)
           _HAF._oscopesync[i] = syncsource->_triggers[i];
       } else {
-        for (int i = 0; i < inumframes; i++)
+        for (int i = 0; i < numframes; i++)
           _HAF._oscopesync[i] = false;
       }
       ///////////////////////////////////////////////
       if (doBlockStereo) {
-        for (int i = 0; i < inumframes; i++) {
+        for (int i = 0; i < numframes; i++) {
           int inpi              = i;
           float l               = _layerObuf._leftBuffer[inpi];
           float r               = _layerObuf._rightBuffer[inpi];
@@ -320,7 +300,7 @@ void Layer::compute(outputBuffer& obuf) {
         }
 
       } else {
-        for (int i = 0; i < inumframes; i++) {
+        for (int i = 0; i < numframes; i++) {
           int inpi              = i;
           float l               = _layerObuf._leftBuffer[inpi];
           _HAF._oscopebuffer[i] = l;
@@ -329,11 +309,12 @@ void Layer::compute(outputBuffer& obuf) {
       ///////////////////////////////////////////////
       _HAF._baseserial = _num_sent_to_scope;
       //_HAF._owcount += the_synth->_ostrack;
-      _num_sent_to_scope += inumframes;
+      _num_sent_to_scope += numframes;
       ///////////////////////////////////////////////
       the_synth->_hudbuf.push(_HAF);
     }
-  }
+
+  } // if(true)
 
   _layerTime += dt;
 } // namespace ork::audio::singularity
@@ -483,8 +464,6 @@ void Layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
   _ignoreRelease = ld->_ignRels;
   _curnote       = note;
   _LayerData     = ld;
-  _layerGain     = 1.0f; // ld->_outputGain;
-  _masterGain    = the_synth->_masterGain;
 
   _curvel = vel;
 

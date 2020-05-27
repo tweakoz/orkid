@@ -98,7 +98,7 @@ void RateLevelEnvInst::initSeg(int iseg) {
     _dstval           = curseg._level;
     float deltlev     = (_dstval - _curval);
     float slope       = (deltlev / segtime);
-    _curslope_persamp = slope / getSampleRate();
+    _curslope_persamp = slope * getInverseSampleRate();
   }
   _framesrem = segtime * getSampleRate(); // / 48000.0f;
                                           // assert(false);
@@ -107,68 +107,58 @@ void RateLevelEnvInst::initSeg(int iseg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void RateLevelEnvInst::compute(int inumfr) // final
+void RateLevelEnvInst::compute() // final
 {
-  // printf( "RateLevelEnvInst<%p> inumfr<%d>\n", this, inumfr );
-  auto L = [this]() -> float {
-    if (nullptr == _data)
-      return 0.0f;
-
-    const auto& edata = *_data;
-    const auto& segs  = edata._segments;
-    bool done         = false;
-    _framesrem--;
-    if (_framesrem <= 0) {
-      //////////////////////////
-      // next segment
-      //////////////////////////
-      if (_released) {
-        if (_curseg <= 5) {
-          initSeg(_curseg + 1);
-        } else {
-          done    = true;
-          _curval = _dstval;
-          //_data = nullptr;
-        }
-      } else { // go up to decay
-        if (_curseg == edata._sustainPoint) {
-          float declev = segs[edata._sustainPoint]._level;
-          // if (_curval < declev) {
-          _curslope_persamp = 0.0f;
-          _curval           = declev;
-          //}
-        } else if (_curseg < edata._sustainPoint)
-          initSeg(_curseg + 1);
+  if (nullptr == _data)
+    return;
+  /////////////////////////////
+  const auto& edata = *_data;
+  const auto& segs  = edata._segments;
+  bool done         = false;
+  _framesrem -= frames_per_controlpass;
+  if (_framesrem <= 0) {
+    //////////////////////////
+    // next segment
+    //////////////////////////
+    if (_released) {
+      if (_curseg <= 5) {
+        initSeg(_curseg + 1);
+      } else {
+        done    = true;
+        _curval = _dstval;
       }
+    } else { // go up to decay
+      if (_curseg == edata._sustainPoint) {
+        float declev      = segs[edata._sustainPoint]._level;
+        _curslope_persamp = 0.0f;
+        _curval           = declev;
+      } else if (_curseg < edata._sustainPoint)
+        initSeg(_curseg + 1);
     }
-    //////////////////////////
-    // compute next value
-    //////////////////////////
-    if (!done) {
-      _curval += _curslope_persamp;
-      if (_curslope_persamp > 0.0f && _curval > _dstval)
-        _curval = _dstval;
-      else if (_curslope_persamp < 0.0f && _curval < _dstval)
-        _curval = _dstval;
-    }
-    //////////////////////////
+  }
+  //////////////////////////
+  // compute next value
+  //////////////////////////
+  if (not done) {
+    _curval += (_curslope_persamp * frames_per_controlpass);
+    if (_curslope_persamp > 0.0f && _curval > _dstval)
+      _curval = _dstval;
+    else if (_curslope_persamp < 0.0f && _curval < _dstval)
+      _curval = _dstval;
+  }
+  //////////////////////////
+  // release layer ?
+  //////////////////////////
+  float dbatten = linear_amp_ratio_to_decibel(_curval);
 
-    _filtval      = _filtval * 0.995f + _curval * 0.005f;
-    float sign    = _filtval < 0.0f ? -1.0f : 1.0f;
-    float rval    = sign * clip_float(powf(_filtval, 2.0f), -1.0f, 1.0f);
-    float dbatten = linear_amp_ratio_to_decibel(rval);
-    done          = (_curseg == 6) && (dbatten < -96.0f);
-    if (done && _ampenv) {
-      _layer->release();
-      _data = nullptr;
-      // printf("ENV RELEASING LAYER<%p>\n", _layer);
-    }
-    return rval;
-  };
-  /////////////////////////////////////
-  for (int i = 0; i < inumfr; i++)
-    _USERAMPENV[i] = L();
-  /////////////////////////////////////
+  done = (_curseg >= edata._endPoint) //
+         and (dbatten < -96.0f);
+
+  if (done and _ampenv) {
+    _layer->release();
+    _data = nullptr;
+    // printf("ENV RELEASING LAYER<%p>\n", _layer);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

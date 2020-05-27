@@ -39,7 +39,7 @@ struct ControllerInst {
 
   virtual void keyOn(const KeyOnInfo& KOI) = 0;
   virtual void keyOff()                    = 0;
-  virtual void compute(int inumfr)         = 0;
+  virtual void compute()                   = 0;
   float getval() const {
     return _curval;
   }
@@ -49,7 +49,7 @@ struct ControllerInst {
 };
 
 struct ControlBlockInst {
-  void compute(int inumfr);
+  void compute();
   void keyOn(const KeyOnInfo& KOI, controlblockdata_constptr_t CBD);
   void keyOff();
 
@@ -77,7 +77,7 @@ struct LfoInst : public ControllerInst {
   void reset();
   void keyOn(const KeyOnInfo& KOI) final;
   void keyOff() final;
-  void compute(int inumfr) final;
+  void compute() final;
   ////////////////////////////
   const LfoData* _data;
   float _phaseInc;
@@ -101,7 +101,7 @@ struct FunData : public ControllerData {
 
 struct FunInst : public ControllerInst {
   FunInst(const FunData* data, Layer* layer);
-  void compute(int inumfr) final;
+  void compute() final;
   void keyOn(const KeyOnInfo& KOI) final;
   void keyOff() final;
   ////////////////////////////
@@ -114,7 +114,7 @@ struct FunInst : public ControllerInst {
 ///////////////////////////////////////////////////////////////////////////////
 struct CustomControllerInst;
 
-using customcontroller_computemethod_t = std::function<void(CustomControllerInst* cci, int)>;
+using customcontroller_computemethod_t = std::function<void(CustomControllerInst* cci)>;
 using customcontroller_keyonmethod_t   = std::function<void(CustomControllerInst* cci, const KeyOnInfo& KOI)>;
 using customcontroller_keyoffmethod_t  = std::function<void(CustomControllerInst* cci)>;
 
@@ -127,7 +127,7 @@ struct CustomControllerData final : public ControllerData {
 };
 struct CustomControllerInst final : public ControllerInst {
   CustomControllerInst(const CustomControllerData* data, Layer* layer);
-  void compute(int inumfr) override;
+  void compute() override;
   void keyOn(const KeyOnInfo& KOI) override;
   void keyOff() override;
   const CustomControllerData* _data = nullptr;
