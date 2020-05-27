@@ -28,8 +28,11 @@ static constexpr size_t fftoversample = 16;
 static constexpr size_t DOWNSHIFT     = bitsToHold<fftoversample>() - 1;
 static const size_t fftSize           = inumframes * fftoversample; // Needs to be power of 2!
 static constexpr int KMAXNOTE         = 141;
-static auto lab1color                 = fvec3(0.5, 0.5, 0.7);
+static constexpr int KDB_LO           = -96.0f;
+static constexpr int KDB_HI           = 48.0f;
+static constexpr int KDB_STEP         = 12.0f;
 static auto lab2color                 = fvec3(0.5, 0.5, 0.9);
+static auto lab1color                 = fvec3(0.5, 0.5, 0.7);
 static auto gridcolor                 = fvec3(.1, .2, .4);
 static auto plotcolor                 = fvec3(.2, .4, 5);
 ///////////////////////////////////////////////////////////////////////////////
@@ -119,10 +122,8 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     return std::clamp(dB, -96.0f, 36.0f);
   };
   auto mapFFTY = [&](float dbin) -> float {
-    const float KMIN = -96.0f;
-    const float KMAX = 36.0f;
-    const float KRNG = KMAX - KMIN;
-    float dbY        = (dbin + 96.0f) / KRNG;
+    const float KRNG = KDB_HI - KDB_LO;
+    float dbY        = (dbin - KDB_LO) / KRNG;
     float y          = ANA_Y2 - dbY * ANA_H;
     if (y > ANA_Y2)
       y = ANA_Y2;
@@ -140,7 +141,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   // draw grid
   //////////////////////////////
 
-  for (int dB = 36; dB >= -96; dB -= 12) {
+  for (float dB = KDB_HI; dB >= KDB_LO; dB -= KDB_STEP) {
     float f1 = midi_note_to_frequency(0);
     float f2 = midi_note_to_frequency(KMAXNOTE);
     lines.push_back(HudLine{
@@ -156,8 +157,8 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     float f = midi_note_to_frequency(note);
     float x = mapFFTX(f);
     lines.push_back(HudLine{
-        fvec2(x, mapFFTY(36)), //
-        fvec2(x, mapFFTY(-96)),
+        fvec2(x, mapFFTY(KDB_LO)), //
+        fvec2(x, mapFFTY(KDB_HI)),
         lab2color * 0.5}); // vertical grid
   }
 
@@ -165,13 +166,12 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   // draw amplitude labels
   ////////////////////////////////////////
 
-  for (int i = 36; i >= -96; i -= 12) {
-    float db0 = i;
-    float y   = mapFFTY(db0);
+  for (float dB = KDB_HI; dB >= KDB_LO; dB -= KDB_STEP) {
+    float y = mapFFTY(dB);
     drawtext(
         this,
         context, //
-        FormatString("%g dB", db0),
+        FormatString("%g dB", dB),
         ANA_X1 - 22,
         y - hud_lineheight() / 2,
         fontscale,
@@ -268,7 +268,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
     float frq = fi * getSampleRate() * float(fftoversample);
     float x2  = mapFFTX(frq);
-    float y2  = mapFFTY(dB - 12);
+    float y2  = mapFFTY(dB);
 
     // printf("frq<%g> dB<%f>\n", frq, dB);
     if (frq >= 8.0f)
