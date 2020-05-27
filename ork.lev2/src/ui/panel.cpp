@@ -21,10 +21,6 @@ Panel::Panel(const std::string& name, int x, int y, int w, int h)
 }
 
 Panel::~Panel() {
-  if (_child) {
-    _child->SetParent(nullptr);
-    _child = nullptr;
-  }
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -159,10 +155,10 @@ void Panel::snap() {
     return;
 
   int x2 = GetX2();
-  int pw = mParent->GetW();
+  int pw = mParent->width();
   int xd = abs(x2 - pw);
   int y2 = GetY2();
-  int ph = mParent->GetH();
+  int ph = mParent->height();
   int yd = abs(y2 - ph);
   // printf( "x2<%d> pw<%d> xd<%d>\n", x2, pw, xd );
   // printf( "y2<%d> ph<%d> yd<%d>\n", y2, ph, yd );
@@ -176,7 +172,7 @@ void Panel::snap() {
   } else if (snapt)
     SetY(-kpanelw);
   else if (snapb)
-    SetY(ph + kpanelw - GetH());
+    SetY(ph + kpanelw - height());
   if (snapl && snapr) {
     SetX(-kpanelw);
     SetW(pw + 2 * kpanelw);
@@ -184,7 +180,7 @@ void Panel::snap() {
   if (snapl)
     SetX(-kpanelw);
   else if (snapr)
-    SetX(pw + kpanelw - GetW());
+    SetX(pw + kpanelw - width());
 }
 
 HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
@@ -211,7 +207,11 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
       if (filtev.mBut0) {
         printf("ilocx<%d> mCloseX<%d>\n", ilocx, mCloseX);
         if ((ilocx >= mCloseX) && ((ilocx - mCloseX) < kpanelw) && (ilocy >= mCloseY) && ((ilocy - mCloseY) < kpanelw)) {
-          auto lamb = [=]() { delete this; };
+          auto lamb = [=]() {
+            if (mParent) {
+              mParent->removeChild(this);
+            }
+          };
           opq::Op(lamb).QueueASync(opq::mainSerialQueue());
 
         } else

@@ -201,7 +201,7 @@ void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
   uiev->miEventCode = (Buttons == Qt::NoButton) ? ork::ui::UIEV_MOVE : ork::ui::UIEV_DRAG;
 
   if (vp) {
-    uiev->_vpdim = fvec2(vp->GetW(), vp->GetH());
+    uiev->_vpdim = fvec2(vp->width(), vp->height());
     if (_HIDPI()) {
       uiev->_vpdim *= 0.5;
     }
@@ -221,7 +221,7 @@ void QCtxWidget::mousePressEvent(QMouseEvent* event) {
   auto vp           = gfxwin ? gfxwin->GetRootWidget() : nullptr;
   uiev->miEventCode = ork::ui::UIEV_PUSH;
   if (vp) {
-    uiev->_vpdim = fvec2(vp->GetW(), vp->GetH());
+    uiev->_vpdim = fvec2(vp->width(), vp->height());
     if (_HIDPI()) {
       uiev->_vpdim *= 0.5;
     }
@@ -241,7 +241,7 @@ void QCtxWidget::mouseDoubleClickEvent(QMouseEvent* event) {
   uiev->miEventCode = ork::ui::UIEV_DOUBLECLICK;
 
   if (vp) {
-    uiev->_vpdim = fvec2(vp->GetW(), vp->GetH());
+    uiev->_vpdim = fvec2(vp->width(), vp->height());
     if (_HIDPI()) {
       uiev->_vpdim *= 0.5;
     }
@@ -261,7 +261,7 @@ void QCtxWidget::mouseReleaseEvent(QMouseEvent* event) {
   uiev->miEventCode = ork::ui::UIEV_RELEASE;
 
   if (vp) {
-    uiev->_vpdim = fvec2(vp->GetW(), vp->GetH());
+    uiev->_vpdim = fvec2(vp->width(), vp->height());
     if (_HIDPI()) {
       uiev->_vpdim *= 0.5;
     }
@@ -301,7 +301,7 @@ void QCtxWidget::wheelEvent(QWheelEvent* qem) {
   uiev->miMWY = idelta;
 
   if (vp && idelta != 0) {
-    uiev->_vpdim = fvec2(vp->GetW(), vp->GetH());
+    uiev->_vpdim = fvec2(vp->width(), vp->height());
     if (_HIDPI()) {
       uiev->_vpdim *= 0.5;
     }
@@ -348,7 +348,7 @@ void QCtxWidget::keyPressEvent(QKeyEvent* event) {
   }
 
   if (vp) {
-    uiev->_vpdim = fvec2(vp->GetW(), vp->GetH());
+    uiev->_vpdim = fvec2(vp->width(), vp->height());
     if (_HIDPI()) {
       uiev->_vpdim *= 0.5;
     }
@@ -389,7 +389,7 @@ void QCtxWidget::keyReleaseEvent(QKeyEvent* event) {
   }
 
   if (vp) {
-    uiev->_vpdim = fvec2(vp->GetW(), vp->GetH());
+    uiev->_vpdim = fvec2(vp->width(), vp->height());
     if (_HIDPI()) {
       uiev->_vpdim *= 0.5;
     }

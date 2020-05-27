@@ -44,8 +44,8 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
   // lazy create mrt's
   //////////////////////////////////////////////////
 
-  int iw = Base->GetW();
-  int ih = Base->GetH();
+  int iw = Base->width();
+  int ih = Base->height();
 
   iw = (iw < 16) ? 16 : iw;
   ih = (ih < 16) ? 16 : ih;
@@ -369,7 +369,8 @@ void GlFrameBufferInterface::rtGroupClear(RtGroup* rtg) {
   }
   if (rtg->GetNumTargets()) {
     BufferBits |= GL_COLOR_BUFFER_BIT;
-    glClearColor(mcClearColor.GetX(), mcClearColor.GetY(), mcClearColor.GetZ(), mcClearColor.GetW());
+    const auto& C = rtg->_clearColor;
+    glClearColor(C.x, C.y, C.z, C.w);
   }
   glClear(BufferBits);
   GL_ERRORCHECK();

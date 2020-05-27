@@ -463,11 +463,11 @@ template <typename T> void Matrix44<T>::FromQuaternion(Quaternion<T> quat) {
   T yy = quat.GetY() * quat.GetY();
   T zz = quat.GetZ() * quat.GetZ();
   T xy = quat.GetX() * quat.GetY();
-  T zw = quat.GetZ() * quat.GetW();
+  T zw = quat.GetZ() * quat.width();
   T zx = quat.GetZ() * quat.GetX();
-  T yw = quat.GetY() * quat.GetW();
+  T yw = quat.GetY() * quat.width();
   T yz = quat.GetY() * quat.GetZ();
-  T xw = quat.GetX() * quat.GetW();
+  T xw = quat.GetX() * quat.width();
 
   elements[0][0] = T(1.0f) - (T(2.0f) * (yy + zz));
   elements[0][1] = T(2.0f) * (xy + zw);
@@ -845,7 +845,7 @@ void Matrix44<T>::Lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par) //
   Qrot.FromMatrix(CORR);
 
   // Vector4<T>  rawaxisang = Qrot.toAxisAngle();
-  // T rawangle = rawaxisang.GetW();
+  // T rawangle = rawaxisang.width();
   // T	newangle = rawangle*par;
   // Vector4<T> newaxisang = rawaxisang;
   // newaxisang.SetW( newangle );
@@ -947,19 +947,19 @@ template <typename T> Vector4<T> Matrix44<T>::GetColumn(int icol) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix44<T>::SetRow(int irow, const Vector4<T>& v) {
-  SetElemXY(0, irow, v.GetX());
-  SetElemXY(1, irow, v.GetY());
-  SetElemXY(2, irow, v.GetZ());
-  SetElemXY(3, irow, v.GetW());
+  SetElemXY(0, irow, v.x);
+  SetElemXY(1, irow, v.y);
+  SetElemXY(2, irow, v.z);
+  SetElemXY(3, irow, v.w);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix44<T>::SetColumn(int icol, const Vector4<T>& v) {
-  SetElemXY(icol, 0, v.GetX());
-  SetElemXY(icol, 1, v.GetY());
-  SetElemXY(icol, 2, v.GetZ());
-  SetElemXY(icol, 3, v.GetW());
+  SetElemXY(icol, 0, v.x);
+  SetElemXY(icol, 1, v.y);
+  SetElemXY(icol, 2, v.z);
+  SetElemXY(icol, 3, v.w);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

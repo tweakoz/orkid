@@ -70,14 +70,6 @@ public:
     return (w);
   }
 
-  // sometimes 4-vectors are used for XYWH format
-  T width(void) const {
-    return (z);
-  }
-  T GetHeight(void) const {
-    return (w);
-  }
-
   void Set(T _x, T _y, T _z, T _w) {
     x = _x;
     y = _y;
@@ -101,14 +93,6 @@ public:
   }
   void SetW(T _w) {
     w = _w;
-  }
-
-  // sometimes 4-vectors are used for XYWH format
-  void SetWidth(T width) {
-    z = width;
-  }
-  void SetHeight(T height) {
-    w = height;
   }
 
   Vector3<T> xyz(void) const {
@@ -271,7 +255,7 @@ public:
         T::FromFX(vec.GetX().FXCast()),
         T::FromFX(vec.GetY().FXCast()),
         T::FromFX(vec.GetZ().FXCast()),
-        T::FromFX(vec.GetW().FXCast()));
+        T::FromFX(vec.width().FXCast()));
   }
 
 public:

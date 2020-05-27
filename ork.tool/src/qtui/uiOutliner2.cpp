@@ -600,8 +600,8 @@ ui::HandlerResult Outliner2View::DoOnUiEvent(ui::event_constptr_t EV) {
       int idelta = EV->miMWY;
 
       GetPixel(ilocx, ilocy, ctx);
-      float fx                   = float(ilocx) / float(GetW());
-      float fy                   = float(ilocy) / float(GetH());
+      float fx                   = float(ilocx) / float(width());
+      float fy                   = float(ilocy) / float(height());
       ork::rtti::ICastable* pobj = ctx.GetObject(_pickbuffer, 0);
 
       bool is_in_set = true; // IsObjInSet(pobj);

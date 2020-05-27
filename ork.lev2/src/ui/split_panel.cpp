@@ -194,10 +194,10 @@ void SplitPanel::snap() {
     return;
 
   int x2 = GetX2();
-  int pw = mParent->GetW();
+  int pw = mParent->width();
   int xd = abs(x2 - pw);
   int y2 = GetY2();
-  int ph = mParent->GetH();
+  int ph = mParent->height();
   int yd = abs(y2 - ph);
   // printf( "x2<%d> pw<%d> xd<%d>\n", x2, pw, xd );
   // printf( "y2<%d> ph<%d> yd<%d>\n", y2, ph, yd );
@@ -211,7 +211,7 @@ void SplitPanel::snap() {
   } else if (snapt)
     SetY(-kpanelw);
   else if (snapb)
-    SetY(ph + kpanelw - GetH());
+    SetY(ph + kpanelw - height());
   if (snapl && snapr) {
     SetX(-kpanelw);
     SetW(pw + 2 * kpanelw);
@@ -219,7 +219,7 @@ void SplitPanel::snap() {
   if (snapl)
     SetX(-kpanelw);
   else if (snapr)
-    SetX(pw + kpanelw - GetW());
+    SetX(pw + kpanelw - width());
 }
 
 HandlerResult SplitPanel::DoOnUiEvent(event_constptr_t Ev) {

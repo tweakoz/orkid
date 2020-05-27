@@ -289,8 +289,8 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
   }
   ///////////////////////////////////////////////////////////////////
   void End(Context* pTARG) {
-    int iw = mpCurrentGedVp->GetW();
-    int ih = mpCurrentGedVp->GetH();
+    int iw = mpCurrentGedVp->width();
+    int ih = mpCurrentGedVp->height();
     lev2::GfxMaterialUI uimat(pTARG);
     miRejected                           = 0;
     miAccepted                           = 0;
@@ -592,8 +592,8 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   }
   ///////////////////////////////////////////////////////////////////
   void End(Context* pTARG) {
-    int iw = mpCurrentGedVp->GetW();
-    int ih = mpCurrentGedVp->GetH();
+    int iw = mpCurrentGedVp->width();
+    int ih = mpCurrentGedVp->height();
     lev2::GfxMaterialUI uimat(pTARG);
     miRejected                           = 0;
     miAccepted                           = 0;

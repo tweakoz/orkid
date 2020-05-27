@@ -381,7 +381,7 @@ void GfxMaterial3DSolid::SetMaterialProperty(const char* prop, const char* val) 
       printf("color<0x%08x>\n", ucolor);
 
       Color = fvec4(ucolor);
-      printf("color<%f %f %f %f>\n", Color.GetX(), Color.GetY(), Color.GetZ(), Color.GetW());
+      printf("color<%f %f %f %f>\n", Color.x, Color.y, Color.z, Color.w);
     }
   }
 }

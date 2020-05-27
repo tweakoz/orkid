@@ -52,7 +52,10 @@ struct HudLine {
 };
 using hudlines_t = std::vector<HudLine>;
 
-void drawHudLines(lev2::Context* context, const hudlines_t& lines);
+void drawHudLines(
+    ui::Surface* surface,   //
+    lev2::Context* context, //
+    const hudlines_t& lines);
 
 ///////////////////////////////////////////////////////////////////////////////
 

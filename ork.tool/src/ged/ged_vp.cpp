@@ -189,7 +189,7 @@ ui::HandlerResult GedVP::DoOnUiEvent(ui::event_constptr_t EV) {
           // ism = -200
           ////////////////////////////////////
 
-          int iwh        = GetH();                  // 500
+          int iwh        = height();                  // 500
           int irh        = mWidget.GetRootHeight(); // 200
           int iscrollmin = (iwh - irh);             // 300
 
@@ -248,8 +248,8 @@ ui::HandlerResult GedVP::DoOnUiEvent(ui::event_constptr_t EV) {
       QMouseEvent* qem = (QMouseEvent*)qip;
 
       GetPixel(ilocx, ilocy, ctx);
-      float fx                   = float(ilocx) / float(GetW());
-      float fy                   = float(ilocy) / float(GetH());
+      float fx                   = float(ilocx) / float(width());
+      float fy                   = float(ilocy) / float(height());
       ork::rtti::ICastable* pobj = ctx.GetObject(_pickbuffer, 0);
 
       bool is_in_set = IsObjInSet(pobj);

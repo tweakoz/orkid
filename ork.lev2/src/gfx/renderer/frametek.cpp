@@ -51,12 +51,12 @@ IRenderTarget::IRenderTarget() {
 RtGroupRenderTarget::RtGroupRenderTarget(RtGroup* prtgroup)
     : _rtgroup(prtgroup) {
 }
-int RtGroupRenderTarget::GetW() {
-  // printf( "RtGroup W<%d> H<%d>\n", _rtgroup->GetW(), _rtgroup->GetH() );
-  return _rtgroup->GetW();
+int RtGroupRenderTarget::width() {
+  // printf( "RtGroup W<%d> H<%d>\n", _rtgroup->width(), _rtgroup->height() );
+  return _rtgroup->width();
 }
-int RtGroupRenderTarget::GetH() {
-  return _rtgroup->GetH();
+int RtGroupRenderTarget::height() {
+  return _rtgroup->height();
 }
 void RtGroupRenderTarget::BeginFrame(FrameRenderer& frenderer) {
 }
@@ -68,11 +68,11 @@ void RtGroupRenderTarget::EndFrame(FrameRenderer& frenderer) {
 UiViewportRenderTarget::UiViewportRenderTarget(ui::Viewport* pVP)
     : mpViewport(pVP) {
 }
-int UiViewportRenderTarget::GetW() {
-  return mpViewport->GetW();
+int UiViewportRenderTarget::width() {
+  return mpViewport->width();
 }
-int UiViewportRenderTarget::GetH() {
-  return mpViewport->GetH();
+int UiViewportRenderTarget::height() {
+  return mpViewport->height();
 }
 void UiViewportRenderTarget::BeginFrame(FrameRenderer& frenderer) {
   RenderContextFrameData& FrameData = frenderer.framedata();
@@ -90,11 +90,11 @@ void UiViewportRenderTarget::EndFrame(FrameRenderer& frenderer) {
 UiSurfaceRenderTarget::UiSurfaceRenderTarget(ui::Surface* pVP)
     : mSurface(pVP) {
 }
-int UiSurfaceRenderTarget::GetW() {
-  return mSurface->GetW();
+int UiSurfaceRenderTarget::width() {
+  return mSurface->width();
 }
-int UiSurfaceRenderTarget::GetH() {
-  return mSurface->GetH();
+int UiSurfaceRenderTarget::height() {
+  return mSurface->height();
 }
 void UiSurfaceRenderTarget::BeginFrame(FrameRenderer& frenderer) {
   mSurface->BeginSurface(frenderer);

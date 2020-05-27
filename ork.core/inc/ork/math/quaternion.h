@@ -65,7 +65,7 @@ template <typename T> struct Quaternion {
   const T& GetZ() const {
     return z;
   }
-  const T& GetW() const {
+  const T& width() const {
     return w;
   }
 

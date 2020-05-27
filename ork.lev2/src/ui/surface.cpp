@@ -16,7 +16,7 @@ namespace ork { namespace ui {
 Surface::Surface(const std::string& name, int x, int y, int w, int h, fcolor3 color, F32 depth)
     : Group(name, x, y, w, h)
     , mbClear(true)
-    , mcClearColor(color)
+    , _clearColor(color)
     , mfClearDepth(depth)
     , mRtGroup(nullptr)
     , mNeedsSurfaceRepaint(true)
@@ -26,8 +26,8 @@ Surface::Surface(const std::string& name, int x, int y, int w, int h, fcolor3 co
 ///////////////////////////////////////////////////////////////////////////////
 
 void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
-  int iW   = GetW();
-  int iH   = GetH();
+  int iW   = width();
+  int iH   = height();
   float fx = float(ix) / float(iW);
   float fy = float(iy) / float(iH);
   /////////////////////////////////////////////////////////////
@@ -56,7 +56,7 @@ void Surface::OnResize(void) {
 
   if( mRtGroup )
   {
-      mRtGroup->Resize(GetW(),GetH());
+      mRtGroup->Resize(width(),height());
   }*/
   DoSurfaceResize();
   SetDirty();
@@ -81,10 +81,10 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     mRtGroup->SetMrt(0, mrt0);
   }
   ///////////////////////////////////////
-  int irtgw  = mRtGroup->GetW();
-  int irtgh  = mRtGroup->GetH();
-  int isurfw = GetW();
-  int isurfh = GetH();
+  int irtgw  = mRtGroup->width();
+  int irtgh  = mRtGroup->height();
+  int isurfw = width();
+  int isurfh = height();
   if (irtgw != isurfw || irtgh != isurfh) {
     // printf( "resize surface rtgroup<%d %d>\n", isurfw, isurfh);
     mRtGroup->Resize(isurfw, isurfh);
@@ -158,15 +158,15 @@ void Surface::SurfaceRender(lev2::RenderContextFrameData& FrameData, const std::
 
 	int vpx = GetX();
 	int vpy = GetY();
-	int vpw = GetW();
-	int vph = GetH();
+	int vpw = width();
+	int vph = height();
 
 	auto fbi = pTARG->FBI();
 
 	//fbi->setScissor( vpx, vpy, vpw, vph );
 	//fbi->setViewport( vpx, vpy, vpw, vph );
 
-SRect VPRect( 0, 0, pIT->GetW(), pIT->GetH() );
+SRect VPRect( 0, 0, pIT->width(), pIT->height() );
 	pTARG->FBI()->pushViewport( VPRect );
 	pTARG->FBI()->pushScissor( VPRect );
 	{

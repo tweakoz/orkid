@@ -71,7 +71,7 @@ struct IMPL {
     //////////////////////////////////////////////////////
     // Resize RenderTargets
     //////////////////////////////////////////////////////
-    if (_rtg->GetW() != _width or _rtg->GetH() != _height) {
+    if (_rtg->width() != _width or _rtg->height() != _height) {
       _rtg->Resize(_width, _height);
     }
     //////////////////////////////////////////////////////

@@ -79,7 +79,7 @@ void NoVrDevice::_updatePoses(RenderContextFrameData& RCFD) {
   // printf("v3<%g %g %g>\n", v3.x, v3.y, v3.z);
   auto& CPD    = RCFD.topCPD();
   auto rt      = CPD._irendertarget;
-  float aspect = float(rt->GetW()) / float(rt->GetH());
+  float aspect = float(rt->width()) / float(rt->height());
   _posemap["projl"].Perspective(45, aspect, .1, 100000);
   _posemap["projr"].Perspective(45, aspect, .1, 100000);
   _posemap["projc"].Perspective(45, aspect, .1, 100000);

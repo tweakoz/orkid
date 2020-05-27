@@ -93,10 +93,10 @@ public:
   int GetY2(void) const {
     return miY2;
   }
-  int GetW(void) const {
+  int width(void) const {
     return miW;
   }
-  int GetH(void) const {
+  int height(void) const {
     return miH;
   }
   void SetX(int X) {

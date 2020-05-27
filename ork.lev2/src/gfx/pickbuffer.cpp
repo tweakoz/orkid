@@ -64,10 +64,10 @@ void PickBuffer::Draw(lev2::PixelFetchContext& ctx) {
   auto fxi  = tgt->FXI();
   auto rsi  = tgt->RSI();
 
-  int irtgw  = _rtgroup->GetW();
-  int irtgh  = _rtgroup->GetH();
-  int isurfw = _surface->GetW();
-  int isurfh = _surface->GetH();
+  int irtgw  = _rtgroup->width();
+  int irtgh  = _rtgroup->height();
+  int isurfw = _surface->width();
+  int isurfh = _surface->height();
   if (irtgw != isurfw || irtgh != isurfh) {
     printf("resize pickbuf size<%d %d>\n", isurfw, isurfh);
     _width  = isurfw;

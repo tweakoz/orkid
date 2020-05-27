@@ -86,20 +86,20 @@ void XgmRigidClusterBuilder::buildVertexBuffer(lev2::Context& context, lev2::EVt
     case lev2::EVtxStreamFormat::V12N6C2T4: {
       _vertexBuffer = buildTypedVertexBuffer<lev2::SVtxV12N6C2T4>(context, _submesh, [](const meshutil::vertex& inpvtx) {
         lev2::SVtxV12N6C2T4 out_vtx;
-        out_vtx.mX = inpvtx.mPos.GetX();
-        out_vtx.mY = inpvtx.mPos.GetY();
-        out_vtx.mZ = inpvtx.mPos.GetZ();
+        out_vtx.mX = inpvtx.mPos.x;
+        out_vtx.mY = inpvtx.mPos.y;
+        out_vtx.mZ = inpvtx.mPos.z;
 
-        out_vtx.mNX = s16(inpvtx.mNrm.GetX() * float(32767.0f));
-        out_vtx.mNY = s16(inpvtx.mNrm.GetY() * float(32767.0f));
-        out_vtx.mNZ = s16(inpvtx.mNrm.GetZ() * float(32767.0f));
+        out_vtx.mNX = s16(inpvtx.mNrm.x * float(32767.0f));
+        out_vtx.mNY = s16(inpvtx.mNrm.y * float(32767.0f));
+        out_vtx.mNZ = s16(inpvtx.mNrm.z * float(32767.0f));
 
-        out_vtx.mU = s16(inpvtx.mUV[0].mMapTexCoord.GetX() * float(1024.0f));
-        out_vtx.mV = s16(inpvtx.mUV[0].mMapTexCoord.GetY() * float(1024.0f));
+        out_vtx.mU = s16(inpvtx.mUV[0].mMapTexCoord.x * float(1024.0f));
+        out_vtx.mV = s16(inpvtx.mUV[0].mMapTexCoord.y * float(1024.0f));
 
-        int ir = int(inpvtx.mCol[0].GetY() * 255.0f);
-        int ig = int(inpvtx.mCol[0].GetZ() * 255.0f);
-        int ib = int(inpvtx.mCol[0].GetW() * 255.0f);
+        int ir = int(inpvtx.mCol[0].y * 255.0f);
+        int ig = int(inpvtx.mCol[0].z * 255.0f);
+        int ib = int(inpvtx.mCol[0].w * 255.0f);
 
         out_vtx.mColor = U16(((ir >> 3) << 11) | ((ig >> 2) << 5) | ((ib >> 3) << 0));
         return out_vtx;

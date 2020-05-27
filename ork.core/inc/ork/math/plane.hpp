@@ -33,7 +33,7 @@ Plane<T>::Plane()
 template <typename T>
 Plane<T>::Plane(const Vector4<T>& vec)
     : n(vec.xyz())
-    , d(vec.GetW()) {
+    , d(vec.w) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

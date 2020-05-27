@@ -70,7 +70,7 @@ struct IMPL {
     //////////////////////////////////////////////////////
     int newwidth  = ddprops["OutputWidth"_crcu].Get<int>();
     int newheight = ddprops["OutputHeight"_crcu].Get<int>();
-    if (_rtg->GetW() != newwidth or _rtg->GetH() != newheight) {
+    if (_rtg->width() != newwidth or _rtg->height() != newheight) {
       _rtg->Resize(newwidth, newheight);
     }
     //////////////////////////////////////////////////////

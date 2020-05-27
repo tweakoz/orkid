@@ -166,7 +166,7 @@ void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
 /////////////////////////////////////////////////
 void EzViewport::DoSurfaceResize() {
   if (_mainwin->_onResize)
-    _mainwin->_onResize(GetW(), GetH());
+    _mainwin->_onResize(width(), height());
 }
 /////////////////////////////////////////////////
 ui::HandlerResult EzViewport::DoOnUiEvent(ui::event_constptr_t ev) {

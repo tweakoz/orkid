@@ -20,179 +20,179 @@ TEST(QuatStraightDown) {
 
 TEST(Vector4DefaultConstructor) {
   fvec4 v;
-  CHECK_CLOSE(0.0f, v.GetX(), MyEPSILON);
-  CHECK_CLOSE(0.0f, v.GetY(), MyEPSILON);
-  CHECK_CLOSE(0.0f, v.GetZ(), MyEPSILON);
-  CHECK_CLOSE(1.0f, v.GetW(), MyEPSILON);
+  CHECK_CLOSE(0.0f, v.x, MyEPSILON);
+  CHECK_CLOSE(0.0f, v.y, MyEPSILON);
+  CHECK_CLOSE(0.0f, v.z, MyEPSILON);
+  CHECK_CLOSE(1.0f, v.w, MyEPSILON);
 }
 
 TEST(Vector4Constructor) {
   fvec4 v(1.0f, 2.0f, 3.0f, 4.0f);
-  CHECK_CLOSE(1.0f, v.GetX(), MyEPSILON);
-  CHECK_CLOSE(2.0f, v.GetY(), MyEPSILON);
-  CHECK_CLOSE(3.0f, v.GetZ(), MyEPSILON);
-  CHECK_CLOSE(4.0f, v.GetW(), MyEPSILON);
+  CHECK_CLOSE(1.0f, v.x, MyEPSILON);
+  CHECK_CLOSE(2.0f, v.y, MyEPSILON);
+  CHECK_CLOSE(3.0f, v.z, MyEPSILON);
+  CHECK_CLOSE(4.0f, v.w, MyEPSILON);
 }
 
 TEST(Vector4CopyConstructor) {
   fvec4 v(1.0f, 2.0f, 3.0f, 4.0f);
   Vector4 copy(v);
-  CHECK_CLOSE(1.0f, copy.GetX(), MyEPSILON);
-  CHECK_CLOSE(2.0f, copy.GetY(), MyEPSILON);
-  CHECK_CLOSE(3.0f, copy.GetZ(), MyEPSILON);
-  CHECK_CLOSE(4.0f, copy.GetW(), MyEPSILON);
+  CHECK_CLOSE(1.0f, copy.x, MyEPSILON);
+  CHECK_CLOSE(2.0f, copy.y, MyEPSILON);
+  CHECK_CLOSE(3.0f, copy.z, MyEPSILON);
+  CHECK_CLOSE(4.0f, copy.w, MyEPSILON);
 }
 
 TEST(Vector4RGBAConstructor) {
   fvec4 v(0xFF00FFFF);
-  CHECK_CLOSE(1.0f, v.GetX(), MyEPSILON);
-  CHECK_CLOSE(0.0f, v.GetY(), MyEPSILON);
-  CHECK_CLOSE(1.0f, v.GetZ(), MyEPSILON);
-  CHECK_CLOSE(1.0f, v.GetW(), MyEPSILON);
+  CHECK_CLOSE(1.0f, v.x, MyEPSILON);
+  CHECK_CLOSE(0.0f, v.y, MyEPSILON);
+  CHECK_CLOSE(1.0f, v.z, MyEPSILON);
+  CHECK_CLOSE(1.0f, v.w, MyEPSILON);
 }
 
 TEST(Vector4RotateX) {
   fvec4 v(0.0f, 1.0f, 0.0f);
   v.RotateX(PI / float(2.0f));
-  CHECK_CLOSE(0.0f, v.GetX(), MyEPSILON);
-  CHECK_CLOSE(0.0f, v.GetY(), MyEPSILON);
-  CHECK_CLOSE(1.0f, v.GetZ(), MyEPSILON);
-  CHECK_CLOSE(1.0f, v.GetW(), MyEPSILON);
+  CHECK_CLOSE(0.0f, v.x, MyEPSILON);
+  CHECK_CLOSE(0.0f, v.y, MyEPSILON);
+  CHECK_CLOSE(1.0f, v.z, MyEPSILON);
+  CHECK_CLOSE(1.0f, v.w, MyEPSILON);
 }
 
 TEST(Vector4RotateY) {
   fvec4 v(1.0f, 0.0f, 0.0f);
   v.RotateY(PI / float(2.0f));
-  CHECK_CLOSE(0.0f, v.GetX(), MyEPSILON);
-  CHECK_CLOSE(0.0f, v.GetY(), MyEPSILON);
-  CHECK_CLOSE(1.0f, v.GetZ(), MyEPSILON);
-  CHECK_CLOSE(1.0f, v.GetW(), MyEPSILON);
+  CHECK_CLOSE(0.0f, v.x, MyEPSILON);
+  CHECK_CLOSE(0.0f, v.y, MyEPSILON);
+  CHECK_CLOSE(1.0f, v.z, MyEPSILON);
+  CHECK_CLOSE(1.0f, v.w, MyEPSILON);
 }
 
 TEST(Vector4RotateZ) {
   fvec4 v(1.0f, 0.0f, 0.0f);
   v.RotateZ(PI / float(2.0f));
-  CHECK_CLOSE(0.0f, v.GetX(), MyEPSILON);
-  CHECK_CLOSE(1.0f, v.GetY(), MyEPSILON);
-  CHECK_CLOSE(0.0f, v.GetZ(), MyEPSILON);
-  CHECK_CLOSE(1.0f, v.GetW(), MyEPSILON);
+  CHECK_CLOSE(0.0f, v.x, MyEPSILON);
+  CHECK_CLOSE(1.0f, v.y, MyEPSILON);
+  CHECK_CLOSE(0.0f, v.z, MyEPSILON);
+  CHECK_CLOSE(1.0f, v.w, MyEPSILON);
 }
 
 TEST(Vector4Add) {
   fvec4 v(1.0f, 0.0f, 0.0f);
   fvec4 res = v + Vector4(0.0f, 1.0f, 0.0f);
-  CHECK_CLOSE(1.0f, res.GetX(), MyEPSILON);
-  CHECK_CLOSE(1.0f, res.GetY(), MyEPSILON);
-  CHECK_CLOSE(0.0f, res.GetZ(), MyEPSILON);
-  CHECK_CLOSE(2.0f, res.GetW(), MyEPSILON);
+  CHECK_CLOSE(1.0f, res.x, MyEPSILON);
+  CHECK_CLOSE(1.0f, res.y, MyEPSILON);
+  CHECK_CLOSE(0.0f, res.z, MyEPSILON);
+  CHECK_CLOSE(2.0f, res.w, MyEPSILON);
 }
 
 TEST(Vector4AddTo) {
   fvec4 v(1.0f, 0.0f, 0.0f);
   v += Vector4(0.0f, 1.0f, 0.0f);
-  CHECK_CLOSE(1.0f, v.GetX(), MyEPSILON);
-  CHECK_CLOSE(1.0f, v.GetY(), MyEPSILON);
-  CHECK_CLOSE(0.0f, v.GetZ(), MyEPSILON);
-  CHECK_CLOSE(2.0f, v.GetW(), MyEPSILON);
+  CHECK_CLOSE(1.0f, v.x, MyEPSILON);
+  CHECK_CLOSE(1.0f, v.y, MyEPSILON);
+  CHECK_CLOSE(0.0f, v.z, MyEPSILON);
+  CHECK_CLOSE(2.0f, v.w, MyEPSILON);
 }
 
 TEST(Vector4Subtract) {
   fvec4 v(1.0f, 0.0f, 0.0f);
   Vector4 res = v - Vector4(0.0f, 1.0f, 0.0f);
-  CHECK_CLOSE(1.0f, res.GetX(), MyEPSILON);
-  CHECK_CLOSE(-1.0f, res.GetY(), MyEPSILON);
-  CHECK_CLOSE(0.0f, res.GetZ(), MyEPSILON);
-  CHECK_CLOSE(0.0f, res.GetW(), MyEPSILON);
+  CHECK_CLOSE(1.0f, res.x, MyEPSILON);
+  CHECK_CLOSE(-1.0f, res.y, MyEPSILON);
+  CHECK_CLOSE(0.0f, res.z, MyEPSILON);
+  CHECK_CLOSE(0.0f, res.w, MyEPSILON);
 }
 
 TEST(Vector4SubtractFrom) {
   fvec4 v(1.0f, 0.0f, 0.0f);
   v -= Vector4(0.0f, 1.0f, 0.0f);
-  CHECK_CLOSE(1.0f, v.GetX(), MyEPSILON);
-  CHECK_CLOSE(-1.0f, v.GetY(), MyEPSILON);
-  CHECK_CLOSE(0.0f, v.GetZ(), MyEPSILON);
-  CHECK_CLOSE(0.0f, v.GetW(), MyEPSILON);
+  CHECK_CLOSE(1.0f, v.x, MyEPSILON);
+  CHECK_CLOSE(-1.0f, v.y, MyEPSILON);
+  CHECK_CLOSE(0.0f, v.z, MyEPSILON);
+  CHECK_CLOSE(0.0f, v.w, MyEPSILON);
 }
 
 TEST(Vector4Multiply) {
   fvec4 v(1.0f, 2.0f, 3.0f);
   Vector4 res = v * Vector4(3.0f, 2.0f, 1.0f);
-  CHECK_CLOSE(3.0f, res.GetX(), MyEPSILON);
-  CHECK_CLOSE(4.0f, res.GetY(), MyEPSILON);
-  CHECK_CLOSE(3.0f, res.GetZ(), MyEPSILON);
-  CHECK_CLOSE(1.0f, res.GetW(), MyEPSILON);
+  CHECK_CLOSE(3.0f, res.x, MyEPSILON);
+  CHECK_CLOSE(4.0f, res.y, MyEPSILON);
+  CHECK_CLOSE(3.0f, res.z, MyEPSILON);
+  CHECK_CLOSE(1.0f, res.w, MyEPSILON);
 }
 
 TEST(Vector4MultiplyTo) {
   fvec4 v(1.0f, 2.0f, 3.0f);
   v *= Vector4(3.0f, 2.0f, 1.0f);
-  CHECK_CLOSE(3.0f, v.GetX(), MyEPSILON);
-  CHECK_CLOSE(4.0f, v.GetY(), MyEPSILON);
-  CHECK_CLOSE(3.0f, v.GetZ(), MyEPSILON);
-  CHECK_CLOSE(1.0f, v.GetW(), MyEPSILON);
+  CHECK_CLOSE(3.0f, v.x, MyEPSILON);
+  CHECK_CLOSE(4.0f, v.y, MyEPSILON);
+  CHECK_CLOSE(3.0f, v.z, MyEPSILON);
+  CHECK_CLOSE(1.0f, v.w, MyEPSILON);
 }
 
 TEST(Vector4Divide) {
   fvec4 v(1.0f, 2.0f, 3.0f);
   Vector4 res = v / Vector4(3.0f, 2.0f, 1.0f);
-  CHECK_CLOSE(.333333f, res.GetX(), MyEPSILON);
-  CHECK_CLOSE(1.0f, res.GetY(), MyEPSILON);
-  CHECK_CLOSE(3.0f, res.GetZ(), MyEPSILON);
-  CHECK_CLOSE(1.0f, res.GetW(), MyEPSILON);
+  CHECK_CLOSE(.333333f, res.x, MyEPSILON);
+  CHECK_CLOSE(1.0f, res.y, MyEPSILON);
+  CHECK_CLOSE(3.0f, res.z, MyEPSILON);
+  CHECK_CLOSE(1.0f, res.w, MyEPSILON);
 }
 
 TEST(Vector4DivideTo) {
   fvec4 v(1.0f, 2.0f, 3.0f);
   v /= Vector4(3.0f, 2.0f, 1.0f);
-  CHECK_CLOSE(0.333333f, v.GetX(), MyEPSILON);
-  CHECK_CLOSE(1.0f, v.GetY(), MyEPSILON);
-  CHECK_CLOSE(3.0f, v.GetZ(), MyEPSILON);
-  CHECK_CLOSE(1.0f, v.GetW(), MyEPSILON);
+  CHECK_CLOSE(0.333333f, v.x, MyEPSILON);
+  CHECK_CLOSE(1.0f, v.y, MyEPSILON);
+  CHECK_CLOSE(3.0f, v.z, MyEPSILON);
+  CHECK_CLOSE(1.0f, v.w, MyEPSILON);
 }
 
 TEST(Vector4Scale) {
   fvec4 v(1.0f, 2.0f, 3.0f);
   fvec4 res = v * float(3.0f);
-  CHECK_CLOSE(3.0f, res.GetX(), MyEPSILON);
-  CHECK_CLOSE(6.0f, res.GetY(), MyEPSILON);
-  CHECK_CLOSE(9.0f, res.GetZ(), MyEPSILON);
-  CHECK_CLOSE(3.0f, res.GetW(), MyEPSILON);
+  CHECK_CLOSE(3.0f, res.x, MyEPSILON);
+  CHECK_CLOSE(6.0f, res.y, MyEPSILON);
+  CHECK_CLOSE(9.0f, res.z, MyEPSILON);
+  CHECK_CLOSE(3.0f, res.w, MyEPSILON);
 }
 
 TEST(Vector4ScaleTo) {
   fvec4 v(1.0f, 2.0f, 3.0f);
   v *= float(3.0f);
-  CHECK_CLOSE(3.0f, v.GetX(), MyEPSILON);
-  CHECK_CLOSE(6.0f, v.GetY(), MyEPSILON);
-  CHECK_CLOSE(9.0f, v.GetZ(), MyEPSILON);
-  CHECK_CLOSE(3.0f, v.GetW(), MyEPSILON);
+  CHECK_CLOSE(3.0f, v.x, MyEPSILON);
+  CHECK_CLOSE(6.0f, v.y, MyEPSILON);
+  CHECK_CLOSE(9.0f, v.z, MyEPSILON);
+  CHECK_CLOSE(3.0f, v.w, MyEPSILON);
 }
 
 TEST(Vector4ScalePre) {
   fvec4 v(1.0f, 2.0f, 3.0f);
   fvec4 res = float(3.0f) * v;
-  CHECK_CLOSE(3.0f, res.GetX(), MyEPSILON);
-  CHECK_CLOSE(6.0f, res.GetY(), MyEPSILON);
-  CHECK_CLOSE(9.0f, res.GetZ(), MyEPSILON);
-  CHECK_CLOSE(1.0f, res.GetW(), MyEPSILON);
+  CHECK_CLOSE(3.0f, res.x, MyEPSILON);
+  CHECK_CLOSE(6.0f, res.y, MyEPSILON);
+  CHECK_CLOSE(9.0f, res.z, MyEPSILON);
+  CHECK_CLOSE(1.0f, res.w, MyEPSILON);
 }
 
 TEST(Vector4InvScale) {
   fvec4 v(1.0f, 2.0f, 3.0f);
   fvec4 res = v / float(3.0f);
-  CHECK_CLOSE(0.333333f, res.GetX(), MyEPSILON);
-  CHECK_CLOSE(0.666667f, res.GetY(), MyEPSILON);
-  CHECK_CLOSE(1.0f, res.GetZ(), MyEPSILON);
-  CHECK_CLOSE(0.333333f, res.GetW(), MyEPSILON);
+  CHECK_CLOSE(0.333333f, res.x, MyEPSILON);
+  CHECK_CLOSE(0.666667f, res.y, MyEPSILON);
+  CHECK_CLOSE(1.0f, res.z, MyEPSILON);
+  CHECK_CLOSE(0.333333f, res.w, MyEPSILON);
 }
 
 TEST(Vector4InvScaleTo) {
   fvec4 v(1.0f, 2.0f, 3.0f);
   v /= float(3.0f);
-  CHECK_CLOSE(0.333333f, v.GetX(), MyEPSILON);
-  CHECK_CLOSE(0.666667f, v.GetY(), MyEPSILON);
-  CHECK_CLOSE(1.0f, v.GetZ(), MyEPSILON);
-  CHECK_CLOSE(0.333333f, v.GetW(), MyEPSILON);
+  CHECK_CLOSE(0.333333f, v.x, MyEPSILON);
+  CHECK_CLOSE(0.666667f, v.y, MyEPSILON);
+  CHECK_CLOSE(1.0f, v.z, MyEPSILON);
+  CHECK_CLOSE(0.333333f, v.w, MyEPSILON);
 }
 
 TEST(Vector4EqualCompare) {
@@ -222,28 +222,28 @@ TEST(Vector4Cross) {
   fvec4 v1(1.0f, 2.0f, 3.0f);
   fvec4 v2(4.0f, 3.0f, 2.0f);
   fvec4 res = v1.Cross(v2);
-  CHECK_CLOSE(-5.0f, res.GetX(), MyEPSILON);
-  CHECK_CLOSE(10.0f, res.GetY(), MyEPSILON);
-  CHECK_CLOSE(-5.0f, res.GetZ(), MyEPSILON);
-  CHECK_CLOSE(1.0f, res.GetW(), MyEPSILON);
+  CHECK_CLOSE(-5.0f, res.x, MyEPSILON);
+  CHECK_CLOSE(10.0f, res.y, MyEPSILON);
+  CHECK_CLOSE(-5.0f, res.z, MyEPSILON);
+  CHECK_CLOSE(1.0f, res.w, MyEPSILON);
 }
 
 TEST(Vector4Normalize) {
   fvec4 v(1.0f, 2.0f, 3.0f);
   v.Normalize();
-  CHECK_CLOSE(0.267261f, v.GetX(), MyEPSILON);
-  CHECK_CLOSE(0.534522f, v.GetY(), MyEPSILON);
-  CHECK_CLOSE(0.801784f, v.GetZ(), MyEPSILON);
-  CHECK_CLOSE(1.0f, v.GetW(), MyEPSILON);
+  CHECK_CLOSE(0.267261f, v.x, MyEPSILON);
+  CHECK_CLOSE(0.534522f, v.y, MyEPSILON);
+  CHECK_CLOSE(0.801784f, v.z, MyEPSILON);
+  CHECK_CLOSE(1.0f, v.w, MyEPSILON);
 }
 
 TEST(Vector4Normal) {
   fvec4 v(1.0f, 2.0f, 3.0f);
   fvec4 res = v.Normal();
-  CHECK_CLOSE(0.267261f, res.GetX(), MyEPSILON);
-  CHECK_CLOSE(0.534522f, res.GetY(), MyEPSILON);
-  CHECK_CLOSE(0.801784f, res.GetZ(), MyEPSILON);
-  CHECK_CLOSE(1.0f, res.GetW(), MyEPSILON);
+  CHECK_CLOSE(0.267261f, res.x, MyEPSILON);
+  CHECK_CLOSE(0.534522f, res.y, MyEPSILON);
+  CHECK_CLOSE(0.801784f, res.z, MyEPSILON);
+  CHECK_CLOSE(1.0f, res.w, MyEPSILON);
 }
 
 TEST(Vector4Mag) {
@@ -263,19 +263,19 @@ TEST(Vector4Transform) {
   fmtx4 m;
   m.SetRotateX(PI / float(2.0f));
   fvec4 res = v.Transform(m);
-  CHECK_CLOSE(0.0f, res.GetX(), MyEPSILON);
-  CHECK_CLOSE(0.0f, res.GetY(), MyEPSILON);
-  CHECK_CLOSE(1.0f, res.GetZ(), MyEPSILON);
-  CHECK_CLOSE(1.0f, res.GetW(), MyEPSILON);
+  CHECK_CLOSE(0.0f, res.x, MyEPSILON);
+  CHECK_CLOSE(0.0f, res.y, MyEPSILON);
+  CHECK_CLOSE(1.0f, res.z, MyEPSILON);
+  CHECK_CLOSE(1.0f, res.w, MyEPSILON);
 }
 
 TEST(Vector4PerspectiveDivide) {
   fvec4 v(4.0f, 8.0f, 12.0f, 4.0f);
   v.PerspectiveDivide();
-  CHECK_CLOSE(1.0f, v.GetX(), MyEPSILON);
-  CHECK_CLOSE(2.0f, v.GetY(), MyEPSILON);
-  CHECK_CLOSE(3.0f, v.GetZ(), MyEPSILON);
-  CHECK_CLOSE(1.0f, v.GetW(), MyEPSILON);
+  CHECK_CLOSE(1.0f, v.x, MyEPSILON);
+  CHECK_CLOSE(2.0f, v.y, MyEPSILON);
+  CHECK_CLOSE(3.0f, v.z, MyEPSILON);
+  CHECK_CLOSE(1.0f, v.w, MyEPSILON);
 }
 
 TEST(Vector4_YO) {
@@ -307,7 +307,7 @@ TEST(Vector4_YO) {
   fvec4 v0 = fvec4(fx0, fy0, 0.0f).Transform(w2u_mtx);
   fvec4 v1 = fvec4(fx1, fy1, 0.0f).Transform(w2u_mtx);
 
-  printf("aa::V0<%f %f> V1<%f %f>\n", v0.GetX(), v0.GetY(), v1.GetX(), v1.GetY());
+  printf("aa::V0<%f %f> V1<%f %f>\n", v0.x, v0.y, v1.x, v1.y);
 
-  // CHECK_CLOSE(1.0f, v.GetW(), MyEPSILON);
+  // CHECK_CLOSE(1.0f, v.w, MyEPSILON);
 }

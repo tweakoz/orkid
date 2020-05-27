@@ -17,7 +17,7 @@ public:
   void Clear();
 
   fcolor3& GetClearColorRef(void) {
-    return mcClearColor;
+    return _clearColor;
   }
   F32 GetClearDepth(void) {
     return mfClearDepth;
@@ -50,7 +50,7 @@ protected:
 
   orkstack<lev2::FrameTechniqueBase*> mpActiveFrameTek;
   bool mbClear;
-  fcolor3 mcClearColor;
+  fcolor3 _clearColor;
   F32 mfClearDepth;
   lev2::RtGroup* mRtGroup;
   bool mNeedsSurfaceRepaint;

@@ -73,11 +73,11 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
     glDepthRange(0.0, 1.0f);
     float fx = 0.0f; // mTargetGL.FBI()->GetRtGroup()->GetX();
     float fy = 0.0f; // mTargetGL.FBI()->GetRtGroup()->GetY();
-    float fw = GetRtGroup()->GetW();
-    float fh = GetRtGroup()->GetH();
+    float fw = GetRtGroup()->width();
+    float fh = GetRtGroup()->height();
     // printf("RTGroup begin x<%f> y<%f> w<%f> h<%f>\n", fx, fy, fw, fh);
     ViewportRect extents(fx, fy, fw, fh);
-    // SRect extents( mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH() );
+    // SRect extents( mTarget.GetX(), mTarget.GetY(), mTarget.width(), mTarget.height() );
     pushViewport(extents);
     pushScissor(extents);
     // printf("BEGINFRAME<RtGroup>\n");
@@ -101,7 +101,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
 
     glDepthRange(0.0, 1.0f);
     ViewportRect extents = mTarget.mainSurfaceRectAtOrigin();
-    // printf( "WINtarg begin x<%d> y<%d> w<%d> h<%d>\n", mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH() );
+    // printf( "WINtarg begin x<%d> y<%d> w<%d> h<%d>\n", mTarget.GetX(), mTarget.GetY(), mTarget.width(), mTarget.height() );
     pushViewport(extents);
     pushScissor(extents);
     // printf("BEGINFRAME<WIN> w<%d> h<%d>\n", extents.miW, extents.miH);
@@ -282,7 +282,7 @@ void GlFrameBufferInterface::Clear(const fcolor4& color, float fdepth) {
   if (isPickState())
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   else
-    glClearColor(color.GetX(), color.GetY(), color.GetZ(), color.GetW());
+    glClearColor(color.x, color.y, color.z, color.w);
 
   // printf("GlFrameBufferInterface::ClearViewport() color<%g %g %g %g>\n", color.x, color.y, color.z, color.w);
   GL_ERRORCHECK();
@@ -316,8 +316,8 @@ void GlFrameBufferInterface::Capture(const RtGroup& rtg, int irt, const file::Pa
 
   auto tex_id = buffer->_impl.Get<GlRtBufferImpl*>()->_texture;
 
-  int iw        = rtg.GetW();
-  int ih        = rtg.GetH();
+  int iw        = rtg.width();
+  int ih        = rtg.height();
   RtBuffer* rtb = rtg.GetMrt(irt);
 
   printf("pth<%s> BUFW<%d> BUF<%d>\n", pth.c_str(), iw, ih);
@@ -563,8 +563,8 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
 
   if (bInBounds) {
     if (ctx.mRtGroup) {
-      int W  = ctx.mRtGroup->GetW();
-      int H  = ctx.mRtGroup->GetH();
+      int W  = ctx.mRtGroup->width();
+      int H  = ctx.mRtGroup->height();
       int sx = int((rAt.GetX()) * float(W));
       int sy = int((1.0f - rAt.GetY()) * float(H));
 

@@ -23,10 +23,10 @@ float SplineV2::GetComponent(int idx) const {
   float rval = 0.0f;
   switch (idx) {
     case 0:
-      rval = mData.GetX();
+      rval = mData.x;
       break;
     case 1:
-      rval = mData.GetY();
+      rval = mData.y;
       break;
   }
   return rval;
@@ -54,13 +54,13 @@ float SplineV3::GetComponent(int idx) const {
   float rval = 0.0f;
   switch (idx) {
     case 0:
-      rval = mData.GetX();
+      rval = mData.x;
       break;
     case 1:
-      rval = mData.GetY();
+      rval = mData.y;
       break;
     case 2:
-      rval = mData.GetZ();
+      rval = mData.z;
       break;
   }
   return rval;
@@ -91,16 +91,16 @@ float SplineV4::GetComponent(int idx) const {
   float rval = 0.0f;
   switch (idx) {
     case 0:
-      rval = mData.GetX();
+      rval = mData.x;
       break;
     case 1:
-      rval = mData.GetY();
+      rval = mData.y;
       break;
     case 2:
-      rval = mData.GetZ();
+      rval = mData.z;
       break;
     case 3:
-      rval = mData.GetW();
+      rval = mData.w;
       break;
   }
   return rval;

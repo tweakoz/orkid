@@ -109,7 +109,7 @@ public:
 
             fvec4 inp = it->second;
 
-            QRgb rgba = qRgba(inp.GetX() * 255.0f, inp.GetY() * 255.0f, inp.GetZ() * 255.0f, inp.GetW() * 255.0f);
+            QRgb rgba = qRgba(inp.x * 255.0f, inp.y * 255.0f, inp.z * 255.0f, inp.w * 255.0f);
 
             rgba = QColorDialog::getRgba(rgba, &bok, 0);
 

@@ -119,7 +119,7 @@ void DrawLfo(lev2::Context* context, const ItemDrawReq& EDR) {
   }
 
   R.PopOrtho(context);
-  drawHudLines(context, lines);
+  // drawHudLines(context, lines);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

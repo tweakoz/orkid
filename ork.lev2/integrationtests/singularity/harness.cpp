@@ -131,7 +131,8 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
   });
   //////////////////////////////////////////////////////////
   qtapp->onResize([=](int w, int h) { //
-    printf("GOTRESIZE<%d %d>\n", w, h);
+    // printf("GOTRESIZE<%d %d>\n", w, h);
+    the_synth->_hudvp->SetSize(w, h);
   });
   //////////////////////////////////////////////////////////
   const int64_t trackMAX = (4095 << 16);

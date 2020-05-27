@@ -30,6 +30,7 @@ ScopeSurf::ScopeSurf() //
 ///////////////////////////////////////////////////////////////////////////////
 void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   auto context         = drwev->GetTarget();
+  auto fbi             = context->FBI();
   auto syn             = synth::instance();
   auto vp              = syn->_hudvp;
   auto hudl            = syn->_hudLayer;
@@ -38,6 +39,9 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   if (false == (hudl && hudl->_LayerData))
     return;
+
+  mRtGroup->_clearColor = _clearColor;
+  fbi->rtGroupClear(mRtGroup);
 
   ///////////////////////////////////////////////
 
@@ -54,7 +58,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   const float OSC_HH = OSC_H * 0.5;
   const float OSC_CY = OSC_Y1 + OSC_HH;
 
-  DrawBorder(context, OSC_X1, OSC_Y1, OSC_X2, OSC_Y2);
+  // DrawBorder(context, OSC_X1, OSC_Y1, OSC_X2, OSC_Y2);
 
   int ycursor = OSC_Y1;
 
@@ -64,7 +68,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   double frq         = 1.0 / width;
   float triggerlevel = syn->_ostriglev;
 
-  drawtext(
+  /*drawtext(
       context, //
       FormatString("-= width: %g msec", width * 1000.0),
       OSC_X1,
@@ -103,7 +107,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       1,
       1,
       0);
-
+*/
   /////////////////////////////////////////////
   // oscilloscope centerline
   /////////////////////////////////////////////
@@ -240,7 +244,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     y1 = y2;
   }
 
-  drawHudLines(context, lines);
+  drawHudLines(this, context, lines);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ScopeSurf::DoInit(lev2::Context* pt) {

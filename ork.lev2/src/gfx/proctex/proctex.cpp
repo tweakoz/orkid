@@ -685,10 +685,10 @@ void AA16Render::RenderAA() {
 
   fmtx4 mtxortho;
 
-  float boxx = mOrthoBoxXYWH.GetX();
-  float boxy = mOrthoBoxXYWH.GetY();
-  float boxw = mOrthoBoxXYWH.GetZ();
-  float boxh = mOrthoBoxXYWH.GetW();
+  float boxx = mOrthoBoxXYWH.x;
+  float boxy = mOrthoBoxXYWH.y;
+  float boxw = mOrthoBoxXYWH.z;
+  float boxh = mOrthoBoxXYWH.w;
 
   float xa = boxx + (boxw * 0.0f);
   float xb = boxx + (boxw * 0.25f);
@@ -819,10 +819,10 @@ void AA16Render::RenderNoAA() {
   auto mtxi   = target->MTXI();
   auto fbi    = target->FBI();
 
-  float x = mOrthoBoxXYWH.GetX();
-  float y = mOrthoBoxXYWH.GetY();
-  float w = mOrthoBoxXYWH.GetZ();
-  float h = mOrthoBoxXYWH.GetW();
+  float x = mOrthoBoxXYWH.x;
+  float y = mOrthoBoxXYWH.y;
+  float w = mOrthoBoxXYWH.z;
+  float h = mOrthoBoxXYWH.w;
   float l = x;
   float r = x + w;
   float t = y;

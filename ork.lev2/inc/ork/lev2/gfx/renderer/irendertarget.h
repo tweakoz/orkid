@@ -8,8 +8,8 @@ class IRenderTarget {
 public:
   IRenderTarget();
 
-  virtual int GetW()                                = 0;
-  virtual int GetH()                                = 0;
+  virtual int width()                                = 0;
+  virtual int height()                                = 0;
   virtual void BeginFrame(FrameRenderer& frenderer) = 0;
   virtual void EndFrame(FrameRenderer& frenderer)   = 0;
 };
@@ -19,8 +19,8 @@ public:
 struct RtGroupRenderTarget : public IRenderTarget {
   RtGroupRenderTarget(RtGroup* prtgroup);
 
-  int GetW() final;
-  int GetH() final;
+  int width() final;
+  int height() final;
   void BeginFrame(FrameRenderer& frenderer) final;
   void EndFrame(FrameRenderer& frenderer) final;
 
@@ -36,8 +36,8 @@ public:
 private:
   ui::Viewport* mpViewport;
 
-  int GetW() final;
-  int GetH() final;
+  int width() final;
+  int height() final;
   void BeginFrame(FrameRenderer& frenderer) final;
   void EndFrame(FrameRenderer& frenderer) final;
 };
@@ -51,8 +51,8 @@ public:
 private:
   ui::Surface* mSurface;
 
-  int GetW() final;
-  int GetH() final;
+  int width() final;
+  int height() final;
   void BeginFrame(FrameRenderer& frenderer) final;
   void EndFrame(FrameRenderer& frenderer) final;
 };

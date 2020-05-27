@@ -61,7 +61,7 @@ void FragmentCompositorREYES::Visit(const rend_fragment* pfrag) // virtual
   if (pfrag->mZ > opaqueZ)
     return; // we can still z cull on fully opaque fragments but it might not catch everything
 
-  bool bisopaque = (pfrag->mRGBA.GetW() == 1.0f);
+  bool bisopaque = (pfrag->mRGBA.w == 1.0f);
 
   if (bisopaque) {
     if (pfrag->mZ < opaqueZ) {
@@ -184,7 +184,7 @@ FragmentCompositorREYES::Composite(const ork::fvec3& clrcolor) { ///////////////
     ////////////////////////////////////
     if (bleavelast) // composite in volume
     {
-      if (fragrgba.GetW() < 1.0f) {
+      if (fragrgba.w < 1.0f) {
         const ork::fvec3& cnrm = pfrag->mWldSpaceNrm;
         const ork::fvec3& lnrm = plastfragment->mWldSpaceNrm;
 
@@ -194,7 +194,7 @@ FragmentCompositorREYES::Composite(const ork::fvec3& clrcolor) { ///////////////
           const ork::fvec3& lpos = plastfragment->mWorldPos;
           OrkAssert(plastvolumeshader);
           ork::fvec4 shcol = plastvolumeshader->ShadeVolume(lpos, wpos);
-          float falpha     = shcol.GetW();
+          float falpha     = shcol.w;
           ork::fvec3 res;
           res.Lerp(rgb, shcol.xyz(), falpha);
           rgb = res;
@@ -204,7 +204,7 @@ FragmentCompositorREYES::Composite(const ork::fvec3& clrcolor) { ///////////////
     ////////////////////////////////////
 
     ork::fvec3 res;
-    res.Lerp(rgb, fragrgba.xyz(), fragrgba.GetW());
+    res.Lerp(rgb, fragrgba.xyz(), fragrgba.w);
     rgb = res;
   }
   //	OrkAssert(VolumeShaderStack.size()==1);

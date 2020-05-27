@@ -111,7 +111,7 @@ void DrawOp4(lev2::Context* context, const Op4DrawReq& OPR) {
     }
   }
   R.PopOrtho(context);
-  drawHudLines(context, lines);
+  // drawHudLines(context, lines);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

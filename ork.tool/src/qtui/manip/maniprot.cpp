@@ -217,7 +217,7 @@ bool ManipRot::UIEventHandler(ui::event_constptr_t EV) {
         if (isshift) {
           float SnapAngleVal(PI2 / 16.0f);
           fvec4 NewAxisAngle = RotQ.toAxisAngle();
-          float Angle        = NewAxisAngle.GetW();
+          float Angle        = NewAxisAngle.w;
           Angle              = SnapReal(Angle, SnapAngleVal);
           NewAxisAngle.SetW(Angle);
           RotQ.fromAxisAngle(NewAxisAngle);

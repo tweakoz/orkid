@@ -81,10 +81,10 @@ struct RtGroup final {
     return mParentTarget;
   }
   /////////////////////////////////////////
-  int GetW() const {
+  int width() const {
     return miW;
   }
-  int GetH() const {
+  int height() const {
     return miH;
   }
   ViewportRect viewportRect() const {
@@ -108,6 +108,7 @@ struct RtGroup final {
   void* mInternalHandle;
   bool _needsDepth = true;
   bool _autoclear  = true;
+  fvec4 _clearColor;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

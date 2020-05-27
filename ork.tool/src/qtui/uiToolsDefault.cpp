@@ -109,8 +109,8 @@ ui::HandlerResult DefaultUiHandler::DoOnUiEvent(ui::event_constptr_t EV) {
   int ix = EV->miX;
   int iy = EV->miY;
 
-  float fx = float(ix) / float(GetViewport()->GetW());
-  float fy = float(iy) / float(GetViewport()->GetH());
+  float fx = float(ix) / float(GetViewport()->width());
+  float fy = float(iy) / float(GetViewport()->height());
 
   bool AreAnyMoveKeysDown = OldSchool::IsKeyDepressed('W') | OldSchool::IsKeyDepressed('A') | OldSchool::IsKeyDepressed('S') |
                             OldSchool::IsKeyDepressed('D');

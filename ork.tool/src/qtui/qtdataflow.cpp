@@ -522,8 +522,8 @@ ui::HandlerResult GraphVP::DoOnUiEvent(ui::event_constptr_t EV) {
   int iy = EV->miY;
   int ilocx, ilocy;
   RootToLocal(ix, iy, ilocx, ilocy);
-  float fx = float(ilocx) / float(GetW());
-  float fy = float(ilocy) / float(GetH());
+  float fx = float(ilocx) / float(width());
+  float fy = float(ilocy) / float(height());
 
   lev2::PixelFetchContext ctx;
   ctx.miMrtMask = (1 << 0); // | (1 << 1); // ObjectID and ObjectUVD

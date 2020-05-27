@@ -13,10 +13,10 @@ public:
   ///////////////////////////////////////////////////////
 
   void SetClearColor(const fcolor4& scol) {
-    mcClearColor = scol;
+    _clearColor = scol;
   }
   const fcolor4& GetClearColor() const {
-    return mcClearColor;
+    return _clearColor;
   }
   void SetAutoClear(bool bv) {
     mbAutoClear = bv;
@@ -140,7 +140,7 @@ protected:
   OffscreenBuffer* mpThisBuffer;
   Texture* mpBufferTex;
   RtGroup* mCurrentRtGroup;
-  fcolor4 mcClearColor;
+  fcolor4 _clearColor;
   bool mbAutoClear;
   bool mbEnableFullScreen;
   bool mbEnableVSync;

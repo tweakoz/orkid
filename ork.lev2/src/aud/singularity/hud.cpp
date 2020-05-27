@@ -144,7 +144,10 @@ void drawtext(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void drawHudLines(Context* context, const hudlines_t& lines) {
+void drawHudLines(
+    ui::Surface* surface, //
+    Context* context,
+    const hudlines_t& lines) {
 
   if (lines.size() == 0)
     return;
@@ -169,8 +172,8 @@ void drawHudLines(Context* context, const hudlines_t& lines) {
   }
   vw.UnLock(context);
 
-  int w = context->mainSurfaceWidth();
-  int h = context->mainSurfaceHeight();
+  int w = surface->width();
+  int h = surface->height();
   mtxi->PushUIMatrix(w, h);
   mtl->begin(tek, RCFD);
   mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
@@ -240,7 +243,7 @@ void DrawBorder(Context* context, int X1, int Y1, int X2, int Y2, int color) {
   addline(X2, Y1, X2, Y2);
   addline(X2, Y2, X1, Y2);
   addline(X1, Y2, X1, Y1);
-  drawHudLines(context, lines);
+  // drawHudLines(context, lines);
 }
 ///////////////////////////////////////////////////////////////////////////////
 /*

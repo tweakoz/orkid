@@ -882,7 +882,7 @@ void ModelRenderer::Render(
 
     fquat qrot;
     fvec4 axisang = mBaseRotAxisAngle;
-    axisang.SetW(3.1415926 * axisang.GetW() / 90.0f);
+    axisang.SetW(3.1415926 * axisang.w / 90.0f);
     qrot.fromAxisAngle(axisang);
     rmtx.FromQuaternion(qrot);
 

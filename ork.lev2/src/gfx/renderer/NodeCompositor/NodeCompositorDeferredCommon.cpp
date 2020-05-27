@@ -182,8 +182,8 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
   auto FBI                     = targ->FBI();
   auto& ddprops                = drawdata._properties;
   auto irenderer               = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
-  ViewportRect tgt_rect(0, 0, _rtgGbuffer->GetW(), _rtgGbuffer->GetH());
-  ViewportRect mrt_rect(0, 0, _rtgGbuffer->GetW(), _rtgGbuffer->GetH());
+  ViewportRect tgt_rect(0, 0, _rtgGbuffer->width(), _rtgGbuffer->height());
+  ViewportRect mrt_rect(0, 0, _rtgGbuffer->width(), _rtgGbuffer->height());
   ///////////////////////////////////////////////////////////////////////////
   FBI->PushRtGroup(_rtgGbuffer);
   FBI->SetAutoClear(false); // explicit clear
@@ -284,7 +284,7 @@ void DeferredContext::renderUpdate(CompositorDrawData& drawdata) {
   //////////////////////////////////////////////////////
   int newwidth  = ddprops["OutputWidth"_crcu].Get<int>();
   int newheight = ddprops["OutputHeight"_crcu].Get<int>();
-  if (_rtgGbuffer->GetW() != newwidth or _rtgGbuffer->GetH() != newheight) {
+  if (_rtgGbuffer->width() != newwidth or _rtgGbuffer->height() != newheight) {
     printf("newwidth<%d>\n", newwidth);
     printf("newheight<%d>\n", newheight);
     _width    = newwidth;

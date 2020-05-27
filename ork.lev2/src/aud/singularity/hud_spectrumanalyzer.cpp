@@ -276,7 +276,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   ////////////////////////////////////////
 
-  drawHudLines(context, lines);
+  drawHudLines(this, context, lines);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SpectraSurf::DoInit(lev2::Context* pt) {

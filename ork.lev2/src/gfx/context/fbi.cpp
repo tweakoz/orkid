@@ -21,7 +21,7 @@ FrameBufferInterface::FrameBufferInterface(Context& tgt)
     , mbEnableFullScreen(GfxEnv::GetRef().GetCreationParams().mbFullScreen)
     , mpBufferTex(0)
     , mbAutoClear(true)
-    , mcClearColor(fcolor4::Black())
+    , _clearColor(fcolor4::Black())
     , mpThisBuffer(0)
     , miScissorStackIndex(0)
     , miViewportStackIndex(0)
@@ -75,8 +75,8 @@ void FrameBufferInterface::PushRtGroup(RtGroup* Base) {
   int ih = mTarget.mainSurfaceHeight();
 
   if (Base != nullptr) {
-    iw = Base->GetW();
-    ih = Base->GetH();
+    iw = Base->width();
+    ih = Base->height();
   }
 
   ViewportRect r(0, 0, iw, ih);

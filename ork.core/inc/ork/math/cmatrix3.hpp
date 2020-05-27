@@ -285,11 +285,11 @@ template <typename T> void Matrix33<T>::FromQuaternion(Quaternion<T> quat)
 	T yy = quat.GetY() * quat.GetY();
 	T zz = quat.GetZ() * quat.GetZ();
 	T xy = quat.GetX() * quat.GetY();
-	T zw = quat.GetZ() * quat.GetW();
+	T zw = quat.GetZ() * quat.width();
 	T zx = quat.GetZ() * quat.GetX();
-	T yw = quat.GetY() * quat.GetW();
+	T yw = quat.GetY() * quat.width();
 	T yz = quat.GetY() * quat.GetZ();
-	T xw = quat.GetX() * quat.GetW();
+	T xw = quat.GetX() * quat.width();
 
 	elements[0][0] = T(1.0f) - (T(2.0f) * (yy + zz));
 	elements[0][1] = T(2.0f) * (xy + zw);

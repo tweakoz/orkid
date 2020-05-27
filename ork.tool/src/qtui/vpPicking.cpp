@@ -31,8 +31,8 @@ void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
   if (false == _scenevp->mbSceneDisplayEnable)
     return;
 
-  float mainvpW      = _scenevp->GetW();
-  float mainvpH      = _scenevp->GetH();
+  float mainvpW      = _scenevp->width();
+  float mainvpH      = _scenevp->height();
   float mainVPAspect = mainvpW / mainvpH;
 
   _rtgroup->Resize(2048, 2048);
@@ -59,7 +59,7 @@ void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
   //_scenevp->PushFrameTechnique(&pktek);
   Context* pTEXTARG = context();
   pTEXTARG->pushRenderContextFrameData(&RCFD);
-  ViewportRect tgt_rect(0, 0, _scenevp->GetW(), _scenevp->GetH());
+  ViewportRect tgt_rect(0, 0, _scenevp->width(), _scenevp->height());
   ///////////////////////////////////////////////////////////////////////////
   auto irenderer = _scenevp->GetRenderer();
   irenderer->setContext(pTEXTARG);

@@ -31,7 +31,7 @@ template<> void PropType<fquat>::ToString( const fquat & Value, PropTypeString& 
 	result += CreateFormattedString("%g ", v.GetX() );
 	result += CreateFormattedString("%g ", v.GetY() );
 	result += CreateFormattedString("%g ", v.GetZ() );
-	result += CreateFormattedString("%g ", v.GetW() );
+	result += CreateFormattedString("%g ", v.width() );
 	tstr.format( "%s", result.c_str() );
 }
 
@@ -62,7 +62,7 @@ namespace reflect {
 			bidi | in->GetX();
 			bidi | in->GetY();
 			bidi | in->GetZ();
-			bidi | in->GetW();
+			bidi | in->width();
 		}
 		else
 		{

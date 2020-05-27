@@ -241,8 +241,8 @@ void PerformanceTracker::Draw(ork::lev2::Context* pTARG) {
 
   int itX = pTARG->GetX();
   int itY = pTARG->GetY();
-  int itW = pTARG->GetW();
-  int itH = pTARG->GetH();
+  int itW = pTARG->width();
+  int itH = pTARG->height();
 
   int iih = 16;
 
