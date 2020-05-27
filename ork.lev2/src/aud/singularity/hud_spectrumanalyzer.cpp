@@ -78,6 +78,8 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   auto vp              = syn->_hudvp;
   const float* samples = syn->_oscopebuffer;
 
+  // printf("SpectraSurf::DoRePaintSurface\n");
+
   hudlines_t lines;
 
   const float ANA_X1 = 32;
@@ -96,7 +98,8 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   auto& fftcontext = _fftcontext();
 
   for (int i = 0; i < fftSize; i++) {
-    float s             = samples[i >> DOWNSHIFT];
+    float s = samples[i >> DOWNSHIFT];
+    // printf("s<%d:%g>\n", i, s);
     float win_num       = pi2 * float(i);
     float win_den       = fftSize - 1;
     float win           = 0.5f * (1 - cosf(win_num / win_den));
@@ -113,11 +116,14 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   auto mapDecibels = [&](float re, float im) -> float {
     float mag = re * re + im * im;
     float dB  = 10.0f * log_base(10.0f, mag) - 6.0f;
-    return dB;
+    return std::clamp(dB, -96.0f, 36.0f);
   };
   auto mapFFTY = [&](float dbin) -> float {
-    float dbY = (dbin + 96.0f) / 132.0f;
-    float y   = ANA_Y2 - dbY * ANA_H;
+    const float KMIN = -96.0f;
+    const float KMAX = 36.0f;
+    const float KRNG = KMAX - KMIN;
+    float dbY        = (dbin + 96.0f) / KRNG;
+    float y          = ANA_Y2 - dbY * ANA_H;
     if (y > ANA_Y2)
       y = ANA_Y2;
     return y;
@@ -258,13 +264,13 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     dB = fftsmoothbuf[i] * 0.23;                                // scale to unity (todo: find coef)
     ///////////////////////////////////////////////
 
-    // printf( "dB<%f>\n", dB);
     float fi = float(i) / float(fftSize);
 
     float frq = fi * getSampleRate() * float(fftoversample);
     float x2  = mapFFTX(frq);
     float y2  = mapFFTY(dB - 12);
 
+    // printf("frq<%g> dB<%f>\n", frq, dB);
     if (frq >= 8.0f)
       lines.push_back(HudLine{
           fvec2(x1, y1), //

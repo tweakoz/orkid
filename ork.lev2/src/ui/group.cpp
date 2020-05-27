@@ -87,12 +87,12 @@ HandlerResult Group::DoRouteUiEvent(event_constptr_t Ev) {
   for (auto& child : _children) {
     if (res.mHandler == nullptr) {
       bool binside = child->IsEventInside(Ev);
-      printf(
+      /*printf(
           "Group::RouteUiEvent ev<%d,%d> child<%p> inside<%d>\n", //
           Ev->miX,
           Ev->miY,
           child.get(),
-          int(binside));
+          int(binside));*/
       if (binside) {
         auto child_res = child->RouteUiEvent(Ev);
         if (child_res.wasHandled()) {

@@ -52,8 +52,8 @@ HudViewport::HudViewport() //
   addChild(_oscope._panel);
   addChild(_spectra._panel);
 
-  _oscope._panel->SetRect(0, 0, 256, 256);
-  _spectra._panel->SetRect(0, 256, 256, 256);
+  _oscope._panel->SetRect(0, 0, 1280, 320);
+  _spectra._panel->SetRect(0, 720 - 384, 1280, 384);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void HudViewport::onUpdateThreadTick(ui::updatedata_ptr_t updata) {

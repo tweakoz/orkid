@@ -39,6 +39,10 @@ synth::synth()
     _freeProgInst.insert(pi);
     _allProgInsts.insert(pi);
   }
+  for (int i = 0; i < koscopelength; i++) {
+    _oscopebuffer[i]     = 0.0f;
+    _oscopesyncbuffer[i] = false;
+  }
 
   _hudvp = std::make_shared<HudViewport>();
 }

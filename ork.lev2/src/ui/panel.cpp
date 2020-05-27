@@ -131,7 +131,7 @@ void Panel::DoLayout() {
 /////////////////////////////////////////////////////////////////////////
 
 HandlerResult Panel::DoRouteUiEvent(event_constptr_t Ev) {
-  printf("Panel::DoRouteUiEvent mPanelUiState<%d>\n", mPanelUiState);
+  // printf("Panel::DoRouteUiEvent mPanelUiState<%d>\n", mPanelUiState);
 
   if (_child && _child->IsEventInside(Ev) && mPanelUiState == 0) {
     HandlerResult res = _child->RouteUiEvent(Ev);
