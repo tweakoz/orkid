@@ -9,26 +9,31 @@ int main(int argc, char** argv) {
   auto qtapp = createEZapp(argc, argv);
   startupAudio();
   //////////////////////////////////////////////////////////////////////////////
-  // allocate components
+  // allocate program/layer data
   //////////////////////////////////////////////////////////////////////////////
   auto program   = std::make_shared<ProgramData>();
   auto layerdata = program->newLayer();
-  auto czdata    = std::make_shared<CzOscData>();
-  auto DCAENV    = layerdata->appendController<RateLevelEnvData>("DCAENV");
-  auto DCWENV    = layerdata->appendController<RateLevelEnvData>("DCWENV");
-  auto LFO2      = layerdata->appendController<LfoData>("MYLFO2");
-  auto LFO1      = layerdata->appendController<LfoData>("MYLFO1");
-  //////////////////////////////////////
-  // set names
-  //////////////////////////////////////
+  auto czoscdata = std::make_shared<CzOscData>();
   program->_role = "czx";
   program->_name = "test";
   //////////////////////////////////////
-  // create layer
+  // setup dsp graph
   //////////////////////////////////////
-  layerdata->_algdata = configureKrzAlgorithm(1);
+  layerdata->_algdata  = configureCz1Algorithm(1);
+  auto dcostage        = layerdata->stageByName("DCO");
+  auto ampstage        = layerdata->stageByName("AMP");
+  auto osc             = dcostage->appendTypedBlock<CZX>(czoscdata, 0);
+  auto amp             = ampstage->appendTypedBlock<AMP>();
+  czoscdata->_noisemod = true;
   //////////////////////////////////////
-  // set envelope
+  // setup modulators
+  //////////////////////////////////////
+  auto DCAENV = layerdata->appendController<RateLevelEnvData>("DCAENV");
+  auto DCWENV = layerdata->appendController<RateLevelEnvData>("DCWENV");
+  auto LFO2   = layerdata->appendController<LfoData>("MYLFO2");
+  auto LFO1   = layerdata->appendController<LfoData>("MYLFO1");
+  //////////////////////////////////////
+  // setup envelope
   //////////////////////////////////////
   DCAENV->_ampenv = true;
   DCAENV->_segments.push_back({.2, .7});  // atk1
@@ -45,7 +50,7 @@ int main(int argc, char** argv) {
   DCWENV->_segments.push_back({40, 1});   // rel2
   DCWENV->_segments.push_back({40, 0});   // rel3
   //////////////////////////////////////
-  // set LFO
+  // setup LFO
   //////////////////////////////////////
   LFO1->_minRate = 0.25;
   LFO1->_maxRate = 0.25;
@@ -54,13 +59,8 @@ int main(int argc, char** argv) {
   LFO2->_maxRate = 3.3;
   LFO2->_shape   = "Sine";
   //////////////////////////////////////
-  // setup dsp graph
+  // setup modulation routing
   //////////////////////////////////////
-  auto osc = layerdata->stageByName("DCO")->appendBlock();
-  auto amp = layerdata->stageByName("AMP")->appendBlock();
-  CZX::initBlock(osc, czdata, 0);
-  czdata->_noisemod = true;
-  AMP::initBlock(amp);
   auto& modulation_index_param      = osc->_paramd[0]._mods;
   modulation_index_param._src1      = DCWENV;
   modulation_index_param._src1Depth = 1.0;
@@ -75,10 +75,12 @@ int main(int argc, char** argv) {
   amp_param._mods._src1      = DCAENV;
   amp_param._mods._src1Depth = 1.0;
   //////////////////////////////////////
-  // play a test note
+  // play test notes
   //////////////////////////////////////
   for (int i = 24; i < 84; i++)
     enqueue_audio_event(program.get(), 0.5f + float(i - 24) * 0.5, 2.0, i);
+  //////////////////////////////////////////////////////////////////////////////
+  // test harness UI
   //////////////////////////////////////////////////////////////////////////////
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, 0});
   qtapp->exec();
