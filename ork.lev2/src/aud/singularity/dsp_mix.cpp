@@ -26,10 +26,11 @@ SUM2::SUM2(dspblkdata_constptr_t dbd)
 ///////////////////////////////////////////////////////////////////////////////
 void SUM2::compute(DspBuffer& dspbuf) { // final
   int inumframes       = _layer->_dspwritecount;
-  const float* inpbufa = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
-  const float* inpbufb = getInpBuf(dspbuf, 1) + _layer->_dspwritebase;
-  float* outbufa       = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-  float* outbufb       = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
+  int ibase            = _layer->_dspwritebase;
+  const float* inpbufa = getInpBuf(dspbuf, 0) + ibase;
+  const float* inpbufb = getInpBuf(dspbuf, 1) + ibase;
+  float* outbufa       = getOutBuf(dspbuf, 0) + ibase;
+  float* outbufb       = getOutBuf(dspbuf, 1) + ibase;
   for (int i = 0; i < inumframes; i++) {
     float inA  = inpbufa[i] * _dbd->_inputPad;
     float inB  = inpbufb[i] * _dbd->_inputPad;

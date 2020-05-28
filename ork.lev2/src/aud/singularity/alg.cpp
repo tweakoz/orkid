@@ -70,11 +70,13 @@ void Alg::keyOn(DspKeyOnInfo& koi) {
   // instantiate dspblock grid
   ///////////////////////////////////////////////////
 
+  int numstages = 0;
   for (int istage = 0; istage < kmaxdspstagesperlayer; istage++) {
     auto stagedata = _algdata._stages[istage];
     if (stagedata) {
       auto stage      = std::make_shared<DspStage>();
       _stages[istage] = stage;
+      numstages++;
       for (int iblock = 0; iblock < kmaxdspblocksperstage; iblock++) {
         auto blockdata = stagedata->_blockdatas[iblock];
         if (blockdata) {
@@ -87,7 +89,7 @@ void Alg::keyOn(DspKeyOnInfo& koi) {
     } else
       _stages[istage] = nullptr;
   }
-
+  printf("ALG<%p> numstages<%d>\n", this, numstages);
   ///////////////////////////////////////////////////
 
   // if (i == 0) // pitch block ?

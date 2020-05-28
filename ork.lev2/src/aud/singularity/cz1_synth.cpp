@@ -35,30 +35,26 @@ algdata_ptr_t configureCz1Algorithm(int numosc) {
   auto algdout   = std::make_shared<AlgData>();
   algdout->_name = ork::FormatString("Cz1Alg");
   //////////////////////////////////////////
-  dspstagedata_ptr_t stage_mod;
-  //////////////////////////////////////////
-  auto stage_dco = algdout->appendStage("DCO");
-  stage_dco->_iomask->_outputs.push_back(0);
-  //////////////////////////////////////////
-  if (numosc == 2)
-    stage_mod = algdout->appendStage("MOD");
-  //////////////////////////////////////////
-  // final gain stage
-  //////////////////////////////////////////
+  auto stage_dco               = algdout->appendStage("DCO");
+  dspstagedata_ptr_t stage_mod = (numosc == 2) //
+                                     ? algdout->appendStage("MOD")
+                                     : nullptr;
   auto stage_amp = algdout->appendStage("AMP");
+  //////////////////////////////////////////
+  stage_dco->_iomask->_outputs.push_back(0);
   stage_amp->_iomask->_inputs.push_back(0);  // 1 input
   stage_amp->_iomask->_outputs.push_back(0); // 1 output
   //////////////////////////////////////////
   // 2 DCO case..
   //////////////////////////////////////////
-  if (numosc == 2) {
-    stage_dco->_iomask->_outputs.push_back(1); // 2nd output for DCO stage
+  if (stage_mod) {
+    stage_dco->_iomask->_outputs.push_back(1); // 2nd output
     //////////////////////////////////////////
     // ring, noise mod or mix stage
     //////////////////////////////////////////
     stage_mod->_iomask->_inputs.push_back(0);
-    stage_mod->_iomask->_outputs.push_back(0); // 1 outputs
-    stage_mod->_iomask->_inputs.push_back(1);  // 2nd input for MOD stage
+    stage_mod->_iomask->_inputs.push_back(1);  // 2nd input
+    stage_mod->_iomask->_outputs.push_back(0); // 1 output
   }
   //////////////////////////////////////////
   return algdout;
@@ -313,10 +309,10 @@ void CZX::compute(DspBuffer& dspbuf) // final
 
 void CZX::doKeyOn(const DspKeyOnInfo& koi) // final
 {
-  _oscdata     = _dbd->_vars.typedValueForKey<czxdata_constptr_t>("CZX").value();
-  int dcoindex = _dbd->_vars.typedValueForKey<int>("dcoindex").value();
+  _oscdata       = _dbd->_vars.typedValueForKey<czxdata_constptr_t>("CZX").value();
+  int dcochannel = _dbd->_vars.typedValueForKey<int>("dcochannel").value();
 
-  printf("CZX<%p> dcoindex<%d> keyon\n", this, dcoindex);
+  // printf("CZX<%p> dcochannel<%d> keyon\n", this, dcochannel);
 
   _dspchannel       = _oscdata->_dspchannel;
   auto l            = koi._layer;
@@ -340,8 +336,8 @@ void CZX::doKeyOn(const DspKeyOnInfo& koi) // final
 
 void CZX::doKeyOff() // final
 {
-  int dcoindex = _dbd->_vars.typedValueForKey<int>("dcoindex").value();
-  printf("CZX<%p> dcoindex<%d> keyoff\n", this, dcoindex);
+  int dcochannel = _dbd->_vars.typedValueForKey<int>("dcochannel").value();
+  // printf("CZX<%p> dcochannel<%d> keyoff\n", this, dcochannel);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

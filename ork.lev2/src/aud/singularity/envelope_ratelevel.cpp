@@ -81,14 +81,14 @@ void RateLevelEnvInst::initSeg(int iseg) {
     _lerpincr  = 0.0f;
     _lerpindex = 1.0f;
   }
-  printf(
+  /*printf(
       "env<%p> initseg<%d> _startval<%g> _destval<%g> segtime<%g> _lerpincr<%g>\n", //
       this,
       iseg,
       _startval,
       _destval,
       segtime,
-      _lerpincr);
+      _lerpincr);*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -164,7 +164,7 @@ void RateLevelEnvInst::compute() // final
     case 3: // done
       printf("env<%p> done\n", this);
       if (_ampenv) {
-        printf("ampenv<%p> RELEASING LAYER<%p>\n", this, _layer);
+        // printf("ampenv<%p> RELEASING LAYER<%p>\n", this, _layer);
         _layer->release();
         _curval = 0.0;
       } else {
@@ -191,7 +191,7 @@ void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI) {
   _ignoreRelease = ld->_ignRels;
   _released      = false;
   //////////////////////////////////
-  printf("env<%p> keyon\n", this);
+  // printf("env<%p> keyon\n", this);
   //////////////////////////////////
   if (_data) {
     _curval = 0.0f;
@@ -211,7 +211,7 @@ void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void RateLevelEnvInst::keyOff() {
-  printf("env<%p> keyoff\n", this);
+  // printf("env<%p> keyoff\n", this);
   _released = true;
   _state    = 2;
   if (_data && false == _ignoreRelease) {

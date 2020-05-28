@@ -31,7 +31,7 @@ auto genwacurve = []() -> MultiCurve1D {
 
   s.resize(12);
   for (int i = 0; i < 12; i++)
-    s[i] = EMCST_LOG;
+    s[i] = EMCST_EXP;
 
   auto& v = curve.mVertices;
   v.AddSorted(0.1, 35.0);
@@ -73,11 +73,11 @@ auto genpcurve = []() -> MultiCurve1D {
 ///////////////////////////////////////////////////////////////////////////////
 float decode_wa_envrate(int value) {
   static auto curve = genwacurve();
-  return curve.Sample(float(value) * 0.01f);
+  return curve.Sample(float(value) * 0.01f) * 0.5;
 }
 float decode_p_envrate(int value) {
   static auto curve = genpcurve();
-  return curve.Sample(float(value) * 0.01f);
+  return curve.Sample(float(value) * 0.01f) * 0.25;
 }
 ///////////////////////////////////////////////////////////////////////////////
 float decode_p_envlevel(int value) {
@@ -213,8 +213,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   // 0x47 .. 0x7f osc 2
 
   for (int o = 0; o < 2; o++) {
-    auto OSC         = czdata->_oscData[o];
-    OSC->_dspchannel = o;
+    auto OSC = czdata->_oscData[o];
     switch (czdata->_octave) {
       case 0:
         OSC->_octaveScale = 1.0;
@@ -317,7 +316,8 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   prgout->_name = name;
   // czdata->dump();
 
-  auto make_dco = [&](lyrdata_ptr_t layerdata, czxdata_ptr_t oscdata, int dcoindex) {
+  auto make_dco = [&](lyrdata_ptr_t layerdata, czxdata_ptr_t oscdata, int dcochannel) {
+    oscdata->_dspchannel = dcochannel;
     /////////////////////////////////////////////////
     // Pitch Envelope
     /////////////////////////////////////////////////
@@ -390,7 +390,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     auto amp = layerdata->stageByName("AMP")->appendBlock();
     CZX::initBlock(osc, oscdata);
     AMP::initBlock(amp);
-    osc->_vars.makeValueForKey<int>("dcoindex") = dcoindex;
+    osc->_vars.makeValueForKey<int>("dcochannel") = dcochannel;
     /////////////////////////////////////////////////
     auto& pitch_mod      = osc->_paramd[0]._mods;
     pitch_mod._src1      = DCOENV;
@@ -400,12 +400,12 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     modulation_index._src1      = DCWENV;
     modulation_index._src1Depth = float(oscdata->_dcwDepth) / 15.0f;
     /////////////////////////////////////////////////
-    auto& amp_param = amp->addParam();
+    auto& amp_param = amp->_paramd[0];
     amp_param.useDefaultEvaluator();
     amp_param._mods._src1      = DCAENV;
     amp_param._mods._src1Depth = float(oscdata->_dcaDepth) / 15.0f;
     /////////////////////////////////////////////////
-    if (dcoindex == 1) { // add detune
+    if (dcochannel == 1) { // add detune
       auto CZPITCH            = layerdata->appendController<CustomControllerData>("CZPITCH");
       pitch_mod._src2         = CZPITCH;
       pitch_mod._src2MinDepth = 1.0;
@@ -433,9 +433,10 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
       make_dco(layerdata, czdata->_oscData[1], 0);
       break;
     case 2: // 1+1'
-      layerdata->_algdata = configureCz1Algorithm(2);
+      layerdata->_algdata    = configureCz1Algorithm(2);
+      *(czdata->_oscData[1]) = *(czdata->_oscData[0]);
       make_dco(layerdata, czdata->_oscData[0], 0);
-      make_dco(layerdata, czdata->_oscData[0], 1);
+      make_dco(layerdata, czdata->_oscData[1], 1);
       break;
     case 3: // 1+2'
       layerdata->_algdata = configureCz1Algorithm(2);
