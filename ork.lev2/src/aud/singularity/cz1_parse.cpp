@@ -57,9 +57,9 @@ auto genpcurve = []() -> MultiCurve1D {
   curve.SetPoint(0, 0.0, 235.0);
   curve.SetPoint(1, 1.0, 0.004);
 
-  s.resize(12);
-  for (int i = 0; i < 12; i++)
-    s[i] = EMCST_LOG;
+  s.resize(17);
+  for (int i = 0; i < 17; i++)
+    s[i] = EMCST_LINEAR;
 
   auto& v = curve.mVertices;
   v.AddSorted(0.05, 134.0);
@@ -68,10 +68,15 @@ auto genpcurve = []() -> MultiCurve1D {
   v.AddSorted(0.3, 8.5);
   v.AddSorted(0.4, 2.68);
   v.AddSorted(0.5, 0.92);
+  v.AddSorted(0.55, 0.526);
   v.AddSorted(0.6, 0.29);
+  v.AddSorted(0.65, 0.160);
   v.AddSorted(0.7, 0.097);
+  v.AddSorted(0.75, 0.054);
   v.AddSorted(0.8, 0.032);
+  v.AddSorted(0.85, 0.017);
   v.AddSorted(0.9, 0.010);
+  v.AddSorted(0.95, 0.006);
 
   return curve;
 };
@@ -79,7 +84,7 @@ auto genpcurve = []() -> MultiCurve1D {
 float decode_wa_envrate(int value) {
   static auto curve = genwacurve();
 
-  int munged = ((value * 99) / 119) + 1;
+  int munged = (((value - 8) * 99) / 119) + 1;
   switch (value) {
     case 0:
       munged = 0;
@@ -88,12 +93,12 @@ float decode_wa_envrate(int value) {
       munged = 99;
       break;
   }
-  return curve.Sample(float(munged) / 99.0f);
+  return curve.Sample(float(munged) / 99.0f) * 0.125;
 }
 float decode_p_envrate(int value) {
   static auto curve = genpcurve();
   // int munged        = 1 + (r7 * 99) / 127;
-  int munged = ((value * 99) / 119) + 1;
+  int munged = (((value - 8) * 99) / 119) + 1;
   switch (value) {
     case 0:
       munged = 0;
@@ -102,7 +107,7 @@ float decode_p_envrate(int value) {
       munged = 99;
       break;
   }
-  return curve.Sample(float(munged) / 99.0f) * 0.25;
+  return curve.Sample(float(munged) / 99.0f) * 0.125;
 }
 ///////////////////////////////////////////////////////////////////////////////
 float decode_p_envlevel(int value) {

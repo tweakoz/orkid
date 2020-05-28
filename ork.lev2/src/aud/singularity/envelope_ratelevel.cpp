@@ -81,14 +81,15 @@ void RateLevelEnvInst::initSeg(int iseg) {
     _lerpincr  = 0.0f;
     _lerpindex = 1.0f;
   }
-  /*printf(
-      "env<%p> initseg<%d> _startval<%g> _destval<%g> segtime<%g> _lerpincr<%g>\n", //
-      this,
-      iseg,
-      _startval,
-      _destval,
-      segtime,
-      _lerpincr);*/
+  if (1)
+    printf(
+        "env<%p> initseg<%d> _startval<%g> _destval<%g> segtime<%g> _lerpincr<%g>\n", //
+        this,
+        iseg,
+        _startval,
+        _destval,
+        segtime,
+        _lerpincr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
