@@ -13,11 +13,11 @@ file::Path basePath();
 struct ProgramData {
   lyrdata_ptr_t newLayer();
   lyrdata_ptr_t getLayer(int i) const {
-    return _LayerDatas[i];
+    return _layerdatas[i];
   }
   std::string _name;
   std::string _role;
-  std::vector<lyrdata_ptr_t> _LayerDatas;
+  std::vector<lyrdata_ptr_t> _layerdatas;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

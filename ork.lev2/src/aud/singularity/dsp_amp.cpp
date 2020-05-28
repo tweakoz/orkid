@@ -41,7 +41,7 @@ void AMP_MONOIO::compute(DspBuffer& dspbuf) // final
 
   int inumframes = _layer->_dspwritecount;
 
-  const auto& LD = _layer->_LayerData;
+  const auto& LD = _layer->_layerdata;
 
   // printf( "amp numinp<%d>\n", numInputs() );
   auto inputchan   = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
@@ -62,7 +62,7 @@ void AMP_MONOIO::compute(DspBuffer& dspbuf) // final
 void AMP_MONOIO::doKeyOn(const DspKeyOnInfo& koi) // final
 {
   _filt   = 0.0f;
-  auto LD = koi._layer->_LayerData;
+  auto LD = koi._layer->_layerdata;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -82,7 +82,7 @@ void AMP::compute(DspBuffer& dspbuf) // final
   float gain     = _param[0].eval();
   int inumframes = _layer->_dspwritecount;
   int ibase      = _layer->_dspwritebase;
-  const auto& LD = _layer->_LayerData;
+  const auto& LD = _layer->_layerdata;
   auto l_lrmix   = panBlend(_lpan);
 
   if (numInputs() == 1) {
@@ -128,7 +128,7 @@ void AMP::compute(DspBuffer& dspbuf) // final
 void AMP::doKeyOn(const DspKeyOnInfo& koi) // final
 {
   _filt       = 0.0f;
-  auto LD     = koi._layer->_LayerData;
+  auto LD     = koi._layer->_layerdata;
   float fpanu = float(LD->_channelPans[0]) / 7.0f;
   float fpanl = float(LD->_channelPans[1]) / 7.0f;
   _upan       = fpanu;
@@ -155,7 +155,7 @@ void PLUSAMP::compute(DspBuffer& dspbuf) // final
   float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
   float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
 
-  auto LD = _layer->_LayerData;
+  auto LD = _layer->_layerdata;
 
   float LinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
 
@@ -201,7 +201,7 @@ void XAMP::compute(DspBuffer& dspbuf) // final
   float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
   float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
 
-  auto LD    = _layer->_LayerData;
+  auto LD    = _layer->_layerdata;
   float LinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
 
   if (1)
@@ -341,7 +341,7 @@ void AMPU_AMPL::compute(DspBuffer& dspbuf) // final
   auto u_lrmix = panBlend(_upan);
   auto l_lrmix = panBlend(_lpan);
 
-  const auto& layd = _layer->_LayerData;
+  const auto& layd = _layer->_layerdata;
   float LowerLinG  = decibel_to_linear_amp_ratio(layd->_channelGains[0]);
   float UpperLinG  = decibel_to_linear_amp_ratio(layd->_channelGains[1]);
 
@@ -368,7 +368,7 @@ void AMPU_AMPL::doKeyOn(const DspKeyOnInfo& koi) // final
 {
   _filtU      = 0.0f;
   _filtL      = 0.0f;
-  auto LD     = koi._layer->_LayerData;
+  auto LD     = koi._layer->_layerdata;
   float fpanu = float(LD->_channelPans[0]) / 7.0f;
   float fpanl = float(LD->_channelPans[1]) / 7.0f;
   _upan       = fpanu;
@@ -451,7 +451,7 @@ void BANGAMP::compute(DspBuffer& dspbuf) // final
   float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
   float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
 
-  auto LD    = _layer->_LayerData;
+  auto LD    = _layer->_layerdata;
   float LinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
 
   // printf( "frq<%f> _phaseInc<%lld>\n", frq, _phaseInc );

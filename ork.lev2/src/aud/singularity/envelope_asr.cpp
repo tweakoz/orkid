@@ -117,7 +117,7 @@ void AsrInst::compute() // final
 void AsrInst::keyOn(const KeyOnInfo& KOI) // final
 {
   _konoffinfo    = KOI;
-  auto ld        = KOI._LayerData;
+  auto ld        = KOI._layerdata;
   _ignoreRelease = ld->_ignRels;
   assert(_data);
   _curval   = 0.0f;

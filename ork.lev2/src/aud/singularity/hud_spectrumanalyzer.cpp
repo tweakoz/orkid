@@ -1,4 +1,5 @@
 #include <ork/lev2/aud/singularity/hud.h>
+#include <ork/util/triple_buffer.h>
 
 using namespace ork;
 using namespace ork::lev2;
@@ -12,15 +13,31 @@ struct SpectraSurf final : public ui::Surface {
   void DoInit(lev2::Context* pt) override;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
   ork::lev2::CTXBASE* _ctxbase = nullptr;
+  concurrent_triple_buffer<ScopeBuffer> _scopebuffers;
 };
 ///////////////////////////////////////////////////////////////////////////////
-hudpanel_ptr_t create_spectrumanalyzer() {
-  auto rval      = std::make_shared<HudPanel>();
-  rval->_panel   = std::make_shared<ui::Panel>("spectra", 0, 256, 256, 256);
-  rval->_surface = std::make_shared<SpectraSurf>();
-  rval->_panel->setChild(rval->_surface);
-  rval->_panel->snap();
-  return rval;
+analyzer_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp) {
+  auto hudpanel        = std::make_shared<HudPanel>();
+  auto analyzersurf    = std::make_shared<SpectraSurf>();
+  hudpanel->_uipanel   = std::make_shared<ui::Panel>("analyzer", 0, 0, 32, 32);
+  hudpanel->_uisurface = analyzersurf;
+  hudpanel->_uipanel->setChild(hudpanel->_uisurface);
+  hudpanel->_uipanel->snap();
+  auto analyzer              = std::make_shared<SpectrumAnalyzer>();
+  analyzer->_hudpanel        = hudpanel;
+  analyzer->_sink            = std::make_shared<ScopeSink>();
+  analyzer->_sink->_onupdate = [analyzersurf](const ScopeSource& src) { //
+    auto dest_scopebuf = analyzersurf->_scopebuffers.begin_push();
+    memcpy(
+        dest_scopebuf->_samples, //
+        src._scopebuffer._samples,
+        koscopelength * sizeof(float));
+    analyzersurf->_scopebuffers.end_push(dest_scopebuf);
+    analyzersurf->SetDirty();
+  };
+  vp->addChild(hudpanel->_uipanel);
+  vp->_hudpanels.insert(hudpanel);
+  return analyzer;
 }
 ///////////////////////////////////////////////////////////////////////////////
 static const int inumframes           = koscopelength;
@@ -72,14 +89,18 @@ static float* fftsmoothingbuffer() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 SpectraSurf::SpectraSurf() //
-    : ui::Surface("Spectra", 0, 0, 128, 128, fvec3(), 1.0) {
+    : ui::Surface("Spectra", 0, 0, 32, 32, fvec3(), 1.0) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
-  auto context         = drwev->GetTarget();
-  auto syn             = synth::instance();
-  auto vp              = syn->_hudvp;
-  const float* samples = syn->_oscopebuffer;
+  auto context = drwev->GetTarget();
+  auto syn     = synth::instance();
+  auto vp      = syn->_hudvp;
+
+  auto scopebuf = _scopebuffers.begin_pull();
+  if (nullptr == scopebuf)
+    return;
+  const float* _samples = scopebuf->_samples;
 
   // printf("SpectraSurf::DoRePaintSurface\n");
 
@@ -101,14 +122,16 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   auto& fftcontext = _fftcontext();
 
   for (int i = 0; i < fftSize; i++) {
-    float s = samples[i >> DOWNSHIFT];
+    float s = _samples[i >> DOWNSHIFT];
     // printf("s<%d:%g>\n", i, s);
     float win_num       = pi2 * float(i);
     float win_den       = fftSize - 1;
     float win           = 0.5f * (1 - cosf(win_num / win_den));
-    float s2            = samples[i >> DOWNSHIFT];
+    float s2            = _samples[i >> DOWNSHIFT];
     fftcontext.input[i] = s2 * win;
   }
+
+  _scopebuffers.end_pull(scopebuf);
 
   fftcontext.compute(); // do the FFT
 
@@ -296,6 +319,10 @@ void SpectraSurf::DoInit(lev2::Context* pt) {
 ui::HandlerResult SpectraSurf::DoOnUiEvent(ui::event_constptr_t EV) {
   ui::HandlerResult ret(this);
   return ret;
+}
+///////////////////////////////////////////////////////////////////////////////
+void SpectrumAnalyzer::setRect(int iX, int iY, int iW, int iH) {
+  _hudpanel->_uipanel->SetRect(iX, iY, iW, iH);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

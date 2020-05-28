@@ -30,6 +30,8 @@ struct LayerData {
     return controllerdata;
   }
   ///////////////////////////////////////////////////
+  scopesource_ptr_t createScopeSource();
+  ///////////////////////////////////////////////////
 
   int _numdspblocks       = 0;
   int _loKey              = 0;
@@ -51,6 +53,7 @@ struct LayerData {
   keymap_constptr_t _keymap;
   std::set<controllerdata_ptr_t> _controllerset;
   controlblockdata_ptr_t _ctrlBlock;
+  scopesource_ptr_t _scopesource;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -117,7 +120,7 @@ struct Layer {
   HudFrameAudio _HAF;
   int _HAF_nenvseg;
   size_t _num_sent_to_scope = 0;
-  lyrdata_constptr_t _LayerData;
+  lyrdata_constptr_t _layerdata;
   oschardsynctrack_ptr_t _oschsynctracks[kmaxdspblocksperstage];
   scopesynctrack_ptr_t _scopesynctracks[kmaxdspblocksperstage];
 

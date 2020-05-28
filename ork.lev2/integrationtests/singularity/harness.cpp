@@ -22,7 +22,16 @@ extern bool _macosUseHIDPI;
 
 static auto the_synth = synth::instance();
 
-qtezapp_ptr_t createEZapp(int& argc, char** argv) {
+SingularityTestApp::SingularityTestApp(int& argc, char** argv)
+    : OrkEzQtApp(argc, argv) {
+  _hudvp = the_synth->_hudvp;
+  startupAudio();
+}
+SingularityTestApp::~SingularityTestApp() {
+  tearDownAudio();
+}
+
+singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
 
   po::options_description desc("Allowed options");
   desc.add_options()                   //
@@ -46,7 +55,9 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   // boot up debug HUD
   //////////////////////////////////////////////////////////////////////////////
-  auto qtapp  = OrkEzQtApp::create(argc, argv);
+  static auto& qti = qtinit(argc, argv);
+  QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+  auto qtapp  = std::make_shared<SingularityTestApp>(qti._argc, qti._argvp);
   auto qtwin  = qtapp->_mainWindow;
   auto gfxwin = qtwin->_gfxwin;
   //////////////////////////////////////////////////////////
@@ -90,12 +101,8 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
     auto DB = DrawableBuffer::acquireForWrite(0);
     DB->Reset();
     DB->copyCameras(*cameras);
-
-    the_synth->_hudvp->onUpdateThreadTick(updata);
-
-    // auto layer = DB->MergeLayer("Default"_pool);
+    qtapp->_hudvp->onUpdateThreadTick(updata);
     DrawableBuffer::releaseFromWrite(DB);
-    usleep(1000);
   });
   //////////////////////////////////////////////////////////
   qtapp->onDraw([=](ui::drawevent_constptr_t drwev) {
@@ -123,7 +130,7 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
     compositorimpl->pushCPD(*CPD);
     context->beginFrame();
     mtxi->PushUIMatrix();
-    the_synth->_hudvp->Draw(drwev);
+    qtapp->_hudvp->Draw(drwev);
     mtxi->PopUIMatrix();
     context->endFrame();
     ////////////////////////////////////////////////////
@@ -132,7 +139,7 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
   //////////////////////////////////////////////////////////
   qtapp->onResize([=](int w, int h) { //
     // printf("GOTRESIZE<%d %d>\n", w, h);
-    the_synth->_hudvp->SetSize(w, h);
+    qtapp->_hudvp->SetSize(w, h);
   });
   //////////////////////////////////////////////////////////
   const int64_t trackMAX = (4095 << 16);
@@ -175,7 +182,7 @@ qtezapp_ptr_t createEZapp(int& argc, char** argv) {
         }
         break;
       default:
-        return the_synth->_hudvp->HandleUiEvent(ev);
+        return qtapp->_hudvp->HandleUiEvent(ev);
         break;
     }
     ui::HandlerResult rval;

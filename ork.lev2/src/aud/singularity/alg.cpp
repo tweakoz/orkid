@@ -64,7 +64,7 @@ void Alg::keyOn(DspKeyOnInfo& koi) {
   auto l = koi._layer;
   assert(l != nullptr);
 
-  const auto ld = l->_LayerData;
+  const auto ld = l->_layerdata;
 
   ///////////////////////////////////////////////////
   // instantiate dspblock grid

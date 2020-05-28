@@ -14,6 +14,7 @@
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
+#include <ork/lev2/aud/singularity/hud.h>
 
 namespace ork::audio::singularity {
 
@@ -22,10 +23,11 @@ static synth_ptr_t the_synth = synth::instance();
 ///////////////////////////////////////////////////////////////////////////////
 
 LayerData::LayerData() {
-  _pchBlock  = nullptr;
-  _algdata   = std::make_shared<AlgData>();
-  _ctrlBlock = std::make_shared<ControlBlockData>();
-  _kmpBlock  = std::make_shared<KmpBlockData>(); // todo move to samplerdata
+  _pchBlock    = nullptr;
+  _algdata     = std::make_shared<AlgData>();
+  _ctrlBlock   = std::make_shared<ControlBlockData>();
+  _kmpBlock    = std::make_shared<KmpBlockData>(); // todo move to samplerdata
+  _scopesource = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -39,9 +41,14 @@ dspstagedata_ptr_t LayerData::stageByIndex(int index) {
   return _algdata->stageByIndex(index);
 }
 ///////////////////////////////////////////////////////////////////////////////
+scopesource_ptr_t LayerData::createScopeSource() {
+  _scopesource = std::make_shared<ScopeSource>();
+  return _scopesource;
+}
+///////////////////////////////////////////////////////////////////////////////
 
 Layer::Layer()
-    : _LayerData(nullptr)
+    : _layerdata(nullptr)
     , _layerGain(0.25)
     , _curPitchOffsetInCents(0.0f)
     , _centsPerKey(100.0f)
@@ -102,7 +109,7 @@ void Layer::compute(outputBuffer& obuf, int numframes) {
 
   ///////////////////////
 
-  if (nullptr == _LayerData) {
+  if (nullptr == _layerdata) {
     printf("gotnull ld layer<%p>\n", this);
     return;
   }
@@ -253,49 +260,45 @@ void Layer::compute(outputBuffer& obuf, int numframes) {
     /////////////////
 
     if (this == the_synth->_hudLayer) {
+
       _HAF._oscopebuffer.resize(numframes);
       _HAF._oscopesync.resize(numframes);
       ///////////////////////////////////////////////
       // find oscope sync source
       ///////////////////////////////////////////////
 
-      scopesynctrack_ptr_t syncsource = nullptr;
-      int istage                      = 0;
-      _alg->forEachStage([&](dspstage_ptr_t stage) {
-        bool ena = the_synth->_stageEnable[istage];
-        if (ena) {
-          int iblock = 0;
-          stage->forEachBlock([&](dspblk_ptr_t block) {
-            if (block->isScopeSyncSource()) {
-              syncsource = _scopesynctracks[iblock];
-            }
-            iblock++;
-          }); // forEachBlock
-          istage++;
-        } // if(ena)
-      });
+      // scopesynctrack_ptr_t syncsource = nullptr;
+      // int istage                      = 0;
+      //_alg->forEachStage([&](dspstage_ptr_t stage) {
+      // bool ena = the_synth->_stageEnable[istage];
+      // if (ena) {
+      // int iblock = 0;
+      // stage->forEachBlock([&](dspblk_ptr_t block) {
+      // if (block->isScopeSyncSource()) {
+      // syncsource = _scopesynctracks[iblock];
+      //}
+      // iblock++;
+      //}); // forEachBlock
+      // istage++;
+      //} // if(ena)
+      //});
       ///////////////////////////////////////////////
-      if (syncsource) {
-        for (int i = 0; i < numframes; i++)
-          _HAF._oscopesync[i] = syncsource->_triggers[i];
-      } else {
-        for (int i = 0; i < numframes; i++)
-          _HAF._oscopesync[i] = false;
-      }
+      // if (syncsource) {
+      // for (int i = 0; i < numframes; i++)
+      //_HAF._oscopesync[i] = syncsource->_triggers[i];
+      //} else {
+      // for (int i = 0; i < numframes; i++)
+      //_HAF._oscopesync[i] = false;
+      //}
       ///////////////////////////////////////////////
-      if (doBlockStereo) {
-        for (int i = 0; i < numframes; i++) {
-          int inpi              = i;
-          float l               = _layerObuf._leftBuffer[inpi];
-          float r               = _layerObuf._rightBuffer[inpi];
-          _HAF._oscopebuffer[i] = (l + r) * 0.5f;
-        }
-
-      } else {
-        for (int i = 0; i < numframes; i++) {
-          int inpi              = i;
-          float l               = _layerObuf._leftBuffer[inpi];
-          _HAF._oscopebuffer[i] = l;
+      if (_layerdata->_scopesource) {
+        if (doBlockStereo) {
+          const float* l = _layerObuf._leftBuffer;
+          const float* r = _layerObuf._rightBuffer;
+          _layerdata->_scopesource->updateStereo(numframes, l, r);
+        } else {
+          const float* mono = _layerObuf._leftBuffer;
+          _layerdata->_scopesource->updateMono(numframes, mono);
         }
       }
       ///////////////////////////////////////////////
@@ -442,7 +445,7 @@ void Layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
   KOI._key       = note;
   KOI._vel       = vel;
   KOI._layer     = this;
-  KOI._LayerData = ld;
+  KOI._layerdata = ld;
 
   _HKF._miscText   = "";
   _HKF._note       = note;
@@ -455,7 +458,7 @@ void Layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
 
   _ignoreRelease = ld->_ignRels;
   _curnote       = note;
-  _LayerData     = ld;
+  _layerdata     = ld;
 
   _curvel = vel;
 
@@ -476,14 +479,14 @@ void Layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
 
   ///////////////////////////////////////
 
-  _alg = _LayerData->_algdata->createAlgInst();
+  _alg = _layerdata->_algdata->createAlgInst();
   // assert(_alg);
   if (_alg) {
     DspKeyOnInfo koi;
     koi._key       = note;
     koi._vel       = vel;
     koi._layer     = this;
-    koi._LayerData = ld;
+    koi._layerdata = ld;
     _alg->keyOn(koi);
   }
 
@@ -520,7 +523,7 @@ void Layer::keyOff() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Layer::reset() {
-  _LayerData = nullptr;
+  _layerdata = nullptr;
   _curnote   = 0;
   _keepalive = 0;
 

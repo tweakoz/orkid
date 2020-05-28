@@ -110,7 +110,7 @@ struct EzViewport : public ui::Viewport {
   EzMainWin* _mainwin;
 };
 ////////////////////////////////////////////////////////////////////////////////
-class OrkEzQtApp final : public OrkEzQtAppBase {
+class OrkEzQtApp : public OrkEzQtAppBase {
   Q_OBJECT
 
 public:

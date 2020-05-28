@@ -1,6 +1,7 @@
 #include <ork/lev2/aud/singularity/hud.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/gfx/pickbuffer.h>
+#include <ork/util/triple_buffer.h>
 
 using namespace ork;
 using namespace ork::lev2;
@@ -13,32 +14,48 @@ struct ScopeSurf final : public ui::Surface {
   void DoInit(lev2::Context* pt) override;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
   ork::lev2::CTXBASE* _ctxbase = nullptr;
+  concurrent_triple_buffer<ScopeBuffer> _scopebuffers;
 };
 ///////////////////////////////////////////////////////////////////////////////
-hudpanel_ptr_t create_oscilloscope() {
-  auto rval      = std::make_shared<HudPanel>();
-  rval->_panel   = std::make_shared<ui::Panel>("scope", 0, 0, 256, 256);
-  rval->_surface = std::make_shared<ScopeSurf>();
-  rval->_panel->setChild(rval->_surface);
-  rval->_panel->snap();
-  return rval;
+scope_ptr_t create_oscilloscope(hudvp_ptr_t vp) {
+  auto hudpanel        = std::make_shared<HudPanel>();
+  auto scopesurf       = std::make_shared<ScopeSurf>();
+  hudpanel->_uipanel   = std::make_shared<ui::Panel>("scope", 0, 0, 32, 32);
+  hudpanel->_uisurface = scopesurf;
+  hudpanel->_uipanel->setChild(hudpanel->_uisurface);
+  hudpanel->_uipanel->snap();
+  auto scope              = std::make_shared<Scope>();
+  scope->_hudpanel        = hudpanel;
+  scope->_sink            = std::make_shared<ScopeSink>();
+  scope->_sink->_onupdate = [scopesurf](const ScopeSource& src) { //
+    auto dest_scopebuf = scopesurf->_scopebuffers.begin_push();
+    memcpy(
+        dest_scopebuf->_samples, //
+        src._scopebuffer._samples,
+        koscopelength * sizeof(float));
+    scopesurf->_scopebuffers.end_push(dest_scopebuf);
+    scopesurf->SetDirty();
+  };
+  vp->addChild(hudpanel->_uipanel);
+  vp->_hudpanels.insert(hudpanel);
+  return scope;
 }
 ///////////////////////////////////////////////////////////////////////////////
 ScopeSurf::ScopeSurf() //
-    : ui::Surface("Scope", 0, 0, 128, 128, fvec3(0.2, 0.1, 0.2), 1.0) {
-} // namespace ork::audio::singularity
+    : ui::Surface("Scope", 0, 0, 32, 32, fvec3(0.2, 0.1, 0.2), 1.0) {
+}
 ///////////////////////////////////////////////////////////////////////////////
 void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
-  auto context         = drwev->GetTarget();
-  auto fbi             = context->FBI();
-  auto syn             = synth::instance();
-  auto vp              = syn->_hudvp;
-  auto hudl            = syn->_hudLayer;
-  double time          = syn->_timeaccum;
-  const float* samples = syn->_oscopebuffer;
+  auto context = drwev->GetTarget();
+  auto fbi     = context->FBI();
+  auto syn     = synth::instance();
+  auto vp      = syn->_hudvp;
+  double time  = syn->_timeaccum;
 
-  if (false == (hudl && hudl->_LayerData))
+  auto scopebuf = _scopebuffers.begin_pull();
+  if (nullptr == scopebuf)
     return;
+  const float* _samples = scopebuf->_samples;
 
   mRtGroup->_clearColor = _clearColor;
   fbi->rtGroupClear(mRtGroup);
@@ -126,7 +143,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   /////////////////////////////////////////////
 
   float x1 = OSC_X1;
-  float y1 = OSC_CY + samples[0] * -OSC_HH;
+  float y1 = OSC_CY + _samples[0] * -OSC_HH;
   float x2, y2;
 
   const int koscfr = window_width;
@@ -138,9 +155,9 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   std::set<int> crossings;
   {
-    float ly = samples[0];
+    float ly = _samples[0];
     for (int i = 0; i < koscopelength; i++) {
-      float y = samples[i];
+      float y = _samples[i];
       if (syn->_ostrigdir) {
         if (ly > triggerlevel and y <= triggerlevel)
           crossings.insert(i);
@@ -236,7 +253,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   for (int i = 0; i < window_width; i++) {
     int j   = (i + crossing) & koscopelengthmask;
     float x = OSC_W * float(i) / float(window_width);
-    float y = samples[j] * -OSC_HH;
+    float y = _samples[j] * -OSC_HH;
     x2      = OSC_X1 + x;
     y2      = OSC_CY + y;
     if (i < koscfr)
@@ -247,6 +264,8 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     x1 = x2;
     y1 = y2;
   }
+
+  _scopebuffers.end_pull(scopebuf);
 
   drawHudLines(this, context, lines);
 }
@@ -259,6 +278,57 @@ void ScopeSurf::DoInit(lev2::Context* pt) {
 ui::HandlerResult ScopeSurf::DoOnUiEvent(ui::event_constptr_t EV) {
   ui::HandlerResult ret(this);
   return ret;
+}
+///////////////////////////////////////////////////////////////////////////////
+void Scope::setRect(int iX, int iY, int iW, int iH) {
+  _hudpanel->_uipanel->SetRect(iX, iY, iW, iH);
+}
+///////////////////////////////////////////////////////////////////////////////
+void ScopeSource::connect(scopesink_ptr_t sink) {
+  _sinks.insert(sink);
+}
+///////////////////////////////////////////////////////////////////////////////
+void ScopeSource::disconnect(scopesink_ptr_t sink) {
+  auto it = _sinks.find(sink);
+  if (it != _sinks.end()) {
+    _sinks.erase(it);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+void ScopeSource::updateMono(int numframes, const float* mono) {
+  OrkAssert(numframes <= koscopelength);
+  int tailbegin = koscopelength - numframes;
+  float* dest   = _scopebuffer._samples;
+  memcpy(dest, dest + numframes, tailbegin * sizeof(float));
+  memcpy(dest + tailbegin, mono, numframes * sizeof(float));
+  for (auto s : _sinks) {
+    s->sourceUpdated(*this);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+void ScopeSource::updateStereo(int numframes, const float* left, const float* right) {
+  OrkAssert(numframes <= koscopelength);
+  int tailbegin = koscopelength - numframes;
+  float* dest   = _scopebuffer._samples;
+  memcpy(dest, dest + numframes, tailbegin * sizeof(float));
+  for (int i = 0; i < numframes; i++) {
+    dest[tailbegin + i] = (left[i] + right[i]) * 0.5f;
+  }
+  for (auto s : _sinks) {
+    s->sourceUpdated(*this);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+void ScopeSink::sourceUpdated(const ScopeSource& src) {
+  if (_onupdate)
+    _onupdate(src);
+}
+///////////////////////////////////////////////////////////////////////////////
+ScopeBuffer::ScopeBuffer(int tbufindex)
+    : _tbindex(tbufindex) {
+  for (int i = 0; i < koscopelength; i++) {
+    _samples[i] = 0.0f;
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

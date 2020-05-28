@@ -187,7 +187,7 @@ void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI) {
   _layer         = KOI._layer;
   _konoffinfo    = KOI;
   _state         = 0;
-  auto ld        = KOI._LayerData;
+  auto ld        = KOI._layerdata;
   int ikey       = KOI._key;
   _ignoreRelease = ld->_ignRels;
   _released      = false;

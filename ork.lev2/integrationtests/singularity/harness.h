@@ -7,7 +7,7 @@
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/synthdata.h>
-#include <ork/lev2/aud/singularity/synth.h>
+#include <ork/lev2/aud/singularity/hud.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/material_freestyle.h>
@@ -22,7 +22,14 @@ void startupAudio();
 void tearDownAudio();
 } // namespace ork::lev2
 
-qtezapp_ptr_t createEZapp(int& argc, char** argv);
+struct SingularityTestApp final : public OrkEzQtApp {
+  SingularityTestApp(int& argc, char** argv);
+  ~SingularityTestApp() override;
+  hudvp_ptr_t _hudvp;
+};
+using singularitytestapp_ptr_t = std::shared_ptr<SingularityTestApp>;
+
+singularitytestapp_ptr_t createEZapp(int& argc, char** argv);
 
 inline void enqueue_audio_event(
     const ProgramData* prog, //

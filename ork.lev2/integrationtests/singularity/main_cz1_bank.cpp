@@ -4,7 +4,6 @@
 int main(int argc, char** argv) {
   auto qtapp    = createEZapp(argc, argv);
   auto basepath = basePath() / "casioCZ";
-  startupAudio();
   //////////////////////////////////////////////////////////////////////////////
   auto czdata1 = CzData::load(basepath / "factoryA.bnk", "bank1");
   auto czdata2 = CzData::load(basepath / "factoryB.bnk", "bank2");
@@ -19,6 +18,5 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, 0});
   qtapp->exec();
-  tearDownAudio();
   return 0;
 }

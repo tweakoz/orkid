@@ -6,8 +6,7 @@
 using namespace ork::audio::singularity;
 
 int main(int argc, char** argv) {
-  auto qtapp = createEZapp(argc, argv);
-  startupAudio();
+  auto app = createEZapp(argc, argv);
   //////////////////////////////////////////////////////////////////////////////
   // allocate program/layer data
   //////////////////////////////////////////////////////////////////////////////
@@ -78,14 +77,23 @@ int main(int argc, char** argv) {
   amp_param._mods._src1      = DCAENV;
   amp_param._mods._src1Depth = 1.0;
   //////////////////////////////////////
+  // create and connect oscilloscope
+  //////////////////////////////////////
+  auto source   = layerdata->createScopeSource();
+  auto scope    = create_oscilloscope(app->_hudvp);
+  auto analyzer = create_spectrumanalyzer(app->_hudvp);
+  source->connect(scope->_sink);
+  source->connect(analyzer->_sink);
+  scope->setRect(0, 0, 1280, 256);
+  analyzer->setRect(0, 720 - 256, 1280, 256);
+  //////////////////////////////////////
   // play test notes
   //////////////////////////////////////
   enqueue_audio_event(program.get(), 1.5f, 240.0, 48);
   //////////////////////////////////////////////////////////////////////////////
   // test harness UI
   //////////////////////////////////////////////////////////////////////////////
-  qtapp->setRefreshPolicy({EREFRESH_FASTEST, 0});
-  qtapp->exec();
-  tearDownAudio();
+  app->setRefreshPolicy({EREFRESH_FASTEST, 0});
+  app->exec();
   return 0;
 }

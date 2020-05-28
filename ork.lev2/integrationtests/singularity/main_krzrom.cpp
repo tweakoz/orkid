@@ -2,8 +2,7 @@
 #include <ork/lev2/aud/singularity/krzdata.h>
 
 int main(int argc, char** argv) {
-  auto qtapp = createEZapp(argc, argv);
-  startupAudio();
+  auto qtapp    = createEZapp(argc, argv);
   auto bank     = std::make_shared<KrzSynthData>();
   auto drums    = bank->getProgramByName("Castle_Drums");
   auto doomsday = bank->getProgramByName("Doomsday");
@@ -32,6 +31,5 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, 0});
   qtapp->exec();
-  tearDownAudio();
   return 0;
 }

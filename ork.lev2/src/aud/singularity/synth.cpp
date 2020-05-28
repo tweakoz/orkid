@@ -45,10 +45,6 @@ synth::synth()
     _freeProgInst.insert(pi);
     _allProgInsts.insert(pi);
   }
-  for (int i = 0; i < koscopelength; i++) {
-    _oscopebuffer[i]     = 0.0f;
-    _oscopesyncbuffer[i] = false;
-  }
 
   _hudvp = std::make_shared<HudViewport>();
 
@@ -299,7 +295,7 @@ void programInst::keyOn(int note, const ProgramData* pd) {
 
   auto syn = synth::instance();
 
-  for (const auto& ld : pd->_LayerDatas) {
+  for (const auto& ld : pd->_layerdatas) {
     ilayer++;
 
     if (note < ld->_loKey || note > ld->_hiKey)

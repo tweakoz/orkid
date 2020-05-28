@@ -46,14 +46,14 @@ void Rect::PopOrtho(Context* context) const {
 ///////////////////////////////////////////////////////////////////////////////
 HudViewport::HudViewport() //
     : ui::Viewport("HUD", 0, 0, 512, 512, fvec3::Red(), 1.0) {
-  _oscope  = create_oscilloscope();
-  _spectra = create_spectrumanalyzer();
+  //_oscope  = create_oscilloscope();
+  //_spectra = create_spectrumanalyzer();
 
-  addChild(_oscope->_panel);
-  addChild(_spectra->_panel);
+  // addChild(_oscope->_panel);
+  // addChild(_spectra->_panel);
 
-  _oscope->_panel->SetRect(0, 0, 1280, 320);
-  _spectra->_panel->SetRect(0, 720 - 384, 1280, 384);
+  //_oscope->_panel->SetRect(0, 0, 1280, 320);
+  //_spectra->_panel->SetRect(0, 720 - 384, 1280, 384);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void HudViewport::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
@@ -69,38 +69,14 @@ void HudViewport::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
   while (syn->_hudbuf.try_pop(hdata)) {
     if (hdata.IsA<HudFrameControl>()) {
       syn->_curhud_kframe = hdata.Get<HudFrameControl>();
-
-      for (int i = 0; i < koscopelength; i++) {
-        syn->_oscopebuffer[i] = 0.0f;
-      }
-
     }
 
     else if (auto try_aframe = hdata.TryAs<HudFrameAudio>()) {
       //////////////////////////////
-      // OSCOPE INPUT
-      //////////////////////////////
-
-      auto& AFIN  = try_aframe.value();
-      int inumfin = AFIN._oscopebuffer.size();
-
-      int tailbegin = koscopelength - inumfin;
-
-      memcpy(syn->_oscopebuffer, syn->_oscopebuffer + inumfin, tailbegin * sizeof(float));
-      memcpy(syn->_oscopesyncbuffer, syn->_oscopesyncbuffer + inumfin, tailbegin * sizeof(bool));
-
-      float* tailb_float = syn->_oscopebuffer + tailbegin;
-      bool* tailb_bool   = syn->_oscopesyncbuffer + tailbegin;
-      for (int i = 0; i < inumfin; i++) {
-        tailb_float[i] = AFIN._oscopebuffer[i];
-        tailb_bool[i]  = AFIN._oscopesync[i];
-      }
+      auto& AFIN = try_aframe.value();
       syn->_curhud_aframe._items.clear();
       syn->_curhud_aframe = AFIN;
       AFIN._items.clear();
-
-      _oscope->_surface->SetDirty();
-      _spectra->_surface->SetDirty();
     }
   }
 }
@@ -261,12 +237,12 @@ void synth::onDrawHudPage1(Context* context, float width, float height) {
 void synth::onDrawHudPage2(Context* context, float width, float height) {
   auto hudl = _hudLayer;
 
-  if (false == (hudl && hudl->_LayerData))
+  if (false == (hudl && hudl->_layerdata))
     return;
 
   std::lock_guard<std::mutex> lock(hudl->_mutex);
 
-  auto layd = _hudLayer->_LayerData;
+  auto layd = _hudLayer->_layerdata;
 
   const HudFrameAudio& HAF = _curhud_aframe;
 

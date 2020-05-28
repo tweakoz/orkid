@@ -7,7 +7,6 @@ using namespace ork::audio::singularity;
 
 int main(int argc, char** argv) {
   auto qtapp = createEZapp(argc, argv);
-  startupAudio();
   //////////////////////////////////////////////////////////////////////////////
   // allocate program/layer data
   //////////////////////////////////////////////////////////////////////////////
@@ -84,6 +83,5 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, 0});
   qtapp->exec();
-  tearDownAudio();
   return 0;
 }

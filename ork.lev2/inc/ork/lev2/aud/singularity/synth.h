@@ -110,9 +110,6 @@ struct synth {
   HudFrameControl _curhud_kframe;
   HudFrameAudio _curhud_aframe;
   hudvp_ptr_t _hudvp;
-
-  float _oscopebuffer[koscopelength];
-  bool _oscopesyncbuffer[koscopelength];
 };
 
 } // namespace ork::audio::singularity

@@ -4,7 +4,6 @@
 int main(int argc, char** argv) {
   auto qtapp    = createEZapp(argc, argv);
   auto basepath = basePath() / "casioCZ";
-  startupAudio();
   //////////////////////////////////////////////////////////////////////////////
   auto bnk = CzData::load(basepath / "edit.syx", "bank1");
   auto prg = bnk->getProgram(0);
@@ -16,6 +15,5 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, 0});
   qtapp->exec();
-  tearDownAudio();
   return 0;
 }

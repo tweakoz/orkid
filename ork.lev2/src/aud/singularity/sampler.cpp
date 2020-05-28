@@ -47,10 +47,10 @@ SAMPLER::SAMPLER(dspblkdata_constptr_t dbd)
 
 ///////////////////////////////////////////////////////////////////////////////
 /* sampler/keymap specific pitch setup
-if (auto PCHBLK = _LayerData->_pchBlock) {
+if (auto PCHBLK = _layerdata->_pchBlock) {
   const int kNOTEC4 = 60;
   const auto& PCH   = PCHBLK->_paramd[0];
-  const auto& KMP   = _LayerData->_kmpBlock;
+  const auto& KMP   = _layerdata->_kmpBlock;
 
   int timbreshift = KMP->_timbreShift;                // 0
   int kmtrans     = KMP->_transpose; //+timbreshift; // -20
@@ -71,7 +71,7 @@ if (auto PCHBLK = _LayerData->_pchBlock) {
   int kmcents = kmfinalcents; //+region->_tuning;
   // printf( "_layerBasePitch<%d>\n", int(_layerBasePitch) );
 
-  //_pchBlock = _LayerData->_pchBlock->create();
+  //_pchBlock = _layerdata->_pchBlock->create();
 
   if (_pchBlock) {
     float centoff          = _pchBlock->_param[0].eval();
@@ -257,7 +257,7 @@ void sampleOsc::keyOn(const DspKeyOnInfo& koi) {
 
   pbratio *= 0.5f;
 
-  lyrdata_constptr_t ld = _lyr->_LayerData;
+  lyrdata_constptr_t ld = _lyr->_layerdata;
 
   if (nullptr == _sample) {
     printf("sampleOsc no sample!\n");
@@ -367,7 +367,7 @@ void sampleOsc::keyOff() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void sampleOsc::findRegion(const DspKeyOnInfo& koi) {
-  auto ld  = _lyr->_LayerData;
+  auto ld  = _lyr->_layerdata;
   auto KMP = ld->_kmpBlock;
 
   auto PCHBLK = ld->_pchBlock;
