@@ -415,17 +415,21 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, ProgramData* prgout, std::ve
       outp._time *= power;
       return outp;
     };
-    /////////////////////////////////////////////////
-    auto osc = layerdata->stageByName("DCO")->appendBlock();
-    auto amp = layerdata->stageByName("AMP")->appendBlock();
-    CZX::initBlock(osc, oscdata, dcochannel);
-    AMP::initBlock(amp);
-    /////////////////////////////////////////////////
-    auto& pitch_mod      = osc->_paramd[0]._mods;
+    //////////////////////////////////////
+    // setup dsp graph
+    //////////////////////////////////////
+    auto dcostage = layerdata->stageByName("DCO");
+    auto ampstage = layerdata->stageByName("AMP");
+    auto dco      = dcostage->appendTypedBlock<CZX>(oscdata, dcochannel);
+    auto amp      = ampstage->appendTypedBlock<AMP>();
+    //////////////////////////////////////
+    // setup modulators
+    //////////////////////////////////////
+    auto& pitch_mod      = dco->_paramd[0]._mods;
     pitch_mod._src1      = DCOENV;
     pitch_mod._src1Depth = 1.0f;
     /////////////////////////////////////////////////
-    auto& modulation_index      = osc->_paramd[1]._mods;
+    auto& modulation_index      = dco->_paramd[1]._mods;
     modulation_index._src1      = DCWENV;
     modulation_index._src1Depth = float(oscdata->_dcwDepth) / 15.0f;
     /////////////////////////////////////////////////

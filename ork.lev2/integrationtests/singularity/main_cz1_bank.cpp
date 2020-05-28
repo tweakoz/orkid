@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
     auto bnk = (i >> 5) ? czdata2 : czdata1;
     auto prg = bnk->getProgram(i % 32);
     for (int n = 0; n < 12; n++) {
-      enqueue_audio_event(prg, 3 + float(i * 12 + n) * 0.5, 0.2, 48 + (n % 12));
+      enqueue_audio_event(prg, 0.5 + float(i * 12 + n) * 0.5, 0.2, 48 + (n % 12));
     }
   }
   //////////////////////////////////////////////////////////////////////////////

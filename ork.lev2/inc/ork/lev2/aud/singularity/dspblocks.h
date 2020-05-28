@@ -175,6 +175,13 @@ struct DspBlock {
 struct DspStageData final {
   DspStageData();
   dspblkdata_ptr_t appendBlock();
+
+  template <typename T, typename... A> dspblkdata_ptr_t appendTypedBlock(A&&... args) {
+    auto block = appendBlock();
+    T::initBlock(block, std::forward<A>(args)...);
+    return block;
+  }
+
   dspblkdata_constptr_t _blockdatas[kmaxdspblocksperstage];
   iomask_ptr_t _iomask;
   int _numblocks = 0;

@@ -56,10 +56,13 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   // setup dsp graph
   //////////////////////////////////////
-  auto osc = layerdata->stageByName("DCO")->appendBlock();
-  auto amp = layerdata->stageByName("AMP")->appendBlock();
-  CZX::initBlock(osc, czoscdata, 0);
-  AMP::initBlock(amp);
+  auto dcostage = layerdata->stageByName("DCO");
+  auto ampstage = layerdata->stageByName("AMP");
+  auto osc      = dcostage->appendTypedBlock<CZX>(czoscdata, 0);
+  auto amp      = ampstage->appendTypedBlock<AMP>();
+  //////////////////////////////////////
+  // setup modulators
+  //////////////////////////////////////
   auto& modulation_index_param      = osc->_paramd[0]._mods;
   modulation_index_param._src1      = DCWENV;
   modulation_index_param._src1Depth = 1.0;
