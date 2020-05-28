@@ -12,6 +12,30 @@ dspblk_ptr_t createDspBlock(dspblkdata_constptr_t dbd);
 
 ///////////////////////////////////////////////////////////////////////////////
 
+alg_ptr_t AlgData::createAlgInst() const {
+  auto alg = std::make_shared<Alg>(*this);
+  return alg;
+}
+dspstagedata_ptr_t AlgData::appendStage(const std::string& named) {
+  OrkAssert((_numstages + 1) <= kmaxdspstagesperlayer);
+  auto stage            = std::make_shared<DspStageData>();
+  _stages[_numstages++] = stage;
+  _stageByName[named]   = stage;
+  return stage;
+}
+dspstagedata_ptr_t AlgData::stageByName(const std::string& named) {
+  auto it = _stageByName.find(named);
+  return (it == _stageByName.end()) ? nullptr : it->second;
+}
+dspstagedata_ptr_t AlgData::stageByIndex(int index) {
+  OrkAssert(index < _numstages);
+  OrkAssert(index >= 0);
+  auto stage = _stages[index];
+  return stage;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 Alg::Alg(const AlgData& algd)
     : _algdata(algd) {
 }

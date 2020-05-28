@@ -18,8 +18,8 @@ algdata_ptr_t configureKrzAlgorithm(int algid) {
   algdout->_name = ork::FormatString("KrzALG%d", algid);
   switch (algid) {
     case 1: { // KRZ1 (PCH->DSP->AMP->MONO)
-      auto stage_dsp = algdout->appendStage();
-      auto stage_amp = algdout->appendStage();
+      auto stage_dsp = algdout->appendStage("DSP");
+      auto stage_amp = algdout->appendStage("AMP");
       stage_dsp->_iomask->_inputs.push_back(0);  // 1 input
       stage_dsp->_iomask->_outputs.push_back(0); // 1 output
       stage_amp->_iomask->_inputs.push_back(0);  // 1 input
@@ -27,8 +27,8 @@ algdata_ptr_t configureKrzAlgorithm(int algid) {
       break;
     }
     case 2: { // KRZ2 (PCH->DSP1->DSP2->PANNER->AMP->STEREO)
-      auto stage_dsp    = algdout->appendStage();
-      auto stage_panner = algdout->appendStage();
+      auto stage_dsp    = algdout->appendStage("DSP");
+      auto stage_panner = algdout->appendStage("AMP");
       stage_dsp->_iomask->_inputs.push_back(0);    // 1 input
       stage_dsp->_iomask->_outputs.push_back(0);   // 1 output
       stage_panner->_iomask->_inputs.push_back(0); // 1 input

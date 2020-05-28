@@ -56,8 +56,8 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   // setup dsp graph
   //////////////////////////////////////
-  auto osc = layerdata->stage(0)->appendBlock();
-  auto amp = layerdata->stage(1)->appendBlock();
+  auto osc = layerdata->stageByName("DCO")->appendBlock();
+  auto amp = layerdata->stageByName("AMP")->appendBlock();
   CZX::initBlock(osc, czdata);
   czdata->_noisemod = true;
   AMP::initBlock(amp);

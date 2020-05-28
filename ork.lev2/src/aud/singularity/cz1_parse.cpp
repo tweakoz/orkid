@@ -34,7 +34,6 @@ auto genwacurve = []() -> MultiCurve1D {
     s[i] = EMCST_LOG;
 
   auto& v = curve.mVertices;
-  v.AddSorted(0.05, 0.0);
   v.AddSorted(0.1, 35.0);
   v.AddSorted(0.2, 13.0);
   v.AddSorted(0.3, 4.33);
@@ -44,6 +43,7 @@ auto genwacurve = []() -> MultiCurve1D {
   v.AddSorted(0.7, 0.066);
   v.AddSorted(0.8, 0.025);
   v.AddSorted(0.9, 0.008);
+  v.AddSorted(0.95, 0.006);
   return curve;
 };
 auto genpcurve = []() -> MultiCurve1D {
@@ -152,18 +152,18 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     }
   }
 
-  auto czdata     = std::make_shared<CzProgData>();
-  u8 PFLAG        = bytes[0x00]; // octave/linesel
-  czdata->_octave = (PFLAG & 0x0c) >> 2;
-  int lineSel     = (PFLAG & 0x03);
-  u8 PDS          = bytes[0x01];        // detune sign
-  u8 PDETL        = bytes[0x02];        // detune fine
-  u8 PDETH        = bytes[0x03];        // detune oct/note
-  int detval      = (PDETH * 100)       // accumulate coarse
+  auto czdata      = std::make_shared<CzProgData>();
+  u8 PFLAG         = bytes[0x00]; // octave/linesel
+  czdata->_octave  = (PFLAG & 0x0c) >> 2;
+  czdata->_lineSel = (PFLAG & 0x03);
+  u8 PDS           = bytes[0x01];       // detune sign
+  u8 PDETL         = bytes[0x02];       // detune fine
+  u8 PDETH         = bytes[0x03];       // detune oct/note
+  int detval       = (PDETH * 100)      // accumulate coarse
                + ((PDETL * 100) / 240); // accumulate fine
   czdata->_detuneCents = (PDS & 1) ? (detval) : +detval;
 
-  switch (lineSel) {
+  switch (czdata->_lineSel) {
     case 0: // 1
       printf("linesel<1>\n");
       break;
@@ -319,38 +319,34 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
 
   auto make_dco = [&](lyrdata_ptr_t layerdata, czxdata_ptr_t oscdata, int dcoindex) {
     /////////////////////////////////////////////////
-    auto DCOENV           = layerdata->appendController<RateLevelEnvData>("DCOENV");
-    DCOENV->_ampenv       = false;
-    const auto& srcdcoenv = oscdata->_dcoEnv;
-    DCOENV->_sustainPoint = (srcdcoenv._sustPoint == 0) //
-                                ? 7
-                                : srcdcoenv._sustPoint - 1;
+    // Pitch Envelope
+    /////////////////////////////////////////////////
+    auto DCOENV             = layerdata->appendController<RateLevelEnvData>("DCOENV");
+    DCOENV->_ampenv         = false;
+    const auto& srcdcoenv   = oscdata->_dcoEnv;
+    DCOENV->_sustainSegment = srcdcoenv._sustPoint;
     for (int i = 0; i < 8; i++) {
-      bool end   = i > srcdcoenv._endStep;
-      auto point = end ? //
-                       EnvPoint{0, 0}
-                       : EnvPoint{//
-                                  srcdcoenv._time[i],
-                                  srcdcoenv._level[i]};
-      DCOENV->_segments.push_back(point);
-      DCOENV->_endPoint = srcdcoenv._endStep;
+      if (i <= srcdcoenv._endStep) {
+        auto point = EnvPoint{//
+                              srcdcoenv._time[i],
+                              srcdcoenv._level[i]};
+        DCOENV->_segments.push_back(point);
+      }
     }
     /////////////////////////////////////////////////
-    auto DCWENV           = layerdata->appendController<RateLevelEnvData>("DCWENV");
-    DCWENV->_ampenv       = false;
-    const auto& srcdcwenv = oscdata->_dcwEnv;
-    DCWENV->_sustainPoint = (srcdcwenv._sustPoint == 0) //
-                                ? 7
-                                : srcdcwenv._sustPoint - 1;
+    // Wave(filter) Envelope
+    /////////////////////////////////////////////////
+    auto DCWENV             = layerdata->appendController<RateLevelEnvData>("DCWENV");
+    DCWENV->_ampenv         = false;
+    const auto& srcdcwenv   = oscdata->_dcwEnv;
+    DCWENV->_sustainSegment = srcdcwenv._sustPoint;
     for (int i = 0; i < 8; i++) {
-      bool end   = i > srcdcwenv._endStep;
-      auto point = end ? //
-                       EnvPoint{0, 0}
-                       : EnvPoint{//
-                                  srcdcwenv._time[i],
-                                  srcdcwenv._level[i] / 100.0f};
-      DCWENV->_segments.push_back(point);
-      DCWENV->_endPoint = srcdcwenv._endStep;
+      if (i <= srcdcwenv._endStep) {
+        auto point = EnvPoint{//
+                              srcdcwenv._time[i],
+                              srcdcwenv._level[i] / 100.0f};
+        DCWENV->_segments.push_back(point);
+      }
     }
     DCWENV->_envadjust = [=](const EnvPoint& inp, //
                              int iseg,
@@ -363,23 +359,20 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
       outp._level *= power;
       return outp;
     };
-
     /////////////////////////////////////////////////
-    auto DCAENV           = layerdata->appendController<RateLevelEnvData>("DCAENV");
-    DCAENV->_ampenv       = true;
-    const auto& srcdcaenv = oscdata->_dcaEnv;
-    DCAENV->_sustainPoint = (srcdcaenv._sustPoint == 0) //
-                                ? 7
-                                : srcdcaenv._sustPoint - 1;
+    // Amplitude Envelope
+    /////////////////////////////////////////////////
+    auto DCAENV             = layerdata->appendController<RateLevelEnvData>("DCAENV");
+    DCAENV->_ampenv         = true;
+    const auto& srcdcaenv   = oscdata->_dcaEnv;
+    DCAENV->_sustainSegment = srcdcaenv._sustPoint;
     for (int i = 0; i < 8; i++) {
-      bool end   = i > srcdcaenv._endStep;
-      auto point = end ? //
-                       EnvPoint{0, 0}
-                       : EnvPoint{//
-                                  srcdcaenv._time[i],
-                                  srcdcaenv._level[i] / 100.0f};
-      DCAENV->_segments.push_back(point);
-      DCAENV->_endPoint = srcdcaenv._endStep;
+      if (i <= srcdcaenv._endStep) {
+        auto point = EnvPoint{//
+                              srcdcaenv._time[i],
+                              srcdcaenv._level[i] / 100.0f};
+        DCAENV->_segments.push_back(point);
+      }
     }
     DCAENV->_envadjust = [=](const EnvPoint& inp, //
                              int iseg,
@@ -393,10 +386,11 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
       return outp;
     };
     /////////////////////////////////////////////////
-    auto osc = layerdata->stage(0)->appendBlock();
-    auto amp = layerdata->stage(2)->appendBlock();
+    auto osc = layerdata->stageByName("DCO")->appendBlock();
+    auto amp = layerdata->stageByName("AMP")->appendBlock();
     CZX::initBlock(osc, oscdata);
     AMP::initBlock(amp);
+    osc->_vars.makeValueForKey<int>("dcoindex") = dcoindex;
     /////////////////////////////////////////////////
     auto& pitch_mod      = osc->_paramd[0]._mods;
     pitch_mod._src1      = DCOENV;
@@ -425,52 +419,61 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     }
   };
   /////////////////////////////////////////////////
-  auto layerdata      = prgout->newLayer();
-  layerdata->_algdata = configureCz1Algorithm();
-  switch (lineSel) {
+  auto layerdata = prgout->newLayer();
+  /////////////////////////////////////////////////
+  // line select
+  /////////////////////////////////////////////////
+  switch (czdata->_lineSel) {
     case 0: // 1
+      layerdata->_algdata = configureCz1Algorithm(1);
       make_dco(layerdata, czdata->_oscData[0], 0);
       break;
     case 1: // 2
+      layerdata->_algdata = configureCz1Algorithm(1);
       make_dco(layerdata, czdata->_oscData[1], 0);
       break;
     case 2: // 1+1'
-      // TODO : ring, noisemod
+      layerdata->_algdata = configureCz1Algorithm(2);
       make_dco(layerdata, czdata->_oscData[0], 0);
       make_dco(layerdata, czdata->_oscData[0], 1);
       break;
     case 3: // 1+2'
-      // TODO : ring, noisemod
+      layerdata->_algdata = configureCz1Algorithm(2);
       make_dco(layerdata, czdata->_oscData[0], 0);
       make_dco(layerdata, czdata->_oscData[1], 1);
       break;
     default:
       assert(false);
   }
+  /////////////////////////////////////////////////
+  // line modulation
+  /////////////////////////////////////////////////
   int modulation_mode   = czdata->_lineMod >> 1;
   bool modulation_nomix = (czdata->_lineMod & 1);
   switch (modulation_mode) {
     case 0:   // none
     case 1: { // none
-      auto mix = layerdata->stage(1)->appendBlock();
-      SUM2::initBlock(mix);
+      if (czdata->numOscs() == 2) {
+        auto mix = layerdata->stageByName("MOD")->appendBlock();
+        SUM2::initBlock(mix);
+      }
       break;
     }
     case 2: // ring 2
-      OrkAssert(lineSel == 2 or lineSel == 3);
+      OrkAssert(czdata->numOscs() == 2);
       OrkAssert(false);
       break;
     case 3: { // noise 1
-      OrkAssert(lineSel == 2 or lineSel == 3);
+      OrkAssert(czdata->numOscs() == 2);
       czdata->_oscData[1]->_noisemod = true;
-      auto mix                       = layerdata->stage(1)->appendBlock();
+      auto mix                       = layerdata->stageByName("MOD")->appendBlock();
       SUM2::initBlock(mix);
       break;
     }
     case 4:   // ring 1
     case 5: { // ring 1
-      OrkAssert(lineSel == 2 or lineSel == 3);
-      auto ring = layerdata->stage(1)->appendBlock();
+      OrkAssert(czdata->numOscs() == 2);
+      auto ring = layerdata->stageByName("MOD")->appendBlock();
       if (modulation_nomix)
         RingMod::initBlock(ring);
       else
@@ -478,22 +481,25 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
       break;
     }
     case 6: // ring 3
-      OrkAssert(lineSel == 2 or lineSel == 3);
+      OrkAssert(czdata->numOscs() == 2);
       OrkAssert(false);
       break;
     case 7: { // noise 2
       OrkAssert(false);
-      OrkAssert(lineSel == 2 or lineSel == 3);
+      OrkAssert(czdata->numOscs() == 2);
       czdata->_oscData[1]->_noisemod = true;
-      auto mix                       = layerdata->stage(1)->appendBlock();
+      auto mix                       = layerdata->stageByName("MOD")->appendBlock();
       SUM2::initBlock(mix);
       break;
     }
   }
+  /////////////////////////////////////////////////
   czdata->_name = name;
-
   czdata->dump();
 } // namespace ork::audio::singularity
+int CzProgData::numOscs() const {
+  return (_lineSel == 2 or _lineSel == 3) ? 2 : 1;
+}
 ///////////////////////////////////////////////////////////////////////////////
 void parse_czx(CzData* outd, const file::Path& path, const std::string& bnkname) {
   ork::File syxfile(path, ork::EFM_READ);

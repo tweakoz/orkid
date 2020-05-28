@@ -46,11 +46,9 @@ ControllerInst* RateLevelEnvData::instantiate(Layer* l) const // final
 RateLevelEnvInst::RateLevelEnvInst(const RateLevelEnvData* data, Layer* l)
     : ControllerInst(l)
     , _data(data)
-    , _curslope_persamp(0.0f)
-    , _curseg(-1)
+    , _segmentIndex(-1)
     , _released(false)
     , _ampenv(data->_ampenv)
-    , _bipolar(data->_bipolar)
     , _envType(data->_envType)
     , _layer(nullptr) {
 }
@@ -60,49 +58,37 @@ RateLevelEnvInst::RateLevelEnvInst(const RateLevelEnvData* data, Layer* l)
 void RateLevelEnvInst::initSeg(int iseg) {
   if (!_data)
     return;
-
-  _curseg = iseg;
-  assert(_curseg >= 0);
-  assert(_curseg < 7);
   const auto& edata = *_data;
-  auto curseg       = edata._segments[_curseg];
-  curseg            = edata._envadjust(curseg, iseg, _konoffinfo);
-  float segtime     = curseg._time;
-
-  if (segtime == 0.0f) {
-    switch (_envType) {
-      case RlEnvType::ERLTYPE_KRZAMPENV:
-        if (iseg == 0 or iseg == 6) {
-          _dstval           = curseg._level;
-          _curval           = _dstval;
-          _curslope_persamp = 0.0f;
-        }
-        break;
-      case RlEnvType::ERLTYPE_DEFAULT:
-        if (iseg == 0 or iseg == 6) {
-          _dstval           = curseg._level;
-          _curval           = _dstval;
-          _curslope_persamp = 0.0f;
-        }
-        break;
-      default:
-        // if( iseg>0 ) { // iseg==1 or iseg==2 or iseg==4 or iseg==5 ){
-        // attack segss 2 and 3 only have effect
-        // if their times are not 0
-        //    printf( "segt0 iseg<%d>\n", iseg );
-        //}
-        break;
-    }
-
+  const auto& segs  = edata._segments;
+  size_t numsegs    = segs.size();
+  size_t maxseg     = numsegs - 1;
+  OrkAssert(iseg >= 0);
+  OrkAssert(iseg < numsegs);
+  _segmentIndex = iseg;
+  //////////////////////////////////////////////
+  const auto& base_segment = segs[_segmentIndex];
+  auto adjusted_segment    = edata._envadjust(base_segment, iseg, _konoffinfo);
+  //////////////////////////////////////////////
+  _startval = _curval;
+  _destval  = adjusted_segment._level;
+  //////////////////////////////////////////////
+  float segtime = adjusted_segment._time;
+  //////////////////////////////////////////////
+  if (segtime > 0.0f) {
+    _lerpincr  = getInverseControlRate() / segtime;
+    _lerpindex = 0.0f;
   } else {
-    _dstval           = curseg._level;
-    float deltlev     = (_dstval - _curval);
-    float slope       = (deltlev / segtime);
-    _curslope_persamp = slope * getInverseSampleRate();
+    _lerpincr  = 0.0f;
+    _lerpindex = 1.0f;
   }
-  _framesrem = segtime * getSampleRate(); // / 48000.0f;
-                                          // assert(false);
-  // printf("env<%s> iseg<%d> segt<%f> curv<%f> dest<%f>\n", _data->_name.c_str(), iseg, segtime, _curval, _dstval);
+  printf(
+      "env<%p> initseg<%d> _startval<%g> _destval<%g> segtime<%g> _lerpincr<%g>\n", //
+      this,
+      iseg,
+      _startval,
+      _destval,
+      segtime,
+      _lerpincr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -114,84 +100,124 @@ void RateLevelEnvInst::compute() // final
   /////////////////////////////
   const auto& edata = *_data;
   const auto& segs  = edata._segments;
-  bool done         = false;
-  _framesrem -= frames_per_controlpass;
-  if (_framesrem <= 0) {
-    //////////////////////////
-    // next segment
-    //////////////////////////
-    if (_released) {
-      if (_curseg <= 5) {
-        initSeg(_curseg + 1);
-      } else {
-        done    = true;
-        _curval = _dstval;
+  size_t numsegs    = segs.size();
+  size_t maxseg     = numsegs - 1;
+  /////////////////////////////
+  switch (_state) {
+    ////////////////////////////////////////////////////////////////////////////
+    case 0: { // atkdec
+      ///////////////////////////////////////////
+      _lerpindex += _lerpincr;
+      _curval          = lerp(_startval, _destval, std::clamp(_lerpindex, 0.0f, 1.0f));
+      bool try_advance = (_lerpindex >= 1.0);
+      ///////////////////////////////////////////
+      if (try_advance) {
+        if (_segmentIndex == edata._sustainSegment) { // hold at sustain
+          _state = 1;
+        } else if (edata._sustainSegment == -1) { // this env has no sustain...
+          // so go to release
+          _state = 2;
+        } else if (_segmentIndex < edata._sustainSegment) { // we are not at sustain yet..
+          if (_segmentIndex >= maxseg)
+            _state = 3; // straight to done..
+          else
+            initSeg(_segmentIndex + 1);
+        } else {
+          OrkAssert(false);
+        }
       }
-    } else { // go up to decay
-      if (_curseg == edata._sustainPoint) {
-        float declev      = segs[edata._sustainPoint]._level;
-        _curslope_persamp = 0.0f;
-        _curval           = declev;
-      } else if (_curseg < edata._sustainPoint)
-        initSeg(_curseg + 1);
+
+      break;
     }
+    ////////////////////////////////////////////////////////////////////////////
+    case 1: // sustain
+      break;
+    ////////////////////////////////////////////////////////////////////////////
+    case 2: { // release
+      ///////////////////////////////////////////
+      _lerpindex += _lerpincr;
+      _curval          = lerp(_startval, _destval, std::clamp(_lerpindex, 0.0f, 1.0f));
+      bool try_advance = (_lerpindex >= 1.0);
+      ///////////////////////////////////////////
+      if (try_advance) {
+        if (_segmentIndex >= maxseg)
+          _state = 3;
+        else
+          initSeg(_segmentIndex + 1);
+      } else {
+        ///////////////////////////////////////////
+        // if its an amp env, the envelope is done
+        //  when the value is inaudible
+        ///////////////////////////////////////////
+        if (_ampenv) {
+          float dbatten = linear_amp_ratio_to_decibel(_curval);
+          bool done     = (_segmentIndex >= numsegs) //
+                      and (dbatten < -96.0f);
+          if (done) //
+            _state = 3;
+        }
+        ///////////////////////////////////////////
+      }
+      break;
+    }
+      ////////////////////////////////////////////////////////////////////////////
+    case 3: // done
+      printf("env<%p> done\n", this);
+      if (_ampenv) {
+        printf("ampenv<%p> RELEASING LAYER<%p>\n", this, _layer);
+        _layer->release();
+        _curval = 0.0;
+      } else {
+        _curval = segs.rbegin()->_level;
+      }
+      _data  = nullptr;
+      _state = 4;
+      break;
+      ////////////////////////////////////////////////////////////////////////////
+    case 4: // dead (NOP)
+      break;
   }
-  //////////////////////////
-  // compute next value
-  //////////////////////////
-  if (not done) {
-    _curval += (_curslope_persamp * frames_per_controlpass);
-    if (_curslope_persamp > 0.0f && _curval > _dstval)
-      _curval = _dstval;
-    else if (_curslope_persamp < 0.0f && _curval < _dstval)
-      _curval = _dstval;
-  }
-  //////////////////////////
-  // release layer ?
-  //////////////////////////
-  float dbatten = linear_amp_ratio_to_decibel(_curval);
-
-  done = (_curseg >= edata._endPoint) //
-         and (dbatten < -96.0f);
-
-  if (done and _ampenv) {
-    _layer->release();
-    _data = nullptr;
-    // printf("ENV RELEASING LAYER<%p>\n", _layer);
-  }
+  // printf("env<%p> _state<%d> _curval<%g>\n", this, _state, _curval);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI) {
-  _layer      = KOI._layer;
-  _konoffinfo = KOI;
-
-  auto ld  = KOI._LayerData;
-  int ikey = KOI._key;
-
-  // printf( "flerp<%f> _decAdjust<%f>\n", flerp,_decAdjust);
-
-  // printf( "_relAdjust<%f>\n", _relAdjust );
+  _layer         = KOI._layer;
+  _konoffinfo    = KOI;
+  _state         = 0;
+  auto ld        = KOI._LayerData;
+  int ikey       = KOI._key;
   _ignoreRelease = ld->_ignRels;
-  _curval        = 0.0f;
-  _dstval        = 0.0f;
   _released      = false;
-
+  //////////////////////////////////
+  printf("env<%p> keyon\n", this);
+  //////////////////////////////////
   if (_data) {
+    _curval = 0.0f;
+    initSeg(0);
     if (_ampenv)
       _layer->retain();
-
-    initSeg(0);
   }
+  //////////////////////////////////
+  else {
+    _startval = 0.0f;
+    _destval  = 0.0f;
+    _curval   = 0.0f;
+  }
+  //////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void RateLevelEnvInst::keyOff() {
+  printf("env<%p> keyoff\n", this);
   _released = true;
-  if (_data && false == _ignoreRelease)
-    initSeg(4);
+  _state    = 2;
+  if (_data && false == _ignoreRelease) {
+    if (_data->_sustainSegment >= 0)
+      initSeg(_data->_sustainSegment + 1);
+  }
 }
 
 } // namespace ork::audio::singularity

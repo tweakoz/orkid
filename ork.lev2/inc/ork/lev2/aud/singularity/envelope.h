@@ -32,8 +32,7 @@ struct RateLevelEnvData : public ControllerData {
   bool _bipolar;
   RlEnvType _envType;
   envadjust_method_t _envadjust;
-  int _sustainPoint = 3;
-  int _endPoint     = 6;
+  int _sustainSegment = -1;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -99,15 +98,17 @@ struct RateLevelEnvInst : public ControllerInst {
   bool done() const;
   const RateLevelEnvData* _data;
   Layer* _layer;
-  int _curseg;
-  float _filtval;
-  float _dstval;
+  int _segmentIndex;
+  float _startval;
+  float _destval;
+  float _lerpindex;
+  float _lerpincr;
+
   int _framesrem;
   bool _released;
   bool _ignoreRelease;
-  float _curslope_persamp;
   bool _ampenv;
-  bool _bipolar;
+  int _state;
   RlEnvType _envType;
   KeyOnInfo _konoffinfo;
 };

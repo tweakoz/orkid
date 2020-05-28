@@ -31,26 +31,35 @@ inline double sinc(double i) { // ph --1 .. +1
 
 ///////////////////////////////////////////////////////////////////////////////
 
-algdata_ptr_t configureCz1Algorithm() {
+algdata_ptr_t configureCz1Algorithm(int numosc) {
   auto algdout   = std::make_shared<AlgData>();
   algdout->_name = ork::FormatString("Cz1Alg");
   //////////////////////////////////////////
-  auto stage_dco = algdout->appendStage();
+  dspstagedata_ptr_t stage_mod;
+  //////////////////////////////////////////
+  auto stage_dco = algdout->appendStage("DCO");
   stage_dco->_iomask->_outputs.push_back(0);
-  stage_dco->_iomask->_outputs.push_back(1); // 2 outputs
   //////////////////////////////////////////
-  // ring, noise mod or mix stage
-  //////////////////////////////////////////
-  auto stage_mod = algdout->appendStage();
-  stage_mod->_iomask->_inputs.push_back(0);
-  stage_mod->_iomask->_inputs.push_back(1);  // 2 inputs
-  stage_mod->_iomask->_outputs.push_back(0); // 1 outputs
+  if (numosc == 2)
+    stage_mod = algdout->appendStage("MOD");
   //////////////////////////////////////////
   // final gain stage
   //////////////////////////////////////////
-  auto stage_amp = algdout->appendStage();
+  auto stage_amp = algdout->appendStage("AMP");
   stage_amp->_iomask->_inputs.push_back(0);  // 1 input
   stage_amp->_iomask->_outputs.push_back(0); // 1 output
+  //////////////////////////////////////////
+  // 2 DCO case..
+  //////////////////////////////////////////
+  if (numosc == 2) {
+    stage_dco->_iomask->_outputs.push_back(1); // 2nd output for DCO stage
+    //////////////////////////////////////////
+    // ring, noise mod or mix stage
+    //////////////////////////////////////////
+    stage_mod->_iomask->_inputs.push_back(0);
+    stage_mod->_iomask->_outputs.push_back(0); // 1 outputs
+    stage_mod->_iomask->_inputs.push_back(1);  // 2nd input for MOD stage
+  }
   //////////////////////////////////////////
   return algdout;
 }
@@ -81,14 +90,13 @@ void CZX::compute(DspBuffer& dspbuf) // final
   // test tone ?
   ////////////////////////////////////////////////
   if (0) {
-    int inumframes             = _layer->_dspwritecount;
-    float* outsamples          = dspbuf.channel(_dspchannel) + _layer->_dspwritebase;
-    static int64_t _testtoneph = 0;
+    int inumframes    = _layer->_dspwritecount;
+    float* outsamples = dspbuf.channel(_dspchannel) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
-      double phase  = 60.0 * pi2 * double(_testtoneph) * ISR;
+      double phase  = 60.0 * PI_ISR * double(_phase);
       float samp    = sinf(phase) * .6;
       outsamples[i] = samp;
-      _testtoneph++;
+      _phase++;
     }
     return;
   }
@@ -107,6 +115,8 @@ void CZX::compute(DspBuffer& dspbuf) // final
   double cin     = (lyrcents + centoff) * 0.01;
   double frq     = midi_note_to_frequency(cin) * _oscdata->_octaveScale;
   double per     = SR / frq;
+
+  // printf("osc<%p> frq<%g>\n", this, frq);
 
   /////////////////////////
   // printf("centoff<%g>\n", centoff);
@@ -292,6 +302,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
     float waveclamped = std::clamp(waveraw, -1.0f, 1.0f);
     float waveout     = (1.0f - waveclamped) * window;
     outsamples[i]     = (1.0f - waveout);
+    // outsamples[i] = linphase;
     // printf("i<%d> v<%g>\n", i, linphase);
     // outsamples[i] = double_linphase;
   }
@@ -302,9 +313,10 @@ void CZX::compute(DspBuffer& dspbuf) // final
 
 void CZX::doKeyOn(const DspKeyOnInfo& koi) // final
 {
-  auto dspb = koi._prv;
-  auto dbd  = dspb->_dbd;
-  _oscdata  = dbd->getExtData("CZX").Get<czxdata_constptr_t>();
+  _oscdata     = _dbd->_vars.typedValueForKey<czxdata_constptr_t>("CZX").value();
+  int dcoindex = _dbd->_vars.typedValueForKey<int>("dcoindex").value();
+
+  printf("CZX<%p> dcoindex<%d> keyon\n", this, dcoindex);
 
   _dspchannel       = _oscdata->_dspchannel;
   auto l            = koi._layer;
@@ -315,13 +327,21 @@ void CZX::doKeyOn(const DspKeyOnInfo& koi) // final
   _hsynctrack       = l->_oschsynctracks[_verticalIndex];
   _scopetrack       = l->_scopesynctracks[_verticalIndex];
   _noisemod         = _oscdata->_noisemod;
+  _modIndex         = 0.0f;
+  _noisemodcounter  = 0;
   _phase            = 0;
+  _resophase        = 0;
   _noisevalue       = 0;
+
+  for (int i = 0; i < 8; i++)
+    _waveoutputs[i] = 0.0f;
 }
 ///////////////////////////////////////////////////////////////////////////////
 
 void CZX::doKeyOff() // final
 {
+  int dcoindex = _dbd->_vars.typedValueForKey<int>("dcoindex").value();
+  printf("CZX<%p> dcoindex<%d> keyoff\n", this, dcoindex);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -330,7 +350,7 @@ void CZX::initBlock(dspblkdata_ptr_t blockdata, czxdata_constptr_t czdata) {
   blockdata->_dspBlock = "CZX";
   blockdata->addParam().usePitchEvaluator();
   blockdata->addParam().useDefaultEvaluator();
-  blockdata->_extdata["CZX"].Set<czxdata_constptr_t>(czdata);
+  blockdata->_vars.makeValueForKey<czxdata_constptr_t>("CZX") = czdata;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -79,7 +79,7 @@ AMP::AMP(dspblkdata_constptr_t dbd)
 
 void AMP::compute(DspBuffer& dspbuf) // final
 {
-  float gain     = _param[0].eval(); //,0.01f,100.0f);
+  float gain     = 0.1f; //_param[0].eval();
   int inumframes = _layer->_dspwritecount;
   int ibase      = _layer->_dspwritebase;
   const auto& LD = _layer->_LayerData;
@@ -92,14 +92,12 @@ void AMP::compute(DspBuffer& dspbuf) // final
     float SingleLinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
 
     for (int i = 0; i < inumframes; i++) {
-      _filt      = 0.995 * _filt + 0.005 * gain;
-      float linG = decibel_to_linear_amp_ratio(_filt);
+      float linG = decibel_to_linear_amp_ratio(gain);
       linG *= SingleLinG;
       float inp  = ibuf[i];
-      float ae   = 1.0f; //_param[1].eval();
-      float mono = clip_float(inp * linG * _dbd->_inputPad * ae, kminclip, kmaxclip);
-      ubuf[i]    = mono * l_lrmix.lmix;
-      lbuf[i]    = mono * l_lrmix.rmix;
+      float mono = clip_float(inp * linG * _dbd->_inputPad, kminclip, kmaxclip);
+      // ubuf[i]    = mono * l_lrmix.lmix;
+      // lbuf[i]    = mono * l_lrmix.rmix;
     }
   } else if (numInputs() == 2) {
     auto ilbuf      = getInpBuf(dspbuf, 1 + ibase);
@@ -112,18 +110,16 @@ void AMP::compute(DspBuffer& dspbuf) // final
 
     for (int i = 0; i < inumframes; i++) {
       // printf("AMPSTER\n");
-      _filt      = 0.995 * _filt + 0.005 * gain;
-      float linG = decibel_to_linear_amp_ratio(_filt);
-      float ae   = _param[1].eval();
-      float totG = linG * ae * _dbd->_inputPad;
+      float linG = decibel_to_linear_amp_ratio(gain);
+      float totG = linG * _dbd->_inputPad;
 
       float inpU = iubuf[i] * totG;
       float inpL = ilbuf[i] * totG;
       inpU *= UpperLinG;
       inpL *= LowerLinG;
 
-      ubuf[i] = inpU;
-      lbuf[i] = inpL;
+      // ubuf[i] = inpU;
+      // lbuf[i] = inpL;
     }
   }
   _fval[0] = _filt;

@@ -127,7 +127,7 @@ void DspParamData::useAmplitudeEvaluator() {
     cec._s1val = cec._C1();
     cec._s2val = cec._C2();
     float x    = (cec._coarse) + cec._s1val + cec._s2val + cec._kval + cec._vval;
-    // printf( "vt<%f> kt<%f> x<%f>\n", vt, kt, x );
+    printf("vt<%f> kt<%f> x<%f>\n", _velTrack, _keyTrack, x);
     return x;
   };
 }

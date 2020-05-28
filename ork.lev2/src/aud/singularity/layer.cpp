@@ -29,23 +29,15 @@ LayerData::LayerData() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-dspstagedata_ptr_t LayerData::appendStage() {
-  OrkAssert(_algdata->_numstages < kmaxdspstagesperlayer);
-  auto stage                                = std::make_shared<DspStageData>();
-  _algdata->_stages[_algdata->_numstages++] = stage;
-  return stage;
+dspstagedata_ptr_t LayerData::appendStage(const std::string& named) {
+  return _algdata->appendStage(named);
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-dspstagedata_ptr_t LayerData::stage(int index) {
-  OrkAssert(index < _algdata->_numstages);
-  OrkAssert(index >= 0);
-  auto stage = _algdata->_stages[index];
-  return stage;
+dspstagedata_ptr_t LayerData::stageByName(const std::string& named) {
+  return _algdata->stageByName(named);
 }
-
+dspstagedata_ptr_t LayerData::stageByIndex(int index) {
+  return _algdata->stageByIndex(index);
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 Layer::Layer()
@@ -93,7 +85,7 @@ void Layer::retain() {
 
 void Layer::release() {
   if ((--_keepalive) == 0) {
-    // printf( "LAYER<%p> DONE\n", this );
+    printf("LAYER<%p> DONE\n", this);
     the_synth->freeLayer(this);
   }
   assert(_keepalive >= 0);
@@ -227,9 +219,9 @@ void Layer::compute(outputBuffer& obuf, int numframes) {
           envf._index  = envcount++;
           envf._value  = env->_curval;
           envf._data   = env->_data;
-          envf._curseg = env->_curseg;
+          envf._curseg = env->_segmentIndex;
           if (env->_data && env->_data->_ampenv)
-            envf._curseg = env->_curseg;
+            envf._curseg = env->_segmentIndex;
           _HAF._items.push_back(envf);
         } else if (auto asr = dynamic_cast<AsrInst*>(cinst)) {
           asrframe asrf;

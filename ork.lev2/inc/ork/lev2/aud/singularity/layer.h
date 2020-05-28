@@ -17,8 +17,9 @@ namespace ork::audio::singularity {
 struct LayerData {
   LayerData();
 
-  dspstagedata_ptr_t appendStage();
-  dspstagedata_ptr_t stage(int index);
+  dspstagedata_ptr_t appendStage(const std::string& named);
+  dspstagedata_ptr_t stageByIndex(int index);
+  dspstagedata_ptr_t stageByName(const std::string& named);
 
   ///////////////////////////////////////////////////
   template <typename T>                                           //

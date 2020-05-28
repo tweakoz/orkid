@@ -22,16 +22,8 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-alg_ptr_t AlgData::createAlgInst() const {
-  auto alg = std::make_shared<Alg>(*this);
-  return alg;
-}
-
-dspstagedata_ptr_t AlgData::appendStage() {
-  OrkAssert((_numstages + 1) <= kmaxdspstagesperlayer);
-  auto stage            = std::make_shared<DspStageData>();
-  _stages[_numstages++] = stage;
-  return stage;
+DspParamData::DspParamData() {
+  useDefaultEvaluator();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

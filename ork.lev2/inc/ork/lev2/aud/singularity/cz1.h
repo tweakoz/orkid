@@ -9,7 +9,7 @@ namespace ork::audio::singularity {
 
 struct CzEnvelope {
   int _endStep   = 0;
-  int _sustPoint = 0;
+  int _sustPoint = -1;
   bool _decreasing[8];
   float _time[8];
   float _level[8];
@@ -47,7 +47,7 @@ struct CzProgData {
 
   CzProgData();
   void dump() const;
-
+  int numOscs() const;
   int _octave       = 0;
   int _lineSel      = 0;
   int _lineMod      = 0;
@@ -62,7 +62,7 @@ struct CzProgData {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-algdata_ptr_t configureCz1Algorithm();
+algdata_ptr_t configureCz1Algorithm(int numosc);
 
 ///////////////////////////////////////////////////////////////////////////////
 

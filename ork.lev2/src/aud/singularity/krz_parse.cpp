@@ -149,17 +149,6 @@ static KrzAlgCfg getAlgConfig(int algID) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-DspParamData::DspParamData() {
-  useDefaultEvaluator();
-}
-
-ork::svar16_t DspBlockData::getExtData(const std::string& name) const {
-  auto it = _extdata.find(name);
-  return (it == _extdata.end()) ? ork::svar16_t() : it->second;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 keymap_ptr_t SynthObjectsDB::parseKeymap(int kmid, const Value& jsonobj) {
   auto kmapout = std::make_shared<KeyMap>();
 
@@ -624,6 +613,14 @@ lyrdata_ptr_t SynthObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) 
       rout->_bipolar = true;
       rout->_envType = RlEnvType::ERLTYPE_KRZMODENV;
     }
+    //////////////////////////////////////////
+    rout->_sustainSegment = 3;
+    // kurzweil shenanigans
+    // if( iseg>0 ) { // iseg==1 or iseg==2 or iseg==4 or iseg==5 ){
+    // attack segss 2 and 3 only have effect
+    // if their times are not 0
+    //    printf( "segt0 iseg<%d>\n", iseg );
+    //}
     //////////////////////////////////////////
     const auto& jsonrates = envobj["rates"];
     assert(jsonrates.IsArray());

@@ -94,9 +94,6 @@ struct IoMask {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DspBlockData {
-  ork::svar16_t getExtData(const std::string& name) const;
-  //
-
   std::string _dspBlock;
 
   DspParamData& addParam();
@@ -105,7 +102,7 @@ struct DspBlockData {
   int _numParams  = 0;
   float _inputPad = 1.0f;
   int _blockIndex = -1;
-  std::map<std::string, ork::svar16_t> _extdata;
+  varmap::VarMap _vars;
   DspParamData _paramd[kmaxparmperblock];
 };
 
@@ -191,12 +188,15 @@ struct DspStage {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct AlgData {
-  dspstagedata_ptr_t appendStage();
+  dspstagedata_ptr_t appendStage(const std::string& named);
+  dspstagedata_ptr_t stageByName(const std::string& named);
+  dspstagedata_ptr_t stageByIndex(int index);
   alg_ptr_t createAlgInst() const;
 
   int _numstages = 0;
   std::string _name;
   dspstagedata_ptr_t _stages[kmaxdspstagesperlayer];
+  std::map<std::string, dspstagedata_ptr_t> _stageByName;
 };
 
 algdata_ptr_t configureKrzAlgorithm(int algid);

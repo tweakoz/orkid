@@ -120,7 +120,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
     auto fm4pd  = new Fm4ProgData;
     auto ld     = prg->newLayer();
-    auto stage0 = ld->appendStage();
+    auto stage0 = ld->appendStage("STAGE0");
 
     auto block0       = stage0->appendBlock();
     auto block1       = stage0->appendBlock();
@@ -128,7 +128,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     auto block3       = stage0->appendBlock();
     block0->_dspBlock = "FM4";
     // block0->_paramScheme = "FM4";
-    block0->_extdata["FM4"].Set<Fm4ProgData*>(fm4pd);
+    block0->_vars.makeValueForKey<Fm4ProgData*>("FM4") = fm4pd;
     // block0->_mods._src1      = "OP0.Amp";
     // block1->_mods._src1      = "OP1.Amp";
     // block2->_mods._src1      = "OP2.Amp";
