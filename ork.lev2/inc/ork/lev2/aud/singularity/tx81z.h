@@ -70,11 +70,6 @@ struct Tx81zData : public SynthData {
   ~Tx81zData();
   void loadBank(const file::Path& syxpath);
 
-  const ProgramData* getProgram(int progID) const final;
-  const ProgramData* getProgramByName(const std::string& named) const final {
-    return nullptr;
-  }
-  SynthObjectsDB* _zpmDB;
   int _lastprg;
 };
 

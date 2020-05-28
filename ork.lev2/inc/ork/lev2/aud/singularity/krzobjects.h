@@ -32,6 +32,7 @@ struct EnvCtrlData {
 struct SynthObjectsDB {
   void loadJson(const std::string& fname, int bank);
 
+  void addProgram(int idx, const std::string& name, ProgramData* program);
   const ProgramData* findProgram(int idx) const;
   const ProgramData* findProgramByName(const std::string named) const;
   keymap_constptr_t findKeymap(int kmID) const;

@@ -29,19 +29,24 @@ auto genwacurve = []() -> MultiCurve1D {
   curve.SetPoint(0, 0.0, 105.0);
   curve.SetPoint(1, 1.0, 0.004);
 
-  s.resize(12);
-  for (int i = 0; i < 12; i++)
-    s[i] = EMCST_EXP;
+  s.resize(17);
+  for (int i = 0; i < 17; i++)
+    s[i] = EMCST_LINEAR;
 
   auto& v = curve.mVertices;
   v.AddSorted(0.1, 35.0);
   v.AddSorted(0.2, 13.0);
   v.AddSorted(0.3, 4.33);
   v.AddSorted(0.4, 1.63);
+  v.AddSorted(0.45, 0.928);
   v.AddSorted(0.5, 0.54);
+  v.AddSorted(0.55, 0.323);
   v.AddSorted(0.6, 0.19);
+  v.AddSorted(0.65, 0.112);
   v.AddSorted(0.7, 0.066);
+  v.AddSorted(0.75, 0.038);
   v.AddSorted(0.8, 0.025);
+  v.AddSorted(0.85, 0.016);
   v.AddSorted(0.9, 0.008);
   v.AddSorted(0.95, 0.006);
   return curve;
@@ -73,11 +78,31 @@ auto genpcurve = []() -> MultiCurve1D {
 ///////////////////////////////////////////////////////////////////////////////
 float decode_wa_envrate(int value) {
   static auto curve = genwacurve();
-  return curve.Sample(float(value) * 0.01f) * 0.5;
+
+  int munged = ((value * 99) / 119) + 1;
+  switch (value) {
+    case 0:
+      munged = 0;
+      break;
+    case 0x7f:
+      munged = 99;
+      break;
+  }
+  return curve.Sample(float(munged) / 99.0f);
 }
 float decode_p_envrate(int value) {
   static auto curve = genpcurve();
-  return curve.Sample(float(value) * 0.01f) * 0.25;
+  // int munged        = 1 + (r7 * 99) / 127;
+  int munged = ((value * 99) / 119) + 1;
+  switch (value) {
+    case 0:
+      munged = 0;
+      break;
+    case 0x7f:
+      munged = 99;
+      break;
+  }
+  return curve.Sample(float(munged) / 99.0f) * 0.25;
 }
 ///////////////////////////////////////////////////////////////////////////////
 float decode_p_envlevel(int value) {
@@ -115,7 +140,7 @@ float decode_p_envlevel(int value) {
   return cents;
 } // namespace ork::audio::singularity
 ///////////////////////////////////////////////////////////////////////////////
-void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> bytes) {
+czxprogdata_ptr_t parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> bytes) {
 
   bool is_cz1 = bytes.size() == 144;
 
@@ -152,18 +177,18 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     }
   }
 
-  auto czdata      = std::make_shared<CzProgData>();
-  u8 PFLAG         = bytes[0x00]; // octave/linesel
-  czdata->_octave  = (PFLAG & 0x0c) >> 2;
-  czdata->_lineSel = (PFLAG & 0x03);
-  u8 PDS           = bytes[0x01];       // detune sign
-  u8 PDETL         = bytes[0x02];       // detune fine
-  u8 PDETH         = bytes[0x03];       // detune oct/note
-  int detval       = (PDETH * 100)      // accumulate coarse
+  auto czprogdata      = std::make_shared<CzProgData>();
+  u8 PFLAG             = bytes[0x00]; // octave/linesel
+  czprogdata->_octave  = (PFLAG & 0x0c) >> 2;
+  czprogdata->_lineSel = (PFLAG & 0x03);
+  u8 PDS               = bytes[0x01];   // detune sign
+  u8 PDETL             = bytes[0x02];   // detune fine
+  u8 PDETH             = bytes[0x03];   // detune oct/note
+  int detval           = (PDETH * 100)  // accumulate coarse
                + ((PDETL * 100) / 240); // accumulate fine
-  czdata->_detuneCents = (PDS & 1) ? (detval) : +detval;
+  czprogdata->_detuneCents = (PDS & 1) ? (detval) : +detval;
 
-  switch (czdata->_lineSel) {
+  switch (czprogdata->_lineSel) {
     case 0: // 1
       printf("linesel<1>\n");
       break;
@@ -183,27 +208,27 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   u8 PVK = bytes[0x04]; // vibrato wave
   switch (PVK) {
     case 0x08:
-      czdata->_vibratoWave = 1;
+      czprogdata->_vibratoWave = 1;
       break;
     case 0x04:
-      czdata->_vibratoWave = 2;
+      czprogdata->_vibratoWave = 2;
       break;
     case 0x20:
-      czdata->_vibratoWave = 3;
+      czprogdata->_vibratoWave = 3;
       break;
     case 0x02:
-      czdata->_vibratoWave = 4;
+      czprogdata->_vibratoWave = 4;
       break;
     default:
       assert(false);
       break;
   }
-  u8 PVDLD              = bytes[0x05]; // vibrato delay (skip 2)
-  czdata->_vibratoDelay = PVDLD;
-  u8 PVSD               = bytes[0x08]; // vibrato rate (skip 2)
-  czdata->_vibratoRate  = PVSD;
-  u8 PVDD               = bytes[0x0b]; // vibrato depth (skip 2)
-  czdata->_vibratoDepth = PVDD;
+  u8 PVDLD                  = bytes[0x05]; // vibrato delay (skip 2)
+  czprogdata->_vibratoDelay = PVDLD;
+  u8 PVSD                   = bytes[0x08]; // vibrato rate (skip 2)
+  czprogdata->_vibratoRate  = PVSD;
+  u8 PVDD                   = bytes[0x0b]; // vibrato depth (skip 2)
+  czprogdata->_vibratoDepth = PVDD;
 
   int byteindex = 0x0e; // OSC START
   // (48+9) == 57 bytes per osc * 2 == 114 bytes
@@ -213,8 +238,8 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   // 0x47 .. 0x7f osc 2
 
   for (int o = 0; o < 2; o++) {
-    auto OSC = czdata->_oscData[o];
-    switch (czdata->_octave) {
+    auto OSC = czprogdata->_oscData[o];
+    switch (czprogdata->_octave) {
       case 0:
         OSC->_octaveScale = 1.0;
         break;
@@ -245,7 +270,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
       OSC->_dcaEnv._decreasing[i] = (r & 0x80);
       if (l & 0x80)
         OSC->_dcaEnv._sustPoint = i;
-      OSC->_dcaEnv._time[i]  = decode_wa_envrate((r7 * 99) / 119);
+      OSC->_dcaEnv._time[i]  = decode_wa_envrate(r7);
       OSC->_dcaEnv._level[i] = (l7 * 99) / 127;
     }
     ///////////////////////////////////////////////////////////
@@ -272,7 +297,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
         OSC->_dcoEnv._sustPoint = i;
 
       OSC->_dcoEnv._decreasing[i] = (r & 0x80);
-      OSC->_dcoEnv._time[i]       = decode_p_envrate(1 + (r7 * 99) / 127);
+      OSC->_dcoEnv._time[i]       = decode_p_envrate(r7);
       OSC->_dcoEnv._level[i]      = decode_p_envlevel(l7);
     }
     ///////////////////////////////////////////////////////////
@@ -285,7 +310,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     OSC->_dcoWindow |= (int(MFW1 >> 6) & 0x3);
 
     if (o == 0) { // ignore linemod from line1{
-      czdata->_lineMod = (MFW1 >> 2) & 0xf;
+      czprogdata->_lineMod = (MFW1 >> 2) & 0xf;
     }
 
     OSC->_dcaKeyFollow = MAMD & 0xf;
@@ -314,7 +339,7 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
     name = std::regex_replace(name, std::regex("^ +| +$|( ) +"), "$1");
   }
   prgout->_name = name;
-  // czdata->dump();
+  // czprogdata->dump();
 
   auto make_dco = [&](lyrdata_ptr_t layerdata, czxdata_ptr_t oscdata, int dcochannel) {
     oscdata->_dspchannel = dcochannel;
@@ -410,10 +435,10 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
       pitch_mod._src2         = CZPITCH;
       pitch_mod._src2MinDepth = 1.0;
       pitch_mod._src2MaxDepth = 1.0;
-      CZPITCH->_onkeyon       = [czdata](
+      CZPITCH->_onkeyon       = [czprogdata](
                               CustomControllerInst* cci, //
                               const KeyOnInfo& KOI) {    //
-        cci->_curval = czdata->_detuneCents;
+        cci->_curval = czprogdata->_detuneCents;
         printf("DETUNE<%g>\n", cci->_curval);
       };
     }
@@ -423,25 +448,25 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   /////////////////////////////////////////////////
   // line select
   /////////////////////////////////////////////////
-  switch (czdata->_lineSel) {
+  switch (czprogdata->_lineSel) {
     case 0: // 1
       layerdata->_algdata = configureCz1Algorithm(1);
-      make_dco(layerdata, czdata->_oscData[0], 0);
+      make_dco(layerdata, czprogdata->_oscData[0], 0);
       break;
     case 1: // 2
       layerdata->_algdata = configureCz1Algorithm(1);
-      make_dco(layerdata, czdata->_oscData[1], 0);
+      make_dco(layerdata, czprogdata->_oscData[1], 0);
       break;
     case 2: // 1+1'
-      layerdata->_algdata    = configureCz1Algorithm(2);
-      *(czdata->_oscData[1]) = *(czdata->_oscData[0]);
-      make_dco(layerdata, czdata->_oscData[0], 0);
-      make_dco(layerdata, czdata->_oscData[1], 1);
+      layerdata->_algdata        = configureCz1Algorithm(2);
+      *(czprogdata->_oscData[1]) = *(czprogdata->_oscData[0]);
+      make_dco(layerdata, czprogdata->_oscData[0], 0);
+      make_dco(layerdata, czprogdata->_oscData[1], 1);
       break;
     case 3: // 1+2'
       layerdata->_algdata = configureCz1Algorithm(2);
-      make_dco(layerdata, czdata->_oscData[0], 0);
-      make_dco(layerdata, czdata->_oscData[1], 1);
+      make_dco(layerdata, czprogdata->_oscData[0], 0);
+      make_dco(layerdata, czprogdata->_oscData[1], 1);
       break;
     default:
       assert(false);
@@ -449,31 +474,31 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
   /////////////////////////////////////////////////
   // line modulation
   /////////////////////////////////////////////////
-  int modulation_mode   = czdata->_lineMod >> 1;
-  bool modulation_nomix = (czdata->_lineMod & 1);
+  int modulation_mode   = czprogdata->_lineMod >> 1;
+  bool modulation_nomix = (czprogdata->_lineMod & 1);
   switch (modulation_mode) {
     case 0:   // none
     case 1: { // none
-      if (czdata->numOscs() == 2) {
+      if (czprogdata->numOscs() == 2) {
         auto mix = layerdata->stageByName("MOD")->appendBlock();
         SUM2::initBlock(mix);
       }
       break;
     }
     case 2: // ring 2
-      OrkAssert(czdata->numOscs() == 2);
+      OrkAssert(czprogdata->numOscs() == 2);
       OrkAssert(false);
       break;
     case 3: { // noise 1
-      OrkAssert(czdata->numOscs() == 2);
-      czdata->_oscData[1]->_noisemod = true;
-      auto mix                       = layerdata->stageByName("MOD")->appendBlock();
+      OrkAssert(czprogdata->numOscs() == 2);
+      czprogdata->_oscData[1]->_noisemod = true;
+      auto mix                           = layerdata->stageByName("MOD")->appendBlock();
       SUM2::initBlock(mix);
       break;
     }
     case 4:   // ring 1
     case 5: { // ring 1
-      OrkAssert(czdata->numOscs() == 2);
+      OrkAssert(czprogdata->numOscs() == 2);
       auto ring = layerdata->stageByName("MOD")->appendBlock();
       if (modulation_nomix)
         RingMod::initBlock(ring);
@@ -482,22 +507,24 @@ void parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> byte
       break;
     }
     case 6: // ring 3
-      OrkAssert(czdata->numOscs() == 2);
+      OrkAssert(czprogdata->numOscs() == 2);
       OrkAssert(false);
       break;
     case 7: { // noise 2
       OrkAssert(false);
-      OrkAssert(czdata->numOscs() == 2);
-      czdata->_oscData[1]->_noisemod = true;
-      auto mix                       = layerdata->stageByName("MOD")->appendBlock();
+      OrkAssert(czprogdata->numOscs() == 2);
+      czprogdata->_oscData[1]->_noisemod = true;
+      auto mix                           = layerdata->stageByName("MOD")->appendBlock();
       SUM2::initBlock(mix);
       break;
     }
   }
   /////////////////////////////////////////////////
-  czdata->_name = name;
-  czdata->dump();
-} // namespace ork::audio::singularity
+  czprogdata->_name = name;
+  czprogdata->dump();
+  return czprogdata;
+}
+///////////////////////////////////////////////////////////////////////////////
 int CzProgData::numOscs() const {
   return (_lineSel == 2 or _lineSel == 3) ? 2 : 1;
 }
@@ -510,7 +537,6 @@ void parse_czx(CzData* outd, const file::Path& path, const std::string& bnkname)
 
   printf("casio CZ syxfile<%s> loaded size<%d>\n", path.c_str(), int(size));
 
-  auto zpmDB       = outd->_zpmDB;
   int programcount = 0;
   int programincrm = (256 + 8);
   int prgbase      = 0;
@@ -553,12 +579,10 @@ void parse_czx(CzData* outd, const file::Path& path, const std::string& bnkname)
 
   for (int iv = 0; iv < programcount; iv++) {
     printf("////////////////////////////\n");
-    int newprogramid               = outd->_lastprg++;
-    auto prgout                    = new ProgramData;
-    zpmDB->_programs[newprogramid] = prgout;
-    prgout->_role                  = "czx";
-    prgout->_name                  = FormatString("%s(%02d)", bnkname.c_str(), iv);
-    printf("czprog<%s>\n", prgout->_name.c_str());
+    auto name        = FormatString("%s(%02d)", bnkname.c_str(), iv);
+    int newprogramid = outd->_lastprg++;
+    auto prgout      = new ProgramData;
+    prgout->_role    = "czx";
     ///////////////////////////
     // collect bytes for program
     ///////////////////////////
@@ -578,7 +602,10 @@ void parse_czx(CzData* outd, const file::Path& path, const std::string& bnkname)
         bytes.push_back(data[base + i]);
     }
     ///////////////////////////
-    parse_czprogramdata(outd, prgout, bytes);
+    auto czpd = parse_czprogramdata(outd, prgout, bytes);
+    outd->_bankdata->addProgram(newprogramid, czpd->_name, prgout);
+    prgout->_name = czpd->_name;
+    printf("czprog<%s>\n", prgout->_name.c_str());
     ///////////////////////////
   }
 }
@@ -674,7 +701,6 @@ void CzProgData::dump() const {
 CzData::CzData()
     : SynthData()
     , _lastprg(0) {
-  _zpmDB = new SynthObjectsDB;
 }
 ///////////////////////////////////////////////////////////////////////////////
 CzData::~CzData() {
@@ -687,12 +713,6 @@ std::shared_ptr<CzData> CzData::load(const file::Path& syxpath, const std::strin
   auto czdata = std::make_shared<CzData>();
   czdata->appendBank(syxpath, bnkname);
   return czdata;
-}
-///////////////////////////////////////////////////////////////////////////////
-const ProgramData* CzData::getProgram(int progID) const // final
-{
-  auto ObjDB = this->_zpmDB;
-  return ObjDB->findProgram(progID);
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

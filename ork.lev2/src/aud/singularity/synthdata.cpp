@@ -15,6 +15,11 @@
 
 namespace ork::audio::singularity {
 
+void SynthObjectsDB::addProgram(int idx, const std::string& name, ProgramData* program) {
+  _programs[idx]        = program;
+  _programsByName[name] = program;
+}
+
 file::Path basePath() {
   return file::Path::share_dir() / "singularity";
 }
@@ -25,10 +30,19 @@ float SynthData::seqTime(float dur) {
   return rval;
 }
 
+const ProgramData* SynthData::getProgram(int progID) const {
+  return _bankdata->findProgram(progID);
+}
+const ProgramData* SynthData::getProgramByName(const std::string& named) const {
+  return _bankdata->findProgramByName(named);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 SynthData::SynthData()
     : _seqCursor(0.0f) {
+
+  _bankdata = std::make_shared<SynthObjectsDB>();
 
   auto syn = synth::instance();
   _synsr   = syn->_sampleRate;

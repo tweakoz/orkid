@@ -16,26 +16,14 @@ namespace ork::audio::singularity {
 
 static const auto krzbasedir = basePath() / "kurzweil" / "krz";
 
-SynthObjectsDB* KrzSynthData::baseObjects() {
-  static SynthObjectsDB* objdb = nullptr;
-  if (nullptr == objdb) {
-    objdb = new SynthObjectsDB;
-    objdb->loadJson("k2v3base", 0);
-  }
-
+bankdata_ptr_t KrzSynthData::baseObjects() {
+  static bankdata_ptr_t objdb = std::make_shared<SynthObjectsDB>();
+  objdb->loadJson("k2v3base", 0);
   return objdb;
 }
 
 KrzSynthData::KrzSynthData()
     : SynthData() {
-}
-const ProgramData* KrzSynthData::getProgram(int progID) const {
-  auto ObjDB = baseObjects();
-  return ObjDB->findProgram(progID);
-}
-const ProgramData* KrzSynthData::getProgramByName(const std::string& named) const {
-  auto ObjDB = baseObjects();
-  return ObjDB->findProgramByName(named);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -43,37 +31,12 @@ const ProgramData* KrzSynthData::getProgramByName(const std::string& named) cons
 KrzKmTestData::KrzKmTestData()
     : SynthData() {
 }
-const ProgramData* KrzKmTestData::getProgram(int kmID) const {
-  ProgramData* rval = nullptr;
-  auto it           = _testKmPrograms.find(kmID);
-  if (it == _testKmPrograms.end()) {
-    auto ObjDB  = KrzSynthData::baseObjects();
-    rval        = new ProgramData;
-    rval->_role = "KmTest";
-    auto km     = ObjDB->findKeymap(kmID);
-    if (km) {
-      auto lyr     = rval->newLayer();
-      lyr->_keymap = km;
-      rval->_name  = ork::FormatString("%s", km->_name.c_str());
-    } else
-      rval->_name = ork::FormatString("\?\?\?\?");
-  }
-  return rval;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 KrzTestData::KrzTestData()
     : SynthData() {
   genTestPrograms();
-}
-
-const ProgramData* KrzTestData::getProgram(int progid) const {
-  int inumtests = _testPrograms.size();
-  int testid    = progid % inumtests;
-  printf("test<%d>\n", testid);
-  auto test = _testPrograms[testid];
-  return test;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

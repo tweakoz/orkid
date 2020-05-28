@@ -29,11 +29,6 @@ Sf2TestSynthData::~Sf2TestSynthData() {
   delete _sfont;
 }
 
-const ProgramData* Sf2TestSynthData::getProgram(int progID) const {
-  auto ObjDB = _sfont->_zpmDB;
-  return ObjDB->findProgram(progID);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 // SF2Sample<11:piano060v125> opitch<60> sta<9674166> end<10272671> isblklen<59189498>

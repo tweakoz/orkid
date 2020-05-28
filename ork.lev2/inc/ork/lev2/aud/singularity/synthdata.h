@@ -30,9 +30,10 @@ struct SynthData {
   }
 
   float seqTime(float dur);
-  virtual const ProgramData* getProgram(int progID) const                     = 0;
-  virtual const ProgramData* getProgramByName(const std::string& named) const = 0;
+  const ProgramData* getProgram(int progID) const;
+  const ProgramData* getProgramByName(const std::string& named) const;
 
+  bankdata_ptr_t _bankdata;
   programInst* _prog;
   float _synsr;
   float _seqCursor;

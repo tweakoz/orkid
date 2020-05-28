@@ -77,7 +77,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
   printf("tx81z syxfile<%s> loaded size<%d>\n", path.c_str(), int(size));
 
-  auto zpmDB       = outd->_zpmDB;
+  auto zpmDB       = outd->_bankdata;
   int programcount = 0;
   int prgbase      = 0;
 
@@ -320,18 +320,12 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 Tx81zData::Tx81zData()
     : SynthData()
     , _lastprg(0) {
-  _zpmDB = new SynthObjectsDB;
 }
 
 Tx81zData::~Tx81zData() {
 }
 void Tx81zData::loadBank(const file::Path& syxpath) {
   parse_tx81z(this, syxpath);
-}
-const ProgramData* Tx81zData::getProgram(int progID) const // final
-{
-  auto ObjDB = this->_zpmDB;
-  return ObjDB->findProgram(progID);
 }
 
 } // namespace ork::audio::singularity

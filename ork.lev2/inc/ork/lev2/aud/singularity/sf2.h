@@ -10,10 +10,6 @@
 #include <ork/file/riff.h>
 #include "synthdata.h"
 
-namespace ork::audio::singularity {
-struct SynthObjectsDB;
-}
-
 namespace ork::audio::singularity::sf2 {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -503,7 +499,7 @@ struct SoundFont {
 
   // std::vector<S16>					mSampleData;
 
-  SynthObjectsDB* _zpmDB;
+  bankdata_ptr_t _zpmDB;
 
   ////////////////////////////////////////////////////
 
@@ -536,10 +532,6 @@ struct Sf2TestSynthData : public SynthData {
   Sf2TestSynthData(const file::Path& syxpath, const std::string& bankname = "sf2");
   ~Sf2TestSynthData();
   sf2::SoundFont* _sfont;
-  const ProgramData* getProgram(int progID) const final;
-  const ProgramData* getProgramByName(const std::string& named) const final {
-    return nullptr;
-  }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
