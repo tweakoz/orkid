@@ -70,14 +70,6 @@ void HudViewport::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
     if (hdata.IsA<HudFrameControl>()) {
       syn->_curhud_kframe = hdata.Get<HudFrameControl>();
     }
-
-    else if (auto try_aframe = hdata.TryAs<HudFrameAudio>()) {
-      //////////////////////////////
-      auto& AFIN = try_aframe.value();
-      syn->_curhud_aframe._items.clear();
-      syn->_curhud_aframe = AFIN;
-      AFIN._items.clear();
-    }
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

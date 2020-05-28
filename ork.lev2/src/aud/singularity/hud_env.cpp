@@ -13,7 +13,6 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR) {
   float Y2 = R.Y1 + R.H;
 
   const auto& KFIN             = EDR.s->_curhud_kframe;
-  const auto& AFIN             = EDR.s->_curhud_aframe;
   const auto& ENVFRAME         = EDR._data.Get<envframe>();
   const RateLevelEnvData* ENVD = ENVFRAME._data;
 

@@ -24,21 +24,6 @@ struct funframe {
   const FunData* _data = nullptr;
 };
 ////////////////////////////////////////
-struct HudFrameAudio {
-  HudFrameAudio()
-      : _oscopebuffer(koscopelength) {
-  }
-  std::vector<float> _oscopebuffer;
-  std::vector<bool> _oscopesync;
-
-  std::vector<ork::svar256_t> _items;
-
-  // op4frame _op4frame[4];
-  size_t _trackoffset = 0;
-  size_t _baseserial  = 0;
-  size_t _owcount     = 0;
-};
-////////////////////////////////////////
 struct HudFrameControl {
   lyrdata_constptr_t _layerdata;
   alg_ptr_t _alg;

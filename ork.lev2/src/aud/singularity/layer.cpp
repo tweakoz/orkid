@@ -102,7 +102,6 @@ void Layer::release() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Layer::compute(outputBuffer& obuf, int numframes) {
-  _HAF._items.clear();
 
   _dspbuffer->resize(numframes);
   _layerObuf.resize(numframes);
@@ -229,14 +228,14 @@ void Layer::compute(outputBuffer& obuf, int numframes) {
           envf._curseg = env->_segmentIndex;
           if (env->_data && env->_data->_ampenv)
             envf._curseg = env->_segmentIndex;
-          _HAF._items.push_back(envf);
+          //_HAF._items.push_back(envf);
         } else if (auto asr = dynamic_cast<AsrInst*>(cinst)) {
           asrframe asrf;
           asrf._index  = asrcount++;
           asrf._value  = asr->_curval;
           asrf._curseg = asr->_curseg;
           asrf._data   = asr->_data;
-          _HAF._items.push_back(asrf);
+          //_HAF._items.push_back(asrf);
           // printf( "add asr item\n");
         } else if (auto lfo = dynamic_cast<LfoInst*>(cinst)) {
           lfoframe lfof;
@@ -244,53 +243,20 @@ void Layer::compute(outputBuffer& obuf, int numframes) {
           lfof._value   = lfo->_curval;
           lfof._currate = lfo->_currate;
           lfof._data    = lfo->_data;
-          _HAF._items.push_back(lfof);
+          //_HAF._items.push_back(lfof);
         } else if (auto fun = dynamic_cast<FunInst*>(cinst)) {
           funframe funfr;
           funfr._index = funcount++;
           funfr._data  = fun->_data;
           funfr._value = fun->_curval;
-          _HAF._items.push_back(funfr);
+          //_HAF._items.push_back(funfr);
         }
       }
     }
-
-    /////////////////
+    ///////////////////////////////////////////////
     // oscope
-    /////////////////
-
+    ///////////////////////////////////////////////
     if (this == the_synth->_hudLayer) {
-
-      _HAF._oscopebuffer.resize(numframes);
-      _HAF._oscopesync.resize(numframes);
-      ///////////////////////////////////////////////
-      // find oscope sync source
-      ///////////////////////////////////////////////
-
-      // scopesynctrack_ptr_t syncsource = nullptr;
-      // int istage                      = 0;
-      //_alg->forEachStage([&](dspstage_ptr_t stage) {
-      // bool ena = the_synth->_stageEnable[istage];
-      // if (ena) {
-      // int iblock = 0;
-      // stage->forEachBlock([&](dspblk_ptr_t block) {
-      // if (block->isScopeSyncSource()) {
-      // syncsource = _scopesynctracks[iblock];
-      //}
-      // iblock++;
-      //}); // forEachBlock
-      // istage++;
-      //} // if(ena)
-      //});
-      ///////////////////////////////////////////////
-      // if (syncsource) {
-      // for (int i = 0; i < numframes; i++)
-      //_HAF._oscopesync[i] = syncsource->_triggers[i];
-      //} else {
-      // for (int i = 0; i < numframes; i++)
-      //_HAF._oscopesync[i] = false;
-      //}
-      ///////////////////////////////////////////////
       if (_layerdata->_scopesource) {
         if (doBlockStereo) {
           const float* l = _layerObuf._leftBuffer;
@@ -301,14 +267,8 @@ void Layer::compute(outputBuffer& obuf, int numframes) {
           _layerdata->_scopesource->updateMono(numframes, mono);
         }
       }
-      ///////////////////////////////////////////////
-      _HAF._baseserial = _num_sent_to_scope;
-      //_HAF._owcount += the_synth->_ostrack;
-      _num_sent_to_scope += numframes;
-      ///////////////////////////////////////////////
-      the_synth->_hudbuf.push(_HAF);
     }
-
+    ///////////////////////////////////////////////
   } // if(true)
 
   _layerTime += dt;
@@ -463,8 +423,6 @@ void Layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
   _curvel = vel;
 
   _layerTime = 0.0f;
-
-  _HAF_nenvseg = 1;
 
   this->retain();
 

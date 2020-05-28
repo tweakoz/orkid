@@ -10,7 +10,6 @@ void DrawLfo(lev2::Context* context, const ItemDrawReq& EDR) {
   float Y2      = R.Y1 + R.H;
 
   const auto& KFIN     = EDR.s->_curhud_kframe;
-  const auto& AFIN     = EDR.s->_curhud_aframe;
   const auto& LFOFRAME = EDR._data.Get<lfoframe>();
   const LfoData* LFOD  = LFOFRAME._data;
 

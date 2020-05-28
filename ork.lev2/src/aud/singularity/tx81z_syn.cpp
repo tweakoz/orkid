@@ -15,7 +15,7 @@ struct fm4vcpriv {
   void callalg(DspBuffer& dspbuf) {
     _curalg(dspbuf);
 
-    auto& HAF = _curlayer->_HAF;
+    // auto& HAF = _curlayer->_HAF;
 
     for (int i = 0; i < 4; i++) {
       /*

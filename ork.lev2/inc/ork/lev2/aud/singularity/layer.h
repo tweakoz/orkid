@@ -117,9 +117,6 @@ struct Layer {
   dspbuf_ptr_t _dspbuffer;
 
   HudFrameControl _HKF;
-  HudFrameAudio _HAF;
-  int _HAF_nenvseg;
-  size_t _num_sent_to_scope = 0;
   lyrdata_constptr_t _layerdata;
   oschardsynctrack_ptr_t _oschsynctracks[kmaxdspblocksperstage];
   scopesynctrack_ptr_t _scopesynctracks[kmaxdspblocksperstage];

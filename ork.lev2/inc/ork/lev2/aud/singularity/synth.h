@@ -108,7 +108,6 @@ struct synth {
   ork::MpMcBoundedQueue<ork::svar1024_t> _hudbuf;
 
   HudFrameControl _curhud_kframe;
-  HudFrameAudio _curhud_aframe;
   hudvp_ptr_t _hudvp;
 };
 

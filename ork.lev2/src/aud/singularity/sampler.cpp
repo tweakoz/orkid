@@ -546,9 +546,12 @@ void sampleOsc::compute(int inumfr) {
 
     // float sampleval = std::invoke(this, _pbFunc);
 
-    _OUTPUT[i]         = sampleval;
-    _NATENV[i]         = _natAmpEnv.compute();
-    _lyr->_HAF_nenvseg = _natAmpEnv._curseg;
+    _OUTPUT[i] = sampleval;
+    _NATENV[i] = _natAmpEnv.compute();
+
+    //_lyr->_HAF_nenvseg = _natAmpEnv._curseg;
+    // todo update HUD ui of segment change...
+
     // printf( "_NATENV<%f> sampleval<%f>\n\n", _NATENV[i], sampleval);
   }
 }
