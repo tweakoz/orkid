@@ -418,9 +418,8 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, ProgramData* prgout, std::ve
     /////////////////////////////////////////////////
     auto osc = layerdata->stageByName("DCO")->appendBlock();
     auto amp = layerdata->stageByName("AMP")->appendBlock();
-    CZX::initBlock(osc, oscdata);
+    CZX::initBlock(osc, oscdata, dcochannel);
     AMP::initBlock(amp);
-    osc->_vars.makeValueForKey<int>("dcochannel") = dcochannel;
     /////////////////////////////////////////////////
     auto& pitch_mod      = osc->_paramd[0]._mods;
     pitch_mod._src1      = DCOENV;

@@ -89,21 +89,13 @@ struct ItemDrawReq {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-struct Op4DrawReq {
-  synth* s;
-  int iop;
-  Rect rect;
-};
-
-///////////////////////////////////////////////////////////////////////////////
 struct HudPanel {
   ui::panel_ptr_t _panel;
   ui::surface_ptr_t _surface;
 };
 
-HudPanel create_oscilloscope();
-HudPanel create_spectrumanalyzer();
+hudpanel_ptr_t create_oscilloscope();
+hudpanel_ptr_t create_spectrumanalyzer();
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -111,8 +103,8 @@ struct HudViewport final : public ui::Viewport {
   HudViewport();
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   void onUpdateThreadTick(ui::updatedata_ptr_t updata);
-  HudPanel _oscope;
-  HudPanel _spectra;
+  hudpanel_ptr_t _oscope;
+  hudpanel_ptr_t _spectra;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -121,7 +113,6 @@ void DrawEnv(lev2::Context* context, const ItemDrawReq& EDR);
 void DrawAsr(lev2::Context* context, const ItemDrawReq& EDR);
 void DrawLfo(lev2::Context* context, const ItemDrawReq& EDR);
 void DrawFun(lev2::Context* context, const ItemDrawReq& EDR);
-void DrawOp4(lev2::Context* context, const Op4DrawReq& OPR);
 float FUNH(float vpw, float vph);
 float FUNW(float vpw, float vph);
 float FUNX(float vpw, float vph);

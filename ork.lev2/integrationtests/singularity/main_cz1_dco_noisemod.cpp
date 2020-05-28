@@ -58,10 +58,10 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   auto osc = layerdata->stageByName("DCO")->appendBlock();
   auto amp = layerdata->stageByName("AMP")->appendBlock();
-  CZX::initBlock(osc, czdata);
+  CZX::initBlock(osc, czdata, 0);
   czdata->_noisemod = true;
   AMP::initBlock(amp);
-  auto& modulation_index_param      = osc->_paramd[1]._mods;
+  auto& modulation_index_param      = osc->_paramd[0]._mods;
   modulation_index_param._src1      = DCWENV;
   modulation_index_param._src1Depth = 1.0;
   modulation_index_param._src2      = LFO1;
@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
   modulation_index_param._src2MinDepth = 0.5;
   modulation_index_param._src2MaxDepth = 0.1;
   //////////////////////////////////////
-  auto& amp_param   = amp->addParam();
+  auto& amp_param   = amp->_paramd[0];
   amp_param._coarse = 0.0f;
   amp_param.useDefaultEvaluator();
   amp_param._mods._src1      = DCAENV;
@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
   // play a test note
   //////////////////////////////////////
   for (int i = 24; i < 84; i++)
-    enqueue_audio_event(program.get(), 0.5f + float(i - 24) * 1.5, 2.0, i);
+    enqueue_audio_event(program.get(), 0.5f + float(i - 24) * 0.5, 2.0, i);
   //////////////////////////////////////////////////////////////////////////////
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, 0});
   qtapp->exec();

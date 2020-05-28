@@ -65,6 +65,26 @@ struct fm4syn {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct op4frame {
+  float _envout = 0.0f;
+  int _envph    = 0;
+  float _mi     = 0.0f;
+  float _r      = 0.0f;
+  float _f      = 0.0f;
+  int _ar       = 0;
+  int _d1r      = 0;
+  int _d1l      = 0;
+  int _d2r      = 0;
+  int _rr       = 0;
+  int _egshift  = 0;
+  int _wav      = 0;
+  int _olev     = 0;
+};
+
+hudpanel_ptr_t create_op4panel();
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct Tx81zData : public SynthData {
   Tx81zData();
   ~Tx81zData();

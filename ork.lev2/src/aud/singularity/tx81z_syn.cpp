@@ -11,12 +11,14 @@ namespace ork::audio::singularity {
 typedef std::function<void(DspBuffer& dspbuf)> fm4alg_t;
 
 struct fm4vcpriv {
+
   void callalg(DspBuffer& dspbuf) {
     _curalg(dspbuf);
 
     auto& HAF = _curlayer->_HAF;
 
     for (int i = 0; i < 4; i++) {
+      /*
       const auto& opd = _data._ops[i];
       auto& opf       = HAF._op4frame[i];
       opf._mi         = _mi[i];
@@ -30,7 +32,7 @@ struct fm4vcpriv {
       opf._d2r        = opd._dec2Rate;
       opf._rr         = opd._relRate;
       opf._egshift    = opd._egShift;
-      opf._wav        = opd._waveform;
+      opf._wav        = opd._waveform;*/
     }
 
     // printf( "f0<%f> f1<%f> f2<%f> f3<%f>\n", _f[0], _f[1], _f[2], _f[3] );

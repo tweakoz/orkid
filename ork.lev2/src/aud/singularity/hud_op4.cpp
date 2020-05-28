@@ -3,7 +3,10 @@
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawOp4(lev2::Context* context, const Op4DrawReq& OPR) {
+#if 0
+void DrawOp4(
+    lev2::Context* context, //
+    const Op4DrawReq& OPR) {
   hudlines_t lines;
   const auto& R = OPR.rect;
   float X2      = R.X1 + R.W;
@@ -113,6 +116,7 @@ void DrawOp4(lev2::Context* context, const Op4DrawReq& OPR) {
   R.PopOrtho(context);
   // drawHudLines(context, lines);
 }
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   auto osc = layerdata->stageByName("DCO")->appendBlock();
   auto amp = layerdata->stageByName("AMP")->appendBlock();
-  CZX::initBlock(osc, czoscdata);
+  CZX::initBlock(osc, czoscdata, 0);
   AMP::initBlock(amp);
   auto& modulation_index_param      = osc->_paramd[1]._mods;
   modulation_index_param._src1      = DCWENV;

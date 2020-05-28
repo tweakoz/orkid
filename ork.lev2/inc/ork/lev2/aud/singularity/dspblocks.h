@@ -21,7 +21,7 @@ struct DspBlock;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct DspBuffer {
+struct DspBuffer final {
   DspBuffer();
   void resize(int inumframes);
 
@@ -36,7 +36,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct BlockModulationData {
+struct BlockModulationData final {
   controllerdata_ptr_t _src1;
   controllerdata_ptr_t _src2;
   controllerdata_ptr_t _src2DepthCtrl;
@@ -49,7 +49,7 @@ struct BlockModulationData {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct DspParamData {
+struct DspParamData final {
 
   DspParamData();
 
@@ -78,7 +78,7 @@ struct DspParamData {
 //   specifies inputs and output configuration of a zpm module
 ////////////////////////////////////////////////////////////////////////////////
 
-struct IoMask {
+struct IoMask final {
   inline IoMask() {
   }
   inline size_t numInputs() const {
@@ -93,7 +93,7 @@ struct IoMask {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct DspBlockData {
+struct DspBlockData final {
   std::string _dspBlock;
 
   DspParamData& addParam();
@@ -172,14 +172,14 @@ struct DspBlock {
 // a DspStage is a vertical stack of up to N dspblocks
 ///////////////////////////////////////////////////////////////////////////////
 
-struct DspStageData {
+struct DspStageData final {
   DspStageData();
   dspblkdata_ptr_t appendBlock();
   dspblkdata_constptr_t _blockdatas[kmaxdspblocksperstage];
   iomask_ptr_t _iomask;
   int _numblocks = 0;
 };
-struct DspStage {
+struct DspStage final {
   dspblk_ptr_t _blocks[kmaxdspblocksperstage];
   using blockfn_t = std::function<void(dspblk_ptr_t)>;
   void forEachBlock(blockfn_t fn);
@@ -187,7 +187,7 @@ struct DspStage {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct AlgData {
+struct AlgData final {
   dspstagedata_ptr_t appendStage(const std::string& named);
   dspstagedata_ptr_t stageByName(const std::string& named);
   dspstagedata_ptr_t stageByIndex(int index);

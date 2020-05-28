@@ -342,11 +342,15 @@ void CZX::doKeyOff() // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CZX::initBlock(dspblkdata_ptr_t blockdata, czxdata_constptr_t czdata) {
+void CZX::initBlock(
+    dspblkdata_ptr_t blockdata, //
+    czxdata_constptr_t czdata,
+    int dcochannel) {
   blockdata->_dspBlock = "CZX";
   blockdata->addParam().usePitchEvaluator();
   blockdata->addParam().useDefaultEvaluator();
   blockdata->_vars.makeValueForKey<czxdata_constptr_t>("CZX") = czdata;
+  blockdata->_vars.makeValueForKey<int>("dcochannel")         = dcochannel;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

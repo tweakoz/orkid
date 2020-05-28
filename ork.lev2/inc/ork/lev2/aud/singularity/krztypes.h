@@ -44,7 +44,7 @@ struct FPARAM;
 struct Wavetable;
 struct KeyOnInfo;
 struct IoMask;
-///////////////////////////////////////////////////////////////////////////////
+struct HudPanel;
 struct BlockModulationData;
 struct DspKeyOnInfo;
 struct DspParamData;
@@ -60,7 +60,6 @@ struct ScopeSyncTrack;
 struct ControllerData;
 struct ControllerInst;
 struct ControlBlockData;
-///////////////////////////////////////////////////////////////////////////////
 struct SynthData;
 struct KrzSynthData;
 struct Sf2TestSynthData;
@@ -112,6 +111,7 @@ using kmpblockdata_ptr_t          = std::shared_ptr<KmpBlockData>;
 using hudframeaud_ptr_t           = std::shared_ptr<HudFrameAudio>;
 using hudframectrl_ptr_t          = std::shared_ptr<HudFrameControl>;
 using hudvp_ptr_t                 = std::shared_ptr<HudViewport>;
+using hudpanel_ptr_t              = std::shared_ptr<HudPanel>;
 ///////////////////////////////////////////////////////////////////////////////
 static constexpr int kmaxenvperlayer       = 8;
 static constexpr int kmaxdspblocksperstage = 4; // vertical dimension of layer's dsp grid

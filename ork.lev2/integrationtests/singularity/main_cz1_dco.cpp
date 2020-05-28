@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   // create layer
   //////////////////////////////////////
-  layerdata->_algdata = configureKrzAlgorithm(1);
+  layerdata->_algdata = configureCz1Algorithm(1);
   //////////////////////////////////////
   // set envelope
   //////////////////////////////////////
@@ -58,9 +58,9 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   auto osc = layerdata->stageByName("DCO")->appendBlock();
   auto amp = layerdata->stageByName("AMP")->appendBlock();
-  CZX::initBlock(osc, czoscdata);
+  CZX::initBlock(osc, czoscdata, 0);
   AMP::initBlock(amp);
-  auto& modulation_index_param      = osc->_paramd[1]._mods;
+  auto& modulation_index_param      = osc->_paramd[0]._mods;
   modulation_index_param._src1      = DCWENV;
   modulation_index_param._src1Depth = 1.0;
   // modulation_index_param._src2      = LFO1;
@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
   czoscdata->_dcoBaseWaveB = 7;
   czoscdata->_dcoWindow    = 2;
   //////////////////////////////////////
-  auto& amp_param   = amp->addParam();
+  auto& amp_param   = amp->_paramd[0];
   amp_param._coarse = 0.0f;
   amp_param.useDefaultEvaluator();
   amp_param._mods._src1      = DCAENV;
