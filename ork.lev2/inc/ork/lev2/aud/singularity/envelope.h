@@ -4,11 +4,21 @@
 
 namespace ork::audio::singularity {
 
+enum ENVSEGTYPE {
+  ESEG_LINEAR = 0,
+  ESEG_BOX,
+  ESEG_POWFOURTH,
+  ESEG_POWHALF,
+  ESEG_POWTWO,
+  ESEG_POWFOUR,
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct EnvPoint {
-  float _time;
-  float _level;
+  float _time       = 0.0f;
+  float _level      = 0.0f;
+  ENVSEGTYPE _shape = ESEG_LINEAR;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -27,7 +37,7 @@ struct RateLevelEnvData : public ControllerData {
   ControllerInst* instantiate(Layer* layer) const final;
   bool isBiPolar() const;
 
-  void addSegment(std::string name, EnvPoint point);
+  void addSegment(std::string name, float time, float level, ENVSEGTYPE shape = ESEG_LINEAR);
   std::vector<EnvPoint> _segments;
   std::vector<std::string> _segmentNames;
   bool _ampenv;
@@ -96,6 +106,8 @@ struct RateLevelEnvInst : public ControllerInst {
   void keyOn(const KeyOnInfo& KOI) final;
   void keyOff() final;
   ////////////////////////////
+  float shapedlerpindex(float index) const;
+  ////////////////////////////
   void initSeg(int iseg);
   bool done() const;
   const RateLevelEnvData* _data;
@@ -105,6 +117,7 @@ struct RateLevelEnvInst : public ControllerInst {
   float _destval;
   float _lerpindex;
   float _lerpincr;
+  ENVSEGTYPE _curshape = ESEG_LINEAR;
 
   int _framesrem;
   bool _released;

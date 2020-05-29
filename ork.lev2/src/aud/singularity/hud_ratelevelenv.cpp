@@ -142,14 +142,14 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     float range = maxval - minval;
     ///////////////////////////////////////
 
-    int spcperseg = 120;
+    int segbasex = 128;
 
     drawtext(
         this, //
         context,
         "name       lev        tim",
-        16,
-        24,
+        segbasex,
+        0,
         fontscale,
         1,  // r
         1,  // g
@@ -160,13 +160,13 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     ///////////////////////////////////////////////////
     for (int i = 0; i < AE.size(); i++) {
       bool iscurseg = (i == _cursegindex);
-      int y         = 48 + i * 20;
+      int y         = 16 + i * 16;
 
       drawtext(
           this, //
           context,
           _envdata->_segmentNames[i],
-          16,
+          segbasex,
           y,
           fontscale,
           1,                  // r
@@ -177,7 +177,7 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
           this, //
           context,
           FormatString("%0.2f     %0.3f", AE[i]._level, AE[i]._time),
-          108,
+          segbasex + 88,
           y,
           fontscale,
           1,                 // r
@@ -189,12 +189,6 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   /////////////////////////////////////////////////
   // draw envelope segments
   /////////////////////////////////////////////////
-
-  ///////////////////////
-  // draw border
-  ///////////////////////
-
-  const float ktime = 4.0f;
 
   bool bipolar = _envdata ? _envdata->_bipolar : false;
 
@@ -243,7 +237,7 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       lines.push_back(HudLine{
           fvec2(x, 0.0) * scale + bias, //
           fvec2(x, 1.0) * scale + bias,
-          fvec3(0.7, 0.5, 0.5)});
+          fvec3(0.4, 0.3, 0.4)});
     }
   }
 
