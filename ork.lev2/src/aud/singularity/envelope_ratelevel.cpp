@@ -13,8 +13,8 @@ namespace ork::audio::singularity {
 // 7-seg rate/level envelopes
 ///////////////////////////////////////////////////////////////////////////////
 
-void RateLevelEnvData::addSegment(std::string name, float time, float level, ENVSEGTYPE shape) {
-  _segments.push_back(EnvPoint{time, level, shape});
+void RateLevelEnvData::addSegment(std::string name, float time, float level, float power) {
+  _segments.push_back(EnvPoint{time, level, power});
   _segmentNames.push_back(name);
 }
 
@@ -77,7 +77,7 @@ void RateLevelEnvInst::initSeg(int iseg) {
   //////////////////////////////////////////////
   _startval = _curval;
   _destval  = adjusted_segment._level;
-  _curshape = adjusted_segment._shape;
+  _curpower = adjusted_segment._power;
   //////////////////////////////////////////////
   float segtime = adjusted_segment._time;
   //////////////////////////////////////////////
@@ -100,25 +100,12 @@ void RateLevelEnvInst::initSeg(int iseg) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-float RateLevelEnvInst::shapedlerpindex(float index) const {
-  switch (_curshape) {
-    case ESEG_LINEAR:
-      return std::clamp(index, 0.0f, 1.0f);
-      break;
-    case ESEG_POWFOURTH:
-      return powf(std::clamp(index, 0.0f, 1.0f), 0.25);
-      break;
-    case ESEG_POWHALF:
-      return powf(std::clamp(index, 0.0f, 1.0f), 0.5);
-      break;
-    case ESEG_POWTWO:
-      return powf(std::clamp(index, 0.0f, 1.0f), 2.0);
-      break;
-    case ESEG_POWFOUR:
-      return powf(std::clamp(index, 0.0f, 1.0f), 4.0);
-      break;
-  }
-  return index;
+float RateLevelEnvInst::shapedvalue() const {
+
+  float index = _curpower > 0.0f //
+      ? powf(std::clamp(index, 0.0f, 1.0f), _curpower);
+  float rawval = lerp(_startval, _destval, index);
+  return std::clamp(rawval, 0.0f, 1.0f);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -137,7 +124,7 @@ void RateLevelEnvInst::compute() // final
     case 0: { // atkdec
       ///////////////////////////////////////////
       _lerpindex += _lerpincr;
-      _curval          = lerp(_startval, _destval, shapedlerpindex(_lerpindex));
+      _curval          = shapedvalue();
       bool try_advance = (_lerpindex >= 1.0);
       ///////////////////////////////////////////
       if (try_advance) {
@@ -165,7 +152,7 @@ void RateLevelEnvInst::compute() // final
     case 2: { // release
       ///////////////////////////////////////////
       _lerpindex += _lerpincr;
-      _curval          = lerp(_startval, _destval, shapedlerpindex(_lerpindex));
+      _curval          = shapedvalue();
       bool try_advance = (_lerpindex >= 1.0);
       ///////////////////////////////////////////
       if (try_advance) {

@@ -204,14 +204,31 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   }
 
   ///////////////////////
-  // from hud samples
+
+  fvec2 scale(miW, -miH / 2);
+  fvec2 bias(0.0, miH);
+
+  ///////////////////////
+  // timegrid lines
   ///////////////////////
 
   float controlframerate = getSampleRate() / float(frames_per_controlpass);
   int space              = int(controlframerate);
+  for (int i = 0; i < MAXSAMPLES; i++) {
+    float fi  = float(MAXSAMPLES - i) / float(MAXSAMPLES);
+    float fni = fi - 1.0f / float(MAXSAMPLES);
+    if ((i % space) == 0) {
+      float x = (fi + fni) * 0.5f;
+      lines.push_back(HudLine{
+          fvec2(x, 0.0) * scale + bias, //
+          fvec2(x, 1.0) * scale + bias,
+          fvec3(0.4, 0.3, 0.4)});
+    }
+  }
 
-  fvec2 scale(miW, -miH / 2);
-  fvec2 bias(0.0, miH);
+  ///////////////////////
+  // from hud samples
+  ///////////////////////
 
   int off          = _curreadsample % MAXSAMPLES;
   int j            = (MAXSAMPLES + off) % MAXSAMPLES;
@@ -231,14 +248,6 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
         p2,
         fvec3(1, 1, 1)});
     prevsample = sample;
-
-    if ((i % space) == 0) {
-      float x = (fi + fni) * 0.5f;
-      lines.push_back(HudLine{
-          fvec2(x, 0.0) * scale + bias, //
-          fvec2(x, 1.0) * scale + bias,
-          fvec3(0.4, 0.3, 0.4)});
-    }
   }
 
   /////////////////////////////////////////////////

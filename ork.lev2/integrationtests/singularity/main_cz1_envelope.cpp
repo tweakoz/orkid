@@ -34,15 +34,15 @@ int main(int argc, char** argv) {
   // setup envelope
   //////////////////////////////////////
   DCAENV->_ampenv = true;
-  DCAENV->addSegment("seg0", .25, .25, ESEG_POWFOURTH);
-  DCAENV->addSegment("seg1", .25, .5, ESEG_POWFOUR);
-  DCAENV->addSegment("seg2", .25, .75, ESEG_POWHALF);
-  DCAENV->addSegment("seg3", .25, 1.0, ESEG_POWTWO);
+  DCAENV->addSegment("seg0", .25, .25, 0.5f);
+  DCAENV->addSegment("seg1", .25, .5, 1.5f);
+  DCAENV->addSegment("seg2", .25, .75, 0.5f);
+  DCAENV->addSegment("seg3", .25, 1.0, -1.65f);
   DCAENV->addSegment("seg4", 1, 1);
-  DCAENV->addSegment("seg5", 3, .75, ESEG_POWHALF);
-  DCAENV->addSegment("seg6", 3, .5, ESEG_POWTWO);
-  DCAENV->addSegment("seg7", 3, .25, ESEG_POWFOUR);
-  DCAENV->addSegment("seg8", 3, 0, ESEG_POWFOURTH);
+  DCAENV->addSegment("seg5", 3, .75, 0.5f);
+  DCAENV->addSegment("seg6", 3, .5, 2.0f);
+  DCAENV->addSegment("seg7", 3, .25, 4.0f);
+  DCAENV->addSegment("seg8", 3, 0, 0.25f);
   DCAENV->_ampenv = false;
   DCWENV->addSegment("seg0", 0.1, .7);
   DCWENV->addSegment("seg1", 1, 1);
