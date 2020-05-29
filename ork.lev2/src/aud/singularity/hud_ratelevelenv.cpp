@@ -147,7 +147,7 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     drawtext(
         this, //
         context,
-        "name       lev        tim      shape",
+        "name       level    time      shape",
         segbasex,
         0,
         fontscale,
