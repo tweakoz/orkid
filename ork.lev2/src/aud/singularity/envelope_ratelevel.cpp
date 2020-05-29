@@ -5,12 +5,18 @@
 
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
+#include <ork/lev2/aud/singularity/hud.h>
 
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 // 7-seg rate/level envelopes
 ///////////////////////////////////////////////////////////////////////////////
+
+void RateLevelEnvData::addSegment(std::string name, EnvPoint point) {
+  _segments.push_back(point);
+  _segmentNames.push_back(name);
+}
 
 bool RateLevelEnvData::isBiPolar() const {
   bool rval = false;
@@ -178,6 +184,13 @@ void RateLevelEnvInst::compute() // final
     case 4: // dead (NOP)
       break;
   }
+  //////////////////////////////////////
+  // SignalScope
+  //////////////////////////////////////
+  if (_data->_scopesource) {
+    _data->_scopesource->updateController(this);
+  }
+  //////////////////////////////////////
   // printf("env<%p> _state<%d> _curval<%g>\n", this, _state, _curval);
 }
 

@@ -26,8 +26,9 @@ struct ControllerData {
   virtual ControllerInst* instantiate(Layer* layer) const = 0;
   virtual ~ControllerData() {
   }
-
+  scopesource_ptr_t createScopeSource();
   std::string _name;
+  scopesource_ptr_t _scopesource;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

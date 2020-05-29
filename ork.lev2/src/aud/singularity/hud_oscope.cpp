@@ -17,17 +17,17 @@ struct ScopeSurf final : public ui::Surface {
   concurrent_triple_buffer<ScopeBuffer> _scopebuffers;
 };
 ///////////////////////////////////////////////////////////////////////////////
-scope_ptr_t create_oscilloscope(hudvp_ptr_t vp) {
+signalscope_ptr_t create_oscilloscope(hudvp_ptr_t vp) {
   auto hudpanel        = std::make_shared<HudPanel>();
   auto scopesurf       = std::make_shared<ScopeSurf>();
   hudpanel->_uipanel   = std::make_shared<ui::Panel>("scope", 0, 0, 32, 32);
   hudpanel->_uisurface = scopesurf;
   hudpanel->_uipanel->setChild(hudpanel->_uisurface);
   hudpanel->_uipanel->snap();
-  auto scope              = std::make_shared<Scope>();
-  scope->_hudpanel        = hudpanel;
-  scope->_sink            = std::make_shared<ScopeSink>();
-  scope->_sink->_onupdate = [scopesurf](const ScopeSource& src) { //
+  auto instrument              = std::make_shared<SignalScope>();
+  instrument->_hudpanel        = hudpanel;
+  instrument->_sink            = std::make_shared<ScopeSink>();
+  instrument->_sink->_onupdate = [scopesurf](const ScopeSource& src) { //
     auto dest_scopebuf = scopesurf->_scopebuffers.begin_push();
     memcpy(
         dest_scopebuf->_samples, //
@@ -38,7 +38,7 @@ scope_ptr_t create_oscilloscope(hudvp_ptr_t vp) {
   };
   vp->addChild(hudpanel->_uipanel);
   vp->_hudpanels.insert(hudpanel);
-  return scope;
+  return instrument;
 }
 ///////////////////////////////////////////////////////////////////////////////
 ScopeSurf::ScopeSurf() //
@@ -278,57 +278,6 @@ void ScopeSurf::DoInit(lev2::Context* pt) {
 ui::HandlerResult ScopeSurf::DoOnUiEvent(ui::event_constptr_t EV) {
   ui::HandlerResult ret(this);
   return ret;
-}
-///////////////////////////////////////////////////////////////////////////////
-void Scope::setRect(int iX, int iY, int iW, int iH) {
-  _hudpanel->_uipanel->SetRect(iX, iY, iW, iH);
-}
-///////////////////////////////////////////////////////////////////////////////
-void ScopeSource::connect(scopesink_ptr_t sink) {
-  _sinks.insert(sink);
-}
-///////////////////////////////////////////////////////////////////////////////
-void ScopeSource::disconnect(scopesink_ptr_t sink) {
-  auto it = _sinks.find(sink);
-  if (it != _sinks.end()) {
-    _sinks.erase(it);
-  }
-}
-///////////////////////////////////////////////////////////////////////////////
-void ScopeSource::updateMono(int numframes, const float* mono) {
-  OrkAssert(numframes <= koscopelength);
-  int tailbegin = koscopelength - numframes;
-  float* dest   = _scopebuffer._samples;
-  memcpy(dest, dest + numframes, tailbegin * sizeof(float));
-  memcpy(dest + tailbegin, mono, numframes * sizeof(float));
-  for (auto s : _sinks) {
-    s->sourceUpdated(*this);
-  }
-}
-///////////////////////////////////////////////////////////////////////////////
-void ScopeSource::updateStereo(int numframes, const float* left, const float* right) {
-  OrkAssert(numframes <= koscopelength);
-  int tailbegin = koscopelength - numframes;
-  float* dest   = _scopebuffer._samples;
-  memcpy(dest, dest + numframes, tailbegin * sizeof(float));
-  for (int i = 0; i < numframes; i++) {
-    dest[tailbegin + i] = (left[i] + right[i]) * 0.5f;
-  }
-  for (auto s : _sinks) {
-    s->sourceUpdated(*this);
-  }
-}
-///////////////////////////////////////////////////////////////////////////////
-void ScopeSink::sourceUpdated(const ScopeSource& src) {
-  if (_onupdate)
-    _onupdate(src);
-}
-///////////////////////////////////////////////////////////////////////////////
-ScopeBuffer::ScopeBuffer(int tbufindex)
-    : _tbindex(tbufindex) {
-  for (int i = 0; i < koscopelength; i++) {
-    _samples[i] = 0.0f;
-  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

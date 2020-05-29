@@ -16,17 +16,17 @@ struct SpectraSurf final : public ui::Surface {
   concurrent_triple_buffer<ScopeBuffer> _scopebuffers;
 };
 ///////////////////////////////////////////////////////////////////////////////
-analyzer_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp) {
+signalscope_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp) {
   auto hudpanel        = std::make_shared<HudPanel>();
   auto analyzersurf    = std::make_shared<SpectraSurf>();
   hudpanel->_uipanel   = std::make_shared<ui::Panel>("analyzer", 0, 0, 32, 32);
   hudpanel->_uisurface = analyzersurf;
   hudpanel->_uipanel->setChild(hudpanel->_uisurface);
   hudpanel->_uipanel->snap();
-  auto analyzer              = std::make_shared<SpectrumAnalyzer>();
-  analyzer->_hudpanel        = hudpanel;
-  analyzer->_sink            = std::make_shared<ScopeSink>();
-  analyzer->_sink->_onupdate = [analyzersurf](const ScopeSource& src) { //
+  auto instrument              = std::make_shared<SignalScope>();
+  instrument->_hudpanel        = hudpanel;
+  instrument->_sink            = std::make_shared<ScopeSink>();
+  instrument->_sink->_onupdate = [analyzersurf](const ScopeSource& src) { //
     auto dest_scopebuf = analyzersurf->_scopebuffers.begin_push();
     memcpy(
         dest_scopebuf->_samples, //
@@ -37,7 +37,7 @@ analyzer_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp) {
   };
   vp->addChild(hudpanel->_uipanel);
   vp->_hudpanels.insert(hudpanel);
-  return analyzer;
+  return instrument;
 }
 ///////////////////////////////////////////////////////////////////////////////
 static const int inumframes           = koscopelength;
@@ -320,11 +320,6 @@ ui::HandlerResult SpectraSurf::DoOnUiEvent(ui::event_constptr_t EV) {
   ui::HandlerResult ret(this);
   return ret;
 }
-///////////////////////////////////////////////////////////////////////////////
-void SpectrumAnalyzer::setRect(int iX, int iY, int iW, int iH) {
-  _hudpanel->_uipanel->SetRect(iX, iY, iW, iH);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity
 ///////////////////////////////////////////////////////////////////////////////

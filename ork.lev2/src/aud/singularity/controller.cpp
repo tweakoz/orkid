@@ -6,9 +6,15 @@
 
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
+#include <ork/lev2/aud/singularity/hud.h>
 
 namespace ork::audio::singularity {
 
+///////////////////////////////////////////////////////////////////////////////
+scopesource_ptr_t ControllerData::createScopeSource() {
+  _scopesource = std::make_shared<ScopeSource>();
+  return _scopesource;
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 void ControlBlockInst::keyOn(const KeyOnInfo& KOI, controlblockdata_constptr_t CBD) {

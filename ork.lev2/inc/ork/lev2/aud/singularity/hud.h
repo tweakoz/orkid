@@ -103,36 +103,32 @@ struct ScopeBuffer {
 struct ScopeSource {
   void updateMono(int numframes, const float* mono);
   void updateStereo(int numframes, const float* left, const float* right);
+  void updateController(const ControllerInst* controller);
   void connect(scopesink_ptr_t sink);
   void disconnect(scopesink_ptr_t sink);
   std::unordered_set<scopesink_ptr_t> _sinks;
   ScopeBuffer _scopebuffer;
+  const ControllerInst* _controller = nullptr;
 };
 struct ScopeSink {
   void sourceUpdated(const ScopeSource& src);
   std::function<void(const ScopeSource&)> _onupdate;
 };
-struct Scope {
-  void setRect(int iX, int iY, int iW, int iH);
-  hudpanel_ptr_t _hudpanel;
-  scopesink_ptr_t _sink;
-};
-struct SpectrumAnalyzer {
+struct SignalScope {
   void setRect(int iX, int iY, int iW, int iH);
   hudpanel_ptr_t _hudpanel;
   scopesink_ptr_t _sink;
 };
 ///////////////////////////////////////////////////////////////////////////////
-scope_ptr_t create_oscilloscope(hudvp_ptr_t vp);
-analyzer_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp);
+signalscope_ptr_t create_oscilloscope(hudvp_ptr_t vp);
+signalscope_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp);
+signalscope_ptr_t create_envelope_analyzer(hudvp_ptr_t vp);
 ///////////////////////////////////////////////////////////////////////////////
 struct HudViewport final : public ui::Viewport {
   HudViewport();
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   void onUpdateThreadTick(ui::updatedata_ptr_t updata);
   std::unordered_set<hudpanel_ptr_t> _hudpanels;
-  // scope_ptr_t _oscope;
-  // hudpanel_ptr_t _spectra;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

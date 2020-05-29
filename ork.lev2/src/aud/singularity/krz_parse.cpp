@@ -615,6 +615,13 @@ lyrdata_ptr_t SynthObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) 
     }
     //////////////////////////////////////////
     rout->_sustainSegment = 3;
+    rout->_segmentNames.push_back("at1");
+    rout->_segmentNames.push_back("at2");
+    rout->_segmentNames.push_back("at3");
+    rout->_segmentNames.push_back("dec");
+    rout->_segmentNames.push_back("rl1");
+    rout->_segmentNames.push_back("rl2");
+    rout->_segmentNames.push_back("rl3");
     // kurzweil shenanigans
     // if( iseg>0 ) { // iseg==1 or iseg==2 or iseg==4 or iseg==5 ){
     // attack segss 2 and 3 only have effect

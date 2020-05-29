@@ -34,19 +34,20 @@ int main(int argc, char** argv) {
   // setup envelope
   //////////////////////////////////////
   DCAENV->_ampenv = true;
-  DCAENV->_segments.push_back({.2, .7});  // atk1
-  DCAENV->_segments.push_back({1, 1});    // atk2
-  DCAENV->_segments.push_back({120, .3}); // atk3
-  DCAENV->_segments.push_back({120, 0});  // atk3
-                                          //
+  DCAENV->addSegment("seg0", {.2, .7});
+  DCAENV->addSegment("seg1", {.2, .7}); // atk1
+  DCAENV->addSegment("seg2", {1, 1});   // atk2
+  DCAENV->addSegment("seg3", {12, .3}); // atk3
+  DCAENV->addSegment("seg4", {12, 0});  // atk3
+                                        //
   DCWENV->_ampenv = false;
-  DCWENV->_segments.push_back({0.1, .7}); // atk1
-  DCWENV->_segments.push_back({1, 1});    // atk2
-  DCWENV->_segments.push_back({2, .5});   // atk3
-  DCWENV->_segments.push_back({2, 1});    // dec
-  DCWENV->_segments.push_back({2, 1});    // rel1
-  DCWENV->_segments.push_back({40, 1});   // rel2
-  DCWENV->_segments.push_back({40, 0});   // rel3
+  DCWENV->addSegment("seg0", {0.1, .7}); // atk1
+  DCWENV->addSegment("seg1", {1, 1});    // atk2
+  DCWENV->addSegment("seg2", {2, .5});   // atk3
+  DCWENV->addSegment("seg3", {2, 1});    // dec
+  DCWENV->addSegment("seg4", {2, 1});    // rel1
+  DCWENV->addSegment("seg5", {40, 1});   // rel2
+  DCWENV->addSegment("seg6", {40, 0});   // rel3
   //////////////////////////////////////
   // setup LFO
   //////////////////////////////////////
@@ -84,8 +85,15 @@ int main(int argc, char** argv) {
   auto analyzer = create_spectrumanalyzer(app->_hudvp);
   source->connect(scope->_sink);
   source->connect(analyzer->_sink);
-  scope->setRect(0, 0, 1280, 256);
-  analyzer->setRect(0, 720 - 256, 1280, 256);
+  scope->setRect(0, 0, 640, 256);
+  analyzer->setRect(640, 0, 640, 256);
+  //////////////////////////////////////
+  // envelope viewer
+  //////////////////////////////////////
+  auto env_source = DCAENV->createScopeSource();
+  auto envview    = create_envelope_analyzer(app->_hudvp);
+  env_source->connect(envview->_sink);
+  envview->setRect(0, 720 - 384, 1280, 384);
   //////////////////////////////////////
   // play test notes
   //////////////////////////////////////

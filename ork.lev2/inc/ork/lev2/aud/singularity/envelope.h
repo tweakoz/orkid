@@ -27,7 +27,9 @@ struct RateLevelEnvData : public ControllerData {
   ControllerInst* instantiate(Layer* layer) const final;
   bool isBiPolar() const;
 
+  void addSegment(std::string name, EnvPoint point);
   std::vector<EnvPoint> _segments;
+  std::vector<std::string> _segmentNames;
   bool _ampenv;
   bool _bipolar;
   RlEnvType _envType;

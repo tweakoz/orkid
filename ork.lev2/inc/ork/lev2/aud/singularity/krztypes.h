@@ -74,10 +74,9 @@ struct HudViewport;
 ///////////////////////////////////////////////////////////////////////////////
 // scope / signal analyzer
 ///////////////////////////////////////////////////////////////////////////////
-struct Scope;
+struct SignalScope;
 struct ScopeSource;
 struct ScopeSink;
-struct SpectrumAnalyzer;
 ///////////////////////////////////////////////////////////////////////////////
 using iomask_ptr_t                = std::shared_ptr<IoMask>;
 using iomask_constptr_t           = std::shared_ptr<const IoMask>;
@@ -121,8 +120,7 @@ using hudvp_ptr_t                 = std::shared_ptr<HudViewport>;
 using hudpanel_ptr_t              = std::shared_ptr<HudPanel>;
 using scopesource_ptr_t           = std::shared_ptr<ScopeSource>;
 using scopesink_ptr_t             = std::shared_ptr<ScopeSink>;
-using scope_ptr_t                 = std::shared_ptr<Scope>;
-using analyzer_ptr_t              = std::shared_ptr<SpectrumAnalyzer>;
+using signalscope_ptr_t           = std::shared_ptr<SignalScope>;
 ///////////////////////////////////////////////////////////////////////////////
 static constexpr int kmaxenvperlayer       = 8;
 static constexpr int kmaxdspblocksperstage = 4; // vertical dimension of layer's dsp grid

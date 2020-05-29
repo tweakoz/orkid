@@ -209,53 +209,9 @@ void Layer::compute(outputBuffer& obuf, int numframes) {
         _testtoneph++;
       }
     }
-    ///////////////////////////////////////////////
-    // HUD AFRAME
-    ///////////////////////////////////////////////
-    int envcount = 0;
-    int asrcount = 0;
-    int lfocount = 0;
-    int funcount = 0;
-    auto cb      = _ctrlBlock;
-    if (cb) {
-      for (int ic = 0; ic < kmaxctrlperblock; ic++) {
-        auto cinst = cb->_cinst[ic];
-        if (auto env = dynamic_cast<RateLevelEnvInst*>(cinst)) {
-          envframe envf;
-          envf._index  = envcount++;
-          envf._value  = env->_curval;
-          envf._data   = env->_data;
-          envf._curseg = env->_segmentIndex;
-          if (env->_data && env->_data->_ampenv)
-            envf._curseg = env->_segmentIndex;
-          //_HAF._items.push_back(envf);
-        } else if (auto asr = dynamic_cast<AsrInst*>(cinst)) {
-          asrframe asrf;
-          asrf._index  = asrcount++;
-          asrf._value  = asr->_curval;
-          asrf._curseg = asr->_curseg;
-          asrf._data   = asr->_data;
-          //_HAF._items.push_back(asrf);
-          // printf( "add asr item\n");
-        } else if (auto lfo = dynamic_cast<LfoInst*>(cinst)) {
-          lfoframe lfof;
-          lfof._index   = lfocount++;
-          lfof._value   = lfo->_curval;
-          lfof._currate = lfo->_currate;
-          lfof._data    = lfo->_data;
-          //_HAF._items.push_back(lfof);
-        } else if (auto fun = dynamic_cast<FunInst*>(cinst)) {
-          funframe funfr;
-          funfr._index = funcount++;
-          funfr._data  = fun->_data;
-          funfr._value = fun->_curval;
-          //_HAF._items.push_back(funfr);
-        }
-      }
-    }
-    ///////////////////////////////////////////////
-    // oscope
-    ///////////////////////////////////////////////
+    //////////////////////////////////////
+    // SignalScope
+    //////////////////////////////////////
     if (this == the_synth->_hudLayer) {
       if (_layerdata->_scopesource) {
         if (doBlockStereo) {
