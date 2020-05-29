@@ -113,6 +113,7 @@ struct RateLevelEnvInst : public ControllerInst {
   int _state;
   RlEnvType _envType;
   KeyOnInfo _konoffinfo;
+  int _updatecount = 0;
 };
 
 } // namespace ork::audio::singularity

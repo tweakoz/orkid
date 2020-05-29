@@ -191,6 +191,7 @@ void RateLevelEnvInst::compute() // final
     _data->_scopesource->updateController(this);
   }
   //////////////////////////////////////
+  _updatecount++;
   // printf("env<%p> _state<%d> _curval<%g>\n", this, _state, _curval);
 }
 
