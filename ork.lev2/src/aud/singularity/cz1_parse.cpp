@@ -145,7 +145,7 @@ float decode_p_envlevel(int value) {
   return cents;
 } // namespace ork::audio::singularity
 ///////////////////////////////////////////////////////////////////////////////
-czxprogdata_ptr_t parse_czprogramdata(CzData* outd, ProgramData* prgout, std::vector<u8> bytes) {
+czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::vector<u8> bytes) {
 
   bool is_cz1 = bytes.size() == 144;
 
@@ -357,10 +357,8 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, ProgramData* prgout, std::ve
     DCOENV->_sustainSegment = srcdcoenv._sustPoint;
     for (int i = 0; i < 8; i++) {
       if (i <= srcdcoenv._endStep) {
-        auto point = EnvPoint{//
-                              srcdcoenv._time[i],
-                              srcdcoenv._level[i]};
-        DCOENV->_segments.push_back(point);
+        auto name = FormatString("seg%d", i);
+        DCOENV->addSegment(name, srcdcoenv._time[i], srcdcoenv._level[i]);
       }
     }
     /////////////////////////////////////////////////
@@ -372,10 +370,8 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, ProgramData* prgout, std::ve
     DCWENV->_sustainSegment = srcdcwenv._sustPoint;
     for (int i = 0; i < 8; i++) {
       if (i <= srcdcwenv._endStep) {
-        auto point = EnvPoint{//
-                              srcdcwenv._time[i],
-                              srcdcwenv._level[i] / 100.0f};
-        DCWENV->_segments.push_back(point);
+        auto name = FormatString("seg%d", i);
+        DCWENV->addSegment(name, srcdcwenv._time[i], srcdcwenv._level[i] * 0.01);
       }
     }
     DCWENV->_envadjust = [=](const EnvPoint& inp, //
@@ -398,10 +394,8 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, ProgramData* prgout, std::ve
     DCAENV->_sustainSegment = srcdcaenv._sustPoint;
     for (int i = 0; i < 8; i++) {
       if (i <= srcdcaenv._endStep) {
-        auto point = EnvPoint{//
-                              srcdcaenv._time[i],
-                              srcdcaenv._level[i] / 100.0f};
-        DCAENV->_segments.push_back(point);
+        auto name = FormatString("seg%d", i);
+        DCAENV->addSegment(name, srcdcaenv._time[i], srcdcaenv._level[i] * 0.01);
       }
     }
     DCAENV->_envadjust = [=](const EnvPoint& inp, //
@@ -589,7 +583,7 @@ void parse_czx(CzData* outd, const file::Path& path, const std::string& bnkname)
     printf("////////////////////////////\n");
     auto name        = FormatString("%s(%02d)", bnkname.c_str(), iv);
     int newprogramid = outd->_lastprg++;
-    auto prgout      = new ProgramData;
+    auto prgout      = std::make_shared<ProgramData>();
     prgout->_role    = "czx";
     ///////////////////////////
     // collect bytes for program

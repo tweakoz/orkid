@@ -29,14 +29,20 @@ LayerData::LayerData() {
   _kmpBlock    = std::make_shared<KmpBlockData>(); // todo move to samplerdata
   _scopesource = nullptr;
 }
-
+///////////////////////////////////////////////////////////////////////////////
+controllerdata_ptr_t LayerData::controllerByName(const std::string& named) const {
+  auto it = _controllermap.find(named);
+  return it != _controllermap.end() ? it->second : nullptr;
+}
 ///////////////////////////////////////////////////////////////////////////////
 dspstagedata_ptr_t LayerData::appendStage(const std::string& named) {
   return _algdata->appendStage(named);
 }
+///////////////////////////////////////////////////////////////////////////////
 dspstagedata_ptr_t LayerData::stageByName(const std::string& named) {
   return _algdata->stageByName(named);
 }
+///////////////////////////////////////////////////////////////////////////////
 dspstagedata_ptr_t LayerData::stageByIndex(int index) {
   return _algdata->stageByIndex(index);
 }

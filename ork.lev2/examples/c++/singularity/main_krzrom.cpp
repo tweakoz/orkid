@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
   auto winds    = bank->getProgramByName("Northern_Winds");
   auto sweep    = bank->getProgramByName("Hi_Res_Sweeper");
   //////////////////////////////////////////////////////////////////////////////
-  auto add_event = [&](const ProgramData* prog, //
+  auto add_event = [&](prgdata_constptr_t prog, //
                        float time,
                        float duration,
                        int midinote) {

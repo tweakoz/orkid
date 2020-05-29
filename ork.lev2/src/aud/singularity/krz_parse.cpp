@@ -556,7 +556,7 @@ void SynthObjectsDB::parseKmpBlock(const Value& kmseg, KmpBlockData& kmblk) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lyrdata_ptr_t SynthObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) {
+lyrdata_ptr_t SynthObjectsDB::parseLayer(const Value& jsonobj, prgdata_ptr_t pd) {
   const auto& name = pd->_name;
   printf("Got Prgram<%s> layer..\n", name.c_str());
   const auto& calvinSeg = jsonobj["CALVIN"];
@@ -905,8 +905,8 @@ void SynthObjectsDB::parseEnvControl(const rapidjson::Value& seg, EnvCtrlData& e
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ProgramData* SynthObjectsDB::parseProgram(const Value& jsonobj) {
-  auto pdata       = new ProgramData;
+prgdata_ptr_t SynthObjectsDB::parseProgram(const Value& jsonobj) {
+  auto pdata       = std::make_shared<ProgramData>();
   pdata->_role     = "Program";
   const auto& name = jsonobj["Program"].GetString();
   // printf( "Got Prgram name<%s>\n", name );
@@ -979,9 +979,9 @@ void SynthObjectsDB::loadJson(const std::string& fname, int ibaseid) {
   // fill
 
   for (auto it : _tempprograms) {
-    int objid        = it.first;
-    ProgramData* prg = it.second;
-    auto it2         = objmap->_programs.find(objid);
+    int objid         = it.first;
+    prgdata_ptr_t prg = it.second;
+    auto it2          = objmap->_programs.find(objid);
     if (it2 != objmap->_programs.end()) {
       int nid = (objmap->_programs.rbegin()->first + 1);
       // nid = nid-(nid%
@@ -1029,9 +1029,9 @@ void SynthObjectsDB::loadJson(const std::string& fname, int ibaseid) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const ProgramData* SynthObjectsDB::findProgram(int progID) const {
-  ProgramData* pd = nullptr;
-  auto it         = _programs.find(progID);
+prgdata_constptr_t SynthObjectsDB::findProgram(int progID) const {
+  prgdata_constptr_t pd = nullptr;
+  auto it               = _programs.find(progID);
   if (it == _programs.end()) {
     return _programs.begin()->second;
   }
@@ -1040,9 +1040,9 @@ const ProgramData* SynthObjectsDB::findProgram(int progID) const {
   return pd;
 }
 
-const ProgramData* SynthObjectsDB::findProgramByName(const std::string named) const {
-  ProgramData* pd = nullptr;
-  auto it         = _programsByName.find(named);
+prgdata_constptr_t SynthObjectsDB::findProgramByName(const std::string named) const {
+  prgdata_constptr_t pd = nullptr;
+  auto it               = _programsByName.find(named);
   if (it == _programsByName.end()) {
     return _programsByName.begin()->second;
   }

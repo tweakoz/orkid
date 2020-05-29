@@ -7,79 +7,91 @@ using namespace ork::audio::singularity;
 
 int main(int argc, char** argv) {
   auto app = createEZapp(argc, argv);
+  prgdata_constptr_t program;
+  lyrdata_ptr_t layerdata;
+
   //////////////////////////////////////////////////////////////////////////////
   // allocate program/layer data
   //////////////////////////////////////////////////////////////////////////////
-  auto program   = std::make_shared<ProgramData>();
-  auto layerdata = program->newLayer();
-  auto czoscdata = std::make_shared<CzOscData>();
-  program->_role = "czx";
-  program->_name = "test";
-  //////////////////////////////////////
-  // setup dsp graph
-  //////////////////////////////////////
-  layerdata->_algdata = configureCz1Algorithm(1);
-  auto dcostage       = layerdata->stageByName("DCO");
-  auto ampstage       = layerdata->stageByName("AMP");
-  auto osc            = dcostage->appendTypedBlock<CZX>(czoscdata, 0);
-  auto amp            = ampstage->appendTypedBlock<AMP>();
-  //////////////////////////////////////
-  // setup modulators
-  //////////////////////////////////////
-  auto DCAENV = layerdata->appendController<RateLevelEnvData>("DCAENV");
-  auto DCWENV = layerdata->appendController<RateLevelEnvData>("DCWENV");
-  auto LFO2   = layerdata->appendController<LfoData>("MYLFO2");
-  auto LFO1   = layerdata->appendController<LfoData>("MYLFO1");
-  //////////////////////////////////////
-  // setup envelope
-  //////////////////////////////////////
-  DCAENV->_ampenv = true;
-  DCAENV->addSegment("seg0", .25, .25, 0.5f);
-  DCAENV->addSegment("seg1", .25, .5, 1.5f);
-  DCAENV->addSegment("seg2", .25, .75, 0.5f);
-  DCAENV->addSegment("seg3", .25, 1.0, -1.65f);
-  DCAENV->addSegment("seg4", 1, 1);
-  DCAENV->addSegment("seg5", 3, .75, 0.5f);
-  DCAENV->addSegment("seg6", 3, .5, -9.0f);
-  DCAENV->addSegment("seg7", 3, .25, 4.0f);
-  DCAENV->addSegment("seg8", 3, 0, 0.25f);
-  DCAENV->_ampenv = false;
-  DCWENV->addSegment("seg0", 0.1, .7);
-  DCWENV->addSegment("seg1", 1, 1);
-  DCWENV->addSegment("seg2", 2, .5);
-  DCWENV->addSegment("seg3", 2, 1);
-  DCWENV->addSegment("seg4", 2, 1);
-  DCWENV->addSegment("seg5", 40, 1);
-  DCWENV->addSegment("seg6", 40, 0);
-  //////////////////////////////////////
-  // setup LFO
-  //////////////////////////////////////
-  LFO1->_minRate = 0.25;
-  LFO1->_maxRate = 0.25;
-  LFO1->_shape   = "Sine";
-  LFO2->_minRate = 3.3;
-  LFO2->_maxRate = 3.3;
-  LFO2->_shape   = "Sine";
-  //////////////////////////////////////
-  // setup modulation routing
-  //////////////////////////////////////
-  auto& modulation_index_param      = osc->_paramd[0]._mods;
-  modulation_index_param._src1      = DCWENV;
-  modulation_index_param._src1Depth = 1.0;
-  // modulation_index_param._src2      = LFO1;
-  // modulation_index_param._src2DepthCtrl = LFO2;
-  modulation_index_param._src2MinDepth = 0.5;
-  modulation_index_param._src2MaxDepth = 0.1;
-  //////////////////////////////////////
-  czoscdata->_dcoBaseWaveA = 6;
-  czoscdata->_dcoBaseWaveB = 7;
-  czoscdata->_dcoWindow    = 2;
-  //////////////////////////////////////
-  auto& amp_param   = amp->_paramd[0];
-  amp_param._coarse = 0.0f;
-  amp_param.useDefaultEvaluator();
-  amp_param._mods._src1      = DCAENV;
-  amp_param._mods._src1Depth = 1.0;
+  if (1) {
+    auto basepath = basePath() / "casioCZ";
+    auto czdata   = CzData::load(basepath / "factoryA.bnk", "bank1");
+    auto bnk      = czdata->_bankdata;
+    program       = bnk->findProgramByName("ELEC.GUITAR");
+    layerdata     = program->getLayer(0);
+  } else {
+    auto mutable_program   = std::make_shared<ProgramData>();
+    layerdata              = mutable_program->newLayer();
+    auto czoscdata         = std::make_shared<CzOscData>();
+    mutable_program->_role = "czx";
+    mutable_program->_name = "test";
+    program                = mutable_program;
+    //////////////////////////////////////
+    // setup dsp graph
+    //////////////////////////////////////
+    layerdata->_algdata = configureCz1Algorithm(1);
+    auto dcostage       = layerdata->stageByName("DCO");
+    auto ampstage       = layerdata->stageByName("AMP");
+    auto osc            = dcostage->appendTypedBlock<CZX>(czoscdata, 0);
+    auto amp            = ampstage->appendTypedBlock<AMP>();
+    //////////////////////////////////////
+    // setup modulators
+    //////////////////////////////////////
+    auto DCAENV = layerdata->appendController<RateLevelEnvData>("DCAENV");
+    auto DCWENV = layerdata->appendController<RateLevelEnvData>("DCWENV");
+    auto LFO2   = layerdata->appendController<LfoData>("MYLFO2");
+    auto LFO1   = layerdata->appendController<LfoData>("MYLFO1");
+    //////////////////////////////////////
+    // setup envelope
+    //////////////////////////////////////
+    DCAENV->_ampenv = true;
+    DCAENV->addSegment("seg0", .25, .25, 0.5f);
+    DCAENV->addSegment("seg1", .25, .5, 1.5f);
+    DCAENV->addSegment("seg2", .25, .75, 0.5f);
+    DCAENV->addSegment("seg3", .25, 1.0, -1.65f);
+    DCAENV->addSegment("seg4", 1, 1);
+    DCAENV->addSegment("seg5", 3, .75, 0.5f);
+    DCAENV->addSegment("seg6", 3, .5, -9.0f);
+    DCAENV->addSegment("seg7", 3, .25, 4.0f);
+    DCAENV->addSegment("seg8", 3, 0, 0.25f);
+    DCAENV->_ampenv = false;
+    DCWENV->addSegment("seg0", 0.1, .7);
+    DCWENV->addSegment("seg1", 1, 1);
+    DCWENV->addSegment("seg2", 2, .5);
+    DCWENV->addSegment("seg3", 2, 1);
+    DCWENV->addSegment("seg4", 2, 1);
+    DCWENV->addSegment("seg5", 40, 1);
+    DCWENV->addSegment("seg6", 40, 0);
+    //////////////////////////////////////
+    // setup LFO
+    //////////////////////////////////////
+    LFO1->_minRate = 0.25;
+    LFO1->_maxRate = 0.25;
+    LFO1->_shape   = "Sine";
+    LFO2->_minRate = 3.3;
+    LFO2->_maxRate = 3.3;
+    LFO2->_shape   = "Sine";
+    //////////////////////////////////////
+    // setup modulation routing
+    //////////////////////////////////////
+    auto& modulation_index_param      = osc->_paramd[0]._mods;
+    modulation_index_param._src1      = DCWENV;
+    modulation_index_param._src1Depth = 1.0;
+    // modulation_index_param._src2      = LFO1;
+    // modulation_index_param._src2DepthCtrl = LFO2;
+    modulation_index_param._src2MinDepth = 0.5;
+    modulation_index_param._src2MaxDepth = 0.1;
+    //////////////////////////////////////
+    czoscdata->_dcoBaseWaveA = 6;
+    czoscdata->_dcoBaseWaveB = 7;
+    czoscdata->_dcoWindow    = 2;
+    //////////////////////////////////////
+    auto& amp_param   = amp->_paramd[0];
+    amp_param._coarse = 0.0f;
+    amp_param.useDefaultEvaluator();
+    amp_param._mods._src1      = DCAENV;
+    amp_param._mods._src1Depth = 1.0;
+  }
   //////////////////////////////////////
   // create and connect oscilloscope
   //////////////////////////////////////
@@ -93,15 +105,16 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   // envelope viewer
   //////////////////////////////////////
-  auto env_source = DCAENV->createScopeSource();
-  auto envview    = create_envelope_analyzer(app->_hudvp);
+  controllerdata_ptr_t inspect_env = layerdata->controllerByName("DCAENV");
+  auto env_source                  = inspect_env->createScopeSource();
+  auto envview                     = create_envelope_analyzer(app->_hudvp);
   env_source->connect(envview->_sink);
   envview->setRect(-10, 720 - 467, 1300, 477, true);
   //////////////////////////////////////
   // play test notes
   //////////////////////////////////////
-  enqueue_audio_event(program.get(), 1.0f, 240.0, 48);
-  enqueue_audio_event(program.get(), 6.5f, 240.0, 64);
+  enqueue_audio_event(program, 1.0f, 240.0, 48);
+  enqueue_audio_event(program, 6.5f, 240.0, 64);
   //////////////////////////////////////////////////////////////////////////////
   // test harness UI
   //////////////////////////////////////////////////////////////////////////////

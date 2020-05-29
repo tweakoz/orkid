@@ -30,8 +30,8 @@ struct SynthData {
   }
 
   float seqTime(float dur);
-  const ProgramData* getProgram(int progID) const;
-  const ProgramData* getProgramByName(const std::string& named) const;
+  prgdata_constptr_t getProgram(int progID) const;
+  prgdata_constptr_t getProgramByName(const std::string& named) const;
 
   bankdata_ptr_t _bankdata;
   programInst* _prog;

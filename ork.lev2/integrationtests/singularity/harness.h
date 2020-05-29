@@ -32,7 +32,7 @@ using singularitytestapp_ptr_t = std::shared_ptr<SingularityTestApp>;
 singularitytestapp_ptr_t createEZapp(int& argc, char** argv);
 
 inline void enqueue_audio_event(
-    const ProgramData* prog, //
+    prgdata_constptr_t prog, //
     float time,
     float duration,
     int midinote) {

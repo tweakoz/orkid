@@ -15,7 +15,7 @@
 
 namespace ork::audio::singularity {
 
-void SynthObjectsDB::addProgram(int idx, const std::string& name, ProgramData* program) {
+void SynthObjectsDB::addProgram(int idx, const std::string& name, prgdata_ptr_t program) {
   _programs[idx]        = program;
   _programsByName[name] = program;
 }
@@ -30,10 +30,10 @@ float SynthData::seqTime(float dur) {
   return rval;
 }
 
-const ProgramData* SynthData::getProgram(int progID) const {
+prgdata_constptr_t SynthData::getProgram(int progID) const {
   return _bankdata->findProgram(progID);
 }
-const ProgramData* SynthData::getProgramByName(const std::string& named) const {
+prgdata_constptr_t SynthData::getProgramByName(const std::string& named) const {
   return _bankdata->findProgramByName(named);
 }
 

@@ -32,9 +32,9 @@ struct EnvCtrlData {
 struct SynthObjectsDB {
   void loadJson(const std::string& fname, int bank);
 
-  void addProgram(int idx, const std::string& name, ProgramData* program);
-  const ProgramData* findProgram(int idx) const;
-  const ProgramData* findProgramByName(const std::string named) const;
+  void addProgram(int idx, const std::string& name, prgdata_ptr_t program);
+  prgdata_constptr_t findProgram(int idx) const;
+  prgdata_constptr_t findProgramByName(const std::string named) const;
   keymap_constptr_t findKeymap(int kmID) const;
 
   //
@@ -43,9 +43,9 @@ struct SynthObjectsDB {
   void parseAsr(const rapidjson::Value& JO, controlblockdata_ptr_t cblock, const EnvCtrlData& ENVCTRL, const std::string& name);
   void parseLfo(const rapidjson::Value& JO, controlblockdata_ptr_t cblock, const std::string& name);
   void parseFun(const rapidjson::Value& JO, controlblockdata_ptr_t cblock, const std::string& name);
-  lyrdata_ptr_t parseLayer(const rapidjson::Value& JO, ProgramData* pd);
+  lyrdata_ptr_t parseLayer(const rapidjson::Value& JO, prgdata_ptr_t pd);
   void parseEnvControl(const rapidjson::Value& JO, EnvCtrlData& ed);
-  ProgramData* parseProgram(const rapidjson::Value& JO);
+  prgdata_ptr_t parseProgram(const rapidjson::Value& JO);
   multisample* parseMultiSample(const rapidjson::Value& JO);
   sample* parseSample(const rapidjson::Value& JO, const multisample* parent);
 
@@ -55,12 +55,12 @@ struct SynthObjectsDB {
   dspblkdata_ptr_t parseDspBlock(const Value& JO, lyrdata_ptr_t layd, bool force = false);
   dspblkdata_ptr_t parsePchBlock(const Value& JO, lyrdata_ptr_t layd);
 
-  std::map<int, ProgramData*> _programs;
-  std::map<std::string, ProgramData*> _programsByName;
+  std::map<int, prgdata_ptr_t> _programs;
+  std::map<std::string, prgdata_ptr_t> _programsByName;
   std::map<int, keymap_ptr_t> _keymaps;
   std::map<int, multisample*> _multisamples;
 
-  std::map<int, ProgramData*> _tempprograms;
+  std::map<int, prgdata_ptr_t> _tempprograms;
   std::map<int, keymap_ptr_t> _tempkeymaps;
   std::map<int, multisample*> _tempmultisamples;
 };

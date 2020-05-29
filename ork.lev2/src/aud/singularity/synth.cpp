@@ -138,7 +138,7 @@ void synth::deactivateVoices() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-programInst* synth::keyOn(int note, const ProgramData* pdata) {
+programInst* synth::keyOn(int note, prgdata_constptr_t pdata) {
   assert(pdata);
   auto it = _freeProgInst.begin();
   assert(it != _freeProgInst.end());
@@ -290,7 +290,7 @@ programInst::~programInst() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void programInst::keyOn(int note, const ProgramData* pd) {
+void programInst::keyOn(int note, prgdata_constptr_t pd) {
   int ilayer = 0;
 
   auto syn = synth::instance();

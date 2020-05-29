@@ -105,7 +105,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
   }
 
   for (int iv = 0; iv < programcount; iv++) {
-    auto prg                           = new ProgramData;
+    auto prg                           = std::make_shared<ProgramData>();
     zpmDB->_programs[outd->_lastprg++] = prg;
     prg->_role                         = "fm4";
 

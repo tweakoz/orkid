@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
   auto basepath = basePath() / "casioCZ";
   startupAudio();
   //////////////////////////////////////////////////////////////////////////////
-  auto add_event = [&](const ProgramData* prog, //
+  auto add_event = [&](prgdata_constptr_t prog, //
                        float time,
                        float duration,
                        int midinote) {
@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < 64; i++) { // 2 32 patch banks
       auto bnk = (i >> 5) ? czdata2 : czdata1;
       auto prg = bnk->getProgram(i % 32);
-      printf("i<%d> prg<%p>\n", i, prg);
+      printf("i<%d> prg<%p>\n", i, prg.get());
       add_event(prg, float(i) * 0.5, 1.0, 36);
     }
     usleep(35 << 20); // just wait, let the "music" play..
