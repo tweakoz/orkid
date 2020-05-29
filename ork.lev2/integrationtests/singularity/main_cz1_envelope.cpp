@@ -88,15 +88,15 @@ int main(int argc, char** argv) {
   auto analyzer = create_spectrumanalyzer(app->_hudvp);
   source->connect(scope->_sink);
   source->connect(analyzer->_sink);
-  scope->setRect(0, 0, 640, 256);
-  analyzer->setRect(640, 0, 640, 256);
+  scope->setRect(0, 0, 480, 256, true);
+  analyzer->setRect(480, 0, 810, 256, true);
   //////////////////////////////////////
   // envelope viewer
   //////////////////////////////////////
   auto env_source = DCAENV->createScopeSource();
   auto envview    = create_envelope_analyzer(app->_hudvp);
   env_source->connect(envview->_sink);
-  envview->setRect(-10, 720 - 420, 1300, 430);
+  envview->setRect(-10, 720 - 467, 1300, 477, true);
   //////////////////////////////////////
   // play test notes
   //////////////////////////////////////

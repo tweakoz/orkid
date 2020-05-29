@@ -45,15 +45,7 @@ void Rect::PopOrtho(Context* context) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 HudViewport::HudViewport() //
-    : ui::Viewport("HUD", 0, 0, 512, 512, fvec3::Red(), 1.0) {
-  //_oscope  = create_oscilloscope();
-  //_spectra = create_spectrumanalyzer();
-
-  // addChild(_oscope->_panel);
-  // addChild(_spectra->_panel);
-
-  //_oscope->_panel->SetRect(0, 0, 1280, 320);
-  //_spectra->_panel->SetRect(0, 720 - 384, 1280, 384);
+    : ui::Viewport("HUD", 0, 0, 1280, 720, fvec3::Red(), 1.0) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void HudViewport::onUpdateThreadTick(ui::updatedata_ptr_t updata) {

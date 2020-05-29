@@ -107,87 +107,84 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   // draw envelope values
   /////////////////////////////////////////////////
 
-  if (_envdata) {
+  int segtextbasex = 128;
 
-    //////////////////////
-    // draw envelope name
-    //////////////////////
+  //////////////////////
+  // draw envelope name
+  //////////////////////
+
+  drawtext(
+      this, //
+      context,
+      _envdata->_name,
+      0,
+      0,
+      fontscale,
+      1,
+      0,
+      .5);
+
+  //////////////////////
+
+  float minval = 0.0f;
+  float maxval = 1.00f;
+
+  auto& AE = _envdata->_segments;
+  ///////////////////////////////////////
+  for (int i = 0; i < AE.size(); i++) {
+    auto seg = AE[i];
+    auto lev = seg._level;
+    if (lev > maxval)
+      maxval = lev;
+    if (lev < minval)
+      minval = lev;
+  }
+  float range = maxval - minval;
+  ///////////////////////////////////////
+
+  drawtext(
+      this, //
+      context,
+      "name       level    time      shape",
+      segtextbasex,
+      0,
+      fontscale,
+      1,  // r
+      1,  // g
+      0); // b
+
+  ///////////////////////////////////////////////////
+  // draw segment names/times/level text
+  ///////////////////////////////////////////////////
+  for (int i = 0; i < AE.size(); i++) {
+    bool iscurseg = (i == _cursegindex);
+    int y         = 16 + i * 16;
 
     drawtext(
         this, //
         context,
-        _envdata->_name,
-        0,
-        0,
+        _envdata->_segmentNames[i],
+        segtextbasex,
+        y,
         fontscale,
-        1,
-        0,
-        .5);
-
-    //////////////////////
-
-    float minval = 0.0f;
-    float maxval = 1.00f;
-
-    auto& AE = _envdata->_segments;
-    ///////////////////////////////////////
-    for (int i = 0; i < AE.size(); i++) {
-      auto seg = AE[i];
-      auto lev = seg._level;
-      if (lev > maxval)
-        maxval = lev;
-      if (lev < minval)
-        minval = lev;
-    }
-    float range = maxval - minval;
-    ///////////////////////////////////////
-
-    int segbasex = 128;
+        1,                  // r
+        iscurseg ? 0.5 : 1, // g
+        0);                 // b
 
     drawtext(
         this, //
         context,
-        "name       level    time      shape",
-        segbasex,
-        0,
+        FormatString(
+            "%0.2f     %0.3f     %0.3f", //
+            AE[i]._level,
+            AE[i]._time,
+            AE[i]._shape),
+        segtextbasex + 88,
+        y,
         fontscale,
-        1,  // r
-        1,  // g
-        0); // b
-
-    ///////////////////////////////////////////////////
-    // draw segment names/times/level text
-    ///////////////////////////////////////////////////
-    for (int i = 0; i < AE.size(); i++) {
-      bool iscurseg = (i == _cursegindex);
-      int y         = 16 + i * 16;
-
-      drawtext(
-          this, //
-          context,
-          _envdata->_segmentNames[i],
-          segbasex,
-          y,
-          fontscale,
-          1,                  // r
-          iscurseg ? 0.5 : 1, // g
-          0);                 // b
-
-      drawtext(
-          this, //
-          context,
-          FormatString(
-              "%0.2f     %0.3f     %0.3f", //
-              AE[i]._level,
-              AE[i]._time,
-              AE[i]._shape),
-          segbasex + 88,
-          y,
-          fontscale,
-          1,                 // r
-          iscurseg ? 0 : 1,  // g
-          iscurseg ? 0 : 1); // b
-    }
+        1,                 // r
+        iscurseg ? 0 : 1,  // g
+        iscurseg ? 0 : 1); // b
   }
 
   /////////////////////////////////////////////////
@@ -253,6 +250,91 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
         fvec3(1, 1, 1)});
     prevsample = sample;
   }
+
+  /////////////////////////////////////////////////
+  // draw misc envelope state
+  /////////////////////////////////////////////////
+
+  int miscx   = segtextbasex + 384;
+  int miscy   = 0;
+  int miscspc = 16;
+
+  drawtext(
+      this, //
+      context,
+      FormatString("sustainseg: %d", _envdata->_sustainSegment),
+      miscx,
+      (miscy++) * miscspc,
+      fontscale,
+      1,  // r
+      1,  // g
+      1); // b
+
+  drawtext(
+      this, //
+      context,
+      FormatString("isAmpEnv: %d", int(_envdata->_ampenv)),
+      miscx,
+      (miscy++) * miscspc,
+      fontscale,
+      1,  // r
+      1,  // g
+      1); // b
+
+  drawtext(
+      this, //
+      context,
+      FormatString("isBipolar: %d", int(_envdata->_bipolar)),
+      miscx,
+      (miscy++) * miscspc,
+      fontscale,
+      1,  // r
+      1,  // g
+      1); // b
+
+  drawtext(
+      this, //
+      context,
+      FormatString("state: %d", _envinst->_state),
+      miscx,
+      (miscy++) * miscspc,
+      fontscale,
+      1,  // r
+      1,  // g
+      1); // b
+
+  drawtext(
+      this, //
+      context,
+      FormatString("curshape: %g", _envinst->_curshape),
+      miscx,
+      (miscy++) * miscspc,
+      fontscale,
+      1,  // r
+      1,  // g
+      1); // b
+
+  drawtext(
+      this, //
+      context,
+      FormatString("curval: %g", _envinst->_curval),
+      miscx,
+      (miscy++) * miscspc,
+      fontscale,
+      1,  // r
+      1,  // g
+      1); // b
+
+  drawtext(
+      this, //
+      context,
+      FormatString("lerpindex: %g", _envinst->_lerpindex),
+      miscx,
+      (miscy++) * miscspc,
+      fontscale,
+      1,  // r
+      1,  // g
+      1); // b
 
   /////////////////////////////////////////////////
   drawHudLines(this, context, lines);

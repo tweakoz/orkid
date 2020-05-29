@@ -115,7 +115,7 @@ struct ScopeSink {
   std::function<void(const ScopeSource&)> _onupdate;
 };
 struct SignalScope {
-  void setRect(int iX, int iY, int iW, int iH);
+  void setRect(int iX, int iY, int iW, int iH, bool snap = false);
   hudpanel_ptr_t _hudpanel;
   scopesink_ptr_t _sink;
 };

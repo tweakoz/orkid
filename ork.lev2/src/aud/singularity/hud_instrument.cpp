@@ -9,8 +9,10 @@ using namespace ork::lev2;
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void SignalScope::setRect(int iX, int iY, int iW, int iH) {
+void SignalScope::setRect(int iX, int iY, int iW, int iH, bool snap) {
   _hudpanel->_uipanel->SetRect(iX, iY, iW, iH);
+  if (snap)
+    _hudpanel->_uipanel->snap();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ScopeSource::connect(scopesink_ptr_t sink) {
