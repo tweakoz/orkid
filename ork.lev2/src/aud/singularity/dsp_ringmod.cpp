@@ -6,7 +6,7 @@
 
 namespace ork::audio::singularity {
 RingModData::RingModData() {
-  _dspBlock   = "RingMod";
+  _blocktype  = "RingMod";
   auto& param = addParam();
   param.useAmplitudeEvaluator();
 }
@@ -15,7 +15,7 @@ dspblk_ptr_t RingModData::createInstance() const { // override
 }
 ///////////////////////////////////////////////////////////////////////////////
 RingModSumAData::RingModSumAData() {
-  _dspBlock   = "RingModSumA";
+  _blocktype  = "RingModSumA";
   auto& param = addParam();
   param.useAmplitudeEvaluator();
 }

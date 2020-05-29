@@ -476,9 +476,9 @@ void SynthObjectsDB::parseFBlock(const Value& fseg, DspParamData& fblk) {
 dspblkdata_ptr_t SynthObjectsDB::parseDspBlock(const Value& dseg, lyrdata_ptr_t layd, bool force) {
   dspblkdata_ptr_t rval;
   if (dseg.HasMember("BLOCK_ALG ")) {
-    rval            = std::make_shared<DspBlockData>();
-    rval->_dspBlock = dseg["BLOCK_ALG "].GetString();
-    printf("rval._dspBlock<%s>\n", rval->_dspBlock.c_str());
+    rval             = std::make_shared<DspBlockData>();
+    rval->_blocktype = dseg["BLOCK_ALG "].GetString();
+    printf("rval._dspBlock<%s>\n", rval->_blocktype.c_str());
   } else if (force) {
     rval = std::make_shared<DspBlockData>();
   }
@@ -537,7 +537,7 @@ dspblkdata_ptr_t SynthObjectsDB::parsePchBlock(const Value& pseg, lyrdata_ptr_t 
 
   auto KMP = layd->_kmpBlock;
   if (KMP->_pbMode == "Noise") {
-    dblk->_dspBlock = "NOISE";
+    dblk->_blocktype = "NOISE";
     dblk->_paramd[0].usePitchEvaluator();
   } else {
     SAMPLER::initBlock(dblk);
@@ -858,7 +858,7 @@ lyrdata_ptr_t SynthObjectsDB::parseLayer(const Value& jsonobj, ProgramData* pd) 
     for (int i = 0; i < 5; i++) {
       auto blk = rval->_dspBlocks[i];
       if (blk)
-        printf("dspblk<%d:%p:%s>\n", i, blk.get(), blk->_dspBlock.c_str());
+        printf("dspblk<%d:%p:%s>\n", i, blk.get(), blk->_blocktype.c_str());
     }
     // assert(false);
   }

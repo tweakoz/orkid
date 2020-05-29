@@ -27,7 +27,7 @@ panLR panBlend(float inp) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void AMP_MONOIO::initBlock(dspblkdata_ptr_t blockdata) {
-  blockdata->_dspBlock = "AMP_MONOIO";
+  blockdata->_blocktype = "AMP_MONOIO";
   blockdata->_paramd[0].useAmplitudeEvaluator();
 }
 
@@ -68,7 +68,7 @@ void AMP_MONOIO::doKeyOn(const DspKeyOnInfo& koi) // final
 ///////////////////////////////////////////////////////////////////////////////
 
 AMPDATA::AMPDATA() {
-  _dspBlock   = "AMP";
+  _blocktype  = "AMP";
   auto& param = addParam();
   param.useAmplitudeEvaluator();
 }
@@ -141,8 +141,8 @@ void AMP::doKeyOn(const DspKeyOnInfo& koi) // final
 ///////////////////////////////////////////////////////////////////////////////
 
 void PLUSAMP::initBlock(dspblkdata_ptr_t blockdata) {
-  blockdata->_dspBlock = "+ AMP";
-  auto& param          = blockdata->addParam();
+  blockdata->_blocktype = "+ AMP";
+  auto& param           = blockdata->addParam();
   param.useAmplitudeEvaluator();
 }
 
@@ -187,8 +187,8 @@ void PLUSAMP::doKeyOn(const DspKeyOnInfo& koi) // final
 ///////////////////////////////////////////////////////////////////////////////
 
 void XAMP::initBlock(dspblkdata_ptr_t blockdata) {
-  blockdata->_dspBlock = "x AMP";
-  auto& param          = blockdata->addParam();
+  blockdata->_blocktype = "x AMP";
+  auto& param           = blockdata->addParam();
   param.useAmplitudeEvaluator();
 }
 

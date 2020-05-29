@@ -458,7 +458,7 @@ void synth::onDrawHudPage3(Context* context, float width, float height) {
     int yt        = ytb + 30;
     int block_top = ytb;
 
-    auto name = dbd->_dspBlock;
+    auto name = dbd->_blocktype;
     if (name == "")
       continue;
 

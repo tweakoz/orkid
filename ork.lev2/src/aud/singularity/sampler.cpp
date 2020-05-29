@@ -35,7 +35,7 @@ kmregion* KeyMap::getRegion(int note, int vel) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SAMPLER::initBlock(dspblkdata_ptr_t blockdata) {
-  blockdata->_dspBlock = "SAMPLER";
+  blockdata->_blocktype = "SAMPLER";
   blockdata->_paramd[0].usePitchEvaluator();
 }
 

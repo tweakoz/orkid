@@ -351,7 +351,7 @@ void CZX::initBlock(
 CZXDATA::CZXDATA(czxdata_constptr_t czdata, int dcochannel)
     : _cxzdata(czdata)
     , _dcochannel(dcochannel) {
-  _dspBlock = "CZX";
+  _blocktype = "CZX";
   addParam().usePitchEvaluator();
   addParam().useDefaultEvaluator();
   _vars.makeValueForKey<czxdata_constptr_t>("CZX") = _cxzdata;

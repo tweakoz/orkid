@@ -93,7 +93,7 @@ void KrzTestData::genTestPrograms() {
 
   if (0) {
     auto F1                = l1->_dspBlocks[1];
-    F1->_dspBlock          = "2PARAM SHAPER";
+    F1->_blocktype          = "2PARAM SHAPER";
     F1->_blockIndex        = 0;
     F1->_paramd[0]._coarse = -60.0;
     F1->_paramd[0].useKrzEvnOddEvaluator();
@@ -101,7 +101,7 @@ void KrzTestData::genTestPrograms() {
   } else if (0) {
     auto F2                = l1->_dspBlocks[2];
     F2->_blockIndex        = 0;
-    F2->_dspBlock          = "SHAPER";
+    F2->_blocktype          = "SHAPER";
     F2->_paramd[0]._coarse = 0.1;
     // F2->_paramd[0]._paramScheme = "AMT"; need new evaluator
     F2->_paramd[0]._units = "x";

@@ -15,7 +15,7 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 Sum2Data::Sum2Data() {
-  _dspBlock = "SUM2";
+  _blocktype = "SUM2";
 }
 dspblk_ptr_t Sum2Data::createInstance() const { // override
   return std::make_shared<SUM2>(this);

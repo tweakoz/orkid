@@ -104,7 +104,7 @@ struct DspBlockData {
     return nullptr;
   }
 
-  std::string _dspBlock;
+  std::string _blocktype;
 
   DspParamData& addParam();
   DspParamData& getParam(int index);
