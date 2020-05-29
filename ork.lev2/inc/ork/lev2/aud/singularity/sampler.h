@@ -200,7 +200,7 @@ struct sampleOsc {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SAMPLER final : public DspBlock {
-  SAMPLER(dspblkdata_constptr_t dbd);
+  SAMPLER(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf);
 
   void doKeyOn(const DspKeyOnInfo& koi);

@@ -76,7 +76,7 @@ dspblkdata_ptr_t DspStageData::appendBlock() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DspBlock::DspBlock(dspblkdata_constptr_t dbd)
+DspBlock::DspBlock(const DspBlockData* dbd)
     : _dbd(dbd)
     , _numParams(dbd->_numParams) {
 }
@@ -145,21 +145,26 @@ int DspBlock::numInputs() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-struct NONE : public DspBlock {
-  NONE(dspblkdata_constptr_t dbd)
-      : DspBlock(dbd) {
-    _numParams = 0;
-  }
-  void compute(DspBuffer& dspbuf) final {
-  }
-};
+NOPDATA::NOPDATA() {
+  _dspBlock = "NOP";
+}
+dspblk_ptr_t NOPDATA::createInstance() const { // override
+  return std::make_shared<NOP>(this);
+}
+
+NOP::NOP(const DspBlockData* dbd)
+    : DspBlock(dbd) {
+  _numParams = 0;
+}
+void NOP::compute(DspBuffer& dspbuf) { // override
+}
 ///////////////////////////////////////////////////////////////////////////////
 
-dspblk_ptr_t createDspBlock(dspblkdata_constptr_t dbd) {
-  dspblk_ptr_t rval;
+dspblk_ptr_t createDspBlock(const DspBlockData* dbd) {
 
-  if (dbd->_dspBlock == "NONE")
-    rval = std::make_shared<NONE>(dbd);
+  dspblk_ptr_t rval = dbd->createInstance();
+  if (rval)
+    return rval;
 
   ////////////////////////
   // amp/mix
@@ -173,8 +178,6 @@ dspblk_ptr_t createDspBlock(dspblkdata_constptr_t dbd) {
     rval = std::make_shared<GAIN>(dbd);
   if (dbd->_dspBlock == "AMP_MONOIO")
     rval = std::make_shared<AMP_MONOIO>(dbd);
-  if (dbd->_dspBlock == "AMP")
-    rval = std::make_shared<AMP>(dbd);
   if (dbd->_dspBlock == "+ AMP")
     rval = std::make_shared<PLUSAMP>(dbd);
   if (dbd->_dspBlock == "x AMP")
@@ -185,13 +188,6 @@ dspblk_ptr_t createDspBlock(dspblkdata_constptr_t dbd) {
     rval = std::make_shared<AMPU_AMPL>(dbd);
   if (dbd->_dspBlock == "! AMP")
     rval = std::make_shared<BANGAMP>(dbd);
-
-  if (dbd->_dspBlock == "SUM2")
-    rval = std::make_shared<SUM2>(dbd);
-  if (dbd->_dspBlock == "RingMod")
-    rval = std::make_shared<RingMod>(dbd);
-  if (dbd->_dspBlock == "RingModSumA")
-    rval = std::make_shared<RingModSumA>(dbd);
 
   ////////////////////////
   // osc/gen
@@ -227,9 +223,6 @@ dspblk_ptr_t createDspBlock(dspblkdata_constptr_t dbd) {
 
   if (dbd->_dspBlock == "FM4")
     rval = std::make_shared<FM4>(dbd);
-  if (dbd->_dspBlock == "CZX")
-    rval = std::make_shared<CZX>(dbd);
-
   if (dbd->_dspBlock == "NOISE")
     rval = std::make_shared<NOISE>(dbd);
 

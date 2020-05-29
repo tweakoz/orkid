@@ -5,9 +5,15 @@
 
 namespace ork::audio::singularity {
 
+///////////////////////////////////////////////////////////////////////////////
+struct Sum2Data final : public DspBlockData {
+  Sum2Data();
+  dspblk_ptr_t createInstance() const override;
+};
+
 struct SUM2 : public DspBlock {
-  static void initBlock(dspblkdata_ptr_t blockdata);
-  SUM2(dspblkdata_constptr_t dbd);
+  using dataclass_t = Sum2Data;
+  SUM2(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
 };
 

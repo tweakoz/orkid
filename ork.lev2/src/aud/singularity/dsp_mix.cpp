@@ -14,13 +14,14 @@
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
-void SUM2::initBlock(dspblkdata_ptr_t blockdata) {
-  blockdata->_dspBlock = "SUM2";
-  auto& param          = blockdata->addParam();
-  param.useAmplitudeEvaluator();
+Sum2Data::Sum2Data() {
+  _dspBlock = "SUM2";
+}
+dspblk_ptr_t Sum2Data::createInstance() const { // override
+  return std::make_shared<SUM2>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
-SUM2::SUM2(dspblkdata_constptr_t dbd)
+SUM2::SUM2(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 ///////////////////////////////////////////////////////////////////////////////

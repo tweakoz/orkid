@@ -41,7 +41,7 @@ void SAMPLER::initBlock(dspblkdata_ptr_t blockdata) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SAMPLER::SAMPLER(dspblkdata_constptr_t dbd)
+SAMPLER::SAMPLER(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 

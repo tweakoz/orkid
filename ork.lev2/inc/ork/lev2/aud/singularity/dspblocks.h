@@ -93,7 +93,17 @@ struct IoMask final {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct DspBlockData final {
+struct DspBlockData {
+
+  DspBlockData() {
+  }
+  virtual ~DspBlockData() {
+  }
+
+  virtual dspblk_ptr_t createInstance() const {
+    return nullptr;
+  }
+
   std::string _dspBlock;
 
   DspParamData& addParam();
@@ -128,7 +138,7 @@ struct ScopeSyncTrack {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DspBlock {
-  DspBlock(dspblkdata_constptr_t dbd);
+  DspBlock(const DspBlockData* dbd);
   virtual ~DspBlock() {
   }
 
@@ -176,10 +186,11 @@ struct DspStageData final {
   DspStageData();
   dspblkdata_ptr_t appendBlock();
 
-  template <typename T, typename... A> dspblkdata_ptr_t appendTypedBlock(A&&... args) {
-    auto block = appendBlock();
-    T::initBlock(block, std::forward<A>(args)...);
-    return block;
+  template <typename T, typename... A> std::shared_ptr<typename T::dataclass_t> appendTypedBlock(A&&... args) {
+    OrkAssert(_numblocks < kmaxdspblocksperstage);
+    auto blkdata              = std::make_shared<typename T::dataclass_t>(std::forward<A>(args)...);
+    _blockdatas[_numblocks++] = blkdata;
+    return blkdata;
   }
 
   dspblkdata_constptr_t _blockdatas[kmaxdspblocksperstage];
@@ -231,6 +242,18 @@ struct Alg final {
   const AlgData& _algdata;
 
   Layer* _layer;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+struct NOPDATA final : public DspBlockData {
+  NOPDATA();
+  dspblk_ptr_t createInstance() const override;
+};
+
+struct NOP final : public DspBlock {
+  using dataclass_t = NOPDATA;
+  NOP(const DspBlockData* dbd);
+  void compute(DspBuffer& dspbuf);
 };
 
 } // namespace ork::audio::singularity

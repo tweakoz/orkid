@@ -10,7 +10,7 @@ float wrap(float inp, float adj);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SHAPER::SHAPER(dspblkdata_constptr_t dbd)
+SHAPER::SHAPER(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -35,7 +35,7 @@ void SHAPER::compute(DspBuffer& dspbuf) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SHAPE2::SHAPE2(dspblkdata_constptr_t dbd)
+SHAPE2::SHAPE2(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -58,7 +58,7 @@ void SHAPE2::compute(DspBuffer& dspbuf) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TWOPARAM_SHAPER::TWOPARAM_SHAPER(dspblkdata_constptr_t dbd)
+TWOPARAM_SHAPER::TWOPARAM_SHAPER(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -114,7 +114,7 @@ void TWOPARAM_SHAPER::compute(DspBuffer& dspbuf) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-WRAP::WRAP(dspblkdata_constptr_t dbd)
+WRAP::WRAP(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -134,7 +134,7 @@ void WRAP::compute(DspBuffer& dspbuf) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DIST::DIST(dspblkdata_constptr_t dbd)
+DIST::DIST(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 

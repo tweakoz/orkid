@@ -5,14 +5,25 @@
 #include <ork/lev2/aud/singularity/modulation.h>
 
 namespace ork::audio::singularity {
-///////////////////////////////////////////////////////////////////////////////
-void RingMod::initBlock(dspblkdata_ptr_t blockdata) {
-  blockdata->_dspBlock = "RingMod";
-  auto& param          = blockdata->addParam();
+RingModData::RingModData() {
+  _dspBlock   = "RingMod";
+  auto& param = addParam();
   param.useAmplitudeEvaluator();
 }
+dspblk_ptr_t RingModData::createInstance() const { // override
+  return std::make_shared<RingMod>(this);
+}
 ///////////////////////////////////////////////////////////////////////////////
-RingMod::RingMod(dspblkdata_constptr_t dbd)
+RingModSumAData::RingModSumAData() {
+  _dspBlock   = "RingModSumA";
+  auto& param = addParam();
+  param.useAmplitudeEvaluator();
+}
+dspblk_ptr_t RingModSumAData::createInstance() const { // override
+  return std::make_shared<RingModSumA>(this);
+}
+///////////////////////////////////////////////////////////////////////////////
+RingMod::RingMod(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -33,13 +44,7 @@ void RingMod::compute(DspBuffer& dspbuf) { // final
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void RingModSumA::initBlock(dspblkdata_ptr_t blockdata) {
-  blockdata->_dspBlock = "RingModSumA";
-  auto& param          = blockdata->addParam();
-  param.useAmplitudeEvaluator();
-}
-///////////////////////////////////////////////////////////////////////////////
-RingModSumA::RingModSumA(dspblkdata_constptr_t dbd)
+RingModSumA::RingModSumA(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 ///////////////////////////////////////////////////////////////////////////////

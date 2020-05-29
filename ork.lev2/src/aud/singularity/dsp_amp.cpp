@@ -31,7 +31,7 @@ void AMP_MONOIO::initBlock(dspblkdata_ptr_t blockdata) {
   blockdata->_paramd[0].useAmplitudeEvaluator();
 }
 
-AMP_MONOIO::AMP_MONOIO(dspblkdata_constptr_t dbd)
+AMP_MONOIO::AMP_MONOIO(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -67,13 +67,16 @@ void AMP_MONOIO::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AMP::initBlock(dspblkdata_ptr_t blockdata) {
-  blockdata->_dspBlock = "AMP";
-  auto& param          = blockdata->addParam();
+AMPDATA::AMPDATA() {
+  _dspBlock   = "AMP";
+  auto& param = addParam();
   param.useAmplitudeEvaluator();
 }
+dspblk_ptr_t AMPDATA::createInstance() const { // override
+  return std::make_shared<AMP>(this);
+}
 
-AMP::AMP(dspblkdata_constptr_t dbd)
+AMP::AMP(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -143,7 +146,7 @@ void PLUSAMP::initBlock(dspblkdata_ptr_t blockdata) {
   param.useAmplitudeEvaluator();
 }
 
-PLUSAMP::PLUSAMP(dspblkdata_constptr_t dbd)
+PLUSAMP::PLUSAMP(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -189,7 +192,7 @@ void XAMP::initBlock(dspblkdata_ptr_t blockdata) {
   param.useAmplitudeEvaluator();
 }
 
-XAMP::XAMP(dspblkdata_constptr_t dbd)
+XAMP::XAMP(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -226,7 +229,7 @@ void XAMP::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GAIN::GAIN(dspblkdata_constptr_t dbd)
+GAIN::GAIN(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -250,7 +253,7 @@ void GAIN::compute(DspBuffer& dspbuf) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-XFADE::XFADE(dspblkdata_constptr_t dbd)
+XFADE::XFADE(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -291,7 +294,7 @@ void XFADE::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-XGAIN::XGAIN(dspblkdata_constptr_t dbd)
+XGAIN::XGAIN(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -325,7 +328,7 @@ void XGAIN::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AMPU_AMPL::AMPU_AMPL(dspblkdata_constptr_t dbd)
+AMPU_AMPL::AMPU_AMPL(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -377,7 +380,7 @@ void AMPU_AMPL::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BAL_AMP::BAL_AMP(dspblkdata_constptr_t dbd)
+BAL_AMP::BAL_AMP(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -403,7 +406,7 @@ void BAL_AMP::doKeyOn(const DspKeyOnInfo& koi) // final
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-PANNER::PANNER(dspblkdata_constptr_t dbd)
+PANNER::PANNER(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 void PANNER::compute(DspBuffer& dspbuf) // final
@@ -439,7 +442,7 @@ void PANNER::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BANGAMP::BANGAMP(dspblkdata_constptr_t dbd)
+BANGAMP::BANGAMP(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 

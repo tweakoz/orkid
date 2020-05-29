@@ -62,7 +62,7 @@ algdata_ptr_t configureCz1Algorithm(int numosc) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CZX::CZX(dspblkdata_constptr_t dbd)
+CZX::CZX(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -346,11 +346,21 @@ void CZX::initBlock(
     dspblkdata_ptr_t blockdata, //
     czxdata_constptr_t czdata,
     int dcochannel) {
-  blockdata->_dspBlock = "CZX";
-  blockdata->addParam().usePitchEvaluator();
-  blockdata->addParam().useDefaultEvaluator();
-  blockdata->_vars.makeValueForKey<czxdata_constptr_t>("CZX") = czdata;
-  blockdata->_vars.makeValueForKey<int>("dcochannel")         = dcochannel;
+}
+///////////////////////////////////////////////////////////////////////////////
+CZXDATA::CZXDATA(czxdata_constptr_t czdata, int dcochannel)
+    : _cxzdata(czdata)
+    , _dcochannel(dcochannel) {
+  _dspBlock = "CZX";
+  addParam().usePitchEvaluator();
+  addParam().useDefaultEvaluator();
+  _vars.makeValueForKey<czxdata_constptr_t>("CZX") = _cxzdata;
+  _vars.makeValueForKey<int>("dcochannel")         = dcochannel;
+}
+///////////////////////////////////////////////////////////////////////////////
+dspblk_ptr_t CZXDATA::createInstance() const { // override
+  auto instance = std::make_shared<CZX>(this);
+  return instance;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

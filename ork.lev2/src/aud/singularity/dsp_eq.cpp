@@ -6,7 +6,7 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PARABASS::PARABASS(dspblkdata_constptr_t dbd)
+PARABASS::PARABASS(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -48,7 +48,7 @@ void PARABASS::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-STEEP_RESONANT_BASS::STEEP_RESONANT_BASS(dspblkdata_constptr_t dbd)
+STEEP_RESONANT_BASS::STEEP_RESONANT_BASS(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -90,7 +90,7 @@ void STEEP_RESONANT_BASS::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PARATREBLE::PARATREBLE(dspblkdata_constptr_t dbd)
+PARATREBLE::PARATREBLE(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -129,7 +129,7 @@ void PARATREBLE::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PARAMID::PARAMID(dspblkdata_constptr_t dbd)
+PARAMID::PARAMID(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -163,7 +163,7 @@ void PARAMID::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PARAMETRIC_EQ::PARAMETRIC_EQ(dspblkdata_constptr_t dbd)
+PARAMETRIC_EQ::PARAMETRIC_EQ(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 

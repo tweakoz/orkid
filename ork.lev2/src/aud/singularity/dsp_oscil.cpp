@@ -13,7 +13,7 @@ float wrap(float inp, float adj);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SINE::SINE(dspblkdata_constptr_t dbd)
+SINE::SINE(const DspBlockData* dbd)
     : DspBlock(dbd)
     , _pblep(48000, PolyBLEP::SINE) {
 }
@@ -46,7 +46,7 @@ void SINE::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SAW::SAW(dspblkdata_constptr_t dbd)
+SAW::SAW(const DspBlockData* dbd)
     : DspBlock(dbd)
     , _pblep(48000, PolyBLEP::SAWTOOTH) {
 }
@@ -78,7 +78,7 @@ void SAW::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SQUARE::SQUARE(dspblkdata_constptr_t dbd)
+SQUARE::SQUARE(const DspBlockData* dbd)
     : DspBlock(dbd)
     , _pblep(48000, PolyBLEP::SQUARE) {
 }
@@ -110,7 +110,7 @@ void SQUARE::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SINEPLUS::SINEPLUS(dspblkdata_constptr_t dbd)
+SINEPLUS::SINEPLUS(const DspBlockData* dbd)
     : DspBlock(dbd)
     , _pblep(48000, PolyBLEP::SINE) {
 }
@@ -144,7 +144,7 @@ void SINEPLUS::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SAWPLUS::SAWPLUS(dspblkdata_constptr_t dbd)
+SAWPLUS::SAWPLUS(const DspBlockData* dbd)
     : DspBlock(dbd)
     , _pblep(48000, PolyBLEP::SAWTOOTH) {
 }
@@ -183,7 +183,7 @@ void SAWPLUS::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SWPLUSSHP::SWPLUSSHP(dspblkdata_constptr_t dbd)
+SWPLUSSHP::SWPLUSSHP(const DspBlockData* dbd)
     : DspBlock(dbd)
     , _pblep(48000, PolyBLEP::RAMP) {
   _pblep.setAmplitude(1.0f);
@@ -221,7 +221,7 @@ void SWPLUSSHP::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SHAPEMODOSC::SHAPEMODOSC(dspblkdata_constptr_t dbd)
+SHAPEMODOSC::SHAPEMODOSC(const DspBlockData* dbd)
     : DspBlock(dbd)
     , _pblep(48000, PolyBLEP::SINE) {
   _pblep.setAmplitude(1.0f);
@@ -285,7 +285,7 @@ void SHAPEMODOSC::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PLUSSHAPEMODOSC::PLUSSHAPEMODOSC(dspblkdata_constptr_t dbd)
+PLUSSHAPEMODOSC::PLUSSHAPEMODOSC(const DspBlockData* dbd)
     : DspBlock(dbd)
     , _pblep(48000, PolyBLEP::SINE) {
   _pblep.setAmplitude(0.25f);
@@ -362,7 +362,7 @@ void PLUSSHAPEMODOSC::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SYNCM::SYNCM(dspblkdata_constptr_t dbd)
+SYNCM::SYNCM(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -396,7 +396,7 @@ void SYNCM::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SYNCS::SYNCS(dspblkdata_constptr_t dbd)
+SYNCS::SYNCS(const DspBlockData* dbd)
     : DspBlock(dbd)
     , _pblep(48000, PolyBLEP::RAMP) {
   _pblep.setAmplitude(1.0f);
@@ -440,7 +440,7 @@ void SYNCS::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PWM::PWM(dspblkdata_constptr_t dbd)
+PWM::PWM(const DspBlockData* dbd)
     : DspBlock(dbd)
     , _pblep(48000, PolyBLEP::SINE) {
   _pblep.setAmplitude(1.0f);
@@ -467,7 +467,7 @@ void PWM::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FM4::FM4(dspblkdata_constptr_t dbd)
+FM4::FM4(const DspBlockData* dbd)
     : DspBlock(dbd) {
   _fm4 = new fm4syn;
 }
@@ -498,7 +498,7 @@ void FM4::initBlock(dspblkdata_ptr_t blockdata) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-NOISE::NOISE(dspblkdata_constptr_t dbd)
+NOISE::NOISE(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 void NOISE::compute(DspBuffer& dspbuf) // final

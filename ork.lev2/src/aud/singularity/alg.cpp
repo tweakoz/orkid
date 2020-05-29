@@ -8,7 +8,7 @@ namespace ork::audio::singularity {
 
 static synth_ptr_t the_synth = synth::instance();
 
-dspblk_ptr_t createDspBlock(dspblkdata_constptr_t dbd);
+dspblk_ptr_t createDspBlock(const DspBlockData* dbd);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -80,7 +80,7 @@ void Alg::keyOn(DspKeyOnInfo& koi) {
       for (int iblock = 0; iblock < kmaxdspblocksperstage; iblock++) {
         auto blockdata = stagedata->_blockdatas[iblock];
         if (blockdata) {
-          auto block             = createDspBlock(blockdata);
+          auto block             = createDspBlock(blockdata.get());
           stage->_blocks[iblock] = block;
           block->_verticalIndex  = iblock;
           block->_iomask         = stagedata->_iomask;

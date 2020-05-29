@@ -476,7 +476,7 @@ void Layer::keyOff() {
 
   if (_alg)
     _alg->keyOff();
-} // namespace ork::audio::singularity
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -485,16 +485,12 @@ void Layer::reset() {
   _curnote   = 0;
   _keepalive = 0;
 
-  // for( int i=0; i<kmaxdspblocksperlayer; i++ )
-  //   _fp[i].reset();
-
   // todo pool controllers
   if (_ctrlBlock)
     delete _ctrlBlock;
   _ctrlBlock = nullptr;
 
   _controlMap.clear();
-
-} // namespace ork::audio::singularity
+}
 
 } // namespace ork::audio::singularity

@@ -6,7 +6,7 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BANDPASS_FILT::BANDPASS_FILT(dspblkdata_constptr_t dbd)
+BANDPASS_FILT::BANDPASS_FILT(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -45,7 +45,7 @@ void BANDPASS_FILT::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BAND2::BAND2(dspblkdata_constptr_t dbd)
+BAND2::BAND2(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -77,7 +77,7 @@ void BAND2::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-NOTCH_FILT::NOTCH_FILT(dspblkdata_constptr_t dbd)
+NOTCH_FILT::NOTCH_FILT(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -110,7 +110,7 @@ void NOTCH_FILT::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-NOTCH2::NOTCH2(dspblkdata_constptr_t dbd)
+NOTCH2::NOTCH2(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -141,7 +141,7 @@ void NOTCH2::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DOUBLE_NOTCH_W_SEP::DOUBLE_NOTCH_W_SEP(dspblkdata_constptr_t dbd)
+DOUBLE_NOTCH_W_SEP::DOUBLE_NOTCH_W_SEP(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -180,7 +180,7 @@ void DOUBLE_NOTCH_W_SEP::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TWOPOLE_ALLPASS::TWOPOLE_ALLPASS(dspblkdata_constptr_t dbd)
+TWOPOLE_ALLPASS::TWOPOLE_ALLPASS(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -215,7 +215,7 @@ void TWOPOLE_ALLPASS::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TWOPOLE_LOWPASS::TWOPOLE_LOWPASS(dspblkdata_constptr_t dbd)
+TWOPOLE_LOWPASS::TWOPOLE_LOWPASS(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -256,7 +256,7 @@ void TWOPOLE_LOWPASS::doKeyOn(const DspKeyOnInfo& koi) // final
 // LOPAS2 = TWOPOLE_LOWPASS (fixed -6dB res)
 ///////////////////////////////////////////////////////////////////////////////
 
-LOPAS2::LOPAS2(dspblkdata_constptr_t dbd)
+LOPAS2::LOPAS2(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -288,7 +288,7 @@ void LOPAS2::doKeyOn(const DspKeyOnInfo& koi) // final
 // LOPAS2 = TWOPOLE_LOWPASS (fixed -6dB res)
 ///////////////////////////////////////////////////////////////////////////////
 
-LP2RES::LP2RES(dspblkdata_constptr_t dbd)
+LP2RES::LP2RES(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -319,7 +319,7 @@ void LP2RES::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FOURPOLE_LOPASS_W_SEP::FOURPOLE_LOPASS_W_SEP(dspblkdata_constptr_t dbd)
+FOURPOLE_LOPASS_W_SEP::FOURPOLE_LOPASS_W_SEP(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -361,7 +361,7 @@ void FOURPOLE_LOPASS_W_SEP::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FOURPOLE_HIPASS_W_SEP::FOURPOLE_HIPASS_W_SEP(dspblkdata_constptr_t dbd)
+FOURPOLE_HIPASS_W_SEP::FOURPOLE_HIPASS_W_SEP(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -408,7 +408,7 @@ void FOURPOLE_HIPASS_W_SEP::doKeyOn(const DspKeyOnInfo& koi) // final
 // LOPASS : 1 pole! lowpass
 ///////////////////////////////////////////////////////////////////////////////
 
-LOPASS::LOPASS(dspblkdata_constptr_t dbd)
+LOPASS::LOPASS(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -442,7 +442,7 @@ void LOPASS::doKeyOn(const DspKeyOnInfo& koi) // final
 // LPCLIP : 1 pole! lowpass
 ///////////////////////////////////////////////////////////////////////////////
 
-LPCLIP::LPCLIP(dspblkdata_constptr_t dbd)
+LPCLIP::LPCLIP(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -470,7 +470,7 @@ void LPCLIP::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-HIPASS::HIPASS(dspblkdata_constptr_t dbd)
+HIPASS::HIPASS(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -501,7 +501,7 @@ void HIPASS::doKeyOn(const DspKeyOnInfo& koi) // final
 // LOPASS : 1 pole! lowpass
 ///////////////////////////////////////////////////////////////////////////////
 
-LPGATE::LPGATE(dspblkdata_constptr_t dbd)
+LPGATE::LPGATE(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -527,7 +527,7 @@ void LPGATE::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-HIFREQ_STIMULATOR::HIFREQ_STIMULATOR(dspblkdata_constptr_t dbd)
+HIFREQ_STIMULATOR::HIFREQ_STIMULATOR(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
@@ -572,7 +572,7 @@ void HIFREQ_STIMULATOR::doKeyOn(const DspKeyOnInfo& koi) // final
 // 2pole allpass (for phasers, etc..)
 ///////////////////////////////////////////////////////////////////////////////
 
-ALPASS::ALPASS(dspblkdata_constptr_t dbd)
+ALPASS::ALPASS(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
