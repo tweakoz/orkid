@@ -5,7 +5,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
-static const int MAXSAMPLES = 32768;
+static const int MAXSAMPLES = 1500 * 15;
 ///////////////////////////////////////////////////////////////////////////////
 struct RateLevelSurf final : public ui::Surface {
   RateLevelSurf();
@@ -19,6 +19,7 @@ struct RateLevelSurf final : public ui::Surface {
   int _cursegindex                 = 0;
   int _updatecount                 = 0;
   const RateLevelEnvData* _envdata = nullptr;
+  const RateLevelEnvInst* _envinst = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
 signalscope_ptr_t create_envelope_analyzer(hudvp_ptr_t vp) {
@@ -34,27 +35,39 @@ signalscope_ptr_t create_envelope_analyzer(hudvp_ptr_t vp) {
   instrument->_sink->_onupdate = [ratelevsurf](const ScopeSource& src) { //
     auto ratelev = dynamic_cast<const RateLevelEnvInst*>(src._controller);
     if (ratelev) {
-      if (0 == ratelev->_updatecount) {
+      if (0 == ratelev->_updatecount) { // attach
         ratelevsurf->_updatecount    = 0;
         ratelevsurf->_curwritesample = 0;
         ratelevsurf->_curreadsample  = 0;
+        ratelevsurf->_envdata        = ratelev->_data;
+        ratelevsurf->_envinst        = ratelev;
       }
-      switch (ratelev->_state) {
-        case 0:
-        case 1:
-        case 2:
-        case 3: {
-          ratelevsurf->_cursegindex                   = ratelev->_segmentIndex;
-          ratelevsurf->_envdata                       = ratelev->_data;
-          int isample                                 = ratelevsurf->_curwritesample++;
-          ratelevsurf->_samples[isample % MAXSAMPLES] = ratelev->_curval;
-          ratelevsurf->_curreadsample                 = isample;
-          break;
+      ///////////////////////////////
+      // single out attached envelope
+      ///////////////////////////////
+      if (ratelevsurf->_envinst == ratelev) {
+        switch (ratelev->_state) {
+          case 0:
+          case 1:
+          case 2:
+          case 3: {
+            ratelevsurf->_cursegindex                   = ratelev->_segmentIndex;
+            ratelevsurf->_envdata                       = ratelev->_data;
+            int isample                                 = ratelevsurf->_curwritesample++;
+            ratelevsurf->_samples[isample % MAXSAMPLES] = ratelev->_curval;
+            ratelevsurf->_curreadsample                 = isample;
+            break;
+          }
+          case 4:
+          default: // detach
+            int isample                                 = ratelevsurf->_curwritesample++;
+            ratelevsurf->_samples[isample % MAXSAMPLES] = ratelev->_curval;
+            ratelevsurf->_curreadsample                 = isample;
+            ratelevsurf->_envdata                       = nullptr;
+            ratelevsurf->_envinst                       = nullptr;
         }
-        case 4:
-        default:
-          ratelevsurf->_envdata = nullptr;
       }
+      ratelevsurf->_updatecount++;
     }
     ratelevsurf->SetDirty();
   };
@@ -207,7 +220,7 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   fvec2 bias(0.0, miH);
 
   int off          = _curreadsample % MAXSAMPLES;
-  int j            = (MAXSAMPLES + off - 0) % MAXSAMPLES;
+  int j            = (MAXSAMPLES + off) % MAXSAMPLES;
   float prevsample = _samples[j];
 
   for (int i = 0; i < MAXSAMPLES; i++) {
@@ -216,7 +229,7 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     int off   = _curreadsample % MAXSAMPLES;
     int j     = (MAXSAMPLES + off - i) % MAXSAMPLES;
 
-    float sample = _samples[j];
+    float sample = (i < _updatecount) ? _samples[j] : 0.0f;
     auto p1      = fvec2(fi, prevsample) * scale + bias;
     auto p2      = fvec2(fni, sample) * scale + bias;
     lines.push_back(HudLine{

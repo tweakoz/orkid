@@ -187,7 +187,7 @@ void RateLevelEnvInst::compute() // final
   //////////////////////////////////////
   // SignalScope
   //////////////////////////////////////
-  if (_data->_scopesource) {
+  if (_data and _data->_scopesource) {
     _data->_scopesource->updateController(this);
   }
   //////////////////////////////////////

@@ -37,8 +37,8 @@ int main(int argc, char** argv) {
   DCAENV->addSegment("seg0", {.2, .7});
   DCAENV->addSegment("seg1", {.2, .7}); // atk1
   DCAENV->addSegment("seg2", {1, 1});   // atk2
-  DCAENV->addSegment("seg3", {12, .3}); // atk3
-  DCAENV->addSegment("seg4", {12, 0});  // atk3
+  DCAENV->addSegment("seg3", {6, .3});  // atk3
+  DCAENV->addSegment("seg4", {6, 0});   // atk3
                                         //
   DCWENV->_ampenv = false;
   DCWENV->addSegment("seg0", {0.1, .7}); // atk1
@@ -93,11 +93,12 @@ int main(int argc, char** argv) {
   auto env_source = DCAENV->createScopeSource();
   auto envview    = create_envelope_analyzer(app->_hudvp);
   env_source->connect(envview->_sink);
-  envview->setRect(0, 720 - 384, 1280, 384);
+  envview->setRect(-10, 720 - 420, 1300, 430);
   //////////////////////////////////////
   // play test notes
   //////////////////////////////////////
-  enqueue_audio_event(program.get(), 1.5f, 240.0, 48);
+  enqueue_audio_event(program.get(), 1.0f, 240.0, 48);
+  enqueue_audio_event(program.get(), 6.5f, 240.0, 64);
   //////////////////////////////////////////////////////////////////////////////
   // test harness UI
   //////////////////////////////////////////////////////////////////////////////
