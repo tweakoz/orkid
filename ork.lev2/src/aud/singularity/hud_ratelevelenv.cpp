@@ -147,7 +147,7 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     drawtext(
         this, //
         context,
-        "name       lev        tim",
+        "name       lev        tim      shape",
         segbasex,
         0,
         fontscale,
@@ -176,7 +176,11 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       drawtext(
           this, //
           context,
-          FormatString("%0.2f     %0.3f", AE[i]._level, AE[i]._time),
+          FormatString(
+              "%0.2f     %0.3f     %0.3f", //
+              AE[i]._level,
+              AE[i]._time,
+              AE[i]._shape),
           segbasex + 88,
           y,
           fontscale,

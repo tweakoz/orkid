@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
   DCAENV->addSegment("seg3", .25, 1.0, -1.65f);
   DCAENV->addSegment("seg4", 1, 1);
   DCAENV->addSegment("seg5", 3, .75, 0.5f);
-  DCAENV->addSegment("seg6", 3, .5, 2.0f);
+  DCAENV->addSegment("seg6", 3, .5, -9.0f);
   DCAENV->addSegment("seg7", 3, .25, 4.0f);
   DCAENV->addSegment("seg8", 3, 0, 0.25f);
   DCAENV->_ampenv = false;

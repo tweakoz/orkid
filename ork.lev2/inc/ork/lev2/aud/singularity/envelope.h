@@ -9,7 +9,7 @@ namespace ork::audio::singularity {
 struct EnvPoint {
   float _time  = 0.0f;
   float _level = 0.0f;
-  float _power = 1.0f;
+  float _shape = 1.0f;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -108,7 +108,7 @@ struct RateLevelEnvInst : public ControllerInst {
   float _destval;
   float _lerpindex;
   float _lerpincr;
-  float _curpower = 1.0f;
+  float _curshape = 1.0f;
 
   int _framesrem;
   bool _released;

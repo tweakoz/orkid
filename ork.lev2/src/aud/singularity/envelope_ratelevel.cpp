@@ -77,7 +77,7 @@ void RateLevelEnvInst::initSeg(int iseg) {
   //////////////////////////////////////////////
   _startval = _curval;
   _destval  = adjusted_segment._level;
-  _curpower = adjusted_segment._power;
+  _curshape = adjusted_segment._shape;
   //////////////////////////////////////////////
   float segtime = adjusted_segment._time;
   //////////////////////////////////////////////
@@ -100,10 +100,14 @@ void RateLevelEnvInst::initSeg(int iseg) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// -1   0..1
+// -2   .125 .. .875
+// -3   .25
 float RateLevelEnvInst::shapedvalue() const {
-
-  float index = _curpower > 0.0f //
-      ? powf(std::clamp(index, 0.0f, 1.0f), _curpower);
+  float clamped_index = std::clamp(_lerpindex, 0.0f, 1.0f);
+  float index         = _curshape >= 0.0f //
+                    ? powf(clamped_index, _curshape)
+                    : smoothstep(-_curshape * 0.05, 1 + _curshape * 0.05, clamped_index);
   float rawval = lerp(_startval, _destval, index);
   return std::clamp(rawval, 0.0f, 1.0f);
 }
