@@ -1,27 +1,49 @@
 #!/usr/bin/env python3
 import math, random
+import numpy as np
+import concurrent.futures
+opq = concurrent.futures.ThreadPoolExecutor(max_workers=8)
+# cant use ProcessPoolExecutor because multiprocessing is broken
+#  so we are stuck with the GIL for now
+#  this should get more performant when using numpi for crunching
+#  the numbers
 
 ########################################
 # input data
 ########################################
 
-#wa env model
-#a = [72,52,37,26,50,14]
-#b = [.056,.464,2.17,6.94,.544,26.01]
+class dataset:
+  def __init__(self,name):
+    self._name = name
+    self._keys = []
+    self._vals = []
+  def check(self):
+    assert(len(self._keys)==len(self._vals))
 
-#fullpenv model
-#a = [39,56,61,70,82,99]
-#b = [3.0,0.5,0.25,0.1,0.025,0.004]
+wa_env_data = dataset("waveamp")
+wa_env_data._keys = [72,52,37,26,50,14]
+wa_env_data._vals = [.056,.464,2.17,6.94,.544,26.01]
+wa_env_data.check()
 
-#lowp model
-a = [82,99]
-b = [0.025,0.004]
+fullp_env_data = dataset("full-p")
+fullp_env_data._keys = [39,56,61,70,82,99]
+fullp_env_data._vals = [3.0,0.5,0.25,0.1,0.025,0.004]
+fullp_env_data.check()
 
-#midp model
-a = [39,56,61,70,75]
-b = [3.0,0.5,0.25,0.1,0.054]
+lowp_env_data = dataset("low-p")
+lowp_env_data._keys = [82,99]
+lowp_env_data._vals = [0.025,0.004]
+lowp_env_data.check()
 
-assert(len(a)==len(b))
+midp_env_data = dataset("mid-p")
+midp_env_data._keys = [39,56,61,70,75]
+midp_env_data._vals = [3.0,0.5,0.25,0.1,0.054]
+midp_env_data.check()
+
+hip_env_data = dataset("hi-p")
+hip_env_data._keys = [5,10]
+hip_env_data._vals = [135,79]
+hip_env_data.check()
 
 ########################################
 # math utils
@@ -40,68 +62,90 @@ def slope2ror(slope,bias):
 ########################################
 
 class model:
+ ##################################
  def __init__(self):
-  self.biasa = 1.0
-  self.scala = 89.0
-  self.diva = 99.0
-  self.biasb = 0.01
-  self.basec = 1.0
-  self.powc = math.pi
-  self.scalc = 0.5
+  self.slopebias = 1.0
+  self.slopescale = 89.0
+  self.slopediv = 99.0
+  self.rorbias = 0.01
+  self.basenumer = 1.0
+  self.power = math.pi
+  self.scalar = 0.5
   self.error = 1e6
+ ##################################
  def permute(self):
-  self.biasa += random.uniform(-0.5,0.5)
-  self.scala += random.uniform(-2.0,2.0)
-  self.diva += random.uniform(-2.0,2.0)
-  self.biasb += random.uniform(-0.01,0.1)
-  self.basec += random.uniform(-0.5,0.5)
-  self.powc += random.uniform(-2.0,2.0)
-  self.scalc += random.uniform(-0.49,1)
+  self.slopebias += random.uniform(-0.5,0.5)
+  self.slopescale += random.uniform(-2.0,2.0)
+  self.slopediv += random.uniform(-2.0,2.0)
+  self.rorbias += random.uniform(-0.01,0.1)
+  self.basenumer += random.uniform(-0.5,0.5)
+  self.power += random.uniform(-2.0,2.0)
+  self.scalar += random.uniform(-0.49,1)
+ ##################################
  def transform(self,value):
-  slope = self.biasa+(value*self.scala)/self.diva
-  ror = slope2ror(slope,self.biasb)
-  computed = math.pow(self.basec/ror,self.powc)*self.scalc
+  slope = self.slopebias+(value*self.slopescale)/self.slopediv
+  ror = slope2ror(slope,self.rorbias)
+  computed = math.pow(self.basenumer/ror,self.power)*self.scalar
   return computed
-
-bestmodel = model() # initial best
+ ##################################
+ def report(self,dset):
+  print("########################################")
+  print(dset._name+" error<%g>"%self.error)
+  print(dset._name+" slopebias<%g>"%self.slopebias)
+  print(dset._name+" slopescale<%g>"%self.slopescale)
+  print(dset._name+" slopediv<%g>"%self.slopediv)
+  print(dset._name+" rorbias<%g>"%self.rorbias)
+  print(dset._name+" basenumer<%g>"%self.basenumer)
+  print(dset._name+" power<%g>"%self.power)
+  print(dset._name+" scalar<%g>"%self.scalar)
+  print("##")
+  index = 0
+  for ival in dset._keys:
+   desired = dset._vals[index]
+   computed = self.transform(ival)
+   print(dset._name+" desired<%g> computed<%g>"%(desired,computed))
+   index+=1
+  print("########################################")
+ ##################################
 
 ########################################
-# find best fit
+# find best fit for one dataset
 ########################################
 
-for i in range(1,200000):
- m = model()
- m.permute()
- index = 0
- error = 0.0
- for ival in a:
-  desired = b[index]
-  computed = m.transform(ival)
-  error += abs(desired-computed)#/math.pow(desired,0.5)
-  #print("ival<%d> slope<%g> ror<%g> desired<%g> computed<%g>"%(ival,slope,ror,desired,computed))
-  index+=1
- if(error<bestmodel.error):
-  bestmodel = m
-  bestmodel.error = error
- if i%10000==0:
+def perform_dataset(dset):
+ bestmodel = model() # initial best
+ for i in range(1,250000):
+  m = model()
+  m.permute()
+  index = 0
+  error = 0.0
+  for ival in dset._keys:
+   desired = dset._vals[index]
+   computed = m.transform(ival)
+   error += abs(desired-computed)/math.pow(desired,0.5)
+   index+=1
+  if(error<bestmodel.error):
+   bestmodel = m
+   bestmodel.error = error
+  if i%10000==0:
    print("iteration<%d>"%i)
+ return bestmodel
 
 ########################################
-# report results
+# submit jobs
 ########################################
 
-print("best error<%g>"%bestmodel.error)
-print("best biasa<%g>"%bestmodel.biasa)
-print("best scala<%g>"%bestmodel.scala)
-print("best diva<%g>"%bestmodel.diva)
-print("best biasb<%g>"%bestmodel.biasb)
-print("best basec<%g>"%bestmodel.basec)
-print("best powc<%g>"%bestmodel.powc)
-print("best scalc<%g>"%bestmodel.scalc)
+async0 = opq.submit(perform_dataset, wa_env_data)
+async1 = opq.submit(perform_dataset, lowp_env_data)
+async2 = opq.submit(perform_dataset, midp_env_data)
+async3 = opq.submit(perform_dataset, hip_env_data)
+async4 = opq.submit(perform_dataset, fullp_env_data)
 
-index = 0
-for ival in a:
-  desired = b[index]
-  computed = bestmodel.transform(ival)
-  print( "desired<%g> computed<%g>"%(desired,computed))
-  index+=1
+########################################
+# report jobs
+########################################
+
+async0.result().report(wa_env_data)
+async1.result().report(lowp_env_data)
+async2.result().report(midp_env_data)
+async3.result().report(hip_env_data)
