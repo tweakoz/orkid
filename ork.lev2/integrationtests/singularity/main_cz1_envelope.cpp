@@ -17,8 +17,8 @@ int main(int argc, char** argv) {
     auto basepath = basePath() / "casioCZ";
     auto czdataa  = CzData::load(basepath / "factoryA.bnk", "bank1");
     auto czdatab  = CzData::load(basepath / "factoryB.bnk", "bank2");
-    auto bnk      = czdatab->_bankdata;
-    program       = bnk->findProgramByName("SITAR");
+    auto bnk      = czdataa->_bankdata;
+    program       = bnk->findProgramByName("BRASS 2");
     layerdata     = program->getLayer(0);
   } else {
     auto mutable_program   = std::make_shared<ProgramData>();
@@ -118,12 +118,12 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   // envelope viewer
   //////////////////////////////////////
-  controllerdata_ptr_t inspect_env = layerdata->controllerByName("DCAENV0");
+  controllerdata_ptr_t inspect_env = layerdata->controllerByName("DCWENV1");
   auto env_source                  = inspect_env->createScopeSource();
   auto envview                     = create_envelope_analyzer(app->_hudvp);
   env_source->connect(envview->_sink);
   envview->setRect(-10, 720 - 467, 1300, 477, true);
-  envview->_vars.makeValueForKey<float>("timewidth") = 0.1f;
+  envview->_vars.makeValueForKey<float>("timewidth") = 15.0f;
   //////////////////////////////////////
   // play test notes
   //////////////////////////////////////

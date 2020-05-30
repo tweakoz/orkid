@@ -24,12 +24,47 @@ CzProgData::CzProgData() {
 ///////////////////////////////////////////////////////////////////////////////
 // slope = tan-1(rise/run)
 ///////////////////////////////////////////////////////////////////////////////
-float slope2ror(float slope) {
-  float bias        = 0.1f;
+float slope2ror(float slope, float bias) {
   float clamped     = std::clamp(slope + bias, 0.0f, 90.0f - bias);
   float riseoverrun = tanf(clamped * pi / 180.0);
   return riseoverrun;
 }
+///////////////////////////////////////////
+struct ratelevmodel {
+  float _biasa = 0.0f;
+  float _scala = 0.0f;
+  float _diva  = 0.0f;
+  float _biasb = 0.0f;
+  float _basec = 0.0f;
+  float _powc  = 0.0f;
+  float _scalc = 0.0f;
+  void wamodel() {
+    _biasa = 1.09252f;
+    _scala = 90.9917f;
+    _diva  = 97.4786f;
+    _biasb = 0.102644f;
+    _basec = 1.04686f;
+    _powc  = 2.6284f;
+    _scalc = 0.635746f;
+  }
+  void pmodel() {
+    _biasa = 1.04262f;
+    _scala = 87.6609f;
+    _diva  = 100.543f;
+    _biasb = 0.102852f;
+    _basec = 1.06407f;
+    _powc  = 3.42532f;
+    _scalc = 0.729096f;
+  }
+
+  float transform(float value) {
+    float slope    = _biasa + (value * _scala) / _diva;
+    float ror      = slope2ror(slope, _biasb);
+    float computed = powf(_basec / ror, _powc) * _scalc;
+    return computed;
+  }
+};
+
 ///////////////////////////////////////////
 float decode_a_envlevel(int value) {
   int normed = (value * 99) / 127 + 1;
@@ -46,21 +81,18 @@ float decode_a_envlevel(int value) {
 }
 ///////////////////////////////////////////
 float decode_a_envrate(int value, float delta) {
-  int islope = (value * 99) / 119 + 1;
+  int uservalue = (value * 99) / 119 + 1;
   switch (value) {
     case 0:
-      islope = 0;
+      uservalue = 0;
       break;
     case 0x7f:
-      islope = 99;
+      uservalue = 99;
       break;
   }
-  float slope  = (islope * 90.0f / 99.0f);
-  float ror    = slope2ror(slope);
-  float scalar = 0.5f;
-  float run    = scalar * fabs(delta) / ror;
-  printf("slope<%g> ror<%g> delta<%g> run<%g>\n", slope, ror, delta, run);
-  return run;
+  ratelevmodel model;
+  model.wamodel();
+  return model.transform(uservalue) * fabs(delta);
 }
 ///////////////////////////////////////////
 float decode_w_envlevel(int value) {
@@ -74,42 +106,36 @@ float decode_w_envlevel(int value) {
       break;
   }
   float fn = float(normed) / 99.0f;
-  return powf(fn, 0.25);
+  return powf(fn, 1.0f);
 }
 ///////////////////////////////////////////
 float decode_w_envrate(int value, float delta) {
-  int islope = (((value - 8) * 99) / 119) + 1;
+  int uservalue = (((value - 8) * 99) / 119) + 1;
   switch (value) {
     case 0:
-      islope = 0;
+      uservalue = 0;
       break;
     case 0x7f:
-      islope = 99;
+      uservalue = 99;
       break;
   }
-  float slope  = (islope * 90.0f / 99.0f);
-  float ror    = slope2ror(slope);
-  float scalar = 0.20f;
-  float run    = scalar * fabs(delta) / ror;
-  printf("slope<%g> ror<%g> delta<%g> run<%g>\n", slope, ror, delta, run);
-  return run;
+  ratelevmodel model;
+  model.wamodel();
+  return model.transform(uservalue) * fabs(delta);
 }
 float decode_p_envrate(int value, float delta) {
-  float islope = (value * 99) / 127 + 1;
+  float uservalue = (value * 99) / 127 + 1;
   switch (value) {
     case 0:
-      islope = 0;
+      uservalue = 0;
       break;
     case 0x7f:
-      islope = 99;
+      uservalue = 99;
       break;
   }
-  float slope  = (islope * 90.0f / 99.0f);
-  float ror    = slope2ror(slope);
-  float scalar = 0.2f;
-  float run    = scalar * fabs(delta) / ror;
-  printf("slope<%g> ror<%g> delta<%g> run<%g>\n", slope, ror, delta, run);
-  return run;
+  ratelevmodel model;
+  model.pmodel();
+  return model.transform(uservalue) * fabs(delta);
 }
 ///////////////////////////////////////////////////////////////////////////////
 float decode_p_envlevel(int value) {
@@ -430,7 +456,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
                              const KeyOnInfo& KOI) -> EnvPoint { //
       EnvPoint outp = inp;
       int ikeydelta = KOI._key;
-      float base    = 1.0 - (oscdata->_dcaKeyFollow * 0.0003);
+      float base    = 1.0 - (oscdata->_dcaKeyFollow * 0.001);
       float power   = pow(base, ikeydelta);
       printf("DCA kf<%d> ikeydelta<%d> base<%0.3f> power<%0.3f>\n", oscdata->_dcaKeyFollow, ikeydelta, base, power);
       outp._time *= power;
