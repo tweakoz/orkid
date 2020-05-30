@@ -22,92 +22,64 @@ CzProgData::CzProgData() {
   _oscData[1] = std::make_shared<CzOscData>();
 }
 ///////////////////////////////////////////////////////////////////////////////
-auto genwacurve = []() -> MultiCurve1D {
-  MultiCurve1D curve;
-  auto& s = curve.mSegmentTypes;
-
-  curve.SetPoint(0, 0.0, 105.0);
-  curve.SetPoint(1, 1.0, 0.004);
-
-  s.resize(17);
-  for (int i = 0; i < 17; i++)
-    s[i] = EMCST_LINEAR;
-
-  auto& v = curve.mVertices;
-  v.AddSorted(0.1, 35.0);
-  v.AddSorted(0.2, 13.0);
-  v.AddSorted(0.3, 4.33);
-  v.AddSorted(0.4, 1.63);
-  v.AddSorted(0.45, 0.928);
-  v.AddSorted(0.5, 0.54);
-  v.AddSorted(0.55, 0.323);
-  v.AddSorted(0.6, 0.19);
-  v.AddSorted(0.65, 0.112);
-  v.AddSorted(0.7, 0.066);
-  v.AddSorted(0.75, 0.038);
-  v.AddSorted(0.8, 0.025);
-  v.AddSorted(0.85, 0.016);
-  v.AddSorted(0.9, 0.008);
-  v.AddSorted(0.95, 0.006);
-  return curve;
-};
-auto genpcurve = []() -> MultiCurve1D {
-  MultiCurve1D curve;
-  auto& s = curve.mSegmentTypes;
-  curve.SetPoint(0, 0.0, 235.0);
-  curve.SetPoint(1, 1.0, 0.004);
-
-  s.resize(17);
-  for (int i = 0; i < 17; i++)
-    s[i] = EMCST_LINEAR;
-
-  auto& v = curve.mVertices;
-  v.AddSorted(0.05, 134.0);
-  v.AddSorted(0.1, 70.0);
-  v.AddSorted(0.2, 26.0);
-  v.AddSorted(0.3, 8.5);
-  v.AddSorted(0.4, 2.68);
-  v.AddSorted(0.5, 0.92);
-  v.AddSorted(0.55, 0.526);
-  v.AddSorted(0.6, 0.29);
-  v.AddSorted(0.65, 0.160);
-  v.AddSorted(0.7, 0.097);
-  v.AddSorted(0.75, 0.054);
-  v.AddSorted(0.8, 0.032);
-  v.AddSorted(0.85, 0.017);
-  v.AddSorted(0.9, 0.010);
-  v.AddSorted(0.95, 0.006);
-
-  return curve;
-};
+// slope = tan-1(rise/run)
 ///////////////////////////////////////////////////////////////////////////////
-float decode_wa_envrate(int value) {
-  static auto curve = genwacurve();
-
-  int munged = (((value - 8) * 99) / 119) + 1;
-  switch (value) {
-    case 0:
-      munged = 0;
-      break;
-    case 0x7f:
-      munged = 99;
-      break;
-  }
-  return curve.Sample(float(munged) / 99.0f) * 0.125;
+float slope2ror(float slope) {
+  float bias        = 0.1f;
+  float clamped     = std::clamp(slope + bias, 0.0f, 90.0f - bias);
+  float riseoverrun = tanf(clamped * pi / 180.0);
+  return riseoverrun;
 }
-float decode_p_envrate(int value) {
-  static auto curve = genpcurve();
-  // int munged        = 1 + (r7 * 99) / 127;
-  int munged = (((value - 8) * 99) / 119) + 1;
+float decode_a_envrate(int value, float delta) {
+  int islope = (((value - 8) * 99) / 119) + 1;
   switch (value) {
     case 0:
-      munged = 0;
+      islope = 0;
       break;
     case 0x7f:
-      munged = 99;
+      islope = 99;
       break;
   }
-  return curve.Sample(float(munged) / 99.0f) * 0.125;
+  float slope  = (islope * 90.0f / 99.0f);
+  float ror    = slope2ror(slope);
+  float scalar = (delta >= 0.0f) ? 0.002f : 0.004f;
+  float run    = scalar * fabs(delta) / ror;
+  printf("slope<%g> ror<%g> delta<%g> run<%g>\n", slope, ror, delta, run);
+  return run;
+}
+float decode_w_envrate(int value, float delta) {
+  int islope = (((value - 8) * 99) / 119) + 1;
+  switch (value) {
+    case 0:
+      islope = 0;
+      break;
+    case 0x7f:
+      islope = 99;
+      break;
+  }
+  float slope  = (islope * 90.0f / 99.0f);
+  float ror    = slope2ror(slope);
+  float scalar = (delta >= 0.0f) ? 0.0003f : 0.004f;
+  float run    = scalar * fabs(delta) / ror;
+  printf("slope<%g> ror<%g> delta<%g> run<%g>\n", slope, ror, delta, run);
+  return run;
+}
+float decode_p_envrate(int value, float delta) {
+  float islope = (((value - 8) * 99) / 119) + 1;
+  switch (value) {
+    case 0:
+      islope = 0;
+      break;
+    case 0x7f:
+      islope = 99;
+      break;
+  }
+  float slope  = (islope * 90.0f / 99.0f);
+  float ror    = slope2ror(slope);
+  float scalar = (delta >= 0.0f) ? 0.0003f : 0.001f;
+  float run    = scalar * fabs(delta) / ror;
+  printf("slope<%g> ror<%g> delta<%g> run<%g>\n", slope, ror, delta, run);
+  return run;
 }
 ///////////////////////////////////////////////////////////////////////////////
 float decode_p_envlevel(int value) {
@@ -265,21 +237,28 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     u8 MAMV = bytes[byteindex++];
     u8 MWMD = bytes[byteindex++]; // DCW key follow
     u8 MWMV = bytes[byteindex++];
+    u8 PMAL = bytes[byteindex++]; // DCA1 end
     ///////////////////////////////////////////////////////////
-    u8 PMAL = bytes[byteindex++];                       // DCA1 end
+    float prevlevel = 0;
     for (int i = 0; i < 8; i++) {                       // DCA env (16 bytes)
       u8 r                        = bytes[byteindex++]; // byte = (119*r/99)
       u8 l                        = bytes[byteindex++]; // byte = (127*l/99)
       u8 r7                       = r & 0x7f;
       u8 l7                       = l & 0x7f;
       OSC->_dcaEnv._decreasing[i] = (r & 0x80);
+
+      float thislev  = (l7 * 99) / 127;
+      float deltalev = thislev - prevlevel;
+      prevlevel      = thislev;
+
       if (l & 0x80)
         OSC->_dcaEnv._sustPoint = i;
-      OSC->_dcaEnv._time[i]  = decode_wa_envrate(r7);
-      OSC->_dcaEnv._level[i] = (l7 * 99) / 127;
+      OSC->_dcaEnv._time[i]  = decode_a_envrate(r7, deltalev);
+      OSC->_dcaEnv._level[i] = thislev;
     }
     ///////////////////////////////////////////////////////////
-    u8 PMWL = bytes[byteindex++];                       // DCW1 end
+    u8 PMWL   = bytes[byteindex++]; // DCW1 end
+    prevlevel = 0;
     for (int i = 0; i < 8; i++) {                       // DCW env (16 bytes)
       u8 r                        = bytes[byteindex++]; // byte = (119*r/99)+8
       u8 l                        = bytes[byteindex++]; // byte = (127*l/99)
@@ -288,11 +267,17 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
       OSC->_dcwEnv._decreasing[i] = (r & 0x80);
       if (l & 0x80)
         OSC->_dcwEnv._sustPoint = i;
-      OSC->_dcwEnv._time[i]  = decode_wa_envrate(((r7 - 8) * 99) / 119);
-      OSC->_dcwEnv._level[i] = (l7 * 99) / 127;
+
+      float thislev  = (l7 * 99) / 127;
+      float deltalev = thislev - prevlevel;
+      prevlevel      = thislev;
+
+      OSC->_dcwEnv._time[i]  = decode_w_envrate(r7, deltalev);
+      OSC->_dcwEnv._level[i] = thislev;
     }
     ///////////////////////////////////////////////////////////
-    u8 PMPL = bytes[byteindex++]; // DCO1 end
+    u8 PMPL   = bytes[byteindex++]; // DCO1 end
+    prevlevel = 0;
     for (int i = 0; i < 8; i++) { // DCO (pitch) env (16 bytes)
       u8 r  = bytes[byteindex++]; // byte = (127*r/99)
       u8 l  = bytes[byteindex++]; // byte = (127*l/99)
@@ -302,8 +287,14 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
         OSC->_dcoEnv._sustPoint = i;
 
       OSC->_dcoEnv._decreasing[i] = (r & 0x80);
-      OSC->_dcoEnv._time[i]       = decode_p_envrate(r7);
-      OSC->_dcoEnv._level[i]      = decode_p_envlevel(l7);
+
+      float thislev  = decode_p_envlevel(l7);
+      float deltalev = fabs(thislev - prevlevel) / 8400.0f;
+      prevlevel      = thislev;
+
+      OSC->_dcoEnv._level[i] = decode_p_envlevel(l7);
+      float decoded_time     = decode_p_envrate(r7, deltalev);
+      OSC->_dcoEnv._time[i]  = decoded_time;
     }
     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
@@ -348,10 +339,13 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
 
   auto make_dco = [&](lyrdata_ptr_t layerdata, czxdata_ptr_t oscdata, int dcochannel) {
     oscdata->_dspchannel = dcochannel;
+    auto dcoenvname      = FormatString("DCOENV%d", dcochannel);
+    auto dcaenvname      = FormatString("DCAENV%d", dcochannel);
+    auto dcwenvname      = FormatString("DCWENV%d", dcochannel);
     /////////////////////////////////////////////////
     // Pitch Envelope
     /////////////////////////////////////////////////
-    auto DCOENV             = layerdata->appendController<RateLevelEnvData>("DCOENV");
+    auto DCOENV             = layerdata->appendController<RateLevelEnvData>(dcoenvname);
     DCOENV->_ampenv         = false;
     const auto& srcdcoenv   = oscdata->_dcoEnv;
     DCOENV->_sustainSegment = srcdcoenv._sustPoint;
@@ -364,7 +358,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     /////////////////////////////////////////////////
     // Wave(filter) Envelope
     /////////////////////////////////////////////////
-    auto DCWENV             = layerdata->appendController<RateLevelEnvData>("DCWENV");
+    auto DCWENV             = layerdata->appendController<RateLevelEnvData>(dcwenvname);
     DCWENV->_ampenv         = false;
     const auto& srcdcwenv   = oscdata->_dcwEnv;
     DCWENV->_sustainSegment = srcdcwenv._sustPoint;
@@ -379,7 +373,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
                              const KeyOnInfo& KOI) -> EnvPoint { //
       EnvPoint outp = inp;
       int ikeydelta = KOI._key;
-      float base    = 1.0 - (oscdata->_dcwKeyFollow * 0.005);
+      float base    = 1.0 - (oscdata->_dcwKeyFollow * 0.001);
       float power   = pow(base, ikeydelta);
       // printf("DCW kf<%d> ikeydelta<%d> base<%0.3f> power<%0.3f>\n", oscdata->_dcwKeyFollow, ikeydelta, base, power);
       outp._level *= power;
@@ -388,7 +382,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     /////////////////////////////////////////////////
     // Amplitude Envelope
     /////////////////////////////////////////////////
-    auto DCAENV             = layerdata->appendController<RateLevelEnvData>("DCAENV");
+    auto DCAENV             = layerdata->appendController<RateLevelEnvData>(dcaenvname);
     DCAENV->_ampenv         = true;
     const auto& srcdcaenv   = oscdata->_dcaEnv;
     DCAENV->_sustainSegment = srcdcaenv._sustPoint;
@@ -403,7 +397,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
                              const KeyOnInfo& KOI) -> EnvPoint { //
       EnvPoint outp = inp;
       int ikeydelta = KOI._key;
-      float base    = 1.0 - (oscdata->_dcaKeyFollow * 0.005);
+      float base    = 1.0 - (oscdata->_dcaKeyFollow * 0.001);
       float power   = pow(base, ikeydelta);
       // printf("DCA kf<%d> ikeydelta<%d> base<%0.3f> power<%0.3f>\n", oscdata->_dcaKeyFollow, ikeydelta, base, power);
       outp._time *= power;
@@ -433,13 +427,13 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     amp_param._mods._src1Depth = float(oscdata->_dcaDepth) / 15.0f;
     /////////////////////////////////////////////////
     if (dcochannel == 1) { // add detune
-      auto CZPITCH            = layerdata->appendController<CustomControllerData>("CZPITCH");
-      pitch_mod._src2         = CZPITCH;
+      auto DETUNE             = layerdata->appendController<CustomControllerData>("DCO1DETUNE");
+      pitch_mod._src2         = DETUNE;
       pitch_mod._src2MinDepth = 1.0;
       pitch_mod._src2MaxDepth = 1.0;
-      CZPITCH->_onkeyon       = [czprogdata](
-                              CustomControllerInst* cci, //
-                              const KeyOnInfo& KOI) {    //
+      DETUNE->_onkeyon        = [czprogdata](
+                             CustomControllerInst* cci, //
+                             const KeyOnInfo& KOI) {    //
         cci->_curval = czprogdata->_detuneCents;
         printf("DETUNE<%g>\n", cci->_curval);
       };

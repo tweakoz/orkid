@@ -75,44 +75,32 @@ void RateLevelEnvInst::initSeg(int iseg) {
   const auto& base_segment = segs[_segmentIndex];
   auto adjusted_segment    = edata._envadjust(base_segment, iseg, _konoffinfo);
   //////////////////////////////////////////////
-  _startval = _curval;
-  _destval  = adjusted_segment._level;
-  _curshape = adjusted_segment._shape;
+  _startval   = _curval;
+  _rawdestval = base_segment._level;
+  _rawtime    = base_segment._time;
+  _destval    = adjusted_segment._level;
+  _curshape   = base_segment._shape;
   //////////////////////////////////////////////
-  float segtime = adjusted_segment._time;
+  _adjtime = adjusted_segment._time;
   //////////////////////////////////////////////
-  if (segtime > 0.0f) {
-    _lerpincr  = getInverseControlRate() / segtime;
+  if (_adjtime > 0.0f) {
+    _lerpincr  = getInverseControlRate() / _adjtime;
     _lerpindex = 0.0f;
   } else {
     _lerpincr  = 0.0f;
     _lerpindex = 1.0f;
   }
-  if (1)
-    printf(
-        "env<%p> initseg<%d> _startval<%g> _destval<%g> segtime<%g> _lerpincr<%g>\n", //
-        this,
-        iseg,
-        _startval,
-        _destval,
-        segtime,
-        _lerpincr);
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-// -1   0..1
-// -2   .125 .. .875
-// -3   .25
 float RateLevelEnvInst::shapedvalue() const {
   float clamped_index = std::clamp(_lerpindex, 0.0f, 1.0f);
   float index         = _curshape >= 0.0f //
                     ? powf(clamped_index, _curshape)
                     : smoothstep(-_curshape * 0.05, 1 + _curshape * 0.05, clamped_index);
   float rawval = lerp(_startval, _destval, index);
-  return std::clamp(rawval, 0.0f, 1.0f);
+  return std::clamp(rawval, _clampmin, _clampmax);
 }
 ///////////////////////////////////////////////////////////////////////////////
-
 void RateLevelEnvInst::compute() // final
 {
   if (nullptr == _data)
@@ -182,7 +170,7 @@ void RateLevelEnvInst::compute() // final
     }
       ////////////////////////////////////////////////////////////////////////////
     case 3: // done
-      printf("env<%p> done\n", this);
+      // printf("env<%p> done\n", this);
       if (_ampenv) {
         // printf("ampenv<%p> RELEASING LAYER<%p>\n", this, _layer);
         _layer->release();
@@ -222,6 +210,20 @@ void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI) {
   // printf("env<%p> keyon\n", this);
   //////////////////////////////////
   if (_data) {
+    ///////////////////////
+    // get env vertical extent
+    ///////////////////////
+    _clampmin = 1e6;
+    _clampmax = -1e6;
+    for (auto seg : _data->_segments) {
+      float s = seg._level;
+      if (s > _clampmax)
+        _clampmax = s;
+      if (s < _clampmin)
+        _clampmin = s;
+    }
+    _clamprange = (_clampmax - _clampmin);
+    ///////////////////////
     _curval = 0.0f;
     initSeg(0);
     if (_ampenv)
@@ -229,9 +231,12 @@ void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI) {
   }
   //////////////////////////////////
   else {
-    _startval = 0.0f;
-    _destval  = 0.0f;
-    _curval   = 0.0f;
+    _startval   = 0.0f;
+    _destval    = 0.0f;
+    _curval     = 0.0f;
+    _clampmin   = 0.0f;
+    _clampmax   = 1.0f;
+    _clamprange = 1.0f;
   }
   //////////////////////////////////
 }

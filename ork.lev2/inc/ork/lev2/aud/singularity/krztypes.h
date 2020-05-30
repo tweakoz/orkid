@@ -133,8 +133,8 @@ static constexpr double pi2  = 3.141592654 * 2.0;
 static constexpr double pid2 = 3.141592654 * 0.5;
 static const double sqrt2    = sqrt(2.0);
 ///////////////////////////////////////////////////////////////////////////////
-static const int frames_per_dsppass     = 256;
-static const int frames_per_controlpass = 32;
+static constexpr int frames_per_dsppass     = 256;
+static constexpr int frames_per_controlpass = 32;
 inline constexpr float getSampleRate() {
   return 48000.0f;
 }
@@ -143,6 +143,9 @@ inline constexpr float getInverseSampleRate() {
 }
 inline constexpr float getControlRate() {
   return float(frames_per_controlpass) / 48000.0f;
+}
+inline constexpr float samplesPerControlPeriod() {
+  return getSampleRate() / float(frames_per_controlpass);
 }
 inline constexpr float getInverseControlRate() {
   return float(frames_per_controlpass) / 48000.0f;

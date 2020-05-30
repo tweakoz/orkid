@@ -118,6 +118,7 @@ struct SignalScope {
   void setRect(int iX, int iY, int iW, int iH, bool snap = false);
   hudpanel_ptr_t _hudpanel;
   scopesink_ptr_t _sink;
+  varmap::VarMap _vars;
 };
 ///////////////////////////////////////////////////////////////////////////////
 signalscope_ptr_t create_oscilloscope(hudvp_ptr_t vp);

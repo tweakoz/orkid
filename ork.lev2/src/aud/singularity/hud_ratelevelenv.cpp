@@ -5,13 +5,17 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
-static const int MAXSAMPLES = 1500 * 15;
-///////////////////////////////////////////////////////////////////////////////
 struct RateLevelSurf final : public ui::Surface {
   RateLevelSurf();
   void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
   void DoInit(lev2::Context* pt) override;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
+  void setTimeWidth(float w) {
+    _timewidthsamples = int(samplesPerControlPeriod() * w);
+    if (_timewidthsamples != _samples.size()) {
+      _samples.resize(_timewidthsamples);
+    }
+  }
   ork::lev2::CTXBASE* _ctxbase = nullptr;
   std::vector<float> _samples;
   std::atomic<int> _curwritesample = 0;
@@ -20,6 +24,8 @@ struct RateLevelSurf final : public ui::Surface {
   int _updatecount                 = 0;
   const RateLevelEnvData* _envdata = nullptr;
   const RateLevelEnvInst* _envinst = nullptr;
+  signalscope_ptr_t _instrument;
+  int _timewidthsamples = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
 signalscope_ptr_t create_envelope_analyzer(hudvp_ptr_t vp) {
@@ -30,6 +36,7 @@ signalscope_ptr_t create_envelope_analyzer(hudvp_ptr_t vp) {
   hudpanel->_uipanel->setChild(hudpanel->_uisurface);
   hudpanel->_uipanel->snap();
   auto instrument              = std::make_shared<SignalScope>();
+  ratelevsurf->_instrument     = instrument;
   instrument->_hudpanel        = hudpanel;
   instrument->_sink            = std::make_shared<ScopeSink>();
   instrument->_sink->_onupdate = [ratelevsurf](const ScopeSource& src) { //
@@ -45,26 +52,27 @@ signalscope_ptr_t create_envelope_analyzer(hudvp_ptr_t vp) {
       ///////////////////////////////
       // single out attached envelope
       ///////////////////////////////
+      int maxsamps = ratelevsurf->_timewidthsamples;
       if (ratelevsurf->_envinst == ratelev) {
         switch (ratelev->_state) {
           case 0:
           case 1:
           case 2:
           case 3: {
-            ratelevsurf->_cursegindex                   = ratelev->_segmentIndex;
-            ratelevsurf->_envdata                       = ratelev->_data;
-            int isample                                 = ratelevsurf->_curwritesample++;
-            ratelevsurf->_samples[isample % MAXSAMPLES] = ratelev->_curval;
-            ratelevsurf->_curreadsample                 = isample;
+            ratelevsurf->_cursegindex                 = ratelev->_segmentIndex;
+            ratelevsurf->_envdata                     = ratelev->_data;
+            int isample                               = ratelevsurf->_curwritesample++;
+            ratelevsurf->_samples[isample % maxsamps] = ratelev->_curval;
+            ratelevsurf->_curreadsample               = isample;
             break;
           }
           case 4:
           default: // detach
-            int isample                                 = ratelevsurf->_curwritesample++;
-            ratelevsurf->_samples[isample % MAXSAMPLES] = ratelev->_curval;
-            ratelevsurf->_curreadsample                 = isample;
-            ratelevsurf->_envdata                       = nullptr;
-            ratelevsurf->_envinst                       = nullptr;
+            int isample                               = ratelevsurf->_curwritesample++;
+            ratelevsurf->_samples[isample % maxsamps] = ratelev->_curval;
+            ratelevsurf->_curreadsample               = isample;
+            ratelevsurf->_envdata                     = nullptr;
+            ratelevsurf->_envinst                     = nullptr;
         }
       }
       ratelevsurf->_updatecount++;
@@ -73,12 +81,15 @@ signalscope_ptr_t create_envelope_analyzer(hudvp_ptr_t vp) {
   };
   vp->addChild(hudpanel->_uipanel);
   vp->_hudpanels.insert(hudpanel);
+
+  float time_width                                      = 15.0f;
+  instrument->_vars.makeValueForKey<float>("timewidth") = time_width;
+  ratelevsurf->setTimeWidth(time_width);
   return instrument;
 }
 ///////////////////////////////////////////////////////////////////////////////
 RateLevelSurf::RateLevelSurf() //
     : ui::Surface("Scope", 0, 0, 32, 32, fvec3(0.2, 0.1, 0.2), 1.0) {
-  _samples.resize(MAXSAMPLES); //
 }
 ///////////////////////////////////////////////////////////////////////////////
 void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
@@ -87,6 +98,9 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   auto syn     = synth::instance();
   auto vp      = syn->_hudvp;
   double time  = syn->_timeaccum;
+
+  float timewidth = _instrument->_vars.typedValueForKey<float>("timewidth");
+  setTimeWidth(timewidth);
 
   // auto scopebuf = _scopebuffers.begin_pull();
   // if (nullptr == scopebuf)
@@ -215,9 +229,9 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   float controlframerate = getSampleRate() / float(frames_per_controlpass);
   int space              = int(controlframerate);
-  for (int i = 0; i < MAXSAMPLES; i++) {
-    float fi  = float(MAXSAMPLES - i) / float(MAXSAMPLES);
-    float fni = fi - 1.0f / float(MAXSAMPLES);
+  for (int i = 0; i < _timewidthsamples; i++) {
+    float fi  = float(_timewidthsamples - i) / float(_timewidthsamples);
+    float fni = fi - 1.0f / float(_timewidthsamples);
     if ((i % space) == 0) {
       float x = (fi + fni) * 0.5f;
       lines.push_back(HudLine{
@@ -227,23 +241,25 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     }
   }
 
+  // printf("envmin<%g> envmax<%g> envrange<%g>\n", envmin, envmax, envrange);
   ///////////////////////
   // from hud samples
   ///////////////////////
 
-  int off          = _curreadsample % MAXSAMPLES;
-  int j            = (MAXSAMPLES + off) % MAXSAMPLES;
-  float prevsample = _samples[j];
+  int off             = _curreadsample % _timewidthsamples;
+  int j               = (_timewidthsamples + off) % _timewidthsamples;
+  float prevrawsample = _samples[j];
+  float prevsample    = (prevrawsample - _envinst->_clampmin) / _envinst->_clamprange;
 
-  for (int i = 0; i < MAXSAMPLES; i++) {
-    float fi  = float(MAXSAMPLES - i) / float(MAXSAMPLES);
-    float fni = fi - 1.0f / float(MAXSAMPLES);
-    int off   = _curreadsample % MAXSAMPLES;
-    int j     = (MAXSAMPLES + off - i) % MAXSAMPLES;
-
-    float sample = (i < _updatecount) ? _samples[j] : 0.0f;
-    auto p1      = fvec2(fi, prevsample) * scale + bias;
-    auto p2      = fvec2(fni, sample) * scale + bias;
+  for (int i = 0; i < _timewidthsamples; i++) {
+    float fi        = float(_timewidthsamples - i) / float(_timewidthsamples);
+    float fni       = fi - 1.0f / float(_timewidthsamples);
+    int off         = _curreadsample % _timewidthsamples;
+    int j           = (_timewidthsamples + off - i) % _timewidthsamples;
+    float rawsample = (i < _updatecount) ? _samples[j] : 0.0f;
+    float sample    = (rawsample - _envinst->_clampmin) / _envinst->_clamprange;
+    auto p1         = fvec2(fi, prevsample) * scale + bias;
+    auto p2         = fvec2(fni, sample) * scale + bias;
     lines.push_back(HudLine{
         p1, //
         p2,
@@ -329,6 +345,48 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       this, //
       context,
       FormatString("lerpindex: %g", _envinst->_lerpindex),
+      miscx,
+      (miscy++) * miscspc,
+      fontscale,
+      1,  // r
+      1,  // g
+      1); // b
+
+  drawtext(
+      this, //
+      context,
+      FormatString("rawtime: %g", _envinst->_rawtime),
+      miscx,
+      (miscy++) * miscspc,
+      fontscale,
+      1,  // r
+      1,  // g
+      1); // b
+  drawtext(
+      this, //
+      context,
+      FormatString("rawlevel: %g", _envinst->_rawdestval),
+      miscx,
+      (miscy++) * miscspc,
+      fontscale,
+      1,  // r
+      1,  // g
+      1); // b
+
+  drawtext(
+      this, //
+      context,
+      FormatString("adjtime: %g", _envinst->_rawtime),
+      miscx,
+      (miscy++) * miscspc,
+      fontscale,
+      1,  // r
+      1,  // g
+      1); // b
+  drawtext(
+      this, //
+      context,
+      FormatString("adjlevel: %g", _envinst->_rawdestval),
       miscx,
       (miscy++) * miscspc,
       fontscale,

@@ -106,8 +106,6 @@ struct CZX final : public DspBlock {
   oschardsynctrack_ptr_t _hsynctrack;
   scopesynctrack_ptr_t _scopetrack;
   czxdata_constptr_t _oscdata;
-
-  static void initBlock(dspblkdata_ptr_t blockdata, czxdata_constptr_t czdata, int dcochannel);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

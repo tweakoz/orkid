@@ -89,7 +89,7 @@ void Alg::keyOn(DspKeyOnInfo& koi) {
     } else
       _stages[istage] = nullptr;
   }
-  printf("ALG<%p> numstages<%d>\n", this, numstages);
+  // printf("ALG<%p> numstages<%d>\n", this, numstages);
   ///////////////////////////////////////////////////
 
   // if (i == 0) // pitch block ?

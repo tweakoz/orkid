@@ -9,11 +9,11 @@ int main(int argc, char** argv) {
   auto app = createEZapp(argc, argv);
   prgdata_constptr_t program;
   lyrdata_ptr_t layerdata;
-
+  bool do_from_bank = true;
   //////////////////////////////////////////////////////////////////////////////
   // allocate program/layer data
   //////////////////////////////////////////////////////////////////////////////
-  if (1) {
+  if (do_from_bank) {
     auto basepath = basePath() / "casioCZ";
     auto czdata   = CzData::load(basepath / "factoryA.bnk", "bank1");
     auto bnk      = czdata->_bankdata;
@@ -32,18 +32,12 @@ int main(int argc, char** argv) {
     layerdata->_algdata = configureCz1Algorithm(1);
     auto dcostage       = layerdata->stageByName("DCO");
     auto ampstage       = layerdata->stageByName("AMP");
-    auto osc            = dcostage->appendTypedBlock<CZX>(czoscdata, 0);
+    auto dco            = dcostage->appendTypedBlock<CZX>(czoscdata, 0);
     auto amp            = ampstage->appendTypedBlock<AMP>();
-    //////////////////////////////////////
-    // setup modulators
-    //////////////////////////////////////
-    auto DCAENV = layerdata->appendController<RateLevelEnvData>("DCAENV");
-    auto DCWENV = layerdata->appendController<RateLevelEnvData>("DCWENV");
-    auto LFO2   = layerdata->appendController<LfoData>("MYLFO2");
-    auto LFO1   = layerdata->appendController<LfoData>("MYLFO1");
     //////////////////////////////////////
     // setup envelope
     //////////////////////////////////////
+    auto DCAENV     = layerdata->appendController<RateLevelEnvData>("DCAENV0");
     DCAENV->_ampenv = true;
     DCAENV->addSegment("seg0", .25, .25, 0.5f);
     DCAENV->addSegment("seg1", .25, .5, 1.5f);
@@ -54,7 +48,8 @@ int main(int argc, char** argv) {
     DCAENV->addSegment("seg6", 3, .5, -9.0f);
     DCAENV->addSegment("seg7", 3, .25, 4.0f);
     DCAENV->addSegment("seg8", 3, 0, 0.25f);
-    DCAENV->_ampenv = false;
+    //////////////////////////////////////
+    auto DCWENV = layerdata->appendController<RateLevelEnvData>("DCWENV0");
     DCWENV->addSegment("seg0", 0.1, .7);
     DCWENV->addSegment("seg1", 1, 1);
     DCWENV->addSegment("seg2", 2, .5);
@@ -62,19 +57,36 @@ int main(int argc, char** argv) {
     DCWENV->addSegment("seg4", 2, 1);
     DCWENV->addSegment("seg5", 40, 1);
     DCWENV->addSegment("seg6", 40, 0);
+    DCWENV->_ampenv = false;
+    //////////////////////////////////////
+    auto DCOENV = layerdata->appendController<RateLevelEnvData>("DCOENV0");
+    DCOENV->addSegment("seg0", 0.1, 1200);
+    DCOENV->addSegment("seg1", 4, 900);
+    DCOENV->addSegment("seg2", 3, 700);
+    DCOENV->addSegment("seg3", 2, 120);
+    DCOENV->addSegment("seg4", 2, 60);
+    DCOENV->addSegment("seg5", 1, 1);
+    DCOENV->addSegment("seg6", 1, 0);
+    DCOENV->_ampenv = false;
     //////////////////////////////////////
     // setup LFO
     //////////////////////////////////////
+    auto LFO1      = layerdata->appendController<LfoData>("MYLFO1");
     LFO1->_minRate = 0.25;
     LFO1->_maxRate = 0.25;
     LFO1->_shape   = "Sine";
+    auto LFO2      = layerdata->appendController<LfoData>("MYLFO2");
     LFO2->_minRate = 3.3;
     LFO2->_maxRate = 3.3;
     LFO2->_shape   = "Sine";
     //////////////////////////////////////
     // setup modulation routing
     //////////////////////////////////////
-    auto& modulation_index_param      = osc->_paramd[0]._mods;
+    auto& pitch_mod      = dco->_paramd[0]._mods;
+    pitch_mod._src1      = DCOENV;
+    pitch_mod._src1Depth = 1.0f;
+    //////////////////////////////////////
+    auto& modulation_index_param      = dco->_paramd[1]._mods;
     modulation_index_param._src1      = DCWENV;
     modulation_index_param._src1Depth = 1.0;
     // modulation_index_param._src2      = LFO1;
@@ -105,16 +117,21 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   // envelope viewer
   //////////////////////////////////////
-  controllerdata_ptr_t inspect_env = layerdata->controllerByName("DCAENV");
+  controllerdata_ptr_t inspect_env = layerdata->controllerByName("DCOENV0");
   auto env_source                  = inspect_env->createScopeSource();
   auto envview                     = create_envelope_analyzer(app->_hudvp);
   env_source->connect(envview->_sink);
   envview->setRect(-10, 720 - 467, 1300, 477, true);
+  envview->_vars.makeValueForKey<float>("timewidth") = 0.1f;
   //////////////////////////////////////
   // play test notes
   //////////////////////////////////////
-  enqueue_audio_event(program, 1.0f, 240.0, 48);
-  enqueue_audio_event(program, 6.5f, 240.0, 64);
+  if (do_from_bank) {
+    for (int i = 0; i < 36; i++)
+      enqueue_audio_event(program, 1.0f + (i * 3), 3.0, 48);
+  } else {
+    enqueue_audio_event(program, 1.5f, 240.0, 48);
+  }
   //////////////////////////////////////////////////////////////////////////////
   // test harness UI
   //////////////////////////////////////////////////////////////////////////////

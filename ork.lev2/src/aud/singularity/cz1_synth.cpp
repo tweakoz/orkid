@@ -339,14 +339,6 @@ void CZX::doKeyOff() // final
   int dcochannel = _dbd->_vars.typedValueForKey<int>("dcochannel").value();
   // printf("CZX<%p> dcochannel<%d> keyoff\n", this, dcochannel);
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-void CZX::initBlock(
-    dspblkdata_ptr_t blockdata, //
-    czxdata_constptr_t czdata,
-    int dcochannel) {
-}
 ///////////////////////////////////////////////////////////////////////////////
 CZXDATA::CZXDATA(czxdata_constptr_t czdata, int dcochannel)
     : _cxzdata(czdata)

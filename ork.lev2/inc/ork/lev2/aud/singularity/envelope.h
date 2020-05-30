@@ -105,10 +105,16 @@ struct RateLevelEnvInst : public ControllerInst {
   Layer* _layer;
   int _segmentIndex;
   float _startval;
+  float _rawdestval;
+  float _rawtime;
+  float _adjtime;
   float _destval;
   float _lerpindex;
   float _lerpincr;
-  float _curshape = 1.0f;
+  float _curshape   = 1.0f;
+  float _clampmin   = 0.0f;
+  float _clampmax   = 1.0f;
+  float _clamprange = 1.0f;
 
   int _framesrem;
   bool _released;

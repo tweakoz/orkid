@@ -164,7 +164,7 @@ struct DspBlock {
     return false;
   }
 
-  dspblkdata_constptr_t _dbd;
+  const DspBlockData* _dbd;
   int _numParams;
   int numOutputs() const;
   int numInputs() const;
