@@ -64,26 +64,26 @@ def slope2ror(slope,bias):
 class model:
  ##################################
  def __init__(self):
-  self.slopebias = 1.0
-  self.slopescale = 89.0
-  self.slopediv = 99.0
+  self.inpbias = 1.0
+  self.inpscale = 89.0
+  self.inpdiv = 99.0
   self.rorbias = 0.01
   self.basenumer = 1.0
-  self.power = math.pi
+  self.power = 3.0
   self.scalar = 0.5
   self.error = 1e6
  ##################################
  def permute(self):
-  self.slopebias += random.uniform(-0.5,0.5)
-  self.slopescale += random.uniform(-2.0,2.0)
-  self.slopediv += random.uniform(-2.0,2.0)
+  self.inpbias += random.uniform(-0.5,0.5)
+  self.inpscale += random.uniform(-2.0,2.0)
+  self.inpdiv += random.uniform(-2.0,2.0)
   self.rorbias += random.uniform(-0.01,0.1)
   self.basenumer += random.uniform(-0.5,0.5)
   self.power += random.uniform(-2.0,2.0)
   self.scalar += random.uniform(-0.49,1)
  ##################################
  def transform(self,value):
-  slope = self.slopebias+(value*self.slopescale)/self.slopediv
+  slope = self.inpbias+(value*self.inpscale)/self.inpdiv
   ror = slope2ror(slope,self.rorbias)
   computed = math.pow(self.basenumer/ror,self.power)*self.scalar
   return computed
@@ -91,9 +91,9 @@ class model:
  def report(self,dset):
   print("########################################")
   print(dset._name+" error<%g>"%self.error)
-  print(dset._name+" slopebias<%g>"%self.slopebias)
-  print(dset._name+" slopescale<%g>"%self.slopescale)
-  print(dset._name+" slopediv<%g>"%self.slopediv)
+  print(dset._name+" inpbias<%g>"%self.inpbias)
+  print(dset._name+" inpscale<%g>"%self.inpscale)
+  print(dset._name+" inpdiv<%g>"%self.inpdiv)
   print(dset._name+" rorbias<%g>"%self.rorbias)
   print(dset._name+" basenumer<%g>"%self.basenumer)
   print(dset._name+" power<%g>"%self.power)
@@ -114,7 +114,7 @@ class model:
 
 def perform_dataset(dset):
  bestmodel = model() # initial best
- for i in range(1,250000):
+ for i in range(1,1250000):
   m = model()
   m.permute()
   index = 0
@@ -122,7 +122,7 @@ def perform_dataset(dset):
   for ival in dset._keys:
    desired = dset._vals[index]
    computed = m.transform(ival)
-   error += abs(desired-computed)/math.pow(desired,0.5)
+   error += abs(desired-computed)/math.pow(desired,0.25)
    index+=1
   if(error<bestmodel.error):
    bestmodel = m

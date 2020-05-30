@@ -31,46 +31,46 @@ float slope2ror(float slope, float bias) {
 }
 ///////////////////////////////////////////
 struct ratelevmodel {
-  float _slopebias  = 0.0f;
-  float _slopescale = 0.0f;
-  float _slopediv   = 0.0f;
-  float _rorbias    = 0.0f;
-  float _basenumer  = 0.0f;
-  float _power      = 0.0f;
-  float _scalar     = 0.0f;
+  float _inpbias   = 0.0f;
+  float _inpscale  = 0.0f;
+  float _inpdiv    = 0.0f;
+  float _rorbias   = 0.0f;
+  float _basenumer = 0.0f;
+  float _power     = 0.0f;
+  float _scalar    = 0.0f;
   void wamodel() {
-    _slopebias  = 1.09252f;
-    _slopescale = 90.9917f;
-    _slopediv   = 97.4786f;
-    _rorbias    = 0.102644f;
-    _basenumer  = 1.04686f;
-    _power      = 2.6284f;
-    _scalar     = 0.635746f;
+    _inpbias   = 1.09252f;
+    _inpscale  = 90.9917f;
+    _inpdiv    = 97.4786f;
+    _rorbias   = 0.102644f;
+    _basenumer = 1.04686f;
+    _power     = 2.6284f;
+    _scalar    = 0.635746f;
   }
   void low_pmodel() {
-    _slopebias  = 0.6867f;
-    _slopescale = 87.1289f;
-    _slopediv   = 100.904f;
-    _rorbias    = 0.00999345f;
-    _basenumer  = 0.775586f;
-    _power      = 1.23521f;
-    _scalar     = 0.132403f;
+    _inpbias   = 0.583739f;
+    _inpscale  = 87.4026f;
+    _inpdiv    = 100.548f;
+    _rorbias   = 0.0218978f;
+    _basenumer = 1.32368f;
+    _power     = 1.08842f;
+    _scalar    = 0.0618756f;
   }
   void mid_pmodel() {
-    _slopebias  = 0.612909f;
-    _slopescale = 89.747f;
-    _slopediv   = 100.471f;
-    _rorbias    = 0.0959415f;
-    _basenumer  = 1.08779f;
-    _power      = 3.32362f;
-    _scalar     = 0.741f;
+    _inpbias   = 0.612909f;
+    _inpscale  = 89.747f;
+    _inpdiv    = 100.471f;
+    _rorbias   = 0.0959415f;
+    _basenumer = 1.08779f;
+    _power     = 3.32362f;
+    _scalar    = 0.741f;
   }
 
   float transform(float value) {
-    float slope    = _slopebias + (value * _slopescale) / _slopediv;
+    float slope    = _inpbias + (value * _inpscale) / _inpdiv;
     float ror      = slope2ror(slope, _rorbias);
     float computed = powf(_basenumer / ror, _power) * _scalar;
-    return computed;
+    return std::clamp(computed, 0.004f, 250.0f);
   }
 };
 
