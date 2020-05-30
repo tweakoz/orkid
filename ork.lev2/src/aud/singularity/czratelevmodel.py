@@ -9,9 +9,17 @@ import math, random
 #a = [72,52,37,26,50,14]
 #b = [.056,.464,2.17,6.94,.544,26.01]
 
-#penv model
-a = [39,56,61,70,82,99]
-b = [3.0,0.5,0.25,0.1,0.025,0.004]
+#fullpenv model
+#a = [39,56,61,70,82,99]
+#b = [3.0,0.5,0.25,0.1,0.025,0.004]
+
+#lowp model
+a = [82,99]
+b = [0.025,0.004]
+
+#midp model
+a = [39,56,61,70,75]
+b = [3.0,0.5,0.25,0.1,0.054]
 
 assert(len(a)==len(b))
 
@@ -42,13 +50,13 @@ class model:
   self.scalc = 0.5
   self.error = 1e6
  def permute(self):
-  self.biasa += random.uniform(-0.1,0.1)
+  self.biasa += random.uniform(-0.5,0.5)
   self.scala += random.uniform(-2.0,2.0)
   self.diva += random.uniform(-2.0,2.0)
   self.biasb += random.uniform(-0.01,0.1)
-  self.basec += random.uniform(-0.1,0.1)
-  self.powc += random.uniform(-1.0,1.0)
-  self.scalc += random.uniform(-0.4,0.6)
+  self.basec += random.uniform(-0.5,0.5)
+  self.powc += random.uniform(-2.0,2.0)
+  self.scalc += random.uniform(-0.49,1)
  def transform(self,value):
   slope = self.biasa+(value*self.scala)/self.diva
   ror = slope2ror(slope,self.biasb)
@@ -61,7 +69,7 @@ bestmodel = model() # initial best
 # find best fit
 ########################################
 
-for i in range(1,500000):
+for i in range(1,200000):
  m = model()
  m.permute()
  index = 0
@@ -69,7 +77,7 @@ for i in range(1,500000):
  for ival in a:
   desired = b[index]
   computed = m.transform(ival)
-  error += abs(desired-computed)/math.pow(desired,0.5)
+  error += abs(desired-computed)#/math.pow(desired,0.5)
   #print("ival<%d> slope<%g> ror<%g> desired<%g> computed<%g>"%(ival,slope,ror,desired,computed))
   index+=1
  if(error<bestmodel.error):

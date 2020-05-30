@@ -47,14 +47,23 @@ struct ratelevmodel {
     _powc  = 2.6284f;
     _scalc = 0.635746f;
   }
-  void pmodel() {
-    _biasa = 1.04262f;
-    _scala = 87.6609f;
-    _diva  = 100.543f;
-    _biasb = 0.102852f;
-    _basec = 1.06407f;
-    _powc  = 3.42532f;
-    _scalc = 0.729096f;
+  void low_pmodel() {
+    _biasa = 0.6867f;
+    _scala = 87.1289f;
+    _diva  = 100.904f;
+    _biasb = 0.00999345f;
+    _basec = 0.775586f;
+    _powc  = 1.23521f;
+    _scalc = 0.132403f;
+  }
+  void mid_pmodel() {
+    _biasa = 0.612909f;
+    _scala = 89.747f;
+    _diva  = 100.471f;
+    _biasb = 0.0959415f;
+    _basec = 1.08779f;
+    _powc  = 3.32362f;
+    _scalc = 0.741f;
   }
 
   float transform(float value) {
@@ -133,8 +142,10 @@ float decode_p_envrate(int value, float delta) {
       uservalue = 99;
       break;
   }
-  ratelevmodel model;
-  model.pmodel();
+  ratelevmodel lopmodel, midpmodel;
+  lopmodel.low_pmodel();
+  midpmodel.mid_pmodel();
+  auto model = (uservalue <= 75) ? midpmodel : lopmodel;
   return model.transform(uservalue) * fabs(delta);
 }
 ///////////////////////////////////////////////////////////////////////////////
