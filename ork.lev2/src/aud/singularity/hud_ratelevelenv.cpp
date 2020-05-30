@@ -289,6 +289,17 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   drawtext(
       this, //
       context,
+      FormatString("releaseseg: %d", _envdata->_releaseSegment),
+      miscx,
+      (miscy++) * miscspc,
+      fontscale,
+      1,  // r
+      1,  // g
+      1); // b
+
+  drawtext(
+      this, //
+      context,
       FormatString("isAmpEnv: %d", int(_envdata->_ampenv)),
       miscx,
       (miscy++) * miscspc,

@@ -30,8 +30,23 @@ float slope2ror(float slope) {
   float riseoverrun = tanf(clamped * pi / 180.0);
   return riseoverrun;
 }
+///////////////////////////////////////////
+float decode_a_envlevel(int value) {
+  int normed = (value * 99) / 127 + 1;
+  switch (normed) {
+    case 0:
+      normed = 0;
+      break;
+    case 0x7f:
+      normed = 99;
+      break;
+  }
+  float fn = float(normed) / 99.0f;
+  return powf(fn, 0.5);
+}
+///////////////////////////////////////////
 float decode_a_envrate(int value, float delta) {
-  int islope = (((value - 8) * 99) / 119) + 1;
+  int islope = (value * 99) / 119 + 1;
   switch (value) {
     case 0:
       islope = 0;
@@ -42,11 +57,26 @@ float decode_a_envrate(int value, float delta) {
   }
   float slope  = (islope * 90.0f / 99.0f);
   float ror    = slope2ror(slope);
-  float scalar = (delta >= 0.0f) ? 0.002f : 0.004f;
+  float scalar = 0.5f;
   float run    = scalar * fabs(delta) / ror;
   printf("slope<%g> ror<%g> delta<%g> run<%g>\n", slope, ror, delta, run);
   return run;
 }
+///////////////////////////////////////////
+float decode_w_envlevel(int value) {
+  int normed = (value * 99) / 127 + 1;
+  switch (normed) {
+    case 0:
+      normed = 0;
+      break;
+    case 0x7f:
+      normed = 99;
+      break;
+  }
+  float fn = float(normed) / 99.0f;
+  return powf(fn, 0.25);
+}
+///////////////////////////////////////////
 float decode_w_envrate(int value, float delta) {
   int islope = (((value - 8) * 99) / 119) + 1;
   switch (value) {
@@ -59,13 +89,13 @@ float decode_w_envrate(int value, float delta) {
   }
   float slope  = (islope * 90.0f / 99.0f);
   float ror    = slope2ror(slope);
-  float scalar = (delta >= 0.0f) ? 0.0003f : 0.004f;
+  float scalar = 0.20f;
   float run    = scalar * fabs(delta) / ror;
   printf("slope<%g> ror<%g> delta<%g> run<%g>\n", slope, ror, delta, run);
   return run;
 }
 float decode_p_envrate(int value, float delta) {
-  float islope = (((value - 8) * 99) / 119) + 1;
+  float islope = (value * 99) / 127 + 1;
   switch (value) {
     case 0:
       islope = 0;
@@ -76,7 +106,7 @@ float decode_p_envrate(int value, float delta) {
   }
   float slope  = (islope * 90.0f / 99.0f);
   float ror    = slope2ror(slope);
-  float scalar = (delta >= 0.0f) ? 0.0003f : 0.001f;
+  float scalar = 0.2f;
   float run    = scalar * fabs(delta) / ror;
   printf("slope<%g> ror<%g> delta<%g> run<%g>\n", slope, ror, delta, run);
   return run;
@@ -247,7 +277,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
       u8 l7                       = l & 0x7f;
       OSC->_dcaEnv._decreasing[i] = (r & 0x80);
 
-      float thislev  = (l7 * 99) / 127;
+      float thislev  = decode_a_envlevel(l7);
       float deltalev = thislev - prevlevel;
       prevlevel      = thislev;
 
@@ -268,7 +298,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
       if (l & 0x80)
         OSC->_dcwEnv._sustPoint = i;
 
-      float thislev  = (l7 * 99) / 127;
+      float thislev  = decode_w_envlevel(l7);
       float deltalev = thislev - prevlevel;
       prevlevel      = thislev;
 
@@ -355,6 +385,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
         DCOENV->addSegment(name, srcdcoenv._time[i], srcdcoenv._level[i]);
       }
     }
+    DCOENV->_releaseSegment = srcdcoenv._endStep;
     /////////////////////////////////////////////////
     // Wave(filter) Envelope
     /////////////////////////////////////////////////
@@ -365,10 +396,11 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     for (int i = 0; i < 8; i++) {
       if (i <= srcdcwenv._endStep) {
         auto name = FormatString("seg%d", i);
-        DCWENV->addSegment(name, srcdcwenv._time[i], srcdcwenv._level[i] * 0.01);
+        DCWENV->addSegment(name, srcdcwenv._time[i], srcdcwenv._level[i]);
       }
     }
-    DCWENV->_envadjust = [=](const EnvPoint& inp, //
+    DCWENV->_releaseSegment = srcdcwenv._endStep;
+    DCWENV->_envadjust      = [=](const EnvPoint& inp, //
                              int iseg,
                              const KeyOnInfo& KOI) -> EnvPoint { //
       EnvPoint outp = inp;
@@ -389,17 +421,18 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     for (int i = 0; i < 8; i++) {
       if (i <= srcdcaenv._endStep) {
         auto name = FormatString("seg%d", i);
-        DCAENV->addSegment(name, srcdcaenv._time[i], srcdcaenv._level[i] * 0.01);
+        DCAENV->addSegment(name, srcdcaenv._time[i], srcdcaenv._level[i]);
       }
+      DCAENV->_releaseSegment = srcdcaenv._endStep;
     }
     DCAENV->_envadjust = [=](const EnvPoint& inp, //
                              int iseg,
                              const KeyOnInfo& KOI) -> EnvPoint { //
       EnvPoint outp = inp;
       int ikeydelta = KOI._key;
-      float base    = 1.0 - (oscdata->_dcaKeyFollow * 0.001);
+      float base    = 1.0 - (oscdata->_dcaKeyFollow * 0.0003);
       float power   = pow(base, ikeydelta);
-      // printf("DCA kf<%d> ikeydelta<%d> base<%0.3f> power<%0.3f>\n", oscdata->_dcaKeyFollow, ikeydelta, base, power);
+      printf("DCA kf<%d> ikeydelta<%d> base<%0.3f> power<%0.3f>\n", oscdata->_dcaKeyFollow, ikeydelta, base, power);
       outp._time *= power;
       return outp;
     };

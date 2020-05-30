@@ -248,8 +248,8 @@ void RateLevelEnvInst::keyOff() {
   _released = true;
   _state    = 2;
   if (_data && false == _ignoreRelease) {
-    if (_data->_sustainSegment >= 0)
-      initSeg(_data->_sustainSegment + 1);
+    if (_data->_releaseSegment >= 0)
+      initSeg(_data->_releaseSegment);
   }
 }
 

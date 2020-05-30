@@ -615,6 +615,7 @@ lyrdata_ptr_t SynthObjectsDB::parseLayer(const Value& jsonobj, prgdata_ptr_t pd)
     }
     //////////////////////////////////////////
     rout->_sustainSegment = 3;
+    rout->_releaseSegment = 4;
     rout->_segmentNames.push_back("at1");
     rout->_segmentNames.push_back("at2");
     rout->_segmentNames.push_back("at3");

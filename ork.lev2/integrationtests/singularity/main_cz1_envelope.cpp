@@ -15,9 +15,10 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   if (do_from_bank) {
     auto basepath = basePath() / "casioCZ";
-    auto czdata   = CzData::load(basepath / "factoryA.bnk", "bank1");
-    auto bnk      = czdata->_bankdata;
-    program       = bnk->findProgramByName("ELEC.GUITAR");
+    auto czdataa  = CzData::load(basepath / "factoryA.bnk", "bank1");
+    auto czdatab  = CzData::load(basepath / "factoryB.bnk", "bank2");
+    auto bnk      = czdatab->_bankdata;
+    program       = bnk->findProgramByName("SITAR");
     layerdata     = program->getLayer(0);
   } else {
     auto mutable_program   = std::make_shared<ProgramData>();
@@ -117,7 +118,7 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   // envelope viewer
   //////////////////////////////////////
-  controllerdata_ptr_t inspect_env = layerdata->controllerByName("DCOENV0");
+  controllerdata_ptr_t inspect_env = layerdata->controllerByName("DCAENV0");
   auto env_source                  = inspect_env->createScopeSource();
   auto envview                     = create_envelope_analyzer(app->_hudvp);
   env_source->connect(envview->_sink);
