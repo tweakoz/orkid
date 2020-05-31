@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
     auto dcostage       = layerdata->stageByName("DCO");
     auto ampstage       = layerdata->stageByName("AMP");
     auto dco            = dcostage->appendTypedBlock<CZX>(czoscdata, 0);
-    auto amp            = ampstage->appendTypedBlock<AMP>();
+    auto amp            = ampstage->appendTypedBlock<AMP_MONOIO>();
     //////////////////////////////////////
     // setup envelope
     //////////////////////////////////////

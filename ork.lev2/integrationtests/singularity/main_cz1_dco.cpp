@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
   auto dcostage       = layerdata->stageByName("DCO");
   auto ampstage       = layerdata->stageByName("AMP");
   auto osc            = dcostage->appendTypedBlock<CZX>(czoscdata, 0);
-  auto amp            = ampstage->appendTypedBlock<AMP>();
+  auto amp            = ampstage->appendTypedBlock<AMP_MONOIO>();
   //////////////////////////////////////
   // setup modulators
   //////////////////////////////////////

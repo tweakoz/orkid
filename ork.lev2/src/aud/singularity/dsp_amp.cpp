@@ -26,38 +26,42 @@ panLR panBlend(float inp) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AMP_MONOIO::initBlock(dspblkdata_ptr_t blockdata) {
-  blockdata->_blocktype = "AMP_MONOIO";
-  blockdata->_paramd[0].useAmplitudeEvaluator();
+AMP_MONOIO_DATA::AMP_MONOIO_DATA() {
+  _blocktype  = "AMP_MONOIO";
+  auto& param = addParam();
+  param.useAmplitudeEvaluator();
+}
+
+dspblk_ptr_t AMP_MONOIO_DATA::createInstance() const { // override
+  return std::make_shared<AMP_MONOIO>(this);
 }
 
 AMP_MONOIO::AMP_MONOIO(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
-void AMP_MONOIO::compute(DspBuffer& dspbuf) // final
-{
-  float gain = _param[0].eval(); //,0.01f,100.0f);
-
-  int inumframes = _layer->_dspwritecount;
-
-  const auto& LD = _layer->_layerdata;
-
-  // printf( "amp numinp<%d>\n", numInputs() );
-  auto inputchan   = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
-  auto outputchan  = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-  float SingleLinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
-
+void AMP_MONOIO::compute(DspBuffer& dspbuf) { // final
+  float paramgain = _param[0].eval();         //,0.01f,100.0f);
+  int inumframes  = _layer->_dspwritecount;
+  const auto& LD  = _layer->_layerdata;
+  //////////////////////////////////
+  auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+  auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float laychgain = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
+  //////////////////////////////////
   for (int i = 0; i < inumframes; i++) {
-    _filt      = 0.995 * _filt + 0.005 * gain;
-    float linG = decibel_to_linear_amp_ratio(_filt);
-    linG *= SingleLinG;
+    //_filt      = 0.995 * _filt + 0.005 * paramgain;
+    float linG = paramgain; // decibel_to_linear_amp_ratio(_filt);
+    linG *= laychgain;
     float inp     = inputchan[i];
-    float ae      = _param[1].eval();
-    outputchan[i] = clip_float(inp * linG * _dbd->_inputPad * ae, kminclip, kmaxclip);
+    outputchan[i] = clip_float(inp * linG * _dbd->_inputPad, kminclip, kmaxclip);
+    // printf("inp<%g>\n", inp);
   }
+  //////////////////////////////////
   _fval[0] = _filt;
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void AMP_MONOIO::doKeyOn(const DspKeyOnInfo& koi) // final
 {
@@ -67,20 +71,20 @@ void AMP_MONOIO::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AMPDATA::AMPDATA() {
+AMP_STEREOOUT_DATA::AMP_STEREOOUT_DATA() {
   _blocktype  = "AMP";
   auto& param = addParam();
   param.useAmplitudeEvaluator();
 }
-dspblk_ptr_t AMPDATA::createInstance() const { // override
-  return std::make_shared<AMP>(this);
+dspblk_ptr_t AMP_STEREOOUT_DATA::createInstance() const { // override
+  return std::make_shared<AMP_STEREOOUT>(this);
 }
 
-AMP::AMP(const DspBlockData* dbd)
+AMP_STEREOOUT::AMP_STEREOOUT(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
-void AMP::compute(DspBuffer& dspbuf) // final
+void AMP_STEREOOUT::compute(DspBuffer& dspbuf) // final
 {
   float gain     = _param[0].eval();
   int inumframes = _layer->_dspwritecount;
@@ -89,6 +93,7 @@ void AMP::compute(DspBuffer& dspbuf) // final
   auto l_lrmix   = panBlend(_lpan);
 
   if (numInputs() == 1) {
+    // configured for mono input, stereo output
     auto ibuf        = getInpBuf(dspbuf, 0) + ibase;
     auto lbuf        = getOutBuf(dspbuf, 1) + ibase;
     auto ubuf        = getOutBuf(dspbuf, 0) + ibase;
@@ -128,7 +133,7 @@ void AMP::compute(DspBuffer& dspbuf) // final
   _fval[0] = _filt;
 }
 
-void AMP::doKeyOn(const DspKeyOnInfo& koi) // final
+void AMP_STEREOOUT::doKeyOn(const DspKeyOnInfo& koi) // final
 {
   _filt       = 0.0f;
   auto LD     = koi._layer->_layerdata;

@@ -31,14 +31,14 @@ void SUM2::compute(DspBuffer& dspbuf) { // final
   const float* inpbufa = getInpBuf(dspbuf, 0) + ibase;
   const float* inpbufb = getInpBuf(dspbuf, 1) + ibase;
   float* outbufa       = getOutBuf(dspbuf, 0) + ibase;
-  float* outbufb       = getOutBuf(dspbuf, 1) + ibase;
+  // float* outbufb       = getOutBuf(dspbuf, 1) + ibase;
   for (int i = 0; i < inumframes; i++) {
     float inA  = inpbufa[i] * _dbd->_inputPad;
     float inB  = inpbufb[i] * _dbd->_inputPad;
     float res  = (inA + inB);
     res        = clip_float(res, -2, 2);
     outbufa[i] = res;
-    outbufb[i] = res;
+    // outbufb[i] = res;
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

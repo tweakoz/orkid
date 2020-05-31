@@ -20,6 +20,11 @@
 
 namespace ork::audio::singularity {
 
+DspBlockData::DspBlockData() {
+  for (int i = 0; i < kmaxdspblocksperstage; i++)
+    _dspchannel[i] = i;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 DspParamData::DspParamData() {
@@ -74,11 +79,20 @@ dspblkdata_ptr_t DspStageData::appendBlock() {
   return blk;
 }
 
+void DspStageData::setNumIos(int numinp, int numout) {
+  for (int i = 0; i < numinp; i++)
+    _iomask->_inputs.push_back(i);
+  for (int i = 0; i < numout; i++)
+    _iomask->_outputs.push_back(i);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 DspBlock::DspBlock(const DspBlockData* dbd)
     : _dbd(dbd)
     , _numParams(dbd->_numParams) {
+  for (int i = 0; i < kmaxdspblocksperstage; i++)
+    _dspchannel[i] = dbd->_dspchannel[i];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -112,25 +126,19 @@ void DspBlock::keyOn(const DspKeyOnInfo& koi) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const float* DspBlock::getInpBuf(DspBuffer& obuf, int index) {
-  int inpidx = _iomask->_inputs[index];
-  return obuf.channel(inpidx);
+const float* DspBlock::getInpBuf(DspBuffer& dspbuf, int index) {
+  int chan   = _dspchannel[index];
+  int inpidx = _iomask->_inputs[chan];
+  return dspbuf.channel(inpidx);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float* DspBlock::getOutBuf(DspBuffer& obuf, int index) {
-  int outidx = _iomask->_outputs[index];
-  return obuf.channel(outidx);
+float* DspBlock::getOutBuf(DspBuffer& dspbuf, int index) {
+  int chan   = _dspchannel[index];
+  int outidx = _iomask->_outputs[chan];
+  return dspbuf.channel(outidx);
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-// void DspBlock::output(DspBuffer& obuf, int chanidx, int sampleindex, float val) {
-// int outidx     = _iomask->_outputs[chanidx];
-// float* A       = obuf.channel(outidx);
-// A[sampleindex] = val;
-//}
 
 ///////////////////////////////////////////////////////////////////////////////
 

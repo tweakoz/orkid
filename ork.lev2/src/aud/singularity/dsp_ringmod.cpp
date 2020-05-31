@@ -32,15 +32,14 @@ void RingMod::compute(DspBuffer& dspbuf) { // final
   const float* inpbufa = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
   const float* inpbufb = getInpBuf(dspbuf, 1) + _layer->_dspwritebase;
   float* outbufa       = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-  float* outbufb       = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
   // printf("running ringmod\n");
   for (int i = 0; i < inumframes; i++) {
-    float inA  = inpbufa[i] * _dbd->_inputPad;
-    float inB  = inpbufb[i] * _dbd->_inputPad;
-    float res  = (inA * inB);
-    res        = clip_float(res, -2, 2);
+    float inA = inpbufa[i] * _dbd->_inputPad;
+    float inB = inpbufb[i] * _dbd->_inputPad;
+    float res = (inA * inB);
+    res       = clip_float(res, -2, 2);
+    // printf("ringmod res<%g>\n", res);
     outbufa[i] = res;
-    outbufb[i] = res;
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,7 +52,6 @@ void RingModSumA::compute(DspBuffer& dspbuf) { // final
   const float* inpbufa = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
   const float* inpbufb = getInpBuf(dspbuf, 1) + _layer->_dspwritebase;
   float* outbufa       = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-  float* outbufb       = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
   // printf("running ringmod\n");
   for (int i = 0; i < inumframes; i++) {
     float inA  = inpbufa[i] * _dbd->_inputPad;
@@ -61,7 +59,6 @@ void RingModSumA::compute(DspBuffer& dspbuf) { // final
     float res  = inA + (inA * inB);
     res        = clip_float(res, -2, 2);
     outbufa[i] = res;
-    outbufb[i] = res;
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

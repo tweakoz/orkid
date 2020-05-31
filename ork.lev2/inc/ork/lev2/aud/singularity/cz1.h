@@ -31,7 +31,6 @@ struct CzOscData {
   CzEnvelope _dcoEnv;
   CzEnvelope _dcaEnv;
   CzEnvelope _dcwEnv;
-  int _dspchannel     = 0;
   bool _noisemod      = false;
   double _octaveScale = 1.0;
 };
@@ -93,9 +92,8 @@ struct CZX final : public DspBlock {
     return true;
   }
 
-  int _waveIDA    = 0;
-  int _waveIDB    = 0;
-  int _dspchannel = 0;
+  int _waveIDA = 0;
+  int _waveIDB = 0;
   float _waveoutputs[8];
   float _modIndex;
   int64_t _phase;

@@ -64,7 +64,7 @@ static int patestCallback(
     }
   } else if (ENABLE_OUTPUT) {
     const auto& obuf = the_synth->_obuf;
-    float gain       = the_synth->_masterGain * 2.0f;
+    float gain       = the_synth->_masterGain * 1.0f;
     for (i = 0; i < framesPerBuffer; i++) {
       *out++ = obuf._leftBuffer[i] * gain;  // interleaved
       *out++ = obuf._rightBuffer[i] * gain; // interleaved

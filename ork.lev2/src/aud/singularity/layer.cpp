@@ -137,11 +137,8 @@ void Layer::compute(outputBuffer& obuf, int numframes) {
   ////////////////////////////////////////
 
   if (true) {
-    bool bypassDSP     = the_synth->_bypassDSP;
-    auto lastblock     = _alg->lastBlock();
-    bool doBlockStereo = bypassDSP //
-                             ? false
-                             : lastblock ? (lastblock->numOutputs() == 2) : false;
+    bool bypassDSP = the_synth->_bypassDSP;
+    auto lastblock = _alg->lastBlock();
 
     float synsr = the_synth->_sampleRate;
 
@@ -191,16 +188,10 @@ void Layer::compute(outputBuffer& obuf, int numframes) {
         master_outl[i] += inp * _layerGain;
         master_outr[i] += inp * _layerGain;
       }
-    } else if (doBlockStereo) { // standard accumulation output (stereo)
+    } else {
       for (int i = 0; i < numframes; i++) {
         master_outl[i] += lyroutl[i] * _layerGain;
         master_outr[i] += lyroutr[i] * _layerGain;
-      }
-    } else { // standard accumulation output (mono)
-      for (int i = 0; i < numframes; i++) {
-        float output = lyroutl[i] * _layerGain;
-        master_outl[i] += output;
-        master_outr[i] += output;
       }
     }
     ///////////////////////////////////////////////
@@ -220,14 +211,9 @@ void Layer::compute(outputBuffer& obuf, int numframes) {
     //////////////////////////////////////
     if (this == the_synth->_hudLayer) {
       if (_layerdata->_scopesource) {
-        if (doBlockStereo) {
-          const float* l = _layerObuf._leftBuffer;
-          const float* r = _layerObuf._rightBuffer;
-          _layerdata->_scopesource->updateStereo(numframes, l, r);
-        } else {
-          const float* mono = _layerObuf._leftBuffer;
-          _layerdata->_scopesource->updateMono(numframes, mono);
-        }
+        const float* l = _layerObuf._leftBuffer;
+        const float* r = _layerObuf._rightBuffer;
+        _layerdata->_scopesource->updateStereo(numframes, l, r);
       }
     }
     ///////////////////////////////////////////////

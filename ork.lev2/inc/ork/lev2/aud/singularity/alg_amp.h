@@ -6,21 +6,25 @@ namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 // amp blocks
 ///////////////////////////////////////////////////////////////////////////////
+struct AMP_MONOIO_DATA : public DspBlockData {
+  AMP_MONOIO_DATA();
+  dspblk_ptr_t createInstance() const override;
+};
 struct AMP_MONOIO : public DspBlock {
-  static void initBlock(dspblkdata_ptr_t blockdata);
+  using dataclass_t = AMP_MONOIO_DATA;
   AMP_MONOIO(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
   float _filt;
 };
 ///////////////////////////////////////////////////////////////////////////////
-struct AMPDATA : public DspBlockData {
-  AMPDATA();
+struct AMP_STEREOOUT_DATA : public DspBlockData {
+  AMP_STEREOOUT_DATA();
   dspblk_ptr_t createInstance() const override;
 };
-struct AMP : public DspBlock {
-  using dataclass_t = AMPDATA;
-  AMP(const DspBlockData* dbd);
+struct AMP_STEREOOUT : public DspBlock {
+  using dataclass_t = AMP_STEREOOUT_DATA;
+  AMP_STEREOOUT(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
   float _filt;

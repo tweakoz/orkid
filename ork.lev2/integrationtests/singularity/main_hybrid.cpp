@@ -24,10 +24,11 @@ int main(int argc, char** argv) {
   auto ampstage       = layerdata->stageByName("AMP");
 
   auto make_dco = [&](int dcochannel) {
-    auto czoscdata         = std::make_shared<CzOscData>();
-    czoscdata->_dspchannel = dcochannel;
-    auto dco               = dcostage->appendTypedBlock<CZX>(czoscdata, dcochannel);
-    auto amp               = ampstage->appendTypedBlock<AMP>();
+    auto czoscdata      = std::make_shared<CzOscData>();
+    auto dco            = dcostage->appendTypedBlock<CZX>(czoscdata, dcochannel);
+    auto amp            = ampstage->appendTypedBlock<AMP_MONOIO>();
+    dco->_dspchannel[0] = dcochannel;
+    amp->_dspchannel[0] = dcochannel;
     //////////////////////////////////////
     auto envname_dca = FormatString("DCAENV%d", dcochannel);
     auto envname_dcw = FormatString("DCWENV%d", dcochannel);

@@ -95,8 +95,7 @@ struct IoMask final {
 
 struct DspBlockData {
 
-  DspBlockData() {
-  }
+  DspBlockData();
   virtual ~DspBlockData() {
   }
 
@@ -109,6 +108,7 @@ struct DspBlockData {
   DspParamData& addParam();
   DspParamData& getParam(int index);
 
+  int _dspchannel[kmaxdspblocksperstage];
   int _numParams  = 0;
   float _inputPad = 1.0f;
   int _blockIndex = -1;
@@ -173,6 +173,7 @@ struct DspBlock {
 
   varmap::VarMap _vars;
 
+  int _dspchannel[kmaxdspblocksperstage];
   float _fval[kmaxparmperblock];
   FPARAM _param[kmaxparmperblock];
   iomask_constptr_t _iomask;
@@ -192,6 +193,7 @@ struct DspStageData final {
     _blockdatas[_numblocks++] = blkdata;
     return blkdata;
   }
+  void setNumIos(int numinp, int numout);
 
   dspblkdata_constptr_t _blockdatas[kmaxdspblocksperstage];
   iomask_ptr_t _iomask;

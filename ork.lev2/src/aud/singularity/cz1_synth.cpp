@@ -36,26 +36,22 @@ algdata_ptr_t configureCz1Algorithm(int numosc) {
   algdout->_name = ork::FormatString("Cz1Alg");
   //////////////////////////////////////////
   auto stage_dco               = algdout->appendStage("DCO");
-  auto stage_amp               = algdout->appendStage("AMP");
+  auto stage_amp               = algdout->appendStage("DCOAMP");
   dspstagedata_ptr_t stage_mod = (numosc == 2) //
                                      ? algdout->appendStage("MOD")
                                      : nullptr;
+  auto stage_stereo = algdout->appendStage("STEREO"); // todo : quadraphonic, 3d?
   //////////////////////////////////////////
-  stage_dco->_iomask->_outputs.push_back(0);
-  stage_amp->_iomask->_inputs.push_back(0);  // 1 input
-  stage_amp->_iomask->_outputs.push_back(0); // 1 output
+  int dcoios = stage_mod ? 2 : 1;
+  stage_dco->setNumIos(dcoios, dcoios);
+  stage_amp->setNumIos(dcoios, dcoios);
+  stage_stereo->setNumIos(1, 2); // 1 in, 2 out
   //////////////////////////////////////////
   // 2 DCO case..
+  // ring, noise mod or mix stage
   //////////////////////////////////////////
-  if (stage_mod) {
-    stage_dco->_iomask->_outputs.push_back(1); // 2nd output
-    //////////////////////////////////////////
-    // ring, noise mod or mix stage
-    //////////////////////////////////////////
-    stage_mod->_iomask->_inputs.push_back(0);
-    stage_mod->_iomask->_inputs.push_back(1);  // 2nd input
-    stage_mod->_iomask->_outputs.push_back(0); // 1 output
-  }
+  if (stage_mod)
+    stage_mod->setNumIos(2, 1); // 2 ins, 1 out
   //////////////////////////////////////////
   return algdout;
 }
@@ -79,15 +75,15 @@ float step(float u, float steps) {
 
 void CZX::compute(DspBuffer& dspbuf) // final
 {
-  float SR  = getSampleRate();
-  float ISR = getInverseSampleRate();
+  float SR          = getSampleRate();
+  float ISR         = getInverseSampleRate();
+  float* outsamples = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
 
   ////////////////////////////////////////////////
   // test tone ?
   ////////////////////////////////////////////////
   if (0) {
-    int inumframes    = _layer->_dspwritecount;
-    float* outsamples = dspbuf.channel(_dspchannel) + _layer->_dspwritebase;
+    int inumframes = _layer->_dspwritecount;
     for (int i = 0; i < inumframes; i++) {
       double phase  = 60.0 * PI_ISR * double(_phase);
       float samp    = sinf(phase) * .6;
@@ -118,8 +114,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
   /////////////////////////
   // printf("centoff<%g>\n", centoff);
   /////////////////////////
-  int inumframes    = _layer->_dspwritecount;
-  float* outsamples = dspbuf.channel(_dspchannel) + _layer->_dspwritebase;
+  int inumframes = _layer->_dspwritecount;
   for (int i = 0; i < inumframes; i++) {
     //////////////////////////////////////////////
     // interpolate modindex
@@ -315,7 +310,6 @@ void CZX::doKeyOn(const DspKeyOnInfo& koi) // final
 
   // printf("CZX<%p> dcochannel<%d> keyon\n", this, dcochannel);
 
-  _dspchannel       = _oscdata->_dspchannel;
   auto l            = koi._layer;
   l->_HKF._miscText = FormatString("CZ\n");
   l->_HKF._useFm4   = false;
