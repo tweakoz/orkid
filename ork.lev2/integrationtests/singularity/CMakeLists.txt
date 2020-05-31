@@ -24,3 +24,4 @@ setupEXE(ork.lev2.test.aud.singularity.cz1.dco.noisemod.exe main_cz1_dco_noisemo
 setupEXE(ork.lev2.test.aud.singularity.cz1.dco.playedit.exe main_cz1_playedit.cpp)
 setupEXE(ork.lev2.test.aud.singularity.cz1.envelope.exe main_cz1_envelope.cpp)
 setupEXE(ork.lev2.test.aud.singularity.cz1.bankprog.exe main_cz1_bankprog.cpp)
+setupEXE(ork.lev2.test.aud.singularity.hybrid.exe main_hybrid.cpp)

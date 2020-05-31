@@ -36,10 +36,10 @@ algdata_ptr_t configureCz1Algorithm(int numosc) {
   algdout->_name = ork::FormatString("Cz1Alg");
   //////////////////////////////////////////
   auto stage_dco               = algdout->appendStage("DCO");
+  auto stage_amp               = algdout->appendStage("AMP");
   dspstagedata_ptr_t stage_mod = (numosc == 2) //
                                      ? algdout->appendStage("MOD")
                                      : nullptr;
-  auto stage_amp = algdout->appendStage("AMP");
   //////////////////////////////////////////
   stage_dco->_iomask->_outputs.push_back(0);
   stage_amp->_iomask->_inputs.push_back(0);  // 1 input
