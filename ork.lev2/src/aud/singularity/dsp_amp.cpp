@@ -2,27 +2,13 @@
 #include <assert.h>
 #include <ork/lev2/aud/singularity/filters.h>
 #include <ork/lev2/aud/singularity/alg_amp.h>
+#include <ork/lev2/aud/singularity/alg_pan.inl>
 #include <ork/lev2/aud/singularity/modulation.h>
 
 namespace ork::audio::singularity {
 
 float shaper(float inp, float adj);
 float wrap(float inp, float adj);
-const float kmaxclip = 16.0f;  // 18dB
-const float kminclip = -16.0f; // 18dB
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct panLR {
-  float lmix, rmix;
-};
-
-panLR panBlend(float inp) {
-  panLR rval;
-  rval.lmix = (inp > 0) ? lerp(0.5, 0, inp) : lerp(0.5, 1, -inp);
-  rval.rmix = (inp > 0) ? lerp(0.5, 1, inp) : lerp(0.5, 0, -inp);
-  return rval;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -67,80 +53,6 @@ void AMP_MONOIO::doKeyOn(const DspKeyOnInfo& koi) // final
 {
   _filt   = 0.0f;
   auto LD = koi._layer->_layerdata;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-AMP_STEREOOUT_DATA::AMP_STEREOOUT_DATA() {
-  _blocktype  = "AMP";
-  auto& param = addParam();
-  param.useAmplitudeEvaluator();
-}
-dspblk_ptr_t AMP_STEREOOUT_DATA::createInstance() const { // override
-  return std::make_shared<AMP_STEREOOUT>(this);
-}
-
-AMP_STEREOOUT::AMP_STEREOOUT(const DspBlockData* dbd)
-    : DspBlock(dbd) {
-}
-
-void AMP_STEREOOUT::compute(DspBuffer& dspbuf) // final
-{
-  float gain     = _param[0].eval();
-  int inumframes = _layer->_dspwritecount;
-  int ibase      = _layer->_dspwritebase;
-  const auto& LD = _layer->_layerdata;
-  auto l_lrmix   = panBlend(_lpan);
-
-  if (numInputs() == 1) {
-    // configured for mono input, stereo output
-    auto ibuf        = getInpBuf(dspbuf, 0) + ibase;
-    auto lbuf        = getOutBuf(dspbuf, 1) + ibase;
-    auto ubuf        = getOutBuf(dspbuf, 0) + ibase;
-    float SingleLinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
-
-    for (int i = 0; i < inumframes; i++) {
-      float linG = decibel_to_linear_amp_ratio(gain);
-      linG *= SingleLinG;
-      float inp  = ibuf[i];
-      float mono = clip_float(inp * gain * _dbd->_inputPad, kminclip, kmaxclip);
-      ubuf[i]    = mono * l_lrmix.lmix;
-      lbuf[i]    = mono * l_lrmix.rmix;
-    }
-  } else if (numInputs() == 2) {
-    auto ilbuf      = getInpBuf(dspbuf, 1 + ibase);
-    auto iubuf      = getInpBuf(dspbuf, 0) + ibase;
-    auto lbuf       = getOutBuf(dspbuf, 1) + ibase;
-    auto ubuf       = getOutBuf(dspbuf, 0) + ibase;
-    auto u_lrmix    = panBlend(_upan);
-    float UpperLinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
-    float LowerLinG = decibel_to_linear_amp_ratio(LD->_channelGains[1]);
-
-    for (int i = 0; i < inumframes; i++) {
-      // printf("AMPSTER\n");
-      float linG = decibel_to_linear_amp_ratio(gain);
-      float totG = gain * _dbd->_inputPad;
-
-      float inpU = iubuf[i] * totG;
-      float inpL = ilbuf[i] * totG;
-      inpU *= UpperLinG;
-      inpL *= LowerLinG;
-
-      ubuf[i] = inpU;
-      lbuf[i] = inpL;
-    }
-  }
-  _fval[0] = _filt;
-}
-
-void AMP_STEREOOUT::doKeyOn(const DspKeyOnInfo& koi) // final
-{
-  _filt       = 0.0f;
-  auto LD     = koi._layer->_layerdata;
-  float fpanu = float(LD->_channelPans[0]) / 7.0f;
-  float fpanl = float(LD->_channelPans[1]) / 7.0f;
-  _upan       = fpanu;
-  _lpan       = fpanl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

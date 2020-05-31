@@ -17,6 +17,8 @@
 #include <ork/lev2/aud/singularity/fmosc.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
+#include <ork/lev2/aud/singularity/alg_amp.h>
+#include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/kernel/string/string.h>
 
 using namespace ork;
@@ -31,27 +33,39 @@ inline double sinc(double i) { // ph --1 .. +1
 
 ///////////////////////////////////////////////////////////////////////////////
 
-algdata_ptr_t configureCz1Algorithm(int numosc) {
+algdata_ptr_t configureCz1Algorithm(lyrdata_ptr_t layerdata, int numosc) {
   auto algdout   = std::make_shared<AlgData>();
   algdout->_name = ork::FormatString("Cz1Alg");
   //////////////////////////////////////////
   auto stage_dco               = algdout->appendStage("DCO");
-  auto stage_amp               = algdout->appendStage("DCOAMP");
+  auto stage_amp               = algdout->appendStage("AMP");
   dspstagedata_ptr_t stage_mod = (numosc == 2) //
                                      ? algdout->appendStage("MOD")
                                      : nullptr;
-  auto stage_stereo = algdout->appendStage("STEREO"); // todo : quadraphonic, 3d?
+  auto stage_mix = algdout->appendStage("MIX"); // todo : quadraphonic, 3d?
   //////////////////////////////////////////
   int dcoios = stage_mod ? 2 : 1;
   stage_dco->setNumIos(dcoios, dcoios);
   stage_amp->setNumIos(dcoios, dcoios);
-  stage_stereo->setNumIos(1, 2); // 1 in, 2 out
+  stage_mix->setNumIos(1, 2); // 1 in, 2 out
   //////////////////////////////////////////
   // 2 DCO case..
   // ring, noise mod or mix stage
   //////////////////////////////////////////
   if (stage_mod)
     stage_mod->setNumIos(2, 1); // 2 ins, 1 out
+  /////////////////////////////////////////////////
+  // stereo mix out
+  /////////////////////////////////////////////////
+  auto stereoout        = stage_mix->appendTypedBlock<MonoInStereoOut>();
+  auto STEREOC          = layerdata->appendController<CustomControllerData>("DCO1DETUNE");
+  auto& stereo_mod      = stereoout->_paramd[0]._mods;
+  stereo_mod._src1      = STEREOC;
+  stereo_mod._src1Depth = 1.0f;
+  STEREOC->_onkeyon     = [](CustomControllerInst* cci, //
+                         const KeyOnInfo& KOI) {    //
+    cci->_curval = 1.0f;                            // amplitude to unity
+  };
   //////////////////////////////////////////
   return algdout;
 }

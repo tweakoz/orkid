@@ -116,6 +116,15 @@ struct ScopeSink {
 };
 struct SignalScope {
   void setRect(int iX, int iY, int iW, int iH, bool snap = false);
+  ///////////////////////////////////////////////////////////////////////////
+  template <typename T, typename... A> void setProperty(const varmap::key_t& key, A&&... args) {
+    _vars.makeValueForKey<T>(key, std::forward<A>(args)...);
+  }
+  ///////////////////////////////////////////////////////////////////////////
+  template <typename T> const T& property(const varmap::key_t& key) const {
+    return _vars.typedValueForKey<T>(key).value();
+  }
+  ///////////////////////////////////////////////////////////////////////////
   hudpanel_ptr_t _hudpanel;
   scopesink_ptr_t _sink;
   varmap::VarMap _vars;

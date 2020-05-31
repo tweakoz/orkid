@@ -126,8 +126,6 @@ void Layer::compute(outputBuffer& obuf, int numframes) {
   float* master_outl = obuf._leftBuffer;
   float* master_outr = obuf._rightBuffer;
 
-  float dt = float(numframes) / the_synth->_sampleRate;
-
   ///////////////////////////////////////////////
 
   // printf( "pchc1<%f> pchc2<%f> poic<%f> currat<%f>\n", _pchc1, _pchc2, _curPitchOffsetInCents, currat );
@@ -175,6 +173,7 @@ void Layer::compute(outputBuffer& obuf, int numframes) {
         _dspwritebase += frames_per_controlpass;
         ifrpending -= frames_per_controlpass;
         ////////////////////////////////
+        _layerTime += float(frames_per_controlpass) * getInverseSampleRate();
       }
     }
 
@@ -219,7 +218,6 @@ void Layer::compute(outputBuffer& obuf, int numframes) {
     ///////////////////////////////////////////////
   } // if(true)
 
-  _layerTime += dt;
 } // namespace ork::audio::singularity
 
 ///////////////////////////////////////////////////////////////////////////////

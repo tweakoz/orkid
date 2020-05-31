@@ -41,7 +41,7 @@ struct LayerData {
   int _loVel              = 0;
   int _hiVel              = 127;
   float _channelGains[4]  = {0, 0, 0, 0};
-  int _channelPans[4]     = {0, 0, 0, 0};
+  float _channelPans[4]   = {0, 0, 0, 0};
   int _channelPanModes[4] = {0, 0, 0, 0};
   bool _ignRels           = false;
   bool _atk1Hold          = false; // ThrAtt

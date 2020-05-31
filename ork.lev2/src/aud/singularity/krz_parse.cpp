@@ -496,11 +496,11 @@ dspblkdata_ptr_t SynthObjectsDB::parseDspBlock(const Value& dseg, lyrdata_ptr_t 
 
     switch (rval->_blockIndex) {
       case 3: // upper
-        layd->_channelPans[1]     = pan;
+        layd->_channelPans[1]     = ((pan / 7.0f) - 3.5f) / 3.5f;
         layd->_channelPanModes[1] = panMode;
         break;
       case 4: // lower
-        layd->_channelPans[0]     = pan;
+        layd->_channelPans[0]     = ((pan / 7.0f) - 3.5f) / 3.5f;
         layd->_channelPanModes[0] = panMode;
         break;
       default:

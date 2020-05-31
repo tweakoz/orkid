@@ -62,7 +62,7 @@ using czxprogdata_ptr_t = std::shared_ptr<CzProgData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-algdata_ptr_t configureCz1Algorithm(int numosc);
+algdata_ptr_t configureCz1Algorithm(lyrdata_ptr_t ldat, int numosc);
 
 ///////////////////////////////////////////////////////////////////////////////
 struct CZXDATA final : public DspBlockData {

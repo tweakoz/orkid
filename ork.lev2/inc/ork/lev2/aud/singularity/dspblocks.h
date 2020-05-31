@@ -195,7 +195,7 @@ struct DspStageData final {
   }
   void setNumIos(int numinp, int numout);
 
-  dspblkdata_constptr_t _blockdatas[kmaxdspblocksperstage];
+  dspblkdata_ptr_t _blockdatas[kmaxdspblocksperstage];
   iomask_ptr_t _iomask;
   int _numblocks = 0;
 };

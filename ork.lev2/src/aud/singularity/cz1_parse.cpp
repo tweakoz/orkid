@@ -476,7 +476,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     // setup dsp graph
     //////////////////////////////////////
     auto dcostage       = layerdata->stageByName("DCO");
-    auto ampstage       = layerdata->stageByName("DCOAMP");
+    auto ampstage       = layerdata->stageByName("AMP");
     auto dco            = dcostage->appendTypedBlock<CZX>(oscdata, dcochannel);
     auto amp            = ampstage->appendTypedBlock<AMP_MONOIO>();
     dco->_dspchannel[0] = dcochannel;
@@ -517,21 +517,21 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
   /////////////////////////////////////////////////
   switch (czprogdata->_lineSel) {
     case 0: // 1
-      layerdata->_algdata = configureCz1Algorithm(1);
+      layerdata->_algdata = configureCz1Algorithm(layerdata, 1);
       make_dco(layerdata, czprogdata->_oscData[0], 0);
       break;
     case 1: // 2
-      layerdata->_algdata = configureCz1Algorithm(1);
+      layerdata->_algdata = configureCz1Algorithm(layerdata, 1);
       make_dco(layerdata, czprogdata->_oscData[1], 0);
       break;
     case 2: // 1+1'
-      layerdata->_algdata        = configureCz1Algorithm(2);
+      layerdata->_algdata        = configureCz1Algorithm(layerdata, 2);
       *(czprogdata->_oscData[1]) = *(czprogdata->_oscData[0]);
       make_dco(layerdata, czprogdata->_oscData[0], 0);
       make_dco(layerdata, czprogdata->_oscData[1], 1);
       break;
     case 3: // 1+2'
-      layerdata->_algdata = configureCz1Algorithm(2);
+      layerdata->_algdata = configureCz1Algorithm(layerdata, 2);
       make_dco(layerdata, czprogdata->_oscData[0], 0);
       make_dco(layerdata, czprogdata->_oscData[1], 1);
       break;
@@ -586,21 +586,6 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
       break;
     }
   }
-  /////////////////////////////////////////////////
-  // stereo mix out
-  /////////////////////////////////////////////////
-  auto stereostage      = layerdata->stageByName("STEREO");
-  auto stro             = stereostage->appendTypedBlock<AMP_STEREOOUT>();
-  auto STEREOC          = layerdata->appendController<CustomControllerData>("DCO1DETUNE");
-  auto& stereo_mod      = stro->_paramd[0]._mods;
-  stereo_mod._src1      = STEREOC;
-  stereo_mod._src1Depth = 1.0f;
-  STEREOC->_onkeyon     = [czprogdata](
-                          CustomControllerInst* cci, //
-                          const KeyOnInfo& KOI) {    //
-    cci->_curval = 1.0f;                                 // amplitude to unity
-  };
-
   /////////////////////////////////////////////////
   czprogdata->_name = name;
   czprogdata->dump();

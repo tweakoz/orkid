@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
     //////////////////////////////////////
     // setup dsp graph
     //////////////////////////////////////
-    layerdata->_algdata = configureCz1Algorithm(1);
+    layerdata->_algdata = configureCz1Algorithm(layerdata, 1);
     auto dcostage       = layerdata->stageByName("DCO");
     auto ampstage       = layerdata->stageByName("AMP");
     auto dco            = dcostage->appendTypedBlock<CZX>(czoscdata, 0);
@@ -123,7 +123,7 @@ int main(int argc, char** argv) {
   auto envview                     = create_envelope_analyzer(app->_hudvp);
   env_source->connect(envview->_sink);
   envview->setRect(-10, 720 - 467, 1300, 477, true);
-  envview->_vars.makeValueForKey<float>("timewidth") = 15.0f;
+  envview->setProperty<float>("timewidth", 1.0f);
   //////////////////////////////////////
   // play test notes
   //////////////////////////////////////

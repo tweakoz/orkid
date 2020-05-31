@@ -18,19 +18,6 @@ struct AMP_MONOIO : public DspBlock {
   float _filt;
 };
 ///////////////////////////////////////////////////////////////////////////////
-struct AMP_STEREOOUT_DATA : public DspBlockData {
-  AMP_STEREOOUT_DATA();
-  dspblk_ptr_t createInstance() const override;
-};
-struct AMP_STEREOOUT : public DspBlock {
-  using dataclass_t = AMP_STEREOOUT_DATA;
-  AMP_STEREOOUT(const DspBlockData* dbd);
-  void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
-  float _filt;
-  float _upan, _lpan;
-};
-///////////////////////////////////////////////////////////////////////////////
 struct PLUSAMP : public DspBlock {
   static void initBlock(dspblkdata_ptr_t blockdata);
   PLUSAMP(const DspBlockData* dbd);

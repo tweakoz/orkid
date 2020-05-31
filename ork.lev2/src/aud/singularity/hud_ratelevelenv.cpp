@@ -14,6 +14,7 @@ struct RateLevelSurf final : public ui::Surface {
     _timewidthsamples = int(samplesPerControlPeriod() * w);
     if (_timewidthsamples != _samples.size()) {
       _samples.resize(_timewidthsamples);
+      memset(_samples.data(), 0, _timewidthsamples * sizeof(float));
     }
   }
   ork::lev2::CTXBASE* _ctxbase = nullptr;
@@ -82,9 +83,7 @@ signalscope_ptr_t create_envelope_analyzer(hudvp_ptr_t vp) {
   vp->addChild(hudpanel->_uipanel);
   vp->_hudpanels.insert(hudpanel);
 
-  float time_width                                      = 15.0f;
-  instrument->_vars.makeValueForKey<float>("timewidth") = time_width;
-  ratelevsurf->setTimeWidth(time_width);
+  instrument->setProperty<float>("timewidth", 15.0f);
   return instrument;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -99,7 +98,7 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   auto vp      = syn->_hudvp;
   double time  = syn->_timeaccum;
 
-  float timewidth = _instrument->_vars.typedValueForKey<float>("timewidth");
+  float timewidth = _instrument->property<float>("timewidth");
   setTimeWidth(timewidth);
 
   // auto scopebuf = _scopebuffers.begin_pull();
