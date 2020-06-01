@@ -179,41 +179,6 @@ void DOUBLE_NOTCH_W_SEP::doKeyOn(const DspKeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-TWOPOLE_ALLPASS::TWOPOLE_ALLPASS(const DspBlockData* dbd)
-    : DspBlock(dbd) {
-}
-
-void TWOPOLE_ALLPASS::compute(DspBuffer& dspbuf) // final
-{
-  float pad      = _dbd->_inputPad;
-  int inumframes = _layer->_dspwritecount;
-  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-
-  float fc  = _param[0].eval();
-  float wid = _param[1].eval();
-  _fval[0]  = fc;
-  _fval[1]  = wid;
-
-  _filterL.Set(fc);
-  _filterH.Set(fc);
-  // printf( "fc<%f>\n", fc );
-  if (1)
-    for (int i = 0; i < inumframes; i++) {
-      float f1 = _filterL.Tick(ubuf[i] * pad);
-      ubuf[i]  = _filterH.Tick(f1);
-    }
-
-  // printf( "ff<%f> res<%f>\n", ff, res );
-}
-
-void TWOPOLE_ALLPASS::doKeyOn(const DspKeyOnInfo& koi) // final
-{
-  _filterL.Clear();
-  _filterH.Clear();
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // LOPAS2 = TWOPOLE_LOWPASS (fixed -6dB res)
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -516,6 +481,49 @@ void ALPASS::compute(DspBuffer& dspbuf) // final
 void ALPASS::doKeyOn(const DspKeyOnInfo& koi) // final
 {
   _filter.Clear();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+TwoPoleAllPassData::TwoPoleAllPassData() {
+  _blocktype = "TwoPoleAllPass";
+  addParam().useDefaultEvaluator(); // center
+  addParam().useDefaultEvaluator(); // width
+}
+dspblk_ptr_t TwoPoleAllPassData::createInstance() const {
+  return std::make_shared<TwoPoleAllPass>(this);
+}
+TwoPoleAllPass::TwoPoleAllPass(const DspBlockData* dbd)
+    : DspBlock(dbd) {
+}
+
+void TwoPoleAllPass::compute(DspBuffer& dspbuf) // final
+{
+  float pad      = _dbd->_inputPad;
+  int inumframes = _layer->_dspwritecount;
+  auto inpbuf    = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+  auto outbuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+
+  float fc  = _param[0].eval();
+  float wid = _param[1].eval();
+  _fval[0]  = fc;
+  _fval[1]  = wid;
+
+  _filterL.Set(fc);
+  _filterH.Set(fc);
+  // printf( "fc<%f>\n", fc );
+  if (1)
+    for (int i = 0; i < inumframes; i++) {
+      float f1  = _filterL.Tick(inpbuf[i] * pad);
+      outbuf[i] = _filterH.Tick(f1);
+    }
+
+  // printf( "ff<%f> res<%f>\n", ff, res );
+}
+
+void TwoPoleAllPass::doKeyOn(const DspKeyOnInfo& koi) // final
+{
+  _filterL.Clear();
+  _filterH.Clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

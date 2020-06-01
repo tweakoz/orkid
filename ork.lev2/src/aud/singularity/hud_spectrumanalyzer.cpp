@@ -154,7 +154,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   };
   auto mapFFTX = [&](float frq) -> float {
     float midinote    = frequency_to_midi_note(frq);
-    const float kfinv = 1.0f / 24000.0f;
+    const float kfinv = 2.0f * getInverseSampleRate();
     float normf       = (frq)*kfinv;
     float x           = powf(normf, 0.3);
     return ANA_X1 - 16 + ANA_W * x;

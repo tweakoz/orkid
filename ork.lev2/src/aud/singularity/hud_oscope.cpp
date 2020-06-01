@@ -42,7 +42,7 @@ signalscope_ptr_t create_oscilloscope(hudvp_ptr_t vp) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 ScopeSurf::ScopeSurf() //
-    : ui::Surface("Scope", 0, 0, 32, 32, fvec3(0.2, 0.1, 0.2), 1.0) {
+    : ui::Surface("Scope", 0, 0, 32, 32, fvec3(), 1.0) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
@@ -81,7 +81,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   int window_width = syn->_oswidth;
 
-  double width       = double(window_width) / double(48000.0);
+  double width       = double(window_width) / getSampleRate();
   double frq         = 1.0 / width;
   float triggerlevel = syn->_ostriglev;
 

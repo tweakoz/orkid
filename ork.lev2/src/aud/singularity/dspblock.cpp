@@ -251,9 +251,6 @@ dspblk_ptr_t createDspBlock(const DspBlockData* dbd) {
   // filter
   ////////////////////////
 
-  if (dbd->_blocktype == "2POLE ALLPASS")
-    rval = std::make_shared<TWOPOLE_ALLPASS>(dbd);
-
   if (dbd->_blocktype == "STEEP RESONANT BASS")
     rval = std::make_shared<STEEP_RESONANT_BASS>(dbd);
   if (dbd->_blocktype == "4POLE HIPASS W/SEP")

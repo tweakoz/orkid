@@ -15,7 +15,7 @@ float wrap(float inp, float adj);
 
 SINE::SINE(const DspBlockData* dbd)
     : DspBlock(dbd)
-    , _pblep(48000, PolyBLEP::SINE) {
+    , _pblep(getSampleRate(), PolyBLEP::SINE) {
 }
 
 void SINE::compute(DspBuffer& dspbuf) // final
@@ -48,7 +48,7 @@ void SINE::doKeyOn(const DspKeyOnInfo& koi) // final
 
 SAW::SAW(const DspBlockData* dbd)
     : DspBlock(dbd)
-    , _pblep(48000, PolyBLEP::SAWTOOTH) {
+    , _pblep(getSampleRate(), PolyBLEP::SAWTOOTH) {
 }
 
 void SAW::compute(DspBuffer& dspbuf) // final
@@ -80,7 +80,7 @@ void SAW::doKeyOn(const DspKeyOnInfo& koi) // final
 
 SQUARE::SQUARE(const DspBlockData* dbd)
     : DspBlock(dbd)
-    , _pblep(48000, PolyBLEP::SQUARE) {
+    , _pblep(getSampleRate(), PolyBLEP::SQUARE) {
 }
 
 void SQUARE::compute(DspBuffer& dspbuf) // final
@@ -112,7 +112,7 @@ void SQUARE::doKeyOn(const DspKeyOnInfo& koi) // final
 
 SINEPLUS::SINEPLUS(const DspBlockData* dbd)
     : DspBlock(dbd)
-    , _pblep(48000, PolyBLEP::SINE) {
+    , _pblep(getSampleRate(), PolyBLEP::SINE) {
 }
 
 void SINEPLUS::compute(DspBuffer& dspbuf) // final
@@ -146,7 +146,7 @@ void SINEPLUS::doKeyOn(const DspKeyOnInfo& koi) // final
 
 SAWPLUS::SAWPLUS(const DspBlockData* dbd)
     : DspBlock(dbd)
-    , _pblep(48000, PolyBLEP::SAWTOOTH) {
+    , _pblep(getSampleRate(), PolyBLEP::SAWTOOTH) {
 }
 
 void SAWPLUS::compute(DspBuffer& dspbuf) // final
@@ -185,7 +185,7 @@ void SAWPLUS::doKeyOn(const DspKeyOnInfo& koi) // final
 
 SWPLUSSHP::SWPLUSSHP(const DspBlockData* dbd)
     : DspBlock(dbd)
-    , _pblep(48000, PolyBLEP::RAMP) {
+    , _pblep(getSampleRate(), PolyBLEP::RAMP) {
   _pblep.setAmplitude(1.0f);
 }
 
@@ -223,7 +223,7 @@ void SWPLUSSHP::doKeyOn(const DspKeyOnInfo& koi) // final
 
 SHAPEMODOSC::SHAPEMODOSC(const DspBlockData* dbd)
     : DspBlock(dbd)
-    , _pblep(48000, PolyBLEP::SINE) {
+    , _pblep(getSampleRate(), PolyBLEP::SINE) {
   _pblep.setAmplitude(1.0f);
 }
 
@@ -287,7 +287,7 @@ void SHAPEMODOSC::doKeyOn(const DspKeyOnInfo& koi) // final
 
 PLUSSHAPEMODOSC::PLUSSHAPEMODOSC(const DspBlockData* dbd)
     : DspBlock(dbd)
-    , _pblep(48000, PolyBLEP::SINE) {
+    , _pblep(getSampleRate(), PolyBLEP::SINE) {
   _pblep.setAmplitude(0.25f);
 }
 
@@ -398,7 +398,7 @@ void SYNCM::doKeyOn(const DspKeyOnInfo& koi) // final
 
 SYNCS::SYNCS(const DspBlockData* dbd)
     : DspBlock(dbd)
-    , _pblep(48000, PolyBLEP::RAMP) {
+    , _pblep(getSampleRate(), PolyBLEP::RAMP) {
   _pblep.setAmplitude(1.0f);
   _prvmaster = 0.0f;
 }
@@ -442,7 +442,7 @@ void SYNCS::doKeyOn(const DspKeyOnInfo& koi) // final
 
 PWM::PWM(const DspBlockData* dbd)
     : DspBlock(dbd)
-    , _pblep(48000, PolyBLEP::SINE) {
+    , _pblep(getSampleRate(), PolyBLEP::SINE) {
   _pblep.setAmplitude(1.0f);
 }
 

@@ -86,30 +86,35 @@ int main(int argc, char** argv) {
     auto ampstage = layerdata->stageByName("AMP");
 
     auto make_dco = [&](int dcochannel) {
-      auto czoscdata             = std::make_shared<CzOscData>();
-      auto dco                   = dcostage->appendTypedBlock<CZX>(czoscdata, dcochannel);
-      auto distortion            = ampstage->appendTypedBlock<Distortion>(); //  Kurzweil Distorion
-      auto lopass1               = ampstage->appendTypedBlock<FourPoleLowPassWithSep>();
-      auto lopass2               = ampstage->appendTypedBlock<FourPoleLowPassWithSep>();
+      auto czoscdata  = std::make_shared<CzOscData>();
+      auto dco        = dcostage->appendTypedBlock<CZX>(czoscdata, dcochannel);
+      auto distortion = ampstage->appendTypedBlock<Distortion>(); //  Kurzweil Distorion
+      auto allpass    = ampstage->appendTypedBlock<TwoPoleAllPass>();
+      auto lopass1    = ampstage->appendTypedBlock<FourPoleLowPassWithSep>();
+      // auto lopass2               = ampstage->appendTypedBlock<FourPoleLowPassWithSep>();
       auto amp                   = ampstage->appendTypedBlock<AMP_MONOIO>();
       dco->_dspchannel[0]        = dcochannel;
       distortion->_dspchannel[0] = dcochannel;
+      allpass->_dspchannel[0]    = dcochannel;
       lopass1->_dspchannel[0]    = dcochannel;
-      lopass2->_dspchannel[0]    = dcochannel;
-      amp->_dspchannel[0]        = dcochannel;
+      // lopass2->_dspchannel[0]    = dcochannel;
+      amp->_dspchannel[0] = dcochannel;
       //////////////////////////////////////
       distortion->param(0)._coarse = rangedf(-30.0f, -21.0f);
       //////////////////////////////////////
       // 2 4poles in series == 48db/octave
       //////////////////////////////////////
+      allpass->_inputPad        = 0.75f;
+      allpass->param(0)._coarse = 5500.0f; // center
+      allpass->param(1)._coarse = 0.0f;    // width
       lopass1->_inputPad        = 0.75f;
       lopass1->param(0)._coarse = 4500.0f; // cutoff
       lopass1->param(1)._coarse = 0.0f;    // resonance
-      lopass1->param(2)._coarse = 0.0f;    // sep
-      lopass2->_inputPad        = 0.75f;
-      lopass2->param(0)._coarse = 4500.0f; // cutoff
-      lopass2->param(1)._coarse = 0.0f;    // resonance
-      lopass2->param(2)._coarse = 0.0f;    // sep
+      lopass1->param(2)._coarse = 1200.0f; // sep
+      // lopass2->_inputPad        = 0.75f;
+      // lopass2->param(0)._coarse = 4500.0f; // cutoff
+      // lopass2->param(1)._coarse = 0.0f;    // resonance
+      // lopass2->param(2)._coarse = 1200.0f; // sep
       //////////////////////////////////////
       auto envname_dca = FormatString("DCAENV%d", dcochannel);
       auto envname_dcw = FormatString("DCWENV%d", dcochannel);

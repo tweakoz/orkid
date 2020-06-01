@@ -90,13 +90,6 @@ struct ALPASS : public DspBlock {
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
 };
-struct TWOPOLE_ALLPASS : public DspBlock {
-  TWOPOLE_ALLPASS(const DspBlockData* dbd);
-  TrapAllpass _filterL;
-  TrapAllpass _filterH;
-  void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
-};
 struct HIFREQ_STIMULATOR : public DspBlock {
   HIFREQ_STIMULATOR(const DspBlockData* dbd);
   TrapSVF _filter1;
@@ -118,6 +111,20 @@ struct TwoPoleLowPass : public DspBlock {
   TwoPoleLowPass(const DspBlockData* dbd);
   TrapSVF _filter;
   float _smoothFC;
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const DspKeyOnInfo& koi) final;
+};
+
+struct TwoPoleAllPassData : public DspBlockData {
+  // krzname: "2POLE ALLPASS"
+  TwoPoleAllPassData();
+  dspblk_ptr_t createInstance() const override;
+};
+struct TwoPoleAllPass : public DspBlock {
+  using dataclass_t = TwoPoleAllPassData;
+  TwoPoleAllPass(const DspBlockData* dbd);
+  TrapAllpass _filterL;
+  TrapAllpass _filterH;
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
 };
