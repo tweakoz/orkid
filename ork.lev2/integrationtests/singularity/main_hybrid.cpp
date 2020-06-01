@@ -4,6 +4,7 @@
 #include <ork/lev2/aud/singularity/alg_amp.h>
 #include <ork/lev2/aud/singularity/alg_nonlin.h>
 #include <ork/lev2/aud/singularity/dsp_ringmod.h>
+#include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <random>
 
 using namespace ork::audio::singularity;
@@ -12,7 +13,6 @@ int main(int argc, char** argv) {
   auto app = createEZapp(argc, argv);
   ////////////////////////////////////////////////
   // main bus effect
-  //  Kurzweil Distorion on CZ oscillators..
   ////////////////////////////////////////////////
   auto mainbus      = synth::instance()->outputBus("main");
   auto bussource    = mainbus->createScopeSource();
@@ -21,24 +21,42 @@ int main(int argc, char** argv) {
   auto fxalg        = std::make_shared<AlgData>();
   fxlayer->_algdata = fxalg;
   fxalg->_name      = ork::FormatString("FxAlg");
-  auto fxstage      = fxalg->appendStage("FX");
-  fxstage->setNumIos(2, 2); // stereo in, stereo out
-  auto dL               = fxstage->appendTypedBlock<Distortion>();
-  auto dR               = fxstage->appendTypedBlock<Distortion>();
-  dL->_dspchannel[0]    = 0;
-  dR->_dspchannel[0]    = 1;
-  auto& dLmod           = dL->getParam(0)._mods;
-  auto& dRmod           = dR->getParam(0)._mods;
-  auto FXCONTROL        = fxlayer->appendController<CustomControllerData>("PAN");
-  dLmod._src1           = FXCONTROL;
-  dLmod._src1Depth      = 1.0;
-  dRmod._src1           = FXCONTROL;
-  dRmod._src1Depth      = 1.0;
-  FXCONTROL->_oncompute = [](CustomControllerInst* cci) { //
+  /////////////////
+  //  Kurzweil Distorion
+  /////////////////
+  auto fxstage1 = fxalg->appendStage("FX1");
+  fxstage1->setNumIos(2, 2); // stereo in, stereo out
+  auto dL                 = fxstage1->appendTypedBlock<Distortion>();
+  auto dR                 = fxstage1->appendTypedBlock<Distortion>();
+  dL->_dspchannel[0]      = 0;
+  dR->_dspchannel[0]      = 1;
+  auto& dLmod             = dL->getParam(0)._mods;
+  auto& dRmod             = dR->getParam(0)._mods;
+  auto DISTCONTROL        = fxlayer->appendController<CustomControllerData>("PAN");
+  dLmod._src1             = DISTCONTROL;
+  dLmod._src1Depth        = 1.0;
+  dRmod._src1             = DISTCONTROL;
+  dRmod._src1Depth        = 1.0;
+  DISTCONTROL->_oncompute = [](CustomControllerInst* cci) { //
     float index = cci->_layer->_layerTime;
     float wave  = (0.5f + sinf(index) * 0.5);
     // cci->_curval = lerp(1.0, 0.5, wave); // Wrap
     cci->_curval = lerp(-30.0f, -24.0f, wave); // Distortion
+  };
+  /////////////////
+  // stereo enhancer
+  /////////////////
+  auto fxstage2 = fxalg->appendStage("FX2");
+  fxstage2->setNumIos(2, 2); // stereo in, stereo out
+  auto stereoenh           = fxstage1->appendTypedBlock<StereoEnhancer>();
+  auto& width_mod          = stereoenh->getParam(0)._mods;
+  auto WIDTHCONTROL        = fxlayer->appendController<CustomControllerData>("PAN");
+  width_mod._src1          = WIDTHCONTROL;
+  width_mod._src1Depth     = 1.0;
+  WIDTHCONTROL->_oncompute = [](CustomControllerInst* cci) { //
+    float index  = cci->_layer->_layerTime;
+    float wave   = (0.5f + sinf(index) * 0.5);
+    cci->_curval = wave;
   };
   //
   mainbus->setBusDSP(fxlayer);

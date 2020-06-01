@@ -94,4 +94,42 @@ void MonoInStereoOut::doKeyOn(const DspKeyOnInfo& koi) // final
   _panbase = LD->_channelPans[chan];
 }
 ///////////////////////////////////////////////////////////////////////////////
+
+StereoEnhancerData::StereoEnhancerData() {
+  _blocktype        = "StereoEnhancer";
+  auto& width_param = addParam();
+  width_param.useDefaultEvaluator();
+}
+dspblk_ptr_t StereoEnhancerData::createInstance() const { // override
+  return std::make_shared<StereoEnhancer>(this);
+}
+
+StereoEnhancer::StereoEnhancer(const DspBlockData* dbd)
+    : DspBlock(dbd) {
+}
+
+void StereoEnhancer::compute(DspBuffer& dspbuf) // final
+{
+  int inumframes = _layer->_dspwritecount;
+  int ibase      = _layer->_dspwritebase;
+  auto ilbuf     = getInpBuf(dspbuf, 0) + ibase;
+  auto irbuf     = getInpBuf(dspbuf, 1) + ibase;
+  auto olbuf     = getOutBuf(dspbuf, 0) + ibase;
+  auto orbuf     = getOutBuf(dspbuf, 1) + ibase;
+  float width    = _param[0].eval();
+
+  for (int i = 0; i < inumframes; i++) {
+    float inl    = ilbuf[i];
+    float inr    = irbuf[i];
+    float mono   = (inl + inr) * 0.5f;
+    float stereo = (inl - inr) * width;
+    olbuf[i]     = mono + stereo;
+    orbuf[i]     = mono - stereo;
+  }
+}
+
+void StereoEnhancer::doKeyOn(const DspKeyOnInfo& koi) // final
+{
+}
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

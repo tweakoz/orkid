@@ -29,5 +29,16 @@ struct MonoInStereoOut : public DspBlock {
   float _filt;
   float _panbase;
 };
+///////////////////////////////////////////////////////////////////////////////
+struct StereoEnhancerData : public DspBlockData {
+  StereoEnhancerData();
+  dspblk_ptr_t createInstance() const override;
+};
+struct StereoEnhancer : public DspBlock {
+  using dataclass_t = StereoEnhancerData;
+  StereoEnhancer(const DspBlockData* dbd);
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const DspKeyOnInfo& koi) final;
+};
 
 } // namespace ork::audio::singularity
