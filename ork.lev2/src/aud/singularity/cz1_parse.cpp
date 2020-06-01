@@ -564,9 +564,10 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
       auto mix                           = modstage->appendTypedBlock<SUM2>();
       break;
     }
-    case 4:   // ring 1
-    case 5: { // ring 1
-      OrkAssert(czprogdata->numOscs() == 2);
+    case 4:                           // ring 1
+    case 5: {                         // ring 1
+      if (czprogdata->numOscs() == 1) // we get some bad data with some banks
+        return nullptr;
       auto modstage = layerdata->stageByName("MOD");
       if (modulation_nomix)
         modstage->appendTypedBlock<RingMod>();
@@ -671,9 +672,11 @@ void parse_czx(CzData* outd, const file::Path& path, const std::string& bnkname)
     }
     ///////////////////////////
     auto czpd = parse_czprogramdata(outd, prgout, bytes);
-    outd->_bankdata->addProgram(newprogramid, czpd->_name, prgout);
-    prgout->_name = czpd->_name;
-    printf("czprog<%s>\n", prgout->_name.c_str());
+    if (czpd) {
+      outd->_bankdata->addProgram(newprogramid, czpd->_name, prgout);
+      prgout->_name = czpd->_name;
+      printf("czprog<%s>\n", prgout->_name.c_str());
+    }
     ///////////////////////////
   }
 }

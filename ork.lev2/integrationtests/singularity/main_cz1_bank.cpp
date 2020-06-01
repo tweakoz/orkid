@@ -15,11 +15,11 @@ int main(int argc, char** argv) {
   fxlayer->_algdata = fxalg;
   fxalg->_name      = ork::FormatString("FxAlg");
   /////////////////
-  // stereo enhancer
+  // output effect
   /////////////////
   auto fxstage = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
-  auto stereoenh           = fxstage->appendTypedBlock<StereoEnhancer>();
+  auto stereoenh           = fxstage->appendTypedBlock<StaticStereoEcho>();
   auto& width_mod          = stereoenh->param(0)._mods;
   auto WIDTHCONTROL        = fxlayer->appendController<CustomControllerData>("PAN");
   width_mod._src1          = WIDTHCONTROL;
@@ -27,6 +27,10 @@ int main(int argc, char** argv) {
   WIDTHCONTROL->_oncompute = [](CustomControllerInst* cci) { //
     cci->_curval = 0.7f;
   };
+  // auto echo              = fxstage->appendTypedBlock<StaticStereoEcho>();
+  // echo->param(0)._coarse = 0.5; // delay time
+  // echo->param(1)._coarse = 0.5; // feedback
+  // echo->param(2)._coarse = 0.5; // wet/dry mix
   //
   mainbus->setBusDSP(fxlayer);
   //////////////////////////////////////////////////////////////////////////////
@@ -38,6 +42,8 @@ int main(int argc, char** argv) {
   auto basepath = basePath() / "casioCZ";
   auto czdata1  = CzData::load(basepath / "factoryA.bnk", "bank1");
   auto czdata2  = CzData::load(basepath / "factoryB.bnk", "bank2");
+  // auto czdata1  = CzData::load(basepath / "cz1_1.bnk", "bank1");
+  // auto czdata2  = CzData::load(basepath / "cz1_2.bnk", "bank2");
   // czdata->loadBank(basepath / "edit.syx", "bank1");
   int count = 0;
   for (int i = 0; i < 64; i++) { // 2 32 patch banks
