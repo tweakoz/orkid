@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
   /////////////////
   auto fxstage2 = fxalg->appendStage("FX2");
   fxstage2->setNumIos(2, 2); // stereo in, stereo out
-  auto stereoenh           = fxstage1->appendTypedBlock<StereoEnhancer>();
+  auto stereoenh           = fxstage2->appendTypedBlock<StereoEnhancer>();
   auto& width_mod          = stereoenh->getParam(0)._mods;
   auto WIDTHCONTROL        = fxlayer->appendController<CustomControllerData>("PAN");
   width_mod._src1          = WIDTHCONTROL;

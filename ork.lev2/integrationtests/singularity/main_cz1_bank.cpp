@@ -1,8 +1,34 @@
 #include "harness.h"
 #include <ork/lev2/aud/singularity/cz1.h>
+#include <ork/lev2/aud/singularity/dsp_mix.h>
 
 int main(int argc, char** argv) {
   auto app = createEZapp(argc, argv);
+  ////////////////////////////////////////////////
+  // main bus effect
+  ////////////////////////////////////////////////
+  auto mainbus      = synth::instance()->outputBus("main");
+  auto bussource    = mainbus->createScopeSource();
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // stereo enhancer
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  auto stereoenh           = fxstage->appendTypedBlock<StereoEnhancer>();
+  auto& width_mod          = stereoenh->getParam(0)._mods;
+  auto WIDTHCONTROL        = fxlayer->appendController<CustomControllerData>("PAN");
+  width_mod._src1          = WIDTHCONTROL;
+  width_mod._src1Depth     = 1.0;
+  WIDTHCONTROL->_oncompute = [](CustomControllerInst* cci) { //
+    cci->_curval = 0.7f;
+  };
+  //
+  mainbus->setBusDSP(fxlayer);
   //////////////////////////////////////////////////////////////////////////////
   auto scope    = create_oscilloscope(app->_hudvp);
   auto analyzer = create_spectrumanalyzer(app->_hudvp);
