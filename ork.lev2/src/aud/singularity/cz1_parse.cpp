@@ -511,7 +511,8 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     }
   };
   /////////////////////////////////////////////////
-  auto layerdata = prgout->newLayer();
+  auto layerdata           = prgout->newLayer();
+  layerdata->_layerLinGain = 0.25;
   /////////////////////////////////////////////////
   // line select
   /////////////////////////////////////////////////

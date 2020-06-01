@@ -14,15 +14,14 @@ int main(int argc, char** argv) {
   // main bus effect
   //  Kurzweil Distorion on CZ oscillators..
   ////////////////////////////////////////////////
-  auto mainbus          = synth::instance()->outputBus("main");
-  auto bussource        = mainbus->createScopeSource();
-  auto fxprog           = std::make_shared<ProgramData>();
-  auto fxlayer          = fxprog->newLayer();
-  auto fxalg            = std::make_shared<AlgData>();
-  fxlayer->_algdata     = fxalg;
-  fxalg->_name          = ork::FormatString("FxAlg");
-  fxalg->_cleardspblock = false;
-  auto fxstage          = fxalg->appendStage("FX");
+  auto mainbus      = synth::instance()->outputBus("main");
+  auto bussource    = mainbus->createScopeSource();
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  auto fxstage      = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   auto dL               = fxstage->appendTypedBlock<Distortion>();
   auto dR               = fxstage->appendTypedBlock<Distortion>();

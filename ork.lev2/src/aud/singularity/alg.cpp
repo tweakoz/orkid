@@ -131,14 +131,6 @@ void Alg::compute() {
   int inumframes = _layer->_dspwritecount;
   int ibase      = _layer->_dspwritebase;
   ////////////////////////////////////////////////
-  // clear dsp buffers
-  ////////////////////////////////////////////////
-  if (_algdata._cleardspblock)
-    for (int ich = 0; ich < kmaxdspblocksperstage; ich++) {
-      float* dst = _layer->_dspbuffer->channel(ich) + ibase;
-      memset(dst, inumframes * sizeof(float), 0);
-    }
-  ////////////////////////////////////////////////
   // compute dsp stages
   ////////////////////////////////////////////////
   auto& dspbuf    = *_layer->_dspbuffer;
