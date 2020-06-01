@@ -132,4 +132,63 @@ void StereoEnhancer::doKeyOn(const DspKeyOnInfo& koi) // final
 {
 }
 ///////////////////////////////////////////////////////////////////////////////
+
+StaticStereoEchoData::StaticStereoEchoData() {
+  _blocktype            = "StaticStereoEcho";
+  auto& delaytime_param = addParam();
+  auto& feedback_param  = addParam();
+  auto& mix_param       = addParam();
+  delaytime_param.useDefaultEvaluator();
+  feedback_param.useDefaultEvaluator();
+  mix_param.useDefaultEvaluator();
+}
+dspblk_ptr_t StaticStereoEchoData::createInstance() const { // override
+  return std::make_shared<StaticStereoEcho>(this);
+}
+
+StaticStereoEcho::StaticStereoEcho(const DspBlockData* dbd)
+    : DspBlock(dbd) {
+}
+
+void StaticStereoEcho::compute(DspBuffer& dspbuf) // final
+{
+  float delaytime = _param[0].eval();
+  float feedback  = _param[1].eval();
+  float mix       = _param[2].eval();
+
+  int delaylen = delaytime * getSampleRate();
+  _delaybuffer.resize(delaylen);
+
+  int inumframes = _layer->_dspwritecount;
+  int ibase      = _layer->_dspwritebase;
+
+  auto ilbuf = getInpBuf(dspbuf, 0) + ibase;
+  auto irbuf = getInpBuf(dspbuf, 1) + ibase;
+  auto olbuf = getOutBuf(dspbuf, 0) + ibase;
+  auto orbuf = getOutBuf(dspbuf, 1) + ibase;
+  auto dlbuf = _delaybuffer.channel(0);
+  auto drbuf = _delaybuffer.channel(1);
+
+  for (int i = 0; i < inumframes; i++) {
+    float inl         = ilbuf[i];
+    float inr         = irbuf[i];
+    int inpdelayindex = (_index + i + delaylen) % delaylen;
+    int outdelayindex = (_index + i) % delaylen;
+
+    float delayoutL      = dlbuf[outdelayindex];
+    float delayoutR      = dlbuf[outdelayindex];
+    dlbuf[inpdelayindex] = inl + delayoutL * feedback;
+    drbuf[inpdelayindex] = inr + delayoutR * feedback;
+
+    olbuf[i] = lerp(inl, delayoutL, mix);
+    orbuf[i] = lerp(inr, delayoutR, mix);
+  }
+
+  _index += inumframes;
+}
+
+void StaticStereoEcho::doKeyOn(const DspKeyOnInfo& koi) // final
+{
+}
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

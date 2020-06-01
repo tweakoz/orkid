@@ -30,9 +30,9 @@ int main(int argc, char** argv) {
   auto dR                 = fxstage1->appendTypedBlock<Distortion>();
   dL->_dspchannel[0]      = 0;
   dR->_dspchannel[0]      = 1;
+  auto DISTCONTROL        = fxlayer->appendController<CustomControllerData>("PAN");
   auto& dLmod             = dL->getParam(0)._mods;
   auto& dRmod             = dR->getParam(0)._mods;
-  auto DISTCONTROL        = fxlayer->appendController<CustomControllerData>("PAN");
   dLmod._src1             = DISTCONTROL;
   dLmod._src1Depth        = 1.0;
   dRmod._src1             = DISTCONTROL;
@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
     float index = cci->_layer->_layerTime;
     float wave  = (0.5f + sinf(index) * 0.5);
     // cci->_curval = lerp(1.0, 0.5, wave); // Wrap
-    cci->_curval = lerp(-30.0f, -24.0f, wave); // Distortion
+    cci->_curval = lerp(-30.0f, -28.0f, wave); // Distortion
   };
   /////////////////
   // stereo enhancer
@@ -49,8 +49,8 @@ int main(int argc, char** argv) {
   auto fxstage2 = fxalg->appendStage("FX2");
   fxstage2->setNumIos(2, 2); // stereo in, stereo out
   auto stereoenh           = fxstage2->appendTypedBlock<StereoEnhancer>();
-  auto& width_mod          = stereoenh->getParam(0)._mods;
   auto WIDTHCONTROL        = fxlayer->appendController<CustomControllerData>("PAN");
+  auto& width_mod          = stereoenh->getParam(0)._mods;
   width_mod._src1          = WIDTHCONTROL;
   width_mod._src1Depth     = 1.0;
   WIDTHCONTROL->_oncompute = [](CustomControllerInst* cci) { //
@@ -58,6 +58,13 @@ int main(int argc, char** argv) {
     float wave   = (0.5f + sinf(index) * 0.5);
     cci->_curval = wave;
   };
+  /////////////////
+  // stereo enhancer
+  /////////////////
+  auto echo                 = fxstage2->appendTypedBlock<StaticStereoEcho>();
+  echo->getParam(0)._coarse = 2.0;  // delay time (sec)
+  echo->getParam(1)._coarse = 0.5;  // feedback
+  echo->getParam(2)._coarse = 0.25; // wet/dry mix
   //
   mainbus->setBusDSP(fxlayer);
   ////////////////////////////////////////////////
@@ -70,8 +77,8 @@ int main(int argc, char** argv) {
   analyzer->setRect(480, 0, 810, 256, true);
   envview->setRect(-10, 720 - 467, 1300, 477, true);
   envview->setProperty<float>("timewidth", 5.0f);
-  bussource->connect(scope->_sink);
-  bussource->connect(analyzer->_sink);
+  // bussource->connect(scope->_sink);
+  // bussource->connect(analyzer->_sink);
   ////////////////////////////////////////////////
   // random generators
   ////////////////////////////////////////////////
@@ -214,6 +221,10 @@ int main(int argc, char** argv) {
       pan          = std::clamp(pan, -1.0f, 1.0f);
       cci->_curval = pan;
     };
+    //////////////////////////////////////
+    auto lay_source = layerdata->createScopeSource();
+    lay_source->connect(scope->_sink);
+    lay_source->connect(analyzer->_sink);
     //////////////////////////////////////
     // envelope viewer
     //////////////////////////////////////

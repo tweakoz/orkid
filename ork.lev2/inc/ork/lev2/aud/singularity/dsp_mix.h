@@ -40,5 +40,18 @@ struct StereoEnhancer : public DspBlock {
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const DspKeyOnInfo& koi) final;
 };
+///////////////////////////////////////////////////////////////////////////////
+struct StaticStereoEchoData : public DspBlockData {
+  StaticStereoEchoData();
+  dspblk_ptr_t createInstance() const override;
+};
+struct StaticStereoEcho : public DspBlock {
+  using dataclass_t = StaticStereoEchoData;
+  StaticStereoEcho(const DspBlockData* dbd);
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const DspKeyOnInfo& koi) final;
+  DspBuffer _delaybuffer;
+  int64_t _index;
+};
 
 } // namespace ork::audio::singularity
