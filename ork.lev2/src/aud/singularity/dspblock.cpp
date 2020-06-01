@@ -38,7 +38,7 @@ DspParamData& DspBlockData::addParam() {
   return _paramd[_numParams++];
 }
 
-DspParamData& DspBlockData::getParam(int index) {
+DspParamData& DspBlockData::param(int index) {
   return _paramd[index];
 }
 
@@ -253,13 +253,9 @@ dspblk_ptr_t createDspBlock(const DspBlockData* dbd) {
 
   if (dbd->_blocktype == "2POLE ALLPASS")
     rval = std::make_shared<TWOPOLE_ALLPASS>(dbd);
-  if (dbd->_blocktype == "2POLE LOWPASS")
-    rval = std::make_shared<TWOPOLE_LOWPASS>(dbd);
 
   if (dbd->_blocktype == "STEEP RESONANT BASS")
     rval = std::make_shared<STEEP_RESONANT_BASS>(dbd);
-  if (dbd->_blocktype == "4POLE LOPASS W/SEP")
-    rval = std::make_shared<FOURPOLE_LOPASS_W_SEP>(dbd);
   if (dbd->_blocktype == "4POLE HIPASS W/SEP")
     rval = std::make_shared<FOURPOLE_HIPASS_W_SEP>(dbd);
   if (dbd->_blocktype == "NOTCH FILTER")

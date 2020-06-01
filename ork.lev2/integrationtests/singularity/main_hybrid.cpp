@@ -5,6 +5,7 @@
 #include <ork/lev2/aud/singularity/alg_nonlin.h>
 #include <ork/lev2/aud/singularity/dsp_ringmod.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
+#include <ork/lev2/aud/singularity/alg_filters.h>
 #include <random>
 
 using namespace ork::audio::singularity;
@@ -31,8 +32,8 @@ int main(int argc, char** argv) {
   dL->_dspchannel[0]      = 0;
   dR->_dspchannel[0]      = 1;
   auto DISTCONTROL        = fxlayer->appendController<CustomControllerData>("PAN");
-  auto& dLmod             = dL->getParam(0)._mods;
-  auto& dRmod             = dR->getParam(0)._mods;
+  auto& dLmod             = dL->param(0)._mods;
+  auto& dRmod             = dR->param(0)._mods;
   dLmod._src1             = DISTCONTROL;
   dLmod._src1Depth        = 1.0;
   dRmod._src1             = DISTCONTROL;
@@ -41,7 +42,7 @@ int main(int argc, char** argv) {
     float index = cci->_layer->_layerTime;
     float wave  = (0.5f + sinf(index) * 0.5);
     // cci->_curval = lerp(1.0, 0.5, wave); // Wrap
-    cci->_curval = lerp(-30.0f, -28.0f, wave); // Distortion
+    cci->_curval = lerp(-30.0f, -30.0f, wave); // Distortion
   };
   /////////////////
   // stereo enhancer
@@ -50,7 +51,7 @@ int main(int argc, char** argv) {
   fxstage2->setNumIos(2, 2); // stereo in, stereo out
   auto stereoenh           = fxstage2->appendTypedBlock<StereoEnhancer>();
   auto WIDTHCONTROL        = fxlayer->appendController<CustomControllerData>("PAN");
-  auto& width_mod          = stereoenh->getParam(0)._mods;
+  auto& width_mod          = stereoenh->param(0)._mods;
   width_mod._src1          = WIDTHCONTROL;
   width_mod._src1Depth     = 1.0;
   WIDTHCONTROL->_oncompute = [](CustomControllerInst* cci) { //
@@ -61,10 +62,10 @@ int main(int argc, char** argv) {
   /////////////////
   // stereo enhancer
   /////////////////
-  auto echo                 = fxstage2->appendTypedBlock<StaticStereoEcho>();
-  echo->getParam(0)._coarse = 2.0;  // delay time (sec)
-  echo->getParam(1)._coarse = 0.5;  // feedback
-  echo->getParam(2)._coarse = 0.25; // wet/dry mix
+  auto echo              = fxstage2->appendTypedBlock<StaticStereoEcho>();
+  echo->param(0)._coarse = 2.0;  // delay time (sec)
+  echo->param(1)._coarse = 0.5;  // feedback
+  echo->param(2)._coarse = 0.25; // wet/dry mix
   //
   mainbus->setBusDSP(fxlayer);
   ////////////////////////////////////////////////
@@ -104,14 +105,22 @@ int main(int argc, char** argv) {
     configureCz1Algorithm(layerdata, 2);
     auto dcostage = layerdata->stageByName("DCO");
     auto modstage = layerdata->stageByName("MOD");
+    auto filstage = layerdata->stageByName("FILTER");
     auto ampstage = layerdata->stageByName("AMP");
 
     auto make_dco = [&](int dcochannel) {
-      auto czoscdata      = std::make_shared<CzOscData>();
-      auto dco            = dcostage->appendTypedBlock<CZX>(czoscdata, dcochannel);
-      auto amp            = ampstage->appendTypedBlock<AMP_MONOIO>();
-      dco->_dspchannel[0] = dcochannel;
-      amp->_dspchannel[0] = dcochannel;
+      auto czoscdata         = std::make_shared<CzOscData>();
+      auto dco               = dcostage->appendTypedBlock<CZX>(czoscdata, dcochannel);
+      auto lopass            = ampstage->appendTypedBlock<FourPoleLowPassWithSep>();
+      auto amp               = ampstage->appendTypedBlock<AMP_MONOIO>();
+      dco->_dspchannel[0]    = dcochannel;
+      lopass->_dspchannel[0] = dcochannel;
+      amp->_dspchannel[0]    = dcochannel;
+      //////////////////////////////////////
+      lopass->_inputPad        = 0.7f;
+      lopass->param(0)._coarse = 4000.0f; // cutoff
+      lopass->param(1)._coarse = 0.0f;    // resonance
+      lopass->param(2)._coarse = 0.0f;    // sep
       //////////////////////////////////////
       auto envname_dca = FormatString("DCAENV%d", dcochannel);
       auto envname_dcw = FormatString("DCWENV%d", dcochannel);
@@ -134,17 +143,17 @@ int main(int argc, char** argv) {
       DCAENV->addSegment("seg8", 3, 0, 0.25);
       //////////////////////////////////////
       auto DCWENV = layerdata->appendController<RateLevelEnvData>(envname_dcw);
-      DCWENV->addSegment("seg0", 0.1, rangedf(0.3, 0.9));
-      DCWENV->addSegment("seg1", 1, rangedf(0.5, 1.0));
-      DCWENV->addSegment("seg2", 2, rangedf(0.25, 0.5));
-      DCWENV->addSegment("seg3", 2, 1);
-      DCWENV->addSegment("seg4", 2, 1);
-      DCWENV->addSegment("seg5", 1, 1);
+      DCWENV->addSegment("seg0", rangedf(0.1, 0.2), rangedf(0.3, 0.75));
+      DCWENV->addSegment("seg1", rangedf(0.5, 1.2), rangedf(0.5, 1.0));
+      DCWENV->addSegment("seg2", rangedf(1.5, 2.3), rangedf(0.25, 0.75));
+      DCWENV->addSegment("seg3", rangedf(1.5, 2.3), rangedf(0.25, 0.75));
+      DCWENV->addSegment("seg4", rangedf(1.5, 2.3), rangedf(0.25, 0.75));
+      DCWENV->addSegment("seg5", rangedf(1.5, 2.3), rangedf(0.25, 0.75));
       DCWENV->addSegment("seg6", 1, 0);
       DCWENV->_ampenv = false;
       //////////////////////////////////////
       auto DCOENV = layerdata->appendController<RateLevelEnvData>(envname_dco);
-      DCOENV->addSegment("seg0", rangedf(0.05, 0.1), rangedf(600, 1800));
+      DCOENV->addSegment("seg0", rangedf(0.1, 0.2), rangedf(600, 1800));
       DCOENV->addSegment("seg1", rangedf(3, 5), rangedf(450, 900));
       DCOENV->addSegment("seg2", rangedf(2, 4), rangedf(350, 700));
       DCOENV->addSegment("seg3", rangedf(1.5, 2.5), rangedf(120, 250));
@@ -210,7 +219,7 @@ int main(int argc, char** argv) {
     //////////////////////////////////////
     auto mixstage          = layerdata->stageByName("MIX");
     auto stereomix         = mixstage->_blockdatas[0];
-    auto& panmod           = stereomix->getParam(1)._mods;
+    auto& panmod           = stereomix->param(1)._mods;
     auto PANCONTROL        = layerdata->appendController<CustomControllerData>("PAN");
     panmod._src1           = PANCONTROL;
     panmod._src1Depth      = 1.0;

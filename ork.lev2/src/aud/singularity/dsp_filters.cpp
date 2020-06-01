@@ -214,45 +214,6 @@ void TWOPOLE_ALLPASS::doKeyOn(const DspKeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-TWOPOLE_LOWPASS::TWOPOLE_LOWPASS(const DspBlockData* dbd)
-    : DspBlock(dbd) {
-}
-
-void TWOPOLE_LOWPASS::compute(DspBuffer& dspbuf) // final
-{
-  float pad      = _dbd->_inputPad;
-  int inumframes = _layer->_dspwritecount;
-  auto inpbuf    = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
-
-  float fc  = _param[0].eval();
-  float res = _param[1].eval() * 0.25;
-  _fval[0]  = fc;
-  _fval[1]  = res;
-
-  // printf( "fc<%f>\n", fc );
-  if (1) {
-    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-    for (int i = 0; i < inumframes; i++) {
-      _smoothFC = (_smoothFC * 0.99f) + fc * .01f;
-      _filter.SetWithRes(EM_LPF, fc, res);
-      _filter.Tick(inpbuf[i] * pad);
-      float output = _filter.output;
-      // output = inpbuf[i]*pad;
-      outputchan[i] = output;
-    }
-  }
-
-  // printf( "ff<%f> res<%f>\n", ff, res );
-}
-
-void TWOPOLE_LOWPASS::doKeyOn(const DspKeyOnInfo& koi) // final
-{
-  _filter.Clear();
-  _smoothFC = 0.0f;
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // LOPAS2 = TWOPOLE_LOWPASS (fixed -6dB res)
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -315,48 +276,6 @@ void LP2RES::compute(DspBuffer& dspbuf) // final
 void LP2RES::doKeyOn(const DspKeyOnInfo& koi) // final
 {
   _filter.Clear();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-FOURPOLE_LOPASS_W_SEP::FOURPOLE_LOPASS_W_SEP(const DspBlockData* dbd)
-    : DspBlock(dbd) {
-}
-
-void FOURPOLE_LOPASS_W_SEP::compute(DspBuffer& dspbuf) // final
-{
-  float pad      = _dbd->_inputPad;
-  int inumframes = _layer->_dspwritecount;
-  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-
-  float fc  = _param[0].eval();
-  float res = _param[1].eval();
-  float sep = _param[2].eval();
-
-  float ratio = cents_to_linear_freq_ratio(sep);
-
-  if (1)
-    for (int i = 0; i < inumframes; i++) {
-      _filtFC = 0.99 * _filtFC + 0.01 * fc;
-
-      _filter1.SetWithRes(EM_LPF, _filtFC, res);
-      _filter2.SetWithRes(EM_LPF, _filtFC * ratio, res);
-      _filter1.Tick(ubuf[i] * pad);
-      _filter2.Tick(_filter1.output);
-      ubuf[i] = _filter2.output;
-    }
-
-  _fval[0] = _filtFC;
-  _fval[1] = res;
-  _fval[2] = sep;
-  // printf( "fc<%f> res<%f> sep<%f>\n", fc, res, sep );
-}
-
-void FOURPOLE_LOPASS_W_SEP::doKeyOn(const DspKeyOnInfo& koi) // final
-{
-  _filter1.Clear();
-  _filter2.Clear();
-  _filtFC = 0.0f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -597,6 +516,105 @@ void ALPASS::compute(DspBuffer& dspbuf) // final
 void ALPASS::doKeyOn(const DspKeyOnInfo& koi) // final
 {
   _filter.Clear();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+TwoPoleLowPassData::TwoPoleLowPassData() {
+  _blocktype      = "TwoPoleLowPassData";
+  auto& cutoff    = addParam();
+  auto& resonance = addParam();
+  cutoff.useDefaultEvaluator();
+  resonance.useDefaultEvaluator();
+}
+dspblk_ptr_t TwoPoleLowPassData::createInstance() const {
+  return std::make_shared<TwoPoleLowPass>(this);
+}
+
+TwoPoleLowPass::TwoPoleLowPass(const DspBlockData* dbd)
+    : DspBlock(dbd) {
+}
+void TwoPoleLowPass::compute(DspBuffer& dspbuf) // final
+{
+  float pad      = _dbd->_inputPad;
+  int inumframes = _layer->_dspwritecount;
+  auto inpbuf    = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+  auto outbuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+
+  float fc  = _param[0].eval();
+  float res = _param[1].eval() * 0.25;
+  _fval[0]  = fc;
+  _fval[1]  = res;
+
+  // printf( "fc<%f>\n", fc );
+  if (1) {
+    for (int i = 0; i < inumframes; i++) {
+      _smoothFC = (_smoothFC * 0.99f) + fc * .01f;
+      _filter.SetWithRes(EM_LPF, fc, res);
+      _filter.Tick(inpbuf[i] * pad);
+      outbuf[i] = _filter.output;
+    }
+  }
+
+  // printf( "ff<%f> res<%f>\n", ff, res );
+}
+
+void TwoPoleLowPass::doKeyOn(const DspKeyOnInfo& koi) // final
+{
+  _filter.Clear();
+  _smoothFC = 0.0f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+FourPoleLowPassWithSepData::FourPoleLowPassWithSepData() {
+  _blocktype = "FourPoleLowPassWithSep";
+  addParam().useDefaultEvaluator(); // cutoff
+  addParam().useDefaultEvaluator(); // resonance
+  addParam().useDefaultEvaluator(); // seperation
+}
+dspblk_ptr_t FourPoleLowPassWithSepData::createInstance() const { // override
+  return std::make_shared<FourPoleLowPassWithSep>(this);
+}
+
+FourPoleLowPassWithSep::FourPoleLowPassWithSep(const DspBlockData* dbd)
+    : DspBlock(dbd) {
+}
+
+void FourPoleLowPassWithSep::compute(DspBuffer& dspbuf) // final
+{
+  float pad      = _dbd->_inputPad;
+  int inumframes = _layer->_dspwritecount;
+  auto ibuf      = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+  auto obuf      = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+
+  float fc  = _param[0].eval();
+  float res = _param[1].eval();
+  float sep = _param[2].eval();
+
+  float ratio = cents_to_linear_freq_ratio(sep);
+
+  if (1)
+    for (int i = 0; i < inumframes; i++) {
+      _filtFC = 0.99 * _filtFC + 0.01 * fc;
+
+      _filter1.SetWithRes(EM_LPF, _filtFC, res);
+      _filter2.SetWithRes(EM_LPF, _filtFC * ratio, res);
+      _filter1.Tick(ibuf[i] * pad);
+      _filter2.Tick(_filter1.output);
+      obuf[i] = _filter2.output;
+    }
+
+  _fval[0] = _filtFC;
+  _fval[1] = res;
+  _fval[2] = sep;
+  // printf( "fc<%f> res<%f> sep<%f>\n", fc, res, sep );
+}
+
+void FourPoleLowPassWithSep::doKeyOn(const DspKeyOnInfo& koi) // final
+{
+  _filter1.Clear();
+  _filter2.Clear();
+  _filtFC = 0.0f;
 }
 
 } // namespace ork::audio::singularity

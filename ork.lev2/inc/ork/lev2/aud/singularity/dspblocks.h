@@ -106,7 +106,7 @@ struct DspBlockData {
   std::string _blocktype;
 
   DspParamData& addParam();
-  DspParamData& getParam(int index);
+  DspParamData& param(int index);
 
   int _dspchannel[kmaxdspblocksperstage];
   int _numParams  = 0;
