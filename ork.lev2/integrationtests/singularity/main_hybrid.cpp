@@ -2,6 +2,7 @@
 #include <ork/lev2/aud/singularity/cz1.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/aud/singularity/alg_amp.h>
+#include <ork/lev2/aud/singularity/alg_nonlin.h>
 #include <ork/lev2/aud/singularity/dsp_ringmod.h>
 #include <random>
 
@@ -9,6 +10,39 @@ using namespace ork::audio::singularity;
 
 int main(int argc, char** argv) {
   auto app = createEZapp(argc, argv);
+  ////////////////////////////////////////////////
+  // main bus effect
+  //  Kurzweil Distorion on CZ oscillators..
+  ////////////////////////////////////////////////
+  auto mainbus          = synth::instance()->outputBus("main");
+  auto bussource        = mainbus->createScopeSource();
+  auto fxprog           = std::make_shared<ProgramData>();
+  auto fxlayer          = fxprog->newLayer();
+  auto fxalg            = std::make_shared<AlgData>();
+  fxlayer->_algdata     = fxalg;
+  fxalg->_name          = ork::FormatString("FxAlg");
+  fxalg->_cleardspblock = false;
+  auto fxstage          = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  auto dL               = fxstage->appendTypedBlock<Distortion>();
+  auto dR               = fxstage->appendTypedBlock<Distortion>();
+  dL->_dspchannel[0]    = 0;
+  dR->_dspchannel[0]    = 1;
+  auto& dLmod           = dL->getParam(0)._mods;
+  auto& dRmod           = dR->getParam(0)._mods;
+  auto FXCONTROL        = fxlayer->appendController<CustomControllerData>("PAN");
+  dLmod._src1           = FXCONTROL;
+  dLmod._src1Depth      = 1.0;
+  dRmod._src1           = FXCONTROL;
+  dRmod._src1Depth      = 1.0;
+  FXCONTROL->_oncompute = [](CustomControllerInst* cci) { //
+    float index = cci->_layer->_layerTime;
+    float wave  = (0.5f + sinf(index) * 0.5);
+    // cci->_curval = lerp(1.0, 0.5, wave); // Wrap
+    cci->_curval = lerp(-30.0f, -24.0f, wave); // Distortion
+  };
+  //
+  mainbus->setBusDSP(fxlayer);
   ////////////////////////////////////////////////
   // create visualizers
   ////////////////////////////////////////////////
@@ -19,6 +53,8 @@ int main(int argc, char** argv) {
   analyzer->setRect(480, 0, 810, 256, true);
   envview->setRect(-10, 720 - 467, 1300, 477, true);
   envview->setProperty<float>("timewidth", 5.0f);
+  bussource->connect(scope->_sink);
+  bussource->connect(analyzer->_sink);
   ////////////////////////////////////////////////
   // random generators
   ////////////////////////////////////////////////
@@ -41,10 +77,10 @@ int main(int argc, char** argv) {
     //////////////////////////////////////
     // setup dsp graph
     //////////////////////////////////////
-    layerdata->_algdata = configureCz1Algorithm(layerdata, 2);
-    auto dcostage       = layerdata->stageByName("DCO");
-    auto modstage       = layerdata->stageByName("MOD");
-    auto ampstage       = layerdata->stageByName("AMP");
+    configureCz1Algorithm(layerdata, 2);
+    auto dcostage = layerdata->stageByName("DCO");
+    auto modstage = layerdata->stageByName("MOD");
+    auto ampstage = layerdata->stageByName("AMP");
 
     auto make_dco = [&](int dcochannel) {
       auto czoscdata      = std::make_shared<CzOscData>();
@@ -161,12 +197,6 @@ int main(int argc, char** argv) {
       pan          = std::clamp(pan, -1.0f, 1.0f);
       cci->_curval = pan;
     };
-    //////////////////////////////////////
-    // create and connect oscilloscope
-    //////////////////////////////////////
-    auto source = layerdata->createScopeSource();
-    source->connect(scope->_sink);
-    source->connect(analyzer->_sink);
     //////////////////////////////////////
     // envelope viewer
     //////////////////////////////////////

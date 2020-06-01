@@ -126,17 +126,18 @@ void DspStage::forEachBlock(blockfn_t fn) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Alg::compute(outputBuffer& obuf) {
+void Alg::compute() {
   ////////////////////////////////////////////////
   int inumframes = _layer->_dspwritecount;
   int ibase      = _layer->_dspwritebase;
   ////////////////////////////////////////////////
   // clear dsp buffers
   ////////////////////////////////////////////////
-  for (int ich = 0; ich < kmaxdspblocksperstage; ich++) {
-    float* dst = _layer->_dspbuffer->channel(ich) + ibase;
-    memset(dst, inumframes * sizeof(float), 0);
-  }
+  if (_algdata._cleardspblock)
+    for (int ich = 0; ich < kmaxdspblocksperstage; ich++) {
+      float* dst = _layer->_dspbuffer->channel(ich) + ibase;
+      memset(dst, inumframes * sizeof(float), 0);
+    }
   ////////////////////////////////////////////////
   // compute dsp stages
   ////////////////////////////////////////////////
@@ -155,30 +156,6 @@ void Alg::compute(outputBuffer& obuf) {
       });
     istage++;
   });
-  ////////////////////////////////////////////////
-  // route dsp buffers into outputBuffer
-  ////////////////////////////////////////////////
-  // get num outputs for STAGE, not block..
-  const float* srcL = dspbuf.channel(0) + ibase;
-  const float* srcR = dspbuf.channel(1) + ibase;
-  float* dstL       = obuf._leftBuffer + ibase;
-  float* dstR       = obuf._rightBuffer + ibase;
-  memcpy(dstL, srcL, inumframes * sizeof(float));
-  memcpy(dstR, srcR, inumframes * sizeof(float));
-  ////////////////////////////////////////////////
-  // test tone ?
-  ////////////////////////////////////////////////
-  if (0) {
-    static int64_t _testtoneph = 0;
-    for (int i = 0; i < inumframes; i++) {
-      double phase = 60.0 * pi2 * double(_testtoneph) / getSampleRate();
-      float samp   = sinf(phase) * .6;
-      dstL[i]      = samp;
-      dstR[i]      = samp;
-      _testtoneph++;
-    }
-  }
-  ////////////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////

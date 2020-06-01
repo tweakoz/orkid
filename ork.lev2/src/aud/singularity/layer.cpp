@@ -28,6 +28,7 @@ LayerData::LayerData() {
   _ctrlBlock   = std::make_shared<ControlBlockData>();
   _kmpBlock    = std::make_shared<KmpBlockData>(); // todo move to samplerdata
   _scopesource = nullptr;
+  _outbus      = the_synth->outputBus("main");
 }
 ///////////////////////////////////////////////////////////////////////////////
 controllerdata_ptr_t LayerData::controllerByName(const std::string& named) const {
@@ -55,7 +56,7 @@ scopesource_ptr_t LayerData::createScopeSource() {
 
 Layer::Layer()
     : _layerdata(nullptr)
-    , _layerGain(0.25)
+    , _layerLinGain(1.0)
     , _curPitchOffsetInCents(0.0f)
     , _centsPerKey(100.0f)
     , _lyrPhase(-1)
@@ -107,11 +108,9 @@ void Layer::release() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Layer::compute(outputBuffer& obuf, int numframes) {
+void Layer::compute(int numframes) {
 
   _dspbuffer->resize(numframes);
-  _layerObuf.resize(numframes);
-
   ///////////////////////
 
   if (nullptr == _layerdata) {
@@ -122,75 +121,64 @@ void Layer::compute(outputBuffer& obuf, int numframes) {
   if (nullptr == _alg)
     return;
 
-  // printf( "layer<%p> compute\n", this );
-  float* master_outl = obuf._leftBuffer;
-  float* master_outr = obuf._rightBuffer;
+  auto& out_buf   = _outbus->_buffer;
+  float* bus_outl = out_buf._leftBuffer;
+  float* bus_outr = out_buf._rightBuffer;
 
-  ///////////////////////////////////////////////
-
-  // printf( "pchc1<%f> pchc2<%f> poic<%f> currat<%f>\n", _pchc1, _pchc2, _curPitchOffsetInCents, currat );
-  ////////////////////////////////////////
-
-  // printf( "doBlockStereo<%d>\n", int(doBlockStereo) );
   ////////////////////////////////////////
 
   if (true) {
-    bool bypassDSP = the_synth->_bypassDSP;
-    auto lastblock = _alg->lastBlock();
 
-    float synsr = the_synth->_sampleRate;
+    float* lyroutl = _dspbuffer->channel(0);
+    float* lyroutr = _dspbuffer->channel(1);
 
-    float* lyroutl = _layerObuf._leftBuffer;
-    float* lyroutr = _layerObuf._rightBuffer;
-
-    for (int i = 0; i < numframes; i++) {
-      lyroutl[i] = 0.0f;
-      lyroutr[i] = 0.0f;
+    if (_is_bus_processor) {
+    } else {
+      for (int i = 0; i < numframes; i++) {
+        lyroutl[i] = 0.0f;
+        lyroutr[i] = 0.0f;
+      }
     }
 
     ///////////////////////////////////
     // DspAlgorithm
     ///////////////////////////////////
 
-    if (false == bypassDSP) {
-      int ifrpending = numframes;
-      _dspwritecount = frames_per_controlpass;
-      _dspwritebase  = 0;
-      while (ifrpending > 0) {
-        // printf("_dspwritecount<%d> _dspwritebase<%d>\n", _dspwritecount, _dspwritebase);
-        ////////////////////////////////
-        // update controllers
-        ////////////////////////////////
-        if (_ctrlBlock)
-          _ctrlBlock->compute();
-        ////////////////////////////////
-        // update dsp modules
-        ////////////////////////////////
-        _alg->compute(_layerObuf);
-        ////////////////////////////////
-        // update indices
-        ////////////////////////////////
-        _dspwritebase += frames_per_controlpass;
-        ifrpending -= frames_per_controlpass;
-        ////////////////////////////////
-        _layerTime += float(frames_per_controlpass) * getInverseSampleRate();
-      }
+    int ifrpending = numframes;
+    _dspwritecount = frames_per_controlpass;
+    _dspwritebase  = 0;
+    while (ifrpending > 0) {
+      // printf("_dspwritecount<%d> _dspwritebase<%d>\n", _dspwritecount, _dspwritebase);
+      ////////////////////////////////
+      // update controllers
+      ////////////////////////////////
+      if (_ctrlBlock)
+        _ctrlBlock->compute();
+      ////////////////////////////////
+      // update dsp modules
+      ////////////////////////////////
+      _alg->compute();
+      ////////////////////////////////
+      // update indices
+      ////////////////////////////////
+      _dspwritebase += frames_per_controlpass;
+      ifrpending -= frames_per_controlpass;
+      ////////////////////////////////
+      _layerTime += float(frames_per_controlpass) * getInverseSampleRate();
     }
 
     ///////////////////////////////////
     // amp / out
     ///////////////////////////////////
-
-    if (bypassDSP) {
+    if (_is_bus_processor) {
       for (int i = 0; i < numframes; i++) {
-        float inp = lyroutl[i];
-        master_outl[i] += inp * _layerGain;
-        master_outr[i] += inp * _layerGain;
+        bus_outl[i] = lyroutl[i] * _layerLinGain;
+        bus_outr[i] = lyroutr[i] * _layerLinGain;
       }
     } else {
       for (int i = 0; i < numframes; i++) {
-        master_outl[i] += lyroutl[i] * _layerGain;
-        master_outr[i] += lyroutr[i] * _layerGain;
+        bus_outl[i] += lyroutl[i] * _layerLinGain;
+        bus_outr[i] += lyroutr[i] * _layerLinGain;
       }
     }
     ///////////////////////////////////////////////
@@ -198,10 +186,10 @@ void Layer::compute(outputBuffer& obuf, int numframes) {
     ///////////////////////////////////////////////
     if (0) {
       for (int i = 0; i < numframes; i++) {
-        double phase   = 60.0 * pi2 * double(_testtoneph) / getSampleRate();
-        float samp     = sinf(phase) * .6;
-        master_outl[i] = samp * _layerGain;
-        master_outr[i] = samp * _layerGain;
+        double phase = 60.0 * pi2 * double(_testtoneph) / getSampleRate();
+        float samp   = sinf(phase) * .6;
+        bus_outl[i]  = samp * _layerLinGain;
+        bus_outr[i]  = samp * _layerLinGain;
         _testtoneph++;
       }
     }
@@ -210,9 +198,7 @@ void Layer::compute(outputBuffer& obuf, int numframes) {
     //////////////////////////////////////
     if (this == the_synth->_hudLayer) {
       if (_layerdata->_scopesource) {
-        const float* l = _layerObuf._leftBuffer;
-        const float* r = _layerObuf._rightBuffer;
-        _layerdata->_scopesource->updateStereo(numframes, l, r);
+        _layerdata->_scopesource->updateStereo(numframes, lyroutl, lyroutr);
       }
     }
     ///////////////////////////////////////////////
@@ -365,6 +351,8 @@ void Layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
   _ignoreRelease = ld->_ignRels;
   _curnote       = note;
   _layerdata     = ld;
+  _outbus        = ld->_outbus;
+  _layerLinGain  = ld->_layerLinGain;
 
   _curvel = vel;
 

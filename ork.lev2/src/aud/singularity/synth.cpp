@@ -9,22 +9,54 @@
 #include <assert.h>
 #include <unistd.h>
 #include <math.h>
-#include <GLFW/glfw3.h>
 
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/hud.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
+#include <ork/lev2/aud/singularity/dspblocks.h>
 
 namespace ork::audio::singularity {
+///////////////////////////////////////////////////////////////////////////////
+void OutputBus::resize(int numframes) {
+  _buffer.resize(numframes);
+  if (_dsplayer) {
+    _dsplayer->resize(numframes);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+void OutputBus::setBusDSP(lyrdata_ptr_t ld) {
+  _dsplayerdata        = ld;
+  auto l               = new Layer;
+  l->_is_bus_processor = true;
+  l->keyOn(0, 0, _dsplayerdata); // outbus layer always keyed on...
+  _dsplayer = l;
+}
+scopesource_ptr_t OutputBus::createScopeSource() {
+  _scopesource = std::make_shared<ScopeSource>();
+  return _scopesource;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 synth_ptr_t synth::instance() {
   static auto the_syn = std::make_shared<synth>();
   return the_syn;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
+outbus_ptr_t synth::createOutputBus(std::string named) {
+  auto bus             = std::make_shared<OutputBus>();
+  bus->_name           = named;
+  _outputBusses[named] = bus;
+  return bus;
+}
+///////////////////////////////////////////////////////////////////////////////
+outbus_ptr_t synth::outputBus(std::string named) const {
+  auto it = _outputBusses.find(named);
+  return (it != _outputBusses.end()) //
+             ? it->second
+             : nullptr;
+}
+///////////////////////////////////////////////////////////////////////////////
 synth::synth()
     : _sampleRate(0.0f)
     , _dt(0.0f)
@@ -33,6 +65,11 @@ synth::synth()
     , _hudpage(0)
     , _oswidth(1500)      //
     , _ostriglev(0.05f) { //
+
+  _tempbus        = std::make_shared<OutputBus>();
+  _tempbus->_name = "temp-dsp";
+
+  createOutputBus("main");
 
   for (int i = 0; i < 256; i++) {
     auto l = new Layer();
@@ -180,10 +217,14 @@ void synth::keyOff(programInst* pinst) {
 
 void synth::resize(int numframes) {
   if (numframes > _numFrames) {
+    _tempbus->resize(numframes);
     _ibuf.resize(numframes);
     _obuf.resize(numframes);
     for (auto lay : _allVoices) {
       lay->resize(numframes);
+    }
+    for (auto bus : _outputBusses) {
+      bus.second->resize(numframes);
     }
   }
   _numFrames = numframes;
@@ -214,15 +255,6 @@ void synth::compute(int inumframes, const void* inputBuffer) {
     }
 
   /////////////////////////////
-  // clear synth output mix buffer
-  /////////////////////////////
-
-  for (int i = 0; i < inumframes; i++) {
-    master_left[i]  = 0.0f;
-    master_right[i] = 0.0f;
-  }
-
-  /////////////////////////////
   // synth update tick
   /////////////////////////////
 
@@ -232,13 +264,99 @@ void synth::compute(int inumframes, const void* inputBuffer) {
   this->tick(tick);
 
   /////////////////////////////
+  // clear output busses
+  /////////////////////////////
+
+  for (auto busitem : _outputBusses) {
+    auto bus         = busitem.second;
+    auto& obuf       = bus->_buffer;
+    float* bus_left  = obuf._leftBuffer;
+    float* bus_right = obuf._rightBuffer;
+    for (int i = 0; i < inumframes; i++) {
+      bus_left[i]  = 0.0f;
+      bus_right[i] = 0.0f;
+    }
+  }
+
+  /////////////////////////////
   // compute/accumulate layer instances
+  //  (into output busses)
   /////////////////////////////
 
   int inumv = 0;
   for (auto l : _activeVoices) {
-    l->compute(_obuf, inumframes);
+    l->compute(inumframes);
     inumv++;
+  }
+
+  /////////////////////////////
+  // clear synth main output mix buffer
+  /////////////////////////////
+
+  for (int i = 0; i < inumframes; i++) {
+    master_left[i]  = 0.0f;
+    master_right[i] = 0.0f;
+  }
+
+  /////////////////////////////
+  // compute DSP for output busses
+  /////////////////////////////
+
+  for (auto busitem : _outputBusses) {
+    auto bus = busitem.second;
+    if (bus->_dsplayer) {
+      auto& bus_buf = bus->_buffer;
+      auto dsp_buf  = bus->_dsplayer->_dspbuffer;
+      dsp_buf->resize(inumframes);
+      float* bus_left  = bus_buf._leftBuffer;
+      float* bus_right = bus_buf._rightBuffer;
+      float* dsp_left  = dsp_buf->channel(0);
+      float* dsp_right = dsp_buf->channel(1);
+      //////////////////////////////////////////
+      // bus -> dsp buf input
+      //////////////////////////////////////////
+      for (int i = 0; i < inumframes; i++) {
+        dsp_left[i]  = bus_left[i];
+        dsp_right[i] = bus_right[i];
+      }
+      //////////////////////////////////////////
+      // compute dsp -> tempbus
+      //////////////////////////////////////////
+      bus->_dsplayer->_outbus = _tempbus;
+      bus->_dsplayer->compute(inumframes);
+      //////////////////////////////////////////
+      // tempbus -> bus out
+      //////////////////////////////////////////
+      float* tmp_left  = _tempbus->_buffer._leftBuffer;
+      float* tmp_right = _tempbus->_buffer._rightBuffer;
+      for (int i = 0; i < inumframes; i++) {
+        bus_left[i]  = tmp_left[i];
+        bus_right[i] = tmp_right[i];
+      }
+      //////////////////////////////////////////
+    }
+  }
+
+  /////////////////////////////
+  // compute/accumulate output busses
+  //  (into main output)
+  /////////////////////////////
+
+  for (auto busitem : _outputBusses) {
+    auto bus               = busitem.second;
+    auto& obuf             = bus->_buffer;
+    const float* bus_left  = obuf._leftBuffer;
+    const float* bus_right = obuf._rightBuffer;
+    for (int i = 0; i < inumframes; i++) {
+      master_left[i] += bus_left[i];
+      master_right[i] += bus_right[i];
+    }
+    //////////////////////////////////////
+    // SignalScope
+    //////////////////////////////////////
+    if (bus->_scopesource) {
+      bus->_scopesource->updateStereo(inumframes, bus_left, bus_right);
+    }
   }
 
   /////////////////////////////

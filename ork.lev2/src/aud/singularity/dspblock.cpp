@@ -300,10 +300,6 @@ dspblk_ptr_t createDspBlock(const DspBlockData* dbd) {
     rval = std::make_shared<SHAPER>(dbd);
   if (dbd->_blocktype == "2PARAM SHAPER")
     rval = std::make_shared<TWOPARAM_SHAPER>(dbd);
-  if (dbd->_blocktype == "WRAP")
-    rval = std::make_shared<WRAP>(dbd);
-  if (dbd->_blocktype == "DIST")
-    rval = std::make_shared<DIST>(dbd);
 
   return rval;
 }

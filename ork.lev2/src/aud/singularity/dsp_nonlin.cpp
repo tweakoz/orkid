@@ -114,14 +114,21 @@ void TWOPARAM_SHAPER::compute(DspBuffer& dspbuf) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-WRAP::WRAP(const DspBlockData* dbd)
+WrapData::WrapData() {
+  _blocktype = "WRAP";
+  addParam().useDefaultEvaluator();
+}
+dspblk_ptr_t WrapData::createInstance() const {
+  return std::make_shared<Wrap>(this);
+}
+Wrap::Wrap(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
-void WRAP::compute(DspBuffer& dspbuf) // final
+void Wrap::compute(DspBuffer& dspbuf) // final
 {
   int inumframes = _layer->_dspwritecount;
-  float rpoint   = _param[0].eval(); //,-100,100.0f);
+  float rpoint   = _param[0].eval();
   _fval[0]       = rpoint;
   if (1) {
     auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
@@ -133,26 +140,34 @@ void WRAP::compute(DspBuffer& dspbuf) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-DIST::DIST(const DspBlockData* dbd)
+DistortionData::DistortionData() {
+  _blocktype = "DIST";
+  addParam().useDefaultEvaluator();
+}
+dspblk_ptr_t DistortionData::createInstance() const {
+  return std::make_shared<Distortion>(this);
+}
+Distortion::Distortion(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
-void DIST::compute(DspBuffer& dspbuf) // final
+void Distortion::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
   int inumframes = _layer->_dspwritecount;
   float adj      = _param[0].eval();
   _fval[0]       = adj;
   float ratio    = decibel_to_linear_amp_ratio(adj + 30.0) * pad;
-
+  // printf("ratio<%g>\n", ratio);
   if (1) {
     auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
     auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
-      float v       = inputchan[i] * ratio;
-      v             = softsat(v, 1);
-      outputchan[i] = v;
+      float inp     = inputchan[i];
+      float out     = inp * ratio;
+      out           = softsat(out, 1);
+      outputchan[i] = out;
+      // printf("inp<%g> out<%g>\n", inp, out);
     }
   }
 }

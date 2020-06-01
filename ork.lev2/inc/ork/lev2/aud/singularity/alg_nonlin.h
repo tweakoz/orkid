@@ -22,12 +22,22 @@ struct TWOPARAM_SHAPER : public DspBlock {
   float ph1, ph2;
   void doKeyOn(const DspKeyOnInfo& koi) final;
 };
-struct WRAP : public DspBlock {
-  WRAP(const DspBlockData* dbd);
+struct WrapData : public DspBlockData {
+  WrapData();
+  dspblk_ptr_t createInstance() const override;
+};
+struct Wrap : public DspBlock {
+  using dataclass_t = WrapData;
+  Wrap(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
 };
-struct DIST : public DspBlock {
-  DIST(const DspBlockData* dbd);
+struct DistortionData : public DspBlockData {
+  DistortionData();
+  dspblk_ptr_t createInstance() const override;
+};
+struct Distortion : public DspBlock {
+  using dataclass_t = DistortionData;
+  Distortion(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
 };
 

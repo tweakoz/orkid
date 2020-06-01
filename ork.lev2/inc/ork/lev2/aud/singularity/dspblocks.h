@@ -215,6 +215,7 @@ struct AlgData final {
 
   int _numstages = 0;
   std::string _name;
+  bool _cleardspblock = true;
   dspstagedata_ptr_t _stages[kmaxdspstagesperlayer];
   std::map<std::string, dspstagedata_ptr_t> _stageByName;
 };
@@ -234,7 +235,7 @@ struct Alg final {
 
   void forEachStage(stagefn_t fn);
 
-  void compute(outputBuffer& obuf);
+  void compute();
 
   virtual void doKeyOn(DspKeyOnInfo& koi);
   dspblk_ptr_t lastBlock() const;

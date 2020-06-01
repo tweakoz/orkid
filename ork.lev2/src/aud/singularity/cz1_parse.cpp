@@ -517,21 +517,21 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
   /////////////////////////////////////////////////
   switch (czprogdata->_lineSel) {
     case 0: // 1
-      layerdata->_algdata = configureCz1Algorithm(layerdata, 1);
+      configureCz1Algorithm(layerdata, 1);
       make_dco(layerdata, czprogdata->_oscData[0], 0);
       break;
     case 1: // 2
-      layerdata->_algdata = configureCz1Algorithm(layerdata, 1);
+      configureCz1Algorithm(layerdata, 1);
       make_dco(layerdata, czprogdata->_oscData[1], 0);
       break;
     case 2: // 1+1'
-      layerdata->_algdata        = configureCz1Algorithm(layerdata, 2);
+      configureCz1Algorithm(layerdata, 2);
       *(czprogdata->_oscData[1]) = *(czprogdata->_oscData[0]);
       make_dco(layerdata, czprogdata->_oscData[0], 0);
       make_dco(layerdata, czprogdata->_oscData[1], 1);
       break;
     case 3: // 1+2'
-      layerdata->_algdata = configureCz1Algorithm(layerdata, 2);
+      configureCz1Algorithm(layerdata, 2);
       make_dco(layerdata, czprogdata->_oscData[0], 0);
       make_dco(layerdata, czprogdata->_oscData[1], 1);
       break;

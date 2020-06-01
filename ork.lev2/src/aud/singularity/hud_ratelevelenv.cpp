@@ -36,7 +36,10 @@ signalscope_ptr_t create_envelope_analyzer(hudvp_ptr_t vp) {
   hudpanel->_uisurface = ratelevsurf;
   hudpanel->_uipanel->setChild(hudpanel->_uisurface);
   hudpanel->_uipanel->snap();
-  auto instrument              = std::make_shared<SignalScope>();
+  auto instrument = std::make_shared<SignalScope>();
+  float timew     = 15.0f;
+  instrument->setProperty<float>("timewidth", timew);
+  ratelevsurf->setTimeWidth(timew);
   ratelevsurf->_instrument     = instrument;
   instrument->_hudpanel        = hudpanel;
   instrument->_sink            = std::make_shared<ScopeSink>();
@@ -82,8 +85,6 @@ signalscope_ptr_t create_envelope_analyzer(hudvp_ptr_t vp) {
   };
   vp->addChild(hudpanel->_uipanel);
   vp->_hudpanels.insert(hudpanel);
-
-  instrument->setProperty<float>("timewidth", 15.0f);
   return instrument;
 }
 ///////////////////////////////////////////////////////////////////////////////

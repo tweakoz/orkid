@@ -35,6 +35,29 @@ struct hudsample {
 };
 using synth_ptr_t = std::shared_ptr<synth>;
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct OutputBus {
+  void resize(int numframes);
+  std::string _name;
+  outputBuffer _buffer;
+  scopesource_ptr_t createScopeSource();
+
+  /////////////////////////
+  // output bus DSP
+  /////////////////////////
+
+  void setBusDSP(lyrdata_ptr_t ld);
+
+  lyrdata_ptr_t _dsplayerdata;
+  Layer* _dsplayer = nullptr;
+  scopesource_ptr_t _scopesource;
+
+  /////////////////////////
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct synth {
   synth();
   ~synth();
@@ -47,6 +70,9 @@ struct synth {
   inline float sampleRate() const {
     return _sampleRate;
   }
+
+  outbus_ptr_t createOutputBus(std::string named);
+  outbus_ptr_t outputBus(std::string named) const;
 
   void compute(int inumframes, const void* inputbuffer);
 
@@ -62,6 +88,10 @@ struct synth {
   void addEvent(float time, void_lambda_t ev);
   void tick(float dt);
   float _timeaccum;
+
+  std::map<std::string, outbus_ptr_t> _outputBusses;
+
+  outbus_ptr_t _tempbus;
 
   outputBuffer _ibuf;
   outputBuffer _obuf;

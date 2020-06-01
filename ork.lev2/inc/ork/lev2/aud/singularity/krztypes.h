@@ -68,16 +68,18 @@ struct CzData;
 struct KrzTestData;
 struct KrzKmTestData;
 struct CzProgData;
-struct HudFrameAudio;
-struct HudFrameControl;
-struct HudViewport;
+struct OutputBus;
 ///////////////////////////////////////////////////////////////////////////////
 // scope / signal analyzer
 ///////////////////////////////////////////////////////////////////////////////
+struct HudFrameAudio;
+struct HudFrameControl;
+struct HudViewport;
 struct SignalScope;
 struct ScopeSource;
 struct ScopeSink;
 ///////////////////////////////////////////////////////////////////////////////
+using outbus_ptr_t                = std::shared_ptr<OutputBus>;
 using iomask_ptr_t                = std::shared_ptr<IoMask>;
 using iomask_constptr_t           = std::shared_ptr<const IoMask>;
 using algdata_ptr_t               = std::shared_ptr<AlgData>;

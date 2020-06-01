@@ -47,8 +47,10 @@ struct LayerData {
   bool _atk1Hold          = false; // ThrAtt
   bool _atk3Hold          = false; // TilDec
   bool _usenatenv         = false; // todo: move to krz
+  float _layerLinGain     = 1.0f;
 
   algdata_ptr_t _algdata;
+  outbus_ptr_t _outbus;
 
   kmpblockdata_ptr_t _kmpBlock;
   dspblkdata_ptr_t _pchBlock;
@@ -66,7 +68,7 @@ struct Layer {
   ~Layer();
 
   void resize(int numframes);
-  void compute(outputBuffer& obuf, int numframes);
+  void compute(int numframes);
   void keyOn(int note, int vel, lyrdata_constptr_t ld);
   void keyOff();
   void reset();
@@ -93,7 +95,7 @@ struct Layer {
   int _curnote;
   int _curvel;
   int _ldindex;
-  float _layerGain;
+  float _layerLinGain = 1.0f;
   float _curPitchOffsetInCents;
   float _centsPerKey;
   int _lyrPhase;
@@ -108,6 +110,7 @@ struct Layer {
   bool _doNoise;
   float _layerTime;
   dspblk_ptr_t _pchBlock;
+  outbus_ptr_t _outbus;
 
   ControlBlockInst* _ctrlBlock = nullptr;
 
@@ -115,7 +118,8 @@ struct Layer {
   std::map<controllerdata_constptr_t, ControllerInst*> _controld2iMap;
   alg_ptr_t _alg;
 
-  outputBuffer _layerObuf;
+  bool _is_bus_processor = false;
+
   dspbuf_ptr_t _dspbuffer;
 
   HudFrameControl _HKF;
