@@ -125,7 +125,7 @@ using scopesink_ptr_t             = std::shared_ptr<ScopeSink>;
 using signalscope_ptr_t           = std::shared_ptr<SignalScope>;
 ///////////////////////////////////////////////////////////////////////////////
 static constexpr int kmaxenvperlayer       = 8;
-static constexpr int kmaxdspblocksperstage = 4; // vertical dimension of layer's dsp grid
+static constexpr int kmaxdspblocksperstage = 8; // vertical dimension of layer's dsp grid
 static constexpr int kmaxdspstagesperlayer = 8; // horizontal dimension of layer's dsp grid
 static constexpr int kmaxctrlperblock      = 16;
 static constexpr int kmaxparmperblock      = 16;

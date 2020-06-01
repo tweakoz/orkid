@@ -246,25 +246,36 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   // from hud samples
   ///////////////////////
 
-  int off             = _curreadsample % _timewidthsamples;
-  int j               = (_timewidthsamples + off) % _timewidthsamples;
-  float prevrawsample = _samples[j];
-  float prevsample    = (prevrawsample - _envinst->_clampmin) / _envinst->_clamprange;
+  int basereadoffset = _curreadsample % _timewidthsamples;
+  auto readindex     = [this, basereadoffset](int i) -> int { //
+    return (_timewidthsamples + basereadoffset - i) % _timewidthsamples;
+  };
+  auto normalize = [this](float inp) -> float { //
+    return (inp - _envinst->_clampmin) / _envinst->_clamprange;
+  };
+  float prevsample = normalize(_samples[readindex(0)]);
 
   for (int i = 0; i < _timewidthsamples; i++) {
-    float fi        = float(_timewidthsamples - i) / float(_timewidthsamples);
-    float fni       = fi - 1.0f / float(_timewidthsamples);
-    int off         = _curreadsample % _timewidthsamples;
-    int j           = (_timewidthsamples + off - i) % _timewidthsamples;
-    float rawsample = (i < _updatecount) ? _samples[j] : 0.0f;
-    float sample    = (rawsample - _envinst->_clampmin) / _envinst->_clamprange;
-    auto p1         = fvec2(fi, prevsample) * scale + bias;
-    auto p2         = fvec2(fni, sample) * scale + bias;
+    //////////////////////////////
+    // scanning right to left!
+    // i==0 at right
+    // i==_timewidthsamples at left
+    //////////////////////////////
+    float fright = float(_timewidthsamples - i) / float(_timewidthsamples);
+    float fleft  = fright - 1.0f / float(_timewidthsamples);
+    ////////////////////////////////////
+    // dont read past provided samples
+    ////////////////////////////////////
+    float rawsample = (i < _curreadsample) ? _samples[readindex(i)] : 0.0f;
+    ////////////////////////////////////
+    float mappedsample = normalize(rawsample);
+    auto p_right       = fvec2(fright, prevsample) * scale + bias;
+    auto p_left        = fvec2(fleft, mappedsample) * scale + bias;
     lines.push_back(HudLine{
-        p1, //
-        p2,
+        p_right, //
+        p_left,
         fvec3(1, 1, 1)});
-    prevsample = sample;
+    prevsample = mappedsample;
   }
 
   /////////////////////////////////////////////////

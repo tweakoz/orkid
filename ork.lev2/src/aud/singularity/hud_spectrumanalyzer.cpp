@@ -148,8 +148,8 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     const float KRNG = KDB_HI - KDB_LO;
     float dbY        = (dbin - KDB_LO) / KRNG;
     float y          = ANA_Y2 - dbY * ANA_H;
-    if (y > ANA_Y2)
-      y = ANA_Y2;
+    // if (y > ANA_Y2)
+    // y = ANA_Y2;
     return y;
   };
   auto mapFFTX = [&](float frq) -> float {
@@ -291,7 +291,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
     float frq = fi * getSampleRate() * float(fftoversample);
     float x2  = mapFFTX(frq);
-    float y2  = mapFFTY(dB);
+    float y2  = mapFFTY(dB - 6);
 
     // printf("frq<%g> dB<%f>\n", frq, dB);
     if (frq >= 8.0f)

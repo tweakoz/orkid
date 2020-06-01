@@ -23,34 +23,12 @@ int main(int argc, char** argv) {
   fxlayer->_algdata = fxalg;
   fxalg->_name      = ork::FormatString("FxAlg");
   /////////////////
-  //  Kurzweil Distorion
-  /////////////////
-  auto fxstage1 = fxalg->appendStage("FX1");
-  fxstage1->setNumIos(2, 2); // stereo in, stereo out
-  auto dL                 = fxstage1->appendTypedBlock<Distortion>();
-  auto dR                 = fxstage1->appendTypedBlock<Distortion>();
-  dL->_dspchannel[0]      = 0;
-  dR->_dspchannel[0]      = 1;
-  auto DISTCONTROL        = fxlayer->appendController<CustomControllerData>("PAN");
-  auto& dLmod             = dL->param(0)._mods;
-  auto& dRmod             = dR->param(0)._mods;
-  dLmod._src1             = DISTCONTROL;
-  dLmod._src1Depth        = 1.0;
-  dRmod._src1             = DISTCONTROL;
-  dRmod._src1Depth        = 1.0;
-  DISTCONTROL->_oncompute = [](CustomControllerInst* cci) { //
-    float index = cci->_layer->_layerTime;
-    float wave  = (0.5f + sinf(index) * 0.5);
-    // cci->_curval = lerp(1.0, 0.5, wave); // Wrap
-    cci->_curval = lerp(-30.0f, -30.0f, wave); // Distortion
-  };
-  /////////////////
   // stereo enhancer
   /////////////////
-  auto fxstage2 = fxalg->appendStage("FX2");
-  fxstage2->setNumIos(2, 2); // stereo in, stereo out
-  auto stereoenh           = fxstage2->appendTypedBlock<StereoEnhancer>();
-  auto WIDTHCONTROL        = fxlayer->appendController<CustomControllerData>("PAN");
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  auto stereoenh           = fxstage->appendTypedBlock<StereoEnhancer>();
+  auto WIDTHCONTROL        = fxlayer->appendController<CustomControllerData>("STEREOWIDTH");
   auto& width_mod          = stereoenh->param(0)._mods;
   width_mod._src1          = WIDTHCONTROL;
   width_mod._src1Depth     = 1.0;
@@ -60,12 +38,12 @@ int main(int argc, char** argv) {
     cci->_curval = wave;
   };
   /////////////////
-  // stereo enhancer
+  // stereo echo
   /////////////////
-  auto echo              = fxstage2->appendTypedBlock<StaticStereoEcho>();
+  auto echo              = fxstage->appendTypedBlock<StaticStereoEcho>();
   echo->param(0)._coarse = 2.0;  // delay time (sec)
-  echo->param(1)._coarse = 0.5;  // feedback
-  echo->param(2)._coarse = 0.25; // wet/dry mix
+  echo->param(1)._coarse = 0.25; // feedback
+  echo->param(2)._coarse = 0.15; // wet/dry mix
   //
   mainbus->setBusDSP(fxlayer);
   ////////////////////////////////////////////////
@@ -105,22 +83,33 @@ int main(int argc, char** argv) {
     configureCz1Algorithm(layerdata, 2);
     auto dcostage = layerdata->stageByName("DCO");
     auto modstage = layerdata->stageByName("MOD");
-    auto filstage = layerdata->stageByName("FILTER");
     auto ampstage = layerdata->stageByName("AMP");
 
     auto make_dco = [&](int dcochannel) {
-      auto czoscdata         = std::make_shared<CzOscData>();
-      auto dco               = dcostage->appendTypedBlock<CZX>(czoscdata, dcochannel);
-      auto lopass            = ampstage->appendTypedBlock<FourPoleLowPassWithSep>();
-      auto amp               = ampstage->appendTypedBlock<AMP_MONOIO>();
-      dco->_dspchannel[0]    = dcochannel;
-      lopass->_dspchannel[0] = dcochannel;
-      amp->_dspchannel[0]    = dcochannel;
+      auto czoscdata             = std::make_shared<CzOscData>();
+      auto dco                   = dcostage->appendTypedBlock<CZX>(czoscdata, dcochannel);
+      auto distortion            = ampstage->appendTypedBlock<Distortion>(); //  Kurzweil Distorion
+      auto lopass1               = ampstage->appendTypedBlock<FourPoleLowPassWithSep>();
+      auto lopass2               = ampstage->appendTypedBlock<FourPoleLowPassWithSep>();
+      auto amp                   = ampstage->appendTypedBlock<AMP_MONOIO>();
+      dco->_dspchannel[0]        = dcochannel;
+      distortion->_dspchannel[0] = dcochannel;
+      lopass1->_dspchannel[0]    = dcochannel;
+      lopass2->_dspchannel[0]    = dcochannel;
+      amp->_dspchannel[0]        = dcochannel;
       //////////////////////////////////////
-      lopass->_inputPad        = 0.7f;
-      lopass->param(0)._coarse = 4000.0f; // cutoff
-      lopass->param(1)._coarse = 0.0f;    // resonance
-      lopass->param(2)._coarse = 0.0f;    // sep
+      distortion->param(0)._coarse = rangedf(-30.0f, -21.0f);
+      //////////////////////////////////////
+      // 2 4poles in series == 48db/octave
+      //////////////////////////////////////
+      lopass1->_inputPad        = 0.75f;
+      lopass1->param(0)._coarse = 4500.0f; // cutoff
+      lopass1->param(1)._coarse = 0.0f;    // resonance
+      lopass1->param(2)._coarse = 0.0f;    // sep
+      lopass2->_inputPad        = 0.75f;
+      lopass2->param(0)._coarse = 4500.0f; // cutoff
+      lopass2->param(1)._coarse = 0.0f;    // resonance
+      lopass2->param(2)._coarse = 0.0f;    // sep
       //////////////////////////////////////
       auto envname_dca = FormatString("DCAENV%d", dcochannel);
       auto envname_dcw = FormatString("DCWENV%d", dcochannel);
