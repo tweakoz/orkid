@@ -33,11 +33,21 @@ int main(int argc, char** argv) {
   // echo->param(2)._coarse = 0.5; // wet/dry mix
   //
   mainbus->setBusDSP(fxlayer);
-  //////////////////////////////////////////////////////////////////////////////
-  auto scope    = create_oscilloscope(app->_hudvp);
-  auto analyzer = create_spectrumanalyzer(app->_hudvp);
-  scope->setRect(-10, 0, 1300, 256, true);
-  analyzer->setRect(-10, 268, 1300, 720 - 256, true);
+  ////////////////////////////////////////////////
+  // create visualizers
+  ////////////////////////////////////////////////
+  auto scope1    = create_oscilloscope(app->_hudvp);
+  auto scope2    = create_oscilloscope(app->_hudvp);
+  auto scope3    = create_oscilloscope(app->_hudvp);
+  auto analyzer1 = create_spectrumanalyzer(app->_hudvp);
+  auto analyzer2 = create_spectrumanalyzer(app->_hudvp);
+  auto analyzer3 = create_spectrumanalyzer(app->_hudvp);
+  scope1->setRect(-10, 0, 480, 240, true);
+  scope2->setRect(-10, 240, 480, 240, true);
+  scope3->setRect(-10, 480, 480, 240, true);
+  analyzer1->setRect(480, 0, 810, 240, true);
+  analyzer2->setRect(480, 240, 810, 240, true);
+  analyzer3->setRect(480, 480, 810, 240, true);
   //////////////////////////////////////////////////////////////////////////////
   auto basepath = basePath() / "casioCZ";
   auto czdata1  = CzData::load(basepath / "factoryA.bnk", "bank1");
@@ -50,9 +60,31 @@ int main(int argc, char** argv) {
     auto bnk       = (i >> 5) ? czdata2 : czdata1;
     auto prg       = bnk->getProgram(i % 32);
     auto layerdata = prg->getLayer(0);
-    auto source    = layerdata->createScopeSource();
-    source->connect(scope->_sink);
-    source->connect(analyzer->_sink);
+    //////////////////////////////////////
+    // connect DCO's to scopes 1&2
+    //////////////////////////////////////
+    auto dcostage = layerdata->stageByName("DCO");
+    auto dco0     = dcostage->_blockdatas[0];
+    auto dco1     = dcostage->_blockdatas[1];
+    if (dco0) {
+      auto dco0_source         = dco0->createScopeSource();
+      dco0_source->_dspchannel = 0;
+      dco0_source->connect(scope1->_sink);
+      dco0_source->connect(analyzer1->_sink);
+    }
+    if (dco1) {
+      auto dco1_source         = dco1->createScopeSource();
+      dco1_source->_dspchannel = 1;
+      dco1_source->connect(scope2->_sink);
+      dco1_source->connect(analyzer2->_sink);
+    }
+    //////////////////////////////////////
+    // connect layerout to scope 3
+    //////////////////////////////////////
+    auto layersource = layerdata->createScopeSource();
+    layersource->connect(scope3->_sink);
+    layersource->connect(analyzer3->_sink);
+    //////////////////////////////////////
     for (int n = 0; n <= 24; n += 3) {
       enqueue_audio_event(prg, count * 0.5, 0.5, 48 + n);
       count++;
