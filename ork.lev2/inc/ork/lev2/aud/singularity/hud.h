@@ -105,7 +105,9 @@ struct ScopeSource {
   void updateStereo(int numframes, const float* left, const float* right, bool notifysinks = true);
   void updateController(const ControllerInst* controller);
 
-  void notifySinks();
+  void notifySinksUpdated();
+  void notifySinksKeyOn(DspKeyOnInfo& koi);
+  void notifySinksKeyOff();
   void connect(scopesink_ptr_t sink);
   void disconnect(scopesink_ptr_t sink);
   std::unordered_set<scopesink_ptr_t> _sinks;
@@ -114,8 +116,12 @@ struct ScopeSource {
   int _dspchannel                   = 0;
 };
 struct ScopeSink {
-  void sourceUpdated(const ScopeSource& src);
-  std::function<void(const ScopeSource&)> _onupdate;
+  void sourceUpdated(const ScopeSource* src);
+  void sourceKeyOn(const ScopeSource* src, DspKeyOnInfo& koi);
+  void sourceKeyOff(const ScopeSource* src);
+  std::function<void(const ScopeSource*)> _onupdate                   = nullptr;
+  std::function<void(const ScopeSource*, DspKeyOnInfo& koi)> _onkeyon = nullptr;
+  std::function<void(const ScopeSource*)> _onkeyoff                   = nullptr;
 };
 struct SignalScope {
   void setRect(int iX, int iY, int iW, int iH, bool snap = false);

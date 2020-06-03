@@ -15,6 +15,7 @@ struct ScopeSurf final : public ui::Surface {
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
   ork::lev2::CTXBASE* _ctxbase = nullptr;
   concurrent_triple_buffer<ScopeBuffer> _scopebuffers;
+  const ScopeSource* _currentSource = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
 signalscope_ptr_t create_oscilloscope(hudvp_ptr_t vp) {
@@ -24,18 +25,29 @@ signalscope_ptr_t create_oscilloscope(hudvp_ptr_t vp) {
   hudpanel->_uisurface = scopesurf;
   hudpanel->_uipanel->setChild(hudpanel->_uisurface);
   hudpanel->_uipanel->snap();
-  auto instrument              = std::make_shared<SignalScope>();
-  instrument->_hudpanel        = hudpanel;
-  instrument->_sink            = std::make_shared<ScopeSink>();
-  instrument->_sink->_onupdate = [scopesurf](const ScopeSource& src) { //
-    auto dest_scopebuf = scopesurf->_scopebuffers.begin_push();
-    memcpy(
-        dest_scopebuf->_samples, //
-        src._scopebuffer._samples,
-        koscopelength * sizeof(float));
-    scopesurf->_scopebuffers.end_push(dest_scopebuf);
-    scopesurf->SetDirty();
+  auto instrument       = std::make_shared<SignalScope>();
+  instrument->_hudpanel = hudpanel;
+  instrument->_sink     = std::make_shared<ScopeSink>();
+  ///////////////////////////////////////////////////////////////////////
+  instrument->_sink->_onupdate = [scopesurf](const ScopeSource* src) { //
+    bool select = (scopesurf->_currentSource == nullptr);
+    select |= (src == scopesurf->_currentSource);
+    if (select) {
+      auto dest_scopebuf = scopesurf->_scopebuffers.begin_push();
+      memcpy(
+          dest_scopebuf->_samples, //
+          src->_scopebuffer._samples,
+          koscopelength * sizeof(float));
+      scopesurf->_scopebuffers.end_push(dest_scopebuf);
+      scopesurf->SetDirty();
+    }
   };
+  instrument->_sink->_onkeyon = [scopesurf](const ScopeSource* src, DspKeyOnInfo& koi) { //
+    scopesurf->_currentSource = src;
+  };
+  instrument->_sink->_onkeyoff = [scopesurf](const ScopeSource* src) { //
+  };
+  ///////////////////////////////////////////////////////////////////////
   vp->addChild(hudpanel->_uipanel);
   vp->_hudpanels.insert(hudpanel);
   return instrument;
@@ -138,16 +150,6 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       fvec2(OSC_X2, OSC_CY),
       fvec3(1, 1, 1)});
 
-  /////////////////////////////////////////////
-  // oscilloscope trace
-  /////////////////////////////////////////////
-
-  float x1 = OSC_X1;
-  float y1 = OSC_CY + _samples[0] * -OSC_HH;
-  float x2, y2;
-
-  const int koscfr = window_width;
-
   //////////////////////////////////////////////
   // find set of all level trigger crossings
   //   matching the selected direction
@@ -248,12 +250,22 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     lastdelta         = item._delta;
   }
 
-  //////////////////////////////////////////////
+  /////////////////////////////////////////////
+  // oscilloscope trace
+  /////////////////////////////////////////////
+
+  float ampscale = 0.9 * -OSC_HH;
+
+  float x1 = OSC_X1;
+  float y1 = OSC_CY + _samples[0] * ampscale;
+  float x2, y2;
+
+  const int koscfr = window_width;
 
   for (int i = 0; i < window_width; i++) {
     int j   = (i + crossing) & koscopelengthmask;
     float x = OSC_W * float(i) / float(window_width);
-    float y = _samples[j] * -OSC_HH;
+    float y = _samples[j] * ampscale;
     x2      = OSC_X1 + x;
     y2      = OSC_CY + y;
     if (i < koscfr)

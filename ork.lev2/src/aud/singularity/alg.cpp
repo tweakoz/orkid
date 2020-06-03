@@ -170,7 +170,7 @@ void Alg::endCompute() {
         //////////////////////////////////////
         auto scopesrc = block->_dbd->_scopesource;
         if (scopesrc) {
-          scopesrc->notifySinks();
+          scopesrc->notifySinksUpdated();
         }
         /////////////////////////////
       });
@@ -189,10 +189,16 @@ void Alg::doKeyOn(DspKeyOnInfo& koi) {
 
   forEachStage([&](dspstage_ptr_t stage) {
     stage->forEachBlock([&](dspblk_ptr_t block) {
-      // const auto& iomasks = _algConfig._ioMasks;
-      //_block[i]->_iomask = iomasks[i];
       koi._prv = block;
       block->keyOn(koi);
+      //////////////////////////////////////
+      // SignalScope
+      //////////////////////////////////////
+      auto scopesrc = block->_dbd->_scopesource;
+      if (scopesrc) {
+        scopesrc->notifySinksKeyOn(koi);
+      }
+      /////////////////////////////
     });
   });
 }
@@ -203,6 +209,14 @@ void Alg::keyOff() {
   forEachStage([&](dspstage_ptr_t stage) {        //
     stage->forEachBlock([&](dspblk_ptr_t block) { //
       block->doKeyOff();
+      //////////////////////////////////////
+      // SignalScope
+      //////////////////////////////////////
+      auto scopesrc = block->_dbd->_scopesource;
+      if (scopesrc) {
+        scopesrc->notifySinksKeyOff();
+      }
+      /////////////////////////////
     });
   });
 }

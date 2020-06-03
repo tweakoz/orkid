@@ -24,7 +24,7 @@ signalscope_ptr_t create_natural_envelope_analyzer(hudvp_ptr_t vp) {
   auto instrument              = std::make_shared<SignalScope>();
   instrument->_hudpanel        = hudpanel;
   instrument->_sink            = std::make_shared<ScopeSink>();
-  instrument->_sink->_onupdate = [ratelevsurf](const ScopeSource& src) { //
+  instrument->_sink->_onupdate = [ratelevsurf](const ScopeSource* src) { //
     ratelevsurf->SetDirty();
   };
   vp->addChild(hudpanel->_uipanel);

@@ -40,24 +40,27 @@ signalscope_ptr_t create_envelope_analyzer(hudvp_ptr_t vp) {
   float timew     = 15.0f;
   instrument->setProperty<float>("timewidth", timew);
   ratelevsurf->setTimeWidth(timew);
-  ratelevsurf->_instrument     = instrument;
-  instrument->_hudpanel        = hudpanel;
-  instrument->_sink            = std::make_shared<ScopeSink>();
-  instrument->_sink->_onupdate = [ratelevsurf](const ScopeSource& src) { //
-    auto ratelev = dynamic_cast<const RateLevelEnvInst*>(src._controller);
+  ratelevsurf->_instrument    = instrument;
+  instrument->_hudpanel       = hudpanel;
+  instrument->_sink           = std::make_shared<ScopeSink>();
+  instrument->_sink->_onkeyon = [ratelevsurf](const ScopeSource* src, DspKeyOnInfo& koi) { //
+    auto ratelev = dynamic_cast<const RateLevelEnvInst*>(src->_controller);
+    if (ratelev) { // attach
+      ratelevsurf->_updatecount    = 0;
+      ratelevsurf->_curwritesample = 0;
+      ratelevsurf->_curreadsample  = 0;
+      ratelevsurf->_envdata        = ratelev->_data;
+      ratelevsurf->_envinst        = ratelev;
+    }
+  };
+  instrument->_sink->_onupdate = [ratelevsurf](const ScopeSource* src) { //
+    auto ratelev = dynamic_cast<const RateLevelEnvInst*>(src->_controller);
     if (ratelev) {
-      if (0 == ratelev->_updatecount) { // attach
-        ratelevsurf->_updatecount    = 0;
-        ratelevsurf->_curwritesample = 0;
-        ratelevsurf->_curreadsample  = 0;
-        ratelevsurf->_envdata        = ratelev->_data;
-        ratelevsurf->_envinst        = ratelev;
-      }
       ///////////////////////////////
       // single out attached envelope
       ///////////////////////////////
-      int maxsamps = ratelevsurf->_timewidthsamples;
       if (ratelevsurf->_envinst == ratelev) {
+        int maxsamps = ratelevsurf->_timewidthsamples;
         switch (ratelev->_state) {
           case 0:
           case 1:

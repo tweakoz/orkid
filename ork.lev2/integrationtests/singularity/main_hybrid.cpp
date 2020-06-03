@@ -61,8 +61,6 @@ int main(int argc, char** argv) {
   analyzer1->setRect(480, 0, 810, 240, true);
   analyzer2->setRect(480, 240, 810, 240, true);
   analyzer3->setRect(480, 480, 810, 240, true);
-  bussource->connect(scope3->_sink);
-  bussource->connect(analyzer3->_sink);
   ////////////////////////////////////////////////
   // random generators
   ////////////////////////////////////////////////
@@ -82,6 +80,10 @@ int main(int argc, char** argv) {
     mutable_program->_role = "czx";
     mutable_program->_name = "test";
     program                = mutable_program;
+    //////////////////////////////////////
+    auto layersource = layerdata->createScopeSource();
+    layersource->connect(scope3->_sink);
+    layersource->connect(analyzer3->_sink);
     //////////////////////////////////////
     // setup dsp graph
     //////////////////////////////////////
@@ -108,8 +110,8 @@ int main(int argc, char** argv) {
       auto dco_source         = dco->createScopeSource();
       dco_source->_dspchannel = dcochannel;
       bool isch1              = dcochannel == 1;
-      dco_source->connect(isch1 ? scope1->_sink : scope2->_sink);
-      dco_source->connect(isch1 ? analyzer1->_sink : analyzer2->_sink);
+      dco_source->connect(isch1 ? scope2->_sink : scope1->_sink);
+      dco_source->connect(isch1 ? analyzer2->_sink : analyzer1->_sink);
       //////////////////////////////////////
       distortion->param(0)._coarse = rangedf(-30.0f, -21.0f);
       //////////////////////////////////////

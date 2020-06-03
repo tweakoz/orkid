@@ -29,14 +29,26 @@ void ScopeSource::disconnect(scopesink_ptr_t sink) {
 void ScopeSource::updateController(const ControllerInst* controller) {
   _controller = controller;
   for (auto s : _sinks) {
-    s->sourceUpdated(*this);
+    s->sourceUpdated(this);
   }
   _controller = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ScopeSource::notifySinks() {
+void ScopeSource::notifySinksUpdated() {
   for (auto s : _sinks) {
-    s->sourceUpdated(*this);
+    s->sourceUpdated(this);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+void ScopeSource::notifySinksKeyOn(DspKeyOnInfo& koi) {
+  for (auto s : _sinks) {
+    s->sourceKeyOn(this, koi);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+void ScopeSource::notifySinksKeyOff() {
+  for (auto s : _sinks) {
+    s->sourceKeyOff(this);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -47,7 +59,7 @@ void ScopeSource::updateMono(int numframes, const float* mono, bool notifysinks)
   memcpy(dest, dest + numframes, tailbegin * sizeof(float));
   memcpy(dest + tailbegin, mono, numframes * sizeof(float));
   if (notifysinks)
-    notifySinks();
+    notifySinksUpdated();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ScopeSource::updateStereo(int numframes, const float* left, const float* right, bool notifysinks) {
@@ -59,12 +71,22 @@ void ScopeSource::updateStereo(int numframes, const float* left, const float* ri
     dest[tailbegin + i] = (left[i] + right[i]) * 0.5f;
   }
   if (notifysinks)
-    notifySinks();
+    notifySinksUpdated();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ScopeSink::sourceUpdated(const ScopeSource& src) {
+void ScopeSink::sourceUpdated(const ScopeSource* src) {
   if (_onupdate)
     _onupdate(src);
+}
+///////////////////////////////////////////////////////////////////////////////
+void ScopeSink::sourceKeyOn(const ScopeSource* src, DspKeyOnInfo& koi) {
+  if (_onkeyon)
+    _onkeyon(src, koi);
+}
+///////////////////////////////////////////////////////////////////////////////
+void ScopeSink::sourceKeyOff(const ScopeSource* src) {
+  if (_onkeyoff)
+    _onkeyoff(src);
 }
 ///////////////////////////////////////////////////////////////////////////////
 ScopeBuffer::ScopeBuffer(int tbufindex)

@@ -45,6 +45,7 @@ struct SpectraSurf final : public ui::Surface {
   ork::lev2::CTXBASE* _ctxbase = nullptr;
   concurrent_triple_buffer<ScopeBuffer> _scopebuffers;
   FFT_Context _fftcontext;
+  const ScopeSource* _currentSource = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
 signalscope_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp) {
@@ -57,14 +58,23 @@ signalscope_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp) {
   auto instrument              = std::make_shared<SignalScope>();
   instrument->_hudpanel        = hudpanel;
   instrument->_sink            = std::make_shared<ScopeSink>();
-  instrument->_sink->_onupdate = [analyzersurf](const ScopeSource& src) { //
-    auto dest_scopebuf = analyzersurf->_scopebuffers.begin_push();
-    memcpy(
-        dest_scopebuf->_samples, //
-        src._scopebuffer._samples,
-        koscopelength * sizeof(float));
-    analyzersurf->_scopebuffers.end_push(dest_scopebuf);
-    analyzersurf->SetDirty();
+  instrument->_sink->_onupdate = [analyzersurf](const ScopeSource* src) { //
+    bool select = (analyzersurf->_currentSource == nullptr);
+    select |= (src == analyzersurf->_currentSource);
+    if (select) {
+      auto dest_scopebuf = analyzersurf->_scopebuffers.begin_push();
+      memcpy(
+          dest_scopebuf->_samples, //
+          src->_scopebuffer._samples,
+          koscopelength * sizeof(float));
+      analyzersurf->_scopebuffers.end_push(dest_scopebuf);
+      analyzersurf->SetDirty();
+    }
+  };
+  instrument->_sink->_onkeyon = [analyzersurf](const ScopeSource* src, DspKeyOnInfo& koi) { //
+    analyzersurf->_currentSource = src;
+  };
+  instrument->_sink->_onkeyoff = [analyzersurf](const ScopeSource* src) { //
   };
   vp->addChild(hudpanel->_uipanel);
   vp->_hudpanels.insert(hudpanel);
