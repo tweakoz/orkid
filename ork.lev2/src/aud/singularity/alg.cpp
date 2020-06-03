@@ -3,6 +3,7 @@
 #include <ork/lev2/aud/singularity/filters.h>
 #include <ork/lev2/aud/singularity/konoff.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
+#include <ork/lev2/aud/singularity/hud.h>
 
 namespace ork::audio::singularity {
 
@@ -125,26 +126,53 @@ void DspStage::forEachBlock(blockfn_t fn) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-void Alg::compute() {
+void Alg::beginCompute() {
+}
+///////////////////////////////////////////////////////////////////////////////
+void Alg::doComputePass() {
   ////////////////////////////////////////////////
   int inumframes = _layer->_dspwritecount;
   int ibase      = _layer->_dspwritebase;
   ////////////////////////////////////////////////
   // compute dsp stages
   ////////////////////////////////////////////////
-  auto& dspbuf    = *_layer->_dspbuffer;
-  bool touched    = false;
-  int inumoutputs = 1;
-  int istage      = 0;
-  auto syn        = the_synth;
+  auto& dspbuf = *_layer->_dspbuffer;
+  int istage   = 0;
+  auto syn     = the_synth;
   forEachStage([&](dspstage_ptr_t stage) {
     bool ena = syn->_stageEnable[istage];
     if (ena)
       stage->forEachBlock([&](dspblk_ptr_t block) {
         block->compute(dspbuf);
-        inumoutputs = block->numOutputs();
-        touched     = true;
+        //////////////////////////////////////
+        // SignalScope
+        //////////////////////////////////////
+        auto scopesrc = block->_dbd->_scopesource;
+        if (scopesrc) {
+          auto data = dspbuf.channel(scopesrc->_dspchannel) + ibase;
+          scopesrc->updateMono(inumframes, data, false);
+        }
+        /////////////////////////////
+      });
+    istage++;
+  });
+}
+///////////////////////////////////////////////////////////////////////////////
+void Alg::endCompute() {
+  auto syn   = the_synth.get();
+  int istage = 0;
+  forEachStage([&](dspstage_ptr_t stage) {
+    bool ena = syn->_stageEnable[istage];
+    if (ena)
+      stage->forEachBlock([&](dspblk_ptr_t block) {
+        //////////////////////////////////////
+        // SignalScope
+        //////////////////////////////////////
+        auto scopesrc = block->_dbd->_scopesource;
+        if (scopesrc) {
+          scopesrc->notifySinks();
+        }
+        /////////////////////////////
       });
     istage++;
   });

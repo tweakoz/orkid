@@ -17,12 +17,18 @@
 #include <ork/lev2/aud/singularity/dsp_ringmod.h>
 #include <ork/lev2/aud/singularity/cz1.h>
 #include <ork/lev2/aud/singularity/sampler.h>
+#include <ork/lev2/aud/singularity/hud.h>
 
 namespace ork::audio::singularity {
 
 DspBlockData::DspBlockData() {
   for (int i = 0; i < kmaxdspblocksperstage; i++)
     _dspchannel[i] = i;
+}
+scopesource_ptr_t DspBlockData::createScopeSource() {
+  auto src     = std::make_shared<ScopeSource>();
+  _scopesource = src;
+  return src;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

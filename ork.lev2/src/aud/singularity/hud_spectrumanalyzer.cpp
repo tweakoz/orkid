@@ -7,39 +7,6 @@ using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
-struct SpectraSurf final : public ui::Surface {
-  SpectraSurf();
-  void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
-  void DoInit(lev2::Context* pt) override;
-  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
-  ork::lev2::CTXBASE* _ctxbase = nullptr;
-  concurrent_triple_buffer<ScopeBuffer> _scopebuffers;
-};
-///////////////////////////////////////////////////////////////////////////////
-signalscope_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp) {
-  auto hudpanel        = std::make_shared<HudPanel>();
-  auto analyzersurf    = std::make_shared<SpectraSurf>();
-  hudpanel->_uipanel   = std::make_shared<ui::Panel>("analyzer", 0, 0, 32, 32);
-  hudpanel->_uisurface = analyzersurf;
-  hudpanel->_uipanel->setChild(hudpanel->_uisurface);
-  hudpanel->_uipanel->snap();
-  auto instrument              = std::make_shared<SignalScope>();
-  instrument->_hudpanel        = hudpanel;
-  instrument->_sink            = std::make_shared<ScopeSink>();
-  instrument->_sink->_onupdate = [analyzersurf](const ScopeSource& src) { //
-    auto dest_scopebuf = analyzersurf->_scopebuffers.begin_push();
-    memcpy(
-        dest_scopebuf->_samples, //
-        src._scopebuffer._samples,
-        koscopelength * sizeof(float));
-    analyzersurf->_scopebuffers.end_push(dest_scopebuf);
-    analyzersurf->SetDirty();
-  };
-  vp->addChild(hudpanel->_uipanel);
-  vp->_hudpanels.insert(hudpanel);
-  return instrument;
-}
-///////////////////////////////////////////////////////////////////////////////
 static const int inumframes           = koscopelength;
 static constexpr size_t fftoversample = 16;
 static constexpr size_t DOWNSHIFT     = bitsToHold<fftoversample>() - 1;
@@ -70,22 +37,38 @@ struct FFT_Context {
   std::vector<float> im;
 };
 ///////////////////////////////////////////////////////////////////////////////
-static FFT_Context& _fftcontext() {
-  static FFT_Context _ctx;
-  return _ctx;
-}
+struct SpectraSurf final : public ui::Surface {
+  SpectraSurf();
+  void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
+  void DoInit(lev2::Context* pt) override;
+  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
+  ork::lev2::CTXBASE* _ctxbase = nullptr;
+  concurrent_triple_buffer<ScopeBuffer> _scopebuffers;
+  FFT_Context _fftcontext;
+};
 ///////////////////////////////////////////////////////////////////////////////
-static float* initfftsmoothingbuffer() {
-  float* buffer = new float[fftSize];
-  for (int i = 0; i < fftSize; i++) {
-    buffer[i] = 0.0f;
-  }
-  return buffer;
-}
-///////////////////////////////////////////////////////////////////////////////
-static float* fftsmoothingbuffer() {
-  static float* buffer = initfftsmoothingbuffer();
-  return buffer;
+signalscope_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp) {
+  auto hudpanel        = std::make_shared<HudPanel>();
+  auto analyzersurf    = std::make_shared<SpectraSurf>();
+  hudpanel->_uipanel   = std::make_shared<ui::Panel>("analyzer", 0, 0, 32, 32);
+  hudpanel->_uisurface = analyzersurf;
+  hudpanel->_uipanel->setChild(hudpanel->_uisurface);
+  hudpanel->_uipanel->snap();
+  auto instrument              = std::make_shared<SignalScope>();
+  instrument->_hudpanel        = hudpanel;
+  instrument->_sink            = std::make_shared<ScopeSink>();
+  instrument->_sink->_onupdate = [analyzersurf](const ScopeSource& src) { //
+    auto dest_scopebuf = analyzersurf->_scopebuffers.begin_push();
+    memcpy(
+        dest_scopebuf->_samples, //
+        src._scopebuffer._samples,
+        koscopelength * sizeof(float));
+    analyzersurf->_scopebuffers.end_push(dest_scopebuf);
+    analyzersurf->SetDirty();
+  };
+  vp->addChild(hudpanel->_uipanel);
+  vp->_hudpanels.insert(hudpanel);
+  return instrument;
 }
 ///////////////////////////////////////////////////////////////////////////////
 SpectraSurf::SpectraSurf() //
@@ -119,21 +102,19 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   // fill in FFT buffer using window func
   //////////////////////////////
 
-  auto& fftcontext = _fftcontext();
-
   for (int i = 0; i < fftSize; i++) {
     float s = _samples[i >> DOWNSHIFT];
     // printf("s<%d:%g>\n", i, s);
-    float win_num       = pi2 * float(i);
-    float win_den       = fftSize - 1;
-    float win           = 0.5f * (1 - cosf(win_num / win_den));
-    float s2            = _samples[i >> DOWNSHIFT];
-    fftcontext.input[i] = s2 * win;
+    float win_num        = pi2 * float(i);
+    float win_den        = fftSize - 1;
+    float win            = 0.5f * (1 - cosf(win_num / win_den));
+    float s2             = _samples[i >> DOWNSHIFT];
+    _fftcontext.input[i] = s2 * win;
   }
 
   _scopebuffers.end_pull(scopebuf);
 
-  fftcontext.compute(); // do the FFT
+  _fftcontext.compute(); // do the FFT
 
   //////////////////////////////
   // map fft-bin -> Y
@@ -269,23 +250,15 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   // spectral plot
   //////////////////////////////
 
-  float dB = mapDecibels(fftcontext.re[0], fftcontext.im[0]);
+  float dB = mapDecibels(_fftcontext.re[0], _fftcontext.im[0]);
   float x1 = mapFFTX(8);
   float y1 = mapFFTY(dB);
 
-  auto fftsmoothbuf = fftsmoothingbuffer();
-  bool done         = false;
-  int i             = 0;
+  bool done = false;
+  int i     = 0;
   while (not done) {
 
-    ///////////////////////////////////////////////
-    // average fft samples to smooth out spectral plot
-    ///////////////////////////////////////////////
-    float dB = mapDecibels(fftcontext.re[i], fftcontext.im[i]); // instantaneous sample
-    fftsmoothbuf[i] += dB * 0.03 + 0.0001f;                     // accumulate
-    fftsmoothbuf[i] *= 0.99f;                                   // dampen
-    // dB = fftsmoothbuf[i] * 0.23;                                // scale to unity (todo: find coef)
-    ///////////////////////////////////////////////
+    float dB = mapDecibels(_fftcontext.re[i], _fftcontext.im[i]); // instantaneous sample
 
     float fi = float(i) / float(fftSize);
 
@@ -304,7 +277,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     y1 = y2;
     i++;
 
-    done = frq >= 24000.0f; // were done at 1/2 nyquist
+    done = frq >= getSampleRate() * 0.5; // were done at 1/2 nyquist
   }
   // freqbins[index] = complex_t(0,0);
 

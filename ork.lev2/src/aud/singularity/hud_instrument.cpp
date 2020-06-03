@@ -34,18 +34,23 @@ void ScopeSource::updateController(const ControllerInst* controller) {
   _controller = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ScopeSource::updateMono(int numframes, const float* mono) {
-  OrkAssert(numframes <= koscopelength);
-  int tailbegin = koscopelength - numframes;
-  float* dest   = _scopebuffer._samples;
-  memcpy(dest, dest + numframes, tailbegin * sizeof(float));
-  memcpy(dest + tailbegin, mono, numframes * sizeof(float));
+void ScopeSource::notifySinks() {
   for (auto s : _sinks) {
     s->sourceUpdated(*this);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ScopeSource::updateStereo(int numframes, const float* left, const float* right) {
+void ScopeSource::updateMono(int numframes, const float* mono, bool notifysinks) {
+  OrkAssert(numframes <= koscopelength);
+  int tailbegin = koscopelength - numframes;
+  float* dest   = _scopebuffer._samples;
+  memcpy(dest, dest + numframes, tailbegin * sizeof(float));
+  memcpy(dest + tailbegin, mono, numframes * sizeof(float));
+  if (notifysinks)
+    notifySinks();
+}
+///////////////////////////////////////////////////////////////////////////////
+void ScopeSource::updateStereo(int numframes, const float* left, const float* right, bool notifysinks) {
   OrkAssert(numframes <= koscopelength);
   int tailbegin = koscopelength - numframes;
   float* dest   = _scopebuffer._samples;
@@ -53,9 +58,8 @@ void ScopeSource::updateStereo(int numframes, const float* left, const float* ri
   for (int i = 0; i < numframes; i++) {
     dest[tailbegin + i] = (left[i] + right[i]) * 0.5f;
   }
-  for (auto s : _sinks) {
-    s->sourceUpdated(*this);
-  }
+  if (notifysinks)
+    notifySinks();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ScopeSink::sourceUpdated(const ScopeSource& src) {

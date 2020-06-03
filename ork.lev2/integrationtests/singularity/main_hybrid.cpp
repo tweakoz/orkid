@@ -49,15 +49,20 @@ int main(int argc, char** argv) {
   ////////////////////////////////////////////////
   // create visualizers
   ////////////////////////////////////////////////
-  auto scope    = create_oscilloscope(app->_hudvp);
-  auto analyzer = create_spectrumanalyzer(app->_hudvp);
-  auto envview  = create_envelope_analyzer(app->_hudvp);
-  scope->setRect(0, 0, 480, 256, true);
-  analyzer->setRect(480, 0, 810, 256, true);
-  envview->setRect(-10, 720 - 467, 1300, 477, true);
-  envview->setProperty<float>("timewidth", 5.0f);
-  // bussource->connect(scope->_sink);
-  // bussource->connect(analyzer->_sink);
+  auto scope1    = create_oscilloscope(app->_hudvp);
+  auto scope2    = create_oscilloscope(app->_hudvp);
+  auto scope3    = create_oscilloscope(app->_hudvp);
+  auto analyzer1 = create_spectrumanalyzer(app->_hudvp);
+  auto analyzer2 = create_spectrumanalyzer(app->_hudvp);
+  auto analyzer3 = create_spectrumanalyzer(app->_hudvp);
+  scope1->setRect(-10, 0, 480, 240, true);
+  scope2->setRect(-10, 240, 480, 240, true);
+  scope3->setRect(-10, 480, 480, 240, true);
+  analyzer1->setRect(480, 0, 810, 240, true);
+  analyzer2->setRect(480, 240, 810, 240, true);
+  analyzer3->setRect(480, 480, 810, 240, true);
+  bussource->connect(scope3->_sink);
+  bussource->connect(analyzer3->_sink);
   ////////////////////////////////////////////////
   // random generators
   ////////////////////////////////////////////////
@@ -99,6 +104,12 @@ int main(int argc, char** argv) {
       lopass1->_dspchannel[0]    = dcochannel;
       // lopass2->_dspchannel[0]    = dcochannel;
       amp->_dspchannel[0] = dcochannel;
+      //////////////////////////////////////
+      auto dco_source         = dco->createScopeSource();
+      dco_source->_dspchannel = dcochannel;
+      bool isch1              = dcochannel == 1;
+      dco_source->connect(isch1 ? scope1->_sink : scope2->_sink);
+      dco_source->connect(isch1 ? analyzer1->_sink : analyzer2->_sink);
       //////////////////////////////////////
       distortion->param(0)._coarse = rangedf(-30.0f, -21.0f);
       //////////////////////////////////////
@@ -224,16 +235,6 @@ int main(int argc, char** argv) {
       pan          = std::clamp(pan, -1.0f, 1.0f);
       cci->_curval = pan;
     };
-    //////////////////////////////////////
-    auto lay_source = layerdata->createScopeSource();
-    lay_source->connect(scope->_sink);
-    lay_source->connect(analyzer->_sink);
-    //////////////////////////////////////
-    // envelope viewer
-    //////////////////////////////////////
-    controllerdata_ptr_t inspect_env = layerdata->controllerByName("DCOENV0");
-    auto env_source                  = inspect_env->createScopeSource();
-    env_source->connect(envview->_sink);
     //////////////////////////////////////
     // play test notes
     //////////////////////////////////////

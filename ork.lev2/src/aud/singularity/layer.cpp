@@ -147,6 +147,7 @@ void Layer::compute(int numframes) {
     int ifrpending = numframes;
     _dspwritecount = frames_per_controlpass;
     _dspwritebase  = 0;
+    _alg->beginCompute();
     while (ifrpending > 0) {
       // printf("_dspwritecount<%d> _dspwritebase<%d>\n", _dspwritecount, _dspwritebase);
       ////////////////////////////////
@@ -157,7 +158,7 @@ void Layer::compute(int numframes) {
       ////////////////////////////////
       // update dsp modules
       ////////////////////////////////
-      _alg->compute();
+      _alg->doComputePass();
       ////////////////////////////////
       // update indices
       ////////////////////////////////
@@ -166,7 +167,7 @@ void Layer::compute(int numframes) {
       ////////////////////////////////
       _layerTime += float(frames_per_controlpass) * getInverseSampleRate();
     }
-
+    _alg->endCompute();
     ///////////////////////////////////
     // amp / out
     ///////////////////////////////////

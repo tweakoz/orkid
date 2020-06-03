@@ -24,8 +24,37 @@
 #include <ork/math/audiomath.h>
 
 namespace ork::audio::singularity {
-
 using namespace ork::audiomath;
+///////////////////////////////////////////////////////////////////////////////
+static constexpr int kmaxenvperlayer       = 8;
+static constexpr int kmaxdspblocksperstage = 16; // vertical dimension of layer's dsp grid
+static constexpr int kmaxdspstagesperlayer = 16; // horizontal dimension of layer's dsp grid
+static constexpr int kmaxctrlperblock      = 16;
+static constexpr int kmaxparmperblock      = 16;
+///////////////////////////////////////////////////////////////////////////////
+static constexpr double pi   = 3.141592654;
+static constexpr double pi2  = 3.141592654 * 2.0;
+static constexpr double pid2 = 3.141592654 * 0.5;
+static const double sqrt2    = sqrt(2.0);
+///////////////////////////////////////////////////////////////////////////////
+static constexpr int frames_per_dsppass     = 256;
+static constexpr int frames_per_controlpass = 32;
+inline constexpr float getSampleRate() {
+  return 48000.0f;
+}
+inline constexpr float getInverseSampleRate() {
+  return 1.0f / getSampleRate();
+}
+inline constexpr float getControlRate() {
+  return float(frames_per_controlpass) / getSampleRate();
+}
+inline constexpr float samplesPerControlPeriod() {
+  return getSampleRate() / float(frames_per_controlpass);
+}
+inline constexpr float getInverseControlRate() {
+  return float(frames_per_controlpass) / getSampleRate();
+}
+constexpr float PI_ISR = pi2 * getInverseSampleRate();
 ///////////////////////////////////////////////////////////////////////////////
 struct ProgramData;
 struct LayerData;
@@ -123,37 +152,6 @@ using hudpanel_ptr_t              = std::shared_ptr<HudPanel>;
 using scopesource_ptr_t           = std::shared_ptr<ScopeSource>;
 using scopesink_ptr_t             = std::shared_ptr<ScopeSink>;
 using signalscope_ptr_t           = std::shared_ptr<SignalScope>;
-///////////////////////////////////////////////////////////////////////////////
-static constexpr int kmaxenvperlayer       = 8;
-static constexpr int kmaxdspblocksperstage = 16; // vertical dimension of layer's dsp grid
-static constexpr int kmaxdspstagesperlayer = 16; // horizontal dimension of layer's dsp grid
-static constexpr int kmaxctrlperblock      = 16;
-static constexpr int kmaxparmperblock      = 16;
-///////////////////////////////////////////////////////////////////////////////
-static constexpr double pi   = 3.141592654;
-static constexpr double pi2  = 3.141592654 * 2.0;
-static constexpr double pid2 = 3.141592654 * 0.5;
-static const double sqrt2    = sqrt(2.0);
-///////////////////////////////////////////////////////////////////////////////
-static constexpr int frames_per_dsppass     = 256;
-static constexpr int frames_per_controlpass = 32;
-inline constexpr float getSampleRate() {
-  return 96000.0f;
-}
-inline constexpr float getInverseSampleRate() {
-  return 1.0f / getSampleRate();
-}
-inline constexpr float getControlRate() {
-  return float(frames_per_controlpass) / getSampleRate();
-}
-inline constexpr float samplesPerControlPeriod() {
-  return getSampleRate() / float(frames_per_controlpass);
-}
-inline constexpr float getInverseControlRate() {
-  return float(frames_per_controlpass) / getSampleRate();
-}
-constexpr float PI_ISR = pi2 * getInverseSampleRate();
-
 ///////////////////////////////////////////////////////////////////////////////
 typedef std::function<float()> controller_t;
 typedef std::function<float(float)> mapper_t;

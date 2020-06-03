@@ -101,14 +101,17 @@ struct ScopeBuffer {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct ScopeSource {
-  void updateMono(int numframes, const float* mono);
-  void updateStereo(int numframes, const float* left, const float* right);
+  void updateMono(int numframes, const float* mono, bool notifysinks = true);
+  void updateStereo(int numframes, const float* left, const float* right, bool notifysinks = true);
   void updateController(const ControllerInst* controller);
+
+  void notifySinks();
   void connect(scopesink_ptr_t sink);
   void disconnect(scopesink_ptr_t sink);
   std::unordered_set<scopesink_ptr_t> _sinks;
   ScopeBuffer _scopebuffer;
   const ControllerInst* _controller = nullptr;
+  int _dspchannel                   = 0;
 };
 struct ScopeSink {
   void sourceUpdated(const ScopeSource& src);

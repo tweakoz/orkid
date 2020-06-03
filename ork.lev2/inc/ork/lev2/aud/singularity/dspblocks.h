@@ -103,6 +103,8 @@ struct DspBlockData {
     return nullptr;
   }
 
+  scopesource_ptr_t createScopeSource();
+
   std::string _blocktype;
 
   DspParamData& addParam();
@@ -114,6 +116,7 @@ struct DspBlockData {
   int _blockIndex = -1;
   varmap::VarMap _vars;
   DspParamData _paramd[kmaxparmperblock];
+  scopesource_ptr_t _scopesource;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -234,7 +237,9 @@ struct Alg final {
 
   void forEachStage(stagefn_t fn);
 
-  void compute();
+  void beginCompute();
+  void doComputePass();
+  void endCompute();
 
   virtual void doKeyOn(DspKeyOnInfo& koi);
   dspblk_ptr_t lastBlock() const;
