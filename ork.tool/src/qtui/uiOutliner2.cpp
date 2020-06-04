@@ -419,6 +419,7 @@ void Outliner2Surface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
         bool is_sel = item.mSelected;
 
         if (is_pick) {
+          pick_color = fvec4(100, 1, 0, 1); // come back as <0x0001 0000 0001 0001>
           _material->bindParamVec4(_parmodcolor, pick_color);
         } else {
 

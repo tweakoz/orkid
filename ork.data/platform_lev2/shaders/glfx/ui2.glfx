@@ -57,7 +57,8 @@ fragment_shader fs_ui
 ///////////////////////////////////////////////////////////////
 fragment_shader fs_picking
 	: iface_fpick {
-		out_iid = uvec4(modcolor);
+		//out_iid = uvec4(0x1234,0x5678,0,0xabcd); // comes back as 0xabcd000056781234
+		out_iid = uvec4(modcolor); 
     out_nrmd = vec4(0,1,0,0);
 }
 ///////////////////////////////////////////////////////////////
