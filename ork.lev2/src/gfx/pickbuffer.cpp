@@ -36,7 +36,7 @@ uint64_t PickBuffer::AssignPickId(const ork::Object* pobj) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 ork::Object* PickBuffer::GetObjectFromPickId(uint64_t pid) {
-  printf("pickid <0x%zx>\n", pid);
+  // printf("pickid <0x%zx>\n", pid);
   auto it           = mPickIds.find(pid);
   ork::Object* pobj = (it == mPickIds.end()) ? nullptr : it->second;
   return pobj;
@@ -54,7 +54,7 @@ void PickBuffer::Init() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PickBuffer::resize(int w, int h) {
-  printf("resize pickbuf<%p> size<%d %d>\n", this, w, h);
+  // printf("resize pickbuf<%p> size<%d %d>\n", this, w, h);
   _rtgroup->Resize(w, h);
   _width  = w;
   _height = h;
@@ -76,12 +76,12 @@ void PickBuffer::Draw(lev2::PixelFetchContext& ctx) {
   int isurfw = _surface->width();
   int isurfh = _surface->height();
   if (irtgw != isurfw || irtgh != isurfh) {
-    printf("resize pickbuf size<%d %d>\n", isurfw, isurfh);
+    // printf("resize pickbuf size<%d %d>\n", isurfw, isurfh);
     _width  = isurfw;
     _height = isurfh;
     _rtgroup->Resize(isurfw, isurfh);
   }
-  printf("Begin Pickbuffer::Draw() surf<%p>\n", _surface);
+  // printf("Begin Pickbuffer::Draw() surf<%p>\n", _surface);
   fbi->PushRtGroup(_rtgroup);
   fbi->EnterPickState(this);
 
@@ -90,7 +90,7 @@ void PickBuffer::Draw(lev2::PixelFetchContext& ctx) {
   fbi->LeavePickState();
   fbi->PopRtGroup();
   tgt->debugPopGroup();
-  printf("End Pickbuffer::Draw()\n");
+  // printf("End Pickbuffer::Draw()\n");
 }
 ///////////////////////////////////////////////////////////////////////////////
 

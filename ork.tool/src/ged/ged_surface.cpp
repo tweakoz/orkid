@@ -88,7 +88,7 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   int pickstate = fbi->miPickState;
   // bool bispick = framedata().IsPickMode();
 
-  printf("GedSurface<%p>::Draw x<%d> y<%d> w<%d> h<%d> pickstate<%d>\n", this, miX, miY, miW, miH, pickstate);
+  // printf("GedSurface<%p>::Draw x<%d> y<%d> w<%d> h<%d> pickstate<%d>\n", this, miX, miY, miW, miH, pickstate);
 
   //////////////////////////////////////////////////
   // Compute Scoll Transform
@@ -128,7 +128,7 @@ void GedSurface::onInvalidate() {
 ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
   ui::HandlerResult ret(this);
 
-  printf("GedSurface<%p> uievent\n", this);
+  // printf("GedSurface<%p> uievent\n", this);
 
   const auto& filtev = EV->mFilteredEvent;
 
@@ -261,7 +261,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
       bool is_in_set = IsObjInSet(pobj);
       const auto clr = ctx._pickvalues[0];
       // printf("GetPixel color<%g %g %g %g>\n", clr.x, clr.y, clr.z, clr.w);
-      printf(
+      /*printf(
           "GedSurface<%p> Object<%p> is_in_set<%d> ilocx<%d> ilocy<%d> fx<%f> fy<%f>\n", //
           this,
           pobj,
@@ -269,7 +269,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
           ilocx,
           ilocy,
           fx,
-          fy);
+          fy);*/
 
       /////////////////////////////////////
       // test object against known set

@@ -136,7 +136,7 @@ void Outliner2Model::ToggleGlobals() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Outliner2Model::UpdateModel() {
-  printf("Outliner2Model<%p>::SlotSceneTopoChanged\n", this);
+  // printf("Outliner2Model<%p>::SlotSceneTopoChanged\n", this);
 
   mItems.clear();
 
@@ -253,13 +253,13 @@ void Outliner2Model::SigModelChanged() {
 
 ///////////////////////////////////////////////////////////////////////////////
 void Outliner2Model::SlotObjectSelected(ork::Object* pobj) {
-  printf("Outliner2Model<%p>::SlotObjectSelected obj<%p>\n", this, pobj);
+  // printf("Outliner2Model<%p>::SlotObjectSelected obj<%p>\n", this, pobj);
   mSelected.insert(pobj);
   UpdateModel();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Outliner2Model::SlotObjectDeSelected(ork::Object* pobj) {
-  printf("Outliner2Model<%p>::SlotObjectDeSelected obj<%p>\n", this, pobj);
+  // printf("Outliner2Model<%p>::SlotObjectDeSelected obj<%p>\n", this, pobj);
   auto it = mSelected.find(pobj);
   if (it != mSelected.end()) {
     mSelected.erase(it);
@@ -349,7 +349,7 @@ void Outliner2Surface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   bool has_foc                         = HasMouseFocus();
   bool is_pick                         = fbi->isPickState();
 
-  printf("Outliner2Surface<%p>::DoRePaintSurface is_pick<%d>\n", this, int(is_pick));
+  // printf("Outliner2Surface<%p>::DoRePaintSurface is_pick<%d>\n", this, int(is_pick));
 
   //////////////////////////////////////////////////
   // Compute Scoll Transform
@@ -521,7 +521,7 @@ void Outliner2Surface::SetNameOfSelectedItem() {
     const char* rescstr = result.toStdString().c_str();
     auto& ed            = mOutlinerModel.Editor();
     auto& sm            = ed.selectionManager();
-    printf("rescstr<%s>\n", rescstr);
+    // printf("rescstr<%s>\n", rescstr);
     ed.EditorRenameSceneObject((ent::SceneObject*)item.mObject, rescstr);
     sm.ClearSelection();
     sm.AddObjectToSelection((ork::Object*)item.mObject);
@@ -657,7 +657,7 @@ ui::HandlerResult Outliner2Surface::DoOnUiEvent(ui::event_constptr_t EV) {
     case ui::UIEV_RELEASE: {
       int idelta = EV->miMWY;
 
-      printf("Outliner2Surface<%p>::DoOnUiEvent UIEV_PUSH\n", this);
+      // printf("Outliner2Surface<%p>::DoOnUiEvent UIEV_PUSH\n", this);
 
       GetPixel(ilocx, ilocy, ctx);
       float fx                   = float(ilocx) / float(width());

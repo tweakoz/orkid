@@ -143,7 +143,7 @@ void Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
       bool bright = ev->IsButton2DownF();
 
       if (bleft || bright) {
-        printf("evx<%f> mfx<%f>\n", (float)ev->miX, mfx);
+        // printf("evx<%f> mfx<%f>\n", (float)ev->miX, mfx);
         int mousepos = ev->miX;
 
         float fx    = float(mousepos - mfx) / mfw;

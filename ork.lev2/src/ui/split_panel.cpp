@@ -228,7 +228,7 @@ HandlerResult SplitPanel::DoOnUiEvent(event_constptr_t Ev) {
   int evx      = Ev->miX;
   int evy      = Ev->miY;
   bool isshift = Ev->mbSHIFT;
-  printf("Panel<%p>::OnUiEvent isshift<%d>\n", this, int(isshift));
+  // printf("Panel<%p>::OnUiEvent isshift<%d>\n", this, int(isshift));
   //////////////////////////////
   int ilocx = 0;
   int ilocy = 0;
