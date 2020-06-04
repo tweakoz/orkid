@@ -97,7 +97,11 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 ctx->makeCurrentContext();
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars.typedValueForKey<py::function>("gpuinitfn");
-                pyfn.value()(ctx_t(ctx));
+                try {
+                  pyfn.value()(ctx_t(ctx));
+                } catch (std::exception& e) {
+                  OrkAssert(false);
+                }
               });
             }
             ////////////////////////////////////////////////////////////////////
@@ -121,7 +125,11 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 auto pyfn       = rval->_vars.typedValueForKey<py::function>("drawfn");
                 auto mydrev     = rval->_vars.typedValueForKey<drawevent_ptr_t>("drawev");
                 *mydrev.value() = *drwev;
-                pyfn.value()(mydrev);
+                try {
+                  pyfn.value()(drwev);
+                } catch (std::exception& e) {
+                  OrkAssert(false);
+                }
               });
             } else {
               auto scene = py::cast<scenegraph::scene_ptr_t>(appinstance.attr("scene"));
@@ -139,7 +147,11 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               rval->onUpdate([=](ui::updatedata_ptr_t updata) { //
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars.typedValueForKey<py::function>("updatefn");
-                pyfn.value()(updata);
+                try {
+                  pyfn.value()(updata);
+                } catch (std::exception& e) {
+                  OrkAssert(false);
+                }
               });
             }
             ////////////////////////////////////////////////////////////////////
@@ -151,7 +163,11 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               rval->onUiEvent([=](ui::event_constptr_t ev) -> ui::HandlerResult { //
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars.typedValueForKey<py::function>("uievfn");
-                pyfn.value()(ev);
+                try {
+                  pyfn.value()(ev);
+                } catch (std::exception& e) {
+                  OrkAssert(false);
+                }
                 return ui::HandlerResult();
               });
             }

@@ -93,7 +93,7 @@ class Blasphemoids(_simsetup.SimApp):
   def onUpdate(self,updinfo):
     super().onUpdate(updinfo)
     self.abstime = updinfo.absolutetime
-    left = self.hands.channel("left.matrix")
+    #left = self.hands.channel("left.matrix")
     right = self.hands.channel("right.matrix")
     iset = self.instanceset
     hand = right # todo fix controller assignment
