@@ -326,6 +326,8 @@ void Outliner2Surface::DoInit(lev2::Context* pt) {
   _tekmodcolor = _material->technique("ui_modcolor");
   _parmvp      = _material->param("mvp");
   _parmodcolor = _material->param("modcolor");
+  _parobjid    = _material->param("objid");
+
   _material->dump();
 
   OrkAssert(_tekpick != nullptr);
@@ -419,8 +421,8 @@ void Outliner2Surface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
         bool is_sel = item.mSelected;
 
         if (is_pick) {
-          pick_color = fvec4(100, 1, 0, 1); // come back as <0x0001 0000 0001 0001>
-          _material->bindParamVec4(_parmodcolor, pick_color);
+          pick_color = fvec4(100, 1, 0, 1); // come back as <0x0001 0000 0001 0064>
+          _material->bindParamU64(_parobjid, uint64_t(pobj));
         } else {
 
           fvec4 modcolor;

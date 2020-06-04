@@ -164,6 +164,12 @@ void FreestyleMaterial::bindParamVec4(const FxShaderParam* par, const fvec4& v) 
   fxi->BindParamVect4(par, v);
 }
 ///////////////////////////////////////////////////////////////////////////////
+void FreestyleMaterial::bindParamU64(const FxShaderParam* par, uint64_t v) {
+  OrkAssert(par);
+  auto fxi = _initialTarget->FXI();
+  fxi->BindParamU64(par, v);
+}
+///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamMatrix(const FxShaderParam* par, const fmtx4& m) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();

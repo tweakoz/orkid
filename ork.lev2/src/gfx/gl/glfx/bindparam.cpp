@@ -99,9 +99,14 @@ void Interface::BindParamU32(const FxShaderParam* hpar, uint32_t uval) {
 #if !defined(__APPLE__)
 void Interface::BindParamU64(const FxShaderParam* hpar, uint64_t uval) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
-    OrkAssert(checktype == GL_UNSIGNED_INT64_NV);
+    OrkAssert(checktype == GL_UNSIGNED_INT_VEC4);
     GL_ERRORCHECK();
-    glUniform1ui64NV(iloc, uval);
+    uint32_t split[4];
+    split[0] = uval & 0xffff;
+    split[1] = (uval >> 16) & 0xffff;
+    split[2] = (uval >> 32) & 0xffff;
+    split[3] = (uval >> 48) & 0xffff;
+    glUniform4uiv(iloc, 1, split);
     GL_ERRORCHECK();
   });
 }

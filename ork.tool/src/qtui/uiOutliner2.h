@@ -141,6 +141,7 @@ private:
   const ork::lev2::FxShaderTechnique* _tekmodcolor = nullptr;
   const ork::lev2::FxShaderParam* _parmvp          = nullptr;
   const ork::lev2::FxShaderParam* _parmodcolor     = nullptr;
+  const ork::lev2::FxShaderParam* _parobjid        = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::ent

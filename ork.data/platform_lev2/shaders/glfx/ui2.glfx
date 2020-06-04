@@ -6,6 +6,7 @@ fxconfig fxcfg_default {
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_ui {
+	uvec4 objid;
   vec4 modcolor;
   mat4 mvp;
   sampler2D InstanceMatrices;
@@ -58,7 +59,7 @@ fragment_shader fs_ui
 fragment_shader fs_picking
 	: iface_fpick {
 		//out_iid = uvec4(0x1234,0x5678,0,0xabcd); // comes back as 0xabcd000056781234
-		out_iid = uvec4(modcolor); 
+		out_iid = objid;
     out_nrmd = vec4(0,1,0,0);
 }
 ///////////////////////////////////////////////////////////////

@@ -570,14 +570,14 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
 
       GlFboObject* FboObj = (GlFboObject*)ctx.mRtGroup->GetInternalHandle();
 
-      // printf("GetPixel<%d %d> FboObj<%p>\n", sx, sy, FboObj);
+      printf("GetPixel<%d %d> FboObj<%p>\n", sx, sy, FboObj);
 
       if (FboObj) {
         GL_ERRORCHECK();
         glBindFramebuffer(GL_FRAMEBUFFER, FboObj->mFBOMaster);
         GL_ERRORCHECK();
 
-        // printf("GetPixel<%d %d> FboMaster<%u>\n", sx, sy, FboObj->mFBOMaster);
+        printf("GetPixel<%d %d> FboMaster<%u>\n", sx, sy, FboObj->mFBOMaster);
 
         if (FboObj->mFBOMaster) {
 
@@ -588,7 +588,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
           glGetIntegerv(GL_READ_BUFFER, &readbuffer);
           GL_ERRORCHECK();
 
-          // printf( "readbuf<%d>\n", int(readbuffer) );
+          printf("readbuf<%d>\n", int(readbuffer));
 
           for (int MrtIndex = 0; MrtIndex < 4; MrtIndex++) {
             int MrtTest = 1 << MrtIndex;
@@ -625,6 +625,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
                   // uint64_t rval = (d << 48) | (c << 32) | (b << 16) | a;
                   /////////////////////////////////////////////////////////////////
                   ctx._pickvalues[MrtIndex].Set<uint64_t>(value);
+                  printf("getpix MrtIndex<%d> rx<%d> ry<%d> value<0x%zx>\n", MrtIndex, sx, sy, value);
                   /////////////////////////////////////////////////////////////////
                   break;
                 }
@@ -632,6 +633,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
                   fvec4 rv;
                   glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*)rv.GetArray());
                   ctx._pickvalues[MrtIndex].Set<fvec4>(rv);
+                  printf("getpix MrtIndex<%d> rx<%d> ry<%d> <%g %g %g %g>\n", MrtIndex, sx, sy, rv.x, rv.y, rv.z, rv.w);
                   break;
                 }
                 default:
@@ -639,8 +641,6 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
                   break;
               }
               GL_ERRORCHECK();
-
-              // printf("getpix MrtIndex<%d> rx<%d> ry<%d> <%g %g %g %g>\n", MrtIndex, sx, sy, rv.x, rv.y, rv.z, rv.w);
             }
           }
           GL_ERRORCHECK();
