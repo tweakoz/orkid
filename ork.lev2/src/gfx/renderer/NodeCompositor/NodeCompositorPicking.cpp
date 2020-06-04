@@ -33,7 +33,7 @@ struct IMPL {
   ///////////////////////////////////////
   IMPL()
       : _camname("Camera") {
-    _layername = "All"_pool;
+    _layername = "All";
     _width     = 8;
     _height    = 8;
   }

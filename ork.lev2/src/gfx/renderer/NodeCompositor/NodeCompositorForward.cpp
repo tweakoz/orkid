@@ -32,8 +32,8 @@ namespace forwardnode {
 struct IMPL {
   ///////////////////////////////////////
   IMPL()
-      : _camname(AddPooledString("Camera")) {
-    _layername = "All"_pool;
+      : _camname("Camera") {
+    _layername = "All";
   }
   ///////////////////////////////////////
   ~IMPL() {
@@ -116,7 +116,7 @@ struct IMPL {
     targ->debugPopGroup();
   }
   ///////////////////////////////////////
-  PoolString _camname, _layername;
+  std::string _camname, _layername;
   CompositingMaterial _material;
   RtGroup* _rtg = nullptr;
   fmtx4 _viewOffsetMatrix;

@@ -30,13 +30,15 @@ uint64_t PickBuffer::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord
   auto mtcs = cam->computeMatrices(float(W) / float(H));
   auto ray  = std::make_shared<fray3>();
   mtcs.projectDepthRay(unitpos, *ray.get());
-  auto o       = ray->mOrigin;
-  auto d       = ray->mDirection;
+  auto o = ray->mOrigin;
+  auto d = ray->mDirection;
+  // printf("//////////////////\n");
+  // printf("unitpos<%g %g>\n", fx, fy);
+  // printf("ori <%g %g %g>\n", o.x, o.y, o.z);
+  // printf("dir <%g %g %g>\n", d.x, d.y, d.z);
   uint64_t val = pickWithRay(ray);
-  printf("unitpos<%g %g>\n", fx, fy);
-  printf("ori <%g %g %g>\n", o.x, o.y, o.z);
-  printf("dir <%g %g %g>\n", d.x, d.y, d.z);
-  printf("val <0x%zu>\n", val);
+  //printf("val <0x%zu>\n", val);
+  //printf("//////////////////\n");
 
   return val;
 }
@@ -80,8 +82,6 @@ void PickBuffer::mydraw(fray3_constptr_t ray) {
   RCFD._cimpl = _compimpl;
   _pixelfetchctx.mUserData.Set<ork::lev2::RenderContextFrameData*>(&RCFD);
   ///////////////////////////////////////////////////////////////////////////
-
-  // mPickIds.clear();
 
   ork::recursive_mutex& glock = lev2::GfxEnv::GetRef().GetGlobalLock();
   glock.Lock(0x777);
