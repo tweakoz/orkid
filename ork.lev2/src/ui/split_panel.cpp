@@ -225,9 +225,10 @@ void SplitPanel::snap() {
 HandlerResult SplitPanel::DoOnUiEvent(event_constptr_t Ev) {
   HandlerResult ret(this);
 
-  int evx = Ev->miX;
-  int evy = Ev->miY;
-  // printf( "Panel<%p>::OnUiEvent isshift<%d>\n", this, int(isshift) );
+  int evx      = Ev->miX;
+  int evy      = Ev->miY;
+  bool isshift = Ev->mbSHIFT;
+  printf("Panel<%p>::OnUiEvent isshift<%d>\n", this, int(isshift));
   //////////////////////////////
   int ilocx = 0;
   int ilocy = 0;

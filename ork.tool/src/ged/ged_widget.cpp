@@ -220,10 +220,14 @@ void GedWidget::Draw(lev2::Context* pTARG, int iw, int ih, int iscrolly) {
   // miH = ih;
   GedItemNode* root = GetRootItem();
   ///////////////////////////////////////////////
-  // if( false == pTARG->FBI()->isPickState() )
-  //{
+  bool is_pick = pTARG->FBI()->isPickState();
+  printf("drawing ged pick<%d>\n", int(is_pick));
+  if (is_pick) {
+  }
+  // else {
   //	root->Layout( 2, 2, miW-4, miH-4 );
   //}
+
   ///////////////////////////////////////////////
   GetSkin()->SetScrollY(iscrolly);
   GetSkin()->Begin(pTARG, mViewport);

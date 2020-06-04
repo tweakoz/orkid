@@ -70,8 +70,8 @@ void EditorMainWindow::SceneObjPropEdit() {
   int df_y      = 192;
 
   auto pnl  = std::make_shared<ui::SplitPanel>("ged.panel", df_x, df_y, df_w, df_h);
-  auto pvp1 = std::make_shared<Outliner2View>(mEditorBase);
-  auto pvp2 = std::make_shared<tool::ged::GedVP>("props.vp", mGedModelObj);
+  auto pvp1 = std::make_shared<Outliner2Surface>(mEditorBase);
+  auto pvp2 = std::make_shared<tool::ged::GedSurface>("props.vp", mGedModelObj);
   pnl->setChild1(pvp1);
   pnl->setChild2(pvp2);
   gpvp->addChild(pnl);
@@ -98,7 +98,7 @@ void EditorMainWindow::SceneObjPropEdit() {
   /////////////////////////////////////////////////////////////////////////////////////
 }
 
-void EditorMainWindow::NewOutliner2View() {
+void EditorMainWindow::NewOutliner2Surface() {
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -114,7 +114,7 @@ void EditorMainWindow::SlotSpawnNewGed(ork::Object* pobj) {
   ork::tool::ged::ObjModel* pnewobjmodel = new ork::tool::ged::ObjModel;
   pnewobjmodel->Attach(0);
 
-  auto pvp = std::make_shared<tool::ged::GedVP>("props.vp", *pnewobjmodel);
+  auto pvp = std::make_shared<tool::ged::GedSurface>("props.vp", *pnewobjmodel);
   pvp->GetGedWidget().SetDeleteModel(true);
 
   ui::widget_ptr_t pnlw;

@@ -94,6 +94,7 @@ bool Widget::HasMouseFocus() const {
 
 HandlerResult Widget::OnUiEvent(event_constptr_t Ev) {
   Ev->mFilteredEvent.Reset();
+  // printf("Widget<%p>::OnUiEvent\n", this);
 
   if (_eventfilterstack.size()) {
     auto top = _eventfilterstack.top();

@@ -21,7 +21,7 @@ using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
-fvec4 ged::GedVP::AssignPickId(GedObject* pobj) {
+fvec4 ged::GedSurface::AssignPickId(GedObject* pobj) {
   fvec4 out;
   out.SetRGBAU64(_pickbuffer->AssignPickId(pobj));
   return out;
@@ -30,9 +30,9 @@ fvec4 ged::GedVP::AssignPickId(GedObject* pobj) {
 namespace ged {
 ///////////////////////////////////////////////////////////////////////////////
 static const int kscrollw = 32;
-orkset<GedVP*> GedVP::gAllViewports;
+orkset<GedSurface*> GedSurface::gAllViewports;
 ///////////////////////////////////////////////////////////////////////////////
-GedVP::GedVP(const std::string& name, ObjModel& model)
+GedSurface::GedSurface(const std::string& name, ObjModel& model)
     : ui::Surface(name, 0, 0, 0, 0, fcolor3::Black(), 0.0f)
     , mModel(model)
     , mWidget(model)
@@ -48,8 +48,8 @@ GedVP::GedVP(const std::string& name, ObjModel& model)
 
   _simulation_subscriber = msgrouter::channel("Simulation")->subscribe([=](msgrouter::content_t c) { this->onInvalidate(); });
 }
-GedVP::~GedVP() {
-  orkset<GedVP*>::iterator it = gAllViewports.find(this);
+GedSurface::~GedSurface() {
+  orkset<GedSurface*>::iterator it = gAllViewports.find(this);
 
   if (it != gAllViewports.end()) {
     gAllViewports.erase(it);
@@ -60,31 +60,34 @@ GedVP::~GedVP() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void GedVP::DoInit(lev2::Context* pt) {
+void GedSurface::DoInit(lev2::Context* pt) {
   auto par    = pt->FBI()->GetThisBuffer();
   _pickbuffer = new ork::lev2::PickBuffer(this, pt, 0, 0);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedVP::DoSurfaceResize() {
+void GedSurface::DoSurfaceResize() {
   mWidget.SetDims(miW, miH);
 
   if (0 == _pickbuffer && (nullptr != mpTarget)) {
+    _pickbuffer->resize(miW, miH);
   }
   // TODO: _pickbuffer->Resize()
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedVP::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
-  // printf("GedVP<%p>::Draw x<%d> y<%d> w<%d> h<%d>\n", this, miX, miY, miW, miH);
+void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   // ork::tool::ged::ObjModel::FlushAllQueues();
 
-  // orkprintf( "GedVP::DoDraw()\n" );
+  // orkprintf( "GedSurface::DoDraw()\n" );
 
   auto tgt = drwev->GetTarget();
-  tgt->debugPushGroup(FormatString("GedVP::repaint"));
-  auto mtxi = tgt->MTXI();
-  auto fbi  = tgt->FBI();
+  tgt->debugPushGroup(FormatString("GedSurface::repaint"));
+  auto mtxi     = tgt->MTXI();
+  auto fbi      = tgt->FBI();
+  int pickstate = fbi->miPickState;
   // bool bispick = framedata().IsPickMode();
+
+  printf("GedSurface<%p>::Draw x<%d> y<%d> w<%d> h<%d> pickstate<%d>\n", this, miX, miY, miW, miH, pickstate);
 
   //////////////////////////////////////////////////
   // Compute Scoll Transform
@@ -116,13 +119,15 @@ void GedVP::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GedVP::onInvalidate() {
+void GedSurface::onInvalidate() {
   mpActiveNode = nullptr;
   MarkSurfaceDirty();
 }
 
-ui::HandlerResult GedVP::DoOnUiEvent(ui::event_constptr_t EV) {
+ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
   ui::HandlerResult ret(this);
+
+  printf("GedSurface<%p> uievent\n", this);
 
   const auto& filtev = EV->mFilteredEvent;
 
@@ -189,7 +194,7 @@ ui::HandlerResult GedVP::DoOnUiEvent(ui::event_constptr_t EV) {
           // ism = -200
           ////////////////////////////////////
 
-          int iwh        = height();                  // 500
+          int iwh        = height();                // 500
           int irh        = mWidget.GetRootHeight(); // 200
           int iscrollmin = (iwh - irh);             // 300
 
@@ -255,7 +260,15 @@ ui::HandlerResult GedVP::DoOnUiEvent(ui::event_constptr_t EV) {
       bool is_in_set = IsObjInSet(pobj);
       const auto clr = ctx._pickvalues[0];
       // printf("GetPixel color<%g %g %g %g>\n", clr.x, clr.y, clr.z, clr.w);
-      // orkprintf("Object<%p> is_in_set<%d> ilocx<%d> ilocy<%d> fx<%f> fy<%f>\n", pobj, int(is_in_set), ilocx, ilocy, fx, fy);
+      printf(
+          "GedSurface<%p> Object<%p> is_in_set<%d> ilocx<%d> ilocy<%d> fx<%f> fy<%f>\n", //
+          this,
+          pobj,
+          int(is_in_set),
+          ilocx,
+          ilocy,
+          fx,
+          fy);
 
       /////////////////////////////////////
       // test object against known set

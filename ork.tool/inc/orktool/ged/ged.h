@@ -233,7 +233,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class GedObject;
-class GedVP;
+class GedSurface;
 
 class GedSkin {
 
@@ -291,7 +291,7 @@ public:
     ESTYLE_BUTTON_OUTLINE,
   } ESTYLE;
 
-  virtual void Begin(ork::lev2::Context* pTARG, GedVP* pgedvp)                                            = 0;
+  virtual void Begin(ork::lev2::Context* pTARG, GedSurface* pgedvp)                                            = 0;
   virtual void DrawBgBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort = 0)      = 0;
   virtual void DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort = 0) = 0;
   virtual void DrawLine(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic)                      = 0;
@@ -335,7 +335,7 @@ protected:
   int miScrollY;
   int miRejected;
   int miAccepted;
-  GedVP* mpCurrentGedVp;
+  GedSurface* mpCurrentGedVp;
   ork::lev2::Font* mpFONT;
   int miCHARW;
   int miCHARH;
@@ -594,7 +594,7 @@ public:
   bool mIsObjNode;
 };
 ///////////////////////////////////////////////////////////////////////////////
-class GedVP;
+class GedSurface;
 
 class GedWidget : public ork::AutoConnector {
   RttiDeclareAbstract(GedWidget, ork::AutoConnector);
@@ -608,7 +608,7 @@ class GedWidget : public ork::AutoConnector {
   ObjModel& mModel;
   std::deque<GedItemNode*> mItemStack;
   int miRootH;
-  GedVP* mViewport;
+  GedSurface* mViewport;
   U64 mStackHash;
   orkvector<GedSkin*> mSkins;
   int miSkin;
@@ -662,12 +662,12 @@ public:
     return miRootH;
   }
 
-  void setViewport(GedVP* pvp) {
+  void setViewport(GedSurface* pvp) {
     mViewport = pvp;
   }
   U64 GetStackHash() const;
 
-  GedVP* GetViewport() const {
+  GedSurface* GetViewport() const {
     return mViewport;
   }
   GedSkin* GetSkin();
@@ -675,16 +675,16 @@ public:
   void SetDims(int iw, int ih);
 };
 ///////////////////////////////////////////////////////////////////////////////
-class GedVP : public ui::Surface {
+class GedSurface : public ui::Surface {
 public:
-  // friend class lev2::PickBuffer<GedVP>;
+  // friend class lev2::PickBuffer<GedSurface>;
 
   fvec4 AssignPickId(GedObject* pobj);
   GedWidget& GetGedWidget() {
     return mWidget;
   }
-  GedVP(const std::string& name, ObjModel& model);
-  ~GedVP();
+  GedSurface(const std::string& name, ObjModel& model);
+  ~GedSurface();
 
   void ResetScroll() {
     miScrollY = 0;
@@ -694,7 +694,7 @@ public:
     return mpMouseOverNode;
   }
 
-  static orkset<GedVP*> gAllViewports;
+  static orkset<GedSurface*> gAllViewports;
   void SetDims(int iw, int ih);
   void onInvalidate();
 

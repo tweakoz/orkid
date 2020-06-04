@@ -21,7 +21,7 @@ public:
   PickBuffer(ui::Surface* surf, Context* ctx, int iW, int iH);
 
   void Init();
-
+  void resize(int w, int h);
   uint64_t AssignPickId(const ork::Object*);
   ork::Object* GetObjectFromPickId(uint64_t);
   Context* context() {

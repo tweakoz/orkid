@@ -47,6 +47,9 @@ FrameBufferInterface::~FrameBufferInterface() {
 
 void FrameBufferInterface::EnterPickState(PickBuffer* pb) {
   miPickState++;
+
+  printf("enter miPickState<%d>\n", miPickState);
+
   _pickbuffer = pb;
 }
 bool FrameBufferInterface::isPickState() const {
@@ -55,6 +58,7 @@ bool FrameBufferInterface::isPickState() const {
 
 void FrameBufferInterface::LeavePickState() {
   miPickState--;
+  printf("leave miPickState<%d>\n", miPickState);
   OrkAssert(miPickState >= 0);
   _pickbuffer = 0;
 }

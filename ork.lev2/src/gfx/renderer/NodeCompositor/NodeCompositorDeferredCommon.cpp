@@ -50,7 +50,7 @@ DeferredContext::DeferredContext(RenderCompositingNode* node, std::string shader
   _rtbGbuffer->_texture->TexSamplingMode().PresetPointAndClamp();
   ///////////
   _shadername = shadername;
-  _layername  = "All"_pool;
+  _layername  = "All";
 
   for (int i = 0; i < numlights; i++) {
 
@@ -210,7 +210,7 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
     auto MTXI = targ->MTXI();
     CIMPL->pushCPD(CPD); // drawenq
     targ->debugPushGroup("toolvp::DrawEnqRenderables");
-    FBI->SetClearColor(fvec4(0, 0, 0, 0));
+    _rtgGbuffer->_clearColor = fvec4(0, 0, 0, 0);
     FBI->rtGroupClear(_rtgGbuffer);
     irenderer->drawEnqueuedRenderables();
     framerenderer.renderMisc();

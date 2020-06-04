@@ -1,5 +1,6 @@
 ///////////////////////////////////////////////////////////////
 uniform_set ub_pick {
+  uvec4 oid;
   vec4 ModColor;
   mat4 mvp;
   sampler2D InstanceMatrices;

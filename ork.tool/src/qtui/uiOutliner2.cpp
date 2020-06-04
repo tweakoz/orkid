@@ -40,7 +40,9 @@ void Outliner2Model::Describe() {
   RegisterAutoSignal(Outliner2Model, ModelChanged);
 }
 
-Outliner2Model::Outliner2Model(SceneEditorBase& ed, Outliner2View& v)
+///////////////////////////////////////////////////////////////////////////////
+
+Outliner2Model::Outliner2Model(SceneEditorBase& ed, Outliner2Surface& v)
     : mEditor(ed)
     , ConstructAutoSlot(SceneTopoChanged)
     , ConstructAutoSlot(ObjectSelected)
@@ -54,8 +56,14 @@ Outliner2Model::Outliner2Model(SceneEditorBase& ed, Outliner2View& v)
     , mShowSystems(true) {
   SetupSignalsAndSlots();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 Outliner2Model::~Outliner2Model() {
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Outliner2Model::IncSel() {
   auto& selmgr = mEditor.selectionManager();
 
@@ -71,6 +79,9 @@ void Outliner2Model::IncSel() {
     selmgr.AddObjectToSelection(pobj);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Outliner2Model::DecSel() {
   auto& selmgr = mEditor.selectionManager();
 
@@ -86,26 +97,43 @@ void Outliner2Model::DecSel() {
     selmgr.AddObjectToSelection(pobj);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Outliner2Model::ToggleEnts() {
   mShowEnts = !mShowEnts;
   UpdateModel();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Outliner2Model::ToggleArchs() {
   mShowArchs = !mShowArchs;
   UpdateModel();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Outliner2Model::ToggleComps() {
   mShowComps = !mShowComps;
   UpdateModel();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Outliner2Model::ToggleSystems() {
   mShowSystems = !mShowSystems;
   UpdateModel();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Outliner2Model::ToggleGlobals() {
   mShowGlobals = !mShowGlobals;
   UpdateModel();
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void Outliner2Model::UpdateModel() {
   printf("Outliner2Model<%p>::SlotSceneTopoChanged\n", this);
@@ -119,11 +147,9 @@ void Outliner2Model::UpdateModel() {
     bool alt       = false;
     int index      = 0;
     mLastSelection = -1;
-
     ///////////////////////////////////////////////
     // add single item
     ///////////////////////////////////////////////
-
     auto additem = [&](const char* name, ork::Object* obj, int indent) {
       Outliner2Item o2i;
 
@@ -140,31 +166,26 @@ void Outliner2Model::UpdateModel() {
       mItems.push_back(o2i);
       index++;
     };
-
     ///////////////////////////////////////////////
-
     if (mShowGlobals)
       additem("SceneGlobal", scene_data, 0);
-
     ///////////////////////////////////////////////
     // sceneobjects
     ///////////////////////////////////////////////
     orkmap<PoolString, SceneObject*>& objs = scene_data->GetSceneObjects();
     size_t numobjs                         = objs.size();
-
+    ///////////////////////////////////////////////
     for (const auto& item : objs) {
-
       const PoolString& name = item.first;
       SceneObject* pobj      = item.second;
-
-      Archetype* as_arch = rtti::autocast(pobj);
-      EntData* as_ent    = rtti::autocast(pobj);
-
+      Archetype* as_arch     = rtti::autocast(pobj);
+      EntData* as_ent        = rtti::autocast(pobj);
+      ///////////////////////////////////////////////
       if (as_ent && false == mShowEnts)
         pobj = nullptr;
       if (as_arch && false == mShowArchs)
         pobj = nullptr;
-
+      ///////////////////////////////////////////////
       if (pobj) {
         FixedString<256> decnam;
         if (as_arch)
@@ -217,9 +238,15 @@ void Outliner2Model::UpdateModel() {
 
   SigModelChanged();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Outliner2Model::SlotSceneTopoChanged() {
   UpdateModel();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Outliner2Model::SigModelChanged() {
   // mSignalModelChanged(&Outliner2Model::SigModelChanged);
 }
@@ -246,7 +273,7 @@ void Outliner2Model::SlotClearSelection() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-Outliner2View::Outliner2View(SceneEditorBase& ed)
+Outliner2Surface::Outliner2Surface(SceneEditorBase& ed)
     : ui::Surface("outl2", 0, 0, 0, 0, fcolor3::Black(), 0.0f)
     , mOutlinerModel(ed, *this)
     , mFont(nullptr)
@@ -255,57 +282,69 @@ Outliner2View::Outliner2View(SceneEditorBase& ed)
     , mContentH(0)
     , ConstructAutoSlot(ModelChanged)
     , mDark(true) {
-
   object::Connect(&ed.GetSigSceneTopoChanged(), &mOutlinerModel.GetSlotSceneTopoChanged());
-
   object::Connect(&mOutlinerModel.GetSigModelChanged(), &this->GetSlotModelChanged());
-
   object::Connect(&ed.selectionManager().GetSigObjectSelected(), &mOutlinerModel.GetSlotObjectSelected());
-
   object::Connect(&ed.selectionManager().GetSigObjectDeSelected(), &mOutlinerModel.GetSlotObjectDeSelected());
 }
 
-void Outliner2View::SlotObjectSelected(ork::Object* pobj) {
-}
-void Outliner2View::SlotObjectDeSelected(ork::Object* pobj) {
+///////////////////////////////////////////////////////////////////////////////
+
+void Outliner2Surface::SlotObjectSelected(ork::Object* pobj) {
 }
 
-void Outliner2View::SlotModelChanged() {
+///////////////////////////////////////////////////////////////////////////////
+
+void Outliner2Surface::SlotObjectDeSelected(ork::Object* pobj) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Outliner2Surface::SlotModelChanged() {
   assert(false);
 }
 ///////////////////////////////////////////////////////////////////////////////
-int Outliner2View::kitemh() const {
+int Outliner2Surface::kitemh() const {
   return mCharH + 4;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Outliner2View::DoInit(lev2::Context* pt) {
+void Outliner2Surface::DoInit(lev2::Context* pt) {
   auto par    = pt->FBI()->GetThisBuffer();
   _pickbuffer = new lev2::PickBuffer(this, pt, miW, miH);
-
+  ///////////////////////////////////////////////
   mFont          = lev2::FontMan::GetFont("i13");
   auto& fontdesc = mFont->GetFontDesc();
-
+  ///////////////////////////////////////////////
   mCharW = fontdesc.miAdvanceWidth;
   mCharH = fontdesc.miAdvanceHeight;
-
+  ///////////////////////////////////////////////
   mCtxBase = pt->GetCtxBase();
+  ///////////////////////////////////////////////
+  _material = std::make_shared<FreestyleMaterial>();
+  _material->gpuInit(pt, "orkshader://ui2");
+  _tekpick     = _material->technique("picking_rigid");
+  _tekmodcolor = _material->technique("ui_modcolor");
+  _parmvp      = _material->param("mvp");
+  _parmodcolor = _material->param("ModColor");
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Outliner2View::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
+void Outliner2Surface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
+
   auto tgt = drwev->GetTarget();
   tgt->makeCurrentContext();
-  tgt->debugPushGroup(FormatString("Outliner2View::repaint"));
+  tgt->debugPushGroup(FormatString("Outliner2Surface::repaint"));
   auto mtxi                            = tgt->MTXI();
   auto fbi                             = tgt->FBI();
   auto fxi                             = tgt->FXI();
   auto rsi                             = tgt->RSI();
   auto& primi                          = lev2::GfxPrimitives::GetRef();
-  auto defmtl                          = lev2::defaultUIMaterial();
   lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
   SceneEditorBase& ed                  = mOutlinerModel.Editor();
   auto scene_data                      = ed.GetSceneData();
   bool has_foc                         = HasMouseFocus();
   bool is_pick                         = fbi->isPickState();
+
+  printf("Outliner2Surface<%p>::DoRePaintSurface is_pick<%d>\n", this, int(is_pick));
 
   //////////////////////////////////////////////////
   // Compute Scoll Transform
@@ -355,36 +394,41 @@ void Outliner2View::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
     const int kheaderH = miScrollY;
 
-    mtxi->PushUIMatrix(miW, miH);
+    auto uimatrix = mtxi->uiMatrix(miW, miH);
     {
-
       int iy   = kheaderH;
       bool alt = false;
-
+      RenderContextFrameData RCFD(tgt);
+      //////////////////////////////////////
+      if (is_pick)
+        _material->begin(_tekpick, RCFD);
+      else
+        _material->begin(_tekmodcolor, RCFD);
       //////////////////////////////////////
 
       for (const auto& item : items) {
         const std::string& name = item.mName;
         auto pobj               = item.mObject;
-        fvec4 pick_color;
+        fvec4 pick_color        = fvec4(1, 1, 0, 1);
         pick_color.SetRGBAU64(_pickbuffer->AssignPickId(pobj));
         bool is_sel = item.mSelected;
 
-        if (is_pick)
-          tgt->PushModColor(pick_color);
-        else if (dynamic_cast<SceneData*>(pobj))
-          tgt->PushModColor(is_sel ? c3 : col_sceneglobal);
+        if (is_pick) {
+          _material->bindParamMatrix(_parmvp, uimatrix);
+          _material->bindParamVec4(_parmodcolor, pick_color);
+        } else if (dynamic_cast<SceneData*>(pobj))
+          _material->bindParamVec4(_parmodcolor, is_sel ? c3 : col_sceneglobal);
         else if (dynamic_cast<EntData*>(pobj))
-          tgt->PushModColor(is_sel ? c3 : (alt ? col_entity : col_entity_alt));
+          _material->bindParamVec4(_parmodcolor, is_sel ? c3 : (alt ? col_entity : col_entity_alt));
         else if (dynamic_cast<Archetype*>(pobj))
-          tgt->PushModColor(is_sel ? c3 : (alt ? col_archet : col_archet_alt));
+          _material->bindParamVec4(_parmodcolor, is_sel ? c3 : (alt ? col_archet : col_archet_alt));
         else if (dynamic_cast<SystemData*>(pobj))
-          tgt->PushModColor(is_sel ? c3 : (alt ? col_sysdat : col_sysdat_alt));
+          _material->bindParamVec4(_parmodcolor, is_sel ? c3 : (alt ? col_sysdat : col_sysdat_alt));
         else
-          tgt->PushModColor(is_sel ? c3 : (alt ? c1 : c2));
+          _material->bindParamVec4(_parmodcolor, is_sel ? c3 : (alt ? c1 : c2));
 
         primi.RenderQuadAtZV16T16C16(
-            defmtl.get(),
+            _material.get(),
             tgt,
             0,
             miW, // x0, x1
@@ -397,15 +441,16 @@ void Outliner2View::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
             1.0f // v0, v1
         );
 
-        tgt->PopModColor();
         iy += kitemh();
         alt = !alt;
       }
 
+      _material->end(RCFD);
+
       //////////////////////////////////////
 
       if (false == is_pick) {
-
+        mtxi->PushUIMatrix(miW, miH);
         lev2::FontMan::PushFont(mFont);
         tgt->PushModColor(mDark ? fcolor4(0.7f, 0.7f, 0.8f) : fcolor4::Black());
         lev2::FontMan::beginTextBlock(tgt);
@@ -422,16 +467,16 @@ void Outliner2View::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
         lev2::FontMan::endTextBlock(tgt);
         lev2::FontMan::PopFont();
         tgt->PopModColor();
+        mtxi->PopUIMatrix();
       }
     }
-    mtxi->PopUIMatrix();
   }
   fbi->popViewport();
   fbi->popScissor();
   tgt->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Outliner2View::SetNameOfSelectedItem() {
+void Outliner2Surface::SetNameOfSelectedItem() {
   int ilastsel = mOutlinerModel.GetLastSelection();
 
   int irx, iry;
@@ -470,7 +515,7 @@ void Outliner2View::SetNameOfSelectedItem() {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-ui::HandlerResult Outliner2View::DoOnUiEvent(ui::event_constptr_t EV) {
+ui::HandlerResult Outliner2Surface::DoOnUiEvent(ui::event_constptr_t EV) {
   ui::HandlerResult ret(this);
 
   auto& ed           = mOutlinerModel.Editor();
@@ -598,6 +643,8 @@ ui::HandlerResult Outliner2View::DoOnUiEvent(ui::event_constptr_t EV) {
     case ui::UIEV_PUSH:
     case ui::UIEV_RELEASE: {
       int idelta = EV->miMWY;
+
+      printf("Outliner2Surface<%p>::DoOnUiEvent UIEV_PUSH\n", this);
 
       GetPixel(ilocx, ilocy, ctx);
       float fx                   = float(ilocx) / float(width());

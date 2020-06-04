@@ -10,6 +10,8 @@ class MatrixStackInterface {
 public:
   MatrixStackInterface(Context& target);
 
+  fmtx4 uiMatrix(float w, float h) const;
+
   void PushMMatrix(const fmtx4& rMat);
   void PushVMatrix(const fmtx4& rMat);
   void PushPMatrix(const fmtx4& rMat);

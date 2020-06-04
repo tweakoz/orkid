@@ -46,11 +46,11 @@ ork::rtti::ICastable* PixelFetchContext::GetObject(PickBuffer* pb, int ichan) co
 
   auto pid   = (uint64_t)GetPointer(ichan);
   void* uobj = pb->GetObjectFromPickId(pid);
-  if (0 != uobj) {
+  if (nullptr != uobj) {
     ork::rtti::ICastable* pObj = reinterpret_cast<ork::rtti::ICastable*>(uobj);
     return pObj;
   }
-  return 0;
+  return nullptr;
 }
 
 /////////////////////////////////////////////////////////////////////////

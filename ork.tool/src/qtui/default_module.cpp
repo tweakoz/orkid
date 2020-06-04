@@ -94,7 +94,7 @@ void MainWinDefaultModule::OnAction(const char* pact) {
   }
   ///////////////////////////////////////////////////////
   //	else if( 0 == strcmp( "/View/Outliner",pact) )				{	mEditWin.NewOutlinerView(false); }
-  //	else if( 0 == strcmp( "/View/Outliner2",pact) )				{	mEditWin.NewOutliner2View(false); }
+  //	else if( 0 == strcmp( "/View/Outliner2",pact) )				{	mEditWin.NewOutliner2Surface(false); }
   //	else if( 0 == strcmp( "/View/PyCon",pact) )					{	mEditWin.NewPyConView(true); }
   //    else if( 0 == strcmp( "/View/AssetAssist",pact) )           {   mEditWin.NewAssetAssist(); }
   //	else if( 0 == strcmp( "/View/DataflowEditor",pact) )		{	mEditWin.NewDataflowView(); }

@@ -232,7 +232,7 @@ int GedRootNode::CalcHeight(void) {
 
 bool GedItemNode::IsObjectHilighted(const GedObject* pobj) const {
   GedWidget* pwidg        = GetGedWidget();
-  GedVP* pvp              = pwidg->GetViewport();
+  GedSurface* pvp              = pwidg->GetViewport();
   const GedObject* pmoobj = pvp->GetMouseOverNode();
   return (pmoobj == pobj);
 }

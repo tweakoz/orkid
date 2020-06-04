@@ -36,7 +36,7 @@ uint64_t PickBuffer::AssignPickId(const ork::Object* pobj) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 ork::Object* PickBuffer::GetObjectFromPickId(uint64_t pid) {
-  // printf("pickid <0x%zx>\n", pid);
+  printf("pickid <0x%zx>\n", pid);
   auto it           = mPickIds.find(pid);
   ork::Object* pobj = (it == mPickIds.end()) ? nullptr : it->second;
   return pobj;
@@ -45,12 +45,19 @@ ork::Object* PickBuffer::GetObjectFromPickId(uint64_t pid) {
 void PickBuffer::Init() {
   _rtgroup         = new lev2::RtGroup(_context, _width, _height);
   _uimaterial      = new ork::lev2::GfxMaterialUITextured(_context);
-  auto buf0        = new ork::lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA32F, _width, _height);
+  auto buf0        = new ork::lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA16UI, _width, _height);
   auto buf1        = new ork::lev2::RtBuffer(lev2::ERTGSLOT1, lev2::EBufferFormat::RGBA32F, _width, _height);
   buf0->_debugName = FormatString("Pickbuf::mrt0");
   buf1->_debugName = FormatString("Pickbuf::mrt1");
   _rtgroup->SetMrt(0, buf0);
   _rtgroup->SetMrt(1, buf1);
+}
+///////////////////////////////////////////////////////////////////////////////
+void PickBuffer::resize(int w, int h) {
+  printf("resize pickbuf<%p> size<%d %d>\n", this, w, h);
+  _rtgroup->Resize(w, h);
+  _width  = w;
+  _height = h;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PickBuffer::Draw(lev2::PixelFetchContext& ctx) {
@@ -74,7 +81,7 @@ void PickBuffer::Draw(lev2::PixelFetchContext& ctx) {
     _height = isurfh;
     _rtgroup->Resize(isurfw, isurfh);
   }
-  printf("Begin Pickbuffer::Draw()\n");
+  printf("Begin Pickbuffer::Draw() surf<%p>\n", _surface);
   fbi->PushRtGroup(_rtgroup);
   fbi->EnterPickState(this);
 

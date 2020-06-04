@@ -21,6 +21,17 @@ MatrixStackInterface::MatrixStackInterface(Context& target)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+fmtx4 MatrixStackInterface::uiMatrix(float fw, float fh) const {
+  if (mTarget.hiDPI()) {
+    // iw /=2;
+    // ih /=2;
+  }
+  ork::fmtx4 mtxMVP = mTarget.MTXI()->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);
+  return mtxMVP;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void MatrixStackInterface::PushUIMatrix() {
   const RenderContextFrameData* pfdata = mTarget.topRenderContextFrameData();
   assert(pfdata);
@@ -40,11 +51,7 @@ void MatrixStackInterface::PushUIMatrix() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void MatrixStackInterface::PushUIMatrix(int iw, int ih) {
-  if (mTarget.hiDPI()) {
-    // iw /=2;
-    // ih /=2;
-  }
-  ork::fmtx4 mtxMVP = mTarget.MTXI()->Ortho(0.0f, float(iw), 0.0f, float(ih), 0.0f, 1.0f);
+  ork::fmtx4 mtxMVP = uiMatrix(iw, ih);
   PushPMatrix(mtxMVP);
   PushVMatrix(ork::fmtx4::Identity());
   PushMMatrix(ork::fmtx4::Identity());

@@ -74,7 +74,7 @@ public: //
 
   QWidget* NewCamView(bool bfloat);
 
-  void NewOutliner2View();
+  void NewOutliner2Surface();
 
   // QDockWidget * NewToolView( bool bfloat );
   // QDockWidget * NewDataflowView( bool bfloat );

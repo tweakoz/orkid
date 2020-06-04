@@ -1,0 +1,87 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+	glsl_version = "130";
+}
+///////////////////////////////////////////////////////////////
+uniform_set ub_ui {
+  vec4 ModColor;
+  mat4 mvp;
+  sampler2D InstanceMatrices;
+  usampler2D InstanceIds;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vui : ub_ui {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+  }
+  //
+  outputs {
+    vec4 frg_clr;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fui : ub_ui {
+  inputs {
+    vec4 frg_clr;
+  }
+  outputs {
+    layout(location = 0) vec4 out_iid;
+    layout(location = 1) vec4 out_nrmd;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fpick : ub_ui {
+  inputs {
+    vec4 frg_clr;
+  }
+  outputs {
+    layout(location = 0) uvec4 out_iid;
+    layout(location = 1) vec4 out_nrmd;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_ui
+	: iface_vui {
+		gl_Position = mvp*position;
+    frg_clr = ModColor;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader fs_ui
+	: iface_fui {
+		out_iid = uvec4(ModColor);
+    out_nrmd = vec4(0,1,0,0);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader fs_picking
+	: iface_fpick {
+		out_iid = uvec4(ModColor);
+    out_nrmd = vec4(0,1,0,0);
+}
+///////////////////////////////////////////////////////////////
+technique ui_modcolor {
+	fxconfig=fxcfg_default;
+	pass p0 {
+    vertex_shader=vs_ui;
+		fragment_shader=fs_ui;
+		state_block=sb_ui;
+	}
+}
+///////////////////////////////////////////////////////////////
+state_block sb_ui : default {
+	DepthTest=OFF;
+	DepthMask=true;
+	CullTest=OFF;
+	BlendMode = OFF;
+}
+///////////////////////////////////////////////////////////////
+technique ui_picking {
+	fxconfig=fxcfg_default;
+	pass p0 {
+    vertex_shader=vs_ui;
+		fragment_shader=fs_picking;
+		state_block=sb_ui;
+	}
+}

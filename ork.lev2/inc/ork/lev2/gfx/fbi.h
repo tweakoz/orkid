@@ -129,7 +129,6 @@ public:
 
   static std::function<void(Context*)> _hackcb;
 
-protected:
   static const int kiVPStackMax = 16;
 
   int miViewportStackIndex;

@@ -78,7 +78,7 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const std::string& LayerName, lev
     return;
   }
 
-  bool DoAll = (0 == strcmp(LayerName.c_str(), "All"));
+  bool DoAll = LayerName == "All";
   target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue doall<%d>", int(DoAll)));
   target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue numlayers<%zu>", mLayerLut.size()));
 
@@ -100,8 +100,9 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const std::string& LayerName, lev
         const lev2::DrawableBufItem& item = player->mDrawBufItems[id];
         const lev2::Drawable* pdrw        = item.GetDrawable();
         target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer item <%d> drw<%p>", id, pdrw));
-        if (pdrw)
+        if (pdrw) {
           pdrw->enqueueToRenderQueue(item, renderer);
+        }
       }
     }
   }

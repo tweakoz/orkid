@@ -35,7 +35,8 @@ void ScenePickBuffer::Draw(lev2::PixelFetchContext& ctx) {
   float mainvpH      = _scenevp->height();
   float mainVPAspect = mainvpW / mainvpH;
 
-  _rtgroup->Resize(2048, 2048);
+  this->resize(2048, 2048);
+  //_rtgroup->Resize(2048, 2048);
 
   auto target = ctx._gfxContext;
   target->makeCurrentContext();
