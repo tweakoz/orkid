@@ -1,3 +1,4 @@
+#include <map>
 #include "harness.h"
 #include <ork/kernel/timer.h>
 #include <ork/lev2/aud/singularity/synth.h>
@@ -93,42 +94,69 @@ int main(int argc, char** argv) {
   }
 
   ork::Timer timer;
-  constexpr int KNUMFRAMES = 256;
+  constexpr int KNUMFRAMES = 512;
   float inpbuf[KNUMFRAMES * 2];
   memset(inpbuf, 0, KNUMFRAMES * 2 * sizeof(float));
   const auto& obuf = the_synth->_obuf;
 
-  int iblockcount   = 0;
   int numiters      = 0;
   double total_time = 0.0;
   timer.Start();
   bool done               = false;
   double voicebench_accum = 0;
+  double cur_time         = timer.SecsSinceStart();
+  double prev_time        = cur_time;
+  /////////////////////////////////////////
+  std::multimap<double, int> time_histogram;
   while (done == false) {
     the_synth->compute(KNUMFRAMES, inpbuf);
-    iblockcount++;
-    double cur_time = timer.SecsSinceStart();
-    if (cur_time > 1.0f) {
-
-      double maxSR      = (double(iblockcount) * double(KNUMFRAMES)) / cur_time;
-      double voicebench = double(numvoices) * maxSR;
-      voicebench_accum += voicebench;
-      printf(
-          "time<%g> iblockcount<%d> maxSR<%d> numvoices<%d> voicebench<%d>\n", //
-          cur_time,
-          iblockcount,
-          int(maxSR),
-          numvoices,
-          int(voicebench));
-
-      timer.Start();
-      iblockcount = 0;
-      total_time += cur_time;
-      numiters++;
+    cur_time         = timer.SecsSinceStart();
+    double iter_time = cur_time - prev_time;
+    ///////////////////////////////////////////
+    // histogram for looking for timing spikes
+    ///////////////////////////////////////////
+    auto hit = time_histogram.find(iter_time);
+    if (hit == time_histogram.end()) {
+      hit = time_histogram.insert(std::make_pair(iter_time, 0));
     }
-    done = total_time > 10.0;
+    hit->second++;
+    ///////////////////////////////////////////
+    prev_time = cur_time;
+    numiters++;
+    done = cur_time > 10.0;
+    if (numiters % 256 == 0) {
+      printf("numiters<%d>                  \r", numiters);
+      fflush(stdout);
+    }
   }
-  int voicebench_avg = voicebench_accum / double(numiters);
-  printf("voicebench total<%d> average<%d>\n", int(voicebench_accum), voicebench_avg);
+  /////////////////////////////////////////
+  size_t samples_computed = size_t(numiters) * size_t(KNUMFRAMES);
+  double maxSR            = double(samples_computed) / cur_time;
+  double voicebench       = double(numvoices) * maxSR;
+  /////////////////////////////////////////
+  printf("voicebench maxSR<%d> numvoices<%d> voicebench<%d>\n", int(maxSR), numvoices, int(voicebench));
+  /////////////////////////////////////////
+  // time histogram report
+  /////////////////////////////////////////
+  double desired_blockperiod = 1000.0 / (48000.0 / double(KNUMFRAMES));
+  printf("desired_blockperiod<%g msec>\n", desired_blockperiod);
+  /////
+  auto it_lo       = time_histogram.begin();
+  auto it_hi       = time_histogram.rbegin();
+  double lo        = it_lo->first * 1000.0;
+  double hi        = it_hi->first * 1000.0;
+  double accum     = 0.0;
+  int numunderruns = 0;
+  for (auto item : time_histogram) {
+    double t = item.first;
+    accum += t;
+    if (t * 1000.0 > desired_blockperiod) {
+      numunderruns++;
+    }
+  }
+  double avg = 1000.0 * accum / double(time_histogram.size());
+  printf("exectime range lo<%g msec> hi<%g msec> avg<%g msec>\n", lo, hi, avg);
+  printf("numunderruns<%d>\n", numunderruns);
+  /////////////////////////////////////////
   return 0;
 }
