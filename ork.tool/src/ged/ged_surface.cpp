@@ -22,8 +22,9 @@ using namespace ork::lev2;
 namespace ork { namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
 fvec4 ged::GedSurface::AssignPickId(GedObject* pobj) {
+  uint64_t pid = _pickbuffer->AssignPickId(pobj);
   fvec4 out;
-  out.SetRGBAU64(_pickbuffer->AssignPickId(pobj));
+  out.SetRGBAU64(pid);
   return out;
 }
 ///////////////////////////////////////////////////////////////////////////////

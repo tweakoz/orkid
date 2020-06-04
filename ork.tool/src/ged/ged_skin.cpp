@@ -25,12 +25,25 @@ namespace ork { namespace tool { namespace ged {
 
 typedef SVtxV16T16C16 vtx_t;
 
-GedSkin::GedSkin(Context* ptarg)
+GedSkin::GedSkin()
     : miScrollY(0)
     , mpCurrentGedVp(nullptr)
     , mpFONT(nullptr)
     , miCHARW(0)
     , miCHARH(0) {
+}
+
+void GedSkin::gpuInit(lev2::Context* ctx) {
+  _material = std::make_shared<FreestyleMaterial>();
+  _material->gpuInit(ctx, "orkshader://ui2");
+  _tekpick     = _material->technique("ui_picking");
+  _tekvtxcolor = _material->technique("ui_vtxcolor");
+  _tekvtxpick  = _material->technique("ui_vtxpicking");
+  _tekmodcolor = _material->technique("ui_modcolor");
+  _parmvp      = _material->param("mvp");
+  _parmodcolor = _material->param("modcolor");
+  _parobjid    = _material->param("objid");
+  _material->dump();
 }
 
 struct GedText {
@@ -93,8 +106,8 @@ void GedSkin::clear() {
 struct GedSkin0 : public GedSkin { ///////////////////////////////////////////////////////////////////
   bool mbPickMode;
   orkvector<GedText> mTexts;
-  GedSkin0(Context* ptarg)
-      : GedSkin(ptarg) {
+  GedSkin0()
+      : GedSkin() {
     mpFONT  = lev2::FontMan::GetFont("i14");
     miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
     miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
@@ -286,12 +299,13 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     mTexts.clear();
     clear();
     ClearObjSet();
+    if (not _material)
+      gpuInit(pTARG);
   }
   ///////////////////////////////////////////////////////////////////
   void End(Context* pTARG) {
-    int iw = mpCurrentGedVp->width();
-    int ih = mpCurrentGedVp->height();
-    lev2::GfxMaterialUI uimat(pTARG);
+    int iw                               = mpCurrentGedVp->width();
+    int ih                               = mpCurrentGedVp->height();
     miRejected                           = 0;
     miAccepted                           = 0;
     lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
@@ -299,17 +313,19 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     ork::fmtx4 mtxW = pTARG->MTXI()->RefMMatrix();
     pTARG->MTXI()->PushUIMatrix(iw, ih);
     pTARG->MTXI()->PushMMatrix(mtxW);
+    auto uimatrix = pTARG->MTXI()->uiMatrix(iw, ih);
     ////////////////////////
     // pTARG->IMI()->QueFlush();
-    for (PrimContainers::const_iterator itc = mPrimContainers.begin(); itc != mPrimContainers.end(); itc++) {
-      const PrimContainer* primcontainer = itc->second;
+    RenderContextFrameData RCFD(pTARG);
+    for (auto itc : mPrimContainers) {
+      const PrimContainer* primcontainer = itc.second;
 
       int inumlines = (int)primcontainer->mLinePrims.size();
       int inumquads = (int)primcontainer->mQuadPrims.size();
       int inumcusts = (int)primcontainer->mCustomPrims.size();
 
-      uimat.SetUIColorMode(EUICOLOR_VTX);
-      uimat._rasterstate.SetBlending(lev2::EBLENDING_OFF);
+      // uimat.SetUIColorMode(EUICOLOR_VTX);
+      // uimat._rasterstate.SetBlending(lev2::EBLENDING_OFF);
 
       const float fZ = 0.0f;
 
@@ -336,7 +352,10 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
       }
       vw.UnLock(pTARG);
 
-      pTARG->GBI()->DrawPrimitive(&uimat, vw, EPrimitiveType::TRIANGLES);
+      _material->begin(mbPickMode ? _tekvtxpick : _tekvtxcolor, RCFD);
+      _material->bindParamMatrix(_parmvp, uimatrix);
+      pTARG->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES);
+      _material->end(RCFD);
       icount = 0;
       // ivbase += inumquads*6;
       ///////////////////////////////////////////////////////////
@@ -363,14 +382,19 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
             }
           }
           vw.UnLock(pTARG);
-          if (icount)
-            pTARG->GBI()->DrawPrimitive(&uimat, vw, EPrimitiveType::LINES);
+          if (icount) {
+            _material->begin(mbPickMode ? _tekvtxpick : _tekvtxcolor, RCFD);
+            _material->bindParamMatrix(_parmvp, uimatrix);
+            pTARG->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::LINES);
+            _material->end(RCFD);
+          }
         }
       }
     }
     ///////////////////////////////////////////////////////////
     ////////////////////////
     if (false == mbPickMode) { ////////////////////////
+      lev2::GfxMaterialUI uimat(pTARG);
       uimat.SetUIColorMode(EUICOLOR_MOD);
       // pTARG->PushModColor(fcolor4(0.0f,0.0f,0.2f));
       pTARG->PushModColor(fcolor4::Black());
@@ -400,8 +424,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   bool mbPickMode;
   orkvector<GedText> mTexts;
   ///////////////////////////////////////////////////////////////////
-  GedSkin1(Context* ptarg)
-      : GedSkin(ptarg) {
+  GedSkin1() {
     mpFONT  = lev2::FontMan::GetFont("i14");
     miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
     miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
@@ -589,30 +612,30 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     mTexts.clear();
     clear();
     ClearObjSet();
+    if (not _material)
+      gpuInit(pTARG);
   }
   ///////////////////////////////////////////////////////////////////
   void End(Context* pTARG) {
-    int iw = mpCurrentGedVp->width();
-    int ih = mpCurrentGedVp->height();
-    lev2::GfxMaterialUI uimat(pTARG);
+    int iw                               = mpCurrentGedVp->width();
+    int ih                               = mpCurrentGedVp->height();
     miRejected                           = 0;
     miAccepted                           = 0;
     lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
     ////////////////////////
     const ork::fmtx4& mtxW = pTARG->MTXI()->RefMMatrix();
+    auto uimatrix          = pTARG->MTXI()->uiMatrix(iw, ih);
     pTARG->MTXI()->PushUIMatrix(iw, ih);
     pTARG->MTXI()->PushMMatrix(mtxW);
     ////////////////////////
-    // pTARG->IMI()->QueFlush();
-    for (PrimContainers::const_iterator itc = mPrimContainers.begin(); itc != mPrimContainers.end(); itc++) {
-      const PrimContainer* primcontainer = itc->second;
+    RenderContextFrameData RCFD(pTARG);
+    ////////////////////////
+    for (auto itc : mPrimContainers) {
+      const PrimContainer* primcontainer = itc.second;
 
       int inumlines = (int)primcontainer->mLinePrims.size();
       int inumquads = (int)primcontainer->mQuadPrims.size();
       int inumcusts = (int)primcontainer->mCustomPrims.size();
-
-      uimat.SetUIColorMode(EUICOLOR_VTX);
-      uimat._rasterstate.SetBlending(lev2::EBLENDING_OFF);
 
       const float fZ = 0.0f;
 
@@ -638,7 +661,10 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
       }
       vw.UnLock(pTARG);
 
-      pTARG->GBI()->DrawPrimitive(&uimat, vw, EPrimitiveType::TRIANGLES);
+      _material->begin(mbPickMode ? _tekvtxpick : _tekvtxcolor, RCFD);
+      _material->bindParamMatrix(_parmvp, mtxW * uimatrix);
+      pTARG->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES);
+      _material->end(RCFD);
       icount = 0;
       // ivbase += inumquads*6;
       ///////////////////////////////////////////////////////////
@@ -665,14 +691,19 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
             }
           }
           vw.UnLock(pTARG);
-          if (icount)
-            pTARG->GBI()->DrawPrimitive(&uimat, vw, EPrimitiveType::LINES);
+          if (icount) {
+            _material->begin(mbPickMode ? _tekvtxpick : _tekvtxcolor, RCFD);
+            _material->bindParamMatrix(_parmvp, mtxW * uimatrix);
+            pTARG->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::LINES);
+            _material->end(RCFD);
+          }
         }
       }
     }
     ///////////////////////////////////////////////////////////
     ////////////////////////
     if (false == mbPickMode) { ////////////////////////
+      lev2::GfxMaterialUI uimat(pTARG);
       uimat.SetUIColorMode(EUICOLOR_MOD);
       lev2::FontMan::PushFont(mpFONT);
       lev2::FontMan::beginTextBlock(pTARG);
@@ -703,8 +734,8 @@ orkvector<GedSkin*> InstantiateSkins() {
   auto targ = lev2::GfxEnv::GetRef().loadingContext();
   FontMan::gpuInit(targ);
   orkvector<GedSkin*> skins;
-  skins.push_back(new GedSkin0(targ));
-  skins.push_back(new GedSkin1(targ));
+  skins.push_back(new GedSkin0());
+  skins.push_back(new GedSkin1());
   return skins;
 }
 //////////////////////////////////////////////////////////////////////////////

@@ -57,9 +57,8 @@ GedWidget::GedWidget(ObjModel& mdl)
 
   orkvector<GedSkin*> skins = InstantiateSkins();
 
-  for (orkvector<GedSkin*>::iterator it = skins.begin(); it != skins.end(); it++) {
-    GedSkin* pskin = (*it);
-    AddSkin(pskin);
+  for (auto skin : skins) {
+    AddSkin(skin);
   }
 
   /*object::Connect(	& this->GetSigRepaint(),

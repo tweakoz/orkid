@@ -143,14 +143,14 @@ template <typename T> uint64_t Vector4<T>::GetRGBAU64(void) const {
 
 template <typename T> void Vector4<T>::SetRGBAU64(uint64_t inp) {
   static constexpr T kfic(T(1.0) / T(65535.0));
-  uint64_t r = (inp >> 48) & 0xffff;
-  uint64_t g = (inp >> 32) & 0xffff;
-  uint64_t b = (inp >> 16) & 0xffff;
-  uint64_t a = (inp)&0xffff;
-  x          = (kfic * T(uint64_t(r)));
-  y          = (kfic * T(uint64_t(g)));
-  z          = (kfic * T(uint64_t(b)));
-  w          = (kfic * T(uint64_t(a)));
+  uint16_t r = (inp)&0xffff;
+  uint16_t g = (inp >> 16) & 0xffff;
+  uint16_t b = (inp >> 32) & 0xffff;
+  uint16_t a = (inp >> 48) & 0xffff;
+  x          = T(r);
+  y          = T(g);
+  z          = T(b);
+  w          = T(a);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

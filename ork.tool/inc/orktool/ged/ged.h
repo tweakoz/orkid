@@ -20,6 +20,7 @@
 #include <ork/lev2/ui/viewport.h>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QDialog>
+#include <ork/lev2/gfx/material_freestyle.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -240,6 +241,17 @@ class GedSkin {
 public:
   typedef void (*DrawCB)(GedSkin* pskin, GedObject* pnode, ork::lev2::Context* pTARG);
 
+  void gpuInit(lev2::Context* ctx);
+
+  ork::lev2::freestyle_mtl_ptr_t _material;
+  const ork::lev2::FxShaderTechnique* _tekpick     = nullptr;
+  const ork::lev2::FxShaderTechnique* _tekvtxcolor = nullptr;
+  const ork::lev2::FxShaderTechnique* _tekvtxpick  = nullptr;
+  const ork::lev2::FxShaderTechnique* _tekmodcolor = nullptr;
+  const ork::lev2::FxShaderParam* _parmvp          = nullptr;
+  const ork::lev2::FxShaderParam* _parmodcolor     = nullptr;
+  const ork::lev2::FxShaderParam* _parobjid        = nullptr;
+
   struct GedPrim {
     DrawCB mDrawCB;
     GedObject* mpNode;
@@ -272,7 +284,7 @@ public:
     void clear();
   };
 
-  GedSkin(ork::lev2::Context* ptarg);
+  GedSkin();
 
   typedef enum {
     ESTYLE_BACKGROUND_1 = 0,
@@ -291,7 +303,7 @@ public:
     ESTYLE_BUTTON_OUTLINE,
   } ESTYLE;
 
-  virtual void Begin(ork::lev2::Context* pTARG, GedSurface* pgedvp)                                            = 0;
+  virtual void Begin(ork::lev2::Context* pTARG, GedSurface* pgedvp)                                       = 0;
   virtual void DrawBgBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort = 0)      = 0;
   virtual void DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort = 0) = 0;
   virtual void DrawLine(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic)                      = 0;
