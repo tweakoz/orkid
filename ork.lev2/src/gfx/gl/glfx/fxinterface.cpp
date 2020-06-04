@@ -90,7 +90,7 @@ void Interface::BindContainerToAbstract(Container* pcont, FxShader* fxh) {
     ork_tek->_shader        = fxh;
     ork_tek->mTechniqueName = ittek.first;
     // pabstek->mPasses = ittek->first;
-    ork_tek->mbValidated = true;
+    ork_tek->mbValidated = fxh != nullptr;
     fxh->addTechnique(ork_tek);
   }
   for (const auto& itp : pcont->_uniforms) {
@@ -98,6 +98,7 @@ void Interface::BindContainerToAbstract(Container* pcont, FxShader* fxh) {
     FxShaderParam* ork_parm      = new FxShaderParam;
     ork_parm->_name              = itp.first;
     ork_parm->mParameterSemantic = puni->_semantic;
+    ork_parm->mParameterType     = puni->_typeName;
     ork_parm->mInternalHandle    = (void*)puni;
     fxh->addParameter(ork_parm);
   }

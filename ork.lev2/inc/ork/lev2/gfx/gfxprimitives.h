@@ -95,7 +95,7 @@ public:
   static void RenderQuadAtX(Context* pTarg, f32 fY1, f32 fY2, f32 fZ1, f32 fZ2, f32 fX, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV);
   static void RenderQuadAtY(Context* pTarg, f32 fX1, f32 fX2, f32 fZ1, f32 fZ2, f32 fY, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV);
   static void RenderQuadAtZ(
-      GfxMaterial* mtl,
+      GfxMaterial* mtl, //
       Context* pTarg,
       f32 fX1,
       f32 fX2,
@@ -107,8 +107,19 @@ public:
       f32 iminV,
       f32 imaxV);
   static void RenderQuadAtZV16T16C16(
-      GfxMaterial* mtl,
+      GfxMaterial* mtl, //
       Context* pTarg,
+      f32 fX1,
+      f32 fX2,
+      f32 fY1,
+      f32 fY2,
+      f32 fZ,
+      f32 iminU,
+      f32 imaxU,
+      f32 iminV,
+      f32 imaxV);
+  static void RenderEMLQuadAtZV16T16C16(
+      Context* pTarg, //
       f32 fX1,
       f32 fX2,
       f32 fY1,

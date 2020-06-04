@@ -322,10 +322,13 @@ void Outliner2Surface::DoInit(lev2::Context* pt) {
   ///////////////////////////////////////////////
   _material = std::make_shared<FreestyleMaterial>();
   _material->gpuInit(pt, "orkshader://ui2");
-  _tekpick     = _material->technique("picking_rigid");
+  _tekpick     = _material->technique("ui_picking");
   _tekmodcolor = _material->technique("ui_modcolor");
   _parmvp      = _material->param("mvp");
-  _parmodcolor = _material->param("ModColor");
+  _parmodcolor = _material->param("modcolor");
+  _material->dump();
+
+  OrkAssert(_tekpick != nullptr);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Outliner2Surface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
@@ -394,7 +397,6 @@ void Outliner2Surface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
     const int kheaderH = miScrollY;
 
-    auto uimatrix = mtxi->uiMatrix(miW, miH);
     {
       int iy   = kheaderH;
       bool alt = false;
@@ -405,6 +407,9 @@ void Outliner2Surface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       else
         _material->begin(_tekmodcolor, RCFD);
       //////////////////////////////////////
+      auto uimatrix = mtxi->uiMatrix(miW, miH);
+      _material->bindParamMatrix(_parmvp, uimatrix);
+      //////////////////////////////////////
 
       for (const auto& item : items) {
         const std::string& name = item.mName;
@@ -414,21 +419,26 @@ void Outliner2Surface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
         bool is_sel = item.mSelected;
 
         if (is_pick) {
-          _material->bindParamMatrix(_parmvp, uimatrix);
           _material->bindParamVec4(_parmodcolor, pick_color);
-        } else if (dynamic_cast<SceneData*>(pobj))
-          _material->bindParamVec4(_parmodcolor, is_sel ? c3 : col_sceneglobal);
-        else if (dynamic_cast<EntData*>(pobj))
-          _material->bindParamVec4(_parmodcolor, is_sel ? c3 : (alt ? col_entity : col_entity_alt));
-        else if (dynamic_cast<Archetype*>(pobj))
-          _material->bindParamVec4(_parmodcolor, is_sel ? c3 : (alt ? col_archet : col_archet_alt));
-        else if (dynamic_cast<SystemData*>(pobj))
-          _material->bindParamVec4(_parmodcolor, is_sel ? c3 : (alt ? col_sysdat : col_sysdat_alt));
-        else
-          _material->bindParamVec4(_parmodcolor, is_sel ? c3 : (alt ? c1 : c2));
+        } else {
 
-        primi.RenderQuadAtZV16T16C16(
-            _material.get(),
+          fvec4 modcolor;
+
+          if (dynamic_cast<SceneData*>(pobj))
+            modcolor = is_sel ? c3 : col_sceneglobal;
+          else if (dynamic_cast<EntData*>(pobj))
+            modcolor = is_sel ? c3 : (alt ? col_entity : col_entity_alt);
+          else if (dynamic_cast<Archetype*>(pobj))
+            modcolor = is_sel ? c3 : (alt ? col_archet : col_archet_alt);
+          else if (dynamic_cast<SystemData*>(pobj))
+            modcolor = is_sel ? c3 : (alt ? col_sysdat : col_sysdat_alt);
+          else
+            modcolor = is_sel ? c3 : (alt ? c1 : c2);
+
+          _material->bindParamVec4(_parmodcolor, modcolor);
+        }
+
+        primi.RenderEMLQuadAtZV16T16C16(
             tgt,
             0,
             miW, // x0, x1
@@ -443,7 +453,7 @@ void Outliner2Surface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
         iy += kitemh();
         alt = !alt;
-      }
+      } // for (const auto& item : items) {
 
       _material->end(RCFD);
 

@@ -1560,6 +1560,41 @@ void GfxPrimitives::RenderQuadAtZV16T16C16(
 
   ///////////////////////////////////////////
 }
+void GfxPrimitives::RenderEMLQuadAtZV16T16C16(
+    Context* pTarg,
+    f32 fX1,
+    f32 fX2,
+    f32 fY1,
+    f32 fY2,
+    f32 fZ,
+    f32 iminU,
+    f32 imaxU,
+    f32 iminV,
+    f32 imaxV) {
+  auto vb = &GfxEnv::GetSharedDynamicV16T16C16();
+
+  ///////////////////////////////////////////
+  // SET VERTICES (range 0..1)
+
+  lev2::VtxWriter<SVtxV16T16C16> vw;
+  vw.Lock(pTarg, vb, 6);
+
+  vw.AddVertex(SVtxV16T16C16(fvec4(fX1, fY1, fZ), fvec4(1, 1, 1, 1), fvec4(iminU, iminV, 0, 0)));
+  vw.AddVertex(SVtxV16T16C16(fvec4(fX2, fY1, fZ), fvec4(1, 1, 1, 1), fvec4(imaxU, iminV, 0, 0)));
+  vw.AddVertex(SVtxV16T16C16(fvec4(fX2, fY2, fZ), fvec4(1, 1, 1, 1), fvec4(imaxU, imaxV, 0, 0)));
+
+  vw.AddVertex(SVtxV16T16C16(fvec4(fX1, fY1, fZ), fvec4(1, 1, 1, 1), fvec4(iminU, iminV, 0, 0)));
+  vw.AddVertex(SVtxV16T16C16(fvec4(fX2, fY2, fZ), fvec4(1, 1, 1, 1), fvec4(imaxU, imaxV, 0, 0)));
+  vw.AddVertex(SVtxV16T16C16(fvec4(fX1, fY2, fZ), fvec4(1, 1, 1, 1), fvec4(iminU, imaxV, 0, 0)));
+
+  vw.UnLock(pTarg);
+
+  ///////////////////////////////////////////
+
+  pTarg->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES);
+
+  ///////////////////////////////////////////
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

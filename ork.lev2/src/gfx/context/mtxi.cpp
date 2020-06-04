@@ -26,8 +26,7 @@ fmtx4 MatrixStackInterface::uiMatrix(float fw, float fh) const {
     // iw /=2;
     // ih /=2;
   }
-  ork::fmtx4 mtxMVP = mTarget.MTXI()->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);
-  return mtxMVP;
+  return mTarget.MTXI()->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
