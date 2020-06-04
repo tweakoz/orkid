@@ -25,3 +25,4 @@ setupEXE(ork.test.lev2.aud.singularity.cz1.dco.playedit.exe main_cz1_playedit.cp
 setupEXE(ork.test.lev2.aud.singularity.cz1.envelope.exe main_cz1_envelope.cpp)
 setupEXE(ork.test.lev2.aud.singularity.cz1.bankprog.exe main_cz1_bankprog.cpp)
 setupEXE(ork.test.lev2.aud.singularity.hybrid.exe main_hybrid.cpp)
+setupEXE(ork.test.lev2.aud.singularity.cz1.benchmark.exe main_cz1_benchmark.cpp)
