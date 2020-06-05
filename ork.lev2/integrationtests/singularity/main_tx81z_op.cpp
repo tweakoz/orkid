@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   // setup dsp graph
   //////////////////////////////////////
-  layerdata->_algdata   = configureTx81zAlgorithm(layerdata, fmdata);
+  configureTx81zAlgorithm(layerdata, fmdata);
   auto ops_stage        = layerdata->stageByName("OPS");
   auto ops              = ops_stage->_blockdatas[0];
   ops->param(0)._coarse = 1.0f;  // op0 amp

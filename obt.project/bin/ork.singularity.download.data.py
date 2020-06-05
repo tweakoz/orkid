@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 ################################################################################
-from ork import path
+from ork import path, command
 from ork.pathtools import ensureDirectoryExists
 from ork.wget import batch_wget
 from yarl import URL
@@ -13,13 +13,15 @@ ensureDirectoryExists(dest_path)
 # tx81Z data
 ################################################################################
 ensureDirectoryExists(dest_path/"tx81z")
-base_81zurl = str("http://www.sysexdb.com/binaryview.aspx?IDSysexMessage=")
+base_81zManuals = base_manuals/"yamaha"/"tx81z"
+manurl = base_81zManuals/"owners_manual"/"yamaha_tx81z_owners_manual_rvgm.pdf"
+base_81zurl = URL("http://nuxmicromedia.com/4ophq/files-4op-patches/")
 batch_wget({
- base_81zurl+"1758": (dest_path/"tx81z"/"factorypatchA.syx","a14c5af8fb22c4c4ff2fb3123dd2aa6b"),
- base_81zurl+"1759": (dest_path/"tx81z"/"factorypatchB.syx","05827dd45f6010ee5ae62790b453dcb2"),
- base_81zurl+"1760": (dest_path/"tx81z"/"factorypatchC.syx","58543b3f0fa726e0ff746b59932b152a"),
- base_81zurl+"1761": (dest_path/"tx81z"/"factorypatchD.syx","eddfa391958b64695de51ec5c86f6d5f"),
+ manurl:(dest_path/"tx81z"/"tx81z_manual2.0.pdf","77290fc492848ddd7c574f23bad4686c"),
+ base_81zurl/"TX81Z_Presets.zip": (dest_path/"tx81z"/"TX81Z_Presets.zip","d9f3a7c9eb721e7c06490905b4769829"),
 })
+(dest_path/"tx81z").chdir()
+command.system(["unzip","-j","-o","TX81Z_Presets.zip"])
 ################################################################################
 base_casioCZ = URL("http://cd.textfiles.com/10000soundssongs/SYNTHDAT/CASIO")
 base_casioManuals = base_manuals/"casio"

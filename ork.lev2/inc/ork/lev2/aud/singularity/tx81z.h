@@ -106,7 +106,7 @@ struct FM4 final : public DspBlock {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-algdata_ptr_t configureTx81zAlgorithm(lyrdata_ptr_t layerdata, fm4prgdata_ptr_t fmdata);
+void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, fm4prgdata_ptr_t fmdata);
 
 ///////////////////////////////////////////////////////////////////////////////
 

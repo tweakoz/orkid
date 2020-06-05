@@ -442,7 +442,7 @@ dspblk_ptr_t FM4Data::createInstance() const {
   return std::make_shared<FM4>(this);
 }
 
-algdata_ptr_t configureTx81zAlgorithm(lyrdata_ptr_t layerdata, fm4prgdata_ptr_t prgdata) {
+void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, fm4prgdata_ptr_t prgdata) {
   auto algdout        = std::make_shared<AlgData>();
   layerdata->_algdata = algdout;
   algdout->_name      = ork::FormatString("tx81z<%d>", prgdata->_alg);
@@ -466,10 +466,9 @@ algdata_ptr_t configureTx81zAlgorithm(lyrdata_ptr_t layerdata, fm4prgdata_ptr_t 
   stereo_mod._src1Depth = 1.0f;
   STEREOC->_onkeyon     = [](CustomControllerInst* cci, //
                          const KeyOnInfo& KOI) {    //
-    cci->_curval = 1.0f;                            // amplitude to unity
+    cci->_curval = 0.125f;                          // amplitude to unity
   };
   //////////////////////////////////////////
-  return algdout;
 }
 
 } // namespace ork::audio::singularity

@@ -40,4 +40,6 @@ struct SynthData {
   std::string _staticBankName;
 };
 
+void hexdumpbytes(std::vector<uint8_t> bytes);
+
 } // namespace ork::audio::singularity

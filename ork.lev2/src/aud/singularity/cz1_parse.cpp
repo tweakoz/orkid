@@ -200,25 +200,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
   */
 
   if (1) {
-    int numlines = bytes.size() / 16;
-    for (int r = 0; r < numlines; r++) {
-      int bidx = (r * 16);
-      printf("0x%02x: ", bidx);
-
-      for (int c = 0; c < 16; c++) {
-        u8 byte = bytes[bidx + c];
-        printf("%02x ", byte);
-      }
-
-      printf(" |");
-      for (int c = 0; c < 16; c++) {
-        char byte = (char)bytes[bidx + c];
-        if (false == isprint(byte))
-          byte = '.';
-        printf("%c", byte);
-      }
-      printf("|\n");
-    }
+    hexdumpbytes(bytes);
   }
 
   auto czprogdata      = std::make_shared<CzProgData>();
