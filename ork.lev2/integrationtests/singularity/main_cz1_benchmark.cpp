@@ -5,6 +5,8 @@
 #include <ork/lev2/aud/singularity/cz1.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/aud/singularity/alg_amp.h>
+#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/gfxmaterial_ui.h>
 
 using namespace ork::audio::singularity;
 
@@ -86,77 +88,245 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   // benchmark
   //////////////////////////////////////////////////////////////////////////////
-
   // enqueue test notes
-  constexpr int numvoices = 128;
+  constexpr int numvoices    = 128;
+  constexpr size_t histosize = 65536;
   for (int i = 0; i < numvoices; i++) {
     enqueue_audio_event(program, double(i) * 0.001, 240.0, 48);
   }
+  /////////////////////////////////////////
+  static constexpr size_t KNUMFRAMES = 512;
+  struct SingularityBenchMarkApp final : public OrkEzQtApp {
+    SingularityBenchMarkApp(int& argc, char** argv)
+        : OrkEzQtApp(argc, argv) {
+    }
+    ~SingularityBenchMarkApp() override {
+    }
+    std::vector<int> _time_histogram;
+    ork::lev2::freestyle_mtl_ptr_t _material;
+    const FxShaderTechnique* _fxtechniqueMODC = nullptr;
+    const FxShaderTechnique* _fxtechniqueVTXC = nullptr;
+    const FxShaderParam* _fxparameterMVP      = nullptr;
+    const FxShaderParam* _fxparameterMODC     = nullptr;
+    ork::Timer _timer;
+    float _inpbuf[KNUMFRAMES * 2];
+    int _numiters     = 0;
+    double _cur_time  = 0.0;
+    double _prev_time = 0.0;
+    lev2::Font* _font;
+    int _charw = 0;
+    int _charh = 0;
+  };
+  auto app = std::make_shared<SingularityBenchMarkApp>(argc, argv);
+  //////////////////////////////////////////////////////////////////////////////
+  app->onGpuInit([=](Context* ctx) { //
+    app->_material = std::make_shared<ork::lev2::FreestyleMaterial>();
+    app->_material->gpuInit(ctx, "orkshader://ui2");
+    app->_fxtechniqueMODC = app->_material->technique("ui_modcolor");
+    app->_fxtechniqueVTXC = app->_material->technique("ui_vtxcolor");
+    app->_fxparameterMVP  = app->_material->param("mvp");
+    app->_fxparameterMODC = app->_material->param("modcolor");
+    app->_timer.Start();
+    memset(app->_inpbuf, 0, KNUMFRAMES * 2 * sizeof(float));
+    app->_cur_time  = app->_timer.SecsSinceStart();
+    app->_prev_time = app->_cur_time;
+    app->_time_histogram.resize(histosize);
+    app->_font  = lev2::FontMan::GetFont("i14");
+    app->_charw = app->_font->GetFontDesc().miAdvanceWidth;
+    app->_charh = app->_font->GetFontDesc().miAdvanceHeight;
+  });
+  //////////////////////////////////////////////////////////////////////////////
+  app->onUpdate([=](ui::updatedata_ptr_t updata) {
+    const auto& obuf = the_synth->_obuf;
+    /////////////////////////////////////////
+    double upd_time = 0.0;
+    bool done       = false;
+    while (done == false) {
+      the_synth->compute(KNUMFRAMES, app->_inpbuf);
+      app->_cur_time   = app->_timer.SecsSinceStart();
+      double iter_time = app->_cur_time - app->_prev_time;
+      upd_time += iter_time;
+      ///////////////////////////////////////////
+      // histogram for looking for timing spikes
+      ///////////////////////////////////////////
+      size_t index = size_t(double(histosize) * iter_time / 0.02);
+      index        = std::clamp(index, size_t(0), histosize - 1);
+      app->_time_histogram[index]++;
+      ///////////////////////////////////////////
+      app->_prev_time = app->_cur_time;
+      app->_numiters++;
+      done = upd_time > 1.0 / 60.0;
+      if (app->_numiters % 256 == 0) {
+        printf("_numiters<%d>                  \r", app->_numiters);
+        fflush(stdout);
+      }
+    }
+  });
+  //////////////////////////////////////////////////////////////////////////////
+  app->onDraw([=](ui::drawevent_constptr_t drwev) { //
+    ////////////////////////////////////////////////
+    auto context = drwev->GetTarget();
+    auto fbi     = context->FBI();  // FrameBufferInterface
+    auto fxi     = context->FXI();  // FX Interface
+    auto mtxi    = context->MTXI(); // FX Interface
+    fbi->SetClearColor(fvec4(0.1, 0.1, 0.1, 1));
+    ////////////////////////////////////////////////////
+    // draw the synth HUD
+    ////////////////////////////////////////////////////
+    RenderContextFrameData RCFD(context); // renderer per/frame data
+    context->beginFrame();
+    auto tgtrect = context->mainSurfaceRectAtOrigin();
+    auto uimtx   = mtxi->uiMatrix(tgtrect._w, tgtrect._h);
+    app->_material->begin(app->_fxtechniqueMODC, RCFD);
+    app->_material->bindParamMatrix(app->_fxparameterMVP, uimtx);
+    {
+      //////////////////////////////////////////////
+      // draw background
+      //////////////////////////////////////////////
+      auto& primi = lev2::GfxPrimitives::GetRef();
+      app->_material->bindParamVec4(app->_fxparameterMODC, fvec4(0, 0, 0, 1));
+      primi.RenderEMLQuadAtZV16T16C16(
+          context,
+          8,              // x0
+          tgtrect._w - 8, // x1
+          8,              // y0
+          tgtrect._h - 8, // y1
+          0.0f,           // z
+          0.0f,           // u0
+          1.0f,           // u1
+          0.0f,           // v0
+          1.0f            // v1
+      );
+    }
+    app->_material->end(RCFD);
+    //////////////////////////////////////////////
+    app->_material->begin(app->_fxtechniqueVTXC, RCFD);
+    {
+      app->_material->bindParamMatrix(app->_fxparameterMVP, uimtx);
+      //////////////////////////////////////////////
+      double desired_blockperiod = 1000.0 / (48000.0 / double(KNUMFRAMES));
+      //////////////////////////////////////////////
+      // compute histogram vertical extents
+      //////////////////////////////////////////////
+      int maxval       = 0;
+      int minbin       = 0;
+      int maxbin       = 0;
+      double avgbin    = 0.0;
+      double avgdiv    = 0.0;
+      int numunderruns = 0;
+      for (size_t i = 0; i < histosize; i++) {
+        int item = app->_time_histogram[i];
+        if (item > maxval) {
+          maxval = item;
+        }
+        if (minbin == 0 and item != 0) {
+          minbin = i;
+        }
+        if (item != 0) {
+          maxbin = i;
+        }
+        avgbin += double(i) * double(item);
+        avgdiv += double(item);
+        double bin_time = 1000.0 * 0.02 * double(i) / double(histosize);
+        if (bin_time > desired_blockperiod) {
+          numunderruns += item;
+        }
+      }
+      avgbin /= avgdiv;
+      //////////////////////////////////////////////
+      // draw histogram
+      //////////////////////////////////////////////
+      app->_material->bindParamVec4(app->_fxparameterMODC, fvec4(0, 1, 0, 1));
+      size_t numlines                      = histosize;
+      lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
+      lev2::VtxWriter<vtx_t> vw;
+      vw.Lock(context, &VB, numlines * 2);
+      for (size_t index_r = 1; index_r < histosize; index_r++) {
+        size_t index_l = index_r - 1;
+        int item_l     = app->_time_histogram[index_l];
+        int item_r     = app->_time_histogram[index_r];
 
-  ork::Timer timer;
-  constexpr int KNUMFRAMES = 512;
-  float inpbuf[KNUMFRAMES * 2];
-  memset(inpbuf, 0, KNUMFRAMES * 2 * sizeof(float));
-  const auto& obuf = the_synth->_obuf;
+        double time_l = 20.0 * double(index_l) / double(histosize);
 
-  int numiters      = 0;
-  double total_time = 0.0;
-  timer.Start();
-  bool done               = false;
-  double voicebench_accum = 0;
-  double cur_time         = timer.SecsSinceStart();
-  double prev_time        = cur_time;
-  /////////////////////////////////////////
-  std::multimap<double, int> time_histogram;
-  while (done == false) {
-    the_synth->compute(KNUMFRAMES, inpbuf);
-    cur_time         = timer.SecsSinceStart();
-    double iter_time = cur_time - prev_time;
-    ///////////////////////////////////////////
-    // histogram for looking for timing spikes
-    ///////////////////////////////////////////
-    auto hit = time_histogram.find(iter_time);
-    if (hit == time_histogram.end()) {
-      hit = time_histogram.insert(std::make_pair(iter_time, 0));
+        double xl = 8.0 + double(tgtrect._w - 16.0) * double(index_l) / double(histosize);
+        double xr = 8.0 + double(tgtrect._w - 16.0) * double(index_r) / double(histosize);
+        double yl = 8.0 + double(tgtrect._h - 16.0) * double(item_l) / double(maxval);
+        double yr = 8.0 + double(tgtrect._h - 16.0) * double(item_r) / double(maxval);
+
+        fvec4 color = time_l < desired_blockperiod //
+                          ? fvec4(0, 1, 0, 1)
+                          : fvec4(1, 0, 0, 1);
+
+        vw.AddVertex(vtx_t(fvec4(xl, tgtrect._h - yl, 0.0), fvec4(), color));
+        vw.AddVertex(vtx_t(fvec4(xr, tgtrect._h - yr, 0.0), fvec4(), color));
+      }
+      vw.UnLock(context);
+      context->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::LINES);
+      //////////////////////////////////////////////
+      // bin_time = 20 * i / histosize
+      // bin_time/i = 20/histosize
+      // i/bin_time = histosize/20
+      // i=histosize/(20*bin_time)
+      double desi = desired_blockperiod / 20.0;
+      double desx = 8.0 + double(tgtrect._w - 16.0) * desi;
+      lev2::VtxWriter<vtx_t> vw2;
+      vw2.Lock(context, &VB, 2);
+      vw2.AddVertex(vtx_t(fvec4(desx, 0, 0.0), fvec4(), fvec4(1, 1, 0, 0)));
+      vw2.AddVertex(vtx_t(fvec4(desx, tgtrect._h, 0.0), fvec4(), fvec4(1, 1, 0, 0)));
+      vw2.UnLock(context);
+      context->GBI()->DrawPrimitiveEML(vw2, EPrimitiveType::LINES);
+      //////////////////////////////////////////////
+      // draw text
+      //////////////////////////////////////////////
+      {
+        context->MTXI()->PushUIMatrix(tgtrect._w, tgtrect._h);
+        lev2::FontMan::PushFont(app->_font);
+        { //
+          int y = 0;
+
+          context->PushModColor(fcolor4::White());
+          lev2::FontMan::beginTextBlock(context);
+          lev2::FontMan::DrawText(context, 32, y += 32, "Synth Compute Timing Histogram");
+          lev2::FontMan::endTextBlock(context);
+          context->PopModColor();
+
+          double minbin_time = 0.02 * double(minbin) / double(histosize);
+          double maxbin_time = 0.02 * double(maxbin) / double(histosize);
+          double avgbin_time = 0.02 * avgbin / double(histosize);
+          auto str0          = FormatString("Desired Blockperiod @ 48KhZ <%g msec>", desired_blockperiod);
+          auto str1          = FormatString("Min IterTime <%g msec>", minbin_time * 1000.0);
+          auto str2          = FormatString("Max IterTime <%g msec>", maxbin_time * 1000.0);
+          auto str3          = FormatString("Avg IterTime <%g msec>", avgbin_time * 1000.0);
+          auto str4          = FormatString("Number of Underruns <%d>", numunderruns);
+
+          context->PushModColor(fcolor4::Green());
+          lev2::FontMan::beginTextBlock(context);
+          lev2::FontMan::DrawText(context, 32, y += 16, str1.c_str());
+          lev2::FontMan::DrawText(context, 32, y += 16, str2.c_str());
+          lev2::FontMan::DrawText(context, 32, y += 16, str3.c_str());
+          lev2::FontMan::endTextBlock(context);
+          context->PopModColor();
+
+          context->PushModColor(fcolor4::Yellow());
+          lev2::FontMan::beginTextBlock(context);
+          lev2::FontMan::DrawText(context, 32, y += 16, str0.c_str());
+          lev2::FontMan::endTextBlock(context);
+          context->PopModColor();
+
+          context->PushModColor(fcolor4::Red());
+          lev2::FontMan::beginTextBlock(context);
+          lev2::FontMan::DrawText(context, 32, y += 16, str4.c_str());
+          lev2::FontMan::endTextBlock(context);
+          context->PopModColor();
+        }
+        lev2::FontMan::PopFont();
+        context->MTXI()->PopUIMatrix();
+      }
     }
-    hit->second++;
-    ///////////////////////////////////////////
-    prev_time = cur_time;
-    numiters++;
-    done = cur_time > 10.0;
-    if (numiters % 256 == 0) {
-      printf("numiters<%d>                  \r", numiters);
-      fflush(stdout);
-    }
-  }
+    app->_material->end(RCFD);
+    context->endFrame();
+  });
   /////////////////////////////////////////
-  size_t samples_computed = size_t(numiters) * size_t(KNUMFRAMES);
-  double maxSR            = double(samples_computed) / cur_time;
-  double voicebench       = double(numvoices) * maxSR;
-  /////////////////////////////////////////
-  printf("voicebench maxSR<%d> numvoices<%d> voicebench<%d>\n", int(maxSR), numvoices, int(voicebench));
-  /////////////////////////////////////////
-  // time histogram report
-  /////////////////////////////////////////
-  double desired_blockperiod = 1000.0 / (48000.0 / double(KNUMFRAMES));
-  printf("desired_blockperiod<%g msec>\n", desired_blockperiod);
-  /////
-  auto it_lo       = time_histogram.begin();
-  auto it_hi       = time_histogram.rbegin();
-  double lo        = it_lo->first * 1000.0;
-  double hi        = it_hi->first * 1000.0;
-  double accum     = 0.0;
-  int numunderruns = 0;
-  for (auto item : time_histogram) {
-    double t = item.first;
-    accum += t;
-    if (t * 1000.0 > desired_blockperiod) {
-      numunderruns++;
-    }
-  }
-  double avg = 1000.0 * accum / double(time_histogram.size());
-  printf("exectime range lo<%g msec> hi<%g msec> avg<%g msec>\n", lo, hi, avg);
-  printf("numunderruns<%d>\n", numunderruns);
-  /////////////////////////////////////////
-  return 0;
+  app->setRefreshPolicy({EREFRESH_FIXEDFPS, 60});
+  return app->exec();
 }
