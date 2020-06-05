@@ -37,19 +37,19 @@ int main(int argc, char** argv) {
   op1._outLevel     = 99.0f;
   op2._outLevel     = 99.0f;
   op3._outLevel     = 99.0f;
-  op1._modIndex     = 100.0f;
-  op2._modIndex     = 100.0f;
-  op3._modIndex     = 100.0f;
+  op1._modIndex     = 0.125f;
+  op2._modIndex     = 0.125f;
+  op3._modIndex     = 0.125f;
   //////////////////////////////////////
   // setup dsp graph
   //////////////////////////////////////
   configureTx81zAlgorithm(layerdata, fmdata);
   auto ops_stage        = layerdata->stageByName("OPS");
   auto ops              = ops_stage->_blockdatas[0];
-  ops->param(0)._coarse = 1.0f;  // op0 amp
-  ops->param(1)._coarse = 10.0f; // op1 amp
-  ops->param(2)._coarse = 1.0f;  // op2 amp
-  ops->param(3)._coarse = 10.0f; // op3 amp
+  ops->param(0)._coarse = 1.0f; // op0 amp
+  ops->param(1)._coarse = 1.0f; // op1 amp
+  ops->param(2)._coarse = 1.0f; // op2 amp
+  ops->param(3)._coarse = 1.0f; // op3 amp
   // auto ampstage       = layerdata->stageByName("AMP");
   // auto osc            = dcostage->appendTypedBlock<CZX>(czoscdata, 0);
   // auto amp            = ampstage->appendTypedBlock<AMP_MONOIO>();

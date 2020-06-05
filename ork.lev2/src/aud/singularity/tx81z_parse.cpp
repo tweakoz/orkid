@@ -124,11 +124,9 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
     ///////////////////////////
 
-    int index_vb = 0;
-
     char namebuf[11];
     for (int n = 0; n < 10; n++)
-      namebuf[n] = bytes[index_vb + 57 + n];
+      namebuf[n] = bytes[57 + n];
     namebuf[10] = 0;
 
     prg->_name = namebuf;
@@ -143,11 +141,11 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     // voice global
     ////////////
 
-    int ALG = bytes[index_vb + 40] & 7;           // op amp 0..7
-    int FBL = (bytes[index_vb + 40] & 0x38) >> 3; // fb level  0..7
-    int SY  = (bytes[index_vb + 40] & 0x60) >> 6; // lfo sync (reset phase) bool
-
     configureTx81zAlgorithm(layerdata, fm4pd);
+
+    int ALG = bytes[40] & 7;           // fm algoorithm 0..7
+    int FBL = (bytes[40] & 0x38) >> 3; // fb level  0..7
+    int SY  = (bytes[40] & 0x60) >> 6; // lfo sync (reset phase) bool
 
     fm4pd->_alg      = ALG;
     fm4pd->_feedback = FBL;
@@ -155,10 +153,10 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
     // printf( "ALG<%d> FBL<%d> SY<%d>\n", ALG, FBL, SY);
 
-    int LFS = bytes[index_vb + 41]; // lfo speed 0..99
-    int LFD = bytes[index_vb + 42]; // lfo depth 0..99
-    int PMD = bytes[index_vb + 43]; // pch mod depth 0..99
-    int AMD = bytes[index_vb + 44]; // amp mod depth 0..99
+    int LFS = bytes[41]; // lfo speed 0..99
+    int LFD = bytes[42]; // lfo depth 0..99
+    int PMD = bytes[43]; // pch mod depth 0..99
+    int AMD = bytes[44]; // amp mod depth 0..99
 
     fm4pd->_lfoSpeed = LFS;
     fm4pd->_lfoDepth = LFD;
@@ -167,7 +165,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
     // printf( "LFS<%d> LFD<%d> PMD<%d> AMD<%d>\n", LFS, LFD, PMD, AMD);
 
-    int _LAP = bytes[index_vb + 45];
+    int _LAP = bytes[45];
     int LFW  = _LAP & 3;        // 0..3 lfo wave (sawup,squ,tri,shold)
     int AMS  = (_LAP >> 2) & 3; // lfo amp mod sensa 0..3
     int PMS  = (_LAP >> 5);     // lfo pch mod sensa 0..7
@@ -178,27 +176,27 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
     // printf( "LFW<%d> AMS<%d> PMS<%d>\n", LFW, AMS, PMS);
 
-    int TRPS = bytes[index_vb + 46] & 0x3f; // transpose 0..48 (middle-c)
-    int PBR  = bytes[index_vb + 47] & 0x0f; // pitchbendrange 0..12
+    int TRPS = bytes[46] & 0x3f; // transpose 0..48 (middle-c)
+    int PBR  = bytes[47] & 0x0f; // pitchbendrange 0..12
 
     fm4pd->_middleC        = TRPS;
     fm4pd->_pitchBendRange = PBR;
 
-    // printf( "TRPS<%d> PBR<%d>\n", TRPS, PBR);
+    printf("TRPS<%d> PBR<%d>\n", TRPS, PBR);
 
-    bool CH = bytes[index_vb + 48] & 0x10;
-    bool MO = bytes[index_vb + 48] & 0x08; // mono mode ?
-    bool SU = bytes[index_vb + 48] & 0x04;
-    bool PO = bytes[index_vb + 48] & 0x02; // porto mode ?
-    bool PM = bytes[index_vb + 48] & 0x01;
+    bool CH = bytes[48] & 0x10;
+    bool MO = bytes[48] & 0x08; // mono mode ?
+    bool SU = bytes[48] & 0x04;
+    bool PO = bytes[48] & 0x02; // porto mode ?
+    bool PM = bytes[48] & 0x01;
 
     fm4pd->_mono     = MO;
     fm4pd->_portMode = PO;
 
     // printf( "CH<%d> MO<%d> SU<%d> PO<%d> PM<%d>\n", CH,MO,SU,PO,PM);
 
-    int PORT = bytes[index_vb + 49] & 0x3f; // portotime 0..99
-                                            // printf( "PORT<%d>\n", PORT);
+    int PORT = bytes[49] & 0x3f; // portotime 0..99
+                                 // printf( "PORT<%d>\n", PORT);
 
     fm4pd->_portRate = PORT;
 
@@ -206,42 +204,43 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     auto ops_block = ops_stage->_blockdatas[0];
 
     ////////////
-    // operator data
+    // per-operator data
     ////////////
-    for (int j = 0; j < 4; j++) {
-      int index = index_vb + j * 10;
+
+    for (int opindex = 0; opindex < 4; opindex++) {
+      int op_base = opindex * 10;
 
       const int kop[] = {3, 1, 2, 0};
-      int op          = kop[j];
+      int op          = kop[opindex];
       auto& opd       = fm4pd->_ops[op];
 
       // ratio 0.5 .. 27.57
 
-      opd._atkRate     = bytes[index + 0]; // EG 0..31
-      opd._dec1Rate    = bytes[index + 1]; // EG 0..31
-      opd._dec2Rate    = bytes[index + 2]; // EG 0..31
-      opd._relRate     = bytes[index + 3]; // EG 0..15
-      opd._dec1Lev     = bytes[index + 4]; // EG 0..15
-      opd._levScaling  = bytes[index + 5]; // level scaling 0..99
-      int _AEK         = bytes[index + 6];
-      opd._opEnable    = (_AEK & 64) >> 6;               // AME - bool (enable op?)
-      opd._egBiasSensa = (_AEK & 0x18) >> 3;             // eg bias sensitivity 0..7
-      opd._kvSensa     = (_AEK & 0x07);                  // keyvel sensitivity 0..7
-      opd._outLevel    = bytes[index + 7];               // out level 0..99
-      opd._coarseFrq   = bytes[index + 8] & 0x3f;        // coarse frequency 0..63
-      opd._ratScaling  = (bytes[index + 9] & 0x18) >> 3; // rate scaling 0..3
-      opd._detune      = (bytes[index + 9] & 7);         // detune ? -3..3
+      opd._atkRate     = bytes[op_base + 0]; // EG 0..31
+      opd._dec1Rate    = bytes[op_base + 1]; // EG 0..31
+      opd._dec2Rate    = bytes[op_base + 2]; // EG 0..31
+      opd._relRate     = bytes[op_base + 3]; // EG 0..15
+      opd._dec1Lev     = bytes[op_base + 4]; // EG 0..15
+      opd._levScaling  = bytes[op_base + 5]; // level scaling 0..99
+      int _AEK         = bytes[op_base + 6];
+      opd._opEnable    = (_AEK & 64) >> 6;                 // AME - bool (enable op?)
+      opd._egBiasSensa = (_AEK & 0x18) >> 3;               // eg bias sensitivity 0..7
+      opd._kvSensa     = (_AEK & 0x07);                    // keyvel sensitivity 0..7
+      opd._outLevel    = bytes[op_base + 7];               // out level 0..99
+      opd._coarseFrq   = bytes[op_base + 8] & 0x3f;        // coarse frequency 0..63
+      opd._ratScaling  = (bytes[op_base + 9] & 0x18) >> 3; // rate scaling 0..3
+      opd._detune      = (bytes[op_base + 9] & 7);         // detune ? -3..3
 
-      int _EFF          = bytes[index_vb + 73 + 2 * j] & 0x3f;
-      opd._egShift      = (_EFF & 0x30) >> 4;       // eg shift (off,48,24,12)
-      opd._fixedFrqMode = (_EFF & 0x08) >> 3;       // fixed mode ? bool
-      opd._fixedRange   = (_EFF & 0x7);             // fixed range: 255,510,1k,2k,4k,8k,16k,32k
-                                                    // fixed step:  1,  2,  4, 8, 16,32,64, 128
-      int _OWF      = bytes[index_vb + 74 + 2 * j]; //&0x7f;
-      opd._waveform = (_OWF & 0x70) >> 4;           // waveform 0..7
-      opd._fineFrq  = (_OWF & 7);                   // fine frequency 0..15
+      int _EFF          = bytes[73 + 2 * opindex] & 0x3f;
+      opd._egShift      = (_EFF & 0x30) >> 4;  // eg shift (off,48,24,12)
+      opd._fixedFrqMode = (_EFF & 0x08) >> 3;  // fixed mode ? bool
+      opd._fixedRange   = (_EFF & 0x7);        // fixed range: 255,510,1k,2k,4k,8k,16k,32k
+                                               // fixed step:  1,  2,  4, 8, 16,32,64, 128
+      int _OWF      = bytes[74 + 2 * opindex]; //&0x7f;
+      opd._waveform = (_OWF & 0x70) >> 4;      // waveform 0..7
+      opd._fineFrq  = (_OWF & 7);              // fine frequency 0..15
 
-      opd._F   = bytes[index + 8];
+      opd._F   = bytes[op_base + 8];
       opd._EFF = _EFF;
       opd._OWF = _OWF;
 
@@ -265,16 +264,16 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
       // float MI = (4.0f*pi2) *  powf(2.0,(-tlval/8.0f));
       // opd._modIndex = (4.0f*512.0f) *  powf(2.0,(-tlval/8.0f));
-      opd._modIndex = (4.0f * 1024.0f) * powf(2.0, (-tlval / 8.0f));
+      opd._modIndex = 2.0f * powf(2.0, (-tlval / 8.0f));
 
       ////////////////////////////
 
-      auto envname = ork::FormatString("OP%d.Amp", j);
+      auto envname = ork::FormatString("OP%d.Amp", opindex);
       auto AE      = layerdata->appendController<RateLevelEnvData>(envname);
-      AE->_ampenv  = true; //(j==0);
+      AE->_ampenv  = true; //(opindex==0);
       AE->_envType = RlEnvType::ERLTYPE_DEFAULT;
 
-      auto& op_amp_par            = ops_block->param(j);
+      auto& op_amp_par            = ops_block->param(opindex);
       op_amp_par._coarse          = 0.0f;
       op_amp_par._mods._src1      = AE;
       op_amp_par._mods._src1Depth = 1.0;
@@ -292,10 +291,10 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       OrkAssert(declevl < 16);
       OrkAssert(reltime < 16);
       float attaktime = openv_attacktimes[atktime]; // float(j)*0.5;
-      float decaytime = openv_dectimes[dectime];
-      float deca2time = openv_dectimes[dec2time];
-      float decaylevl = openv_declevels[declevl]; // float(j)*0.5;
-      float relestime = openv_reltimes[reltime];  // float(j)*0.5;
+      float decaytime = openv_dectimes[dectime] * 0.25;
+      float deca2time = openv_dectimes[dec2time] * 0.25;
+      float decaylevl = openv_declevels[declevl] * 0.25; // float(j)*0.5;
+      float relestime = openv_reltimes[reltime] * 0.25;  // float(j)*0.5;
 
       AE->_segments.push_back({attaktime, 1});         // atk1
       AE->_segments.push_back({decaytime, decaylevl}); // atk2

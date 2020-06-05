@@ -7,67 +7,44 @@
 #include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/aud/singularity/alg_amp.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
-
+////////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
-
+////////////////////////////////////////////////////////////////////////////////
 typedef std::function<void(Layer* layer)> fm4alg_t;
-
+////////////////////////////////////////////////////////////////////////////////
 struct fm4vcpriv {
-
+  int _dspchannel = 0;
+  ///////////////////////////////////////////////////
   void callalg(Layer* layer) {
     _curalg(layer);
-
-    // auto& HAF = _curlayer->_HAF;
-
-    for (int i = 0; i < 4; i++) {
-      /*
-      const auto& opd = _data._ops[i];
-      auto& opf       = HAF._op4frame[i];
-      opf._mi         = _mi[i];
-      opf._r          = _ratio[i];
-      opf._f          = _f[i];
-      opf._envout     = _opa[i];
-      opf._olev       = opd._outLevel;
-      opf._ar         = opd._atkRate;
-      opf._d1r        = opd._dec1Rate;
-      opf._d1l        = opd._dec1Lev;
-      opf._d2r        = opd._dec2Rate;
-      opf._rr         = opd._relRate;
-      opf._egshift    = opd._egShift;
-      opf._wav        = opd._waveform;*/
-    }
-
-    // printf( "f0<%f> f1<%f> f2<%f> f3<%f>\n", _f[0], _f[1], _f[2], _f[3] );
-    // printf( "i0<%f> i1<%f> i2<%f> i3<%f>\n", _mi[0], _mi[1], _mi[2], _mi[3] );
-    // printf( "a0<%f> a1<%f> a2<%f> a3<%f>\n", _opa[0], _opa[1], _opa[2], _opa[3] );
-    // printf( "o0<%f> o1<%f> o2<%f> o3<%f>\n", opvalm(0), opvalm(1), opvalm(2), opvalm(3) );
   }
+  ///////////////////////////////////////////////////
   fm4vcpriv() {
     /////////////////////////////////////////////////
     _alg[0] = [this](Layer* layer) {
       //   (3)->2->1->0
       auto& dspbuf   = *layer->_dspbuffer;
       int inumframes = layer->_dspwritecount;
-      float* U       = dspbuf.channel(0) + layer->_dspwritebase;
+      float* output  = dspbuf.channel(_dspchannel) + layer->_dspwritebase;
 
       for (int i = 0; i < inumframes; i++) {
         updateControllers();
         computeOpParms();
-        float l3 = _fmosc[3]._prevOutput;
-        float l2 = _fmosc[2]._prevOutput;
-        float l1 = _fmosc[1]._prevOutput;
-        float l0 = _fmosc[0]._prevOutput;
-        float m3 = l3 * _mi[3] * _opa[3];
-        float m2 = l2 * _mi[2] * _opa[2];
-        float m1 = l1 * _mi[1] * _opa[1];
-        float m0 = l0 * _mi[0] * _opa[0];
+        float l1        = _phasemodosc[1]._prevOutput;
+        float l2        = _phasemodosc[2]._prevOutput;
+        float l3        = _phasemodosc[3]._prevOutput;
+        float phaseoff1 = l1 * _modindex[1] * _op_amplitude[1];
+        float phaseoff2 = l2 * _modindex[2] * _op_amplitude[2];
+        float phaseoff3 = l3 * _modindex[3] * _op_amplitude[3];
 
-        float o3 = _fmosc[3].compute(_f[3], m3 * FBL());
-        float o2 = _fmosc[2].compute(_f[2], m3);
-        float o1 = _fmosc[1].compute(_f[1], m2);
-        float o0 = _fmosc[0].compute(_f[0], m1);
+        // printf("phaseoff1<%g>\n", phaseoff1);
 
-        U[i] = o0 * _opa[0];
+        float o3 = _phasemodosc[3].compute(_frequency[3], phaseoff3 * FBL());
+        float o2 = _phasemodosc[2].compute(_frequency[2], phaseoff3);
+        float o1 = _phasemodosc[1].compute(_frequency[0], phaseoff2);
+        float o0 = _phasemodosc[0].compute(_frequency[0], phaseoff1);
+
+        output[i] = o0 * _op_amplitude[0];
       }
     };
     /////////////////////////////////////////////////
@@ -76,26 +53,24 @@ struct fm4vcpriv {
       //   2->1->0
       auto& dspbuf   = *layer->_dspbuffer;
       int inumframes = layer->_dspwritecount;
-      float* U       = dspbuf.channel(0) + layer->_dspwritebase;
+      float* output  = dspbuf.channel(_dspchannel) + layer->_dspwritebase;
 
       for (int i = 0; i < inumframes; i++) {
         updateControllers();
         computeOpParms();
-        float l3 = _fmosc[3]._prevOutput;
-        float l2 = _fmosc[2]._prevOutput;
-        float l1 = _fmosc[1]._prevOutput;
-        float l0 = _fmosc[0]._prevOutput;
-        float m3 = l3 * _mi[3] * _opa[3];
-        float m2 = l2 * _mi[2] * _opa[2];
-        float m1 = l1 * _mi[1] * _opa[1];
-        float m0 = l0 * _mi[0] * _opa[0];
+        float l3        = _phasemodosc[3]._prevOutput;
+        float l2        = _phasemodosc[2]._prevOutput;
+        float l1        = _phasemodosc[1]._prevOutput;
+        float phaseoff3 = l3 * _modindex[3] * _op_amplitude[3];
+        float phaseoff2 = l2 * _modindex[2] * _op_amplitude[2];
+        float phaseoff1 = l1 * _modindex[1] * _op_amplitude[1];
 
-        float o3 = _fmosc[3].compute(_f[3], m3 * FBL());
-        float o2 = _fmosc[2].compute(_f[2], m3);
-        float o1 = _fmosc[1].compute(_f[1], m2);
-        float o0 = _fmosc[0].compute(_f[0], m1);
+        float o3 = _phasemodosc[3].compute(_frequency[3], phaseoff3 * FBL());
+        float o2 = _phasemodosc[2].compute(_frequency[2], phaseoff3);
+        float o1 = _phasemodosc[1].compute(_frequency[1], phaseoff2);
+        float o0 = _phasemodosc[0].compute(_frequency[0], phaseoff1);
 
-        U[i] = o0 * _opa[0];
+        output[i] = o0 * _op_amplitude[0];
       }
     };
     /////////////////////////////////////////////////
@@ -105,26 +80,24 @@ struct fm4vcpriv {
       //     0
       auto& dspbuf   = *layer->_dspbuffer;
       int inumframes = layer->_dspwritecount;
-      float* U       = dspbuf.channel(0) + layer->_dspwritebase;
+      float* output  = dspbuf.channel(_dspchannel) + layer->_dspwritebase;
 
       for (int i = 0; i < inumframes; i++) {
         updateControllers();
         computeOpParms();
-        float l3 = _fmosc[3]._prevOutput;
-        float l2 = _fmosc[2]._prevOutput;
-        float l1 = _fmosc[1]._prevOutput;
-        float l0 = _fmosc[0]._prevOutput;
-        float m3 = l3 * _mi[3] * _opa[3];
-        float m2 = l2 * _mi[2] * _opa[2];
-        float m1 = l1 * _mi[1] * _opa[1];
-        float m0 = l0 * _mi[0] * _opa[0];
+        float l3        = _phasemodosc[3]._prevOutput;
+        float l2        = _phasemodosc[2]._prevOutput;
+        float l1        = _phasemodosc[1]._prevOutput;
+        float phaseoff3 = l3 * _modindex[3] * _op_amplitude[3];
+        float phaseoff2 = l2 * _modindex[2] * _op_amplitude[2];
+        float phaseoff1 = l1 * _modindex[1] * _op_amplitude[1];
 
-        float o3 = _fmosc[3].compute(_f[3], m3 * FBL());
-        float o2 = _fmosc[2].compute(_f[2], m3);
-        float o1 = _fmosc[1].compute(_f[1], m2);
-        float o0 = _fmosc[0].compute(_f[0], (m1 + m3));
+        float o3 = _phasemodosc[3].compute(_frequency[3], phaseoff3 * FBL());
+        float o2 = _phasemodosc[2].compute(_frequency[2], phaseoff3);
+        float o1 = _phasemodosc[1].compute(_frequency[1], phaseoff2);
+        float o0 = _phasemodosc[0].compute(_frequency[0], (phaseoff1 + phaseoff3));
 
-        U[i] = o0 * _opa[0];
+        output[i] = o0 * _op_amplitude[0];
       }
     };
     /////////////////////////////////////////////////
@@ -134,26 +107,24 @@ struct fm4vcpriv {
       //     0
       auto& dspbuf   = *layer->_dspbuffer;
       int inumframes = layer->_dspwritecount;
-      float* U       = dspbuf.channel(0) + layer->_dspwritebase;
+      float* output  = dspbuf.channel(_dspchannel) + layer->_dspwritebase;
 
       for (int i = 0; i < inumframes; i++) {
         updateControllers();
         computeOpParms();
-        float l3 = _fmosc[3]._prevOutput;
-        float l2 = _fmosc[2]._prevOutput;
-        float l1 = _fmosc[1]._prevOutput;
-        float l0 = _fmosc[0]._prevOutput;
-        float m3 = l3 * _mi[3] * _opa[3];
-        float m2 = l2 * _mi[2] * _opa[2];
-        float m1 = l1 * _mi[1] * _opa[1];
-        float m0 = l0 * _mi[0] * _opa[0];
+        float l3        = _phasemodosc[3]._prevOutput;
+        float l2        = _phasemodosc[2]._prevOutput;
+        float l1        = _phasemodosc[1]._prevOutput;
+        float phaseoff3 = l3 * _modindex[3] * _op_amplitude[3];
+        float phaseoff2 = l2 * _modindex[2] * _op_amplitude[2];
+        float phaseoff1 = l1 * _modindex[1] * _op_amplitude[1];
 
-        float o3 = _fmosc[3].compute(_f[3], m3 * FBL());
-        float o2 = _fmosc[2].compute(_f[2], m3);
-        float o1 = _fmosc[1].compute(_f[1], 0.0f);
-        float o0 = _fmosc[0].compute(_f[0], (m1 + m2));
+        float o3 = _phasemodosc[3].compute(_frequency[3], phaseoff3 * FBL());
+        float o2 = _phasemodosc[2].compute(_frequency[2], phaseoff3);
+        float o1 = _phasemodosc[1].compute(_frequency[1], 0.0f);
+        float o0 = _phasemodosc[0].compute(_frequency[0], (phaseoff1 + phaseoff2));
 
-        U[i] = o0 * _opa[0];
+        output[i] = o0 * _op_amplitude[0];
       }
     };
     /////////////////////////////////////////////////
@@ -162,56 +133,49 @@ struct fm4vcpriv {
       // 0  2
       auto& dspbuf   = *layer->_dspbuffer;
       int inumframes = layer->_dspwritecount;
-      float* U       = dspbuf.channel(0) + layer->_dspwritebase;
+      float* output  = dspbuf.channel(_dspchannel) + layer->_dspwritebase;
 
       for (int i = 0; i < inumframes; i++) {
         updateControllers();
         computeOpParms();
-        float l3 = _fmosc[3]._prevOutput;
-        float l2 = _fmosc[2]._prevOutput;
-        float l1 = _fmosc[1]._prevOutput;
-        float l0 = _fmosc[0]._prevOutput;
-        float m3 = l3 * _mi[3] * _opa[3];
-        float m2 = l2 * _mi[2] * _opa[2];
-        float m1 = l1 * _mi[1] * _opa[1];
-        float m0 = l0 * _mi[0] * _opa[0];
+        float l3        = _phasemodosc[3]._prevOutput;
+        float l1        = _phasemodosc[1]._prevOutput;
+        float phaseoff3 = l3 * _modindex[3] * _op_amplitude[3];
+        float phaseoff1 = l1 * _modindex[1] * _op_amplitude[1];
 
-        float o3 = _fmosc[3].compute(_f[3], m3 * FBL());
-        float o2 = _fmosc[2].compute(_f[2], m3);
-        float o1 = _fmosc[1].compute(_f[1], 0.0f);
-        float o0 = _fmosc[0].compute(_f[0], m1);
+        float o3 = _phasemodosc[3].compute(_frequency[3], phaseoff3 * FBL());
+        float o2 = _phasemodosc[2].compute(_frequency[2], phaseoff3);
+        float o1 = _phasemodosc[1].compute(_frequency[1], 0.0f);
+        float o0 = _phasemodosc[0].compute(_frequency[0], phaseoff1);
 
-        // printf( "_mi[1]<%f>\n", _mi[1] );
-        U[i] = o0 * _opa[0] * _olev[0] + o2 * _opa[2] * _olev[2];
+        // printf( "_modindex[1]<%f>\n", _modindex[1] );
+        output[i] = o0 * _op_amplitude[0] * _olev[0] + //
+                    o2 * _op_amplitude[2] * _olev[2];
       }
     };
     /////////////////////////////////////////////////
     _alg[5] = [this](Layer* layer) {
       //   (3)
       //   / \
-            // 0  1  2
+      // 0  1  2
       auto& dspbuf   = *layer->_dspbuffer;
       int inumframes = layer->_dspwritecount;
-      float* U       = dspbuf.channel(0) + layer->_dspwritebase;
+      float* output  = dspbuf.channel(_dspchannel) + layer->_dspwritebase;
 
       for (int i = 0; i < inumframes; i++) {
         updateControllers();
         computeOpParms();
-        float l3 = _fmosc[3]._prevOutput;
-        float l2 = _fmosc[2]._prevOutput;
-        float l1 = _fmosc[1]._prevOutput;
-        float l0 = _fmosc[0]._prevOutput;
-        float m3 = l3 * _mi[3] * _opa[3];
-        float m2 = l2 * _mi[2] * _opa[2];
-        float m1 = l1 * _mi[1] * _opa[1];
-        float m0 = l0 * _mi[0] * _opa[0];
+        float l3        = _phasemodosc[3]._prevOutput;
+        float phaseoff3 = l3 * _modindex[3] * _op_amplitude[3];
 
-        float o3 = _fmosc[3].compute(_f[3], m3 * FBL());
-        float o2 = _fmosc[2].compute(_f[2], m3);
-        float o1 = _fmosc[1].compute(_f[1], 0.0f);
-        float o0 = _fmosc[0].compute(_f[0], m3);
+        float o3 = _phasemodosc[3].compute(_frequency[3], phaseoff3 * FBL());
+        float o2 = _phasemodosc[2].compute(_frequency[2], phaseoff3);
+        float o1 = _phasemodosc[1].compute(_frequency[1], 0.0f);
+        float o0 = _phasemodosc[0].compute(_frequency[0], phaseoff3);
 
-        U[i] = o0 * _opa[0] + o1 * _opa[1] + o2 * _opa[2];
+        output[i] = o0 * _op_amplitude[0] + //
+                    o1 * _op_amplitude[1] + //
+                    o2 * _op_amplitude[2];
       }
     };
     /////////////////////////////////////////////////
@@ -220,26 +184,22 @@ struct fm4vcpriv {
       // 0  1  2
       auto& dspbuf   = *layer->_dspbuffer;
       int inumframes = layer->_dspwritecount;
-      float* U       = dspbuf.channel(0) + layer->_dspwritebase;
+      float* output  = dspbuf.channel(_dspchannel) + layer->_dspwritebase;
 
       for (int i = 0; i < inumframes; i++) {
         updateControllers();
         computeOpParms();
-        float l3 = _fmosc[3]._prevOutput;
-        float l2 = _fmosc[2]._prevOutput;
-        float l1 = _fmosc[1]._prevOutput;
-        float l0 = _fmosc[0]._prevOutput;
-        float m3 = l3 * _mi[3] * _opa[3];
-        float m2 = l2 * _mi[2] * _opa[2];
-        float m1 = l1 * _mi[1] * _opa[1];
-        float m0 = l0 * _mi[0] * _opa[0];
+        float l3        = _phasemodosc[3]._prevOutput;
+        float phaseoff3 = l3 * _modindex[3] * _op_amplitude[3];
 
-        float o3 = _fmosc[3].compute(_f[3], m3 * FBL());
-        float o2 = _fmosc[2].compute(_f[2], m3);
-        float o1 = _fmosc[1].compute(_f[1], 0.0f);
-        float o0 = _fmosc[0].compute(_f[0], 0.0f);
+        float o3 = _phasemodosc[3].compute(_frequency[3], phaseoff3 * FBL());
+        float o2 = _phasemodosc[2].compute(_frequency[2], phaseoff3);
+        float o1 = _phasemodosc[1].compute(_frequency[1], 0.0f);
+        float o0 = _phasemodosc[0].compute(_frequency[0], 0.0f);
 
-        U[i] = o0 * _opa[0] + o1 * _opa[1] + o2 * _opa[2];
+        output[i] = o0 * _op_amplitude[0] + //
+                    o1 * _op_amplitude[1] + //
+                    o2 * _op_amplitude[2];
       }
     };
     /////////////////////////////////////////////////
@@ -247,26 +207,23 @@ struct fm4vcpriv {
       //   0  1  2 (3)
       auto& dspbuf   = *layer->_dspbuffer;
       int inumframes = layer->_dspwritecount;
-      float* U       = dspbuf.channel(0) + layer->_dspwritebase;
+      float* output  = dspbuf.channel(_dspchannel) + layer->_dspwritebase;
 
       for (int i = 0; i < inumframes; i++) {
         updateControllers();
         computeOpParms();
-        float l3 = _fmosc[3]._prevOutput;
-        float l2 = _fmosc[2]._prevOutput;
-        float l1 = _fmosc[1]._prevOutput;
-        float l0 = _fmosc[0]._prevOutput;
-        float m3 = l3 * _mi[3] * _opa[3];
-        float m2 = l2 * _mi[2] * _opa[2];
-        float m1 = l1 * _mi[1] * _opa[1];
-        float m0 = l0 * _mi[0] * _opa[0];
+        float l3        = _phasemodosc[3]._prevOutput;
+        float phaseoff3 = l3 * _modindex[3] * _op_amplitude[3];
 
-        float o3 = _fmosc[3].compute(_f[3], m3 * FBL());
-        float o2 = _fmosc[2].compute(_f[2], 0.0f);
-        float o1 = _fmosc[1].compute(_f[1], 0.0f);
-        float o0 = _fmosc[0].compute(_f[0], 0.0f);
+        float o3 = _phasemodosc[3].compute(_frequency[3], phaseoff3 * FBL());
+        float o2 = _phasemodosc[2].compute(_frequency[2], 0.0f);
+        float o1 = _phasemodosc[1].compute(_frequency[1], 0.0f);
+        float o0 = _phasemodosc[0].compute(_frequency[0], 0.0f);
 
-        U[i] = o0 * _opa[0] + o1 * _opa[1] + o2 * _opa[2] + o3 * _opa[3];
+        output[i] = o0 * _op_amplitude[0] + //
+                    o1 * _op_amplitude[1] + //
+                    o2 * _op_amplitude[2] + //
+                    o3 * _op_amplitude[3];
       }
     };
     /////////////////////////////////////////////////
@@ -281,22 +238,13 @@ struct fm4vcpriv {
     float crate = getControlRate();
   }
   //////////////////////////////////////////////////////////////
-  void computeOpParms() {
-    _mi[0] = computeModIndex(0);
-    _mi[1] = computeModIndex(1);
-    _mi[2] = computeModIndex(2);
-    _mi[3] = computeModIndex(3);
-    _f[0]  = computeOpFrq(0);
-    _f[1]  = computeOpFrq(1);
-    _f[2]  = computeOpFrq(2);
-    _f[3]  = computeOpFrq(3);
+  float computeModIndex(int op) const {
+    return _data._ops[op]._modIndex;
   }
   //////////////////////////////////////////////////////////////
   float computeOpFrq(int op) const {
     const auto& opd = _data._ops[op];
-    bool fixed      = opd._fixedFrqMode;
-
-    if (fixed) {
+    if (opd._fixedFrqMode) {
       return opd._frqFixed;
     } else {
       float f = midi_note_to_frequency(_note) * opd._frqRatio;
@@ -304,9 +252,12 @@ struct fm4vcpriv {
     }
   }
   //////////////////////////////////////////////////////////////
-  float computeModIndex(int op) const {
-    const auto& opd = _data._ops[op];
-    return opd._modIndex;
+  void computeOpParms() {
+    for (int i = 0; i < 4; i++) {
+      _modindex[i]  = computeModIndex(i);
+      _frequency[i] = computeOpFrq(i);
+      // printf("op<%d> f<%g> mi<%g>\n", i, _frequency[i], _modindex[i]);
+    }
   }
   //////////////////////////////////////////////////////////////
   // op<3> ol<99> tl<0> mi<25.132742>
@@ -318,14 +269,14 @@ struct fm4vcpriv {
     _curlayer = l;
     _newnote  = true;
     for (int i = 0; i < 4; i++) {
-      const auto& opd = _data._ops[i];
-      _mi[i]          = 0.0f;
-      _opa[i]         = 0.0f;
-      _ratio[i]       = 0.0f;
-      _fixed[i]       = 0.0f;
-      _f[i]           = 0.0f;
+      const auto& opd  = _data._ops[i];
+      _modindex[i]     = 0.0f;
+      _op_amplitude[i] = 0.0f;
+      _ratio[i]        = 0.0f;
+      _fixed[i]        = 0.0f;
+      _frequency[i]    = 0.0f;
       DspKeyOnInfo koi;
-      _fmosc[i].keyOn(koi, opd);
+      _phasemodosc[i].keyOn(koi, opd);
       _olev[i] = float(opd._outLevel) / 99.0f;
     }
 
@@ -344,15 +295,15 @@ struct fm4vcpriv {
   }
   //////////////////////////////////////////////////////////////
 
-  FmOsc _fmosc[4];
+  FmOsc _phasemodosc[4];
 
   fm4alg_t _curalg;
   Fm4ProgData _data;
   fm4alg_t _alg[8];
-  float _mi[4];
-  float _f[4];
+  float _modindex[4];
+  float _frequency[4];
   float _xegval[4];
-  float _opa[4];
+  float _op_amplitude[4];
   float _ratio[4];
   float _fixed[4];
   float _olev[4];
@@ -360,43 +311,52 @@ struct fm4vcpriv {
   int _note;
   Layer* _curlayer;
 };
-
+///////////////////////////////////////////////////////////////////////////////
 fm4syn::fm4syn() {
   auto priv = new fm4vcpriv;
   _pimpl.Set<fm4vcpriv*>(priv);
 }
+///////////////////////////////////////////////////////////////////////////////
 void fm4syn::compute(Layer* layer) {
   auto priv = _pimpl.Get<fm4vcpriv*>();
   for (int i = 0; i < 4; i++) {
-    priv->_opa[i] = _opAmp[i];
+    priv->_op_amplitude[i] = _opAmp[i];
     // printf( "got amp<%d:%f>\n", i, _opAmp[i] );
   }
   priv->callalg(layer);
 }
+///////////////////////////////////////////////////////////////////////////////
 void fm4syn::keyOn(const DspKeyOnInfo& koi) {
   _opAmp[0]  = 0.0f;
   _opAmp[1]  = 0.0f;
   _opAmp[2]  = 0.0f;
   _opAmp[3]  = 0.0f;
   auto dspb  = koi._prv;
-  auto& dbd  = dspb->_dbd;
+  auto dbd   = dspb->_dbd;
   auto progd = dbd->_vars.typedValueForKey<fm4prgdata_ptr_t>("FM4").value();
   auto l     = koi._layer;
 
   // int curpitch = l->_curnote;
   printf("_curnote<%d>\n", l->_curnote);
-  _data     = *progd;
-  auto priv = _pimpl.Get<fm4vcpriv*>();
+  _data             = *progd;
+  auto priv         = _pimpl.Get<fm4vcpriv*>();
+  priv->_dspchannel = dbd->_dspchannel[0];
 
   priv->_note   = l->_curnote + (_data._middleC - 24);
   priv->_curalg = priv->_alg[_data._alg];
   priv->_data   = *progd;
 
-  l->_HKF._miscText = ork::FormatString("FM4 alg<%d> fbl<%d> MIDC<%d>\n", _data._alg, _data._feedback, _data._middleC);
-  l->_HKF._useFm4   = true;
+  l->_HKF._miscText = ork::FormatString(
+      "FM4 alg<%d> fbl<%d> MIDC<%d>\n", //
+      _data._alg,
+      _data._feedback,
+      _data._middleC);
+  l->_HKF._useFm4 = true;
 
   priv->keyOn(l);
 }
+
+///////////////////////////////////////////////////////////////////////////////
 void fm4syn::keyOff() {
   auto priv = _pimpl.Get<fm4vcpriv*>();
   priv->keyOff();
@@ -407,28 +367,29 @@ void fm4syn::keyOff() {
 FM4::FM4(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
-void FM4::compute(DspBuffer& dspbuf) // final
-{
+
+///////////////////////////////////////////////////////////////////////////////
+void FM4::compute(DspBuffer& dspbuf) { // final
   for (int i = 0; i < 4; i++) {
     _fval[i]       = _param[i].eval();
     _fm4._opAmp[i] = _fval[i];
   }
-  int inumframes = _layer->_dspwritecount;
-  float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
-  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-  //_layer->_curPitchOffsetInCents = centoff;
   _fm4.compute(_layer);
 }
 
-void FM4::doKeyOn(const DspKeyOnInfo& koi) // final
-{
+///////////////////////////////////////////////////////////////////////////////
+
+void FM4::doKeyOn(const DspKeyOnInfo& koi) { // final
   _fm4.keyOn(koi);
-  //_spOsc.keyOn(koi);
 }
-void FM4::doKeyOff() // final
-{
+
+///////////////////////////////////////////////////////////////////////////////
+
+void FM4::doKeyOff() { // final
   _fm4.keyOff();
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 FM4Data::FM4Data(fm4prgdata_ptr_t fmdata)
     : _fmdata(fmdata) {
@@ -438,37 +399,42 @@ FM4Data::FM4Data(fm4prgdata_ptr_t fmdata)
   addParam().useDefaultEvaluator(); // amp3
   _vars.makeValueForKey<fm4prgdata_ptr_t>("FM4") = _fmdata;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 dspblk_ptr_t FM4Data::createInstance() const {
   return std::make_shared<FM4>(this);
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, fm4prgdata_ptr_t prgdata) {
   auto algdout        = std::make_shared<AlgData>();
   layerdata->_algdata = algdout;
   algdout->_name      = ork::FormatString("tx81z<%d>", prgdata->_alg);
   //////////////////////////////////////////
-  auto stage_ops = algdout->appendStage("OPS");
-  auto stage_amp = algdout->appendStage("AMP");
-  auto stage_mix = algdout->appendStage("MIX"); // todo : quadraphonic, 3d?
+  auto stage_ops       = algdout->appendStage("OPS");
+  auto stage_amp       = algdout->appendStage("AMP");
+  auto stage_modindexx = algdout->appendStage("MIX"); // todo : quadraphonic, 3d?
   //////////////////////////////////////////
   stage_ops->setNumIos(1, 1);
   stage_amp->setNumIos(1, 1);
-  stage_mix->setNumIos(1, 2); // 1 in, 2 out
+  stage_modindexx->setNumIos(1, 2); // 1 in, 2 out
   /////////////////////////////////////////////////
   auto ops = stage_ops->appendTypedBlock<FM4>(prgdata);
   /////////////////////////////////////////////////
   // stereo mix out
   /////////////////////////////////////////////////
-  auto stereoout        = stage_mix->appendTypedBlock<MonoInStereoOut>();
+  auto stereoout        = stage_modindexx->appendTypedBlock<MonoInStereoOut>();
   auto STEREOC          = layerdata->appendController<CustomControllerData>("DCO1DETUNE");
   auto& stereo_mod      = stereoout->_paramd[0]._mods;
   stereo_mod._src1      = STEREOC;
   stereo_mod._src1Depth = 1.0f;
   STEREOC->_onkeyon     = [](CustomControllerInst* cci, //
                          const KeyOnInfo& KOI) {    //
-    cci->_curval = 0.125f;                          // amplitude to unity
+    cci->_curval = 1.0f;                            // amplitude to unity
   };
-  //////////////////////////////////////////
 }
 
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

@@ -45,7 +45,7 @@ struct Fm4ProgData {
   int _lfoWave        = 0;
   int _ampSensa       = 0;
   int _pchSensa       = 0;
-  int _middleC        = 0;
+  int _middleC        = 24;
   int _pitchBendRange = 0;
   bool _mono          = false;
   bool _portMode      = false;
