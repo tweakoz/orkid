@@ -1,19 +1,21 @@
 #include <math.h>
 #include <assert.h>
+#include <ork/kernel/string/string.h>
 #include <ork/lev2/aud/singularity/tx81z.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/fmosc.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
-#include <ork/kernel/string/string.h>
+#include <ork/lev2/aud/singularity/alg_amp.h>
+#include <ork/lev2/aud/singularity/dsp_mix.h>
 
 namespace ork::audio::singularity {
 
-typedef std::function<void(DspBuffer& dspbuf)> fm4alg_t;
+typedef std::function<void(Layer* layer)> fm4alg_t;
 
 struct fm4vcpriv {
 
-  void callalg(DspBuffer& dspbuf) {
-    _curalg(dspbuf);
+  void callalg(Layer* layer) {
+    _curalg(layer);
 
     // auto& HAF = _curlayer->_HAF;
 
@@ -42,10 +44,11 @@ struct fm4vcpriv {
   }
   fm4vcpriv() {
     /////////////////////////////////////////////////
-    _alg[0] = [this](DspBuffer& dspbuf) {
+    _alg[0] = [this](Layer* layer) {
       //   (3)->2->1->0
-      int inumframes = synth::instance()->_numFrames;
-      float* U       = dspbuf.channel(0);
+      auto& dspbuf   = *layer->_dspbuffer;
+      int inumframes = layer->_dspwritecount;
+      float* U       = dspbuf.channel(0) + layer->_dspwritebase;
 
       for (int i = 0; i < inumframes; i++) {
         updateControllers();
@@ -68,11 +71,12 @@ struct fm4vcpriv {
       }
     };
     /////////////////////////////////////////////////
-    _alg[1] = [this](DspBuffer& dspbuf) {
-      //  (3)\
-            //   2->1->0
-      int inumframes = synth::instance()->_numFrames;
-      float* U       = dspbuf.channel(0);
+    _alg[1] = [this](Layer* layer) {
+      //     (3)
+      //   2->1->0
+      auto& dspbuf   = *layer->_dspbuffer;
+      int inumframes = layer->_dspwritecount;
+      float* U       = dspbuf.channel(0) + layer->_dspwritebase;
 
       for (int i = 0; i < inumframes; i++) {
         updateControllers();
@@ -95,12 +99,13 @@ struct fm4vcpriv {
       }
     };
     /////////////////////////////////////////////////
-    _alg[2] = [this](DspBuffer& dspbuf) {
+    _alg[2] = [this](Layer* layer) {
       //   2
       //   1  (3)
       //     0
-      int inumframes = synth::instance()->_numFrames;
-      float* U       = dspbuf.channel(0);
+      auto& dspbuf   = *layer->_dspbuffer;
+      int inumframes = layer->_dspwritecount;
+      float* U       = dspbuf.channel(0) + layer->_dspwritebase;
 
       for (int i = 0; i < inumframes; i++) {
         updateControllers();
@@ -123,12 +128,13 @@ struct fm4vcpriv {
       }
     };
     /////////////////////////////////////////////////
-    _alg[3] = [this](DspBuffer& dspbuf) {
-      //    (3)
-      //   1 2
-      //    0
-      int inumframes = synth::instance()->_numFrames;
-      float* U       = dspbuf.channel(0);
+    _alg[3] = [this](Layer* layer) {
+      //      (3)
+      //   1   2
+      //     0
+      auto& dspbuf   = *layer->_dspbuffer;
+      int inumframes = layer->_dspwritecount;
+      float* U       = dspbuf.channel(0) + layer->_dspwritebase;
 
       for (int i = 0; i < inumframes; i++) {
         updateControllers();
@@ -151,11 +157,12 @@ struct fm4vcpriv {
       }
     };
     /////////////////////////////////////////////////
-    _alg[4] = [this](DspBuffer& dspbuf) {
+    _alg[4] = [this](Layer* layer) {
       // 1 (3)
       // 0  2
-      int inumframes = synth::instance()->_numFrames;
-      float* U       = dspbuf.channel(0);
+      auto& dspbuf   = *layer->_dspbuffer;
+      int inumframes = layer->_dspwritecount;
+      float* U       = dspbuf.channel(0) + layer->_dspwritebase;
 
       for (int i = 0; i < inumframes; i++) {
         updateControllers();
@@ -179,12 +186,13 @@ struct fm4vcpriv {
       }
     };
     /////////////////////////////////////////////////
-    _alg[5] = [this](DspBuffer& dspbuf) {
+    _alg[5] = [this](Layer* layer) {
       //   (3)
       //   / \
             // 0  1  2
-      int inumframes = synth::instance()->_numFrames;
-      float* U       = dspbuf.channel(0);
+      auto& dspbuf   = *layer->_dspbuffer;
+      int inumframes = layer->_dspwritecount;
+      float* U       = dspbuf.channel(0) + layer->_dspwritebase;
 
       for (int i = 0; i < inumframes; i++) {
         updateControllers();
@@ -207,11 +215,12 @@ struct fm4vcpriv {
       }
     };
     /////////////////////////////////////////////////
-    _alg[6] = [this](DspBuffer& dspbuf) {
+    _alg[6] = [this](Layer* layer) {
       //      (3)
       // 0  1  2
-      int inumframes = synth::instance()->_numFrames;
-      float* U       = dspbuf.channel(0);
+      auto& dspbuf   = *layer->_dspbuffer;
+      int inumframes = layer->_dspwritecount;
+      float* U       = dspbuf.channel(0) + layer->_dspwritebase;
 
       for (int i = 0; i < inumframes; i++) {
         updateControllers();
@@ -234,10 +243,11 @@ struct fm4vcpriv {
       }
     };
     /////////////////////////////////////////////////
-    _alg[7] = [this](DspBuffer& dspbuf) {
+    _alg[7] = [this](Layer* layer) {
       //   0  1  2 (3)
-      int inumframes = synth::instance()->_numFrames;
-      float* U       = dspbuf.channel(0);
+      auto& dspbuf   = *layer->_dspbuffer;
+      int inumframes = layer->_dspwritecount;
+      float* U       = dspbuf.channel(0) + layer->_dspwritebase;
 
       for (int i = 0; i < inumframes; i++) {
         updateControllers();
@@ -268,7 +278,7 @@ struct fm4vcpriv {
   }
   //////////////////////////////////////////////////////////////
   void updateControllers() {
-    float dt = 256 / 48000.0f;
+    float crate = getControlRate();
   }
   //////////////////////////////////////////////////////////////
   void computeOpParms() {
@@ -355,13 +365,13 @@ fm4syn::fm4syn() {
   auto priv = new fm4vcpriv;
   _pimpl.Set<fm4vcpriv*>(priv);
 }
-void fm4syn::compute(DspBuffer& dspbuf) {
+void fm4syn::compute(Layer* layer) {
   auto priv = _pimpl.Get<fm4vcpriv*>();
   for (int i = 0; i < 4; i++) {
     priv->_opa[i] = _opAmp[i];
     // printf( "got amp<%d:%f>\n", i, _opAmp[i] );
   }
-  priv->callalg(dspbuf);
+  priv->callalg(layer);
 }
 void fm4syn::keyOn(const DspKeyOnInfo& koi) {
   _opAmp[0]  = 0.0f;
@@ -370,11 +380,11 @@ void fm4syn::keyOn(const DspKeyOnInfo& koi) {
   _opAmp[3]  = 0.0f;
   auto dspb  = koi._prv;
   auto& dbd  = dspb->_dbd;
-  auto progd = dbd->_vars.typedValueForKey<Fm4ProgData*>("FM4").value();
+  auto progd = dbd->_vars.typedValueForKey<fm4prgdata_ptr_t>("FM4").value();
   auto l     = koi._layer;
 
   // int curpitch = l->_curnote;
-  // printf( "_curnote<%d>\n", l->_curnote );
+  printf("_curnote<%d>\n", l->_curnote);
   _data     = *progd;
   auto priv = _pimpl.Get<fm4vcpriv*>();
 
@@ -390,6 +400,76 @@ void fm4syn::keyOn(const DspKeyOnInfo& koi) {
 void fm4syn::keyOff() {
   auto priv = _pimpl.Get<fm4vcpriv*>();
   priv->keyOff();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+FM4::FM4(const DspBlockData* dbd)
+    : DspBlock(dbd) {
+}
+void FM4::compute(DspBuffer& dspbuf) // final
+{
+  for (int i = 0; i < 4; i++) {
+    _fval[i]       = _param[i].eval();
+    _fm4._opAmp[i] = _fval[i];
+  }
+  int inumframes = _layer->_dspwritecount;
+  float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  //_layer->_curPitchOffsetInCents = centoff;
+  _fm4.compute(_layer);
+}
+
+void FM4::doKeyOn(const DspKeyOnInfo& koi) // final
+{
+  _fm4.keyOn(koi);
+  //_spOsc.keyOn(koi);
+}
+void FM4::doKeyOff() // final
+{
+  _fm4.keyOff();
+}
+
+FM4Data::FM4Data(fm4prgdata_ptr_t fmdata)
+    : _fmdata(fmdata) {
+  addParam().useDefaultEvaluator(); // amp0
+  addParam().useDefaultEvaluator(); // amp1
+  addParam().useDefaultEvaluator(); // amp2
+  addParam().useDefaultEvaluator(); // amp3
+  _vars.makeValueForKey<fm4prgdata_ptr_t>("FM4") = _fmdata;
+}
+dspblk_ptr_t FM4Data::createInstance() const {
+  return std::make_shared<FM4>(this);
+}
+
+algdata_ptr_t configureTx81zAlgorithm(lyrdata_ptr_t layerdata, fm4prgdata_ptr_t prgdata) {
+  auto algdout        = std::make_shared<AlgData>();
+  layerdata->_algdata = algdout;
+  algdout->_name      = ork::FormatString("tx81z<%d>", prgdata->_alg);
+  //////////////////////////////////////////
+  auto stage_ops = algdout->appendStage("OPS");
+  auto stage_amp = algdout->appendStage("AMP");
+  auto stage_mix = algdout->appendStage("MIX"); // todo : quadraphonic, 3d?
+  //////////////////////////////////////////
+  stage_ops->setNumIos(1, 1);
+  stage_amp->setNumIos(1, 1);
+  stage_mix->setNumIos(1, 2); // 1 in, 2 out
+  /////////////////////////////////////////////////
+  auto ops = stage_ops->appendTypedBlock<FM4>(prgdata);
+  /////////////////////////////////////////////////
+  // stereo mix out
+  /////////////////////////////////////////////////
+  auto stereoout        = stage_mix->appendTypedBlock<MonoInStereoOut>();
+  auto STEREOC          = layerdata->appendController<CustomControllerData>("DCO1DETUNE");
+  auto& stereo_mod      = stereoout->_paramd[0]._mods;
+  stereo_mod._src1      = STEREOC;
+  stereo_mod._src1Depth = 1.0f;
+  STEREOC->_onkeyon     = [](CustomControllerInst* cci, //
+                         const KeyOnInfo& KOI) {    //
+    cci->_curval = 1.0f;                            // amplitude to unity
+  };
+  //////////////////////////////////////////
+  return algdout;
 }
 
 } // namespace ork::audio::singularity

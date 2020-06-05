@@ -467,37 +467,6 @@ void PWM::doKeyOn(const DspKeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FM4::FM4(const DspBlockData* dbd)
-    : DspBlock(dbd) {
-  _fm4 = new fm4syn;
-}
-void FM4::compute(DspBuffer& dspbuf) // final
-{
-  for (int i = 0; i < 4; i++) {
-    _fval[i]        = _param[i].eval();
-    _fm4->_opAmp[i] = _fval[i];
-  }
-  int inumframes = _layer->_dspwritecount;
-  float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
-  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-  //_layer->_curPitchOffsetInCents = centoff;
-  _fm4->compute(dspbuf);
-}
-
-void FM4::doKeyOn(const DspKeyOnInfo& koi) // final
-{
-  _fm4->keyOn(koi);
-  //_spOsc.keyOn(koi);
-}
-void FM4::doKeyOff() // final
-{
-  _fm4->keyOff();
-}
-void FM4::initBlock(dspblkdata_ptr_t blockdata) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 NOISE::NOISE(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }

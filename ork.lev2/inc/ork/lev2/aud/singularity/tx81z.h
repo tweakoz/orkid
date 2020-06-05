@@ -1,6 +1,7 @@
 #pragma once
 #include <ork/kernel/svariant.h>
 #include "synthdata.h"
+#include "dspblocks.h"
 #include <ork/file/path.h>
 
 namespace ork::audio::singularity {
@@ -32,6 +33,7 @@ struct Fm4OpData {
   float _frqRatio = 1.0f;
   float _frqFixed = 0.0f;
 };
+
 struct Fm4ProgData {
   int _alg            = 0;
   int _feedback       = 0;
@@ -50,11 +52,14 @@ struct Fm4ProgData {
   int _portRate       = 0;
   Fm4OpData _ops[4];
 };
+
+using fm4prgdata_ptr_t = std::shared_ptr<Fm4ProgData>;
+
 struct DspKeyOnInfo;
 struct DspBuffer;
 struct fm4syn {
   fm4syn();
-  void compute(DspBuffer& dspbuf);
+  void compute(Layer* layer);
   void keyOn(const DspKeyOnInfo& koi);
   void keyOff();
 
@@ -82,6 +87,26 @@ struct op4frame {
 };
 
 hudpanel_ptr_t create_op4panel();
+
+///////////////////////////////////////////////////////////////////////////////
+struct FM4Data final : public DspBlockData {
+  FM4Data(fm4prgdata_ptr_t fmdata);
+  dspblk_ptr_t createInstance() const override;
+  fm4prgdata_ptr_t _fmdata;
+};
+
+struct FM4 final : public DspBlock {
+  using dataclass_t = FM4Data;
+  FM4(const DspBlockData* dbd);
+  void compute(DspBuffer& dspbuf) override;
+  void doKeyOn(const DspKeyOnInfo& koi) override;
+  void doKeyOff() override;
+  fm4syn _fm4;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+algdata_ptr_t configureTx81zAlgorithm(lyrdata_ptr_t layerdata, fm4prgdata_ptr_t fmdata);
 
 ///////////////////////////////////////////////////////////////////////////////
 

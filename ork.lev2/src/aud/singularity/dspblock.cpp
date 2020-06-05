@@ -235,8 +235,6 @@ dspblk_ptr_t createDspBlock(const DspBlockData* dbd) {
   if (dbd->_blocktype == "PWM")
     rval = std::make_shared<PWM>(dbd);
 
-  if (dbd->_blocktype == "FM4")
-    rval = std::make_shared<FM4>(dbd);
   if (dbd->_blocktype == "NOISE")
     rval = std::make_shared<NOISE>(dbd);
 

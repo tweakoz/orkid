@@ -77,17 +77,6 @@ struct PWM : public DspBlock {
   void doKeyOn(const DspKeyOnInfo& koi) final;
 };
 
-struct fm4syn;
-
-struct FM4 : public DspBlock {
-  FM4(const DspBlockData* dbd);
-  void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
-  void doKeyOff() final;
-  fm4syn* _fm4;
-  static void initBlock(dspblkdata_ptr_t blockdata);
-};
-
 struct NOISE : public DspBlock {
   NOISE(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
