@@ -109,8 +109,12 @@ int main(int argc, char** argv) {
     double _cur_time  = 0.0;
     double _prev_time = 0.0;
     lev2::Font* _font;
-    int _charw = 0;
-    int _charh = 0;
+    int _charw             = 0;
+    int _charh             = 0;
+    double _underrunrate   = 0;
+    int _numunderruns      = 0;
+    double _maxvoices      = 4.0;
+    double _accumnumvoices = 0.0;
   };
   auto app = std::make_shared<SingularityBenchMarkApp>(argc, argv);
   //////////////////////////////////////////////////////////////////////////////
@@ -134,15 +138,14 @@ int main(int argc, char** argv) {
   app->onUpdate([=](ui::updatedata_ptr_t updata) {
     const auto& obuf = the_synth->_obuf;
     /////////////////////////////////////////
-    double upd_time         = 0.0;
-    bool done               = false;
-    constexpr int maxvoices = 128;
+    double upd_time = 0.0;
+    bool done       = false;
     while (done == false) {
 
       int numcurvoices = the_synth->_numactivevoices.load();
-      if (numcurvoices < maxvoices) {
+      if (numcurvoices < int(app->_maxvoices)) {
         int irand = rand() & 0xffff;
-        if (irand < 24000)
+        if (irand < 32768)
           enqueue_audio_event(program, 0.0f, 2.0, 48);
       }
       the_synth->compute(KNUMFRAMES, app->_inpbuf);
@@ -158,6 +161,9 @@ int main(int argc, char** argv) {
       ///////////////////////////////////////////
       app->_prev_time = app->_cur_time;
       app->_numiters++;
+
+      app->_accumnumvoices += app->_maxvoices;
+
       done = upd_time > 1.0 / 60.0;
     }
   });
@@ -232,6 +238,14 @@ int main(int argc, char** argv) {
         }
       }
       avgbin /= avgdiv;
+
+      if (numunderruns <= app->_numunderruns) {
+        app->_maxvoices += 0.25;
+      } else {
+        app->_maxvoices -= 2.5;
+      }
+      app->_numunderruns = numunderruns;
+
       //////////////////////////////////////////////
       // draw histogram
       //////////////////////////////////////////////
@@ -285,14 +299,18 @@ int main(int argc, char** argv) {
 
           std::string str[8];
 
+          double avgnumvoices = app->_accumnumvoices / double(app->_numiters);
+
           context->PushModColor(fcolor4::White());
           lev2::FontMan::beginTextBlock(context);
           str[0] = "     Synth Compute Timing Histogram";
           str[1] = FormatString("NumIters<%d>", app->_numiters);
           str[2] = FormatString("NumActiveVoices<%d>", the_synth->_numactivevoices.load());
+          str[3] = FormatString("AvgActiveVoices<%d>", int(avgnumvoices));
           lev2::FontMan::DrawText(context, 32, y += 32, str[0].c_str());
           lev2::FontMan::DrawText(context, 32, y += 32, str[1].c_str());
           lev2::FontMan::DrawText(context, 32, y += 16, str[2].c_str());
+          lev2::FontMan::DrawText(context, 32, y += 16, str[3].c_str());
           lev2::FontMan::endTextBlock(context);
           context->PopModColor();
 

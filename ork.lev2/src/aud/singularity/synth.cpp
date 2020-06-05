@@ -71,13 +71,13 @@ synth::synth()
   _numactivevoices = 0;
   createOutputBus("main");
 
-  for (int i = 0; i < 256; i++) {
+  for (int i = 0; i < kmaxlayerspersynth; i++) {
     auto l = new Layer();
     _allVoices.insert(l);
     _freeVoices.insert(l);
   }
 
-  for (int i = 0; i < 256; i++) {
+  for (int i = 0; i < kmaxlayerspersynth; i++) {
     auto pi = new programInst();
     _freeProgInst.insert(pi);
     _allProgInsts.insert(pi);
