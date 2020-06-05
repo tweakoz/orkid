@@ -30,7 +30,7 @@ Some Features Include:
 * GLTF2-PBR/FBX/assimp import support
 * Realtime fixed function and node based compositor with offline rendering mode (dumps to image files on disk).
 * QT5/OpenGL based UI
-* Singularity - Pro synthesizer inspired audio engine. Loads Kurzweil k2000, CZ101, TX81Z and SF2 patches.
+* Singularity - Pro synthesizer inspired audio engine. Loads Kurzweil k2000, Casio CZ1, Yamaha TX81Z and SoundFont SF2 patches.
 * Now has OpenVR/Linux support!
 * Fairly lightweight build. A clean build builds in about 5 mins on a 2.8ghz 4core ivybridge 2013 macbook pro or 80 seconds on a 2.8ghz 20core ivybridge xeon. This time does not include time building dependencies (Qt5,OpenImageIO,etc..)
 * Many more...
