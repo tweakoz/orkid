@@ -99,7 +99,7 @@ void Layer::retain() {
 
 void Layer::release() {
   if ((--_keepalive) == 0) {
-    printf("LAYER<%p> DONE\n", this);
+    // printf("LAYER<%p> DONE\n", this);
     the_synth->freeLayer(this);
   }
   assert(_keepalive >= 0);

@@ -66,9 +66,9 @@ synth::synth()
     , _oswidth(0.0333333f * getSampleRate()) //
     , _ostriglev(0.05f) {                    //
 
-  _tempbus        = std::make_shared<OutputBus>();
-  _tempbus->_name = "temp-dsp";
-
+  _tempbus         = std::make_shared<OutputBus>();
+  _tempbus->_name  = "temp-dsp";
+  _numactivevoices = 0;
   createOutputBus("main");
 
   for (int i = 0; i < 256; i++) {
@@ -114,7 +114,8 @@ void synth::tick(float dt) {
   while (false == done) {
     done    = true;
     auto it = _eventmap.begin();
-    if (it != _eventmap.end() && it->first <= _timeaccum) {
+    if (it != _eventmap.end() and //
+        it->first <= _timeaccum) {
       auto& event = it->second;
       event();
       done = false;
@@ -171,6 +172,7 @@ void synth::deactivateVoices() {
 
     done = (_deactiveateVoiceQ.size() == 0);
   }
+  _numactivevoices = _activeVoices.size();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -454,8 +456,8 @@ void programInst::keyOn(int note, prgdata_constptr_t pd) {
   } else
     syn->_hudLayer = nullptr;
 
-  if (syn->_hudLayer)
-    syn->_hudbuf.push(syn->_hudLayer->_HKF);
+  // if (syn->_hudLayer)
+  // syn->_hudbuf.push(syn->_hudLayer->_HKF);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

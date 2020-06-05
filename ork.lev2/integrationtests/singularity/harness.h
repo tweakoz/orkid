@@ -36,14 +36,20 @@ inline void enqueue_audio_event(
     float time,
     float duration,
     int midinote) {
-  synth::instance()->addEvent(time, [=]() {
+  auto s = synth::instance();
+
+  if (time < s->_timeaccum) {
+    time = s->_timeaccum;
+  }
+
+  s->addEvent(time, [=]() {
     // NOTE ON
-    printf("time<%g> note<%d> program<%s>\n", time, midinote, prog->_name.c_str());
-    auto noteinstance = synth::instance()->keyOn(midinote, prog);
+    // printf("time<%g> note<%d> program<%s>\n", time, midinote, prog->_name.c_str());
+    auto noteinstance = s->keyOn(midinote, prog);
     assert(noteinstance);
     // NOTE OFF
-    synth::instance()->addEvent(time + duration, [=]() { //
-      synth::instance()->keyOff(noteinstance);
+    s->addEvent(time + duration, [=]() { //
+      s->keyOff(noteinstance);
     });
   });
 }

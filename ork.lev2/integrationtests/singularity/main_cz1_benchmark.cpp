@@ -45,8 +45,8 @@ int main(int argc, char** argv) {
   DCAENV->addSegment("seg0", .2, .7);
   DCAENV->addSegment("seg1", .2, .7);
   DCAENV->addSegment("seg2", 1, 1);
-  DCAENV->addSegment("seg3", 120, .3);
-  DCAENV->addSegment("seg4", 120, 0);
+  DCAENV->addSegment("seg3", 1, .3);
+  DCAENV->addSegment("seg4", 1, 0);
   //
   DCWENV->_ampenv = false;
   DCWENV->addSegment("seg0", 0.1, .7);
@@ -54,8 +54,8 @@ int main(int argc, char** argv) {
   DCWENV->addSegment("seg2", 2, .5);
   DCWENV->addSegment("seg3", 2, 1);
   DCWENV->addSegment("seg4", 2, 1);
-  DCWENV->addSegment("seg5", 40, 1);
-  DCWENV->addSegment("seg6", 40, 0);
+  DCWENV->addSegment("seg5", 1, 1);
+  DCWENV->addSegment("seg6", 1, 0);
   //////////////////////////////////////
   // setup LFO
   //////////////////////////////////////
@@ -88,12 +88,7 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   // benchmark
   //////////////////////////////////////////////////////////////////////////////
-  // enqueue test notes
-  constexpr int numvoices    = 128;
   constexpr size_t histosize = 65536;
-  for (int i = 0; i < numvoices; i++) {
-    enqueue_audio_event(program, double(i) * 0.001, 240.0, 48);
-  }
   /////////////////////////////////////////
   static constexpr size_t KNUMFRAMES = 512;
   struct SingularityBenchMarkApp final : public OrkEzQtApp {
@@ -139,9 +134,17 @@ int main(int argc, char** argv) {
   app->onUpdate([=](ui::updatedata_ptr_t updata) {
     const auto& obuf = the_synth->_obuf;
     /////////////////////////////////////////
-    double upd_time = 0.0;
-    bool done       = false;
+    double upd_time         = 0.0;
+    bool done               = false;
+    constexpr int maxvoices = 128;
     while (done == false) {
+
+      int numcurvoices = the_synth->_numactivevoices.load();
+      if (numcurvoices < maxvoices) {
+        int irand = rand() & 0xffff;
+        if (irand < 24000)
+          enqueue_audio_event(program, 0.0f, 2.0, 48);
+      }
       the_synth->compute(KNUMFRAMES, app->_inpbuf);
       app->_cur_time   = app->_timer.SecsSinceStart();
       double iter_time = app->_cur_time - app->_prev_time;
@@ -156,10 +159,6 @@ int main(int argc, char** argv) {
       app->_prev_time = app->_cur_time;
       app->_numiters++;
       done = upd_time > 1.0 / 60.0;
-      if (app->_numiters % 256 == 0) {
-        printf("_numiters<%d>                  \r", app->_numiters);
-        fflush(stdout);
-      }
     }
   });
   //////////////////////////////////////////////////////////////////////////////
@@ -284,38 +283,45 @@ int main(int argc, char** argv) {
         { //
           int y = 0;
 
+          std::string str[8];
+
           context->PushModColor(fcolor4::White());
           lev2::FontMan::beginTextBlock(context);
-          lev2::FontMan::DrawText(context, 32, y += 32, "Synth Compute Timing Histogram");
+          str[0] = "     Synth Compute Timing Histogram";
+          str[1] = FormatString("NumIters<%d>", app->_numiters);
+          str[2] = FormatString("NumActiveVoices<%d>", the_synth->_numactivevoices.load());
+          lev2::FontMan::DrawText(context, 32, y += 32, str[0].c_str());
+          lev2::FontMan::DrawText(context, 32, y += 32, str[1].c_str());
+          lev2::FontMan::DrawText(context, 32, y += 16, str[2].c_str());
           lev2::FontMan::endTextBlock(context);
           context->PopModColor();
 
           double minbin_time = 0.02 * double(minbin) / double(histosize);
           double maxbin_time = 0.02 * double(maxbin) / double(histosize);
           double avgbin_time = 0.02 * avgbin / double(histosize);
-          auto str0          = FormatString("Desired Blockperiod @ 48KhZ <%g msec>", desired_blockperiod);
-          auto str1          = FormatString("Min IterTime <%g msec>", minbin_time * 1000.0);
-          auto str2          = FormatString("Max IterTime <%g msec>", maxbin_time * 1000.0);
-          auto str3          = FormatString("Avg IterTime <%g msec>", avgbin_time * 1000.0);
-          auto str4          = FormatString("Number of Underruns <%d>", numunderruns);
+          str[0]             = FormatString("Min IterTime <%g msec>", minbin_time * 1000.0);
+          str[1]             = FormatString("Max IterTime <%g msec>", maxbin_time * 1000.0);
+          str[2]             = FormatString("Avg IterTime <%g msec>", avgbin_time * 1000.0);
 
           context->PushModColor(fcolor4::Green());
           lev2::FontMan::beginTextBlock(context);
-          lev2::FontMan::DrawText(context, 32, y += 16, str1.c_str());
-          lev2::FontMan::DrawText(context, 32, y += 16, str2.c_str());
-          lev2::FontMan::DrawText(context, 32, y += 16, str3.c_str());
+          lev2::FontMan::DrawText(context, 32, y += 16, str[0].c_str());
+          lev2::FontMan::DrawText(context, 32, y += 16, str[1].c_str());
+          lev2::FontMan::DrawText(context, 32, y += 16, str[2].c_str());
           lev2::FontMan::endTextBlock(context);
           context->PopModColor();
 
           context->PushModColor(fcolor4::Yellow());
           lev2::FontMan::beginTextBlock(context);
-          lev2::FontMan::DrawText(context, 32, y += 16, str0.c_str());
+          str[0] = FormatString("Desired Blockperiod @ 48KhZ <%g msec>", desired_blockperiod);
+          lev2::FontMan::DrawText(context, 32, y += 16, str[0].c_str());
           lev2::FontMan::endTextBlock(context);
           context->PopModColor();
 
           context->PushModColor(fcolor4::Red());
           lev2::FontMan::beginTextBlock(context);
-          lev2::FontMan::DrawText(context, 32, y += 16, str4.c_str());
+          str[0] = FormatString("Number of Underruns <%d>", numunderruns);
+          lev2::FontMan::DrawText(context, 32, y += 16, str[0].c_str());
           lev2::FontMan::endTextBlock(context);
           context->PopModColor();
         }

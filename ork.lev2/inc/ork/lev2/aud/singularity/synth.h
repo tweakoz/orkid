@@ -134,7 +134,7 @@ struct synth {
   Layer* _hudLayer   = nullptr;
   bool _clearhuddata = true;
   int _numFrames     = 0;
-
+  std::atomic<int> _numactivevoices;
   ork::MpMcBoundedQueue<ork::svar1024_t> _hudbuf;
 
   HudFrameControl _curhud_kframe;
