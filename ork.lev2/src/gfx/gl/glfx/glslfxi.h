@@ -566,10 +566,7 @@ public:
   void BindParamMatrixArray(const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) override;
   void BindParamU32(const FxShaderParam* hpar, uint32_t uval) override;
   void BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) override;
-
-#if !defined(__APPLE__)
   void BindParamU64(const FxShaderParam* hpar, uint64_t uval) override;
-#endif
 
   bool LoadFxShader(const AssetPath& pth, FxShader* ptex) override;
   FxShader* shaderFromShaderText(const std::string& name, const std::string& shadertext) override;

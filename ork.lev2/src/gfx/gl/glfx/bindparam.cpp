@@ -96,7 +96,6 @@ void Interface::BindParamU32(const FxShaderParam* hpar, uint32_t uval) {
     GL_ERRORCHECK();
   });
 }
-#if !defined(__APPLE__)
 void Interface::BindParamU64(const FxShaderParam* hpar, uint64_t uval) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_UNSIGNED_INT_VEC4);
@@ -110,7 +109,6 @@ void Interface::BindParamU64(const FxShaderParam* hpar, uint64_t uval) {
     GL_ERRORCHECK();
   });
 }
-#endif
 void Interface::BindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_FLOAT_MAT4);

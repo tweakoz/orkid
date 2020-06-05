@@ -83,6 +83,8 @@ public:
   }
   void BindParamU32(const FxShaderParam* hpar, U32 uval) final {
   }
+  void BindParamU64(const FxShaderParam* hpar, uint64_t uval) final {
+  }
   void BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) final {
   }
 

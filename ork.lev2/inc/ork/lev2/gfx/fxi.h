@@ -51,11 +51,7 @@ public:
   virtual void BindParamMatrixArray(const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) = 0;
   virtual void BindParamU32(const FxShaderParam* hpar, uint32_t uval)                             = 0;
   virtual void BindParamCTex(const FxShaderParam* hpar, const Texture* pTex)                      = 0;
-
-#if !defined(__APPLE__)
-  virtual void BindParamU64(const FxShaderParam* hpar, uint64_t uval) {
-  }
-#endif
+  virtual void BindParamU64(const FxShaderParam* hpar, uint64_t uval)                             = 0;
 
   void BindParamTex(const FxShaderParam* hpar, const lev2::TextureAsset* tex);
 
