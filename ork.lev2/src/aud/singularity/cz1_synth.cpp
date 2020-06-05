@@ -36,7 +36,7 @@ inline double sinc(double i) { // ph --1 .. +1
 algdata_ptr_t configureCz1Algorithm(lyrdata_ptr_t layerdata, int numosc) {
   auto algdout        = std::make_shared<AlgData>();
   layerdata->_algdata = algdout;
-  algdout->_name      = ork::FormatString("Cz1Alg");
+  algdout->_name      = ork::FormatString("Cz1<%d>", numosc);
   //////////////////////////////////////////
   auto stage_dco               = algdout->appendStage("DCO");
   auto stage_amp               = algdout->appendStage("AMP");

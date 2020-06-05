@@ -11,6 +11,7 @@
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/kernel/timer.h>
 
 using namespace std::string_literals;
 using namespace ork;
@@ -53,3 +54,33 @@ inline void enqueue_audio_event(
     });
   });
 }
+////////////////////////////////////////////////////////////////////////////////
+struct SingularityBenchMarkApp final : public OrkEzQtApp {
+  static constexpr size_t KNUMFRAMES = 512;
+  SingularityBenchMarkApp(int& argc, char** argv)
+      : OrkEzQtApp(argc, argv) {
+  }
+  ~SingularityBenchMarkApp() override {
+  }
+  std::vector<int> _time_histogram;
+  ork::lev2::freestyle_mtl_ptr_t _material;
+  const FxShaderTechnique* _fxtechniqueMODC = nullptr;
+  const FxShaderTechnique* _fxtechniqueVTXC = nullptr;
+  const FxShaderParam* _fxparameterMVP      = nullptr;
+  const FxShaderParam* _fxparameterMODC     = nullptr;
+  ork::Timer _timer;
+  float _inpbuf[KNUMFRAMES * 2];
+  int _numiters     = 0;
+  double _cur_time  = 0.0;
+  double _prev_time = 0.0;
+  lev2::Font* _font;
+  int _charw             = 0;
+  int _charh             = 0;
+  double _underrunrate   = 0;
+  int _numunderruns      = 0;
+  double _maxvoices      = 32.0;
+  double _accumnumvoices = 0.0;
+};
+using singularitybenchapp_ptr_t = std::shared_ptr<SingularityBenchMarkApp>;
+
+singularitybenchapp_ptr_t createBenchmarkApp(int& argc, char** argv, prgdata_constptr_t program);
