@@ -1,5 +1,7 @@
 #include "krzio.h"
 
+namespace ork::audio::singularity::krzio {
+
 const std::map<int, std::string>& get_controllermap() {
   static std::map<int, std::string> gmap = {
       {0, "MPress"},
@@ -754,3 +756,4 @@ algcfg getAlgConfig(int algID) {
 
   return algcfg();
 }
+} // namespace ork::audio::singularity::krzio

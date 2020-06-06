@@ -2,6 +2,7 @@
 #include <fstream>
 
 using namespace rapidjson;
+namespace ork::audio::singularity::krzio {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -348,3 +349,4 @@ void filescanner::emitSample(const SampleItem* si, rapidjson::Value& parent) {
   /////////////////////////////
   parent.PushBack(sampleobject, _japrog);
 }
+} // namespace ork::audio::singularity::krzio

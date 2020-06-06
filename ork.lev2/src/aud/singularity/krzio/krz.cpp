@@ -2,6 +2,7 @@
 #include <audiofile.h>
 
 // extern gig::File dls_file;
+namespace ork::audio::singularity::krzio {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -202,3 +203,5 @@ size_t rdhasher::operator()(const RegionData& r) const {
 bool rdequer::operator()(const RegionData& a, const RegionData& b) const {
   return a == b;
 }
+
+} // namespace ork::audio::singularity::krzio

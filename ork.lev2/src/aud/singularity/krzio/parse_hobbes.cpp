@@ -2,6 +2,7 @@
 #include <fstream>
 
 using namespace rapidjson;
+namespace ork::audio::singularity::krzio {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -177,3 +178,4 @@ void filescanner::emitHobbes(const Hobbes* h, rapidjson::Value& parent) {
 Hobbes::Hobbes()
     : _ok2emit(false) {
 }
+} // namespace ork::audio::singularity::krzio

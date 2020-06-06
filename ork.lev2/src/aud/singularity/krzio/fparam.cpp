@@ -1,6 +1,7 @@
 #include "krzio.h"
 
 using namespace rapidjson;
+namespace ork::audio::singularity::krzio {
 
 void getFParamXFD(fparam& fp) {
   int adj = makeSigned(fp._inputCourse);
@@ -319,3 +320,4 @@ void filescanner::fparamOutput(const fparam& fp, const std::string& blkname, rap
   AddStringKVMember(jsono, "FiltAlg", fp._outputFiltAlg);
   AddMember(jsono, "MoreTSCR", fp._inputMoreTSCR);
 }
+} // namespace ork::audio::singularity::krzio

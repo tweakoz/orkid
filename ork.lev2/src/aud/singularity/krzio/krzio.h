@@ -30,6 +30,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace ork::audio::singularity::krzio {
 typedef uint32_t u32;
 typedef uint16_t u16;
 typedef int16_t s16;
@@ -664,3 +665,5 @@ struct filescanner {
 
 float log_base(float base, float inp);
 int GenSampleKey(int iobjid, int isubi);
+
+} // namespace ork::audio::singularity::krzio

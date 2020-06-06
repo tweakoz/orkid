@@ -1,6 +1,6 @@
 #include "krzio.h"
 
-namespace ork::lev2::audio::krzparse {
+namespace ork::audio::singularity::krzio {
 ///////////////////////////////////////////////////////////////////////////////
 
 int convert(std::string krzpath) {
@@ -99,4 +99,4 @@ int convert(std::string krzpath) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2::audio::krzparse
+} // namespace ork::audio::singularity::krzio

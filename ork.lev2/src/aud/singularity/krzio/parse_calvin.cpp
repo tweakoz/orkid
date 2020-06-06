@@ -2,6 +2,7 @@
 #include <fstream>
 
 using namespace rapidjson;
+namespace ork::audio::singularity::krzio {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -163,3 +164,4 @@ CalvinKmPage::CalvinKmPage(Calvin* c)
     , _timbreShift(0)
     , _playbackMode(0) {
 }
+} // namespace ork::audio::singularity::krzio
