@@ -21,14 +21,6 @@ CzProgData::CzProgData() {
   _oscData[0] = std::make_shared<CzOscData>();
   _oscData[1] = std::make_shared<CzOscData>();
 }
-///////////////////////////////////////////////////////////////////////////////
-// slope = tan-1(rise/run)
-///////////////////////////////////////////////////////////////////////////////
-float slope2ror(float slope, float bias) {
-  float clamped     = std::clamp(slope + bias, 0.0f, 90.0f - bias);
-  float riseoverrun = tanf(clamped * pi / 180.0);
-  return riseoverrun;
-}
 ///////////////////////////////////////////
 struct ratelevmodel {
   float _inpbias   = 0.0f;
@@ -68,7 +60,7 @@ struct ratelevmodel {
 
   float transform(float value) {
     float slope    = _inpbias + (value * _inpscale) / _inpdiv;
-    float ror      = slope2ror(slope, _rorbias);
+    float ror      = env_slope2ror(slope, _rorbias);
     float computed = powf(_basenumer / ror, _power) * _scalar;
     return std::clamp(computed, 0.004f, 250.0f);
   }

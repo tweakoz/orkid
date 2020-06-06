@@ -11,13 +11,30 @@
 using namespace ork;
 namespace ork::audio::singularity {
 
-static const float openv_attacktimes[32] = {
-    0,  .01, .013, .015, .017, .02, .023, .025, .03, .055, .06, .065, .07, .1, .2, .35,
-    .5, .7,  1,    2,    3,    4,   5,    6,    7,   8,    9,   10,   15,  20, 25, 31,
-};
-static const float openv_dectimes[32] = {
-    0,  .01, .02, .03, .04, .05, .06, .07, .08, .09, .1, .11, .12, .13, .14, .15,
-    .2, .3,  .4,  .5,  .6,  .7,  .8,  .9,  1,   2,   3,  4,   5,   6,   7,   10,
+///////////////////////////////////////////
+struct ratelevmodel {
+  float _inpbias   = 0.0f;
+  float _inpscale  = 0.0f;
+  float _inpdiv    = 0.0f;
+  float _rorbias   = 0.0f;
+  float _basenumer = 0.0f;
+  float _power     = 0.0f;
+  float _scalar    = 0.0f;
+  void txmodel() {
+    _inpbias   = 0.01f;
+    _inpscale  = 89.9f;
+    _inpdiv    = 1.0f;
+    _rorbias   = 0.0f;
+    _basenumer = 1.0f;
+    _power     = 1.0f;
+    _scalar    = 1.0f;
+  }
+  float transform(float value) {
+    float slope    = _inpbias + (value * _inpscale) / _inpdiv;
+    float ror      = env_slope2ror(slope, _rorbias);
+    float computed = powf(_basenumer / ror, _power) * _scalar;
+    return std::clamp(computed, 0.004f, 250.0f);
+  }
 };
 
 static const float openv_declevels[16] = {
@@ -39,34 +56,44 @@ static const float openv_declevels[16] = {
     1,
 };
 
-static const float openv_reltimes[16] = {
-    0,
-    .1,
-    .2,
-    .4,
-    .8,
-    .85,
-    .9,
-    1,
-    1.5,
-    2,
-    2.5,
-    3,
-    5,
-    7,
-    9,
-    11,
+////////////////////////////////////////////////////////////////////////////////
+// Compact TX81z frequiency ratio decoding
+// https://mgregory22.me/tx81z/freqratios.html
+////////////////////////////////////////////////////////////////////////////////
+
+static const std::vector<int> group_to_coarse = {
+    0, 4, 8,  10, 13, 16, 19, 22, 25, 28, 31, 34, 36, 40, 42, 45, // #group
+    1, 5, 9,  14, 18, 23, 26, 30, 35, 39, 43, 46, 49, 52, 55, 58, // #group
+    2, 6, 11, 15, 20, 24, 29, 33, 38, 44, 48, 50, 53, 56, 59, 61, // #group
+    3, 7, 12, 17, 21, 27, 32, 37, 41, 47, 51, 54, 57, 60, 62, 63  // #group
 };
 
-static const float opfrq_ratios[64] = {0.5,   0.71,  0.78,  0.87,  1.00,  1.41,  1.57,  1.73,  2.0,   2.82,  3.0,   3.14,  3.46,
-                                       4.0,   4.24,  4.71,  5.0,   5.19,  5.65,  6.0,   6.28,  6.92,  7.0,   7.07,  7.85,  8.0,
-                                       8.48,  8.65,  9.0,   9.42,  9.89,  10.0,  10.38, 10.99, 11.0,  11.3,  12.0,  12.11, 12.56,
-                                       12.72, 13.0,  13.84, 14.0,  14.1,  14.13, 15.0,  15.55, 15.57, 15.7,  16.96, 17.27, 17.30,
-                                       18.37, 18.84, 19.03, 19.78, 20.41, 20.76, 21.20, 21.98, 22.49, 23.55, 24.22, 25.95};
-
-static const int op_mitltab[20] = {
-    127, 122, 118, 114, 110, 107, 104, 102, 100, 98, 96, 94, 92, 90, 88, 86, 85, 84, 82, 81,
+struct RatioCoef {
+  float _a;
+  float _b;
 };
+
+static const RatioCoef coeffs[4] = {
+    {0.50, 0.0625},   // #group 0
+    {0.71, 0.088105}, // # 0.50 + 0.21,  0.0625 + 0.025605 #group 1
+    {0.78, 0.098145}, //# 0.71 + 0.07, 0.088105 + 0.01004 #group 2
+    {0.87, 0.108105}, // # 0.78 + 0.09, 0.098145 + 0.00996 #group 3
+};
+
+float compute_ratio(int coarse, int fine) {
+  if (coarse < 4 and fine >= 8)
+    return 1.0f;
+  int skip = (coarse >= 4) ? 8 : 0;
+  auto iti = std::find(group_to_coarse.begin(), group_to_coarse.end(), coarse);
+  OrkAssert(iti != group_to_coarse.end());
+  int coarse_index = iti - group_to_coarse.begin();
+  int group        = int(coarse_index / 16);
+  int order        = (coarse_index - group * 16) * 16 - skip + fine;
+  const auto& coef = coeffs[group];
+  return coef._a + coef._b * order;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
@@ -238,7 +265,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
                                                // fixed step:  1,  2,  4, 8, 16,32,64, 128
       int _OWF      = bytes[74 + 2 * opindex]; //&0x7f;
       opd._waveform = (_OWF & 0x70) >> 4;      // waveform 0..7
-      opd._fineFrq  = (_OWF & 7);              // fine frequency 0..15
+      opd._fineFrq  = (_OWF & 0xf);            // fine frequency 0..15
 
       opd._F   = bytes[op_base + 8];
       opd._EFF = _EFF;
@@ -252,13 +279,17 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         opd._frqFixed = float(8 << fxrange) + float(index << fxrange);
       } else {
         OrkAssert(opd._coarseFrq < 64);
-        float r       = opfrq_ratios[opd._coarseFrq];
+        float r = compute_ratio(opd._coarseFrq, opd._fineFrq);
+        printf("coarse<%d> fine<%d> ratio<%g>\n", opd._coarseFrq, opd._fineFrq, r);
         opd._frqRatio = r;
       }
 
       ////////////////////////////
       // modulation Index
       ////////////////////////////
+      constexpr int op_mitltab[20] = {
+          127, 122, 118, 114, 110, 107, 104, 102, 100, 98, 96, 94, 92, 90, 88, 86, 85, 84, 82, 81,
+      };
 
       int tlval = (opd._outLevel > 19) ? 99 - opd._outLevel : op_mitltab[opd._outLevel];
 
@@ -278,34 +309,22 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       op_amp_par._mods._src1      = AE;
       op_amp_par._mods._src1Depth = 1.0;
 
-      int atktime  = 31 - opd._atkRate;
-      int dectime  = 31 - opd._dec1Rate;
-      int dec2time = 31 - opd._dec2Rate;
-      int declevl  = opd._dec1Lev;
-      int reltime  = 15 - opd._relRate;
+      ratelevmodel model;
+      model.txmodel();
+      float atktime   = model.transform(opd._atkRate / 31.0);
+      float dc1time   = model.transform(opd._dec1Rate / 31.0);
+      float dc2time   = model.transform(opd._dec2Rate / 31.0);
+      float reltime   = model.transform(opd._relRate / 15.0);
+      float decaylevl = openv_declevels[opd._dec1Lev];
 
-      printf("ATK<%d> DEC<%d> REL<%d>\n", atktime, dectime, reltime);
-      OrkAssert(atktime < 32);
-      OrkAssert(dectime < 32);
-      OrkAssert(dec2time < 32);
-      OrkAssert(declevl < 16);
-      OrkAssert(reltime < 16);
-      float attaktime = openv_attacktimes[atktime]; // float(j)*0.5;
-      float decaytime = openv_dectimes[dectime] * 0.25;
-      float deca2time = openv_dectimes[dec2time] * 0.25;
-      float decaylevl = openv_declevels[declevl] * 0.25; // float(j)*0.5;
-      float relestime = openv_reltimes[reltime] * 0.25;  // float(j)*0.5;
+      printf("ATK<%g> DC1<%g> DC2<%g> REL<%g>\n", atktime, dc1time, dc2time, reltime);
 
-      AE->_segments.push_back({attaktime, 1});         // atk1
-      AE->_segments.push_back({decaytime, decaylevl}); // atk2
-      AE->_segments.push_back({0, 0});                 // atk3
-      if (opd._dec2Rate != 0)
-        AE->_segments.push_back({deca2time, 0}); // dec
-      else
-        AE->_segments.push_back({0, 0});       // dec
-      AE->_segments.push_back({relestime, 0}); // rel1
-      AE->_segments.push_back({0, 0});         // rel2
-      AE->_segments.push_back({0, 0});         // rel3
+      AE->_sustainSegment = 2;
+      AE->_releaseSegment = 3;
+      AE->_segments.push_back({atktime, 1});         // atk1
+      AE->_segments.push_back({dc1time, decaylevl}); // atk2
+      AE->_segments.push_back({dc2time, 0});         // dec
+      AE->_segments.push_back({reltime, 0});         // rel1
 
       // printf( "OP<%d>\n", op );
       // printf( "    AR<%d> D1R<%d> D2R<%d> RR<%d> D1L<%d>\n", AR,D1R,D2R,RR,D1L);

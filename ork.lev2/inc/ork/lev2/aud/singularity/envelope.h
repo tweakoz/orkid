@@ -6,6 +6,14 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+inline float env_slope2ror(float slope, float bias) {
+  float clamped     = std::clamp(slope + bias, 0.0f, 90.0f - bias);
+  float riseoverrun = tanf(clamped * pi / 180.0);
+  return riseoverrun;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct EnvPoint {
   float _time  = 0.0f;
   float _level = 0.0f;
