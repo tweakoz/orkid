@@ -7,7 +7,7 @@ namespace ork::audio::singularity::krzio {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> struct keymap_ent_templ {
-  typedef void (^kmsetter_t)(Keymap* k, RegionData& rd, T tval);
+  using kmsetter_t = std::function<void(Keymap* k, RegionData& rd, T tval)>;
 
   static void doit(Keymap* kmap, kmsetter_t krt, int ivelrng, const std::vector<T>& the_vec, const char* typnam, T invval) {
     int inumV  = the_vec.size();
@@ -146,21 +146,11 @@ void filescanner::ParseKeyMapEntryIt(Keymap* kmap, const datablock& db, databloc
   // fill in 2d array of region data
   //////////////////////
 
-  auto set_sample = ^void(Keymap* k, RegionData& rd, int ival) {
-    rd.miSampleId = ival;
-  };
-  auto set_subsample = ^void(Keymap* k, RegionData& rd, int ival) {
-    rd.miSubSample = ival - 1;
-  };
-  auto set_2btune = ^void(Keymap* k, RegionData& rd, int ival) {
-    rd.miTuning = ival;
-  };
-  auto set_1btune = ^void(Keymap* k, RegionData& rd, int ival) {
-    rd.miTuning = ival;
-  };
-  auto set_voladj = ^void(Keymap* k, RegionData& rd, float fval) {
-    rd.mVolumeAdjust = fval;
-  };
+  auto set_sample    = [](Keymap* k, RegionData& rd, int ival) { rd.miSampleId = ival; };
+  auto set_subsample = [](Keymap* k, RegionData& rd, int ival) { rd.miSubSample = ival - 1; };
+  auto set_2btune    = [](Keymap* k, RegionData& rd, int ival) { rd.miTuning = ival; };
+  auto set_1btune    = [](Keymap* k, RegionData& rd, int ival) { rd.miTuning = ival; };
+  auto set_voladj    = [](Keymap* k, RegionData& rd, float fval) { rd.mVolumeAdjust = fval; };
 
   keymap_ent_templ<int>::doit(kmap, set_sample, ivelrng, vect_samp, "sample", -1);
   keymap_ent_templ<int>::doit(kmap, set_subsample, ivelrng, vect_subsamp, "subsamp", -1);
